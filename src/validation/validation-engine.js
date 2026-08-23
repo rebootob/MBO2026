@@ -1,5 +1,5 @@
 /**
- * Business Rule Validation Engine
+ * Business Rule Validation Engine (Bilingual Thai / English)
  */
 
 import { BUSINESS_STAGES } from '../config/constants.js';
@@ -9,12 +9,12 @@ export class ValidationEngine {
     const errors = [];
 
     if (!record) {
-      errors.push('ไม่พบข้อมูล Record');
+      errors.push('ไม่พบข้อมูล Record\nRecord data not found');
       return { isValid: false, errors };
     }
 
     if (stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
-      errors.push('ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)');
+      errors.push('ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)\nUnable to identify workflow stage. Please contact HR / Administrator.');
       return { isValid: false, errors };
     }
 
@@ -25,17 +25,17 @@ export class ValidationEngine {
     // Common checks
     const empCode = this._val(record.Employee_Code);
     if (!empCode) {
-      errors.push('กรุณาระบุรหัสพนักงาน (Employee Code)');
+      errors.push('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
     }
 
     const fy = this._val(record.Fiscal_Year);
     if (!fy) {
-      errors.push('กรุณาระบุรอบการประเมิน (Fiscal Year)');
+      errors.push('กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year');
     }
 
     const objCount = parseInt(this._val(record.Objective_Count) || '4', 10);
     if (isNaN(objCount) || objCount < 2 || objCount > 10) {
-      errors.push('จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ');
+      errors.push('จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ\nObjective Count must be between 2 and 10');
       return { isValid: false, errors };
     }
 
@@ -52,23 +52,23 @@ export class ValidationEngine {
         const diff = parseInt(diffVal, 10);
 
         if (!obj) {
-          errors.push(`กรุณาระบุ Objective ข้อที่ ${i}`);
+          errors.push(`กรุณาระบุ Objective ข้อที่ ${i}\nPlease enter Objective ${i}`);
         }
         if (!plan) {
-          errors.push(`กรุณาระบุ Action Plan ข้อที่ ${i}`);
+          errors.push(`กรุณาระบุ Action Plan ข้อที่ ${i}\nPlease enter Action Plan ${i}`);
         }
         if (!weightVal || isNaN(weight) || weight <= 0 || weight > 100) {
-          errors.push(`กรุณาระบุ Weight ข้อที่ ${i} (1 - 100%)`);
+          errors.push(`กรุณาระบุ Weight ข้อที่ ${i} (1 - 100%)\nPlease enter Weight ${i} (1 - 100%)`);
         } else {
           totalWeight += weight;
         }
         if (!diffVal || isNaN(diff) || diff < 1 || diff > 4) {
-          errors.push(`กรุณาเลือกระดับ Difficulty Level ${i} ต้องอยู่ระหว่าง 1 ถึง 4`);
+          errors.push(`กรุณาเลือกระดับ Difficulty Level ${i} ต้องอยู่ระหว่าง 1 ถึง 4\nPlease select Difficulty Level ${i} (1 - 4)`);
         }
       }
 
       if (Math.round(totalWeight) !== 100) {
-        errors.push(`ผลรวม Weight ต้องเท่ากับ 100% (ปัจจุบันคำนวณได้ ${totalWeight}%)`);
+        errors.push(`ผลรวม Weight ต้องเท่ากับ 100% (ปัจจุบันคำนวณได้ ${totalWeight}%)\nTotal Weight must equal 100% (Currently ${totalWeight}%)`);
       }
     }
 
@@ -78,7 +78,7 @@ export class ValidationEngine {
         const progVal = this._val(record[`Progress_Percent_${i}`]);
         const prog = parseFloat(progVal || '0');
         if (progVal === '' || isNaN(prog) || prog < 0 || prog > 100) {
-          errors.push(`กรุณาระบุ Progress % ${i} ระหว่าง 0 ถึง 100%`);
+          errors.push(`กรุณาระบุ Progress % ${i} ระหว่าง 0 ถึง 100%\nPlease enter Progress % ${i} (0 - 100%)`);
         }
       }
     }
@@ -91,10 +91,10 @@ export class ValidationEngine {
         const ach = parseInt(achVal, 10);
 
         if (!actual) {
-          errors.push(`กรุณาระบุ Actual Result ข้อที่ ${i}`);
+          errors.push(`กรุณาระบุ Actual Result ข้อที่ ${i}\nPlease enter Actual Result ${i}`);
         }
         if (!achVal || isNaN(ach) || ach < 1 || ach > 5) {
-          errors.push(`กรุณาเลือกระดับ Self Achievement ข้อที่ ${i} (1 - 5)`);
+          errors.push(`กรุณาเลือกระดับ Self Achievement ข้อที่ ${i} (1 - 5)\nPlease select Self Achievement ${i} (1 - 5)`);
         }
       }
     }
