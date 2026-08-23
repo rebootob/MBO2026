@@ -3,33 +3,8 @@
   'use strict';
 
   /**
- * Central Configuration & Constants for TTMET MBO V2
+ * MBO System Constants & Enums
  */
-
-const APP_CONFIG = {
-  DEFAULT_FISCAL_YEAR: 'FY2026',
-  APP_53_EMPLOYEE_MASTER_ID: 53,
-  APP_283_LEGACY_PMS_ID: 283
-};
-
-const WORKFLOW_STATUS = {
-  DRAFT_OBJECTIVE: '01 Draft Objective',
-  FIRST_MANAGER_OBJECTIVE: '02 First Manager Objective Review',
-  MANAGER_OBJECTIVE: '03 Manager Objective Review',
-  GM_OBJECTIVE: '04 GM Objective Review',
-  OBJECTIVE_APPROVED: '05 Objective Approved',
-  EMPLOYEE_MIDYEAR: '06 Employee Mid-Year',
-  FIRST_MANAGER_MIDYEAR: '07 First Manager Mid-Year Review',
-  MANAGER_MIDYEAR: '08 Manager Mid-Year Review',
-  GM_MIDYEAR: '09 GM Mid-Year Review',
-  MIDYEAR_COMPLETED: '10 Mid-Year Completed',
-  EMPLOYEE_SELF_EVAL: '11 Employee Self Evaluation',
-  FIRST_MANAGER_FINAL: '12 First Manager Final Evaluation',
-  MANAGER_FINAL: '13 Manager Final Evaluation',
-  GM_FINAL: '14 GM Final Evaluation',
-  HR_FINAL_CHECK: '15 HR Final Check',
-  COMPLETED: '16 Completed'
-};
 
 const BUSINESS_STAGES = {
   OBJECTIVE_INPUT: 'OBJECTIVE_INPUT',
@@ -40,47 +15,50 @@ const BUSINESS_STAGES = {
 };
 
 const STATUS_TO_STAGE_MAP = {
-  '': BUSINESS_STAGES.OBJECTIVE_INPUT,
-  'Not started': BUSINESS_STAGES.OBJECTIVE_INPUT,
-  [WORKFLOW_STATUS.DRAFT_OBJECTIVE]: BUSINESS_STAGES.OBJECTIVE_INPUT,
-  [WORKFLOW_STATUS.FIRST_MANAGER_OBJECTIVE]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.MANAGER_OBJECTIVE]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.GM_OBJECTIVE]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.OBJECTIVE_APPROVED]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.EMPLOYEE_MIDYEAR]: BUSINESS_STAGES.MIDYEAR_INPUT,
-  [WORKFLOW_STATUS.FIRST_MANAGER_MIDYEAR]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.MANAGER_MIDYEAR]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.GM_MIDYEAR]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.MIDYEAR_COMPLETED]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.EMPLOYEE_SELF_EVAL]: BUSINESS_STAGES.SELF_EVALUATION,
-  [WORKFLOW_STATUS.FIRST_MANAGER_FINAL]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.MANAGER_FINAL]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.GM_FINAL]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.HR_FINAL_CHECK]: BUSINESS_STAGES.READ_ONLY,
-  [WORKFLOW_STATUS.COMPLETED]: BUSINESS_STAGES.READ_ONLY
+  '01 Draft Objective': BUSINESS_STAGES.OBJECTIVE_INPUT,
+  '02 First Manager Objective Review': BUSINESS_STAGES.READ_ONLY,
+  '03 Manager Objective Review': BUSINESS_STAGES.READ_ONLY,
+  '04 GM Objective Review': BUSINESS_STAGES.READ_ONLY,
+  '05 Objective Approved': BUSINESS_STAGES.READ_ONLY,
+  '06 Employee Mid-Year': BUSINESS_STAGES.MIDYEAR_INPUT,
+  '07 First Manager Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
+  '08 Manager Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
+  '09 GM Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
+  '10 Mid-Year Approved': BUSINESS_STAGES.READ_ONLY,
+  '11 Employee Self Evaluation': BUSINESS_STAGES.SELF_EVALUATION,
+  '12 First Manager Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '13 Manager Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '14 GM Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '15 Evaluation Completed': BUSINESS_STAGES.READ_ONLY,
+  '16 Completed': BUSINESS_STAGES.READ_ONLY
 };
 
 const CONFIDENTIAL_FIELDS = [
-  'PartA_Raw_Score', 'PartA_Weighted_Score', 'PartB_Raw_Score', 'PartB_Weighted_Score', 'Final_Confidential_Score',
-  'Manager_Achievement_1', 'Manager_Objective_Score_1', 'Manager_Comment_1',
-  'Manager_Achievement_2', 'Manager_Objective_Score_2', 'Manager_Comment_2',
-  'Manager_Achievement_3', 'Manager_Objective_Score_3', 'Manager_Comment_3',
-  'Manager_Achievement_4', 'Manager_Objective_Score_4', 'Manager_Comment_4',
-  'GM_Achievement_1', 'GM_Objective_Score_1', 'GM_Comment_1',
-  'GM_Achievement_2', 'GM_Objective_Score_2', 'GM_Comment_2',
-  'GM_Achievement_3', 'GM_Objective_Score_3', 'GM_Comment_3',
-  'GM_Achievement_4', 'GM_Objective_Score_4', 'GM_Comment_4',
-  'Average_Objective_Score_1', 'MBO_Point_1',
-  'Average_Objective_Score_2', 'MBO_Point_2',
-  'Average_Objective_Score_3', 'MBO_Point_3',
-  'Average_Objective_Score_4', 'MBO_Point_4',
-  'Manager_Competency_Rating_1', 'GM_Competency_Rating_1', 'Manager_Competency_Comment_1', 'GM_Competency_Comment_1', 'Competency_Result_1',
-  'Manager_Competency_Rating_2', 'GM_Competency_Rating_2', 'Manager_Competency_Comment_2', 'GM_Competency_Comment_2', 'Competency_Result_2',
-  'Manager_Competency_Rating_3', 'GM_Competency_Rating_3', 'Manager_Competency_Comment_3', 'GM_Competency_Comment_3', 'Competency_Result_3',
-  'Manager_Competency_Rating_4', 'GM_Competency_Rating_4', 'Manager_Competency_Comment_4', 'GM_Competency_Comment_4', 'Competency_Result_4',
-  'Manager_Competency_Rating_5', 'GM_Competency_Rating_5', 'Manager_Competency_Comment_5', 'GM_Competency_Comment_5', 'Competency_Result_5',
-  'Manager_Competency_Rating_6', 'GM_Competency_Rating_6', 'Manager_Competency_Comment_6', 'GM_Competency_Comment_6', 'Competency_Result_6'
+  'Manager_Achievement_1', 'Manager_Achievement_2', 'Manager_Achievement_3', 'Manager_Achievement_4',
+  'GM_Achievement_1', 'GM_Achievement_2', 'GM_Achievement_3', 'GM_Achievement_4',
+  'Manager_Comment_1', 'Manager_Comment_2', 'Manager_Comment_3', 'Manager_Comment_4',
+  'GM_Comment_1', 'GM_Comment_2', 'GM_Comment_3', 'GM_Comment_4',
+  'PartA_Raw_Score', 'PartA_Weighted_Score',
+  'Manager_Competency_Rating_1', 'Manager_Competency_Rating_2', 'Manager_Competency_Rating_3', 'Manager_Competency_Rating_4', 'Manager_Competency_Rating_5', 'Manager_Competency_Rating_6',
+  'GM_Competency_Rating_1', 'GM_Competency_Rating_2', 'GM_Competency_Rating_3', 'GM_Competency_Rating_4', 'GM_Competency_Rating_5', 'GM_Competency_Rating_6',
+  'PartB_Raw_Score', 'PartB_Weighted_Score',
+  'Final_Confidential_Score', 'Final_Grade'
 ];
+
+/**
+ * Build deterministic Record Key preserving leading zeroes
+ * @param {string} fiscalYear e.g. "FY2026"
+ * @param {string} employeeCode e.g. "0149"
+ * @returns {string} e.g. "FY2026-0149"
+ */
+function buildRecordKey(fiscalYear, employeeCode) {
+  const fy = String(fiscalYear || '').trim();
+  const emp = String(employeeCode || '').trim();
+  if (!fy || !emp) {
+    return '';
+  }
+  return `${fy}-${emp}`;
+}
 
 
   /**
@@ -1054,9 +1032,12 @@ class EmployeePartAUI {
 
   if (typeof kintone === 'undefined') return;
 
-  const MBO_APP_ID = kintone.app.getId();
   const ROUTING_APP_ID = 795;
   const EMPLOYEE_APP_ID = 53;
+
+  function getMboAppId() {
+    return kintone.app.getId() || 794;
+  }
 
   const kintoneApiWrapper = {
     getRecords: async (appId, query) => {
@@ -1069,7 +1050,6 @@ class EmployeePartAUI {
   };
 
   function hideAllNativeFields(record) {
-    // Hide all configured custom fields from native form
     Object.keys(record).forEach(code => {
       try {
         kintone.app.record.setFieldShown(code, false);
@@ -1085,6 +1065,26 @@ class EmployeePartAUI {
       return STATUS_TO_STAGE_MAP[status];
     }
     return BUSINESS_STAGES.CONFIGURATION_ERROR;
+  }
+
+  function syncRecordToKintone(record) {
+    try {
+      if (typeof kintone.app.record.get === 'function' && typeof kintone.app.record.set === 'function') {
+        const currentData = kintone.app.record.get();
+        if (currentData && currentData.record) {
+          Object.keys(record).forEach(k => {
+            if (currentData.record[k]) {
+              currentData.record[k].value = record[k].value;
+            } else {
+              currentData.record[k] = record[k];
+            }
+          });
+          kintone.app.record.set(currentData);
+        }
+      }
+    } catch (e) {
+      console.warn('[MBO V2] syncRecordToKintone warning:', e);
+    }
   }
 
   // Hook 1: Record Show (Detail, Edit, Create)
@@ -1113,16 +1113,22 @@ class EmployeePartAUI {
       onFieldChange: (code, val) => {
         if (record[code]) {
           record[code].value = val;
+        } else {
+          record[code] = { value: val };
         }
+        syncRecordToKintone(record);
       },
       onLookupEmployee: async (empCode) => {
         const empProfile = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
         const loginUser = kintone.getLoginUser();
         const routing = await RoutingService.validateRequesterAccess(ROUTING_APP_ID, empProfile.Employee_Section, loginUser.code, kintoneApiWrapper);
         const fy = record.Fiscal_Year?.value || 'FY2026';
-        await EmployeeService.checkDuplicateMBO(MBO_APP_ID, fy, empCode, record.$id?.value, kintoneApiWrapper);
+        const generatedKey = buildRecordKey(fy, empProfile.Employee_Code);
 
-        // Snapshot all data into record
+        // Check duplicate MBO
+        await EmployeeService.checkDuplicateMBO(getMboAppId(), fy, empProfile.Employee_Code, record.$id?.value, kintoneApiWrapper);
+
+        // Snapshot all data into record in-memory
         Object.assign(record, {
           Employee_Code: { value: empProfile.Employee_Code },
           Employee_Name: { value: empProfile.Employee_Name },
@@ -1139,35 +1145,59 @@ class EmployeePartAUI {
           Manager_User: { value: routing.Manager_User },
           GM_User: { value: routing.GM_User },
           Fiscal_Year: { value: fy },
-          Record_Key: { value: `${fy}-${empProfile.Employee_Code}` }
+          Record_Key: { value: generatedKey }
         });
+
+        // Push directly to Kintone Form State
+        syncRecordToKintone(record);
       }
     });
 
     try {
       ui.render();
-      // 3. Only hide native fields AFTER successful custom UI render
       hideAllNativeFields(record);
     } catch (renderError) {
       console.error('[MBO V2] Error rendering custom UI:', renderError);
-      // Keep native fields visible in fail-safe mode
     }
 
     return event;
   });
 
   // Hook 2: Record Submit (Create & Edit)
-  kintone.events.on(['app.record.create.submit', 'app.record.edit.submit'], function (event) {
+  kintone.events.on(['app.record.create.submit', 'app.record.edit.submit'], async function (event) {
     const record = event.record;
     const stage = getBusinessStage(record);
 
-    // Always ensure Record_Key is generated: FY + Code
+    // 1. Build and validate deterministic Record Key
     const fy = record.Fiscal_Year?.value || 'FY2026';
     const code = record.Employee_Code?.value || '';
-    if (fy && code && record.Record_Key) {
-      record.Record_Key.value = `${fy}-${code}`;
+    const recordKey = buildRecordKey(fy, code);
+
+    if (!recordKey) {
+      event.error = 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและ Fiscal Year';
+      return event;
     }
 
+    if (!record.Record_Key) {
+      record.Record_Key = { value: recordKey };
+    } else {
+      record.Record_Key.value = recordKey;
+    }
+
+    // 2. Duplicate Check Guard
+    try {
+      const currentId = record.$id?.value;
+      const query = `Record_Key = "${recordKey}" ${currentId ? `and $id != "${currentId}"` : ''}`;
+      const duplicateRes = await kintoneApiWrapper.getRecords(getMboAppId(), query);
+      if (duplicateRes.records && duplicateRes.records.length > 0) {
+        event.error = `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`;
+        return event;
+      }
+    } catch (err) {
+      console.error('[MBO V2] Duplicate check error:', err);
+    }
+
+    // 3. Stage Validation
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
       event.error = validation.errors.join('\n');

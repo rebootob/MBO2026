@@ -8,7 +8,8 @@ assertSandboxWriteTarget(app);
 
 // 1. Build Single JS File
 const constantsJs = fs.readFileSync('src/config/constants.js', 'utf8')
-  .replace(/export const/g, 'const');
+  .replace(/export const/g, 'const')
+  .replace(/export function/g, 'function');
 
 const hostResolverJs = fs.readFileSync('src/ui/host-resolver.js', 'utf8')
   .replace(/import .*/g, '')
