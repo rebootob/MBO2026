@@ -30,7 +30,7 @@ export async function kintoneRequest(path, { method = 'GET', body } = {}) {
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    const detail = [error.code, error.message].filter(Boolean).join(': ');
+    const detail = [error.code, error.message, error.errors ? JSON.stringify(error.errors) : ''].filter(Boolean).join(': ');
     throw new Error(`Kintone returned HTTP ${response.status}${detail ? ` (${detail})` : ''}.`);
   }
   return response.json();

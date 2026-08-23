@@ -5,10 +5,14 @@
   "description": "TTMET MBO / PMS V2 Kintone sandbox tooling",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/sandbox-write-guard.test.js",
+    "test": "node --test tests/sandbox-write-guard.test.js tests/workflow-validator.test.js",
     "test:safety": "node --test tests/sandbox-write-guard.test.js",
     "connection:test": "node --env-file-if-exists=.env.local scripts/kintone/connection-test.js",
     "sandbox:create": "node --env-file-if-exists=.env.local scripts/kintone/create-sandbox-apps.js",
+    "sandbox:backup": "node --env-file-if-exists=.env.local scripts/kintone/backup-sandbox-apps.js",
+    "schema:deploy": "node --env-file-if-exists=.env.local scripts/kintone/deploy-schema-foundation.js",
+    "workflow:deploy": "node --env-file-if-exists=.env.local scripts/kintone/deploy-workflow-skeleton.js",
+    "workflow:minimal": "node --env-file-if-exists=.env.local scripts/kintone/deploy-workflow-minimal.js",
     "sandbox:deploy": "node --env-file-if-exists=.env.local scripts/kintone/deploy-sandbox-apps.js",
     "sandbox:smoke-test": "node --env-file-if-exists=.env.local scripts/kintone/smoke-test-sandbox-apps.js"
   }
