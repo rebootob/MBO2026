@@ -1,14 +1,17 @@
 # Architecture & Design Decisions
 
-## DEC-018 — Hoshin Final Governance: Dual-Level Requirement & Ready Version Immutability
+## DEC-018 — Hoshin Final Governance: Dual-Level Requirement, Ready Version Immutability & Architecture Freeze
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Confirmed by User & Frozen)
+- **Status**: FROZEN (Approved by User)
 - **Decision**:
-  1. **Dual-Level Submission Gate:** Objective Submission requires BOTH Department Hoshin (`Ready_For_MBO = YES`) AND Section Hoshin (`Ready_For_MBO = YES`) simultaneously (Strict AND condition). Missing levels produce distinct validation errors.
-  2. **Ready Version Immutability:** When `Ready_For_MBO = "YES"`, the record is locked and immutable. Revisions require creating a new version (`Version 2`) with `Ready_For_MBO = "NO"` during draft editing.
-  3. **Single Current Ready Invariant:** At most one version per `(Fiscal_Year, Scope_Type, Scope_Code)` can be active/ready simultaneously. Activating a new version transitions the old version to `SUPERSEDED` (never deleted).
-  4. **Zero Workflow Maintained:** Governed without Kintone Process Management via Native Permissions and direct readiness toggle.
-  5. **Complete Dual Snapshot:** App 794 captures complete snapshots of both Department and Section Hoshins on submit.
+  1. **Architecture Status:** `HOSHIN_ARCHITECTURE = FROZEN`.
+  2. **HR Sole Management & Zero Workflow:** HR directly maintains Department and Section Hoshins with zero Kintone Process Management.
+  3. **Dual-Level Submission Gate:** Objective submission in App 794 strictly requires BOTH Department Hoshin (`Ready_For_MBO = YES`) AND Section Hoshin (`Ready_For_MBO = YES`) simultaneously (Strict AND condition).
+  4. **Ready Version Immutability:** When `Ready_For_MBO = "YES"`, the record is strictly immutable. Revisions require creating a new version (`Version 2`) with `Ready_For_MBO = "NO"` during draft editing.
+  5. **Single Current Ready Invariant:** At most one active ready version per `(Fiscal_Year, Scope_Type, Scope_Code)`. When a new version becomes ready, the old version only has its lifecycle state updated to `SUPERSEDED` / `HISTORICAL` without altering its content or audit data.
+  6. **Zero Historical Deletion:** Superseded versions are preserved permanently.
+  7. **Complete Dual Snapshot:** App 794 captures complete snapshots of both Department and Section Hoshins on submit.
+
 
 ## DEC-017 — HR Managed Hoshin Model: No Approval Workflow & Ready_For_MBO Flag
 - **Date**: 2026-08-24

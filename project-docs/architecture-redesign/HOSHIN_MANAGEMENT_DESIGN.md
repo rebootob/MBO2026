@@ -1,6 +1,7 @@
 # Hoshin Final Governance, Immutability & Dual-Level Architecture Blueprint
 
-> **Document Status:** Active (Final Business Rule Confirmed & Frozen)  
+> **Document Status:** FROZEN (Approved by User on 2026-08-24)  
+> **Architecture Status:** `HOSHIN_ARCHITECTURE = FROZEN`  
 > **Governance Model:** HR Managed / Direct Readiness / Zero Approval Workflow  
 > **Submission Requirement:** BOTH Department Hoshin AND Section Hoshin Must Be `Ready_For_MBO = YES` (AND Condition)  
 > **Immutability Principle:** Published/Ready Versions Are Strictly Immutable (Revisions Require Creating a New Version)  
@@ -8,11 +9,30 @@
 
 ---
 
-## 1. Core Architectural Principles
+## 1. Executive Summary & 13 Frozen Business Rules
+
+The Hoshin Architecture has been formally approved and frozen with the following 13 core business rules:
+
+1. **HR Sole Management:** HR manages and maintains both Department Hoshin and Section Hoshin for the entire company.
+2. **Zero Approval Workflow:** Hoshin Master operates without Kintone Process Management (no multi-tier approval chains).
+3. **Japanese Fiscal Year Alignment:** Bound strictly to Japanese Fiscal Year (`1 April - 31 March`, e.g. `FY2027`).
+4. **Dual-Level Submission Requirement:** Objective submission in App 794 strictly requires BOTH Department Hoshin (`Ready_For_MBO = YES`) AND Section Hoshin (`Ready_For_MBO = YES`).
+5. **Business Usability Flag:** `Ready_For_MBO = YES` designates the published, usable business baseline.
+6. **Ready Version Immutability:** Active ready versions cannot have their content, scope, fiscal year, or version number modified.
+7. **Revision via New Version:** Any modification requires creating a new version (`Version 2`) with `Ready_For_MBO = NO` during draft editing.
+8. **Single Current Ready Invariant:** At most one version per `(Fiscal_Year, Scope_Type, Scope_Code)` can have `Ready_For_MBO = YES` at any time.
+9. **Zero Historical Deletion:** Historical/superseded versions are never deleted from the database.
+10. **Immutable App 794 Transaction Snapshot:** App 794 permanently captures full Department and Section Hoshin snapshots upon objective submission.
+11. **No Silent Fallback:** If Current FY Hoshin is missing or not ready, system never falls back silently to previous years.
+12. **Native Kintone Security:** Permissions are enforced via native Kintone App/Field permissions (HR = Full, Others = Read Only).
+13. **No Orphan Policy:** Any superseded designs or deprecated artifacts must be cleaned up per `DEC-016`.
+
+### Supersession Clarification
+When a new version (e.g. `Version 2`) becomes `Ready_For_MBO = YES`, the previous version (`Version 1`) has **only its lifecycle state changed to `SUPERSEDED` / `HISTORICAL`**. Its Hoshin content, scope, fiscal year, version integer, and historical audit metadata remain permanently unaltered.
 
 ```mermaid
 graph TD
-    subgraph Master [App 799: MBO Hoshin Master (HR Managed, No Workflow)]
+    subgraph Master [App 799: MBO Hoshin Master (FROZEN)]
         DEPT_V1["Dept Hoshin (FY2027 + Dept + V1) <br/> Ready_For_MBO = YES (IMMUTABLE)"]
         SECT_V1["Section Hoshin (FY2027 + TME1 + V1) <br/> Ready_For_MBO = YES (IMMUTABLE)"]
     end
@@ -29,7 +49,6 @@ graph TD
 
 ## 2. Dual-Level Submission Gate (Strict AND Condition)
 
-In MBO V2, both organizational levels are strictly required:
 $$\text{Objective Submission Enabled} \iff (\text{Dept Hoshin.Ready\_For\_MBO} = \text{"YES"}) \land (\text{Section Hoshin.Ready\_For\_MBO} = \text{"YES"})$$
 
 ### Specific Distinct User Messages:
@@ -52,7 +71,7 @@ If HR must revise an active Hoshin:
 1. **Create New Version:** System creates a new draft record (e.g. `FY2027 + TME1 + Version 2`) with `Ready_For_MBO = "NO"`.
 2. **HR Edits Draft:** HR modifies the text or notes in `Version 2`.
 3. **Publish / Set Ready:** HR toggles `Version 2` to `Ready_For_MBO = "YES"`.
-4. **Automatic Supersession:** `Version 1` is automatically marked `SUPERSEDED` / `HISTORICAL` (never deleted).
+4. **Automatic Supersession:** `Version 1` is automatically marked `SUPERSEDED` / `HISTORICAL` (never deleted, content never altered).
 
 ### Rule 3: Single Current Ready Version Invariant
 For any unique tuple `(Fiscal_Year, Scope_Type, Scope_Code)`, there can be **at most ONE record** with `Ready_For_MBO = "YES"` at any given time.
