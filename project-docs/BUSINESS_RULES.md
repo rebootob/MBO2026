@@ -1,29 +1,34 @@
-# MBO Business Rules & Workflow Specification
+# TTMET MBO & Performance Management Business Rules (MBO V2)
 
-## 1. Approval Hierarchy: Levels vs. Approval Rules
+> **Document Status:** Active (Confirmed Standards)  
+> **Last Updated:** 2026-08-23  
 
-### A. Approval Levels (Sequential)
-- `Manager Level 1` -> `Manager Level 2` -> `GM Level 1` -> `GM Level 2`
-- Empty Level = Bypassed automatically.
+---
 
-### B. Approval Rules (Intra-Level)
-- **Standard Default**: **`ALL`**
-- `ALL`: Every user in the level must approve.
-- `ANY`: Any single user in the level can approve.
+## 1. Evaluation Groups & Weight Splits
 
-### C. Trainee Manager Pattern
-- Manager Level 1 = Trainee Manager (`Manager_Level1_Approvers`)
-- Manager Level 2 = Mentor Manager (`Manager_Level2_Approvers`)
-- GM Level 1 = General Manager (`GM_Level1_Approvers`)
-- This is a 3-level sequential flow (`M1 -> M2 -> G1`), NOT a multi-approver rule.
+| Evaluation Group / Profile | Target Positions | Part A Weight | Part B Weight | Status |
+| :--- | :--- | :---: | :---: | :---: |
+| **Staff & Chief** | Staff, Chief, Officer, Senior Staff | **70%** | **30%** | **CONFIRMED** |
+| **Japanese Staff** | Expatriate / Japanese Staff | **70%** | **30%** | **CONFIRMED** |
+| **Assistant Manager** | Assistant Manager, Specialist | **50%** | **50%** | **CONFIRMED** |
+| **Section Manager** | Section Manager | **50%** | **50%** | **CONFIRMED** |
+| **Senior Manager** | Senior Manager | **50%** | **50%** | **CONFIRMED** |
+| **Deputy General Manager** | Deputy General Manager (DGM) | **50%** | **50%** | **CONFIRMED** |
+| **General Manager** | General Manager (GM) | **50%** | **50%** | **CONFIRMED** |
+| **Vice President** | Vice President (VP) | **50%** | **50%** | **CONFIRMED** |
 
-## 2. Master Data & Snapshot Model
-- **App 795 (Routing Master)**: Master source per Section.
-- **App 794 (MBO V2 Sandbox)**: Snapshot target per record.
-- **Pilot Section (TME1)**:
-  - Employee: `0149` (Mr.Gritchai Somphonkrang)
-  - Manager L1: `suthas` (Rule: `ALL`)
-  - Manager L2: `[]` (empty)
-  - GM L1: `somrudee` (Rule: `ALL`)
-  - GM L2: `[]` (empty)
-  - Topology: `M1_G1` (Employee -> suthas -> somrudee -> Approved)
+---
+
+## 2. COCE / Compliance Governance
+* **Evaluated:** **YES** (1-5 rating collected for employee review & compliance monitoring)
+* **Included in Score:** **NO** (Excluded from Part B Sum, Part B Divisor, and Final Score calculation)
+* **Configuration Property:** `Included_In_Score = false`
+
+---
+
+## 3. Annual Evaluation Cycle & Long-Lived App Core
+* **Single Core App:** App 794 handles all fiscal years.
+* **1 Employee = 1 Record per Cycle:** Record Key format `{Cycle_Code}-{Employee_Code}` (e.g. `FY2026-0149`, `FY2027-0149`).
+* **Dynamic Resolution:** Current Cycle resolved from Evaluation Cycle Master + Current Date; zero hardcoded years in application logic.
+* **Hybrid Generation:** Batch opening for active employees + Lazy creation for mid-year hires.

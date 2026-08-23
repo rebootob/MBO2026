@@ -1,6 +1,6 @@
 # Business Rule Truth Table (Consolidated)
 
-> **Document Status:** Active (Discovery Phase)  
+> **Document Status:** Active (Confirmed by User)  
 > **Last Updated:** 2026-08-23  
 
 ---
@@ -14,10 +14,11 @@
 | **BR-003** | Section Manager | Part A Weight is 50%, Part B Weight is 50% | `PartA: 50%, PartB: 50%` | App 305 & Excel | 100% | **CONFIRMED** |
 | **BR-004** | Deputy GM (DGM) | Part A Weight is 50%, Part B Weight is 50% | `PartA: 50%, PartB: 50%` | App 307 & Excel | 100% | **CONFIRMED** |
 | **BR-005** | Senior Manager | Part A Weight is 50%, Part B Weight is 50% | `PartA: 50%, PartB: 50%` | App 643 & Excel | 100% | **CONFIRMED** |
-| **BR-006** | Assistant Manager | Part A / Part B Weight Split Conflict | `50/50 (Kintone)` vs `60/40 (Excel)` | App 310 vs PART A.xlsx | 50% | **NEEDS_USER_CONFIRMATION** |
-| **BR-007** | General Manager | Part A / Part B Weight Split Conflict | `50/50 (Kintone)` vs `60/40 (Excel)` | App 640 vs Excel | 50% | **NEEDS_USER_CONFIRMATION** |
-| **BR-008** | Vice President | Part A / Part B Weight Split Conflict | `50/50 (Kintone)` vs `70/30 (Excel)` | App 715 vs Excel | 50% | **NEEDS_USER_CONFIRMATION** |
-| **BR-009** | All Profiles | COCE Compliance numerical score excluded from Part B divisor | `COCE is Gatekeeper / Non-Averaged` | Formula Analysis (All Apps) | 90% | **NEEDS_USER_CONFIRMATION** |
+| **BR-006** | Assistant Manager | Part A Weight is 50%, Part B Weight is 50% | `PartA: 50%, PartB: 50%` | User Confirmation (Supersedes Legacy Excel 60/40) | 100% | **CONFIRMED** |
+| **BR-007** | General Manager | Part A Weight is 50%, Part B Weight is 50% | `PartA: 50%, PartB: 50%` | User Confirmation (Supersedes Legacy Excel 60/40) | 100% | **CONFIRMED** |
+| **BR-008** | Vice President | Part A Weight is 50%, Part B Weight is 50% | `PartA: 50%, PartB: 50%` | User Confirmation (Supersedes Legacy Excel 70/30) | 100% | **CONFIRMED** |
+| **BR-009** | All Profiles | COCE Compliance: Evaluated = YES, Included_In_Score = NO | `Evaluated: YES, Included_In_Score: NO` | User Confirmation (Evaluation Only / Excluded from Average) | 100% | **CONFIRMED** |
 | **BR-010** | All Profiles | MBO Objectives scalability: 2 to 10 items | `Min: 2, Max: 10, Default: 4` | User Approved V2 Rule | 100% | **CONFIRMED** |
 | **BR-011** | All Profiles | Total Weight must equal 100% | `Total_Weight == 100` | Universal Rule | 100% | **CONFIRMED** |
 | **BR-012** | All Profiles | Default Approval Rule is ALL across all levels | `Default: ALL` | User Approved V2 Rule | 100% | **CONFIRMED** |
+| **BR-013** | Annual Cycle | Single Long-Lived App Core with Dynamic Cycle Resolution | `Record_Key: {Cycle_Code}-{EmpCode}` | User Approved V2 Rule | 100% | **CONFIRMED** |

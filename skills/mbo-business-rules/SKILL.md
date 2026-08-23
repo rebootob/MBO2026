@@ -1,39 +1,24 @@
 ---
 name: mbo-business-rules
-description: Comprehensive business rules, approval hierarchies, and privacy models
+description: Authoritative business rules, scoring logic, and evaluation profiles for TTMET MBO V2
 ---
 
-# MBO Business Rules & Approval Standards
+# MBO V2 Business Rules & Evaluation Profiles
 
-## 1. Approval Routing Architecture: Levels vs. Approval Rules
+## 1. Confirmed Evaluation Weights
+- **Staff & Chief / Japanese Staff:** Part A: 70% | Part B: 30%
+- **All Management & Executive Groups (Asst Mgr, Sect Mgr, Senior Mgr, DGM, GM, VP):** Part A: 50% | Part B: 50%
 
-The routing engine cleanly separates two distinct concepts:
+## 2. COCE (Code of Conduct & Ethics) Rule
+- `Evaluated = YES`, `Included_In_Score = NO`
+- Ignored in Part B divisor and score sum via `Included_In_Score = false`.
 
-### A. Approval Levels (Sequential Hierarchy)
-- **Definition**: The linear sequence through which an MBO record progresses.
-- **Hierarchy**:
-  1. `Manager Level 1` (`Manager_Level1_Approvers`)
-  2. `Manager Level 2` (`Manager_Level2_Approvers`)
-  3. `GM Level 1` (`GM_Level1_Approvers`)
-  4. `GM Level 2` (`GM_Level2_Approvers`)
-- **Empty Level Rule**: If an approver level is empty (e.g. `Manager_Level2_Approvers = []`), that level is automatically bypassed.
+## 3. Annual Cycle & Single Long-Lived Core
+- App 794 stores all fiscal years.
+- Record Key: `{Cycle_Code}-{Employee_Code}`.
+- Cycle resolved dynamically from Evaluation Cycle Master + Current Date.
+- Zero hardcoded year strings in application code.
 
-### B. Approval Rules (Intra-Level Evaluation)
-- **Definition**: The condition required to satisfy a single level when that level contains multiple approvers.
-- **Default Rule**: **`ALL`** (Mandatory standard across all levels).
-- **Options**:
-  - **`ALL` (Default)**: Every approver assigned to this level must approve before the record can advance to the next level.
-  - **`ANY`**: Any single approver within this level can approve to advance the record. Used only when an explicit business requirement allows approvers to act interchangeably.
-
-### C. Critical Distinction: Multi-Approver vs. Sequential
-- `Manager Level 1 = [User A, User B] with Rule = ALL`: Both User A and User B are peers in Level 1; both must approve, but order does not matter.
-- `Manager Level 1 = [User A]` and `Manager Level 2 = [User B]`: Sequential hierarchy. User A (e.g., Trainee Manager) must approve first, followed by User B (e.g., Mentor Manager).
-
-## 2. Supported Topologies
-1. **Topology 1 (`M1_G1`)**: Employee -> Manager L1 -> GM L1 (e.g. Pilot `TME1`: `suthas` -> `somrudee`).
-2. **Topology 2 (`M1_M2_G1`)**: Employee -> Manager L1 -> Manager L2 -> GM L1.
-3. **Topology 3 (`M1_G1_G2`)**: Employee -> Manager L1 -> GM L1 -> GM L2.
-4. **Topology 4 (`M1_M2_G1_G2`)**: Employee -> Manager L1 -> Manager L2 -> GM L1 -> GM L2.
-
-## 3. Privacy & Security Rules
-- All Manager/GM scores, ratings, and confidential evaluation fields are strictly hidden from Appraisees across all stages.
+## 4. Sequential Approval Routing Model
+- Up to 4 generic steps (`Step_1` to `Step_4`) with default rule `ALL` (or `ANY` if configured).
+- Empty step -> Automatically skipped.

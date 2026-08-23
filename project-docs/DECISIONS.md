@@ -1,5 +1,31 @@
 # Architecture & Design Decisions
 
+## DEC-013 — Annual Evaluation Cycle Architecture & Single Long-Lived App Core
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Decision**:
+  1. Operate App 794 as a single long-lived transaction core for all fiscal years (no app recreation per year).
+  2. Enforce 1 evaluation record per employee per cycle: Record Key `{Cycle_Code}-{Employee_Code}` (e.g. `FY2026-0149`).
+  3. Dynamic Cycle Resolution via Evaluation Cycle Master (App 798); Zero hardcoded fiscal years in application logic.
+  4. Hybrid Record Generation (Batch Opening for active employees + On-demand Lazy Creation for mid-year hires).
+  5. Generic multi-year views with current-cycle derivation.
+
+## DEC-012 — COCE Scoring Treatment (Evaluation Only / Excluded from Average)
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Decision**:
+  1. COCE is evaluated and rated (1-5) for behavioral feedback and reporting (`Evaluated = YES`).
+  2. COCE is excluded from Part B sum and divisor calculations (`Included_In_Score = false`).
+  3. Governed via generic configuration property `Included_In_Score` without hardcoding in calculation code.
+
+## DEC-011 — Confirmed Evaluation Weights (Assistant Manager, GM, VP 50/50 Split)
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Decision**:
+  1. Assistant Manager: Part A = 50%, Part B = 50% (Confirmed, supersedes legacy Excel 60/40).
+  2. General Manager: Part A = 50%, Part B = 50% (Confirmed, supersedes legacy Excel 60/40).
+  3. Vice President: Part A = 50%, Part B = 50% (Confirmed, supersedes legacy Excel 70/30).
+
 ## DEC-010 — Unified MBO Core & Master-Driven Evaluation Architecture (Option A)
 - **Date**: 2026-08-23
 - **Status**: PROPOSED (Awaiting User Review)
