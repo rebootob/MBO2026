@@ -1,22 +1,22 @@
-# System Architecture Document
+# TTMET MBO V2 Architecture & Governance
 
-## 1. Routing Model Architecture
-The routing subsystem decouples hierarchy sequence from intra-level approval conditions:
+> **Document Status:** Active  
+> **Last Updated:** 2026-08-23  
 
-```
-[App 795 Routing Master]
-   ├── Section_Code (e.g. TME1)
-   ├── Requester_User [USER_SELECT]
-   ├── Manager_Level1_Approvers [USER_SELECT] + Manager_Level1_Approval_Rule (Default: ALL)
-   ├── Manager_Level2_Approvers [USER_SELECT] + Manager_Level2_Approval_Rule (Default: ALL)
-   ├── GM_Level1_Approvers [USER_SELECT] + GM_Level1_Approval_Rule (Default: ALL)
-   └── GM_Level2_Approvers [USER_SELECT] + GM_Level2_Approval_Rule (Default: ALL)
-             │
-             ▼ (On Employee Lookup Snapshot)
-[App 794 MBO V2 Record]
-   ├── Immutable Historical Routing Snapshot
-   └── Derived Routing_Topology (M1_G1, M1_M2_G1, M1_G1_G2, M1_M2_G1_G2)
-```
+---
 
-## 2. Process Management Mapping
-- Dynamic transition filter conditions automatically evaluate `Has_Manager_Level2` and `Has_GM_Level2` to route records without presenting multiple ambiguous action buttons to users.
+## 1. Target Subsystem Topology
+* **App 53:** Employee Master (Read Only Legacy Source)
+* **App 794:** Unified MBO Transaction Core (One Long-Lived App for all Fiscal Years)
+* **App 795:** Generic Step-Based Routing Master (Steps 1-4, Rules ALL/ANY)
+* **App 796:** Evaluation Profile Master (Weights 70/30, 50/50, 2-10 Objectives)
+* **App 797:** Competency Master (Core & Management Competencies, COCE `Included_In_Score = false`)
+* **App 798:** Evaluation Cycle Master (Dynamic Japanese FY Resolution, Hybrid Generation)
+* **App 799:** MBO Hoshin Master (Dept/Section Hoshin Scoping, Versioning, Human Publication Gate)
+
+---
+
+## 2. Artifact Lifecycle & Cleanup Governance
+* **Core Rule:** `CREATE -> USE -> CHANGE -> MIGRATE -> VERIFY -> CLEANUP -> DOCUMENT`
+* **Zero Orphan Policy:** No unused fields, dead scripts, orphaned views, or abandoned status actions.
+* **Single Source of Truth:** Every business concept has exactly one authoritative master.

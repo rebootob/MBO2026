@@ -1,39 +1,24 @@
 ---
 name: mbo-kintone-development
-description: Development conventions, APIs, and customization guidelines for Kintone
+description: Standards, conventions, and architectural lifecycle rules for TTMET MBO V2
 ---
 
-# MBO Kintone Development Guide
+# MBO V2 Kintone Development & Architecture Standards
 
-## 1. Naming Conventions & Schema Standards
-- **Field Codes**: Upper CamelCase with underscores (`Objective_1`, `Weight_1`, `Record_Key`, `Employee_Code`).
-- **No Magic Strings**: All workflow statuses and stage enums reside in `src/config/constants.js`.
+## 1. Core Architectural Standards
+- Single Long-Lived Transaction App (App 794) for all fiscal years.
+- Master Apps: Evaluation Profile (App 796), Competency (App 797), Generic Routing (App 795), Hoshin (App 799).
+- Immutable Record Snapshots for all historical evaluations.
+- UI: Vanilla JavaScript, Zero build step, Desktop Space element `SPACE_HEADER`.
 
-## 2. Desktop Record DOM Host Resolution
-- NEVER use `kintone.app.record.getHeaderSpaceElement()` (does not exist on Desktop Record pages).
-- ALWAYS use `getRecordUiHost('SPACE_HEADER')` from `src/ui/host-resolver.js`:
-  1. Primary: `kintone.app.record.getSpaceElement('SPACE_HEADER')`
-  2. Fallback: `kintone.app.record.getHeaderMenuSpaceElement()`
-  3. Null-safe return without throwing exceptions.
-
-## 3. Sequential Approval & Multi-Approver Standards
-- **Model**:
-  - `Manager_Level1_Approvers` (`USER_SELECT`), `Manager_Level1_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
-  - `Manager_Level2_Approvers` (`USER_SELECT`), `Manager_Level2_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
-  - `GM_Level1_Approvers` (`USER_SELECT`), `GM_Level1_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
-  - `GM_Level2_Approvers` (`USER_SELECT`), `GM_Level2_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
-- **Key Rules**:
-  - `Level != Number of Approvers`.
-  - `ALL != Sequential`.
-  - `Empty Level = Skip Level`.
-  - NEVER create hardcoded `Manager_User_1`/`Manager_User_2` fields to solve multi-approver requirements.
-
-## 4. Custom UI Validation Pattern (No Native Error Banner)
-- **NEVER use `event.error`** for standard business/field validation in Custom UI.
-- **Always `return false`**: In `app.record.create.submit` and `app.record.edit.submit`, if validation fails:
-  1. Sync DOM values to record (`ui.syncFromDom()`).
-  2. Run `ValidationEngine.validate(record, stage)`.
-  3. Render Custom Error Summary card inside Custom UI (`ui.showValidationErrors(...)`).
-  4. Highlight invalid fields with red borders (`.mbo-field-state-error`) and show bilingual messages under the cells (`.mbo-cell-tag`).
-  5. Jump (`scrollIntoView`) and focus (`input.focus()`) on the first invalid field.
-  6. Return `false` to cancel save cleanly without native top banner.
+## 2. Artifact Lifecycle & Cleanup Governance (No Orphan / No Dead Artifact Rule)
+- **Goal:** `ORPHAN / DEAD ARTIFACT = 0` across all Sandbox/V2 apps.
+- **Replace Means Cleanup:** When a new field/model replaces an old one (e.g. `Manager_Level1_Approvers` replacing `Manager_User`):
+  1. Dependency Audit (Form, JS, API, Workflow, View, Permissions, Tests, Docs)
+  2. Data/Logic Migration
+  3. Regression Testing
+  4. Confirm Reference Count = 0
+  5. Remove Old Field / Config / Script
+  6. Update Documentation & User Manuals
+- **Zero Parallel Models:** Never maintain competing old and new architecture models simultaneously without an active migration plan.
+- **No Git Clutter:** Never commit `backup_old.js`, `temp_v2.js`, or dead scratch scripts to the codebase. Git history serves as version backup.

@@ -41,3 +41,10 @@
 * **Isolation Guarantee:** Zero copying of scores, appraiser ratings, internal comments, COCE ratings, workflow status, approval timestamps, old approvers, or old snapshots.
 * **Configuration Supremacy:** Target FY resolves fresh Profile, Weights, and Routing. If promoted (e.g. Staff -> Asst Mgr), Target 50/50 profile applies.
 * **Workflow Boundary:** Allowed ONLY in `NEW_RECORD` or `01 DRAFT OBJECTIVE`. Disabled once workflow starts.
+
+---
+
+## 5. Artifact Lifecycle & Cleanup Governance
+* **Zero Dead Artifacts:** Any replaced field, script, or routing model must be fully migrated, tested, and removed.
+* **Single Source of Truth:** No parallel competing models in active production/sandbox apps.
+* **Definition of Done:** Requires complete cleanup of replaced references, 0 orphan artifacts, and synchronized documentation.

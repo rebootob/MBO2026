@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-016 — Project Governance: No Orphan / No Dead Artifact Policy
+- **Date**: 2026-08-23
+- **Status**: ACTIVE (Permanent Rule)
+- **Decision**:
+  1. Mandate `Orphan / Dead Artifact Count = 0` across all MBO V2 Sandbox and Production environments.
+  2. "Replace Means Cleanup": Any schema, script, workflow, or config replacement requires a complete 7-step retirement flow.
+  3. Single Source of Truth: Prohibit parallel competing models (e.g. `Manager_User` vs `Manager_Level1_Approvers`). Old models must be formally deprecated, migrated, and removed.
+  4. Definition of Done (DoD) strictly includes artifact cleanup, dependency auditing, and documentation synchronization.
+  5. Protected Legacy Apps (Apps 53, 283, 305, etc.) remain untouched in READ ONLY mode for historical archiving.
+
 ## DEC-015 — Hoshin Governance, Versioning & Human Publication Model
 - **Date**: 2026-08-23
 - **Status**: ACTIVE
