@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-009 — Legacy Routing Fields Deprecation & Pure Sequential Target Model
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Context**: App 795 and App 794 previously contained both the legacy model (`First_Manager_User`, `Manager_User`, `GM_User`) and the new generic sequential model (`Manager_Level1_Approvers`, `Manager_Level2_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers`).
+- **Decision**:
+  1. Designate the generic sequential model as the single source of truth for routing resolution.
+  2. Mark `First_Manager_User`, `Manager_User`, and `GM_User` as DEPRECATED.
+  3. Prohibit deleting legacy fields immediately until App 794 Process Management (Workflow settings) are migrated to reference generic level field codes.
+  4. Ensure all routing derivation logic reads exclusively from the new model.
+
 ## DEC-008 — Sequential Approval Levels and Multi-Approver Rules (ALL vs ANY)
 - **Date**: 2026-08-23
 - **Status**: ACTIVE

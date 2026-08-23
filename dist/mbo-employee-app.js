@@ -478,6 +478,7 @@ class EmployeeService {
 
   /**
  * Routing Service - App 795 Routing Master Validator & Topology Resolver
+ * Pure New Model (Manager L1/L2, GM L1/L2)
  */
 
 class RoutingService {
@@ -511,19 +512,14 @@ class RoutingService {
       throw new Error(`บัญชีนี้ (${loginUserCode}) ไม่มีสิทธิ์สร้าง MBO สำหรับพนักงานใน Section ${cleanSection}\nThis account (${loginUserCode}) is not authorized to create an MBO for section ${cleanSection}.`);
     }
 
-    // Resolve Manager Levels (support new sequential model with fallback to legacy)
-    const mgrL1 = route.Manager_Level1_Approvers?.value?.length > 0
-      ? route.Manager_Level1_Approvers.value
-      : (route.Manager_User?.value || []);
+    // Pure New Model as Source of Truth
+    const mgrL1 = route.Manager_Level1_Approvers?.value || [];
     const mgrL1Rule = route.Manager_Level1_Approval_Rule?.value || 'ALL';
 
     const mgrL2 = route.Manager_Level2_Approvers?.value || [];
     const mgrL2Rule = route.Manager_Level2_Approval_Rule?.value || 'ALL';
 
-    // Resolve GM Levels
-    const gmL1 = route.GM_Level1_Approvers?.value?.length > 0
-      ? route.GM_Level1_Approvers.value
-      : (route.GM_User?.value || []);
+    const gmL1 = route.GM_Level1_Approvers?.value || [];
     const gmL1Rule = route.GM_Level1_Approval_Rule?.value || 'ALL';
 
     const gmL2 = route.GM_Level2_Approvers?.value || [];
@@ -532,7 +528,7 @@ class RoutingService {
     const hasMgrL2 = mgrL2.length > 0;
     const hasGmL2 = gmL2.length > 0;
 
-    // Topology: e.g. M1_G1, M1_M2_G1, M1_G1_G2, M1_M2_G1_G2
+    // Topology: M1_G1, M1_M2_G1, M1_G1_G2, M1_M2_G1_G2
     let topology = 'M1_G1';
     if (hasMgrL2 && hasGmL2) {
       topology = 'M1_M2_G1_G2';
@@ -555,7 +551,7 @@ class RoutingService {
       Has_Manager_Level2: hasMgrL2 ? 'Yes' : 'No',
       Has_GM_Level2: hasGmL2 ? 'Yes' : 'No',
       Routing_Topology: topology,
-      // Legacy backwards compatibility
+      // Deprecated fields populated for backward compatibility with existing Process Management
       Manager_User: mgrL1,
       First_Manager_User: mgrL2,
       GM_User: gmL1

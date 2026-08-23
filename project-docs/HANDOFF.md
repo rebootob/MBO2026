@@ -1,12 +1,10 @@
 # AI Handoff Document & Core Rules
 
-## 1. Golden Rules for Next AI
-- **LEVEL != Number of Approvers**: Levels represent sequential stages (L1 -> L2).
-- **ALL != Sequential**: `ALL` means all approvers *within the same level* must approve.
-- **ANY != Skip Level**: `ANY` means *any one approver within that level* is sufficient.
-- **Empty Level = Skip Level**: Blank approver list skips that stage automatically.
+## 1. Routing Model Standards
+- **Single Source of Truth**: Generic Sequential Model (`Manager_Level1/2_Approvers`, `GM_Level1/2_Approvers`, `Manager_Level1/2_Approval_Rule`, `GM_Level1/2_Approval_Rule`).
+- **Legacy Fields**: `First_Manager_User`, `Manager_User`, `GM_User` are DEPRECATED.
+- **DO NOT delete legacy fields from App 794** until Process Management workflow state assignees are migrated to generic level codes.
 - **Default Rule = ALL**: Never default to `ANY`.
-- **Never Hardcode Fields**: Do not create `Manager_User_1`/`Manager_User_2` to solve multi-approvers.
 
 ## 2. Key App IDs
 - **App 53**: Employee Master (**READ ONLY**)
