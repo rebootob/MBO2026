@@ -10,7 +10,19 @@ assertSandboxWriteTarget(app);
 const constantsJs = fs.readFileSync('src/config/constants.js', 'utf8')
   .replace(/export const/g, 'const');
 
+const hostResolverJs = fs.readFileSync('src/ui/host-resolver.js', 'utf8')
+  .replace(/import .*/g, '')
+  .replace(/export function/g, 'function');
+
 const validationJs = fs.readFileSync('src/validation/validation-engine.js', 'utf8')
+  .replace(/import .*/g, '')
+  .replace(/export class/g, 'class');
+
+const employeeServiceJs = fs.readFileSync('src/services/employee-service.js', 'utf8')
+  .replace(/import .*/g, '')
+  .replace(/export class/g, 'class');
+
+const routingServiceJs = fs.readFileSync('src/services/routing-service.js', 'utf8')
   .replace(/import .*/g, '')
   .replace(/export class/g, 'class');
 
@@ -27,7 +39,13 @@ const fullJs = `
 
   ${constantsJs}
 
+  ${hostResolverJs}
+
   ${validationJs}
+
+  ${employeeServiceJs}
+
+  ${routingServiceJs}
 
   ${uiJs}
 

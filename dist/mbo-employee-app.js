@@ -84,6 +84,40 @@ const CONFIDENTIAL_FIELDS = [
 
 
   /**
+ * Safe Host Resolver for Kintone Record UI
+ */
+
+function getRecordUiHost(preferredSpaceId = 'SPACE_HEADER') {
+  if (typeof kintone === 'undefined' || !kintone.app || !kintone.app.record) {
+    return null;
+  }
+
+  // 1. Try specified Space Field
+  if (typeof kintone.app.record.getSpaceElement === 'function') {
+    const spaceEl = kintone.app.record.getSpaceElement(preferredSpaceId);
+    if (spaceEl) return spaceEl;
+
+    // Fallback space IDs
+    const fallbackSpaceIds = ['SPACE_HEADER', 'SPACE_MBO_ROOT', 'SPACE_PART_A'];
+    for (const id of fallbackSpaceIds) {
+      if (id !== preferredSpaceId) {
+        const el = kintone.app.record.getSpaceElement(id);
+        if (el) return el;
+      }
+    }
+  }
+
+  // 2. Fallback: Record Header Menu Space Element
+  if (typeof kintone.app.record.getHeaderMenuSpaceElement === 'function') {
+    const menuEl = kintone.app.record.getHeaderMenuSpaceElement();
+    if (menuEl) return menuEl;
+  }
+
+  return null;
+}
+
+
+  /**
  * Central Validation Engine for TTMET MBO V2
  */
 
@@ -199,6 +233,113 @@ class ValidationEngine {
 
 
   /**
+ * Employee Service - Read-only lookup from App 53 (Employee Namelist)
+ */
+
+class EmployeeService {
+  /**
+   * Lookup employee by Employee Code in App 53
+   * Returns snapshot data or throws informative error
+   */
+  static async lookupEmployee(empCode, kintoneApi) {
+    const cleanCode = String(empCode || '').trim();
+    if (!cleanCode) {
+      throw new Error('กรุณาระบุรหัสพนักงาน (Employee Code)');
+    }
+
+    const query = `Number = "${cleanCode}" limit 2`;
+    const resp = await kintoneApi.getRecords(53, query);
+    const records = resp?.records || [];
+
+    if (records.length === 0) {
+      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master (App 53)`);
+    }
+
+    if (records.length > 1) {
+      throw new Error(`พบข้อมูลพนักงานซ้ำซ้อนสำหรับรหัส ${cleanCode} ในระบบ Employee Master กรุณาแจ้ง HR / Administrator`);
+    }
+
+    const emp = records[0];
+    return {
+      Employee_Code: cleanCode,
+      Employee_Name: emp.Text?.value || '',
+      Employee_Name_TH: emp.Text_0?.value || '',
+      Employee_Section: emp.Drop_down?.value || '',
+      Employee_Department: emp.Drop_down_0?.value || '',
+      Employee_Position: emp.Text_2?.value || '',
+      Employee_Email: emp.Text_4?.value || '',
+      Employee_Start_Date: emp.Date?.value || '',
+      Department_Hoshin: emp.Text_area?.value || '',
+      Section_Hoshin: emp.Text_area_0?.value || ''
+    };
+  }
+
+  /**
+   * Check for duplicate MBO in App 794 for Fiscal Year + Employee Code
+   */
+  static async checkDuplicateMBO(mboAppId, fiscalYear, empCode, currentRecordId, kintoneApi) {
+    const cleanCode = String(empCode || '').trim();
+    const cleanFY = String(fiscalYear || '').trim();
+    if (!cleanCode || !cleanFY) return;
+
+    let query = `Fiscal_Year = "${cleanFY}" and Employee_Code = "${cleanCode}"`;
+    if (currentRecordId) {
+      query += ` and $id != "${currentRecordId}"`;
+    }
+
+    const resp = await kintoneApi.getRecords(mboAppId, query);
+    if (resp?.records?.length > 0) {
+      throw new Error(`พบแบบประเมิน MBO ของพนักงานรหัส ${cleanCode} สำหรับปี ${cleanFY} อยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้`);
+    }
+  }
+}
+
+
+  /**
+ * Routing Service - Section to User verification from App 795 (Routing Master)
+ */
+
+class RoutingService {
+  /**
+   * Get routing rule for a section and validate requester access
+   */
+  static async validateRequesterAccess(routingAppId, sectionCode, loginUserCode, kintoneApi) {
+    const cleanSection = String(sectionCode || '').trim().toUpperCase();
+    if (!cleanSection) {
+      throw new Error('ไม่พบข้อมูล Section ของพนักงาน');
+    }
+
+    const query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 1`;
+    const resp = await kintoneApi.getRecords(routingAppId, query);
+    const records = resp?.records || [];
+
+    if (records.length === 0) {
+      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${cleanSection} ใน Routing Master (App ${routingAppId})`);
+    }
+
+    const route = records[0];
+    const requesterUsers = route.Requester_User?.value || [];
+    const allowedUserCodes = requesterUsers.map(u => u.code.toLowerCase());
+
+    // Check if login user is allowed requester or admin/hr
+    const isAllowed = allowedUserCodes.includes(loginUserCode.toLowerCase()) ||
+                      ['admin', 'admin-form', 'hr'].includes(loginUserCode.toLowerCase());
+
+    if (!isAllowed) {
+      throw new Error('บัญชีที่ใช้อยู่ไม่มีสิทธิ์จัดทำ MBO สำหรับพนักงาน Section นี้ กรุณาตรวจสอบรหัสพนักงาน');
+    }
+
+    return {
+      Requester_User: route.Requester_User?.value || [],
+      First_Manager_User: route.First_Manager_User?.value || [],
+      Manager_User: route.Manager_User?.value || [],
+      GM_User: route.GM_User?.value || []
+    };
+  }
+}
+
+
+  /**
  * Employee Part A UI Renderer
  */
 
@@ -210,6 +351,7 @@ class EmployeePartAUI {
     this.record = options.record || {};
     this.stage = options.stage || BUSINESS_STAGES.READ_ONLY;
     this.isEditable = options.isEditable || false;
+    this.isCreate = options.isCreate || false;
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
   }
@@ -227,6 +369,11 @@ class EmployeePartAUI {
       return;
     }
 
+    // Lookup Banner on Create
+    if (this.isCreate) {
+      root.appendChild(this._renderLookupSection());
+    }
+
     // 1. Header Section
     root.appendChild(this._renderHeader());
 
@@ -241,6 +388,7 @@ class EmployeePartAUI {
 
     this.container.appendChild(root);
     this._updateTotalWeightDisplay();
+    this._bindEvents(root);
   }
 
   _renderErrorBanner(msg) {
@@ -250,12 +398,32 @@ class EmployeePartAUI {
     return banner;
   }
 
+  _renderLookupSection() {
+    const box = document.createElement('div');
+    box.className = 'mbo-header-card';
+    box.style.borderTopColor = '#059669';
+    box.style.background = '#f0fdf4';
+    box.innerHTML = `
+      <div style="font-size: 14px; font-weight: 700; color: #065f46; margin-bottom: 8px;">
+        🔍 Employee Lookup (ค้นหาและเลือกข้อมูลพนักงานจาก App 53)
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center; max-width: 600px;">
+        <input type="text" id="mbo-lookup-emp-input" class="mbo-input" placeholder="กรอกรหัสพนักงาน เช่น 0149..." value="${this._getVal('Employee_Code')}" style="flex: 1;" />
+        <button type="button" id="mbo-lookup-btn" style="background: #059669; color: white; border: none; padding: 0 16px; height: 38px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+          ค้นหาพนักงาน
+        </button>
+      </div>
+      <div id="mbo-lookup-msg" style="font-size: 12px; margin-top: 6px;"></div>
+    `;
+    return box;
+  }
+
   _renderHeader() {
     const card = document.createElement('div');
     card.className = 'mbo-header-card';
 
     const fy = this._getVal('Fiscal_Year') || 'FY2026';
-    const status = this._getVal('Status') || 'Draft Objective';
+    const status = this._getVal('Status') || '01 Draft Objective';
 
     card.innerHTML = `
       <div class="mbo-title-bar">
@@ -302,11 +470,11 @@ class EmployeePartAUI {
     grid.innerHTML = `
       <div class="mbo-hoshin-box">
         <h2 class="mbo-hoshin-title">Department's Hoshin</h2>
-        <div class="mbo-hoshin-content">${this._getVal('Department_Hoshin') || '(No Department Hoshin set)'}</div>
+        <div class="mbo-hoshin-content" id="mbo-dept-hoshin-view">${this._getVal('Department_Hoshin') || '(No Department Hoshin set)'}</div>
       </div>
       <div class="mbo-hoshin-box">
         <h2 class="mbo-hoshin-title">Section's Hoshin</h2>
-        <div class="mbo-hoshin-content">${this._getVal('Section_Hoshin') || '(No Section Hoshin set)'}</div>
+        <div class="mbo-hoshin-content" id="mbo-sec-hoshin-view">${this._getVal('Section_Hoshin') || '(No Section Hoshin set)'}</div>
       </div>
     `;
     return grid;
@@ -490,8 +658,23 @@ class EmployeePartAUI {
       card.appendChild(selfBlock);
     }
 
-    // Attach event listeners
-    card.querySelectorAll('.mbo-field').forEach(input => {
+    return card;
+  }
+
+  _renderWeightSummary() {
+    const summary = document.createElement('div');
+    summary.id = 'mbo-weight-summary-box';
+    summary.className = 'mbo-weight-summary valid';
+    summary.innerHTML = `
+      <div class="mbo-weight-text" id="mbo-weight-calc-text">Total Weight: 0%</div>
+      <div class="mbo-weight-status" id="mbo-weight-calc-status">Checking...</div>
+    `;
+    return summary;
+  }
+
+  _bindEvents(root) {
+    // Input changes
+    root.querySelectorAll('.mbo-field').forEach(input => {
       input.addEventListener('input', (e) => {
         const code = e.target.dataset.code;
         const val = e.target.value;
@@ -509,18 +692,38 @@ class EmployeePartAUI {
       });
     });
 
-    return card;
-  }
+    // Objective count selector
+    const countSelect = root.querySelector('#mbo-obj-count-select');
+    if (countSelect) {
+      countSelect.addEventListener('change', (e) => {
+        const count = e.target.value;
+        this._setVal('Objective_Count', count);
+        this.onFieldChange('Objective_Count', count);
+        this.render();
+      });
+    }
 
-  _renderWeightSummary() {
-    const summary = document.createElement('div');
-    summary.id = 'mbo-weight-summary-box';
-    summary.className = 'mbo-weight-summary valid';
-    summary.innerHTML = `
-      <div class="mbo-weight-text" id="mbo-weight-calc-text">Total Weight: 0%</div>
-      <div class="mbo-weight-status" id="mbo-weight-calc-status">Checking...</div>
-    `;
-    return summary;
+    // Lookup button
+    const lookupBtn = root.querySelector('#mbo-lookup-btn');
+    const lookupInput = root.querySelector('#mbo-lookup-emp-input');
+    if (lookupBtn && lookupInput) {
+      lookupBtn.addEventListener('click', async () => {
+        const code = lookupInput.value.trim();
+        const msgEl = root.querySelector('#mbo-lookup-msg');
+        if (!code) {
+          if (msgEl) msgEl.innerHTML = '<span style="color: #dc2626;">กรุณาระบุรหัสพนักงาน</span>';
+          return;
+        }
+        if (msgEl) msgEl.innerHTML = '<span style="color: #0369a1;">กำลังค้นหา...</span>';
+        try {
+          await this.onLookupEmployee(code);
+          if (msgEl) msgEl.innerHTML = '<span style="color: #059669;">✅ พบข้อมูลพนักงานและดึงข้อมูลเรียบร้อยแล้ว</span>';
+          this.render();
+        } catch (err) {
+          if (msgEl) msgEl.innerHTML = `<span style="color: #dc2626;">❌ ${err.message}</span>`;
+        }
+      });
+    }
   }
 
   _updateTotalWeightDisplay() {
@@ -581,6 +784,7 @@ class EmployeePartAUI {
 
 
 
+
 (function () {
   'use strict';
 
@@ -588,6 +792,17 @@ class EmployeePartAUI {
 
   const MBO_APP_ID = kintone.app.getId();
   const ROUTING_APP_ID = 795;
+  const EMPLOYEE_APP_ID = 53;
+
+  const kintoneApiWrapper = {
+    getRecords: async (appId, query) => {
+      const resp = await kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
+        app: appId,
+        query: query
+      });
+      return resp;
+    }
+  };
 
   function hideAllNativeFields(record) {
     // Hide all configured custom fields from native form
@@ -615,24 +830,65 @@ class EmployeePartAUI {
     const isEdit = event.type === 'app.record.edit.show';
     const isDetail = event.type === 'app.record.detail.show';
 
-    hideAllNativeFields(record);
-
-    const headerSpace = kintone.app.record.getHeaderSpaceElement();
-    if (!headerSpace) return event;
+    // 1. Resolve UI host element safely
+    const uiHost = getRecordUiHost('SPACE_HEADER');
+    if (!uiHost) {
+      console.warn('[MBO V2] Custom UI host element not found. Retaining native form.');
+      return event;
+    }
 
     const stage = getBusinessStage(record);
 
+    // 2. Instantiate and render Custom UI
     const ui = new EmployeePartAUI({
-      container: headerSpace,
+      container: uiHost,
       record: record,
       stage: stage,
       isEditable: isCreate || isEdit,
+      isCreate: isCreate,
       onFieldChange: (code, val) => {
-        // sync to record state
+        if (record[code]) {
+          record[code].value = val;
+        }
+      },
+      onLookupEmployee: async (empCode) => {
+        const empProfile = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
+        const loginUser = kintone.getLoginUser();
+        const routing = await RoutingService.validateRequesterAccess(ROUTING_APP_ID, empProfile.Employee_Section, loginUser.code, kintoneApiWrapper);
+        const fy = record.Fiscal_Year?.value || 'FY2026';
+        await EmployeeService.checkDuplicateMBO(MBO_APP_ID, fy, empCode, record.$id?.value, kintoneApiWrapper);
+
+        // Snapshot all data into record
+        Object.assign(record, {
+          Employee_Code: { value: empProfile.Employee_Code },
+          Employee_Name: { value: empProfile.Employee_Name },
+          Employee_Name_TH: { value: empProfile.Employee_Name_TH },
+          Employee_Section: { value: empProfile.Employee_Section },
+          Employee_Department: { value: empProfile.Employee_Department },
+          Employee_Position: { value: empProfile.Employee_Position },
+          Employee_Email: { value: empProfile.Employee_Email },
+          Employee_Start_Date: { value: empProfile.Employee_Start_Date },
+          Department_Hoshin: { value: empProfile.Department_Hoshin },
+          Section_Hoshin: { value: empProfile.Section_Hoshin },
+          Requester_User: { value: routing.Requester_User },
+          First_Manager_User: { value: routing.First_Manager_User },
+          Manager_User: { value: routing.Manager_User },
+          GM_User: { value: routing.GM_User },
+          Fiscal_Year: { value: fy },
+          Record_Key: { value: `${fy}-${empProfile.Employee_Code}` }
+        });
       }
     });
 
-    ui.render();
+    try {
+      ui.render();
+      // 3. Only hide native fields AFTER successful custom UI render
+      hideAllNativeFields(record);
+    } catch (renderError) {
+      console.error('[MBO V2] Error rendering custom UI:', renderError);
+      // Keep native fields visible in fail-safe mode
+    }
+
     return event;
   });
 
@@ -644,7 +900,7 @@ class EmployeePartAUI {
     // Always ensure Record_Key is generated: FY + Code
     const fy = record.Fiscal_Year?.value || 'FY2026';
     const code = record.Employee_Code?.value || '';
-    if (fy && code) {
+    if (fy && code && record.Record_Key) {
       record.Record_Key.value = `${fy}-${code}`;
     }
 

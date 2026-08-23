@@ -10,6 +10,7 @@ export class EmployeePartAUI {
     this.record = options.record || {};
     this.stage = options.stage || BUSINESS_STAGES.READ_ONLY;
     this.isEditable = options.isEditable || false;
+    this.isCreate = options.isCreate || false;
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
   }
@@ -27,6 +28,11 @@ export class EmployeePartAUI {
       return;
     }
 
+    // Lookup Banner on Create
+    if (this.isCreate) {
+      root.appendChild(this._renderLookupSection());
+    }
+
     // 1. Header Section
     root.appendChild(this._renderHeader());
 
@@ -41,6 +47,7 @@ export class EmployeePartAUI {
 
     this.container.appendChild(root);
     this._updateTotalWeightDisplay();
+    this._bindEvents(root);
   }
 
   _renderErrorBanner(msg) {
@@ -50,12 +57,32 @@ export class EmployeePartAUI {
     return banner;
   }
 
+  _renderLookupSection() {
+    const box = document.createElement('div');
+    box.className = 'mbo-header-card';
+    box.style.borderTopColor = '#059669';
+    box.style.background = '#f0fdf4';
+    box.innerHTML = `
+      <div style="font-size: 14px; font-weight: 700; color: #065f46; margin-bottom: 8px;">
+        🔍 Employee Lookup (ค้นหาและเลือกข้อมูลพนักงานจาก App 53)
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center; max-width: 600px;">
+        <input type="text" id="mbo-lookup-emp-input" class="mbo-input" placeholder="กรอกรหัสพนักงาน เช่น 0149..." value="${this._getVal('Employee_Code')}" style="flex: 1;" />
+        <button type="button" id="mbo-lookup-btn" style="background: #059669; color: white; border: none; padding: 0 16px; height: 38px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+          ค้นหาพนักงาน
+        </button>
+      </div>
+      <div id="mbo-lookup-msg" style="font-size: 12px; margin-top: 6px;"></div>
+    `;
+    return box;
+  }
+
   _renderHeader() {
     const card = document.createElement('div');
     card.className = 'mbo-header-card';
 
     const fy = this._getVal('Fiscal_Year') || 'FY2026';
-    const status = this._getVal('Status') || 'Draft Objective';
+    const status = this._getVal('Status') || '01 Draft Objective';
 
     card.innerHTML = `
       <div class="mbo-title-bar">
@@ -102,11 +129,11 @@ export class EmployeePartAUI {
     grid.innerHTML = `
       <div class="mbo-hoshin-box">
         <h2 class="mbo-hoshin-title">Department's Hoshin</h2>
-        <div class="mbo-hoshin-content">${this._getVal('Department_Hoshin') || '(No Department Hoshin set)'}</div>
+        <div class="mbo-hoshin-content" id="mbo-dept-hoshin-view">${this._getVal('Department_Hoshin') || '(No Department Hoshin set)'}</div>
       </div>
       <div class="mbo-hoshin-box">
         <h2 class="mbo-hoshin-title">Section's Hoshin</h2>
-        <div class="mbo-hoshin-content">${this._getVal('Section_Hoshin') || '(No Section Hoshin set)'}</div>
+        <div class="mbo-hoshin-content" id="mbo-sec-hoshin-view">${this._getVal('Section_Hoshin') || '(No Section Hoshin set)'}</div>
       </div>
     `;
     return grid;
@@ -290,8 +317,23 @@ export class EmployeePartAUI {
       card.appendChild(selfBlock);
     }
 
-    // Attach event listeners
-    card.querySelectorAll('.mbo-field').forEach(input => {
+    return card;
+  }
+
+  _renderWeightSummary() {
+    const summary = document.createElement('div');
+    summary.id = 'mbo-weight-summary-box';
+    summary.className = 'mbo-weight-summary valid';
+    summary.innerHTML = `
+      <div class="mbo-weight-text" id="mbo-weight-calc-text">Total Weight: 0%</div>
+      <div class="mbo-weight-status" id="mbo-weight-calc-status">Checking...</div>
+    `;
+    return summary;
+  }
+
+  _bindEvents(root) {
+    // Input changes
+    root.querySelectorAll('.mbo-field').forEach(input => {
       input.addEventListener('input', (e) => {
         const code = e.target.dataset.code;
         const val = e.target.value;
@@ -309,18 +351,38 @@ export class EmployeePartAUI {
       });
     });
 
-    return card;
-  }
+    // Objective count selector
+    const countSelect = root.querySelector('#mbo-obj-count-select');
+    if (countSelect) {
+      countSelect.addEventListener('change', (e) => {
+        const count = e.target.value;
+        this._setVal('Objective_Count', count);
+        this.onFieldChange('Objective_Count', count);
+        this.render();
+      });
+    }
 
-  _renderWeightSummary() {
-    const summary = document.createElement('div');
-    summary.id = 'mbo-weight-summary-box';
-    summary.className = 'mbo-weight-summary valid';
-    summary.innerHTML = `
-      <div class="mbo-weight-text" id="mbo-weight-calc-text">Total Weight: 0%</div>
-      <div class="mbo-weight-status" id="mbo-weight-calc-status">Checking...</div>
-    `;
-    return summary;
+    // Lookup button
+    const lookupBtn = root.querySelector('#mbo-lookup-btn');
+    const lookupInput = root.querySelector('#mbo-lookup-emp-input');
+    if (lookupBtn && lookupInput) {
+      lookupBtn.addEventListener('click', async () => {
+        const code = lookupInput.value.trim();
+        const msgEl = root.querySelector('#mbo-lookup-msg');
+        if (!code) {
+          if (msgEl) msgEl.innerHTML = '<span style="color: #dc2626;">กรุณาระบุรหัสพนักงาน</span>';
+          return;
+        }
+        if (msgEl) msgEl.innerHTML = '<span style="color: #0369a1;">กำลังค้นหา...</span>';
+        try {
+          await this.onLookupEmployee(code);
+          if (msgEl) msgEl.innerHTML = '<span style="color: #059669;">✅ พบข้อมูลพนักงานและดึงข้อมูลเรียบร้อยแล้ว</span>';
+          this.render();
+        } catch (err) {
+          if (msgEl) msgEl.innerHTML = `<span style="color: #dc2626;">❌ ${err.message}</span>`;
+        }
+      });
+    }
   }
 
   _updateTotalWeightDisplay() {
