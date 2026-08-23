@@ -20,6 +20,18 @@ export const routingFields = {
   Remark: area('Remark')
 };
 
+const objectiveCountOptions = {};
+for (let n = 2; n <= 10; n++) {
+  objectiveCountOptions[String(n)] = { label: String(n), index: String(n - 2) };
+}
+
+const weightTerms = [];
+const mboPointTerms = [];
+for (let i = 1; i <= 10; i++) {
+  weightTerms.push(`Weight_${i}`);
+  mboPointTerms.push(`MBO_Point_${i}`);
+}
+
 export const mboFields = {
   Fiscal_Year: text('Fiscal Year', { required: true }),
   Record_Key: text('Record Key', { required: true, unique: true }),
@@ -29,16 +41,16 @@ export const mboFields = {
   Employee_Position: text('Employee Position'), Employee_Email: text('Employee Email'),
   Employee_Start_Date: date('Employee Start Date'), Department_Hoshin: area('Department Hoshin'), Section_Hoshin: area('Section Hoshin'),
   Requester_User: user('Requester User', true), First_Manager_User: user('First Manager User'), Manager_User: user('Manager User', true), GM_User: user('GM User', true),
-  Objective_Count: { type: 'DROP_DOWN', label: 'Objective Count', required: true, defaultValue: '2', options: { '2': { label: '2', index: '0' }, '3': { label: '3', index: '1' }, '4': { label: '4', index: '2' } } },
-  Total_Weight: calc('Total Weight', 'Weight_1+Weight_2+Weight_3+Weight_4'),
-  PartA_Raw_Score: calc('Part A Raw Score', 'MBO_Point_1+MBO_Point_2+MBO_Point_3+MBO_Point_4'),
+  Objective_Count: { type: 'DROP_DOWN', label: 'Objective Count', required: true, defaultValue: '4', options: objectiveCountOptions },
+  Total_Weight: calc('Total Weight', weightTerms.join('+')),
+  PartA_Raw_Score: calc('Part A Raw Score', mboPointTerms.join('+')),
   PartA_Weighted_Score: calc('Part A Weighted Score', 'ROUND((PartA_Raw_Score*70)/100, 2)'),
   PartB_Raw_Score: calc('Part B Raw Score (Pending COCE Decision)', '(Competency_Result_1+Competency_Result_2+Competency_Result_3+Competency_Result_4+Competency_Result_5)/5'),
   PartB_Weighted_Score: calc('Part B Weighted Score (Pending COCE Decision)', 'ROUND(PartB_Raw_Score*0.3, 2)'),
   Final_Confidential_Score: calc('Final Confidential Score (Pending COCE Decision)', '((PartA_Weighted_Score+PartB_Weighted_Score)*100)/5')
 };
 
-for (let i = 1; i <= 4; i += 1) {
+for (let i = 1; i <= 10; i += 1) {
   Object.assign(mboFields, {
     [`Objective_${i}`]: area(`Objective ${i}`), [`Action_Plan_${i}`]: area(`Action Plan ${i}`), [`Additional_Agreement_${i}`]: area(`Additional Agreement ${i}`),
     [`Weight_${i}`]: number(`Weight ${i} (%)`, { minValue: '0', maxValue: '100' }), [`Difficulty_${i}`]: number(`Difficulty ${i}`, { minValue: '1', maxValue: '4' }),

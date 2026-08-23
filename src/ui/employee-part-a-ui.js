@@ -234,8 +234,8 @@ export class EmployeePartAUI {
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '2', 10);
-    const count = isNaN(countVal) ? 2 : Math.min(Math.max(countVal, 2), 4);
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+    const count = isNaN(countVal) ? 2 : Math.min(Math.max(countVal, 2), 10);
     const isObjEditable = this.isEditable && this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT;
 
     // Header bar
@@ -247,9 +247,7 @@ export class EmployeePartAUI {
         <span>Number of Objectives:</span>
         ${isObjEditable ? `
           <select id="mbo-obj-count-select" class="mbo-cell-select" style="width: 65px; height: 28px; font-size: 13px; padding: 2px 6px; background: #ffffff;">
-            <option value="2" ${count === 2 ? 'selected' : ''}>2</option>
-            <option value="3" ${count === 3 ? 'selected' : ''}>3</option>
-            <option value="4" ${count === 4 ? 'selected' : ''}>4</option>
+            ${[2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${count === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         ` : `<strong>${count} Objectives</strong>`}
       </div>
@@ -650,7 +648,7 @@ export class EmployeePartAUI {
   }
 
   _updateTotalWeightDisplay() {
-    const countVal = parseInt(this._getVal('Objective_Count') || '2', 10);
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
     const count = isNaN(countVal) ? 2 : countVal;
 
     let total = 0;

@@ -34,15 +34,122 @@ const STATUS_TO_STAGE_MAP = {
 };
 
 const CONFIDENTIAL_FIELDS = [
-  'Manager_Achievement_1', 'Manager_Achievement_2', 'Manager_Achievement_3', 'Manager_Achievement_4',
-  'GM_Achievement_1', 'GM_Achievement_2', 'GM_Achievement_3', 'GM_Achievement_4',
-  'Manager_Comment_1', 'Manager_Comment_2', 'Manager_Comment_3', 'Manager_Comment_4',
-  'GM_Comment_1', 'GM_Comment_2', 'GM_Comment_3', 'GM_Comment_4',
-  'PartA_Raw_Score', 'PartA_Weighted_Score',
-  'Manager_Competency_Rating_1', 'Manager_Competency_Rating_2', 'Manager_Competency_Rating_3', 'Manager_Competency_Rating_4', 'Manager_Competency_Rating_5', 'Manager_Competency_Rating_6',
-  'GM_Competency_Rating_1', 'GM_Competency_Rating_2', 'GM_Competency_Rating_3', 'GM_Competency_Rating_4', 'GM_Competency_Rating_5', 'GM_Competency_Rating_6',
-  'PartB_Raw_Score', 'PartB_Weighted_Score',
-  'Final_Confidential_Score', 'Final_Grade'
+  "Manager_Achievement_1",
+  "GM_Achievement_1",
+  "Manager_Objective_Score_1",
+  "GM_Objective_Score_1",
+  "Manager_Comment_1",
+  "GM_Comment_1",
+  "Average_Objective_Score_1",
+  "MBO_Point_1",
+  "Manager_Achievement_2",
+  "GM_Achievement_2",
+  "Manager_Objective_Score_2",
+  "GM_Objective_Score_2",
+  "Manager_Comment_2",
+  "GM_Comment_2",
+  "Average_Objective_Score_2",
+  "MBO_Point_2",
+  "Manager_Achievement_3",
+  "GM_Achievement_3",
+  "Manager_Objective_Score_3",
+  "GM_Objective_Score_3",
+  "Manager_Comment_3",
+  "GM_Comment_3",
+  "Average_Objective_Score_3",
+  "MBO_Point_3",
+  "Manager_Achievement_4",
+  "GM_Achievement_4",
+  "Manager_Objective_Score_4",
+  "GM_Objective_Score_4",
+  "Manager_Comment_4",
+  "GM_Comment_4",
+  "Average_Objective_Score_4",
+  "MBO_Point_4",
+  "Manager_Achievement_5",
+  "GM_Achievement_5",
+  "Manager_Objective_Score_5",
+  "GM_Objective_Score_5",
+  "Manager_Comment_5",
+  "GM_Comment_5",
+  "Average_Objective_Score_5",
+  "MBO_Point_5",
+  "Manager_Achievement_6",
+  "GM_Achievement_6",
+  "Manager_Objective_Score_6",
+  "GM_Objective_Score_6",
+  "Manager_Comment_6",
+  "GM_Comment_6",
+  "Average_Objective_Score_6",
+  "MBO_Point_6",
+  "Manager_Achievement_7",
+  "GM_Achievement_7",
+  "Manager_Objective_Score_7",
+  "GM_Objective_Score_7",
+  "Manager_Comment_7",
+  "GM_Comment_7",
+  "Average_Objective_Score_7",
+  "MBO_Point_7",
+  "Manager_Achievement_8",
+  "GM_Achievement_8",
+  "Manager_Objective_Score_8",
+  "GM_Objective_Score_8",
+  "Manager_Comment_8",
+  "GM_Comment_8",
+  "Average_Objective_Score_8",
+  "MBO_Point_8",
+  "Manager_Achievement_9",
+  "GM_Achievement_9",
+  "Manager_Objective_Score_9",
+  "GM_Objective_Score_9",
+  "Manager_Comment_9",
+  "GM_Comment_9",
+  "Average_Objective_Score_9",
+  "MBO_Point_9",
+  "Manager_Achievement_10",
+  "GM_Achievement_10",
+  "Manager_Objective_Score_10",
+  "GM_Objective_Score_10",
+  "Manager_Comment_10",
+  "GM_Comment_10",
+  "Average_Objective_Score_10",
+  "MBO_Point_10",
+  "Manager_Competency_Rating_1",
+  "GM_Competency_Rating_1",
+  "Manager_Competency_Comment_1",
+  "GM_Competency_Comment_1",
+  "Competency_Result_1",
+  "Manager_Competency_Rating_2",
+  "GM_Competency_Rating_2",
+  "Manager_Competency_Comment_2",
+  "GM_Competency_Comment_2",
+  "Competency_Result_2",
+  "Manager_Competency_Rating_3",
+  "GM_Competency_Rating_3",
+  "Manager_Competency_Comment_3",
+  "GM_Competency_Comment_3",
+  "Competency_Result_3",
+  "Manager_Competency_Rating_4",
+  "GM_Competency_Rating_4",
+  "Manager_Competency_Comment_4",
+  "GM_Competency_Comment_4",
+  "Competency_Result_4",
+  "Manager_Competency_Rating_5",
+  "GM_Competency_Rating_5",
+  "Manager_Competency_Comment_5",
+  "GM_Competency_Comment_5",
+  "Competency_Result_5",
+  "Manager_Competency_Rating_6",
+  "GM_Competency_Rating_6",
+  "Manager_Competency_Comment_6",
+  "GM_Competency_Comment_6",
+  "Competency_Result_6",
+  "PartA_Raw_Score",
+  "PartA_Weighted_Score",
+  "PartB_Raw_Score",
+  "PartB_Weighted_Score",
+  "Final_Confidential_Score",
+  "Final_Grade"
 ];
 
 /**
@@ -96,20 +203,17 @@ function getRecordUiHost(preferredSpaceId = 'SPACE_HEADER') {
 
 
   /**
- * Central Validation Engine for TTMET MBO V2
+ * Business Rule Validation Engine
  */
 
 
 
 class ValidationEngine {
-  /**
-   * Validate entire record based on current business stage
-   */
   static validate(record, stage) {
     const errors = [];
 
     if (!record) {
-      errors.push('ไม่พบข้อมูลแบบประเมิน MBO');
+      errors.push('ไม่พบข้อมูล Record');
       return { isValid: false, errors };
     }
 
@@ -118,7 +222,11 @@ class ValidationEngine {
       return { isValid: false, errors };
     }
 
-    // A. Employee Validation (Basic fields)
+    if (stage === BUSINESS_STAGES.READ_ONLY) {
+      return { isValid: true, errors: [] };
+    }
+
+    // Common checks
     const empCode = this._val(record.Employee_Code);
     if (!empCode) {
       errors.push('กรุณาระบุรหัสพนักงาน (Employee Code)');
@@ -126,70 +234,71 @@ class ValidationEngine {
 
     const fy = this._val(record.Fiscal_Year);
     if (!fy) {
-      errors.push('กรุณาระบุปีประเมิน (Fiscal Year)');
+      errors.push('กรุณาระบุรอบการประเมิน (Fiscal Year)');
     }
 
-    // B. Objectives Validation
-    const countVal = parseInt(this._val(record.Objective_Count) || '2', 10);
-    const count = isNaN(countVal) ? 2 : countVal;
-    if (count < 2 || count > 4) {
-      errors.push('จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 4 ข้อ');
+    const objCount = parseInt(this._val(record.Objective_Count) || '4', 10);
+    if (isNaN(objCount) || objCount < 2 || objCount > 10) {
+      errors.push('จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ');
+      return { isValid: false, errors };
     }
 
-    let totalWeight = 0;
-    for (let i = 1; i <= count; i++) {
-      const obj = this._val(record[`Objective_${i}`]);
-      const act = this._val(record[`Action_Plan_${i}`]);
-      const wVal = parseFloat(this._val(record[`Weight_${i}`]) || '0');
-      const diffVal = parseInt(this._val(record[`Difficulty_${i}`]) || '0', 10);
+    // Stage 1: OBJECTIVE_INPUT
+    if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT) {
+      let totalWeight = 0;
 
-      if (!obj) {
-        errors.push(`กรุณากรอก Objective ${i} ให้ครบถ้วน`);
+      for (let i = 1; i <= objCount; i++) {
+        const obj = this._val(record[`Objective_${i}`]);
+        const plan = this._val(record[`Action_Plan_${i}`]);
+        const weightVal = this._val(record[`Weight_${i}`]);
+        const weight = parseFloat(weightVal || '0');
+        const diffVal = this._val(record[`Difficulty_${i}`]);
+        const diff = parseInt(diffVal, 10);
+
+        if (!obj) {
+          errors.push(`กรุณาระบุ Objective ข้อที่ ${i}`);
+        }
+        if (!plan) {
+          errors.push(`กรุณาระบุ Action Plan ข้อที่ ${i}`);
+        }
+        if (!weightVal || isNaN(weight) || weight <= 0 || weight > 100) {
+          errors.push(`กรุณาระบุ Weight ข้อที่ ${i} (1 - 100%)`);
+        } else {
+          totalWeight += weight;
+        }
+        if (!diffVal || isNaN(diff) || diff < 1 || diff > 4) {
+          errors.push(`กรุณาเลือกระดับ Difficulty Level ${i} ต้องอยู่ระหว่าง 1 ถึง 4`);
+        }
       }
-      if (!act) {
-        errors.push(`กรุณากรอก Action Plan ${i} ให้ครบถ้วน`);
-      }
-      if (isNaN(wVal) || wVal <= 0) {
-        errors.push(`กรุณาระบุน้ำหนัก Weight ${i} มากกว่า 0%`);
-      } else {
-        totalWeight += wVal;
-      }
-      if (isNaN(diffVal) || diffVal < 1 || diffVal > 4) {
-        errors.push(`Difficulty Level ${i} ต้องอยู่ระหว่าง 1 ถึง 4`);
+
+      if (Math.round(totalWeight) !== 100) {
+        errors.push(`ผลรวม Weight ต้องเท่ากับ 100% (ปัจจุบันคำนวณได้ ${totalWeight}%)`);
       }
     }
 
-    if (Math.round(totalWeight) !== 100) {
-      errors.push(`ผลรวม Weight ต้องเท่ากับ 100% (ปัจจุบัน: ${totalWeight}%)`);
-    }
-
-    // C. Mid-Year Validation (if in Mid-Year or later)
+    // Stage 2: MIDYEAR_INPUT
     if (stage === BUSINESS_STAGES.MIDYEAR_INPUT) {
-      for (let i = 1; i <= count; i++) {
-        const progVal = parseFloat(this._val(record[`Progress_Percent_${i}`]));
-        const currentResult = this._val(record[`MidYear_Result_${i}`]);
-        const periodical = this._val(record[`Periodical_Review_${i}`]);
-
-        if (isNaN(progVal) || progVal < 0 || progVal > 100) {
+      for (let i = 1; i <= objCount; i++) {
+        const progVal = this._val(record[`Progress_Percent_${i}`]);
+        const prog = parseFloat(progVal || '0');
+        if (progVal === '' || isNaN(prog) || prog < 0 || prog > 100) {
           errors.push(`กรุณาระบุ Progress % ${i} ระหว่าง 0 ถึง 100%`);
         }
-        if (!currentResult && !periodical) {
-          errors.push(`กรุณากรอกผลการดำเนินงาน Mid-Year หรือ Periodical Review ของ Objective ${i}`);
-        }
       }
     }
 
-    // D. Self Evaluation Validation (if in Self Evaluation stage)
+    // Stage 3: SELF_EVALUATION
     if (stage === BUSINESS_STAGES.SELF_EVALUATION) {
-      for (let i = 1; i <= count; i++) {
+      for (let i = 1; i <= objCount; i++) {
         const actual = this._val(record[`Actual_Result_${i}`]);
-        const selfAchVal = parseInt(this._val(record[`Self_Achievement_${i}`]) || '0', 10);
+        const achVal = this._val(record[`Self_Achievement_${i}`]);
+        const ach = parseInt(achVal, 10);
 
         if (!actual) {
-          errors.push(`กรุณากรอก Actual Result สำหรับ Objective ${i}`);
+          errors.push(`กรุณาระบุ Actual Result ข้อที่ ${i}`);
         }
-        if (isNaN(selfAchVal) || selfAchVal < 1 || selfAchVal > 5) {
-          errors.push(`กรุณาระบุ Self Achievement Level ${i} (1-5)`);
+        if (!achVal || isNaN(ach) || ach < 1 || ach > 5) {
+          errors.push(`กรุณาเลือกระดับ Self Achievement ข้อที่ ${i} (1 - 5)`);
         }
       }
     }
@@ -553,8 +662,8 @@ class EmployeePartAUI {
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '2', 10);
-    const count = isNaN(countVal) ? 2 : Math.min(Math.max(countVal, 2), 4);
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+    const count = isNaN(countVal) ? 2 : Math.min(Math.max(countVal, 2), 10);
     const isObjEditable = this.isEditable && this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT;
 
     // Header bar
@@ -566,9 +675,7 @@ class EmployeePartAUI {
         <span>Number of Objectives:</span>
         ${isObjEditable ? `
           <select id="mbo-obj-count-select" class="mbo-cell-select" style="width: 65px; height: 28px; font-size: 13px; padding: 2px 6px; background: #ffffff;">
-            <option value="2" ${count === 2 ? 'selected' : ''}>2</option>
-            <option value="3" ${count === 3 ? 'selected' : ''}>3</option>
-            <option value="4" ${count === 4 ? 'selected' : ''}>4</option>
+            ${[2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${count === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         ` : `<strong>${count} Objectives</strong>`}
       </div>
@@ -969,7 +1076,7 @@ class EmployeePartAUI {
   }
 
   _updateTotalWeightDisplay() {
-    const countVal = parseInt(this._getVal('Objective_Count') || '2', 10);
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
     const count = isNaN(countVal) ? 2 : countVal;
 
     let total = 0;
