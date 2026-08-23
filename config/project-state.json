@@ -1,0 +1,11 @@
+{
+  "project": "MBO2026",
+  "environment": "sandbox",
+  "protectedApps": [53, 283],
+  "sandboxApps": {
+    "mbo": null,
+    "routing": null
+  },
+  "lastDeployment": null,
+  "gitRepository": "https://github.com/rebootob/MBO2026.git"
+}

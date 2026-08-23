@@ -1,0 +1,24 @@
+.env
+.env.*
+!.env.example
+*.secret
+credentials.*
+tokens.*
+cookies.*
+session.*
+node_modules/
+backups/
+coverage/
+*.log
+
+# Local legacy references and original forms may contain employee data.
+MBO_App_*_Discovery_*.json
+MBO_Discovery_Collector_V1_App283.js
+PMS_Staff & Chief_PART_A.xlsx
+PMS_Staff & Chief_PART_B.xlsx
+README_MBO_Discovery.txt
+lock-detail2.js
+hideField_Status.js
+validate_part_B.js
+confirm_run_next_process.js
+HR View ID 6436392.js

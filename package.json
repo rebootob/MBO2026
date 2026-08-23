@@ -1,0 +1,12 @@
+{
+  "name": "ttmet-mbo-v2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TTMET MBO / PMS V2 Kintone sandbox tooling",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/sandbox-write-guard.test.js",
+    "test:safety": "node --test tests/sandbox-write-guard.test.js",
+    "connection:test": "node scripts/kintone/connection-test.js"
+  }
+}
