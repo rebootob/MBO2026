@@ -7,6 +7,7 @@ test('Validation: Valid 2 Objectives with Weight 100% passes', () => {
   const record = {
     Fiscal_Year: { value: 'FY2026' },
     Employee_Code: { value: '0149' },
+    Employee_Name: { value: 'Mr.Gritchai Somphonkrang' },
     Objective_Count: { value: '2' },
     Objective_1: { value: 'Achieve sales profit' },
     Action_Plan_1: { value: 'Visit customers weekly' },
@@ -27,6 +28,7 @@ test('Validation: Missing Objective & Action Plan returns structured field error
   const record = {
     Fiscal_Year: { value: 'FY2026' },
     Employee_Code: { value: '0149' },
+    Employee_Name: { value: 'Mr.Gritchai Somphonkrang' },
     Objective_Count: { value: '4' },
     Objective_1: { value: 'Obj 1' }, Action_Plan_1: { value: 'Plan 1' }, Weight_1: { value: '25' }, Difficulty_1: { value: '3' },
     Objective_2: { value: 'Obj 2' }, Action_Plan_2: { value: 'Plan 2' }, Weight_2: { value: '25' }, Difficulty_2: { value: '3' },
@@ -47,6 +49,7 @@ test('Validation: Valid 10 Objectives with Weight 100% passes', () => {
   const record = {
     Fiscal_Year: { value: 'FY2026' },
     Employee_Code: { value: '0149' },
+    Employee_Name: { value: 'Mr.Gritchai Somphonkrang' },
     Objective_Count: { value: '10' }
   };
   for (let i = 1; i <= 10; i++) {
@@ -61,12 +64,12 @@ test('Validation: Valid 10 Objectives with Weight 100% passes', () => {
 });
 
 test('Validation: Objective Count < 2 or > 10 blocks', () => {
-  const recordLow = { Fiscal_Year: { value: 'FY2026' }, Employee_Code: { value: '0149' }, Objective_Count: { value: '1' } };
+  const recordLow = { Fiscal_Year: { value: 'FY2026' }, Employee_Code: { value: '0149' }, Employee_Name: { value: 'Test' }, Objective_Count: { value: '1' } };
   const resLow = ValidationEngine.validate(recordLow, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(resLow.isValid, false);
   assert.equal(resLow.fieldErrors[0].field, 'Objective_Count');
 
-  const recordHigh = { Fiscal_Year: { value: 'FY2026' }, Employee_Code: { value: '0149' }, Objective_Count: { value: '11' } };
+  const recordHigh = { Fiscal_Year: { value: 'FY2026' }, Employee_Code: { value: '0149' }, Employee_Name: { value: 'Test' }, Objective_Count: { value: '11' } };
   const resHigh = ValidationEngine.validate(recordHigh, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(resHigh.isValid, false);
   assert.equal(resHigh.fieldErrors[0].field, 'Objective_Count');
@@ -76,6 +79,7 @@ test('Validation: Total Weight != 100% produces Total_Weight field error', () =>
   const record = {
     Fiscal_Year: { value: 'FY2026' },
     Employee_Code: { value: '0149' },
+    Employee_Name: { value: 'Mr.Gritchai Somphonkrang' },
     Objective_Count: { value: '2' },
     Objective_1: { value: 'Obj 1' }, Action_Plan_1: { value: 'Plan 1' }, Weight_1: { value: '40' }, Difficulty_1: { value: '3' },
     Objective_2: { value: 'Obj 2' }, Action_Plan_2: { value: 'Plan 2' }, Weight_2: { value: '40' }, Difficulty_2: { value: '3' }

@@ -4,30 +4,37 @@
 
 export class EmployeeService {
   /**
-   * Lookup employee by Employee Code in App 53
-   * Returns snapshot data or throws informative error
+   * Lookup employee by Employee Code in App 53 (Read-Only)
+   * Supports leading zero code input e.g. "0149" -> queries Number in App 53
+   * @param {string} empCode
+   * @param {Object} kintoneApi
+   * @returns {Object} snapshot profile
    */
   static async lookupEmployee(empCode, kintoneApi) {
     const cleanCode = String(empCode || '').trim();
     if (!cleanCode) {
-      throw new Error('กรุณาระบุรหัสพนักงาน (Employee Code)');
+      throw new Error('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
     }
 
-    const query = `Number = "${cleanCode}" limit 2`;
+    const numVal = parseInt(cleanCode, 10);
+    const query = !isNaN(numVal)
+      ? `(Number = "${numVal}" or Number = "${cleanCode}") limit 2`
+      : `Number = "${cleanCode}" limit 2`;
+
     const resp = await kintoneApi.getRecords(53, query);
     const records = resp?.records || [];
 
     if (records.length === 0) {
-      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master (App 53)`);
+      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`);
     }
 
     if (records.length > 1) {
-      throw new Error(`พบข้อมูลพนักงานซ้ำซ้อนสำหรับรหัส ${cleanCode} ในระบบ Employee Master กรุณาแจ้ง HR / Administrator`);
+      throw new Error(`พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee code ${cleanCode} found. Please contact HR / Administrator.`);
     }
 
     const emp = records[0];
     return {
-      Employee_Code: cleanCode,
+      Employee_Code: cleanCode, // Preserve leading zero string representation
       Employee_Name: emp.Text?.value || '',
       Employee_Name_TH: emp.Text_0?.value || '',
       Employee_Section: emp.Drop_down?.value || '',
@@ -55,7 +62,7 @@ export class EmployeeService {
 
     const resp = await kintoneApi.getRecords(mboAppId, query);
     if (resp?.records?.length > 0) {
-      throw new Error(`พบแบบประเมิน MBO ของพนักงานรหัส ${cleanCode} สำหรับปี ${cleanFY} อยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้`);
+      throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
     }
   }
 }

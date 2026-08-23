@@ -7,6 +7,7 @@
  */
 
 const BUSINESS_STAGES = {
+  NEW_RECORD: 'NEW_RECORD',
   OBJECTIVE_INPUT: 'OBJECTIVE_INPUT',
   MIDYEAR_INPUT: 'MIDYEAR_INPUT',
   SELF_EVALUATION: 'SELF_EVALUATION',
@@ -247,9 +248,19 @@ class ValidationEngine {
     if (!empCode) {
       fieldErrors.push({
         field: 'Employee_Code',
-        messageTH: 'กรุณาระบุรหัสพนักงาน',
-        messageEN: 'Please enter Employee Code',
-        message: 'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code'
+        messageTH: 'กรุณาระบุรหัสพนักงานและกดค้นหา',
+        messageEN: 'Please enter Employee Code and search',
+        message: 'กรุณาระบุรหัสพนักงานและกดค้นหา\nPlease enter Employee Code and search'
+      });
+    }
+
+    const empName = this._val(record.Employee_Name);
+    if (!empName) {
+      fieldErrors.push({
+        field: 'Employee_Code',
+        messageTH: 'กรุณากดค้นหาและยืนยันข้อมูลพนักงานก่อนบันทึก',
+        messageEN: 'Please search and verify employee profile before saving',
+        message: 'กรุณากดค้นหาและยืนยันข้อมูลพนักงานก่อนบันทึก\nPlease search and verify employee profile before saving'
       });
     }
 
@@ -257,9 +268,9 @@ class ValidationEngine {
     if (!fy) {
       fieldErrors.push({
         field: 'Fiscal_Year',
-        messageTH: 'กรุณาระบุรอบการประเมิน',
+        messageTH: 'กรุณาระบุรอบการประเมิน (Fiscal Year)',
         messageEN: 'Please enter Fiscal Year',
-        message: 'กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year'
+        message: 'กรุณาระบุรอบการประเมิน (Fiscal Year)\nPlease enter Fiscal Year'
       });
     }
 
@@ -274,8 +285,8 @@ class ValidationEngine {
       return this._formatResult(fieldErrors);
     }
 
-    // Stage 1: OBJECTIVE_INPUT
-    if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT) {
+    // Stage 1: OBJECTIVE_INPUT or NEW_RECORD (Create Submit validates objectives)
+    if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT || stage === BUSINESS_STAGES.NEW_RECORD) {
       let totalWeight = 0;
 
       for (let i = 1; i <= objCount; i++) {
@@ -401,30 +412,37 @@ class ValidationEngine {
 
 class EmployeeService {
   /**
-   * Lookup employee by Employee Code in App 53
-   * Returns snapshot data or throws informative error
+   * Lookup employee by Employee Code in App 53 (Read-Only)
+   * Supports leading zero code input e.g. "0149" -> queries Number in App 53
+   * @param {string} empCode
+   * @param {Object} kintoneApi
+   * @returns {Object} snapshot profile
    */
   static async lookupEmployee(empCode, kintoneApi) {
     const cleanCode = String(empCode || '').trim();
     if (!cleanCode) {
-      throw new Error('กรุณาระบุรหัสพนักงาน (Employee Code)');
+      throw new Error('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
     }
 
-    const query = `Number = "${cleanCode}" limit 2`;
+    const numVal = parseInt(cleanCode, 10);
+    const query = !isNaN(numVal)
+      ? `(Number = "${numVal}" or Number = "${cleanCode}") limit 2`
+      : `Number = "${cleanCode}" limit 2`;
+
     const resp = await kintoneApi.getRecords(53, query);
     const records = resp?.records || [];
 
     if (records.length === 0) {
-      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master (App 53)`);
+      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`);
     }
 
     if (records.length > 1) {
-      throw new Error(`พบข้อมูลพนักงานซ้ำซ้อนสำหรับรหัส ${cleanCode} ในระบบ Employee Master กรุณาแจ้ง HR / Administrator`);
+      throw new Error(`พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee code ${cleanCode} found. Please contact HR / Administrator.`);
     }
 
     const emp = records[0];
     return {
-      Employee_Code: cleanCode,
+      Employee_Code: cleanCode, // Preserve leading zero string representation
       Employee_Name: emp.Text?.value || '',
       Employee_Name_TH: emp.Text_0?.value || '',
       Employee_Section: emp.Drop_down?.value || '',
@@ -452,7 +470,7 @@ class EmployeeService {
 
     const resp = await kintoneApi.getRecords(mboAppId, query);
     if (resp?.records?.length > 0) {
-      throw new Error(`พบแบบประเมิน MBO ของพนักงานรหัส ${cleanCode} สำหรับปี ${cleanFY} อยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้`);
+      throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
     }
   }
 }
@@ -518,7 +536,11 @@ class EmployeePartAUI {
     this.isCreate = options.isCreate || false;
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
+    this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
     this.currentErrors = [];
+
+    // Verification state on Create
+    this.isEmployeeVerified = !this.isCreate || !!(this._getVal('Employee_Name') && this._getVal('Employee_Section'));
   }
 
   render() {
@@ -535,32 +557,32 @@ class EmployeePartAUI {
       return;
     }
 
-    // Lookup Banner on Create
+    // STEP 1: Lookup Banner on Create
     if (this.isCreate) {
       root.appendChild(this._renderLookupSection());
     }
 
-    // 1. Header Section (Horizontal Summary)
+    // STEP 2: Header Section (Horizontal Summary)
     root.appendChild(this._renderHeader());
 
-    // 2. Legend / State Indicator Bar (Bilingual)
+    // Legend / State Indicator Bar (Bilingual)
     root.appendChild(this._renderLegend());
 
-    // 3. Rating Guidelines Reference
+    // Rating Guidelines Reference
     root.appendChild(this._renderGuidelines());
 
-    // 4. Custom Error Summary Area (Top of Table)
+    // Custom Error Summary Area (Top of Table)
     const errorSummaryContainer = document.createElement('div');
     errorSummaryContainer.id = 'mbo-error-summary-anchor';
     root.appendChild(errorSummaryContainer);
 
-    // 5. Hoshin Section (2 Columns Horizontal)
+    // Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
-    // 6. Stage Navigation (Bilingual)
+    // Stage Navigation (Bilingual)
     root.appendChild(this._renderStageNav());
 
-    // 7. Part A Spreadsheet Grid Table (1 Objective = 1 Row)
+    // STEP 3: Part A Spreadsheet Grid Table (1 Objective = 1 Row)
     root.appendChild(this._renderSpreadsheetTable());
 
     this.container.appendChild(root);
@@ -604,6 +626,15 @@ class EmployeePartAUI {
     if (!this.root || !fieldErrors || fieldErrors.length === 0) return;
     const firstField = fieldErrors[0].field;
     if (!firstField) return;
+
+    if (firstField === 'Employee_Code' && this.isCreate) {
+      const empInput = this.root.querySelector('#mbo-lookup-emp-input');
+      if (empInput) {
+        empInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        requestAnimationFrame(() => empInput.focus());
+      }
+      return;
+    }
 
     if (firstField === 'Total_Weight') {
       const weightBox = this.root.querySelector('#mbo-weight-summary-box');
@@ -674,6 +705,15 @@ class EmployeePartAUI {
         return;
       }
 
+      if (err.field === 'Employee_Code' && this.isCreate) {
+        const empInput = this.root.querySelector('#mbo-lookup-emp-input');
+        if (empInput) {
+          empInput.classList.remove('mbo-field-state-editable');
+          empInput.classList.add('mbo-field-state-error');
+        }
+        return;
+      }
+
       const input = this.root.querySelector(`.mbo-field[data-code="${err.field}"]`);
       if (input) {
         input.classList.remove('mbo-field-state-editable', 'mbo-field-state-required-empty');
@@ -702,15 +742,24 @@ class EmployeePartAUI {
   _renderLookupSection() {
     const box = document.createElement('div');
     box.className = 'mbo-header-card';
-    box.style.borderTopColor = '#059669';
-    box.style.background = '#f0fdf4';
+    box.style.borderTopColor = this.isEmployeeVerified ? '#059669' : '#0284c7';
+    box.style.background = this.isEmployeeVerified ? '#f0fdf4' : '#f0f9ff';
+
+    const empCode = this._getVal('Employee_Code');
+    const badgeText = this.isEmployeeVerified
+      ? '<span style="color: #059669; font-weight: 700;">✓ ยืนยันข้อมูลพนักงานแล้ว / Employee verified</span>'
+      : '<span style="color: #0284c7; font-weight: 600;">(กรุณาระบุรหัสพนักงานและกดค้นหา / Please enter Employee ID)</span>';
+
     box.innerHTML = `
-      <div style="font-size: 14px; font-weight: 700; color: #065f46; margin-bottom: 8px;">
-        🔍 ค้นหาพนักงาน / Employee Lookup (App 53)
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div style="font-size: 14px; font-weight: 700; color: #0f172a;">
+          STEP 1: ระบุพนักงาน / Identify Employee (App 53)
+        </div>
+        <div style="font-size: 13px;">${badgeText}</div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center; max-width: 650px;">
-        <input type="text" id="mbo-lookup-emp-input" class="mbo-cell-input mbo-field-state-editable" placeholder="กรอกรหัสพนักงาน เช่น 0149 / Enter Employee ID..." value="${this._getVal('Employee_Code')}" style="flex: 1;" />
-        <button type="button" id="mbo-lookup-btn" style="background: #059669; color: white; border: none; padding: 0 16px; height: 36px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+        <input type="text" id="mbo-lookup-emp-input" class="mbo-cell-input mbo-field-state-editable" placeholder="กรอกรหัสพนักงาน เช่น 0149 / Enter Employee ID..." value="${empCode}" style="flex: 1; font-weight: 600;" />
+        <button type="button" id="mbo-lookup-btn" style="background: #0284c7; color: white; border: none; padding: 0 18px; height: 36px; border-radius: 4px; font-weight: 600; cursor: pointer;">
           ค้นหาพนักงาน / Search
         </button>
       </div>
@@ -723,8 +772,8 @@ class EmployeePartAUI {
     const card = document.createElement('div');
     card.className = 'mbo-header-card';
 
-    const fy = this._getVal('Fiscal_Year') || "FY'2026";
-    const status = this._getVal('Status') || '01 Draft Objective';
+    const fy = this._getVal('Fiscal_Year') || 'FY2026';
+    const status = this.isCreate ? 'NEW RECORD (กำลังสร้าง)' : (this._getVal('Status') || '01 Draft Objective');
 
     card.innerHTML = `
       <div class="mbo-title-bar">
@@ -733,6 +782,9 @@ class EmployeePartAUI {
           <span class="mbo-fy-badge">${fy}</span>
         </h1>
         <div class="mbo-status-badge">${status}</div>
+      </div>
+      <div style="font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px;">
+        STEP 2: ข้อมูลพนักงาน / Employee Information [🔵 ระบบ / System Data]
       </div>
       <div class="mbo-profile-grid-horizontal">
         <div class="mbo-profile-item">
@@ -836,7 +888,7 @@ class EmployeePartAUI {
     const nav = document.createElement('div');
     nav.className = 'mbo-stage-nav';
 
-    const isObj = this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT;
+    const isObj = this.isCreate || this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT || this.stage === BUSINESS_STAGES.NEW_RECORD;
     const isMid = this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
     const isSelf = this.stage === BUSINESS_STAGES.SELF_EVALUATION;
 
@@ -864,13 +916,15 @@ class EmployeePartAUI {
 
     const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
     const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
-    const isObjEditable = this.isEditable && this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT;
+
+    const isObjectiveStage = this.isCreate || this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT || this.stage === BUSINESS_STAGES.NEW_RECORD;
+    const isObjEditable = this.isEditable && isObjectiveStage && this.isEmployeeVerified;
 
     // Header bar
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';
     bar.innerHTML = `
-      <span>Part A : MBO (1 แถว = 1 เป้าหมาย / 1 Objective = 1 Horizontal Row)</span>
+      <span>STEP 3: Part A : MBO (1 แถว = 1 เป้าหมาย / 1 Objective = 1 Horizontal Row)</span>
       <div style="font-size: 13px; font-weight: normal; display: flex; align-items: center; gap: 8px;">
         <span>จำนวนเป้าหมาย / Number of Objectives:</span>
         ${isObjEditable ? `
@@ -882,10 +936,27 @@ class EmployeePartAUI {
     `;
     container.appendChild(bar);
 
+    if (this.isCreate && !this.isEmployeeVerified) {
+      const lockBanner = document.createElement('div');
+      lockBanner.style.padding = '30px 20px';
+      lockBanner.style.textAlign = 'center';
+      lockBanner.style.background = '#f8fafc';
+      lockBanner.style.border = '1px dashed #cbd5e1';
+      lockBanner.style.borderRadius = '6px';
+      lockBanner.style.margin = '12px 0';
+      lockBanner.style.color = '#64748b';
+      lockBanner.innerHTML = `
+        <div style="font-size: 18px; margin-bottom: 6px;">🔒 ตารางตั้งเป้าหมายถูกล็อกชั่วคราว / Objective Grid is Locked</div>
+        <div style="font-size: 13px;">กรุณาระบุรหัสพนักงานใน <strong>STEP 1</strong> และกดปุ่มค้นหาก่อนเพื่อปลดล็อกการตั้งเป้าหมาย<br/>Please identify and verify employee profile in STEP 1 to unlock objective setup.</div>
+      `;
+      container.appendChild(lockBanner);
+      return container;
+    }
+
     const table = document.createElement('table');
     table.className = 'mbo-grid-table';
 
-    if (this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT) {
+    if (isObjectiveStage) {
       table.innerHTML = `
         <thead>
           <tr>
@@ -913,7 +984,7 @@ class EmployeePartAUI {
           </tr>
         </thead>
         <tbody>
-          ${Array.from({ length: count }, (_, idx) => this._renderObjectiveInputRow(idx + 1)).join('')}
+          ${Array.from({ length: count }, (_, idx) => this._renderObjectiveInputRow(idx + 1, isObjEditable)).join('')}
         </tbody>
       `;
     } else if (this.stage === BUSINESS_STAGES.MIDYEAR_INPUT) {
@@ -1006,8 +1077,7 @@ class EmployeePartAUI {
     return container;
   }
 
-  _renderObjectiveInputRow(i) {
-    const isObjEditable = this.isEditable && this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT;
+  _renderObjectiveInputRow(i, isObjEditable) {
     const objVal = this._getVal(`Objective_${i}`);
     const actVal = this._getVal(`Action_Plan_${i}`);
     const addVal = this._getVal(`Additional_Agreement_${i}`);
@@ -1224,9 +1294,31 @@ class EmployeePartAUI {
       });
     }
 
+    // Lookup input change listener (Reset verification if edited)
+    const lookupInput = root.querySelector('#mbo-lookup-emp-input');
+    if (lookupInput) {
+      lookupInput.addEventListener('input', (e) => {
+        const newCode = e.target.value.trim();
+        const oldCode = this._getVal('Employee_Code');
+        if (newCode !== oldCode) {
+          this.isEmployeeVerified = false;
+          this.onEmployeeCodeChanged(newCode);
+          const msgEl = root.querySelector('#mbo-lookup-msg');
+          if (msgEl) msgEl.innerHTML = '<span style="color: #b45309;">⚠️ มีการแก้ไขรหัสพนักงาน กรุณากดค้นหาใหม่ / Employee code changed. Please re-search.</span>';
+        }
+      });
+
+      lookupInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const lookupBtn = root.querySelector('#mbo-lookup-btn');
+          if (lookupBtn) lookupBtn.click();
+        }
+      });
+    }
+
     // Lookup button
     const lookupBtn = root.querySelector('#mbo-lookup-btn');
-    const lookupInput = root.querySelector('#mbo-lookup-emp-input');
     if (lookupBtn && lookupInput) {
       lookupBtn.addEventListener('click', async () => {
         const code = lookupInput.value.trim();
@@ -1235,12 +1327,14 @@ class EmployeePartAUI {
           if (msgEl) msgEl.innerHTML = '<span style="color: #dc2626;">กรุณาระบุรหัสพนักงาน / Please enter Employee ID</span>';
           return;
         }
-        if (msgEl) msgEl.innerHTML = '<span style="color: #0369a1;">กำลังค้นหา... / Searching...</span>';
+        if (msgEl) msgEl.innerHTML = '<span style="color: #0369a1;">กำลังค้นหาข้อมูลจาก App 53 และตรวจสอบสิทธิ์... / Searching App 53 & verifying access...</span>';
         try {
           await this.onLookupEmployee(code);
-          if (msgEl) msgEl.innerHTML = '<span style="color: #059669;">✅ พบข้อมูลพนักงานและดึงข้อมูลเรียบร้อยแล้ว / Employee profile loaded</span>';
+          this.isEmployeeVerified = true;
+          this.clearValidationErrors();
           this.render();
         } catch (err) {
+          this.isEmployeeVerified = false;
           if (msgEl) msgEl.innerHTML = `<span style="color: #dc2626;">❌ ${err.message}</span>`;
         }
       });
@@ -1383,8 +1477,17 @@ class EmployeePartAUI {
     });
   }
 
-  function getBusinessStage(record) {
-    const status = record?.Status?.value || '';
+  /**
+   * Resolve Business Stage based on Event Type and Workflow Status
+   * On Create: Returns NEW_RECORD without reading Process Management Status
+   * On Edit/Detail: Reads Process Status from saved record
+   */
+  function resolveBusinessStage(event) {
+    if (event.type === 'app.record.create.show' || event.type === 'app.record.create.submit') {
+      return BUSINESS_STAGES.NEW_RECORD;
+    }
+
+    const status = event.record?.Status?.value || '';
     if (STATUS_TO_STAGE_MAP[status] !== undefined) {
       return STATUS_TO_STAGE_MAP[status];
     }
@@ -1425,7 +1528,12 @@ class EmployeePartAUI {
       return event;
     }
 
-    const stage = getBusinessStage(record);
+    const stage = resolveBusinessStage(event);
+
+    // Default Fiscal Year on Create
+    if (isCreate && !record.Fiscal_Year?.value) {
+      record.Fiscal_Year = { value: 'FY2026' };
+    }
 
     // 2. Instantiate and render Custom UI
     const ui = new EmployeePartAUI({
@@ -1440,6 +1548,21 @@ class EmployeePartAUI {
         } else {
           record[code] = { value: val };
         }
+        syncRecordToKintone(record);
+      },
+      onEmployeeCodeChanged: (newCode) => {
+        // Reset snapshot if code changes
+        record.Employee_Code = { value: newCode };
+        record.Employee_Name = { value: '' };
+        record.Employee_Name_TH = { value: '' };
+        record.Employee_Section = { value: '' };
+        record.Employee_Department = { value: '' };
+        record.Employee_Position = { value: '' };
+        record.Employee_Email = { value: '' };
+        record.Employee_Start_Date = { value: '' };
+        record.Department_Hoshin = { value: '' };
+        record.Section_Hoshin = { value: '' };
+        record.Record_Key = { value: '' };
         syncRecordToKintone(record);
       },
       onLookupEmployee: async (empCode) => {
@@ -1492,14 +1615,26 @@ class EmployeePartAUI {
   // Hook 2: Record Submit (Create & Edit) -> Uses return false and Inline Errors
   kintone.events.on(['app.record.create.submit', 'app.record.edit.submit'], async function (event) {
     const record = event.record;
-    const stage = getBusinessStage(record);
+    const isCreate = event.type === 'app.record.create.submit';
+    const stage = resolveBusinessStage(event);
 
     // 1. Sync custom UI values to record
     if (activeUiInstance) {
       activeUiInstance.syncFromDom();
     }
 
-    // 2. Build and validate deterministic Record Key
+    // 2. On Create: Must verify employee
+    if (isCreate && activeUiInstance && !activeUiInstance.isEmployeeVerified) {
+      activeUiInstance.showValidationErrors([{
+        field: 'Employee_Code',
+        messageTH: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก',
+        messageEN: 'Please enter Employee Code and click Search to verify employee profile before saving.',
+        message: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก'
+      }]);
+      return false;
+    }
+
+    // 3. Build and validate deterministic Record Key
     const fy = record.Fiscal_Year?.value || 'FY2026';
     const code = record.Employee_Code?.value || '';
     const recordKey = buildRecordKey(fy, code);
@@ -1513,7 +1648,7 @@ class EmployeePartAUI {
           message: 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและรอบการประเมิน'
         }]);
       }
-      return false; // Cancel save without native top banner
+      return false;
     }
 
     if (!record.Record_Key) {
@@ -1522,7 +1657,7 @@ class EmployeePartAUI {
       record.Record_Key.value = recordKey;
     }
 
-    // 3. Duplicate Check Guard
+    // 4. Duplicate Check Guard
     try {
       const currentId = record.$id?.value;
       const query = `Record_Key = "${recordKey}" ${currentId ? `and $id != "${currentId}"` : ''}`;
@@ -1536,19 +1671,19 @@ class EmployeePartAUI {
             message: `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`
           }]);
         }
-        return false; // Cancel save cleanly
+        return false;
       }
     } catch (err) {
       console.error('[MBO V2] Duplicate check error:', err);
     }
 
-    // 4. Stage Business Rule Validation
+    // 5. Stage Business Rule Validation
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
       if (activeUiInstance) {
         activeUiInstance.showValidationErrors(validation.fieldErrors);
       }
-      return false; // Cancel submit: NO native top error banner, purely custom inline validation!
+      return false; // Cancel submit: NO native top error banner!
     }
 
     if (activeUiInstance) {
@@ -1561,7 +1696,7 @@ class EmployeePartAUI {
   // Hook 3: Process Action (Workflow Proceed)
   kintone.events.on('app.record.detail.process.proceed', function (event) {
     const record = event.record;
-    const stage = getBusinessStage(record);
+    const stage = resolveBusinessStage(event);
 
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {

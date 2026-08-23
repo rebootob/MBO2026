@@ -43,9 +43,19 @@ export class ValidationEngine {
     if (!empCode) {
       fieldErrors.push({
         field: 'Employee_Code',
-        messageTH: 'กรุณาระบุรหัสพนักงาน',
-        messageEN: 'Please enter Employee Code',
-        message: 'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code'
+        messageTH: 'กรุณาระบุรหัสพนักงานและกดค้นหา',
+        messageEN: 'Please enter Employee Code and search',
+        message: 'กรุณาระบุรหัสพนักงานและกดค้นหา\nPlease enter Employee Code and search'
+      });
+    }
+
+    const empName = this._val(record.Employee_Name);
+    if (!empName) {
+      fieldErrors.push({
+        field: 'Employee_Code',
+        messageTH: 'กรุณากดค้นหาและยืนยันข้อมูลพนักงานก่อนบันทึก',
+        messageEN: 'Please search and verify employee profile before saving',
+        message: 'กรุณากดค้นหาและยืนยันข้อมูลพนักงานก่อนบันทึก\nPlease search and verify employee profile before saving'
       });
     }
 
@@ -53,9 +63,9 @@ export class ValidationEngine {
     if (!fy) {
       fieldErrors.push({
         field: 'Fiscal_Year',
-        messageTH: 'กรุณาระบุรอบการประเมิน',
+        messageTH: 'กรุณาระบุรอบการประเมิน (Fiscal Year)',
         messageEN: 'Please enter Fiscal Year',
-        message: 'กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year'
+        message: 'กรุณาระบุรอบการประเมิน (Fiscal Year)\nPlease enter Fiscal Year'
       });
     }
 
@@ -70,8 +80,8 @@ export class ValidationEngine {
       return this._formatResult(fieldErrors);
     }
 
-    // Stage 1: OBJECTIVE_INPUT
-    if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT) {
+    // Stage 1: OBJECTIVE_INPUT or NEW_RECORD (Create Submit validates objectives)
+    if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT || stage === BUSINESS_STAGES.NEW_RECORD) {
       let totalWeight = 0;
 
       for (let i = 1; i <= objCount; i++) {

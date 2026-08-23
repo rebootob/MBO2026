@@ -16,15 +16,19 @@ description: Development conventions, APIs, and customization guidelines for Kin
   2. Fallback: `kintone.app.record.getHeaderMenuSpaceElement()`
   3. Null-safe return without throwing exceptions.
 
-## 3. Render Lifecycle Sequence
-1. Resolve UI host element.
-2. Render Custom UI component.
-3. Bind event listeners and dynamic state calculation.
-4. Synchronize values with Kintone internal record state via `kintone.app.record.set(...)`.
-5. Only hide native custom fields AFTER custom UI renders successfully (Fail-Safe).
+## 3. Create Mode vs Workflow Stage Resolution Pattern
+- **Create Show (`app.record.create.show`)**:
+  - Is an unsaved record without Kintone Process Management status.
+  - DO NOT read `record.Status.value`.
+  - Maps to `BUSINESS_STAGES.NEW_RECORD` (Client/UI State).
+  - Step 1: Employee identification & App 53 lookup.
+  - Step 2: System profile & Hoshin snapshot.
+  - Step 3: Part A objective setup (unlocked only after verification).
+- **Edit / Detail Show (`app.record.edit.show`, `app.record.detail.show`)**:
+  - Saved records only -> read `record.Status.value` and map against `STATUS_TO_STAGE_MAP`.
 
 ## 4. Custom UI Validation Pattern (No Native Error Banner)
-- **NEVER use `event.error`** for standard business/field validation in Custom UI. Setting `event.error` spawns Kintone's giant native top red banner.
+- **NEVER use `event.error`** for standard business/field validation in Custom UI.
 - **Always `return false`**: In `app.record.create.submit` and `app.record.edit.submit`, if validation fails:
   1. Sync DOM values to record (`ui.syncFromDom()`).
   2. Run `ValidationEngine.validate(record, stage)`.

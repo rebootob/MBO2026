@@ -8,3 +8,4 @@
 - **2026-08-23**: Extended Objective Count to support 2 to 10 items (added 138 fields on App 794).
 - **2026-08-23**: Created AI skills system and 16 project-docs living documentation files.
 - **2026-08-23**: Replaced native record error banner with custom inline validation, clickable error summary, jump & focus on error, and `return false` save cancellation.
+- **2026-08-23**: Separated employee creation from workflow stage resolution (`resolveBusinessStage`), implemented 3-step Create Mode flow with profile reset protection.
