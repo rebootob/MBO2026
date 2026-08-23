@@ -60,3 +60,11 @@
 * **Ready Immutability:** Active ready versions cannot be edited directly; revisions require creating a new version.
 * **Single Active Version:** Exactly one active ready version allowed per FY and Scope unit. Old versions transition to Superseded state.
 * **No Workflow:** Direct HR management without Process Management.
+
+---
+
+## 7. Generic Routing Architecture & Slot Execution Engine
+* **Slot Capacity:** 6 Generic Approval Slots + 1 HR Final Check Slot (Covers all 5 legacy routing families).
+* **Identity Separation:** Requester Authorization, Scoring Appraiser, and Workflow Approver are governed independently.
+* **Default Rule:** Approver rule defaults to `ALL` within a step.
+* **Immutable Snapshot:** Route is snapshotted into App 794 at creation; historical records are permanently locked.

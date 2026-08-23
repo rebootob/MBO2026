@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-019 — Generic Routing Architecture & Slot Execution Engine
+- **Date**: 2026-08-24
+- **Status**: ACTIVE (Ready for Freeze Review)
+- **Decision**:
+  1. Adopt **Option A: Fixed Slot Execution Model** (6 Generic Approval Slots + 1 HR Final Check Slot) in App 794 to eliminate legacy state explosion while respecting Kintone native workflow constraints.
+  2. Strict separation of the three identity dimensions: Requester Authorization != Scoring Appraiser != Workflow Approver.
+  3. Default approval rule is always **`ALL`** (ANY is restricted to explicit exceptions).
+  4. Immutable Transaction Snapshot: App 794 captures full slot snapshots upon record creation. Historical records never change snapshot on master updates.
+  5. Deprecate legacy hardcoded App 795 fields (`Manager_User`, `GM_User`, `Manager_Level1_Approvers`) and execute full 7-step cleanup during implementation.
+
 ## DEC-018 — Hoshin Final Governance: Dual-Level Requirement, Ready Version Immutability & Architecture Freeze
 - **Date**: 2026-08-24
 - **Status**: FROZEN (Approved by User)

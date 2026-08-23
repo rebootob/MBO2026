@@ -17,4 +17,5 @@
 - **2026-08-23**: Added permanent Project Governance Policy: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done, and 7-step retirement lifecycle in skills and living docs.
 - **2026-08-24**: Confirmed Hoshin Organizational Scope (Shared per Section/Department via App 53 `Drop_down` and `Drop_down_0`).
 - **2026-08-24**: Updated Hoshin Governance to HR Managed Model without Approval Workflow (`DEC-017`), controlled via `Ready_For_MBO` flag (`YES`/`NO`) and Native Permissions.
-- **2026-08-24**: Finalized and **FROZEN** Hoshin Architecture (`HOSHIN_ARCHITECTURE = FROZEN`, `DEC-018`): Dual-level submission gate (AND condition), ready version immutability, revision via new version, single active version invariant, and permanent historical preservation.
+- **2026-08-24**: Finalized and **FROZEN** Hoshin Architecture (`HOSHIN_ARCHITECTURE = FROZEN`, `DEC-018`).
+- **2026-08-24**: Completed Cross-App Legacy Workflow Deep Dive across 8 apps (`ROUTING_WORKFLOW_DEEP_DIVE.md`) and designed Generic Routing Architecture (`GENERIC_ROUTING_ARCHITECTURE.md`, `DEC-019`) with 6 Generic Slots + 1 HR Slot, Option A Data Model, and 24 Test Scenarios.
