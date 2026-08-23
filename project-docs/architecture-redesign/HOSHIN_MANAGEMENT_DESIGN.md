@@ -1,107 +1,95 @@
 # Hoshin Governance, Versioning & Publication Architecture Blueprint
 
-> **Document Status:** Active (Confirmed Requirement)  
-> **System Scope:** MBO Hoshin Master (Conceptual App 799) & App 794 Transaction Integration  
-> **Core Principle:** Strict Fiscal Year Scoping + Mandatory Human Publication (Zero Silent Fallback)  
-> **Last Updated:** 2026-08-23  
+> **Document Status:** Active (Business Rule Confirmed by User)  
+> **Core Principle:** Shared Organizational Scope + Strict Fiscal Year + Mandatory Human Confirmation  
+> **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Executive Summary & Core Principle
+## 1. Confirmed Scope & Architectural Model
 
-In MBO V2, organizational targets (**Department Hoshin** and **Section Hoshin**) are formally governed as **Versioned Strategy Artifacts** bound to a specific Japanese Fiscal Year (`1 April - 31 March`).
-
-### The Human Confirmation Mandate
-Computer systems cannot deduce human intent from string matching. Even if Hoshin content remains identical character-for-character across consecutive years (e.g. FY2026 and FY2027), the business requires an explicit **Human Confirmation / Publication Action** for each fiscal year.
+The User has explicitly confirmed that **Hoshin is shared across employees in the same organizational unit**:
+* **Confirmed Principle:** All employees belonging to the same Section / Department share the **exact same Published Hoshin** for any given Fiscal Year.
+* **Prohibited:** Creating individual, employee-level Hoshins.
 
 ```mermaid
 graph TD
-    PREV[App 53 / Previous FY Hoshin] -->|Copy as Preliminary Draft| DRAFT[Hoshin Master: Status DRAFT]
-    
-    subgraph Governance [Annual Human Confirmation & Publication]
-        DRAFT --> REVIEW[Hoshin Owner / HR Review]
-        REVIEW -->|Edit or Confirm| PUB_ACTION[Click: Publish Hoshin for FY2027]
-        PUB_ACTION --> LIVE[Hoshin Master: Status PUBLISHED (v1)]
+    subgraph Master [App 799: MBO Hoshin Master]
+        PUB[Published Hoshin Record: FY2027 + Section TME1 + Version 1]
     end
 
-    subgraph MBO_Core [App 794 Transaction Integration]
-        LIVE --> RESOLVER[Hoshin Dynamic Resolver]
-        RESOLVER --> SNAPSHOT[Inject Immutable Hoshin Snapshot into MBO Record]
-        SNAPSHOT --> UI[Render Hoshin on MBO Header]
-        SNAPSHOT --> SUBMIT[Unlock Objective Submission]
+    subgraph App53 [App 53: Employee Master]
+        EMP1[Employee 0149 -> Section TME1]
+        EMP2[Employee 0113 -> Section TME1]
+        EMP3[Employee 0180 -> Section TME1]
     end
+
+    PUB -->|Dynamic Lookup by Scope Key| T1[App 794: FY2027-0149 (Same Hoshin)]
+    PUB -->|Dynamic Lookup by Scope Key| T2[App 794: FY2027-0113 (Same Hoshin)]
+    PUB -->|Dynamic Lookup by Scope Key| T3[App 794: FY2027-0180 (Same Hoshin)]
 ```
 
 ---
 
-## 2. Conceptual MBO Hoshin Master Schema (App 799)
+## 2. App 53 Field Mapping Truth
 
-| Field Code | Field Label | Type | Description | Example Values |
-| :--- | :--- | :--- | :--- | :--- |
-| `Hoshin_ID` | Hoshin Identifier | SINGLE_LINE_TEXT | Unique Hoshin Record Key (PK) | `HOSH_FY2026_TME1_v1` |
-| `Fiscal_Year` | Fiscal Year | SINGLE_LINE_TEXT | Target Fiscal Year | `FY2026`, `FY2027` |
-| `Cycle_Code` | Cycle Code | SINGLE_LINE_TEXT | Linked Evaluation Cycle | `CYC_FY2026` |
-| `Scope_Type` | Scope Type | DROP_DOWN | Organizational Hierarchy Level | `SECTION`, `DEPARTMENT`, `COMPANY` |
-| `Scope_Key` | Scope Code / Identifier | SINGLE_LINE_TEXT | Section Code or Dept Code | `TME1`, `TMF1`, `Corporate` |
-| `Scope_Name` | Scope Display Name | SINGLE_LINE_TEXT | Human-readable name | `Eco Energy Section 1` |
-| `Department_Hoshin` | Department Hoshin Text | MULTI_LINE_TEXT | Strategic goals of the Department | `1. Enhance our strength...` |
-| `Section_Hoshin` | Section Hoshin Text | MULTI_LINE_TEXT | Tactical goals of the Section | `1. Achieve operating profit...` |
-| `Version` | Version Number | NUMBER | Incremental version | `1`, `2`, `3` |
-| `Status` | Publication Status | DROP_DOWN | Governance State | `DRAFT`, `PUBLISHED`, `SUPERSEDED` |
-| `Published_Date` | Published Date | DATETIME | Timestamp of publication | `2026-04-15T08:30:00Z` |
-| `Published_By` | Published By User | USER_SELECT | Authorized Publisher | `somrudee` (GM) / `hr` |
-| `Source_Reference` | Source Origin | SINGLE_LINE_TEXT | Heritage origin | `APP53_IMPORT`, `MANUAL_ENTRY` |
-| `Remark` | Change Notes / Remarks | MULTI_LINE_TEXT | Reason for revision | `Annual baseline release` |
-| `Active` | Active Flag | RADIO_BUTTON | Active indicator | `Active` |
+Based on rigorous read-only inspection of App 53 (Employee Master):
+
+| Business Concept | App 53 Field Code | App 53 Field Label | Type | Example Values | Role in Hoshin Resolution |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Section Code** | `Drop_down` | `Section` | `DROP_DOWN` | `TME1`, `TMF1`, `TMF2`, `TMS1`, `TMH2`, `TMT1` | **Primary Scope Key (Section Level)** |
+| **Department Name** | `Drop_down_0` | `Departmant` | `DROP_DOWN` | `Eco Energy & Textile Machinery`, `Industrial  Services`, `Corporate` | **Secondary Scope Key (Department Level)** |
+| **Section Name** | `Drop_down_1` | `Section Name` | `DROP_DOWN` | `Industry`, `Sales Engineering`, `Accounting & Finance` | Display Name Reference |
+| **Legacy Dept Hoshin** | `Text_area` | `Department's Hoshin` | `MULTI_LINE_TEXT` | Multi-line strategy text | Legacy Reference / Bootstrap Source Only |
+| **Legacy Sect Hoshin** | `Text_area_0` | `Section's Hoshin` | `MULTI_LINE_TEXT` | Multi-line strategy text | Legacy Reference / Bootstrap Source Only |
 
 ---
 
-## 3. The Publication & Submission Lifecycle Gate
+## 3. Annual Hoshin Lifecycle & Publication Flow
 
-### Rule 1: Hoshin Validity Criteria
-An organizational Hoshin is valid for MBO V2 transactions **IF AND ONLY IF**:
-$$\text{Current Evaluation Cycle} = \text{Hoshin Fiscal Year} \quad \text{AND} \quad \text{Hoshin Status} = \text{"PUBLISHED"}$$
-
-### Rule 2: Objective Setting vs. Submission Gate
-* **Fiscal Year Open & Hoshin in DRAFT / WAITING:**
-  - Employee **CAN** open the MBO record, view profile info, execute Annual Plan Carry Forward, and prepare objective drafts.
-  - Employee **CANNOT SUBMIT** objectives for Manager Review.
-  - **UI Notification Banner:**  
-    *🔵 รอประกาศ Hoshin สำหรับ FY2027 / Waiting for FY2027 Hoshin*  
-    *คุณสามารถเตรียมร่าง Objective ได้ แต่ยังไม่สามารถส่งอนุมัติจนกว่า Hoshin FY2027 จะถูกประกาศ / You may prepare your objective draft, but submission is disabled until FY2027 Hoshin is published.*
-
-### Rule 3: No Silent Fallback
-If Current FY has no Published Hoshin, the system **NEVER falls back silently to Previous FY Hoshin**. The record enters `WAITING_FOR_HOSHIN` state to prevent employees from committing to obsolete targets.
-
----
-
-## 4. Carry Forward & Post-Publication Interaction
-
-1. **Preliminary Carry Forward Draft:**
-   - An employee may carry forward previous objectives while Hoshin is pending.
-   - When Hoshin is published, system displays: *"กรุณาตรวจสอบ Objective ให้สอดคล้องกับ Hoshin ของ Fiscal Year ปัจจุบันก่อน Submit"*.
-2. **Strict No-Auto-Overwrite:**
-   - When Hoshin is published or revised, the system **NEVER auto-overwrites** objective statements, action plans, or weights. Objective alignment remains the human responsibility of Employee and Manager.
+```
+[Start of New Fiscal Year (e.g. FY2027)]
+                  |
+                  v
+[1. Bootstrap Drafts per Section/Department]
+ └── Previous FY Hoshin copied ONCE per Section/Dept as Status: `DRAFT`
+                  |
+                  v
+[2. Authorized Review & Confirmation]
+ └── Section Manager / GM / HR reviews draft
+ └── Can edit text or confirm reuse of existing text
+                  |
+                  v
+[3. Publish Action]
+ └── Changes Status: `DRAFT` -> `PUBLISHED` (Version 1)
+ └── Captures `Published_Date` and `Published_By`
+                  |
+                  v
+[4. MBO V2 Core Unlocked]
+ └── All employees in Section `TME1` automatically receive Published Hoshin
+ └── Objective submission unlocked in App 794
+```
 
 ---
 
-## 5. Hoshin Versioning & Immutable Transaction Snapshot
+## 4. Versioning & Supersession Governance
 
-### Case A: Hoshin Updated While MBO Record is DRAFT
-* If Current Published Hoshin increments from `v1` to `v2`:
-* Draft record prompts: *"Hoshin มีการปรับปรุง (Version 2) กรุณาตรวจสอบก่อนส่งอนุมัติ"*.
-* On Submit, record captures `Hoshin_Version: 2`.
-
-### Case B: Hoshin Updated After Objective Approval
-* If Hoshin is updated to `v2` after MBO approval:
-* The approved record **IS NEVER MODIFIED AUTOMATICALLY**.
-* Historical snapshot retains `Hoshin_Version: 1` as proof of the governance baseline at time of approval.
+If an organizational Hoshin is revised during the Fiscal Year:
+* The existing published version is marked `Status = "SUPERSEDED"`.
+* The new version is published as `Version 2` (`Status = "PUBLISHED"`).
+* **Historical MBO Records (Approved):** Retain `Version 1` in their snapshot for immutable audit integrity.
+* **Draft MBO Records (Not Submitted):** Prompt the user that Hoshin has been updated to `Version 2` prior to submission.
 
 ---
 
-## 6. Permissions & Publication Authority Model
+## 5. MBO Record Snapshot on Submit Objective
 
-* **Employees / Appraisees:** `READ ONLY` for Published Hoshin matching their Section/Department.
-* **Managers / Evaluators:** `READ ONLY` for Sections under their supervision.
-* **Authorized Publishers (HR / GM / Corporate Planning):** `CREATE DRAFT`, `EDIT DRAFT`, `PUBLISH`.
-* **Security Boundary:** Enforced via Native Kintone App & Field Permissions.
+When an employee submits their objectives in App 794, the record permanently captures:
+* `Snapshot_Hoshin_Scope_Type`: `SECTION`
+* `Snapshot_Hoshin_Scope_Key`: `TME1`
+* `Snapshot_Hoshin_Fiscal_Year`: `FY2027`
+* `Snapshot_Hoshin_ID`: `HOSH_FY2027_TME1_v1`
+* `Snapshot_Hoshin_Version`: `1`
+* `Snapshot_Hoshin_Published_Date`: `2027-04-15T09:00:00Z`
+* `Snapshot_Department_Hoshin_Text`: (Multi-line text snapshot)
+* `Snapshot_Section_Hoshin_Text`: (Multi-line text snapshot)

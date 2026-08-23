@@ -56,3 +56,19 @@ In legacy App 53, Hoshin text was manually copy-pasted into individual employee 
 ## 5. Architectural Conclusion for MBO V2
 * **App 53 Role:** Retained as Employee Profile Master (Read Only) and Legacy Reference.
 * **MBO V2 Source of Truth:** Hoshin must be decoupled into a dedicated **MBO Hoshin Master** with strict Fiscal Year scoping, human publication workflow, and immutable transaction snapshots.
+
+---
+
+## 6. Authoritative App 53 Field Mapping Summary
+
+* **Business Concept: Section Code (Primary Unit)**
+  - App 53 Field Code: `Drop_down`
+  - Field Label: `Section`
+  - Example Values: `TME1`, `TMF1`, `TMF2`, `TMS1`, `TMH2`, `TMT1`
+  - Confidence: **100% (Verified via 275 records)**
+
+* **Business Concept: Department Name (Overarching Unit)**
+  - App 53 Field Code: `Drop_down_0`
+  - Field Label: `Departmant`
+  - Example Values: `Eco Energy & Textile Machinery`, `Industrial  Services`, `Corporate`, `Machinery`
+  - Confidence: **100% (Verified via 275 records)**

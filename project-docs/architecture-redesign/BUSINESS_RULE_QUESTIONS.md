@@ -7,6 +7,7 @@
 
 ## 1. Resolved Questions (Confirmed by User)
 
+* [x] **Q6 (RESOLVED):** Hoshin Organizational Scope -> **Confirmed Shared at Department / Section Level (All employees in same section share identical Published Hoshin)**
 * [x] **Q1 (RESOLVED):** Assistant Manager Weight Split -> **Confirmed 50/50**
 * [x] **Q2 (RESOLVED):** General Manager Weight Split -> **Confirmed 50/50**
 * [x] **Q3 (RESOLVED):** Vice President Weight Split -> **Confirmed 50/50**

@@ -21,4 +21,5 @@
 | **BR-010** | All Profiles | MBO Objectives scalability: 2 to 10 items | `Min: 2, Max: 10, Default: 4` | User Approved V2 Rule | 100% | **CONFIRMED** |
 | **BR-011** | All Profiles | Total Weight must equal 100% | `Total_Weight == 100` | Universal Rule | 100% | **CONFIRMED** |
 | **BR-012** | All Profiles | Default Approval Rule is ALL across all levels | `Default: ALL` | User Approved V2 Rule | 100% | **CONFIRMED** |
+| **BR-014** | Hoshin Governance | Hoshin is shared at Department/Section organizational level (all employees in section share same Hoshin) | `Scope: SECTION / DEPARTMENT (Shared per Org Unit)` | User Confirmation | 100% | **CONFIRMED** |
 | **BR-013** | Annual Cycle | Single Long-Lived App Core with Dynamic Cycle Resolution | `Record_Key: {Cycle_Code}-{EmpCode}` | User Approved V2 Rule | 100% | **CONFIRMED** |

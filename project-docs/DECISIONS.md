@@ -11,14 +11,15 @@
   5. Protected Legacy Apps (Apps 53, 283, 305, etc.) remain untouched in READ ONLY mode for historical archiving.
 
 ## DEC-015 — Hoshin Governance, Versioning & Human Publication Model
-- **Date**: 2026-08-23
-- **Status**: ACTIVE
+- **Date**: 2026-08-23 (Updated 2026-08-24)
+- **Status**: ACTIVE (Confirmed by User)
 - **Decision**:
-  1. App 53 Hoshin fields are legacy references and NOT the authoritative Current-Year Source of Truth.
-  2. MBO V2 establishes a dedicated MBO Hoshin Master (App 799) with Fiscal Year scoping, Scope keys (`SECTION`, `DEPARTMENT`), Versioning, and Publication states (`DRAFT`, `PUBLISHED`, `SUPERSEDED`).
-  3. Mandatory Human Confirmation: Every fiscal year requires explicit human confirmation/publication by authorized owners (zero silent fallback to old years).
-  4. Objective Setting Submission Gate: Draft preparation and Carry Forward are permitted, but Objective Submission is strictly blocked until Current FY Hoshin is `PUBLISHED`.
-  5. Immutable Snapshot: MBO records capture Hoshin version snapshots upon approval; post-approval Hoshin changes never alter historical records automatically.
+  1. Hoshin is governed at the **Department / Section Organizational Unit Level** (`Scope_Type = SECTION / DEPARTMENT`). All employees in the same section share identical Published Hoshin for that Fiscal Year. Individual employee Hoshins are prohibited.
+  2. App 53 fields `Drop_down` (`Section`) and `Drop_down_0` (`Departmant`) provide the organizational mapping. App 53 Hoshin text fields (`Text_area`, `Text_area_0`) serve only as legacy references / bootstrap source.
+  3. MBO Hoshin Master (App 799) is the sole Source of Truth for MBO V2: `Fiscal Year + Scope Key + Version -> Published Hoshin`.
+  4. Mandatory Human Confirmation per Fiscal Year; Zero silent fallback to previous years.
+  5. Objective Submission is gated on `Status = "PUBLISHED"`. Revisions create `Version 2 (PUBLISHED)` while `Version 1` becomes `SUPERSEDED`.
+
 
 ## DEC-014 — Annual Plan Carry Forward Architecture & Strict Allow List Model
 - **Date**: 2026-08-23
