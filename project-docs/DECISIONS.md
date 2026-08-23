@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-014 — Annual Plan Carry Forward Architecture & Strict Allow List Model
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Decision**:
+  1. Historical MBO records must NEVER be cloned or duplicated as a whole record.
+  2. The system allows selective carry forward of employee-owned planning information (`Objective`, `Action_Plan`, `Additional_Agreement`, `Weight`) from Historical FY to Current FY Draft.
+  3. Security enforcement relies on an Explicit Field Allow List (never a blocklist alone).
+  4. All target fiscal year configurations (Evaluation Profile, Scoring Scheme, Competency Set, Routing Master, Approvers) are freshly resolved for the current year.
+  5. Evaluation results, scores, ratings, appraiser comments, COCE ratings, workflow status, approval history, and old configuration snapshots are strictly prohibited from copying.
+
 ## DEC-013 — Annual Evaluation Cycle Architecture & Single Long-Lived App Core
 - **Date**: 2026-08-23
 - **Status**: ACTIVE
