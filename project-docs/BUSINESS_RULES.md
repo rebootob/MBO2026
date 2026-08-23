@@ -1,11 +1,19 @@
-# Business Rules Reference
+# MBO Business Rules & Workflow Specification
 
-1. **Employee Identity**: Derived from `Employee_Code` in App 53.
-2. **Deterministic Record Key**: `{Fiscal_Year}-{Employee_Code}` preserving leading zeroes (`FY2026-0149`).
-3. **Objective Quantity**: 2 to 10 Objectives (Default: 4).
-4. **Total Weight**: Active objectives MUST sum to 100%. Inactive slots are excluded.
-5. **Rating Scales**:
-   - Difficulty Level: 1 to 4.
-   - Achievement Level: 1 to 5.
-   - Progress %: 0 to 100%.
-6. **Pending Rule**: Competency 6 (Compliance / COCE) is collected but excluded from the 50-point score formula (`BUSINESS_RULE_PENDING`).
+## 1. Dynamic Sequential Approval Hierarchy
+- **Master Data Source**: App 795 (Routing Master Sandbox).
+- **Snapshot Storage**: App 794 (MBO V2 Sandbox).
+- **Routing Topologies**:
+  - `M1_G1`: Manager L1 -> GM L1
+  - `M1_M2_G1`: Manager L1 -> Manager L2 -> GM L1
+  - `M1_G1_G2`: Manager L1 -> GM L1 -> GM L2
+  - `M1_M2_G1_G2`: Manager L1 -> Manager L2 -> GM L1 -> GM L2
+
+## 2. Pilot Section (TME1) Configuration
+- `Section_Code`: `TME1`
+- `Requester_User`: `e1`
+- `Manager_Level1_Approvers`: `suthas` (Rule: `ANY`)
+- `Manager_Level2_Approvers`: `[]` (None)
+- `GM_Level1_Approvers`: `somrudee` (Rule: `ANY`)
+- `GM_Level2_Approvers`: `[]` (None)
+- `Topology`: `M1_G1` (Direct route: Employee 0149 -> suthas -> somrudee)

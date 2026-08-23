@@ -477,17 +477,17 @@ class EmployeeService {
 
 
   /**
- * Routing Service - App 795 Routing Master Validator
+ * Routing Service - App 795 Routing Master Validator & Topology Resolver
  */
 
 class RoutingService {
   /**
-   * Validate current user access against Section Routing in App 795
+   * Validate current user access and resolve sequential routing topology from App 795
    * @param {number} routingAppId
    * @param {string} sectionCode
    * @param {string} loginUserCode
    * @param {Object} kintoneApi
-   * @returns {Object} { Requester_User, First_Manager_User, Manager_User, GM_User }
+   * @returns {Object} Full Sequential Routing Profile
    */
   static async validateRequesterAccess(routingAppId, sectionCode, loginUserCode, kintoneApi) {
     const cleanSection = String(sectionCode || '').trim();
@@ -511,11 +511,54 @@ class RoutingService {
       throw new Error(`บัญชีนี้ (${loginUserCode}) ไม่มีสิทธิ์สร้าง MBO สำหรับพนักงานใน Section ${cleanSection}\nThis account (${loginUserCode}) is not authorized to create an MBO for section ${cleanSection}.`);
     }
 
+    // Resolve Manager Levels (support new sequential model with fallback to legacy)
+    const mgrL1 = route.Manager_Level1_Approvers?.value?.length > 0
+      ? route.Manager_Level1_Approvers.value
+      : (route.Manager_User?.value || []);
+    const mgrL1Rule = route.Manager_Level1_Approval_Rule?.value || 'ANY';
+
+    const mgrL2 = route.Manager_Level2_Approvers?.value || [];
+    const mgrL2Rule = route.Manager_Level2_Approval_Rule?.value || 'ANY';
+
+    // Resolve GM Levels
+    const gmL1 = route.GM_Level1_Approvers?.value?.length > 0
+      ? route.GM_Level1_Approvers.value
+      : (route.GM_User?.value || []);
+    const gmL1Rule = route.GM_Level1_Approval_Rule?.value || 'ANY';
+
+    const gmL2 = route.GM_Level2_Approvers?.value || [];
+    const gmL2Rule = route.GM_Level2_Approval_Rule?.value || 'ANY';
+
+    const hasMgrL2 = mgrL2.length > 0;
+    const hasGmL2 = gmL2.length > 0;
+
+    // Topology: e.g. M1_G1, M1_M2_G1, M1_G1_G2, M1_M2_G1_G2
+    let topology = 'M1_G1';
+    if (hasMgrL2 && hasGmL2) {
+      topology = 'M1_M2_G1_G2';
+    } else if (hasMgrL2) {
+      topology = 'M1_M2_G1';
+    } else if (hasGmL2) {
+      topology = 'M1_G1_G2';
+    }
+
     return {
-      Requester_User: route.Requester_User?.value || [],
-      First_Manager_User: route.First_Manager_User?.value || [],
-      Manager_User: route.Manager_User?.value || [],
-      GM_User: route.GM_User?.value || []
+      Requester_User: requesters,
+      Manager_Level1_Approvers: mgrL1,
+      Manager_Level1_Approval_Rule: mgrL1Rule,
+      Manager_Level2_Approvers: mgrL2,
+      Manager_Level2_Approval_Rule: mgrL2Rule,
+      GM_Level1_Approvers: gmL1,
+      GM_Level1_Approval_Rule: gmL1Rule,
+      GM_Level2_Approvers: gmL2,
+      GM_Level2_Approval_Rule: gmL2Rule,
+      Has_Manager_Level2: hasMgrL2 ? 'Yes' : 'No',
+      Has_GM_Level2: hasGmL2 ? 'Yes' : 'No',
+      Routing_Topology: topology,
+      // Legacy backwards compatibility
+      Manager_User: mgrL1,
+      First_Manager_User: mgrL2,
+      GM_User: gmL1
     };
   }
 }
@@ -1554,7 +1597,10 @@ class EmployeePartAUI {
         const fieldsToClear = [
           'Employee_Name', 'Employee_Name_TH', 'Employee_Section',
           'Employee_Department', 'Employee_Position', 'Employee_Email',
-          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key'
+          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
+          'Manager_Level1_Approvers', 'Manager_Level2_Approvers',
+          'GM_Level1_Approvers', 'GM_Level2_Approvers',
+          'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology'
         ];
         if (record.Employee_Code) record.Employee_Code.value = newCode;
         fieldsToClear.forEach(k => {
@@ -1588,6 +1634,17 @@ class EmployeePartAUI {
           Department_Hoshin: empProfile.Department_Hoshin,
           Section_Hoshin: empProfile.Section_Hoshin,
           Requester_User: routing.Requester_User,
+          Manager_Level1_Approvers: routing.Manager_Level1_Approvers,
+          Manager_Level1_Approval_Rule: routing.Manager_Level1_Approval_Rule,
+          Manager_Level2_Approvers: routing.Manager_Level2_Approvers,
+          Manager_Level2_Approval_Rule: routing.Manager_Level2_Approval_Rule,
+          GM_Level1_Approvers: routing.GM_Level1_Approvers,
+          GM_Level1_Approval_Rule: routing.GM_Level1_Approval_Rule,
+          GM_Level2_Approvers: routing.GM_Level2_Approvers,
+          GM_Level2_Approval_Rule: routing.GM_Level2_Approval_Rule,
+          Has_Manager_Level2: routing.Has_Manager_Level2,
+          Has_GM_Level2: routing.Has_GM_Level2,
+          Routing_Topology: routing.Routing_Topology,
           First_Manager_User: routing.First_Manager_User,
           Manager_User: routing.Manager_User,
           GM_User: routing.GM_User,

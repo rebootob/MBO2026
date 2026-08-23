@@ -120,7 +120,10 @@ import { RoutingService } from './services/routing-service.js';
         const fieldsToClear = [
           'Employee_Name', 'Employee_Name_TH', 'Employee_Section',
           'Employee_Department', 'Employee_Position', 'Employee_Email',
-          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key'
+          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
+          'Manager_Level1_Approvers', 'Manager_Level2_Approvers',
+          'GM_Level1_Approvers', 'GM_Level2_Approvers',
+          'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology'
         ];
         if (record.Employee_Code) record.Employee_Code.value = newCode;
         fieldsToClear.forEach(k => {
@@ -154,6 +157,17 @@ import { RoutingService } from './services/routing-service.js';
           Department_Hoshin: empProfile.Department_Hoshin,
           Section_Hoshin: empProfile.Section_Hoshin,
           Requester_User: routing.Requester_User,
+          Manager_Level1_Approvers: routing.Manager_Level1_Approvers,
+          Manager_Level1_Approval_Rule: routing.Manager_Level1_Approval_Rule,
+          Manager_Level2_Approvers: routing.Manager_Level2_Approvers,
+          Manager_Level2_Approval_Rule: routing.Manager_Level2_Approval_Rule,
+          GM_Level1_Approvers: routing.GM_Level1_Approvers,
+          GM_Level1_Approval_Rule: routing.GM_Level1_Approval_Rule,
+          GM_Level2_Approvers: routing.GM_Level2_Approvers,
+          GM_Level2_Approval_Rule: routing.GM_Level2_Approval_Rule,
+          Has_Manager_Level2: routing.Has_Manager_Level2,
+          Has_GM_Level2: routing.Has_GM_Level2,
+          Routing_Topology: routing.Routing_Topology,
           First_Manager_User: routing.First_Manager_User,
           Manager_User: routing.Manager_User,
           GM_User: routing.GM_User,

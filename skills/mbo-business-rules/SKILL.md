@@ -1,23 +1,32 @@
 ---
 name: mbo-business-rules
-description: Core business rules, validation logic, and workflows for TTMET MBO / PMS V2
+description: Business logic, workflow rules, approval hierarchies, and privacy models
 ---
 
-# TTMET MBO / PMS V2 Business Rules
+# MBO Business Rules
 
-## 1. User & Identity Model
-- **Employees**: Use shared section Kintone accounts (`f1`, `t1`, `e1`, `tmh`, etc.). Individual employee identity is determined by **Employee Code** (`Employee_Code` from App 53).
-- **Managers / GMs / HR**: Individual 1:1 Kintone accounts mapped via App 795 (MBO Routing Master).
-- **Single MBO Rule**: 1 Employee + 1 Fiscal Year = Exactly 1 MBO Record.
-- **Record Key Rule**: Deterministic string format `{Fiscal_Year}-{Employee_Code}` preserving leading zeroes (e.g. `FY2026-0149`, `FY2026-0001`).
+## 1. Sequential Approval Routing Architecture
+The routing engine dynamically derives the approval topology per Section from App 795 (Routing Master):
+- **Requester User**: `Requester_User` (`USER_SELECT`, multi-user supported)
+- **Manager Level 1**: `Manager_Level1_Approvers` (`USER_SELECT`), `Manager_Level1_Approval_Rule` (`ANY` / `ALL`)
+- **Manager Level 2**: `Manager_Level2_Approvers` (`USER_SELECT`), `Manager_Level2_Approval_Rule` (`ANY` / `ALL`)
+  - If blank -> Skips Manager Level 2.
+  - If present -> Must pass Manager Level 2.
+- **GM Level 1**: `GM_Level1_Approvers` (`USER_SELECT`), `GM_Level1_Approval_Rule` (`ANY` / `ALL`)
+- **GM Level 2**: `GM_Level2_Approvers` (`USER_SELECT`), `GM_Level2_Approval_Rule` (`ANY` / `ALL`)
+  - If blank -> Skips GM Level 2.
+  - If present -> Must pass GM Level 2 before final approval.
 
-## 2. Objectives & Scoring Structure
-- **Objective Count**: Dynamic 2 to 10 Objectives (Default: 4).
-- **Layout**: 1 Objective = 1 Horizontal Spreadsheet Row.
-- **Weight Rule**: Sum of active `Weight_1` to `Weight_N` MUST equal 100%. Inactive slots are ignored.
-- **Difficulty Level**: Integer [1, 2, 3, 4] (1=Easily achievable, 2=Achievable normal, 3=Difficult, 4=Challenging).
-- **Achievement Level**: Integer [1, 2, 3, 4, 5] (1=Rarely meet, 2=Partially meet, 3=Fully meet, 4=Exceeded, 5=Remarkable).
-- **Mid-Year Progress**: Integer 0% to 100%.
+### Supported Approval Topologies:
+1. **Topology 1 (M1 -> G1)**: Employee -> Manager L1 -> GM L1 (e.g. Pilot `TME1`: `suthas` -> `somrudee`).
+2. **Topology 2 (M1 -> M2 -> G1)**: Employee -> Manager L1 -> Manager L2 -> GM L1.
+3. **Topology 3 (M1 -> G1 -> G2)**: Employee -> Manager L1 -> GM L1 -> GM L2.
+4. **Topology 4 (M1 -> M2 -> G1 -> G2)**: Full 4-level sequential approval.
 
-## 3. Business Rule Pending Status
-- **Competency 6 (Compliance / COCE)**: Marked as `BUSINESS_RULE_PENDING`. Excel template and legacy App 283 collect this rating, but exclude it from the 50-point formula sum. AI must NEVER unilaterally alter this formula.
+## 2. Universal Return Action Rules
+- **Manager Return**: Returns record to `01 Draft Objective` / `06 Employee Mid-Year` / `11 Employee Self Evaluation`.
+- **GM Return**: Returns record to `01 Draft Objective` / `06 Employee Mid-Year` / `11 Employee Self Evaluation`.
+- Single dynamic button labels in Process Management (`Submit`, `Approve`, `Return`) ensure users cannot manually pick arbitrary bypasses.
+
+## 3. Privacy & Security Rules
+- All Manager/GM scores, ratings, and confidential evaluation fields are strictly hidden from Appraisees across all stages.

@@ -8,3 +8,4 @@
 - **2026-08-23**: Replaced native record error banner with custom inline validation, clickable error summary, and `return false` submit cancellation.
 - **2026-08-23**: Separated employee creation from workflow stage resolution, fixed `Fiscal_Year.type` field preservation.
 - **2026-08-23**: Configured and verified Pilot Routing for Section `TME1` on App 795; tested End-to-End Objective approval and return loops for Employee `0149`.
+- **2026-08-23**: Upgraded Routing Model to Sequential Approval supporting Manager L1/L2 and GM L1/L2 with multi-user and ANY/ALL rules across 4 topologies.
