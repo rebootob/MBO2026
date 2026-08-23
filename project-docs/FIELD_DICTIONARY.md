@@ -1,17 +1,19 @@
-# Field Dictionary (Key Fields in App 794)
+# Field Dictionary
 
-| Field Code | Type | Purpose | Source / Role | Stage |
-| :--- | :--- | :--- | :--- | :--- |
-| `Record_Key` | Single-line Text | Unique record identifier (`FY2026-0149`) | System Generated | All Stages |
-| `Fiscal_Year` | Single-line Text | Appraisal Fiscal Year (`FY2026`) | Employee / System | Create |
-| `Employee_Code` | Single-line Text | Employee ID from App 53 | App 53 Lookup | Create |
-| `Objective_Count` | Drop-down | Number of active objectives (2-10) | Employee | Objective Input |
-| `Objective_1..10` | Multi-line Text | Expected result and target | Employee | Objective Input |
-| `Action_Plan_1..10` | Multi-line Text | Activities to achieve objective | Employee | Objective Input |
-| `Weight_1..10` | Number | Objective weight (Sum = 100%) | Employee | Objective Input |
-| `Difficulty_1..10` | Number [1-4] | Difficulty level | Employee | Objective Input |
-| `Progress_Percent_1..10` | Number [0-100] | Mid-year progress % | Employee | Mid-Year Input |
-| `Actual_Result_1..10` | Multi-line Text | Year-end achieved results | Employee | Self Evaluation |
-| `Self_Achievement_1..10` | Number [1-5] | Self evaluation rating | Employee | Self Evaluation |
-| `Manager_Achievement_1..10` | Number [1-5] | 1st Appraiser Rating | Manager | Confidential |
-| `GM_Achievement_1..10` | Number [1-5] | 2nd Appraiser Rating | GM | Confidential |
+## Routing Master (App 795) & Snapshot (App 794)
+
+| Field Code | Type | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `Section_Code` | SINGLE_LINE_TEXT | Section identifier (e.g. `TME1`) | Required |
+| `Requester_User` | USER_SELECT | Authorized creators / employees | - |
+| `Manager_Level1_Approvers` | USER_SELECT | Level 1 Manager Approvers | - |
+| `Manager_Level1_Approval_Rule` | DROP_DOWN | Intra-level rule (`ALL` / `ANY`) | `ALL` |
+| `Manager_Level2_Approvers` | USER_SELECT | Level 2 Manager Approvers (e.g. Mentor Manager) | - |
+| `Manager_Level2_Approval_Rule` | DROP_DOWN | Intra-level rule (`ALL` / `ANY`) | `ALL` |
+| `GM_Level1_Approvers` | USER_SELECT | Level 1 General Manager Approvers | - |
+| `GM_Level1_Approval_Rule` | DROP_DOWN | Intra-level rule (`ALL` / `ANY`) | `ALL` |
+| `GM_Level2_Approvers` | USER_SELECT | Level 2 General Manager Approvers | - |
+| `GM_Level2_Approval_Rule` | DROP_DOWN | Intra-level rule (`ALL` / `ANY`) | `ALL` |
+| `Has_Manager_Level2` | DROP_DOWN | `Yes` / `No` indicator | `No` |
+| `Has_GM_Level2` | DROP_DOWN | `Yes` / `No` indicator | `No` |
+| `Routing_Topology` | SINGLE_LINE_TEXT | Topology key (`M1_G1`, `M1_M2_G1`, etc.) | `M1_G1` |

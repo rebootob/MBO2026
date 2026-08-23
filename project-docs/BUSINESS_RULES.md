@@ -1,19 +1,29 @@
 # MBO Business Rules & Workflow Specification
 
-## 1. Dynamic Sequential Approval Hierarchy
-- **Master Data Source**: App 795 (Routing Master Sandbox).
-- **Snapshot Storage**: App 794 (MBO V2 Sandbox).
-- **Routing Topologies**:
-  - `M1_G1`: Manager L1 -> GM L1
-  - `M1_M2_G1`: Manager L1 -> Manager L2 -> GM L1
-  - `M1_G1_G2`: Manager L1 -> GM L1 -> GM L2
-  - `M1_M2_G1_G2`: Manager L1 -> Manager L2 -> GM L1 -> GM L2
+## 1. Approval Hierarchy: Levels vs. Approval Rules
 
-## 2. Pilot Section (TME1) Configuration
-- `Section_Code`: `TME1`
-- `Requester_User`: `e1`
-- `Manager_Level1_Approvers`: `suthas` (Rule: `ANY`)
-- `Manager_Level2_Approvers`: `[]` (None)
-- `GM_Level1_Approvers`: `somrudee` (Rule: `ANY`)
-- `GM_Level2_Approvers`: `[]` (None)
-- `Topology`: `M1_G1` (Direct route: Employee 0149 -> suthas -> somrudee)
+### A. Approval Levels (Sequential)
+- `Manager Level 1` -> `Manager Level 2` -> `GM Level 1` -> `GM Level 2`
+- Empty Level = Bypassed automatically.
+
+### B. Approval Rules (Intra-Level)
+- **Standard Default**: **`ALL`**
+- `ALL`: Every user in the level must approve.
+- `ANY`: Any single user in the level can approve.
+
+### C. Trainee Manager Pattern
+- Manager Level 1 = Trainee Manager (`Manager_Level1_Approvers`)
+- Manager Level 2 = Mentor Manager (`Manager_Level2_Approvers`)
+- GM Level 1 = General Manager (`GM_Level1_Approvers`)
+- This is a 3-level sequential flow (`M1 -> M2 -> G1`), NOT a multi-approver rule.
+
+## 2. Master Data & Snapshot Model
+- **App 795 (Routing Master)**: Master source per Section.
+- **App 794 (MBO V2 Sandbox)**: Snapshot target per record.
+- **Pilot Section (TME1)**:
+  - Employee: `0149` (Mr.Gritchai Somphonkrang)
+  - Manager L1: `suthas` (Rule: `ALL`)
+  - Manager L2: `[]` (empty)
+  - GM L1: `somrudee` (Rule: `ALL`)
+  - GM L2: `[]` (empty)
+  - Topology: `M1_G1` (Employee -> suthas -> somrudee -> Approved)

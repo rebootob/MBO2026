@@ -1,14 +1,22 @@
-# System Architecture
+# System Architecture Document
 
-## 1. Multi-App Architecture
-- **App 53 (Employee Namelist)**: Source of truth for employee master data, department, section, start date, and Hoshin.
-- **App 795 (MBO Routing Master)**: Section-to-approver mapping (Requester, 1st Manager, Manager, GM).
-- **App 794 (MBO V2 Sandbox)**: Main transactional appraisal records.
+## 1. Routing Model Architecture
+The routing subsystem decouples hierarchy sequence from intra-level approval conditions:
 
-## 2. Code Structure
-- `src/config/`: System constants, statuses, confidential fields, `buildRecordKey`.
-- `src/core/`: Kintone REST client, safety write guard, workflow validators.
-- `src/services/`: Employee master lookup, routing validator, duplicate check.
-- `src/ui/`: DOM host resolver, spreadsheet grid UI component.
-- `src/validation/`: Business rule validation engine.
-- `dist/`: Bundled browser customization scripts (`mbo-employee-app.js`, `mbo-employee.css`).
+```
+[App 795 Routing Master]
+   ├── Section_Code (e.g. TME1)
+   ├── Requester_User [USER_SELECT]
+   ├── Manager_Level1_Approvers [USER_SELECT] + Manager_Level1_Approval_Rule (Default: ALL)
+   ├── Manager_Level2_Approvers [USER_SELECT] + Manager_Level2_Approval_Rule (Default: ALL)
+   ├── GM_Level1_Approvers [USER_SELECT] + GM_Level1_Approval_Rule (Default: ALL)
+   └── GM_Level2_Approvers [USER_SELECT] + GM_Level2_Approval_Rule (Default: ALL)
+             │
+             ▼ (On Employee Lookup Snapshot)
+[App 794 MBO V2 Record]
+   ├── Immutable Historical Routing Snapshot
+   └── Derived Routing_Topology (M1_G1, M1_M2_G1, M1_G1_G2, M1_M2_G1_G2)
+```
+
+## 2. Process Management Mapping
+- Dynamic transition filter conditions automatically evaluate `Has_Manager_Level2` and `Has_GM_Level2` to route records without presenting multiple ambiguous action buttons to users.

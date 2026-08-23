@@ -37,19 +37,19 @@ export class RoutingService {
     const mgrL1 = route.Manager_Level1_Approvers?.value?.length > 0
       ? route.Manager_Level1_Approvers.value
       : (route.Manager_User?.value || []);
-    const mgrL1Rule = route.Manager_Level1_Approval_Rule?.value || 'ANY';
+    const mgrL1Rule = route.Manager_Level1_Approval_Rule?.value || 'ALL';
 
     const mgrL2 = route.Manager_Level2_Approvers?.value || [];
-    const mgrL2Rule = route.Manager_Level2_Approval_Rule?.value || 'ANY';
+    const mgrL2Rule = route.Manager_Level2_Approval_Rule?.value || 'ALL';
 
     // Resolve GM Levels
     const gmL1 = route.GM_Level1_Approvers?.value?.length > 0
       ? route.GM_Level1_Approvers.value
       : (route.GM_User?.value || []);
-    const gmL1Rule = route.GM_Level1_Approval_Rule?.value || 'ANY';
+    const gmL1Rule = route.GM_Level1_Approval_Rule?.value || 'ALL';
 
     const gmL2 = route.GM_Level2_Approvers?.value || [];
-    const gmL2Rule = route.GM_Level2_Approval_Rule?.value || 'ANY';
+    const gmL2Rule = route.GM_Level2_Approval_Rule?.value || 'ALL';
 
     const hasMgrL2 = mgrL2.length > 0;
     const hasGmL2 = gmL2.length > 0;

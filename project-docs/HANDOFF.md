@@ -1,13 +1,12 @@
-# AI Handoff Document
+# AI Handoff Document & Core Rules
 
-## 1. Sequential Approval Model
-- **App 795 & App 794 Fields**:
-  - `Manager_Level1_Approvers`, `Manager_Level1_Approval_Rule` (`ANY`/`ALL`)
-  - `Manager_Level2_Approvers`, `Manager_Level2_Approval_Rule` (`ANY`/`ALL`)
-  - `GM_Level1_Approvers`, `GM_Level1_Approval_Rule` (`ANY`/`ALL`)
-  - `GM_Level2_Approvers`, `GM_Level2_Approval_Rule` (`ANY`/`ALL`)
-  - `Has_Manager_Level2` (`Yes`/`No`), `Has_GM_Level2` (`Yes`/`No`), `Routing_Topology`
-- **Pilot Section TME1**: `M1_G1` (`suthas` -> `somrudee`).
+## 1. Golden Rules for Next AI
+- **LEVEL != Number of Approvers**: Levels represent sequential stages (L1 -> L2).
+- **ALL != Sequential**: `ALL` means all approvers *within the same level* must approve.
+- **ANY != Skip Level**: `ANY` means *any one approver within that level* is sufficient.
+- **Empty Level = Skip Level**: Blank approver list skips that stage automatically.
+- **Default Rule = ALL**: Never default to `ANY`.
+- **Never Hardcode Fields**: Do not create `Manager_User_1`/`Manager_User_2` to solve multi-approvers.
 
 ## 2. Key App IDs
 - **App 53**: Employee Master (**READ ONLY**)

@@ -1,8 +1,33 @@
-# Architecture Decision Records (ADRs)
+# Architecture & Design Decisions
 
-- **DEC-001**: Single Transaction App 794 with generic 16-status workflow.
-- **DEC-002**: Blank Space Field (`SPACE_HEADER`) as the primary DOM anchor for Desktop Record Custom UI.
-- **DEC-003**: Deterministic `Record_Key` format `{Fiscal_Year}-{Employee_Code}` preserving leading zeroes.
-- **DEC-004**: Horizontal Spreadsheet Grid Layout (1 Objective = 1 Row) replacing vertical cards.
-- **DEC-005**: Dynamic Objective Count expanded from 2-4 to 2-10 items.
-- **DEC-006**: Mandatory Bilingual (Thai / English) across all user-facing UI components and error messages.
+## DEC-008 — Sequential Approval Levels and Multi-Approver Rules (ALL vs ANY)
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Context**: Approval workflows require supporting both sequential hierarchies (e.g. Trainee Manager -> Mentor Manager -> GM) and multi-approver consensus within a level.
+- **Decision**:
+  1. Decouple sequential `LEVEL` (Manager L1/L2, GM L1/L2) from intra-level `APPROVAL RULE` (`ALL`/`ANY`).
+  2. Set **`ALL` as the mandatory default** for all approval rules across Manager and GM levels.
+  3. Treat `ANY` as an intentional business exception.
+  4. Both Manager and GM adhere to the identical model.
+  5. Empty levels are automatically bypassed.
+
+## DEC-007 — Horizontal Spreadsheet Form Grid (Part A)
+- **Status**: ACTIVE
+
+## DEC-006 — Dual-Space UI Host Resolution Strategy
+- **Status**: ACTIVE
+
+## DEC-005 — 10-Item Objective Scalability
+- **Status**: ACTIVE
+
+## DEC-004 — Auto-Generated Record Key (FY-EmpCode)
+- **Status**: ACTIVE
+
+## DEC-003 — Pure Custom Inline Validation (return false)
+- **Status**: ACTIVE
+
+## DEC-002 — Event-Driven Create Mode Lifecycle (NEW_RECORD)
+- **Status**: ACTIVE
+
+## DEC-001 — Isolated Sandbox Architecture
+- **Status**: ACTIVE

@@ -16,16 +16,17 @@ description: Development conventions, APIs, and customization guidelines for Kin
   2. Fallback: `kintone.app.record.getHeaderMenuSpaceElement()`
   3. Null-safe return without throwing exceptions.
 
-## 3. Create Mode vs Workflow Stage Resolution Pattern
-- **Create Show (`app.record.create.show`)**:
-  - Is an unsaved record without Kintone Process Management status.
-  - DO NOT read `record.Status.value`.
-  - Maps to `BUSINESS_STAGES.NEW_RECORD` (Client/UI State).
-  - Step 1: Employee identification & App 53 lookup.
-  - Step 2: System profile & Hoshin snapshot.
-  - Step 3: Part A objective setup (unlocked only after verification).
-- **Edit / Detail Show (`app.record.edit.show`, `app.record.detail.show`)**:
-  - Saved records only -> read `record.Status.value` and map against `STATUS_TO_STAGE_MAP`.
+## 3. Sequential Approval & Multi-Approver Standards
+- **Model**:
+  - `Manager_Level1_Approvers` (`USER_SELECT`), `Manager_Level1_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
+  - `Manager_Level2_Approvers` (`USER_SELECT`), `Manager_Level2_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
+  - `GM_Level1_Approvers` (`USER_SELECT`), `GM_Level1_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
+  - `GM_Level2_Approvers` (`USER_SELECT`), `GM_Level2_Approval_Rule` (`DROP_DOWN`, default: `ALL`)
+- **Key Rules**:
+  - `Level != Number of Approvers`.
+  - `ALL != Sequential`.
+  - `Empty Level = Skip Level`.
+  - NEVER create hardcoded `Manager_User_1`/`Manager_User_2` fields to solve multi-approver requirements.
 
 ## 4. Custom UI Validation Pattern (No Native Error Banner)
 - **NEVER use `event.error`** for standard business/field validation in Custom UI.
