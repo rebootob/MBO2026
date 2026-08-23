@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-015 — Hoshin Governance, Versioning & Human Publication Model
+- **Date**: 2026-08-23
+- **Status**: ACTIVE
+- **Decision**:
+  1. App 53 Hoshin fields are legacy references and NOT the authoritative Current-Year Source of Truth.
+  2. MBO V2 establishes a dedicated MBO Hoshin Master (App 799) with Fiscal Year scoping, Scope keys (`SECTION`, `DEPARTMENT`), Versioning, and Publication states (`DRAFT`, `PUBLISHED`, `SUPERSEDED`).
+  3. Mandatory Human Confirmation: Every fiscal year requires explicit human confirmation/publication by authorized owners (zero silent fallback to old years).
+  4. Objective Setting Submission Gate: Draft preparation and Carry Forward are permitted, but Objective Submission is strictly blocked until Current FY Hoshin is `PUBLISHED`.
+  5. Immutable Snapshot: MBO records capture Hoshin version snapshots upon approval; post-approval Hoshin changes never alter historical records automatically.
+
 ## DEC-014 — Annual Plan Carry Forward Architecture & Strict Allow List Model
 - **Date**: 2026-08-23
 - **Status**: ACTIVE

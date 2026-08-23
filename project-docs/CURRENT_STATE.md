@@ -1,6 +1,6 @@
 # Current Project State
 
-- **Updated At**: 2026-08-23T23:30:00+07:00
+- **Updated At**: 2026-08-23T23:45:00+07:00
 - **Current Phase**: CROSS-APP LEGACY DISCOVERY & V2 ARCHITECTURE REDESIGN
 - **Current Branch**: `develop`
 - **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
@@ -12,4 +12,5 @@
   - Evaluation Weights: Staff/Japan (70/30), All Management & Exec (50/50)
   - COCE Compliance: Evaluated = YES, Included_In_Score = NO
 - **Annual Evaluation Cycle Architecture Confirmed**: Single Long-Lived App Core, Zero Year Hardcoding.
-- **Annual Plan Carry Forward Architecture Confirmed**: Strict Whitelist Model, Never Clone Record, Fresh Configuration Supremacy, 20 Test Cases Designed.
+- **Annual Plan Carry Forward Architecture Confirmed**: Strict Whitelist Model, Never Clone Record, Fresh Configuration Supremacy.
+- **Hoshin Governance & Versioning Architecture Confirmed**: Dedicated MBO Hoshin Master (App 799), Fiscal Year Scoping, Mandatory Human Confirmation, Submission Gating.
