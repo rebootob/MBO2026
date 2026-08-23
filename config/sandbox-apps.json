@@ -1,7 +1,7 @@
 {
-  "mboV2AppId": null,
-  "routingMasterAppId": null,
-  "createdAt": null,
+  "mboV2AppId": 794,
+  "routingMasterAppId": 795,
+  "createdAt": "2026-08-23T09:55:19Z",
   "purpose": {
     "mboV2": "Main MBO transaction application",
     "routingMaster": "Section-to-user routing configuration"

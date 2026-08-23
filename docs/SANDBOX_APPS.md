@@ -1,5 +1,8 @@
 # Sandbox Apps Registry
 
-No sandbox applications have been created. Creation is blocked pending a successful read-only Kintone authentication test.
+| App | App ID | Created at (UTC) | Purpose |
+| --- | ---: | --- | --- |
+| MBO V2 Sandbox | 794 | 2026-08-23T09:55:19Z | Main MBO transaction application |
+| MBO Routing Master Sandbox | 795 | 2026-08-23T09:55:19Z | Section-to-user routing configuration |
 
-When created, their IDs, names, UTC creation timestamps, and purposes must be recorded in `config/sandbox-apps.json` and `config/project-state.json` before any write operation.
+The IDs are registered in `config/sandbox-apps.json` and `config/project-state.json`. Every subsequent Kintone write must pass `assertSandboxWriteTarget`.

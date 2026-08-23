@@ -3,9 +3,9 @@
   "environment": "sandbox",
   "protectedApps": [53, 283],
   "sandboxApps": {
-    "mbo": null,
-    "routing": null
+    "mbo": 794,
+    "routing": 795
   },
-  "lastDeployment": null,
+  "lastDeployment": "2026-08-23T09:55:19Z",
   "gitRepository": "https://github.com/rebootob/MBO2026.git"
 }

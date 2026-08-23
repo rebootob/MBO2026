@@ -19,3 +19,11 @@ test('blocks writes to an unregistered app', () => {
 test('allows writes to a registered sandbox app', () => {
   assert.equal(assertSandboxWriteTarget(900, registry), 900);
 });
+
+test('allows the registered MBO V2 Sandbox app', () => {
+  assert.equal(assertSandboxWriteTarget(794), 794);
+});
+
+test('allows the registered Routing Master Sandbox app', () => {
+  assert.equal(assertSandboxWriteTarget(795), 795);
+});

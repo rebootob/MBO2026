@@ -7,6 +7,9 @@
   "scripts": {
     "test": "node --test tests/sandbox-write-guard.test.js",
     "test:safety": "node --test tests/sandbox-write-guard.test.js",
-    "connection:test": "node scripts/kintone/connection-test.js"
+    "connection:test": "node --env-file-if-exists=.env.local scripts/kintone/connection-test.js",
+    "sandbox:create": "node --env-file-if-exists=.env.local scripts/kintone/create-sandbox-apps.js",
+    "sandbox:deploy": "node --env-file-if-exists=.env.local scripts/kintone/deploy-sandbox-apps.js",
+    "sandbox:smoke-test": "node --env-file-if-exists=.env.local scripts/kintone/smoke-test-sandbox-apps.js"
   }
 }
