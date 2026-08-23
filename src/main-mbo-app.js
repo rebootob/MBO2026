@@ -17,6 +17,8 @@ import { RoutingService } from './services/routing-service.js';
   const ROUTING_APP_ID = 795;
   const EMPLOYEE_APP_ID = 53;
 
+  let activeUiInstance = null;
+
   function getMboAppId() {
     return kintone.app.getId() || 794;
   }
@@ -135,6 +137,8 @@ import { RoutingService } from './services/routing-service.js';
       }
     });
 
+    activeUiInstance = ui;
+
     try {
       ui.render();
       hideAllNativeFields(record);
@@ -145,19 +149,31 @@ import { RoutingService } from './services/routing-service.js';
     return event;
   });
 
-  // Hook 2: Record Submit (Create & Edit)
+  // Hook 2: Record Submit (Create & Edit) -> Uses return false and Inline Errors
   kintone.events.on(['app.record.create.submit', 'app.record.edit.submit'], async function (event) {
     const record = event.record;
     const stage = getBusinessStage(record);
 
-    // 1. Build and validate deterministic Record Key
+    // 1. Sync custom UI values to record
+    if (activeUiInstance) {
+      activeUiInstance.syncFromDom();
+    }
+
+    // 2. Build and validate deterministic Record Key
     const fy = record.Fiscal_Year?.value || 'FY2026';
     const code = record.Employee_Code?.value || '';
     const recordKey = buildRecordKey(fy, code);
 
     if (!recordKey) {
-      event.error = 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและ Fiscal Year';
-      return event;
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors([{
+          field: 'Employee_Code',
+          messageTH: 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและรอบการประเมิน',
+          messageEN: 'Cannot generate Record Key. Please enter Employee Code and Fiscal Year.',
+          message: 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและรอบการประเมิน'
+        }]);
+      }
+      return false; // Cancel save without native top banner
     }
 
     if (!record.Record_Key) {
@@ -166,24 +182,37 @@ import { RoutingService } from './services/routing-service.js';
       record.Record_Key.value = recordKey;
     }
 
-    // 2. Duplicate Check Guard
+    // 3. Duplicate Check Guard
     try {
       const currentId = record.$id?.value;
       const query = `Record_Key = "${recordKey}" ${currentId ? `and $id != "${currentId}"` : ''}`;
       const duplicateRes = await kintoneApiWrapper.getRecords(getMboAppId(), query);
       if (duplicateRes.records && duplicateRes.records.length > 0) {
-        event.error = `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`;
-        return event;
+        if (activeUiInstance) {
+          activeUiInstance.showValidationErrors([{
+            field: 'Employee_Code',
+            messageTH: `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`,
+            messageEN: `Employee ID ${code} already has an MBO record for ${fy}. Duplicate creation is blocked.`,
+            message: `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`
+          }]);
+        }
+        return false; // Cancel save cleanly
       }
     } catch (err) {
       console.error('[MBO V2] Duplicate check error:', err);
     }
 
-    // 3. Stage Validation
+    // 4. Stage Business Rule Validation
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
-      event.error = validation.errors.join('\n');
-      return event;
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors(validation.fieldErrors);
+      }
+      return false; // Cancel submit: NO native top error banner, purely custom inline validation!
+    }
+
+    if (activeUiInstance) {
+      activeUiInstance.clearValidationErrors();
     }
 
     return event;
@@ -196,7 +225,9 @@ import { RoutingService } from './services/routing-service.js';
 
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
-      alert('⚠️ ไม่สามารถดำเนินการได้ เนื่องจากข้อมูลยังไม่ครบถ้วน:\n\n' + validation.errors.join('\n'));
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors(validation.fieldErrors);
+      }
       return false; // Cancel transition
     }
 

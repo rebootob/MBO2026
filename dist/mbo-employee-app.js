@@ -203,44 +203,75 @@ function getRecordUiHost(preferredSpaceId = 'SPACE_HEADER') {
 
 
   /**
- * Business Rule Validation Engine (Bilingual Thai / English)
+ * Business Rule Validation Engine (Bilingual Thai / English + Field-level errors)
  */
 
 
 
 class ValidationEngine {
+  /**
+   * Validate record against stage business rules
+   * @param {Object} record Kintone record object
+   * @param {string} stage Current business stage
+   * @returns {Object} { isValid: boolean, fieldErrors: Array<{field: string, messageTH: string, messageEN: string, message: string}>, errors: string[] }
+   */
   static validate(record, stage) {
-    const errors = [];
+    const fieldErrors = [];
 
     if (!record) {
-      errors.push('ไม่พบข้อมูล Record\nRecord data not found');
-      return { isValid: false, errors };
+      fieldErrors.push({
+        field: 'RECORD',
+        messageTH: 'ไม่พบข้อมูล Record',
+        messageEN: 'Record data not found',
+        message: 'ไม่พบข้อมูล Record\nRecord data not found'
+      });
+      return this._formatResult(fieldErrors);
     }
 
     if (stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
-      errors.push('ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)\nUnable to identify workflow stage. Please contact HR / Administrator.');
-      return { isValid: false, errors };
+      fieldErrors.push({
+        field: 'SYSTEM',
+        messageTH: 'ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)',
+        messageEN: 'Unable to identify workflow stage. Please contact HR / Administrator.',
+        message: 'ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)\nUnable to identify workflow stage. Please contact HR / Administrator.'
+      });
+      return this._formatResult(fieldErrors);
     }
 
     if (stage === BUSINESS_STAGES.READ_ONLY) {
-      return { isValid: true, errors: [] };
+      return this._formatResult([]);
     }
 
     // Common checks
     const empCode = this._val(record.Employee_Code);
     if (!empCode) {
-      errors.push('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
+      fieldErrors.push({
+        field: 'Employee_Code',
+        messageTH: 'กรุณาระบุรหัสพนักงาน',
+        messageEN: 'Please enter Employee Code',
+        message: 'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code'
+      });
     }
 
     const fy = this._val(record.Fiscal_Year);
     if (!fy) {
-      errors.push('กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year');
+      fieldErrors.push({
+        field: 'Fiscal_Year',
+        messageTH: 'กรุณาระบุรอบการประเมิน',
+        messageEN: 'Please enter Fiscal Year',
+        message: 'กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year'
+      });
     }
 
     const objCount = parseInt(this._val(record.Objective_Count) || '4', 10);
     if (isNaN(objCount) || objCount < 2 || objCount > 10) {
-      errors.push('จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ\nObjective Count must be between 2 and 10');
-      return { isValid: false, errors };
+      fieldErrors.push({
+        field: 'Objective_Count',
+        messageTH: 'จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ',
+        messageEN: 'Objective Count must be between 2 and 10',
+        message: 'จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ\nObjective Count must be between 2 and 10'
+      });
+      return this._formatResult(fieldErrors);
     }
 
     // Stage 1: OBJECTIVE_INPUT
@@ -256,23 +287,48 @@ class ValidationEngine {
         const diff = parseInt(diffVal, 10);
 
         if (!obj) {
-          errors.push(`กรุณาระบุ Objective ข้อที่ ${i}\nPlease enter Objective ${i}`);
+          fieldErrors.push({
+            field: `Objective_${i}`,
+            messageTH: `กรุณาระบุเป้าหมายข้อที่ ${i}`,
+            messageEN: `Please enter Objective ${i}`,
+            message: `กรุณาระบุเป้าหมายข้อที่ ${i}\nPlease enter Objective ${i}`
+          });
         }
         if (!plan) {
-          errors.push(`กรุณาระบุ Action Plan ข้อที่ ${i}\nPlease enter Action Plan ${i}`);
+          fieldErrors.push({
+            field: `Action_Plan_${i}`,
+            messageTH: `กรุณาระบุแผนปฏิบัติการข้อที่ ${i}`,
+            messageEN: `Please enter Action Plan ${i}`,
+            message: `กรุณาระบุแผนปฏิบัติการข้อที่ ${i}\nPlease enter Action Plan ${i}`
+          });
         }
         if (!weightVal || isNaN(weight) || weight <= 0 || weight > 100) {
-          errors.push(`กรุณาระบุ Weight ข้อที่ ${i} (1 - 100%)\nPlease enter Weight ${i} (1 - 100%)`);
+          fieldErrors.push({
+            field: `Weight_${i}`,
+            messageTH: `กรุณาระบุน้ำหนักข้อที่ ${i} (1 - 100%)`,
+            messageEN: `Please enter Weight ${i} (1 - 100%)`,
+            message: `กรุณาระบุน้ำหนักข้อที่ ${i} (1 - 100%)\nPlease enter Weight ${i} (1 - 100%)`
+          });
         } else {
           totalWeight += weight;
         }
         if (!diffVal || isNaN(diff) || diff < 1 || diff > 4) {
-          errors.push(`กรุณาเลือกระดับ Difficulty Level ${i} ต้องอยู่ระหว่าง 1 ถึง 4\nPlease select Difficulty Level ${i} (1 - 4)`);
+          fieldErrors.push({
+            field: `Difficulty_${i}`,
+            messageTH: `กรุณาเลือกระดับความยากข้อที่ ${i} (1 - 4)`,
+            messageEN: `Please select Difficulty Level ${i} (1 - 4)`,
+            message: `กรุณาเลือกระดับความยากข้อที่ ${i} (1 - 4)\nPlease select Difficulty Level ${i} (1 - 4)`
+          });
         }
       }
 
       if (Math.round(totalWeight) !== 100) {
-        errors.push(`ผลรวม Weight ต้องเท่ากับ 100% (ปัจจุบันคำนวณได้ ${totalWeight}%)\nTotal Weight must equal 100% (Currently ${totalWeight}%)`);
+        fieldErrors.push({
+          field: 'Total_Weight',
+          messageTH: `ผลรวมน้ำหนักต้องเท่ากับ 100% (ปัจจุบันได้ ${totalWeight}%)`,
+          messageEN: `Total Weight must equal 100% (Currently ${totalWeight}%)`,
+          message: `ผลรวมน้ำหนักต้องเท่ากับ 100% (ปัจจุบันได้ ${totalWeight}%)\nTotal Weight must equal 100% (Currently ${totalWeight}%)`
+        });
       }
     }
 
@@ -282,7 +338,12 @@ class ValidationEngine {
         const progVal = this._val(record[`Progress_Percent_${i}`]);
         const prog = parseFloat(progVal || '0');
         if (progVal === '' || isNaN(prog) || prog < 0 || prog > 100) {
-          errors.push(`กรุณาระบุ Progress % ${i} ระหว่าง 0 ถึง 100%\nPlease enter Progress % ${i} (0 - 100%)`);
+          fieldErrors.push({
+            field: `Progress_Percent_${i}`,
+            messageTH: `กรุณาระบุความคืบหน้า % ข้อที่ ${i} (0 - 100%)`,
+            messageEN: `Please enter Progress % ${i} (0 - 100%)`,
+            message: `กรุณาระบุความคืบหน้า % ข้อที่ ${i} (0 - 100%)\nPlease enter Progress % ${i} (0 - 100%)`
+          });
         }
       }
     }
@@ -295,17 +356,32 @@ class ValidationEngine {
         const ach = parseInt(achVal, 10);
 
         if (!actual) {
-          errors.push(`กรุณาระบุ Actual Result ข้อที่ ${i}\nPlease enter Actual Result ${i}`);
+          fieldErrors.push({
+            field: `Actual_Result_${i}`,
+            messageTH: `กรุณาระบุผลการดำเนินงานจริงข้อที่ ${i}`,
+            messageEN: `Please enter Actual Result ${i}`,
+            message: `กรุณาระบุผลการดำเนินงานจริงข้อที่ ${i}\nPlease enter Actual Result ${i}`
+          });
         }
         if (!achVal || isNaN(ach) || ach < 1 || ach > 5) {
-          errors.push(`กรุณาเลือกระดับ Self Achievement ข้อที่ ${i} (1 - 5)\nPlease select Self Achievement ${i} (1 - 5)`);
+          fieldErrors.push({
+            field: `Self_Achievement_${i}`,
+            messageTH: `กรุณาเลือกระดับผลสำเร็จข้อที่ ${i} (1 - 5)`,
+            messageEN: `Please select Self Achievement ${i} (1 - 5)`,
+            message: `กรุณาเลือกระดับผลสำเร็จข้อที่ ${i} (1 - 5)\nPlease select Self Achievement ${i} (1 - 5)`
+          });
         }
       }
     }
 
+    return this._formatResult(fieldErrors);
+  }
+
+  static _formatResult(fieldErrors) {
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: fieldErrors.length === 0,
+      fieldErrors: fieldErrors,
+      errors: fieldErrors.map(e => e.message)
     };
   }
 
@@ -442,6 +518,7 @@ class EmployeePartAUI {
     this.isCreate = options.isCreate || false;
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
+    this.currentErrors = [];
   }
 
   render() {
@@ -450,6 +527,7 @@ class EmployeePartAUI {
 
     const root = document.createElement('div');
     root.className = 'mbo-root';
+    this.root = root;
 
     if (this.stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
       root.appendChild(this._renderErrorBanner('ไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)<br/>Unable to identify workflow stage. Please contact HR / Administrator.'));
@@ -471,19 +549,147 @@ class EmployeePartAUI {
     // 3. Rating Guidelines Reference
     root.appendChild(this._renderGuidelines());
 
-    // 4. Hoshin Section (2 Columns Horizontal)
+    // 4. Custom Error Summary Area (Top of Table)
+    const errorSummaryContainer = document.createElement('div');
+    errorSummaryContainer.id = 'mbo-error-summary-anchor';
+    root.appendChild(errorSummaryContainer);
+
+    // 5. Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
-    // 5. Stage Navigation (Bilingual)
+    // 6. Stage Navigation (Bilingual)
     root.appendChild(this._renderStageNav());
 
-    // 6. Part A Spreadsheet Grid Table (1 Objective = 1 Row)
+    // 7. Part A Spreadsheet Grid Table (1 Objective = 1 Row)
     root.appendChild(this._renderSpreadsheetTable());
 
     this.container.appendChild(root);
     this._updateTotalWeightDisplay();
     this._refreshAllFieldHighlights(root);
     this._bindEvents(root);
+
+    if (this.currentErrors && this.currentErrors.length > 0) {
+      this._renderInlineErrors(this.currentErrors);
+    }
+  }
+
+  syncFromDom() {
+    if (!this.root) return;
+    this.root.querySelectorAll('.mbo-field').forEach(input => {
+      const code = input.dataset.code;
+      if (code) {
+        const val = input.value !== undefined ? input.value : '';
+        this._setVal(code, val);
+      }
+    });
+  }
+
+  showValidationErrors(fieldErrors = []) {
+    this.currentErrors = fieldErrors;
+    this._renderInlineErrors(fieldErrors);
+    this.focusFirstInvalidField(fieldErrors);
+  }
+
+  clearValidationErrors() {
+    this.currentErrors = [];
+    if (!this.root) return;
+    const summaryAnchor = this.root.querySelector('#mbo-error-summary-anchor');
+    if (summaryAnchor) summaryAnchor.innerHTML = '';
+    this.root.querySelectorAll('.mbo-field').forEach(input => {
+      this._refreshSingleFieldHighlight(input, this.root);
+    });
+  }
+
+  focusFirstInvalidField(fieldErrors = []) {
+    if (!this.root || !fieldErrors || fieldErrors.length === 0) return;
+    const firstField = fieldErrors[0].field;
+    if (!firstField) return;
+
+    if (firstField === 'Total_Weight') {
+      const weightBox = this.root.querySelector('#mbo-weight-summary-box');
+      if (weightBox) {
+        weightBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    const input = this.root.querySelector(`.mbo-field[data-code="${firstField}"]`);
+    if (input) {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      requestAnimationFrame(() => {
+        try {
+          input.focus();
+          if (typeof input.select === 'function') input.select();
+        } catch (e) {}
+      });
+    }
+  }
+
+  _renderInlineErrors(fieldErrors = []) {
+    if (!this.root) return;
+    const summaryAnchor = this.root.querySelector('#mbo-error-summary-anchor');
+    if (!summaryAnchor) return;
+
+    if (fieldErrors.length === 0) {
+      summaryAnchor.innerHTML = '';
+      return;
+    }
+
+    const errorCount = fieldErrors.length;
+    const summaryCard = document.createElement('div');
+    summaryCard.className = 'mbo-error-summary-card';
+    summaryCard.innerHTML = `
+      <div class="mbo-error-summary-header">
+        <span>⚠️ พบข้อมูลที่ต้องแก้ไข ${errorCount} รายการ / ${errorCount} items require correction</span>
+      </div>
+      <div class="mbo-error-summary-list">
+        ${fieldErrors.map((err, idx) => `
+          <button type="button" class="mbo-error-item-btn" data-field="${err.field}">
+            <span class="mbo-error-item-num">${idx + 1}</span>
+            <div class="mbo-error-item-text">
+              <div>${err.messageTH}</div>
+              <div class="en-sub">${err.messageEN}</div>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    // Click on summary item jumps to field
+    summaryCard.querySelectorAll('.mbo-error-item-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.field;
+        this.focusFirstInvalidField([{ field }]);
+      });
+    });
+
+    summaryAnchor.innerHTML = '';
+    summaryAnchor.appendChild(summaryCard);
+
+    // Apply red border & error message to each invalid field
+    fieldErrors.forEach(err => {
+      if (err.field === 'Total_Weight') {
+        const box = this.root.querySelector('#mbo-weight-summary-box');
+        if (box) box.className = 'mbo-weight-summary invalid';
+        return;
+      }
+
+      const input = this.root.querySelector(`.mbo-field[data-code="${err.field}"]`);
+      if (input) {
+        input.classList.remove('mbo-field-state-editable', 'mbo-field-state-required-empty');
+        input.classList.add('mbo-field-state-error');
+
+        const tagEl = this.root.querySelector(`.mbo-cell-tag[data-target="${err.field}"]`);
+        if (tagEl) {
+          tagEl.innerHTML = `
+            <span class="mbo-cell-error-msg">
+              ❌ ${err.messageTH}<br/>
+              <span style="opacity: 0.85; font-size: 11px;">${err.messageEN}</span>
+            </span>
+          `;
+        }
+      }
+    });
   }
 
   _renderErrorBanner(msg) {
@@ -985,6 +1191,13 @@ class EmployeePartAUI {
         const val = e.target.value;
         this._setVal(code, val);
         this.onFieldChange(code, val);
+
+        // Clear error for this field if corrected
+        if (this.currentErrors && this.currentErrors.length > 0) {
+          this.currentErrors = this.currentErrors.filter(err => err.field !== code);
+          this._renderInlineErrors(this.currentErrors);
+        }
+
         this._refreshSingleFieldHighlight(e.target, root);
 
         if (code.startsWith('Weight_')) {
@@ -1046,6 +1259,9 @@ class EmployeePartAUI {
     const val = input.value?.trim() || '';
     const isRequired = input.dataset.required === 'true';
 
+    // If currently in error state, keep it unless value changed or reset
+    const isErr = this.currentErrors && this.currentErrors.some(err => err.field === code);
+
     input.classList.remove(
       'mbo-field-state-editable',
       'mbo-field-state-required-empty',
@@ -1054,6 +1270,11 @@ class EmployeePartAUI {
     );
 
     const tagEl = root.querySelector(`.mbo-cell-tag[data-target="${code}"]`);
+
+    if (isErr) {
+      input.classList.add('mbo-field-state-error');
+      return;
+    }
 
     if (isReadonly) {
       input.classList.add('mbo-field-state-locked');
@@ -1135,6 +1356,8 @@ class EmployeePartAUI {
 
   const ROUTING_APP_ID = 795;
   const EMPLOYEE_APP_ID = 53;
+
+  let activeUiInstance = null;
 
   function getMboAppId() {
     return kintone.app.getId() || 794;
@@ -1254,6 +1477,8 @@ class EmployeePartAUI {
       }
     });
 
+    activeUiInstance = ui;
+
     try {
       ui.render();
       hideAllNativeFields(record);
@@ -1264,19 +1489,31 @@ class EmployeePartAUI {
     return event;
   });
 
-  // Hook 2: Record Submit (Create & Edit)
+  // Hook 2: Record Submit (Create & Edit) -> Uses return false and Inline Errors
   kintone.events.on(['app.record.create.submit', 'app.record.edit.submit'], async function (event) {
     const record = event.record;
     const stage = getBusinessStage(record);
 
-    // 1. Build and validate deterministic Record Key
+    // 1. Sync custom UI values to record
+    if (activeUiInstance) {
+      activeUiInstance.syncFromDom();
+    }
+
+    // 2. Build and validate deterministic Record Key
     const fy = record.Fiscal_Year?.value || 'FY2026';
     const code = record.Employee_Code?.value || '';
     const recordKey = buildRecordKey(fy, code);
 
     if (!recordKey) {
-      event.error = 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและ Fiscal Year';
-      return event;
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors([{
+          field: 'Employee_Code',
+          messageTH: 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและรอบการประเมิน',
+          messageEN: 'Cannot generate Record Key. Please enter Employee Code and Fiscal Year.',
+          message: 'ไม่สามารถสร้าง Record Key ได้ กรุณาระบุรหัสพนักงานและรอบการประเมิน'
+        }]);
+      }
+      return false; // Cancel save without native top banner
     }
 
     if (!record.Record_Key) {
@@ -1285,24 +1522,37 @@ class EmployeePartAUI {
       record.Record_Key.value = recordKey;
     }
 
-    // 2. Duplicate Check Guard
+    // 3. Duplicate Check Guard
     try {
       const currentId = record.$id?.value;
       const query = `Record_Key = "${recordKey}" ${currentId ? `and $id != "${currentId}"` : ''}`;
       const duplicateRes = await kintoneApiWrapper.getRecords(getMboAppId(), query);
       if (duplicateRes.records && duplicateRes.records.length > 0) {
-        event.error = `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`;
-        return event;
+        if (activeUiInstance) {
+          activeUiInstance.showValidationErrors([{
+            field: 'Employee_Code',
+            messageTH: `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`,
+            messageEN: `Employee ID ${code} already has an MBO record for ${fy}. Duplicate creation is blocked.`,
+            message: `พนักงานรหัส ${code} มี MBO สำหรับ ${fy} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้`
+          }]);
+        }
+        return false; // Cancel save cleanly
       }
     } catch (err) {
       console.error('[MBO V2] Duplicate check error:', err);
     }
 
-    // 3. Stage Validation
+    // 4. Stage Business Rule Validation
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
-      event.error = validation.errors.join('\n');
-      return event;
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors(validation.fieldErrors);
+      }
+      return false; // Cancel submit: NO native top error banner, purely custom inline validation!
+    }
+
+    if (activeUiInstance) {
+      activeUiInstance.clearValidationErrors();
     }
 
     return event;
@@ -1315,7 +1565,9 @@ class EmployeePartAUI {
 
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
-      alert('⚠️ ไม่สามารถดำเนินการได้ เนื่องจากข้อมูลยังไม่ครบถ้วน:\n\n' + validation.errors.join('\n'));
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors(validation.fieldErrors);
+      }
       return false; // Cancel transition
     }
 

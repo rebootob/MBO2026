@@ -14,6 +14,7 @@ export class EmployeePartAUI {
     this.isCreate = options.isCreate || false;
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
+    this.currentErrors = [];
   }
 
   render() {
@@ -22,6 +23,7 @@ export class EmployeePartAUI {
 
     const root = document.createElement('div');
     root.className = 'mbo-root';
+    this.root = root;
 
     if (this.stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
       root.appendChild(this._renderErrorBanner('ไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)<br/>Unable to identify workflow stage. Please contact HR / Administrator.'));
@@ -43,19 +45,147 @@ export class EmployeePartAUI {
     // 3. Rating Guidelines Reference
     root.appendChild(this._renderGuidelines());
 
-    // 4. Hoshin Section (2 Columns Horizontal)
+    // 4. Custom Error Summary Area (Top of Table)
+    const errorSummaryContainer = document.createElement('div');
+    errorSummaryContainer.id = 'mbo-error-summary-anchor';
+    root.appendChild(errorSummaryContainer);
+
+    // 5. Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
-    // 5. Stage Navigation (Bilingual)
+    // 6. Stage Navigation (Bilingual)
     root.appendChild(this._renderStageNav());
 
-    // 6. Part A Spreadsheet Grid Table (1 Objective = 1 Row)
+    // 7. Part A Spreadsheet Grid Table (1 Objective = 1 Row)
     root.appendChild(this._renderSpreadsheetTable());
 
     this.container.appendChild(root);
     this._updateTotalWeightDisplay();
     this._refreshAllFieldHighlights(root);
     this._bindEvents(root);
+
+    if (this.currentErrors && this.currentErrors.length > 0) {
+      this._renderInlineErrors(this.currentErrors);
+    }
+  }
+
+  syncFromDom() {
+    if (!this.root) return;
+    this.root.querySelectorAll('.mbo-field').forEach(input => {
+      const code = input.dataset.code;
+      if (code) {
+        const val = input.value !== undefined ? input.value : '';
+        this._setVal(code, val);
+      }
+    });
+  }
+
+  showValidationErrors(fieldErrors = []) {
+    this.currentErrors = fieldErrors;
+    this._renderInlineErrors(fieldErrors);
+    this.focusFirstInvalidField(fieldErrors);
+  }
+
+  clearValidationErrors() {
+    this.currentErrors = [];
+    if (!this.root) return;
+    const summaryAnchor = this.root.querySelector('#mbo-error-summary-anchor');
+    if (summaryAnchor) summaryAnchor.innerHTML = '';
+    this.root.querySelectorAll('.mbo-field').forEach(input => {
+      this._refreshSingleFieldHighlight(input, this.root);
+    });
+  }
+
+  focusFirstInvalidField(fieldErrors = []) {
+    if (!this.root || !fieldErrors || fieldErrors.length === 0) return;
+    const firstField = fieldErrors[0].field;
+    if (!firstField) return;
+
+    if (firstField === 'Total_Weight') {
+      const weightBox = this.root.querySelector('#mbo-weight-summary-box');
+      if (weightBox) {
+        weightBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    const input = this.root.querySelector(`.mbo-field[data-code="${firstField}"]`);
+    if (input) {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      requestAnimationFrame(() => {
+        try {
+          input.focus();
+          if (typeof input.select === 'function') input.select();
+        } catch (e) {}
+      });
+    }
+  }
+
+  _renderInlineErrors(fieldErrors = []) {
+    if (!this.root) return;
+    const summaryAnchor = this.root.querySelector('#mbo-error-summary-anchor');
+    if (!summaryAnchor) return;
+
+    if (fieldErrors.length === 0) {
+      summaryAnchor.innerHTML = '';
+      return;
+    }
+
+    const errorCount = fieldErrors.length;
+    const summaryCard = document.createElement('div');
+    summaryCard.className = 'mbo-error-summary-card';
+    summaryCard.innerHTML = `
+      <div class="mbo-error-summary-header">
+        <span>⚠️ พบข้อมูลที่ต้องแก้ไข ${errorCount} รายการ / ${errorCount} items require correction</span>
+      </div>
+      <div class="mbo-error-summary-list">
+        ${fieldErrors.map((err, idx) => `
+          <button type="button" class="mbo-error-item-btn" data-field="${err.field}">
+            <span class="mbo-error-item-num">${idx + 1}</span>
+            <div class="mbo-error-item-text">
+              <div>${err.messageTH}</div>
+              <div class="en-sub">${err.messageEN}</div>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    // Click on summary item jumps to field
+    summaryCard.querySelectorAll('.mbo-error-item-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.field;
+        this.focusFirstInvalidField([{ field }]);
+      });
+    });
+
+    summaryAnchor.innerHTML = '';
+    summaryAnchor.appendChild(summaryCard);
+
+    // Apply red border & error message to each invalid field
+    fieldErrors.forEach(err => {
+      if (err.field === 'Total_Weight') {
+        const box = this.root.querySelector('#mbo-weight-summary-box');
+        if (box) box.className = 'mbo-weight-summary invalid';
+        return;
+      }
+
+      const input = this.root.querySelector(`.mbo-field[data-code="${err.field}"]`);
+      if (input) {
+        input.classList.remove('mbo-field-state-editable', 'mbo-field-state-required-empty');
+        input.classList.add('mbo-field-state-error');
+
+        const tagEl = this.root.querySelector(`.mbo-cell-tag[data-target="${err.field}"]`);
+        if (tagEl) {
+          tagEl.innerHTML = `
+            <span class="mbo-cell-error-msg">
+              ❌ ${err.messageTH}<br/>
+              <span style="opacity: 0.85; font-size: 11px;">${err.messageEN}</span>
+            </span>
+          `;
+        }
+      }
+    });
   }
 
   _renderErrorBanner(msg) {
@@ -557,6 +687,13 @@ export class EmployeePartAUI {
         const val = e.target.value;
         this._setVal(code, val);
         this.onFieldChange(code, val);
+
+        // Clear error for this field if corrected
+        if (this.currentErrors && this.currentErrors.length > 0) {
+          this.currentErrors = this.currentErrors.filter(err => err.field !== code);
+          this._renderInlineErrors(this.currentErrors);
+        }
+
         this._refreshSingleFieldHighlight(e.target, root);
 
         if (code.startsWith('Weight_')) {
@@ -618,6 +755,9 @@ export class EmployeePartAUI {
     const val = input.value?.trim() || '';
     const isRequired = input.dataset.required === 'true';
 
+    // If currently in error state, keep it unless value changed or reset
+    const isErr = this.currentErrors && this.currentErrors.some(err => err.field === code);
+
     input.classList.remove(
       'mbo-field-state-editable',
       'mbo-field-state-required-empty',
@@ -626,6 +766,11 @@ export class EmployeePartAUI {
     );
 
     const tagEl = root.querySelector(`.mbo-cell-tag[data-target="${code}"]`);
+
+    if (isErr) {
+      input.classList.add('mbo-field-state-error');
+      return;
+    }
 
     if (isReadonly) {
       input.classList.add('mbo-field-state-locked');

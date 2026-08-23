@@ -22,3 +22,13 @@ description: Development conventions, APIs, and customization guidelines for Kin
 3. Bind event listeners and dynamic state calculation.
 4. Synchronize values with Kintone internal record state via `kintone.app.record.set(...)`.
 5. Only hide native custom fields AFTER custom UI renders successfully (Fail-Safe).
+
+## 4. Custom UI Validation Pattern (No Native Error Banner)
+- **NEVER use `event.error`** for standard business/field validation in Custom UI. Setting `event.error` spawns Kintone's giant native top red banner.
+- **Always `return false`**: In `app.record.create.submit` and `app.record.edit.submit`, if validation fails:
+  1. Sync DOM values to record (`ui.syncFromDom()`).
+  2. Run `ValidationEngine.validate(record, stage)`.
+  3. Render Custom Error Summary card inside Custom UI (`ui.showValidationErrors(...)`).
+  4. Highlight invalid fields with red borders (`.mbo-field-state-error`) and show bilingual messages under the cells (`.mbo-cell-tag`).
+  5. Jump (`scrollIntoView`) and focus (`input.focus()`) on the first invalid field.
+  6. Return `false` to cancel save cleanly without native top banner.

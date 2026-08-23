@@ -1,42 +1,73 @@
 /**
- * Business Rule Validation Engine (Bilingual Thai / English)
+ * Business Rule Validation Engine (Bilingual Thai / English + Field-level errors)
  */
 
 import { BUSINESS_STAGES } from '../config/constants.js';
 
 export class ValidationEngine {
+  /**
+   * Validate record against stage business rules
+   * @param {Object} record Kintone record object
+   * @param {string} stage Current business stage
+   * @returns {Object} { isValid: boolean, fieldErrors: Array<{field: string, messageTH: string, messageEN: string, message: string}>, errors: string[] }
+   */
   static validate(record, stage) {
-    const errors = [];
+    const fieldErrors = [];
 
     if (!record) {
-      errors.push('ไม่พบข้อมูล Record\nRecord data not found');
-      return { isValid: false, errors };
+      fieldErrors.push({
+        field: 'RECORD',
+        messageTH: 'ไม่พบข้อมูล Record',
+        messageEN: 'Record data not found',
+        message: 'ไม่พบข้อมูล Record\nRecord data not found'
+      });
+      return this._formatResult(fieldErrors);
     }
 
     if (stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
-      errors.push('ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)\nUnable to identify workflow stage. Please contact HR / Administrator.');
-      return { isValid: false, errors };
+      fieldErrors.push({
+        field: 'SYSTEM',
+        messageTH: 'ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)',
+        messageEN: 'Unable to identify workflow stage. Please contact HR / Administrator.',
+        message: 'ระบบไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)\nUnable to identify workflow stage. Please contact HR / Administrator.'
+      });
+      return this._formatResult(fieldErrors);
     }
 
     if (stage === BUSINESS_STAGES.READ_ONLY) {
-      return { isValid: true, errors: [] };
+      return this._formatResult([]);
     }
 
     // Common checks
     const empCode = this._val(record.Employee_Code);
     if (!empCode) {
-      errors.push('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
+      fieldErrors.push({
+        field: 'Employee_Code',
+        messageTH: 'กรุณาระบุรหัสพนักงาน',
+        messageEN: 'Please enter Employee Code',
+        message: 'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code'
+      });
     }
 
     const fy = this._val(record.Fiscal_Year);
     if (!fy) {
-      errors.push('กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year');
+      fieldErrors.push({
+        field: 'Fiscal_Year',
+        messageTH: 'กรุณาระบุรอบการประเมิน',
+        messageEN: 'Please enter Fiscal Year',
+        message: 'กรุณาระบุรอบการประเมิน\nPlease enter Fiscal Year'
+      });
     }
 
     const objCount = parseInt(this._val(record.Objective_Count) || '4', 10);
     if (isNaN(objCount) || objCount < 2 || objCount > 10) {
-      errors.push('จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ\nObjective Count must be between 2 and 10');
-      return { isValid: false, errors };
+      fieldErrors.push({
+        field: 'Objective_Count',
+        messageTH: 'จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ',
+        messageEN: 'Objective Count must be between 2 and 10',
+        message: 'จำนวน Objective ต้องอยู่ระหว่าง 2 ถึง 10 ข้อ\nObjective Count must be between 2 and 10'
+      });
+      return this._formatResult(fieldErrors);
     }
 
     // Stage 1: OBJECTIVE_INPUT
@@ -52,23 +83,48 @@ export class ValidationEngine {
         const diff = parseInt(diffVal, 10);
 
         if (!obj) {
-          errors.push(`กรุณาระบุ Objective ข้อที่ ${i}\nPlease enter Objective ${i}`);
+          fieldErrors.push({
+            field: `Objective_${i}`,
+            messageTH: `กรุณาระบุเป้าหมายข้อที่ ${i}`,
+            messageEN: `Please enter Objective ${i}`,
+            message: `กรุณาระบุเป้าหมายข้อที่ ${i}\nPlease enter Objective ${i}`
+          });
         }
         if (!plan) {
-          errors.push(`กรุณาระบุ Action Plan ข้อที่ ${i}\nPlease enter Action Plan ${i}`);
+          fieldErrors.push({
+            field: `Action_Plan_${i}`,
+            messageTH: `กรุณาระบุแผนปฏิบัติการข้อที่ ${i}`,
+            messageEN: `Please enter Action Plan ${i}`,
+            message: `กรุณาระบุแผนปฏิบัติการข้อที่ ${i}\nPlease enter Action Plan ${i}`
+          });
         }
         if (!weightVal || isNaN(weight) || weight <= 0 || weight > 100) {
-          errors.push(`กรุณาระบุ Weight ข้อที่ ${i} (1 - 100%)\nPlease enter Weight ${i} (1 - 100%)`);
+          fieldErrors.push({
+            field: `Weight_${i}`,
+            messageTH: `กรุณาระบุน้ำหนักข้อที่ ${i} (1 - 100%)`,
+            messageEN: `Please enter Weight ${i} (1 - 100%)`,
+            message: `กรุณาระบุน้ำหนักข้อที่ ${i} (1 - 100%)\nPlease enter Weight ${i} (1 - 100%)`
+          });
         } else {
           totalWeight += weight;
         }
         if (!diffVal || isNaN(diff) || diff < 1 || diff > 4) {
-          errors.push(`กรุณาเลือกระดับ Difficulty Level ${i} ต้องอยู่ระหว่าง 1 ถึง 4\nPlease select Difficulty Level ${i} (1 - 4)`);
+          fieldErrors.push({
+            field: `Difficulty_${i}`,
+            messageTH: `กรุณาเลือกระดับความยากข้อที่ ${i} (1 - 4)`,
+            messageEN: `Please select Difficulty Level ${i} (1 - 4)`,
+            message: `กรุณาเลือกระดับความยากข้อที่ ${i} (1 - 4)\nPlease select Difficulty Level ${i} (1 - 4)`
+          });
         }
       }
 
       if (Math.round(totalWeight) !== 100) {
-        errors.push(`ผลรวม Weight ต้องเท่ากับ 100% (ปัจจุบันคำนวณได้ ${totalWeight}%)\nTotal Weight must equal 100% (Currently ${totalWeight}%)`);
+        fieldErrors.push({
+          field: 'Total_Weight',
+          messageTH: `ผลรวมน้ำหนักต้องเท่ากับ 100% (ปัจจุบันได้ ${totalWeight}%)`,
+          messageEN: `Total Weight must equal 100% (Currently ${totalWeight}%)`,
+          message: `ผลรวมน้ำหนักต้องเท่ากับ 100% (ปัจจุบันได้ ${totalWeight}%)\nTotal Weight must equal 100% (Currently ${totalWeight}%)`
+        });
       }
     }
 
@@ -78,7 +134,12 @@ export class ValidationEngine {
         const progVal = this._val(record[`Progress_Percent_${i}`]);
         const prog = parseFloat(progVal || '0');
         if (progVal === '' || isNaN(prog) || prog < 0 || prog > 100) {
-          errors.push(`กรุณาระบุ Progress % ${i} ระหว่าง 0 ถึง 100%\nPlease enter Progress % ${i} (0 - 100%)`);
+          fieldErrors.push({
+            field: `Progress_Percent_${i}`,
+            messageTH: `กรุณาระบุความคืบหน้า % ข้อที่ ${i} (0 - 100%)`,
+            messageEN: `Please enter Progress % ${i} (0 - 100%)`,
+            message: `กรุณาระบุความคืบหน้า % ข้อที่ ${i} (0 - 100%)\nPlease enter Progress % ${i} (0 - 100%)`
+          });
         }
       }
     }
@@ -91,17 +152,32 @@ export class ValidationEngine {
         const ach = parseInt(achVal, 10);
 
         if (!actual) {
-          errors.push(`กรุณาระบุ Actual Result ข้อที่ ${i}\nPlease enter Actual Result ${i}`);
+          fieldErrors.push({
+            field: `Actual_Result_${i}`,
+            messageTH: `กรุณาระบุผลการดำเนินงานจริงข้อที่ ${i}`,
+            messageEN: `Please enter Actual Result ${i}`,
+            message: `กรุณาระบุผลการดำเนินงานจริงข้อที่ ${i}\nPlease enter Actual Result ${i}`
+          });
         }
         if (!achVal || isNaN(ach) || ach < 1 || ach > 5) {
-          errors.push(`กรุณาเลือกระดับ Self Achievement ข้อที่ ${i} (1 - 5)\nPlease select Self Achievement ${i} (1 - 5)`);
+          fieldErrors.push({
+            field: `Self_Achievement_${i}`,
+            messageTH: `กรุณาเลือกระดับผลสำเร็จข้อที่ ${i} (1 - 5)`,
+            messageEN: `Please select Self Achievement ${i} (1 - 5)`,
+            message: `กรุณาเลือกระดับผลสำเร็จข้อที่ ${i} (1 - 5)\nPlease select Self Achievement ${i} (1 - 5)`
+          });
         }
       }
     }
 
+    return this._formatResult(fieldErrors);
+  }
+
+  static _formatResult(fieldErrors) {
     return {
-      isValid: errors.length === 0,
-      errors
+      isValid: fieldErrors.length === 0,
+      fieldErrors: fieldErrors,
+      errors: fieldErrors.map(e => e.message)
     };
   }
 

@@ -4,6 +4,7 @@
 - App 794 MBO V2 Sandbox is fully functional for Employee Part A.
 - Horizontal Spreadsheet Table (1 Objective = 1 Row) with support for 2 to 10 objectives.
 - Full bilingual UI (Thai / English) and field state highlights.
+- Replaced native top error banner with inline cell validation, custom error summary card, auto-jump & focus, and `return false` submit cancellation.
 - 27 unit and regression tests passing.
 
 ## 2. Key App IDs

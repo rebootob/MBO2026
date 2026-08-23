@@ -11,3 +11,9 @@
 - `🔵 ข้อมูลจากระบบ / System Data`: `#f0f9ff`, border `#0ea5e9`
 - `⚪ ระบบล็อก / Locked`: `#f8fafc`, border `#cbd5e1`
 - `🔴 ข้อมูลไม่ถูกต้อง / Invalid`: `#fef2f2`, border `#ef4444`
+
+## 3. Inline Validation & Error Summary UX
+- **No Native Top Banner**: Validation cancels save via `return false` in Kintone submit event.
+- **Custom Error Summary Card**: Placed above the grid, lists all invalid fields with numbered bilingual descriptions.
+- **Clickable Errors**: Clicking any error item in the summary automatically jumps (`scrollIntoView`) and focuses on the invalid cell.
+- **Instant Resolution**: Typing into or correcting an invalid field removes the red error state immediately in real time.
