@@ -1,35 +1,36 @@
 /**
- * Routing Service - Section to User verification from App 795 (Routing Master)
+ * Routing Service - App 795 Routing Master Validator
  */
 
 export class RoutingService {
   /**
-   * Get routing rule for a section and validate requester access
+   * Validate current user access against Section Routing in App 795
+   * @param {number} routingAppId
+   * @param {string} sectionCode
+   * @param {string} loginUserCode
+   * @param {Object} kintoneApi
+   * @returns {Object} { Requester_User, First_Manager_User, Manager_User, GM_User }
    */
   static async validateRequesterAccess(routingAppId, sectionCode, loginUserCode, kintoneApi) {
-    const cleanSection = String(sectionCode || '').trim().toUpperCase();
+    const cleanSection = String(sectionCode || '').trim();
     if (!cleanSection) {
-      throw new Error('ไม่พบข้อมูล Section ของพนักงาน');
+      throw new Error('ไม่พบข้อมูล Section ของพนักงาน กรุณาตรวจสอบ Employee Master (App 53)\nEmployee section is missing in Employee Master.');
     }
 
-    const query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 1`;
+    const query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 2`;
     const resp = await kintoneApi.getRecords(routingAppId, query);
     const records = resp?.records || [];
 
     if (records.length === 0) {
-      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${cleanSection} ใน Routing Master (App ${routingAppId})`);
+      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${cleanSection} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nRouting configuration for section ${cleanSection} was not found in Routing Master.`);
     }
 
     const route = records[0];
-    const requesterUsers = route.Requester_User?.value || [];
-    const allowedUserCodes = requesterUsers.map(u => u.code.toLowerCase());
+    const requesters = route.Requester_User?.value || [];
+    const isAuthorized = requesters.some(u => u.code === loginUserCode) || loginUserCode === 'Administrator' || loginUserCode === 'admin-form';
 
-    // Check if login user is allowed requester or admin/hr
-    const isAllowed = allowedUserCodes.includes(loginUserCode.toLowerCase()) ||
-                      ['admin', 'admin-form', 'hr'].includes(loginUserCode.toLowerCase());
-
-    if (!isAllowed) {
-      throw new Error('บัญชีที่ใช้อยู่ไม่มีสิทธิ์จัดทำ MBO สำหรับพนักงาน Section นี้ กรุณาตรวจสอบรหัสพนักงาน');
+    if (!isAuthorized) {
+      throw new Error(`บัญชีนี้ (${loginUserCode}) ไม่มีสิทธิ์สร้าง MBO สำหรับพนักงานใน Section ${cleanSection}\nThis account (${loginUserCode}) is not authorized to create an MBO for section ${cleanSection}.`);
     }
 
     return {

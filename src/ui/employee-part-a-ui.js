@@ -813,7 +813,10 @@ export class EmployeePartAUI {
           this.render();
         } catch (err) {
           this.isEmployeeVerified = false;
-          if (msgEl) msgEl.innerHTML = `<span style="color: #dc2626;">❌ ${err.message}</span>`;
+          if (msgEl) {
+            const formattedMsg = String(err.message || '').replace(/\n/g, '<br/>');
+            msgEl.innerHTML = `<div style="color: #dc2626; line-height: 1.4; padding: 6px 0;">❌ ${formattedMsg}</div>`;
+          }
         }
       });
     }
@@ -899,12 +902,8 @@ export class EmployeePartAUI {
   }
 
   _setVal(code, val) {
-    if (!this.record[code]) {
-      this.record[code] = { value: val };
-    } else if (typeof this.record[code] === 'object') {
+    if (this.record[code] && typeof this.record[code] === 'object') {
       this.record[code].value = val;
-    } else {
-      this.record[code] = val;
     }
   }
 }

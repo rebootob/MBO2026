@@ -60,16 +60,17 @@ import { RoutingService } from './services/routing-service.js';
     return BUSINESS_STAGES.CONFIGURATION_ERROR;
   }
 
+  /**
+   * Safe sync to Kintone internal form state preserving field.type
+   */
   function syncRecordToKintone(record) {
     try {
       if (typeof kintone.app.record.get === 'function' && typeof kintone.app.record.set === 'function') {
         const currentData = kintone.app.record.get();
         if (currentData && currentData.record) {
           Object.keys(record).forEach(k => {
-            if (currentData.record[k]) {
+            if (currentData.record[k] && record[k] && record[k].value !== undefined) {
               currentData.record[k].value = record[k].value;
-            } else {
-              currentData.record[k] = record[k];
             }
           });
           kintone.app.record.set(currentData);
@@ -96,9 +97,9 @@ import { RoutingService } from './services/routing-service.js';
 
     const stage = resolveBusinessStage(event);
 
-    // Default Fiscal Year on Create
-    if (isCreate && !record.Fiscal_Year?.value) {
-      record.Fiscal_Year = { value: 'FY2026' };
+    // Default Fiscal Year on Create - safely mutating .value only
+    if (isCreate && record.Fiscal_Year && !record.Fiscal_Year.value) {
+      record.Fiscal_Year.value = 'FY2026';
     }
 
     // 2. Instantiate and render Custom UI
@@ -111,54 +112,59 @@ import { RoutingService } from './services/routing-service.js';
       onFieldChange: (code, val) => {
         if (record[code]) {
           record[code].value = val;
-        } else {
-          record[code] = { value: val };
         }
         syncRecordToKintone(record);
       },
       onEmployeeCodeChanged: (newCode) => {
-        // Reset snapshot if code changes
-        record.Employee_Code = { value: newCode };
-        record.Employee_Name = { value: '' };
-        record.Employee_Name_TH = { value: '' };
-        record.Employee_Section = { value: '' };
-        record.Employee_Department = { value: '' };
-        record.Employee_Position = { value: '' };
-        record.Employee_Email = { value: '' };
-        record.Employee_Start_Date = { value: '' };
-        record.Department_Hoshin = { value: '' };
-        record.Section_Hoshin = { value: '' };
-        record.Record_Key = { value: '' };
+        // Safely reset snapshot fields without destroying .type
+        const fieldsToClear = [
+          'Employee_Name', 'Employee_Name_TH', 'Employee_Section',
+          'Employee_Department', 'Employee_Position', 'Employee_Email',
+          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key'
+        ];
+        if (record.Employee_Code) record.Employee_Code.value = newCode;
+        fieldsToClear.forEach(k => {
+          if (record[k]) record[k].value = '';
+        });
         syncRecordToKintone(record);
       },
       onLookupEmployee: async (empCode) => {
+        // Step 1: Employee Lookup from App 53 (Read-Only)
         const empProfile = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
+
+        // Step 2: Routing Validation from App 795
         const loginUser = kintone.getLoginUser();
         const routing = await RoutingService.validateRequesterAccess(ROUTING_APP_ID, empProfile.Employee_Section, loginUser.code, kintoneApiWrapper);
+
+        // Step 3: Record Key & Duplicate Check
         const fy = record.Fiscal_Year?.value || 'FY2026';
         const generatedKey = buildRecordKey(fy, empProfile.Employee_Code);
-
-        // Check duplicate MBO
         await EmployeeService.checkDuplicateMBO(getMboAppId(), fy, empProfile.Employee_Code, record.$id?.value, kintoneApiWrapper);
 
-        // Snapshot all data into record in-memory
-        Object.assign(record, {
-          Employee_Code: { value: empProfile.Employee_Code },
-          Employee_Name: { value: empProfile.Employee_Name },
-          Employee_Name_TH: { value: empProfile.Employee_Name_TH },
-          Employee_Section: { value: empProfile.Employee_Section },
-          Employee_Department: { value: empProfile.Employee_Department },
-          Employee_Position: { value: empProfile.Employee_Position },
-          Employee_Email: { value: empProfile.Employee_Email },
-          Employee_Start_Date: { value: empProfile.Employee_Start_Date },
-          Department_Hoshin: { value: empProfile.Department_Hoshin },
-          Section_Hoshin: { value: empProfile.Section_Hoshin },
-          Requester_User: { value: routing.Requester_User },
-          First_Manager_User: { value: routing.First_Manager_User },
-          Manager_User: { value: routing.Manager_User },
-          GM_User: { value: routing.GM_User },
-          Fiscal_Year: { value: fy },
-          Record_Key: { value: generatedKey }
+        // Step 4: Snapshot data safely into record in-memory
+        const fieldsToSync = {
+          Employee_Code: empProfile.Employee_Code,
+          Employee_Name: empProfile.Employee_Name,
+          Employee_Name_TH: empProfile.Employee_Name_TH,
+          Employee_Section: empProfile.Employee_Section,
+          Employee_Department: empProfile.Employee_Department,
+          Employee_Position: empProfile.Employee_Position,
+          Employee_Email: empProfile.Employee_Email,
+          Employee_Start_Date: empProfile.Employee_Start_Date,
+          Department_Hoshin: empProfile.Department_Hoshin,
+          Section_Hoshin: empProfile.Section_Hoshin,
+          Requester_User: routing.Requester_User,
+          First_Manager_User: routing.First_Manager_User,
+          Manager_User: routing.Manager_User,
+          GM_User: routing.GM_User,
+          Fiscal_Year: fy,
+          Record_Key: generatedKey
+        };
+
+        Object.entries(fieldsToSync).forEach(([k, val]) => {
+          if (record[k]) {
+            record[k].value = val;
+          }
         });
 
         // Push directly to Kintone Form State
@@ -217,9 +223,7 @@ import { RoutingService } from './services/routing-service.js';
       return false;
     }
 
-    if (!record.Record_Key) {
-      record.Record_Key = { value: recordKey };
-    } else {
+    if (record.Record_Key) {
       record.Record_Key.value = recordKey;
     }
 
