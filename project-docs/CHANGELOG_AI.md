@@ -15,4 +15,5 @@
 - **2026-08-23**: Designed Annual Plan Carry Forward Architecture (`ANNUAL_PLAN_CARRY_FORWARD_DESIGN.md`) with Strict Whitelist Model, Fresh Configuration Supremacy, and 20 Test Cases.
 - **2026-08-23**: Conducted App 53 Hoshin Discovery across 275 records (`HOSHIN_APP53_DISCOVERY.md`) and designed MBO Hoshin Master Architecture (`HOSHIN_MANAGEMENT_DESIGN.md`).
 - **2026-08-23**: Added permanent Project Governance Policy: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done, and 7-step retirement lifecycle in skills and living docs.
-- **2026-08-24**: Confirmed Hoshin Organizational Scope (Shared per Section/Department via App 53 `Drop_down` and `Drop_down_0`) and updated Hoshin Master Architecture Blueprint.
+- **2026-08-24**: Confirmed Hoshin Organizational Scope (Shared per Section/Department via App 53 `Drop_down` and `Drop_down_0`).
+- **2026-08-24**: Updated Hoshin Governance to HR Managed Model without Approval Workflow (`DEC-017`), controlled via `Ready_For_MBO` flag (`YES`/`NO`) and Native Permissions.

@@ -51,7 +51,10 @@
 
 ---
 
-## 6. Hoshin Governance & Organizational Scope
-* **Shared Organizational Scope:** Hoshin is defined and published per Section (`Drop_down`) and Department (`Drop_down_0`). All employees in the same unit share the identical Published Hoshin.
-* **Annual Human Confirmation:** Copied once per section as Draft; must be explicitly confirmed/published by authorized users for each Fiscal Year.
-* **Submission Gate:** Objective submission in App 794 is locked until Current FY Hoshin is `PUBLISHED`.
+---
+
+## 6. Hoshin Governance & Organizational Scope (HR Managed)
+* **Sole Maintainer:** HR is the single business owner for all Department and Section Hoshins across all units.
+* **No Approval Workflow:** Governed directly via Native Permissions and `Ready_For_MBO` toggle (`YES` / `NO`).
+* **Two-Tier Scope:** App 794 renders both Department Hoshin (`Drop_down_0`) and Section Hoshin (`Drop_down`).
+* **Submission Gate:** Objective submission in App 794 is locked until `Ready_For_MBO = "YES"`.

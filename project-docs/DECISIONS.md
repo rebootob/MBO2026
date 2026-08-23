@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-017 — HR Managed Hoshin Model: No Approval Workflow & Ready_For_MBO Flag
+- **Date**: 2026-08-24
+- **Status**: ACTIVE (Confirmed by User)
+- **Decision**:
+  1. HR is the sole business maintainer for both Department Hoshin and Section Hoshin for all company units.
+  2. Eliminate all approval workflows and Process Management from the Hoshin Master.
+  3. Governance relies on Native Kintone Permissions (HR = Full Control, Others = Read Only) and a simple `Ready_For_MBO` toggle (`YES` / `NO`).
+  4. App 794 supports both Department Hoshin and Section Hoshin simultaneously.
+  5. Objective Submission is gated on `Ready_For_MBO = "YES"`. All previous Hoshin workflow designs are formally marked `SUPERSEDED IN DESIGN`.
+
 ## DEC-016 — Project Governance: No Orphan / No Dead Artifact Policy
 - **Date**: 2026-08-23
 - **Status**: ACTIVE (Permanent Rule)

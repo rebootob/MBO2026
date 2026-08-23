@@ -7,6 +7,7 @@
 
 ## 1. Resolved Questions (Confirmed by User)
 
+* [x] **Q7 (RESOLVED):** Hoshin Publishing Authority & Workflow -> **Confirmed HR Managed / No Approval Workflow (Governed via Ready_For_MBO flag and Native Permissions)**
 * [x] **Q6 (RESOLVED):** Hoshin Organizational Scope -> **Confirmed Shared at Department / Section Level (All employees in same section share identical Published Hoshin)**
 * [x] **Q1 (RESOLVED):** Assistant Manager Weight Split -> **Confirmed 50/50**
 * [x] **Q2 (RESOLVED):** General Manager Weight Split -> **Confirmed 50/50**

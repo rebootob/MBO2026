@@ -1,6 +1,6 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T06:30:00+07:00
+- **Updated At**: 2026-08-24T06:40:00+07:00
 - **Current Phase**: CROSS-APP LEGACY DISCOVERY & V2 ARCHITECTURE REDESIGN
 - **Current Branch**: `develop`
 - **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
@@ -13,5 +13,5 @@
   - COCE Compliance: Evaluated = YES, Included_In_Score = NO
 - **Annual Evaluation Cycle Architecture Confirmed**: Single Long-Lived App Core, Zero Year Hardcoding.
 - **Annual Plan Carry Forward Architecture Confirmed**: Strict Whitelist Model, Never Clone Record, Fresh Configuration Supremacy.
-- **Hoshin Governance & Scope Confirmed**: Shared at Section (`Drop_down`) and Department (`Drop_down_0`) Level, Dedicated MBO Hoshin Master (App 799), Mandatory Human Confirmation, Submission Gating.
-- **Project Governance Policy Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
+- **Hoshin Governance Confirmed**: HR Managed / No Approval Workflow, Governed via `Ready_For_MBO` flag (`YES`/`NO`), Two-Tier (Department + Section) display in App 794.
+- **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
