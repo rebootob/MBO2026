@@ -1,39 +1,65 @@
-# Hoshin Governance & Master Architecture Blueprint (HR Managed Model)
+# Hoshin Final Governance, Immutability & Dual-Level Architecture Blueprint
 
-> **Document Status:** Active (Confirmed Business Rule)  
-> **Governance Model:** HR Managed / Direct Maintenance (No Approval Workflow)  
-> **Core Readiness Control:** `Ready_For_MBO` Flag (`YES` / `NO`)  
+> **Document Status:** Active (Final Business Rule Confirmed & Frozen)  
+> **Governance Model:** HR Managed / Direct Readiness / Zero Approval Workflow  
+> **Submission Requirement:** BOTH Department Hoshin AND Section Hoshin Must Be `Ready_For_MBO = YES` (AND Condition)  
+> **Immutability Principle:** Published/Ready Versions Are Strictly Immutable (Revisions Require Creating a New Version)  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Executive Summary & Core Governance Model
-
-The User has explicitly confirmed the governance model for organizational targets (**Department Hoshin** and **Section Hoshin**):
-* **Sole Business Owner:** Human Resources (HR) directly manages, enters, edits, and confirms all Department and Section Hoshins for the entire company.
-* **No Approval Workflow:** The Hoshin Master operates **without Kintone Process Management** (no submission/approval chain through Managers, GMs, VPs, or President).
-* **Security & Readiness Boundary:** Native Kintone App & Field Permissions (HR = Create/Edit/View; Employees = View Only) combined with a simple `Ready_For_MBO` readiness toggle (`YES` / `NO`).
+## 1. Core Architectural Principles
 
 ```mermaid
 graph TD
-    PREV[Previous FY Hoshin / App 53] -->|HR Bootstrap as Draft| MASTER[App 799: MBO Hoshin Master]
-    
-    subgraph HR_Direct_Control [HR Annual Maintenance (No Approval Workflow)]
-        MASTER --> EDIT[HR Edits Department & Section Text]
-        EDIT --> READY[HR Sets: Ready_For_MBO = YES]
+    subgraph Master [App 799: MBO Hoshin Master (HR Managed, No Workflow)]
+        DEPT_V1["Dept Hoshin (FY2027 + Dept + V1) <br/> Ready_For_MBO = YES (IMMUTABLE)"]
+        SECT_V1["Section Hoshin (FY2027 + TME1 + V1) <br/> Ready_For_MBO = YES (IMMUTABLE)"]
     end
 
-    subgraph MBO_Integration [App 794: MBO Transaction Core]
-        READY --> RESOLVER[Hoshin Dynamic Resolver]
-        RESOLVER --> DISPLAY[Display Dept Hoshin & Sect Hoshin on MBO Header]
-        RESOLVER --> GATE[Unlock Objective Submission in App 794]
-        GATE --> SNAPSHOT[Permanent Hoshin Snapshot on Submit]
+    subgraph MBO_Gate [App 794: Objective Submission Gate]
+        DEPT_V1 -->|Condition 1| GATE{"Submission Gate: <br/> Dept Ready AND Section Ready?"}
+        SECT_V1 -->|Condition 2| GATE
+        GATE -->|YES + YES| UNLOCKED["Submit Objective = ENABLED <br/> (Create Immutable Transaction Snapshot)"]
+        GATE -->|Any NO| BLOCKED["Submit Objective = BLOCKED <br/> (Draft & Carry Forward Allowed)"]
     end
 ```
 
 ---
 
-## 2. Conceptual MBO Hoshin Master Schema (App 799)
+## 2. Dual-Level Submission Gate (Strict AND Condition)
+
+In MBO V2, both organizational levels are strictly required:
+$$\text{Objective Submission Enabled} \iff (\text{Dept Hoshin.Ready\_For\_MBO} = \text{"YES"}) \land (\text{Section Hoshin.Ready\_For\_MBO} = \text{"YES"})$$
+
+### Specific Distinct User Messages:
+* **Department Hoshin Missing / Not Ready:**  
+  `🔴 Department Hoshin ยังไม่พร้อม / Department Hoshin is not ready`
+* **Section Hoshin Missing / Not Ready:**  
+  `🔴 Section Hoshin ยังไม่พร้อม / Section Hoshin is not ready`
+* **Both Missing / Not Ready:** Both error items are displayed distinctly in the validation error box.
+* **Employee Capability during Block:** Employees can still open the FY record, view profile info, execute Annual Plan Carry Forward, save drafts, and edit objectives freely.
+
+---
+
+## 3. Immutability of Ready Versions & Revision Lifecycle
+
+### Rule 1: Immutability of Ready Versions
+Once a Hoshin record has `Ready_For_MBO = "YES"`, it is considered a **Published Business Baseline and is strictly immutable**. HR cannot directly modify the text content, scope, fiscal year, or version of an active ready record.
+
+### Rule 2: Revision via New Version Creation
+If HR must revise an active Hoshin:
+1. **Create New Version:** System creates a new draft record (e.g. `FY2027 + TME1 + Version 2`) with `Ready_For_MBO = "NO"`.
+2. **HR Edits Draft:** HR modifies the text or notes in `Version 2`.
+3. **Publish / Set Ready:** HR toggles `Version 2` to `Ready_For_MBO = "YES"`.
+4. **Automatic Supersession:** `Version 1` is automatically marked `SUPERSEDED` / `HISTORICAL` (never deleted).
+
+### Rule 3: Single Current Ready Version Invariant
+For any unique tuple `(Fiscal_Year, Scope_Type, Scope_Code)`, there can be **at most ONE record** with `Ready_For_MBO = "YES"` at any given time.
+
+---
+
+## 4. Conceptual MBO Hoshin Master Schema (App 799)
 
 | Field Code | Field Label | Type | Description | Example Values |
 | :--- | :--- | :--- | :--- | :--- |
@@ -51,6 +77,7 @@ graph TD
 | `Hoshin_EN` | Hoshin Text (EN) | MULTI_LINE_TEXT | Strategy Statement in English | `1. Enhance our strength...` |
 | `Version` | Version Number | NUMBER | Version integer (starts at 1 per FY) | `1`, `2`, `3` |
 | `Ready_For_MBO` | พร้อมใช้งานใน MBO | RADIO_BUTTON | Readiness Flag | **`YES`**, **`NO`** |
+| `Status` | Lifecycle State | DROP_DOWN | Derived Version State | `DRAFT`, `CURRENT_READY`, `SUPERSEDED` |
 | `Updated_By` | Updated By | USER_SELECT | Last HR maintainer | `hr` |
 | `Updated_At` | Updated At | DATETIME | Timestamp of last edit | `2027-04-05T09:00:00Z` |
 | `Remark` | Change Remarks | MULTI_LINE_TEXT | Administrative notes | `Annual FY2027 baseline confirmed` |
@@ -58,51 +85,20 @@ graph TD
 
 ---
 
-## 3. Two-Level Hoshin Structure (Department + Section)
+## 5. App 794 Transaction Snapshot on Submit Objective
 
-MBO V2 preserves and supports both organizational tiers:
-1. **Department Hoshin:** High-level strategic directives set per Department (`Drop_down_0` in App 53).
-2. **Section Hoshin:** Tactical operational goals set per Section (`Drop_down` in App 53).
+When an employee submits objectives in App 794, the record captures an immutable transaction snapshot:
+* **Department Hoshin Snapshot:**
+  - `Snapshot_Dept_Hoshin_Key`
+  - `Snapshot_Dept_Hoshin_Version`
+  - `Snapshot_Dept_Hoshin_Content`
+  - `Snapshot_Dept_Hoshin_Ready_Date`
+* **Section Hoshin Snapshot:**
+  - `Snapshot_Sect_Hoshin_Key`
+  - `Snapshot_Sect_Hoshin_Version`
+  - `Snapshot_Sect_Hoshin_Content`
+  - `Snapshot_Sect_Hoshin_Ready_Date`
+* **Snapshot Metadata:**
+  - `Snapshot_Hoshin_Timestamp`
 
-Both levels are displayed side-by-side in the App 794 MBO header once `Ready_For_MBO = "YES"`.
-
----
-
-## 4. Hoshin Validity & Submission Gating Rules
-
-### Rule 1: Validity Criteria
-A Hoshin is valid and ready for employee transactions **IF AND ONLY IF**:
-$$\text{Current Cycle} = \text{Hoshin Cycle} \quad \text{AND} \quad \text{Scope Matches Employee Org} \quad \text{AND} \quad \text{Ready\_For\_MBO} = \text{"YES"}$$
-
-### Rule 2: Objective Setting vs. Submission Gate
-* **When `Ready_For_MBO == NO`:**
-  - Employee **CAN** open the FY2027 record, view profile info, execute Annual Plan Carry Forward, and prepare objective drafts.
-  - Employee **CANNOT SUBMIT** objectives for Manager Review.
-  - **Banner:** *🔵 รอ HR จัดเตรียม Hoshin สำหรับ FY2027 / Waiting for FY2027 Hoshin*
-* **When `Ready_For_MBO == YES`:**
-  - Full Hoshin content is rendered in App 794 header.
-  - Submit Objective action is unlocked.
-
-### Rule 3: No Silent Fallback
-If FY2027 Hoshin has `Ready_For_MBO = "NO"` or does not exist, the system **never falls back silently to FY2026**.
-
----
-
-## 5. MBO Record Snapshot on Submit Objective
-
-When an employee submits objectives in App 794, the record permanently captures an immutable snapshot:
-* `Snapshot_Department_Code` & `Snapshot_Department_Name`
-* `Snapshot_Section_Code` & `Snapshot_Section_Name`
-* `Snapshot_Dept_Hoshin_Key`, `Snapshot_Dept_Hoshin_Version`, `Snapshot_Dept_Hoshin_Text`
-* `Snapshot_Sect_Hoshin_Key`, `Snapshot_Sect_Hoshin_Version`, `Snapshot_Sect_Hoshin_Text`
-* `Snapshot_Hoshin_Timestamp`
-
-*Note: Subsequent HR edits in Hoshin Master will increment `Version: 2` but will NEVER alter approved MBO records.*
-
----
-
-## 6. Permissions & Governance
-
-* **HR Administrators:** Native Permission `CREATE = YES`, `EDIT = YES`, `VIEW = YES`.
-* **Employees / Managers / Executives:** Native Permission `CREATE = NO`, `EDIT = NO`, `VIEW = YES (Read Only)`.
-* **Superseded Artifact Notice:** All previous designs involving Hoshin Process Management or Multi-Tier Approval Workflows are formally marked `SUPERSEDED IN DESIGN` per the No Orphan Policy (`DEC-016`).
+*Approved / Historical MBO evaluations are strictly isolated and will never change their snapshot when Master is updated to a new version.*

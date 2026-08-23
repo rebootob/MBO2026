@@ -53,8 +53,10 @@
 
 ---
 
-## 6. Hoshin Governance & Organizational Scope (HR Managed)
-* **Sole Maintainer:** HR is the single business owner for all Department and Section Hoshins across all units.
-* **No Approval Workflow:** Governed directly via Native Permissions and `Ready_For_MBO` toggle (`YES` / `NO`).
-* **Two-Tier Scope:** App 794 renders both Department Hoshin (`Drop_down_0`) and Section Hoshin (`Drop_down`).
-* **Submission Gate:** Objective submission in App 794 is locked until `Ready_For_MBO = "YES"`.
+---
+
+## 6. Hoshin Final Governance (Dual-Level & Immutability)
+* **Dual-Level Mandate (AND Condition):** Objective Submission requires BOTH Department Hoshin (`Ready = YES`) AND Section Hoshin (`Ready = YES`). If either is missing, submit is blocked with a specific error message.
+* **Ready Immutability:** Active ready versions cannot be edited directly; revisions require creating a new version.
+* **Single Active Version:** Exactly one active ready version allowed per FY and Scope unit. Old versions transition to Superseded state.
+* **No Workflow:** Direct HR management without Process Management.

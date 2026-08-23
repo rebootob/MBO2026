@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-018 — Hoshin Final Governance: Dual-Level Requirement & Ready Version Immutability
+- **Date**: 2026-08-24
+- **Status**: ACTIVE (Confirmed by User & Frozen)
+- **Decision**:
+  1. **Dual-Level Submission Gate:** Objective Submission requires BOTH Department Hoshin (`Ready_For_MBO = YES`) AND Section Hoshin (`Ready_For_MBO = YES`) simultaneously (Strict AND condition). Missing levels produce distinct validation errors.
+  2. **Ready Version Immutability:** When `Ready_For_MBO = "YES"`, the record is locked and immutable. Revisions require creating a new version (`Version 2`) with `Ready_For_MBO = "NO"` during draft editing.
+  3. **Single Current Ready Invariant:** At most one version per `(Fiscal_Year, Scope_Type, Scope_Code)` can be active/ready simultaneously. Activating a new version transitions the old version to `SUPERSEDED` (never deleted).
+  4. **Zero Workflow Maintained:** Governed without Kintone Process Management via Native Permissions and direct readiness toggle.
+  5. **Complete Dual Snapshot:** App 794 captures complete snapshots of both Department and Section Hoshins on submit.
+
 ## DEC-017 — HR Managed Hoshin Model: No Approval Workflow & Ready_For_MBO Flag
 - **Date**: 2026-08-24
 - **Status**: ACTIVE (Confirmed by User)
