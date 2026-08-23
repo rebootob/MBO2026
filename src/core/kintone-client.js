@@ -1,3 +1,5 @@
+import { assertDiscoveryReadOnly } from './sandbox-write-guard.js';
+
 export function getKintoneConnection() {
   const baseUrl = process.env.KINTONE_BASE_URL?.replace(/\/$/, '');
   const username = process.env.KINTONE_USERNAME;
@@ -22,6 +24,7 @@ export function getKintoneConnection() {
 }
 
 export async function kintoneRequest(path, { method = 'GET', body } = {}) {
+  assertDiscoveryReadOnly(method, path);
   const { baseUrl, headers } = getKintoneConnection();
   const response = await fetch(`${baseUrl}${path}`, {
     method,

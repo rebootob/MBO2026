@@ -1,29 +1,42 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { assertSandboxWriteTarget } from '../src/core/sandbox-write-guard.js';
+import {
+  DISCOVERY_MODE,
+  PROTECTED_APP_IDS,
+  WRITE_BLOCKED_APP_IDS,
+  assertDiscoveryReadOnly,
+  assertSandboxWriteTarget
+} from '../src/core/sandbox-write-guard.js';
 
-const registry = { mboV2AppId: 900, routingMasterAppId: 901 };
-
-test('blocks writes to protected employee master App 53', () => {
-  assert.throws(() => assertSandboxWriteTarget(53, registry), /WRITE BLOCKED/);
+test('Discovery Mode Hard Write Lock is Active', () => {
+  assert.equal(DISCOVERY_MODE, true);
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(53));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(283));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(305));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(307));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(310));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(640));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(643));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(715));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(716));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(794));
+  assert.ok(WRITE_BLOCKED_APP_IDS.includes(795));
 });
 
-test('blocks writes to protected legacy App 283', () => {
-  assert.throws(() => assertSandboxWriteTarget(283, registry), /WRITE BLOCKED/);
+test('assertDiscoveryReadOnly allows GET operations', () => {
+  assert.doesNotThrow(() => assertDiscoveryReadOnly('GET', 794));
+  assert.doesNotThrow(() => assertDiscoveryReadOnly('get', 53));
 });
 
-test('blocks writes to an unregistered app', () => {
-  assert.throws(() => assertSandboxWriteTarget(902, registry), /WRITE BLOCKED/);
+test('assertDiscoveryReadOnly blocks POST, PUT, and DELETE operations', () => {
+  assert.throws(() => assertDiscoveryReadOnly('POST', 794), /DISCOVERY PHASE WRITE BLOCKED/);
+  assert.throws(() => assertDiscoveryReadOnly('PUT', 795), /DISCOVERY PHASE WRITE BLOCKED/);
+  assert.throws(() => assertDiscoveryReadOnly('DELETE', 794), /DISCOVERY PHASE WRITE BLOCKED/);
 });
 
-test('allows writes to a registered sandbox app', () => {
-  assert.equal(assertSandboxWriteTarget(900, registry), 900);
-});
-
-test('allows the registered MBO V2 Sandbox app', () => {
-  assert.equal(assertSandboxWriteTarget(794), 794);
-});
-
-test('allows the registered Routing Master Sandbox app', () => {
-  assert.equal(assertSandboxWriteTarget(795), 795);
+test('assertSandboxWriteTarget blocks all writes when DISCOVERY_MODE is true', () => {
+  assert.throws(() => assertSandboxWriteTarget(794), /DISCOVERY PHASE WRITE BLOCKED/);
+  assert.throws(() => assertSandboxWriteTarget(795), /DISCOVERY PHASE WRITE BLOCKED/);
+  assert.throws(() => assertSandboxWriteTarget(53), /DISCOVERY PHASE WRITE BLOCKED/);
+  assert.throws(() => assertSandboxWriteTarget(283), /DISCOVERY PHASE WRITE BLOCKED/);
 });

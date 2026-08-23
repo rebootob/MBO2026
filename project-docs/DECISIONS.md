@@ -1,5 +1,14 @@
 # Architecture & Design Decisions
 
+## DEC-010 — Unified MBO Core & Master-Driven Evaluation Architecture (Option A)
+- **Date**: 2026-08-23
+- **Status**: PROPOSED (Awaiting User Review)
+- **Context**: Legacy PMS maintained 8 separate applications for 8 employee ranks with 85%+ identical field schema and duplicated maintenance overhead.
+- **Decision**:
+  1. Consolidate all corporate evaluation profiles into a single transaction core (App 794).
+  2. Implement configuration-driven masters: Evaluation Profile Master (App 796), Competency Master (App 797), and Generic Routing Master (App 795).
+  3. Enforce immutable record snapshots to prevent retroactive evaluation scoring changes upon master data updates.
+
 ## DEC-009 — Legacy Routing Fields Deprecation & Pure Sequential Target Model
 - **Date**: 2026-08-23
 - **Status**: ACTIVE

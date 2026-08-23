@@ -1,12 +1,13 @@
 # Current Project State
 
-- **Updated At**: 2026-08-23T22:15:00+07:00
-- **Current Phase**: Legacy Routing Fields Deprecated; Target Sequential Model Enforced
+- **Updated At**: 2026-08-23T23:00:00+07:00
+- **Current Phase**: CROSS-APP LEGACY DISCOVERY & V2 ARCHITECTURE REDESIGN
 - **Current Branch**: `develop`
-- **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY)
-- **Active Sandbox Apps**: App 794 (MBO V2 Sandbox), App 795 (Routing Master Sandbox)
+- **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
+- **Active Sandbox Apps**: App 794 (MBO V2 Sandbox - Frozen for Review), App 795 (Routing Master Sandbox - Frozen for Review)
+- **Hard Write Lock**: ACTIVE (`DISCOVERY_MODE = true`) - 0 Kintone Write Operations
 
-## Routing Model Status
-- **Source of Truth**: Generic Sequential Model (`Manager_Level1_Approvers`, `Manager_Level2_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers`, Rules with Default `ALL`).
-- **Legacy Fields**: `First_Manager_User`, `Manager_User`, `GM_User` marked as DEPRECATED (retained temporarily in App 794 until workflow settings transition).
-- **All 35 Unit Tests PASS (100%)**.
+## Architecture Discovery Milestone
+- **All 8 Legacy Apps Discovered & Analyzed**: Form fields, calculation expressions, process management states, and Excel templates extracted.
+- **21 Comprehensive Blueprints & Matrices Created**: Located in `project-docs/legacy-analysis/` and `project-docs/architecture-redesign/`.
+- **Target Architecture Recommended**: OPTION A (Unified MBO Transaction Core + Evaluation Profile Master + Competency Master + Generic Routing Master).
