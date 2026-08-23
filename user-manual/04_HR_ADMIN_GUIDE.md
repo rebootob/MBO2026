@@ -1,0 +1,44 @@
+# 04. คู่มือสำหรับฝ่ายบุคคลและผู้ดูแลระบบ (HR / Administrator Guide)
+# System Administration & Master Data Management
+
+> **Document Status:** Draft  
+> **System Version:** MBO V2 (FY2026)  
+> **Last Updated:** 2026-08-23  
+
+---
+
+## 1. ภาพรวมโครงสร้างแอปพลิเคชัน (Application Landscape)
+
+| แอปพลิเคชัน / App | ชื่อแอป / App Name | สิทธิ์การทำงาน / Access Mode | หน้าที่ / Purpose |
+| :--- | :--- | :--- | :--- |
+| **App 53** | Employee Namelist | **READ ONLY (ห้ามแก้ไข)** | ฐานข้อมูลพนักงานกลางของบริษัท |
+| **App 283** | Legacy PMS | **READ ONLY (ห้ามแก้ไข)** | ฐานข้อมูลประวัติการประเมินผลเดิม |
+| **App 794** | MBO V2 System | **อ่าน/เขียน (CRUD)** | ระบบประเมินผลการปฏิบัติงาน MBO V2 |
+| **App 795** | MBO Routing Master | **อ่าน/เขียน (CRUD)** | ฐานข้อมูลกำหนดสายการอนุมัติตามส่วนงาน |
+
+---
+
+## 2. การจัดการสายการอนุมัติใน Routing Master (App 795)
+
+ฝ่ายบุคคลสามารถกำหนดและปรับปรุงสายการอนุมัติของแต่ละส่วนงานได้ตลอดเวลา:
+
+### ฟิลด์ข้อมูลที่ต้องกำหนด:
+1. **Section Code:** รหัสส่วนงาน (เช่น `TME1`, `TMF1`, `TMH2`)
+2. **Section Name:** ชื่อส่วนงาน
+3. **Requester User:** ผู้มีสิทธิ์สร้างคำขอสำหรับส่วนงานนี้ (เลือกบัญชีส่วนกลาง เช่น `e1` หรือพนักงาน)
+4. **Manager Level 1 Approvers:** ผู้จัดการลำดับที่ 1 (เลือก User ได้หลายคน)
+5. **Manager Level 1 Approval Rule:** เลือก **`ALL` (ค่าเริ่มต้น)** หรือ **`ANY`**
+6. **Manager Level 2 Approvers:** ผู้จัดการลำดับที่ 2 (เช่น ผู้จัดการพี่เลี้ยง) *หากไม่มีให้ปล่อยว่าง*
+7. **Manager Level 2 Approval Rule:** เลือก `ALL` หรือ `ANY`
+8. **GM Level 1 Approvers:** ผู้จัดการทั่วไปลำดับที่ 1 (เลือก User ได้หลายคน)
+9. **GM Level 1 Approval Rule:** เลือก **`ALL` (ค่าเริ่มต้น)** หรือ **`ANY`**
+10. **GM Level 2 Approvers:** ผู้จัดการทั่วไปลำดับที่ 2 (เช่น ผู้บริหารสายงาน) *หากไม่มีให้ปล่อยว่าง*
+11. **GM Level 2 Approval Rule:** เลือก `ALL` หรือ `ANY`
+12. **Active:** เลือก `Active` เพื่อเปิดใช้งานสายการอนุมัตินี้
+
+---
+
+## 3. การตรวจสอบความถูกต้องก่อนเริ่มรอบการประเมิน (Pre-Launch Checklist)
+* ตรวจสอบว่าทุก Section ที่มีพนักงานมี Record ใน App 795 และสถานะเป็น `Active`
+* ตรวจสอบว่าบัญชี Approver ทุกคนมีสถานะเป็นผู้ใช้งานปกติ (Active User) ในระบบ Kintone
+* ตรวจสอบรอบปีการประเมิน (Fiscal Year) ให้ถูกต้อง (เช่น `FY2026`)
