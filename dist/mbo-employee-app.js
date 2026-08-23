@@ -341,6 +341,7 @@ class RoutingService {
 
   /**
  * Employee Part A UI Renderer
+ * Source of Truth: exp/PMS_Staff & Chief_PART_A.xlsx & Visual Specification
  */
 
 
@@ -377,13 +378,16 @@ class EmployeePartAUI {
     // 1. Header Section
     root.appendChild(this._renderHeader());
 
-    // 2. Hoshin Section
+    // 2. Guidelines Card (Rating scale reference)
+    root.appendChild(this._renderGuidelines());
+
+    // 3. Hoshin Section (2 Columns)
     root.appendChild(this._renderHoshin());
 
-    // 3. Stage Navigation
+    // 4. Stage Navigation
     root.appendChild(this._renderStageNav());
 
-    // 4. Part A Objectives Section
+    // 5. Part A Objectives Section
     root.appendChild(this._renderPartA());
 
     this.container.appendChild(root);
@@ -422,7 +426,7 @@ class EmployeePartAUI {
     const card = document.createElement('div');
     card.className = 'mbo-header-card';
 
-    const fy = this._getVal('Fiscal_Year') || 'FY2026';
+    const fy = this._getVal('Fiscal_Year') || "FY'2026";
     const status = this._getVal('Status') || '01 Draft Objective';
 
     card.innerHTML = `
@@ -463,17 +467,49 @@ class EmployeePartAUI {
     return card;
   }
 
+  _renderGuidelines() {
+    const box = document.createElement('div');
+    box.className = 'mbo-guideline-card';
+    box.innerHTML = `
+      <div class="mbo-guideline-title">📖 Rating Scale Guidelines (เกณฑ์ระดับความยากและระดับผลงานจากแบบฟอร์มเดิม)</div>
+      <div class="mbo-guideline-grid">
+        <div class="mbo-guideline-item">
+          <strong>Difficulty Level [1-4]:</strong><br/>
+          • <strong>Level 4:</strong> Challenging obj. requires sustainable effort and resources<br/>
+          • <strong>Level 3:</strong> Difficult obj. with much effort<br/>
+          • <strong>Level 2:</strong> Achievable obj. normal circumstances<br/>
+          • <strong>Level 1:</strong> Objective easily achievable
+        </div>
+        <div class="mbo-guideline-item">
+          <strong>Achievement Level [1-5]:</strong><br/>
+          • <strong>Level 5:</strong> Make remarkable / highest achievement result<br/>
+          • <strong>Level 4:</strong> Present exceeding expected achievement result<br/>
+          • <strong>Level 3:</strong> Fully meet expected achievement result<br/>
+          • <strong>Level 2:</strong> Partially meet expected achievement result<br/>
+          • <strong>Level 1:</strong> Rarely meet expected achievement result
+        </div>
+      </div>
+    `;
+    return box;
+  }
+
   _renderHoshin() {
     const grid = document.createElement('div');
     grid.className = 'mbo-hoshin-grid';
 
     grid.innerHTML = `
       <div class="mbo-hoshin-box">
-        <h2 class="mbo-hoshin-title">Department's Hoshin</h2>
+        <h2 class="mbo-hoshin-title">
+          <span>Department's Hoshin</span>
+          <span class="mbo-hoshin-subtitle">(Set up by Dept. Manager)</span>
+        </h2>
         <div class="mbo-hoshin-content" id="mbo-dept-hoshin-view">${this._getVal('Department_Hoshin') || '(No Department Hoshin set)'}</div>
       </div>
       <div class="mbo-hoshin-box">
-        <h2 class="mbo-hoshin-title">Section's Hoshin</h2>
+        <h2 class="mbo-hoshin-title">
+          <span>Section's Hoshin</span>
+          <span class="mbo-hoshin-subtitle">(Set up by Sect. Manager)</span>
+        </h2>
         <div class="mbo-hoshin-content" id="mbo-sec-hoshin-view">${this._getVal('Section_Hoshin') || '(No Section Hoshin set)'}</div>
       </div>
     `;
@@ -509,7 +545,7 @@ class EmployeePartAUI {
     const header = document.createElement('div');
     header.className = 'mbo-part-header';
     header.innerHTML = `
-      <span>PART A : MBO (Management By Objectives)</span>
+      <span>Part A : MBO (Management By Objectives)</span>
       <div style="font-size: 13px; font-weight: normal; display: flex; align-items: center; gap: 8px;">
         <span>Number of Objectives:</span>
         ${this.isEditable && this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT ? `
@@ -554,33 +590,48 @@ class EmployeePartAUI {
       </div>
 
       <div class="mbo-field-group">
-        <label class="mbo-field-label">Objective <span class="req">*</span></label>
+        <label class="mbo-field-label">
+          <span>Objectives (Indicate expected result and target) <span class="req">*</span></span>
+          <span class="mbo-field-hint">[ระบุเป้าหมายและผลลัพธ์ที่ต้องการ]</span>
+        </label>
         <textarea class="mbo-textarea mbo-field" data-code="Objective_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="Indicate expected result and target...">${objVal}</textarea>
       </div>
 
       <div class="mbo-field-group">
-        <label class="mbo-field-label">Action Plan <span class="req">*</span></label>
+        <label class="mbo-field-label">
+          <span>Action Plan (Indicate activities to be carried out) <span class="req">*</span></span>
+          <span class="mbo-field-hint">[ระบุกิจกรรมและแผนงานเพื่อบรรลุเป้าหมาย]</span>
+        </label>
         <textarea class="mbo-textarea mbo-field" data-code="Action_Plan_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="Indicate activities to achieve objective...">${actVal}</textarea>
       </div>
 
       <div class="mbo-field-group">
-        <label class="mbo-field-label">Additional Agreement / Comment</label>
+        <label class="mbo-field-label">
+          <span>Additional agreement / Comment</span>
+          <span class="mbo-field-hint">[ข้อตกลงเพิ่มเติมหรือความเห็น]</span>
+        </label>
         <textarea class="mbo-textarea mbo-field" data-code="Additional_Agreement_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="Any specific agreement...">${addVal}</textarea>
       </div>
 
       <div class="mbo-row-2col">
         <div class="mbo-field-group">
-          <label class="mbo-field-label">Weight (%) <span class="req">*</span></label>
+          <label class="mbo-field-label">
+            <span>Weight [A] (%) <span class="req">*</span></span>
+            <span class="mbo-field-hint">[น้ำหนักร้อยละ]</span>
+          </label>
           <input type="number" min="1" max="100" class="mbo-input mbo-field mbo-weight-input" data-code="Weight_${i}" value="${wVal}" ${!isObjEditable ? 'readonly' : ''} placeholder="e.g. 30" />
         </div>
         <div class="mbo-field-group">
-          <label class="mbo-field-label">Difficulty Level [1-4] <span class="req">*</span></label>
+          <label class="mbo-field-label">
+            <span>Difficulty Level [1-4] <span class="req">*</span></span>
+            <span class="mbo-field-hint">[ระดับความยาก]</span>
+          </label>
           ${isObjEditable ? `
             <select class="mbo-select mbo-field" data-code="Difficulty_${i}">
-              <option value="1" ${diffVal === '1' ? 'selected' : ''}>1 (Normal)</option>
-              <option value="2" ${diffVal === '2' ? 'selected' : ''}>2 (Moderate)</option>
-              <option value="3" ${diffVal === '3' ? 'selected' : ''}>3 (Challenging)</option>
-              <option value="4" ${diffVal === '4' ? 'selected' : ''}>4 (Highly Difficult)</option>
+              <option value="1" ${diffVal === '1' ? 'selected' : ''}>Level 1 : Objective easily achievable</option>
+              <option value="2" ${diffVal === '2' ? 'selected' : ''}>Level 2 : Achievable obj. normal circumstances</option>
+              <option value="3" ${diffVal === '3' ? 'selected' : ''}>Level 3 : Difficult obj. with much effort</option>
+              <option value="4" ${diffVal === '4' ? 'selected' : ''}>Level 4 : Challenging obj. requires sustainable effort</option>
             </select>
           ` : `
             <input type="text" class="mbo-input" value="Difficulty Level: ${diffVal}" readonly />
@@ -595,7 +646,7 @@ class EmployeePartAUI {
       const midBlock = document.createElement('div');
       midBlock.className = 'mbo-midyear-block';
       midBlock.innerHTML = `
-        <div style="font-weight: 700; color: #0369a1; margin-bottom: 8px; font-size: 14px;">⏳ Mid-Year Review (Objective ${i})</div>
+        <div style="font-weight: 700; color: #0369a1; margin-bottom: 8px; font-size: 14px;">⏳ Periodical Review by Appraisee (Mid-Year Progress for Objective ${i})</div>
         <div class="mbo-field-group">
           <div style="display: flex; justify-content: space-between;">
             <label class="mbo-field-label">Progress (%): <strong>${prog}%</strong></label>
@@ -608,7 +659,7 @@ class EmployeePartAUI {
           </div>
         </div>
         <div class="mbo-field-group">
-          <label class="mbo-field-label">Periodical Review by Appraisee</label>
+          <label class="mbo-field-label">Periodical Review / Notes by Appraisee</label>
           <textarea class="mbo-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="Review notes by appraisee...">${this._getVal(`Periodical_Review_${i}`)}</textarea>
         </div>
         <div class="mbo-field-group">
@@ -629,28 +680,37 @@ class EmployeePartAUI {
       const selfBlock = document.createElement('div');
       selfBlock.className = 'mbo-selfeval-block';
       selfBlock.innerHTML = `
-        <div style="font-weight: 700; color: #6d28d9; margin-bottom: 8px; font-size: 14px;">🎯 Year-End Self Evaluation (Objective ${i})</div>
+        <div style="font-weight: 700; color: #b45309; margin-bottom: 8px; font-size: 14px;">🎯 Year-End Self Evaluation (Objective ${i})</div>
         <div class="mbo-field-group">
-          <label class="mbo-field-label">Actual Result <span class="req">*</span></label>
+          <label class="mbo-field-label">
+            <span>Actual Result & Achievement <span class="req">*</span></span>
+            <span class="mbo-field-hint">[ผลการปฏิบัติงานจริงเมื่อสิ้นสุดรอบประเมิน]</span>
+          </label>
           <textarea class="mbo-textarea mbo-field" data-code="Actual_Result_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="Summary of actual results achieved...">${this._getVal(`Actual_Result_${i}`)}</textarea>
         </div>
         <div class="mbo-row-2col">
           <div class="mbo-field-group">
-            <label class="mbo-field-label">Self Achievement Level [1-5] <span class="req">*</span></label>
+            <label class="mbo-field-label">
+              <span>Achievement Level [1-5] <span class="req">*</span></span>
+              <span class="mbo-field-hint">[ระดับผลสำเร็จตามเกณฑ์]</span>
+            </label>
             ${isSelfEditable ? `
               <select class="mbo-select mbo-field" data-code="Self_Achievement_${i}">
-                <option value="1" ${selfAch === '1' ? 'selected' : ''}>1 (Far Below Target)</option>
-                <option value="2" ${selfAch === '2' ? 'selected' : ''}>2 (Below Target)</option>
-                <option value="3" ${selfAch === '3' ? 'selected' : ''}>3 (Met Target)</option>
-                <option value="4" ${selfAch === '4' ? 'selected' : ''}>4 (Exceeded Target)</option>
-                <option value="5" ${selfAch === '5' ? 'selected' : ''}>5 (Far Exceeded Target)</option>
+                <option value="1" ${selfAch === '1' ? 'selected' : ''}>Level 1 : Rarely meet expected achievement result</option>
+                <option value="2" ${selfAch === '2' ? 'selected' : ''}>Level 2 : Partially meet expected achievement result</option>
+                <option value="3" ${selfAch === '3' ? 'selected' : ''}>Level 3 : Fully meet expected achievement result</option>
+                <option value="4" ${selfAch === '4' ? 'selected' : ''}>Level 4 : Present exceeding expected achievement result</option>
+                <option value="5" ${selfAch === '5' ? 'selected' : ''}>Level 5 : Make remarkable / highest achievement result</option>
               </select>
             ` : `
-              <input type="text" class="mbo-input" value="Self Achievement: ${selfAch}" readonly />
+              <input type="text" class="mbo-input" value="Self Achievement: Level ${selfAch}" readonly />
             `}
           </div>
           <div class="mbo-field-group">
-            <label class="mbo-field-label">Self Comment</label>
+            <label class="mbo-field-label">
+              <span>Self Comment / Reflection</span>
+              <span class="mbo-field-hint">[ความเห็นประกอบการประเมินตนเอง]</span>
+            </label>
             <input type="text" class="mbo-input mbo-field" data-code="Self_Comment_${i}" value="${this._getVal(`Self_Comment_${i}`)}" ${!isSelfEditable ? 'readonly' : ''} placeholder="Self reflection..." />
           </div>
         </div>

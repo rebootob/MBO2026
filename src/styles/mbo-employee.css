@@ -1,26 +1,49 @@
 /**
- * TTMET MBO V2 - Excel-like Employee Theme
+ * TTMET MBO V2 - Excel PMS Style Sheet
+ * Source of Truth: exp/PMS_Staff & Chief_PART_A.xlsx & Visual Specification
  */
 
+:root {
+  --mbo-bg: #f8fafc;
+  --mbo-card-bg: #ffffff;
+  --mbo-border: #cbd5e1;
+  --mbo-border-focus: #2563eb;
+  --mbo-primary-navy: #1e3a8a;
+  --mbo-text-main: #0f172a;
+  --mbo-text-muted: #64748b;
+  --mbo-mint-bg: #f0fdf4;
+  --mbo-mint-border: #86efac;
+  --mbo-mint-text: #166534;
+  --mbo-amber-bg: #fefce8;
+  --mbo-amber-border: #fde047;
+  --mbo-sky-bg: #f0f9ff;
+  --mbo-sky-border: #7dd3fc;
+  --mbo-sky-text: #0369a1;
+  --mbo-radius: 6px;
+  --mbo-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
 .mbo-root {
-  max-width: 1280px;
-  margin: 16px auto 32px auto;
+  max-width: 1320px;
+  margin: 12px auto 32px auto;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #1e293b;
-  background-color: #f8fafc;
+  color: var(--mbo-text-main);
+  background-color: var(--mbo-bg);
   padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  border-radius: var(--mbo-radius);
+  box-shadow: var(--mbo-shadow);
   box-sizing: border-box;
 }
 
+/* Header Card */
 .mbo-header-card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-top: 4px solid #1e40af;
-  border-radius: 6px;
-  padding: 20px 24px;
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
+  border-top: 4px solid var(--mbo-primary-navy);
+  border-radius: var(--mbo-radius);
+  padding: 18px 24px;
   margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .mbo-title-bar {
@@ -35,31 +58,33 @@
 .mbo-main-title {
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--mbo-primary-navy);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .mbo-fy-badge {
   display: inline-block;
-  background: #e0e7ff;
-  color: #3730a3;
+  background: #dbeafe;
+  color: #1e40af;
   padding: 3px 10px;
   border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .mbo-status-badge {
   display: inline-block;
   background: #0284c7;
   color: #ffffff;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .mbo-profile-grid {
@@ -75,24 +100,25 @@
 
 .mbo-profile-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 2px;
+  color: var(--mbo-text-muted);
+  margin-bottom: 3px;
+  letter-spacing: 0.5px;
 }
 
 .mbo-profile-value {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--mbo-text-main);
   background: #f1f5f9;
-  padding: 6px 10px;
+  padding: 7px 12px;
   border-radius: 4px;
   border: 1px solid #e2e8f0;
   min-height: 20px;
 }
 
-/* Hoshin Section */
+/* Hoshin Section (2 Columns) */
 .mbo-hoshin-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -100,18 +126,18 @@
   margin-bottom: 20px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 820px) {
   .mbo-hoshin-grid {
     grid-template-columns: 1fr;
   }
 }
 
 .mbo-hoshin-box {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
   border-left: 4px solid #0284c7;
-  border-radius: 6px;
-  padding: 16px;
+  border-radius: var(--mbo-radius);
+  padding: 16px 20px;
 }
 
 .mbo-hoshin-title {
@@ -122,23 +148,65 @@
   margin-top: 0;
   margin-bottom: 8px;
   border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.mbo-hoshin-subtitle {
+  font-size: 11px;
+  font-weight: normal;
+  color: #64748b;
+  text-transform: none;
 }
 
 .mbo-hoshin-content {
   font-size: 13px;
   color: #334155;
   white-space: pre-wrap;
-  line-height: 1.5;
-  min-height: 48px;
+  line-height: 1.6;
+  min-height: 54px;
+}
+
+/* Guidelines Reference Box */
+.mbo-guideline-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--mbo-radius);
+  padding: 12px 18px;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.mbo-guideline-title {
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.mbo-guideline-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .mbo-guideline-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mbo-guideline-item {
+  color: #475569;
+  line-height: 1.4;
 }
 
 /* Stage Navigation */
 .mbo-stage-nav {
   display: flex;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
+  border-radius: var(--mbo-radius);
   padding: 8px;
   margin-bottom: 20px;
   gap: 8px;
@@ -147,61 +215,64 @@
 .mbo-stage-step {
   flex: 1;
   text-align: center;
-  padding: 10px 12px;
+  padding: 11px 14px;
   font-size: 13px;
   font-weight: 600;
   border-radius: 4px;
   background: #f1f5f9;
-  color: #64748b;
+  color: var(--mbo-text-muted);
   border: 1px solid transparent;
+  transition: all 0.2s;
 }
 
 .mbo-stage-step.active {
-  background: #1e40af;
+  background: var(--mbo-primary-navy);
   color: #ffffff;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .mbo-stage-step.completed {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
+  background: var(--mbo-mint-bg);
+  color: var(--mbo-mint-text);
+  border-color: var(--mbo-mint-border);
 }
 
 .mbo-stage-step.locked {
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
-/* Part A Section */
+/* Part A Header */
 .mbo-part-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1e3a8a;
+  background: var(--mbo-primary-navy);
   color: #ffffff;
-  padding: 12px 18px;
-  border-radius: 6px 6px 0 0;
-  font-size: 16px;
+  padding: 13px 20px;
+  border-radius: var(--mbo-radius) var(--mbo-radius) 0 0;
+  font-size: 15px;
   font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
 .mbo-objective-card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
   border-top: none;
-  padding: 20px 24px;
+  padding: 22px 24px;
   margin-bottom: 16px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .mbo-objective-card:last-child {
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--mbo-radius) var(--mbo-radius);
 }
 
 .mbo-obj-title {
   font-size: 15px;
   font-weight: 700;
-  color: #1e3a8a;
+  color: var(--mbo-primary-navy);
   margin-top: 0;
   margin-bottom: 14px;
   display: flex;
@@ -214,15 +285,23 @@
 }
 
 .mbo-field-label {
-  display: block;
+  display: flex;
+  justify-content: space-between;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: #334155;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .mbo-field-label span.req {
   color: #dc2626;
+  margin-left: 2px;
+}
+
+.mbo-field-hint {
+  font-size: 11px;
+  font-weight: normal;
+  color: #64748b;
 }
 
 .mbo-textarea {
@@ -230,25 +309,26 @@
   box-sizing: border-box;
   font-family: inherit;
   font-size: 14px;
-  color: #0f172a;
+  color: var(--mbo-text-main);
   background: #ffffff;
   border: 1px solid #94a3b8;
   border-radius: 4px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   line-height: 1.5;
-  min-height: 80px;
+  min-height: 84px;
   resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .mbo-textarea:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--mbo-border-focus);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-  background: #f8fafc;
+  background: #fafafa;
 }
 
 .mbo-textarea[readonly], .mbo-textarea[disabled] {
-  background: #f1f5f9;
+  background: #f8fafc;
   color: #334155;
   border-color: #cbd5e1;
   cursor: default;
@@ -260,13 +340,19 @@
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .mbo-row-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
 .mbo-input, .mbo-select {
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--mbo-text-main);
   background: #ffffff;
   border: 1px solid #94a3b8;
   border-radius: 4px;
@@ -276,33 +362,33 @@
 
 .mbo-input:focus, .mbo-select:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--mbo-border-focus);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .mbo-input[readonly], .mbo-select[disabled] {
-  background: #f1f5f9;
+  background: #f8fafc;
   color: #334155;
   border-color: #cbd5e1;
 }
 
-/* Weight Summary */
+/* Weight Summary Box */
 .mbo-weight-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
-  border: 2px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 14px 20px;
+  background: var(--mbo-card-bg);
+  border: 2px solid var(--mbo-border);
+  border-radius: var(--mbo-radius);
+  padding: 14px 22px;
   margin-top: 16px;
   margin-bottom: 20px;
 }
 
 .mbo-weight-summary.valid {
   border-color: #10b981;
-  background: #f0fdf4;
-  color: #065f46;
+  background: var(--mbo-mint-bg);
+  color: var(--mbo-mint-text);
 }
 
 .mbo-weight-summary.invalid {
@@ -323,11 +409,11 @@
 
 /* Mid-Year Section */
 .mbo-midyear-block {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 6px;
-  padding: 16px;
-  margin-top: 14px;
+  background: var(--mbo-sky-bg);
+  border: 1px solid var(--mbo-sky-border);
+  border-radius: var(--mbo-radius);
+  padding: 16px 20px;
+  margin-top: 16px;
 }
 
 .mbo-progress-bar-container {
@@ -347,17 +433,17 @@
 
 /* Self Evaluation Section */
 .mbo-selfeval-block {
-  background: #f5f3ff;
-  border: 1px solid #ddd6fe;
-  border-radius: 6px;
-  padding: 16px;
-  margin-top: 14px;
+  background: var(--mbo-amber-bg);
+  border: 1px solid var(--mbo-amber-border);
+  border-radius: var(--mbo-radius);
+  padding: 16px 20px;
+  margin-top: 16px;
 }
 
 /* Alert Banner */
 .mbo-alert-banner {
   padding: 12px 16px;
-  border-radius: 6px;
+  border-radius: var(--mbo-radius);
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 16px;
