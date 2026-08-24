@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — SECURE LIVE APP ACTIVATION
+# AI ACTIVE TASK — STAGE 3A REVIEW CORRECTION & RECONCILIATION
 
 > **Control Plane:** ChatGPT / approved human reviewer
 > **Execution Plane:** Codex
@@ -7,99 +7,60 @@
 ## ACTIVE TASK
 
 - **WP:** `MBO-P03-WP-002C`
-- **Stage:** `STAGE 3A — SECURE LIVE APP ACTIVATION CORRECTION`
+- **Stage:** `STAGE 3A — LIVE ACTIVATION REVIEW CORRECTION + STATE RECONCILIATION`
 - **Branch:** `ai/codex-wp002c`
-- **Accepted Stage-2 Closure Commit:** `f96645cb94a566263532802ba15611d1a003ad1e`
-- **Stage-2 Gate:** `PASS / FROZEN`
+- **Accepted Stage-2 Closure:** `f96645cb94a566263532802ba15611d1a003ad1e`
+- **Stage-3A Implementation Commit Under Review:** `763aef5dfc3a293d7e9a01c5b673d0d56cbed7f4`
 - **Verified App ID:** `796`
 - **Exact App Name:** `MBO Profile & Scoring Configuration Master [Sandbox]`
-- **Current State:** `PREVIEW_CREATED / NOT_DEPLOYED`
-- **Target State:** `LIVE_DEPLOYED / CREATOR_ONLY / SCHEMA_NOT_CONFIGURED`
-- **Environment:** `SANDBOX`
-- **Production:** `FALSE`
-- **Explicit User Authorization:** `YES — user explicitly requested that the App be actually created/accessible in Kintone, not left only as Preview`
-- **APP_CREATE:** `FORBIDDEN — App 796 already exists in Preview; do not create another App`
-- **Schema Writes:** `NO`
-- **Record Writes:** `NO`
-- **Delete:** `NO`
+- **Control Plane Review:** `BLOCKER + MUST FIX`
+- **APP_CREATE:** `FORBIDDEN`
+- **Schema / Layout / View / Process / Record / Delete Writes:** `FORBIDDEN`
 - **WP-002D:** `NOT STARTED`
 
-## CONTROL PLANE REVIEW FINDING
+## REVIEW FINDINGS
 
-Stage 2 correctly created a **pre-live / Preview App** and verified App ID `796`, but the user expectation for “create App” is that the App must exist in the live Kintone application list and be addressable at `/k/796/`.
+### BLOCKER — LIVE ACTIVATION OUTCOME IS NOT EVIDENCED
 
-Kintone's official contract is:
+GitHub contains only the Stage-3A implementation commit after the Control Plane authorization. There is no activation/status commit and the living state still records App 796 as:
 
-- `POST /k/v1/preview/app.json` creates a **Preview / pre-live App** only.
-- `POST /k/v1/preview/app/deploy.json` deploys pre-live settings to the **live App**.
-- Deployment completion must be verified with `GET /k/v1/preview/app/deploy.json` until the exact App reports `SUCCESS`.
+```text
+PREVIEW_CREATED / NOT_DEPLOYED
+```
 
-Therefore this stage is a **requirement correction / live activation**, not a second App creation.
+Therefore do **not** assume either:
 
-**Never call `POST /k/v1/preview/app.json` again.**
+- that no Stage-3A Kintone write occurred, or
+- that deployment succeeded.
 
-## WHAT / WHERE / HOW / WHY
+The exact Kintone state must be reconciled with read-only GETs before any new write.
 
-### What
+### MUST FIX — DEPLOY SUCCESS RESPONSE CONTRACT
 
-Securely activate existing Preview App `796` as a live Kintone App while keeping it empty and locked to the App creator.
+Kintone `POST /k/v1/preview/app/deploy.json` has **no response body on success**.
 
-### Where
+Current implementation incorrectly calls `response.json()` after an HTTP-successful deploy POST and therefore classifies the normal empty-body success path as transport/result uncertainty.
 
-Only App `796`:
+Fix the implementation and tests so:
 
-`MBO Profile & Scoring Configuration Master [Sandbox]`
+- HTTP success from deploy POST does not require or parse JSON.
+- HTTP non-success remains a clear failure.
+- thrown/transport failure remains `DEPLOY_RESULT_UNCERTAIN` and is reconciled by GET only.
+- deploy POST is never automatically retried.
 
-### How
+Official endpoint remains:
 
-1. Re-verify exact Preview identity.
-2. Apply a creator-only pre-live App ACL.
-3. Read back and verify the ACL.
-4. Deploy App `796` exactly once using the latest revision.
-5. Poll deploy status by GET only until `SUCCESS`, `FAIL`, `CANCEL`, or bounded timeout.
-6. Verify the live App identity and live ACL using exact App ID `796`.
-7. Update project state only after verified success.
+```text
+POST /k/v1/preview/app/deploy.json
+```
 
-### Why
+Deployment status remains:
 
-The Preview App ID alone is not a usable live Kintone App. The user confirmed the required outcome is that the App actually exists in Kintone and `/k/796/` no longer reports “app not found”.
+```text
+GET /k/v1/preview/app/deploy.json?apps[0]=796
+```
 
-### Expected Impact
-
-After success:
-
-- App `796` is live in the Kintone tenant.
-- App name remains exact.
-- Only the App creator has App/record permissions at this stage.
-- No business schema is configured yet.
-- No records exist because this WP performs zero record writes.
-- Apps 794/795 and all protected Apps are untouched.
-
-## RISKS AND CONTROL
-
-### Risk: duplicate App
-
-Control: `APP_CREATE` is forbidden. App ID must remain `796`.
-
-### Risk: exposing Sandbox to all users
-
-Control: before deploy, set the pre-live App ACL to **CREATOR only**. Do not grant `Everyone` any permission.
-
-### Risk: deploy POST transport uncertainty
-
-Control: never retry the deploy POST automatically. If transport outcome is uncertain, use only deploy-status GET and live read-back to reconcile.
-
-### Risk: partial activation / wrong identity
-
-Control: exact-ID/name read-back is mandatory before and after deploy. Never search or substitute another App ID.
-
-### Rollback
-
-- Before deploy: if pre-live ACL update succeeds but deploy has not been attempted, STOP on any failure. Do not auto-revert.
-- After deploy: do not delete the App automatically. Any corrective deploy/permission rollback requires a new Control Plane authorization.
-- Never delete App 796 in this task.
-
-## SYNC FIRST
+## STEP 0 — SYNC / CLEAN GATE
 
 Run:
 
@@ -107,7 +68,7 @@ Run:
 git status --short
 ```
 
-If working tree is not clean, STOP and report. Do not stash/discard automatically.
+If not clean: STOP and report. Do not stash/discard automatically.
 
 Then:
 
@@ -117,118 +78,182 @@ git merge --ff-only origin/ai/codex-wp002c
 git branch --show-current
 ```
 
-Expected:
+Expected branch:
 
 ```text
 ai/codex-wp002c
 ```
 
-Confirm `f96645cb94a566263532802ba15611d1a003ad1e` is in branch history.
+Confirm commit `763aef5dfc3a293d7e9a01c5b673d0d56cbed7f4` is present.
 
-## PRE-WRITE SAFETY CHECKS
+## STEP 1 — READ-ONLY KINTONE RECONCILIATION FIRST
 
-Before implementing/executing any Kintone write:
+Before changing code and before any Kintone write, use password-authenticated **GET only** to inspect exact App 796.
 
-1. Confirm `DISCOVERY_MODE === true`.
-2. Confirm default `WRITE_ALLOWED_APPS` remains `[]`.
-3. Confirm `config/sandbox-apps.json` has exactly `scoringConfigMasterAppId = 796`.
-4. Confirm Apps `794` and `795` remain unchanged.
-5. Confirm `project-docs/APP_REGISTRY.md` registers App `796` with exact name.
-6. Confirm `.env.local` provides `KINTONE_BASE_URL`, `KINTONE_USERNAME`, `KINTONE_PASSWORD` without printing values.
-7. Confirm Preview settings read-back for exact App `796` returns exact name `MBO Profile & Scoring Configuration Master [Sandbox]` and a valid numeric revision.
-8. Perform a read-only live settings check for exact App `796`.
-   - If the live App already exists and exact identity verifies, STOP without any write and report `LIVE_ALREADY_DEPLOYED` for Control Plane reconciliation.
-   - If live App is not found, continue.
-   - If a different identity is returned, STOP.
-9. Confirm no planned custom schema fields from WP-002C have been configured yet. Do not add/remove/update fields in this stage.
-10. Run full `npm test` before the live write.
+Read:
 
-If any required precondition fails: STOP. No Kintone write.
+1. Preview settings:
+   `GET /k/v1/preview/app/settings.json?app=796`
+2. Preview ACL:
+   `GET /k/v1/preview/app/acl.json?app=796`
+3. Deploy status:
+   `GET /k/v1/preview/app/deploy.json?apps[0]=796`
+4. Live settings:
+   `GET /k/v1/app/settings.json?app=796`
+5. If live settings exist, live ACL:
+   `GET /k/v1/app/acl.json?app=796`
 
-## OFFICIAL KINTONE CONTRACT TO PRESERVE
+Never print credentials or auth headers.
 
-### Preview App ACL
-
-Use:
+Record locally for decision making:
 
 ```text
-PUT /k/v1/preview/app/acl.json
+PREVIEW_IDENTITY
+PREVIEW_REVISION
+PREVIEW_ACL_STATE
+DEPLOY_STATUS
+LIVE_EXISTS
+LIVE_IDENTITY
+LIVE_REVISION
+LIVE_ACL_STATE
 ```
 
-Target:
+### RECONCILIATION DECISION TREE
+
+#### Case A — LIVE ALREADY EXISTS AND VERIFIES
+
+If exact live App 796 exists, exact name matches, and live ACL is creator-only:
 
 ```text
-app = 796
+RECONCILIATION = LIVE_ALREADY_DEPLOYED_VERIFIED
 ```
 
-Kintone treats omitted `Everyone` rights as no permissions. This task intentionally uses a single `CREATOR` ACL entry only.
+Then:
 
-### Deploy
+- perform **zero Kintone writes**
+- do not run activation script
+- do not deploy again
+- do not PUT ACL again
+- proceed to code correction/tests and status documentation only
 
-Use exactly:
+#### Case B — DEPLOY STATUS = PROCESSING
 
-```text
-POST /k/v1/preview/app/deploy.json
-```
+Do not send any write.
 
-Body must contain exactly one App:
+Poll deploy status with GET only, bounded, until final state.
 
-```json
-{
-  "apps": [
-    {
-      "app": 796,
-      "revision": "<LATEST_VERIFIED_PREVIEW_REVISION>"
-    }
-  ]
-}
-```
+- `SUCCESS` -> verify live identity + ACL; then treat as Case A
+- `FAIL` / `CANCEL` -> STOP and report `PRIOR_DEPLOY_FAILED`; no new deploy POST in this task
+- timeout/unknown -> STOP `DEPLOY_RESULT_UNCERTAIN`
 
-Do not use `revision = -1`. Use the exact latest verified revision.
+#### Case C — LIVE ABSENT BUT PREVIEW ACL IS ALREADY CREATOR-ONLY
 
-### Deploy Status
+This proves a prior Stage-3A ACL write may already have occurred.
 
-Use GET only:
+Do not PUT ACL again.
 
-```text
-GET /k/v1/preview/app/deploy.json?apps[0]=796
-```
+Inspect deploy status:
 
-Valid status values:
+- `SUCCESS` -> verify live; no write
+- `PROCESSING` -> GET-only polling
+- `FAIL` / `CANCEL` -> STOP; no second deploy authorization in this task
+- no prior deploy state can be established -> STOP and report `PARTIAL_STAGE3A_STATE_REQUIRES_CONTROL_PLANE`
 
-```text
-PROCESSING
-SUCCESS
-FAIL
-CANCEL
-```
+Do not guess that a deploy POST was never sent.
 
-Only `SUCCESS` permits final live verification.
+#### Case D — LIVE ABSENT, PREVIEW ACL NOT CREATOR-ONLY, AND NO PRIOR DEPLOY IS EVIDENCED
 
-## AUTHENTICATION
+Only this clean state may proceed to a new Stage-3A execution after the code correction/tests pass.
 
-Use the existing password-authenticated connection path based on:
+## STEP 2 — CORRECT DEPLOY RESPONSE HANDLING
 
-```text
-KINTONE_USERNAME
-KINTONE_PASSWORD
-```
-
-Do not print credentials or authorization headers.
-
-For this task, do not depend on an API token for the activation path.
-
-## FILE BOUNDARY
-
-Allowed implementation changes:
+Allowed implementation files:
 
 - `src/core/kintone-client.js`
-- `src/core/sandbox-write-guard.js` only for a narrow exact-App activation guard if necessary
 - `tests/safety-guard.test.js`
-- one single-purpose script if needed:
-  - `scripts/kintone/activate-scoring-config-master-live.js`
 
-Allowed post-success documentation changes:
+Change the deploy POST handling so a normal HTTP-successful response with an empty body is accepted without JSON parsing.
+
+Keep the existing exact App-796 guard and all fail-closed behavior.
+
+Do not change the App ID, App name, endpoints, ACL design, `DISCOVERY_MODE`, or default `WRITE_ALLOWED_APPS`.
+
+### REQUIRED NEW/ADJUSTED MOCK TESTS
+
+Prove at minimum:
+
+1. HTTP 200 deploy response with **empty/no JSON body** is the normal success submission path.
+2. No JSON parse is required for deploy success.
+3. Status polling still occurs after successful submission.
+4. Deploy POST count remains exactly one.
+5. Transport throw produces uncertainty and never retries POST.
+6. Non-success HTTP deploy response fails without automatic retry.
+7. `PROCESSING -> SUCCESS` uses GET-only polling.
+8. No APP_CREATE/schema/record/delete call is generated.
+9. Existing exact App-796/creator-only safety tests remain passing.
+
+Update the mock so it reflects Kintone's real no-body deploy response instead of returning `{}`.
+
+## STEP 3 — TEST / IMPLEMENTATION COMMIT
+
+Run:
+
+```bash
+git diff --check
+npm test
+```
+
+All tests must pass.
+
+Commit code/test correction before any possible new live write:
+
+```text
+fix: align wp-002c deploy response contract
+```
+
+Push branch.
+
+Reconfirm clean worktree.
+
+## STEP 4 — EXECUTION ONLY IF RECONCILIATION CASE D
+
+Only if Step 1 conclusively produced **Case D**, re-run the exact read-only preflight and execute the corrected activation path.
+
+Maximum new writes in this correction execution:
+
+```text
+APP_CREATE              = 0
+PREVIEW ACL PUT         = 1 maximum, only if not already applied
+DEPLOY POST             = 1 maximum, only if no prior deploy is evidenced
+SCHEMA/LAYOUT/VIEW      = 0
+RECORD WRITES           = 0
+DELETE                  = 0
+```
+
+Do not reuse a previous uncertain deploy POST as justification for another POST.
+
+After any deploy submission, status reconciliation is GET only.
+
+## STEP 5 — VERIFIED SUCCESS STATE
+
+Success may be established either by:
+
+- Case A reconciliation with zero writes, or
+- a clean Case D activation that reaches deploy `SUCCESS`.
+
+Require all:
+
+```text
+LIVE APP ID = 796
+LIVE NAME = MBO Profile & Scoring Configuration Master [Sandbox]
+LIVE ACL = CREATOR_ONLY
+DEPLOY STATUS = SUCCESS
+SCHEMA_STATUS = NOT_CONFIGURED
+BASELINE_SEED_STATUS = NOT_STARTED
+PRODUCTION = FALSE
+```
+
+Only then update:
 
 - `project-docs/CURRENT_STATE.md`
 - `project-docs/HANDOFF.md`
@@ -237,268 +262,67 @@ Allowed post-success documentation changes:
 - `project-docs/CHANGELOG_AI.md`
 - `project-docs/APP_REGISTRY.md`
 
-Do not modify:
-
-- `project-docs/AI_ACTIVE_TASK.md`
-- `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
-- scoring/profile business modules
-- App 794 configuration
-- App 795 configuration
-- any record data
-- any field/schema/layout/view/process-management configuration
-
-## REQUIRED NARROW ACTIVATION GUARD
-
-The live-activation execution path must fail closed unless all of these are exact:
+Final app status wording:
 
 ```text
-workPackageId = MBO-P03-WP-002C
-stage = STAGE_3A_LIVE_ACTIVATION
-appId = 796
-appName = MBO Profile & Scoring Configuration Master [Sandbox]
-operation sequence = APP_ACL_PREVIEW_UPDATE -> APP_DEPLOY
-explicitUserAuthorization = true
-activeWindow = true
+APP_STATUS = LIVE_DEPLOYED
+ACCESS_STATUS = CREATOR_ONLY
+SCHEMA_STATUS = NOT_CONFIGURED
 ```
 
-Use one unique authorization ID:
+Do not change `config/sandbox-apps.json`; App ID remains 796.
 
-```text
-MBO-P03-WP-002C-STAGE3A-20260824-2219-ICT
-```
-
-No generic arbitrary-App deploy capability may be introduced.
-
-The dedicated path must not allow App 794, App 795, or any protected App.
-
-## IMPLEMENTATION — SAFE CREATOR-ONLY ACL
-
-Before deploy, set pre-live App permissions to exactly one `CREATOR` entry with:
-
-```json
-{
-  "entity": { "type": "CREATOR" },
-  "appEditable": true,
-  "recordViewable": true,
-  "recordAddable": true,
-  "recordEditable": true,
-  "recordDeletable": true,
-  "recordImportable": true,
-  "recordExportable": true
-}
-```
-
-Do not include an `Everyone` entry.
-Do not include any other user/group/organization in this stage.
-
-Use the current preview revision in the ACL PUT when supported by the existing implementation path.
-
-Validate the ACL PUT response contains a valid numeric revision string.
-
-Then GET the exact preview ACL and verify:
-
-- App ID is `796`
-- CREATOR has the expected rights
-- no `Everyone` entry grants any right
-- no unexpected entity has rights
-- returned revision is valid
-
-If ACL read-back fails: STOP. Do not deploy.
-
-## DEPLOY EXECUTION
-
-After ACL read-back PASS:
-
-1. Use the latest exact revision returned/read back after ACL update.
-2. Send exactly one deploy POST for App `796`.
-3. Never retry the deploy POST automatically.
-4. After POST, poll deploy status with GET only.
-
-Polling must be bounded. For example:
-
-```text
-max 30 GET checks
-2 seconds between checks
-```
-
-Polling is read-only and may continue while status is `PROCESSING`.
-
-### Deploy transport uncertainty
-
-If the deploy POST throws, times out, or produces an uncertain transport outcome:
-
-```text
-DEPLOY_RESULT_UNCERTAIN
-```
-
-Do not send a second POST.
-
-Use deploy-status GET for App `796` to reconcile:
-
-- `SUCCESS` -> continue to live read-back
-- `FAIL` or `CANCEL` -> STOP
-- persistent `PROCESSING` / unknown -> STOP as uncertain
-
-## FINAL LIVE VERIFICATION
-
-After deploy status `SUCCESS`, perform password-authenticated read-only verification of exact App `796` using live endpoints.
-
-Verify at minimum:
-
-1. Live App settings for `796` exist.
-2. Name is exactly:
-
-   `MBO Profile & Scoring Configuration Master [Sandbox]`
-
-3. Live revision is present and valid.
-4. Live App ACL is creator-only as required.
-5. No App ID substitution occurred.
-
-If any live verification fails:
-
-```text
-LIVE_APP_VERIFICATION_FAILED
-```
-
-STOP.
-Do not delete.
-Do not redeploy automatically.
-Do not create another App.
-
-## TESTS — MOCK ONLY
-
-Add/adjust tests proving at minimum:
-
-1. activation rejects any App ID other than 796
-2. activation rejects wrong App name
-3. activation rejects wrong WP/stage
-4. activation rejects missing explicit user authorization
-5. APP_CREATE is not used anywhere in Stage 3A
-6. preview identity must pass before ACL PUT
-7. creator-only ACL body is exact
-8. no Everyone permission is granted
-9. ACL PUT targets only `/k/v1/preview/app/acl.json` for App 796
-10. ACL failure prevents deploy
-11. deploy body contains exactly one App: 796
-12. deploy uses exact latest verified revision, never `-1`
-13. deploy POST is attempted at most once
-14. deploy transport uncertainty never retries POST
-15. PROCESSING status causes GET-only polling
-16. FAIL/CANCEL fail closed
-17. SUCCESS proceeds to live identity read-back
-18. live identity mismatch fails closed
-19. live ACL mismatch fails closed
-20. default `WRITE_ALLOWED_APPS` remains `[]`
-21. `DISCOVERY_MODE` remains `true`
-22. Apps 794/795 remain unchanged and are never targets
-23. protected Apps remain hard-blocked
-24. no schema/record/delete operation is generated
-
-No real Kintone calls in unit tests.
-
-## EXECUTION ORDER
-
-Follow exactly:
-
-1. Sync and run pre-write read-only checks.
-2. Implement the narrow Stage-3A activation path and mocked tests.
-3. Run:
+Then run:
 
 ```bash
 git diff --check
 npm test
 ```
 
-4. If tests fail: STOP. No live write.
-5. Commit implementation/tests BEFORE Kintone writes:
+Commit verified status evidence:
 
 ```text
-feat: add controlled wp-002c live activation
+chore: record verified wp-002c live activation
 ```
 
-6. Push `ai/codex-wp002c`.
-7. Reconfirm clean worktree and exact branch.
-8. Re-run exact preview identity and live-not-found checks.
-9. Execute creator-only preview ACL PUT exactly once.
-10. Verify preview ACL read-back.
-11. Execute deploy POST exactly once.
-12. Poll deploy status with GET only until final/bounded result.
-13. If `SUCCESS`, verify exact live App identity and ACL.
-14. If verification succeeds, update living docs and `APP_REGISTRY.md`:
+Push and STOP.
 
-```text
-SCORING_MASTER_APP_ID = 796
-APP_STATUS = LIVE_DEPLOYED
-ACCESS_STATUS = CREATOR_ONLY
-ENVIRONMENT = SANDBOX
-PRODUCTION = FALSE
-SCHEMA_STATUS = NOT_CONFIGURED
-BASELINE_SEED_STATUS = NOT_STARTED
-PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
-```
+## FAILURE / PARTIAL STATE
 
-`APP_REGISTRY.md` should no longer describe App 796 as only `Sandbox / Preview`; record it as live Sandbox with creator-only/default-deny governance.
+If reconciliation finds a prior partial/failed/uncertain Stage-3A write state that does not fit verified success and does not fit clean Case D:
 
-15. Do not change `config/sandbox-apps.json` because ID remains `796`.
-16. Run `git diff --check` and full `npm test` again.
-17. Commit status/evidence changes:
+- make **no new Kintone write**
+- preserve evidence
+- push only the deploy-response code/test correction if applicable
+- report exact read-only reconciliation result
+- STOP for Control Plane
 
-```text
-chore: record wp-002c live app activation
-```
-
-18. Push branch.
-19. STOP for independent review.
-
-Do not configure schema.
-Do not seed records.
-Do not begin WP-002D.
-
-## KINTONE WRITE BOUNDARY — STAGE 3A
-
-Maximum authorized writes for this stage:
-
-```text
-APP_CREATE POST             = 0
-PREVIEW APP ACL PUT         = exactly 1
-APP DEPLOY POST             = exactly 1
-SCHEMA FIELD POST/PUT       = 0
-LAYOUT PUT                  = 0
-VIEW PUT                    = 0
-PROCESS/PERMISSION OTHER    = 0
-RECORD WRITES               = 0
-DELETE                      = 0
-```
-
-Read-only GETs required for exact identity, ACL and deploy-status verification are allowed.
-
-Cumulative project history must preserve the earlier Stage-2 App creation count separately:
-
-```text
-Historical APP_CREATE POST = 1
-```
+Do not create another App.
+Do not delete App 796.
+Do not start schema configuration.
+Do not start WP-002D.
 
 ## FINAL REPORT
 
 Report only:
 
 - branch
-- implementation commit SHA
-- activation/status commit SHA if successful
-- tests total/passed/failed before Kintone writes
-- tests total/passed/failed after activation
-- Stage-3A APP_CREATE POST count
-- Stage-3A ACL PUT count
-- Stage-3A DEPLOY POST count
-- Stage-3A schema write count
-- Stage-3A record write count
-- deploy status final value
-- live identity read-back PASS/FAIL/UNCERTAIN
-- exact live App ID/name/revision
-- live ACL verification PASS/FAIL
-- final App status
-- final access status
-- final schema status
+- reconciliation case (A/B/C/D or partial)
+- preview identity/revision result
+- preview ACL state
+- deploy status observed
+- live App exists YES/NO
+- live identity result
+- live ACL result
+- deploy-response correction commit SHA
+- activation/status commit SHA if verified success
+- tests total/passed/failed
+- Kintone GET count
+- new ACL PUT count in this task
+- new DEPLOY POST count in this task
+- APP_CREATE count in this task
+- schema/record/delete write counts
+- final App ID/status/access/schema state
 
 Never print credentials or authorization headers.
 
@@ -506,42 +330,34 @@ Then STOP.
 
 # REVIEW EXPECTATION
 
-Independent Reviewer will inspect GitHub and verify:
+Independent Reviewer will verify:
 
-1. Stage-2 closure commit `f96645cb94a566263532802ba15611d1a003ad1e` is preserved and Stage 2 remains PASS/FROZEN.
-2. No second APP_CREATE call was made; App ID remains exactly `796`.
-3. Stage-3A implementation introduces only a narrow exact-App live-activation path.
-4. No generic deploy bypass or arbitrary-App write capability was introduced.
-5. `DISCOVERY_MODE` remains `true` and default `WRITE_ALLOWED_APPS` remains `[]`.
-6. Preview identity for App 796 was verified before any write.
-7. The creator-only ACL contained exactly the intended CREATOR rights and no Everyone grant.
-8. ACL PUT targeted only `/k/v1/preview/app/acl.json` for App 796.
-9. ACL read-back passed before deploy.
-10. Deploy POST targeted only `/k/v1/preview/app/deploy.json` and contained exactly App 796 with the exact latest verified revision.
-11. Deploy POST occurred at most once.
-12. No automatic deploy POST retry exists.
-13. Transport uncertainty is reconciled only with GET status/read-back.
-14. Deploy status was checked with GET and final status is `SUCCESS` before claiming activation success.
-15. Exact live App 796 identity was read back after deploy.
-16. Exact live App name remained `MBO Profile & Scoring Configuration Master [Sandbox]`.
-17. Live ACL remained creator-only.
-18. No schema, layout, view, process-management, record, seed or delete operation occurred.
-19. Apps 794/795 received zero writes.
-20. Protected Apps received zero writes.
-21. `config/sandbox-apps.json` still maps scoring master to 796 and 794/795 are unchanged.
-22. `APP_REGISTRY.md` and living docs reflect `LIVE_DEPLOYED / CREATOR_ONLY / SCHEMA_NOT_CONFIGURED` only after verified success.
-23. Full regression passes after activation.
-24. WP-002D did not start.
-25. Codex stopped after Stage-3A evidence push.
+1. Stage-3A outcome was reconciled with GETs before any new write.
+2. No assumption was made from missing Git evidence about whether prior Kintone writes occurred.
+3. Official deploy success is handled as an HTTP success with no required response body.
+4. Unit tests model the real no-body deploy response.
+5. No deploy POST retry exists.
+6. No second APP_CREATE occurs; App ID remains exactly 796.
+7. If prior ACL was already applied, it was not PUT again.
+8. If prior deploy was PROCESSING/SUCCESS, only GET reconciliation occurred.
+9. If prior deploy was FAIL/CANCEL/uncertain partial state, no new deploy POST occurred without new Control Plane authorization.
+10. A new ACL PUT/deploy POST occurred only in conclusively clean Case D.
+11. Exact App name and App ID were verified after deploy/reconciliation.
+12. Live ACL is creator-only before status is marked successful.
+13. App 796 is marked `LIVE_DEPLOYED` only after exact live verification.
+14. Schema remains `NOT_CONFIGURED`; no fields/layout/views/process/records were changed.
+15. `DISCOVERY_MODE = true` and default `WRITE_ALLOWED_APPS = []` remain unchanged.
+16. Apps 794/795 and protected apps received zero writes.
+17. Full regression passes.
+18. WP-002D did not start.
 
 Expected gates:
 
-- `STAGE3A_PREFLIGHT_GATE = PASS / FAIL`
+- `STAGE3A_RECONCILIATION_GATE = PASS / FAIL / UNCERTAIN`
+- `DEPLOY_CONTRACT_GATE = PASS / FAIL`
 - `ACL_LOCKDOWN_GATE = PASS / FAIL`
-- `DEPLOY_EXECUTION_GATE = PASS / FAIL / UNCERTAIN`
 - `LIVE_IDENTITY_GATE = PASS / FAIL`
-- `LIVE_ACL_GATE = PASS / FAIL`
 - `WRITE_SCOPE_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
 - `KINTONE_SAFETY_GATE = PASS / FAIL`
-- `WP002C_STAGE3A_GATE = PASS / FAIL`
+- `WP002C_STAGE3A_GATE = PASS / FAIL / BLOCKED`
