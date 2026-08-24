@@ -5,9 +5,10 @@
 > **Review Policy:** Evidence-based verification (Source, Diff, Config, Test Evidence). Screenshots reserved for UI layout only.  
 > **Governance Rules:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-037 (PROFILE_CONFIGURATION_STORAGE)`  
 > **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
-> **WP-002 Status:** **`PLANNING (PLAN_GATE: PENDING INDEPENDENT REVIEW)`**  
-> **Implementation Authorization:** **`IMPLEMENTATION_AUTHORIZED = NO`**  
-> **Last Updated:** 2026-08-24T17:05:00+07:00  
+> **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
+> **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
+> **WP-002B Status:** **`LOCKED / NOT STARTED`**  
+> **Last Updated:** 2026-08-24T17:10:00+07:00  
 
 ---
 
@@ -17,8 +18,8 @@
 | :--- | :--- | :--- |
 | **Previous Approved Safe Commit** | `8fb306e` | Phase 2 Closed Baseline (Gates Passed & Frozen) |
 | **Phase 3 WP-001 Plan Commit** | `6e72553` | Frozen Authoritative WP-001 Implementation Plan (`PLAN_GATE = PASS`) |
-| **Phase 3 WP-002 Plan Commit** | `2f87a3b` | Finalized WP-002 Implementation Plan (`PLAN_GATE: PENDING_REVIEW`) |
-| **Evidence & Review Commit** | *(Commit B / Review Head)* | Commit B: Updated Phase 3 WP-002 Review Package Target Metadata |
+| **Phase 3 WP-002A Target Commit** | `f9029ca` | Implementation Commit: `feat: add phase 3 scoring configuration master foundation` |
+| **Evidence & Review Commit** | *(Commit B / Review Head)* | Commit B: Updated Phase 3 WP-002A Review Package Target Metadata |
 
 ---
 
@@ -26,25 +27,17 @@
 
 | Attribute | Value / Evidence Pointer |
 | :--- | :--- |
-| **Work Package ID** | `MBO-P03-WP-002` |
+| **Work Package ID** | `MBO-P03-WP-002A` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
-| **Work Package Name** | `HYBRID PROFILE & SCORING CONFIGURATION FOUNDATION` |
-| **Mode** | **`PLAN ONLY (READ-ONLY DISCOVERY)`** |
-| **Implementation Authorization** | **`IMPLEMENTATION_AUTHORIZED = NO`** |
-| **Claimed Status** | **`PLAN_GATE: PENDING_INDEPENDENT_REVIEW`** |
+| **Work Package Name** | `HYBRID PROFILE / SCORING MASTER FOUNDATION` |
+| **Mode** | **`CONTROLLED IMPLEMENTATION (SANDBOX & UNIT ONLY)`** |
+| **Claimed Status** | **`IMPLEMENTATION_GATE: PASS (128/128 Unit Tests Passing)`** |
+| **Source Module** | [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js) |
+| **Unit Test Suite** | [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (12/12 new tests passing; 128/128 total suite passing) |
 | **Governance Decisions** | [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Preserved) |
-| **WP-001 Plan (Frozen)** | [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md) |
-| **WP-002 Plan Path** | [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md) |
-| **Physical Unique Key** | Proposed field `Master_Record_Key` (`SINGLE_LINE_TEXT`, `unique = true`, `{Profile_Code}::{Version}`) |
-| **Stable Profile Identity** | `Profile_Code` is stable (e.g. `PROF_ASST_MGR`) and decoupled from versioning |
-| **Safe Publish Sequence** | Read-back verification executed while record is STILL in `VALIDATED` status prior to `PUBLISHED` transition |
-| **Exact Field Types Specified**| 23 proposed Master fields mapped to exact Kintone types (`SINGLE_LINE_TEXT`, `NUMBER`, `DATE`, `DATETIME`, `DROP_DOWN`, `USER_SELECT`) |
-| **Rollback Effective Period** | Rollback creates a NEW `Master_Record_Key` & `Version` with a NEW effective period date range |
-| **Configuration Hash Contract** | `Configuration_Hash = SHA256(Attributes 1..19)`. Audit/lifecycle fields (20..23) excluded |
-| **Pre/Post-Publish Hash Match** | Git pre-publish backup and Kintone post-publish read-back compare the EXACT SAME 19-attribute payload hash |
-| **Three System Sources** | `LEGACY_SCORING_EVIDENCE_SOURCE`, `V2_RUNTIME_CONFIGURATION_SOURCE`, `V2_BACKUP_AUDIT_RECOVERY_SOURCE` |
-| **App Allocation Status** | `NOT_ALLOCATED` (0 Apps created) |
-| **Fail-Closed Runtime Rule** | Git backup is NOT automatic runtime fallback; missing runtime config $\implies$ **FAIL CLOSED** |
+| **Master Record Key Formulation** | `generateMasterRecordKey(profileCode, version)` $\to$ `{Profile_Code}::{Scoring_Config_Version}` |
+| **Immutable Payload Hash** | `computeConfigurationHash(payload)` computed over 19 immutable fields; audit fields (20..23) excluded |
+| **Validation Model** | `validateScoringMasterConfig(payload, existingKeys)` enforces weights=100, $K \in \{1, 2\}$, duplicate key rejection (`MASTER_CONFIG_DUPLICATE`), effective date validity, and competency set requirement |
 | **Part A Scoring Modes** | Staff..DGM: `DIFFICULTY_ACHIEVEMENT_MATRIX`; GM/VP: `ACHIEVEMENT_DIRECT` |
 | **Weight Layer 1 (Appraiser)** | Part A & B: $K=1 \implies 100\%$, $K=2 \implies 50\% / 50\%$ (No auto redistribution) |
 | **Weight Layer 2 (Part A/B)** | Staff/Japan (70/30), Asst Mgr (60/40), Sect/Snr/DGM/GM/VP (50/50) |
