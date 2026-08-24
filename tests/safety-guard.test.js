@@ -17,12 +17,12 @@ import {
 
 const approvedAppName = 'MBO Profile & Scoring Configuration Master [Sandbox]';
 
-function validAppCreateAuthorization() {
+function validAppCreateAuthorization(authorizationId) {
   return {
     workPackageId: 'MBO-P03-WP-002C',
     activeWindow: true,
     explicitUserAuthorization: true,
-    authorizationId: 'wp002c-create-once',
+    authorizationId,
     authorizationConsumed: false,
     authorizedAppName: approvedAppName
   };
@@ -278,18 +278,18 @@ test('SAFE-020: Closed temporary write window (activeWindow: false) -> DENIED', 
 // ==========================================
 
 test('WP002C-S1-001: exact one-target APP_CREATE authorization passes', () => {
-  assert.equal(assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest()), true);
+  assert.equal(assertAppCreationAuthorization(validAppCreateAuthorization('s1-001'), validAppCreateRequest()), true);
 });
 
 test('WP002C-S1-002: wrong WP, operation, authorization, window, name, manifest, and consumed authorization fail closed', () => {
-  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ workPackageId: 'MBO-P03-WP-002B' })), /Work package/);
-  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ operation: 'POST' })), /Operation/);
-  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization(), explicitUserAuthorization: false }, validAppCreateRequest()), /Explicit user authorization/);
-  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization(), activeWindow: false }, validAppCreateRequest()), /window is CLOSED/);
-  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ requestedAppName: 'Other App' })), /App name/);
-  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ manifest: { expectedChanges: [] } })), /exactly one/);
-  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ manifest: { expectedChanges: [{ operation: 'APP_CREATE', appName: approvedAppName }, { operation: 'APP_CREATE', appName: approvedAppName }] } })), /exactly one/);
-  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization(), authorizationConsumed: true }, validAppCreateRequest()), /already been consumed/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization('s1-002-wp'), validAppCreateRequest({ workPackageId: 'MBO-P03-WP-002B' })), /Work package/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization('s1-002-op'), validAppCreateRequest({ operation: 'POST' })), /Operation/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization('s1-002-auth'), explicitUserAuthorization: false }, validAppCreateRequest()), /Explicit user authorization/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization('s1-002-window'), activeWindow: false }, validAppCreateRequest()), /window is CLOSED/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization('s1-002-name'), validAppCreateRequest({ requestedAppName: 'Other App' })), /App name/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization('s1-002-empty'), validAppCreateRequest({ manifest: { expectedChanges: [] } })), /exactly one/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization('s1-002-many'), validAppCreateRequest({ manifest: { expectedChanges: [{ operation: 'APP_CREATE', appName: approvedAppName }, { operation: 'APP_CREATE', appName: approvedAppName }] } })), /exactly one/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization('s1-002-consumed'), authorizationConsumed: true }, validAppCreateRequest()), /already been consumed/);
 });
 
 test('WP002C-S1-003: APP_CREATE preflight permits only the exact preview POST path', () => {
@@ -299,9 +299,17 @@ test('WP002C-S1-003: APP_CREATE preflight permits only the exact preview POST pa
     path: '/k/v1/preview/app.json',
     body: { name: approvedAppName }
   };
-  assert.equal(assertAppCreationRequestPreflight(validAppCreateAuthorization(), request), true);
-  assert.throws(() => assertAppCreationRequestPreflight(validAppCreateAuthorization(), { ...request, method: 'PUT' }), /Only POST/);
-  assert.throws(() => assertAppCreationRequestPreflight(validAppCreateAuthorization(), { ...request, path: '/k/v1/app.json' }), /Only POST/);
+  assert.equal(assertAppCreationRequestPreflight(validAppCreateAuthorization('s1-003'), request), true);
+  assert.throws(() => assertAppCreationRequestPreflight(validAppCreateAuthorization('s1-003-method'), { ...request, method: 'PUT' }), /Only POST/);
+  assert.throws(() => assertAppCreationRequestPreflight(validAppCreateAuthorization('s1-003-path'), { ...request, path: '/k/v1/app.json' }), /Only POST/);
+});
+
+test('WP002C-S1-006: authorization IDs are module-private single-use and cannot be replayed', () => {
+  const authorizationA = validAppCreateAuthorization('s1-006-a');
+  assert.equal(assertAppCreationAuthorization(authorizationA, validAppCreateRequest()), true);
+  assert.throws(() => assertAppCreationAuthorization(authorizationA, validAppCreateRequest()), /Authorization has already been consumed/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization('s1-006-a'), authorizationConsumed: false }, validAppCreateRequest()), /Authorization has already been consumed/);
+  assert.equal(assertAppCreationAuthorization(validAppCreateAuthorization('s1-006-b'), validAppCreateRequest()), true);
 });
 
 test('WP002C-S1-004: APP_CREATE authentication requires password credentials and omits API token header', () => {

@@ -18,6 +18,10 @@ export const WRITE_ALLOWED_APPS = Object.freeze([]);
 export const WP002C_APP_CREATE_WORK_PACKAGE = 'MBO-P03-WP-002C';
 export const WP002C_APPROVED_APP_NAME = 'MBO Profile & Scoring Configuration Master [Sandbox]';
 
+// Stage-1 process-local replay protection. Deliberately module-private:
+// normal callers cannot clear or pre-mark this registry.
+const consumedAppCreationAuthorizationIds = new Set();
+
 /**
  * Backwards compatibility: WRITE_BLOCKED_APP_IDS includes all protected apps + any app not in allow-list
  */
@@ -99,6 +103,9 @@ export function assertAppCreationAuthorization(authConfig, requestConfig) {
   if (authConfig.authorizationConsumed === true || authConfig.authorizationUsed === true) {
     throw new Error('APP CREATE BLOCKED: Single-use authorization has already been consumed.');
   }
+  if (consumedAppCreationAuthorizationIds.has(authorizationId)) {
+    throw new Error('APP CREATE BLOCKED: Authorization has already been consumed.');
+  }
   if (authConfig.authorizedAppName !== WP002C_APPROVED_APP_NAME || requestConfig.requestedAppName !== WP002C_APPROVED_APP_NAME) {
     throw new Error('APP CREATE BLOCKED: App name must exactly match the approved WP-002C target.');
   }
@@ -112,6 +119,7 @@ export function assertAppCreationAuthorization(authConfig, requestConfig) {
     throw new Error('APP CREATE BLOCKED: Manifest target must be exactly one approved APP_CREATE.');
   }
 
+  consumedAppCreationAuthorizationIds.add(authorizationId);
   return true;
 }
 
