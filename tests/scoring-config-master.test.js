@@ -23,7 +23,7 @@ test('WP-002A: Baseline returns exactly 8 config records for all 8 evaluation gr
   assert.deepEqual(profileCodes.sort(), expectedCodes.sort());
 });
 
-test('WP-002A: Section Manager and DGM are separate configs with distinct rounding behavior', () => {
+test('WP-002A: Section Manager and DGM are separate Profile_Code values', () => {
   const baselines = getCanonicalBaselineMasterConfigs();
   const sectMgr = baselines.find(c => c.Profile_Code === PROFILE_CODES.SECTION_MGR);
   const dgm = baselines.find(c => c.Profile_Code === PROFILE_CODES.DGM);
@@ -39,26 +39,32 @@ test('WP-002A: Section Manager and DGM are separate configs with distinct roundi
   assert.equal(dgm.Final_Rounding_Rule, ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC);
 });
 
-test('WP-002A: Assistant Manager remains 60/40 split', () => {
+test('WP-002A: GM and VP are separate Profile_Code values with K=1 ACHIEVEMENT_DIRECT', () => {
+  const baselines = getCanonicalBaselineMasterConfigs();
+  const gm = baselines.find(c => c.Profile_Code === PROFILE_CODES.GM);
+  const vp = baselines.find(c => c.Profile_Code === PROFILE_CODES.VP);
+
+  assert.ok(gm);
+  assert.ok(vp);
+  assert.notEqual(gm.Profile_Code, vp.Profile_Code);
+  assert.notEqual(gm.Master_Record_Key, vp.Master_Record_Key);
+
+  assert.equal(gm.Expected_Appraiser_Count, 1);
+  assert.equal(vp.Expected_Appraiser_Count, 1);
+  assert.equal(gm.Part_A_Scoring_Mode, PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT);
+  assert.equal(vp.Part_A_Scoring_Mode, PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT);
+});
+
+test('WP-002A: Assistant Manager remains 60/40 split with K=2 equal weighting', () => {
   const baselines = getCanonicalBaselineMasterConfigs();
   const asstMgr = baselines.find(c => c.Profile_Code === PROFILE_CODES.ASST_MGR);
   assert.ok(asstMgr);
   assert.equal(asstMgr.PartA_Weight, 60);
   assert.equal(asstMgr.PartB_Weight, 40);
   assert.equal(asstMgr.Expected_Appraiser_Count, 2);
+  assert.equal(asstMgr.Appraiser_Weight_Rule_Code, APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1);
 
   const result = validateScoringMasterConfig(asstMgr);
-  assert.equal(result.isValid, true);
-});
-
-test('WP-002A: GM remains K=1 / ACHIEVEMENT_DIRECT', () => {
-  const baselines = getCanonicalBaselineMasterConfigs();
-  const gm = baselines.find(c => c.Profile_Code === PROFILE_CODES.GM);
-  assert.ok(gm);
-  assert.equal(gm.Expected_Appraiser_Count, 1);
-  assert.equal(gm.Part_A_Scoring_Mode, PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT);
-
-  const result = validateScoringMasterConfig(gm);
   assert.equal(result.isValid, true);
 });
 
@@ -183,4 +189,15 @@ test('WP-002A: Configuration_Hash changes when immutable scoring content changes
   const hashMod = computeConfigurationHash(modifiedWeightConfig);
 
   assert.notEqual(hashBase, hashMod);
+});
+
+test('WP-002A: Scoring master configuration validation has ZERO runtime Git dependency', () => {
+  const baselines = getCanonicalBaselineMasterConfigs();
+  const gmConfig = baselines.find(c => c.Profile_Code === PROFILE_CODES.GM);
+  assert.ok(gmConfig);
+
+  // Pure in-memory & Kintone-compatible validation without filesystem/git requirement
+  const result = validateScoringMasterConfig(gmConfig);
+  assert.equal(result.isValid, true);
+  assert.ok(result.computedHash);
 });

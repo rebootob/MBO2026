@@ -1,6 +1,6 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T17:14:00+07:00
+- **Updated At**: 2026-08-24T17:22:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
 - **Active AI:** `Antigravity`
 - **Active Work Package**: `MBO-P03-WP-002A (Hybrid Profile / Scoring Master Foundation)`
@@ -10,14 +10,14 @@
 - **WP-002B Status**: **`LOCKED / NOT STARTED`**
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Appraiser Weight & Completeness**: `DEC-036`
-- **Profile Storage Architecture**: `HYBRID_OPTION_C (DEC-037)`
+- **Profile Storage Architecture**: `KINTONE_ONLY (DEC-038)` (Supersedes DEC-037)
 - **Scoring Evidence Matrix**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Matrix**: [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
 - **Competency Evidence Matrix**: [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)
 - **WP-001 Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **WP-002 Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
-- **WP-002A Unit Test Suite**: [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (130/130 tests passing)
+- **WP-002A Unit Test Suite**: [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (131/131 tests passing)
 - **Handoff State**: `SAFE_CHECKPOINT`
 - **Current Branch**: `develop`
 - **Last Safe Commit**: `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -35,12 +35,12 @@
 6. **Phase 3 WP-002A Master Foundation Implementation: `PASSED / COMPLETE`**.
 7. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (`DEC-035`)**.
 8. **Appraiser Weight & Completeness Governance: `FROZEN` (`DEC-036`)**.
-9. **Profile Configuration Storage Architecture: `HYBRID_OPTION_C = FROZEN` (`DEC-037`)**.
+9. **Profile Configuration Storage Architecture: `KINTONE_ONLY = FROZEN` (`DEC-038`)** (Supersedes `DEC-037`).
 10. **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
 11. **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
 12. **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
 13. **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` & `CONTROLLED_REOPEN_REVISION_MODEL = FROZEN` (`DEC-022`)**.
-14. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`, `DEC-035`, `DEC-036`, `DEC-037`)**.
+14. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`, `DEC-035`, `DEC-036`, `DEC-038`)**.
 15. **Annual Evaluation Cycle Architecture: `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)**.
 16. **Annual Plan Carry Forward Architecture: `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)**.
 17. **HR Control Center Architecture: `HR_CONTROL_CENTER_ARCHITECTURE = FROZEN` (`DEC-025`)**.
@@ -56,7 +56,7 @@
 27. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
 
 ## Test & Defect Status
-- **Automated Unit Tests:** 130/130 Tests Passing (`npm test`)
+- **Automated Unit Tests:** 131/131 Tests Passing (`npm test`)
 - **Defects:** 0 Open, 15 CLOSED (`DEF-001`..`DEF-015`)
 - **Observations:** 5 Open (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
 - **Critical Business Questions:** **0 (All governance decisions confirmed)**

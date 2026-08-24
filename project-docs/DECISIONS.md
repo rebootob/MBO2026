@@ -195,9 +195,10 @@
   8. **Annual Profile Snapshot:** $K_{\text{expected}}$, `Appraiser_Weight_Rule_Code`, and `Scoring_Config_Version` are resolved and snapshotted at Annual Record Initialization and frozen for the full FY under `DEC-024`.
   9. **Separation of Scoring from Routing:** Scoring Appraiser count and weight belong strictly to the Scoring Configuration and are decoupled from workflow routing slots or stage approver reassignments.
 
-## DEC-037 — Profile Configuration Storage Architecture
+## DEC-037 — Hybrid Configuration Storage Architecture (SUPERSEDED)
 - **Date**: 2026-08-24
-- **Status**: FROZEN (User-Confirmed Architectural Choice)
+- **Status**: SUPERSEDED_BY_DEC_038 (Historical Architectural Record Preserved)
+- **Superseded Reason**: User simplified architecture to Kintone-Only storage (`DEC-038`), eliminating runtime Git dependencies.
 - **Decision**:
   1. **Selected Option:** **`Option C: Hybrid Architecture`** (Standalone Kintone Master App for HR runtime administration with Git Repository JSON Backup Snapshots).
   2. **Three System Sources Defined:**
@@ -207,3 +208,16 @@
   3. **Runtime Governance:** Kintone Master App serves as `V2_RUNTIME_CONFIGURATION_SOURCE` for active runtime profile and scoring configuration resolution.
   4. **Backup & Recovery Governance:** Git Repository serves as `V2_BACKUP_AUDIT_RECOVERY_SOURCE` for immutable audit, publish verification, and disaster recovery.
   5. **Fail-Closed Runtime Rule:** Git backup is NOT an automatic runtime fallback. If runtime Kintone configuration is unavailable or inconsistent, the runtime engine must **FAIL CLOSED** (`SCORING_CONFIG_RESOLUTION_FAILED`).
+
+## DEC-038 — Kintone-Only Profile & Scoring Configuration Storage Architecture
+- **Date**: 2026-08-24
+- **Status**: FROZEN (User-Confirmed Core Architecture Decision - Supersedes DEC-037)
+- **Decision**:
+  1. **Target Architecture:** **`PROFILE_CONFIGURATION_STORAGE = KINTONE_ONLY`**.
+  2. **Runtime Configuration Source:** Kintone Profile / Scoring Configuration Master App (`V2_RUNTIME_CONFIGURATION_SOURCE`) is the single active runtime source for HR profile and scoring administration.
+  3. **Immutable Version History:** Historical scoring configurations are stored as immutable versioned records within the same Kintone Master App (`{Profile_Code}::{Scoring_Config_Version}`).
+  4. **Annual Historical Snapshot:** App 794 Annual MBO Records snapshot sufficient physical profile and scoring codes at annual record initialization to guarantee permanent FY scoring reproducibility.
+  5. **Zero Runtime Git Dependency:** Software runtime has **NO DEPENDENCY** on GitHub, Local Git, Remote Git, external file servers, or NAS for configuration resolution or publish verification. (Developer source code version control in Git remains standard software development practice).
+  6. **Kintone-Only Safe Publish Sequence:**
+     - `DRAFT` $\to$ Validate rules $\to$ `VALIDATED` $\to$ Compute `Configuration_Hash` $\to$ Save in Kintone $\to$ Read record back via REST API while status remains `VALIDATED` $\to$ Compare Expected Hash vs Read-Back Hash $\implies$ IF MATCH: Transition status to `PUBLISHED`; IF NOT MATCH: Fail Closed with `CONFIG_READBACK_MISMATCH`.
+  7. **No Separate Archive App:** The Configuration Master App itself maintains historical published versions (`Config_Status = SUPERSEDED` / `RETIRED`). No separate archive app is created.
