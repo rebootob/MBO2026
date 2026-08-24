@@ -1,22 +1,24 @@
 # MBO V2 Implementation Status & Governance Control
 
 - **Active AI:** `Codex`
-- **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002B`
-- **Handoff State:** `SAFE_CHECKPOINT (WP-002B CLOSED)`
+- **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002C`
+- **Handoff State:** `SAFE_CHECKPOINT (WP-002C PLAN CREATED)`
 - **Last Handoff At:** `2026-08-24T19:04:00+07:00`
-- **Review Status:** `PHASE 3 WP-002B REVIEW_GATE = PASS (INDEPENDENT REVIEW CLOSED)`
-- **Implementation Authorization:** **`WP-002B IMPLEMENTATION AUTHORIZED AND COMPLETE`** (Read-only; Zero Writes)
+- **Review Status:** `PHASE 3 WP-002C = PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`
+- **Implementation Authorization:** **`NO`** (`APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit:** `6e72553` (Frozen / Approved)
 - **Phase 3 WP-002 Plan Commit:** `2f87a3b`
 - **Current Phase:** **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package:** `MBO-P03-WP-002B (Profile Resolution & Read-Only Scoring Configuration Resolver)`
+- **Current Work Package:** `MBO-P03-WP-002C (Kintone Profile & Scoring Configuration Master — Plan Only)`
 - **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
 - **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-- **NEXT_WP:** `AWAITING_USER_AUTHORIZATION`
+- **WP-002C Status:** **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** (Plan only; no app creation, implementation, or Kintone writes)
+- **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = NOT_ALLOCATED`; `NOT_CREATED`; `SANDBOX`; production `FALSE`)
+- **NEXT_WP:** `WP-002C INDEPENDENT REVIEW`
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate:** `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Kintone-Only Version Immutability)`
@@ -71,6 +73,7 @@
 |  | ↳ *WP-002: Kintone-Only Profile & Scoring Configuration Foundation (Plan)* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002A: Kintone-Only Profile / Scoring Master Foundation (Code & Unit)* | **IMPLEMENTATION COMPLETE** | 2026-08-24 |
 |  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver* | **PASSED / FROZEN** | 2026-08-24 |
+|  | ↳ *WP-002C: Kintone Profile & Scoring Configuration Master (Plan)* | **PLAN_CREATED / PENDING INDEPENDENT REVIEW** | - |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
 | **P6** | In-Flight Approver Change & HR Self-Service | LOCKED | - |
