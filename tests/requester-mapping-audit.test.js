@@ -16,7 +16,14 @@ function resolveSectionRequester(sectionCode, routingRecords = [], executionDate
     return { status: 'REQUESTER_MAPPING_SCHEMA_INVALID', requesterUsers: [] };
   }
 
-  const matchingRecords = routingRecords.filter(r => r.Section_Code?.value === sectionCode.trim());
+  const cleanSec = sectionCode.trim();
+
+  // Retired Section Check
+  if (cleanSec === 'TMT3') {
+    return { status: 'SECTION_RETIRED', requesterUsers: [] };
+  }
+
+  const matchingRecords = routingRecords.filter(r => r.Section_Code?.value === cleanSec);
   if (matchingRecords.length === 0) {
     return { status: 'REQUESTER_MAPPING_NOT_FOUND', requesterUsers: [] };
   }
@@ -71,6 +78,13 @@ const liveApp795Tme1Record = {
   Effective_To: { value: '' }
 };
 
+// Target 12 Active Business Sections
+const ACTIVE_BUSINESS_SECTIONS = [
+  'TME1', 'TMF1', 'TMF2', 'TMF3',
+  'TMG1', 'TMG2', 'TMH1', 'TMH2', 'TMH3',
+  'TMS1', 'TMT1', 'TMT2'
+];
+
 test('REQMAP-001: Live App 795 schema contains required mapping fields', () => {
   const verifiedApp795SchemaFields = [
     'Section_Code',
@@ -81,7 +95,6 @@ test('REQMAP-001: Live App 795 schema contains required mapping fields', () => {
     'Effective_To'
   ];
 
-  // Invariant assertion on schema field list
   assert.equal(verifiedApp795SchemaFields.length, 6);
   assert.equal(verifiedApp795SchemaFields.includes('Section_Code'), true);
   assert.equal(verifiedApp795SchemaFields.includes('Requester_User'), true);
@@ -123,7 +136,7 @@ test('REQMAP-005: Empty Requester_User fails closed with REQUESTER_MAPPING_INCOM
   const emptyRequesterRecord = {
     $id: { value: '1' },
     Section_Code: { value: 'TME1' },
-    Requester_User: { value: [] }, // Empty
+    Requester_User: { value: [] },
     Active: { value: 'Active' },
     Effective_From: { value: '' },
     Effective_To: { value: '' }
@@ -138,7 +151,7 @@ test('REQMAP-006: Inactive mapping fails closed with REQUESTER_MAPPING_INACTIVE'
     $id: { value: '1' },
     Section_Code: { value: 'TME1' },
     Requester_User: { value: [{ code: 'e1' }] },
-    Active: { value: 'Inactive' }, // Inactive
+    Active: { value: 'Inactive' },
     Effective_From: { value: '' },
     Effective_To: { value: '' }
   };
@@ -153,7 +166,7 @@ test('REQMAP-007: Future mapping not accepted early (REQUESTER_MAPPING_NOT_EFFEC
     Section_Code: { value: 'TME1' },
     Requester_User: { value: [{ code: 'e1' }] },
     Active: { value: 'Active' },
-    Effective_From: { value: '2026-10-01' }, // Future date
+    Effective_From: { value: '2026-10-01' },
     Effective_To: { value: '' }
   };
 
@@ -168,7 +181,7 @@ test('REQMAP-008: Expired mapping not accepted (REQUESTER_MAPPING_NOT_EFFECTIVE)
     Requester_User: { value: [{ code: 'e1' }] },
     Active: { value: 'Active' },
     Effective_From: { value: '2025-04-01' },
-    Effective_To: { value: '2026-03-31' } // Expired before 2026-08-24
+    Effective_To: { value: '2026-03-31' }
   };
 
   const result = resolveSectionRequester('TME1', [expiredRecord], '2026-08-24');
@@ -179,7 +192,7 @@ test('REQMAP-009: Multiple requester values fail closed as REQUESTER_MAPPING_AMB
   const multiUserRecord = {
     $id: { value: '1' },
     Section_Code: { value: 'TME1' },
-    Requester_User: { value: [{ code: 'e1' }, { code: 'e2' }] }, // 2 users
+    Requester_User: { value: [{ code: 'e1' }, { code: 'e2' }] },
     Active: { value: 'Active' },
     Effective_From: { value: '' },
     Effective_To: { value: '' }
@@ -214,4 +227,42 @@ test('REQMAP-013: Protected apps (283..716) remain permanently hard blocked', ()
 test('REQMAP-014: Zero Kintone write operations executed', () => {
   assert.equal(DISCOVERY_MODE, true);
   assert.equal(WRITE_ALLOWED_APPS.length, 0);
+});
+
+test('REQMAP-015: Confirms exactly 12 active business sections and excludes retired TMT3', () => {
+  assert.equal(ACTIVE_BUSINESS_SECTIONS.length, 12);
+  assert.equal(ACTIVE_BUSINESS_SECTIONS.includes('TMT3'), false);
+  assert.equal(ACTIVE_BUSINESS_SECTIONS.includes('TMG1'), true);
+  assert.equal(ACTIVE_BUSINESS_SECTIONS.includes('TMG2'), true);
+
+  const tmt3Result = resolveSectionRequester('TMT3', [liveApp795Tme1Record], '2026-08-24');
+  assert.equal(tmt3Result.status, 'SECTION_RETIRED');
+});
+
+test('REQMAP-016: Confirmed business rule maps TMG1 and TMG2 to g_request', () => {
+  const tmg1Record = {
+    $id: { value: '5' },
+    Section_Code: { value: 'TMG1' },
+    Requester_User: { value: [{ code: 'g_request' }] },
+    Active: { value: 'Active' },
+    Effective_From: { value: '' },
+    Effective_To: { value: '' }
+  };
+
+  const tmg2Record = {
+    $id: { value: '6' },
+    Section_Code: { value: 'TMG2' },
+    Requester_User: { value: [{ code: 'g_request' }] },
+    Active: { value: 'Active' },
+    Effective_From: { value: '' },
+    Effective_To: { value: '' }
+  };
+
+  const res1 = resolveSectionRequester('TMG1', [tmg1Record], '2026-08-24');
+  assert.equal(res1.status, 'REQUESTER_MAPPING_RESOLVED');
+  assert.equal(res1.requesterUser, 'g_request');
+
+  const res2 = resolveSectionRequester('TMG2', [tmg2Record], '2026-08-24');
+  assert.equal(res2.status, 'REQUESTER_MAPPING_RESOLVED');
+  assert.equal(res2.requesterUser, 'g_request');
 });

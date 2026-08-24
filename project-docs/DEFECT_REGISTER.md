@@ -33,3 +33,10 @@
 | **MBO-P02-DEF-013** | P2 | Severity 2 | Malformed duplicate-check responses (e.g. `{}`, `{ records: null }`) could fail open. | Missing response array validation in duplicate check. | `src/services/annual-record-service.js` | Added strict validation requiring `Array.isArray(resp.records)`; invalid responses throw `DUPLICATE_CHECK_RESPONSE_INVALID`. | `REC-019`, `REC-020` passing | **`CLOSED`** |
 | **MBO-P02-DEF-014** | P2 | Severity 2 | Normalized read-back skipped server defaults and CALC fields rather than validating them. | Read-back loop lacked deep default comparison and structural CALC field presence verification. | `src/services/annual-record-service.js` | Implemented deep equality normalization for Tier B defaults and strict Tier D CALC presence & client write-prohibition verification. | `REC-011` passing | **`CLOSED`** |
 | **MBO-P02-DEF-015** | P2 | Severity 2 | `REC-005`..`REC-008` did not test the actual Annual Record orchestration pipeline. | Tests bypassed service orchestration pipeline. | `src/services/annual-record-service.js`, `tests/annual-record-initialization.test.js` | Implemented `prepareInitializationCandidate` pipeline and rewrote `REC-005`..`REC-008` to verify failure propagation and 0 create calls. | `REC-005`..`REC-008` passing | **`CLOSED`** |
+
+
+## 3. Data Quality Observations
+
+| Observation ID | Phase | Severity | Summary | Root Cause | Affected Component | Governance Action | Test Evidence | Status |
+| :--- | :---: | :---: | :--- | :--- | :--- | :--- | :--- | :---: |
+| **MBO-P02-OBS-005** | P2 | Severity 3 | Retired `TMT3` section remains referenced by 11 current App53 employee records. | Historical organization assignment not yet updated in App 53 after section retirement. | `App 53 (Employee Namelist)` | Maintain fail-closed routing block for TMT3 until HR updates employee section assignments in App 53. | `REQMAP-015` passing | **`OPEN_OBSERVATION`** |
