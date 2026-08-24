@@ -3,18 +3,16 @@
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 2 / MBO-P02-WP-001`
 - **Handoff State:** `SAFE_CHECKPOINT`
-- **Last Handoff At:** `2026-08-24T11:05:00+07:00`
-- **Last Handoff Commit:** `ed4e4e9`
-- **Current Phase:** **`PHASE 2: ANNUAL RECORD FOUNDATION (IN PROGRESS)`**
-- **Current Work Package:** `MBO-P02-WP-001 (Annual Identity & Fiscal Year Foundation)`
-- **WP-001 Status:** **`PASSED (Pure Fiscal Year Engine & Record Key Logic Complete)`**
-- **WP-002 (Next Work Package):** `LOCKED / PENDING USER REVIEW` (Annual Record Creation & Lookup Flow)
-- **Review Status:** `PENDING_EXTERNAL_REVIEW`
-- **Review Package Commit:** `7c1a61a`
+- **Last Handoff At:** `2026-08-24T12:12:00+07:00`
+- **Review Status:** `PENDING_INDEPENDENT_REVIEW`
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `ed4e4e9`
+- **Current Phase:** **`PHASE 2: ANNUAL RECORD FOUNDATION (IN PROGRESS)`**
+- **Current Work Package:** `MBO-P02-WP-001 (Annual Identity & Fiscal Year Foundation - Review Fixes Applied)`
+- **WP-001 Status:** `IMPLEMENTATION GATE: PASSED / REVIEW GATE: PENDING_RETEST`
+- **WP-002 (Next Work Package):** `LOCKED / PENDING REVIEW` (MBO-P02-WP-002: Employee Lookup & Verification Foundation - Read Only)
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`, Kintone Writes = 0)
-- **Open Defects:** **0**
+- **Open Defects:** **4 (FIXED_PENDING_RETEST)**
 - **Blockers:** **0**
 
 ---
@@ -28,8 +26,8 @@
 |  | ↳ *WP-001: Baseline & Safety Gate* | *PASSED* | 2026-08-24 |
 |  | ↳ *WP-002: Controlled Sandbox Write Readiness* | *PASSED* | 2026-08-24 |
 | **P2** | **Annual Record Foundation (App 794 Base Schema)** | **IN PROGRESS** | - |
-|  | ↳ *WP-001: Annual Identity & Fiscal Year Foundation* | *PASSED* | 2026-08-24 |
-|  | ↳ *WP-002: Annual Record Creation & Validation Pipeline* | *LOCKED* | - |
+|  | ↳ *WP-001: Annual Identity & Fiscal Year Foundation* | *PENDING RE-REVIEW* | - |
+|  | ↳ *WP-002: Employee Lookup & Verification Foundation* | *LOCKED* | - |
 | **P3** | Evaluation Profile, Competency & Scoring Engine | LOCKED | - |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
@@ -46,17 +44,17 @@
 
 ---
 
-## 2. Test & Safety Gate Metrics for Phase 2 WP-001
-* **Automated Unit Tests:** 61/61 Passing (32 Baseline + 20 Safety + 9 Annual Foundation).
-* **Japanese FY Engine:** `PASS` (`ANNUAL-001` & `ANNUAL-002` boundary validations).
-* **Leading Zero Preservation:** `PASS` (`ANNUAL-003`: `"0149"` preserved as string).
-* **Record Key Generation:** `PASS` (`ANNUAL-004` & `ANNUAL-005`: `"FY2027-0149"` unique key).
-* **App 794 Schema Fidelity:** `PASS` (`Expected Diff = NONE`, `Unexpected Diff = NONE`).
+## 2. Test & Safety Gate Metrics for Phase 2 WP-001 (Cycle 2)
+* **Automated Unit Tests:** 62/62 Passing (32 Baseline + 20 Safety + 10 Annual Foundation).
+* **DEF-001 Fix:** Strict String Employee Code Contract (`normalizeEmployeeCode(149)` throws).
+* **DEF-002 Fix:** Strict Date Parsing & Format Validation (Rejects invalid dates & formats).
+* **DEF-003 Fix:** Accurate Test Naming & Assertions.
+* **DEF-004 Fix:** Corrected Next WP to `MBO-P02-WP-002` (Employee Lookup, Read-Only).
 * **Zero Artificial Writes:** `PASS` (`WRITE_ALLOWED_APPS = []`, `Kintone Writes = 0`).
 * **Kintone Apps Modified:** **NONE**.
 
 ---
 
 ## 3. Next Action & Boundaries
-* **Immediate Action:** Present Phase 2 WP-001 completion report in Thai to the user and STOP.
-* **Do Not Start:** Strictly **DO NOT START WP-002** (Annual Record Creation & Validation Pipeline) until user reviews and approves WP-001.
+* **Immediate Action:** Present Phase 2 WP-001 review fix report in Thai to the user and STOP.
+* **Do Not Start:** Strictly **DO NOT START WP-002** until the independent review gate passes.
