@@ -21,6 +21,7 @@
 | **Phase 3 WP-002B Plan Correction Commit** | `622b8c4` | Commit A: `docs: correct wp-002b resolver dependency and fiscal year contract` |
 | **WP-002B Implementation Commit** | `26f4771` | Commit A: `feat: implement wp-002b profile scoring resolver` |
 | **WP-002B Correction Commit** | `42029ab` | EmployeeService-owned snapshot provenance, mutation detection, config-domain validation, FY context gate |
+| **WP-002B Final Architecture Commit** | `86e4354` | Removes source-code scoring authority; restores resolver regression coverage |
 | **Evidence & Review Commit** | *(this Commit B / Review Head)* | Independent review metadata only; review remains pending |
 
 ---
@@ -49,6 +50,6 @@
 | **Migration Decision** | **`DEC-040: LEGACY_MIGRATION_STATUS = DEFERRED`** with complete rollback contract |
 | **Resolver Module** | `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter) |
 | **Validation Modules** | `src/services/employee-service.js` provenance registry and `src/profiles/scoring-config-master.js` domain validation are reused by the resolver |
-| **Unit Test Suite** | `tests/profile-scoring-resolver.test.js` (15 tests; 146/146 total suite passing) |
+| **Unit Test Suite** | `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing) |
 | **Kintone Write Operations** | **`0 (Zero Writes Executed)`** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |
