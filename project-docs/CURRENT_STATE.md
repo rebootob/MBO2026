@@ -23,7 +23,7 @@
 - **WP-002B Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md)
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
 - **WP-002B Source Module**: `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter)
-- **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (22 tests; 154/154 total suite passing)
+- **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (23 tests; 154/154 total suite passing)
 - **Handoff State**: `SAFE_CHECKPOINT`
 - **Current Branch**: `ai/codex-wp002b`
 - **Last Safe Commit**: `8fb306e` (Phase 2 Passed Implementation & Review Gates)
