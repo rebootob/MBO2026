@@ -65,3 +65,22 @@
 * **Caller Position Bypass Blocked:** Arbitrary caller-provided `Profile_Code` cannot bypass position-based resolution. Invalid/unverified employee snapshots fail closed.
 * **DRY_RUN Clarification:** `DRY_RUN = ZERO_WRITE` always; `SANDBOX_MIGRATION_TEST` is a separate concept that may involve controlled writes when explicitly authorized.
 * **Implementation Status:** **`PASSED / FROZEN`** (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS; 17 resolver tests; 148/148 total; 0 Kintone Writes).
+
+
+---
+
+# MBO-P03-WP-002C STAGE 3A VERIFICATION EVIDENCE LOG
+
+- **Execution Plane:** `Antigravity`
+- **Execution Branch:** `ai/antigravity-wp002c`
+- **Handoff Baseline Commit:** `18e1d5510e7a03a7a5c3afded0fb36ca9cc9effc`
+- **Verification Case:** `CASE V2 — BOTH MANAGEMENT PROBES PROVE APP NOT FOUND`
+- **Deployment State:** `LIVE_DEPLOYMENT_STATE = INCONSISTENT`
+- **Live ACL Probe (`/k/v1/app/acl.json?app=796`):** `HTTP 404`
+- **Live Admin Notes Probe (`/k/v1/app/adminNotes.json?app=796`):** `HTTP 404`
+- **Published App Catalog Probe (`/k/v1/apps.json?ids[0]=796`):** `HTTP 200 (apps: [])`
+- **Live General Settings Probe (`/k/v1/app/settings.json?app=796`):** `HTTP 404`
+- **Preview Deploy Status:** `SUCCESS` (App 796, revision 3, Creator-Only ACL)
+- **Planned Schema Fields:** Absent (`NO`)
+- **Automated Tests:** **171 / 171 PASS**
+- **Kintone Write Operations:** **`0 (Zero Writes Executed)`**
