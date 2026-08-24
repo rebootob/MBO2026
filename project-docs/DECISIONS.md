@@ -1,5 +1,14 @@
 # Architecture & Design Decisions
 
+## DEC-028 — Multi-AI Continuity & Handoff Governance
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Provider-Neutral Governance)
+- **Decision**:
+  1. **Provider-Independent Continuity:** The project must seamlessly transition between implementing AI assistants (Antigravity, OpenAI Codex, Claude, etc.) using the Git repository and living documentation as the sole authoritative Source of Truth.
+  2. **Mandatory 12-Document Reading Order:** Incoming AI assistants must read the 12-document sequence defined in `AI_START_HERE.md` and verify state via the 7-Step Handoff Verification Protocol before taking action.
+  3. **Traceability Standards:** All changes must reference structured Work Package IDs (`MBO-P{PHASE}-WP-{NUMBER}`) and Defect IDs (`MBO-P{PHASE}-DEF-{NUMBER}`).
+  4. **Strict Handoff Checkpoint:** Current AI must test, document, verify zero unrecorded changes, commit, push, and record the Last Safe Commit hash before handing off.
+
 ## DEC-027 — 16-Phase Implementation Governance & Delivery Model
 - **Date**: 2026-08-24
 - **Status**: FROZEN (Phased Delivery Governance)

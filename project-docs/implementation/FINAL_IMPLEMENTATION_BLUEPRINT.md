@@ -90,3 +90,14 @@ graph LR
 | **P13**| **Migration & Cleanup** | 7-step retirement lifecycle, legacy script cleanup, zero dead artifacts | No-Orphan Audit (Count=0) |
 | **P14**| **Integrated UAT** | End-to-end execution of all 125 defined test scenarios | 125/125 Scenarios PASS |
 | **P15**| **Production Cutover** | Cutover checklist, baseline database snapshot, user manual publication | Production Sign-off |
+
+---
+
+## 4. Multi-AI Continuity & Handoff Governance (DEC-028)
+
+To support long-term maintainability across different AI tools (Antigravity, OpenAI Codex, Claude):
+1. **Source of Truth:** Git Repository + Frozen Blueprints + Status & Handoff Documents. Conversation history is non-authoritative.
+2. **Standard Handoff Protocol:** Governed by `project-docs/AI_HANDOFF_PROTOCOL.md`.
+3. **Mandatory Reading Order:** Prescribed 12-document sequence in `AI_START_HERE.md`.
+4. **Traceability:** Every change mapped to `MBO-P{PHASE}-WP-{NUMBER}` and `MBO-P{PHASE}-DEF-{NUMBER}`.
+
