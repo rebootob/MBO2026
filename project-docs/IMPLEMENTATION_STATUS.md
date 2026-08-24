@@ -3,16 +3,17 @@
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-001`
 - **Handoff State:** `SAFE_CHECKPOINT`
-- **Last Handoff At:** `2026-08-24T16:41:00+07:00`
-- **Review Status:** `PHASE 3 WP-001 PLAN GATE PASSED / FROZEN / APPROVED`
-- **Review Required By:** User Decision Required for Storage Selection before WP-002
+- **Last Handoff At:** `2026-08-24T16:46:00+07:00`
+- **Review Status:** `PHASE 3 WP-001 FROZEN & APPROVED; DEC-037 STORAGE DECISION CONFIRMED (HYBRID)`
+- **Review Required By:** User Authorization to Start WP-002
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit:** `6e72553`
 - **Independent Review Metadata Commit:** `9b2882e`
+- **Closure Commit:** `d5481f2`
 - **Current Phase:** **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
 - **Current Work Package:** `MBO-P03-WP-001 (Evaluation Profile & Competency Configuration Foundation)`
 - **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**
-- **WP-002 Status:** **`BLOCKED_PENDING_USER_DECISION (Awaiting PROFILE_CONFIGURATION_STORAGE Selection)`**
+- **WP-002 Status:** **`READY_TO_START (DEC-037 CONFIRMED: Option C Hybrid Architecture)`**
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate:** `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Storage-Neutral Version Immutability)`
@@ -20,16 +21,17 @@
 - **Position Evidence Gate:** `PASS (33 Resolved / 125 Recs, 29 Ambiguous / 147 Recs Fail Closed, 1 Invalid / 3 Recs)`
 - **Competency Evidence Gate:** `PASS (Accepted & Frozen)`
 - **DEC-030 Commit Gate:** `PASS (Commit Separation Verified)`
-- **Scoring Governance Rules:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`
+- **Profile Storage Decision:** **`DEC-037 CONFIRMED (Option C: Hybrid Architecture)`**
+- **Scoring Governance Rules:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-037 (PROFILE_CONFIGURATION_STORAGE)`
 - **Scoring Evidence Path:** [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Path:** [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
 - **Competency Evidence Path:** [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)
 - **Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
-- **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-035`, `DEC-036`)
+- **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-035`, `DEC-036`, `DEC-037`)
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`, Kintone Writes = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)
 - **Open Observations:** **5** (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
-- **Blockers:** **0 Implementation Defects (Awaiting User Storage Choice for WP-002)**
+- **Blockers:** **0 Implementation Defects**
 
 ---
 
@@ -47,7 +49,7 @@
 |  | ↳ *WP-003: Annual Record Initialization & Duplicate Prevention* | *PASSED* | 2026-08-24 |
 | **P3** | **Evaluation Profile, Competency & Scoring Engine** | **IN PROGRESS** | - |
 |  | ↳ *WP-001: Evaluation Profile & Competency Foundation* | **FROZEN / APPROVED** | 2026-08-24 |
-|  | ↳ *WP-002: Profile Resolution & Scoring Engine Implementation* | *BLOCKED* | - |
+|  | ↳ *WP-002: Profile Resolution & Scoring Engine Implementation* | *READY_TO_START* | - |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
 | **P6** | In-Flight Approver Change & HR Self-Service | LOCKED | - |

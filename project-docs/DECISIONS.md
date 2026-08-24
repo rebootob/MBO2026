@@ -194,3 +194,13 @@
   7. **No Automatic Weight Redistribution:** If $K_{\text{expected}} = 2$ and only one appraiser has submitted evaluations, the system **MUST NOT** redistribute weight to 100% for the completed appraiser. It must fail closed until all required appraisers complete their evaluations.
   8. **Annual Profile Snapshot:** $K_{\text{expected}}$, `Appraiser_Weight_Rule_Code`, and `Scoring_Config_Version` are resolved and snapshotted at Annual Record Initialization and frozen for the full FY under `DEC-024`.
   9. **Separation of Scoring from Routing:** Scoring Appraiser count and weight belong strictly to the Scoring Configuration and are decoupled from workflow routing slots or stage approver reassignments.
+
+
+## DEC-037 — Profile Configuration Storage Architecture
+- **Date**: 2026-08-24
+- **Status**: FROZEN (User-Confirmed Architectural Choice)
+- **Decision**:
+  1. **Selected Option:** **`Option C: Hybrid Architecture`** (Standalone Kintone Master App for HR runtime administration with Git Repository JSON Backup Snapshots).
+  2. **Runtime Governance:** Kintone Master App serves as the active runtime source of truth for HR profile and scoring configuration administration.
+  3. **Audit & Safety Snapshot:** Every active configuration version is backed up immutably in the git repository (`config/profiles/`), satisfying version immutability and offline recovery.
+  4. **Next WP Readiness:** Unblocks `MBO-P03-WP-002` (Profile Resolution & Scoring Engine Implementation).
