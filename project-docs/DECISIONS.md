@@ -11,7 +11,7 @@
 
 ## DEC-026 — Guided Workflow UX Framework
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Required Core Subsystem)
+- **Status**: FROZEN (Required Core Subsystem)
 - **Decision**:
   1. **5 Core Principles:** UI must clearly present: (1) What is happening, (2) Who needs to act, (3) What is wrong/missing, (4) What is the next step, (5) Where is the action button.
   2. **Plain-Language Statuses:** Replace technical status codes (e.g. `02 Manager L1 Pending - ALL`) with bilingual business-friendly status banners.
