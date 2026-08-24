@@ -23,10 +23,13 @@ export const WP002C_APPROVED_APP_NAME = 'MBO Profile & Scoring Configuration Mas
 const consumedAppCreationAuthorizationIds = new Set();
 const consumedLiveActivationAuthorizationIds = new Set();
 const consumedSchemaAuthorizationIds = new Set();
+const consumedDropdownRepairAuthorizationIds = new Set();
 
 export const WP002C_LIVE_ACTIVATION_STAGE = 'STAGE_3A_LIVE_ACTIVATION';
 export const WP002C_SCHEMA_CONFIGURATION_STAGE = 'STAGE_3C_SCHEMA_CONFIGURATION';
 export const WP002C_SCHEMA_CONTRACT_ID = 'WP002C_23_FIELDS_V1';
+export const WP002C_SCHEMA_REPAIR_STAGE = 'STAGE_3C_DROPDOWN_REPAIR';
+export const WP002C_SCHEMA_REPAIR_CONTRACT_ID = 'WP002C_2_DROPDOWN_REPAIR_V1';
 export const WP002C_SCORING_MASTER_APP_ID = 796;
 
 /**
@@ -174,6 +177,52 @@ export function assertScoringMasterLiveActivationAuthorization(authConfig, reque
  * This guard is process-local, single-use, and cannot authorize APP_CREATE,
  * ACL, record, delete, or arbitrary-App operations.
  */
+
+/**
+ * Narrow authorization for the two-dropdown schema repair -> deploy sequence on App 796 (Stage 3C-R1).
+ * This guard is process-local, single-use, and allows ONLY updating Part_A_Scoring_Mode and Config_Status options on App 796.
+ */
+export function assertScoringMasterDropdownRepairAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('DROPDOWN REPAIR BLOCKED (FAIL-CLOSED): Missing authorization/request configuration.');
+  }
+  if (authConfig.workPackageId !== WP002C_APP_CREATE_WORK_PACKAGE || requestConfig.workPackageId !== WP002C_APP_CREATE_WORK_PACKAGE) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Work package must be exactly MBO-P03-WP-002C.');
+  }
+  if (authConfig.stage !== WP002C_SCHEMA_REPAIR_STAGE || requestConfig.stage !== WP002C_SCHEMA_REPAIR_STAGE) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Stage must be exactly STAGE_3C_DROPDOWN_REPAIR.');
+  }
+  if (requestConfig.appId !== WP002C_SCORING_MASTER_APP_ID) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Target App ID must be exactly 796.');
+  }
+  if (requestConfig.appName !== WP002C_APPROVED_APP_NAME) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Target App name mismatch.');
+  }
+  if (requestConfig.repairContractId !== WP002C_SCHEMA_REPAIR_CONTRACT_ID) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Repair contract ID must be exactly WP002C_2_DROPDOWN_REPAIR_V1.');
+  }
+  if (authConfig.explicitUserAuthorization !== true || authConfig.activeWindow !== true) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Explicit authorization and active window are required.');
+  }
+  if (typeof authConfig.authorizationId !== 'string' || authConfig.authorizationId.trim() === '') {
+    throw new Error('DROPDOWN REPAIR BLOCKED: A non-empty authorization ID is required.');
+  }
+  if (consumedDropdownRepairAuthorizationIds.has(authConfig.authorizationId)) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Authorization has already been consumed.');
+  }
+  const expectedSequence = ['FORM_FIELDS_UPDATE', 'APP_DEPLOY'];
+  if (!Array.isArray(requestConfig.operationSequence) || requestConfig.operationSequence.length !== expectedSequence.length || requestConfig.operationSequence.some((operation, index) => operation !== expectedSequence[index])) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Operation sequence must be FORM_FIELDS_UPDATE -> APP_DEPLOY.');
+  }
+  const expectedFieldCodes = ['Part_A_Scoring_Mode', 'Config_Status'];
+  if (!Array.isArray(requestConfig.repairFieldCodes) || requestConfig.repairFieldCodes.length !== expectedFieldCodes.length || requestConfig.repairFieldCodes.some((code, index) => code !== expectedFieldCodes[index])) {
+    throw new Error('DROPDOWN REPAIR BLOCKED: Repair field codes must be exactly [Part_A_Scoring_Mode, Config_Status].');
+  }
+
+  consumedDropdownRepairAuthorizationIds.add(authConfig.authorizationId);
+  return true;
+}
+
 export function assertScoringMasterSchemaAuthorization(authConfig, requestConfig) {
   if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
     throw new Error('SCHEMA CONFIGURATION BLOCKED (FAIL-CLOSED): Missing authorization/request configuration.');

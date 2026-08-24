@@ -12,7 +12,10 @@ import {
   assertSandboxWriteTarget,
   assertWorkPackageAuthorization,
   WP002C_SCHEMA_CONFIGURATION_STAGE,
-  WP002C_SCHEMA_CONTRACT_ID
+  WP002C_SCHEMA_CONTRACT_ID,
+  WP002C_SCHEMA_REPAIR_STAGE,
+  WP002C_SCHEMA_REPAIR_CONTRACT_ID,
+  assertScoringMasterDropdownRepairAuthorization
 } from '../src/core/sandbox-write-guard.js';
 import {
   assertAppCreationRequestPreflight,
@@ -24,7 +27,10 @@ import {
   WP002C_23_FIELD_MANIFEST,
   generateExact23FieldsPayload,
   assertExact23FieldSchema,
-  configureAndDeployScoringMasterSchema
+  configureAndDeployScoringMasterSchema,
+  WP002C_DROPDOWN_REPAIR_PAYLOAD,
+  assertKnownStage3cDefectSchema,
+  repairScoringMasterDropdownSchema
 } from '../src/core/kintone-client.js';
 
 const approvedAppName = 'MBO Profile & Scoring Configuration Master [Sandbox]';
@@ -1035,4 +1041,372 @@ test('WP002C-S3C-028: readback with one altered field label is rejected', () => 
     () => assertExact23FieldSchema(payload),
     /SCHEMA_VERIFICATION_FAILED: Field Master_Record_Key label mismatch/
   );
+});
+// ==========================================
+// WP-002C STAGE 3C-R1 DROPDOWN REPAIR TESTS
+// ==========================================
+
+function validRepairAuthorization(authorizationId) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_3C_DROPDOWN_REPAIR',
+    explicitUserAuthorization: true,
+    activeWindow: true,
+    authorizationId
+  };
+}
+
+function validRepairRequest(overrides = {}) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_3C_DROPDOWN_REPAIR',
+    appId: 796,
+    appName: approvedAppName,
+    repairContractId: WP002C_SCHEMA_REPAIR_CONTRACT_ID,
+    operationSequence: ['FORM_FIELDS_UPDATE', 'APP_DEPLOY'],
+    repairFieldCodes: ['Part_A_Scoring_Mode', 'Config_Status'],
+    ...overrides
+  };
+}
+
+function defectFieldsPayload() {
+  const payload = generateExact23FieldsPayload();
+  payload.Part_A_Scoring_Mode.options = {
+    '0 DIFFICULTY_ACHIEVEMENT_MATRIX': { label: '0 DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' },
+    '1 ACHIEVEMENT_DIRECT': { label: '1 ACHIEVEMENT_DIRECT', index: '1' }
+  };
+  payload.Config_Status.options = {
+    '0 DRAFT': { label: '0 DRAFT', index: '0' },
+    '1 VALIDATED': { label: '1 VALIDATED', index: '1' },
+    '2 PUBLISHED': { label: '2 PUBLISHED', index: '2' },
+    '3 SUPERSEDED': { label: '3 SUPERSEDED', index: '3' },
+    '4 RETIRED': { label: '4 RETIRED', index: '4' }
+  };
+  return payload;
+}
+
+function buildRepairFetch({
+  previewRevision = '3',
+  liveRevision = '3',
+  recordCount = 0,
+  liveFields = defectFieldsPayload(),
+  previewFields = defectFieldsPayload(),
+  putOk = true,
+  putThrows = false,
+  putRevision = '4',
+  previewReadbackFields = generateExact23FieldsPayload(),
+  deployStatuses = ['SUCCESS'],
+  deployOk = true,
+  finalLiveFields = generateExact23FieldsPayload()
+} = {}) {
+  const calls = [];
+  let statusIndex = 0;
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url.endsWith('/k/v1/preview/app/settings.json?app=796')) {
+      return mockResponse({ name: approvedAppName, revision: previewRevision });
+    }
+    if (url.endsWith('/k/v1/app/settings.json?app=796')) {
+      return mockResponse({ name: approvedAppName, revision: liveRevision });
+    }
+    if (url.endsWith('/k/v1/app/acl.json?app=796')) {
+      return mockResponse(creatorOnlyAclPayload(liveRevision));
+    }
+    if (url.endsWith('/k/v1/preview/app/acl.json?app=796') && options.method !== 'PUT') {
+      return mockResponse(creatorOnlyAclPayload(previewRevision));
+    }
+    if (url.includes('/k/v1/records.json?app=796')) {
+      const records = recordCount > 0 ? [{ $id: { value: '1' } }] : [];
+      return mockResponse({ records });
+    }
+    if (url.endsWith('/k/v1/app/form/fields.json?app=796')) {
+      const getCalls = calls.filter(c => c.url.endsWith('/k/v1/app/form/fields.json?app=796'));
+      if (getCalls.length === 1) {
+        return mockResponse({ properties: liveFields, revision: liveRevision });
+      }
+      return mockResponse({ properties: finalLiveFields, revision: putRevision });
+    }
+    if (url.endsWith('/k/v1/preview/app/form/fields.json?app=796') && (options.method === undefined || options.method === 'GET')) {
+      const getCalls = calls.filter(c => c.url.endsWith('/k/v1/preview/app/form/fields.json?app=796') && (c.options.method === undefined || c.options.method === 'GET'));
+      if (getCalls.length === 1) {
+        return mockResponse({ properties: previewFields, revision: previewRevision });
+      }
+      return mockResponse({ properties: previewReadbackFields, revision: putRevision });
+    }
+    if (url.endsWith('/k/v1/preview/app/form/fields.json') && options.method === 'PUT') {
+      if (putThrows) throw new Error('mock put transport error');
+      return putOk
+        ? mockResponse({ revision: putRevision })
+        : mockResponse({}, { ok: false, status: 400 });
+    }
+    if (url.endsWith('/k/v1/preview/app/deploy.json') && options.method === 'POST') {
+      return mockResponse(undefined, { ok: deployOk, status: deployOk ? 200 : 400, parseError: true });
+    }
+    if (url.endsWith('/k/v1/preview/app/deploy.json?apps[0]=796')) {
+      const status = deployStatuses[Math.min(statusIndex, deployStatuses.length - 1)];
+      statusIndex += 1;
+      return mockResponse({ apps: [{ app: '796', status }] });
+    }
+    if (url.endsWith('/k/v1/apps.json?ids[0]=796')) {
+      return mockResponse({ apps: [{ app: '796', name: approvedAppName }] });
+    }
+    throw new Error(`Unexpected mock URL: ${url}`);
+  };
+  return { calls, fetchMock };
+}
+
+test('WP002C-S3CR1-001: wrong WP rejected', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-001'), validRepairRequest({ workPackageId: 'MBO-P03-WP-002B' })),
+    /Work package must be exactly MBO-P03-WP-002C/
+  );
+});
+
+test('WP002C-S3CR1-002: wrong stage rejected', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-002'), validRepairRequest({ stage: 'STAGE_3C_SCHEMA_CONFIGURATION' })),
+    /Stage must be exactly STAGE_3C_DROPDOWN_REPAIR/
+  );
+});
+
+test('WP002C-S3CR1-003: wrong App rejected', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-003'), validRepairRequest({ appId: 794 })),
+    /Target App ID must be exactly 796/
+  );
+});
+
+test('WP002C-S3CR1-004: wrong name rejected', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-004'), validRepairRequest({ appName: 'Wrong Name' })),
+    /Target App name mismatch/
+  );
+});
+
+test('WP002C-S3CR1-005: missing/wrong repair contract ID rejected before fetch', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch();
+    const reqMissing = { ...validRepairRequest() };
+    delete reqMissing.repairContractId;
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-005a'), reqMissing, fetchMock),
+      /Repair contract ID must be exactly WP002C_2_DROPDOWN_REPAIR_V1/
+    );
+    assert.equal(calls.length, 0);
+
+    const reqWrong = validRepairRequest({ repairContractId: 'WRONG' });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-005b'), reqWrong, fetchMock),
+      /Repair contract ID must be exactly WP002C_2_DROPDOWN_REPAIR_V1/
+    );
+    assert.equal(calls.length, 0);
+  });
+});
+
+test('WP002C-S3CR1-006: missing explicit authorization rejected', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization({ ...validRepairAuthorization('r1-006'), explicitUserAuthorization: false }, validRepairRequest()),
+    /Explicit authorization and active window are required/
+  );
+});
+
+test('WP002C-S3CR1-007: reused authorization ID rejected', () => {
+  const auth = validRepairAuthorization('r1-007-replay');
+  assert.equal(assertScoringMasterDropdownRepairAuthorization(auth, validRepairRequest()), true);
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(auth, validRepairRequest()),
+    /Authorization has already been consumed/
+  );
+});
+
+test('WP002C-S3CR1-008: operation sequence mismatch rejected', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-008'), validRepairRequest({ operationSequence: ['APP_DEPLOY'] })),
+    /Operation sequence must be FORM_FIELDS_UPDATE -> APP_DEPLOY/
+  );
+});
+
+test('WP002C-S3CR1-009: repair field list must be exactly the two approved fields', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-009'), validRepairRequest({ repairFieldCodes: ['Part_A_Scoring_Mode'] })),
+    /Repair field codes must be exactly/
+  );
+});
+
+test('WP002C-S3CR1-010: generated repair payload contains exactly two properties', () => {
+  const keys = Object.keys(WP002C_DROPDOWN_REPAIR_PAYLOAD);
+  assert.deepEqual(keys, ['Part_A_Scoring_Mode', 'Config_Status']);
+});
+
+test('WP002C-S3CR1-011: repair payload has no record/ACL/layout/view/process/customization/delete operation', () => {
+  assert.throws(
+    () => assertScoringMasterDropdownRepairAuthorization(validRepairAuthorization('r1-011'), validRepairRequest({ operationSequence: ['RECORD_CREATE'] })),
+    /Operation sequence/
+  );
+});
+
+test('WP002C-S3CR1-012: repair payload uses raw domain values and exact indexes', () => {
+  const partA = WP002C_DROPDOWN_REPAIR_PAYLOAD.Part_A_Scoring_Mode.options;
+  assert.deepEqual(Object.keys(partA), ['DIFFICULTY_ACHIEVEMENT_MATRIX', 'ACHIEVEMENT_DIRECT']);
+  assert.equal(partA.DIFFICULTY_ACHIEVEMENT_MATRIX.index, '0');
+  assert.equal(partA.ACHIEVEMENT_DIRECT.index, '1');
+
+  const cfg = WP002C_DROPDOWN_REPAIR_PAYLOAD.Config_Status.options;
+  assert.deepEqual(Object.keys(cfg), ['DRAFT', 'VALIDATED', 'PUBLISHED', 'SUPERSEDED', 'RETIRED']);
+  assert.equal(cfg.DRAFT.index, '0');
+  assert.equal(cfg.RETIRED.index, '4');
+});
+
+test('WP002C-S3CR1-013: known-defect verifier accepts only exact prefixed defect', () => {
+  const defect = defectFieldsPayload();
+  assert.equal(assertKnownStage3cDefectSchema(defect), true);
+});
+
+test('WP002C-S3CR1-014: arbitrary third option / missing option / wrong index rejected', () => {
+  const badOption = defectFieldsPayload();
+  badOption.Part_A_Scoring_Mode.options['2 OTHER'] = { label: '2 OTHER', index: '2' };
+  assert.throws(() => assertKnownStage3cDefectSchema(badOption), /UNEXPECTED_SCHEMA_DRIFT/);
+});
+
+test('WP002C-S3CR1-015: drift in any unaffected field rejected', () => {
+  const badField = defectFieldsPayload();
+  delete badField.Master_Record_Key;
+  assert.throws(() => assertKnownStage3cDefectSchema(badField), /UNEXPECTED_SCHEMA_DRIFT/);
+});
+
+test('WP002C-S3CR1-016: already-corrected schema produces no PUT/deploy', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const corrected = generateExact23FieldsPayload();
+    const { calls, fetchMock } = buildRepairFetch({ liveFields: corrected, previewFields: corrected });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-016'), validRepairRequest(), fetchMock),
+      /REPAIR_ALREADY_APPLIED_REQUIRES_RECONCILIATION/
+    );
+    const puts = calls.filter(c => c.options.method === 'PUT');
+    assert.equal(puts.length, 0);
+  });
+});
+
+test('WP002C-S3CR1-017: record count nonzero prevents PUT', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch({ recordCount: 1 });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-017'), validRepairRequest(), fetchMock),
+      /Record count is non-zero/
+    );
+    const puts = calls.filter(c => c.options.method === 'PUT');
+    assert.equal(puts.length, 0);
+  });
+});
+
+test('WP002C-S3CR1-018: PUT uses exact current numeric preview revision', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch({ previewRevision: '14' });
+    await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-018'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    const puts = calls.filter(c => c.url.endsWith('/k/v1/preview/app/form/fields.json') && c.options.method === 'PUT');
+    assert.equal(JSON.parse(puts[0].options.body).revision, '14');
+  });
+});
+
+test('WP002C-S3CR1-019: PUT occurs maximum once', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch();
+    const result = await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-019'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.putAttempts, 1);
+    const puts = calls.filter(c => c.url.endsWith('/k/v1/preview/app/form/fields.json') && c.options.method === 'PUT');
+    assert.equal(puts.length, 1);
+  });
+});
+
+test('WP002C-S3CR1-020: PUT transport uncertainty never retries and uses GET-only reconciliation', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch({ putThrows: true });
+    const result = await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-020'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.deployStatus, 'SUCCESS');
+    const puts = calls.filter(c => c.url.endsWith('/k/v1/preview/app/form/fields.json') && c.options.method === 'PUT');
+    assert.equal(puts.length, 1);
+  });
+});
+
+test('WP002C-S3CR1-021: PUT explicit HTTP failure prevents deploy', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch({ putOk: false });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-021'), validRepairRequest(), fetchMock),
+      /REPAIR_PUT_EXECUTION_FAILED/
+    );
+    const deploys = calls.filter(c => c.url.endsWith('/k/v1/preview/app/deploy.json') && c.options.method === 'POST');
+    assert.equal(deploys.length, 0);
+  });
+});
+
+test('WP002C-S3CR1-022: preview corrected 23/23 exact read-back required before deploy', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const brokenReadback = generateExact23FieldsPayload();
+    brokenReadback.Master_Record_Key.label = 'Wrong';
+    const { calls, fetchMock } = buildRepairFetch({ previewReadbackFields: brokenReadback });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-022'), validRepairRequest(), fetchMock),
+      /PREVIEW_REPAIR_READBACK_FAILED/
+    );
+    const deploys = calls.filter(c => c.url.endsWith('/k/v1/preview/app/deploy.json') && c.options.method === 'POST');
+    assert.equal(deploys.length, 0);
+  });
+});
+
+test('WP002C-S3CR1-023: deploy uses exact post-PUT revision and occurs maximum once', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch({ putRevision: '18' });
+    await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-023'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    const deploys = calls.filter(c => c.url.endsWith('/k/v1/preview/app/deploy.json') && c.options.method === 'POST');
+    assert.equal(deploys.length, 1);
+    assert.equal(JSON.parse(deploys[0].options.body).apps[0].revision, '18');
+  });
+});
+
+test('WP002C-S3CR1-024: deploy empty success body is not parsed', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildRepairFetch({ deployOk: true });
+    const result = await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-024'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.deployStatus, 'SUCCESS');
+  });
+});
+
+test('WP002C-S3CR1-025: final success requires exact live 23/23 corrected read-back', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const brokenLive = generateExact23FieldsPayload();
+    brokenLive.Config_Status.label = 'Bad';
+    const { fetchMock } = buildRepairFetch({ finalLiveFields: brokenLive });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-025'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} }),
+      /LIVE_SCHEMA_VERIFICATION_FAILED/
+    );
+  });
+});
+
+test('WP002C-S3CR1-026: ACL must remain creator-only/default-deny', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { result } = await (async () => {
+      const { fetchMock } = buildRepairFetch();
+      const res = await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-026'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+      return { result: res };
+    })();
+    assert.equal(result.liveAclStatus, 'CREATOR_ONLY');
+  });
+});
+
+test('WP002C-S3CR1-027: protected Apps and 794/795 remain unwritable', () => {
+  assert.throws(() => assertSandboxWriteTarget(794, undefined, []), /WRITE BLOCKED/);
+  assert.throws(() => assertSandboxWriteTarget(795, undefined, []), /WRITE BLOCKED/);
+  for (const protectedId of PROTECTED_APP_IDS) {
+    assert.throws(
+      () => assertSandboxWriteTarget(protectedId, undefined, [protectedId], { dryRunBypassDiscovery: true }),
+      /PROTECTED PRODUCTION APP/
+    );
+  }
+});
+
+test('WP002C-S3CR1-028: DISCOVERY_MODE and WRITE_ALLOWED_APPS remain unchanged', () => {
+  assert.equal(DISCOVERY_MODE, true);
+  assert.equal(WRITE_ALLOWED_APPS.length, 0);
 });

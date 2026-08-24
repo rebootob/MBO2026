@@ -6,7 +6,10 @@ import {
   WP002C_APPROVED_APP_NAME,
   WP002C_SCORING_MASTER_APP_ID,
   WP002C_SCHEMA_CONTRACT_ID,
-  WP002C_SCHEMA_CONFIGURATION_STAGE
+  WP002C_SCHEMA_CONFIGURATION_STAGE,
+  WP002C_SCHEMA_REPAIR_STAGE,
+  WP002C_SCHEMA_REPAIR_CONTRACT_ID,
+  assertScoringMasterDropdownRepairAuthorization
 } from './sandbox-write-guard.js';
 
 const APP_CREATE_PREVIEW_PATH = '/k/v1/preview/app.json';
@@ -417,6 +420,277 @@ export const WP002C_23_FIELD_MANIFEST = Object.freeze([
   { code: 'Published_By', type: 'USER_SELECT', required: false, unique: false },
   { code: 'Configuration_Hash', type: 'SINGLE_LINE_TEXT', required: false, unique: false }
 ]);
+
+
+export const WP002C_DROPDOWN_REPAIR_PAYLOAD = Object.freeze({
+  Part_A_Scoring_Mode: Object.freeze({
+    type: 'DROP_DOWN',
+    options: Object.freeze({
+      DIFFICULTY_ACHIEVEMENT_MATRIX: { label: 'DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' },
+      ACHIEVEMENT_DIRECT: { label: 'ACHIEVEMENT_DIRECT', index: '1' }
+    })
+  }),
+  Config_Status: Object.freeze({
+    type: 'DROP_DOWN',
+    options: Object.freeze({
+      DRAFT: { label: 'DRAFT', index: '0' },
+      VALIDATED: { label: 'VALIDATED', index: '1' },
+      PUBLISHED: { label: 'PUBLISHED', index: '2' },
+      SUPERSEDED: { label: 'SUPERSEDED', index: '3' },
+      RETIRED: { label: 'RETIRED', index: '4' }
+    })
+  })
+});
+
+export function assertKnownStage3cDefectSchema(propertiesPayload, failureCode = 'KNOWN_DEFECT_VERIFICATION_FAILED') {
+  if (!propertiesPayload || typeof propertiesPayload !== 'object') {
+    throw new Error(`${failureCode}: Missing or invalid properties payload.`);
+  }
+
+  // Check if schema is already corrected
+  let isAlreadyCorrected = false;
+  try {
+    isAlreadyCorrected = assertExact23FieldSchema(propertiesPayload, failureCode);
+  } catch {
+    isAlreadyCorrected = false;
+  }
+  if (isAlreadyCorrected) {
+    throw new Error('REPAIR_ALREADY_APPLIED_REQUIRES_RECONCILIATION: Schema already matches corrected contract.');
+  }
+
+  const expectedCodes = WP002C_PLANNED_SCHEMA_FIELDS;
+  const presentPlannedCodes = expectedCodes.filter((code) => Object.prototype.hasOwnProperty.call(propertiesPayload, code));
+  if (presentPlannedCodes.length !== expectedCodes.length) {
+    throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Found ${presentPlannedCodes.length}/23 planned fields.`);
+  }
+
+  for (const spec of WP002C_23_FIELD_MANIFEST) {
+    const actual = propertiesPayload[spec.code];
+    if (!actual || typeof actual !== 'object') {
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} missing.`);
+    }
+    if (actual.label !== spec.code) {
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} label mismatch.`);
+    }
+    if (actual.type !== spec.type) {
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} type mismatch.`);
+    }
+    if (Boolean(actual.required) !== spec.required) {
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} required mismatch.`);
+    }
+    if (spec.code === 'Master_Record_Key') {
+      if (actual.unique !== true) throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Master_Record_Key unique mismatch.`);
+    } else if (actual.unique === true) {
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} unique mismatch.`);
+    }
+
+    if (spec.code === 'Part_A_Scoring_Mode') {
+      const actualOpts = actual.options ?? {};
+      const expectedDefectOpts = ['0 DIFFICULTY_ACHIEVEMENT_MATRIX', '1 ACHIEVEMENT_DIRECT'];
+      const actualKeys = Object.keys(actualOpts);
+      if (actualKeys.length !== expectedDefectOpts.length || !expectedDefectOpts.every((k) => Object.prototype.hasOwnProperty.call(actualOpts, k))) {
+        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode does not match known defect.`);
+      }
+      if (String(actualOpts['0 DIFFICULTY_ACHIEVEMENT_MATRIX'].index) !== '0' || String(actualOpts['1 ACHIEVEMENT_DIRECT'].index) !== '1') {
+        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode defect indexes mismatch.`);
+      }
+    } else if (spec.code === 'Config_Status') {
+      const actualOpts = actual.options ?? {};
+      const expectedDefectOpts = ['0 DRAFT', '1 VALIDATED', '2 PUBLISHED', '3 SUPERSEDED', '4 RETIRED'];
+      const actualKeys = Object.keys(actualOpts);
+      if (actualKeys.length !== expectedDefectOpts.length || !expectedDefectOpts.every((k) => Object.prototype.hasOwnProperty.call(actualOpts, k))) {
+        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status does not match known defect.`);
+      }
+      if (String(actualOpts['0 DRAFT'].index) !== '0' || String(actualOpts['4 RETIRED'].index) !== '4') {
+        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status defect indexes mismatch.`);
+      }
+    }
+  }
+
+  return true;
+}
+
+export async function repairScoringMasterDropdownSchema(authConfig, requestConfig, fetchImpl = globalThis.fetch, options = {}) {
+  assertScoringMasterDropdownRepairAuthorization(authConfig, requestConfig);
+  const { baseUrl, headers } = getAppCreationConnection();
+  const appId = WP002C_SCORING_MASTER_APP_ID;
+  const maxStatusChecks = options.maxStatusChecks ?? 30;
+  const pollDelayMs = options.pollDelayMs ?? 2000;
+  const sleep = options.sleep ?? ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+
+  const previewSettingsUrl = `${baseUrl}/k/v1/preview/app/settings.json?app=${appId}`;
+  const previewResponse = await exactGet(fetchImpl, previewSettingsUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Preview settings');
+  if (!previewResponse.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Preview settings HTTP ${previewResponse.status}.`);
+  const preview = await parseJsonOrThrow(previewResponse, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Preview settings');
+  if (preview.name !== WP002C_APPROVED_APP_NAME || !isNumericRevision(preview.revision)) {
+    throw new Error('STAGE3C_R1_PREFLIGHT_FAILED: Preview identity or revision mismatch.');
+  }
+
+  const liveSettingsUrl = `${baseUrl}/k/v1/app/settings.json?app=${appId}`;
+  const livePrecheck = await exactGet(fetchImpl, liveSettingsUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Live settings precheck');
+  if (!livePrecheck.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Live settings HTTP ${livePrecheck.status}.`);
+  const live = await parseJsonOrThrow(livePrecheck, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Live identity');
+  if (live.name !== WP002C_APPROVED_APP_NAME) throw new Error('STAGE3C_R1_PREFLIGHT_FAILED: Live App 796 identity mismatch.');
+
+  const liveAclUrl = `${baseUrl}/k/v1/app/acl.json?app=${appId}`;
+  const liveAclResponse = await exactGet(fetchImpl, liveAclUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Live ACL');
+  if (!liveAclResponse.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Live ACL HTTP ${liveAclResponse.status}.`);
+  const liveAcl = await parseJsonOrThrow(liveAclResponse, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Live ACL');
+  assertCreatorOnlyAcl(liveAcl, 'STAGE3C_R1_PREFLIGHT_FAILED');
+
+  const previewAclUrl = `${baseUrl}/k/v1/preview/app/acl.json?app=${appId}`;
+  const previewAclResponse = await exactGet(fetchImpl, previewAclUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Preview ACL');
+  if (!previewAclResponse.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Preview ACL HTTP ${previewAclResponse.status}.`);
+  const previewAcl = await parseJsonOrThrow(previewAclResponse, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Preview ACL');
+  assertCreatorOnlyAcl(previewAcl, 'STAGE3C_R1_PREFLIGHT_FAILED');
+
+  const recordsUrl = `${baseUrl}/k/v1/records.json?app=${appId}&query=limit%201`;
+  const recordsResponse = await exactGet(fetchImpl, recordsUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Records count check');
+  if (!recordsResponse.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Records count HTTP ${recordsResponse.status}.`);
+  const recordsPayload = await parseJsonOrThrow(recordsResponse, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Records count check');
+  if (Array.isArray(recordsPayload.records) && recordsPayload.records.length > 0) {
+    throw new Error('STAGE3C_R1_PREFLIGHT_FAILED: Record count is non-zero (found records); repair blocked.');
+  }
+
+  const liveFieldsUrl = `${baseUrl}/k/v1/app/form/fields.json?app=${appId}`;
+  const liveFieldsResponse = await exactGet(fetchImpl, liveFieldsUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Live fields');
+  if (!liveFieldsResponse.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Live fields HTTP ${liveFieldsResponse.status}.`);
+  const liveFields = await parseJsonOrThrow(liveFieldsResponse, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Live fields');
+  assertKnownStage3cDefectSchema(liveFields.properties, 'STAGE3C_R1_PREFLIGHT_FAILED');
+
+  const previewFieldsUrl = `${baseUrl}/k/v1/preview/app/form/fields.json?app=${appId}`;
+  const previewFieldsResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Preview fields');
+  if (!previewFieldsResponse.ok) throw new Error(`STAGE3C_R1_PREFLIGHT_FAILED: Preview fields HTTP ${previewFieldsResponse.status}.`);
+  const previewFields = await parseJsonOrThrow(previewFieldsResponse, 'STAGE3C_R1_PREFLIGHT_FAILED', 'Preview fields');
+  assertKnownStage3cDefectSchema(previewFields.properties, 'STAGE3C_R1_PREFLIGHT_FAILED');
+
+  const fieldsPutUrl = `${baseUrl}/k/v1/preview/app/form/fields.json`;
+  const fieldsPutBody = {
+    app: appId,
+    properties: WP002C_DROPDOWN_REPAIR_PAYLOAD,
+    revision: preview.revision
+  };
+
+  let putTransportUncertain = false;
+  let putResponse;
+  try {
+    putResponse = await fetchImpl(fieldsPutUrl, {
+      method: 'PUT',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(fieldsPutBody)
+    });
+  } catch {
+    putTransportUncertain = true;
+  }
+
+  let postPutRevision = preview.revision;
+  if (putTransportUncertain) {
+    const reconcileResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'REPAIR_PUT_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+    if (!reconcileResponse.ok) throw new Error('REPAIR_PUT_RESULT_UNCERTAIN: Preview fields GET failed after uncertain PUT; do not retry.');
+    const reconciledFields = await parseJsonOrThrow(reconcileResponse, 'REPAIR_PUT_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+    const isCorrect = (() => {
+      try {
+        return assertExact23FieldSchema(reconciledFields.properties, 'REPAIR_PUT_RESULT_UNCERTAIN');
+      } catch {
+        return false;
+      }
+    })();
+    if (isCorrect && isNumericRevision(reconciledFields.revision)) {
+      postPutRevision = reconciledFields.revision;
+    } else {
+      throw new Error('REPAIR_PUT_RESULT_UNCERTAIN: PUT transport uncertain and schema not corrected; do not retry.');
+    }
+  } else {
+    if (!putResponse?.ok) {
+      const detail = await readSafeError(putResponse);
+      throw new Error(`REPAIR_PUT_EXECUTION_FAILED: HTTP ${putResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}; no retry.`);
+    }
+    const putPayload = await parseJsonOrThrow(putResponse, 'REPAIR_PUT_EXECUTION_FAILED', 'Form fields PUT response');
+    if (!isNumericRevision(putPayload.revision)) {
+      throw new Error('REPAIR_PUT_EXECUTION_FAILED: PUT did not return a valid numeric revision.');
+    }
+    postPutRevision = putPayload.revision;
+  }
+
+  const previewReadbackResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'PREVIEW_REPAIR_READBACK_FAILED', 'Preview fields readback');
+  if (!previewReadbackResponse.ok) throw new Error(`PREVIEW_REPAIR_READBACK_FAILED: HTTP ${previewReadbackResponse.status}.`);
+  const previewReadbackFields = await parseJsonOrThrow(previewReadbackResponse, 'PREVIEW_REPAIR_READBACK_FAILED', 'Preview fields readback');
+  assertExact23FieldSchema(previewReadbackFields.properties, 'PREVIEW_REPAIR_READBACK_FAILED');
+
+  const previewAclReadbackResponse = await exactGet(fetchImpl, previewAclUrl, headers, 'PREVIEW_REPAIR_READBACK_FAILED', 'Preview ACL readback');
+  if (!previewAclReadbackResponse.ok) throw new Error(`PREVIEW_REPAIR_READBACK_FAILED: Preview ACL HTTP ${previewAclReadbackResponse.status}.`);
+  const previewReadbackAcl = await parseJsonOrThrow(previewAclReadbackResponse, 'PREVIEW_REPAIR_READBACK_FAILED', 'Preview ACL readback');
+  assertCreatorOnlyAcl(previewReadbackAcl, 'PREVIEW_REPAIR_READBACK_FAILED');
+
+  const latestPreviewRevision = isNumericRevision(previewReadbackFields.revision) ? previewReadbackFields.revision : postPutRevision;
+
+  const deployUrl = `${baseUrl}/k/v1/preview/app/deploy.json`;
+  const deployBody = { apps: [{ app: appId, revision: latestPreviewRevision }] };
+  let deployTransportUncertain = false;
+  let deployResponse;
+  try {
+    deployResponse = await fetchImpl(deployUrl, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(deployBody)
+    });
+  } catch {
+    deployTransportUncertain = true;
+  }
+
+  if (deployResponse && !deployResponse.ok) {
+    throw new Error(`DEPLOY_EXECUTION_FAILED: HTTP ${deployResponse.status ?? 'UNKNOWN'}; no retry.`);
+  }
+
+  const deployStatusUrl = `${baseUrl}/k/v1/preview/app/deploy.json?apps[0]=${appId}`;
+  let finalDeployStatus = null;
+  for (let check = 0; check < maxStatusChecks; check += 1) {
+    const statusResponse = await exactGet(fetchImpl, deployStatusUrl, headers, 'DEPLOY_RESULT_UNCERTAIN', 'Deploy status');
+    if (!statusResponse.ok) throw new Error(`DEPLOY_RESULT_UNCERTAIN: Deploy status HTTP ${statusResponse.status}.`);
+    const statusPayload = await parseJsonOrThrow(statusResponse, 'DEPLOY_RESULT_UNCERTAIN', 'Deploy status');
+    const exactApp = statusPayload.apps?.find((entry) => String(entry.app) === String(appId));
+    if (!exactApp || !['PROCESSING', 'SUCCESS', 'FAIL', 'CANCEL'].includes(exactApp.status)) {
+      throw new Error('DEPLOY_RESULT_UNCERTAIN: Missing or invalid exact-App deploy status.');
+    }
+    finalDeployStatus = exactApp.status;
+    if (finalDeployStatus === 'SUCCESS') break;
+    if (finalDeployStatus === 'FAIL' || finalDeployStatus === 'CANCEL') {
+      throw new Error(`DEPLOY_EXECUTION_FAILED: Final status ${finalDeployStatus}.`);
+    }
+    if (check < maxStatusChecks - 1) await sleep(pollDelayMs);
+  }
+
+  if (finalDeployStatus !== 'SUCCESS') {
+    throw new Error(`DEPLOY_RESULT_UNCERTAIN: ${deployTransportUncertain ? 'POST transport uncertain; ' : ''}polling did not reach SUCCESS.`);
+  }
+
+  const finalLiveResponse = await exactGet(fetchImpl, liveSettingsUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live settings verification');
+  if (!finalLiveResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live settings HTTP ${finalLiveResponse.status}.`);
+  const finalLive = await parseJsonOrThrow(finalLiveResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live settings');
+  if (finalLive.name !== WP002C_APPROVED_APP_NAME) throw new Error('LIVE_SCHEMA_VERIFICATION_FAILED: Exact live identity mismatch.');
+
+  const finalLiveFieldsResponse = await exactGet(fetchImpl, liveFieldsUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live fields verification');
+  if (!finalLiveFieldsResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live fields HTTP ${finalLiveFieldsResponse.status}.`);
+  const finalLiveFields = await parseJsonOrThrow(finalLiveFieldsResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live fields');
+  assertExact23FieldSchema(finalLiveFields.properties, 'LIVE_SCHEMA_VERIFICATION_FAILED');
+
+  const finalLiveAclResponse = await exactGet(fetchImpl, liveAclUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live ACL verification');
+  if (!finalLiveAclResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live ACL HTTP ${finalLiveAclResponse.status}.`);
+  const finalLiveAcl = await parseJsonOrThrow(finalLiveAclResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live ACL');
+  assertCreatorOnlyAcl(finalLiveAcl, 'LIVE_SCHEMA_VERIFICATION_FAILED');
+
+  return {
+    appId,
+    appName: finalLive.name,
+    putAttempts: 1,
+    postPutRevision,
+    deployAttempts: 1,
+    deployStatus: finalDeployStatus,
+    liveFieldCount: 23,
+    liveAclStatus: 'CREATOR_ONLY',
+    semanticState: 'DOMAIN_ALIGNED'
+  };
+}
 
 export function generateExact23FieldsPayload() {
   const properties = {};
