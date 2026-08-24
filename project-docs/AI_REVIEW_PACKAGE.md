@@ -7,7 +7,7 @@
 > **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002 Status:** **`PLANNING (PLAN_GATE: PENDING INDEPENDENT REVIEW)`**  
 > **Implementation Authorization:** **`IMPLEMENTATION_AUTHORIZED = NO`**  
-> **Last Updated:** 2026-08-24T16:55:00+07:00  
+> **Last Updated:** 2026-08-24T17:00:00+07:00  
 
 ---
 
@@ -17,7 +17,7 @@
 | :--- | :--- | :--- |
 | **Previous Approved Safe Commit** | `8fb306e` | Phase 2 Closed Baseline (Gates Passed & Frozen) |
 | **Phase 3 WP-001 Plan Commit** | `6e72553` | Frozen Authoritative WP-001 Implementation Plan (`PLAN_GATE = PASS`) |
-| **Phase 3 WP-002 Plan Commit** | `08cdc22` | Authoritative WP-002 Implementation Plan (`PLAN_GATE: PENDING_REVIEW`) |
+| **Phase 3 WP-002 Plan Commit** | `8720ba5` | Corrected WP-002 Implementation Plan (`PLAN_GATE: PENDING_REVIEW`) |
 | **Evidence & Review Commit** | *(Commit B / Review Head)* | Commit B: Updated Phase 3 WP-002 Review Package Target Metadata |
 
 ---
@@ -32,14 +32,17 @@
 | **Mode** | **`PLAN ONLY (READ-ONLY DISCOVERY)`** |
 | **Implementation Authorization** | **`IMPLEMENTATION_AUTHORIZED = NO`** |
 | **Claimed Status** | **`PLAN_GATE: PENDING_INDEPENDENT_REVIEW`** |
-| **Governance Decisions** | [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-035`, `DEC-036`, `DEC-037`) |
+| **Governance Decisions** | [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Restored) |
 | **WP-001 Plan (Frozen)** | [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md) |
 | **WP-002 Plan Path** | [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md) |
 | **Scoring Evidence Matrix** | [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md) |
 | **Position Evidence Matrix** | [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md) |
 | **Competency Evidence Matrix** | [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md) |
+| **Master Record Identity** | Canonical uniqueness constraint: `Profile_Code` + `Scoring_Config_Version` |
+| **Configuration Hash Contract** | `Configuration_Hash = SHA256(Attributes 1..18)`. Audit/lifecycle fields (19..22) excluded |
+| **Pre/Post-Publish Hash Match** | Git pre-publish backup and Kintone post-publish read-back compare the EXACT SAME payload hash |
+| **Immutable Rollback Semantics** | Rollback creates a NEW `Scoring_Config_Version` record rather than mutating historical records |
 | **Three System Sources** | `LEGACY_SCORING_EVIDENCE_SOURCE`, `V2_RUNTIME_CONFIGURATION_SOURCE`, `V2_BACKUP_AUDIT_RECOVERY_SOURCE` |
-| **Proposed Master App Schema** | 22 Attributes (`Profile_Code`, `Scoring_Config_Code`, `Scoring_Config_Version`, `Config_Status`, etc.) |
 | **App Allocation Status** | `NOT_ALLOCATED` (0 Apps created) |
 | **Fail-Closed Runtime Rule** | Git backup is NOT automatic runtime fallback; missing runtime config $\implies$ **FAIL CLOSED** |
 | **Part A Scoring Modes** | Staff..DGM: `DIFFICULTY_ACHIEVEMENT_MATRIX`; GM/VP: `ACHIEVEMENT_DIRECT` |
