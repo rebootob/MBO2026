@@ -2,7 +2,7 @@
 
 > **Document Status:** Active (Authoritative Standards Baseline)  
 > **Last Updated:** 2026-08-24  
-> **Governance Decisions:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`  
+> **Governance Decisions:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-038 (KINTONE_ONLY)`, `DEC-039 (DATA_ISOLATION)`, `DEC-040 (LEGACY_MIGRATION)`  
 
 ---
 
@@ -36,6 +36,7 @@
 * **Evaluated:** **YES** (1-5 rating collected for employee review & compliance monitoring)
 * **Included in Score:** **NO** (Excluded from Part B Sum, Part B Divisor, and Final Score calculation)
 * **Configuration Property:** `Included_In_Score = false`
+* **Item Index Rule:** `coceItemIndex = 6` for both Operational (Item 6 of 6) and Management (Item 6 of 8; scored items are 1,2,3,4,5,7,8).
 
 ---
 
@@ -98,7 +99,7 @@
 ## 11. One MBO Record Per FY & Same Record Revision (FROZEN)
 * **Identity Rule:** 1 Employee + 1 Fiscal Year = 1 MBO Record (`FY2027-0149`).
 * **No Duplicate Records:** Reopen uses same record with incremented stage revision counter (`Objective_Revision: 2`). Never duplicate records.
-* **Historical Immutability:** Superseded revisions are archived immutably (Option C Hybrid Model).
+* **Historical Immutability:** Superseded revisions are archived immutably.
 * **Single Counting:** Dashboard KPIs count exactly 1 evaluation per employee per FY.
 
 ---
@@ -132,19 +133,23 @@
 * **3-Mode Verification:** Implementer -> Verifier -> Tester/Auditor.
 * **Gate Criteria:** Static, Unit, Browser, Security, Regression, No-Orphan, and Guided UX Gates before phase completion.
 
-## 15. Employee Data Isolation Governance (`DEC-039`)
+---
+
+## 16. Employee Data Isolation Governance (`DEC-039`)
 - **Strict Isolation:** Each employee must only access their own MBO and evaluation records. Employee A must NEVER view Employee B objectives, ratings, comments, scores, history, or attachments unless explicitly authorized by role (Appraiser, Approver, HR).
 - **Authenticated Identity:** `Employee_Code` alone is business identity data, NOT proof of identity. Access control MUST bind to verified Authenticated Identity.
 - **Shared Account Conflict (`SECURITY_ARCHITECTURE_DEPENDENCY`):** Shared Kintone account logins cannot be distinguished by native permissions alone. Deterministic binding (`Authenticated Identity -> Employee_Code -> Authorized Record`) is required prior to Self-Service go-live.
 - **Security Boundary:** Native permissions / server-side controls form the security boundary. Client-side JS/CSS filters are UX only.
 - **Release Blocker Test:** `EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B` test across URLs, record IDs, REST APIs, and exports is a mandatory release blocker.
 
+---
 
-## 16. Legacy 8-App PMS Data Migration Governance (`DEC-040`)
+## 17. Legacy 8-App PMS Data Migration & Rollback Governance (`DEC-040`)
 - **Post-Stabilization Deferred Status (`LEGACY_MIGRATION_STATUS = DEFERRED`):** Historical data from the 8 legacy PMS apps (Apps 283, 305, 307, 310, 640, 643, 715, 716) will be migrated ONLY AFTER MBO V2 is stable, tested, verified, and UAT approved.
 - **Read-Only Baseline:** All 8 legacy PMS apps remain strictly READ ONLY (`WRITE_ALLOWED_APPS = []`). Legacy records MUST NEVER be modified, deleted, or normalized in place.
-- **Traceability Metadata:** Migrated records must store source app ID, source record ID, source record number, source revision, source profile, employee code, fiscal year, batch ID, migrated timestamp, and status.
+- **Traceability Metadata:** Migrated records must store source app ID, source record ID, source record number, source revision, source profile, employee code, fiscal year, batch ID (`Migration_Batch_ID`), migrated timestamp, and status.
 - **Idempotent & Duplicate Safe:** Unique key constraint `Legacy_Source_App_ID + Legacy_Source_Record_ID`. Duplicate sources fail closed (`MIGRATION_DUPLICATE_SOURCE`).
 - **No Score Recalculation:** Historical legacy scores must be migrated as historical results/evidence. Never recalculate old scores using current MBO V2 formulas.
 - **Mandatory Dry-Run & Reconciliation:** Production migration requires explicit source-to-target mapping per app, mandatory `DRY_RUN = true` execution (0 writes), and complete reconciliation (`SOURCE = MIGRATED + APPROVED_SKIPPED + DOCUMENTED_ERRORS`).
 - **Record Classification:** Migrated records are classified as `Record_Origin = LEGACY_MIGRATED` and MUST NOT enter active MBO V2 workflows.
+- **Batch Rollback Rule:** Future migration rollback operates strictly by `Migration_Batch_ID`. A failed migration must remove/revert ONLY target records created by that specific batch. Legacy source apps (283, 305, 307, 310, 640, 643, 715, 716) MUST NEVER be modified during rollback.

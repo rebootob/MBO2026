@@ -2,7 +2,7 @@
 
 > **Governance Authority:** `DEC-039 (STRICT EMPLOYEE RECORD DATA ISOLATION)`  
 > **Status:** `FROZEN / SECURITY CRITICAL`  
-> **Last Updated:** 2026-08-24T18:34:00+07:00  
+> **Last Updated:** 2026-08-24T18:40:00+07:00  
 
 ---
 
@@ -84,12 +84,16 @@ Access control security testing MUST include adversarial attempts to access cros
 
 ---
 
-## 8. Existing Confidentiality Field Matrix
+## 8. Hardened Confidentiality Field Policy
 
-Employees / Shared accounts MUST NEVER view:
+All appraisal competency rating fields belonging to the resolved competency set are **CONFIDENTIAL BY DEFAULT**.
+
+Security access control MUST NOT rely on a fixed 1..6 list, but dynamically enforce privacy over all active competency rating indexes (including 1..8 for Management sets).
+
+Specifically, Employees / Shared accounts MUST NEVER view:
 - `Manager_Achievement_1..10`, `GM_Achievement_1..10`
 - `Manager_Comment_1..10`, `GM_Comment_1..10`
 - `PartA_Raw_Score`, `PartA_Weighted_Score`
-- `Manager_Competency_Rating_1..6`, `GM_Competency_Rating_1..6`
+- `Manager_Competency_Rating_1..8`, `GM_Competency_Rating_1..8` (All active competency items 1..8)
 - `PartB_Raw_Score`, `PartB_Weighted_Score`
 - `Final_Confidential_Score`, `Final_Grade`

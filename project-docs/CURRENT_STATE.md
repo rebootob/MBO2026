@@ -1,9 +1,9 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T18:34:00+07:00
+- **Updated At**: 2026-08-24T18:40:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
 - **Active AI:** `Antigravity`
-- **Active Work Package**: `MBO-P03-WP-002A (Hybrid Profile / Scoring Master Foundation)`
+- **Active Work Package**: `MBO-P03-WP-002A (Kintone-Only Profile / Scoring Master Foundation)`
 - **WP-001 Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002 Plan Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002A Implementation Status**: **`IMPLEMENTATION_GATE = PASS (COMPLETE)`**
@@ -34,7 +34,7 @@
 2. **Phase 1: Safety & Test Foundation Harness: `PASSED / FROZEN`**.
 3. **Phase 2: Annual Record Foundation: `PASSED / FROZEN`**.
 4. **Phase 3 WP-001 Evaluation Profile & Competency Foundation Plan: `PASSED / FROZEN`**.
-5. **Phase 3 WP-002 Hybrid Profile & Scoring Configuration Plan: `PASSED / FROZEN`**.
+5. **Phase 3 WP-002 Kintone-Only Profile & Scoring Configuration Plan: `PASSED / FROZEN`**.
 6. **Phase 3 WP-002A Master Foundation Implementation: `PASSED / COMPLETE`**.
 7. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (`DEC-035`)**.
 8. **Appraiser Weight & Completeness Governance: `FROZEN` (`DEC-036`)**.

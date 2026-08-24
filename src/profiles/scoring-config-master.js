@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
  * MBO V2 Phase 3 WP-002A: Scoring Configuration Master Foundation
  * 
  * Master Record Identity: Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}
- * Governance Rules: DEC-035 (LIVE_KINTONE_FIRST), DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS), DEC-037 (HYBRID_OPTION_C)
+ * Governance Rules: DEC-035 (LIVE_KINTONE_FIRST), DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS), DEC-038 (KINTONE_ONLY)
  */
 
 export const PROFILE_CODES = {
@@ -46,14 +46,16 @@ export const KNOWN_COMPETENCY_SETS = {
     totalItems: 6,
     includedItemsCount: 5,
     coceItemIndex: 6,
-    coceIncludedInScore: false
+    coceIncludedInScore: false,
+    scoredItemIndexes: [1, 2, 3, 4, 5]
   },
   COMP_SET_MANAGEMENT_V1: {
     code: 'COMP_SET_MANAGEMENT_V1',
     totalItems: 8,
     includedItemsCount: 7,
-    coceItemIndex: 8,
-    coceIncludedInScore: false
+    coceItemIndex: 6,
+    coceIncludedInScore: false,
+    scoredItemIndexes: [1, 2, 3, 4, 5, 7, 8]
   }
 };
 
@@ -191,8 +193,8 @@ export function validateScoringMasterConfig(configPayload, existingKeys = []) {
   if (!compSet) {
     throw new Error(`INVALID_COMPETENCY_SET: Competency_Set_Code ${configPayload.Competency_Set_Code} is invalid`);
   }
-  if (compSet.coceIncludedInScore !== false) {
-    throw new Error('INVALID_COCE_GOVERNANCE: COCE must have coceIncludedInScore = false');
+  if (compSet.coceIncludedInScore !== false || compSet.coceItemIndex !== 6) {
+    throw new Error('INVALID_COCE_GOVERNANCE: COCE must have coceItemIndex = 6 and coceIncludedInScore = false');
   }
 
   // 10. Rounding Rules Validation

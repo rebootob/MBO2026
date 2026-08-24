@@ -250,4 +250,5 @@
   5. **No Historical Score Recalculation:** Legacy scores must be migrated as historical results/evidence. Migration MUST NOT recalculate old scores using current MBO V2 formulas.
   6. **Mandatory Reconciliation & Dry-Run Gate:** Production migration requires an explicit source-to-target mapping per app, mandatory `DRY_RUN = true` execution (with 0 writes), and complete reconciliation (`SOURCE = MIGRATED + APPROVED_SKIPPED + DOCUMENTED_ERRORS`).
   7. **Record Classification:** Migrated records are classified as `Record_Origin = LEGACY_MIGRATED` and MUST NOT enter active MBO V2 approval workflows.
-  8. **Security Continuity:** `DEC-039` strict record isolation applies equally to historical migrated records.
+  8. **Batch Rollback Governance:** Future migration must support controlled rollback operating strictly by `Migration_Batch_ID`. If a migration batch fails or is aborted, rollback must remove/revert ONLY target records created by that specific batch. Legacy source apps (283, 305, 307, 310, 640, 643, 715, 716) MUST NEVER be modified during rollback.
+9. **Security Continuity:** `DEC-039` strict record isolation applies equally to historical migrated records.

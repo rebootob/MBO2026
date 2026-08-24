@@ -118,12 +118,18 @@ test('WP-002A: Current baseline does not globally use UNIFIED_HALF_UP_2_DECIMALS
   assert.equal(usesUnified, false);
 });
 
-test('WP-002A: COCE remains Included_In_Score = false across known competency sets', () => {
-  for (const setKey of Object.keys(KNOWN_COMPETENCY_SETS)) {
-    const compSet = KNOWN_COMPETENCY_SETS[setKey];
-    assert.equal(compSet.coceIncludedInScore, false);
-    assert.equal(compSet.totalItems - compSet.includedItemsCount, 1);
-  }
+test('WP-002A: COCE item index is 6 for both Operational and Management competency sets', () => {
+  const opSet = KNOWN_COMPETENCY_SETS.COMP_SET_OPERATIONAL_V1;
+  const mgmtSet = KNOWN_COMPETENCY_SETS.COMP_SET_MANAGEMENT_V1;
+
+  assert.equal(opSet.coceItemIndex, 6);
+  assert.equal(mgmtSet.coceItemIndex, 6);
+
+  assert.equal(opSet.coceIncludedInScore, false);
+  assert.equal(mgmtSet.coceIncludedInScore, false);
+
+  assert.deepEqual(opSet.scoredItemIndexes, [1, 2, 3, 4, 5]);
+  assert.deepEqual(mgmtSet.scoredItemIndexes, [1, 2, 3, 4, 5, 7, 8]);
 });
 
 test('WP-002A: Master_Record_Key generation matches Profile_Code + Version exactly', () => {
