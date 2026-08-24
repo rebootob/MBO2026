@@ -8,7 +8,7 @@
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-> **WP-002C Status:** **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** (`IMPLEMENTATION_AUTHORIZED = NO`; `APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
+> **WP-002C Status:** **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** (`APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
 > **Last Updated:** 2026-08-24T21:00:00+07:00
 
 ---
@@ -26,7 +26,8 @@
 | **WP-002B Review Closure Commit** | `9d263a4` | Independent review passed; WP-002B frozen |
 | **WP-002C Plan Commit (Commit A)** | `4b7c3f16a58f711ad4c892502a79fad44aee24af` | `docs: plan wp-002c kintone scoring configuration master` |
 | **WP-002C Safety Correction Commit (Commit A)** | `e40c0c5b80ffc43299345348d45d75f559e8ebc4` | Exact-name bootstrap, verified-ID registration, hash/read-back, overlap, audit, and recovery plan |
-| **WP-002C Corrected Review Metadata Commit (Commit B)** | *(this commit)* | Metadata only; independent review remains pending |
+| **WP-002C Stage-1 Implementation Commit (Commit A)** | `4d951401244f78f30523e758ed211c44e16c5294` | Narrow APP_CREATE guard, pure preview preflight, password-only auth preparation, and regression tests |
+| **WP-002C Stage-1 Review Metadata Commit (Commit B)** | *(this commit)* | Metadata only; independent review remains pending |
 
 ---
 
@@ -37,8 +38,8 @@
 | **Work Package ID** | `MBO-P03-WP-002C` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
-| **Mode** | **`PLAN ONLY`** |
-| **Claimed Status** | **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** |
+| **Mode** | **`IMPLEMENTATION STAGE 1 — APP-CREATION SAFETY PREFLIGHT`** |
+| **Claimed Status** | **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** |
 | **Independent Review Gate** | **`PENDING`** |
 | **Next Work Package** | `WP-002C INDEPENDENT REVIEW` |
 | **Master App Dependency** | **`SCORING_MASTER_APP_ID = NOT_ALLOCATED / NOT_CREATED`** — target is `MBO Profile & Scoring Configuration Master [Sandbox]`; `SANDBOX`; production `FALSE`; no hardcoded ID |
@@ -48,6 +49,7 @@
 | **Effective Uniqueness** | A matching `Profile_Code` + `Fiscal_Year` published date overlap fails closed as `SCORING_CONFIG_EFFECTIVE_OVERLAP`; lineage does not auto-deactivate an older record |
 | **Publish Audit / Recovery** | `Published_By` is trusted publisher identity and `Published_At` trusted system/Kintone time; final state read-back required; interruption quarantines candidate and runtime remains fail-closed |
 | **Kintone Boundary** | `POST/PUT/DELETE/DEPLOY = 0`; `WRITE_ALLOWED_APPS = []`; no app/schema/seed action in this WP |
+| **Stage-1 Evidence** | `assertAppCreationAuthorization()` requires exact WP/operation/name, explicit one-time authorization and one-target manifest without App ID; preflight allows only `POST /k/v1/preview/app.json`; generic `kintoneRequest()` remains discovery-blocked; APP_CREATE auth excludes API token |
 | **Resolver Contract** | Pure dependency-injected: `resolveProfileScoringConfig({ employeeSnapshot, fiscalYear, effectiveDate, masterConfigRecords, authenticatedContext })` |
 | **Employee Source** | `src/services/employee-service.js` (App 53 READ ONLY) owns mutation-detecting snapshot provenance; arbitrary caller `Profile_Code` cannot bypass position resolution |
 | **Position Resolution** | `TRIM(COLLAPSE_INTERNAL_SPACES(LOWERCASE(raw)))`; no guessing; ambiguous → `PROFILE_RESOLUTION_AMBIGUOUS` (Fail Closed) |

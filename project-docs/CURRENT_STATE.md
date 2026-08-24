@@ -8,7 +8,7 @@
 - **WP-002 Plan Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002A Implementation Status**: **`IMPLEMENTATION_GATE = PASS (COMPLETE)`**
 - **WP-002B Status**: **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-- **WP-002C Status**: **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** (`IMPLEMENTATION_AUTHORIZED = NO`; `APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
+- **WP-002C Status**: **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** (`APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
 - **WP-002C Plan Correction**: `APP_CREATION_BOOTSTRAP_SAFETY + PUBLISH_INTEGRITY + EFFECTIVE_OVERLAP` documented; independent review pending
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Appraiser Weight & Completeness**: `DEC-036`
@@ -27,7 +27,7 @@
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
 - **WP-002B Source Module**: `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter)
 - **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing)
-- **Handoff State**: `SAFE_CHECKPOINT (WP-002C PLAN CREATED)`
+- **Handoff State**: `SAFE_CHECKPOINT (WP-002C STAGE 1 COMPLETE / REVIEW PENDING)`
 - **NEXT_WP**: `WP-002C INDEPENDENT REVIEW`
 - **Current Branch**: `ai/codex-wp002c`
 - **Scoring Master Target**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = NOT_ALLOCATED`; `NOT_CREATED`; `SANDBOX`; production `FALSE`)

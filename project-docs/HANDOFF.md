@@ -5,16 +5,16 @@
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `ai/codex-wp002c`
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package**: `MBO-P03-WP-002C (PLAN ONLY — KINTONE PROFILE & SCORING CONFIGURATION MASTER)`
+- **Current Work Package**: `MBO-P03-WP-002C (IMPLEMENTATION STAGE 1 — APP-CREATION SAFETY PREFLIGHT)`
 - **WP-001 Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002 Plan Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002A Status**: `IMPLEMENTATION COMPLETE (15/15 new tests passing; 131/131 total suite passing)`
 - **WP-002B Status**: `PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`
-- **WP-002C Status**: `PLAN_CREATED / PENDING_INDEPENDENT_REVIEW` (`IMPLEMENTATION_AUTHORIZED = NO`; `APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
+- **WP-002C Status**: `PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW` (`APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
 - **Target App**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = NOT_ALLOCATED`; `NOT_CREATED`; `SANDBOX`; production `FALSE`)
 - **NEXT_WP**: `WP-002C INDEPENDENT REVIEW`
 - **WP-002C Plan**: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
-- **WP-002C Correction**: Plan hardens exact-name app-creation bootstrap, verified `config/sandbox-apps.json` + `APP_REGISTRY.md` registration, publish integrity, effective-overlap, and final read-back; still zero implementation/Kintone writes
+- **WP-002C Stage 1**: Exact-name APP_CREATE guard, pure preview-app preflight, and password-only auth preparation are implemented/tested; generic network writes remain blocked by `DISCOVERY_MODE`; zero Kintone writes
 - **Implementation Scope**: `src/profiles/profile-scoring-resolver.js` and `tests/profile-scoring-resolver.test.js`; reuses `EmployeeService` and `computeConfigurationHash()` with dependency-injected records only.
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`
