@@ -10,8 +10,8 @@
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 > **WP-002C Stage 2 Status:** **`STAGE 2 PASSED / FROZEN; WP002C_STAGE2_GATE = PASS`**
 > **WP-002C Stage 3A Status:** **`STAGE 3A VERIFICATION RECONCILIATION = PASS / R3`**
-> **WP-002C Stage 3B Status:** **`STAGE 3B ACTIVATION COMPLETE / PENDING INDEPENDENT REVIEW (SCORING_MASTER_APP_ID = 796; LIVE_DEPLOYED)`**
-> **Last Updated:** 2026-08-25T06:03:00+07:00
+> **WP-002C Stage 3B Status:** **`STAGE 3B ACTIVATION COMPLETE / PENDING CHATGPT RE-REVIEW (SCORING_MASTER_APP_ID = 796; LIVE_DEPLOYED; ACTIVATION COMMIT = aedff94fbb86b4dbab6cb49c8135a95b373cd04f)`**
+> **Last Updated:** 2026-08-25T06:06:00+07:00
 
 ---
 
@@ -26,7 +26,8 @@
 | **WP-002C Stage-3A Handoff Baseline**| `18e1d55` | `docs: correct stage3a live verification criteria` |
 | **WP-002C Stage-3A Evidence Classification** | `c3b3388` | `docs: correct wp-002c live-state evidence classification` |
 | **WP-002C Stage-3B Activation Task**| `244a41b` | `docs: authorize wp-002c stage3b controlled deploy` |
-| **WP-002C Stage-3B Activation Commit** | *(Review Head)* | `chore: record wp-002c app 796 activation` |
+| **WP-002C Stage-3B Activation Commit** | `aedff94fbb86b4dbab6cb49c8135a95b373cd04f` | `chore: record wp-002c app 796 activation` |
+| **WP-002C Stage-3B Living Doc Alignment** | *(Review Head)* | `docs: align wp-002c stage3b living state` |
 
 ---
 
@@ -38,7 +39,7 @@
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
 | **Mode** | **`STAGE 3B — CONTROLLED DEPLOY OF EXISTING PREVIEW APP 796`** |
-| **Claimed Status** | **`STAGE 3B COMPLETE / PENDING INDEPENDENT REVIEW`** |
+| **Claimed Status** | **`STAGE 3B ACTIVATION COMPLETE / PENDING CHATGPT RE-REVIEW`** |
 | **Active AI** | `Antigravity` |
 | **Execution / Review Branch** | `ai/antigravity-wp002c` |
 | **Scoring Master App ID** | `796` |
@@ -50,8 +51,8 @@
 | **Publish Pipeline Status** | **`NOT_DEPLOYED`** |
 | **Environment** | `SANDBOX` |
 | **Production** | `FALSE` |
-| **Next Action** | `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3B` |
-| **Stage 3B Deploy Attempt** | `STAGE3B_DEPLOY_POST_ATTEMPTS = 1` (Single `POST /k/v1/preview/app/deploy.json` submitted; HTTP 200; no retry) |
+| **Next Action** | `AWAIT CHATGPT INDEPENDENT RE-REVIEW OF STAGE 3B DOCUMENT CONSISTENCY` |
+| **Stage 3B Deploy Attempt** | `STAGE3B_DEPLOY_POST_ATTEMPTS = 1` (Single `POST /k/v1/preview/app/deploy.json` submitted; HTTP 200; no retry; activation commit `aedff94fbb86b4dbab6cb49c8135a95b373cd04f`) |
 | **Live App Detail Verification**| `GET /k/v1/app.json?id=796` $\to$ **`PASS (HTTP 200; exact name match)`** |
 | **Live Settings Verification** | `GET /k/v1/app/settings.json?app=796` $\to$ **`PASS (HTTP 200; exact name match)`** |
 | **Live ACL Verification** | `GET /k/v1/app/acl.json?app=796` $\to$ **`PASS (HTTP 200; Creator-Only)`** |
