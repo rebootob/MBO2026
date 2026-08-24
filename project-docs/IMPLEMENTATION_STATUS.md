@@ -1,21 +1,21 @@
 # MBO V2 Implementation Status & Governance Control
 
-- **Active AI:** `Antigravity`
+- **Active AI:** `Codex`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002B`
 - **Handoff State:** `SAFE_CHECKPOINT`
 - **Last Handoff At:** `2026-08-24T19:04:00+07:00`
-- **Review Status:** `PHASE 3 WP-002B PLAN CORRECTED (MASTER APP DEPENDENCY + FY CONTRACT) (READY FOR REVIEW)`
-- **Implementation Authorization:** **`WP-002B IMPLEMENTATION NOT AUTHORIZED`** (Plan Only; Zero Writes)
+- **Review Status:** `PHASE 3 WP-002B IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`
+- **Implementation Authorization:** **`WP-002B IMPLEMENTATION AUTHORIZED AND COMPLETE`** (Read-only; Zero Writes)
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit:** `6e72553` (Frozen / Approved)
 - **Phase 3 WP-002 Plan Commit:** `2f87a3b`
 - **Current Phase:** **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package:** `MBO-P03-WP-002B (Profile Resolution & Read-Only Scoring Configuration Resolver - Plan)`
+- **Current Work Package:** `MBO-P03-WP-002B (Profile Resolution & Read-Only Scoring Configuration Resolver)`
 - **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
-- **WP-002B Status:** **`PLAN_CREATED / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`**
+- **WP-002B Status:** **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`**
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate:** `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Kintone-Only Version Immutability)`
@@ -43,8 +43,8 @@
 - **WP-001 Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **WP-002 Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
 - **WP-002B Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md)
-- **WP-002A Source Code Path:** [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
-- **WP-002A Unit Test Suite:** [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (15/15 new tests passing; 131/131 total suite passing)
+- **WP-002B Source Code Path:** `src/profiles/profile-scoring-resolver.js` (reuses EmployeeService snapshot contract and `computeConfigurationHash()`)
+- **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (22/22 new tests passing; 154/154 total suite passing)
 - **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`, Kintone Writes = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)
@@ -69,7 +69,7 @@
 |  | ↳ *WP-001: Evaluation Profile & Competency Foundation* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002: Kintone-Only Profile & Scoring Configuration Foundation (Plan)* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002A: Kintone-Only Profile / Scoring Master Foundation (Code & Unit)* | **IMPLEMENTATION COMPLETE** | 2026-08-24 |
-|  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver (Plan)* | **PLAN_CREATED / PENDING_REVIEW** | - |
+|  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver* | **IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW** | 2026-08-24 |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
 | **P6** | In-Flight Approver Change & HR Self-Service | LOCKED | - |
