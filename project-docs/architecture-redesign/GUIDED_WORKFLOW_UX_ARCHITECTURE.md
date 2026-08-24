@@ -1,7 +1,8 @@
-# Guided Workflow UX Architecture Blueprint (CORE GOVERNANCE)
+# Guided Workflow UX Architecture Blueprint (FROZEN)
 
-> **Document Status:** Complete (Ready for Freeze Review)  
+> **Document Status:** **`GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN`**  
 > **Core Governance:** Every page must clearly explain Current State, Required Action, Missing Items, and Next Step  
+> **Single Source of Truth:** Guidance, Validation, Editable/Locked States, and CTAs derive from the unified Business State Engine  
 > **Target Audiences:** Employees, Managers, GMs, VPs, President, HR Administrators  
 > **Last Updated:** 2026-08-24  
 
@@ -23,7 +24,15 @@ graph TD
 
 ---
 
-## 2. Mandatory Guidance UI Components
+## 2. Single Business State Source Rule (Architecture Invariant)
+
+To eliminate inconsistent UI behaviors and fragmented logic, MBO V2 mandates that all presentation elements derive from a single unified **Business State Resolution Pipeline**:
+
+$$\text{Technical Status} + \text{Stage} + \text{Revision} + \text{Role} + \text{Profile} \implies \mathbf{Business\ State} \implies \begin{cases} \text{Guidance Header} \\ \text{Validation Rules} \\ \text{Field Editable / Locked States} \\ \text{Available Primary Actions} \\ \text{Next Step Preview} \end{cases}$$
+
+---
+
+## 3. Mandatory Guidance UI Components
 
 ### Component 1: Required Guidance Header
 Fixed at the top of every MBO Record:
@@ -56,14 +65,14 @@ To guarantee 100% accessibility:
 * **Required:** Yellow background + `[ต้องกรอก / Required]`
 * **Invalid:** Red border + `[ข้อมูลไม่ถูกต้อง / Invalid]`
 
-### Component 6: Contextual Subsystem Guidance
-* **Return for Correction:** Displays returning approver name, return reason, list of fields to fix, and direct anchor links.
-* **Reopen Revision:** Displays revision counter, reopen reason, and highlights which subsequent approvals are invalidated and require re-approval.
-* **Hoshin Not Ready Gate:** Displays exact status of Department and Section Hoshins with clear warning that Save Draft is allowed but Submit Objective is blocked.
-* **Routing / Profile Missing Errors:** Replaces cryptic technical errors with human-friendly notices explaining that HR is actively setting up their routing or profile.
+### Component 6: Reopen & Revision Guidance Integration
+When a record is reopened by HR:
+* Displays prominent orange alert: **"เปิดกลับเพื่อแก้ไข / Reopened for Correction (Revision 2)"**
+* Displays documented business reason from HR.
+* Explains that Revision 1 approvals are superseded and highlights which approvers must re-approve.
 
 ---
 
-## 3. Confidentiality & Security Boundaries in Guidance
+## 4. Confidentiality & Security Boundaries in Guidance
 * The Guidance Engine never leaks confidential appraisal data (e.g. Manager/GM internal scores or comments) to employees.
 * If internal steps are in progress, employees see a generalized business status: "กำลังอยู่ระหว่างการประเมินผล / Evaluation review in progress".

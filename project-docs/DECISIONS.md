@@ -2,7 +2,7 @@
 
 ## DEC-025 — HR Control Center & Operations Architecture
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Required Core Subsystem)
+- **Status**: FROZEN (Required Core Subsystem)
 - **Decision**:
   1. **Unified Monitoring & Operations Hub:** Implement HR Control Center as the primary operational console for HR administrators.
   2. **Core Modules:** Pipeline Overview Dashboard, Employee Evaluation Monitor (interactive grid with 1-click modal), Multi-Dimensional Filter/Search, Routing Operations Hub, Reopen & Revision Center, Hoshin Management Hub, Annual Cycle Hub, and Health/Configuration Monitor.

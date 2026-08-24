@@ -1,8 +1,8 @@
 # AI Handoff Document & Core Rules
 
 ## 1. Complete Baseline of Frozen Architectures
-- **Guided Workflow UX Governance (`GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN`, `DEC-026`)**: Every page must answer 6 Core Questions (Where am I, Who acts, What to do, What is required, What is missing, What is next). Zero technical status codes on UI. Double-encoded field states (Color + Label). Real-time checklist and dynamic action bars.
-- **HR Control Center (`HR_CONTROL_CENTER_ARCHITECTURE = FROZEN`, `DEC-025`)**: Unified operations dashboard, employee monitor, multi-filter, self-service hubs (>= 95% IT independence), actionable alerts.
+- **Guided Workflow UX Governance (`GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN`, `DEC-026`)**: Every page must answer 6 Core Questions (Where am I, Who acts, What to do, What is required, What is missing, What is next). Single Business State source of truth. Zero technical status codes on UI. Double-encoded field states (Color + Label). Real-time checklist and dynamic action bars.
+- **HR Control Center (`HR_CONTROL_CENTER_ARCHITECTURE = FROZEN`, `DEC-025`)**: Single pane of glass for Monitor -> Diagnose -> Action. Employee monitor, multi-filter, self-service hubs (>= 95% IT independence), actionable alerts.
 - **Controlled Reopen & Revision (`CONTROLLED_REOPEN_REVISION_MODEL = FROZEN`, `SAME_RECORD_NEW_REVISION = FROZEN`, `DEC-022`)**: 1 Employee + 1 FY = 1 Record (`FY2027-0149`). Reopen increments stage revision counter. Superseded revisions archived immutably (Option C Hybrid Model). Full authority matrix.
 - **Evaluation Profile & Scoring (`EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN`, `DEC-023`, `DEC-024`)**: Annual Profile Freeze Policy (Single profile per FY). Mid-year promotion applies next FY. 4 Profile Families, `WEIGHTED_PART_A_B` algorithm, COCE excluded from score.
 - **Four Distinct Snapshot Concepts**: Profile (Annual Snapshot), Routing (Stage Snapshot), Hoshin (Versioned Snapshot), Revision (Same Record New Revision).

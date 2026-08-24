@@ -1,97 +1,48 @@
-# HR Control Center & Operations Architecture Blueprint (FROZEN CORE)
+# HR Control Center & Operations Architecture Blueprint (FROZEN)
 
-> **Document Status:** Complete (Required Core Subsystem)  
-> **Core Objective:** Single-Pane-of-Glass Monitoring & HR Self-Service Operations (>= 95% IT Independence)  
+> **Document Status:** **`HR_CONTROL_CENTER_ARCHITECTURE = FROZEN`**  
+> **Core Objective:** Single-Pane-of-Glass Monitoring, Diagnosis, & Direct Self-Service Action (>= 95% IT Independence)  
 > **Governance:** Actionable Monitoring, Guided Workflow UX, Native Security Boundaries  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Summary: Monitor -> Diagnose -> Action
 
-In legacy PMS, HR administrators had to inspect hundreds of individual Kintone records across 8 separate apps to identify approval bottlenecks, inactive approvers, unconfigured routings, or pending reopens.
-
-The **HR Control Center (HRCC)** in MBO V2 establishes a unified, single-pane-of-glass operations console that shifts HR administration from reactive manual record inspection to **proactive, exception-driven actionable management**.
+The **HR Control Center (HRCC)** is an interactive operational management cockpit for HR administrators that combines real-time pipeline monitoring, automated exception diagnosis, and direct self-service remediation:
 
 ```mermaid
-graph TD
-    subgraph Unified_Data_Core [Unified Data Core (App 794, App 795, App 53, Hoshin App)]
-        A794["App 794 (Annual Transactions)"]
-        A795["App 795 (Routing Master)"]
-        A53["App 53 (Employee Master)"]
-        HOSH["Hoshin Master App"]
-    end
-
-    Unified_Data_Core --> ENGINE["HRCC Aggregation & Health Engine"]
-    
-    ENGINE --> DASH["1. Overview Dashboard <br/> (Stage Metrics & Bottlenecks)"]
-    ENGINE --> GRID["2. Employee Evaluation Monitor <br/> (Search, Filter, 1-Click Detail)"]
-    ENGINE --> ROUTE_HUB["3. Routing Operations Hub <br/> (Reassign, Effective Dates, Bulk Preview)"]
-    ENGINE --> REOPEN_HUB["4. Reopen & Revision Center <br/> (Requests, Impact Preview, Controlled Reopen)"]
-    ENGINE --> HOSH_HUB["5. Hoshin Management Hub <br/> (Dept/Sec Ready Toggles, Copy FY)"]
-    ENGINE --> CYCLE_HUB["6. Annual Cycle Hub <br/> (Generation, Onboarding, Closing)"]
-    ENGINE --> HEALTH_HUB["7. Health & Config Monitor <br/> (Priority Alerts: Critical -> Info)"]
+graph LR
+    MONITOR["1. MONITOR <br/> Real-time Stage Pipeline & Metrics"] --> DIAGNOSE["2. DIAGNOSE <br/> Automated Health Checks & Exception Alerts"]
+    DIAGNOSE --> ACTION["3. ACTION <br/> 1-Click Operational Self-Service Hubs"]
 ```
 
 ---
 
-## 2. Core Functional Modules of HR Control Center
+## 2. Core Operational Modules
 
-### Module 1: Overview Dashboard (Stage Funnel & Pipeline Metrics)
-Displays real-time transaction counts across the entire Japanese Fiscal Year (1 Apr - 31 Mar):
-* **Pipeline Funnel:** `Total Employees` -> `Not Started` -> `Objective Draft` -> `Waiting Manager L1` -> `Waiting Manager L2` -> `Waiting GM/VP` -> `Objective Approved` -> `Mid-Year In Progress` -> `Final In Progress` -> `HR Final Check` -> `Completed`.
-* **Bottleneck Highlights:** Overdue approvals (> 7 days pending), pending resignations, and stage blockers.
+### Module 1: Overview Dashboard & Exception Alerts (Need Attention)
+* **Real-time Pipeline:** `Not Started` -> `Draft` -> `Waiting Manager L1` -> `Waiting Manager L2` -> `Waiting GM/VP` -> `Objective Approved` -> `Mid-Year` -> `Final` -> `HR Final Check` -> `Completed`.
+* **Need Attention Aggregator:** Automatically groups exceptions:
+  * `Routing Not Configured` -> Direct link to Configure Routing
+  * `Profile Not Configured` -> Direct link to Configure Profile
+  * `Hoshin Not Ready` -> Direct link to Manage Hoshin
+  * `Inactive Approver on Pending Record` -> Direct link to Reassign Approver
+  * `Approval Overdue (> 7 Days)` -> Direct link to Send Reminder
+  * `Reopen Requested` -> Direct link to Review Reopen
 
-### Module 2: Employee Evaluation Monitor (Actionable Data Grid)
-Provides a rich, interactive table for all employees with 1-click drill-down:
-* **Columns:** `Employee Code`, `Name (TH/EN)`, `Department`, `Section`, `Evaluation Profile`, `Fiscal Year`, `Current Stage`, `Current Status (Plain Text)`, `Waiting For (Role & Name)`, `Days Pending`, `Revision Counter`, `Health Status / Alert Badge`.
-* **Action:** Clicking any employee row opens the full MBO detail view in a modal/drawer without losing table state.
+### Module 2: Employee Evaluation Monitor (Actionable Grid)
+* Rich interactive data grid with 1-click drill-down:
+  * `Employee Code`, `Name`, `Department`, `Section`, `Profile`, `Stage`, `Status (Plain Language)`, `Waiting For (Role & Name)`, `Days Pending`, `Next Required Action`, `Revision`, `Alert / Health Badge`.
 
-### Module 3: Multi-Dimensional Filter & Search Engine
-* **Filters:** `Fiscal Year`, `Department`, `Section`, `Evaluation Profile`, `Stage`, `Status`, `Waiting For`, `Approver Name`, `Overdue Only`, `Has Errors Only`, `Has Reopen Request Only`.
-* **Search:** Instant fuzzy search by Employee Code or Employee Name.
-
-### Module 4: Routing Operations Hub (HR Self-Service >= 95%)
-Directly accessible from the Control Center:
-* **Single Record Reassignment:** Select pending record -> Choose new approver -> Execute `/k/v1/record/assignees.json` with audit log `APPROVER_REASSIGNED`.
-* **Future Routing Maintenance:** Update App 795 master records with effective dates.
-* **Bulk Pending Reassignment:** Impact Preview (shows count of affected records) -> Confirm -> Bulk API update with audit log `BULK_REASSIGNMENT`.
-
-### Module 5: Reopen & Revision Center
-* **Reopen Request Queue:** View and triage formal reopen requests submitted by managers or employees.
-* **Impact Preview Engine:** Displays which approvals will be invalidated and reset to pending before confirming the reopen.
-* **Controlled Reopen Execution:** Increments `Objective_Revision` (or stage revision), archives historical snapshot immutably, and logs `EVALUATION_REOPENED`.
-
-### Module 6: Hoshin Management Hub
-* **Dual-Level Overview:** Visual grid showing all Departments and Sections with their current FY Hoshin status.
-* **Readiness Status:** Clear badge indicator: `Ready_For_MBO = YES` (Green) or `NOT READY` (Red).
-* **One-Click Actions:** Publish Version, Invalidate Old Version, Copy Previous FY Content.
-
-### Module 7: Annual Cycle Management Hub
-* **Cycle Monitor:** Tracks initialization of annual records for Japanese FY (1 April - 31 March).
-* **Onboarding Tool:** Detects new hires added to App 53 and creates missing annual MBO records.
-* **Cycle Close:** Enforces final archiving and locks completed records.
+### Module 3: Self-Service Operations Hubs (>= 95% HR Autonomy)
+* **Routing Operations Hub:** Future routing maintenance, Single in-flight reassignment, Bulk pending reassignment with Impact Preview.
+* **Reopen & Revision Center:** Reopen request queue, Approval invalidation impact preview, Controlled Reopen execution.
+* **Hoshin Management Hub:** Department and Section Hoshin readiness toggles (`Ready_For_MBO`), Version publication, Copy previous FY.
+* **Annual Cycle Hub:** Japanese FY tracking (1 Apr - 31 Mar), New hire record onboarding, Annual closing lock.
 
 ---
 
-## 3. Alert Priority & Health Classification Matrix
-
-| Alert Level | Visual Style | Trigger Criteria | Actionable Shortcut |
-| :--- | :--- | :--- | :--- |
-| **CRITICAL** | Red Banner / Pulse Badge | Routing Missing, Inactive Approver on Pending Record, Profile Resolution Error | **[Fix Routing]** / **[Reassign Approver]** |
-| **ACTION REQUIRED**| Orange Badge | Department or Section Hoshin Not Ready for Current FY | **[Manage Hoshin]** |
-| **WARNING** | Yellow Badge | Pending Approval Overdue (> 7 Days), Objective Total Weight != 100% | **[Send Reminder]** / **[View Details]** |
-| **INFORMATION** | Blue / Green Badge | Stage Successfully Approved, Revision Created, Cycle Initialized | **[View Log]** |
-
----
-
-## 4. Security & Audit Architecture
-
-1. **Authorization Boundary:** Access to HR Control Center is governed by **Native Kintone Role/Group Permissions** (e.g. `HR_ADMIN_GROUP`). System Administrators without HR role assignment cannot execute business actions.
-2. **Audit Logging:** Every administrative action generates an immutable audit entry in the System Audit Log:
-   * `ROUTING_MASTER_CHANGED`
-   * `APPROVER_REASSIGNED`
-   * `BULK_REASSIGNMENT`
-   * `EVALUATION_REOPENED`
-   * `HOSHIN_VERSION_CHANGED`
-   * `ANNUAL_CYCLE_INITIALIZED`
+## 3. Security & Native Permissions
+* Access to HR Control Center is strictly governed by **Native Kintone Group/Role Permissions (`HR_ADMIN_GROUP`)**.
+* System Administrators without business HR authorization cannot execute business actions.
