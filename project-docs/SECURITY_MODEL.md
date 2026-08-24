@@ -97,3 +97,9 @@ Specifically, Employees / Shared accounts MUST NEVER view:
 - `Manager_Competency_Rating_1..8`, `GM_Competency_Rating_1..8` (All active competency items 1..8)
 - `PartB_Raw_Score`, `PartB_Weighted_Score`
 - `Final_Confidential_Score`, `Final_Grade`
+## 9. App 794 Full Test Sandbox Environment Governance (`DEC-041`)
+
+* **Sandbox Designation:** App 794 (`MBO V2 Sandbox App`) is designated as `APP_794_ENVIRONMENT = SANDBOX` and `APP_794_PRODUCTION = FALSE`. Its explicit purpose is `APP_794_PURPOSE = MBO_V2_DEVELOPMENT_AND_FULL_TESTING`. It is NOT a production application and MUST NOT be treated as permanently read-only.
+* **Controlled Write Permission:** App 794 controlled write operations (POST, PUT, DELETE, schema modifications, Process Management, security testing) are permitted ONLY when explicitly planned and authorized by an approved Work Package (`WRITE_ALLOWED_APPS = [794]`).
+* **Default-Deny Security Guard:** The default safety harness remains `WRITE_ALLOWED_APPS = []`. Protected apps (Apps 53, 283, 305, 307, 310, 640, 643, 715, 716) remain permanently READ ONLY.
+* **Primary Security Sandbox:** App 794 is the primary sandbox for proving `DEC-039` security isolation requirements and executing adversarial `EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B` release blocker tests prior to production cutover.
