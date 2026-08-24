@@ -15,6 +15,9 @@ export const PROTECTED_APP_IDS = Object.freeze([
  */
 export const WRITE_ALLOWED_APPS = Object.freeze([]);
 
+export const WP002C_APP_CREATE_WORK_PACKAGE = 'MBO-P03-WP-002C';
+export const WP002C_APPROVED_APP_NAME = 'MBO Profile & Scoring Configuration Master [Sandbox]';
+
 /**
  * Backwards compatibility: WRITE_BLOCKED_APP_IDS includes all protected apps + any app not in allow-list
  */
@@ -66,6 +69,50 @@ export function assertSandboxWriteTarget(appId, registry = sandboxRegistry, allo
   }
 
   return appId;
+}
+
+/**
+ * Narrow pre-ID authorization for exactly one future WP-002C app creation.
+ * This is validation only: it neither changes Discovery Mode nor performs I/O.
+ */
+export function assertAppCreationAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('APP CREATE BLOCKED (FAIL-CLOSED): Missing or corrupted authorization/request configuration.');
+  }
+
+  const authorizationId = authConfig.authorizationId;
+  if (authConfig.workPackageId !== WP002C_APP_CREATE_WORK_PACKAGE || requestConfig.workPackageId !== WP002C_APP_CREATE_WORK_PACKAGE) {
+    throw new Error('APP CREATE BLOCKED: Work package must be exactly MBO-P03-WP-002C.');
+  }
+  if (requestConfig.operation !== 'APP_CREATE') {
+    throw new Error('APP CREATE BLOCKED: Operation must be exactly APP_CREATE.');
+  }
+  if (authConfig.activeWindow !== true) {
+    throw new Error('APP CREATE BLOCKED: One-time write window is CLOSED.');
+  }
+  if (authConfig.explicitUserAuthorization !== true) {
+    throw new Error('APP CREATE BLOCKED: Explicit user authorization is required.');
+  }
+  if (typeof authorizationId !== 'string' || authorizationId.trim() === '') {
+    throw new Error('APP CREATE BLOCKED: A non-empty single-use authorization identifier is required.');
+  }
+  if (authConfig.authorizationConsumed === true || authConfig.authorizationUsed === true) {
+    throw new Error('APP CREATE BLOCKED: Single-use authorization has already been consumed.');
+  }
+  if (authConfig.authorizedAppName !== WP002C_APPROVED_APP_NAME || requestConfig.requestedAppName !== WP002C_APPROVED_APP_NAME) {
+    throw new Error('APP CREATE BLOCKED: App name must exactly match the approved WP-002C target.');
+  }
+
+  const changes = requestConfig.manifest?.expectedChanges;
+  if (!Array.isArray(changes) || changes.length !== 1) {
+    throw new Error('APP CREATE BLOCKED: Manifest must authorize exactly one app creation.');
+  }
+  const [change] = changes;
+  if (!change || typeof change !== 'object' || change.operation !== 'APP_CREATE' || change.appName !== WP002C_APPROVED_APP_NAME) {
+    throw new Error('APP CREATE BLOCKED: Manifest target must be exactly one approved APP_CREATE.');
+  }
+
+  return true;
 }
 
 /**

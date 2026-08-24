@@ -5,9 +5,38 @@ import {
   PROTECTED_APP_IDS,
   WRITE_ALLOWED_APPS,
   assertDiscoveryReadOnly,
+  assertAppCreationAuthorization,
   assertSandboxWriteTarget,
   assertWorkPackageAuthorization
 } from '../src/core/sandbox-write-guard.js';
+import {
+  assertAppCreationRequestPreflight,
+  getAppCreationConnection,
+  kintoneRequest
+} from '../src/core/kintone-client.js';
+
+const approvedAppName = 'MBO Profile & Scoring Configuration Master [Sandbox]';
+
+function validAppCreateAuthorization() {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    authorizationId: 'wp002c-create-once',
+    authorizationConsumed: false,
+    authorizedAppName: approvedAppName
+  };
+}
+
+function validAppCreateRequest(overrides = {}) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    operation: 'APP_CREATE',
+    requestedAppName: approvedAppName,
+    manifest: { expectedChanges: [{ operation: 'APP_CREATE', appName: approvedAppName }] },
+    ...overrides
+  };
+}
 
 // ==========================================
 // WP-001 SAFETY BASELINE TESTS (SAFE-001..008)
@@ -242,4 +271,71 @@ test('SAFE-020: Closed temporary write window (activeWindow: false) -> DENIED', 
     () => assertWorkPackageAuthorization(authClosedWindow, req),
     /Write window is CLOSED/
   );
+});
+
+// ==========================================
+// WP-002C STAGE-1 APP-CREATION SAFETY TESTS
+// ==========================================
+
+test('WP002C-S1-001: exact one-target APP_CREATE authorization passes', () => {
+  assert.equal(assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest()), true);
+});
+
+test('WP002C-S1-002: wrong WP, operation, authorization, window, name, manifest, and consumed authorization fail closed', () => {
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ workPackageId: 'MBO-P03-WP-002B' })), /Work package/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ operation: 'POST' })), /Operation/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization(), explicitUserAuthorization: false }, validAppCreateRequest()), /Explicit user authorization/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization(), activeWindow: false }, validAppCreateRequest()), /window is CLOSED/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ requestedAppName: 'Other App' })), /App name/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ manifest: { expectedChanges: [] } })), /exactly one/);
+  assert.throws(() => assertAppCreationAuthorization(validAppCreateAuthorization(), validAppCreateRequest({ manifest: { expectedChanges: [{ operation: 'APP_CREATE', appName: approvedAppName }, { operation: 'APP_CREATE', appName: approvedAppName }] } })), /exactly one/);
+  assert.throws(() => assertAppCreationAuthorization({ ...validAppCreateAuthorization(), authorizationConsumed: true }, validAppCreateRequest()), /already been consumed/);
+});
+
+test('WP002C-S1-003: APP_CREATE preflight permits only the exact preview POST path', () => {
+  const request = {
+    ...validAppCreateRequest(),
+    method: 'POST',
+    path: '/k/v1/preview/app.json',
+    body: { name: approvedAppName }
+  };
+  assert.equal(assertAppCreationRequestPreflight(validAppCreateAuthorization(), request), true);
+  assert.throws(() => assertAppCreationRequestPreflight(validAppCreateAuthorization(), { ...request, method: 'PUT' }), /Only POST/);
+  assert.throws(() => assertAppCreationRequestPreflight(validAppCreateAuthorization(), { ...request, path: '/k/v1/app.json' }), /Only POST/);
+});
+
+test('WP002C-S1-004: APP_CREATE authentication requires password credentials and omits API token header', () => {
+  const saved = {
+    baseUrl: process.env.KINTONE_BASE_URL,
+    username: process.env.KINTONE_USERNAME,
+    password: process.env.KINTONE_PASSWORD,
+    token: process.env.KINTONE_API_TOKEN
+  };
+  try {
+    process.env.KINTONE_BASE_URL = 'https://example.kintone.com';
+    delete process.env.KINTONE_USERNAME;
+    delete process.env.KINTONE_PASSWORD;
+    process.env.KINTONE_API_TOKEN = 'token-only';
+    assert.throws(() => getAppCreationConnection(), /username and password/);
+
+    process.env.KINTONE_USERNAME = 'publisher';
+    process.env.KINTONE_PASSWORD = 'secret';
+    const connection = getAppCreationConnection();
+    assert.equal(connection.baseUrl, 'https://example.kintone.com');
+    assert.ok(connection.headers['X-Cybozu-Authorization']);
+    assert.equal(connection.headers['X-Cybozu-API-Token'], undefined);
+  } finally {
+    for (const [key, value] of Object.entries({
+      KINTONE_BASE_URL: saved.baseUrl,
+      KINTONE_USERNAME: saved.username,
+      KINTONE_PASSWORD: saved.password,
+      KINTONE_API_TOKEN: saved.token
+    })) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
+});
+
+test('WP002C-S1-005: generic network client still blocks POST during Discovery Mode', async () => {
+  await assert.rejects(() => kintoneRequest('/k/v1/preview/app.json', { method: 'POST', body: { name: approvedAppName } }), /DISCOVERY PHASE WRITE BLOCKED/);
 });
