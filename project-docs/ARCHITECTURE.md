@@ -9,7 +9,9 @@
 > 4. `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`)
 > 5. `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)
 > 6. `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)
-> 7. `PROJECT_GOVERNANCE_NO_ORPHAN = ACTIVE` (`DEC-016`)
+> 7. `HR_CONTROL_CENTER_ARCHITECTURE = REQUIRED CORE` (`DEC-025`)
+> 8. `GUIDED_WORKFLOW_UX_ARCHITECTURE = REQUIRED CORE` (`DEC-026`)
+> 9. `PROJECT_GOVERNANCE_NO_ORPHAN = ACTIVE` (`DEC-016`)
 
 ---
 
@@ -25,3 +27,5 @@
 | **Approver Operations** | App 794 | Three Scopes (Future Master, Current Record Reassign, Bulk Preview Reassign) | Frozen (`DEC-021`) |
 | **Reopen & Revision** | App 794 + Archive | Same Record / New Revision (`FY2027-0149`), Stage Revisions, Approval Invalidation | Frozen (`DEC-022`) |
 | **Evaluation Profile** | App 794 | Annual Profile Freeze (Single Profile per FY), 4 Families, Standardized `WEIGHTED_PART_A_B` | Frozen (`DEC-023`, `DEC-024`) |
+| **HR Control Center** | App 794 / Portal | Unified Monitoring Dashboard, Multi-Filter, Self-Service Hubs (>= 95% IT Independence) | Required Core (`DEC-025`) |
+| **Guided Workflow UX** | App 794 Custom UI | 5 Principles (What, Who, Why, Next, Where), Plain Language Status, Actionable CTA | Required Core (`DEC-026`) |

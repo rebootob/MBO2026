@@ -112,3 +112,11 @@
 * **Mid-Year Promotion:** Current FY retains starting profile; promoted profile applies in next FY.
 * **Separation of Concerns:** Profile = Annual Snapshot (Criteria), Routing = Stage Snapshot (Approvers).
 
+
+---
+
+## 13. HR Control Center & Guided Workflow UX Architecture
+* **HR Control Center:** Unified monitoring, exception management, and administrative self-service hub (>= 95% IT independence).
+* **Alert Hierarchy:** Critical (Blocker), Action Required (Gate), Warning (Overdue), Information (Milestone).
+* **Guided Workflow UX:** 5 Core Principles (What, Who, Why, Next, Where) with plain language status and context-aware action bars.
+
