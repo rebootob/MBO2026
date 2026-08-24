@@ -11,7 +11,8 @@ import {
   assertScoringMasterSchemaAuthorization,
   assertSandboxWriteTarget,
   assertWorkPackageAuthorization,
-  WP002C_SCHEMA_CONFIGURATION_STAGE
+  WP002C_SCHEMA_CONFIGURATION_STAGE,
+  WP002C_SCHEMA_CONTRACT_ID
 } from '../src/core/sandbox-write-guard.js';
 import {
   assertAppCreationRequestPreflight,
@@ -685,6 +686,7 @@ function validSchemaRequest(overrides = {}) {
   return {
     workPackageId: 'MBO-P03-WP-002C',
     stage: 'STAGE_3C_SCHEMA_CONFIGURATION',
+    schemaContractId: WP002C_SCHEMA_CONTRACT_ID,
     appId: 796,
     appName: approvedAppName,
     operationSequence: ['FORM_FIELDS_ADD', 'APP_DEPLOY'],
@@ -830,18 +832,18 @@ test('WP002C-S3C-010: Part A mode options exactly two and ordered correctly', ()
   const payload = generateExact23FieldsPayload();
   const options = payload.Part_A_Scoring_Mode.options;
   const keys = Object.keys(options);
-  assert.deepEqual(keys, ['0 DIFFICULTY_ACHIEVEMENT_MATRIX', '1 ACHIEVEMENT_DIRECT']);
-  assert.equal(options['0 DIFFICULTY_ACHIEVEMENT_MATRIX'].index, '0');
-  assert.equal(options['1 ACHIEVEMENT_DIRECT'].index, '1');
+  assert.deepEqual(keys, ['DIFFICULTY_ACHIEVEMENT_MATRIX', 'ACHIEVEMENT_DIRECT']);
+  assert.equal(options.DIFFICULTY_ACHIEVEMENT_MATRIX.index, '0');
+  assert.equal(options.ACHIEVEMENT_DIRECT.index, '1');
 });
 
 test('WP002C-S3C-011: Config status options exactly five and ordered correctly', () => {
   const payload = generateExact23FieldsPayload();
   const options = payload.Config_Status.options;
   const keys = Object.keys(options);
-  assert.deepEqual(keys, ['0 DRAFT', '1 VALIDATED', '2 PUBLISHED', '3 SUPERSEDED', '4 RETIRED']);
-  assert.equal(options['0 DRAFT'].index, '0');
-  assert.equal(options['4 RETIRED'].index, '4');
+  assert.deepEqual(keys, ['DRAFT', 'VALIDATED', 'PUBLISHED', 'SUPERSEDED', 'RETIRED']);
+  assert.equal(options.DRAFT.index, '0');
+  assert.equal(options.RETIRED.index, '4');
 });
 
 test('WP002C-S3C-012: no unexpected/default business values in schema', () => {
@@ -963,4 +965,32 @@ test('WP002C-S3C-022: no record/layout/view/process/customization/ACL/delete wri
     () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-022-b'), validSchemaRequest({ operationSequence: ['LAYOUT_UPDATE'] })),
     /Operation sequence/
   );
+});
+test('WP002C-S3C-023: prefixed drop-down labels are rejected by exact schema assertion', () => {
+  const payload = generateExact23FieldsPayload();
+  payload.Part_A_Scoring_Mode.options = {
+    '0 DIFFICULTY_ACHIEVEMENT_MATRIX': { label: '0 DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' }
+  };
+  assert.throws(
+    () => assertExact23FieldSchema(payload),
+    /SCHEMA_VERIFICATION_FAILED: Field Part_A_Scoring_Mode/
+  );
+});
+
+test('WP002C-S3C-024: missing or wrong schema contract ID is rejected', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-024'), { ...validSchemaRequest(), schemaContractId: 'WRONG_CONTRACT' }),
+    /Schema contract ID must be exactly WP002C_23_FIELDS_V1/
+  );
+});
+
+test('WP002C-S3C-025: preflight stops if 1 or 23 planned fields already exist in preview', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const fullFields = generateExact23FieldsPayload();
+    const { fetchMock } = buildSchemaFetch({ previewReadbackFields: fullFields, preflightPlannedFieldsExist: true });
+    await assert.rejects(
+      () => configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-025'), validSchemaRequest(), fetchMock),
+      /STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist/
+    );
+  });
 });

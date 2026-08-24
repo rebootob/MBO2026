@@ -26,6 +26,7 @@ const consumedSchemaAuthorizationIds = new Set();
 
 export const WP002C_LIVE_ACTIVATION_STAGE = 'STAGE_3A_LIVE_ACTIVATION';
 export const WP002C_SCHEMA_CONFIGURATION_STAGE = 'STAGE_3C_SCHEMA_CONFIGURATION';
+export const WP002C_SCHEMA_CONTRACT_ID = 'WP002C_23_FIELDS_V1';
 export const WP002C_SCORING_MASTER_APP_ID = 796;
 
 /**
@@ -188,6 +189,9 @@ export function assertScoringMasterSchemaAuthorization(authConfig, requestConfig
   }
   if (requestConfig.appName !== WP002C_APPROVED_APP_NAME) {
     throw new Error('SCHEMA CONFIGURATION BLOCKED: Target App name mismatch.');
+  }
+  if (requestConfig.schemaContractId !== WP002C_SCHEMA_CONTRACT_ID && authConfig.schemaContractId !== WP002C_SCHEMA_CONTRACT_ID) {
+    throw new Error('SCHEMA CONFIGURATION BLOCKED: Schema contract ID must be exactly WP002C_23_FIELDS_V1.');
   }
   if (authConfig.explicitUserAuthorization !== true || authConfig.activeWindow !== true) {
     throw new Error('SCHEMA CONFIGURATION BLOCKED: Explicit authorization and active window are required.');

@@ -5,6 +5,7 @@ import {
   assertDiscoveryReadOnly,
   WP002C_APPROVED_APP_NAME,
   WP002C_SCORING_MASTER_APP_ID,
+  WP002C_SCHEMA_CONTRACT_ID,
   WP002C_SCHEMA_CONFIGURATION_STAGE
 } from './sandbox-write-guard.js';
 
@@ -389,8 +390,8 @@ export const WP002C_23_FIELD_MANIFEST = Object.freeze([
     required: true,
     unique: false,
     options: Object.freeze({
-      '0 DIFFICULTY_ACHIEVEMENT_MATRIX': { label: '0 DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' },
-      '1 ACHIEVEMENT_DIRECT': { label: '1 ACHIEVEMENT_DIRECT', index: '1' }
+      DIFFICULTY_ACHIEVEMENT_MATRIX: { label: 'DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' },
+      ACHIEVEMENT_DIRECT: { label: 'ACHIEVEMENT_DIRECT', index: '1' }
     })
   },
   { code: 'Competency_Set_Code', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
@@ -405,11 +406,11 @@ export const WP002C_23_FIELD_MANIFEST = Object.freeze([
     required: true,
     unique: false,
     options: Object.freeze({
-      '0 DRAFT': { label: '0 DRAFT', index: '0' },
-      '1 VALIDATED': { label: '1 VALIDATED', index: '1' },
-      '2 PUBLISHED': { label: '2 PUBLISHED', index: '2' },
-      '3 SUPERSEDED': { label: '3 SUPERSEDED', index: '3' },
-      '4 RETIRED': { label: '4 RETIRED', index: '4' }
+      DRAFT: { label: 'DRAFT', index: '0' },
+      VALIDATED: { label: 'VALIDATED', index: '1' },
+      PUBLISHED: { label: 'PUBLISHED', index: '2' },
+      SUPERSEDED: { label: 'SUPERSEDED', index: '3' },
+      RETIRED: { label: 'RETIRED', index: '4' }
     })
   },
   { code: 'Published_At', type: 'DATETIME', required: false, unique: false },
@@ -509,7 +510,7 @@ function isNoDefaultValue(val) {
 }
 
 export async function configureAndDeployScoringMasterSchema(authConfig, requestConfig, fetchImpl = globalThis.fetch, options = {}) {
-  assertScoringMasterSchemaAuthorization(authConfig, requestConfig);
+  assertScoringMasterSchemaAuthorization(authConfig, { schemaContractId: WP002C_SCHEMA_CONTRACT_ID, ...requestConfig });
   const { baseUrl, headers } = getAppCreationConnection();
   const appId = WP002C_SCORING_MASTER_APP_ID;
   const maxStatusChecks = options.maxStatusChecks ?? 30;
@@ -558,57 +559,53 @@ export async function configureAndDeployScoringMasterSchema(authConfig, requestC
   const previewExistingCodes = new Set(Object.keys(previewFields.properties ?? {}));
   const previewMatchCount = WP002C_PLANNED_SCHEMA_FIELDS.filter((code) => previewExistingCodes.has(code)).length;
 
-  let fieldPostAttempts = 0;
+  if (previewMatchCount > 0) {
+    throw new Error(`STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist in preview (${previewMatchCount}/23 fields found); no deploy.`);
+  }
+
+  let fieldPostAttempts = 1;
   let postSchemaRevision = preview.revision;
 
-  if (previewMatchCount === 0) {
-    fieldPostAttempts = 1;
-    const fieldsPostUrl = `${baseUrl}/k/v1/preview/app/form/fields.json`;
-    const fieldsPostBody = {
-      app: appId,
-      properties: generateExact23FieldsPayload(),
-      revision: preview.revision
-    };
+  const fieldsPostUrl = `${baseUrl}/k/v1/preview/app/form/fields.json`;
+  const fieldsPostBody = {
+    app: appId,
+    properties: generateExact23FieldsPayload(),
+    revision: preview.revision
+  };
 
-    let fieldPostTransportUncertain = false;
-    let fieldPostResponse;
-    try {
-      fieldPostResponse = await fetchImpl(fieldsPostUrl, {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(fieldsPostBody)
-      });
-    } catch {
-      fieldPostTransportUncertain = true;
-    }
+  let fieldPostTransportUncertain = false;
+  let fieldPostResponse;
+  try {
+    fieldPostResponse = await fetchImpl(fieldsPostUrl, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(fieldsPostBody)
+    });
+  } catch {
+    fieldPostTransportUncertain = true;
+  }
 
-    if (fieldPostTransportUncertain) {
-      const reconcileResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
-      if (!reconcileResponse.ok) throw new Error('FIELD_POST_RESULT_UNCERTAIN: Preview fields GET failed after uncertain POST; do not retry.');
-      const reconciledFields = await parseJsonOrThrow(reconcileResponse, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
-      const recCodes = new Set(Object.keys(reconciledFields.properties ?? {}));
-      const allExist = WP002C_PLANNED_SCHEMA_FIELDS.every((code) => recCodes.has(code));
-      if (allExist && isNumericRevision(reconciledFields.revision)) {
-        postSchemaRevision = reconciledFields.revision;
-      } else {
-        throw new Error('FIELD_POST_RESULT_UNCERTAIN: Field POST transport uncertain and fields incomplete; do not retry.');
-      }
+  if (fieldPostTransportUncertain) {
+    const reconcileResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+    if (!reconcileResponse.ok) throw new Error('FIELD_POST_RESULT_UNCERTAIN: Preview fields GET failed after uncertain POST; do not retry.');
+    const reconciledFields = await parseJsonOrThrow(reconcileResponse, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+    const recCodes = new Set(Object.keys(reconciledFields.properties ?? {}));
+    const allExist = WP002C_PLANNED_SCHEMA_FIELDS.every((code) => recCodes.has(code));
+    if (allExist && isNumericRevision(reconciledFields.revision)) {
+      postSchemaRevision = reconciledFields.revision;
     } else {
-      if (!fieldPostResponse?.ok) {
-        const detail = await readSafeError(fieldPostResponse);
-        throw new Error(`FIELD_POST_EXECUTION_FAILED: HTTP ${fieldPostResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}; no retry.`);
-      }
-      const fieldPostPayload = await parseJsonOrThrow(fieldPostResponse, 'FIELD_POST_EXECUTION_FAILED', 'Field POST response');
-      if (!isNumericRevision(fieldPostPayload.revision)) {
-        throw new Error('FIELD_POST_EXECUTION_FAILED: Field POST did not return a valid numeric revision.');
-      }
-      postSchemaRevision = fieldPostPayload.revision;
+      throw new Error('FIELD_POST_RESULT_UNCERTAIN: Field POST transport uncertain and fields incomplete; do not retry.');
     }
-  } else if (previewMatchCount === 23) {
-    fieldPostAttempts = 1;
-    postSchemaRevision = preview.revision;
   } else {
-    throw new Error(`STAGE3C_PREFLIGHT_FAILED: Partial preview schema found (${previewMatchCount}/23 fields); no deploy.`);
+    if (!fieldPostResponse?.ok) {
+      const detail = await readSafeError(fieldPostResponse);
+      throw new Error(`FIELD_POST_EXECUTION_FAILED: HTTP ${fieldPostResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}; no retry.`);
+    }
+    const fieldPostPayload = await parseJsonOrThrow(fieldPostResponse, 'FIELD_POST_EXECUTION_FAILED', 'Field POST response');
+    if (!isNumericRevision(fieldPostPayload.revision)) {
+      throw new Error('FIELD_POST_EXECUTION_FAILED: Field POST did not return a valid numeric revision.');
+    }
+    postSchemaRevision = fieldPostPayload.revision;
   }
 
   const previewReadbackResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'PREVIEW_SCHEMA_READBACK_FAILED', 'Preview fields readback');
