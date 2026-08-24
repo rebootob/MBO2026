@@ -1,9 +1,11 @@
 import {
   assertAppCreationAuthorization,
   assertScoringMasterLiveActivationAuthorization,
+  assertScoringMasterSchemaAuthorization,
   assertDiscoveryReadOnly,
   WP002C_APPROVED_APP_NAME,
-  WP002C_SCORING_MASTER_APP_ID
+  WP002C_SCORING_MASTER_APP_ID,
+  WP002C_SCHEMA_CONFIGURATION_STAGE
 } from './sandbox-write-guard.js';
 
 const APP_CREATE_PREVIEW_PATH = '/k/v1/preview/app.json';
@@ -354,6 +356,311 @@ export async function activateScoringConfigMasterLive(authConfig, requestConfig,
     revision: finalLive.revision,
     deployStatus: finalDeployStatus,
     accessStatus: 'CREATOR_ONLY'
+  };
+}
+
+export const WP002C_23_FIELD_MANIFEST = Object.freeze([
+  { code: 'Master_Record_Key', type: 'SINGLE_LINE_TEXT', required: true, unique: true },
+  { code: 'Profile_Code', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'Profile_Family', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'Scoring_Config_Code', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'Scoring_Config_Version', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'Effective_From', type: 'DATE', required: true, unique: false },
+  { code: 'Effective_To', type: 'DATE', required: true, unique: false },
+  { code: 'Fiscal_Year', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'PartA_Weight', type: 'NUMBER', required: true, unique: false },
+  { code: 'PartB_Weight', type: 'NUMBER', required: true, unique: false },
+  { code: 'Expected_Appraiser_Count', type: 'NUMBER', required: true, unique: false },
+  { code: 'Appraiser_Weight_Rule_Code', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  {
+    code: 'Part_A_Scoring_Mode',
+    type: 'DROP_DOWN',
+    required: true,
+    unique: false,
+    options: Object.freeze({
+      '0 DIFFICULTY_ACHIEVEMENT_MATRIX': { label: '0 DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' },
+      '1 ACHIEVEMENT_DIRECT': { label: '1 ACHIEVEMENT_DIRECT', index: '1' }
+    })
+  },
+  { code: 'Competency_Set_Code', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'PartA_Rounding_Rule', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'PartB_Raw_Rounding_Rule', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'PartB_Weighted_Rounding_Rule', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'Final_Rounding_Rule', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  { code: 'Supersedes_Config_Version', type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  {
+    code: 'Config_Status',
+    type: 'DROP_DOWN',
+    required: true,
+    unique: false,
+    options: Object.freeze({
+      '0 DRAFT': { label: '0 DRAFT', index: '0' },
+      '1 VALIDATED': { label: '1 VALIDATED', index: '1' },
+      '2 PUBLISHED': { label: '2 PUBLISHED', index: '2' },
+      '3 SUPERSEDED': { label: '3 SUPERSEDED', index: '3' },
+      '4 RETIRED': { label: '4 RETIRED', index: '4' }
+    })
+  },
+  { code: 'Published_At', type: 'DATETIME', required: false, unique: false },
+  { code: 'Published_By', type: 'USER_SELECT', required: false, unique: false },
+  { code: 'Configuration_Hash', type: 'SINGLE_LINE_TEXT', required: false, unique: false }
+]);
+
+export function generateExact23FieldsPayload() {
+  const properties = {};
+  for (const field of WP002C_23_FIELD_MANIFEST) {
+    const entry = {
+      code: field.code,
+      label: field.code,
+      type: field.type,
+      required: field.required
+    };
+    if (['SINGLE_LINE_TEXT', 'NUMBER'].includes(field.type)) {
+      entry.unique = field.unique;
+    }
+    if (field.type === 'DROP_DOWN' && field.options) {
+      entry.options = field.options;
+    }
+    properties[field.code] = entry;
+  }
+  return properties;
+}
+
+export function assertExact23FieldSchema(propertiesPayload, failureCode = 'SCHEMA_VERIFICATION_FAILED') {
+  if (!propertiesPayload || typeof propertiesPayload !== 'object') {
+    throw new Error(`${failureCode}: Missing or invalid properties payload.`);
+  }
+
+  const expectedCodes = WP002C_23_FIELD_MANIFEST.map((f) => f.code);
+  const presentPlannedCodes = expectedCodes.filter((code) => Object.prototype.hasOwnProperty.call(propertiesPayload, code));
+
+  if (presentPlannedCodes.length !== expectedCodes.length) {
+    throw new Error(`${failureCode}: Schema must contain all 23 WP-002C fields (found ${presentPlannedCodes.length}/23).`);
+  }
+
+  for (const spec of WP002C_23_FIELD_MANIFEST) {
+    const actual = propertiesPayload[spec.code];
+    if (!actual || typeof actual !== 'object') {
+      throw new Error(`${failureCode}: Field ${spec.code} is missing from read-back.`);
+    }
+    if (actual.type !== spec.type) {
+      throw new Error(`${failureCode}: Field ${spec.code} type mismatch (expected ${spec.type}, got ${actual.type}).`);
+    }
+
+    const actualRequired = Boolean(actual.required);
+    if (actualRequired !== spec.required) {
+      throw new Error(`${failureCode}: Field ${spec.code} required flag mismatch (expected ${spec.required}, got ${actualRequired}).`);
+    }
+
+    if (spec.code === 'Master_Record_Key') {
+      if (actual.unique !== true) {
+        throw new Error(`${failureCode}: Master_Record_Key must have unique === true.`);
+      }
+    } else if (actual.unique === true) {
+      throw new Error(`${failureCode}: Field ${spec.code} must NOT be unique.`);
+    }
+
+    if (spec.type === 'DROP_DOWN') {
+      const expectedOptionsKeys = Object.keys(spec.options);
+      const actualOptions = actual.options ?? {};
+      const actualKeys = Object.keys(actualOptions);
+
+      if (actualKeys.length !== expectedOptionsKeys.length) {
+        throw new Error(`${failureCode}: Field ${spec.code} options count mismatch.`);
+      }
+
+      for (let i = 0; i < expectedOptionsKeys.length; i += 1) {
+        const expectedKey = expectedOptionsKeys[i];
+        const actualOption = actualOptions[expectedKey];
+        if (!actualOption || (actualOption.label !== expectedKey && actualOption.key !== expectedKey)) {
+          throw new Error(`${failureCode}: Field ${spec.code} missing option '${expectedKey}'.`);
+        }
+        if (actualOption.index !== undefined && String(actualOption.index) !== String(i)) {
+          throw new Error(`${failureCode}: Field ${spec.code} option '${expectedKey}' index mismatch.`);
+        }
+      }
+    }
+
+    if (actual.defaultValue !== undefined && actual.defaultValue !== '' && actual.defaultValue !== null) {
+      throw new Error(`${failureCode}: Field ${spec.code} contains unexpected default business value '${actual.defaultValue}'.`);
+    }
+  }
+
+  return true;
+}
+
+export async function configureAndDeployScoringMasterSchema(authConfig, requestConfig, fetchImpl = globalThis.fetch, options = {}) {
+  assertScoringMasterSchemaAuthorization(authConfig, requestConfig);
+  const { baseUrl, headers } = getAppCreationConnection();
+  const appId = WP002C_SCORING_MASTER_APP_ID;
+  const maxStatusChecks = options.maxStatusChecks ?? 30;
+  const pollDelayMs = options.pollDelayMs ?? 2000;
+  const sleep = options.sleep ?? ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+
+  const previewSettingsUrl = `${baseUrl}/k/v1/preview/app/settings.json?app=${appId}`;
+  const previewResponse = await exactGet(fetchImpl, previewSettingsUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Preview identity');
+  if (!previewResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Preview settings HTTP ${previewResponse.status}.`);
+  const preview = await parseJsonOrThrow(previewResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Preview settings');
+  if (preview.name !== WP002C_APPROVED_APP_NAME || !isNumericRevision(preview.revision)) {
+    throw new Error('STAGE3C_PREFLIGHT_FAILED: Preview identity or revision mismatch.');
+  }
+
+  const liveSettingsUrl = `${baseUrl}/k/v1/app/settings.json?app=${appId}`;
+  const livePrecheck = await exactGet(fetchImpl, liveSettingsUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Live identity precheck');
+  if (!livePrecheck.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Live settings HTTP ${livePrecheck.status}.`);
+  const live = await parseJsonOrThrow(livePrecheck, 'STAGE3C_PREFLIGHT_FAILED', 'Live identity');
+  if (live.name !== WP002C_APPROVED_APP_NAME) throw new Error('STAGE3C_PREFLIGHT_FAILED: Live App 796 identity mismatch.');
+
+  const liveAclUrl = `${baseUrl}/k/v1/app/acl.json?app=${appId}`;
+  const liveAclResponse = await exactGet(fetchImpl, liveAclUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Live ACL');
+  if (!liveAclResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Live ACL HTTP ${liveAclResponse.status}.`);
+  const liveAcl = await parseJsonOrThrow(liveAclResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Live ACL');
+  assertCreatorOnlyAcl(liveAcl, 'STAGE3C_PREFLIGHT_FAILED');
+
+  const previewAclUrl = `${baseUrl}/k/v1/preview/app/acl.json?app=${appId}`;
+  const previewAclResponse = await exactGet(fetchImpl, previewAclUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Preview ACL');
+  if (!previewAclResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Preview ACL HTTP ${previewAclResponse.status}.`);
+  const previewAcl = await parseJsonOrThrow(previewAclResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Preview ACL');
+  assertCreatorOnlyAcl(previewAcl, 'STAGE3C_PREFLIGHT_FAILED');
+
+  const liveFieldsUrl = `${baseUrl}/k/v1/app/form/fields.json?app=${appId}`;
+  const liveFieldsResponse = await exactGet(fetchImpl, liveFieldsUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Live fields');
+  if (!liveFieldsResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Live fields HTTP ${liveFieldsResponse.status}.`);
+  const liveFields = await parseJsonOrThrow(liveFieldsResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Live fields');
+  const liveExistingCodes = new Set(Object.keys(liveFields.properties ?? {}));
+
+  const previewFieldsUrl = `${baseUrl}/k/v1/preview/app/form/fields.json?app=${appId}`;
+  const previewFieldsResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Preview fields');
+  if (!previewFieldsResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Preview fields HTTP ${previewFieldsResponse.status}.`);
+  const previewFields = await parseJsonOrThrow(previewFieldsResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Preview fields');
+  const previewExistingCodes = new Set(Object.keys(previewFields.properties ?? {}));
+
+  if (WP002C_PLANNED_SCHEMA_FIELDS.some((code) => liveExistingCodes.has(code) || previewExistingCodes.has(code))) {
+    throw new Error('STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist in live or preview.');
+  }
+
+  const preflightRevision = preview.revision;
+
+  const fieldsPostUrl = `${baseUrl}/k/v1/preview/app/form/fields.json`;
+  const fieldsPostBody = {
+    app: appId,
+    properties: generateExact23FieldsPayload(),
+    revision: preflightRevision
+  };
+
+  let fieldPostTransportUncertain = false;
+  let fieldPostResponse;
+  try {
+    fieldPostResponse = await fetchImpl(fieldsPostUrl, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(fieldsPostBody)
+    });
+  } catch {
+    fieldPostTransportUncertain = true;
+  }
+
+  let postSchemaRevision = null;
+
+  if (fieldPostTransportUncertain) {
+    const reconcileResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+    if (!reconcileResponse.ok) throw new Error('FIELD_POST_RESULT_UNCERTAIN: Preview fields GET failed after uncertain POST; do not retry.');
+    const reconciledFields = await parseJsonOrThrow(reconcileResponse, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+    const recCodes = new Set(Object.keys(reconciledFields.properties ?? {}));
+    const allExist = WP002C_PLANNED_SCHEMA_FIELDS.every((code) => recCodes.has(code));
+    if (allExist && isNumericRevision(reconciledFields.revision)) {
+      postSchemaRevision = reconciledFields.revision;
+    } else {
+      throw new Error('FIELD_POST_RESULT_UNCERTAIN: Field POST transport uncertain and fields incomplete; do not retry.');
+    }
+  } else {
+    if (!fieldPostResponse?.ok) {
+      const detail = await readSafeError(fieldPostResponse);
+      throw new Error(`FIELD_POST_EXECUTION_FAILED: HTTP ${fieldPostResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}; no retry.`);
+    }
+    const fieldPostPayload = await parseJsonOrThrow(fieldPostResponse, 'FIELD_POST_EXECUTION_FAILED', 'Field POST response');
+    if (!isNumericRevision(fieldPostPayload.revision)) {
+      throw new Error('FIELD_POST_EXECUTION_FAILED: Field POST did not return a valid numeric revision.');
+    }
+    postSchemaRevision = fieldPostPayload.revision;
+  }
+
+  const previewReadbackResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'PREVIEW_SCHEMA_READBACK_FAILED', 'Preview fields readback');
+  if (!previewReadbackResponse.ok) throw new Error(`PREVIEW_SCHEMA_READBACK_FAILED: HTTP ${previewReadbackResponse.status}.`);
+  const previewReadbackFields = await parseJsonOrThrow(previewReadbackResponse, 'PREVIEW_SCHEMA_READBACK_FAILED', 'Preview fields readback');
+  assertExact23FieldSchema(previewReadbackFields.properties, 'PREVIEW_SCHEMA_READBACK_FAILED');
+
+  const previewAclReadbackResponse = await exactGet(fetchImpl, previewAclUrl, headers, 'PREVIEW_SCHEMA_READBACK_FAILED', 'Preview ACL readback');
+  if (!previewAclReadbackResponse.ok) throw new Error(`PREVIEW_SCHEMA_READBACK_FAILED: Preview ACL HTTP ${previewAclReadbackResponse.status}.`);
+  const previewReadbackAcl = await parseJsonOrThrow(previewAclReadbackResponse, 'PREVIEW_SCHEMA_READBACK_FAILED', 'Preview ACL readback');
+  assertCreatorOnlyAcl(previewReadbackAcl, 'PREVIEW_SCHEMA_READBACK_FAILED');
+
+  const latestPreviewRevision = isNumericRevision(previewReadbackFields.revision) ? previewReadbackFields.revision : postSchemaRevision;
+
+  const deployUrl = `${baseUrl}/k/v1/preview/app/deploy.json`;
+  const deployBody = { apps: [{ app: appId, revision: latestPreviewRevision }] };
+  let deployTransportUncertain = false;
+  let deployResponse;
+  try {
+    deployResponse = await fetchImpl(deployUrl, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(deployBody)
+    });
+  } catch {
+    deployTransportUncertain = true;
+  }
+
+  if (deployResponse && !deployResponse.ok) {
+    throw new Error(`DEPLOY_EXECUTION_FAILED: HTTP ${deployResponse.status ?? 'UNKNOWN'}; no retry.`);
+  }
+
+  const deployStatusUrl = `${baseUrl}/k/v1/preview/app/deploy.json?apps[0]=${appId}`;
+  let finalDeployStatus = null;
+  for (let check = 0; check < maxStatusChecks; check += 1) {
+    const statusResponse = await exactGet(fetchImpl, deployStatusUrl, headers, 'DEPLOY_RESULT_UNCERTAIN', 'Deploy status');
+    if (!statusResponse.ok) throw new Error(`DEPLOY_RESULT_UNCERTAIN: Deploy status HTTP ${statusResponse.status}.`);
+    const statusPayload = await parseJsonOrThrow(statusResponse, 'DEPLOY_RESULT_UNCERTAIN', 'Deploy status');
+    const exactApp = statusPayload.apps?.find((entry) => String(entry.app) === String(appId));
+    if (!exactApp || !['PROCESSING', 'SUCCESS', 'FAIL', 'CANCEL'].includes(exactApp.status)) {
+      throw new Error('DEPLOY_RESULT_UNCERTAIN: Missing or invalid exact-App deploy status.');
+    }
+    finalDeployStatus = exactApp.status;
+    if (finalDeployStatus === 'SUCCESS') break;
+    if (finalDeployStatus === 'FAIL' || finalDeployStatus === 'CANCEL') {
+      throw new Error(`DEPLOY_EXECUTION_FAILED: Final status ${finalDeployStatus}.`);
+    }
+    if (check < maxStatusChecks - 1) await sleep(pollDelayMs);
+  }
+
+  if (finalDeployStatus !== 'SUCCESS') {
+    throw new Error(`DEPLOY_RESULT_UNCERTAIN: ${deployTransportUncertain ? 'POST transport uncertain; ' : ''}polling did not reach SUCCESS.`);
+  }
+
+  const finalLiveResponse = await exactGet(fetchImpl, liveSettingsUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live settings verification');
+  if (!finalLiveResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live settings HTTP ${finalLiveResponse.status}.`);
+  const finalLive = await parseJsonOrThrow(finalLiveResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live settings');
+  if (finalLive.name !== WP002C_APPROVED_APP_NAME) throw new Error('LIVE_SCHEMA_VERIFICATION_FAILED: Exact live identity mismatch.');
+
+  const finalLiveFieldsResponse = await exactGet(fetchImpl, liveFieldsUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live fields verification');
+  if (!finalLiveFieldsResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live fields HTTP ${finalLiveFieldsResponse.status}.`);
+  const finalLiveFields = await parseJsonOrThrow(finalLiveFieldsResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live fields');
+  assertExact23FieldSchema(finalLiveFields.properties, 'LIVE_SCHEMA_VERIFICATION_FAILED');
+
+  const finalLiveAclResponse = await exactGet(fetchImpl, liveAclUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live ACL verification');
+  if (!finalLiveAclResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live ACL HTTP ${finalLiveAclResponse.status}.`);
+  const finalLiveAcl = await parseJsonOrThrow(finalLiveAclResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live ACL');
+  assertCreatorOnlyAcl(finalLiveAcl, 'LIVE_SCHEMA_VERIFICATION_FAILED');
+
+  return {
+    appId,
+    appName: finalLive.name,
+    fieldPostAttempts: 1,
+    postSchemaRevision,
+    deployAttempts: 1,
+    deployStatus: finalDeployStatus,
+    liveFieldCount: 23,
+    liveAclStatus: 'CREATOR_ONLY'
   };
 }
 

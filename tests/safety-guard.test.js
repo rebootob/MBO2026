@@ -8,8 +8,10 @@ import {
   assertDiscoveryReadOnly,
   assertAppCreationAuthorization,
   assertScoringMasterLiveActivationAuthorization,
+  assertScoringMasterSchemaAuthorization,
   assertSandboxWriteTarget,
-  assertWorkPackageAuthorization
+  assertWorkPackageAuthorization,
+  WP002C_SCHEMA_CONFIGURATION_STAGE
 } from '../src/core/sandbox-write-guard.js';
 import {
   assertAppCreationRequestPreflight,
@@ -17,7 +19,11 @@ import {
   CREATOR_ONLY_SCORING_MASTER_ACL,
   createAndVerifyScoringConfigMasterPreview,
   getAppCreationConnection,
-  kintoneRequest
+  kintoneRequest,
+  WP002C_23_FIELD_MANIFEST,
+  generateExact23FieldsPayload,
+  assertExact23FieldSchema,
+  configureAndDeployScoringMasterSchema
 } from '../src/core/kintone-client.js';
 
 const approvedAppName = 'MBO Profile & Scoring Configuration Master [Sandbox]';
@@ -659,4 +665,302 @@ test('WP002C-S3A-008: live ACL mismatch fails closed and safety defaults remain 
     assert.equal(DISCOVERY_MODE, true);
     assert.equal(WRITE_ALLOWED_APPS.length, 0);
   });
+});
+
+// ==========================================
+// WP-002C STAGE-3C SCHEMA CONFIGURATION TESTS
+// ==========================================
+
+function validSchemaAuthorization(authorizationId) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_3C_SCHEMA_CONFIGURATION',
+    explicitUserAuthorization: true,
+    activeWindow: true,
+    authorizationId
+  };
+}
+
+function validSchemaRequest(overrides = {}) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_3C_SCHEMA_CONFIGURATION',
+    appId: 796,
+    appName: approvedAppName,
+    operationSequence: ['FORM_FIELDS_ADD', 'APP_DEPLOY'],
+    ...overrides
+  };
+}
+
+function buildSchemaFetch({
+  previewRevision = '3',
+  liveRevision = '3',
+  preflightPlannedFieldsExist = false,
+  fieldPostOk = true,
+  fieldPostThrows = false,
+  fieldPostRevision = '4',
+  previewReadbackFields = generateExact23FieldsPayload(),
+  deployStatuses = ['SUCCESS'],
+  deployThrows = false,
+  deployOk = true,
+  liveFields = generateExact23FieldsPayload(),
+  liveAcl = creatorOnlyAclPayload('4')
+} = {}) {
+  const calls = [];
+  let statusIndex = 0;
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url.endsWith('/k/v1/preview/app/settings.json?app=796')) {
+      return mockResponse({ name: approvedAppName, revision: previewRevision });
+    }
+    if (url.endsWith('/k/v1/app/settings.json?app=796')) {
+      return mockResponse({ name: approvedAppName, revision: liveRevision });
+    }
+    if (url.endsWith('/k/v1/app/acl.json?app=796')) {
+      return mockResponse(creatorOnlyAclPayload(liveRevision));
+    }
+    if (url.endsWith('/k/v1/preview/app/acl.json?app=796') && options.method !== 'PUT') {
+      return mockResponse(creatorOnlyAclPayload(previewRevision));
+    }
+    if (url.endsWith('/k/v1/app/form/fields.json?app=796')) {
+      const getCalls = calls.filter(c => c.url.endsWith('/k/v1/app/form/fields.json?app=796'));
+      if (getCalls.length === 1) {
+        return preflightPlannedFieldsExist
+          ? mockResponse({ properties: { Master_Record_Key: {} } })
+          : mockResponse({ properties: {} });
+      }
+      return mockResponse({ properties: liveFields, revision: fieldPostRevision });
+    }
+    if (url.endsWith('/k/v1/preview/app/form/fields.json?app=796') && (options.method === undefined || options.method === 'GET')) {
+      const getCalls = calls.filter(c => c.url.endsWith('/k/v1/preview/app/form/fields.json?app=796') && (c.options.method === undefined || c.options.method === 'GET'));
+      if (getCalls.length === 1) {
+        return preflightPlannedFieldsExist
+          ? mockResponse({ properties: { Master_Record_Key: {} } })
+          : mockResponse({ properties: {} });
+      }
+      return mockResponse({ properties: previewReadbackFields, revision: fieldPostRevision });
+    }
+    if (url.endsWith('/k/v1/preview/app/form/fields.json') && options.method === 'POST') {
+      if (fieldPostThrows) throw new Error('mock field post transport error');
+      return fieldPostOk
+        ? mockResponse({ revision: fieldPostRevision })
+        : mockResponse({}, { ok: false, status: 400 });
+    }
+    if (url.endsWith('/k/v1/preview/app/deploy.json') && options.method === 'POST') {
+      if (deployThrows) throw new Error('mock deploy transport error');
+      return mockResponse(undefined, { ok: deployOk, status: deployOk ? 200 : 400, parseError: true });
+    }
+    if (url.endsWith('/k/v1/preview/app/deploy.json?apps[0]=796')) {
+      const status = deployStatuses[Math.min(statusIndex, deployStatuses.length - 1)];
+      statusIndex += 1;
+      return mockResponse({ apps: [{ app: '796', status }] });
+    }
+    throw new Error(`Unexpected mock URL: ${url}`);
+  };
+  return { calls, fetchMock };
+}
+
+test('WP002C-S3C-001: wrong WP rejected', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-001'), validSchemaRequest({ workPackageId: 'MBO-P03-WP-002B' })),
+    /Work package must be exactly MBO-P03-WP-002C/
+  );
+});
+
+test('WP002C-S3C-002: wrong App rejected', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-002'), validSchemaRequest({ appId: 794 })),
+    /Target App ID must be exactly 796/
+  );
+});
+
+test('WP002C-S3C-003: wrong stage rejected', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-003'), validSchemaRequest({ stage: 'STAGE_3A_LIVE_ACTIVATION' })),
+    /Stage must be exactly STAGE_3C_SCHEMA_CONFIGURATION/
+  );
+});
+
+test('WP002C-S3C-004: missing explicit authorization rejected', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization({ ...validSchemaAuthorization('s3c-004'), explicitUserAuthorization: false }, validSchemaRequest()),
+    /Explicit authorization and active window are required/
+  );
+});
+
+test('WP002C-S3C-005: repeated authorization ID rejected', () => {
+  const auth = validSchemaAuthorization('s3c-005-replay');
+  assert.equal(assertScoringMasterSchemaAuthorization(auth, validSchemaRequest()), true);
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(auth, validSchemaRequest()),
+    /Authorization has already been consumed/
+  );
+});
+
+test('WP002C-S3C-006: operation sequence mismatch rejected', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-006'), validSchemaRequest({ operationSequence: ['APP_DEPLOY'] })),
+    /Operation sequence must be FORM_FIELDS_ADD -> APP_DEPLOY/
+  );
+});
+
+test('WP002C-S3C-007: manifest has exactly 23 unique field codes', () => {
+  assert.equal(WP002C_23_FIELD_MANIFEST.length, 23);
+  const codes = WP002C_23_FIELD_MANIFEST.map((f) => f.code);
+  const uniqueCodes = new Set(codes);
+  assert.equal(uniqueCodes.size, 23);
+});
+
+test('WP002C-S3C-008: every field type / required / unique flag matches authoritative contract', () => {
+  const payload = generateExact23FieldsPayload();
+  assert.equal(assertExact23FieldSchema(payload), true);
+});
+
+test('WP002C-S3C-009: Master_Record_Key.unique === true; all others not unique', () => {
+  const payload = generateExact23FieldsPayload();
+  assert.equal(payload.Master_Record_Key.unique, true);
+  for (const [code, field] of Object.entries(payload)) {
+    if (code !== 'Master_Record_Key' && field.unique !== undefined) {
+      assert.equal(field.unique, false);
+    }
+  }
+});
+
+test('WP002C-S3C-010: Part A mode options exactly two and ordered correctly', () => {
+  const payload = generateExact23FieldsPayload();
+  const options = payload.Part_A_Scoring_Mode.options;
+  const keys = Object.keys(options);
+  assert.deepEqual(keys, ['0 DIFFICULTY_ACHIEVEMENT_MATRIX', '1 ACHIEVEMENT_DIRECT']);
+  assert.equal(options['0 DIFFICULTY_ACHIEVEMENT_MATRIX'].index, '0');
+  assert.equal(options['1 ACHIEVEMENT_DIRECT'].index, '1');
+});
+
+test('WP002C-S3C-011: Config status options exactly five and ordered correctly', () => {
+  const payload = generateExact23FieldsPayload();
+  const options = payload.Config_Status.options;
+  const keys = Object.keys(options);
+  assert.deepEqual(keys, ['0 DRAFT', '1 VALIDATED', '2 PUBLISHED', '3 SUPERSEDED', '4 RETIRED']);
+  assert.equal(options['0 DRAFT'].index, '0');
+  assert.equal(options['4 RETIRED'].index, '4');
+});
+
+test('WP002C-S3C-012: no unexpected/default business values in schema', () => {
+  const payload = generateExact23FieldsPayload();
+  for (const field of Object.values(payload)) {
+    assert.equal(field.defaultValue, undefined);
+  }
+});
+
+test('WP002C-S3C-013: preflight stops if any planned field already exists', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildSchemaFetch({ preflightPlannedFieldsExist: true });
+    await assert.rejects(
+      () => configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-013'), validSchemaRequest(), fetchMock),
+      /STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist/
+    );
+  });
+});
+
+test('WP002C-S3C-014: field POST targets only App 796 and occurs at most once', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildSchemaFetch();
+    const result = await configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-014'), validSchemaRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.appId, 796);
+    assert.equal(result.fieldPostAttempts, 1);
+    const fieldPosts = calls.filter((c) => c.url.endsWith('/k/v1/preview/app/form/fields.json') && c.options.method === 'POST');
+    assert.equal(fieldPosts.length, 1);
+    assert.equal(JSON.parse(fieldPosts[0].options.body).app, 796);
+  });
+});
+
+test('WP002C-S3C-015: field POST uses exact numeric revision read from preflight', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildSchemaFetch({ previewRevision: '12' });
+    await configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-015'), validSchemaRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    const fieldPosts = calls.filter((c) => c.url.endsWith('/k/v1/preview/app/form/fields.json') && c.options.method === 'POST');
+    assert.equal(JSON.parse(fieldPosts[0].options.body).revision, '12');
+  });
+});
+
+test('WP002C-S3C-016: field POST transport uncertainty causes GET-only reconciliation, never a POST retry', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildSchemaFetch({ fieldPostThrows: true });
+    const result = await configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-016'), validSchemaRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.deployStatus, 'SUCCESS');
+    const fieldPosts = calls.filter((c) => c.url.endsWith('/k/v1/preview/app/form/fields.json') && c.options.method === 'POST');
+    assert.equal(fieldPosts.length, 1);
+  });
+});
+
+test('WP002C-S3C-017: partial/mismatched preview readback stops before deploy', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const partialFields = { ...generateExact23FieldsPayload() };
+    delete partialFields.Configuration_Hash;
+    const { calls, fetchMock } = buildSchemaFetch({ previewReadbackFields: partialFields });
+    await assert.rejects(
+      () => configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-017'), validSchemaRequest(), fetchMock),
+      /PREVIEW_SCHEMA_READBACK_FAILED/
+    );
+    const deployPosts = calls.filter((c) => c.url.endsWith('/k/v1/preview/app/deploy.json') && c.options.method === 'POST');
+    assert.equal(deployPosts.length, 0);
+  });
+});
+
+test('WP002C-S3C-018: deploy uses exact post-schema revision and occurs at most once', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildSchemaFetch({ fieldPostRevision: '15' });
+    await configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-018'), validSchemaRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    const deployPosts = calls.filter((c) => c.url.endsWith('/k/v1/preview/app/deploy.json') && c.options.method === 'POST');
+    assert.equal(deployPosts.length, 1);
+    assert.equal(JSON.parse(deployPosts[0].options.body).apps[0].revision, '15');
+  });
+});
+
+test('WP002C-S3C-019: deploy success does not require parsing a JSON body', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildSchemaFetch({ deployOk: true });
+    const result = await configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-019'), validSchemaRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.deployStatus, 'SUCCESS');
+  });
+});
+
+test('WP002C-S3C-020: post-deploy success requires exact live field readback', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const incompleteLiveFields = { ...generateExact23FieldsPayload() };
+    delete incompleteLiveFields.Master_Record_Key;
+    const { fetchMock } = buildSchemaFetch({ liveFields: incompleteLiveFields });
+    await assert.rejects(
+      () => configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-020'), validSchemaRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} }),
+      /LIVE_SCHEMA_VERIFICATION_FAILED/
+    );
+  });
+});
+
+test('WP002C-S3C-021: no write path to Apps 794/795 or protected Apps', () => {
+  assert.equal(WRITE_ALLOWED_APPS.length, 0);
+  assert.throws(
+    () => assertSandboxWriteTarget(794, undefined, []),
+    /WRITE BLOCKED/
+  );
+  assert.throws(
+    () => assertSandboxWriteTarget(795, undefined, []),
+    /WRITE BLOCKED/
+  );
+  for (const protectedId of PROTECTED_APP_IDS) {
+    assert.throws(
+      () => assertSandboxWriteTarget(protectedId, undefined, [protectedId], { dryRunBypassDiscovery: true }),
+      /PROTECTED PRODUCTION APP/
+    );
+  }
+});
+
+test('WP002C-S3C-022: no record/layout/view/process/customization/ACL/delete write path', () => {
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-022'), validSchemaRequest({ operationSequence: ['RECORD_CREATE'] })),
+    /Operation sequence/
+  );
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-022-b'), validSchemaRequest({ operationSequence: ['LAYOUT_UPDATE'] })),
+    /Operation sequence/
+  );
 });
