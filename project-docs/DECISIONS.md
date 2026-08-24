@@ -1,5 +1,14 @@
 # Architecture & Design Decisions
 
+## DEC-024 — Annual Evaluation Profile Freeze Policy
+- **Date**: 2026-08-24
+- **Status**: ACTIVE (Confirmed & Ready for Final Freeze Review)
+- **Decision**:
+  1. **Annual Profile Freeze:** Evaluation and Scoring Profiles are resolved strictly at Annual MBO Record initialization and are **FROZEN FOR THE ENTIRE FISCAL YEAR**.
+  2. **Mid-Year Promotion / Transfer Policy:** Mid-year position changes, promotions (e.g. Staff $	o$ Asst Mgr), or department transfers do NOT modify the current FY Evaluation Profile. The employee completes the current FY under their starting Profile; the new Profile applies in the subsequent FY.
+  3. **Profile vs Routing Separation:** Evaluation Profile (Scoring Criteria) is an Annual Snapshot; Routing (Approver Assignees) is a Stage Snapshot capable of mid-year refresh/reassignment.
+  4. **Supersede Stage Profile Refresh:** The previous exploratory design *Controlled Stage Profile Refresh* is officially **SUPERSEDED**.
+
 ## DEC-023 — Evaluation Profile, Competency & Scoring Architecture
 - **Date**: 2026-08-24
 - **Status**: ACTIVE (Ready for Final Freeze Review)

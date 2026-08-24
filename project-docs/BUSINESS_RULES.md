@@ -104,3 +104,11 @@
 * **Rounding:** Standard Half-Up to 2 decimal places (`0.01`).
 * **Objective Limits:** Min 2, Max 10, Total Active Weight = 100%.
 
+
+---
+
+## 12. Annual Evaluation Profile Freeze Policy (CONFIRMED)
+* **Annual Immutability:** Profile resolved at FY start is locked for the entire fiscal year.
+* **Mid-Year Promotion:** Current FY retains starting profile; promoted profile applies in next FY.
+* **Separation of Concerns:** Profile = Annual Snapshot (Criteria), Routing = Stage Snapshot (Approvers).
+

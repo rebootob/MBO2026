@@ -1,26 +1,21 @@
-# Evaluation Profile Resolution Engine Blueprint
+# Evaluation Profile Resolution Engine Blueprint (Annual Timing)
 
-> **Document Status:** Complete  
+> **Document Status:** Complete (Annual Resolution Model)  
+> **Resolution Timing:** Executed STRICTLY at Annual Record Initialization  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Deterministic Priority Resolution Hierarchy
+## 1. Resolution Timing & Lifetime Immutability
 
-When an employee MBO record is initialized or refreshed, the Profile Resolution Engine executes a 3-tier deterministic lookup:
+* **Timing:** The Profile Resolution Engine executes exclusively during **Annual MBO Record Creation**.
+* **Immutability:** Once resolved, the `Snapshot_Profile_Code` and all associated scoring rules are permanently locked in App 794 for that entire Fiscal Year.
+* **No Mid-Year Re-Resolution:** Opening Mid-Year or Final stages does NOT trigger Profile Resolution. (Routing resolution is handled separately per stage).
 
 ```mermaid
 graph TD
-    START["Resolve Employee Profile"] --> P1{"Tier 1: Individual Employee Exception?"}
-    P1 -- YES --> USE_P1["Apply Specific Employee Profile Override"]
-    P1 -- NO --> P2{"Tier 2: Specific Position Mapping in App 53?"}
-    P2 -- YES --> USE_P2["Apply Position Profile (e.g. Section Manager)"]
-    P2 -- NO --> P3{"Tier 3: Employee Group Mapping (e.g. Staff)?"}
-    P3 -- YES --> USE_P3["Apply Group Default Profile"]
-    P3 -- NO --> ERR["Raise ROUTING_CONFIGURATION_ERROR"]
+    A["Create FY2027 Record"] --> B["Lookup App 53 (Current Position/Group)"]
+    B --> C["Resolve Profile (Priority: Override -> Position -> Group)"]
+    C --> D["Lock Annual Profile Snapshot in App 794"]
+    D --> E["Used for Objective, Mid-Year, and Final without alteration"]
 ```
-
----
-
-## 2. Resolution Output & Snapshot Binding
-Upon successful resolution, the engine returns the exact `Profile_Code` and `Profile_Version`, which is immediately locked into App 794's immutable transaction snapshot fields.
