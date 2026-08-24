@@ -7,7 +7,7 @@
 - **WP-001 Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002 Plan Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002A Implementation Status**: **`IMPLEMENTATION_GATE = PASS (COMPLETE)`**
-- **WP-002B Status**: **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`**
+- **WP-002B Status**: **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Appraiser Weight & Completeness**: `DEC-036`
 - **Profile Storage Architecture**: `KINTONE_ONLY (DEC-038)` (Supersedes DEC-037)
@@ -24,7 +24,8 @@
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
 - **WP-002B Source Module**: `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter)
 - **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing)
-- **Handoff State**: `SAFE_CHECKPOINT`
+- **Handoff State**: `SAFE_CHECKPOINT (WP-002B CLOSED)`
+- **NEXT_WP**: `AWAITING_USER_AUTHORIZATION`
 - **Current Branch**: `ai/codex-wp002b`
 - **Last Safe Commit**: `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
@@ -39,7 +40,7 @@
 4. **Phase 3 WP-001 Evaluation Profile & Competency Foundation Plan: `PASSED / FROZEN`**.
 5. **Phase 3 WP-002 Kintone-Only Profile & Scoring Configuration Plan: `PASSED / FROZEN`**.
 6. **Phase 3 WP-002A Master Foundation Implementation: `PASSED / COMPLETE`**.
-7. **Phase 3 WP-002B Profile Resolution Resolver: `IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`**.
+7. **Phase 3 WP-002B Profile Resolution Resolver: `PASSED / FROZEN`**.
 8. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (`DEC-035`)**.
 9. **Appraiser Weight & Completeness Governance: `FROZEN` (`DEC-036`)**.
 10. **Profile Configuration Storage Architecture: `KINTONE_ONLY = FROZEN` (`DEC-038`)** (Supersedes `DEC-037`).

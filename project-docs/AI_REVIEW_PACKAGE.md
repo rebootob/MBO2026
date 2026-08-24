@@ -7,7 +7,7 @@
 > **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
-> **WP-002B Status:** **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`**
+> **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 > **Last Updated:** 2026-08-24T19:05:00+07:00  
 
 ---
@@ -34,7 +34,9 @@
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `PROFILE RESOLUTION & READ-ONLY SCORING CONFIGURATION RESOLVER` |
 | **Mode** | **`IMPLEMENTED (READ-ONLY RESOLVER FOUNDATION)`** |
-| **Claimed Status** | **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`** |
+| **Claimed Status** | **`PASSED / FROZEN`** |
+| **Independent Review Gate** | **`PASS`** |
+| **Next Work Package** | `AWAITING_USER_AUTHORIZATION` |
 | **Master App Dependency** | **`SCORING_MASTER_APP_DEPENDENCY = NOT_ALLOCATED / NOT_CREATED`** — No live Kintone Master App ID; no hardcoded ID; resolver uses injected fixtures |
 | **WP-002B Authoritative Plan** | [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md) |
 | **Resolver Contract** | Pure dependency-injected: `resolveProfileScoringConfig({ employeeSnapshot, fiscalYear, effectiveDate, masterConfigRecords, authenticatedContext })` |

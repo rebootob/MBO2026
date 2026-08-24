@@ -9,7 +9,8 @@
 - **WP-001 Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002 Plan Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002A Status**: `IMPLEMENTATION COMPLETE (15/15 new tests passing; 131/131 total suite passing)`
-- **WP-002B Status**: `IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`
+- **WP-002B Status**: `PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`
+- **NEXT_WP**: `AWAITING_USER_AUTHORIZATION`
 - **Implementation Scope**: `src/profiles/profile-scoring-resolver.js` and `tests/profile-scoring-resolver.test.js`; reuses `EmployeeService` and `computeConfigurationHash()` with dependency-injected records only.
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`
@@ -57,4 +58,4 @@
 * **Exact Fiscal Year Contract:** `Fiscal_Year` is now a mandatory selection criterion (exact match required). Mismatch fails closed (`SCORING_CONFIG_NOT_FOUND`). `Fiscal_Year` included in resolved output.
 * **Caller Position Bypass Blocked:** Arbitrary caller-provided `Profile_Code` cannot bypass position-based resolution. Invalid/unverified employee snapshots fail closed.
 * **DRY_RUN Clarification:** `DRY_RUN = ZERO_WRITE` always; `SANDBOX_MIGRATION_TEST` is a separate concept that may involve controlled writes when explicitly authorized.
-* **Implementation Status:** **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`** (17 resolver tests; 148/148 total; 0 Kintone Writes).
+* **Implementation Status:** **`PASSED / FROZEN`** (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS; 17 resolver tests; 148/148 total; 0 Kintone Writes).

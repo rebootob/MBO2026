@@ -2,9 +2,9 @@
 
 - **Active AI:** `Codex`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002B`
-- **Handoff State:** `SAFE_CHECKPOINT`
+- **Handoff State:** `SAFE_CHECKPOINT (WP-002B CLOSED)`
 - **Last Handoff At:** `2026-08-24T19:04:00+07:00`
-- **Review Status:** `PHASE 3 WP-002B IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`
+- **Review Status:** `PHASE 3 WP-002B REVIEW_GATE = PASS (INDEPENDENT REVIEW CLOSED)`
 - **Implementation Authorization:** **`WP-002B IMPLEMENTATION AUTHORIZED AND COMPLETE`** (Read-only; Zero Writes)
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -15,7 +15,8 @@
 - **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
-- **WP-002B Status:** **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`**
+- **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
+- **NEXT_WP:** `AWAITING_USER_AUTHORIZATION`
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate:** `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Kintone-Only Version Immutability)`
@@ -69,7 +70,7 @@
 |  | ↳ *WP-001: Evaluation Profile & Competency Foundation* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002: Kintone-Only Profile & Scoring Configuration Foundation (Plan)* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002A: Kintone-Only Profile / Scoring Master Foundation (Code & Unit)* | **IMPLEMENTATION COMPLETE** | 2026-08-24 |
-|  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver* | **IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW** | 2026-08-24 |
+|  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver* | **PASSED / FROZEN** | 2026-08-24 |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
 | **P6** | In-Flight Approver Change & HR Self-Service | LOCKED | - |
