@@ -2,48 +2,123 @@
  * Employee Service - Read-only lookup from App 53 (Employee Namelist)
  */
 
+import { isValidEmployeeCode } from '../core/fiscal-year-engine.js';
+
+export class EmployeeLookupError extends Error {
+  constructor(code, userMessageTH, userMessageEN, cause = null) {
+    super(userMessageTH);
+    this.name = 'EmployeeLookupError';
+    this.code = code;
+    this.userMessageTH = userMessageTH;
+    this.userMessageEN = userMessageEN;
+    this.cause = cause;
+  }
+}
+
 export class EmployeeService {
   /**
    * Lookup employee by Employee Code in App 53 (Read-Only)
-   * Supports leading zero code input e.g. "0149" -> queries Number in App 53
-   * @param {string} empCode
-   * @param {Object} kintoneApi
-   * @returns {Object} snapshot profile
+   * Canonical Business Employee Code is sourced strictly from App53.emp_text.
+   * @param {string} empCode - Input employee code string
+   * @param {Object} kintoneApi - Kintone API client instance
+   * @returns {Promise<{ status: string, employee: Object }>}
    */
   static async lookupEmployee(empCode, kintoneApi) {
-    const cleanCode = String(empCode || '').trim();
-    if (!cleanCode) {
-      throw new Error('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
+    // 1. Strict Input Validation before API call
+    if (empCode === null || empCode === undefined) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code',
+        'Please enter Employee Code'
+      );
     }
 
-    const numVal = parseInt(cleanCode, 10);
-    const query = !isNaN(numVal)
-      ? `(Number = "${numVal}" or Number = "${cleanCode}") limit 2`
-      : `Number = "${cleanCode}" limit 2`;
+    if (typeof empCode !== 'string') {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        `รหัสพนักงานต้องเป็นข้อความ (String) เท่านั้น\nEmployee Code must be a string (received ${typeof empCode})`,
+        `Employee Code must be a string (received ${typeof empCode})`
+      );
+    }
 
-    const resp = await kintoneApi.getRecords(53, query);
+    const cleanCode = empCode.trim();
+    if (cleanCode.length === 0 || !isValidEmployeeCode(cleanCode)) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        `รูปแบบรหัสพนักงานไม่ถูกต้อง (${empCode})\nInvalid Employee Code format (${empCode})`,
+        `Invalid Employee Code format (${empCode})`
+      );
+    }
+
+    // 2. Query Construction (Injection-safe dual representation for query only)
+    const isDigitOnly = /^\d+$/.test(cleanCode);
+    let query;
+    if (isDigitOnly) {
+      const numericRep = parseInt(cleanCode, 10);
+      query = `(emp_text = "${cleanCode}" or Number = ${numericRep}) limit 2`;
+    } else {
+      query = `emp_text = "${cleanCode}" limit 2`;
+    }
+
+    // 3. Query Execution with safe error wrapping
+    let resp;
+    try {
+      resp = await kintoneApi.getRecords(53, query);
+    } catch (err) {
+      throw new EmployeeLookupError(
+        'SOURCE_ACCESS_ERROR',
+        'ไม่สามารถตรวจสอบข้อมูลพนักงานได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify employee information at this time. Please try again or contact HR / Administrator.',
+        'Unable to verify employee information at this time. Please try again or contact HR / Administrator.',
+        err
+      );
+    }
+
     const records = resp?.records || [];
 
+    // 4. Exactly-One Match Rule
     if (records.length === 0) {
-      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`);
+      throw new EmployeeLookupError(
+        'EMPLOYEE_NOT_FOUND',
+        `ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`,
+        `Employee code ${cleanCode} was not found in Employee Master (App 53)`
+      );
     }
 
     if (records.length > 1) {
-      throw new Error(`พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee code ${cleanCode} found. Please contact HR / Administrator.`);
+      throw new EmployeeLookupError(
+        'EMPLOYEE_SOURCE_AMBIGUOUS',
+        `พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee records found for code ${cleanCode}. Please contact HR / Administrator.`,
+        `Duplicate employee records found for code ${cleanCode}. Please contact HR / Administrator.`
+      );
     }
 
     const emp = records[0];
+
+    // 5. Source Complete Validation: Canonical code must exist in emp_text
+    const rawEmpText = emp.emp_text?.value;
+    if (!rawEmpText || typeof rawEmpText !== 'string' || !isValidEmployeeCode(rawEmpText.trim())) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_SOURCE_INCOMPLETE',
+        `ข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master ไม่สมบูรณ์ (ขาดรหัส Canonical emp_text) กรุณาติดต่อ HR\nEmployee Master record for code ${cleanCode} is incomplete (missing or invalid emp_text). Please contact HR.`,
+        `Employee Master record for code ${cleanCode} is incomplete (missing or invalid emp_text). Please contact HR.`
+      );
+    }
+
+    const canonicalCode = rawEmpText.trim();
+
+    // 6. Return 8 Header Snapshot Fields (Hoshin fields explicitly excluded)
     return {
-      Employee_Code: cleanCode, // Preserve leading zero string representation
-      Employee_Name: emp.Text?.value || '',
-      Employee_Name_TH: emp.Text_0?.value || '',
-      Employee_Section: emp.Drop_down?.value || '',
-      Employee_Department: emp.Drop_down_0?.value || '',
-      Employee_Position: emp.Text_2?.value || '',
-      Employee_Email: emp.Text_4?.value || '',
-      Employee_Start_Date: emp.Date?.value || '',
-      Department_Hoshin: emp.Text_area?.value || '',
-      Section_Hoshin: emp.Text_area_0?.value || ''
+      status: 'EMPLOYEE_FOUND',
+      employee: {
+        Employee_Code: canonicalCode,
+        Employee_Name: emp.Text?.value || '',
+        Employee_Name_TH: emp.Text_0?.value || '',
+        Employee_Department: emp.Drop_down_0?.value || '',
+        Employee_Section: emp.Drop_down?.value || '',
+        Employee_Position: emp.Text_2?.value || '',
+        Employee_Email: emp.Text_4?.value || '',
+        Employee_Start_Date: emp.Date?.value || ''
+      }
     };
   }
 
