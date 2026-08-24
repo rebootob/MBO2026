@@ -146,10 +146,15 @@
 
 ## 17. Legacy 8-App PMS Data Migration & Rollback Governance (`DEC-040`)
 - **Post-Stabilization Deferred Status (`LEGACY_MIGRATION_STATUS = DEFERRED`):** Historical data from the 8 legacy PMS apps (Apps 283, 305, 307, 310, 640, 643, 715, 716) will be migrated ONLY AFTER MBO V2 is stable, tested, verified, and UAT approved.
-- **Read-Only Baseline:** All 8 legacy PMS apps remain strictly READ ONLY (`WRITE_ALLOWED_APPS = []`). Legacy records MUST NEVER be modified, deleted, or normalized in place.
+- **Legacy Apps Permanently Read-Only:** All 8 legacy PMS apps remain strictly READ ONLY (`WRITE_ALLOWED_APPS = []`). Migration & rollback processes must NEVER modify, delete, normalize in-place, recalculate, or alter permissions of legacy source records.
 - **Traceability Metadata:** Migrated records must store source app ID, source record ID, source record number, source revision, source profile, employee code, fiscal year, batch ID (`Migration_Batch_ID`), migrated timestamp, and status.
 - **Idempotent & Duplicate Safe:** Unique key constraint `Legacy_Source_App_ID + Legacy_Source_Record_ID`. Duplicate sources fail closed (`MIGRATION_DUPLICATE_SOURCE`).
 - **No Score Recalculation:** Historical legacy scores must be migrated as historical results/evidence. Never recalculate old scores using current MBO V2 formulas.
 - **Mandatory Dry-Run & Reconciliation:** Production migration requires explicit source-to-target mapping per app, mandatory `DRY_RUN = true` execution (0 writes), and complete reconciliation (`SOURCE = MIGRATED + APPROVED_SKIPPED + DOCUMENTED_ERRORS`).
 - **Record Classification:** Migrated records are classified as `Record_Origin = LEGACY_MIGRATED` and MUST NOT enter active MBO V2 workflows.
-- **Batch Rollback Rule:** Future migration rollback operates strictly by `Migration_Batch_ID`. A failed migration must remove/revert ONLY target records created by that specific batch. Legacy source apps (283, 305, 307, 310, 640, 643, 715, 716) MUST NEVER be modified during rollback.
+- **Pre-Migration Target Checkpoint:** Capture a deterministic target-state checkpoint before batch writes to verify pre-batch state for rollback & reconciliation.
+- **Exact Target Record Manifest:** Maintain an exact manifest per batch (`Migration_Batch_ID`, `Legacy_Source_App_ID`, `Legacy_Source_Record_ID`, `Target_App_ID`, `Target_Record_ID`, `Migration_Status`). Rollback MUST use this manifest (NO broad deletion queries).
+- **Post-Write Read-Back Verification:** Read target records back from Kintone REST API after writes to verify record existence, `Migration_Batch_ID`, `Legacy_Source_App_ID`, `Legacy_Source_Record_ID`, `Record_Origin = LEGACY_MIGRATED`, and business fields. Verification failure yields `MIGRATION_VERIFICATION_FAILED` (Fail Closed).
+- **Migration Batch Success Contract:** A batch becomes `MIGRATION_BATCH_SUCCESS` ONLY when write completed, post-write read-back passed, duplicate check passed, batch manifest reconciled, and source/target reconciliation passed. Otherwise, status is `MIGRATION_BATCH_FAILED` and controlled rollback is executed.
+- **Batch-Only Rollback Contract:** Rollback operates ONLY from the exact `Migration_Batch_ID` target manifest, removing/reverting ONLY target records created by that failed batch. Legacy source apps (283, 305, 307, 310, 640, 643, 715, 716) remain PERMANENTLY READ ONLY and are NEVER modified during rollback.
+- **Security Continuity:** `DEC-039` strict record data isolation applies equally to historical migrated records.

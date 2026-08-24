@@ -3,8 +3,8 @@
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002A`
 - **Handoff State:** `SAFE_CHECKPOINT`
-- **Last Handoff At:** `2026-08-24T18:40:00+07:00`
-- **Review Status:** `PHASE 3 WP-002A COCE INDEX & MIGRATION ROLLBACK GOVERNANCE FIXED (READY FOR REVIEW)`
+- **Last Handoff At:** `2026-08-24T18:48:00+07:00`
+- **Review Status:** `PHASE 3 WP-002A MIGRATION ROLLBACK & VERIFICATION CONTRACT COMPLETED (READY FOR REVIEW)`
 - **Implementation Authorization:** **`WP-002A CONTROLLED IMPLEMENTATION AUTHORIZED`** (Sandbox / Unit Only; No Kintone Writes)
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -23,7 +23,7 @@
 - **Position Evidence Gate:** `PASS (33 Resolved / 125 Recs, 29 Ambiguous / 147 Recs Fail Closed, 1 Invalid / 3 Recs)`
 - **Competency Evidence Gate:** `PASS (Accepted & Frozen; COCE Index = 6)`
 - **Security Governance Gate:** `PASS (DEC-039 Strict Employee Record Data Isolation & Hardened Confidentiality 1..8)`
-- **Legacy Migration Gate:** `PASS (DEC-040 Legacy 8-App PMS Data Migration Deferred & Batch Rollback Governed)`
+- **Legacy Migration Gate:** `PASS (DEC-040 Migration Rollback & Read-Back Verification Contract Completed)`
 - **DEC-030 Commit Gate:** `PASS (Commit Separation Verified)`
 - **Governance Decisions:**  
   - `DEC-035`: **Scoring Source of Truth** (`SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`)  
