@@ -2,186 +2,193 @@
 
 > **Control Plane:** ChatGPT / approved human reviewer
 > **Execution Plane:** Codex
-> **Rule:** Codex executes this file exactly. Do not redesign architecture, expand scope, or rewrite this task file.
+> **Rule:** Execute exactly this task. Do not redesign architecture or expand scope. Do not modify this file.
 
-## 1. Active Work Package
+## ACTIVE TASK
 
 - **WP:** `MBO-P03-WP-002C`
-- **Mode:** `PLAN CORRECTION ONLY`
+- **Stage:** `IMPLEMENTATION STAGE 1 — APP-CREATION SAFETY PREFLIGHT`
 - **Branch:** `ai/codex-wp002c`
-- **Accepted base:** `develop @ 9d263a4`
+- **Accepted develop base:** `9d263a4`
 - **Target App:** `MBO Profile & Scoring Configuration Master [Sandbox]`
 - **App ID:** `NOT_ALLOCATED`
 - **App Status:** `NOT_CREATED`
-- **Kintone Writes:** `0`
-- **Implementation Authorization:** `NO`
-- **App Creation Authorization:** `NO`
+- **Kintone write authorization:** `NO`
+- **App creation authorization:** `NO`
 
-## 2. Execution Rules
+This stage implements and unit-tests the safety primitives needed before any real App creation. **No Kintone write may occur.**
 
-1. Work only on `ai/codex-wp002c`.
-2. Do not modify source code or tests in this task.
-3. Do not create the Kintone App.
-4. Do not perform POST/PUT/DELETE/DEPLOY to Kintone.
-5. Do not touch Apps `53, 283, 305, 307, 310, 640, 643, 715, 716, 794, 795`.
-6. Do not start WP-002D.
-7. Do not solve `SEC-DEP-001`.
-8. Do not modify `project-docs/AI_ACTIVE_TASK.md`.
-9. Read only the files required for this task; avoid repository-wide re-analysis unless a direct dependency requires it.
+## SYNC FIRST
 
-## 3. Files Allowed To Change
+Before editing:
 
-Primary:
-- `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
+```bash
+git status --short
+```
 
-Living docs only if needed for accurate status/metadata:
+If not clean, STOP and report. Do not stash/discard automatically.
+
+Then:
+
+```bash
+git fetch origin
+git merge --ff-only origin/ai/codex-wp002c
+```
+
+Verify branch is still `ai/codex-wp002c`.
+
+## FILE BOUNDARY
+
+Allowed source changes only:
+
+- `src/core/sandbox-write-guard.js`
+- `src/core/kintone-client.js`
+- `tests/safety-guard.test.js`
+- `tests/sandbox-write-guard.test.js` only if required to preserve/extend existing guard regression coverage
+
+Allowed living-doc updates only after tests pass:
+
 - `project-docs/CURRENT_STATE.md`
 - `project-docs/IMPLEMENTATION_STATUS.md`
 - `project-docs/HANDOFF.md`
 - `project-docs/AI_REVIEW_PACKAGE.md`
 - `project-docs/CHANGELOG_AI.md`
 
-No source/test/config implementation changes are authorized in this task.
+Do **not** create a new helper/service/test file in this stage unless an existing file genuinely cannot contain the responsibility. Prefer the existing files above.
 
-## 4. Required Plan Corrections
+Do not modify:
 
-### A. App-Creation Bootstrap Safety
+- `config/sandbox-apps.json`
+- `project-docs/APP_REGISTRY.md`
+- scoring/profile resolver modules
+- App794/App795 config
+- `project-docs/AI_ACTIVE_TASK.md`
 
-The current safety stack cannot authorize `APP_CREATE` because a new App has no App ID yet.
+## IMPLEMENTATION 1 — EXACT APP_CREATE AUTHORIZATION GUARD
 
-Update the plan to require a dedicated narrow bootstrap authorization contract, conceptually:
+In `src/core/sandbox-write-guard.js`, add a narrow exported guard for the pre-ID bootstrap, e.g.:
 
 `assertAppCreationAuthorization(authConfig, requestConfig)`
 
-It must validate at minimum:
-- `workPackageId === MBO-P03-WP-002C`
-- `operation === APP_CREATE`
-- explicit user authorization is true
-- active one-time write window is true
-- expected change manifest exists
-- requested App name equals exactly `MBO Profile & Scoring Configuration Master [Sandbox]`
+Use the approved constants/contracts rather than caller-defined authority.
 
-It must NOT require an App ID before creation.
-It must NOT disable `DISCOVERY_MODE` globally.
-It must NOT authorize generic POST or arbitrary App creation.
+It must fail closed unless **all** are true:
 
-Future minimal implementation boundary must account for:
-- `src/core/sandbox-write-guard.js`
-- `src/core/kintone-client.js`
-- `config/sandbox-apps.json`
-- `project-docs/APP_REGISTRY.md`
-- one cohesive future service only if necessary: `src/services/scoring-config-master-service.js`
+- `authConfig` and `requestConfig` are valid objects
+- work package is exactly `MBO-P03-WP-002C`
+- operation is exactly `APP_CREATE`
+- `activeWindow === true`
+- `explicitUserAuthorization === true`
+- a non-empty single-use authorization identifier/nonce exists
+- authorization is not already marked consumed/used
+- authorized App name is exactly `MBO Profile & Scoring Configuration Master [Sandbox]`
+- requested App name is exactly the same approved name
+- expected-change manifest exists
+- manifest authorizes exactly **one** `APP_CREATE` for that exact App name
 
-### B. Post-Creation Registration Order
+Reject:
 
-Lock this exact future sequence:
+- wrong/missing WP
+- wrong/missing operation
+- closed window
+- missing explicit authorization
+- missing/blank authorization identifier
+- consumed authorization
+- wrong/blank App name
+- generic POST semantics
+- missing/empty manifest
+- manifest with a different target
+- manifest authorizing multiple App creations
 
-1. Explicit user authorization.
-2. Exact-name `APP_CREATE` bootstrap gate.
-3. Create exactly one approved App.
-4. Capture returned real numeric App ID.
-5. Read back using that exact returned App ID.
-6. Verify exact App name and ownership.
-7. Register the verified ID in `config/sandbox-apps.json`.
-8. Register the same verified ID in `project-docs/APP_REGISTRY.md`.
-9. Only then allow normal App-ID-scoped WP writes to that exact App.
-10. Restore default deny after the authorized write stage.
+This guard must **not require an App ID**, because the ID does not exist yet.
 
-### C. Stored Hash Read-Back Integrity
+Do not weaken these existing invariants:
 
-Before publish, require all three values to match exactly:
+- `DISCOVERY_MODE === true`
+- protected Apps are absolute deny
+- `WRITE_ALLOWED_APPS` default remains empty
+- ordinary App-ID writes remain governed by the existing guards
 
-`EXPECTED_HASH === READBACK.Configuration_Hash === computeConfigurationHash(READBACK_IMMUTABLE_PAYLOAD)`
+Do not use `dryRunBypassDiscovery` as the APP_CREATE solution.
 
-Any missing/malformed/mismatched value, wrong record, or wrong `Master_Record_Key` must fail closed with:
+## IMPLEMENTATION 2 — APP-CREATION REQUEST PREFLIGHT ONLY
 
-`CONFIG_READBACK_MISMATCH`
+In `src/core/kintone-client.js`, add a **pure/preflight authorization path** for future App creation. Do not wire it to execute a real write in this stage.
 
-### D. Published Effective-Period Uniqueness
+The preflight must enforce:
 
-Before `PUBLISHED`, query existing `PUBLISHED` records for the same:
-- `Profile_Code`
-- `Fiscal_Year`
+- method exactly `POST`
+- path exactly `/k/v1/preview/app.json`
+- request body App name exactly `MBO Profile & Scoring Configuration Master [Sandbox]`
+- successful `assertAppCreationAuthorization(...)`
 
-Block overlapping effective ranges using:
+Any other write endpoint/method must remain denied by existing safety behavior.
 
-`candidate.Effective_From <= existing.Effective_To`
-AND
-`existing.Effective_From <= candidate.Effective_To`
+**Critical Stage-1 invariant:** the existing network `kintoneRequest()` must still block non-GET execution under current discovery state. Stage 1 must not create a usable network-write escape hatch.
 
-Failure code:
+If useful, expose a clearly named pure helper such as:
 
-`SCORING_CONFIG_EFFECTIVE_OVERLAP`
+`assertAppCreationRequestPreflight(...)`
 
-Never resolve ambiguity by choosing newest/highest version.
+Do not call `fetch()` from this preflight helper.
 
-### E. Supersession Contract
+## IMPLEMENTATION 3 — APP-CREATE AUTHENTICATION CAPABILITY
 
-Clarify:
-- `Supersedes_Config_Version` is lineage metadata only.
-- It does not automatically deactivate an older version.
-- Lifecycle transition must explicitly manage `PUBLISHED -> SUPERSEDED`.
-- The publish sequence must preserve exactly-one active published configuration for the same Profile/FY/effective date.
-- Interrupted multi-record activation must fail closed and require controlled recovery; do not silently leave ambiguous published records.
+Kintone's Add Preview App API (`POST /k/v1/preview/app.json`) does not support API-token authentication. Build the future App-create auth preparation into the existing `kintone-client.js` without executing a request.
 
-### F. Trusted Publish Audit
+Add a small helper that prepares/validates the connection for `APP_CREATE` and:
 
-Lock:
-- `Published_By` comes from trusted authenticated publisher identity, never arbitrary request payload.
-- `Published_At` comes from trusted system/Kintone time, never caller business input.
+- requires Kintone username + password authentication for this Node-based path
+- rejects token-only credentials for `APP_CREATE`
+- never treats an API token as sufficient for App creation
+- if both password credentials and token exist, the APP_CREATE-specific headers must not include `X-Cybozu-API-Token`
+- preserve Basic Auth headers if configured
+- never log or return plaintext credentials
 
-After final publish update, perform exact-record read-back and verify:
-- `Config_Status === PUBLISHED`
-- `Master_Record_Key === expected`
-- `Configuration_Hash === expected`
-- `Published_By === trusted publisher`
-- `Published_At` is present and valid
+Do not change generic read authentication behavior unnecessarily.
 
-Failure code:
+## TESTS
 
-`PUBLISH_VERIFICATION_FAILED`
+Extend existing safety tests. At minimum prove:
 
-### G. Test Plan Additions
+1. valid exact WP/name/operation/manifest authorization passes guard validation
+2. wrong WP rejected
+3. wrong operation rejected
+4. missing explicit user authorization rejected
+5. closed window rejected
+6. wrong App name rejected
+7. missing/invalid manifest rejected
+8. multiple App-create targets rejected
+9. consumed/used authorization rejected
+10. APP_CREATE preflight accepts only `POST /k/v1/preview/app.json`
+11. wrong path/method rejected
+12. token-only APP_CREATE authentication rejected
+13. username/password APP_CREATE authentication accepted
+14. APP_CREATE headers do not include API token
+15. existing generic `kintoneRequest()` still blocks POST under `DISCOVERY_MODE`
+16. existing protected-App and App794/App795 safety regression still passes
 
-Add planned tests for:
-- wrong App name rejected
-- missing explicit authorization rejected
-- wrong WP rejected
-- one-target App creation only
-- registry not updated before identity verification
-- same verified ID written to both registries
-- expected/stored/recomputed hash mismatch cases
-- overlapping published effective period rejected
-- different FY does not conflict
-- different Profile_Code does not conflict
-- caller cannot override `Published_By`
-- caller cannot control `Published_At`
-- final post-publish read-back verified
+No real HTTP request in tests. No real Kintone connection.
 
-## 5. Preserve Existing Approved Contracts
+## KINTONE SAFETY
 
-Do not change:
-- exact App name
-- 23-field schema
-- 19-field immutable payload
-- `Master_Record_Key` required + unique
-- `KINTONE_ONLY` architecture
-- version immutability
-- current 8 baseline values as evidence only
-- App794/App795 no-write boundary for WP-002C
-- permanent read-only protected Apps
-- `SEC-DEP-001 = OPEN`
-- WP-002D boundary
+For this stage:
 
-## 6. Current Accepted Baseline Metadata
+```text
+WRITE_ALLOWED_APPS = []
+APP_CREATE = 0
+POST = 0
+PUT = 0
+DELETE = 0
+DEPLOY = 0
+```
 
-Where a living document intends to identify the current accepted `develop` baseline, use:
+Do not create the target App.
+Do not update `config/sandbox-apps.json`.
+Do not update `APP_REGISTRY.md`.
+Do not touch Apps 53, 283, 305, 307, 310, 640, 643, 715, 716, 794, or 795.
 
-`9d263a4`
-
-Do not rewrite historical references that intentionally identify Phase 2 or earlier commits.
-
-## 7. Verification
+## VERIFY
 
 Run:
 
@@ -190,69 +197,77 @@ git diff --check
 npm test
 ```
 
-Expected regression baseline:
+All existing 148 baseline tests must remain passing, plus the new Stage-1 tests.
 
-`148/148 PASS`
+Inspect the final diff. If any file outside the authorized boundary changed, STOP and revert only your own unauthorized change before committing.
 
-If source or test files changed, STOP and revert only your own unauthorized changes before committing.
+## DOCUMENT STATUS
 
-## 8. Git
+After code/tests pass, update necessary living docs to state:
 
-Remain on:
+- `WP-002C PLAN_GATE = PASS`
+- `WP-002C IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW`
+- `APP_CREATION_AUTHORIZED = NO`
+- `SCORING_MASTER_APP_ID = NOT_ALLOCATED`
+- `APP_STATUS = NOT_CREATED`
+- Kintone writes = 0
 
-`ai/codex-wp002c`
+Do not mark Stage 1 review PASS yourself.
 
-Suggested plan-correction commit:
+## GIT
 
-`docs: harden wp-002c bootstrap and publish safety`
+Commit implementation/tests first:
 
-Then, only if needed by DEC-030, a separate metadata commit:
+`feat: add wp-002c app creation safety preflight`
 
-`docs: update wp-002c corrected review metadata`
+Then, if living docs changed, use a separate metadata commit:
 
-Push the branch.
-Do NOT merge to `develop`.
+`docs: update wp-002c stage1 review metadata`
 
-## 9. Final Report
+Push `ai/codex-wp002c`.
+
+Do not merge to `develop`.
+
+## FINAL REPORT
 
 Report only:
+
 - branch
-- files changed
-- plan correction commit SHA
+- source/test files changed
+- implementation commit SHA
 - metadata commit SHA if any
-- tests total/passed/failed
-- Kintone POST/PUT/DELETE/DEPLOY counts
+- total tests / passed / failed
 - App created YES/NO
 - `SCORING_MASTER_APP_ID`
+- POST/PUT/DELETE/DEPLOY counts
 
 Then STOP.
 
 # REVIEW EXPECTATION
 
-Independent review will verify:
+Independent Reviewer will inspect the GitHub diff and verify:
 
-1. Exact target App name is unchanged.
-2. App ID remains `NOT_ALLOCATED` and App remains `NOT_CREATED`.
-3. No Kintone write occurred.
-4. Dedicated exact-name `APP_CREATE` bootstrap authorization is planned.
-5. Bootstrap does not require an App ID before creation.
-6. `DISCOVERY_MODE` is not globally disabled or broadly bypassed.
-7. Post-create identity read-back precedes registry updates.
-8. Verified real App ID is planned for both `config/sandbox-apps.json` and `APP_REGISTRY.md`.
-9. Normal writes become scoped only to that verified real App ID.
-10. Expected hash, stored hash, and recomputed hash must all match.
-11. Published effective-period overlap is blocked.
-12. Supersession cannot silently create runtime ambiguity.
-13. `Published_By` and `Published_At` use trusted sources.
-14. Final post-publish read-back is mandatory.
-15. No source/test implementation occurred in this task.
-16. Regression remains `148/148`.
-17. WP-002D was not started.
+1. `assertAppCreationAuthorization` is narrow, fail-closed, exact-WP, exact-operation, exact-name, manifest-scoped, and does not require an App ID.
+2. No generic discovery/write safety was weakened.
+3. `DISCOVERY_MODE` remains true and default write allow-list remains empty.
+4. APP_CREATE preflight is restricted to `POST /k/v1/preview/app.json`.
+5. Stage 1 cannot execute a real Kintone write through the new path.
+6. Token-only authentication cannot be used for APP_CREATE.
+7. Password-based APP_CREATE preparation does not send an API-token header.
+8. Existing protected-App invariants remain intact.
+9. Apps 794/795 remain untouched.
+10. `config/sandbox-apps.json` and `APP_REGISTRY.md` remain unchanged.
+11. Target App remains `NOT_CREATED` and ID remains `NOT_ALLOCATED`.
+12. No Kintone POST/PUT/DELETE/DEPLOY occurred.
+13. Existing 148 tests plus all new Stage-1 tests pass.
+14. No scoring/business-rule source changed.
+15. WP-002D did not start.
 
 Expected gates:
-- `APP_CREATION_SAFETY_GATE = PASS / FAIL`
-- `PUBLISH_PIPELINE_PLAN_GATE = PASS / FAIL`
-- `EFFECTIVE_UNIQUENESS_GATE = PASS / FAIL`
-- `SECURITY_PLAN_GATE = PASS / FAIL`
+
+- `APP_CREATE_GUARD_GATE = PASS / FAIL`
+- `KINTONE_PREFLIGHT_GATE = PASS / FAIL`
+- `APP_CREATE_AUTH_MODE_GATE = PASS / FAIL`
+- `REGRESSION_GATE = PASS / FAIL`
 - `KINTONE_SAFETY_GATE = PASS / FAIL`
-- `WP002C_PLAN_GATE = PASS / FAIL`
+- `WP002C_STAGE1_GATE = PASS / FAIL`
