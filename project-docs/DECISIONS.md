@@ -1,5 +1,14 @@
 # Architecture & Design Decisions
 
+## DEC-030 — Standardized AI Review Package Governance
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Review Governance)
+- **Decision**:
+  1. **Single Source Review Package:** Exactly one living review package file `project-docs/AI_REVIEW_PACKAGE.md` is maintained across the repository, replaced/updated per Work Package. Historical reviews are tracked exclusively via Git history.
+  2. **Evidence-Based Technical Review:** Technical verification is based strictly on Source code, Git Diff, Config Snapshots, Test Output, Read-back verification, and Audit Evidence. Screenshots are strictly limited to UI layout, responsive visual design, or visual error inspection.
+  3. **Multi-AI Compatibility:** The review package must be provider-neutral, facilitating peer reviews across Antigravity, ChatGPT, OpenAI Codex, Claude, or Human Technical Leads.
+  4. **Dual Gate Requirement:** A Work Package is only fully complete when both `IMPLEMENTATION_GATE = PASS` and `REVIEW_GATE = PASS`.
+
 ## DEC-029 — First Actual Kintone Write & Zero Artificial Write Policy
 - **Date**: 2026-08-24
 - **Status**: FROZEN (Implementation Governance)

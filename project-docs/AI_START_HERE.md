@@ -8,17 +8,18 @@
 ## 1. Mandatory Reading Order
 
 1. **[`project-docs/AI_START_HERE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/AI_START_HERE.md)** (This orientation document)
-2. **[`project-docs/AI_HANDOFF_PROTOCOL.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/AI_HANDOFF_PROTOCOL.md)** (Multi-AI handoff & continuity rules)
-3. **[`project-docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/IMPLEMENTATION_STATUS.md)** (Authoritative current phase, active AI, and approved scope)
-4. **[`project-docs/CURRENT_STATE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/CURRENT_STATE.md)** (Live system state & active apps)
-5. **[`project-docs/HANDOFF.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/HANDOFF.md)** (Operational handoff notes & exact next action)
-6. **[`project-docs/implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md)** (Consolidated target architecture)
-7. **Relevant Frozen Architecture Blueprints** in `project-docs/architecture-redesign/`
-8. **[`project-docs/BUSINESS_RULES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/BUSINESS_RULES.md)** (Authoritative business rules & weights)
-9. **[`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md)** (Immutable architectural decision log)
-10. **[`project-docs/OPEN_ISSUES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/OPEN_ISSUES.md)** (Open questions & observations)
-11. **[`project-docs/DEFECT_REGISTER.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DEFECT_REGISTER.md)** (Active bug tracking register)
-12. **Relevant Test Matrix** (`ROUTING_TEST_MATRIX.md`, `SCORING_TEST_MATRIX.md`, `GUIDED_UX_TEST_MATRIX.md`)
+2. **[`project-docs/AI_REVIEW_PACKAGE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/AI_REVIEW_PACKAGE.md)** (Latest standardized Work Package review package)
+3. **[`project-docs/AI_HANDOFF_PROTOCOL.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/AI_HANDOFF_PROTOCOL.md)** (Multi-AI handoff & continuity rules)
+4. **[`project-docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/IMPLEMENTATION_STATUS.md)** (Authoritative current phase, active AI, and review status)
+5. **[`project-docs/CURRENT_STATE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/CURRENT_STATE.md)** (Live system state & active apps)
+6. **[`project-docs/HANDOFF.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/HANDOFF.md)** (Operational handoff notes & exact next action)
+7. **[`project-docs/implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md)** (Consolidated target architecture)
+8. **Relevant Frozen Architecture Blueprints** in `project-docs/architecture-redesign/`
+9. **[`project-docs/BUSINESS_RULES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/BUSINESS_RULES.md)** (Authoritative business rules & weights)
+10. **[`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md)** (Immutable architectural decision log)
+11. **[`project-docs/OPEN_ISSUES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/OPEN_ISSUES.md)** (Open questions & observations)
+12. **[`project-docs/DEFECT_REGISTER.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DEFECT_REGISTER.md)** (Active bug tracking register)
+13. **Relevant Test Matrix** (`ROUTING_TEST_MATRIX.md`, `SCORING_TEST_MATRIX.md`, `GUIDED_UX_TEST_MATRIX.md`)
 
 ---
 

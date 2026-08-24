@@ -13,6 +13,8 @@
 
 ---
 
+- **Review Package**: [`project-docs/AI_REVIEW_PACKAGE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/AI_REVIEW_PACKAGE.md) (Standardized Review Document, `DEC-030`)
+
 ## 1. Completed in This Session
 * Implemented Pure Japanese Fiscal Year Engine in `src/core/fiscal-year-engine.js` (dynamic 1 Apr - 31 Mar boundary, no hardcoded year list).
 * Implemented string leading-zero preservation logic for Employee Code (`"0149"` preserved as string).
