@@ -7,8 +7,8 @@
 > **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
-> **WP-002B Status:** **`READY_FOR_PLANNING / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`**  
-> **Last Updated:** 2026-08-24T18:56:00+07:00  
+> **WP-002B Status:** **`PLAN_CREATED / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`**  
+> **Last Updated:** 2026-08-24T19:05:00+07:00  
 
 ---
 
@@ -18,7 +18,7 @@
 | :--- | :--- | :--- |
 | **Previous Approved Safe Commit** | `8fb306e` | Phase 2 Closed Baseline (Gates Passed & Frozen) |
 | **Phase 3 WP-001 Plan Commit** | `6e72553` | Frozen Authoritative WP-001 Implementation Plan (`PLAN_GATE = PASS`) |
-| **Phase 3 Sandbox & WP-002B Plan Commit**| `3c1ab0e` | Implementation Commit: `docs: define app 794 full sandbox governance and plan wp-002b` |
+| **Phase 3 WP-002B Plan Correction Commit** | `622b8c4` | Commit A: `docs: correct wp-002b resolver dependency and fiscal year contract` |
 | **Evidence & Review Commit** | *(Commit B / Review Head)* | Commit B: Updated Phase 3 Review Package Target Metadata |
 
 ---
@@ -30,22 +30,22 @@
 | **Work Package ID** | `MBO-P03-WP-002B` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `PROFILE RESOLUTION & READ-ONLY SCORING CONFIGURATION RESOLVER` |
-| **Mode** | **`PLAN ONLY (READ-ONLY RESOLVER)`** |
-| **Claimed Status** | **`PLAN_GATE: PENDING_INDEPENDENT_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`** |
-| **App 794 Sandbox Decision** | **`DEC-041: APP 794 FULL TEST SANDBOX GOVERNANCE`** ([`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md)) |
-| **App 794 Controlled Writes** | Allowed ONLY when explicitly planned & authorized by a WP (`WRITE_ALLOWED_APPS = [794]`); Default remains `WRITE_ALLOWED_APPS = []` |
+| **Mode** | **`PLAN ONLY (READ-ONLY RESOLVER FOUNDATION)`** |
+| **Claimed Status** | **`PLAN_CREATED / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`** |
+| **Master App Dependency** | **`SCORING_MASTER_APP_DEPENDENCY = NOT_ALLOCATED / NOT_CREATED`** — No live Kintone Master App ID; no hardcoded ID; resolver uses injected fixtures |
+| **WP-002B Authoritative Plan** | [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md) |
+| **Resolver Contract** | Pure dependency-injected: `resolveProfileScoringConfig({ employeeSnapshot, fiscalYear, effectiveDate, masterConfigRecords, authenticatedContext })` |
+| **Employee Source** | Reuses `src/services/employee-service.js` (App 53 READ ONLY); arbitrary caller `Profile_Code` cannot bypass position resolution |
+| **Position Resolution** | `TRIM(COLLAPSE_INTERNAL_SPACES(LOWERCASE(raw)))`; no guessing; ambiguous → `PROFILE_RESOLUTION_AMBIGUOUS` (Fail Closed) |
+| **Fiscal Year Contract** | Exact `Fiscal_Year` match required in config selection; mismatch → `SCORING_CONFIG_NOT_FOUND` (Fail Closed); `Fiscal_Year` included in resolver output |
+| **Config Selection Criteria** | `Profile_Code` + `Fiscal_Year` (exact) + `Config_Status = PUBLISHED` + `Effective_From ≤ effectiveDate ≤ Effective_To`; 0 → `SCORING_CONFIG_NOT_FOUND`; >1 → `SCORING_CONFIG_AMBIGUOUS` |
+| **Hash Integrity Verification** | Reuses `computeConfigurationHash()` from `scoring-config-master.js`; mismatch → `SCORING_CONFIG_INTEGRITY_FAILED` (Fail Closed) |
+| **DRY_RUN Clarification** | `DRY_RUN = ZERO_WRITE` always (not a controlled write); `SANDBOX_MIGRATION_TEST` is a separate concept requiring explicit WP authorization |
+| **App 794 Sandbox Decision** | **`DEC-041: APP_794_ENVIRONMENT = SANDBOX`** — Controlled WP-scoped writes allowed; default `WRITE_ALLOWED_APPS = []` |
 | **Protected Applications** | Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain **PERMANENTLY READ ONLY** |
-| **WP-002B Authoritative Plan**| [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md) |
-| **Resolver Scope** | Read-only resolver mapping `Employee -> Position -> Profile_Code -> Scoring Config -> Validated PUBLISHED Config` |
-| **Position Resolution Rules** | `TRIM(COLLAPSE_INTERNAL_SPACES(LOWERCASE(raw_title)))`; NO substring/prefix/suffix/semantic guessing; Ambiguous titles fail closed (`PROFILE_RESOLUTION_AMBIGUOUS`) |
-| **Config Selection Criteria** | `Profile_Code` exact match + `Config_Status = PUBLISHED` + date within `Effective_From..Effective_To`; 0 configs $\implies$ `SCORING_CONFIG_NOT_FOUND`; >1 configs $\implies$ `SCORING_CONFIG_AMBIGUOUS` (Fail Closed) |
-| **Hash Integrity Verification**| Reconstructs 19-attribute canonical payload, computes SHA-256 `Configuration_Hash`, compares with stored hash; mismatch $\implies$ `SCORING_CONFIG_INTEGRITY_FAILED` (Fail Closed) |
-| **Security Decision** | **`DEC-039: STRICT EMPLOYEE RECORD DATA ISOLATION`** ([`project-docs/SECURITY_MODEL.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/SECURITY_MODEL.md)) |
-| **Identity Binding** | Security is bound to verified **Authenticated Identity**, NOT `Employee_Code` alone |
-| **Shared Account Conflict** | Documented `SECURITY_ARCHITECTURE_DEPENDENCY` in [`project-docs/OPEN_ISSUES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/OPEN_ISSUES.md) |
-| **Migration Decision** | **`DEC-040: LEGACY 8-APP PMS DATA MIGRATION GOVERNANCE`** (`LEGACY_MIGRATION_STATUS = DEFERRED`) |
-| **Target Architecture** | **`PROFILE_CONFIGURATION_STORAGE = KINTONE_ONLY (DEC-038)`** |
-| **Source Module** | [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js) (UNTOUCHED) |
-| **Unit Test Suite** | [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (UNTOUCHED; 131/131 total suite passing) |
+| **Security Decision** | **`DEC-039: STRICT EMPLOYEE RECORD DATA ISOLATION`** (`Employee_Code` ≠ authentication; `SEC-DEP-001` OPEN) |
+| **Migration Decision** | **`DEC-040: LEGACY_MIGRATION_STATUS = DEFERRED`** with complete rollback contract |
+| **Source Module** | `src/profiles/scoring-config-master.js` (UNTOUCHED) |
+| **Unit Test Suite** | `tests/scoring-config-master.test.js` (UNTOUCHED; 131/131 total suite passing) |
 | **Kintone Write Operations** | **`0 (Zero Writes Executed)`** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |
