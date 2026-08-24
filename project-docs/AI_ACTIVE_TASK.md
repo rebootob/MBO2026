@@ -1,218 +1,173 @@
-# AI ACTIVE TASK — ANTIGRAVITY STAGE 3C GUARDED SCHEMA CONFIGURATION
+# AI ACTIVE TASK — ANTIGRAVITY STAGE 3C REVIEW CORRECTION
 
-> **Control Plane:** ChatGPT / Project Lead / Architect / Independent Reviewer
-> **Primary Execution Plane:** Antigravity
-> **Codex:** NOT ACTIVE; do not delegate to Codex
+> **Control Plane:** ChatGPT / Independent Reviewer
+> **Execution Plane:** Antigravity
 > **Repository:** `rebootob/MBO2026`
-> **Execution / Review Branch:** `ai/antigravity-wp002c`
-> **Reviewed Stage-3B Head:** `d4b8eb0cb2939162f3128cf4325ff9b8ffe6bd95`
-> **Target App:** `796` — `MBO Profile & Scoring Configuration Master [Sandbox]`
-> **Environment:** SANDBOX / Production FALSE
+> **Branch:** `ai/antigravity-wp002c`
+> **Required starting HEAD:** `6d27b9cdc04d7ea72ef9d6d38b34b1dab27cc9b3`
+> **Target App:** 796
+> **Mode:** CODE + TEST + LIVING-DOC CORRECTION ONLY
+> **Kintone calls:** FORBIDDEN in this task
+> **Kintone writes:** ZERO
 
-## CONTROL PLANE GATE DECISION
+## REVIEW RESULT
 
-Stage 3B has passed independent review:
+Stage 3C execution sequencing and evidence were strong:
 
 ```text
-WP002C_STAGE3B_GATE = PASS
-App 796 = LIVE_DEPLOYED
+implementation commit before Kintone write = PASS
+implementation commit = 41ad63d293a9de3e61a2fc6851af0df3d2a5fa9f
+evidence commit = 6d27b9cdc04d7ea72ef9d6d38b34b1dab27cc9b3
+Form Fields POST attempts = 1
+Deploy POST attempts = 1
 Deploy status = SUCCESS
-Access = CREATOR_ONLY / DEFAULT_DENY
-Schema = NOT_CONFIGURED
-Seed = NOT_STARTED
-Publish pipeline = NOT_DEPLOYED
+Live App 796 = verified
+Live ACL = CREATOR_ONLY / DEFAULT_DENY
+Live field readback = 23/23
+Record count = 0
+Reported tests = 193/193 PASS
 ```
 
-This task authorizes the next narrowly scoped stage only:
+However independent review found blocking semantic/safety defects.
+
+## BLOCKER 1 — DROP-DOWN STORED VALUES DO NOT MATCH FROZEN DOMAIN VALUES
+
+Current Stage-3C manifest incorrectly uses display-order prefixes inside option labels/values:
 
 ```text
-STAGE 3C — CREATE AND DEPLOY THE EXACT 23-FIELD WP-002C SCHEMA ON EXISTING APP 796
+Part_A_Scoring_Mode:
+  "0 DIFFICULTY_ACHIEVEMENT_MATRIX"
+  "1 ACHIEVEMENT_DIRECT"
+
+Config_Status:
+  "0 DRAFT"
+  "1 VALIDATED"
+  "2 PUBLISHED"
+  "3 SUPERSEDED"
+  "4 RETIRED"
 ```
 
-It does NOT authorize baseline records, publish service execution, lifecycle transitions, layout customization, views, process management, JavaScript customization, permission changes, App creation, deletion, or WP-002D.
-
-## AUTHORITATIVE SCHEMA CONTRACT
-
-Source: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md` section 4 and `src/profiles/scoring-config-master.js` enums.
-
-Create exactly these 23 fields, no more and no fewer:
-
-| # | Code | Type | Required | Unique |
-|---:|---|---|:---:|:---:|
-| 1 | Master_Record_Key | SINGLE_LINE_TEXT | YES | YES |
-| 2 | Profile_Code | SINGLE_LINE_TEXT | YES | NO |
-| 3 | Profile_Family | SINGLE_LINE_TEXT | YES | NO |
-| 4 | Scoring_Config_Code | SINGLE_LINE_TEXT | YES | NO |
-| 5 | Scoring_Config_Version | SINGLE_LINE_TEXT | YES | NO |
-| 6 | Effective_From | DATE | YES | NO |
-| 7 | Effective_To | DATE | YES | NO |
-| 8 | Fiscal_Year | SINGLE_LINE_TEXT | YES | NO |
-| 9 | PartA_Weight | NUMBER | YES | NO |
-| 10 | PartB_Weight | NUMBER | YES | NO |
-| 11 | Expected_Appraiser_Count | NUMBER | YES | NO |
-| 12 | Appraiser_Weight_Rule_Code | SINGLE_LINE_TEXT | YES | NO |
-| 13 | Part_A_Scoring_Mode | DROP_DOWN | YES | NO |
-| 14 | Competency_Set_Code | SINGLE_LINE_TEXT | YES | NO |
-| 15 | PartA_Rounding_Rule | SINGLE_LINE_TEXT | YES | NO |
-| 16 | PartB_Raw_Rounding_Rule | SINGLE_LINE_TEXT | YES | NO |
-| 17 | PartB_Weighted_Rounding_Rule | SINGLE_LINE_TEXT | YES | NO |
-| 18 | Final_Rounding_Rule | SINGLE_LINE_TEXT | YES | NO |
-| 19 | Supersedes_Config_Version | SINGLE_LINE_TEXT | YES | NO |
-| 20 | Config_Status | DROP_DOWN | YES | NO |
-| 21 | Published_At | DATETIME | NO | NO |
-| 22 | Published_By | USER_SELECT | NO | NO |
-| 23 | Configuration_Hash | SINGLE_LINE_TEXT | NO | NO |
-
-### Exact drop-down options
-
-`Part_A_Scoring_Mode`:
+This is incompatible with frozen domain/runtime values in `src/profiles/scoring-config-master.js` and `src/profiles/profile-scoring-resolver.js`, which require:
 
 ```text
-0 DIFFICULTY_ACHIEVEMENT_MATRIX
-1 ACHIEVEMENT_DIRECT
+Part_A_Scoring_Mode values:
+  DIFFICULTY_ACHIEVEMENT_MATRIX
+  ACHIEVEMENT_DIRECT
+
+Config_Status values:
+  DRAFT
+  VALIDATED
+  PUBLISHED
+  SUPERSEDED
+  RETIRED
 ```
 
-`Config_Status`:
+The numeric order belongs only in Kintone option `index`; it must not be part of the option value/label.
+
+**Control Plane acknowledges the previous Stage-3C task specified the prefixed labels incorrectly. Antigravity followed that instruction; this is a Control Plane contract correction.**
+
+## BLOCKER 2 — PREFLIGHT CAN DEPLOY PRE-EXISTING 23-FIELD PREVIEW STATE
+
+Current `configureAndDeployScoringMasterSchema()` contains a path equivalent to:
 
 ```text
-0 DRAFT
-1 VALIDATED
-2 PUBLISHED
-3 SUPERSEDED
-4 RETIRED
+if preview has all 23 fields:
+  treat fieldPostAttempts as 1
+  continue to deploy
 ```
 
-Each option key and label must be identical to the value above. Do not invent additional options.
+This violates the Stage-3C safety contract. Before the authorized field POST, **any planned field already present in live OR preview must fail closed and STOP**. Only a transport-uncertainty reconciliation that occurs *after this process actually attempted the one authorized field POST* may inspect 23/23 fields and continue.
 
-For Stage 3C, field labels must equal the exact field codes. Do not introduce alternate Thai/English UI labels yet; UI/layout refinement is a later separately authorized stage.
+Also do not report `fieldPostAttempts = 1` when no POST was actually sent.
 
-Do not set business defaults that were not frozen in the plan. In particular, do not auto-default `Config_Status`, publisher, dates, weights, or scoring mode at schema level.
+## MUST FIX 1 — SCHEMA AUTHORIZATION MUST BIND THE EXACT CONTRACT
 
-## KINTONE API CONTRACT
+The Stage-3C authorization guard currently checks WP/stage/App/name/sequence but not an explicit schema contract identifier.
 
-Kintone official behavior: Add Form Fields updates **pre-live** settings and requires a later Deploy App Settings call to publish those settings. Use the latest revision returned/read back; never use `-1` and never omit revision in this controlled stage.
-
-Allowed write sequence is exactly:
+Do not duplicate all 23 field definitions into the guard. Add a frozen contract identifier such as:
 
 ```text
-1. POST /k/v1/preview/app/form/fields.json   [maximum 1 attempt]
-2. POST /k/v1/preview/app/deploy.json        [maximum 1 attempt]
+WP002C_SCHEMA_CONTRACT_ID = WP002C_23_FIELDS_V1
 ```
 
-No PUT/DELETE is authorized.
+Require the request to contain that exact contract ID. The client remains hard-bound to the internal exact 23-field manifest, so caller-supplied field bodies/endpoints remain impossible.
 
-## STAGE 0 — GIT / STATE SAFETY GATE
+## MUST FIX 2 — LIVING DOC CONSISTENCY
 
-Run first:
+`CURRENT_STATE.md` still reports `171/171` although the Stage-3C evidence reports `193/193`.
+
+`HANDOFF.md` top summary currently says `SCHEMA/RECORD/DELETE WRITES = 0` even though Stage 3C performed one Form Fields POST. Correct the write summary without changing historical Stage-3A/3B logs.
+
+Until the live two-drop-down correction is separately authorized and verified, living docs must not imply Stage 3C passed review. Record:
+
+```text
+WP002C_STAGE3C_GATE = BLOCKED
+SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE
+SCHEMA_SEMANTIC_STATE = CORRECTION_REQUIRED
+CORRECTION_REQUIRED_FIELDS = Part_A_Scoring_Mode, Config_Status
+RECORD_COUNT = 0
+PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
+```
+
+## OFFICIAL KINTONE SEMANTICS TO PRESERVE
+
+Kintone form option `index` controls display order. The option name/label is the business value used for selection/query semantics. Therefore use raw frozen domain values as option names/labels and keep order only in `index`.
+
+Future correction write (NOT authorized in this task) will update only the two existing DROP_DOWN option labels and deploy App 796 after separate Control Plane authorization.
+
+## STEP 0 — GIT SAFETY
+
+Run:
 
 ```bash
 git status --short
 git branch --show-current
 git fetch origin
-git pull --ff-only
 git rev-parse HEAD
 git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor d4b8eb0cb2939162f3128cf4325ff9b8ffe6bd95 HEAD
 ```
 
 Required:
 
 ```text
 branch = ai/antigravity-wp002c
-working tree = clean
+HEAD = 6d27b9cdc04d7ea72ef9d6d38b34b1dab27cc9b3
 local HEAD = remote HEAD
-reviewed Stage-3B commit is in ancestry
 ```
 
-If not, STOP. Do not reset/rebase/stash/force-push automatically.
+Pre-existing unrelated IDE files must not be modified, staged, deleted, stashed, reset, or committed.
 
-Read before execution:
+## STEP 1 — CODE / TEST CORRECTION
 
-- `project-docs/AI_ACTIVE_TASK.md`
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
-- `project-docs/AI_REVIEW_PACKAGE.md`
-- `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
-- `src/profiles/scoring-config-master.js`
-- `src/core/sandbox-write-guard.js`
+Allowed implementation files only:
+
 - `src/core/kintone-client.js`
-
-## STAGE 1 — IMPLEMENT EXACT SCHEMA SAFETY PATH BEFORE ANY KINTONE WRITE
-
-Prefer modifying existing files; do not create new modules unless absolutely necessary.
-
-Authorized implementation files:
-
 - `src/core/sandbox-write-guard.js`
-- `src/core/kintone-client.js`
 - `tests/safety-guard.test.js`
 
-### Required guard
+Required changes:
 
-Add a narrow single-use authorization such as `assertScoringMasterSchemaAuthorization(...)` with a fixed stage constant equivalent to:
+1. Change Stage-3C manifest options to raw domain values with index only for ordering.
+2. Update exact-schema readback assertion/tests accordingly.
+3. Remove/deny the preflight path that accepts 23 pre-existing preview fields.
+4. Preflight must fail if any planned field exists in live OR preview.
+5. Transport uncertainty reconciliation remains allowed only after this function has actually attempted its authorized Form Fields POST.
+6. Return/report actual write-attempt counters; never synthesize `1` when no POST occurred.
+7. Add exact `WP002C_SCHEMA_CONTRACT_ID` binding to Stage-3C authorization.
+8. Preserve hard-bound App 796, exact endpoint paths, one-attempt behavior, protected-app blocks, `DISCOVERY_MODE = true`, and `WRITE_ALLOWED_APPS = []`.
+9. Do not add a Kintone correction PUT function yet. That write belongs to a separately authorized task.
 
-```text
-STAGE_3C_SCHEMA_CONFIGURATION
-```
+Required tests include:
 
-It must fail closed unless all are true:
-
-- work package exactly `MBO-P03-WP-002C`
-- App ID exactly `796`
-- App name exact approved name
-- explicit user authorization true
-- active window true
-- non-empty authorization ID
-- authorization ID not already consumed in current process
-- operation sequence exactly `FORM_FIELDS_ADD -> APP_DEPLOY`
-- requested schema is the exact 23-field contract
-- no caller-selectable alternate App ID/path/schema
-
-Do not change global `DISCOVERY_MODE`.
-Do not populate global `WRITE_ALLOWED_APPS`.
-Do not weaken protected App blocks.
-Do not reuse the Stage-3A live-activation authorization for schema writes.
-
-### Required exact schema function
-
-Implement one cohesive exact-purpose function in existing `src/core/kintone-client.js` for Stage 3C. It must hard-bind:
-
-```text
-App ID = 796
-App name = MBO Profile & Scoring Configuration Master [Sandbox]
-POST fields endpoint = /k/v1/preview/app/form/fields.json
-Deploy endpoint = /k/v1/preview/app/deploy.json
-Field manifest = exact 23 fields above
-```
-
-The caller must not be able to inject extra properties/fields or alternate endpoints.
-
-### Tests required before write
-
-Add tests covering at minimum:
-
-1. wrong WP rejected
-2. wrong App rejected
-3. wrong stage rejected
-4. missing explicit authorization rejected
-5. repeated authorization ID rejected
-6. operation sequence mismatch rejected
-7. manifest has exactly 23 unique field codes
-8. every field type / required / unique flag matches authoritative contract
-9. `Master_Record_Key.unique === true`; all others not unique
-10. Part A mode options exactly two and ordered correctly
-11. Config status options exactly five and ordered correctly
-12. no unexpected/default business values in schema
-13. preflight stops if any planned field already exists
-14. field POST targets only App 796 and occurs at most once
-15. field POST uses exact numeric revision read from preflight
-16. field POST transport uncertainty causes GET-only reconciliation, never a POST retry
-17. partial/mismatched preview readback stops before deploy
-18. deploy uses exact post-schema revision and occurs at most once
-19. deploy success does not require parsing a JSON body
-20. post-deploy success requires exact live field readback
-21. no write path to Apps 794/795 or protected Apps
-22. no record/layout/view/process/customization/ACL/delete write path
+- raw Part A option keys/labels exactly match `PART_A_SCORING_MODES` values and indexes 0/1
+- raw Config Status option keys/labels exactly match `CONFIG_LIFECYCLE_STATUS` values and indexes 0..4
+- prefixed labels are rejected by exact schema assertion
+- missing/wrong schema contract ID rejected
+- preview containing 1 planned field stops with zero POST/deploy
+- preview containing all 23 planned fields before authorized POST also stops with zero POST/deploy
+- actual field POST attempt counter equals actual POST count
+- uncertain transport reconciliation still never retries POST
+- no safety regression for Apps 794/795/protected Apps
 
 Run:
 
@@ -223,384 +178,106 @@ npm test
 
 All tests must pass.
 
-## STAGE 2 — COMMIT IMPLEMENTATION BEFORE KINTONE WRITE
-
-Before commit, changed code files must be only the three authorized implementation/test files.
-
-Commit exactly:
+Commit only the three authorized implementation/test files:
 
 ```text
-feat: add guarded wp-002c schema configuration
+fix: align wp-002c schema values and preflight safety
 ```
 
-Push to:
+Push to `origin/ai/antigravity-wp002c` and verify local HEAD = remote HEAD.
 
-```text
-origin/ai/antigravity-wp002c
-```
+## STEP 2 — LIVING-DOC CORRECTION
 
-Verify local HEAD = remote HEAD and working tree clean.
-
-Only after this commit/push and passing tests may Kintone write execution begin.
-
-## STAGE 3 — LOCAL SECURE PRE-WRITE BACKUP + GET-ONLY PREFLIGHT
-
-Use `.env.local` only locally; never print/commit secrets.
-
-Create/verify a local secure-backup snapshot of App 796's current live/pre-live management state using existing project backup practices. At minimum preserve safe JSON for:
-
-- live app identity/settings
-- live form fields
-- live ACL
-- preview app settings
-- preview form fields
-- preview ACL
-
-Do not push backup payloads if they contain environment/account metadata. Record only `BACKUP_VERIFIED = YES` and a safe local evidence identifier/hash in the final report.
-
-Then GET-only preflight:
-
-```text
-GET /k/v1/app.json?id=796
-GET /k/v1/app/settings.json?app=796
-GET /k/v1/app/acl.json?app=796
-GET /k/v1/app/form/fields.json?app=796
-GET /k/v1/preview/app/settings.json?app=796
-GET /k/v1/preview/app/acl.json?app=796
-GET /k/v1/preview/app/form/fields.json?app=796
-```
-
-Required:
-
-```text
-live App 796 exact name = PASS
-live ACL = CREATOR_ONLY / DEFAULT_DENY
-preview ACL = CREATOR_ONLY / DEFAULT_DENY
-all 23 planned field codes absent from live
-all 23 planned field codes absent from preview
-preview revision = valid current numeric revision
-```
-
-If any planned field already exists or identity/ACL is unexpected, make zero Kintone writes and STOP.
-
-Run full `npm test` again immediately before write.
-
-## STAGE 4 — ONE-TIME FORM FIELD POST
-
-Authorization ID:
-
-```text
-MBO-P03-WP-002C-STAGE3C-20260825-0610-ICT
-```
-
-Submit at most one:
-
-```text
-POST /k/v1/preview/app/form/fields.json
-```
-
-Body must contain only:
-
-```text
-app = 796
-properties = exact 23-field schema
-revision = exact current preflight preview revision
-```
-
-As soon as request is sent:
-
-```text
-STAGE3C_FIELD_POST_ATTEMPTS = 1
-```
-
-Never issue attempt 2.
-
-### Field POST success
-
-Require HTTP success and a numeric returned revision. Record it as:
-
-```text
-POST_SCHEMA_REVISION
-```
-
-### Transport uncertainty
-
-Do not retry. GET preview fields/settings only.
-
-- if all 23 fields exist exactly and a numeric latest revision is proven: reconciliation may continue
-- if zero fields exist: STOP; no retry under this authorization
-- if partial/mismatched state: STOP; no deploy
-
-### Explicit HTTP failure
-
-STOP. No retry. No deploy.
-
-## STAGE 5 — EXACT PREVIEW READBACK BEFORE DEPLOY
-
-GET:
-
-```text
-GET /k/v1/preview/app/form/fields.json?app=796
-GET /k/v1/preview/app/settings.json?app=796
-GET /k/v1/preview/app/acl.json?app=796
-```
-
-Verify all 23 fields exactly against the contract:
-
-- type
-- code
-- required
-- unique
-- drop-down option labels and order
-- no additional WP-002C field outside the manifest
-
-Also verify ACL remains creator-only/default-deny.
-
-Require exact latest numeric preview revision. This is the only revision permitted in deploy.
-
-If mismatch: STOP. Do not deploy.
-
-## STAGE 6 — ONE-TIME DEPLOY OF SCHEMA
-
-Submit at most one:
-
-```text
-POST /k/v1/preview/app/deploy.json
-```
-
-Exact body:
-
-```json
-{
-  "apps": [
-    {
-      "app": 796,
-      "revision": "<EXACT_POST_SCHEMA_REVISION>"
-    }
-  ]
-}
-```
-
-Rules:
-
-- no `revert`
-- no `-1`
-- no second App
-- deploy POST attempts <= 1
-- successful deploy response has no required JSON response body
-- transport uncertainty never triggers retry
-
-After send:
-
-```text
-STAGE3C_DEPLOY_POST_ATTEMPTS = 1
-```
-
-Poll deploy status GET only, maximum 30 checks, about 2 seconds apart, until `SUCCESS`, `FAIL`, or `CANCEL`.
-
-`FAIL`/`CANCEL`/timeout => no retry, preserve evidence, STOP.
-
-## STAGE 7 — POSITIVE LIVE SCHEMA VERIFICATION
-
-After deploy status SUCCESS, GET only:
-
-```text
-GET /k/v1/app.json?id=796
-GET /k/v1/app/settings.json?app=796
-GET /k/v1/app/acl.json?app=796
-GET /k/v1/app/form/fields.json?app=796
-GET /k/v1/apps.json?ids[0]=796
-```
-
-Require:
-
-```text
-App ID/name exact
-App 796 published/catalog visible
-ACL = CREATOR_ONLY / DEFAULT_DENY
-23/23 planned fields exist
-23/23 types correct
-required flags correct
-Master_Record_Key unique = true
-all other unique flags = false
-Part_A_Scoring_Mode options exact
-Config_Status options exact
-```
-
-Do not claim schema configured based only on deploy status.
-
-Also verify no record was created/seeded. Use a safe read-only record count/query if available and report `RECORD_COUNT = 0`.
-
-## STAGE 8 — DOCUMENTATION / EVIDENCE
-
-Only after positive live verification PASS, update:
+After implementation commit is pushed, update only:
 
 - `project-docs/CURRENT_STATE.md`
 - `project-docs/HANDOFF.md`
 - `project-docs/AI_REVIEW_PACKAGE.md`
 - `project-docs/IMPLEMENTATION_STATUS.md`
 - `project-docs/CHANGELOG_AI.md`
-- `project-docs/APP_REGISTRY.md`
 
-Record Control Plane Stage-3B closure and Stage-3C actual state:
+Required state:
 
 ```text
-WP002C_STAGE3B_GATE = PASS
-WP-002C Stage 3C = SCHEMA CONFIGURATION COMPLETE / PENDING CHATGPT REVIEW
-APP_ID = 796
-APP_STATUS = LIVE_DEPLOYED
-SCHEMA_STATUS = CONFIGURED_23_FIELDS
-SCHEMA_FIELD_COUNT = 23
-ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY
-BASELINE_SEED_STATUS = NOT_STARTED
+Active AI = Antigravity
+Branch = ai/antigravity-wp002c
+Stage 3B = PASS
+Stage 3C physical write execution = COMPLETE
+WP002C_STAGE3C_GATE = BLOCKED / CORRECTION_REQUIRED
+App 796 = LIVE_DEPLOYED
+SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE
+SCHEMA_SEMANTIC_STATE = CORRECTION_REQUIRED
+CORRECTION_REQUIRED_FIELDS = Part_A_Scoring_Mode, Config_Status
 RECORD_COUNT = 0
+BASELINE_SEED_STATUS = NOT_STARTED
 PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
-WP-002D = NOT STARTED
-NEXT_ACTION = AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3C
+NEXT_ACTION = AWAIT CHATGPT REVIEW OF STAGE3C CODE CORRECTION BEFORE ANY KINTONE REPAIR WRITE
 ```
 
-Do not claim lifecycle immutability/publish integrity is operational merely because fields exist. Those controls are later stages.
+Use the actual new full test count in all living docs; do not leave stale `171/171` or `193/193` if the new count changes.
 
-If a write was attempted but final live verification failed/was uncertain, update only minimum safe write-history evidence and do NOT set `SCHEMA_STATUS = CONFIGURED_23_FIELDS`.
-
-## STAGE 9 — FINAL TEST / GIT PUSH
-
-Run:
-
-```bash
-git diff --check
-npm test
-git status --short
-git diff --name-only
-```
-
-All tests must pass.
-
-Verified success evidence commit:
+Correct Stage-3C write summary to:
 
 ```text
-chore: record wp-002c schema configuration
-```
-
-Failed/uncertain evidence commit:
-
-```text
-chore: record wp-002c schema attempt evidence
-```
-
-Push only to `origin/ai/antigravity-wp002c`, verify local HEAD = remote HEAD and working tree clean, then STOP.
-
-## MAXIMUM KINTONE WRITE BOUNDARY
-
-For this entire Stage 3C:
-
-```text
-APP_CREATE POST = 0
+FORM FIELDS POST = 1 historical Stage-3C write
+DEPLOY POST = 1 historical Stage-3C write
+APP_CREATE = 0
 ACL PUT = 0
-FORM FIELDS POST = 1 maximum
-FORM FIELDS PUT = 0
-FORM FIELDS DELETE = 0
-DEPLOY POST = 1 maximum
-LAYOUT WRITE = 0
-VIEW WRITE = 0
-PROCESS WRITE = 0
-CUSTOMIZATION WRITE = 0
-RECORD WRITE = 0
-RECORD DELETE = 0
-APP DELETE = 0
+RECORD/DELETE/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0
+THIS CORRECTION TASK KINTONE CALLS = 0
 ```
 
-Apps 794/795 and protected Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 must receive zero writes.
+Commit:
 
-## ROLLBACK / FAILURE RULE
+```text
+docs: record wp-002c stage3c correction required
+```
 
-No automatic destructive rollback is authorized.
+Push to `origin/ai/antigravity-wp002c`, verify local HEAD = remote HEAD and clean tracked working state, then STOP.
 
-If schema exists only in preview or live verification is uncertain:
+## KINTONE BOUNDARY FOR THIS TASK
 
-- do not retry POST
-- do not delete fields
-- do not call deploy `revert=true`
-- do not delete App 796
-- do not create another App
-- preserve exact evidence and STOP
+```text
+Kintone GET = 0
+Kintone POST = 0
+Kintone PUT = 0
+Kintone DELETE = 0
+Kintone DEPLOY = 0
+```
 
-Any revert/remove operation requires a new Control Plane authorization.
-
-## FINAL REPORT
-
-Report only safe evidence:
-
-- execution plane / branch
-- starting HEAD
-- implementation commit SHA
-- authorization ID
-- pre-write backup verified YES/NO + safe evidence ID/hash
-- preflight live/preview identity + revision
-- preflight ACL result
-- preflight 23-field absence result
-- tests before write total/pass/fail
-- field POST attempt count + outcome + returned/reconciled revision
-- preview 23/23 exact readback PASS/FAIL
-- deploy POST attempt count + status sequence/final status
-- live App/catalog verification
-- live ACL verification
-- live schema 23/23 exact verification
-- record count
-- all Kintone write counts
-- tests after operation total/pass/fail
-- evidence/status commit SHA
-- changed files
-- local HEAD = remote HEAD YES/NO
-- working tree clean YES/NO
-- final schema status
-- STOP confirmation
-
-Never expose usernames, passwords, tokens, cookies, authorization headers, `.env.local`, or sensitive backup content.
+Do not use `.env.local`.
+Do not access App 796 API in this task.
+Do not update the live dropdowns yet.
+Do not seed records.
+Do not start WP-002D.
 
 # REVIEW EXPECTATION
 
-ChatGPT will inspect GitHub branch `ai/antigravity-wp002c` directly and verify:
+ChatGPT will verify:
 
-1. Stage-3B reviewed commit remains in ancestry and Stage-3B PASS is recorded.
-2. Implementation uses existing files unless a new file was clearly necessary.
-3. Dedicated Stage-3C guard is exact-App / exact-stage / single-use / fail-closed.
-4. Global discovery/protected-app safety was not weakened.
-5. Exact schema contains 23 fields only and matches authoritative types/flags.
-6. Master_Record_Key is the only unique field.
-7. Drop-down options match frozen enums exactly.
-8. No invented schema defaults/business rules were introduced.
-9. Implementation/tests were committed and pushed before Kintone schema write.
-10. Backup gate was verified before write.
-11. Live + preview preflight proved fields absent before creation.
-12. Form Fields POST occurred <= 1 time and targeted only App 796 with exact revision.
-13. No retry occurred after failure/uncertainty.
-14. Preview readback was exact before deploy.
-15. Deploy POST occurred <= 1 time using exact post-schema revision.
-16. Deploy status alone was not used as schema-success proof.
-17. Live schema readback proves 23/23 fields and exact critical settings.
-18. ACL remained creator-only/default-deny.
-19. Record count remains zero and no seed occurred.
-20. Apps 794/795 and protected Apps received zero writes.
-21. No layout/view/process/customization/permission/delete/write-scope expansion occurred.
-22. Tests pass before and after operation.
-23. Living docs/evidence match actual state and do not overclaim publish/lifecycle controls.
-24. Git local/remote heads are synchronized.
-25. WP-002D did not start.
+1. Exactly two new commits after this Control Plane task: code/tests then docs.
+2. No unrelated IDE files are committed.
+3. Drop-down business values exactly match frozen domain enums; numeric order exists only in `index`.
+4. Resolver requirement `Config_Status === PUBLISHED` is compatible with the corrected schema manifest.
+5. Stage-3C preflight fails on any pre-existing planned field, including full 23/23 preview state.
+6. Transport uncertainty reconciliation is reachable only after an actual Form Fields POST attempt.
+7. Attempt counters reflect actual requests.
+8. Schema authorization binds exact contract ID.
+9. Global/default safety remains unchanged.
+10. Tests all pass.
+11. Living docs explicitly mark Stage 3C BLOCKED / correction required and use the actual test total.
+12. Historical Form Fields POST=1 and Deploy POST=1 remain recorded accurately.
+13. This correction task made zero Kintone calls/writes.
+14. No seed/publish/WP-002D work started.
 
 Expected gates:
 
-- `STAGE3C_IMPLEMENTATION_GATE = PASS / FAIL`
-- `SCHEMA_CONTRACT_GATE = PASS / FAIL`
-- `PREWRITE_BACKUP_GATE = PASS / FAIL`
-- `SCHEMA_WRITE_SCOPE_GATE = PASS / FAIL`
-- `SCHEMA_SINGLE_ATTEMPT_GATE = PASS / FAIL`
-- `PREVIEW_SCHEMA_READBACK_GATE = PASS / FAIL`
-- `SCHEMA_DEPLOY_GATE = PASS / FAIL / UNCERTAIN`
-- `LIVE_SCHEMA_VERIFICATION_GATE = PASS / FAIL / UNVERIFIABLE`
-- `ACL_PRESERVATION_GATE = PASS / FAIL`
-- `ZERO_SEED_GATE = PASS / FAIL`
+- `STAGE3C_CODE_CORRECTION_GATE = PASS / FAIL`
+- `DOMAIN_VALUE_COMPATIBILITY_GATE = PASS / FAIL`
+- `PREFLIGHT_FAIL_CLOSED_GATE = PASS / FAIL`
+- `SCHEMA_AUTHORIZATION_GATE = PASS / FAIL`
+- `DOC_CONSISTENCY_GATE = PASS / FAIL`
+- `ZERO_KINTONE_CORRECTION_CALL_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
 - `GIT_PUSH_SYNC_GATE = PASS / FAIL`
-- `KINTONE_SAFETY_GATE = PASS / FAIL`
-- `WP002C_STAGE3C_GATE = PASS / BLOCKED / FAIL`
+- `WP002C_STAGE3C_GATE = BLOCKED / READY_FOR_SCHEMA_REPAIR_AUTHORIZATION`
