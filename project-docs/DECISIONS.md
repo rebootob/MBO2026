@@ -1,5 +1,15 @@
 # Architecture & Design Decisions
 
+## DEC-023 — Evaluation Profile, Competency & Scoring Architecture
+- **Date**: 2026-08-24
+- **Status**: ACTIVE (Ready for Final Freeze Review)
+- **Decision**:
+  1. **Configuration-Driven Profile Master:** Unify all 8 evaluation groups into 4 Profile Families (`PROFILE_STAFF_CHIEF`, `PROFILE_JAPANESE_STAFF`, `PROFILE_MANAGEMENT`, `PROFILE_EXECUTIVE`) governed by metadata.
+  2. **Evaluation Weights:** Staff/Japan (70/30), All Management & Exec (50/50 - Confirmed).
+  3. **COCE Governance:** `Evaluated = YES`, `Included_In_Score = NO`. Scoring denominator dynamically filters out excluded items.
+  4. **Standardized Scoring Algorithm (`WEIGHTED_PART_A_B`):** Parameterized mathematical model with dynamic denominator ($N_{\text{included}} \times K_{\text{appraisers}}$) and Half-Up 2-decimal place rounding.
+  5. **Hybrid Schema Storage (Option C):** App 794 maintains current working state (~172 fields, 34% of Kintone limit); Revision Archive App stores immutable historical snapshots.
+
 ## DEC-021 — Approver Change Operational Model & HR Self-Service
 - **Date**: 2026-08-24
 - **Status**: FROZEN

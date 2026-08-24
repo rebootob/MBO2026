@@ -94,3 +94,13 @@
 * **Historical Immutability:** Superseded revisions are archived immutably (Option C Hybrid Model).
 * **Single Counting:** Dashboard KPIs count exactly 1 evaluation per employee per FY.
 
+
+---
+
+## 11. Evaluation Profile & Scoring Architecture (Ready for Freeze)
+* **Weights:** Staff/Japan (70/30), All Management & Exec (50/50).
+* **COCE Rule:** Evaluated = YES, Included_In_Score = NO.
+* **Scoring Engine:** Parameterized `WEIGHTED_PART_A_B` with dynamic denominator.
+* **Rounding:** Standard Half-Up to 2 decimal places (`0.01`).
+* **Objective Limits:** Min 2, Max 10, Total Active Weight = 100%.
+

@@ -1,6 +1,6 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T09:25:00+07:00
+- **Updated At**: 2026-08-24T09:45:00+07:00
 - **Current Phase**: CROSS-APP LEGACY DISCOVERY & V2 ARCHITECTURE REDESIGN (READ ONLY)
 - **Current Branch**: `develop`
 - **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
@@ -17,5 +17,10 @@
 - **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
 - **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
 - **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` (`DEC-022`)**.
-- **Test Scenarios Defined:** **70 Scenarios** (`RT-001` to `RT-050`, `RT-071` to `RT-090`) / **32 Automated Unit Tests Executed & Passed**.
+- **Evaluation Profile, Competency & Scoring Architecture: Ready for Final Freeze Review (`DEC-023`)**:
+  - 4 Profile Families covering all 8 groups without hardcoding.
+  - Standardized `WEIGHTED_PART_A_B` Scoring Algorithm with dynamic denominator.
+  - COCE Evaluated but Excluded from Scoring.
+  - 30 Scoring Test Scenarios Defined (`SC-001` to `SC-030`).
+  - App 794 Field Count Estimate: ~172 fields (34% capacity).
 - **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.

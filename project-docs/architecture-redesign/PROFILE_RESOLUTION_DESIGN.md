@@ -1,32 +1,26 @@
-# Profile & Routing Dynamic Resolution Flow
+# Evaluation Profile Resolution Engine Blueprint
 
-> **Document Status:** Proposed  
-> **Last Updated:** 2026-08-23  
+> **Document Status:** Complete  
+> **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Resolution Sequence Diagram
+## 1. Deterministic Priority Resolution Hierarchy
 
+When an employee MBO record is initialized or refreshed, the Profile Resolution Engine executes a 3-tier deterministic lookup:
+
+```mermaid
+graph TD
+    START["Resolve Employee Profile"] --> P1{"Tier 1: Individual Employee Exception?"}
+    P1 -- YES --> USE_P1["Apply Specific Employee Profile Override"]
+    P1 -- NO --> P2{"Tier 2: Specific Position Mapping in App 53?"}
+    P2 -- YES --> USE_P2["Apply Position Profile (e.g. Section Manager)"]
+    P2 -- NO --> P3{"Tier 3: Employee Group Mapping (e.g. Staff)?"}
+    P3 -- YES --> USE_P3["Apply Group Default Profile"]
+    P3 -- NO --> ERR["Raise ROUTING_CONFIGURATION_ERROR"]
 ```
-User types Employee Code (e.g. "0149")
-                 |
-                 v
-[STEP 1: App 53 Employee Master Query]
- └── Returns: Position ("Marketing Chief"), Section ("TME1"), Department ("Eco Energy")
-                 |
-                 v
-[STEP 2: App 796 Evaluation Profile Resolution]
- └── Matches: Position "Marketing Chief" -> Profile "PROF_STAFF" (70/30 split, Core Competencies)
-                 |
-                 v
-[STEP 3: App 795 Generic Routing Resolution]
- └── Matches: Section "TME1" + Profile "PROF_STAFF" -> Route "ROUTE_TME1_STAFF" (suthas -> somrudee)
-                 |
-                 v
-[STEP 4: Snapshot Injection into App 794 Record]
- └── Injects immutable snapshots: Profile_Code, Weights, Competencies, Step Approvers
-                 |
-                 v
-[STEP 5: UI Grid & Scoring Runtime Unlocked]
- └── Dynamic Part A Grid rendered with exact profile constraints
-```
+
+---
+
+## 2. Resolution Output & Snapshot Binding
+Upon successful resolution, the engine returns the exact `Profile_Code` and `Profile_Version`, which is immediately locked into App 794's immutable transaction snapshot fields.
