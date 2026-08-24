@@ -3,8 +3,8 @@
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002B`
 - **Handoff State:** `SAFE_CHECKPOINT`
-- **Last Handoff At:** `2026-08-24T18:55:00+07:00`
-- **Review Status:** `PHASE 3 WP-002B IMPLEMENTATION PLAN CREATED & DEC-041 RECORDED (READY FOR REVIEW)`
+- **Last Handoff At:** `2026-08-24T19:04:00+07:00`
+- **Review Status:** `PHASE 3 WP-002B PLAN CORRECTED (MASTER APP DEPENDENCY + FY CONTRACT) (READY FOR REVIEW)`
 - **Implementation Authorization:** **`WP-002B IMPLEMENTATION NOT AUTHORIZED`** (Plan Only; Zero Writes)
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -15,7 +15,7 @@
 - **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
-- **WP-002B Status:** **`READY_FOR_PLANNING / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`**
+- **WP-002B Status:** **`PLAN_CREATED / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`**
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate:** `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Kintone-Only Version Immutability)`
@@ -25,6 +25,7 @@
 - **Security Governance Gate:** `PASS (DEC-039 Strict Employee Record Data Isolation & Hardened Confidentiality 1..8)`
 - **Legacy Migration Gate:** `PASS (DEC-040 Complete Migration Rollback & Read-Back Verification Contract)`
 - **Sandbox Governance Gate:** `PASS (DEC-041 App 794 Full Test Sandbox Governance Recorded)`
+- **Master App Dependency Gate:** `PASS (SCORING_MASTER_APP_DEPENDENCY = NOT_ALLOCATED documented explicitly in WP-002B plan)`
 - **DEC-030 Commit Gate:** `PASS (Commit Separation Verified)`
 - **Governance Decisions:**  
   - `DEC-035`: **Scoring Source of Truth** (`SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`)  
@@ -68,7 +69,7 @@
 |  | ↳ *WP-001: Evaluation Profile & Competency Foundation* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002: Kintone-Only Profile & Scoring Configuration Foundation (Plan)* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002A: Kintone-Only Profile / Scoring Master Foundation (Code & Unit)* | **IMPLEMENTATION COMPLETE** | 2026-08-24 |
-|  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver (Plan)* | **READY_FOR_PLANNING** | - |
+|  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver (Plan)* | **PLAN_CREATED / PENDING_REVIEW** | - |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
 | **P6** | In-Flight Approver Change & HR Self-Service | LOCKED | - |

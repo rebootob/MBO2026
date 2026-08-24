@@ -1,15 +1,15 @@
 # AI Operational Handoff Document
 
-- **Handoff Date**: 2026-08-24T18:55:00+07:00
+- **Handoff Date**: 2026-08-24T19:04:00+07:00
 - **From AI**: Antigravity
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `develop`
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package**: `MBO-P03-WP-002B (DEC-041 RECORDED & WP-002B PLAN CREATED)`
+- **Current Work Package**: `MBO-P03-WP-002B (PLAN CORRECTED — MASTER APP DEPENDENCY + FY CONTRACT)`
 - **WP-001 Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002 Plan Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002A Status**: `IMPLEMENTATION COMPLETE (15/15 new tests passing; 131/131 total suite passing)`
-- **WP-002B Status**: `READY_FOR_PLANNING / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`
+- **WP-002B Status**: `PLAN_CREATED / PENDING_REVIEW (IMPLEMENTATION_AUTHORIZED = NO)`
 - **Implementation Scope**: Limited strictly to `WP-002A` Master configuration foundation (`src/profiles/scoring-config-master.js` and `tests/scoring-config-master.test.js`). WP-002B is PLAN ONLY.
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`
@@ -51,6 +51,10 @@
 * **Controlled Write Permission:** App 794 controlled write operations are allowed when explicitly planned and authorized by an approved Work Package (`WRITE_ALLOWED_APPS = [794]`). Default remains `WRITE_ALLOWED_APPS = []`.
 * **Protected Apps:** Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain PERMANENTLY READ ONLY.
 
-### 2. WP-002B Implementation Plan Created
-* **Plan Document:** Created [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md) detailing the read-only resolver contract (`Employee -> Position -> Profile_Code -> Scoring Config -> Validated PUBLISHED Config`).
+### 2. WP-002B Implementation Plan Corrected
+* **Plan Document:** Corrected [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md) to explicitly state `SCORING_MASTER_APP_DEPENDENCY = NOT_ALLOCATED / NOT_CREATED`.
+* **Pure Dependency-Injected Resolver:** WP-002B is a pure resolver foundation operating on injected config records (test fixtures). No live Kintone Master App API call until App ID is formally allocated.
+* **Exact Fiscal Year Contract:** `Fiscal_Year` is now a mandatory selection criterion (exact match required). Mismatch fails closed (`SCORING_CONFIG_NOT_FOUND`). `Fiscal_Year` included in resolved output.
+* **Caller Position Bypass Blocked:** Arbitrary caller-provided `Profile_Code` cannot bypass position-based resolution. Invalid/unverified employee snapshots fail closed.
+* **DRY_RUN Clarification:** `DRY_RUN = ZERO_WRITE` always; `SANDBOX_MIGRATION_TEST` is a separate concept that may involve controlled writes when explicitly authorized.
 * **Implementation Status:** **`IMPLEMENTATION_AUTHORIZED = NO`** (Plan Only; 0 Kintone Writes).
