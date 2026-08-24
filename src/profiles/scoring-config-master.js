@@ -11,8 +11,11 @@ export const PROFILE_CODES = {
   STAFF_CHIEF: 'PROF_STAFF_CHIEF',
   JAPANESE_STAFF: 'PROF_JAPANESE_STAFF',
   ASST_MGR: 'PROF_ASST_MGR',
-  MANAGEMENT: 'PROF_MANAGEMENT',
-  EXECUTIVE: 'PROF_EXECUTIVE'
+  SECTION_MGR: 'PROF_SECTION_MGR',
+  SENIOR_MGR: 'PROF_SENIOR_MGR',
+  DGM: 'PROF_DGM',
+  GM: 'PROF_GM',
+  VP: 'PROF_VP'
 };
 
 export const PROFILE_FAMILIES = {
@@ -29,6 +32,29 @@ export const PART_A_SCORING_MODES = {
 
 export const APPRAISER_WEIGHT_RULES = {
   EQUAL_DISTRIBUTION_V1: 'EQUAL_DISTRIBUTION_V1'
+};
+
+export const ALLOWED_ROUNDING_RULES = {
+  ROUNDING_LEGACY_PER_APP_CALC: 'ROUNDING_LEGACY_PER_APP_CALC',
+  ROUNDING_LEGACY_FINAL_ROUND_2: 'ROUNDING_LEGACY_FINAL_ROUND_2',
+  UNIFIED_HALF_UP_2_DECIMALS: 'UNIFIED_HALF_UP_2_DECIMALS'
+};
+
+export const KNOWN_COMPETENCY_SETS = {
+  COMP_SET_OPERATIONAL_V1: {
+    code: 'COMP_SET_OPERATIONAL_V1',
+    totalItems: 6,
+    includedItemsCount: 5,
+    coceItemIndex: 6,
+    coceIncludedInScore: false
+  },
+  COMP_SET_MANAGEMENT_V1: {
+    code: 'COMP_SET_MANAGEMENT_V1',
+    totalItems: 8,
+    includedItemsCount: 7,
+    coceItemIndex: 8,
+    coceIncludedInScore: false
+  }
 };
 
 export const CONFIG_LIFECYCLE_STATUS = {
@@ -157,18 +183,44 @@ export function validateScoringMasterConfig(configPayload, existingKeys = []) {
     throw new Error('INVALID_PART_A_MODE: Part_A_Scoring_Mode is invalid');
   }
 
-  // 9. Competency Set Code Requirement
+  // 9. Competency Set Code Requirement & COCE Exclusion Check
   if (!configPayload.Competency_Set_Code || typeof configPayload.Competency_Set_Code !== 'string' || configPayload.Competency_Set_Code.trim() === '') {
     throw new Error('MISSING_COMPETENCY_SET: Competency_Set_Code is required');
   }
+  const compSet = KNOWN_COMPETENCY_SETS[configPayload.Competency_Set_Code];
+  if (!compSet) {
+    throw new Error(`INVALID_COMPETENCY_SET: Competency_Set_Code ${configPayload.Competency_Set_Code} is invalid`);
+  }
+  if (compSet.coceIncludedInScore !== false) {
+    throw new Error('INVALID_COCE_GOVERNANCE: COCE must have coceIncludedInScore = false');
+  }
 
-  // 10. Effective Date Validity
-  if (configPayload.Effective_From && configPayload.Effective_To) {
-    const fromDate = new Date(configPayload.Effective_From);
-    const toDate = new Date(configPayload.Effective_To);
-    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime()) || fromDate > toDate) {
-      throw new Error('INVALID_EFFECTIVE_PERIOD: Effective_From must be prior to or equal to Effective_To');
+  // 10. Rounding Rules Validation
+  const roundingFields = [
+    'PartA_Rounding_Rule',
+    'PartB_Raw_Rounding_Rule',
+    'PartB_Weighted_Rounding_Rule',
+    'Final_Rounding_Rule'
+  ];
+  for (const field of roundingFields) {
+    const rule = configPayload[field];
+    if (!rule || !Object.values(ALLOWED_ROUNDING_RULES).includes(rule)) {
+      throw new Error(`INVALID_ROUNDING_RULE: ${field} value '${rule}' is not an allowed rounding rule`);
     }
+  }
+
+  // 11. Effective Date Requirement & Validity (Fail-Closed)
+  if (!configPayload.Effective_From || typeof configPayload.Effective_From !== 'string' || configPayload.Effective_From.trim() === '') {
+    throw new Error('MISSING_EFFECTIVE_PERIOD: Effective_From is required');
+  }
+  if (!configPayload.Effective_To || typeof configPayload.Effective_To !== 'string' || configPayload.Effective_To.trim() === '') {
+    throw new Error('MISSING_EFFECTIVE_PERIOD: Effective_To is required');
+  }
+
+  const fromDate = new Date(configPayload.Effective_From);
+  const toDate = new Date(configPayload.Effective_To);
+  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime()) || fromDate > toDate) {
+    throw new Error('INVALID_EFFECTIVE_PERIOD: Effective_From must be prior to or equal to Effective_To');
   }
 
   // Return validated config with computed configuration hash
@@ -180,7 +232,7 @@ export function validateScoringMasterConfig(configPayload, existingKeys = []) {
 }
 
 /**
- * Returns canonical frozen baseline configurations for all 8 evaluation groups
+ * Returns canonical frozen baseline configurations for ALL 8 evaluation groups
  */
 export function getCanonicalBaselineMasterConfigs() {
   return [
@@ -199,10 +251,10 @@ export function getCanonicalBaselineMasterConfigs() {
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
       Competency_Set_Code: 'COMP_SET_OPERATIONAL_V1',
-      PartA_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Raw_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Weighted_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      Final_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
       Supersedes_Config_Version: 'NONE',
       Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
     },
@@ -221,10 +273,10 @@ export function getCanonicalBaselineMasterConfigs() {
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
       Competency_Set_Code: 'COMP_SET_OPERATIONAL_V1',
-      PartA_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Raw_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Weighted_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      Final_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
       Supersedes_Config_Version: 'NONE',
       Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
     },
@@ -243,18 +295,18 @@ export function getCanonicalBaselineMasterConfigs() {
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
       Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
-      PartA_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Raw_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Weighted_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      Final_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
       Supersedes_Config_Version: 'NONE',
       Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
     },
     {
-      Master_Record_Key: 'PROF_MANAGEMENT::v1.0.0',
-      Profile_Code: PROFILE_CODES.MANAGEMENT,
+      Master_Record_Key: 'PROF_SECTION_MGR::v1.0.0',
+      Profile_Code: PROFILE_CODES.SECTION_MGR,
       Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
-      Scoring_Config_Code: 'SCORE_CFG_MANAGEMENT_V1',
+      Scoring_Config_Code: 'SCORE_CFG_SECTION_MGR_V1',
       Scoring_Config_Version: 'v1.0.0',
       Effective_From: '2026-04-01',
       Effective_To: '2027-03-31',
@@ -265,18 +317,62 @@ export function getCanonicalBaselineMasterConfigs() {
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
       Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
-      PartA_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Raw_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Weighted_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      Final_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_FINAL_ROUND_2,
       Supersedes_Config_Version: 'NONE',
       Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
     },
     {
-      Master_Record_Key: 'PROF_EXECUTIVE::v1.0.0',
-      Profile_Code: PROFILE_CODES.EXECUTIVE,
+      Master_Record_Key: 'PROF_SENIOR_MGR::v1.0.0',
+      Profile_Code: PROFILE_CODES.SENIOR_MGR,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
+      Scoring_Config_Code: 'SCORE_CFG_SENIOR_MGR_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_FINAL_ROUND_2,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_DGM::v1.0.0',
+      Profile_Code: PROFILE_CODES.DGM,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
+      Scoring_Config_Code: 'SCORE_CFG_DGM_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_GM::v1.0.0',
+      Profile_Code: PROFILE_CODES.GM,
       Profile_Family: PROFILE_FAMILIES.PROFILE_EXECUTIVE,
-      Scoring_Config_Code: 'SCORE_CFG_EXEC_V1',
+      Scoring_Config_Code: 'SCORE_CFG_GM_V1',
       Scoring_Config_Version: 'v1.0.0',
       Effective_From: '2026-04-01',
       Effective_To: '2027-03-31',
@@ -287,10 +383,32 @@ export function getCanonicalBaselineMasterConfigs() {
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT,
       Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
-      PartA_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Raw_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      PartB_Weighted_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
-      Final_Rounding_Rule: 'UNIFIED_HALF_UP_2_DECIMALS',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_VP::v1.0.0',
+      Profile_Code: PROFILE_CODES.VP,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_EXECUTIVE,
+      Scoring_Config_Code: 'SCORE_CFG_VP_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 1,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
       Supersedes_Config_Version: 'NONE',
       Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
     }

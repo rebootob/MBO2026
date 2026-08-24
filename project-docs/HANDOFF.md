@@ -1,14 +1,14 @@
 # AI Operational Handoff Document
 
-- **Handoff Date**: 2026-08-24T17:10:00+07:00
+- **Handoff Date**: 2026-08-24T17:14:00+07:00
 - **From AI**: Antigravity
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `develop`
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package**: `MBO-P03-WP-002A (COMPLETE)`
+- **Current Work Package**: `MBO-P03-WP-002A (LEAN CORRECTION COMPLETE)`
 - **WP-001 Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002 Plan Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
-- **WP-002A Status**: `IMPLEMENTATION COMPLETE (12/12 new tests passing; 128/128 total suite passing)`
+- **WP-002A Status**: `IMPLEMENTATION COMPLETE (14/14 new tests passing; 130/130 total suite passing)`
 - **WP-002B Status**: `LOCKED / NOT STARTED`
 - **Implementation Scope**: Limited strictly to `WP-002A` Master configuration foundation (`src/profiles/scoring-config-master.js` and `tests/scoring-config-master.test.js`)
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
@@ -37,13 +37,13 @@
 
 ---
 
-# MBO-P03-WP-002A — IMPLEMENTATION SUMMARY & TEST RESULTS
+# MBO-P03-WP-002A — LEAN CORRECTIONS APPLIED & TEST RESULTS
 
-### 1. Controlled Scope Accomplished
-* **Created Module:** [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js).
-* **Deterministic Key Generation:** `generateMasterRecordKey(Profile_Code, Version)` $\to$ `{Profile_Code}::{Scoring_Config_Version}`.
-* **Deterministic Configuration Hash:** `computeConfigurationHash(payload)` computes SHA-256 over 19 immutable payload fields only (excluding `Config_Status`, `Published_At`, `Published_By`, `Configuration_Hash`).
-* **Validation Engine:** `validateScoringMasterConfig(payload, existingKeys)` validates Staff 70/30, Asst Mgr 60/40, Executive GM K=1 Direct, PartA+PartB=100, $K \in \{1, 2\}$, duplicate key rejection (`MASTER_CONFIG_DUPLICATE`), effective date ranges, and missing competency set codes.
-* **Canonical Baseline Reproduction:** `getCanonicalBaselineMasterConfigs()` reproduces 8 frozen evaluation groups without ambiguity.
-* **Automated Test Suite:** Created [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (12 new tests). Verified full regression suite: 128/128 tests passing cleanly (0 failures).
+### 1. Controlled Scope & Fidelity Fixes
+* **Canonical Baseline 8 Records:** `getCanonicalBaselineMasterConfigs()` returns exactly 8 configurations corresponding to all 8 evaluation groups (`PROF_STAFF_CHIEF`, `PROF_JAPANESE_STAFF`, `PROF_ASST_MGR`, `PROF_SECTION_MGR`, `PROF_SENIOR_MGR`, `PROF_DGM`, `PROF_GM`, `PROF_VP`).
+* **Preserved Deployed Rounding Differences:** Replaced universal `UNIFIED_HALF_UP_2_DECIMALS` claim with explicit deployed rounding distinction (e.g. `ROUNDING_LEGACY_FINAL_ROUND_2` for Section Mgr App 305 and Senior Mgr App 643; `ROUNDING_LEGACY_PER_APP_CALC` for DGM App 307, GM App 640, VP App 715, Staff App 283, Japan App 716, Asst Mgr App 310).
+* **Effective Period Fail-Closed Validation:** Required both `Effective_From` and `Effective_To` strings; missing dates fail with `MISSING_EFFECTIVE_PERIOD`.
+* **Allowed Rounding Rules Validation:** Added explicit validation for `PartA_Rounding_Rule`, `PartB_Raw_Rounding_Rule`, `PartB_Weighted_Rounding_Rule`, `Final_Rounding_Rule`; invalid codes fail with `INVALID_ROUNDING_RULE`.
+* **Competency Set & COCE Governance Validation:** Added `KNOWN_COMPETENCY_SETS` mapping enforcing `coceIncludedInScore = false` for Item 6/8 across operational/management sets.
+* **Automated Test Suite:** Updated [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (14 tests). Full regression suite: 130/130 tests passing cleanly (0 failures).
 * **Zero Kintone Writes:** **`0 (Zero Writes Executed)`**.
