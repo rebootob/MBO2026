@@ -3,81 +3,59 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)  
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)  
 > **Review Policy:** Evidence-based verification (Source, Diff, Config, Test Evidence). Screenshots reserved for UI layout only.  
-> **Last Updated:** 2026-08-24T14:28:00+07:00  
+> **Last Updated:** 2026-08-24T14:33:00+07:00  
 
 ---
 
-## 1. Phase 2 Final Gate Review Metadata
+## 1. Work Package & Review Metadata
 
 | Attribute | Value / Evidence Pointer |
 | :--- | :--- |
-| **Phase** | **`Phase 2: Annual Record Foundation`** |
-| **Phase 2 Status** | **`PASSED / FROZEN`** |
-| **Phase 2 Implementation Gate** | **`PASS`** |
-| **Phase 2 Review Gate** | **`PASS`** |
-| **Work Package 1 (WP-001)** | `PASSED` (Annual Identity & Fiscal Year Foundation) |
-| **Work Package 2 (WP-002)** | `PASSED` (Employee Lookup & Verification Foundation) |
-| **Work Package 3 (WP-003)** | `PASSED` (Annual Record Initialization & Duplicate Prevention) |
+| **Work Package ID** | `MBO-P03-WP-001` |
+| **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
+| **Work Package Name** | `EVALUATION PROFILE & COMPETENCY CONFIGURATION FOUNDATION` |
+| **Claimed Status** | **`PLAN_GATE: READY_FOR_INDEPENDENT_REVIEW`** |
+| **Phase 3 Implementation Status** | **`NOT STARTED / LOCKED (PLAN ONLY)`** |
+| **Phase 2 Status** | **`PASSED / FROZEN (Commit 8fb306e)`** |
+| **Live Kintone Write Authorization** | **`NOT_AUTHORIZED / ZERO WRITES EXECUTED`** |
 | **Git Branch** | `develop` |
-| **Implementation Target Commit** | `59b53df` |
-| **Final Evidence Commit Baseline** | `033d54a` |
-| **Kintone Write Operations** | **`0 (Zero Writes Executed Across Entire Phase 2)`** |
+| **Profile Master App ID** | **`PROFILE_MASTER_APP = UNASSIGNED (Option 1 Code-Driven Engine Proposed)`** |
+| **App 53 Position Values Audited** | **`61 Unique Raw Positions`** (Mapped to 8 confirmed profile groups) |
+| **Profile Mapping Readiness** | **`FAIL_CLOSED_ENGINE_DESIGNED (8 Groups, 70/30 vs 50/50 Weights)`** |
+| **Competency Configuration** | **`6 Competencies Defined (COCE Included_In_Score = false, Dynamic N=5)`** |
+| **Kintone Write Operations** | **`0 (Zero Writes Executed)`** |
 | **Kintone Apps Modified** | **`NONE`** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |
-| **Next Phase** | **`Phase 3: Evaluation Profile, Competency & Scoring Engine (LOCKED / NOT STARTED)`** |
 
 ---
 
-## 2. Phase 2 Architecture & Governance Baseline
+## 2. Phase 3 WP-001 Planning & Architecture Summary
 
-### A. Authoritative Work Package Summaries
-1. **WP-001 (Annual Identity & Fiscal Year Foundation):**
-   - Implemented dynamic Japanese Fiscal Year engine (`getJapaneseFiscalYear`), canonical employee code normalization (`normalizeEmployeeCode`), and deterministic Record Key generator (`generateRecordKey`).
-   - Covered by 10 automated unit tests (`ANNUAL-001`..`010`).
-2. **WP-002 (Employee Lookup & Verification Foundation):**
-   - Implemented `EmployeeService.lookupEmployee` with strict fail-closed classification, query representation separation, and post-lookup identity consistency checks (`DEF-008`).
-   - Covered by 18 automated unit tests (`EMP-001`..`018`).
-3. **WP-003 (Annual Record Initialization & Duplicate Prevention):**
-   - Implemented pure orchestration pipeline (`prepareInitializationCandidate`), Layer 1 GET check, Layer 2 unique constraint error translator (`translateCreateError`), 5-tier normalized read-back verification (`verifyNormalizedReadBack`), and exact single-record rollback guard contract (`assertRollbackAuthorization`).
-   - Covered by 20 annual record tests (`REC-001`..`020`) and 16 requester mapping tests (`REQMAP-001`..`016`).
+### A. 8 Confirmed Evaluation Profile Groups & Weights
+* **`STAFF_CHIEF`** (Staff & Chief): 70% Part A / 30% Part B
+* **`JAPAN_STAFF`** (Japanese Staff): 70% Part A / 30% Part B
+* **`ASST_MGR`** (Assistant Manager): 50% Part A / 50% Part B
+* **`SECT_MGR`** (Section Manager): 50% Part A / 50% Part B
+* **`SNR_MGR`** (Senior Manager): 50% Part A / 50% Part B
+* **`DGM`** (Deputy General Manager): 50% Part A / 50% Part B
+* **`GM`** (General Manager): 50% Part A / 50% Part B
+* **`VP`** (Vice President / Executive): 50% Part A / 50% Part B
 
-### B. Requester Master & Section Mapping Baseline
-* **Active Business Sections:** Exactly **12 Sections** across 8 departments (`DEC-031`).
-* **Active Business Mapping Coverage:** **12 / 12 (100% Confirmed)**:
-  - `TME1 -> e1` (`LIVE_APP795_MASTER`)
-  - `TMF1 -> f1`, `TMF2 -> f2`, `TMF3 -> f3` (`LEGACY_CREATOR_USAGE`)
-  - `TMG1 -> g_request`, `TMG2 -> g_request` (`USER_CONFIRMED_BUSINESS_RULE`)
-  - `TMH1 -> tmh`, `TMH2 -> tmh`, `TMH3 -> tmh` (`LEGACY_CREATOR_USAGE`)
-  - `TMS1 -> s1` (`LEGACY_CREATOR_USAGE`)
-  - `TMT1 -> t1`, `TMT2 -> t2` (`LEGACY_CREATOR_USAGE`)
-* **Distinct Requester User Accounts:** Exactly **9 Valid Cybozu Accounts** (`e1`, `f1`, `f2`, `f3`, `g_request`, `tmh`, `s1`, `t1`, `t2`), all verified `valid=true`.
-* **Retired Section:** `TMT3` is formally **`RETIRED`** (`DEC-032`); excluded from App 795 seeding and new MBO records. 11 App 53 references tracked under `OBS-005` with `UNDETERMINED` status.
-* **App 795 Runtime State:** Currently **1 / 12** (`TME1 -> e1` seeded and active). Enterprise seeding of remaining 11 mappings deferred to **Phase 5 Generic Routing** (`DEC-034`).
-* **Schema Baseline Preservation:** `App794.Requester_User.required = true` is retained; `ACR-001` is `DEFERRED / NOT REQUIRED` (`DEC-033`).
-* **Live Record Gate Boundary:** `LIVE_RECORD_READINESS_DEPENDENCY` is active (Annual record POST remains gated on Phase 3 and Phase 5).
+### B. 6 Core Competencies & Dynamic Score Formulation
+* `COMP_01` (Adaptability): `Included_In_Score = true`
+* `COMP_02` (Problem Solving): `Included_In_Score = true`
+* `COMP_03` (Customer Focus): `Included_In_Score = true`
+* `COMP_04` (Additional Value Creation): `Included_In_Score = true`
+* `COMP_05` (Safety Awareness): `Included_In_Score = true`
+* `COMP_06` (Compliance / COCE): `Included_In_Score = false` (Evaluated on 1-5 scale; excluded from Part B score calculation via dynamic denominator $N=5$).
+
+### C. Annual Profile Freeze Invariant
+* Profile snapshot resolved at Annual Record initialization from canonical position and frozen for the entire FY. Mid-year transfers/promotions do not alter active FY profile snapshot on App 794.
 
 ---
 
-## 3. Automated Test Evidence (116 / 116 Tests Passing)
+## 3. Automated Test Evidence (116 / 116 Tests Passing Baseline)
 
 * **Command:** `npm test`
-* **Test Suites Breakdown:**
-  - Existing Baseline Tests: 32 tests
-  - Safety Harness Tests (`SAFE-001`..`020`): 20 tests
-  - Annual Record Foundation (`ANNUAL-001`..`010`): 10 tests
-  - Employee Lookup Service (`EMP-001`..`018`): 18 tests
-  - Annual Record Initialization (`REC-001`..`020`): 20 tests
-  - Requester Mapping Audit (`REQMAP-001`..`016`): 16 tests
-* **Total:** **116 Defined, 116 Executed, 116 Passed, 0 Failed, 0 Skipped (100% Pass Rate)**.
-
----
-
-## 4. Defect & Observation Tracking
-
-* **Open Implementation Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are **`CLOSED`**).
-* **Open Governance Observations:**
-  - `OBS-001`: App 53 Data Quality (79 missing / 2 invalid `emp_text` records fail closed with `EMPLOYEE_SOURCE_INCOMPLETE`).
-  - `OBS-002`: PII Governance in Unit Test Fixtures (Mitigated via synthetic test data in `DEF-010`).
-  - `OBS-003`: App 794 `Manager_User` & `GM_User` Schema Drift (`required: true` on live App 794 vs `required: false` in repo spec; deferred cleanup assigned to Phase 5 Generic Routing).
-  - `OBS-004`: `TMT3` legacy account `t3` inactive (`valid=false`).
-  - `OBS-005`: 11 App 53 records reference retired `TMT3` (employment/stale status undetermined; fail-closed routing block maintained).
+* **Test Suite Status:** 116 Defined, 116 Executed, 116 Passed, 0 Failed, 0 Skipped (100% Pass Rate).
+* **Phase 3 Test Plan:** 20 proposed test cases (`PROF-001` through `PROF-020`) designed for implementation phase.
