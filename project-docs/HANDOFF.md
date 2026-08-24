@@ -154,3 +154,31 @@ To avoid false diffs from system metadata or server-side calculations, read-back
 | **App 53 (Employee Master)** | `NONE` | Read-Only | 0 writes |
 | **App 795 (Routing Master)** | `NONE` | Locked | 0 writes |
 | **Protected Apps (283..716)** | `NONE` | Locked | 0 writes |
+
+---
+
+## MBO-P02-WP-003 — APP 794 SCHEMA BLOCKER RESOLUTION PLAN (FOR REVIEW)
+
+### 1. Context & Problem Statement
+Live App 794 preflight confirms that 3 `USER_SELECT` fields (`Requester_User`, `Manager_User`, `GM_User`) are configured with `required: true` and `defaultValue: []`. During Phase 2 Annual Record Initialization, creating a record with empty array triggers a Kintone validation error, while guessing or artificially populating users violates business governance.
+
+### 2. Architecture Rationale
+1. **Requester Authorization Decoupling:** `Employee_Code` identifies who the evaluation is for. `Requester_User` is the Cybozu user account submitting objectives. Making `Requester_User.required = false` at the Kintone database schema level allows automated/batch annual initialization. The Business State Model strictly enforces requester authorization before submission at Stage 01.
+2. **Manager_User & GM_User Deprecation:** In MBO2026 Generic Routing (`DEC-019`), approvals use 4-stage dynamic multi-user arrays (`Manager_Level1/2_Approvers`, `GM_Level1/2_Approvers`) resolved from App 795. The single fields `Manager_User` and `GM_User` are legacy artifacts and must be non-required at schema level.
+
+### 3. Comprehensive Live Field Audit (328 Fields Total)
+* Total `required: true` fields: Exactly 7 (`Fiscal_Year`, `Record_Key`, `Employee_Code`, `Objective_Count`, `Requester_User`, `Manager_User`, `GM_User`).
+* Total `USER_SELECT` fields: Exactly 18 (15 are already `required: false`).
+* Total blocking unresolved fields: Exactly 3 (`Requester_User`, `Manager_User`, `GM_User`).
+
+### 4. Proposed Change Manifest (Target: App 794 ONLY)
+* `Requester_User`: `required: true` $	o$ `required: false` (Default: `[]`). Rollback: `required: true`.
+* `Manager_User`: `required: true` $	o$ `required: false` (Default: `[]`). Rollback: `required: true`.
+* `GM_User`: `required: true` $	o$ `required: false` (Default: `[]`). Rollback: `required: true`.
+
+### 5. Safety Protocol (When Execution is Approved)
+* App 794 ONLY (`FIELD_UPDATE` form configuration).
+* App 53: Permanent Read-Only (0 writes).
+* App 795: Untouched (0 writes).
+* Protected Apps: Untouched (0 writes).
+* Pre-write schema backup + exact read-back verification + immediate write window closure.
