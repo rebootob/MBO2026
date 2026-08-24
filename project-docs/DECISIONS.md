@@ -168,3 +168,27 @@
   5. **Exact Legacy Rounding vs Target Rule (Supersedes DEC-023):** Supersedes generic universal rounding assumptions in `DEC-023`. Live Kintone application-specific rounding is the authoritative legacy truth. Any unified rounding precision for MBO 2026 is designated as `PROPOSED_TARGET_RULE` subject to Phase 3 design approval.
   6. **100-Point Scale Normalization:** Final evaluation score is normalized to a 100-point scale via `((total_a + total_b) * 100) / 5`, while `total_a + total_b` represents the intermediate 5-point weighted score.
   7. **Preservation of DEC-023 Architecture:** All other architectural principles of `DEC-023` (4 Profile Families, Configuration-Driven Master, COCE exclusion, Hybrid Storage) remain fully effective.
+
+
+## DEC-036 — Appraiser Weight & Completeness Governance
+- **Date**: 2026-08-24
+- **Status**: FROZEN (User-Confirmed Core Governance Rule)
+- **Decision**:
+  1. **Two Distinct Weight Layers:** The scoring architecture strictly separates:
+     - **Weight Layer 1 (Appraiser Weight):** Weight distribution across multiple scoring appraisers ($1/K_{	ext{expected}}$).
+     - **Weight Layer 2 (Part A / Part B Weight):** Weight distribution between MBO objectives (Part A) and Competencies (Part B) (70/30, 60/40, or 50/50).
+  2. **Appraiser Weight Formulation:** Appraiser weight is dynamically derived from $K_{	ext{expected}}$ (resolved from the employee's annual Scoring Configuration):
+     - When $K_{	ext{expected}} = 1 \implies 	ext{Appraiser\_1\_Weight} = 100\%$.
+     - When $K_{	ext{expected}} = 2 \implies 	ext{Appraiser\_1\_Weight} = 50\%, 	ext{Appraiser\_2\_Weight} = 50\%$.
+     - General Equal-Weight Formula: $	ext{Appraiser\_Weight}_j = 1 / K_{	ext{expected}}$.
+     - Weights derive from $K_{	ext{expected}}$, never hardcoded to specific role titles.
+  3. **Competency Score Calculation:**
+     $$	ext{Competency\_Result}_i = \sum_{j=1}^{K_{	ext{expected}}} (	ext{Rating}_{i,j} 	imes 	ext{Appraiser\_Weight}_j) = rac{\sum 	ext{valid appraiser ratings}}{K_{	ext{expected}}}$$
+  4. **Strict Completeness Gate (Fail-Closed):** Scoring calculation is permitted **ONLY** when all expected appraisers have submitted valid ratings ($K_{	ext{valid}} == K_{	ext{expected}}$). If $K_{	ext{valid}} 
+eq K_{	ext{expected}}$, calculation is blocked, returning `APPRAISER_RATING_INCOMPLETE` with no partial scoring.
+  5. **No Automatic Weight Redistribution:** If $K_{	ext{expected}} = 2$ and only one appraiser has submitted ratings, the system **MUST NOT** redistribute weight to 100% for the completed appraiser. It must fail closed until the second appraiser completes evaluation.
+  6. **Current Deployed Truth & Mathematical Equivalence:**
+     - Operational & Management ($K_{	ext{expected}} = 2$): Legacy $\sum 	ext{ratings} / 10$ or $/ 14$ is mathematically equivalent to 50/50 appraiser weighting across 5 or 7 scored competencies.
+     - Executive GM & VP ($K_{	ext{expected}} = 1$): Legacy $(\sum 	ext{ratings} 	imes 2) / 14 = \sum 	ext{ratings} / 7$ is mathematically equivalent to a single appraiser contributing 100%.
+  7. **Annual Profile Snapshot:** $K_{	ext{expected}}$ and `Appraiser_Weight_Config` are resolved and snapshotted at Annual Record Initialization and frozen for the full FY under `DEC-024`.
+  8. **Separation of Scoring from Routing:** Scoring Appraiser count and weight belong strictly to the Scoring Configuration and are decoupled from workflow routing slots or stage approver reassignments.

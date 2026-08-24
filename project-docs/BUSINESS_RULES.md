@@ -128,3 +128,12 @@
 * **3-Mode Verification:** Implementer -> Verifier -> Tester/Auditor.
 * **Gate Criteria:** Static, Unit, Browser, Security, Regression, No-Orphan, and Guided UX Gates before phase completion.
 
+
+
+### Appraiser Weight & Scoring Completeness Governance (DEC-036)
+1. **Appraiser Weight Layer:** Appraiser weights are derived from $K_{	ext{expected}}$:
+   - $K_{	ext{expected}} = 1 \implies 	ext{Appraiser 1} = 100\%$ (GM / VP current deployed baseline).
+   - $K_{	ext{expected}} = 2 \implies 	ext{Appraiser 1} = 50\%, 	ext{Appraiser 2} = 50\%$ (Staff, Japan, Asst Mgr, Sect Mgr, Snr Mgr, DGM).
+2. **Completeness Gate ($K_{	ext{valid}} == K_{	ext{expected}}$):** Partial appraiser evaluation fails closed with `APPRAISER_RATING_INCOMPLETE`. No partial scoring is permitted.
+3. **No Weight Redistribution:** A single completed appraiser in a 2-appraiser profile never inherits 100% weight.
+4. **Layer Separation:** Appraiser Weight (Layer 1) is completely decoupled from Part A / Part B Weight (Layer 2) and workflow routing.
