@@ -2,8 +2,8 @@
  * Annual Record Service - App 794 Record Initialization & Duplicate Prevention
  */
 
-import { getJapaneseFiscalYear, generateRecordKey, isValidRecordKeyFormat } from '../core/fiscal-year-engine.js';
-import { EmployeeService, EmployeeLookupError } from './employee-service.js';
+import { getJapaneseFiscalYear, generateRecordKey } from '../core/fiscal-year-engine.js';
+import { EmployeeService } from './employee-service.js';
 
 export class AnnualRecordError extends Error {
   constructor(code, userMessageTH, userMessageEN, cause = null) {
@@ -38,6 +38,43 @@ export const SYSTEM_FIELDS_ALLOWLIST = [
   'Updated_by',
   'Record_number'
 ];
+
+/**
+ * Deterministic Value Normalizer & Deep Comparator (DEF-014)
+ */
+export function areNormalizedValuesEqual(valA, valB) {
+  if (valA === valB) return true;
+  if (valA === undefined || valA === null || valB === undefined || valB === null) {
+    return valA === valB;
+  }
+
+  // Handle Arrays (e.g. USER_SELECT: [], [{ code: "userA" }])
+  if (Array.isArray(valA) && Array.isArray(valB)) {
+    if (valA.length !== valB.length) return false;
+    for (let i = 0; i < valA.length; i++) {
+      if (!areNormalizedValuesEqual(valA[i], valB[i])) return false;
+    }
+    return true;
+  }
+
+  if (Array.isArray(valA) || Array.isArray(valB)) return false;
+
+  // Handle Objects (e.g. { code: "userA" })
+  if (typeof valA === 'object' && typeof valB === 'object') {
+    const keysA = Object.keys(valA).sort();
+    const keysB = Object.keys(valB).sort();
+    if (keysA.length !== keysB.length) return false;
+    for (let i = 0; i < keysA.length; i++) {
+      const k = keysA[i];
+      if (k !== keysB[i]) return false;
+      if (!areNormalizedValuesEqual(valA[k], valB[k])) return false;
+    }
+    return true;
+  }
+
+  // Handle String / Number normalization
+  return String(valA).trim() === String(valB).trim();
+}
 
 export class AnnualRecordService {
   /**
@@ -233,6 +270,14 @@ export class AnnualRecordService {
    * Normalize and verify read-back record against expected payload and schema rules (DEF-014)
    */
   static verifyNormalizedReadBack(writtenRecord, postPayload, schemaProperties = {}) {
+    if (!writtenRecord || typeof writtenRecord !== 'object') {
+      throw new AnnualRecordError(
+        'READBACK_RECORD_INVALID',
+        'โครงสร้างข้อมูลที่อ่านกลับไม่ถูกต้อง',
+        'Invalid read-back record object received.'
+      );
+    }
+
     // Tier A: Explicit Written Fields
     for (const fieldCode of EXPLICIT_WRITE_FIELDS) {
       const expectedVal = postPayload[fieldCode]?.value ?? '';
@@ -240,49 +285,67 @@ export class AnnualRecordService {
       if (actualVal !== expectedVal) {
         throw new AnnualRecordError(
           'READBACK_VERIFICATION_MISMATCH',
-          `ข้อมูลที่อ่านกลับในฟิลด์ ${fieldCode} ไม่ตรงกับข้อมูลที่บันทึก (คาดหวัง: ${expectedVal}, ได้รับ: ${actualVal})`,
+          `ข้อมูลที่อ่านกลับในฟิลด์ ${fieldCode} ไม่ตรงกับข้อมูลที่บันทึก`,
           `Read-back field mismatch on ${fieldCode}. Expected: ${expectedVal}, received: ${actualVal}`
         );
       }
     }
 
-    // Tier B: Approved Kintone Server Defaults
+    // Tier B: Approved Kintone Server Defaults (Deep Equality & Field Presence)
     for (const [code, prop] of Object.entries(schemaProperties)) {
       if (EXPLICIT_WRITE_FIELDS.includes(code) || SYSTEM_FIELDS_ALLOWLIST.includes(code)) {
         continue;
       }
       if (prop?.defaultValue !== undefined && prop?.type !== 'CALC') {
-        const actualVal = writtenRecord[code]?.value;
-        const expectedDefault = prop.defaultValue;
-        
-        // Handle array defaults (e.g. USER_SELECT: []) vs primitives
-        if (Array.isArray(expectedDefault)) {
-          if (!Array.isArray(actualVal) || actualVal.length !== expectedDefault.length) {
-            throw new AnnualRecordError(
-              'READBACK_DEFAULT_MISMATCH',
-              `ค่าเริ่มต้นของฟิลด์ ${code} ไม่ตรงตาม Schema`,
-              `Default value mismatch on field ${code}. Expected: ${JSON.stringify(expectedDefault)}, received: ${JSON.stringify(actualVal)}`
-            );
-          }
-        } else if (actualVal !== undefined && String(actualVal) !== String(expectedDefault)) {
+        const fieldObj = writtenRecord[code];
+        if (fieldObj === undefined) {
           throw new AnnualRecordError(
             'READBACK_DEFAULT_MISMATCH',
-            `ค่าเริ่มต้นของฟิลด์ ${code} ไม่ตรงตาม Schema (คาดหวัง: ${expectedDefault}, ได้รับ: ${actualVal})`,
-            `Default value mismatch on field ${code}. Expected: ${expectedDefault}, received: ${actualVal}`
+            `ฟิลด์ที่มีค่าเริ่มต้นตาม Schema (${code}) ขาดหายไปในข้อมูลที่อ่านกลับ`,
+            `Field with default value ${code} is missing from read-back record.`
+          );
+        }
+
+        const actualVal = fieldObj.value;
+        const expectedDefault = prop.defaultValue;
+
+        if (!areNormalizedValuesEqual(actualVal, expectedDefault)) {
+          throw new AnnualRecordError(
+            'READBACK_DEFAULT_MISMATCH',
+            `ค่าเริ่มต้นของฟิลด์ ${code} ไม่ตรงตาม Schema`,
+            `Default value mismatch on field ${code}. Expected: ${JSON.stringify(expectedDefault)}, received: ${JSON.stringify(actualVal)}`
           );
         }
       }
     }
 
-    // Tier D: Calculated Fields (CALC) verification
+    // Tier D: Calculated Fields (CALC) Contract Verification
     for (const [code, prop] of Object.entries(schemaProperties)) {
       if (prop?.type === 'CALC') {
-        // Assert CALC fields are not written in client POST payload
-        if (postPayload[code] !== undefined) {
+        // 1. Assert CALC fields are NOT present in client POST payload
+        if (postPayload && postPayload[code] !== undefined) {
           throw new AnnualRecordError(
             'CALC_FIELD_WRITE_PROHIBITED',
             `ไม่อนุญาตให้เขียนข้อมูลลงฟิลด์คำนวณ (${code})`,
             `Direct client write prohibited for calculated field: ${code}`
+          );
+        }
+
+        // 2. Assert CALC field IS present in read-back record
+        if (writtenRecord[code] === undefined) {
+          throw new AnnualRecordError(
+            'CALC_READBACK_MISSING',
+            `ฟิลด์คำนวณ (${code}) ขาดหายไปในข้อมูลที่อ่านกลับ`,
+            `Calculated field ${code} is missing from read-back record.`
+          );
+        }
+
+        // 3. Assert CALC field has a valid server-managed structure
+        if (typeof writtenRecord[code] !== 'object' || writtenRecord[code] === null || !('value' in writtenRecord[code])) {
+          throw new AnnualRecordError(
+            'CALC_READBACK_INVALID',
+            `โครงสร้างข้อมูลของฟิลด์คำนวณ (${code}) ไม่ถูกต้อง`,
+            `Invalid calculated field format on ${code}.`
           );
         }
       }

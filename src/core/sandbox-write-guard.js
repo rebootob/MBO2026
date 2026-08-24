@@ -156,33 +156,60 @@ export function assertWorkPackageAuthorization(authConfig, requestConfig) {
  * Enforces that a rollback DELETE operation can ONLY target the exact record ID created by the active Work Package.
  */
 export function assertRollbackAuthorization(authConfig, rollbackRequest) {
-  // First assert standard Work Package authorization
-  assertWorkPackageAuthorization(authConfig, rollbackRequest);
-
   if (!authConfig || typeof authConfig !== 'object' || !rollbackRequest || typeof rollbackRequest !== 'object') {
     throw new Error('ROLLBACK BLOCKED: Missing authorization or request configuration.');
   }
 
+  // 1. Strict Operation Contract: rollback operation MUST be RECORD_DELETE
+  if (rollbackRequest.operation !== 'RECORD_DELETE') {
+    throw new Error(`ROLLBACK BLOCKED: Invalid rollback operation '${rollbackRequest.operation || 'UNKNOWN'}'. Rollback requires 'RECORD_DELETE'.`);
+  }
+
+  // 2. Exact Record ID Contract
   const { allowedRecordId } = authConfig;
   const { targetRecordId, targetRecordIds } = rollbackRequest;
 
-  if (!allowedRecordId || (typeof allowedRecordId !== 'string' && typeof allowedRecordId !== 'number')) {
+  if (allowedRecordId === undefined || allowedRecordId === null || String(allowedRecordId).trim() === '') {
     throw new Error('ROLLBACK BLOCKED: Missing or invalid allowedRecordId in rollback authorization.');
   }
 
-  if (targetRecordIds && Array.isArray(targetRecordIds)) {
-    if (targetRecordIds.length !== 1 || String(targetRecordIds[0]) !== String(allowedRecordId)) {
-      throw new Error(`ROLLBACK BLOCKED: Target record IDs array mismatch (allowed: ${allowedRecordId}, requested: [${targetRecordIds.join(', ')}]).`);
-    }
+  // Reject if both targetRecordId and targetRecordIds are provided
+  if (targetRecordId !== undefined && targetRecordIds !== undefined) {
+    throw new Error('ROLLBACK BLOCKED: Prohibited ambiguous request containing both targetRecordId and targetRecordIds.');
   }
 
-  if (targetRecordId !== undefined) {
-    if (String(targetRecordId) !== String(allowedRecordId)) {
-      throw new Error(`ROLLBACK BLOCKED: Target record ID mismatch (allowed: ${allowedRecordId}, requested: ${targetRecordId}).`);
-    }
-  } else if (!targetRecordIds) {
+  // Reject if neither targetRecordId nor targetRecordIds is provided
+  if (targetRecordId === undefined && targetRecordIds === undefined) {
     throw new Error('ROLLBACK BLOCKED: Missing target record ID in rollback request.');
   }
+
+  let requestedId = null;
+
+  if (targetRecordId !== undefined) {
+    if (targetRecordId === null || (typeof targetRecordId !== 'string' && typeof targetRecordId !== 'number') || String(targetRecordId).trim() === '') {
+      throw new Error('ROLLBACK BLOCKED: Invalid targetRecordId format.');
+    }
+    requestedId = String(targetRecordId).trim();
+  } else if (targetRecordIds !== undefined) {
+    if (!Array.isArray(targetRecordIds)) {
+      throw new Error('ROLLBACK BLOCKED: targetRecordIds must be a valid array.');
+    }
+    if (targetRecordIds.length !== 1) {
+      throw new Error(`ROLLBACK BLOCKED: Target record IDs array must contain exactly 1 ID (requested: [${targetRecordIds.join(', ')}]).`);
+    }
+    const singleId = targetRecordIds[0];
+    if (singleId === null || singleId === undefined || (typeof singleId !== 'string' && typeof singleId !== 'number') || String(singleId).trim() === '') {
+      throw new Error('ROLLBACK BLOCKED: Invalid record ID format inside targetRecordIds array.');
+    }
+    requestedId = String(singleId).trim();
+  }
+
+  if (requestedId !== String(allowedRecordId).trim()) {
+    throw new Error(`ROLLBACK BLOCKED: Target record ID mismatch (allowed: ${allowedRecordId}, requested: ${requestedId}).`);
+  }
+
+  // 3. Work Package Authorization asserting active window, backup gate, app allow-list, manifest
+  assertWorkPackageAuthorization(authConfig, rollbackRequest);
 
   return true;
 }

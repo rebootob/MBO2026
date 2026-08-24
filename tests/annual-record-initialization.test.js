@@ -4,9 +4,10 @@ import {
   AnnualRecordService,
   AnnualRecordError,
   EXPLICIT_WRITE_FIELDS,
-  SYSTEM_FIELDS_ALLOWLIST
+  SYSTEM_FIELDS_ALLOWLIST,
+  areNormalizedValuesEqual
 } from '../src/services/annual-record-service.js';
-import { EmployeeService, EmployeeLookupError } from '../src/services/employee-service.js';
+import { EmployeeService } from '../src/services/employee-service.js';
 import { getJapaneseFiscalYear, generateRecordKey } from '../src/core/fiscal-year-engine.js';
 import {
   DISCOVERY_MODE,
@@ -275,38 +276,91 @@ test('REC-010: Create attempt with closed write window (WRITE_ALLOWED_APPS = [])
   );
 });
 
-test('REC-011: Normalized read-back verification detects unmapped field modifications and default mismatches (DEF-014)', () => {
+test('REC-011: Normalized read-back Tier B default equality and Tier D CALC structural verification (DEF-014)', () => {
   const postPayload = AnnualRecordService.buildInitializationPayload('FY2026', mockSyntheticEmployee);
 
   const schemaProperties = {
     ...mockValidProperties,
     Objective_Count: { type: 'DROP_DOWN', defaultValue: '4' },
+    Requester_User: { type: 'USER_SELECT', defaultValue: [] },
+    Manager_User: { type: 'USER_SELECT', defaultValue: [{ code: 'userM' }] },
     Total_Weight: { type: 'CALC' }
   };
 
-  // Valid matching readback with valid default
+  // Valid matching readback with valid primitive, array defaults, and server CALC
   const validWrittenRecord = {
     ...postPayload,
     $id: { value: '901' },
     $revision: { value: '1' },
-    Objective_Count: { value: '4' }
+    Objective_Count: { value: '4' },
+    Requester_User: { value: [] },
+    Manager_User: { value: [{ code: 'userM' }] },
+    Total_Weight: { value: '100' }
   };
   assert.equal(AnnualRecordService.verifyNormalizedReadBack(validWrittenRecord, postPayload, schemaProperties), true);
 
-  // Mismatched server default (Tier B failure)
-  const corruptDefaultRecord = {
+  // Mismatched primitive server default (Tier B failure: "4" vs "2")
+  const corruptPrimitiveDefault = {
     ...validWrittenRecord,
-    Objective_Count: { value: '2' } // Mismatched default
+    Objective_Count: { value: '2' }
   };
   assert.throws(
-    () => AnnualRecordService.verifyNormalizedReadBack(corruptDefaultRecord, postPayload, schemaProperties),
+    () => AnnualRecordService.verifyNormalizedReadBack(corruptPrimitiveDefault, postPayload, schemaProperties),
     (err) => {
       assert.equal(err.code, 'READBACK_DEFAULT_MISMATCH');
       return true;
     }
   );
 
-  // Unexpected populated business field (Tier E failure)
+  // Missing primitive default field in read-back (Tier B failure)
+  const missingPrimitiveDefault = { ...validWrittenRecord };
+  delete missingPrimitiveDefault.Objective_Count;
+  assert.throws(
+    () => AnnualRecordService.verifyNormalizedReadBack(missingPrimitiveDefault, postPayload, schemaProperties),
+    (err) => {
+      assert.equal(err.code, 'READBACK_DEFAULT_MISMATCH');
+      return true;
+    }
+  );
+
+  // Mismatched array server default (Tier B failure: [{ code: "userM" }] vs [{ code: "userOTHER" }])
+  const corruptArrayDefault = {
+    ...validWrittenRecord,
+    Manager_User: { value: [{ code: 'userOTHER' }] }
+  };
+  assert.throws(
+    () => AnnualRecordService.verifyNormalizedReadBack(corruptArrayDefault, postPayload, schemaProperties),
+    (err) => {
+      assert.equal(err.code, 'READBACK_DEFAULT_MISMATCH');
+      return true;
+    }
+  );
+
+  // Tier D: Direct client attempt to write CALC field in payload throws CALC_FIELD_WRITE_PROHIBITED
+  const corruptPayloadWithCalc = {
+    ...postPayload,
+    Total_Weight: { value: '100' }
+  };
+  assert.throws(
+    () => AnnualRecordService.verifyNormalizedReadBack(validWrittenRecord, corruptPayloadWithCalc, schemaProperties),
+    (err) => {
+      assert.equal(err.code, 'CALC_FIELD_WRITE_PROHIBITED');
+      return true;
+    }
+  );
+
+  // Tier D: CALC field missing from server read-back record throws CALC_READBACK_MISSING
+  const corruptReadbackMissingCalc = { ...validWrittenRecord };
+  delete corruptReadbackMissingCalc.Total_Weight;
+  assert.throws(
+    () => AnnualRecordService.verifyNormalizedReadBack(corruptReadbackMissingCalc, postPayload, schemaProperties),
+    (err) => {
+      assert.equal(err.code, 'CALC_READBACK_MISSING');
+      return true;
+    }
+  );
+
+  // Tier E: Unexpected populated business field throws UNEXPECTED_BUSINESS_FIELD_POPULATED
   const corruptFieldRecord = {
     ...validWrittenRecord,
     Manager_Score_1: { value: '95' }
@@ -376,8 +430,8 @@ test('REC-017: Requester_User required on live schema without resolved value blo
   assert.match(preflight.blockedReason, /REQUIRED_FIELD_UNRESOLVED: Requester_User/);
 });
 
-test('REC-018: Rollback authorization permits only exact newly-created record deletion and denies mismatches (DEF-011)', () => {
-  const authConfig = {
+test('REC-018: Rollback exact-record authorization contract and boundary enforcement (DEF-011)', () => {
+  const baseAuthConfig = {
     workPackageId: 'MBO-P02-WP-003',
     allowedAppIds: [794],
     allowedOperations: ['RECORD_DELETE'],
@@ -387,43 +441,137 @@ test('REC-018: Rollback authorization permits only exact newly-created record de
     dryRunBypassDiscovery: true
   };
 
-  const reqExact = {
-    workPackageId: 'MBO-P02-WP-003',
-    appId: 794,
-    operation: 'RECORD_DELETE',
-    targetRecordId: '905',
-    manifest: { expectedChanges: [{ recordId: '905', action: 'DELETE' }] }
-  };
+  const baseManifest = { expectedChanges: [{ recordId: '905', action: 'DELETE' }] };
 
-  const reqMismatched = {
-    workPackageId: 'MBO-P02-WP-003',
-    appId: 794,
-    operation: 'RECORD_DELETE',
-    targetRecordId: '904', // Mismatched ID!
-    manifest: { expectedChanges: [{ recordId: '904', action: 'DELETE' }] }
-  };
+  // 1. 905 -> 905 (PASS)
+  assert.equal(
+    assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordId: '905',
+      manifest: baseManifest
+    }),
+    true
+  );
 
-  const reqMultiRecord = {
-    workPackageId: 'MBO-P02-WP-003',
-    appId: 794,
-    operation: 'RECORD_DELETE',
-    targetRecordIds: ['905', '906'], // Multi-record!
-    manifest: { expectedChanges: [{ recordId: '905', action: 'DELETE' }] }
-  };
-
-  // Exact match allows
-  assert.equal(assertRollbackAuthorization(authConfig, reqExact), true);
-
-  // Mismatched ID throws
+  // 2. 905 -> 904 (DENY)
   assert.throws(
-    () => assertRollbackAuthorization(authConfig, reqMismatched),
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordId: '904',
+      manifest: baseManifest
+    }),
     /Target record ID mismatch/
   );
 
-  // Multi-record throws
+  // 3. 905 -> 906 (DENY)
   assert.throws(
-    () => assertRollbackAuthorization(authConfig, reqMultiRecord),
-    /Target record IDs array mismatch/
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordId: '906',
+      manifest: baseManifest
+    }),
+    /Target record ID mismatch/
+  );
+
+  // 4. 905 -> ["905"] (PASS)
+  assert.equal(
+    assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordIds: ['905'],
+      manifest: baseManifest
+    }),
+    true
+  );
+
+  // 5. 905 -> ["905", "906"] (DENY: multi-record prohibited)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordIds: ['905', '906'],
+      manifest: baseManifest
+    }),
+    /must contain exactly 1 ID/
+  );
+
+  // 6. 905 -> "905" passed as non-array targetRecordIds (DENY)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordIds: '905',
+      manifest: baseManifest
+    }),
+    /targetRecordIds must be a valid array/
+  );
+
+  // 7. Missing target ID (DENY)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      manifest: baseManifest
+    }),
+    /Missing target record ID/
+  );
+
+  // 8. Operation RECORD_CREATE (DENY)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_CREATE',
+      targetRecordId: '905',
+      manifest: baseManifest
+    }),
+    /Rollback requires 'RECORD_DELETE'/
+  );
+
+  // 9. Operation RECORD_UPDATE (DENY)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 794,
+      operation: 'RECORD_UPDATE',
+      targetRecordId: '905',
+      manifest: baseManifest
+    }),
+    /Rollback requires 'RECORD_DELETE'/
+  );
+
+  // 10. App 795 (DENY)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-003',
+      appId: 795,
+      operation: 'RECORD_DELETE',
+      targetRecordId: '905',
+      manifest: baseManifest
+    }),
+    /App 795 is not in the authorized allow-list/
+  );
+
+  // 11. Wrong Work Package ID (DENY)
+  assert.throws(
+    () => assertRollbackAuthorization(baseAuthConfig, {
+      workPackageId: 'MBO-P02-WP-001',
+      appId: 794,
+      operation: 'RECORD_DELETE',
+      targetRecordId: '905',
+      manifest: baseManifest
+    }),
+    /Work package mismatch/
   );
 });
 
