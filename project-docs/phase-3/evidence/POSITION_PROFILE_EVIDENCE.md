@@ -1,7 +1,7 @@
 # App 53 Position to Evaluation Group & Profile Family Evidence Matrix
-## Complete Sanitized Enumeration of All 63 Raw Position Values with Deterministic Normalization Policy
+## Complete Sanitized Enumeration of All 63 Raw Position Values with Reconciled Normalization Policy
 
-> **Audit Date:** 2026-08-24T16:32:00+07:00  
+> **Audit Date:** 2026-08-24T16:38:00+07:00  
 > **Source App:** App 53 (Employee Master - Read Only)  
 > **App 53 Total Visible Records:** 275  
 > **Total Distinct Raw Position Values:** 63  
@@ -49,7 +49,7 @@
 | 23 | `Marketing Engineer` | 3 | Staff & Chief | `PROFILE_STAFF_CHIEF` | **70 / 30** | **`PROFILE_MAPPING_RESOLVED`** | **`DIRECT_LEGACY_MATCH`** | Direct non-conflicting legacy match in App 283 [App 283: 3 recs] | HIGH |
 | 24 | `Engineering Staff` | 3 | Staff & Chief | `PROFILE_STAFF_CHIEF` | **70 / 30** | **`PROFILE_MAPPING_RESOLVED`** | **`DIRECT_LEGACY_MATCH`** | Direct non-conflicting legacy match in App 283 [App 283: 7 recs] | HIGH |
 | 25 | `Senior Chief` | 3 | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | **`PROFILE_MAPPING_AMBIGUOUS`** | **`NO_DIRECT_EVIDENCE`** | No direct legacy PMS match [*(None in legacy PMS)*]; fails closed until HR confirmation | LOW |
-| 26 | ` Chief` | 3 | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | **`PROFILE_MAPPING_AMBIGUOUS`** | **`NO_DIRECT_EVIDENCE`** | No direct legacy PMS match [*(None in legacy PMS)*]; fails closed until HR confirmation | LOW |
+| 26 | ` Chief` | 3 | Staff & Chief | `PROFILE_STAFF_CHIEF` | **70 / 30** | **`PROFILE_MAPPING_RESOLVED`** | **`DETERMINISTIC_TITLE_NORMALIZATION`** | normalize_title(' Chief') -> 'chief' -> exact canonical Chief | HIGH |
 | 27 | `President` | 2 | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | **`PROFILE_MAPPING_AMBIGUOUS`** | **`NO_DIRECT_EVIDENCE`** | No direct legacy PMS match [*(None in legacy PMS)*]; fails closed until HR confirmation | LOW |
 | 28 | `Supoort Marketing Staff` | 2 | Staff & Chief | `PROFILE_STAFF_CHIEF` | **70 / 30** | **`PROFILE_MAPPING_RESOLVED`** | **`DIRECT_LEGACY_MATCH`** | Direct non-conflicting legacy match in App 283 [App 283: 15 recs] | HIGH |
 | 29 | `Manager` | 2 | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | *(Pending HR Confirmation)* | **`PROFILE_MAPPING_AMBIGUOUS`** | **`NO_DIRECT_EVIDENCE`** | No direct legacy PMS match [*(None in legacy PMS)*]; fails closed until HR confirmation | LOW |
@@ -95,6 +95,6 @@
 * **Total Evaluated Records across Matrix:** **`275`**
 * **Reconciliation Check:** `sum(Exact_Record_Count) == 275` $\implies$ **`100% RECONCILED (MATCH)`**
 * **Distinct Raw Position Values:** **`63 / 63 ENUMERATED`**
-* **Resolved Positions (`PROFILE_MAPPING_RESOLVED`):** **`32 Values`** (Representing 122 records with direct non-conflicting legacy proof or frozen rule)
-* **Ambiguous Positions (`PROFILE_MAPPING_AMBIGUOUS`):** **`30 Values`** (Representing 150 records, failing closed until explicit HR confirmation)
+* **Resolved Positions (`PROFILE_MAPPING_RESOLVED`):** **`33 Values`** (Representing 125 records)
+* **Ambiguous Positions (`PROFILE_MAPPING_AMBIGUOUS`):** **`29 Values`** (Representing 147 records, failing closed until explicit HR confirmation)
 * **Invalid Positions (`PROFILE_SOURCE_INVALID`):** **`1 Value (<EMPTY>)`** (Representing 3 records, failing closed)

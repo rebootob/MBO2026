@@ -146,7 +146,7 @@ At Annual Record Initialization, the following configuration attributes are gove
 | 1 | `Evaluation_Profile_Code` | **`PHYSICAL_APP794_FIELD`** | `Evaluation_Profile_Code` | `SINGLE_LINE_TEXT` | Immutable record snapshot of profile code |
 | 2 | `Profile_Family` | **`PHYSICAL_APP794_FIELD`** | `Profile_Family` | `SINGLE_LINE_TEXT` | Immutable record snapshot of profile family |
 | 3 | `Scoring_Config_Code` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Code` | `SINGLE_LINE_TEXT` | Versioned scoring config identifier |
-| 4 | `Scoring_Config_Version` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Version` | `SINGLE_LINE_TEXT` | Immutable version SHA/tag for historical playback |
+| 4 | `Scoring_Config_Version` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Version` | `SINGLE_LINE_TEXT` | Immutable version identifier (e.g. semantic version, immutable config revision, configuration ID, or Git commit SHA/tag) |
 | 5 | `Expected_Appraiser_Count` | **`PHYSICAL_APP794_FIELD`** | `Expected_Appraiser_Count` | `NUMBER` | Snapshot of $K_{\text{expected}}$ for completeness gate |
 | 6 | `PartA_Weight` | **`PHYSICAL_APP794_FIELD`** | `PartA_Weight` | `NUMBER` | Snapshot of Part A percentage weight |
 | 7 | `PartB_Weight` | **`PHYSICAL_APP794_FIELD`** | `PartB_Weight` | `NUMBER` | Snapshot of Part B percentage weight |
