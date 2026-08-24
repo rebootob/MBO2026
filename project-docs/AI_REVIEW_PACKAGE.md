@@ -8,7 +8,7 @@
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`LOCKED / NOT STARTED`**  
-> **Last Updated:** 2026-08-24T18:34:00+07:00  
+> **Last Updated:** 2026-08-24T18:41:00+07:00  
 
 ---
 
@@ -18,7 +18,7 @@
 | :--- | :--- | :--- |
 | **Previous Approved Safe Commit** | `8fb306e` | Phase 2 Closed Baseline (Gates Passed & Frozen) |
 | **Phase 3 WP-001 Plan Commit** | `6e72553` | Frozen Authoritative WP-001 Implementation Plan (`PLAN_GATE = PASS`) |
-| **Phase 3 Security & Migration Commit**| `59950ef` | Governance Commit: `docs: add employee isolation and legacy migration governance` |
+| **Phase 3 WP-002A Target Commit** | `80a3060` | Implementation Commit: `fix: align wp-002a status security and migration governance` |
 | **Evidence & Review Commit** | *(Commit B / Review Head)* | Commit B: Updated Phase 3 Review Package Target Metadata |
 
 ---
@@ -29,17 +29,16 @@
 | :--- | :--- |
 | **Work Package ID** | `MBO-P03-WP-002A` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
-| **Work Package Name** | `HYBRID PROFILE / SCORING MASTER FOUNDATION` |
+| **Work Package Name** | `KINTONE-ONLY PROFILE / SCORING MASTER FOUNDATION` |
 | **Mode** | **`CONTROLLED IMPLEMENTATION (SANDBOX & UNIT ONLY)`** |
 | **Claimed Status** | **`IMPLEMENTATION_GATE: PASS (131/131 Unit Tests Passing)`** |
-| **Security Decision** | **`DEC-039: STRICT EMPLOYEE RECORD DATA ISOLATION`** ([`project-docs/SECURITY_MODEL.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/SECURITY_MODEL.md)) |
-| **Identity Binding** | Security is bound to verified **Authenticated Identity**, NOT `Employee_Code` alone |
-| **Shared Account Conflict** | Documented `SECURITY_ARCHITECTURE_DEPENDENCY` in [`project-docs/OPEN_ISSUES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/OPEN_ISSUES.md) |
-| **Security Boundary** | Native permissions & server-side access controls (JS/CSS filters are UX only) |
-| **Release Blocker Test** | Mandatory test `EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B` across URLs, REST APIs, and exports |
-| **Migration Decision** | **`DEC-040: LEGACY 8-APP PMS DATA MIGRATION GOVERNANCE`** (`LEGACY_MIGRATION_STATUS = DEFERRED`) |
-| **Legacy 8 Apps Status** | Apps 283, 305, 307, 310, 640, 643, 715, 716 remain **READ ONLY** |
-| **Migration Requirements** | Post-stabilization, mandatory dry-run (`DRY_RUN = true`), zero score recalculation, source traceability (`Legacy_Source_App_ID + Legacy_Source_Record_ID`), complete reconciliation |
+| **COCE Item Index Correction** | `COMP_SET_OPERATIONAL_V1.coceItemIndex = 6` & `COMP_SET_MANAGEMENT_V1.coceItemIndex = 6` in [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js) |
+| **Management Scored Indexes** | `[1, 2, 3, 4, 5, 7, 8]` (COCE item 6 excluded from score) |
+| **COCE Direct Test Assertions** | Direct regression assertions in [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) verifying `coceItemIndex === 6` for both sets |
+| **Hardened Confidentiality Rule**| All active competency rating fields belonging to resolved competency set (including indexes 1..8) are confidential by default ([`project-docs/SECURITY_MODEL.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/SECURITY_MODEL.md)) |
+| **Migration Rollback Governance**| Rollback operates strictly by `Migration_Batch_ID` reverting target records created by that batch only; legacy apps 283..716 are NEVER modified ([`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) & [`project-docs/BUSINESS_RULES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/BUSINESS_RULES.md)) |
+| **Sequential Section Numbers** | Section numbering in [`project-docs/BUSINESS_RULES.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/BUSINESS_RULES.md) corrected to sequential Sections 1 through 17 |
+| **Active Kintone-Only Naming** | Active naming updated to `KINTONE-ONLY PROFILE / SCORING MASTER FOUNDATION` across all living docs while preserving historical `DEC-037` text |
 | **Target Architecture** | **`PROFILE_CONFIGURATION_STORAGE = KINTONE_ONLY (DEC-038)`** |
 | **Source Module** | [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js) |
 | **Unit Test Suite** | [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (15/15 new tests passing; 131/131 total suite passing) |
@@ -47,7 +46,6 @@
 | **Deployed Rounding Fidelity** | Preserved exact deployed rounding differences (Section Mgr App 305 / Senior Mgr App 643 explicit ROUND 2 vs DGM App 307 / GM App 640 / VP App 715 / Staff App 283 / Japan App 716 / Asst Mgr App 310 per-app CALC) |
 | **Effective Period Validation** | `Effective_From` and `Effective_To` strings strictly required; missing dates fail with `MISSING_EFFECTIVE_PERIOD` |
 | **Allowed Rounding Rules** | Validates `ALLOWED_ROUNDING_RULES`; invalid codes fail with `INVALID_ROUNDING_RULE` |
-| **COCE Governance Validation** | Enforces `coceIncludedInScore = false` across `KNOWN_COMPETENCY_SETS` |
 | **Master Record Key Formulation** | `generateMasterRecordKey(profileCode, version)` $\to$ `{Profile_Code}::{Scoring_Config_Version}` |
 | **Immutable Payload Hash** | `computeConfigurationHash(payload)` computed over 19 immutable fields; audit fields (20..23) excluded |
 | **Part A Scoring Modes** | Staff..DGM: `DIFFICULTY_ACHIEVEMENT_MATRIX`; GM/VP: `ACHIEVEMENT_DIRECT` |
