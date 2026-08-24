@@ -11,8 +11,8 @@
 > **Kintone Write Operations in Planning:** `0 (Strict Read-Only Mode Active)`  
 > **Evidence Matrices:**  
 > - Scoring Truth & Active Lineage: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)  
-> - Position Mapping Inventory: [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)  
-> - Competency Definitions: [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)  
+> - App 53 Position Enumeration (63 Positions): [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)  
+> - Exact Per-App Competency Matrix (8 Apps): [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)  
 
 ---
 
@@ -76,7 +76,7 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 | **General Manager** | `PROFILE_EXECUTIVE` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | **1** (Capacity: 1..2) | App 640 (Rev 542) / DEC-035 |
 | **Vice President** | `PROFILE_EXECUTIVE` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | **1** (Capacity: 1..2) | App 715 (Rev 543) / DEC-035 |
 
-*Note on Position Resolution:* All 63 raw position strings in App 53 are audited in [`POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md). Unknown/empty positions fail closed (`PROFILE_SOURCE_INVALID`).
+*Note on Position Resolution:* All 63 raw position strings in App 53 (275 visible records) are audited individually in [`POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md). Ambiguous, unknown, or empty positions fail closed (`PROFILE_SOURCE_INVALID` / `PROFILE_MAPPING_AMBIGUOUS`).
 
 ---
 
@@ -88,7 +88,9 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 * **Section Manager / Senior Manager / DGM (305, 643, 307):** 50/50 Split, 2 Appraisers, Denominator 14 (`ROUND(sum/14, 2)`).
 * **GM / VP (640, 715):** 50/50 Split, 1 Deployed Appraiser, Denominator 14 (`ROUND((sum*2)/14, 2)`).
 
-### B. Mathematical Formulas
+### B. Mathematical Formulas & Rounding Rules
+* **Current Deployed Rounding:** `CURRENT_DEPLOYED_ROUNDING = LIVE_KINTONE_PER_APP` (Preserves exact per-app formulas as documented in [`KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)).
+* **Proposed Target Rule for Future Engine:** `PROPOSED_TARGET_RULE` (Standardized Half-Up 2-decimal rounding across all calculated score stages, subject to user design approval).
 * **Part A Weighted Score:** $\text{PartA\_Weighted} = \text{ROUND}((\text{Part A Raw} \times \text{Part\_A\_Weight}) / 100, 2)$
 * **Part B Weighted Score:** $\text{PartB\_Weighted} = \text{ROUND}(\text{Part B Raw} \times (\text{Part\_B\_Weight} / 100), 2)$
 * **Intermediate 5-Point Weighted Score:** $\text{Weighted\_Score\_5\_Point} = \text{PartA\_Weighted} + \text{PartB\_Weighted}$
@@ -149,11 +151,15 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 2. `test_profile_mapping_asst_mgr_60_40`: Verify Assistant Manager maps to 60/40 split.
 3. `test_profile_mapping_mgmt_50_50`: Verify Sect/Snr/DGM map to 50/50 split.
 4. `test_appraiser_cardinality_exec_1`: Verify GM/VP deployed baseline of 1 appraiser scaled via $(sum \times 2)/14$.
-5. `test_coce_excluded_dynamic_denominator`: Verify COCE evaluated but omitted, yielding $N=5$ (Ops) or $N=7$ (Mgmt).
-6. `test_objective_difficulty_achievement_20_cases`: Verify all 20 combinations of Difficulty $\times$ Achievement match live Kintone matrix.
-7. `test_score_normalization_100_point`: Verify $((A+B)*100)/5$ scale conversion.
-8. `test_fail_closed_unknown_position`: Verify invalid/empty position halts initialization.
-9. `test_annual_profile_freeze`: Verify mid-year changes do not alter frozen App 794 record profile.
+5. `test_appraiser_contract_incomplete_fail_closed`: Verify partial appraiser ratings ($K_{\text{valid}} < K_{\text{expected}}$) fail closed with `APPRAISER_RATING_INCOMPLETE`.
+6. `test_coce_excluded_dynamic_denominator`: Verify COCE evaluated but omitted, yielding $N=5$ (Ops) or $N=7$ (Mgmt).
+7. `test_objective_difficulty_achievement_20_cases`: Verify all 20 combinations of Difficulty $\times$ Achievement match live Kintone matrix.
+8. `test_score_normalization_100_point`: Verify $((A+B)*100)/5$ scale conversion.
+9. `test_fail_closed_unknown_position`: Verify invalid/empty position halts initialization with `PROFILE_SOURCE_INVALID`.
+10. `test_fail_closed_ambiguous_position`: Verify non-standard position halts initialization with `PROFILE_MAPPING_AMBIGUOUS`.
+11. `test_missing_config_fail_closed`: Verify missing/inactive profile config halts initialization.
+12. `test_confidential_field_security_regression`: Verify employee/requester role cannot access appraiser ratings/comments.
+13. `test_annual_profile_freeze`: Verify mid-year changes do not alter frozen App 794 record profile.
 
 ---
 

@@ -1,13 +1,15 @@
 # AI Operational Handoff Document
 
-- **Handoff Date**: 2026-08-24T15:27:00+07:00
+- **Handoff Date**: 2026-08-24T15:38:00+07:00
 - **From AI**: Antigravity
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `develop`
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE (PLANNING)`**
-- **Current Work Package**: `MBO-P03-WP-001 (Complete Plan & Schema Manifest Audit)`
+- **Current Work Package**: `MBO-P03-WP-001 (Complete Plan & Exact Evidence Audit)`
 - **WP-001 Status**: `PLANNING (PLAN_GATE: READY_FOR_INDEPENDENT_REVIEW)`
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
+- **Position Evidence Gate**: `READY_FOR_REVIEW (63 Distinct Positions, 275 Records Reconciled)`
+- **Competency Evidence Gate**: `READY_FOR_REVIEW (Exact Per-App Matrix across 8 Apps)`
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Scoring Evidence Doc**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Doc**: [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
@@ -21,11 +23,10 @@
 
 ---
 
-# MBO-P03-WP-001 — COMPLETE PLAN & SCHEMA MANIFEST RECONCILIATION
+# MBO-P03-WP-001 — COMPLETE PLAN & EVIDENCE RECONCILIATION
 
-### 1. Reconciled Plan Highlights
-* **Scoring Truth:** Frozen and accepted under `DEC-035` (Staff/Japan 70/30, Asst Mgr 60/40, Sect/Snr/DGM/GM/VP 50/50).
-* **Schema Manifest Audit:** Audited live schema against `config/schema-spec.js`, clearly separating `LIVE_SCHEMA_GAP` from `REPOSITORY_SCHEMA_SPEC_GAP`. `Final_Confidential_Score` classified as `REUSE`.
-* **Full Plan Restored:** Restored all sections (Scope, Security, Risks, Change Manifest, Test Plan, Rollback, No-Orphan, Storage Trade-Offs).
-* **Position & Competency Evidence:** Separated into dedicated evidence matrices.
+### 1. Reconciled Plan & Evidence Highlights
+* **Position Evidence Rebuilt:** Programmatically enumerated all 63 distinct raw position strings from 275 App 53 visible records. Sum of records reconciles 100% (`sum = 275`). No aggregate rows used.
+* **Competency Evidence Rebuilt:** Created exact per-app competency matrix across all 8 legacy apps (283, 716, 310, 305, 643, 307, 640, 715) documenting exact labels, dropdown fields, and appraiser rating fields.
+* **Scoring Truth:** Preserved accepted Kintone scoring truth under `DEC-035`.
 * **Kintone Write Operations:** **`0 (Zero Writes Executed)`**.
