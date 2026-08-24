@@ -23,12 +23,14 @@ The purpose of **MBO-P03-WP-002** is to design the implementation architecture f
 
 This plan specifies the design for:
 1. The **Kintone Profile / Scoring Configuration Master App** (`V2_RUNTIME_CONFIGURATION_SOURCE`).
-2. The **Deterministic Master Record Identity & Uniqueness Contract** (`Profile_Code` + `Scoring_Config_Version`).
-3. The **Immutable Content Payload Hash Contract** (`Configuration_Hash`).
-4. The **Versioned Profile & Scoring Configuration Resolution Engine**.
-5. The **App 794 Annual Record Initialization Snapshot Model**.
-6. The **Git Repository Immutable Backup & Recovery Pipeline** (`V2_BACKUP_AUDIT_RECOVERY_SOURCE`).
-7. The **Immutable Rollback Governance Model** (Creating new version for rollback).
+2. The **Physical Master Record Key & Uniqueness Contract** (`Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}`).
+3. The **Stable Profile Identity Model** (`Profile_Code` decoupled from versioning).
+4. The **Immutable Content Payload Hash Contract** (`Configuration_Hash`).
+5. The **Safe Publish Activation Sequence** (Read-back payload hash verification prior to `PUBLISHED` status transition).
+6. The **Versioned Profile & Scoring Configuration Resolution Engine**.
+7. The **App 794 Annual Record Initialization Snapshot Model**.
+8. The **Git Repository Immutable Backup & Recovery Pipeline** (`V2_BACKUP_AUDIT_RECOVERY_SOURCE`).
+9. The **Immutable Rollback & New Effective Period Governance Model**.
 
 > **CRITICAL GOVERNANCE DIRECTIVE:**  
 > This task is **PLANNING ONLY**. No source code implementation, schema specification changes, Kintone app creation, or Kintone record mutations are authorized until `MBO-P03-WP-002 PLAN_GATE = PASS` and explicit user authorization is granted.
@@ -50,83 +52,92 @@ This work package strictly operates across three distinct system sources:
 
 ---
 
-## 3. Master Record Identity & Uniqueness Contract
+## 3. Physical Master Record Identity & Stable Profile Model
 
-### A. Deterministic Master Record Uniqueness
-* **Canonical Master Record Identity:** Exactly ONE Master Record represents ONE Evaluation Profile Configuration Version.
-* **Canonical Uniqueness Constraint:**
-  $$\text{Master\_Record\_Key} = \text{Profile\_Code} + \text{Scoring\_Config\_Version}$$
-* **Rule:** A record identity (`Profile_Code` + `Scoring_Config_Version`) **MUST BE UNIQUE** across the entire Master App. An identical `Scoring_Config_Code` must not be reused ambiguously across different profiles.
+### A. Physical Field: `Master_Record_Key`
+To physically enforce uniqueness at the native Kintone database layer, the proposed Master App includes a dedicated physical key field:
+* **Canonical Value Formulation:** `Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}`
+* **Kintone Database Constraint:** Native Kintone `prohibit_duplicate_values = true` (`unique = true`).
 
-### B. Proposed Master Field Schema (22 Attributes)
+### B. Stable Profile Identity Policy
+* `Profile_Code` represents a **stable profile identity** and MUST NOT embed version strings (e.g. `PROF_STAFF_CHIEF`, `PROF_JAPANESE_STAFF`, `PROF_ASST_MGR`, `PROF_MANAGEMENT`, `PROF_EXECUTIVE`).
+* Version identifier belongs strictly to `Scoring_Config_Version` (e.g. `v1.0.0`, `v1.1.0`).
+
+### C. Proposed Master Field Schema & Exact Kintone Field Types (23 Attributes)
 *(Proposed schema to be created upon WP-002 execution authorization; App ID: `NOT_ALLOCATED`)*
 
-| Attribute # | Field Code | Payload Classification | Purpose / Description | Allowed Values / Validation |
-| :---: | :--- | :---: | :--- | :--- |
-| 1 | `Profile_Code` | **`IMMUTABLE_PAYLOAD`** | Unique profile identifier | e.g. `PROF_STAFF_CHIEF_V1`, `PROF_JAPANESE_STAFF_V1` |
-| 2 | `Profile_Family` | **`IMMUTABLE_PAYLOAD`** | Structural profile family classification | `PROFILE_STAFF_CHIEF`, `PROFILE_JAPANESE_STAFF`, `PROFILE_MANAGEMENT`, `PROFILE_EXECUTIVE` |
-| 3 | `Scoring_Config_Code` | **`IMMUTABLE_PAYLOAD`** | Unique scoring configuration code | e.g. `SCORE_CFG_STAFF_CHIEF_V1`, `SCORE_CFG_ASST_MGR_V1` |
-| 4 | `Scoring_Config_Version` | **`IMMUTABLE_PAYLOAD`** | Immutable version identifier | e.g. `v1.0.0`, `v1.1.0` |
-| 5 | `Effective_From` | **`IMMUTABLE_PAYLOAD`** | Start date of applicability | ISO Date (`YYYY-MM-DD`) |
-| 6 | `Effective_To` | **`IMMUTABLE_PAYLOAD`** | End date of applicability | ISO Date (`YYYY-MM-DD`) |
-| 7 | `Fiscal_Year` | **`IMMUTABLE_PAYLOAD`** | Applicable Fiscal Year | e.g. `FY2026`, `ALL` |
-| 8 | `PartA_Weight` | **`IMMUTABLE_PAYLOAD`** | MBO Objectives percentage weight | `70`, `60`, `50` (Must sum to 100 with Part B) |
-| 9 | `PartB_Weight` | **`IMMUTABLE_PAYLOAD`** | Competencies percentage weight | `30`, `40`, `50` (Must sum to 100 with Part A) |
-| 10 | `Expected_Appraiser_Count` | **`IMMUTABLE_PAYLOAD`** | Required scoring appraisers ($K_{\text{expected}}$) | `1` (Executive GM/VP), `2` (Operational & Mgmt) |
-| 11 | `Appraiser_Weight_Rule_Code` | **`IMMUTABLE_PAYLOAD`** | Layer 1 Appraiser weighting rule | `EQUAL_DISTRIBUTION_V1` ($1/K_{\text{expected}}$) |
-| 12 | `Part_A_Scoring_Mode` | **`IMMUTABLE_PAYLOAD`** | Objective calculation mode | `DIFFICULTY_ACHIEVEMENT_MATRIX`, `ACHIEVEMENT_DIRECT` |
-| 13 | `Competency_Set_Code` | **`IMMUTABLE_PAYLOAD`** | Applicable competency set | `COMP_SET_OPERATIONAL_V1`, `COMP_SET_MANAGEMENT_V1` |
-| 14 | `PartA_Rounding_Rule` | **`IMMUTABLE_PAYLOAD`** | Part A weighted score rounding | `UNIFIED_HALF_UP_2_DECIMALS` / `PER_APP_LEGACY` |
-| 15 | `PartB_Raw_Rounding_Rule` | **`IMMUTABLE_PAYLOAD`** | Part B raw score rounding | `UNIFIED_HALF_UP_2_DECIMALS` / `PER_APP_LEGACY` |
-| 16 | `PartB_Weighted_Rounding_Rule`| **`IMMUTABLE_PAYLOAD`** | Part B weighted score rounding | `UNIFIED_HALF_UP_2_DECIMALS` / `PER_APP_LEGACY` |
-| 17 | `Final_Rounding_Rule` | **`IMMUTABLE_PAYLOAD`** | Final 100-point score rounding | `UNIFIED_HALF_UP_2_DECIMALS` / `PER_APP_LEGACY` |
-| 18 | `Supersedes_Config_Version` | **`IMMUTABLE_PAYLOAD`** | Previous version superseded by this config | e.g. `v1.0.0` or `NONE` |
-| 19 | `Config_Status` | `AUDIT_LIFECYCLE` | Lifecycle status | `DRAFT`, `VALIDATED`, `PUBLISHED`, `SUPERSEDED`, `RETIRED` |
-| 20 | `Published_At` | `AUDIT_LIFECYCLE` | Timestamp of publish activation | ISO DateTime |
-| 21 | `Published_By` | `AUDIT_LIFECYCLE` | User account executing publish | Kintone User |
-| 22 | `Configuration_Hash` | `AUDIT_LIFECYCLE` | SHA-256 hash of immutable payload | Hex SHA-256 string |
+| Attribute # | Field Code | Kintone Field Type | Required | Unique Rule | Payload Classification | Purpose / Description |
+| :---: | :--- | :---: | :---: | :---: | :---: | :--- |
+| 1 | `Master_Record_Key` | `SINGLE_LINE_TEXT` | **YES** | **UNIQUE** | **`IMMUTABLE_PAYLOAD`** | Physical unique key (`{Profile_Code}::{Scoring_Config_Version}`) |
+| 2 | `Profile_Code` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Stable profile identifier (e.g. `PROF_ASST_MGR`) |
+| 3 | `Profile_Family` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Structural profile family classification |
+| 4 | `Scoring_Config_Code` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Unique scoring configuration code |
+| 5 | `Scoring_Config_Version` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Immutable version identifier (e.g. `v1.0.0`) |
+| 6 | `Effective_From` | `DATE` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Start date of applicability (`YYYY-MM-DD`) |
+| 7 | `Effective_To` | `DATE` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | End date of applicability (`YYYY-MM-DD`) |
+| 8 | `Fiscal_Year` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Applicable Fiscal Year (e.g. `FY2026`, `ALL`) |
+| 9 | `PartA_Weight` | `NUMBER` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | MBO Objectives percentage weight (`70`, `60`, `50`) |
+| 10 | `PartB_Weight` | `NUMBER` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Competencies percentage weight (`30`, `40`, `50`) |
+| 11 | `Expected_Appraiser_Count` | `NUMBER` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Required scoring appraisers ($K_{\text{expected}}$: `1` or `2`) |
+| 12 | `Appraiser_Weight_Rule_Code` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Layer 1 Appraiser weighting rule |
+| 13 | `Part_A_Scoring_Mode` | `DROP_DOWN` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | `DIFFICULTY_ACHIEVEMENT_MATRIX` / `ACHIEVEMENT_DIRECT` |
+| 14 | `Competency_Set_Code` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Applicable competency set code |
+| 15 | `PartA_Rounding_Rule` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Part A weighted score rounding rule |
+| 16 | `PartB_Raw_Rounding_Rule` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Part B raw score rounding rule |
+| 17 | `PartB_Weighted_Rounding_Rule`| `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Part B weighted score rounding rule |
+| 18 | `Final_Rounding_Rule` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Final 100-point score rounding rule |
+| 19 | `Supersedes_Config_Version` | `SINGLE_LINE_TEXT` | **YES** | NOT_UNIQUE | **`IMMUTABLE_PAYLOAD`** | Previous version superseded (or `NONE`) |
+| 20 | `Config_Status` | `DROP_DOWN` | **YES** | NOT_UNIQUE | `AUDIT_LIFECYCLE` | `DRAFT`, `VALIDATED`, `PUBLISHED`, `SUPERSEDED`, `RETIRED` |
+| 21 | `Published_At` | `DATETIME` | NO | NOT_UNIQUE | `AUDIT_LIFECYCLE` | Timestamp of publish activation |
+| 22 | `Published_By` | `USER_SELECT` | NO | NOT_UNIQUE | `AUDIT_LIFECYCLE` | User account executing publish |
+| 23 | `Configuration_Hash` | `SINGLE_LINE_TEXT` | NO | NOT_UNIQUE | `AUDIT_LIFECYCLE` | SHA-256 hash of 19 immutable payload fields |
 
 ---
 
 ## 4. Immutable Configuration Payload Hash Contract
 
 ### A. Payload Inclusion Rule
-The `Configuration_Hash` is computed strictly over the **18 Immutable Payload Fields** (Attributes 1..18 above).
+The `Configuration_Hash` is computed strictly over the **19 Immutable Payload Fields** (Attributes 1..19 above, including `Master_Record_Key`).
 
 ### B. Explicit Exclusion Rule
 The following 4 Audit/Lifecycle fields are **EXCLUDED** from hash calculation:
-- `Config_Status`
-- `Published_At`
-- `Published_By`
-- `Configuration_Hash`
+- `Config_Status` (Attribute 20)
+- `Published_At` (Attribute 21)
+- `Published_By` (Attribute 22)
+- `Configuration_Hash` (Attribute 23)
 
 ### C. Hash Formulation
-$$\text{Configuration\_Hash} = \text{SHA256}(\text{Canonical\_JSON}(\text{Attributes } 1..18))$$
-
-* **Pre-Publish & Post-Publish Hash Invariant:** Pre-publish repository backup commit and post-publish Kintone read-back verification MUST compare the **EXACT SAME** immutable payload hash.
+$$\text{Configuration\_Hash} = \text{SHA256}(\text{Canonical\_JSON}(\text{Attributes } 1..19))$$
 
 ---
 
-## 5. Separation of Profile Family vs Scoring Configuration
+## 5. Safe Publish Activation Sequence (Verification Before Activation)
 
-The architecture strictly distinguishes **Profile Family** from **Scoring Configuration**:
+To ensure unverified or corrupted configurations are NEVER exposed as active `PUBLISHED` data, the publish pipeline enforces strict pre-activation verification while the record is still in `VALIDATED` status:
 
 ```
-PROFILE FAMILY (Structural Classification)
- ├── PROFILE_STAFF_CHIEF
- ├── PROFILE_JAPANESE_STAFF
- ├── PROFILE_MANAGEMENT ────────┐
- └── PROFILE_EXECUTIVE          │
-                                ▼
-SCORING CONFIGURATION (Versioned Calculation Rules)
- ├── PROF_STAFF_CHIEF_V1 + v1.0.0    ──> SCORE_CFG_STAFF_CHIEF_V1   (70/30, K=2, MATRIX)
- ├── PROF_JAPANESE_STAFF_V1 + v1.0.0 ──> SCORE_CFG_JAPANESE_STAFF_V1(70/30, K=2, MATRIX)
- ├── PROF_ASST_MGR_V1 + v1.0.0       ──> SCORE_CFG_ASST_MGR_V1      (60/40, K=2, MATRIX)
- ├── PROF_MANAGEMENT_V1 + v1.0.0     ──> SCORE_CFG_MANAGEMENT_V1    (50/50, K=2, MATRIX)
- └── PROF_EXECUTIVE_V1 + v1.0.0      ──> SCORE_CFG_EXEC_V1          (50/50, K=1, DIRECT)
+Step 1: HR Draft Creation & Content Edit on Master App (Config_Status = DRAFT)
+   │
+Step 2: Structural & Domain Validation ──(If Invalid)──> [ BLOCK & REMAIN DRAFT ]
+   │
+Step 3: Transition Status to VALIDATED (Config_Status = VALIDATED)
+   │
+Step 4: Generate Canonical Immutable Payload JSON (Attributes 1..19) & Compute Configuration_Hash
+   │
+Step 5: Commit Git Backup Snapshot to Controlled Versioned Repository Path
+   │
+Step 6: Verify Git Backup Payload Hash ──(If Mismatch)──> [ FAIL CLOSED: REVERT TO DRAFT ]
+   │
+Step 7: Execute Kintone REST API Payload Read-Back Verification while record is STILL VALIDATED
+   │
+Step 8: Compare Exact Payload Hash (Git Backup vs Kintone REST API Read-Back)
+   │     ├── If Hashes Match 100% ──────────────────────────► [ Step 9: Transition Config_Status to PUBLISHED ]
+   │     └── If Hash Mismatch / API Read Error ─────────────► [ FAIL CLOSED: BLOCK PUBLISH & REVERT TO DRAFT ]
+   │
+Step 9: Controlled Activation: Update Config_Status = PUBLISHED, set Published_At & Published_By
+   │
+Step 10: Final Post-Publish Status & Audit Logging Verification
 ```
-
-* **Governance Rule:** Profile Family **MUST NOT** hardcode scoring splits or appraiser cardinality. Scoring behavior is resolved dynamically via versioned configuration (`Profile_Code` + `Scoring_Config_Version`).
 
 ---
 
@@ -134,27 +145,28 @@ SCORING CONFIGURATION (Versioned Calculation Rules)
 
 The proposed Master App reproduces frozen WP-001 deployed truth across all 8 evaluation groups without ambiguity:
 
-| Evaluation Group | Profile Code | Profile Family | Scoring Config Code | Part A Weight | Part B Weight | Deployed Appraisers ($K_{\text{expected}}$) | Layer 1 Appraiser Weights | Part A Scoring Mode | Competency Set Code | Scored Items ($N_{\text{included}}$) |
-| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :--- | :--- | :---: |
-| **Staff & Chief** | `PROF_STAFF_CHIEF_V1` | `PROFILE_STAFF_CHIEF` | `SCORE_CFG_STAFF_CHIEF_V1` | **70%** | **30%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_OPERATIONAL_V1` | **5** (COCE Excluded) |
-| **Japanese Staff** | `PROF_JAPANESE_STAFF_V1`| `PROFILE_JAPANESE_STAFF`| `SCORE_CFG_JAPANESE_STAFF_V1`| **70%** | **30%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_OPERATIONAL_V1` | **5** (COCE Excluded) |
-| **Assistant Manager**| `PROF_ASST_MGR_V1` | `PROFILE_MANAGEMENT` | `SCORE_CFG_ASST_MGR_V1` | **60%** | **40%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
-| **Section Manager** | `PROF_MANAGEMENT_V1` | `PROFILE_MANAGEMENT` | `SCORE_CFG_MANAGEMENT_V1` | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
-| **Senior Manager** | `PROF_MANAGEMENT_V1` | `PROFILE_MANAGEMENT` | `SCORE_CFG_MANAGEMENT_V1` | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
-| **Deputy General Mgr**| `PROF_MANAGEMENT_V1` | `PROFILE_MANAGEMENT` | `SCORE_CFG_MANAGEMENT_V1` | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
-| **General Manager** | `PROF_EXECUTIVE_V1` | `PROFILE_EXECUTIVE` | `SCORE_CFG_EXEC_V1` | **50%** | **50%** | **1** | **100%** | `ACHIEVEMENT_DIRECT` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
-| **Vice President** | `PROF_EXECUTIVE_V1` | `PROFILE_EXECUTIVE` | `SCORE_CFG_EXEC_V1` | **50%** | **50%** | **1** | **100%** | `ACHIEVEMENT_DIRECT` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
+| Evaluation Group | Profile Code | Master Record Key | Profile Family | Scoring Config Code | Part A Weight | Part B Weight | Deployed Appraisers ($K_{\text{expected}}$) | Layer 1 Appraiser Weights | Part A Scoring Mode | Competency Set Code | Scored Items ($N_{\text{included}}$) |
+| :--- | :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :--- | :--- | :---: |
+| **Staff & Chief** | `PROF_STAFF_CHIEF` | `PROF_STAFF_CHIEF::v1.0.0` | `PROFILE_STAFF_CHIEF` | `SCORE_CFG_STAFF_CHIEF_V1` | **70%** | **30%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_OPERATIONAL_V1` | **5** (COCE Excluded) |
+| **Japanese Staff** | `PROF_JAPANESE_STAFF`| `PROF_JAPANESE_STAFF::v1.0.0`| `PROFILE_JAPANESE_STAFF`| `SCORE_CFG_JAPANESE_STAFF_V1`| **70%** | **30%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_OPERATIONAL_V1` | **5** (COCE Excluded) |
+| **Assistant Manager**| `PROF_ASST_MGR` | `PROF_ASST_MGR::v1.0.0` | `PROFILE_MANAGEMENT` | `SCORE_CFG_ASST_MGR_V1` | **60%** | **40%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
+| **Section Manager** | `PROF_MANAGEMENT` | `PROF_MANAGEMENT::v1.0.0` | `PROFILE_MANAGEMENT` | `SCORE_CFG_MANAGEMENT_V1` | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
+| **Senior Manager** | `PROF_MANAGEMENT` | `PROF_MANAGEMENT::v1.0.0` | `PROFILE_MANAGEMENT` | `SCORE_CFG_MANAGEMENT_V1` | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
+| **Deputy General Mgr**| `PROF_MANAGEMENT` | `PROF_MANAGEMENT::v1.0.0` | `PROFILE_MANAGEMENT` | `SCORE_CFG_MANAGEMENT_V1` | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
+| **General Manager** | `PROF_EXECUTIVE` | `PROF_EXECUTIVE::v1.0.0` | `PROFILE_EXECUTIVE` | `SCORE_CFG_EXEC_V1` | **50%** | **50%** | **1** | **100%** | `ACHIEVEMENT_DIRECT` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
+| **Vice President** | `PROF_EXECUTIVE` | `PROF_EXECUTIVE::v1.0.0` | `PROFILE_EXECUTIVE` | `SCORE_CFG_EXEC_V1` | **50%** | **50%** | **1** | **100%** | `ACHIEVEMENT_DIRECT` | `COMP_SET_MANAGEMENT_V1` | **7** (COCE Excluded) |
 
 ---
 
-## 7. Immutable Version Model & Immutable Rollback Governance
+## 7. Rollback Effective-Period & Version Semantics
 
-### A. Immutability Boundary Contract
-* Once a record transitions to **`PUBLISHED`** and is referenced by any App 794 Annual Record, its 18 immutable payload fields are **PERMANENTLY LOCKED**.
-
-### B. Immutable Rollback Semantics
-* Reverting or rolling back to an older business scoring configuration **MUST NOT** reactivate, mutate, or edit historical published/superseded records.
-* Rollback is executed by creating a **NEW Master Record** with an incremented `Scoring_Config_Version` (e.g. `v1.2.0`), copying the approved historical immutable payload, setting `Supersedes_Config_Version = v1.1.0`, and running through the hybrid publish pipeline.
+* **Historical Record Immutability:** Rolling back to a previous scoring configuration **NEVER** mutates, edits, or reactivates historical published/superseded records.
+* **New Rollback Record Creation:** Rollback requires creating a **NEW Master Record** with:
+  - New `Master_Record_Key` (e.g. `PROF_ASST_MGR::v1.2.0`).
+  - New `Scoring_Config_Version` (e.g. `v1.2.0`).
+  - **NEW Effective Dates:** New `Effective_From` and `Effective_To` defining the new effective period. Historical effective dates are **NEVER** blindly reused.
+  - `Supersedes_Config_Version` set to the superseded active version (e.g. `v1.1.0`).
+  - Copy of the approved historical business calculation payload.
 
 ---
 
@@ -171,35 +183,15 @@ Security boundaries are enforced strictly via **Native Kintone App & Field Permi
 
 ---
 
-## 9. Hybrid Publish Pipeline Design (`Option C`)
-
-```
-Step 1: HR Draft Creation & Content Edit on Master App
-   │
-Step 2: Automated Structural Validation (Weights sum 100, N_included, Mode valid)
-   │
-Step 3: Canonical Immutable Payload JSON Generation & SHA-256 Hash Computation
-   │
-Step 4: Repository Backup Commit & Verification (Controlled Versioned Repository Path)
-   │     ├── Verify Git file creation & SHA-256 hash match
-   │     └── If Hash Mismatch / Git Backup Error ───────────► [ FAIL CLOSED: BLOCK PUBLISH ]
-   │
-Step 5: Controlled Kintone Activation (Set Status = PUBLISHED)
-   │
-Step 6: Kintone Read-Back Verification (Re-fetch REST API record and verify hash)
-```
-
----
-
-## 10. Controlled Repository Backup Structure (`V2_BACKUP_AUDIT_RECOVERY_SOURCE`)
+## 9. Controlled Repository Backup Structure (`V2_BACKUP_AUDIT_RECOVERY_SOURCE`)
 
 * **Repository Backup Strategy:** Controlled versioned repository path defined and approved during WP-002 execution.
-* **Canonical JSON Format:** Standardized UTF-8 JSON containing 18 immutable payload fields and `Configuration_Hash`.
+* **Canonical JSON Format:** Standardized UTF-8 JSON containing 19 immutable payload fields and `Configuration_Hash`.
 * **Restore & Recovery Procedure:** Offline audit tool reads repository JSON snapshots to verify historical App 794 score calculations independently.
 
 ---
 
-## 11. Deterministic Runtime Resolution & Position Fail-Closed
+## 10. Deterministic Runtime Resolution & Position Fail-Closed
 
 ### A. Resolution Flow
 $$\text{Raw Title} \xrightarrow{\text{normalize\_title()}} \text{Normalized Position} \xrightarrow{\text{Position Matrix}} \text{Profile\_Code} \xrightarrow{\text{Master App}} \text{Profile\_Code} + \text{Scoring\_Config\_Version}$$
@@ -210,7 +202,7 @@ $$\text{Raw Title} \xrightarrow{\text{normalize\_title()}} \text{Normalized Posi
 
 ---
 
-## 12. App 794 Annual Record Initialization Snapshot
+## 11. App 794 Annual Record Initialization Snapshot
 
 At Annual Record Initialization, physical snapshot fields are populated on App 794:
 - `Evaluation_Profile_Code`
@@ -226,7 +218,7 @@ Derived runtime rules (`Appraiser_Weight_Rule_Code`, `Part_A_Scoring_Mode`, `Rou
 
 ---
 
-## 13. Master Configuration Integrity Validations
+## 12. Master Configuration Integrity Validations
 
 1. `PartA_Weight` + `PartB_Weight` == 100.
 2. `Expected_Appraiser_Count` $\in \{1, 2\}$.
@@ -235,33 +227,33 @@ Derived runtime rules (`Appraiser_Weight_Rule_Code`, `Part_A_Scoring_Mode`, `Rou
 5. Competency Item 6 (`COMP_COCE`) `Included_In_Score == false`.
 6. No overlapping `Effective_From` and `Effective_To` dates for the same profile in `PUBLISHED` status.
 7. SHA-256 `Configuration_Hash` matches immutable payload exactly.
+8. Native Kintone `Master_Record_Key` uniqueness constraint verified.
 
 ---
 
-## 14. Future Test Matrix Plan (Planning Tests Only)
+## 13. Future Test Matrix Plan (Planning Tests Only)
 
 * `TEST-WP002-001`: Master record structural validation (Part A + B = 100).
-* `TEST-WP002-002`: Duplicate version creation blocked (`Profile_Code` + `Version` collision).
-* `TEST-WP002-003`: Draft config ignored by runtime resolution engine.
-* `TEST-WP002-004`: Published config mutation blocked by permission boundary.
-* `TEST-WP002-005`: Git backup snapshot hash mismatch blocks activation (Fail Closed).
-* `TEST-WP002-006`: Kintone read-back verification after publish compares same payload hash.
+* `TEST-WP002-002`: Native Kintone `Master_Record_Key` duplicate collision blocked (`MASTER_CONFIG_DUPLICATE`).
+* `TEST-WP002-003`: Read-back verification while record is in `VALIDATED` status before publish.
+* `TEST-WP002-004`: Git backup payload hash mismatch halts publish (Fail Closed).
+* `TEST-WP002-005`: Published config mutation blocked by native permission boundary.
+* `TEST-WP002-006`: Rollback creates a new `Master_Record_Key` with a new effective date period.
 * `TEST-WP002-007`: Ambiguous position (147 records) halts initialization (`PROFILE_MAPPING_AMBIGUOUS`).
-* `TEST-WP002-008`: Assistant Manager resolves to `SCORE_CFG_ASST_MGR_V1`.
+* `TEST-WP002-008`: Assistant Manager resolves to `SCORE_CFG_ASST_MGR_V1` (60/40 split).
 * `TEST-WP002-009`: Executive GM resolves to `SCORE_CFG_EXEC_V1` ($K=1$, 100%, `ACHIEVEMENT_DIRECT`).
-* `TEST-WP002-010`: Rollback creates new version tag and preserves historical immutability.
 
 ---
 
-## 15. Backup, Rollback & Recovery Governance
+## 14. Backup, Rollback & Recovery Governance
 
-* **Immutable Rollback Procedure:** Rolling back to a previous scoring configuration requires issuing a NEW `Scoring_Config_Version` record containing the target historical immutable payload.
+* **Immutable Rollback Procedure:** Rolling back to a previous scoring configuration requires issuing a NEW `Scoring_Config_Version` record with a NEW `Master_Record_Key` and NEW effective dates.
 * **Disaster Recovery:** If Kintone Master App data is corrupted, an explicit HR recovery command reads Git repository JSON snapshots, performs read-back payload hash verification, and re-initializes the Master App records.
 * **No Silent Fallback:** Recovery is strictly explicit, audited, and verified.
 
 ---
 
-## 16. Expected Change Manifest
+## 15. Expected Change Manifest
 
 ### Current Task (WP-002 Planning)
 * **Kintone Writes:** **`0 (Zero Writes)`**.
@@ -269,7 +261,7 @@ Derived runtime rules (`Appraiser_Weight_Rule_Code`, `Part_A_Scoring_Mode`, `Rou
 * **Schema Changes:** **`0 (No schema spec modifications executed)`**.
 
 ### Proposed Future WP-002 Execution Manifest (Pending User Authorization)
-1. Allocate Kintone Master App ID and deploy proposed 22-attribute Master Schema.
+1. Allocate Kintone Master App ID and deploy proposed 23-attribute Master Schema with `Master_Record_Key` native unique constraint.
 2. Synchronize `config/schema-spec.js` with physical snapshot fields for App 794 and Master App.
 3. Implement profile resolution and scoring engine in `src/profiles/` and `src/scoring/`.
 4. Deploy automated unit test suite.

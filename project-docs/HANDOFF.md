@@ -1,6 +1,6 @@
 # AI Operational Handoff Document
 
-- **Handoff Date**: 2026-08-24T17:00:00+07:00
+- **Handoff Date**: 2026-08-24T17:05:00+07:00
 - **From AI**: Antigravity
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `develop`
@@ -25,7 +25,7 @@
 - **Competency Evidence Doc**: [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)
 - **WP-001 Authoritative Plan Path**: [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **WP-002 Authoritative Plan Path**: [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
-- **Durable Decisions Path**: [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Restored)
+- **Durable Decisions Path**: [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Preserved)
 - **Phase 2 Status**: `PASSED / FROZEN (Commit 8fb306e)`
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
 - **Independent Review Metadata Commit**: `9b2882e`
@@ -35,13 +35,13 @@
 
 ---
 
-# MBO-P03-WP-002 — LEAN PLAN CORRECTIONS APPLIED
+# MBO-P03-WP-002 — IMPLEMENTATION-SAFETY CORRECTIONS FINALIZED
 
-### 1. Corrected Plan & Governance Highlights
-* **DECISIONS.md History Restored:** Restored 100% of historical durable decisions (`DEC-001` through `DEC-037`).
-* **Master Record Identity & Uniqueness Contract:** Defined `Master_Record_Key = Profile_Code + Scoring_Config_Version` as canonical uniqueness constraint. Disambiguated `Staff & Chief` (`PROF_STAFF_CHIEF_V1`) and `Japanese Staff` (`PROF_JAPANESE_STAFF_V1`).
-* **Configuration Hash Contract:** Formally excluded 4 audit/lifecycle fields (`Config_Status`, `Published_At`, `Published_By`, `Configuration_Hash`) from `Configuration_Hash`. Pre-publish repository backup and post-publish Kintone read-back compare the EXACT SAME 18-attribute immutable payload hash.
-* **Immutable Rollback Semantics:** Rollback creates a NEW `Scoring_Config_Version` record rather than mutating historical published records.
-* **Governance Labels Disambiguated:** `DEC-035` (Scoring Calibration), `DEC-036` (Appraiser Weight & Completeness), `DEC-037` (Hybrid Option C Storage).
+### 1. Finalized Plan Highlights
+* **Physical Field `Master_Record_Key` Added:** Proposed physical Kintone field `Master_Record_Key` (`SINGLE_LINE_TEXT`, `unique = true`) added to Master schema with canonical value `{Profile_Code}::{Scoring_Config_Version}`.
+* **Stable Profile Identity:** `Profile_Code` remains a stable profile identifier (e.g. `PROF_ASST_MGR`) decoupled from versioning.
+* **Safe Publish Sequence:** Enforced payload read-back verification while record is STILL in `VALIDATED` status prior to `PUBLISHED` transition.
+* **Exact Field Types Specified:** 23 proposed Master fields mapped to exact Kintone types (`SINGLE_LINE_TEXT`, `NUMBER`, `DATE`, `DATETIME`, `DROP_DOWN`, `USER_SELECT`).
+* **Rollback Effective Period Semantics:** Rollback creates a NEW `Master_Record_Key` and NEW `Scoring_Config_Version` with a NEW effective period date range.
 * **Zero Kintone Writes:** **`0 (Zero Writes Executed)`**.
 * **Zero Implementation:** **`IMPLEMENTATION_AUTHORIZED = NO`**.
