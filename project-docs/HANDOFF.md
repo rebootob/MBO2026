@@ -69,18 +69,24 @@
 
 ---
 
-# MBO-P03-WP-002C STAGE 3A VERIFICATION EVIDENCE LOG
+# MBO-P03-WP-002C STAGE 3A EXACT ERROR RECONCILIATION EVIDENCE LOG
 
 - **Execution Plane:** `Antigravity`
 - **Execution Branch:** `ai/antigravity-wp002c`
-- **Handoff Baseline Commit:** `18e1d5510e7a03a7a5c3afded0fb36ca9cc9effc`
-- **Verification Case:** `CASE V2 — BOTH MANAGEMENT PROBES PROVE APP NOT FOUND`
-- **Deployment State:** `LIVE_DEPLOYMENT_STATE = INCONSISTENT`
-- **Live ACL Probe (`/k/v1/app/acl.json?app=796`):** `HTTP 404`
-- **Live Admin Notes Probe (`/k/v1/app/adminNotes.json?app=796`):** `HTTP 404`
-- **Published App Catalog Probe (`/k/v1/apps.json?ids[0]=796`):** `HTTP 200 (apps: [])`
-- **Live General Settings Probe (`/k/v1/app/settings.json?app=796`):** `HTTP 404`
-- **Preview Deploy Status:** `SUCCESS` (App 796, revision 3, Creator-Only ACL)
-- **Planned Schema Fields:** Absent (`NO`)
+- **Prior Baseline Commit:** `c02e120e7e6598ae25d3469d9645b978d80ae3f9`
+- **Auth Context Check:** `AUTH_CONTEXT_PRESENT = YES`, `AUTH_CONTEXT_SAME_AS_STAGE2_CONFIGURED_CONTEXT = YES`
+- **Classification:** `R3 — PREVIEW-ONLY STRONG EVIDENCE` (`LIVE_STATE = PREVIEW_ONLY_STRONG_EVIDENCE`)
+- **Deployment Requirement:** `DEPLOYMENT_REQUIRED = YES_PENDING_CONTROL_PLANE_AUTHORIZATION`
+- **Preview Identity Statement:** App 796 remains a valid Preview identity (`MBO Profile & Scoring Configuration Master [Sandbox]`, revision 3, Creator-Only ACL). No second `APP_CREATE` is permitted. A future Control Plane task may authorize one controlled deploy POST of existing App 796 after review.
+- **Exact Error Payload Probes:**
+  - `GET /k/v1/app/acl.json?app=796` $\to$ `HTTP 404` (`code: GAIA_AP01`, `message: "The app (ID: 796) not found. The app may have been deleted."`)
+  - `GET /k/v1/app/adminNotes.json?app=796` $\to$ `HTTP 404` (`code: GAIA_AP01`, `message: "The app (ID: 796) not found. The app may have been deleted."`)
+  - `GET /k/v1/app/settings.json?app=796` $\to$ `HTTP 404` (`code: GAIA_AP01`, `message: "The app (ID: 796) not found. The app may have been deleted."`)
+  - `GET /k/v1/app.json?id=796` $\to$ `HTTP 404` (`code: GAIA_AP01`, `message: "The app (ID: 796) not found. The app may have been deleted."`)
+  - `GET /k/v1/apps.json?ids[0]=796` $\to$ `HTTP 200 (apps: [])`
+  - `GET /k/v1/preview/app/deploy.json?apps[0]=796` $\to$ `HTTP 200 (status: "SUCCESS")`
+  - `GET /k/v1/preview/app/settings.json?app=796` $\to$ `HTTP 200 (name: "MBO Profile & Scoring Configuration Master [Sandbox]", revision: "3")`
+  - `GET /k/v1/preview/app/acl.json?app=796` $\to$ `HTTP 200 (CREATOR all true, GROUP everyone all false, revision: "3")`
+  - `GET /k/v1/preview/app/form/fields.json?app=796` $\to$ `HTTP 200 (planned schema fields present: NO)`
 - **Automated Tests:** **171 / 171 PASS**
 - **Kintone Write Operations:** **`0 (Zero Writes Executed)`**
