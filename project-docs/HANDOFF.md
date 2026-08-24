@@ -1,6 +1,6 @@
 # AI Operational Handoff Document
 
-- **Handoff Date**: 2026-08-24T16:54:00+07:00
+- **Handoff Date**: 2026-08-24T17:00:00+07:00
 - **From AI**: Antigravity
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `develop`
@@ -16,13 +16,16 @@
 - **Position Evidence Gate**: `PASS (33 Resolved / 125 Recs, 29 Ambiguous / 147 Recs Fail Closed, 1 Invalid / 3 Recs)`
 - **Competency Evidence Gate**: `PASS (Accepted & Frozen)`
 - **DEC-030 Commit Gate**: `PASS (Commit Separation Verified)`
-- **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035, DEC-036, DEC-037)`
+- **Governance Decisions Disambiguated**:  
+  - `DEC-035`: **Scoring Source of Truth** (`LIVE_KINTONE_FIRST`)  
+  - `DEC-036`: **Appraiser Weight & Completeness** (`APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE`)  
+  - `DEC-037`: **Profile Configuration Storage** (`PROFILE_CONFIGURATION_STORAGE_HYBRID = HYBRID_OPTION_C`)  
 - **Scoring Evidence Doc**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Doc**: [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
 - **Competency Evidence Doc**: [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)
 - **WP-001 Authoritative Plan Path**: [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **WP-002 Authoritative Plan Path**: [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
-- **Durable Decisions Path**: [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-035`, `DEC-036`, `DEC-037`)
+- **Durable Decisions Path**: [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Restored)
 - **Phase 2 Status**: `PASSED / FROZEN (Commit 8fb306e)`
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
 - **Independent Review Metadata Commit**: `9b2882e`
@@ -32,12 +35,13 @@
 
 ---
 
-# MBO-P03-WP-002 — HYBRID PROFILE & SCORING CONFIGURATION FOUNDATION (PLAN ONLY)
+# MBO-P03-WP-002 — LEAN PLAN CORRECTIONS APPLIED
 
-### 1. Planning Highlights
-* **WP-002 Implementation Plan Created:** [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md).
+### 1. Corrected Plan & Governance Highlights
+* **DECISIONS.md History Restored:** Restored 100% of historical durable decisions (`DEC-001` through `DEC-037`).
+* **Master Record Identity & Uniqueness Contract:** Defined `Master_Record_Key = Profile_Code + Scoring_Config_Version` as canonical uniqueness constraint. Disambiguated `Staff & Chief` (`PROF_STAFF_CHIEF_V1`) and `Japanese Staff` (`PROF_JAPANESE_STAFF_V1`).
+* **Configuration Hash Contract:** Formally excluded 4 audit/lifecycle fields (`Config_Status`, `Published_At`, `Published_By`, `Configuration_Hash`) from `Configuration_Hash`. Pre-publish repository backup and post-publish Kintone read-back compare the EXACT SAME 18-attribute immutable payload hash.
+* **Immutable Rollback Semantics:** Rollback creates a NEW `Scoring_Config_Version` record rather than mutating historical published records.
 * **Governance Labels Disambiguated:** `DEC-035` (Scoring Calibration), `DEC-036` (Appraiser Weight & Completeness), `DEC-037` (Hybrid Option C Storage).
-* **Three Systems Defined:** `LEGACY_SCORING_EVIDENCE_SOURCE`, `V2_RUNTIME_CONFIGURATION_SOURCE` (Master App ID: `NOT_ALLOCATED`), `V2_BACKUP_AUDIT_RECOVERY_SOURCE` (Controlled versioned repository path).
-* **Fail-Closed Runtime Rule:** Git backup is NOT an automatic runtime fallback. If runtime configuration is missing/inconsistent $\implies$ `SCORING_CONFIG_RESOLUTION_FAILED` (Fail Closed).
 * **Zero Kintone Writes:** **`0 (Zero Writes Executed)`**.
 * **Zero Implementation:** **`IMPLEMENTATION_AUTHORIZED = NO`**.

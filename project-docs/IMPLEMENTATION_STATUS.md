@@ -3,8 +3,8 @@
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002`
 - **Handoff State:** `SAFE_CHECKPOINT`
-- **Last Handoff At:** `2026-08-24T16:54:00+07:00`
-- **Review Status:** `PHASE 3 WP-002 PLAN CREATED (PLAN_GATE: PENDING INDEPENDENT REVIEW)`
+- **Last Handoff At:** `2026-08-24T17:00:00+07:00`
+- **Review Status:** `PHASE 3 WP-002 PLAN CORRECTED (PLAN_GATE: PENDING INDEPENDENT REVIEW)`
 - **Implementation Authorization:** **`IMPLEMENTATION_AUTHORIZED = NO`** (Strict Plan-Only Mode)
 - **Review Required By:** Independent Reviewer / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -21,14 +21,16 @@
 - **Position Evidence Gate:** `PASS (33 Resolved / 125 Recs, 29 Ambiguous / 147 Recs Fail Closed, 1 Invalid / 3 Recs)`
 - **Competency Evidence Gate:** `PASS (Accepted & Frozen)`
 - **DEC-030 Commit Gate:** `PASS (Commit Separation Verified)`
-- **Profile Storage Decision:** **`DEC-037 CONFIRMED (Option C: Hybrid Architecture)`**
-- **Scoring Governance Rules:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-037 (PROFILE_CONFIGURATION_STORAGE)`
+- **Governance Decisions:**  
+  - `DEC-035`: **Scoring Source of Truth** (`SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`)  
+  - `DEC-036`: **Appraiser Weight & Completeness** (`APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE`)  
+  - `DEC-037`: **Profile Configuration Storage** (`PROFILE_CONFIGURATION_STORAGE_HYBRID = HYBRID_OPTION_C`)  
 - **Scoring Evidence Path:** [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Path:** [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
 - **Competency Evidence Path:** [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)
 - **WP-001 Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **WP-002 Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
-- **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-035`, `DEC-036`, `DEC-037`)
+- **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Restored)
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`, Kintone Writes = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)
 - **Open Observations:** **5** (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
