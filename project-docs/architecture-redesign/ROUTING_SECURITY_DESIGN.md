@@ -1,6 +1,6 @@
 # Routing Security, Permission & Requester Authorization Model
 
-> **Document Status:** Complete  
+> **Document Status:** Complete (Updated with Reassignment Security Boundaries)  
 > **Last Updated:** 2026-08-24  
 
 ---
@@ -14,6 +14,6 @@ In TTMET operations, administrative staff may enter MBO drafts on behalf of empl
 
 ---
 
-## 2. Workflow Action Security
-* Native Process Management Assignees are bound directly to `Step_X_Approvers`.
-* An unauthorized user cannot click `Approve` or `Return` because Kintone Native Process Management restricts action buttons exclusively to current assignees.
+## 2. In-Flight Reassignment Authorization Security
+* **Strict Role Restriction:** Only users belonging to the `HR_ADMIN` role or administrators with explicit app management rights can execute the Reassign Approver REST API.
+* **Server-Side Verification:** Kintone native API checks session credentials before updating assignees. Unauthorized calls fail with HTTP 403.
