@@ -156,3 +156,14 @@
   1. **Phase 2 Scope Boundary:** Work Package `MBO-P02-WP-003` is restricted to Annual Record Foundation, pilot verification (`TME1 -> e1`), and zero Kintone writes.
   2. **Phase 5 Delivery Scope:** Enterprise seeding of all remaining 11 active section mappings into App 795 will be executed exclusively under Phase 5 (`Generic Routing & Twin-Status Execution Engine`) under its dedicated Work Package and controlled write window.
   3. **Live Record Dependency:** Live annual record creation remains blocked under `LIVE_RECORD_READINESS_DEPENDENCY`.
+
+## DEC-035 — Kintone-First Scoring Source of Truth & Legacy Production Calibration
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Authoritative Governance Rule)
+- **Decision**:
+  1. **Primary Source of Truth:** For all scoring formulas, weights, appraiser models, and rounding behaviors, **Live Deployed Kintone Configuration is the Primary Source of Truth (`SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`)**. Secondary Excel business artifacts must NOT override verified live Kintone calculation behavior.
+  2. **Active Downstream Lineage Rule:** The authoritative scoring formula is strictly the one participating in the active downstream calculation chain leading to the terminal score (`total_all`). Unreferenced duplicate CALC fields (e.g. `total_a_0` in App 310) are classified as `DUPLICATE_CALC / LEGACY_UNUSED`.
+  3. **Assistant Manager 60/40 Weight Split (Supersedes DEC-023):** Supersedes the generic 50/50 assumption in `DEC-023` for Assistant Manager. Live Kintone (App 310) establishes Assistant Manager as a distinct profile with **60% Part A / 40% Part B** and standard `ROUND(..., 2)` rounding.
+  4. **GM & VP Single Appraiser Model (Supersedes DEC-023):** Supersedes the generic 1–2 appraiser assumption in `DEC-023` for deployed baseline truth. Live Kintone (App 640 and App 715) deploys a 1-appraiser scoring model normalized via `(sum_rating * 2) / 14`.
+  5. **100-Point Scale Normalization:** Final evaluation score is normalized to a 100-point scale via `((total_a + total_b) * 100) / 5`, while `total_a + total_b` represents the intermediate 5-point weighted score.
+  6. **Preservation of DEC-023 Architecture:** All other architectural principles of `DEC-023` (4 Profile Families, Configuration-Driven Master, COCE exclusion, Half-Up 2-decimal precision, Hybrid Storage) remain fully effective.

@@ -1,11 +1,11 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T14:55:00+07:00
+- **Updated At**: 2026-08-24T15:15:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE (PLANNING)`**
 - **Active AI:** `Antigravity`
-- **Active Work Package**: `MBO-P03-WP-001 (Kintone-First Scoring Plan Review Mode)`
+- **Active Work Package**: `MBO-P03-WP-001 (Active Lineage & DEC-035 Plan Review Mode)`
 - **Review Status**: `WP-001 PLAN GATE PENDING INDEPENDENT REVIEW`
-- **Scoring Source of Truth**: `LIVE_KINTONE_FIRST`
+- **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Scoring Evidence Matrix**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **Handoff State**: `SAFE_CHECKPOINT`
@@ -19,12 +19,12 @@
 1. **Phase 0: Blueprint & Phased Delivery Model: `PASSED / FROZEN`**.
 2. **Phase 1: Safety & Test Foundation Harness: `PASSED / FROZEN`**.
 3. **Phase 2: Annual Record Foundation: `PASSED / FROZEN`**.
-4. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (User-Confirmed Rule)**.
+4. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (`DEC-035`)**.
 5. **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
 6. **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
 7. **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
 8. **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` & `CONTROLLED_REOPEN_REVISION_MODEL = FROZEN` (`DEC-022`)**.
-9. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`)**.
+9. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`, `DEC-035`)**.
 10. **Annual Evaluation Cycle Architecture: `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)**.
 11. **Annual Plan Carry Forward Architecture: `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)**.
 12. **HR Control Center Architecture: `HR_CONTROL_CENTER_ARCHITECTURE = FROZEN` (`DEC-025`)**.
