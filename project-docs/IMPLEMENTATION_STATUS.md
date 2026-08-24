@@ -1,16 +1,15 @@
 # MBO V2 Implementation Status & Governance Control
 
 - **Active AI:** `Antigravity`
-- **Active Work Package Owner:** `Phase 1 / MBO-P01-WP-002`
+- **Active Work Package Owner:** `Phase 2 / MBO-P02-WP-001`
 - **Handoff State:** `SAFE_CHECKPOINT`
-- **Last Handoff At:** `2026-08-24T10:50:00+07:00`
-- **Last Handoff Commit:** `647951d`
-- **Current Phase:** **`PHASE 1: SAFETY & TEST FOUNDATION HARNESS (IN PROGRESS / READY FOR PHASE 1 GATE REVIEW)`**
-- **Current Work Package:** `MBO-P01-WP-002 (Controlled Sandbox Write Readiness)`
-- **WP-001 Status:** **`PASSED (Baseline & Safety Gate)`**
-- **WP-002 Status:** **`PASSED (Controlled Sandbox Write Readiness Gate)`**
-- **Phase 1 Overall Status:** **`READY FOR USER FINAL GATE REVIEW`**
-- **Last Safe Commit:** `647951d`
+- **Last Handoff At:** `2026-08-24T11:05:00+07:00`
+- **Last Handoff Commit:** `ed4e4e9`
+- **Current Phase:** **`PHASE 2: ANNUAL RECORD FOUNDATION (IN PROGRESS)`**
+- **Current Work Package:** `MBO-P02-WP-001 (Annual Identity & Fiscal Year Foundation)`
+- **WP-001 Status:** **`PASSED (Pure Fiscal Year Engine & Record Key Logic Complete)`**
+- **WP-002 (Next Work Package):** `LOCKED / PENDING USER REVIEW` (Annual Record Creation & Lookup Flow)
+- **Last Safe Commit:** `ed4e4e9`
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`, Kintone Writes = 0)
 - **Open Defects:** **0**
 - **Blockers:** **0**
@@ -22,10 +21,12 @@
 | Phase | Description | Status | Pass Gate Date |
 | :---: | :--- | :---: | :---: |
 | **P0** | **Final Implementation Blueprint & Phased Delivery Model** | **PASSED** | 2026-08-24 |
-| **P1** | **Safety & Test Foundation Harness** | **READY FOR GATE REVIEW** | 2026-08-24 |
+| **P1** | **Safety & Test Foundation Harness** | **PASSED** | 2026-08-24 |
 |  | ↳ *WP-001: Baseline & Safety Gate* | *PASSED* | 2026-08-24 |
 |  | ↳ *WP-002: Controlled Sandbox Write Readiness* | *PASSED* | 2026-08-24 |
-| **P2** | Annual Record Foundation (App 794 Base Schema) | LOCKED (DO NOT START) | - |
+| **P2** | **Annual Record Foundation (App 794 Base Schema)** | **IN PROGRESS** | - |
+|  | ↳ *WP-001: Annual Identity & Fiscal Year Foundation* | *PASSED* | 2026-08-24 |
+|  | ↳ *WP-002: Annual Record Creation & Validation Pipeline* | *LOCKED* | - |
 | **P3** | Evaluation Profile, Competency & Scoring Engine | LOCKED | - |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
@@ -42,21 +43,17 @@
 
 ---
 
-## 2. Test & Safety Gate Metrics for Phase 1 (WP-001 + WP-002)
-* **Automated Unit Tests:** 52/52 Passing (32 Baseline + 8 WP-001 Safety + 12 WP-002 Scope Safety).
-* **Explicit Sandbox Allow-List:** `PASS` (794/795 authorized only when explicitly in WP allow-list).
-* **Protected Hard Block:** `PASS` (53, 283, 305, 307, 310, 640, 643, 715, 716 permanently blocked regardless of allow-list).
-* **Operation-Level Scope Guard:** `PASS` (`assertWorkPackageAuthorization` verifies operation and resource).
-* **Pre-Write Backup Gate:** `PASS` (Requires `backupVerified: true` before write authorization).
-* **Expected Change Manifest Gate:** `PASS` (Requires non-empty manifest before write authorization).
-* **Fail-Closed Behavior:** `PASS` (Missing, invalid, or corrupted configs trigger strict DENY).
-* **Temporary Write Window:** `PASS` (Requires `activeWindow: true` and defaults to closed `[]`).
-* **Secret Scan:** `PASS` (0 exposed secrets).
-* **Kintone Write Operations:** **0 (Zero Writes)**.
+## 2. Test & Safety Gate Metrics for Phase 2 WP-001
+* **Automated Unit Tests:** 61/61 Passing (32 Baseline + 20 Safety + 9 Annual Foundation).
+* **Japanese FY Engine:** `PASS` (`ANNUAL-001` & `ANNUAL-002` boundary validations).
+* **Leading Zero Preservation:** `PASS` (`ANNUAL-003`: `"0149"` preserved as string).
+* **Record Key Generation:** `PASS` (`ANNUAL-004` & `ANNUAL-005`: `"FY2027-0149"` unique key).
+* **App 794 Schema Fidelity:** `PASS` (`Expected Diff = NONE`, `Unexpected Diff = NONE`).
+* **Zero Artificial Writes:** `PASS` (`WRITE_ALLOWED_APPS = []`, `Kintone Writes = 0`).
 * **Kintone Apps Modified:** **NONE**.
 
 ---
 
 ## 3. Next Action & Boundaries
-* **Immediate Action:** Present Phase 1 WP-002 completion report in Thai to the user and STOP.
-* **Do Not Start:** Strictly **DO NOT START PHASE 2** (Annual Record Foundation) until the user explicitly reviews and approves the Phase 1 Final Gate.
+* **Immediate Action:** Present Phase 2 WP-001 completion report in Thai to the user and STOP.
+* **Do Not Start:** Strictly **DO NOT START WP-002** (Annual Record Creation & Validation Pipeline) until user reviews and approves WP-001.

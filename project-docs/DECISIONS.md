@@ -1,5 +1,13 @@
 # Architecture & Design Decisions
 
+## DEC-029 — First Actual Kintone Write & Zero Artificial Write Policy
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Implementation Governance)
+- **Decision**:
+  1. **Zero Artificial Writes:** No artificial canary changes, temporary test fields, or dummy records may ever be written to Kintone solely to test write pipelines.
+  2. **No Required Business Change = No Kintone Write:** When existing Kintone schemas (such as App 794 annual identity fields) already conform to the target blueprint, all existing fields are marked `KEEP` with zero schema mutations (`WRITE_ALLOWED_APPS = []`).
+  3. **Strict Write Preconditions:** Actual Kintone write operations will occur exclusively when an approved work package specifically requires an actual business schema change, with an exact Expected Change Manifest, pre-write backup, temporary write window, read-back verification, and rollback procedure.
+
 ## DEC-028 — Multi-AI Continuity & Handoff Governance
 - **Date**: 2026-08-24
 - **Status**: FROZEN (Provider-Neutral Governance)
