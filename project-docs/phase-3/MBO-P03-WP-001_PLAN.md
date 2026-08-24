@@ -17,7 +17,7 @@
 ---
 
 ## 1. Purpose
-Establish the authoritative, configuration-driven foundation for Evaluation Profiles, Competency Sets, and Scoring Lineage for MBO 2026. This plan formally reconciles business rules, position mappings, appraiser weighting layers across Part A and Part B (`DEC-036`), Part A scoring modes (`Part_A_Scoring_Mode`), completeness gating, COCE exclusion, annual snapshot storage strategy, and schema requirements prior to any Phase 3 implementation or Kintone writes.
+Establish the authoritative, configuration-driven foundation for Evaluation Profiles, Competency Sets, and Scoring Lineage for MBO 2026. This plan formally reconciles business rules, position normalization policy, appraiser weighting layers across Part A and Part B (`DEC-036`), Part A scoring modes (`Part_A_Scoring_Mode`), completeness gating, COCE exclusion, annual snapshot storage strategy, version immutability, and schema requirements prior to any Phase 3 implementation or Kintone writes.
 
 ---
 
@@ -33,19 +33,24 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 5. Formalize `Part_A_Scoring_Mode` configuration property:
    - `DIFFICULTY_ACHIEVEMENT_MATRIX`: $\text{Objective\_Value} = \text{Matrix(Difficulty, Achievement)}$ (Used by Staff, Japan, Asst Mgr, Sect Mgr, Snr Mgr, DGM).
    - `ACHIEVEMENT_DIRECT`: $\text{Objective\_Value} = \text{Achievement}$ (Used by GM, VP; matrix field exists but is bypassed).
-6. Reconcile Annual Scoring Snapshot Storage Strategy with App 794 Field Manifest (`PHYSICAL_APP794_FIELD` vs `DERIVED_FROM_VERSIONED_SCORING_CONFIG`).
-7. Audit and categorize all App 794 fields against live deployed schema and repository specification (`config/schema-spec.js`).
-8. Present the Profile Configuration Storage trade-off options for user decision.
+6. Formalize Position Normalization Policy:
+   - `normalize_title(raw) = TRIM(COLLAPSE_INTERNAL_SPACES(LOWERCASE(raw)))`
+   - Strict prohibition of substring matching (`contains("Staff")`), suffix guessing, or semantic inference.
+7. Establish **Scoring Configuration Version Immutability Contract**: Once a `Scoring_Config_Version` is referenced by an Annual Record, that version is permanently immutable; modifications require issuing a new version tag.
+8. Reconcile Annual Scoring Snapshot Storage Strategy with App 794 Field Manifest (`PHYSICAL_APP794_FIELD` vs `DERIVED_FROM_VERSIONED_SCORING_CONFIG`).
+9. Audit and categorize all App 794 fields against live deployed schema and repository specification (`config/schema-spec.js`).
+10. Present the Profile Configuration Storage trade-off options for user decision.
 
 ---
 
 ## 3. Out of Scope
 1. Any Kintone write operations (App 794 schema changes, record creation, app creation) $\implies$ Strictly 0 writes in WP-001.
-2. Silent standardization of GM/VP Part A scoring behavior.
-3. Unequal appraiser weighting (e.g. 60/40 between appraisers) without separate user approval.
-4. Phase 3 JavaScript implementation (deferred to execution work packages).
-5. Phase 4 Hoshin dual-level gating.
-6. Phase 5 Enterprise App 795 seeding.
+2. Substring or heuristic position matching.
+3. Silent standardization of GM/VP Part A scoring behavior.
+4. Unequal appraiser weighting (e.g. 60/40 between appraisers) without separate user approval.
+5. Phase 3 JavaScript implementation (deferred to execution work packages).
+6. Phase 4 Hoshin dual-level gating.
+7. Phase 5 Enterprise App 795 seeding.
 
 ---
 
@@ -70,9 +75,10 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
    - Appraiser weight derives from $K_{\text{expected}}$ ($K=1 \implies 100\%$, $K=2 \implies 50/50\%$).
    - Scoring calculation strictly blocked unless $K_{\text{valid}} == K_{\text{expected}}$ across Part A and Part B.
    - Missing appraiser evaluation never triggers automatic weight redistribution to completed appraiser.
-2. **`DEC-035: SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`:** Live deployed Kintone configuration is primary truth for scoring formulas, weights, appraiser models, and rounding.
-3. **`DEC-024: Annual Profile Freeze`:** Evaluation profile, $K_{\text{expected}}$, and Scoring Configuration resolved once at Annual Record Initialization and frozen for the full Fiscal Year.
-4. **`DEC-023: Evaluation Profile Architecture`:** 4 Profile Families, configuration-driven master, hybrid storage.
+2. **Scoring Configuration Version Immutability Contract:** Once `Scoring_Config_Version` has been referenced by an Annual Record, that exact version becomes permanently immutable. Any scoring configuration change requires issuing a NEW `Scoring_Config_Version`. Historical scoring configurations must never be mutated in place.
+3. **`DEC-035: SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`:** Live deployed Kintone configuration is primary truth for scoring formulas, weights, appraiser models, and rounding.
+4. **`DEC-024: Annual Profile Freeze`:** Evaluation profile, $K_{\text{expected}}$, and Scoring Configuration resolved once at Annual Record Initialization and frozen for the full Fiscal Year.
+5. **`DEC-023: Evaluation Profile Architecture`:** 4 Profile Families, configuration-driven master, hybrid storage.
 
 ---
 
@@ -87,7 +93,15 @@ The MBO 2026 scoring engine strictly separates two independent weight layers:
 
 ---
 
-## 7. Position Resolution & Profile Family Hierarchy
+## 7. Position Resolution & Deterministic Normalization Policy
+
+### Position Normalization Function
+$$\text{normalize\_title}(\text{raw\_string}) = \text{TRIM}(\text{COLLAPSE\_INTERNAL\_SPACES}(\text{LOWERCASE}(\text{raw\_string})))$$
+
+### Prohibited Normalization Rules
+- **NO Substring Matching:** Matching `contains("Staff")` or `contains("Manager")` is strictly prohibited.
+- **NO Suffix / Prefix Guessing:** Guessing profile from partial title matches is strictly prohibited.
+- **NO Semantic Inference:** Inferring profile without direct legacy match or frozen rule is strictly prohibited.
 
 ### 8 Evaluation Groups mapped to 4 Profile Families:
 | Evaluation Group | Profile Family | Applicable Competency Set | Displayed Items | Included Items ($N_{\text{included}}$) | Part A Weight (%) | Part B Weight (%) | Current Deployed Appraisers ($K_{\text{expected}}$) | Layer 1 Appraiser Weights | Part A Scoring Mode | Authoritative Evidence |
@@ -100,8 +114,6 @@ The MBO 2026 scoring engine strictly separates two independent weight layers:
 | **Deputy General Mgr**| `PROFILE_MANAGEMENT` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | App 307 (Rev 579: PMS DGM) |
 | **General Manager** | `PROFILE_EXECUTIVE` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | **1** (Capacity: 1..2) | **100%** | `ACHIEVEMENT_DIRECT` | App 640 (Rev 542) / DEC-035 |
 | **Vice President** | `PROFILE_EXECUTIVE` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | **1** (Capacity: 1..2) | **100%** | `ACHIEVEMENT_DIRECT` | App 715 (Rev 543) / DEC-035 |
-
-*Note on Position Resolution:* All 63 raw position strings in App 53 (275 visible records) are audited individually in [`POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md) under a strict evidence classification policy. Positions with conflicting legacy evidence (e.g. `Assistant Section Manager`) or no direct evidence fail closed (`PROFILE_MAPPING_AMBIGUOUS` / `PROFILE_SOURCE_INVALID`).
 
 ---
 
@@ -134,7 +146,7 @@ At Annual Record Initialization, the following configuration attributes are gove
 | 1 | `Evaluation_Profile_Code` | **`PHYSICAL_APP794_FIELD`** | `Evaluation_Profile_Code` | `SINGLE_LINE_TEXT` | Immutable record snapshot of profile code |
 | 2 | `Profile_Family` | **`PHYSICAL_APP794_FIELD`** | `Profile_Family` | `SINGLE_LINE_TEXT` | Immutable record snapshot of profile family |
 | 3 | `Scoring_Config_Code` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Code` | `SINGLE_LINE_TEXT` | Versioned scoring config identifier |
-| 4 | `Scoring_Config_Version` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Version` | `SINGLE_LINE_TEXT` | Exact version SHA/tag for historical playback |
+| 4 | `Scoring_Config_Version` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Version` | `SINGLE_LINE_TEXT` | Immutable version SHA/tag for historical playback |
 | 5 | `Expected_Appraiser_Count` | **`PHYSICAL_APP794_FIELD`** | `Expected_Appraiser_Count` | `NUMBER` | Snapshot of $K_{\text{expected}}$ for completeness gate |
 | 6 | `PartA_Weight` | **`PHYSICAL_APP794_FIELD`** | `PartA_Weight` | `NUMBER` | Snapshot of Part A percentage weight |
 | 7 | `PartB_Weight` | **`PHYSICAL_APP794_FIELD`** | `PartB_Weight` | `NUMBER` | Snapshot of Part B percentage weight |
@@ -214,10 +226,13 @@ At Annual Record Initialization, the following configuration attributes are gove
 * `APPW-B-003`: Part B $K_{\text{expected}} = 2$ with 1 missing $\implies$ Fails closed (`APPRAISER_RATING_INCOMPLETE`).
 * `APPW-FINAL-001`: Final score calculation blocked until BOTH Part A and Part B completeness gates pass.
 
-### C. Position Resolution Evidence Suite
-* `POSITION-CONFLICT-001`: Position with conflicting legacy matches (e.g. `Assistant Section Manager`) fails closed with `PROFILE_MAPPING_AMBIGUOUS`.
+### C. Position Normalization & Evidence Suite
+* `POSITION-NORM-001`: Whitespace/case variants (e.g. `Senior  Manager`, `General manager`) resolve via `normalize_title()`.
+* `POSITION-SUBSTRING-FAIL-001`: Substring matching (e.g. `contains("Staff")`, `contains("Manager")`) is prohibited and fails closed (`PROFILE_MAPPING_AMBIGUOUS`).
+* `POSITION-CONFLICT-001`: Position with conflicting legacy matches (e.g. `Assistant Section Manager`, `Marketing Staff`) fails closed with `PROFILE_MAPPING_AMBIGUOUS`.
 * `POSITION-NOEVIDENCE-001`: Position with no direct legacy match or frozen rule fails closed with `PROFILE_MAPPING_AMBIGUOUS`.
 * `POSITION-RULE-001`: Canonical titles with frozen governance rules (`Staff`, `Chief`) resolve with `PROFILE_MAPPING_RESOLVED`.
+* `VERSION-IMMUTABILITY-001`: Historical scoring configuration cannot be mutated in place; version change creates a new immutable version tag.
 
 ---
 
