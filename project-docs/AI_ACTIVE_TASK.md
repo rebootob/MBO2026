@@ -1,40 +1,29 @@
-# AI ACTIVE TASK — CONTROLLED EXECUTION
+# AI ACTIVE TASK — REVIEW CORRECTION
 
 > **Control Plane:** ChatGPT / approved human reviewer
 > **Execution Plane:** Codex
-> **Rule:** Execute exactly this task. Do not redesign architecture or expand scope. Do not modify this file.
+> **Rule:** Execute exactly this correction task. Do not redesign architecture, expand scope, or perform any Kintone operation. Do not modify this file.
 
 ## ACTIVE TASK
 
 - **WP:** `MBO-P03-WP-002C`
-- **Stage:** `IMPLEMENTATION STAGE 2 — CONTROLLED PREVIEW APP CREATION + IDENTITY REGISTRATION`
+- **Stage:** `STAGE 2 INDEPENDENT REVIEW CORRECTION — LIVING DOC CONSISTENCY ONLY`
 - **Branch:** `ai/codex-wp002c`
-- **Accepted develop base:** `9d263a4`
-- **Stage-1 Gate:** `PASS`
-- **Target App:** `MBO Profile & Scoring Configuration Master [Sandbox]`
-- **Current App ID:** `NOT_ALLOCATED`
-- **Current App Status:** `NOT_CREATED`
-- **Environment:** `SANDBOX`
-- **Production:** `FALSE`
-- **Explicit User Authorization:** `YES — user authorized continuation after Stage-1 PASS`
-- **Authorized Kintone write:** exactly one `POST /k/v1/preview/app.json` for the exact target App name
-- **Schema writes:** `NO`
-- **Deploy to operating environment:** `NO`
-- **Record writes:** `NO`
+- **Review Result:** `MUST FIX`
+- **Implementation Commit:** `81f6452fe3416e09c91051df9be3de8bb4a391b9`
+- **Registry/Status Commit:** `9e5e746a44187ba32f55b905a4df37d2202ddf05`
+- **Verified App ID:** `796`
+- **Verified App Name:** `MBO Profile & Scoring Configuration Master [Sandbox]`
+- **App Status:** `PREVIEW_CREATED / NOT_DEPLOYED`
+- **Kintone Writes Authorized:** `NONE`
+- **Source-Code Changes Authorized:** `NONE`
+- **Schema / Deploy / Record Writes:** `NO`
 
-This stage may create the App **only in Kintone's preview/test settings environment**. It must not deploy the App to the operating environment yet.
+## REVIEW FINDING
 
-## OFFICIAL KINTONE CONTRACT TO PRESERVE
+Stage-2 implementation and safety boundaries passed technical review, but the living documentation is internally inconsistent and must be corrected before `WP002C_STAGE2_GATE = PASS`.
 
-For this stage:
-
-- Create preview App: `POST /k/v1/preview/app.json`
-- Request body: `{ "name": "MBO Profile & Scoring Configuration Master [Sandbox]" }`
-- Create response must contain string `app` and `revision`
-- API-token authentication is not valid for Add Preview App; use username/password authentication in this Node path
-- Identity read-back: `GET /k/v1/preview/app/settings.json?app=<RETURNED_APP_ID>`
-
-Do not change endpoints or add Space/Thread parameters.
+This is a documentation-only correction. Do not repeat APP_CREATE, do not call Kintone, and do not change implementation behavior.
 
 ## SYNC FIRST
 
@@ -42,326 +31,205 @@ Run:
 
 ```bash
 git status --short
-```
-
-If working tree is not clean, STOP and report. Do not stash/discard automatically.
-
-Then:
-
-```bash
 git fetch origin
 git merge --ff-only origin/ai/codex-wp002c
-```
-
-Verify branch:
-
-```bash
 git branch --show-current
 ```
 
-Expected: `ai/codex-wp002c`
+Expected branch:
 
-## PRE-WRITE SAFETY CHECKS
-
-Before implementing or executing the real write:
-
-1. Confirm `DISCOVERY_MODE === true`.
-2. Confirm `WRITE_ALLOWED_APPS` remains `[]`.
-3. Confirm `config/sandbox-apps.json` does NOT already contain a positive `scoringConfigMasterAppId`.
-4. Confirm `project-docs/APP_REGISTRY.md` does NOT already register the target exact name.
-5. Confirm target exact name is unchanged.
-6. Confirm `.env.local` provides `KINTONE_BASE_URL`, `KINTONE_USERNAME`, and `KINTONE_PASSWORD` without printing values.
-7. Do not request or print credentials.
-8. Run `npm test` before the live write. Expected current baseline: `154/154 PASS`.
-
-If any check fails: STOP. No Kintone write.
-
-## FILE BOUNDARY
-
-Allowed implementation changes before the live call:
-
-- `src/core/kintone-client.js`
-- `src/core/sandbox-write-guard.js` only if necessary to recognize the future registered App ID without weakening any existing guard
-- `tests/safety-guard.test.js`
-- `config/sandbox-apps.json` ONLY AFTER successful exact identity read-back
-- `project-docs/APP_REGISTRY.md` ONLY AFTER successful exact identity read-back
-- necessary living docs after success/failure
-
-A dedicated new script is allowed only if needed to provide a safe single-purpose executable. Prefer one cohesive script:
-
-- `scripts/kintone/create-scoring-config-master-preview.js`
-
-Do not modify the legacy `scripts/kintone/create-sandbox-apps.js` behavior.
-
-Do not modify scoring/profile modules.
-Do not modify App794/App795 configuration.
-Do not modify `project-docs/AI_ACTIVE_TASK.md`.
-
-## IMPLEMENTATION — SINGLE-PURPOSE EXECUTION PATH
-
-Implement the smallest safe executable path that:
-
-1. Builds the exact Stage-2 authorization object internally.
-2. Uses one unique authorization ID for this execution:
-
-   `MBO-P03-WP-002C-STAGE2-20260824-2144-ICT`
-
-3. Calls the existing Stage-1 `assertAppCreationRequestPreflight(...)` exactly once.
-4. Uses `getAppCreationConnection()` so APP_CREATE headers use username/password and do not include API token.
-5. Sends exactly one real request:
-
-   `POST /k/v1/preview/app.json`
-
-6. Sends exactly this body:
-
-```json
-{
-  "name": "MBO Profile & Scoring Configuration Master [Sandbox]"
-}
+```text
+ai/codex-wp002c
 ```
 
-7. Does not call the generic discovery-blocked `kintoneRequest()` for the POST.
-8. Does not provide a generic authorized-write bypass usable by other endpoints.
-9. Does not retry APP_CREATE automatically for any reason.
+If the worktree is not clean before sync, STOP and report. Do not stash/discard automatically.
 
-The single-purpose function/script may call `fetch()` directly only after the Stage-1 preflight has passed and only for this exact endpoint/body.
+## ALLOWED FILES
 
-## TRANSPORT / RESPONSE FAILURE RULE
+Only these files may be changed:
 
-This is critical.
+- `project-docs/CURRENT_STATE.md`
+- `project-docs/HANDOFF.md`
+- `project-docs/AI_REVIEW_PACKAGE.md`
+- `project-docs/IMPLEMENTATION_STATUS.md`
 
-If the APP_CREATE POST:
+Do not modify:
 
-- throws a network/transport error,
-- times out,
-- returns an unparseable response,
-- returns a response without a valid positive `app` ID,
-- or otherwise leaves uncertainty whether the server created the App,
+- `project-docs/AI_ACTIVE_TASK.md`
+- source code under `src/`
+- scripts under `scripts/`
+- tests under `tests/`
+- `config/sandbox-apps.json`
+- `project-docs/APP_REGISTRY.md`
+- Kintone configuration or records
 
-then:
+## REQUIRED CORRECTIONS
 
-`APP_CREATE_RESULT_UNCERTAIN`
+### 1. `project-docs/CURRENT_STATE.md`
 
-STOP immediately.
+Make the active WP description consistent with actual Stage-2 completion.
 
-Do NOT retry.
-Do NOT issue another POST.
-Do NOT guess an App ID.
-Do NOT search a range of IDs.
-Do NOT register anything.
+Replace stale `Plan Only` wording for the active WP with wording that clearly states:
 
-Report the uncertainty for independent reconciliation.
-
-If Kintone returns a clear non-success HTTP response before a valid App ID is received, report the exact HTTP status/error code without credentials and STOP. Do not retry automatically.
-
-## RESPONSE VALIDATION
-
-A successful create response must have:
-
-- `app`: string representing a positive integer
-- `revision`: non-empty numeric string
-
-Convert `app` to a positive integer only after validating its format.
-
-Do not trust the returned ID as final identity until read-back succeeds.
-
-## EXACT IDENTITY READ-BACK
-
-Immediately after receiving the returned real App ID, perform a password-authenticated GET:
-
-`GET /k/v1/preview/app/settings.json?app=<RETURNED_APP_ID>`
-
-No API token header for this Stage-2 identity verification path.
-
-Verify at minimum:
-
-- returned App ID is the exact ID used for read-back
-- `name === "MBO Profile & Scoring Configuration Master [Sandbox]"`
-- `revision` is present and valid
-- no other App ID is substituted
-
-If name/identity verification fails:
-
-`APP_IDENTITY_VERIFICATION_FAILED`
-
-Then:
-
-- STOP
-- do NOT register the ID in either registry
-- do NOT delete the App automatically
-- do NOT retry creation
-- report the returned App ID for controlled quarantine/recovery
-
-## REGISTER ONLY AFTER VERIFIED READ-BACK
-
-Only after exact identity read-back PASS:
-
-### 1. Update `config/sandbox-apps.json`
-
-Add explicit keys without changing existing 794/795 values:
-
-```json
-"scoringConfigMasterAppId": <REAL_VERIFIED_ID>
+```text
+MBO-P03-WP-002C — Stage 2 complete / independent review correction pending
 ```
 
-and add purpose text clearly identifying:
+Preserve:
 
-`MBO Profile & Scoring Configuration Master [Sandbox]`
-
-Preserve existing `mboV2AppId = 794` and `routingMasterAppId = 795` exactly.
-
-Update `getSandboxAppIds()` minimally so the verified `scoringConfigMasterAppId` is recognized as a registered sandbox target after it exists.
-
-Default `WRITE_ALLOWED_APPS` must remain `[]`.
-
-### 2. Update `project-docs/APP_REGISTRY.md`
-
-Add exactly one row for the real verified App ID:
-
-- Environment: `Sandbox / Preview`
-- Name: `MBO Profile & Scoring Configuration Master [Sandbox]`
-- Permission: `WP-SCOPED WRITABLE / DEFAULT DENY`
-- Purpose: `Versioned MBO evaluation profile and scoring configuration master`
-
-Do not mark it Production.
-Do not mark it Deployed.
-
-## APP STATUS AFTER STAGE 2
-
-After successful Stage 2, record:
-
-- `SCORING_MASTER_APP_ID = <REAL_VERIFIED_ID>`
+- `SCORING_MASTER_APP_ID = 796`
 - `APP_STATUS = PREVIEW_CREATED / NOT_DEPLOYED`
 - `ENVIRONMENT = SANDBOX`
 - `PRODUCTION = FALSE`
 - `SCHEMA_STATUS = NOT_CONFIGURED`
 - `BASELINE_SEED_STATUS = NOT_STARTED`
 - `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`
+- `DISCOVERY_MODE = true`
+- `WRITE_ALLOWED_APPS = []`
 
-Do not call `/k/v1/preview/app/deploy.json` in this stage.
+### 2. `project-docs/HANDOFF.md`
 
-## KINTONE WRITE BOUNDARY
+Remove stale WP-002B implementation-scope wording from the current WP-002C Stage-2 handoff.
 
-Authorized maximum for this stage:
+The current Stage-2 implementation scope must identify the actual Stage-2 artifacts, at minimum:
+
+- `scripts/kintone/create-scoring-config-master-preview.js`
+- `src/core/kintone-client.js`
+- `src/core/sandbox-write-guard.js`
+- `tests/safety-guard.test.js`
+
+Keep historical WP-002B information only in clearly historical WP-002B sections.
+
+Update the handoff timestamp/status metadata so it does not imply the handoff predates the completed Stage-2 work.
+
+### 3. `project-docs/AI_REVIEW_PACKAGE.md`
+
+Make the Stage-2 review evidence self-consistent.
+
+Required updates:
+
+- Replace `WP-002C Stage-2 Registry/Status Commit = (this commit)` with the actual SHA:
+
+  `9e5e746a44187ba32f55b905a4df37d2202ddf05`
+
+- Stage-2 test evidence must reflect the actual final regression baseline:
+
+  `161/161 PASS`
+
+- Do not present `tests/profile-scoring-resolver.test.js (148/148 total)` as the current Stage-2 full-suite evidence. It may remain only as historical WP-002B evidence if explicitly labeled historical.
+
+- Preserve the verified Stage-2 facts:
+  - APP_CREATE POST = 1
+  - PUT = 0
+  - DELETE = 0
+  - DEPLOY = 0
+  - RECORD WRITES = 0
+  - returned App ID = 796
+  - exact identity read-back name = `MBO Profile & Scoring Configuration Master [Sandbox]`
+  - create/read-back revision = `2`
+  - final status = `PREVIEW_CREATED / NOT_DEPLOYED`
+  - `WRITE_ALLOWED_APPS = []`
+
+### 4. `project-docs/IMPLEMENTATION_STATUS.md`
+
+Correct the Phase Progress Summary row for WP-002C.
+
+It must no longer say only:
 
 ```text
-APP_CREATE POST = exactly 1
-PUT             = 0
-DELETE          = 0
-DEPLOY          = 0
-RECORD WRITES   = 0
+Kintone Profile & Scoring Configuration Master (Plan) | PLAN_CREATED / PENDING INDEPENDENT REVIEW
 ```
 
-Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain permanent READ ONLY.
-Apps 794 and 795 receive zero writes.
+It must reflect actual state:
 
-## TESTS
+```text
+Stage 2 complete / independent review correction pending
+```
 
-Before the live write, add/adjust unit tests for the Stage-2 execution path using mocked `fetch` only. Prove:
+Do not mark the independent review PASS yet. Control Plane owns the final Gate decision.
 
-1. exact one POST endpoint/body is constructed
-2. preflight failure prevents fetch
-3. token header is absent
-4. password auth header is present
-5. malformed create response rejected
-6. invalid/non-positive App ID rejected
-7. transport failure produces `APP_CREATE_RESULT_UNCERTAIN` and no retry
-8. identity read-back uses the exact returned App ID
-9. identity name mismatch fails closed
-10. successful verified identity returns the exact positive App ID
-11. registry logic recognizes `scoringConfigMasterAppId` only when it is a positive integer
-12. 794 and 795 remain unchanged and protected by their existing rules
-13. default `WRITE_ALLOWED_APPS` remains empty
+Also update stale handoff timestamp metadata if needed for consistency.
 
-No real Kintone calls in unit tests.
+## INVARIANTS
 
-Run full tests before live execution.
+These facts must not change during this correction:
 
-## EXECUTION ORDER
+```text
+SCORING_MASTER_APP_ID = 796
+APP_STATUS = PREVIEW_CREATED / NOT_DEPLOYED
+APP_CREATE POST = 1
+PUT = 0
+DELETE = 0
+DEPLOY = 0
+RECORD WRITES = 0
+DISCOVERY_MODE = true
+WRITE_ALLOWED_APPS = []
+Apps 794 and 795 unchanged
+Protected Apps unchanged
+WP-002D NOT STARTED
+```
 
-Follow exactly:
+## VALIDATION
 
-1. Implement narrow Stage-2 execution path and mock tests.
-2. Run:
+Run:
 
 ```bash
 git diff --check
 npm test
 ```
 
-3. If tests fail: STOP. No live write.
-4. Commit implementation/tests BEFORE live write:
+Expected regression baseline:
 
-`feat: add controlled wp-002c preview app creator`
+```text
+161/161 PASS
+```
 
-5. Push `ai/codex-wp002c`.
-6. Reconfirm clean worktree and exact branch.
-7. Execute the single-purpose Stage-2 creation script/function exactly once.
-8. If creation or identity verification fails/uncertain: STOP; do not retry.
-9. If identity verification passes, update both registries with the exact real App ID.
-10. Update living docs with actual App ID and `PREVIEW_CREATED / NOT_DEPLOYED`.
-11. Run `git diff --check` and `npm test` again.
-12. Commit registry/status changes:
+Then verify the diff contains documentation changes only.
 
-`chore: register wp-002c scoring master preview app`
+Commit exactly once with a documentation-only commit, suggested message:
 
-13. Push branch.
-14. STOP. Do not configure schema and do not deploy.
+```text
+docs: align wp-002c stage2 review evidence
+```
+
+Push `ai/codex-wp002c` and STOP.
 
 ## FINAL REPORT
 
 Report only:
 
 - branch
-- implementation commit SHA
-- registry/status commit SHA if successful
-- tests total/passed/failed before live write
-- tests total/passed/failed after registration
-- Kintone POST count
-- Kintone PUT count
-- Kintone DELETE count
-- Kintone DEPLOY count
-- returned App ID if any
-- identity read-back PASS/FAIL/UNCERTAIN
-- exact App name read back
-- final `SCORING_MASTER_APP_ID`
-- final App status
+- correction commit SHA
+- changed files
+- `git diff --check` result
+- tests total/passed/failed
+- confirmation `Kintone operations = 0`
+- confirmation `source/test/config changes = 0`
+- final App ID/status preserved
 
-Never print credentials or authorization headers.
-
-Then STOP.
+Then STOP. Do not start WP-002D.
 
 # REVIEW EXPECTATION
 
-Independent Reviewer will inspect GitHub and verify:
+Independent Reviewer will verify:
 
-1. Stage-2 live creation was explicitly limited to the exact App name `MBO Profile & Scoring Configuration Master [Sandbox]`.
-2. Only `POST /k/v1/preview/app.json` was authorized for creation.
-3. Add Preview App used username/password auth and did not send API-token auth.
-4. No generic write bypass was introduced.
-5. APP_CREATE was attempted at most once.
-6. No automatic retry path exists.
-7. Uncertain transport outcome fails closed as `APP_CREATE_RESULT_UNCERTAIN`.
-8. Returned `app` and `revision` were validated.
-9. Identity was read back from `GET /k/v1/preview/app/settings.json` using the exact returned App ID.
-10. Exact App name was verified before registration.
-11. On successful verification, the same real ID was registered in both `config/sandbox-apps.json` and `APP_REGISTRY.md`.
-12. Existing App IDs 794 and 795 were not changed.
-13. `getSandboxAppIds()` recognizes the new App only after a positive registered ID exists.
-14. `WRITE_ALLOWED_APPS` remains `[]` after Stage 2.
-15. No schema, permission, process-management, record, seed, or publish configuration was written.
-16. No deploy call occurred.
-17. Protected Apps received zero writes.
-18. Apps 794 and 795 received zero writes.
-19. Final status is `PREVIEW_CREATED / NOT_DEPLOYED`, not Production/Deployed.
-20. Full regression passes after registration.
-21. WP-002D did not start.
+1. Correction commit changes documentation only.
+2. `CURRENT_STATE.md` no longer describes active WP-002C as `Plan Only`.
+3. `HANDOFF.md` current Stage-2 implementation scope names the actual Stage-2 artifacts rather than WP-002B resolver files.
+4. `AI_REVIEW_PACKAGE.md` records registry/status commit SHA `9e5e746a44187ba32f55b905a4df37d2202ddf05`.
+5. Stage-2 final regression evidence is consistently `161/161 PASS`.
+6. `IMPLEMENTATION_STATUS.md` Phase Progress Summary reflects Stage-2 completion and review correction pending.
+7. No document falsely marks independent review PASS before Control Plane approval.
+8. App ID `796` and exact App name remain unchanged.
+9. App status remains `PREVIEW_CREATED / NOT_DEPLOYED`.
+10. `WRITE_ALLOWED_APPS` remains `[]` and `DISCOVERY_MODE` remains `true`.
+11. No Kintone operation occurs during the correction.
+12. No source, test, config, schema, deploy, or record change occurs.
+13. WP-002D does not start.
 
-Expected gates:
+Expected post-correction review gates:
 
-- `APP_CREATE_EXECUTION_GATE = PASS / FAIL / UNCERTAIN`
-- `APP_IDENTITY_READBACK_GATE = PASS / FAIL`
-- `APP_REGISTRATION_GATE = PASS / FAIL`
+- `DOC_CONSISTENCY_GATE = PASS / FAIL`
 - `WRITE_SCOPE_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
 - `KINTONE_SAFETY_GATE = PASS / FAIL`
