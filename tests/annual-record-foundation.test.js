@@ -4,7 +4,8 @@ import {
   getJapaneseFiscalYear,
   normalizeEmployeeCode,
   generateRecordKey,
-  isValidRecordKeyFormat
+  isValidRecordKeyFormat,
+  isValidEmployeeCode
 } from '../src/core/fiscal-year-engine.js';
 import {
   DISCOVERY_MODE,
@@ -27,28 +28,34 @@ test('ANNUAL-002: Japanese FY on and after Apr 1 resolves to current calendar ye
   assert.equal(getJapaneseFiscalYear('2028-04-01'), 'FY2028');
 });
 
-test('ANNUAL-003: Employee Code strictly preserves string leading zeros and rejects numeric input (DEF-001)', () => {
-  const code = '0149';
-  const normalized = normalizeEmployeeCode(code);
-  assert.equal(normalized, '0149');
-  assert.equal(typeof normalized, 'string');
+test('ANNUAL-003: Employee Code strictly preserves string leading zeros and enforces canonical character set (DEF-001, DEF-005)', () => {
+  // Allowed canonical formats
+  assert.equal(normalizeEmployeeCode('0149'), '0149');
+  assert.equal(normalizeEmployeeCode('A0149'), 'A0149');
+  assert.equal(normalizeEmployeeCode('01-49'), '01-49');
+  assert.equal(normalizeEmployeeCode('EMP_999'), 'EMP_999');
 
-  // DEF-001: Numeric input must throw to prevent silent destruction of canonical codes
-  assert.throws(
-    () => normalizeEmployeeCode(149),
-    /Employee Code must be a string/
-  );
-  assert.throws(
-    () => normalizeEmployeeCode(null),
-    /cannot be null or undefined/
-  );
-  assert.throws(
-    () => normalizeEmployeeCode(''),
-    /Employee Code cannot be empty/
-  );
+  assert.equal(isValidEmployeeCode('0149'), true);
+  assert.equal(isValidEmployeeCode('A0149'), true);
+  assert.equal(isValidEmployeeCode('01-49'), true);
+
+  // Rejected non-string inputs (DEF-001)
+  assert.throws(() => normalizeEmployeeCode(149), /Employee Code must be a string/);
+  assert.throws(() => normalizeEmployeeCode(null), /cannot be null or undefined/);
+  assert.throws(() => normalizeEmployeeCode(''), /Employee Code cannot be empty/);
+  assert.throws(() => normalizeEmployeeCode('   '), /Employee Code cannot be empty/);
+
+  // Rejected illegal character formats (DEF-005)
+  assert.throws(() => normalizeEmployeeCode('01 49'), /Invalid Employee Code format/);
+  assert.throws(() => normalizeEmployeeCode('01/49'), /Invalid Employee Code format/);
+  assert.throws(() => normalizeEmployeeCode('01#49'), /Invalid Employee Code format/);
+
+  assert.equal(isValidEmployeeCode('01 49'), false);
+  assert.equal(isValidEmployeeCode('01/49'), false);
+  assert.equal(isValidEmployeeCode(149), false);
 });
 
-test('ANNUAL-004: Record Key generation produces exact {Fiscal_Year}-{Employee_Code} and validates format (DEF-002)', () => {
+test('ANNUAL-004: Record Key generation produces exact {Fiscal_Year}-{Employee_Code} and validates format contract (DEF-002, DEF-005)', () => {
   const recordKey = generateRecordKey('FY2027', '0149');
   assert.equal(recordKey, 'FY2027-0149');
   assert.equal(isValidRecordKeyFormat(recordKey), true);
@@ -56,10 +63,18 @@ test('ANNUAL-004: Record Key generation produces exact {Fiscal_Year}-{Employee_C
   // Case normalization for valid format
   assert.equal(generateRecordKey('fy2027', '0149'), 'FY2027-0149');
 
+  // Generator guarantees returned key matches isValidRecordKeyFormat
+  assert.equal(isValidRecordKeyFormat(generateRecordKey('FY2027', 'A0149')), true);
+  assert.equal(isValidRecordKeyFormat(generateRecordKey('FY2027', '01-49')), true);
+
   // Rejects invalid Fiscal Year format
   assert.throws(() => generateRecordKey('HELLO', '0149'), /Invalid Fiscal Year format/);
   assert.throws(() => generateRecordKey('FY27', '0149'), /Invalid Fiscal Year format/);
   assert.throws(() => generateRecordKey('', '0149'), /Fiscal Year is required/);
+
+  // Rejects incompatible employee code (DEF-005)
+  assert.throws(() => generateRecordKey('FY2027', '01 49'), /Invalid Employee Code format/);
+  assert.throws(() => generateRecordKey('FY2027', '01/49'), /Invalid Employee Code format/);
   assert.throws(() => generateRecordKey('FY2027', 149), /Employee Code must be a string/);
 });
 
@@ -69,6 +84,7 @@ test('ANNUAL-005: Input validation tests for Fiscal Year and Employee Code (DEF-
   assert.equal(isValidRecordKeyFormat(''), false);
   assert.equal(isValidRecordKeyFormat(null), false);
   assert.equal(isValidRecordKeyFormat('INVALID_FORMAT'), false);
+  assert.equal(isValidRecordKeyFormat('FY2027-01 49'), false);
 });
 
 test('ANNUAL-006: App 53 remains strictly read-only', () => {
@@ -106,7 +122,7 @@ test('ANNUAL-009: Protected legacy apps remain unchanged (Hard Deny)', () => {
   }
 });
 
-test('ANNUAL-010: Strict calendar date validation rejects invalid calendar dates and trailing garbage (DEF-002)', () => {
+test('ANNUAL-010: Strict calendar date & timestamp validation rejects invalid dates and invalid time components (DEF-002, DEF-006)', () => {
   // Invalid Month
   assert.throws(() => getJapaneseFiscalYear('2027-13-01'), /Invalid month: 13/);
   assert.throws(() => getJapaneseFiscalYear('2027-00-01'), /Invalid month: 0/);
@@ -115,6 +131,12 @@ test('ANNUAL-010: Strict calendar date validation rejects invalid calendar dates
   assert.throws(() => getJapaneseFiscalYear('2027-02-31'), /Invalid day: 31/);
   assert.throws(() => getJapaneseFiscalYear('2027-04-00'), /Invalid day: 0/);
   assert.throws(() => getJapaneseFiscalYear('2027-04-31'), /Invalid day: 31/); // April has 30 days
+
+  // Invalid Timestamps (DEF-006)
+  assert.throws(() => getJapaneseFiscalYear('2027-04-01T99:99:99'), /Invalid hour: 99/);
+  assert.throws(() => getJapaneseFiscalYear('2027-04-01T25:70:80+07:00'), /Invalid hour: 25/);
+  assert.throws(() => getJapaneseFiscalYear('2027-04-01T12:99:00'), /Invalid minute: 99/);
+  assert.throws(() => getJapaneseFiscalYear('2027-04-01T12:00:99'), /Invalid second: 99/);
 
   // Trailing garbage / Invalid format
   assert.throws(() => getJapaneseFiscalYear('2027-04-01abc'), /Invalid date format/);

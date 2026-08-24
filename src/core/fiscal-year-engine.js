@@ -5,11 +5,11 @@
  * 1. Japanese Fiscal Year runs from 1 April to 31 March.
  *    - Example: 2027-04-01 to 2028-03-31 is FY2027.
  *    - Example: 2027-03-31 is FY2026.
- * 2. Employee Code is strictly required to be a String, preserving leading zeros (e.g. "0149").
- *    Numeric input (e.g. 149) is rejected to prevent silent corruption of canonical codes.
+ * 2. Employee Code is strictly required to be a String matching /^[A-Za-z0-9_-]+$/, preserving leading zeros (e.g. "0149").
+ *    Numeric input (e.g. 149), spaces (e.g. "01 49"), slashes, and symbols are rejected to prevent silent corruption.
  * 3. Fiscal Year must match /^FY\d{4}$/i.
- * 4. Record Key is strictly formatted as "{Fiscal_Year}-{Employee_Code}" (e.g. "FY2027-0149").
- * 5. Strict date validation rejects invalid calendar dates (e.g. 2027-13-01, 2027-02-31, 2027-04-01abc).
+ * 4. Record Key is strictly formatted as "{Fiscal_Year}-{Employee_Code}" (e.g. "FY2027-0149") and must satisfy /^FY\d{4}-[A-Za-z0-9_-]+$/.
+ * 5. Strict date/time validation rejects invalid calendar dates and invalid timestamp hours/minutes/seconds.
  */
 
 function isLeapYear(year) {
@@ -23,8 +23,8 @@ function getDaysInMonth(year, month) {
 
 /**
  * Parse and strictly validate a date input (string or Date object).
- * Rejects invalid calendar dates, invalid months/days, and trailing garbage.
- * @param {Date|string} dateInput - Date object or ISO date string (YYYY-MM-DD)
+ * Rejects invalid calendar dates, invalid months/days, invalid hours/minutes/seconds, and trailing garbage.
+ * @param {Date|string} dateInput - Date object or ISO date string (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss...)
  * @returns {{ year: number, month: number, day: number }}
  */
 function parseAndValidateDate(dateInput) {
@@ -38,7 +38,7 @@ function parseAndValidateDate(dateInput) {
     const trimmed = dateInput.trim();
 
     // Check for exact YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss(Z|offset)
-    const dateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/);
+    const dateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))?)?$/);
     if (!dateMatch) {
       throw new Error(`Invalid date format (must be YYYY-MM-DD or ISO-8601): "${dateInput}"`);
     }
@@ -46,6 +46,35 @@ function parseAndValidateDate(dateInput) {
     year = parseInt(dateMatch[1], 10);
     month = parseInt(dateMatch[2], 10);
     day = parseInt(dateMatch[3], 10);
+
+    // If time components exist, strictly validate hour, minute, second, and timezone offset
+    if (dateMatch[4] !== undefined) {
+      const hour = parseInt(dateMatch[4], 10);
+      const minute = parseInt(dateMatch[5], 10);
+      const second = parseInt(dateMatch[6], 10);
+
+      if (hour < 0 || hour > 23) {
+        throw new Error(`Invalid hour: ${hour} in date "${dateInput}". Hour must be between 00 and 23.`);
+      }
+      if (minute < 0 || minute > 59) {
+        throw new Error(`Invalid minute: ${minute} in date "${dateInput}". Minute must be between 00 and 59.`);
+      }
+      if (second < 0 || second > 59) {
+        throw new Error(`Invalid second: ${second} in date "${dateInput}". Second must be between 00 and 59.`);
+      }
+
+      // If timezone offset exists, validate offset bounds
+      if (dateMatch[8] !== undefined) {
+        const offsetHour = parseInt(dateMatch[9], 10);
+        const offsetMinute = parseInt(dateMatch[10], 10);
+        if (offsetHour < 0 || offsetHour > 14) {
+          throw new Error(`Invalid timezone offset hour: ${offsetHour} in date "${dateInput}".`);
+        }
+        if (offsetMinute < 0 || offsetMinute > 59) {
+          throw new Error(`Invalid timezone offset minute: ${offsetMinute} in date "${dateInput}".`);
+        }
+      }
+    }
 
     // If ISO string with UTC 'Z' timezone, evaluate in UTC
     if (dateMatch[7] === 'Z') {
@@ -101,9 +130,26 @@ export function getJapaneseFiscalYear(dateInput = new Date()) {
 }
 
 /**
+ * Validate that a string qualifies as a canonical Employee Code.
+ * Must match /^[A-Za-z0-9_-]+$/.
+ * @param {any} code - Value to test
+ * @returns {boolean} True if code is non-empty string matching /^[A-Za-z0-9_-]+$/
+ */
+export function isValidEmployeeCode(code) {
+  if (typeof code !== 'string') {
+    return false;
+  }
+  const trimmed = code.trim();
+  if (trimmed.length === 0) {
+    return false;
+  }
+  return /^[A-Za-z0-9_-]+$/.test(trimmed);
+}
+
+/**
  * Normalize and strictly validate an Employee Code.
- * Enforces String type to guarantee canonical leading zeros are never destroyed.
- * Rejects numeric inputs (e.g. 149) and non-string types.
+ * Enforces String type and format /^[A-Za-z0-9_-]+$/ to guarantee canonical leading zeros are never destroyed.
+ * Rejects numeric inputs (e.g. 149), spaces (e.g. "01 49"), slashes, and non-string types.
  * @param {string} code - Raw employee code input (must be string)
  * @returns {string} Canonical preserved string representation (e.g. "0149")
  */
@@ -121,12 +167,29 @@ export function normalizeEmployeeCode(code) {
     throw new Error('Employee Code cannot be empty.');
   }
 
+  if (!/^[A-Za-z0-9_-]+$/.test(strCode)) {
+    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must contain only alphanumeric characters, underscores, and hyphens (no spaces or slashes).`);
+  }
+
   return strCode;
 }
 
 /**
+ * Validate that a given Record Key conforms to standard MBO V2 format.
+ * @param {string} recordKey - Record Key string to validate
+ * @returns {boolean} True if format matches /^FY\d{4}-[A-Za-z0-9_-]+$/
+ */
+export function isValidRecordKeyFormat(recordKey) {
+  if (!recordKey || typeof recordKey !== 'string') {
+    return false;
+  }
+  return /^FY\d{4}-[A-Za-z0-9_-]+$/.test(recordKey.trim());
+}
+
+/**
  * Generate standard MBO Record Key from Fiscal Year and Employee Code.
- * Validates that Fiscal Year matches /^FY\d{4}$/i and Employee Code is a valid canonical string.
+ * Validates that Fiscal Year matches /^FY\d{4}$/i and Employee Code satisfies canonical contract.
+ * Guarantees that the returned Record Key satisfies isValidRecordKeyFormat() === true.
  * @param {string} fiscalYear - Fiscal Year string (e.g. "FY2027")
  * @param {string} employeeCode - Canonical string Employee Code (e.g. "0149")
  * @returns {string} Standard Record Key (e.g. "FY2027-0149")
@@ -142,18 +205,11 @@ export function generateRecordKey(fiscalYear, employeeCode) {
   }
 
   const cleanEmpCode = normalizeEmployeeCode(employeeCode);
+  const generatedKey = `${cleanFy}-${cleanEmpCode}`;
 
-  return `${cleanFy}-${cleanEmpCode}`;
-}
-
-/**
- * Validate that a given Record Key conforms to standard MBO V2 format.
- * @param {string} recordKey - Record Key string to validate
- * @returns {boolean} True if format matches /^FY\d{4}-[A-Za-z0-9_-]+$/
- */
-export function isValidRecordKeyFormat(recordKey) {
-  if (!recordKey || typeof recordKey !== 'string') {
-    return false;
+  if (!isValidRecordKeyFormat(generatedKey)) {
+    throw new Error(`Generated Record Key "${generatedKey}" violates canonical Record Key format.`);
   }
-  return /^FY\d{4}-[A-Za-z0-9_-]+$/.test(recordKey.trim());
+
+  return generatedKey;
 }
