@@ -8,6 +8,7 @@
   2. **Evidence-Based Technical Review:** Technical verification is based strictly on Source code, Git Diff, Config Snapshots, Test Output, Read-back verification, and Audit Evidence. Screenshots are strictly limited to UI layout, responsive visual design, or visual error inspection.
   3. **Multi-AI Compatibility:** The review package must be provider-neutral, facilitating peer reviews across Antigravity, ChatGPT, OpenAI Codex, Claude, or Human Technical Leads.
   4. **Dual Gate Requirement:** A Work Package is only fully complete when both `IMPLEMENTATION_GATE = PASS` and `REVIEW_GATE = PASS`.
+  5. **Review Commit Separation Rule:** To avoid recursive SHA updates, `Implementation Target Commit` (the commit containing the source/test changes under review) and `Review Package / Evidence Commit` (the commit packaging the review documentation) are tracked as distinct metadata fields.
 
 ## DEC-029 — First Actual Kintone Write & Zero Artificial Write Policy
 - **Date**: 2026-08-24
