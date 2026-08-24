@@ -978,8 +978,14 @@ test('WP002C-S3C-023: prefixed drop-down labels are rejected by exact schema ass
 });
 
 test('WP002C-S3C-024: missing or wrong schema contract ID is rejected', () => {
+  const reqMissing = { ...validSchemaRequest() };
+  delete reqMissing.schemaContractId;
   assert.throws(
-    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-024'), { ...validSchemaRequest(), schemaContractId: 'WRONG_CONTRACT' }),
+    () => assertScoringMasterSchemaAuthorization(validSchemaAuthorization('s3c-024a'), reqMissing),
+    /Schema contract ID must be exactly WP002C_23_FIELDS_V1/
+  );
+  assert.throws(
+    () => assertScoringMasterSchemaAuthorization({ ...validSchemaAuthorization('s3c-024b'), schemaContractId: WP002C_SCHEMA_CONTRACT_ID }, { ...validSchemaRequest(), schemaContractId: 'WRONG_CONTRACT' }),
     /Schema contract ID must be exactly WP002C_23_FIELDS_V1/
   );
 });
@@ -993,4 +999,40 @@ test('WP002C-S3C-025: preflight stops if 1 or 23 planned fields already exist in
       /STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist/
     );
   });
+});
+test('WP002C-S3C-026: exact-purpose client rejects missing/wrong request schema contract ID before fetch', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildSchemaFetch();
+    const reqMissing = { ...validSchemaRequest() };
+    delete reqMissing.schemaContractId;
+    await assert.rejects(
+      () => configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-026a'), reqMissing, fetchMock),
+      /Schema contract ID must be exactly WP002C_23_FIELDS_V1/
+    );
+    assert.equal(calls.length, 0);
+
+    const reqWrong = validSchemaRequest({ schemaContractId: 'WRONG' });
+    await assert.rejects(
+      () => configureAndDeployScoringMasterSchema(validSchemaAuthorization('s3c-026b'), reqWrong, fetchMock),
+      /Schema contract ID must be exactly WP002C_23_FIELDS_V1/
+    );
+    assert.equal(calls.length, 0);
+  });
+});
+
+test('WP002C-S3C-027: all 23 generated labels equal field codes', () => {
+  const payload = generateExact23FieldsPayload();
+  for (const [code, field] of Object.entries(payload)) {
+    assert.equal(field.label, code);
+  }
+  assert.equal(assertExact23FieldSchema(payload), true);
+});
+
+test('WP002C-S3C-028: readback with one altered field label is rejected', () => {
+  const payload = generateExact23FieldsPayload();
+  payload.Master_Record_Key.label = 'Altered_Label';
+  assert.throws(
+    () => assertExact23FieldSchema(payload),
+    /SCHEMA_VERIFICATION_FAILED: Field Master_Record_Key label mismatch/
+  );
 });

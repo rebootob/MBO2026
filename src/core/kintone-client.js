@@ -455,6 +455,9 @@ export function assertExact23FieldSchema(propertiesPayload, failureCode = 'SCHEM
     if (!actual || typeof actual !== 'object') {
       throw new Error(`${failureCode}: Field ${spec.code} is missing from read-back.`);
     }
+    if (actual.label !== spec.code) {
+      throw new Error(`${failureCode}: Field ${spec.code} label mismatch (expected '${spec.code}', got '${actual.label}').`);
+    }
     if (actual.type !== spec.type) {
       throw new Error(`${failureCode}: Field ${spec.code} type mismatch (expected ${spec.type}, got ${actual.type}).`);
     }
@@ -510,7 +513,7 @@ function isNoDefaultValue(val) {
 }
 
 export async function configureAndDeployScoringMasterSchema(authConfig, requestConfig, fetchImpl = globalThis.fetch, options = {}) {
-  assertScoringMasterSchemaAuthorization(authConfig, { schemaContractId: WP002C_SCHEMA_CONTRACT_ID, ...requestConfig });
+  assertScoringMasterSchemaAuthorization(authConfig, requestConfig);
   const { baseUrl, headers } = getAppCreationConnection();
   const appId = WP002C_SCORING_MASTER_APP_ID;
   const maxStatusChecks = options.maxStatusChecks ?? 30;
