@@ -2,7 +2,7 @@
 
 > **Document Status:** Active Tracking Register  
 > **Format Standard:** `MBO-P{PHASE}-DEF-{NUMBER}`  
-> **Last Updated:** 2026-08-24T12:45:00+07:00  
+> **Last Updated:** 2026-08-24T13:00:00+07:00  
 
 ---
 
@@ -28,12 +28,8 @@
 | **MBO-P02-DEF-008** | P2 | Severity 2 | Source record matched via numeric query representation could return a disparate `emp_text` (e.g. requested `"149"` matched `Number = 149`, but record stored `emp_text = "0150"`). | Lack of post-lookup identity consistency check between canonical source and input. | `src/services/employee-service.js` | Implemented identity consistency check asserting exact match or numeric equivalence for digit-only inputs; mismatches throw `EMPLOYEE_SOURCE_MISMATCH`. | `EMP-015`, `EMP-016` passing | **`CLOSED`** |
 | **MBO-P02-DEF-009** | P2 | Severity 2 | Malformed Kintone API response (e.g. `{}`, `{ records: null }`) was silently converted by `resp?.records || []` into `EMPLOYEE_NOT_FOUND`. | Missing response structure validation before records evaluation. | `src/services/employee-service.js` | Added strict validation requiring `Array.isArray(resp.records)`; invalid responses throw `SOURCE_RESPONSE_INVALID`. | `EMP-017`, `EMP-018` passing | **`CLOSED`** |
 | **MBO-P02-DEF-010** | P2 | Severity 3 | Unit test mock fixture in `tests/employee-lookup-service.test.js` contained real employee personal data. | Real discovery record values copied into test fixture. | `tests/employee-lookup-service.test.js` | Replaced personal fixture values with synthetic data (`"Test Employee"`, `"พนักงานทดสอบ"`, `"pilot0149@example.invalid"`), retaining only structural IDs (`"0149"`, `"TME1"`). | `EMP-008` passing | **`CLOSED`** |
-
----
-
-## 3. Data Governance Observations (Open Non-Defect Observations)
-
-| Observation ID | Subsystem | Description | Resolution Plan | Status |
-| :--- | :--- | :--- | :--- | :---: |
-| **OBS-001** | App 53 Master Data Quality | 79 records in App 53 lack canonical `emp_text` and 2 records contain invalid format codes. Eligibility cannot currently be determined from App 53 status fields. | Handled via fail-closed state `EMPLOYEE_SOURCE_INCOMPLETE` without speculative padding. HR data cleansing required prior to full rollout. | **`OPEN_OBSERVATION`** |
-| **OBS-002** | Test Fixture Privacy | Historical commits prior to WP-002 Cycle 2 contained test fixtures derived from discovery data. | Test fixtures sanitized to 100% synthetic data (`DEF-010`). Git history not rewritten in this WP. | **`OPEN_OBSERVATION`** |
+| **MBO-P02-DEF-011** | P2 | Severity 2 | Rollback exact-record authorization was not actually enforced in guard functions. | Missing target record ID assertion in safety guard module. | `src/core/sandbox-write-guard.js` | Added `assertRollbackAuthorization` requiring exact string match of `targetRecordId === allowedRecordId` and denying multi-record deletions. | `REC-018` passing | **`FIXED_PENDING_RETEST`** |
+| **MBO-P02-DEF-012** | P2 | Severity 2 | Layer-2 unique conflict handling was tested directly against mock API rather than through service error translator. | Missing service-level error translator for Kintone create errors. | `src/services/annual-record-service.js` | Implemented `AnnualRecordService.translateCreateError` translating Kintone `CB_VA01` into structured `DUPLICATE_MBO_EXISTS`. | `REC-004` passing | **`FIXED_PENDING_RETEST`** |
+| **MBO-P02-DEF-013** | P2 | Severity 2 | Malformed duplicate-check responses (e.g. `{}`, `{ records: null }`) could fail open. | Missing response array validation in duplicate check. | `src/services/annual-record-service.js` | Added strict validation requiring `Array.isArray(resp.records)`; invalid responses throw `DUPLICATE_CHECK_RESPONSE_INVALID`. | `REC-019`, `REC-020` passing | **`FIXED_PENDING_RETEST`** |
+| **MBO-P02-DEF-014** | P2 | Severity 2 | Normalized read-back skipped server defaults and CALC fields rather than validating them. | Read-back loop unconditionally skipped fields with `defaultValue` or `CALC`. | `src/services/annual-record-service.js` | Implemented Tier B default matching (`READBACK_DEFAULT_MISMATCH`) and Tier D CALC write-prohibition verification. | `REC-011` passing | **`FIXED_PENDING_RETEST`** |
+| **MBO-P02-DEF-015** | P2 | Severity 2 | `REC-005`..`REC-008` did not test the actual Annual Record orchestration pipeline. | Tests bypassed service orchestration pipeline. | `src/services/annual-record-service.js`, `tests/annual-record-initialization.test.js` | Implemented `prepareInitializationCandidate` pipeline and rewrote `REC-005`..`REC-008` to verify failure propagation and 0 create calls. | `REC-005`..`REC-008` passing | **`FIXED_PENDING_RETEST`** |
