@@ -2,7 +2,10 @@
 ## EVALUATION PROFILE & COMPETENCY CONFIGURATION FOUNDATION
 ### Frozen Architecture Reconciliation & Authoritative Evidence Baseline
 
-> **Document Type:** Authoritative Repository Implementation Plan  
+> **Document Type:** Authoritative Repository Implementation Plan
+> **Scoring Source of Truth:** `LIVE_KINTONE_FIRST` (User-Confirmed Rule: Live Kintone calculation behavior is primary truth over secondary Excel artifacts).  
+> **Scoring Evidence Matrix:** [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)  
+  
 > **Phase:** `Phase 3: Evaluation Profile, Competency & Scoring Engine`  
 > **Work Package ID:** `MBO-P03-WP-001`  
 > **Plan Gate Status:** `PLAN_GATE: READY FOR INDEPENDENT REVIEW`  
@@ -39,7 +42,7 @@ The purpose of **`MBO-P03-WP-001`** is to establish the authoritative, configura
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
 | **Staff & Chief** | `PROFILE_STAFF_CHIEF` | `COMP_SET_OPERATIONAL_V1` | 6 | **5** | **70%** | **30%** | 2 | App 283 / `exp/PMS_Staff & Chief_PART_B.xlsx` / DEC-023 |
 | **Japanese Staff** | `PROFILE_JAPANESE_STAFF`| `COMP_SET_OPERATIONAL_V1` | 6 | **5** | **70%** | **30%** | 2 | App 716 (`info app/716`) / DEC-023 |
-| **Assistant Manager**| `PROFILE_MANAGEMENT` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | 2 | App 310 (`info app/310`) / DEC-023 |
+| **Assistant Manager**| `PROFILE_MANAGEMENT` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **60%** | **40%** | 2 | App 310 (Live Formula: 60/40 overrides doc) |
 | **Section Manager** | `PROFILE_MANAGEMENT` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | 2 | App 305 (`info app/305`) / DEC-023 |
 | **Senior Manager** | `PROFILE_MANAGEMENT` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | 2 | App 643 (`info app/643`) / DEC-023 |
 | **Deputy General Mgr**| `PROFILE_MANAGEMENT` | `COMP_SET_MANAGEMENT_V1` | 8 | **7** | **50%** | **50%** | 2 | EVALUATION_PROFILE_ARCHITECTURE.md (L46) |

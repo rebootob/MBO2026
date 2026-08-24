@@ -1,10 +1,12 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T14:46:00+07:00
+- **Updated At**: 2026-08-24T14:55:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE (PLANNING)`**
 - **Active AI:** `Antigravity`
-- **Active Work Package**: `MBO-P03-WP-001 (Reconciled Plan Review Mode)`
+- **Active Work Package**: `MBO-P03-WP-001 (Kintone-First Scoring Plan Review Mode)`
 - **Review Status**: `WP-001 PLAN GATE PENDING INDEPENDENT REVIEW`
+- **Scoring Source of Truth**: `LIVE_KINTONE_FIRST`
+- **Scoring Evidence Matrix**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **Handoff State**: `SAFE_CHECKPOINT`
 - **Current Branch**: `develop`
@@ -17,24 +19,25 @@
 1. **Phase 0: Blueprint & Phased Delivery Model: `PASSED / FROZEN`**.
 2. **Phase 1: Safety & Test Foundation Harness: `PASSED / FROZEN`**.
 3. **Phase 2: Annual Record Foundation: `PASSED / FROZEN`**.
-4. **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
-5. **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
-6. **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
-7. **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` & `CONTROLLED_REOPEN_REVISION_MODEL = FROZEN` (`DEC-022`)**.
-8. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`)**.
-9. **Annual Evaluation Cycle Architecture: `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)**.
-10. **Annual Plan Carry Forward Architecture: `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)**.
-11. **HR Control Center Architecture: `HR_CONTROL_CENTER_ARCHITECTURE = FROZEN` (`DEC-025`)**.
-12. **Guided Workflow UX Architecture: `GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN` (`DEC-026`)**.
-13. **Implementation Delivery Model: `IMPLEMENTATION_DELIVERY_MODEL = FROZEN` (`DEC-027`)**.
-14. **Multi-AI Continuity & Handoff Protocol: `MULTI_AI_HANDOFF_GOVERNANCE = FROZEN` (`DEC-028`)**.
-15. **First Actual Kintone Write Policy: `ZERO_ARTIFICIAL_WRITES = FROZEN` (`DEC-029`)**.
-16. **AI Review Package Governance & Commit Separation: `STANDARDIZED_REVIEW_PACKAGE = FROZEN` (`DEC-030`)**.
-17. **Active Section Requester Master & Account Mapping: `FROZEN` (`DEC-031`)**.
-18. **Retirement of Section TMT3: `FROZEN` (`DEC-032`)**.
-19. **App 794 Requester_User Schema Baseline Preservation: `FROZEN` (`DEC-033`)**.
-20. **Enterprise App 795 Seeding Deferred to Phase 5: `FROZEN` (`DEC-034`)**.
-21. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
+4. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (User-Confirmed Rule)**.
+5. **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
+6. **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
+7. **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
+8. **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` & `CONTROLLED_REOPEN_REVISION_MODEL = FROZEN` (`DEC-022`)**.
+9. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`)**.
+10. **Annual Evaluation Cycle Architecture: `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)**.
+11. **Annual Plan Carry Forward Architecture: `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)**.
+12. **HR Control Center Architecture: `HR_CONTROL_CENTER_ARCHITECTURE = FROZEN` (`DEC-025`)**.
+13. **Guided Workflow UX Architecture: `GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN` (`DEC-026`)**.
+14. **Implementation Delivery Model: `IMPLEMENTATION_DELIVERY_MODEL = FROZEN` (`DEC-027`)**.
+15. **Multi-AI Continuity & Handoff Protocol: `MULTI_AI_HANDOFF_GOVERNANCE = FROZEN` (`DEC-028`)**.
+16. **First Actual Kintone Write Policy: `ZERO_ARTIFICIAL_WRITES = FROZEN` (`DEC-029`)**.
+17. **AI Review Package Governance & Commit Separation: `STANDARDIZED_REVIEW_PACKAGE = FROZEN` (`DEC-030`)**.
+18. **Active Section Requester Master & Account Mapping: `FROZEN` (`DEC-031`)**.
+19. **Retirement of Section TMT3: `FROZEN` (`DEC-032`)**.
+20. **App 794 Requester_User Schema Baseline Preservation: `FROZEN` (`DEC-033`)**.
+21. **Enterprise App 795 Seeding Deferred to Phase 5: `FROZEN` (`DEC-034`)**.
+22. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
 
 ## Test & Defect Status
 - **Automated Unit Tests:** 116/116 Tests Passing (`npm test`)
