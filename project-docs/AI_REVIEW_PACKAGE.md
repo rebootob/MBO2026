@@ -8,8 +8,8 @@
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-> **WP-002C Status:** **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_2 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** (`APP_CREATE` authorization consumed/closed; schema/deploy/record writes unauthorized)
-> **Last Updated:** 2026-08-24T22:12:30+07:00
+> **WP-002C Status:** **`STAGE 2 PASSED / FROZEN; WP002C_STAGE2_GATE = PASS`** (`APP_CREATE` authorization consumed/closed; schema/deploy/record writes unauthorized)
+> **Last Updated:** 2026-08-24T22:17:04+07:00
 
 ---
 
@@ -29,6 +29,8 @@
 | **WP-002C Stage-1 Implementation Commit (Commit A)** | `4d951401244f78f30523e758ed211c44e16c5294` | Narrow APP_CREATE guard, pure preview preflight, password-only auth preparation, and regression tests |
 | **WP-002C Stage-2 Implementation Commit** | `81f6452fe3416e09c91051df9be3de8bb4a391b9` | Single-purpose exact-name Preview App creator, identity verification, and mocked safety tests |
 | **WP-002C Stage-2 Registry/Status Commit** | `9e5e746a44187ba32f55b905a4df37d2202ddf05` | Verified App 796 registration and status metadata; independent review remains pending |
+| **WP-002C Stage-2 Review Correction Commit** | `d4cf052cbf20d881cea38149739be77e4b630c53` | Living-document consistency correction accepted by Control Plane |
+| **WP-002C Stage-2 Independent Review Closure** | `PASS` | `BLOCKER = 0`; `MUST FIX = 0`; `WP002C_STAGE2_GATE = PASS` |
 
 ---
 
@@ -40,9 +42,9 @@
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
 | **Mode** | **`IMPLEMENTATION STAGE 2 — CONTROLLED PREVIEW APP CREATION + IDENTITY REGISTRATION`** |
-| **Claimed Status** | **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_2 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** |
-| **Independent Review Gate** | **`PENDING`** |
-| **Next Work Package** | `WP-002C INDEPENDENT REVIEW` |
+| **Claimed Status** | **`STAGE 2 PASSED / FROZEN`** |
+| **Independent Review Gate** | **`PASS`** (`WP002C_STAGE2_GATE = PASS`) |
+| **Next Action** | `AWAIT CONTROL PLANE AUTHORIZATION FOR WP-002C STAGE 3` (Stage 3 not authorized or started) |
 | **Master App Dependency** | **`SCORING_MASTER_APP_ID = 796; PREVIEW_CREATED / NOT_DEPLOYED`** — exact target name verified by Preview settings read-back; `SANDBOX`; production `FALSE`; schema not configured |
 | **WP-002C Authoritative Plan** | `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md` |
 | **Plan Deliverable** | 23 future schema fields; immutable payload fields 1–19; lifecycle/audit fields 20–23; controlled validate → hash → persist → triple-equality read-back → overlap gate → publish → final read-back |
