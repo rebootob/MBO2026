@@ -56,26 +56,34 @@ Establish an authoritative, robust, and fail-closed Employee Lookup & Identity V
 
 ---
 
-### D. Current App 53 Source Data Quality Audit
-Discovery data audit of App 53 (275 records, `info app/App_53_Discovery_2026-08-23T08-53-01-729Z.json`) reveals:
-* **Total Records:** 275
-* **`emp_text` (`SINGLE_LINE_TEXT`):** Populated in 196 records, **Missing/Empty in 79 records**.
-* **`Number` (`NUMBER`):** Populated in 275 records (0 missing).
-* **Duplicate `emp_text`:** 1 pair (code `'9000'` has 2 records).
-* **Duplicate `Number`:** 1 pair (number `9000` has 2 records).
-* **Pilot Employee 0149 (Record ID 386):**
-  - `emp_text`: `'0149'` (`SINGLE_LINE_TEXT`)
-  - `Number`: `'149'` (`NUMBER`)
-  - `Text`: `'Mr.Gritchai  Somphonkrang'`
-  - `Text_0`: Thai name
-  - `Drop_down_0`: `'Eco Energy & Textile Machinery'`
-  - `Drop_down`: `'TME1'`
-  - `Text_2`: `'Marketing Chief'`
-  - `Text_4`: `'gritchai@ttmet.co.th'`
-  - `Date`: `'2021-04-01'` (Employee Start Date)
-  - `Expiry_Date`: `'2026-11-01'`
+### D. App 53 Source Data Quality Audit & Evidence
+Discovery audit of App 53 (Employee Namelist Master - 275 records, timestamp `2026-08-23T08:53:01.729Z`) demonstrates:
+* **Total Master Records:** 275 records.
+* **Canonical `emp_text` (`SINGLE_LINE_TEXT`):** Populated in 196 records, **Missing/Empty in 79 records**.
+* **`Number` (`NUMBER`):** Populated in 275 records (0 missing, includes 3 decimal legacy records e.g. `'135.02'`).
+* **Duplicate Detection (Fail-Closed Evidence):**
+  - Duplicate `emp_text = "9000"`: 2 records.
+  - Duplicate `Number = 9000`: 2 records.
+  - *Behavioral Verification:* When queried with `limit 2`, `records.length > 1` triggers **`EMPLOYEE_SOURCE_AMBIGUOUS`** and halts execution safely.
 
----
+#### Classification of 79 Records with Missing `emp_text`:
+* **Eligibility Status Indicator:** App 53 contains an optional `Expiry_Date` field (populated in only 81 of 275 records) and lacks an explicit resignation/active status boolean.
+* **Audit Breakdown of 79 Records:**
+  - **A. Current / Active / MBO-Eligible:** `0` (Cannot be confirmed by explicit status field)
+  - **B. Expired / Historical / Inactive:** `0` (No `Expiry_Date` populated in these 79 records)
+  - **C. Cannot Determine:** **`79 records`** (**`ELIGIBILITY_CANNOT_BE_DETERMINED`**)
+* **Section Distribution of 79 Records:**
+  - Section `TMG1` (Mold): 53 records
+  - Section `TMG2` (Engineering): 23 records
+  - Section `TMF1` (Machinery): 2 records
+  - Section `TMF2` (Industrial): 1 record
+  - **Pilot Section `TME1`:** **`0 records missing`** (100% of TME1 employees possess canonical `emp_text`).
+* **Pilot Employee `0149` (Record ID 386) Verification:**
+  - `emp_text`: `'0149'` (Canonical String preserved)
+  - `Number`: `'149'` (Query representation only)
+  - `Section`: `'TME1'`
+  - `Employee_Start_Date`: `'2021-04-01'` (Confirmed present)
+* **Critical Architectural Rule:** Because 79 records lack canonical `emp_text`, any attempt to look up an employee whose App 53 record has missing `emp_text` will **FAIL CLOSED** with status **`EMPLOYEE_SOURCE_INCOMPLETE`**, completely preventing speculative padding (`padStart`) or numeric unpadded code leakage into MBO V2.
 
 ### E. Confirmed App 53 Field Mapping (8 Header Fields)
 | Business Concept | Target MBO Field | App 53 Source Code | App 53 Field Type | Source Evidence Pointer / Example | Confidence |
