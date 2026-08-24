@@ -1,12 +1,11 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T15:39:00+07:00
+- **Updated At**: 2026-08-24T16:15:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE (PLANNING)`**
 - **Active AI:** `Antigravity`
-- **Active Work Package**: `MBO-P03-WP-001 (Complete Plan & DEC-036 Review Mode)`
+- **Active Work Package**: `MBO-P03-WP-001 (Part A Lineage & Legacy Position Review Mode)`
 - **Review Status**: `WP-001 PLAN GATE PENDING INDEPENDENT REVIEW`
-- **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
-- **Scoring Governance Rules**: `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`
+- **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035, DEC-036)`
 - **Scoring Evidence Matrix**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Matrix**: [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
 - **Competency Evidence Matrix**: [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)

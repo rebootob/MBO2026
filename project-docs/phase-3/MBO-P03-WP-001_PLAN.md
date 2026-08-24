@@ -17,7 +17,7 @@
 ---
 
 ## 1. Purpose
-Establish the authoritative, configuration-driven foundation for Evaluation Profiles, Competency Sets, and Scoring Lineage for MBO 2026. This plan formally reconciles business rules, position mappings, appraiser weighting layers (`DEC-036`), completeness gating, COCE exclusion, and schema requirements prior to any Phase 3 implementation or Kintone writes.
+Establish the authoritative, configuration-driven foundation for Evaluation Profiles, Competency Sets, and Scoring Lineage for MBO 2026. This plan formally reconciles business rules, position mappings, appraiser weighting layers across Part A and Part B (`DEC-036`), completeness gating, COCE exclusion, and schema requirements prior to any Phase 3 implementation or Kintone writes.
 
 ---
 
@@ -26,8 +26,9 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 2. Formalize the 2 standard Competency Sets: Operational (6 items, $N_{\text{included}}=5$) and Management/Executive (8 items, $N_{\text{included}}=7$).
 3. Establish dynamic COCE gate calculation ($N_{\text{included}} = \text{count}(\text{Included\_In\_Score} == \text{true})$) where COCE is evaluated but excluded from scored points.
 4. Establish the Appraiser Weight & Completeness Governance (`DEC-036`):
+   - Universal application to **BOTH Part A (Objectives) and Part B (Competencies)**.
    - Derivation of Appraiser Weight from $K_{\text{expected}}$ ($1/K_{\text{expected}}$).
-   - Strict completeness gate ($K_{\text{valid}} == K_{\text{expected}}$).
+   - Strict completeness gates ($K_{\text{valid}} == K_{\text{expected}}$) across Part A and Part B.
    - Prohibition of automatic weight redistribution upon missing appraiser evaluation.
 5. Audit and categorize all App 794 fields against live deployed schema and repository specification (`config/schema-spec.js`).
 6. Present the Profile Configuration Storage trade-off options for user decision.
@@ -60,12 +61,12 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 
 ## 5. Business Rules & Governance Invariants
 
-1. **`DEC-036: Appraiser Weight & Completeness Governance`:**
+1. **`DEC-036: Appraiser Weight & Completeness Governance (Part A & Part B)`:**
    - Appraiser weight derives from $K_{\text{expected}}$ ($K=1 \implies 100\%$, $K=2 \implies 50/50\%$).
-   - Scoring calculation strictly blocked unless $K_{\text{valid}} == K_{\text{expected}}$.
+   - Scoring calculation strictly blocked unless $K_{\text{valid}} == K_{\text{expected}}$ across Part A and Part B.
    - Missing appraiser evaluation never triggers automatic weight redistribution to completed appraiser.
 2. **`DEC-035: SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST`:** Live deployed Kintone configuration is primary truth for scoring formulas, weights, appraiser models, and rounding.
-3. **`DEC-024: Annual Profile Freeze`:** Evaluation profile and $K_{\text{expected}}$ resolved once at Annual Record Initialization and frozen for the full Fiscal Year.
+3. **`DEC-024: Annual Profile Freeze`:** Evaluation profile, $K_{\text{expected}}$, and `Appraiser_Weight_Config` resolved once at Annual Record Initialization and frozen for the full Fiscal Year.
 4. **`DEC-023: Evaluation Profile Architecture`:** 4 Profile Families, configuration-driven master, hybrid storage.
 
 ---
@@ -76,7 +77,7 @@ The MBO 2026 scoring engine strictly separates two independent weight layers:
 
 | Layer | Weight Layer Name | Purpose | Configuration Source | Values |
 | :---: | :--- | :--- | :--- | :--- |
-| **Layer 1** | **Appraiser Weight** | Combines ratings across multiple appraisers for each competency item | Derived dynamically from $K_{\text{expected}}$ ($1/K_{\text{expected}}$) | $K=1 \implies 100\%$<br>$K=2 \implies 50\% / 50\%$ |
+| **Layer 1** | **Appraiser Weight** | Combines ratings across multiple appraisers for Part A and Part B | Derived dynamically from $K_{\text{expected}}$ ($1/K_{\text{expected}}$) | $K=1 \implies 100\%$<br>$K=2 \implies 50\% / 50\%$ |
 | **Layer 2** | **Part A / Part B Weight** | Combines MBO objectives (Part A) and Competencies (Part B) into overall evaluation | Scoring Configuration Profile Split | Staff/Japan: **70 / 30**<br>Asst Mgr: **60 / 40**<br>Sect/Snr/DGM/GM/VP: **50 / 50** |
 
 ---
@@ -108,19 +109,24 @@ The MBO 2026 scoring engine strictly separates two independent weight layers:
 * **GM / VP (640, 715):** 50/50 Split, 1 Deployed Appraiser (100%), Denominator 14 (`ROUND((sum*2)/14, 2)`).
 
 ### B. Mathematical Formulation (`DEC-036`)
-1. **Competency Item Score:**
+1. **Part A Objective Combination Formula:**
+   $$\text{Objective\_Result}_i = \sum_{j=1}^{K_{\text{expected}}} (\text{Objective\_Value}_{i,j} \times \text{Appraiser\_Weight}_j) = \frac{\sum_{j=1}^{K_{\text{expected}}} \text{Objective\_Value}_{i,j}}{K_{\text{expected}}}$$
+   *(Calculated strictly when Part A completeness passes: $K_{\text{valid}} == K_{\text{expected}}$)*
+2. **Part B Competency Combination Formula:**
    $$\text{Competency\_Result}_i = \sum_{j=1}^{K_{\text{expected}}} (\text{Rating}_{i,j} \times \text{Appraiser\_Weight}_j) = \frac{\sum_{j=1}^{K_{\text{expected}}} \text{Rating}_{i,j}}{K_{\text{expected}}}$$
-   *(Calculated strictly when $K_{\text{valid}} == K_{\text{expected}}$)*
-2. **Part B Raw Score:**
+   *(Calculated strictly when Part B completeness passes: $K_{\text{valid}} == K_{\text{expected}}$)*
+3. **Part B Raw Score:**
    $$\text{PartB\_Raw} = \frac{\sum_{i \in \text{Scored}} \text{Competency\_Result}_i}{N_{\text{included}}}$$
-3. **Part A & Part B Weighted Scores:**
+4. **Part A & Part B Weighted Scores:**
    - $\text{PartA\_Weighted} = \text{ROUND}((\text{Part A Raw} \times \text{Part\_A\_Weight}) / 100, 2)$
    - $\text{PartB\_Weighted} = \text{ROUND}(\text{Part B Raw} \times (\text{Part\_B\_Weight} / 100), 2)$
-4. **Intermediate 5-Point Weighted Score:**
+5. **Intermediate 5-Point Weighted Score:**
    $$\text{Weighted\_Score\_5\_Point} = \text{PartA\_Weighted} + \text{PartB\_Weighted}$$
-5. **Final 100-Point Normalized Score:**
+6. **Final 100-Point Normalized Score:**
    $$\text{Final\_Score\_100\_Point} = \frac{\text{Weighted\_Score\_5\_Point} \times 100}{5}$$
-6. **Objective Difficulty x Achievement Matrix:** 20-case nested IF matrix verified identical across 8/8 apps (`MATRIX_IDENTICAL_ACROSS_APPS = 8 / 8 VERIFIED`).
+7. **Objective Difficulty x Achievement Matrix Verification:**
+   - **`OBJECTIVE_MATRIX_FIELD_FORMULA = 8 / 8 VERIFIED`** (Field exists on all 8 apps with identical 20-case formula).
+   - **`OBJECTIVE_MATRIX_ACTIVE_FINAL_USAGE = 6 / 8 ACTIVE, 2 / 8 PRESENT_BUT_BYPASSED`** (Apps 640 & 715 bypass matrix in production).
 
 ---
 
@@ -174,21 +180,18 @@ The MBO 2026 scoring engine strictly separates two independent weight layers:
 
 ## 13. Future Test Matrix Plan (Future Execution Phase)
 
-### A. Appraiser Weight & Completeness Test Suite (DEC-036)
-* `APPW-001`: $K_{\text{expected}} = 1 \implies \text{Weight} = 100\%$.
-* `APPW-002`: $K_{\text{expected}} = 2 \implies \text{Weights} = 50\% / 50\%$.
-* `APPW-003`: $K_{\text{expected}} = 2$ with 1 completed $\implies$ Fails closed (`APPRAISER_RATING_INCOMPLETE`).
-* `APPW-004`: Missing appraiser must NOT redistribute weight to completed appraiser.
-* `APPW-005`: $K_{\text{valid}} == K_{\text{expected}} \implies$ Calculation allowed.
-* `APPW-006`: Appraiser weights sum to 100%.
-* `APPW-007`: Appraiser Weight (Layer 1) independent from Part A/B Weight (Layer 2).
-* `APPW-008`: GM current baseline $K=1 \implies 100\%$.
-* `APPW-009`: VP current baseline $K=1 \implies 100\%$.
-* `APPW-010`: Management $K=2 \implies 50\% / 50\%$.
-* `APPW-011`: Annual scoring snapshot preserves $K_{\text{expected}}$ across fiscal year.
-* `APPW-012`: Routing stage reassignment does not alter scoring appraiser weight.
+### A. Part A Appraiser Weight & Completeness Test Suite (DEC-036)
+* `APPW-A-001`: Part A $K_{\text{expected}} = 1 \implies \text{Appraiser Weight} = 100\%$.
+* `APPW-A-002`: Part A $K_{\text{expected}} = 2 \implies \text{Appraiser Weights} = 50\% / 50\%$.
+* `APPW-A-003`: Part A $K_{\text{expected}} = 2$ with 1 missing $\implies$ Fails closed (`APPRAISER_RATING_INCOMPLETE`, no partial scoring, no auto-redistribution).
 
-### B. Core Profile & Scoring Test Suite
+### B. Part B Appraiser Weight & Completeness Test Suite (DEC-036)
+* `APPW-B-001`: Part B $K_{\text{expected}} = 1 \implies \text{Appraiser Weight} = 100\%$.
+* `APPW-B-002`: Part B $K_{\text{expected}} = 2 \implies \text{Appraiser Weights} = 50\% / 50\%$.
+* `APPW-B-003`: Part B $K_{\text{expected}} = 2$ with 1 missing $\implies$ Fails closed (`APPRAISER_RATING_INCOMPLETE`, no partial scoring, no auto-redistribution).
+
+### C. Final Score & Core Scoring Test Suite
+* `APPW-FINAL-001`: Final score calculation blocked until BOTH Part A and Part B completeness gates pass.
 * `test_profile_mapping_operational_70_30`: Verify Staff/Japan map to 70/30 split.
 * `test_profile_mapping_asst_mgr_60_40`: Verify Assistant Manager maps to 60/40 split.
 * `test_profile_mapping_mgmt_50_50`: Verify Sect/Snr/DGM map to 50/50 split.

@@ -137,3 +137,15 @@
 2. **Completeness Gate ($K_{	ext{valid}} == K_{	ext{expected}}$):** Partial appraiser evaluation fails closed with `APPRAISER_RATING_INCOMPLETE`. No partial scoring is permitted.
 3. **No Weight Redistribution:** A single completed appraiser in a 2-appraiser profile never inherits 100% weight.
 4. **Layer Separation:** Appraiser Weight (Layer 1) is completely decoupled from Part A / Part B Weight (Layer 2) and workflow routing.
+
+
+### Scoring Profile Weight Baseline (DEC-035, DEC-036)
+- **Staff & Chief:** 70% Part A / 30% Part B ($K_{	ext{expected}} = 2$, 50/50 Appraiser Weight)
+- **Japanese Staff:** 70% Part A / 30% Part B ($K_{	ext{expected}} = 2$, 50/50 Appraiser Weight)
+- **Assistant Manager:** **60% Part A / 40% Part B** ($K_{	ext{expected}} = 2$, 50/50 Appraiser Weight)
+- **Section Manager:** 50% Part A / 50% Part B ($K_{	ext{expected}} = 2$, 50/50 Appraiser Weight)
+- **Senior Manager:** 50% Part A / 50% Part B ($K_{	ext{expected}} = 2$, 50/50 Appraiser Weight)
+- **Deputy General Manager (DGM):** 50% Part A / 50% Part B ($K_{	ext{expected}} = 2$, 50/50 Appraiser Weight)
+- **General Manager (GM):** 50% Part A / 50% Part B ($K_{	ext{expected}} = 1$, 100% Appraiser Weight)
+- **Vice President (VP):** 50% Part A / 50% Part B ($K_{	ext{expected}} = 1$, 100% Appraiser Weight)
+- **Rounding Baseline:** `CURRENT_DEPLOYED_ROUNDING = LIVE_KINTONE_PER_SCORING_CONFIGURATION`. Unified rounding is `PROPOSED_TARGET_RULE`.

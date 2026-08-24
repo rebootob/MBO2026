@@ -170,25 +170,27 @@
   7. **Preservation of DEC-023 Architecture:** All other architectural principles of `DEC-023` (4 Profile Families, Configuration-Driven Master, COCE exclusion, Hybrid Storage) remain fully effective.
 
 
-## DEC-036 — Appraiser Weight & Completeness Governance
+## DEC-036 — Appraiser Weight & Completeness Governance (Part A & Part B)
 - **Date**: 2026-08-24
 - **Status**: FROZEN (User-Confirmed Core Governance Rule)
 - **Decision**:
-  1. **Two Distinct Weight Layers:** The scoring architecture strictly separates:
-     - **Weight Layer 1 (Appraiser Weight):** Weight distribution across multiple scoring appraisers ($1/K_{	ext{expected}}$).
+  1. **Scope across Both Part A and Part B:** Appraiser Weight Governance applies universally to all scoring calculations that combine evaluations from multiple scoring appraisers, including **Part A (Objective Evaluation)** and **Part B (Competency Evaluation)**.
+  2. **Two Distinct Weight Layers:** The scoring architecture strictly separates:
+     - **Weight Layer 1 (Appraiser Weight):** Weight distribution across multiple scoring appraisers ($1/K_{\text{expected}}$).
      - **Weight Layer 2 (Part A / Part B Weight):** Weight distribution between MBO objectives (Part A) and Competencies (Part B) (70/30, 60/40, or 50/50).
-  2. **Appraiser Weight Formulation:** Appraiser weight is dynamically derived from $K_{	ext{expected}}$ (resolved from the employee's annual Scoring Configuration):
-     - When $K_{	ext{expected}} = 1 \implies 	ext{Appraiser\_1\_Weight} = 100\%$.
-     - When $K_{	ext{expected}} = 2 \implies 	ext{Appraiser\_1\_Weight} = 50\%, 	ext{Appraiser\_2\_Weight} = 50\%$.
-     - General Equal-Weight Formula: $	ext{Appraiser\_Weight}_j = 1 / K_{	ext{expected}}$.
-     - Weights derive from $K_{	ext{expected}}$, never hardcoded to specific role titles.
-  3. **Competency Score Calculation:**
-     $$	ext{Competency\_Result}_i = \sum_{j=1}^{K_{	ext{expected}}} (	ext{Rating}_{i,j} 	imes 	ext{Appraiser\_Weight}_j) = rac{\sum 	ext{valid appraiser ratings}}{K_{	ext{expected}}}$$
-  4. **Strict Completeness Gate (Fail-Closed):** Scoring calculation is permitted **ONLY** when all expected appraisers have submitted valid ratings ($K_{	ext{valid}} == K_{	ext{expected}}$). If $K_{	ext{valid}} 
-eq K_{	ext{expected}}$, calculation is blocked, returning `APPRAISER_RATING_INCOMPLETE` with no partial scoring.
-  5. **No Automatic Weight Redistribution:** If $K_{	ext{expected}} = 2$ and only one appraiser has submitted ratings, the system **MUST NOT** redistribute weight to 100% for the completed appraiser. It must fail closed until the second appraiser completes evaluation.
-  6. **Current Deployed Truth & Mathematical Equivalence:**
-     - Operational & Management ($K_{	ext{expected}} = 2$): Legacy $\sum 	ext{ratings} / 10$ or $/ 14$ is mathematically equivalent to 50/50 appraiser weighting across 5 or 7 scored competencies.
-     - Executive GM & VP ($K_{	ext{expected}} = 1$): Legacy $(\sum 	ext{ratings} 	imes 2) / 14 = \sum 	ext{ratings} / 7$ is mathematically equivalent to a single appraiser contributing 100%.
-  7. **Annual Profile Snapshot:** $K_{	ext{expected}}$ and `Appraiser_Weight_Config` are resolved and snapshotted at Annual Record Initialization and frozen for the full FY under `DEC-024`.
-  8. **Separation of Scoring from Routing:** Scoring Appraiser count and weight belong strictly to the Scoring Configuration and are decoupled from workflow routing slots or stage approver reassignments.
+  3. **Appraiser Weight Formulation:** Appraiser weight is dynamically derived from $K_{\text{expected}}$ (resolved from the employee's annual Scoring Configuration):
+     - When $K_{\text{expected}} = 1 \implies \text{Appraiser\_1\_Weight} = 100\%$.
+     - When $K_{\text{expected}} = 2 \implies \text{Appraiser\_1\_Weight} = 50\%, \text{Appraiser\_2\_Weight} = 50\%$.
+     - General Equal-Weight Formula: $\text{Appraiser\_Weight}_j = 1 / K_{\text{expected}}$.
+     - Weights derive from $K_{\text{expected}}$, never hardcoded to specific role titles.
+  4. **Part A Objective Combination Formula:**
+     $$\text{Objective\_Result}_i = \sum_{j=1}^{K_{\text{expected}}} (\text{Objective\_Value}_{i,j} \times \text{Appraiser\_Weight}_j) = \frac{\sum_{j=1}^{K_{\text{expected}}} \text{Objective\_Value}_{i,j}}{K_{\text{expected}}}$$
+  5. **Part B Competency Combination Formula:**
+     $$\text{Competency\_Result}_i = \sum_{j=1}^{K_{\text{expected}}} (\text{Rating}_{i,j} \times \text{Appraiser\_Weight}_j) = \frac{\sum_{j=1}^{K_{\text{expected}}} \text{Rating}_{i,j}}{K_{\text{expected}}}$$
+  6. **Strict Completeness Gates (Fail-Closed):**
+     - **Part A Completeness Gate:** All required Part A appraiser inputs must be complete ($K_{\text{valid}} == K_{\text{expected}}$).
+     - **Part B Completeness Gate:** All required Part B competency ratings must be complete ($K_{\text{valid}} == K_{\text{expected}}$).
+     - **Final Score Availability:** Final score calculation is blocked until **BOTH** Part A and Part B completeness gates pass. If any required appraiser input is missing, the system returns `APPRAISER_RATING_INCOMPLETE` with no partial scoring.
+  7. **No Automatic Weight Redistribution:** If $K_{\text{expected}} = 2$ and only one appraiser has submitted evaluations, the system **MUST NOT** redistribute weight to 100% for the completed appraiser. It must fail closed until all required appraisers complete their evaluations.
+  8. **Annual Profile Snapshot:** $K_{\text{expected}}$, `Appraiser_Weight_Rule_Code`, and `Scoring_Config_Version` are resolved and snapshotted at Annual Record Initialization and frozen for the full FY under `DEC-024`.
+  9. **Separation of Scoring from Routing:** Scoring Appraiser count and weight belong strictly to the Scoring Configuration and are decoupled from workflow routing slots or stage approver reassignments.
