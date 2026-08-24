@@ -3,7 +3,7 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)  
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)  
 > **Review Policy:** Evidence-based verification (Source, Diff, Config, Test Evidence). Screenshots reserved for UI layout only.  
-> **Last Updated:** 2026-08-24T14:39:00+07:00  
+> **Last Updated:** 2026-08-24T14:46:00+07:00  
 
 ---
 
@@ -20,41 +20,32 @@
 | **Live Kintone Write Authorization** | **`NOT_AUTHORIZED / ZERO WRITES EXECUTED`** |
 | **Git Branch** | `develop` |
 | **Authoritative Repository Plan** | [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md) |
-| **Profile Master App ID** | **`PROFILE_MASTER_APP = UNASSIGNED (PROFILE_CONFIGURATION_STORAGE = DECISION_REQUIRED)`** |
-| **Critical Business Questions** | **`1 (Profile Configuration Storage Selection)`** |
-| **App 53 Position Values Audited** | **`63 Raw Positions Audited (62 Resolved, 1 Invalid / Empty)`** |
-| **Profile Hierarchy** | **`8 Evaluation Groups -> 4 Profile Families (70/30 vs 50/50)`** |
-| **Competency Configuration** | **`6 Competencies Traced (COCE Included_In_Score = false, Dynamic N_included = 5)`** |
+| **Profile Configuration Storage** | **`PROFILE_CONFIGURATION_STORAGE = DECISION_REQUIRED`** |
+| **Critical Business Questions** | **`1 (Profile Configuration Storage Architecture Selection)`** |
+| **App 53 Position Inventory** | **`63 Audited (62 Resolved with Direct Evidence, 1 Invalid / Empty)`** |
+| **Profile Family Mapping** | **`DGM -> PROFILE_MANAGEMENT (50/50), GM/VP -> PROFILE_EXECUTIVE (50/50)`** |
+| **Competency Sets** | **`Operational Set (6 items, N_included=5), Management/Exec Set (8 items, N_included=7)`** |
+| **App 794 Field Capacity Audit** | **`Competency 1..6 Live Exists; Competency 7..8 & Snapshot Fields = MISSING_TARGET_FIELD`** |
+| **App 796 / App 797 Status** | **`DESIGN_APP_ID != DEPLOYED_APP_ID (Not Deployed in App Registry)`** |
 | **Kintone Write Operations** | **`0 (Zero Writes Executed)`** |
 | **Kintone Apps Modified** | **`NONE`** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |
 
 ---
 
-## 2. Phase 3 WP-001 Planning & Architecture Summary
+## 2. Frozen Architecture Reconciliation Summary
 
-### A. Authoritative Plan Location
-The full, reviewable implementation plan is committed in the repository at:
-* [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
+### A. 8 Evaluation Groups to 4 Profile Families
+* **`PROFILE_STAFF_CHIEF`** (Staff & Chief): 70% Part A / 30% Part B $\implies$ `COMP_SET_OPERATIONAL_V1` ($N_{\text{included}} = 5$).
+* **`PROFILE_JAPANESE_STAFF`** (Japanese Staff): 70% Part A / 30% Part B $\implies$ `COMP_SET_OPERATIONAL_V1` ($N_{\text{included}} = 5$).
+* **`PROFILE_MANAGEMENT`** (Assistant Manager, Section Manager, Senior Manager, **Deputy General Manager**): 50% Part A / 50% Part B $\implies$ `COMP_SET_MANAGEMENT_V1` ($N_{\text{included}} = 7$).
+* **`PROFILE_EXECUTIVE`** (General Manager, Vice President): 50% Part A / 50% Part B $\implies$ `COMP_SET_MANAGEMENT_V1` ($N_{\text{included}} = 7$).
 
-### B. 8 Evaluation Groups to 4 Profile Families
-* **`PROFILE_STAFF_CHIEF`** (Staff & Chief): 70% Part A / 30% Part B
-* **`PROFILE_JAPANESE_STAFF`** (Japanese Staff): 70% Part A / 30% Part B
-* **`PROFILE_MANAGEMENT`** (Assistant Manager, Section Manager, Senior Manager): 50% Part A / 50% Part B
-* **`PROFILE_EXECUTIVE`** (Deputy General Manager, General Manager, Vice President): 50% Part A / 50% Part B
+### B. Master Competency Sets & COCE
+* **Operational Set:** `COMP_ADAPT`, `COMP_PROB`, `COMP_CUST`, `COMP_VALUE`, `COMP_SAFETY` (Scored), `COMP_COCE` (Excluded from score; dynamic denominator $N_{\text{included}} = 5$).
+* **Management/Executive Set:** 6 Operational items + `COMP_LEAD` (Leadership) + `COMP_STRAT` (Strategy/Coaching) $\implies$ 7 scored items, dynamic denominator $N_{\text{included}} = 7$.
 
-### C. 6 Core Competencies & Dynamic Score Formulation
-* Traced to `exp/PMS_Staff & Chief_PART_B.xlsx` and App 794.
-* `COMP_01`..`COMP_05`: `Included_In_Score = true`.
-* `COMP_06` (Compliance / COCE): `Included_In_Score = false` (Evaluated on 1-5 scale; excluded from Part B score calculation via dynamic denominator $N_{\text{included}} = 5$).
-
-### D. Annual Profile Freeze Invariant
-* Profile snapshot resolved at Annual Record initialization from canonical position and frozen for the entire FY (`DEC-024`).
-
----
-
-## 3. Automated Test Evidence (116 / 116 Tests Passing Baseline)
-
-* **Command:** `npm test`
-* **Test Suite Status:** 116 Defined, 116 Executed, 116 Passed, 0 Failed, 0 Skipped (100% Pass Rate).
-* **Phase 3 Planned Tests:** 20 proposed test cases (`PROF-001` through `PROF-020`) designed in repository plan (NOT yet executed).
+### C. Live App 794 Field Audit & Classification
+* `Competency_Result_1..6`, `Manager_Competency_Rating_1..6`, `GM_Competency_Rating_1..6`: `KEEP` (Live exists).
+* `Competency_Result_7..8`, `Manager_Competency_Rating_7..8`, `GM_Competency_Rating_7..8`, `Evaluation_Profile_Code`, `Profile_Family`, `PartA_Weight`, `PartB_Weight`: **`MISSING_TARGET_FIELD`** (Required for 8-item Management set; not yet created on live schema).
+* `PartA_Weighted_Score`, `PartB_Raw_Score`, `PartB_Weighted_Score`: **`SCHEMA_DRIFT`** (Hardcoded formulas require adaptation for dynamic profile weights and 7-item denominator).
