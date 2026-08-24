@@ -2,24 +2,24 @@
 
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002C`
-- **Handoff State:** `SAFE_CHECKPOINT (WP-002C STAGE 3C SCHEMA CONFIGURATION COMPLETE)`
-- **Last Handoff At:** `2026-08-25T06:22:00+07:00`
-- **Review Status:** `PHASE 3 WP-002C STAGE 3C SCHEMA CONFIGURATION COMPLETE / PENDING CHATGPT REVIEW`
-- **Implementation Authorization:** **`STAGE-3C FORM FIELDS POST & DEPLOY POST EXECUTED (1 ATTEMPT EACH); APP 796 LIVE_DEPLOYED; 23/23 FIELDS CONFIGURED; RECORD WRITES UNAUTHORIZED`**
+- **Handoff State:** `SAFE_CHECKPOINT (WP-002C STAGE 3C CODE CORRECTION COMPLETE)`
+- **Last Handoff At:** `2026-08-25T06:30:00+07:00`
+- **Review Status:** `WP002C_STAGE3C_GATE = BLOCKED / CORRECTION_REQUIRED`
+- **Implementation Authorization:** **`STAGE 3C CODE CORRECTION COMPLETE; THIS TASK KINTONE CALLS = 0; REPAIR WRITE UNAUTHORIZED`**
 - **Review Required By:** Independent Reviewer (ChatGPT) / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit:** `6e72553` (Frozen / Approved)
 - **Phase 3 WP-002 Plan Commit:** `2f87a3b`
 - **Current Phase:** **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package:** `MBO-P03-WP-002C (Guarded Schema Configuration — Stage 3C)`
+- **Current Work Package:** `MBO-P03-WP-002C (Stage 3C Review Correction)`
 - **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
 - **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-- **WP-002C Status:** **`STAGE 3C SCHEMA CONFIGURATION COMPLETE / PENDING CHATGPT REVIEW`** (whole WP remains IN PROGRESS; baseline seeding/publish stages not implemented)
+- **WP-002C Status:** **`WP002C_STAGE3C_GATE = BLOCKED / CORRECTION_REQUIRED`** (`APP 796 LIVE_DEPLOYED`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = CORRECTION_REQUIRED`; `CORRECTION_REQUIRED_FIELDS = Part_A_Scoring_Mode, Config_Status`; whole WP remains IN PROGRESS)
 - **WP-002C Correction Scope:** `APP_CREATE` exact-name one-time bootstrap authorization, verified ID registration, hash triple-equality, effective-overlap, trusted publish audit, and final read-back are plan requirements only
-- **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SCHEMA_STATUS = CONFIGURED_23_FIELDS`; `SCHEMA_FIELD_COUNT = 23`; `SANDBOX`; production `FALSE`; baseline seed not started; publish pipeline not deployed)
-- **NEXT_ACTION:** `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3C`
+- **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SANDBOX`; production `FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = CORRECTION_REQUIRED`; `BASELINE_SEED_STATUS = NOT_STARTED`; `RECORD_COUNT = 0`; `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`)
+- **NEXT_ACTION:** `AWAIT CHATGPT REVIEW OF STAGE3C CODE CORRECTION BEFORE ANY KINTONE REPAIR WRITE`
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate:** `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Kintone-Only Version Immutability)`
@@ -50,7 +50,7 @@
 - **WP-002B Source Code Path:** `src/profiles/profile-scoring-resolver.js` (reuses EmployeeService snapshot contract and `computeConfigurationHash()`)
 - **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (17 tests passing; 148/148 total suite passing)
 - **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
-- **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`; Stage-3B DEPLOY POST attempts = 1; PUT/DELETE/record/schema writes = 0)
+- **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`; Historical Stage-3C writes: FORM FIELDS POST = 1, DEPLOY POST = 1; THIS CORRECTION TASK KINTONE CALLS = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)
 - **Open Observations:** **5** (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
 - **Blockers:** **0 Implementation Defects**
@@ -74,7 +74,7 @@
 |  | ↳ *WP-002: Kintone-Only Profile & Scoring Configuration Foundation (Plan)* | **FROZEN / APPROVED** | 2026-08-24 |
 |  | ↳ *WP-002A: Kintone-Only Profile / Scoring Master Foundation (Code & Unit)* | **IMPLEMENTATION COMPLETE** | 2026-08-24 |
 |  | ↳ *WP-002B: Profile Resolution & Read-Only Scoring Config Resolver* | **PASSED / FROZEN** | 2026-08-24 |
-|  | ↳ *WP-002C: Kintone Profile & Scoring Configuration Master* | **STAGE 3C SCHEMA CONFIGURATION COMPLETE / PENDING REVIEW** | - |
+|  | ↳ *WP-002C: Kintone Profile & Scoring Configuration Master* | **STAGE 3C BLOCKED / CORRECTION REQUIRED** | - |
 | **P4** | Hoshin Governance & Dual-Level Gate | LOCKED | - |
 | **P5** | Generic Routing & Twin-Status Execution Engine | LOCKED | - |
 | **P6** | In-Flight Approver Change & HR Self-Service | LOCKED | - |
