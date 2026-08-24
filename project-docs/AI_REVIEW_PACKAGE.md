@@ -9,7 +9,7 @@
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 > **WP-002C Status:** **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_2 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** (`APP_CREATE` authorization consumed/closed; schema/deploy/record writes unauthorized)
-> **Last Updated:** 2026-08-24T21:00:00+07:00
+> **Last Updated:** 2026-08-24T22:12:30+07:00
 
 ---
 
@@ -28,7 +28,7 @@
 | **WP-002C Safety Correction Commit (Commit A)** | `e40c0c5b80ffc43299345348d45d75f559e8ebc4` | Exact-name bootstrap, verified-ID registration, hash/read-back, overlap, audit, and recovery plan |
 | **WP-002C Stage-1 Implementation Commit (Commit A)** | `4d951401244f78f30523e758ed211c44e16c5294` | Narrow APP_CREATE guard, pure preview preflight, password-only auth preparation, and regression tests |
 | **WP-002C Stage-2 Implementation Commit** | `81f6452fe3416e09c91051df9be3de8bb4a391b9` | Single-purpose exact-name Preview App creator, identity verification, and mocked safety tests |
-| **WP-002C Stage-2 Registry/Status Commit** | *(this commit)* | Verified App 796 registration and status metadata; independent review remains pending |
+| **WP-002C Stage-2 Registry/Status Commit** | `9e5e746a44187ba32f55b905a4df37d2202ddf05` | Verified App 796 registration and status metadata; independent review remains pending |
 
 ---
 
@@ -65,6 +65,7 @@
 | **Migration Decision** | **`DEC-040: LEGACY_MIGRATION_STATUS = DEFERRED`** with complete rollback contract |
 | **Resolver Module** | `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter) |
 | **Validation Modules** | `src/services/employee-service.js` provenance registry and `src/profiles/scoring-config-master.js` domain validation are reused by the resolver |
-| **Unit Test Suite** | `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing) |
+| **Historical WP-002B Unit Test Suite** | `tests/profile-scoring-resolver.test.js` (17 resolver tests; 148/148 full suite at WP-002B closure) |
+| **Stage-2 Full Regression Evidence** | `tests/safety-guard.test.js` plus full `npm test`: **161/161 PASS** |
 | **Kintone Write Operations** | **`APP_CREATE POST = 1; PUT = 0; DELETE = 0; DEPLOY = 0; RECORD WRITES = 0`** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |

@@ -1,6 +1,6 @@
 # AI Operational Handoff Document
 
-- **Handoff Date**: 2026-08-24T19:04:00+07:00
+- **Handoff Date**: 2026-08-24T22:12:30+07:00
 - **From AI**: Codex
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `ai/codex-wp002c`
@@ -15,7 +15,7 @@
 - **NEXT_WP**: `WP-002C INDEPENDENT REVIEW`
 - **WP-002C Plan**: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
 - **WP-002C Stage 2**: Exactly one Preview App POST created App 796; password-authenticated exact-ID settings read-back verified the exact name/revision; no schema, deploy, record, App 794, or App 795 write occurred
-- **Implementation Scope**: `src/profiles/profile-scoring-resolver.js` and `tests/profile-scoring-resolver.test.js`; reuses `EmployeeService` and `computeConfigurationHash()` with dependency-injected records only.
+- **Implementation Scope**: Stage-2 artifacts are `scripts/kintone/create-scoring-config-master-preview.js`, `src/core/kintone-client.js`, `src/core/sandbox-write-guard.js`, and `tests/safety-guard.test.js`; App 796 registry/status evidence is recorded separately. WP-002B resolver artifacts remain historical only.
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate**: `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Storage-Neutral Version Immutability)`
