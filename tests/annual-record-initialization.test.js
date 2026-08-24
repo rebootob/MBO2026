@@ -14,7 +14,8 @@ import {
   WRITE_ALLOWED_APPS,
   assertDiscoveryReadOnly,
   assertSandboxWriteTarget,
-  assertWorkPackageAuthorization
+  assertWorkPackageAuthorization,
+  assertRollbackAuthorization
 } from '../src/core/sandbox-write-guard.js';
 
 // Mock Synthetic Profile (Zero PII)
@@ -29,9 +30,17 @@ const mockSyntheticEmployee = {
   Employee_Start_Date: '2021-04-01'
 };
 
+const mockValidProperties = {
+  Record_Key: { type: 'SINGLE_LINE_TEXT', required: true, unique: true },
+  Fiscal_Year: { type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  Employee_Code: { type: 'SINGLE_LINE_TEXT', required: true, unique: false },
+  Objective_Count: { type: 'DROP_DOWN', required: true, defaultValue: '4' }
+};
+
 function createMockKintoneApi({
   formFieldsResponse = null,
   recordsResponse = [],
+  rawRecordsResponse = null,
   postResponse = null,
   shouldThrow = false,
   errorType = null
@@ -44,12 +53,13 @@ function createMockKintoneApi({
       callCount.getFormFields++;
       lastCalls.getFormFields = { appId };
       if (shouldThrow) throw new Error('API Schema Error');
-      return formFieldsResponse || { properties: {} };
+      return formFieldsResponse || { properties: mockValidProperties };
     },
     async getRecords(appId, query) {
       callCount.getRecords++;
       lastCalls.getRecords = { appId, query };
       if (shouldThrow) throw new Error('API Get Records Error');
+      if (rawRecordsResponse !== null) return rawRecordsResponse;
       return { records: recordsResponse };
     },
     async postRecord(appId, record) {
@@ -94,12 +104,6 @@ test('REC-001: Dynamic FY calculation and canonical employee code produce exact 
 });
 
 test('REC-002: Live schema preflight contract validates required, unique, and default metadata', async () => {
-  const mockValidProperties = {
-    Record_Key: { type: 'SINGLE_LINE_TEXT', required: true, unique: true },
-    Fiscal_Year: { type: 'SINGLE_LINE_TEXT', required: true, unique: false },
-    Employee_Code: { type: 'SINGLE_LINE_TEXT', required: true, unique: false },
-    Objective_Count: { type: 'DROP_DOWN', required: true, defaultValue: '4' }
-  };
   const api = createMockKintoneApi({ formFieldsResponse: { properties: mockValidProperties } });
   const preflight = await AnnualRecordService.performLiveSchemaPreflight(794, api);
 
@@ -126,29 +130,33 @@ test('REC-003: Layer 1 application duplicate check stops duplicate write before 
   );
 });
 
-test('REC-004: Layer 2 Kintone unique conflict simulated via mock produces structured duplicate error', async () => {
-  const api = createMockKintoneApi({ errorType: 'UNIQUE_CONFLICT' });
+test('REC-004: Layer 2 Kintone unique conflict translated via AnnualRecordService (DEF-012)', () => {
+  const kintoneErr = new Error('CB_VA01: Duplicate Record_Key unique constraint violation');
+  kintoneErr.code = 'CB_VA01';
 
-  await assert.rejects(
-    async () => await api.postRecord(794, {}),
-    (err) => {
-      assert.equal(err.code, 'CB_VA01');
-      assert.match(err.message, /unique constraint violation/);
-      return true;
-    }
-  );
+  const translated = AnnualRecordService.translateCreateError(kintoneErr, 'FY2026', '0149');
+  assert.equal(translated instanceof AnnualRecordError, true);
+  assert.equal(translated.code, 'DUPLICATE_MBO_EXISTS');
+  assert.match(translated.userMessageTH, /Record Key ซ้ำซ้อน/);
+  assert.equal(translated.cause, kintoneErr);
 });
 
-test('REC-005: Employee lookup EMPLOYEE_NOT_FOUND results in zero create calls', async () => {
+test('REC-005: Pipeline EMPLOYEE_NOT_FOUND fails closed with 0 create calls (DEF-015)', async () => {
   const mockApp53Api = {
     async getRecords() {
       return { records: [] }; // Not found
     }
   };
-  const app794Api = createMockKintoneApi();
+  const mboApi = createMockKintoneApi();
 
   await assert.rejects(
-    async () => await EmployeeService.lookupEmployee('9999', mockApp53Api),
+    async () => await AnnualRecordService.prepareInitializationCandidate({
+      executionDate: '2026-08-24',
+      employeeCode: '9999',
+      mboAppId: 794,
+      employeeApi: mockApp53Api,
+      mboApi
+    }),
     (err) => {
       assert.equal(err.code, 'EMPLOYEE_NOT_FOUND');
       return true;
@@ -156,24 +164,30 @@ test('REC-005: Employee lookup EMPLOYEE_NOT_FOUND results in zero create calls',
   );
 
   // Assert zero POST calls to App 794
-  assert.equal(app794Api.getCallCount().postRecord, 0);
+  assert.equal(mboApi.getCallCount().postRecord, 0);
 });
 
-test('REC-006: Employee lookup EMPLOYEE_CODE_INVALID results in zero create calls', async () => {
-  const app794Api = createMockKintoneApi();
+test('REC-006: Pipeline EMPLOYEE_CODE_INVALID fails closed with 0 create calls (DEF-015)', async () => {
+  const mboApi = createMockKintoneApi();
 
   await assert.rejects(
-    async () => await EmployeeService.lookupEmployee('01 49', {}),
+    async () => await AnnualRecordService.prepareInitializationCandidate({
+      executionDate: '2026-08-24',
+      employeeCode: '01 49',
+      mboAppId: 794,
+      employeeApi: {},
+      mboApi
+    }),
     (err) => {
       assert.equal(err.code, 'EMPLOYEE_CODE_INVALID');
       return true;
     }
   );
 
-  assert.equal(app794Api.getCallCount().postRecord, 0);
+  assert.equal(mboApi.getCallCount().postRecord, 0);
 });
 
-test('REC-007: Employee lookup EMPLOYEE_SOURCE_AMBIGUOUS results in zero create calls', async () => {
+test('REC-007: Pipeline EMPLOYEE_SOURCE_AMBIGUOUS fails closed with 0 create calls (DEF-015)', async () => {
   const mockApp53Api = {
     async getRecords() {
       return {
@@ -184,20 +198,26 @@ test('REC-007: Employee lookup EMPLOYEE_SOURCE_AMBIGUOUS results in zero create 
       };
     }
   };
-  const app794Api = createMockKintoneApi();
+  const mboApi = createMockKintoneApi();
 
   await assert.rejects(
-    async () => await EmployeeService.lookupEmployee('9000', mockApp53Api),
+    async () => await AnnualRecordService.prepareInitializationCandidate({
+      executionDate: '2026-08-24',
+      employeeCode: '9000',
+      mboAppId: 794,
+      employeeApi: mockApp53Api,
+      mboApi
+    }),
     (err) => {
       assert.equal(err.code, 'EMPLOYEE_SOURCE_AMBIGUOUS');
       return true;
     }
   );
 
-  assert.equal(app794Api.getCallCount().postRecord, 0);
+  assert.equal(mboApi.getCallCount().postRecord, 0);
 });
 
-test('REC-008: Employee lookup EMPLOYEE_SOURCE_INCOMPLETE results in zero create calls', async () => {
+test('REC-008: Pipeline EMPLOYEE_SOURCE_INCOMPLETE fails closed with 0 create calls (DEF-015)', async () => {
   const mockApp53Api = {
     async getRecords() {
       return {
@@ -205,17 +225,23 @@ test('REC-008: Employee lookup EMPLOYEE_SOURCE_INCOMPLETE results in zero create
       };
     }
   };
-  const app794Api = createMockKintoneApi();
+  const mboApi = createMockKintoneApi();
 
   await assert.rejects(
-    async () => await EmployeeService.lookupEmployee('195', mockApp53Api),
+    async () => await AnnualRecordService.prepareInitializationCandidate({
+      executionDate: '2026-08-24',
+      employeeCode: '195',
+      mboAppId: 794,
+      employeeApi: mockApp53Api,
+      mboApi
+    }),
     (err) => {
       assert.equal(err.code, 'EMPLOYEE_SOURCE_INCOMPLETE');
       return true;
     }
   );
 
-  assert.equal(app794Api.getCallCount().postRecord, 0);
+  assert.equal(mboApi.getCallCount().postRecord, 0);
 });
 
 test('REC-009: Pre-write backup requirement is strictly enforced by safety guard', () => {
@@ -249,25 +275,44 @@ test('REC-010: Create attempt with closed write window (WRITE_ALLOWED_APPS = [])
   );
 });
 
-test('REC-011: Normalized read-back verification detects unmapped field modifications', () => {
+test('REC-011: Normalized read-back verification detects unmapped field modifications and default mismatches (DEF-014)', () => {
   const postPayload = AnnualRecordService.buildInitializationPayload('FY2026', mockSyntheticEmployee);
 
-  // Exact matching readback
+  const schemaProperties = {
+    ...mockValidProperties,
+    Objective_Count: { type: 'DROP_DOWN', defaultValue: '4' },
+    Total_Weight: { type: 'CALC' }
+  };
+
+  // Valid matching readback with valid default
   const validWrittenRecord = {
     ...postPayload,
     $id: { value: '901' },
-    $revision: { value: '1' }
+    $revision: { value: '1' },
+    Objective_Count: { value: '4' }
   };
-  assert.equal(AnnualRecordService.verifyNormalizedReadBack(validWrittenRecord, postPayload), true);
+  assert.equal(AnnualRecordService.verifyNormalizedReadBack(validWrittenRecord, postPayload, schemaProperties), true);
 
-  // Unexpected populated business field (e.g. unexpected score)
-  const corruptRecord = {
+  // Mismatched server default (Tier B failure)
+  const corruptDefaultRecord = {
     ...validWrittenRecord,
-    Manager_Score_1: { value: '95' } // Unexpected business field populated
+    Objective_Count: { value: '2' } // Mismatched default
   };
-
   assert.throws(
-    () => AnnualRecordService.verifyNormalizedReadBack(corruptRecord, postPayload),
+    () => AnnualRecordService.verifyNormalizedReadBack(corruptDefaultRecord, postPayload, schemaProperties),
+    (err) => {
+      assert.equal(err.code, 'READBACK_DEFAULT_MISMATCH');
+      return true;
+    }
+  );
+
+  // Unexpected populated business field (Tier E failure)
+  const corruptFieldRecord = {
+    ...validWrittenRecord,
+    Manager_Score_1: { value: '95' }
+  };
+  assert.throws(
+    () => AnnualRecordService.verifyNormalizedReadBack(corruptFieldRecord, postPayload, schemaProperties),
     (err) => {
       assert.equal(err.code, 'UNEXPECTED_BUSINESS_FIELD_POPULATED');
       return true;
@@ -331,17 +376,77 @@ test('REC-017: Requester_User required on live schema without resolved value blo
   assert.match(preflight.blockedReason, /REQUIRED_FIELD_UNRESOLVED: Requester_User/);
 });
 
-test('REC-018: Rollback authorization only permits deletion of the exact newly-created record ID', () => {
-  const targetAppId = 794;
-  const createdRecordId = '905';
+test('REC-018: Rollback authorization permits only exact newly-created record deletion and denies mismatches (DEF-011)', () => {
+  const authConfig = {
+    workPackageId: 'MBO-P02-WP-003',
+    allowedAppIds: [794],
+    allowedOperations: ['RECORD_DELETE'],
+    allowedRecordId: '905',
+    backupVerified: true,
+    activeWindow: true,
+    dryRunBypassDiscovery: true
+  };
 
-  // Allowed rollback target
-  assert.doesNotThrow(() => {
-    assertSandboxWriteTarget(targetAppId, undefined, [targetAppId], {
-      backupVerified: true,
-      activeWindow: true,
-      manifest: { allowedAppId: 794, operation: 'RECORD_DELETE', targetRecordId: createdRecordId },
-      dryRunBypassDiscovery: true
-    });
-  });
+  const reqExact = {
+    workPackageId: 'MBO-P02-WP-003',
+    appId: 794,
+    operation: 'RECORD_DELETE',
+    targetRecordId: '905',
+    manifest: { expectedChanges: [{ recordId: '905', action: 'DELETE' }] }
+  };
+
+  const reqMismatched = {
+    workPackageId: 'MBO-P02-WP-003',
+    appId: 794,
+    operation: 'RECORD_DELETE',
+    targetRecordId: '904', // Mismatched ID!
+    manifest: { expectedChanges: [{ recordId: '904', action: 'DELETE' }] }
+  };
+
+  const reqMultiRecord = {
+    workPackageId: 'MBO-P02-WP-003',
+    appId: 794,
+    operation: 'RECORD_DELETE',
+    targetRecordIds: ['905', '906'], // Multi-record!
+    manifest: { expectedChanges: [{ recordId: '905', action: 'DELETE' }] }
+  };
+
+  // Exact match allows
+  assert.equal(assertRollbackAuthorization(authConfig, reqExact), true);
+
+  // Mismatched ID throws
+  assert.throws(
+    () => assertRollbackAuthorization(authConfig, reqMismatched),
+    /Target record ID mismatch/
+  );
+
+  // Multi-record throws
+  assert.throws(
+    () => assertRollbackAuthorization(authConfig, reqMultiRecord),
+    /Target record IDs array mismatch/
+  );
+});
+
+test('REC-019: Malformed duplicate check response {} throws DUPLICATE_CHECK_RESPONSE_INVALID (DEF-013)', async () => {
+  const api = createMockKintoneApi({ rawRecordsResponse: {} });
+
+  await assert.rejects(
+    async () => await AnnualRecordService.checkDuplicateMBO(794, 'FY2026', '0149', api),
+    (err) => {
+      assert.equal(err.code, 'DUPLICATE_CHECK_RESPONSE_INVALID');
+      return true;
+    }
+  );
+});
+
+test('REC-020: Malformed duplicate check response { records: null } throws DUPLICATE_CHECK_RESPONSE_INVALID (DEF-013)', async () => {
+  const api = createMockKintoneApi({ rawRecordsResponse: { records: null } });
+
+  await assert.rejects(
+    async () => await AnnualRecordService.checkDuplicateMBO(794, 'FY2026', '0149', api),
+    (err) => {
+      assert.equal(err.code, 'DUPLICATE_CHECK_RESPONSE_INVALID');
+      return true;
+    }
+  );
 });

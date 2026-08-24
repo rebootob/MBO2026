@@ -3,8 +3,7 @@
  */
 
 import { getJapaneseFiscalYear, generateRecordKey, isValidRecordKeyFormat } from '../core/fiscal-year-engine.js';
-import { EmployeeService } from './employee-service.js';
-import { assertSandboxWriteTarget } from '../core/sandbox-write-guard.js';
+import { EmployeeService, EmployeeLookupError } from './employee-service.js';
 
 export class AnnualRecordError extends Error {
   constructor(code, userMessageTH, userMessageEN, cause = null) {
@@ -115,7 +114,17 @@ export class AnnualRecordService {
       );
     }
 
-    if (resp?.records?.length > 0) {
+    // Response structure validation (DEF-013: Fail-closed on malformed duplicate check response)
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      throw new AnnualRecordError(
+        'DUPLICATE_CHECK_RESPONSE_INVALID',
+        'โครงสร้างข้อมูลตอบกลับจากการตรวจสอบ MBO ซ้ำซ้อนไม่ถูกต้อง',
+        'Invalid response structure received from duplicate check query.',
+        resp
+      );
+    }
+
+    if (resp.records.length > 0) {
       throw new AnnualRecordError(
         'DUPLICATE_MBO_EXISTS',
         `พนักงานรหัส ${empCode} มี MBO สำหรับปีงบประมาณ ${fiscalYear} อยู่แล้วในระบบ ไม่สามารถสร้างซ้ำได้\nEmployee ${empCode} already has an MBO record for ${fiscalYear}. Duplicate creation is blocked.`,
@@ -145,7 +154,83 @@ export class AnnualRecordService {
   }
 
   /**
-   * Normalize and verify read-back record against expected payload and schema rules
+   * Translate Layer 2 Kintone Create Errors (DEF-012)
+   * Converts Kintone unique constraint violations into structured DUPLICATE_MBO_EXISTS errors.
+   */
+  static translateCreateError(err, fiscalYear, empCode) {
+    if (err?.code === 'CB_VA01' || (err?.message && /unique constraint|Record_Key/i.test(err.message))) {
+      return new AnnualRecordError(
+        'DUPLICATE_MBO_EXISTS',
+        `พบข้อมูล Record Key ซ้ำซ้อนในระบบสำหรับพนักงาน ${empCode} ปีงบประมาณ ${fiscalYear} ไม่สามารถสร้างรายการซ้ำได้`,
+        `Duplicate Record_Key collision detected for employee ${empCode} in ${fiscalYear}. Duplicate creation blocked.`,
+        err
+      );
+    }
+
+    return new AnnualRecordError(
+      'KINTONE_CREATE_FAILED',
+      `ไม่สามารถสร้างรายการ MBO ได้: ${err?.message || 'Unknown error'}`,
+      `Failed to create MBO record: ${err?.message || 'Unknown error'}`,
+      err
+    );
+  }
+
+  /**
+   * Pure Pre-Write Orchestration Pipeline (DEF-015)
+   * Executes entire validation, lookup, preflight, duplicate check, and payload building without issuing any POST calls.
+   */
+  static async prepareInitializationCandidate({
+    executionDate,
+    employeeCode,
+    mboAppId,
+    employeeApi,
+    mboApi
+  }) {
+    if (!executionDate || typeof executionDate !== 'string') {
+      throw new AnnualRecordError(
+        'INVALID_EXECUTION_DATE',
+        'กรุณาระบุวันที่ดำเนินการที่ถูกต้อง',
+        'Please provide a valid execution date string.'
+      );
+    }
+
+    // 1. Dynamic Fiscal Year Calculation
+    const fiscalYear = getJapaneseFiscalYear(executionDate);
+
+    // 2. Employee Lookup via EmployeeService
+    const lookupResult = await EmployeeService.lookupEmployee(employeeCode, employeeApi);
+    const employee = lookupResult.employee;
+
+    // 3. Live Schema Preflight
+    const preflight = await this.performLiveSchemaPreflight(mboAppId, mboApi);
+    if (!preflight.isPreflightOk) {
+      throw new AnnualRecordError(
+        'LIVE_CREATE_BLOCKED',
+        `การสร้าง Record ถูกระงับชั่วคราวเนื่องจาก Schema ไม่พร้อม: ${preflight.blockedReason}`,
+        `Record creation is blocked due to schema preflight: ${preflight.blockedReason}`,
+        preflight.blockedReason
+      );
+    }
+
+    // 4. Layer 1 Duplicate Check
+    await this.checkDuplicateMBO(mboAppId, fiscalYear, employee.Employee_Code, mboApi);
+
+    // 5. Generate Record Key & Payload
+    const recordKey = generateRecordKey(fiscalYear, employee.Employee_Code);
+    const payload = this.buildInitializationPayload(fiscalYear, employee);
+
+    return {
+      status: 'ANNUAL_RECORD_READY',
+      fiscalYear,
+      recordKey,
+      employee,
+      payload,
+      schemaMetadata: preflight.metadata
+    };
+  }
+
+  /**
+   * Normalize and verify read-back record against expected payload and schema rules (DEF-014)
    */
   static verifyNormalizedReadBack(writtenRecord, postPayload, schemaProperties = {}) {
     // Tier A: Explicit Written Fields
@@ -158,6 +243,48 @@ export class AnnualRecordService {
           `ข้อมูลที่อ่านกลับในฟิลด์ ${fieldCode} ไม่ตรงกับข้อมูลที่บันทึก (คาดหวัง: ${expectedVal}, ได้รับ: ${actualVal})`,
           `Read-back field mismatch on ${fieldCode}. Expected: ${expectedVal}, received: ${actualVal}`
         );
+      }
+    }
+
+    // Tier B: Approved Kintone Server Defaults
+    for (const [code, prop] of Object.entries(schemaProperties)) {
+      if (EXPLICIT_WRITE_FIELDS.includes(code) || SYSTEM_FIELDS_ALLOWLIST.includes(code)) {
+        continue;
+      }
+      if (prop?.defaultValue !== undefined && prop?.type !== 'CALC') {
+        const actualVal = writtenRecord[code]?.value;
+        const expectedDefault = prop.defaultValue;
+        
+        // Handle array defaults (e.g. USER_SELECT: []) vs primitives
+        if (Array.isArray(expectedDefault)) {
+          if (!Array.isArray(actualVal) || actualVal.length !== expectedDefault.length) {
+            throw new AnnualRecordError(
+              'READBACK_DEFAULT_MISMATCH',
+              `ค่าเริ่มต้นของฟิลด์ ${code} ไม่ตรงตาม Schema`,
+              `Default value mismatch on field ${code}. Expected: ${JSON.stringify(expectedDefault)}, received: ${JSON.stringify(actualVal)}`
+            );
+          }
+        } else if (actualVal !== undefined && String(actualVal) !== String(expectedDefault)) {
+          throw new AnnualRecordError(
+            'READBACK_DEFAULT_MISMATCH',
+            `ค่าเริ่มต้นของฟิลด์ ${code} ไม่ตรงตาม Schema (คาดหวัง: ${expectedDefault}, ได้รับ: ${actualVal})`,
+            `Default value mismatch on field ${code}. Expected: ${expectedDefault}, received: ${actualVal}`
+          );
+        }
+      }
+    }
+
+    // Tier D: Calculated Fields (CALC) verification
+    for (const [code, prop] of Object.entries(schemaProperties)) {
+      if (prop?.type === 'CALC') {
+        // Assert CALC fields are not written in client POST payload
+        if (postPayload[code] !== undefined) {
+          throw new AnnualRecordError(
+            'CALC_FIELD_WRITE_PROHIBITED',
+            `ไม่อนุญาตให้เขียนข้อมูลลงฟิลด์คำนวณ (${code})`,
+            `Direct client write prohibited for calculated field: ${code}`
+          );
+        }
       }
     }
 
