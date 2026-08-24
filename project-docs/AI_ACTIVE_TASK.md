@@ -1,67 +1,78 @@
-# AI ACTIVE TASK — ANTIGRAVITY EXECUTION HANDOFF
+# AI ACTIVE TASK — ANTIGRAVITY LIVE VERIFICATION CORRECTION
 
 > **Control Plane:** ChatGPT / Project Lead / Architect / Independent Reviewer
 > **Primary Execution Plane:** Antigravity
-> **Codex:** NOT ACTIVE for this task; do not delegate to Codex unless Control Plane explicitly authorizes it later
-> **Rule:** Execute exactly this task. Do not redesign architecture, expand scope, or modify this file.
+> **Codex:** NOT ACTIVE; do not delegate to Codex
+> **Rule:** Execute exactly this verification correction. Do not redesign architecture, expand scope, or modify this file.
 
 ## ACTIVE TASK
 
 - **Repository:** `rebootob/MBO2026`
 - **WP:** `MBO-P03-WP-002C`
-- **Stage:** `STAGE 3A — LIVE APP ACTIVATION RECONCILIATION & COMPLETION`
+- **Stage:** `STAGE 3A — LIVE DEPLOYMENT VERIFICATION CORRECTION`
 - **Branch:** `ai/codex-wp002c`
-- **Branch Note:** legacy branch name is intentionally retained until WP-002C reaches a safe checkpoint; DO NOT rename or create a replacement branch
-- **Current HEAD Before Handoff:** `db6b2426c1c10b3ea96c7d9834a211df57389903`
-- **Accepted Stage-2 Closure:** `f96645cb94a566263532802ba15611d1a003ad1e`
-- **Stage-3A Initial Implementation:** `763aef5dfc3a293d7e9a01c5b673d0d56cbed7f4`
-- **Deploy Contract Fix:** `db6b2426c1c10b3ea96c7d9834a211df57389903`
+- **Current HEAD baseline:** `db6b2426c1c10b3ea96c7d9834a211df57389903`
 - **Target App ID:** `796`
 - **Exact App Name:** `MBO Profile & Scoring Configuration Master [Sandbox]`
-- **Last Documented App State:** `PREVIEW_CREATED / NOT_DEPLOYED`
+- **Observed by Antigravity:** `DEPLOY_STATUS = SUCCESS`, preview ACL = creator-only/default-deny, live general-settings GET = HTTP 404
 - **APP_CREATE:** `FORBIDDEN`
+- **NEW ACL PUT:** `FORBIDDEN IN THIS TASK`
+- **NEW DEPLOY POST:** `FORBIDDEN IN THIS TASK`
 - **Schema / Layout / View / Process / Record / Delete Writes:** `FORBIDDEN`
-- **WP-002D:** `NOT STARTED`
+- **Purpose:** determine the actual live state using the correct Kintone permission model before any further write authorization
 
-## EXECUTION PLANE CHANGE
+## CONTROL PLANE CORRECTION
 
-Effective immediately:
-
-```text
-ChatGPT = Control Plane
-Antigravity = Primary Execution Plane
-Codex = Optional Code Specialist only when explicitly authorized by ChatGPT
-```
-
-Antigravity owns end-to-end local execution for this task, including:
-
-- local Git/worktree inspection
-- `.env.local` use without exposing secrets
-- terminal commands
-- Kintone GET reconciliation
-- controlled Kintone writes only when this task explicitly permits them
-- tests
-- commits
-- push
-- evidence/status updates
-
-Antigravity must not redesign architecture or widen scope. If anything is ambiguous or unsafe, STOP and report to Control Plane rather than inventing a new solution.
-
-## CURRENT CONTROL PLANE REVIEW STATUS
-
-The deploy empty-body defect has already been corrected in commit:
+The previous reconciliation logic incorrectly treated:
 
 ```text
-db6b2426c1c10b3ea96c7d9834a211df57389903
+GET /k/v1/app/settings.json?app=796 -> HTTP 404
 ```
 
-Do not redo that correction unless actual local tests prove a regression.
+as conclusive proof that the live App does not exist.
 
-The remaining BLOCKER is operational evidence: GitHub still does not prove whether App 796 was previously partially activated, fully deployed, or untouched after Stage-3A implementation.
+That conclusion is invalid.
 
-Therefore the **first action is READ-ONLY reconciliation against Kintone**.
+Kintone's official permission contract differs by endpoint:
 
-## STEP 0 — LOCAL / GIT SAFETY GATE
+```text
+GET /k/v1/app/settings.json
+  -> live App requires permission to VIEW records OR ADD records
+
+GET /k/v1/app/acl.json
+  -> live App requires App Management Permission
+
+GET /k/v1/app/adminNotes.json
+  -> live App requires App Management Permission
+```
+
+Because Stage 3A intentionally changed the App ACL to creator-only/default-deny, a live settings 404 can be caused by the authenticated execution account lacking record-view/add rights even when the App is already live.
+
+Therefore:
+
+```text
+LIVE_SETTINGS_404 != LIVE_APP_ABSENT
+```
+
+Do not deploy again based on that 404.
+
+## CURRENT SAFE INTERPRETATION
+
+The prior Antigravity report established:
+
+```text
+Preview identity = exact App 796 / exact name / revision 3
+Preview ACL = CREATOR rights true + Everyone rights false
+Deploy status = SUCCESS
+Planned schema fields present = NO
+New writes during Antigravity reconciliation = 0
+```
+
+This is strong evidence that a previous Stage-3A deploy may already have completed.
+
+The remaining job is read-only proof of the **live management configuration**.
+
+## STEP 0 — LOCAL / GIT CHECK
 
 Run:
 
@@ -71,134 +82,186 @@ git branch --show-current
 git rev-parse HEAD
 ```
 
+Required branch:
+
+```text
+ai/codex-wp002c
+```
+
+If local branch is behind remote, fast-forward only.
+
+If worktree contains only the local report artifact created by the prior read-only run, do not commit it automatically. Preserve it locally as evidence and continue only if it does not affect source/config execution. If there are source/config changes, STOP.
+
+Do not expose `.env.local` values.
+
+## STEP 1 — READ-ONLY LIVE MANAGEMENT PROBES
+
+Perform password-authenticated GET only.
+
+### Probe 1 — live App ACL
+
+```text
+GET /k/v1/app/acl.json?app=796
+```
+
+This is the primary live-state verification endpoint for this reconciliation because its permission requirement is App Management Permission rather than record-view/add permission.
+
+Capture:
+
+```text
+LIVE_ACL_HTTP_STATUS
+LIVE_ACL_REVISION
+LIVE_ACL_RIGHTS
+```
+
+Expected successful live ACL:
+
+- exactly the intended `CREATOR` rights are true
+- `Everyone` grants no rights
+- no unexpected entity has rights
+- valid revision
+
+### Probe 2 — live App Admin Notes
+
+```text
+GET /k/v1/app/adminNotes.json?app=796
+```
+
+This is an independent live App management endpoint.
+
+Capture only:
+
+```text
+LIVE_ADMIN_NOTES_HTTP_STATUS
+LIVE_ADMIN_NOTES_REVISION
+```
+
+Do not change admin notes.
+
+### Probe 3 — published App catalog
+
+Attempt password-authenticated:
+
+```text
+GET /k/v1/apps.json?ids[0]=796
+```
+
+Interpret carefully: Get Apps returns only published Apps, but also requires view-record or add-record permission. Therefore:
+
+- App 796 returned -> strong positive proof of publication
+- empty/not found/permission failure -> NOT conclusive by itself because creator-only ACL may exclude the authenticated user
+
+### Probe 4 — live general settings
+
+Re-run:
+
+```text
+GET /k/v1/app/settings.json?app=796
+```
+
+Treat a 404 only as:
+
+```text
+LIVE_SETTINGS_NOT_VISIBLE_TO_CURRENT_AUTH_CONTEXT
+```
+
+Do not map it to `LIVE_ABSENT` unless management-level live probes also prove absence.
+
+### Probe 5 — existing deploy and preview evidence
+
+Reconfirm GET only:
+
+```text
+GET /k/v1/preview/app/deploy.json?apps[0]=796
+GET /k/v1/preview/app/settings.json?app=796
+GET /k/v1/preview/app/acl.json?app=796
+GET /k/v1/preview/app/form/fields.json?app=796
+```
+
 Required:
 
 ```text
-branch = ai/codex-wp002c
-HEAD = db6b2426c1c10b3ea96c7d9834a211df57389903
-working tree = clean
+DEPLOY_STATUS = SUCCESS
+PREVIEW_IDENTITY = exact
+PLANNED_SCHEMA_FIELDS_PRESENT = NO
 ```
 
-If local HEAD is behind remote, perform:
+## STEP 2 — VERIFICATION DECISION
 
-```bash
-git fetch origin
-git merge --ff-only origin/ai/codex-wp002c
-```
+### CASE V1 — LIVE MANAGEMENT PROOF PASS
 
-If worktree is dirty, diverged, or merge is not fast-forward: STOP and report. Do not stash/discard/reset automatically.
-
-Confirm `.env.local` contains the required Kintone connection variables without printing secret values.
-
-## STEP 1 — KINTONE READ-ONLY RECONCILIATION
-
-Before any Kintone write, inspect exact App `796` using password-authenticated GET only.
-
-Required reads:
-
-1. `GET /k/v1/preview/app/settings.json?app=796`
-2. `GET /k/v1/preview/app/acl.json?app=796`
-3. `GET /k/v1/preview/app/deploy.json?apps[0]=796`
-4. `GET /k/v1/app/settings.json?app=796`
-5. If live App exists: `GET /k/v1/app/acl.json?app=796`
-6. `GET /k/v1/preview/app/form/fields.json?app=796` to confirm planned WP-002C schema fields are still absent
-
-Never print credentials, passwords, API tokens, cookies, or authorization headers.
-
-Capture only safe evidence:
+If **either** live management endpoint succeeds for exact App 796:
 
 ```text
-PREVIEW_IDENTITY
-PREVIEW_REVISION
-PREVIEW_ACL_STATE
-DEPLOY_STATUS
-LIVE_EXISTS
-LIVE_IDENTITY
-LIVE_REVISION
-LIVE_ACL_STATE
-PLANNED_SCHEMA_FIELDS_PRESENT = YES/NO
+GET /k/v1/app/acl.json?app=796 -> 200
+OR
+GET /k/v1/app/adminNotes.json?app=796 -> 200
 ```
 
-Exact identity must remain:
+and deploy status is `SUCCESS`, then classify:
 
 ```text
-App ID = 796
-Name = MBO Profile & Scoring Configuration Master [Sandbox]
+LIVE_DEPLOYMENT_VERIFICATION = PASS
+APP_STATUS = LIVE_DEPLOYED
 ```
 
-If any different identity is observed: STOP immediately.
+Additional required checks:
 
-## STEP 2 — RECONCILIATION DECISION
+- live ACL must be creator-only/default-deny if live ACL is readable
+- exact Preview identity remains App 796 / exact name
+- planned schema fields absent
 
-### CASE A — LIVE ALREADY DEPLOYED AND VERIFIED
+A 404 from live general settings does NOT overturn this PASS; document it as an access-context limitation.
 
-If:
+Then perform **zero Kintone writes** and proceed to documentation/evidence update.
 
-- live App 796 exists
-- exact name matches
-- live ACL is creator-only
-- deploy status is `SUCCESS`
-- planned WP-002C schema fields are absent
+### CASE V2 — BOTH LIVE MANAGEMENT PROBES FAIL AS NOT-FOUND
 
-then:
+If both:
 
 ```text
-RECONCILIATION = LIVE_ALREADY_DEPLOYED_VERIFIED
+/k/v1/app/acl.json?app=796
+/k/v1/app/adminNotes.json?app=796
 ```
 
-Actions:
-
-- Kintone writes = 0
-- DO NOT run activation script
-- DO NOT PUT ACL again
-- DO NOT deploy again
-- proceed directly to tests + documentation/evidence update
-
-### CASE B — DEPLOY STATUS = PROCESSING
-
-Perform GET-only bounded polling.
-
-- `SUCCESS` -> verify live identity/ACL/schema and continue as Case A
-- `FAIL` / `CANCEL` -> STOP; no new write
-- bounded timeout/unknown -> STOP as `DEPLOY_RESULT_UNCERTAIN`
-
-### CASE C — LIVE ABSENT BUT PREVIEW ACL ALREADY CREATOR-ONLY
-
-Treat this as evidence of a possible prior partial Stage-3A execution.
-
-- DO NOT PUT ACL again
-- inspect deploy state
-- `SUCCESS` -> live verification
-- `PROCESSING` -> GET-only polling
-- `FAIL` / `CANCEL` / no reliable deploy state -> STOP
-
-Report:
+return a true App-not-found condition while deploy status remains `SUCCESS`, classify:
 
 ```text
-PARTIAL_STAGE3A_STATE_REQUIRES_CONTROL_PLANE
+LIVE_DEPLOYMENT_STATE = INCONSISTENT
 ```
 
-Do not deploy again in this case.
+Make zero writes and STOP for Control Plane with exact safe HTTP/error codes.
 
-### CASE D — CLEAN UNEXECUTED STATE
+Do not deploy again.
 
-Only if all are conclusively true:
+### CASE V3 — PERMISSION/AUTH ERROR
 
-- live App 796 does not exist
-- preview App exact identity is valid
-- preview ACL is not already the Stage-3A creator-only ACL
-- no prior deploy is PROCESSING/SUCCESS/FAIL/CANCEL in a way indicating previous Stage-3A execution
-- planned schema fields are absent
-
-then:
+If management probes fail due to permission/auth rather than App-not-found:
 
 ```text
-RECONCILIATION = CLEAN_STAGE3A_EXECUTION_ALLOWED
+LIVE_DEPLOYMENT_STATE = UNVERIFIABLE_BY_CURRENT_AUTH_CONTEXT
 ```
 
-Only Case D may perform new Stage-3A writes.
+Make zero writes and STOP. Report safe error codes/messages without credentials.
 
-## STEP 3 — REGRESSION BEFORE ANY NEW WRITE
+Do not deploy again.
+
+## STEP 3 — USER ACCESS DIAGNOSIS AFTER V1 ONLY
+
+If V1 proves the App is live but `GET /k/v1/app/settings.json` remains inaccessible, record:
+
+```text
+APP_LIVE = YES
+CURRENT_AUTH_RECORD_ACCESS = NO/UNKNOWN
+```
+
+This means the deployment problem is resolved and the remaining issue is **access permission**, not App creation/deployment.
+
+Do not change ACL in this task.
+
+We need the exact Kintone login/user that the user wants to use in the browser before granting additional access. Do not guess or grant `Everyone` access.
+
+## STEP 4 — TESTS
 
 Run:
 
@@ -207,83 +270,13 @@ git diff --check
 npm test
 ```
 
-All tests must pass.
+All existing tests must pass.
 
-The existing implementation must preserve:
+No implementation change is expected in this task unless a purely read-only verification helper already exists and requires no behavioral redesign. Prefer zero source change.
 
-- deploy success does not parse a response body
-- deploy POST is at most once
-- transport uncertainty never auto-retries POST
-- status polling is GET only
-- target App is hard-coded/narrowly authorized to 796
-- no APP_CREATE path is used by Stage 3A
-- `DISCOVERY_MODE = true`
-- default `WRITE_ALLOWED_APPS = []`
+## STEP 5 — DOCUMENTATION ONLY AFTER V1
 
-If tests fail: STOP. No Kintone write.
-
-## STEP 4 — NEW WRITE EXECUTION ONLY FOR CASE D
-
-Use the already implemented controlled activation path in:
-
-```text
-scripts/kintone/activate-scoring-config-master-live.js
-```
-
-Do not create a new implementation unless the current path cannot execute for a concrete defect; if so, STOP and report before redesigning.
-
-Maximum NEW Kintone writes permitted in this Antigravity task:
-
-```text
-APP_CREATE              = 0
-PREVIEW ACL PUT         = 1 maximum
-DEPLOY POST             = 1 maximum
-SCHEMA FIELD WRITE      = 0
-LAYOUT WRITE            = 0
-VIEW WRITE              = 0
-PROCESS WRITE           = 0
-RECORD WRITE            = 0
-DELETE                  = 0
-```
-
-Required write order:
-
-1. exact preview identity re-check
-2. creator-only preview ACL PUT once
-3. preview ACL GET read-back
-4. deploy POST once using exact latest verified preview revision
-5. deploy-status GET polling only
-6. exact live identity GET
-7. exact live ACL GET
-8. preview field GET confirming planned schema is still absent
-
-Never retry ACL PUT or deploy POST automatically.
-
-If write outcome is uncertain, reconcile with GET only and STOP if not provably successful.
-
-## STEP 5 — VERIFIED SUCCESS CRITERIA
-
-Do not claim success until all are true:
-
-```text
-LIVE APP ID = 796
-LIVE NAME = MBO Profile & Scoring Configuration Master [Sandbox]
-DEPLOY STATUS = SUCCESS
-LIVE ACL = CREATOR_ONLY
-APP_STATUS = LIVE_DEPLOYED
-ACCESS_STATUS = CREATOR_ONLY
-SCHEMA_STATUS = NOT_CONFIGURED
-BASELINE_SEED_STATUS = NOT_STARTED
-PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
-ENVIRONMENT = SANDBOX
-PRODUCTION = FALSE
-```
-
-The user-visible Kintone route `/k/796/` should therefore correspond to an existing live App, subject to the creator-only permission boundary.
-
-## STEP 6 — DOCUMENTATION AFTER VERIFIED SUCCESS ONLY
-
-Only after verified success update:
+If `LIVE_DEPLOYMENT_VERIFICATION = PASS`, update only:
 
 - `project-docs/CURRENT_STATE.md`
 - `project-docs/HANDOFF.md`
@@ -292,132 +285,103 @@ Only after verified success update:
 - `project-docs/CHANGELOG_AI.md`
 - `project-docs/APP_REGISTRY.md`
 
-Required status:
+Required facts:
 
 ```text
 Execution Plane = Antigravity
-WP-002C Stage 2 = PASSED / FROZEN
-WP-002C Stage 3A = COMPLETE / PENDING INDEPENDENT REVIEW
 SCORING_MASTER_APP_ID = 796
 APP_STATUS = LIVE_DEPLOYED
-ACCESS_STATUS = CREATOR_ONLY
+DEPLOY_STATUS = SUCCESS
+ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY
 SCHEMA_STATUS = NOT_CONFIGURED
 BASELINE_SEED_STATUS = NOT_STARTED
 PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
+PRODUCTION = FALSE
+STAGE3A = COMPLETE / PENDING INDEPENDENT REVIEW
 ```
 
-`APP_REGISTRY.md` must describe App 796 as a live Sandbox App, creator-only/default-deny at this stage.
-
-Do not change `config/sandbox-apps.json`; App ID remains `796`.
-
-Do not mark Stage 3A review PASS; Control Plane owns that Gate.
-
-## STEP 7 — FINAL TEST / COMMIT / PUSH
-
-Run:
-
-```bash
-git diff --check
-npm test
-```
-
-If documentation/evidence changed after verified success, commit exactly once:
+Also record if applicable:
 
 ```text
-chore: record verified wp-002c live activation
+LIVE_GENERAL_SETTINGS_VISIBILITY = BLOCKED_BY_CURRENT_AUTH_CONTEXT
 ```
 
-If Case A required documentation only, use the same commit message.
+Do not claim the user's browser account has access until separately verified.
 
-Push:
+Commit exactly once:
 
 ```text
-ai/codex-wp002c
+chore: record verified wp-002c live deployment
 ```
 
-Then STOP.
+Push branch and STOP.
 
-Do not start schema configuration.
-Do not start WP-002D.
-Do not rename the branch.
-Do not delegate to Codex.
+For V2 or V3, do not update App status to LIVE_DEPLOYED. Push no status claim; just report to Control Plane and STOP.
 
-## FAILURE / PARTIAL STATE
+## KINTONE WRITE BOUNDARY
 
-If reconciliation is not Case A or clean Case D:
+For this entire task:
 
-- make no new Kintone write
-- do not create another App
-- do not delete App 796
-- do not alter schema
-- do not update docs to `LIVE_DEPLOYED`
-- report exact safe reconciliation evidence
-- STOP for ChatGPT Control Plane
+```text
+GET = allowed
+APP_CREATE POST = 0
+ACL PUT = 0
+DEPLOY POST = 0
+SCHEMA/LAYOUT/VIEW/PROCESS writes = 0
+RECORD writes = 0
+DELETE = 0
+```
 
 ## FINAL REPORT
 
 Report only:
 
 - execution plane = Antigravity
-- branch
-- HEAD before execution
-- reconciliation case
+- branch / HEAD
+- live ACL HTTP status + verification result
+- live adminNotes HTTP status + verification result
+- Get Apps result for ID 796
+- live general-settings result (visibility only; do not infer absence from 404 alone)
+- deploy status
 - preview identity/revision
 - preview ACL state
-- deploy status
-- live exists YES/NO
-- live identity/revision
-- live ACL state
 - planned schema fields present YES/NO
+- verification case V1/V2/V3
 - tests total/passed/failed
-- new Kintone GET count
-- new ACL PUT count
-- new deploy POST count
-- APP_CREATE count
-- schema/layout/view/process/record/delete write counts
-- evidence/status commit SHA if created
-- final App ID
-- final App status
-- final access status
-- final schema status
+- Kintone GET count
+- all Kintone write counts (must all be zero)
+- evidence/status commit SHA if V1
+- final App state
+- whether remaining issue is DEPLOYMENT or ACCESS_PERMISSION
 - STOP confirmation
 
 Never expose credentials or authorization headers.
 
 # REVIEW EXPECTATION
 
-ChatGPT Independent Reviewer will inspect GitHub and verify:
+ChatGPT will verify:
 
-1. Antigravity, not Codex, executed the handoff task.
-2. Branch `ai/codex-wp002c` was intentionally preserved and not renamed mid-WP.
-3. Reconciliation GETs occurred before any new Kintone write.
-4. No assumption was made about prior Stage-3A execution from Git history alone.
-5. No second APP_CREATE occurred; App ID remains exactly 796.
-6. Exact App name remains `MBO Profile & Scoring Configuration Master [Sandbox]`.
-7. Deploy success path does not require parsing a response body.
-8. Deploy POST has no automatic retry.
-9. If prior ACL/deploy state was detected, no duplicate corresponding write occurred.
-10. New writes occurred only for conclusively clean Case D.
-11. New ACL PUT count is <= 1 and new deploy POST count is <= 1.
-12. Apps 794/795 and protected apps received zero writes.
-13. No schema/layout/view/process/record/delete operation occurred.
-14. Live status is claimed only after deploy `SUCCESS` plus exact live identity and creator-only ACL verification.
-15. Planned schema fields remain absent.
-16. `DISCOVERY_MODE = true` and default `WRITE_ALLOWED_APPS = []` remain intact.
-17. Full regression passes.
-18. Living docs identify Antigravity as Execution Plane after verified success.
-19. Stage 3A remains `PENDING INDEPENDENT REVIEW` until ChatGPT reviews it.
-20. WP-002D did not start.
-21. Antigravity stopped after evidence push.
+1. Antigravity did not treat live general-settings 404 alone as proof of App absence.
+2. Live App existence was checked through management-level live endpoints.
+3. Deploy status remained `SUCCESS`.
+4. No second deploy POST occurred.
+5. No ACL PUT occurred.
+6. No APP_CREATE occurred.
+7. No schema/record/delete write occurred.
+8. App ID remained exactly 796.
+9. Exact App name remained unchanged.
+10. If live ACL endpoint succeeded, ACL is creator-only/default-deny.
+11. `APP_STATUS = LIVE_DEPLOYED` is recorded only for V1.
+12. If V1 + browser/access remains blocked, the issue is explicitly separated as access permission rather than deployment failure.
+13. No `Everyone` grant is introduced.
+14. Full regression passes.
+15. WP-002D did not start.
 
 Expected gates:
 
-- `EXECUTION_HANDOFF_GATE = PASS / FAIL`
-- `STAGE3A_RECONCILIATION_GATE = PASS / FAIL / UNCERTAIN`
-- `DEPLOY_CONTRACT_GATE = PASS / FAIL`
-- `ACL_LOCKDOWN_GATE = PASS / FAIL`
-- `LIVE_IDENTITY_GATE = PASS / FAIL`
+- `LIVE_MANAGEMENT_PROOF_GATE = PASS / FAIL / UNVERIFIABLE`
+- `DEPLOYMENT_STATE_GATE = PASS / INCONSISTENT / UNVERIFIABLE`
+- `ACCESS_CONTEXT_GATE = PASS / RESTRICTED / UNKNOWN`
 - `WRITE_SCOPE_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
-- `KINTONE_SAFETY_GATE = PASS / FAIL`
-- `WP002C_STAGE3A_GATE = PASS / FAIL / BLOCKED`
+- `WP002C_STAGE3A_GATE = PASS / BLOCKED`
