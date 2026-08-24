@@ -7,11 +7,14 @@ import {
   getSandboxAppIds,
   assertDiscoveryReadOnly,
   assertAppCreationAuthorization,
+  assertScoringMasterLiveActivationAuthorization,
   assertSandboxWriteTarget,
   assertWorkPackageAuthorization
 } from '../src/core/sandbox-write-guard.js';
 import {
   assertAppCreationRequestPreflight,
+  activateScoringConfigMasterLive,
+  CREATOR_ONLY_SCORING_MASTER_ACL,
   createAndVerifyScoringConfigMasterPreview,
   getAppCreationConnection,
   kintoneRequest
@@ -62,6 +65,60 @@ function mockResponse(payload, { ok = true, status = 200, parseError = false } =
       return payload;
     }
   };
+}
+
+function validLiveActivationAuthorization(authorizationId) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_3A_LIVE_ACTIVATION',
+    explicitUserAuthorization: true,
+    activeWindow: true,
+    authorizationId
+  };
+}
+
+function validLiveActivationRequest(overrides = {}) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_3A_LIVE_ACTIVATION',
+    appId: 796,
+    appName: approvedAppName,
+    operationSequence: ['APP_ACL_PREVIEW_UPDATE', 'APP_DEPLOY'],
+    ...overrides
+  };
+}
+
+function creatorOnlyAclPayload(revision = '3') {
+  return { rights: [{ ...CREATOR_ONLY_SCORING_MASTER_ACL, entity: { type: 'CREATOR' } }], revision };
+}
+
+function buildActivationFetch({ deployStatuses = ['SUCCESS'], liveName = approvedAppName, liveAcl = creatorOnlyAclPayload('3'), aclPutOk = true, deployThrows = false } = {}) {
+  const calls = [];
+  let liveSettingsChecks = 0;
+  let statusIndex = 0;
+  const fetchMock = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url.endsWith('/k/v1/preview/app/settings.json?app=796')) return mockResponse({ name: approvedAppName, revision: '2' });
+    if (url.endsWith('/k/v1/app/settings.json?app=796')) {
+      liveSettingsChecks += 1;
+      return liveSettingsChecks === 1 ? mockResponse({}, { ok: false, status: 404 }) : mockResponse({ name: liveName, revision: '3' });
+    }
+    if (url.endsWith('/k/v1/preview/app/form/fields.json?app=796')) return mockResponse({ properties: {} });
+    if (url.endsWith('/k/v1/preview/app/acl.json') && options.method === 'PUT') return aclPutOk ? mockResponse({ revision: '3' }) : mockResponse({}, { ok: false, status: 400 });
+    if (url.endsWith('/k/v1/preview/app/acl.json?app=796')) return mockResponse(creatorOnlyAclPayload('3'));
+    if (url.endsWith('/k/v1/preview/app/deploy.json') && options.method === 'POST') {
+      if (deployThrows) throw new Error('mock deploy transport');
+      return mockResponse({});
+    }
+    if (url.endsWith('/k/v1/preview/app/deploy.json?apps[0]=796')) {
+      const status = deployStatuses[Math.min(statusIndex, deployStatuses.length - 1)];
+      statusIndex += 1;
+      return mockResponse({ apps: [{ app: '796', status }] });
+    }
+    if (url.endsWith('/k/v1/app/acl.json?app=796')) return mockResponse(liveAcl);
+    throw new Error(`Unexpected mock URL: ${url}`);
+  };
+  return { calls, fetchMock };
 }
 
 function validAppCreateAuthorization(authorizationId) {
@@ -495,4 +552,89 @@ test('WP002C-S2-007: sandbox registry accepts only a positive scoring master ID 
   assert.deepEqual(getSandboxAppIds({ mboV2AppId: 794, routingMasterAppId: 795, scoringConfigMasterAppId: 900 }), [794, 795, 900]);
   assert.deepEqual(getSandboxAppIds({ mboV2AppId: 794, routingMasterAppId: 795, scoringConfigMasterAppId: 0 }), [794, 795]);
   assert.equal(WRITE_ALLOWED_APPS.length, 0);
+});
+
+// ==========================================
+// WP-002C STAGE-3A LIVE ACTIVATION TESTS
+// ==========================================
+
+test('WP002C-S3A-001: activation guard is exact-WP/stage/App/name/sequence and single-use', () => {
+  assert.equal(assertScoringMasterLiveActivationAuthorization(validLiveActivationAuthorization('s3a-001-pass'), validLiveActivationRequest()), true);
+  assert.throws(() => assertScoringMasterLiveActivationAuthorization(validLiveActivationAuthorization('s3a-001-id'), validLiveActivationRequest({ appId: 794 })), /exactly 796/);
+  assert.throws(() => assertScoringMasterLiveActivationAuthorization(validLiveActivationAuthorization('s3a-001-name'), validLiveActivationRequest({ appName: 'Wrong' })), /name mismatch/);
+  assert.throws(() => assertScoringMasterLiveActivationAuthorization(validLiveActivationAuthorization('s3a-001-wp'), validLiveActivationRequest({ workPackageId: 'MBO-P03-WP-002B' })), /Work package/);
+  assert.throws(() => assertScoringMasterLiveActivationAuthorization(validLiveActivationAuthorization('s3a-001-stage'), validLiveActivationRequest({ stage: 'OTHER' })), /Stage/);
+  assert.throws(() => assertScoringMasterLiveActivationAuthorization({ ...validLiveActivationAuthorization('s3a-001-auth'), explicitUserAuthorization: false }, validLiveActivationRequest()), /Explicit authorization/);
+  assert.throws(() => assertScoringMasterLiveActivationAuthorization(validLiveActivationAuthorization('s3a-001-seq'), validLiveActivationRequest({ operationSequence: ['APP_CREATE'] })), /Operation sequence/);
+});
+
+test('WP002C-S3A-002: successful activation uses exact creator ACL, one deploy, polling, and live verification', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildActivationFetch({ deployStatuses: ['PROCESSING', 'SUCCESS'] });
+    const result = await activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-002'), validLiveActivationRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.deepEqual(result, { appId: 796, name: approvedAppName, revision: '3', deployStatus: 'SUCCESS', accessStatus: 'CREATOR_ONLY' });
+    const aclPuts = calls.filter((call) => call.options.method === 'PUT');
+    const deployPosts = calls.filter((call) => call.options.method === 'POST');
+    assert.equal(aclPuts.length, 1);
+    assert.equal(deployPosts.length, 1);
+    assert.equal(aclPuts[0].url, 'https://example.kintone.com/k/v1/preview/app/acl.json');
+    assert.deepEqual(JSON.parse(aclPuts[0].options.body), { app: 796, rights: [{ ...CREATOR_ONLY_SCORING_MASTER_ACL, entity: { type: 'CREATOR' } }], revision: '2' });
+    assert.equal(JSON.parse(aclPuts[0].options.body).rights.some((right) => right.entity.type === 'EVERYONE'), false);
+    assert.deepEqual(JSON.parse(deployPosts[0].options.body), { apps: [{ app: 796, revision: '3' }] });
+    assert.equal(calls.some((call) => call.url.endsWith('/k/v1/preview/app.json')), false);
+    assert.equal(calls.filter((call) => call.url.includes('deploy.json?')).every((call) => call.options.method === undefined || call.options.method === 'GET'), true);
+  });
+});
+
+test('WP002C-S3A-003: preview identity mismatch prevents ACL and deploy writes', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const calls = [];
+    const fetchMock = async (url, options = {}) => { calls.push({ url, options }); return mockResponse({ name: 'Wrong', revision: '2' }); };
+    await assert.rejects(() => activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-003'), validLiveActivationRequest(), fetchMock), /STAGE3A_PREFLIGHT_FAILED/);
+    assert.equal(calls.some((call) => ['PUT', 'POST'].includes(call.options.method)), false);
+  });
+});
+
+test('WP002C-S3A-004: ACL update failure prevents deploy', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildActivationFetch({ aclPutOk: false });
+    await assert.rejects(() => activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-004'), validLiveActivationRequest(), fetchMock), /ACL_UPDATE_FAILED/);
+    assert.equal(calls.filter((call) => call.options.method === 'POST').length, 0);
+  });
+});
+
+test('WP002C-S3A-005: uncertain deploy transport never retries POST and reconciles by GET', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildActivationFetch({ deployThrows: true, deployStatuses: ['PROCESSING', 'SUCCESS'] });
+    const result = await activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-005'), validLiveActivationRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.deployStatus, 'SUCCESS');
+    assert.equal(calls.filter((call) => call.options.method === 'POST').length, 1);
+    assert.equal(calls.filter((call) => call.url.includes('deploy.json?')).length, 2);
+  });
+});
+
+test('WP002C-S3A-006: FAIL and CANCEL deploy statuses fail closed', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    for (const status of ['FAIL', 'CANCEL']) {
+      const { fetchMock } = buildActivationFetch({ deployStatuses: [status] });
+      await assert.rejects(() => activateScoringConfigMasterLive(validLiveActivationAuthorization(`s3a-006-${status}`), validLiveActivationRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} }), new RegExp(`Final status ${status}`));
+    }
+  });
+});
+
+test('WP002C-S3A-007: live identity mismatch fails closed after SUCCESS', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildActivationFetch({ liveName: 'Wrong Live App' });
+    await assert.rejects(() => activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-007'), validLiveActivationRequest(), fetchMock), /LIVE_APP_VERIFICATION_FAILED/);
+  });
+});
+
+test('WP002C-S3A-008: live ACL mismatch fails closed and safety defaults remain locked', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const mismatchedAcl = { rights: [{ entity: { type: 'EVERYONE' }, appEditable: true }], revision: '3' };
+    const { fetchMock } = buildActivationFetch({ liveAcl: mismatchedAcl });
+    await assert.rejects(() => activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-008'), validLiveActivationRequest(), fetchMock), /LIVE_APP_VERIFICATION_FAILED/);
+    assert.equal(DISCOVERY_MODE, true);
+    assert.equal(WRITE_ALLOWED_APPS.length, 0);
+  });
 });

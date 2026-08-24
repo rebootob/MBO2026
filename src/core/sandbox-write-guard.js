@@ -21,6 +21,10 @@ export const WP002C_APPROVED_APP_NAME = 'MBO Profile & Scoring Configuration Mas
 // Stage-1 process-local replay protection. Deliberately module-private:
 // normal callers cannot clear or pre-mark this registry.
 const consumedAppCreationAuthorizationIds = new Set();
+const consumedLiveActivationAuthorizationIds = new Set();
+
+export const WP002C_LIVE_ACTIVATION_STAGE = 'STAGE_3A_LIVE_ACTIVATION';
+export const WP002C_SCORING_MASTER_APP_ID = 796;
 
 /**
  * Backwards compatibility: WRITE_BLOCKED_APP_IDS includes all protected apps + any app not in allow-list
@@ -120,6 +124,45 @@ export function assertAppCreationAuthorization(authConfig, requestConfig) {
   }
 
   consumedAppCreationAuthorizationIds.add(authorizationId);
+  return true;
+}
+
+/**
+ * Narrow authorization for the creator-only ACL -> deploy sequence on App 796.
+ * This guard is process-local, single-use, and cannot authorize APP_CREATE,
+ * schema, record, delete, or arbitrary-App operations.
+ */
+export function assertScoringMasterLiveActivationAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('LIVE ACTIVATION BLOCKED (FAIL-CLOSED): Missing authorization/request configuration.');
+  }
+  if (authConfig.workPackageId !== WP002C_APP_CREATE_WORK_PACKAGE || requestConfig.workPackageId !== WP002C_APP_CREATE_WORK_PACKAGE) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Work package must be exactly MBO-P03-WP-002C.');
+  }
+  if (authConfig.stage !== WP002C_LIVE_ACTIVATION_STAGE || requestConfig.stage !== WP002C_LIVE_ACTIVATION_STAGE) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Stage must be exactly STAGE_3A_LIVE_ACTIVATION.');
+  }
+  if (requestConfig.appId !== WP002C_SCORING_MASTER_APP_ID) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Target App ID must be exactly 796.');
+  }
+  if (requestConfig.appName !== WP002C_APPROVED_APP_NAME) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Target App name mismatch.');
+  }
+  if (authConfig.explicitUserAuthorization !== true || authConfig.activeWindow !== true) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Explicit authorization and active window are required.');
+  }
+  if (typeof authConfig.authorizationId !== 'string' || authConfig.authorizationId.trim() === '') {
+    throw new Error('LIVE ACTIVATION BLOCKED: A non-empty authorization ID is required.');
+  }
+  if (consumedLiveActivationAuthorizationIds.has(authConfig.authorizationId)) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Authorization has already been consumed.');
+  }
+  const expectedSequence = ['APP_ACL_PREVIEW_UPDATE', 'APP_DEPLOY'];
+  if (!Array.isArray(requestConfig.operationSequence) || requestConfig.operationSequence.length !== expectedSequence.length || requestConfig.operationSequence.some((operation, index) => operation !== expectedSequence[index])) {
+    throw new Error('LIVE ACTIVATION BLOCKED: Operation sequence must be APP_ACL_PREVIEW_UPDATE -> APP_DEPLOY.');
+  }
+
+  consumedLiveActivationAuthorizationIds.add(authConfig.authorizationId);
   return true;
 }
 
