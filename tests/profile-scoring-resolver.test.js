@@ -63,10 +63,28 @@ test('WP-002B selects only exactly one published config in its effective range',
 test('WP-002B requires a valid hash and valid scoring-domain fields', async () => {
   const missingHash = configRecords(); delete missingHash[0].Configuration_Hash;
   await rejects(() => resolve('Staff', { masterConfigRecords: missingHash }), 'SCORING_CONFIG_INTEGRITY_FAILED');
-  const invalidWeights = configRecords(); invalidWeights[0].PartA_Weight = 99; invalidWeights[0].PartB_Weight = 1; invalidWeights[0].Configuration_Hash = computeConfigurationHash(invalidWeights[0]);
+  const mismatchedHash = configRecords(); mismatchedHash[0].Configuration_Hash = '0'.repeat(64);
+  await rejects(() => resolve('Staff', { masterConfigRecords: mismatchedHash }), 'SCORING_CONFIG_INTEGRITY_FAILED');
+  const invalidWeights = configRecords(); invalidWeights[0].PartA_Weight = 99; invalidWeights[0].PartB_Weight = 2; invalidWeights[0].Configuration_Hash = computeConfigurationHash(invalidWeights[0]);
   await rejects(() => resolve('Staff', { masterConfigRecords: invalidWeights }), 'SCORING_CONFIG_INVALID');
   const invalidAppraisers = configRecords(); invalidAppraisers[0].Expected_Appraiser_Count = 3; invalidAppraisers[0].Configuration_Hash = computeConfigurationHash(invalidAppraisers[0]);
   await rejects(() => resolve('Staff', { masterConfigRecords: invalidAppraisers }), 'SCORING_CONFIG_INVALID');
+});
+
+test('WP-002B applies effective-period bounds independently within FY2026', async () => {
+  const bounded = configRecords();
+  bounded[0].Effective_From = '2026-06-01'; bounded[0].Effective_To = '2027-02-28';
+  bounded[0].Configuration_Hash = computeConfigurationHash(bounded[0]);
+  await rejects(() => resolve('Staff', { effectiveDate: '2026-05-31', masterConfigRecords: bounded }), 'SCORING_CONFIG_NOT_FOUND');
+  await rejects(() => resolve('Staff', { effectiveDate: '2027-03-01', masterConfigRecords: bounded }), 'SCORING_CONFIG_NOT_FOUND');
+  assert.equal((await resolve('Staff', { effectiveDate: '2026-06-01', masterConfigRecords: bounded })).Profile_Code, PROFILE_CODES.STAFF_CHIEF);
+  assert.equal((await resolve('Staff', { effectiveDate: '2027-02-28', masterConfigRecords: bounded })).Profile_Code, PROFILE_CODES.STAFF_CHIEF);
+});
+
+test('WP-002B filters out an otherwise-valid config from another fiscal year', async () => {
+  const otherYear = configRecords().map(config => ({ ...config }));
+  otherYear[0].Fiscal_Year = 'FY2027'; otherYear[0].Configuration_Hash = computeConfigurationHash(otherYear[0]);
+  await rejects(() => resolve('Staff', { masterConfigRecords: otherYear }), 'SCORING_CONFIG_NOT_FOUND');
 });
 
 test('WP-002B preserves scoring truth, COCE, rounding, and architecture boundaries', async () => {
@@ -74,6 +92,8 @@ test('WP-002B preserves scoring truth, COCE, rounding, and architecture boundari
   assert.deepEqual([asst.PartA_Weight, asst.PartB_Weight], [60, 40]); assert.equal(gm.Expected_Appraiser_Count, 1); assert.equal(vp.Expected_Appraiser_Count, 1);
   assert.equal(gm.Part_A_Scoring_Mode, PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT); assert.equal(vp.Part_A_Scoring_Mode, PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT);
   assert.equal(KNOWN_COMPETENCY_SETS.COMP_SET_MANAGEMENT_V1.coceItemIndex, 6); assert.equal(KNOWN_COMPETENCY_SETS.COMP_SET_MANAGEMENT_V1.coceIncludedInScore, false);
+  assert.equal(KNOWN_COMPETENCY_SETS.COMP_SET_OPERATIONAL_V1.coceItemIndex, 6); assert.equal(KNOWN_COMPETENCY_SETS.COMP_SET_OPERATIONAL_V1.coceIncludedInScore, false);
+  assert.deepEqual(KNOWN_COMPETENCY_SETS.COMP_SET_MANAGEMENT_V1.scoredItemIndexes, [1, 2, 3, 4, 5, 7, 8]);
   assert.notEqual(section.Final_Rounding_Rule, gm.Final_Rounding_Rule);
   const source = readFileSync(new URL('../src/profiles/profile-scoring-resolver.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /\.getRecords\(|fetch\(|child_process|simple-git/i); assert.doesNotMatch(source, /\b(?:53|794|795)\b/);

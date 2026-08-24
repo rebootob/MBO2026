@@ -35,7 +35,7 @@
 - **WP-002 Authoritative Plan Path**: [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
 - **WP-002B Authoritative Plan Path**: [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md)
 - **WP-002B Source Module**: `src/profiles/profile-scoring-resolver.js`
-- **WP-002B Test File**: `tests/profile-scoring-resolver.test.js` (15 tests; 146/146 total)
+- **WP-002B Test File**: `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total)
 - **Durable Decisions Path**: [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
 - **Phase 2 Status**: `PASSED / FROZEN (Commit 8fb306e)`
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
@@ -57,4 +57,4 @@
 * **Exact Fiscal Year Contract:** `Fiscal_Year` is now a mandatory selection criterion (exact match required). Mismatch fails closed (`SCORING_CONFIG_NOT_FOUND`). `Fiscal_Year` included in resolved output.
 * **Caller Position Bypass Blocked:** Arbitrary caller-provided `Profile_Code` cannot bypass position-based resolution. Invalid/unverified employee snapshots fail closed.
 * **DRY_RUN Clarification:** `DRY_RUN = ZERO_WRITE` always; `SANDBOX_MIGRATION_TEST` is a separate concept that may involve controlled writes when explicitly authorized.
-* **Implementation Status:** **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`** (15 resolver tests; 146/146 total; 0 Kintone Writes).
+* **Implementation Status:** **`IMPLEMENTATION_COMPLETE / PENDING_INDEPENDENT_REVIEW`** (17 resolver tests; 148/148 total; 0 Kintone Writes).

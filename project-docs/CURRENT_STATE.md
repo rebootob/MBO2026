@@ -23,7 +23,7 @@
 - **WP-002B Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md)
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
 - **WP-002B Source Module**: `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter)
-- **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (15 tests; 146/146 total suite passing)
+- **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing)
 - **Handoff State**: `SAFE_CHECKPOINT`
 - **Current Branch**: `ai/codex-wp002b`
 - **Last Safe Commit**: `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -66,7 +66,7 @@
 31. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
 
 ## Test & Defect Status
-- **Automated Unit Tests:** 146/146 Tests Passing (`npm test`)
+- **Automated Unit Tests:** 148/148 Tests Passing (`npm test`)
 - **Defects:** 0 Open, 15 CLOSED (`DEF-001`..`DEF-015`)
 - **Observations:** 5 Open (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
 - **Open Security Dependencies:** 1 Open (`SEC-DEP-001: Shared Kintone Account Security Conflict`)
