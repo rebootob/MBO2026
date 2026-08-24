@@ -122,3 +122,37 @@
   6. **Zero Historical Deletion:** Superseded versions are preserved permanently.
   7. **Complete Dual Snapshot:** App 794 captures complete snapshots of both Department and Section Hoshins on submit.
 
+
+## DEC-031 — Target Active Section Requester Authorization Master & Distinct User Account Mapping
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Approved Business Rule)
+- **Decision**:
+  1. **12 Active Business Sections:** The active enterprise scope consists of exactly 12 active business sections across 8 departments: `TME1`, `TMF1`, `TMF2`, `TMF3`, `TMG1`, `TMG2`, `TMH1`, `TMH2`, `TMH3`, `TMS1`, `TMT1`, `TMT2`.
+  2. **9 Distinct Valid Requester Accounts:** The 12 active sections map deterministically to exactly 9 distinct active Cybozu accounts (`e1`, `f1`, `f2`, `f3`, `g_request`, `tmh`, `s1`, `t1`, `t2`), all verified `valid=true`.
+  3. **User-Confirmed TMG Mapping:** Sections `TMG1` and `TMG2` map to shared requester account `g_request` (`USER_CONFIRMED_BUSINESS_RULE`).
+  4. **Strict Role Separation:** Requester User (departmental submitter) != Scoring Appraiser != Workflow Approver != Employee.
+
+## DEC-032 — Retirement of Section TMT3 & Legacy Account Exclusion
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Approved Business Rule)
+- **Decision**:
+  1. **Section TMT3 Status:** Formally retired (`TMT3_SECTION_STATUS = RETIRED`).
+  2. **Zero Seeding:** `TMT3` must NOT be seeded into App 795 and must NOT have new MBO records initialized.
+  3. **Historical Legacy Account:** Legacy account `t3` is `HISTORICAL_ONLY` (`valid=false`) and is not proposed for automatic reactivation.
+  4. **App 53 Reconciliation:** The 11 App 53 records referencing `TMT3` are tracked under `OBS-005` as `ORGANIZATION_DATA_RECONCILIATION_REQUIRED` (employment/stale status undetermined).
+
+## DEC-033 — Baseline Preservation of App 794 Requester_User Schema Requirement & ACR-001 Deferral
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Architecture Baseline)
+- **Decision**:
+  1. **Schema Requirement Retained:** `App794.Requester_User.required = true` is retained in the Kintone database schema.
+  2. **ACR-001 Deferral:** `ACR-001` (proposing `required = false`) is formally marked `DEFERRED / NOT REQUIRED FOR CURRENT DESIGN` because Requester_User can be resolved directly from App 795 prior to Annual Record creation.
+  3. **Zero Schema Modification:** No schema write operations are executed against App 794 in Phase 2.
+
+## DEC-034 — Enterprise App 795 Routing Master Seeding Scope Boundary (Phase 5 Delivery)
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Phased Scope Boundary)
+- **Decision**:
+  1. **Phase 2 Scope Boundary:** Work Package `MBO-P02-WP-003` is restricted to Annual Record Foundation, pilot verification (`TME1 -> e1`), and zero Kintone writes.
+  2. **Phase 5 Delivery Scope:** Enterprise seeding of all remaining 11 active section mappings into App 795 will be executed exclusively under Phase 5 (`Generic Routing & Twin-Status Execution Engine`) under its dedicated Work Package and controlled write window.
+  3. **Live Record Dependency:** Live annual record creation remains blocked under `LIVE_RECORD_READINESS_DEPENDENCY`.

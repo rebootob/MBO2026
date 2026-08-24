@@ -1,10 +1,10 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T13:45:00+07:00
+- **Updated At**: 2026-08-24T14:24:00+07:00
 - **Current Phase**: **`PHASE 2: ANNUAL RECORD FOUNDATION (WP-003 RECONCILIATION)`**
 - **Active AI:** `Antigravity`
 - **Active Work Package**: `MBO-P02-WP-003`
-- **Review Status**: `WP-003 FINAL REQUESTER MASTER RECONCILIATION COMPLETED`
+- **Review Status**: `WP-003 FINAL EVIDENCE RECONCILIATION COMPLETED`
 - **Handoff State**: `SAFE_CHECKPOINT`
 - **Current Branch**: `develop`
 - **Last Safe Commit**: `31ff6ca`
@@ -26,7 +26,11 @@
 11. **Multi-AI Continuity & Handoff Protocol: `MULTI_AI_HANDOFF_GOVERNANCE = FROZEN` (`DEC-028`)**.
 12. **First Actual Kintone Write Policy: `ZERO_ARTIFICIAL_WRITES = FROZEN` (`DEC-029`)**.
 13. **AI Review Package Governance & Commit Separation: `STANDARDIZED_REVIEW_PACKAGE = FROZEN` (`DEC-030`)**.
-14. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
+14. **Active Section Requester Master & Account Mapping: `FROZEN` (`DEC-031`)**.
+15. **Retirement of Section TMT3: `FROZEN` (`DEC-032`)**.
+16. **App 794 Requester_User Schema Baseline Preservation: `FROZEN` (`DEC-033`)**.
+17. **Enterprise App 795 Seeding Deferred to Phase 5: `FROZEN` (`DEC-034`)**.
+18. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
 
 ## Test & Defect Status
 - **Automated Unit Tests:** 116/116 Tests Passing (`npm test`)

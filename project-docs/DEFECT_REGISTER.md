@@ -39,4 +39,4 @@
 
 | Observation ID | Phase | Severity | Summary | Root Cause | Affected Component | Governance Action | Test Evidence | Status |
 | :--- | :---: | :---: | :--- | :--- | :--- | :--- | :--- | :---: |
-| **MBO-P02-OBS-005** | P2 | Severity 3 | Retired `TMT3` section remains referenced by 11 current App53 employee records. | Historical organization assignment not yet updated in App 53 after section retirement. | `App 53 (Employee Namelist)` | Maintain fail-closed routing block for TMT3 until HR updates employee section assignments in App 53. | `REQMAP-015` passing | **`OPEN_OBSERVATION`** |
+| **MBO-P02-OBS-005** | P2 | Severity 3 | Retired `TMT3` section referenced by 11 current App53 employee records. Current employment / stale data status is UNDETERMINED (hypotheses include historical records, inactive employees, stale section assignment, or unreflected transfers). | Organization data reconciliation required. | `App 53 (Employee Namelist)` | Maintain fail-closed routing block for TMT3 until HR reconciles employee section assignments in App 53. Exclude TMT3 from App 795 seeding. | `REQMAP-015` passing | **`OPEN_OBSERVATION`** |
