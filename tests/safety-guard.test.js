@@ -92,7 +92,7 @@ function creatorOnlyAclPayload(revision = '3') {
   return { rights: [{ ...CREATOR_ONLY_SCORING_MASTER_ACL, entity: { type: 'CREATOR' } }], revision };
 }
 
-function buildActivationFetch({ deployStatuses = ['SUCCESS'], liveName = approvedAppName, liveAcl = creatorOnlyAclPayload('3'), aclPutOk = true, deployThrows = false } = {}) {
+function buildActivationFetch({ deployStatuses = ['SUCCESS'], liveName = approvedAppName, liveAcl = creatorOnlyAclPayload('3'), aclPutOk = true, deployThrows = false, deployOk = true } = {}) {
   const calls = [];
   let liveSettingsChecks = 0;
   let statusIndex = 0;
@@ -108,7 +108,7 @@ function buildActivationFetch({ deployStatuses = ['SUCCESS'], liveName = approve
     if (url.endsWith('/k/v1/preview/app/acl.json?app=796')) return mockResponse(creatorOnlyAclPayload('3'));
     if (url.endsWith('/k/v1/preview/app/deploy.json') && options.method === 'POST') {
       if (deployThrows) throw new Error('mock deploy transport');
-      return mockResponse({});
+      return mockResponse(undefined, { ok: deployOk, status: deployOk ? 200 : 400, parseError: true });
     }
     if (url.endsWith('/k/v1/preview/app/deploy.json?apps[0]=796')) {
       const status = deployStatuses[Math.min(statusIndex, deployStatuses.length - 1)];
@@ -586,6 +586,16 @@ test('WP002C-S3A-002: successful activation uses exact creator ACL, one deploy, 
   });
 });
 
+test('WP002C-S3A-002B: empty deploy success body is not parsed and status polling continues', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildActivationFetch({ deployStatuses: ['PROCESSING', 'SUCCESS'] });
+    const result = await activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-002b'), validLiveActivationRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.deployStatus, 'SUCCESS');
+    assert.equal(calls.filter((call) => call.options.method === 'POST').length, 1);
+    assert.equal(calls.filter((call) => call.url.includes('deploy.json?')).length, 2);
+  });
+});
+
 test('WP002C-S3A-003: preview identity mismatch prevents ACL and deploy writes', async () => {
   await withAppCreateTestEnvironment(async () => {
     const calls = [];
@@ -610,6 +620,18 @@ test('WP002C-S3A-005: uncertain deploy transport never retries POST and reconcil
     assert.equal(result.deployStatus, 'SUCCESS');
     assert.equal(calls.filter((call) => call.options.method === 'POST').length, 1);
     assert.equal(calls.filter((call) => call.url.includes('deploy.json?')).length, 2);
+  });
+});
+
+test('WP002C-S3A-005B: non-success deploy response fails without automatic retry', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildActivationFetch({ deployOk: false });
+    await assert.rejects(
+      () => activateScoringConfigMasterLive(validLiveActivationAuthorization('s3a-005b'), validLiveActivationRequest(), fetchMock),
+      /DEPLOY_EXECUTION_FAILED: HTTP 400/
+    );
+    assert.equal(calls.filter((call) => call.options.method === 'POST').length, 1);
+    assert.equal(calls.filter((call) => call.url.includes('deploy.json?')).length, 0);
   });
 });
 

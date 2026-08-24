@@ -301,17 +301,18 @@ export async function activateScoringConfigMasterLive(authConfig, requestConfig,
   const deployUrl = `${baseUrl}/k/v1/preview/app/deploy.json`;
   const deployBody = { apps: [{ app: appId, revision: latestRevision }] };
   let deployTransportUncertain = false;
+  let deployResponse;
   try {
-    const deployResponse = await fetchImpl(deployUrl, {
+    deployResponse = await fetchImpl(deployUrl, {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify(deployBody)
     });
-    if (!deployResponse?.ok) throw new Error(`DEPLOY_EXECUTION_FAILED: HTTP ${deployResponse?.status ?? 'UNKNOWN'}.`);
-    await parseJsonOrThrow(deployResponse, 'DEPLOY_RESULT_UNCERTAIN', 'deploy');
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith('DEPLOY_EXECUTION_FAILED')) throw error;
+  } catch {
     deployTransportUncertain = true;
+  }
+  if (deployResponse && !deployResponse.ok) {
+    throw new Error(`DEPLOY_EXECUTION_FAILED: HTTP ${deployResponse.status ?? 'UNKNOWN'}.`);
   }
 
   const deployStatusUrl = `${baseUrl}/k/v1/preview/app/deploy.json?apps[0]=${appId}`;
