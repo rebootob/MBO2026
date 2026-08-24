@@ -4,6 +4,7 @@ import {
   DISCOVERY_MODE,
   PROTECTED_APP_IDS,
   WRITE_ALLOWED_APPS,
+  getSandboxAppIds,
   assertDiscoveryReadOnly,
   assertAppCreationAuthorization,
   assertSandboxWriteTarget,
@@ -11,11 +12,57 @@ import {
 } from '../src/core/sandbox-write-guard.js';
 import {
   assertAppCreationRequestPreflight,
+  createAndVerifyScoringConfigMasterPreview,
   getAppCreationConnection,
   kintoneRequest
 } from '../src/core/kintone-client.js';
 
 const approvedAppName = 'MBO Profile & Scoring Configuration Master [Sandbox]';
+
+async function withAppCreateTestEnvironment(callback) {
+  const keys = [
+    'KINTONE_BASE_URL',
+    'KINTONE_USERNAME',
+    'KINTONE_PASSWORD',
+    'KINTONE_API_TOKEN',
+    'KINTONE_BASIC_AUTH_USERNAME',
+    'KINTONE_BASIC_AUTH_PASSWORD'
+  ];
+  const saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    process.env.KINTONE_BASE_URL = 'https://example.kintone.com';
+    process.env.KINTONE_USERNAME = 'publisher';
+    process.env.KINTONE_PASSWORD = 'secret';
+    process.env.KINTONE_API_TOKEN = 'must-not-be-sent';
+    delete process.env.KINTONE_BASIC_AUTH_USERNAME;
+    delete process.env.KINTONE_BASIC_AUTH_PASSWORD;
+    return await callback();
+  } finally {
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key];
+    }
+  }
+}
+
+function validStage2Request() {
+  return {
+    ...validAppCreateRequest(),
+    method: 'POST',
+    path: '/k/v1/preview/app.json',
+    body: { name: approvedAppName }
+  };
+}
+
+function mockResponse(payload, { ok = true, status = 200, parseError = false } = {}) {
+  return {
+    ok,
+    status,
+    json: async () => {
+      if (parseError) throw new Error('mock parse error');
+      return payload;
+    }
+  };
+}
 
 function validAppCreateAuthorization(authorizationId) {
   return {
@@ -346,4 +393,106 @@ test('WP002C-S1-004: APP_CREATE authentication requires password credentials and
 
 test('WP002C-S1-005: generic network client still blocks POST during Discovery Mode', async () => {
   await assert.rejects(() => kintoneRequest('/k/v1/preview/app.json', { method: 'POST', body: { name: approvedAppName } }), /DISCOVERY PHASE WRITE BLOCKED/);
+});
+
+// ==========================================
+// WP-002C STAGE-2 CONTROLLED CREATION TESTS
+// ==========================================
+
+test('WP002C-S2-001: exact POST/body/auth and exact-ID read-back succeed', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const calls = [];
+    const fetchMock = async (url, options) => {
+      calls.push({ url, options });
+      return calls.length === 1
+        ? mockResponse({ app: '900', revision: '1' })
+        : mockResponse({ name: approvedAppName, revision: '1' });
+    };
+    const result = await createAndVerifyScoringConfigMasterPreview(validAppCreateAuthorization('s2-001'), validStage2Request(), fetchMock);
+    assert.equal(result.appId, 900);
+    assert.equal(result.name, approvedAppName);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].url, 'https://example.kintone.com/k/v1/preview/app.json');
+    assert.equal(calls[0].options.method, 'POST');
+    assert.deepEqual(JSON.parse(calls[0].options.body), { name: approvedAppName });
+    assert.ok(calls[0].options.headers['X-Cybozu-Authorization']);
+    assert.equal(calls[0].options.headers['X-Cybozu-API-Token'], undefined);
+    assert.equal(calls[1].url, 'https://example.kintone.com/k/v1/preview/app/settings.json?app=900');
+    assert.equal(calls[1].options.method, 'GET');
+  });
+});
+
+test('WP002C-S2-002: preflight failure prevents fetch', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    let calls = 0;
+    const fetchMock = async () => { calls += 1; return mockResponse({}); };
+    await assert.rejects(
+      () => createAndVerifyScoringConfigMasterPreview({ ...validAppCreateAuthorization('s2-002'), explicitUserAuthorization: false }, validStage2Request(), fetchMock),
+      /Explicit user authorization/
+    );
+    assert.equal(calls, 0);
+  });
+});
+
+test('WP002C-S2-003: malformed create response is uncertain and never retried', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    let calls = 0;
+    const fetchMock = async () => { calls += 1; return mockResponse(null, { parseError: true }); };
+    await assert.rejects(
+      () => createAndVerifyScoringConfigMasterPreview(validAppCreateAuthorization('s2-003'), validStage2Request(), fetchMock),
+      /APP_CREATE_RESULT_UNCERTAIN/
+    );
+    assert.equal(calls, 1);
+  });
+});
+
+test('WP002C-S2-004: invalid or non-positive returned App IDs fail uncertain without read-back', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    for (const [index, app] of ['0', '-1', 'abc', '', 900].entries()) {
+      let calls = 0;
+      const fetchMock = async () => { calls += 1; return mockResponse({ app, revision: '1' }); };
+      await assert.rejects(
+        () => createAndVerifyScoringConfigMasterPreview(validAppCreateAuthorization(`s2-004-${index}`), validStage2Request(), fetchMock),
+        /APP_CREATE_RESULT_UNCERTAIN/
+      );
+      assert.equal(calls, 1);
+    }
+  });
+});
+
+test('WP002C-S2-005: create transport failure is uncertain and attempted once', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    let calls = 0;
+    const fetchMock = async () => { calls += 1; throw new Error('mock network failure'); };
+    await assert.rejects(
+      () => createAndVerifyScoringConfigMasterPreview(validAppCreateAuthorization('s2-005'), validStage2Request(), fetchMock),
+      /APP_CREATE_RESULT_UNCERTAIN.*do not retry/
+    );
+    assert.equal(calls, 1);
+  });
+});
+
+test('WP002C-S2-006: identity name mismatch fails closed after exact-ID read-back', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const calls = [];
+    const fetchMock = async (url, options) => {
+      calls.push({ url, options });
+      return calls.length === 1
+        ? mockResponse({ app: '901', revision: '1' })
+        : mockResponse({ name: 'Wrong App', revision: '1' });
+    };
+    await assert.rejects(
+      () => createAndVerifyScoringConfigMasterPreview(validAppCreateAuthorization('s2-006'), validStage2Request(), fetchMock),
+      /APP_IDENTITY_VERIFICATION_FAILED/
+    );
+    assert.equal(calls.length, 2);
+    assert.match(calls[1].url, /app=901$/);
+  });
+});
+
+test('WP002C-S2-007: sandbox registry accepts only a positive scoring master ID and preserves 794/795', () => {
+  assert.deepEqual(getSandboxAppIds({ mboV2AppId: 794, routingMasterAppId: 795 }), [794, 795]);
+  assert.deepEqual(getSandboxAppIds({ mboV2AppId: 794, routingMasterAppId: 795, scoringConfigMasterAppId: 900 }), [794, 795, 900]);
+  assert.deepEqual(getSandboxAppIds({ mboV2AppId: 794, routingMasterAppId: 795, scoringConfigMasterAppId: 0 }), [794, 795]);
+  assert.equal(WRITE_ALLOWED_APPS.length, 0);
 });

@@ -75,6 +75,91 @@ export function assertAppCreationRequestPreflight(authConfig, requestConfig) {
   });
 }
 
+function assertValidCreateResponse(payload) {
+  if (!payload || typeof payload !== 'object' || typeof payload.app !== 'string' || !/^[1-9]\d*$/.test(payload.app) || typeof payload.revision !== 'string' || !/^\d+$/.test(payload.revision)) {
+    throw new Error('APP_CREATE_RESULT_UNCERTAIN: Create response did not contain a valid positive app ID and numeric revision.');
+  }
+  return {
+    appId: Number(payload.app),
+    app: payload.app,
+    revision: payload.revision
+  };
+}
+
+async function readSafeError(response) {
+  try {
+    const payload = await response.json();
+    return [payload?.code, payload?.message].filter(Boolean).join(': ');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Exact-purpose Stage-2 path. The endpoint, method, and body are constants;
+ * authorization preflight is mandatory and runs once before the sole POST.
+ */
+export async function createAndVerifyScoringConfigMasterPreview(authConfig, requestConfig, fetchImpl = globalThis.fetch) {
+  assertAppCreationRequestPreflight(authConfig, requestConfig);
+  const { baseUrl, headers } = getAppCreationConnection();
+  const createUrl = `${baseUrl}${APP_CREATE_PREVIEW_PATH}`;
+  const createBody = { name: WP002C_APPROVED_APP_NAME };
+
+  let createResponse;
+  try {
+    createResponse = await fetchImpl(createUrl, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(createBody)
+    });
+  } catch {
+    throw new Error('APP_CREATE_RESULT_UNCERTAIN: Preview App create transport failed; do not retry.');
+  }
+
+  if (!createResponse?.ok) {
+    const detail = await readSafeError(createResponse);
+    throw new Error(`APP_CREATE_HTTP_ERROR: HTTP ${createResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}.`);
+  }
+
+  let createPayload;
+  try {
+    createPayload = await createResponse.json();
+  } catch {
+    throw new Error('APP_CREATE_RESULT_UNCERTAIN: Preview App create response was not parseable; do not retry.');
+  }
+  const created = assertValidCreateResponse(createPayload);
+
+  const identityPath = `/k/v1/preview/app/settings.json?app=${created.app}`;
+  let identityResponse;
+  try {
+    identityResponse = await fetchImpl(`${baseUrl}${identityPath}`, { method: 'GET', headers: { ...headers } });
+  } catch {
+    throw new Error(`APP_IDENTITY_VERIFICATION_FAILED: Read-back transport failed for returned App ID ${created.app}.`);
+  }
+  if (!identityResponse?.ok) {
+    const detail = await readSafeError(identityResponse);
+    throw new Error(`APP_IDENTITY_VERIFICATION_FAILED: HTTP ${identityResponse?.status ?? 'UNKNOWN'} for returned App ID ${created.app}${detail ? ` (${detail})` : ''}.`);
+  }
+
+  let identity;
+  try {
+    identity = await identityResponse.json();
+  } catch {
+    throw new Error(`APP_IDENTITY_VERIFICATION_FAILED: Unparseable read-back for returned App ID ${created.app}.`);
+  }
+  if (!identity || identity.name !== WP002C_APPROVED_APP_NAME || typeof identity.revision !== 'string' || !/^\d+$/.test(identity.revision)) {
+    throw new Error(`APP_IDENTITY_VERIFICATION_FAILED: Exact identity mismatch for returned App ID ${created.app}.`);
+  }
+
+  return {
+    appId: created.appId,
+    app: created.app,
+    createRevision: created.revision,
+    identityRevision: identity.revision,
+    name: identity.name
+  };
+}
+
 export async function kintoneRequest(path, { method = 'GET', body } = {}) {
   assertDiscoveryReadOnly(method, path);
   const { baseUrl, headers } = getKintoneConnection();

@@ -36,7 +36,7 @@ export function assertDiscoveryReadOnly(method = 'GET', appId) {
 }
 
 export function getSandboxAppIds(registry = sandboxRegistry) {
-  return [registry.mboV2AppId, registry.routingMasterAppId]
+  return [registry.mboV2AppId, registry.routingMasterAppId, registry.scoringConfigMasterAppId]
     .filter((appId) => Number.isInteger(appId) && appId > 0);
 }
 
