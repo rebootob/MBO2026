@@ -17,7 +17,7 @@
 ---
 
 ## 1. Purpose
-Establish the authoritative, configuration-driven foundation for Evaluation Profiles, Competency Sets, and Scoring Lineage for MBO 2026. This plan formally reconciles business rules, position mappings, appraiser weighting layers across Part A and Part B (`DEC-036`), Part A scoring modes (`Part_A_Scoring_Mode`), completeness gating, COCE exclusion, and schema requirements prior to any Phase 3 implementation or Kintone writes.
+Establish the authoritative, configuration-driven foundation for Evaluation Profiles, Competency Sets, and Scoring Lineage for MBO 2026. This plan formally reconciles business rules, position mappings, appraiser weighting layers across Part A and Part B (`DEC-036`), Part A scoring modes (`Part_A_Scoring_Mode`), completeness gating, COCE exclusion, annual snapshot storage strategy, and schema requirements prior to any Phase 3 implementation or Kintone writes.
 
 ---
 
@@ -33,7 +33,7 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 5. Formalize `Part_A_Scoring_Mode` configuration property:
    - `DIFFICULTY_ACHIEVEMENT_MATRIX`: $\text{Objective\_Value} = \text{Matrix(Difficulty, Achievement)}$ (Used by Staff, Japan, Asst Mgr, Sect Mgr, Snr Mgr, DGM).
    - `ACHIEVEMENT_DIRECT`: $\text{Objective\_Value} = \text{Achievement}$ (Used by GM, VP; matrix field exists but is bypassed).
-6. Define canonical Annual Scoring Snapshot representation.
+6. Reconcile Annual Scoring Snapshot Storage Strategy with App 794 Field Manifest (`PHYSICAL_APP794_FIELD` vs `DERIVED_FROM_VERSIONED_SCORING_CONFIG`).
 7. Audit and categorize all App 794 fields against live deployed schema and repository specification (`config/schema-spec.js`).
 8. Present the Profile Configuration Storage trade-off options for user decision.
 
@@ -58,7 +58,7 @@ Establish the authoritative, configuration-driven foundation for Evaluation Prof
 * `tests/unit/` (Unit test suite for profiles and scoring math)
 
 ### Potential Kintone Components (Target App 794)
-* Native form fields: `Evaluation_Profile_Code`, `Profile_Family`, `PartA_Weight`, `PartB_Weight`, `Expected_Appraiser_Count`.
+* Native form fields: `Evaluation_Profile_Code`, `Profile_Family`, `Scoring_Config_Code`, `Scoring_Config_Version`, `Expected_Appraiser_Count`, `PartA_Weight`, `PartB_Weight`, `Competency_Set_Code`.
 * Native competency fields: `Competency_Result_7..8`, `Competency_Criteria_7..8`, `Manager_Competency_Rating_7..8`, `GM_Competency_Rating_7..8`.
 * Native CALC formula updates for Part A & Part B weighted scores.
 
@@ -105,49 +105,43 @@ The MBO 2026 scoring engine strictly separates two independent weight layers:
 
 ---
 
-## 8. Scoring Mathematical Model & Lineage
+## 8. Scoring Mathematical Model & Configuration-Driven Rounding
 
-### A. Current Deployed Kintone Truth vs Future Model
-* **Operational (283, 716):** 70/30 Split, 2 Appraisers (50/50), `DIFFICULTY_ACHIEVEMENT_MATRIX`, Denominator 10 (`(sum)/10`).
-* **Assistant Manager (310):** 60/40 Split, 2 Appraisers (50/50), `DIFFICULTY_ACHIEVEMENT_MATRIX`, Denominator 14 (`ROUND(sum/14, 2)`).
-* **Section Manager / Senior Manager / DGM (305, 643, 307):** 50/50 Split, 2 Appraisers (50/50), `DIFFICULTY_ACHIEVEMENT_MATRIX`, Denominator 14 (`ROUND(sum/14, 2)`).
-* **GM / VP (640, 715):** 50/50 Split, 1 Deployed Appraiser (100%), `ACHIEVEMENT_DIRECT` (Matrix bypassed), Denominator 14 (`ROUND((sum*2)/14, 2)`).
-
-### B. Mathematical Formulation (`DEC-036`)
+### A. Parameterized Scoring Engine
 1. **Part A Objective Combination Formula:**
    $$\text{Objective\_Result}_i = \sum_{j=1}^{K_{\text{expected}}} (\text{Objective\_Value}_{i,j} \times \text{Appraiser\_Weight}_j) = \frac{\sum_{j=1}^{K_{\text{expected}}} \text{Objective\_Value}_{i,j}}{K_{\text{expected}}}$$
    - For `DIFFICULTY_ACHIEVEMENT_MATRIX`: $\text{Objective\_Value}_{i,j} = \text{Matrix}(\text{Difficulty}_i, \text{Achievement}_{i,j})$
    - For `ACHIEVEMENT_DIRECT`: $\text{Objective\_Value}_{i,j} = \text{Achievement}_{i,j}$
-   *(Calculated strictly when Part A completeness passes: $K_{\text{valid}} == K_{\text{expected}}$)*
 2. **Part B Competency Combination Formula:**
    $$\text{Competency\_Result}_i = \sum_{j=1}^{K_{\text{expected}}} (\text{Rating}_{i,j} \times \text{Appraiser\_Weight}_j) = \frac{\sum_{j=1}^{K_{\text{expected}}} \text{Rating}_{i,j}}{K_{\text{expected}}}$$
-   *(Calculated strictly when Part B completeness passes: $K_{\text{valid}} == K_{\text{expected}}$)*
 3. **Part B Raw Score:**
    $$\text{PartB\_Raw} = \frac{\sum_{i \in \text{Scored}} \text{Competency\_Result}_i}{N_{\text{included}}}$$
 4. **Part A & Part B Weighted Scores:**
-   - $\text{PartA\_Weighted} = \text{ROUND}((\text{Part A Raw} \times \text{Part\_A\_Weight}) / 100, 2)$
-   - $\text{PartB\_Weighted} = \text{ROUND}(\text{Part B Raw} \times (\text{Part\_B\_Weight} / 100), 2)$
-5. **Intermediate 5-Point Weighted Score:**
-   $$\text{Weighted\_Score\_5\_Point} = \text{PartA\_Weighted} + \text{PartB\_Weighted}$$
-6. **Final 100-Point Normalized Score:**
-   $$\text{Final\_Score\_100\_Point} = \frac{\text{Weighted\_Score\_5\_Point} \times 100}{5}$$
+   - $\text{PartA\_Weighted} = \text{APPLY\_ROUNDING}(\text{PartA\_Rounding\_Rule}, (\text{Part A Raw} \times \text{Part\_A\_Weight}) / 100)$
+   - $\text{PartB\_Weighted} = \text{APPLY\_ROUNDING}(\text{PartB\_Weighted\_Rounding\_Rule}, \text{PartB\_Raw} \times (\text{Part\_B\_Weight} / 100))$
+5. **Intermediate & Final Scores:**
+   - $\text{Weighted\_Score\_5\_Point} = \text{PartA\_Weighted} + \text{PartB\_Weighted}$
+   - $\text{Final\_Score\_100\_Point} = \text{APPLY\_ROUNDING}(\text{Final\_Rounding\_Rule}, (\text{Weighted\_Score\_5\_Point} \times 100) / 5)$
 
 ---
 
-## 9. Canonical Annual Scoring Snapshot Schema (Future Model)
+## 9. Canonical Annual Scoring Snapshot Storage Strategy
 
-At Annual Record Initialization, the following configuration attributes are snapshotted onto App 794 to ensure immutable historical evaluation reproducibility (`DEC-024`):
+At Annual Record Initialization, the following configuration attributes are governed to ensure 100% historical evaluation reproducibility (`DEC-024`):
 
-1. `Evaluation_Profile_Code` (e.g. `PROF_STAFF_CHIEF_V1`, `PROF_GM_EXEC_V1`)
-2. `Scoring_Config_Code` (e.g. `SCORE_CFG_70_30_V1`, `SCORE_CFG_50_50_EXEC_V1`)
-3. `Scoring_Config_Version` (e.g. `1.0.0`)
-4. `Expected_Appraiser_Count` ($K_{\text{expected}}$: `1` or `2`)
-5. `Appraiser_Weight_Rule_Code` (`EQUAL_DISTRIBUTION_V1`)
-6. `Part_A_Scoring_Mode` (`DIFFICULTY_ACHIEVEMENT_MATRIX` or `ACHIEVEMENT_DIRECT`)
-7. `PartA_Weight` (`70`, `60`, or `50`)
-8. `PartB_Weight` (`30`, `40`, or `50`)
-9. `Competency_Set_Code` (`COMP_SET_OPERATIONAL_V1` or `COMP_SET_MANAGEMENT_V1`)
-10. `PartA_Rounding_Rule` / `PartB_Raw_Rounding_Rule` / `PartB_Weighted_Rounding_Rule` / `Final_Rounding_Rule`
+| Attribute # | Attribute Name | Storage Strategy | Physical App 794 Field Code | Field Type | Purpose / Rationale |
+| :---: | :--- | :---: | :--- | :---: | :--- |
+| 1 | `Evaluation_Profile_Code` | **`PHYSICAL_APP794_FIELD`** | `Evaluation_Profile_Code` | `SINGLE_LINE_TEXT` | Immutable record snapshot of profile code |
+| 2 | `Profile_Family` | **`PHYSICAL_APP794_FIELD`** | `Profile_Family` | `SINGLE_LINE_TEXT` | Immutable record snapshot of profile family |
+| 3 | `Scoring_Config_Code` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Code` | `SINGLE_LINE_TEXT` | Versioned scoring config identifier |
+| 4 | `Scoring_Config_Version` | **`PHYSICAL_APP794_FIELD`** | `Scoring_Config_Version` | `SINGLE_LINE_TEXT` | Exact version SHA/tag for historical playback |
+| 5 | `Expected_Appraiser_Count` | **`PHYSICAL_APP794_FIELD`** | `Expected_Appraiser_Count` | `NUMBER` | Snapshot of $K_{\text{expected}}$ for completeness gate |
+| 6 | `PartA_Weight` | **`PHYSICAL_APP794_FIELD`** | `PartA_Weight` | `NUMBER` | Snapshot of Part A percentage weight |
+| 7 | `PartB_Weight` | **`PHYSICAL_APP794_FIELD`** | `PartB_Weight` | `NUMBER` | Snapshot of Part B percentage weight |
+| 8 | `Competency_Set_Code` | **`PHYSICAL_APP794_FIELD`** | `Competency_Set_Code` | `SINGLE_LINE_TEXT` | Code of applicable competency item set |
+| 9 | `Appraiser_Weight_Rule_Code` | `DERIVED_FROM_VERSIONED_SCORING_CONFIG` | *(None)* | *(Derived)* | Resolved dynamically via `Scoring_Config_Version` |
+| 10 | `Part_A_Scoring_Mode` | `DERIVED_FROM_VERSIONED_SCORING_CONFIG` | *(None)* | *(Derived)* | Resolved dynamically via `Scoring_Config_Version` |
+| 11 | Rounding Rules | `DERIVED_FROM_VERSIONED_SCORING_CONFIG` | *(None)* | *(Derived)* | Resolved dynamically via `Scoring_Config_Version` |
 
 ---
 
@@ -157,9 +151,12 @@ At Annual Record Initialization, the following configuration attributes are snap
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | `Evaluation_Profile_Code` | No | No | `SINGLE_LINE_TEXT` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
 | `Profile_Family` | No | No | `SINGLE_LINE_TEXT` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
+| `Scoring_Config_Code` | No | No | `SINGLE_LINE_TEXT` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
+| `Scoring_Config_Version` | No | No | `SINGLE_LINE_TEXT` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
+| `Expected_Appraiser_Count`| No | No | `NUMBER` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
 | `PartA_Weight` | No | No | `NUMBER` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
 | `PartB_Weight` | No | No | `NUMBER` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
-| `Expected_Appraiser_Count`| No | No | `NUMBER` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
+| `Competency_Set_Code` | No | No | `SINGLE_LINE_TEXT` | **`MISSING_TARGET_FIELD`** | `LIVE_SCHEMA_GAP` & `REPOSITORY_SCHEMA_SPEC_GAP` |
 | `PartA_Raw_Score` | Yes | Yes | `CALC` | **`KEEP`** | Deployed & Spec Synchronized |
 | `PartA_Weighted_Score` | Yes | Yes | `CALC` | **`SCHEMA_DRIFT`** | Hardcoded 70% in Live & Spec |
 | `PartB_Raw_Score` | Yes | Yes | `CALC` | **`SCHEMA_DRIFT`** | Hardcoded /5 in Live & Spec |
