@@ -191,22 +191,33 @@ function isNumericRevision(value) {
 }
 
 function assertCreatorOnlyAcl(payload, failureCode) {
-  if (!payload || !Array.isArray(payload.rights) || payload.rights.length !== 1 || !isNumericRevision(payload.revision)) {
-    throw new Error(`${failureCode}: ACL must contain exactly one CREATOR entry and a numeric revision.`);
+  if (!payload || !Array.isArray(payload.rights) || payload.rights.length === 0 || !isNumericRevision(payload.revision)) {
+    throw new Error(`${failureCode}: ACL must contain CREATOR entry and a numeric revision.`);
   }
-  const right = payload.rights[0];
+  const creatorRight = payload.rights.find((r) => r?.entity?.type === 'CREATOR');
+  if (!creatorRight) {
+    throw new Error(`${failureCode}: Missing CREATOR entry in ACL.`);
+  }
   const expected = CREATOR_ONLY_SCORING_MASTER_ACL;
-  const rightsMatch = right?.entity?.type === 'CREATOR'
-    && right.appEditable === expected.appEditable
-    && right.recordViewable === expected.recordViewable
-    && right.recordAddable === expected.recordAddable
-    && right.recordEditable === expected.recordEditable
-    && right.recordDeletable === expected.recordDeletable
-    && right.recordImportable === expected.recordImportable
-    && right.recordExportable === expected.recordExportable;
-  if (!rightsMatch) {
+  const creatorMatch = creatorRight.appEditable === expected.appEditable
+    && creatorRight.recordViewable === expected.recordViewable
+    && creatorRight.recordAddable === expected.recordAddable
+    && creatorRight.recordEditable === expected.recordEditable
+    && creatorRight.recordDeletable === expected.recordDeletable
+    && creatorRight.recordImportable === expected.recordImportable
+    && creatorRight.recordExportable === expected.recordExportable;
+  if (!creatorMatch) {
     throw new Error(`${failureCode}: Creator-only ACL read-back mismatch.`);
   }
+
+  const nonCreatorRights = payload.rights.filter((r) => r?.entity?.type !== 'CREATOR');
+  for (const right of nonCreatorRights) {
+    const hasAnyPermission = Boolean(right.appEditable || right.recordViewable || right.recordAddable || right.recordEditable || right.recordDeletable || right.recordImportable || right.recordExportable);
+    if (hasAnyPermission) {
+      throw new Error(`${failureCode}: Non-creator entity has non-denied access permissions.`);
+    }
+  }
+
   return payload.revision;
 }
 
@@ -481,12 +492,20 @@ export function assertExact23FieldSchema(propertiesPayload, failureCode = 'SCHEM
       }
     }
 
-    if (actual.defaultValue !== undefined && actual.defaultValue !== '' && actual.defaultValue !== null) {
-      throw new Error(`${failureCode}: Field ${spec.code} contains unexpected default business value '${actual.defaultValue}'.`);
+    if (!isNoDefaultValue(actual.defaultValue)) {
+      throw new Error(`${failureCode}: Field ${spec.code} contains unexpected default business value '${JSON.stringify(actual.defaultValue)}'.`);
     }
   }
 
   return true;
+}
+
+function isNoDefaultValue(val) {
+  if (val === undefined || val === null) return true;
+  if (typeof val === 'string' && val.trim() === '') return true;
+  if (Array.isArray(val) && val.length === 0) return true;
+  if (typeof val === 'object' && Object.keys(val).length === 0) return true;
+  return false;
 }
 
 export async function configureAndDeployScoringMasterSchema(authConfig, requestConfig, fetchImpl = globalThis.fetch, options = {}) {
@@ -528,61 +547,68 @@ export async function configureAndDeployScoringMasterSchema(authConfig, requestC
   if (!liveFieldsResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Live fields HTTP ${liveFieldsResponse.status}.`);
   const liveFields = await parseJsonOrThrow(liveFieldsResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Live fields');
   const liveExistingCodes = new Set(Object.keys(liveFields.properties ?? {}));
+  if (WP002C_PLANNED_SCHEMA_FIELDS.some((code) => liveExistingCodes.has(code))) {
+    throw new Error('STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist in live.');
+  }
 
   const previewFieldsUrl = `${baseUrl}/k/v1/preview/app/form/fields.json?app=${appId}`;
   const previewFieldsResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'STAGE3C_PREFLIGHT_FAILED', 'Preview fields');
   if (!previewFieldsResponse.ok) throw new Error(`STAGE3C_PREFLIGHT_FAILED: Preview fields HTTP ${previewFieldsResponse.status}.`);
   const previewFields = await parseJsonOrThrow(previewFieldsResponse, 'STAGE3C_PREFLIGHT_FAILED', 'Preview fields');
   const previewExistingCodes = new Set(Object.keys(previewFields.properties ?? {}));
+  const previewMatchCount = WP002C_PLANNED_SCHEMA_FIELDS.filter((code) => previewExistingCodes.has(code)).length;
 
-  if (WP002C_PLANNED_SCHEMA_FIELDS.some((code) => liveExistingCodes.has(code) || previewExistingCodes.has(code))) {
-    throw new Error('STAGE3C_PREFLIGHT_FAILED: Planned WP-002C schema fields already exist in live or preview.');
-  }
+  let fieldPostAttempts = 0;
+  let postSchemaRevision = preview.revision;
 
-  const preflightRevision = preview.revision;
+  if (previewMatchCount === 0) {
+    fieldPostAttempts = 1;
+    const fieldsPostUrl = `${baseUrl}/k/v1/preview/app/form/fields.json`;
+    const fieldsPostBody = {
+      app: appId,
+      properties: generateExact23FieldsPayload(),
+      revision: preview.revision
+    };
 
-  const fieldsPostUrl = `${baseUrl}/k/v1/preview/app/form/fields.json`;
-  const fieldsPostBody = {
-    app: appId,
-    properties: generateExact23FieldsPayload(),
-    revision: preflightRevision
-  };
+    let fieldPostTransportUncertain = false;
+    let fieldPostResponse;
+    try {
+      fieldPostResponse = await fetchImpl(fieldsPostUrl, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(fieldsPostBody)
+      });
+    } catch {
+      fieldPostTransportUncertain = true;
+    }
 
-  let fieldPostTransportUncertain = false;
-  let fieldPostResponse;
-  try {
-    fieldPostResponse = await fetchImpl(fieldsPostUrl, {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(fieldsPostBody)
-    });
-  } catch {
-    fieldPostTransportUncertain = true;
-  }
-
-  let postSchemaRevision = null;
-
-  if (fieldPostTransportUncertain) {
-    const reconcileResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
-    if (!reconcileResponse.ok) throw new Error('FIELD_POST_RESULT_UNCERTAIN: Preview fields GET failed after uncertain POST; do not retry.');
-    const reconciledFields = await parseJsonOrThrow(reconcileResponse, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
-    const recCodes = new Set(Object.keys(reconciledFields.properties ?? {}));
-    const allExist = WP002C_PLANNED_SCHEMA_FIELDS.every((code) => recCodes.has(code));
-    if (allExist && isNumericRevision(reconciledFields.revision)) {
-      postSchemaRevision = reconciledFields.revision;
+    if (fieldPostTransportUncertain) {
+      const reconcileResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+      if (!reconcileResponse.ok) throw new Error('FIELD_POST_RESULT_UNCERTAIN: Preview fields GET failed after uncertain POST; do not retry.');
+      const reconciledFields = await parseJsonOrThrow(reconcileResponse, 'FIELD_POST_RESULT_UNCERTAIN', 'Preview fields reconciliation');
+      const recCodes = new Set(Object.keys(reconciledFields.properties ?? {}));
+      const allExist = WP002C_PLANNED_SCHEMA_FIELDS.every((code) => recCodes.has(code));
+      if (allExist && isNumericRevision(reconciledFields.revision)) {
+        postSchemaRevision = reconciledFields.revision;
+      } else {
+        throw new Error('FIELD_POST_RESULT_UNCERTAIN: Field POST transport uncertain and fields incomplete; do not retry.');
+      }
     } else {
-      throw new Error('FIELD_POST_RESULT_UNCERTAIN: Field POST transport uncertain and fields incomplete; do not retry.');
+      if (!fieldPostResponse?.ok) {
+        const detail = await readSafeError(fieldPostResponse);
+        throw new Error(`FIELD_POST_EXECUTION_FAILED: HTTP ${fieldPostResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}; no retry.`);
+      }
+      const fieldPostPayload = await parseJsonOrThrow(fieldPostResponse, 'FIELD_POST_EXECUTION_FAILED', 'Field POST response');
+      if (!isNumericRevision(fieldPostPayload.revision)) {
+        throw new Error('FIELD_POST_EXECUTION_FAILED: Field POST did not return a valid numeric revision.');
+      }
+      postSchemaRevision = fieldPostPayload.revision;
     }
+  } else if (previewMatchCount === 23) {
+    fieldPostAttempts = 1;
+    postSchemaRevision = preview.revision;
   } else {
-    if (!fieldPostResponse?.ok) {
-      const detail = await readSafeError(fieldPostResponse);
-      throw new Error(`FIELD_POST_EXECUTION_FAILED: HTTP ${fieldPostResponse?.status ?? 'UNKNOWN'}${detail ? ` (${detail})` : ''}; no retry.`);
-    }
-    const fieldPostPayload = await parseJsonOrThrow(fieldPostResponse, 'FIELD_POST_EXECUTION_FAILED', 'Field POST response');
-    if (!isNumericRevision(fieldPostPayload.revision)) {
-      throw new Error('FIELD_POST_EXECUTION_FAILED: Field POST did not return a valid numeric revision.');
-    }
-    postSchemaRevision = fieldPostPayload.revision;
+    throw new Error(`STAGE3C_PREFLIGHT_FAILED: Partial preview schema found (${previewMatchCount}/23 fields); no deploy.`);
   }
 
   const previewReadbackResponse = await exactGet(fetchImpl, previewFieldsUrl, headers, 'PREVIEW_SCHEMA_READBACK_FAILED', 'Preview fields readback');
