@@ -18,5 +18,5 @@
 - **2026-08-24**: Confirmed Hoshin Organizational Scope (Shared per Section/Department via App 53 `Drop_down` and `Drop_down_0`).
 - **2026-08-24**: Updated Hoshin Governance to HR Managed Model without Approval Workflow (`DEC-017`), controlled via `Ready_For_MBO` flag (`YES`/`NO`) and Native Permissions.
 - **2026-08-24**: Finalized and **FROZEN** Hoshin Architecture (`HOSHIN_ARCHITECTURE = FROZEN`, `DEC-018`).
-- **2026-08-24**: Designed Generic Routing Architecture (`DEC-019`).
-- **2026-08-24**: Applied Native Kintone Technical Correction to Generic Routing: Implemented Twin-Status Engine (`Step N - ALL` / `Step N - ANY`) with native `filterCond` branching, standardized capacity to 6 Generic Slots + Dedicated HR Final Check (45 Native Statuses total), and verified Controlled Stage Route Refresh.
+- **2026-08-24**: Designed Generic Routing Architecture with Twin-Status Engine (`DEC-019`).
+- **2026-08-24**: Added In-Flight Approver Reassignment Architecture (`DEC-020`) with 35 test cases (`RT-001` to `RT-035`), native REST API integration, current-record-only scope, and full audit logging.

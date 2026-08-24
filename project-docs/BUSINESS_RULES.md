@@ -68,3 +68,12 @@
 * **Standard Capacity:** Exactly 6 Generic Approval Slots + Dedicated HR Final Check (45 Native Statuses total).
 * **Identity Separation:** Requester Authorization, Scoring Appraiser, and Workflow Approver are governed independently.
 * **Controlled Route Refresh:** In-flight stages are locked. Stage refresh on transfer requires HR action and audit logging.
+
+---
+
+## 8. In-Flight Approver Reassignment Governance
+* **Dual-Mode Management:** Stage Refresh (before new stage) vs In-Flight Reassignment (during active stage).
+* **Current Record Only:** Reassignment applies strictly to current record via native API without altering Master.
+* **Historical Immutability:** Completed evaluation stages are permanently locked.
+* **Mandatory Audit Trail:** All reassignments require business reason and audit logging.
+

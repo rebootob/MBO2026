@@ -1,12 +1,12 @@
-# Generic Routing Architecture Test Matrix (24 Scenarios)
+# Generic Routing Architecture Test Matrix (35 Scenarios)
 
-> **Document Status:** Complete (Architecture Test Blueprint)  
-> **Coverage:** All 5 Routing Families, Edge Cases, Security, and Versioning  
+> **Document Status:** Complete (Architecture Test Blueprint with In-Flight Reassignment)  
+> **Coverage:** All 5 Routing Families, Twin-Status Engine, In-Flight Reassignment, and Security  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Test Matrix Table
+## 1. Comprehensive Test Matrix Table
 
 | Test ID | Test Scenario Description | Target Topology / Condition | Expected Execution Result | Pass Criteria |
 | :--- | :--- | :--- | :--- | :---: |
@@ -34,3 +34,14 @@
 | **RT-022** | Missing Route Configuration | Employee section not in Master | Displays *พบข้อมูลพนักงานแล้ว แต่ยังไม่ได้ตั้งค่าเส้นทางอนุมัติ* | PASS |
 | **RT-023** | Inactive Approver Detection | Approver resigned / disabled | Validation alerts HR to update routing master | PASS |
 | **RT-024** | Historical Audit Integrity | View closed FY2024 record | Displays historical route snapshot unchanged | PASS |
+| **RT-025** | In-Flight Single Approver Reassignment | Manager A resigned during Mid-Year | HR reassigns Manager A -> Manager B on current record | PASS |
+| **RT-026** | Master Change vs In-Flight Immutability | Master edited while Step 2 active | Active record remains unaffected; future stages use new master | PASS |
+| **RT-027** | Inactive Approver Reassignment | Active approver disabled in Kintone | HR successfully reassigns to active substitute | PASS |
+| **RT-028** | ALL Rule Replace Pending Approver | Slot has [A, B, C], Rule=ALL; B replaced | Slot updates to [A, D, C], Rule remains ALL | PASS |
+| **RT-029** | Partial ALL Approval with Reassignment | [A, B, C]; A approved; B replaced by D | A's approval kept; D assigned; C remains pending | PASS |
+| **RT-030** | ANY Rule Reassignment Before Action | Slot has [A, B], Rule=ANY; A replaced | Slot updates to [D, B]; either D or B can approve | PASS |
+| **RT-031** | Reassignment Blocked on Completed Stage| HR attempts reassign on closed stage | System rejects operation (`STAGE_ALREADY_COMPLETED`) | PASS |
+| **RT-032** | Unauthorized Reassignment Attempt | Non-HR user attempts reassignment API | Kintone server-side permission denies request (403) | PASS |
+| **RT-033** | Reassignment Audit Trail Capture | Execute Reassignment | Audit log records old/new/reason/by/timestamp | PASS |
+| **RT-034** | Native Assignee & Snapshot Consistency | Reassign executed | Native Kintone assignee and UI snapshot match 100% | PASS |
+| **RT-035** | Current Record Only Scope Guarantee | Reassign executed with default scope | Target record updated; App 795 master remains unchanged | PASS |

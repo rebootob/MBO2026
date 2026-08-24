@@ -1,71 +1,51 @@
-# Generic Approval Routing Architecture Blueprint (Native Kintone Dual-Status Engine)
+# Generic Approval Routing Architecture Blueprint (Twin-Status Engine & In-Flight Reassignment)
 
-> **Document Status:** Complete (Corrected for Native Kintone Process Management Constraints)  
+> **Document Status:** Complete (Updated with In-Flight Approver Reassignment Governance)  
 > **Core Architecture:** Twin-Status Execution Engine (`Step N - ALL` / `Step N - ANY`) via Server-Side `filterCond`  
-> **Slot Capacity:** `GENERIC_APPROVAL_SLOT_CAPACITY = 6` + Dedicated `HR_FINAL_CHECK`  
+> **Slot Capacity:** `GENERIC_APPROVAL_SLOT_CAPACITY = 6` + Dedicated `HR_FINAL_CHECK` (45 Total Native Statuses)  
+> **Reassignment Governance:** Strict separation of Controlled Stage Refresh vs. In-Flight Single-Record Reassignment  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. The Native Kintone Assignee Constraint & The Twin-Status Engine
+## 1. The Two Route Modification Operational Modes
 
-### The Technical Limitation in Kintone Process Management
-In Kintone's native Process Management API:
-* The **Assignee Type** (`ALL` vs `ANY` vs `ONE`) is a **static property of the Process Status configuration**, not a dynamic property of individual records.
-* While the assignees themselves can be dynamically assigned per record via `FIELD_ENTITY` (`Step_N_Approvers`), a single native status cannot dynamically switch between `ALL` and `ANY` on the fly.
-
-### The Architectural Solution: Twin Execution Statuses with Native `filterCond` Branching
-To achieve 100% native server-side security without relying on client-side JavaScript hiding:
-1. Each Generic Slot ($N \in [1..6]$) is implemented as two paired native statuses:
-   - **`Step N - ALL`:** Native Assignee Type = `ALL`, Assignee Entity = `FIELD_ENTITY (Step_N_Approvers)`.
-   - **`Step N - ANY`:** Native Assignee Type = `ANY`, Assignee Entity = `FIELD_ENTITY (Step_N_Approvers)`.
-2. Process Actions branching into Slot $N$ use native Kintone **`filterCond`**:
-   - `Step_N_Rule = "ALL"` -> Destination: `Step N - ALL`
-   - `Step_N_Rule = "ANY"` -> Destination: `Step N - ANY`
-3. **Security Guarantee:** Only the applicable native action is rendered server-side by Kintone. JavaScript is strictly used for cosmetic UX labeling, never for security filtering.
+MBO V2 strictly isolates route changes into two distinct operational paradigms:
 
 ```mermaid
 graph TD
-    DRAFT["01 Draft Objective"] -->|Action: Submit (filterCond: Step_1_Rule = 'ALL')| S1_ALL["Step 1 - ALL <br/> (Native Assignee Type: ALL)"]
-    DRAFT -->|Action: Submit (filterCond: Step_1_Rule = 'ANY')| S1_ANY["Step 1 - ANY <br/> (Native Assignee Type: ANY)"]
-    
-    S1_ALL -->|Approve (filterCond: Step_2_Rule = 'ALL' & Step_2_Active = 'YES')| S2_ALL["Step 2 - ALL"]
-    S1_ALL -->|Approve (filterCond: Step_2_Rule = 'ANY' & Step_2_Active = 'YES')| S2_ANY["Step 2 - ANY"]
-    S1_ANY -->|Approve (filterCond: Step_2_Rule = 'ALL' & Step_2_Active = 'YES')| S2_ALL
-    S1_ANY -->|Approve (filterCond: Step_2_Rule = 'ANY' & Step_2_Active = 'YES')| S2_ANY
+    subgraph Mode_A [Mode A: Controlled Stage Route Refresh]
+        A_TRIGGER["New Evaluation Stage Start <br/> (e.g. Before Mid-Year / Final)"] --> A_RESOLVE["Re-resolve from Routing Master (App 795)"]
+        A_RESOLVE --> A_SNAP["Create New Stage Snapshot for Upcoming Stage"]
+        A_SNAP --> A_LOG["Log Stage Route Refresh Audit"]
+    end
+
+    subgraph Mode_B [Mode B: In-Flight Approver Reassignment]
+        B_TRIGGER["Current Stage In-Progress & Approver Unavailable <br/> (Resignation / Transfer / Leave / Inactive)"] --> B_ACTION["HR Reassignment Modal: Select New Approver & Reason"]
+        B_ACTION --> B_NATIVE["Call Native Kintone REST API: Update Assignees"]
+        B_NATIVE --> B_REC["Update Current Effective Approver on Current Record Only"]
+        B_REC --> B_AUDIT["Append Immutable Audit Event: APPROVER_REASSIGNED"]
+    end
 ```
 
 ---
 
-## 2. Standardized Slot Capacity (6 Slots + Dedicated HR)
+## 2. In-Flight Approver Reassignment Principles
 
-* **Legacy Maximum Approval Depth:** 5 Steps (Observed in App 307).
-* **Final Architectural Standard:** **`GENERIC_APPROVAL_SLOT_CAPACITY = 6`**.
-* **Future Reserve:** 1 Extra Generic Slot (Accommodates mentor/trainee roles without any schema changes).
-* **Prohibited:** Creating Slots 7 or 8 without documented business justification.
-* **HR Final Check:** Configured as a **Dedicated Stage** (`HR_FINAL_CHECK`) following the approval of all business steps in the Final Evaluation stage.
-
----
-
-## 3. Total Native Process Status Capacity
-
-| Evaluation Stage | Initial State | Twin Approval Slots (1 to 6) | Dedicated End States | Total Statuses per Stage |
-| :--- | :---: | :---: | :---: | :---: |
-| **Objective Setting** | 1 (`01 Draft Objective`) | 12 (6 Slots * 2 [ALL/ANY]) | 1 (`Objective Approved`) | **14** |
-| **Mid-Year Review** | 1 (`Mid-Year Input`) | 12 (6 Slots * 2 [ALL/ANY]) | 1 (`Mid-Year Approved`) | **14** |
-| **Final Evaluation** | 1 (`Self Evaluation Input`) | 12 (6 Slots * 2 [ALL/ANY]) | 2 (`HR Final Check`, `Completed`) | **15** |
-| **System Terminal** | - | - | 2 (`Cancel`, `Resign`) | **2** |
-| **Grand Total** | | | | **45 Native Statuses** |
-
-*Analysis:* 45 clean, normalized statuses in a single unified app replaces the 384 fragmented actions of legacy App 283 and supports 100% of all company routing families.
+1. **Completed Stages Are Strictly Immutable:** If Objective Setting was approved by `Manager A`, historical audit permanently reflects `Manager A`. Subsequent reassignments in Mid-Year or Final will NEVER rewrite historical approver stamps or comments.
+2. **Current Record Only Default:** In-flight reassignment applies strictly to the single active transaction record. It **does NOT silently modify App 795 Routing Master** or alter other employees' routing.
+3. **Native Kintone API Integration:** Reassignment updates active assignees server-side via Kintone's Native REST API (`/k/v1/record/assignees.json`), guaranteeing that action buttons are strictly restricted to the newly authorized approver.
+4. **ALL / ANY Rule Governance:**
+   - **`ALL` Rule with Multiple Approvers ($[A, B, C]$):** If $B$ resigns and is replaced by $D$, the slot becomes $[A, D, C]$. If $A$ already approved, $A$'s completed approval is preserved, $D$ receives the pending assignment, and $C$ remains pending.
+   - **`ANY` Rule:** Reassignment is permitted before any approver acts. Once an approval completes the step, reassignment is blocked.
+5. **Reassignment Block Conditions:**
+   - Blocked if stage is already completed or record is closed/archived.
+   - Blocked if target user is inactive/disabled or unauthorized.
 
 ---
 
-## 4. Controlled Stage Route Refresh Architecture
+## 3. Standardized Slot Capacity (6 Slots + Dedicated HR)
 
-* **In-flight Immutability:** While an evaluation stage is active/in-progress, the Route Snapshot is **strictly frozen**.
-* **Controlled Refresh Before New Stage:**
-  - If an employee transfers sections or gets a new supervisor mid-year:
-  - HR Administrator executes a formal **"Refresh Routing Snapshot"** before Mid-Year or Final stage opens.
-  - The system freshly resolves App 795, updates the transaction snapshot, and logs the change in `Routing_Revision_Log` (`Old Route`, `New Route`, `Reason`, `Timestamp`, `HR User`).
-  - Historical completed stages (e.g. Objective Setting) remain permanently untouched.
+* **Architectural Standard:** **`GENERIC_APPROVAL_SLOT_CAPACITY = 6`**.
+* **HR Final Check:** Dedicated Stage (`HR_FINAL_CHECK`) following business approval in Final Evaluation.
+* **Grand Total:** **45 Native Process Statuses** across the entire lifecycle.

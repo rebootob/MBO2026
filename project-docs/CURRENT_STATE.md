@@ -1,6 +1,6 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T07:25:00+07:00
+- **Updated At**: 2026-08-24T07:45:00+07:00
 - **Current Phase**: CROSS-APP LEGACY DISCOVERY & V2 ARCHITECTURE REDESIGN (READ ONLY)
 - **Current Branch**: `develop`
 - **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
@@ -14,9 +14,10 @@
 - **Annual Evaluation Cycle Architecture Confirmed**: Single Long-Lived App Core, Zero Year Hardcoding.
 - **Annual Plan Carry Forward Architecture Confirmed**: Strict Whitelist Model, Never Clone Record, Fresh Configuration Supremacy.
 - **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
-- **Generic Routing Architecture: Ready for Final Freeze Review (`DEC-019`)**:
+- **Generic Routing Architecture: Ready for Final Freeze Review (`DEC-019`, `DEC-020`)**:
   - Twin-Status Execution Engine (`Step N - ALL` / `Step N - ANY`) via native `filterCond`.
   - Standardized Capacity: 6 Generic Slots + Dedicated HR Final Check (45 Native Statuses total).
-  - Controlled Stage Route Refresh with Audit Logging.
-  - Option A Flat Master Data Model.
+  - In-Flight Approver Reassignment (Current Record Only via Native REST API + Audit Logging).
+  - Controlled Stage Route Refresh before new stages.
+  - Comprehensive 35 Test Matrix Scenarios (`RT-001` to `RT-035`).
 - **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
