@@ -221,3 +221,33 @@
   6. **Kintone-Only Safe Publish Sequence:**
      - `DRAFT` $\to$ Validate rules $\to$ `VALIDATED` $\to$ Compute `Configuration_Hash` $\to$ Save in Kintone $\to$ Read record back via REST API while status remains `VALIDATED` $\to$ Compare Expected Hash vs Read-Back Hash $\implies$ IF MATCH: Transition status to `PUBLISHED`; IF NOT MATCH: Fail Closed with `CONFIG_READBACK_MISMATCH`.
   7. **No Separate Archive App:** The Configuration Master App itself maintains historical published versions (`Config_Status = SUPERSEDED` / `RETIRED`). No separate archive app is created.
+
+## DEC-039 — Strict Employee Record Data Isolation Architecture
+- **Date**: 2026-08-24
+- **Status**: FROZEN (User-Confirmed Security Critical Governance)
+- **Decision**:
+  1. **Strict Record-Level Data Isolation:** Each employee must ONLY be able to access their own MBO and evaluation records (e.g., Employee Code `0149` can access only `0149` records). Employee A must NEVER be able to view Employee B objectives, ratings, comments, scores, evaluation history, attachments, or routing information unless the authenticated user possesses an explicit authorized business role (such as HR or assigned approver).
+  2. **Security Based on Authenticated Identity:** `Employee_Code` alone MUST NOT be treated as authentication. Entering an `Employee_Code` in a form or URL does NOT prove user identity. Security MUST be bound to authenticated identity (e.g. native Kintone login identity or verified SSO server token).
+  3. **Shared Kintone Account Security Conflict (`SECURITY_ARCHITECTURE_DEPENDENCY`):** If multiple employees log in using a shared Kintone account, native Kintone permissions see them as the SAME user. Native record permissions cannot distinguish individual employees behind a shared login. Prior to Employee Self-Service go-live, a deterministic, secure binding mechanism (`Authenticated Identity -> Employee_Code -> Authorized Record(s)`) must be established.
+  4. **Security Boundary Rule:** Native Kintone app/field permissions or approved server-side access controls constitute the security boundary. JavaScript/CSS (hiding fields/buttons, JS filtering) are UX enhancements ONLY and MUST NOT be relied upon to prevent unauthorized data access.
+  5. **Least-Privilege Role Access Model:**
+     - **Employee:** Own records only.
+     - **Authorized Appraiser:** Records explicitly assigned for evaluation.
+     - **Authorized Approver:** Records explicitly routed to that approver.
+     - **HR:** Authorized enterprise evaluation access.
+     - **HR Manager / System Admin:** Administrative access according to approved security policy.
+  6. **Direct URL / API Security & Mandatory Testing:** Access control testing must verify that tampering with URLs, record IDs, Kintone REST APIs, list views, searches, exports, or attachments does NOT grant cross-employee access. The test `EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B` is a mandatory release blocker.
+
+
+## DEC-040 — Legacy 8-App PMS Data Migration to MBO V2 Governance
+- **Date**: 2026-08-24
+- **Status**: FROZEN (User-Confirmed Data Migration Governance)
+- **Decision**:
+  1. **Post-Stabilization Deferred Migration (`LEGACY_MIGRATION_STATUS = DEFERRED`):** Historical evaluation data from all 8 legacy PMS applications (Apps 283, 305, 307, 310, 640, 643, 715, 716) will be migrated into MBO V2 ONLY AFTER MBO V2 is stable, tested, verified, and UAT approved. No data migration is authorized during current implementation phases.
+  2. **Legacy Applications Remain Read-Only:** All 8 legacy PMS apps remain strictly READ ONLY (`WRITE_ALLOWED_APPS = []`). Migration processes must NEVER modify, delete, normalize in-place, recalculate, or alter permissions of legacy source records.
+  3. **Traceability Metadata Design:** Every migrated record must preserve source traceability metadata (`Legacy_Source_App_ID`, `Legacy_Source_Record_ID`, `Legacy_Source_Record_Number`, `Legacy_Source_Revision`, `Legacy_Source_Profile`, `Legacy_Employee_Code`, `Legacy_Fiscal_Year`, `Migration_Batch_ID`, `Migrated_At`, `Migration_Status`).
+  4. **Idempotent & Duplicate-Safe Migration:** Migration must be safe to rerun without creating duplicate historical records. Unique key constraint: `Legacy_Source_App_ID` + `Legacy_Source_Record_ID`. Duplicate sources fail closed with `MIGRATION_DUPLICATE_SOURCE`.
+  5. **No Historical Score Recalculation:** Legacy scores must be migrated as historical results/evidence. Migration MUST NOT recalculate old scores using current MBO V2 formulas.
+  6. **Mandatory Reconciliation & Dry-Run Gate:** Production migration requires an explicit source-to-target mapping per app, mandatory `DRY_RUN = true` execution (with 0 writes), and complete reconciliation (`SOURCE = MIGRATED + APPROVED_SKIPPED + DOCUMENTED_ERRORS`).
+  7. **Record Classification:** Migrated records are classified as `Record_Origin = LEGACY_MIGRATED` and MUST NOT enter active MBO V2 approval workflows.
+  8. **Security Continuity:** `DEC-039` strict record isolation applies equally to historical migrated records.

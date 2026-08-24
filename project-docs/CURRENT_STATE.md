@@ -1,6 +1,6 @@
 # Current Project State
 
-- **Updated At**: 2026-08-24T17:22:00+07:00
+- **Updated At**: 2026-08-24T18:34:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
 - **Active AI:** `Antigravity`
 - **Active Work Package**: `MBO-P03-WP-002A (Hybrid Profile / Scoring Master Foundation)`
@@ -11,9 +11,12 @@
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Appraiser Weight & Completeness**: `DEC-036`
 - **Profile Storage Architecture**: `KINTONE_ONLY (DEC-038)` (Supersedes DEC-037)
+- **Employee Record Isolation**: `STRICT_EMPLOYEE_DATA_ISOLATION (DEC-039)`
+- **Legacy PMS Data Migration**: `LEGACY_MIGRATION_STATUS = DEFERRED (DEC-040)`
 - **Scoring Evidence Matrix**: [`project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/KINTONE_SCORING_SOURCE_OF_TRUTH.md)
 - **Position Evidence Matrix**: [`project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/POSITION_PROFILE_EVIDENCE.md)
 - **Competency Evidence Matrix**: [`project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md)
+- **Security Model Document**: [`project-docs/SECURITY_MODEL.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/SECURITY_MODEL.md)
 - **WP-001 Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-001_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-001_PLAN.md)
 - **WP-002 Authoritative Plan**: [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
@@ -36,28 +39,31 @@
 7. **Scoring Source of Truth Governance: `LIVE_KINTONE_FIRST` (`DEC-035`)**.
 8. **Appraiser Weight & Completeness Governance: `FROZEN` (`DEC-036`)**.
 9. **Profile Configuration Storage Architecture: `KINTONE_ONLY = FROZEN` (`DEC-038`)** (Supersedes `DEC-037`).
-10. **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
-11. **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
-12. **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
-13. **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` & `CONTROLLED_REOPEN_REVISION_MODEL = FROZEN` (`DEC-022`)**.
-14. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`, `DEC-035`, `DEC-036`, `DEC-038`)**.
-15. **Annual Evaluation Cycle Architecture: `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)**.
-16. **Annual Plan Carry Forward Architecture: `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)**.
-17. **HR Control Center Architecture: `HR_CONTROL_CENTER_ARCHITECTURE = FROZEN` (`DEC-025`)**.
-18. **Guided Workflow UX Architecture: `GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN` (`DEC-026`)**.
-19. **Implementation Delivery Model: `IMPLEMENTATION_DELIVERY_MODEL = FROZEN` (`DEC-027`)**.
-20. **Multi-AI Continuity & Handoff Protocol: `MULTI_AI_HANDOFF_GOVERNANCE = FROZEN` (`DEC-028`)**.
-21. **First Actual Kintone Write Policy: `ZERO_ARTIFICIAL_WRITES = FROZEN` (`DEC-029`)**.
-22. **AI Review Package Governance & Commit Separation: `STANDARDIZED_REVIEW_PACKAGE = FROZEN` (`DEC-030`)**.
-23. **Active Section Requester Master & Account Mapping: `FROZEN` (`DEC-031`)**.
-24. **Retirement of Section TMT3: `FROZEN` (`DEC-032`)**.
-25. **App 794 Requester_User Schema Baseline Preservation: `FROZEN` (`DEC-033`)**.
-26. **Enterprise App 795 Seeding Deferred to Phase 5: `FROZEN` (`DEC-034`)**.
-27. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
+10. **Strict Employee Record Data Isolation Architecture: `STRICT_EMPLOYEE_DATA_ISOLATION = FROZEN` (`DEC-039`)**.
+11. **Legacy 8-App PMS Data Migration Governance: `LEGACY_MIGRATION_STATUS = DEFERRED` (`DEC-040`)**.
+12. **Hoshin Governance Architecture: `HOSHIN_ARCHITECTURE = FROZEN` (`DEC-018`)**.
+13. **Generic Routing Architecture: `GENERIC_ROUTING_ARCHITECTURE = FROZEN` (`DEC-019`, `DEC-020`)**.
+14. **Approver Change Operational Model: `FROZEN` (`DEC-021`)**.
+15. **Same Record / New Revision Model: `SAME_RECORD_NEW_REVISION = FROZEN` & `CONTROLLED_REOPEN_REVISION_MODEL = FROZEN` (`DEC-022`)**.
+16. **Evaluation Profile, Competency & Scoring Architecture: `EVALUATION_PROFILE_SCORING_ARCHITECTURE = FROZEN` (`DEC-023`, `DEC-024`, `DEC-035`, `DEC-036`, `DEC-038`)**.
+17. **Annual Evaluation Cycle Architecture: `ANNUAL_EVALUATION_CYCLE = FROZEN` (`DEC-013`, `DEC-014`)**.
+18. **Annual Plan Carry Forward Architecture: `ANNUAL_PLAN_CARRY_FORWARD = FROZEN` (`DEC-015`)**.
+19. **HR Control Center Architecture: `HR_CONTROL_CENTER_ARCHITECTURE = FROZEN` (`DEC-025`)**.
+20. **Guided Workflow UX Architecture: `GUIDED_WORKFLOW_UX_ARCHITECTURE = FROZEN` (`DEC-026`)**.
+21. **Implementation Delivery Model: `IMPLEMENTATION_DELIVERY_MODEL = FROZEN` (`DEC-027`)**.
+22. **Multi-AI Continuity & Handoff Protocol: `MULTI_AI_HANDOFF_GOVERNANCE = FROZEN` (`DEC-028`)**.
+23. **First Actual Kintone Write Policy: `ZERO_ARTIFICIAL_WRITES = FROZEN` (`DEC-029`)**.
+24. **AI Review Package Governance & Commit Separation: `STANDARDIZED_REVIEW_PACKAGE = FROZEN` (`DEC-030`)**.
+25. **Active Section Requester Master & Account Mapping: `FROZEN` (`DEC-031`)**.
+26. **Retirement of Section TMT3: `FROZEN` (`DEC-032`)**.
+27. **App 794 Requester_User Schema Baseline Preservation: `FROZEN` (`DEC-033`)**.
+28. **Enterprise App 795 Seeding Deferred to Phase 5: `FROZEN` (`DEC-034`)**.
+29. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
 
 ## Test & Defect Status
 - **Automated Unit Tests:** 131/131 Tests Passing (`npm test`)
 - **Defects:** 0 Open, 15 CLOSED (`DEF-001`..`DEF-015`)
 - **Observations:** 5 Open (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
+- **Open Security Dependencies:** 1 Open (`SEC-DEP-001: Shared Kintone Account Security Conflict`)
 - **Critical Business Questions:** **0 (All governance decisions confirmed)**
 - **Secret Scan:** `PASS`
