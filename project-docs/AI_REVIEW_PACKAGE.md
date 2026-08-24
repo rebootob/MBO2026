@@ -8,7 +8,8 @@
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-> **Last Updated:** 2026-08-24T19:05:00+07:00  
+> **WP-002C Status:** **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** (`IMPLEMENTATION_AUTHORIZED = NO`; `APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
+> **Last Updated:** 2026-08-24T20:00:00+07:00
 
 ---
 
@@ -22,7 +23,9 @@
 | **WP-002B Implementation Commit** | `26f4771` | Commit A: `feat: implement wp-002b profile scoring resolver` |
 | **WP-002B Correction Commit** | `42029ab` | EmployeeService-owned snapshot provenance, mutation detection, config-domain validation, FY context gate |
 | **WP-002B Final Architecture Commit** | `86e4354` | Removes source-code scoring authority; restores resolver regression coverage |
-| **Evidence & Review Commit** | *(this Commit B / Review Head)* | Independent review metadata only; review remains pending |
+| **WP-002B Review Closure Commit** | `9d263a4` | Independent review passed; WP-002B frozen |
+| **WP-002C Plan Commit (Commit A)** | `4b7c3f16a58f711ad4c892502a79fad44aee24af` | `docs: plan wp-002c kintone scoring configuration master` |
+| **WP-002C Review Metadata Commit (Commit B)** | *(this commit)* | Metadata only; independent review remains pending |
 
 ---
 
@@ -30,15 +33,17 @@
 
 | Attribute | Value / Evidence Pointer |
 | :--- | :--- |
-| **Work Package ID** | `MBO-P03-WP-002B` |
+| **Work Package ID** | `MBO-P03-WP-002C` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
-| **Work Package Name** | `PROFILE RESOLUTION & READ-ONLY SCORING CONFIGURATION RESOLVER` |
-| **Mode** | **`IMPLEMENTED (READ-ONLY RESOLVER FOUNDATION)`** |
-| **Claimed Status** | **`PASSED / FROZEN`** |
-| **Independent Review Gate** | **`PASS`** |
-| **Next Work Package** | `AWAITING_USER_AUTHORIZATION` |
-| **Master App Dependency** | **`SCORING_MASTER_APP_DEPENDENCY = NOT_ALLOCATED / NOT_CREATED`** — No live Kintone Master App ID; no hardcoded ID; resolver uses injected fixtures |
-| **WP-002B Authoritative Plan** | [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md) |
+| **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
+| **Mode** | **`PLAN ONLY`** |
+| **Claimed Status** | **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** |
+| **Independent Review Gate** | **`PENDING`** |
+| **Next Work Package** | `WP-002C INDEPENDENT REVIEW` |
+| **Master App Dependency** | **`SCORING_MASTER_APP_ID = NOT_ALLOCATED / NOT_CREATED`** — target is `MBO Profile & Scoring Configuration Master [Sandbox]`; `SANDBOX`; production `FALSE`; no hardcoded ID |
+| **WP-002C Authoritative Plan** | `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md` |
+| **Plan Deliverable** | 23 future schema fields; immutable payload fields 1–19; lifecycle/audit fields 20–23; controlled validate → hash → persist → exact read-back → publish flow |
+| **Kintone Boundary** | `POST/PUT/DELETE/DEPLOY = 0`; `WRITE_ALLOWED_APPS = []`; no app/schema/seed action in this WP |
 | **Resolver Contract** | Pure dependency-injected: `resolveProfileScoringConfig({ employeeSnapshot, fiscalYear, effectiveDate, masterConfigRecords, authenticatedContext })` |
 | **Employee Source** | `src/services/employee-service.js` (App 53 READ ONLY) owns mutation-detecting snapshot provenance; arbitrary caller `Profile_Code` cannot bypass position resolution |
 | **Position Resolution** | `TRIM(COLLAPSE_INTERNAL_SPACES(LOWERCASE(raw)))`; no guessing; ambiguous → `PROFILE_RESOLUTION_AMBIGUOUS` (Fail Closed) |
