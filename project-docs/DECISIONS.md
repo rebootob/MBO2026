@@ -1,5 +1,14 @@
 # Architecture & Design Decisions
 
+## DEC-027 — 16-Phase Implementation Governance & Delivery Model
+- **Date**: 2026-08-24
+- **Status**: FROZEN (Phased Delivery Governance)
+- **Decision**:
+  1. **Strict 16-Phase Delivery Model:** Enforce `PHASE -> WORK PACKAGE -> TEST GATE -> USER REVIEW -> COMMIT/TAG -> NEXT PHASE`. Strictly prohibit Big-Bang deployment.
+  2. **Three Execution Modes:** Mode 1 (Implementer), Mode 2 (Verifier), Mode 3 (Tester/Auditor). Verifier must independently verify code, tests, and Kintone state.
+  3. **One Phase One Boundary:** Cross-phase discoveries must be logged as `DEFERRED_OBSERVATION` without scope creep. Discrepancies with frozen architectures require a formal `ARCHITECTURE_CHANGE_REQUEST` (ACR) and user approval.
+  4. **Defect Management & Status Control:** Every bug tracked via `MBO-P{PHASE}-DEF-{NUMBER}` in `DEFECT_REGISTER.md`. Live progress tracked in `IMPLEMENTATION_STATUS.md`.
+
 ## DEC-025 — HR Control Center & Operations Architecture
 - **Date**: 2026-08-24
 - **Status**: FROZEN (Required Core Subsystem)

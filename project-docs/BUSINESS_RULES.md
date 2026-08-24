@@ -120,3 +120,11 @@
 * **Alert Hierarchy:** Critical (Blocker), Action Required (Gate), Warning (Overdue), Information (Milestone).
 * **Guided Workflow UX:** 5 Core Principles (What, Who, Why, Next, Where) with plain language status and context-aware action bars.
 
+
+---
+
+## 14. Implementation Governance & Phased Delivery Model (CONFIRMED)
+* **16-Phase Execution:** Phased delivery from Phase 0 (Blueprint) to Phase 15 (Production Cutover).
+* **3-Mode Verification:** Implementer -> Verifier -> Tester/Auditor.
+* **Gate Criteria:** Static, Unit, Browser, Security, Regression, No-Orphan, and Guided UX Gates before phase completion.
+
