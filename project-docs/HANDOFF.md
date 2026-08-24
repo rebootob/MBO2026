@@ -154,3 +154,44 @@ If schema deployment fails or read-back verification fails:
   - Annual Record Foundation (`ANNUAL-001`..`010`): 10 tests
   - Employee Lookup Service (`EMP-001`..`018`): 18 tests
   - Annual Record Initialization (`REC-001`..`020`): 20 tests
+
+---
+
+## WP-003 REQUESTER AUTHORIZATION MAPPING AUDIT (APP 795 READ-ONLY EVIDENCE)
+
+### 1. Audit Metadata & Live Schema Evidence
+* **Audit Timestamp:** `2026-08-24T13:25:31+07:00`
+* **Target App:** App 795 (`MBO Routing Master Sandbox`)
+* **Access Mode:** Read-Only (`GET` only; 0 writes executed)
+* **Relevant Schema Properties:**
+  - `Section_Code` (`SINGLE_LINE_TEXT`, `required: true`, `unique: true`)
+  - `Section_Name` (`SINGLE_LINE_TEXT`, `required: true`)
+  - `Requester_User` (`USER_SELECT`, `required: true`, `defaultValue: []`)
+  - `Active` (`RADIO_BUTTON`, `required: true`, `defaultValue: "Active"`)
+  - `Effective_From` (`DATE`, `required: false`)
+  - `Effective_To` (`DATE`, `required: false`)
+
+### 2. Comprehensive Section Mapping Statistics
+* **Total Routing Records in App 795:** **1**
+* **Total Unique `Section_Code` Values:** **1** (`"TME1"`)
+* **Sections with Effective Requester Mapping:** **1** (`"TME1"` -> `["e1"]`)
+* **Sections with No Requester Mapping:** All other non-pilot sections (e.g. `TMH1`, `TMH2`, `TMH3`)
+* **Sections with Duplicate Active Mappings:** **0** (`Section_Code.unique === true`)
+* **Sections with Empty `Requester_User`:** **0**
+* **Sections with Multiple `Requester_User` Values:** **0**
+* **Inactive-Only Sections:** **0**
+* **Future-Effective Mappings:** **0**
+* **Expired Mappings:** **0**
+
+### 3. Pilot Target Section Verification (`TME1` for Pilot Employee `0149`)
+* `Section_Code = "TME1"`
+* `Requester_User = ["e1"]` (Cardinality: Exactly 1)
+* `Active = "Active"`
+* `Effective_From = ""` / `Effective_To = ""`
+* **Result:** **`REQUESTER_MAPPING_RESOLVED (TME1 -> e1)`**
+
+### 4. Gate Results Summary
+* **`APP795_REQUESTER_MAPPING_READY = YES (FOR PILOT TME1) / NO (FOR FULL ROLLOUT)`**
+* **`TME1_REQUESTER_MAPPING = REQUESTER_MAPPING_RESOLVED`**
+* **`KINTONE WRITE OPERATIONS = 0`**
+* **Automated Test Evidence:** 114 / 114 tests passing (`npm test`, `REQMAP-001` through `REQMAP-014`).
