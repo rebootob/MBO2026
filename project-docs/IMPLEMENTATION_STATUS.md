@@ -17,6 +17,7 @@
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
 - **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 - **WP-002C Status:** **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** (Plan only; no app creation, implementation, or Kintone writes)
+- **WP-002C Correction Scope:** `APP_CREATE` exact-name one-time bootstrap authorization, verified ID registration, hash triple-equality, effective-overlap, trusted publish audit, and final read-back are plan requirements only
 - **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = NOT_ALLOCATED`; `NOT_CREATED`; `SANDBOX`; production `FALSE`)
 - **NEXT_WP:** `WP-002C INDEPENDENT REVIEW`
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`

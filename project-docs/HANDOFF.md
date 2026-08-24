@@ -14,6 +14,7 @@
 - **Target App**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = NOT_ALLOCATED`; `NOT_CREATED`; `SANDBOX`; production `FALSE`)
 - **NEXT_WP**: `WP-002C INDEPENDENT REVIEW`
 - **WP-002C Plan**: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
+- **WP-002C Correction**: Plan hardens exact-name app-creation bootstrap, verified `config/sandbox-apps.json` + `APP_REGISTRY.md` registration, publish integrity, effective-overlap, and final read-back; still zero implementation/Kintone writes
 - **Implementation Scope**: `src/profiles/profile-scoring-resolver.js` and `tests/profile-scoring-resolver.test.js`; reuses `EmployeeService` and `computeConfigurationHash()` with dependency-injected records only.
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`

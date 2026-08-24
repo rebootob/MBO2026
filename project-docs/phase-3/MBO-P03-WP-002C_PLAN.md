@@ -31,16 +31,21 @@ This work package defines the future controlled Kintone master only. It creates 
 
 The current resolver dependency remains `SCORING_MASTER_APP_DEPENDENCY = NOT_ALLOCATED / NOT_CREATED`; injected records are the only permitted input until this gate is passed.
 
-Future app creation is an explicit, one-time sequence, not a generic app-creation permission:
+The existing discovery/write safety architecture correctly needs a positive App ID for ordinary writes, while `APP_CREATE` occurs before an ID exists. Future implementation must therefore add a dedicated, narrow bootstrap gate—conceptually `assertAppCreationAuthorization(authConfig, requestConfig)`—rather than use `dryRunBypassDiscovery`, disable `DISCOVERY_MODE`, or bypass `sandbox-write-guard`.
 
-1. Obtain user authorization naming the exact target app above.
-2. Create that exact app and capture Kintone's real numeric ID.
-3. Read it back and prove the exact name and real ID match the authorization.
-4. Update `APP_REGISTRY.md` only with that verified real ID.
-5. Temporarily set the WP-specific allowlist to that real ID only; never inherit App 794/795 permissions.
-6. Apply and read back the approved schema; then restore default deny unless a separately authorized step requires a write.
+The gate must require all of the following: `workPackageId = MBO-P03-WP-002C`; `operation = APP_CREATE`; `activeWindow = true`; `explicitUserAuthorization = true`; a non-empty expected-change manifest; a one-time bootstrap authorization; `exactAuthorizedAppName = MBO Profile & Scoring Configuration Master [Sandbox]`; and `requestedAppName === exactAuthorizedAppName`. It authorizes **one app only with that exact name**. It must reject generic POST, a different name, another WP, repeat use, App 794/795 targeting, and every protected-app write.
 
-No fake numeric ID, inferred ID, name-search target, or broad allowlist is allowed.
+Future post-authorization registration order is mandatory:
+
+1. Explicit user authorization and one-time manifest.
+2. `APP_CREATE` exact-name bootstrap guard approval.
+3. Create the exact approved app and capture its returned real numeric ID.
+4. Read back using that exact returned ID; verify the exact name and proof it is the WP-created target.
+5. Register the same verified ID in `config/sandbox-apps.json` **and** `project-docs/APP_REGISTRY.md`.
+6. Only then allow ordinary WP-scoped App-ID authorization for that exact verified ID; never inherit App 794/795 permission.
+7. Apply/read-back the approved schema, then restore default deny unless a separately authorized window is required.
+
+No fake, inferred, name-search, or unverified ID; broad allowlist; global discovery-mode change; or generic creation capability is allowed. `APP_REGISTRY.md` alone is insufficient because the runtime safety guard uses `config/sandbox-apps.json`.
 
 ## 4. Future Schema Contract (23 Fields)
 
@@ -82,9 +87,14 @@ The future controlled publish service must perform this ordered sequence:
 2. Set `Config_Status = VALIDATED`.
 3. Canonicalize immutable fields 1–19 and compute `Configuration_Hash`.
 4. Persist the validated payload and hash through the explicitly authorized real app ID.
-5. Read back the same record by its exact Kintone record ID and `Master_Record_Key`.
-6. Recompute the hash from read-back fields and compare it to the expected hash.
-7. Transition to `PUBLISHED` only if every comparison matches; otherwise fail closed with `CONFIG_READBACK_MISMATCH` and do not publish.
+5. Read back the same record by its exact Kintone record ID and expected `Master_Record_Key`.
+6. Require exact equality: `EXPECTED_HASH === READBACK.Configuration_Hash === computeConfigurationHash(READBACK_IMMUTABLE_PAYLOAD)`. A missing/malformed stored hash, wrong record, mismatched master key, or any unequal value is `CONFIG_READBACK_MISMATCH`; fail closed and do not publish.
+7. Query existing `PUBLISHED` records for the same `Profile_Code` and exact `Fiscal_Year`. Before activation, reject an overlap whenever `candidate.Effective_From <= existing.Effective_To AND existing.Effective_From <= candidate.Effective_To`, with `SCORING_CONFIG_EFFECTIVE_OVERLAP`.
+8. Obtain `Published_By` only from the trusted authenticated publisher identity and `Published_At` only from a trusted Kintone/system timestamp; neither field is accepted from caller business payload.
+9. Transition to `PUBLISHED` only if every preceding verification passes.
+10. Perform a final exact-record read-back. It must prove `Config_Status = PUBLISHED`, expected master key and hash, trusted `Published_By`, and present/valid `Published_At`. Otherwise raise `PUBLISH_VERIFICATION_FAILED`, fail closed, and do not report publishing success.
+
+`Supersedes_Config_Version` is lineage metadata only; it never automatically makes the older record inactive. A supersession activation must explicitly transition the older `PUBLISHED` record to `SUPERSEDED` while preserving the invariant that exactly one `PUBLISHED` configuration matches each `Profile_Code` + `Fiscal_Year` + effective date. The future implementation must define a controlled transaction/ordered activation protocol. If interrupted after either state change, recovery must quarantine the candidate and re-read both exact records; runtime selection remains fail-closed on zero or multiple matches. It must never silently choose the newest/highest version.
 
 `Config_Status` plus native Kintone permissions and a controlled server-side publish service is the recommended design. Kintone Process Management is not planned: it does not add integrity beyond status locking plus the publish/read-back service and increases workflow configuration and rollback burden. Future implementation must verify native capability; if native status locking is insufficient, it requires an explicit architecture change and authorization, not an implicit Process Management addition.
 
@@ -106,15 +116,20 @@ Actual group/account resolution, permissions, and field controls are out of scop
 
 ## 7. Planned Implementation Boundary (Future Only)
 
-Future code may add one cohesive injectable adapter/service at `src/services/scoring-config-master-service.js` with tests at `tests/scoring-config-master-service.test.js`. It may use `src/profiles/scoring-config-master.js` only for generic record mapping/domain primitives, not for a competing source-code scoring authority. `src/profiles/profile-scoring-resolver.js` may be wired to the live adapter only after the real ID is allocated. Reuse the exact-record read-back and response-normalization ideas from `AnnualRecordService`; do not modify code in this WP.
+The minimum future implementation boundary is: add the exact-name `APP_CREATE` bootstrap guard to `src/core/sandbox-write-guard.js`; add WP-scoped authorized-write support to `src/core/kintone-client.js` without globally disabling discovery safety; register the verified post-creation ID in `config/sandbox-apps.json`; and register the same verified ID in `project-docs/APP_REGISTRY.md`. A single cohesive injectable service may be added at `src/services/scoring-config-master-service.js`, with `tests/scoring-config-master-service.test.js` and guard-level safety tests where the bootstrap guard belongs. Do not create multiple small helper modules without necessity.
+
+The service may use `src/profiles/scoring-config-master.js` only for generic record mapping/domain primitives, not for a competing source-code scoring authority. `src/profiles/profile-scoring-resolver.js` may be wired to the live adapter only after the real ID is allocated. Reuse exact-record read-back and response-normalization concepts from `AnnualRecordService`; do not modify code in this WP.
 
 ## 8. Future Test Plan
 
-- App identity bootstrap: exact authorized app name, real ID read-back, and no registry update before proof.
+- App creation bootstrap: wrong name, missing explicit authorization, wrong WP, generic `APP_CREATE`, repeated authorization, and App 794/795/protected targets are rejected; authorization permits one exact target only and does not disable discovery mode globally.
+- Registration: returned App ID is required; name/ownership read-back mismatch rejects; no registry update before proof; `config/sandbox-apps.json` and `APP_REGISTRY.md` receive the same verified ID.
 - Schema: all 23 field codes, types, required/unique flags, master-key uniqueness, immutable vs audit partition, and no `Fiscal_Year = ALL`.
 - Domain: invalid/missing fields, key mismatch/duplicate, invalid effective period, non-100 weights, invalid appraiser values, unsupported modes/rounding, and COCE inclusion fail closed.
 - Versioning: no published mutation; replacement uses a new key/version and valid supersession lineage.
-- Publishing: each ordered stage, wrong/missing record ID, wrong key, altered read-back payload/hash, and `CONFIG_READBACK_MISMATCH`.
+- Publishing/hash: each ordered stage; wrong/missing record ID or key; `EXPECTED_HASH != stored`; `EXPECTED_HASH != recomputed`; `stored != recomputed`; malformed stored hash; and `CONFIG_READBACK_MISMATCH`.
+- Effective uniqueness: non-overlapping published periods pass; same profile/FY overlap fails; different FY or profile does not conflict; interrupted supersession fails closed and never auto-selects a version.
+- Audit/final verification: caller `Published_By` cannot override trusted identity; caller cannot set `Published_At`; final post-publish read-back verifies status, key, hash, trusted publisher, and trusted timestamp.
 - Source-of-truth: runtime resolution consumes only a published Kintone record; no Git/filesystem/JSON fallback.
 - Safety: zero writes to protected apps and Apps 794/795; API fixture tests remain dependency-injected.
 
@@ -122,7 +137,7 @@ Future code may add one cohesive injectable adapter/service at `src/services/sco
 
 App/schema creation and baseline seeding are separate future authorization gates. The eight baseline configurations are staged evidence fixtures only; no record will be seeded by this WP.
 
-Rollback is stage-specific: before app creation, only Git documentation may be reverted; for an empty app, deletion requires explicit authorization plus exact real ID, exact name, and proof of ownership—never a name search. After schema, quarantine/disable is preferred; exact-app deletion remains separately authorized and capability-dependent. After seeding, rollback targets only an explicit manifest of exact record IDs/keys, never any protected app or unrelated record. Delete-all operations are never implied.
+Rollback is stage-specific: before app creation, only Git documentation may be reverted; for an empty app, deletion requires explicit authorization plus exact real ID, exact name, and proof of ownership—never a name search. After schema, quarantine/disable is preferred; exact-app deletion remains separately authorized and capability-dependent. For an interrupted publish/supersession, quarantine the candidate, do exact-record read-backs, preserve evidence, and keep runtime fail-closed until an explicitly authorized recovery establishes one matching published record. After seeding, rollback targets only an explicit manifest of exact record IDs/keys, never any protected app or unrelated record. Delete-all operations are never implied.
 
 This WP's Git plan is documentation only: commit the plan/living-state update, commit review metadata separately under `DEC-030`, push `ai/codex-wp002c`, and do not merge `develop`.
 

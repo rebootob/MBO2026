@@ -9,6 +9,7 @@
 - **WP-002A Implementation Status**: **`IMPLEMENTATION_GATE = PASS (COMPLETE)`**
 - **WP-002B Status**: **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 - **WP-002C Status**: **`PLAN_CREATED / PENDING_INDEPENDENT_REVIEW`** (`IMPLEMENTATION_AUTHORIZED = NO`; `APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
+- **WP-002C Plan Correction**: `APP_CREATION_BOOTSTRAP_SAFETY + PUBLISH_INTEGRITY + EFFECTIVE_OVERLAP` documented; independent review pending
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Appraiser Weight & Completeness**: `DEC-036`
 - **Profile Storage Architecture**: `KINTONE_ONLY (DEC-038)` (Supersedes DEC-037)
