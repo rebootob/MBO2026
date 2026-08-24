@@ -1,5 +1,24 @@
 # Architecture & Design Decisions
 
+## DEC-021 — Approver Change Operational Model & HR Self-Service
+- **Date**: 2026-08-24
+- **Status**: FROZEN
+- **Decision**:
+  1. **Three Operational Scopes:** 1) Future Routing Change, 2) Current Record Reassignment, 3) Future Routing + Bulk Pending Reassignment.
+  2. **Draft vs In-Flight Logic:** Draft records resolve newly effective Master routing upon submission. In-flight pending records remain with current approver unless explicitly reassigned by HR with documented reason.
+  3. **HR Self-Service Target:** $\ge 95\%$ of routine routing administration is executable by HR via Business UI without IT intervention.
+  4. **Three-Layer History Model:** Preserves Master history, Stage snapshots, and In-Flight reassignment audit trail (`APPROVER_REASSIGNED`).
+
+## DEC-022 — One MBO Record Per Employee Per Fiscal Year & Same Record Revision
+- **Date**: 2026-08-24
+- **Status**: FROZEN
+- **Decision**:
+  1. **One Record Per Employee Per FY:** Exactly 1 primary MBO Transaction Record (`FY2027-0149`). Reopen NEVER duplicates Kintone records (Strictly NO `FY2027-0149-R2`, `-COPY`, `-NEW`).
+  2. **Stage-Specific Revision:** Stage counters (`Objective_Revision`, `MidYear_Revision`, `Final_Revision`) increment on controlled reopen.
+  3. **Hybrid Archive Storage (Option C):** App 794 maintains the Current Working Revision; Dedicated Revision Archive App stores immutable serialized snapshots of superseded revisions.
+  4. **Approval & Score Invalidation:** Superseded approvals become `HISTORICAL / SUPERSEDED`; current approval status resets to `PENDING` on new revision; scores recalculate from current valid revision.
+  5. **Dashboard Single Counting:** Dashboard KPIs count exactly 1 evaluation per employee per FY regardless of revision count.
+
 ## DEC-020 — In-Flight Approver Reassignment & Dual-Mode Route Management
 - **Date**: 2026-08-24
 - **Status**: FROZEN

@@ -77,3 +77,20 @@
 * **Historical Immutability:** Completed evaluation stages are permanently locked.
 * **Mandatory Audit Trail:** All reassignments require business reason and audit logging.
 
+
+---
+
+## 9. Approver Change Operational Rules (FROZEN)
+* **Three Scopes:** Future Routing Change, Current Record Reassignment, Future Routing + Bulk Pending Reassignment.
+* **Draft Record:** Resolves current Master upon submission.
+* **Pending Record:** Requires explicit HR reassignment with reason; Master change alone does not alter in-flight records.
+* **HR Self-Service:** $\ge 95\%$ routine routing administration handled by HR without IT intervention.
+
+---
+
+## 10. One MBO Record Per FY & Same Record Revision (FROZEN)
+* **Identity Rule:** 1 Employee + 1 Fiscal Year = 1 MBO Record (`FY2027-0149`).
+* **No Duplicate Records:** Reopen uses same record with incremented stage revision counter (`Objective_Revision: 2`). Never duplicate records.
+* **Historical Immutability:** Superseded revisions are archived immutably (Option C Hybrid Model).
+* **Single Counting:** Dashboard KPIs count exactly 1 evaluation per employee per FY.
+

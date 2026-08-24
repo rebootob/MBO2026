@@ -21,3 +21,5 @@
 - **2026-08-24**: Designed Generic Routing Architecture with Twin-Status Engine (`DEC-019`).
 - **2026-08-24**: Added In-Flight Approver Reassignment Architecture (`DEC-020`) with 35 test cases (`RT-001` to `RT-035`), native REST API integration, current-record-only scope, and full audit logging.
 - **2026-08-24**: **FROZEN** Generic Routing Architecture (`GENERIC_ROUTING_ARCHITECTURE = FROZEN`, `DEC-019`, `DEC-020`).
+- **2026-08-24**: Added Generic Routing Operational Rules (`DEC-021`) for HR Self-Service Approver Changes (Three Scopes, Effective Dates, Three-Layer History, and Bulk Preview).
+- **2026-08-24**: Added and **FROZEN** Reopen Revision Architecture (`SAME_RECORD_NEW_REVISION = FROZEN`, `DEC-022`): 1 Employee + 1 FY = 1 Record (`FY2027-0149`), Stage Revisions (`Objective_Revision: 2`), Option C Hybrid Archive Model, and 70 defined test scenarios (`RT-001` to `RT-050`, `RT-071` to `RT-090`).
