@@ -3,12 +3,12 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)  
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)  
 > **Review Policy:** Evidence-based verification (Source, Diff, Config, Test Evidence). Screenshots reserved for UI layout only.  
-> **Governance Rules:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-037 (PROFILE_CONFIGURATION_STORAGE)`  
+> **Governance Rules:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-038 (PROFILE_CONFIGURATION_STORAGE = KINTONE_ONLY)`  
 > **WP-001 Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`LOCKED / NOT STARTED`**  
-> **Last Updated:** 2026-08-24T17:14:00+07:00  
+> **Last Updated:** 2026-08-24T17:22:00+07:00  
 
 ---
 
@@ -18,7 +18,7 @@
 | :--- | :--- | :--- |
 | **Previous Approved Safe Commit** | `8fb306e` | Phase 2 Closed Baseline (Gates Passed & Frozen) |
 | **Phase 3 WP-001 Plan Commit** | `6e72553` | Frozen Authoritative WP-001 Implementation Plan (`PLAN_GATE = PASS`) |
-| **Phase 3 WP-002A Target Commit** | `d738851` | Implementation Commit: `fix: preserve deployed scoring config differences in wp-002a` |
+| **Phase 3 WP-002A Target Commit** | `2116ae5` | Implementation Commit: `fix: simplify scoring configuration storage to kintone only` |
 | **Evidence & Review Commit** | *(Commit B / Review Head)* | Commit B: Updated Phase 3 WP-002A Review Package Target Metadata |
 
 ---
@@ -31,10 +31,13 @@
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `HYBRID PROFILE / SCORING MASTER FOUNDATION` |
 | **Mode** | **`CONTROLLED IMPLEMENTATION (SANDBOX & UNIT ONLY)`** |
-| **Claimed Status** | **`IMPLEMENTATION_GATE: PASS (130/130 Unit Tests Passing)`** |
+| **Claimed Status** | **`IMPLEMENTATION_GATE: PASS (131/131 Unit Tests Passing)`** |
+| **Target Architecture** | **`PROFILE_CONFIGURATION_STORAGE = KINTONE_ONLY (DEC-038)`** |
+| **DEC-037 Status** | Marked `SUPERSEDED_BY_DEC_038` in [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (Original text preserved for audit) |
+| **Runtime Git Dependency** | **`ZERO RUNTIME GIT DEPENDENCY`** (Software runtime requires no Git/GitHub APIs) |
+| **Publish Sequence** | `DRAFT` $\to$ Validate $\to$ `VALIDATED` $\to$ Compute Hash $\to$ Kintone REST API payload read-back comparison while in `VALIDATED` status $\implies$ IF MATCH: Transition to `PUBLISHED`; IF MISMATCH: Block publish (`CONFIG_READBACK_MISMATCH`) |
 | **Source Module** | [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js) |
-| **Unit Test Suite** | [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (14/14 new tests passing; 130/130 total suite passing) |
-| **Governance Decisions** | [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-037` Full History Preserved) |
+| **Unit Test Suite** | [`tests/scoring-config-master.test.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/scoring-config-master.test.js) (15/15 new tests passing; 131/131 total suite passing) |
 | **Canonical Baseline Configs** | Exactly **8 configuration records** corresponding to all 8 evaluation groups (`PROF_STAFF_CHIEF`, `PROF_JAPANESE_STAFF`, `PROF_ASST_MGR`, `PROF_SECTION_MGR`, `PROF_SENIOR_MGR`, `PROF_DGM`, `PROF_GM`, `PROF_VP`) |
 | **Deployed Rounding Fidelity** | Preserved exact deployed rounding differences (Section Mgr App 305 / Senior Mgr App 643 explicit ROUND 2 vs DGM App 307 / GM App 640 / VP App 715 / Staff App 283 / Japan App 716 / Asst Mgr App 310 per-app CALC) |
 | **Effective Period Validation** | `Effective_From` and `Effective_To` strings strictly required; missing dates fail with `MISSING_EFFECTIVE_PERIOD` |
