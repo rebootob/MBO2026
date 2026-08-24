@@ -9,19 +9,27 @@ import {
   assertSandboxWriteTarget
 } from '../src/core/sandbox-write-guard.js';
 
-// Mock helper to simulate Kintone API
-function createMockKintoneApi(recordsResponse, shouldThrow = false) {
+// Mock helper to simulate Kintone API and track calls
+function createMockKintoneApi(recordsResponse, shouldThrow = false, rawResponse = null) {
+  let callCount = 0;
   let lastQuery = null;
   let lastAppId = null;
 
   return {
     async getRecords(appId, query) {
+      callCount++;
       lastAppId = appId;
       lastQuery = query;
       if (shouldThrow) {
         throw new Error('Network timeout / Kintone 500 Internal Error');
       }
+      if (rawResponse !== null) {
+        return rawResponse;
+      }
       return { records: recordsResponse };
+    },
+    getCallCount() {
+      return callCount;
     },
     getLastCall() {
       return { appId: lastAppId, query: lastQuery };
@@ -29,17 +37,17 @@ function createMockKintoneApi(recordsResponse, shouldThrow = false) {
   };
 }
 
-// Sample Pilot Record (Employee 0149)
+// Synthetic Fixture (DEF-010: Zero unnecessary real PII)
 const mockPilot0149Record = {
   $id: { value: '386' },
   emp_text: { type: 'SINGLE_LINE_TEXT', value: '0149' },
   Number: { type: 'NUMBER', value: '149' },
-  Text: { type: 'SINGLE_LINE_TEXT', value: 'Mr.Gritchai  Somphonkrang' },
-  Text_0: { type: 'SINGLE_LINE_TEXT', value: 'นายกฤตชัย  สมพลกรัง' },
+  Text: { type: 'SINGLE_LINE_TEXT', value: 'Test Employee' },
+  Text_0: { type: 'SINGLE_LINE_TEXT', value: 'พนักงานทดสอบ' },
   Drop_down_0: { type: 'DROP_DOWN', value: 'Eco Energy & Textile Machinery' },
   Drop_down: { type: 'DROP_DOWN', value: 'TME1' },
-  Text_2: { type: 'SINGLE_LINE_TEXT', value: 'Marketing Chief' },
-  Text_4: { type: 'SINGLE_LINE_TEXT', value: 'gritchai@ttmet.co.th' },
+  Text_2: { type: 'SINGLE_LINE_TEXT', value: 'Test Position' },
+  Text_4: { type: 'SINGLE_LINE_TEXT', value: 'pilot0149@example.invalid' },
   Date: { type: 'DATE', value: '2021-04-01' },
   Text_area: { type: 'MULTI_LINE_TEXT', value: 'Legacy Dept Hoshin' },
   Text_area_0: { type: 'MULTI_LINE_TEXT', value: 'Legacy Sec Hoshin' }
@@ -59,7 +67,7 @@ test('EMP-002: Query representation separation: Input "149" queries Number 149, 
   const result = await EmployeeService.lookupEmployee('149', api);
 
   assert.equal(result.status, 'EMPLOYEE_FOUND');
-  // Crucial test: Canonical code comes strictly from App53.emp_text ("0149"), NOT the unpadded input "149"
+  // Canonical code comes strictly from App53.emp_text ("0149"), NOT the unpadded input "149"
   assert.equal(result.employee.Employee_Code, '0149');
 
   const lastCall = api.getLastCall();
@@ -82,7 +90,7 @@ test('EMP-003: Non-existent employee code throws EMPLOYEE_NOT_FOUND', async () =
   );
 });
 
-test('EMP-004: Empty or whitespace employee code throws EMPLOYEE_CODE_INVALID client-side', async () => {
+test('EMP-004: Empty or whitespace employee code throws EMPLOYEE_CODE_INVALID client-side without calling API', async () => {
   const api = createMockKintoneApi([mockPilot0149Record]);
 
   await assert.rejects(
@@ -108,9 +116,12 @@ test('EMP-004: Empty or whitespace employee code throws EMPLOYEE_CODE_INVALID cl
       return true;
     }
   );
+
+  // Assert API was never called
+  assert.equal(api.getCallCount(), 0);
 });
 
-test('EMP-005: Numeric type and illegal characters throw EMPLOYEE_CODE_INVALID', async () => {
+test('EMP-005: Numeric type and illegal characters throw EMPLOYEE_CODE_INVALID client-side without calling API', async () => {
   const api = createMockKintoneApi([mockPilot0149Record]);
 
   await assert.rejects(
@@ -137,6 +148,9 @@ test('EMP-005: Numeric type and illegal characters throw EMPLOYEE_CODE_INVALID',
       return true;
     }
   );
+
+  // Assert API was never called
+  assert.equal(api.getCallCount(), 0);
 });
 
 test('EMP-006: Multiple matching records in App 53 throws EMPLOYEE_SOURCE_AMBIGUOUS (Fail-Closed)', async () => {
@@ -171,18 +185,18 @@ test('EMP-007: API / Network connectivity failure throws SOURCE_ACCESS_ERROR wit
   );
 });
 
-test('EMP-008: Validates all 8 snapshot mapped fields and excludes deprecated Hoshin fields', async () => {
+test('EMP-008: Validates all 8 snapshot mapped fields and excludes deprecated Hoshin fields (DEF-010 Synthetic Data)', async () => {
   const api = createMockKintoneApi([mockPilot0149Record]);
   const result = await EmployeeService.lookupEmployee('0149', api);
   const emp = result.employee;
 
   assert.equal(emp.Employee_Code, '0149');
-  assert.equal(emp.Employee_Name, 'Mr.Gritchai  Somphonkrang');
-  assert.equal(emp.Employee_Name_TH, 'นายกฤตชัย  สมพลกรัง');
+  assert.equal(emp.Employee_Name, 'Test Employee');
+  assert.equal(emp.Employee_Name_TH, 'พนักงานทดสอบ');
   assert.equal(emp.Employee_Department, 'Eco Energy & Textile Machinery');
   assert.equal(emp.Employee_Section, 'TME1');
-  assert.equal(emp.Employee_Position, 'Marketing Chief');
-  assert.equal(emp.Employee_Email, 'gritchai@ttmet.co.th');
+  assert.equal(emp.Employee_Position, 'Test Position');
+  assert.equal(emp.Employee_Email, 'pilot0149@example.invalid');
   assert.equal(emp.Employee_Start_Date, '2021-04-01');
 
   // Strict check: Deprecated Hoshin fields must NOT exist in snapshot
@@ -252,5 +266,59 @@ test('EMP-014: App 795 remains unchanged (Deny)', () => {
   assert.throws(
     () => assertSandboxWriteTarget(795, undefined, WRITE_ALLOWED_APPS),
     /WRITE BLOCKED/
+  );
+});
+
+test('EMP-015: Identity Mismatch: Input "149" matched Number 149 but emp_text is "0150" throws EMPLOYEE_SOURCE_MISMATCH (DEF-008)', async () => {
+  const mismatchedRecord = {
+    ...mockPilot0149Record,
+    emp_text: { type: 'SINGLE_LINE_TEXT', value: '0150' }, // Inconsistent code!
+    Number: { type: 'NUMBER', value: '149' }
+  };
+  const api = createMockKintoneApi([mismatchedRecord]);
+
+  await assert.rejects(
+    async () => await EmployeeService.lookupEmployee('149', api),
+    (err) => {
+      assert.equal(err.code, 'EMPLOYEE_SOURCE_MISMATCH');
+      assert.match(err.userMessageTH, /ไม่ตรงกับรหัสที่ร้องขอ/);
+      assert.match(err.userMessageEN, /does not match requested code/);
+      return true;
+    }
+  );
+});
+
+test('EMP-016: Identity Consistency: Input "149" with matching emp_text "0149" passes successfully (DEF-008)', async () => {
+  const api = createMockKintoneApi([mockPilot0149Record]);
+  const result = await EmployeeService.lookupEmployee('149', api);
+
+  assert.equal(result.status, 'EMPLOYEE_FOUND');
+  assert.equal(result.employee.Employee_Code, '0149');
+});
+
+test('EMP-017: Malformed response object {} throws SOURCE_RESPONSE_INVALID (DEF-009)', async () => {
+  const api = createMockKintoneApi([], false, {}); // Malformed raw response
+
+  await assert.rejects(
+    async () => await EmployeeService.lookupEmployee('0149', api),
+    (err) => {
+      assert.equal(err.code, 'SOURCE_RESPONSE_INVALID');
+      assert.match(err.userMessageTH, /โครงสร้างข้อมูลตอบกลับ/);
+      assert.match(err.userMessageEN, /Invalid response structure/);
+      return true;
+    }
+  );
+});
+
+test('EMP-018: Malformed response { records: null } throws SOURCE_RESPONSE_INVALID and NOT EMPLOYEE_NOT_FOUND (DEF-009)', async () => {
+  const api = createMockKintoneApi([], false, { records: null }); // Malformed records
+
+  await assert.rejects(
+    async () => await EmployeeService.lookupEmployee('0149', api),
+    (err) => {
+      assert.equal(err.code, 'SOURCE_RESPONSE_INVALID');
+      assert.notEqual(err.code, 'EMPLOYEE_NOT_FOUND');
+      return true;
+    }
   );
 });

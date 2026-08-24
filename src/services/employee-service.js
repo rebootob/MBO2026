@@ -73,9 +73,18 @@ export class EmployeeService {
       );
     }
 
-    const records = resp?.records || [];
+    // 4. Source Response Structure Validation (DEF-009)
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      throw new EmployeeLookupError(
+        'SOURCE_RESPONSE_INVALID',
+        'โครงสร้างข้อมูลตอบกลับจากระบบ Employee Master ไม่ถูกต้อง กรุณาติดต่อ HR / Administrator\nInvalid response structure received from Employee Master. Please contact HR / Administrator.',
+        'Invalid response structure received from Employee Master. Please contact HR / Administrator.'
+      );
+    }
 
-    // 4. Exactly-One Match Rule
+    const records = resp.records;
+
+    // 5. Exactly-One Match Rule
     if (records.length === 0) {
       throw new EmployeeLookupError(
         'EMPLOYEE_NOT_FOUND',
@@ -94,7 +103,7 @@ export class EmployeeService {
 
     const emp = records[0];
 
-    // 5. Source Complete Validation: Canonical code must exist in emp_text
+    // 6. Source Complete Validation: Canonical code must exist in emp_text
     const rawEmpText = emp.emp_text?.value;
     if (!rawEmpText || typeof rawEmpText !== 'string' || !isValidEmployeeCode(rawEmpText.trim())) {
       throw new EmployeeLookupError(
@@ -106,7 +115,23 @@ export class EmployeeService {
 
     const canonicalCode = rawEmpText.trim();
 
-    // 6. Return 8 Header Snapshot Fields (Hoshin fields explicitly excluded)
+    // 7. Identity Consistency Validation (DEF-008)
+    let isConsistent = false;
+    if (canonicalCode === cleanCode) {
+      isConsistent = true;
+    } else if (isDigitOnly && /^\d+$/.test(canonicalCode)) {
+      isConsistent = parseInt(canonicalCode, 10) === parseInt(cleanCode, 10);
+    }
+
+    if (!isConsistent) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_SOURCE_MISMATCH',
+        `ข้อมูลรหัสพนักงานในระบบ Employee Master ไม่ตรงกับรหัสที่ร้องขอ (${cleanCode}) กรุณาติดต่อ HR\nEmployee Master canonical identity does not match requested code (${cleanCode}). Please contact HR.`,
+        `Employee Master canonical identity does not match requested code (${cleanCode}). Please contact HR.`
+      );
+    }
+
+    // 8. Return 8 Header Snapshot Fields (Hoshin fields explicitly excluded)
     return {
       status: 'EMPLOYEE_FOUND',
       employee: {
