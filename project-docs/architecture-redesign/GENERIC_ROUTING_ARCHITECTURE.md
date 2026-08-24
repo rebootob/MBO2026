@@ -1,74 +1,71 @@
-# Generic Approval Routing Architecture Blueprint
+# Generic Approval Routing Architecture Blueprint (Native Kintone Dual-Status Engine)
 
-> **Document Status:** Complete (Ready for Freeze Review)  
-> **Core Model:** Slot-Based Generic Execution Engine (Decoupled Configuration & Native Execution)  
-> **Capacity:** 6 Generic Approval Slots + 1 HR Final Check Slot (Total 7 Steps)  
+> **Document Status:** Complete (Corrected for Native Kintone Process Management Constraints)  
+> **Core Architecture:** Twin-Status Execution Engine (`Step N - ALL` / `Step N - ANY`) via Server-Side `filterCond`  
+> **Slot Capacity:** `GENERIC_APPROVAL_SLOT_CAPACITY = 6` + Dedicated `HR_FINAL_CHECK`  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. Executive Summary & The Slot Execution Engine
+## 1. The Native Kintone Assignee Constraint & The Twin-Status Engine
 
-To eliminate the legacy state explosion (384 actions) while respecting Kintone's static Process Management engine, MBO V2 implements the **Slot-Based Generic Execution Engine**:
+### The Technical Limitation in Kintone Process Management
+In Kintone's native Process Management API:
+* The **Assignee Type** (`ALL` vs `ANY` vs `ONE`) is a **static property of the Process Status configuration**, not a dynamic property of individual records.
+* While the assignees themselves can be dynamically assigned per record via `FIELD_ENTITY` (`Step_N_Approvers`), a single native status cannot dynamically switch between `ALL` and `ANY` on the fly.
 
-* **Business Route Master (App 795):** Stores dynamic, ordered approval steps per Section/Profile (e.g. 1 to 6 steps).
-* **Native Process Management (App 794):** Configured with **6 Generic Approval Slots** per evaluation stage (`Slot 1` through `Slot 6`) plus `HR Final Check`.
-* **Dynamic Slot Binding:** When an employee record is created/opened, the resolved Business Route dynamically binds approvers to `Step_1_Approvers`, `Step_2_Approvers`, ..., `Step_N_Approvers`. Unused slots (e.g. Slots 3-6 in a 2-step route) are automatically bypassed seamlessly.
+### The Architectural Solution: Twin Execution Statuses with Native `filterCond` Branching
+To achieve 100% native server-side security without relying on client-side JavaScript hiding:
+1. Each Generic Slot ($N \in [1..6]$) is implemented as two paired native statuses:
+   - **`Step N - ALL`:** Native Assignee Type = `ALL`, Assignee Entity = `FIELD_ENTITY (Step_N_Approvers)`.
+   - **`Step N - ANY`:** Native Assignee Type = `ANY`, Assignee Entity = `FIELD_ENTITY (Step_N_Approvers)`.
+2. Process Actions branching into Slot $N$ use native Kintone **`filterCond`**:
+   - `Step_N_Rule = "ALL"` -> Destination: `Step N - ALL`
+   - `Step_N_Rule = "ANY"` -> Destination: `Step N - ANY`
+3. **Security Guarantee:** Only the applicable native action is rendered server-side by Kintone. JavaScript is strictly used for cosmetic UX labeling, never for security filtering.
 
 ```mermaid
-graph LR
-    subgraph Route_Master [App 795: Generic Route Master]
-        R_DEF["Route: TME1 Staff (2 Steps) <br/> Step 1: Suthas (Manager) <br/> Step 2: Somrudee (GM)"]
-    end
-
-    subgraph MBO_Snapshot [App 794: Annual Record Snapshot]
-        S1["Step_1_Approvers = [suthas] <br/> Step_1_Active = YES"]
-        S2["Step_2_Approvers = [somrudee] <br/> Step_2_Active = YES"]
-        S3["Step_3_Active = NO (Bypassed)"]
-        S4["Step_4_Active = NO (Bypassed)"]
-        S5["Step_5_Active = NO (Bypassed)"]
-        S6["Step_6_Active = NO (Bypassed)"]
-    end
-
-    subgraph Native_Process [Kintone Process Execution Engine]
-        DRAFT["01 Draft Objective"] --> ST1["Objective Approval Step 1 (Assignee: Step_1_Approvers)"]
-        ST1 --> ST2["Objective Approval Step 2 (Assignee: Step_2_Approvers)"]
-        ST2 --> DONE["Objective Approved"]
-    end
-
-    R_DEF --> MBO_Snapshot
-    MBO_Snapshot --> Native_Process
+graph TD
+    DRAFT["01 Draft Objective"] -->|Action: Submit (filterCond: Step_1_Rule = 'ALL')| S1_ALL["Step 1 - ALL <br/> (Native Assignee Type: ALL)"]
+    DRAFT -->|Action: Submit (filterCond: Step_1_Rule = 'ANY')| S1_ANY["Step 1 - ANY <br/> (Native Assignee Type: ANY)"]
+    
+    S1_ALL -->|Approve (filterCond: Step_2_Rule = 'ALL' & Step_2_Active = 'YES')| S2_ALL["Step 2 - ALL"]
+    S1_ALL -->|Approve (filterCond: Step_2_Rule = 'ANY' & Step_2_Active = 'YES')| S2_ANY["Step 2 - ANY"]
+    S1_ANY -->|Approve (filterCond: Step_2_Rule = 'ALL' & Step_2_Active = 'YES')| S2_ALL
+    S1_ANY -->|Approve (filterCond: Step_2_Rule = 'ANY' & Step_2_Active = 'YES')| S2_ANY
 ```
 
 ---
 
-## 2. Maximum Routing Capacity Calculation
+## 2. Standardized Slot Capacity (6 Slots + Dedicated HR)
 
-* **Legacy Maximum Observed:** 5 Approval Steps + HR Check (App 307 / Combined Staff-Exec Chain).
-* **Minimum Required Capacity:** 5 Steps.
-* **MBO V2 Standard Architecture Capacity:** **6 Generic Approval Slots + 1 HR Final Check Slot**.
-* **Future Reserve:** 100% covers all existing company positions (Staff, Chief, Japanese Staff, Section Mgr, Dept Mgr, GM, VP, President) with an extra slot for emerging mentor/trainee roles.
-
----
-
-## 3. Sequence vs. ANY / ALL Semantics
-
-* **Sequence (Level / Step):** Represents strict sequential progression (Step 1 -> Step 2 -> Step 3).
-* **Rule (Within Step):**
-  - **`ALL` (Default):** All assigned approvers in the slot must approve before the workflow advances to the next step.
-  - **`ANY`:** Any single approver in the slot approving will advance the workflow.
-* *Standard:* Default rule is always **`ALL`**.
+* **Legacy Maximum Approval Depth:** 5 Steps (Observed in App 307).
+* **Final Architectural Standard:** **`GENERIC_APPROVAL_SLOT_CAPACITY = 6`**.
+* **Future Reserve:** 1 Extra Generic Slot (Accommodates mentor/trainee roles without any schema changes).
+* **Prohibited:** Creating Slots 7 or 8 without documented business justification.
+* **HR Final Check:** Configured as a **Dedicated Stage** (`HR_FINAL_CHECK`) following the approval of all business steps in the Final Evaluation stage.
 
 ---
 
-## 4. Generic Return / Reject Semantics
+## 3. Total Native Process Status Capacity
 
-* **Step-by-Step Return:** An approver at `Step N` can return the record to `Step N-1` (Previous Step) or directly to `01 Draft Objective` (Employee Revision).
-* **Clear Action Labels:** Actions are standard across all profiles: `Approve`, `Return to Previous Step`, `Return to Employee Draft`.
+| Evaluation Stage | Initial State | Twin Approval Slots (1 to 6) | Dedicated End States | Total Statuses per Stage |
+| :--- | :---: | :---: | :---: | :---: |
+| **Objective Setting** | 1 (`01 Draft Objective`) | 12 (6 Slots * 2 [ALL/ANY]) | 1 (`Objective Approved`) | **14** |
+| **Mid-Year Review** | 1 (`Mid-Year Input`) | 12 (6 Slots * 2 [ALL/ANY]) | 1 (`Mid-Year Approved`) | **14** |
+| **Final Evaluation** | 1 (`Self Evaluation Input`) | 12 (6 Slots * 2 [ALL/ANY]) | 2 (`HR Final Check`, `Completed`) | **15** |
+| **System Terminal** | - | - | 2 (`Cancel`, `Resign`) | **2** |
+| **Grand Total** | | | | **45 Native Statuses** |
+
+*Analysis:* 45 clean, normalized statuses in a single unified app replaces the 384 fragmented actions of legacy App 283 and supports 100% of all company routing families.
 
 ---
 
-## 5. Annual Route Snapshot & Current FY Supremacy
+## 4. Controlled Stage Route Refresh Architecture
 
-* **Immutable Transaction Snapshot:** When an annual MBO record is created in App 794, the resolved route is snapshotted into `Snapshot_Step_1_Approvers` ... `Snapshot_Step_6_Approvers`.
-* **Current FY Supremacy:** Historical records (FY2026) permanently retain their snapshot. When FY2027 opens, the route is freshly resolved from App 795. Annual Plan Carry Forward **never carries forward routing snapshots**.
+* **In-flight Immutability:** While an evaluation stage is active/in-progress, the Route Snapshot is **strictly frozen**.
+* **Controlled Refresh Before New Stage:**
+  - If an employee transfers sections or gets a new supervisor mid-year:
+  - HR Administrator executes a formal **"Refresh Routing Snapshot"** before Mid-Year or Final stage opens.
+  - The system freshly resolves App 795, updates the transaction snapshot, and logs the change in `Routing_Revision_Log` (`Old Route`, `New Route`, `Reason`, `Timestamp`, `HR User`).
+  - Historical completed stages (e.g. Objective Setting) remain permanently untouched.

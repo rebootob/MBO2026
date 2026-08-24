@@ -63,8 +63,8 @@
 
 ---
 
-## 7. Generic Routing Architecture & Slot Execution Engine
-* **Slot Capacity:** 6 Generic Approval Slots + 1 HR Final Check Slot (Covers all 5 legacy routing families).
+## 7. Generic Routing Architecture (Twin-Status & 6-Slot Capacity)
+* **Twin-Status Engine:** Supports both `ALL` and `ANY` rules natively via twin statuses (`Step N - ALL` / `Step N - ANY`) and native `filterCond` branching.
+* **Standard Capacity:** Exactly 6 Generic Approval Slots + Dedicated HR Final Check (45 Native Statuses total).
 * **Identity Separation:** Requester Authorization, Scoring Appraiser, and Workflow Approver are governed independently.
-* **Default Rule:** Approver rule defaults to `ALL` within a step.
-* **Immutable Snapshot:** Route is snapshotted into App 794 at creation; historical records are permanently locked.
+* **Controlled Route Refresh:** In-flight stages are locked. Stage refresh on transfer requires HR action and audit logging.
