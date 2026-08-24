@@ -2,7 +2,7 @@
 
 ## DEC-024 — Annual Evaluation Profile Freeze Policy
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Confirmed & Ready for Final Freeze Review)
+- **Status**: FROZEN
 - **Decision**:
   1. **Annual Profile Freeze:** Evaluation and Scoring Profiles are resolved strictly at Annual MBO Record initialization and are **FROZEN FOR THE ENTIRE FISCAL YEAR**.
   2. **Mid-Year Promotion / Transfer Policy:** Mid-year position changes, promotions (e.g. Staff $	o$ Asst Mgr), or department transfers do NOT modify the current FY Evaluation Profile. The employee completes the current FY under their starting Profile; the new Profile applies in the subsequent FY.
@@ -11,7 +11,7 @@
 
 ## DEC-023 — Evaluation Profile, Competency & Scoring Architecture
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Ready for Final Freeze Review)
+- **Status**: FROZEN
 - **Decision**:
   1. **Configuration-Driven Profile Master:** Unify all 8 evaluation groups into 4 Profile Families (`PROFILE_STAFF_CHIEF`, `PROFILE_JAPANESE_STAFF`, `PROFILE_MANAGEMENT`, `PROFILE_EXECUTIVE`) governed by metadata.
   2. **Evaluation Weights:** Staff/Japan (70/30), All Management & Exec (50/50 - Confirmed).
