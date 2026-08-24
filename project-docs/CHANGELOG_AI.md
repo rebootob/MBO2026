@@ -20,3 +20,4 @@
 - **2026-08-24**: Finalized and **FROZEN** Hoshin Architecture (`HOSHIN_ARCHITECTURE = FROZEN`, `DEC-018`).
 - **2026-08-24**: Designed Generic Routing Architecture with Twin-Status Engine (`DEC-019`).
 - **2026-08-24**: Added In-Flight Approver Reassignment Architecture (`DEC-020`) with 35 test cases (`RT-001` to `RT-035`), native REST API integration, current-record-only scope, and full audit logging.
+- **2026-08-24**: **FROZEN** Generic Routing Architecture (`GENERIC_ROUTING_ARCHITECTURE = FROZEN`, `DEC-019`, `DEC-020`).

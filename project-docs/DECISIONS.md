@@ -2,7 +2,7 @@
 
 ## DEC-020 — In-Flight Approver Reassignment & Dual-Mode Route Management
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Confirmed & Ready for Final Freeze Review)
+- **Status**: FROZEN
 - **Decision**:
   1. **Dual-Mode Route Management:** Formally separate Mode A (Controlled Stage Route Refresh before new stage) from Mode B (In-Flight Approver Reassignment during an active stage).
   2. **In-Flight Reassignment Scope:** Defaults strictly to **Current Record Only** via Native Kintone Update Assignees REST API without altering App 795 Routing Master.
@@ -10,9 +10,9 @@
   4. **Multi-User ALL / ANY Support:** Reassigning an approver in an `ALL` slot with partial approvals preserves already-completed approvals and seamlessly transfers pending assignments.
   5. **Mandatory Audit Trail:** Every reassignment permanently logs an `APPROVER_REASSIGNED` event (`Record_Key`, `Old_Approver`, `New_Approver`, `Reason`, `User`, `Timestamp`).
 
-## DEC-019 — Generic Routing Architecture: Twin-Status Engine (ALL/ANY) & 6-Slot Capacity
+## DEC-019 — Generic Routing Architecture: Twin-Status Engine & 6-Slot Capacity
 - **Date**: 2026-08-24
-- **Status**: ACTIVE (Corrected & Ready for Final Freeze Review)
+- **Status**: FROZEN
 - **Decision**:
   1. **Native Twin-Status Engine:** To overcome Kintone's static status-level Assignee Type limitation, each Generic Slot ($N in [1..6]$) is implemented as twin statuses (`Step N - ALL` and `Step N - ANY`). Transition branching is enforced 100% server-side via native `filterCond`.
   2. **Standardized Capacity:** `GENERIC_APPROVAL_SLOT_CAPACITY = 6` Generic Slots + Dedicated `HR_FINAL_CHECK` (45 Total Native Statuses across the entire lifecycle).

@@ -1,33 +1,47 @@
-# Transaction Route Snapshot Schema in App 794
+# Transaction Route Snapshot Schema in App 794 (FROZEN)
 
-> **Document Status:** Complete (Updated with In-Flight Reassignment Fields)  
+> **Architecture Status:** **`FROZEN`**  
 > **Target App:** App 794 Transaction Core  
-> **Capacity:** 6 Generic Slots + 1 HR Slot  
+> **Model:** Stage-Specific Immutable Routing Snapshots (Objective, Mid-Year, Final)  
+> **Capacity:** 6 Generic Slots + 1 HR Slot per Stage  
 > **Last Updated:** 2026-08-24  
 
 ---
 
-## 1. App 794 Snapshot Field Definitions
+## 1. Stage-Specific Route Snapshot Architecture
 
-| Slot | Role Field Code | Approver Field Code (`USER_SELECT`) | Rule Field Code | Active Flag | Effective Current Approver |
-| :---: | :--- | :--- | :--- | :--- | :--- |
-| **Slot 1** | `Step_1_Role` | `Step_1_Approvers` | `Step_1_Rule` (`ALL`/`ANY`) | `Step_1_Active` (`YES`/`NO`) | `Step_1_Effective_Approvers` |
-| **Slot 2** | `Step_2_Role` | `Step_2_Approvers` | `Step_2_Rule` (`ALL`/`ANY`) | `Step_2_Active` (`YES`/`NO`) | `Step_2_Effective_Approvers` |
-| **Slot 3** | `Step_3_Role` | `Step_3_Approvers` | `Step_3_Rule` (`ALL`/`ANY`) | `Step_3_Active` (`YES`/`NO`) | `Step_3_Effective_Approvers` |
-| **Slot 4** | `Step_4_Role` | `Step_4_Approvers` | `Step_4_Rule` (`ALL`/`ANY`) | `Step_4_Active` (`YES`/`NO`) | `Step_4_Effective_Approvers` |
-| **Slot 5** | `Step_5_Role` | `Step_5_Approvers` | `Step_5_Rule` (`ALL`/`ANY`) | `Step_5_Active` (`YES`/`NO`) | `Step_5_Effective_Approvers` |
-| **Slot 6** | `Step_6_Role` | `Step_6_Approvers` | `Step_6_Rule` (`ALL`/`ANY`) | `Step_6_Active` (`YES`/`NO`) | `Step_6_Effective_Approvers` |
-| **HR** | `HR_Final_Role` | `HR_Final_Approvers` | Fixed (`ALL`) | Fixed (`YES`) | `HR_Final_Approvers` |
+To accommodate mid-year supervisor changes, transfers, and in-flight reassignments without altering historical evidence, App 794 stores independent snapshots per stage:
+
+```mermaid
+graph TD
+    subgraph Stage_Snapshots [App 794 Stage-Specific Snapshots]
+        S_OBJ["Objective Stage Snapshot <br/> Step 1: Manager A (Approved) <br/> IMMUTABLE"]
+        S_MID["Mid-Year Stage Snapshot <br/> Step 1: Manager B (Reassigned to Manager C) <br/> IMMUTABLE ONCE COMPLETED"]
+        S_FIN["Final Stage Snapshot <br/> Step 1: Manager C <br/> HR Final Check"]
+    end
+```
 
 ---
 
-## 2. In-Flight Reassignment Audit Log Table
-* Subtable / Event Log: `Routing_Reassignment_Log`
-  - `Event_Type`: `APPROVER_REASSIGNED`
-  - `Evaluation_Stage`: `OBJECTIVE` / `MID_YEAR` / `FINAL`
-  - `Approval_Step`: `Step 1` ... `Step 6`
-  - `Original_Approver`: User Code
-  - `New_Approver`: User Code
-  - `Reason`: Reason text
-  - `Reassigned_By`: HR User Code
-  - `Reassigned_At`: Timestamp
+## 2. Field Schema per Generic Slot ($N \in [1..6]$)
+
+| Slot Component | Objective Snapshot Field | Mid-Year Snapshot Field | Final Snapshot Field | Field Type |
+| :--- | :--- | :--- | :--- | :--- |
+| **Approvers** | `Obj_Step_N_Approvers` | `Mid_Step_N_Approvers` | `Fin_Step_N_Approvers` | `USER_SELECT` |
+| **Effective Current** | `Obj_Step_N_Effective` | `Mid_Step_N_Effective` | `Fin_Step_N_Effective` | `USER_SELECT` |
+| **Rule** | `Obj_Step_N_Rule` | `Mid_Step_N_Rule` | `Fin_Step_N_Rule` | `DROP_DOWN` (`ALL`/`ANY`) |
+| **Active Flag** | `Obj_Step_N_Active` | `Mid_Step_N_Active` | `Fin_Step_N_Active` | `DROP_DOWN` (`YES`/`NO`) |
+| **Role Label** | `Obj_Step_N_Role` | `Mid_Step_N_Role` | `Fin_Step_N_Role` | `SINGLE_LINE_TEXT` |
+
+---
+
+## 3. Dedicated HR Final Check Fields
+* `HR_Final_Approvers`: `USER_SELECT`
+* `HR_Final_Review_Date`: `DATETIME`
+* `HR_Final_Status`: `DROP_DOWN` (`PENDING`, `VERIFIED`, `COMPLETED`)
+
+---
+
+## 4. Reassignment Audit Table (`Routing_Reassignment_Log`)
+* `Record_Key`, `Fiscal_Year`, `Evaluation_Stage`, `Approval_Step`
+* `Original_Approver`, `New_Approver`, `Reason`, `Reassigned_By`, `Reassigned_At`

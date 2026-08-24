@@ -63,7 +63,7 @@
 
 ---
 
-## 7. Generic Routing Architecture (Twin-Status & 6-Slot Capacity)
+## 7. Generic Routing Architecture (FROZEN)
 * **Twin-Status Engine:** Supports both `ALL` and `ANY` rules natively via twin statuses (`Step N - ALL` / `Step N - ANY`) and native `filterCond` branching.
 * **Standard Capacity:** Exactly 6 Generic Approval Slots + Dedicated HR Final Check (45 Native Statuses total).
 * **Identity Separation:** Requester Authorization, Scoring Appraiser, and Workflow Approver are governed independently.
@@ -71,7 +71,7 @@
 
 ---
 
-## 8. In-Flight Approver Reassignment Governance
+## 8. In-Flight Approver Reassignment Governance (FROZEN)
 * **Dual-Mode Management:** Stage Refresh (before new stage) vs In-Flight Reassignment (during active stage).
 * **Current Record Only:** Reassignment applies strictly to current record via native API without altering Master.
 * **Historical Immutability:** Completed evaluation stages are permanently locked.
