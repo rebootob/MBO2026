@@ -44,7 +44,7 @@
 - **WP-002 Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
 - **WP-002B Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md)
 - **WP-002B Source Code Path:** `src/profiles/profile-scoring-resolver.js` (reuses EmployeeService snapshot contract and `computeConfigurationHash()`)
-- **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (23/23 new tests passing; 154/154 total suite passing)
+- **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (15 tests passing; 146/146 total suite passing)
 - **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`, Kintone Writes = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)

@@ -2,13 +2,13 @@
  * Phase 3 WP-002B: profile resolution and read-only scoring configuration resolver.
  * This module deliberately has no Kintone adapter: master records are injected.
  */
-import { getJapaneseFiscalYear, isValidEmployeeCode } from '../core/fiscal-year-engine.js';
+import { getJapaneseFiscalYear } from '../core/fiscal-year-engine.js';
+import { isVerifiedEmployeeSnapshot } from '../services/employee-service.js';
 import {
   PROFILE_CODES,
-  computeConfigurationHash
+  computeConfigurationHash,
+  validateScoringMasterConfig
 } from './scoring-config-master.js';
-
-const verifiedSnapshots = new WeakSet();
 
 const POSITION_TO_PROFILE = new Map([
   ['staff', PROFILE_CODES.STAFF_CHIEF],
@@ -80,24 +80,8 @@ export function normalizeTitle(rawTitle) {
   return rawTitle.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-/**
- * Marks the exact employee object returned by EmployeeService.lookupEmployee as
- * trusted for this resolver invocation boundary.  The WeakSet cannot be forged
- * through caller-controlled fields.
- */
-export function createVerifiedEmployeeSnapshot(employeeLookupResult) {
-  const employee = employeeLookupResult?.employee;
-  if (employeeLookupResult?.status !== 'EMPLOYEE_FOUND' || !employee ||
-      !isValidEmployeeCode(employee.Employee_Code) ||
-      typeof employee.Employee_Position !== 'string') {
-    throw new ProfileScoringResolverError('EMPLOYEE_SNAPSHOT_UNVERIFIED');
-  }
-  verifiedSnapshots.add(employee);
-  return employee;
-}
-
 export function resolveProfileCode(employeeSnapshot) {
-  if (!employeeSnapshot || typeof employeeSnapshot !== 'object' || !verifiedSnapshots.has(employeeSnapshot)) {
+  if (!isVerifiedEmployeeSnapshot(employeeSnapshot)) {
     throw new ProfileScoringResolverError('EMPLOYEE_SNAPSHOT_UNVERIFIED');
   }
   const normalizedTitle = normalizeTitle(employeeSnapshot.Employee_Position);
@@ -112,6 +96,8 @@ export function resolveProfileCode(employeeSnapshot) {
 }
 
 function assertAuthenticatedContext(authenticatedContext) {
+  // This pre-verified caller contract is not the production security boundary.
+  // Native Kintone permissions or approved server-side controls remain that boundary.
   if (!authenticatedContext || typeof authenticatedContext !== 'object' || authenticatedContext.isAuthenticated !== true) {
     throw new ProfileScoringResolverError('AUTHENTICATED_CONTEXT_REQUIRED');
   }
@@ -165,6 +151,9 @@ export function resolveProfileScoringConfig({
   assertAuthenticatedContext(authenticatedContext);
   const requestedFiscalYear = assertFiscalYear(fiscalYear);
   const requestedEffectiveDate = assertIsoDate(effectiveDate, 'EFFECTIVE_DATE_INVALID');
+  if (getJapaneseFiscalYear(requestedEffectiveDate) !== requestedFiscalYear) {
+    throw new ProfileScoringResolverError('FISCAL_YEAR_EFFECTIVE_DATE_MISMATCH');
+  }
   if (!Array.isArray(masterConfigRecords)) {
     throw new ProfileScoringResolverError('SCORING_CONFIG_NOT_FOUND');
   }
@@ -177,6 +166,11 @@ export function resolveProfileScoringConfig({
   if (matches.length !== 1) throw new ProfileScoringResolverError('SCORING_CONFIG_AMBIGUOUS');
 
   const config = matches[0];
+  try {
+    validateScoringMasterConfig(config);
+  } catch {
+    throw new ProfileScoringResolverError('SCORING_CONFIG_INVALID');
+  }
   if (typeof config.Configuration_Hash !== 'string' || config.Configuration_Hash.length !== 64 ||
       computeConfigurationHash(config) !== config.Configuration_Hash) {
     throw new ProfileScoringResolverError('SCORING_CONFIG_INTEGRITY_FAILED');

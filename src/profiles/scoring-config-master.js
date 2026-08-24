@@ -67,6 +67,18 @@ export const CONFIG_LIFECYCLE_STATUS = {
   RETIRED: 'RETIRED'
 };
 
+/** Frozen scoring-domain invariants for each stable Profile_Code (DEC-035/036). */
+export const PROFILE_SCORING_INVARIANTS = {
+  [PROFILE_CODES.STAFF_CHIEF]: { partA: 70, partB: 30, appraisers: 2, mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX },
+  [PROFILE_CODES.JAPANESE_STAFF]: { partA: 70, partB: 30, appraisers: 2, mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX },
+  [PROFILE_CODES.ASST_MGR]: { partA: 60, partB: 40, appraisers: 2, mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX },
+  [PROFILE_CODES.SECTION_MGR]: { partA: 50, partB: 50, appraisers: 2, mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX },
+  [PROFILE_CODES.SENIOR_MGR]: { partA: 50, partB: 50, appraisers: 2, mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX },
+  [PROFILE_CODES.DGM]: { partA: 50, partB: 50, appraisers: 2, mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX },
+  [PROFILE_CODES.GM]: { partA: 50, partB: 50, appraisers: 1, mode: PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT },
+  [PROFILE_CODES.VP]: { partA: 50, partB: 50, appraisers: 1, mode: PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT }
+};
+
 /**
  * 19 Immutable Payload Fields for Configuration Hash computation
  */
@@ -168,11 +180,18 @@ export function validateScoringMasterConfig(configPayload, existingKeys = []) {
   if (isNaN(partA) || isNaN(partB) || (partA + partB !== 100)) {
     throw new Error(`INVALID_SCORING_WEIGHTS: PartA_Weight (${partA}) + PartB_Weight (${partB}) must equal 100`);
   }
+  const profileInvariant = PROFILE_SCORING_INVARIANTS[configPayload.Profile_Code];
+  if (partA !== profileInvariant.partA || partB !== profileInvariant.partB) {
+    throw new Error(`PROFILE_SCORING_INVARIANT_VIOLATION: ${configPayload.Profile_Code} requires ${profileInvariant.partA}/${profileInvariant.partB}`);
+  }
 
   // 6. Expected Appraiser Count Validation (Must be 1 or 2)
   const kExpected = Number(configPayload.Expected_Appraiser_Count);
   if (![1, 2].includes(kExpected)) {
     throw new Error(`INVALID_APPRAISER_COUNT: Expected_Appraiser_Count must be 1 or 2, got ${configPayload.Expected_Appraiser_Count}`);
+  }
+  if (kExpected !== profileInvariant.appraisers) {
+    throw new Error(`PROFILE_SCORING_INVARIANT_VIOLATION: ${configPayload.Profile_Code} requires ${profileInvariant.appraisers} appraiser(s)`);
   }
 
   // 7. Appraiser Weight Rule Validation
@@ -183,6 +202,9 @@ export function validateScoringMasterConfig(configPayload, existingKeys = []) {
   // 8. Part A Scoring Mode Validation
   if (!configPayload.Part_A_Scoring_Mode || !Object.values(PART_A_SCORING_MODES).includes(configPayload.Part_A_Scoring_Mode)) {
     throw new Error('INVALID_PART_A_MODE: Part_A_Scoring_Mode is invalid');
+  }
+  if (configPayload.Part_A_Scoring_Mode !== profileInvariant.mode) {
+    throw new Error(`PROFILE_SCORING_INVARIANT_VIOLATION: ${configPayload.Profile_Code} requires ${profileInvariant.mode}`);
   }
 
   // 9. Competency Set Code Requirement & COCE Exclusion Check

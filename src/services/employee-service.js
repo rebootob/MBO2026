@@ -4,6 +4,28 @@
 
 import { isValidEmployeeCode } from '../core/fiscal-year-engine.js';
 
+const SNAPSHOT_FIELDS = [
+  'Employee_Code', 'Employee_Name', 'Employee_Name_TH', 'Employee_Department',
+  'Employee_Section', 'Employee_Position', 'Employee_Email', 'Employee_Start_Date'
+];
+const verifiedSnapshotFingerprints = new WeakMap();
+
+function getSnapshotFingerprint(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return null;
+  return JSON.stringify(SNAPSHOT_FIELDS.map(field => snapshot[field] ?? null));
+}
+
+/**
+ * Returns true only for an unmodified snapshot object created by a successful
+ * EmployeeService.lookupEmployee call. This is provenance evidence, not an
+ * authentication or authorization boundary.
+ */
+export function isVerifiedEmployeeSnapshot(snapshot) {
+  const registeredFingerprint = verifiedSnapshotFingerprints.get(snapshot);
+  return typeof registeredFingerprint === 'string' &&
+    registeredFingerprint === getSnapshotFingerprint(snapshot);
+}
+
 export class EmployeeLookupError extends Error {
   constructor(code, userMessageTH, userMessageEN, cause = null) {
     super(userMessageTH);
@@ -131,20 +153,19 @@ export class EmployeeService {
       );
     }
 
-    // 8. Return 8 Header Snapshot Fields (Hoshin fields explicitly excluded)
-    return {
-      status: 'EMPLOYEE_FOUND',
-      employee: {
-        Employee_Code: canonicalCode,
-        Employee_Name: emp.Text?.value || '',
-        Employee_Name_TH: emp.Text_0?.value || '',
-        Employee_Department: emp.Drop_down_0?.value || '',
-        Employee_Section: emp.Drop_down?.value || '',
-        Employee_Position: emp.Text_2?.value || '',
-        Employee_Email: emp.Text_4?.value || '',
-        Employee_Start_Date: emp.Date?.value || ''
-      }
+    // 8. Return and register the 8 header snapshot fields (Hoshin excluded).
+    const employee = {
+      Employee_Code: canonicalCode,
+      Employee_Name: emp.Text?.value || '',
+      Employee_Name_TH: emp.Text_0?.value || '',
+      Employee_Department: emp.Drop_down_0?.value || '',
+      Employee_Section: emp.Drop_down?.value || '',
+      Employee_Position: emp.Text_2?.value || '',
+      Employee_Email: emp.Text_4?.value || '',
+      Employee_Start_Date: emp.Date?.value || ''
     };
+    verifiedSnapshotFingerprints.set(employee, getSnapshotFingerprint(employee));
+    return { status: 'EMPLOYEE_FOUND', employee };
   }
 
   /**
