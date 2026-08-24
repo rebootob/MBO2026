@@ -5,16 +5,16 @@
 - **To AI**: Incoming AI (Antigravity / Codex / Claude / Independent Reviewer)
 - **Branch**: `ai/codex-wp002c`
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package**: `MBO-P03-WP-002C (IMPLEMENTATION STAGE 1 — APP-CREATION SAFETY PREFLIGHT)`
+- **Current Work Package**: `MBO-P03-WP-002C (IMPLEMENTATION STAGE 2 — CONTROLLED PREVIEW APP CREATION + IDENTITY REGISTRATION)`
 - **WP-001 Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002 Plan Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002A Status**: `IMPLEMENTATION COMPLETE (15/15 new tests passing; 131/131 total suite passing)`
 - **WP-002B Status**: `PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`
-- **WP-002C Status**: `PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW` (`APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
-- **Target App**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = NOT_ALLOCATED`; `NOT_CREATED`; `SANDBOX`; production `FALSE`)
+- **WP-002C Status**: `PLAN_GATE = PASS; IMPLEMENTATION_STAGE_2 = COMPLETE / PENDING_INDEPENDENT_REVIEW` (one-time APP_CREATE authorization consumed/closed)
+- **Target App**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `PREVIEW_CREATED / NOT_DEPLOYED`; `SANDBOX`; production `FALSE`; schema not configured; seed not started)
 - **NEXT_WP**: `WP-002C INDEPENDENT REVIEW`
 - **WP-002C Plan**: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
-- **WP-002C Stage 1**: Exact-name APP_CREATE guard, pure preview-app preflight, and password-only auth preparation are implemented/tested; generic network writes remain blocked by `DISCOVERY_MODE`; zero Kintone writes
+- **WP-002C Stage 2**: Exactly one Preview App POST created App 796; password-authenticated exact-ID settings read-back verified the exact name/revision; no schema, deploy, record, App 794, or App 795 write occurred
 - **Implementation Scope**: `src/profiles/profile-scoring-resolver.js` and `tests/profile-scoring-resolver.test.js`; reuses `EmployeeService` and `computeConfigurationHash()` with dependency-injected records only.
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`
@@ -44,7 +44,7 @@
 - **Durable Decisions Path**: [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
 - **Phase 2 Status**: `PASSED / FROZEN (Commit 8fb306e)`
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
-- **Kintone Write Operations**: `0 (Zero Writes Executed)`
+- **Kintone Write Operations**: `APP_CREATE POST = 1; PUT = 0; DELETE = 0; DEPLOY = 0; RECORD WRITES = 0`
 - **Review Package**: [`project-docs/AI_REVIEW_PACKAGE.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/AI_REVIEW_PACKAGE.md)
 
 ---

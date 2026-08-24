@@ -8,7 +8,7 @@
 > **WP-002 Plan Status:** **`FROZEN / APPROVED (PLAN_GATE: PASS)`**  
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**  
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-> **WP-002C Status:** **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** (`APP_CREATION_AUTHORIZED = NO`; `KINTONE_WRITE_AUTHORIZATION = NO`)
+> **WP-002C Status:** **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_2 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** (`APP_CREATE` authorization consumed/closed; schema/deploy/record writes unauthorized)
 > **Last Updated:** 2026-08-24T21:00:00+07:00
 
 ---
@@ -27,7 +27,8 @@
 | **WP-002C Plan Commit (Commit A)** | `4b7c3f16a58f711ad4c892502a79fad44aee24af` | `docs: plan wp-002c kintone scoring configuration master` |
 | **WP-002C Safety Correction Commit (Commit A)** | `e40c0c5b80ffc43299345348d45d75f559e8ebc4` | Exact-name bootstrap, verified-ID registration, hash/read-back, overlap, audit, and recovery plan |
 | **WP-002C Stage-1 Implementation Commit (Commit A)** | `4d951401244f78f30523e758ed211c44e16c5294` | Narrow APP_CREATE guard, pure preview preflight, password-only auth preparation, and regression tests |
-| **WP-002C Stage-1 Review Metadata Commit (Commit B)** | *(this commit)* | Metadata only; independent review remains pending |
+| **WP-002C Stage-2 Implementation Commit** | `81f6452fe3416e09c91051df9be3de8bb4a391b9` | Single-purpose exact-name Preview App creator, identity verification, and mocked safety tests |
+| **WP-002C Stage-2 Registry/Status Commit** | *(this commit)* | Verified App 796 registration and status metadata; independent review remains pending |
 
 ---
 
@@ -38,18 +39,19 @@
 | **Work Package ID** | `MBO-P03-WP-002C` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
-| **Mode** | **`IMPLEMENTATION STAGE 1 — APP-CREATION SAFETY PREFLIGHT`** |
-| **Claimed Status** | **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_1 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** |
+| **Mode** | **`IMPLEMENTATION STAGE 2 — CONTROLLED PREVIEW APP CREATION + IDENTITY REGISTRATION`** |
+| **Claimed Status** | **`PLAN_GATE = PASS; IMPLEMENTATION_STAGE_2 = COMPLETE / PENDING_INDEPENDENT_REVIEW`** |
 | **Independent Review Gate** | **`PENDING`** |
 | **Next Work Package** | `WP-002C INDEPENDENT REVIEW` |
-| **Master App Dependency** | **`SCORING_MASTER_APP_ID = NOT_ALLOCATED / NOT_CREATED`** — target is `MBO Profile & Scoring Configuration Master [Sandbox]`; `SANDBOX`; production `FALSE`; no hardcoded ID |
+| **Master App Dependency** | **`SCORING_MASTER_APP_ID = 796; PREVIEW_CREATED / NOT_DEPLOYED`** — exact target name verified by Preview settings read-back; `SANDBOX`; production `FALSE`; schema not configured |
 | **WP-002C Authoritative Plan** | `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md` |
 | **Plan Deliverable** | 23 future schema fields; immutable payload fields 1–19; lifecycle/audit fields 20–23; controlled validate → hash → persist → triple-equality read-back → overlap gate → publish → final read-back |
 | **App Creation Safety** | Dedicated one-time `APP_CREATE` exact-name authorization is planned without App ID; no global discovery disable/broad bypass; real ID is read back then registered in `config/sandbox-apps.json` and `APP_REGISTRY.md` before normal ID-scoped writes |
 | **Effective Uniqueness** | A matching `Profile_Code` + `Fiscal_Year` published date overlap fails closed as `SCORING_CONFIG_EFFECTIVE_OVERLAP`; lineage does not auto-deactivate an older record |
 | **Publish Audit / Recovery** | `Published_By` is trusted publisher identity and `Published_At` trusted system/Kintone time; final state read-back required; interruption quarantines candidate and runtime remains fail-closed |
-| **Kintone Boundary** | `POST/PUT/DELETE/DEPLOY = 0`; `WRITE_ALLOWED_APPS = []`; no app/schema/seed action in this WP |
+| **Kintone Boundary** | `APP_CREATE POST = 1`; `PUT/DELETE/DEPLOY/record writes = 0`; `WRITE_ALLOWED_APPS = []`; Apps 794/795 and protected apps untouched |
 | **Stage-1 Evidence** | `assertAppCreationAuthorization()` requires exact WP/operation/name, explicit one-time authorization and one-target manifest without App ID; preflight allows only `POST /k/v1/preview/app.json`; generic `kintoneRequest()` remains discovery-blocked; APP_CREATE auth excludes API token |
+| **Stage-2 Evidence** | Create response `app=796`, revision `2`; exact-ID GET settings read-back returned `MBO Profile & Scoring Configuration Master [Sandbox]`, revision `2`; registered only after verification; App remains Preview / Not Deployed |
 | **Resolver Contract** | Pure dependency-injected: `resolveProfileScoringConfig({ employeeSnapshot, fiscalYear, effectiveDate, masterConfigRecords, authenticatedContext })` |
 | **Employee Source** | `src/services/employee-service.js` (App 53 READ ONLY) owns mutation-detecting snapshot provenance; arbitrary caller `Profile_Code` cannot bypass position resolution |
 | **Position Resolution** | `TRIM(COLLAPSE_INTERNAL_SPACES(LOWERCASE(raw)))`; no guessing; ambiguous → `PROFILE_RESOLUTION_AMBIGUOUS` (Fail Closed) |
@@ -64,5 +66,5 @@
 | **Resolver Module** | `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter) |
 | **Validation Modules** | `src/services/employee-service.js` provenance registry and `src/profiles/scoring-config-master.js` domain validation are reused by the resolver |
 | **Unit Test Suite** | `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing) |
-| **Kintone Write Operations** | **`0 (Zero Writes Executed)`** |
+| **Kintone Write Operations** | **`APP_CREATE POST = 1; PUT = 0; DELETE = 0; DEPLOY = 0; RECORD WRITES = 0`** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |

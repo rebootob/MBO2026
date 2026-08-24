@@ -1,9 +1,11 @@
 {
   "mboV2AppId": 794,
   "routingMasterAppId": 795,
+  "scoringConfigMasterAppId": 796,
   "createdAt": "2026-08-23T09:55:19Z",
   "purpose": {
     "mboV2": "Main MBO transaction application",
-    "routingMaster": "Section-to-user routing configuration"
+    "routingMaster": "Section-to-user routing configuration",
+    "scoringConfigMaster": "MBO Profile & Scoring Configuration Master [Sandbox]"
   }
 }
