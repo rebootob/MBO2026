@@ -1,57 +1,57 @@
-# AI ACTIVE TASK — ANTIGRAVITY LIVE VERIFICATION + GIT CONTROL
+# AI ACTIVE TASK — ANTIGRAVITY STAGE 3A EXACT ERROR RECONCILIATION
 
 > **Control Plane:** ChatGPT / Project Lead / Architect / Independent Reviewer
 > **Primary Execution Plane:** Antigravity
 > **Codex:** NOT ACTIVE; do not delegate to Codex
-> **Rule:** Execute exactly this task. Do not redesign architecture, expand scope, or modify this file.
+> **Rule:** Execute exactly this review-correction task. Do not redesign architecture, expand scope, or modify this file.
 
 ## ACTIVE TASK
 
 - **Repository:** `rebootob/MBO2026`
 - **WP:** `MBO-P03-WP-002C`
-- **Stage:** `STAGE 3A — LIVE DEPLOYMENT VERIFICATION CORRECTION`
-- **Execution Branch:** `ai/antigravity-wp002c`
-- **Review Branch:** `ai/antigravity-wp002c`
-- **Source Handoff Branch:** `ai/codex-wp002c`
-- **Handoff Baseline Commit:** `18e1d5510e7a03a7a5c3afded0fb36ca9cc9effc`
+- **Stage:** `STAGE 3A — EXACT LIVE-STATE / AUTH-CONTEXT RECONCILIATION`
+- **Execution / Review Branch:** `ai/antigravity-wp002c`
+- **Prior Control Plane Baseline:** `c02e120e7e6598ae25d3469d9645b978d80ae3f9`
 - **Target App ID:** `796`
 - **Exact App Name:** `MBO Profile & Scoring Configuration Master [Sandbox]`
-- **Observed by Antigravity:** `DEPLOY_STATUS = SUCCESS`, preview ACL = creator-only/default-deny, live general-settings GET = HTTP 404
-- **APP_CREATE:** `FORBIDDEN`
-- **NEW ACL PUT:** `FORBIDDEN IN THIS TASK`
-- **NEW DEPLOY POST:** `FORBIDDEN IN THIS TASK`
-- **Schema / Layout / View / Process / Record / Delete Writes:** `FORBIDDEN`
-- **Purpose:** prove the actual live state using correct Kintone management-level GETs and leave auditable Git evidence on the Antigravity branch
+- **Current Review Result:** `BLOCKED / MUST FIX EVIDENCE CLASSIFICATION`
+- **Kintone Writes Authorized:** `NONE`
+- **APP_CREATE / ACL PUT / DEPLOY POST / SCHEMA / RECORD / DELETE:** `FORBIDDEN`
 
-## EXECUTION / REVIEW OWNERSHIP
+## REVIEW FINDING
 
-Effective immediately:
+Antigravity correctly executed a GET-only verification and pushed evidence to the Antigravity branch.
 
-```text
-ChatGPT = Control Plane
-Antigravity = Primary Execution Plane
-Codex = Optional specialist only if later authorized
-```
-
-For this WP, all new execution commits must go to:
+Observed evidence:
 
 ```text
-ai/antigravity-wp002c
+Preview App 796 exact identity = PASS
+Preview revision = 3
+Preview ACL = CREATOR allowed / Everyone denied
+Preview deploy status = SUCCESS
+Planned WP-002C schema fields = absent
+Live App ACL endpoint = HTTP 404
+Live App Admin Notes endpoint = HTTP 404
+Get Apps for ID 796 = HTTP 200, apps=[]
+Live general settings = HTTP 404
+Browser /k/796/ = app-not-found UI for the user's current browser context
+Kintone writes during verification = 0
+Regression = 171/171 PASS
 ```
 
-Do not commit new work to `ai/codex-wp002c`.
-Do not rename the branch.
-Do not merge to `develop`.
-
-When the user asks ChatGPT to `review`, ChatGPT will inspect GitHub branch:
+However the evidence package classified HTTP 404 alone as:
 
 ```text
-ai/antigravity-wp002c
+CASE V2 — BOTH MANAGEMENT PROBES PROVE APP NOT FOUND
 ```
 
-and compare it against the last approved/assigned Control Plane baseline.
+That classification is not sufficiently proven.
 
-## GIT SAFETY GATE — MANDATORY FIRST
+Kintone requires App Management Permission for live App ACL and Admin Notes reads. Kintone can hide inaccessible Apps from an authentication context. Therefore this correction must capture the safe Kintone error payload (`HTTP status`, `error.code`, sanitized `error.message`) rather than HTTP status only, and must identify whether the authentication context is the same account that created/managed the Preview App without exposing credentials.
+
+Do not deploy again during this task.
+
+## GIT SAFETY GATE
 
 Run:
 
@@ -59,233 +59,117 @@ Run:
 git status --short
 git branch --show-current
 git rev-parse HEAD
-git remote -v
+git fetch origin
+git rev-parse origin/ai/antigravity-wp002c
 ```
 
-Required branch:
+Required:
 
 ```text
-ai/antigravity-wp002c
-```
-
-If currently on `ai/codex-wp002c`, switch safely:
-
-```bash
-git fetch origin
-git switch ai/antigravity-wp002c
-```
-
-If the branch does not exist locally:
-
-```bash
-git fetch origin
-git switch --track origin/ai/antigravity-wp002c
-```
-
-Then:
-
-```bash
-git pull --ff-only
-```
-
-Required conditions before execution:
-
-```text
-working tree = clean
 branch = ai/antigravity-wp002c
-remote branch exists
-no divergence
-HEAD includes Handoff Baseline Commit 18e1d5510e7a03a7a5c3afded0fb36ca9cc9effc
+working tree = clean
+local HEAD = origin/ai/antigravity-wp002c
 ```
 
-Verify baseline ancestry:
+If not: STOP. Do not reset/rebase/stash/force-push automatically.
 
-```bash
-git merge-base --is-ancestor 18e1d5510e7a03a7a5c3afded0fb36ca9cc9effc HEAD
-```
+## STEP 1 — AUTH CONTEXT, READ-ONLY
 
-Expected exit code: `0`.
+Use the same password-authenticated `.env.local` connection path used for the existing Preview App operations.
 
-If dirty, diverged, wrong branch, non-fast-forward, or baseline ancestry fails: STOP and report. Do not stash/reset/rebase/force-push automatically.
+Do not print username, password, token, Base64 authorization value, cookie, or Authorization header.
 
-Never commit `.env.local` or secrets.
-
-## CONTROL PLANE CORRECTION
-
-Do not treat:
+Derive only safe boolean evidence:
 
 ```text
-GET /k/v1/app/settings.json?app=796 -> HTTP 404
+AUTH_CONTEXT_PRESENT = YES/NO
+AUTH_CONTEXT_SAME_AS_STAGE2_CONFIGURED_CONTEXT = YES/NO/UNVERIFIABLE
 ```
 
-as conclusive proof that the live App does not exist.
+If repository/local evidence can safely prove the same configured credential source was used in Stage 2 and now, record only the boolean result. Do not expose the login name.
 
-Use management-level live endpoints for proof because Stage 3A intentionally applies creator-only/default-deny record permissions.
+Do not guess from display names or screenshots.
 
-Therefore:
+## STEP 2 — EXACT ERROR PAYLOAD PROBES
+
+Repeat GET-only probes for exact App 796 and capture only:
 
 ```text
-LIVE_SETTINGS_404 != LIVE_APP_ABSENT
+HTTP_STATUS
+ERROR_CODE (if any)
+SANITIZED_MESSAGE (no identity/secrets)
 ```
 
-## STEP 1 — READ-ONLY LIVE MANAGEMENT PROBES
-
-Perform password-authenticated GET only.
-
-### Probe 1 — Live App ACL
+Required endpoints:
 
 ```text
 GET /k/v1/app/acl.json?app=796
-```
-
-Capture:
-
-```text
-LIVE_ACL_HTTP_STATUS
-LIVE_ACL_REVISION
-LIVE_ACL_RIGHTS
-```
-
-If HTTP 200, verify creator-only/default-deny:
-
-- intended `CREATOR` rights are true
-- `Everyone` grants no rights
-- no unexpected entity grants rights
-- valid revision
-
-### Probe 2 — Live App Admin Notes
-
-```text
 GET /k/v1/app/adminNotes.json?app=796
-```
-
-Capture:
-
-```text
-LIVE_ADMIN_NOTES_HTTP_STATUS
-LIVE_ADMIN_NOTES_REVISION
-```
-
-Do not modify admin notes.
-
-### Probe 3 — Published App Catalog
-
-```text
-GET /k/v1/apps.json?ids[0]=796
-```
-
-Interpret carefully:
-
-- returned App 796 = positive publication evidence
-- empty/not-visible is not conclusive by itself because access may restrict listing
-
-### Probe 4 — Live General Settings
-
-```text
 GET /k/v1/app/settings.json?app=796
-```
-
-If 404, record only:
-
-```text
-LIVE_SETTINGS_NOT_VISIBLE_TO_CURRENT_AUTH_CONTEXT
-```
-
-Do not infer App absence from this endpoint alone.
-
-### Probe 5 — Preview / Deploy Evidence
-
-Reconfirm:
-
-```text
+GET /k/v1/app.json?id=796
+GET /k/v1/apps.json?ids[0]=796
 GET /k/v1/preview/app/deploy.json?apps[0]=796
 GET /k/v1/preview/app/settings.json?app=796
 GET /k/v1/preview/app/acl.json?app=796
 GET /k/v1/preview/app/form/fields.json?app=796
 ```
 
-Required:
+Do not perform any PUT/POST/DELETE.
+
+## STEP 3 — CLASSIFICATION RULE
+
+Do not label HTTP 404 by itself as proven absence.
+
+Classify only as one of:
+
+### R1 — LIVE POSITIVE PROOF
+
+At least one live endpoint returns exact App 796 successfully, with deploy status SUCCESS.
 
 ```text
-DEPLOY_STATUS = SUCCESS
-PREVIEW_IDENTITY = exact App 796 / exact name
-PLANNED_SCHEMA_FIELDS_PRESENT = NO
+LIVE_STATE = LIVE_VERIFIED
+REMAINING_ISSUE = ACCESS_PERMISSION (if browser still cannot access)
 ```
 
-Never expose credentials or authorization headers.
+### R2 — LIVE NOT VISIBLE / AUTH CONTEXT RESTRICTED
 
-## STEP 2 — VERIFICATION DECISION
-
-### CASE V1 — LIVE MANAGEMENT PROOF PASS
-
-If either management-level live endpoint returns HTTP 200 for exact App 796:
+Live endpoints fail and evidence cannot distinguish App absence from permission hiding.
 
 ```text
-GET /k/v1/app/acl.json?app=796
-OR
-GET /k/v1/app/adminNotes.json?app=796
+LIVE_STATE = UNVERIFIABLE_BY_CURRENT_AUTH_CONTEXT
 ```
 
-and deploy status remains `SUCCESS`, classify:
+### R3 — PREVIEW-ONLY STRONG EVIDENCE
+
+Use only if all of the following hold:
+
+- Preview exact identity exists.
+- All available live App lookups return no App / true app-not-found semantics.
+- Published Get Apps returns no App 796.
+- Browser context also reports App not found.
+- There is no positive live evidence.
+- No permission/auth error code contradicts absence.
+
+Then classify conservatively:
 
 ```text
-LIVE_DEPLOYMENT_VERIFICATION = PASS
-APP_STATUS = LIVE_DEPLOYED
+LIVE_STATE = PREVIEW_ONLY_STRONG_EVIDENCE
+DEPLOYMENT_REQUIRED = YES_PENDING_CONTROL_PLANE_AUTHORIZATION
 ```
 
-Additional conditions:
+This still does NOT authorize a deploy in this task.
 
-- exact Preview identity remains valid
-- planned schema fields remain absent
-- live ACL is creator-only/default-deny if readable
+### R4 — INCONSISTENT
 
-A live general-settings 404 does not overturn this PASS.
-
-Remaining browser problem, if any, must be classified separately as:
+If error codes/statuses conflict in a way that cannot be safely reconciled:
 
 ```text
-ACCESS_PERMISSION
+LIVE_STATE = INCONSISTENT
 ```
 
-not deployment failure.
+STOP.
 
-### CASE V2 — BOTH MANAGEMENT PROBES PROVE APP NOT FOUND
-
-If both live management endpoints return a true App-not-found condition while deploy status is `SUCCESS`:
-
-```text
-LIVE_DEPLOYMENT_STATE = INCONSISTENT
-```
-
-Make zero writes and STOP.
-
-### CASE V3 — MANAGEMENT PROBES BLOCKED BY AUTH/PERMISSION
-
-If management endpoints cannot prove state due to authorization/permission:
-
-```text
-LIVE_DEPLOYMENT_STATE = UNVERIFIABLE_BY_CURRENT_AUTH_CONTEXT
-```
-
-Make zero writes and STOP.
-
-## KINTONE WRITE BOUNDARY
-
-This task is read-only:
-
-```text
-GET = allowed
-APP_CREATE POST = 0
-ACL PUT = 0
-DEPLOY POST = 0
-SCHEMA/LAYOUT/VIEW/PROCESS writes = 0
-RECORD writes = 0
-DELETE = 0
-```
-
-No exception.
-
-## STEP 3 — REGRESSION
+## STEP 4 — TESTS
 
 Run:
 
@@ -294,49 +178,37 @@ git diff --check
 npm test
 ```
 
-All tests must pass.
+Expected current baseline:
 
-Prefer zero source-code change in this verification task.
+```text
+171/171 PASS
+```
 
-## STEP 4 — DOCUMENTATION ONLY FOR V1
+No source change is expected.
 
-Only if `LIVE_DEPLOYMENT_VERIFICATION = PASS`, update:
+## STEP 5 — EVIDENCE CORRECTION ONLY
 
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
+Correct only the existing Stage-3A evidence wording in:
+
 - `project-docs/AI_REVIEW_PACKAGE.md`
-- `project-docs/IMPLEMENTATION_STATUS.md`
+- `project-docs/HANDOFF.md`
 - `project-docs/CHANGELOG_AI.md`
-- `project-docs/APP_REGISTRY.md`
 
-Required status:
+Do not update `CURRENT_STATE.md` to LIVE_DEPLOYED.
+Do not claim Stage 3A PASS.
+Do not mark deployment complete.
 
-```text
-Execution Plane = Antigravity
-Execution Branch = ai/antigravity-wp002c
-Review Branch = ai/antigravity-wp002c
-SCORING_MASTER_APP_ID = 796
-APP_STATUS = LIVE_DEPLOYED
-DEPLOY_STATUS = SUCCESS
-ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY
-SCHEMA_STATUS = NOT_CONFIGURED
-BASELINE_SEED_STATUS = NOT_STARTED
-PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
-PRODUCTION = FALSE
-STAGE3A = COMPLETE / PENDING INDEPENDENT REVIEW
-```
+Replace unsupported `PROVE APP NOT FOUND` wording with the exact R1/R2/R3/R4 classification and safe error-code evidence.
 
-If general settings remain 404, record:
+If R3, explicitly state:
 
 ```text
-LIVE_GENERAL_SETTINGS_VISIBILITY = BLOCKED_BY_CURRENT_AUTH_CONTEXT
-REMAINING_ISSUE = ACCESS_PERMISSION
+App 796 remains a valid Preview identity.
+No second APP_CREATE is permitted.
+A future Control Plane task may authorize one controlled deploy POST of existing App 796 after review.
 ```
 
-Do not change `config/sandbox-apps.json`.
-Do not mark independent review PASS.
-
-## STEP 5 — GIT COMMIT / PUSH / REVIEW PACKAGE
+## GIT COMMIT / PUSH
 
 Before commit:
 
@@ -346,127 +218,91 @@ git diff --check
 git diff --name-only
 ```
 
-For V1, changed files must be documentation/evidence only as authorized above.
+Only the three evidence documents above may change.
 
 Commit exactly once:
 
 ```text
-chore: record verified wp-002c live deployment
+docs: correct wp-002c live-state evidence classification
 ```
 
-Then push explicitly:
+Push:
 
 ```bash
 git push origin ai/antigravity-wp002c
 ```
 
-After push verify:
+Verify:
 
 ```bash
-git status --short
+git fetch origin
 git rev-parse HEAD
 git rev-parse origin/ai/antigravity-wp002c
+git status --short
 ```
 
 Required:
 
 ```text
+local HEAD = remote HEAD
 working tree = clean
-local HEAD = origin/ai/antigravity-wp002c
 ```
 
-Do not force push.
-Do not push to `ai/codex-wp002c`.
-Do not merge `develop`.
-
-## STEP 6 — FINAL GIT REVIEW EVIDENCE
-
-The final report must include enough information for ChatGPT to review GitHub without screenshots:
-
-```text
-execution branch
-baseline commit
-final commit SHA
-commit message
-changed files
-local HEAD
-remote HEAD
-working tree clean YES/NO
-push result
-```
-
-Also include Kintone safe evidence and test totals.
-
-If V2 or V3 occurs, make no false `LIVE_DEPLOYED` documentation commit. If there is no authorized documentation change, do not create a meaningless commit. Report and STOP.
+Then STOP.
 
 ## FINAL REPORT
 
 Report only:
 
 - execution plane = Antigravity
-- repository
-- execution/review branch = `ai/antigravity-wp002c`
-- baseline commit
-- HEAD before work
-- verification case V1/V2/V3
-- live ACL HTTP status + verification
-- live adminNotes HTTP status + verification
-- Get Apps result for 796
-- live general-settings visibility result
+- branch
+- prior evidence commit SHA
+- correction commit SHA
+- auth-context booleans only
+- each live probe HTTP status + error code + sanitized classification
+- Get Apps result
 - deploy status
 - preview identity/revision
 - preview ACL state
-- planned schema fields present YES/NO
+- planned schema present YES/NO
+- final classification R1/R2/R3/R4
+- deployment required YES/NO/UNKNOWN
 - tests total/passed/failed
 - Kintone GET count
-- every Kintone write count (must be zero)
+- Kintone write counts (all must be zero)
 - changed files
-- final commit SHA if created
-- commit message
-- push result
-- local HEAD
-- remote `origin/ai/antigravity-wp002c` HEAD
+- local HEAD / remote HEAD match YES/NO
 - working tree clean YES/NO
-- final App state
-- remaining issue = DEPLOYMENT / ACCESS_PERMISSION / NONE / UNVERIFIABLE
 - STOP confirmation
 
-Never expose credentials, `.env.local`, passwords, tokens, cookies, or authorization headers.
+Never reveal credentials, usernames, passwords, tokens, cookies, authorization headers, or `.env.local` content.
 
 # REVIEW EXPECTATION
 
-ChatGPT will review **GitHub branch `ai/antigravity-wp002c` directly** and verify:
+ChatGPT will inspect GitHub branch `ai/antigravity-wp002c` and verify:
 
-1. Execution occurred on `ai/antigravity-wp002c`, not `ai/codex-wp002c`.
-2. Handoff baseline `18e1d5510e7a03a7a5c3afded0fb36ca9cc9effc` is in branch ancestry.
-3. No force-push/rebase or history replacement occurred.
-4. Local/remote HEAD were synchronized after push.
-5. Only authorized files changed.
-6. Live general-settings 404 was not used alone to infer App absence.
-7. Management-level GET probes were used for live-state proof.
-8. Deploy status remained `SUCCESS`.
-9. No second deploy POST occurred.
-10. No ACL PUT occurred.
-11. No APP_CREATE occurred.
-12. No schema/layout/view/process/record/delete write occurred.
-13. App ID remained exactly 796.
-14. Exact App name remained unchanged.
-15. If live ACL was readable, it remained creator-only/default-deny.
-16. `APP_STATUS = LIVE_DEPLOYED` is recorded only for V1.
-17. Browser inability, if present after V1, is classified as `ACCESS_PERMISSION`, not deployment failure.
-18. Full regression passes.
-19. Stage 3A remains pending ChatGPT Independent Review until `review` is requested.
-20. WP-002D did not start.
-21. Antigravity stopped after the authorized push/report.
+1. Correction remains on the Antigravity branch.
+2. Only `AI_REVIEW_PACKAGE.md`, `HANDOFF.md`, and `CHANGELOG_AI.md` changed.
+3. Kintone operations were GET-only; all write counts are zero.
+4. No second APP_CREATE occurred.
+5. No ACL PUT or deploy POST occurred.
+6. Error evidence includes HTTP status + safe Kintone error code where available, not status alone.
+7. Authentication identity/secrets are not exposed in Git or report.
+8. HTTP 404 alone is not called conclusive proof of absence.
+9. App ID remains exactly 796 and Preview identity/name remain unchanged.
+10. Deploy status is recorded exactly as observed, without treating SUCCESS alone as proof of publication.
+11. `APP_STATUS = LIVE_DEPLOYED` is not claimed unless R1 positive live proof exists.
+12. R3, if selected, explicitly preserves App 796 and proposes deploy of existing App only; no new App creation.
+13. Regression remains fully passing.
+14. Local and remote Antigravity branch heads are synchronized.
+15. WP-002D and schema work do not start.
 
 Expected gates:
 
 - `GIT_EXECUTION_BRANCH_GATE = PASS / FAIL`
-- `GIT_HISTORY_GATE = PASS / FAIL`
-- `GIT_PUSH_SYNC_GATE = PASS / FAIL`
-- `LIVE_MANAGEMENT_PROOF_GATE = PASS / FAIL / UNVERIFIABLE`
-- `DEPLOYMENT_STATE_GATE = PASS / INCONSISTENT / UNVERIFIABLE`
-- `ACCESS_CONTEXT_GATE = PASS / RESTRICTED / UNKNOWN`
+- `EXACT_ERROR_EVIDENCE_GATE = PASS / FAIL`
+- `AUTH_CONTEXT_GATE = PASS / UNVERIFIABLE / FAIL`
+- `LIVE_STATE_CLASSIFICATION_GATE = PASS / FAIL`
 - `WRITE_SCOPE_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
-- `WP002C_STAGE3A_GATE = PASS / BLOCKED`
+- `WP002C_STAGE3A_GATE = BLOCKED / READY_FOR_DEPLOY_AUTHORIZATION / PASS`
