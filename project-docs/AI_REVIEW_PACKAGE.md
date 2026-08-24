@@ -9,8 +9,9 @@
 > **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
 > **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
 > **WP-002C Stage 2 Status:** **`STAGE 2 PASSED / FROZEN; WP002C_STAGE2_GATE = PASS`**
-> **WP-002C Stage 3A Status:** **`STAGE 3A VERIFICATION COMPLETE (LIVE_STATE = PREVIEW_ONLY_STRONG_EVIDENCE; DEPLOYMENT_REQUIRED = YES_PENDING_CONTROL_PLANE_AUTHORIZATION; ZERO WRITES EXECUTED)`**
-> **Last Updated:** 2026-08-24T23:00:00+07:00
+> **WP-002C Stage 3A Status:** **`STAGE 3A VERIFICATION RECONCILIATION = PASS / R3`**
+> **WP-002C Stage 3B Status:** **`STAGE 3B ACTIVATION COMPLETE / PENDING INDEPENDENT REVIEW (SCORING_MASTER_APP_ID = 796; LIVE_DEPLOYED)`**
+> **Last Updated:** 2026-08-25T06:03:00+07:00
 
 ---
 
@@ -23,9 +24,9 @@
 | **WP-002B Review Closure Commit** | `9d263a4` | Independent review passed; WP-002B frozen |
 | **WP-002C Stage-2 Review Closure** | `d4cf052` | `BLOCKER = 0`; `MUST FIX = 0`; `WP002C_STAGE2_GATE = PASS` |
 | **WP-002C Stage-3A Handoff Baseline**| `18e1d55` | `docs: correct stage3a live verification criteria` |
-| **WP-002C Execution Branch Setup** | `c02e120` | `docs: bind wp-002c execution and review to antigravity branch` |
-| **WP-002C Stage-3A Evidence Commit** | `8e740f8` | Initial GET probe logging |
-| **WP-002C Stage-3A Evidence Correction** | *(Review Head)* | `docs: correct wp-002c live-state evidence classification` |
+| **WP-002C Stage-3A Evidence Classification** | `c3b3388` | `docs: correct wp-002c live-state evidence classification` |
+| **WP-002C Stage-3B Activation Task**| `244a41b` | `docs: authorize wp-002c stage3b controlled deploy` |
+| **WP-002C Stage-3B Activation Commit** | *(Review Head)* | `chore: record wp-002c app 796 activation` |
 
 ---
 
@@ -36,22 +37,26 @@
 | **Work Package ID** | `MBO-P03-WP-002C` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
-| **Mode** | **`STAGE 3A — EXACT LIVE-STATE / AUTH-CONTEXT RECONCILIATION (GET-ONLY)`** |
-| **Claimed Status** | **`STAGE 3A VERIFICATION COMPLETE (LIVE_STATE = PREVIEW_ONLY_STRONG_EVIDENCE)`** |
-| **Execution Plane** | `Antigravity` |
+| **Mode** | **`STAGE 3B — CONTROLLED DEPLOY OF EXISTING PREVIEW APP 796`** |
+| **Claimed Status** | **`STAGE 3B COMPLETE / PENDING INDEPENDENT REVIEW`** |
+| **Active AI** | `Antigravity` |
 | **Execution / Review Branch** | `ai/antigravity-wp002c` |
-| **Auth Context Check** | `AUTH_CONTEXT_PRESENT = YES`, `AUTH_CONTEXT_SAME_AS_STAGE2_CONFIGURED_CONTEXT = YES` |
-| **Stage 3A Classification** | **`R3 — PREVIEW-ONLY STRONG EVIDENCE`** (`LIVE_STATE = PREVIEW_ONLY_STRONG_EVIDENCE`) |
-| **Live ACL Probe** | `GET /k/v1/app/acl.json?app=796` $\to$ `HTTP 404` (`GAIA_AP01`: "The app (ID: 796) not found. The app may have been deleted.") |
-| **Live Admin Notes Probe** | `GET /k/v1/app/adminNotes.json?app=796` $\to$ `HTTP 404` (`GAIA_AP01`: "The app (ID: 796) not found. The app may have been deleted.") |
-| **Live General Settings Probe**| `GET /k/v1/app/settings.json?app=796` $\to$ `HTTP 404` (`GAIA_AP01`: "The app (ID: 796) not found. The app may have been deleted.") |
-| **Live App Detail Probe** | `GET /k/v1/app.json?id=796` $\to$ `HTTP 404` (`GAIA_AP01`: "The app (ID: 796) not found. The app may have been deleted.") |
-| **Published App Catalog Probe**| `GET /k/v1/apps.json?ids[0]=796` $\to$ `HTTP 200 (apps: [])` |
-| **Preview Deploy Status** | `GET /k/v1/preview/app/deploy.json?apps[0]=796` $\to$ `HTTP 200 (status: "SUCCESS")` |
-| **Preview Identity** | `GET /k/v1/preview/app/settings.json?app=796` $\to$ App `796`, `MBO Profile & Scoring Configuration Master [Sandbox]`, revision `3` |
-| **Preview ACL State** | `GET /k/v1/preview/app/acl.json?app=796` $\to$ `CREATOR` all true, `GROUP everyone` all false |
-| **Planned Schema Fields** | `GET /k/v1/preview/app/form/fields.json?app=796` $\to$ `NO (Planned schema fields absent)` |
-| **Deployment Authorization** | `DEPLOYMENT_REQUIRED = YES_PENDING_CONTROL_PLANE_AUTHORIZATION` (App 796 remains a valid Preview identity; no second `APP_CREATE` permitted; a future Control Plane task may authorize one controlled deploy POST of existing App 796 after review) |
-| **Kintone Write Operations** | **`0 (Zero Writes Executed)`** (`APP_CREATE: 0, ACL PUT: 0, DEPLOY POST: 0, SCHEMA: 0, RECORD: 0`) |
+| **Scoring Master App ID** | `796` |
+| **App Status** | **`LIVE_DEPLOYED`** |
+| **Deploy Status** | **`SUCCESS`** (`status: "SUCCESS"`) |
+| **Access Status** | **`CREATOR_ONLY / DEFAULT_DENY`** (Verified live ACL: `CREATOR` all true, `GROUP everyone` all false) |
+| **Schema Status** | **`NOT_CONFIGURED`** (Verified live & preview fields: 23 planned WP-002C fields absent) |
+| **Baseline Seed Status** | **`NOT_STARTED`** |
+| **Publish Pipeline Status** | **`NOT_DEPLOYED`** |
+| **Environment** | `SANDBOX` |
+| **Production** | `FALSE` |
+| **Next Action** | `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3B` |
+| **Stage 3B Deploy Attempt** | `STAGE3B_DEPLOY_POST_ATTEMPTS = 1` (Single `POST /k/v1/preview/app/deploy.json` submitted; HTTP 200; no retry) |
+| **Live App Detail Verification**| `GET /k/v1/app.json?id=796` $\to$ **`PASS (HTTP 200; exact name match)`** |
+| **Live Settings Verification** | `GET /k/v1/app/settings.json?app=796` $\to$ **`PASS (HTTP 200; exact name match)`** |
+| **Live ACL Verification** | `GET /k/v1/app/acl.json?app=796` $\to$ **`PASS (HTTP 200; Creator-Only)`** |
+| **Get Apps Publication Check** | `GET /k/v1/apps.json?ids[0]=796` $\to$ **`PASS (HTTP 200; count: 1)`** |
+| **Live Planned Schema Check** | `GET /k/v1/app/form/fields.json?app=796` $\to$ **`PASS (23 planned schema fields absent)`** |
+| **Kintone Write Operations** | **`APP_CREATE POST = 0; ACL PUT = 0; DEPLOY POST = 1; SCHEMA/RECORD/DELETE = 0`** |
 | **Automated Unit Test Suite** | `tests/safety-guard.test.js` plus full `npm test`: **171/171 PASS** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |

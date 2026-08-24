@@ -90,3 +90,29 @@
   - `GET /k/v1/preview/app/form/fields.json?app=796` $\to$ `HTTP 200 (planned schema fields present: NO)`
 - **Automated Tests:** **171 / 171 PASS**
 - **Kintone Write Operations:** **`0 (Zero Writes Executed)`**
+
+
+---
+
+# MBO-P03-WP-002C STAGE 3B CONTROLLED DEPLOY ACTIVATION LOG
+
+- **Active AI:** `Antigravity`
+- **Execution Branch:** `ai/antigravity-wp002c`
+- **Starting HEAD:** `244a41b900a5adaa81772ed4f834813f3f6dee1b`
+- **Authorization ID:** `MBO-P03-WP-002C-STAGE3B-20260825-0600-ICT`
+- **Deploy Submission:** `POST /k/v1/preview/app/deploy.json` (Payload: `{ "apps": [{ "app": 796, "revision": "3" }] }`) $\to$ **HTTP 200**
+- **Deploy POST Attempt Count:** `1` (No retry executed)
+- **Status Polling Sequence:** `PROCESSING -> SUCCESS`
+- **Positive Live Verification Results:**
+  - `GET /k/v1/app.json?id=796` $\to$ **`PASS`** (HTTP 200; `name: "MBO Profile & Scoring Configuration Master [Sandbox]"`)
+  - `GET /k/v1/app/settings.json?app=796` $\to$ **`PASS`** (HTTP 200; `name: "MBO Profile & Scoring Configuration Master [Sandbox]"`)
+  - `GET /k/v1/app/acl.json?app=796` $\to$ **`PASS`** (HTTP 200; `CREATOR` all true, `GROUP everyone` all false)
+  - `GET /k/v1/apps.json?ids[0]=796` $\to$ **`PASS`** (HTTP 200; count: 1)
+  - `GET /k/v1/app/form/fields.json?app=796` $\to$ **`PASS`** (23 planned schema fields absent)
+- **Final App Status:** `LIVE_DEPLOYED`
+- **Access Status:** `CREATOR_ONLY / DEFAULT_DENY`
+- **Schema Status:** `NOT_CONFIGURED`
+- **Baseline Seed Status:** `NOT_STARTED`
+- **Publish Pipeline Status:** `NOT_DEPLOYED`
+- **Automated Test Regression:** **171 / 171 PASS**
+- **Kintone Write Summary:** `APP_CREATE: 0`, `ACL PUT: 0`, `DEPLOY POST: 1`, `SCHEMA/RECORD/DELETE: 0`
