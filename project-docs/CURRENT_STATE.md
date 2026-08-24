@@ -1,14 +1,14 @@
 # Current Project State
 
-- **Updated At**: 2026-08-25T06:30:00+07:00
+- **Updated At**: 2026-08-25T06:54:00+07:00
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
 - **Active AI:** `Antigravity`
-- **Active Work Package**: `MBO-P03-WP-002C — Stage 3C BLOCKED / CORRECTION REQUIRED`
+- **Active Work Package**: `MBO-P03-WP-002C — Stage 3C-R1 DROPDOWN REPAIR COMPLETE / PENDING CHATGPT REVIEW`
 - **WP-001 Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002 Plan Gate Status**: **`PLAN_GATE = PASS (FROZEN / APPROVED)`**
 - **WP-002A Implementation Status**: **`IMPLEMENTATION_GATE = PASS (COMPLETE)`**
 - **WP-002B Status**: **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-- **WP-002C Status**: **`WP002C_STAGE3C_GATE = BLOCKED / CORRECTION_REQUIRED`** (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = CORRECTION_REQUIRED`; `CORRECTION_REQUIRED_FIELDS = Part_A_Scoring_Mode, Config_Status`; `RECORD_COUNT = 0`; `BASELINE_SEED_STATUS = NOT_STARTED`; `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`)
+- **WP-002C Status**: **`STAGE 3C-R1 DROPDOWN REPAIR COMPLETE / PENDING CHATGPT REVIEW`** (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SCHEMA_STATUS = CONFIGURED_23_FIELDS`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `CORRECTION_REQUIRED_FIELDS = NONE`; `RECORD_COUNT = 0`; `BASELINE_SEED_STATUS = NOT_STARTED`; `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`)
 - **WP-002C Plan Correction**: `APP_CREATION_BOOTSTRAP_SAFETY + PUBLISH_INTEGRITY + EFFECTIVE_OVERLAP` documented and independently reviewed
 - **Scoring Source of Truth**: `LIVE_KINTONE_FIRST (DEC-035)`
 - **Appraiser Weight & Completeness**: `DEC-036`
@@ -27,15 +27,15 @@
 - **WP-002A Source Code Module**: [`src/profiles/scoring-config-master.js`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/profiles/scoring-config-master.js)
 - **WP-002B Source Module**: `src/profiles/profile-scoring-resolver.js` (pure dependency-injected; no Master App adapter)
 - **WP-002B Unit Test Suite**: `tests/profile-scoring-resolver.test.js` (17 tests; 148/148 total suite passing)
-- **Handoff State**: `SAFE_CHECKPOINT (WP-002C STAGE 3C CODE CORRECTION COMPLETE)`
-- **NEXT_ACTION**: `AWAIT CHATGPT REVIEW OF STAGE3C CODE CORRECTION BEFORE ANY KINTONE REPAIR WRITE`
+- **Handoff State**: `SAFE_CHECKPOINT (WP-002C STAGE 3C-R1 REPAIR COMPLETE)`
+- **NEXT_ACTION**: `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3C-R1`
 - **Current Branch**: `ai/antigravity-wp002c`
-- **Scoring Master Target**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `ENVIRONMENT = SANDBOX`; `PRODUCTION = FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = CORRECTION_REQUIRED`; `CORRECTION_REQUIRED_FIELDS = Part_A_Scoring_Mode, Config_Status`; `BASELINE_SEED_STATUS = NOT_STARTED`; `RECORD_COUNT = 0`; `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`)
+- **Scoring Master Target**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `ENVIRONMENT = SANDBOX`; `PRODUCTION = FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `CORRECTION_REQUIRED_FIELDS = NONE`; `BASELINE_SEED_STATUS = NOT_STARTED`; `RECORD_COUNT = 0`; `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`)
 - **Last Safe Commit**: `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
 - **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
-- **Active Sandbox Apps**: App 794 (MBO V2 Sandbox App - Full Test Sandbox DEC-041), App 795 (Routing Master Sandbox App), App 796 (Scoring Configuration Master — Live Deployed / Creator-Only / 23 Fields Live / Drop-Down Correction Required)
-- **Hard Write Lock**: ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`); Historical Stage-3C writes: FORM FIELDS POST = 1, DEPLOY POST = 1; THIS CORRECTION TASK KINTONE CALLS = 0
+- **Active Sandbox Apps**: App 794 (MBO V2 Sandbox App - Full Test Sandbox DEC-041), App 795 (Routing Master Sandbox App), App 796 (Scoring Configuration Master — Live Deployed / Creator-Only / 23 Fields Configured & Domain Aligned)
+- **Hard Write Lock**: ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`); Stage 3C-R1 repair writes: FORM FIELDS PUT = 1, DEPLOY POST = 1; RECORD/DELETE/ACL/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0
 
 ## Complete Baseline of Frozen Subsystems (100% Frozen & Approved)
 1. **Phase 0: Blueprint & Phased Delivery Model: `PASSED / FROZEN`**.
@@ -71,7 +71,7 @@
 31. **Project Governance Confirmed**: No Orphan / No Dead Artifact Rule (`DEC-016`), Definition of Done.
 
 ## Test & Defect Status
-- **Automated Unit Tests:** 196/196 Tests Passing (`npm test`)
+- **Automated Unit Tests:** 227/227 Tests Passing (`npm test`)
 - **Defects:** 0 Open, 15 CLOSED (`DEF-001`..`DEF-015`)
 - **Observations:** 5 Open (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
 - **Open Security Dependencies:** 1 Open (`SEC-DEP-001: Shared Kintone Account Security Conflict`)
