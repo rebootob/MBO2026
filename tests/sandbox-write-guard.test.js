@@ -37,6 +37,6 @@ test('assertDiscoveryReadOnly blocks POST, PUT, and DELETE operations', () => {
 test('assertSandboxWriteTarget blocks all writes when DISCOVERY_MODE is true', () => {
   assert.throws(() => assertSandboxWriteTarget(794), /DISCOVERY PHASE WRITE BLOCKED/);
   assert.throws(() => assertSandboxWriteTarget(795), /DISCOVERY PHASE WRITE BLOCKED/);
-  assert.throws(() => assertSandboxWriteTarget(53), /DISCOVERY PHASE WRITE BLOCKED/);
-  assert.throws(() => assertSandboxWriteTarget(283), /DISCOVERY PHASE WRITE BLOCKED/);
+  assert.throws(() => assertSandboxWriteTarget(53), /PROTECTED PRODUCTION APP/);
+  assert.throws(() => assertSandboxWriteTarget(283), /PROTECTED PRODUCTION APP/);
 });
