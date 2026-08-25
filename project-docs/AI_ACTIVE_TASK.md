@@ -1,212 +1,161 @@
-# AI ACTIVE TASK — M10I POSITION → SCORING PROFILE MAPPING CLOSURE
+# AI ACTIVE TASK — M10I-R2 HISTORICAL EVIDENCE RECONCILIATION
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `72d8ef294de3a80636a913ace4ead03ed5e8929f`
-> Mode: APP53 READ-ONLY ANALYSIS + REPOSITORY MAPPING IMPLEMENTATION/TESTS ONLY — NO KINTONE WRITE / NO APP794 DEPLOY
+> Reviewed Head: `16767cf76464db1779046dec16a7bf09296947b6`
+> Mode: REPOSITORY RECONCILIATION + KINTONE READ-ONLY VERIFICATION ONLY — NO KINTONE WRITE / NO APP794 DEPLOY
 
 # NORTH STAR
 
-```text
-Apps foundation             = READY
-App795 routing              = LIVE / READY
-App796 scoring              = LIVE / READY
-App800 dashboard            = LIVE
-App794 runtime revision 26  = LIVE
-M10H coverage audit         = PASS
+Use `project-docs/CONFIRMED_BASELINE/` as the primary business source of truth before living review/handoff docs.
 
-M10H factual coverage:
-TOTAL_ACTIVE_EMPLOYEES      = 275
-DISTINCT_POSITION_COUNT     = 61
-MAPPED_POSITIONS            = 32 / 125 employees
-AMBIGUOUS_POSITIONS         = 28 / 147 employees
-UNKNOWN_POSITIONS           = 1 / 3 employees
+Confirmed historical evidence now exists for all 8 legacy PMS apps. M10I title-based mapping is provisional where it conflicts with historical evidence.
 
-CURRENT CRITICAL BLOCKER:
-147 ambiguous + 3 unknown employees cannot reliably resolve scoring profile.
-
-THIS TASK:
-Close Position -> Scoring Profile mapping at repository level for every non-empty active App53 position where the business rule is determinable from the frozen MBO level policy, and isolate any truly unresolvable data-quality cases for explicit user decision. Target full usable coverage as close to 275/275 as evidence permits.
-```
-
-# FROZEN BUSINESS PROFILE POLICY
-
-Use these frozen profile families only:
+Immediate required correction:
 
 ```text
-Staff / Chief level       -> PROF_STAFF_CHIEF        -> Part A 70 / Part B 30
-Japanese Staff            -> PROF_JAPANESE_STAFF     -> Part A 70 / Part B 30
-Assistant Manager level   -> PROF_ASST_MGR            -> Part A 60 / Part B 40
-Section Manager level     -> PROF_SECTION_MGR         -> Part A 50 / Part B 50
-Senior Manager level      -> PROF_SENIOR_MGR          -> Part A 50 / Part B 50
-Deputy General Manager    -> PROF_DGM                 -> Part A 50 / Part B 50
-General Manager           -> PROF_GM                  -> Part A 50 / Part B 50
-Vice President            -> PROF_VP                  -> Part A 50 / Part B 50
+Factory Manager
+current provisional resolver = PROF_SECTION_MGR
+confirmed historical evidence = App640 PMS GM
+required reconciled profile = PROF_GM
 ```
 
-Do NOT create new profiles.
-Do NOT modify App796 records.
-Do NOT change the frozen weights.
+This task must reconcile the repository resolver against confirmed historical evidence, preserve M10H stale-state fix, and prepare one clean deployment candidate. Do NOT deploy.
+
+# CONFIRMED BASELINE — MUST READ FIRST
+
+Read completely before changing code:
+
+```text
+project-docs/CONFIRMED_BASELINE/README.md
+project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md
+project-docs/CONFIRMED_BASELINE/LEGACY_PMS_APPS.md
+project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
+```
+
+If another document conflicts with `CONFIRMED_BASELINE`, STOP and report the contradiction unless the baseline is superseded by newer explicit user-approved evidence.
 
 # HARD SAFETY
 
 ```text
-APP53 = READ ONLY
-APP794_CUSTOMIZATION_DEPLOY = 0
-APP794_SCHEMA_WRITE = 0
-APP794_PROCESS_WRITE = 0
-APP794_RECORD_WRITE = 0
-APP794_ACL_WRITE = 0
-APP795_WRITE = 0
-APP796_WRITE = 0
-OTHER_APP_WRITE = 0
+App53 = READ ONLY
+Legacy Apps 283,310,305,643,307,640,715,716 = READ ONLY
+App794 customization deploy = 0
+App794 schema/process/record/ACL writes = 0
+App795/App796/App797/App798/App800/App801 writes = 0
+Other Kintone writes = 0
 KINTONE_WRITES_THIS_TASK = 0
 ```
 
-# STEP 1 — RE-READ M10H COVERAGE MATRIX
+# STEP 1 — VERIFY HISTORICAL EVIDENCE AGAINST CURRENT RESOLVER
 
-Use the M10H audit evidence already recorded in living docs plus read-only App53 only if necessary to reconstruct the exact 28 ambiguous positions and 1 unknown/empty position.
-
-For each unresolved position, capture:
+Inspect the existing `src/profiles/profile-scoring-resolver.js` and compare every historically confirmed questionable title from `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md`:
 
 ```text
-raw position label
-normalized label
-employee count
-sample employee codes
-candidate frozen profile
-reason/evidence
-confidence = HIGH / MEDIUM / LOW
+Advisor -> PROF_JAPANESE_STAFF
+President -> PROF_VP
+Manager -> PROF_SECTION_MGR
+Co Project Manager -> PROF_SECTION_MGR
+Executive Management Coordinator -> PROF_STAFF_CHIEF
+Factory Manager -> PROF_GM
 ```
 
-Do not infer from employee names or other personal characteristics.
-Use job title semantics and frozen MBO hierarchy only.
-
-# STEP 2 — APPLY DETERMINISTIC TITLE MAPPING RULES
-
-Implement mappings only where the title clearly indicates the frozen level.
-
-Required semantic policy:
+For each output:
 
 ```text
-Titles containing/meaning Assistant Manager or Assistant Section Manager
--> PROF_ASST_MGR
-
-Titles containing/meaning Section Manager / Manager where App53 title clearly represents section-manager management level
--> PROF_SECTION_MGR
-
-Titles containing/meaning Senior Manager
--> PROF_SENIOR_MGR
-
-Titles containing/meaning Deputy General Manager / DGM
--> PROF_DGM
-
-Titles containing/meaning General Manager / GM
--> PROF_GM
-
-Titles containing/meaning Vice President / VP
--> PROF_VP
-
-Operational Staff / Chief / Senior Chief / Assistant Chief / technician / engineer / operator / coordinator / specialist / clerk / warehouse staff / driver / messenger / interpreter etc. that are not management-level titles
--> PROF_STAFF_CHIEF
-
-Japanese Staff / expatriate Japanese staff titles already covered
--> PROF_JAPANESE_STAFF
+TITLE
+CURRENT_RESOLVER_PROFILE
+CONFIRMED_BASELINE_PROFILE
+MATCH / CONFLICT
+ACTION
 ```
 
-IMPORTANT:
-- Do not blindly map every string containing `manager` to Section Manager.
-- `Assistant Manager` remains PROF_ASST_MGR.
-- `Senior Manager` remains PROF_SENIOR_MGR.
-- DGM/GM/VP remain their exact profiles.
-- For titles such as `Factory Manager`, `Co Project Manager`, `Manager`, `Advisor`, `President`, `Executive Management Coordinator`, or other unclear titles, inspect actual App53 distribution and existing project business rules before deciding.
-- If a title cannot be assigned confidently from evidence, leave it UNRESOLVED and report for user decision. Fail closed is preferable to invented policy.
+Do not change confirmed matches unnecessarily.
 
-# STEP 3 — REMOVE OBSOLETE AMBIGUOUS ENTRIES WHEN REPLACED
+# STEP 2 — FIX CONFLICTS IN EXISTING SOURCE ONLY
 
-Update the EXISTING `src/profiles/profile-scoring-resolver.js` source of truth.
+Modify the existing resolver source of truth only.
 
-Rules:
-- Add exact mappings to `POSITION_TO_PROFILE` where approved by evidence/frozen hierarchy.
-- Remove the same normalized titles from `AMBIGUOUS_TITLES` when they become deterministic.
-- Do not leave a title both mapped and ambiguous.
-- Do not create duplicate maps, fallback maps, `_v2`, `_old`, or alternative resolver modules.
-- Preserve strict `PROFILE_SOURCE_INVALID` / `PROFILE_RESOLUTION_AMBIGUOUS` behavior for genuinely unresolved positions.
-
-NO-ORPHAN gate is mandatory.
-
-# STEP 4 — HANDLE EMPTY / UNKNOWN POSITION SAFELY
-
-M10H found 3 employees with empty/unknown Position.
-
-Do NOT invent a profile for blank position.
-These records must remain fail-closed unless another authoritative App53 field already provides a frozen management level and the existing architecture explicitly permits using it.
-
-If no authoritative existing field is approved for this purpose:
+Mandatory current fix:
 
 ```text
-EMPTY_POSITION_EMPLOYEES = 3
-RESULT = BLOCKED_BY_APP53_DATA_QUALITY
-USER/HR_DATA_CORRECTION_REQUIRED = YES
+Factory Manager -> PROF_GM
 ```
 
-Do NOT write App53 in this task.
+If any additional resolver conflict with CONFIRMED_BASELINE is found, fix it only when the baseline evidence is explicit.
 
-# STEP 5 — COVERAGE TEST
+Do not create alternate resolver files, fallback maps, `_old`, `_v2`, duplicate maps, or compatibility shims.
 
-Build an automated coverage test against the exact current App53 read-only position inventory or a durable sanitized position/count fixture derived from the M10H audit.
+# STEP 3 — HISTORICAL PRECEDENCE RULE
 
-Required outputs:
+Implement/document the classification evidence hierarchy consistently:
+
+```text
+1. Explicit confirmed business rule / current HR-approved class
+2. Confirmed recent historical PMS class evidence
+3. Current Position deterministic mapping
+4. Ambiguous/unknown -> FAIL CLOSED
+```
+
+Historical evidence is evidence, not blind override. If current App53 position clearly indicates a promotion/level change relative to legacy history, preserve `LEVEL_CHANGE_DETECTED` semantics rather than forcing the old class.
+
+Do not introduce per-employee hardcoded profile exceptions unless already explicitly confirmed as a business rule.
+
+# STEP 4 — RE-CHECK 275 EMPLOYEE COVERAGE
+
+Using App53 READ ONLY and legacy evidence READ ONLY as needed, report:
 
 ```text
 TOTAL_ACTIVE_EMPLOYEES = 275
-RESOLVED_EMPLOYEE_COUNT = actual
-AMBIGUOUS_EMPLOYEE_COUNT_AFTER = actual
-UNKNOWN_EMPLOYEE_COUNT_AFTER = actual
-RESOLVED_NONEMPTY_POSITION_COUNT = actual / non-empty distinct positions
+NONEMPTY_POSITION_EMPLOYEES = actual
+RESOLVED_BY_CURRENT_RULES = actual
+LEVEL_CHANGE_DETECTED = actual
+AMBIGUOUS = actual
+EMPTY_POSITION = actual
 ```
 
-Target:
+Explicitly verify:
 
 ```text
-ALL NON-EMPTY ACTIVE POSITIONS deterministically resolved unless explicitly documented as business-decision-required.
+0111 -> current Assistant Section Manager; historical App310 Assistant Manager; expected PROF_ASST_MGR
+0118 -> historical App283 Staff & Chief; expected PROF_STAFF_CHIEF
+Factory Manager employee(s) -> expected PROF_GM based on confirmed App640 evidence unless newer current-level evidence proves a change
 ```
 
-Do not fake 275/275 by assigning blank/unknown positions.
+For employees `9042`, `9000`, `9036` with blank Position, do not invent a current profile. Report historical evidence separately and keep fail-closed unless current authoritative classification is confirmed.
 
-Explicit regression cases must include at least:
+# STEP 5 — PRESERVE M10H LOOKUP ATOMICITY FIX
+
+Regression must still prove:
 
 ```text
-0111 Assistant Section Manager -> expected frozen profile based on hierarchy
-0118 Technical Service Chief -> PROF_STAFF_CHIEF
-Assistant Manager -> PROF_ASST_MGR
-Section Manager -> PROF_SECTION_MGR
-Senior Manager -> PROF_SENIOR_MGR
-DGM -> PROF_DGM
-GM -> PROF_GM
-VP -> PROF_VP
-Japanese Staff -> PROF_JAPANESE_STAFF
-blank position -> fail closed
+new lookup starts -> verified false immediately
+failed lookup -> previous employee snapshot cleared
+failed lookup -> objective grid locked
+successful lookup -> verified true only after App53 + routing + profile + scoring all pass
+USER_SELECT reset uses []
 ```
 
-# STEP 6 — RETAIN M10H STALE-STATE FIX
+# STEP 6 — CONFIRMED BASELINE GOVERNANCE
 
-Ensure M10H stale verified-state fix remains present and regression tests continue passing:
+Do not scatter newly confirmed facts only into CHANGELOG/HANDOFF.
 
-```text
-lookup failure => verified false
-previous employee snapshot cleared
-objective grid locked
-successful lookup => verified true only after routing/profile/scoring all pass
-```
+If this task produces a new CONFIRMED fact after verification, update the appropriate existing file under:
 
-Do not deploy it in this task.
+`project-docs/CONFIRMED_BASELINE/`
 
-# STEP 7 — BUILD / VERIFY
+Rules:
+- confirmed facts only
+- modify canonical existing file when possible
+- no `_old`, `_v1`, duplicate source-of-truth file
+- provisional/test observations stay outside baseline
+- if a confirmed fact is superseded, replace it with traceable note/evidence, do not retain contradictory active rules
 
-Rebuild classic bundle using the existing repaired pipeline.
+# STEP 7 — BUILD / TEST
+
+Rebuild using the repaired classic-script pipeline. Do NOT deploy.
 
 Required gates:
 
@@ -215,10 +164,11 @@ CLASSIC_BUNDLE_PARSE = PASS
 ES_MODULE_IMPORT_COUNT = 0
 ES_MODULE_EXPORT_COUNT = 0
 BROKEN_FROM_RESIDUE_COUNT = 0
-IS_VALID_EMPLOYEE_CODE_RUNTIME = PASS
-USER_SELECTION_RESET_TYPE = ARRAY
 LOOKUP_FAILURE_STALE_STATE_TEST = PASS
-PROFILE_MAPPING_COVERAGE_TEST = PASS
+USER_SELECTION_RESET_TYPE = ARRAY
+FACTORY_MANAGER_PROFILE_TEST = PROF_GM
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS
 ```
 
 Run:
@@ -232,46 +182,48 @@ git status --short
 # REQUIRED FINAL SUMMARY
 
 ```text
-M10I_POSITION_PROFILE_MAPPING_CLOSURE = COMPLETE / BLOCKED / PARTIAL
+M10I_R2_HISTORICAL_RECONCILIATION = COMPLETE / PARTIAL / BLOCKED
 
-TOTAL_ACTIVE_EMPLOYEES = 275
-DISTINCT_POSITION_COUNT = 61
-NONEMPTY_POSITION_COUNT = actual
-RESOLVED_POSITION_COUNT_AFTER = actual
-AMBIGUOUS_POSITION_COUNT_AFTER = actual
-UNKNOWN_POSITION_COUNT_AFTER = actual
-RESOLVED_EMPLOYEE_COUNT_AFTER = actual
-AMBIGUOUS_EMPLOYEE_COUNT_AFTER = actual
-UNKNOWN_EMPLOYEE_COUNT_AFTER = actual
+CONFIRMED_BASELINE_READ_FIRST = YES
+CONFIRMED_BASELINE_CONFLICT_COUNT_BEFORE = actual
+CONFIRMED_BASELINE_CONFLICT_COUNT_AFTER = actual
 
-EMPLOYEE_0111_POSITION = Assistant Section Manager
-EMPLOYEE_0111_PROFILE_AFTER = actual
-EMPLOYEE_0118_POSITION = Technical Service Chief
-EMPLOYEE_0118_PROFILE_AFTER = PROF_STAFF_CHIEF
+FACTORY_MANAGER_BEFORE = actual
+FACTORY_MANAGER_AFTER = PROF_GM
+FACTORY_MANAGER_EVIDENCE = App640 PMS GM
 
-MAPPINGS_ADDED = exact list
-AMBIGUOUS_ENTRIES_REMOVED = exact list
-UNRESOLVED_POSITIONS = exact list with employee counts/reasons
+ADVISOR = actual
+PRESIDENT = actual
+MANAGER = actual
+CO_PROJECT_MANAGER = actual
+EXEC_MGMT_COORDINATOR = actual
+
+TOTAL_ACTIVE_EMPLOYEES = actual
+RESOLVED_EMPLOYEES = actual
+LEVEL_CHANGE_DETECTED = actual
+AMBIGUOUS_EMPLOYEES = actual
 EMPTY_POSITION_EMPLOYEES = actual
-APP53_DATA_CORRECTION_REQUIRED = YES/NO
 
-STALE_VERIFIED_STATE_FIX_RETAINED = PASS/FAIL
-PROFILE_MAPPING_COVERAGE_TEST = PASS/FAIL
+EMPLOYEE_0111_RESULT = exact
+EMPLOYEE_0118_RESULT = exact
+BLANK_POSITION_9042 = exact
+BLANK_POSITION_9000 = exact
+BLANK_POSITION_9036 = exact
+
+STALE_STATE_FIX_RETAINED = PASS/FAIL
 CLASSIC_BUNDLE_PARSE = PASS/FAIL
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 
 KINTONE_WRITES_THIS_TASK = 0
-APP794_CUSTOMIZATION_DEPLOY = 0
+APP794_DEPLOY = 0
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = CHATGPT REVIEW; IF COVERAGE ACCEPTABLE, PREPARE ONE CONTROLLED APP794 DEPLOY INCLUDING M10H+M10I
+NEXT_ACTION = CHATGPT REVIEW; IF PASS, PREPARE ONE CONTROLLED APP794 DEPLOY FOR RECONCILED M10H+M10I FIXES
 ```
 
-Update only living docs with factual results.
-Commit and push same branch, then STOP.
+Commit and push the same branch, then STOP.
 
-Do NOT deploy App794.
-Do NOT write App53/App795/App796 or any other Kintone app.
-Do NOT create new scoring profiles or change scoring weights.
+Do not deploy App794.
+Do not write any Kintone app.
