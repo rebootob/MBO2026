@@ -24,24 +24,40 @@ export function validateLifecycleTransition(currentStatus, nextStatus) {
 function isValidIsoDateTime(str) {
   if (typeof str !== 'string') return false;
   const trimmed = str.trim();
-  const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+  // ISO-8601 datetime pattern requiring Z or [+-]HH:MM offset
+  const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/;
   const match = isoRegex.exec(trimmed);
   if (!match) return false;
-  const [, year, month, day, hour, minute, second] = match;
-  const y = parseInt(year, 10);
-  const m = parseInt(month, 10);
-  const d = parseInt(day, 10);
-  const hh = parseInt(hour, 10);
-  const mm = parseInt(minute, 10);
-  const ss = parseInt(second, 10);
-  if (m < 1 || m > 12 || d < 1 || d > 31 || hh > 23 || mm > 59 || ss > 59) return false;
+
+  const [, yearStr, monthStr, dayStr, hourStr, minStr, secStr, , tzSign, tzHourStr, tzMinStr] = match;
+
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  const hour = parseInt(hourStr, 10);
+  const minute = parseInt(minStr, 10);
+  const second = parseInt(secStr, 10);
+
+  if (month < 1 || month > 12) return false;
+  if (hour > 23 || minute > 59 || second > 59) return false;
+
+  if (tzSign) {
+    const tzHour = parseInt(tzHourStr, 10);
+    const tzMin = parseInt(tzMinStr, 10);
+    if (tzHour > 23 || tzMin > 59) return false;
+  }
+
+  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  const daysInMonth = [0, 31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  if (day < 1 || day > daysInMonth[month]) {
+    return false;
+  }
+
   const dt = new Date(trimmed);
   if (isNaN(dt.getTime())) return false;
-  if (trimmed.endsWith('Z')) {
-    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== m || dt.getUTCDate() !== d || dt.getUTCHours() !== hh || dt.getUTCMinutes() !== mm || dt.getUTCSeconds() !== ss) {
-      return false;
-    }
-  }
+
   return true;
 }
 
