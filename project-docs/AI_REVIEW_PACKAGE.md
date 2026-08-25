@@ -36,10 +36,13 @@
 | **Stage 4B Final Exactness Correction** | `ac9ce5dce2ffa2a45cab44a88c46cf7bd6215465` | `fix: finalize scoring config repository storage exactness` |
 | **Stage 4B Final Correction Evidence** | `b69e2d1d7fa396ddcabbb7df5f789674fc034158` | `docs: finalize wp-002c stage4b repository evidence` |
 | **Stage 4B Final Doc Closure Attempt** | `ad87defbfa7f072406e7795b50f310c3ee40dc0b` | `docs: close wp-002c stage4b review evidence` |
+| **Stage 4B Final Review Closure** | `d0bfbd9d7983911d8003010635fbfcf6e9307b28` | `docs: add missing wp-002c stage4b traceability rows` |
+| **Stage 4B Closure / Stage 4C Authorization** | `c43aad83d46cfb065db7c2afa06a6b97ce732d1d` | `docs: close wp-002c stage4b and authorize stage4c` |
 | **Stage 4C First-Pass Implementation** | `c281364e6ab96c690dcf019d0372d48f83dbb273` | `feat: add scoring config guarded request bridge foundation` |
 | **Stage 4C First-Pass Evidence** | `53e32ce95187745b9179289d6bed0409ab021339` | `docs: record wp-002c stage4c guarded bridge foundation` |
 | **Stage 4C Hardening Code** | `f581b90a778e91bacc3a0b14c39e9d127191bf99` | `fix: harden scoring config stage4c bridge exactness` |
-| **Stage 4C Hardening Evidence Docs** | *(Review Head)* | `docs: record wp-002c stage4c bridge hardening` |
+| **Stage 4C Hardening Evidence** | `c33285ef6bfa958f026d36b5c5f299448ae78c30` | `docs: record wp-002c stage4c bridge hardening` |
+| **Stage 4C Final Doc Closure Commit** | *(Review Head)* | `docs: close wp-002c stage4c review evidence` |
 
 ## 2. Gate Summary
 
