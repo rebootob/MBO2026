@@ -1,32 +1,26 @@
-# AI ACTIVE TASK — M10I-R2 HISTORICAL EVIDENCE RECONCILIATION
+# AI ACTIVE TASK — M10J APP794 CONTROLLED DEPLOY PRE-FLIGHT
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `16767cf76464db1779046dec16a7bf09296947b6`
-> Mode: REPOSITORY RECONCILIATION + KINTONE READ-ONLY VERIFICATION ONLY — NO KINTONE WRITE / NO APP794 DEPLOY
+> Reviewed Head: `0049d2faab59f858c7139be40fb7ca5d0c6a46e3`
+> Mode: PRE-DEPLOY VERIFICATION ONLY — KINTONE READ ONLY — NO DEPLOY / NO WRITE
 
 # NORTH STAR
 
-Use `project-docs/CONFIRMED_BASELINE/` as the primary business source of truth before living review/handoff docs.
+Prepare exactly one deployment candidate for App794 that contains the already-reviewed fixes only:
 
-Confirmed historical evidence now exists for all 8 legacy PMS apps. M10I title-based mapping is provisional where it conflicts with historical evidence.
+1. M10H stale verified-state / stale snapshot fix.
+2. M10I final Position -> Scoring Profile mappings.
+3. M10I-R2 historical reconciliation, including `Factory Manager -> PROF_GM`.
 
-Immediate required correction:
+Do not add new business features in this task.
+Do not deploy in this task.
 
-```text
-Factory Manager
-current provisional resolver = PROF_SECTION_MGR
-confirmed historical evidence = App640 PMS GM
-required reconciled profile = PROF_GM
-```
+# CONFIRMED BASELINE — READ FIRST
 
-This task must reconcile the repository resolver against confirmed historical evidence, preserve M10H stale-state fix, and prepare one clean deployment candidate. Do NOT deploy.
-
-# CONFIRMED BASELINE — MUST READ FIRST
-
-Read completely before changing code:
+Read completely before any verification:
 
 ```text
 project-docs/CONFIRMED_BASELINE/README.md
@@ -35,127 +29,77 @@ project-docs/CONFIRMED_BASELINE/LEGACY_PMS_APPS.md
 project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
 ```
 
-If another document conflicts with `CONFIRMED_BASELINE`, STOP and report the contradiction unless the baseline is superseded by newer explicit user-approved evidence.
+If implementation conflicts with CONFIRMED_BASELINE, STOP and report BLOCKED.
 
 # HARD SAFETY
 
 ```text
-App53 = READ ONLY
-Legacy Apps 283,310,305,643,307,640,715,716 = READ ONLY
-App794 customization deploy = 0
-App794 schema/process/record/ACL writes = 0
-App795/App796/App797/App798/App800/App801 writes = 0
-Other Kintone writes = 0
+APP794_CUSTOMIZATION_DEPLOY = 0
+APP794_SCHEMA_WRITE = 0
+APP794_PROCESS_WRITE = 0
+APP794_RECORD_WRITE = 0
+APP794_ACL_WRITE = 0
+APP53_WRITE = 0
+LEGACY_PMS_WRITE = 0
+APP795_WRITE = 0
+APP796_WRITE = 0
+APP797_WRITE = 0
+APP798_WRITE = 0
+APP800_WRITE = 0
+APP801_WRITE = 0
+OTHER_KINTONE_WRITE = 0
 KINTONE_WRITES_THIS_TASK = 0
 ```
 
-# STEP 1 — VERIFY HISTORICAL EVIDENCE AGAINST CURRENT RESOLVER
+Kintone reads are allowed only for verification/readback.
 
-Inspect the existing `src/profiles/profile-scoring-resolver.js` and compare every historically confirmed questionable title from `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md`:
+# STEP 1 — VERIFY CURRENT LIVE APP794 BASELINE
+
+Read App794 customization live state and record:
 
 ```text
+LIVE_REVISION = actual
+LIVE_DESKTOP_JS_FILE_KEY = actual
+LIVE_DESKTOP_CSS_FILE_KEY = actual
+LIVE_MOBILE_CUSTOMIZATION = actual
+```
+
+Expected starting point from prior verified deployment:
+
+```text
+Revision 26
+Desktop customization present
+Mobile customization unchanged/empty
+```
+
+If live state has drifted from the expected controlled baseline, STOP and report BLOCKED. Do not overwrite unknown drift.
+
+# STEP 2 — VERIFY DEPLOYMENT CANDIDATE CONTENT
+
+Inspect current source and built bundle.
+
+The deployment candidate must include:
+
+```text
+STALE_STATE_FIX = present
+USER_SELECT_RESET_TO_ARRAY = present
+IS_VALID_EMPLOYEE_CODE_RUNTIME = present
+0111 Assistant Section Manager -> PROF_ASST_MGR
+0118 Technical Service Chief -> PROF_STAFF_CHIEF
+Factory Manager -> PROF_GM
 Advisor -> PROF_JAPANESE_STAFF
 President -> PROF_VP
 Manager -> PROF_SECTION_MGR
 Co Project Manager -> PROF_SECTION_MGR
 Executive Management Coordinator -> PROF_STAFF_CHIEF
-Factory Manager -> PROF_GM
 ```
 
-For each output:
+No unresolved non-empty current positions may remain.
+Blank App53 Position records remain fail-closed.
 
-```text
-TITLE
-CURRENT_RESOLVER_PROFILE
-CONFIRMED_BASELINE_PROFILE
-MATCH / CONFLICT
-ACTION
-```
+# STEP 3 — VERIFY BUNDLE SAFETY
 
-Do not change confirmed matches unnecessarily.
-
-# STEP 2 — FIX CONFLICTS IN EXISTING SOURCE ONLY
-
-Modify the existing resolver source of truth only.
-
-Mandatory current fix:
-
-```text
-Factory Manager -> PROF_GM
-```
-
-If any additional resolver conflict with CONFIRMED_BASELINE is found, fix it only when the baseline evidence is explicit.
-
-Do not create alternate resolver files, fallback maps, `_old`, `_v2`, duplicate maps, or compatibility shims.
-
-# STEP 3 — HISTORICAL PRECEDENCE RULE
-
-Implement/document the classification evidence hierarchy consistently:
-
-```text
-1. Explicit confirmed business rule / current HR-approved class
-2. Confirmed recent historical PMS class evidence
-3. Current Position deterministic mapping
-4. Ambiguous/unknown -> FAIL CLOSED
-```
-
-Historical evidence is evidence, not blind override. If current App53 position clearly indicates a promotion/level change relative to legacy history, preserve `LEVEL_CHANGE_DETECTED` semantics rather than forcing the old class.
-
-Do not introduce per-employee hardcoded profile exceptions unless already explicitly confirmed as a business rule.
-
-# STEP 4 — RE-CHECK 275 EMPLOYEE COVERAGE
-
-Using App53 READ ONLY and legacy evidence READ ONLY as needed, report:
-
-```text
-TOTAL_ACTIVE_EMPLOYEES = 275
-NONEMPTY_POSITION_EMPLOYEES = actual
-RESOLVED_BY_CURRENT_RULES = actual
-LEVEL_CHANGE_DETECTED = actual
-AMBIGUOUS = actual
-EMPTY_POSITION = actual
-```
-
-Explicitly verify:
-
-```text
-0111 -> current Assistant Section Manager; historical App310 Assistant Manager; expected PROF_ASST_MGR
-0118 -> historical App283 Staff & Chief; expected PROF_STAFF_CHIEF
-Factory Manager employee(s) -> expected PROF_GM based on confirmed App640 evidence unless newer current-level evidence proves a change
-```
-
-For employees `9042`, `9000`, `9036` with blank Position, do not invent a current profile. Report historical evidence separately and keep fail-closed unless current authoritative classification is confirmed.
-
-# STEP 5 — PRESERVE M10H LOOKUP ATOMICITY FIX
-
-Regression must still prove:
-
-```text
-new lookup starts -> verified false immediately
-failed lookup -> previous employee snapshot cleared
-failed lookup -> objective grid locked
-successful lookup -> verified true only after App53 + routing + profile + scoring all pass
-USER_SELECT reset uses []
-```
-
-# STEP 6 — CONFIRMED BASELINE GOVERNANCE
-
-Do not scatter newly confirmed facts only into CHANGELOG/HANDOFF.
-
-If this task produces a new CONFIRMED fact after verification, update the appropriate existing file under:
-
-`project-docs/CONFIRMED_BASELINE/`
-
-Rules:
-- confirmed facts only
-- modify canonical existing file when possible
-- no `_old`, `_v1`, duplicate source-of-truth file
-- provisional/test observations stay outside baseline
-- if a confirmed fact is superseded, replace it with traceable note/evidence, do not retain contradictory active rules
-
-# STEP 7 — BUILD / TEST
-
-Rebuild using the repaired classic-script pipeline. Do NOT deploy.
+Rebuild using the existing repaired classic-script pipeline only.
 
 Required gates:
 
@@ -164,12 +108,17 @@ CLASSIC_BUNDLE_PARSE = PASS
 ES_MODULE_IMPORT_COUNT = 0
 ES_MODULE_EXPORT_COUNT = 0
 BROKEN_FROM_RESIDUE_COUNT = 0
-LOOKUP_FAILURE_STALE_STATE_TEST = PASS
+IS_VALID_EMPLOYEE_CODE_RUNTIME = PASS
 USER_SELECTION_RESET_TYPE = ARRAY
+LOOKUP_FAILURE_STALE_STATE_TEST = PASS
 FACTORY_MANAGER_PROFILE_TEST = PROF_GM
+PROFILE_MAPPING_COVERAGE_TEST = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
-NO_ORPHAN_ARTIFACT_GATE = PASS
 ```
+
+Record candidate JS/CSS sizes and a stable hash if the existing tooling already supports it. Do not invent a new deployment framework.
+
+# STEP 4 — VERIFY TEST SUITE
 
 Run:
 
@@ -179,51 +128,131 @@ git diff --check
 git status --short
 ```
 
+Expected current regression baseline is 518 tests; actual count must be reported.
+
+# STEP 5 — PREPARE FRESH BACKUP PLAN, BUT DO NOT EXECUTE WRITE
+
+Determine the exact existing script/command that will be used after explicit user authorization to:
+
+1. Capture fresh pre-write App794 customization/readback backup.
+2. Store backup under a durable `backups/` path.
+3. Verify backup contents before any PUT/deploy.
+4. Upload only the reviewed desktop JS/CSS candidate.
+5. Deploy App794 customization only.
+6. Poll deployment status to SUCCESS.
+7. Read back live revision/fileKeys.
+8. Verify mobile customization unchanged.
+
+Do not perform the write/deploy in this task.
+
+# STEP 6 — DEFINE ROLLBACK CONTRACT
+
+Before requesting authorization, identify exactly how rollback will work if browser runtime fails.
+
+Rollback source must be the fresh pre-write backup captured immediately before deployment.
+
+Browser-failure rollback triggers include at minimum:
+
+```text
+page initialization parser/runtime failure
+Employee Search runtime failure
+USER_SELECT invalid value runtime failure
+verified state stale after failed lookup
+profile resolver mismatch for reviewed examples
+objective grid unlocks incorrectly
+```
+
+Do not reuse an old unrelated backup as the planned primary rollback source.
+
+# STEP 7 — DEFINE POST-DEPLOY BROWSER SMOKE
+
+Prepare exact browser tests for the user after deployment:
+
+```text
+A. 0118 successful lookup
+   - employee data loads
+   - PROF_STAFF_CHIEF path
+   - no console/runtime error
+   - objective grid unlocks correctly
+
+B. 0111 successful lookup
+   - Assistant Section Manager
+   - PROF_ASST_MGR
+   - no PROFILE_RESOLUTION_AMBIGUOUS
+
+C. Factory Manager employee
+   - resolves PROF_GM
+   - no Section Manager misclassification
+
+D. Failed lookup / invalid or fail-closed case
+   - verified=false
+   - previous employee snapshot cleared
+   - objective grid locked
+   - no stale Employee verified state
+
+E. Console
+   - no parser error
+   - no isValidEmployeeCode error
+   - no USER_SELECT `.value is invalid` errors
+```
+
+Do not create test business records unless separately authorized.
+
+# STEP 8 — NO ORPHAN / CHANGE SCOPE
+
+This task must not introduce:
+
+```text
+new resolver copies
+_old / _v1 files
+new deployment scripts without necessity
+duplicate source-of-truth docs
+provisional facts inside CONFIRMED_BASELINE
+```
+
+If a new confirmed factual correction is discovered, update the appropriate canonical baseline file only.
+
 # REQUIRED FINAL SUMMARY
 
 ```text
-M10I_R2_HISTORICAL_RECONCILIATION = COMPLETE / PARTIAL / BLOCKED
+M10J_APP794_PREDEPLOY = READY_FOR_AUTHORIZATION / BLOCKED
 
-CONFIRMED_BASELINE_READ_FIRST = YES
-CONFIRMED_BASELINE_CONFLICT_COUNT_BEFORE = actual
-CONFIRMED_BASELINE_CONFLICT_COUNT_AFTER = actual
+CONFIRMED_BASELINE_READ_FIRST = YES/NO
+LIVE_APP794_REVISION = actual
+LIVE_CUSTOMIZATION_DRIFT = YES/NO
 
-FACTORY_MANAGER_BEFORE = actual
-FACTORY_MANAGER_AFTER = PROF_GM
-FACTORY_MANAGER_EVIDENCE = App640 PMS GM
+STALE_STATE_FIX_PRESENT = PASS/FAIL
+USER_SELECT_ARRAY_FIX_PRESENT = PASS/FAIL
+0111_PROFILE = actual
+0118_PROFILE = actual
+FACTORY_MANAGER_PROFILE = actual
+CONFIRMED_BASELINE_CONFLICT_COUNT = actual
 
-ADVISOR = actual
-PRESIDENT = actual
-MANAGER = actual
-CO_PROJECT_MANAGER = actual
-EXEC_MGMT_COORDINATOR = actual
-
-TOTAL_ACTIVE_EMPLOYEES = actual
-RESOLVED_EMPLOYEES = actual
-LEVEL_CHANGE_DETECTED = actual
-AMBIGUOUS_EMPLOYEES = actual
-EMPTY_POSITION_EMPLOYEES = actual
-
-EMPLOYEE_0111_RESULT = exact
-EMPLOYEE_0118_RESULT = exact
-BLANK_POSITION_9042 = exact
-BLANK_POSITION_9000 = exact
-BLANK_POSITION_9036 = exact
-
-STALE_STATE_FIX_RETAINED = PASS/FAIL
 CLASSIC_BUNDLE_PARSE = PASS/FAIL
+ES_MODULE_IMPORT_COUNT = actual
+ES_MODULE_EXPORT_COUNT = actual
+BROKEN_FROM_RESIDUE_COUNT = actual
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
+
+CANDIDATE_JS_SIZE = actual
+CANDIDATE_CSS_SIZE = actual
+CANDIDATE_HASH = actual / NOT_AVAILABLE
+
+FRESH_PREWRITE_BACKUP_PLAN = READY/BLOCKED
+ROLLBACK_PLAN = READY/BLOCKED
+POST_DEPLOY_BROWSER_SMOKE_PLAN = READY/BLOCKED
 
 KINTONE_WRITES_THIS_TASK = 0
 APP794_DEPLOY = 0
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = CHATGPT REVIEW; IF PASS, PREPARE ONE CONTROLLED APP794 DEPLOY FOR RECONCILED M10H+M10I FIXES
+NEXT_ACTION = IF ALL PASS, STOP AND REQUEST EXPLICIT USER AUTHORIZATION FOR ONE APP794 CUSTOMIZATION DEPLOY ONLY
 ```
 
-Commit and push the same branch, then STOP.
+Update living docs with factual results if needed.
+Commit and push same branch, then STOP.
 
 Do not deploy App794.
 Do not write any Kintone app.
