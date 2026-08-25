@@ -1,79 +1,217 @@
-# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4A CLOSURE + STAGE 4B KINTONE REPOSITORY FOUNDATION
+# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4B REPOSITORY HARDENING
 
-> **Control Plane:** ChatGPT / Project Lead / Architect / Independent Reviewer
+> **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Stage 4A head:** `b8f4771b5d31361c6cf85c91b3809ebd5cd3d993`
-> **Target App:** 796 — `MBO Profile & Scoring Configuration Master [Sandbox]`
-> **Environment:** SANDBOX / Production FALSE
-> **WP:** `MBO-P03-WP-002C`
-> **Mode:** STAGE 4A GOVERNANCE CLOSURE + STAGE 4B CODE/UNIT FOUNDATION ONLY
+> **Reviewed Stage 4B head:** `7fbd9e8ec555198933a8e1fffb302e59b4ea8286`
+> **Mode:** CODE/TEST HARDENING + LIVING-DOC EVIDENCE CORRECTION ONLY
 > **Kintone calls:** ZERO
 > **Kintone writes:** ZERO
 
-# CONTROL PLANE DECISION
+# REVIEW RESULT
 
-Independent review of Stage 4A is complete.
-
-Record:
+Accepted from Stage 4B first pass:
 
 ```text
-WP002C_STAGE4A_GATE = PASS
-STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = PASSED / FROZEN
-REGRESSION_BASELINE = 307/307 PASS
+Stage 4A closure commit = f24f247cc22a5b73ad855047d33c2cdb591b41b7
+Stage 4B implementation commit = ab162b3e530b0e87f76ecc46589cd117e1ac8c6c
+Stage 4B evidence commit = 7fbd9e8ec555198933a8e1fffb302e59b4ea8286
+commit order = PASS
+implementation scope = PASS (4 authorized code/test files only)
+repository source file count = 1
+repository test file count = 1
+query escaping foundation = PASS
+USER_SELECT foundation = PASS
+lifecycle-only publish patch = PASS
+optimistic revision propagation foundation = PASS
+no-retry foundation = PASS
+reported regression = 367/367 PASS
+Stage 4B Kintone calls/writes = 0
 ```
 
-Accepted Stage 4A gates:
+Stage 4B is NOT approved for Stage 4C yet. The following MUST FIX items are required.
+
+---
+
+# MUST FIX A — REUSE THE EXISTING APP-796 SAFETY CONSTANT; KEEP APP ID NUMERIC
+
+Current repository defines a second constant:
 
 ```text
-CANONICALIZATION_GATE = PASS
-DEPENDENCY_CONTRACT_GATE = PASS
-EFFECTIVE_OVERLAP_GATE = PASS
-TRUSTED_DATETIME_GATE = PASS
-TRIPLE_HASH_GATE = PASS
-TRUSTED_AUDIT_GATE = PASS
-FINAL_PUBLISH_READBACK_GATE = PASS
-REGRESSION_COVERAGE_GATE = PASS
-LIFECYCLE_GATE = PASS
-SUPERSESSION_FAIL_CLOSED_GATE = PASS
-DOC_EVIDENCE_CONSISTENCY_GATE = PASS
-ZERO_KINTONE_STAGE4A_GATE = PASS
-GIT_PUSH_SYNC_GATE = PASS
+export const WP002C_SCORING_MASTER_APP_ID = '796'
 ```
 
-Stage 3C remains:
+This duplicates the existing safety constant in `src/core/sandbox-write-guard.js`, where:
 
 ```text
-WP002C_STAGE3C_GATE = PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION
-R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE_ACCEPTED
-PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
+WP002C_SCORING_MASTER_APP_ID = 796
+```
+
+This is not only duplication: the repository currently sends string `'796'` to `authorizeWrite`, while the existing safety guard requires integer App IDs. That would break the future live authorization bridge.
+
+Required:
+
+- import/reuse `WP002C_SCORING_MASTER_APP_ID` from `src/core/sandbox-write-guard.js`
+- do not redefine the value locally
+- repository `appId` must be numeric `796`
+- request params/body `app` must be numeric `796`
+- authorizer context `appId` must be numeric `796`
+- re-exporting the imported constant from the repository file is allowed for test ergonomics
+
+Do NOT modify `sandbox-write-guard.js`.
+
+---
+
+# MUST FIX B — RAW KINTONE NORMALIZATION MUST BE EXACT, NOT TRIM/COERCE
+
+Current `normalizeRawRecord()` performs:
+
+```text
+String(value).trim()
+```
+
+for scalar fields, and trims `Published_By.code`.
+
+This can hide storage corruption. For example a stored `Master_Record_Key = " PROF... "` can normalize to the expected key and incorrectly pass an exact read-back gate.
+
+Required raw-storage contract:
+
+1. raw record must be a true plain object (not Array/null/class instance)
+2. `$id` and `$revision` wrappers must be plain objects
+3. `$id.value` and `$revision.value` must be exact positive safe-integer strings; surrounding whitespace is invalid
+4. every non-USER_SELECT business field wrapper must be a plain object with its own `value`
+5. every scalar Kintone business `value` must already be a string; do not silently stringify numbers/objects
+6. preserve scalar strings exactly — NO `.trim()` mutation in normalization
+7. `Published_By`:
+   - `[] -> ''`
+   - one user whose `.code` is a non-empty string after whitespace validation -> return the exact original `.code`, not a trimmed replacement
+   - >1/malformed -> fail closed
+8. unknown raw fields remain ignored
+9. output remains exactly 23 business fields + `__recordId` + `__storageRevision`
+
+Also preserve exact caller query identity:
+
+- `findByMasterKey()` may validate `trim() !== ''`, but query and equality must use the exact caller string, not a trimmed semantic replacement
+- same principle for `Profile_Code` and `Fiscal_Year`
+
+Malformed storage remains:
+
+```text
+REPOSITORY_RESPONSE_INVALID
 ```
 
 ---
 
-# STAGE 4B PURPOSE — KINTONE REPOSITORY ADAPTER FOUNDATION
+# MUST FIX C — REQUEST/AUTH FAILURE ERRORS MUST NOT LEAK DEPENDENCY MESSAGES
 
-Stage 4A created and independently approved the domain-level publish integrity service.
+Current code wraps request errors using `${err.message}`. A live bridge error may contain URLs, server payloads, usernames, query content, or secrets.
 
-Stage 4B must create the **storage adapter boundary** between that service and Kintone record payloads, but must NOT connect to real Kintone yet.
+Required normal caller error messages:
 
-The primary safety addition is **optimistic concurrency control** using Kintone record revision metadata so a record cannot be read/validated and then silently changed before the publish status transition.
+```text
+KINTONE_REPOSITORY_REQUEST_FAILED
+WRITE_AUTHORIZATION_FAILED
+```
 
-Stage 4B is NOT:
+Do not append the raw thrown dependency message.
+Do not include raw HTTP bodies/URLs/credentials/query values in the stable error.
+No automatic retry.
 
-- live Kintone integration
-- `.env.local` execution
-- App 796 access
-- baseline seeding
-- real record create/update
-- live trusted publisher identity wiring
-- resolver live wiring
-- UI wiring
-- Stage 4C
-- WP-002D
+Add tests where the fake request/authorizer throws a message containing a sentinel secret such as `SECRET_DO_NOT_LEAK`, and assert the public error does not contain that sentinel.
 
-After Stage 4B, App 796 remains at the last verified checkpoint of 0 records.
+---
+
+# MUST FIX D — RECORD ID / REVISION TOKENS MUST BE SAFE-INTEGER EXACT
+
+Current repository accepts arbitrarily large digit strings and later compares revisions with `Number(...)`. That can lose precision above `Number.MAX_SAFE_INTEGER`.
+
+Implement one small internal helper in the existing repository file; no new module.
+
+For record IDs and revision tokens:
+
+- number input: `Number.isSafeInteger(value) && value > 0`
+- string input: exact `/^[1-9]\d*$/`, no surrounding whitespace, numeric value must be a safe integer > 0
+- reject unsafe/overflow values
+- reject decimal/negative/zero/NaN/Infinity
+
+Apply to:
+
+- raw `$id.value`
+- raw `$revision.value`
+- `getByRecordId(recordId)` input
+- create response `id`
+- create response `revision`
+- `publishRecord(recordId, ..., expectedRevision)`
+- publish response `revision`
+
+For Kintone create/publish response payloads, require the documented string-shaped ID/revision values rather than silently coercing malformed response types.
+
+Revision advancement comparison must occur only after exact safe-integer validation.
+
+Harden `ScoringConfigMasterService` defensively too:
+
+- initial `__storageRevision` must be exact positive safe-integer string
+- final `__storageRevision` must be exact positive safe-integer string
+- no trim-based acceptance
+- compare only validated safe integers
+
+Required service tests additionally include:
+
+```text
+initial revision with whitespace -> CONFIG_READBACK_MISMATCH
+initial unsafe revision -> CONFIG_READBACK_MISMATCH
+final revision missing -> PUBLISH_VERIFICATION_FAILED
+final revision malformed/unsafe -> PUBLISH_VERIFICATION_FAILED
+final revision not advanced -> PUBLISH_VERIFICATION_FAILED
+normal 1 -> 2 advancement -> PUBLISH_VERIFIED
+```
+
+---
+
+# MUST FIX E — WRITE AUTHORIZER MUST BE THE LAST PRE-REQUEST GATE
+
+For each write method:
+
+1. validate all repository inputs
+2. build/validate the complete Kintone request body
+3. only then call `authorizeWrite(context)`
+4. require return exactly `true`
+5. immediately perform the single injected write request
+
+There must be no payload mapping/string conversion that can still fail after authorization has been consumed and before the request is issued.
+
+For `createValidatedRecord()`, also require all 23 planned storage fields to be present before authorization. Do not silently turn a missing immutable field into `''`.
+
+For `publishRecord()`, build the exact lifecycle-only patch before authorization, then authorize, then request.
+
+Add tests proving malformed/missing create fields fail before authorizer and request.
+
+---
+
+# MUST FIX F — LIVING DOC TRACEABILITY / CURRENT WORK PACKAGE
+
+`AI_REVIEW_PACKAGE.md` does not currently include the Stage 4B implementation/evidence commits in its main commit traceability table.
+
+Add:
+
+```text
+f24f247cc22a5b73ad855047d33c2cdb591b41b7 — Stage 4A closure / Stage 4B authorization
+ab162b3e530b0e87f76ecc46589cd117e1ac8c6c — Stage 4B repository implementation
+7fbd9e8ec555198933a8e1fffb302e59b4ea8286 — Stage 4B first-pass evidence
+<new hardening commit> — Stage 4B repository hardening
+<new docs commit> — Stage 4B hardening evidence
+```
+
+Also fix the stale current line in `IMPLEMENTATION_STATUS.md`:
+
+```text
+Current Work Package = Stage 3C-R1 Controlled Dropdown Repair
+```
+
+It must describe Stage 4B repository foundation/hardening. Historical Stage 3C log sections must remain unchanged.
+
+Add/update Stage 4B entry in `CHANGELOG_AI.md`.
 
 ---
 
@@ -88,7 +226,7 @@ git fetch origin
 git pull --ff-only
 git rev-parse HEAD
 git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor b8f4771b5d31361c6cf85c91b3809ebd5cd3d993 HEAD
+git merge-base --is-ancestor 7fbd9e8ec555198933a8e1fffb302e59b4ea8286 HEAD
 ```
 
 Required:
@@ -96,582 +234,38 @@ Required:
 ```text
 branch = ai/antigravity-wp002c
 local HEAD = remote HEAD
-reviewed Stage 4A head b8f4771... is in ancestry
+reviewed head 7fbd9e8... is in ancestry
 tracked working tree clean before edits
 ```
 
-No reset/rebase/stash/force-push automatically.
-Do not touch unrelated files.
-
-Read before work:
-
-- `project-docs/AI_ACTIVE_TASK.md`
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
-- `project-docs/AI_REVIEW_PACKAGE.md`
-- `project-docs/IMPLEMENTATION_STATUS.md`
-- `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
-- `src/profiles/scoring-config-master.js`
-- `src/services/scoring-config-master-service.js`
-- `tests/scoring-config-master-service.test.js`
-- `src/core/sandbox-write-guard.js`
-- `src/core/kintone-client.js`
+No reset/rebase/stash/force push automatically.
 
 ---
 
-# STEP 1 — DURABLE STAGE 4A CLOSURE
+# STEP 1 — CODE / TEST HARDENING
 
-Update only these living docs:
-
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
-- `project-docs/AI_REVIEW_PACKAGE.md`
-- `project-docs/IMPLEMENTATION_STATUS.md`
-- `project-docs/CHANGELOG_AI.md`
-
-Required current state after closure:
-
-```text
-WP002C_STAGE4A_GATE = PASS
-STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = PASSED / FROZEN
-STAGE4B_KINTONE_REPOSITORY_FOUNDATION = AUTHORIZED / NOT_STARTED
-PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
-LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
-BASELINE_SEED_STATUS = NOT_STARTED
-RECORD_COUNT = 0 (last verified Kintone checkpoint)
-WP002D = NOT_STARTED
-NEXT_ACTION = EXECUTE STAGE 4B KINTONE REPOSITORY FOUNDATION
-```
-
-Also clean stale **current-state** wording in `IMPLEMENTATION_STATUS.md` that still describes the active/current work package as Stage 3C-R1. Historical Stage 3C logs must remain untouched and clearly historical.
-
-The Phase Progress Summary row for WP-002C must reflect Stage 4A passed and Stage 4B authorized/in progress rather than `STAGE 3C-R1 REPAIR COMPLETE / PENDING REVIEW`.
-
-Run:
-
-```bash
-git diff --check
-```
-
-Commit exactly:
-
-```text
-docs: close wp-002c stage4a review gate
-```
-
-Push only to `origin/ai/antigravity-wp002c` and verify local HEAD = remote HEAD before Stage 4B code changes.
-
----
-
-# STEP 2 — STORAGE ADAPTER ARCHITECTURE
-
-Create exactly one new source file:
+Allowed code/test files only:
 
 ```text
 src/services/scoring-config-kintone-repository.js
-```
-
-Create exactly one new test file:
-
-```text
 tests/scoring-config-kintone-repository.test.js
-```
-
-Do not create an `adapters/` directory or additional helper modules in this stage.
-
-The adapter must be a cohesive dependency-injected class/factory, recommended name:
-
-```text
-ScoringConfigKintoneRepository
-```
-
-## Hard architectural boundaries
-
-The adapter MUST NOT:
-
-- import or use `fetch`
-- import or read `process.env`
-- import `.env.local`
-- call `getKintoneConnection()`
-- access the network
-- perform Kintone I/O during import/construction
-- silently select an App ID from caller input
-- contain baseline business values
-- become a second scoring source of truth
-
-It must use an injected request dependency only.
-
-Recommended constructor contract:
-
-```text
-new ScoringConfigKintoneRepository({
-  request,
-  authorizeWrite
-})
-```
-
-Where:
-
-```text
-request({ method, path, params?, body? }) -> Promise<payload>
-authorizeWrite(context) -> true or throws
-```
-
-`request` is an I/O abstraction only. Stage 4B tests use fakes.
-
-The target App ID must be pinned to the existing WP-002C constant for App 796 (`WP002C_SCORING_MASTER_APP_ID`). Do not let normal callers choose another App ID.
-
-`authorizeWrite` is mandatory for write methods. If absent/non-function, constructor must fail closed. It must be invoked immediately before each write request and must return exactly `true`; otherwise the write is blocked.
-
-Stage 4B does NOT implement the real write authorization bridge. That is a later separately reviewed stage.
-
----
-
-# STEP 3 — REUSE DOMAIN FIELD CONTRACTS; DO NOT DUPLICATE BUSINESS RULES
-
-Import and reuse from `src/profiles/scoring-config-master.js`:
-
-```text
-IMMUTABLE_PAYLOAD_FIELDS
-EXCLUDED_AUDIT_FIELDS
-CONFIG_LIFECYCLE_STATUS
-```
-
-Use:
-
-```text
-ALL_STORAGE_FIELDS = IMMUTABLE_PAYLOAD_FIELDS + EXCLUDED_AUDIT_FIELDS
-```
-
-Do not duplicate the 19 immutable field names or lifecycle enum values manually in multiple places.
-
-The 23 Kintone business fields are:
-
-```text
-19 immutable fields
-+ Config_Status
-+ Published_At
-+ Published_By
-+ Configuration_Hash
-```
-
-System metadata is separate and must never enter `Configuration_Hash`:
-
-```text
-__recordId
-__storageRevision
-```
-
----
-
-# STEP 4 — RAW KINTONE RECORD -> DOMAIN RECORD NORMALIZATION
-
-Implement an exported pure normalization function or a private cohesive equivalent testable through the repository.
-
-Expected raw Kintone field shape:
-
-```text
-Field_Code: { type: <KintoneType>, value: <value> }
-$id: { type: 'RECORD_NUMBER', value: '123' }
-$revision: { type: '__REVISION__', value: '4' }
-```
-
-Required behavior:
-
-1. Raw record must be a plain object, not Array/null.
-2. `$id.value` must be a positive integer string.
-3. `$revision.value` must be a positive integer string.
-4. All 23 planned business fields must exist as field-wrapper objects with a `value` property.
-5. Scalar fields must normalize to their Kintone scalar string value.
-6. `Published_By` (`USER_SELECT`) normalizes as:
-   - `[]` -> `''`
-   - exactly one user with non-empty `.code` -> that exact code
-   - more than one user -> fail closed
-   - malformed user object -> fail closed
-7. Unknown/unrelated Kintone fields may be ignored; do not copy them into the domain object.
-8. Return exactly the 23 domain fields plus:
-
-```text
-__recordId
-__storageRevision
-```
-
-9. Malformed storage payload throws stable:
-
-```text
-REPOSITORY_RESPONSE_INVALID
-```
-
-Do not leak raw HTTP/body/secrets in errors.
-
----
-
-# STEP 5 — SAFE KINTONE QUERY LITERAL ESCAPING
-
-Implement one internal query-literal escape helper inside the same repository file.
-
-At minimum escape:
-
-```text
-backslash -> \\
-quote -> \"
-```
-
-The helper must prevent query-string injection for business string inputs.
-
-Test keys/profile/fiscal-year values containing quotes and backslashes.
-
-Do not create a separate helper file.
-
----
-
-# STEP 6 — IMPLEMENT THE STAGE 4A REPOSITORY CONTRACT
-
-Implement exactly these repository methods required by `ScoringConfigMasterService`:
-
-```text
-findByMasterKey(masterRecordKey)
-createValidatedRecord(validatedRecord)
-getByRecordId(recordId)
-findPublishedByProfileFiscalYear(profileCode, fiscalYear)
-publishRecord(recordId, lifecyclePatch, expectedRevision)
-```
-
-## 6.1 `findByMasterKey(masterRecordKey)`
-
-Use injected request equivalent to:
-
-```text
-GET /k/v1/records.json
-params.app = 796
-params.query = Master_Record_Key = "<escaped>" limit 2
-```
-
-Requirements:
-
-- non-empty string input
-- response must be plain object with `records` Array
-- 0 records -> `null`
-- exactly 1 -> normalized domain record
-- >1 -> `REPOSITORY_RESPONSE_INVALID`
-- returned record's `Master_Record_Key` must equal requested key exactly
-- no silent first/newest selection
-
-## 6.2 `getByRecordId(recordId)`
-
-Use injected request equivalent to:
-
-```text
-GET /k/v1/record.json
-params = { app: 796, id: <exact id> }
-```
-
-Requirements:
-
-- record ID positive integer string or safe positive integer
-- response must contain one plain `record`
-- normalize record
-- normalized `__recordId` must equal requested exact ID
-- mismatch -> `REPOSITORY_RESPONSE_INVALID`
-
-## 6.3 `findPublishedByProfileFiscalYear(profileCode, fiscalYear)`
-
-Use injected request equivalent to:
-
-```text
-GET /k/v1/records.json
-params.app = 796
-query exact:
-Profile_Code = "<escaped>"
-and Fiscal_Year = "<escaped>"
-and Config_Status = "PUBLISHED"
-limit 500
-```
-
-Requirements:
-
-- response `records` must be Array
-- normalize every row
-- every normalized row must still exactly match:
-  - requested `Profile_Code`
-  - requested `Fiscal_Year`
-  - `Config_Status = PUBLISHED`
-- unexpected row -> `REPOSITORY_RESPONSE_INVALID`
-- do not silently filter unexpected/malformed rows
-
-## 6.4 `createValidatedRecord(validatedRecord)`
-
-Before any request:
-
-- `authorizeWrite` must return exactly true for context:
-
-```text
-operation = SCORING_CONFIG_CREATE_VALIDATED
-appId = 796
-masterRecordKey = exact Master_Record_Key
-```
-
-Validate adapter-level storage contract:
-
-```text
-Config_Status = VALIDATED
-Configuration_Hash = 64 lowercase hex chars
-Published_By = ''
-Published_At = ''
-```
-
-Build Kintone record payload for the 23 business fields only.
-
-`Published_By` raw write value must be:
-
-```text
-[]
-```
-
-Validated record request equivalent:
-
-```text
-POST /k/v1/record.json
-body = { app: 796, record: ... }
-```
-
-Response must contain:
-
-```text
-id = positive integer string
-revision = positive integer string
-```
-
-Malformed response -> `REPOSITORY_RESPONSE_INVALID`.
-Return exact record ID string.
-
-No retry.
-
-## 6.5 `publishRecord(recordId, lifecyclePatch, expectedRevision)`
-
-This method is lifecycle-only.
-
-Require patch keys EXACTLY:
-
-```text
-Config_Status
-Published_By
-Published_At
-```
-
-Require:
-
-```text
-Config_Status = PUBLISHED
-Published_By = non-empty string
-Published_At = non-empty string
-expectedRevision = positive safe-integer revision string/number
-```
-
-Before request, `authorizeWrite` must return exactly true for:
-
-```text
-operation = SCORING_CONFIG_PUBLISH
-appId = 796
-recordId = exact ID
-expectedRevision = exact normalized revision
-```
-
-Build only:
-
-```text
-Config_Status: { value: 'PUBLISHED' }
-Published_By: { value: [{ code: trustedPublisher }] }
-Published_At: { value: trustedTimestamp }
-```
-
-Do not include immutable fields in the PUT patch.
-
-Request equivalent:
-
-```text
-PUT /k/v1/record.json
-body = {
-  app: 796,
-  id: exact record ID,
-  revision: expected revision,
-  record: lifecycle-only patch
-}
-```
-
-Require returned revision to be a positive integer string and strictly greater than expected revision.
-Malformed/not-advanced revision -> `REPOSITORY_RESPONSE_INVALID`.
-
-No retry.
-
----
-
-# STEP 7 — REQUEST FAILURE SEMANTICS
-
-If the injected `request()` throws, do not expose raw dependency internals to normal callers.
-
-Wrap as a stable error such as:
-
-```text
-KINTONE_REPOSITORY_REQUEST_FAILED
-```
-
-Do not retry automatically.
-Do not convert a failed write into success.
-Do not perform a compensating delete.
-
-A future live bridge may classify Kintone-specific revision conflicts separately; Stage 4B only proves the repository boundary.
-
----
-
-# STEP 8 — HARDEN STAGE 4A SERVICE WITH OPTIMISTIC CONCURRENCY
-
-Modify only the existing:
-
-```text
 src/services/scoring-config-master-service.js
 tests/scoring-config-master-service.test.js
 ```
 
-Required change to the repository contract:
+Do not modify:
 
 ```text
-publishRecord(recordId, lifecyclePatch, expectedRevision)
+src/core/kintone-client.js
+src/core/sandbox-write-guard.js
+src/profiles/scoring-config-master.js
+src/profiles/profile-scoring-resolver.js
+config/sandbox-apps.json
+UI/main app files
 ```
 
-After the initial exact read-back and before audit/publish:
-
-- require `readback1.__storageRevision` to be a valid positive integer string
-- missing/malformed revision -> `CONFIG_READBACK_MISMATCH`
-
-Publish call must use exactly that initial read-back revision:
-
-```text
-repository.publishRecord(recordId, patch, readback1.__storageRevision)
-```
-
-Final exact read-back must require:
-
-- `finalReadback.__storageRevision` valid positive integer string
-- final revision strictly greater than the validated read-back revision
-
-Otherwise:
-
-```text
-PUBLISH_VERIFICATION_FAILED
-```
-
-This prevents a stale validated read from being published without an optimistic-concurrency token.
-
-Do not weaken any previously accepted Stage 4A gates.
-
-Update in-memory service test repository so revisions behave realistically:
-
-```text
-created validated record -> revision 1
-publish with expected revision 1 -> revision increments to 2
-final readback -> revision 2
-```
-
-Add tests for:
-
-```text
-initial revision missing -> CONFIG_READBACK_MISMATCH
-initial revision malformed -> CONFIG_READBACK_MISMATCH
-publish receives exact initial revision
-a stale/wrong expected revision fake rejects/fails closed
-final revision missing -> PUBLISH_VERIFICATION_FAILED
-final revision not advanced -> PUBLISH_VERIFICATION_FAILED
-normal revision advancement -> PUBLISH_VERIFIED
-```
-
----
-
-# STEP 9 — REQUIRED ADAPTER TESTS
-
-`tests/scoring-config-kintone-repository.test.js` must use fake injected request + fake authorizeWrite only.
-
-Cover at minimum:
-
-1. constructor requires request function
-2. constructor requires authorizeWrite function
-3. target app fixed to 796
-4. normalization of all 23 fields
-5. metadata `__recordId` + `__storageRevision`
-6. unknown raw fields ignored
-7. missing `$id` rejected
-8. malformed `$id` rejected
-9. missing `$revision` rejected
-10. malformed `$revision` rejected
-11. missing planned business field rejected
-12. malformed field wrapper rejected
-13. Published_By empty array -> empty string
-14. Published_By one user -> exact code
-15. Published_By >1 user rejected
-16. malformed Published_By user rejected
-17. findByMasterKey zero -> null
-18. findByMasterKey one -> exact record
-19. findByMasterKey >1 rejected
-20. findByMasterKey returned key mismatch rejected
-21. master key query escaping handles quote/backslash
-22. getByRecordId exact success
-23. getByRecordId requested/returned ID mismatch rejected
-24. invalid record ID rejected before request
-25. published query exact profile/FY/status
-26. published query quote/backslash escaping
-27. published query malformed response rejected
-28. published query unexpected profile row rejected
-29. published query unexpected fiscal year row rejected
-30. published query non-PUBLISHED row rejected
-31. createValidatedRecord authorizer called before request
-32. authorizer false blocks request
-33. validated status required
-34. exact 64-char lowercase configuration hash required
-35. validated Published_By must be empty
-36. validated Published_At must be empty
-37. create body pinned app 796
-38. create body contains planned fields only
-39. create Published_By writes []
-40. create malformed ID/revision response rejected
-41. publish authorizer called before request
-42. publish authorizer receives exact expected revision
-43. publish patch exact 3 keys only
-44. publish immutable field injection rejected
-45. publish status must PUBLISHED
-46. publish publisher non-empty
-47. publish timestamp non-empty
-48. publish request pinned app 796
-49. publish sends revision token
-50. publish USER_SELECT shape exact `[{code}]`
-51. publish response revision must advance
-52. request throw -> stable `KINTONE_REPOSITORY_REQUEST_FAILED`
-53. no automatic retry on read failure
-54. no automatic retry on write failure
-55. repository source contains no fetch/process.env/.env/Kintone connection import
-
-Additional meaningful tests are allowed; do not inflate file count.
-
----
-
-# STEP 10 — CODE SCOPE / COMMIT
-
-Authorized implementation files only:
-
-```text
-src/services/scoring-config-master-service.js
-tests/scoring-config-master-service.test.js
-src/services/scoring-config-kintone-repository.js
-tests/scoring-config-kintone-repository.test.js
-```
-
-Do NOT modify:
-
-- `src/core/kintone-client.js`
-- `src/core/sandbox-write-guard.js`
-- `src/profiles/profile-scoring-resolver.js`
-- `src/profiles/scoring-config-master.js`
-- `config/sandbox-apps.json`
-- UI/main app files
+Preserve all existing Stage 4A/4B semantic tests.
+Add hardening tests for all requirements above.
 
 Run:
 
@@ -684,13 +278,13 @@ Required:
 
 ```text
 all tests PASS
-final full-suite count >= 307
+full suite >= 367 tests
 ```
 
 Commit exactly:
 
 ```text
-feat: add scoring config kintone repository foundation
+fix: harden scoring config kintone repository exactness
 ```
 
 Push only to `origin/ai/antigravity-wp002c`.
@@ -698,22 +292,24 @@ Verify local HEAD = remote HEAD before docs.
 
 ---
 
-# STEP 11 — STAGE 4B EVIDENCE DOCS
+# STEP 2 — DOC EVIDENCE CORRECTION
 
-Update only:
+Allowed docs only:
 
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
-- `project-docs/AI_REVIEW_PACKAGE.md`
-- `project-docs/IMPLEMENTATION_STATUS.md`
-- `project-docs/CHANGELOG_AI.md`
+```text
+project-docs/CURRENT_STATE.md
+project-docs/HANDOFF.md
+project-docs/AI_REVIEW_PACKAGE.md
+project-docs/IMPLEMENTATION_STATUS.md
+project-docs/CHANGELOG_AI.md
+```
 
-Required state:
+Required current state:
 
 ```text
 WP002C_STAGE4A_GATE = PASS
 STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = PASSED / FROZEN
-STAGE4B_KINTONE_REPOSITORY_FOUNDATION = COMPLETE / PENDING CHATGPT REVIEW
+STAGE4B_KINTONE_REPOSITORY_FOUNDATION = HARDENED / PENDING CHATGPT RE-REVIEW
 KINTONE_REPOSITORY_ADAPTER_STATUS = FOUNDATION_IMPLEMENTED_NOT_WIRED
 PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
 LIVE_KINTONE_REQUEST_BRIDGE_STATUS = NOT_IMPLEMENTED
@@ -722,31 +318,27 @@ TRUSTED_AUDIT_LIVE_PROVIDER_STATUS = NOT_IMPLEMENTED
 LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
 RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
 BASELINE_SEED_STATUS = NOT_STARTED
-RECORD_COUNT = 0 (last verified Kintone checkpoint; Stage 4B made zero Kintone calls)
+RECORD_COUNT = 0 (last verified Kintone checkpoint; hardening made zero Kintone calls)
 STAGE4B_KINTONE_CALLS = 0
 STAGE4B_KINTONE_WRITES = 0
 PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
-NEXT_ACTION = AWAIT CHATGPT STAGE 4B REVIEW BEFORE ANY LIVE REQUEST BRIDGE
+NEXT_ACTION = AWAIT CHATGPT STAGE 4B RE-REVIEW BEFORE ANY LIVE REQUEST BRIDGE
 ```
 
-Use actual final `npm test` count consistently in current operational sections.
-
-Add Stage 4B implementation commit traceability to `AI_REVIEW_PACKAGE.md`.
+Use actual final test count consistently in current operational sections.
+Historical test counts may remain when clearly historical.
 
 Commit exactly:
 
 ```text
-docs: record wp-002c stage4b repository foundation
+docs: record wp-002c stage4b repository hardening
 ```
 
-Push and verify local HEAD = remote HEAD and tracked working tree clean.
-Then STOP.
+Push, verify local HEAD = remote HEAD and tracked working tree clean, then STOP.
 
 ---
 
-# STRICT KINTONE / RUNTIME BOUNDARY
-
-For this entire task:
+# STRICT BOUNDARY
 
 ```text
 Kintone GET = 0
@@ -759,89 +351,55 @@ Kintone RECORD WRITE = 0
 
 Do not use `.env.local`.
 Do not access App 796.
-Do not seed the 8 baseline configurations.
-Do not create/update/delete any Kintone record.
-Do not implement real request bridge.
-Do not add real record-write authorization guard.
+Do not seed records.
+Do not implement the live request bridge.
+Do not implement the real write-authorization bridge.
 Do not implement live trusted audit provider.
-Do not wire resolver to live master.
-Do not start Stage 4C.
-Do not start WP-002D.
-Do not merge to develop.
-
----
-
-# FINAL REPORT
-
-Report only safe evidence:
-
-- branch
-- assignment/start HEAD
-- Stage 4A closure commit SHA
-- Stage 4B implementation commit SHA
-- Stage 4B evidence commit SHA
-- changed files per commit
-- repository adapter file count
-- target App ID pinning PASS/FAIL
-- raw->domain normalization PASS/FAIL
-- USER_SELECT normalization PASS/FAIL
-- safe query escaping PASS/FAIL
-- create validated mapping PASS/FAIL
-- lifecycle-only publish mapping PASS/FAIL
-- optimistic revision propagation PASS/FAIL
-- final revision advancement gate PASS/FAIL
-- authorizer-before-write tests PASS/FAIL
-- request failure no-retry tests PASS/FAIL
-- full test total/pass/fail
-- Kintone calls/writes = 0
-- `.env.local` used = NO
-- local HEAD = remote HEAD YES/NO
-- tracked working tree clean YES/NO
-- STOP confirmation
+Do not wire resolver.
+Do not start Stage 4C or WP-002D.
 
 # REVIEW EXPECTATION
 
-ChatGPT will inspect GitHub directly and verify:
+ChatGPT will verify:
 
-1. Stage 4A closure is durably recorded before Stage 4B code.
-2. Exactly one new repository source file and one repository test file were created.
-3. Stage 4B code commit touches only the four authorized code/test files.
-4. Adapter pins App 796 and does not allow arbitrary App ID.
-5. Adapter has no fetch/process.env/.env/network/Kintone connection dependency.
-6. Adapter reuses frozen domain field arrays/enums rather than duplicating business rules.
-7. Raw Kintone fields normalize exactly to domain records + storage metadata.
-8. Published_By USER_SELECT is exact and fail-closed.
-9. Query literal escaping prevents quote/backslash injection.
-10. Duplicate query never silently chooses one row.
-11. Create requires VALIDATED + exact hash + empty publish audit.
-12. Write authorizer runs before every write request and false/throw blocks request.
-13. Publish patch is lifecycle/audit only.
-14. Expected Kintone revision is included in publish update.
-15. Stage 4A service uses initial readback revision as the exact optimistic-concurrency token.
-16. Final readback requires revision advancement.
-17. Triple hash/final readback/overlap/trusted audit gates remain intact.
-18. Request errors are fail-closed with no automatic retry.
-19. No core client/write guard/resolver/UI/domain baseline file was modified.
-20. Test count is >=307 and all pass.
-21. Stage 4B has zero Kintone calls/writes and no `.env.local` use.
-22. No seed/live bridge/live trusted audit/resolver wiring/Stage4C/WP002D occurred.
-23. Git remote branch points to final evidence commit.
+1. Exactly two new Antigravity commits after this assignment: code/tests then docs.
+2. Code commit changes only the four authorized code/test files.
+3. App ID is imported from the existing guard constant and is numeric 796 everywhere.
+4. Raw normalization preserves exact storage strings; no trim/coercion can hide mismatches.
+5. Published_By returns exact user code after validation.
+6. IDs/revisions reject whitespace, unsafe integers and malformed response types.
+7. Revision comparison cannot lose Number precision.
+8. Request/authorization errors do not leak dependency messages.
+9. Authorizer is the last gate before each write request.
+10. Missing create fields fail before authorization/request.
+11. Query escaping remains correct.
+12. Duplicate/no-silent-selection behavior remains correct.
+13. Stage 4A triple-hash/overlap/trusted-audit/final-readback gates remain passing.
+14. Service optimistic concurrency tests cover initial/final exact revision failures and normal advancement.
+15. No retry behavior remains intact.
+16. Full regression >=367 and all pass.
+17. Stage 4B Kintone calls/writes remain zero.
+18. AI_REVIEW_PACKAGE has Stage 4B commit traceability.
+19. Current Work Package no longer incorrectly says Stage 3C-R1.
+20. Git local/remote sync passes.
 
 Expected gates:
 
 ```text
-STAGE4A_CLOSURE_GATE = PASS / FAIL
+STAGE4A_CLOSURE_GATE = PASS
 KINTONE_REPOSITORY_ARCHITECTURE_GATE = PASS / FAIL
+APP_ID_SAFETY_BINDING_GATE = PASS / FAIL
 RAW_DOMAIN_MAPPING_GATE = PASS / FAIL
 USER_SELECT_MAPPING_GATE = PASS / FAIL
-QUERY_ESCAPE_GATE = PASS / FAIL
+QUERY_ESCAPE_GATE = PASS
 WRITE_AUTHORIZATION_BOUNDARY_GATE = PASS / FAIL
+ERROR_REDACTION_GATE = PASS / FAIL
 OPTIMISTIC_CONCURRENCY_GATE = PASS / FAIL
-TRIPLE_HASH_GATE = PASS / FAIL
-FINAL_PUBLISH_READBACK_GATE = PASS / FAIL
-NO_RETRY_FAIL_CLOSED_GATE = PASS / FAIL
+TRIPLE_HASH_GATE = PASS
+FINAL_PUBLISH_READBACK_GATE = PASS
+NO_RETRY_FAIL_CLOSED_GATE = PASS
 REGRESSION_GATE = PASS / FAIL
-ZERO_KINTONE_STAGE4B_GATE = PASS / FAIL
+ZERO_KINTONE_STAGE4B_GATE = PASS
 DOC_EVIDENCE_CONSISTENCY_GATE = PASS / FAIL
 GIT_PUSH_SYNC_GATE = PASS / FAIL
 WP002C_STAGE4B_GATE = PASS / BLOCKED
