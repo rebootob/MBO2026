@@ -2,9 +2,9 @@
 
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002C`
-- **Handoff State:** `SAFE_CHECKPOINT (WP-002C STAGE 3C PASSED WITH EVIDENCE EXCEPTION)`
+- **Handoff State:** `SAFE_CHECKPOINT (WP-002C STAGE 4A FOUNDATION COMPLETE)`
 - **Last Handoff At:** `2026-08-25T06:54:00+07:00`
-- **Review Status:** `WP-002C STAGE 3C PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION`
+- **Review Status:** `WP-002C STAGE 4A PUBLISH INTEGRITY FOUNDATION COMPLETE / PENDING CHATGPT REVIEW`
 - **Implementation Authorization:** **`STAGE 3C-R1 DROPDOWN REPAIR EXECUTED (1 PUT, 1 DEPLOY); APP 796 DOMAIN ALIGNED; SEED WRITES UNAUTHORIZED`**
 - **Review Required By:** Independent Reviewer (ChatGPT) / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
@@ -16,14 +16,15 @@
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
 - **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-- **WP-002C Status:** **`STAGE 3C PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION`** (`APP 796 LIVE_DEPLOYED`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `CORRECTION_REQUIRED_FIELDS = NONE`; whole WP remains IN PROGRESS)
+- **WP-002C Status:** **`STAGE 4A PUBLISH INTEGRITY FOUNDATION COMPLETE / PENDING CHATGPT REVIEW`** (`APP 796 LIVE_DEPLOYED`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `CORRECTION_REQUIRED_FIELDS = NONE`; whole WP remains IN PROGRESS)
 - **WP-002C Correction Scope:** `APP_CREATE` exact-name one-time bootstrap authorization, verified ID registration, hash triple-equality, effective-overlap, trusted publish audit, and final read-back are plan requirements only
-- **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SANDBOX`; production `FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `BASELINE_SEED_STATUS = NOT_STARTED`; `RECORD_COUNT = 0`; `PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED`)
+- **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SANDBOX`; production `FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `BASELINE_SEED_STATUS = NOT_STARTED`; `RECORD_COUNT = 0`; `PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED` (`LIVE_KINTONE_ADAPTER_STATUS = NOT_IMPLEMENTED`; `RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED`; `SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED`))
 - **WP002C_STAGE3C_GATE:** `PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION`
 - **R1_PREWRITE_BACKUP_PROVENANCE_GATE:** `UNVERIFIABLE_ACCEPTED`
 - **EVIDENCE_EXCEPTION_STATUS:** `ACCEPTED_BY_CONTROL_PLANE`
 - **PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW:** `MANDATORY`
-- **NEXT_ACTION:** `STAGE 4A PUBLISH INTEGRITY SERVICE FOUNDATION`
+- **STAGE4A_PUBLISH_INTEGRITY_FOUNDATION:** `COMPLETE / PENDING CHATGPT REVIEW` (f010e26)
+- **NEXT_ACTION:** `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 4A BEFORE ANY LIVE ADAPTER OR RECORD WRITE`
 - **Forensic Note:** A genuine R1 pre-write snapshot was captured immediately before the repair PUT but deleted by post-repair cleanup before evidence commit. No durable R1 backup artifact survives. The 23:22Z backup is the earlier Stage 3C schema-creation backup and must not be treated as R1 evidence.
 - **Scoring Truth Gate:** `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate:** `PASS (DEC-036 Universal Part A & Part B)`
@@ -53,7 +54,7 @@
 - **WP-002 Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002_PLAN.md)
 - **WP-002B Authoritative Plan Path:** [`project-docs/phase-3/MBO-P03-WP-002B_PLAN.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/phase-3/MBO-P03-WP-002B_PLAN.md)
 - **WP-002B Source Code Path:** `src/profiles/profile-scoring-resolver.js` (reuses EmployeeService snapshot contract and `computeConfigurationHash()`)
-- **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (17 tests passing; 148/148 total suite passing)
+- **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (17 tests passing; 291/291 total suite passing)
 - **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
 - **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`; Stage 3C-R1 historical repair writes: FORM FIELDS PUT = 1, DEPLOY POST = 1; Stage 3C-R1 hardening task Kintone writes = 0; Final verifier correction Kintone calls = 0 / writes = 0; RECORD/DELETE/ACL/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)
