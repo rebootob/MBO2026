@@ -405,3 +405,117 @@ export function assertRollbackAuthorization(authConfig, rollbackRequest) {
 
   return true;
 }
+export const WP002C_RECORD_WRITE_STAGE = 'STAGE_4C_RECORD_WRITE_BRIDGE';
+export const WP002C_RECORD_WRITE_CONTRACT_ID = 'WP002C_SCORING_RECORD_WRITE_V1';
+
+const consumedAuthorizationIds = new Set();
+
+function isPlainObject(obj) {
+  return obj !== null && typeof obj === 'object' && !Array.isArray(obj) && Object.getPrototypeOf(obj) === Object.prototype;
+}
+
+function isExactPositiveSafeIntegerString(val) {
+  if (typeof val !== 'string') return false;
+  if (val !== val.trim() || !/^[1-9]\d*$/.test(val)) return false;
+  return Number.isSafeInteger(Number(val));
+}
+
+export function assertScoringConfigRecordWriteAuthorization(authConfig, requestContext) {
+  if (!isPlainObject(authConfig) || !isPlainObject(requestContext)) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  if (
+    authConfig.workPackageId !== 'MBO-P03-WP-002C' ||
+    authConfig.stage !== WP002C_RECORD_WRITE_STAGE ||
+    authConfig.recordWriteContractId !== WP002C_RECORD_WRITE_CONTRACT_ID ||
+    authConfig.appId !== WP002C_SCORING_MASTER_APP_ID ||
+    authConfig.appName !== WP002C_APPROVED_APP_NAME
+  ) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  const op = authConfig.operation;
+  if (op !== 'SCORING_CONFIG_CREATE_VALIDATED' && op !== 'SCORING_CONFIG_PUBLISH') {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+  if (requestContext.operation !== op) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  if (
+    authConfig.explicitUserAuthorization !== true ||
+    authConfig.activeWindow !== true ||
+    typeof authConfig.authorizationId !== 'string' ||
+    authConfig.authorizationId === '' ||
+    authConfig.authorizationId !== authConfig.authorizationId.trim()
+  ) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  if (consumedAuthorizationIds.has(authConfig.authorizationId)) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  const backup = authConfig.prewriteBackupEvidence;
+  if (!isPlainObject(backup)) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+  if (
+    backup.appId !== WP002C_SCORING_MASTER_APP_ID ||
+    backup.appName !== WP002C_APPROVED_APP_NAME ||
+    backup.snapshotScope !== 'APP796_RECORDS_PREWRITE_V1' ||
+    backup.captured !== true ||
+    backup.verified !== true ||
+    backup.retainedUntilIndependentReview !== true ||
+    typeof backup.artifactPath !== 'string' ||
+    backup.artifactPath === '' ||
+    backup.artifactPath !== backup.artifactPath.trim() ||
+    typeof backup.sha256 !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(backup.sha256) ||
+    typeof backup.capturedAt !== 'string' ||
+    backup.capturedAt === '' ||
+    backup.capturedAt !== backup.capturedAt.trim() ||
+    typeof backup.recordCount !== 'number' ||
+    !Number.isSafeInteger(backup.recordCount) ||
+    backup.recordCount < 0
+  ) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  const manifest = requestContext.manifest;
+  if (!isPlainObject(manifest) || !Array.isArray(manifest.expectedChanges) || manifest.expectedChanges.length !== 1) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+  const change = manifest.expectedChanges[0];
+  if (!isPlainObject(change)) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
+  if (op === 'SCORING_CONFIG_CREATE_VALIDATED') {
+    if (
+      change.operation !== 'SCORING_CONFIG_CREATE_VALIDATED' ||
+      change.appId !== WP002C_SCORING_MASTER_APP_ID ||
+      change.masterRecordKey !== requestContext.masterRecordKey ||
+      typeof requestContext.masterRecordKey !== 'string' ||
+      requestContext.masterRecordKey === '' ||
+      requestContext.masterRecordKey !== requestContext.masterRecordKey.trim()
+    ) {
+      throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+    }
+  } else if (op === 'SCORING_CONFIG_PUBLISH') {
+    if (
+      change.operation !== 'SCORING_CONFIG_PUBLISH' ||
+      change.appId !== WP002C_SCORING_MASTER_APP_ID ||
+      change.recordId !== requestContext.recordId ||
+      change.expectedRevision !== requestContext.expectedRevision ||
+      !isExactPositiveSafeIntegerString(requestContext.recordId) ||
+      !isExactPositiveSafeIntegerString(requestContext.expectedRevision)
+    ) {
+      throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+    }
+  }
+
+  consumedAuthorizationIds.add(authConfig.authorizationId);
+  return true;
+}

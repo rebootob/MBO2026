@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   DISCOVERY_MODE,
   PROTECTED_APP_IDS,
@@ -1560,4 +1561,616 @@ test('WP002C-S3CR1-043: valid known-defect exact schema still passes', () => {
 
 test('WP002C-S3CR1-044: valid corrected 23/23 schema still passes', () => {
   assert.equal(assertExact23FieldSchema(generateExact23FieldsPayload()), true);
+});
+import {
+  WP002C_RECORD_WRITE_STAGE,
+  WP002C_RECORD_WRITE_CONTRACT_ID,
+  assertScoringConfigRecordWriteAuthorization
+} from '../src/core/sandbox-write-guard.js';
+import {
+  createScoringConfigRepositoryRequestBridge
+} from '../src/core/kintone-client.js';
+
+function getValidBackupEvidence(overrides = {}) {
+  return {
+    appId: 796,
+    appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+    snapshotScope: 'APP796_RECORDS_PREWRITE_V1',
+    captured: true,
+    verified: true,
+    retainedUntilIndependentReview: true,
+    artifactPath: 'project-docs/backups/app796_prewrite.json',
+    sha256: 'a'.repeat(64),
+    capturedAt: '2026-08-25T09:00:00Z',
+    recordCount: 0,
+    ...overrides
+  };
+}
+
+function getValidCreateAuthConfig(id = 'auth_create_101', overrides = {}) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: WP002C_RECORD_WRITE_STAGE,
+    recordWriteContractId: WP002C_RECORD_WRITE_CONTRACT_ID,
+    appId: 796,
+    appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+    operation: 'SCORING_CONFIG_CREATE_VALIDATED',
+    explicitUserAuthorization: true,
+    activeWindow: true,
+    authorizationId: id,
+    prewriteBackupEvidence: getValidBackupEvidence(),
+    ...overrides
+  };
+}
+
+function getValidCreateRequestContext(overrides = {}) {
+  return {
+    operation: 'SCORING_CONFIG_CREATE_VALIDATED',
+    masterRecordKey: 'PROF_STAFF_CHIEF::v1.0.0',
+    manifest: {
+      expectedChanges: [
+        {
+          operation: 'SCORING_CONFIG_CREATE_VALIDATED',
+          appId: 796,
+          masterRecordKey: 'PROF_STAFF_CHIEF::v1.0.0'
+        }
+      ]
+    },
+    ...overrides
+  };
+}
+
+function getValidPublishAuthConfig(id = 'auth_publish_101', overrides = {}) {
+  return {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: WP002C_RECORD_WRITE_STAGE,
+    recordWriteContractId: WP002C_RECORD_WRITE_CONTRACT_ID,
+    appId: 796,
+    appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+    operation: 'SCORING_CONFIG_PUBLISH',
+    explicitUserAuthorization: true,
+    activeWindow: true,
+    authorizationId: id,
+    prewriteBackupEvidence: getValidBackupEvidence(),
+    ...overrides
+  };
+}
+
+function getValidPublishRequestContext(overrides = {}) {
+  return {
+    operation: 'SCORING_CONFIG_PUBLISH',
+    recordId: '101',
+    expectedRevision: '1',
+    manifest: {
+      expectedChanges: [
+        {
+          operation: 'SCORING_CONFIG_PUBLISH',
+          appId: 796,
+          recordId: '101',
+          expectedRevision: '1'
+        }
+      ]
+    },
+    ...overrides
+  };
+}
+
+// ── Stage 4C Record-Write Authorization Guard Tests ──
+
+test('Stage 4C 1: exact create authorization passes', () => {
+  const authConfig = getValidCreateAuthConfig('auth_pass_create');
+  const reqCtx = getValidCreateRequestContext();
+  assert.equal(assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), true);
+});
+
+test('Stage 4C 2: exact publish authorization passes', () => {
+  const authConfig = getValidPublishAuthConfig('auth_pass_pub');
+  const reqCtx = getValidPublishRequestContext();
+  assert.equal(assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), true);
+});
+
+test('Stage 4C 3: wrong WP rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_wp', { workPackageId: 'WRONG_WP' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 4: wrong stage rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_stage', { stage: 'WRONG_STAGE' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 5: wrong contract ID rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_cid', { recordWriteContractId: 'WRONG_CID' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 6: wrong App ID rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_appid', { appId: 794 });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 7: wrong App name rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_appname', { appName: 'Wrong Name' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 8: App 794/795/protected App targets rejected', () => {
+  for (const badApp of [794, 795, 999]) {
+    const authConfig = getValidCreateAuthConfig(`auth_app_${badApp}`, { appId: badApp });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 9: unsupported operation rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_op', { operation: 'DELETE_RECORD' });
+  const reqCtx = getValidCreateRequestContext({ operation: 'DELETE_RECORD' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 10: explicitUserAuthorization false rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_no_userauth', { explicitUserAuthorization: false });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 11: activeWindow false rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_no_window', { activeWindow: false });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 12: empty/whitespace authorization ID rejected', () => {
+  for (const badId of ['', '   ', ' auth_123 ']) {
+    const authConfig = getValidCreateAuthConfig(badId);
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 13: replayed authorization ID rejected', () => {
+  const authConfig1 = getValidCreateAuthConfig('auth_replay_101');
+  assert.equal(assertScoringConfigRecordWriteAuthorization(authConfig1, getValidCreateRequestContext()), true);
+
+  const authConfig2 = getValidCreateAuthConfig('auth_replay_101');
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig2, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 14: missing backup evidence rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_no_backup', { prewriteBackupEvidence: null });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 15: backup app/name mismatch rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bapp_mismatch', {
+    prewriteBackupEvidence: getValidBackupEvidence({ appId: 794 })
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 16: wrong snapshotScope rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bscope', {
+    prewriteBackupEvidence: getValidBackupEvidence({ snapshotScope: 'WRONG_SCOPE' })
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 17: captured false rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bcap', {
+    prewriteBackupEvidence: getValidBackupEvidence({ captured: false })
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 18: verified false rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bver', {
+    prewriteBackupEvidence: getValidBackupEvidence({ verified: false })
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 19: retainedUntilIndependentReview false rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bret', {
+    prewriteBackupEvidence: getValidBackupEvidence({ retainedUntilIndependentReview: false })
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 20: blank artifactPath rejected', () => {
+  for (const badPath of ['', '   ', null]) {
+    const authConfig = getValidCreateAuthConfig('auth_bpath', {
+      prewriteBackupEvidence: getValidBackupEvidence({ artifactPath: badPath })
+    });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 21: malformed sha256 rejected', () => {
+  for (const badSha of ['abc', 'A'.repeat(64), 'a'.repeat(63)]) {
+    const authConfig = getValidCreateAuthConfig('auth_bsha', {
+      prewriteBackupEvidence: getValidBackupEvidence({ sha256: badSha })
+    });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 22: blank capturedAt rejected', () => {
+  for (const badCapAt of ['', '   ', null]) {
+    const authConfig = getValidCreateAuthConfig('auth_bcapat', {
+      prewriteBackupEvidence: getValidBackupEvidence({ capturedAt: badCapAt })
+    });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 23: negative/unsafe/non-integer recordCount rejected', () => {
+  for (const badCnt of [-1, 1.5, 9007199254740993, '0', null]) {
+    const authConfig = getValidCreateAuthConfig('auth_bcnt', {
+      prewriteBackupEvidence: getValidBackupEvidence({ recordCount: badCnt })
+    });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 24: missing/empty/multiple manifest changes rejected', () => {
+  const authConfig1 = getValidCreateAuthConfig('auth_mman1');
+  const reqCtx1 = getValidCreateRequestContext({ manifest: { expectedChanges: [] } });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig1, reqCtx1), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+
+  const authConfig2 = getValidCreateAuthConfig('auth_mman2');
+  const reqCtx2 = getValidCreateRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_CREATE_VALIDATED', appId: 796, masterRecordKey: 'K1' },
+        { operation: 'SCORING_CONFIG_CREATE_VALIDATED', appId: 796, masterRecordKey: 'K2' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig2, reqCtx2), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 25: create manifest master key mismatch rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_mmismatch');
+  const reqCtx = getValidCreateRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_CREATE_VALIDATED', appId: 796, masterRecordKey: 'DIFFERENT_KEY' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 26: create context master key whitespace rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_mkws');
+  const reqCtx = getValidCreateRequestContext({ masterRecordKey: ' PROF_STAFF_CHIEF::v1.0.0 ' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 27: publish manifest record ID mismatch rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_pubid_mismatch');
+  const reqCtx = getValidPublishRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_PUBLISH', appId: 796, recordId: '999', expectedRevision: '1' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 28: publish manifest revision mismatch rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_pubrev_mismatch');
+  const reqCtx = getValidPublishRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_PUBLISH', appId: 796, recordId: '101', expectedRevision: '999' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C 29: publish numeric/whitespace/unsafe ID/revision rejected', () => {
+  for (const badId of [101, ' 101 ', '0', '-1', '9007199254740993']) {
+    const authConfig = getValidPublishAuthConfig(`auth_badid_${badId}`);
+    const reqCtx = getValidPublishRequestContext({ recordId: badId });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C 30: failed validation does not consume authorization ID', () => {
+  const authConfig = getValidCreateAuthConfig('auth_unconsumed', { workPackageId: 'INVALID_WP' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+
+  // Correct the WP and re-run with same authorization ID -> should succeed!
+  authConfig.workPackageId = 'MBO-P03-WP-002C';
+  assert.equal(assertScoringConfigRecordWriteAuthorization(authConfig, getValidCreateRequestContext()), true);
+});
+
+test('Stage 4C 31: DISCOVERY_MODE remains true and WRITE_ALLOWED_APPS remains empty', () => {
+  assert.equal(DISCOVERY_MODE, true);
+  assert.deepEqual(WRITE_ALLOWED_APPS, []);
+});
+
+// ── Stage 4C Injected Request Bridge Tests ──
+
+test('Stage 4C 32: constructor requires transport function', () => {
+  assert.throws(
+    () => createScoringConfigRepositoryRequestBridge({ transport: null }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+});
+
+test('Stage 4C 33: bridge supports GET records exact path', async () => {
+  let transportCalled = false;
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async (path, opts) => {
+      transportCalled = true;
+      assert.equal(opts.method, 'GET');
+      assert.ok(path.startsWith('/k/v1/records.json?app=796&query='));
+      return { records: [] };
+    }
+  });
+
+  const res = await bridge({ method: 'GET', path: '/k/v1/records.json', params: { app: 796, query: 'Master_Record_Key = "KEY"' } });
+  assert.equal(transportCalled, true);
+  assert.deepEqual(res, { records: [] });
+});
+
+test('Stage 4C 34: GET records query is URL encoded deterministically', async () => {
+  let targetPath = '';
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async (path) => { targetPath = path; return { records: [] }; }
+  });
+
+  await bridge({ method: 'GET', path: '/k/v1/records.json', params: { app: 796, query: 'Profile_Code = "PROF_STAFF" and Fiscal_Year = "FY2026"' } });
+  assert.equal(targetPath, '/k/v1/records.json?app=796&query=Profile_Code%20%3D%20%22PROF_STAFF%22%20and%20Fiscal_Year%20%3D%20%22FY2026%22');
+});
+
+test('Stage 4C 35: GET records rejects wrong App/extra params/body', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  await assert.rejects(
+    () => bridge({ method: 'GET', path: '/k/v1/records.json', params: { app: 794, query: 'Q' } }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  await assert.rejects(
+    () => bridge({ method: 'GET', path: '/k/v1/records.json', params: { app: 796, query: 'Q', extra: 1 } }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  await assert.rejects(
+    () => bridge({ method: 'GET', path: '/k/v1/records.json', params: { app: 796, query: 'Q' }, body: {} }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+});
+
+test('Stage 4C 36: GET record exact success', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async (path, opts) => {
+      assert.equal(path, '/k/v1/record.json?app=796&id=101');
+      assert.equal(opts.method, 'GET');
+      return { record: { $id: { value: '101' } } };
+    }
+  });
+
+  const res = await bridge({ method: 'GET', path: '/k/v1/record.json', params: { app: 796, id: '101' } });
+  assert.equal(res.record.$id.value, '101');
+});
+
+test('Stage 4C 37: GET record rejects numeric/whitespace/unsafe ID', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  for (const badId of [101, ' 101 ', '0', '-1', '9007199254740993']) {
+    await assert.rejects(
+      () => bridge({ method: 'GET', path: '/k/v1/record.json', params: { app: 796, id: badId } }),
+      /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+    );
+  }
+});
+
+test('Stage 4C 38: POST record exact success pinned to numeric 796', async () => {
+  let transportOpts = null;
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async (path, opts) => {
+      transportOpts = { path, opts };
+      return { id: '301', revision: '1' };
+    }
+  });
+
+  const body = { app: 796, record: { Master_Record_Key: { value: 'KEY' } } };
+  const res = await bridge({ method: 'POST', path: '/k/v1/record.json', body });
+
+  assert.equal(res.id, '301');
+  assert.equal(transportOpts.path, '/k/v1/record.json');
+  assert.equal(transportOpts.opts.method, 'POST');
+  assert.equal(transportOpts.opts.body.app, 796);
+});
+
+test('Stage 4C 39: POST rejects extra top-level keys/wrong App/non-plain record', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  await assert.rejects(
+    () => bridge({ method: 'POST', path: '/k/v1/record.json', body: { app: 794, record: {} } }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  await assert.rejects(
+    () => bridge({ method: 'POST', path: '/k/v1/record.json', body: { app: 796, record: {}, extra: 1 } }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  await assert.rejects(
+    () => bridge({ method: 'POST', path: '/k/v1/record.json', body: { app: 796, record: null } }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+});
+
+test('Stage 4C 40: PUT exact lifecycle-only success', async () => {
+  let transportOpts = null;
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async (path, opts) => {
+      transportOpts = { path, opts };
+      return { revision: '2' };
+    }
+  });
+
+  const body = {
+    app: 796,
+    id: '101',
+    revision: '1',
+    record: {
+      Config_Status: { value: 'PUBLISHED' },
+      Published_By: { value: [{ code: 'usr_admin_01' }] },
+      Published_At: { value: '2026-08-25T09:00:00Z' }
+    }
+  };
+
+  const res = await bridge({ method: 'PUT', path: '/k/v1/record.json', body });
+  assert.equal(res.revision, '2');
+  assert.equal(transportOpts.opts.method, 'PUT');
+  assert.equal(transportOpts.opts.body.app, 796);
+});
+
+test('Stage 4C 41: PUT rejects wrong App', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+  const body = {
+    app: 794,
+    id: '101',
+    revision: '1',
+    record: {
+      Config_Status: { value: 'PUBLISHED' },
+      Published_By: { value: [{ code: 'usr_admin_01' }] },
+      Published_At: { value: '2026-08-25T09:00:00Z' }
+    }
+  };
+
+  await assert.rejects(() => bridge({ method: 'PUT', path: '/k/v1/record.json', body }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+});
+
+test('Stage 4C 42: PUT rejects numeric/whitespace/unsafe id/revision', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  for (const badId of [101, ' 101 ', '0', '-1']) {
+    const body = {
+      app: 796,
+      id: badId,
+      revision: '1',
+      record: {
+        Config_Status: { value: 'PUBLISHED' },
+        Published_By: { value: [{ code: 'usr_admin_01' }] },
+        Published_At: { value: '2026-08-25T09:00:00Z' }
+      }
+    };
+    await assert.rejects(() => bridge({ method: 'PUT', path: '/k/v1/record.json', body }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  }
+});
+
+test('Stage 4C 43: PUT rejects immutable field injection', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+  const body = {
+    app: 796,
+    id: '101',
+    revision: '1',
+    record: {
+      Config_Status: { value: 'PUBLISHED' },
+      Published_By: { value: [{ code: 'usr_admin_01' }] },
+      Published_At: { value: '2026-08-25T09:00:00Z' },
+      PartA_Weight: { value: '80' } // immutable field injection
+    }
+  };
+
+  await assert.rejects(() => bridge({ method: 'PUT', path: '/k/v1/record.json', body }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+});
+
+test('Stage 4C 44: PUT rejects malformed USER_SELECT shape', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+  const body = {
+    app: 796,
+    id: '101',
+    revision: '1',
+    record: {
+      Config_Status: { value: 'PUBLISHED' },
+      Published_By: { value: [] }, // empty array
+      Published_At: { value: '2026-08-25T09:00:00Z' }
+    }
+  };
+
+  await assert.rejects(() => bridge({ method: 'PUT', path: '/k/v1/record.json', body }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+});
+
+test('Stage 4C 45: PUT rejects non-PUBLISHED status', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+  const body = {
+    app: 796,
+    id: '101',
+    revision: '1',
+    record: {
+      Config_Status: { value: 'VALIDATED' },
+      Published_By: { value: [{ code: 'usr_admin_01' }] },
+      Published_At: { value: '2026-08-25T09:00:00Z' }
+    }
+  };
+
+  await assert.rejects(() => bridge({ method: 'PUT', path: '/k/v1/record.json', body }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+});
+
+test('Stage 4C 46: DELETE/PATCH/preview/schema/ACL/deploy/unknown path rejected', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  await assert.rejects(() => bridge({ method: 'DELETE', path: '/k/v1/record.json' }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'PATCH', path: '/k/v1/record.json' }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'GET', path: '/k/v1/preview/record.json' }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'POST', path: '/k/v1/app/deploy.json' }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+});
+
+test('Stage 4C 47: accepted request invokes transport exactly once', async () => {
+  let callCount = 0;
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async () => { callCount++; return { record: {} }; }
+  });
+
+  await bridge({ method: 'GET', path: '/k/v1/record.json', params: { app: 796, id: '101' } });
+  assert.equal(callCount, 1);
+});
+
+test('Stage 4C 48: transport throw is redacted to exact SCORING_CONFIG_BRIDGE_REQUEST_FAILED', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async () => { throw new Error('Raw transport failure with secret: SECRET_DO_NOT_LEAK_789'); }
+  });
+
+  await assert.rejects(
+    () => bridge({ method: 'GET', path: '/k/v1/record.json', params: { app: 796, id: '101' } }),
+    (err) => {
+      assert.equal(err.message, 'SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      assert.equal(err.message.includes('SECRET_DO_NOT_LEAK'), false);
+      return true;
+    }
+  );
+});
+
+test('Stage 4C 49: no automatic retry on transport failure', async () => {
+  let callCount = 0;
+  const bridge = createScoringConfigRepositoryRequestBridge({
+    transport: async () => { callCount++; throw new Error('Network timeout'); }
+  });
+
+  await assert.rejects(
+    () => bridge({ method: 'GET', path: '/k/v1/record.json', params: { app: 796, id: '101' } }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+  assert.equal(callCount, 1);
+});
+
+test('Stage 4C 50: new bridge factory source does not reference fetch, getKintoneConnection, or environment variables in its own implementation', () => {
+  const factoryStr = createScoringConfigRepositoryRequestBridge.toString();
+  assert.equal(factoryStr.includes('fetch'), false);
+  assert.equal(factoryStr.includes('getKintoneConnection'), false);
+  assert.equal(factoryStr.includes('process.env'), false);
+});
+
+test('Stage 4C 51: existing kintoneRequest() still blocks POST under DISCOVERY_MODE = true', async () => {
+  const { kintoneRequest } = await import('../src/core/kintone-client.js');
+  await assert.rejects(
+    () => kintoneRequest('/k/v1/record.json', { method: 'POST', body: { app: 796 } }),
+    /DISCOVERY PHASE WRITE BLOCKED/
+  );
 });

@@ -1026,3 +1026,125 @@ export async function kintoneRequest(path, { method = 'GET', body } = {}) {
   }
   return response.json();
 }
+function isPlainObject(obj) {
+  return obj !== null && typeof obj === 'object' && !Array.isArray(obj) && Object.getPrototypeOf(obj) === Object.prototype;
+}
+
+function isExactPositiveSafeIntegerString(val) {
+  if (typeof val !== 'string') return false;
+  if (val !== val.trim() || !/^[1-9]\d*$/.test(val)) return false;
+  return Number.isSafeInteger(Number(val));
+}
+
+export function createScoringConfigRepositoryRequestBridge({ transport }) {
+  if (!transport || typeof transport !== 'function') {
+    throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+  }
+
+  return async function request({ method, path, params, body }) {
+    if (typeof method !== 'string' || typeof path !== 'string' || path.includes('?')) {
+      throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+    }
+
+    const upperMethod = method.toUpperCase();
+
+    if (upperMethod === 'GET') {
+      if (body !== undefined) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      if (!isPlainObject(params)) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+
+      if (path === '/k/v1/records.json') {
+        const paramKeys = Object.keys(params);
+        if (paramKeys.length !== 2 || !paramKeys.includes('app') || !paramKeys.includes('query')) {
+          throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+        }
+        if (params.app !== 796 || typeof params.query !== 'string' || params.query === '') {
+          throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+        }
+        const transportPath = `/k/v1/records.json?app=796&query=${encodeURIComponent(params.query)}`;
+        try {
+          return await transport(transportPath, { method: 'GET' });
+        } catch {
+          throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+        }
+      }
+
+      if (path === '/k/v1/record.json') {
+        const paramKeys = Object.keys(params);
+        if (paramKeys.length !== 2 || !paramKeys.includes('app') || !paramKeys.includes('id')) {
+          throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+        }
+        if (params.app !== 796 || !isExactPositiveSafeIntegerString(params.id)) {
+          throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+        }
+        const transportPath = `/k/v1/record.json?app=796&id=${params.id}`;
+        try {
+          return await transport(transportPath, { method: 'GET' });
+        } catch {
+          throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+        }
+      }
+
+      throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+    }
+
+    if (upperMethod === 'POST') {
+      if (params !== undefined || path !== '/k/v1/record.json' || !isPlainObject(body)) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      const bodyKeys = Object.keys(body);
+      if (bodyKeys.length !== 2 || !bodyKeys.includes('app') || !bodyKeys.includes('record')) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      if (body.app !== 796 || !isPlainObject(body.record)) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      try {
+        return await transport('/k/v1/record.json', { method: 'POST', body });
+      } catch {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+    }
+
+    if (upperMethod === 'PUT') {
+      if (params !== undefined || path !== '/k/v1/record.json' || !isPlainObject(body)) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      const bodyKeys = Object.keys(body);
+      const expectedKeys = ['app', 'id', 'revision', 'record'];
+      if (bodyKeys.length !== 4 || !expectedKeys.every(k => bodyKeys.includes(k))) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      if (body.app !== 796 || !isExactPositiveSafeIntegerString(body.id) || !isExactPositiveSafeIntegerString(body.revision) || !isPlainObject(body.record)) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      const recPatch = body.record;
+      const recKeys = Object.keys(recPatch);
+      const expectedRecKeys = ['Config_Status', 'Published_By', 'Published_At'];
+      if (recKeys.length !== 3 || !expectedRecKeys.every(k => recKeys.includes(k))) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      if (
+        !isPlainObject(recPatch.Config_Status) || recPatch.Config_Status.value !== 'PUBLISHED' ||
+        !isPlainObject(recPatch.Published_By) || !Array.isArray(recPatch.Published_By.value) || recPatch.Published_By.value.length !== 1 ||
+        !isPlainObject(recPatch.Published_By.value[0]) || typeof recPatch.Published_By.value[0].code !== 'string' ||
+        recPatch.Published_By.value[0].code === '' || recPatch.Published_By.value[0].code !== recPatch.Published_By.value[0].code.trim() ||
+        !isPlainObject(recPatch.Published_At) || typeof recPatch.Published_At.value !== 'string' ||
+        recPatch.Published_At.value === '' || recPatch.Published_At.value !== recPatch.Published_At.value.trim()
+      ) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+
+      try {
+        return await transport('/k/v1/record.json', { method: 'PUT', body });
+      } catch {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+    }
+
+    throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+  };
+}
