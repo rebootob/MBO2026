@@ -230,3 +230,33 @@ test('Sprint 02R3: fetchHealthCount executes exact business status queries for 7
   assert.equal(recordedQueries[2].query, 'Ready_For_MBO = "YES" limit 1');
   assert.equal(recordedQueries[3].query, 'limit 1');
 });
+
+import { createNarrowLiveTransport } from '../scripts/kintone/seed-scoring-baseline.js';
+
+test('Sprint 03A: Baseline configs return exact 8 profile codes with exact 70/30, 60/40, 50/50 ratios', () => {
+  const configs = getCanonicalBaselineMasterConfigs();
+  assert.equal(configs.length, 8);
+  const staff = configs.find(c => c.Profile_Code === 'PROF_STAFF_CHIEF');
+  assert.equal(staff.PartA_Weight, 70);
+  assert.equal(staff.PartB_Weight, 30);
+
+  const asst = configs.find(c => c.Profile_Code === 'PROF_ASST_MGR');
+  assert.equal(asst.PartA_Weight, 60);
+  assert.equal(asst.PartB_Weight, 40);
+
+  const sec = configs.find(c => c.Profile_Code === 'PROF_SECTION_MGR');
+  assert.equal(sec.PartA_Weight, 50);
+  assert.equal(sec.PartB_Weight, 50);
+});
+
+test('Sprint 03A: createNarrowLiveTransport blocks DELETE, PATCH, and non-796 App IDs', async () => {
+  const transport = createNarrowLiveTransport(796);
+
+  await assert.rejects(async () => {
+    await transport('/k/v1/record.json', { method: 'DELETE' });
+  }, /NARROW TRANSPORT BLOCKED/);
+
+  await assert.rejects(async () => {
+    await transport('/k/v1/record.json', { method: 'POST', body: { app: 794 } });
+  }, /NARROW TRANSPORT BLOCKED/);
+});
