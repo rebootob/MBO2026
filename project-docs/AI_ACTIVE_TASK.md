@@ -1,194 +1,133 @@
-# AI ACTIVE TASK — M10B-SEC-B CONTROLLED APP799 CLEANUP BEFORE APP801
+# AI ACTIVE TASK — M10B-SEC-C VERIFY MANUAL APP799 DELETION
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Head:** `02bb102fe0b70e4a90450688978f42fc10b9c09a`
-> **Mode:** CONTROLLED DESTRUCTIVE CLEANUP — APP799 ONLY
+> **Reviewed Head:** `ffd9b94c86932553de3c97afc4c1ba85415ba88c`
+> **Mode:** READ-ONLY POST-DELETE VERIFICATION / DOC RECONCILIATION ONLY — KINTONE WRITES = 0
 
 # NORTH STAR
 
 ```text
 M10B-SEC Authentication Architecture = PASS
-M10B-SEC-A App799 Purpose Audit       = PASS
-App799                                = SUPERSEDED / 0 RECORDS / 0 CUSTOM FIELDS / NO ACTIVE RUNTIME REFERENCE
-App801                                = PLANNED / NOT CREATED
+App799 purpose audit                  = PASS
+App799 API deletion attempt           = BLOCKED BY KINTONE HTTP 405
+User manually deleted App799 in Kintone Web UI
 
-USER AUTHORIZATION:
-Controlled deletion of App799 = EXPLICITLY APPROVED
-Authorized destructive target = APP799 ONLY
-New App801 creation            = NOT AUTHORIZED IN THIS TASK
+THIS TASK:
+Prove App799 is actually gone, reconcile docs, and close the cleanup gate.
+Do NOT create App801 yet.
 ```
 
-# USER AUTHORIZATION BOUNDARY
+# USER-REPORTED FACT TO VERIFY
 
-User explicitly approved the recommended App799 cleanup after review.
-
-This authorization permits ONLY:
+User states:
 
 ```text
-DELETE KINTONE APP 799
+App799 was manually deleted through Kintone Web UI.
 ```
 
-It does NOT authorize:
+Treat this as a claim requiring live read-back verification before changing current-state truth.
+
+# HARD SAFETY
 
 ```text
-creating App801
-modifying App794/795/796/797/798/800
-modifying App53
-record writes in any other app
-schema/customization/process/ACL writes in any other app
-external auth-service deployment
-login implementation
-TOTP implementation
+KINTONE_WRITES_THIS_TASK = 0
+SCHEMA_WRITES = 0
+RECORD_WRITES = 0
+APP_CREATE = 0
+APP_DELETE = 0
+ACL_WRITES = 0
+CUSTOMIZATION_DEPLOY = 0
+PROCESS_WRITES = 0
+EXTERNAL_DEPLOY = 0
 ```
 
-Treat this authorization as consumed and closed immediately after successful App799 deletion + read-back verification.
-
-# AUTHORITATIVE APP799 PRE-DELETE FACTS
-
-From M10B-SEC-A live audit:
+Protected apps remain READ ONLY:
 
 ```text
-APP799_EXISTS = YES
-APP799_NAME = MBO HR Control Center [Sandbox]
-APP799_REVISION = 3
-APP799_RECORD_COUNT = 0
-APP799_CUSTOM_FIELDS = 0
-APP799_ACL = CREATOR ONLY / DEFAULT DENY
-APP799_PURPOSE_CLASS = KNOWN_SUPERSEDED_PURPOSE
-APP799_PURPOSE = early uncustomized HR Control Center shell superseded by App800
-APP799_REFERENCED_BY_ACTIVE_RUNTIME = NO
-APP799_SAFE_TO_REUSE_FOR_AUTH = NO
-APP799_SAFE_TO_DELETE = YES
-WOULD_CREATING_APP801_DUPLICATE_APP799 = NO
+53, 139, 283, 305, 307, 310, 640, 643, 715, 716
 ```
 
-App800 is the active HR Control Center and MUST remain untouched.
+Delivered apps 794, 795, 796, 797, 798, 800 remain READ ONLY.
+App801 remains PLANNED / NOT CREATED.
 
-# STEP 1 — FRESH PRE-DELETE READ-BACK
+# STEP 1 — LIVE READ-BACK APP799
 
-Before any destructive call, GET/read-only verify App799 again.
+Using Kintone GET/read-only methods only, verify App799 no longer exists / is no longer retrievable as an app.
 
-Required exact checks:
+Required output:
 
 ```text
-APP799_EXISTS_BEFORE_DELETE = YES
-APP799_NAME_BEFORE_DELETE = MBO HR Control Center [Sandbox]
-APP799_RECORD_COUNT_BEFORE_DELETE = 0
-APP799_CUSTOM_FIELDS_BEFORE_DELETE = 0
-APP799_ACTIVE_RUNTIME_REFERENCES = 0
+APP799_EXISTS_AFTER_MANUAL_DELETE = YES / NO / UNVERIFIABLE
+APP799_GET_RESULT = exact high-level result
 ```
 
-Re-check repository/runtime references to App799 (`799`, `App799`, `app=799`, config/quick links/runtime constants).
-
-If any new active reference, record, customization, or conflicting business use is found:
+If App799 still exists:
 
 ```text
 STOP
-DO NOT DELETE
 REPORT BLOCKED
+Do not modify or delete anything.
 ```
 
-# STEP 2 — DURABLE PRE-DELETE BACKUP / EVIDENCE
+If the API behavior cannot distinguish deleted vs inaccessible, explain exact response and stop rather than guess.
 
-Before deletion, create a durable local backup/evidence package for App799 sufficient to reconstruct/audit what was removed.
+# STEP 2 — APP800 SAFETY READ-BACK
 
-Capture at minimum:
-
-```text
-app identity/name/revision
-schema/form fields
-layout/views where available
-process management state
-ACL summary
-customization state
-record count + records export (expected 0)
-M10B-SEC-A purpose evidence/reference summary
-```
-
-Store under a dedicated path such as:
-
-```text
-backups/m10b-sec-b-app799/<timestamp>/
-```
-
-Create a manifest containing file hashes and calculate a SHA-256 for the manifest.
-
-Required before delete:
-
-```text
-BACKUP_CREATED = YES
-BACKUP_MANIFEST_SHA256 = actual
-BACKUP_VERIFIED_BY_EXECUTION_PLANE = YES
-```
-
-Do not claim independent reviewer byte verification.
-Do not delete this backup during this task.
-
-# STEP 3 — DELETE APP799 ONLY
-
-Execute the minimum Kintone destructive operation required to delete App799.
-
-Hard boundary:
-
-```text
-AUTHORIZED_DELETE_APP = 799 ONLY
-AUTHORIZED_APP_CREATE = NONE
-AUTHORIZED_RECORD_WRITE = NONE
-AUTHORIZED_SCHEMA_WRITE = NONE except unavoidable delete-app operation itself
-AUTHORIZED_CUSTOMIZATION_WRITE = NONE
-AUTHORIZED_PROCESS_WRITE = NONE
-AUTHORIZED_ACL_WRITE = NONE
-```
-
-Do NOT reuse App799 ID/purpose for authentication.
-Do NOT create App801 in the same task.
-
-# STEP 4 — POST-DELETE READ-BACK
-
-Immediately verify using GET/read-back that App799 no longer exists / is inaccessible as an app.
+Read-only verify App800 remains present and unchanged at a high level.
 
 Required:
 
 ```text
-APP799_EXISTS_AFTER_DELETE = NO
-APP800_EXISTS_AFTER_DELETE = YES
-APP800_NAME_UNCHANGED = YES
-APP800_DASHBOARD_UNTOUCHED = YES
-NON_APP799_KINTONE_WRITES = 0
-APP801_CREATED = NO
+APP800_EXISTS = YES
+APP800_NAME = MBO HR Control Center [Sandbox]
+APP800_DASHBOARD_CUSTOMIZATION_PRESENT = YES
+APP800_UNTOUCHED = YES
 ```
 
-If App799 still exists or delete outcome is ambiguous:
+Do not redeploy App800.
+
+# STEP 3 — APP801 STATUS
+
+Confirm:
 
 ```text
-STOP
-DO NOT RETRY DESTRUCTIVELY WITHOUT EVIDENCE
-REPORT BLOCKED / PARTIAL
+APP801_CREATED = NO
+APP801_PLANNED_NAME = MBO Employee Authentication & MFA Credential Store [Sandbox]
+APP801_ROLE = AUTHENTICATION_CREDENTIAL_STORE_ONLY
 ```
 
-# STEP 5 — NO-ORPHAN / REGISTRY RECONCILIATION
+Do not create App801 in this task.
 
-After successful deletion, update current repository docs so App799 is not presented as a live app.
+# STEP 4 — DOC / REGISTRY RECONCILIATION
 
-`project-docs/APP_REGISTRY.md` should preserve historical chronology but clearly classify:
+Only if App799 deletion is proven by read-back, update current living docs so active truth is:
 
 ```text
 App799 = DELETED / HISTORICAL SUPERSEDED HRCC SHELL
+App800 = ACTIVE HR CONTROL CENTER
+App801 = PLANNED / NOT CREATED
 ```
 
-Do not remove historical evidence that explains why it existed.
+Preserve historical evidence explaining why App799 existed and why it was manually deleted.
 
-App801 remains:
+Update at minimum where factual truth requires:
 
 ```text
-App801 = PLANNED / NOT CREATED
-Name = MBO Employee Authentication & MFA Credential Store [Sandbox]
+project-docs/APP_REGISTRY.md
+project-docs/CURRENT_STATE.md
+project-docs/HANDOFF.md
+project-docs/AI_REVIEW_PACKAGE.md
+project-docs/CHANGELOG_AI.md
 ```
 
-Search active/current sources for stale assumptions that App799 is live or available.
+Do not create redundant evidence files unless required.
+
+# STEP 5 — NO-ORPHAN CHECK
+
+Search current/active repository content for stale App799 live assumptions.
 
 Required:
 
@@ -198,7 +137,9 @@ STALE_ACTIVE_APP799_RUNTIME_REFERENCES = 0
 NO_ORPHAN_ARTIFACT_GATE = PASS
 ```
 
-# STEP 6 — TEST / GIT SAFETY
+Historical references explaining prior existence/deletion are allowed.
+
+# STEP 6 — TEST / GIT
 
 Run:
 
@@ -208,50 +149,40 @@ git diff --check
 git status --short
 ```
 
-Require:
+Required:
 
 ```text
 npm test = PASS
 git diff --check = PASS
-tracked tree clean after commit
+KINTONE_WRITES_THIS_TASK = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS
 local HEAD = origin/ai/antigravity-wp002c after push
 ```
 
-No reset.
-No rebase.
-No force push.
-No history rewrite.
+No reset/rebase/force push/history rewrite.
 
-# REQUIRED FINAL SUMMARY
+# FINAL REQUIRED SUMMARY
 
 ```text
-M10B_SEC_B_APP799_CONTROLLED_CLEANUP = COMPLETE / BLOCKED
+M10B_SEC_C_APP799_MANUAL_DELETE_VERIFICATION = COMPLETE / BLOCKED
 
-USER_AUTHORIZATION = EXPLICIT
-AUTHORIZED_DESTRUCTIVE_TARGET = APP799 ONLY
-AUTHORIZATION_STATUS = EXECUTED / CLOSED after success
-NEW_KINTONE_WRITE_AUTHORIZATION = NO
+USER_REPORTED_MANUAL_DELETE = YES
+APP799_EXISTS_AFTER_MANUAL_DELETE = actual
+APP799_GET_RESULT = actual
 
-APP799_EXISTS_BEFORE_DELETE = actual
-APP799_RECORD_COUNT_BEFORE_DELETE = actual
-APP799_CUSTOM_FIELDS_BEFORE_DELETE = actual
-APP799_ACTIVE_RUNTIME_REFERENCES = actual
-
-BACKUP_PATH = actual
-BACKUP_MANIFEST_SHA256 = actual
-BACKUP_VERIFIED_BY_EXECUTION_PLANE = YES/NO
-INDEPENDENT_REVIEWER_BYTE_VERIFICATION = NOT_PERFORMED
-
-APP799_DELETE = EXECUTED / NOT_EXECUTED
-APP799_EXISTS_AFTER_DELETE = NO/YES/UNVERIFIABLE
+APP800_EXISTS = actual
+APP800_NAME_UNCHANGED = YES/NO
+APP800_DASHBOARD_CUSTOMIZATION_PRESENT = YES/NO
 APP800_UNTOUCHED = YES/NO
-NON_APP799_KINTONE_WRITES = 0/actual
-APP801_CREATED = NO
 
-STALE_ACTIVE_APP799_LIVE_REFERENCES = 0/actual
-STALE_ACTIVE_APP799_RUNTIME_REFERENCES = 0/actual
+APP801_CREATED = NO
+APP801_PLANNED_NAME = MBO Employee Authentication & MFA Credential Store [Sandbox]
+
+STALE_ACTIVE_APP799_LIVE_REFERENCES = actual
+STALE_ACTIVE_APP799_RUNTIME_REFERENCES = actual
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 
+KINTONE_WRITES_THIS_TASK = 0
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
 GIT_PUSH_SYNC = PASS/FAIL
@@ -263,5 +194,5 @@ Commit and push same branch, then STOP.
 
 Do NOT create App801.
 Do NOT implement authentication.
-Do NOT deploy external service.
-Do NOT touch any app other than deleting App799.
+Do NOT deploy auth service.
+Do NOT touch Kintone state.
