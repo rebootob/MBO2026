@@ -1,176 +1,213 @@
-# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4A REVIEW HARDENING
+# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4A FINAL CORRECTION
 
 > **Control Plane:** ChatGPT / Project Lead / Independent Reviewer
 > **Execution Plane:** Antigravity
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Stage 4A Head:** `3f773414783c3b8903c4be7085cce8eb6764c44b`
-> **Mode:** CODE/TEST HARDENING + LIVING-DOC EVIDENCE CORRECTION ONLY
+> **Reviewed head:** `92d3454602f80a9eabc2c1021f0c387233e2e1a7`
+> **Mode:** FINAL CODE/TEST CORRECTION + LIVING-DOC CONSISTENCY
 > **Kintone calls:** ZERO
 > **Kintone writes:** ZERO
 
 ## REVIEW RESULT
 
-Accepted Stage 4A evidence:
+The first Stage 4A hardening pass substantially fixed the requested contracts.
+
+Accepted:
 
 ```text
-Stage 3C exception closure commit = cca9389c5b8f054ef8bd6c8ccddb7d34d6786137
-Stage 4A implementation commit = f010e26fbc61e39ee84874a1c024492acf0c81fa
-Stage 4A evidence commit = 3f773414783c3b8903c4be7085cce8eb6764c44b
-commit ordering = PASS
-implementation file scope = PASS
-canonicalization foundation = PASS
-triple-hash foundation = PASS
-effective-overlap positive/boundary tests = PASS
-trusted audit ordering = PASS
-final publish read-back foundation = PASS
-lifecycle matrix = PASS
-supersession fail-closed = PASS
-Stage 4A Kintone calls/writes = 0 (reported; no Kintone/network implementation in Stage 4A source scope)
-latest reported npm test = 291/291 PASS
+hardening code commit = 683cc0eaae66faa1e335e122b7aff8aba08ad9e7
+hardening docs commit = 92d3454602f80a9eabc2c1021f0c387233e2e1a7
+commit order = PASS
+code scope = service + service tests only
+DEPENDENCY_CONTRACT_GATE = PASS
+CANDIDATE_STATUS_CONTRACT = PASS
+EFFECTIVE_OVERLAP_ROW_CONTRACT = PASS
+TRIPLE_HASH_GATE = PASS in runtime implementation
+FINAL_PUBLISH_READBACK_GATE = PASS in runtime implementation
+LIFECYCLE_GATE = PASS
+SUPERSESSION_FAIL_CLOSED_GATE = PASS
+ZERO_KINTONE_STAGE4A_GATE = PASS
+reported suite = 283/283 PASS
 ```
 
-Stage 4A is NOT yet approved for Stage 4B. The following MUST FIX items are required.
+Two blocking review findings remain, plus one document-consistency correction.
 
 ---
 
-# MUST FIX A — OVERLAP ROW CONTRACT MUST FAIL CLOSED ON MALFORMED DATES/STATUS
+# MUST FIX A — TIMEZONE-OFFSET DATETIME CALENDAR VALIDATION IS INCOMPLETE
 
-Current service verifies overlap row object/profile/FY, then directly compares:
+Current `isValidIsoDateTime()` validates exact calendar components against the parsed Date only when the input ends with `Z`.
 
-```text
-candidateFrom <= pubTo && pubFrom <= candidateTo
-```
-
-A row with missing/invalid `Effective_From` or `Effective_To` can therefore evaluate false and silently bypass the overlap gate.
-
-Before any overlap comparison, every row returned by `findPublishedByProfileFiscalYear()` must be verified as a valid published-domain row for this query.
-
-Require each row:
+As a result, an offset timestamp such as:
 
 ```text
-plain object, not Array
-Profile_Code === candidate.Profile_Code
-Fiscal_Year === candidate.Fiscal_Year
-Config_Status === PUBLISHED
-Effective_From = exact valid YYYY-MM-DD
-Effective_To = exact valid YYYY-MM-DD
-Effective_From <= Effective_To
+2026-02-31T00:00:00+09:00
 ```
 
-Any missing/wrong/malformed value must throw:
+can be normalized by JavaScript into March and incorrectly pass the helper.
+
+The contract is a valid timezone-aware ISO-8601 datetime regardless of whether timezone is `Z` or an explicit offset.
+
+Fix inside the existing service file only.
+
+Required behavior:
 
 ```text
-REPOSITORY_RESPONSE_INVALID
+PASS: 2026-04-01T00:00:00Z
+PASS: 2026-04-01T09:00:00+09:00
+PASS: 2026-04-01T00:00:00.123Z
+PASS: valid leap day such as 2028-02-29T09:00:00+09:00
+
+FAIL: 2026-04-01
+FAIL: 2026-02-31T00:00:00Z
+FAIL: 2026-02-31T00:00:00+09:00
+FAIL: 2026-04-31T00:00:00+09:00
+FAIL: 2026-04-01T25:00:00+09:00
+FAIL: 2026-04-01T00:60:00+09:00
+FAIL: 2026-04-01T00:00:60+09:00
+FAIL: invalid offset such as +24:00 or +09:60
 ```
 
-before audit provider calls and before `publishRecord()`.
+Validate calendar day/month independently of timezone conversion (e.g. exact days-in-month/leap-year validation) and validate offset components explicitly before accepting the parsed datetime.
 
-Do not silently filter malformed rows.
-Do not silently ignore wrong-status rows.
-Do not treat missing dates as non-overlap.
-
-You may add one small internal validation helper inside the existing service file. Do not create another source module.
+Keep the trusted timestamp's exact trimmed representation for publish patch/final equality.
 
 ---
 
-# MUST FIX B — DEPENDENCY INTERFACE CONTRACT MUST BE VALIDATED BEFORE ORCHESTRATION
+# MUST FIX B — HARDENING MUST NOT DELETE STAGE 4A REGRESSION COVERAGE
 
-Constructor currently checks only that repository/audit provider are objects.
-
-Require these repository methods to be functions before any publish orchestration begins:
+The original Stage 4A evidence reported:
 
 ```text
-findByMasterKey
-createValidatedRecord
-getByRecordId
-findPublishedByProfileFiscalYear
-publishRecord
+291/291 PASS
 ```
 
-Require audit provider methods:
+After hardening the suite is reported as:
 
 ```text
-getPublisherIdentity
-getPublishedAt
+283/283 PASS
 ```
 
-Missing/non-function repository methods must fail with stable `REPOSITORY_RESPONSE_INVALID`.
-Missing/non-function audit methods must fail with stable trusted-audit error (`TRUSTED_PUBLISHER_INVALID` or a clearly stable trusted-audit contract error).
+The hardening commit modified `tests/scoring-config-master-service.test.js` with substantial deletions and removed multiple original contract tests. For example the explicit final `Config_Status != PUBLISHED` verification test was deleted.
 
-This validation must happen before persistence or any dependency method call.
+Hardening may consolidate duplicated setup, but it must not remove semantic coverage from the original Stage 4A contract.
 
-Also strengthen repository response shape checks so arrays are not accepted where an exact record object is required.
+Restore the original semantic regression coverage while preserving all newly added hardening tests.
 
-For `createValidatedRecord()` numeric IDs, reject `NaN`/`Infinity`; a string ID must be non-empty after trim.
+At minimum preserve/restore explicit coverage for all of the following:
+
+### Caller/lifecycle injection
+
+```text
+caller PUBLISHED rejected
+caller VALIDATED rejected
+caller Published_By rejected
+caller Published_At rejected
+caller Configuration_Hash rejected
+unsupported supersession rejected before persistence
+```
+
+### Duplicate/domain/persistence contract
+
+```text
+duplicate master key rejected
+malformed findByMasterKey response rejected
+invalid domain config rejected before persistence
+createValidatedRecord missing/invalid ID rejected
+```
+
+### Initial exact read-back / triple hash
+
+```text
+wrong Master_Record_Key rejected
+missing stored Configuration_Hash rejected
+expected hash != stored hash rejected
+expected hash != recomputed hash rejected
+stored hash != recomputed hash rejected
+status != VALIDATED rejected
+```
+
+### Effective-overlap contract
+
+```text
+same-day inclusive boundary overlap rejected
+contained overlap rejected
+enveloping overlap rejected
+non-overlap earlier passes
+non-overlap later passes
+wrong Profile_Code row rejected
+wrong Fiscal_Year row rejected
+malformed/non-array overlap response rejected
+missing/malformed/reversed dates rejected
+wrong/missing PUBLISHED status rejected
+```
+
+### Trusted audit
+
+```text
+audit provider not called before all earlier gates pass
+missing publisher rejected
+invalid timestamp rejected
+date-only timestamp rejected
+valid Z timestamp passes
+valid offset timestamp passes
+invalid offset-calendar datetime rejected
+invalid timezone offset rejected
+```
+
+### Publish patch + final exact verification
+
+```text
+publish patch contains lifecycle/audit fields only
+final status != PUBLISHED rejected
+final Master_Record_Key mismatch rejected
+final Configuration_Hash mismatch rejected
+final immutable payload mutation rejected
+final publisher mismatch rejected
+final timestamp mismatch rejected
+final success requires recomputed hash equality
+```
+
+### Lifecycle / architecture
+
+```text
+allowed lifecycle matrix passes
+invalid/reverse/direct jumps fail
+service has no Kintone/network/filesystem/Git runtime dependency
+```
+
+Do not remove any currently-added hardening tests to make the count fit.
+Semantic coverage is the primary gate, but the final full-suite test count must not be lower than the accepted pre-hardening 291-test baseline.
 
 ---
 
-# MUST FIX C — CANDIDATE STATUS CONTRACT MUST BE EXACT
+# MUST FIX C — REMOVE CURRENT PUBLISH PIPELINE STATUS AMBIGUITY
 
-Frozen Stage 4A contract:
-
-```text
-Config_Status may be absent or DRAFT only.
-```
-
-Current implementation also accepts `null` and empty string.
-
-Correct behavior:
+Current living docs still contain both:
 
 ```text
-undefined/absent -> allowed
-DRAFT -> allowed
-null -> reject UNTRUSTED_LIFECYCLE_FIELD
-"" -> reject UNTRUSTED_LIFECYCLE_FIELD
-VALIDATED/PUBLISHED/SUPERSEDED/RETIRED -> reject
+PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
 ```
 
-Do not weaken the caller audit/hash rejection rules.
-
----
-
-# MUST FIX D — TRUSTED PUBLISHED TIMESTAMP MUST BE A REAL TIMEZONE-AWARE DATETIME
-
-Current `new Date(value)` validation accepts date-only strings such as `2026-04-01`.
-
-`Published_At` is Kintone DATETIME audit data. Require a valid timezone-aware ISO-8601 datetime, supporting examples such as:
+and a current target description containing:
 
 ```text
-2026-04-01T00:00:00Z
-2026-04-01T09:00:00+09:00
-2026-04-01T00:00:00.123Z
+PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
 ```
 
-Reject:
-
-```text
-2026-04-01
-not-a-date
-invalid calendar/time/offset values
-```
-
-Keep the exact trusted value (trimmed) for publish patch and final equality verification.
-
----
-
-# MUST FIX E — STAGE 4A LIVING EVIDENCE CONSISTENCY
-
-The Stage 4A evidence commit did not update `CHANGELOG_AI.md` for Stage 4A, and `AI_REVIEW_PACKAGE.md` still has current gate/test references at `243/243` while current state reports `291/291`.
-
-Also avoid contradictory current `PUBLISH_PIPELINE_STATUS` values (`FOUNDATION_IMPLEMENTED_NOT_DEPLOYED` vs `NOT_DEPLOYED`) in the same current-state section.
-
-After hardening, all current operational sections must use the actual final test total and this semantic distinction:
+Use one current vocabulary consistently:
 
 ```text
 PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
 LIVE_KINTONE_ADAPTER_STATUS = NOT_IMPLEMENTED
 LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
+RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
 ```
 
-Historical entries may preserve historical test counts if explicitly historical.
+Historical/pre-Stage4 checkpoints may retain `NOT_DEPLOYED` only if clearly labelled historical.
 
-`CHANGELOG_AI.md` must receive a Stage 4A implementation/hardening entry.
+Also update the review package commit metadata so the current Stage 4A implementation/hardening/final-correction commits are visible rather than leaving the review head table at the earlier Stage 3C forensic checkpoint.
 
 ---
 
@@ -185,64 +222,40 @@ git fetch origin
 git pull --ff-only
 git rev-parse HEAD
 git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor 3f773414783c3b8903c4be7085cce8eb6764c44b HEAD
+git merge-base --is-ancestor 92d3454602f80a9eabc2c1021f0c387233e2e1a7 HEAD
 ```
 
 Required:
 
 ```text
 branch = ai/antigravity-wp002c
-reviewed head 3f773414... is in ancestry
+reviewed head 92d3454... is in ancestry
 local HEAD = remote HEAD
 tracked working tree clean before edits
 ```
 
 No reset/rebase/stash/force-push automatically.
 
-Read:
-
-- `project-docs/AI_ACTIVE_TASK.md`
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
-- `project-docs/AI_REVIEW_PACKAGE.md`
-- `src/services/scoring-config-master-service.js`
-- `tests/scoring-config-master-service.test.js`
-
 ---
 
-# STEP 1 — CODE / TEST HARDENING
+# STEP 1 — FINAL CODE / TEST CORRECTION
 
-Allowed code/test files only:
+Allowed files only:
 
 - `src/services/scoring-config-master-service.js`
 - `tests/scoring-config-master-service.test.js`
 
-Do not modify `src/profiles/scoring-config-master.js` unless a reviewer requirement above is impossible without doing so. It should not be necessary.
+Do not change domain rules, baseline configs, resolver, core client, write guard, UI, main app, or any Kintone integration.
 
-Required new/strengthened tests include:
+Required:
 
-1. overlap row missing `Effective_From` rejects before audit/publish
-2. overlap row missing `Effective_To` rejects before audit/publish
-3. overlap row malformed date rejects
-4. overlap row reversed period rejects
-5. overlap row status missing/wrong rejects
-6. valid `PUBLISHED` overlap row still detects inclusive overlap
-7. valid non-overlap published row still passes
-8. missing each required repository method fails before dependency calls/persistence (table-driven test allowed)
-9. missing each audit provider method fails before repository orchestration (table-driven allowed)
-10. array returned where exact record object expected is rejected
-11. invalid numeric record IDs (`NaN`, `Infinity`) reject
-12. candidate `Config_Status = null` rejects
-13. candidate `Config_Status = ""` rejects
-14. candidate `Config_Status = DRAFT` still passes
-15. date-only trusted `Published_At` rejects
-16. ISO Z timestamp passes
-17. ISO offset timestamp passes
-18. invalid timezone/calendar datetime rejects
-19. audit provider still not called before validation/read-back/overlap gates
-20. publish patch still contains lifecycle/audit fields only
-21. triple-hash/final-readback/lifecycle/supersession tests remain passing
-22. service remains free of Kintone/network/filesystem/Git runtime dependencies
+1. Fix timezone-offset calendar validation.
+2. Preserve all current hardening behavior.
+3. Restore all lost Stage 4A semantic regression coverage listed above.
+4. Add explicit tests for offset invalid-calendar and invalid offset components.
+5. Keep dependency-injected/no-network architecture.
+6. Keep supersession fail-closed.
+7. Keep final triple-hash/read-back fail-closed.
 
 Run:
 
@@ -252,19 +265,20 @@ npm test
 ```
 
 All tests must pass.
+Final full-suite test total must be >= 291.
 
 Commit exactly:
 
 ```text
-fix: harden scoring config publish service contracts
+fix: finalize scoring config datetime and regression coverage
 ```
 
 Push only to `origin/ai/antigravity-wp002c`.
-Verify local HEAD = remote HEAD before proceeding to docs.
+Verify local HEAD = remote HEAD before docs.
 
 ---
 
-# STEP 2 — LIVING DOC EVIDENCE CORRECTION
+# STEP 2 — FINAL LIVING-DOC EVIDENCE CORRECTION
 
 Allowed docs only:
 
@@ -279,28 +293,36 @@ Required current state:
 ```text
 WP002C_STAGE3C_GATE = PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION
 R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE_ACCEPTED
-STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = HARDENED / PENDING CHATGPT RE-REVIEW
+STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = FINAL_CORRECTION_COMPLETE / PENDING CHATGPT FINAL REVIEW
 PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
 LIVE_KINTONE_ADAPTER_STATUS = NOT_IMPLEMENTED
 LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
 RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
 SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED
 BASELINE_SEED_STATUS = NOT_STARTED
-RECORD_COUNT = 0 (last verified checkpoint; Stage 4A and this correction made zero Kintone calls)
-THIS STAGE 4A CORRECTION KINTONE CALLS = 0
-THIS STAGE 4A CORRECTION KINTONE WRITES = 0
+RECORD_COUNT = 0 (last verified Kintone checkpoint; no Kintone access in Stage 4A)
+THIS_STAGE_4A_FINAL_CORRECTION_KINTONE_CALLS = 0
+THIS_STAGE_4A_FINAL_CORRECTION_KINTONE_WRITES = 0
 PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
-NEXT_ACTION = AWAIT CHATGPT RE-REVIEW BEFORE STAGE 4B
+NEXT_ACTION = AWAIT CHATGPT FINAL STAGE 4A REVIEW BEFORE STAGE 4B
 ```
 
-Use actual final `npm test` total consistently in current operational sections.
-Historical test counts must be clearly historical.
-Add a Stage 4A changelog entry describing implementation + hardening + zero Kintone calls/writes.
+Use actual final full-suite test count consistently in current operational sections.
+Do not rewrite historical counts.
+
+Update `AI_REVIEW_PACKAGE.md` commit metadata with at least:
+
+```text
+f010e26 = Stage 4A implementation
+683cc0e = Stage 4A first hardening
+<new code commit> = Stage 4A final correction
+<new docs commit> = Stage 4A final evidence
+```
 
 Commit exactly:
 
 ```text
-docs: correct wp-002c stage4a review evidence
+docs: finalize wp-002c stage4a review evidence
 ```
 
 Push, verify local HEAD = remote HEAD and tracked working tree clean, then STOP.
@@ -320,10 +342,11 @@ Kintone RECORD WRITE = 0
 
 Do not use `.env.local`.
 Do not access App 796.
-Do not seed baseline configurations.
-Do not implement Kintone adapter.
-Do not modify core client/write guard/resolver/UI.
-Do not start Stage 4B or WP-002D.
+Do not seed records.
+Do not implement Stage 4B.
+Do not implement a Kintone adapter.
+Do not wire the resolver.
+Do not start WP-002D.
 
 ---
 
@@ -331,37 +354,37 @@ Do not start Stage 4B or WP-002D.
 
 ChatGPT will verify:
 
-1. Exactly two new Antigravity commits after this assignment: code/tests then docs.
-2. Code commit changes only service + service tests.
-3. Dependency method contracts fail before orchestration.
-4. Candidate status is absent/DRAFT only.
-5. Every overlap row is exact PUBLISHED + exact profile/FY + valid ordered dates before comparison.
-6. Malformed overlap rows cannot silently pass as non-overlap.
-7. Trusted `Published_At` is timezone-aware valid datetime, not date-only.
-8. Triple hash and final exact read-back remain fail-closed.
-9. Publish patch remains lifecycle/audit only.
-10. Supersession remains fail-closed.
-11. Service still has no Kintone/network/filesystem/Git dependency.
-12. Full tests pass.
-13. Living docs have one current Stage 4A test total and consistent pipeline status.
-14. CHANGELOG includes Stage 4A.
-15. Kintone calls/writes remain zero.
-16. Git local/remote sync passes.
+1. Exactly two new execution commits: code/tests then docs.
+2. Code commit changes service + service-test only.
+3. Offset timestamps receive exact calendar validation independent of timezone conversion.
+4. Invalid offset-calendar and invalid offset-component tests pass.
+5. Original Stage 4A semantic test coverage is restored, not traded away for hardening tests.
+6. Full test total is >= 291 and all pass.
+7. Dependency/overlap/status hardening remains intact.
+8. Triple-hash gate remains fail-closed.
+9. Every final read-back dimension has explicit regression coverage.
+10. Trusted audit gates remain fail-closed.
+11. Supersession remains unimplemented/fail-closed.
+12. No Kintone/network/filesystem/Git runtime dependency was added.
+13. Current living docs use one unambiguous pipeline-status vocabulary.
+14. Stage 4A commit metadata is current.
+15. Kintone calls/writes = zero.
+16. Git remote branch points to final evidence commit and reported local/remote sync passes.
 
 Expected gates:
 
 - `STAGE3C_EVIDENCE_EXCEPTION_CLOSURE_GATE = PASS`
 - `CANONICALIZATION_GATE = PASS`
-- `DEPENDENCY_CONTRACT_GATE = PASS / FAIL`
-- `PUBLISH_SERVICE_ARCHITECTURE_GATE = PASS / FAIL`
+- `DEPENDENCY_CONTRACT_GATE = PASS`
+- `EFFECTIVE_OVERLAP_GATE = PASS`
+- `TRUSTED_DATETIME_GATE = PASS / FAIL`
 - `TRIPLE_HASH_GATE = PASS`
-- `EFFECTIVE_OVERLAP_GATE = PASS / FAIL`
-- `TRUSTED_AUDIT_GATE = PASS / FAIL`
+- `TRUSTED_AUDIT_GATE = PASS`
 - `FINAL_PUBLISH_READBACK_GATE = PASS`
+- `REGRESSION_COVERAGE_GATE = PASS / FAIL`
 - `LIFECYCLE_GATE = PASS`
 - `SUPERSESSION_FAIL_CLOSED_GATE = PASS`
 - `DOC_EVIDENCE_CONSISTENCY_GATE = PASS / FAIL`
-- `ZERO_KINTONE_STAGE4A_GATE = PASS / FAIL`
-- `REGRESSION_GATE = PASS / FAIL`
+- `ZERO_KINTONE_STAGE4A_GATE = PASS`
 - `GIT_PUSH_SYNC_GATE = PASS / FAIL`
 - `WP002C_STAGE4A_GATE = PASS / BLOCKED`
