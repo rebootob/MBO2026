@@ -21,14 +21,91 @@ export function validateLifecycleTransition(currentStatus, nextStatus) {
   return true;
 }
 
+function isValidIsoDateTime(str) {
+  if (typeof str !== 'string') return false;
+  const trimmed = str.trim();
+  const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+  const match = isoRegex.exec(trimmed);
+  if (!match) return false;
+  const [, year, month, day, hour, minute, second] = match;
+  const y = parseInt(year, 10);
+  const m = parseInt(month, 10);
+  const d = parseInt(day, 10);
+  const hh = parseInt(hour, 10);
+  const mm = parseInt(minute, 10);
+  const ss = parseInt(second, 10);
+  if (m < 1 || m > 12 || d < 1 || d > 31 || hh > 23 || mm > 59 || ss > 59) return false;
+  const dt = new Date(trimmed);
+  if (isNaN(dt.getTime())) return false;
+  if (trimmed.endsWith('Z')) {
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== m || dt.getUTCDate() !== d || dt.getUTCHours() !== hh || dt.getUTCMinutes() !== mm || dt.getUTCSeconds() !== ss) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function validateOverlapRow(row, candidateProfile, candidateFiscalYear) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    throw new Error('REPOSITORY_RESPONSE_INVALID: Overlap query item must be a plain object');
+  }
+  if (row.Profile_Code !== candidateProfile || row.Fiscal_Year !== candidateFiscalYear) {
+    throw new Error('REPOSITORY_RESPONSE_INVALID: Overlap query item Profile_Code or Fiscal_Year mismatch');
+  }
+  if (row.Config_Status !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+    throw new Error('REPOSITORY_RESPONSE_INVALID: Overlap query item Config_Status must be PUBLISHED');
+  }
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (typeof row.Effective_From !== 'string' || !dateRegex.test(row.Effective_From.trim())) {
+    throw new Error('REPOSITORY_RESPONSE_INVALID: Overlap query item Effective_From invalid');
+  }
+  if (typeof row.Effective_To !== 'string' || !dateRegex.test(row.Effective_To.trim())) {
+    throw new Error('REPOSITORY_RESPONSE_INVALID: Overlap query item Effective_To invalid');
+  }
+  const fromDate = new Date(row.Effective_From.trim());
+  const toDate = new Date(row.Effective_To.trim());
+  if (
+    isNaN(fromDate.getTime()) || fromDate.toISOString().slice(0, 10) !== row.Effective_From.trim() ||
+    isNaN(toDate.getTime()) || toDate.toISOString().slice(0, 10) !== row.Effective_To.trim() ||
+    fromDate > toDate
+  ) {
+    throw new Error('REPOSITORY_RESPONSE_INVALID: Overlap query item effective date range invalid');
+  }
+}
+
 export class ScoringConfigMasterService {
   constructor({ repository, auditProvider }) {
     if (!repository || typeof repository !== 'object') {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Repository instance is required');
     }
+
+    const requiredRepoMethods = [
+      'findByMasterKey',
+      'createValidatedRecord',
+      'getByRecordId',
+      'findPublishedByProfileFiscalYear',
+      'publishRecord'
+    ];
+    for (const m of requiredRepoMethods) {
+      if (typeof repository[m] !== 'function') {
+        throw new Error(`REPOSITORY_RESPONSE_INVALID: Repository must provide method ${m}`);
+      }
+    }
+
     if (!auditProvider || typeof auditProvider !== 'object') {
       throw new Error('TRUSTED_PUBLISHER_INVALID: Audit provider instance is required');
     }
+
+    const requiredAuditMethods = [
+      'getPublisherIdentity',
+      'getPublishedAt'
+    ];
+    for (const m of requiredAuditMethods) {
+      if (typeof auditProvider[m] !== 'function') {
+        throw new Error(`TRUSTED_PUBLISHER_INVALID: Audit provider must provide method ${m}`);
+      }
+    }
+
     this.repository = repository;
     this.auditProvider = auditProvider;
   }
@@ -39,8 +116,8 @@ export class ScoringConfigMasterService {
     }
 
     // 1. Untrusted field & supersession checks
-    if (candidate.Config_Status !== undefined && candidate.Config_Status !== null && candidate.Config_Status !== '' && candidate.Config_Status !== CONFIG_LIFECYCLE_STATUS.DRAFT) {
-      throw new Error('UNTRUSTED_LIFECYCLE_FIELD: Candidate cannot specify non-DRAFT Config_Status');
+    if (candidate.Config_Status !== undefined && candidate.Config_Status !== CONFIG_LIFECYCLE_STATUS.DRAFT) {
+      throw new Error('UNTRUSTED_LIFECYCLE_FIELD: Candidate Config_Status must be absent or DRAFT only');
     }
     if (candidate.Published_By !== undefined && candidate.Published_By !== null && candidate.Published_By !== '') {
       throw new Error('UNTRUSTED_PUBLISH_AUDIT_FIELD: Candidate cannot specify Published_By');
@@ -59,11 +136,7 @@ export class ScoringConfigMasterService {
     const canonicalImmutable = canonicalizeScoringConfigPayload(candidate);
 
     // 3. Domain validation
-    try {
-      validateScoringMasterConfig(canonicalImmutable);
-    } catch (err) {
-      throw err;
-    }
+    validateScoringMasterConfig(canonicalImmutable);
 
     // 4. Duplicate master key query
     const existing = await this.repository.findByMasterKey(canonicalImmutable.Master_Record_Key);
@@ -71,7 +144,7 @@ export class ScoringConfigMasterService {
       throw new Error('REPOSITORY_RESPONSE_INVALID: findByMasterKey returned undefined');
     }
     if (existing !== null) {
-      if (typeof existing !== 'object') {
+      if (typeof existing !== 'object' || Array.isArray(existing)) {
         throw new Error('REPOSITORY_RESPONSE_INVALID: findByMasterKey returned non-object');
       }
       throw new Error(`MASTER_CONFIG_DUPLICATE: Key ${canonicalImmutable.Master_Record_Key} already exists`);
@@ -91,13 +164,24 @@ export class ScoringConfigMasterService {
 
     // 7. Persist validated record
     const recordId = await this.repository.createValidatedRecord(validatedRecordPayload);
-    if (recordId === undefined || recordId === null || (typeof recordId !== 'string' && typeof recordId !== 'number') || String(recordId).trim() === '') {
+    if (recordId === undefined || recordId === null) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: createValidatedRecord returned invalid record ID');
+    }
+    if (typeof recordId === 'number') {
+      if (!isFinite(recordId) || isNaN(recordId)) {
+        throw new Error('REPOSITORY_RESPONSE_INVALID: createValidatedRecord returned invalid numeric record ID');
+      }
+    } else if (typeof recordId === 'string') {
+      if (recordId.trim() === '') {
+        throw new Error('REPOSITORY_RESPONSE_INVALID: createValidatedRecord returned empty record ID');
+      }
+    } else {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: createValidatedRecord returned non-string/number record ID');
     }
 
     // 8. Initial read-back
     const readback1 = await this.repository.getByRecordId(recordId);
-    if (!readback1 || typeof readback1 !== 'object') {
+    if (!readback1 || typeof readback1 !== 'object' || Array.isArray(readback1)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: getByRecordId returned invalid payload');
     }
 
@@ -130,16 +214,12 @@ export class ScoringConfigMasterService {
     }
 
     for (const pub of publishedList) {
-      if (!pub || typeof pub !== 'object') {
-        throw new Error('REPOSITORY_RESPONSE_INVALID: findPublishedByProfileFiscalYear array item invalid');
-      }
-      if (pub.Profile_Code !== canonicalImmutable.Profile_Code || pub.Fiscal_Year !== canonicalImmutable.Fiscal_Year) {
-        throw new Error('REPOSITORY_RESPONSE_INVALID: findPublishedByProfileFiscalYear returned record for different profile/fiscal year');
-      }
+      validateOverlapRow(pub, canonicalImmutable.Profile_Code, canonicalImmutable.Fiscal_Year);
+
       const candidateFrom = canonicalImmutable.Effective_From;
       const candidateTo = canonicalImmutable.Effective_To;
-      const pubFrom = pub.Effective_From;
-      const pubTo = pub.Effective_To;
+      const pubFrom = pub.Effective_From.trim();
+      const pubTo = pub.Effective_To.trim();
 
       if (candidateFrom <= pubTo && pubFrom <= candidateTo) {
         throw new Error('SCORING_CONFIG_EFFECTIVE_OVERLAP: Effective period overlaps with an existing published configuration');
@@ -153,8 +233,8 @@ export class ScoringConfigMasterService {
     }
 
     const publishedAt = await this.auditProvider.getPublishedAt();
-    if (!publishedAt || typeof publishedAt !== 'string' || publishedAt.trim() === '' || isNaN(new Date(publishedAt).getTime())) {
-      throw new Error('TRUSTED_PUBLISHED_AT_INVALID: Trusted published date is empty or invalid');
+    if (!publishedAt || !isValidIsoDateTime(publishedAt)) {
+      throw new Error('TRUSTED_PUBLISHED_AT_INVALID: Trusted published date must be a valid timezone-aware ISO-8601 datetime');
     }
 
     // 11. Publish patch
@@ -167,7 +247,7 @@ export class ScoringConfigMasterService {
 
     // 12. Final read-back
     const finalReadback = await this.repository.getByRecordId(recordId);
-    if (!finalReadback || typeof finalReadback !== 'object') {
+    if (!finalReadback || typeof finalReadback !== 'object' || Array.isArray(finalReadback)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Final getByRecordId returned invalid payload');
     }
 
