@@ -1,209 +1,206 @@
-# AI ACTIVE TASK — M10G-R3 APP794 FIXED BUNDLE CONTROLLED REDEPLOY
+# AI ACTIVE TASK — M10H PROFILE MAPPING COVERAGE AUDIT + LOOKUP FAILURE STATE FIX
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `91b41a1aca60b5ef648bb7c4cee7ce087914d82c`
-> Mode: CONTROLLED APP794 CUSTOMIZATION REDEPLOY — EXPLICIT USER AUTHORIZATION RECEIVED
+> Reviewed Head: `324e93348205533f109668597f38ab6a9436969a`
+> Mode: APP53 READ-ONLY AUDIT + REPOSITORY FIX/TESTS ONLY — NO KINTONE WRITE / NO APP794 DEPLOY
 
 # NORTH STAR
 
 ```text
-App794 live UI is visible but current baseline is NOT business-usable.
-Confirmed live browser defects before this task:
-1) isValidEmployeeCode is not defined
-2) Kintone USER_SELECT fields receive invalid values
+Apps foundation              = READY
+App795 routing               = LIVE / READY
+App796 scoring               = LIVE / READY
+App800 dashboard             = LIVE
+App794 fixed runtime bundle  = LIVE revision 26
 
-M10G-R2 repaired both defects in repository and rebuilt the classic bundle.
-Tests = 511/511 PASS.
-Fixed bundle has NOT yet been deployed.
-
-USER AUTHORIZATION RECEIVED:
-"อนุมัติ M10G-R3 deploy App794 fixed bundle"
+Browser evidence after M10G-R3:
+- employee 0118 resolves successfully and unlocks objective UI
+- employee 0111 is found in App53 but fails at profile resolution with PROFILE_RESOLUTION_AMBIGUOUS
+- when the new lookup fails, the UI can retain stale verified state / stale employee snapshot from the previous successful employee
 
 THIS TASK:
-Deploy ONLY the M10G-R2 fixed App794 desktop customization bundle,
-then prove runtime health with live read-back plus browser/runtime smoke gates.
+1) Audit profile-mapping coverage for ALL distinct active employee positions in App53.
+2) Produce exact Mapped / Ambiguous / Unknown coverage and impacted employee counts.
+3) Fix stale verified-state behavior so a failed lookup can never leave a previous employee shown as verified.
+4) Do NOT invent new profile mappings or write Kintone data in this task.
 ```
 
-# AUTHORIZATION BOUNDARY — STRICT
-
-Authorized target:
+# HARD SAFETY
 
 ```text
-APP_ID = 794
-WRITE_TYPE = customization upload/update + deploy only
+APP53 = READ ONLY
+APP794_CUSTOMIZATION_DEPLOY = 0
+APP794_SCHEMA_WRITE = 0
+APP794_PROCESS_WRITE = 0
+APP794_RECORD_WRITE = 0
+APP794_ACL_WRITE = 0
+APP795_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+KINTONE_WRITES_THIS_TASK = 0
 ```
 
-Allowed:
-- verify/rebuild the already-reviewed R2 fixed bundle
-- capture a fresh durable pre-write App794 backup
-- upload/register exact fixed JS/CSS files
-- update App794 desktop customization only
-- deploy App794 customization
-- poll deployment status
-- live read-back revision/customization
-- non-destructive runtime/browser smoke checks
-- rollback App794 customization if deployment/runtime smoke fails
+# STEP 1 — READ-ONLY APP53 POSITION COVERAGE AUDIT
 
-NOT authorized:
+Read App53 only and obtain the distinct active employee Position values using the actual field code used by EmployeeService.
+
+For every distinct normalized position, classify using the CURRENT resolver source of truth in `src/profiles/profile-scoring-resolver.js`:
 
 ```text
-APP794_SCHEMA_WRITE = NO
-APP794_PROCESS_WRITE = NO
-APP794_RECORD_WRITE = NO
-APP794_ACL_WRITE = NO
-APP53_WRITE = NO
-APP795_WRITE = NO
-APP796_WRITE = NO
-APP797_WRITE = NO
-APP798_WRITE = NO
-APP800_WRITE = NO
-APP801_WRITE = NO
-OTHER_APP_WRITE = NO
+MAPPED     = exact POSITION_TO_PROFILE match
+AMBIGUOUS  = exact AMBIGUOUS_TITLES match
+UNKNOWN    = neither mapped nor ambiguous
 ```
 
-Do not create/update an MBO record for smoke testing.
-Do not broaden authorization.
+Do not silently assign a profile to Ambiguous or Unknown positions.
 
-# STEP 1 — PREDEPLOY SOURCE GATES
-
-Before any Kintone write:
-
-1. Confirm branch HEAD contains M10G-R2 commit `91b41a1aca60b5ef648bb7c4cee7ce087914d82c` or a direct descendant with no unreviewed runtime drift.
-2. Rebuild using the existing repaired build pipeline only.
-3. Deployment files must be exactly the current approved App794 desktop bundle/CSS produced by the existing pipeline.
-4. Run all gates before write:
+Required audit output:
 
 ```text
-npm test = PASS (>= 511)
+TOTAL_ACTIVE_EMPLOYEES = actual
+DISTINCT_POSITION_COUNT = actual
+MAPPED_POSITION_COUNT = actual
+AMBIGUOUS_POSITION_COUNT = actual
+UNKNOWN_POSITION_COUNT = actual
+MAPPED_EMPLOYEE_COUNT = actual
+AMBIGUOUS_EMPLOYEE_COUNT = actual
+UNKNOWN_EMPLOYEE_COUNT = actual
+```
+
+For every Ambiguous/Unknown position provide at minimum:
+
+```text
+raw App53 position label
+normalized label
+classification
+employee count
+sample employee codes (small representative sample only)
+current resolver result/error
+```
+
+Explicitly locate employee code `0111` and record its exact App53 Position plus why it resolves to `PROFILE_RESOLUTION_AMBIGUOUS`.
+
+Also verify a known successful example such as `0118` and record its position/profile resolution for contrast.
+
+# STEP 2 — PROFILE COVERAGE DECISION PACKAGE
+
+Prepare a concise decision matrix for Control Plane/User review.
+
+Do NOT choose mappings yourself where business meaning is not already frozen.
+
+Group unresolved positions by the most likely candidate profile only as `CANDIDATE_FOR_REVIEW`, never as final mapping.
+
+Valid frozen profiles are:
+
+```text
+PROF_STAFF_CHIEF
+PROF_JAPANESE_STAFF
+PROF_ASST_MGR
+PROF_SECTION_MGR
+PROF_SENIOR_MGR
+PROF_DGM
+PROF_GM
+PROF_VP
+```
+
+For each unresolved position, include:
+
+```text
+POSITION
+EMPLOYEE_COUNT
+CURRENT_CLASSIFICATION = AMBIGUOUS/UNKNOWN
+CANDIDATE_FOR_REVIEW = one or more plausible frozen profiles, only if inferable from title
+BUSINESS_DECISION_REQUIRED = YES
+```
+
+If title alone is insufficient, candidate must be `UNDETERMINED`.
+
+# STEP 3 — FIX STALE VERIFIED STATE ON LOOKUP FAILURE
+
+Current browser evidence shows a failed lookup may leave the previous successful employee visible/verified.
+
+Inspect existing `EmployeePartAUI` lookup flow and `src/main-mbo-app.js` callbacks.
+
+Required behavior:
+
+```text
+WHEN Employee Code changes:
+- immediately set isEmployeeVerified = false
+- clear previous employee snapshot fields safely by Kintone field type
+- lock objective grid until new lookup fully succeeds
+
+WHEN lookup starts:
+- verified state remains false
+- stale employee data must not be presented as the newly requested employee
+
+WHEN ANY lookup stage fails (App53 / App795 / profile resolution / App796 / duplicate check):
+- isEmployeeVerified = false
+- clear or keep cleared stale employee snapshot
+- show the new error for the requested Employee Code
+- objective grid remains locked
+- do not show “Employee verified”
+
+ONLY AFTER all required read-only validation stages succeed:
+- sync new employee/routing/scoring snapshot into record state
+- set isEmployeeVerified = true
+- refresh UI from the new snapshot
+- unlock objective grid as allowed
+```
+
+Important: do not partially commit a newly looked-up employee into the record before all required validation stages pass.
+
+# STEP 4 — TESTS FOR LOOKUP ATOMICITY / STALE STATE
+
+Add regression tests around existing modules/functions. At minimum cover:
+
+```text
+successful lookup A -> employee verified
+change code A to B -> verified becomes false and stale snapshot clears
+lookup B profile ambiguous -> verified remains false
+lookup B missing scoring -> verified remains false
+lookup B routing failure -> verified remains false
+no previous employee name/section/position remains displayed after failed B lookup
+successful lookup B after previous failure -> verified becomes true only after full success
+USER_SELECT reset values remain arrays []
+```
+
+Prefer modifying existing UI/main runtime tests rather than creating duplicate test infrastructure.
+
+# STEP 5 — DO NOT MODIFY PROFILE MAPPINGS YET
+
+This task is an AUDIT + stale-state FIX only.
+
+Do NOT edit:
+
+```text
+POSITION_TO_PROFILE mappings
+AMBIGUOUS_TITLES classifications
+App796 records
+App53 records
+```
+
+unless a purely technical normalization bug is proven. Any business mapping changes require ChatGPT/User review of the coverage matrix first.
+
+# STEP 6 — BUILD / VERIFY
+
+Rebuild the classic bundle after the stale-state fix using the existing pipeline, but DO NOT deploy it.
+
+Required gates:
+
+```text
 CLASSIC_BUNDLE_PARSE = PASS
 ES_MODULE_IMPORT_COUNT = 0
 ES_MODULE_EXPORT_COUNT = 0
 BROKEN_FROM_RESIDUE_COUNT = 0
-IS_VALID_EMPLOYEE_CODE_RUNTIME_TEST = PASS
-USER_SELECTION_RESET_TYPE_TEST = PASS
-ROUTING_USER_ARRAY_ASSIGNMENT_TEST = PASS
-GIT_DIFF_CHECK = PASS
-NO_ORPHAN_ARTIFACT_GATE = PASS
+IS_VALID_EMPLOYEE_CODE_RUNTIME = PASS
+USER_SELECTION_RESET_TYPE = ARRAY
+LOOKUP_FAILURE_STALE_STATE_TEST = PASS
 ```
 
-If any gate fails: STOP BEFORE KINTONE WRITE.
-
-# STEP 2 — FRESH PRE-WRITE BACKUP
-
-Immediately before the first write, capture fresh durable evidence under:
-
-```text
-backups/m10g-r3-app794-fixed-redeploy/<timestamp>/
-```
-
-Capture at minimum:
-- App794 app/settings
-- form/schema
-- process-management
-- ACL/permissions
-- customization settings
-- desktop JS/CSS references
-- mobile references
-- live revision
-- record count
-- checksums/manifest where practical
-
-Expected current live state from prior recovery is Revision 25 working-baseline customization, but DO NOT assume it. Read live state first.
-
-If live state has unexpected concurrent drift, STOP and report BLOCKED.
-
-# STEP 3 — DEPLOY EXACT R2 FIXED BUNDLE
-
-Deploy App794 desktop customization only.
-
-Required fixed behavior contained in bundle:
-
-```text
-isValidEmployeeCode exists in classic runtime scope
-USER_SELECT blank/reset values use []
-Requester_User / Manager / GM user values remain arrays of Kintone user objects
-M10F App53 -> App795 -> App796 runtime logic retained
-TMG exact Section|Team routing retained
-classic script has zero active import/export residue
-```
-
-Preserve mobile customization unchanged.
-
-# STEP 4 — DEPLOY STATUS + LIVE READ-BACK
-
-After update/deploy:
-
-```text
-APP794_DEPLOY_STATUS = SUCCESS
-LIVE_CUSTOMIZATION_READBACK = MATCH
-MOBILE_CUSTOMIZATION_UNCHANGED = YES
-APP794_SCHEMA_DRIFT = 0
-APP794_PROCESS_DRIFT = 0
-APP794_ACL_DRIFT = 0
-APP794_RECORD_WRITES = 0
-NON_TARGET_APP_WRITES = 0
-```
-
-Record exact post-deploy revision and file keys/checksums.
-
-# STEP 5 — MANDATORY RUNTIME SMOKE
-
-This deployment MUST NOT be marked healthy based only on API read-back.
-
-Required runtime/browser evidence as far as Antigravity can execute non-destructively:
-
-A. Page initialization:
-```text
-NO classic syntax error
-NO unresolved runtime dependency error
-NO Kintone event.record invalid-value error on page load/change
-```
-
-B. Employee Search path:
-- Use a known valid sandbox employee code only if this can be done without record creation/update.
-- Search must progress past `isValidEmployeeCode`.
-- Employee lookup path must remain App53 GET-only.
-- If a real browser interaction cannot be executed by Antigravity, mark `USER_BROWSER_CONFIRMATION_REQUIRED` and do NOT claim END_TO_END_BROWSER_PASS.
-
-C. USER_SELECT type gate:
-- Prove record-state assignments for Requester_User / Manager / GM fields are arrays.
-- Empty optional approvers = `[]`.
-- Non-empty approvers = array of user objects.
-- No `''` assignment to USER_SELECT fields.
-
-D. Routing/scoring non-destructive smoke:
-- App795 GET only.
-- App796 GET only.
-- TMG exact route behavior preserved.
-- No App794 record POST/PUT.
-
-# STEP 6 — ROLLBACK RULE
-
-Rollback immediately to the exact fresh pre-write customization from STEP 2 if any of these occurs:
-
-```text
-deployment failure
-customization read-back mismatch
-classic syntax error
-isValidEmployeeCode runtime error
-USER_SELECT invalid-value error
-other page initialization failure attributable to redeploy
-critical routing/scoring regression
-schema/process/ACL drift
-unexpected record write
-non-target app write
-```
-
-Rollback scope = App794 customization only.
-After rollback, poll to SUCCESS and verify original customization restored.
-Report `ROLLED_BACK`, never PASS.
-
-# STEP 7 — VERIFY / EVIDENCE
-
-Run after execution:
+Run:
 
 ```bash
 npm test
@@ -211,57 +208,56 @@ git diff --check
 git status --short
 ```
 
-Update living docs with factual result only.
-The user authorization is consumed by this one M10G-R3 redeploy task.
-Commit and push same branch, then STOP.
+# NO-ORPHAN
+
+Modify existing resolver/UI/runtime/test files only as necessary.
+Do not create `_old`, `_v1`, duplicate resolver, duplicate UI, duplicate profile map, or throwaway active files.
+If a durable coverage artifact is needed, update an existing living project-doc review package rather than adding redundant documentation.
 
 # REQUIRED FINAL SUMMARY
 
 ```text
-M10G_R3_APP794_FIXED_REDEPLOY = COMPLETE / BLOCKED / ROLLED_BACK
+M10H_PROFILE_MAPPING_COVERAGE_AUDIT = COMPLETE / BLOCKED
+M10H_LOOKUP_FAILURE_STATE_FIX = COMPLETE / BLOCKED
 
-USER_AUTHORIZATION_CONSUMED = YES
-AUTHORIZED_TARGET = App794 customization only
+APP53_READ_ONLY = YES
+TOTAL_ACTIVE_EMPLOYEES = actual
+DISTINCT_POSITION_COUNT = actual
+MAPPED_POSITION_COUNT = actual
+AMBIGUOUS_POSITION_COUNT = actual
+UNKNOWN_POSITION_COUNT = actual
+MAPPED_EMPLOYEE_COUNT = actual
+AMBIGUOUS_EMPLOYEE_COUNT = actual
+UNKNOWN_EMPLOYEE_COUNT = actual
 
-PREWRITE_BACKUP = PASS/FAIL
-BACKUP_PATH = exact
-PREWRITE_REVISION = actual
-POST_DEPLOY_REVISION = actual
-DEPLOYED_JS = exact
-DEPLOYED_CSS = exact
-APP794_DEPLOY_STATUS = actual
-LIVE_CUSTOMIZATION_READBACK = PASS/FAIL
-MOBILE_CUSTOMIZATION_UNCHANGED = YES/NO
+EMPLOYEE_0111_POSITION = exact
+EMPLOYEE_0111_CURRENT_RESULT = exact
+EMPLOYEE_0118_POSITION = exact
+EMPLOYEE_0118_CURRENT_RESULT = exact
+
+UNRESOLVED_POSITION_MATRIX = included in review package
+PROFILE_MAPPING_CHANGES_THIS_TASK = 0
+
+STALE_VERIFIED_STATE_FIX = PASS/FAIL
+FAILED_LOOKUP_CLEARS_PREVIOUS_EMPLOYEE = PASS/FAIL
+FAILED_LOOKUP_OBJECTIVE_GRID_LOCKED = PASS/FAIL
+VERIFIED_ONLY_AFTER_FULL_SUCCESS = PASS/FAIL
 
 CLASSIC_BUNDLE_PARSE = PASS/FAIL
-ES_MODULE_IMPORT_COUNT = actual
-ES_MODULE_EXPORT_COUNT = actual
-IS_VALID_EMPLOYEE_CODE_RUNTIME_GATE = PASS/FAIL
-USER_SELECTION_RESET_TYPE_GATE = PASS/FAIL
-ROUTING_USER_ARRAY_ASSIGNMENT_GATE = PASS/FAIL
-
-PAGE_INITIALIZATION_SMOKE = PASS/FAIL/USER_BROWSER_CONFIRMATION_REQUIRED
-EMPLOYEE_SEARCH_SMOKE = PASS/FAIL/USER_BROWSER_CONFIRMATION_REQUIRED
-KINTONE_INVALID_USER_SELECT_ERROR = 0/actual/USER_BROWSER_CONFIRMATION_REQUIRED
-CONSOLE_RUNTIME_ERROR = 0/actual/USER_BROWSER_CONFIRMATION_REQUIRED
-
-APP794_SCHEMA_WRITES = 0
-APP794_PROCESS_WRITES = 0
-APP794_RECORD_WRITES = 0
-APP794_ACL_WRITES = 0
-NON_TARGET_APP_WRITES = 0
-
-ROLLBACK_REQUIRED = YES/NO
-ROLLBACK_STATUS = NOT_REQUIRED/PASS/FAIL
-
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
+
+KINTONE_WRITES_THIS_TASK = 0
+APP794_CUSTOMIZATION_DEPLOY = 0
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = CHATGPT REVIEW + USER BROWSER CONFIRMATION IF REQUIRED
+NEXT_ACTION = CHATGPT REVIEW OF COVERAGE MATRIX + BUSINESS PROFILE MAPPING DECISIONS
 ```
 
-Do NOT perform schema/process/record writes.
-Do NOT touch any other Kintone app.
-Do NOT claim browser runtime PASS without browser/runtime evidence.
+Update living docs with factual results.
+Commit and push same branch, then STOP.
+
+Do NOT deploy App794.
+Do NOT change profile mapping business rules.
+Do NOT write any Kintone records/settings.
