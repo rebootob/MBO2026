@@ -1,54 +1,189 @@
-# AI ACTIVE TASK — M7B-R1 DEEP LEGACY ROUTING RESOLUTION
+# AI ACTIVE TASK — M7C TMG TEAM-BASED ROUTING DISCOVERY (READ ONLY)
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `220b4d07d44dacd3444f71ad3c56fe8e2dc92dd7`
-> **Mode:** READ-ONLY LEGACY DATA RESOLUTION — KINTONE WRITES = 0
+> **Reviewed head:** `73c4e76f49b8937b43179882db4cda6975c1cfed`
+> **Mode:** READ-ONLY DISCOVERY / EVIDENCE ONLY — KINTONE WRITES = 0
 
 # NORTH STAR
 
 ```text
-M7A Requester Baseline 12/12 = PASS
-M7B Full Routing Flow         = 1/12 VERIFIED, 11/12 AMBIGUOUS
-M7 OVERALL                    = OPEN
-M9 FINAL ACCEPTANCE           = BLOCKED_PENDING_M7B
-TODAY_DONE                    = NO
-
-NEXT_CRITICAL_PATH = DEEP-READ OLD PMS APPS -> RESOLVE LEGACY APPROVER NAMES/ROLES -> MAP TO KINTONE USERS -> USER REVIEW -> M7B WRITE
+M7A Requester Baseline                 = PASS / 12 OF 12 SECTIONS
+M7B Section-Level Routing Discovery    = PARTIAL / 3 VERIFIED, 7 AMBIGUOUS, 2 MISSING
+M7C TMG Team-Based Routing             = REQUIRED / EXECUTE READ-ONLY DISCOVERY NOW
+M7 OVERALL                              = OPEN
+M9 FINAL ACCEPTANCE                     = BLOCKED_PENDING_M7
+TODAY_DONE                              = NO
 ```
 
-# PURPOSE
-
-The previous M7B discovery confirmed that requester mappings are complete but 11 sections still have ambiguous manager/GM approvers because legacy records contain free-text or non-canonical approver data.
-
-This task performs a deeper READ-ONLY investigation of the old PMS applications and related employee/user sources before asking the user to fill routing manually.
-
-Do not guess approvers. Do not write anything to Kintone.
-
-# TARGET ACTIVE SECTIONS
+Critical business clarification from user:
 
 ```text
-TME1
-TMF1
-TMF2
-TMF3
-TMG1
-TMG2
-TMH1
-TMH2
-TMH3
-TMS1
-TMT1
-TMT2
+TMG1 = 4 routing lines, divided by Team
+TMG2 = 4 routing lines, divided by Team
 ```
 
-TMT3 remains retired/excluded.
+Therefore TMG1/TMG2 MUST NOT be treated as one routing flow per Section_Code.
 
-# READ-ONLY SOURCES TO INSPECT DEEPLY
+For TMG routing, Team must be derived from App53 employee master data.
 
-Protected legacy PMS apps:
+# OBJECTIVE
+
+Discover the real 8 Team-based routing flows:
+
+```text
+TMG1 = 4 Team flows
+TMG2 = 4 Team flows
+TOTAL = 8 Team routing flows
+```
+
+Do not guess Team names.
+Do not guess approvers.
+Do not modify anything.
+
+# HARD SAFETY RULE — READ ONLY ONLY
+
+This task is investigation only.
+
+ABSOLUTELY PROHIBITED:
+
+```text
+NO Kintone record create
+NO Kintone record update
+NO Kintone record delete
+NO schema change
+NO Process Management change
+NO deploy
+NO POST
+NO PUT
+NO PATCH
+NO DELETE
+NO field rename
+NO field removal
+NO App795 modification
+NO App53 modification
+NO legacy app modification
+NO cleanup of Kintone data/schema
+NO migration
+NO routing seed
+NO status transition
+```
+
+Required:
+
+```text
+KINTONE_WRITES_THIS_TASK = 0
+APP53_MODIFIED = NO
+APP795_MODIFIED = NO
+LEGACY_APPS_MODIFIED = NO
+SCHEMA_MODIFIED = NO
+PROCESS_MANAGEMENT_MODIFIED = NO
+```
+
+Before Kintone network access:
+
+```js
+delete process.env.KINTONE_API_TOKEN;
+```
+
+Use authorized username/password authentication only.
+Never print credentials, authentication headers, passwords, raw secrets, or unnecessary personal employee data.
+
+# STEP 0 — GIT / REPOSITORY SAFETY
+
+Require:
+
+```text
+branch = ai/antigravity-wp002c
+73c4e76f... is ancestor
+local HEAD = origin branch
+tracked tree clean before execution
+```
+
+No reset/rebase/force push/history rewrite.
+
+Do not create duplicate runtime scripts.
+Prefer existing read-only utilities.
+If a temporary local inspector is necessary, keep it untracked and delete it after use.
+Do not commit raw Kintone exports, personal-data dumps, screenshots, or temporary JSON.
+
+# STEP 1 — VERIFY APP53 TEAM SOURCE
+
+Read App53 schema and only the records needed to understand TMG1/TMG2.
+
+Confirm exact field codes for:
+
+```text
+Employee Code
+Section / Section Code
+Team
+Position
+Active/employment status if available
+other fields genuinely required to distinguish routing
+```
+
+Existing external evidence suggests Team may be App53 field:
+
+```text
+Drop_down_2
+```
+
+BUT VERIFY THIS DIRECTLY FROM APP53. Do not assume.
+
+Find active/current employees whose Section is:
+
+```text
+TMG1
+TMG2
+```
+
+Group by exact Team value from App53.
+
+Required result must prove:
+
+```text
+TMG1_TEAM_COUNT = 4
+TMG2_TEAM_COUNT = 4
+```
+
+If live App53 does not produce exactly 4 + 4, STOP and report discrepancy. Do not force the expected count.
+
+Preserve Team values exactly as stored in App53.
+Do not normalize, rename, translate, abbreviate, or invent Team values.
+
+For each Team report employee count only; do not list employee names unless a specific identity is necessary to prove routing evidence.
+
+# STEP 2 — DEFINE DISCOVERY ROUTING IDENTITY
+
+For investigation, derive the business routing identity as:
+
+```text
+Section_Code + exact Team value
+```
+
+Example structure only:
+
+```text
+TMG1 | <exact Team value>
+TMG1 | <exact Team value>
+TMG1 | <exact Team value>
+TMG1 | <exact Team value>
+TMG2 | <exact Team value>
+TMG2 | <exact Team value>
+TMG2 | <exact Team value>
+TMG2 | <exact Team value>
+```
+
+Do NOT create a permanent `Routing_Key` field or modify App795 in this task.
+Recommendation only is allowed.
+
+# STEP 3 — DEEP READ LEGACY ROUTING SOURCES FOR EACH TEAM
+
+Read only the relevant historical apps and evidence.
+
+Inspect at minimum:
 
 ```text
 283
@@ -61,184 +196,222 @@ Protected legacy PMS apps:
 716
 ```
 
-Also inspect when useful:
+Also inspect App139 or another legacy app only if repository/project evidence shows it contains useful Section-Team/routing evidence.
+
+For TMG1/TMG2 search using:
 
 ```text
-App53 Employee Namelist / organization data
-App795 current routing records and schema
-Kintone User API / organization/user directory read-only
-repository routing/process docs and historical evidence
-legacy process-management settings from each PMS app
+exact Section value
+exact Team value
+Section-Team combinations
+historical records
+approval status values
+Process Management states
+Process Management assignee groups/users
+manager approval fields
+GM approval fields
+historical approver names/codes
 ```
 
-# REQUIRED DEEP INSPECTION PER LEGACY APP
+Do not stop at form/schema inspection.
+Inspect actual historical records and Process Management configuration when necessary.
 
-For each old PMS app, do not stop at field/schema inventory. Read enough existing records and process configuration to understand actual approver behavior.
+# STEP 4 — CROSS-CHECK APPROVER IDENTITIES
 
-Identify fields that may represent:
+For every candidate approver, cross-check against:
 
 ```text
-Section / Department
-Employee Code / Employee Name
-Requester / Creator
-Manager / First Manager / Section Manager
-Second Manager / Senior Manager
-GM / DGM / General Manager
-Approver / Evaluator / Appraiser
-Approval status / process assignee
-Created By / Updated By where relevant
+App53 employee master
+Kintone User Directory
+legacy Process Management actors/groups
+historical record approver evidence
+repository routing/process documentation
 ```
 
-Inspect actual field TYPES and actual stored VALUES. Distinguish:
+Identity resolution priority:
+
+1. exact Kintone USER_SELECT code stored in record/process configuration
+2. exact employee code/email uniquely matching App53 + Kintone User Directory
+3. exact full name with exactly one match
+4. organization + position + name combination with exactly one match
+
+Never infer an approver from title alone.
+Never pick between conflicting candidates automatically.
+Never reuse Requester_User as approver unless independently proven.
+
+Classifications:
 
 ```text
-USER_SELECT
-ORGANIZATION_SELECT
-GROUP_SELECT
-SINGLE_LINE_TEXT / free text
-Creator / Modifier system fields
-Process assignee/action settings
+VERIFIED
+AMBIGUOUS
+MISSING
+NO_KINTONE_ACCOUNT
 ```
 
-Do not assume a free-text person name equals a Kintone user account.
+# STEP 5 — DETERMINE FULL ROUTING TOPOLOGY FOR EACH OF THE 8 TEAM FLOWS
 
-# NAME / IDENTITY RESOLUTION
-
-For every legacy approver candidate, try to resolve identity using authoritative evidence, in this order:
-
-1. Exact Kintone USER_SELECT code already stored in legacy record/process configuration.
-2. Exact employee code or email matching App53 and Kintone User API.
-3. Exact full name with one-and-only-one match across App53 + Kintone User API.
-4. Organization + position + name combination with one-and-only-one match.
-
-If multiple people can match, classify AMBIGUOUS.
-If no Kintone user account exists, classify NO_KINTONE_ACCOUNT and report the exact business role/name without inventing an account.
-
-Do not expose unnecessary personal details in docs; exact user codes may be included in the review matrix when needed for approval, but omit unrelated user profile data.
-
-# PROCESS-MANAGEMENT EVIDENCE
-
-Inspect each legacy PMS app process management READ ONLY.
-
-Determine whether approval actors are defined by:
+For every exact TMG1/TMG2 Team, determine when evidence supports it:
 
 ```text
-fixed users
-field-based users
-organizations/groups
-creator/record owner
-status/action assignees
+Requester rule/source
+Manager_Level1_Approvers
+Manager_Level1_Approval_Rule = ALL / ANY / UNKNOWN
+Manager_Level2_Approvers, if applicable
+Manager_Level2_Approval_Rule
+GM_Level1_Approvers
+GM_Level1_Approval_Rule
+GM_Level2_Approvers, if applicable
+GM_Level2_Approval_Rule
+routing order/topology
+HR final check behavior if evidenced
 ```
 
-Use this to reconstruct real historical routing rather than relying only on record free-text fields.
+Possible topology examples only:
 
-# SECTION-LEVEL OUTPUT
+```text
+M1 -> G1
+M1 -> M2 -> G1
+M1 -> G1 -> G2
+M1 -> M2 -> G1 -> G2
+```
 
-Produce one exact row for each active section:
+Do not force a topology if evidence is incomplete.
+
+# STEP 6 — EXACT 8-FLOW DISCOVERY MATRIX
+
+Produce exactly one row per live TMG Team.
+
+Required columns/content:
 
 ```text
 Section_Code
-Requester_User
-Manager_Level1 candidate(s)
-Manager_Level1 source(s)
-Manager_Level1 rule ALL/ANY if evidenced
-Manager_Level2 candidate(s), if any
-Manager_Level2 source(s)
-Manager_Level2 rule
-GM_Level1 candidate(s)
-GM_Level1 source(s)
-GM_Level1 rule
-GM_Level2 candidate(s), if any
-GM_Level2 source(s)
-GM_Level2 rule
+Team exact value
+Employee count
+Requester rule/source
+Manager L1 candidate(s)
+Manager L1 Kintone user code(s)
+Manager L1 rule
+Manager L2 candidate(s), if any
+Manager L2 Kintone user code(s)
+Manager L2 rule
+GM L1 candidate(s)
+GM L1 Kintone user code(s)
+GM L1 rule
+GM L2 candidate(s), if any
+GM L2 Kintone user code(s)
+GM L2 rule
 Topology
 Legacy source app(s)
-Identity resolution result
+Source field/process state/group/record evidence
 Confidence = VERIFIED / AMBIGUOUS / MISSING / NO_KINTONE_ACCOUNT
 Exact unresolved question if not VERIFIED
 ```
 
-A section may be VERIFIED only when every required active routing slot has authoritative identity evidence and routing order/rule evidence.
+A Team flow is VERIFIED only if all required active routing slots, routing order, and required rule(s) are supported by authoritative evidence.
 
-# CROSS-CHECK RULES
+# STEP 7 — ARCHITECTURE COMPATIBILITY CHECK ONLY
 
-Cross-check candidate approvers against:
+Assess whether current App795 model is compatible with Team-based routing.
 
-```text
-App53 employee department/section/position
-Kintone user existence
-legacy app process settings
-multiple legacy records from the same section
-multiple years if available
-```
-
-Prefer consistent repeated evidence over a single old record.
-
-If legacy years differ, report the latest relevant routing and show that historical routing changed. Do not silently choose one.
-
-# WRITE SAFETY
-
-Kintone writes = 0.
-
-Never call POST/PUT/PATCH/DELETE/deploy/status-transition endpoints.
-
-Protected apps remain READ ONLY:
+Specifically inspect the implications of current:
 
 ```text
-53,283,305,307,310,640,643,715,716
+Section_Code unique
 ```
 
-Sandbox apps also READ ONLY in this task:
+versus required business reality:
 
 ```text
-794,795,796,797,798,800
+TMG1 has 4 Team flows
+TMG2 has 4 Team flows
 ```
 
-Before live calls:
+Report only:
 
-```js
-delete process.env.KINTONE_API_TOKEN;
+```text
+APP795_TEAM_AWARE_CHANGE_REQUIRED = YES / NO / UNDETERMINED
 ```
 
-Use username/password auth only. Never print credentials/auth headers.
+If YES, provide the minimum safe design recommendation, for example conceptual fields such as:
 
-# REPOSITORY / NO-ORPHAN
+```text
+Routing_Key
+Section_Code
+Team
+```
 
-Prefer existing read-only utilities. Do not create duplicate discovery scripts or committed raw exports.
+but DO NOT implement, rename, add, remove, or alter any field.
 
-If a temporary local inspector is necessary, keep it untracked and delete it after use.
+No App795 write authorization exists in this task.
 
-Do not commit raw Kintone record dumps, screenshots, temp JSON, or personal data exports.
+# STEP 8 — NO-ORPHAN / TEST SAFETY
+
+No new persistent runtime implementation should be created for this discovery unless absolutely necessary and justified.
+
+Do not delete existing historical evidence.
+Do not clean or remove live Kintone artifacts.
+
+Run:
+
+```bash
+npm test
+git diff --check
+git status --short
+```
 
 Required:
 
 ```text
 NO_ORPHAN_ARTIFACT_GATE = PASS
 STALE_ACTIVE_REFERENCES = 0
+KINTONE_WRITES_THIS_TASK = 0
 ```
 
-# FINAL EVIDENCE
+# FINAL REQUIRED SUMMARY
 
-Update living docs and AI_REVIEW_PACKAGE with a concise exact matrix and counts.
+Update living documentation / AI_REVIEW_PACKAGE only with sanitized findings.
 
-Required final status:
+Required final block:
 
 ```text
-M7A_REQUESTER_BASELINE = PASS / 12/12
-M7B_DEEP_LEGACY_RESOLUTION = COMPLETE / PENDING CHATGPT REVIEW
-M7B_VERIFIED_COUNT = actual / 12
-M7B_AMBIGUOUS_COUNT = actual
-M7B_MISSING_COUNT = actual
-M7B_NO_KINTONE_ACCOUNT_COUNT = actual
-KINTONE_WRITES_THIS_TASK = 0
-PROTECTED_WRITES_THIS_TASK = 0
+M7C_TMG_TEAM_ROUTING_DISCOVERY = COMPLETE / PENDING CHATGPT REVIEW
+
+APP53_TEAM_FIELD = exact field code
+TMG1_TEAM_COUNT = actual
+TMG2_TEAM_COUNT = actual
+EXPECTED_TOTAL_TEAM_FLOWS = 8
+
+VERIFIED = X
+AMBIGUOUS = X
+MISSING = X
+NO_KINTONE_ACCOUNT = X
+
+APP795_TEAM_AWARE_CHANGE_REQUIRED = YES / NO / UNDETERMINED
+
+KINTONE_GETS = actual
+KINTONE_WRITES = 0
+POST = 0
+PUT = 0
+PATCH = 0
+DELETE = 0
+
+APP53_MODIFIED = NO
+APP795_MODIFIED = NO
+LEGACY_APPS_MODIFIED = NO
+SCHEMA_MODIFIED = NO
+PROCESS_MANAGEMENT_MODIFIED = NO
+
 NO_ORPHAN_ARTIFACT_GATE = PASS
 npm test = actual / PASS
-M7B_WRITE_AUTHORIZATION = NO
-NEXT_ACTION = CHATGPT + USER REVIEW OF RESOLVED ROUTING MATRIX
+
+M7_WRITE_AUTHORIZATION = NO
+NEXT_ACTION = CHATGPT + USER REVIEW ONLY
 ```
 
-Do not claim M7 complete unless all 12 are VERIFIED.
-Do not execute any routing write in this task.
+Do not mark M7 complete.
+Do not proceed to M9.
+Do not seed App795.
+Do not alter routing schema.
+Do not delete or clean old fields.
 
-Commit/push same branch, then STOP.
+Commit only investigation/evidence documentation if required by current governance, push same branch, then STOP.
