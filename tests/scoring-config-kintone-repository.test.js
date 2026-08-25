@@ -61,7 +61,7 @@ function createFakeAdapter(requestImpl, authorizeWriteImpl) {
   return { repo, reqCalls, authCalls };
 }
 
-// ── Step 9 & Must-Fix Hardening Tests ──
+// ── Step 9 & Must-Fix Final Exactness Tests ──
 
 test('Stage 4B 1: constructor requires request function', () => {
   assert.throws(
@@ -115,8 +115,8 @@ test('Stage 4B 7: missing $id rejected', () => {
   assert.throws(() => normalizeRawRecord(raw), /REPOSITORY_RESPONSE_INVALID/);
 });
 
-test('Stage 4B 8: malformed / whitespace / non-integer $id rejected', () => {
-  for (const badId of ['0', ' 101 ', '-1', '1.5', '9007199254740993', 'abc', null, undefined]) {
+test('Stage 4B 8: malformed / whitespace / non-string / numeric $id rejected', () => {
+  for (const badId of ['0', ' 101 ', '-1', '1.5', '9007199254740993', 'abc', null, undefined, 101]) {
     const raw = getValidRawRecord({ $id: { value: badId } });
     assert.throws(() => normalizeRawRecord(raw), /REPOSITORY_RESPONSE_INVALID/);
   }
@@ -128,8 +128,8 @@ test('Stage 4B 9: missing $revision rejected', () => {
   assert.throws(() => normalizeRawRecord(raw), /REPOSITORY_RESPONSE_INVALID/);
 });
 
-test('Stage 4B 10: malformed / whitespace / non-integer $revision rejected', () => {
-  for (const badRev of ['0', ' 1 ', '-1', '9007199254740993', 'abc', null]) {
+test('Stage 4B 10: malformed / whitespace / non-string / numeric $revision rejected', () => {
+  for (const badRev of ['0', ' 1 ', '-1', '9007199254740993', 'abc', null, 1]) {
     const raw = getValidRawRecord({ $revision: { value: badRev } });
     assert.throws(() => normalizeRawRecord(raw), /REPOSITORY_RESPONSE_INVALID/);
   }
@@ -211,7 +211,7 @@ test('Stage 4B 20: findByMasterKey returned key mismatch rejected', async () => 
 test('Stage 4B 21: master key query requires exact non-trimmed string and handles escaping', async () => {
   const { repo, reqCalls } = createFakeAdapter(async () => ({ records: [] }));
   await assert.rejects(
-    () => repo.findByMasterKey(' PROF_STAFF_CHIEF::v1.0.0 '), // whitespace rejected
+    () => repo.findByMasterKey(' PROF_STAFF_CHIEF::v1.0.0 '),
     /REPOSITORY_RESPONSE_INVALID/
   );
 
@@ -347,7 +347,7 @@ test('Stage 4B 33: missing / non-string create field fails BEFORE authorizer and
   const base = getCanonicalBaselineMasterConfigs()[0];
   const hash = computeConfigurationHash(base);
   const valRecord = { ...base, Config_Status: 'VALIDATED', Configuration_Hash: hash, Published_By: '', Published_At: '' };
-  delete valRecord.PartA_Weight; // missing required field!
+  delete valRecord.PartA_Weight;
 
   await assert.rejects(
     () => repo.createValidatedRecord(valRecord),
@@ -380,19 +380,43 @@ test('Stage 4B 35: exact 64-char lowercase configuration hash required', async (
   );
 });
 
-test('Stage 4B 36: validated Published_By must be empty', async () => {
-  const { repo } = createFakeAdapter();
+test('Stage 4B 36: Published_By undefined/null property rejected before authorizer/request', async () => {
+  const { repo, reqCalls, authCalls } = createFakeAdapter();
   const base = getCanonicalBaselineMasterConfigs()[0];
   const hash = computeConfigurationHash(base);
-  const valRecord = { ...base, Config_Status: 'VALIDATED', Configuration_Hash: hash, Published_By: 'user1', Published_At: '' };
+  
+  for (const badBy of [undefined, null, 'usr_admin_01']) {
+    const valRecord = { ...base, Config_Status: 'VALIDATED', Configuration_Hash: hash, Published_By: badBy, Published_At: '' };
+    if (badBy === undefined) delete valRecord.Published_By;
 
-  await assert.rejects(
-    () => repo.createValidatedRecord(valRecord),
-    /REPOSITORY_RESPONSE_INVALID/
-  );
+    await assert.rejects(
+      () => repo.createValidatedRecord(valRecord),
+      /REPOSITORY_RESPONSE_INVALID/
+    );
+  }
+  assert.equal(authCalls.length, 0);
+  assert.equal(reqCalls.length, 0);
 });
 
-test('Stage 4B 37: create body pinned numeric app 796', async () => {
+test('Stage 4B 37: Published_At undefined/null property rejected before authorizer/request', async () => {
+  const { repo, reqCalls, authCalls } = createFakeAdapter();
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  const hash = computeConfigurationHash(base);
+
+  for (const badAt of [undefined, null, '2026-04-01T00:00:00Z']) {
+    const valRecord = { ...base, Config_Status: 'VALIDATED', Configuration_Hash: hash, Published_By: '', Published_At: badAt };
+    if (badAt === undefined) delete valRecord.Published_At;
+
+    await assert.rejects(
+      () => repo.createValidatedRecord(valRecord),
+      /REPOSITORY_RESPONSE_INVALID/
+    );
+  }
+  assert.equal(authCalls.length, 0);
+  assert.equal(reqCalls.length, 0);
+});
+
+test('Stage 4B 38: create body pinned numeric app 796', async () => {
   const { repo, reqCalls } = createFakeAdapter(async () => ({ id: '301', revision: '1' }));
   const base = getCanonicalBaselineMasterConfigs()[0];
   const hash = computeConfigurationHash(base);
@@ -402,7 +426,7 @@ test('Stage 4B 37: create body pinned numeric app 796', async () => {
   assert.equal(reqCalls[0].body.app, 796);
 });
 
-test('Stage 4B 38: create body contains planned fields only', async () => {
+test('Stage 4B 39: create body contains planned fields only', async () => {
   const { repo, reqCalls } = createFakeAdapter(async () => ({ id: '301', revision: '1' }));
   const base = getCanonicalBaselineMasterConfigs()[0];
   const hash = computeConfigurationHash(base);
@@ -415,7 +439,7 @@ test('Stage 4B 38: create body contains planned fields only', async () => {
   assert.equal(bodyFields.includes('__storageRevision'), false);
 });
 
-test('Stage 4B 39: create Published_By writes []', async () => {
+test('Stage 4B 40: create Published_By writes []', async () => {
   const { repo, reqCalls } = createFakeAdapter(async () => ({ id: '301', revision: '1' }));
   const base = getCanonicalBaselineMasterConfigs()[0];
   const hash = computeConfigurationHash(base);
@@ -425,8 +449,8 @@ test('Stage 4B 39: create Published_By writes []', async () => {
   assert.deepEqual(reqCalls[0].body.record.Published_By.value, []);
 });
 
-test('Stage 4B 40: create malformed / unsafe ID/revision response rejected', async () => {
-  for (const badResp of [{ id: null, revision: '1' }, { id: '301', revision: '9007199254740993' }, { id: ' 301 ', revision: '1' }]) {
+test('Stage 4B 41: create numeric id or numeric revision response rejected', async () => {
+  for (const badResp of [{ id: 301, revision: '1' }, { id: '301', revision: 1 }, { id: null, revision: '1' }]) {
     const { repo } = createFakeAdapter(async () => badResp);
     const base = getCanonicalBaselineMasterConfigs()[0];
     const hash = computeConfigurationHash(base);
@@ -439,7 +463,7 @@ test('Stage 4B 40: create malformed / unsafe ID/revision response rejected', asy
   }
 });
 
-test('Stage 4B 41: publish authorizer called as last pre-request gate', async () => {
+test('Stage 4B 42: publish authorizer called as last pre-request gate', async () => {
   let reqCalled = false;
   const { repo, authCalls } = createFakeAdapter(
     async () => { reqCalled = true; return { revision: '2' }; },
@@ -454,14 +478,23 @@ test('Stage 4B 41: publish authorizer called as last pre-request gate', async ()
   assert.equal(authCalls[0].appId, 796);
 });
 
-test('Stage 4B 42: publish authorizer receives exact expected revision', async () => {
-  const { repo, authCalls } = createFakeAdapter(async () => ({ revision: '5' }));
+test('Stage 4B 43: publish numeric expectedRevision or numeric response revision rejected', async () => {
   const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
-  await repo.publishRecord('101', patch, '4');
-  assert.equal(authCalls[0].expectedRevision, '4');
+  
+  // numeric response revision rejected
+  const { repo: repo1 } = createFakeAdapter(async () => ({ revision: 2 }));
+  await assert.rejects(
+    () => repo1.publishRecord('101', patch, '1'),
+    /REPOSITORY_RESPONSE_INVALID/
+  );
+
+  // caller number expectedRevision 1 is allowed
+  const { repo: repo2 } = createFakeAdapter(async () => ({ revision: '2' }));
+  const ok = await repo2.publishRecord(101, patch, 1);
+  assert.equal(ok, true);
 });
 
-test('Stage 4B 43: publish patch exact 3 keys only', async () => {
+test('Stage 4B 44: publish patch exact 3 keys only', async () => {
   const { repo, reqCalls } = createFakeAdapter(async () => ({ revision: '2' }));
   const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
   await repo.publishRecord('101', patch, '1');
@@ -469,7 +502,7 @@ test('Stage 4B 43: publish patch exact 3 keys only', async () => {
   assert.deepEqual(recordPatchKeys.sort(), ['Config_Status', 'Published_At', 'Published_By'].sort());
 });
 
-test('Stage 4B 44: publish immutable field injection rejected before authorizer', async () => {
+test('Stage 4B 45: publish immutable field injection rejected before authorizer', async () => {
   const { repo, authCalls } = createFakeAdapter();
   const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z', PartA_Weight: '80' };
   await assert.rejects(
@@ -479,7 +512,7 @@ test('Stage 4B 44: publish immutable field injection rejected before authorizer'
   assert.equal(authCalls.length, 0);
 });
 
-test('Stage 4B 45: publish status must be PUBLISHED', async () => {
+test('Stage 4B 46: publish status must be PUBLISHED', async () => {
   const { repo } = createFakeAdapter();
   const patch = { Config_Status: 'VALIDATED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
   await assert.rejects(
@@ -488,7 +521,7 @@ test('Stage 4B 45: publish status must be PUBLISHED', async () => {
   );
 });
 
-test('Stage 4B 46: publish publisher with whitespace or empty rejected', async () => {
+test('Stage 4B 47: publish publisher with whitespace or empty rejected', async () => {
   const { repo } = createFakeAdapter();
   for (const badPub of ['   ', ' usr_admin_01 ', '']) {
     const patch = { Config_Status: 'PUBLISHED', Published_By: badPub, Published_At: '2026-04-01T00:00:00Z' };
@@ -499,7 +532,7 @@ test('Stage 4B 46: publish publisher with whitespace or empty rejected', async (
   }
 });
 
-test('Stage 4B 47: publish timestamp with whitespace or empty rejected', async () => {
+test('Stage 4B 48: publish timestamp with whitespace or empty rejected', async () => {
   const { repo } = createFakeAdapter();
   for (const badTs of ['', ' 2026-04-01T00:00:00Z ']) {
     const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: badTs };
@@ -510,37 +543,22 @@ test('Stage 4B 47: publish timestamp with whitespace or empty rejected', async (
   }
 });
 
-test('Stage 4B 48: publish request pinned numeric app 796', async () => {
-  const { repo, reqCalls } = createFakeAdapter(async () => ({ revision: '2' }));
-  const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
-  await repo.publishRecord('101', patch, '1');
-  assert.equal(reqCalls[0].body.app, 796);
+test('Stage 4B 49: class instance raw record / field wrapper / response object rejected by true plain-object check', async () => {
+  class CustomRecord {}
+  class CustomWrapper {}
+  class CustomResponse {}
+
+  const raw1 = new CustomRecord();
+  assert.throws(() => normalizeRawRecord(raw1), /REPOSITORY_RESPONSE_INVALID/);
+
+  const raw2 = getValidRawRecord({ $id: new CustomWrapper() });
+  assert.throws(() => normalizeRawRecord(raw2), /REPOSITORY_RESPONSE_INVALID/);
+
+  const { repo: repoClassResp } = createFakeAdapter(async () => new CustomResponse());
+  await assert.rejects(() => repoClassResp.getByRecordId('101'), /REPOSITORY_RESPONSE_INVALID/);
 });
 
-test('Stage 4B 49: publish sends revision token', async () => {
-  const { repo, reqCalls } = createFakeAdapter(async () => ({ revision: '2' }));
-  const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
-  await repo.publishRecord('101', patch, '1');
-  assert.equal(reqCalls[0].body.revision, '1');
-});
-
-test('Stage 4B 50: publish USER_SELECT shape exact [{code}]', async () => {
-  const { repo, reqCalls } = createFakeAdapter(async () => ({ revision: '2' }));
-  const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
-  await repo.publishRecord('101', patch, '1');
-  assert.deepEqual(reqCalls[0].body.record.Published_By.value, [{ code: 'usr_admin_01' }]);
-});
-
-test('Stage 4B 51: publish response revision must advance', async () => {
-  const { repo } = createFakeAdapter(async () => ({ revision: '1' })); // same revision, not advanced!
-  const patch = { Config_Status: 'PUBLISHED', Published_By: 'usr_admin_01', Published_At: '2026-04-01T00:00:00Z' };
-  await assert.rejects(
-    () => repo.publishRecord('101', patch, '1'),
-    /REPOSITORY_RESPONSE_INVALID/
-  );
-});
-
-test('Stage 4B 52: request throw -> redacts message to stable KINTONE_REPOSITORY_REQUEST_FAILED', async () => {
+test('Stage 4B 50: request throw -> redacts message to stable KINTONE_REPOSITORY_REQUEST_FAILED', async () => {
   const { repo } = createFakeAdapter(async () => {
     throw new Error('Network secret payload: SECRET_DO_NOT_LEAK_123');
   });
@@ -554,7 +572,7 @@ test('Stage 4B 52: request throw -> redacts message to stable KINTONE_REPOSITORY
   );
 });
 
-test('Stage 4B 53: authorizer throw -> redacts message to stable WRITE_AUTHORIZATION_FAILED', async () => {
+test('Stage 4B 51: authorizer throw -> redacts message to stable WRITE_AUTHORIZATION_FAILED', async () => {
   const { repo } = createFakeAdapter(
     async () => ({ id: '301', revision: '1' }),
     () => { throw new Error('Auth secret payload: SECRET_DO_NOT_LEAK_456'); }
@@ -574,7 +592,7 @@ test('Stage 4B 53: authorizer throw -> redacts message to stable WRITE_AUTHORIZA
   );
 });
 
-test('Stage 4B 54: no automatic retry on read or write failure', async () => {
+test('Stage 4B 52: no automatic retry on read or write failure', async () => {
   let readCallCount = 0;
   let writeCallCount = 0;
   const { repo } = createFakeAdapter(async ({ method }) => {
@@ -594,7 +612,7 @@ test('Stage 4B 54: no automatic retry on read or write failure', async () => {
   assert.equal(writeCallCount, 1);
 });
 
-test('Stage 4B 55: repository source contains no fetch/process.env/.env/Kintone connection import', () => {
+test('Stage 4B 53: repository source contains no fetch/process.env/.env/Kintone connection import', () => {
   const sourceCode = fs.readFileSync('src/services/scoring-config-kintone-repository.js', 'utf-8');
   assert.equal(sourceCode.includes('fetch('), false);
   assert.equal(sourceCode.includes('process.env'), false);

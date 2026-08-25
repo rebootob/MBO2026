@@ -1153,3 +1153,40 @@ test('Stage 4A Concurrency: final revision malformed/unsafe -> PUBLISH_VERIFICAT
     /PUBLISH_VERIFICATION_FAILED/
   );
 });
+test('Stage 4A Concurrency: initial numeric revision -> CONFIG_READBACK_MISMATCH', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 1) return { ...res, __storageRevision: 1 }; // numeric 1 instead of string '1'
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /CONFIG_READBACK_MISMATCH/
+  );
+});
+
+test('Stage 4A Concurrency: final numeric revision -> PUBLISH_VERIFICATION_FAILED', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 2) return { ...res, __storageRevision: 2 }; // numeric 2 instead of string '2'
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /PUBLISH_VERIFICATION_FAILED/
+  );
+});

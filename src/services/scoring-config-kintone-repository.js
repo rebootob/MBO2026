@@ -10,15 +10,15 @@ export { WP002C_SCORING_MASTER_APP_ID };
 const ALL_STORAGE_FIELDS = [...IMMUTABLE_PAYLOAD_FIELDS, ...EXCLUDED_AUDIT_FIELDS];
 
 function isPlainObject(obj) {
-  return obj !== null && typeof obj === 'object' && Object.prototype.toString.call(obj) === '[object Object]';
+  return obj !== null && typeof obj === 'object' && !Array.isArray(obj) && Object.getPrototypeOf(obj) === Object.prototype;
 }
 
-function parsePositiveSafeIntegerToken(val, label) {
+function parseCallerSafeIntegerToken(val, label) {
   if (typeof val === 'number') {
     if (Number.isSafeInteger(val) && val > 0) {
       return String(val);
     }
-    throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer`);
+    throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer number`);
   }
   if (typeof val === 'string') {
     if (val !== val.trim() || !/^[1-9]\d*$/.test(val)) {
@@ -31,6 +31,20 @@ function parsePositiveSafeIntegerToken(val, label) {
     return val;
   }
   throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer string or number`);
+}
+
+function parseStorageSafeIntegerToken(val, label) {
+  if (typeof val !== 'string') {
+    throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be a string`);
+  }
+  if (val !== val.trim() || !/^[1-9]\d*$/.test(val)) {
+    throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer string`);
+  }
+  const num = Number(val);
+  if (!Number.isSafeInteger(num)) {
+    throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} exceeds safe integer limit`);
+  }
+  return val;
 }
 
 export function escapeKintoneQueryLiteral(str) {
@@ -46,12 +60,12 @@ export function normalizeRawRecord(rawRecord) {
   if (!isPlainObject(rawRecord.$id)) {
     throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record missing $id wrapper');
   }
-  const strId = parsePositiveSafeIntegerToken(rawRecord.$id.value, '$id.value');
+  const strId = parseStorageSafeIntegerToken(rawRecord.$id.value, '$id.value');
 
   if (!isPlainObject(rawRecord.$revision)) {
     throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record missing $revision wrapper');
   }
-  const strRev = parsePositiveSafeIntegerToken(rawRecord.$revision.value, '$revision.value');
+  const strRev = parseStorageSafeIntegerToken(rawRecord.$revision.value, '$revision.value');
 
   const normalized = {
     __recordId: strId,
@@ -102,7 +116,7 @@ export class ScoringConfigKintoneRepository {
     }
     this.request = request;
     this.authorizeWrite = authorizeWrite;
-    this.appId = WP002C_SCORING_MASTER_APP_ID; // 796 (numeric)
+    this.appId = WP002C_SCORING_MASTER_APP_ID;
   }
 
   async findByMasterKey(masterRecordKey) {
@@ -138,7 +152,7 @@ export class ScoringConfigKintoneRepository {
   }
 
   async getByRecordId(recordId) {
-    const strId = parsePositiveSafeIntegerToken(recordId, 'recordId');
+    const strId = parseCallerSafeIntegerToken(recordId, 'recordId');
     const path = '/k/v1/record.json';
 
     let res;
@@ -209,12 +223,12 @@ export class ScoringConfigKintoneRepository {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Configuration_Hash must be exact 64-char lowercase hex');
     }
 
-    if (validatedRecord.Published_By !== '' && validatedRecord.Published_By !== undefined) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By must be empty for validated record creation');
+    if (validatedRecord.Published_By !== '') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By must be empty string exactly for validated record creation');
     }
 
-    if (validatedRecord.Published_At !== '' && validatedRecord.Published_At !== undefined) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_At must be empty for validated record creation');
+    if (validatedRecord.Published_At !== '') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_At must be empty string exactly for validated record creation');
     }
 
     const kintoneRecord = {};
@@ -266,15 +280,15 @@ export class ScoringConfigKintoneRepository {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Create response must be a plain object');
     }
 
-    const strId = parsePositiveSafeIntegerToken(res.id, 'create response id');
-    const strRev = parsePositiveSafeIntegerToken(res.revision, 'create response revision');
+    const strId = parseStorageSafeIntegerToken(res.id, 'create response id');
+    const strRev = parseStorageSafeIntegerToken(res.revision, 'create response revision');
 
     return strId;
   }
 
   async publishRecord(recordId, lifecyclePatch, expectedRevision) {
-    const strId = parsePositiveSafeIntegerToken(recordId, 'recordId');
-    const strExpRev = parsePositiveSafeIntegerToken(expectedRevision, 'expectedRevision');
+    const strId = parseCallerSafeIntegerToken(recordId, 'recordId');
+    const strExpRev = parseCallerSafeIntegerToken(expectedRevision, 'expectedRevision');
 
     if (!isPlainObject(lifecyclePatch)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: lifecyclePatch must be a plain object');
@@ -343,7 +357,7 @@ export class ScoringConfigKintoneRepository {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Publish response must be a plain object');
     }
 
-    const newRevStr = parsePositiveSafeIntegerToken(res.revision, 'publish response revision');
+    const newRevStr = parseStorageSafeIntegerToken(res.revision, 'publish response revision');
 
     if (Number(newRevStr) <= Number(strExpRev)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Publish response revision not advanced');

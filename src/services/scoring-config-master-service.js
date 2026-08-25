@@ -209,11 +209,10 @@ export class ScoringConfigMasterService {
       throw new Error('CONFIG_READBACK_MISMATCH: Status must be VALIDATED');
     }
 
-    const initialRevStr = typeof readback1.__storageRevision === 'string' || typeof readback1.__storageRevision === 'number' ? String(readback1.__storageRevision) : '';
-    if (initialRevStr === '' || initialRevStr !== initialRevStr.trim() || !/^[1-9]\d*$/.test(initialRevStr) || !Number.isSafeInteger(Number(initialRevStr))) {
+    if (typeof readback1.__storageRevision !== 'string' || readback1.__storageRevision !== readback1.__storageRevision.trim() || !/^[1-9]\d*$/.test(readback1.__storageRevision) || !Number.isSafeInteger(Number(readback1.__storageRevision))) {
       throw new Error('CONFIG_READBACK_MISMATCH: Initial read-back missing valid __storageRevision');
     }
-    const initialRevision = initialRevStr;
+    const initialRevision = readback1.__storageRevision;
 
     let canonicalReadback1;
     try {
@@ -289,11 +288,10 @@ export class ScoringConfigMasterService {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final Published_At mismatch');
     }
 
-    const finalRevStr = typeof finalReadback.__storageRevision === 'string' || typeof finalReadback.__storageRevision === 'number' ? String(finalReadback.__storageRevision) : '';
-    if (finalRevStr === '' || finalRevStr !== finalRevStr.trim() || !/^[1-9]\d*$/.test(finalRevStr) || !Number.isSafeInteger(Number(finalRevStr))) {
+    if (typeof finalReadback.__storageRevision !== 'string' || finalReadback.__storageRevision !== finalReadback.__storageRevision.trim() || !/^[1-9]\d*$/.test(finalReadback.__storageRevision) || !Number.isSafeInteger(Number(finalReadback.__storageRevision))) {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final storage revision missing or invalid');
     }
-    const finalRevision = finalRevStr;
+    const finalRevision = finalReadback.__storageRevision;
     if (Number(finalRevision) <= Number(initialRevision)) {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final storage revision was not advanced');
     }
