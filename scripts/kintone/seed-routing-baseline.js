@@ -235,11 +235,15 @@ export async function executeRoutingSchemaCorrection({ overrideTransport } = {})
     app: appId795,
     properties: {
       Manager_User: {
+        type: props.Manager_User?.type || 'USER_SELECT',
         code: 'Manager_User',
+        label: props.Manager_User?.label || 'Manager User',
         required: false
       },
       GM_User: {
+        type: props.GM_User?.type || 'USER_SELECT',
         code: 'GM_User',
+        label: props.GM_User?.label || 'GM User',
         required: false
       }
     }
