@@ -30,7 +30,7 @@ function isValidIsoDateTime(str) {
   const match = isoRegex.exec(trimmed);
   if (!match) return false;
 
-  const [, yearStr, monthStr, dayStr, hourStr, minStr, secStr, , tzSign, tzHourStr, tzMinStr] = match;
+  const [, yearStr, monthStr, dayStr, hourStr, minStr, secStr, , tzToken, tzSign, tzHourStr, tzMinStr] = match;
 
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10);

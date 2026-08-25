@@ -767,6 +767,16 @@ test('Stage 4A: valid Z timestamp passes', async () => {
   assert.equal(res.publishedAt, '2026-04-01T00:00:00Z');
 });
 
+test('Stage 4A Hardening: valid high-range offset +23:59 passes', async () => {
+  const repo = createInMemoryRepo();
+  const audit = createInMemoryAuditProvider('usr_admin_01', '2026-04-01T09:00:00+23:59');
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  const res = await service.publishScoringConfig(getValidCandidate());
+  assert.equal(res.status, 'PUBLISH_VERIFIED');
+  assert.equal(res.publishedAt, '2026-04-01T09:00:00+23:59');
+});
+
 test('Stage 4A: valid offset timestamp passes', async () => {
   const repo = createInMemoryRepo();
   const audit = createInMemoryAuditProvider('usr_admin_01', '2026-04-01T09:00:00+09:00');
