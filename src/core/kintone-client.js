@@ -426,18 +426,18 @@ export const WP002C_DROPDOWN_REPAIR_PAYLOAD = Object.freeze({
   Part_A_Scoring_Mode: Object.freeze({
     type: 'DROP_DOWN',
     options: Object.freeze({
-      DIFFICULTY_ACHIEVEMENT_MATRIX: { label: 'DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' },
-      ACHIEVEMENT_DIRECT: { label: 'ACHIEVEMENT_DIRECT', index: '1' }
+      DIFFICULTY_ACHIEVEMENT_MATRIX: Object.freeze({ label: 'DIFFICULTY_ACHIEVEMENT_MATRIX', index: '0' }),
+      ACHIEVEMENT_DIRECT: Object.freeze({ label: 'ACHIEVEMENT_DIRECT', index: '1' })
     })
   }),
   Config_Status: Object.freeze({
     type: 'DROP_DOWN',
     options: Object.freeze({
-      DRAFT: { label: 'DRAFT', index: '0' },
-      VALIDATED: { label: 'VALIDATED', index: '1' },
-      PUBLISHED: { label: 'PUBLISHED', index: '2' },
-      SUPERSEDED: { label: 'SUPERSEDED', index: '3' },
-      RETIRED: { label: 'RETIRED', index: '4' }
+      DRAFT: Object.freeze({ label: 'DRAFT', index: '0' }),
+      VALIDATED: Object.freeze({ label: 'VALIDATED', index: '1' }),
+      PUBLISHED: Object.freeze({ label: 'PUBLISHED', index: '2' }),
+      SUPERSEDED: Object.freeze({ label: 'SUPERSEDED', index: '3' }),
+      RETIRED: Object.freeze({ label: 'RETIRED', index: '4' })
     })
   })
 });
@@ -447,7 +447,6 @@ export function assertKnownStage3cDefectSchema(propertiesPayload, failureCode = 
     throw new Error(`${failureCode}: Missing or invalid properties payload.`);
   }
 
-  // Check if schema is already corrected
   let isAlreadyCorrected = false;
   try {
     isAlreadyCorrected = assertExact23FieldSchema(propertiesPayload, failureCode);
@@ -470,7 +469,7 @@ export function assertKnownStage3cDefectSchema(propertiesPayload, failureCode = 
       throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} missing.`);
     }
     if (actual.label !== spec.code) {
-      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} label mismatch.`);
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} label mismatch (expected '${spec.code}', got '${actual.label}').`);
     }
     if (actual.type !== spec.type) {
       throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} type mismatch.`);
@@ -483,26 +482,43 @@ export function assertKnownStage3cDefectSchema(propertiesPayload, failureCode = 
     } else if (actual.unique === true) {
       throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} unique mismatch.`);
     }
+    if (!isNoDefaultValue(actual.defaultValue)) {
+      throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Field ${spec.code} contains unexpected default business value.`);
+    }
 
     if (spec.code === 'Part_A_Scoring_Mode') {
       const actualOpts = actual.options ?? {};
       const expectedDefectOpts = ['0 DIFFICULTY_ACHIEVEMENT_MATRIX', '1 ACHIEVEMENT_DIRECT'];
       const actualKeys = Object.keys(actualOpts);
       if (actualKeys.length !== expectedDefectOpts.length || !expectedDefectOpts.every((k) => Object.prototype.hasOwnProperty.call(actualOpts, k))) {
-        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode does not match known defect.`);
+        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode option keys mismatch.`);
       }
-      if (String(actualOpts['0 DIFFICULTY_ACHIEVEMENT_MATRIX'].index) !== '0' || String(actualOpts['1 ACHIEVEMENT_DIRECT'].index) !== '1') {
-        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode defect indexes mismatch.`);
+      for (let i = 0; i < expectedDefectOpts.length; i += 1) {
+        const key = expectedDefectOpts[i];
+        const opt = actualOpts[key];
+        if (!opt || (opt.label !== key && opt.key !== key)) {
+          throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode label mismatch for '${key}'.`);
+        }
+        if (String(opt.index) !== String(i)) {
+          throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode index mismatch for '${key}'.`);
+        }
       }
     } else if (spec.code === 'Config_Status') {
       const actualOpts = actual.options ?? {};
       const expectedDefectOpts = ['0 DRAFT', '1 VALIDATED', '2 PUBLISHED', '3 SUPERSEDED', '4 RETIRED'];
       const actualKeys = Object.keys(actualOpts);
       if (actualKeys.length !== expectedDefectOpts.length || !expectedDefectOpts.every((k) => Object.prototype.hasOwnProperty.call(actualOpts, k))) {
-        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status does not match known defect.`);
+        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status option keys mismatch.`);
       }
-      if (String(actualOpts['0 DRAFT'].index) !== '0' || String(actualOpts['4 RETIRED'].index) !== '4') {
-        throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status defect indexes mismatch.`);
+      for (let i = 0; i < expectedDefectOpts.length; i += 1) {
+        const key = expectedDefectOpts[i];
+        const opt = actualOpts[key];
+        if (!opt || (opt.label !== key && opt.key !== key)) {
+          throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status label mismatch for '${key}'.`);
+        }
+        if (String(opt.index) !== String(i)) {
+          throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status index mismatch for '${key}'.`);
+        }
       }
     }
   }
@@ -622,6 +638,13 @@ export async function repairScoringMasterDropdownSchema(authConfig, requestConfi
   const previewReadbackAcl = await parseJsonOrThrow(previewAclReadbackResponse, 'PREVIEW_REPAIR_READBACK_FAILED', 'Preview ACL readback');
   assertCreatorOnlyAcl(previewReadbackAcl, 'PREVIEW_REPAIR_READBACK_FAILED');
 
+  const postPutRecordsRes = await exactGet(fetchImpl, recordsUrl, headers, 'PREVIEW_REPAIR_READBACK_FAILED', 'Post-PUT records check');
+  if (!postPutRecordsRes.ok) throw new Error(`PREVIEW_REPAIR_READBACK_FAILED: Post-PUT records HTTP ${postPutRecordsRes.status}.`);
+  const postPutRecords = await parseJsonOrThrow(postPutRecordsRes, 'PREVIEW_REPAIR_READBACK_FAILED', 'Post-PUT records check');
+  if (Array.isArray(postPutRecords.records) && postPutRecords.records.length > 0) {
+    throw new Error('PREVIEW_REPAIR_READBACK_FAILED: Post-PUT record count is non-zero.');
+  }
+
   const latestPreviewRevision = isNumericRevision(previewReadbackFields.revision) ? previewReadbackFields.revision : postPutRevision;
 
   const deployUrl = `${baseUrl}/k/v1/preview/app/deploy.json`;
@@ -664,6 +687,23 @@ export async function repairScoringMasterDropdownSchema(authConfig, requestConfi
     throw new Error(`DEPLOY_RESULT_UNCERTAIN: ${deployTransportUncertain ? 'POST transport uncertain; ' : ''}polling did not reach SUCCESS.`);
   }
 
+  const liveAppDetailUrl = `${baseUrl}/k/v1/app.json?id=${appId}`;
+  const liveAppDetailRes = await exactGet(fetchImpl, liveAppDetailUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live App Detail verification');
+  if (!liveAppDetailRes.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live App Detail HTTP ${liveAppDetailRes.status}.`);
+  const liveAppDetail = await parseJsonOrThrow(liveAppDetailRes, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live App Detail');
+  if (liveAppDetail.name !== WP002C_APPROVED_APP_NAME || String(liveAppDetail.appId) !== String(appId)) {
+    throw new Error('LIVE_SCHEMA_VERIFICATION_FAILED: Live App Detail identity mismatch.');
+  }
+
+  const catalogUrl = `${baseUrl}/k/v1/apps.json?ids[0]=${appId}`;
+  const catalogRes = await exactGet(fetchImpl, catalogUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Get Apps Catalog verification');
+  if (!catalogRes.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Catalog HTTP ${catalogRes.status}.`);
+  const catalog = await parseJsonOrThrow(catalogRes, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Get Apps Catalog');
+  const exactCatalogApp = catalog.apps?.find((entry) => String(entry.appId || entry.app) === String(appId));
+  if (!exactCatalogApp || exactCatalogApp.name !== WP002C_APPROVED_APP_NAME) {
+    throw new Error('LIVE_SCHEMA_VERIFICATION_FAILED: Catalog missing App 796.');
+  }
+
   const finalLiveResponse = await exactGet(fetchImpl, liveSettingsUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live settings verification');
   if (!finalLiveResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live settings HTTP ${finalLiveResponse.status}.`);
   const finalLive = await parseJsonOrThrow(finalLiveResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live settings');
@@ -678,6 +718,13 @@ export async function repairScoringMasterDropdownSchema(authConfig, requestConfi
   if (!finalLiveAclResponse.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Live ACL HTTP ${finalLiveAclResponse.status}.`);
   const finalLiveAcl = await parseJsonOrThrow(finalLiveAclResponse, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Live ACL');
   assertCreatorOnlyAcl(finalLiveAcl, 'LIVE_SCHEMA_VERIFICATION_FAILED');
+
+  const finalRecordsRes = await exactGet(fetchImpl, recordsUrl, headers, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Final live records check');
+  if (!finalRecordsRes.ok) throw new Error(`LIVE_SCHEMA_VERIFICATION_FAILED: Final records HTTP ${finalRecordsRes.status}.`);
+  const finalRecords = await parseJsonOrThrow(finalRecordsRes, 'LIVE_SCHEMA_VERIFICATION_FAILED', 'Final live records check');
+  if (Array.isArray(finalRecords.records) && finalRecords.records.length > 0) {
+    throw new Error('LIVE_SCHEMA_VERIFICATION_FAILED: Final live record count is non-zero.');
+  }
 
   return {
     appId,

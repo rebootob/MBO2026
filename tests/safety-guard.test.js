@@ -1089,6 +1089,8 @@ function buildRepairFetch({
   previewRevision = '3',
   liveRevision = '3',
   recordCount = 0,
+  postPutRecordCount = 0,
+  finalRecordCount = 0,
   liveFields = defectFieldsPayload(),
   previewFields = defectFieldsPayload(),
   putOk = true,
@@ -1097,7 +1099,9 @@ function buildRepairFetch({
   previewReadbackFields = generateExact23FieldsPayload(),
   deployStatuses = ['SUCCESS'],
   deployOk = true,
-  finalLiveFields = generateExact23FieldsPayload()
+  finalLiveFields = generateExact23FieldsPayload(),
+  appDetailOk = true,
+  catalogOk = true
 } = {}) {
   const calls = [];
   let statusIndex = 0;
@@ -1115,8 +1119,16 @@ function buildRepairFetch({
     if (url.endsWith('/k/v1/preview/app/acl.json?app=796') && options.method !== 'PUT') {
       return mockResponse(creatorOnlyAclPayload(previewRevision));
     }
+    if (url.endsWith('/k/v1/app.json?id=796')) {
+      if (!appDetailOk) return mockResponse({ name: 'Wrong Name', appId: '796' });
+      return mockResponse({ name: approvedAppName, appId: '796' });
+    }
     if (url.includes('/k/v1/records.json?app=796')) {
-      const records = recordCount > 0 ? [{ $id: { value: '1' } }] : [];
+      const getCalls = calls.filter(c => c.url.includes('/k/v1/records.json?app=796'));
+      let count = recordCount;
+      if (getCalls.length === 2) count = postPutRecordCount;
+      if (getCalls.length >= 3) count = finalRecordCount;
+      const records = count > 0 ? [{ $id: { value: '1' } }] : [];
       return mockResponse({ records });
     }
     if (url.endsWith('/k/v1/app/form/fields.json?app=796')) {
@@ -1148,7 +1160,8 @@ function buildRepairFetch({
       return mockResponse({ apps: [{ app: '796', status }] });
     }
     if (url.endsWith('/k/v1/apps.json?ids[0]=796')) {
-      return mockResponse({ apps: [{ app: '796', name: approvedAppName }] });
+      if (!catalogOk) return mockResponse({ apps: [] });
+      return mockResponse({ apps: [{ appId: '796', app: '796', name: approvedAppName }] });
     }
     throw new Error(`Unexpected mock URL: ${url}`);
   };
@@ -1409,4 +1422,86 @@ test('WP002C-S3CR1-027: protected Apps and 794/795 remain unwritable', () => {
 test('WP002C-S3CR1-028: DISCOVERY_MODE and WRITE_ALLOWED_APPS remain unchanged', () => {
   assert.equal(DISCOVERY_MODE, true);
   assert.equal(WRITE_ALLOWED_APPS.length, 0);
+});
+test('WP002C-S3CR1-029: known defect rejects wrong Part A option label', () => {
+  const badDefect = defectFieldsPayload();
+  badDefect.Part_A_Scoring_Mode.options['0 DIFFICULTY_ACHIEVEMENT_MATRIX'].label = 'Wrong Label';
+  assert.throws(() => assertKnownStage3cDefectSchema(badDefect), /UNEXPECTED_SCHEMA_DRIFT/);
+});
+
+test('WP002C-S3CR1-030: known defect rejects wrong Config_Status option label', () => {
+  const badDefect = defectFieldsPayload();
+  badDefect.Config_Status.options['2 PUBLISHED'].label = 'Wrong Label';
+  assert.throws(() => assertKnownStage3cDefectSchema(badDefect), /UNEXPECTED_SCHEMA_DRIFT/);
+});
+
+test('WP002C-S3CR1-031: known defect rejects every wrong Config_Status index, including middle options', () => {
+  const badDefect = defectFieldsPayload();
+  badDefect.Config_Status.options['2 PUBLISHED'].index = '3';
+  assert.throws(() => assertKnownStage3cDefectSchema(badDefect), /UNEXPECTED_SCHEMA_DRIFT/);
+});
+
+test('WP002C-S3CR1-032: known defect rejects unexpected defaultValue on any field', () => {
+  const badDefect = defectFieldsPayload();
+  badDefect.PartA_Weight.defaultValue = '100';
+  assert.throws(() => assertKnownStage3cDefectSchema(badDefect), /UNEXPECTED_SCHEMA_DRIFT/);
+});
+
+test('WP002C-S3CR1-033: repair payload nested option objects cannot be mutated', () => {
+  assert.equal(Object.isFrozen(WP002C_DROPDOWN_REPAIR_PAYLOAD), true);
+  assert.equal(Object.isFrozen(WP002C_DROPDOWN_REPAIR_PAYLOAD.Part_A_Scoring_Mode), true);
+  assert.equal(Object.isFrozen(WP002C_DROPDOWN_REPAIR_PAYLOAD.Part_A_Scoring_Mode.options), true);
+  assert.equal(Object.isFrozen(WP002C_DROPDOWN_REPAIR_PAYLOAD.Part_A_Scoring_Mode.options.DIFFICULTY_ACHIEVEMENT_MATRIX), true);
+  assert.equal(Object.isFrozen(WP002C_DROPDOWN_REPAIR_PAYLOAD.Config_Status.options.PUBLISHED), true);
+});
+
+test('WP002C-S3CR1-034: post-PUT nonzero record result prevents deploy', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { calls, fetchMock } = buildRepairFetch({ postPutRecordCount: 1 });
+    await assert.rejects(
+      () => repairScoringMasterDropdownSchema(validRepairAuthorization('r1-034'), validRepairRequest(), fetchMock),
+      /PREVIEW_REPAIR_READBACK_FAILED: Post-PUT record count is non-zero/
+    );
+    const deploys = calls.filter(c => c.url.endsWith('/k/v1/preview/app/deploy.json') && c.options.method === 'POST');
+    assert.equal(deploys.length, 0);
+  });
+});
+
+test('WP002C-S3CR1-035: final App Detail mismatch fails success', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildRepairFetch({ appDetailOk: false });
+    await assert.rejects(
+      repairScoringMasterDropdownSchema(validRepairAuthorization('r1-035'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} }),
+      /LIVE_SCHEMA_VERIFICATION_FAILED: Live App Detail identity mismatch/
+    );
+  });
+});
+
+test('WP002C-S3CR1-036: Get Apps missing App 796 fails success', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildRepairFetch({ catalogOk: false });
+    await assert.rejects(
+      repairScoringMasterDropdownSchema(validRepairAuthorization('r1-036'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} }),
+      /LIVE_SCHEMA_VERIFICATION_FAILED: Catalog missing App 796/
+    );
+  });
+});
+
+test('WP002C-S3CR1-037: final nonzero record result fails success', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildRepairFetch({ finalRecordCount: 1 });
+    await assert.rejects(
+      repairScoringMasterDropdownSchema(validRepairAuthorization('r1-037'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} }),
+      /LIVE_SCHEMA_VERIFICATION_FAILED: Final live record count is non-zero/
+    );
+  });
+});
+
+test('WP002C-S3CR1-038: final successful result requires catalog + final zero-record gates', async () => {
+  await withAppCreateTestEnvironment(async () => {
+    const { fetchMock } = buildRepairFetch();
+    const result = await repairScoringMasterDropdownSchema(validRepairAuthorization('r1-038'), validRepairRequest(), fetchMock, { pollDelayMs: 0, sleep: async () => {} });
+    assert.equal(result.semanticState, 'DOMAIN_ALIGNED');
+    assert.equal(result.liveFieldCount, 23);
+  });
 });
