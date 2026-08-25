@@ -1,203 +1,103 @@
-# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4B FINAL EXACTNESS CORRECTION
+# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4B FINAL DOC CLOSURE
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `ec122945856e87fdee84bb20571aaa9ef68f0039`
-> **Mode:** TINY CODE/TEST EXACTNESS + DOC TRACEABILITY ONLY
+> **Reviewed head:** `b69e2d1d7fa396ddcabbb7df5f789674fc034158`
+> **Mode:** DOC TRACEABILITY / CURRENT-STATE CLOSURE ONLY
+> **Source code changes:** ZERO
+> **Test code changes:** ZERO
 > **Kintone calls:** ZERO
 > **Kintone writes:** ZERO
 
-## REVIEW RESULT
+# INDEPENDENT REVIEW RESULT
 
-Accepted:
+The Stage 4B final code/test correction is accepted.
 
 ```text
-commit order = PASS
+code commit = ac9ce5dce2ffa2a45cab44a88c46cf7bd6215465
+code commit message = fix: finalize scoring config repository storage exactness
+docs evidence commit = b69e2d1d7fa396ddcabbb7df5f789674fc034158
 code scope = PASS
 APP_ID_SAFETY_BINDING_GATE = PASS
-QUERY_ESCAPE_GATE = PASS
+RAW_DOMAIN_MAPPING_GATE = PASS
 USER_SELECT_MAPPING_GATE = PASS
+QUERY_ESCAPE_GATE = PASS
+WRITE_AUTHORIZATION_BOUNDARY_GATE = PASS
 ERROR_REDACTION_GATE = PASS
-WRITE_AUTHORIZATION_ORDER = PASS
-NO_RETRY_FAIL_CLOSED_GATE = PASS
+OPTIMISTIC_CONCURRENCY_GATE = PASS
+STORAGE_TOKEN_SHAPE_GATE = PASS
+PLAIN_OBJECT_GATE = PASS
 TRIPLE_HASH_GATE = PASS
 FINAL_PUBLISH_READBACK_GATE = PASS
+NO_RETRY_FAIL_CLOSED_GATE = PASS
 reported regression = 370/370 PASS
 ZERO_KINTONE_STAGE4B_GATE = PASS
 ```
 
-Stage 4B remains BLOCKED only on the exactness items below.
+Only documentation closure remains.
 
 ---
 
-# MUST FIX A — STORAGE ID/REVISION VALUES MUST BE STRING-SHAPED
+# MUST FIX 1 — AI_REVIEW_PACKAGE MAIN COMMIT TRACEABILITY TABLE
 
-`parsePositiveSafeIntegerToken()` currently accepts both numbers and strings and is reused for raw Kintone storage metadata and Kintone write responses.
-
-The contract is different by boundary:
-
-### Normal method inputs
-
-For caller input such as `getByRecordId(recordId)` and `publishRecord(..., expectedRevision)`:
+The main commit table in:
 
 ```text
-positive safe integer number = allowed
-exact positive safe integer string = allowed
+project-docs/AI_REVIEW_PACKAGE.md
 ```
 
-### Kintone storage/response values
+still ends at the Stage 4A final doc closure.
 
-For all of these, require **string only**:
+Change the section title from a Stage-4A-only description to Stage 4A/4B traceability, and append the Stage 4B history explicitly:
 
 ```text
-rawRecord.$id.value
-rawRecord.$revision.value
-create response id
-create response revision
-publish response revision
+f24f247cc22a5b73ad855047d33c2cdb591b41b7 — Stage 4A closure / Stage 4B authorization — docs: close wp-002c stage4a review gate
+ab162b3e530b0e87f76ecc46589cd117e1ac8c6c — Stage 4B repository implementation — feat: add scoring config kintone repository foundation
+7fbd9e8ec555198933a8e1fffb302e59b4ea8286 — Stage 4B first-pass evidence — docs: record wp-002c stage4b repository foundation
+5b71558edf7a781e5b0bc7e1f5d6d266b9ca8cb6 — Stage 4B repository hardening — fix: harden scoring config kintone repository exactness
+ec122945856e87fdee84bb20571aaa9ef68f0039 — Stage 4B hardening evidence — docs: record wp-002c stage4b repository hardening
+ac9ce5dce2ffa2a45cab44a88c46cf7bd6215465 — Stage 4B final exactness correction — fix: finalize scoring config repository storage exactness
+b69e2d1d7fa396ddcabbb7df5f789674fc034158 — Stage 4B final correction evidence — docs: finalize wp-002c stage4b repository evidence
 ```
 
-Required storage token rules:
+Also replace the stale Stage 4A final-doc-closure placeholder `*(Review Head)*` with the real commit SHA if that commit is already known in repository history.
 
-```text
-typeof value === 'string'
-/^[1-9]\d*$/
-value === value.trim()
-Number(value) is safe integer
-> 0
-```
-
-Numeric `101` or numeric revision `1` from raw Kintone/response must fail closed as `REPOSITORY_RESPONSE_INVALID` rather than being silently converted to strings.
-
-Recommended: keep one helper for caller token input and add one small storage-string helper in the same repository file. Do not create a new module.
-
-Required tests:
-
-```text
-raw numeric $id rejected
-raw numeric $revision rejected
-create numeric id response rejected
-create numeric revision response rejected
-publish numeric revision response rejected
-normal getByRecordId(101) input remains allowed
-normal publish expectedRevision number input remains allowed
-```
+Do not delete historical Stage 3C / Stage 4A rows.
 
 ---
 
-# MUST FIX B — TRUE PLAIN OBJECT CHECK
+# MUST FIX 2 — IMPLEMENTATION_STATUS CURRENT WORK PACKAGE
 
-Current:
-
-```js
-Object.prototype.toString.call(obj) === '[object Object]'
-```
-
-also accepts class instances.
-
-For storage/repository response structures that require a plain JSON object, reject class instances and non-plain prototypes.
-
-Use an exact plain-object check appropriate for JSON payloads, for example requiring:
+Current living state still says:
 
 ```text
-obj !== null
-object
-not array
-Object.getPrototypeOf(obj) === Object.prototype
+Current Work Package: MBO-P03-WP-002C (Stage 3C-R1 Controlled Dropdown Repair)
 ```
 
-Apply wherever `isPlainObject()` is currently used.
-
-Tests must prove at least:
+Replace that **current-state line only** with:
 
 ```text
-class instance raw record rejected
-class instance field wrapper rejected
-class instance response object rejected
+Current Work Package: MBO-P03-WP-002C (Stage 4B Kintone Repository Foundation — FINAL_CORRECTION_COMPLETE / PENDING CHATGPT FINAL REVIEW)
 ```
+
+Do not rewrite historical Stage 3C execution records.
 
 ---
 
-# MUST FIX C — SERVICE STORAGE REVISION MUST BE STRING ONLY
+# ALLOWED FILES ONLY
 
-`ScoringConfigMasterService` currently accepts numeric `__storageRevision` and converts it with `String(...)`.
-
-Repository-normalized Kintone metadata contract is an exact string.
-
-For both initial and final read-back require:
+This task may modify only:
 
 ```text
-typeof __storageRevision === 'string'
-exact /^[1-9]\d*$/
-no surrounding whitespace
-safe integer
+project-docs/AI_REVIEW_PACKAGE.md
+project-docs/IMPLEMENTATION_STATUS.md
 ```
 
-No numeric coercion.
+Do not modify CURRENT_STATE/HANDOFF/CHANGELOG unless a concrete inconsistency is discovered that directly contradicts the reviewed current state. If such an inconsistency is found, STOP and report it rather than expanding scope automatically.
 
-Required tests:
-
-```text
-initial numeric revision -> CONFIG_READBACK_MISMATCH
-final numeric revision -> PUBLISH_VERIFICATION_FAILED
-final revision missing -> PUBLISH_VERIFICATION_FAILED
-final unsafe revision -> PUBLISH_VERIFICATION_FAILED
-normal string '1' -> '2' advancement -> PUBLISH_VERIFIED
-```
-
-Keep all prior concurrency tests.
-
----
-
-# MUST FIX D — CREATE PUBLISH AUDIT FIELDS MUST BE EXACT EMPTY STRINGS
-
-For `createValidatedRecord()` require exactly:
-
-```text
-Published_By === ''
-Published_At === ''
-```
-
-Do not accept `undefined`, `null`, missing, or other values.
-
-All validation/mapping still occurs before authorizer.
-
-Add tests proving:
-
-```text
-Published_By undefined property rejected before authorizer/request
-Published_By null rejected before authorizer/request
-Published_At undefined rejected before authorizer/request
-Published_At null rejected before authorizer/request
-```
-
----
-
-# MUST FIX E — DOC TRACEABILITY ITEMS WERE NOT ACTUALLY APPLIED
-
-`AI_REVIEW_PACKAGE.md` main commit table still ends at the Stage 4A final doc closure. Add explicit Stage 4B rows:
-
-```text
-f24f247cc22a5b73ad855047d33c2cdb591b41b7 — Stage 4A closure / Stage 4B authorization
-ab162b3e530b0e87f76ecc46589cd117e1ac8c6c — Stage 4B repository implementation
-7fbd9e8ec555198933a8e1fffb302e59b4ea8286 — Stage 4B first-pass evidence
-5b71558edf7a781e5b0bc7e1f5d6d266b9ca8cb6 — Stage 4B repository hardening
- ec122945856e87fdee84bb20571aaa9ef68f0039 — Stage 4B hardening evidence
-<new code commit> — Stage 4B final exactness correction
-<new docs commit> — Stage 4B final evidence
-```
-
-Remove the accidental leading space before `ec122...` when writing the actual table.
-
-`IMPLEMENTATION_STATUS.md` still incorrectly says:
-
-```text
-Current Work Package = MBO-P03-WP-002C (Stage 3C-R1 Controlled Dropdown Repair)
-```
-
-Change the current line to Stage 4B repository foundation/final exactness review state. Historical Stage 3C log sections must remain unchanged.
+No source/test/config changes.
 
 ---
 
@@ -212,7 +112,7 @@ git fetch origin
 git pull --ff-only
 git rev-parse HEAD
 git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor ec122945856e87fdee84bb20571aaa9ef68f0039 HEAD
+git merge-base --is-ancestor b69e2d1d7fa396ddcabbb7df5f789674fc034158 HEAD
 ```
 
 Required:
@@ -220,7 +120,7 @@ Required:
 ```text
 branch = ai/antigravity-wp002c
 local HEAD = remote HEAD
-reviewed head ec12294... is in ancestry
+reviewed head b69e2d1... is in ancestry
 tracked working tree clean before edits
 ```
 
@@ -228,89 +128,48 @@ No reset/rebase/stash/force push automatically.
 
 ---
 
-# STEP 1 — FINAL CODE / TEST CORRECTION
-
-Allowed files only:
-
-```text
-src/services/scoring-config-kintone-repository.js
-tests/scoring-config-kintone-repository.test.js
-src/services/scoring-config-master-service.js
-tests/scoring-config-master-service.test.js
-```
-
-Do not modify core guard/client, domain, resolver, config, UI, or main app.
-
-Preserve all existing semantic tests and add the exact tests above.
+# VALIDATION
 
 Run:
 
 ```bash
 git diff --check
 npm test
+git diff --name-only
 ```
 
 Required:
 
 ```text
+source/test changes = 0
 all tests PASS
-full suite >= 370
+expected full suite = 370/370 unless unchanged suite legitimately reports a higher total
 ```
-
-Commit exactly:
-
-```text
-fix: finalize scoring config repository storage exactness
-```
-
-Push only to `origin/ai/antigravity-wp002c` and verify local HEAD = remote HEAD.
 
 ---
 
-# STEP 2 — FINAL DOC EVIDENCE
+# COMMIT / PUSH
 
-Allowed docs only:
-
-```text
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/IMPLEMENTATION_STATUS.md
-project-docs/CHANGELOG_AI.md
-```
-
-Required current state:
+Create exactly one Antigravity commit:
 
 ```text
-WP002C_STAGE4A_GATE = PASS
-STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = PASSED / FROZEN
-STAGE4B_KINTONE_REPOSITORY_FOUNDATION = FINAL_CORRECTION_COMPLETE / PENDING CHATGPT FINAL REVIEW
-KINTONE_REPOSITORY_ADAPTER_STATUS = FOUNDATION_IMPLEMENTED_NOT_WIRED
-PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
-LIVE_KINTONE_REQUEST_BRIDGE_STATUS = NOT_IMPLEMENTED
-LIVE_RECORD_WRITE_AUTHORIZATION_STATUS = NOT_IMPLEMENTED
-TRUSTED_AUDIT_LIVE_PROVIDER_STATUS = NOT_IMPLEMENTED
-LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
-RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
-BASELINE_SEED_STATUS = NOT_STARTED
-RECORD_COUNT = 0 (last verified Kintone checkpoint; Stage 4B made zero Kintone calls)
-STAGE4B_KINTONE_CALLS = 0
-STAGE4B_KINTONE_WRITES = 0
-PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
-NEXT_ACTION = AWAIT CHATGPT FINAL STAGE 4B REVIEW BEFORE ANY LIVE REQUEST BRIDGE
+docs: close wp-002c stage4b review evidence
 ```
 
-Use actual final test count consistently in current operational sections.
-Add the Stage 4B traceability rows exactly.
-Fix current work package wording.
-
-Commit exactly:
+Push only to:
 
 ```text
-docs: finalize wp-002c stage4b repository evidence
+origin/ai/antigravity-wp002c
 ```
 
-Push, verify local HEAD = remote HEAD and tracked working tree clean, then STOP.
+Verify:
+
+```text
+local HEAD = remote HEAD
+tracked working tree clean
+```
+
+Then STOP.
 
 ---
 
@@ -328,37 +187,35 @@ Kintone RECORD WRITE = 0
 Do not use `.env.local`.
 Do not access App 796.
 Do not seed records.
-Do not implement live request/write-authorization/audit bridge.
+Do not implement Stage 4C.
+Do not implement live request/write authorization/audit bridges.
 Do not wire resolver.
-Do not start Stage 4C or WP-002D.
+Do not start WP-002D.
 
 # REVIEW EXPECTATION
 
-ChatGPT expects exactly two Antigravity commits after this assignment:
+ChatGPT expects exactly one Antigravity docs-only commit after this assignment.
 
-1. `fix: finalize scoring config repository storage exactness`
-2. `docs: finalize wp-002c stage4b repository evidence`
-
-Expected final gates:
+Expected final gates after independent review:
 
 ```text
 STAGE4A_CLOSURE_GATE = PASS
 KINTONE_REPOSITORY_ARCHITECTURE_GATE = PASS
 APP_ID_SAFETY_BINDING_GATE = PASS
-RAW_DOMAIN_MAPPING_GATE = PASS / FAIL
+RAW_DOMAIN_MAPPING_GATE = PASS
 USER_SELECT_MAPPING_GATE = PASS
 QUERY_ESCAPE_GATE = PASS
 WRITE_AUTHORIZATION_BOUNDARY_GATE = PASS
 ERROR_REDACTION_GATE = PASS
-OPTIMISTIC_CONCURRENCY_GATE = PASS / FAIL
-STORAGE_TOKEN_SHAPE_GATE = PASS / FAIL
-PLAIN_OBJECT_GATE = PASS / FAIL
+OPTIMISTIC_CONCURRENCY_GATE = PASS
+STORAGE_TOKEN_SHAPE_GATE = PASS
+PLAIN_OBJECT_GATE = PASS
 TRIPLE_HASH_GATE = PASS
 FINAL_PUBLISH_READBACK_GATE = PASS
 NO_RETRY_FAIL_CLOSED_GATE = PASS
-REGRESSION_GATE = PASS / FAIL
+REGRESSION_GATE = PASS
 ZERO_KINTONE_STAGE4B_GATE = PASS
-DOC_EVIDENCE_CONSISTENCY_GATE = PASS / FAIL
-GIT_PUSH_SYNC_GATE = PASS / FAIL
-WP002C_STAGE4B_GATE = PASS / BLOCKED
+DOC_EVIDENCE_CONSISTENCY_GATE = PASS
+GIT_PUSH_SYNC_GATE = PASS
+WP002C_STAGE4B_GATE = PASS
 ```
