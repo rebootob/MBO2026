@@ -13,6 +13,14 @@ Status: CONFIRMED / FROZEN WHERE STATED
 - TMG routing must never fall back to Section-only routing.
 - `Requester_User` is the authoritative Kintone shared workflow/requester boundary under the Kintone-only model. It is not individual employee authentication.
 
+## Confirmed Retired Section Rule
+
+- `TMT3` is a retired/obsolete section code and is no longer in use.
+- Current canonical section replacing the old `TMT3` structure is `TMS1`.
+- Do NOT create or restore an App795 routing row for `TMT3`.
+- If an active App53 employee still carries `Section = TMT3`, treat it as stale Employee Master data requiring source-data review/correction rather than a missing-routing defect.
+- Runtime missing-route behavior for stale `TMT3` must remain FAIL CLOSED until the App53 source record is corrected/confirmed.
+
 ## Confirmed TMG Team Routes
 
 - TMG1 Admin -> `amporn` -> `uchida`
@@ -44,4 +52,4 @@ Rejected work follows the approved reject path with a reason and returns to the 
 
 ## Change Rule
 
-Any change to routing rows, requester identities, approvers, TMG team structure, or workflow path must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
+Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, or workflow path must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
