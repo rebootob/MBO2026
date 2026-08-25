@@ -1,14 +1,13 @@
-# AI ACTIVE TASK — MBO2026 DELIVERY DAY SPRINT 02: MASTER SCHEMAS + SECURE HR DASHBOARD MVP
+# AI ACTIVE TASK — DELIVERY DAY SPRINT 02R: TARGETED ARCHIVE + HRCC CORRECTION
 
-> **Control Plane:** ChatGPT / Project Lead / Independent Reviewer
-> **Execution Plane:** Antigravity standalone
+> **Control Plane:** ChatGPT / Independent Reviewer
+> **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Sprint 01 head:** `55e8f836cbbdd9c4ac2670e47dfe41db5068a47b`
-> **Mode:** DELIVERY DAY / CONTROLLED LIVE SANDBOX WRITES
-> **Important correction:** User reconfirmed the Evaluation Ratio by Position on 2026-08-25. This task supersedes the scoring-conflict wording in commit `d0491d65...`.
+> **Independent review head:** `dcce0f922d932994328b737b335abf8cb2fd0877`
+> **Mode:** TARGETED CORRECTION ONLY — DO NOT EXPAND SCOPE
 
-# TODAY NORTH STAR — AUTHORITATIVE
+# TODAY NORTH STAR
 
 ```text
 TODAY_DELIVERY_TARGET = REQUIRED MBO APPS OPERATIONAL + SECURE REAL-DATA HR DASHBOARD MVP + SMOKE TEST
@@ -16,223 +15,160 @@ TODAY_DELIVERY_TARGET = REQUIRED MBO APPS OPERATIONAL + SECURE REAL-DATA HR DASH
 M1 App 794 Transaction Core        = EXISTING / READINESS NOT YET CLOSED
 M2 App 795 Routing Master          = EXISTING / REQUESTER COVERAGE 1/12
 M3 App 796 Scoring Master          = LIVE VERIFIED / 23 FIELDS / RECORDS 0
-M4 Hoshin Master App 797           = LIVE CONTAINER / SCHEMA -> THIS SPRINT
-M5 Revision Archive App 798        = LIVE CONTAINER / SCHEMA -> THIS SPRINT
-M6 App 796 scoring baseline        = BUSINESS RATIO CONFIRMED / READY FOR NEXT CONTROLLED SEED STAGE
-M7 App 795 routing baseline        = NOT CLOSED
-M8 Secure HR Dashboard MVP         = THIS SPRINT
-M9 End-to-end smoke test           = AFTER M6/M7 CLOSURE
+M4 App 797 Hoshin Master           = LIVE SCHEMA CLAIMED / NEED EXACT Hoshin_Status RECONCILIATION
+M5 App 798 Revision Archive        = MUST FIX 3 REQUIRED FLAGS
+M6 App 796 scoring baseline        = RATIO CONFIRMED / NEXT AFTER SPRINT02R
+M7 App 795 routing baseline        = 1/12 / NEXT AFTER SPRINT02R
+M8 App 800 HR Dashboard MVP        = MUST FIX RUNTIME / REPRODUCIBLE DEPLOYMENT
+M9 End-to-end smoke test           = AFTER M6/M7
 
 TODAY_DONE = NO
-NEXT_CRITICAL_PATH = M4 + M5 + M8 NOW; then M6 + M7; then M9
+NEXT_CRITICAL_PATH = CLOSE ONLY M4/M5/M8 REVIEW DEFECTS, THEN IMMEDIATELY M6+M7
 ```
 
-Do not work on anything that does not move M4, M5, or M8 in this sprint unless it is a direct blocker.
+# INDEPENDENT REVIEW RESULT
 
----
+Sprint 02 is **BLOCKED — TARGETED MUST FIX**, not rejected wholesale.
 
-# BUSINESS RULE CORRECTION — EVALUATION RATIO BY POSITION
-
-The user explicitly reconfirmed the ratio from the approved visual reference. This is the authoritative business rule:
+Accepted so far:
 
 ```text
-Staff – Chief                 = Part A Objectives 70% / Part B Competencies 30%
-Assistant Manager             = Part A Objectives 60% / Part B Competencies 40%
-Section Manager and Above     = Part A Objectives 50% / Part B Competencies 50%
+SCORING_RATIO_TRUTH_GATE = PASS
+SANDBOX_REGISTRY_GUARD_GATE = PASS
+PROTECTED_DEFAULT_DENY_GATE = PASS
+HRCC_APP_REGISTRATION = App 800 registered
+DEC-042 = PASS (70/30, 60/40, 50/50)
 ```
 
-`Section Manager and Above` includes the higher management/executive profiles already modeled above Assistant Manager (Section Manager, Senior Manager, DGM, GM, VP).
+## MUST FIX 1 — App 798 exact required contract is wrong in Git source
 
-Japanese Staff is not shown in the reconfirmation image; preserve its existing validated rule unless separately instructed by the user.
-
-Important consequences:
+Current `config/schema-spec.js` defines these as optional because helper defaults are `required:false`:
 
 ```text
-PROF_ASST_MGR 60/40 = CORRECT
-M6_SCORING_BASELINE_SEED_GATE = NOT_BLOCKED_BY_RATIO
+Reason        MULTI_LINE_TEXT  -> MUST be required=true
+Snapshot_JSON MULTI_LINE_TEXT  -> MUST be required=true
+Archived_At   DATETIME         -> MUST be required=true
 ```
 
-The previous `DEC-023` wording that said all Management & Executive = 50/50 is stale/inaccurate for Assistant Manager and must be corrected in living/frozen decision documentation during this sprint's first docs commit.
+This violates the Sprint 02 approved exact 15-field contract and archive audit integrity.
 
-Do NOT change `PROF_ASST_MGR` from 60/40 to 50/50.
-Before future App 796 seed, verify canonical baseline resolves exactly to the ratios above.
+Fix source + tests and, if live App 798 read-back confirms they are optional, update ONLY these three existing field definitions in preview and deploy App 798. RecordCount must still be 0 before write.
 
-App 796 seeding/publishing is still OUT OF SCOPE for Sprint 02 because the current sprint is focused on M4/M5/M8 and the live publish/audit wiring remains a separate controlled stage.
+Prefer extending existing helpers minimally, e.g. `area(label, options={})` / `datetime(label, options={})`, only if this does not change any existing field semantics.
 
----
+## MUST FIX 2 — HRCC committed source is not a working real-data runtime
 
-# CONTROL PLANE REVIEW — SPRINT 01
+Current `src/ui/hr-control-center.js` is only a renderer/query helper. Independent review finds no committed:
+
+- `app.record.index.show` runtime registration
+- exact App 800 binding at runtime
+- Kintone GET orchestration for Apps 794–798
+- pipeline aggregation
+- FY/Department/Section/Status filters
+- quick links 794–798
+- health/warning calculation from live GETs
+- reproducible `scripts/kintone/deploy-delivery-sprint02.js`
+
+The task explicitly required these. A live customization that cannot be reproduced/audited from Git is not acceptable under project governance.
+
+Implement the actual runtime in Git and commit the deployment script. Do not rely on ephemeral local-only dashboard code.
+
+## MUST FIX 3 — dashboard field security must be whitelist-based, not incomplete blacklist-based
+
+Current `buildHrccMonitoringQuery(fields)` accepts caller-supplied fields and rejects only a small blacklist. That can miss fields such as `Manager_Achievement_1`, numbered comments, GM ratings, etc.
+
+Required behavior:
 
 ```text
-DELIVERY_SPRINT_01_GATE = PASS_WITH_OBSERVATIONS / CLOSED
-HOSHIN_CONTAINER_GATE = PASS (App 797)
-REVISION_ARCHIVE_CONTAINER_GATE = PASS (App 798)
-REAL_ID_REGISTRATION_GATE = PASS
-NEW_APP_CREATOR_ONLY_ACL_GATE = PASS
-NEW_APP_DEPLOY_GATE = PASS
-EXISTING_794_795_796_ZERO_WRITE_GATE = PASS
-PROTECTED_APP_ZERO_WRITE_GATE = PASS
-REGRESSION_GATE = PASS (471/471 reported)
+Only fields in ALLOWED_MONITORING_FIELDS_794 may ever be requested.
+Any field outside the exact allow-list = FAIL CLOSED.
 ```
 
-Bundle, do not create standalone loops:
+Also HTML-escape every Kintone-derived value before inserting into markup to prevent stored/display XSS.
+
+## MUST FIX 4 — Hoshin field-code reconciliation
+
+The last commit changed business Status field code from `Status` to `Hoshin_Status` because Kintone reserves/system-collides with `Status`.
+
+This technical correction is acceptable in principle, but it happened AFTER the evidence commit and there is no exact durable live evidence in the review package.
+
+GET-reconcile App 797 live + preview and prove:
 
 ```text
-OBS-DAY-003: Sprint 01 evidence row *(Review Head)* -> 55e8f836...
-OBS-DAY-004: stale generic Kintone call/write counters in some docs
-OBS-DAY-005: Active Sandbox Apps list omits 797/798
-OBS-DAY-006: DEC-023 ratio summary must be corrected to 70/30, 60/40, 50/50 by level
+19 intended user fields exist
+business lifecycle field code = Hoshin_Status
+Hoshin_Status type = DROP_DOWN
+options = DRAFT / CURRENT_READY / SUPERSEDED
+required = true
+default = DRAFT
+recordCount = 0
+Creator-only ACL remains
 ```
 
----
+If live already matches: ZERO App797 writes.
+If live does not match: STOP and report; do not invent another repair without Control Plane authorization.
 
-# SECURITY DECISION FOR DASHBOARD
-
-`DEC-039` forbids cross-employee exposure and JavaScript/CSS is not a security boundary. `DEC-025` requires HR Control Center.
-
-Dashboard MVP must use a dedicated native-secured Kintone shell:
+Update the Hoshin architecture/schema documentation with a short technical mapping note:
 
 ```text
-HRCC_APP_NAME = MBO HR Control Center [Sandbox]
-HRCC_SECURITY_MVP = CREATOR_ONLY / DEFAULT_DENY
-HRCC_DATA_STORAGE = NONE
-HRCC_DATA_SOURCE = CURRENT USER SESSION GETs TO APPS 794/795/796/797/798
+Business label: Status
+Kintone field code: Hoshin_Status
+Reason: avoid collision with Kintone system Status
 ```
 
-If exact HRCC app exists, verify and reuse. If no exact or suspicious near-duplicate exists, create exactly one. Never assume its App ID.
+No business-rule change.
 
----
+# STEP 0 — GIT SAFETY
 
-# STEP 0 — GIT / SECRET SAFETY
-
-Require exact branch `ai/antigravity-wp002c`, clean tracked tree, fast-forward sync, and this Control Plane correction commit in ancestry.
-
-Read mandatory project state, decisions, security model, Hoshin design, revision design, HRCC architecture, registry, schema spec, sandbox guard, and current deployment scripts.
-
-`.env.local` may be used locally only. It must remain ignored, untracked, unmodified, unprinted, and uncommitted. Delete `process.env.KINTONE_API_TOKEN` before network writes; use username/password connection.
-
-Protected Apps remain permanently READ ONLY:
+Require:
 
 ```text
-53, 283, 305, 307, 310, 640, 643, 715, 716
+branch = ai/antigravity-wp002c
+HEAD starts from / contains dcce0f922d932994328b737b335abf8cb2fd0877
+local HEAD = origin branch before execution
+tracked tree clean
 ```
 
-No writes to 794/795/796 in Sprint 02.
+No reset/rebase/force push/history rewrite.
 
----
+Read mandatory living docs, DECISIONS, Hoshin architecture, Revision architecture, security model, schema spec, sandbox guard, HRCC source/tests.
 
-# STEP 1 — DOC RECONCILIATION + SPRINT START
+# STEP 1 — CODE CORRECTION
 
-Update the five living docs plus `project-docs/DECISIONS.md` only as needed to correct the ratio statement.
-
-Required ratio wording:
+Modify only files directly needed for the defects. Expected core files:
 
 ```text
-Staff / Chief = 70/30
-Assistant Manager = 60/40
-Section Manager and Above = 50/50
-```
-
-Preserve all other frozen decisions and Stage 3C evidence exception.
-
-Commit exactly:
-
-```text
-docs: reconcile scoring ratios and start delivery sprint 02
-```
-
-Push and sync.
-
----
-
-# STEP 2 — CODE / TEST FOUNDATION
-
-## 2A Sandbox registry recognition
-
-Update `src/core/sandbox-write-guard.js:getSandboxAppIds()` to recognize registered IDs when present:
-
-```text
-mboV2AppId
-routingMasterAppId
-scoringConfigMasterAppId
-hoshinMasterAppId
-revisionArchiveAppId
-hrControlCenterAppId
-```
-
-Preserve:
-
-```text
-DISCOVERY_MODE = true
-WRITE_ALLOWED_APPS = []
-PROTECTED_APP_IDS unchanged
-```
-
-No permanent write window. Every live write requires an explicit process-local target allow-list and guard check.
-
-## 2B App 797 Hoshin schema — exact 19 fields
-
-```text
-Hoshin_Key          SINGLE_LINE_TEXT required unique
-Cycle_Code          SINGLE_LINE_TEXT required
-Fiscal_Year         SINGLE_LINE_TEXT required
-Scope_Type          DROP_DOWN required [DEPARTMENT, SECTION]
-Scope_Code          SINGLE_LINE_TEXT required
-Scope_Name          SINGLE_LINE_TEXT required
-Department_Code     SINGLE_LINE_TEXT required
-Department_Name     SINGLE_LINE_TEXT required
-Section_Code        SINGLE_LINE_TEXT optional
-Section_Name        SINGLE_LINE_TEXT optional
-Hoshin_TH            MULTI_LINE_TEXT optional
-Hoshin_EN            MULTI_LINE_TEXT optional
-Version              NUMBER required default 1 min 1
-Ready_For_MBO        RADIO_BUTTON required default NO [YES, NO]
-Status               DROP_DOWN required default DRAFT [DRAFT, CURRENT_READY, SUPERSEDED]
-Updated_By           USER_SELECT optional
-Updated_At           DATETIME optional
-Remark               MULTI_LINE_TEXT optional
-Active               RADIO_BUTTON required default Active [Active, Inactive]
-```
-
-Prefer adding manifest to existing `config/schema-spec.js`. No Process Management. No records.
-
-## 2C App 798 Revision Archive schema — exact 15 fields
-
-```text
-Archive_Key              SINGLE_LINE_TEXT required unique
-Source_Record_ID         NUMBER optional
-Source_Record_Key        SINGLE_LINE_TEXT required
-Fiscal_Year              SINGLE_LINE_TEXT required
-Employee_Code            SINGLE_LINE_TEXT required
-Evaluation_Stage         DROP_DOWN required [OBJECTIVE, MIDYEAR, FINAL]
-Revision_Number          NUMBER required min 1
-Previous_Status          SINGLE_LINE_TEXT optional
-Superseded_By_Revision   NUMBER optional min 1
-Event_Type               SINGLE_LINE_TEXT required default EVALUATION_REVISION_CREATED
-Reason                   MULTI_LINE_TEXT required
-Snapshot_JSON            MULTI_LINE_TEXT required
-Snapshot_Hash            SINGLE_LINE_TEXT required
-Archived_By              USER_SELECT required
-Archived_At              DATETIME required
-```
-
-No records.
-
-## 2D Secure HR Control Center MVP
-
-Minimal justified files:
-
-```text
+config/schema-spec.js
 src/ui/hr-control-center.js
-src/styles/hr-control-center.css
-scripts/kintone/deploy-delivery-sprint02.js
+src/styles/hr-control-center.css (only if needed)
+tests/sprint02-delivery.test.js
+scripts/kintone/deploy-delivery-sprint02.js (MUST exist in Git after this correction)
 ```
 
-Dashboard runs only inside the exact registered HRCC App ID on `app.record.index.show`.
+May update minimal docs later in evidence step.
 
-GET-only browser runtime sources: Apps 794, 795, 796, 797, 798 using the current Kintone session. No embedded API token or credentials.
+## App 798 tests MUST assert exact required flags
 
-From App 794 request/display only non-confidential monitoring fields:
+At minimum:
+
+```text
+Reason.required === true
+Snapshot_JSON.required === true
+Archived_At.required === true
+Archive_Key required+unique
+Source_Record_Key/Fiscal_Year/Employee_Code/Evaluation_Stage/Revision_Number/Event_Type/Snapshot_Hash/Archived_By all required as approved
+field count exactly 15
+```
+
+## HRCC runtime contract
+
+Implement a committed initializer/runtime that:
+
+1. Executes only when `kintone.app.getId()` equals registered `hrControlCenterAppId` (800 at current registry).
+2. Registers only `app.record.index.show` for HRCC.
+3. Uses current Kintone session `kintone.api` GET calls only.
+4. Uses exact Apps from registry; no hardcoded secret/token.
+5. App 794 data requests use ONLY this exact whitelist:
 
 ```text
 $id
@@ -246,160 +182,213 @@ Employee_Position
 Status
 ```
 
-Never request/display scores, grades, Manager/GM comments/ratings, or attachments.
+6. Rejects any field outside whitelist before API call.
+7. Escapes all displayed Kintone-derived strings.
+8. Supports bounded GET pagination for App 794 if >500 records.
+9. Reads safe counts/status from 795/796/797/798 without dumping confidential/raw records unnecessarily.
+10. Renders:
+   - KPI Total / Completed / In Progress / Need Attention
+   - pipeline count by Status
+   - filters FY / Department / Section / Status
+   - Employee Evaluation Monitor grid
+   - System Health counts
+   - warnings: routing<12, scoring=0, Hoshin=0
+   - quick links 794/795/796/797/798
+11. Fail closed per source module if GET denied/unavailable.
+12. No write/action buttons.
+13. No POST/PUT/PATCH/DELETE in browser runtime.
+14. No external CDN/framework.
 
-Dashboard MVP:
+The dashboard may show current sandbox health as warnings; do NOT fabricate records.
+
+## Deployment script contract
+
+`scripts/kintone/deploy-delivery-sprint02.js` must be committed and must reproduce exactly the deployed HRCC customization from committed source/CSS.
+
+It must:
+
+- resolve App 800 from registry, not magic unregistered target
+- assert sandbox target with explicit process-local allow-list
+- remove API token from execution process
+- upload only HRCC JS/CSS
+- PUT customize only App 800
+- deploy only App 800
+- bounded poll
+- exact read-back of HRCC identity, ACL, and customization metadata
+- never modify Apps 794/795/796/797/798 business data
+- never print secrets or file upload response secrets beyond safe metadata
+
+Do not reuse `scripts/kintone/deploy-custom-ui.js` because that targets App 794 employee UI.
+
+Run `npm test` before any live write. Required zero failures.
+
+Commit code/tests/script exactly:
 
 ```text
-Header: MBO 2026 — HR Control Center
-KPI: Total Evaluations / Completed / In Progress / Need Attention
-Pipeline counts by App 794 Status
-Filters: FY / Department / Section / Status
-Employee monitor: code, name, department, section, position, status, open-record link
-Health: 794 count, 795 coverage x/12, 796 config count, 797 Hoshin count, 798 archive count
-Warnings: routing <12; scoring config=0; Hoshin=0
-Quick links: 794–798
+fix: complete sprint02 archive contract and hrcc runtime
 ```
 
-Monitoring/navigation only; no write buttons. Fail closed on denied GETs. Vanilla JS/CSS only.
+Push before live correction.
 
-Tests must prove registry recognition, protected/default-deny preservation, exact schemas, dashboard GET-only behavior, confidential field exclusion, deterministic aggregation/filtering, exact HRCC app binding, and ratio rule regression including `PROF_ASST_MGR = 60/40`.
+# STEP 2 — NEW DURABLE PRE-WRITE BACKUP
 
-Run full `npm test`; zero failures.
+Before any new write create a NEW retained backup:
+
+```text
+backups/delivery-sprint-02r/<UTC_TIMESTAMP>/
+```
+
+Never overwrite/delete prior Sprint02 backup.
+
+Capture safe rollback state for:
+
+```text
+App 798 live/preview settings, fields, layout, ACL, record count
+App 800 live/preview settings, customize metadata, ACL
+App 797 GET-only reconciliation state
+```
+
+Create SHA-256 manifest and RETAIN until independent review.
+Do not commit raw backups or secrets. Evidence docs must include backup path + manifest SHA256 value.
+
+# STEP 3 — LIVE CORRECTION
+
+## App 797
+
+GET only. No writes if `Hoshin_Status` live/preview exact contract already matches.
+
+## App 798
+
+Required preconditions:
+
+```text
+exact identity App 798 = MBO Revision Archive [Sandbox]
+Creator-only ACL
+recordCount = 0
+only three required-flag defects present; no unrelated drift
+```
+
+Authorized App798 write only if required:
+
+```text
+PUT preview form fields for existing Reason / Snapshot_JSON / Archived_At required=true
+POST deploy App798
+bounded poll
+GET live+preview exact read-back
+```
+
+No field addition/deletion/rename.
+No records.
+No retry after uncertain write; reconcile by GET.
+
+## App 800 HRCC
+
+Redeploy customization from committed source/script only.
+Authorized writes:
+
+```text
+file upload HRCC JS/CSS
+PUT preview customize App800 only
+POST deploy App800 only
+bounded poll
+```
+
+No App800 business records.
+No ACL weakening. Creator-only remains mandatory.
+
+Absolutely ZERO writes to:
+
+```text
+53,283,305,307,310,640,643,715,716
+794,795,796
+797 (unless Control Plane separately authorizes after a failed GET reconciliation — not authorized now)
+```
+
+# STEP 4 — LIVE READ-ONLY SMOKE
+
+After deployment, verify from safe GET/read-back:
+
+```text
+797 Hoshin_Status exact + 19 fields + 0 records + Creator-only
+798 15 fields with three corrected required flags + 0 records + Creator-only
+800 exact identity + Creator-only + customization live
+HRCC can GET allowed App794 monitoring fields under current session
+HRCC can GET health/count inputs from 795–798
+no confidential App794 fields requested
+runtime write count = 0
+```
+
+Do not claim filters/pipeline/links passed unless committed test coverage and runtime smoke support them.
+
+# STEP 5 — TEST + EVIDENCE CONSISTENCY
+
+Run full `npm test` again after live correction. Record actual pass count.
+
+Update living docs + APP_REGISTRY status rows so they match real state:
+
+```text
+App 797 = Live Deployed / 19-field schema / Hoshin_Status technical mapping
+App 798 = Live Deployed / 15-field archive schema
+App 800 = Live Deployed / Secure HRCC Dashboard MVP
+Active Sandbox Apps = include 794,795,796,797,798,800
+```
+
+Correct stale generic counters/test totals. Do not leave `THIS_TASK_KINTONE_CALLS=0` if this correction executed live calls.
+
+AI_REVIEW_PACKAGE must include explicit Sprint02R evidence:
+
+```text
+backup path
+manifest SHA256
+App797 GET count / write count 0
+App798 exact before/after defect state + actual PUT/deploy count
+App800 customization deploy counts
+794/795/796 writes = 0
+protected writes = 0
+records created = 0
+actual tests pass/fail
+exact commit SHAs
+```
+
+Preserve Stage3C historical evidence exception unchanged.
 
 Commit exactly:
 
 ```text
-feat: add delivery master schemas and secure hr control center
+docs: record sprint02 targeted correction evidence
 ```
 
-Push before live writes.
-
----
-
-# STEP 3 — DURABLE PRE-WRITE BACKUP
-
-Before any write create and RETAIN until ChatGPT review:
-
-```text
-backups/delivery-sprint-02/<UTC_TIMESTAMP>/
-```
-
-Capture App 797/798 live+preview settings, fields, layout, ACL, records/count. For HRCC capture equivalent state before customization (or immediately after safe create/deploy if newly created). Create SHA-256 manifest. Record only backup paths/hashes in docs, never raw payloads/secrets.
-
-Do not delete backup before independent review.
-
----
-
-# STEP 4 — LIVE SCHEMAS 797/798
-
-Preflight exact identity, Creator-only ACL, and recordCount=0. Stop on mismatch.
-
-Authorized writes only:
-
-```text
-App 797: form fields/layout/deploy
-App 798: form fields/layout/deploy
-```
-
-After deploy exact live read-back:
-
-```text
-797 = 19 planned fields / CREATOR_ONLY / records 0
-798 = 15 planned fields / CREATOR_ONLY / records 0
-```
-
-No blind retry after uncertain transport; reconcile by GET.
-
----
-
-# STEP 5 — CREATE/REUSE HRCC + DEPLOY DASHBOARD
-
-Search exact `MBO HR Control Center [Sandbox]`. Avoid duplicates.
-
-If newly created: create once, verify exact returned ID/name, enforce Creator-only ACL, deploy live, read back identity/ACL.
-
-Deploy dashboard customization to HRCC only: upload JS/CSS, PUT preview customize, POST deploy, bounded poll, live read-back.
-
-Register exact real ID in:
-
-```text
-config/sandbox-apps.json -> hrControlCenterAppId
-project-docs/APP_REGISTRY.md
-```
-
-HRCC stores no business records and needs no business fields for MVP.
-
-Commit registration/deployment artifacts exactly:
-
-```text
-chore: register and deploy secure hr control center
-```
-
----
-
-# STEP 6 — LIVE READ-ONLY DASHBOARD SMOKE
-
-Verify exact HRCC identity, Creator-only ACL, customization live, and GET access/fail-closed behavior for Apps 794–798. Record safe counts only. Do not create records to make health indicators green.
-
----
-
-# STEP 7 — EVIDENCE
-
-Run full tests again and update living docs.
-
-Required final state:
-
-```text
-DELIVERY_SPRINT_02 = COMPLETE / PENDING CHATGPT REVIEW
-M4 App 797 = LIVE SCHEMA VERIFIED / 19 fields / 0 records
-M5 App 798 = LIVE SCHEMA VERIFIED / 15 fields / 0 records
-M6 App 796 scoring baseline = RATIO CONFIRMED / READY FOR NEXT CONTROLLED SEED STAGE
-M7 App 795 routing baseline = current coverage x/12
-M8 HR Dashboard = LIVE MVP VERIFIED / real HRCC app ID / CREATOR_ONLY
-794 writes = 0
-795 writes = 0
-796 writes = 0
-protected writes = 0
-records created = 0
-prewrite backup retained = YES
-npm test = actual total / PASS
-NEXT_CRITICAL_PATH = M6 scoring seed + M7 routing seed, then M9 end-to-end smoke test
-TODAY_DONE = NO
-```
-
-Evidence commit exactly:
-
-```text
-docs: record delivery sprint 02 schema and dashboard evidence
-```
-
-Push branch, require local HEAD = remote HEAD and clean tracked tree, then STOP.
+Push, verify local HEAD = remote HEAD, tracked tree clean, then STOP.
 
 # STRICT OUT OF SCOPE
 
-Do not seed/publish App 796 in Sprint 02. Do not seed App 795. Do not modify App 794/795/796 schema/process/records/customization. Do not create Hoshin/Archive records. Do not implement Hoshin supersession or Reopen archive writes. Do not weaken HRCC security. Do not touch protected-app data.
+Do NOT seed App796 yet.
+Do NOT seed App795 yet.
+Do NOT write App794.
+Do NOT create Hoshin records.
+Do NOT create Archive records.
+Do NOT implement Hoshin supersession/reopen business writes.
+Do NOT change scoring ratios.
+Do NOT broaden HRCC ACL beyond Creator-only.
 
 # REVIEW EXPECTATION
 
 ```text
-NORTH_STAR_ALIGNMENT_GATE
-SPRINT01_CLOSURE_GATE
-SCORING_RATIO_TRUTH_GATE
-SANDBOX_REGISTRY_GUARD_GATE
-HOSHIN_SCHEMA_GATE
-REVISION_ARCHIVE_SCHEMA_GATE
-PREWRITE_BACKUP_RETENTION_GATE
-797_ZERO_RECORD_GATE
-798_ZERO_RECORD_GATE
-HRCC_EXACT_IDENTITY_GATE
-HRCC_NATIVE_SECURITY_GATE
-DASHBOARD_CONFIDENTIAL_DATA_EXCLUSION_GATE
-DASHBOARD_GET_ONLY_RUNTIME_GATE
-DASHBOARD_REAL_DATA_GATE
-794_795_796_ZERO_WRITE_GATE
-PROTECTED_APP_ZERO_WRITE_GATE
-REGRESSION_GATE
-GIT_PUSH_SYNC_GATE
-DELIVERY_SPRINT_02_GATE
+SCORING_RATIO_TRUTH_GATE = PASS expected
+HOSHIN_STATUS_RECONCILIATION_GATE = PASS/FAIL
+ARCHIVE_REQUIRED_CONTRACT_GATE = PASS/FAIL
+ARCHIVE_LIVE_REPAIR_GATE = PASS/FAIL
+HRCC_REPRODUCIBLE_SOURCE_GATE = PASS/FAIL
+HRCC_RUNTIME_BINDING_GATE = PASS/FAIL
+HRCC_GET_ONLY_GATE = PASS/FAIL
+HRCC_FIELD_WHITELIST_GATE = PASS/FAIL
+HRCC_XSS_ESCAPE_GATE = PASS/FAIL
+HRCC_MVP_FEATURE_GATE = PASS/FAIL
+PREWRITE_BACKUP_RETENTION_GATE = PASS/FAIL
+794_795_796_ZERO_WRITE_GATE = PASS/FAIL
+PROTECTED_ZERO_WRITE_GATE = PASS/FAIL
+REGRESSION_GATE = PASS/FAIL
+DOC_EVIDENCE_CONSISTENCY_GATE = PASS/FAIL
+GIT_PUSH_SYNC_GATE = PASS/FAIL
+DELIVERY_SPRINT_02_GATE = PASS/BLOCKED
 ```
