@@ -5,13 +5,13 @@
 - **To AI**: Incoming AI / Independent Reviewer (ChatGPT)
 - **Branch**: `ai/antigravity-wp002c`
 - **Current Phase**: **`PHASE 3: EVALUATION PROFILE, COMPETENCY & SCORING ENGINE`**
-- **Current Work Package**: `MBO-P03-WP-002C (DELIVERY DAY SPRINT 04 M7G COMPLETE / PENDING CHATGPT REVIEW)`
+- **Current Work Package**: `MBO-P03-WP-002C (DELIVERY DAY SPRINT 04 M7H COMPLETE / PENDING CHATGPT REVIEW)`
 - **WP-001 Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002 Plan Status**: `FROZEN / APPROVED (PLAN_GATE = PASS)`
 - **WP-002A Status**: `IMPLEMENTATION COMPLETE (15/15 new tests passing; 131/131 total suite passing)`
 - **WP-002B Status**: `PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`
-- **WP-002C Status**: `DELIVERY SPRINT 04 M7G COMPLETE / PENDING CHATGPT REVIEW; AUTHORITATIVE TARGET COUNT = 17 ROUTING FLOWS RECONCILED (0 KINTONE WRITES)`
-- **Independent Review Gate**: `DELIVERY SPRINT 04 M7G COMPLETE / PENDING CHATGPT REVIEW`
+- **WP-002C Status**: `DELIVERY SPRINT 04 M7H COMPLETE / PENDING CHATGPT REVIEW; CONTROLLED APP795 SCHEMA & 17-FLOW ROUTING MIGRATION EXECUTED & READBACK VERIFIED`
+- **Independent Review Gate**: `DELIVERY SPRINT 04 M7H COMPLETE / PENDING CHATGPT REVIEW`
 - **Implementation Commit**: `4bef27e` (`feat: add guarded wp-002c dropdown schema repair`)
 - **Target App**: `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SANDBOX`; production `FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `CORRECTION_REQUIRED_FIELDS = NONE`; `RECORD_COUNT = 8`; `PUBLISHED_COUNT = 8`; `VALIDATED_COUNT = 0`; `BASELINE_SEED_STATUS = PUBLISHED_8_OF_8`; `PUBLISH_PIPELINE_STATUS = LIVE_BASELINE_PUBLISH_VERIFIED`; `LIVE_RECORD_PUBLISH_STATUS = BASELINE_8_OF_8_PUBLISHED`; `RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED`; `SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED`)
 - **WP002C_STAGE3C_GATE**: `PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION`
@@ -29,7 +29,7 @@
 - **WP002C_STAGE4D_B_GATE**: `PASS_WITH_OBSERVATIONS` (ed4238e)
 - **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT**: `PASSED / FROZEN`
 - **DELIVERY_SPRINT_01_GATE**: `PASS_WITH_OBSERVATIONS / CLOSED` (55e8f83)
-- **DELIVERY_SPRINT_04_M7G**: `COMPLETE / PENDING CHATGPT REVIEW` (Repository & living docs count consistency reconciled with 0 Kintone writes. Frozen authoritative target count = 17 active routing flows [10 non-TMG + 4 TMG1 + 3 TMG2 = 17]. All active 15-row references reconciled to 17. Stale active references = 0. Pre-write readiness check passed).
+- **DELIVERY_SPRINT_04_M7H**: `COMPLETE / PENDING CHATGPT REVIEW` (Controlled App795 schema & routing write executed following explicit user authorization. Created durable pre-write backup manifest SHA-256 verified. Added Routing_Key [unique=true], Team, Section_Code.unique=false. Updated 12 existing records and created 5 TMG team records. Verified exact 17/17 active records readback. 501/501 tests pass).
 - **PUBLISH_PIPELINE_STATUS**: `FOUNDATION_IMPLEMENTED_NOT_DEPLOYED`
 - **LIVE_KINTONE_ADAPTER_STATUS**: `NOT_IMPLEMENTED`
 - **LIVE_RECORD_PUBLISH_STATUS**: `BASELINE_8_OF_8_PUBLISHED`
@@ -37,7 +37,7 @@
 - **SUPERSESSION_ACTIVATION**: `NOT_IMPLEMENTED / FAIL_CLOSED`
 - **THIS_TASK_KINTONE_CALLS**: `0`
 - **THIS_TASK_KINTONE_WRITES**: `0`
-- **NEXT_ACTION**: `CHATGPT CONTROL PLANE REVIEW; IF PASS, REQUEST EXPLICIT USER APPROVAL FOR CONTROLLED APP795 WRITE WINDOW`
+- **NEXT_ACTION**: `CHATGPT REVIEW ONLY`
 - **Forensic Note**: A genuine R1 pre-write snapshot was captured immediately before the repair PUT but deleted by post-repair cleanup before evidence commit. No durable R1 backup artifact survives. The 23:22Z backup is the earlier Stage 3C schema-creation backup and must not be treated as R1 evidence.
 - **WP-002C Plan**: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
 - **WP-002C Stage 3C-R1 Repair**: Successfully submitted 1 Form Fields PUT for Part_A_Scoring_Mode and Config_Status and 1 Deploy POST; positive live verification confirmed raw domain option values (DIFFICULTY_ACHIEVEMENT_MATRIX, ACHIEVEMENT_DIRECT, DRAFT, VALIDATED, PUBLISHED, SUPERSEDED, RETIRED) and indexes (0..4); live 23/23 readback PASS; Creator-Only ACL PASS; Record count 0

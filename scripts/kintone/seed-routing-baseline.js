@@ -18,6 +18,43 @@ export const APPROVED_ROUTING_BASELINE_MANIFEST = [
   { sectionCode: 'TMT2', sectionName: 'Technology Section 2', requesterUser: 't2' }
 ];
 
+export const APPROVED_TEAM_ROUTING_MANIFEST = [
+  { routingKey: 'TME1', sectionCode: 'TME1', sectionName: 'Managing Director Section 1', team: '', requesterUser: 'e1' },
+  { routingKey: 'TMF1', sectionCode: 'TMF1', sectionName: 'Manufacturing Section 1', team: '', requesterUser: 'f1' },
+  { routingKey: 'TMF2', sectionCode: 'TMF2', sectionName: 'Manufacturing Section 2', team: '', requesterUser: 'f2' },
+  { routingKey: 'TMF3', sectionCode: 'TMF3', sectionName: 'Manufacturing Section 3', team: '', requesterUser: 'f3' },
+  { routingKey: 'TMH1', sectionCode: 'TMH1', sectionName: 'HR & Admin Section 1', team: '', requesterUser: 'tmh' },
+  { routingKey: 'TMH2', sectionCode: 'TMH2', sectionName: 'HR & Admin Section 2', team: '', requesterUser: 'tmh' },
+  { routingKey: 'TMH3', sectionCode: 'TMH3', sectionName: 'HR & Admin Section 3', team: '', requesterUser: 'tmh' },
+  { routingKey: 'TMS1', sectionCode: 'TMS1', sectionName: 'Sales Section 1', team: '', requesterUser: 's1' },
+  { routingKey: 'TMT1', sectionCode: 'TMT1', sectionName: 'Technology Section 1', team: '', requesterUser: 't1' },
+  { routingKey: 'TMT2', sectionCode: 'TMT2', sectionName: 'Technology Section 2', team: '', requesterUser: 't2' },
+  { routingKey: 'TMG1|Admin', sectionCode: 'TMG1', sectionName: 'General Admin Section 1', team: 'Admin', requesterUser: 'g_request' },
+  { routingKey: 'TMG1|CAD', sectionCode: 'TMG1', sectionName: 'General Admin Section 1', team: 'CAD', requesterUser: 'g_request' },
+  { routingKey: 'TMG1|Marketing', sectionCode: 'TMG1', sectionName: 'General Admin Section 1', team: 'Marketing', requesterUser: 'g_request' },
+  { routingKey: 'TMG1|Production', sectionCode: 'TMG1', sectionName: 'General Admin Section 1', team: 'Production', requesterUser: 'g_request' },
+  { routingKey: 'TMG2|CAD', sectionCode: 'TMG2', sectionName: 'General Admin Section 2', team: 'CAD', requesterUser: 'g_request' },
+  { routingKey: 'TMG2|Marketing', sectionCode: 'TMG2', sectionName: 'General Admin Section 2', team: 'Marketing', requesterUser: 'g_request' },
+  { routingKey: 'TMG2|Production', sectionCode: 'TMG2', sectionName: 'General Admin Section 2', team: 'Production', requesterUser: 'g_request' }
+];
+
+export function validateTeamRoutingManifest(manifest) {
+  if (!Array.isArray(manifest) || manifest.length !== 17) {
+    throw new Error(`TEAM ROUTING MANIFEST INVALID: Expected exactly 17 items, got ${manifest?.length}`);
+  }
+  const seenKeys = new Set();
+  for (const item of manifest) {
+    if (!item || typeof item !== 'object' || !item.routingKey) {
+      throw new Error('TEAM ROUTING MANIFEST INVALID: Item must have routingKey');
+    }
+    if (seenKeys.has(item.routingKey)) {
+      throw new Error(`TEAM ROUTING MANIFEST INVALID: Duplicate routingKey '${item.routingKey}'`);
+    }
+    seenKeys.add(item.routingKey);
+  }
+  return true;
+}
+
 export function validateRoutingSeedManifest(manifest) {
   if (!Array.isArray(manifest) || manifest.length !== 11) {
     throw new Error(`ROUTING MANIFEST INVALID: Expected exactly 11 items, got ${manifest?.length}`);

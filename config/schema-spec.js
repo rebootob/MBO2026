@@ -13,7 +13,9 @@ const approvalRuleOptions = {
 };
 
 export const routingFields = {
-  Section_Code: text('Section Code', { required: true, unique: true }),
+  Routing_Key: text('Routing Key', { required: true, unique: true }),
+  Team: text('Team Name'),
+  Section_Code: text('Section Code', { required: true, unique: false }),
   Section_Name: text('Section Name', { required: true }),
   Requester_User: user('Requester User', true),
   
