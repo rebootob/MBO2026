@@ -1,11 +1,11 @@
-# AI ACTIVE TASK — M10C-AUTH-A APP801 CREATION PREFLIGHT
+# AI ACTIVE TASK — M10C-AUTH-B CONTROLLED APP801 CREDENTIAL STORE CREATION
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Head:** `8d0b538e8729e6d4a0193f399a4bafa247cec26d`
-> **Mode:** READ-ONLY / CHANGE PLAN / SCHEMA + ACL PREFLIGHT ONLY — KINTONE WRITES = 0
+> **Reviewed Head:** `8d0896776777a50b374946343de9d0d5fbe9f2b2`
+> **Mode:** CONTROLLED KINTONE WRITE — CREATE ONE AUTH CREDENTIAL APP ONLY
 
 # NORTH STAR
 
@@ -16,206 +16,338 @@ App796 scoring                  = 8/8 READY
 App800 HR Control Center        = LIVE
 App799                          = DELETED / VERIFIED
 M10B-SEC architecture           = PASS
+M10C-AUTH-A App801 preflight    = PASS
 
-NEXT DELIVERY GOAL:
-Create a dedicated secure credential store for employee self-service authentication,
-then implement Phase 1 Employee_Code + Personal Password and later Phase 2 TOTP.
+USER AUTHORIZATION:
+Create the dedicated MBO employee authentication credential store = EXPLICITLY APPROVED
 
-THIS TASK = APP801 CREATION PREFLIGHT ONLY
-NO KINTONE WRITE YET
+THIS TASK:
+Create exactly ONE credential-store app, configure the approved minimum schema and restrictive ACL,
+deploy/read-back verify it, record the ACTUAL Kintone App ID, and STOP.
 ```
 
-# FROZEN APP801 IDENTITY
+# USER AUTHORIZATION BOUNDARY
+
+The user explicitly authorized:
 
 ```text
-Planned App ID reference = 801 (actual ID must be captured from Kintone only after future creation)
-Planned Name = MBO Employee Authentication & MFA Credential Store [Sandbox]
+"อนุมัติสร้าง App801"
+```
+
+Interpret this authorization narrowly as:
+
+```text
+CREATE exactly ONE new Kintone app for:
+MBO Employee Authentication & MFA Credential Store [Sandbox]
+
+Configure that new app only:
+- approved 14-field credential schema
+- restrictive Creator/Service-only ACL / default deny
+- deploy / read-back verification
+- registry/config/docs reconciliation using ACTUAL Kintone App ID
+```
+
+This authorization does NOT authorize:
+
+```text
+credential record creation / seeding
+plaintext or temporary password records
+employee account provisioning
+App53 mutation
+App794/795/796/797/798/800 mutation
+login UI implementation
+Node.js auth-service deployment
+session/token implementation
+TOTP enrollment
+external infrastructure deployment
+creating a second app if the allocated App ID is not 801
+manual deletion of any app
+```
+
+Consume and close this authorization after one successful controlled app creation + read-back.
+
+# FROZEN BUSINESS IDENTITY
+
+```text
+Business Name = MBO Employee Authentication & MFA Credential Store [Sandbox]
 Role = AUTHENTICATION_CREDENTIAL_STORE_ONLY
 Environment = Sandbox
 App53 remains Employee Master = YES / READ ONLY
-Employee browser direct access = PROHIBITED
-Server-side access only = REQUIRED
+General employee browser direct access = PROHIBITED
+Server-side auth service access only = REQUIRED for runtime use
 ```
 
-Do not call App801 an Employee Master.
-Do not store passwords in App53.
-Do not create App801 in this task.
+Important:
+- `801` is a planned/reference ID only until Kintone returns the actual created app ID.
+- Never fabricate or force an ID by creating throwaway apps.
+- Never create a second app just to obtain ID 801.
+- Business name + role are authoritative; actual Kintone ID is authoritative after creation.
 
-# SECURITY MODEL TO PRESERVE
+# APPROVED SCHEMA — 14 FIELDS ONLY
+
+Create exactly this minimum schema unless a Kintone field-type limitation makes one field impossible. If so, STOP before deploy and report BLOCKED rather than silently substituting a weaker design.
 
 ```text
-Phase 1 = Employee_Code + Personal Password
-Phase 2 = Employee_Code + Personal Password + Google Authenticator-compatible TOTP
-Password verification = SERVER SIDE ONLY
-Password hash = Argon2id preferred
-TOTP secret = encrypted/protected server-side representation only
-Plaintext password/TOTP secret = PROHIBITED
-Browser/localStorage credential storage = PROHIBITED
+1. Employee_Code
+2. Password_Hash
+3. Password_Algorithm
+4. Credential_Version
+5. Account_Status
+6. Force_Password_Change
+7. Failed_Attempts
+8. Locked_Until
+9. Password_Changed_At
+10. Last_Login_At
+11. MFA_Enabled
+12. TOTP_Secret_Encrypted
+13. MFA_Enrolled_At
+14. Recovery_Codes_Hashed
 ```
 
-# STEP 1 — CONFIRM NO DUPLICATE / STALE APP
-
-Using GET/read-only evidence only:
+Required semantic rules:
 
 ```text
-App799 must remain deleted
-App800 must remain active HR Control Center
-No existing live app currently serves App801 credential-store purpose
-No repo config/runtime already binds auth storage to another app
+Employee_Code = SINGLE_LINE_TEXT, required, unique
+Password_Hash = SINGLE_LINE_TEXT, required only when a credential is provisioned later; no record creation in this task
+Password_Algorithm = SINGLE_LINE_TEXT or controlled dropdown if preflight design already froze it; no plaintext secret
+Credential_Version = numeric or appropriate scalar version field
+Account_Status = controlled status value suitable for ACTIVE/DISABLED/LOCKED or preflight-frozen equivalent
+Force_Password_Change = boolean/check/dropdown equivalent
+Failed_Attempts = NUMBER
+Locked_Until = DATETIME
+Password_Changed_At = DATETIME
+Last_Login_At = DATETIME
+MFA_Enabled = boolean/check/dropdown equivalent
+TOTP_Secret_Encrypted = MULTI_LINE_TEXT or suitable encrypted-blob field; plaintext forbidden
+MFA_Enrolled_At = DATETIME
+Recovery_Codes_Hashed = MULTI_LINE_TEXT or suitable hashed-data field; plaintext recovery codes forbidden
 ```
 
-Required output:
+Preserve the exact preflight design where it is more specific than the generic type guidance above.
+
+Hard prohibitions:
 
 ```text
-APP799_STILL_DELETED = YES/NO
-APP800_ACTIVE = YES/NO
-EXISTING_AUTH_CREDENTIAL_APP = NONE / exact app
-APP801_DUPLICATE_RISK = NONE / exact risk
+NO Password_Plaintext field
+NO Temporary_Password_Plaintext field
+NO PIN field used as password substitute
+NO TOTP_Secret plaintext field
+NO Recovery_Codes plaintext field
+NO duplicate employee profile fields from App53
+NO decorative or unused fields
+NO extra legacy auth fields
 ```
 
-If another live credential/auth app is found, STOP and report BLOCKED.
+# STEP 1 — FINAL PRE-CREATE SAFETY CHECK
 
-# STEP 2 — DEFINE MINIMUM APP801 SCHEMA
-
-Design the smallest schema needed for Phase 1 while being migration-safe for Phase 2.
-
-At minimum evaluate these fields and include only those justified:
+Before any write, perform read-only checks:
 
 ```text
-Employee_Code
-Password_Hash
-Password_Algorithm
-Credential_Version
-Account_Status
-Force_Password_Change
-Failed_Attempts
-Locked_Until
-Password_Changed_At
-Last_Login_At
-Session_Version or equivalent revocation version if required
-MFA_Enabled
-TOTP_Secret_Encrypted
-MFA_Enrolled_At
+APP799_STILL_DELETED = YES
+APP800_ACTIVE = YES
+EXISTING_AUTH_CREDENTIAL_APP = NONE
+EXACT_NAME_DUPLICATE = 0
+ACTIVE_RUNTIME_AUTH_STORE_BINDING = NONE
 ```
 
-For each proposed field specify:
+Search current repository/config/docs for any existing live credential-store app binding.
+
+If any duplicate or conflicting live auth app exists:
 
 ```text
-Field Code
-Label
-Kintone field type
-Required YES/NO
-Unique YES/NO
-Default
-Phase 1 / Phase 2
-Sensitivity
-Who reads
-Who writes
-Why required
+STOP
+DO NOT CREATE
+REPORT BLOCKED
 ```
 
-Rules:
-- `Employee_Code` must be unique.
-- Do not duplicate employee profile fields that belong to App53 unless required for immutable audit and explicitly justified.
-- Do not add decorative/unused fields.
-- No plaintext password field.
-- No plaintext TOTP secret field.
+# STEP 2 — RECORD PRE-WRITE EVIDENCE
 
-# STEP 3 — ACL / ACCESS DESIGN
-
-Produce exact intended security posture for App801.
-
-Required target posture:
+Capture a pre-create evidence package sufficient to prove environment state before creation:
 
 ```text
-General/shared Kintone users = NO READ / NO WRITE
-Employee browser JS = NO DIRECT APP801 ACCESS
-Creator/Admin/approved service identity = minimum required access only
-Default deny
+app list / relevant neighboring app state where available
+App799 deletion evidence
+App800 identity/read-back
+no exact-name duplicate evidence
+planned schema manifest
+planned ACL manifest
 ```
 
-Define:
+Store under a dedicated path such as:
 
 ```text
-App-level ACL
-Record-level ACL if needed
-Who is allowed to administer/reset credentials
-How Node.js Auth Proxy/service identity accesses App801
-Whether API token is acceptable or dedicated service user is required
-Secret handling rules for API credentials
+backups/m10c-auth-b-app-creation/<timestamp>/
 ```
 
-If Kintone ACL cannot meet the intended boundary with the selected service access model, report BLOCKED rather than weakening security.
-
-# STEP 4 — INITIAL PASSWORD / RESET OPERATING MODEL
-
-Freeze practical Phase 1 operations:
-
-```text
-Initial credential creation
-Temporary password generation
-Forced password change on first login
-Forgotten password reset by HR/IT without knowing permanent password
-Account disable/termination
-Session revocation after reset
-Lockout / unlock
-Audit requirements
-```
-
-Do not require email because not every employee has email.
-
-# STEP 5 — CREATION CHANGE PLAN
-
-Produce the exact future controlled-write plan for App801 creation.
-
-Must include:
-
-```text
-WHAT
-WHERE
-HOW
-WHY
-EXPECTED IMPACT
-RISKS
-PRE-WRITE BACKUP / EVIDENCE
-WRITE SCOPE
-READ-BACK VERIFICATION
-TEST PLAN
-ROLLBACK PLAN
-NO-ORPHAN CHECK
-```
-
-Future write scope must be narrow:
-
-```text
-APP_CREATE = exact App801 only
-SCHEMA_WRITE = App801 only
-ACL_WRITE = App801 only
-RECORD_WRITE = 0 during creation task unless separately authorized
-APP794/795/796/797/798/800 = NO WRITES
-APP53 = READ ONLY
-EXTERNAL AUTH SERVICE DEPLOY = NO in App801 creation task
-```
-
-Explicitly list every Kintone API/write operation that will require user authorization.
-
-# STEP 6 — DETERMINE WHETHER APP ID 801 IS GUARANTEED
-
-Do not assume Kintone will allocate ID 801 merely because that number is planned.
-
-Determine from actual environment/API behavior whether exact app ID selection is possible.
+Create manifest hashes and SHA-256 of the manifest.
 
 Required:
 
 ```text
-CAN_FORCE_APP_ID_801 = YES/NO/UNKNOWN
-EXPECTED_CREATION_ID_BEHAVIOR = exact
-REGISTRY_UPDATE_RULE = use actual created ID, never fabricate
+PREWRITE_EVIDENCE_CREATED = YES
+PREWRITE_MANIFEST_SHA256 = actual
 ```
 
-If exact ID 801 cannot be guaranteed and a different ID may be allocated, preserve the business name and role; the actual live ID becomes authoritative after creation.
+Do not put secrets into evidence.
 
-# STEP 7 — TEST / GIT
+# STEP 3 — CREATE EXACTLY ONE APP
+
+Create exactly one Kintone app with name:
+
+```text
+MBO Employee Authentication & MFA Credential Store [Sandbox]
+```
+
+Immediately capture the actual app ID returned by Kintone.
+
+Required behavior:
+
+```text
+ACTUAL_CREATED_APP_ID = Kintone-returned value
+```
+
+Decision rule:
+
+```text
+If ACTUAL_CREATED_APP_ID = 801:
+    continue normally
+
+If ACTUAL_CREATED_APP_ID != 801:
+    DO NOT create another app
+    DO NOT delete the newly created valid credential app merely to chase ID 801
+    continue using the actual ID as authoritative
+    reconcile registry/config/docs to actual ID
+```
+
+If app creation response is ambiguous:
+
+```text
+STOP
+DO NOT RETRY CREATE until exact-name duplicate/live app check proves whether creation occurred
+```
+
+# STEP 4 — APPLY THE 14-FIELD SCHEMA TO THE CREATED APP ONLY
+
+Apply schema changes only to `ACTUAL_CREATED_APP_ID`.
+
+Verify after schema write/deploy:
+
+```text
+APP_SCHEMA_FIELD_COUNT = 14 custom approved fields
+EMPLOYEE_CODE_REQUIRED = YES
+EMPLOYEE_CODE_UNIQUE = YES
+PLAINTEXT_PASSWORD_FIELD = NO
+PLAINTEXT_TOTP_SECRET_FIELD = NO
+PLAINTEXT_RECOVERY_CODES_FIELD = NO
+UNAPPROVED_EXTRA_FIELDS = 0
+```
+
+Kintone system fields do not count as unapproved custom fields.
+
+If schema cannot match the approved security semantics exactly enough:
+
+```text
+STOP
+DO NOT SEED RECORDS
+REPORT BLOCKED / PARTIAL
+```
+
+# STEP 5 — APPLY RESTRICTIVE ACL TO CREATED APP ONLY
+
+Target posture:
+
+```text
+General/shared Kintone users = NO READ / NO WRITE
+Employee browser JS = NO DIRECT ACCESS
+Creator/Admin/approved service identity = minimum required access only
+Default deny
+```
+
+Apply the preflight-frozen ACL model only to `ACTUAL_CREATED_APP_ID`.
+
+Read-back verify ACL after deploy.
+
+Required:
+
+```text
+GENERAL_EMPLOYEE_DIRECT_ACCESS = PROHIBITED
+DEFAULT_DENY = YES
+CREATOR_OR_APPROVED_SERVICE_ACCESS = YES
+```
+
+Do not weaken ACL to make browser-based password verification easier.
+
+# STEP 6 — NO RECORDS / NO CREDENTIALS
+
+This task must leave the credential store empty.
+
+Required:
+
+```text
+RECORD_COUNT_AFTER_CREATION = 0
+PASSWORD_RECORDS_CREATED = 0
+TEMP_PASSWORDS_CREATED = 0
+TOTP_SECRETS_CREATED = 0
+RECOVERY_CODES_CREATED = 0
+```
+
+No employee provisioning yet.
+
+# STEP 7 — POST-CREATE READ-BACK / SAFETY
+
+Verify:
+
+```text
+CREATED_APP_EXISTS = YES
+CREATED_APP_NAME = MBO Employee Authentication & MFA Credential Store [Sandbox]
+ACTUAL_CREATED_APP_ID = actual
+SCHEMA_MATCH = PASS
+ACL_MATCH = PASS
+RECORD_COUNT = 0
+
+APP53_MODIFIED = NO
+APP794_MODIFIED = NO
+APP795_MODIFIED = NO
+APP796_MODIFIED = NO
+APP797_MODIFIED = NO
+APP798_MODIFIED = NO
+APP800_MODIFIED = NO
+APP799_RECREATED = NO
+NON_TARGET_KINTONE_WRITES = 0
+```
+
+Read-only verification of protected apps is allowed where needed.
+
+# STEP 8 — REGISTRY / CONFIG RECONCILIATION
+
+Update current living docs/config so the actual app ID becomes authoritative.
+
+If actual ID is 801:
+
+```text
+App801 = LIVE / CREATED / CREDENTIAL STORE
+```
+
+If actual ID differs:
+
+```text
+Do not keep a false live App801 binding.
+Record historical planned reference 801 only where useful.
+Register the ACTUAL_CREATED_APP_ID as the live credential store.
+Update config/constants that are intended to point to the live credential store.
+```
+
+Do not leave duplicate active IDs or stale planned-ID assumptions.
+
+Required:
+
+```text
+STALE_ACTIVE_PLANNED_ID_REFERENCES = 0
+DUPLICATE_AUTH_STORE_BINDINGS = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS
+```
+
+# STEP 9 — TEST / GIT
 
 Run:
 
@@ -228,59 +360,96 @@ git status --short
 Required:
 
 ```text
-KINTONE_WRITES_THIS_TASK = 0
-APP801_CREATED = NO
-EXTERNAL_DEPLOY_THIS_TASK = 0
 npm test = PASS
 git diff --check = PASS
 NO_ORPHAN_ARTIFACT_GATE = PASS
+tracked tree clean after commit
 local HEAD = origin/ai/antigravity-wp002c after push
 ```
 
-Update only living docs/evidence required for this preflight. Avoid redundant files.
+No reset.
+No rebase.
+No force push.
+No history rewrite.
 
-# FINAL REQUIRED SUMMARY
+# AUTHORIZATION WRITE SCOPE
+
+Allowed Kintone writes in this task are strictly limited to the one newly created credential app:
 
 ```text
-M10C_AUTH_A_APP801_PREFLIGHT = COMPLETE / BLOCKED
+APP_CREATE = 1 credential-store app only
+SCHEMA_WRITE = created credential-store app only
+ACL_WRITE = created credential-store app only
+DEPLOY = created credential-store app only
+RECORD_WRITE = 0
+CUSTOMIZATION_WRITE = 0
+PROCESS_MANAGEMENT_WRITE = 0 unless strictly required by the approved preflight (default = 0)
+NON_TARGET_APP_WRITES = 0
+EXTERNAL_DEPLOY = 0
+```
 
-APP799_STILL_DELETED = actual
-APP800_ACTIVE = actual
-EXISTING_AUTH_CREDENTIAL_APP = actual
-APP801_DUPLICATE_RISK = actual
+# REQUIRED FINAL SUMMARY
 
-APP801_PLANNED_NAME = MBO Employee Authentication & MFA Credential Store [Sandbox]
-APP801_ROLE = AUTHENTICATION_CREDENTIAL_STORE_ONLY
-APP801_SCHEMA_FIELD_COUNT = actual
-APP801_EMPLOYEE_CODE_UNIQUE = YES/NO
+```text
+M10C_AUTH_B_APP_CREATION = COMPLETE / BLOCKED / PARTIAL
+
+USER_AUTHORIZATION = EXPLICIT
+AUTHORIZED_SCOPE = CREATE_ONE_CREDENTIAL_STORE_APP + SCHEMA + ACL + DEPLOY/READBACK
+AUTHORIZATION_STATUS = EXECUTED_AND_CLOSED / NOT_CONSUMED_DUE_TO_BLOCKER
+
+PRECREATE_DUPLICATE_CHECK = PASS/FAIL
+PREWRITE_EVIDENCE_CREATED = YES/NO
+PREWRITE_MANIFEST_SHA256 = actual
+
+PLANNED_REFERENCE_ID = 801
+ACTUAL_CREATED_APP_ID = actual / NONE
+ACTUAL_CREATED_APP_NAME = actual / NONE
+ACTUAL_ID_EQUALS_801 = YES/NO/N/A
+SECOND_APP_CREATED_TO_CHASE_ID_801 = NO
+
+SCHEMA_FIELD_COUNT = actual
+SCHEMA_MATCH = PASS/FAIL
+EMPLOYEE_CODE_UNIQUE = YES/NO
 PLAINTEXT_PASSWORD_FIELD = NO
 PLAINTEXT_TOTP_SECRET_FIELD = NO
+PLAINTEXT_RECOVERY_CODES_FIELD = NO
 
-APP801_ACL_MODEL = exact
+ACL_MATCH = PASS/FAIL
 GENERAL_EMPLOYEE_DIRECT_ACCESS = PROHIBITED
-SERVER_SIDE_ACCESS_ONLY = YES
+DEFAULT_DENY = YES/NO
 
-CAN_FORCE_APP_ID_801 = actual
-EXPECTED_CREATION_ID_BEHAVIOR = actual
+RECORD_COUNT = actual
+PASSWORD_RECORDS_CREATED = 0
+TEMP_PASSWORDS_CREATED = 0
+TOTP_SECRETS_CREATED = 0
+RECOVERY_CODES_CREATED = 0
 
-KINTONE_WRITE_REQUIRED_FOR_NEXT_TASK = YES/NO
-AUTHORIZED_WRITE_SCOPE_REQUIRED = exact
-USER_AUTHORIZATION_REQUIRED = YES/NO
-APP801_CREATED = NO
-KINTONE_WRITES_THIS_TASK = 0
+APP53_MODIFIED = NO
+APP794_MODIFIED = NO
+APP795_MODIFIED = NO
+APP796_MODIFIED = NO
+APP797_MODIFIED = NO
+APP798_MODIFIED = NO
+APP800_MODIFIED = NO
+APP799_RECREATED = NO
+NON_TARGET_KINTONE_WRITES = 0
+
+STALE_ACTIVE_PLANNED_ID_REFERENCES = actual
+DUPLICATE_AUTH_STORE_BINDINGS = actual
+NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
-NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = CHATGPT REVIEW / USER APP801 CREATION AUTHORIZATION
+NEW_KINTONE_WRITE_AUTHORIZATION = NO
+NEXT_ACTION = CHATGPT REVIEW ONLY
 ```
 
 Commit and push same branch, then STOP.
 
-Do NOT create App801.
 Do NOT implement login.
 Do NOT deploy Node.js auth service.
-Do NOT write credentials.
-Do NOT touch App53 or Apps794-800.
+Do NOT create employee credential records.
+Do NOT start password provisioning.
+Do NOT start TOTP enrollment.
