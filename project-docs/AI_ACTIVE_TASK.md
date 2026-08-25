@@ -1,178 +1,204 @@
-# AI ACTIVE TASK — M10B-SEC-A APP799 PURPOSE AUDIT + APP801 NAMING FREEZE
+# AI ACTIVE TASK — M10B-SEC-B CONTROLLED APP799 CLEANUP BEFORE APP801
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Head:** `8a1cbfd01311d8b95d6e79d3b2c1b3cd62ad05f0`
-> **Mode:** READ-ONLY LIVE AUDIT + NAMING/GOVERNANCE ONLY — KINTONE WRITES = 0
+> **Reviewed Head:** `02bb102fe0b70e4a90450688978f42fc10b9c09a`
+> **Mode:** CONTROLLED DESTRUCTIVE CLEANUP — APP799 ONLY
 
 # NORTH STAR
 
 ```text
 M10B-SEC Authentication Architecture = PASS
-Phase 1 Auth = Employee Code + Personal Password
-Phase 2 MFA = Google Authenticator-compatible TOTP
+M10B-SEC-A App799 Purpose Audit       = PASS
+App799                                = SUPERSEDED / 0 RECORDS / 0 CUSTOM FIELDS / NO ACTIVE RUNTIME REFERENCE
+App801                                = PLANNED / NOT CREATED
 
-BEFORE M10C IMPLEMENTATION:
-1. Determine exactly what live App799 was created for.
-2. Do not create a duplicate purpose/app.
-3. Freeze a clear business name for future App801 credential store.
+USER AUTHORIZATION:
+Controlled deletion of App799 = EXPLICITLY APPROVED
+Authorized destructive target = APP799 ONLY
+New App801 creation            = NOT AUTHORIZED IN THIS TASK
 ```
 
-# CURRENT REPOSITORY FACT
+# USER AUTHORIZATION BOUNDARY
 
-`project-docs/APP_REGISTRY.md` currently registers Apps 794, 795, 796, 797, 798 and 800, but does NOT register App799.
+User explicitly approved the recommended App799 cleanup after review.
 
-Therefore App799 purpose is UNKNOWN from the authoritative registry and MUST be investigated from live Kintone + repository history before App801 creation.
-
-Do NOT assume App799 is unused.
-Do NOT assume App799 should be deleted.
-Do NOT reuse App799 for authentication unless its original purpose is conclusively proven compatible and Control Plane explicitly approves reuse.
-
-# APP801 NAME — FREEZE CANDIDATE
-
-If a new dedicated credential store is still required after App799 audit, use this clear name unless evidence shows a naming conflict:
+This authorization permits ONLY:
 
 ```text
-MBO Employee Authentication & MFA Credential Store [Sandbox]
+DELETE KINTONE APP 799
 ```
 
-Purpose text:
+It does NOT authorize:
 
 ```text
-Server-side credential metadata store for MBO employee self-service authentication.
-Phase 1: Employee_Code + password hash/account state.
-Phase 2: Google Authenticator-compatible TOTP enrollment metadata/secured secret material.
-Not an Employee Master. App53 remains authoritative Employee Master and READ ONLY.
-Browser employees must not access this app directly.
+creating App801
+modifying App794/795/796/797/798/800
+modifying App53
+record writes in any other app
+schema/customization/process/ACL writes in any other app
+external auth-service deployment
+login implementation
+TOTP implementation
 ```
 
-Preferred registry description:
+Treat this authorization as consumed and closed immediately after successful App799 deletion + read-back verification.
+
+# AUTHORITATIVE APP799 PRE-DELETE FACTS
+
+From M10B-SEC-A live audit:
 
 ```text
-App801 = MBO Employee Authentication & MFA Credential Store [Sandbox]
-Permission = CREATOR/SERVICE ONLY / DEFAULT DENY
-Purpose = Server-side MBO employee authentication credential metadata for Phase 1 password login and Phase 2 TOTP MFA; App53 remains employee source of truth.
+APP799_EXISTS = YES
+APP799_NAME = MBO HR Control Center [Sandbox]
+APP799_REVISION = 3
+APP799_RECORD_COUNT = 0
+APP799_CUSTOM_FIELDS = 0
+APP799_ACL = CREATOR ONLY / DEFAULT DENY
+APP799_PURPOSE_CLASS = KNOWN_SUPERSEDED_PURPOSE
+APP799_PURPOSE = early uncustomized HR Control Center shell superseded by App800
+APP799_REFERENCED_BY_ACTIVE_RUNTIME = NO
+APP799_SAFE_TO_REUSE_FOR_AUTH = NO
+APP799_SAFE_TO_DELETE = YES
+WOULD_CREATING_APP801_DUPLICATE_APP799 = NO
 ```
 
-Do NOT create App801 in this task.
+App800 is the active HR Control Center and MUST remain untouched.
 
-# STEP 1 — LIVE READ-ONLY APP799 IDENTITY AUDIT
+# STEP 1 — FRESH PRE-DELETE READ-BACK
 
-Using Kintone GET only, inspect App799.
+Before any destructive call, GET/read-only verify App799 again.
 
-Collect:
+Required exact checks:
 
 ```text
-APP799_EXISTS = YES/NO
-APP799_NAME = exact live name
-APP799_REVISION = exact
-APP799_RECORD_COUNT = exact
-APP799_ACL_SUMMARY = exact relevant posture
-APP799_CUSTOMIZATION = present/absent + filenames/URLs if safely reportable
-APP799_PROCESS_MANAGEMENT = enabled/disabled + high-level states if applicable
+APP799_EXISTS_BEFORE_DELETE = YES
+APP799_NAME_BEFORE_DELETE = MBO HR Control Center [Sandbox]
+APP799_RECORD_COUNT_BEFORE_DELETE = 0
+APP799_CUSTOM_FIELDS_BEFORE_DELETE = 0
+APP799_ACTIVE_RUNTIME_REFERENCES = 0
 ```
 
-Inspect live schema field codes/labels/types using GET only.
-Do not expose secrets or employee personal data.
+Re-check repository/runtime references to App799 (`799`, `App799`, `app=799`, config/quick links/runtime constants).
 
-# STEP 2 — DETERMINE APP799 ORIGINAL PURPOSE
-
-Search repository, docs, commits, changelog, config, scripts, tests, historical evidence for:
+If any new active reference, record, customization, or conflicting business use is found:
 
 ```text
-799
-App799
-App 799
-APP_799
-app=799
+STOP
+DO NOT DELETE
+REPORT BLOCKED
 ```
 
-Correlate repository history with live schema/name/customization.
+# STEP 2 — DURABLE PRE-DELETE BACKUP / EVIDENCE
 
-Classify exact purpose as one:
+Before deletion, create a durable local backup/evidence package for App799 sufficient to reconstruct/audit what was removed.
+
+Capture at minimum:
 
 ```text
-KNOWN_ACTIVE_PURPOSE
-KNOWN_SUPERSEDED_PURPOSE
-ABANDONED_OR_ORPHAN_CANDIDATE
-UNKNOWN_INSUFFICIENT_EVIDENCE
+app identity/name/revision
+schema/form fields
+layout/views where available
+process management state
+ACL summary
+customization state
+record count + records export (expected 0)
+M10B-SEC-A purpose evidence/reference summary
 ```
 
-Required output:
+Store under a dedicated path such as:
 
 ```text
-APP799_PURPOSE = concise exact description
-APP799_PURPOSE_EVIDENCE = live + repo evidence
-APP799_CURRENT_ROLE_IN_MBO2026 = exact
-APP799_REFERENCED_BY_ACTIVE_RUNTIME = YES/NO/UNVERIFIABLE
-APP799_SAFE_TO_REUSE_FOR_AUTH = YES/NO/REQUIRES_CONTROL_PLANE_DECISION
-APP799_SAFE_TO_DELETE = YES/NO/NOT_PROVEN
+backups/m10b-sec-b-app799/<timestamp>/
 ```
 
-If any active or historical business purpose exists, preserve it and do NOT repurpose silently.
+Create a manifest containing file hashes and calculate a SHA-256 for the manifest.
 
-# STEP 3 — NO-DUPLICATE APP DECISION INPUT
-
-Compare App799 live purpose against the planned authentication credential store.
-
-Answer:
+Required before delete:
 
 ```text
-DOES_APP799_ALREADY_SERVE_AUTH_CREDENTIAL_PURPOSE = YES/NO/PARTIAL
-WOULD_CREATING_APP801_DUPLICATE_APP799 = YES/NO/UNKNOWN
-RECOMMENDATION = REUSE_799 / CREATE_801 / STOP_FOR_DECISION
+BACKUP_CREATED = YES
+BACKUP_MANIFEST_SHA256 = actual
+BACKUP_VERIFIED_BY_EXECUTION_PLANE = YES
 ```
 
-Reuse is NOT authorized by this task.
-Creation is NOT authorized by this task.
-This is decision evidence only.
+Do not claim independent reviewer byte verification.
+Do not delete this backup during this task.
 
-# STEP 4 — APP801 NAMING / ROLE GOVERNANCE
+# STEP 3 — DELETE APP799 ONLY
 
-If App801 remains the recommended new app, freeze these semantics:
+Execute the minimum Kintone destructive operation required to delete App799.
+
+Hard boundary:
 
 ```text
-APP801_PLANNED_NAME = MBO Employee Authentication & MFA Credential Store [Sandbox]
-APP801_ROLE = AUTHENTICATION_CREDENTIAL_STORE_ONLY
-APP801_IS_EMPLOYEE_MASTER = NO
-APP53_REMAINS_EMPLOYEE_MASTER = YES / READ ONLY
-EMPLOYEE_BROWSER_DIRECT_ACCESS = PROHIBITED
-SERVER_SIDE_ACCESS_ONLY = REQUIRED
+AUTHORIZED_DELETE_APP = 799 ONLY
+AUTHORIZED_APP_CREATE = NONE
+AUTHORIZED_RECORD_WRITE = NONE
+AUTHORIZED_SCHEMA_WRITE = NONE except unavoidable delete-app operation itself
+AUTHORIZED_CUSTOMIZATION_WRITE = NONE
+AUTHORIZED_PROCESS_WRITE = NONE
+AUTHORIZED_ACL_WRITE = NONE
 ```
 
-Do not call it merely "Auth App" or another ambiguous name in current docs.
+Do NOT reuse App799 ID/purpose for authentication.
+Do NOT create App801 in the same task.
 
-# STEP 5 — SAFETY
+# STEP 4 — POST-DELETE READ-BACK
+
+Immediately verify using GET/read-back that App799 no longer exists / is inaccessible as an app.
+
+Required:
 
 ```text
-KINTONE_WRITES_THIS_TASK = 0
-APP799_MODIFIED = NO
+APP799_EXISTS_AFTER_DELETE = NO
+APP800_EXISTS_AFTER_DELETE = YES
+APP800_NAME_UNCHANGED = YES
+APP800_DASHBOARD_UNTOUCHED = YES
+NON_APP799_KINTONE_WRITES = 0
 APP801_CREATED = NO
-APP53_MODIFIED = NO
-SCHEMA_WRITES = 0
-RECORD_WRITES = 0
-ACL_WRITES = 0
-CUSTOMIZATION_DEPLOY = 0
-PROCESS_WRITES = 0
-EXTERNAL_DEPLOY = 0
 ```
 
-No reset/rebase/force push/history rewrite.
+If App799 still exists or delete outcome is ambiguous:
 
-# STEP 6 — DOC / REGISTRY HANDLING
+```text
+STOP
+DO NOT RETRY DESTRUCTIVELY WITHOUT EVIDENCE
+REPORT BLOCKED / PARTIAL
+```
 
-Update `project-docs/APP_REGISTRY.md` only with facts proven by live audit.
+# STEP 5 — NO-ORPHAN / REGISTRY RECONCILIATION
 
-If App799 exists and its purpose is proven, add it to registry with exact name/purpose/status.
-If App799 purpose remains unknown, record it as `UNCLASSIFIED / INVESTIGATION REQUIRED`; do not invent a purpose.
+After successful deletion, update current repository docs so App799 is not presented as a live app.
 
-App801 may be recorded as `PLANNED / NOT CREATED` only if the registry supports planned entries cleanly; otherwise keep it in architecture/task docs until creation authorization.
+`project-docs/APP_REGISTRY.md` should preserve historical chronology but clearly classify:
 
-Respect NO-ORPHAN rule. Do not delete App799 or any repo artifact in this task.
+```text
+App799 = DELETED / HISTORICAL SUPERSEDED HRCC SHELL
+```
 
-# STEP 7 — TEST / GIT
+Do not remove historical evidence that explains why it existed.
+
+App801 remains:
+
+```text
+App801 = PLANNED / NOT CREATED
+Name = MBO Employee Authentication & MFA Credential Store [Sandbox]
+```
+
+Search active/current sources for stale assumptions that App799 is live or available.
+
+Required:
+
+```text
+STALE_ACTIVE_APP799_LIVE_REFERENCES = 0
+STALE_ACTIVE_APP799_RUNTIME_REFERENCES = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS
+```
+
+# STEP 6 — TEST / GIT SAFETY
 
 Run:
 
@@ -182,48 +208,60 @@ git diff --check
 git status --short
 ```
 
-Required:
+Require:
 
 ```text
 npm test = PASS
 git diff --check = PASS
-KINTONE_WRITES_THIS_TASK = 0
-NO_ORPHAN_ARTIFACT_GATE = PASS
+tracked tree clean after commit
 local HEAD = origin/ai/antigravity-wp002c after push
 ```
 
-# FINAL REQUIRED SUMMARY
+No reset.
+No rebase.
+No force push.
+No history rewrite.
+
+# REQUIRED FINAL SUMMARY
 
 ```text
-M10B_SEC_A_APP799_AUDIT = COMPLETE / BLOCKED
+M10B_SEC_B_APP799_CONTROLLED_CLEANUP = COMPLETE / BLOCKED
 
-APP799_EXISTS = actual
-APP799_NAME = actual
-APP799_RECORD_COUNT = actual
-APP799_PURPOSE_CLASS = actual
-APP799_PURPOSE = actual
-APP799_REFERENCED_BY_ACTIVE_RUNTIME = actual
-APP799_SAFE_TO_REUSE_FOR_AUTH = actual
-APP799_SAFE_TO_DELETE = actual
+USER_AUTHORIZATION = EXPLICIT
+AUTHORIZED_DESTRUCTIVE_TARGET = APP799 ONLY
+AUTHORIZATION_STATUS = EXECUTED / CLOSED after success
+NEW_KINTONE_WRITE_AUTHORIZATION = NO
 
-APP801_PLANNED_NAME = MBO Employee Authentication & MFA Credential Store [Sandbox]
-APP801_ROLE = AUTHENTICATION_CREDENTIAL_STORE_ONLY
+APP799_EXISTS_BEFORE_DELETE = actual
+APP799_RECORD_COUNT_BEFORE_DELETE = actual
+APP799_CUSTOM_FIELDS_BEFORE_DELETE = actual
+APP799_ACTIVE_RUNTIME_REFERENCES = actual
+
+BACKUP_PATH = actual
+BACKUP_MANIFEST_SHA256 = actual
+BACKUP_VERIFIED_BY_EXECUTION_PLANE = YES/NO
+INDEPENDENT_REVIEWER_BYTE_VERIFICATION = NOT_PERFORMED
+
+APP799_DELETE = EXECUTED / NOT_EXECUTED
+APP799_EXISTS_AFTER_DELETE = NO/YES/UNVERIFIABLE
+APP800_UNTOUCHED = YES/NO
+NON_APP799_KINTONE_WRITES = 0/actual
 APP801_CREATED = NO
-APP53_REMAINS_EMPLOYEE_MASTER = YES / READ ONLY
 
-WOULD_CREATING_APP801_DUPLICATE_APP799 = actual
-RECOMMENDATION = actual
+STALE_ACTIVE_APP799_LIVE_REFERENCES = 0/actual
+STALE_ACTIVE_APP799_RUNTIME_REFERENCES = 0/actual
+NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 
-KINTONE_WRITES_THIS_TASK = 0
 npm test = actual / PASS
-GIT_DIFF_CHECK = PASS / FAIL
-NO_ORPHAN_ARTIFACT_GATE = PASS / BLOCKED
-GIT_PUSH_SYNC = PASS / FAIL
+GIT_DIFF_CHECK = PASS/FAIL
+GIT_PUSH_SYNC = PASS/FAIL
 
 NEXT_ACTION = CHATGPT REVIEW ONLY
 ```
 
 Commit and push same branch, then STOP.
+
 Do NOT create App801.
-Do NOT modify App799.
-Do NOT implement login yet.
+Do NOT implement authentication.
+Do NOT deploy external service.
+Do NOT touch any app other than deleting App799.
