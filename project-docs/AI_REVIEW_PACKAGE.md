@@ -2,7 +2,7 @@
 
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
-> **WP-002C Stage 4A/4B/4C/4D-A Status:** **`STAGE 4A, 4B & 4C PASSED / FROZEN; STAGE 4D-A COMPLETE / PENDING CHATGPT REVIEW`**
+> **WP-002C Stage 4A/4B/4C/4D-A Status:** **`STAGE 4A, 4B, 4C & 4D-A PASSED / FROZEN`**
 > **Last Updated:** 2026-08-25T08:29:00+07:00
 
 ---
@@ -46,6 +46,7 @@
 | **Stage 4C Closure / Stage 4D-A Authorization** | `9321921d36b9a9b5a374e2c584a571153f016757` | `docs: close wp-002c stage4c and authorize stage4d-a` |
 | **Stage 4D-A Preflight Implementation** | `322d12bd8eac7f23b8b823826d2a4852077ca4b1` | `feat: add scoring config read-only live preflight foundation` |
 | **Stage 4D-A Preflight Evidence** | `f09a10e5f42b9677023d51a46ae8dd45a014504e` | `docs: record wp-002c stage4d-a read preflight foundation` |
+| **Stage 4D-A Final Doc Closure Commit** | `902a57db95d77fc15eefd2b18c11ef4e61cafb04` | `docs: close wp-002c stage4d-a review evidence` |
 
 ## 2. Gate Summary
 
@@ -68,7 +69,9 @@
 | **STAGE4B_KINTONE_REPOSITORY_FOUNDATION** | `PASSED / FROZEN` |
 | **WP002C_STAGE4C_GATE** | **`PASS (PASSED / FROZEN)`** |
 | **STAGE4C_GUARDED_REQUEST_BRIDGE_FOUNDATION** | `PASSED / FROZEN` |
-| **STAGE4D_A_READ_ONLY_LIVE_PREFLIGHT_FOUNDATION** | **`COMPLETE / PENDING CHATGPT REVIEW`** |
+| **WP002C_STAGE4D_A_GATE** | **`PASS (PASSED / FROZEN)`** |
+| **STAGE4D_A_READ_ONLY_LIVE_PREFLIGHT_FOUNDATION** | `PASSED / FROZEN` |
+| **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `AUTHORIZED / IN_PROGRESS` |
 | **LIVE_KINTONE_REQUEST_BRIDGE_STATUS** | `FOUNDATION_IMPLEMENTED_NOT_WIRED` |
 | **LIVE_RECORD_WRITE_AUTHORIZATION_STATUS** | `GUARD_CONTRACT_IMPLEMENTED_NOT_WIRED` |
 | **PREWRITE_BACKUP_CONTRACT_STATUS** | `DURABLE_RETENTION_REQUIRED / NOT_EXECUTED` |
@@ -85,7 +88,7 @@
 | **THIS_TASK_KINTONE_CALLS** | `0` |
 | **THIS_TASK_KINTONE_WRITES** | `0` |
 | **AUTOMATED_TEST_SUITE** | `471/471 PASS` |
-| **NEXT_ACTION** | `AWAIT CHATGPT STAGE 4D-A REVIEW BEFORE CONTROLLED LIVE GET PREFLIGHT` |
+| **NEXT_ACTION** | `EXECUTE ONE CONTROLLED LIVE GET PREFLIGHT FOR APP 796` |
 | **PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW** | `MANDATORY` |
 
 ---
