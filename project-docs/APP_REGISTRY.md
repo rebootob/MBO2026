@@ -3,7 +3,14 @@
 | App ID | Environment | Name | Permission | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
 | **53** | Production | Employee Namelist | **READ ONLY** | Master Employee Profile & Hoshin |
-| **283** | Production | PMS Staff & Chief | **READ ONLY** | Legacy System Business Rule Reference |
+| **283** | Production | PMS Staff & Chief | **READ ONLY** | Legacy System Business Rule Reference (Staff & Chief) |
+| **310** | Production | PMS Assistant Manager | **READ ONLY** | Legacy System Business Rule Reference (Assistant Manager) |
+| **305** | Production | PMS Sect.Mgr | **READ ONLY** | Legacy System Business Rule Reference (Section Manager) |
+| **643** | Production | PMS Senior Manager | **READ ONLY** | Legacy System Business Rule Reference (Senior Manager) |
+| **307** | Production | PMS DGM | **READ ONLY** | Legacy System Business Rule Reference (Deputy General Manager) |
+| **640** | Production | PMS GM | **READ ONLY** | Legacy System Business Rule Reference (General Manager) |
+| **715** | Production | PMS VP | **READ ONLY** | Legacy System Business Rule Reference (Vice President) |
+| **716** | Production | Japan Staff | **READ ONLY** | Legacy System Business Rule Reference (Japanese Staff) |
 | **794** | Sandbox | MBO V2 Sandbox | **WRITABLE** | Main Transactional Appraisal Records |
 | **795** | Sandbox | MBO Routing Master | **WRITABLE** | Section-to-Approver Workflow Routing |
 | **796** | Sandbox (Live Deployed / 23 Fields Domain Aligned) | MBO Profile & Scoring Configuration Master [Sandbox] | **CREATOR ONLY / DEFAULT DENY** | Versioned MBO evaluation profile and scoring configuration master |
