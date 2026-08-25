@@ -86,9 +86,10 @@ export async function fetchAllApp794Records(kintoneApi, appId = 794, maxPages = 
   return { records: allRecords, truncated };
 }
 
-export async function fetchHealthCount(kintoneApi, appId) {
+export async function fetchHealthCount(kintoneApi, appId, queryFilter = '') {
   try {
-    const res = await kintoneApi('/k/v1/records.json', 'GET', { app: appId, query: 'limit 1', totalCount: true });
+    const query = queryFilter ? `${queryFilter} limit 1` : 'limit 1';
+    const res = await kintoneApi('/k/v1/records.json', 'GET', { app: appId, query, totalCount: true });
     const count = res.totalCount !== undefined && res.totalCount !== null ? Number(res.totalCount) : (res.records?.length || 0);
     return { available: true, count, error: null };
   } catch (err) {
@@ -200,9 +201,9 @@ export function renderHrControlCenterHtml({
   <div class="hrcc-health-panel">
     <strong>System Health & Inventory:</strong> 
     App ${appIds.mboV2AppId} Count: ${escapeHtml(normHealth.app794Count)} | 
-    App ${appIds.routingMasterAppId} Routing Coverage: ${routingText} | 
-    App ${appIds.scoringConfigMasterAppId} Scoring Configs: ${formatHealthText(normHealth.scoring)} | 
-    App ${appIds.hoshinMasterAppId} Hoshin Master: ${formatHealthText(normHealth.hoshin)} | 
+    App ${appIds.routingMasterAppId} Active Routings: ${routingText} | 
+    App ${appIds.scoringConfigMasterAppId} Published Configs: ${formatHealthText(normHealth.scoring)} | 
+    App ${appIds.hoshinMasterAppId} Ready Hoshins: ${formatHealthText(normHealth.hoshin)} | 
     App ${appIds.revisionArchiveAppId} Archive Snapshots: ${formatHealthText(normHealth.archive)}
   </div>
 
@@ -313,11 +314,11 @@ export function createHrccRuntime({
       // 1. Bounded pagination fetch for App 794
       const { records: evaluations, truncated } = await fetchAllApp794Records(kintoneApi, appIds.mboV2AppId);
 
-      // 2. Health count GETs for 795, 796, 797, 798 using totalCount: true
-      const health795 = await fetchHealthCount(kintoneApi, appIds.routingMasterAppId);
-      const health796 = await fetchHealthCount(kintoneApi, appIds.scoringConfigMasterAppId);
-      const health797 = await fetchHealthCount(kintoneApi, appIds.hoshinMasterAppId);
-      const health798 = await fetchHealthCount(kintoneApi, appIds.revisionArchiveAppId);
+      // 2. Health count GETs with exact business query filters using totalCount: true
+      const health795 = await fetchHealthCount(kintoneApi, appIds.routingMasterAppId, 'Active = "Active"');
+      const health796 = await fetchHealthCount(kintoneApi, appIds.scoringConfigMasterAppId, 'Config_Status = "PUBLISHED"');
+      const health797 = await fetchHealthCount(kintoneApi, appIds.hoshinMasterAppId, 'Ready_For_MBO = "YES"');
+      const health798 = await fetchHealthCount(kintoneApi, appIds.revisionArchiveAppId, '');
 
       const warnings = [];
       if (truncated) {

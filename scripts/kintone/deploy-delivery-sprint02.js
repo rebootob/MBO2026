@@ -15,7 +15,15 @@ export function buildClassicHrccBundle(sourceText, registry = {}) {
     hrControlCenterAppId: registry.hrControlCenterAppId || 800
   });
 
-  // Remove ES-module exports
+  // Replace source's export const DEFAULT_APP_IDS declaration directly
+  const defaultAppIdsRegex = /export\s+const\s+DEFAULT_APP_IDS\s+=\s+Object\.freeze\([\s\S]*?\);/;
+  if (defaultAppIdsRegex.test(code)) {
+    code = code.replace(defaultAppIdsRegex, `const DEFAULT_APP_IDS = Object.freeze(${registryObjString});`);
+  } else {
+    code = `const DEFAULT_APP_IDS = Object.freeze(${registryObjString});\n` + code;
+  }
+
+  // Remove remaining ES-module exports
   code = code.replace(/export\s+const\s+/g, 'const ');
   code = code.replace(/export\s+function\s+/g, 'function ');
   code = code.replace(/export\s+async\s+function\s+/g, 'async function ');
@@ -23,13 +31,25 @@ export function buildClassicHrccBundle(sourceText, registry = {}) {
   // Wrap in IIFE
   const bundle = `(function() {
   'use strict';
-  const DEFAULT_APP_IDS = ${registryObjString};
 ${code}
 })();`;
 
   // Verify no import/export tokens remain
   if (/\bimport\b/.test(bundle) || /\bexport\b/.test(bundle)) {
     throw new Error('BUNDLE BUILD ERROR: Classic bundle contains forbidden import/export statements.');
+  }
+
+  // Verify exact declaration count of DEFAULT_APP_IDS is 1
+  const declCount = (bundle.match(/const DEFAULT_APP_IDS/g) || []).length;
+  if (declCount !== 1) {
+    throw new Error(`BUNDLE BUILD ERROR: Expected exactly 1 DEFAULT_APP_IDS declaration, found ${declCount}`);
+  }
+
+  // Real JS syntax parse check before returning
+  try {
+    new Function(bundle);
+  } catch (err) {
+    throw new Error(`BUNDLE SYNTAX PARSE ERROR: ${err.message}`);
   }
 
   return bundle;

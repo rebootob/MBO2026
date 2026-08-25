@@ -116,7 +116,7 @@ test('Sprint 02R2: Classic HRCC bundle generator creates valid browser JS withou
   const bundle = buildClassicHrccBundle(source, DEFAULT_APP_IDS);
   assert.equal(/\bimport\b/.test(bundle), false, 'Bundle must not contain import keyword');
   assert.equal(/\bexport\b/.test(bundle), false, 'Bundle must not contain export keyword');
-  assert.equal(bundle.includes('DEFAULT_APP_IDS = {"mboV2AppId":794'), true);
+  assert.equal(bundle.includes('DEFAULT_APP_IDS = Object.freeze({"mboV2AppId":794'), true);
 });
 
 test('Sprint 02R2: fetchAllApp794Records executes bounded GET pagination up to limit', async () => {
@@ -201,4 +201,32 @@ test('Sprint 02R2: renderHrControlCenterHtml handles denied health sources safel
 
   assert.equal(html.includes('Unavailable / Access denied'), true);
   assert.equal(html.includes('App 795 (Routing Master) is unavailable'), true);
+});
+
+test('Sprint 02R3: Classic HRCC bundle generator creates exactly 1 DEFAULT_APP_IDS declaration and passes new Function syntax parse', () => {
+  const source = fs.readFileSync('src/ui/hr-control-center.js', 'utf8');
+  const bundle = buildClassicHrccBundle(source, DEFAULT_APP_IDS);
+  const matches = bundle.match(/const DEFAULT_APP_IDS/g);
+  assert.equal(matches !== null && matches.length === 1, true, 'Bundle must contain exactly 1 DEFAULT_APP_IDS declaration');
+  assert.doesNotThrow(() => {
+    new Function(bundle);
+  }, 'Bundle must pass real JavaScript syntax compilation/parse check');
+});
+
+test('Sprint 02R3: fetchHealthCount executes exact business status queries for 795, 796, 797, 798', async () => {
+  const recordedQueries = [];
+  const fakeApi = async (path, method, params) => {
+    recordedQueries.push({ appId: params.app, query: params.query });
+    return { totalCount: 5, records: [] };
+  };
+
+  await fetchHealthCount(fakeApi, 795, 'Active = "Active"');
+  await fetchHealthCount(fakeApi, 796, 'Config_Status = "PUBLISHED"');
+  await fetchHealthCount(fakeApi, 797, 'Ready_For_MBO = "YES"');
+  await fetchHealthCount(fakeApi, 798, '');
+
+  assert.equal(recordedQueries[0].query, 'Active = "Active" limit 1');
+  assert.equal(recordedQueries[1].query, 'Config_Status = "PUBLISHED" limit 1');
+  assert.equal(recordedQueries[2].query, 'Ready_For_MBO = "YES" limit 1');
+  assert.equal(recordedQueries[3].query, 'limit 1');
 });
