@@ -1,159 +1,221 @@
-# AI ACTIVE TASK — M10C-AUTH-D KINTONE-ONLY ACCESS GATE PREFLIGHT
+# AI ACTIVE TASK — M10E APP794 RUNTIME ADAPTER PREFLIGHT
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `107bc511aa980e627c005eb154562dc8a283c2df`
-> Mode: READ-ONLY FEASIBILITY REVIEW — NO KINTONE WRITES / NO DEPLOY
+> Reviewed Head: `c77aac51b1248ce8dbd843354cfda6122dbee9a5`
+> Mode: READ-ONLY / REPOSITORY PREFLIGHT ONLY — NO KINTONE WRITES / NO DEPLOY
 
 # NORTH STAR
 
 ```text
+Apps foundation             = READY
 App795 routing              = READY 17/17
 App796 scoring              = READY 8/8
 App800 HR Control Center    = LIVE
-App801 auth metadata app    = LIVE / empty / restricted
+App801                      = LIVE / restricted / reserved
+Kintone-only direction      = SELECTED
+PATH_B Section Requester    = SELECTED
 
-USER DECISION:
-- no extra Kintone user licenses
-- no external auth server/hosting/integration
-- use Kintone only
-
-GOAL:
-Find the safest feasible Kintone-only employee access-gate model for employees using a shared Kintone account.
+NEXT DELIVERY GOAL:
+Make App794 runtime behavior use authoritative App795 routing + App53 employee master + App796 scoring,
+without pretending a shared Kintone account is individual authentication.
 ```
-
-# IMPORTANT SECURITY CLASSIFICATION
-
-The Kintone-only model must be treated as an INTERNAL APPLICATION ACCESS GATE unless evidence proves stronger guarantees.
-A shared Kintone account is not individual employee identity.
-Do not claim SSO, MFA, or strong independent authentication.
 
 # HARD SAFETY
 
 ```text
 KINTONE_WRITES_THIS_TASK = 0
-APP801_RECORD_WRITES = 0
-APP801_SCHEMA_WRITES = 0
-APP801_ACL_WRITES = 0
-APP794_WRITES = 0
+APP794_CUSTOMIZATION_DEPLOY = 0
+APP794_SCHEMA_WRITES = 0
+APP794_RECORD_WRITES = 0
+APP795_WRITES = 0
+APP796_WRITES = 0
 APP53_WRITES = 0
-CUSTOMIZATION_DEPLOY = 0
-PASSWORD_PROVISIONING = 0
-LOGIN_GO_LIVE = 0
-TOTP_IMPLEMENTATION = 0
+APP801_WRITES = 0
+PROCESS_WRITES = 0
 EXTERNAL_DEPLOY = 0
 ```
 
-# STEP 1 — APP801 / SHARED ACCOUNT ACCESS REALITY
+# STEP 1 — INSPECT CURRENT APP794 RUNTIME CODE
 
-Using read-only evidence, determine:
-
-```text
-CAN_SHARED_ACCOUNT_READ_APP801_NOW = YES/NO/UNKNOWN
-CAN_BROWSER_CUSTOMIZATION_USE_APP801_WITH_CURRENT_ACL = YES/NO
-WOULD_KINTONE_ONLY_VERIFICATION_REQUIRE_ACL_WEAKENING = YES/NO
-```
-
-Do not weaken App801 ACL.
-Do not embed privileged credentials in browser JavaScript.
-
-# STEP 2 — EVALUATE KINTONE-ONLY OPTIONS
-
-Evaluate these options:
-
-```text
-A. shared account + browser-side employee access gate
-B. shared account + simple per-employee internal PIN/access code model
-C. Kintone workflow/record-permission based model
-D. native individual Kintone identity (document why extra licenses are required)
-E. any tenant-native feature that can distinguish employees without additional licensed accounts
-```
-
-For each report:
-
-```text
-FEASIBLE
-SECURITY_LEVEL
-REQUIRES_ACL_WEAKENING
-CAN_PREVENT_EMPLOYEE_CODE_SWITCHING
-CAN_ENFORCE_EMPLOYEE_RECORD_ISOLATION
-RECOMMENDATION
-```
-
-# STEP 3 — STRICT EMPLOYEE DATA ISOLATION CHECK
-
-Determine whether Kintone-only + shared account can actually enforce all of:
-
-```text
-Employee A cannot read Employee B record
-Employee A cannot edit Employee B record
-Employee A cannot switch Employee_Code through browser/devtools
-Employee A cannot bypass the custom gate through a direct App794 URL/API call
-```
+Identify the exact current repository modules/customization files that affect App794 runtime behavior.
 
 Required:
 
 ```text
-STRICT_EMPLOYEE_DATA_ISOLATION_WITH_SHARED_ACCOUNT = YES / NO / PARTIAL
+CURRENT_APP794_RUNTIME_FILES = exact
+CURRENT_EMPLOYEE_RESOLUTION = exact
+CURRENT_ROUTING_RESOLUTION = exact
+CURRENT_SCORING_RESOLUTION = exact
+CURRENT_REQUESTER_USER_USAGE = exact
+CURRENT_DEPLOYMENT_STATUS = exact
 ```
 
-Clearly separate real Kintone enforcement from UI-only deterrence.
+Do not create duplicate adapters if an existing module can be extended safely.
 
-# STEP 4 — APP801 FUTURE ROLE
+# STEP 2 — FREEZE AUTHORITATIVE DATA FLOW
 
-Determine:
+Design exact runtime flow:
 
 ```text
-APP801_FUTURE_ROLE = KEEP / REPURPOSE_LATER / REMOVE_LATER / BLOCKED
+shared Kintone account
+  -> App794 page
+  -> employee selection/context for business entry (NOT authentication)
+  -> App53 READ ONLY employee snapshot
+  -> derive Section + Team
+  -> App795 Routing_Key resolution
+  -> Requester_User / Manager / GM routing
+  -> App796 scoring profile resolution
+  -> App794 business fields / validation / workflow behavior
 ```
 
-Do not change or delete App801 in this task.
-If App801 no longer has a safe runtime role, flag it for a later controlled No-Orphan decision.
+Required rules:
+- App53 remains employee master / READ ONLY.
+- App795 is authoritative routing source.
+- TMG uses Section + Team Routing_Key.
+- Non-TMG uses Section only.
+- App796 is authoritative scoring source.
+- Shared Kintone user must never be labeled individual employee identity.
+- Employee_Code/query/localStorage must not be described as trusted authentication.
 
-# STEP 5 — GOOGLE AUTHENTICATOR / TOTP FEASIBILITY
+# STEP 3 — FIELD MAPPING
 
-Under Kintone-only + shared-account constraints, report:
+Read-only inspect App794, App53, App795, App796 schema/contracts and produce exact field mapping needed by runtime adapter.
+
+At minimum resolve:
 
 ```text
-KINTONE_ONLY_TOTP_FEASIBLE = YES/NO/PARTIAL
-TOTP_CAN_BE_VERIFIED_WITHOUT_EXPOSING_THE_VERIFICATION_SECRET_TO_SHARED_BROWSER = YES/NO
-RECOMMENDED_TOTP_STATUS = ENABLE / DEFER / REJECT
+App53 Employee_Code field
+App53 Department field
+App53 Section field
+App53 Team field
+App53 Position/Profile field(s)
+App794 target Employee_Code field
+App794 Requester_User field
+App794 routing/approver fields actually present
+App794 scoring/profile fields actually present
 ```
 
-Do not implement TOTP in this task.
+If any exact field code is unresolved, mark BLOCKED rather than guess.
 
-# STEP 6 — FINAL DELIVERY PATH
+# STEP 4 — ROUTING BEHAVIOR
 
-Choose exactly one:
+Verify implementation plan for all active routing:
 
 ```text
-PATH_A = Kintone-only internal gate is acceptable for MBO scope
-PATH_B = Kintone-only UI gate cannot satisfy strict employee isolation; redesign authorization/workflow using native Kintone controls
-PATH_C = Kintone-only is not acceptable for intended security requirement
+17/17 App795 rows
+TMG1 = 4 teams
+TMG2 = 3 teams
+Non-TMG = Section-only
+Routing_Key duplicate handling = fail closed
+Missing route = fail closed
+Inactive route = fail closed
 ```
 
-If PATH_A: define smallest next repository-only implementation scope.
-If PATH_B: propose the safest Kintone-only workflow/authorization redesign.
-If PATH_C: stop with reason.
+Define exactly what App794 shows to user when routing cannot resolve.
 
-# STEP 7 — CURRENT-DOC RECONCILIATION
+# STEP 5 — SCORING BEHAVIOR
 
-Update living docs only where required so current truth states:
+Verify exact App796 runtime resolver contract against 8 published profiles.
+
+Required:
 
 ```text
-EXTERNAL_AUTH_SERVICE_SELECTED = NO
-KINTONE_ONLY_DIRECTION = USER_SELECTED
-SHARED_ACCOUNT_LIMITATION = ACTIVE SECURITY CONSTRAINT
+published config only
+position/profile mapping exact
+missing profile = fail closed
+multiple active matching profiles = fail closed
+no fallback to hardcoded stale ratios
 ```
 
-Preserve prior Node.js auth design as historical/abandoned direction, not current delivery path.
-Do not close SEC-DEP-001 unless actually proven closed.
+Preserve current frozen ratios and source-of-truth rules.
 
-# STEP 8 — TEST / GIT
+# STEP 6 — PATH_B REQUESTER MODEL
 
-Run:
+Define how `Requester_User` from App795 is used operationally.
+
+Required:
+
+```text
+Requester_User is workflow/request submission identity under shared-account constraint
+Requester_User is NOT employee authentication identity
+Employee business record remains tied to selected/validated App53 Employee_Code
+Approver routing must derive from App795 only
+```
+
+Explain limitations clearly so UI does not imply individual login security.
+
+# STEP 7 — UI / ERROR STATES
+
+Design minimal runtime UX for:
+
+```text
+employee not found
+Section missing
+Team missing where TMG requires team
+routing missing
+routing duplicate
+scoring profile missing
+scoring profile duplicate
+inactive employee if such field exists
+successful resolution
+```
+
+Do not overbuild dashboard or unrelated UI.
+
+# STEP 8 — IMPLEMENTATION PLAN FOR NEXT TASK
+
+Produce exact smallest deployment-ready repository scope only.
+
+Must include:
+
+```text
+WHAT
+WHERE exact files/functions
+HOW
+WHY
+EXPECTED IMPACT
+RISKS
+TEST PLAN
+ROLLBACK PLAN
+NO-ORPHAN PLAN
+```
+
+Prefer modifying existing files/functions.
+New files only with clear separation-of-concerns justification.
+
+Next task should separate:
+
+```text
+A. repository code implementation/test only
+B. App794 customization deployment
+C. any schema/process write if unexpectedly required
+```
+
+Do not combine B/C without explicit user authorization.
+
+# STEP 9 — TEST MATRIX
+
+Define tests covering at least:
+
+```text
+non-TMG route
+TMG1 team route
+TMG2 team route
+missing team
+unknown employee
+missing route
+duplicate route
+valid scoring profile
+missing scoring profile
+duplicate scoring profile
+Requester_User mapping
+no stale hardcoded routing/scoring fallback
+```
+
+Run existing tests:
 
 ```bash
 npm test
@@ -161,49 +223,37 @@ git diff --check
 git status --short
 ```
 
-Required:
-
-```text
-KINTONE_WRITES_THIS_TASK = 0
-EXTERNAL_DEPLOY_THIS_TASK = 0
-APP801_RECORD_COUNT_EXPECTED = 0
-npm test = PASS
-git diff --check = PASS
-NO_ORPHAN_ARTIFACT_GATE = PASS / BLOCKED_WITH_EXPLANATION
-local HEAD = origin/ai/antigravity-wp002c after push
-```
-
 # FINAL REQUIRED SUMMARY
 
 ```text
-M10C_AUTH_D_KINTONE_ONLY_PREFLIGHT = COMPLETE / BLOCKED
-USER_SELECTED_KINTONE_ONLY = YES
-EXTERNAL_AUTH_SERVICE_SELECTED = NO
-CAN_SHARED_ACCOUNT_READ_APP801_NOW = actual
-CAN_BROWSER_CUSTOMIZATION_USE_APP801_WITH_CURRENT_ACL = actual
-STRICT_EMPLOYEE_DATA_ISOLATION_WITH_SHARED_ACCOUNT = actual
-DIRECT_APP794_BYPASS_RISK = actual
-EMPLOYEE_CODE_SWITCHING_RISK = actual
-APP801_FUTURE_ROLE = actual
-KINTONE_ONLY_TOTP_FEASIBLE = actual
-RECOMMENDED_TOTP_STATUS = actual
-FINAL_RECOMMENDED_PATH = PATH_A / PATH_B / PATH_C
-NEXT_REPOSITORY_IMPLEMENTATION_SCOPE = exact / NONE
+M10E_APP794_RUNTIME_PREFLIGHT = COMPLETE / BLOCKED
+
+CURRENT_APP794_RUNTIME_FILES = actual
+FIELD_MAPPING_COMPLETE = YES/NO
+APP53_READ_ONLY = YES
+APP795_ROUTING_SOURCE = YES
+APP796_SCORING_SOURCE = YES
+TMG_TEAM_AWARE = YES/NO
+REQUESTER_USER_MODEL = exact
+
+RUNTIME_IMPLEMENTATION_READY = YES/NO
+NEXT_REPOSITORY_SCOPE = exact
 NEXT_TASK_KINTONE_WRITES = NONE / exact
-NEXT_TASK_USER_AUTHORIZATION_REQUIRED = YES/NO
+NEXT_TASK_CUSTOMIZATION_DEPLOY = NO
+USER_AUTHORIZATION_REQUIRED_FOR_DEPLOY = YES
+
 KINTONE_WRITES_THIS_TASK = 0
-EXTERNAL_DEPLOY_THIS_TASK = 0
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 GIT_PUSH_SYNC = PASS/FAIL
+
 NEXT_ACTION = CHATGPT REVIEW ONLY
 ```
 
+Update only living docs required to record current factual preflight conclusions.
 Commit and push same branch, then STOP.
 
-Do NOT deploy login.
-Do NOT weaken App801 ACL.
-Do NOT create employee auth records.
-Do NOT implement TOTP.
 Do NOT deploy App794 customization.
+Do NOT change App794 schema/process.
+Do NOT touch App53/App795/App796/App801 state.
