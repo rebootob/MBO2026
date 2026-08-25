@@ -1,96 +1,52 @@
-# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4A FINAL EXACTNESS CLEANUP
+# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4A FINAL DOC CLOSURE
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `2a0c4b774ff3e04912769c11664b5aba0ee91ae1`
-> **Mode:** TINY CODE EXACTNESS + DOC CONSISTENCY ONLY
+> **Reviewed head:** `7cdc1f97976b2cbdb48f55e0d338de53bae0c343`
+> **Mode:** DOC CONSISTENCY ONLY
+> **Source code changes:** ZERO
 > **Kintone calls:** ZERO
 > **Kintone writes:** ZERO
 
-## REVIEW RESULT
+## FINAL REVIEW RESULT BEFORE DOC CLOSURE
 
-Accepted from the previous final correction:
+Accepted:
 
 ```text
-code commit = 4d5a1bf6a8cae1fddd59972430e0b5e45fbbf7ca
-docs commit = 2a0c4b774ff3e04912769c11664b5aba0ee91ae1
-commit order = PASS
-code scope = PASS
-REGRESSION_COVERAGE_GATE = PASS (306/306 reported; >=291 baseline)
+TIMEZONE_CAPTURE_EXACTNESS = PASS
+TRUSTED_DATETIME_GATE = PASS
+REGRESSION_COVERAGE_GATE = PASS — 307/307
 DEPENDENCY_CONTRACT_GATE = PASS
 EFFECTIVE_OVERLAP_GATE = PASS
 TRIPLE_HASH_GATE = PASS
+TRUSTED_AUDIT_GATE = PASS
 FINAL_PUBLISH_READBACK_GATE = PASS
 LIFECYCLE_GATE = PASS
 SUPERSESSION_FAIL_CLOSED_GATE = PASS
 ZERO_KINTONE_STAGE4A_GATE = PASS
+GIT_COMMIT_ORDER = PASS
+CODE_SCOPE = PASS
 ```
 
-Three exactness issues remain.
+Only two documentation consistency defects remain.
 
----
+## MUST FIX 1 — ONE CURRENT PIPELINE STATUS ONLY
 
-# MUST FIX 1 — OFFSET REGEX GROUP DESTRUCTURING IS SHIFTED
-
-Current `isValidIsoDateTime()` regex captures:
-
-```text
-1 year
-2 month
-3 day
-4 hour
-5 minute
-6 second
-7 fraction
-8 full timezone token (Z or +HH:MM)
-9 offset sign
-10 offset hour
-11 offset minute
-```
-
-But current destructuring skips only group 7 and assigns:
-
-```text
-tzSign    <- group 8
-tzHourStr <- group 9
-tzMinStr  <- group 10
-```
-
-So the explicit timezone component validation does not actually read sign/hour/minute as intended.
-
-Correct the destructuring (or equivalent explicit indexing) so offset validation truly reads groups 9/10/11.
-
-Required explicit behavior remains:
-
-```text
-+23:59 = syntactically valid offset component range
-+24:00 = reject
-+09:60 = reject
-```
-
-Do not rely only on `new Date()` for these component bounds.
-
-Add/retain a direct regression test proving a valid high-range offset such as `+23:59` passes and invalid `+24:00` / `+09:60` fail.
-
----
-
-# MUST FIX 2 — CURRENT PIPELINE STATUS MUST BE UNAMBIGUOUS
-
-Current living docs still use both:
-
-```text
-PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
-```
-
-and in current App/Target descriptions:
+In every current Stage 4A operational section, remove/replace current occurrences of:
 
 ```text
 PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
 ```
 
-For every current Stage 4A state/target description, use exactly:
+with:
+
+```text
+PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
+```
+
+Current state must consistently expose:
 
 ```text
 PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
@@ -99,100 +55,24 @@ LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
 RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
 ```
 
-Historical pre-Stage4 statements may retain `NOT_DEPLOYED` only if explicitly historical.
+Historical pre-Stage4 statements may retain `NOT_DEPLOYED` only when clearly historical.
 
----
+## MUST FIX 2 — CURRENT STAGE 4A COMMIT TRACEABILITY
 
-# MUST FIX 3 — AI_REVIEW_PACKAGE COMMIT METADATA IS STALE
-
-The current `AI_REVIEW_PACKAGE.md` commit table still stops at the earlier Stage 3C forensic checkpoint.
-
-Add current Stage 4A traceability, at minimum:
+Update `project-docs/AI_REVIEW_PACKAGE.md` commit metadata to include at least:
 
 ```text
-f010e26fbc61e39ee84874a1c024492acf0c81fa = Stage 4A implementation
-683cc0eaae66faa1e335e122b7aff8aba08ad9e7 = Stage 4A first hardening
-4d5a1bf6a8cae1fddd59972430e0b5e45fbbf7ca = Stage 4A final correction
-2a0c4b774ff3e04912769c11664b5aba0ee91ae1 = Stage 4A final evidence before this cleanup
-<new code commit> = Stage 4A exactness cleanup
-<new docs commit> = Stage 4A final review evidence
+f010e26fbc61e39ee84874a1c024492acf0c81fa — Stage 4A implementation
+683cc0eaae66faa1e335e122b7aff8aba08ad9e7 — Stage 4A first hardening
+4d5a1bf6a8cae1fddd59972430e0b5e45fbbf7ca — Stage 4A final correction
+2a0c4b774ff3e04912769c11664b5aba0ee91ae1 — Stage 4A final evidence
+4cf9374fcbbd8e164cd8e0f49745d3e4f34547f2 — Stage 4A timezone capture exactness
+7cdc1f97976b2cbdb48f55e0d338de53bae0c343 — Stage 4A exactness evidence
 ```
 
-Historical Stage 3C rows may remain.
+Do not remove historical Stage 3C rows.
 
----
-
-# STEP 0 — GIT SAFETY
-
-Run:
-
-```bash
-git status --short
-git branch --show-current
-git fetch origin
-git pull --ff-only
-git rev-parse HEAD
-git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor 2a0c4b774ff3e04912769c11664b5aba0ee91ae1 HEAD
-```
-
-Required:
-
-```text
-branch = ai/antigravity-wp002c
-local HEAD = remote HEAD
-reviewed head 2a0c4b7... is in ancestry
-tracked working tree clean before edits
-```
-
-No reset/rebase/stash/force-push automatically.
-
----
-
-# STEP 1 — CODE / TEST EXACTNESS
-
-Allowed files only:
-
-- `src/services/scoring-config-master-service.js`
-- `tests/scoring-config-master-service.test.js`
-
-Do only the timezone capture/component exactness correction.
-Preserve all 306-test semantic coverage already restored.
-Do not refactor unrelated logic.
-
-Required tests:
-
-```text
-valid +23:59 offset passes
-+24:00 rejects
-+09:60 rejects
-invalid calendar with offset rejects
-valid leap day with offset passes
-all prior Stage 4A tests remain present
-```
-
-Run:
-
-```bash
-git diff --check
-npm test
-```
-
-All tests must pass and final total must remain >= 306.
-
-Commit exactly:
-
-```text
-fix: correct scoring config timezone capture exactness
-```
-
-Push and verify local HEAD = remote HEAD.
-
----
-
-# STEP 2 — DOC CONSISTENCY
-
-Allowed docs only:
+## ALLOWED FILES ONLY
 
 - `project-docs/CURRENT_STATE.md`
 - `project-docs/HANDOFF.md`
@@ -200,10 +80,12 @@ Allowed docs only:
 - `project-docs/IMPLEMENTATION_STATUS.md`
 - `project-docs/CHANGELOG_AI.md`
 
-Required current state:
+## REQUIRED FINAL CURRENT STATE
 
 ```text
-STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = EXACTNESS_CLEANUP_COMPLETE / PENDING CHATGPT FINAL REVIEW
+WP002C_STAGE3C_GATE = PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION
+R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE_ACCEPTED
+STAGE4A_PUBLISH_INTEGRITY_FOUNDATION = REVIEW_READY / PENDING CHATGPT CLOSURE
 PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
 LIVE_KINTONE_ADAPTER_STATUS = NOT_IMPLEMENTED
 LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
@@ -211,26 +93,36 @@ RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
 SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED
 BASELINE_SEED_STATUS = NOT_STARTED
 RECORD_COUNT = 0 (last verified Kintone checkpoint)
-THIS_STAGE_4A_EXACTNESS_CLEANUP_KINTONE_CALLS = 0
-THIS_STAGE_4A_EXACTNESS_CLEANUP_KINTONE_WRITES = 0
-PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
-NEXT_ACTION = AWAIT CHATGPT FINAL STAGE 4A REVIEW
+TESTS = 307/307 PASS
+THIS_TASK_KINTONE_CALLS = 0
+THIS_TASK_KINTONE_WRITES = 0
+NEXT_ACTION = AWAIT CHATGPT STAGE 4A CLOSURE REVIEW
 ```
 
-Use actual final test total consistently in current operational sections.
-Update AI_REVIEW_PACKAGE Stage 4A commit metadata as required above.
+## VALIDATION
+
+Run:
+
+```bash
+git diff --check
+npm test
+git diff --name-only
+```
+
+Expected tests: `307/307 PASS` unless unchanged suite legitimately reports a higher total.
+No source/config/test files may change.
 
 Commit exactly:
 
 ```text
-docs: finalize wp-002c stage4a exactness evidence
+docs: close wp-002c stage4a evidence consistency
 ```
 
-Push, verify local HEAD = remote HEAD, tracked working tree clean, then STOP.
+Push only to `origin/ai/antigravity-wp002c`.
+Verify local HEAD = remote HEAD and tracked working tree clean.
+Then STOP.
 
----
-
-# STRICT BOUNDARY
+## STRICT BOUNDARY
 
 ```text
 Kintone GET = 0
@@ -243,31 +135,30 @@ Kintone RECORD WRITE = 0
 
 Do not use `.env.local`.
 Do not access App 796.
+Do not change source code/tests/config.
+Do not start Stage 4B.
 Do not seed records.
-Do not implement Stage 4B.
-Do not modify resolver/core client/write guard/UI/domain baseline values.
 Do not start WP-002D.
 
-# REVIEW EXPECTATION
+## REVIEW EXPECTATION
 
-Expected exactly two Antigravity commits after this assignment:
+ChatGPT expects exactly one Antigravity docs-only commit after this assignment.
 
-1. `fix: correct scoring config timezone capture exactness`
-2. `docs: finalize wp-002c stage4a exactness evidence`
+Expected final gates after review:
 
-Final expected gates:
-
-- `CANONICALIZATION_GATE = PASS`
-- `DEPENDENCY_CONTRACT_GATE = PASS`
-- `EFFECTIVE_OVERLAP_GATE = PASS`
-- `TRUSTED_DATETIME_GATE = PASS`
-- `TRIPLE_HASH_GATE = PASS`
-- `TRUSTED_AUDIT_GATE = PASS`
-- `FINAL_PUBLISH_READBACK_GATE = PASS`
-- `REGRESSION_COVERAGE_GATE = PASS`
-- `LIFECYCLE_GATE = PASS`
-- `SUPERSESSION_FAIL_CLOSED_GATE = PASS`
-- `DOC_EVIDENCE_CONSISTENCY_GATE = PASS`
-- `ZERO_KINTONE_STAGE4A_GATE = PASS`
-- `GIT_PUSH_SYNC_GATE = PASS`
-- `WP002C_STAGE4A_GATE = PASS`
+```text
+CANONICALIZATION_GATE = PASS
+DEPENDENCY_CONTRACT_GATE = PASS
+EFFECTIVE_OVERLAP_GATE = PASS
+TRUSTED_DATETIME_GATE = PASS
+TRIPLE_HASH_GATE = PASS
+TRUSTED_AUDIT_GATE = PASS
+FINAL_PUBLISH_READBACK_GATE = PASS
+REGRESSION_COVERAGE_GATE = PASS
+LIFECYCLE_GATE = PASS
+SUPERSESSION_FAIL_CLOSED_GATE = PASS
+DOC_EVIDENCE_CONSISTENCY_GATE = PASS
+ZERO_KINTONE_STAGE4A_GATE = PASS
+GIT_PUSH_SYNC_GATE = PASS
+WP002C_STAGE4A_GATE = PASS
+```
