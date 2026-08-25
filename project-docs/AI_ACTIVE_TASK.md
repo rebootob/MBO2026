@@ -1,184 +1,127 @@
-# AI ACTIVE TASK — M7I M7H EVIDENCE RECONCILIATION BEFORE M9
+# AI ACTIVE TASK — M7J FINAL HANDOFF EVIDENCE RECONCILIATION BEFORE M9
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed M7H Head:** `81675c09da72806efcd40e9fca76124105c236ec`
-> **Mode:** DOCUMENTATION / EVIDENCE RECONCILIATION ONLY — KINTONE WRITES = 0
+> **Reviewed Head:** `403a0b58bb60a9cda98f214e05244fb595708009`
+> **Mode:** DOCUMENTATION / AUDIT-TRAIL RECONCILIATION ONLY — KINTONE WRITES = 0
 
 # NORTH STAR
 
 ```text
 M6 Scoring                        = PASS
 M7 Discovery / Final Matrix       = PASS / 17 OF 17
-M7H App795 Schema Migration       = PASS
-M7H App795 Record Migration       = PASS / 17 OF 17
-M7H Exact Read-back               = PASS
-M7I Evidence Reconciliation       = EXECUTE NOW / DOCS ONLY
-M7 OVERALL                        = PENDING REVIEW CLOSURE
-M9 FINAL ACCEPTANCE               = BLOCKED UNTIL M7I REVIEW
+M7H App795 Controlled Write       = PASS / EXECUTED
+M7I Evidence Reconciliation       = PASS EXCEPT FINAL HANDOFF CURRENT-STATE CONTRADICTIONS
+M7J Final Handoff Reconciliation  = EXECUTE NOW / DOCS ONLY
+M7 OVERALL                        = PENDING FINAL REVIEW CLOSURE
+M9 FINAL ACCEPTANCE               = BLOCKED UNTIL M7J REVIEW
 TODAY_DONE                        = NO
 ```
 
 # PURPOSE
 
-M7H implementation itself passed review, but living evidence still contains active/current statements that contradict the actual controlled App795 write.
+M7H implementation is complete and M7I reconciled most evidence. Independent review found remaining current-state contradictions in `project-docs/HANDOFF.md` and any other current audit summary that still presents pre-M7H authorization/write state as if it were current.
 
-This task must reconcile documentation/audit state only.
+This task is the final documentation-only reconciliation required before M7 can be closed and M9 can be opened.
 
-Do NOT touch Kintone again.
-Do NOT rerun schema mutation.
-Do NOT rerun record migration.
-Do NOT modify App795 or any other Kintone app.
+Do NOT touch Kintone.
+Do NOT rerun schema or record migration.
+Do NOT change routing data.
 Do NOT start M9.
 
-# AUTHORITATIVE M7H FACTS TO PRESERVE
+# AUTHORITATIVE M7H EXECUTION FACTS
 
-Use the following as the current authoritative M7H execution facts:
+Preserve these exact facts:
 
 ```text
-M7H_COMMIT = 81675c09da72806efcd40e9fca76124105c236ec
-USER_AUTHORIZATION = EXPLICIT / APPROVED
+M7H_EXECUTION_COMMIT = 81675c09da72806efcd40e9fca76124105c236ec
+M7I_EVIDENCE_RECONCILIATION_COMMIT = 403a0b58bb60a9cda98f214e05244fb595708009
+
+M7H_USER_AUTHORIZATION = EXPLICIT
+USER_APPROVAL_TEXT = อนุมัติ M7 App795 write
 AUTHORIZED_WRITE_APP = 795 ONLY
+M7H_APPROVED_WRITE = EXECUTED / CLOSED
+NEW_KINTONE_WRITE_AUTHORIZATION = NO
 
-BACKUP_PATH = backups/m7h-app795/2026-08-25T10-54-25-606Z
-BACKUP_MANIFEST_SHA256 = 52133c5df3cb879ab084d6850e8eeff49f53a1a8f5ccf14f132e7fa4be06a5d3
-BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
+APP795_SCHEMA_MIGRATION = PASS
+Routing_Key = added / required / unique
+Team = added
+Section_Code.unique = false
+Schema deploy/read-back = PASS
 
-APP795_SCHEMA_CHANGE:
-- Routing_Key added, required=true, unique=true
-- Team added
-- Section_Code.unique changed true -> false
-- deploy/read-back verified
-
-APP795_RECORD_MIGRATION:
-- existing records updated = 12
-- new records created = 5
-- final active routing rows = 17
-- final routing manifest exact match = 17/17
-- Routing_Key duplicates = 0
-- approver account lookup failures = 0
-
-NON_APP795_KINTONE_WRITES = 0
-APP53_MODIFIED = NO
-PROCESS_MANAGEMENT_MODIFIED = NO
-npm test = 501/501 PASS
-NO_ORPHAN_ARTIFACT_GATE = PASS
-```
-
-Do not reinterpret these values unless repository evidence proves an exact typo.
-
-# MUST FIX 1 — CURRENT TASK WRITE COUNTERS
-
-Search current/living documentation for active/current M7H state such as:
-
-```text
-THIS_TASK_KINTONE_CALLS = 0
-THIS_TASK_KINTONE_WRITES = 0
-KINTONE_WRITES_THIS_TASK = 0
-SEED WRITES UNAUTHORIZED
-M7_WRITE_AUTHORIZATION = NO
-```
-
-These statements were valid for earlier read-only milestones but are incorrect if presented as the current M7H execution state.
-
-Reconcile active/current M7H state to the truth.
-
-At minimum distinguish:
-
-```text
-M7H_APP795_RECORD_WRITES = 17 record mutations total
-  - PUT existing = 12
-  - POST new = 5
-
-M7H_APP795_SCHEMA_WRITE = EXECUTED
-M7H_APP795_DEPLOY = EXECUTED
+APP795_RECORD_MIGRATION = PASS
+M7H_APP795_RECORD_UPDATES = 12
+M7H_APP795_RECORD_CREATES = 5
+APP795_ACTIVE_ROUTING_ROWS = 17
+ROUTING_MANIFEST_EXACT_MATCH = 17/17
+ROUTING_KEY_DUPLICATES = 0
 M7H_NON_APP795_KINTONE_WRITES = 0
-```
 
-If a document uses generic `THIS_TASK_*` counters, either update them to exact actual M7H values where determinable or replace them with explicit semantically correct counters so there is no misleading `0 writes` claim.
-
-Do not guess HTTP request counts if repository evidence does not prove exact network-call quantity. Prefer exact operation semantics over invented totals.
-
-# MUST FIX 2 — AUTHORIZATION STATE
-
-Current living docs must not say `SEED WRITES UNAUTHORIZED` as the current M7H state.
-
-Reconcile authorization chronology clearly:
-
-```text
-Before M7H = write unauthorized
-User approval = `อนุมัติ M7 App795 write`
-M7H App795-only write = AUTHORIZED AND EXECUTED
-Authorization scope = CLOSED AFTER EXECUTION / NO FURTHER WRITE AUTHORIZED
-```
-
-Historical entries may remain when explicitly historical.
-
-Current state after M7H must be:
-
-```text
-NEW KINTONE WRITE AUTHORIZATION = NO
-M7H APPROVED WRITE = EXECUTED / CLOSED
-```
-
-This prevents anyone from interpreting the earlier approval as open-ended write authority.
-
-# MUST FIX 3 — BACKUP EVIDENCE / RETENTION
-
-Do not claim ChatGPT independently verified backup bytes.
-
-Preserve exact execution-plane evidence:
-
-```text
 BACKUP_PATH = backups/m7h-app795/2026-08-25T10-54-25-606Z
 BACKUP_MANIFEST_SHA256 = 52133c5df3cb879ab084d6850e8eeff49f53a1a8f5ccf14f132e7fa4be06a5d3
 BACKUP_REPORTED_VERIFIED_BY_EXECUTION_PLANE = YES
 INDEPENDENT_REVIEWER_BYTE_VERIFICATION = NOT_PERFORMED
 BACKUP_RETENTION = REQUIRED UNTIL M7 REVIEW CLOSURE
+
+M7I_KINTONE_WRITES = 0
+M7J_KINTONE_WRITES = 0
+npm test prior = 501/501 PASS
+NO_ORPHAN_ARTIFACT_GATE prior = PASS
 ```
 
-Do NOT delete, move, replace, regenerate, or clean this backup during this task.
+# MUST FIX 1 — HANDOFF CURRENT AUTHORIZATION STATE
 
-# STEP 1 — SEARCH LIVING DOCS
+Inspect `project-docs/HANDOFF.md`.
 
-Inspect at minimum:
+The current handoff must NOT state this as the present authorization status:
 
 ```text
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/CHANGELOG_AI.md
+Implementation Authorization = STAGE 3C-R1 ... SEED WRITES UNAUTHORIZED
 ```
 
-Also search repository for active/current occurrences of:
+That may remain only if clearly labeled as historical Stage 3C-R1 state.
+
+Current authorization state must explicitly show:
 
 ```text
-THIS_TASK_KINTONE_CALLS
-THIS_TASK_KINTONE_WRITES
-KINTONE_WRITES_THIS_TASK
-SEED WRITES UNAUTHORIZED
-M7_WRITE_AUTHORIZATION
-M7H
-81675c09
-BACKUP_RETENTION
+M7H_APP795_WRITE_AUTHORIZATION = APPROVED -> EXECUTED -> CLOSED
+M7H_AUTHORIZED_TARGET = APP795 ONLY
+NEW_KINTONE_WRITE_AUTHORIZATION = NO
 ```
 
-Classify each finding as:
+Do not imply that the M7H approval remains open-ended.
+
+# MUST FIX 2 — CURRENT KINTONE WRITE SUMMARY
+
+Inspect current summaries, especially `project-docs/HANDOFF.md` and `project-docs/AI_REVIEW_PACKAGE.md`.
+
+Any overall/current Kintone write summary must include M7H execution facts and must not misleadingly summarize the project only as:
 
 ```text
-ACTIVE_CURRENT
-HISTORICAL_SUPERSEDED
-UNRELATED
+FORM FIELDS PUT = 1 Stage 3C-R1
+DEPLOY POST = 1 Stage 3C-R1
+RECORD writes = 0
 ```
 
-Do not rewrite historical evidence merely because it reflects earlier state.
+If retaining the old Stage 3C-R1 summary, label it explicitly historical and separate it from current cumulative/current milestone facts.
 
-# STEP 2 — RECONCILE CURRENT M7 STATE
+For current M7 routing write state, preserve exact known operation semantics:
 
-Current living source-of-truth should represent:
+```text
+M7H App795 record updates = 12
+M7H App795 record creates = 5
+M7H App795 schema mutation = EXECUTED
+M7H App795 deploy = EXECUTED
+M7H non-App795 writes = 0
+```
+
+Do NOT invent aggregate HTTP request counts when exact request grouping/batching is not proven.
+
+# MUST FIX 3 — M7 CURRENT STATE
+
+Current living docs must consistently state:
 
 ```text
 M7A = PASS
@@ -187,46 +130,103 @@ M7D = PASS
 M7E = PASS / 7 OF 7
 M7F = PASS / 17 OF 17
 M7G = PASS
-M7H IMPLEMENTATION = PASS / EXECUTED
-M7H INDEPENDENT REVIEW = PASS WITH DOCS RECONCILIATION REQUIRED -> M7I
-M7I = PENDING CHATGPT REVIEW after this task
+M7H = PASS / EXECUTED
+M7I = PASS / EVIDENCE RECONCILED
+M7J = PENDING CHATGPT REVIEW after this task
 
 APP795_ACTIVE_ROUTING_ROWS = 17
 APP795_ROUTING_MANIFEST_MATCH = 17/17
 APP795_ROUTING_KEY_DUPLICATES = 0
-NON_APP795_KINTONE_WRITES = 0
+APP795_TEAM_AWARE_SCHEMA = LIVE
 ```
 
-Do not mark M9 complete.
+Do NOT mark M9 complete.
+Do NOT claim runtime resolver live wiring if it remains not started.
 
-# STEP 3 — NO-ORPHAN / SOURCE-OF-TRUTH CONSISTENCY
+# STEP 1 — SEARCH CURRENT/LIVING SOURCES
 
-Search active/current documentation for contradictory routing state such as:
+Inspect at minimum:
 
 ```text
-App795 still 12 rows
-Team field absent
-Routing_Key absent
-Section_Code unique=true
-routing target 15
-TMG2 = 4 Teams
-M7C = 7/8
-M7H not authorized
-M7H write not executed
-current task Kintone writes = 0
+project-docs/HANDOFF.md
+project-docs/CURRENT_STATE.md
+project-docs/AI_REVIEW_PACKAGE.md
+project-docs/AI_ACTIVE_TASK.md
+project-docs/CHANGELOG_AI.md
 ```
 
-Required:
+Search for:
 
 ```text
-STALE_ACTIVE_M7H_ZERO_WRITE_REFERENCES = 0
+SEED WRITES UNAUTHORIZED
+Implementation Authorization
+Kintone Write Summary
+RECORD/DELETE/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0
+THIS_TASK_KINTONE_WRITES
+M7H
+M7I
+APP795_ACTIVE_ROUTING_ROWS
+NEW_KINTONE_WRITE_AUTHORIZATION
+```
+
+Classify each result:
+
+```text
+ACTIVE_CURRENT
+HISTORICAL_SUPERSEDED
+UNRELATED
+```
+
+Do not rewrite valid historical chronology.
+
+# STEP 2 — RECONCILE HANDOFF + CURRENT SUMMARIES
+
+Update only what is necessary so no ACTIVE_CURRENT statement contradicts M7H/M7I facts.
+
+Preferred current handoff wording:
+
+```text
+M7H App795 write authorization: EXPLICITLY APPROVED / EXECUTED / CLOSED
+New Kintone write authorization: NONE
+App795 active routing rows: 17
+Routing manifest exact match: 17/17
+Routing key duplicates: 0
+M7H non-App795 writes: 0
+M7J current task Kintone writes: 0
+```
+
+Preserve historical Stage 3C write notes as historical sections, not current global state.
+
+# STEP 3 — BACKUP RETENTION EVIDENCE
+
+Do not delete/move/regenerate the M7H backup.
+
+Current docs must state:
+
+```text
+BACKUP_PATH = backups/m7h-app795/2026-08-25T10-54-25-606Z
+BACKUP_MANIFEST_SHA256 = 52133c5df3cb879ab084d6850e8eeff49f53a1a8f5ccf14f132e7fa4be06a5d3
+BACKUP_REPORTED_VERIFIED_BY_EXECUTION_PLANE = YES
+INDEPENDENT_REVIEWER_BYTE_VERIFICATION = NOT_PERFORMED
+BACKUP_RETENTION_UNTIL_M7_REVIEW_CLOSURE = REQUIRED
+```
+
+# STEP 4 — NO-ORPHAN / CONTRADICTION CHECK
+
+Required after reconciliation:
+
+```text
 STALE_ACTIVE_M7H_UNAUTHORIZED_REFERENCES = 0
-STALE_ACTIVE_APP795_PRE_MIGRATION_STATE = 0
+STALE_ACTIVE_M7H_ZERO_RECORD_WRITE_REFERENCES = 0
+STALE_ACTIVE_PRE_MIGRATION_APP795_STATE = 0
 STALE_ACTIVE_ROUTING_COUNT_REFERENCES = 0
+STALE_ACTIVE_SECTION_ONLY_TMG_ASSUMPTIONS = 0
 NO_ORPHAN_ARTIFACT_GATE = PASS
 ```
 
-# STEP 4 — TEST / GIT SAFETY
+Historical superseded entries do not count as stale when clearly historical.
+
+# STEP 5 — TEST / GIT SAFETY
 
 Run:
 
@@ -236,7 +236,7 @@ git diff --check
 git status --short
 ```
 
-Require:
+Required:
 
 ```text
 KINTONE_WRITES_THIS_TASK = 0
@@ -250,21 +250,24 @@ tracked tree clean after commit
 local HEAD = origin/ai/antigravity-wp002c after push
 ```
 
-No reset/rebase/force push/history rewrite.
+No reset.
+No rebase.
+No force push.
+No history rewrite.
 
 # FINAL REQUIRED SUMMARY
 
-Update living docs and AI_REVIEW_PACKAGE with a sanitized M7I reconciliation block:
+Update living docs with a sanitized block:
 
 ```text
-M7I_M7H_EVIDENCE_RECONCILIATION = COMPLETE / PENDING CHATGPT REVIEW
+M7J_FINAL_HANDOFF_RECONCILIATION = COMPLETE / PENDING CHATGPT REVIEW
 
 M7H_IMPLEMENTATION = PASS / EXECUTED
+M7I_EVIDENCE_RECONCILIATION = PASS
 M7H_USER_AUTHORIZATION = EXPLICIT / EXECUTED / CLOSED
 NEW_KINTONE_WRITE_AUTHORIZATION = NO
 
-APP795_SCHEMA_MIGRATION = PASS
-APP795_RECORD_MIGRATION = PASS
+APP795_TEAM_AWARE_SCHEMA = LIVE
 APP795_ACTIVE_ROUTING_ROWS = 17
 ROUTING_MANIFEST_EXACT_MATCH = 17/17
 ROUTING_KEY_DUPLICATES = 0
@@ -281,9 +284,9 @@ BACKUP_REPORTED_VERIFIED_BY_EXECUTION_PLANE = YES
 INDEPENDENT_REVIEWER_BYTE_VERIFICATION = NOT_PERFORMED
 BACKUP_RETENTION_UNTIL_M7_REVIEW_CLOSURE = REQUIRED
 
-STALE_ACTIVE_M7H_ZERO_WRITE_REFERENCES = 0
 STALE_ACTIVE_M7H_UNAUTHORIZED_REFERENCES = 0
-STALE_ACTIVE_APP795_PRE_MIGRATION_STATE = 0
+STALE_ACTIVE_M7H_ZERO_RECORD_WRITE_REFERENCES = 0
+STALE_ACTIVE_PRE_MIGRATION_APP795_STATE = 0
 NO_ORPHAN_ARTIFACT_GATE = PASS
 
 KINTONE_WRITES_THIS_TASK = 0
@@ -292,12 +295,12 @@ npm test = actual / PASS
 GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
 
-M7_OVERALL = IMPLEMENTED / PENDING CHATGPT CLOSURE REVIEW
-M9_FINAL_ACCEPTANCE = BLOCKED_PENDING_M7I_REVIEW
+M7_OVERALL = IMPLEMENTED / PENDING CHATGPT FINAL CLOSURE REVIEW
+M9_FINAL_ACCEPTANCE = BLOCKED_PENDING_M7J_REVIEW
 NEXT_ACTION = CHATGPT REVIEW ONLY
 ```
 
-Commit/push documentation/evidence reconciliation only to the same branch, then STOP.
+Commit and push documentation/evidence reconciliation only to the same branch, then STOP.
 
 Do NOT touch Kintone.
 Do NOT execute M9.
