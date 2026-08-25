@@ -1,81 +1,92 @@
-# AI ACTIVE TASK — ANTIGRAVITY WP-002C STAGE 4D-B CONTROLLED LIVE GET PREFLIGHT
+# AI ACTIVE TASK — MBO2026 DELIVERY DAY SPRINT 01: CORE APP AVAILABILITY + MISSING APP BOOTSTRAP
 
-> **Control Plane:** ChatGPT / Project Lead / Architect / Independent Reviewer
+> **Control Plane:** ChatGPT / Project Lead / Independent Reviewer
 > **Execution Plane:** Antigravity standalone
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed Stage 4D-A final head:** `902a57db95d77fc15eefd2b18c11ef4e61cafb04`
-> **Reviewed Stage 4D-A code:** `322d12bd8eac7f23b8b823826d2a4852077ca4b1`
-> **Target App:** 796 — `MBO Profile & Scoring Configuration Master [Sandbox]`
-> **Mode:** CONTROLLED LIVE READ-ONLY PREFLIGHT
-> **Authorized network operations:** GET ONLY, exact Stage 4D-A sequence
-> **Authorized Kintone writes:** ZERO
-> **`.env.local`:** MAY BE USED ONLY AS LOCAL READ-ONLY CONNECTION INPUT; NEVER PRINT / COPY / COMMIT / MODIFY
+> **Reviewed Stage 4D-B head:** `ed4238e607edd9e8e54ad58dfb41e6841489feb4`
+> **Mode:** DELIVERY DAY / CONTROLLED LIVE APP BOOTSTRAP
+> **User priority:** TODAY = REQUIRED MBO APPS UP + HR DASHBOARD MVP VISIBLE
 
-# CONTROL PLANE DECISION
+# TODAY NORTH STAR — DO NOT DRIFT
 
-Independent review is complete:
+This block is authoritative for the rest of today. Every Antigravity report and every ChatGPT review must repeat the scoreboard.
 
 ```text
-WP002C_STAGE4D_A_GATE = PASS
-STAGE4D_A_READ_ONLY_LIVE_PREFLIGHT_FOUNDATION = PASSED / FROZEN
-reported regression = 471/471 PASS
+TODAY_DELIVERY_TARGET = REQUIRED MBO APPS UP + REAL-DATA HR DASHBOARD MVP
+
+M1 App 794 Transaction Core        = EXISTING / READINESS NOT YET CLOSED
+M2 App 795 Routing Master          = EXISTING / BASELINE NOT YET CLOSED
+M3 App 796 Scoring Master          = LIVE VERIFIED / SCHEMA VERIFIED / ACL VERIFIED / RECORDS 0
+M4 Hoshin Master                   = MISSING OR UNVERIFIED -> THIS SPRINT
+M5 Revision Archive               = MISSING OR UNVERIFIED -> THIS SPRINT
+M6 App 796 baseline scoring data  = NOT STARTED
+M7 App 795 routing baseline       = NOT CLOSED
+M8 HR Dashboard MVP on App 794    = NOT STARTED
+M9 End-to-end smoke test          = NOT STARTED
+
+TODAY_DONE = NO
+NEXT_CRITICAL_PATH = M4 + M5, then M6/M7, then M8, then M9
 ```
 
-Accepted Stage 4D-A gates:
+Do not start work that does not move one of M1–M9 unless it is a BLOCKER for those milestones.
+Documentation-only imperfections must be bundled into useful delivery commits and must not create standalone loops unless they affect safety/data integrity.
+
+---
+
+# CONTROL PLANE REVIEW RESULT — STAGE 4D-B
+
+Accepted:
 
 ```text
-STAGE4C_CLOSURE_GATE = PASS
-READ_ONLY_PREFLIGHT_ARCHITECTURE_GATE = PASS
-APP_ID_SAFETY_BINDING_GATE = PASS
-LIVE_PREVIEW_IDENTITY_CONTRACT_GATE = PASS
-LIVE_PREVIEW_SCHEMA_CONTRACT_GATE = PASS
-LIVE_PREVIEW_ACL_CONTRACT_GATE = PASS
-STAGE4C_BRIDGE_REUSE_GATE = PASS
-ZERO_RECORD_PREFLIGHT_GATE = PASS
-ERROR_REDACTION_GATE = PASS
+STAGE4D_A_CLOSURE_GATE = PASS
+REVIEWED_CODE_INTEGRITY_GATE = PASS
+LOCAL_SECRET_SAFETY_GATE = PASS (execution evidence + .gitignore)
+LIVE_GET_ONLY_EXECUTION_GATE = PASS
+LIVE_APP_IDENTITY_GATE = PASS
+LIVE_SCHEMA_GATE = PASS
+LIVE_ACL_GATE = PASS
+LIVE_ZERO_RECORD_GATE = PASS
+STAGE4C_BRIDGE_LIVE_GET_GATE = PASS
+API_TOKEN_SUPPRESSION_GATE = PASS (execution evidence)
 NO_RETRY_FAIL_CLOSED_GATE = PASS
-DISCOVERY_LOCK_PRESERVATION_GATE = PASS
-REGRESSION_GATE = PASS
-ZERO_KINTONE_STAGE4D_A_GATE = PASS
-DOC_EVIDENCE_CONSISTENCY_GATE = PASS
+ZERO_KINTONE_WRITE_GATE = PASS
+REGRESSION_GATE = PASS (471/471 reported)
 GIT_PUSH_SYNC_GATE = PASS
+WP002C_STAGE4D_B_GATE = PASS_WITH_OBSERVATIONS
 ```
 
-Stage 3C historical evidence exception remains unchanged:
+Observed but NOT blocking delivery:
 
 ```text
-WP002C_STAGE3C_GATE = PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION
-R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE_ACCEPTED
-PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = MANDATORY
+OBS-DAY-001: AI_REVIEW_PACKAGE Stage 4D-B row still uses *(Review Head)* instead of ed4238e...
+OBS-DAY-002: generic THIS_TASK_KINTONE_CALLS remains 0 in some living-doc sections although Stage 4D-B evidence correctly records attempted=7/successful=7 GETs.
 ```
 
-Do not rewrite historical evidence.
+Fix these observations inside the first documentation commit of this sprint. Do NOT create a separate closure loop.
+
+Historical Stage 3C evidence exception remains unchanged.
 
 ---
 
-# STAGE 4D-B PURPOSE
+# SPRINT 01 GOAL
 
-Execute the already-reviewed Stage 4D-A function against real Kintone App 796 exactly once as a controlled read-only reconciliation.
+By the end of this sprint, determine the real existence state of the two missing core app containers and ensure both exist live in Kintone with exact identities and creator-only/default-deny access.
 
-This stage proves the current real state of:
+Exact approved names:
 
 ```text
-live app identity
-preview app identity
-live 23-field schema
-preview 23-field schema
-live creator-only ACL
-preview creator-only ACL
-record count == 0
-Stage 4C records GET bridge composition
+HOSHIN_APP_NAME = MBO Hoshin Master [Sandbox]
+REVISION_ARCHIVE_APP_NAME = MBO Revision Archive [Sandbox]
 ```
 
-This is NOT a write authorization and NOT a seed/publish authorization.
+Kintone must allocate the IDs. NEVER assume App 799 or any other ID from old diagrams.
+
+This sprint creates APP CONTAINERS ONLY. It does not configure their business schemas and does not seed records. Schema/data comes immediately in Delivery Sprint 02.
 
 ---
 
-# STEP 0 — GIT / REVIEWED-CODE INTEGRITY
+# STEP 0 — GIT SAFETY
 
 Run:
 
@@ -86,8 +97,7 @@ git fetch origin
 git pull --ff-only
 git rev-parse HEAD
 git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor 902a57db95d77fc15eefd2b18c11ef4e61cafb04 HEAD
-git diff --quiet 322d12bd8eac7f23b8b823826d2a4852077ca4b1 HEAD -- src/core/kintone-client.js tests/safety-guard.test.js
+git merge-base --is-ancestor ed4238e607edd9e8e54ad58dfb41e6841489feb4 HEAD
 ```
 
 Required:
@@ -95,12 +105,11 @@ Required:
 ```text
 branch = ai/antigravity-wp002c
 local HEAD = remote HEAD
-reviewed Stage 4D-A final head is in ancestry
-reviewed Stage 4D-A code/test diff since 322d12b = EMPTY
+reviewed Stage 4D-B head is in ancestry
 tracked working tree clean
 ```
 
-If any requirement fails: STOP. Do not run live preflight.
+No reset/rebase/stash/force push automatically.
 
 Read before execution:
 
@@ -110,16 +119,21 @@ project-docs/CURRENT_STATE.md
 project-docs/HANDOFF.md
 project-docs/AI_REVIEW_PACKAGE.md
 project-docs/IMPLEMENTATION_STATUS.md
-project-docs/phase-3/MBO-P03-WP-002C_PLAN.md
+project-docs/APP_REGISTRY.md
+project-docs/ARCHITECTURE.md
+project-docs/DECISIONS.md
 src/core/kintone-client.js
 src/core/sandbox-write-guard.js
+config/sandbox-apps.json
 ```
+
+Also locate and read the frozen Hoshin blueprint/architecture-redesign documents. Confirm DEC-018 remains frozen.
 
 ---
 
-# STEP 1 — DURABLE STAGE 4D-A CLOSURE / STAGE 4D-B AUTHORIZATION
+# STEP 1 — BUNDLE STAGE 4D-B CLOSURE + DELIVERY NORTH STAR DOC UPDATE
 
-Update only these living docs:
+Update only:
 
 ```text
 project-docs/CURRENT_STATE.md
@@ -129,226 +143,199 @@ project-docs/IMPLEMENTATION_STATUS.md
 project-docs/CHANGELOG_AI.md
 ```
 
-Required current state before live GET:
+Required:
 
-```text
-WP002C_STAGE4D_A_GATE = PASS
-STAGE4D_A_READ_ONLY_LIVE_PREFLIGHT_FOUNDATION = PASSED / FROZEN
-STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT = AUTHORIZED / NOT_EXECUTED
-READ_ONLY_LIVE_PREFLIGHT_FOUNDATION = PASSED / FROZEN
-LIVE_KINTONE_READ_RECONCILIATION = NOT_STARTED
-LIVE_RECORD_WRITE_AUTHORIZATION_STATUS = GUARD_CONTRACT_IMPLEMENTED_NOT_WIRED
-PREWRITE_BACKUP_CONTRACT_STATUS = DURABLE_RETENTION_REQUIRED / NOT_EXECUTED
-TRUSTED_AUDIT_LIVE_PROVIDER_STATUS = NOT_IMPLEMENTED
-LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
-RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
-BASELINE_SEED_STATUS = NOT_STARTED
-RECORD_COUNT = 0 (last verified checkpoint only; Stage 4D-B has not re-read yet)
-NEXT_ACTION = EXECUTE ONE CONTROLLED LIVE GET PREFLIGHT FOR APP 796
-```
-
-Update Stage 4D-A final closure traceability with real SHA:
-
-```text
-902a57db95d77fc15eefd2b18c11ef4e61cafb04 — docs: close wp-002c stage4d-a review evidence
-```
-
-Run:
-
-```bash
-git diff --check
-```
+- record `WP002C_STAGE4D_B_GATE = PASS_WITH_OBSERVATIONS`
+- record Stage 4D-B evidence SHA `ed4238e607edd9e8e54ad58dfb41e6841489feb4`
+- replace Stage 4D-B `*(Review Head)*` placeholder with that SHA
+- correct current Stage 4D-B GET accounting to `attempted=7`, `successful=7`, `writes=0`
+- add the TODAY NORTH STAR scoreboard from this task to CURRENT_STATE and HANDOFF in a compact form
+- mark Delivery Sprint 01 as active
+- preserve Stage 3C evidence exception exactly
 
 Commit exactly:
 
 ```text
-docs: close wp-002c stage4d-a and authorize stage4d-b
+docs: close stage4d-b and start delivery-day core app sprint
 ```
 
-Push only to `origin/ai/antigravity-wp002c` and verify local HEAD = remote HEAD.
-
-Do not modify source/test/config files.
+Push and verify local HEAD = remote HEAD.
 
 ---
 
-# STEP 2 — LOCAL SECRET SAFETY PREFLIGHT
+# STEP 2 — LOCAL SECRET SAFETY
 
-`.env.local` may be used in this stage only because real GETs are now explicitly authorized.
+`.env.local` is authorized only as local connection input.
+Never print/cat/copy/hash/commit/modify its contents.
 
-DO NOT display, cat, type, print, copy, upload, diff, commit, hash, or otherwise expose `.env.local` contents.
-
-Run only metadata/safety checks:
+Required checks:
 
 ```bash
 git check-ignore -q .env.local
 ```
 
-Required: exit code 0.
+and verify `.env.local` is not tracked.
 
-Verify it is not tracked. Use a command that does not print contents, for example:
-
-```bash
-git ls-files --error-unmatch .env.local
-```
-
-Required: this command MUST fail because `.env.local` must not be tracked.
-
-Check required variable PRESENCE ONLY, never values:
-
-```bash
-node --env-file=.env.local --input-type=module -e "const keys=['KINTONE_BASE_URL','KINTONE_USERNAME','KINTONE_PASSWORD']; console.log(JSON.stringify(Object.fromEntries(keys.map(k=>[k,Boolean(process.env[k])])))); if(keys.some(k=>!process.env[k])) process.exit(1)"
-```
-
-Expected safe output contains booleans only:
+Presence-only check for:
 
 ```text
-KINTONE_BASE_URL = true
-KINTONE_USERNAME = true
-KINTONE_PASSWORD = true
+KINTONE_BASE_URL
+KINTONE_USERNAME
+KINTONE_PASSWORD
 ```
 
-If `.env.local` is missing, tracked, not ignored, or required variables are absent: STOP without live calls.
+Before every network run:
 
-Do NOT modify `.env.local`.
+```text
+delete process.env.KINTONE_API_TOKEN
+```
+
+Never print headers or secrets.
 
 ---
 
-# STEP 3 — PRE-LIVE SAFETY / REGRESSION
+# STEP 3 — LIVE INVENTORY: EXISTING CORE APPS + NAME COLLISION GATE
 
-Run:
+GET-only inventory first.
+
+Verify current existing apps without modifying them:
+
+```text
+794 = MBO V2 Sandbox
+795 = MBO Routing Master Sandbox
+796 = MBO Profile & Scoring Configuration Master [Sandbox]
+```
+
+For 794/795/796 record only safe metadata:
+
+```text
+appId
+appName
+live revision if available
+record count (use limit 1 / total-safe approach; do not dump records)
+```
+
+Protected apps remain READ ONLY and do not need broad rediscovery.
+
+Search Kintone app catalog for names containing:
+
+```text
+MBO Hoshin Master
+MBO Revision Archive
+```
+
+For each target:
+
+A. If one exact approved live app exists -> do NOT create another; verify exact name and creator-only/default-deny ACL; use its real ID.
+
+B. If no exact app exists and no suspicious near-duplicate exists -> creation is authorized.
+
+C. If a suspicious near-duplicate exists -> STOP before creation and report exact safe app ID/name only. Do not guess ownership and do not create a duplicate.
+
+Do not modify 794/795/796.
+
+---
+
+# STEP 4 — AUTHORIZED NEW APP BOOTSTRAP (ONLY IF MISSING)
+
+User has explicitly prioritized that all required MBO app containers be up today. Control Plane authorizes creation of ONLY these exact two names if missing:
+
+```text
+MBO Hoshin Master [Sandbox]
+MBO Revision Archive [Sandbox]
+```
+
+No caller-selectable third app name.
+
+Use username/password connection only. API token removed from process.
+
+For each missing app:
+
+1. POST exactly `/k/v1/preview/app.json` with body `{name: EXACT_APPROVED_NAME}` exactly once.
+2. Capture returned positive App ID and numeric revision.
+3. GET preview settings by that exact returned ID; require exact name equality.
+4. GET preview ACL.
+5. If ACL is not creator-only/default-deny, PUT exactly `/k/v1/preview/app/acl.json` for that returned ID with creator-only rights. This ACL PUT is authorized only for the newly created exact-ID app.
+6. POST deploy exactly for that returned app/revision.
+7. Poll deploy status boundedly until SUCCESS; no blind retry of create/deploy after uncertain transport.
+8. GET live settings + live ACL by exact returned ID.
+9. Require exact name and creator-only/default-deny.
+10. Record safe ID/name/revisions/status only.
+
+No schema fields in this sprint.
+No records in this sprint.
+No Process Management.
+No JavaScript/CSS deployment.
+
+Allowed Kintone writes are strictly limited to the two new app containers:
+
+```text
+APP_CREATE POST <= 2 total
+NEW-APP ACL PUT <= 2 total, only if needed
+NEW-APP DEPLOY POST <= 2 total
+```
+
+Absolutely zero writes to:
+
+```text
+53, 283, 305, 307, 310, 640, 643, 715, 716
+794, 795, 796
+```
+
+If create transport becomes uncertain, do NOT retry. Reconcile by GET/catalog only and stop if ownership/result is uncertain.
+
+Rollback policy: do not auto-delete a created app. Preserve exact new app IDs and stop for Control Plane review if bootstrap partially fails.
+
+---
+
+# STEP 5 — REGISTER REAL APP IDS IN GIT
+
+Only after exact live read-back succeeds for each target, update:
+
+```text
+config/sandbox-apps.json
+project-docs/APP_REGISTRY.md
+```
+
+Add dynamic real IDs under clear keys:
+
+```text
+hoshinMasterAppId
+revisionArchiveAppId
+```
+
+Do not overwrite existing 794/795/796 IDs.
+
+APP_REGISTRY purposes:
+
+```text
+Hoshin Master = HR-managed Department/Section Hoshin version master; DEC-018; no workflow
+Revision Archive = immutable historical snapshots of superseded App 794 stage revisions; DEC-022
+```
+
+Do NOT yet change `getSandboxAppIds()` or write guards for these new apps. That belongs to Sprint 02 when schema writes are authorized and tested.
+
+Run full regression:
 
 ```bash
 npm test
 ```
 
-Required:
+Expected >=471 and 0 fail.
+
+Commit exactly:
 
 ```text
-471/471 PASS or legitimately higher
-0 FAIL
+chore: register delivery-day hoshin and revision archive apps
 ```
 
-Confirm safety constants without secrets:
-
-```bash
-node --input-type=module -e "const g=await import('./src/core/sandbox-write-guard.js'); console.log(JSON.stringify({DISCOVERY_MODE:g.DISCOVERY_MODE,WRITE_ALLOWED_APPS:g.WRITE_ALLOWED_APPS,APP_ID:g.WP002C_SCORING_MASTER_APP_ID,APP_NAME:g.WP002C_APPROVED_APP_NAME}))"
-```
-
-Required:
-
-```text
-DISCOVERY_MODE = true
-WRITE_ALLOWED_APPS = []
-APP_ID = 796
-APP_NAME = exact approved name
-```
-
-If not exact: STOP.
+Push and verify local HEAD = remote HEAD.
 
 ---
 
-# STEP 4 — EXECUTE ONE CONTROLLED LIVE PREFLIGHT
+# STEP 6 — DELIVERY EVIDENCE + NEXT CRITICAL PATH
 
-Execute the reviewed function one time only.
-
-Important authentication rule for this run:
-
-- load `.env.local` into the process
-- DO NOT alter `.env.local`
-- delete `KINTONE_API_TOKEN` from the process before requests
-- therefore existing `kintoneRequest` uses username/password (+ Basic Auth only if already configured)
-- never print credentials or headers
-
-Use the existing reviewed `kintoneRequest` as the only network transport, wrapped only to count attempted/successful GET calls safely.
-
-Run exactly one live preflight command equivalent to:
-
-```bash
-node --env-file=.env.local --input-type=module -e "delete process.env.KINTONE_API_TOKEN; const m=await import('./src/core/kintone-client.js'); let attemptedGetCalls=0; let successfulGetCalls=0; const transport=async(path,opts)=>{attemptedGetCalls+=1; const r=await m.kintoneRequest(path,opts); successfulGetCalls+=1; return r;}; try{const result=await m.verifyScoringConfigReadOnlyLivePreflight({transport}); console.log(JSON.stringify({status:'PASS',attemptedGetCalls,successfulGetCalls,result}));}catch{console.error(JSON.stringify({status:'FAIL',error:'STAGE4D_READ_PREFLIGHT_FAILED',attemptedGetCalls,successfulGetCalls})); process.exit(1)}"
-```
-
-DO NOT run this command more than once.
-
-## Expected PASS contract
-
-The one safe JSON output must prove:
-
-```text
-status = PASS
-attemptedGetCalls = 7
-successfulGetCalls = 7
-result.appId = 796
-result.appName = MBO Profile & Scoring Configuration Master [Sandbox]
-result.plannedFieldCount = 23
-result.liveAclStatus = CREATOR_ONLY
-result.previewAclStatus = CREATOR_ONLY
-result.recordCount = 0
-result.repositoryBridgeGetVerified = true
-```
-
-Revision strings may differ between live and preview and must be recorded only as safe numeric revision strings.
-
-No raw Kintone payload may be persisted.
-
-## Failure contract
-
-If the command fails:
-
-- DO NOT retry
-- DO NOT diagnose by making more Kintone calls
-- DO NOT use curl/Postman/browser/API explorer as fallback
-- DO NOT alter `.env.local`
-- record only:
-  - `STAGE4D_READ_PREFLIGHT_FAILED`
-  - attemptedGetCalls
-  - successfulGetCalls
-- current live record count becomes `UNKNOWN_CURRENT / LAST_VERIFIED_0`
-- proceed only to failure evidence docs and STOP
-
----
-
-# STEP 5 — ABSOLUTE WRITE PROHIBITION
-
-For the whole Stage 4D-B task:
-
-```text
-Kintone POST = 0
-Kintone PUT = 0
-Kintone PATCH = 0
-Kintone DELETE = 0
-Kintone DEPLOY = 0
-Kintone RECORD WRITE = 0
-Kintone SCHEMA WRITE = 0
-Kintone ACL WRITE = 0
-```
-
-Do not invoke:
-
-```text
-createAndVerifyScoringConfigMasterPreview
-activateScoringConfigMasterLive
-configureAndDeployScoringMasterSchema
-repairScoringMasterDropdownSchema
-ScoringConfigKintoneRepository.createValidatedRecord
-ScoringConfigKintoneRepository.publishRecord
-```
-
-Do not open any write authorization window.
-Do not change `DISCOVERY_MODE`.
-Do not change `WRITE_ALLOWED_APPS`.
-Do not create a pre-write backup because no write is authorized.
-Do not seed.
-Do not publish.
-Do not supersede/retire.
-Do not implement trusted audit identity.
-Do not wire resolver.
-Do not start WP-002D.
-
----
-
-# STEP 6 — EVIDENCE DOCS
-
-Modify only:
+Update only the five living docs:
 
 ```text
 project-docs/CURRENT_STATE.md
@@ -358,196 +345,98 @@ project-docs/IMPLEMENTATION_STATUS.md
 project-docs/CHANGELOG_AI.md
 ```
 
-No source/test/config changes.
-
-## If PASS
-
 Record:
 
 ```text
-WP002C_STAGE4D_A_GATE = PASS
-STAGE4D_A_READ_ONLY_LIVE_PREFLIGHT_FOUNDATION = PASSED / FROZEN
-STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT = EXECUTED / PENDING CHATGPT REVIEW
-LIVE_KINTONE_READ_RECONCILIATION = VERIFIED / PENDING CHATGPT REVIEW
-LIVE_APP_IDENTITY = VERIFIED
-PREVIEW_APP_IDENTITY = VERIFIED
-LIVE_SCHEMA_23_FIELDS = VERIFIED
-PREVIEW_SCHEMA_23_FIELDS = VERIFIED
-LIVE_ACL_CREATOR_ONLY = VERIFIED
-PREVIEW_ACL_CREATOR_ONLY = VERIFIED
-REPOSITORY_BRIDGE_GET = VERIFIED
-RECORD_COUNT = 0 (LIVE VERIFIED BY STAGE 4D-B)
-STAGE4D_B_ATTEMPTED_GETS = 7
-STAGE4D_B_SUCCESSFUL_GETS = 7
-STAGE4D_B_KINTONE_WRITES = 0
-ENV_LOCAL_USED = YES / LOCAL ONLY / NOT MODIFIED / NOT COMMITTED / NOT PRINTED
-KINTONE_API_TOKEN_SENT = NO (removed from process for controlled run)
-LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
-BASELINE_SEED_STATUS = NOT_STARTED
-RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
-NEXT_ACTION = AWAIT CHATGPT STAGE 4D-B REVIEW BEFORE ANY WRITE-RELATED STAGE
+DELIVERY_SPRINT_01 = COMPLETE / PENDING CHATGPT REVIEW
+M4 Hoshin Master = LIVE CONTAINER VERIFIED / real ID
+M5 Revision Archive = LIVE CONTAINER VERIFIED / real ID
+existing 794/795/796 write count = 0
+protected app write count = 0
+new app create count = actual safe count
+new app ACL PUT count = actual safe count
+new app deploy count = actual safe count
+records created = 0
+schema fields created = 0
+npm test = actual total / PASS
 ```
 
-Record the safe revision strings returned by the preflight:
+Repeat the TODAY NORTH STAR scoreboard and set:
 
 ```text
-liveSettingsRevision
-previewSettingsRevision
-liveFieldsRevision
-previewFieldsRevision
-liveAclRevision
-previewAclRevision
-```
-
-Do not record secrets, auth headers, raw response payloads, raw user objects, or `.env.local` contents.
-
-Commit exactly:
-
-```text
-docs: record wp-002c stage4d-b live read preflight
-```
-
-## If FAIL
-
-Record:
-
-```text
-STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT = BLOCKED / FAILED
-LIVE_KINTONE_READ_RECONCILIATION = FAILED
-ERROR_CODE = STAGE4D_READ_PREFLIGHT_FAILED
-STAGE4D_B_ATTEMPTED_GETS = <safe count>
-STAGE4D_B_SUCCESSFUL_GETS = <safe count>
-STAGE4D_B_KINTONE_WRITES = 0
-RECORD_COUNT = UNKNOWN_CURRENT / LAST_VERIFIED_0
-ENV_LOCAL_USED = YES / LOCAL ONLY / NOT MODIFIED / NOT COMMITTED / NOT PRINTED
-KINTONE_API_TOKEN_SENT = NO
-NEXT_ACTION = AWAIT CHATGPT FAILURE REVIEW; NO RETRY
+NEXT_CRITICAL_PATH = DELIVERY SPRINT 02: HOSHIN + REVISION ARCHIVE SCHEMA / BASELINE DATA CLOSURE, THEN DASHBOARD MVP
+TODAY_DONE = NO
 ```
 
 Commit exactly:
 
 ```text
-docs: record wp-002c stage4d-b live read preflight failure
+docs: record delivery-day core app bootstrap evidence
 ```
 
-Run:
-
-```bash
-git diff --check
-git diff --name-only
-```
-
-Required evidence-doc diff = only the five authorized living docs.
-
-Push only `origin/ai/antigravity-wp002c`.
-
-Verify:
-
-```bash
-git status --short
-git rev-parse HEAD
-git rev-parse origin/ai/antigravity-wp002c
-```
-
-Required:
-
-```text
-local HEAD = remote HEAD
-tracked working tree clean
-```
-
-Then STOP.
+Push and STOP.
 
 ---
 
-# EXPECTED COMMIT SHAPE
+# STRICT OUT-OF-SCOPE FOR SPRINT 01
 
-After this Control Plane assignment, expect exactly two Antigravity commits on PASS:
+Do not:
 
-```text
-1. docs: close wp-002c stage4d-a and authorize stage4d-b
-2. docs: record wp-002c stage4d-b live read preflight
-```
+- modify schema/records/process/customization of App 794
+- modify schema/records/process/customization of App 795
+- modify schema/records/process/customization of App 796
+- seed App 795
+- seed/publish App 796
+- create Hoshin records
+- create Revision Archive records
+- configure Hoshin/Archive business fields yet
+- deploy Dashboard yet
+- wire resolver
+- touch protected-app data
+- start unrelated phases
 
-No source/test/config commit is expected.
-
-On FAIL, commit 2 must instead be:
-
-```text
-docs: record wp-002c stage4d-b live read preflight failure
-```
-
----
+The reason is focus: Sprint 01 closes M4/M5 app availability only. Sprint 02 immediately addresses schemas/data. Dashboard is the next visible deliverable after that.
 
 # FINAL REPORT
 
+Start and end the report with the TODAY NORTH STAR scoreboard.
 Report only safe evidence:
 
-- branch
-- assignment/start HEAD
-- Stage 4D-A closure / Stage 4D-B authorization commit SHA
-- Stage 4D-B evidence commit SHA
-- live preflight status PASS/FAIL
-- attempted GET count
-- successful GET count
-- App ID / exact App name verification
-- live/preview identity verification
-- live/preview 23-field schema verification
-- live/preview creator-only ACL verification
-- repository bridge GET verification
-- live record count if verified
-- safe revision strings if PASS
-- Kintone writes = 0
-- `.env.local` used = YES/NO
-- `.env.local` modified = NO
-- `.env.local` committed = NO
-- secrets printed = NO
-- KINTONE_API_TOKEN sent = NO
-- test total/pass/fail
-- local HEAD = remote HEAD YES/NO
-- tracked working tree clean YES/NO
-- STOP confirmation
+- branch / start HEAD / final HEAD
+- three expected commits
+- existing 794/795/796 verified IDs/names and zero writes
+- Hoshin real ID/name/status
+- Revision Archive real ID/name/status
+- suspicious duplicate check PASS/FAIL
+- app create / ACL PUT / deploy counts
+- records created = 0
+- schema fields created = 0
+- protected app writes = 0
+- 794/795/796 writes = 0
+- `.env.local` used local-only YES/NO; modified NO; committed NO; secrets printed NO
+- API token sent NO
+- npm test total/pass/fail
+- local HEAD = remote HEAD
+- working tree clean
+- STOP
 
 # REVIEW EXPECTATION
 
-ChatGPT will inspect GitHub directly and verify:
-
-1. Stage 4D-A is durably recorded PASS/FROZEN.
-2. Exactly two Antigravity docs commits exist after this assignment on PASS.
-3. No source/test/config file changed after reviewed Stage 4D-A code commit.
-4. First Antigravity commit changes exactly the five living docs.
-5. Second Antigravity commit changes exactly the five living docs.
-6. `.env.local` is ignored/untracked and never committed.
-7. Regression remains >=471 and PASS.
-8. The live execution used the reviewed Stage 4D-A function and existing `kintoneRequest` only.
-9. API token was removed from process and not sent.
-10. Exactly 7 attempted and 7 successful GETs on PASS.
-11. App 796 exact live/preview identity verified.
-12. Live/preview 23-field schemas verified.
-13. Live/preview creator-only ACLs verified.
-14. Records GET reused Stage 4C bridge and record count is exactly 0.
-15. No Kintone write/deploy occurred.
-16. No backup, seed, publish, trusted audit provider, resolver wiring, or WP002D occurred.
-17. Stage 3C evidence exception remains preserved.
-18. Git branch points to final evidence commit.
-
-Expected PASS gates:
+ChatGPT will independently inspect GitHub and determine:
 
 ```text
-STAGE4D_A_CLOSURE_GATE = PASS / FAIL
-REVIEWED_CODE_INTEGRITY_GATE = PASS / FAIL
-LOCAL_SECRET_SAFETY_GATE = PASS / FAIL
-LIVE_GET_ONLY_EXECUTION_GATE = PASS / FAIL
-LIVE_APP_IDENTITY_GATE = PASS / FAIL
-LIVE_SCHEMA_GATE = PASS / FAIL
-LIVE_ACL_GATE = PASS / FAIL
-LIVE_ZERO_RECORD_GATE = PASS / FAIL
-STAGE4C_BRIDGE_LIVE_GET_GATE = PASS / FAIL
-API_TOKEN_SUPPRESSION_GATE = PASS / FAIL
-NO_RETRY_FAIL_CLOSED_GATE = PASS / FAIL
-ZERO_KINTONE_WRITE_GATE = PASS / FAIL
-REGRESSION_GATE = PASS / FAIL
-DOC_EVIDENCE_CONSISTENCY_GATE = PASS / FAIL
-GIT_PUSH_SYNC_GATE = PASS / FAIL
-WP002C_STAGE4D_B_GATE = PASS / BLOCKED
+STAGE4D_B_CLOSURE_GATE
+NORTH_STAR_ALIGNMENT_GATE
+EXISTING_CORE_APP_ZERO_WRITE_GATE
+APP_NAME_COLLISION_GATE
+HOSHIN_CONTAINER_GATE
+REVISION_ARCHIVE_CONTAINER_GATE
+NEW_APP_CREATOR_ONLY_ACL_GATE
+NEW_APP_DEPLOY_GATE
+REAL_ID_REGISTRATION_GATE
+PROTECTED_APP_ZERO_WRITE_GATE
+REGRESSION_GATE
+DOC_EVIDENCE_CONSISTENCY_GATE
+GIT_PUSH_SYNC_GATE
+DELIVERY_SPRINT_01_GATE
 ```
