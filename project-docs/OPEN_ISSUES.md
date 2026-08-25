@@ -7,14 +7,15 @@
 | **ISSUE-002** | Excel Export Template Expansion (5-10 items) | Technical Design | PENDING | Excel Export Phase | Implement row expansion or overflow sheet for 5-10 objectives in Export phase. |
 
 ### SEC-DEP-001 Shared Kintone Account Security Conflict & Identity Binding
-- **Status**: `DESIGNED_PENDING_M10C_CORE_IMPLEMENTATION` (App 801 created live; Server API contracts finalized in M10C-AUTH-C)
-- **User Decision Frozen**:
-  - **Phase 1**: Employee Code + Personal Password
-  - **Phase 2**: Employee Code + Personal Password + Google Authenticator TOTP (RFC 6238)
-- **Security Rules**:
-  - App 53 password storage is **STRICTLY PROHIBITED**.
-  - Client-side browser JS password verification is **STRICTLY PROHIBITED**.
-  - Server-side Node.js Auth Proxy required (Argon2id salted password hashing).
-  - Credential Store: App 801 live (`MBO Employee Authentication & MFA Credential Store [Sandbox]`, Creator-Only ACL, zero browser access).
-- **Next Step**: Implementation of `M10C-AUTH-CORE` Node.js Auth Proxy repository module.
+- **Status**: `OPEN_UNDER_SHARED_ACCOUNT_CONSTRAINT` (Evaluated in M10C-AUTH-D Preflight)
+- **User Constraints**:
+  - No external auth server / proxy hosting deployment.
+  - No additional Kintone user licenses.
+  - Kintone-only environment.
+- **Technical & Security Realities Recorded**:
+  - Under shared Kintone login accounts, client-side UI gates provide operational entry deterrence, NOT cryptographic or database-level record isolation.
+  - Authoritative workflow security is enforced via **PATH_B: Section Requester Model** (`Requester_User` in App 795).
+  - App 801 ACL is preserved as Creator-Only (not weakened to `GROUP everyone`).
+  - Google Authenticator TOTP is REJECTED for Kintone-only mode (requires secret key in client JS, compromising TOTP security).
+- **Next Step**: User authorization for App 794 runtime JS adapter deployment.
 
