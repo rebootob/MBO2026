@@ -1,26 +1,25 @@
-# AI ACTIVE TASK — M10J APP794 CONTROLLED DEPLOY PRE-FLIGHT
+# AI ACTIVE TASK — M10J-D CONTROLLED APP794 CUSTOMIZATION DEPLOY
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `0049d2faab59f858c7139be40fb7ca5d0c6a46e3`
-> Mode: PRE-DEPLOY VERIFICATION ONLY — KINTONE READ ONLY — NO DEPLOY / NO WRITE
+> Authorization: USER EXPLICITLY APPROVED `อนุมัติ M10J deploy App794 customization`
+> Mode: ONE CONTROLLED APP794 CUSTOMIZATION DEPLOY ONLY
 
 # NORTH STAR
 
-Prepare exactly one deployment candidate for App794 that contains the already-reviewed fixes only:
+Deploy exactly the already-reviewed App794 desktop customization candidate containing:
 
 1. M10H stale verified-state / stale snapshot fix.
 2. M10I final Position -> Scoring Profile mappings.
 3. M10I-R2 historical reconciliation, including `Factory Manager -> PROF_GM`.
 
-Do not add new business features in this task.
-Do not deploy in this task.
+Do not add new business features or alter any other app/schema/process/record/ACL.
 
 # CONFIRMED BASELINE — READ FIRST
 
-Read completely before any verification:
+Read completely before execution:
 
 ```text
 project-docs/CONFIRMED_BASELINE/README.md
@@ -29,12 +28,14 @@ project-docs/CONFIRMED_BASELINE/LEGACY_PMS_APPS.md
 project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
 ```
 
-If implementation conflicts with CONFIRMED_BASELINE, STOP and report BLOCKED.
-
-# HARD SAFETY
+# AUTHORIZED TARGET AND LIMITS
 
 ```text
-APP794_CUSTOMIZATION_DEPLOY = 0
+AUTHORIZED_TARGET = APP794 CUSTOMIZATION ONLY
+AUTHORIZED_DEPLOY_COUNT = 1
+AUTHORIZED_DESKTOP_JS = dist/mbo-employee-app.js
+AUTHORIZED_DESKTOP_CSS = dist/mbo-employee.css
+
 APP794_SCHEMA_WRITE = 0
 APP794_PROCESS_WRITE = 0
 APP794_RECORD_WRITE = 0
@@ -48,211 +49,269 @@ APP798_WRITE = 0
 APP800_WRITE = 0
 APP801_WRITE = 0
 OTHER_KINTONE_WRITE = 0
-KINTONE_WRITES_THIS_TASK = 0
 ```
 
-Kintone reads are allowed only for verification/readback.
+Only customization file upload/update + App794 customization deployment required for this task are authorized.
 
-# STEP 1 — VERIFY CURRENT LIVE APP794 BASELINE
+# LOCKED PRE-FLIGHT BASELINE
 
-Read App794 customization live state and record:
+Expected live starting state from M10J pre-flight:
 
 ```text
-LIVE_REVISION = actual
-LIVE_DESKTOP_JS_FILE_KEY = actual
-LIVE_DESKTOP_CSS_FILE_KEY = actual
-LIVE_MOBILE_CUSTOMIZATION = actual
+LIVE_APP794_REVISION = 26
+LIVE_DESKTOP_JS_FILE_KEY = 2026082515285180E89A4E24124E9887C69F1C6446D2C6195
+LIVE_DESKTOP_CSS_FILE_KEY = 20260825152851A67EA6B4672B49FCABE99BAD10A1AADB227
+LIVE_MOBILE_CUSTOMIZATION = []
+LIVE_CUSTOMIZATION_DRIFT = NO
 ```
 
-Expected starting point from prior verified deployment:
+Locked deployment candidate:
 
 ```text
-Revision 26
-Desktop customization present
-Mobile customization unchanged/empty
+CANDIDATE_JS = dist/mbo-employee-app.js
+CANDIDATE_JS_SIZE = 124766
+CANDIDATE_JS_SHA256 = ba89a4d2bd9833237fa5fa166ef48a2cf408461098782cfb94b9e308ef65fb62
+
+CANDIDATE_CSS = dist/mbo-employee.css
+CANDIDATE_CSS_SIZE = 13098
+CANDIDATE_CSS_SHA256 = 3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0
+
+EXPECTED_TESTS = 518/518 PASS
 ```
 
-If live state has drifted from the expected controlled baseline, STOP and report BLOCKED. Do not overwrite unknown drift.
+If branch contents/hash/live customization differ from this approved baseline before write, STOP and report BLOCKED. Do not deploy a changed candidate under this authorization.
 
-# STEP 2 — VERIFY DEPLOYMENT CANDIDATE CONTENT
+# STEP 1 — PULL / RE-VERIFY BEFORE WRITE
 
-Inspect current source and built bundle.
-
-The deployment candidate must include:
+Pull latest same branch and verify:
 
 ```text
-STALE_STATE_FIX = present
-USER_SELECT_RESET_TO_ARRAY = present
-IS_VALID_EMPLOYEE_CODE_RUNTIME = present
-0111 Assistant Section Manager -> PROF_ASST_MGR
-0118 Technical Service Chief -> PROF_STAFF_CHIEF
-Factory Manager -> PROF_GM
-Advisor -> PROF_JAPANESE_STAFF
-President -> PROF_VP
-Manager -> PROF_SECTION_MGR
-Co Project Manager -> PROF_SECTION_MGR
-Executive Management Coordinator -> PROF_STAFF_CHIEF
+local HEAD = origin/ai/antigravity-wp002c
+candidate JS/CSS hash exactly matches locked hashes
+npm test = 518/518 PASS
+classic bundle parse = PASS
+ES module imports = 0
+ES module exports = 0
+broken `from` residue = 0
+CONFIRMED_BASELINE conflicts = 0
 ```
 
-No unresolved non-empty current positions may remain.
-Blank App53 Position records remain fail-closed.
+Read live App794 customization again immediately before write.
 
-# STEP 3 — VERIFY BUNDLE SAFETY
-
-Rebuild using the existing repaired classic-script pipeline only.
-
-Required gates:
+Required:
 
 ```text
-CLASSIC_BUNDLE_PARSE = PASS
-ES_MODULE_IMPORT_COUNT = 0
-ES_MODULE_EXPORT_COUNT = 0
-BROKEN_FROM_RESIDUE_COUNT = 0
-IS_VALID_EMPLOYEE_CODE_RUNTIME = PASS
-USER_SELECTION_RESET_TYPE = ARRAY
-LOOKUP_FAILURE_STALE_STATE_TEST = PASS
-FACTORY_MANAGER_PROFILE_TEST = PROF_GM
-PROFILE_MAPPING_COVERAGE_TEST = PASS
-CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+Revision = 26
+existing JS/CSS fileKeys match locked pre-flight baseline
+mobile customization = []
 ```
 
-Record candidate JS/CSS sizes and a stable hash if the existing tooling already supports it. Do not invent a new deployment framework.
+Any drift => STOP, no write.
 
-# STEP 4 — VERIFY TEST SUITE
+# STEP 2 — CAPTURE FRESH PRE-WRITE BACKUP
 
-Run:
+Before any upload/PUT/deploy, capture fresh live App794 customization evidence and store durably under a new path such as:
 
-```bash
-npm test
-git diff --check
-git status --short
-```
+`backups/m10j-d-app794-controlled-deploy/<timestamp>/`
 
-Expected current regression baseline is 518 tests; actual count must be reported.
-
-# STEP 5 — PREPARE FRESH BACKUP PLAN, BUT DO NOT EXECUTE WRITE
-
-Determine the exact existing script/command that will be used after explicit user authorization to:
-
-1. Capture fresh pre-write App794 customization/readback backup.
-2. Store backup under a durable `backups/` path.
-3. Verify backup contents before any PUT/deploy.
-4. Upload only the reviewed desktop JS/CSS candidate.
-5. Deploy App794 customization only.
-6. Poll deployment status to SUCCESS.
-7. Read back live revision/fileKeys.
-8. Verify mobile customization unchanged.
-
-Do not perform the write/deploy in this task.
-
-# STEP 6 — DEFINE ROLLBACK CONTRACT
-
-Before requesting authorization, identify exactly how rollback will work if browser runtime fails.
-
-Rollback source must be the fresh pre-write backup captured immediately before deployment.
-
-Browser-failure rollback triggers include at minimum:
+Backup must contain enough information to restore the exact prior customization, including at least:
 
 ```text
-page initialization parser/runtime failure
-Employee Search runtime failure
-USER_SELECT invalid value runtime failure
-verified state stale after failed lookup
-profile resolver mismatch for reviewed examples
-objective grid unlocks incorrectly
+live revision
+live desktop customization config
+current JS fileKey/reference
+current CSS fileKey/reference
+mobile customization
+retrievable prior JS/CSS files or exact existing restoration artifacts supported by the existing deployment tooling
+manifest / hashes where supported
 ```
 
-Do not reuse an old unrelated backup as the planned primary rollback source.
+Verify backup is readable and complete BEFORE write.
 
-# STEP 7 — DEFINE POST-DEPLOY BROWSER SMOKE
+If fresh backup cannot be proven restorable => STOP, no deploy.
 
-Prepare exact browser tests for the user after deployment:
+# STEP 3 — EXECUTE ONE APP794 CUSTOMIZATION DEPLOY
+
+Use the existing proven App794 deployment process from M10G-R3. Do not invent a new deployment framework.
+
+Allowed sequence only:
+
+1. Upload locked reviewed desktop JS.
+2. Upload locked reviewed desktop CSS.
+3. Update App794 desktop customization preview/config only.
+4. Keep mobile customization exactly unchanged (`[]`).
+5. Deploy App794 customization.
+6. Poll deployment status until SUCCESS or failure/timeout.
+
+Do NOT touch schema/process/records/ACL.
+
+# STEP 4 — IMMEDIATE LIVE READBACK
+
+After deployment SUCCESS, read back and record:
 
 ```text
-A. 0118 successful lookup
-   - employee data loads
-   - PROF_STAFF_CHIEF path
-   - no console/runtime error
-   - objective grid unlocks correctly
-
-B. 0111 successful lookup
-   - Assistant Section Manager
-   - PROF_ASST_MGR
-   - no PROFILE_RESOLUTION_AMBIGUOUS
-
-C. Factory Manager employee
-   - resolves PROF_GM
-   - no Section Manager misclassification
-
-D. Failed lookup / invalid or fail-closed case
-   - verified=false
-   - previous employee snapshot cleared
-   - objective grid locked
-   - no stale Employee verified state
-
-E. Console
-   - no parser error
-   - no isValidEmployeeCode error
-   - no USER_SELECT `.value is invalid` errors
+NEW_LIVE_REVISION = actual
+NEW_DESKTOP_JS_FILE_KEY = actual
+NEW_DESKTOP_CSS_FILE_KEY = actual
+NEW_MOBILE_CUSTOMIZATION = actual
+DEPLOY_STATUS = actual
 ```
 
-Do not create test business records unless separately authorized.
-
-# STEP 8 — NO ORPHAN / CHANGE SCOPE
-
-This task must not introduce:
+Required:
 
 ```text
-new resolver copies
-_old / _v1 files
-new deployment scripts without necessity
-duplicate source-of-truth docs
-provisional facts inside CONFIRMED_BASELINE
+NEW_LIVE_REVISION > 26
+mobile remains []
+desktop customization references new uploaded reviewed JS/CSS
 ```
 
-If a new confirmed factual correction is discovered, update the appropriate canonical baseline file only.
+If deployment fails or readback is inconsistent, execute rollback from the fresh pre-write backup and verify restored live state.
+
+# STEP 5 — BROWSER RUNTIME SMOKE (MANDATORY BEFORE CALLING RUNTIME PASS)
+
+API/readback alone is NOT runtime PASS.
+
+Perform browser verification if Antigravity can interact with the browser. Otherwise STOP at `DEPLOYED_AWAITING_USER_BROWSER_SMOKE` and provide exact user test steps; do not claim full runtime PASS.
+
+Required browser checks:
+
+## A — 0118 successful lookup
+
+```text
+Employee Code = 0118
+employee data loads correctly
+profile path = PROF_STAFF_CHIEF
+Employee verified appears only after full validation
+objective grid unlocks correctly
+no console/runtime error
+```
+
+## B — 0111 successful lookup
+
+```text
+Employee Code = 0111
+current Position = Assistant Section Manager
+profile = PROF_ASST_MGR
+no PROFILE_RESOLUTION_AMBIGUOUS
+objective grid unlocks correctly
+```
+
+## C — Factory Manager
+
+Use confirmed Factory Manager employee from evidence (9048 if still current/eligible for lookup).
+
+```text
+profile resolution = PROF_GM
+must NOT resolve PROF_SECTION_MGR
+```
+
+If current routing/access prevents normal successful lookup for that employee, distinguish routing failure from profile resolver evidence; do not falsify a runtime profile PASS.
+
+## D — stale-state failure regression
+
+After one successful employee lookup, enter a code/path that fails lookup or required validation.
+
+Required:
+
+```text
+isEmployeeVerified = false
+previous employee snapshot/header cleared
+no stale green Employee verified
+objective grid locked
+error refers to requested lookup
+```
+
+## E — console
+
+Must have none of:
+
+```text
+parser/syntax error
+isValidEmployeeCode is not defined
+USER_SELECT `.value is invalid`
+unhandled runtime exception from new bundle
+```
+
+# STEP 6 — ROLLBACK TRIGGERS
+
+Immediately rollback using the fresh pre-write backup if browser verification finds a deployment-caused critical regression such as:
+
+```text
+page initialization/parser failure
+Employee Search broken
+USER_SELECT invalid runtime error
+stale prior employee remains verified after failed lookup
+0111 still ambiguous due to deployed candidate defect
+Factory Manager incorrectly resolves Section Manager due to deployed candidate defect
+objective grid verification state broken
+```
+
+After rollback:
+
+```text
+poll rollback deployment SUCCESS
+read back restored customization
+verify restored JS/CSS/mobile references match fresh pre-write backup
+report ROLLED_BACK and STOP
+```
+
+Do not attempt an unreviewed hotfix under this authorization.
+
+# STEP 7 — NO ORPHAN / CONFIRMED BASELINE
+
+No new `_old`, `_v1`, duplicate resolver, duplicate deploy script, or duplicate source-of-truth doc.
+
+If deployment/readback establishes a new confirmed live fact, update the appropriate canonical living docs and, where appropriate, `CONFIRMED_BASELINE` only for stable confirmed business/system facts.
 
 # REQUIRED FINAL SUMMARY
 
 ```text
-M10J_APP794_PREDEPLOY = READY_FOR_AUTHORIZATION / BLOCKED
+M10J_D_APP794_CONTROLLED_DEPLOY = SUCCESS / DEPLOYED_AWAITING_USER_BROWSER_SMOKE / ROLLED_BACK / BLOCKED
 
-CONFIRMED_BASELINE_READ_FIRST = YES/NO
-LIVE_APP794_REVISION = actual
-LIVE_CUSTOMIZATION_DRIFT = YES/NO
+USER_AUTHORIZATION = CONFIRMED
+AUTHORIZED_TARGET = APP794 CUSTOMIZATION ONLY
 
-STALE_STATE_FIX_PRESENT = PASS/FAIL
-USER_SELECT_ARRAY_FIX_PRESENT = PASS/FAIL
-0111_PROFILE = actual
-0118_PROFILE = actual
-FACTORY_MANAGER_PROFILE = actual
-CONFIRMED_BASELINE_CONFLICT_COUNT = actual
+PREWRITE_LIVE_REVISION = actual
+PREWRITE_JS_FILE_KEY = actual
+PREWRITE_CSS_FILE_KEY = actual
+PREWRITE_MOBILE = actual
+FRESH_BACKUP_PATH = actual
+FRESH_BACKUP_VERIFIED_RESTORABLE = PASS/FAIL
 
-CLASSIC_BUNDLE_PARSE = PASS/FAIL
-ES_MODULE_IMPORT_COUNT = actual
-ES_MODULE_EXPORT_COUNT = actual
-BROKEN_FROM_RESIDUE_COUNT = actual
+CANDIDATE_JS_SHA256 = actual
+CANDIDATE_CSS_SHA256 = actual
+CANDIDATE_HASH_MATCH_LOCKED = PASS/FAIL
 npm test = actual / PASS
-GIT_DIFF_CHECK = PASS/FAIL
+CLASSIC_BUNDLE_PARSE = PASS/FAIL
+
+DEPLOY_STATUS = actual
+POSTDEPLOY_LIVE_REVISION = actual
+POSTDEPLOY_JS_FILE_KEY = actual
+POSTDEPLOY_CSS_FILE_KEY = actual
+POSTDEPLOY_MOBILE = actual
+
+BROWSER_0118 = PASS/FAIL/NOT_EXECUTED
+BROWSER_0111 = PASS/FAIL/NOT_EXECUTED
+BROWSER_FACTORY_MANAGER = PASS/FAIL/NOT_EXECUTED
+BROWSER_STALE_STATE_FAILURE = PASS/FAIL/NOT_EXECUTED
+BROWSER_CONSOLE = PASS/FAIL/NOT_EXECUTED
+
+ROLLBACK_REQUIRED = YES/NO
+ROLLBACK_RESULT = PASS/FAIL/NOT_REQUIRED
+
+APP794_CUSTOMIZATION_DEPLOY_COUNT = actual
+APP794_SCHEMA_WRITE = 0
+APP794_PROCESS_WRITE = 0
+APP794_RECORD_WRITE = 0
+APP794_ACL_WRITE = 0
+NON_TARGET_KINTONE_WRITES = 0
+
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
-
-CANDIDATE_JS_SIZE = actual
-CANDIDATE_CSS_SIZE = actual
-CANDIDATE_HASH = actual / NOT_AVAILABLE
-
-FRESH_PREWRITE_BACKUP_PLAN = READY/BLOCKED
-ROLLBACK_PLAN = READY/BLOCKED
-POST_DEPLOY_BROWSER_SMOKE_PLAN = READY/BLOCKED
-
-KINTONE_WRITES_THIS_TASK = 0
-APP794_DEPLOY = 0
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = IF ALL PASS, STOP AND REQUEST EXPLICIT USER AUTHORIZATION FOR ONE APP794 CUSTOMIZATION DEPLOY ONLY
+NEXT_ACTION = CHATGPT REVIEW
 ```
 
-Update living docs with factual results if needed.
-Commit and push same branch, then STOP.
+Update factual living docs, commit and push the same branch, then STOP.
 
-Do not deploy App794.
-Do not write any Kintone app.
+Do not perform any additional deployment after the one authorized deployment. Do not modify any Kintone business records.
