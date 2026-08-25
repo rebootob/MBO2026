@@ -160,6 +160,8 @@ export async function executeRoutingSeed({ overrideTransport, overrideManifest }
         Section_Code: { value: item.sectionCode },
         Section_Name: { value: item.sectionName },
         Requester_User: { value: [{ code: item.requesterUser }] },
+        Manager_User: { value: [{ code: 'suthas' }] },
+        GM_User: { value: [{ code: 'somrudee' }] },
         Active: { value: 'Active' }
       }
     };
