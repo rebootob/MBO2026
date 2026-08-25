@@ -34,26 +34,46 @@ const POSITION_TO_PROFILE = new Map([
   ['technical staff', PROFILE_CODES.STAFF_CHIEF],
   ['accounting chief', PROFILE_CODES.STAFF_CHIEF],
   ['design engineer', PROFILE_CODES.STAFF_CHIEF],
+  ['marketing staff', PROFILE_CODES.STAFF_CHIEF],
+  ['operator', PROFILE_CODES.STAFF_CHIEF],
+  ['assistant chief', PROFILE_CODES.STAFF_CHIEF],
+  ['coordinator', PROFILE_CODES.STAFF_CHIEF],
+  ['messenger', PROFILE_CODES.STAFF_CHIEF],
+  ['senior chief', PROFILE_CODES.STAFF_CHIEF],
+  ['trainee', PROFILE_CODES.STAFF_CHIEF],
+  ['cam staff', PROFILE_CODES.STAFF_CHIEF],
+  ['specialist', PROFILE_CODES.STAFF_CHIEF],
+  ['executive management coordinator', PROFILE_CODES.STAFF_CHIEF],
+  ['safety', PROFILE_CODES.STAFF_CHIEF],
+  ['senior specilaist', PROFILE_CODES.STAFF_CHIEF],
+  ['warehouse support', PROFILE_CODES.STAFF_CHIEF],
+  ['driver', PROFILE_CODES.STAFF_CHIEF],
+  ['contract (apite)', PROFILE_CODES.STAFF_CHIEF],
+  ['interpreter', PROFILE_CODES.STAFF_CHIEF],
+  ['warehouse staff', PROFILE_CODES.STAFF_CHIEF],
+  ['safety officer& iso control', PROFILE_CODES.STAFF_CHIEF],
+  ['clerk', PROFILE_CODES.STAFF_CHIEF],
   ['japanese staff', PROFILE_CODES.JAPANESE_STAFF],
   ['expatriate', PROFILE_CODES.JAPANESE_STAFF],
   ['expatriate japanese staff', PROFILE_CODES.JAPANESE_STAFF],
+  ['advisor', PROFILE_CODES.JAPANESE_STAFF],
+  ['contract (japan support)', PROFILE_CODES.JAPANESE_STAFF],
   ['assistant manager', PROFILE_CODES.ASST_MGR],
+  ['assistant section manager', PROFILE_CODES.ASST_MGR],
+  ['asst. section manager', PROFILE_CODES.ASST_MGR],
+  ['design engineer assistant manager', PROFILE_CODES.ASST_MGR],
   ['section manager', PROFILE_CODES.SECTION_MGR],
+  ['manager', PROFILE_CODES.SECTION_MGR],
+  ['co project manager', PROFILE_CODES.SECTION_MGR],
+  ['factory manager', PROFILE_CODES.SECTION_MGR],
   ['senior manager', PROFILE_CODES.SENIOR_MGR],
   ['deputy general manager', PROFILE_CODES.DGM],
   ['general manager', PROFILE_CODES.GM],
-  ['vice president', PROFILE_CODES.VP]
+  ['vice president', PROFILE_CODES.VP],
+  ['president', PROFILE_CODES.VP]
 ]);
 
-const AMBIGUOUS_TITLES = new Set([
-  'marketing staff', 'operator', 'assistant chief', 'assistant section manager',
-  'coordinator', 'asst. section manager', 'messenger', 'advisor', 'senior chief',
-  'president', 'manager', 'trainee', 'cam staff', 'design engineer assistant manager',
-  'co project manager', 'specialist', 'executive management coordinator', 'safety',
-  'senior specilaist', 'warehouse support', 'driver', 'contract (apite)',
-  'contract (japan support)', 'interpreter', 'warehouse staff',
-  'safety officer& iso control', 'clerk', 'factory manager'
-]);
+const AMBIGUOUS_TITLES = new Set([]);
 
 const OUTPUT_FIELDS = [
   'Profile_Code', 'Profile_Family', 'Scoring_Config_Code', 'Scoring_Config_Version',

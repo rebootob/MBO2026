@@ -22,7 +22,7 @@ for (const [label, position, code] of [
 
 test('WP-002B normalizes titles and fails closed for ambiguous/invalid titles', async () => {
   assert.equal(normalizeTitle('  Senior   Manager  '), 'senior manager');
-  await rejects(() => resolve('Assistant Section Manager'), 'PROFILE_RESOLUTION_AMBIGUOUS');
+  assert.equal((await resolve('Assistant Section Manager')).Profile_Code, PROFILE_CODES.ASST_MGR);
   await rejects(() => resolve('Unknown Position'), 'PROFILE_SOURCE_INVALID');
 });
 
@@ -40,8 +40,8 @@ test('WP-002B accepts only unmodified EmployeeService snapshots', async () => {
 });
 
 test('WP-002B ignores caller profile fields and requires caller context', async () => {
-  const employee = await snapshot('Manager'); employee.Profile_Code = PROFILE_CODES.GM; employee.Profile_Family = 'PROFILE_EXECUTIVE';
-  await rejects(() => resolveProfileScoringConfig({ employeeSnapshot: employee, fiscalYear: 'FY2026', effectiveDate: '2026-08-24', masterConfigRecords: configRecords(), authenticatedContext: AUTHENTICATED }), 'PROFILE_RESOLUTION_AMBIGUOUS');
+  const employee = await snapshot('Unknown Position'); employee.Profile_Code = PROFILE_CODES.GM; employee.Profile_Family = 'PROFILE_EXECUTIVE';
+  await rejects(() => resolveProfileScoringConfig({ employeeSnapshot: employee, fiscalYear: 'FY2026', effectiveDate: '2026-08-24', masterConfigRecords: configRecords(), authenticatedContext: AUTHENTICATED }), 'PROFILE_SOURCE_INVALID');
   const staffSnapshot = await snapshot('Staff');
   await rejects(() => resolveProfileScoringConfig({ employeeSnapshot: staffSnapshot, fiscalYear: 'FY2026', effectiveDate: '2026-08-24', masterConfigRecords: configRecords() }), 'AUTHENTICATED_CONTEXT_REQUIRED');
 });
