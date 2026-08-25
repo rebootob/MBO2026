@@ -279,3 +279,12 @@
      - **Section Manager and Above:** Part A Objectives **50%** / Part B Competencies **50%**
   2. **Assistant Manager 60/40 Confirmation:** `PROF_ASST_MGR` 60/40 ratio is confirmed. Generic 50/50 references for Assistant Manager are superseded.
   3. **Section Manager and Above Scope:** Includes Section Manager, Senior Manager, DGM, GM, and VP profiles.
+
+## ACR-002 — Delivery-Day Acceleration of DEC-034 Routing Seed Boundary
+- **Date**: 2026-08-25
+- **Status**: PROPOSED / USER APPROVAL REQUIRED
+- **Decision & Proposed Scope**:
+  1. **No Business Architecture Change:** Accelerates the seed schedule for the remaining 11 enterprise requester routing mappings in App 795 without altering business routing rules or DEC-019 twin-status engine.
+  2. **Preserve Pilot Baseline:** Preserves existing TME1 pilot mapping (`TME1 -> e1`) verified on live App 795.
+  3. **TMT3 Exclusion:** `TMT3` remains RETIRED and MUST NOT BE SEEDED.
+  4. **User Approval Required:** ZERO App 795 writes occur until the User explicitly approves ACR-002.
