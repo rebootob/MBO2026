@@ -27,7 +27,15 @@
 | **Stage 4A Final Evidence Commit** | `2a0c4b774ff3e04912769c11664b5aba0ee91ae1` | `docs: finalize wp-002c stage4a review evidence` |
 | **Stage 4A Timezone Exactness Code** | `4cf9374fcbbd8e164cd8e0f49745d3e4f34547f2` | `fix: correct scoring config timezone capture exactness` |
 | **Stage 4A Exactness Evidence Docs** | `7cdc1f97976b2cbdb48f55e0d338de53bae0c343` | `docs: finalize wp-002c stage4a exactness evidence` |
-| **Stage 4A Final Doc Closure** | *(Review Head)* | `docs: close wp-002c stage4a evidence consistency` |
+| **Stage 4A Final Doc Closure** | `b8f4771b5d31361c6cf85c91b3809ebd5cd3d993` | `docs: close wp-002c stage4a evidence consistency` |
+| **Stage 4A Closure / Stage 4B Authorization** | `f24f247cc22a5b73ad855047d33c2cdb591b41b7` | `docs: close wp-002c stage4a review gate` |
+| **Stage 4B Repository Implementation** | `ab162b3e530b0e87f76ecc46589cd117e1ac8c6c` | `feat: add scoring config kintone repository foundation` |
+| **Stage 4B First-Pass Evidence** | `7fbd9e8ec555198933a8e1fffb302e59b4ea8286` | `docs: record wp-002c stage4b repository foundation` |
+| **Stage 4B Repository Hardening** | `5b71558edf7a781e5b0bc7e1f5d6d266b9ca8cb6` | `fix: harden scoring config kintone repository exactness` |
+| **Stage 4B Hardening Evidence** | `ec122945856e87fdee84bb20571aaa9ef68f0039` | `docs: record wp-002c stage4b repository hardening` |
+| **Stage 4B Final Exactness Correction** | `ac9ce5dce2ffa2a45cab44a88c46cf7bd6215465` | `fix: finalize scoring config repository storage exactness` |
+| **Stage 4B Final Correction Evidence** | `b69e2d1d7fa396ddcabbb7df5f789674fc034158` | `docs: finalize wp-002c stage4b repository evidence` |
+| **Stage 4B Final Doc Closure Attempt** | `ad87defbfa7f072406e7795b50f310c3ee40dc0b` | `docs: close wp-002c stage4b review evidence` |
 
 ## 2. Gate Summary
 
