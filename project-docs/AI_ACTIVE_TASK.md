@@ -1,63 +1,46 @@
-# AI ACTIVE TASK — ANTIGRAVITY STAGE 3C-R1 BACKUP PROVENANCE RECONCILIATION
+# AI ACTIVE TASK — ANTIGRAVITY STAGE 3C-R1 EVIDENCE BLOCKER DOC ALIGNMENT
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Required starting HEAD:** `e57c2e3b0fe3815183984893b394f5e93a341c1e`
+> **Required starting HEAD:** `f9ec168d3a83a33435b754adcba7083e67a5c35e`
 > **Target App:** 796
-> **Mode:** LOCAL FORENSIC EVIDENCE RECONCILIATION + DOC CORRECTION ONLY
+> **Mode:** LIVING-DOC CONSISTENCY ONLY
 > **Source code changes:** FORBIDDEN
 > **Kintone calls:** ZERO
 > **Kintone writes:** ZERO
 
 ## INDEPENDENT REVIEW RESULT
 
-The final verifier correction passed:
+The forensic reconciliation is accepted:
 
 ```text
+forensic commit = f9ec168d3a83a33435b754adcba7083e67a5c35e
+source code changes = 0
+R1 genuine pre-write snapshot capture = evidenced in local execution transcript
+R1 durable pre-write artifact = deleted after repair
+R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE
+23:22 backup = Stage 3C schema-creation backup only; NOT R1 backup
 OPTION_LABEL_EXACTNESS_GATE = PASS
 OPTION_INDEX_EXACTNESS_GATE = PASS
-KNOWN_DEFECT_EXACT_GATE = PASS (code semantics)
 REPAIR_PAYLOAD_IMMUTABILITY_GATE = PASS
-ZERO_KINTONE_FINAL_CORRECTION_GATE = PASS
 REGRESSION_GATE = PASS (243/243)
-GIT commit ordering = PASS
+current App 796 state from latest GET-only reconciliation = LIVE_DEPLOYED / DOMAIN_ALIGNED / CREATOR_ONLY / RECORD_COUNT 0
 ```
 
-One evidence blocker remains.
+The remaining problem is living-document inconsistency.
 
-## BLOCKER — THE CURRENTLY CITED BACKUP IS NOT A STAGE 3C-R1 PRE-WRITE BACKUP
-
-Current review metadata cites:
+`AI_REVIEW_PACKAGE.md` correctly records:
 
 ```text
-scratch/app796_stage3c_pre_write_backup.json
-Timestamp = 2026-08-24T23:22:36.590Z
-SHA-256 = ce6429e6f7152601715488c791c1fe7ecbba75599c1e6c4aac93ae767466cefa
+WP002C_STAGE3C_GATE = BLOCKED / R1_PREWRITE_BACKUP_UNVERIFIABLE
+NEXT_ACTION = CONTROL PLANE DECISION REQUIRED: STRICT BLOCK OR EXPLICIT EVIDENCE-RISK ACCEPTANCE
 ```
 
-Git chronology proves:
+But `CURRENT_STATE.md`, `HANDOFF.md`, and `IMPLEMENTATION_STATUS.md` still present Stage 3C-R1 as merely `REPAIR COMPLETE / PENDING REVIEW` and do not surface the evidence blocker consistently.
 
-```text
-Stage 3C schema implementation commit 41ad63d created_at = 2026-08-24T23:20:44Z
-Cited backup timestamp = 2026-08-24T23:22:36.590Z
-Stage 3C-R1 repair implementation commit 4bef27e created_at = 2026-08-24T23:53:27Z
-Stage 3C-R1 evidence commit d38a965 created_at is after the repair execution
-```
-
-Therefore the cited 23:22 backup predates Stage 3C-R1 by ~31 minutes and is consistent with the original Stage 3C schema-creation backup, not the required R1 dropdown-repair pre-write backup.
-
-This is also consistent with the strict recheck result:
-
-```text
-HISTORICAL_PREVIEW_DEFECT_EXACT_STRICT = PASS
-HISTORICAL_LIVE_DEFECT_EXACT_STRICT = FAIL (0/23 planned fields)
-```
-
-A genuine Stage 3C-R1 pre-write state should have had the 23-field prefixed defect in both live and preview immediately before repair.
-
-Do not relabel the old Stage 3C backup as an R1 backup.
+This task aligns all living docs. It does NOT change the current live Kintone state and does NOT authorize risk acceptance.
 
 # STEP 0 — GIT SAFETY
 
@@ -75,70 +58,13 @@ Required:
 
 ```text
 branch = ai/antigravity-wp002c
-HEAD = e57c2e3b0fe3815183984893b394f5e93a341c1e
+HEAD = f9ec168d3a83a33435b754adcba7083e67a5c35e
 local HEAD = remote HEAD
 ```
 
 Do not reset/rebase/stash/force-push automatically.
 
-# STEP 1 — LOCAL FORENSIC SEARCH ONLY
-
-Do not use `.env.local`.
-Do not call Kintone.
-Do not create a new backup.
-Do not modify any existing backup artifact.
-
-Search existing local project backup/scratch/log/history artifacts for a genuine Stage 3C-R1 pre-write snapshot or backup evidence created **after the repair implementation commit was available and before the R1 PUT was sent**.
-
-Use all available safe local evidence, such as:
-
-- file creation/modification timestamps
-- existing scratch/secure-backup manifests
-- existing local execution logs
-- shell/command logs if already recorded by project tooling
-- hashes already recorded locally
-- backup payload metadata
-
-Do not search external services and do not expose credentials.
-
-A candidate counts as genuine R1 pre-write backup only if provenance establishes it belongs to the R1 repair window and its saved state represents App 796 immediately before the dropdown PUT.
-
-## If a genuine R1 backup is found
-
-Record only safe metadata:
-
-```text
-R1_PREWRITE_BACKUP_PROVENANCE = PASS
-R1_PREWRITE_BACKUP_FILENAME_OR_ID = <safe identifier>
-R1_PREWRITE_BACKUP_TIMESTAMP = <timestamp>
-R1_PREWRITE_BACKUP_SHA256 = <hash>
-```
-
-Run the current strict verifier locally against every live/preview form-field payload contained in that actual R1 backup.
-
-Required for Gate PASS:
-
-```text
-R1_PREWRITE_LIVE_DEFECT_EXACT_STRICT = PASS
-R1_PREWRITE_PREVIEW_DEFECT_EXACT_STRICT = PASS
-```
-
-If either payload is absent or fails, provenance gate does not pass.
-
-## If no genuine R1 backup can be proven
-
-Record exactly:
-
-```text
-R1_PREWRITE_BACKUP_PROVENANCE = UNVERIFIABLE
-PREWRITE_BACKUP_GATE = UNVERIFIABLE
-```
-
-Do not create/recreate a backup now.
-Do not reuse the 23:22 Stage 3C backup as R1 evidence.
-Do not claim PASS.
-
-# STEP 2 — CORRECT LIVING EVIDENCE
+# STEP 1 — ALIGN LIVING DOCUMENTS
 
 Allowed files only:
 
@@ -148,54 +74,92 @@ Allowed files only:
 - `project-docs/IMPLEMENTATION_STATUS.md`
 - `project-docs/CHANGELOG_AI.md`
 
-Correct any current statement that labels the 23:22 backup as Stage 3C-R1 pre-write evidence.
+No source/config/test file may change.
 
-Preserve the 23:22 artifact accurately as historical **Stage 3C schema-creation backup evidence** if appropriate.
-
-Preserve these accepted facts:
+All current operational sections must consistently record:
 
 ```text
-App 796 current state = LIVE_DEPLOYED
+Active AI = Antigravity
+Branch = ai/antigravity-wp002c
+App 796 = LIVE_DEPLOYED
+ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY
+SCHEMA_STATUS = CONFIGURED_23_FIELDS
 SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED
-Current reconciliation = GET_ONLY PASS
-Current record count = 0
-ACL = CREATOR_ONLY / DEFAULT DENY
-Historical R1 PUT = 1
-Historical R1 Deploy POST = 1
-Final verifier task Kintone calls/writes = 0
-Tests = 243/243 PASS unless local npm test count changes
-Publish pipeline = NOT_DEPLOYED
-Baseline seed = NOT_STARTED
+CORRECTION_REQUIRED_FIELDS = NONE
+RECORD_COUNT = 0
+BASELINE_SEED_STATUS = NOT_STARTED
+PUBLISH_PIPELINE_STATUS = NOT_DEPLOYED
 WP-002D = NOT STARTED
-```
-
-If genuine R1 backup provenance passes, record the safe R1 backup ID/hash and both strict live/preview results.
-
-If provenance is unverified, record:
-
-```text
+Tests = 243/243 PASS
+Historical R1 FORM FIELDS PUT = 1
+Historical R1 DEPLOY POST = 1
+R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE
+R1_PREWRITE_LIVE_DEFECT_GATE = UNVERIFIABLE
+R1_PREWRITE_PREVIEW_DEFECT_GATE = UNVERIFIABLE
 WP002C_STAGE3C_GATE = BLOCKED / R1_PREWRITE_BACKUP_UNVERIFIABLE
 NEXT_ACTION = CONTROL PLANE DECISION REQUIRED: STRICT BLOCK OR EXPLICIT EVIDENCE-RISK ACCEPTANCE
 ```
 
-Do not self-authorize an exception.
+Also record the forensic explanation succinctly:
+
+```text
+A genuine R1 pre-write snapshot was captured immediately before the repair PUT but deleted by post-repair cleanup before evidence commit. No durable R1 backup artifact survives. The 23:22Z backup is the earlier Stage 3C schema-creation backup and must not be treated as R1 evidence.
+```
+
+Do not remove or rewrite historical evidence logs. Correct only current/living status sections and add a short forensic note where appropriate.
+
+Do not claim that the live schema is broken. The blocker is evidence/governance provenance, not current Kintone state.
+
+# STEP 2 — VALIDATION
 
 Run:
 
 ```bash
 git diff --check
 npm test
+git diff --name-only
 ```
 
-No source code file may change.
+Required:
+
+```text
+npm test = 243/243 PASS, unless the unchanged suite reports another valid total
+changed files = living docs only
+source/config/test changes = 0
+Kintone calls = 0
+```
+
+# STEP 3 — COMMIT / PUSH
 
 Commit exactly:
 
 ```text
-docs: reconcile wp-002c r1 backup provenance
+docs: align wp-002c r1 evidence blocker state
 ```
 
-Push only to `origin/ai/antigravity-wp002c`, verify local HEAD = remote HEAD and tracked working tree clean, then STOP.
+Push only to:
+
+```text
+origin/ai/antigravity-wp002c
+```
+
+Verify:
+
+```bash
+git fetch origin
+git rev-parse HEAD
+git rev-parse origin/ai/antigravity-wp002c
+git status --short
+```
+
+Required:
+
+```text
+local HEAD = remote HEAD
+tracked working tree clean
+```
+
+STOP.
 
 # KINTONE BOUNDARY
 
@@ -207,36 +171,32 @@ DELETE = 0
 DEPLOY = 0
 ```
 
-No `.env.local`.
-No App 796 access.
-No repair retry.
-No seed.
-No publish pipeline.
-No WP-002D.
+Do not use `.env.local`.
+Do not access App 796.
+Do not repeat repair.
+Do not create/recreate a historical backup.
+Do not seed records.
+Do not start publish pipeline.
+Do not start WP-002D.
 
 # REVIEW EXPECTATION
 
 ChatGPT will verify:
 
-1. No source code changes.
-2. Zero Kintone calls/writes.
-3. The 23:22 backup is no longer mislabeled as R1 evidence.
-4. Any newly claimed R1 backup has chronological/provenance evidence from the actual R1 repair window.
-5. A PASS requires both saved live and saved preview states to pass the strict known-defect verifier.
-6. If no genuine R1 backup exists, docs say UNVERIFIABLE rather than inventing evidence.
-7. Current live DOMAIN_ALIGNED / zero-record state remains accurately recorded from the prior GET-only reconciliation.
-8. 243/243 or current full test suite passes.
-9. Git local/remote sync passes.
+1. Exactly one docs-only commit after this task.
+2. No source/config/test changes.
+3. Zero Kintone calls/writes.
+4. `CURRENT_STATE.md`, `HANDOFF.md`, `AI_REVIEW_PACKAGE.md`, and `IMPLEMENTATION_STATUS.md` all expose the same Stage 3C evidence-blocker state.
+5. The 23:22 backup is not mislabeled as R1 evidence anywhere in current operational sections.
+6. Current App 796 state remains accurately recorded as DOMAIN_ALIGNED / zero records / Creator-only.
+7. Tests pass and Git sync passes.
+8. No seed/publish/WP-002D work starts.
 
 Expected gates:
 
-- `OPTION_LABEL_EXACTNESS_GATE = PASS`
-- `OPTION_INDEX_EXACTNESS_GATE = PASS`
-- `REPAIR_PAYLOAD_IMMUTABILITY_GATE = PASS`
-- `R1_PREWRITE_BACKUP_PROVENANCE_GATE = PASS / UNVERIFIABLE / FAIL`
-- `R1_PREWRITE_LIVE_DEFECT_GATE = PASS / UNVERIFIABLE / FAIL`
-- `R1_PREWRITE_PREVIEW_DEFECT_GATE = PASS / UNVERIFIABLE / FAIL`
-- `ZERO_KINTONE_PROVENANCE_TASK_GATE = PASS / FAIL`
+- `DOC_CONSISTENCY_GATE = PASS / FAIL`
+- `ZERO_KINTONE_DOC_ALIGNMENT_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
 - `GIT_PUSH_SYNC_GATE = PASS / FAIL`
-- `WP002C_STAGE3C_GATE = PASS / BLOCKED`
+- `R1_PREWRITE_BACKUP_PROVENANCE_GATE = UNVERIFIABLE`
+- `WP002C_STAGE3C_GATE = BLOCKED / R1_PREWRITE_BACKUP_UNVERIFIABLE`
