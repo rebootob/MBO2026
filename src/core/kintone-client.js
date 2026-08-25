@@ -1162,3 +1162,85 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
     throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
   };
 }
+export async function verifyScoringConfigReadOnlyLivePreflight({ transport = kintoneRequest } = {}) {
+  if (!transport || typeof transport !== 'function') {
+    throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+  }
+
+  const appId = WP002C_SCORING_MASTER_APP_ID;
+  const appName = WP002C_APPROVED_APP_NAME;
+
+  try {
+    const liveSettings = await transport(`/k/v1/app/settings.json?app=${appId}`, { method: 'GET' });
+    if (!isPlainObject(liveSettings) || liveSettings.name !== appName || !isNumericRevision(liveSettings.revision)) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+    const liveSettingsRevision = liveSettings.revision;
+
+    const previewSettings = await transport(`/k/v1/preview/app/settings.json?app=${appId}`, { method: 'GET' });
+    if (!isPlainObject(previewSettings) || previewSettings.name !== appName || !isNumericRevision(previewSettings.revision)) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+    const previewSettingsRevision = previewSettings.revision;
+
+    const liveFields = await transport(`/k/v1/app/form/fields.json?app=${appId}`, { method: 'GET' });
+    if (!isPlainObject(liveFields) || !isNumericRevision(liveFields.revision) || !isPlainObject(liveFields.properties)) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+    assertExact23FieldSchema(liveFields.properties, 'STAGE4D_READ_PREFLIGHT_FAILED');
+    const liveFieldsRevision = liveFields.revision;
+
+    const previewFields = await transport(`/k/v1/preview/app/form/fields.json?app=${appId}`, { method: 'GET' });
+    if (!isPlainObject(previewFields) || !isNumericRevision(previewFields.revision) || !isPlainObject(previewFields.properties)) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+    assertExact23FieldSchema(previewFields.properties, 'STAGE4D_READ_PREFLIGHT_FAILED');
+    const previewFieldsRevision = previewFields.revision;
+
+    const liveAcl = await transport(`/k/v1/app/acl.json?app=${appId}`, { method: 'GET' });
+    if (!isPlainObject(liveAcl)) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+    assertCreatorOnlyAcl(liveAcl, 'STAGE4D_READ_PREFLIGHT_FAILED');
+    const liveAclRevision = liveAcl.revision;
+
+    const previewAcl = await transport(`/k/v1/preview/app/acl.json?app=${appId}`, { method: 'GET' });
+    if (!isPlainObject(previewAcl)) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+    assertCreatorOnlyAcl(previewAcl, 'STAGE4D_READ_PREFLIGHT_FAILED');
+    const previewAclRevision = previewAcl.revision;
+
+    const bridge = createScoringConfigRepositoryRequestBridge({ transport });
+    const recordsRes = await bridge({
+      method: 'GET',
+      path: '/k/v1/records.json',
+      params: {
+        app: appId,
+        query: 'limit 1'
+      }
+    });
+
+    if (!isPlainObject(recordsRes) || !Array.isArray(recordsRes.records) || recordsRes.records.length !== 0) {
+      throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+    }
+
+    return {
+      appId,
+      appName,
+      liveSettingsRevision,
+      previewSettingsRevision,
+      liveFieldsRevision,
+      previewFieldsRevision,
+      liveAclRevision,
+      previewAclRevision,
+      plannedFieldCount: 23,
+      liveAclStatus: 'CREATOR_ONLY',
+      previewAclStatus: 'CREATOR_ONLY',
+      recordCount: 0,
+      repositoryBridgeGetVerified: true
+    };
+  } catch {
+    throw new Error('STAGE4D_READ_PREFLIGHT_FAILED');
+  }
+}
