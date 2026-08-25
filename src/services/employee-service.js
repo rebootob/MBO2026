@@ -6,7 +6,7 @@ import { isValidEmployeeCode } from '../core/fiscal-year-engine.js';
 
 const SNAPSHOT_FIELDS = [
   'Employee_Code', 'Employee_Name', 'Employee_Name_TH', 'Employee_Department',
-  'Employee_Section', 'Employee_Position', 'Employee_Email', 'Employee_Start_Date'
+  'Employee_Section', 'Team', 'Employee_Position', 'Employee_Email', 'Employee_Start_Date'
 ];
 const verifiedSnapshotFingerprints = new WeakMap();
 
@@ -153,13 +153,14 @@ export class EmployeeService {
       );
     }
 
-    // 8. Return and register the 8 header snapshot fields (Hoshin excluded).
+    // 8. Return and register the 9 header snapshot fields (Hoshin excluded).
     const employee = {
       Employee_Code: canonicalCode,
       Employee_Name: emp.Text?.value || '',
       Employee_Name_TH: emp.Text_0?.value || '',
       Employee_Department: emp.Drop_down_0?.value || '',
       Employee_Section: emp.Drop_down?.value || '',
+      Team: emp.Drop_down_2?.value || emp.Team?.value || '',
       Employee_Position: emp.Text_2?.value || '',
       Employee_Email: emp.Text_4?.value || '',
       Employee_Start_Date: emp.Date?.value || ''

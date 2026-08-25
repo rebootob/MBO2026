@@ -6,24 +6,45 @@
 export class RoutingService {
   /**
    * Validate current user access and resolve sequential routing topology from App 795
+   * Supports Team-aware routing keys (Section_Code|Team) for TMG sections
    * @param {number} routingAppId
    * @param {string} sectionCode
+   * @param {string} teamCode
    * @param {string} loginUserCode
    * @param {Object} kintoneApi
    * @returns {Object} Full Sequential Routing Profile
    */
-  static async validateRequesterAccess(routingAppId, sectionCode, loginUserCode, kintoneApi) {
+  static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi) {
     const cleanSection = String(sectionCode || '').trim();
+    const cleanTeam = String(teamCode || '').trim();
+
     if (!cleanSection) {
       throw new Error('ไม่พบข้อมูล Section ของพนักงาน กรุณาตรวจสอบ Employee Master (App 53)\nEmployee section is missing in Employee Master.');
     }
 
-    const query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 2`;
-    const resp = await kintoneApi.getRecords(routingAppId, query);
-    const records = resp?.records || [];
+    const primaryRoutingKey = cleanTeam ? `${cleanSection}|${cleanTeam}` : cleanSection;
 
+    // 1. Primary Query by Routing_Key
+    let query = `Routing_Key = "${primaryRoutingKey}" and Active in ("Active") limit 2`;
+    let resp = await kintoneApi.getRecords(routingAppId, query);
+    let records = resp?.records || [];
+
+    // 2. Fallback Query by Section_Code if team-aware key returned no records
+    if (records.length === 0 && cleanTeam) {
+      query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 2`;
+      resp = await kintoneApi.getRecords(routingAppId, query);
+      records = resp?.records || [];
+    }
+
+    // 3. Fail-Closed: Routing Not Found
     if (records.length === 0) {
-      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${cleanSection} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nRouting configuration for section ${cleanSection} was not found in Routing Master.`);
+      const targetLabel = cleanTeam ? `${cleanSection} / Team ${cleanTeam}` : cleanSection;
+      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${targetLabel} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nRouting configuration for section ${targetLabel} was not found in Routing Master.`);
+    }
+
+    // 4. Fail-Closed: Duplicate Active Routing Key
+    if (records.length > 1) {
+      throw new Error(`พบข้อมูล Routing ซ้ำซ้อนสำหรับ Routing Key ${primaryRoutingKey} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nDuplicate active routing records found for key ${primaryRoutingKey} in Routing Master.`);
     }
 
     const route = records[0];
@@ -61,6 +82,7 @@ export class RoutingService {
     }
 
     return {
+      Routing_Key: route.Routing_Key?.value || primaryRoutingKey,
       Requester_User: requesters,
       Manager_Level1_Approvers: mgrL1,
       Manager_Level1_Approval_Rule: mgrL1Rule,

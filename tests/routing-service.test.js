@@ -19,7 +19,7 @@ test('Routing Topology: M1_G1 when Manager L2 and GM L2 are blank (Pilot TME1, D
     })
   };
 
-  const routing = await RoutingService.validateRequesterAccess(795, 'TME1', 'e1', mockApi);
+  const routing = await RoutingService.validateRequesterAccess(795, 'TME1', null, 'e1', mockApi);
   assert.equal(routing.Routing_Topology, 'M1_G1');
   assert.equal(routing.Has_Manager_Level2, 'No');
   assert.equal(routing.Has_GM_Level2, 'No');
@@ -46,7 +46,7 @@ test('Routing Topology: M1_M2_G1 when Manager L2 is present and GM L2 is blank',
     })
   };
 
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', 'f1', mockApi);
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', null, 'f1', mockApi);
   assert.equal(routing.Routing_Topology, 'M1_M2_G1');
   assert.equal(routing.Has_Manager_Level2, 'Yes');
   assert.equal(routing.Has_GM_Level2, 'No');
@@ -70,7 +70,7 @@ test('Routing Topology: M1_G1_G2 when Manager L2 is blank and GM L2 is present',
     })
   };
 
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMT1', 't1', mockApi);
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMT1', null, 't1', mockApi);
   assert.equal(routing.Routing_Topology, 'M1_G1_G2');
   assert.equal(routing.Has_Manager_Level2, 'No');
   assert.equal(routing.Has_GM_Level2, 'Yes');
@@ -90,11 +90,49 @@ test('Routing Topology: M1_M2_G1_G2 full 4-stage sequential approval with defaul
     })
   };
 
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMS1', 's1', mockApi);
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMS1', null, 's1', mockApi);
   assert.equal(routing.Routing_Topology, 'M1_M2_G1_G2');
   assert.equal(routing.Has_Manager_Level2, 'Yes');
   assert.equal(routing.Has_GM_Level2, 'Yes');
   assert.equal(routing.Manager_Level1_Approvers.length, 2);
   assert.equal(routing.Manager_Level1_Approval_Rule, 'ALL');
   assert.equal(routing.GM_Level2_Approval_Rule, 'ALL');
+});
+
+test('Routing Topology: TMG Team-Aware Routing_Key resolution (TMG1 + Admin)', async () => {
+  let queriedQuery = '';
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      queriedQuery = query;
+      return {
+        records: [{
+          Routing_Key: { value: 'TMG1|Admin' },
+          Requester_User: { value: [{ code: 'g_request' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'narumol' }] },
+          GM_Level1_Approvers: { value: [{ code: 'nagase' }] }
+        }]
+      };
+    }
+  };
+
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMG1', 'Admin', 'g_request', mockApi);
+  assert.equal(queriedQuery.includes('Routing_Key = "TMG1|Admin"'), true);
+  assert.equal(routing.Routing_Key, 'TMG1|Admin');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'narumol');
+});
+
+test('Routing Topology: Duplicate Routing_Key fails closed', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [
+        { Requester_User: { value: [{ code: 'u1' }] } },
+        { Requester_User: { value: [{ code: 'u2' }] } }
+      ]
+    })
+  };
+
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMG1', 'Admin', 'u1', mockApi),
+    /พบข้อมูล Routing ซ้ำซ้อนสำหรับ Routing Key TMG1\|Admin/
+  );
 });

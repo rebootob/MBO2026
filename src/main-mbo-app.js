@@ -8,6 +8,7 @@ import { EmployeePartAUI } from './ui/employee-part-a-ui.js';
 import { ValidationEngine } from './validation/validation-engine.js';
 import { EmployeeService } from './services/employee-service.js';
 import { RoutingService } from './services/routing-service.js';
+import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
 
 (function () {
   'use strict';
@@ -16,6 +17,7 @@ import { RoutingService } from './services/routing-service.js';
 
   const ROUTING_APP_ID = 795;
   const EMPLOYEE_APP_ID = 53;
+  const SCORING_APP_ID = 796;
 
   let activeUiInstance = null;
 
@@ -133,18 +135,55 @@ import { RoutingService } from './services/routing-service.js';
       },
       onLookupEmployee: async (empCode) => {
         // Step 1: Employee Lookup from App 53 (Read-Only)
-        const empProfile = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
+        const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
+        const empProfile = empLookupRes.employee || empLookupRes;
 
-        // Step 2: Routing Validation from App 795
+        // Step 2: Routing Validation from App 795 (Team-Aware)
         const loginUser = kintone.getLoginUser();
-        const routing = await RoutingService.validateRequesterAccess(ROUTING_APP_ID, empProfile.Employee_Section, loginUser.code, kintoneApiWrapper);
+        const routing = await RoutingService.validateRequesterAccess(
+          ROUTING_APP_ID,
+          empProfile.Employee_Section,
+          empProfile.Team,
+          loginUser.code,
+          kintoneApiWrapper
+        );
 
-        // Step 3: Record Key & Duplicate Check
+        // Step 3: Published Scoring Configuration Lookup from App 796
         const fy = record.Fiscal_Year?.value || 'FY2026';
+        let scoringConfig = null;
+        try {
+          const profileCode = resolveProfileCode(empProfile);
+          const scoringQuery = `Profile_Code = "${profileCode}" and Config_Status in ("PUBLISHED") and Fiscal_Year = "${fy}" limit 2`;
+          const scoringRes = await kintoneApiWrapper.getRecords(SCORING_APP_ID, scoringQuery);
+          const scoringRecords = scoringRes?.records || [];
+
+          if (scoringRecords.length === 0) {
+            throw new Error(`ไม่พบการตั้งค่า Scoring Master (App 796) ที่สถานะ PUBLISHED สำหรับตำแหน่ง ${empProfile.Employee_Position} (${profileCode}) ใน ${fy}\nPublished scoring configuration was not found in App 796 for position ${empProfile.Employee_Position} (${profileCode}) in ${fy}.`);
+          }
+          if (scoringRecords.length > 1) {
+            throw new Error(`พบการตั้งค่า Scoring Master (App 796) ซ้ำซ้อนสำหรับโปรไฟล์ ${profileCode} ใน ${fy}\nDuplicate published scoring configurations found in App 796 for profile ${profileCode} in ${fy}.`);
+          }
+
+          const scRec = scoringRecords[0];
+          scoringConfig = {
+            Profile_Code: profileCode,
+            PartA_Weight: scRec.PartA_Weight?.value ? Number(scRec.PartA_Weight.value) : undefined,
+            PartB_Weight: scRec.PartB_Weight?.value ? Number(scRec.PartB_Weight.value) : undefined,
+            Part_A_Scoring_Mode: scRec.Part_A_Scoring_Mode?.value || '',
+            Competency_Set_Code: scRec.Competency_Set_Code?.value || '',
+            Configuration_Hash: scRec.Configuration_Hash?.value || ''
+          };
+        } catch (scoringErr) {
+          console.warn('[MBO V2] Scoring resolution info:', scoringErr.message);
+          // Re-throw if it's a fail-closed error
+          throw scoringErr;
+        }
+
+        // Step 4: Record Key & Duplicate Check
         const generatedKey = buildRecordKey(fy, empProfile.Employee_Code);
         await EmployeeService.checkDuplicateMBO(getMboAppId(), fy, empProfile.Employee_Code, record.$id?.value, kintoneApiWrapper);
 
-        // Step 4: Snapshot data safely into record in-memory
+        // Step 5: Snapshot data safely into record in-memory
         const fieldsToSync = {
           Employee_Code: empProfile.Employee_Code,
           Employee_Name: empProfile.Employee_Name,
@@ -174,6 +213,15 @@ import { RoutingService } from './services/routing-service.js';
           Fiscal_Year: fy,
           Record_Key: generatedKey
         };
+
+        if (scoringConfig) {
+          if (scoringConfig.Profile_Code) fieldsToSync.Profile_Code = scoringConfig.Profile_Code;
+          if (scoringConfig.PartA_Weight !== undefined) fieldsToSync.PartA_Weight = scoringConfig.PartA_Weight;
+          if (scoringConfig.PartB_Weight !== undefined) fieldsToSync.PartB_Weight = scoringConfig.PartB_Weight;
+          if (scoringConfig.Part_A_Scoring_Mode) fieldsToSync.Part_A_Scoring_Mode = scoringConfig.Part_A_Scoring_Mode;
+          if (scoringConfig.Competency_Set_Code) fieldsToSync.Competency_Set_Code = scoringConfig.Competency_Set_Code;
+          if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
+        }
 
         Object.entries(fieldsToSync).forEach(([k, val]) => {
           if (record[k]) {
