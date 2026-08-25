@@ -302,12 +302,25 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
       record.Record_Key.value = recordKey;
     }
 
-    // 4. Duplicate Check Guard
+    // 4. Duplicate Check Guard (Fail-Closed)
     try {
       const currentId = record.$id?.value;
       const query = `Record_Key = "${recordKey}" ${currentId ? `and $id != "${currentId}"` : ''}`;
       const duplicateRes = await kintoneApiWrapper.getRecords(getMboAppId(), query);
-      if (duplicateRes.records && duplicateRes.records.length > 0) {
+
+      if (!duplicateRes || typeof duplicateRes !== 'object' || !Array.isArray(duplicateRes.records)) {
+        if (activeUiInstance) {
+          activeUiInstance.showValidationErrors([{
+            field: 'Employee_Code',
+            messageTH: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator',
+            messageEN: 'Unable to verify record uniqueness. Please try again or contact HR / Administrator.',
+            message: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator'
+          }]);
+        }
+        return false;
+      }
+
+      if (duplicateRes.records.length > 0) {
         if (activeUiInstance) {
           activeUiInstance.showValidationErrors([{
             field: 'Employee_Code',
@@ -320,6 +333,15 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
       }
     } catch (err) {
       console.error('[MBO V2] Duplicate check error:', err);
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors([{
+          field: 'Employee_Code',
+          messageTH: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator',
+          messageEN: 'Unable to verify record uniqueness. Please try again or contact HR / Administrator.',
+          message: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator'
+        }]);
+      }
+      return false;
     }
 
     // 5. Stage Business Rule Validation

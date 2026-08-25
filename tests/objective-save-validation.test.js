@@ -71,7 +71,7 @@ test('M10L: Valid verified record + 4 objectives + 100% total weight passes vali
   assert.equal(res.fieldErrors.length, 0);
 });
 
-test('M10L: Missing Profile_Code or Routing blocks save', () => {
+test('M10L-R1: Missing Profile_Code, Routing_Topology, or empty Requester_User [] blocks save', () => {
   const noProfileRecord = createMockRecord({ Profile_Code: { value: '' } });
   const res1 = ValidationEngine.validate(noProfileRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(res1.isValid, false);
@@ -81,6 +81,17 @@ test('M10L: Missing Profile_Code or Routing blocks save', () => {
   const res2 = ValidationEngine.validate(noRoutingRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(res2.isValid, false);
   assert.ok(res2.fieldErrors.some(e => e.field === 'Employee_Code'));
+
+  const emptyRequesterRecord = createMockRecord({ Requester_User: { value: [] } });
+  const res3 = ValidationEngine.validate(emptyRequesterRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res3.isValid, false);
+  assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
+});
+
+test('M10L-R1: Requester_User populated array allows validation when other fields valid', () => {
+  const validRecord = createMockRecord({ Requester_User: { value: [{ code: 's1' }] } });
+  const res = ValidationEngine.validate(validRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res.isValid, true);
 });
 
 test('M10L: Missing Objective text blocks save', () => {
@@ -136,6 +147,51 @@ test('M10L: Hidden/inactive objective rows are cleared and do not leak into reco
   assert.equal(record.Weight_3.value, '');
   assert.equal(record.Objective_4.value, '');
   assert.equal(record.Weight_4.value, '');
+});
+
+test('M10L-R1: checkDuplicateMBO fails closed when duplicate found', async () => {
+  const mockApi = {
+    async getRecords() {
+      return { records: [{ $id: { value: '100' } }] };
+    }
+  };
+  await assert.rejects(
+    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, mockApi),
+    err => err.message.includes('มี MBO สำหรับ FY2026 อยู่แล้ว')
+  );
+});
+
+test('M10L-R1: checkDuplicateMBO fails closed on GET error or malformed response', async () => {
+  const errApi = {
+    async getRecords() {
+      throw new Error('Network timeout');
+    }
+  };
+  await assert.rejects(
+    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, errApi),
+    err => err.message.includes('ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้')
+  );
+
+  const malformedApi = {
+    async getRecords() {
+      return { status: 'error', records: null };
+    }
+  };
+  await assert.rejects(
+    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, malformedApi),
+    err => err.message.includes('ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้')
+  );
+});
+
+test('M10L-R1: checkDuplicateMBO succeeds on zero duplicate records', async () => {
+  const mockApi = {
+    async getRecords() {
+      return { records: [] };
+    }
+  };
+  await assert.doesNotReject(
+    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, mockApi)
+  );
 });
 
 test('M10L: Profile resolver regressions (0111, 0118, Factory Manager)', async () => {

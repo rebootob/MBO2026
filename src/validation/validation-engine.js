@@ -82,7 +82,8 @@ export class ValidationEngine {
 
     // Stage 1: OBJECTIVE_INPUT or NEW_RECORD (Create Submit validates objectives)
     if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT || stage === BUSINESS_STAGES.NEW_RECORD) {
-      if (record.Profile_Code !== undefined && !this._val(record.Profile_Code)) {
+      const profileCode = this._val(record.Profile_Code);
+      if (!profileCode) {
         fieldErrors.push({
           field: 'Employee_Code',
           messageTH: 'ไม่พบข้อมูล Profile Code ของพนักงาน กรุณากดค้นหาเพื่อระบุกลุ่มประเมิน',
@@ -91,7 +92,13 @@ export class ValidationEngine {
         });
       }
 
-      if (record.Routing_Topology !== undefined && !this._val(record.Routing_Topology)) {
+      const routingTopo = this._val(record.Routing_Topology);
+      const requesterUserVal = record.Requester_User?.value;
+      const hasRequester = Array.isArray(requesterUserVal)
+        ? requesterUserVal.length > 0
+        : !!this._val(record.Requester_User);
+
+      if (!routingTopo || !hasRequester) {
         fieldErrors.push({
           field: 'Employee_Code',
           messageTH: 'ไม่พบข้อมูล Routing ของพนักงาน กรุณากดค้นหาเพื่อระบุเส้นทางอนุมัติ',

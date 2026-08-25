@@ -1197,8 +1197,11 @@ class ValidationEngine {
       }
 
       const routingTopo = this._val(record.Routing_Topology);
-      const requesterUser = record.Requester_User?.value;
-      const hasRequester = Array.isArray(requesterUser) ? requesterUser.length > 0 : !!requesterUser;
+      const requesterUserVal = record.Requester_User?.value;
+      const hasRequester = Array.isArray(requesterUserVal)
+        ? requesterUserVal.length > 0
+        : !!this._val(record.Requester_User);
+
       if (!routingTopo || !hasRequester) {
         fieldErrors.push({
           field: 'Employee_Code',
@@ -1537,9 +1540,19 @@ class EmployeeService {
       query += ` and $id != "${currentRecordId}"`;
     }
 
-    const resp = await kintoneApi.getRecords(mboAppId, query);
-    if (resp?.records?.length > 0) {
-      throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
+    let resp;
+    try {
+      resp = await kintoneApi.getRecords(mboAppId, query);
+    } catch (err) {
+      throw new Error(`ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify record uniqueness. Please try again or contact HR / Administrator.`);
+    }
+
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      throw new Error(`ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify record uniqueness. Please try again or contact HR / Administrator.`);
+    }
+
+    if (resp.records.length > 0) {
+      throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
     }
   }
 }
@@ -2876,12 +2889,25 @@ class EmployeePartAUI {
       record.Record_Key.value = recordKey;
     }
 
-    // 4. Duplicate Check Guard
+    // 4. Duplicate Check Guard (Fail-Closed)
     try {
       const currentId = record.$id?.value;
       const query = `Record_Key = "${recordKey}" ${currentId ? `and $id != "${currentId}"` : ''}`;
       const duplicateRes = await kintoneApiWrapper.getRecords(getMboAppId(), query);
-      if (duplicateRes.records && duplicateRes.records.length > 0) {
+
+      if (!duplicateRes || typeof duplicateRes !== 'object' || !Array.isArray(duplicateRes.records)) {
+        if (activeUiInstance) {
+          activeUiInstance.showValidationErrors([{
+            field: 'Employee_Code',
+            messageTH: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator',
+            messageEN: 'Unable to verify record uniqueness. Please try again or contact HR / Administrator.',
+            message: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator'
+          }]);
+        }
+        return false;
+      }
+
+      if (duplicateRes.records.length > 0) {
         if (activeUiInstance) {
           activeUiInstance.showValidationErrors([{
             field: 'Employee_Code',
@@ -2894,6 +2920,15 @@ class EmployeePartAUI {
       }
     } catch (err) {
       console.error('[MBO V2] Duplicate check error:', err);
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors([{
+          field: 'Employee_Code',
+          messageTH: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator',
+          messageEN: 'Unable to verify record uniqueness. Please try again or contact HR / Administrator.',
+          message: 'ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator'
+        }]);
+      }
+      return false;
     }
 
     // 5. Stage Business Rule Validation

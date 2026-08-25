@@ -182,9 +182,19 @@ export class EmployeeService {
       query += ` and $id != "${currentRecordId}"`;
     }
 
-    const resp = await kintoneApi.getRecords(mboAppId, query);
-    if (resp?.records?.length > 0) {
-      throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
+    let resp;
+    try {
+      resp = await kintoneApi.getRecords(mboAppId, query);
+    } catch (err) {
+      throw new Error(`ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify record uniqueness. Please try again or contact HR / Administrator.`);
+    }
+
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      throw new Error(`ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify record uniqueness. Please try again or contact HR / Administrator.`);
+    }
+
+    if (resp.records.length > 0) {
+      throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
     }
   }
 }
