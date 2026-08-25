@@ -27,7 +27,7 @@ function createInMemoryRepo() {
     async createValidatedRecord(payload) {
       calls.push({ method: 'createValidatedRecord', payload });
       const id = String(nextId++);
-      const newRec = { ...payload, $id: id };
+      const newRec = { ...payload, $id: id, __recordId: id, __storageRevision: '1' };
       records.set(id, newRec);
       return id;
     },
@@ -46,11 +46,15 @@ function createInMemoryRepo() {
       }
       return res;
     },
-    async publishRecord(id, patch) {
-      calls.push({ method: 'publishRecord', id, patch });
+    async publishRecord(id, patch, expectedRevision) {
+      calls.push({ method: 'publishRecord', id, patch, expectedRevision });
       const rec = records.get(String(id));
       if (!rec) return false;
-      records.set(String(id), { ...rec, ...patch });
+      if (expectedRevision && String(rec.__storageRevision) !== String(expectedRevision)) {
+        throw new Error('REPOSITORY_RESPONSE_INVALID: Revision conflict');
+      }
+      const nextRev = String(Number(rec.__storageRevision || '1') + 1);
+      records.set(String(id), { ...rec, ...patch, __storageRevision: nextRev });
       return true;
     }
   };
@@ -1003,4 +1007,93 @@ test('Stage 4A: service has no Kintone/network/filesystem/Git runtime dependency
 
   const result = await service.publishScoringConfig(getValidCandidate());
   assert.equal(result.status, 'PUBLISH_VERIFIED');
+});
+
+// ── Optimistic Concurrency Revision Tests ──
+test('Stage 4A Concurrency: initial revision missing -> CONFIG_READBACK_MISMATCH', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 1) {
+      const copy = { ...res };
+      delete copy.__storageRevision;
+      return copy;
+    }
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /CONFIG_READBACK_MISMATCH/
+  );
+});
+
+test('Stage 4A Concurrency: initial revision malformed -> CONFIG_READBACK_MISMATCH', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 1) return { ...res, __storageRevision: 'invalid_rev' };
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /CONFIG_READBACK_MISMATCH/
+  );
+});
+
+test('Stage 4A Concurrency: publish receives exact initial revision token', async () => {
+  const repo = createInMemoryRepo();
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await service.publishScoringConfig(getValidCandidate());
+
+  const publishCall = repo.calls.find(c => c.method === 'publishRecord');
+  assert.ok(publishCall);
+  assert.equal(publishCall.expectedRevision, '1');
+});
+
+test('Stage 4A Concurrency: stale expected revision fake rejects', async () => {
+  const repo = createInMemoryRepo();
+  const origPublish = repo.publishRecord.bind(repo);
+  repo.publishRecord = async (id, patch, expectedRev) => {
+    return origPublish(id, patch, '999'); // send wrong expected rev to fake
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /REPOSITORY_RESPONSE_INVALID/
+  );
+});
+
+test('Stage 4A Concurrency: final revision not advanced -> PUBLISH_VERIFICATION_FAILED', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 2) return { ...res, __storageRevision: '1' }; // not advanced (still 1)
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /PUBLISH_VERIFICATION_FAILED/
+  );
 });

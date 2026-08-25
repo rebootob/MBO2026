@@ -209,6 +209,11 @@ export class ScoringConfigMasterService {
       throw new Error('CONFIG_READBACK_MISMATCH: Status must be VALIDATED');
     }
 
+    if (!readback1.__storageRevision || !/^[1-9]\d*$/.test(String(readback1.__storageRevision).trim())) {
+      throw new Error('CONFIG_READBACK_MISMATCH: Initial read-back missing valid __storageRevision');
+    }
+    const initialRevision = String(readback1.__storageRevision).trim();
+
     let canonicalReadback1;
     try {
       canonicalReadback1 = canonicalizeScoringConfigPayload(readback1);
@@ -259,7 +264,7 @@ export class ScoringConfigMasterService {
       Published_By: publisher.trim(),
       Published_At: publishedAt.trim()
     };
-    await this.repository.publishRecord(recordId, patch);
+    await this.repository.publishRecord(recordId, patch, initialRevision);
 
     // 12. Final read-back
     const finalReadback = await this.repository.getByRecordId(recordId);
@@ -281,6 +286,14 @@ export class ScoringConfigMasterService {
 
     if (finalReadback.Published_At !== publishedAt.trim()) {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final Published_At mismatch');
+    }
+
+    if (!finalReadback.__storageRevision || !/^[1-9]\d*$/.test(String(finalReadback.__storageRevision).trim())) {
+      throw new Error('PUBLISH_VERIFICATION_FAILED: Final storage revision missing or invalid');
+    }
+    const finalRevision = String(finalReadback.__storageRevision).trim();
+    if (Number(finalRevision) <= Number(initialRevision)) {
+      throw new Error('PUBLISH_VERIFICATION_FAILED: Final storage revision was not advanced');
     }
 
     let finalCanonical;
