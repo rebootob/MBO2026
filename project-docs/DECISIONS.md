@@ -67,7 +67,7 @@
 - **Status**: FROZEN
 - **Decision**:
   1. **Configuration-Driven Profile Master:** Unify all 8 evaluation groups into 4 Profile Families (`PROFILE_STAFF_CHIEF`, `PROFILE_JAPANESE_STAFF`, `PROFILE_MANAGEMENT`, `PROFILE_EXECUTIVE`) governed by metadata.
-  2. **Evaluation Weights:** Staff/Japan (70/30), All Management & Exec (50/50 - Confirmed).
+  2. **Evaluation Weights:** Staff / Japanese Staff = 70/30; Assistant Manager = 60/40; Section Manager and Above = 50/50. See DEC-042 for the user-reconfirmed authoritative position-ratio rule.
   3. **COCE Governance:** `Evaluated = YES`, `Included_In_Score = NO`. Scoring denominator dynamically filters out excluded items.
   4. **Standardized Scoring Algorithm (`WEIGHTED_PART_A_B`):** Parameterized mathematical model with dynamic denominator ($N_{\text{included}} \times K_{\text{appraisers}}$) and Half-Up 2-decimal place rounding.
   5. **Hybrid Schema Storage (Option C):** App 794 maintains current working state (~172 fields, 34% of Kintone limit); Revision Archive App stores immutable historical snapshots.
