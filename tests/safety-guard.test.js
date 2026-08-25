@@ -1605,6 +1605,7 @@ function getValidCreateAuthConfig(id = 'auth_create_101', overrides = {}) {
 
 function getValidCreateRequestContext(overrides = {}) {
   return {
+    appId: 796,
     operation: 'SCORING_CONFIG_CREATE_VALIDATED',
     masterRecordKey: 'PROF_STAFF_CHIEF::v1.0.0',
     manifest: {
@@ -1638,6 +1639,7 @@ function getValidPublishAuthConfig(id = 'auth_publish_101', overrides = {}) {
 
 function getValidPublishRequestContext(overrides = {}) {
   return {
+    appId: 796,
     operation: 'SCORING_CONFIG_PUBLISH',
     recordId: '101',
     expectedRevision: '1',
@@ -2173,4 +2175,259 @@ test('Stage 4C 51: existing kintoneRequest() still blocks POST under DISCOVERY_M
     () => kintoneRequest('/k/v1/record.json', { method: 'POST', body: { app: 796 } }),
     /DISCOVERY PHASE WRITE BLOCKED/
   );
+});
+// ── Stage 4C Hardening Tests ──
+
+test('Stage 4C Hardening A1: create requestContext.appId = 794 rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_ctx_app794');
+  const reqCtx = getValidCreateRequestContext({ appId: 794 });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening A2: create requestContext.appId = 795 rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_ctx_app795');
+  const reqCtx = getValidCreateRequestContext({ appId: 795 });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening A3: create requestContext.appId = protected App 53 rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_bad_ctx_app53');
+  const reqCtx = getValidCreateRequestContext({ appId: 53 });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening A4: publish requestContext.appId = 794 rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_bad_pub_app794');
+  const reqCtx = getValidPublishRequestContext({ appId: 794 });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening A5: publish requestContext.appId = protected App 53 rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_bad_pub_app53');
+  const reqCtx = getValidPublishRequestContext({ appId: 53 });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening A6: missing requestContext.appId rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_missing_ctx_app');
+  const reqCtx = getValidCreateRequestContext();
+  delete reqCtx.appId;
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening A7: string "796" requestContext.appId rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_str_ctx_app');
+  const reqCtx = getValidCreateRequestContext({ appId: '796' });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening B1: manifest extra top-level key rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_man_extra_top');
+  const reqCtx = getValidCreateRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_CREATE_VALIDATED', appId: 796, masterRecordKey: 'PROF_STAFF_CHIEF::v1.0.0' }
+      ],
+      extraTopKey: 123
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening B2: create change extra key rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_create_extra_key');
+  const reqCtx = getValidCreateRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_CREATE_VALIDATED', appId: 796, masterRecordKey: 'PROF_STAFF_CHIEF::v1.0.0', extraKey: 'bad' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening B3: create change missing key rejected', () => {
+  const authConfig = getValidCreateAuthConfig('auth_create_missing_key');
+  const reqCtx = getValidCreateRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_CREATE_VALIDATED', appId: 796 }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening B4: publish change extra key rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_pub_extra_key');
+  const reqCtx = getValidPublishRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_PUBLISH', appId: 796, recordId: '101', expectedRevision: '1', extraKey: 'bad' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening B5: publish change missing expectedRevision rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_pub_missing_rev');
+  const reqCtx = getValidPublishRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_PUBLISH', appId: 796, recordId: '101' }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening B6: class-instance manifest or change rejected', () => {
+  class CustomManifest {}
+  class CustomChange {}
+
+  const authConfig1 = getValidCreateAuthConfig('auth_class_manifest');
+  const reqCtx1 = getValidCreateRequestContext({ manifest: new CustomManifest() });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig1, reqCtx1), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+
+  const authConfig2 = getValidCreateAuthConfig('auth_class_change');
+  const reqCtx2 = getValidCreateRequestContext({ manifest: { expectedChanges: [new CustomChange()] } });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig2, reqCtx2), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening C1: publish expectedRevision numeric 1 / whitespace / 0 / -1 / unsafe rejected', () => {
+  for (const badRev of [1, ' 1 ', '0', '-1', '9007199254740993']) {
+    const authConfig = getValidPublishAuthConfig(`auth_bad_rev_${badRev}`);
+    const reqCtx = getValidPublishRequestContext({ expectedRevision: badRev });
+    assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+  }
+});
+
+test('Stage 4C Hardening C2: publish manifest expectedRevision numeric 1 rejected', () => {
+  const authConfig = getValidPublishAuthConfig('auth_man_num_rev');
+  const reqCtx = getValidPublishRequestContext({
+    manifest: {
+      expectedChanges: [
+        { operation: 'SCORING_CONFIG_PUBLISH', appId: 796, recordId: '101', expectedRevision: 1 }
+      ]
+    }
+  });
+  assert.throws(() => assertScoringConfigRecordWriteAuthorization(authConfig, reqCtx), /RECORD_WRITE_AUTHORIZATION_FAILED/);
+});
+
+test('Stage 4C Hardening C3: bridge PUT body.revision numeric 1 / whitespace / 0 / -1 / unsafe rejected', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  for (const badRev of [1, ' 1 ', '0', '-1', '9007199254740993']) {
+    const body = {
+      app: 796,
+      id: '101',
+      revision: badRev,
+      record: {
+        Config_Status: { value: 'PUBLISHED' },
+        Published_By: { value: [{ code: 'usr_admin_01' }] },
+        Published_At: { value: '2026-08-25T09:00:00Z' }
+      }
+    };
+    await assert.rejects(() => bridge({ method: 'PUT', path: '/k/v1/record.json', body }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  }
+});
+
+test('Stage 4C Hardening D1: exact uppercase methods only', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  for (const badMethod of ['get', 'post', 'put', ' GET ', 'POST ']) {
+    await assert.rejects(
+      () => bridge({ method: badMethod, path: '/k/v1/record.json', params: { app: 796, id: '101' } }),
+      /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+    );
+  }
+});
+
+test('Stage 4C Hardening D2: bridge() / null / array / class instance rejected with stable code', async () => {
+  class CustomReq {}
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  await assert.rejects(() => bridge(), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge(null), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge([]), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge(new CustomReq()), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+});
+
+test('Stage 4C Hardening D3: PUT lifecycle wrappers and user object extra keys rejected', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  // Config_Status extra key
+  await assert.rejects(
+    () => bridge({
+      method: 'PUT', path: '/k/v1/record.json',
+      body: {
+        app: 796, id: '101', revision: '1',
+        record: {
+          Config_Status: { value: 'PUBLISHED', extra: 1 },
+          Published_By: { value: [{ code: 'usr_admin_01' }] },
+          Published_At: { value: '2026-08-25T09:00:00Z' }
+        }
+      }
+    }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  // Published_By extra key
+  await assert.rejects(
+    () => bridge({
+      method: 'PUT', path: '/k/v1/record.json',
+      body: {
+        app: 796, id: '101', revision: '1',
+        record: {
+          Config_Status: { value: 'PUBLISHED' },
+          Published_By: { value: [{ code: 'usr_admin_01' }], extra: 1 },
+          Published_At: { value: '2026-08-25T09:00:00Z' }
+        }
+      }
+    }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  // Published_By user extra key
+  await assert.rejects(
+    () => bridge({
+      method: 'PUT', path: '/k/v1/record.json',
+      body: {
+        app: 796, id: '101', revision: '1',
+        record: {
+          Config_Status: { value: 'PUBLISHED' },
+          Published_By: { value: [{ code: 'usr_admin_01', name: 'Admin' }] },
+          Published_At: { value: '2026-08-25T09:00:00Z' }
+        }
+      }
+    }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+
+  // Published_At extra key
+  await assert.rejects(
+    () => bridge({
+      method: 'PUT', path: '/k/v1/record.json',
+      body: {
+        app: 796, id: '101', revision: '1',
+        record: {
+          Config_Status: { value: 'PUBLISHED' },
+          Published_By: { value: [{ code: 'usr_admin_01' }] },
+          Published_At: { value: '2026-08-25T09:00:00Z', extra: 1 }
+        }
+      }
+    }),
+    /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/
+  );
+});
+
+test('Stage 4C Hardening D4: complete path allowlist regression tests (schema, ACL, deploy, unknown, query in path)', async () => {
+  const bridge = createScoringConfigRepositoryRequestBridge({ transport: async () => ({}) });
+
+  await assert.rejects(() => bridge({ method: 'POST', path: '/k/v1/preview/app/form/fields.json', body: {} }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'GET', path: '/k/v1/right/app.json', params: { app: 796 } }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'POST', path: '/k/v1/preview/app/deploy.json', body: {} }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'GET', path: '/k/v1/unknown.json', params: { app: 796 } }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
+  await assert.rejects(() => bridge({ method: 'GET', path: '/k/v1/record.json?id=101', params: { app: 796 } }), /SCORING_CONFIG_BRIDGE_REQUEST_FAILED/);
 });

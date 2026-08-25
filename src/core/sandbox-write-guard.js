@@ -435,6 +435,13 @@ export function assertScoringConfigRecordWriteAuthorization(authConfig, requestC
     throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
   }
 
+  if (
+    requestContext.appId !== WP002C_SCORING_MASTER_APP_ID ||
+    requestContext.appId !== authConfig.appId
+  ) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+
   const op = authConfig.operation;
   if (op !== 'SCORING_CONFIG_CREATE_VALIDATED' && op !== 'SCORING_CONFIG_PUBLISH') {
     throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
@@ -484,7 +491,14 @@ export function assertScoringConfigRecordWriteAuthorization(authConfig, requestC
   }
 
   const manifest = requestContext.manifest;
-  if (!isPlainObject(manifest) || !Array.isArray(manifest.expectedChanges) || manifest.expectedChanges.length !== 1) {
+  if (!isPlainObject(manifest)) {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+  const manifestKeys = Object.keys(manifest);
+  if (manifestKeys.length !== 1 || manifestKeys[0] !== 'expectedChanges') {
+    throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+  }
+  if (!Array.isArray(manifest.expectedChanges) || manifest.expectedChanges.length !== 1) {
     throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
   }
   const change = manifest.expectedChanges[0];
@@ -492,10 +506,17 @@ export function assertScoringConfigRecordWriteAuthorization(authConfig, requestC
     throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
   }
 
+  const changeKeys = Object.keys(change);
+
   if (op === 'SCORING_CONFIG_CREATE_VALIDATED') {
+    const expectedCreateKeys = ['operation', 'appId', 'masterRecordKey'];
+    if (changeKeys.length !== 3 || !expectedCreateKeys.every(k => changeKeys.includes(k))) {
+      throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+    }
     if (
       change.operation !== 'SCORING_CONFIG_CREATE_VALIDATED' ||
       change.appId !== WP002C_SCORING_MASTER_APP_ID ||
+      change.appId !== requestContext.appId ||
       change.masterRecordKey !== requestContext.masterRecordKey ||
       typeof requestContext.masterRecordKey !== 'string' ||
       requestContext.masterRecordKey === '' ||
@@ -504,9 +525,14 @@ export function assertScoringConfigRecordWriteAuthorization(authConfig, requestC
       throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
     }
   } else if (op === 'SCORING_CONFIG_PUBLISH') {
+    const expectedPublishKeys = ['operation', 'appId', 'recordId', 'expectedRevision'];
+    if (changeKeys.length !== 4 || !expectedPublishKeys.every(k => changeKeys.includes(k))) {
+      throw new Error('RECORD_WRITE_AUTHORIZATION_FAILED');
+    }
     if (
       change.operation !== 'SCORING_CONFIG_PUBLISH' ||
       change.appId !== WP002C_SCORING_MASTER_APP_ID ||
+      change.appId !== requestContext.appId ||
       change.recordId !== requestContext.recordId ||
       change.expectedRevision !== requestContext.expectedRevision ||
       !isExactPositiveSafeIntegerString(requestContext.recordId) ||

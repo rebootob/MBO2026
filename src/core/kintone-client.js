@@ -1041,14 +1041,22 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
     throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
   }
 
-  return async function request({ method, path, params, body }) {
-    if (typeof method !== 'string' || typeof path !== 'string' || path.includes('?')) {
+  return async function request(reqOpts) {
+    if (!isPlainObject(reqOpts)) {
       throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
     }
 
-    const upperMethod = method.toUpperCase();
+    const { method, path, params, body } = reqOpts;
 
-    if (upperMethod === 'GET') {
+    if (typeof method !== 'string' || (method !== 'GET' && method !== 'POST' && method !== 'PUT')) {
+      throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+    }
+
+    if (typeof path !== 'string' || path.includes('?')) {
+      throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+    }
+
+    if (method === 'GET') {
       if (body !== undefined) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
@@ -1061,10 +1069,10 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
         if (paramKeys.length !== 2 || !paramKeys.includes('app') || !paramKeys.includes('query')) {
           throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
         }
-        if (params.app !== 796 || typeof params.query !== 'string' || params.query === '') {
+        if (params.app !== WP002C_SCORING_MASTER_APP_ID || typeof params.query !== 'string' || params.query === '') {
           throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
         }
-        const transportPath = `/k/v1/records.json?app=796&query=${encodeURIComponent(params.query)}`;
+        const transportPath = `/k/v1/records.json?app=${WP002C_SCORING_MASTER_APP_ID}&query=${encodeURIComponent(params.query)}`;
         try {
           return await transport(transportPath, { method: 'GET' });
         } catch {
@@ -1077,10 +1085,10 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
         if (paramKeys.length !== 2 || !paramKeys.includes('app') || !paramKeys.includes('id')) {
           throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
         }
-        if (params.app !== 796 || !isExactPositiveSafeIntegerString(params.id)) {
+        if (params.app !== WP002C_SCORING_MASTER_APP_ID || !isExactPositiveSafeIntegerString(params.id)) {
           throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
         }
-        const transportPath = `/k/v1/record.json?app=796&id=${params.id}`;
+        const transportPath = `/k/v1/record.json?app=${WP002C_SCORING_MASTER_APP_ID}&id=${params.id}`;
         try {
           return await transport(transportPath, { method: 'GET' });
         } catch {
@@ -1091,7 +1099,7 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
       throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
     }
 
-    if (upperMethod === 'POST') {
+    if (method === 'POST') {
       if (params !== undefined || path !== '/k/v1/record.json' || !isPlainObject(body)) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
@@ -1099,7 +1107,7 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
       if (bodyKeys.length !== 2 || !bodyKeys.includes('app') || !bodyKeys.includes('record')) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
-      if (body.app !== 796 || !isPlainObject(body.record)) {
+      if (body.app !== WP002C_SCORING_MASTER_APP_ID || !isPlainObject(body.record)) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
       try {
@@ -1109,7 +1117,7 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
       }
     }
 
-    if (upperMethod === 'PUT') {
+    if (method === 'PUT') {
       if (params !== undefined || path !== '/k/v1/record.json' || !isPlainObject(body)) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
@@ -1118,7 +1126,7 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
       if (bodyKeys.length !== 4 || !expectedKeys.every(k => bodyKeys.includes(k))) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
-      if (body.app !== 796 || !isExactPositiveSafeIntegerString(body.id) || !isExactPositiveSafeIntegerString(body.revision) || !isPlainObject(body.record)) {
+      if (body.app !== WP002C_SCORING_MASTER_APP_ID || !isExactPositiveSafeIntegerString(body.id) || !isExactPositiveSafeIntegerString(body.revision) || !isPlainObject(body.record)) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
       const recPatch = body.record;
@@ -1127,14 +1135,20 @@ export function createScoringConfigRepositoryRequestBridge({ transport }) {
       if (recKeys.length !== 3 || !expectedRecKeys.every(k => recKeys.includes(k))) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
-      if (
-        !isPlainObject(recPatch.Config_Status) || recPatch.Config_Status.value !== 'PUBLISHED' ||
-        !isPlainObject(recPatch.Published_By) || !Array.isArray(recPatch.Published_By.value) || recPatch.Published_By.value.length !== 1 ||
-        !isPlainObject(recPatch.Published_By.value[0]) || typeof recPatch.Published_By.value[0].code !== 'string' ||
-        recPatch.Published_By.value[0].code === '' || recPatch.Published_By.value[0].code !== recPatch.Published_By.value[0].code.trim() ||
-        !isPlainObject(recPatch.Published_At) || typeof recPatch.Published_At.value !== 'string' ||
-        recPatch.Published_At.value === '' || recPatch.Published_At.value !== recPatch.Published_At.value.trim()
-      ) {
+
+      if (!isPlainObject(recPatch.Config_Status) || Object.keys(recPatch.Config_Status).length !== 1 || recPatch.Config_Status.value !== 'PUBLISHED') {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+
+      if (!isPlainObject(recPatch.Published_By) || Object.keys(recPatch.Published_By).length !== 1 || !Array.isArray(recPatch.Published_By.value) || recPatch.Published_By.value.length !== 1) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+      const userObj = recPatch.Published_By.value[0];
+      if (!isPlainObject(userObj) || Object.keys(userObj).length !== 1 || typeof userObj.code !== 'string' || userObj.code === '' || userObj.code !== userObj.code.trim()) {
+        throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
+      }
+
+      if (!isPlainObject(recPatch.Published_At) || Object.keys(recPatch.Published_At).length !== 1 || typeof recPatch.Published_At.value !== 'string' || recPatch.Published_At.value === '' || recPatch.Published_At.value !== recPatch.Published_At.value.trim()) {
         throw new Error('SCORING_CONFIG_BRIDGE_REQUEST_FAILED');
       }
 
