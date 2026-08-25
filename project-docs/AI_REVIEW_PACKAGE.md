@@ -12,8 +12,8 @@
 > **WP-002C Stage 3A Status:** **`STAGE 3A VERIFICATION RECONCILIATION = PASS / R3`**
 > **WP-002C Stage 3B Status:** **`STAGE 3B = PASS`**
 > **WP-002C Stage 3C Physical Write:** **`STAGE 3C PHYSICAL WRITE = COMPLETE`**
-> **WP-002C Stage 3C-R1 Repair Status:** **`STAGE 3C-R1 DROPDOWN REPAIR COMPLETE / PENDING CHATGPT REVIEW (SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED; CORRECTION_REQUIRED_FIELDS = NONE)`**
-> **Last Updated:** 2026-08-25T06:54:00+07:00
+> **WP-002C Stage 3C-R1 Status:** **`STAGE 3C-R1 HARDENED & RECONCILED / PENDING CHATGPT RE-REVIEW (PREWRITE_BACKUP_GATE = PASS; HISTORICAL_PREWRITE_DEFECT_EXACT_GATE = PASS; CURRENT_LIVE_SCHEMA_GATE = PASS; CURRENT_ZERO_RECORD_GATE = PASS; SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED)`**
+> **Last Updated:** 2026-08-25T07:08:00+07:00
 
 ---
 
@@ -31,7 +31,9 @@
 | **WP-002C Stage-3C Code Fix Commit** | `12e4e5e` | `fix: align wp-002c schema values and preflight safety` |
 | **WP-002C Stage-3C Schema Binding Fix** | `95ce44f` | `fix: enforce wp-002c schema contract binding` |
 | **WP-002C Stage-3C-R1 Repair Guard Commit** | `4bef27e` | `feat: add guarded wp-002c dropdown schema repair` |
-| **WP-002C Stage-3C-R1 Repair Evidence Commit** | *(Review Head)* | `chore: record wp-002c dropdown schema repair` |
+| **WP-002C Stage-3C-R1 Repair Evidence Commit** | `d38a965` | `chore: record wp-002c dropdown schema repair` |
+| **WP-002C Stage-3C-R1 Review Hardening Commit** | `ac3d401` | `fix: harden wp-002c dropdown repair verification` |
+| **WP-002C Stage-3C-R1 Evidence Closure Commit** | *(Review Head)* | `docs: complete wp-002c dropdown repair evidence` |
 
 ---
 
@@ -42,8 +44,8 @@
 | **Work Package ID** | `MBO-P03-WP-002C` |
 | **Phase** | `Phase 3: Evaluation Profile, Competency & Scoring Engine` |
 | **Work Package Name** | `KINTONE PROFILE & SCORING CONFIGURATION MASTER` |
-| **Mode** | **`STAGE 3C-R1 — CONTROLLED TWO-DROPDOWN SEMANTIC REPAIR`** |
-| **Claimed Status** | **`STAGE 3C-R1 REPAIR COMPLETE / PENDING CHATGPT REVIEW`** |
+| **Mode** | **`STAGE 3C-R1 — REVIEW HARDENING & GET-ONLY RECONCILIATION`** |
+| **Claimed Status** | **`STAGE 3C-R1 HARDENED & RECONCILED / PENDING CHATGPT RE-REVIEW`** |
 | **Active AI** | `Antigravity` |
 | **Execution / Review Branch** | `ai/antigravity-wp002c` |
 | **Scoring Master App ID** | `796` |
@@ -59,6 +61,9 @@
 | **Environment** | `SANDBOX` |
 | **Production** | `FALSE` |
 | **Next Action** | `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3C-R1` |
-| **Stage 3C-R1 Repair Writes** | `FORM FIELDS PUT = 1; DEPLOY POST = 1; RECORD/ACL/DELETE/LAYOUT/VIEW/PROCESS = 0` |
-| **Automated Unit Test Suite** | `tests/safety-guard.test.js` plus full `npm test`: **227/227 PASS** |
+| **Pre-Write Backup Gate** | **`PASS`** (`app796_stage3c_pre_write_backup.json`, 2026-08-24T23:22:36.590Z) |
+| **Historical Pre-Write Defect Gate** | **`PASS`** (`HISTORICAL_PREVIEW_DEFECT_EXACT = PASS`) |
+| **Current Reconciliation Mode** | **`GET_ONLY`** (This hardening task Kintone writes = 0) |
+| **Historical Repair Writes** | `FORM FIELDS PUT = 1; DEPLOY POST = 1; RECORD/ACL/DELETE/LAYOUT/VIEW/PROCESS = 0` |
+| **Automated Unit Test Suite** | `tests/safety-guard.test.js` plus full `npm test`: **237/237 PASS** |
 | **Active Write Allow-List** | `WRITE_ALLOWED_APPS = []` (Default Deny) |

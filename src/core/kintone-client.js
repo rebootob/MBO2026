@@ -194,7 +194,7 @@ function isNumericRevision(value) {
   return typeof value === 'string' && /^\d+$/.test(value);
 }
 
-function assertCreatorOnlyAcl(payload, failureCode) {
+export function assertCreatorOnlyAcl(payload, failureCode) {
   if (!payload || !Array.isArray(payload.rights) || payload.rights.length === 0 || !isNumericRevision(payload.revision)) {
     throw new Error(`${failureCode}: ACL must contain CREATOR entry and a numeric revision.`);
   }

@@ -50,7 +50,7 @@
 - **WP-002B Source Code Path:** `src/profiles/profile-scoring-resolver.js` (reuses EmployeeService snapshot contract and `computeConfigurationHash()`)
 - **WP-002B Unit Test Suite:** `tests/profile-scoring-resolver.test.js` (17 tests passing; 148/148 total suite passing)
 - **Durable Decisions Path:** [`project-docs/DECISIONS.md`](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/DECISIONS.md) (`DEC-001`..`DEC-041` Full History Preserved)
-- **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`; Stage 3C-R1 repair writes: FORM FIELDS PUT = 1, DEPLOY POST = 1; RECORD/DELETE/ACL/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0)
+- **Hard Write Lock:** ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`; Stage 3C-R1 historical repair writes: FORM FIELDS PUT = 1, DEPLOY POST = 1; Stage 3C-R1 hardening task Kintone writes = 0 (GET-only reconciliation); RECORD/DELETE/ACL/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0)
 - **Open Defects:** **0** (All 15 defects `DEF-001` through `DEF-015` are CLOSED)
 - **Open Observations:** **5** (`OBS-001`, `OBS-002`, `OBS-003`, `OBS-004`, `OBS-005`)
 - **Blockers:** **0 Implementation Defects**

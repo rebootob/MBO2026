@@ -17,7 +17,7 @@
 - **NEXT_ACTION**: `AWAIT CHATGPT INDEPENDENT REVIEW OF STAGE 3C-R1`
 - **WP-002C Plan**: `project-docs/phase-3/MBO-P03-WP-002C_PLAN.md`
 - **WP-002C Stage 3C-R1 Repair**: Successfully submitted 1 Form Fields PUT for Part_A_Scoring_Mode and Config_Status and 1 Deploy POST; positive live verification confirmed raw domain option values (DIFFICULTY_ACHIEVEMENT_MATRIX, ACHIEVEMENT_DIRECT, DRAFT, VALIDATED, PUBLISHED, SUPERSEDED, RETIRED) and indexes (0..4); live 23/23 readback PASS; Creator-Only ACL PASS; Record count 0
-- **Implementation Scope**: Implementation commit `4bef27e` added `assertScoringMasterDropdownRepairAuthorization` and `repairScoringMasterDropdownSchema` with 28 new unit tests (227/227 total suite passing); zero source code changes to resolver/scoring engines
+- **Implementation Scope**: Implementation commit `4bef27e` added `assertScoringMasterDropdownRepairAuthorization` and `repairScoringMasterDropdownSchema` with 38 new unit tests (237/237 total suite passing); zero source code changes to resolver/scoring engines
 - **Scoring Truth Gate**: `PASS (Accepted & Frozen)`
 - **Appraiser Weight Gate**: `PASS (DEC-036 Universal Part A & Part B)`
 - **Scoring Config Model Gate**: `PASS (Part_A_Scoring_Mode, Snapshot Strategy & Storage-Neutral Version Immutability)`
