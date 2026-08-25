@@ -11,6 +11,8 @@
     "routingMaster": "Section-to-user routing configuration",
     "scoringConfigMaster": "MBO Profile & Scoring Configuration Master [Sandbox]",
     "hoshinMaster": "HR-managed Department/Section Hoshin version master; DEC-018; no workflow",
-    "revisionArchive": "Immutable historical snapshots of superseded App 794 stage revisions; DEC-022"
-  }
+    "revisionArchive": "Immutable historical snapshots of superseded App 794 stage revisions; DEC-022",
+    "hrControlCenter": "HR Control Center Native Shell & HR Dashboard MVP; DEC-025, DEC-039; no records"
+  },
+  "hrControlCenterAppId": 800
 }
