@@ -1,26 +1,26 @@
-# AI ACTIVE TASK — M10E APP794 RUNTIME ADAPTER PREFLIGHT
+# AI ACTIVE TASK — M10F APP794 RUNTIME ADAPTER REPOSITORY IMPLEMENTATION
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `c77aac51b1248ce8dbd843354cfda6122dbee9a5`
-> Mode: READ-ONLY / REPOSITORY PREFLIGHT ONLY — NO KINTONE WRITES / NO DEPLOY
+> Reviewed Head: `2de27c5c21bcf91bd2114cc84202a0d5b781e327`
+> Mode: REPOSITORY CODE IMPLEMENTATION + TESTS ONLY — NO KINTONE WRITE / NO CUSTOMIZATION DEPLOY
 
 # NORTH STAR
 
 ```text
-Apps foundation             = READY
-App795 routing              = READY 17/17
-App796 scoring              = READY 8/8
-App800 HR Control Center    = LIVE
-App801                      = LIVE / restricted / reserved
-Kintone-only direction      = SELECTED
-PATH_B Section Requester    = SELECTED
+Apps foundation          = READY
+App795 routing           = READY 17/17
+App796 scoring           = READY 8/8
+App800 dashboard         = LIVE
+Kintone-only PATH_B      = SELECTED
+M10E runtime preflight   = PASS
 
-NEXT DELIVERY GOAL:
-Make App794 runtime behavior use authoritative App795 routing + App53 employee master + App796 scoring,
-without pretending a shared Kintone account is individual authentication.
+THIS TASK:
+Implement the repository-side App794 runtime adapter so employee context resolves from App53,
+routing from App795, scoring from App796, and App794 receives fail-closed runtime behavior.
+Do not deploy to Kintone in this task.
 ```
 
 # HARD SAFETY
@@ -38,184 +38,129 @@ PROCESS_WRITES = 0
 EXTERNAL_DEPLOY = 0
 ```
 
-# STEP 1 — INSPECT CURRENT APP794 RUNTIME CODE
+# IMPLEMENTATION SCOPE
 
-Identify the exact current repository modules/customization files that affect App794 runtime behavior.
-
-Required:
+Modify existing modules first:
 
 ```text
-CURRENT_APP794_RUNTIME_FILES = exact
-CURRENT_EMPLOYEE_RESOLUTION = exact
-CURRENT_ROUTING_RESOLUTION = exact
-CURRENT_SCORING_RESOLUTION = exact
-CURRENT_REQUESTER_USER_USAGE = exact
-CURRENT_DEPLOYMENT_STATUS = exact
+src/main-mbo-app.js
+src/services/routing-service.js
+src/services/employee-service.js
+src/profiles/profile-scoring-resolver.js
+src/ui/employee-part-a-ui.js
 ```
 
-Do not create duplicate adapters if an existing module can be extended safely.
+Create a new file only if separation of concerns clearly requires it.
+No `_old`, `_v1`, duplicate service, duplicate resolver, or dead helper.
 
-# STEP 2 — FREEZE AUTHORITATIVE DATA FLOW
-
-Design exact runtime flow:
+# REQUIRED RUNTIME FLOW
 
 ```text
-shared Kintone account
-  -> App794 page
-  -> employee selection/context for business entry (NOT authentication)
-  -> App53 READ ONLY employee snapshot
-  -> derive Section + Team
-  -> App795 Routing_Key resolution
-  -> Requester_User / Manager / GM routing
-  -> App796 scoring profile resolution
-  -> App794 business fields / validation / workflow behavior
+App794 employee context
+  -> App53 READ ONLY lookup
+  -> derive Section + Team + Position/Profile context
+  -> build Routing_Key
+  -> App795 exact route resolution
+  -> Requester_User + Manager/GM routing
+  -> App796 exact published scoring profile resolution
+  -> normalized runtime result for App794
 ```
 
-Required rules:
-- App53 remains employee master / READ ONLY.
-- App795 is authoritative routing source.
-- TMG uses Section + Team Routing_Key.
-- Non-TMG uses Section only.
-- App796 is authoritative scoring source.
-- Shared Kintone user must never be labeled individual employee identity.
-- Employee_Code/query/localStorage must not be described as trusted authentication.
-
-# STEP 3 — FIELD MAPPING
-
-Read-only inspect App794, App53, App795, App796 schema/contracts and produce exact field mapping needed by runtime adapter.
-
-At minimum resolve:
+Rules:
 
 ```text
-App53 Employee_Code field
-App53 Department field
-App53 Section field
-App53 Team field
-App53 Position/Profile field(s)
-App794 target Employee_Code field
-App794 Requester_User field
-App794 routing/approver fields actually present
-App794 scoring/profile fields actually present
+TMG1/TMG2: Routing_Key = Section_Code + "|" + Team
+Non-TMG:   Routing_Key = Section_Code
+
+Requester_User = workflow/request submission identity only
+Requester_User != employee authentication identity
+Shared Kintone account != individual employee identity
 ```
 
-If any exact field code is unresolved, mark BLOCKED rather than guess.
+# FAIL-CLOSED RULES
 
-# STEP 4 — ROUTING BEHAVIOR
-
-Verify implementation plan for all active routing:
-
-```text
-17/17 App795 rows
-TMG1 = 4 teams
-TMG2 = 3 teams
-Non-TMG = Section-only
-Routing_Key duplicate handling = fail closed
-Missing route = fail closed
-Inactive route = fail closed
-```
-
-Define exactly what App794 shows to user when routing cannot resolve.
-
-# STEP 5 — SCORING BEHAVIOR
-
-Verify exact App796 runtime resolver contract against 8 published profiles.
-
-Required:
-
-```text
-published config only
-position/profile mapping exact
-missing profile = fail closed
-multiple active matching profiles = fail closed
-no fallback to hardcoded stale ratios
-```
-
-Preserve current frozen ratios and source-of-truth rules.
-
-# STEP 6 — PATH_B REQUESTER MODEL
-
-Define how `Requester_User` from App795 is used operationally.
-
-Required:
-
-```text
-Requester_User is workflow/request submission identity under shared-account constraint
-Requester_User is NOT employee authentication identity
-Employee business record remains tied to selected/validated App53 Employee_Code
-Approver routing must derive from App795 only
-```
-
-Explain limitations clearly so UI does not imply individual login security.
-
-# STEP 7 — UI / ERROR STATES
-
-Design minimal runtime UX for:
+Implementation must stop business progression on:
 
 ```text
 employee not found
-Section missing
-Team missing where TMG requires team
-routing missing
+required Section missing
+TMG Team missing
+routing not found
 routing duplicate
-scoring profile missing
+inactive routing
+scoring profile not found
 scoring profile duplicate
-inactive employee if such field exists
+invalid/unpublished scoring profile
+```
+
+No stale hardcoded routing/scoring fallback.
+No silent first-match behavior on duplicates.
+No guessed field mapping.
+
+# APP53 CONTRACT
+
+App53 remains authoritative Employee Master and READ ONLY.
+Use the exact field mapping frozen by M10E.
+Do not duplicate employee master data into new config files.
+
+# APP795 CONTRACT
+
+Use current team-aware routing model only:
+
+```text
+17/17 active routing baseline
+TMG1 = 4 teams
+TMG2 = 3 teams
+non-TMG = section-only
+Routing_Key unique
+Section_Code intentionally non-unique for TMG
+```
+
+Approver data must come from App795 only.
+
+# APP796 CONTRACT
+
+Use published/current scoring configuration only.
+Preserve frozen source-of-truth behavior and exact 8-profile baseline.
+Do not reintroduce hardcoded scoring ratios as runtime fallback.
+
+# UI / ERROR BEHAVIOR
+
+Implement minimal user-facing resolution states using existing UI structures where possible:
+
+```text
+employee not found
+missing section/team
+routing configuration error
+scoring configuration error
 successful resolution
 ```
 
-Do not overbuild dashboard or unrelated UI.
+Messages must be understandable but must not expose internal secrets/configuration unnecessarily.
+Do not redesign unrelated dashboard/UI.
 
-# STEP 8 — IMPLEMENTATION PLAN FOR NEXT TASK
+# TEST REQUIREMENTS
 
-Produce exact smallest deployment-ready repository scope only.
-
-Must include:
-
-```text
-WHAT
-WHERE exact files/functions
-HOW
-WHY
-EXPECTED IMPACT
-RISKS
-TEST PLAN
-ROLLBACK PLAN
-NO-ORPHAN PLAN
-```
-
-Prefer modifying existing files/functions.
-New files only with clear separation-of-concerns justification.
-
-Next task should separate:
+Add/extend automated tests for at least:
 
 ```text
-A. repository code implementation/test only
-B. App794 customization deployment
-C. any schema/process write if unexpectedly required
-```
-
-Do not combine B/C without explicit user authorization.
-
-# STEP 9 — TEST MATRIX
-
-Define tests covering at least:
-
-```text
-non-TMG route
-TMG1 team route
-TMG2 team route
-missing team
-unknown employee
-missing route
-duplicate route
-valid scoring profile
-missing scoring profile
-duplicate scoring profile
+non-TMG route success
+TMG1 team route success
+TMG2 team route success
+TMG missing team fail-closed
+unknown employee fail-closed
+missing route fail-closed
+duplicate route fail-closed
+inactive route fail-closed
+valid published scoring resolution
+missing scoring fail-closed
+duplicate scoring fail-closed
 Requester_User mapping
-no stale hardcoded routing/scoring fallback
+no stale hardcoded route fallback
+no stale hardcoded scoring fallback
 ```
 
-Run existing tests:
+Run full suite:
 
 ```bash
 npm test
@@ -223,37 +168,49 @@ git diff --check
 git status --short
 ```
 
-# FINAL REQUIRED SUMMARY
+# NO-ORPHAN GATE
+
+After implementation:
 
 ```text
-M10E_APP794_RUNTIME_PREFLIGHT = COMPLETE / BLOCKED
+search for replaced runtime logic
+remove obsolete active implementations when safe
+remove unused imports/helpers/config keys
+no duplicate route/scoring resolver path
+no dead implementation files
+NO_ORPHAN_ARTIFACT_GATE = PASS
+```
 
-CURRENT_APP794_RUNTIME_FILES = actual
-FIELD_MAPPING_COMPLETE = YES/NO
-APP53_READ_ONLY = YES
-APP795_ROUTING_SOURCE = YES
-APP796_SCORING_SOURCE = YES
-TMG_TEAM_AWARE = YES/NO
-REQUESTER_USER_MODEL = exact
+If an old artifact must remain for historical compatibility, document the exact active reason; otherwise remove it.
 
-RUNTIME_IMPLEMENTATION_READY = YES/NO
-NEXT_REPOSITORY_SCOPE = exact
-NEXT_TASK_KINTONE_WRITES = NONE / exact
-NEXT_TASK_CUSTOMIZATION_DEPLOY = NO
-USER_AUTHORIZATION_REQUIRED_FOR_DEPLOY = YES
+# REQUIRED FINAL SUMMARY
+
+```text
+M10F_APP794_RUNTIME_REPOSITORY_IMPLEMENTATION = COMPLETE / BLOCKED
+
+FILES_CHANGED = exact
+NEW_FILES_CREATED = exact / NONE
+APP53_RUNTIME_LOOKUP = IMPLEMENTED / BLOCKED
+APP795_TEAM_AWARE_ROUTING = IMPLEMENTED / BLOCKED
+APP796_SCORING_RESOLUTION = IMPLEMENTED / BLOCKED
+REQUESTER_USER_MAPPING = IMPLEMENTED / BLOCKED
+FAIL_CLOSED_RUNTIME = PASS / FAIL
+STALE_HARDCODED_ROUTING_FALLBACK = 0 / actual
+STALE_HARDCODED_SCORING_FALLBACK = 0 / actual
 
 KINTONE_WRITES_THIS_TASK = 0
+APP794_CUSTOMIZATION_DEPLOY = 0
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
 NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = CHATGPT REVIEW ONLY
+NEXT_ACTION = CHATGPT CODE REVIEW ONLY
 ```
 
-Update only living docs required to record current factual preflight conclusions.
+Update only living docs needed to record factual implementation state.
 Commit and push same branch, then STOP.
 
 Do NOT deploy App794 customization.
-Do NOT change App794 schema/process.
+Do NOT modify Kintone schema/process/records.
 Do NOT touch App53/App795/App796/App801 state.
