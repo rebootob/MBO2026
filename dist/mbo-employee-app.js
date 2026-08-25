@@ -170,6 +170,889 @@ function buildRecordKey(fiscalYear, employeeCode) {
 
 
   /**
+ * Japanese Fiscal Year & Record Key Engine (MBO V2 Pure Foundation)
+ *
+ * Rules:
+ * 1. Japanese Fiscal Year runs from 1 April to 31 March.
+ *    - Example: 2027-04-01 to 2028-03-31 is FY2027.
+ *    - Example: 2027-03-31 is FY2026.
+ * 2. Employee Code is strictly required to be a String matching /^[A-Za-z0-9_-]+$/, preserving leading zeros (e.g. "0149").
+ *    Numeric input (e.g. 149), spaces (e.g. "01 49"), slashes, and symbols are rejected to prevent silent corruption.
+ * 3. Fiscal Year must match /^FY\d{4}$/i.
+ * 4. Record Key is strictly formatted as "{Fiscal_Year}-{Employee_Code}" (e.g. "FY2027-0149") and must satisfy /^FY\d{4}-[A-Za-z0-9_-]+$/.
+ * 5. Strict date/time validation rejects invalid calendar dates and invalid timestamp hours/minutes/seconds.
+ */
+
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+function getDaysInMonth(year, month) {
+  const days = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return days[month - 1];
+}
+
+/**
+ * Parse and strictly validate a date input (string or Date object).
+ * Rejects invalid calendar dates, invalid months/days, invalid hours/minutes/seconds, and trailing garbage.
+ * @param {Date|string} dateInput - Date object or ISO date string (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss...)
+ * @returns {{ year: number, month: number, day: number }}
+ */
+function parseAndValidateDate(dateInput) {
+  if (dateInput === null || dateInput === undefined) {
+    throw new Error('Date input cannot be null or undefined.');
+  }
+
+  let year, month, day;
+
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+
+    // Check for exact YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss(Z|offset)
+    const dateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))?)?$/);
+    if (!dateMatch) {
+      throw new Error(`Invalid date format (must be YYYY-MM-DD or ISO-8601): "${dateInput}"`);
+    }
+
+    year = parseInt(dateMatch[1], 10);
+    month = parseInt(dateMatch[2], 10);
+    day = parseInt(dateMatch[3], 10);
+
+    // If time components exist, strictly validate hour, minute, second, and timezone offset
+    if (dateMatch[4] !== undefined) {
+      const hour = parseInt(dateMatch[4], 10);
+      const minute = parseInt(dateMatch[5], 10);
+      const second = parseInt(dateMatch[6], 10);
+
+      if (hour < 0 || hour > 23) {
+        throw new Error(`Invalid hour: ${hour} in date "${dateInput}". Hour must be between 00 and 23.`);
+      }
+      if (minute < 0 || minute > 59) {
+        throw new Error(`Invalid minute: ${minute} in date "${dateInput}". Minute must be between 00 and 59.`);
+      }
+      if (second < 0 || second > 59) {
+        throw new Error(`Invalid second: ${second} in date "${dateInput}". Second must be between 00 and 59.`);
+      }
+
+      // If timezone offset exists, validate offset bounds
+      if (dateMatch[8] !== undefined) {
+        const offsetHour = parseInt(dateMatch[9], 10);
+        const offsetMinute = parseInt(dateMatch[10], 10);
+        if (offsetHour < 0 || offsetHour > 14) {
+          throw new Error(`Invalid timezone offset hour: ${offsetHour} in date "${dateInput}".`);
+        }
+        if (offsetMinute < 0 || offsetMinute > 59) {
+          throw new Error(`Invalid timezone offset minute: ${offsetMinute} in date "${dateInput}".`);
+        }
+      }
+    }
+
+    // If ISO string with UTC 'Z' timezone, evaluate in UTC
+    if (dateMatch[7] === 'Z') {
+      const d = new Date(trimmed);
+      if (isNaN(d.getTime())) {
+        throw new Error(`Invalid date input: "${dateInput}"`);
+      }
+      year = d.getUTCFullYear();
+      month = d.getUTCMonth() + 1;
+      day = d.getUTCDate();
+    }
+  } else if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) {
+      throw new Error('Invalid Date object instance.');
+    }
+    year = dateInput.getFullYear();
+    month = dateInput.getMonth() + 1;
+    day = dateInput.getDate();
+  } else {
+    throw new Error(`Unsupported date input type: ${typeof dateInput}`);
+  }
+
+  // Validate Year range
+  if (year < 1900 || year > 2100) {
+    throw new Error(`Year ${year} is out of supported range (1900-2100).`);
+  }
+
+  // Validate Month range (1 to 12)
+  if (month < 1 || month > 12) {
+    throw new Error(`Invalid month: ${month} in date "${dateInput}". Month must be between 01 and 12.`);
+  }
+
+  // Validate Day range for specific month/year
+  const maxDays = getDaysInMonth(year, month);
+  if (day < 1 || day > maxDays) {
+    throw new Error(`Invalid day: ${day} for month ${month}/${year} in date "${dateInput}". Maximum valid day is ${maxDays}.`);
+  }
+
+  return { year, month, day };
+}
+
+/**
+ * Calculate the Japanese Fiscal Year from a strictly validated date.
+ * @param {Date|string} dateInput - Date object or ISO date string (YYYY-MM-DD)
+ * @returns {string} Fiscal Year string in format "FYXXXX" (e.g. "FY2027")
+ */
+function getJapaneseFiscalYear(dateInput = new Date()) {
+  const { year, month } = parseAndValidateDate(dateInput);
+
+  // Japanese FY: April (Month 4) to March (Month 3 of next calendar year)
+  const fiscalYearNumber = month >= 4 ? year : year - 1;
+  return `FY${fiscalYearNumber}`;
+}
+
+/**
+ * Validate that a string qualifies as a canonical Employee Code.
+ * Must match /^[A-Za-z0-9_-]+$/.
+ * @param {any} code - Value to test
+ * @returns {boolean} True if code is non-empty string matching /^[A-Za-z0-9_-]+$/
+ */
+function isValidEmployeeCode(code) {
+  if (typeof code !== 'string') {
+    return false;
+  }
+  const trimmed = code.trim();
+  if (trimmed.length === 0) {
+    return false;
+  }
+  return /^[A-Za-z0-9_-]+$/.test(trimmed);
+}
+
+/**
+ * Normalize and strictly validate an Employee Code.
+ * Enforces String type and format /^[A-Za-z0-9_-]+$/ to guarantee canonical leading zeros are never destroyed.
+ * Rejects numeric inputs (e.g. 149), spaces (e.g. "01 49"), slashes, and non-string types.
+ * @param {string} code - Raw employee code input (must be string)
+ * @returns {string} Canonical preserved string representation (e.g. "0149")
+ */
+function normalizeEmployeeCode(code) {
+  if (code === null || code === undefined) {
+    throw new Error('Employee Code cannot be null or undefined.');
+  }
+
+  if (typeof code !== 'string') {
+    throw new Error(`Employee Code must be a string (received ${typeof code}). Numeric codes like ${code} are rejected to protect canonical leading zeros.`);
+  }
+
+  const strCode = code.trim();
+  if (strCode.length === 0) {
+    throw new Error('Employee Code cannot be empty.');
+  }
+
+  if (!/^[A-Za-z0-9_-]+$/.test(strCode)) {
+    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must contain only alphanumeric characters, underscores, and hyphens (no spaces or slashes).`);
+  }
+
+  return strCode;
+}
+
+/**
+ * Validate that a given Record Key conforms to standard MBO V2 format.
+ * @param {string} recordKey - Record Key string to validate
+ * @returns {boolean} True if format matches /^FY\d{4}-[A-Za-z0-9_-]+$/
+ */
+function isValidRecordKeyFormat(recordKey) {
+  if (!recordKey || typeof recordKey !== 'string') {
+    return false;
+  }
+  return /^FY\d{4}-[A-Za-z0-9_-]+$/.test(recordKey.trim());
+}
+
+/**
+ * Generate standard MBO Record Key from Fiscal Year and Employee Code.
+ * Validates that Fiscal Year matches /^FY\d{4}$/i and Employee Code satisfies canonical contract.
+ * Guarantees that the returned Record Key satisfies isValidRecordKeyFormat() === true.
+ * @param {string} fiscalYear - Fiscal Year string (e.g. "FY2027")
+ * @param {string} employeeCode - Canonical string Employee Code (e.g. "0149")
+ * @returns {string} Standard Record Key (e.g. "FY2027-0149")
+ */
+function generateRecordKey(fiscalYear, employeeCode) {
+  if (!fiscalYear || typeof fiscalYear !== 'string') {
+    throw new Error('Fiscal Year is required and must be a string.');
+  }
+
+  const cleanFy = fiscalYear.trim().toUpperCase();
+  if (!/^FY\d{4}$/.test(cleanFy)) {
+    throw new Error(`Invalid Fiscal Year format: "${fiscalYear}". Expected format is FYYYYY (e.g. FY2027).`);
+  }
+
+  const cleanEmpCode = normalizeEmployeeCode(employeeCode);
+  const generatedKey = `${cleanFy}-${cleanEmpCode}`;
+
+  if (!isValidRecordKeyFormat(generatedKey)) {
+    throw new Error(`Generated Record Key "${generatedKey}" violates canonical Record Key format.`);
+  }
+
+  return generatedKey;
+}
+
+
+  
+
+/**
+ * MBO V2 Phase 3 WP-002A: Scoring Configuration Master Foundation
+ * 
+ * Master Record Identity: Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}
+ * Governance Rules: DEC-035 (LIVE_KINTONE_FIRST), DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS), DEC-038 (KINTONE_ONLY)
+ */
+
+const PROFILE_CODES = {
+  STAFF_CHIEF: 'PROF_STAFF_CHIEF',
+  JAPANESE_STAFF: 'PROF_JAPANESE_STAFF',
+  ASST_MGR: 'PROF_ASST_MGR',
+  SECTION_MGR: 'PROF_SECTION_MGR',
+  SENIOR_MGR: 'PROF_SENIOR_MGR',
+  DGM: 'PROF_DGM',
+  GM: 'PROF_GM',
+  VP: 'PROF_VP'
+};
+
+const PROFILE_FAMILIES = {
+  PROFILE_STAFF_CHIEF: 'PROFILE_STAFF_CHIEF',
+  PROFILE_JAPANESE_STAFF: 'PROFILE_JAPANESE_STAFF',
+  PROFILE_MANAGEMENT: 'PROFILE_MANAGEMENT',
+  PROFILE_EXECUTIVE: 'PROFILE_EXECUTIVE'
+};
+
+const PART_A_SCORING_MODES = {
+  DIFFICULTY_ACHIEVEMENT_MATRIX: 'DIFFICULTY_ACHIEVEMENT_MATRIX',
+  ACHIEVEMENT_DIRECT: 'ACHIEVEMENT_DIRECT'
+};
+
+const APPRAISER_WEIGHT_RULES = {
+  EQUAL_DISTRIBUTION_V1: 'EQUAL_DISTRIBUTION_V1'
+};
+
+const ALLOWED_ROUNDING_RULES = {
+  ROUNDING_LEGACY_PER_APP_CALC: 'ROUNDING_LEGACY_PER_APP_CALC',
+  ROUNDING_LEGACY_FINAL_ROUND_2: 'ROUNDING_LEGACY_FINAL_ROUND_2',
+  UNIFIED_HALF_UP_2_DECIMALS: 'UNIFIED_HALF_UP_2_DECIMALS'
+};
+
+const KNOWN_COMPETENCY_SETS = {
+  COMP_SET_OPERATIONAL_V1: {
+    code: 'COMP_SET_OPERATIONAL_V1',
+    totalItems: 6,
+    includedItemsCount: 5,
+    coceItemIndex: 6,
+    coceIncludedInScore: false,
+    scoredItemIndexes: [1, 2, 3, 4, 5]
+  },
+  COMP_SET_MANAGEMENT_V1: {
+    code: 'COMP_SET_MANAGEMENT_V1',
+    totalItems: 8,
+    includedItemsCount: 7,
+    coceItemIndex: 6,
+    coceIncludedInScore: false,
+    scoredItemIndexes: [1, 2, 3, 4, 5, 7, 8]
+  }
+};
+
+const CONFIG_LIFECYCLE_STATUS = {
+  DRAFT: 'DRAFT',
+  VALIDATED: 'VALIDATED',
+  PUBLISHED: 'PUBLISHED',
+  SUPERSEDED: 'SUPERSEDED',
+  RETIRED: 'RETIRED'
+};
+
+/**
+ * 19 Immutable Payload Fields for Configuration Hash computation
+ */
+const IMMUTABLE_PAYLOAD_FIELDS = [
+  'Master_Record_Key',
+  'Profile_Code',
+  'Profile_Family',
+  'Scoring_Config_Code',
+  'Scoring_Config_Version',
+  'Effective_From',
+  'Effective_To',
+  'Fiscal_Year',
+  'PartA_Weight',
+  'PartB_Weight',
+  'Expected_Appraiser_Count',
+  'Appraiser_Weight_Rule_Code',
+  'Part_A_Scoring_Mode',
+  'Competency_Set_Code',
+  'PartA_Rounding_Rule',
+  'PartB_Raw_Rounding_Rule',
+  'PartB_Weighted_Rounding_Rule',
+  'Final_Rounding_Rule',
+  'Supersedes_Config_Version'
+];
+
+/**
+ * Explicitly excluded audit/lifecycle fields (must NOT affect Configuration_Hash)
+ */
+const EXCLUDED_AUDIT_FIELDS = [
+  'Config_Status',
+  'Published_At',
+  'Published_By',
+  'Configuration_Hash'
+];
+
+/**
+ * Generates deterministic Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}
+ */
+function generateMasterRecordKey(profileCode, scoringConfigVersion) {
+  if (!profileCode || typeof profileCode !== 'string' || profileCode.trim() === '') {
+    throw new Error('PROFILE_CODE_INVALID: Profile_Code is required');
+  }
+  if (!scoringConfigVersion || typeof scoringConfigVersion !== 'string' || scoringConfigVersion.trim() === '') {
+    throw new Error('CONFIG_VERSION_INVALID: Scoring_Config_Version is required');
+  }
+  return `${profileCode.trim()}::${scoringConfigVersion.trim()}`;
+}
+
+/**
+ * Computes deterministic SHA-256 hash over the 19 immutable payload fields only
+ */
+function computeConfigurationHash(configPayload) {
+  if (!configPayload || typeof configPayload !== 'object') {
+    throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
+  }
+
+  // Extract and sort immutable payload fields
+  const immutableObject = {};
+  for (const field of IMMUTABLE_PAYLOAD_FIELDS.slice().sort()) {
+    immutableObject[field] = configPayload[field] !== undefined ? configPayload[field] : null;
+  }
+
+  const canonicalJson = JSON.stringify(immutableObject);
+  return crypto.createHash('sha256').update(canonicalJson, 'utf8').digest('hex');
+}
+
+/**
+ * Validates a Master Configuration Record against MBO V2 scoring invariants
+ */
+function validateScoringMasterConfig(configPayload, existingKeys = []) {
+  if (!configPayload || typeof configPayload !== 'object') {
+    throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
+  }
+
+  // 1. Version requirement
+  if (!configPayload.Scoring_Config_Version || typeof configPayload.Scoring_Config_Version !== 'string' || configPayload.Scoring_Config_Version.trim() === '') {
+    throw new Error('MISSING_CONFIG_VERSION: Scoring_Config_Version is required');
+  }
+
+  // 2. Profile Code requirement & stability check
+  if (!configPayload.Profile_Code || !Object.values(PROFILE_CODES).includes(configPayload.Profile_Code)) {
+    throw new Error('INVALID_PROFILE_CODE: Profile_Code is invalid or unsupported');
+  }
+
+  // 3. Master_Record_Key generation and match
+  const expectedKey = generateMasterRecordKey(configPayload.Profile_Code, configPayload.Scoring_Config_Version);
+  if (!configPayload.Master_Record_Key || configPayload.Master_Record_Key !== expectedKey) {
+    throw new Error(`INVALID_MASTER_RECORD_KEY: Expected ${expectedKey} but got ${configPayload.Master_Record_Key}`);
+  }
+
+  // 4. Duplicate Key Rejection
+  if (Array.isArray(existingKeys) && existingKeys.includes(configPayload.Master_Record_Key)) {
+    throw new Error(`MASTER_CONFIG_DUPLICATE: Key ${configPayload.Master_Record_Key} already exists`);
+  }
+
+  // 5. PartA + PartB Weight Validation (Must sum to 100)
+  const partA = Number(configPayload.PartA_Weight);
+  const partB = Number(configPayload.PartB_Weight);
+  if (isNaN(partA) || isNaN(partB) || (partA + partB !== 100)) {
+    throw new Error(`INVALID_SCORING_WEIGHTS: PartA_Weight (${partA}) + PartB_Weight (${partB}) must equal 100`);
+  }
+
+  // 6. Expected Appraiser Count Validation (Must be 1 or 2)
+  const kExpected = Number(configPayload.Expected_Appraiser_Count);
+  if (![1, 2].includes(kExpected)) {
+    throw new Error(`INVALID_APPRAISER_COUNT: Expected_Appraiser_Count must be 1 or 2, got ${configPayload.Expected_Appraiser_Count}`);
+  }
+
+  // 7. Appraiser Weight Rule Validation
+  if (!configPayload.Appraiser_Weight_Rule_Code || !Object.values(APPRAISER_WEIGHT_RULES).includes(configPayload.Appraiser_Weight_Rule_Code)) {
+    throw new Error('INVALID_APPRAISER_WEIGHT_RULE: Appraiser_Weight_Rule_Code is invalid');
+  }
+
+  // 8. Part A Scoring Mode Validation
+  if (!configPayload.Part_A_Scoring_Mode || !Object.values(PART_A_SCORING_MODES).includes(configPayload.Part_A_Scoring_Mode)) {
+    throw new Error('INVALID_PART_A_MODE: Part_A_Scoring_Mode is invalid');
+  }
+
+  // 9. Competency Set Code Requirement & COCE Exclusion Check
+  if (!configPayload.Competency_Set_Code || typeof configPayload.Competency_Set_Code !== 'string' || configPayload.Competency_Set_Code.trim() === '') {
+    throw new Error('MISSING_COMPETENCY_SET: Competency_Set_Code is required');
+  }
+  const compSet = KNOWN_COMPETENCY_SETS[configPayload.Competency_Set_Code];
+  if (!compSet) {
+    throw new Error(`INVALID_COMPETENCY_SET: Competency_Set_Code ${configPayload.Competency_Set_Code} is invalid`);
+  }
+  if (compSet.coceIncludedInScore !== false || compSet.coceItemIndex !== 6) {
+    throw new Error('INVALID_COCE_GOVERNANCE: COCE must have coceItemIndex = 6 and coceIncludedInScore = false');
+  }
+
+  // 10. Rounding Rules Validation
+  const roundingFields = [
+    'PartA_Rounding_Rule',
+    'PartB_Raw_Rounding_Rule',
+    'PartB_Weighted_Rounding_Rule',
+    'Final_Rounding_Rule'
+  ];
+  for (const field of roundingFields) {
+    const rule = configPayload[field];
+    if (!rule || !Object.values(ALLOWED_ROUNDING_RULES).includes(rule)) {
+      throw new Error(`INVALID_ROUNDING_RULE: ${field} value '${rule}' is not an allowed rounding rule`);
+    }
+  }
+
+  // 11. Effective Date Requirement & Validity (Fail-Closed)
+  if (!configPayload.Effective_From || typeof configPayload.Effective_From !== 'string' || configPayload.Effective_From.trim() === '') {
+    throw new Error('MISSING_EFFECTIVE_PERIOD: Effective_From is required');
+  }
+  if (!configPayload.Effective_To || typeof configPayload.Effective_To !== 'string' || configPayload.Effective_To.trim() === '') {
+    throw new Error('MISSING_EFFECTIVE_PERIOD: Effective_To is required');
+  }
+
+  const fromDate = new Date(configPayload.Effective_From);
+  const toDate = new Date(configPayload.Effective_To);
+  if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime()) || fromDate > toDate) {
+    throw new Error('INVALID_EFFECTIVE_PERIOD: Effective_From must be prior to or equal to Effective_To');
+  }
+
+  // Return validated config with computed configuration hash
+  const computedHash = computeConfigurationHash(configPayload);
+  return {
+    isValid: true,
+    computedHash
+  };
+}
+
+/**
+ * Returns canonical frozen baseline configurations for ALL 8 evaluation groups
+ */
+function getCanonicalBaselineMasterConfigs() {
+  return [
+    {
+      Master_Record_Key: 'PROF_STAFF_CHIEF::v1.0.0',
+      Profile_Code: PROFILE_CODES.STAFF_CHIEF,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_STAFF_CHIEF,
+      Scoring_Config_Code: 'SCORE_CFG_STAFF_CHIEF_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 70,
+      PartB_Weight: 30,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_OPERATIONAL_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_JAPANESE_STAFF::v1.0.0',
+      Profile_Code: PROFILE_CODES.JAPANESE_STAFF,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_JAPANESE_STAFF,
+      Scoring_Config_Code: 'SCORE_CFG_JAPANESE_STAFF_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 70,
+      PartB_Weight: 30,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_OPERATIONAL_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_ASST_MGR::v1.0.0',
+      Profile_Code: PROFILE_CODES.ASST_MGR,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
+      Scoring_Config_Code: 'SCORE_CFG_ASST_MGR_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 60,
+      PartB_Weight: 40,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_SECTION_MGR::v1.0.0',
+      Profile_Code: PROFILE_CODES.SECTION_MGR,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
+      Scoring_Config_Code: 'SCORE_CFG_SECTION_MGR_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_FINAL_ROUND_2,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_SENIOR_MGR::v1.0.0',
+      Profile_Code: PROFILE_CODES.SENIOR_MGR,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
+      Scoring_Config_Code: 'SCORE_CFG_SENIOR_MGR_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_FINAL_ROUND_2,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_DGM::v1.0.0',
+      Profile_Code: PROFILE_CODES.DGM,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_MANAGEMENT,
+      Scoring_Config_Code: 'SCORE_CFG_DGM_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 2,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_GM::v1.0.0',
+      Profile_Code: PROFILE_CODES.GM,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_EXECUTIVE,
+      Scoring_Config_Code: 'SCORE_CFG_GM_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 1,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    },
+    {
+      Master_Record_Key: 'PROF_VP::v1.0.0',
+      Profile_Code: PROFILE_CODES.VP,
+      Profile_Family: PROFILE_FAMILIES.PROFILE_EXECUTIVE,
+      Scoring_Config_Code: 'SCORE_CFG_VP_V1',
+      Scoring_Config_Version: 'v1.0.0',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Fiscal_Year: 'FY2026',
+      PartA_Weight: 50,
+      PartB_Weight: 50,
+      Expected_Appraiser_Count: 1,
+      Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
+      Part_A_Scoring_Mode: PART_A_SCORING_MODES.ACHIEVEMENT_DIRECT,
+      Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+      PartA_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Raw_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      PartB_Weighted_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Final_Rounding_Rule: ALLOWED_ROUNDING_RULES.ROUNDING_LEGACY_PER_APP_CALC,
+      Supersedes_Config_Version: 'NONE',
+      Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED
+    }
+  ];
+}
+/**
+ * Canonicalizes a scoring config payload to enforce strict string representations 
+ * for the 19 immutable fields, enabling stable hash computation across number/string formats.
+ */
+function canonicalizeScoringConfigPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
+  }
+
+  const canonical = {};
+
+  for (const field of IMMUTABLE_PAYLOAD_FIELDS) {
+    const val = payload[field];
+    if (val === undefined || val === null) {
+      throw new Error(`CANONICALIZATION_FAILED: Missing immutable field '${field}'`);
+    }
+
+    if (field === 'PartA_Weight' || field === 'PartB_Weight') {
+      const strVal = typeof val === 'string' ? val.trim() : String(val);
+      if (strVal === '') {
+        throw new Error(`CANONICALIZATION_FAILED: Invalid numeric field '${field}'`);
+      }
+      const num = Number(strVal);
+      if (isNaN(num) || !isFinite(num)) {
+        throw new Error(`CANONICALIZATION_FAILED: Invalid numeric field '${field}'`);
+      }
+      canonical[field] = String(num);
+    } else if (field === 'Expected_Appraiser_Count') {
+      const strVal = typeof val === 'string' ? val.trim() : String(val);
+      if (strVal === '') {
+        throw new Error(`CANONICALIZATION_FAILED: Invalid appraiser count '${field}'`);
+      }
+      const num = Number(strVal);
+      if (isNaN(num) || !isFinite(num) || !Number.isInteger(num)) {
+        throw new Error(`CANONICALIZATION_FAILED: Expected_Appraiser_Count must be an integer`);
+      }
+      canonical[field] = String(num);
+    } else if (field === 'Effective_From' || field === 'Effective_To') {
+      if (typeof val !== 'string') {
+        throw new Error(`CANONICALIZATION_FAILED: ${field} must be a string`);
+      }
+      const trimmed = val.trim();
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(trimmed)) {
+        throw new Error(`CANONICALIZATION_FAILED: ${field} must be formatted YYYY-MM-DD`);
+      }
+      const parsedDate = new Date(trimmed);
+      if (isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== trimmed) {
+        throw new Error(`CANONICALIZATION_FAILED: ${field} represents an invalid calendar date`);
+      }
+      canonical[field] = trimmed;
+    } else {
+      if (typeof val !== 'string') {
+        throw new Error(`CANONICALIZATION_FAILED: Field '${field}' must be a string`);
+      }
+      const trimmed = val.trim();
+      if (trimmed === '' && field !== 'Supersedes_Config_Version') {
+        throw new Error(`CANONICALIZATION_FAILED: Field '${field}' cannot be empty`);
+      }
+      canonical[field] = trimmed;
+    }
+  }
+
+  return canonical;
+}
+
+
+  /**
+ * Phase 3 WP-002B: profile resolution and read-only scoring configuration resolver.
+ * This module deliberately has no Kintone adapter: master records are injected.
+ */
+
+
+
+  PROFILE_CODES,
+  computeConfigurationHash,
+  validateScoringMasterConfig
+} from './scoring-config-master.js';
+
+const POSITION_TO_PROFILE = new Map([
+  ['staff', PROFILE_CODES.STAFF_CHIEF],
+  ['senior staff', PROFILE_CODES.STAFF_CHIEF],
+  ['chief', PROFILE_CODES.STAFF_CHIEF],
+  ['marketing chief', PROFILE_CODES.STAFF_CHIEF],
+  ['support marketing staff', PROFILE_CODES.STAFF_CHIEF],
+  ['support marketing chief', PROFILE_CODES.STAFF_CHIEF],
+  ['supoort marketing staff', PROFILE_CODES.STAFF_CHIEF],
+  ['supoort marketing chief', PROFILE_CODES.STAFF_CHIEF],
+  ['technical service engineer', PROFILE_CODES.STAFF_CHIEF],
+  ['technical service chief', PROFILE_CODES.STAFF_CHIEF],
+  ['accounting staff', PROFILE_CODES.STAFF_CHIEF],
+  ['chief of engineer', PROFILE_CODES.STAFF_CHIEF],
+  ['marketing engineer', PROFILE_CODES.STAFF_CHIEF],
+  ['engineering staff', PROFILE_CODES.STAFF_CHIEF],
+  ['it staff', PROFILE_CODES.STAFF_CHIEF],
+  ['technical chief', PROFILE_CODES.STAFF_CHIEF],
+  ['technician', PROFILE_CODES.STAFF_CHIEF],
+  ['safety officer', PROFILE_CODES.STAFF_CHIEF],
+  ['service engineer', PROFILE_CODES.STAFF_CHIEF],
+  ['chief of safety officer', PROFILE_CODES.STAFF_CHIEF],
+  ['technical staff', PROFILE_CODES.STAFF_CHIEF],
+  ['accounting chief', PROFILE_CODES.STAFF_CHIEF],
+  ['design engineer', PROFILE_CODES.STAFF_CHIEF],
+  ['japanese staff', PROFILE_CODES.JAPANESE_STAFF],
+  ['expatriate', PROFILE_CODES.JAPANESE_STAFF],
+  ['expatriate japanese staff', PROFILE_CODES.JAPANESE_STAFF],
+  ['assistant manager', PROFILE_CODES.ASST_MGR],
+  ['section manager', PROFILE_CODES.SECTION_MGR],
+  ['senior manager', PROFILE_CODES.SENIOR_MGR],
+  ['deputy general manager', PROFILE_CODES.DGM],
+  ['general manager', PROFILE_CODES.GM],
+  ['vice president', PROFILE_CODES.VP]
+]);
+
+const AMBIGUOUS_TITLES = new Set([
+  'marketing staff', 'operator', 'assistant chief', 'assistant section manager',
+  'coordinator', 'asst. section manager', 'messenger', 'advisor', 'senior chief',
+  'president', 'manager', 'trainee', 'cam staff', 'design engineer assistant manager',
+  'co project manager', 'specialist', 'executive management coordinator', 'safety',
+  'senior specilaist', 'warehouse support', 'driver', 'contract (apite)',
+  'contract (japan support)', 'interpreter', 'warehouse staff',
+  'safety officer& iso control', 'clerk', 'factory manager'
+]);
+
+const OUTPUT_FIELDS = [
+  'Profile_Code', 'Profile_Family', 'Scoring_Config_Code', 'Scoring_Config_Version',
+  'Fiscal_Year', 'Expected_Appraiser_Count', 'Appraiser_Weight_Rule_Code',
+  'PartA_Weight', 'PartB_Weight', 'Part_A_Scoring_Mode', 'Competency_Set_Code',
+  'PartA_Rounding_Rule', 'PartB_Raw_Rounding_Rule',
+  'PartB_Weighted_Rounding_Rule', 'Final_Rounding_Rule', 'Effective_From',
+  'Effective_To', 'Configuration_Hash'
+];
+
+class ProfileScoringResolverError extends Error {
+  constructor(code, message = code) {
+    super(message);
+    this.name = 'ProfileScoringResolverError';
+    this.code = code;
+  }
+}
+
+/** Applies the frozen title normalization policy. */
+function normalizeTitle(rawTitle) {
+  if (typeof rawTitle !== 'string' || rawTitle.trim() === '') {
+    throw new ProfileScoringResolverError('PROFILE_SOURCE_INVALID');
+  }
+  return rawTitle.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function resolveProfileCode(employeeSnapshot) {
+  if (!isVerifiedEmployeeSnapshot(employeeSnapshot)) {
+    throw new ProfileScoringResolverError('EMPLOYEE_SNAPSHOT_UNVERIFIED');
+  }
+  const normalizedTitle = normalizeTitle(employeeSnapshot.Employee_Position);
+  if (AMBIGUOUS_TITLES.has(normalizedTitle)) {
+    throw new ProfileScoringResolverError('PROFILE_RESOLUTION_AMBIGUOUS');
+  }
+  const profileCode = POSITION_TO_PROFILE.get(normalizedTitle);
+  if (!profileCode) {
+    throw new ProfileScoringResolverError('PROFILE_SOURCE_INVALID');
+  }
+  return profileCode;
+}
+
+function assertAuthenticatedContext(authenticatedContext) {
+  // This pre-verified caller contract is not the production security boundary.
+  // Native Kintone permissions or approved server-side controls remain that boundary.
+  if (!authenticatedContext || typeof authenticatedContext !== 'object' || authenticatedContext.isAuthenticated !== true) {
+    throw new ProfileScoringResolverError('AUTHENTICATED_CONTEXT_REQUIRED');
+  }
+}
+
+function assertFiscalYear(fiscalYear) {
+  if (typeof fiscalYear !== 'string' || !/^FY\d{4}$/i.test(fiscalYear.trim())) {
+    throw new ProfileScoringResolverError('FISCAL_YEAR_INVALID');
+  }
+  return fiscalYear.trim().toUpperCase();
+}
+
+function assertIsoDate(date, code) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    throw new ProfileScoringResolverError(code);
+  }
+  try {
+    getJapaneseFiscalYear(date.trim());
+  } catch {
+    throw new ProfileScoringResolverError(code);
+  }
+  return date.trim();
+}
+
+function isEligibleConfig(config, profileCode, fiscalYear, effectiveDate) {
+  if (!config || typeof config !== 'object' ||
+      config.Profile_Code !== profileCode || config.Fiscal_Year !== fiscalYear ||
+      config.Config_Status !== 'PUBLISHED') return false;
+  try {
+    const from = assertIsoDate(config.Effective_From, 'SCORING_CONFIG_NOT_FOUND');
+    const to = assertIsoDate(config.Effective_To, 'SCORING_CONFIG_NOT_FOUND');
+    return from <= effectiveDate && effectiveDate <= to;
+  } catch {
+    return false;
+  }
+}
+
+function toResolvedOutput(config) {
+  const result = {};
+  for (const field of OUTPUT_FIELDS) result[field] = config[field];
+  return result;
+}
+
+function resolveProfileScoringConfig({
+  employeeSnapshot,
+  fiscalYear,
+  effectiveDate,
+  masterConfigRecords,
+  authenticatedContext
+} = {}) {
+  assertAuthenticatedContext(authenticatedContext);
+  const requestedFiscalYear = assertFiscalYear(fiscalYear);
+  const requestedEffectiveDate = assertIsoDate(effectiveDate, 'EFFECTIVE_DATE_INVALID');
+  if (getJapaneseFiscalYear(requestedEffectiveDate) !== requestedFiscalYear) {
+    throw new ProfileScoringResolverError('FISCAL_YEAR_EFFECTIVE_DATE_MISMATCH');
+  }
+  if (!Array.isArray(masterConfigRecords)) {
+    throw new ProfileScoringResolverError('SCORING_CONFIG_NOT_FOUND');
+  }
+
+  const resolvedProfileCode = resolveProfileCode(employeeSnapshot);
+  const matches = masterConfigRecords.filter(config =>
+    isEligibleConfig(config, resolvedProfileCode, requestedFiscalYear, requestedEffectiveDate)
+  );
+  if (matches.length === 0) throw new ProfileScoringResolverError('SCORING_CONFIG_NOT_FOUND');
+  if (matches.length !== 1) throw new ProfileScoringResolverError('SCORING_CONFIG_AMBIGUOUS');
+
+  const config = matches[0];
+  try {
+    validateScoringMasterConfig(config);
+  } catch {
+    throw new ProfileScoringResolverError('SCORING_CONFIG_INVALID');
+  }
+  if (typeof config.Configuration_Hash !== 'string' || config.Configuration_Hash.length !== 64 ||
+      computeConfigurationHash(config) !== config.Configuration_Hash) {
+    throw new ProfileScoringResolverError('SCORING_CONFIG_INTEGRITY_FAILED');
+  }
+  return toResolvedOutput(config);
+}
+
+
+  /**
  * Safe Host Resolver for Kintone Record UI
  */
 
@@ -410,49 +1293,171 @@ class ValidationEngine {
  * Employee Service - Read-only lookup from App 53 (Employee Namelist)
  */
 
+
+
+const SNAPSHOT_FIELDS = [
+  'Employee_Code', 'Employee_Name', 'Employee_Name_TH', 'Employee_Department',
+  'Employee_Section', 'Team', 'Employee_Position', 'Employee_Email', 'Employee_Start_Date'
+];
+const verifiedSnapshotFingerprints = new WeakMap();
+
+function getSnapshotFingerprint(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return null;
+  return JSON.stringify(SNAPSHOT_FIELDS.map(field => snapshot[field] ?? null));
+}
+
+/**
+ * Returns true only for an unmodified snapshot object created by a successful
+ * EmployeeService.lookupEmployee call. This is provenance evidence, not an
+ * authentication or authorization boundary.
+ */
+export function isVerifiedEmployeeSnapshot(snapshot) {
+  const registeredFingerprint = verifiedSnapshotFingerprints.get(snapshot);
+  return typeof registeredFingerprint === 'string' &&
+    registeredFingerprint === getSnapshotFingerprint(snapshot);
+}
+
+class EmployeeLookupError extends Error {
+  constructor(code, userMessageTH, userMessageEN, cause = null) {
+    super(userMessageTH);
+    this.name = 'EmployeeLookupError';
+    this.code = code;
+    this.userMessageTH = userMessageTH;
+    this.userMessageEN = userMessageEN;
+    this.cause = cause;
+  }
+}
+
 class EmployeeService {
   /**
    * Lookup employee by Employee Code in App 53 (Read-Only)
-   * Supports leading zero code input e.g. "0149" -> queries Number in App 53
-   * @param {string} empCode
-   * @param {Object} kintoneApi
-   * @returns {Object} snapshot profile
+   * Canonical Business Employee Code is sourced strictly from App53.emp_text.
+   * @param {string} empCode - Input employee code string
+   * @param {Object} kintoneApi - Kintone API client instance
+   * @returns {Promise<{ status: string, employee: Object }>}
    */
   static async lookupEmployee(empCode, kintoneApi) {
-    const cleanCode = String(empCode || '').trim();
-    if (!cleanCode) {
-      throw new Error('กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code');
+    // 1. Strict Input Validation before API call
+    if (empCode === null || empCode === undefined) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code',
+        'Please enter Employee Code'
+      );
     }
 
-    const numVal = parseInt(cleanCode, 10);
-    const query = !isNaN(numVal)
-      ? `(Number = "${numVal}" or Number = "${cleanCode}") limit 2`
-      : `Number = "${cleanCode}" limit 2`;
+    if (typeof empCode !== 'string') {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        `รหัสพนักงานต้องเป็นข้อความ (String) เท่านั้น\nEmployee Code must be a string (received ${typeof empCode})`,
+        `Employee Code must be a string (received ${typeof empCode})`
+      );
+    }
 
-    const resp = await kintoneApi.getRecords(53, query);
-    const records = resp?.records || [];
+    const cleanCode = empCode.trim();
+    if (cleanCode.length === 0 || !isValidEmployeeCode(cleanCode)) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        `รูปแบบรหัสพนักงานไม่ถูกต้อง (${empCode})\nInvalid Employee Code format (${empCode})`,
+        `Invalid Employee Code format (${empCode})`
+      );
+    }
 
+    // 2. Query Construction (Injection-safe dual representation for query only)
+    const isDigitOnly = /^\d+$/.test(cleanCode);
+    let query;
+    if (isDigitOnly) {
+      const numericRep = parseInt(cleanCode, 10);
+      query = `(emp_text = "${cleanCode}" or Number = ${numericRep}) limit 2`;
+    } else {
+      query = `emp_text = "${cleanCode}" limit 2`;
+    }
+
+    // 3. Query Execution with safe error wrapping
+    let resp;
+    try {
+      resp = await kintoneApi.getRecords(53, query);
+    } catch (err) {
+      throw new EmployeeLookupError(
+        'SOURCE_ACCESS_ERROR',
+        'ไม่สามารถตรวจสอบข้อมูลพนักงานได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify employee information at this time. Please try again or contact HR / Administrator.',
+        'Unable to verify employee information at this time. Please try again or contact HR / Administrator.',
+        err
+      );
+    }
+
+    // 4. Source Response Structure Validation (DEF-009)
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      throw new EmployeeLookupError(
+        'SOURCE_RESPONSE_INVALID',
+        'โครงสร้างข้อมูลตอบกลับจากระบบ Employee Master ไม่ถูกต้อง กรุณาติดต่อ HR / Administrator\nInvalid response structure received from Employee Master. Please contact HR / Administrator.',
+        'Invalid response structure received from Employee Master. Please contact HR / Administrator.'
+      );
+    }
+
+    const records = resp.records;
+
+    // 5. Exactly-One Match Rule
     if (records.length === 0) {
-      throw new Error(`ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`);
+      throw new EmployeeLookupError(
+        'EMPLOYEE_NOT_FOUND',
+        `ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`,
+        `Employee code ${cleanCode} was not found in Employee Master (App 53)`
+      );
     }
 
     if (records.length > 1) {
-      throw new Error(`พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee code ${cleanCode} found. Please contact HR / Administrator.`);
+      throw new EmployeeLookupError(
+        'EMPLOYEE_SOURCE_AMBIGUOUS',
+        `พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee records found for code ${cleanCode}. Please contact HR / Administrator.`,
+        `Duplicate employee records found for code ${cleanCode}. Please contact HR / Administrator.`
+      );
     }
 
     const emp = records[0];
-    return {
-      Employee_Code: cleanCode, // Preserve leading zero string representation
+
+    // 6. Source Complete Validation: Canonical code must exist in emp_text
+    const rawEmpText = emp.emp_text?.value;
+    if (!rawEmpText || typeof rawEmpText !== 'string' || !isValidEmployeeCode(rawEmpText.trim())) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_SOURCE_INCOMPLETE',
+        `ข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master ไม่สมบูรณ์ (ขาดรหัส Canonical emp_text) กรุณาติดต่อ HR\nEmployee Master record for code ${cleanCode} is incomplete (missing or invalid emp_text). Please contact HR.`,
+        `Employee Master record for code ${cleanCode} is incomplete (missing or invalid emp_text). Please contact HR.`
+      );
+    }
+
+    const canonicalCode = rawEmpText.trim();
+
+    // 7. Identity Consistency Validation (DEF-008)
+    let isConsistent = false;
+    if (canonicalCode === cleanCode) {
+      isConsistent = true;
+    } else if (isDigitOnly && /^\d+$/.test(canonicalCode)) {
+      isConsistent = parseInt(canonicalCode, 10) === parseInt(cleanCode, 10);
+    }
+
+    if (!isConsistent) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_SOURCE_MISMATCH',
+        `ข้อมูลรหัสพนักงานในระบบ Employee Master ไม่ตรงกับรหัสที่ร้องขอ (${cleanCode}) กรุณาติดต่อ HR\nEmployee Master canonical identity does not match requested code (${cleanCode}). Please contact HR.`,
+        `Employee Master canonical identity does not match requested code (${cleanCode}). Please contact HR.`
+      );
+    }
+
+    // 8. Return and register the 9 header snapshot fields (Hoshin excluded).
+    const employee = {
+      Employee_Code: canonicalCode,
       Employee_Name: emp.Text?.value || '',
       Employee_Name_TH: emp.Text_0?.value || '',
-      Employee_Section: emp.Drop_down?.value || '',
       Employee_Department: emp.Drop_down_0?.value || '',
+      Employee_Section: emp.Drop_down?.value || '',
+      Team: emp.Drop_down_2?.value || emp.Team?.value || '',
       Employee_Position: emp.Text_2?.value || '',
       Employee_Email: emp.Text_4?.value || '',
-      Employee_Start_Date: emp.Date?.value || '',
-      Department_Hoshin: emp.Text_area?.value || '',
-      Section_Hoshin: emp.Text_area_0?.value || ''
+      Employee_Start_Date: emp.Date?.value || ''
     };
+    verifiedSnapshotFingerprints.set(employee, getSnapshotFingerprint(employee));
+    return { status: 'EMPLOYEE_FOUND', employee };
   }
 
   /**
@@ -484,24 +1489,44 @@ class EmployeeService {
 class RoutingService {
   /**
    * Validate current user access and resolve sequential routing topology from App 795
+   * Supports Team-aware routing keys (Section_Code|Team) for TMG sections
    * @param {number} routingAppId
    * @param {string} sectionCode
+   * @param {string} teamCode
    * @param {string} loginUserCode
    * @param {Object} kintoneApi
    * @returns {Object} Full Sequential Routing Profile
    */
-  static async validateRequesterAccess(routingAppId, sectionCode, loginUserCode, kintoneApi) {
+  static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi) {
     const cleanSection = String(sectionCode || '').trim();
+    const cleanTeam = String(teamCode || '').trim();
+
     if (!cleanSection) {
       throw new Error('ไม่พบข้อมูล Section ของพนักงาน กรุณาตรวจสอบ Employee Master (App 53)\nEmployee section is missing in Employee Master.');
     }
 
-    const query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 2`;
+    const isTmgSection = cleanSection === 'TMG1' || cleanSection === 'TMG2' || /^TMG/i.test(cleanSection);
+
+    if (isTmgSection && !cleanTeam) {
+      throw new Error(`ไม่พบข้อมูล Team ของพนักงานใน Section ${cleanSection} กรุณาตรวจสอบ Employee Master (App 53)\nTeam is required for employee in section ${cleanSection}.`);
+    }
+
+    const primaryRoutingKey = cleanTeam ? `${cleanSection}|${cleanTeam}` : cleanSection;
+
+    // Strict Query by Routing_Key (No fallback to Section_Code only)
+    const query = `Routing_Key = "${primaryRoutingKey}" and Active in ("Active") limit 2`;
     const resp = await kintoneApi.getRecords(routingAppId, query);
     const records = resp?.records || [];
 
+    // Fail-Closed: Routing Not Found
     if (records.length === 0) {
-      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${cleanSection} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nRouting configuration for section ${cleanSection} was not found in Routing Master.`);
+      const targetLabel = cleanTeam ? `${cleanSection} / Team ${cleanTeam}` : cleanSection;
+      throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${targetLabel} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nRouting configuration for section ${targetLabel} was not found in Routing Master.`);
+    }
+
+    // Fail-Closed: Duplicate Active Routing Key
+    if (records.length > 1) {
+      throw new Error(`พบข้อมูล Routing ซ้ำซ้อนสำหรับ Routing Key ${primaryRoutingKey} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nDuplicate active routing records found for key ${primaryRoutingKey} in Routing Master.`);
     }
 
     const route = records[0];
@@ -539,6 +1564,7 @@ class RoutingService {
     }
 
     return {
+      Routing_Key: route.Routing_Key?.value || primaryRoutingKey,
       Requester_User: requesters,
       Manager_Level1_Approvers: mgrL1,
       Manager_Level1_Approval_Rule: mgrL1Rule,
@@ -1482,6 +2508,7 @@ class EmployeePartAUI {
 
 
 
+
 (function () {
   'use strict';
 
@@ -1489,6 +2516,7 @@ class EmployeePartAUI {
 
   const ROUTING_APP_ID = 795;
   const EMPLOYEE_APP_ID = 53;
+  const SCORING_APP_ID = 796;
 
   let activeUiInstance = null;
 
@@ -1606,18 +2634,55 @@ class EmployeePartAUI {
       },
       onLookupEmployee: async (empCode) => {
         // Step 1: Employee Lookup from App 53 (Read-Only)
-        const empProfile = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
+        const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
+        const empProfile = empLookupRes.employee || empLookupRes;
 
-        // Step 2: Routing Validation from App 795
+        // Step 2: Routing Validation from App 795 (Team-Aware)
         const loginUser = kintone.getLoginUser();
-        const routing = await RoutingService.validateRequesterAccess(ROUTING_APP_ID, empProfile.Employee_Section, loginUser.code, kintoneApiWrapper);
+        const routing = await RoutingService.validateRequesterAccess(
+          ROUTING_APP_ID,
+          empProfile.Employee_Section,
+          empProfile.Team,
+          loginUser.code,
+          kintoneApiWrapper
+        );
 
-        // Step 3: Record Key & Duplicate Check
+        // Step 3: Published Scoring Configuration Lookup from App 796
         const fy = record.Fiscal_Year?.value || 'FY2026';
+        let scoringConfig = null;
+        try {
+          const profileCode = resolveProfileCode(empProfile);
+          const scoringQuery = `Profile_Code = "${profileCode}" and Config_Status in ("PUBLISHED") and Fiscal_Year = "${fy}" limit 2`;
+          const scoringRes = await kintoneApiWrapper.getRecords(SCORING_APP_ID, scoringQuery);
+          const scoringRecords = scoringRes?.records || [];
+
+          if (scoringRecords.length === 0) {
+            throw new Error(`ไม่พบการตั้งค่า Scoring Master (App 796) ที่สถานะ PUBLISHED สำหรับตำแหน่ง ${empProfile.Employee_Position} (${profileCode}) ใน ${fy}\nPublished scoring configuration was not found in App 796 for position ${empProfile.Employee_Position} (${profileCode}) in ${fy}.`);
+          }
+          if (scoringRecords.length > 1) {
+            throw new Error(`พบการตั้งค่า Scoring Master (App 796) ซ้ำซ้อนสำหรับโปรไฟล์ ${profileCode} ใน ${fy}\nDuplicate published scoring configurations found in App 796 for profile ${profileCode} in ${fy}.`);
+          }
+
+          const scRec = scoringRecords[0];
+          scoringConfig = {
+            Profile_Code: profileCode,
+            PartA_Weight: scRec.PartA_Weight?.value ? Number(scRec.PartA_Weight.value) : undefined,
+            PartB_Weight: scRec.PartB_Weight?.value ? Number(scRec.PartB_Weight.value) : undefined,
+            Part_A_Scoring_Mode: scRec.Part_A_Scoring_Mode?.value || '',
+            Competency_Set_Code: scRec.Competency_Set_Code?.value || '',
+            Configuration_Hash: scRec.Configuration_Hash?.value || ''
+          };
+        } catch (scoringErr) {
+          console.warn('[MBO V2] Scoring resolution info:', scoringErr.message);
+          // Re-throw if it's a fail-closed error
+          throw scoringErr;
+        }
+
+        // Step 4: Record Key & Duplicate Check
         const generatedKey = buildRecordKey(fy, empProfile.Employee_Code);
         await EmployeeService.checkDuplicateMBO(getMboAppId(), fy, empProfile.Employee_Code, record.$id?.value, kintoneApiWrapper);
 
-        // Step 4: Snapshot data safely into record in-memory
+        // Step 5: Snapshot data safely into record in-memory
         const fieldsToSync = {
           Employee_Code: empProfile.Employee_Code,
           Employee_Name: empProfile.Employee_Name,
@@ -1647,6 +2712,15 @@ class EmployeePartAUI {
           Fiscal_Year: fy,
           Record_Key: generatedKey
         };
+
+        if (scoringConfig) {
+          if (scoringConfig.Profile_Code) fieldsToSync.Profile_Code = scoringConfig.Profile_Code;
+          if (scoringConfig.PartA_Weight !== undefined) fieldsToSync.PartA_Weight = scoringConfig.PartA_Weight;
+          if (scoringConfig.PartB_Weight !== undefined) fieldsToSync.PartB_Weight = scoringConfig.PartB_Weight;
+          if (scoringConfig.Part_A_Scoring_Mode) fieldsToSync.Part_A_Scoring_Mode = scoringConfig.Part_A_Scoring_Mode;
+          if (scoringConfig.Competency_Set_Code) fieldsToSync.Competency_Set_Code = scoringConfig.Competency_Set_Code;
+          if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
+        }
 
         Object.entries(fieldsToSync).forEach(([k, val]) => {
           if (record[k]) {

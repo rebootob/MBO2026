@@ -11,6 +11,23 @@ const constantsJs = fs.readFileSync('src/config/constants.js', 'utf8')
   .replace(/export const/g, 'const')
   .replace(/export function/g, 'function');
 
+const fiscalYearEngineJs = fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8')
+  .replace(/import .*/g, '')
+  .replace(/export function/g, 'function')
+  .replace(/export class/g, 'class');
+
+const scoringConfigMasterJs = fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8')
+  .replace(/import .*/g, '')
+  .replace(/export const/g, 'const')
+  .replace(/export function/g, 'function')
+  .replace(/export class/g, 'class');
+
+const profileScoringResolverJs = fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8')
+  .replace(/import .*/g, '')
+  .replace(/export const/g, 'const')
+  .replace(/export function/g, 'function')
+  .replace(/export class/g, 'class');
+
 const hostResolverJs = fs.readFileSync('src/ui/host-resolver.js', 'utf8')
   .replace(/import .*/g, '')
   .replace(/export function/g, 'function');
@@ -39,6 +56,12 @@ const fullJs = `
   'use strict';
 
   ${constantsJs}
+
+  ${fiscalYearEngineJs}
+
+  ${scoringConfigMasterJs}
+
+  ${profileScoringResolverJs}
 
   ${hostResolverJs}
 
