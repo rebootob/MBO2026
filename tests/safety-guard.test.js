@@ -1505,3 +1505,59 @@ test('WP002C-S3CR1-038: final successful result requires catalog + final zero-re
     assert.equal(result.liveFieldCount, 23);
   });
 });
+test('WP002C-S3CR1-039: known-defect option with wrong label + matching key is rejected', () => {
+  const badDefect = defectFieldsPayload();
+  badDefect.Part_A_Scoring_Mode.options['0 DIFFICULTY_ACHIEVEMENT_MATRIX'] = {
+    label: 'Wrong Label',
+    key: '0 DIFFICULTY_ACHIEVEMENT_MATRIX',
+    index: '0'
+  };
+  assert.throws(
+    () => assertKnownStage3cDefectSchema(badDefect),
+    /UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode label mismatch for '0 DIFFICULTY_ACHIEVEMENT_MATRIX'/
+  );
+});
+
+test('WP002C-S3CR1-040: corrected-schema option with wrong label + matching key is rejected', () => {
+  const badSchema = JSON.parse(JSON.stringify(generateExact23FieldsPayload()));
+  badSchema.Part_A_Scoring_Mode.options.ACHIEVEMENT_DIRECT = {
+    label: 'Wrong Label',
+    key: 'ACHIEVEMENT_DIRECT',
+    index: '1'
+  };
+  assert.throws(
+    () => assertExact23FieldSchema(badSchema),
+    /Field Part_A_Scoring_Mode option 'ACHIEVEMENT_DIRECT' label mismatch/
+  );
+});
+
+test('WP002C-S3CR1-041: corrected-schema option with missing index is rejected', () => {
+  const badSchema = JSON.parse(JSON.stringify(generateExact23FieldsPayload()));
+  badSchema.Config_Status.options.DRAFT = {
+    label: 'DRAFT'
+  };
+  assert.throws(
+    () => assertExact23FieldSchema(badSchema),
+    /Field Config_Status option 'DRAFT' index mismatch/
+  );
+});
+
+test('WP002C-S3CR1-042: corrected-schema option with wrong index is rejected', () => {
+  const badSchema = JSON.parse(JSON.stringify(generateExact23FieldsPayload()));
+  badSchema.Config_Status.options.DRAFT = {
+    label: 'DRAFT',
+    index: '1'
+  };
+  assert.throws(
+    () => assertExact23FieldSchema(badSchema),
+    /Field Config_Status option 'DRAFT' index mismatch/
+  );
+});
+
+test('WP002C-S3CR1-043: valid known-defect exact schema still passes', () => {
+  assert.equal(assertKnownStage3cDefectSchema(defectFieldsPayload()), true);
+});
+
+test('WP002C-S3CR1-044: valid corrected 23/23 schema still passes', () => {
+  assert.equal(assertExact23FieldSchema(generateExact23FieldsPayload()), true);
+});

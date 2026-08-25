@@ -496,10 +496,10 @@ export function assertKnownStage3cDefectSchema(propertiesPayload, failureCode = 
       for (let i = 0; i < expectedDefectOpts.length; i += 1) {
         const key = expectedDefectOpts[i];
         const opt = actualOpts[key];
-        if (!opt || (opt.label !== key && opt.key !== key)) {
+        if (!opt || opt.label !== key) {
           throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode label mismatch for '${key}'.`);
         }
-        if (String(opt.index) !== String(i)) {
+        if (opt.index === undefined || String(opt.index) !== String(i)) {
           throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Part_A_Scoring_Mode index mismatch for '${key}'.`);
         }
       }
@@ -513,10 +513,10 @@ export function assertKnownStage3cDefectSchema(propertiesPayload, failureCode = 
       for (let i = 0; i < expectedDefectOpts.length; i += 1) {
         const key = expectedDefectOpts[i];
         const opt = actualOpts[key];
-        if (!opt || (opt.label !== key && opt.key !== key)) {
+        if (!opt || opt.label !== key) {
           throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status label mismatch for '${key}'.`);
         }
-        if (String(opt.index) !== String(i)) {
+        if (opt.index === undefined || String(opt.index) !== String(i)) {
           throw new Error(`${failureCode}: UNEXPECTED_SCHEMA_DRIFT: Config_Status index mismatch for '${key}'.`);
         }
       }
@@ -808,10 +808,10 @@ export function assertExact23FieldSchema(propertiesPayload, failureCode = 'SCHEM
       for (let i = 0; i < expectedOptionsKeys.length; i += 1) {
         const expectedKey = expectedOptionsKeys[i];
         const actualOption = actualOptions[expectedKey];
-        if (!actualOption || (actualOption.label !== expectedKey && actualOption.key !== expectedKey)) {
-          throw new Error(`${failureCode}: Field ${spec.code} missing option '${expectedKey}'.`);
+        if (!actualOption || actualOption.label !== expectedKey) {
+          throw new Error(`${failureCode}: Field ${spec.code} option '${expectedKey}' label mismatch.`);
         }
-        if (actualOption.index !== undefined && String(actualOption.index) !== String(i)) {
+        if (actualOption.index === undefined || String(actualOption.index) !== String(i)) {
           throw new Error(`${failureCode}: Field ${spec.code} option '${expectedKey}' index mismatch.`);
         }
       }
