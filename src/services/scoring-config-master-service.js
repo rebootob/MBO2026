@@ -284,7 +284,7 @@ export class ScoringConfigMasterService {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final Published_By mismatch');
     }
 
-    if (finalReadback.Published_At !== publishedAt.trim()) {
+    if (finalReadback.Published_At !== publishedAt.trim() && new Date(finalReadback.Published_At).getTime() !== new Date(publishedAt.trim()).getTime()) {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final Published_At mismatch');
     }
 

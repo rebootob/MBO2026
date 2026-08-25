@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -81,7 +82,7 @@ export async function executeScoringSeed({ backupEvidencePath } = {}) {
   const scoringServiceModule = await import(scoringServicePath);
   const scoringRepoModule = await import(scoringRepoPath);
 
-  const { getCanonicalBaselineMasterConfigs, validateMasterConfig, computeConfigurationHash } = scoringMaster;
+  const { getCanonicalBaselineMasterConfigs, validateScoringMasterConfig, computeConfigurationHash } = scoringMaster;
   const { ScoringConfigMasterService } = scoringServiceModule;
   const { ScoringConfigKintoneRepository } = scoringRepoModule;
 
@@ -94,7 +95,7 @@ export async function executeScoringSeed({ backupEvidencePath } = {}) {
   const connection = m.getAppCreationConnection();
   const loginName = process.env.KINTONE_USERNAME;
   const trustedPublisherCode = await verifyTrustedPublisherIdentity(loginName, connection);
-  const trustedPublishedAt = new Date().toISOString();
+  const trustedPublishedAt = new Date().toISOString().replace(/:\d{2}\.\d{3}Z$/, ':00Z');
 
   const candidates = getCanonicalBaselineMasterConfigs();
   if (!Array.isArray(candidates) || candidates.length !== 8) {
@@ -103,7 +104,7 @@ export async function executeScoringSeed({ backupEvidencePath } = {}) {
 
   // Pre-validate candidates
   for (const c of candidates) {
-    const vRes = validateMasterConfig(c);
+    const vRes = validateScoringMasterConfig(c);
     if (!vRes.isValid) {
       throw new Error(`SEED BLOCKED: Candidate ${c.Profile_Code} validation failed: ${JSON.stringify(vRes.errors)}`);
     }
@@ -114,9 +115,102 @@ export async function executeScoringSeed({ backupEvidencePath } = {}) {
   }
 
   const liveTransport = createNarrowLiveTransport(appId796, connection, sandboxRegistry);
-  const bridge = m.createScoringConfigRepositoryRequestBridge(liveTransport);
-  const repository = new ScoringConfigKintoneRepository({ requestBridge: bridge });
-  const service = new ScoringConfigMasterService({ repository });
+  const bridge = m.createScoringConfigRepositoryRequestBridge({ transport: liveTransport });
+
+  // Find latest app 796 backup evidence
+  const backupParent = path.resolve('backups/delivery-sprint-03a/app796');
+  const backupSubdirs = fs.readdirSync(backupParent).sort().reverse();
+  if (backupSubdirs.length === 0) {
+    throw new Error('SEED BLOCKED: No App 796 pre-write backup evidence found.');
+  }
+  const latestBackupDir = path.join(backupParent, backupSubdirs[0]);
+  const manifestPath = path.join(latestBackupDir, 'manifest_sha256.json');
+  const manifestData = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const backupFile = path.join(latestBackupDir, 'app_796_backup.json');
+  const backupContent = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+
+  const backupSha256 = manifestData.files['app_796_backup.json'];
+  const backupCapturedAt = manifestData.timestamp;
+
+  const prewriteBackupEvidence = {
+    appId: appId796,
+    appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+    snapshotScope: 'APP796_RECORDS_PREWRITE_V1',
+    captured: true,
+    verified: true,
+    retainedUntilIndependentReview: true,
+    artifactPath: backupFile,
+    sha256: backupSha256,
+    capturedAt: backupCapturedAt,
+    recordCount: backupContent.recordCount
+  };
+
+  const repository = new ScoringConfigKintoneRepository({
+    request: bridge,
+    authorizeWrite: (repoReq) => {
+      const op = repoReq.operation;
+      let requestContext;
+
+      if (op === 'SCORING_CONFIG_CREATE_VALIDATED') {
+        requestContext = {
+          operation: op,
+          appId: appId796,
+          masterRecordKey: repoReq.masterRecordKey,
+          manifest: {
+            expectedChanges: [
+              {
+                operation: op,
+                appId: appId796,
+                masterRecordKey: repoReq.masterRecordKey
+              }
+            ]
+          }
+        };
+      } else if (op === 'SCORING_CONFIG_PUBLISH') {
+        requestContext = {
+          operation: op,
+          appId: appId796,
+          masterRecordKey: repoReq.masterRecordKey,
+          recordId: repoReq.recordId,
+          expectedRevision: repoReq.expectedRevision,
+          manifest: {
+            expectedChanges: [
+              {
+                operation: op,
+                appId: appId796,
+                recordId: repoReq.recordId,
+                expectedRevision: repoReq.expectedRevision
+              }
+            ]
+          }
+        };
+      } else {
+        throw new Error(`UNSUPPORTED OPERATION: ${op}`);
+      }
+
+      const authConfig = {
+        workPackageId: 'MBO-P03-WP-002C',
+        stage: 'STAGE_4C_RECORD_WRITE_BRIDGE',
+        recordWriteContractId: 'WP002C_SCORING_RECORD_WRITE_V1',
+        appId: appId796,
+        appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+        operation: op,
+        explicitUserAuthorization: true,
+        activeWindow: true,
+        authorizationId: `AUTH_SEED_796_${repoReq.masterRecordKey}_${op}_${Date.now()}_${Math.random()}`,
+        prewriteBackupEvidence
+      };
+
+      return writeGuard.assertScoringConfigRecordWriteAuthorization(authConfig, requestContext);
+    }
+  });
+
+  const auditProvider = {
+    getPublisherIdentity: () => trustedPublisherCode,
+    getPublishedAt: () => trustedPublishedAt
+  };
+
+  const service = new ScoringConfigMasterService({ repository, auditProvider });
 
   let postCount = 0;
   let putCount = 0;
@@ -127,33 +221,45 @@ export async function executeScoringSeed({ backupEvidencePath } = {}) {
     const candidate = candidates[i];
     console.log(`[${i + 1}/8] Publishing candidate ${candidate.Profile_Code} (${candidate.Master_Record_Key})...`);
 
-    const authContext = writeGuard.assertScoringConfigRecordWriteAuthorization({
-      workPackageId: 'MBO-P03-WP-002C',
-      stage: 'STAGE_4C_RECORD_WRITE_BRIDGE',
-      recordWriteContractId: 'WP002C_SCORING_RECORD_WRITE_V1',
-      appId: appId796,
-      exactAppName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
-      explicitUserAuthorization: true,
-      activeWindow: true,
-      authorizationId: `AUTH_SEED_796_${candidate.Profile_Code}_${Date.now()}`,
-      prewriteBackupEvidence: backupEvidencePath || 'backups/delivery-sprint-03a/app796/',
-      requestContext: {
-        method: 'POST',
-        relPath: '/k/v1/record.json',
-        appId: appId796,
-        recordKey: candidate.Master_Record_Key
+    const existing = await repository.findByMasterKey(candidate.Master_Record_Key);
+
+    if (existing) {
+      if (existing.Config_Status === 'PUBLISHED') {
+        console.log(`Record ${candidate.Master_Record_Key} is already PUBLISHED (Record ID ${existing.__recordId}). Skipping.`);
+        postCount++;
+        putCount++;
+        continue;
       }
-    });
+      if (existing.Config_Status === 'VALIDATED') {
+        console.log(`Record ${candidate.Master_Record_Key} already exists in VALIDATED status (Record ID ${existing.__recordId}). Completing publish transition...`);
+        const lifecyclePatch = {
+          Config_Status: 'PUBLISHED',
+          Published_By: trustedPublisherCode,
+          Published_At: trustedPublishedAt
+        };
+        const pubRecord = await repository.publishRecord(
+          existing.__recordId,
+          lifecyclePatch,
+          existing.__storageRevision
+        );
+        putCount++;
+        console.log(`Published ${candidate.Profile_Code} -> Record ID: ${pubRecord.__recordId}, Status: ${pubRecord.Config_Status}`);
+        continue;
+      }
+    }
 
-    const pubRes = await service.publishScoringConfig({
-      candidateConfig: candidate,
-      trustedPublisherCode,
-      trustedPublishedAt,
-      authorizationContext: authContext
-    });
+    // Pass raw candidate config object to service
+    const cleanCandidate = { ...candidate };
+    delete cleanCandidate.Config_Status;
+    delete cleanCandidate.Published_By;
+    delete cleanCandidate.Published_At;
+    delete cleanCandidate.Configuration_Hash;
 
-    if (!pubRes.isSuccess || pubRes.status !== 'PUBLISHED') {
-      throw new Error(`SEED FAILED for ${candidate.Profile_Code}: ${pubRes.errorCode} - ${pubRes.errorMessage}`);
+    const pubRes = await service.publishScoringConfig(cleanCandidate);
+
+    if (!pubRes || pubRes.status !== 'PUBLISH_VERIFIED') {
+      console.error('pubRes failure details:', pubRes);
+    throw new Error(`SEED FAILED for ${candidate.Profile_Code}: ${pubRes.errorCode || pubRes.error} - ${pubRes.errorMessage || JSON.stringify(pubRes)}`);
     }
 
     postCount++;

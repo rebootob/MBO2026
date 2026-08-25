@@ -261,7 +261,7 @@ test('Stage 4B 25: published query exact profile/FY/status', async () => {
   assert.equal(reqCalls[0].params.app, 796);
   assert.ok(reqCalls[0].params.query.includes('Profile_Code = "PROF_STAFF_CHIEF"'));
   assert.ok(reqCalls[0].params.query.includes('Fiscal_Year = "FY2026"'));
-  assert.ok(reqCalls[0].params.query.includes('Config_Status = "PUBLISHED"'));
+  assert.ok(reqCalls[0].params.query.includes('Config_Status in ("PUBLISHED")'));
 });
 
 test('Stage 4B 26: published query rejects whitespace input and handles escaping', async () => {

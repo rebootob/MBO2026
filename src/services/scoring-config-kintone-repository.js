@@ -185,7 +185,7 @@ export class ScoringConfigKintoneRepository {
     const safeProfile = escapeKintoneQueryLiteral(profileCode);
     const safeFY = escapeKintoneQueryLiteral(fiscalYear);
     const path = '/k/v1/records.json';
-    const query = `Profile_Code = "${safeProfile}" and Fiscal_Year = "${safeFY}" and Config_Status = "PUBLISHED" limit 500`;
+    const query = `Profile_Code = "${safeProfile}" and Fiscal_Year = "${safeFY}" and Config_Status in ("PUBLISHED") limit 500`;
 
     let res;
     try {
