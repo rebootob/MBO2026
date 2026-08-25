@@ -35,6 +35,6 @@ Historical evidence supported these associations during M10I-R1:
 - Manager -> Section Manager / App305.
 - Co Project Manager -> Section Manager / App305.
 - Executive Management Coordinator -> Staff & Chief / App283.
-- Factory Manager -> historical App640 / PMS GM. Any current resolver mapping of Factory Manager to Section Manager conflicts with this evidence and requires correction/review before deployment.
+- Factory Manager -> historical App640 / PMS GM. Reconciled in source resolver (`src/profiles/profile-scoring-resolver.js`) as `PROF_GM` in M10I-R2.
 
 Historical evidence is not permission to write these apps.

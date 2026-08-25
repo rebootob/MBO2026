@@ -52,7 +52,7 @@ test('M10I: Hierarchy regression checks across key positions', async () => {
     { pos: 'Asst. Section Manager', expected: 'PROF_ASST_MGR' },
     { pos: 'Section Manager', expected: 'PROF_SECTION_MGR' },
     { pos: 'Manager', expected: 'PROF_SECTION_MGR' },
-    { pos: 'Factory Manager', expected: 'PROF_SECTION_MGR' },
+    { pos: 'Factory Manager', expected: 'PROF_GM' },
     { pos: 'Senior Manager', expected: 'PROF_SENIOR_MGR' },
     { pos: 'Deputy General Manager', expected: 'PROF_DGM' },
     { pos: 'General Manager', expected: 'PROF_GM' },

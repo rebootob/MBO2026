@@ -934,7 +934,7 @@ const POSITION_TO_PROFILE = new Map([
   ['section manager', PROFILE_CODES.SECTION_MGR],
   ['manager', PROFILE_CODES.SECTION_MGR],
   ['co project manager', PROFILE_CODES.SECTION_MGR],
-  ['factory manager', PROFILE_CODES.SECTION_MGR],
+  ['factory manager', PROFILE_CODES.GM],
   ['senior manager', PROFILE_CODES.SENIOR_MGR],
   ['deputy general manager', PROFILE_CODES.DGM],
   ['general manager', PROFILE_CODES.GM],
