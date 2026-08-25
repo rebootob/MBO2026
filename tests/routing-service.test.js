@@ -99,29 +99,128 @@ test('Routing Topology: M1_M2_G1_G2 full 4-stage sequential approval with defaul
   assert.equal(routing.GM_Level2_Approval_Rule, 'ALL');
 });
 
-test('Routing Topology: TMG Team-Aware Routing_Key resolution (TMG1 + Admin)', async () => {
+test('M10F-R1: TMG1 exact route success', async () => {
+  let queryCount = 0;
+  let lastQuery = '';
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      queryCount++;
+      lastQuery = query;
+      return {
+        records: [{
+          Routing_Key: { value: 'TMG1|CAD' },
+          Requester_User: { value: [{ code: 'g_request' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'm1' }] }
+        }]
+      };
+    }
+  };
+
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMG1', 'CAD', 'g_request', mockApi);
+  assert.equal(queryCount, 1);
+  assert.equal(lastQuery.includes('Routing_Key = "TMG1|CAD"'), true);
+  assert.equal(routing.Routing_Key, 'TMG1|CAD');
+});
+
+test('M10F-R1: TMG2 exact route success', async () => {
+  let queryCount = 0;
+  let lastQuery = '';
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      queryCount++;
+      lastQuery = query;
+      return {
+        records: [{
+          Routing_Key: { value: 'TMG2|Production' },
+          Requester_User: { value: [{ code: 'g_request' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'm2' }] }
+        }]
+      };
+    }
+  };
+
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'Production', 'g_request', mockApi);
+  assert.equal(queryCount, 1);
+  assert.equal(lastQuery.includes('Routing_Key = "TMG2|Production"'), true);
+  assert.equal(routing.Routing_Key, 'TMG2|Production');
+});
+
+test('M10F-R1: TMG1 missing Team fails closed without API query', async () => {
+  let apiCalled = false;
+  const mockApi = {
+    getRecords: async () => {
+      apiCalled = true;
+      return { records: [] };
+    }
+  };
+
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMG1', null, 'g_request', mockApi),
+    /Team is required for employee in section TMG1/
+  );
+  assert.equal(apiCalled, false);
+});
+
+test('M10F-R1: TMG2 missing Team fails closed without API query', async () => {
+  let apiCalled = false;
+  const mockApi = {
+    getRecords: async () => {
+      apiCalled = true;
+      return { records: [] };
+    }
+  };
+
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMG2', '', 'g_request', mockApi),
+    /Team is required for employee in section TMG2/
+  );
+  assert.equal(apiCalled, false);
+});
+
+test('M10F-R1: TMG exact route missing fails closed and PROVES NO section fallback query occurs', async () => {
+  let queryCount = 0;
+  const queriedQueries = [];
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      queryCount++;
+      queriedQueries.push(query);
+      return { records: [] };
+    }
+  };
+
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMG1', 'InvalidTeam', 'g_request', mockApi),
+    /ไม่พบการตั้งค่า Routing สำหรับ Section TMG1 \/ Team InvalidTeam/
+  );
+
+  // MUST PROVE queryCount === 1 and NO fallback query was performed
+  assert.equal(queryCount, 1);
+  assert.equal(queriedQueries.length, 1);
+  assert.equal(queriedQueries[0].includes('Routing_Key = "TMG1|InvalidTeam"'), true);
+  assert.equal(queriedQueries.some(q => q.includes('Section_Code = "TMG1"')), false);
+});
+
+test('M10F-R1: Non-TMG route remains section-only', async () => {
   let queriedQuery = '';
   const mockApi = {
     getRecords: async (appId, query) => {
       queriedQuery = query;
       return {
         records: [{
-          Routing_Key: { value: 'TMG1|Admin' },
-          Requester_User: { value: [{ code: 'g_request' }] },
-          Manager_Level1_Approvers: { value: [{ code: 'narumol' }] },
-          GM_Level1_Approvers: { value: [{ code: 'nagase' }] }
+          Routing_Key: { value: 'TMF1' },
+          Requester_User: { value: [{ code: 'f1' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'kritsada' }] }
         }]
       };
     }
   };
 
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMG1', 'Admin', 'g_request', mockApi);
-  assert.equal(queriedQuery.includes('Routing_Key = "TMG1|Admin"'), true);
-  assert.equal(routing.Routing_Key, 'TMG1|Admin');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'narumol');
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', null, 'f1', mockApi);
+  assert.equal(queriedQuery.includes('Routing_Key = "TMF1"'), true);
+  assert.equal(routing.Routing_Key, 'TMF1');
 });
 
-test('Routing Topology: Duplicate Routing_Key fails closed', async () => {
+test('M10F-R1: Duplicate exact TMG route fails closed', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [

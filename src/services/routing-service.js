@@ -22,27 +22,26 @@ export class RoutingService {
       throw new Error('ไม่พบข้อมูล Section ของพนักงาน กรุณาตรวจสอบ Employee Master (App 53)\nEmployee section is missing in Employee Master.');
     }
 
-    const primaryRoutingKey = cleanTeam ? `${cleanSection}|${cleanTeam}` : cleanSection;
+    const isTmgSection = cleanSection === 'TMG1' || cleanSection === 'TMG2' || /^TMG/i.test(cleanSection);
 
-    // 1. Primary Query by Routing_Key
-    let query = `Routing_Key = "${primaryRoutingKey}" and Active in ("Active") limit 2`;
-    let resp = await kintoneApi.getRecords(routingAppId, query);
-    let records = resp?.records || [];
-
-    // 2. Fallback Query by Section_Code if team-aware key returned no records
-    if (records.length === 0 && cleanTeam) {
-      query = `Section_Code = "${cleanSection}" and Active in ("Active") limit 2`;
-      resp = await kintoneApi.getRecords(routingAppId, query);
-      records = resp?.records || [];
+    if (isTmgSection && !cleanTeam) {
+      throw new Error(`ไม่พบข้อมูล Team ของพนักงานใน Section ${cleanSection} กรุณาตรวจสอบ Employee Master (App 53)\nTeam is required for employee in section ${cleanSection}.`);
     }
 
-    // 3. Fail-Closed: Routing Not Found
+    const primaryRoutingKey = cleanTeam ? `${cleanSection}|${cleanTeam}` : cleanSection;
+
+    // Strict Query by Routing_Key (No fallback to Section_Code only)
+    const query = `Routing_Key = "${primaryRoutingKey}" and Active in ("Active") limit 2`;
+    const resp = await kintoneApi.getRecords(routingAppId, query);
+    const records = resp?.records || [];
+
+    // Fail-Closed: Routing Not Found
     if (records.length === 0) {
       const targetLabel = cleanTeam ? `${cleanSection} / Team ${cleanTeam}` : cleanSection;
       throw new Error(`ไม่พบการตั้งค่า Routing สำหรับ Section ${targetLabel} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nRouting configuration for section ${targetLabel} was not found in Routing Master.`);
     }
 
-    // 4. Fail-Closed: Duplicate Active Routing Key
+    // Fail-Closed: Duplicate Active Routing Key
     if (records.length > 1) {
       throw new Error(`พบข้อมูล Routing ซ้ำซ้อนสำหรับ Routing Key ${primaryRoutingKey} ใน Routing Master (App 795) กรุณาติดต่อ HR / Administrator\nDuplicate active routing records found for key ${primaryRoutingKey} in Routing Master.`);
     }
