@@ -1,237 +1,481 @@
-# AI ACTIVE TASK — DELIVERY DAY SPRINT 03A-R2: FINAL DOCUMENTATION TRUTH CORRECTION
+# AI ACTIVE TASK — DELIVERY DAY SPRINT 03B: ACR-002 APPROVED / APP 795 ROUTING BASELINE SEED
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `962925b1ab3ead250f2367c06c0161f0a85cda67`
-> **Mode:** DOCUMENTATION-ONLY FINAL CORRECTION — KINTONE WRITES = 0 / CODE CHANGES = 0
+> **Reviewed head:** `55b85c4fed16701ee57801a73e1b9ff3f1aa81bd`
+> **User authorization:** `ACR-002 APPROVED` on 2026-08-25
+> **Mode:** CONTROLLED APP795 RECORD WRITE ONLY
 
-# TODAY NORTH STAR
+# TODAY NORTH STAR — DO NOT DRIFT
 
 ```text
-M4 App 797 Hoshin Master           = PASS
-M5 App 798 Revision Archive        = PASS
-M6 App 796 Scoring Baseline        = PASS BUSINESS STATE / 8 OF 8 PUBLISHED
-M7 App 795 Routing Baseline        = 1/12 / PREFLIGHT READY / ACR-002 PROPOSED
-M8 App 800 HR Dashboard MVP        = PASS
-M9 End-to-end Smoke Test           = AFTER M7
+M4 App 797 Hoshin Master        = PASS
+M5 App 798 Revision Archive     = PASS
+M6 App 796 Scoring Baseline     = PASS / 8 OF 8 PUBLISHED
+M7 App 795 Routing Baseline     = EXECUTE 11 MISSING MAPPINGS NOW
+M8 App 800 HR Dashboard MVP     = PASS
+M9 End-to-end Smoke Test        = NEXT IMMEDIATELY AFTER M7 REVIEW
 
 TODAY_DONE = NO
-NEXT_CRITICAL_PATH = FINAL DOC TRUTH -> USER DECISION ACR-002 -> M7 WRITE -> M9
+NEXT_CRITICAL_PATH = APP795 12/12 -> CHATGPT REVIEW -> M9 END-TO-END SMOKE
 ```
 
-# INDEPENDENT REVIEW — SPRINT 03A-R1
+# CONTROL PLANE DECISION
 
-Passed:
+User explicitly approved `ACR-002 — Delivery-Day Acceleration of DEC-034 Routing Seed Boundary`.
+
+This approval changes SCHEDULING ONLY. It does not change business architecture, routing model, requester assignments, or retired-section rules.
+
+Update DECISIONS.md:
 
 ```text
-ACCIDENTAL_ARTIFACT_CLEANUP_GATE = PASS
-ACCIDENTAL_ARTIFACTS_REMOVED = 18/18
-SEEDER_FAIL_CLOSED_POST_SEED_GATE = PASS
-POST_IMPLEMENTATION_CODE_DRIFT_GATE = PASS_WITH_JUSTIFICATION
-KINTONE_ZERO_WRITE_CLEANUP_GATE = PASS
-REGRESSION_GATE = PASS (490/490 reported)
-GIT_SCOPE_GATE = PASS
+ACR-002 Status = APPROVED BY USER / ACTIVE FOR SPRINT03B ONLY
+Approval date = 2026-08-25
+Supersedes DEC-034 timing boundary only for the 11 missing requester baseline records
+DEC-019 architecture remains unchanged
+DEC-031 requester mapping remains unchanged
+DEC-032 TMT3 retirement remains unchanged
 ```
 
-Sprint 03A-R1 remains blocked only because documentation claims do not match the actual active files.
+After Sprint03B completes and is independently reviewed, ACR-002 write window is CLOSED. Do not treat it as permanent broad App795 authorization.
 
-## MUST FIX 1 — DEC-023 WAS NOT ACTUALLY CORRECTED
+# EXACT TARGET BASELINE
 
-The active `project-docs/DECISIONS.md` still contains:
+Existing record to KEEP if exact:
 
 ```text
-Evaluation Weights: Staff/Japan (70/30), All Management & Exec (50/50 - Confirmed).
+TME1 -> e1
 ```
 
-This is stale and conflicts with frozen `DEC-042`.
-
-Replace that ONE active DEC-023 weight statement with exactly:
+Create only these 11 missing active requester mappings:
 
 ```text
-Evaluation Weights: Staff / Japanese Staff = 70/30; Assistant Manager = 60/40; Section Manager and Above = 50/50. See DEC-042 for the user-reconfirmed authoritative position-ratio rule.
+TMF1 -> f1
+TMF2 -> f2
+TMF3 -> f3
+TMG1 -> g_request
+TMG2 -> g_request
+TMH1 -> tmh
+TMH2 -> tmh
+TMH3 -> tmh
+TMS1 -> s1
+TMT1 -> t1
+TMT2 -> t2
 ```
 
-Do not alter DEC-042.
-Do not remove DEC-035 historical supersession explanation.
-
-Required:
+Strict exclusion:
 
 ```text
-SCORING_RATIO_SINGLE_SOURCE_GATE = PASS
-DEC023_STALE_WEIGHT_RULE = 0
+TMT3 = RETIRED / MUST NOT EXIST AS NEW ACTIVE BASELINE RECORD
 ```
 
-## MUST FIX 2 — CURRENT APP796 STATUS STILL CONTAINS STALE ZERO/NOT_STARTED VALUES
+Section_Name must come from the already verified Sprint03A preflight / approved source. NEVER guess a Section_Name.
 
-Current living docs still contain combinations such as:
+Do not populate unverified approver slots. This acceleration is REQUESTER BASELINE ONLY.
 
-```text
-M6 = 8/8 PUBLISHED
-...
-RECORD_COUNT = 0
-BASELINE_SEED_STATUS = NOT_STARTED
-PUBLISH_PIPELINE_STATUS = FOUNDATION_IMPLEMENTED_NOT_DEPLOYED
-LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
-```
-
-These cannot coexist as current state.
-
-In CURRENT/LIVING state sections only, reconcile App796 to:
-
-```text
-RECORD_COUNT = 8
-PUBLISHED_COUNT = 8
-VALIDATED_COUNT = 0
-BASELINE_SEED_STATUS = PUBLISHED_8_OF_8
-PUBLISH_PIPELINE_STATUS = LIVE_BASELINE_PUBLISH_VERIFIED
-LIVE_RECORD_PUBLISH_STATUS = BASELINE_8_OF_8_PUBLISHED
-RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED
-SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED
-```
-
-Do not rewrite historical stage descriptions that accurately describe earlier state at that time.
-
-## MUST FIX 3 — CURRENT REVIEW PACKAGE MUST HAVE ONE CANONICAL CURRENT BLOCK
-
-`AI_REVIEW_PACKAGE.md` currently still carries stale generic current rows from older stages such as:
-
-```text
-THIS_TASK_KINTONE_CALLS = 0
-THIS_TASK_KINTONE_WRITES = 0
-AUTOMATED_TEST_SUITE = 471/471
-NEXT_ACTION = older Sprint02R3 wording
-LIVE_RECORD_PUBLISH_STATUS = NOT_STARTED
-```
-
-For the CURRENT Sprint03A review block:
-
-```text
-DELIVERY_SPRINT_03A_R2 = COMPLETE / PENDING CHATGPT REVIEW
-M6_BUSINESS_STATE = 8/8 PUBLISHED
-M6_POST_COUNT = 8
-M6_PUT_COUNT = 8
-M6_DELETE_COUNT = 0
-SPRINT03A_R1_KINTONE_WRITES = 0
-SPRINT03A_R2_KINTONE_WRITES = 0
-GET_TOTAL_FOR_ORIGINAL_03A = NOT_DURABLY_COUNTED
-npm test = 490/490 PASS (or actual if rerun)
-NO_ORPHAN_ARTIFACT_GATE = PASS
-ACCIDENTAL_ARTIFACTS_REMOVED = 18/18
-STALE_ACTIVE_REFERENCES = 0
-NEXT_ACTION = USER DECISION ON ACR-002
-```
-
-Do not delete valid historical forensic tables. Clearly separate `HISTORICAL STAGE METRICS` from `CURRENT DELIVERY STATE` if necessary rather than mixing them.
-
-# NO-ORPHAN RULE
-
-Current source of truth must not retain contradictory active values.
-
-Required repo search proof:
-
-```text
-DEC-023 exact stale phrase "All Management & Exec (50/50 - Confirmed)" = 0
-current App796 RECORD_COUNT=0 references = 0
-current App796 BASELINE_SEED_STATUS=NOT_STARTED references = 0
-current LIVE_RECORD_PUBLISH_STATUS=NOT_STARTED references = 0
-current NEXT_ACTION referencing Sprint02R3 before M6 = 0
-```
-
-Historical evidence may retain its historically correct old values only when explicitly labeled historical and not presented as current state.
-
-# STEP 0 — SAFETY
+# STEP 0 — GIT / SECURITY / SCOPE PRECONDITIONS
 
 Require:
 
 ```text
 branch = ai/antigravity-wp002c
-962925b1... in ancestry
-local HEAD = remote HEAD
+55b85c4... is ancestor
+local HEAD = origin branch before work
 tracked tree clean
 ```
 
-No reset/rebase/force push.
-No Kintone network writes.
-Do not run seeder.
-Do not modify source/tests unless a documentation link itself is broken; source changes are not authorized.
+No reset/rebase/force push/history rewrite.
 
-# STEP 1 — DOCS ONLY
-
-Expected files only:
+Read at minimum:
 
 ```text
-project-docs/DECISIONS.md
+project-docs/AI_ACTIVE_TASK.md
 project-docs/CURRENT_STATE.md
 project-docs/HANDOFF.md
 project-docs/AI_REVIEW_PACKAGE.md
-project-docs/IMPLEMENTATION_STATUS.md
-project-docs/CHANGELOG_AI.md
+project-docs/DECISIONS.md
+project-docs/APP_REGISTRY.md
+project-docs/BUSINESS_RULES.md
+config/sandbox-apps.json
+config/schema-spec.js
+src/core/sandbox-write-guard.js
 ```
 
-Touch fewer if sufficient.
+Inspect existing App795-related scripts/tests before adding anything.
 
-Do not create new docs.
-Do not duplicate status blocks.
-Do not create walkthrough files.
+`.env.local`:
 
-# STEP 2 — VERIFY
-
-Run:
-
-```bash
-npm test
-git diff --check
-git status --short
+```text
+ignored = YES
+tracked = NO
+printed = NO
+committed = NO
 ```
 
-Zero failures.
+Before any live network operation:
 
-Search the active/current documentation for all stale values listed above.
+```js
+delete process.env.KINTONE_API_TOKEN;
+```
+
+Use username/password authentication only.
+Never print credentials, auth headers, or full User API payloads.
+
+Protected apps remain permanently READ ONLY:
+
+```text
+53, 283, 305, 307, 310, 640, 643, 715, 716
+```
+
+Zero writes also to:
+
+```text
+794, 796, 797, 798, 800
+```
+
+Only App795 record creation is authorized.
+
+# STEP 1 — ACR/DOC STATE + CURRENT DOC OBSERVATIONS
+
+Update ACR-002 from PROPOSED to APPROVED BY USER.
+
+While touching living docs, reconcile these already-known observation-level stale current values WITHOUT opening another cleanup sprint:
+
+- current Active Sandbox Apps list must include 794,795,796,797,798,800
+- current test total must use actual latest test total after this sprint, not stale 471/471
+- current M6/App796 = 8/8 published
+- current M7 = controlled write authorized by approved ACR-002
+- historical state may remain historical
+
+Do not rewrite historical forensic evidence.
+
+# STEP 2 — EXACT APP795 READ-ONLY PREFLIGHT BEFORE CODE WRITE PATH
+
+Before any App795 write, GET and verify:
+
+```text
+registry routingMasterAppId = 795
+exact expected sandbox app identity
+live + preview field schema
+live + preview app ACL
+all existing routing records required to determine active coverage
+```
+
+Verify:
+
+```text
+current active coverage = exactly 1/12
+existing exact pilot = TME1 -> e1
+no unexpected active duplicate section mappings
+no active TMT3 record
+all 11 target Section_Codes are currently missing
+```
+
+If ANY of these differ, STOP WITH ZERO WRITES and report exact safe drift summary. Do not merge/repair/delete automatically.
+
+Reverify the 9 requester user accounts through the read-only User API before write. Require all expected codes valid/existing. Do not print user details.
+
+Required prewrite state:
+
+```text
+APP795_PREFLIGHT_GATE = PASS
+CURRENT_ACTIVE_COVERAGE = 1/12
+TME1_PILOT_GATE = PASS
+TARGET_11_ALL_MISSING_GATE = PASS
+TMT3_ACTIVE_RECORD_GATE = PASS (none)
+REQUESTER_ACCOUNT_GATE = 9/9 PASS
+```
+
+# STEP 3 — DURABLE PREWRITE BACKUP
+
+Before App795 write create NEW retained backup:
+
+```text
+backups/delivery-sprint-03b/app795/<UTC_TIMESTAMP>/
+```
+
+Capture enough state for exact rollback/reconciliation:
+
+```text
+live settings
+preview settings
+live fields
+preview fields
+live ACL
+preview ACL
+all existing App795 records
+record count
+active routing count
+```
+
+Create SHA-256 manifest.
+Retain until ChatGPT independent review.
+Do not commit raw backup.
+Do not overwrite/delete prior backups.
+
+# STEP 4 — IMPLEMENT ONE CONTROLLED ROUTING BASELINE SEEDER
+
+Search first for an existing App795 seed/publisher script.
+
+- If a suitable existing script exists, modify/reuse it.
+- If none exists, create exactly ONE justified script:
+
+```text
+scripts/kintone/seed-routing-baseline.js
+```
+
+Do not create duplicate helper/domain files.
+
+The script must use `config/sandbox-apps.json` for App ID, not hardcode business behavior into multiple places.
+
+Create path rules:
+
+```text
+POST only to /k/v1/record.json
+body.app must equal 795
+one record per POST, sequentially
+maximum successful creates = 11
+PUT = 0
+DELETE = 0
+schema writes = 0
+deploy = 0
+```
+
+Before each POST enforce exact process-local App795 allow-list through the existing sandbox write guard pattern:
+
+```text
+assertSandboxWriteTarget(795, registry, [795], { dryRunBypassDiscovery: true })
+```
+
+Use a narrow transport that rejects:
+
+```text
+wrong app
+PUT
+DELETE
+PATCH
+unapproved endpoint
+unexpected body shape
+```
+
+No blind retry after uncertain POST.
+
+# STEP 5 — RECORD PAYLOAD EXACTNESS
+
+For each of the 11 records, payload must contain ONLY the existing approved App795 requester-baseline fields necessary for the current live schema.
+
+At minimum semantic values must resolve to:
+
+```text
+Section_Code = exact target code
+Section_Name = exact verified approved name
+Requester_User = exact verified user code
+Active = Active
+```
+
+If the live schema requires additional fields, use only fields already frozen/verified by existing architecture and preflight evidence. Do NOT invent approver identities or new business defaults.
+
+Before first write, construct an exact in-memory manifest of 11 records and validate:
+
+```text
+count = 11
+Section_Code unique = 11
+none = TME1
+none = TMT3
+all Section_Name non-empty and verified
+all Requester_User from approved mapping
+all Active = Active
+```
+
+# STEP 6 — AUTOMATED TESTS BEFORE LIVE WRITE
+
+Add tests to the most relevant existing routing/safety test file. Avoid unnecessary new test files.
+
+Minimum coverage:
+
+```text
+exact 11-create manifest
+exact requester mapping per section
+TME1 excluded from CREATE manifest
+TMT3 excluded
+duplicate section rejected
+unknown section rejected
+empty/unverified Section_Name rejected
+unknown requester rejected
+wrong app rejected
+PUT/DELETE/PATCH rejected
+POST body.app must be 795
+max create set = exact 11
+write guard only [795]
+no schema/deploy paths
+NO_ORPHAN: exactly one active routing seeder implementation
+```
+
+Run full `npm test` before live write. Zero failures.
+
+Commit code/tests and ACR approval/current-doc prep exactly:
+
+```text
+feat: add controlled app795 routing baseline seed
+```
+
+Push BEFORE live write.
+
+# STEP 7 — LIVE WRITE: APP795 ONLY
+
+Run the committed script exactly once after tests + backup + preflight pass.
+
+Expected write budget:
+
+```text
+App795 POST record creates = 11
+App795 PUT = 0
+App795 DELETE = 0
+App795 schema/deploy = 0
+other sandbox app writes = 0
+protected app writes = 0
+```
+
+Sequential operation only.
+
+If any POST is uncertain/fails:
+
+- STOP immediately
+- NO retry
+- NO automatic delete
+- perform GET-only exact reconciliation
+- identify exact successfully-created sections vs missing sections
+- retain backup
+- mark M7 = BLOCKED_PARTIAL
+- return for ChatGPT review
+
+# STEP 8 — FINAL APP795 READBACK
+
+On successful sequence, GET all relevant records and require:
+
+```text
+active baseline count = exactly 12
+exact sections = TME1, TMF1, TMF2, TMF3, TMG1, TMG2, TMH1, TMH2, TMH3, TMS1, TMT1, TMT2
+one active record per Section_Code
+TME1 -> e1 unchanged
+all 11 newly created requester mappings exact
+TMT3 active count = 0
+no duplicate active sections
+```
+
+Verify 12/12 business baseline by field values, not merely record count.
 
 Required:
 
 ```text
-SCORING_RATIO_SINGLE_SOURCE_GATE = PASS
-DOC_EVIDENCE_CONSISTENCY_GATE = PASS
-NO_ORPHAN_ARTIFACT_GATE = PASS
-STALE_ACTIVE_REFERENCES = 0
-KINTONE_WRITES_THIS_TASK = 0
+M7_ROUTING_BASELINE_GATE = PASS
+M7_ACTIVE_COVERAGE = 12/12
+M7_DUPLICATE_ACTIVE_SECTION_COUNT = 0
+M7_TMT3_ACTIVE_COUNT = 0
 ```
 
-# STEP 3 — COMMIT
+# NO-ORPHAN / CLEANUP RULE
 
-One commit only:
+Mandatory project rule remains active.
+
+This sprint MUST NOT create dead/duplicate scripts, temp JSON manifests, walkthrough files, local discovery exports, or other unneeded Git artifacts.
+
+If an old routing seed artifact is superseded by the implementation, safely reconcile/remove the old active artifact after verifying references.
+
+Never delete live Kintone records merely because they look old without a separately approved migration/cleanup plan.
+
+Required:
 
 ```text
-docs: finalize sprint03a source of truth
+NO_ORPHAN_ARTIFACT_GATE = PASS
+STALE_ACTIVE_REFERENCES = 0
 ```
 
-Push, verify local HEAD = remote HEAD and clean tracked tree, then STOP.
+# STEP 9 — EVIDENCE / CLOSE WRITE WINDOW
+
+Run full `npm test` again after live write.
+
+Update living docs:
+
+```text
+M6 = PASS / 8/8 PUBLISHED
+M7 = PASS / 12/12 ACTIVE REQUESTER BASELINE
+M8 = PASS
+ACR-002 = APPROVED / EXECUTED / WRITE WINDOW CLOSED
+M9 = NEXT
+```
+
+AI_REVIEW_PACKAGE must record:
+
+```text
+SPRINT03B = COMPLETE / PENDING CHATGPT REVIEW
+ACR_002_USER_APPROVAL = YES
+APP795_PREWRITE_BACKUP_PATH = safe path
+APP795_BACKUP_MANIFEST_SHA256 = value
+APP795_PREWRITE_ACTIVE_COVERAGE = 1/12
+APP795_POST_COUNT = actual
+APP795_PUT_COUNT = 0
+APP795_DELETE_COUNT = 0
+APP795_SCHEMA_DEPLOY_WRITES = 0
+APP795_FINAL_ACTIVE_COVERAGE = actual
+TMT3_ACTIVE_COUNT = 0
+DUPLICATE_ACTIVE_SECTION_COUNT = 0
+App794/796/797/798/800 writes = 0
+protected writes = 0
+records created = actual
+NO_ORPHAN_ARTIFACT_GATE = PASS
+STALE_ACTIVE_REFERENCES = 0
+npm test = actual total / PASS
+ACR_002_WRITE_WINDOW = CLOSED
+NEXT_ACTION = M9 END-TO-END SMOKE TEST
+```
+
+Preserve Stage3C historical evidence exception unchanged.
+
+Commit exactly:
+
+```text
+docs: record app795 routing baseline seed evidence
+```
+
+Push; verify local HEAD = remote HEAD; tracked tree clean; STOP.
 
 # STRICT OUT OF SCOPE
 
 Do NOT:
 
-- write Kintone
-- seed App795
-- rerun App796 seeder
-- modify the 8 App796 records
-- modify runtime/source code
-- add/remove fields
-- add files
-- change ACR-002 status
+- write App794
+- write App796/797/798/800
+- modify App795 schema
+- delete/update TME1
+- seed TMT3
+- guess approver slots
+- implement twin-status engine here
+- implement M9 in same task
+- add fake/test Kintone records
+- remove App795 legacy fields in this task
+- touch protected production apps
 
 # REVIEW EXPECTATION
 
 ```text
-M6_LIVE_BUSINESS_STATE_GATE = PASS expected
-SCORING_RATIO_SINGLE_SOURCE_GATE = PASS/FAIL
-DOC_EVIDENCE_CONSISTENCY_GATE = PASS/FAIL
-NO_ORPHAN_ARTIFACT_GATE = PASS/FAIL
-KINTONE_ZERO_WRITE_GATE = PASS/FAIL
-REGRESSION_GATE = PASS/FAIL
-GIT_PUSH_SYNC_GATE = PASS/FAIL
-DELIVERY_SPRINT_03A_GATE = PASS/BLOCKED
+ACR002_APPROVAL_GATE = PASS expected
+APP795_PREFLIGHT_GATE
+APP795_PREWRITE_BACKUP_GATE
+APP795_EXACT_11_MANIFEST_GATE
+APP795_WRITE_GUARD_GATE
+APP795_11_CREATE_GATE
+APP795_12_OF_12_READBACK_GATE
+APP795_TME1_PRESERVATION_GATE
+APP795_TMT3_EXCLUSION_GATE
+APP795_DUPLICATE_ACTIVE_GATE
+OTHER_SANDBOX_ZERO_WRITE_GATE
+PROTECTED_ZERO_WRITE_GATE
+NO_ORPHAN_ARTIFACT_GATE
+REGRESSION_GATE
+DOC_EVIDENCE_CONSISTENCY_GATE
+GIT_PUSH_SYNC_GATE
+DELIVERY_SPRINT_03B_GATE
 ```
