@@ -6,6 +6,7 @@
 > **Branch:** `ai/antigravity-wp002c`
 > **Reviewed Sprint 01 head:** `55e8f836cbbdd9c4ac2670e47dfe41db5068a47b`
 > **Mode:** DELIVERY DAY / CONTROLLED LIVE SANDBOX WRITES
+> **Important correction:** User reconfirmed the Evaluation Ratio by Position on 2026-08-25. This task supersedes the scoring-conflict wording in commit `d0491d65...`.
 
 # TODAY NORTH STAR — AUTHORITATIVE
 
@@ -17,16 +18,46 @@ M2 App 795 Routing Master          = EXISTING / REQUESTER COVERAGE 1/12
 M3 App 796 Scoring Master          = LIVE VERIFIED / 23 FIELDS / RECORDS 0
 M4 Hoshin Master App 797           = LIVE CONTAINER / SCHEMA -> THIS SPRINT
 M5 Revision Archive App 798        = LIVE CONTAINER / SCHEMA -> THIS SPRINT
-M6 App 796 scoring baseline        = BLOCKED: CANONICAL SOURCE CONFLICT (ASST MGR 60/40 vs DEC-023 50/50)
+M6 App 796 scoring baseline        = BUSINESS RATIO CONFIRMED / READY FOR NEXT CONTROLLED SEED STAGE
 M7 App 795 routing baseline        = NOT CLOSED
 M8 Secure HR Dashboard MVP         = THIS SPRINT
 M9 End-to-end smoke test           = AFTER M6/M7 CLOSURE
 
 TODAY_DONE = NO
-NEXT_CRITICAL_PATH = M4 + M5 + M8 NOW; then repair M6 conflict + M7 baseline; then M9
+NEXT_CRITICAL_PATH = M4 + M5 + M8 NOW; then M6 + M7; then M9
 ```
 
 Do not work on anything that does not move M4, M5, or M8 in this sprint unless it is a direct blocker.
+
+---
+
+# BUSINESS RULE CORRECTION — EVALUATION RATIO BY POSITION
+
+The user explicitly reconfirmed the ratio from the approved visual reference. This is the authoritative business rule:
+
+```text
+Staff – Chief                 = Part A Objectives 70% / Part B Competencies 30%
+Assistant Manager             = Part A Objectives 60% / Part B Competencies 40%
+Section Manager and Above     = Part A Objectives 50% / Part B Competencies 50%
+```
+
+`Section Manager and Above` includes the higher management/executive profiles already modeled above Assistant Manager (Section Manager, Senior Manager, DGM, GM, VP).
+
+Japanese Staff is not shown in the reconfirmation image; preserve its existing validated rule unless separately instructed by the user.
+
+Important consequences:
+
+```text
+PROF_ASST_MGR 60/40 = CORRECT
+M6_SCORING_BASELINE_SEED_GATE = NOT_BLOCKED_BY_RATIO
+```
+
+The previous `DEC-023` wording that said all Management & Executive = 50/50 is stale/inaccurate for Assistant Manager and must be corrected in living/frozen decision documentation during this sprint's first docs commit.
+
+Do NOT change `PROF_ASST_MGR` from 60/40 to 50/50.
+Before future App 796 seed, verify canonical baseline resolves exactly to the ratios above.
+
+App 796 seeding/publishing is still OUT OF SCOPE for Sprint 02 because the current sprint is focused on M4/M5/M8 and the live publish/audit wiring remains a separate controlled stage.
 
 ---
 
@@ -34,7 +65,6 @@ Do not work on anything that does not move M4, M5, or M8 in this sprint unless i
 
 ```text
 DELIVERY_SPRINT_01_GATE = PASS_WITH_OBSERVATIONS / CLOSED
-NORTH_STAR_ALIGNMENT_GATE = PASS
 HOSHIN_CONTAINER_GATE = PASS (App 797)
 REVISION_ARCHIVE_CONTAINER_GATE = PASS (App 798)
 REAL_ID_REGISTRATION_GATE = PASS
@@ -45,52 +75,22 @@ PROTECTED_APP_ZERO_WRITE_GATE = PASS
 REGRESSION_GATE = PASS (471/471 reported)
 ```
 
-Bundle these non-blocking documentation corrections into this sprint's first docs commit:
+Bundle, do not create standalone loops:
 
 ```text
-OBS-DAY-003: Sprint 01 evidence row still uses *(Review Head)* -> replace with 55e8f836...
-OBS-DAY-004: generic THIS_TASK_KINTONE_CALLS / WRITES text is stale in some sections
-OBS-DAY-005: Active Sandbox Apps list omits App 797/798
+OBS-DAY-003: Sprint 01 evidence row *(Review Head)* -> 55e8f836...
+OBS-DAY-004: stale generic Kintone call/write counters in some docs
+OBS-DAY-005: Active Sandbox Apps list omits 797/798
+OBS-DAY-006: DEC-023 ratio summary must be corrected to 70/30, 60/40, 50/50 by level
 ```
-
-Do NOT create a standalone documentation loop.
-
----
-
-# NEW BLOCKER FOUND — M6 SCORING SEED
-
-Frozen `DEC-023` says:
-
-```text
-Staff / Japanese Staff = 70 / 30
-ALL Management & Executive = 50 / 50
-```
-
-But `src/profiles/scoring-config-master.js:getCanonicalBaselineMasterConfigs()` currently contains at least:
-
-```text
-PROF_ASST_MGR = 60 / 40
-```
-
-Therefore:
-
-```text
-M6_SCORING_BASELINE_SEED_GATE = BLOCKED
-```
-
-Do not seed or publish App 796 in this sprint.
-Do not "fix" this scoring conflict in this sprint unless required for dashboard compilation. It will be the first item after Dashboard MVP.
 
 ---
 
 # SECURITY DECISION FOR DASHBOARD
 
-`DEC-039` forbids cross-employee data exposure and explicitly says JavaScript/CSS is NOT a security boundary.
-`DEC-025` requires HR Control Center.
+`DEC-039` forbids cross-employee exposure and JavaScript/CSS is not a security boundary. `DEC-025` requires HR Control Center.
 
-Therefore the MVP dashboard MUST NOT be added as an all-user App 794 index customization.
-
-Implement the `App 794 / Portal` architecture as a dedicated Kintone **portal-shell app** with Native Creator-Only access for today's sandbox MVP:
+Dashboard MVP must use a dedicated native-secured Kintone shell:
 
 ```text
 HRCC_APP_NAME = MBO HR Control Center [Sandbox]
@@ -99,92 +99,57 @@ HRCC_DATA_STORAGE = NONE
 HRCC_DATA_SOURCE = CURRENT USER SESSION GETs TO APPS 794/795/796/797/798
 ```
 
-This app stores no employee/business records. It is only a secure UI shell. Native Creator-Only ACL is the security boundary for this MVP.
-
-If an exact `MBO HR Control Center [Sandbox]` already exists, do not create a duplicate; verify identity and ACL and reuse it.
-If a suspicious near-duplicate exists, STOP before creation and report.
-
-Kintone allocates the app ID. Never assume it will be 799.
+If exact HRCC app exists, verify and reuse. If no exact or suspicious near-duplicate exists, create exactly one. Never assume its App ID.
 
 ---
 
-# STEP 0 — GIT / SAFETY
+# STEP 0 — GIT / SECRET SAFETY
 
-Run and require:
+Require exact branch `ai/antigravity-wp002c`, clean tracked tree, fast-forward sync, and this Control Plane correction commit in ancestry.
 
-```bash
-git status --short
-git branch --show-current
-git fetch origin
-git pull --ff-only
-git rev-parse HEAD
-git rev-parse origin/ai/antigravity-wp002c
-git merge-base --is-ancestor 55e8f836cbbdd9c4ac2670e47dfe41db5068a47b HEAD
-```
+Read mandatory project state, decisions, security model, Hoshin design, revision design, HRCC architecture, registry, schema spec, sandbox guard, and current deployment scripts.
 
-Required:
+`.env.local` may be used locally only. It must remain ignored, untracked, unmodified, unprinted, and uncommitted. Delete `process.env.KINTONE_API_TOKEN` before network writes; use username/password connection.
+
+Protected Apps remain permanently READ ONLY:
 
 ```text
-branch = ai/antigravity-wp002c
-local HEAD = remote HEAD
-tracked working tree clean
-Sprint 01 head in ancestry
+53, 283, 305, 307, 310, 640, 643, 715, 716
 ```
 
-Read:
-
-```text
-project-docs/AI_ACTIVE_TASK.md
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/APP_REGISTRY.md
-project-docs/ARCHITECTURE.md
-project-docs/DECISIONS.md
-project-docs/SECURITY_MODEL.md
-project-docs/architecture-redesign/HOSHIN_MANAGEMENT_DESIGN.md
-project-docs/architecture-redesign/REVISION_DATA_MODEL_DESIGN.md
-project-docs/architecture-redesign/CONTROLLED_REOPEN_REVISION_DESIGN.md
-project-docs/architecture-redesign/HR_CONTROL_CENTER_ARCHITECTURE.md
-config/sandbox-apps.json
-config/schema-spec.js
-src/core/sandbox-write-guard.js
-scripts/kintone/deploy-custom-ui.js
-```
+No writes to 794/795/796 in Sprint 02.
 
 ---
 
-# STEP 1 — CLOSE SPRINT 01 + START SPRINT 02 DOCS
+# STEP 1 — DOC RECONCILIATION + SPRINT START
 
-Update only the five living docs:
+Update the five living docs plus `project-docs/DECISIONS.md` only as needed to correct the ratio statement.
+
+Required ratio wording:
 
 ```text
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/IMPLEMENTATION_STATUS.md
-project-docs/CHANGELOG_AI.md
+Staff / Chief = 70/30
+Assistant Manager = 60/40
+Section Manager and Above = 50/50
 ```
 
-Record Sprint 01 as `PASS_WITH_OBSERVATIONS / CLOSED` and fix OBS-DAY-003/004/005.
-Record the M6 scoring conflict exactly as above.
-Update North Star scoreboard.
+Preserve all other frozen decisions and Stage 3C evidence exception.
 
 Commit exactly:
 
 ```text
-docs: close delivery sprint 01 and start secure dashboard sprint
+docs: reconcile scoring ratios and start delivery sprint 02
 ```
 
-Push and verify sync.
+Push and sync.
 
 ---
 
-# STEP 2 — CODE / TEST FOUNDATION FOR THIS SPRINT
+# STEP 2 — CODE / TEST FOUNDATION
 
-## 2A. Extend registered sandbox recognition
+## 2A Sandbox registry recognition
 
-Update `src/core/sandbox-write-guard.js:getSandboxAppIds()` to include, when present:
+Update `src/core/sandbox-write-guard.js:getSandboxAppIds()` to recognize registered IDs when present:
 
 ```text
 mboV2AppId
@@ -203,14 +168,9 @@ WRITE_ALLOWED_APPS = []
 PROTECTED_APP_IDS unchanged
 ```
 
-No global permanent write window.
-Every deployment write must use a process-local explicit allow-list + `dryRunBypassDiscovery: true` only for the exact target app being written.
+No permanent write window. Every live write requires an explicit process-local target allow-list and guard check.
 
-## 2B. Add App 797 Hoshin schema manifest
-
-Prefer adding this to existing `config/schema-spec.js` rather than creating another schema-definition file.
-
-Exact fields:
+## 2B App 797 Hoshin schema — exact 19 fields
 
 ```text
 Hoshin_Key          SINGLE_LINE_TEXT required unique
@@ -234,13 +194,9 @@ Remark               MULTI_LINE_TEXT optional
 Active               RADIO_BUTTON required default Active [Active, Inactive]
 ```
 
-No Process Management.
-No records.
-Do not implement readiness/supersession mutation logic yet.
+Prefer adding manifest to existing `config/schema-spec.js`. No Process Management. No records.
 
-## 2C. Add App 798 Revision Archive schema manifest
-
-Exact minimal archive schema:
+## 2C App 798 Revision Archive schema — exact 15 fields
 
 ```text
 Archive_Key              SINGLE_LINE_TEXT required unique
@@ -260,11 +216,11 @@ Archived_By              USER_SELECT required
 Archived_At              DATETIME required
 ```
 
-No records in this sprint.
+No records.
 
-## 2D. Add secure HR Control Center UI
+## 2D Secure HR Control Center MVP
 
-New files are justified by separation of concerns. Keep them minimal:
+Minimal justified files:
 
 ```text
 src/ui/hr-control-center.js
@@ -272,23 +228,11 @@ src/styles/hr-control-center.css
 scripts/kintone/deploy-delivery-sprint02.js
 ```
 
-Add one focused test file if useful, otherwise extend existing tests. Do not create extra helper files without need.
+Dashboard runs only inside the exact registered HRCC App ID on `app.record.index.show`.
 
-Dashboard must run on `app.record.index.show` inside the dedicated HRCC app only.
+GET-only browser runtime sources: Apps 794, 795, 796, 797, 798 using the current Kintone session. No embedded API token or credentials.
 
-Dashboard GET sources:
-
-```text
-App 794 Transaction Core
-App 795 Routing Master
-App 796 Scoring Config Master
-App 797 Hoshin Master
-App 798 Revision Archive
-```
-
-Use current Kintone user session only. No API token embedded in browser code. No secret or elevated backend proxy.
-
-App 794 requested fields must be limited to non-confidential monitoring fields only, e.g.:
+From App 794 request/display only non-confidential monitoring fields:
 
 ```text
 $id
@@ -302,93 +246,28 @@ Employee_Position
 Status
 ```
 
-Never request/display:
+Never request/display scores, grades, Manager/GM comments/ratings, or attachments.
+
+Dashboard MVP:
 
 ```text
-Manager_* scores/comments
-GM_* scores/comments
-PartA_Raw_Score
-PartA_Weighted_Score
-PartB_Raw_Score
-PartB_Weighted_Score
-Final_Confidential_Score
-Final_Grade
-attachments
+Header: MBO 2026 — HR Control Center
+KPI: Total Evaluations / Completed / In Progress / Need Attention
+Pipeline counts by App 794 Status
+Filters: FY / Department / Section / Status
+Employee monitor: code, name, department, section, position, status, open-record link
+Health: 794 count, 795 coverage x/12, 796 config count, 797 Hoshin count, 798 archive count
+Warnings: routing <12; scoring config=0; Hoshin=0
+Quick links: 794–798
 ```
 
-### Dashboard MVP UI
+Monitoring/navigation only; no write buttons. Fail closed on denied GETs. Vanilla JS/CSS only.
 
-Render:
+Tests must prove registry recognition, protected/default-deny preservation, exact schemas, dashboard GET-only behavior, confidential field exclusion, deterministic aggregation/filtering, exact HRCC app binding, and ratio rule regression including `PROF_ASST_MGR = 60/40`.
 
-1. Header: `MBO 2026 — HR Control Center`
-2. KPI cards:
-   - Total Evaluations
-   - Completed
-   - In Progress
-   - Need Attention
-3. Pipeline counts grouped by live App 794 `Status`
-4. Filters:
-   - Fiscal Year
-   - Department
-   - Section
-   - Status
-5. Employee Evaluation Monitor grid:
-   - Employee Code
-   - Name
-   - Department
-   - Section
-   - Position
-   - Status (plain-language mapping)
-   - Open Record link
-6. System Health cards:
-   - App 794 record count
-   - App 795 routing coverage `x / 12`
-   - App 796 scoring config count
-   - App 797 Hoshin record count
-   - App 798 Archive record count
-7. Need Attention rules for MVP:
-   - routing coverage < 12 -> warning
-   - scoring config count == 0 -> warning
-   - Hoshin record count == 0 -> warning
-8. Quick links:
-   - App 794
-   - App 795
-   - App 796
-   - App 797
-   - App 798
+Run full `npm test`; zero failures.
 
-No write/action buttons in this MVP. Monitoring + navigation only.
-
-Fail closed: if a source GET is denied, show that module as `Access denied / unavailable`; never bypass permissions.
-
-No external CDN/framework. Vanilla JS/CSS only.
-
-## 2E. Tests
-
-Minimum automated coverage:
-
-```text
-getSandboxAppIds recognizes 797/798 and optional HRCC id
-protected app list unchanged
-default WRITE_ALLOWED_APPS remains []
-Hoshin manifest exact fields/types/options/unique/required
-Revision manifest exact fields/types/options/unique/required
-Dashboard source GET-only
-Dashboard source contains no confidential field requests
-Dashboard aggregation/filter logic deterministic
-Dashboard links use registered app IDs
-Dashboard does not execute outside exact HRCC app ID
-```
-
-Run:
-
-```bash
-npm test
-```
-
-Required: previous 471 regressions + new tests, zero failures.
-
-Commit code/tests exactly:
+Commit exactly:
 
 ```text
 feat: add delivery master schemas and secure hr control center
@@ -398,220 +277,115 @@ Push before live writes.
 
 ---
 
-# STEP 3 — LOCAL PRE-WRITE BACKUP (MANDATORY)
+# STEP 3 — DURABLE PRE-WRITE BACKUP
 
-`.env.local` may be used locally. Never print, modify, copy, hash, or commit its contents.
-Delete `KINTONE_API_TOKEN` from the process before write execution; use username/password connection.
-
-Create a durable local backup directory:
+Before any write create and RETAIN until ChatGPT review:
 
 ```text
 backups/delivery-sprint-02/<UTC_TIMESTAMP>/
 ```
 
-Before ANY write, capture and retain until ChatGPT review:
+Capture App 797/798 live+preview settings, fields, layout, ACL, records/count. For HRCC capture equivalent state before customization (or immediately after safe create/deploy if newly created). Create SHA-256 manifest. Record only backup paths/hashes in docs, never raw payloads/secrets.
 
-For App 797 and 798:
-
-```text
-live settings
-preview settings
-live fields
-preview fields
-live layout
-preview layout
-live ACL
-preview ACL
-record count / records (expected 0)
-```
-
-For an existing HRCC app, capture equivalent state before customization.
-For a newly created HRCC app, capture state immediately after safe create/deploy and before customization.
-
-Create SHA-256 manifest for backup files. Record only paths + hashes in evidence docs, not raw contents.
-
-DO NOT delete this backup directory before ChatGPT review.
+Do not delete backup before independent review.
 
 ---
 
-# STEP 4 — LIVE SCHEMA DEPLOY: APPS 797 + 798 ONLY
+# STEP 4 — LIVE SCHEMAS 797/798
 
-Preflight exact identity + creator-only ACL + recordCount=0 for both apps.
-If any record exists or identity/ACL mismatches, STOP before write.
+Preflight exact identity, Creator-only ACL, and recordCount=0. Stop on mismatch.
 
-Authorized writes:
-
-```text
-App 797 form fields/layout/deploy only
-App 798 form fields/layout/deploy only
-```
-
-Use exact process-local allow-list `[797, 798]` and guard checks before each app-specific write.
-
-After deploy, exact read-back must verify:
+Authorized writes only:
 
 ```text
-App 797 = exact 19 planned fields + creator-only + live deploy success + records 0
-App 798 = exact 15 planned fields + creator-only + live deploy success + records 0
+App 797: form fields/layout/deploy
+App 798: form fields/layout/deploy
 ```
 
-If transport is uncertain, reconcile with GET; do not blindly retry.
+After deploy exact live read-back:
 
-No writes to 794/795/796.
-No protected-app writes.
-No records anywhere.
+```text
+797 = 19 planned fields / CREATOR_ONLY / records 0
+798 = 15 planned fields / CREATOR_ONLY / records 0
+```
+
+No blind retry after uncertain transport; reconcile by GET.
 
 ---
 
-# STEP 5 — CREATE/REUSE SECURE HRCC PORTAL SHELL + DEPLOY DASHBOARD
+# STEP 5 — CREATE/REUSE HRCC + DEPLOY DASHBOARD
 
-First GET/search app catalog for exact name:
+Search exact `MBO HR Control Center [Sandbox]`. Avoid duplicates.
 
-```text
-MBO HR Control Center [Sandbox]
-```
+If newly created: create once, verify exact returned ID/name, enforce Creator-only ACL, deploy live, read back identity/ACL.
 
-If exact one exists, verify exact identity + creator-only/default-deny and reuse.
-If no exact/suspicious duplicate exists, create exactly one app with that exact name.
+Deploy dashboard customization to HRCC only: upload JS/CSS, PUT preview customize, POST deploy, bounded poll, live read-back.
 
-For a new HRCC app:
-
-```text
-POST preview app create exactly once
-verify returned ID/name
-ensure creator-only ACL
-live deploy
-read-back exact live identity/ACL
-```
-
-Then deploy the dashboard customization to HRCC app only:
-
-```text
-upload JS/CSS
-PUT preview app customize for HRCC ID only
-POST deploy HRCC only
-bounded status polling
-live read-back of customization/settings/ACL
-```
-
-No business records in HRCC.
-No fields required in HRCC for MVP.
-
-Register the returned/reused real ID in:
+Register exact real ID in:
 
 ```text
 config/sandbox-apps.json -> hrControlCenterAppId
 project-docs/APP_REGISTRY.md
 ```
 
-Purpose:
+HRCC stores no business records and needs no business fields for MVP.
+
+Commit registration/deployment artifacts exactly:
 
 ```text
-Secure creator-only Kintone portal shell for HR Control Center MVP; reads real sandbox data under current-user native permissions; stores no business records.
+chore: register and deploy secure hr control center
 ```
-
-Generate committed `dist` dashboard artifacts only if the deployment process needs them and existing repository convention tracks dist.
 
 ---
 
-# STEP 6 — LIVE DASHBOARD SMOKE TEST (READ ONLY)
+# STEP 6 — LIVE READ-ONLY DASHBOARD SMOKE
 
-Using the deployed HRCC app and current authenticated creator/admin account, verify via safe GETs/read-back:
-
-```text
-HRCC app exact identity
-HRCC ACL = CREATOR_ONLY
-Dashboard customization live
-App 794 GET works or reports access denied without bypass
-App 795 GET works
-App 796 GET works
-App 797 GET works
-App 798 GET works
-```
-
-Record safe counts only.
-
-Expected current health likely includes:
-
-```text
-App 796 configs = 0 -> warning is correct
-App 797 Hoshin records = 0 -> warning is correct
-App 798 archive records = 0
-App 795 routing coverage currently expected 1/12 unless live state differs
-```
-
-Do not create data just to make KPI cards green.
+Verify exact HRCC identity, Creator-only ACL, customization live, and GET access/fail-closed behavior for Apps 794–798. Record safe counts only. Do not create records to make health indicators green.
 
 ---
 
-# STEP 7 — EVIDENCE / GIT
+# STEP 7 — EVIDENCE
 
-Run full tests again after generated artifacts/registration changes.
+Run full tests again and update living docs.
 
-Expected commits after Control Plane assignment:
-
-```text
-1. docs: close delivery sprint 01 and start secure dashboard sprint
-2. feat: add delivery master schemas and secure hr control center
-3. chore: register and deploy secure hr control center
-4. docs: record delivery sprint 02 schema and dashboard evidence
-```
-
-Commit 3 may also include `config/sandbox-apps.json`, `project-docs/APP_REGISTRY.md`, and tracked dist artifacts only.
-
-Final evidence docs must record:
+Required final state:
 
 ```text
 DELIVERY_SPRINT_02 = COMPLETE / PENDING CHATGPT REVIEW
 M4 App 797 = LIVE SCHEMA VERIFIED / 19 fields / 0 records
 M5 App 798 = LIVE SCHEMA VERIFIED / 15 fields / 0 records
-M8 HR Dashboard = LIVE MVP VERIFIED / exact HRCC app ID / CREATOR_ONLY
-M6 = BLOCKED pending scoring source correction
-M7 = still requester coverage x/12
+M6 App 796 scoring baseline = RATIO CONFIRMED / READY FOR NEXT CONTROLLED SEED STAGE
+M7 App 795 routing baseline = current coverage x/12
+M8 HR Dashboard = LIVE MVP VERIFIED / real HRCC app ID / CREATOR_ONLY
 794 writes = 0
 795 writes = 0
 796 writes = 0
 protected writes = 0
-797 schema write counts = actual
-798 schema write counts = actual
-HRCC create/customize/deploy write counts = actual
 records created = 0
-prewrite backup retained = YES + local path + SHA256 manifest
+prewrite backup retained = YES
 npm test = actual total / PASS
-NEXT_CRITICAL_PATH = repair M6 scoring baseline source, seed M6 + M7, then end-to-end smoke test
+NEXT_CRITICAL_PATH = M6 scoring seed + M7 routing seed, then M9 end-to-end smoke test
 TODAY_DONE = NO
 ```
 
-Push branch and require local HEAD = remote HEAD, tracked working tree clean, then STOP.
+Evidence commit exactly:
 
----
+```text
+docs: record delivery sprint 02 schema and dashboard evidence
+```
+
+Push branch, require local HEAD = remote HEAD and clean tracked tree, then STOP.
 
 # STRICT OUT OF SCOPE
 
-Do not:
-
-- seed/publish App 796
-- seed App 795
-- alter scoring weights in this sprint
-- create Hoshin records
-- create Revision Archive records
-- modify App 794 schema/process/records/customization
-- modify App 795 schema/process/records
-- modify App 796 schema/process/records
-- implement Hoshin supersession business writes yet
-- implement Reopen archive writes yet
-- weaken Creator-Only ACL
-- expose dashboard to shared/common employee account
-- touch protected app data
+Do not seed/publish App 796 in Sprint 02. Do not seed App 795. Do not modify App 794/795/796 schema/process/records/customization. Do not create Hoshin/Archive records. Do not implement Hoshin supersession or Reopen archive writes. Do not weaken HRCC security. Do not touch protected-app data.
 
 # REVIEW EXPECTATION
-
-ChatGPT will independently inspect GitHub and gate:
 
 ```text
 NORTH_STAR_ALIGNMENT_GATE
 SPRINT01_CLOSURE_GATE
-SCORING_CONFLICT_CONTAINMENT_GATE
+SCORING_RATIO_TRUTH_GATE
 SANDBOX_REGISTRY_GUARD_GATE
 HOSHIN_SCHEMA_GATE
 REVISION_ARCHIVE_SCHEMA_GATE
@@ -629,8 +403,3 @@ REGRESSION_GATE
 GIT_PUSH_SYNC_GATE
 DELIVERY_SPRINT_02_GATE
 ```
-
-# FINAL REPORT FORMAT
-
-Start and end with the TODAY NORTH STAR scoreboard.
-Report safe metadata only. Never print secrets or raw employee datasets.
