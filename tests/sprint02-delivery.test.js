@@ -79,3 +79,23 @@ test('Sprint 02: Position ratio rule regression - Assistant Manager 60/40 confir
   assert.equal(asstMgrRecord.PartA_Weight, 60);
   assert.equal(asstMgrRecord.PartB_Weight, 40);
 });
+
+test('Sprint 02R: App 798 Revision Archive exact required contract has all 3 required flags set to true', () => {
+  assert.equal(revisionArchiveFields.Reason.required, true, 'Reason MUST be required=true');
+  assert.equal(revisionArchiveFields.Snapshot_JSON.required, true, 'Snapshot_JSON MUST be required=true');
+  assert.equal(revisionArchiveFields.Archived_At.required, true, 'Archived_At MUST be required=true');
+  assert.equal(Object.keys(revisionArchiveFields).length, 15, 'Revision Archive schema must contain exactly 15 fields');
+});
+
+test('Sprint 02R: HRCC query builder enforces strict whitelist security and fails closed on non-whitelisted fields', () => {
+  const validQuery = buildHrccMonitoringQuery(ALLOWED_MONITORING_FIELDS_794);
+  assert.equal(validQuery, '$id,Fiscal_Year,Employee_Code,Employee_Name,Employee_Name_TH,Employee_Department,Employee_Section,Employee_Position,Status');
+
+  assert.throws(() => {
+    buildHrccMonitoringQuery(['$id', 'Manager_Comment']);
+  }, /SECURITY VIOLATION/);
+
+  assert.throws(() => {
+    buildHrccMonitoringQuery(['PartA_Weighted_Score']);
+  }, /SECURITY VIOLATION/);
+});

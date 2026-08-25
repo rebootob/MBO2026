@@ -1,8 +1,8 @@
 const text = (label, options = {}) => ({ type: 'SINGLE_LINE_TEXT', label, required: false, unique: false, defaultValue: '', ...options });
-const area = (label) => ({ type: 'MULTI_LINE_TEXT', label, required: false, defaultValue: '' });
+const area = (label, options = {}) => ({ type: 'MULTI_LINE_TEXT', label, required: false, defaultValue: '', ...options });
 const user = (label, required = false) => ({ type: 'USER_SELECT', label, required, defaultValue: [], entities: [] });
 const date = (label) => ({ type: 'DATE', label, required: false, defaultValue: '' });
-const datetime = (label) => ({ type: 'DATETIME', label, required: false, defaultValue: '' });
+const datetime = (label, options = {}) => ({ type: 'DATETIME', label, required: false, defaultValue: '', ...options });
 const number = (label, options = {}) => ({ type: 'NUMBER', label, required: false, unique: false, minValue: '', maxValue: '', defaultValue: '', ...options });
 const file = (label) => ({ type: 'FILE', label, required: false });
 const calc = (label, expression) => ({ type: 'CALC', label, expression, hideExpression: true });
@@ -133,9 +133,9 @@ export const revisionArchiveFields = {
   Previous_Status: text('Previous Status'),
   Superseded_By_Revision: number('Superseded By Revision', { minValue: '1' }),
   Event_Type: text('Event Type', { required: true, defaultValue: 'EVALUATION_REVISION_CREATED' }),
-  Reason: area('Reason'),
-  Snapshot_JSON: area('Snapshot JSON'),
+  Reason: area('Reason', { required: true }),
+  Snapshot_JSON: area('Snapshot JSON', { required: true }),
   Snapshot_Hash: text('Snapshot Hash', { required: true }),
   Archived_By: user('Archived By', true),
-  Archived_At: datetime('Archived At')
+  Archived_At: datetime('Archived At', { required: true })
 };
