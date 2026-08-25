@@ -282,3 +282,70 @@ test('Sprint 03A-R1: executeScoringSeed stops fail-closed if App 796 contains ex
 
   assert.equal(writeOps.length, 0, 'No write operations (POST/PUT) must be executed when existing records are present');
 });
+
+import {
+  APPROVED_ROUTING_BASELINE_MANIFEST,
+  validateRoutingSeedManifest,
+  createNarrowRoutingTransport,
+  executeRoutingSeed
+} from '../scripts/kintone/seed-routing-baseline.js';
+
+test('Sprint 03B: APPROVED_ROUTING_BASELINE_MANIFEST has exact 11 unique section mappings excluding TME1 and TMT3', () => {
+  assert.equal(APPROVED_ROUTING_BASELINE_MANIFEST.length, 11);
+  const codes = APPROVED_ROUTING_BASELINE_MANIFEST.map(x => x.sectionCode);
+  assert.equal(new Set(codes).size, 11);
+  assert.ok(!codes.includes('TME1'), 'TME1 must be excluded from seed manifest');
+  assert.ok(!codes.includes('TMT3'), 'TMT3 must be excluded from seed manifest');
+  assert.equal(validateRoutingSeedManifest(APPROVED_ROUTING_BASELINE_MANIFEST), true);
+});
+
+test('Sprint 03B: validateRoutingSeedManifest rejects duplicate, TME1, TMT3, and invalid users', () => {
+  const base10 = APPROVED_ROUTING_BASELINE_MANIFEST.slice(0, 10);
+  assert.throws(() => validateRoutingSeedManifest([...base10, { sectionCode: 'TME1', sectionName: 'Eng 1', requesterUser: 'e1' }]), /TME1/);
+  assert.throws(() => validateRoutingSeedManifest([...base10, { sectionCode: 'TMT3', sectionName: 'Tech 3', requesterUser: 't3' }]), /TMT3/);
+  assert.throws(() => validateRoutingSeedManifest([...base10, { sectionCode: 'TMF1', sectionName: 'Dup', requesterUser: 'f1' }]), /Duplicate/);
+  assert.throws(() => validateRoutingSeedManifest([{ sectionCode: 'TMX1', sectionName: 'Unknown', requesterUser: 'unauthorized_user' }]), /ROUTING MANIFEST INVALID: Expected exactly 11 items/);
+  assert.throws(() => validateRoutingSeedManifest([...base10, { sectionCode: 'TMX1', sectionName: 'Unknown', requesterUser: 'unauthorized_user' }]), /not in approved requester list/);
+});
+
+test('Sprint 03B: createNarrowRoutingTransport blocks PUT, DELETE, PATCH, wrong app, and unapproved endpoint', async () => {
+  const transport = createNarrowRoutingTransport(795);
+  await assert.rejects(async () => transport('/k/v1/record.json', { method: 'PUT', body: { app: 795 } }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/record.json', { method: 'DELETE', body: { app: 795 } }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/record.json', { method: 'PATCH', body: { app: 795 } }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/record.json', { method: 'POST', body: { app: 796 } }), /Write target body.app must be App 795/);
+  await assert.rejects(async () => transport('/k/v1/records.json', { method: 'POST', body: { app: 795 } }), /POST target must be '\/k\/v1\/record.json'/);
+});
+
+test('Sprint 03B: executeRoutingSeed executes bounded 11 POSTs and verifies 12/12 active readback', async () => {
+  const fakeRecords = [{ $id: { value: '1' }, Section_Code: { value: 'TME1' }, Requester_User: { value: [{ code: 'e1' }] }, Active: { value: 'Active' } }];
+  const postCalls = [];
+  let nextId = 2;
+
+  const fakeTransport = async (relPath, opts = {}) => {
+    const method = (opts.method || 'GET').toUpperCase();
+    if (method === 'POST') {
+      postCalls.push({ relPath, body: opts.body });
+      const recId = String(nextId++);
+      fakeRecords.push({
+        $id: { value: recId },
+        Section_Code: { value: opts.body.record.Section_Code.value },
+        Section_Name: { value: opts.body.record.Section_Name.value },
+        Requester_User: { value: opts.body.record.Requester_User.value },
+        Active: { value: 'Active' }
+      });
+      return { id: recId };
+    }
+    if (relPath.includes('records.json')) {
+      return { records: fakeRecords };
+    }
+    return {};
+  };
+
+  const res = await executeRoutingSeed({ overrideTransport: fakeTransport });
+  assert.equal(res.postCount, 11);
+  assert.equal(res.createdRecordIds.length, 11);
+  assert.equal(res.totalActive, 12);
+  assert.equal(postCalls.length, 11);
+  assert.ok(postCalls.every(c => c.relPath === '/k/v1/record.json' && c.body.app === 795));
+});
