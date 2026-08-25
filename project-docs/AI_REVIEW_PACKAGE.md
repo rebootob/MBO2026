@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Commit Verification Metadata (DEC-030, Stage 4A, Stage 4B & Stage 4C Traceability)
+## 1. Commit Verification Metadata (DEC-030, Stage 4A, Stage 4B, Stage 4C & Stage 4D-A Traceability)
 
 | Stage / Component | Commit SHA | Notes / Message |
 | :--- | :--- | :--- |
@@ -43,8 +43,9 @@
 | **Stage 4C Hardening Code** | `f581b90a778e91bacc3a0b14c39e9d127191bf99` | `fix: harden scoring config stage4c bridge exactness` |
 | **Stage 4C Hardening Evidence** | `c33285ef6bfa958f026d36b5c5f299448ae78c30` | `docs: record wp-002c stage4c bridge hardening` |
 | **Stage 4C Final Doc Closure Commit** | `6f03d9049ce4377534f6b494a715ee0b7ba9afb2` | `docs: close wp-002c stage4c review evidence` |
+| **Stage 4C Closure / Stage 4D-A Authorization** | `9321921d36b9a9b5a374e2c584a571153f016757` | `docs: close wp-002c stage4c and authorize stage4d-a` |
 | **Stage 4D-A Preflight Implementation** | `322d12bd8eac7f23b8b823826d2a4852077ca4b1` | `feat: add scoring config read-only live preflight foundation` |
-| **Stage 4D-A Preflight Evidence Docs** | *(Review Head)* | `docs: record wp-002c stage4d-a read preflight foundation` |
+| **Stage 4D-A Preflight Evidence** | `f09a10e5f42b9677023d51a46ae8dd45a014504e` | `docs: record wp-002c stage4d-a read preflight foundation` |
 
 ## 2. Gate Summary
 
