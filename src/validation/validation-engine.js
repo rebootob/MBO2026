@@ -82,6 +82,27 @@ export class ValidationEngine {
 
     // Stage 1: OBJECTIVE_INPUT or NEW_RECORD (Create Submit validates objectives)
     if (stage === BUSINESS_STAGES.OBJECTIVE_INPUT || stage === BUSINESS_STAGES.NEW_RECORD) {
+      if (record.Profile_Code !== undefined && !this._val(record.Profile_Code)) {
+        fieldErrors.push({
+          field: 'Employee_Code',
+          messageTH: 'ไม่พบข้อมูล Profile Code ของพนักงาน กรุณากดค้นหาเพื่อระบุกลุ่มประเมิน',
+          messageEN: 'Employee scoring profile code was not found. Please search to resolve profile.',
+          message: 'ไม่พบข้อมูล Profile Code ของพนักงาน กรุณากดค้นหาเพื่อระบุกลุ่มประเมิน\nEmployee scoring profile code was not found. Please search to resolve profile.'
+        });
+      }
+
+      if (record.Routing_Topology !== undefined && !this._val(record.Routing_Topology)) {
+        fieldErrors.push({
+          field: 'Employee_Code',
+          messageTH: 'ไม่พบข้อมูล Routing ของพนักงาน กรุณากดค้นหาเพื่อระบุเส้นทางอนุมัติ',
+          messageEN: 'Employee routing workflow was not found. Please search to resolve routing.',
+          message: 'ไม่พบข้อมูล Routing ของพนักงาน กรุณากดค้นหาเพื่อระบุเส้นทางอนุมัติ\nEmployee routing workflow was not found. Please search to resolve routing.'
+        });
+      }
+
+      // Automatically clear inactive rows so stale values do not leak into saved record
+      this.clearInactiveRows(record);
+
       let totalWeight = 0;
 
       for (let i = 1; i <= objCount; i++) {
@@ -189,6 +210,29 @@ export class ValidationEngine {
       fieldErrors: fieldErrors,
       errors: fieldErrors.map(e => e.message)
     };
+  }
+
+  static clearInactiveRows(record) {
+    if (!record) return;
+    const objCount = parseInt(this._val(record.Objective_Count) || '4', 10);
+    if (isNaN(objCount) || objCount < 2 || objCount > 10) return;
+
+    for (let i = objCount + 1; i <= 10; i++) {
+      const rowFields = [
+        `Objective_${i}`, `Action_Plan_${i}`, `Weight_${i}`, `Difficulty_${i}`,
+        `Progress_Percent_${i}`, `Actual_Result_${i}`, `Self_Achievement_${i}`,
+        `Midyear_Comment_${i}`, `Appraiser_Achievement_${i}`, `Appraiser_Comment_${i}`
+      ];
+      rowFields.forEach(f => {
+        if (record[f]) {
+          if (typeof record[f] === 'object' && 'value' in record[f]) {
+            record[f].value = '';
+          } else {
+            record[f] = '';
+          }
+        }
+      });
+    }
   }
 
   static _val(field) {

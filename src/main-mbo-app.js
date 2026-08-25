@@ -270,8 +270,8 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
       activeUiInstance.syncFromDom();
     }
 
-    // 2. On Create: Must verify employee
-    if (isCreate && activeUiInstance && !activeUiInstance.isEmployeeVerified) {
+    // 2. Must verify employee before save
+    if (activeUiInstance && !activeUiInstance.isEmployeeVerified) {
       activeUiInstance.showValidationErrors([{
         field: 'Employee_Code',
         messageTH: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก',

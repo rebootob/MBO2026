@@ -4,6 +4,7 @@
  */
 
 import { BUSINESS_STAGES } from '../config/constants.js';
+import { ValidationEngine } from '../validation/validation-engine.js';
 
 export class EmployeePartAUI {
   constructor(options = {}) {
@@ -768,6 +769,7 @@ export class EmployeePartAUI {
         const count = e.target.value;
         this._setVal('Objective_Count', count);
         this.onFieldChange('Objective_Count', count);
+        ValidationEngine.clearInactiveRows(this.record);
         this.render();
       });
     }
