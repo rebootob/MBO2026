@@ -1,32 +1,54 @@
-# AI ACTIVE TASK — M10H PROFILE MAPPING COVERAGE AUDIT + LOOKUP FAILURE STATE FIX
+# AI ACTIVE TASK — M10I POSITION → SCORING PROFILE MAPPING CLOSURE
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed Head: `324e93348205533f109668597f38ab6a9436969a`
-> Mode: APP53 READ-ONLY AUDIT + REPOSITORY FIX/TESTS ONLY — NO KINTONE WRITE / NO APP794 DEPLOY
+> Reviewed Head: `72d8ef294de3a80636a913ace4ead03ed5e8929f`
+> Mode: APP53 READ-ONLY ANALYSIS + REPOSITORY MAPPING IMPLEMENTATION/TESTS ONLY — NO KINTONE WRITE / NO APP794 DEPLOY
 
 # NORTH STAR
 
 ```text
-Apps foundation              = READY
-App795 routing               = LIVE / READY
-App796 scoring               = LIVE / READY
-App800 dashboard             = LIVE
-App794 fixed runtime bundle  = LIVE revision 26
+Apps foundation             = READY
+App795 routing              = LIVE / READY
+App796 scoring              = LIVE / READY
+App800 dashboard            = LIVE
+App794 runtime revision 26  = LIVE
+M10H coverage audit         = PASS
 
-Browser evidence after M10G-R3:
-- employee 0118 resolves successfully and unlocks objective UI
-- employee 0111 is found in App53 but fails at profile resolution with PROFILE_RESOLUTION_AMBIGUOUS
-- when the new lookup fails, the UI can retain stale verified state / stale employee snapshot from the previous successful employee
+M10H factual coverage:
+TOTAL_ACTIVE_EMPLOYEES      = 275
+DISTINCT_POSITION_COUNT     = 61
+MAPPED_POSITIONS            = 32 / 125 employees
+AMBIGUOUS_POSITIONS         = 28 / 147 employees
+UNKNOWN_POSITIONS           = 1 / 3 employees
+
+CURRENT CRITICAL BLOCKER:
+147 ambiguous + 3 unknown employees cannot reliably resolve scoring profile.
 
 THIS TASK:
-1) Audit profile-mapping coverage for ALL distinct active employee positions in App53.
-2) Produce exact Mapped / Ambiguous / Unknown coverage and impacted employee counts.
-3) Fix stale verified-state behavior so a failed lookup can never leave a previous employee shown as verified.
-4) Do NOT invent new profile mappings or write Kintone data in this task.
+Close Position -> Scoring Profile mapping at repository level for every non-empty active App53 position where the business rule is determinable from the frozen MBO level policy, and isolate any truly unresolvable data-quality cases for explicit user decision. Target full usable coverage as close to 275/275 as evidence permits.
 ```
+
+# FROZEN BUSINESS PROFILE POLICY
+
+Use these frozen profile families only:
+
+```text
+Staff / Chief level       -> PROF_STAFF_CHIEF        -> Part A 70 / Part B 30
+Japanese Staff            -> PROF_JAPANESE_STAFF     -> Part A 70 / Part B 30
+Assistant Manager level   -> PROF_ASST_MGR            -> Part A 60 / Part B 40
+Section Manager level     -> PROF_SECTION_MGR         -> Part A 50 / Part B 50
+Senior Manager level      -> PROF_SENIOR_MGR          -> Part A 50 / Part B 50
+Deputy General Manager    -> PROF_DGM                 -> Part A 50 / Part B 50
+General Manager           -> PROF_GM                  -> Part A 50 / Part B 50
+Vice President            -> PROF_VP                  -> Part A 50 / Part B 50
+```
+
+Do NOT create new profiles.
+Do NOT modify App796 records.
+Do NOT change the frozen weights.
 
 # HARD SAFETY
 
@@ -43,150 +65,148 @@ OTHER_APP_WRITE = 0
 KINTONE_WRITES_THIS_TASK = 0
 ```
 
-# STEP 1 — READ-ONLY APP53 POSITION COVERAGE AUDIT
+# STEP 1 — RE-READ M10H COVERAGE MATRIX
 
-Read App53 only and obtain the distinct active employee Position values using the actual field code used by EmployeeService.
+Use the M10H audit evidence already recorded in living docs plus read-only App53 only if necessary to reconstruct the exact 28 ambiguous positions and 1 unknown/empty position.
 
-For every distinct normalized position, classify using the CURRENT resolver source of truth in `src/profiles/profile-scoring-resolver.js`:
-
-```text
-MAPPED     = exact POSITION_TO_PROFILE match
-AMBIGUOUS  = exact AMBIGUOUS_TITLES match
-UNKNOWN    = neither mapped nor ambiguous
-```
-
-Do not silently assign a profile to Ambiguous or Unknown positions.
-
-Required audit output:
+For each unresolved position, capture:
 
 ```text
-TOTAL_ACTIVE_EMPLOYEES = actual
-DISTINCT_POSITION_COUNT = actual
-MAPPED_POSITION_COUNT = actual
-AMBIGUOUS_POSITION_COUNT = actual
-UNKNOWN_POSITION_COUNT = actual
-MAPPED_EMPLOYEE_COUNT = actual
-AMBIGUOUS_EMPLOYEE_COUNT = actual
-UNKNOWN_EMPLOYEE_COUNT = actual
-```
-
-For every Ambiguous/Unknown position provide at minimum:
-
-```text
-raw App53 position label
+raw position label
 normalized label
-classification
 employee count
-sample employee codes (small representative sample only)
-current resolver result/error
+sample employee codes
+candidate frozen profile
+reason/evidence
+confidence = HIGH / MEDIUM / LOW
 ```
 
-Explicitly locate employee code `0111` and record its exact App53 Position plus why it resolves to `PROFILE_RESOLUTION_AMBIGUOUS`.
+Do not infer from employee names or other personal characteristics.
+Use job title semantics and frozen MBO hierarchy only.
 
-Also verify a known successful example such as `0118` and record its position/profile resolution for contrast.
+# STEP 2 — APPLY DETERMINISTIC TITLE MAPPING RULES
 
-# STEP 2 — PROFILE COVERAGE DECISION PACKAGE
+Implement mappings only where the title clearly indicates the frozen level.
 
-Prepare a concise decision matrix for Control Plane/User review.
-
-Do NOT choose mappings yourself where business meaning is not already frozen.
-
-Group unresolved positions by the most likely candidate profile only as `CANDIDATE_FOR_REVIEW`, never as final mapping.
-
-Valid frozen profiles are:
+Required semantic policy:
 
 ```text
-PROF_STAFF_CHIEF
-PROF_JAPANESE_STAFF
-PROF_ASST_MGR
-PROF_SECTION_MGR
-PROF_SENIOR_MGR
-PROF_DGM
-PROF_GM
-PROF_VP
+Titles containing/meaning Assistant Manager or Assistant Section Manager
+-> PROF_ASST_MGR
+
+Titles containing/meaning Section Manager / Manager where App53 title clearly represents section-manager management level
+-> PROF_SECTION_MGR
+
+Titles containing/meaning Senior Manager
+-> PROF_SENIOR_MGR
+
+Titles containing/meaning Deputy General Manager / DGM
+-> PROF_DGM
+
+Titles containing/meaning General Manager / GM
+-> PROF_GM
+
+Titles containing/meaning Vice President / VP
+-> PROF_VP
+
+Operational Staff / Chief / Senior Chief / Assistant Chief / technician / engineer / operator / coordinator / specialist / clerk / warehouse staff / driver / messenger / interpreter etc. that are not management-level titles
+-> PROF_STAFF_CHIEF
+
+Japanese Staff / expatriate Japanese staff titles already covered
+-> PROF_JAPANESE_STAFF
 ```
 
-For each unresolved position, include:
+IMPORTANT:
+- Do not blindly map every string containing `manager` to Section Manager.
+- `Assistant Manager` remains PROF_ASST_MGR.
+- `Senior Manager` remains PROF_SENIOR_MGR.
+- DGM/GM/VP remain their exact profiles.
+- For titles such as `Factory Manager`, `Co Project Manager`, `Manager`, `Advisor`, `President`, `Executive Management Coordinator`, or other unclear titles, inspect actual App53 distribution and existing project business rules before deciding.
+- If a title cannot be assigned confidently from evidence, leave it UNRESOLVED and report for user decision. Fail closed is preferable to invented policy.
+
+# STEP 3 — REMOVE OBSOLETE AMBIGUOUS ENTRIES WHEN REPLACED
+
+Update the EXISTING `src/profiles/profile-scoring-resolver.js` source of truth.
+
+Rules:
+- Add exact mappings to `POSITION_TO_PROFILE` where approved by evidence/frozen hierarchy.
+- Remove the same normalized titles from `AMBIGUOUS_TITLES` when they become deterministic.
+- Do not leave a title both mapped and ambiguous.
+- Do not create duplicate maps, fallback maps, `_v2`, `_old`, or alternative resolver modules.
+- Preserve strict `PROFILE_SOURCE_INVALID` / `PROFILE_RESOLUTION_AMBIGUOUS` behavior for genuinely unresolved positions.
+
+NO-ORPHAN gate is mandatory.
+
+# STEP 4 — HANDLE EMPTY / UNKNOWN POSITION SAFELY
+
+M10H found 3 employees with empty/unknown Position.
+
+Do NOT invent a profile for blank position.
+These records must remain fail-closed unless another authoritative App53 field already provides a frozen management level and the existing architecture explicitly permits using it.
+
+If no authoritative existing field is approved for this purpose:
 
 ```text
-POSITION
-EMPLOYEE_COUNT
-CURRENT_CLASSIFICATION = AMBIGUOUS/UNKNOWN
-CANDIDATE_FOR_REVIEW = one or more plausible frozen profiles, only if inferable from title
-BUSINESS_DECISION_REQUIRED = YES
+EMPTY_POSITION_EMPLOYEES = 3
+RESULT = BLOCKED_BY_APP53_DATA_QUALITY
+USER/HR_DATA_CORRECTION_REQUIRED = YES
 ```
 
-If title alone is insufficient, candidate must be `UNDETERMINED`.
+Do NOT write App53 in this task.
 
-# STEP 3 — FIX STALE VERIFIED STATE ON LOOKUP FAILURE
+# STEP 5 — COVERAGE TEST
 
-Current browser evidence shows a failed lookup may leave the previous successful employee visible/verified.
+Build an automated coverage test against the exact current App53 read-only position inventory or a durable sanitized position/count fixture derived from the M10H audit.
 
-Inspect existing `EmployeePartAUI` lookup flow and `src/main-mbo-app.js` callbacks.
-
-Required behavior:
+Required outputs:
 
 ```text
-WHEN Employee Code changes:
-- immediately set isEmployeeVerified = false
-- clear previous employee snapshot fields safely by Kintone field type
-- lock objective grid until new lookup fully succeeds
-
-WHEN lookup starts:
-- verified state remains false
-- stale employee data must not be presented as the newly requested employee
-
-WHEN ANY lookup stage fails (App53 / App795 / profile resolution / App796 / duplicate check):
-- isEmployeeVerified = false
-- clear or keep cleared stale employee snapshot
-- show the new error for the requested Employee Code
-- objective grid remains locked
-- do not show “Employee verified”
-
-ONLY AFTER all required read-only validation stages succeed:
-- sync new employee/routing/scoring snapshot into record state
-- set isEmployeeVerified = true
-- refresh UI from the new snapshot
-- unlock objective grid as allowed
+TOTAL_ACTIVE_EMPLOYEES = 275
+RESOLVED_EMPLOYEE_COUNT = actual
+AMBIGUOUS_EMPLOYEE_COUNT_AFTER = actual
+UNKNOWN_EMPLOYEE_COUNT_AFTER = actual
+RESOLVED_NONEMPTY_POSITION_COUNT = actual / non-empty distinct positions
 ```
 
-Important: do not partially commit a newly looked-up employee into the record before all required validation stages pass.
-
-# STEP 4 — TESTS FOR LOOKUP ATOMICITY / STALE STATE
-
-Add regression tests around existing modules/functions. At minimum cover:
+Target:
 
 ```text
-successful lookup A -> employee verified
-change code A to B -> verified becomes false and stale snapshot clears
-lookup B profile ambiguous -> verified remains false
-lookup B missing scoring -> verified remains false
-lookup B routing failure -> verified remains false
-no previous employee name/section/position remains displayed after failed B lookup
-successful lookup B after previous failure -> verified becomes true only after full success
-USER_SELECT reset values remain arrays []
+ALL NON-EMPTY ACTIVE POSITIONS deterministically resolved unless explicitly documented as business-decision-required.
 ```
 
-Prefer modifying existing UI/main runtime tests rather than creating duplicate test infrastructure.
+Do not fake 275/275 by assigning blank/unknown positions.
 
-# STEP 5 — DO NOT MODIFY PROFILE MAPPINGS YET
-
-This task is an AUDIT + stale-state FIX only.
-
-Do NOT edit:
+Explicit regression cases must include at least:
 
 ```text
-POSITION_TO_PROFILE mappings
-AMBIGUOUS_TITLES classifications
-App796 records
-App53 records
+0111 Assistant Section Manager -> expected frozen profile based on hierarchy
+0118 Technical Service Chief -> PROF_STAFF_CHIEF
+Assistant Manager -> PROF_ASST_MGR
+Section Manager -> PROF_SECTION_MGR
+Senior Manager -> PROF_SENIOR_MGR
+DGM -> PROF_DGM
+GM -> PROF_GM
+VP -> PROF_VP
+Japanese Staff -> PROF_JAPANESE_STAFF
+blank position -> fail closed
 ```
 
-unless a purely technical normalization bug is proven. Any business mapping changes require ChatGPT/User review of the coverage matrix first.
+# STEP 6 — RETAIN M10H STALE-STATE FIX
 
-# STEP 6 — BUILD / VERIFY
+Ensure M10H stale verified-state fix remains present and regression tests continue passing:
 
-Rebuild the classic bundle after the stale-state fix using the existing pipeline, but DO NOT deploy it.
+```text
+lookup failure => verified false
+previous employee snapshot cleared
+objective grid locked
+successful lookup => verified true only after routing/profile/scoring all pass
+```
+
+Do not deploy it in this task.
+
+# STEP 7 — BUILD / VERIFY
+
+Rebuild classic bundle using the existing repaired pipeline.
 
 Required gates:
 
@@ -198,6 +218,7 @@ BROKEN_FROM_RESIDUE_COUNT = 0
 IS_VALID_EMPLOYEE_CODE_RUNTIME = PASS
 USER_SELECTION_RESET_TYPE = ARRAY
 LOOKUP_FAILURE_STALE_STATE_TEST = PASS
+PROFILE_MAPPING_COVERAGE_TEST = PASS
 ```
 
 Run:
@@ -208,41 +229,34 @@ git diff --check
 git status --short
 ```
 
-# NO-ORPHAN
-
-Modify existing resolver/UI/runtime/test files only as necessary.
-Do not create `_old`, `_v1`, duplicate resolver, duplicate UI, duplicate profile map, or throwaway active files.
-If a durable coverage artifact is needed, update an existing living project-doc review package rather than adding redundant documentation.
-
 # REQUIRED FINAL SUMMARY
 
 ```text
-M10H_PROFILE_MAPPING_COVERAGE_AUDIT = COMPLETE / BLOCKED
-M10H_LOOKUP_FAILURE_STATE_FIX = COMPLETE / BLOCKED
+M10I_POSITION_PROFILE_MAPPING_CLOSURE = COMPLETE / BLOCKED / PARTIAL
 
-APP53_READ_ONLY = YES
-TOTAL_ACTIVE_EMPLOYEES = actual
-DISTINCT_POSITION_COUNT = actual
-MAPPED_POSITION_COUNT = actual
-AMBIGUOUS_POSITION_COUNT = actual
-UNKNOWN_POSITION_COUNT = actual
-MAPPED_EMPLOYEE_COUNT = actual
-AMBIGUOUS_EMPLOYEE_COUNT = actual
-UNKNOWN_EMPLOYEE_COUNT = actual
+TOTAL_ACTIVE_EMPLOYEES = 275
+DISTINCT_POSITION_COUNT = 61
+NONEMPTY_POSITION_COUNT = actual
+RESOLVED_POSITION_COUNT_AFTER = actual
+AMBIGUOUS_POSITION_COUNT_AFTER = actual
+UNKNOWN_POSITION_COUNT_AFTER = actual
+RESOLVED_EMPLOYEE_COUNT_AFTER = actual
+AMBIGUOUS_EMPLOYEE_COUNT_AFTER = actual
+UNKNOWN_EMPLOYEE_COUNT_AFTER = actual
 
-EMPLOYEE_0111_POSITION = exact
-EMPLOYEE_0111_CURRENT_RESULT = exact
-EMPLOYEE_0118_POSITION = exact
-EMPLOYEE_0118_CURRENT_RESULT = exact
+EMPLOYEE_0111_POSITION = Assistant Section Manager
+EMPLOYEE_0111_PROFILE_AFTER = actual
+EMPLOYEE_0118_POSITION = Technical Service Chief
+EMPLOYEE_0118_PROFILE_AFTER = PROF_STAFF_CHIEF
 
-UNRESOLVED_POSITION_MATRIX = included in review package
-PROFILE_MAPPING_CHANGES_THIS_TASK = 0
+MAPPINGS_ADDED = exact list
+AMBIGUOUS_ENTRIES_REMOVED = exact list
+UNRESOLVED_POSITIONS = exact list with employee counts/reasons
+EMPTY_POSITION_EMPLOYEES = actual
+APP53_DATA_CORRECTION_REQUIRED = YES/NO
 
-STALE_VERIFIED_STATE_FIX = PASS/FAIL
-FAILED_LOOKUP_CLEARS_PREVIOUS_EMPLOYEE = PASS/FAIL
-FAILED_LOOKUP_OBJECTIVE_GRID_LOCKED = PASS/FAIL
-VERIFIED_ONLY_AFTER_FULL_SUCCESS = PASS/FAIL
-
+STALE_VERIFIED_STATE_FIX_RETAINED = PASS/FAIL
+PROFILE_MAPPING_COVERAGE_TEST = PASS/FAIL
 CLASSIC_BUNDLE_PARSE = PASS/FAIL
 npm test = actual / PASS
 GIT_DIFF_CHECK = PASS/FAIL
@@ -252,12 +266,12 @@ KINTONE_WRITES_THIS_TASK = 0
 APP794_CUSTOMIZATION_DEPLOY = 0
 GIT_PUSH_SYNC = PASS/FAIL
 
-NEXT_ACTION = CHATGPT REVIEW OF COVERAGE MATRIX + BUSINESS PROFILE MAPPING DECISIONS
+NEXT_ACTION = CHATGPT REVIEW; IF COVERAGE ACCEPTABLE, PREPARE ONE CONTROLLED APP794 DEPLOY INCLUDING M10H+M10I
 ```
 
-Update living docs with factual results.
+Update only living docs with factual results.
 Commit and push same branch, then STOP.
 
 Do NOT deploy App794.
-Do NOT change profile mapping business rules.
-Do NOT write any Kintone records/settings.
+Do NOT write App53/App795/App796 or any other Kintone app.
+Do NOT create new scoring profiles or change scoring weights.
