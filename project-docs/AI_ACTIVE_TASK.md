@@ -1,74 +1,65 @@
-# AI ACTIVE TASK — ANTIGRAVITY STAGE 3C-R1 FINAL VERIFIER CORRECTION
+# AI ACTIVE TASK — ANTIGRAVITY STAGE 3C-R1 BACKUP PROVENANCE RECONCILIATION
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Required starting HEAD:** `44e746dd9eb10012671b10747efb15edd0a998a3`
+> **Required starting HEAD:** `e57c2e3b0fe3815183984893b394f5e93a341c1e`
 > **Target App:** 796
-> **Mode:** FINAL CODE/TEST EXACTNESS CORRECTION + EVIDENCE METADATA ONLY
+> **Mode:** LOCAL FORENSIC EVIDENCE RECONCILIATION + DOC CORRECTION ONLY
+> **Source code changes:** FORBIDDEN
 > **Kintone calls:** ZERO
 > **Kintone writes:** ZERO
 
-## REVIEW RESULT
+## INDEPENDENT REVIEW RESULT
 
-Stage 3C-R1 is operationally repaired and current state reconciliation is positive:
-
-```text
-Historical repair PUT = 1
-Historical repair Deploy POST = 1
-Current App 796 = LIVE_DEPLOYED
-Current schema = 23/23 DOMAIN_ALIGNED
-Current ACL = CREATOR_ONLY / DEFAULT_DENY
-Current record count = 0
-Historical pre-write backup = FOUND / PASS
-Current reconciliation = GET_ONLY / PASS
-Latest tests = 237/237 PASS
-Hardening task writes = 0
-```
-
-Independent review found two final exactness defects in the shared schema verifier logic. They do not imply that the live schema is wrong, but they prevent the safety gate from being considered fully fail-closed.
-
-## MUST FIX 1 — OPTION LABEL MUST NOT FALL BACK TO `option.key`
-
-Current code accepts an option when:
+The final verifier correction passed:
 
 ```text
-actualOption.label === expectedKey OR actualOption.key === expectedKey
+OPTION_LABEL_EXACTNESS_GATE = PASS
+OPTION_INDEX_EXACTNESS_GATE = PASS
+KNOWN_DEFECT_EXACT_GATE = PASS (code semantics)
+REPAIR_PAYLOAD_IMMUTABILITY_GATE = PASS
+ZERO_KINTONE_FINAL_CORRECTION_GATE = PASS
+REGRESSION_GATE = PASS (243/243)
+GIT commit ordering = PASS
 ```
 
-The contract requires the Kintone option **label itself** to equal the frozen value. A correct `key` property must never compensate for a wrong/missing label.
+One evidence blocker remains.
 
-Apply this strict rule in both:
+## BLOCKER — THE CURRENTLY CITED BACKUP IS NOT A STAGE 3C-R1 PRE-WRITE BACKUP
 
-- `assertKnownStage3cDefectSchema()`
-- `assertExact23FieldSchema()`
-
-Required:
+Current review metadata cites:
 
 ```text
-actualOption.label === expectedKey
+scratch/app796_stage3c_pre_write_backup.json
+Timestamp = 2026-08-24T23:22:36.590Z
+SHA-256 = ce6429e6f7152601715488c791c1fe7ecbba75599c1e6c4aac93ae767466cefa
 ```
 
-No fallback to `actualOption.key`.
-
-## MUST FIX 2 — OPTION INDEX MUST BE PRESENT AND EXACT
-
-Current corrected-schema verifier checks index only when `actualOption.index !== undefined`.
-
-The schema contract requires every DROP_DOWN option index to be present and exact.
-
-Required in `assertExact23FieldSchema()`:
+Git chronology proves:
 
 ```text
-String(actualOption.index) === String(expectedIndex)
+Stage 3C schema implementation commit 41ad63d created_at = 2026-08-24T23:20:44Z
+Cited backup timestamp = 2026-08-24T23:22:36.590Z
+Stage 3C-R1 repair implementation commit 4bef27e created_at = 2026-08-24T23:53:27Z
+Stage 3C-R1 evidence commit d38a965 created_at is after the repair execution
 ```
 
-A missing index must fail.
+Therefore the cited 23:22 backup predates Stage 3C-R1 by ~31 minutes and is consistent with the original Stage 3C schema-creation backup, not the required R1 dropdown-repair pre-write backup.
 
-`assertKnownStage3cDefectSchema()` must continue requiring every known-defect index exactly.
+This is also consistent with the strict recheck result:
 
-## STEP 0 — GIT SAFETY
+```text
+HISTORICAL_PREVIEW_DEFECT_EXACT_STRICT = PASS
+HISTORICAL_LIVE_DEFECT_EXACT_STRICT = FAIL (0/23 planned fields)
+```
+
+A genuine Stage 3C-R1 pre-write state should have had the 23-field prefixed defect in both live and preview immediately before repair.
+
+Do not relabel the old Stage 3C backup as an R1 backup.
+
+# STEP 0 — GIT SAFETY
 
 Run:
 
@@ -84,40 +75,110 @@ Required:
 
 ```text
 branch = ai/antigravity-wp002c
-HEAD = 44e746dd9eb10012671b10747efb15edd0a998a3
+HEAD = e57c2e3b0fe3815183984893b394f5e93a341c1e
 local HEAD = remote HEAD
 ```
 
 Do not reset/rebase/stash/force-push automatically.
-Do not touch unrelated local files.
 
-## STEP 1 — CODE / TEST CORRECTION
+# STEP 1 — LOCAL FORENSIC SEARCH ONLY
+
+Do not use `.env.local`.
+Do not call Kintone.
+Do not create a new backup.
+Do not modify any existing backup artifact.
+
+Search existing local project backup/scratch/log/history artifacts for a genuine Stage 3C-R1 pre-write snapshot or backup evidence created **after the repair implementation commit was available and before the R1 PUT was sent**.
+
+Use all available safe local evidence, such as:
+
+- file creation/modification timestamps
+- existing scratch/secure-backup manifests
+- existing local execution logs
+- shell/command logs if already recorded by project tooling
+- hashes already recorded locally
+- backup payload metadata
+
+Do not search external services and do not expose credentials.
+
+A candidate counts as genuine R1 pre-write backup only if provenance establishes it belongs to the R1 repair window and its saved state represents App 796 immediately before the dropdown PUT.
+
+## If a genuine R1 backup is found
+
+Record only safe metadata:
+
+```text
+R1_PREWRITE_BACKUP_PROVENANCE = PASS
+R1_PREWRITE_BACKUP_FILENAME_OR_ID = <safe identifier>
+R1_PREWRITE_BACKUP_TIMESTAMP = <timestamp>
+R1_PREWRITE_BACKUP_SHA256 = <hash>
+```
+
+Run the current strict verifier locally against every live/preview form-field payload contained in that actual R1 backup.
+
+Required for Gate PASS:
+
+```text
+R1_PREWRITE_LIVE_DEFECT_EXACT_STRICT = PASS
+R1_PREWRITE_PREVIEW_DEFECT_EXACT_STRICT = PASS
+```
+
+If either payload is absent or fails, provenance gate does not pass.
+
+## If no genuine R1 backup can be proven
+
+Record exactly:
+
+```text
+R1_PREWRITE_BACKUP_PROVENANCE = UNVERIFIABLE
+PREWRITE_BACKUP_GATE = UNVERIFIABLE
+```
+
+Do not create/recreate a backup now.
+Do not reuse the 23:22 Stage 3C backup as R1 evidence.
+Do not claim PASS.
+
+# STEP 2 — CORRECT LIVING EVIDENCE
 
 Allowed files only:
 
-- `src/core/kintone-client.js`
-- `tests/safety-guard.test.js`
+- `project-docs/CURRENT_STATE.md`
+- `project-docs/HANDOFF.md`
+- `project-docs/AI_REVIEW_PACKAGE.md`
+- `project-docs/IMPLEMENTATION_STATUS.md`
+- `project-docs/CHANGELOG_AI.md`
 
-Required changes:
+Correct any current statement that labels the 23:22 backup as Stage 3C-R1 pre-write evidence.
 
-1. In known-defect verification, require each option `label` exactly; remove `key` fallback.
-2. In corrected exact-schema verification, require each option `label` exactly; remove `key` fallback.
-3. In corrected exact-schema verification, require `index` to exist and exactly match the frozen order.
-4. Preserve deep immutability of the repair payload.
-5. Preserve all post-PUT/final App Detail/catalog/ACL/zero-record gates.
-6. Preserve single-attempt/no-retry behavior and all protected-app/default-deny safety.
-7. No Kintone access or `.env.local` use in this task.
+Preserve the 23:22 artifact accurately as historical **Stage 3C schema-creation backup evidence** if appropriate.
 
-Required tests:
+Preserve these accepted facts:
 
-- known-defect option with wrong label + matching `key` is rejected
-- corrected-schema option with wrong label + matching `key` is rejected
-- corrected-schema option with missing index is rejected
-- corrected-schema option with wrong index is rejected
-- valid known-defect exact schema still passes
-- valid corrected 23/23 schema still passes
-- existing Stage 3C-R1 tests remain passing
-- `DISCOVERY_MODE = true` and `WRITE_ALLOWED_APPS = []`
+```text
+App 796 current state = LIVE_DEPLOYED
+SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED
+Current reconciliation = GET_ONLY PASS
+Current record count = 0
+ACL = CREATOR_ONLY / DEFAULT DENY
+Historical R1 PUT = 1
+Historical R1 Deploy POST = 1
+Final verifier task Kintone calls/writes = 0
+Tests = 243/243 PASS unless local npm test count changes
+Publish pipeline = NOT_DEPLOYED
+Baseline seed = NOT_STARTED
+WP-002D = NOT STARTED
+```
+
+If genuine R1 backup provenance passes, record the safe R1 backup ID/hash and both strict live/preview results.
+
+If provenance is unverified, record:
+
+```text
+WP002C_STAGE3C_GATE = BLOCKED / R1_PREWRITE_BACKUP_UNVERIFIABLE
+NEXT_ACTION = CONTROL PLANE DECISION REQUIRED: STRICT BLOCK OR EXPLICIT EVIDENCE-RISK ACCEPTANCE
+```
+
+Do not self-authorize an exception.
 
 Run:
 
@@ -126,72 +187,17 @@ git diff --check
 npm test
 ```
 
-All tests must pass.
+No source code file may change.
 
 Commit exactly:
 
 ```text
-fix: enforce exact dropdown labels and indexes
+docs: reconcile wp-002c r1 backup provenance
 ```
 
-Push only to `origin/ai/antigravity-wp002c` and verify local HEAD = remote HEAD.
+Push only to `origin/ai/antigravity-wp002c`, verify local HEAD = remote HEAD and tracked working tree clean, then STOP.
 
-## STEP 2 — EXISTING BACKUP METADATA STRENGTHENING, LOCAL ONLY
-
-Do not call Kintone.
-Do not recreate or modify any backup.
-
-If the genuine existing artifact `app796_stage3c_pre_write_backup.json` is still present, compute a local SHA-256 of the existing file and record only the safe hash in review metadata.
-
-Also run the newly strict known-defect verifier against every saved pre-write form-field payload actually present in that artifact:
-
-```text
-HISTORICAL_PREVIEW_DEFECT_EXACT_STRICT = PASS/FAIL/NOT_PRESENT
-HISTORICAL_LIVE_DEFECT_EXACT_STRICT = PASS/FAIL/NOT_PRESENT
-```
-
-Do not invent a missing payload.
-Do not commit the backup file or raw payloads.
-
-If the artifact is no longer available, retain the previously recorded backup evidence and state that strict re-verification is unavailable; do not fabricate a hash.
-
-## STEP 3 — MINIMAL LIVING-DOC UPDATE
-
-No Kintone reconciliation is required again because this task changes verifier code only and the immediately preceding GET-only reconciliation already passed.
-
-Update only current operational metadata in:
-
-- `project-docs/CURRENT_STATE.md`
-- `project-docs/HANDOFF.md`
-- `project-docs/AI_REVIEW_PACKAGE.md`
-- `project-docs/IMPLEMENTATION_STATUS.md`
-
-Record:
-
-```text
-Stage 3C-R1 live repair state = DOMAIN_ALIGNED / unchanged
-Historical repair PUT = 1
-Historical repair Deploy POST = 1
-This final verifier task Kintone calls = 0
-This final verifier task Kintone writes = 0
-Latest current reconciliation = GET_ONLY PASS at prior evidence checkpoint
-PREWRITE_BACKUP_GATE = PASS
-strict saved-payload results = exact actual results
-latest npm test count = actual result
-NEXT_ACTION = AWAIT CHATGPT FINAL STAGE 3C REVIEW
-```
-
-Do not claim WP002C_STAGE3C_GATE = PASS yourself. Final Gate ownership remains ChatGPT.
-
-Commit exactly:
-
-```text
-docs: record final wp-002c verifier correction
-```
-
-Push, verify local HEAD = remote HEAD and tracked working tree clean, then STOP.
-
-## KINTONE BOUNDARY
+# KINTONE BOUNDARY
 
 ```text
 GET = 0
@@ -199,41 +205,38 @@ POST = 0
 PUT = 0
 DELETE = 0
 DEPLOY = 0
-RECORD WRITE = 0
 ```
 
-Do not use `.env.local`.
-Do not access App 796.
-Do not repeat repair.
-Do not seed records.
-Do not start publish pipeline.
-Do not start WP-002D.
+No `.env.local`.
+No App 796 access.
+No repair retry.
+No seed.
+No publish pipeline.
+No WP-002D.
 
 # REVIEW EXPECTATION
 
 ChatGPT will verify:
 
-1. Exactly two new commits: code/tests then living-doc metadata.
-2. No Kintone calls/writes occurred.
-3. No option-label verification uses `option.key` as a substitute for label.
-4. Corrected schema requires every dropdown index to be present and exact.
-5. Known-defect verifier continues to require all exact labels/indexes/default rules.
-6. Repair payload remains deeply immutable.
-7. Final repair success path remains App-detail/catalog/ACL/live-schema/zero-record fail-closed.
-8. Existing backup metadata is strengthened without recreating historical evidence.
-9. Full test suite passes.
-10. Global/default safety is unchanged.
-11. Live state remains recorded as DOMAIN_ALIGNED / zero records / no seed.
-12. No publish pipeline or WP-002D work starts.
+1. No source code changes.
+2. Zero Kintone calls/writes.
+3. The 23:22 backup is no longer mislabeled as R1 evidence.
+4. Any newly claimed R1 backup has chronological/provenance evidence from the actual R1 repair window.
+5. A PASS requires both saved live and saved preview states to pass the strict known-defect verifier.
+6. If no genuine R1 backup exists, docs say UNVERIFIABLE rather than inventing evidence.
+7. Current live DOMAIN_ALIGNED / zero-record state remains accurately recorded from the prior GET-only reconciliation.
+8. 243/243 or current full test suite passes.
+9. Git local/remote sync passes.
 
 Expected gates:
 
-- `OPTION_LABEL_EXACTNESS_GATE = PASS / FAIL`
-- `OPTION_INDEX_EXACTNESS_GATE = PASS / FAIL`
-- `KNOWN_DEFECT_EXACT_GATE = PASS / FAIL`
-- `REPAIR_PAYLOAD_IMMUTABILITY_GATE = PASS / FAIL`
-- `PREWRITE_BACKUP_GATE = PASS / UNVERIFIABLE / FAIL`
-- `ZERO_KINTONE_FINAL_CORRECTION_GATE = PASS / FAIL`
+- `OPTION_LABEL_EXACTNESS_GATE = PASS`
+- `OPTION_INDEX_EXACTNESS_GATE = PASS`
+- `REPAIR_PAYLOAD_IMMUTABILITY_GATE = PASS`
+- `R1_PREWRITE_BACKUP_PROVENANCE_GATE = PASS / UNVERIFIABLE / FAIL`
+- `R1_PREWRITE_LIVE_DEFECT_GATE = PASS / UNVERIFIABLE / FAIL`
+- `R1_PREWRITE_PREVIEW_DEFECT_GATE = PASS / UNVERIFIABLE / FAIL`
+- `ZERO_KINTONE_PROVENANCE_TASK_GATE = PASS / FAIL`
 - `REGRESSION_GATE = PASS / FAIL`
 - `GIT_PUSH_SYNC_GATE = PASS / FAIL`
 - `WP002C_STAGE3C_GATE = PASS / BLOCKED`
