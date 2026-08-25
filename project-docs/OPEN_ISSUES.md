@@ -7,10 +7,14 @@
 | **ISSUE-002** | Excel Export Template Expansion (5-10 items) | Technical Design | PENDING | Excel Export Phase | Implement row expansion or overflow sheet for 5-10 objectives in Export phase. |
 
 ### SEC-DEP-001 Shared Kintone Account Security Conflict & Identity Binding
-- **Status**: `OPEN` (Evaluated in M10A Discovery)
-- **Impact**: Operational employees share login accounts (`g_request`, `f1`, `f2`, `f3`, `tmh`, etc.). Native Kintone ACL cannot distinguish individual employees.
-- **M10A Security Options Recorded**:
-  - **Option 1 (Recommended)**: Manager / Requester Proxy Entry Model (`Requester_User` in App 795 authorized to create MBO forms on behalf of section employees). Zero license addition required.
-  - **Option 2**: Employee PIN / OTP Verification Gate (Custom UI authentication modal in App 794).
-  - **Option 3**: Dedicated Kintone User License per Employee (SAML SSO enterprise integration).
-- **Required Action**: User decision on Security Option before Employee Self-Service go-live.
+- **Status**: `DESIGNED_PENDING_M10C_IMPLEMENTATION` (Architecture finalized in M10B-SEC)
+- **User Decision Frozen**:
+  - **Phase 1**: Employee Code + Personal Password
+  - **Phase 2**: Employee Code + Personal Password + Google Authenticator TOTP (RFC 6238)
+- **Security Rules**:
+  - App 53 password storage is **STRICTLY PROHIBITED**.
+  - Client-side browser JS password verification is **STRICTLY PROHIBITED**.
+  - Server-side Node.js Auth Proxy required (Argon2id salted password hashing).
+  - Credential Store: Dedicated Creator-Only App 801 (App 801 ACL Creator-Only, zero browser access).
+- **Next Step**: Implementation authorization for M10C-AUTH Phase 1.
+
