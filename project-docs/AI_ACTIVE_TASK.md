@@ -1,90 +1,63 @@
-# AI ACTIVE TASK — DELIVERY DAY SPRINT 03B-R2: APP795 LEGACY REQUIRED-FLAG CORRECTION + REQUESTER RESEED
+# AI ACTIVE TASK — DELIVERY DAY SPRINT 04: M9 END-TO-END SMOKE + FINAL NO-ORPHAN CLEANUP
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `f7531b75e3cbc20022711c9ace8e407f56560e3d`
-> **Mode:** TARGETED APP795 SCHEMA CORRECTION + EXACT 11 REQUESTER RECORD CREATES
+> **Reviewed head:** `894547f00335fb6161dd7955961dbe16d3d2f452`
+> **Mode:** READ-ONLY / TEST-ONLY END-TO-END SMOKE + REPO CLEANUP; KINTONE WRITES = 0
 
-# TODAY NORTH STAR — DO NOT DRIFT
+# TODAY NORTH STAR — FINAL DELIVERY PATH
 
 ```text
-M6 App796 Scoring Baseline = PASS / 8 OF 8 PUBLISHED
-M7 App795 Routing Baseline = CLEAN 1/12 AFTER ROLLBACK / FIX LIVE SCHEMA DRIFT + RESEED 11
-M8 App800 HR Dashboard     = PASS
-M9 End-to-End Smoke        = NEXT IMMEDIATELY AFTER M7 REVIEW
+M4 App797 Hoshin Master       = PASS
+M5 App798 Revision Archive    = PASS
+M6 App796 Scoring Baseline    = PASS / 8 OF 8 PUBLISHED
+M7 App795 Routing Baseline    = PASS / 12 OF 12 ACTIVE REQUESTER BASELINE
+M8 App800 HR Dashboard MVP    = PASS
+M9 End-to-End Smoke Test      = EXECUTE NOW
 
 TODAY_DONE = NO
-NEXT_CRITICAL_PATH = APP795 SCHEMA EXACT -> 12/12 REQUESTER BASELINE -> CHATGPT REVIEW -> M9
+NEXT_CRITICAL_PATH = M9 READ-ONLY SMOKE + FINAL NO-ORPHAN CLEANUP -> CHATGPT REVIEW -> TODAY DONE DECISION
 ```
 
-# CONTROL-PLANE FINDING
+# CONTROL-PLANE REVIEW — SPRINT 03B-R2
 
-Sprint03B-R1 rollback is accepted as complete:
+Accepted live/business state:
 
 ```text
-failed batch deleted = 11
-App795 active requester coverage restored = 1/12
+APP795_SCHEMA_REQUIRED_FLAG_GATE = PASS
+Manager_User.required = false
+GM_User.required = false
+APP795_REQUESTER_BASELINE = 12/12
 TME1 -> e1 preserved
-POST/PUT/schema writes in rollback = 0
-Manager_User.required live = true
-GM_User.required live = true
-REQUESTER_ONLY_SCHEMA_COMPATIBLE = NO
+new requester records with Manager_User data = 0
+new requester records with GM_User data = 0
+new requester records with First_Manager_User data = 0
+TMT3 active count = 0
+duplicate active Section_Code = 0
+Apps794/796/797/798/800 writes = 0
+protected app writes = 0
+npm test = 500/500 PASS (reported evidence)
 ```
 
-Canonical source `config/schema-spec.js` defines both legacy fields as deprecated and non-required:
+Sprint03B-R2 business gate is accepted. Do NOT mutate App795 again in this sprint.
+
+# OBSERVATIONS TO CLOSE INSIDE THIS SPRINT — DO NOT OPEN ANOTHER CLEANUP SPRINT
+
+Current repository still has stale current-state text and execution-only code:
 
 ```text
-Manager_User = [DEPRECATED] / required=false
-GM_User      = [DEPRECATED] / required=false
+CURRENT_STATE still contains old 1/12 M7 rows
+CURRENT_STATE still contains ACR-002 PROPOSED wording
+CURRENT_STATE test status still contains stale 471/471
+some current/handoff rows still describe M7 blocked
+rollback-only executable helper remains in seed-routing-baseline.js
 ```
 
-Therefore live App795 has a narrow schema drift that blocks the approved requester-only baseline.
+These are cleanup items to be handled in the same M9 implementation/evidence commits.
 
-# AUTHORIZED BUSINESS/SCHEMA CHANGE
-
-Only these existing App795 field-property changes are authorized:
-
-```text
-Manager_User.required: true -> false
-GM_User.required:      true -> false
-```
-
-Do NOT change type, code, label, entities, value, or any other field property.
-Do NOT add fields.
-Do NOT rename fields.
-Do NOT modify existing TME1 business data.
-
-This task does NOT authorize deleting `Manager_User` or `GM_User` automatically. They are deprecated, but deletion is allowed only later if historical-data/reference analysis proves safe and is separately reviewed. User No-Orphan rule remains active; record the fields as `DEPRECATION_PENDING_SAFE_DATA_MIGRATION_OR_ZERO_DATA_PROOF`, not as active business fields.
-
-# EXACT REQUESTER BASELINE AFTER SCHEMA CORRECTION
-
-KEEP unchanged:
-
-```text
-TME1 -> e1
-```
-
-CREATE exactly:
-
-```text
-TMF1 -> f1
-TMF2 -> f2
-TMF3 -> f3
-TMG1 -> g_request
-TMG2 -> g_request
-TMH1 -> tmh
-TMH2 -> tmh
-TMH3 -> tmh
-TMS1 -> s1
-TMT1 -> t1
-TMT2 -> t2
-```
-
-Never create TMT3.
-Never populate legacy approver fields.
-Never guess approvers.
+Historical Git history/backups/evidence must remain intact.
 
 # STEP 0 — GIT / SECURITY
 
@@ -92,377 +65,394 @@ Require:
 
 ```text
 branch = ai/antigravity-wp002c
-f7531b75... is ancestor
+reviewed head 894547f... is ancestor
 local HEAD = origin branch
 tracked tree clean
 ```
 
 No reset/rebase/force push/history rewrite.
 
-Before live network operations:
+Before any Kintone network call:
 
 ```js
 delete process.env.KINTONE_API_TOKEN;
 ```
 
-Use username/password authentication only.
-Do not print credentials/auth headers/raw user payloads/Kintone error response bodies.
+Use username/password auth only.
 
-Protected apps permanently READ ONLY:
+This Sprint performs ZERO Kintone writes.
+
+Blocked methods across ALL Kintone calls:
+
+```text
+POST
+PUT
+PATCH
+DELETE
+schema mutation
+deploy
+record creation
+record update
+status transition
+```
+
+Protected apps remain READ ONLY:
 
 ```text
 53,283,305,307,310,640,643,715,716
 ```
 
-Zero writes also to:
+Sandbox apps also READ ONLY in M9:
 
 ```text
-794,796,797,798,800
+794,795,796,797,798,800
 ```
 
-# STEP 1 — READ-ONLY PREFLIGHT / EXACT DRIFT CLASSIFICATION
+# STEP 1 — FINAL NO-ORPHAN REPO CLEANUP
 
-GET App795 live + preview:
+## 1A Remove obsolete rollback-only executable path
 
-```text
-settings
-fields
-ACL
-all records needed for exact business-state verification
-```
-
-Require before any write:
-
-```text
-exact App795 identity
-active records = exactly 1
-TME1 -> e1 exact
-no active TMT3
-no active duplicate Section_Code
-Manager_User live.required = true
-GM_User live.required = true
-canonical source required=false for both
-all other intended App795 canonical fields have no unrelated critical drift
-```
-
-If unrelated schema drift would make the two-field repair unsafe, STOP with zero writes.
-
-Read all existing App795 records and safely classify whether deprecated fields contain data:
-
-```text
-Manager_User populated record count = actual
-GM_User populated record count = actual
-```
-
-Do not print user codes/names from these fields in evidence; only counts.
-Do NOT clear values.
-Do NOT delete fields.
-
-Reverify the 9 approved requester accounts read-only. Require 9/9 valid.
-
-# STEP 2 — DURABLE PREWRITE BACKUP
-
-Create NEW retained backup before schema write:
-
-```text
-backups/delivery-sprint-03b-r2/app795/<UTC_TIMESTAMP>/
-```
-
-Capture:
-
-```text
-live + preview settings
-live + preview fields
-live + preview ACL
-all App795 records
-record count
-active count
-```
-
-Create SHA256 manifest and retain until independent review.
-Do not overwrite/delete prior Sprint03B/R1 backups.
-Do not commit raw backup.
-
-# STEP 3 — IMPLEMENT TARGETED SCHEMA CORRECTION PATH
-
-Prefer reusing an existing App795 schema deployment utility if it can enforce exact two-property repair safely.
-If no suitable reusable path exists, add the minimum code to the existing routing seeder/deployment script architecture; do not create multiple overlapping scripts.
-
-Exact mutation payload must change ONLY:
-
-```text
-Manager_User.required=false
-GM_User.required=false
-```
-
-Required safety:
-
-```text
-App target = 795 only
-PUT preview form fields = max 1 request
-POST deploy = max 1 request
-bounded deployment polling
-no blind retry after uncertain write
-GET reconciliation after uncertainty
-```
-
-Before mutation compare exact pre-state and expected post-state.
-After deploy GET live+preview and require both required=false.
-
-No record POST until schema read-back passes.
-
-# STEP 4 — HARDEN REQUESTER SEEDER
-
-Use the existing canonical:
+In existing:
 
 ```text
 scripts/kintone/seed-routing-baseline.js
 ```
 
-Do not create another seeder.
-
-Remove any obsolete rollback-only executable path that is no longer required for active operation IF it can be safely removed without weakening current recovery evidence. Historical rollback evidence remains in Git history/docs/backups. At minimum no hardcoded approver values may exist anywhere in active routing seed runtime/tests.
-
-Requester record payload must contain only canonical requester baseline fields required for creation:
+Remove rollback-only runtime code that was introduced solely for Sprint03B-R1 and is no longer part of active operation:
 
 ```text
-Section_Code
-Section_Name
-Requester_User
-Active
+createNarrowRollbackTransport
+executeRoutingRollback
+related rollback-only exports/comments
 ```
 
-`Manager_User`, `GM_User`, `First_Manager_User` MUST NOT be included.
-Generic approver-slot fields MUST NOT be populated in this requester-only seed.
+Remove corresponding rollback-only unit tests.
 
-Seeder preflight must fail closed unless:
+Do NOT remove historical rollback evidence from docs/Git history/backups.
 
-```text
-active coverage = 1/12
-TME1 -> e1 exact
-target 11 all absent
-TMT3 absent
-Manager_User.required = false live
-GM_User.required = false live
-requester accounts = 9/9 valid
-```
+Do NOT create replacement rollback script.
 
-No idempotent skip/recovery semantics. If active record count != 1, STOP before POST.
+Keep only justified active/bootstrap code needed for reproducible App795 requester baseline/schema contract verification.
 
-# STEP 5 — TEST BEFORE LIVE WRITE
+If any rollback function has an active non-test caller outside its own historical test block, STOP and report rather than removing it.
 
-Extend existing tests only; avoid unnecessary new files.
+## 1B Reconcile living current state
 
-Minimum coverage:
+Update current/living sections only:
 
 ```text
-schema correction manifest contains exactly two field required changes
-wrong app blocked
-unrelated field mutation blocked
-requester payload contains no Manager_User / GM_User / First_Manager_User
-requester payload contains no generic approver slots
-exact 11 manifest
-TME1 excluded
-TMT3 excluded
-unknown requester/section rejected
-active count !=1 blocks before POST
-required=true blocks seed before POST
-required=false permits controlled seed path
-POST body.app = 795 only
-PUT/DELETE/PATCH record operations blocked
-max record creates = 11
-no hardcoded suthas/somrudee in routing seeder/runtime/tests
-```
-
-Run full `npm test`; zero failures.
-
-Commit code/tests/schema correction tooling before live mutation:
-
-```text
-fix: align app795 legacy required flags and requester seed
-```
-
-Push before live write.
-
-# STEP 6 — LIVE SCHEMA CORRECTION APP795 ONLY
-
-Execute once after retained backup + tests.
-
-Authorized writes:
-
-```text
-App795 preview fields PUT = max 1
-App795 deploy POST = max 1
-```
-
-Expected exact result:
-
-```text
-Manager_User.required=false
-GM_User.required=false
-all other field definitions unchanged
-TME1 record unchanged
-```
-
-If uncertain/fails: STOP; no record seed; GET reconcile; no blind retry.
-
-# STEP 7 — LIVE REQUESTER RESEED APP795 ONLY
-
-Only after exact schema read-back PASS.
-
-Run canonical seed script once.
-
-Expected record write budget:
-
-```text
-App795 record POST = exactly 11
-App795 record PUT = 0
-App795 record DELETE = 0
-```
-
-If any POST uncertain/fails:
-
-```text
-STOP
-NO retry
-NO automatic delete
-GET exact reconciliation
-report created vs missing sections
-retain backup
-M7 = BLOCKED_PARTIAL
-```
-
-# STEP 8 — FINAL READBACK
-
-Require field-level verification, not count only:
-
-```text
-active count = 12
-unique active Section_Code = 12
-TME1 -> e1 unchanged
-TMF1 -> f1
-TMF2 -> f2
-TMF3 -> f3
-TMG1 -> g_request
-TMG2 -> g_request
-TMH1 -> tmh
-TMH2 -> tmh
-TMH3 -> tmh
-TMS1 -> s1
-TMT1 -> t1
-TMT2 -> t2
-TMT3 active count = 0
-duplicate active sections = 0
-new 11 records Manager_User empty
-new 11 records GM_User empty
-new 11 records First_Manager_User empty
-Manager_User.required live+preview = false
-GM_User.required live+preview = false
-```
-
-Do not expose user identities beyond already-approved requester codes in evidence.
-
-# STEP 9 — NO-ORPHAN / LEGACY FIELD CLASSIFICATION
-
-Mandatory output:
-
-```text
-NO_ORPHAN_ARTIFACT_GATE = PASS / BLOCKED
-STALE_ACTIVE_REFERENCES = 0 required for code/runtime artifacts
-Manager_User deprecated populated count = actual
-GM_User deprecated populated count = actual
-LEGACY_FIELD_REMOVAL_STATUS =
-  SAFE_ZERO_DATA_CANDIDATE_FOR_LATER_REMOVAL
-  or BLOCKED_BY_HISTORICAL_DATA_MIGRATION_REQUIRED
-```
-
-Do NOT delete legacy fields in this task.
-Do not create duplicate scripts/temp manifests/walkthrough files/discovery exports.
-
-# STEP 10 — EVIDENCE / DOCS
-
-Run full `npm test` after live writes.
-
-Update current living docs:
-
-```text
-M6 = PASS 8/8
-M7 = PASS 12/12 only if all gates pass
+M6 = PASS / App796 8/8 PUBLISHED
+M7 = PASS / App795 12/12 ACTIVE REQUESTER BASELINE
 M8 = PASS
-M9 = NEXT
-ACR-002 = APPROVED / EXECUTED / requester baseline write window CLOSED
+ACR-002 = APPROVED / EXECUTED / WRITE WINDOW CLOSED
+Manager_User.required = false
+GM_User.required = false
+M9 = IN PROGRESS / then final result after smoke
+latest npm test total = actual
+Active Sandbox Apps = 794,795,796,797,798,800
 ```
 
-Record exact:
+Remove stale CURRENT values such as:
 
 ```text
-SPRINT03B_R2 = COMPLETE / PENDING CHATGPT REVIEW
-prewrite backup path + SHA256 manifest
-App795 schema PUT count
-App795 deploy POST count
-App795 record POST count
-App795 record PUT count = 0
-App795 record DELETE count = 0
-other sandbox writes = 0
-protected writes = 0
-pre active coverage = 1/12
-post active coverage = 12/12
-Manager_User required before/after = true/false
-GM_User required before/after = true/false
-unauthorized approver values introduced = 0
+M7 = 1/12
+ACR-002 PROPOSED / USER APPROVAL REQUIRED
+M7 write blocked
+stale 471/471 current test total
+CURRENT_STATE active-app list that omits 797/798/800
+```
+
+Preserve historical forensic sections if clearly historical.
+
+Required:
+
+```text
+NO_ORPHAN_ARTIFACT_GATE = PASS
+STALE_ACTIVE_REFERENCES = 0
+ROLLBACK_ONLY_ACTIVE_RUNTIME = 0
+```
+
+# STEP 2 — M9 READ-ONLY LIVE APP HEALTH PREFLIGHT
+
+Read-only verify exact sandbox app identities from registry:
+
+```text
+794 MBO transaction
+795 Routing Master
+796 Scoring Master
+797 Hoshin Master
+798 Revision Archive
+800 HR Control Center
+```
+
+For each relevant app GET only:
+
+```text
+app/settings identity
+form field metadata required for contract checks
+ACL where required
+record count / bounded records needed for verification
+customization metadata for App800
+```
+
+Required live health assertions:
+
+## App795
+
+```text
+active requester baseline = exactly 12
+exact Section_Code set = TME1,TMF1,TMF2,TMF3,TMG1,TMG2,TMH1,TMH2,TMH3,TMS1,TMT1,TMT2
+exact requester mapping matches DEC-031
 TMT3 active count = 0
-duplicate active count = 0
-NO_ORPHAN_ARTIFACT_GATE
-legacy populated counts / removal classification
-npm test = actual / PASS
-NEXT_ACTION = M9 END-TO-END SMOKE TEST
+duplicate active Section_Code count = 0
+Manager_User.required = false
+GM_User.required = false
 ```
 
-Preserve Stage3C historical evidence exception unchanged.
-
-Expected commits after this Control Plane task:
+## App796
 
 ```text
-1. fix: align app795 legacy required flags and requester seed
-2. docs: record app795 corrected requester baseline evidence
+record count = 8
+PUBLISHED count = 8
+VALIDATED count = 0
+exact 8 profile codes present
+PROF_STAFF_CHIEF = 70/30
+PROF_JAPANESE_STAFF = 70/30
+PROF_ASST_MGR = 60/40
+PROF_SECTION_MGR = 50/50
+PROF_SENIOR_MGR = 50/50
+PROF_DGM = 50/50
+PROF_GM = 50/50
+PROF_VP = 50/50
+stored config hashes structurally valid
 ```
 
-Push; local HEAD = remote HEAD; tracked tree clean; STOP.
+Do not modify/publish/supersede scoring records.
+
+## App797
+
+```text
+exact identity
+Hoshin_Status field exists
+custom Status field absent
+Creator-only ACL / approved native security state
+record count reported exactly
+```
+
+Do not create Hoshin records merely to make smoke pass.
+If record count is 0, report `HOSHIN_DATA_READINESS = NOT_SEEDED` rather than inventing data.
+
+## App798
+
+```text
+exact identity
+15-field archive contract intact
+Reason required=true
+Snapshot_JSON required=true
+Archived_At required=true
+Creator-only ACL
+record count reported exactly
+```
+
+## App800
+
+```text
+exact identity = MBO HR Control Center [Sandbox]
+Creator-only ACL
+live customization metadata includes expected JS FILE and CSS FILE
+record count = 0
+```
+
+# STEP 3 — APP794 READ-ONLY READINESS SMOKE
+
+Do NOT create artificial App794 records.
+
+GET-only verify:
+
+```text
+exact App794 identity
+required core field contract for Fiscal_Year, Employee_Code, Requester_User, Status and scoring/routing snapshot fields needed by current architecture
+native process/status configuration exists and remains unchanged
+record count = actual
+```
+
+If App794 has existing suitable records, inspect only safe fields needed to verify status readability and dashboard consumption.
+
+If App794 has 0 usable records, do NOT manufacture test data. Record:
+
+```text
+APP794_DATA_DRIVEN_E2E = NOT_EXECUTABLE_WITHOUT_ARTIFICIAL_WRITE
+```
+
+This is not a smoke failure if architectural/static/live-read contracts pass; DEC-029 prohibits artificial writes.
+
+# STEP 4 — CROSS-APP CONTRACT SMOKE (NO LIVE WRITE)
+
+Implement/extend tests using injected/fake dependencies against the same production modules, not duplicate logic.
+
+Validate the chain:
+
+```text
+Employee/annual identity input
+-> App795 requester resolution for representative sections
+-> App796 evaluation/scoring profile resolution for representative positions
+-> App794 annual record initialization payload construction / validation path
+-> Dashboard App800 consumption contract / status aggregation helpers
+```
+
+Representative cases at minimum:
+
+```text
+Staff/Chief section requester resolution
+Assistant Manager = 60/40
+Section Manager+ = 50/50
+Japanese Staff = 70/30
+TMG shared requester g_request
+TMH shared requester tmh
+retired TMT3 rejected
+unknown Section_Code rejected/fail-closed
+unknown position/profile rejected/fail-closed
+missing published scoring config rejected/fail-closed
+```
+
+Do not duplicate scoring/routing business rules into a new parallel implementation solely for test.
+
+If current architecture does not yet expose a complete App794 payload builder/live resolver path, test the nearest existing canonical integration boundaries and record the exact missing integration as a blocker/observation. Do not fake a PASS.
+
+# STEP 5 — HRCC RUNTIME CONTRACT SMOKE
+
+Using the existing dependency-injected HRCC runtime/tests:
+
+```text
+App800 no-op outside App800
+GET-only contract
+App794 pagination bounded
+App795 health returns 12/12 using Active="Active"
+App796 health count reflects 8 PUBLISHED
+App797 health count semantics = Ready_For_MBO="YES"
+App798 archive count total
+filters FY/Department/Section/Status work
+pipeline aggregation works
+XSS escaping still enforced
+quick links use registry IDs
+unavailable source renders unavailable, not zero
+```
+
+If an actual authenticated browser observation is practical in Antigravity standalone, record:
+
+```text
+HRCC_BROWSER_RENDER = PASS
+```
+
+Only if directly observed.
+Otherwise:
+
+```text
+HRCC_BROWSER_RENDER = NOT_DIRECTLY_OBSERVED
+```
+
+Do not claim browser PASS from metadata/unit tests alone.
+
+# STEP 6 — TEST / STATIC SAFETY
+
+Run full:
+
+```bash
+npm test
+git diff --check
+git status --short
+```
+
+Zero test failures.
+
+Search active repository for:
+
+```text
+hardcoded unauthorized Manager_User = suthas -> 0
+hardcoded unauthorized GM_User = somrudee -> 0
+active executeRoutingRollback symbol -> 0
+active createNarrowRollbackTransport symbol -> 0
+stale current M7 1/12 wording -> 0
+stale current ACR-002 PROPOSED wording -> 0
+```
+
+Historical commit messages/forensic docs are allowed if clearly historical.
+
+# STEP 7 — EVIDENCE / FINAL DELIVERY STATUS
+
+Update living docs and AI_REVIEW_PACKAGE with exact evidence.
+
+Required final block:
+
+```text
+DELIVERY_SPRINT_04_M9 = COMPLETE / PENDING CHATGPT REVIEW
+M6_APP796 = PASS / 8/8 PUBLISHED
+M7_APP795 = PASS / 12/12 ACTIVE REQUESTER BASELINE
+M8_APP800 = PASS
+APP795_MANAGER_USER_REQUIRED = false
+APP795_GM_USER_REQUIRED = false
+APP795_TMT3_ACTIVE_COUNT = 0
+APP795_DUPLICATE_ACTIVE_COUNT = 0
+APP796_PUBLISHED_COUNT = 8
+APP797_RECORD_COUNT = actual
+APP798_RECORD_COUNT = actual
+APP800_RECORD_COUNT = 0
+APP800_CUSTOMIZE_METADATA = PASS
+APP794_RECORD_COUNT = actual
+APP794_DATA_DRIVEN_E2E = PASS / NOT_EXECUTABLE_WITHOUT_ARTIFICIAL_WRITE / BLOCKED with exact reason
+CROSS_APP_CONTRACT_SMOKE = PASS/FAIL
+HRCC_RUNTIME_CONTRACT_SMOKE = PASS/FAIL
+HRCC_BROWSER_RENDER = PASS or NOT_DIRECTLY_OBSERVED
+KINTONE_WRITES_THIS_TASK = 0
+PROTECTED_WRITES_THIS_TASK = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS
+ROLLBACK_ONLY_ACTIVE_RUNTIME = 0
+STALE_ACTIVE_REFERENCES = 0
+npm test = actual total / PASS
+TODAY_DELIVERY_TARGET = PASS / BLOCKED with exact reason
+```
+
+Do not mark TODAY_DELIVERY_TARGET PASS if a genuine runtime/business blocker remains.
+
+Expected exactly two commits after this Control Plane task:
+
+```text
+1. test: run m9 cross-app smoke and remove obsolete rollback path
+2. docs: record m9 final delivery evidence
+```
+
+Push; require local HEAD = remote HEAD; tracked tree clean; STOP.
 
 # STRICT OUT OF SCOPE
 
 Do NOT:
 
-- write any app other than 795
-- change App795 business values in TME1
-- populate approver fields
-- delete legacy fields
-- change routing architecture
-- implement twin-status engine
-- run M9 in this same task
-- create fake/canary Kintone records
+- write any Kintone app
+- create fake App794 smoke records
+- modify App795 schema/records
+- modify App796 records
+- create Hoshin/archive records for test
+- redeploy App800
 - alter scoring ratios
+- invent routing approvers
+- reactivate TMT3
+- delete deprecated App795 legacy fields in live Kintone
+- expand dashboard UI/features in this sprint
 
 # REVIEW EXPECTATION
 
 ```text
-APP795_SCHEMA_DRIFT_PREFLIGHT_GATE
-APP795_PREWRITE_BACKUP_GATE
-APP795_EXACT_TWO_FIELD_REPAIR_GATE
-APP795_SCHEMA_READBACK_GATE
-APP795_REQUESTER_ONLY_PAYLOAD_GATE
-APP795_11_CREATE_GATE
-APP795_12_OF_12_READBACK_GATE
-APP795_TME1_PRESERVATION_GATE
-APP795_TMT3_EXCLUSION_GATE
-APP795_DUPLICATE_ACTIVE_GATE
-UNAUTHORIZED_APPROVER_ZERO_GATE
-OTHER_SANDBOX_ZERO_WRITE_GATE
+M7_FINAL_LIVE_BASELINE_GATE = PASS expected
+M9_LIVE_APP_HEALTH_GATE
+M9_APP794_READINESS_GATE
+M9_CROSS_APP_CONTRACT_GATE
+M9_HRCC_RUNTIME_GATE
+M9_BROWSER_OBSERVATION_GATE
+KINTONE_ZERO_WRITE_GATE
 PROTECTED_ZERO_WRITE_GATE
 NO_ORPHAN_ARTIFACT_GATE
-LEGACY_FIELD_CLASSIFICATION_GATE
 REGRESSION_GATE
 DOC_EVIDENCE_CONSISTENCY_GATE
 GIT_PUSH_SYNC_GATE
-DELIVERY_SPRINT_03B_GATE
+TODAY_DELIVERY_TARGET_GATE
 ```
