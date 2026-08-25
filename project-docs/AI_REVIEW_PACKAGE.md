@@ -2,51 +2,77 @@
 
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
-> **WP-002C Stage 3C-R1 Status:** **`FINAL VERIFIER CORRECTED / PENDING CHATGPT FINAL REVIEW`**
-> **Last Updated:** 2026-08-25T07:15:00+07:00
+> **WP-002C Stage 3C-R1 Status:** **`BACKUP PROVENANCE RECONCILED / PENDING CHATGPT FINAL DECISION`**
+> **Last Updated:** 2026-08-25T07:24:00+07:00
 
 ---
 
-## 1. Commit Verification Metadata (DEC-030)
+## 1. Commit Verification Metadata
 
-| Metadata Attribute | Commit SHA | Notes |
+| Commit SHA | Timestamp (ISO) | Message |
 | :--- | :--- | :--- |
-| **WP-002C Stage-3C-R1 Repair Guard** | `4bef27e` | `feat: add guarded wp-002c dropdown schema repair` |
-| **WP-002C Stage-3C-R1 Repair Evidence** | `d38a965` | `chore: record wp-002c dropdown schema repair` |
-| **WP-002C Stage-3C-R1 Hardening** | `ac3d401` | `fix: harden wp-002c dropdown repair verification` |
-| **WP-002C Stage-3C-R1 Evidence Closure** | `44e746d` | `docs: complete wp-002c dropdown repair evidence` |
-| **Final Verifier Correction Code** | `54e1d5e` | `fix: enforce exact dropdown labels and indexes` |
-| **Final Verifier Correction Docs** | *(Review Head)* | `docs: record final wp-002c verifier correction` |
+| `41ad63d` | 2026-08-25T06:20:44+07:00 | `feat: add guarded wp-002c schema configuration` |
+| `4bef27e` | 2026-08-25T06:53:27+07:00 | `feat: add guarded wp-002c dropdown schema repair` |
+| `d38a965` | 2026-08-25T06:54:57+07:00 | `chore: record wp-002c dropdown schema repair` |
+| `ac3d401` | 2026-08-25T07:04:00+07:00 | `fix: harden wp-002c dropdown repair verification` |
+| `44e746d` | 2026-08-25T07:09:00+07:00 | `docs: complete wp-002c dropdown repair evidence` |
+| `54e1d5e` | 2026-08-25T07:15:55+07:00 | `fix: enforce exact dropdown labels and indexes` |
+| `e57c2e3` | 2026-08-25T07:17:09+07:00 | `docs: record final wp-002c verifier correction` |
+| *(Review Head)* | 2026-08-25T07:24:00+07:00 | `docs: reconcile wp-002c r1 backup provenance` |
 
 ---
 
-## 2. Work Package & Review Metadata
+## 2. Gate Summary
 
-| Attribute | Value / Evidence |
+| Gate | Result |
 | :--- | :--- |
-| **Work Package ID** | `MBO-P03-WP-002C` |
-| **Mode** | **`FINAL VERIFIER CORRECTION — ZERO KINTONE CALLS`** |
-| **Claimed Status** | **`FINAL VERIFIER CORRECTED / PENDING CHATGPT FINAL REVIEW`** |
-| **Branch** | `ai/antigravity-wp002c` |
-| **App Status** | **`LIVE_DEPLOYED`** |
-| **Schema Semantic State** | **`DOMAIN_ALIGNED`** (unchanged; last verified by GET-only reconciliation) |
-| **Record Count** | **`0`** (last verified by GET-only reconciliation) |
-| **ACL** | **`CREATOR_ONLY / DEFAULT_DENY`** |
-| **Historical Repair Writes** | `FORM FIELDS PUT = 1; DEPLOY POST = 1` |
-| **Hardening Task Kintone Writes** | `0` |
-| **Final Verifier Task Kintone Calls** | `0` |
-| **Final Verifier Task Kintone Writes** | `0` |
-| **Automated Unit Test Suite** | **243/243 PASS** |
-| **OPTION_LABEL_EXACTNESS_GATE** | **`PASS`** — `actualOption.label === expectedKey` enforced; no `option.key` fallback |
-| **OPTION_INDEX_EXACTNESS_GATE** | **`PASS`** — `String(actualOption.index) === String(i)` enforced; missing index fails |
-| **KNOWN_DEFECT_EXACT_GATE** | **`PASS`** — exact prefixed option labels, indexes, defaultValue all enforced |
+| **OPTION_LABEL_EXACTNESS_GATE** | **`PASS`** — `opt.label === expectedKey` enforced; zero `opt.key` fallback |
+| **OPTION_INDEX_EXACTNESS_GATE** | **`PASS`** — index must be present and exactly match frozen order |
+| **KNOWN_DEFECT_EXACT_GATE** | **`PASS`** — all exact prefixed labels + indexes + defaultValue enforced |
 | **REPAIR_PAYLOAD_IMMUTABILITY_GATE** | **`PASS`** — `WP002C_DROPDOWN_REPAIR_PAYLOAD` deeply frozen |
-| **PREWRITE_BACKUP_GATE** | **`PASS`** — `scratch/app796_stage3c_pre_write_backup.json` (2026-08-24T23:22:36.590Z) |
-| **Backup File SHA-256** | `ce6429e6f7152601715488c791c1fe7ecbba75599c1e6c4aac93ae767466cefa` |
-| **HISTORICAL_PREVIEW_DEFECT_EXACT_STRICT** | **`PASS`** |
-| **HISTORICAL_LIVE_DEFECT_EXACT_STRICT** | **`FAIL (live payload has 0/23 planned fields — pre-repair live state contained non-WP002C fields; preview was the defect-bearing payload)`** |
-| **ZERO_KINTONE_FINAL_CORRECTION_GATE** | **`PASS`** |
-| **REGRESSION_GATE** | **`PASS`** — all 243 tests pass; no prior test broken |
+| **ZERO_KINTONE_PROVENANCE_TASK_GATE** | **`PASS`** — GET=0, POST=0, PUT=0, DELETE=0, DEPLOY=0 |
+| **REGRESSION_GATE** | **`PASS`** — 243/243 tests pass |
 | **GIT_PUSH_SYNC_GATE** | **`PASS`** — local HEAD = remote HEAD |
-| **WP002C_STAGE3C_GATE** | **`BLOCKED — CHATGPT FINAL REVIEW PENDING`** |
-| **NEXT_ACTION** | `AWAIT CHATGPT FINAL STAGE 3C REVIEW` |
+| **R1_PREWRITE_BACKUP_PROVENANCE_GATE** | **`UNVERIFIABLE`** *(see Forensic Finding below)* |
+| **R1_PREWRITE_LIVE_DEFECT_GATE** | **`UNVERIFIABLE`** — backup deleted |
+| **R1_PREWRITE_PREVIEW_DEFECT_GATE** | **`UNVERIFIABLE`** — backup deleted |
+| **WP002C_STAGE3C_GATE** | **`BLOCKED / R1_PREWRITE_BACKUP_UNVERIFIABLE`** |
+| **NEXT_ACTION** | `CONTROL PLANE DECISION REQUIRED: STRICT BLOCK OR EXPLICIT EVIDENCE-RISK ACCEPTANCE` |
+
+---
+
+## 3. Forensic Finding — R1 Pre-Write Backup Provenance
+
+**Evidence source:** Transcript `d02bbd40-a773-412d-a139-65e5e84f587e`, steps 3100–3105
+
+**Chronology (UTC):**
+
+| UTC Timestamp | Event |
+| :--- | :--- |
+| 2026-08-24T23:22:36Z | `scratch/app796_stage3c_pre_write_backup.json` written — **Stage 3C schema-creation pre-write backup** |
+| 2026-08-24T23:53:27Z | Commit `4bef27e` — R1 repair guard code committed |
+| 2026-08-24T23:53:59Z | `scratch/execute-repair-step3.js` ran; captured live+preview+ACL+records into `scratch/app796_repair_backup_snapshot.json` **before** the PUT call |
+| 2026-08-24T23:54:06Z | PUT + Deploy completed (`DOMAIN_ALIGNED`); repair script exited success |
+| 2026-08-24T23:54:11Z | `Remove-Item scratch/execute-repair-step3.js, scratch/app796_repair_backup_snapshot.json` — **R1 pre-write snapshot deleted** |
+| 2026-08-24T23:54:57Z | Commit `d38a965` — evidence commit (snapshot no longer present) |
+
+**Conclusion:**
+
+A genuine R1 pre-write snapshot was captured during execution but was permanently deleted by a post-repair cleanup step. No durable local artifact survives. The 23:22Z file is accurately the Stage 3C schema-creation backup and must not be cited as R1 pre-write evidence.
+
+---
+
+## 4. Live State (last verified by GET-only reconciliation, prior checkpoint)
+
+| Attribute | Value |
+| :--- | :--- |
+| App 796 Status | `LIVE_DEPLOYED` |
+| Schema Semantic State | `DOMAIN_ALIGNED` |
+| ACL | `CREATOR_ONLY / DEFAULT_DENY` |
+| Record Count | `0` |
+| Historical R1 PUT | `1` |
+| Historical R1 Deploy POST | `1` |
+| Publish Pipeline | `NOT_DEPLOYED` |
+| Baseline Seed | `NOT_STARTED` |
+| WP-002D | `NOT STARTED` |
+| Tests | `243 / 243 PASS` |

@@ -35,7 +35,7 @@
 - **Phase 3 WP-001 Plan Commit**: `6e72553`
 - **Protected Apps**: App 53 (READ ONLY), App 283 (READ ONLY), Apps 305, 307, 310, 640, 643, 715, 716 (READ ONLY)
 - **Active Sandbox Apps**: App 794 (MBO V2 Sandbox App - Full Test Sandbox DEC-041), App 795 (Routing Master Sandbox App), App 796 (Scoring Configuration Master — Live Deployed / Creator-Only / 23 Fields Configured & Domain Aligned)
-- **Hard Write Lock**: ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`); Stage 3C-R1 historical repair writes: FORM FIELDS PUT = 1, DEPLOY POST = 1; Stage 3C-R1 hardening task Kintone writes = 0 (GET-only reconciliation); Final verifier correction Kintone calls = 0; Final verifier correction Kintone writes = 0; RECORD/DELETE/ACL/LAYOUT/VIEW/PROCESS/CUSTOMIZATION writes = 0
+- **Hard Write Lock**: ACTIVE (`DISCOVERY_MODE = true`, `WRITE_ALLOWED_APPS = []`); Stage 3C-R1 historical repair writes: FORM FIELDS PUT = 1; DEPLOY POST = 1;
 
 ## Complete Baseline of Frozen Subsystems (100% Frozen & Approved)
 1. **Phase 0: Blueprint & Phased Delivery Model: `PASSED / FROZEN`**.
