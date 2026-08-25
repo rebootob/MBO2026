@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Commit Verification Metadata (DEC-030 & Stage 4A Traceability)
+## 1. Commit Verification Metadata (DEC-030, Stage 4A & Stage 4B Traceability)
 
 | Stage / Component | Commit SHA | Notes / Message |
 | :--- | :--- | :--- |
