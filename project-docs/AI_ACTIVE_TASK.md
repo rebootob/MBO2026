@@ -1,331 +1,430 @@
-# AI ACTIVE TASK — DELIVERY DAY SPRINT 03B-R1: APP795 UNAUTHORIZED APPROVER DATA ROLLBACK
+# AI ACTIVE TASK — DELIVERY DAY SPRINT 03B-R2: APP795 LEGACY REQUIRED-FLAG CORRECTION + REQUESTER RESEED
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `9804c4685f353dfd8401cc483f900bd25f4db8eb`
-> **Mode:** EXACT ROLLBACK OF FAILED SPRINT03B BATCH + READ-ONLY SCHEMA BLOCKER ANALYSIS
+> **Reviewed head:** `f7531b75e3cbc20022711c9ace8e407f56560e3d`
+> **Mode:** TARGETED APP795 SCHEMA CORRECTION + EXACT 11 REQUESTER RECORD CREATES
 
-# TODAY NORTH STAR
+# TODAY NORTH STAR — DO NOT DRIFT
 
 ```text
-M4 App 797 Hoshin Master        = PASS
-M5 App 798 Revision Archive     = PASS
-M6 App 796 Scoring Baseline     = PASS / 8 OF 8 PUBLISHED
-M7 App 795 Routing Baseline     = BLOCKED / 11 CREATED RECORDS CONTAIN UNAUTHORIZED APPROVER DATA
-M8 App 800 HR Dashboard MVP     = PASS
-M9 End-to-end Smoke Test        = BLOCKED UNTIL M7 IS CLEAN
+M6 App796 Scoring Baseline = PASS / 8 OF 8 PUBLISHED
+M7 App795 Routing Baseline = CLEAN 1/12 AFTER ROLLBACK / FIX LIVE SCHEMA DRIFT + RESEED 11
+M8 App800 HR Dashboard     = PASS
+M9 End-to-End Smoke        = NEXT IMMEDIATELY AFTER M7 REVIEW
 
 TODAY_DONE = NO
-NEXT_CRITICAL_PATH = EXACT ROLLBACK TO CLEAN 1/12 -> RESOLVE APP795 REQUIRED LEGACY FIELD BLOCKER -> CLEAN 12/12 -> M9
+NEXT_CRITICAL_PATH = APP795 SCHEMA EXACT -> 12/12 REQUESTER BASELINE -> CHATGPT REVIEW -> M9
 ```
 
-# INDEPENDENT REVIEW FINDING — SPRINT03B
+# CONTROL-PLANE FINDING
 
-The requester mapping readback reached 12/12, but `DELIVERY_SPRINT_03B_GATE = BLOCKED_DATA_SCOPE_VIOLATION`.
-
-Critical defect:
-
-Commit `3030cbb62453af4862c03dcee15b0264d7a04c63` added these hardcoded fields to every one of the 11 newly created App795 records:
-
-```js
-Manager_User: { value: [{ code: 'suthas' }] },
-GM_User: { value: [{ code: 'somrudee' }] },
-```
-
-This directly violated the approved Sprint03B contract:
+Sprint03B-R1 rollback is accepted as complete:
 
 ```text
-Do not populate unverified approver slots.
-This acceleration is REQUESTER BASELINE ONLY.
-If live schema requires additional fields, use only already frozen/verified values.
-Do NOT invent approver identities or business defaults.
+failed batch deleted = 11
+App795 active requester coverage restored = 1/12
+TME1 -> e1 preserved
+POST/PUT/schema writes in rollback = 0
+Manager_User.required live = true
+GM_User.required live = true
+REQUESTER_ONLY_SCHEMA_COMPATIBLE = NO
 ```
 
-No evidence proves `suthas` / `somrudee` are the correct approvers for all 11 sections.
-
-Therefore:
+Canonical source `config/schema-spec.js` defines both legacy fields as deprecated and non-required:
 
 ```text
-APP795_12_OF_12_REQUESTER_READBACK = OBSERVED
-APP795_APPROVER_DATA_AUTHORIZATION_GATE = FAIL
-APP795_BUSINESS_DATA_INTEGRITY_GATE = FAIL
-DELIVERY_SPRINT_03B_GATE = BLOCKED
-M9_AUTHORIZATION = NO
+Manager_User = [DEPRECATED] / required=false
+GM_User      = [DEPRECATED] / required=false
 ```
 
-# IMPORTANT — DO NOT REPAIR BY GUESSING DIFFERENT APPROVERS
+Therefore live App795 has a narrow schema drift that blocks the approved requester-only baseline.
 
-Do not replace the two hardcoded approvers with other guessed users.
-Do not derive approvers from requester identities.
-Do not use TME1 approvers as defaults.
-Do not update 11 records in place to another unverified value.
+# AUTHORIZED BUSINESS/SCHEMA CHANGE
 
-The clean safe state before Sprint03B was exactly one active pilot record (`TME1 -> e1`). The retained prewrite backup proves that baseline and must be preserved.
+Only these existing App795 field-property changes are authorized:
 
-# STEP 0 — GIT / SAFETY
+```text
+Manager_User.required: true -> false
+GM_User.required:      true -> false
+```
+
+Do NOT change type, code, label, entities, value, or any other field property.
+Do NOT add fields.
+Do NOT rename fields.
+Do NOT modify existing TME1 business data.
+
+This task does NOT authorize deleting `Manager_User` or `GM_User` automatically. They are deprecated, but deletion is allowed only later if historical-data/reference analysis proves safe and is separately reviewed. User No-Orphan rule remains active; record the fields as `DEPRECATION_PENDING_SAFE_DATA_MIGRATION_OR_ZERO_DATA_PROOF`, not as active business fields.
+
+# EXACT REQUESTER BASELINE AFTER SCHEMA CORRECTION
+
+KEEP unchanged:
+
+```text
+TME1 -> e1
+```
+
+CREATE exactly:
+
+```text
+TMF1 -> f1
+TMF2 -> f2
+TMF3 -> f3
+TMG1 -> g_request
+TMG2 -> g_request
+TMH1 -> tmh
+TMH2 -> tmh
+TMH3 -> tmh
+TMS1 -> s1
+TMT1 -> t1
+TMT2 -> t2
+```
+
+Never create TMT3.
+Never populate legacy approver fields.
+Never guess approvers.
+
+# STEP 0 — GIT / SECURITY
 
 Require:
 
 ```text
 branch = ai/antigravity-wp002c
-9804c468... in ancestry
+f7531b75... is ancestor
 local HEAD = origin branch
 tracked tree clean
 ```
 
 No reset/rebase/force push/history rewrite.
 
-Read mandatory docs and inspect:
-
-```text
-project-docs/AI_ACTIVE_TASK.md
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-project-docs/DECISIONS.md
-project-docs/APP_REGISTRY.md
-project-docs/BUSINESS_RULES.md
-config/schema-spec.js
-config/sandbox-apps.json
-src/core/sandbox-write-guard.js
-scripts/kintone/seed-routing-baseline.js
-```
-
-Before network operations:
+Before live network operations:
 
 ```js
 delete process.env.KINTONE_API_TOKEN;
 ```
 
-Use password authentication only. Never print credentials/auth headers/raw response bodies.
+Use username/password authentication only.
+Do not print credentials/auth headers/raw user payloads/Kintone error response bodies.
 
-# STEP 1 — RETAIN ORIGINAL PREWRITE BACKUP + CAPTURE FAILED-BATCH CURRENT STATE
-
-First verify the original Sprint03B prewrite backup still exists:
+Protected apps permanently READ ONLY:
 
 ```text
-backups/delivery-sprint-03b/app795/2026-08-25T06-51-41-500Z/
+53,283,305,307,310,640,643,715,716
 ```
 
-Verify its SHA-256 manifest. Do not modify/delete it.
-
-Create a new retained rollback-preflight snapshot:
+Zero writes also to:
 
 ```text
-backups/delivery-sprint-03b-r1/app795/<UTC_TIMESTAMP>/
+794,796,797,798,800
+```
+
+# STEP 1 — READ-ONLY PREFLIGHT / EXACT DRIFT CLASSIFICATION
+
+GET App795 live + preview:
+
+```text
+settings
+fields
+ACL
+all records needed for exact business-state verification
+```
+
+Require before any write:
+
+```text
+exact App795 identity
+active records = exactly 1
+TME1 -> e1 exact
+no active TMT3
+no active duplicate Section_Code
+Manager_User live.required = true
+GM_User live.required = true
+canonical source required=false for both
+all other intended App795 canonical fields have no unrelated critical drift
+```
+
+If unrelated schema drift would make the two-field repair unsafe, STOP with zero writes.
+
+Read all existing App795 records and safely classify whether deprecated fields contain data:
+
+```text
+Manager_User populated record count = actual
+GM_User populated record count = actual
+```
+
+Do not print user codes/names from these fields in evidence; only counts.
+Do NOT clear values.
+Do NOT delete fields.
+
+Reverify the 9 approved requester accounts read-only. Require 9/9 valid.
+
+# STEP 2 — DURABLE PREWRITE BACKUP
+
+Create NEW retained backup before schema write:
+
+```text
+backups/delivery-sprint-03b-r2/app795/<UTC_TIMESTAMP>/
 ```
 
 Capture:
 
 ```text
-live/preview settings
-live/preview fields
-live/preview ACL
+live + preview settings
+live + preview fields
+live + preview ACL
 all App795 records
 record count
 active count
 ```
 
-Create SHA-256 manifest and retain until ChatGPT review.
+Create SHA256 manifest and retain until independent review.
+Do not overwrite/delete prior Sprint03B/R1 backups.
+Do not commit raw backup.
 
-# STEP 2 — EXACT GET-ONLY RECONCILIATION OF FAILED BATCH
+# STEP 3 — IMPLEMENT TARGETED SCHEMA CORRECTION PATH
 
-GET all App795 records and identify the exact 11 records that meet ALL of these conditions:
+Prefer reusing an existing App795 schema deployment utility if it can enforce exact two-property repair safely.
+If no suitable reusable path exists, add the minimum code to the existing routing seeder/deployment script architecture; do not create multiple overlapping scripts.
 
-```text
-Section_Code in [TMF1,TMF2,TMF3,TMG1,TMG2,TMH1,TMH2,TMH3,TMS1,TMT1,TMT2]
-Active = Active
-Requester_User matches the approved DEC-031 mapping
-record did NOT exist in the retained Sprint03B prewrite backup
-```
-
-Require exactly 11 records.
-
-Also verify:
+Exact mutation payload must change ONLY:
 
 ```text
-TME1 -> e1 exists and is NOT in rollback set
-TMT3 active count = 0
-no unexpected records beyond prewrite baseline + exact 11 failed-batch records
+Manager_User.required=false
+GM_User.required=false
 ```
 
-If the exact rollback set cannot be proven = STOP WITH ZERO WRITES.
-
-Create an in-memory exact rollback manifest containing record IDs only for those 11 proven records. Do not commit business-data backup dumps or record IDs into public/living docs if unnecessary; evidence may state count/hash.
-
-# STEP 3 — TEST A NARROW EXACT DELETE ROLLBACK PATH BEFORE LIVE WRITE
-
-Modify the existing `scripts/kintone/seed-routing-baseline.js` only; do not create another routing script.
-
-Required corrections:
-
-1. Remove `Manager_User` and `GM_User` hardcoded values from the active seed payload implementation.
-2. Seed path must fail closed if required live schema cannot accept requester-only payload. Do NOT work around required fields.
-3. Redact HTTP error response bodies; current transport must not include raw Kintone response text in thrown errors.
-4. Add a separately explicit rollback mode/function that can DELETE only the exact 11 proven record IDs from the failed Sprint03B batch.
-5. Exact rollback delete guard:
+Required safety:
 
 ```text
-App ID = 795 only
-DELETE endpoint = /k/v1/records.json only (or official exact record-delete endpoint supported by current client)
-IDs = exact proven 11 only
-TME1 ID prohibited
-any ID outside rollback manifest prohibited
-max deletes = 11
-no PUT
-no schema/deploy writes
+App target = 795 only
+PUT preview form fields = max 1 request
+POST deploy = max 1 request
+bounded deployment polling
+no blind retry after uncertain write
+GET reconciliation after uncertainty
 ```
 
-Use existing sandbox guard with process-local `[795]` and `dryRunBypassDiscovery:true` before DELETE.
+Before mutation compare exact pre-state and expected post-state.
+After deploy GET live+preview and require both required=false.
 
-No generic/broad section query deletion.
-No delete-all.
-No retry after uncertain DELETE.
+No record POST until schema read-back passes.
 
-Tests must prove:
+# STEP 4 — HARDEN REQUESTER SEEDER
+
+Use the existing canonical:
 
 ```text
-active seed payload contains no Manager_User/GM_User
-seed refuses to invent required legacy fields
-rollback exact 11 IDs allowed
-10/12/unknown IDs rejected
-TME1 ID rejected
-wrong app rejected
-PUT/PATCH blocked
-raw response body is not exposed in error message
+scripts/kintone/seed-routing-baseline.js
 ```
 
-Run full `npm test`. Zero failures before rollback.
+Do not create another seeder.
 
-Commit code/tests exactly:
+Remove any obsolete rollback-only executable path that is no longer required for active operation IF it can be safely removed without weakening current recovery evidence. Historical rollback evidence remains in Git history/docs/backups. At minimum no hardcoded approver values may exist anywhere in active routing seed runtime/tests.
 
-```text
-fix: remove unauthorized routing approvers and add exact rollback
-```
-
-Push BEFORE live rollback.
-
-# STEP 4 — EXECUTE EXACT ROLLBACK ON APP795 ONLY
-
-Authorized writes in this task:
-
-```text
-App795 DELETE = exactly failed-batch 11 records only
-```
-
-Zero writes to:
-
-```text
-App794,796,797,798,800
-protected apps 53,283,305,307,310,640,643,715,716
-```
-
-No App795 POST/PUT/schema/deploy in this task.
-
-If DELETE result is uncertain/fails:
-
-- STOP
-- no retry
-- GET-only reconcile exact IDs
-- report exact safe state
-
-# STEP 5 — POST-ROLLBACK READBACK
-
-Require exact restored state:
-
-```text
-App795 active coverage = 1/12
-TME1 -> e1 exact and unchanged
-all failed-batch target 11 active counts = 0
-TMT3 active count = 0
-no duplicate active sections
-```
-
-Then M7 returns to CLEAN_BLOCKED state, not PASS.
-
-# STEP 6 — READ-ONLY SCHEMA BLOCKER ANALYSIS
-
-After rollback, GET live+preview App795 field schema and document exact required flags for at least:
+Requester record payload must contain only canonical requester baseline fields required for creation:
 
 ```text
 Section_Code
 Section_Name
 Requester_User
-Manager_User
-GM_User
 Active
 ```
 
-Also classify `Manager_User` and `GM_User` against frozen DEC-019:
+`Manager_User`, `GM_User`, `First_Manager_User` MUST NOT be included.
+Generic approver-slot fields MUST NOT be populated in this requester-only seed.
+
+Seeder preflight must fail closed unless:
 
 ```text
-CURRENT_REQUIRED_LEGACY_FIELD / DEPRECATION_CANDIDATE / STILL_ACTIVE_BUSINESS_FIELD / UNKNOWN
+active coverage = 1/12
+TME1 -> e1 exact
+target 11 all absent
+TMT3 absent
+Manager_User.required = false live
+GM_User.required = false live
+requester accounts = 9/9 valid
 ```
 
-Do not change schema in this task.
-Do not guess approvers.
+No idempotent skip/recovery semantics. If active record count != 1, STOP before POST.
 
-Required output:
+# STEP 5 — TEST BEFORE LIVE WRITE
+
+Extend existing tests only; avoid unnecessary new files.
+
+Minimum coverage:
 
 ```text
-APP795_REQUESTER_ONLY_SCHEMA_COMPATIBLE = YES/NO
-MANAGER_USER_REQUIRED = true/false
-GM_USER_REQUIRED = true/false
-LEGACY_FIELD_CLASSIFICATION = exact evidence-backed result
-NEXT_REPAIR = either controlled required-flag/schema cleanup OR exact verified approver model; no guessing
+schema correction manifest contains exactly two field required changes
+wrong app blocked
+unrelated field mutation blocked
+requester payload contains no Manager_User / GM_User / First_Manager_User
+requester payload contains no generic approver slots
+exact 11 manifest
+TME1 excluded
+TMT3 excluded
+unknown requester/section rejected
+active count !=1 blocks before POST
+required=true blocks seed before POST
+required=false permits controlled seed path
+POST body.app = 795 only
+PUT/DELETE/PATCH record operations blocked
+max record creates = 11
+no hardcoded suthas/somrudee in routing seeder/runtime/tests
 ```
 
-# STEP 7 — EVIDENCE / DOC TRUTH
+Run full `npm test`; zero failures.
 
-Run full tests again.
-
-Update living docs to state Sprint03B failed independent review due unauthorized approver fields and was rolled back exactly.
-
-Do NOT continue claiming M7=12/12 PASS after rollback.
-
-Canonical state:
+Commit code/tests/schema correction tooling before live mutation:
 
 ```text
-M6 = PASS / 8/8 PUBLISHED
-M7 = CLEAN_BLOCKED / 1/12 after exact rollback
+fix: align app795 legacy required flags and requester seed
+```
+
+Push before live write.
+
+# STEP 6 — LIVE SCHEMA CORRECTION APP795 ONLY
+
+Execute once after retained backup + tests.
+
+Authorized writes:
+
+```text
+App795 preview fields PUT = max 1
+App795 deploy POST = max 1
+```
+
+Expected exact result:
+
+```text
+Manager_User.required=false
+GM_User.required=false
+all other field definitions unchanged
+TME1 record unchanged
+```
+
+If uncertain/fails: STOP; no record seed; GET reconcile; no blind retry.
+
+# STEP 7 — LIVE REQUESTER RESEED APP795 ONLY
+
+Only after exact schema read-back PASS.
+
+Run canonical seed script once.
+
+Expected record write budget:
+
+```text
+App795 record POST = exactly 11
+App795 record PUT = 0
+App795 record DELETE = 0
+```
+
+If any POST uncertain/fails:
+
+```text
+STOP
+NO retry
+NO automatic delete
+GET exact reconciliation
+report created vs missing sections
+retain backup
+M7 = BLOCKED_PARTIAL
+```
+
+# STEP 8 — FINAL READBACK
+
+Require field-level verification, not count only:
+
+```text
+active count = 12
+unique active Section_Code = 12
+TME1 -> e1 unchanged
+TMF1 -> f1
+TMF2 -> f2
+TMF3 -> f3
+TMG1 -> g_request
+TMG2 -> g_request
+TMH1 -> tmh
+TMH2 -> tmh
+TMH3 -> tmh
+TMS1 -> s1
+TMT1 -> t1
+TMT2 -> t2
+TMT3 active count = 0
+duplicate active sections = 0
+new 11 records Manager_User empty
+new 11 records GM_User empty
+new 11 records First_Manager_User empty
+Manager_User.required live+preview = false
+GM_User.required live+preview = false
+```
+
+Do not expose user identities beyond already-approved requester codes in evidence.
+
+# STEP 9 — NO-ORPHAN / LEGACY FIELD CLASSIFICATION
+
+Mandatory output:
+
+```text
+NO_ORPHAN_ARTIFACT_GATE = PASS / BLOCKED
+STALE_ACTIVE_REFERENCES = 0 required for code/runtime artifacts
+Manager_User deprecated populated count = actual
+GM_User deprecated populated count = actual
+LEGACY_FIELD_REMOVAL_STATUS =
+  SAFE_ZERO_DATA_CANDIDATE_FOR_LATER_REMOVAL
+  or BLOCKED_BY_HISTORICAL_DATA_MIGRATION_REQUIRED
+```
+
+Do NOT delete legacy fields in this task.
+Do not create duplicate scripts/temp manifests/walkthrough files/discovery exports.
+
+# STEP 10 — EVIDENCE / DOCS
+
+Run full `npm test` after live writes.
+
+Update current living docs:
+
+```text
+M6 = PASS 8/8
+M7 = PASS 12/12 only if all gates pass
 M8 = PASS
-M9 = BLOCKED pending clean M7
-ACR-002 = APPROVED but Sprint03B execution failed independent review; no active write window after rollback
+M9 = NEXT
+ACR-002 = APPROVED / EXECUTED / requester baseline write window CLOSED
 ```
 
-AI_REVIEW_PACKAGE must finally include a current Sprint03B-R1 block with:
+Record exact:
 
 ```text
-SPRINT03B_REVIEW = BLOCKED_DATA_SCOPE_VIOLATION
-UNAUTHORIZED_APPROVER_FIELDS_FOUND = Manager_User, GM_User
-FAILED_BATCH_RECORD_COUNT = 11
-ORIGINAL_PREWRITE_BACKUP_RETAINED = YES + safe path + manifest SHA
-ROLLBACK_PREWRITE_BACKUP = safe path + manifest SHA
-APP795_DELETE_COUNT = actual exact count
-APP795_POST_COUNT_THIS_TASK = 0
-APP795_PUT_COUNT_THIS_TASK = 0
-APP795_SCHEMA_WRITES_THIS_TASK = 0
-POST_ROLLBACK_ACTIVE_COVERAGE = 1/12 expected
-TME1_PRESERVED = YES
-TMT3_ACTIVE_COUNT = 0
-OTHER_SANDBOX_WRITES = 0
-PROTECTED_WRITES = 0
-APP795_REQUESTER_ONLY_SCHEMA_COMPATIBLE = YES/NO
-MANAGER_USER_REQUIRED = true/false
-GM_USER_REQUIRED = true/false
-NO_ORPHAN_ARTIFACT_GATE = PASS
+SPRINT03B_R2 = COMPLETE / PENDING CHATGPT REVIEW
+prewrite backup path + SHA256 manifest
+App795 schema PUT count
+App795 deploy POST count
+App795 record POST count
+App795 record PUT count = 0
+App795 record DELETE count = 0
+other sandbox writes = 0
+protected writes = 0
+pre active coverage = 1/12
+post active coverage = 12/12
+Manager_User required before/after = true/false
+GM_User required before/after = true/false
+unauthorized approver values introduced = 0
+TMT3 active count = 0
+duplicate active count = 0
+NO_ORPHAN_ARTIFACT_GATE
+legacy populated counts / removal classification
 npm test = actual / PASS
-NEXT_ACTION = targeted M7 schema/business blocker resolution
+NEXT_ACTION = M9 END-TO-END SMOKE TEST
 ```
 
-Preserve historical Stage3C evidence exception.
+Preserve Stage3C historical evidence exception unchanged.
 
-Commit docs exactly:
+Expected commits after this Control Plane task:
 
 ```text
-docs: record app795 failed-batch rollback evidence
+1. fix: align app795 legacy required flags and requester seed
+2. docs: record app795 corrected requester baseline evidence
 ```
 
 Push; local HEAD = remote HEAD; tracked tree clean; STOP.
@@ -334,31 +433,36 @@ Push; local HEAD = remote HEAD; tracked tree clean; STOP.
 
 Do NOT:
 
-- run M9
-- create new App795 records
-- modify TME1
-- update the 11 failed records in place
-- change App795 schema
-- guess Manager_User/GM_User
-- populate generic approver slots
-- write any other app
-- rewrite Git history
-- delete retained backups
+- write any app other than 795
+- change App795 business values in TME1
+- populate approver fields
+- delete legacy fields
+- change routing architecture
+- implement twin-status engine
+- run M9 in this same task
+- create fake/canary Kintone records
+- alter scoring ratios
 
 # REVIEW EXPECTATION
 
 ```text
-UNAUTHORIZED_APPROVER_DATA_GATE = FAIL_CONFIRMED / ROLLED_BACK
-EXACT_FAILED_BATCH_IDENTIFICATION_GATE
-EXACT_ROLLBACK_GATE
-TME1_PRESERVATION_GATE
-POST_ROLLBACK_1_OF_12_GATE
-APP795_SCHEMA_BLOCKER_EVIDENCE_GATE
+APP795_SCHEMA_DRIFT_PREFLIGHT_GATE
+APP795_PREWRITE_BACKUP_GATE
+APP795_EXACT_TWO_FIELD_REPAIR_GATE
+APP795_SCHEMA_READBACK_GATE
+APP795_REQUESTER_ONLY_PAYLOAD_GATE
+APP795_11_CREATE_GATE
+APP795_12_OF_12_READBACK_GATE
+APP795_TME1_PRESERVATION_GATE
+APP795_TMT3_EXCLUSION_GATE
+APP795_DUPLICATE_ACTIVE_GATE
+UNAUTHORIZED_APPROVER_ZERO_GATE
 OTHER_SANDBOX_ZERO_WRITE_GATE
 PROTECTED_ZERO_WRITE_GATE
 NO_ORPHAN_ARTIFACT_GATE
+LEGACY_FIELD_CLASSIFICATION_GATE
 REGRESSION_GATE
 DOC_EVIDENCE_CONSISTENCY_GATE
 GIT_PUSH_SYNC_GATE
-DELIVERY_SPRINT_03B_GATE = BLOCKED_CLEAN or worse
-M9_AUTHORIZATION = NO
+DELIVERY_SPRINT_03B_GATE
+```
