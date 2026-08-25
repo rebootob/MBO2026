@@ -26,6 +26,57 @@ TODAY_DONE = NO
 NEXT_CRITICAL_PATH = CLOSE ONLY M4/M5/M8 REVIEW DEFECTS, THEN IMMEDIATELY M6+M7
 ```
 
+# PROJECT-WIDE MANDATORY RULE — NO ORPHAN / CLEAN REPLACEMENT
+
+This is a hard project rule and applies to every current and future work package. It reinforces `DEC-016` No Orphan / No Dead Artifact governance.
+
+```text
+NO_ORPHAN_ARTIFACT_GATE = MANDATORY
+DEPRECATED_FIELD_RETENTION = PROHIBITED unless explicitly required for historical compatibility and documented
+DEAD_FILE_RETENTION = PROHIBITED
+DUPLICATE_IMPLEMENTATION_RETENTION = PROHIBITED
+UNUSED_CONFIG_KEY_RETENTION = PROHIBITED
+```
+
+Whenever a field, file, function, configuration key, script, UI component, view, or other artifact is **added, removed, renamed, replaced, or superseded**, Antigravity MUST perform cleanup in the same work package:
+
+1. Identify the exact old artifact being replaced.
+2. Search the repository and Kintone target for all references to the old name/artifact.
+3. Migrate every active reference to the new artifact.
+4. Remove the old artifact if it is no longer used.
+5. Verify no active reference points to the removed artifact.
+6. Do not keep `*_old`, `*_v1`, duplicate field codes, dead scripts, unused helpers, stale config keys, duplicate views/customizations, or abandoned deployment artifacts merely "for safety".
+7. Historical evidence/backups are the only exception. They must stay in the approved backup/evidence location and must NOT remain as active runtime/schema artifacts.
+8. If deletion could destroy business/historical data, STOP and escalate to Control Plane before deletion. Never silently delete populated business fields or records.
+
+For Kintone field rename/replacement specifically:
+
+```text
+PRE-BACKUP -> VERIFY NEW FIELD -> MIGRATE REFERENCES/DATA IF ANY -> REMOVE OLD UNUSED CUSTOM FIELD -> DEPLOY -> EXACT READ-BACK -> VERIFY OLD CUSTOM FIELD ABSENT
+```
+
+If the old field contains records/data, deletion is NOT automatically authorized; report the field code, record usage count, and required migration plan first.
+
+For the current App 797 correction:
+
+- Business label remains `Status`.
+- Canonical custom field code is `Hoshin_Status`.
+- Reconcile whether any deprecated **custom** field code `Status` from the attempted design exists.
+- Do NOT confuse or attempt to delete Kintone's native/system Status field.
+- If an unused deprecated custom field exists and contains no business data, clean it in the same correction only when the API clearly identifies it as the custom artifact and the pre-write backup exists.
+- If it cannot be safely distinguished from native/system Status or contains data, STOP and report; do not delete.
+
+Every final report must include:
+
+```text
+NO_ORPHAN_ARTIFACT_GATE = PASS / BLOCKED
+OLD_ARTIFACTS_FOUND = <safe list/count>
+OLD_ARTIFACTS_REMOVED = <safe list/count>
+STALE_ACTIVE_REFERENCES = 0 required for PASS
+```
+
+ChatGPT independent review will explicitly fail a stage if a replacement leaves obsolete active fields/files/config/scripts behind without a documented compatibility reason.
+
 # INDEPENDENT REVIEW RESULT
 
 Sprint 02 is **BLOCKED — TARGETED MUST FIX**, not rejected wholesale.
@@ -105,8 +156,10 @@ recordCount = 0
 Creator-only ACL remains
 ```
 
-If live already matches: ZERO App797 writes.
-If live does not match: STOP and report; do not invent another repair without Control Plane authorization.
+Also apply the NO ORPHAN rule above: determine whether a deprecated custom `Status` artifact exists and whether it is safe/necessary to remove. Native/system Status must never be deleted.
+
+If live already matches and no obsolete custom field exists: ZERO App797 writes.
+If live does not match, or a deprecated artifact cannot be safely classified: STOP and report; do not invent another repair without Control Plane authorization.
 
 Update the Hoshin architecture/schema documentation with a short technical mapping note:
 
@@ -133,6 +186,17 @@ No reset/rebase/force push/history rewrite.
 
 Read mandatory living docs, DECISIONS, Hoshin architecture, Revision architecture, security model, schema spec, sandbox guard, HRCC source/tests.
 
+Before coding, search for stale/duplicate artifacts related to every replacement in this task. Examples:
+
+```text
+Status vs Hoshin_Status
+old HRCC renderer-only runtime paths
+old/temporary dashboard deployment scripts
+obsolete config keys or duplicate HRCC app bindings
+```
+
+Do not delete historical backups/evidence.
+
 # STEP 1 — CODE CORRECTION
 
 Modify only files directly needed for the defects. Expected core files:
@@ -146,6 +210,8 @@ scripts/kintone/deploy-delivery-sprint02.js (MUST exist in Git after this correc
 ```
 
 May update minimal docs later in evidence step.
+
+Do not add a second dashboard implementation if the existing file can be corrected. Replace the existing implementation in place and remove obsolete duplicate code/routes/scripts created by the correction.
 
 ## App 798 tests MUST assert exact required flags
 
@@ -219,6 +285,7 @@ It must:
 - never print secrets or file upload response secrets beyond safe metadata
 
 Do not reuse `scripts/kintone/deploy-custom-ui.js` because that targets App 794 employee UI.
+Do not leave a temporary/alternate HRCC deploy script after this canonical script is committed.
 
 Run `npm test` before any live write. Required zero failures.
 
@@ -255,7 +322,16 @@ Do not commit raw backups or secrets. Evidence docs must include backup path + m
 
 ## App 797
 
-GET only. No writes if `Hoshin_Status` live/preview exact contract already matches.
+GET first. Apply NO ORPHAN inspection to `Status` vs `Hoshin_Status`.
+
+No writes if:
+
+```text
+Hoshin_Status live/preview exact contract matches
+no obsolete custom lifecycle field remains
+```
+
+If an obsolete custom field definitely exists, is not native/system Status, contains zero business data, and deletion is necessary to satisfy canonical schema, removal is permitted only after retained backup and exact classification. Otherwise STOP and report.
 
 ## App 798
 
@@ -283,7 +359,7 @@ No retry after uncertain write; reconcile by GET.
 
 ## App 800 HRCC
 
-Redeploy customization from committed source/script only.
+Redeploy customization from committed canonical source/script only.
 Authorized writes:
 
 ```text
@@ -295,27 +371,30 @@ bounded poll
 
 No App800 business records.
 No ACL weakening. Creator-only remains mandatory.
+Ensure old/superseded HRCC customization file references are not retained alongside the canonical customization unless Kintone requires them; final customization read-back must reference only the intended canonical active JS/CSS files.
 
 Absolutely ZERO writes to:
 
 ```text
 53,283,305,307,310,640,643,715,716
 794,795,796
-797 (unless Control Plane separately authorizes after a failed GET reconciliation — not authorized now)
 ```
+
+App797 writes are restricted to the explicit orphan-cleanup case above and only if safe classification + zero business data + retained backup are all proven.
 
 # STEP 4 — LIVE READ-ONLY SMOKE
 
 After deployment, verify from safe GET/read-back:
 
 ```text
-797 Hoshin_Status exact + 19 fields + 0 records + Creator-only
+797 Hoshin_Status exact + canonical intended custom schema + 0 records + Creator-only
 798 15 fields with three corrected required flags + 0 records + Creator-only
 800 exact identity + Creator-only + customization live
 HRCC can GET allowed App794 monitoring fields under current session
 HRCC can GET health/count inputs from 795–798
 no confidential App794 fields requested
 runtime write count = 0
+stale active references/artifacts = 0
 ```
 
 Do not claim filters/pipeline/links passed unless committed test coverage and runtime smoke support them.
@@ -327,7 +406,7 @@ Run full `npm test` again after live correction. Record actual pass count.
 Update living docs + APP_REGISTRY status rows so they match real state:
 
 ```text
-App 797 = Live Deployed / 19-field schema / Hoshin_Status technical mapping
+App 797 = Live Deployed / canonical Hoshin schema / Hoshin_Status technical mapping
 App 798 = Live Deployed / 15-field archive schema
 App 800 = Live Deployed / Secure HRCC Dashboard MVP
 Active Sandbox Apps = include 794,795,796,797,798,800
@@ -340,13 +419,16 @@ AI_REVIEW_PACKAGE must include explicit Sprint02R evidence:
 ```text
 backup path
 manifest SHA256
-App797 GET count / write count 0
+App797 GET count / actual write count
 App798 exact before/after defect state + actual PUT/deploy count
 App800 customization deploy counts
 794/795/796 writes = 0
 protected writes = 0
 records created = 0
 actual tests pass/fail
+NO_ORPHAN_ARTIFACT_GATE status
+old artifacts found/removed
+stale active references count
 exact commit SHAs
 ```
 
@@ -370,11 +452,13 @@ Do NOT create Archive records.
 Do NOT implement Hoshin supersession/reopen business writes.
 Do NOT change scoring ratios.
 Do NOT broaden HRCC ACL beyond Creator-only.
+Do NOT retain obsolete active artifacts created or superseded by this task.
 
 # REVIEW EXPECTATION
 
 ```text
 SCORING_RATIO_TRUTH_GATE = PASS expected
+NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED
 HOSHIN_STATUS_RECONCILIATION_GATE = PASS/FAIL
 ARCHIVE_REQUIRED_CONTRACT_GATE = PASS/FAIL
 ARCHIVE_LIVE_REPAIR_GATE = PASS/FAIL
