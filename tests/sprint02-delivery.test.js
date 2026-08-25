@@ -7,12 +7,21 @@ import {
   DISCOVERY_MODE
 } from '../src/core/sandbox-write-guard.js';
 import { hoshinFields, revisionArchiveFields } from '../config/schema-spec.js';
+import fs from 'node:fs';
 import {
+  DEFAULT_APP_IDS,
   renderHrControlCenterHtml,
   buildHrccMonitoringQuery,
   ALLOWED_MONITORING_FIELDS_794,
-  CONFIDENTIAL_FIELDS_PROHIBITED
+  CONFIDENTIAL_FIELDS_PROHIBITED,
+  escapeHtml,
+  fetchAllApp794Records,
+  fetchHealthCount,
+  aggregatePipelineByStatus,
+  applyHrccFilters,
+  createHrccRuntime
 } from '../src/ui/hr-control-center.js';
+import { buildClassicHrccBundle } from '../scripts/kintone/deploy-delivery-sprint02.js';
 import { getCanonicalBaselineMasterConfigs, PROFILE_CODES } from '../src/profiles/scoring-config-master.js';
 
 test('Sprint 02: getSandboxAppIds recognizes all 6 sandbox app IDs when present', () => {
@@ -98,4 +107,98 @@ test('Sprint 02R: HRCC query builder enforces strict whitelist security and fail
   assert.throws(() => {
     buildHrccMonitoringQuery(['PartA_Weighted_Score']);
   }, /SECURITY VIOLATION/);
+});
+
+
+
+test('Sprint 02R2: Classic HRCC bundle generator creates valid browser JS without import/export keywords', () => {
+  const source = fs.readFileSync('src/ui/hr-control-center.js', 'utf8');
+  const bundle = buildClassicHrccBundle(source, DEFAULT_APP_IDS);
+  assert.equal(/\bimport\b/.test(bundle), false, 'Bundle must not contain import keyword');
+  assert.equal(/\bexport\b/.test(bundle), false, 'Bundle must not contain export keyword');
+  assert.equal(bundle.includes('DEFAULT_APP_IDS = {"mboV2AppId":794'), true);
+});
+
+test('Sprint 02R2: fetchAllApp794Records executes bounded GET pagination up to limit', async () => {
+  let callCount = 0;
+  const fakeApi = async (path, method, params) => {
+    callCount++;
+    if (callCount === 1) {
+      return { records: new Array(500).fill({ $id: { value: '1' }, Status: { value: 'SUBMITTED' } }) };
+    }
+    return { records: new Array(150).fill({ $id: { value: '2' }, Status: { value: 'DRAFT' } }) };
+  };
+
+  const { records, truncated } = await fetchAllApp794Records(fakeApi, 794, 20);
+  assert.equal(records.length, 650);
+  assert.equal(truncated, false);
+  assert.equal(callCount, 2);
+});
+
+test('Sprint 02R2: fetchHealthCount parses totalCount accurately and handles denied sources safely', async () => {
+  const fakeSuccessApi = async () => ({ totalCount: 12, records: [{ $id: { value: '1' } }] });
+  const hSuccess = await fetchHealthCount(fakeSuccessApi, 795);
+  assert.equal(hSuccess.available, true);
+  assert.equal(hSuccess.count, 12);
+
+  const fakeDeniedApi = async () => { throw new Error('HTTP 403 Access Denied'); };
+  const hDenied = await fetchHealthCount(fakeDeniedApi, 795);
+  assert.equal(hDenied.available, false);
+  assert.equal(hDenied.count, null);
+  assert.equal(hDenied.error.includes('403'), true);
+});
+
+test('Sprint 02R2: aggregatePipelineByStatus and applyHrccFilters filter and aggregate records accurately', () => {
+  const evaluations = [
+    { Fiscal_Year: { value: 'FY2026' }, Employee_Department: { value: 'IT' }, Employee_Section: { value: 'Dev' }, Status: { value: 'DRAFT' } },
+    { Fiscal_Year: { value: 'FY2026' }, Employee_Department: { value: 'HR' }, Employee_Section: { value: 'Ops' }, Status: { value: 'SUBMITTED' } },
+    { Fiscal_Year: { value: 'FY2027' }, Employee_Department: { value: 'IT' }, Employee_Section: { value: 'Dev' }, Status: { value: 'COMPLETED' } }
+  ];
+
+  const pipeline = aggregatePipelineByStatus(evaluations);
+  assert.equal(pipeline.DRAFT, 1);
+  assert.equal(pipeline.SUBMITTED, 1);
+  assert.equal(pipeline.COMPLETED, 1);
+
+  const filteredIT = applyHrccFilters(evaluations, { dept: 'IT' });
+  assert.equal(filteredIT.length, 2);
+
+  const filteredFY2027 = applyHrccFilters(evaluations, { fy: 'FY2027' });
+  assert.equal(filteredFY2027.length, 1);
+  assert.equal(filteredFY2027[0].Status.value, 'COMPLETED');
+});
+
+test('Sprint 02R2: createHrccRuntime does nothing when current app ID does not match HRCC App ID', async () => {
+  let apiCalled = false;
+  const fakeApi = async () => { apiCalled = true; return {}; };
+  const runtime = createHrccRuntime({
+    kintoneApi: fakeApi,
+    appIds: DEFAULT_APP_IDS,
+    getAppId: () => 794, // Wrong app ID (not 800)
+    getHeaderSpaceElement: () => ({ innerHTML: '' })
+  });
+
+  const event = { type: 'app.record.index.show' };
+  const res = await runtime(event);
+  assert.equal(res, event);
+  assert.equal(apiCalled, false, 'API must not be called when app ID != 800');
+});
+
+test('Sprint 02R2: renderHrControlCenterHtml handles denied health sources safely without reporting count 0', () => {
+  const html = renderHrControlCenterHtml({
+    evaluations: [],
+    allEvaluations: [],
+    health: {
+      app794Count: 0,
+      routing: { available: false, count: null },
+      scoring: { available: true, count: 8 },
+      hoshin: { available: true, count: 2 },
+      archive: { available: false, count: null }
+    },
+    warnings: ['App 795 (Routing Master) is unavailable or access denied.'],
+    appIds: DEFAULT_APP_IDS
+  });
+
+  assert.equal(html.includes('Unavailable / Access denied'), true);
+  assert.equal(html.includes('App 795 (Routing Master) is unavailable'), true);
 });

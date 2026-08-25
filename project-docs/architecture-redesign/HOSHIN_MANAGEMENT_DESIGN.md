@@ -32,7 +32,7 @@ When a new version (e.g. `Version 2`) becomes `Ready_For_MBO = YES`, the previou
 
 ```mermaid
 graph TD
-    subgraph Master [App 799: MBO Hoshin Master (FROZEN)]
+    subgraph Master [App 797: MBO Hoshin Master [Sandbox] (Live Deployed App ID: 797)]
         DEPT_V1["Dept Hoshin (FY2027 + Dept + V1) <br/> Ready_For_MBO = YES (IMMUTABLE)"]
         SECT_V1["Section Hoshin (FY2027 + TME1 + V1) <br/> Ready_For_MBO = YES (IMMUTABLE)"]
     end
@@ -78,7 +78,7 @@ For any unique tuple `(Fiscal_Year, Scope_Type, Scope_Code)`, there can be **at 
 
 ---
 
-## 4. Conceptual MBO Hoshin Master Schema (App 799)
+## 4. Live MBO Hoshin Master Schema (App 797)
 
 | Field Code | Field Label | Type | Description | Example Values |
 | :--- | :--- | :--- | :--- | :--- |
@@ -96,7 +96,7 @@ For any unique tuple `(Fiscal_Year, Scope_Type, Scope_Code)`, there can be **at 
 | `Hoshin_EN` | Hoshin Text (EN) | MULTI_LINE_TEXT | Strategy Statement in English | `1. Enhance our strength...` |
 | `Version` | Version Number | NUMBER | Version integer (starts at 1 per FY) | `1`, `2`, `3` |
 | `Ready_For_MBO` | พร้อมใช้งานใน MBO | RADIO_BUTTON | Readiness Flag | **`YES`**, **`NO`** |
-| `Status` | Lifecycle State | DROP_DOWN | Derived Version State | `DRAFT`, `CURRENT_READY`, `SUPERSEDED` |
+| `Hoshin_Status` | Lifecycle State | DROP_DOWN | Derived Version State (Business Label: Status; Field Code: Hoshin_Status to avoid Kintone system Status collision) | `DRAFT`, `CURRENT_READY`, `SUPERSEDED` |
 | `Updated_By` | Updated By | USER_SELECT | Last HR maintainer | `hr` |
 | `Updated_At` | Updated At | DATETIME | Timestamp of last edit | `2027-04-05T09:00:00Z` |
 | `Remark` | Change Remarks | MULTI_LINE_TEXT | Administrative notes | `Annual FY2027 baseline confirmed` |
