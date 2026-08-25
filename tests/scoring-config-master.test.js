@@ -11,7 +11,8 @@ import {
   generateMasterRecordKey,
   computeConfigurationHash,
   validateScoringMasterConfig,
-  getCanonicalBaselineMasterConfigs
+  getCanonicalBaselineMasterConfigs,
+  canonicalizeScoringConfigPayload
 } from '../src/profiles/scoring-config-master.js';
 
 test('WP-002A: Baseline returns exactly 8 config records for all 8 evaluation groups', () => {
@@ -206,4 +207,96 @@ test('WP-002A: Scoring master configuration validation has ZERO runtime Git depe
   const result = validateScoringMasterConfig(gmConfig);
   assert.equal(result.isValid, true);
   assert.ok(result.computedHash);
+});
+test('Stage 4A: number 70 and string "70" canonicalize identically', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  const numInput = { ...base, PartA_Weight: 70, PartB_Weight: 30, Expected_Appraiser_Count: 2 };
+  const strInput = { ...base, PartA_Weight: '70', PartB_Weight: '30', Expected_Appraiser_Count: '2' };
+
+  const numCanonical = canonicalizeScoringConfigPayload(numInput);
+  const strCanonical = canonicalizeScoringConfigPayload(strInput);
+
+  assert.deepEqual(numCanonical, strCanonical);
+  assert.equal(numCanonical.PartA_Weight, '70');
+  assert.equal(numCanonical.PartB_Weight, '30');
+  assert.equal(numCanonical.Expected_Appraiser_Count, '2');
+});
+
+test('Stage 4A: equivalent inputs produce identical hash after canonicalization', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  const numInput = { ...base, PartA_Weight: 70, Expected_Appraiser_Count: 2 };
+  const strInput = { ...base, PartA_Weight: '70', Expected_Appraiser_Count: '2' };
+
+  const numHash = computeConfigurationHash(canonicalizeScoringConfigPayload(numInput));
+  const strHash = computeConfigurationHash(canonicalizeScoringConfigPayload(strInput));
+
+  assert.equal(numHash, strHash);
+});
+
+test('Stage 4A: caller object not mutated during canonicalization', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  const original = { ...base, PartA_Weight: 70 };
+  const originalCopy = JSON.parse(JSON.stringify(original));
+
+  canonicalizeScoringConfigPayload(original);
+  assert.deepEqual(original, originalCopy);
+});
+
+test('Stage 4A: invalid numeric value rejected by canonicalization', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  assert.throws(
+    () => canonicalizeScoringConfigPayload({ ...base, PartA_Weight: 'abc' }),
+    /CANONICALIZATION_FAILED/
+  );
+});
+
+test('Stage 4A: non-integer appraiser count rejected by canonicalization', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  assert.throws(
+    () => canonicalizeScoringConfigPayload({ ...base, Expected_Appraiser_Count: 1.5 }),
+    /Expected_Appraiser_Count must be an integer/
+  );
+  assert.throws(
+    () => canonicalizeScoringConfigPayload({ ...base, Expected_Appraiser_Count: '2.5' }),
+    /Expected_Appraiser_Count must be an integer/
+  );
+});
+
+test('Stage 4A: malformed date rejected by canonicalization', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  assert.throws(
+    () => canonicalizeScoringConfigPayload({ ...base, Effective_From: '2026-02-31' }),
+    /invalid calendar date/
+  );
+  assert.throws(
+    () => canonicalizeScoringConfigPayload({ ...base, Effective_To: '2026/04/01' }),
+    /formatted YYYY-MM-DD/
+  );
+});
+
+test('Stage 4A: missing immutable field rejected by canonicalization', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  const { PartA_Weight, ...missingPartA } = base;
+  assert.throws(
+    () => canonicalizeScoringConfigPayload(missingPartA),
+    /Missing immutable field 'PartA_Weight'/
+  );
+});
+
+test('Stage 4A: lifecycle/audit input fields are not part of the canonical immutable object', () => {
+  const base = getCanonicalBaselineMasterConfigs()[0];
+  const withAudit = {
+    ...base,
+    Config_Status: 'DRAFT',
+    Published_By: 'admin',
+    Published_At: '2026-04-01T00:00:00Z',
+    Configuration_Hash: 'somehash'
+  };
+  const canonical = canonicalizeScoringConfigPayload(withAudit);
+
+  assert.equal(canonical.Config_Status, undefined);
+  assert.equal(canonical.Published_By, undefined);
+  assert.equal(canonical.Published_At, undefined);
+  assert.equal(canonical.Configuration_Hash, undefined);
+  assert.equal(Object.keys(canonical).length, 19);
 });

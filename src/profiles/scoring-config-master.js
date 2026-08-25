@@ -416,3 +416,68 @@ export function getCanonicalBaselineMasterConfigs() {
     }
   ];
 }
+/**
+ * Canonicalizes a scoring config payload to enforce strict string representations 
+ * for the 19 immutable fields, enabling stable hash computation across number/string formats.
+ */
+export function canonicalizeScoringConfigPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
+  }
+
+  const canonical = {};
+
+  for (const field of IMMUTABLE_PAYLOAD_FIELDS) {
+    const val = payload[field];
+    if (val === undefined || val === null) {
+      throw new Error(`CANONICALIZATION_FAILED: Missing immutable field '${field}'`);
+    }
+
+    if (field === 'PartA_Weight' || field === 'PartB_Weight') {
+      const strVal = typeof val === 'string' ? val.trim() : String(val);
+      if (strVal === '') {
+        throw new Error(`CANONICALIZATION_FAILED: Invalid numeric field '${field}'`);
+      }
+      const num = Number(strVal);
+      if (isNaN(num) || !isFinite(num)) {
+        throw new Error(`CANONICALIZATION_FAILED: Invalid numeric field '${field}'`);
+      }
+      canonical[field] = String(num);
+    } else if (field === 'Expected_Appraiser_Count') {
+      const strVal = typeof val === 'string' ? val.trim() : String(val);
+      if (strVal === '') {
+        throw new Error(`CANONICALIZATION_FAILED: Invalid appraiser count '${field}'`);
+      }
+      const num = Number(strVal);
+      if (isNaN(num) || !isFinite(num) || !Number.isInteger(num)) {
+        throw new Error(`CANONICALIZATION_FAILED: Expected_Appraiser_Count must be an integer`);
+      }
+      canonical[field] = String(num);
+    } else if (field === 'Effective_From' || field === 'Effective_To') {
+      if (typeof val !== 'string') {
+        throw new Error(`CANONICALIZATION_FAILED: ${field} must be a string`);
+      }
+      const trimmed = val.trim();
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(trimmed)) {
+        throw new Error(`CANONICALIZATION_FAILED: ${field} must be formatted YYYY-MM-DD`);
+      }
+      const parsedDate = new Date(trimmed);
+      if (isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== trimmed) {
+        throw new Error(`CANONICALIZATION_FAILED: ${field} represents an invalid calendar date`);
+      }
+      canonical[field] = trimmed;
+    } else {
+      if (typeof val !== 'string') {
+        throw new Error(`CANONICALIZATION_FAILED: Field '${field}' must be a string`);
+      }
+      const trimmed = val.trim();
+      if (trimmed === '' && field !== 'Supersedes_Config_Version') {
+        throw new Error(`CANONICALIZATION_FAILED: Field '${field}' cannot be empty`);
+      }
+      canonical[field] = trimmed;
+    }
+  }
+
+  return canonical;
+}
