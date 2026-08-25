@@ -1,0 +1,109 @@
+/* MBO 2026 - HR Control Center Styles */
+.hrcc-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.hrcc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hrcc-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.hrcc-badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.hrcc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hrcc-kpi-card {
+  background-color: #ffffff;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+}
+
+.hrcc-kpi-title {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.hrcc-kpi-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hrcc-health-panel {
+  background-color: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.hrcc-warning-box {
+  background-color: #fef2f2;
+  border-left: 4px solid #ef4444;
+  padding: 0.75rem 1rem;
+  border-radius: 0.25rem;
+  color: #991b1b;
+  margin-bottom: 1rem;
+}
+
+.hrcc-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.hrcc-table th, .hrcc-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.hrcc-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+}
+
+.hrcc-link {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.hrcc-link:hover {
+  text-decoration: underline;
+}

@@ -99,3 +99,43 @@ for (let i = 1; i <= 10; i += 1) {
     [`GM_Achievement_${i}`]: number(`GM Achievement ${i}`, { minValue: '1', maxValue: '5' }), [`GM_Objective_Score_${i}`]: number(`GM Objective Score ${i}`, { minValue: '1', maxValue: '5' }), [`GM_Comment_${i}`]: area(`GM Internal Comment ${i}`)
   });
 }
+
+export const hoshinFields = {
+  Hoshin_Key: text('Hoshin Key', { required: true, unique: true }),
+  Cycle_Code: text('Cycle Code', { required: true }),
+  Fiscal_Year: text('Fiscal Year', { required: true }),
+  Scope_Type: { type: 'DROP_DOWN', label: 'Scope Type', required: true, defaultValue: 'DEPARTMENT', options: { DEPARTMENT: { label: 'DEPARTMENT', index: '0' }, SECTION: { label: 'SECTION', index: '1' } } },
+  Scope_Code: text('Scope Code', { required: true }),
+  Scope_Name: text('Scope Name', { required: true }),
+  Department_Code: text('Department Code', { required: true }),
+  Department_Name: text('Department Name', { required: true }),
+  Section_Code: text('Section Code'),
+  Section_Name: text('Section Name'),
+  Hoshin_TH: area('Hoshin (Thai)'),
+  Hoshin_EN: area('Hoshin (English)'),
+  Version: number('Version', { required: true, defaultValue: '1', minValue: '1' }),
+  Ready_For_MBO: { type: 'RADIO_BUTTON', label: 'Ready For MBO', required: true, defaultValue: 'NO', options: { YES: { label: 'YES', index: '0' }, NO: { label: 'NO', index: '1' } } },
+  Status: { type: 'DROP_DOWN', label: 'Status', required: true, defaultValue: 'DRAFT', options: { DRAFT: { label: 'DRAFT', index: '0' }, CURRENT_READY: { label: 'CURRENT_READY', index: '1' }, SUPERSEDED: { label: 'SUPERSEDED', index: '2' } } },
+  Updated_By: user('Updated By'),
+  Updated_At: datetime('Updated At'),
+  Remark: area('Remark'),
+  Active: { type: 'RADIO_BUTTON', label: 'Active', required: true, defaultValue: 'Active', options: { Active: { label: 'Active', index: '0' }, Inactive: { label: 'Inactive', index: '1' } } }
+};
+
+export const revisionArchiveFields = {
+  Archive_Key: text('Archive Key', { required: true, unique: true }),
+  Source_Record_ID: number('Source Record ID'),
+  Source_Record_Key: text('Source Record Key', { required: true }),
+  Fiscal_Year: text('Fiscal Year', { required: true }),
+  Employee_Code: text('Employee Code', { required: true }),
+  Evaluation_Stage: { type: 'DROP_DOWN', label: 'Evaluation Stage', required: true, defaultValue: 'OBJECTIVE', options: { OBJECTIVE: { label: 'OBJECTIVE', index: '0' }, MIDYEAR: { label: 'MIDYEAR', index: '1' }, FINAL: { label: 'FINAL', index: '2' } } },
+  Revision_Number: number('Revision Number', { required: true, minValue: '1' }),
+  Previous_Status: text('Previous Status'),
+  Superseded_By_Revision: number('Superseded By Revision', { minValue: '1' }),
+  Event_Type: text('Event Type', { required: true, defaultValue: 'EVALUATION_REVISION_CREATED' }),
+  Reason: area('Reason'),
+  Snapshot_JSON: area('Snapshot JSON'),
+  Snapshot_Hash: text('Snapshot Hash', { required: true }),
+  Archived_By: user('Archived By', true),
+  Archived_At: datetime('Archived At')
+};
