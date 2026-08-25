@@ -7,3 +7,5 @@
 | **794** | Sandbox | MBO V2 Sandbox | **WRITABLE** | Main Transactional Appraisal Records |
 | **795** | Sandbox | MBO Routing Master | **WRITABLE** | Section-to-Approver Workflow Routing |
 | **796** | Sandbox (Live Deployed / 23 Fields Domain Aligned) | MBO Profile & Scoring Configuration Master [Sandbox] | **CREATOR ONLY / DEFAULT DENY** | Versioned MBO evaluation profile and scoring configuration master |
+| **797** | Sandbox (Live Deployed / Container Only) | MBO Hoshin Master [Sandbox] | **CREATOR ONLY / DEFAULT DENY** | HR-managed Department/Section Hoshin version master; DEC-018; no workflow |
+| **798** | Sandbox (Live Deployed / Container Only) | MBO Revision Archive [Sandbox] | **CREATOR ONLY / DEFAULT DENY** | Immutable historical snapshots of superseded App 794 stage revisions; DEC-022 |

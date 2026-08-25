@@ -2,10 +2,15 @@
   "mboV2AppId": 794,
   "routingMasterAppId": 795,
   "scoringConfigMasterAppId": 796,
+  "hoshinMasterAppId": 797,
+  "revisionArchiveAppId": 798,
   "createdAt": "2026-08-23T09:55:19Z",
+  "updatedAt": "2026-08-25T11:11:28Z",
   "purpose": {
     "mboV2": "Main MBO transaction application",
     "routingMaster": "Section-to-user routing configuration",
-    "scoringConfigMaster": "MBO Profile & Scoring Configuration Master [Sandbox]"
+    "scoringConfigMaster": "MBO Profile & Scoring Configuration Master [Sandbox]",
+    "hoshinMaster": "HR-managed Department/Section Hoshin version master; DEC-018; no workflow",
+    "revisionArchive": "Immutable historical snapshots of superseded App 794 stage revisions; DEC-022"
   }
 }
