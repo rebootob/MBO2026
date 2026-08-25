@@ -1,11 +1,12 @@
-# AI ACTIVE TASK — M7G ROUTING COUNT CONSISTENCY + PRE-WRITE READINESS CHECK
+# AI ACTIVE TASK — M7H CONTROLLED APP795 TEAM-AWARE ROUTING WRITE
 
 > **Control Plane:** ChatGPT / Independent Reviewer
 > **Execution Plane:** Antigravity standalone only
 > **Repository:** `rebootob/MBO2026`
 > **Branch:** `ai/antigravity-wp002c`
-> **Reviewed head:** `57fbb1e0fedc128c85f0a9635f1a4283314bc3b8`
-> **Mode:** DOCUMENTATION / SOURCE-OF-TRUTH CONSISTENCY ONLY — KINTONE WRITES = 0
+> **User Authorization:** **EXPLICITLY APPROVED — `อนุมัติ M7 App795 write`**
+> **Authorized Target:** **App795 ONLY**
+> **Mode:** CONTROLLED SCHEMA + ROUTING DATA WRITE WITH DURABLE BACKUP / EXACT READ-BACK
 
 # NORTH STAR
 
@@ -15,17 +16,59 @@ M7C TMG Team Routing                = PASS / 7 OF 7
 M7D Team-Aware App795 Preflight     = PASS
 M7E Non-TMG Routing                 = PASS / 7 OF 7
 M7F Final Routing Matrix Audit      = PASS / 17 OF 17
-M7G Count Consistency               = EXECUTE NOW
+M7G Count Consistency               = PASS
 
+EXPECTED_ROUTING_FLOWS              = 17
 TARGET_ACTIVE_ROUTING_ROWS          = 17
-M7 OVERALL                          = NOT YET WRITE-AUTHORIZED
-M9 FINAL ACCEPTANCE                 = BLOCKED
+M7H CONTROLLED APP795 WRITE         = AUTHORIZED / EXECUTE NOW
+M7 OVERALL                          = OPEN UNTIL WRITE + READ-BACK PASS
+M9 FINAL ACCEPTANCE                 = BLOCKED UNTIL M7H REVIEW
 TODAY_DONE                          = NO
 ```
 
-# CONTROL-PLANE REVIEW FINDING
+# EXPLICIT AUTHORIZATION BOUNDARY
 
-M7F proved the authoritative current routing total is:
+The user has explicitly authorized:
+
+```text
+M7 App795 write
+```
+
+This authorization permits ONLY the controlled changes required to make App795 support the already-reviewed 17-flow routing model.
+
+Authorized Kintone target:
+
+```text
+APP795 ONLY
+```
+
+App53 remains authoritative READ-ONLY employee/team source.
+
+Protected / unauthorized for writes in this task:
+
+```text
+App53
+App139
+App283
+App305
+App307
+App310
+App640
+App643
+App715
+App716
+App794
+App796
+App797
+App798
+App800
+```
+
+Do NOT modify Process Management in any app unless this active task explicitly says so. It does not.
+
+# AUTHORITATIVE ROUTING MODEL
+
+Final current routing total is frozen as:
 
 ```text
 10 non-TMG flows
@@ -34,120 +77,7 @@ M7F proved the authoritative current routing total is:
 = 17 active routing flows
 ```
 
-However, older active/current M7D planning text may still contain an incorrect migration count of `15` even though the same expression `10 + 4 + 3` equals `17`.
-
-This must be corrected before any App795 write authorization.
-
-# AUTHORITATIVE COUNT — FREEZE NOW
-
-Use this as current source of truth:
-
-```text
-NON_TMG_FLOW_COUNT                  = 10
-TMG1_TEAM_FLOW_COUNT                = 4
-TMG2_TEAM_FLOW_COUNT                = 3
-EXPECTED_ROUTING_FLOWS              = 17
-FINAL_MATRIX_ROWS                   = 17
-TARGET_ACTIVE_ROUTING_ROWS          = 17
-MIGRATION_TARGET_ROWS               = 17
-PROPOSED_ROUTING_KEY_COUNT          = 17
-```
-
-Any active/current statement claiming `15` target/migration rows is incorrect and must be reconciled.
-
-Historical changelog entries may remain only when clearly historical and superseded by the current authoritative correction.
-
-# HARD SAFETY RULE — NO KINTONE WRITES
-
-```text
-KINTONE_WRITES = 0
-POST = 0
-PUT = 0
-PATCH = 0
-DELETE = 0
-DEPLOY = 0
-```
-
-Do NOT:
-
-- modify App795 schema
-- modify App795 records
-- add Team field
-- add Routing_Key field
-- change Section_Code uniqueness
-- seed routing data
-- modify App53
-- modify App139
-- modify protected legacy apps
-- change Process Management
-- delete Kintone fields
-- perform migration
-- proceed to M9
-
-This task is repository/document consistency + readiness verification only.
-
-# STEP 1 — FIND ALL ACTIVE/CURRENT COUNT REFERENCES
-
-Search the repository for active/current statements related to:
-
-```text
-15-record migration
-15 records
-15 routing rows
-TARGET_ACTIVE_ROUTING_ROWS
-MIGRATION_TARGET_ROWS
-EXPECTED_ROUTING_FLOWS
-FINAL_MATRIX_ROWS
-PROPOSED_ROUTING_KEY_COUNT
-10 non-TMG + 4 TMG1 + 3 TMG2
-```
-
-Inspect at minimum:
-
-```text
-project-docs/AI_ACTIVE_TASK.md
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/CHANGELOG_AI.md
-config/schema-spec.js
-routing seed/migration/resolver code
-routing tests
-any current migration manifest or delivery-plan docs
-```
-
-Do not mechanically replace historical forensic text.
-Classify each occurrence as:
-
-```text
-ACTIVE_CURRENT
-HISTORICAL_SUPERSEDED
-UNRELATED
-```
-
-# STEP 2 — RECONCILE ACTIVE SOURCE OF TRUTH
-
-Every ACTIVE_CURRENT routing/migration plan must use:
-
-```text
-17 active target rows
-```
-
-Required arithmetic:
-
-```text
-10 + 4 + 3 = 17
-```
-
-Correct any active/current `15` routing/migration target references.
-
-Do not alter valid unrelated uses of the number 15.
-
-Historical entries that describe the old mistake may remain if they are clearly historical and followed by/superseded by the authoritative M7G correction.
-
-# STEP 3 — VERIFY FINAL 17 ROUTING CONTEXTS EXIST IN THE MANIFEST
-
-Without re-running broad discovery unless needed, verify the current final manifest accounts for exactly these 17 contexts:
+Final routing contexts:
 
 ```text
 TME1
@@ -171,64 +101,383 @@ TMG2|Marketing
 TMG2|Production
 ```
 
-Required:
+Use the exact verified M7F/M7G 17-flow manifest for requester, Manager L1, Manager L1 rule, GM L1, GM L1 rule, optional levels, topology, Active/effective values, and exact Kintone user codes.
+
+Do NOT rediscover or reinterpret business routing during the write task.
+If the live pre-write state conflicts with the frozen manifest in a way that could change business meaning, STOP BEFORE WRITE and report BLOCKED.
+
+# TEAM SOURCE CONTRACT
+
+App53 remains the source of truth for Team.
+
+Verified field:
 
 ```text
-FINAL_CONTEXT_COUNT = 17
-DUPLICATE_CONTEXTS = 0
-MISSING_CONTEXTS = 0
+App53 Team field code = Drop_down_2
+Label = Team
 ```
 
-Do not change routing identities/approvers in this task unless an obvious documentation typo is proven. If any business-routing conflict is discovered, STOP and report it.
-
-# STEP 4 — PRE-WRITE READINESS CHECK
-
-Confirm the future App795 controlled-write plan is internally consistent with 17 rows.
-
-Target schema remains:
+Routing contract:
 
 ```text
-Routing_Key   = unique
-Section_Code  = non-unique
-Team          = exact App53 Team value for TMG rows; blank for non-TMG rows
+Employee Code
+ -> App53
+ -> Section
+ -> Team (Drop_down_2)
+ -> if Section in [TMG1, TMG2]: resolve App795 by Section + Team
+ -> otherwise: resolve App795 by Section only
 ```
 
-Target key behavior:
+App53 MUST NOT be modified.
+
+# TARGET APP795 SCHEMA
+
+Implement the minimum reviewed team-aware schema:
+
+```text
+Routing_Key
+  type = SINGLE_LINE_TEXT
+  required = true
+  unique = true
+
+Section_Code
+  type = existing SINGLE_LINE_TEXT
+  required = true
+  unique = false
+
+Team
+  type = SINGLE_LINE_TEXT
+  stores exact App53 Team value for TMG rows
+  blank for non-TMG rows
+```
+
+Routing key rule:
 
 ```text
 non-TMG: Routing_Key = Section_Code
 TMG:     Routing_Key = Section_Code + "|" + exact Team
 ```
 
+Do NOT silently trim, rename, translate, case-normalize, alias, or remap Team values.
+
+Required exact TMG Team values:
+
+```text
+TMG1: Admin, CAD, Marketing, Production
+TMG2: CAD, Marketing, Production
+```
+
+# MANDATORY NO-ORPHAN RULE
+
+```text
+NO_ORPHAN_ARTIFACT_GATE = MANDATORY
+DEPRECATED_FIELD_RETENTION = PROHIBITED unless explicitly required for historical compatibility and documented
+DEAD_FILE_RETENTION = PROHIBITED
+DUPLICATE_IMPLEMENTATION_RETENTION = PROHIBITED
+UNUSED_CONFIG_KEY_RETENTION = PROHIBITED
+```
+
+For this migration:
+
+```text
+NO duplicate routing identity paths
+NO stale active section-only TMG rows
+NO stale Section_Code-global-unique assumption in active implementation
+NO duplicate schema definitions
+NO _old / _v1 copies
+NO temporary migration scripts committed unless they are intentionally reusable governed tooling
+```
+
+IMPORTANT:
+Existing deprecated App795 fields such as:
+
+```text
+First_Manager_User
+Manager_User
+GM_User
+```
+
+must NOT be deleted merely for cleanup in this task unless historical data + all active references are independently proven safe to remove.
+If deletion risks historical/business data, retain and document as historical compatibility debt; do not broaden authorization.
+
+# STEP 0 — GIT + AUTHORIZATION SAFETY
+
+Require before any Kintone write:
+
+```text
+branch = ai/antigravity-wp002c
+local HEAD = origin/ai/antigravity-wp002c
+tracked tree clean
+17b0beaf7db2029308dd668191637c8a478668a8 is ancestor
+```
+
+No reset.
+No rebase.
+No force push.
+No history rewrite.
+
+Load current governance and exact final routing manifest from repository evidence.
+
+Do not use broad write credentials beyond the authorized App795 operation.
+Never print credentials, passwords, tokens, cookies, or auth headers.
+
+# STEP 1 — FRESH PRE-WRITE READ-BACK
+
+Before mutation, GET and record sanitized current App795 state:
+
+```text
+live form schema
+preview form schema if applicable
+current 12 routing records
+current Section_Code uniqueness
+Team field existence
+Routing_Key field existence
+current requester values
+current approver fields
+legacy/deprecated routing field values
+ACL / access configuration as needed for rollback confidence
+```
+
+Expected pre-write baseline from prior preflight:
+
+```text
+Section_Code.unique = true
+Team = absent
+Routing_Key = absent
+current section-level baseline rows = 12
+```
+
+If material live drift exists from this baseline, STOP before write unless the drift is demonstrably harmless and fully reconciled.
+
+# STEP 2 — DURABLE PREWRITE BACKUP (HARD GATE)
+
+Before the FIRST mutation, create a durable local backup under a governed backup path, NOT scratch/temp.
+
+Backup at minimum:
+
+```text
+App795 live form schema
+App795 preview form schema if available
+all App795 records
+App795 ACL/access config if relevant
+current app metadata/revision
+sanitized migration manifest
+```
+
+Required backup evidence:
+
+```text
+BACKUP_PATH = exact durable path
+BACKUP_CREATED_BEFORE_FIRST_WRITE = YES
+BACKUP_FILE_COUNT = actual
+BACKUP_MANIFEST_SHA256 = exact
+BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = YES
+```
+
+Verify backup files exist and hashes can be recomputed BEFORE continuing.
+
+If durable backup cannot be proven:
+
+```text
+STOP
+M7H_GATE = BLOCKED_BACKUP
+KINTONE_WRITES = 0
+```
+
+Do not repeat the prior Stage3C evidence-loss mistake.
+
+# STEP 3 — PREPARE REPOSITORY SOURCE-OF-TRUTH CHANGES
+
+Before deploying schema, update the existing canonical implementation/specification files required for team-aware App795 routing.
+
+Prefer modifying existing files/functions over creating new files.
+
+At minimum reconcile active assumptions around:
+
+```text
+App795 schema-spec
+Section_Code uniqueness
+Team field
+Routing_Key field
+routing key construction
+routing lookup/resolver contract
+routing seed/migration manifest
+App800 routing health logic if it directly assumes one row per Section
+related tests
+current docs
+```
+
+Do NOT create a second competing routing resolver.
+Do NOT wire unrelated runtime features.
+Do NOT modify other Kintone apps.
+
+If App800 source code requires repository-only adjustment to correctly count routing coverage after App795 becomes 17 rows, repository code may be updated, but DO NOT deploy/write App800 in this task.
+
+# STEP 4 — APP795 SCHEMA CHANGE
+
+Perform only the minimum App795 schema mutation required:
+
+```text
+1. add Routing_Key
+2. add Team
+3. change Section_Code unique=true -> false
+4. deploy App795 schema
+```
+
+No unrelated field edits.
+No label cleanup.
+No Process Management change.
+No ACL broadening.
+
+Immediately after deploy, perform exact read-back.
+
+Required schema read-back:
+
+```text
+Routing_Key exists = YES
+Routing_Key.type = SINGLE_LINE_TEXT
+Routing_Key.required = true
+Routing_Key.unique = true
+Team exists = YES
+Team.type = SINGLE_LINE_TEXT
+Section_Code.required = true
+Section_Code.unique = false
+unrelated field drift = 0
+```
+
+If schema read-back fails, STOP record migration and execute rollback plan if safe.
+
+# STEP 5 — CONTROLLED 12 -> 17 ROUTING MIGRATION
+
+Use the frozen M7F/M7G 17-flow manifest ONLY.
+
+Target behavior:
+
+```text
+10 non-TMG current records:
+  reuse/update in place where safe
+  Team = blank
+  Routing_Key = Section_Code
+
+TMG1 current section placeholder:
+  reconcile safely into 4 active Team rows
+
+TMG2 current section placeholder:
+  reconcile safely into 3 active Team rows
+```
+
+Prefer minimum-change reuse of existing TMG placeholder rows for one valid Team row each if doing so preserves requester/history safely; create only the additional rows required to reach the exact 17 contexts.
+
+Do not leave the original Section-only TMG placeholders active.
+Do not create duplicate requester/routing records.
+
+For every final row populate only values supported by the verified final manifest.
+
+Required target count:
+
+```text
+TARGET_ACTIVE_ROUTING_ROWS = 17
+```
+
+# STEP 6 — EXACT POST-WRITE RECORD READ-BACK
+
+After migration, GET all App795 routing records and independently verify:
+
+```text
+ACTIVE_ROUTING_ROWS = 17
+FINAL_CONTEXT_COUNT = 17
+MISSING_CONTEXTS = 0
+DUPLICATE_CONTEXTS = 0
+PROPOSED/ACTUAL_ROUTING_KEY_COUNT = 17
+ROUTING_KEY_DUPLICATES = 0
+STALE_ACTIVE_SECTION_ONLY_TMG_ROWS = 0
+```
+
+Verify exact contexts:
+
+```text
+TME1
+TMF1
+TMF2
+TMF3
+TMH1
+TMH2
+TMH3
+TMS1
+TMT1
+TMT2
+TMG1|Admin
+TMG1|CAD
+TMG1|Marketing
+TMG1|Production
+TMG2|CAD
+TMG2|Marketing
+TMG2|Production
+```
+
+For all 17 rows verify against frozen manifest:
+
+```text
+Requester_User
+Manager_Level1_Approvers
+Manager_Level1_Approval_Rule
+Manager_Level2_Approvers / intentional blank
+Manager_Level2_Approval_Rule
+GM_Level1_Approvers
+GM_Level1_Approval_Rule
+GM_Level2_Approvers / intentional blank
+GM_Level2_Approval_Rule
+Topology implied by slots
+Active
+Effective_From / Effective_To if defined
+Team exactness
+Routing_Key exactness
+```
+
 Required:
 
 ```text
-PROPOSED_ROUTING_KEY_COUNT = 17
-PROPOSED_ROUTING_KEY_DUPLICATES = 0
+ROUTING_MANIFEST_EXACT_MATCH = 17/17
+APPROVER_ACCOUNT_LOOKUP_FAILURES = 0
 ```
 
-Verify the future migration logic accounts for:
+Never repair unexpected mismatches by guessing. If any row does not match the approved manifest, STOP and report exact mismatch.
+
+# STEP 7 — RESOLVER / FAIL-CLOSED CONTRACT TESTS
+
+Tests must cover at minimum:
 
 ```text
-10 existing non-TMG rows -> reuse/update safely
-1 current TMG1 section placeholder -> reconcile to 4 Team rows
-1 current TMG2 section placeholder -> reconcile to 3 Team rows
-final active total -> 17
-stale active section-only TMG placeholders -> 0
+TMG1 Admin resolves by Section+Team
+TMG1 CAD resolves by Section+Team
+TMG1 Marketing resolves by Section+Team
+TMG1 Production resolves by Section+Team
+TMG2 CAD resolves by Section+Team
+TMG2 Marketing resolves by Section+Team
+TMG2 Production resolves by Section+Team
+non-TMG resolves by Section only
+TMG blank Team fails closed
+TMG unknown Team fails closed
+duplicate Section+Team fails closed
+multiple active non-TMG rows fail closed
+Routing_Key uniqueness enforced
+App53 remains read-only
 ```
 
-Do NOT execute any of this migration.
+Do not invent a live runtime wiring milestone if the resolver is not yet wired. Test the implemented contract appropriate to the current architecture and report runtime wiring status truthfully.
 
-# STEP 5 — NO-ORPHAN CHECK
+# STEP 8 — NO-ORPHAN VERIFICATION
 
-Search for active code/docs that still assume:
+Search active repo implementation for stale assumptions:
 
 ```text
-Section_Code is globally unique routing identity
-TMG routing is section-only
-TMG2 has 4 Teams
+Section_Code globally unique routing identity
+TMG section-only resolver
+15 routing rows
+TMG2 = 4 Teams
 M7C = 7/8
-routing target = 15 rows
+stale active TMG placeholders
+obsolete duplicate routing implementation
 ```
 
 Required:
@@ -237,12 +486,12 @@ Required:
 STALE_ACTIVE_ROUTING_COUNT_REFERENCES = 0
 STALE_ACTIVE_TMG2_4_TEAM_REFERENCES = 0
 STALE_ACTIVE_SECTION_ONLY_TMG_ASSUMPTIONS = 0
+STALE_ACTIVE_SECTION_CODE_UNIQUE_ASSUMPTIONS = 0
+STALE_ACTIVE_TMG_PLACEHOLDER_ROWS = 0
 NO_ORPHAN_ARTIFACT_GATE = PASS
 ```
 
-Do not delete historical evidence merely because it contains old information.
-
-# STEP 6 — TEST / GIT SAFETY
+# STEP 9 — TEST / GIT / FINAL SAFETY
 
 Run:
 
@@ -252,64 +501,118 @@ git diff --check
 git status --short
 ```
 
-Required:
+Require:
 
 ```text
 npm test = PASS
-tracked working tree = clean after commit
+git diff --check = PASS
+tracked working tree clean after commit
 local HEAD = origin/ai/antigravity-wp002c after push
 ```
 
-No reset/rebase/force push/history rewrite.
+Commit only intentional implementation/evidence/docs changes.
+Push same branch.
+
+# ROLLBACK PLAN
+
+Rollback must be executable from the durable pre-write backup.
+
+If schema changes succeed but data migration fails or exact read-back cannot be established:
+
+```text
+STOP further writes
+preserve evidence
+assess whether safe forward-fix or rollback is lower risk
+restore App795 records/schema only from exact durable pre-write backup when rollback is required
+read-back restored state
+verify original 12-row baseline and original schema
+```
+
+Do not perform an improvised destructive rollback.
+Do not delete records without exact backup provenance.
+
+# HARD STOP CONDITIONS
+
+STOP immediately if any of these occur:
+
+```text
+backup not durable/verifiable
+live pre-write drift changes business meaning
+schema read-back mismatch
+Routing_Key duplicates > 0
+final active rows != 17
+missing routing context > 0
+manifest exact match < 17/17
+unexpected requester/approver conflict
+write attempted against non-App795 Kintone app
+No-Orphan gate blocked
+npm test fails
+```
+
+Do not proceed to M9 in this task even if M7H succeeds.
+M9 requires separate ChatGPT review/authorization after evidence is pushed.
 
 # FINAL REQUIRED SUMMARY
 
-Update living/current docs with the corrected authoritative count and readiness status.
+Update living docs and AI_REVIEW_PACKAGE with sanitized evidence.
 
 Required final block:
 
 ```text
-M7G_ROUTING_COUNT_CONSISTENCY = COMPLETE / PENDING CHATGPT REVIEW
+M7H_CONTROLLED_APP795_WRITE = COMPLETE / PENDING CHATGPT REVIEW / BLOCKED
 
-NON_TMG_FLOW_COUNT = 10
-TMG1_TEAM_FLOW_COUNT = 4
-TMG2_TEAM_FLOW_COUNT = 3
+USER_AUTHORIZATION = EXPLICIT / APPROVED
+AUTHORIZED_WRITE_APP = 795 ONLY
+
+BACKUP_CREATED_BEFORE_FIRST_WRITE = YES / NO
+BACKUP_PATH = exact
+BACKUP_FILE_COUNT = actual
+BACKUP_MANIFEST_SHA256 = exact
+BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW = YES / NO
+
+SCHEMA_CHANGE_ATTEMPTED = YES / NO
+ROUTING_KEY_FIELD = exact status
+TEAM_FIELD = exact status
+SECTION_CODE_UNIQUE = actual
+SCHEMA_READBACK = PASS / FAIL
+UNRELATED_SCHEMA_DRIFT = actual
+
 EXPECTED_ROUTING_FLOWS = 17
-FINAL_MATRIX_ROWS = 17
-TARGET_ACTIVE_ROUTING_ROWS = 17
-MIGRATION_TARGET_ROWS = 17
+ACTIVE_ROUTING_ROWS = actual
+FINAL_CONTEXT_COUNT = actual
+MISSING_CONTEXTS = actual
+DUPLICATE_CONTEXTS = actual
+ROUTING_KEY_COUNT = actual
+ROUTING_KEY_DUPLICATES = actual
+STALE_ACTIVE_SECTION_ONLY_TMG_ROWS = actual
+ROUTING_MANIFEST_EXACT_MATCH = X/17
+APPROVER_ACCOUNT_LOOKUP_FAILURES = actual
 
-FINAL_CONTEXT_COUNT = 17
-DUPLICATE_CONTEXTS = 0
-MISSING_CONTEXTS = 0
-
-PROPOSED_ROUTING_KEY_COUNT = 17
-PROPOSED_ROUTING_KEY_DUPLICATES = 0
+APP795_RECORD_WRITES = actual
+APP795_SCHEMA_WRITES = actual
+APP795_DEPLOY_CALLS = actual
+NON_APP795_KINTONE_WRITES = 0 required
+APP53_MODIFIED = NO
+APP139_MODIFIED = NO
+PROTECTED_LEGACY_APPS_MODIFIED = NO
+APP794_796_797_798_800_MODIFIED = NO
+PROCESS_MANAGEMENT_MODIFIED = NO
 
 STALE_ACTIVE_ROUTING_COUNT_REFERENCES = 0
 STALE_ACTIVE_TMG2_4_TEAM_REFERENCES = 0
 STALE_ACTIVE_SECTION_ONLY_TMG_ASSUMPTIONS = 0
-
-APP795_MODIFIED = NO
-APP53_MODIFIED = NO
-SCHEMA_MODIFIED = NO
-KINTONE_WRITES = 0
-POST = 0
-PUT = 0
-PATCH = 0
-DELETE = 0
-DEPLOY = 0
+STALE_ACTIVE_SECTION_CODE_UNIQUE_ASSUMPTIONS = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS / BLOCKED
 
 npm test = actual / PASS
-NO_ORPHAN_ARTIFACT_GATE = PASS
+GIT_DIFF_CHECK = PASS / FAIL
+GIT_PUSH_SYNC = PASS / FAIL
 
-M7_WRITE_AUTHORIZATION = NO
-M9_FINAL_ACCEPTANCE = BLOCKED_PENDING_CONTROLLED_M7_WRITE
-NEXT_ACTION = CHATGPT CONTROL PLANE REVIEW; IF PASS, REQUEST EXPLICIT USER APPROVAL FOR CONTROLLED APP795 WRITE WINDOW
+M7H_GATE = PASS_PENDING_CHATGPT_REVIEW / BLOCKED
+M7_OVERALL = PENDING_CHATGPT_REVIEW
+M9_FINAL_ACCEPTANCE = BLOCKED_PENDING_M7H_REVIEW
+NEXT_ACTION = CHATGPT REVIEW ONLY
 ```
 
-Do not perform any Kintone write.
-Do not mark M9 complete.
-Do not start App795 schema/data migration.
-
-Commit/push same branch and STOP.
+After commit + push, STOP.
+Do not start M9.
