@@ -805,6 +805,13 @@ export class EmployeePartAUI {
           if (msgEl) msgEl.innerHTML = '<span style="color: #dc2626;">กรุณาระบุรหัสพนักงาน / Please enter Employee ID</span>';
           return;
         }
+
+        // Instantly reset verified state and clear stale snapshot before lookup
+        this.isEmployeeVerified = false;
+        if (typeof this.onEmployeeCodeChanged === 'function') {
+          this.onEmployeeCodeChanged(code);
+        }
+
         if (msgEl) msgEl.innerHTML = '<span style="color: #0369a1;">กำลังค้นหาข้อมูลจาก App 53 และตรวจสอบสิทธิ์... / Searching App 53 & verifying access...</span>';
         try {
           await this.onLookupEmployee(code);
@@ -813,9 +820,11 @@ export class EmployeePartAUI {
           this.render();
         } catch (err) {
           this.isEmployeeVerified = false;
-          if (msgEl) {
+          this.render();
+          const newMsgEl = this.root ? this.root.querySelector('#mbo-lookup-msg') : null;
+          if (newMsgEl) {
             const formattedMsg = String(err.message || '').replace(/\n/g, '<br/>');
-            msgEl.innerHTML = `<div style="color: #dc2626; line-height: 1.4; padding: 6px 0;">❌ ${formattedMsg}</div>`;
+            newMsgEl.innerHTML = `<div style="color: #dc2626; line-height: 1.4; padding: 6px 0;">❌ ${formattedMsg}</div>`;
           }
         }
       });
