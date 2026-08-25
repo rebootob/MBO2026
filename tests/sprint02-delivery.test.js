@@ -260,3 +260,25 @@ test('Sprint 03A: createNarrowLiveTransport blocks DELETE, PATCH, and non-796 Ap
     await transport('/k/v1/record.json', { method: 'POST', body: { app: 794 } });
   }, /NARROW TRANSPORT BLOCKED/);
 });
+
+import { executeScoringSeed } from '../scripts/kintone/seed-scoring-baseline.js';
+
+test('Sprint 03A-R1: executeScoringSeed stops fail-closed if App 796 contains existing records', async () => {
+  const writeOps = [];
+  const fakeTransport = async (relPath, opts = {}) => {
+    const method = (opts.method || 'GET').toUpperCase();
+    if (method === 'POST' || method === 'PUT') {
+      writeOps.push({ method, relPath });
+    }
+    if (relPath.includes('records.json')) {
+      return { records: [{ $id: { value: '1' }, Config_Status: { value: 'PUBLISHED' } }] };
+    }
+    return {};
+  };
+
+  await assert.rejects(async () => {
+    await executeScoringSeed({ overrideTransport: fakeTransport });
+  }, /SEED_BLOCKED_EXISTING_RECORDS/);
+
+  assert.equal(writeOps.length, 0, 'No write operations (POST/PUT) must be executed when existing records are present');
+});
