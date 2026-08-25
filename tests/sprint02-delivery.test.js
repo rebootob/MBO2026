@@ -349,3 +349,64 @@ test('Sprint 03B: executeRoutingSeed executes bounded 11 POSTs and verifies 12/1
   assert.equal(postCalls.length, 11);
   assert.ok(postCalls.every(c => c.relPath === '/k/v1/record.json' && c.body.app === 795));
 });
+
+import {
+  createNarrowRollbackTransport,
+  executeRoutingRollback
+} from '../scripts/kintone/seed-routing-baseline.js';
+
+test('Sprint 03B-R1: createNarrowRollbackTransport blocks POST, PUT, PATCH, wrong app, and invalid IDs array', async () => {
+  const transport = createNarrowRollbackTransport(795);
+  await assert.rejects(async () => transport('/k/v1/records.json', { method: 'POST', body: { app: 795, ids: ['2'] } }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/records.json', { method: 'PUT', body: { app: 795, ids: ['2'] } }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/records.json', { method: 'PATCH', body: { app: 795, ids: ['2'] } }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/records.json', { method: 'DELETE', body: { app: 796, ids: ['2'] } }), /Write target body.app must be App 795/);
+  await assert.rejects(async () => transport('/k/v1/records.json', { method: 'DELETE', body: { app: 795, ids: [] } }), /DELETE body.ids must be non-empty array/);
+});
+
+test('Sprint 03B-R1: executeRoutingRollback rejects TME1 ID, wrong count, and unknown IDs', async () => {
+  assert.rejects(async () => executeRoutingRollback({ targetRecordIds: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'] }), /TME1 record ID \(1\) is prohibited/);
+  assert.rejects(async () => executeRoutingRollback({ targetRecordIds: ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'] }), /Expected exactly 11 target record IDs/);
+});
+
+test('Sprint 03B-R1: executeRoutingRollback executes exact DELETE of 11 IDs and verifies 1/12 readback', async () => {
+  let fakeRecords = [
+    { $id: { value: '1' }, Section_Code: { value: 'TME1' }, Requester_User: { value: [{ code: 'e1' }] }, Active: { value: 'Active' } },
+    { $id: { value: '2' }, Section_Code: { value: 'TMF1' }, Requester_User: { value: [{ code: 'f1' }] }, Active: { value: 'Active' } },
+    { $id: { value: '3' }, Section_Code: { value: 'TMF2' }, Requester_User: { value: [{ code: 'f2' }] }, Active: { value: 'Active' } },
+    { $id: { value: '4' }, Section_Code: { value: 'TMF3' }, Requester_User: { value: [{ code: 'f3' }] }, Active: { value: 'Active' } },
+    { $id: { value: '5' }, Section_Code: { value: 'TMG1' }, Requester_User: { value: [{ code: 'g_request' }] }, Active: { value: 'Active' } },
+    { $id: { value: '6' }, Section_Code: { value: 'TMG2' }, Requester_User: { value: [{ code: 'g_request' }] }, Active: { value: 'Active' } },
+    { $id: { value: '7' }, Section_Code: { value: 'TMH1' }, Requester_User: { value: [{ code: 'tmh' }] }, Active: { value: 'Active' } },
+    { $id: { value: '8' }, Section_Code: { value: 'TMH2' }, Requester_User: { value: [{ code: 'tmh' }] }, Active: { value: 'Active' } },
+    { $id: { value: '9' }, Section_Code: { value: 'TMH3' }, Requester_User: { value: [{ code: 'tmh' }] }, Active: { value: 'Active' } },
+    { $id: { value: '10' }, Section_Code: { value: 'TMS1' }, Requester_User: { value: [{ code: 's1' }] }, Active: { value: 'Active' } },
+    { $id: { value: '11' }, Section_Code: { value: 'TMT1' }, Requester_User: { value: [{ code: 't1' }] }, Active: { value: 'Active' } },
+    { $id: { value: '12' }, Section_Code: { value: 'TMT2' }, Requester_User: { value: [{ code: 't2' }] }, Active: { value: 'Active' } }
+  ];
+
+  const deleteCalls = [];
+
+  const fakeTransport = async (relPath, opts = {}) => {
+    const method = (opts.method || 'GET').toUpperCase();
+    if (method === 'DELETE') {
+      deleteCalls.push({ relPath, body: opts.body });
+      const delIds = new Set(opts.body.ids);
+      fakeRecords = fakeRecords.filter(r => !delIds.has(String(r.$id.value)));
+      return { ids: opts.body.ids };
+    }
+    if (relPath.includes('records.json')) {
+      return { records: fakeRecords };
+    }
+    return {};
+  };
+
+  const targetIds = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const res = await executeRoutingRollback({ targetRecordIds: targetIds, overrideTransport: fakeTransport });
+  assert.equal(res.deletedCount, 11);
+  assert.equal(res.postRollbackActiveCount, 1);
+  assert.equal(deleteCalls.length, 1);
+  assert.equal(deleteCalls[0].body.app, 795);
+  assert.equal(fakeRecords.length, 1);
+  assert.equal(fakeRecords[0].Section_Code.value, 'TME1');
+});
