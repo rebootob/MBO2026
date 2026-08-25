@@ -7,7 +7,7 @@
 | **ISSUE-002** | Excel Export Template Expansion (5-10 items) | Technical Design | PENDING | Excel Export Phase | Implement row expansion or overflow sheet for 5-10 objectives in Export phase. |
 
 ### SEC-DEP-001 Shared Kintone Account Security Conflict & Identity Binding
-- **Status**: `DESIGNED_PENDING_M10C_IMPLEMENTATION` (Architecture finalized in M10B-SEC)
+- **Status**: `DESIGNED_PENDING_M10C_CORE_IMPLEMENTATION` (App 801 created live; Server API contracts finalized in M10C-AUTH-C)
 - **User Decision Frozen**:
   - **Phase 1**: Employee Code + Personal Password
   - **Phase 2**: Employee Code + Personal Password + Google Authenticator TOTP (RFC 6238)
@@ -15,6 +15,6 @@
   - App 53 password storage is **STRICTLY PROHIBITED**.
   - Client-side browser JS password verification is **STRICTLY PROHIBITED**.
   - Server-side Node.js Auth Proxy required (Argon2id salted password hashing).
-  - Credential Store: Dedicated Creator-Only App 801 (App 801 ACL Creator-Only, zero browser access).
-- **Next Step**: Implementation authorization for M10C-AUTH Phase 1.
+  - Credential Store: App 801 live (`MBO Employee Authentication & MFA Credential Store [Sandbox]`, Creator-Only ACL, zero browser access).
+- **Next Step**: Implementation of `M10C-AUTH-CORE` Node.js Auth Proxy repository module.
 
