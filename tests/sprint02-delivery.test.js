@@ -42,7 +42,7 @@ test('Sprint 02: App 797 Hoshin schema specification has exact 19 fields', () =>
   assert.equal(hoshinFields.Hoshin_Key.unique, true);
   assert.equal(hoshinFields.Scope_Type.type, 'DROP_DOWN');
   assert.equal(hoshinFields.Ready_For_MBO.type, 'RADIO_BUTTON');
-  assert.equal(hoshinFields.Status.type, 'DROP_DOWN');
+  assert.equal(hoshinFields.Hoshin_Status.type, 'DROP_DOWN');
 });
 
 test('Sprint 02: App 798 Revision Archive schema specification has exact 15 fields', () => {

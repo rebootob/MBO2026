@@ -115,7 +115,7 @@ export const hoshinFields = {
   Hoshin_EN: area('Hoshin (English)'),
   Version: number('Version', { required: true, defaultValue: '1', minValue: '1' }),
   Ready_For_MBO: { type: 'RADIO_BUTTON', label: 'Ready For MBO', required: true, defaultValue: 'NO', options: { YES: { label: 'YES', index: '0' }, NO: { label: 'NO', index: '1' } } },
-  Status: { type: 'DROP_DOWN', label: 'Status', required: true, defaultValue: 'DRAFT', options: { DRAFT: { label: 'DRAFT', index: '0' }, CURRENT_READY: { label: 'CURRENT_READY', index: '1' }, SUPERSEDED: { label: 'SUPERSEDED', index: '2' } } },
+  Hoshin_Status: { type: 'DROP_DOWN', label: 'Status', required: true, defaultValue: 'DRAFT', options: { DRAFT: { label: 'DRAFT', index: '0' }, CURRENT_READY: { label: 'CURRENT_READY', index: '1' }, SUPERSEDED: { label: 'SUPERSEDED', index: '2' } } },
   Updated_By: user('Updated By'),
   Updated_At: datetime('Updated At'),
   Remark: area('Remark'),
