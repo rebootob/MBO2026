@@ -1097,3 +1097,59 @@ test('Stage 4A Concurrency: final revision not advanced -> PUBLISH_VERIFICATION_
     /PUBLISH_VERIFICATION_FAILED/
   );
 });
+test('Stage 4A Concurrency: initial revision with whitespace -> CONFIG_READBACK_MISMATCH', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 1) return { ...res, __storageRevision: ' 1 ' };
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /CONFIG_READBACK_MISMATCH/
+  );
+});
+
+test('Stage 4A Concurrency: initial unsafe revision -> CONFIG_READBACK_MISMATCH', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 1) return { ...res, __storageRevision: '9007199254740993' }; // > MAX_SAFE_INTEGER
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /CONFIG_READBACK_MISMATCH/
+  );
+});
+
+test('Stage 4A Concurrency: final revision malformed/unsafe -> PUBLISH_VERIFICATION_FAILED', async () => {
+  const repo = createInMemoryRepo();
+  const origGet = repo.getByRecordId.bind(repo);
+  let count = 0;
+  repo.getByRecordId = async (id) => {
+    count++;
+    const res = await origGet(id);
+    if (count === 2) return { ...res, __storageRevision: 'unsafe_9007199254740993' };
+    return res;
+  };
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishScoringConfig(getValidCandidate()),
+    /PUBLISH_VERIFICATION_FAILED/
+  );
+});

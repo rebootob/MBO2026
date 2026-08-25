@@ -1,12 +1,37 @@
+import { WP002C_SCORING_MASTER_APP_ID } from '../core/sandbox-write-guard.js';
 import {
   IMMUTABLE_PAYLOAD_FIELDS,
   EXCLUDED_AUDIT_FIELDS,
   CONFIG_LIFECYCLE_STATUS
 } from '../profiles/scoring-config-master.js';
 
-export const WP002C_SCORING_MASTER_APP_ID = '796';
+export { WP002C_SCORING_MASTER_APP_ID };
 
 const ALL_STORAGE_FIELDS = [...IMMUTABLE_PAYLOAD_FIELDS, ...EXCLUDED_AUDIT_FIELDS];
+
+function isPlainObject(obj) {
+  return obj !== null && typeof obj === 'object' && Object.prototype.toString.call(obj) === '[object Object]';
+}
+
+function parsePositiveSafeIntegerToken(val, label) {
+  if (typeof val === 'number') {
+    if (Number.isSafeInteger(val) && val > 0) {
+      return String(val);
+    }
+    throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer`);
+  }
+  if (typeof val === 'string') {
+    if (val !== val.trim() || !/^[1-9]\d*$/.test(val)) {
+      throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer string`);
+    }
+    const num = Number(val);
+    if (!Number.isSafeInteger(num)) {
+      throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} exceeds safe integer limit`);
+    }
+    return val;
+  }
+  throw new Error(`REPOSITORY_RESPONSE_INVALID: ${label} must be positive safe integer string or number`);
+}
 
 export function escapeKintoneQueryLiteral(str) {
   if (typeof str !== 'string') return '';
@@ -14,25 +39,19 @@ export function escapeKintoneQueryLiteral(str) {
 }
 
 export function normalizeRawRecord(rawRecord) {
-  if (!rawRecord || typeof rawRecord !== 'object' || Array.isArray(rawRecord)) {
+  if (!isPlainObject(rawRecord)) {
     throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record must be a plain object');
   }
 
-  if (!rawRecord.$id || typeof rawRecord.$id !== 'object' || rawRecord.$id.value === undefined || rawRecord.$id.value === null) {
+  if (!isPlainObject(rawRecord.$id)) {
     throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record missing $id wrapper');
   }
-  const strId = String(rawRecord.$id.value).trim();
-  if (!/^[1-9]\d*$/.test(strId)) {
-    throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record $id must be positive integer string');
-  }
+  const strId = parsePositiveSafeIntegerToken(rawRecord.$id.value, '$id.value');
 
-  if (!rawRecord.$revision || typeof rawRecord.$revision !== 'object' || rawRecord.$revision.value === undefined || rawRecord.$revision.value === null) {
+  if (!isPlainObject(rawRecord.$revision)) {
     throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record missing $revision wrapper');
   }
-  const strRev = String(rawRecord.$revision.value).trim();
-  if (!/^[1-9]\d*$/.test(strRev)) {
-    throw new Error('REPOSITORY_RESPONSE_INVALID: Raw record $revision must be positive integer string');
-  }
+  const strRev = parsePositiveSafeIntegerToken(rawRecord.$revision.value, '$revision.value');
 
   const normalized = {
     __recordId: strId,
@@ -41,7 +60,7 @@ export function normalizeRawRecord(rawRecord) {
 
   for (const field of ALL_STORAGE_FIELDS) {
     const wrapper = rawRecord[field];
-    if (!wrapper || typeof wrapper !== 'object' || wrapper.value === undefined) {
+    if (!isPlainObject(wrapper) || wrapper.value === undefined) {
       throw new Error(`REPOSITORY_RESPONSE_INVALID: Field '${field}' wrapper missing or malformed`);
     }
 
@@ -54,16 +73,19 @@ export function normalizeRawRecord(rawRecord) {
         normalized[field] = '';
       } else if (val.length === 1) {
         const u = val[0];
-        if (!u || typeof u !== 'object' || typeof u.code !== 'string' || u.code.trim() === '') {
-          throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By user object invalid');
+        if (!isPlainObject(u) || typeof u.code !== 'string' || u.code === '' || u.code !== u.code.trim()) {
+          throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By user object code invalid');
         }
-        normalized[field] = u.code.trim();
+        normalized[field] = u.code;
       } else {
         throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By contains multiple users');
       }
     } else {
       const val = wrapper.value;
-      normalized[field] = val === null || val === undefined ? '' : String(val).trim();
+      if (typeof val !== 'string') {
+        throw new Error(`REPOSITORY_RESPONSE_INVALID: Scalar field '${field}' value must be string`);
+      }
+      normalized[field] = val;
     }
   }
 
@@ -80,25 +102,25 @@ export class ScoringConfigKintoneRepository {
     }
     this.request = request;
     this.authorizeWrite = authorizeWrite;
-    this.appId = WP002C_SCORING_MASTER_APP_ID;
+    this.appId = WP002C_SCORING_MASTER_APP_ID; // 796 (numeric)
   }
 
   async findByMasterKey(masterRecordKey) {
-    if (!masterRecordKey || typeof masterRecordKey !== 'string' || masterRecordKey.trim() === '') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Master_Record_Key is required');
+    if (!masterRecordKey || typeof masterRecordKey !== 'string' || masterRecordKey !== masterRecordKey.trim() || masterRecordKey === '') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Master_Record_Key must be exact non-empty string');
     }
-    const safeKey = escapeKintoneQueryLiteral(masterRecordKey.trim());
+    const safeKey = escapeKintoneQueryLiteral(masterRecordKey);
     const path = '/k/v1/records.json';
     const query = `Master_Record_Key = "${safeKey}" limit 2`;
 
     let res;
     try {
       res = await this.request({ method: 'GET', path, params: { app: this.appId, query } });
-    } catch (err) {
-      throw new Error(`KINTONE_REPOSITORY_REQUEST_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('KINTONE_REPOSITORY_REQUEST_FAILED');
     }
 
-    if (!res || typeof res !== 'object' || !Array.isArray(res.records)) {
+    if (!isPlainObject(res) || !Array.isArray(res.records)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Response records missing or invalid');
     }
 
@@ -108,7 +130,7 @@ export class ScoringConfigKintoneRepository {
     }
 
     const normalized = normalizeRawRecord(res.records[0]);
-    if (normalized.Master_Record_Key !== masterRecordKey.trim()) {
+    if (normalized.Master_Record_Key !== masterRecordKey) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Returned record Master_Record_Key mismatch');
     }
 
@@ -116,23 +138,17 @@ export class ScoringConfigKintoneRepository {
   }
 
   async getByRecordId(recordId) {
-    if (recordId === undefined || recordId === null) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: recordId is required');
-    }
-    const strId = String(recordId).trim();
-    if (!/^[1-9]\d*$/.test(strId)) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: recordId must be positive integer');
-    }
-
+    const strId = parsePositiveSafeIntegerToken(recordId, 'recordId');
     const path = '/k/v1/record.json';
+
     let res;
     try {
       res = await this.request({ method: 'GET', path, params: { app: this.appId, id: strId } });
-    } catch (err) {
-      throw new Error(`KINTONE_REPOSITORY_REQUEST_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('KINTONE_REPOSITORY_REQUEST_FAILED');
     }
 
-    if (!res || typeof res !== 'object' || !res.record || typeof res.record !== 'object' || Array.isArray(res.record)) {
+    if (!isPlainObject(res) || !isPlainObject(res.record)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Response record missing or invalid');
     }
 
@@ -145,33 +161,33 @@ export class ScoringConfigKintoneRepository {
   }
 
   async findPublishedByProfileFiscalYear(profileCode, fiscalYear) {
-    if (!profileCode || typeof profileCode !== 'string' || profileCode.trim() === '') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Profile_Code is required');
+    if (!profileCode || typeof profileCode !== 'string' || profileCode !== profileCode.trim() || profileCode === '') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Profile_Code must be exact non-empty string');
     }
-    if (!fiscalYear || typeof fiscalYear !== 'string' || fiscalYear.trim() === '') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Fiscal_Year is required');
+    if (!fiscalYear || typeof fiscalYear !== 'string' || fiscalYear !== fiscalYear.trim() || fiscalYear === '') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Fiscal_Year must be exact non-empty string');
     }
 
-    const safeProfile = escapeKintoneQueryLiteral(profileCode.trim());
-    const safeFY = escapeKintoneQueryLiteral(fiscalYear.trim());
+    const safeProfile = escapeKintoneQueryLiteral(profileCode);
+    const safeFY = escapeKintoneQueryLiteral(fiscalYear);
     const path = '/k/v1/records.json';
     const query = `Profile_Code = "${safeProfile}" and Fiscal_Year = "${safeFY}" and Config_Status = "PUBLISHED" limit 500`;
 
     let res;
     try {
       res = await this.request({ method: 'GET', path, params: { app: this.appId, query } });
-    } catch (err) {
-      throw new Error(`KINTONE_REPOSITORY_REQUEST_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('KINTONE_REPOSITORY_REQUEST_FAILED');
     }
 
-    if (!res || typeof res !== 'object' || !Array.isArray(res.records)) {
+    if (!isPlainObject(res) || !Array.isArray(res.records)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Response records array required');
     }
 
     const result = [];
     for (const raw of res.records) {
       const norm = normalizeRawRecord(raw);
-      if (norm.Profile_Code !== profileCode.trim() || norm.Fiscal_Year !== fiscalYear.trim() || norm.Config_Status !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+      if (norm.Profile_Code !== profileCode || norm.Fiscal_Year !== fiscalYear || norm.Config_Status !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
         throw new Error('REPOSITORY_RESPONSE_INVALID: Unexpected record returned in published query');
       }
       result.push(norm);
@@ -181,25 +197,43 @@ export class ScoringConfigKintoneRepository {
   }
 
   async createValidatedRecord(validatedRecord) {
-    if (!validatedRecord || typeof validatedRecord !== 'object') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Validated record payload is required');
+    if (!isPlainObject(validatedRecord)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Validated record payload must be a plain object');
     }
 
     if (validatedRecord.Config_Status !== CONFIG_LIFECYCLE_STATUS.VALIDATED) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Config_Status must be VALIDATED for creation');
     }
 
-    if (!validatedRecord.Configuration_Hash || !/^[0-9a-f]{64}$/.test(validatedRecord.Configuration_Hash)) {
+    if (!validatedRecord.Configuration_Hash || typeof validatedRecord.Configuration_Hash !== 'string' || !/^[0-9a-f]{64}$/.test(validatedRecord.Configuration_Hash)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Configuration_Hash must be exact 64-char lowercase hex');
     }
 
-    if (validatedRecord.Published_By !== '' && validatedRecord.Published_By !== undefined && validatedRecord.Published_By !== null) {
+    if (validatedRecord.Published_By !== '' && validatedRecord.Published_By !== undefined) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By must be empty for validated record creation');
     }
 
-    if (validatedRecord.Published_At !== '' && validatedRecord.Published_At !== undefined && validatedRecord.Published_At !== null) {
+    if (validatedRecord.Published_At !== '' && validatedRecord.Published_At !== undefined) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Published_At must be empty for validated record creation');
     }
+
+    const kintoneRecord = {};
+    for (const field of ALL_STORAGE_FIELDS) {
+      if (!Object.prototype.hasOwnProperty.call(validatedRecord, field)) {
+        throw new Error(`REPOSITORY_RESPONSE_INVALID: Missing required field '${field}' in create payload`);
+      }
+      if (field === 'Published_By') {
+        kintoneRecord[field] = { value: [] };
+      } else {
+        const val = validatedRecord[field];
+        if (typeof val !== 'string' && typeof val !== 'number') {
+          throw new Error(`REPOSITORY_RESPONSE_INVALID: Field '${field}' in create payload must be string or number`);
+        }
+        kintoneRecord[field] = { value: String(val) };
+      }
+    }
+
+    const requestBody = { app: this.appId, record: kintoneRecord };
 
     let authResult;
     try {
@@ -208,22 +242,12 @@ export class ScoringConfigKintoneRepository {
         appId: this.appId,
         masterRecordKey: validatedRecord.Master_Record_Key
       });
-    } catch (err) {
-      throw new Error(`WRITE_AUTHORIZATION_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('WRITE_AUTHORIZATION_FAILED');
     }
 
     if (authResult !== true) {
-      throw new Error('WRITE_AUTHORIZATION_FAILED: Authorizer returned non-true value');
-    }
-
-    const kintoneRecord = {};
-    for (const field of ALL_STORAGE_FIELDS) {
-      if (field === 'Published_By') {
-        kintoneRecord[field] = { value: [] };
-      } else {
-        const val = validatedRecord[field];
-        kintoneRecord[field] = { value: val === undefined || val === null ? '' : String(val) };
-      }
+      throw new Error('WRITE_AUTHORIZATION_FAILED');
     }
 
     const path = '/k/v1/record.json';
@@ -232,44 +256,28 @@ export class ScoringConfigKintoneRepository {
       res = await this.request({
         method: 'POST',
         path,
-        body: { app: this.appId, record: kintoneRecord }
+        body: requestBody
       });
-    } catch (err) {
-      throw new Error(`KINTONE_REPOSITORY_REQUEST_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('KINTONE_REPOSITORY_REQUEST_FAILED');
     }
 
-    if (!res || typeof res !== 'object' || !res.id || !res.revision) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Create response missing id/revision');
+    if (!isPlainObject(res)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Create response must be a plain object');
     }
-    const strId = String(res.id).trim();
-    const strRev = String(res.revision).trim();
 
-    if (!/^[1-9]\d*$/.test(strId) || !/^[1-9]\d*$/.test(strRev)) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Create response id/revision must be positive integers');
-    }
+    const strId = parsePositiveSafeIntegerToken(res.id, 'create response id');
+    const strRev = parsePositiveSafeIntegerToken(res.revision, 'create response revision');
 
     return strId;
   }
 
   async publishRecord(recordId, lifecyclePatch, expectedRevision) {
-    if (recordId === undefined || recordId === null) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: recordId is required');
-    }
-    const strId = String(recordId).trim();
-    if (!/^[1-9]\d*$/.test(strId)) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: recordId must be positive integer');
-    }
+    const strId = parsePositiveSafeIntegerToken(recordId, 'recordId');
+    const strExpRev = parsePositiveSafeIntegerToken(expectedRevision, 'expectedRevision');
 
-    if (expectedRevision === undefined || expectedRevision === null) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: expectedRevision is required');
-    }
-    const strExpRev = String(expectedRevision).trim();
-    if (!/^[1-9]\d*$/.test(strExpRev)) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: expectedRevision must be positive integer');
-    }
-
-    if (!lifecyclePatch || typeof lifecyclePatch !== 'object') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: lifecyclePatch is required');
+    if (!isPlainObject(lifecyclePatch)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: lifecyclePatch must be a plain object');
     }
 
     const patchKeys = Object.keys(lifecyclePatch);
@@ -282,13 +290,26 @@ export class ScoringConfigKintoneRepository {
       throw new Error('REPOSITORY_RESPONSE_INVALID: lifecyclePatch status must be PUBLISHED');
     }
 
-    if (!lifecyclePatch.Published_By || typeof lifecyclePatch.Published_By !== 'string' || lifecyclePatch.Published_By.trim() === '') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By is required');
+    if (typeof lifecyclePatch.Published_By !== 'string' || lifecyclePatch.Published_By === '' || lifecyclePatch.Published_By !== lifecyclePatch.Published_By.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By must be non-empty exact string without whitespace');
     }
 
-    if (!lifecyclePatch.Published_At || typeof lifecyclePatch.Published_At !== 'string' || lifecyclePatch.Published_At.trim() === '') {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_At is required');
+    if (typeof lifecyclePatch.Published_At !== 'string' || lifecyclePatch.Published_At === '' || lifecyclePatch.Published_At !== lifecyclePatch.Published_At.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_At must be non-empty exact string without whitespace');
     }
+
+    const kintonePatch = {
+      Config_Status: { value: CONFIG_LIFECYCLE_STATUS.PUBLISHED },
+      Published_By: { value: [{ code: lifecyclePatch.Published_By }] },
+      Published_At: { value: lifecyclePatch.Published_At }
+    };
+
+    const requestBody = {
+      app: this.appId,
+      id: strId,
+      revision: strExpRev,
+      record: kintonePatch
+    };
 
     let authResult;
     try {
@@ -298,19 +319,13 @@ export class ScoringConfigKintoneRepository {
         recordId: strId,
         expectedRevision: strExpRev
       });
-    } catch (err) {
-      throw new Error(`WRITE_AUTHORIZATION_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('WRITE_AUTHORIZATION_FAILED');
     }
 
     if (authResult !== true) {
-      throw new Error('WRITE_AUTHORIZATION_FAILED: Authorizer returned non-true value');
+      throw new Error('WRITE_AUTHORIZATION_FAILED');
     }
-
-    const kintonePatch = {
-      Config_Status: { value: CONFIG_LIFECYCLE_STATUS.PUBLISHED },
-      Published_By: { value: [{ code: lifecyclePatch.Published_By.trim() }] },
-      Published_At: { value: lifecyclePatch.Published_At.trim() }
-    };
 
     const path = '/k/v1/record.json';
     let res;
@@ -318,25 +333,17 @@ export class ScoringConfigKintoneRepository {
       res = await this.request({
         method: 'PUT',
         path,
-        body: {
-          app: this.appId,
-          id: strId,
-          revision: strExpRev,
-          record: kintonePatch
-        }
+        body: requestBody
       });
-    } catch (err) {
-      throw new Error(`KINTONE_REPOSITORY_REQUEST_FAILED: ${err.message}`);
+    } catch {
+      throw new Error('KINTONE_REPOSITORY_REQUEST_FAILED');
     }
 
-    if (!res || typeof res !== 'object' || !res.revision) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Publish response missing revision');
+    if (!isPlainObject(res)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Publish response must be a plain object');
     }
 
-    const newRevStr = String(res.revision).trim();
-    if (!/^[1-9]\d*$/.test(newRevStr)) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: Publish response revision must be positive integer');
-    }
+    const newRevStr = parsePositiveSafeIntegerToken(res.revision, 'publish response revision');
 
     if (Number(newRevStr) <= Number(strExpRev)) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: Publish response revision not advanced');

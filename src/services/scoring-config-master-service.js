@@ -209,10 +209,11 @@ export class ScoringConfigMasterService {
       throw new Error('CONFIG_READBACK_MISMATCH: Status must be VALIDATED');
     }
 
-    if (!readback1.__storageRevision || !/^[1-9]\d*$/.test(String(readback1.__storageRevision).trim())) {
+    const initialRevStr = typeof readback1.__storageRevision === 'string' || typeof readback1.__storageRevision === 'number' ? String(readback1.__storageRevision) : '';
+    if (initialRevStr === '' || initialRevStr !== initialRevStr.trim() || !/^[1-9]\d*$/.test(initialRevStr) || !Number.isSafeInteger(Number(initialRevStr))) {
       throw new Error('CONFIG_READBACK_MISMATCH: Initial read-back missing valid __storageRevision');
     }
-    const initialRevision = String(readback1.__storageRevision).trim();
+    const initialRevision = initialRevStr;
 
     let canonicalReadback1;
     try {
@@ -288,10 +289,11 @@ export class ScoringConfigMasterService {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final Published_At mismatch');
     }
 
-    if (!finalReadback.__storageRevision || !/^[1-9]\d*$/.test(String(finalReadback.__storageRevision).trim())) {
+    const finalRevStr = typeof finalReadback.__storageRevision === 'string' || typeof finalReadback.__storageRevision === 'number' ? String(finalReadback.__storageRevision) : '';
+    if (finalRevStr === '' || finalRevStr !== finalRevStr.trim() || !/^[1-9]\d*$/.test(finalRevStr) || !Number.isSafeInteger(Number(finalRevStr))) {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final storage revision missing or invalid');
     }
-    const finalRevision = String(finalReadback.__storageRevision).trim();
+    const finalRevision = finalRevStr;
     if (Number(finalRevision) <= Number(initialRevision)) {
       throw new Error('PUBLISH_VERIFICATION_FAILED: Final storage revision was not advanced');
     }
