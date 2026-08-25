@@ -100,6 +100,59 @@ export function createNarrowRoutingTransport(appId = 795, connection = null, reg
   };
 }
 
+export function createNarrowSchemaCorrectionTransport(appId = 795, connection = null, registry = null) {
+  return async function narrowSchemaCorrectionTransport(relPath, opts = {}) {
+    const method = (opts.method || 'GET').toUpperCase();
+    const body = opts.body;
+
+    if (method === 'DELETE' || method === 'PATCH') {
+      throw new Error(`NARROW SCHEMA TRANSPORT BLOCKED: Method ${method} is strictly prohibited.`);
+    }
+
+    const writeGuardPath = pathToFileURL(path.resolve('src/core/sandbox-write-guard.js')).href;
+    const sandboxAppsPath = pathToFileURL(path.resolve('config/sandbox-apps.json')).href;
+    const clientPath = pathToFileURL(path.resolve('src/core/kintone-client.js')).href;
+
+    const writeGuard = await import(writeGuardPath);
+    const m = await import(clientPath);
+    const sandboxRegistry = registry || (await import(sandboxAppsPath, { with: { type: 'json' } })).default;
+
+    if (method === 'PUT') {
+      if (relPath !== '/k/v1/preview/app/form/fields.json') {
+        throw new Error(`NARROW SCHEMA TRANSPORT BLOCKED: PUT target must be '/k/v1/preview/app/form/fields.json', got '${relPath}'`);
+      }
+      if (!body || Number(body.app) !== appId) {
+        throw new Error(`NARROW SCHEMA TRANSPORT BLOCKED: Write target body.app must be App ${appId}.`);
+      }
+      writeGuard.assertSandboxWriteTarget(appId, sandboxRegistry, [appId], { dryRunBypassDiscovery: true });
+    }
+
+    if (method === 'POST') {
+      if (relPath !== '/k/v1/preview/app/deploy.json') {
+        throw new Error(`NARROW SCHEMA TRANSPORT BLOCKED: POST target must be '/k/v1/preview/app/deploy.json', got '${relPath}'`);
+      }
+      if (!body || !Array.isArray(body.apps) || body.apps.length !== 1 || Number(body.apps[0].app) !== appId) {
+        throw new Error(`NARROW SCHEMA TRANSPORT BLOCKED: Deploy target must be App ${appId}.`);
+      }
+      writeGuard.assertSandboxWriteTarget(appId, sandboxRegistry, [appId], { dryRunBypassDiscovery: true });
+    }
+
+    const { baseUrl, headers } = connection || m.getAppCreationConnection();
+    const url = `${baseUrl}${relPath}`;
+    const fetchOpts = {
+      method,
+      headers: body === undefined ? { ...headers } : { ...headers, 'Content-Type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) })
+    };
+
+    const res = await fetch(url, fetchOpts);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} for ${method} ${relPath}: Transport operation failed.`);
+    }
+    return await res.json();
+  };
+}
+
 export function createNarrowRollbackTransport(appId = 795, connection = null, registry = null) {
   return async function narrowRollbackTransport(relPath, opts = {}) {
     const method = (opts.method || 'GET').toUpperCase();
@@ -146,6 +199,99 @@ export function createNarrowRollbackTransport(appId = 795, connection = null, re
   };
 }
 
+export async function executeRoutingSchemaCorrection({ overrideTransport } = {}) {
+  delete process.env.KINTONE_API_TOKEN;
+
+  const clientPath = pathToFileURL(path.resolve('src/core/kintone-client.js')).href;
+  const writeGuardPath = pathToFileURL(path.resolve('src/core/sandbox-write-guard.js')).href;
+  const sandboxAppsPath = pathToFileURL(path.resolve('config/sandbox-apps.json')).href;
+
+  const m = await import(clientPath);
+  const writeGuard = await import(writeGuardPath);
+  const sandboxRegistry = (await import(sandboxAppsPath, { with: { type: 'json' } })).default;
+
+  const appId795 = sandboxRegistry.routingMasterAppId || 795;
+  console.log(`Targeting App ${appId795} for exact two-field schema correction (Manager_User.required=false, GM_User.required=false)...`);
+
+  writeGuard.assertSandboxWriteTarget(appId795, sandboxRegistry, [appId795], { dryRunBypassDiscovery: true });
+
+  const connection = overrideTransport ? null : m.getAppCreationConnection();
+  const liveTransport = overrideTransport || createNarrowSchemaCorrectionTransport(appId795, connection, sandboxRegistry);
+
+  // Preflight check
+  const preFields = await liveTransport(`/k/v1/app/form/fields.json?app=${appId795}`);
+  const props = preFields.properties || {};
+
+  const mgrBefore = Boolean(props.Manager_User?.required);
+  const gmBefore = Boolean(props.GM_User?.required);
+
+  if (!mgrBefore && !gmBefore) {
+    console.log('Schema correction already applied (both Manager_User and GM_User required=false). Skipping.');
+    return { putCount: 0, deployCount: 0, managerRequired: false, gmRequired: false };
+  }
+
+  // Exact PUT payload mutating ONLY required=false on Manager_User and GM_User
+  const putBody = {
+    app: appId795,
+    properties: {
+      Manager_User: {
+        code: 'Manager_User',
+        required: false
+      },
+      GM_User: {
+        code: 'GM_User',
+        required: false
+      }
+    }
+  };
+
+  console.log(`Executing PUT /k/v1/preview/app/form/fields.json for App ${appId795}...`);
+  await liveTransport('/k/v1/preview/app/form/fields.json', {
+    method: 'PUT',
+    body: putBody
+  });
+
+  // Deploy POST
+  console.log(`Executing POST /k/v1/preview/app/deploy.json for App ${appId795}...`);
+  await liveTransport('/k/v1/preview/app/deploy.json', {
+    method: 'POST',
+    body: {
+      apps: [{ app: appId795 }]
+    }
+  });
+
+  // Poll deployment status if not using override transport
+  if (!overrideTransport) {
+    console.log('Polling deployment status for App 795...');
+    let status = 'PROCESSING';
+    let attempts = 0;
+    while (status === 'PROCESSING' && attempts < 30) {
+      await new Promise(r => setTimeout(r, 1000));
+      const statusRes = await liveTransport(`/k/v1/preview/app/deploy.json?apps[0]=${appId795}`);
+      status = statusRes.apps?.[0]?.status || 'SUCCESS';
+      attempts++;
+    }
+    if (status !== 'SUCCESS') {
+      throw new Error(`SCHEMA DEPLOY FAILED: Deployment status for App ${appId795} is ${status}`);
+    }
+  }
+
+  // Readback verification
+  console.log('Verifying post-deploy schema field properties on App 795...');
+  const postLiveFields = await liveTransport(`/k/v1/app/form/fields.json?app=${appId795}`);
+  const postProps = postLiveFields.properties || {};
+
+  const mgrAfter = Boolean(postProps.Manager_User?.required);
+  const gmAfter = Boolean(postProps.GM_User?.required);
+
+  if (mgrAfter !== false || gmAfter !== false) {
+    throw new Error(`SCHEMA READBACK FAILED: Expected required=false for both Manager_User and GM_User, got Manager_User=${mgrAfter}, GM_User=${gmAfter}`);
+  }
+
+  console.log('SUCCESS: App 795 schema correction verified live! (Manager_User.required=false, GM_User.required=false)');
+  return { putCount: 1, deployCount: 1, managerRequired: false, gmRequired: false };
+}
+
 export async function executeRoutingSeed({ overrideTransport, overrideManifest } = {}) {
   delete process.env.KINTONE_API_TOKEN;
 
@@ -168,7 +314,7 @@ export async function executeRoutingSeed({ overrideTransport, overrideManifest }
   const connection = overrideTransport ? null : m.getAppCreationConnection();
   const liveTransport = overrideTransport || createNarrowRoutingTransport(appId795, connection, sandboxRegistry);
 
-  // STEP 2 PREFLIGHT
+  // STEP 4 PREFLIGHT: Check active records AND live schema required flags
   console.log(`Performing App ${appId795} preflight inspection...`);
   const initialRes = await liveTransport(`/k/v1/records.json?app=${appId795}&query=limit%20500`);
   const initialRecords = initialRes?.records || [];
@@ -188,6 +334,13 @@ export async function executeRoutingSeed({ overrideTransport, overrideManifest }
     if (existing) {
       throw new Error(`SEED BLOCKED: Section '${item.sectionCode}' already exists in active records`);
     }
+  }
+
+  // Preflight schema check: Manager_User and GM_User MUST be required=false
+  const schemaRes = await liveTransport(`/k/v1/app/form/fields.json?app=${appId795}`);
+  const props = schemaRes.properties || {};
+  if (props.Manager_User?.required === true || props.GM_User?.required === true) {
+    throw new Error('SEED BLOCKED: Live schema requires Manager_User/GM_User fields. Run executeRoutingSchemaCorrection first.');
   }
 
   console.log(`Starting controlled seed of 11 routing baseline records to App ${appId795}...`);
@@ -250,6 +403,24 @@ export async function executeRoutingSeed({ overrideTransport, overrideManifest }
     }
   }
 
+  // Verify that all 11 newly created records have empty legacy/generic approver fields
+  for (const item of manifest) {
+    const rec = finalActive.find(r => r.Section_Code?.value === item.sectionCode);
+    const mgrVal = rec.Manager_User?.value;
+    const gmVal = rec.GM_User?.value;
+    const firstVal = rec.First_Manager_User?.value;
+
+    if (Array.isArray(mgrVal) && mgrVal.length > 0) {
+      throw new Error(`FINAL READBACK FAILED: New record '${item.sectionCode}' contains non-empty Manager_User`);
+    }
+    if (Array.isArray(gmVal) && gmVal.length > 0) {
+      throw new Error(`FINAL READBACK FAILED: New record '${item.sectionCode}' contains non-empty GM_User`);
+    }
+    if (Array.isArray(firstVal) && firstVal.length > 0) {
+      throw new Error(`FINAL READBACK FAILED: New record '${item.sectionCode}' contains non-empty First_Manager_User`);
+    }
+  }
+
   console.log('SUCCESS: All 12 active routing baseline records verified on live App 795!');
   return { postCount, createdRecordIds, totalActive: finalActive.length };
 }
@@ -263,7 +434,6 @@ export async function executeRoutingRollback({ targetRecordIds, overrideTranspor
 
   const strTargetIds = targetRecordIds.map(id => String(id));
 
-  // TME1 ID check (Record ID 1 must be preserved)
   if (strTargetIds.includes('1')) {
     throw new Error('ROLLBACK BLOCKED: TME1 record ID (1) is prohibited from deletion.');
   }
@@ -296,7 +466,6 @@ export async function executeRoutingRollback({ targetRecordIds, overrideTranspor
     }
   }
 
-  // Construct query string for DELETE request
   const idsQuery = strTargetIds.map((id, idx) => `ids[${idx}]=${encodeURIComponent(id)}`).join('&');
   const deleteUrl = `/k/v1/records.json?app=${appId795}&${idsQuery}`;
 

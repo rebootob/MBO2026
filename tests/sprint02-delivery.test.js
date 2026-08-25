@@ -410,3 +410,72 @@ test('Sprint 03B-R1: executeRoutingRollback executes exact DELETE of 11 IDs and 
   assert.equal(fakeRecords.length, 1);
   assert.equal(fakeRecords[0].Section_Code.value, 'TME1');
 });
+
+import {
+  createNarrowSchemaCorrectionTransport,
+  executeRoutingSchemaCorrection
+} from '../scripts/kintone/seed-routing-baseline.js';
+
+test('Sprint 03B-R2: createNarrowSchemaCorrectionTransport blocks DELETE, PATCH, wrong app, and unapproved endpoints', async () => {
+  const transport = createNarrowSchemaCorrectionTransport(795);
+  await assert.rejects(async () => transport('/k/v1/preview/app/form/fields.json', { method: 'DELETE' }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/preview/app/form/fields.json', { method: 'PATCH' }), /strictly prohibited/);
+  await assert.rejects(async () => transport('/k/v1/preview/app/form/fields.json', { method: 'PUT', body: { app: 796 } }), /Write target body.app must be App 795/);
+  await assert.rejects(async () => transport('/k/v1/app/form/fields.json', { method: 'PUT', body: { app: 795 } }), /PUT target must be '\/k\/v1\/preview\/app\/form\/fields.json'/);
+  await assert.rejects(async () => transport('/k/v1/preview/app/deploy.json', { method: 'POST', body: { apps: [{ app: 796 }] } }), /Deploy target must be App 795/);
+});
+
+test('Sprint 03B-R2: executeRoutingSchemaCorrection executes exact two-field PUT and deploy', async () => {
+  let mgrReq = true;
+  let gmReq = true;
+  const putCalls = [];
+  const deployCalls = [];
+
+  const fakeTransport = async (relPath, opts = {}) => {
+    const method = (opts.method || 'GET').toUpperCase();
+    if (method === 'PUT' && relPath.includes('fields.json')) {
+      putCalls.push({ relPath, body: opts.body });
+      mgrReq = false;
+      gmReq = false;
+      return { revision: '10' };
+    }
+    if (method === 'POST' && relPath.includes('deploy.json')) {
+      deployCalls.push({ relPath, body: opts.body });
+      return {};
+    }
+    if (relPath.includes('fields.json')) {
+      return {
+        properties: {
+          Manager_User: { type: 'USER_SELECT', required: mgrReq },
+          GM_User: { type: 'USER_SELECT', required: gmReq }
+        }
+      };
+    }
+    return {};
+  };
+
+  const res = await executeRoutingSchemaCorrection({ overrideTransport: fakeTransport });
+  assert.equal(res.putCount, 1);
+  assert.equal(res.deployCount, 1);
+  assert.equal(res.managerRequired, false);
+  assert.equal(res.gmRequired, false);
+  assert.equal(putCalls.length, 1);
+  assert.equal(putCalls[0].body.app, 795);
+  assert.deepEqual(Object.keys(putCalls[0].body.properties), ['Manager_User', 'GM_User']);
+  assert.equal(putCalls[0].body.properties.Manager_User.required, false);
+  assert.equal(putCalls[0].body.properties.GM_User.required, false);
+});
+
+test('Sprint 03B-R2: executeRoutingSeed fails closed if live schema required=true for Manager_User or GM_User', async () => {
+  const fakeTransport = async (relPath) => {
+    if (relPath.includes('records.json')) {
+      return { records: [{ $id: { value: '1' }, Section_Code: { value: 'TME1' }, Requester_User: { value: [{ code: 'e1' }] }, Active: { value: 'Active' } }] };
+    }
+    if (relPath.includes('fields.json')) {
+      return { properties: { Manager_User: { required: true }, GM_User: { required: true } } };
+    }
+    return {};
+  };
+
+  await assert.rejects(async () => executeRoutingSeed({ overrideTransport: fakeTransport }), /Live schema requires Manager_User\/GM_User fields/);
+});
