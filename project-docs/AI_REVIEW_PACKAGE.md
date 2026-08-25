@@ -2,25 +2,32 @@
 
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
-> **WP-002C Stage 3C-R1 Status:** **`STAGE 4A EXACTNESS_CLEANUP_COMPLETE / PENDING CHATGPT FINAL REVIEW`**
-> **Last Updated:** 2026-08-25T07:32:00+07:00
+> **WP-002C Stage 4A Status:** **`REVIEW_READY / PENDING CHATGPT CLOSURE`**
+> **Last Updated:** 2026-08-25T08:29:00+07:00
 
 ---
 
-## 1. Commit Verification Metadata
+## 1. Commit Verification Metadata (DEC-030 & Stage 4A Traceability)
 
-| Commit SHA | Timestamp (ISO) | Message |
+| Stage / Component | Commit SHA | Notes / Message |
 | :--- | :--- | :--- |
-| `41ad63d` | 2026-08-25T06:20:44+07:00 | `feat: add guarded wp-002c schema configuration` |
-| `4bef27e` | 2026-08-25T06:53:27+07:00 | `feat: add guarded wp-002c dropdown schema repair` |
-| `d38a965` | 2026-08-25T06:54:57+07:00 | `chore: record wp-002c dropdown schema repair` |
-| `ac3d401` | 2026-08-25T07:04:00+07:00 | `fix: harden wp-002c dropdown repair verification` |
-| `44e746d` | 2026-08-25T07:09:00+07:00 | `docs: complete wp-002c dropdown repair evidence` |
-| `54e1d5e` | 2026-08-25T07:15:55+07:00 | `fix: enforce exact dropdown labels and indexes` |
-| `e57c2e3` | 2026-08-25T07:17:09+07:00 | `docs: record final wp-002c verifier correction` |
-| *(Review Head)* | 2026-08-25T07:24:00+07:00 | `docs: reconcile wp-002c r1 backup provenance` |
-
----
+| **Stage 3C Schema Configuration** | `41ad63d293a9de3e61a2fc6851af0df3d2a5fa9f` | `feat: add guarded wp-002c schema configuration` |
+| **Stage 3C-R1 Dropdown Repair** | `4bef27e4660322adba811ebe058dadffae9681ee` | `feat: add guarded wp-002c dropdown schema repair` |
+| **Stage 3C-R1 Repair Evidence** | `d38a96520152f9a72af7d19ac0a852fe8f4afe68` | `chore: record wp-002c dropdown schema repair` |
+| **Stage 3C-R1 Repair Hardening** | `ac3d401` | `fix: harden wp-002c dropdown repair verification` |
+| **Stage 3C-R1 Evidence Closure** | `44e746d` | `docs: complete wp-002c dropdown repair evidence` |
+| **Stage 3C-R1 Exact Labels & Indexes** | `54e1d5e` | `fix: enforce exact dropdown labels and indexes` |
+| **Stage 3C-R1 Verifier Correction Docs** | `e57c2e3` | `docs: record final wp-002c verifier correction` |
+| **Stage 3C-R1 Provenance Reconciliation** | `f9ec168` | `docs: reconcile wp-002c r1 backup provenance` |
+| **Stage 3C-R1 Evidence Blocker State** | `9d466e8` | `docs: align wp-002c r1 evidence blocker state` |
+| **Stage 3C Exception Closure Commit** | `cca9389` | `docs: accept wp-002c stage3c evidence exception` |
+| **Stage 4A Implementation Commit** | `f010e26fbc61e39ee84874a1c024492acf0c81fa` | `feat: add scoring config publish integrity service` |
+| **Stage 4A First Hardening Commit** | `683cc0eaae66faa1e335e122b7aff8aba08ad9e7` | `fix: harden scoring config publish service contracts` |
+| **Stage 4A Final Correction Code Commit** | `4d5a1bf6a8cae1fddd59972430e0b5e45fbbf7ca` | `fix: finalize scoring config datetime and regression coverage` |
+| **Stage 4A Final Evidence Commit** | `2a0c4b774ff3e04912769c11664b5aba0ee91ae1` | `docs: finalize wp-002c stage4a review evidence` |
+| **Stage 4A Timezone Exactness Code** | `4cf9374fcbbd8e164cd8e0f49745d3e4f34547f2` | `fix: correct scoring config timezone capture exactness` |
+| **Stage 4A Exactness Evidence Docs** | `7cdc1f97976b2cbdb48f55e0d338de53bae0c343` | `docs: finalize wp-002c stage4a exactness evidence` |
+| **Stage 4A Final Doc Closure** | *(Review Head)* | `docs: close wp-002c stage4a evidence consistency` |
 
 ## 2. Gate Summary
 
@@ -37,16 +44,16 @@
 | **R1_PREWRITE_LIVE_DEFECT_GATE** | **`UNVERIFIABLE`** — backup deleted |
 | **R1_PREWRITE_PREVIEW_DEFECT_GATE** | **`UNVERIFIABLE`** — backup deleted |
 | **WP002C_STAGE3C_GATE** | **`PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION`** |
-| **STAGE4A_PUBLISH_INTEGRITY_FOUNDATION** | **`EXACTNESS_CLEANUP_COMPLETE / PENDING CHATGPT FINAL REVIEW`** |
+| **STAGE4A_PUBLISH_INTEGRITY_FOUNDATION** | **`REVIEW_READY / PENDING CHATGPT CLOSURE`** |
 | **PUBLISH_PIPELINE_STATUS** | `FOUNDATION_IMPLEMENTED_NOT_DEPLOYED` |
 | **LIVE_KINTONE_ADAPTER_STATUS** | `NOT_IMPLEMENTED` |
 | **LIVE_RECORD_PUBLISH_STATUS** | `NOT_STARTED` |
 | **RUNTIME_RESOLVER_LIVE_WIRING** | `NOT_STARTED` |
 | **SUPERSESSION_ACTIVATION** | `NOT_IMPLEMENTED / FAIL_CLOSED` |
-| **THIS_STAGE_4A_EXACTNESS_CLEANUP_KINTONE_CALLS** | `0` |
-| **THIS_STAGE_4A_EXACTNESS_CLEANUP_KINTONE_WRITES** | `0` |
+| **THIS_TASK_KINTONE_CALLS** | `0` |
+| **THIS_TASK_KINTONE_WRITES** | `0` |
 | **AUTOMATED_TEST_SUITE** | `307/307 PASS` |
-| **NEXT_ACTION** | `AWAIT CHATGPT FINAL STAGE 4A REVIEW` |
+| **NEXT_ACTION** | `AWAIT CHATGPT STAGE 4A CLOSURE REVIEW` |
 | **PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW** | `MANDATORY` |
 
 ---
