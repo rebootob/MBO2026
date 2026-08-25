@@ -6,50 +6,28 @@ import sandboxRegistry from '../../config/sandbox-apps.json' with { type: 'json'
 const app = sandboxRegistry.mboV2AppId;
 assertSandboxWriteTarget(app);
 
+function cleanEsModules(jsText) {
+  return jsText
+    .replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, '')
+    .replace(/import\s+['"][^'"]+['"];?/g, '')
+    .replace(/export\s+const\s+/g, 'const ')
+    .replace(/export\s+function\s+/g, 'function ')
+    .replace(/export\s+class\s+/g, 'class ')
+    .replace(/export\s+default\s+/g, '')
+    .replace(/export\s+\{[\s\S]*?\};?/g, '');
+}
+
 // 1. Build Single JS File
-const constantsJs = fs.readFileSync('src/config/constants.js', 'utf8')
-  .replace(/export const/g, 'const')
-  .replace(/export function/g, 'function');
-
-const fiscalYearEngineJs = fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export function/g, 'function')
-  .replace(/export class/g, 'class');
-
-const scoringConfigMasterJs = fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export const/g, 'const')
-  .replace(/export function/g, 'function')
-  .replace(/export class/g, 'class');
-
-const profileScoringResolverJs = fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export const/g, 'const')
-  .replace(/export function/g, 'function')
-  .replace(/export class/g, 'class');
-
-const hostResolverJs = fs.readFileSync('src/ui/host-resolver.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export function/g, 'function');
-
-const validationJs = fs.readFileSync('src/validation/validation-engine.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export class/g, 'class');
-
-const employeeServiceJs = fs.readFileSync('src/services/employee-service.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export class/g, 'class');
-
-const routingServiceJs = fs.readFileSync('src/services/routing-service.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export class/g, 'class');
-
-const uiJs = fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8')
-  .replace(/import .*/g, '')
-  .replace(/export class/g, 'class');
-
-const mainJs = fs.readFileSync('src/main-mbo-app.js', 'utf8')
-  .replace(/import .*/g, '');
+const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
+const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
+const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
+const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
+const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
+const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
+const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
+const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
+const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
+const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
 
 const fullJs = `
 (function() {
@@ -77,6 +55,25 @@ const fullJs = `
 
 })();
 `;
+
+// Validation Gate: Classic Bundle Parse & ES Module Residue Check
+try {
+  new Function(fullJs);
+} catch (err) {
+  throw new Error(`CLASSIC_BUNDLE_PARSE FAILED: ${err.message}`);
+}
+
+if (/\bimport\b/.test(fullJs)) {
+  throw new Error('ES_MODULE_IMPORT_COUNT > 0: Bundle contains import statements');
+}
+
+if (/\bexport\b/.test(fullJs)) {
+  throw new Error('ES_MODULE_EXPORT_COUNT > 0: Bundle contains export statements');
+}
+
+if (/}\s*from\s*['"]/.test(fullJs)) {
+  throw new Error('BROKEN_FROM_RESIDUE_COUNT > 0: Bundle contains broken from residue');
+}
 
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/mbo-employee-app.js', fullJs, 'utf8');

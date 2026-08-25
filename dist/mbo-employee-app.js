@@ -878,10 +878,6 @@ function canonicalizeScoringConfigPayload(payload) {
 
 
 
-  PROFILE_CODES,
-  computeConfigurationHash,
-  validateScoringMasterConfig
-} from './scoring-config-master.js';
 
 const POSITION_TO_PROFILE = new Map([
   ['staff', PROFILE_CODES.STAFF_CHIEF],
@@ -1311,7 +1307,7 @@ function getSnapshotFingerprint(snapshot) {
  * EmployeeService.lookupEmployee call. This is provenance evidence, not an
  * authentication or authorization boundary.
  */
-export function isVerifiedEmployeeSnapshot(snapshot) {
+function isVerifiedEmployeeSnapshot(snapshot) {
   const registeredFingerprint = verifiedSnapshotFingerprints.get(snapshot);
   return typeof registeredFingerprint === 'string' &&
     registeredFingerprint === getSnapshotFingerprint(snapshot);
