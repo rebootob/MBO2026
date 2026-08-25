@@ -268,3 +268,14 @@
   6. **Sandbox Test Data Policy:** App 794 testing should use identifiable test records (`Test_Data_Flag = YES` or deterministic test Employee Codes/Record Keys). App 53 live employee source data may be READ for lookup testing, but App 53 remains strictly READ ONLY.
   7. **Read-Back Verification & Rollback:** Every controlled write operation to App 794 requires post-operation read-back verification and a defined rollback plan proportional to the change (record cleanup, value restoration, or config revert).
   8. **Primary Security & Migration Sandbox:** App 794 is the primary sandbox for proving `DEC-039` security isolation requirements (adversarial `EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B` release blocker test) and future `DEC-040` sandbox dry-run migration testing.
+
+## DEC-042 — Reconfirmed Position Evaluation Ratio Truth & Assistant Manager 60/40 Confirmation
+- **Date**: 2026-08-25
+- **Status**: FROZEN (User Reconfirmed Core Rule)
+- **Decision**:
+  1. **Authoritative Position Ratios:** As reconfirmed by user visual reference on 2026-08-25:
+     - **Staff – Chief:** Part A Objectives **70%** / Part B Competencies **30%**
+     - **Assistant Manager:** Part A Objectives **60%** / Part B Competencies **40%**
+     - **Section Manager and Above:** Part A Objectives **50%** / Part B Competencies **50%**
+  2. **Assistant Manager 60/40 Confirmation:** `PROF_ASST_MGR` 60/40 ratio is confirmed. Generic 50/50 references for Assistant Manager are superseded.
+  3. **Section Manager and Above Scope:** Includes Section Manager, Senior Manager, DGM, GM, and VP profiles.

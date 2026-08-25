@@ -50,7 +50,7 @@
 | **Stage 4D-B Controlled Live GET Preflight** | `ed4238e607edd9e8e54ad58dfb41e6841489feb4` | `docs: record wp-002c stage4d-b live read preflight` |
 | **Delivery Sprint 01 Authorization** | `ff8b2f3677e1d1cc84a09d28cec523f7d4300df7` | `docs: close stage4d-b and start delivery-day core app sprint` |
 | **Delivery Sprint 01 App Registration** | `c1130de5449ede43acb91650d485ba4817172912` | `chore: register delivery-day hoshin and revision archive apps` |
-| **Delivery Sprint 01 Evidence Docs** | *(Review Head)* | `docs: record delivery-day core app bootstrap evidence` |
+| **Delivery Sprint 01 Evidence Docs** | `55e8f836cbbdd9c4ac2670e47dfe41db5068a47b` | `docs: record delivery-day core app bootstrap evidence` |
 
 ## 2. Gate Summary
 
@@ -77,7 +77,8 @@
 | **STAGE4D_A_READ_ONLY_LIVE_PREFLIGHT_FOUNDATION** | `PASSED / FROZEN` |
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
-| **DELIVERY_SPRINT_01** | **`COMPLETE / PENDING CHATGPT REVIEW`** |
+| **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **DELIVERY_SPRINT_02** | `IN_PROGRESS` |
 | **LIVE_KINTONE_REQUEST_BRIDGE_STATUS** | `FOUNDATION_IMPLEMENTED_NOT_WIRED` |
 | **LIVE_RECORD_WRITE_AUTHORIZATION_STATUS** | `GUARD_CONTRACT_IMPLEMENTED_NOT_WIRED` |
 | **PREWRITE_BACKUP_CONTRACT_STATUS** | `DURABLE_RETENTION_REQUIRED / NOT_EXECUTED` |
@@ -94,7 +95,7 @@
 | **THIS_TASK_KINTONE_CALLS** | `0` |
 | **THIS_TASK_KINTONE_WRITES** | `0` |
 | **AUTOMATED_TEST_SUITE** | `471/471 PASS` |
-| **NEXT_ACTION** | `AWAIT CHATGPT REVIEW OF SPRINT 01 CORE APP BOOTSTRAP BEFORE SPRINT 02` |
+| **NEXT_ACTION** | `IMPLEMENT MASTER SCHEMAS 797/798 AND SECURE HR CONTROL CENTER MVP` |
 | **PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW** | `MANDATORY` |
 
 ---
