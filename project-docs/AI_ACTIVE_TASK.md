@@ -1,212 +1,72 @@
-# AI ACTIVE TASK — R12E-B7 FINAL CORE WORKFLOW CLOSURE — AUTHORIZED
+# AI ACTIVE TASK — POST-CORE V1 UI/UX SPRINT — AUTHORIZATION PENDING
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Target: App794 `MBO V2 Sandbox` ONLY
-> Mode: PROJECT CLOSE MODE / FINAL CORE FUNCTIONAL UAT
-> Starting control-plane HEAD: `3ee18738eaa9c81c8d862c44e8e5814c8261943f`
-> Fresh user authorization: **GRANTED ONCE** by exact instruction `อนุมัติ controlled App794 R12E-B7 Final Core Workflow Closure ด้วย Record #10 บัญชี hr`
-> Authorization scope: this R12E-B7 manifest only.
-> Authorization is **SINGLE-USE** and is consumed by this execution attempt.
+> Primary target: App794 `MBO V2 Sandbox`
+> Mode: PROJECT CLOSE MODE
+> Kintone write/deploy authorization: **NONE — DO NOT DEPLOY OR WRITE KINTONE YET**
 
 ## Reviewed checkpoint
 
-R12E-B6 Remote-Debug Edge Control Gate = **PASS**.
+R12E-B7 Functional Workflow UAT is independently reviewed and the current M1_G1 Core V1 is frozen as:
 
-Verified prerequisites:
-- dedicated non-default Microsoft Edge UAT profile;
-- CDP endpoint `127.0.0.1:9222` reachable and controllable by Antigravity;
-- trusted page runtime user = `hr`;
-- App794 visible/readable;
-- Record #10 synthetic/test-only;
-- exact key `MBO_UAT_M1G1_001|2026`;
-- current status `03 Manager Objective Review`;
-- `Routing_Topology = M1_G1`;
-- Requester/Manager/GM = `hr`; First Manager empty;
-- latest reviewed App794 checkpoint Rev38/38, Process 16 states / 28 actions, Status15 `ONE + USER: hr`, notification real-recipient risk PASS;
-- B6 writes/actions/credential exposure = 0;
-- `admin-form = TECHNICAL_ADMIN_ONLY`, workflow authority NONE.
+`CORE_V1_FUNCTIONAL_FREEZE = FROZEN`
 
-This synthetic fixture does **not** prove normal `Record_Key` generation and single-account `hr` UAT does **not** prove production role isolation.
+`FUNCTIONAL_WORKFLOW_UAT = PASS_WITH_DOCUMENTED_EXECUTION_EVIDENCE_EXCEPTION`
 
-## North Star
+The retained evidence exception is limited to the R12E-B7 pre-normalization checkpoint: B6 verified Record #10 at status03, while the B7 evidence package records status04 immediately before normalization even though the manifest required exact status03 or STOP. The functional matrix itself is accepted because all 22 reviewed transitions, 3 First-Manager denials, final status16, zero real-user impact and cleanup passed, and the matrix independently covers both `03 -> 01` and `03 -> 04` paths.
 
-`Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Status15 UAT Boundary PASS -> Edge Control PASS -> Functional Workflow UAT -> CORE V1 FREEZE -> UI/UX -> Dashboard -> Final UAT -> Go-Live`
+Do not rerun Core UAT solely to remove this documented evidence exception.
 
-## Change governance
+## North Star / milestone order
 
-**What:** Reuse only Record #10, normalize `03 -> 01` through the legitimate browser `Return Objective`, execute the compact M1_G1 workflow/return matrix, verify First-Manager fail-closed behavior, finish at status16, then delete the exact synthetic record only after full PASS.
+`Core Function ✅ -> Functional UAT ✅ -> CORE V1 FROZEN ✅ -> UI/UX Polish -> Dashboard -> Final UAT -> Go-Live`
 
-**Where:** App794 Sandbox only, Record #10 / `MBO_UAT_M1G1_001|2026`, via dedicated Edge UAT profile controlled through CDP.
+## Next objective — UI/UX Polish only
 
-**How:** Pull exact authorized commit -> reconnect CDP -> pre-click drift gate -> 1 normalization transition -> 22 successful matrix transitions -> 3 First-Manager denial attempts -> verify final status16 -> cleanup exact record -> evidence -> push -> STOP.
+Prepare one compact UI/UX V1 sprint for App794 without changing frozen business logic.
 
-**Why:** All remaining routing, guard, Status15, notification-safety and browser-control prerequisites passed. This is the final Core functional UAT.
+Priority outcomes:
+- current workflow status is immediately understandable;
+- available next action(s) are visually clear;
+- validation/fail-closed messages are understandable to employees/managers;
+- Objective / Mid-Year / Final sections are easy to scan;
+- Requester / Manager / GM / HR context is readable without exposing unnecessary system detail;
+- desktop usability first, mobile only where already supported/necessary;
+- no pixel-perfect redesign and no advanced visual effects;
+- do not change routing, scoring, Process transitions, profile rules, authorization semantics, or Record_Key behavior.
 
-**Expected impact:** Only synthetic Record #10 changes state and is deleted after full PASS. Real-user workflow/notification impact target = 0.
+## Control Plane review scope before any implementation
 
-**Risks:** Wrong session/record, config drift, real-recipient notification drift, validation failure, unexpected transition, or accidental non-synthetic write.
-
-**Test plan:** Exactly 1 normalization + 22 successful reviewed transitions + 3 First-Manager fail-closed attempts. End at `16 Completed` before cleanup.
-
-**Rollback/failure:** Workflow states are not force-reset. On any failure STOP immediately, preserve Record #10/evidence, do not Change assignee, do not force status, do not delete the failed fixture.
-
-## PRECLICK SAFETY GATE — mandatory before first business action
-
-1. Pull latest; local HEAD must equal origin authorized-task commit.
-2. Read canonical baseline in mandatory order.
-3. Confirm no `src/**`, `dist/**`, `tests/**` drift. No npm/build.
-4. Confirm `127.0.0.1:9222` reachable and attached Edge profile is dedicated UAT profile.
-5. Confirm trusted runtime `kintone.getLoginUser().code === "hr"`.
-6. Confirm Record #10 exact key `MBO_UAT_M1G1_001|2026`, synthetic identity, status exactly `03 Manager Objective Review`.
-7. Confirm routing remains M1_G1; Requester/Manager/GM=`hr`; First Manager empty.
-8. Re-read App794 live/preview config: aligned/explained revision, Process exactly 16/28, Status15 exactly `ONE + USER: hr`, canonical M1_G1 semantics unchanged, notification real-recipient risk PASS.
-9. Confirm no duplicate exact synthetic key.
-10. Confirm `admin-form` is not browser actor and will execute zero business actions.
-
-Any mismatch/unexplained drift => **STOP BEFORE CLICK/WRITE**.
-
-## AUTHORIZED MATRIX — Record #10 only
-
-### A. Normalize
-- `03 -> 01` via `Return Objective`; verify status01. Expected = 1 successful transition.
-
-### B. Objective
-1. At 01 attempt `Submit Objective to First Manager` -> DENIED / unchanged.
-2. `01 -> 03` Submit Objective to Manager.
-3. `03 -> 01` Return Objective.
-4. `01 -> 03` resubmit.
-5. `03 -> 04` Approve Objective.
-6. `04 -> 05` Approve Objective.
-
-### C. Mid-Year
-7. `05 -> 06` Start Mid-Year.
-8. Max 1 bounded Mid-Year preparation edit only if validation requires it.
-9. At 06 attempt `Submit Mid-Year to First Manager` -> DENIED / unchanged.
-10. `06 -> 08` Submit Mid-Year to Manager.
-11. `08 -> 06` Return Mid-Year Manager.
-12. `06 -> 08` resubmit.
-13. `08 -> 09` Approve Mid-Year Manager.
-14. `09 -> 10` Approve Mid-Year GM.
-
-### D. Final
-15. `10 -> 11` Start Self Evaluation.
-16. Max 1 bounded Final/Self preparation edit only if validation requires it.
-17. At 11 attempt `Submit Final to First Manager` -> DENIED / unchanged.
-18. `11 -> 13` Submit Final to Manager.
-19. `13 -> 11` Return Final Manager.
-20. `11 -> 13` resubmit.
-21. `13 -> 14` Approve Final Manager.
-22. `14 -> 15` Approve Final GM.
-
-### E. HR Final
-23. `15 -> 11` Return Final HR.
-24. `11 -> 13` resubmit.
-25. `13 -> 14` Approve Final Manager.
-26. `14 -> 15` Approve Final GM.
-27. `15 -> 16` Complete.
-
-Expected matrix successful transitions = `22`.
-Expected First-Manager denials = `3`.
-Expected total successful transitions including normalization = `23`.
-
-## Cleanup
-
-Only after normalization 1/1 + matrix 22/22 + denials 3/3 + final `16 Completed` + browser fatal errors 0 + real-user impact 0 + admin-form business actions 0:
-- delete exactly Record #10 / key `MBO_UAT_M1G1_001|2026`;
-- verify exact key count = 0;
-- capture evidence, update living docs, push same branch, STOP.
-
-On any failure: preserve record; do not delete.
+ChatGPT should inspect existing `src/**` / `dist/**` UI implementation and identify the smallest V1 polish set. Antigravity should only be used for execution that requires the local build/browser/Kintone environment.
 
 ## Hard boundaries
 
-Forbidden:
-- creating another UAT record;
-- Process PUT/deploy/remap;
-- schema/ACL/customization/notification-setting changes;
-- App795/App53/App796/other-app writes;
-- Change assignee;
-- REST-only status transition claimed as browser proof;
-- `admin-form` business workflow action;
-- real Manager/GM/HR workflow or notification testing;
-- credential exposure;
-- source/dist/tests changes or npm/build;
-- extra workflow permutations.
+Until a fresh user authorization is recorded:
+- NO Kintone customization PUT/deploy;
+- NO Process/schema/ACL/notification changes;
+- NO record workflow action;
+- NO App795/App53/App796/other-app write;
+- NO changes to frozen workflow/routing/scoring/security behavior;
+- NO dashboard work yet;
+- NO unnecessary new files or framework rewrites.
 
-## PASS gate
+## Required implementation governance for the future authorized UI/UX sprint
 
-`FUNCTIONAL_WORKFLOW_UAT = PASS` requires:
-- pre-click gate PASS;
-- browser user `hr`;
-- Record #10 synthetic identity PASS;
-- normalization 1/1;
-- matrix 22/22;
-- First-Manager denials 3/3 with unchanged status;
-- total successful transitions 23;
-- final status `16 Completed`;
-- browser fatal MBO errors 0;
-- real-user impact 0;
-- admin-form business actions 0;
-- exact synthetic cleanup PASS.
+Before execution state:
+- What will change;
+- Where (exact files/components/App794 assets);
+- How;
+- Why;
+- Expected impact;
+- Risks;
+- Test plan;
+- Rollback plan.
 
-Always report:
-`SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
-`NORMAL_RECORD_KEY_GENERATION_CLAIM = NOT_TESTED_BY_THIS_SYNTHETIC_FIXTURE`
-
-## Required evidence
-
-```text
-M10L_D_R12E_B7_FINAL_CORE_WORKFLOW_CLOSURE = COMPLETE / BLOCKED
-AUTHORIZATION_SCOPE = APP794_R12E_B7_RECORD10_ONLY
-AUTHORIZATION_CONSUMED = YES
-EDGE_CONTROL_GATE = PASS
-BROWSER_AUTHENTICATED_USER = hr
-PRECHECK_LIVE_REVISION = actual
-PRECHECK_PREVIEW_REVISION = actual
-PRECHECK_PROCESS_STATE_COUNT = actual
-PRECHECK_PROCESS_ACTION_COUNT = actual
-PRECHECK_STATUS15_ASSIGNEE = actual
-PRECHECK_NOTIFICATION_REAL_RECIPIENT_RISK = PASS/FAIL
-UAT_RECORD_NUMBER = 10
-UAT_RECORD_KEY = MBO_UAT_M1G1_001|2026
-UAT_RECORD_SYNTHETIC_IDENTITY = PASS/FAIL
-UAT_PRE_NORMALIZATION_STATUS = actual
-NORMALIZATION_SUCCESSFUL_TRANSITIONS = actual
-UAT_POST_NORMALIZATION_STATUS = actual
-UAT_RECORD_CREATE_COUNT = 0
-UAT_RECORD_EDIT_COUNT = actual
-PROCESS_PUT_COUNT = 0
-DEPLOY_POST_COUNT = 0
-EXPECTED_MATRIX_SUCCESSFUL_TRANSITIONS = 22
-ACTUAL_MATRIX_SUCCESSFUL_TRANSITIONS = actual
-EXPECTED_TOTAL_SUCCESSFUL_TRANSITIONS = 23
-ACTUAL_TOTAL_SUCCESSFUL_TRANSITIONS = actual
-EXPECTED_FIRST_MANAGER_DENIALS = 3
-ACTUAL_FIRST_MANAGER_DENIALS = actual
-FINAL_STATUS = actual
-BROWSER_FATAL_MBO_ERROR_COUNT = actual
-REAL_USER_NOTIFICATION_TRIGGERED = 0
-REAL_USER_WORKFLOW_IMPACT = 0
-ADMIN_FORM_BUSINESS_ACTION_COUNT = 0
-SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED
-NORMAL_RECORD_KEY_GENERATION_CLAIM = NOT_TESTED_BY_THIS_SYNTHETIC_FIXTURE
-FUNCTIONAL_WORKFLOW_UAT = PASS/FAIL/NOT_COMPLETED
-UAT_RECORD_DELETE_COUNT = actual
-UAT_RECORD_CLEANUP_VERIFIED = PASS/FAIL/NOT_EXECUTED
-APP795_WRITE = 0
-APP53_WRITE = 0
-APP796_WRITE = 0
-OTHER_APP_WRITE = 0
-SRC_CHANGE_COUNT = 0
-DIST_CHANGE_COUNT = 0
-TEST_CHANGE_COUNT = 0
-GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW; IF PASS FREEZE CORE V1 AND MOVE TO UI/UX + DASHBOARD
-```
+Any App794 customization write/deploy requires a new explicit single-use user authorization and fresh pre-write backup/readback gate.
 
 # STOP CONDITION
 
-After evidence/living-doc update and push: STOP. Do not start UI/Dashboard or any other task in this execution.
+Current state: **CORE V1 FROZEN / UIUX SPRINT PREPARATION ONLY / NO KINTONE WRITE AUTHORIZATION**.
