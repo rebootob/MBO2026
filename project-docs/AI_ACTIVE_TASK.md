@@ -1,72 +1,110 @@
-# AI ACTIVE TASK — M10L-D-R4 FORM-STATE PERSISTENCE + LIVE CHANGE EVIDENCE CLOSURE
+# AI ACTIVE TASK — M10L-D-R5 FINAL REPOSITORY + EXECUTION-PLAN CLOSURE
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed R3 HEAD: `f7eeabdc7ae3a7e1565b68ed9071a75c4c516170`
+> Reviewed R4 HEAD: `7373ee557bfff5d90af8269f7f30df83edf7cc6f`
 > Live App794 customization remains Revision `29`
-> Mode: REPOSITORY CORRECTION / TESTS + READ-ONLY LIVE EVIDENCE ONLY
+> Mode: REPOSITORY CORRECTION / TESTS + DOCUMENTATION EXACTNESS ONLY
 > Kintone write/deploy authorization: NONE
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-Close the remaining lookup snapshot correctness gap truthfully before requesting any live App794 schema/customization repair.
+R4 closed the substantive form-state persistence gap, but final review found three repository/evidence defects that must be closed before requesting any live App794 schema/customization authorization.
 
 Do not add unrelated features.
 
 # INDEPENDENT REVIEW DECISION
 
-`M10L-D-R3 = MUST FIX`
+`M10L-D-R4 = MUST FIX`
 
-R3 correctly:
-- removed the R2 synthetic Kintone-field workaround;
-- removed `_uiOptions` / `_uiInstance` record pollution;
-- restored fail-closed behavior when `Profile_Code` is absent;
-- identified six missing live App794 scoring snapshot fields:
-  `Profile_Code`, `PartA_Weight`, `PartB_Weight`, `Part_A_Scoring_Mode`, `Competency_Set_Code`, `Configuration_Hash`;
-- reported 542/542 tests PASS and zero Kintone writes.
+## WHAT R4 GOT RIGHT
 
-However R3 cannot close for two reasons.
+- `syncRecordToKintone()` now fail-closes on missing Kintone record APIs/current form state/missing required destination/set failure/read-back mismatch.
+- Post-set read-back verifies 9 core snapshot fields semantically.
+- R3 synthetic field behavior remains removed.
+- `EmployeePartAUI.lastInstance` was removed.
+- Live/preview App794 inventory confirms Revision 29 and six missing scoring snapshot fields.
+- App796 `PROF_STAFF_CHIEF` + FY2026 + PUBLISHED count is 1 with 70/30 evidence.
+- Reported test suite = 546 PASS.
+- Kintone writes = 0.
 
-## MUST FIX 1 — FORM-STATE PERSISTENCE IS NOT VERIFIED
+## MUST FIX 1 — NEW GLOBAL TEST HOOK IN PRODUCTION BUNDLE
 
-Current `syncRecordToKintone(record)`:
-- obtains `kintone.app.record.get()`;
-- copies matching values;
-- calls `kintone.app.record.set(currentData)`;
-- catches and logs all exceptions;
-- returns no success/failure result;
-- performs no post-set read-back.
+R4 introduced:
 
-The lookup callback checks `record.Profile_Code`, `record.Routing_Topology`, and `record.Requester_User` BEFORE/independently of proving that the real Kintone form state accepted those values. If `record.set()` throws, APIs are unavailable, or set is a no-op, `onLookupEmployee()` can still resolve and `executeLookup()` can set `isEmployeeVerified = true`.
+```js
+globalThis.__MBO_APP__ = {
+  getActiveUiInstance: () => activeUiInstance,
+  syncRecordToKintone: (record, options) => syncRecordToKintone(record, options)
+};
+```
 
-This violates R3 requirement: failed/unverifiable form-state persistence must remain unverified.
+The tests depend on this global hook. This violates the R4 instruction:
 
-## MUST FIX 2 — EXACT LIVE CHANGE PLAN / EVIDENCE WAS NOT COMMITTED
+- do not add another global mutable test hook;
+- prefer dependency injection or a narrowly scoped module export/pure helper;
+- do not expose test-only internals in the classic production bundle.
 
-R3 claimed an exact minimum App794 live change plan, but the execution commit changed `AI_REVIEW_PACKAGE.md` only by a gate-summary row. It did not commit the required per-field inventory and exact future controlled change facts:
-- exact live/preview existence/type/label;
-- field permission/access evidence;
-- exact App796 published record evidence;
-- exact field code/type/label/default/required/unique/visibility/permission plan;
-- expected impact/risk;
-- pre-write backup contract;
-- post-change tests;
-- rollback plan;
-- required final R3 summary fields.
+It also unnecessarily exposes a form-state mutation helper globally in the live browser runtime.
 
-Do not request user authorization until this evidence is durable and reviewable.
+Required correction:
+- remove `globalThis.__MBO_APP__` from source and committed dist;
+- ensure the production classic bundle contains zero `__MBO_APP__` residue;
+- use a clean source-module test seam that is stripped by the existing classic-bundle `cleanEsModules()` path, or use dependency injection/direct construction;
+- no business-record pollution and no new global mutable hook.
+
+A named ES-module export in source is acceptable if it is genuinely narrow and the deterministic classic bundle removes the export syntax/exposure. Do not create a new permanent file solely for this.
+
+## MUST FIX 2 — REQUIRED API-UNAVAILABLE TEST COVERAGE IS INCOMPLETE
+
+R4 task required distinct fail-closed coverage for:
+- `kintone.app.record.get` unavailable;
+- `kintone.app.record.set` unavailable.
+
+Current R4 test named "get unavailable" makes `get()` return null, which covers unavailable current form state, not the function actually being absent. There is also no direct test proving `set` function absent causes lookup/persistence to fail closed.
+
+Required tests:
+1. `kintone.app.record.get` is not a function -> fail closed.
+2. `kintone.app.record.set` is not a function -> fail closed.
+3. current form state null -> fail closed.
+4. set throws -> fail closed.
+5. set no-op/read-back mismatch -> fail closed.
+6. successful set + matching read-back -> PASS.
+7. all failures must keep employee verification false on the integration path.
+
+Do not manufacture verification success manually.
+
+## MUST FIX 3 — FUTURE KINTONE EXECUTION PLAN HAS API/METHOD ERRORS + PERMISSION EVIDENCE CONTRADICTION
+
+R4 durable plan currently says:
+- add six missing fields using `PUT /k/v1/preview/app/form/fields.json`;
+- upload customization via `POST /k/v1/preview/app/customize.json`.
+
+For the planned operation these steps are not exact:
+- the six fields are NEW fields, so the future task must use the Kintone Add Form Fields operation (`POST /k/v1/preview/app/form/fields.json` with the exact add-field payload), not an update-existing-fields PUT;
+- customization file bytes must first be uploaded through `POST /k/v1/file.json` to obtain fileKey(s);
+- customization settings must then be updated through `PUT /k/v1/preview/app/customize.json`, preserving unrelated live JS/CSS ordering/assets/mobile customization unless explicitly reviewed;
+- deploy request must use the correct controlled deploy body (`{ apps: [{ app: 794 }] }`) and then poll/read status.
+
+Repository evidence already confirms the existing deployment helper follows file upload POST -> customization PUT -> deploy POST. Use that API contract as implementation evidence, but do NOT execute the helper directly in the future controlled repair because it does not itself provide the required fresh backup/drift gate.
+
+Also fix evidence consistency:
+- inventory table says permission/access for the six missing fields = `UNVERIFIABLE`;
+- final evidence block says `APP794_REQUIRED_SNAPSHOT_PERMISSION_GAPS = NONE`.
+
+These cannot both be true. For fields that do not exist yet, current field-permission state is not established. Record the truthful value (`UNVERIFIABLE` / planned permission requirement) and distinguish current evidence from the future intended permission configuration.
 
 # CONFIRMED BASELINE
 
 Do not change canonical baseline.
 
-- Employee `0118` -> Staff & Chief evidence.
-- `PROF_STAFF_CHIEF` -> Part A 70 / Part B 30.
-- Technical Service Chief resolves to `PROF_STAFF_CHIEF`.
+- 0118 -> Staff & Chief.
+- `PROF_STAFF_CHIEF` -> 70/30.
+- Technical Service Chief -> `PROF_STAFF_CHIEF`.
 - Missing/duplicate scoring profile -> FAIL CLOSED.
 - Missing/duplicate routing -> FAIL CLOSED.
 - App53 and legacy PMS apps remain READ ONLY.
@@ -74,245 +112,144 @@ Do not change canonical baseline.
 # CHANGE GOVERNANCE
 
 ## What
-1. Make Kintone form-state synchronization verifiable and fail closed.
-2. Correct tests so form state is independent from the event-record object and persistence failures are real failures.
-3. Remove unnecessary R3 test-only production seam if it has no production purpose.
-4. Commit exact live/preview App794 inventory + App796 evidence + exact minimum future App794 schema/customization repair plan.
+Close the three review defects above only.
 
 ## Where
-Prefer existing files only:
+Prefer existing files:
 - `src/main-mbo-app.js`
-- `src/ui/employee-part-a-ui.js` only if needed
 - `tests/objective-save-validation.test.js`
-- `dist/mbo-employee-app.js` if source changes
+- `dist/mbo-employee-app.js`
 - `project-docs/AI_REVIEW_PACKAGE.md`
-- living state docs only where factual consistency requires it
+- living docs only where factual status requires update
 
-Do not create duplicate permanent reports or debug artifacts.
+Modify `src/ui/employee-part-a-ui.js` only if genuinely required.
 
 ## How
-Repository source/tests + read-only Kintone GET only.
+Repository source/tests/docs only. Zero Kintone API writes and zero deploy.
 
 ## Why
-A verified employee state is business-significant. It must mean required system snapshot values exist in schema AND are proven present in the actual Kintone form state.
+The repo candidate and future authorized execution plan must be reviewable, fail-closed, and free of test-only production exposure before any live change.
 
-## Impact
-No live behavior changes in this task. Live App794 stays Revision 29 and remains fail-closed for the user-observed defect.
+## Expected Impact
+No live App794 behavior changes in this task. Revision 29 remains untouched.
 
 ## Risks
-- false verification after failed `record.set()`;
-- scalar/USER_SELECT value comparison mistakes;
-- incomplete schema repair causing another live failure;
-- test-only hooks leaking into production code.
+- accidentally retaining global test surface in dist;
+- tests passing through a seam that does not represent runtime behavior;
+- future deployment task using wrong API method and corrupting/overwriting customization settings;
+- conflating current missing-field permission evidence with future planned permission.
 
 # PHASE A — REPOSITORY GATE
 
-1. Pull latest branch; local HEAD must equal origin.
-2. Confirm only this Control Plane task follows R3 before execution.
-3. Run full `npm test` before changes and record result.
+1. Pull latest same branch; local HEAD == origin.
+2. Confirm only this Control Plane R5 task follows R4 before execution.
+3. Run full tests before changes.
 4. Run `git diff --check`.
-5. Confirm live App794 Revision 29 is NOT changed in this task.
+5. Confirm App794 remains Revision 29 and no Kintone write/deploy occurs.
 
-# PHASE B — FAIL-CLOSED FORM-STATE PERSISTENCE CONTRACT
+# PHASE B — REMOVE GLOBAL PRODUCTION TEST HOOK
 
-Correct the existing synchronization path. Do not create a parallel duplicate sync system.
+1. Remove `globalThis.__MBO_APP__` entirely.
+2. Tests must not depend on any replacement global mutable test hook.
+3. Use the smallest clean test seam in an existing file:
+   - named module export(s) stripped/not exposed by classic bundle; or
+   - dependency injection/direct construction.
+4. If using named source exports, prove committed classic dist contains no `export`, no `__MBO_APP__`, and no unintended browser-global test API.
+5. Preserve actual runtime `activeUiInstance` behavior and submit gates.
 
-Required behavior:
-
-1. A lookup snapshot may only complete successfully when required destination fields exist in the event record/schema-backed form contract.
-2. `syncRecordToKintone` (or the existing equivalent path) must return success only when:
-   - `kintone.app.record.get` exists;
-   - `kintone.app.record.set` exists;
-   - current form state exists;
-   - every required snapshot destination exists in current form state;
-   - set completes without exception;
-   - a post-set `kintone.app.record.get()` read-back confirms the required values semantically equal the expected snapshot.
-3. Missing API/current form state/missing required destination/set exception/read-back mismatch => throw a clear fail-closed configuration/persistence error.
-4. Do NOT swallow persistence failure with console warning on the verification-critical path.
-5. Do not create synthetic Kintone fields.
-6. Do not weaken Save validation.
-
-Core required lookup snapshot fields for this flow must include at minimum:
-- `Profile_Code`
-- `PartA_Weight`
-- `PartB_Weight`
-- `Part_A_Scoring_Mode`
-- `Competency_Set_Code`
-- `Configuration_Hash`
-- `Routing_Topology`
-- `Requester_User`
-- `Record_Key`
-
-Also preserve all existing approver snapshot fields already defined in the App794 schema. If architecture requires additional mandatory fields, document them rather than silently omitting them.
-
-Comparison rules must respect actual Kintone field representations. Do not require JavaScript numeric type equality when a NUMBER field read-back is represented as a numeric string. USER_SELECT must remain a valid array with expected user codes.
-
-# PHASE C — REMOVE TEST-ONLY PRODUCTION SEAMS IF UNNECESSARY
-
-Review `EmployeePartAUI.lastInstance` introduced in R3.
-
-If it exists only to let tests reach a runtime instance, remove it and use the smallest clean test seam:
-- direct construction of `EmployeePartAUI` with dependency injection; or
-- a narrowly scoped pure/exported helper in an existing module if truly necessary.
-
-Do not add another global mutable test hook and do not mutate business records for testing.
-
-If there is a legitimate production reason to retain it, document that reason explicitly; otherwise remove it.
-
-# PHASE D — REQUIRED TESTS
-
-Tests must model event record and Kintone form state as distinct contracts where relevant.
+# PHASE C — COMPLETE FAIL-CLOSED TEST MATRIX
 
 At minimum prove:
+- valid 0118 lookup + all 9 core snapshot form-state fields + post-set read-back -> verified true;
+- Profile_Code destination absent -> fail closed;
+- Configuration_Hash destination absent -> fail closed;
+- `record.get` function absent -> fail closed;
+- `record.set` function absent -> fail closed;
+- current form state null -> fail closed;
+- set throws -> fail closed;
+- set no-op/read-back mismatch -> fail closed;
+- USER_SELECT semantic comparison remains correct;
+- NUMBER numeric-string semantic comparison remains correct;
+- 0/duplicate App796 -> fail closed;
+- 0111 and Factory Manager profile regressions PASS;
+- Save/duplicate guards PASS;
+- zero manual forcing of verification for the tested success path.
 
-1. `0118 / Technical Service Chief -> PROF_STAFF_CHIEF`.
-2. Schema-backed `Profile_Code` blank -> lookup populates expected value.
-3. Missing `Profile_Code` field -> lookup rejects, field is not synthesized, UI remains unverified.
-4. Successful `record.set()` + post-set read-back matching all required core snapshot fields -> lookup may become verified.
-5. `kintone.app.record.get` unavailable -> lookup remains unverified.
-6. `kintone.app.record.set` unavailable -> lookup remains unverified.
-7. `record.set()` throws -> lookup remains unverified.
-8. `record.set()` no-op / read-back retains old value -> lookup remains unverified.
-9. Missing required scoring snapshot destination (for example `Configuration_Hash`) -> lookup remains unverified.
-10. Routing_Topology + Requester_User form-state persistence PASS.
-11. Record_Key form-state persistence PASS.
-12. App796 0 published -> fail closed.
-13. App796 duplicate published -> fail closed.
-14. Existing 0111 -> PROF_ASST_MGR and Factory Manager -> PROF_GM regressions PASS.
-15. Existing Save validation and duplicate guards PASS.
-16. No test manually forces `isEmployeeVerified = true` for the success being tested.
-17. No test-only properties on business record.
-18. Classic bundle parse / zero ES-module residue PASS.
-19. Source/dist deterministic exactness PASS.
-20. Full `npm test` PASS.
+# PHASE D — CORRECT DURABLE FUTURE LIVE CHANGE PLAN
 
-# PHASE E — READ-ONLY LIVE INVENTORY / EVIDENCE
+Update the dedicated R4/R5 section in `project-docs/AI_REVIEW_PACKAGE.md` in place. Do not create a parallel plan.
 
-Use Kintone GET/read-only only. No PUT/POST/DELETE/deploy/file upload.
+The exact future sequence must distinguish:
 
-Reconfirm and commit durable evidence for App794 live AND preview for all lookup snapshot destinations, at minimum:
-- `Profile_Code`
-- `PartA_Weight`
-- `PartB_Weight`
-- `Part_A_Scoring_Mode`
-- `Competency_Set_Code`
-- `Configuration_Hash`
-- `Routing_Topology`
-- `Requester_User`
-- `Record_Key`
-- approver fields written by `fieldsToSync`
+1. **Pre-write gate**
+   - fresh live + preview GET;
+   - confirm expected Revision 29 only if still true at execution time; otherwise STOP;
+   - fresh durable backup of live/preview schema, field permissions, customization settings, desktop/mobile JS/CSS fileKeys/order, and downloaded existing customization bytes/hashes;
+   - reviewed runtime candidate hash/source-dist exactness;
+   - STOP on any drift.
 
-For each record:
-- live exists YES/NO
-- preview exists YES/NO
-- exact field type if present
-- exact label if present
-- required/default/unique where applicable
-- permission/access evidence: exact if obtainable; otherwise `UNVERIFIABLE` (do not guess)
+2. **Add six missing fields**
+   - `POST /k/v1/preview/app/form/fields.json`
+   - App794 only;
+   - exact reviewed add-field payload for the six missing codes/types/settings.
 
-Reconfirm App796 using GET only for:
-`Profile_Code = PROF_STAFF_CHIEF`, `Fiscal_Year = FY2026`, `Config_Status = PUBLISHED`.
+3. **Customization file upload**
+   - `POST /k/v1/file.json` for the exact reviewed JS candidate and only any CSS file that actually needs replacement;
+   - do not blindly replace/re-upload CSS if its content is unchanged and preservation is safer.
 
-Commit:
-- exact record count;
-- profile/fiscal year/status;
-- PartA/PartB weights;
-- Part_A_Scoring_Mode;
-- Competency_Set_Code;
-- Configuration_Hash presence/value or safe hash identifier as appropriate.
+4. **Customization settings update**
+   - `PUT /k/v1/preview/app/customize.json`;
+   - use uploaded fileKey(s);
+   - preserve unrelated JS/CSS assets/order and mobile customization exactly unless the reviewed target explicitly changes them.
 
-Expected published count = exactly 1.
+5. **Deploy**
+   - `POST /k/v1/preview/app/deploy.json` with `{ "apps": [{ "app": 794 }] }`;
+   - poll/read deployment status until SUCCESS/FAIL/timeout.
 
-# PHASE F — EXACT MINIMUM FUTURE LIVE CHANGE PLAN (NO EXECUTION)
+6. **Post-deploy read-back**
+   - live schema exact 6-field presence/type/settings;
+   - customization fileKeys/order/mobile preservation;
+   - deployed JS hash equals reviewed candidate;
+   - live revision recorded.
 
-In `project-docs/AI_REVIEW_PACKAGE.md`, add a dedicated `M10L-D-R4` section containing an auditable table and future controlled change plan.
+7. **Browser smoke**
+   - 0118 -> `PROF_STAFF_CHIEF`, 70/30 and 9 core snapshots;
+   - 0111 -> `PROF_ASST_MGR`;
+   - routing/requester/Record_Key;
+   - missing routing / 0 or duplicate scoring fail closed where safely testable;
+   - Objective Save gates;
+   - no fatal console errors;
+   - avoid persistent junk records.
 
-For every missing App794 field, document:
-- exact field code
-- exact planned Kintone field type
-- exact label
-- default value
-- required setting
-- unique setting
-- visibility (native/custom UI behavior)
-- permission requirement
-- rationale/source for the chosen type
+8. **Rollback**
+   - use only the fresh backup captured for that future execution;
+   - remove/revert the six newly added fields as required to restore the exact prior schema;
+   - restore exact prior customization settings/file bytes/fileKeys as applicable;
+   - redeploy and verify read-back/browser health.
 
-The currently known candidate gap list from R3 is:
-- `Profile_Code`
-- `PartA_Weight`
-- `PartB_Weight`
-- `Part_A_Scoring_Mode`
-- `Competency_Set_Code`
-- `Configuration_Hash`
+Correct permission evidence:
+- current permission/access for six nonexistent fields = `UNVERIFIABLE`;
+- future planned permission = exact requirement, clearly labeled as PLAN not current fact.
 
-Do not assume R3's list is complete until the fresh read-only inventory confirms it.
+# REQUIRED FINAL EVIDENCE
 
-The future controlled repair plan must also state:
+Update exact factual values:
 
-### What
-Minimum App794 schema additions plus deployment of the exact independently reviewed corrected customization candidate required to make Verify Employee -> Save operational.
-
-### Where
-App794 only. No App53/App795/App796 record/schema/process/ACL writes unless separately authorized in another task.
-
-### How
-Future task only, after explicit authorization:
-- fresh live/preview GET and drift gate;
-- fresh durable pre-write backup including form schema, customization, JS/CSS bytes/fileKeys, revision, permissions relevant to affected fields;
-- verify reviewed repo candidate hash/source-dist exactness;
-- apply only exact missing App794 fields in preview;
-- apply exact reviewed App794 customization candidate;
-- deploy through controlled Kintone preview/deploy path;
-- wait for SUCCESS;
-- live read-back schema + customization hashes;
-- browser smoke 0118 and at least one non-Staff profile without creating junk business data where possible.
-
-### Impact
-Restores schema-backed scoring snapshot persistence and allows valid employee lookup to satisfy Save prerequisites.
-
-### Risks
-Schema/type mismatch, customization regression, permission/access mismatch, incomplete snapshot fields.
-
-### Test Plan
-At minimum:
-- 0118 -> PROF_STAFF_CHIEF + 70/30 snapshot
-- 0111 -> PROF_ASST_MGR
-- routing/requester retained
-- Record_Key retained
-- zero/duplicate App796 fail closed
-- missing routing fail closed
-- Save objective gates
-- post-deploy read-back
-- browser console no fatal error
-
-### Rollback Plan
-Use only fresh backup from that future authorized deployment. Restore exact prior App794 schema/customization state and redeploy; then read-back/browser verify. Do not reuse an older backup.
-
-# REQUIRED FINAL EVIDENCE BLOCK
-
-Commit exact values, not just a summary line:
-
-`M10L_D_R4_PERSISTENCE_CONTRACT = COMPLETE / PARTIAL / BLOCKED`
-`R3_FORM_STATE_PERSISTENCE_GAP_FIXED = YES/NO`
-`R3_TEST_ONLY_LASTINSTANCE_REMOVED = YES/NO/RETAINED_WITH_REASON`
-`APP794_LIVE_REVISION = actual`
-`APP794_PREVIEW_REVISION = actual`
-`APP794_REQUIRED_SNAPSHOT_SCHEMA_GAPS = exact list`
-`APP794_REQUIRED_SNAPSHOT_PERMISSION_GAPS = exact list / NONE / UNVERIFIABLE`
-`APP796_PROF_STAFF_CHIEF_FY2026_PUBLISHED_COUNT = actual`
-`APP796_PARTA_WEIGHT = actual`
-`APP796_PARTB_WEIGHT = actual`
-`APP796_PART_A_SCORING_MODE = actual`
-`APP796_COMPETENCY_SET_CODE = actual`
-`PROFILE_FIELD_PRESENT_PERSISTENCE_TEST = PASS/FAIL`
-`PROFILE_FIELD_ABSENT_FAIL_CLOSED_TEST = PASS/FAIL`
-`FORM_STATE_POST_SET_READBACK_TEST = PASS/FAIL`
+`M10L_D_R5 = COMPLETE / PARTIAL / BLOCKED`
+`R4_GLOBAL_TEST_HOOK_REMOVED = YES/NO`
+`DIST_GLOBAL_TEST_HOOK_RESIDUE = 0 / actual`
+`RECORD_GET_FUNCTION_ABSENT_FAIL_CLOSED_TEST = PASS/FAIL`
+`RECORD_SET_FUNCTION_ABSENT_FAIL_CLOSED_TEST = PASS/FAIL`
+`CURRENT_FORM_STATE_NULL_FAIL_CLOSED_TEST = PASS/FAIL`
 `FORM_STATE_SET_THROW_FAIL_CLOSED_TEST = PASS/FAIL`
 `FORM_STATE_NOOP_FAIL_CLOSED_TEST = PASS/FAIL`
-`REQUIRED_SCORING_SNAPSHOT_MISSING_FAIL_CLOSED_TEST = PASS/FAIL`
-`ROUTING_SNAPSHOT_REGRESSION = PASS/FAIL`
-`SCORING_ZERO_DUPLICATE_GATES = PASS/FAIL`
+`FORM_STATE_POST_SET_READBACK_TEST = PASS/FAIL`
+`APP794_REQUIRED_SNAPSHOT_SCHEMA_GAPS = exact list`
+`APP794_CURRENT_MISSING_FIELD_PERMISSION_EVIDENCE = UNVERIFIABLE / actual`
+`FUTURE_ADD_FIELDS_HTTP_METHOD = POST`
+`FUTURE_FILE_UPLOAD_HTTP_METHOD = POST /k/v1/file.json`
+`FUTURE_CUSTOMIZE_HTTP_METHOD = PUT /k/v1/preview/app/customize.json`
+`FUTURE_DEPLOY_HTTP_METHOD = POST /k/v1/preview/app/deploy.json`
 `SOURCE_DIST_EXACTNESS = PASS/FAIL`
 `CLASSIC_BUNDLE_PARSE = PASS/FAIL`
 `npm test = actual / PASS|FAIL`
@@ -322,14 +259,12 @@ Commit exact values, not just a summary line:
 `KINTONE_WRITES_THIS_TASK = 0`
 `APP794_DEPLOY_THIS_TASK = 0`
 `LIVE_CONFIG_WRITE_REQUIRED = YES/NO`
-`EXACT_MINIMUM_LIVE_CHANGE = exact concise description / NONE`
 `GIT_PUSH_SYNC = PASS/FAIL`
 
 # NO-ORPHAN
 
-- Remove superseded R3 test-only behavior if not required.
-- No `_old`, `_v1`, `_v2`, duplicate sync helpers, temporary browser scripts, committed raw credentials, or debug artifacts.
-- Prefer modifying existing functions/files.
+No `_old`, `_v1`, `_v2`, duplicate sync helpers, debug artifacts, or global test hooks.
+Do not create a new report when the existing `AI_REVIEW_PACKAGE.md` can be corrected in place.
 
 # HARD SAFETY
 
@@ -344,20 +279,17 @@ APP795_WRITE = 0
 APP796_WRITE = 0
 OTHER_APP_WRITE = 0
 
-Old deployment authorization is consumed. Do not reuse it.
-
-If any Kintone write becomes necessary to gather evidence or fix live state, STOP and report.
+Old authorization remains consumed. Do not reuse it.
 
 # ROLLBACK PLAN
 
-No Kintone write occurs in R4, so no live rollback applies.
-Repository changes use normal forward Git history only; no force push/rebase/reset/history rewrite.
+No live write occurs in R5. Repository changes use forward Git history only; no force push/rebase/reset/history rewrite.
 
 # REQUIRED FINAL SUMMARY
 
-`M10L_D_R4 = COMPLETE / PARTIAL / BLOCKED`
+`M10L_D_R5 = COMPLETE / PARTIAL / BLOCKED`
 `KINTONE_WRITES_THIS_TASK = 0`
 `LIVE_CONFIG_WRITE_REQUIRED = YES/NO`
-`NEXT_ACTION = CHATGPT REVIEW; IF PASS + LIVE_CONFIG_WRITE_REQUIRED=YES, CONTROL PLANE REQUESTS NEW EXPLICIT USER AUTHORIZATION FOR EXACT APP794 SCHEMA + CUSTOMIZATION REPAIR`
+`NEXT_ACTION = CHATGPT REVIEW; IF PASS + LIVE_CONFIG_WRITE_REQUIRED=YES, CONTROL PLANE MAY REQUEST NEW EXPLICIT USER AUTHORIZATION FOR THE EXACT APP794 SCHEMA + CUSTOMIZATION REPAIR`
 
-Commit/push the same branch and STOP. Do not begin another work package.
+Commit/push same branch and STOP.
