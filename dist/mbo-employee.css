@@ -793,3 +793,257 @@
   color: #334155;
   line-height: 1.4;
 }
+
+/* --- UI/UX V2 5-Phase Process Progress Bar --- */
+.mbo-overall-progress-card {
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
+  border-left: 4px solid var(--mbo-primary-navy);
+  border-radius: var(--mbo-radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.mbo-progress-phases {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.mbo-phase-step {
+  flex: 1;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 4px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.mbo-phase-step.active {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #3b82f6;
+  font-weight: 700;
+}
+
+.mbo-phase-step.completed {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #22c55e;
+}
+
+.mbo-progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.mbo-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  transition: width 0.3s ease;
+}
+
+.mbo-progress-label {
+  font-size: 12px;
+  color: #475569;
+  text-align: right;
+}
+
+/* --- Appraiser Completion Bar --- */
+.mbo-appraiser-completion-card {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--mbo-radius);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mbo-appraiser-completion-info {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.mbo-appraiser-slots-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.mbo-appraiser-slot-pill {
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.mbo-appraiser-slot-pill.done {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.mbo-appraiser-slot-pill.pending {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+/* --- Wide Text Layout & Objective Cards --- */
+.mbo-wide-card {
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
+  border-radius: var(--mbo-radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.mbo-wide-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mbo-primary-navy);
+}
+
+.mbo-wide-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 4px;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* --- Appraiser Multi-Slot Evaluation Grid --- */
+.mbo-appraiser-eval-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.mbo-appraiser-slot-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.mbo-appraiser-slot-header {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* --- Part B Competency Cards --- */
+.mbo-partb-card {
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
+  border-radius: var(--mbo-radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.mbo-partb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mbo-partb-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mbo-partb-desc {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 10px;
+  line-height: 1.4;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #0ea5e9;
+}
+
+.mbo-coce-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.mbo-pending-badge {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+/* --- Attachment Evidence Summary Area --- */
+.mbo-attachment-section {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 10px;
+}
+
+.mbo-attachment-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mbo-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mbo-attachment-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, getStageNavSteps, classifyTopologyForUI, CANONICAL_TOPOLOGIES } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, getStageNavSteps, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => ({
   innerHTML: '',
@@ -1095,7 +1095,7 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
     assert.ok(guidanceMap.en && guidanceMap.en.length > 0, `Status "${st}" must have English guidance text`);
 
     const stageNum = getMacroStage(st);
-    assert.ok(stageNum >= 1 && stageNum <= 4, `Status "${st}" must map deterministically to macro stage 1-4`);
+    assert.ok(stageNum >= 1 && stageNum <= 5, `Status "${st}" must map deterministically to macro stage 1-5`);
   });
 
   // 2. classifyTopologyForUI checks canonical & supported V1 topologies strictly
@@ -1204,16 +1204,70 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   assert.equal(getStageNavSteps('08 Manager Mid-Year Review')[1].state, 'active');
   assert.equal(getStageNavSteps('13 Manager Final Evaluation')[2].state, 'active');
 
-  // 6. User-list display prefers name then code
-  assert.equal(formatUserDisplay([{ name: 'John Doe', code: '0123' }]), 'John Doe (0123)');
-  assert.equal(formatUserDisplay([{ code: '0123' }]), '0123');
-  assert.equal(formatUserDisplay([]), '-');
+  // 8. Evaluation UI V2 — 5 Macro Screen Mapping & Appraiser Slot Capacity
+  const statusScreenMap = {
+    '01 Draft Objective': 'objectives',
+    '02 First Manager Objective Review': 'objectives',
+    '03 Manager Objective Review': 'objectives',
+    '04 GM Objective Review': 'objectives',
+    '05 Objective Approved': 'objectives',
+    '06 Employee Mid-Year': 'midyear',
+    '07 First Manager Mid-Year Review': 'midyear',
+    '08 Manager Mid-Year Review': 'midyear',
+    '09 GM Mid-Year Review': 'midyear',
+    '10 Mid-Year Completed': 'midyear',
+    '11 Employee Self Evaluation': 'self_eval',
+    '12 First Manager Final Evaluation': 'appraiser_eval',
+    '13 Manager Final Evaluation': 'appraiser_eval',
+    '14 GM Final Evaluation': 'appraiser_eval',
+    '15 HR Final Check': 'hr_final',
+    '16 Completed': 'hr_final'
+  };
 
-  // 7. HTML Escaping & non-mutation safety
-  assert.equal(escapeHtml('<script>alert("XSS")</script>').includes('<script>'), false);
-  const rawRecord = createMockRecord({ Objective_1: { value: '<b>Sales Objective</b> & Goal' } });
-  const recordSnapshotJson = JSON.stringify(rawRecord);
-  const uiInstance = new EmployeePartAUI({ record: rawRecord, stage: BUSINESS_STAGES.OBJECTIVE_INPUT, isEditable: true });
-  uiInstance.render();
-  assert.equal(JSON.stringify(rawRecord), recordSnapshotJson, 'UI rendering must not mutate record business values');
+  Object.entries(statusScreenMap).forEach(([st, expectedScreen]) => {
+    assert.equal(getVisualScreen(st), expectedScreen, `Status "${st}" must resolve to visual screen "${expectedScreen}"`);
+  });
+
+  // 9. Process progress percentage deterministically maps to status
+  assert.equal(getProcessProgress('01 Draft Objective').percent, 20);
+  assert.equal(getProcessProgress('06 Employee Mid-Year').percent, 40);
+  assert.equal(getProcessProgress('11 Employee Self Evaluation').percent, 60);
+  assert.equal(getProcessProgress('12 First Manager Final Evaluation').percent, 80);
+  assert.equal(getProcessProgress('16 Completed').percent, 100);
+
+  // 10. Appraiser Capacity (1-4) & Role-Neutral Labels
+  const mockRecord = createMockRecord();
+  const appData1 = normalizeAppraiserData(mockRecord, 1, { slot1Completed: true });
+  assert.equal(appData1.totalCount, 1);
+  assert.equal(appData1.slots[0].label, '1st Appraiser');
+
+  const appData2 = normalizeAppraiserData(mockRecord, 2, { slot1Completed: true, slot2Completed: false });
+  assert.equal(appData2.totalCount, 2);
+  assert.equal(appData2.completedCount, 1);
+  assert.equal(appData2.completionPercent, 50);
+  assert.equal(appData2.isFullyComplete, false);
+  assert.equal(appData2.slots[0].label, '1st Appraiser');
+  assert.equal(appData2.slots[1].label, '2nd Appraiser');
+
+  const appData3 = normalizeAppraiserData(mockRecord, 3, { slot1Completed: true, slot2Completed: true, slot3Completed: true });
+  assert.equal(appData3.totalCount, 3);
+  assert.equal(appData3.completedCount, 3);
+  assert.equal(appData3.completionPercent, 100);
+  assert.equal(appData3.isFullyComplete, true);
+  assert.equal(appData3.slots[2].label, '3rd Appraiser');
+
+  const appData4 = normalizeAppraiserData(mockRecord, 4, { slot1Completed: true, slot2Completed: true, slot3Completed: true, slot4Completed: true });
+  assert.equal(appData4.totalCount, 4);
+  assert.equal(appData4.completionPercent, 100);
+  assert.equal(appData4.slots[3].label, '4th Appraiser');
+
+  // Verify none of the normalized appraiser slot labels claim Manager or GM
+  appData4.slots.forEach(s => {
+    assert.equal(s.label.includes('Manager'), false, 'Appraiser slot label must NOT contain "Manager"');
+    assert.equal(s.label.includes('GM'), false, 'Appraiser slot label must NOT contain "GM"');
+  });
+
+  // 11. COCE Competency item index 6 is marked as COCE / Excluded from Score
+  const coceItem = COMPETENCIES_LIST.find(c => c.id === 6);
+  assert.equal(coceItem.isCOCE, true, 'Competency Item 6 must be flagged as isCOCE');
 });

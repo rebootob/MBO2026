@@ -1,5 +1,5 @@
 /**
- * Employee Part A UI Renderer - Bilingual Spreadsheet Grid
+ * Employee Part A & Part B UI Renderer - Evaluation UI V2
  * Source of Truth: exp/PMS_Staff & Chief_PART_A.xlsx & Bilingual Specification
  */
 
@@ -48,6 +48,145 @@ export function classifyTopologyForUI(topology) {
     isM1M2G1: raw === 'M1_M2_G1',
     isG2: false,
     raw
+  };
+}
+
+export function getVisualScreen(status) {
+  const currentStatus = String(status || '').trim();
+
+  if (['01 Draft Objective', '02 First Manager Objective Review', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved'].includes(currentStatus)) {
+    return 'objectives'; // Stage 1
+  }
+  if (['06 Employee Mid-Year', '07 First Manager Mid-Year Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed'].includes(currentStatus)) {
+    return 'midyear'; // Stage 2
+  }
+  if (currentStatus === '11 Employee Self Evaluation') {
+    return 'self_eval'; // Stage 3
+  }
+  if (['12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation'].includes(currentStatus)) {
+    return 'appraiser_eval'; // Stage 4
+  }
+  if (['15 HR Final Check', '16 Completed'].includes(currentStatus)) {
+    return 'hr_final'; // Stage 5
+  }
+  return 'objectives';
+}
+
+export function getProcessProgress(status) {
+  const screen = getVisualScreen(status);
+  switch (screen) {
+    case 'objectives':
+      return { percent: 20, stepIndex: 1, label: '1. Objectives (01–05)' };
+    case 'midyear':
+      return { percent: 40, stepIndex: 2, label: '2. Mid-Year (06–10)' };
+    case 'self_eval':
+      return { percent: 60, stepIndex: 3, label: '3. Self Evaluation (11)' };
+    case 'appraiser_eval':
+      return { percent: 80, stepIndex: 4, label: '4. Appraiser Evaluation (12–14)' };
+    case 'hr_final':
+      return { percent: 100, stepIndex: 5, label: '5. HR Final / Completed (15–16)' };
+    default:
+      return { percent: 20, stepIndex: 1, label: '1. Objectives (01–05)' };
+  }
+}
+
+export const COMPETENCIES_LIST = [
+  { id: 1, nameTH: '1. Core: Achievement Orientation', nameEN: 'Achievement Orientation', desc: 'มุ่งมั่นในการทำงานให้บรรลุเป้าหมายอย่างมีประสิทธิภาพ / Drive for results and continuous improvement' },
+  { id: 2, nameTH: '2. Core: Service Mind', nameEN: 'Service Mind', desc: 'ส่งมอบบริการและตอบสนองความต้องการของผู้รับบริการอย่างมีคุณภาพ / Deliver quality service to stakeholders' },
+  { id: 3, nameTH: '3. Core: Expertise', nameEN: 'Expertise & Professionalism', desc: 'มีความรู้ความสามารถและพัฒนาทักษะการทำงานอย่างต่อเนื่อง / Demonstrate professional competence and technical skills' },
+  { id: 4, nameTH: '4. Core: Teamwork', nameEN: 'Teamwork & Collaboration', desc: 'ให้ความร่วมมือ สื่อสาร และสร้างสัมพันธภาพที่ดีในทีมงาน / Collaborate effectively across teams and departments' },
+  { id: 5, nameTH: '5. Core: Integrity & Ethics', nameEN: 'Integrity & Corporate Ethics', desc: 'ยึดมั่นในความถูกต้อง ความซื่อสัตย์ และปฏิบัติตามจริยธรรมองค์กร / Uphold high ethical standards and organizational compliance' },
+  { id: 6, nameTH: '6. Managerial/Functional: COCE (Compliance & Code of Ethics)', nameEN: 'COCE Compliance', desc: 'การปฏิบัติตามกฎระเบียบและจริยธรรมธุรกิจ [Evaluated / Excluded from Score] / Evaluated for compliance but excluded from numerical score weight', isCOCE: true }
+];
+
+export function normalizeAppraiserData(record, appraiserCount = 2, previewOptions = {}) {
+  const count = Math.min(Math.max(parseInt(appraiserCount || 2, 10), 1), 4);
+  const slots = [];
+
+  const getVal = (code) => {
+    if (!record) return '';
+    const field = record[code];
+    if (field === null || field === undefined) return '';
+    if (typeof field === 'object' && 'value' in field) return field.value ?? '';
+    return String(field);
+  };
+
+  const slotLabels = ['1st Appraiser', '2nd Appraiser', '3rd Appraiser', '4th Appraiser'];
+
+  for (let i = 1; i <= count; i++) {
+    const label = slotLabels[i - 1];
+    let isCompleted = false;
+    const partARatings = {};
+    const partBRatings = {};
+    let partAComment = '';
+    let partBComment = '';
+
+    if (i === 1) {
+      partAComment = getVal('Manager_Comment_PartA') || previewOptions.slot1CommentA || '';
+      partBComment = getVal('Manager_Comment_PartB') || previewOptions.slot1CommentB || '';
+      let hasRating = false;
+      for (let k = 1; k <= 10; k++) {
+        const val = getVal(`Manager_PartA_Rating_${k}`) || previewOptions.slot1RatingsA?.[k];
+        if (val) {
+          partARatings[k] = val;
+          hasRating = true;
+        }
+      }
+      for (let k = 1; k <= 6; k++) {
+        const val = getVal(`Manager_PartB_Score_${k}`) || previewOptions.slot1RatingsB?.[k];
+        if (val) partBRatings[k] = val;
+      }
+      isCompleted = hasRating || Boolean(previewOptions.slot1Completed);
+    } else if (i === 2) {
+      partAComment = getVal('GM_Comment_PartA') || previewOptions.slot2CommentA || '';
+      partBComment = getVal('GM_Comment_PartB') || previewOptions.slot2CommentB || '';
+      let hasRating = false;
+      for (let k = 1; k <= 10; k++) {
+        const val = getVal(`GM_PartA_Rating_${k}`) || previewOptions.slot2RatingsA?.[k];
+        if (val) {
+          partARatings[k] = val;
+          hasRating = true;
+        }
+      }
+      for (let k = 1; k <= 6; k++) {
+        const val = getVal(`GM_PartB_Score_${k}`) || previewOptions.slot2RatingsB?.[k];
+        if (val) partBRatings[k] = val;
+      }
+      isCompleted = hasRating || Boolean(previewOptions.slot2Completed);
+    } else {
+      // Slots 3 & 4 (Preview/Logical slots)
+      partAComment = previewOptions[`slot${i}CommentA`] || '';
+      partBComment = previewOptions[`slot${i}CommentB`] || '';
+      for (let k = 1; k <= 10; k++) {
+        if (previewOptions[`slot${i}RatingsA`]?.[k]) partARatings[k] = previewOptions[`slot${i}RatingsA`][k];
+      }
+      for (let k = 1; k <= 6; k++) {
+        if (previewOptions[`slot${i}RatingsB`]?.[k]) partBRatings[k] = previewOptions[`slot${i}RatingsB`][k];
+      }
+      isCompleted = Boolean(previewOptions[`slot${i}Completed`]);
+    }
+
+    slots.push({
+      slotIndex: i,
+      label,
+      isCompleted,
+      partARatings,
+      partBRatings,
+      partAComment,
+      partBComment
+    });
+  }
+
+  const completedCount = slots.filter(s => s.isCompleted).length;
+  const completionPercent = Math.round((completedCount / count) * 100);
+  const isFullyComplete = completedCount === count;
+
+  return {
+    slots,
+    totalCount: count,
+    completedCount,
+    completionPercent,
+    isFullyComplete
   };
 }
 
@@ -172,21 +311,15 @@ export function getStatusGuidance(status, topology) {
 }
 
 export function getMacroStage(status) {
-  const currentStatus = String(status || '').trim();
-
-  if (['01 Draft Objective', '02 First Manager Objective Review', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved'].includes(currentStatus)) {
-    return 1; // Objectives
+  const screen = getVisualScreen(status);
+  switch (screen) {
+    case 'objectives': return 1;
+    case 'midyear': return 2;
+    case 'self_eval': return 3;
+    case 'appraiser_eval': return 4;
+    case 'hr_final': return 5;
+    default: return 1;
   }
-  if (['06 Employee Mid-Year', '07 First Manager Mid-Year Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed'].includes(currentStatus)) {
-    return 2; // Mid-Year
-  }
-  if (['11 Employee Self Evaluation', '12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check'].includes(currentStatus)) {
-    return 3; // Year-End
-  }
-  if (currentStatus === '16 Completed') {
-    return 4; // Completed
-  }
-  return 1;
 }
 
 export function getStageNavSteps(status) {
@@ -290,6 +423,8 @@ export class EmployeePartAUI {
     this.stage = options.stage || BUSINESS_STAGES.READ_ONLY;
     this.isEditable = options.isEditable || false;
     this.isCreate = options.isCreate || false;
+    this.appraiserCount = options.appraiserCount || 2;
+    this.previewOptions = options.previewOptions || {};
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
     this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
@@ -313,18 +448,24 @@ export class EmployeePartAUI {
       return;
     }
 
+    const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
+    const visualScreen = getVisualScreen(status);
+
     // STEP 1: Lookup Banner on Create
     if (this.isCreate) {
       root.appendChild(this._renderLookupSection());
     }
 
-    // Top Status & Workflow Guidance Card (Display-only guidance)
+    // Top Overall Process Progress Bar (5 Phases)
+    root.appendChild(this._renderOverallProgressBar(status));
+
+    // Top Status & Workflow Guidance Card (Display-only guidance with topology warning)
     root.appendChild(this._renderStatusGuidanceCard());
 
-    // STEP 2: Header Section (Horizontal Summary)
+    // Header Section (Horizontal Summary)
     root.appendChild(this._renderHeader());
 
-    // Approval Route Context (Display-only route summary)
+    // Approval Route Context (Display-only route summary with strict topology classifier)
     root.appendChild(this._renderRouteContext());
 
     // Collapsible Legend & Guidelines
@@ -338,11 +479,18 @@ export class EmployeePartAUI {
     // Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
-    // Stage Navigation (4 Macro Stages)
-    root.appendChild(this._renderStageNav());
-
-    // STEP 3: Part A Spreadsheet Grid Table (1 Objective = 1 Row)
-    root.appendChild(this._renderSpreadsheetTable());
+    // Render exact 1 of 5 Visual Screens
+    if (visualScreen === 'objectives') {
+      root.appendChild(this._renderScreenObjectives());
+    } else if (visualScreen === 'midyear') {
+      root.appendChild(this._renderScreenMidYear());
+    } else if (visualScreen === 'self_eval') {
+      root.appendChild(this._renderScreenSelfEval());
+    } else if (visualScreen === 'appraiser_eval') {
+      root.appendChild(this._renderScreenAppraiserEval());
+    } else if (visualScreen === 'hr_final') {
+      root.appendChild(this._renderScreenHrFinal());
+    }
 
     this.container.appendChild(root);
     this._updateTotalWeightDisplay();
@@ -352,6 +500,375 @@ export class EmployeePartAUI {
     if (this.currentErrors && this.currentErrors.length > 0) {
       this._renderInlineErrors(this.currentErrors);
     }
+  }
+
+  _renderOverallProgressBar(status) {
+    const card = document.createElement('div');
+    card.className = 'mbo-overall-progress-card';
+
+    const screen = getVisualScreen(status);
+    const prog = getProcessProgress(status);
+
+    card.innerHTML = `
+      <div class="mbo-progress-phases">
+        <div class="mbo-phase-step ${screen === 'objectives' ? 'active' : (prog.stepIndex > 1 ? 'completed' : '')}">1. Objectives</div>
+        <div class="mbo-phase-step ${screen === 'midyear' ? 'active' : (prog.stepIndex > 2 ? 'completed' : '')}">2. Mid-Year</div>
+        <div class="mbo-phase-step ${screen === 'self_eval' ? 'active' : (prog.stepIndex > 3 ? 'completed' : '')}">3. Self Evaluation</div>
+        <div class="mbo-phase-step ${screen === 'appraiser_eval' ? 'active' : (prog.stepIndex > 4 ? 'completed' : '')}">4. Appraiser Evaluation</div>
+        <div class="mbo-phase-step ${screen === 'hr_final' ? 'active' : (prog.stepIndex > 5 ? 'completed' : '')}">5. HR Final / Completed</div>
+      </div>
+      <div class="mbo-progress-bar-wrap">
+        <div class="mbo-progress-bar-fill" style="width: ${prog.percent}%;"></div>
+      </div>
+      <div class="mbo-progress-label">
+        📊 ความคืบหน้ากระบวนการ / Process Progress: <strong>${prog.percent}%</strong> (${escapeHtml(prog.label)})
+      </div>
+    `;
+    return card;
+  }
+
+  _renderScreenObjectives() {
+    const wrap = document.createElement('div');
+    wrap.appendChild(this._renderStageNav());
+    wrap.appendChild(this._renderSpreadsheetTable());
+    return wrap;
+  }
+
+  _renderScreenMidYear() {
+    const wrap = document.createElement('div');
+    wrap.appendChild(this._renderStageNav());
+
+    const container = document.createElement('div');
+    container.className = 'mbo-table-container';
+
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+
+    const table = document.createElement('table');
+    table.className = 'mbo-grid-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th style="width: 45px; text-align: center;">#</th>
+          <th style="width: 25%;">
+            เป้าหมาย / Objective & Target <span style="color:#64748b;">[🔒 ล็อก]</span>
+            <span class="th-sub">[เป้าหมายที่บันทึกไว้ / Saved Objective]</span>
+          </th>
+          <th style="width: 140px;">
+            ความคืบหน้า / Progress (%) <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[0 - 100%]</span>
+          </th>
+          <th style="width: 22%;">
+            การทบทวนเป็นระยะ / Periodical Review Notes
+            <span class="th-sub">[บันทึกทบทวนผลงาน / Wide text input]</span>
+          </th>
+          <th style="width: 22%;">
+            ผลสำเร็จปัจจุบัน / Current Result
+            <span class="th-sub">[ผลสำเร็จปัจจุบัน / Milestone Results]</span>
+          </th>
+          <th style="width: 22%;">
+            ปัญหาและแนวทางแก้ไข / Issue, Risk & Next Action
+            <span class="th-sub">[ปัญหา อุปสรรค / Risks & Next Steps]</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from({ length: count }, (_, idx) => this._renderMidYearRow(idx + 1)).join('')}
+      </tbody>
+    `;
+
+    container.appendChild(table);
+    container.appendChild(this._renderWeightSummary());
+    wrap.appendChild(container);
+    return wrap;
+  }
+
+  _renderScreenSelfEval() {
+    const wrap = document.createElement('div');
+    wrap.appendChild(this._renderStageNav());
+
+    const container = document.createElement('div');
+    container.className = 'mbo-table-container';
+
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+
+    const table = document.createElement('table');
+    table.className = 'mbo-grid-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th style="width: 45px; text-align: center;">#</th>
+          <th style="width: 22%;">
+            เป้าหมาย / Objective & Target <span style="color:#64748b;">[🔒 ล็อก]</span>
+            <span class="th-sub">[เป้าหมายที่บันทึกไว้ / Saved Objective]</span>
+          </th>
+          <th style="width: 20%;">
+            ผลทบทวนกลางปี / Mid-Year Summary <span style="color:#64748b;">[🔒 ล็อก]</span>
+            <span class="th-sub">[ผลทบทวนกลางปี / Mid-Year Review]</span>
+          </th>
+          <th style="width: 26%;">
+            ผลการดำเนินงานจริง / Actual Result & Achievement <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[ผลงานจริงเมื่อสิ้นสุดรอบประเมิน / Wide text input]</span>
+          </th>
+          <th style="width: 170px;">
+            ประเมินตนเอง / Self Achievement [1-5] <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[ระดับผลสำเร็จ 1-5]</span>
+          </th>
+          <th style="width: 20%;">
+            ความคิดเห็นตนเอง / Self Comment / Reflection
+            <span class="th-sub">[ความเห็นประเมินตนเอง / Self Reflection]</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from({ length: count }, (_, idx) => this._renderSelfEvalRow(idx + 1)).join('')}
+      </tbody>
+    `;
+
+    container.appendChild(table);
+    container.appendChild(this._renderWeightSummary());
+    wrap.appendChild(container);
+    return wrap;
+  }
+
+  _renderScreenAppraiserEval() {
+    const wrap = document.createElement('div');
+    wrap.appendChild(this._renderStageNav());
+
+    const appraiserInfo = normalizeAppraiserData(this.record, this.appraiserCount, this.previewOptions);
+
+    // Top Appraiser Completion Card
+    const compCard = document.createElement('div');
+    compCard.className = 'mbo-appraiser-completion-card';
+    compCard.innerHTML = `
+      <div class="mbo-appraiser-completion-info">
+        👥 สถานะการประเมินของผู้ประเมิน / Appraiser Evaluation Completion:
+        <strong>${appraiserInfo.completedCount} / ${appraiserInfo.totalCount} Complete (${appraiserInfo.completionPercent}%)</strong>
+      </div>
+      <div class="mbo-appraiser-slots-pills">
+        ${appraiserInfo.slots.map(s => `
+          <span class="mbo-appraiser-slot-pill ${s.isCompleted ? 'done' : 'pending'}">
+            ${s.isCompleted ? '✓' : '⏳'} ${escapeHtml(s.label)}
+          </span>
+        `).join('')}
+      </div>
+    `;
+    wrap.appendChild(compCard);
+
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+
+    // PART A: Objectives Appraiser Evaluation Section
+    const partASection = document.createElement('div');
+    partASection.className = 'mbo-wide-card';
+    partASection.innerHTML = `
+      <div class="mbo-wide-card-header">
+        <span>PART A: การประเมินเป้าหมายผลงาน / Part A Objectives Evaluation (1..${count})</span>
+        <span style="font-weight: normal; font-size: 12px; color: #475569;">[คะแนน 1-5 และข้อเสนอแนะรายผู้ประเมิน / Ratings & Feedback]</span>
+      </div>
+    `;
+
+    for (let i = 1; i <= count; i++) {
+      const objVal = this._getVal(`Objective_${i}`);
+      const wVal = this._getVal(`Weight_${i}`) || '0';
+      const diffVal = this._getVal(`Difficulty_${i}`) || '3';
+      const actResult = this._getVal(`Actual_Result_${i}`);
+      const selfAch = this._getVal(`Self_Achievement_${i}`) || '-';
+
+      const objBox = document.createElement('div');
+      objBox.style.marginBottom = '14px';
+      objBox.style.border = '1px solid #e2e8f0';
+      objBox.style.borderRadius = '6px';
+      objBox.style.padding = '12px';
+      objBox.style.background = '#ffffff';
+
+      let slotsHtml = '';
+      appraiserInfo.slots.forEach(s => {
+        const ratingVal = s.partARatings[i] || '';
+        slotsHtml += `
+          <div class="mbo-appraiser-slot-box">
+            <div class="mbo-appraiser-slot-header">
+              <span>${escapeHtml(s.label)}</span>
+              ${s.isCompleted ? '<span style="color:#166534; font-size:11px;">✓ Complete</span>' : '<span style="color:#b45309; font-size:11px;">⏳ Pending</span>'}
+            </div>
+            <div style="margin-bottom: 6px;">
+              <label style="font-size:11px; font-weight:700; color:#475569;">Rating [1-5]:</label>
+              <select class="mbo-cell-select mbo-field" data-code="${s.slotIndex === 1 ? 'Manager' : 'GM'}_PartA_Rating_${i}" style="margin-top:2px;">
+                <option value="" ${!ratingVal ? 'selected' : ''}>-- Select Rating --</option>
+                <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Rarely meet</option>
+                <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Partially meet</option>
+                <option value="3" ${ratingVal === '3' ? 'selected' : ''}>3 : Fully meet</option>
+                <option value="4" ${ratingVal === '4' ? 'selected' : ''}>4 : Exceeded</option>
+                <option value="5" ${ratingVal === '5' ? 'selected' : ''}>5 : Remarkable</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px; font-weight:700; color:#475569;">Feedback / Comment:</label>
+              <textarea class="mbo-wide-textarea mbo-field" data-code="${s.slotIndex === 1 ? 'Manager' : 'GM'}_Comment_PartA" style="min-height:50px; margin-top:2px;" placeholder="Appraiser comment...">${escapeHtml(s.partAComment)}</textarea>
+            </div>
+          </div>
+        `;
+      });
+
+      objBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong style="color:#0f172a; font-size:13.5px;">#${i} ${escapeHtml(objVal) || '(No objective title)'}</strong>
+          <span style="font-size:12px; font-weight:700; color:#0369a1;">Weight: ${escapeHtml(wVal)}% | Difficulty: Level ${escapeHtml(diffVal)} | Self Ach: Level ${escapeHtml(selfAch)}</span>
+        </div>
+        <div style="font-size:12px; color:#475569; background:#f8fafc; padding:6px 10px; border-radius:4px; margin-bottom:8px;">
+          <strong>Actual Result:</strong> ${escapeHtml(actResult) || '(No actual result entered)'}
+        </div>
+        <div class="mbo-appraiser-eval-grid">
+          ${slotsHtml}
+        </div>
+      `;
+      partASection.appendChild(objBox);
+    }
+    wrap.appendChild(partASection);
+
+    // PART B: Competencies Evaluation Section
+    const partBSection = document.createElement('div');
+    partBSection.className = 'mbo-wide-card';
+    partBSection.innerHTML = `
+      <div class="mbo-wide-card-header">
+        <span>PART B: การประเมินสมรรถนะ / Part B Competency Evaluation (1..6)</span>
+        <span style="font-weight: normal; font-size: 12px; color: #475569;">[5 Core Competencies + 1 COCE]</span>
+      </div>
+    `;
+
+    COMPETENCIES_LIST.forEach(comp => {
+      let slotsHtml = '';
+      appraiserInfo.slots.forEach(s => {
+        const ratingVal = s.partBRatings[comp.id] || '';
+        slotsHtml += `
+          <div class="mbo-appraiser-slot-box">
+            <div class="mbo-appraiser-slot-header">
+              <span>${escapeHtml(s.label)}</span>
+            </div>
+            <div style="margin-bottom: 6px;">
+              <label style="font-size:11px; font-weight:700; color:#475569;">Score [1-5]:</label>
+              <select class="mbo-cell-select mbo-field" data-code="${s.slotIndex === 1 ? 'Manager' : 'GM'}_PartB_Score_${comp.id}" style="margin-top:2px;">
+                <option value="" ${!ratingVal ? 'selected' : ''}>-- Select Score --</option>
+                <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Unsatisfactory</option>
+                <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Needs Improvement</option>
+                <option value="3" ${ratingVal === '3' ? 'selected' : ''}>3 : Meets Standard</option>
+                <option value="4" ${ratingVal === '4' ? 'selected' : ''}>4 : Exceeds Standard</option>
+                <option value="5" ${ratingVal === '5' ? 'selected' : ''}>5 : Outstanding</option>
+              </select>
+            </div>
+          </div>
+        `;
+      });
+
+      const compCard = document.createElement('div');
+      compCard.className = 'mbo-partb-card';
+      compCard.innerHTML = `
+        <div class="mbo-partb-header">
+          <div class="mbo-partb-title">${escapeHtml(comp.nameTH)}</div>
+          ${comp.isCOCE ? '<span class="mbo-coce-badge">Evaluated / Excluded from Score</span>' : ''}
+        </div>
+        <div class="mbo-partb-desc">${escapeHtml(comp.desc)}</div>
+        <div class="mbo-appraiser-eval-grid">
+          ${slotsHtml}
+        </div>
+      `;
+      partBSection.appendChild(compCard);
+    });
+
+    wrap.appendChild(partBSection);
+
+    // Score Completeness Summary Banner
+    const scoreSummaryCard = document.createElement('div');
+    scoreSummaryCard.className = 'mbo-wide-card';
+    if (appraiserInfo.isFullyComplete) {
+      scoreSummaryCard.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="margin:0; color:#166534; font-size:15px;">✅ สรุปการประเมินสมบูรณ์ / Evaluation Complete</h3>
+            <p style="margin:4px 0 0 0; font-size:12.5px; color:#475569;">ผู้ประเมินทุกท่านลงคะแนนครบถ้วนแล้ว พร้อมสำหรับการตรวจสอบขั้นสุดท้ายโดย HR</p>
+          </div>
+          <div style="font-weight:700; font-size:14px; color:#166534; background:#dcfce7; padding:8px 16px; border-radius:6px;">
+            Part A + Part B Verified Complete
+          </div>
+        </div>
+      `;
+    } else {
+      scoreSummaryCard.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="margin:0; color:#991b1b; font-size:15px;">⏳ อยู่ระหว่างการลงคะแนน / Rating Incomplete</h3>
+            <p style="margin:4px 0 0 0; font-size:12.5px; color:#475569;">อยู่ระหว่างการรวบรวมผลประเมินจากผู้ประเมิน (${appraiserInfo.completedCount}/${appraiserInfo.totalCount} Complete)</p>
+          </div>
+          <div>
+            <span class="mbo-pending-badge">⚠️ Result Pending / Incomplete</span>
+          </div>
+        </div>
+      `;
+    }
+    wrap.appendChild(scoreSummaryCard);
+
+    return wrap;
+  }
+
+  _renderScreenHrFinal() {
+    const wrap = document.createElement('div');
+    wrap.appendChild(this._renderStageNav());
+
+    const status = this._getVal('Status') || '15 HR Final Check';
+    const isCompleted = status === '16 Completed';
+    const appraiserInfo = normalizeAppraiserData(this.record, this.appraiserCount, this.previewOptions);
+
+    const execSummaryCard = document.createElement('div');
+    execSummaryCard.className = 'mbo-wide-card';
+    execSummaryCard.style.borderTop = isCompleted ? '4px solid #166534' : '4px solid #0284c7';
+
+    execSummaryCard.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:12px;">
+        <div>
+          <h2 style="margin:0; font-size:17px; color:${isCompleted ? '#166534' : '#0284c7'};">
+            ${isCompleted ? '🎉 ผลการประเมินเสร็จสมบูรณ์ / MBO Evaluation Completed' : '🔍 ตรวจสอบขั้นสุดท้ายโดย HR / HR Final Check'}
+          </h2>
+          <span style="font-size:12px; color:#64748b;">
+            ${isCompleted ? 'กระบวนการประเมินเสร็จสิ้นสมบูรณ์และถูกล็อกถาวร' : 'อยู่ระหว่างการตรวจสอบความถูกต้องและอนุมัติปิดรอบประเมินโดย HR'}
+          </span>
+        </div>
+        <div style="text-align:right;">
+          <span style="font-size:13px; font-weight:700; padding:4px 12px; border-radius:12px; background:${isCompleted ? '#dcfce7' : '#e0f2fe'}; color:${isCompleted ? '#166534' : '#0369a1'};">
+            ${escapeHtml(status)}
+          </span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:14px;">
+        <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="font-size:11px; font-weight:700; color:#64748b;">Appraiser Completion</div>
+          <div style="font-size:14px; font-weight:700; color:#0f172a; margin-top:2px;">
+            ${appraiserInfo.completedCount} / ${appraiserInfo.totalCount} Appraisers (${appraiserInfo.completionPercent}%)
+          </div>
+        </div>
+        <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="font-size:11px; font-weight:700; color:#64748b;">Part A Weight</div>
+          <div style="font-size:14px; font-weight:700; color:#0369a1; margin-top:2px;">70% (Objectives)</div>
+        </div>
+        <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="font-size:11px; font-weight:700; color:#64748b;">Part B Weight</div>
+          <div style="font-size:14px; font-weight:700; color:#0369a1; margin-top:2px;">30% (Competency)</div>
+        </div>
+        <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="font-size:11px; font-weight:700; color:#64748b;">Final Result Status</div>
+          <div style="font-size:14px; font-weight:700; margin-top:2px;">
+            ${appraiserInfo.isFullyComplete ? '<span style="color:#166534;">Verified & Complete</span>' : '<span style="color:#991b1b;">Pending / Incomplete</span>'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    wrap.appendChild(execSummaryCard);
+
+    // Read-only Part A & Part B Breakdown
+    wrap.appendChild(this._renderScreenAppraiserEval());
+    return wrap;
   }
 
   syncFromDom() {
@@ -802,119 +1319,36 @@ export class EmployeePartAUI {
 
     const table = document.createElement('table');
     table.className = 'mbo-grid-table';
-
-    if (isObjectiveStage) {
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th style="width: 45px; text-align: center;">#</th>
-            <th style="width: 32%;">
-              เป้าหมาย / Objectives (Expected result & target) <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[ระบุเป้าหมายและผลลัพธ์ที่คาดหวัง / Indicate expected result]</span>
-            </th>
-            <th style="width: 32%;">
-              แผนปฏิบัติการ / Action Plan (Activities to achieve obj.) <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[ระบุกิจกรรมและแผนงาน / Indicate activities & plan]</span>
-            </th>
-            <th style="width: 18%;">
-              ข้อตกลงเพิ่มเติม / Additional agreement / Comment
-              <span class="th-sub">[ข้อตกลงเพิ่มเติม / Any agreement]</span>
-            </th>
-            <th style="width: 95px; text-align: center;">
-              น้ำหนัก / Weight (%) <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[น้ำหนัก %]</span>
-            </th>
-            <th style="width: 180px;">
-              ระดับความยาก / Difficulty Level [1-4] <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[ระดับความยาก 1-4]</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Array.from({ length: count }, (_, idx) => this._renderObjectiveInputRow(idx + 1, isObjEditable)).join('')}
-        </tbody>
-      `;
-    } else if (this.stage === BUSINESS_STAGES.MIDYEAR_INPUT) {
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th style="width: 45px; text-align: center;">#</th>
-            <th style="width: 25%;">
-              เป้าหมาย / Objective & Target <span style="color:#64748b;">[🔒 ล็อก]</span>
-              <span class="th-sub">[เป้าหมายที่บันทึกไว้ / Saved Objective]</span>
-            </th>
-            <th style="width: 140px;">
-              ความคืบหน้า / Progress (%) <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[0 - 100%]</span>
-            </th>
-            <th style="width: 22%;">
-              การทบทวนเป็นระยะ / Periodical Review by Appraisee
-              <span class="th-sub">[บันทึกทบทวนผลงาน / Review Notes]</span>
-            </th>
-            <th style="width: 22%;">
-              ผลสำเร็จปัจจุบัน / Current Result
-              <span class="th-sub">[ผลสำเร็จปัจจุบัน / Milestone Results]</span>
-            </th>
-            <th style="width: 22%;">
-              ปัญหาและแนวทางแก้ไข / Issue, Risk & Next Action
-              <span class="th-sub">[ปัญหา อุปสรรค / Risks & Next Steps]</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Array.from({ length: count }, (_, idx) => this._renderMidYearRow(idx + 1)).join('')}
-        </tbody>
-      `;
-    } else if (this.stage === BUSINESS_STAGES.SELF_EVALUATION) {
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th style="width: 45px; text-align: center;">#</th>
-            <th style="width: 22%;">
-              เป้าหมาย / Objective & Target <span style="color:#64748b;">[🔒 ล็อก]</span>
-              <span class="th-sub">[เป้าหมายที่บันทึกไว้ / Saved Objective]</span>
-            </th>
-            <th style="width: 20%;">
-              ผลทบทวนกลางปี / Mid-Year Summary <span style="color:#64748b;">[🔒 ล็อก]</span>
-              <span class="th-sub">[ผลทบทวนกลางปี / Mid-Year Review]</span>
-            </th>
-            <th style="width: 26%;">
-              ผลการดำเนินงานจริง / Actual Result & Achievement <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[ผลงานจริงเมื่อสิ้นสุดรอบประเมิน / Actual Results]</span>
-            </th>
-            <th style="width: 170px;">
-              ประเมินตนเอง / Self Achievement [1-5] <span style="color:#dc2626;">*</span>
-              <span class="th-sub">[ระดับผลสำเร็จ 1-5]</span>
-            </th>
-            <th style="width: 20%;">
-              ความคิดเห็นตนเอง / Self Comment / Reflection
-              <span class="th-sub">[ความเห็นประเมินตนเอง / Self Reflection]</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Array.from({ length: count }, (_, idx) => this._renderSelfEvalRow(idx + 1)).join('')}
-        </tbody>
-      `;
-    } else {
-      // Read-Only Summary Mode
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th style="width: 45px; text-align: center;">#</th>
-            <th style="width: 24%;">เป้าหมายและแผนงาน / Objective & Action Plan</th>
-            <th style="width: 80px; text-align: center;">Weight %</th>
-            <th style="width: 90px; text-align: center;">Difficulty</th>
-            <th style="width: 20%;">ทบทวนกลางปี / Mid-Year Review</th>
-            <th style="width: 24%;">ผลงานจริง / Actual Result</th>
-            <th style="width: 90px; text-align: center;">Self Ach.</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Array.from({ length: count }, (_, idx) => this._renderReadOnlySummaryRow(idx + 1)).join('')}
-        </tbody>
-      `;
-    }
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th style="width: 45px; text-align: center;">#</th>
+          <th style="width: 32%;">
+            เป้าหมาย / Objectives (Expected result & target) <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[ระบุเป้าหมายและผลลัพธ์ที่คาดหวัง / Indicate expected result]</span>
+          </th>
+          <th style="width: 32%;">
+            แผนปฏิบัติการ / Action Plan (Activities to achieve obj.) <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[ระบุกิจกรรมและแผนงาน / Indicate activities & plan]</span>
+          </th>
+          <th style="width: 18%;">
+            ข้อตกลงเพิ่มเติม / Additional agreement / Comment
+            <span class="th-sub">[ข้อตกลงเพิ่มเติม / Any agreement]</span>
+          </th>
+          <th style="width: 95px; text-align: center;">
+            น้ำหนัก / Weight (%) <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[น้ำหนัก %]</span>
+          </th>
+          <th style="width: 180px;">
+            ระดับความยาก / Difficulty Level [1-4] <span style="color:#dc2626;">*</span>
+            <span class="th-sub">[ระดับความยาก 1-4]</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from({ length: count }, (_, idx) => this._renderObjectiveInputRow(idx + 1, isObjEditable)).join('')}
+      </tbody>
+    `;
 
     container.appendChild(table);
 
@@ -977,6 +1411,11 @@ export class EmployeePartAUI {
     const resVal = this._getVal(`MidYear_Result_${i}`);
     const riskVal = this._getVal(`MidYear_Issue_Risk_${i}`);
 
+    const attachFiles = this.previewOptions.midyearAttachments?.[i] || [
+      `MidYear_Evidence_Obj${i}.pdf`,
+      `Review_Notes_Q2_Obj${i}.xlsx`
+    ];
+
     return `
       <tr>
         <td class="mbo-row-num-cell">${i}</td>
@@ -996,16 +1435,22 @@ export class EmployeePartAUI {
           <span class="mbo-cell-tag" data-target="Progress_Percent_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="บันทึกทบทวนผลงาน / Review notes...">${escapeHtml(revVal)}</textarea>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="บันทึกทบทวนผลงาน / Review notes...">${escapeHtml(revVal)}</textarea>
           <span class="mbo-cell-tag" data-target="Periodical_Review_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Result_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ผลสำเร็จปัจจุบัน / Milestone results...">${escapeHtml(resVal)}</textarea>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Result_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ผลสำเร็จปัจจุบัน / Milestone results...">${escapeHtml(resVal)}</textarea>
           <span class="mbo-cell-tag" data-target="MidYear_Result_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ปัญหาและอุปสรรค / Risks & next action...">${escapeHtml(riskVal)}</textarea>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ปัญหาและอุปสรรค / Risks & next action...">${escapeHtml(riskVal)}</textarea>
           <span class="mbo-cell-tag" data-target="MidYear_Issue_Risk_${i}"></span>
+          <div class="mbo-attachment-section">
+            <div class="mbo-attachment-title">📎 เอกสารแนบทบทวนกลางปี / Mid-Year Evidence Files:</div>
+            <div class="mbo-attachment-list">
+              ${attachFiles.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('')}
+            </div>
+          </div>
         </td>
       </tr>
     `;
@@ -1021,6 +1466,11 @@ export class EmployeePartAUI {
     const selfAch = this._getVal(`Self_Achievement_${i}`) || '3';
     const selfComment = this._getVal(`Self_Comment_${i}`);
 
+    const finalAttachFiles = this.previewOptions.finalAttachments?.[i] || [
+      `Final_Achievement_Evidence_Obj${i}.pdf`,
+      `Performance_Report_Obj${i}.docx`
+    ];
+
     return `
       <tr>
         <td class="mbo-row-num-cell">${i}</td>
@@ -1029,12 +1479,18 @@ export class EmployeePartAUI {
           <div style="margin-top: 4px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${escapeHtml(wVal)}%</div>
         </td>
         <td>
-          <div style="font-size: 12px; font-weight: 600; color: #0369a1;">Mid-Year: ${escapeHtml(prog)}%</div>
+          <div style="font-size: 12px; font-weight: 600; color: #0369a1;">Mid-Year Progress: ${escapeHtml(prog)}%</div>
           <div style="font-size: 12px; color: #475569; margin-top: 4px; white-space: pre-wrap;">${escapeHtml(midRes) || '-'}</div>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Actual_Result_${i}" data-required="true" ${!isSelfEditable ? 'readonly' : ''} placeholder="ผลงานจริง / Summary of actual results...">${escapeHtml(actResult)}</textarea>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Actual_Result_${i}" data-required="true" ${!isSelfEditable ? 'readonly' : ''} placeholder="ผลงานจริง / Summary of actual results...">${escapeHtml(actResult)}</textarea>
           <span class="mbo-cell-tag" data-target="Actual_Result_${i}"></span>
+          <div class="mbo-attachment-section">
+            <div class="mbo-attachment-title">📎 เอกสารแนบหลักฐานผลงาน / Self Eval Evidence Files:</div>
+            <div class="mbo-attachment-list">
+              ${finalAttachFiles.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('')}
+            </div>
+          </div>
         </td>
         <td style="vertical-align: middle;">
           ${isSelfEditable ? `
@@ -1051,40 +1507,9 @@ export class EmployeePartAUI {
           <span class="mbo-cell-tag" data-target="Self_Achievement_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="ความเห็นประกอบ / Self reflection...">${escapeHtml(selfComment)}</textarea>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="ความเห็นประกอบ / Self reflection...">${escapeHtml(selfComment)}</textarea>
           <span class="mbo-cell-tag" data-target="Self_Comment_${i}"></span>
         </td>
-      </tr>
-    `;
-  }
-
-  _renderReadOnlySummaryRow(i) {
-    const objVal = this._getVal(`Objective_${i}`);
-    const actVal = this._getVal(`Action_Plan_${i}`);
-    const wVal = this._getVal(`Weight_${i}`) || '0';
-    const diffVal = this._getVal(`Difficulty_${i}`) || '-';
-    const prog = this._getVal(`Progress_Percent_${i}`) || '0';
-    const midRes = this._getVal(`MidYear_Result_${i}`);
-    const actResult = this._getVal(`Actual_Result_${i}`);
-    const selfAch = this._getVal(`Self_Achievement_${i}`) || '-';
-
-    return `
-      <tr>
-        <td class="mbo-row-num-cell">${i}</td>
-        <td>
-          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">${escapeHtml(objVal) || '-'}</div>
-          <div style="font-size: 12px; color: #475569; white-space: pre-wrap;">${escapeHtml(actVal) || ''}</div>
-        </td>
-        <td style="text-align: center; vertical-align: middle; font-weight: 700;">${escapeHtml(wVal)}%</td>
-        <td style="text-align: center; vertical-align: middle;">Level ${escapeHtml(diffVal)}</td>
-        <td>
-          <div style="font-size: 12px; font-weight: 700; color: #0369a1;">Progress: ${escapeHtml(prog)}%</div>
-          <div style="font-size: 12px; color: #475569; margin-top: 2px;">${escapeHtml(midRes) || '-'}</div>
-        </td>
-        <td>
-          <div style="font-size: 12px; color: #0f172a; white-space: pre-wrap;">${escapeHtml(actResult) || '-'}</div>
-        </td>
-        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: #b45309;">Level ${escapeHtml(selfAch)}</td>
       </tr>
     `;
   }

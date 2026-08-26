@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App794 Evaluation UI V2 - Status Preview Lab</title>
+  <link rel="stylesheet" href="/mbo-employee.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #f8fafc;
+    }
+    .preview-lab-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #1e293b;
+      border-bottom: 2px solid #3b82f6;
+      padding: 12px 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+    .preview-lab-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-lab-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .preview-lab-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .preview-lab-select {
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .preview-lab-select:focus {
+      border-color: #60a5fa;
+    }
+    .preview-container-wrap {
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-lab-toolbar">
+    <div class="preview-lab-title">
+      🧪 Status Preview Lab V2
+    </div>
+
+    <div class="preview-lab-group">
+      <label>1. Workflow Status (1-16)</label>
+      <select id="lab-status" class="preview-lab-select">
+        <option value="01 Draft Objective">01 Draft Objective [Stage 1]</option>
+        <option value="02 First Manager Objective Review">02 First Manager Objective Review [Stage 1]</option>
+        <option value="03 Manager Objective Review">03 Manager Objective Review [Stage 1]</option>
+        <option value="04 GM Objective Review">04 GM Objective Review [Stage 1]</option>
+        <option value="05 Objective Approved">05 Objective Approved [Stage 1]</option>
+        <option value="06 Employee Mid-Year">06 Employee Mid-Year [Stage 2]</option>
+        <option value="07 First Manager Mid-Year Review">07 First Manager Mid-Year Review [Stage 2]</option>
+        <option value="08 Manager Mid-Year Review">08 Manager Mid-Year Review [Stage 2]</option>
+        <option value="09 GM Mid-Year Review">09 GM Mid-Year Review [Stage 2]</option>
+        <option value="10 Mid-Year Completed">10 Mid-Year Completed [Stage 2]</option>
+        <option value="11 Employee Self Evaluation">11 Employee Self Evaluation [Stage 3]</option>
+        <option value="12 First Manager Final Evaluation">12 First Manager Final Evaluation [Stage 4]</option>
+        <option value="13 Manager Final Evaluation">13 Manager Final Evaluation [Stage 4]</option>
+        <option value="14 GM Final Evaluation">14 GM Final Evaluation [Stage 4]</option>
+        <option value="15 HR Final Check">15 HR Final Check [Stage 5]</option>
+        <option value="16 Completed">16 Completed [Stage 5]</option>
+      </select>
+    </div>
+
+    <div class="preview-lab-group">
+      <label>2. Profile Ratio</label>
+      <select id="lab-ratio" class="preview-lab-select">
+        <option value="70/30">70/30 (Staff / Chief)</option>
+        <option value="60/40">60/40 (Assistant Manager)</option>
+        <option value="50/50">50/50 (Section Manager)</option>
+      </select>
+    </div>
+
+    <div class="preview-lab-group">
+      <label>3. Appraisers (1-4)</label>
+      <select id="lab-appraisers" class="preview-lab-select">
+        <option value="1">1 Appraiser</option>
+        <option value="2" selected>2 Appraisers (Default)</option>
+        <option value="3">3 Appraisers (Logical preview)</option>
+        <option value="4">4 Appraisers (Logical preview)</option>
+      </select>
+    </div>
+
+    <div class="preview-lab-group">
+      <label>4. Completion Mode</label>
+      <select id="lab-completion" class="preview-lab-select">
+        <option value="complete">Complete (All ratings filled)</option>
+        <option value="incomplete">Incomplete (Missing ratings)</option>
+      </select>
+    </div>
+
+    <div class="preview-lab-group">
+      <label>5. Active Editor Slot</label>
+      <select id="lab-slot" class="preview-lab-select">
+        <option value="1">1st Appraiser</option>
+        <option value="2">2nd Appraiser</option>
+        <option value="3">3rd Appraiser</option>
+        <option value="4">4th Appraiser</option>
+      </select>
+    </div>
+
+    <div class="preview-lab-group">
+      <label>6. Topology</label>
+      <select id="lab-topology" class="preview-lab-select">
+        <option value="M1_G1">M1_G1 (Canonical V1)</option>
+        <option value="M1_M2_G1">M1_M2_G1 (Canonical M2 V1)</option>
+        <option value="M1_G1_G2">M1_G1_G2 (Unsupported G2)</option>
+        <option value="M1_M2_G1_G2">M1_M2_G1_G2 (Unsupported G2)</option>
+        <option value="INVALID_TOPOLOGY">INVALID_TOPOLOGY (Unrecognized)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="preview-container-wrap">
+    <div id="mbo-ui-mount"></div>
+  </div>
+
+  <script src="/mbo-employee-app.js"></script>
+  <script>
+    (function() {
+      const mount = document.getElementById('mbo-ui-mount');
+
+      const mockRecord = {
+        Fiscal_Year: { value: 'FY2026' },
+        Status: { value: '01 Draft Objective' },
+        Employee_Code: { value: '0149' },
+        Employee_Name: { value: 'Somchai Prasert (สมชาย ประเสริฐ)' },
+        Employee_Section: { value: 'Technology Section 1 (TMT1)' },
+        Employee_Position: { value: 'Technical Service Chief' },
+        Employee_Department: { value: 'Technology & Innovation' },
+        Employee_Start_Date: { value: '2020-04-01' },
+        Department_Hoshin: { value: 'ส่งเสริมนวัตกรรมทางเทคโนโลยีและยกระดับคุณภาพบริการดิจิทัล FY2026' },
+        Section_Hoshin: { value: 'พัฒนาระบบ MBO V2 และเพิ่มประสิทธิภาพงานบริการเทคนิค 20%' },
+        Objective_Count: { value: '3' },
+        Routing_Topology: { value: 'M1_G1' },
+
+        Objective_1: { value: 'พัฒนาและส่งมอบระบบ MBO V2 ให้เสร็จตามกำหนดเวลา' },
+        Action_Plan_1: { value: 'ออกแบบ Architecture, พัฒนา Frontend/Backend, และทดสอบ UAT ร่วมกับ HR' },
+        Additional_Agreement_1: { value: 'ส่งมอบครบทุก Feature ภายใน Q3' },
+        Weight_1: { value: '40' },
+        Difficulty_1: { value: '4' },
+        Progress_Percent_1: { value: '100' },
+        Periodical_Review_1: { value: 'ความคืบหน้าเป็นไปตามแผนงาน Q2' },
+        MidYear_Result_1: { value: 'เสร็จสิ้นการพัฒนา Core Workflow' },
+        MidYear_Issue_Risk_1: { value: 'ไม่มีอุปสรรคสำคัญ' },
+        Actual_Result_1: { value: 'ส่งมอบระบบ MBO V2 ครบ 100% พร้อมคู่มือการใช้งาน' },
+        Self_Achievement_1: { value: '4' },
+        Self_Comment_1: { value: 'ส่งมอบงานได้ตรงตามเวลาและคุณภาพที่กำหนด' },
+
+        Objective_2: { value: 'ปรับปรุงประสิทธิภาพการให้บริการเทคโนโลยีสารสนเทศ' },
+        Action_Plan_2: { value: 'ลดเวลาการแก้ไขปัญหา IT Support เหลือไม่เกิน 2 ชั่วโมง' },
+        Additional_Agreement_2: { value: 'วัดผลจาก SLA Monthly Report' },
+        Weight_2: { value: '35' },
+        Difficulty_2: { value: '3' },
+        Progress_Percent_2: { value: '90' },
+        Periodical_Review_2: { value: 'SLA เฉลี่ย 1.8 ชั่วโมง' },
+        MidYear_Result_2: { value: 'ผ่านเกณฑ์ SLA 6 เดือนแรก' },
+        MidYear_Issue_Risk_2: { value: 'อุปกรณ์ทดแทนมีจำนวนจำกัด' },
+        Actual_Result_2: { value: 'บรรลุเป้าหมาย SLA 1.5 ชั่วโมงตลอดทั้งปี' },
+        Self_Achievement_2: { value: '4' },
+        Self_Comment_2: { value: 'ได้รับการตอบรับที่ดีจากผู้ใช้งาน' },
+
+        Objective_3: { value: 'อบรมและถ่ายทอดความรู้แก่ทีมงานในส่วนงาน' },
+        Action_Plan_3: { value: 'จัดอบรมสัปดาห์ละ 1 ครั้ง รวม 12 หัวข้อ' },
+        Additional_Agreement_3: { value: 'ประเมินผลหลังอบรมไม่ต่ำกว่า 85%' },
+        Weight_3: { value: '25' },
+        Difficulty_3: { value: '2' },
+        Progress_Percent_3: { value: '100' },
+        Periodical_Review_3: { value: 'อบรมครบแล้ว 6 หัวข้อแรก' },
+        MidYear_Result_3: { value: 'คะแนนประเมินเฉลี่ย 90%' },
+        MidYear_Issue_Risk_3: { value: 'จัดเวลาอบรมให้ตรงกัน' },
+        Actual_Result_3: { value: 'อบรมครบ 12 หัวข้อ คะแนนเฉลี่ย 92%' },
+        Self_Achievement_3: { value: '5' },
+        Self_Comment_3: { value: 'ทีมงานมีความเข้าใจและนำไปปรับใช้ได้จริง' },
+
+        Manager_User: { value: [{ code: 'm01', name: 'Manager Sompong' }] },
+        GM_User: { value: [{ code: 'g01', name: 'GM Vichai' }] },
+        First_Manager_User: { value: [{ code: 'fm01', name: 'First Manager Anan' }] },
+
+        Manager_Comment_PartA: { value: 'ผลงานดีเยี่ยม ปฏิบัติงานได้ตามเป้าหมายและมีคุณภาพสูง' },
+        Manager_Comment_PartB: { value: 'มีความเชี่ยวชาญและการทำงานเป็นทีมดีมาก' },
+        GM_Comment_PartA: { value: 'เห็นพ้องกับความเห็นของ Manager สมควรได้รับผลการประเมินระดับสูง' },
+        GM_Comment_PartB: { value: 'ปฏิบัติตามกฎระเบียบและจริยธรรมองค์กรอย่างเคร่งครัด' },
+
+        Manager_PartA_Rating_1: { value: '4' },
+        Manager_PartA_Rating_2: { value: '4' },
+        Manager_PartA_Rating_3: { value: '5' },
+
+        GM_PartA_Rating_1: { value: '4' },
+        GM_PartA_Rating_2: { value: '4' },
+        GM_PartA_Rating_3: { value: '5' },
+
+        Manager_PartB_Score_1: { value: '4' },
+        Manager_PartB_Score_2: { value: '4' },
+        Manager_PartB_Score_3: { value: '5' },
+        Manager_PartB_Score_4: { value: '4' },
+        Manager_PartB_Score_5: { value: '5' },
+        Manager_PartB_Score_6: { value: '5' },
+
+        GM_PartB_Score_1: { value: '4' },
+        GM_PartB_Score_2: { value: '4' },
+        GM_PartB_Score_3: { value: '5' },
+        GM_PartB_Score_4: { value: '4' },
+        GM_PartB_Score_5: { value: '5' },
+        GM_PartB_Score_6: { value: '5' }
+      };
+
+      function updateLab() {
+        const st = document.getElementById('lab-status').value;
+        const appCount = parseInt(document.getElementById('lab-appraisers').value, 10);
+        const compMode = document.getElementById('lab-completion').value;
+        const activeSlot = parseInt(document.getElementById('lab-slot').value, 10);
+        const topVal = document.getElementById('lab-topology').value;
+
+        mockRecord.Status.value = st;
+        mockRecord.Routing_Topology.value = topVal;
+
+        const previewOptions = {
+          slot1Completed: true,
+          slot2Completed: compMode === 'complete',
+          slot3Completed: compMode === 'complete',
+          slot4Completed: compMode === 'complete',
+          slot3CommentA: 'Appraiser 3 Feedback: Excellent technical leadership.',
+          slot3CommentB: 'Appraiser 3 Competency: Outstanding teamwork.',
+          slot4CommentA: 'Appraiser 4 Feedback: Recommended for distinction.',
+          slot4CommentB: 'Appraiser 4 Competency: High integrity.',
+          slot3RatingsA: { 1: '4', 2: '4', 3: '5' },
+          slot3RatingsB: { 1: '4', 2: '4', 3: '5', 4: '4', 5: '5', 6: '5' },
+          slot4RatingsA: { 1: '5', 2: '4', 3: '5' },
+          slot4RatingsB: { 1: '5', 2: '4', 3: '5', 4: '5', 5: '5', 6: '5' }
+        };
+
+        if (compMode === 'incomplete') {
+          previewOptions.slot2Completed = false;
+          previewOptions.slot3Completed = false;
+          previewOptions.slot4Completed = false;
+          mockRecord.GM_PartA_Rating_1.value = '';
+          mockRecord.GM_PartA_Rating_2.value = '';
+          mockRecord.GM_PartA_Rating_3.value = '';
+        } else {
+          mockRecord.GM_PartA_Rating_1.value = '4';
+          mockRecord.GM_PartA_Rating_2.value = '4';
+          mockRecord.GM_PartA_Rating_3.value = '5';
+        }
+
+        mount.innerHTML = '';
+        const ui = new EmployeePartAUI({
+          container: mount,
+          record: mockRecord,
+          stage: 'READ_ONLY',
+          isEditable: true,
+          appraiserCount: appCount,
+          previewOptions: previewOptions
+        });
+        ui.render();
+      }
+
+      ['lab-status', 'lab-ratio', 'lab-appraisers', 'lab-completion', 'lab-slot', 'lab-topology'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateLab);
+      });
+
+      updateLab();
+    })();
+  </script>
+</body>
+</html>

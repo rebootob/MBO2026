@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_EVALUATION_UI_V2_LOCAL_CANDIDATE** | **`PASS`** — Built App794 Evaluation UI V2 + Status Preview Lab local candidate (0 Kintone calls/writes/deploys): 5 distinct macro screens (`Objectives`, `Mid-Year`, `Self Evaluation`, `Appraiser Evaluation`, `HR Final`), 5-phase overall process progress bar, 1-4 appraiser slot rendering capacity with role-neutral labels (`1st` to `4th Appraiser`), Part A & Part B appraiser cards with COCE exclusion badge, attachment UX summary areas, and interactive Status Preview Lab (`npm run ui:preview`); 555/555 tests passing; bundle parse PASS |
 | **APP794_UIUX_V1_DEPLOY** | **`PASS`** — Executed single-use authorized desktop customization deploy to App 794 (Revision 39); uploaded 2 candidate files (`mbo-employee-app.js` SHA256 `9EF562...`, `mbo-employee.css` SHA256 `26296C...`), 1 customization PUT, 1 deploy POST; verified post-deploy SHA256 match, 16/28 Process states, `ONE + USER:hr` status 15 assignee, 0 mobile changes, and 0 record writes/workflow actions |
 | **POST_CORE_UIUX_V1_CANDIDATE_R2** | **`PASS`** — Applied R2 local UI topology display corrections (0 Kintone calls/writes/deploys): strict `classifyTopologyForUI` helper; non-empty invalid topologies (`INVALID_TOPOLOGY`, `INVALID_M2`) fail closed with warning display & block First Manager / normal route portrayal; G2 topologies (`M1_G1_G2`, `M1_M2_G1_G2`) display unsupported-V1 warning banner; 96/96 tests passing; bundle parse PASS |
 | **POST_CORE_UIUX_V1_CANDIDATE_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): MUST FIX 1 (First Manager route step shown ONLY when `Routing_Topology` contains M2 AND `First_Manager_User` populated), MUST FIX 2 (status 05 Objectives completed & Mid-Year waiting; status 10 Objectives & Mid-Year completed & Year-End waiting; review statuses 03/04, 08/09, 13/14/15 in-review in correct phase), blank/unknown topology display fail-closed warning; 96/96 tests passing; bundle parse & ES module residue check PASS |
@@ -1357,4 +1358,45 @@ ROLLBACK_EXECUTED = NO
 GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
 NEXT_ACTION = CHATGPT REVIEW; IF PASS MOVE TO DASHBOARD SPRINT
+```
+
+## App794 Evaluation UI V2 + Status Preview Lab Evidence
+
+```text
+APP794_EVALUATION_UI_V2_LOCAL_CANDIDATE = COMPLETE
+SOURCE_BASELINE_BEFORE_TASK_MANIFEST = b2d58e5fc723f694d746e74f4e7902ae9d735708
+EXECUTION_STARTING_HEAD = b5f7f3d9ed3015fbe8e45300eb230ed8b2f9f1b4
+FIVE_SCREEN_UI_GATE = PASS
+STATUS_16_PREVIEW_COVERAGE = 16/16
+APPRAISER_SLOT_RENDER_CAPACITY = 1-4
+SCORING_ROLE_NEUTRAL_LABEL_GATE = PASS
+WORKFLOW_APPROVER_SCORING_APPRAISER_SEPARATION = PASS
+PROCESS_PROGRESS_GATE = PASS
+APPRAISER_COMPLETION_GATE = PASS
+DATA_COMPLETION_GATE = PASS
+MIDYEAR_ATTACHMENT_UI_GATE = PASS
+SELF_EVAL_ATTACHMENT_UI_GATE = PASS
+ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
+WIDE_TEXT_UX_GATE = PASS
+PART_A_UI_GATE = PASS
+PART_B_UI_GATE = PASS
+COCE_EXCLUDED_DISPLAY_GATE = PASS
+INCOMPLETE_FINAL_SCORE_FAIL_CLOSED_UI = PASS
+APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
+APP796_MUTATION_COUNT = 0
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+FROZEN_PROCESS_CHANGE_COUNT = 0
+ROUTING_CHANGE_COUNT = 0
+RECORD_KEY_CHANGE_COUNT = 0
+NPM_TEST = 555 / PASS
+UI_BUILD = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+PREVIEW_LAB_LOAD = PASS
+PREVIEW_KINTONE_CALL_COUNT = 0
+NEW_PRODUCTION_UI_STACK_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW + USER VISUAL PREVIEW; NO DEPLOY YET
 ```
