@@ -18,6 +18,7 @@ This folder contains business and technical facts that have already been explici
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights, and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
 - `ROUTING_WORKFLOW.md` — confirmed App795 routing model and workflow rules.
+- `EMPLOYEE_MASTER_ROUTING.md` — confirmed App53 routing-input semantics, Position normalization, General Manager precedence, TMG2 Team values, President-resolution safety, and TMG2 CAD same-route decision.
 - `UI_UX.md` — confirmed App794 five-stage UI/UX, bilingual presentation, route display, HR phase-calendar ownership, deadline/countdown, attachments, and Preview visual-approval rules.
 
 ## Review Rule
