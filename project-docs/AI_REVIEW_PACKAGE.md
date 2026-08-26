@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_EVALUATION_UI_V2_R2** | **`PASS`** — Applied R2 local UI corrections (0 Kintone calls/writes/deploys): Objectives wide card UX (`.mbo-wide-card`), per-item Part A & Part B appraiser comments (`Manager_Comment_i`, `GM_Comment_i`, `Manager_Competency_Comment_i`, `GM_Competency_Comment_i`), read-only score/result context, Appraiser & HR attachment evidence summaries, fail-closed competency set code validation, fail-closed weight configuration validation (0 hardcoded 70/30 production fallback), zero old 4-step secondary nav (`OLD_4_STEP_YEAR_END_NAV_VISIBLE = 0`), Preview incomplete mode working for appraiser counts 1–4, and active slot selector constrained to 1..N; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): real physical legacy scoring field adapter (`Manager_Achievement_*`, `GM_Achievement_*`, `Manager_Competency_Rating_*`, etc.), slots 3/4 zero physical alias, strict data-based completion, verified competency sets (Operational 6 items vs Management 8 items), functional profile ratio selector (70/30, 60/40, 50/50), production path zero fake file fallback, separate `MidYear_Next_Action_i` field, wide-text card layout, read-only HR final with zero nav duplication, functional active preview slot selector, 16-status process progress bar (5%-100%), and unknown status fail-closed banner; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_LOCAL_CANDIDATE** | **`PASS`** — Built App794 Evaluation UI V2 + Status Preview Lab local candidate (0 Kintone calls/writes/deploys): 5 distinct macro screens (`Objectives`, `Mid-Year`, `Self Evaluation`, `Appraiser Evaluation`, `HR Final`), 5-phase overall process progress bar, 1-4 appraiser slot rendering capacity with role-neutral labels (`1st` to `4th Appraiser`), Part A & Part B appraiser cards with COCE exclusion badge, attachment UX summary areas, and interactive Status Preview Lab (`npm run ui:preview`); 555/555 tests passing; bundle parse PASS |
 | **APP794_UIUX_V1_DEPLOY** | **`PASS`** — Executed single-use authorized desktop customization deploy to App 794 (Revision 39); uploaded 2 candidate files (`mbo-employee-app.js` SHA256 `9EF562...`, `mbo-employee.css` SHA256 `26296C...`), 1 customization PUT, 1 deploy POST; verified post-deploy SHA256 match, 16/28 Process states, `ONE + USER:hr` status 15 assignee, 0 mobile changes, and 0 record writes/workflow actions |
@@ -1407,7 +1408,7 @@ NEXT_ACTION = CHATGPT REVIEW + USER VISUAL PREVIEW; NO DEPLOY YET
 ```text
 APP794_EVALUATION_UI_V2_R1 = COMPLETE
 REVIEWED_FIRST_CANDIDATE = bfbbe1413ce761e689b3fa6c3f675493ab6f3399
-R1_EXECUTION_STARTING_HEAD = 7ff421639d67fb80a2cd60f9e160ef9170e0f8f9
+R1_EXECUTION_STARTING_HEAD = 7ff421657fea815f3fc807cf0f89a070ca95c4c6
 REAL_PHYSICAL_SCORING_FIELD_ADAPTER = PASS
 SLOT3_4_NO_PHYSICAL_ALIAS = PASS
 APPRAISER_COMPLETENESS_STRICT = PASS
@@ -1430,6 +1431,42 @@ STATUS_PROGRESS_EXACT_16 = PASS
 STATUS15_PROGRESS = 95
 STATUS16_PROGRESS = 100
 UNKNOWN_VISUAL_STATUS_FAIL_CLOSED = PASS
+APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
+ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+APP796_MUTATION_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+NPM_TEST = 555 / PASS
+UI_BUILD = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+PREVIEW_LAB_LOAD = PASS
+PREVIEW_KINTONE_CALL_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
+```
+
+## App794 Evaluation UI V2 R2 Evidence
+
+```text
+APP794_EVALUATION_UI_V2_R2 = COMPLETE
+REVIEWED_R1_CANDIDATE = 9201d5ef88b783846822d7d2469873715272e7bb
+R2_EXECUTION_STARTING_HEAD = fc0bca16773347f3b5eb423fb886dd6e8ebaaad1
+OBJECTIVES_WIDE_CARD_UX = PASS
+PARTA_COMMENT_PER_OBJECTIVE = PASS
+PARTB_COMMENT_PER_COMPETENCY = PASS
+PARTA_RESULT_CONTEXT = PASS
+PARTB_RESULT_CONTEXT = PASS
+STALE_RESULT_WHEN_INCOMPLETE_FAIL_CLOSED = PASS
+APPRAISER_ATTACHMENT_EVIDENCE = PASS
+HR_ATTACHMENT_EVIDENCE = PASS
+COMPETENCY_SET_INVALID_FAIL_CLOSED = PASS
+WEIGHT_CONFIG_INVALID_FAIL_CLOSED = PASS
+OLD_4_STEP_YEAR_END_NAV_VISIBLE = 0
+PREVIEW_INCOMPLETE_COUNTS_1_TO_4 = PASS
+ACTIVE_SLOT_CONSTRAINED_TO_N = PASS
+PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE
 APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
 ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
 APP794_KINTONE_CALL_COUNT = 0

@@ -4,16 +4,53 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, getStageNavSteps, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies } from '../src/ui/employee-part-a-ui.js';
 
-const makeMockElement = () => ({
-  innerHTML: '',
-  appendChild: () => {},
-  querySelector: () => null,
-  querySelectorAll: () => [],
-  addEventListener: () => {},
-  style: {}
-});
+const makeMockElement = () => {
+  const children = [];
+  let _innerHTML = '';
+  const el = {
+    className: '',
+    get innerHTML() {
+      const childHtml = children.map(c => c.innerHTML || '').join('');
+      return _innerHTML + childHtml;
+    },
+    set innerHTML(val) {
+      _innerHTML = val;
+    },
+    children,
+    appendChild: (child) => { children.push(child); return child; },
+    querySelector: (selector) => {
+      const cls = selector.replace(/^[.#]/, '');
+      const find = (arr) => {
+        for (const c of arr) {
+          if (c.className === cls || c.id === cls || (c.className && c.className.includes(cls))) return c;
+          if (c.children) {
+            const res = find(c.children);
+            if (res) return res;
+          }
+        }
+        return null;
+      };
+      return find(children);
+    },
+    querySelectorAll: (selector) => {
+      const cls = selector.replace(/^[.#]/, '');
+      const results = [];
+      const find = (arr) => {
+        for (const c of arr) {
+          if (c.className === cls || (c.className && c.className.includes(cls))) results.push(c);
+          if (c.children) find(c.children);
+        }
+      };
+      find(children);
+      return results;
+    },
+    addEventListener: () => {},
+    style: {}
+  };
+  return el;
+};
 
 const kintoneHandlers = {};
 let currentFormRecord = null;
@@ -1189,20 +1226,15 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   assert.equal(g2Guidance.isWarning, true, 'G2 topology guidance must set isWarning = true');
   assert.ok(g2Guidance.th.includes('ยังไม่เปิดใช้งานในระบบ MBO V1'), 'G2 guidance must state unsupported in V1');
 
-  // 4. Status 05 & 10 completion phasing
-  const steps05 = getStageNavSteps('05 Objective Approved');
-  assert.equal(steps05[0].state, 'completed', 'Status 05 must mark Objectives stage completed');
-  assert.equal(steps05[1].state, 'locked', 'Status 05 must mark Mid-Year stage locked/waiting, NOT active');
-
-  const steps10 = getStageNavSteps('10 Mid-Year Completed');
-  assert.equal(steps10[0].state, 'completed', 'Status 10 must mark Objectives stage completed');
-  assert.equal(steps10[1].state, 'completed', 'Status 10 must mark Mid-Year stage completed');
-  assert.equal(steps10[2].state, 'locked', 'Status 10 must mark Year-End stage locked/waiting, NOT active');
-
-  // 5. Review statuses (03/04, 08/09, 13/14/15) in-review in correct phase
-  assert.equal(getStageNavSteps('03 Manager Objective Review')[0].state, 'active');
-  assert.equal(getStageNavSteps('08 Manager Mid-Year Review')[1].state, 'active');
-  assert.equal(getStageNavSteps('13 Manager Final Evaluation')[2].state, 'active');
+  // 4. Old 4-step Year-End secondary nav is removed in V2 (R2-07)
+  const uiNavCheck = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' } }),
+    stage: 'READ_ONLY'
+  });
+  uiNavCheck.render();
+  assert.equal(uiNavCheck._renderStageNav, undefined, 'Old 4-step secondary nav method must be removed');
+  assert.ok(uiNavCheck.root, 'V2 screens must render root element');
 
   // 8. Evaluation UI V2 — 5 Macro Screen Mapping & Appraiser Slot Capacity
   const statusScreenMap = {
@@ -1240,24 +1272,31 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   assert.equal(getVisualScreen('99 INVALID STATUS'), null, 'Unknown visual status must return null to fail closed');
   assert.equal(getProcessProgress('99 INVALID STATUS'), null, 'Unknown status progress must return null to fail closed');
 
-  // 10. Competency Set Count (R1-04)
+  // 10. Competency Set Count (R1-04, R2-05)
   const opCompList = getApplicableCompetencies('COMP_SET_OPERATIONAL_V1');
   assert.equal(opCompList.length, 6, 'Operational competency set must have exactly 6 items');
 
   const mgmtCompList = getApplicableCompetencies('COMP_SET_MANAGEMENT_V1');
   assert.equal(mgmtCompList.length, 8, 'Management competency set must have exactly 8 items');
 
-  // 11. Real Legacy Field Mapping & Appraiser Capacity (R1-01, R1-02, R1-03)
+  // Blank or invalid competency set fails closed (R2-05)
+  assert.equal(getApplicableCompetencies(''), null, 'Blank competency set code must return null');
+  assert.equal(getApplicableCompetencies('INVALID_CODE'), null, 'Invalid competency set code must return null');
+
+  // 11. Real Legacy Field Mapping & Per-Item Comments (R1-01, R2-02)
   const mockRecord = createMockRecord({
     Objective_Count: { value: '2' },
     Manager_Achievement_1: { value: '4' },
     Manager_Achievement_2: { value: '4' },
+    Manager_Comment_1: { value: 'Obj 1 Comment' },
+    Manager_Comment_2: { value: 'Obj 2 Comment' },
     Manager_Competency_Rating_1: { value: '4' },
     Manager_Competency_Rating_2: { value: '4' },
     Manager_Competency_Rating_3: { value: '4' },
     Manager_Competency_Rating_4: { value: '4' },
     Manager_Competency_Rating_5: { value: '4' },
-    Manager_Competency_Rating_6: { value: '5' }
+    Manager_Competency_Rating_6: { value: '5' },
+    Manager_Competency_Comment_1: { value: 'Comp 1 Comment' }
   });
 
   const appData2 = normalizeAppraiserData(mockRecord, 2);
@@ -1265,6 +1304,10 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   assert.equal(appData2.slots[0].isCompleted, true, 'Slot 1 must be complete when all Part A & Part B ratings exist');
   assert.equal(appData2.slots[1].isCompleted, false, 'Slot 2 must be incomplete when GM fields are missing');
   assert.equal(appData2.isFullyComplete, false, 'Overall completeness must be false when GM fields are missing');
+  assert.equal(appData2.slots[0].partAComments[1], 'Obj 1 Comment');
+  assert.equal(appData2.slots[0].partAComments[2], 'Obj 2 Comment');
+  assert.notEqual(appData2.slots[0].partAComments[2], appData2.slots[0].partAComments[1], 'Obj 1 comment must not leak to Obj 2');
+  assert.equal(appData2.slots[0].partBComments[1], 'Comp 1 Comment');
   assert.equal(appData2.slots[0].label, '1st Appraiser');
   assert.equal(appData2.slots[1].label, '2nd Appraiser');
 
@@ -1277,4 +1320,67 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   // 12. COCE Competency item index 6 is marked as COCE / Excluded from Score (R1-04)
   const coceItem = COMPETENCIES_LIST.find(c => c.id === 6);
   assert.equal(coceItem.isCOCE, true, 'Competency Item 6 must be flagged as isCOCE');
+
+  // 13. Objectives Screen uses Wide Card UX (R2-01)
+  const uiObj = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '01 Draft Objective' } }),
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true
+  });
+  uiObj.render();
+  assert.equal(uiObj.root.querySelectorAll('.mbo-wide-card').length, 1, 'Objectives screen must render wide card layout');
+
+  // 14. Appraiser & HR Screens render Attachment Evidence Context (R2-04)
+  const uiAppraiser = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({
+      Status: { value: '13 Manager Final Evaluation' },
+      MidYear_Attachment_1: { value: [{ name: 'mid_ev.pdf' }] },
+      Final_Attachment_1: { value: [{ name: 'final_ev.pdf' }] }
+    }),
+    stage: 'READ_ONLY',
+    isEditable: false
+  });
+  uiAppraiser.render();
+  assert.equal(uiAppraiser.root.innerHTML.includes('mid_ev.pdf'), true, 'Appraiser screen must show Mid-Year evidence');
+  assert.equal(uiAppraiser.root.innerHTML.includes('final_ev.pdf'), true, 'Appraiser screen must show Self Eval evidence');
+
+  const uiHr = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({
+      Status: { value: '15 HR Final Check' },
+      MidYear_Attachment_1: { value: [{ name: 'mid_ev.pdf' }] },
+      Final_Attachment_1: { value: [{ name: 'final_ev.pdf' }] }
+    }),
+    stage: 'READ_ONLY',
+    isEditable: false
+  });
+  uiHr.render();
+  assert.equal(uiHr.root.innerHTML.includes('mid_ev.pdf'), true, 'HR screen must show Mid-Year evidence');
+  assert.equal(uiHr.root.innerHTML.includes('final_ev.pdf'), true, 'HR screen must show Self Eval evidence');
+
+  // 15. Invalid Weights Fail Closed (R2-06)
+  const uiInvalidWeight = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ PartA_Weight: { value: '80' }, PartB_Weight: { value: '30' } }), // sum 110 != 100
+    stage: 'READ_ONLY'
+  });
+  uiInvalidWeight.render();
+  assert.equal(uiInvalidWeight.root.innerHTML.includes('CONFIGURATION ERROR'), true, 'Invalid weight sum must fail closed');
+
+  // 16. Incomplete Ratings Fail Closed even if stale result fields exist (R2-03)
+  const uiStale = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({
+      Status: { value: '13 Manager Final Evaluation' },
+      Manager_Achievement_1: { value: '4' },
+      GM_Achievement_1: { value: '' }, // GM incomplete
+      Manager_Objective_Score_1: { value: '4.00' },
+      GM_Objective_Score_1: { value: '4.00' } // Stale calculation
+    }),
+    stage: 'READ_ONLY'
+  });
+  uiStale.render();
+  assert.equal(uiStale.root.innerHTML.includes('Result Pending / Incomplete'), true, 'Incomplete ratings must display Pending banner even with stale result fields');
 });
