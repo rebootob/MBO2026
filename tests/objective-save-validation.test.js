@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, getStageNavSteps } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => ({
   innerHTML: '',
@@ -1068,7 +1068,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   assert.equal(proceedHook(failReturnEmptyRequester), false, 'Return Mid-Year Manager with empty Requester_User must fail closed');
 });
 
-test('UI/UX V1 Candidate — Deterministic Status Guidance, Escaping & Presentation Safety', async (t) => {
+test('UI/UX V1 Candidate R1 — Deterministic Guidance, Topology Rules, Stage Completion & Presentation Safety', async (t) => {
   // 1. Exact 16 statuses have deterministic UI lifecycle & guidance presentation
   const all16Statuses = [
     '01 Draft Objective',
@@ -1109,17 +1109,110 @@ test('UI/UX V1 Candidate — Deterministic Status Guidance, Escaping & Presentat
   const fmFinalWarning = getStatusGuidance('12 First Manager Final Evaluation', 'M1_G1');
   assert.equal(fmFinalWarning.isWarning, true, 'Status 12 on M1_G1 must flag isWarning = true');
 
-  // M2_G1 topology does not flag warning for First Manager status
-  const fmM2Guidance = getStatusGuidance('02 First Manager Objective Review', 'M2_G1');
-  assert.equal(fmM2Guidance.isWarning, false, 'Status 02 on M2_G1 must not be flagged as warning');
+  // Canonical M2 topology M1_M2_G1 does not flag warning for First Manager status
+  const fmM2Guidance = getStatusGuidance('02 First Manager Objective Review', 'M1_M2_G1');
+  assert.equal(fmM2Guidance.isWarning, false, 'Status 02 on M1_M2_G1 must not be flagged as warning');
 
-  // 3. User-list display prefers name then code
+  // 3. MUST FIX 1 — M1_G1 + stale populated First_Manager_User does NOT qualify for First Manager route display
+  const m1g1WithStaleFm = createMockRecord({
+    Routing_Topology: { value: 'M1_G1' },
+    First_Manager_User: { value: [{ code: 'fm01', name: 'Stale First Manager' }] },
+    Manager_User: { value: [{ code: 'm01', name: 'Manager One' }] },
+    GM_User: { value: [{ code: 'g01', name: 'GM One' }] }
+  });
+  const uiM1G1 = new EmployeePartAUI({ record: m1g1WithStaleFm });
+  const routeElM1G1 = uiM1G1._renderRouteContext();
+  assert.equal(routeElM1G1.innerHTML.includes('1st Manager'), false, 'M1_G1 record must NOT display First Manager route step even if stale First_Manager_User exists');
+
+  // Canonical M2 topology M1_M2_G1 + populated First_Manager_User DOES qualify for First Manager route display
+  const m1m2g1WithFm = createMockRecord({
+    Routing_Topology: { value: 'M1_M2_G1' },
+    First_Manager_User: { value: [{ code: 'fm01', name: 'Active First Manager' }] },
+    Manager_User: { value: [{ code: 'm01', name: 'Manager One' }] },
+    GM_User: { value: [{ code: 'g01', name: 'GM One' }] }
+  });
+  const uiM1M2G1 = new EmployeePartAUI({ record: m1m2g1WithFm });
+  const routeElM1M2G1 = uiM1M2G1._renderRouteContext();
+  assert.equal(routeElM1M2G1.innerHTML.includes('1st Manager'), true, 'M1_M2_G1 record with First_Manager_User MUST display First Manager route step');
+
+  // 4. MUST FIX 2 — Status 05 Objective Approved marks Objectives completed and Mid-Year waiting (not Active)
+  const steps05 = getStageNavSteps('05 Objective Approved');
+  assert.equal(steps05[0].state, 'completed', 'Status 05 must mark Objectives stage completed');
+  assert.ok(steps05[0].label.includes('Approved'), 'Status 05 label must include Approved');
+  assert.equal(steps05[1].state, 'locked', 'Status 05 must mark Mid-Year stage locked/waiting, NOT active');
+  assert.ok(steps05[1].label.includes('Waiting'), 'Status 05 Mid-Year label must indicate Waiting');
+
+  // MUST FIX 2 — Status 10 Mid-Year Completed marks Objectives & Mid-Year completed and Year-End waiting (not Active)
+  const steps10 = getStageNavSteps('10 Mid-Year Completed');
+  assert.equal(steps10[0].state, 'completed', 'Status 10 must mark Objectives stage completed');
+  assert.equal(steps10[1].state, 'completed', 'Status 10 must mark Mid-Year stage completed');
+  assert.ok(steps10[1].label.includes('Completed'), 'Status 10 Mid-Year label must include Completed');
+  assert.equal(steps10[2].state, 'locked', 'Status 10 must mark Year-End stage locked/waiting, NOT active');
+  assert.ok(steps10[2].label.includes('Waiting'), 'Status 10 Year-End label must indicate Waiting');
+
+  // 5. Review statuses (03/04, 08/09, 13/14/15) remain in-review in the correct phase
+  const review03 = getStageNavSteps('03 Manager Objective Review');
+  assert.equal(review03[0].state, 'active', 'Status 03 must mark Objectives stage active');
+  assert.ok(review03[0].label.includes('In Review'), 'Status 03 label must include In Review');
+  assert.equal(review03[1].state, 'locked', 'Status 03 must keep Mid-Year stage locked');
+
+  const review04 = getStageNavSteps('04 GM Objective Review');
+  assert.equal(review04[0].state, 'active', 'Status 04 must mark Objectives stage active');
+  assert.ok(review04[0].label.includes('In Review'), 'Status 04 label must include In Review');
+
+  const review08 = getStageNavSteps('08 Manager Mid-Year Review');
+  assert.equal(review08[0].state, 'completed', 'Status 08 must mark Objectives completed');
+  assert.equal(review08[1].state, 'active', 'Status 08 must mark Mid-Year stage active');
+  assert.ok(review08[1].label.includes('In Review'), 'Status 08 label must include In Review');
+
+  const review09 = getStageNavSteps('09 GM Mid-Year Review');
+  assert.equal(review09[0].state, 'completed', 'Status 09 must mark Objectives completed');
+  assert.equal(review09[1].state, 'active', 'Status 09 must mark Mid-Year stage active');
+  assert.ok(review09[1].label.includes('In Review'), 'Status 09 label must include In Review');
+
+  const review13 = getStageNavSteps('13 Manager Final Evaluation');
+  assert.equal(review13[0].state, 'completed', 'Status 13 must mark Objectives completed');
+  assert.equal(review13[1].state, 'completed', 'Status 13 must mark Mid-Year completed');
+  assert.equal(review13[2].state, 'active', 'Status 13 must mark Year-End stage active');
+  assert.ok(review13[2].label.includes('In Review'), 'Status 13 label must include In Review');
+
+  const review14 = getStageNavSteps('14 GM Final Evaluation');
+  assert.equal(review14[2].state, 'active', 'Status 14 must mark Year-End stage active');
+  assert.ok(review14[2].label.includes('In Review'), 'Status 14 label must include In Review');
+
+  const review15 = getStageNavSteps('15 HR Final Check');
+  assert.equal(review15[2].state, 'active', 'Status 15 must mark Year-End stage active');
+  assert.ok(review15[2].label.includes('In Review'), 'Status 15 label must include In Review');
+
+  // Status 16 Completed marks all 4 steps completed
+  const steps16 = getStageNavSteps('16 Completed');
+  assert.equal(steps16[0].state, 'completed', 'Status 16 must mark Objectives completed');
+  assert.equal(steps16[1].state, 'completed', 'Status 16 must mark Mid-Year completed');
+  assert.equal(steps16[2].state, 'completed', 'Status 16 must mark Year-End completed');
+  assert.equal(steps16[3].state, 'completed', 'Status 16 must mark Completed step completed');
+
+  // 6. Blank/unknown topology presentation warns/fails closed instead of pretending M1_G1
+  const unknownGuidance = getStatusGuidance('01 Draft Objective', '');
+  assert.equal(unknownGuidance.isWarning, true, 'Blank topology must produce isWarning = true');
+  assert.ok(unknownGuidance.th.includes('ไม่พบข้อมูล Routing Topology'), 'Blank topology warning must explain missing topology');
+
+  const nullGuidance = getStatusGuidance('01 Draft Objective', null);
+  assert.equal(nullGuidance.isWarning, true, 'Null topology must produce isWarning = true');
+
+  const unknownTopologyRecord = createMockRecord({
+    Routing_Topology: { value: '' }
+  });
+  const uiUnknownTop = new EmployeePartAUI({ record: unknownTopologyRecord });
+  const routeElUnknown = uiUnknownTop._renderRouteContext();
+  assert.ok(routeElUnknown.innerHTML.includes('Not Specified / Unknown'), 'Route context for blank topology must display warning badge');
+
+  // 7. User-list display prefers name then code
   assert.equal(formatUserDisplay([{ name: 'John Doe', code: '0123' }]), 'John Doe (0123)', 'User display must prefer Name (Code)');
   assert.equal(formatUserDisplay([{ code: '0123' }]), '0123', 'User display must fallback to Code if Name missing');
   assert.equal(formatUserDisplay([]), '-', 'User display must return - for empty user list');
   assert.equal(formatUserDisplay(null), '-', 'User display must return - for null user list');
 
-  // 4. HTML Escaping neutralizes <, >, &, quotes, event-handler and closing-textarea payloads
+  // 8. HTML Escaping neutralizes <, >, &, quotes, event-handler and closing-textarea payloads
   const payload1 = '<script>alert("XSS")</script>&\'';
   const escaped1 = escapeHtml(payload1);
   assert.equal(escaped1.includes('<script>'), false, 'Escaped output must not contain raw script tag');
@@ -1133,7 +1226,7 @@ test('UI/UX V1 Candidate — Deterministic Status Guidance, Escaping & Presentat
   assert.equal(escaped2.includes('</textarea>'), false, 'Escaped output must neutralize closing textarea tag');
   assert.equal(escaped2.includes('&lt;/textarea&gt;'), true, 'Escaped output must encode closing textarea tag');
 
-  // 5. Presentation helpers do not mutate record business values
+  // 9. Presentation helpers do not mutate record business values
   const rawRecord = createMockRecord({
     Objective_1: { value: '<b>Sales Objective</b> & Goal' },
     Employee_Name: { value: 'Test & User <Dev>' }

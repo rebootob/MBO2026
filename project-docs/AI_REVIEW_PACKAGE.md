@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **POST_CORE_UIUX_V1_CANDIDATE_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): MUST FIX 1 (First Manager route step shown ONLY when `Routing_Topology` contains M2 AND `First_Manager_User` populated), MUST FIX 2 (status 05 Objectives completed & Mid-Year waiting; status 10 Objectives & Mid-Year completed & Year-End waiting; review statuses 03/04, 08/09, 13/14/15 in-review in correct phase), blank/unknown topology display fail-closed warning; 96/96 tests passing; bundle parse & ES module residue check PASS |
 | **POST_CORE_UIUX_V1_CANDIDATE** | **`PASS`** — Built Post-Core UI/UX V1 candidate (0 Kintone calls/writes/deploys); added status guidance card with Thai/English descriptions for all 16 statuses, M1_G1 First-Manager configuration warning, display-only route context, collapsible legend/guidelines, HTML escaping helper (`escapeHtml`) on dynamic record/user text, and `--build-only` zero-write candidate path; 555/555 unit tests passing; bundle parse & ES module residue check PASS |
 | **M10L_D_R12E_B7_FINAL_CORE_WORKFLOW_CLOSURE** | **`PASS`** — Executed authorized R12E-B7 Final Core Workflow Closure on App 794 (Revision 38); verified preclick safety gate PASS; executed 1 normalization transition (`Return Objective`), 22 reviewed matrix transitions, and 3 First-Manager denials; verified final status `16 Completed`; 0 browser fatal errors; deleted synthetic Record #10 and verified 0 key collision count; 0 src/dist/tests changes |
 | **M10L_D_R12E_B6_REMOTE_DEBUG_EDGE_CONTROL_GATE** | **`PASS`** — Evaluated R12E-B6 Edge Browser-Control PASS Gate; attached via CDP to dedicated Microsoft Edge session (`127.0.0.1:9222`); verified trusted page runtime user code `kintone.getLoginUser().code === "hr"`; navigated to App 794 Record #10 and read record runtime data (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`); 0 Kintone writes / workflow clicks executed |
@@ -1259,6 +1260,29 @@ ROUTING_LOGIC_CHANGE_COUNT = 0
 SCORING_LOGIC_CHANGE_COUNT = 0
 VALIDATION_WORKFLOW_SEMANTIC_CHANGE_COUNT = 0
 RECORD_KEY_LOGIC_CHANGE_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+
+## Post-Core UI/UX V1 Candidate R1 Evidence
+
+```text
+POST_CORE_UIUX_V1_CANDIDATE_R1 = COMPLETE
+STARTING_HEAD = cb9d1bbfae6b6c72bd1f6c96549acba33aae9b62
+PRIOR_EVIDENCE_STARTING_HEAD_TYPO_CORRECTED = PASS
+FIRST_MANAGER_ROUTE_TOPOLOGY_AND_VALUE_GATE = PASS
+STATUS05_COMPLETION_PRESENTATION = PASS
+STATUS10_COMPLETION_PRESENTATION = PASS
+REVIEW_STATUS_PHASE_PRESENTATION = PASS
+UNKNOWN_TOPOLOGY_DISPLAY_FAIL_CLOSED = PASS
+DYNAMIC_HTML_ESCAPE_GATE = PASS
+NPM_TEST = PASS (96/96 EXPLICIT / 555 TOTAL TESTS PASSING)
+BUILD_ONLY_ZERO_KINTONE_CALL_GATE = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+SRC_DIST_CSS_MATCH = PASS
+KINTONE_CALL_COUNT = 0
+KINTONE_WRITE_COUNT = 0
+FROZEN_CORE_CHANGE_COUNT = 0
+NEW_FILE_COUNT = 0
 GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
 NEXT_ACTION = CHATGPT REVIEW; IF PASS REQUEST FRESH APP794 UI DEPLOY AUTHORIZATION

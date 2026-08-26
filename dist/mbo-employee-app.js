@@ -1883,9 +1883,20 @@ function formatUserDisplay(userArr) {
   return '-';
 }
 
-function getStatusGuidance(status, topology = 'M1_G1') {
+function getStatusGuidance(status, topology) {
   const currentStatus = String(status || '').trim();
-  const isM1G1 = topology === 'M1_G1';
+  const rawTopology = topology !== null && topology !== undefined ? String(topology).trim() : '';
+
+  const isUnknownTopology = !rawTopology;
+  const isM1G1 = rawTopology === 'M1_G1';
+
+  if (isUnknownTopology) {
+    return {
+      th: '⚠️ แจ้งเตือนคอนฟิก: ไม่พบข้อมูล Routing Topology ในระเบียบประเมิน กรุณาติดต่อ HR / Administrator',
+      en: '⚠️ Configuration warning: Routing Topology not specified in record. Please contact HR / Administrator.',
+      isWarning: true
+    };
+  }
 
   const firstManagerWarning = {
     th: '⚠️ แจ้งเตือนคอนฟิก: เส้นทาง M1_G1 ไม่ใช้ First Manager หากพบสถานะนี้ กรุณาติดต่อ HR / Administrator',
@@ -1999,6 +2010,100 @@ function getMacroStage(status) {
     return 4; // Completed
   }
   return 1;
+}
+
+function getStageNavSteps(status) {
+  const currentStatus = String(status || '').trim();
+  let step1State = 'locked';
+  let step2State = 'locked';
+  let step3State = 'locked';
+  let step4State = 'locked';
+
+  let step1Label = '1. ตั้งเป้าหมาย / Objectives';
+  let step2Label = '2. ทบทวนกลางปี / Mid-Year';
+  let step3Label = '3. ประเมินปลายปี / Year-End';
+  let step4Label = '4. เสร็จสิ้น / Completed';
+
+  switch (currentStatus) {
+    case '01 Draft Objective':
+    case '02 First Manager Objective Review':
+      step1State = 'active';
+      step1Label += ' 🔥 [Active]';
+      break;
+    case '03 Manager Objective Review':
+    case '04 GM Objective Review':
+      step1State = 'active';
+      step1Label += ' ⏳ [In Review]';
+      break;
+    case '05 Objective Approved':
+      step1State = 'completed';
+      step1Label += ' ✅ [Approved]';
+      step2State = 'locked';
+      step2Label += ' 🔒 [Waiting]';
+      break;
+    case '06 Employee Mid-Year':
+    case '07 First Manager Mid-Year Review':
+      step1State = 'completed';
+      step1Label += ' ✅';
+      step2State = 'active';
+      step2Label += ' 🔥 [Active]';
+      break;
+    case '08 Manager Mid-Year Review':
+    case '09 GM Mid-Year Review':
+      step1State = 'completed';
+      step1Label += ' ✅';
+      step2State = 'active';
+      step2Label += ' ⏳ [In Review]';
+      break;
+    case '10 Mid-Year Completed':
+      step1State = 'completed';
+      step1Label += ' ✅';
+      step2State = 'completed';
+      step2Label += ' ✅ [Completed]';
+      step3State = 'locked';
+      step3Label += ' 🔒 [Waiting]';
+      break;
+    case '11 Employee Self Evaluation':
+    case '12 First Manager Final Evaluation':
+      step1State = 'completed';
+      step1Label += ' ✅';
+      step2State = 'completed';
+      step2Label += ' ✅';
+      step3State = 'active';
+      step3Label += ' 🔥 [Active]';
+      break;
+    case '13 Manager Final Evaluation':
+    case '14 GM Final Evaluation':
+    case '15 HR Final Check':
+      step1State = 'completed';
+      step1Label += ' ✅';
+      step2State = 'completed';
+      step2Label += ' ✅';
+      step3State = 'active';
+      step3Label += ' ⏳ [In Review]';
+      break;
+    case '16 Completed':
+      step1State = 'completed';
+      step1Label += ' ✅';
+      step2State = 'completed';
+      step2Label += ' ✅';
+      step3State = 'completed';
+      step3Label += ' ✅';
+      step4State = 'completed';
+      step4Label += ' ✅ [Completed]';
+      break;
+    default:
+      step1State = 'active';
+      step1Label += ' 🔥 [Active]';
+      break;
+  }
+
+  return [
+    { step: 1, state: step1State, label: step1Label },
+    { step: 2, state: step2State, label: step2Label },
+    { step: 3, state: step3State, label: step3Label },
+    { step: 4, state: step4State, label: step4Label }
+  ];
 }
 
 class EmployeePartAUI {
@@ -2135,11 +2240,10 @@ class EmployeePartAUI {
 
   _renderStatusGuidanceCard() {
     const card = document.createElement('div');
-    card.className = 'mbo-workflow-guidance-card';
 
     const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
-    const topology = this._getVal('Routing_Topology') || 'M1_G1';
-    const guidance = getStatusGuidance(status, topology);
+    const rawTopology = this._getVal('Routing_Topology');
+    const guidance = getStatusGuidance(status, rawTopology);
 
     const cardClass = guidance.isWarning ? 'mbo-guidance-warning' : 'mbo-guidance-info';
 
@@ -2165,17 +2269,24 @@ class EmployeePartAUI {
     const card = document.createElement('div');
     card.className = 'mbo-route-context-card';
 
-    const topology = this._getVal('Routing_Topology') || 'M1_G1';
+    const rawTopology = this._getVal('Routing_Topology');
     const managerUser = this._getValObj('Manager_User');
     const gmUser = this._getValObj('GM_User');
     const firstManagerUser = this._getValObj('First_Manager_User');
 
-    const isM2 = topology.includes('M2') || (firstManagerUser && firstManagerUser.length > 0);
+    const hasTopologyM2 = Boolean(rawTopology && rawTopology.includes('M2'));
+    const hasFirstManagerUser = Array.isArray(firstManagerUser) && firstManagerUser.length > 0;
+
+    const isM2 = hasTopologyM2 && hasFirstManagerUser;
+
+    const topologyBadgeHtml = rawTopology
+      ? `<span class="mbo-route-topology-badge">Topology: ${escapeHtml(rawTopology)}</span>`
+      : `<span class="mbo-route-topology-badge" style="background: #fef2f2; color: #dc2626;">Topology: ⚠️ Not Specified / Unknown</span>`;
 
     card.innerHTML = `
       <div class="mbo-route-title">
         <span>🔗 เส้นทางเสนออนุมัติ / Approval Route Summary</span>
-        <span class="mbo-route-topology-badge">Topology: ${escapeHtml(topology)}</span>
+        ${topologyBadgeHtml}
       </div>
       <div class="mbo-route-grid">
         ${isM2 ? `
@@ -2438,34 +2549,14 @@ class EmployeePartAUI {
     nav.className = 'mbo-stage-nav';
 
     const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
-    const macroStage = getMacroStage(status);
+    const steps = getStageNavSteps(status);
 
-    const isInReview = ['03 Manager Objective Review', '04 GM Objective Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check'].includes(status);
+    nav.innerHTML = steps.map(stepObj => `
+      <div class="mbo-stage-step ${stepObj.state}">
+        ${escapeHtml(stepObj.label)}
+      </div>
+    `).join('');
 
-    const step1Class = macroStage === 1 ? 'active' : (macroStage > 1 ? 'completed' : 'locked');
-    const step2Class = macroStage === 2 ? 'active' : (macroStage > 2 ? 'completed' : 'locked');
-    const step3Class = macroStage === 3 ? 'active' : (macroStage > 3 ? 'completed' : 'locked');
-    const step4Class = macroStage === 4 ? 'completed' : 'locked';
-
-    const step1Sub = macroStage === 1 ? (isInReview ? '⏳ [In Review]' : '🔥 [Active]') : (macroStage > 1 ? '✅' : '');
-    const step2Sub = macroStage === 2 ? (isInReview ? '⏳ [In Review]' : '🔥 [Active]') : (macroStage > 2 ? '✅' : '🔒');
-    const step3Sub = macroStage === 3 ? (isInReview ? '⏳ [In Review]' : '🔥 [Active]') : (macroStage > 3 ? '✅' : '🔒');
-    const step4Sub = macroStage === 4 ? '✅ [Completed]' : '🔒';
-
-    nav.innerHTML = `
-      <div class="mbo-stage-step ${step1Class}">
-        1. ตั้งเป้าหมาย / Objectives ${step1Sub}
-      </div>
-      <div class="mbo-stage-step ${step2Class}">
-        2. ทบทวนกลางปี / Mid-Year ${step2Sub}
-      </div>
-      <div class="mbo-stage-step ${step3Class}">
-        3. ประเมินปลายปี / Year-End ${step3Sub}
-      </div>
-      <div class="mbo-stage-step ${step4Class}">
-        4. เสร็จสิ้น / Completed ${step4Sub}
-      </div>
-    `;
     return nav;
   }
 
