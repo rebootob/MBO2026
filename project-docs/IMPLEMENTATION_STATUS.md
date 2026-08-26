@@ -2,10 +2,10 @@
 
 - **Active AI:** `Antigravity`
 - **Active Work Package Owner:** `Phase 3 / MBO-P03-WP-002C`
-- **Handoff State:** `SAFE_CHECKPOINT (DELIVERY DAY SPRINT 04 M10L-D-R7 COMPLETE)`
-- **Last Handoff At:** `2026-08-26T08:30:00+07:00`
-- **Review Status:** `DELIVERY DAY SPRINT 04 M10L-D-R7 COMPLETE`
-- **Implementation Authorization:** `M7H App795 write explicitly approved by user -> executed -> closed; authorized target was App795 only; NEW_KINTONE_WRITE_AUTHORIZATION = NO. Earlier Stage 3C-R1 authorization is historical only.`
+- **Handoff State:** `SAFE_CHECKPOINT (DELIVERY DAY SPRINT 04 M10L-D-R8 COMPLETE)`
+- **Last Handoff At:** `2026-08-26T08:35:00+07:00`
+- **Review Status:** `DELIVERY DAY SPRINT 04 M10L-D-R8 COMPLETE`
+- **Implementation Authorization:** `M10L-D-R8 authorized by user ("อนุมัติ controlled App794 six-field schema + customization repair") -> executed -> closed; single-use authorization consumed; authorized target was App 794 only; NEW_KINTONE_WRITE_AUTHORIZATION = NO.`
 - **Review Required By:** Independent Reviewer (ChatGPT) / User
 - **Last Safe Commit:** `8fb306e` (Phase 2 Passed Implementation & Review Gates)
 - **Phase 3 WP-001 Plan Commit:** `6e72553` (Frozen / Approved)
@@ -16,7 +16,7 @@
 - **WP-002 Plan Status:** **`PASS (FROZEN / APPROVED)`**
 - **WP-002A Status:** **`IMPLEMENTATION COMPLETE (IMPLEMENTATION_GATE: PASS)`**
 - **WP-002B Status:** **`PASSED / FROZEN (IMPLEMENTATION_GATE = PASS; REVIEW_GATE = PASS)`**
-- **WP-002C Status:** **`DELIVERY SPRINT 04 M10L-D-R7 COMPLETE`** (`APP 796 LIVE_DEPLOYED`; `APP 794 REV 29 DEPLOYED`; `LIVE_CONFIG_WRITE_REQUIRED = YES`; `550 TESTS PASSING`; `REVIEW PACKAGE RECONCILED`)
+- **WP-002C Status:** **`DELIVERY SPRINT 04 M10L-D-R8 COMPLETE`** (`APP 796 LIVE_DEPLOYED`; `APP 794 REV 32 DEPLOYED`; `LIVE_JS_SHA256 = 1a32388e MATCHED`; `550 TESTS PASSING`; `ALL 6 SNAPSHOT FIELDS VERIFIED LIVE`)
 - **WP-002C Correction Scope:** `APP_CREATE` exact-name one-time bootstrap authorization, verified ID registration, hash triple-equality, effective-overlap, trusted publish audit, and final read-back are plan requirements only
 - **Scoring Master Target:** `MBO Profile & Scoring Configuration Master [Sandbox]` (`SCORING_MASTER_APP_ID = 796`; `APP_STATUS = LIVE_DEPLOYED`; `DEPLOY_STATUS = SUCCESS`; `ACCESS_STATUS = CREATOR_ONLY / DEFAULT_DENY`; `SANDBOX`; production `FALSE`; `SCHEMA_PHYSICAL_STATE = 23_FIELDS_LIVE`; `SCHEMA_SEMANTIC_STATE = DOMAIN_ALIGNED`; `RECORD_COUNT = 8`; `PUBLISHED_COUNT = 8`; `VALIDATED_COUNT = 0`; `BASELINE_SEED_STATUS = PUBLISHED_8_OF_8`; `PUBLISH_PIPELINE_STATUS = LIVE_BASELINE_PUBLISH_VERIFIED`; `LIVE_RECORD_PUBLISH_STATUS = BASELINE_8_OF_8_PUBLISHED`; `RUNTIME_RESOLVER_LIVE_WIRING = NOT_STARTED`; `SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED`)
 - **WP002C_STAGE3C_GATE:** `PASS_WITH_DOCUMENTED_EVIDENCE_EXCEPTION`

@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R7 Review Package Integrity Closure: Reconciled and cleanly deduplicated `project-docs/AI_REVIEW_PACKAGE.md` from R5 baseline (`1793b8a`), removed accidental duplicate M6/M7/forensic blocks and interrupted Section 4 plan steps, preserved R6 reviewed runtime candidate `1997754` with 0 source/dist/test changes (`src/**` = 0, `dist/**` = 0, `tests/**` = 0), and confirmed 550/550 suite tests passing. 0 Kintone writes executed.
+- **2026-08-26**: Executed M10L-D-R8 Controlled App794 Six-Field Schema + Customization Repair under explicit single-use user authorization ("อนุมัติ controlled App794 six-field schema + customization repair"): Created durable pre-write backup (`backups/m10l-d-r8-app794-six-field-repair/2026-08-26T01-36-33-310Z`), added exact six missing scoring snapshot fields (`Profile_Code`, `PartA_Weight`, `PartB_Weight`, `Part_A_Scoring_Mode`, `Competency_Set_Code`, `Configuration_Hash`), uploaded and deployed reviewed JS candidate `1a32388e` to App 794 (Revision 32), verified live JS SHA256 match, verified read-back for all 6 fields, and confirmed 550/550 suite tests passing. 0 record/ACL writes executed.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.
