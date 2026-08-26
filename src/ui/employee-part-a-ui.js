@@ -1004,34 +1004,56 @@ export class EmployeePartAUI {
     card.className = 'mbo-timeline-card';
 
     const events = this.previewOptions.timelineEvents || [
-      { stage: '1. Objectives', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong', action: 'Approved Objectives', time: '14 Feb 2026 • 09:42', outcome: 'approved', commentNotice: false },
-      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai', action: 'Returned for Revision', time: '15 Feb 2026 • 10:18', outcome: 'returned', commentNotice: true },
-      { stage: '1. Objectives', actor: 'Employee / Requester (พนักงาน)', name: 'Somchai Prasert', action: 'Resubmitted Objectives', time: '16 Feb 2026 • 08:30', outcome: 'resubmitted', commentNotice: false },
-      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai', action: 'Approved Objectives', time: '16 Feb 2026 • 13:05', outcome: 'approved', commentNotice: false },
-      { stage: '4. Appraiser Evaluation', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong', action: 'Scoring Completed', time: '20 Nov 2026 • 14:22', outcome: 'approved', commentNotice: false }
+      { stage: '1. Objectives', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Approved Objectives', time: '14 Feb 2026 • 09:42', outcome: 'approved', commentNotice: false },
+      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Returned for Revision', time: '15 Feb 2026 • 10:18', outcome: 'returned', commentNotice: true },
+      { stage: '1. Objectives', actor: 'Employee / Requester (พนักงาน)', name: 'Somchai Prasert (0118)', action: 'Resubmitted Objectives', time: '16 Feb 2026 • 08:30', outcome: 'resubmitted', commentNotice: false },
+      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Approved Objectives', time: '16 Feb 2026 • 13:05', outcome: 'approved', commentNotice: false },
+      { stage: '4. Appraiser Evaluation', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Scoring Completed', time: '20 Nov 2026 • 14:22', outcome: 'approved', commentNotice: false }
     ];
 
-    const itemsHtml = events.map(e => `
-      <div class="mbo-timeline-item ${escapeHtml(e.outcome)}">
-        <div>
-          <span style="font-size:10px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 6px; border-radius:4px; margin-right:6px;">[${escapeHtml(e.stage)}]</span>
-          <span class="mbo-timeline-actor">${escapeHtml(e.actor)}:</span>
-          <span style="font-weight:600; color:#0f172a;">${escapeHtml(e.name)}</span>
-          <span class="mbo-timeline-action" style="margin-left:8px;">➔ ${escapeHtml(e.action)}</span>
-          ${e.commentNotice ? `<span style="font-size:10.5px; color:#dc2626; font-weight:700; margin-left:6px;">💬 ดูความคิดเห็นใน Kintone / View Kintone Comments</span>` : ''}
-        </div>
-        <div class="mbo-timeline-time">🕒 ${escapeHtml(e.time)}</div>
-      </div>
-    `).join('');
+    const rowsHtml = events.map((e, idx) => {
+      const outcomeClass = escapeHtml(e.outcome || 'approved');
+      const badgeText = e.outcome === 'returned' ? 'Returned' : (e.outcome === 'resubmitted' ? 'Resubmitted' : 'Approved');
+      const isReturned = e.outcome === 'returned';
+
+      return `
+        <tr class="${isReturned ? 'returned-row' : ''}">
+          <td style="text-align:center; font-weight:700; color:#64748b;">${idx + 1}</td>
+          <td><span style="font-size:11px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 6px; border-radius:4px;">${escapeHtml(e.stage)}</span></td>
+          <td style="font-weight:700; color:#1e293b;">${escapeHtml(e.actor)}</td>
+          <td style="font-weight:600; color:#0f172a;">${escapeHtml(e.name)}</td>
+          <td style="font-weight:600; color:#334155;">${escapeHtml(e.action)}</td>
+          <td style="font-size:11.5px; color:#475569; white-space:nowrap;">🕒 ${escapeHtml(e.time)}</td>
+          <td style="text-align:center;"><span class="mbo-timeline-badge ${outcomeClass}">${escapeHtml(badgeText)}</span></td>
+          <td style="font-size:11px;">${e.commentNotice ? `<span style="color:#dc2626; font-weight:700;">💬 ดูความคิดเห็น / View Comments</span>` : '<span style="color:#94a3b8;">—</span>'}</td>
+        </tr>
+      `;
+    }).join('');
 
     card.innerHTML = `
       <details open style="cursor:pointer;">
         <summary class="mbo-timeline-title">
           <span>📜 ประวัติการดำเนินการ / Workflow Action Timeline (Read-Only Audit Trail)</span>
-          <span style="font-size:11px; font-weight:600; color:#64748b;">${events.length} Events Recorded</span>
+          <span style="font-size:11px; font-weight:600; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px;">${events.length} Events Recorded</span>
         </summary>
-        <div class="mbo-timeline-grid" style="margin-top:10px;">
-          ${itemsHtml}
+        <div class="mbo-table-container" style="margin-top:10px;">
+          <table class="mbo-timeline-table">
+            <thead>
+              <tr>
+                <th style="width:35px; text-align:center;">#</th>
+                <th style="width:17%;">ขั้นตอน / Stage</th>
+                <th style="width:20%;">ผู้ดำเนินการ / Actor</th>
+                <th style="width:16%;">ชื่อผู้ดำเนินการ / Person</th>
+                <th style="width:16%;">การดำเนินการ / Action</th>
+                <th style="width:14%;">วัน-เวลา / Date & Time</th>
+                <th style="width:12%; text-align:center;">ผลลัพธ์ / Result</th>
+                <th style="width:12%;">หมายเหตุ / Comments</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
         </div>
       </details>
     `;
@@ -1495,11 +1517,11 @@ export class EmployeePartAUI {
     tableA.innerHTML = `
       <thead>
         <tr>
-          <th style="width: 40px; text-align: center;">#</th>
-          <th style="width: 22%;">เป้าหมาย & แผนงาน / Objective</th>
+          <th class="sticky-col" style="width: 40px; text-align: center;">#</th>
+          <th class="sticky-col" style="width: 22%; left: 40px;">เป้าหมาย & แผนงาน / Objective</th>
           <th style="width: 18%;">ผลงานจริง & หลักฐาน / Evidence Context</th>
           ${slotHeadersHtml}
-          <th style="width: 10%; text-align: center;">คะแนนสรุป / Result</th>
+          <th class="sticky-right" style="width: 10%; text-align: center;">คะแนนสรุป / Result</th>
         </tr>
       </thead>
     `;
@@ -1577,8 +1599,8 @@ export class EmployeePartAUI {
       const tr = document.createElement('tr');
       tr.dataset.objIndex = String(i);
       tr.innerHTML = `
-        <td class="mbo-row-num-cell">${i}</td>
-        <td>
+        <td class="mbo-row-num-cell sticky-col">${i}</td>
+        <td class="sticky-col" style="left:40px;">
           <strong style="color:#0f172a; font-size:13px;">#${i} ${escapeHtml(objVal) || '(No title)'}</strong>
           <div style="font-size:11px; color:#0369a1; font-weight:700; margin-top:2px;">
             Weight: ${escapeHtml(wVal)}% | Diff: ${diffVal ? `L${escapeHtml(diffVal)}` : 'N/A'} | Self: L${escapeHtml(selfAch)}
@@ -1593,7 +1615,7 @@ export class EmployeePartAUI {
           </div>
         </td>
         ${slotCellsHtml}
-        <td style="vertical-align:middle; text-align:center;">${resultContextHtml}</td>
+        <td class="sticky-right" style="vertical-align:middle; text-align:center;">${resultContextHtml}</td>
       `;
       tbodyA.appendChild(tr);
     }
@@ -1619,8 +1641,9 @@ export class EmployeePartAUI {
     tableB.innerHTML = `
       <thead>
         <tr>
-          <th style="width: 25%;">สมรรถนะ / Competency Item</th>
+          <th class="sticky-col" style="width: 25%;">สมรรถนะ / Competency Item</th>
           ${slotHeadersHtml}
+          <th class="sticky-right" style="width: 12%; text-align: center;">ผลการประเมิน / Result</th>
         </tr>
       </thead>
     `;
@@ -1680,12 +1703,12 @@ export class EmployeePartAUI {
       const tr = document.createElement('tr');
       tr.dataset.compId = String(comp.id);
       tr.innerHTML = `
-        <td>
+        <td class="sticky-col">
           <strong style="color:#0f172a; font-size:13px;">${escapeHtml(comp.nameTH)}</strong>
           <div style="font-size:11px; color:#64748b; margin-top:2px;">${escapeHtml(comp.desc)}</div>
         </td>
         ${slotCellsHtml}
-        <td style="vertical-align:middle; text-align:center;">${partBResultLabel}</td>
+        <td class="sticky-right" style="vertical-align:middle; text-align:center;">${partBResultLabel}</td>
       `;
       tbodyB.appendChild(tr);
     });

@@ -1502,3 +1502,105 @@
   color: #475569;
 }
 
+/* R6-R2: 3-4 Appraiser Responsive Matrix & Sticky Columns */
+.mbo-root {
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.mbo-table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.mbo-grid-table td.sticky-col,
+.mbo-grid-table th.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #ffffff;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.06);
+}
+
+.mbo-grid-table th.sticky-col {
+  background: #f1f5f9;
+  z-index: 12;
+}
+
+.mbo-grid-table td.sticky-right,
+.mbo-grid-table th.sticky-right {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background: #ffffff;
+  box-shadow: -2px 0 4px rgba(0,0,0,0.06);
+}
+
+.mbo-grid-table th.sticky-right {
+  background: #f1f5f9;
+  z-index: 12;
+}
+
+/* R6-R2: Desktop Workflow Action Timeline Table */
+.mbo-timeline-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 6px;
+}
+
+.mbo-timeline-table th {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 700;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+  font-size: 12px;
+}
+
+.mbo-timeline-table td {
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+.mbo-timeline-table tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.mbo-timeline-table tr.returned-row td {
+  background: #fef2f2;
+}
+
+.mbo-timeline-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mbo-timeline-badge.approved {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.mbo-timeline-badge.returned {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.mbo-timeline-badge.resubmitted {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+

@@ -1761,9 +1761,32 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
   uiM1M2Status14.render();
   assert.ok(uiM1M2Status14.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 3'));
 
-  // Inactive appraiser columns render visible and read-only
-  assert.ok(uiM1G1Status13.root.innerHTML.includes('[READ-ONLY / VISIBLE]'));
+  // 6. 4-Appraiser Responsive Contained Matrix (R6-R2)
+  const ui4Appraiser = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    appraiserCount: 4,
+    previewOptions: { activeSlotIndex: 2 }
+  });
+  ui4Appraiser.render();
+  assert.ok(ui4Appraiser.root.innerHTML.includes('mbo-table-container'), 'Matrix must be wrapped in mbo-table-container');
+  assert.ok(ui4Appraiser.root.innerHTML.includes('sticky-col'), 'Objective/Competency first column must be sticky');
+  assert.ok(ui4Appraiser.root.innerHTML.includes('sticky-right'), 'Result column must be sticky right');
+  assert.ok(ui4Appraiser.root.innerHTML.includes('[EDITABLE / ACTIVE APPRAISER]'), 'Active column must be usable and emphasized');
 
-  // 6. Workflow Action Timeline Frame (Read-Only Lifecycle Audit Trail)
-  assert.ok(uiM1G1Status13.root.innerHTML.includes('Workflow Action Timeline') || uiM1G1Status13.root.innerHTML.includes('ประวัติการดำเนินการ'));
+  // 7. Workflow Action Timeline Desktop Table & Required Columns (R6-R2)
+  const timelineHtml = ui4Appraiser.root.innerHTML;
+  assert.ok(timelineHtml.includes('mbo-timeline-table'), 'Timeline must render structured <table> on desktop');
+  assert.ok(timelineHtml.includes('ขั้นตอน / Stage'), 'Timeline table must contain Stage header');
+  assert.ok(timelineHtml.includes('ผู้ดำเนินการ / Actor'), 'Timeline table must contain Actor header');
+  assert.ok(timelineHtml.includes('ชื่อผู้ดำเนินการ / Person'), 'Timeline table must contain Person header');
+  assert.ok(timelineHtml.includes('การดำเนินการ / Action'), 'Timeline table must contain Action header');
+  assert.ok(timelineHtml.includes('วัน-เวลา / Date & Time'), 'Timeline table must contain Date & Time header');
+  assert.ok(timelineHtml.includes('ผลลัพธ์ / Result'), 'Timeline table must contain Result header');
+  assert.ok(timelineHtml.includes('หมายเหตุ / Comments'), 'Timeline table must contain Comments header');
+  assert.ok(timelineHtml.includes('Returned for Revision') || timelineHtml.includes('Returned'), 'Timeline must preserve Return events');
+  assert.ok(timelineHtml.includes('Resubmitted Objectives') || timelineHtml.includes('Resubmitted'), 'Timeline must preserve Resubmit events');
+  assert.ok(timelineHtml.includes('1st Appraiser') && timelineHtml.includes('2nd Appraiser'), 'Timeline must use ordinal Appraiser names');
 });
