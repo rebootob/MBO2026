@@ -3,7 +3,43 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **Last Updated:** 2026-08-26T19:28:00+07:00
+> **M10M-R1 Status:** **`READY FOR CHATGPT REVIEW`**
+> **Last Updated:** 2026-08-26T20:10:00+07:00
+
+---
+
+## 0. M10M-R1 Position Priority & Team-Aware Routing Correction Evidence
+
+```text
+M10M_R1 = READY_FOR_REVIEW
+PARENT_BLOCKED_COMMIT = b3cb13e5ba615ad4cc0c4a8698448282d66aa4fe
+HARDCODED_PRESIDENT_COUNT = 0
+GM_QUERY_ERROR_DEFAULT_FALLBACK_COUNT = 0
+BLANK_REQUESTER_ALLOW_ALL_COUNT = 0
+GENERAL_MANAGER_NORMALIZATION = PASS
+GM_TMH3_TO_MASTER_PRESIDENT_ROUTE = PASS
+GM_TMG2_CAD_POSITION_OVERRIDE = PASS
+TMG2_CAD_ROUTE = PASS
+TMG2_PRODUCTION_ROUTE = PASS
+TMG2_MARKETING_ROUTE = PASS
+TMG2_MISSING_TEAM_FAIL_CLOSED = PASS
+TMG2_UNKNOWN_TEAM_FAIL_CLOSED = PASS
+DUPLICATE_ROUTE_FAIL_CLOSED = PASS
+REQUESTER_AUTH_REGRESSION = PASS
+APP53_WRITE_COUNT = 0
+PRODUCTION_WRITE_COUNT = 0
+NPM_TEST = PASS (570 / 570 PASS)
+BUILD = PASS
+```
+
+### Key Technical Details
+- **App795 Fields Used**: `Routing_Key`, `Section_Code`, `Requester_User`, `Manager_Level1_Approvers`, `Manager_Level1_Approval_Rule`, `GM_Level1_Approvers`, `GM_Level1_Approval_Rule`, `Active`.
+- **GM Routing Key**: `POSITION_GM` (queried dynamically from App 795 without hardcoded user code fallbacks).
+- **Files Modified**: `src/services/routing-service.js`, `src/ui/employee-part-a-ui.js`, `tests/routing-service.test.js`, `dist/mbo-employee-app.js`.
+- **Unit Test Matrix**: 12/12 test cases passing in `tests/routing-service.test.js` (TC01 - TC12). Total suite: 570/570 PASS.
+- **Rollback Procedure**: Discard branch commit or revert to `b3cb13e5` parent baseline. Zero schema or record writes were performed on live Kintone.
+
+---
 
 ---
 

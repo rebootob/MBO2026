@@ -236,30 +236,72 @@ test('M10F-R1: Duplicate exact TMG route fails closed', async () => {
   );
 });
 
-// M10M POSITION PRIORITY + TEAM-AWARE ROUTING TEST SUITE (TC01 - TC10)
+// M10M-R1 POSITION PRIORITY + TEAM-AWARE ROUTING TEST SUITE (TC01 - TC12)
 
-test('M10M TC01: GM in TMH3 routes to President', async () => {
-  const mockApi = { getRecords: async () => ({ records: [] }) };
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm1', mockApi, 'GM');
-  assert.equal(routing.Matched_Rule, 'GM_POSITION_OVERRIDE');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'president');
-  assert.equal(routing.GM_Level1_Approvers[0].code, 'president');
-});
-
-test('M10M TC02: GM in TMG2 with Team CAD routes to President and ignores TMG2 Team route', async () => {
-  let queryCount = 0;
+test('M10M-R1 TC01: GM in TMH3 routes to President from App795 POSITION_GM record', async () => {
   const mockApi = {
-    getRecords: async () => {
-      queryCount++;
-      return { records: [] };
+    getRecords: async (appId, query) => {
+      assert.equal(query.includes('Routing_Key = "POSITION_GM"'), true);
+      return {
+        records: [{
+          Routing_Key: { value: 'POSITION_GM' },
+          Requester_User: { value: [{ code: 'gm_user' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] }
+        }]
+      };
     }
   };
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'CAD', 'gm1', mockApi, 'General Manager');
-  assert.equal(routing.Matched_Rule, 'GM_POSITION_OVERRIDE');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'president');
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'General Manager');
+  assert.equal(routing.Matched_Rule, 'POSITION_GM');
+  assert.equal(routing.Routing_Key, 'POSITION_GM');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'somcai_president');
+  assert.equal(routing.GM_Level1_Approvers[0].code, 'somcai_president');
 });
 
-test('M10M TC03: Normal employee TMG2 Team CAD resolves TMG2|CAD route', async () => {
+test('M10M-R1 TC02: GM in TMG2 CAD normalizes Position and routes to President, ignoring TMG2|CAD', async () => {
+  let queriedKeys = [];
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      queriedKeys.push(query);
+      return {
+        records: [{
+          Routing_Key: { value: 'POSITION_GM' },
+          Requester_User: { value: [{ code: 'gm_user' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] }
+        }]
+      };
+    }
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'CAD', 'gm_user', mockApi, 'General manager');
+  assert.equal(routing.Matched_Rule, 'POSITION_GM');
+  assert.equal(routing.Routing_Key, 'POSITION_GM');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'somcai_president');
+  assert.equal(queriedKeys.length, 1);
+  assert.equal(queriedKeys[0].includes('POSITION_GM'), true);
+  assert.equal(queriedKeys.some(q => q.includes('TMG2')), false);
+});
+
+test('M10M-R1 TC03: Missing GM route in App795 throws APPROVER_NOT_FOUND with zero default president fallback', async () => {
+  const mockApi = { getRecords: async () => ({ records: [] }) };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM'),
+    /APPROVER_NOT_FOUND/
+  );
+});
+
+test('M10M-R1 TC04: App795 GM query/schema error fails closed cleanly without inventing default approver', async () => {
+  const mockApi = {
+    getRecords: async () => {
+      throw new Error('Kintone API Connection Error');
+    }
+  };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM'),
+    /Kintone API Connection Error/
+  );
+});
+
+test('M10M-R1 TC05: Normal employee TMG2 Team CAD resolves TMG2|CAD route', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [{
@@ -274,7 +316,7 @@ test('M10M TC03: Normal employee TMG2 Team CAD resolves TMG2|CAD route', async (
   assert.equal(routing.Manager_Level1_Approvers[0].code, 'phubodin');
 });
 
-test('M10M TC04: Normal employee TMG2 Team Production resolves TMG2|Production route', async () => {
+test('M10M-R1 TC06: Normal employee TMG2 Team Production resolves TMG2|Production route', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [{
@@ -289,7 +331,37 @@ test('M10M TC04: Normal employee TMG2 Team Production resolves TMG2|Production r
   assert.equal(routing.Manager_Level1_Approvers[0].code, 'prompan');
 });
 
-test('M10M TC05: Unknown TMG2 Team throws ROUTE_NOT_FOUND and blocks', async () => {
+test('M10M-R1 TC07: Normal employee TMG2 Team Marketing resolves TMG2|Marketing route', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [{
+        Routing_Key: { value: 'TMG2|Marketing' },
+        Requester_User: { value: [{ code: 'mkt_emp' }] },
+        Manager_Level1_Approvers: { value: [{ code: 'mkt_mgr' }] }
+      }]
+    })
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'Marketing', 'mkt_emp', mockApi, 'Staff');
+  assert.equal(routing.Routing_Key, 'TMG2|Marketing');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'mkt_mgr');
+});
+
+test('M10M-R1 TC08: Missing TMG2 Team when Team required throws TEAM_REQUIRED and blocks without API query', async () => {
+  let apiCalled = false;
+  const mockApi = {
+    getRecords: async () => {
+      apiCalled = true;
+      return { records: [] };
+    }
+  };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMG2', '', 'emp', mockApi, 'Staff'),
+    /TEAM_REQUIRED/
+  );
+  assert.equal(apiCalled, false);
+});
+
+test('M10M-R1 TC09: Unknown TMG2 Team throws ROUTE_NOT_FOUND and blocks', async () => {
   const mockApi = { getRecords: async () => ({ records: [] }) };
   await assert.rejects(
     async () => RoutingService.validateRequesterAccess(795, 'TMG2', 'InvalidTeam', 'emp', mockApi, 'Staff'),
@@ -297,44 +369,7 @@ test('M10M TC05: Unknown TMG2 Team throws ROUTE_NOT_FOUND and blocks', async () 
   );
 });
 
-test('M10M TC06: Missing TMG2 Team when Team required throws TEAM_REQUIRED and blocks', async () => {
-  const mockApi = { getRecords: async () => ({ records: [] }) };
-  await assert.rejects(
-    async () => RoutingService.validateRequesterAccess(795, 'TMG2', '', 'emp', mockApi, 'Staff'),
-    /TEAM_REQUIRED/
-  );
-});
-
-test('M10M TC07: Existing normal Section route (TMF1) before == after', async () => {
-  const mockApi = {
-    getRecords: async () => ({
-      records: [{
-        Routing_Key: { value: 'TMF1' },
-        Requester_User: { value: [{ code: 'f1' }] },
-        Manager_Level1_Approvers: { value: [{ code: 'kritsada' }] }
-      }]
-    })
-  };
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', null, 'f1', mockApi, 'Staff');
-  assert.equal(routing.Routing_Key, 'TMF1');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'kritsada');
-});
-
-test('M10M TC08: Existing Section Manager route (TMS1) no unintended change', async () => {
-  const mockApi = {
-    getRecords: async () => ({
-      records: [{
-        Routing_Key: { value: 'TMS1' },
-        Requester_User: { value: [{ code: 's1' }] },
-        Manager_Level1_Approvers: { value: [{ code: 'mgr_s1' }] }
-      }]
-    })
-  };
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMS1', null, 's1', mockApi, 'Section Manager');
-  assert.equal(routing.Routing_Key, 'TMS1');
-});
-
-test('M10M TC09: Ambiguous rule (>1 active record) throws AMBIGUOUS_ROUTE and blocks', async () => {
+test('M10M-R1 TC10: Duplicate exact route throws AMBIGUOUS_ROUTE and blocks', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [
@@ -349,18 +384,33 @@ test('M10M TC09: Ambiguous rule (>1 active record) throws AMBIGUOUS_ROUTE and bl
   );
 });
 
-test('M10M TC10: Missing President destination for GM throws APPROVER_NOT_FOUND and blocks', async () => {
+test('M10M-R1 TC11: Requester authorization regression - blank Requester_User does NOT authorize ordinary user', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [{
-        Routing_Key: { value: 'POSITION_GM' },
-        Manager_Level1_Approvers: { value: [] },
-        GM_Level1_Approvers: { value: [] }
+        Routing_Key: { value: 'TMF1' },
+        Requester_User: { value: [] },
+        Manager_Level1_Approvers: { value: [{ code: 'm1' }] }
       }]
     })
   };
   await assert.rejects(
-    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm1', mockApi, 'GM'),
-    /APPROVER_NOT_FOUND/
+    async () => RoutingService.validateRequesterAccess(795, 'TMF1', null, 'ordinary_emp', mockApi, 'Staff'),
+    /ไม่มีสิทธิ์สร้าง MBO/
   );
+});
+
+test('M10M-R1 TC12: Existing normal non-TMG Section route (TMF1) regression before == after', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [{
+        Routing_Key: { value: 'TMF1' },
+        Requester_User: { value: [{ code: 'f1' }] },
+        Manager_Level1_Approvers: { value: [{ code: 'kritsada' }] }
+      }]
+    })
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', null, 'f1', mockApi, 'Staff');
+  assert.equal(routing.Routing_Key, 'TMF1');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'kritsada');
 });
