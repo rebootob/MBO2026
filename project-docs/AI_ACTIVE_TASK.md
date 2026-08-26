@@ -1,158 +1,257 @@
-# AI ACTIVE TASK — R12B-R1 WORKFLOW FAIL-CLOSED CLOSURE
+# AI ACTIVE TASK — R12C CONTROLLED APP794 R12B-R1 WORKFLOW GUARD DEPLOY
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed R12B candidate: `4d52cce0d54eb25d9c96c020bfe0be870dde826c`
-> Mode: REPOSITORY FIX + TESTS ONLY
-> Kintone write/deploy authorization: NONE
+> Reviewed deployment candidate: `a980f064817cb3243fa57fce0c7c84619019311e`
+> Target App: App794 `MBO V2 Sandbox`
+> Mode: CONTROLLED CUSTOMIZATION DEPLOY ONLY
+> User authorization: `อนุมัติ controlled App794 R12B-R1 workflow guard deploy`
+> Authorization scope: SINGLE-USE / THIS EXACT TASK ONLY
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-R12B correctly aligned the 16 live App794 status names and added a topology/action guard, but independent review found two fail-closed gaps that must be closed before deployment or isolated Workflow UAT:
+R12B-R1 passed independent review. The reviewed candidate aligns runtime with the confirmed 16-state App794 Process Management, blocks invalid/blank/unsupported routing topologies, blocks First-Manager actions for current `M1_G1`, and completes required Requester/Manager/GM hand-off fail-closed checks.
 
-1. `validateWorkflowAction()` does not require `Routing_Topology` to be a recognized exact topology. Blank or unknown topology can be treated as a direct-manager route and can pass some Mid-Year/Final workflow actions because `ValidationEngine.validate()` returns early for READ_ONLY stages and routing presence is not globally revalidated there.
-2. `Requester_User` is checked for Return actions only. R12A live Process Management shows additional successful transitions whose destination assignee is `Requester_User`; these must also fail closed when `Requester_User` is empty.
+This task deploys that exact reviewed JavaScript candidate to App794 only. It MUST NOT execute any workflow/process action and MUST NOT create or modify business records.
 
-The canonical workflow baseline already reflects the live R12A process and must not be changed unless new evidence requires it.
+# AUTHORIZATION BOUNDARY
+
+The user explicitly authorized exactly:
+
+`อนุมัติ controlled App794 R12B-R1 workflow guard deploy`
+
+This permits only the App794 customization write/deploy operations required to install the exact reviewed candidate.
+
+Allowed writes after all pre-write gates pass:
+- upload reviewed JS candidate file for App794 customization;
+- upload the existing live CSS content only if technically required by Kintone to preserve the customization set, and only if its SHA-256 is unchanged from the pre-write live CSS content;
+- one App794 customization PUT containing the intended preserved customization set;
+- one App794 deploy POST required to publish that preview revision.
+
+Forbidden writes:
+- App794 records;
+- App794 Process Management;
+- App794 form/schema fields;
+- App794 app/record/field ACL;
+- App795 routing records/schema/customization;
+- App53/App796 or any other app;
+- any workflow/process transition;
+- any Change Assignee action;
+- any notification-generating workflow action.
+
+Authorization expires when this task completes or stops. It MUST NOT be reused for retry, UAT, process changes, record changes, or any later task. If this task stops before deployment, fresh explicit authorization is required before another write attempt.
 
 # CHANGE GOVERNANCE
 
 ## What
-Harden the existing R12B workflow-action validator so every supported topology is exact/fail-closed and every live transition that hands work to `Requester_User` validates that field before proceeding.
+Deploy the exact reviewed R12B-R1 JavaScript candidate from commit `a980f064817cb3243fa57fce0c7c84619019311e` to App794, preserving all non-target customization content and existing schema/process/ACL state.
 
 ## Where
-Prefer only:
-- `src/validation/validation-engine.js`
-- `tests/objective-save-validation.test.js`
-- deterministic `dist/mbo-employee-app.js`
-- minimal living evidence docs after implementation
-
-Do not create a new module. Do not alter App794 Process Management or App795 routing data.
+- Live Kintone App794 customization only.
+- Candidate artifact: deterministic `dist/mbo-employee-app.js` from reviewed commit `a980f064817cb3243fa57fce0c7c84619019311e`.
+- Preserve current App794 CSS and mobile customization exactly.
 
 ## How
 
-### A. Exact topology whitelist / fail-closed
-At the start of `ValidationEngine.validateWorkflowAction()` after extracting `Routing_Topology`:
+### A. Git/candidate preflight — ZERO Kintone write
+1. Pull latest branch and verify local HEAD equals `origin/ai/antigravity-wp002c`.
+2. Verify reviewed candidate commit `a980f064817cb3243fa57fce0c7c84619019311e` is an ancestor of current HEAD.
+3. Verify there has been NO `src/**`, `dist/**`, or `tests/**` drift after candidate commit. The only expected post-candidate change is this task document/control-plane documentation.
+4. Compute SHA-256 and byte length of `dist/mbo-employee-app.js` exactly as it exists at the reviewed candidate/current no-drift tree. Record both as `CANDIDATE_JS_SHA256` and `CANDIDATE_JS_BYTES`.
+5. Classic-script parse the candidate before any Kintone write. Failure -> STOP.
 
-Recognized architecture values are exactly:
-- `M1_G1`
-- `M1_M2_G1`
-- `M1_G1_G2`
-- `M1_M2_G1_G2`
+### B. Fresh live pre-write backup — GET only
+Immediately before the first permitted write, capture a NEW durable local backup under a task-specific path such as:
+`backups/m10l-d-r12c-app794-workflow-guard-deploy/<timestamp>`
 
-Required behavior:
-1. blank/missing topology -> FAIL CLOSED;
-2. any unknown/non-exact topology -> FAIL CLOSED;
-3. `M1_G1` -> supported current live topology;
-4. `M1_M2_G1` -> generic M2 path may pass validator when its required First Manager/Manager/GM fields are populated, preserving current source architecture;
-5. both G2 variants remain recognized but MUST FAIL CLOSED because the current 16-state App794 Process Management has no G2 states/actions.
+Backup/read back at minimum:
+- App794 live revision and preview revision;
+- live desktop customization list and fileKeys;
+- live mobile customization list;
+- actual live JS bytes/content SHA-256;
+- actual live CSS bytes/content SHA-256;
+- App794 form fields sufficient to confirm the six scoring snapshot fields remain present;
+- App794 Process Management read-only snapshot sufficient to confirm 16 states / 27 actions remain unchanged;
+- app settings needed for exact rollback/customization restoration.
 
-Do not infer topology using arbitrary substring matching before the exact whitelist gate.
+Backup must be readable before proceeding.
 
-### B. Complete Requester_User hand-off guard
-R12A live Process Management assigns the destination state to `Requester_User` for the following successful/self transitions in addition to Return actions. Require non-empty `Requester_User` for each exact status/action pair:
+Expected pre-write state from last independently reviewed evidence:
+- live App794 revision = `33`;
+- preview App794 revision = `33`;
+- live JS SHA-256 = `983528a592020cc9a12d0e20a6a08d764b29a4e99836e3da908ba5ed30b5a81c`;
+- live CSS SHA-256 = `3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0`;
+- six scoring snapshot fields still present;
+- Process Management still 16 states / 27 actions;
+- mobile customization preserved.
 
-- status `04 GM Objective Review` + action `Approve Objective` -> `05 Objective Approved`;
-- status `05 Objective Approved` + action `Start Mid-Year` -> `06 Employee Mid-Year`;
-- status `09 GM Mid-Year Review` + action `Approve Mid-Year GM` -> `10 Mid-Year Completed`;
-- status `10 Mid-Year Completed` + action `Start Self Evaluation` -> `11 Employee Self Evaluation`;
-- all existing Return actions that route back to employee/requester states.
+If live/preview revision or content/state differs from this expected baseline in a material way -> `PREWRITE_DRIFT = YES` -> STOP BEFORE WRITE and report. Do not normalize or repair unrelated drift.
 
-Keep existing Manager_User, GM_User and First_Manager_User hand-off checks.
+### C. Candidate/live gate
+Before first write:
+1. Candidate JS SHA-256 must be different from the old live JS hash above; if unexpectedly identical, STOP and report.
+2. Candidate source/dist tree must still equal reviewed candidate semantics; any code drift -> STOP.
+3. CSS candidate is NOT being changed by this task. Preserve the exact pre-write CSS content hash.
+4. Process Management, form fields and ACL are not deployment targets and must not be mutated.
 
-Do not invent an HR user field. `14 GM Final Evaluation -> 15 HR Final Check` uses live HR-group configuration and will be handled separately in isolated-UAT planning; this repository task must not change it.
+### D. Controlled customization deploy
+Only after A-C PASS:
+1. Upload exact reviewed candidate JS once.
+2. Attempt/update App794 customization preserving the current customization set.
+3. If Kintone requires a fresh CSS fileKey to submit the preserved CSS customization, CSS re-upload is permitted ONLY when bytes SHA-256 exactly match the pre-write CSS hash. Record `CSS_REUPLOAD_TECHNICALLY_REQUIRED = YES`. Do not change CSS content.
+4. Submit exactly one successful intended customization PUT. If an attempted PUT fails due a fileKey constraint before any preview state changes, record the failed attempt accurately; do not conceal it. If resolving it would require anything beyond exact JS candidate + identical CSS re-upload, STOP.
+5. Deploy App794 preview to live once.
+6. Wait/read deploy status until `SUCCESS` or an explicit failure/timeout. Failure -> execute rollback from fresh pre-write backup if live/preview state was changed and rollback is safe/authorized by this task; otherwise STOP and report exact state.
 
-### C. Preserve valid current M1_G1 behavior
-For valid `M1_G1` records with populated Requester/Manager/GM fields, ensure normal live actions continue to pass:
-- Objective: direct submit, Manager approve/return, GM approve/return, Start Mid-Year;
-- Mid-Year: direct submit, Manager approve/return, GM approve/return, Start Self Evaluation;
-- Final: direct submit, Manager approve/return, GM return; `Approve Final GM` must not be altered by this task beyond existing validation because HR-group isolation is a later UAT concern.
+### E. Post-deploy verification — NO workflow action
+After deploy:
+- live App794 revision incremented as expected;
+- live JS bytes SHA-256 exactly equal `CANDIDATE_JS_SHA256`;
+- live CSS SHA-256 exactly equals pre-write CSS SHA-256;
+- mobile customization unchanged;
+- six scoring snapshot fields preserved;
+- Process Management still exactly 16 states / 27 actions and unchanged by this task;
+- no record/schema/process/ACL writes occurred;
+- one shallow browser smoke of App794 confirms customization loads with no fatal console/runtime error;
+- browser smoke MUST NOT click Submit/Approve/Return/Complete/Change Assignee and MUST NOT save/create/edit any record;
+- no workflow notification is triggered.
 
-# Why
-The project baseline requires missing routing and workflow/action inconsistencies to fail closed. A blank/unknown topology must never silently behave like `M1_G1`, and a transition must not proceed when the user field that owns the destination status is empty.
+Do not perform isolated Workflow UAT in this task.
 
-# Expected Impact
-Repository candidate becomes sufficiently fail-closed for controlled deployment review. No live Kintone state changes occur in this task.
+## Why
+The repository candidate is reviewed and fail-closed, but Workflow UAT must exercise the code actually loaded by App794. Deploying the exact candidate under controlled backup/read-back gates is required before isolated UAT design/execution.
 
-# Risks
-- over-blocking valid M1_G1 actions;
-- accidentally removing generic M2 architecture support;
-- confusing HR-group assignment with Requester_User assignment;
-- source/dist divergence.
+## Expected Impact
+- App794 JavaScript customization advances from the R11 runtime to the reviewed R12B-R1 workflow guard runtime.
+- No business record, routing master, Process Management, schema or ACL changes.
+- No workflow recipient receives a task/notification from this deployment task.
 
-# Test Plan
-Add focused regression assertions in the existing test file:
+## Risks
+- App794 customization fileKey behavior may require JS/CSS upload handling;
+- unintended live drift since Revision 33;
+- source/dist candidate mismatch;
+- customization deploy failure leaving preview/live revisions divergent;
+- accidental process action or business-record write during smoke testing.
 
-1. blank `Routing_Topology` + Mid-Year direct Manager submit -> FAIL CLOSED;
-2. unknown topology + Final direct Manager submit -> FAIL CLOSED;
-3. exact `M1_G1` direct actions remain PASS;
-4. exact `M1_M2_G1` First Manager path remains PASS with populated First_Manager_User;
-5. both G2 exact variants -> FAIL CLOSED;
-6. status 04 `Approve Objective` with empty Requester_User -> FAIL CLOSED; populated -> PASS;
-7. status 05 `Start Mid-Year` with empty Requester_User -> FAIL CLOSED; populated -> PASS;
-8. status 09 `Approve Mid-Year GM` with empty Requester_User -> FAIL CLOSED; populated -> PASS;
-9. status 10 `Start Self Evaluation` with empty Requester_User -> FAIL CLOSED; populated -> PASS;
-10. representative Return action with empty Requester_User -> FAIL CLOSED;
-11. valid M1_G1 Manager/GM approve and return regressions across Objective, Mid-Year and Final remain PASS;
-12. existing 16-status exactness, stale-alias, 0118/Profile/Hoshin/Save regressions remain green;
-13. targeted tests first, then exactly one full `npm test`;
-14. build dist once; source/dist exactness + classic bundle parse PASS.
+All risks are controlled by STOP-on-drift, fresh backup, exact hash verification, narrow write allowlist, and no-workflow-action rule.
 
-## Rollback Plan
-Repository-only revert to reviewed R12B candidate `4d52cce0d54eb25d9c96c020bfe0be870dde826c` if regressions fail. No Kintone rollback because all Kintone calls/writes are forbidden.
+# TEST PLAN
 
-# HARD SAFETY BOUNDARY
+Repository tests were already completed in reviewed R12B-R1 (`554/554 PASS`) and MUST NOT be rerun unless candidate drift is detected. Save Antigravity credit.
 
-- No Kintone GET/POST/PUT/DELETE.
-- No App794 record/process/schema/customization/ACL write.
-- No browser workflow action.
-- No notification test.
-- No App795/App53/App796 calls.
-- No deployment.
-- No UAT records/accounts.
-- No baseline change unless a genuine new conflict is discovered; if so STOP and report.
+Deployment verification only:
+1. Git/candidate no-drift gate PASS.
+2. Candidate classic parse PASS.
+3. Fresh pre-write backup/readability PASS.
+4. Live Revision 33 / Preview 33 pre-write or STOP.
+5. Old live JS/CSS hashes match expected baseline or STOP.
+6. Exact candidate live JS hash match after deploy.
+7. CSS content preservation hash match.
+8. Mobile customization preservation PASS.
+9. Six-field schema preservation PASS.
+10. Process Management unchanged 16 states / 27 actions PASS.
+11. Browser shallow-load runtime smoke PASS with zero process actions.
+12. Zero App794 record/process/schema/ACL writes.
+13. Zero App795/App53/App796/other-app writes.
+14. Git evidence/docs push same branch and STOP.
+
+# ROLLBACK PLAN
+
+Use ONLY the fresh R12C pre-write backup captured immediately before first write.
+
+If the customization/deploy produces a bad live runtime or post-deploy hash/read-back failure:
+1. restore exact prior App794 desktop/mobile customization from the fresh backup, using restored files/bytes rather than stale historical fileKeys;
+2. deploy rollback preview;
+3. verify live JS/CSS hashes equal the fresh pre-write hashes and mobile customization is restored;
+4. do not modify records, Process Management, schema or ACL as part of rollback;
+5. record rollback calls/results exactly and STOP.
+
+If backup is incomplete/unreadable or rollback cannot be proven restorable before first write -> STOP BEFORE WRITE.
+
+# HARD SAFETY / STOP CONDITIONS
+
+STOP before write if any of these occur:
+- current code/dist differs from reviewed candidate `a980f064...`;
+- branch/local/remote mismatch;
+- pre-write live or preview revision is not expected `33` without an explained reviewed reason;
+- pre-write live JS hash differs from `983528a5...`;
+- pre-write CSS hash differs from `3604d2b2...`;
+- six scoring snapshot fields are missing/drifted;
+- Process Management is not the confirmed 16-state / 27-action configuration;
+- backup is unreadable/incomplete;
+- customization preservation cannot be proven.
+
+STOP immediately after any forbidden write is detected. Do not attempt to compensate silently.
 
 # CREDIT-SAVING RULE
 
-Read only canonical baseline plus the R12B candidate files named above. Do not do broad discovery or unrelated history. Make the minimum source/test/dist correction, run targeted test, one full suite, one build, append evidence, push and STOP.
+- No broad discovery.
+- No `npm test` rerun unless drift forces STOP/report.
+- No source changes.
+- No UI/UX work.
+- No Workflow UAT.
+- No repeated browser tests: one shallow runtime load only after successful deploy.
+- Reuse existing controlled-deploy patterns/scripts where safe; do not create redundant tooling.
 
 # REQUIRED EVIDENCE
 
+Append one concise R12C block to `project-docs/AI_REVIEW_PACKAGE.md`; minimally update CURRENT_STATE/HANDOFF/IMPLEMENTATION_STATUS/CHANGELOG if normally required. Do not create a new evidence file.
+
 ```text
-R12B_R1_WORKFLOW_FAIL_CLOSED_CLOSURE = COMPLETE / PARTIAL / BLOCKED
-REVIEWED_R12B_CANDIDATE = 4d52cce0d54eb25d9c96c020bfe0be870dde826c
-EXACT_TOPOLOGY_WHITELIST = PASS/FAIL
-BLANK_TOPOLOGY_FAIL_CLOSED = PASS/FAIL
-UNKNOWN_TOPOLOGY_FAIL_CLOSED = PASS/FAIL
-M1_G1_VALID_PATH_REGRESSION = PASS/FAIL
-M1_M2_G1_VALID_PATH_REGRESSION = PASS/FAIL
-G2_EXACT_VARIANTS_FAIL_CLOSED = PASS/FAIL
-REQUESTER_HANDOFF_STATUS04_APPROVE = PASS/FAIL
-REQUESTER_HANDOFF_STATUS05_START_MIDYEAR = PASS/FAIL
-REQUESTER_HANDOFF_STATUS09_APPROVE_MIDYEAR_GM = PASS/FAIL
-REQUESTER_HANDOFF_STATUS10_START_SELF_EVAL = PASS/FAIL
-RETURN_REQUESTER_EMPTY_FAIL_CLOSED = PASS/FAIL
-VALID_M1_G1_APPROVE_RETURN_STAGE_COVERAGE = PASS/FAIL
-LIVE_STATUS_COUNT_COVERED = 16 / 16
-STALE_STATUS_ALIAS_COUNT_ACTIVE = 0
-SOURCE_DIST_EXACTNESS = PASS/FAIL
-CLASSIC_BUNDLE_PARSE = PASS/FAIL
-npm test = actual / PASS|FAIL
-KINTONE_CALLS_THIS_TASK = 0
-KINTONE_WRITES_THIS_TASK = 0
-SRC_CHANGE_COUNT = actual
-DIST_CHANGE_COUNT = actual
-TEST_CHANGE_COUNT = actual
+M10L_D_R12C_CONTROLLED_DEPLOY = COMPLETE / PARTIAL / BLOCKED
+USER_AUTHORIZATION = VERIFIED_SINGLE_USE_CONSUMED / NOT_CONSUMED_NO_WRITE
+AUTHORIZATION_TEXT = อนุมัติ controlled App794 R12B-R1 workflow guard deploy
+REVIEWED_CANDIDATE = a980f064817cb3243fa57fce0c7c84619019311e
+CANDIDATE_DRIFT = 0 / actual
 GIT_DIFF_CHECK = PASS/FAIL
+CANDIDATE_JS_SHA256 = actual
+CANDIDATE_JS_BYTES = actual
+CLASSIC_BUNDLE_PARSE = PASS/FAIL
+PREWRITE_LIVE_REVISION = actual
+PREWRITE_PREVIEW_REVISION = actual
+PREWRITE_DRIFT = NO/YES
+PREWRITE_JS_SHA256 = actual
+PREWRITE_CSS_SHA256 = actual
+PREWRITE_BACKUP_PATH = actual
+PREWRITE_BACKUP_GATE = PASS/FAIL
+PREWRITE_PROCESS_STATE_COUNT = actual
+PREWRITE_PROCESS_ACTION_COUNT = actual
+JS_FILE_UPLOAD_COUNT = actual
+CSS_FILE_UPLOAD_COUNT = actual
+CSS_REUPLOAD_TECHNICALLY_REQUIRED = YES/NO
+CUSTOMIZE_PUT_ATTEMPT_COUNT = actual
+CUSTOMIZE_PUT_SUCCESS_COUNT = actual
+DEPLOY_POST_COUNT = actual
+POST_DEPLOY_STATUS = actual
+POST_DEPLOY_LIVE_REVISION = actual
+LIVE_JS_SHA256 = actual
+LIVE_JS_HASH_MATCH = PASS/FAIL
+LIVE_CSS_SHA256 = actual
+LIVE_CSS_CONTENT_PRESERVED = PASS/FAIL
+MOBILE_CUSTOMIZE_PRESERVED = PASS/FAIL
+SIX_FIELD_SCHEMA_PRESERVED = PASS/FAIL
+PROCESS_MANAGEMENT_UNCHANGED_16_STATES_27_ACTIONS = PASS/FAIL
+BROWSER_SHALLOW_RUNTIME_LOAD = PASS/FAIL
+BROWSER_CONSOLE_FATAL = PASS/FAIL
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
+APP794_RECORD_WRITE = 0
+APP794_PROCESS_WRITE = 0
+APP794_SCHEMA_WRITE = 0
+APP794_ACL_WRITE = 0
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+ROLLBACK_EXECUTED = YES/NO
+NO_ORPHAN_ARTIFACT_GATE = PASS/FAIL
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY DEPLOY OR UAT WRITE
+NEXT_ACTION = CHATGPT REVIEW BEFORE ISOLATED WORKFLOW UAT
 ```
-
-Append one concise R12B-R1 evidence block to `project-docs/AI_REVIEW_PACKAGE.md`; update CURRENT_STATE/HANDOFF minimally. Do not create new evidence files.
 
 Push same branch and STOP.
