@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R10 Hoshin Undefined Snapshot Regression Fix (0 Kintone calls/writes executed): Fixed Hoshin undefined snapshot mutation in `src/main-mbo-app.js` by excluding `Department_Hoshin`/`Section_Hoshin` from `fieldsToSync` when source value is `undefined` and hardening the in-memory record assignment loop to check `val !== undefined`. Rebuilt `dist/mbo-employee-app.js` (0 drift), updated mock `kintone.app.record.set` in `tests/objective-save-validation.test.js` to fail closed if any field receives `value: undefined`, and added direct regression tests verifying `0118` lookup, `Routing_Topology` read-back, and existing Hoshin preservation (551/551 suite tests passing).
+- **2026-08-26**: Executed M10L-D-R11 Controlled App794 R10 Hoshin Regression Deploy under explicit single-use user authorization ("อนุมัติ controlled App794 R10 Hoshin regression deploy"): Created durable pre-write backup (`backups/m10l-d-r11-app794-r10-hoshin-deploy/2026-08-26T01-54-31-777Z`), uploaded and deployed reviewed R10 JS candidate `983528a5` and candidate CSS `3604d2b2` to App 794 (Revision 33), verified live JS & CSS SHA256 matches 100%, verified live read-back for 0118 (`PROF_STAFF_CHIEF`, 70/30, `M1_G1`). 0 record/schema/ACL writes executed.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.
