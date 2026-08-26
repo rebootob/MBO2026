@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R3 DEADLINE URGENCY VISUAL CORRECTION — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R4 VISUAL HIERARCHY + DENSE AUDIT TABLE — LOCAL ONLY
 
 > Control Plane: ChatGPT / Project Lead / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Prior implementation: R6-R2 commit `b11af6d8c2df8193262ce87bfc51e15796947008`
+> Prior implementation: R6-R3 commit `ff4825399711fda7fbfe294117e161b06fcad546`
 > Canonical UI baseline: `project-docs/CONFIRMED_BASELINE/UI_UX.md`
 > Kintone write/deploy authorization: **NONE**
 
@@ -25,207 +25,243 @@ Read completely, in this exact order:
 
 Confirmed Baseline is canonical.
 
-## 1. CURRENT GATE
+## 1. CURRENT GATE — USER VISUAL FINDING
 
-R6-R2 local implementation exists and is under user visual inspection.
+R6-R3 technically works locally, but the user visually rejected the information hierarchy:
+- the deadline/status area is too busy, repetitive and difficult to scan;
+- too many large status/urgency elements compete with the actual MBO form;
+- Workflow Action Timeline is secondary audit information but still looks too visually heavy;
+- Timeline needs visibly stronger grid lines and smaller, denser typography.
 
-User finding: deadline/day-count information inside the five stage tiles is still too small and easy to miss, especially near deadline and overdue.
+Classification: **MUST FIX VISUAL / LOCAL ONLY**.
 
-This R6-R3 task is a **bounded visual correction only**. Preserve all R6-R2 behavior unless directly required for the deadline urgency correction.
-
-Critical path:
-`R6-R3 Deadline Urgency Correction -> ChatGPT Review -> User Visual Preview -> continue UI closure`
+This is a bounded visual-hierarchy correction. Do not reopen business logic, routing, scoring, persistence, Dashboard or Hoshin.
 
 ## 2. HARD SAFETY BOUNDARY
 
 LOCAL ONLY.
 
 - Kintone GET/POST/PUT/DELETE = 0.
-- App794 deploy/upload = 0.
+- App794 upload/deploy = 0.
 - Record/workflow/process/schema/ACL/notification writes = 0.
 - App795/App796/App797/App798/App800 writes = 0.
 - No real-user workflow/notification test.
 - No new Kintone fields.
-- No new production notification mechanism.
+- No production notification mechanism.
 
-## 3. REQUIRED DEADLINE UX
+## 3. PRIMARY VISUAL RULE — ONE CLEAR STATUS AREA
 
-Implement canonical `UI_UX.md` section 21.
+Implement `CONFIRMED_BASELINE/UI_UX.md` section 22.
 
-### 3.1 Separate urgency callout
+### 3.1 Remove duplicated visual noise
 
-Do not rely only on the small text inside the five stage tiles.
+Do not show multiple large blocks that repeat the same current-phase/deadline state.
 
-For the **current active phase**, render a prominent bilingual urgency callout near the top process/stage area.
+Target hierarchy:
+1. five-stage navigation;
+2. **one compact current-phase status/deadline strip**;
+3. main MBO business content;
+4. secondary information such as Timeline/Comments.
 
-The visual focus is the number:
-- `เหลือ 12 วัน / 12 DAYS REMAINING`
-- `เหลือ 3 วัน / 3 DAYS REMAINING`
-- `ครบกำหนดวันนี้ / DUE TODAY`
-- `เกินกำหนด 76 วัน / 76 DAYS OVERDUE`
+The compact strip may contain:
+- current phase;
+- current actor/action guidance where useful;
+- status badge;
+- days remaining/overdue;
+- exact due date.
 
-Show exact due date immediately adjacent/below:
-`ครบกำหนด 31 Mar 2026 / Due 31 Mar 2026`
+Do not create separate large hero panels for each of these if they can be expressed in one compact strip.
 
-### 3.2 Urgency tiers
+### 3.2 Urgency behavior remains, but compact
 
-Use these deterministic UI tiers:
+Preserve semantic tiers:
+- >7 days: green/on-time;
+- 1..7 days: amber/orange;
+- due today: orange/red;
+- overdue: red;
+- completed: green;
+- upcoming: neutral.
 
-- `> 7 days remaining` -> GREEN / on-time normal emphasis.
-- `1..7 days remaining` -> AMBER/ORANGE / due-soon strong emphasis.
-- `0 days / due today` -> strong ORANGE/RED urgency.
-- `overdue` -> RED critical emphasis.
-- `completed` -> GREEN success, no overdue alarm.
-- `upcoming/not opened` -> neutral/blue/gray and no overdue popup.
+The day count remains easy to notice, but it must not dominate the form.
+Target desktop typography:
+- main day count around 16–18px;
+- phase/status around 12–13px;
+- due-date/helper around 11–12px.
 
-Do not treat green as performance score; this is deadline status only.
+Use restrained color accents (border/badge/light background). Avoid large saturated colored areas.
+Use at most one meaningful icon in the persistent status strip.
 
-### 3.3 Popup / toast behavior
+### 3.3 Transient toast
 
-When the page/Preview is opened and the current phase is:
-- due-soon `1..7 days`, OR
-- due today, OR
-- overdue,
+For due-soon/due-today/overdue, a dismissible toast may remain, but:
+- it must be visually compact;
+- it must not duplicate a full paragraph already shown in the persistent strip;
+- no loop/reopen in the same session;
+- after dismissal, the compact persistent strip still shows the urgency state;
+- no blinking text.
 
-show one dismissible bilingual popup/toast/banner.
+## 4. WORKFLOW ACTION TIMELINE — DENSE GRID TABLE
 
-Example overdue:
-`⚠️ เกินกำหนด 76 วัน / 76 DAYS OVERDUE — กรุณาดำเนินการโดยเร็ว / Please take action as soon as possible.`
+The Timeline is audit/supporting information, not main content.
 
-Rules:
-- popup/toast may appear once per page load/session while the condition remains true;
-- dismissing it must not remove the persistent red/orange urgency callout;
-- no endless/reopening modal loop in the same page session;
-- do not implement browser notifications, email, Kintone notifications, or external alerts in this task.
+Mandatory desktop correction:
+- render as a real compact table;
+- **clearly visible vertical AND horizontal grid lines**;
+- use a stronger neutral border than the current very-light appearance;
+- header/body text approximately 11–12px;
+- compact cell padding about 5–7px where practical;
+- compact row height; do not create tall rows;
+- header background restrained light gray/blue;
+- Result/Return badges small and compact;
+- `Events Recorded` remains a small secondary badge;
+- Return/Reject row may have a light red tint but grid lines must still remain visible;
+- preserve all columns and chronological history;
+- keep the whole Timeline section collapsible;
+- mobile may use stacked cards only when table is genuinely unreadable.
 
-### 3.4 Motion / accessibility
+Do not enlarge Timeline typography merely because the table is bilingual. Prefer concise paired labels/two-line headers.
 
-Do **not** use continuously blinking text.
-
-If motion is used:
-- use only a subtle pulse on border/icon/background for due-soon/due-today/overdue;
-- avoid aggressive flashing;
-- respect `prefers-reduced-motion` by disabling animation where practical.
-
-## 4. PRESERVE R6-R2
+## 5. PRESERVE R6-R3 / R6-R2 FUNCTIONAL UI
 
 Do not regress:
-- five bilingual stages;
-- route/appraiser behavior;
-- optional attachments;
-- Mid-Year Progress semantics;
-- Native Kintone Comments coexistence;
-- active Appraiser column behavior;
-- responsive 4-Appraiser matrix/no page overflow;
-- Workflow Action Timeline table;
-- Difficulty blank state;
-- current HR phase calendar model;
-- 0 Kintone calls in Preview.
+- exactly five bilingual stages;
+- route-aware progress;
+- ordinal Appraiser route labels;
+- Appraiser active-column logic;
+- 1..4 Appraiser Preview capacity;
+- contained 4-Appraiser matrix/no whole-page overflow;
+- Objectives/Mid-Year/Self optional attachments;
+- Mid-Year employee-entered Progress 0..100;
+- Difficulty blank semantics;
+- HR phase calendar model;
+- Native Kintone Comments coexistence contract;
+- Workflow Timeline event semantics/full history;
+- fail-closed incomplete scoring;
+- 0 Preview Kintone calls.
 
-Do not reopen Dashboard/Hoshin/routing persistence/scoring persistence/audit persistence.
+## 6. USER VISUAL CHECK TARGET
 
-## 5. PREVIEW VISUAL MATRIX
+Preview must visibly demonstrate:
 
-Preview must make these cases directly selectable or reproducible:
+### Status/deadline area
+- normal/on-time case is calm and compact;
+- due-soon is noticeable but not a giant hero panel;
+- overdue is clearly red and visible without making the page look chaotic;
+- there is only one persistent status/deadline strip;
+- optional transient toast can be dismissed without leaving duplicated large status panels.
 
-1. 20 days remaining -> GREEN callout, no popup.
-2. 7 days remaining -> AMBER/ORANGE callout + popup/toast.
-3. 3 days remaining -> AMBER/ORANGE callout + popup/toast.
-4. 1 day remaining -> strong AMBER/ORANGE callout + popup/toast.
-5. Due today -> strong urgency + popup/toast.
-6. 1 day overdue -> RED callout + popup/toast.
-7. 76 days overdue -> RED prominent callout + popup/toast.
-8. Completed -> GREEN success, no overdue popup.
-9. Upcoming -> neutral, no urgent popup.
+### Timeline
+- grid lines immediately visible at normal zoom;
+- every column clearly separated;
+- body text visibly smaller than primary MBO form text;
+- rows compact and easy to scan;
+- Return row easy to identify;
+- table remains readable in Thai + English.
 
-The selected/current phase tile may also carry a matching urgency accent, but the separate large callout remains mandatory.
+## 7. FOCUSED TEST / EXECUTION BUDGET
 
-## 6. FOCUSED TESTS / EXECUTION BUDGET
-
-Add/adjust focused tests for:
-1. `>7` days -> green/on-time semantics, no urgent popup.
-2. `7` days -> due-soon class + popup.
-3. `1` day -> due-soon class + popup.
-4. due today -> urgent class + popup.
-5. overdue -> red class + prominent numeric text + popup.
-6. completed -> no overdue popup.
-7. dismiss does not remove persistent urgency callout.
-8. popup is not repeatedly recreated in same render/session without reset.
-9. reduced-motion CSS exists/animation disabled where implemented.
-10. Preview Kintone calls = 0.
+Add/adjust focused tests only for visual contracts that can be asserted structurally:
+1. only one persistent deadline/status strip exists.
+2. urgent toast remains optional/transient and dismissible.
+3. persistent strip remains after toast dismissal.
+4. no continuous blinking text.
+5. Timeline uses `<table>`.
+6. Timeline CSS contains visible cell/header borders.
+7. Timeline compact typography contract exists.
+8. Timeline remains collapsible.
+9. Return history row remains present.
+10. R6-R3 deadline semantics unchanged.
+11. Preview Kintone calls = 0.
 
 Execution budget:
-- run focused UI tests first;
-- `npm test` once only if source shared with production UI changed;
+- focused tests first;
+- `npm test` once because shared production UI/CSS changes;
 - `npm run ui:build` once;
 - `npm run ui:preview` once;
 - local browser smoke only.
 
-Do not rerun unrelated discovery or broad browser workflows.
+Do not burn cycles on unrelated tests/docs cleanup.
 
-## 7. REQUIRED EVIDENCE
+## 8. REQUIRED EVIDENCE
 
 ```text
-APP794_EVALUATION_UI_V2_R6_R3 = COMPLETE / BLOCKED
+APP794_EVALUATION_UI_V2_R6_R4 = COMPLETE / BLOCKED
 EXECUTION_STARTING_HEAD = exact pulled task parent
-DEADLINE_SEPARATE_URGENCY_CALLOUT = PASS/FAIL
-DEADLINE_GT7_GREEN = PASS/FAIL
-DEADLINE_7DAY_AMBER = PASS/FAIL
-DEADLINE_1DAY_AMBER = PASS/FAIL
-DEADLINE_DUE_TODAY_URGENT = PASS/FAIL
-DEADLINE_OVERDUE_RED = PASS/FAIL
-DEADLINE_76DAY_OVERDUE_PROMINENT = PASS/FAIL
-URGENT_POPUP_DUE_SOON = PASS/FAIL
-URGENT_POPUP_DUE_TODAY = PASS/FAIL
-URGENT_POPUP_OVERDUE = PASS/FAIL
-URGENT_POPUP_DISMISS_PRESERVES_CALLOUT = PASS/FAIL
-URGENT_POPUP_NO_LOOP = PASS/FAIL
+PERSISTENT_STATUS_STRIP_COUNT = 1 / actual
+STATUS_STRIP_COMPACT_HIERARCHY = PASS/FAIL
+STATUS_DUPLICATE_LARGE_PANEL_COUNT = 0 / actual
+URGENT_TOAST_COMPACT = PASS/FAIL
+URGENT_TOAST_DISMISS_PRESERVES_STATUS = PASS/FAIL
 CONTINUOUS_BLINKING_TEXT = 0
-REDUCED_MOTION_SUPPORT = PASS/FAIL/NOT_APPLICABLE
-R6_R2_REGRESSION_CHECK = PASS/FAIL
+TIMELINE_DESKTOP_TABLE = PASS/FAIL
+TIMELINE_VERTICAL_GRID_VISIBLE = PASS/FAIL
+TIMELINE_HORIZONTAL_GRID_VISIBLE = PASS/FAIL
+TIMELINE_COMPACT_TYPOGRAPHY = PASS/FAIL
+TIMELINE_COMPACT_PADDING = PASS/FAIL
+TIMELINE_COLLAPSIBLE = PASS/FAIL
+TIMELINE_RETURN_HISTORY_PRESERVED = PASS/FAIL
+R6_R3_SEMANTIC_REGRESSION = 0 / actual
+FOUR_APPRAISER_PAGE_BODY_OVERFLOW = 0 / actual
 KINTONE_CALL_COUNT = 0
 KINTONE_WRITE_COUNT = 0
 DEPLOY_COUNT = 0
-NPM_TEST = actual/PASS/NOT_RUN_WITH_REASON
+NPM_TEST = actual/PASS/FAIL
 UI_BUILD = PASS/FAIL
 PREVIEW_MAIN_UI_RENDER = PASS/FAIL
 PREVIEW_KINTONE_CALL_COUNT = 0
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
+NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; IF USER APPROVES UI, START PREVIEW_TO_APP794_PARITY_CLOSURE PLAN; NO DEPLOY
 ```
 
-## 8. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+## 9. NEXT PHASE AFTER USER VISUAL APPROVAL — DO NOT EXECUTE NOW
+
+After the user approves the local Preview UI, do **not** deploy immediately.
+
+Next Control Plane work package is:
+`PREVIEW_TO_APP794_PARITY_CLOSURE`
+
+Follow `CONFIRMED_BASELINE/UI_UX.md` section 23:
+- create one full Preview -> App794 parity manifest;
+- map all fields/statuses/routes/appraisers/attachments/scoring/calendar/timeline/comments/security;
+- classify every Preview feature gap;
+- bundle required App794/App795/App796/App800/schema/audit changes into one reviewed integration plan;
+- build one integrated candidate instead of live micro-fixes;
+- request fresh explicit Kintone authorization only after the complete plan/candidate is reviewed.
+
+Do not execute that parity work in R6-R4.
+
+## 10. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
 
 What:
-- make current-phase deadline urgency impossible to miss without aggressive flashing.
+- simplify visual hierarchy and make Timeline look like a compact business audit table.
 
 Where:
-- existing App794 UI deadline/progress rendering, CSS, Preview fixture/control, focused tests.
+- existing App794 UI status/deadline rendering, Timeline renderer, CSS, Preview and focused tests.
 
 How:
-- reuse existing deadline calculation; change visual hierarchy and add local dismissible urgency toast/callout behavior.
+- consolidate repeated status blocks into one compact strip; reduce visual weight; strengthen Timeline grid and density.
 
 Why:
-- current user visual inspection shows the date/day count is too subtle to drive employee action.
+- user visual inspection found the current presentation cluttered, unclear and difficult to scan.
 
 Impact:
-- local Preview/candidate only; no Kintone runtime impact.
+- local candidate/Preview only; no Kintone runtime impact.
 
 Risk:
-- excessive notification noise, inaccessible flashing, duplicated popup creation, or regression of stage layout.
+- accidentally reducing deadline visibility too much, hiding actor guidance, or making bilingual Timeline text too cramped.
 
 Test:
-- focused deadline matrix + build/Preview smoke; full npm test only as specified.
+- focused structural tests + one npm test + one build + local Preview smoke.
 
 Rollback:
-- Git revert R6-R3 local implementation commit. No Kintone rollback because writes are prohibited.
+- Git revert the R6-R4 local implementation commit. No Kintone rollback because writes are prohibited.
 
-## 9. STOP CONDITION
+## 11. STOP CONDITION
 
-Commit and push same `ai/antigravity-wp002c` branch.
+Commit and push the same `ai/antigravity-wp002c` branch.
 Keep Preview Lab running if practical.
 STOP.
 
 Do not deploy App794.
 Do not modify any Kintone app.
-Do not continue to Dashboard/Hoshin.
+Do not continue to Dashboard/Hoshin or parity implementation.
