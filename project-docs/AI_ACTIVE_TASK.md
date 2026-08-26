@@ -1,285 +1,166 @@
-# AI ACTIVE TASK — M10M-R2D-R1 APP796 SUPERSESSION FINAL LOCAL CORRECTION
+# AI ACTIVE TASK — R2D-R2 FINAL SUPERSESSION AUTHORIZATION CLOSURE
 
-> Control Plane: ChatGPT / Project Lead / Architect / Reviewer
+> Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed R2D execution HEAD: `a2494f83afbc21955411111442546fb9e976e012`
-> Target: close the last local integration/safety defects before any App796 repair authorization
+> Reviewed implementation HEAD: `a046419bd5e11653fb1d6c84fe97fda0b97460a4`
+> Mode: CREDIT-SAVER / PROJECT CLOSE
 > Kintone authorization: **NONE**
-> Kintone calls/writes/deploys: **0**
-> Previous App796 authorization: **CONSUMED / CLOSED / MUST NOT BE REUSED**
+> Kintone GET/WRITE/DEPLOY: **0**
 
----
-
-## 0. REVIEW RESULT
+## REVIEW RESULT
 
 ```text
-M10M_R2D_REVIEW = MUST_FIX
-ARCHITECTURE_DIRECTION = PASS
-ATOMIC_BULK_DESIGN = PASS
-DGM_V110_CANDIDATE_DESIGN = PASS
-REAL_REPOSITORY_INTEGRATION = FAIL
-SUPERSESSION_AUTHORIZATION_CONTRACT = MUST_FIX
-KINTONE_WRITE_AUTHORIZATION = NONE
+R2D_R1 = MUST_FIX
+SERVICE_REAL_REPOSITORY_INTEGRATION = PASS
+CROSS_LAYER_SUPERSESSION_PATH = PASS
+ATOMIC_BULK_REPOSITORY = PASS
+DGM_V110_CANDIDATE_HASH = PASS
+SUPERSESSION_AUTHORIZATION_GUARD = MUST_FIX
 ```
 
-Do not contact Kintone in this task.
+This is ONE local correction round only. Do not perform discovery, UI work, docs cleanup, Kintone contact, browser smoke, or unrelated refactor.
 
----
+## DEFECT 1 — STRUCTURED BACKUP MUST BE MANDATORY
 
-## 1. DEFECT A — SERVICE / REAL REPOSITORY CONTRACT MISMATCH
-
-`publishSupersedingScoringConfig()` currently passes its in-memory test double but does not work with the real `ScoringConfigKintoneRepository`.
-
-### A1. Published query method mismatch
-
-Service calls:
-
-```text
-queryPublishedByProfileAndFiscalYear(...)
-```
-
-Real repository exposes:
-
-```text
-findPublishedByProfileFiscalYear(...)
-```
-
-Fix the service to use the existing real repository method. Do not create a duplicate method unless a concrete need is proven.
-
-### A2. `createValidatedRecord()` payload mismatch
-
-Real repository accepts one complete validated record and requires:
-
-```text
-Config_Status = VALIDATED
-Configuration_Hash = <computed 64-char hash>
-Published_By = ""
-Published_At = ""
-```
-
-Fix supersession service to build and pass:
+Current `assertScoringMasterSupersessionAuthorization()` still accepts legacy fallback:
 
 ```js
-{
-  ...canonicalImmutable,
-  Config_Status: CONFIG_LIFECYCLE_STATUS.VALIDATED,
-  Configuration_Hash: candidateExpectedHash,
-  Published_By: '',
-  Published_At: ''
-}
+prewriteBackupVerified === true
 ```
 
-Use the same real published-query method for final exactly-one-published verification.
+when `backupEvidence` is absent.
 
-Do not weaken or rewrite the already-frozen normal `publishScoringConfig()` behavior.
+Remove this fallback for supersession authorization.
 
----
-
-## 2. ADD ONE REAL CROSS-LAYER LOCAL INTEGRATION TEST
-
-Add a deterministic no-network integration test wiring the actual implementation chain:
+Supersession MUST require `authConfig.backupEvidence` as a plain structured object containing all of:
 
 ```text
-ScoringConfigMasterService
- -> ScoringConfigKintoneRepository
- -> createScoringConfigRepositoryRequestBridge
- -> fake deterministic transport
-```
-
-The test must execute the full local supersession flow and prove:
-
-1. `PROF_DGM::v1.0.0` predecessor is read as PUBLISHED;
-2. `PROF_DGM::v1.1.0` is created as VALIDATED through the real repository payload contract;
-3. read-back triple hash passes;
-4. exact two-request Bulk payload reaches fake transport;
-5. predecessor becomes SUPERSEDED;
-6. v1.1.0 becomes PUBLISHED;
-7. exactly one PUBLISHED DGM/FY2026 remains;
-8. result is `SUPERSESSION_PUBLISH_VERIFIED`.
-
-This test must fail if service/repository method names or signatures drift again.
-
----
-
-## 3. DEFECT B — HARDEN SUPERSESSION AUTHORIZATION
-
-Current `assertScoringMasterSupersessionAuthorization()` is too weak for future live repair authorization.
-
-Create/use exact operation constants for a dedicated supersession stage/contract. Exact names may follow repository convention, but the guard must bind BOTH authorization config and request context to all of these:
-
-```text
-Work Package ID
-Stage
-Contract ID
-App ID = 796
-Exact App796 App Name
-Operation = SCORING_CONFIG_SUPERSEDE_AND_PUBLISH
-Predecessor Record ID
-Predecessor Revision
-Predecessor Master_Record_Key
-Predecessor Scoring_Config_Version
-New Record ID
-New Revision
-New Master_Record_Key
-New Scoring_Config_Version
-Expected status switch:
-  predecessor PUBLISHED -> SUPERSEDED
-  new VALIDATED -> PUBLISHED
-```
-
-Do not authorize from IDs/versions alone.
-
-### Structured fresh backup evidence required
-
-Replace boolean-only backup proof with a structured contract at least as strict as existing scoring record-write backup evidence:
-
-```text
-appId
-appName
-snapshotScope
+appId = 796
+appName = exact WP002C_APPROVED_APP_NAME
+snapshotScope = non-empty string
 captured = true
 verified = true
 retainedUntilIndependentReview = true
-artifactPath
-sha256 (64-char lowercase hex)
-capturedAt
-recordCount
+artifactPath = non-empty string
+sha256 = 64-char lowercase hex
+capturedAt = valid timezone-aware ISO-8601 datetime
+recordCount = non-negative safe integer
 ```
 
-Retain process-local single-use authorization/replay protection.
+Missing `backupEvidence` must FAIL CLOSED.
 
----
+Do not retain boolean-only compatibility for this supersession operation.
 
-## 4. PROPAGATE EXACT IDENTITY THROUGH SERVICE -> REPOSITORY -> AUTHORIZER
+## DEFECT 2 — AUTH CONTRACT ID MUST BE REQUIRED ON BOTH SIDES
 
-Extend `activateSupersessionAtomically()` narrowly so authorization can verify exact identity without arbitrary patch capability.
+Current code allows `authConfig.contractId === undefined`.
 
-Pass/validate at least:
+Require BOTH:
 
 ```text
-predecessorRecordId
-predecessorRevision
-predecessorMasterRecordKey
-predecessorVersion
-newRecordId
-newRevision
-newMasterRecordKey
-newVersion
-publishedBy
-publishedAt
+authConfig.contractId = WP002C_SUPERSEDE_V1
+requestConfig.contractId = WP002C_SUPERSEDE_V1
 ```
 
-Repository must validate exact non-empty identities and different record IDs before calling `authorizeWrite()`.
+Missing or wrong value on either side must FAIL CLOSED.
 
-Bulk request remains EXACTLY:
+## DEFECT 3 — EXPECTED STATUS SWITCH MUST BE REQUIRED
+
+Current guard validates expected statuses only when values are provided.
+
+Require all four fields and exact values:
 
 ```text
-Request 0: predecessor Config_Status -> SUPERSEDED only
-Request 1: new Config_Status -> PUBLISHED + Published_By + Published_At
+expectedPredecessorCurrentStatus = PUBLISHED
+expectedPredecessorNextStatus = SUPERSEDED
+expectedNewCurrentStatus = VALIDATED
+expectedNewNextStatus = PUBLISHED
 ```
 
-No predecessor immutable field and no arbitrary patch may be added.
+Missing OR wrong value must FAIL CLOSED.
 
----
+## DEFECT 4 — FIX INTEGRATION TEST TO USE REAL REQUIRED BACKUP CONTRACT
 
-## 5. NEGATIVE TESTS
+`tests/scoring-config-supersession-integration.test.js` currently authorizes supersession with:
 
-Focused tests must prove fail-closed for at least:
+```js
+prewriteBackupVerified: true
+```
+
+Replace it with deterministic structured `backupEvidence` matching the production guard contract.
+
+Use synthetic local evidence only. No filesystem/network/Kintone dependency is required for this test.
+
+## REQUIRED NEGATIVE COVERAGE
+
+Add/adjust focused tests proving rejection for:
 
 ```text
-wrong/missing Work Package
-wrong Stage
-wrong Contract ID
-wrong App ID
-wrong App Name
-wrong operation
-explicitUserAuthorization != true
-activeWindow != true
-missing/malformed backup evidence
-backup app mismatch
-bad backup SHA-256
-wrong predecessor ID/revision/master key/version
-wrong new ID/revision/master key/version
-same record ID
-wrong expected old/new statuses
-replayed authorization ID
+missing backupEvidence
+legacy prewriteBackupVerified=true without backupEvidence
+missing authConfig.contractId
+wrong authConfig.contractId
+missing request contractId
+missing each expected status field
+wrong each expected status field
 ```
 
-Retain/verify Bulk bridge rejection for malformed bulk shape, extra requests/fields, wrong app, wrong status patches, malformed revisions, blank publisher/time.
+Retain existing replay/identity/app/stage/operation/revision/record-id negative tests.
 
----
-
-## 6. DOCUMENTATION EVIDENCE CORRECTION
-
-Current R2D review package reports:
+## HARD BOUNDARIES
 
 ```text
-IMPLEMENTATION_HEAD = 2191cdf4...
+KINTONE_CALLS = 0
+KINTONE_WRITES = 0
+KINTONE_DEPLOYS = 0
+APP794_CHANGE = 0
+APP795_CHANGE = 0
+APP796_RUNTIME_CHANGE = 0
+UI_CHANGE = 0
+SERVICE_BUSINESS_LOGIC_CHANGE = 0 unless required solely to satisfy this guard correction
+REPOSITORY_BULK_SHAPE_CHANGE = 0
 ```
 
-but actual execution commit is:
+Do NOT perform DGM restoration or v1.1.0 creation in this task.
+Do NOT rerun browser smoke.
+Do NOT clean stale project documentation broadly.
 
-```text
-a2494f83afbc21955411111442546fb9e976e012
-```
+## TEST PLAN
 
-Correct the R2D evidence metadata. `2191cdf4...` is the Control-Plane task commit / parent, not the implementation HEAD.
-
-Also update stale living-state statements that still say `SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED` after this implementation, but do not rewrite historical evidence sections.
-
----
-
-## 7. HARD BOUNDARIES
-
-```text
-Kintone GET = 0
-Kintone POST = 0
-Kintone PUT = 0
-Kintone DELETE = 0
-Kintone DEPLOY = 0
-App794 change = 0
-App795 change = 0
-App796 runtime change = 0
-GM/VP business config change = 0
-UI change = 0
-```
-
-Do not implement the one-time forensic restoration write in this task.
-Do not execute DGM v1.0.0 restoration.
-Do not create v1.1.0 in Kintone.
-
----
-
-## 8. TEST / EXECUTION PLAN
-
-1. implement only the corrections above;
-2. run targeted supersession service/repository/bridge/guard tests;
-3. run the real cross-layer integration test;
-4. run `npm test` once;
-5. no browser smoke/build unless source tooling genuinely requires it;
-6. confirm zero Kintone contact;
-7. confirm no UI/App794/App795 changes;
-8. update review evidence/current state/handoff;
-9. push same branch and STOP.
+1. Change only guard + directly affected tests.
+2. Run targeted supersession guard tests.
+3. Run cross-layer supersession integration test once.
+4. Run `npm test` once because source changes.
+5. Confirm zero Kintone contact.
+6. Commit and push same branch.
+7. STOP.
 
 Expected final evidence:
 
 ```text
-M10M_R2D_R1 = READY_FOR_CHATGPT_REVIEW
-REAL_REPOSITORY_INTEGRATION = PASS
+R2D_R2 = READY_FOR_CHATGPT_REVIEW
+STRUCTURED_BACKUP_REQUIRED = PASS
+AUTH_CONTRACT_BOTH_SIDES_REQUIRED = PASS
+EXPECTED_STATUS_SWITCH_REQUIRED = PASS
 CROSS_LAYER_SUPERSESSION_TEST = PASS
-SUPERSESSION_AUTH_GUARD = PASS
-ATOMIC_BULK_REPOSITORY = PASS
-DGM_V110_HASH = e69989df7118601b95b3c4df1a0d7cfc6c5b2c3bf3be124a0470d82ff079892e
 KINTONE_CALL_COUNT = 0
 KINTONE_WRITE_COUNT = 0
 NPM_TEST = PASS
 ```
 
-Final line exactly:
+Return only:
 
 ```text
-FINAL STATUS: READY FOR CHATGPT REVIEW
+STATUS: READY FOR CHATGPT REVIEW
+FILES_CHANGED:
+TEST:
+KINTONE_CALLS: 0
+KINTONE_WRITES: 0
+GIT_BRANCH:
+GIT_COMMIT:
+BLOCKERS:
 ```
+
+Then STOP.
