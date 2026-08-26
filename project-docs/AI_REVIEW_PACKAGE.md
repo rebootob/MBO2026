@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT** | **`PASS`** — Completed read-only HR authorization audit of App 794 (`15 HR Final Check`); confirmed live Process assignee is unassigned `[]`, App/Record/Field ACL has no HR restriction, and runtime JS has no HR actor guard; classified as `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`; 0 Kintone writes |
 | **M10L_D_R12C_R1_POST_DEPLOY_CLOSURE** | **`PASS`** — Verified R12C deployed runtime (Revision 35, JS `54e4cd56`, CSS `3604d2b2`); reconciled canonical Process baseline to 16 states / 28 actions (Control Plane counting error in old 27 wording); verified Process semantic match; performed shallow browser runtime smoke (0 fatal MBO errors); captured HR Final Check config (`15 HR Final Check`, assignee type `NONE` / unassigned `[]`, Complete -> `16 Completed`, Return -> `11 Employee Self Evaluation`); 0 Kintone writes |
 | **M10L_D_R12C_CONTROLLED_DEPLOY** | **`PASS`** — Deployed exact reviewed R12B-R1 JS candidate `54e4cd56` to live App 794 (Revision 35); preserved live CSS content (`3604d2b2`); verified live JS & CSS SHA256 hashes match 100%; captured durable pre-write backup `backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z`; 0 record/schema/process/ACL writes |
 | **M10L_D_R12B_R1_WORKFLOW_FAIL_CLOSED** | **`PASS`** — Hardened `validateWorkflowAction` with exact topology whitelist (`M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`), fail-closed blank/unknown/G2 topologies, and complete `Requester_User` handoff checks (Status 04, 05, 09, 10 + Returns); 554/554 tests pass, rebuilt `dist/mbo-employee-app.js` (0 drift), 0 Kintone calls/writes |
@@ -755,5 +756,40 @@ DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW FOR HR-ISOLATED WORKFLOW UAT DESIGN
+
+
+## M10L-D-R12D-A Read-Only HR Final Authorization Audit Evidence
+
+```text
+M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT = COMPLETE
+STARTING_HEAD = 91a3574495d117bf628a394ce50f3e5781017709
+PROCESS_STATE_COUNT = 16
+PROCESS_ACTION_COUNT = 28
+HR_STATUS = 15 HR Final Check
+HR_STATUS_ASSIGNEE_TYPE = ONE
+HR_STATUS_ASSIGNEE_ENTITIES = []
+HR_COMPLETE_ACTION_FILTER = NONE
+HR_RETURN_ACTION_FILTER = NONE
+HR_RETURN_DESTINATION_ASSIGNEE = Requester_User
+APP_ACL_RELEVANT_RULES = CREATOR (all), everyone (view/add/edit/delete)
+RECORD_ACL_RELEVANT_RULES = NONE (empty rights array)
+RECORD_ACL_RULE_ORDER_EVALUATED = NOT_APPLICABLE
+FIELD_ACL_RELEVANT_RULES = NOT_MATERIAL
+EXACT_HR_ENTITY_REFERENCED_BY_ACL = NONE
+HR_ENTITY_MEMBERSHIP = NOT_REQUIRED
+RUNTIME_COMPLETE_HR_ACTOR_GUARD = ABSENT
+RUNTIME_RETURN_FINAL_HR_ACTOR_GUARD = ABSENT
+UI_HIDING_USED_AS_AUTHORIZATION = NO
+EFFECTIVE_HR_AUTHORIZATION_CLASSIFICATION = DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER
+NON_HR_STATUS15_ACTION_RISK = POSSIBLE
+KINTONE_GET_CALLS_THIS_TASK = 4
+KINTONE_WRITES_THIS_TASK = 0
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY HR AUTHORIZATION REPAIR OR WORKFLOW UAT
 ```
