@@ -78,7 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
-| **M10L_D_R4_PERSISTENCE_CONTRACT** | **`PASS`** — Implemented fail-closed form-state persistence verification and post-set read-back in `syncRecordToKintone`; removed test-only `_lastInstance` seam; committed read-only GET inventory of App 794 (Revision 29, 6 missing fields) and App 796 evidence; 546/546 tests pass; 0 Kintone writes |
+| **M10L_D_R5_REPOSITORY_CLOSURE** | **`PASS`** — Removed global test hook residue from source and dist; expanded fail-closed API-unavailable test matrix (548/548 tests pass); corrected controlled change plan HTTP methods (`POST` for add fields, `POST` for file upload, `PUT` for customize, `POST` for deploy) and permission evidence; 0 Kintone writes |
 | **DELIVERY_SPRINT_02** | `PASS / CLOSED` |
 | **DELIVERY_SPRINT_03A_R1** | **`COMPLETE / PENDING CHATGPT REVIEW`** |
 | **M6_BUSINESS_STATE** | `8/8 PUBLISHED (UNCHANGED)` |
@@ -280,11 +280,12 @@ GIT_PUSH_SYNC = PASS
 - **How**: Future task only after explicit user authorization:
   1. Fresh live/preview GET drift check.
   2. Capture fresh durable pre-write backup (schema, JS/CSS bytes, revision, permissions).
-  3. Apply exact 6 missing fields in preview schema via `PUT /k/v1/preview/app/form/fields.json?app=794`.
-  4. Upload reviewed `dist/mbo-employee-app.js` customization bundle via `POST /k/v1/preview/app/customize.json`.
-  5. Deploy preview changes via `POST /k/v1/preview/app/deploy.json?apps[0][app]=794`.
-  6. Wait for deployment `SUCCESS`.
-  7. Perform live read-back verification.
+  3. Apply exact 6 missing fields in preview schema via `POST /k/v1/preview/app/form/fields.json` (add-fields operation).
+  4. Upload reviewed `dist/mbo-employee-app.js` customization bundle via `POST /k/v1/file.json` to obtain `fileKey`.
+  5. Update customization settings via `PUT /k/v1/preview/app/customize.json` using uploaded `fileKey`, preserving existing CSS ordering and mobile customization.
+  6. Deploy preview changes via `POST /k/v1/preview/app/deploy.json` with payload `{ "apps": [{ "app": 794 }] }`.
+  7. Poll deployment status until `SUCCESS`.
+  8. Perform live read-back verification.
 - **Impact**: Restores schema-backed scoring snapshot persistence, allowing employee lookup to satisfy Save prerequisites cleanly.
 - **Risks**: Schema type mismatch, permission/access mismatch, incomplete snapshot fields.
 - **Test Plan**: Browser lookup for Employee 0118 (`Technical Service Chief` -> `PROF_STAFF_CHIEF`), 0111 (`PROF_ASST_MGR`), check all 9 snapshot fields written into form state, Save objectives, submit workflow.
@@ -293,35 +294,29 @@ GIT_PUSH_SYNC = PASS
 ### 5. Required Final Evidence Block
 
 ```text
-M10L_D_R4_PERSISTENCE_CONTRACT = COMPLETE
-R3_FORM_STATE_PERSISTENCE_GAP_FIXED = YES
-R3_TEST_ONLY_LASTINSTANCE_REMOVED = YES
-APP794_LIVE_REVISION = 29
-APP794_PREVIEW_REVISION = 29
-APP794_REQUIRED_SNAPSHOT_SCHEMA_GAPS = Profile_Code, PartA_Weight, PartB_Weight, Part_A_Scoring_Mode, Competency_Set_Code, Configuration_Hash
-APP794_REQUIRED_SNAPSHOT_PERMISSION_GAPS = NONE
-APP796_PROF_STAFF_CHIEF_FY2026_PUBLISHED_COUNT = 1
-APP796_PARTA_WEIGHT = 70
-APP796_PARTB_WEIGHT = 30
-APP796_PART_A_SCORING_MODE = DIFFICULTY_ACHIEVEMENT_MATRIX
-APP796_COMPETENCY_SET_CODE = COMP_SET_OPERATIONAL_V1
-PROFILE_FIELD_PRESENT_PERSISTENCE_TEST = PASS
-PROFILE_FIELD_ABSENT_FAIL_CLOSED_TEST = PASS
-FORM_STATE_POST_SET_READBACK_TEST = PASS
+M10L_D_R5 = COMPLETE
+R4_GLOBAL_TEST_HOOK_REMOVED = YES
+DIST_GLOBAL_TEST_HOOK_RESIDUE = 0
+RECORD_GET_FUNCTION_ABSENT_FAIL_CLOSED_TEST = PASS
+RECORD_SET_FUNCTION_ABSENT_FAIL_CLOSED_TEST = PASS
+CURRENT_FORM_STATE_NULL_FAIL_CLOSED_TEST = PASS
 FORM_STATE_SET_THROW_FAIL_CLOSED_TEST = PASS
 FORM_STATE_NOOP_FAIL_CLOSED_TEST = PASS
-REQUIRED_SCORING_SNAPSHOT_MISSING_FAIL_CLOSED_TEST = PASS
-ROUTING_SNAPSHOT_REGRESSION = PASS
-SCORING_ZERO_DUPLICATE_GATES = PASS
+FORM_STATE_POST_SET_READBACK_TEST = PASS
+APP794_REQUIRED_SNAPSHOT_SCHEMA_GAPS = Profile_Code, PartA_Weight, PartB_Weight, Part_A_Scoring_Mode, Competency_Set_Code, Configuration_Hash
+APP794_CURRENT_MISSING_FIELD_PERMISSION_EVIDENCE = UNVERIFIABLE
+FUTURE_ADD_FIELDS_HTTP_METHOD = POST
+FUTURE_FILE_UPLOAD_HTTP_METHOD = POST /k/v1/file.json
+FUTURE_CUSTOMIZE_HTTP_METHOD = PUT /k/v1/preview/app/customize.json
+FUTURE_DEPLOY_HTTP_METHOD = POST /k/v1/preview/app/deploy.json
 SOURCE_DIST_EXACTNESS = PASS
 CLASSIC_BUNDLE_PARSE = PASS
-npm test = 546 / PASS
+npm test = 548 / PASS
 GIT_DIFF_CHECK = PASS
 NO_ORPHAN_ARTIFACT_GATE = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 KINTONE_WRITES_THIS_TASK = 0
 APP794_DEPLOY_THIS_TASK = 0
 LIVE_CONFIG_WRITE_REQUIRED = YES
-EXACT_MINIMUM_LIVE_CHANGE = Add 6 snapshot fields to App 794 (Profile_Code: SINGLE_LINE_TEXT, PartA_Weight: NUMBER, PartB_Weight: NUMBER, Part_A_Scoring_Mode: SINGLE_LINE_TEXT, Competency_Set_Code: SINGLE_LINE_TEXT, Configuration_Hash: SINGLE_LINE_TEXT)
 GIT_PUSH_SYNC = PASS
 ```

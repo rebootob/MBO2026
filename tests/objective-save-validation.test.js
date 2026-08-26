@@ -5,8 +5,6 @@ import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
 import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
-const getActiveUiInstance = () => globalThis.__MBO_APP__?.getActiveUiInstance();
-const syncRecordToKintone = (record, opts) => globalThis.__MBO_APP__?.syncRecordToKintone(record, opts);
 
 const makeMockElement = () => ({
   innerHTML: '',
@@ -57,7 +55,7 @@ globalThis.document = {
   getElementById: () => null
 };
 
-await import('../src/main-mbo-app.js');
+const { getActiveUiInstance, syncRecordToKintone } = await import('../src/main-mbo-app.js');
 
 function createMockRecord(overrides = {}) {
   const base = {
@@ -475,11 +473,58 @@ test('M10L-D-R4: Lookup fails closed when Profile_Code is absent from Kintone fo
   assert.equal(res, false, 'Submit must return false when UI is unverified');
 });
 
-test('M10L-D-R4: Lookup fails closed when kintone.app.record.get is unavailable', async () => {
+test('M10L-D-R5: Lookup fails closed when kintone.app.record.get is not a function', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
   setupMockKintoneApis();
   const rawRecord = createMockRecord();
   currentFormRecord = createBlankFormStateRecord();
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
+
+  const originalGet = globalThis.kintone.app.record.get;
+  globalThis.kintone.app.record.get = undefined;
+
+  try {
+    await assert.rejects(
+      async () => ui.executeLookup('0118'),
+      err => err.message.includes('Kintone record get/set API functions are unavailable')
+    );
+    assert.equal(ui.isEmployeeVerified, false);
+  } finally {
+    globalThis.kintone.app.record.get = originalGet;
+  }
+});
+
+test('M10L-D-R5: Lookup fails closed when kintone.app.record.set is not a function', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
+
+  const originalSet = globalThis.kintone.app.record.set;
+  globalThis.kintone.app.record.set = undefined;
+
+  try {
+    await assert.rejects(
+      async () => ui.executeLookup('0118'),
+      err => err.message.includes('Kintone record get/set API functions are unavailable')
+    );
+    assert.equal(ui.isEmployeeVerified, false);
+  } finally {
+    globalThis.kintone.app.record.set = originalSet;
+  }
+});
+
+test('M10L-D-R5: Lookup fails closed when kintone.app.record.get returns null (missing form state)', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);

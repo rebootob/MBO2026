@@ -2603,21 +2603,122 @@ class EmployeePartAUI {
 
 
 
-(function () {
-  'use strict';
+let activeUiInstance = null;
 
-  if (typeof kintone === 'undefined') return;
+function getActiveUiInstance() {
+  return activeUiInstance;
+}
 
+function isSemanticValueMatch(valA, valB, fieldType) {
+  if (valA === valB) return true;
+
+  if (Array.isArray(valA) && Array.isArray(valB)) {
+    if (valA.length !== valB.length) return false;
+    return valA.every((item, idx) => {
+      const bItem = valB[idx];
+      if (typeof item === 'object' && item !== null && typeof bItem === 'object' && bItem !== null) {
+        return item.code === bItem.code;
+      }
+      return item === bItem;
+    });
+  }
+
+  if (fieldType === 'NUMBER' || typeof valA === 'number' || typeof valB === 'number') {
+    const numA = Number(valA);
+    const numB = Number(valB);
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA === numB;
+    }
+  }
+
+  const strA = String(valA ?? '').trim();
+  const strB = String(valB ?? '').trim();
+  return strA === strB;
+}
+
+function syncRecordToKintone(record, options = {}) {
+  const requireVerifiedPersistence = options.requireVerifiedPersistence === true;
+  const requiredFields = Array.isArray(options.requiredFields) ? options.requiredFields : [];
+
+  if (typeof kintone === 'undefined' || !kintone.app || !kintone.app.record) {
+    if (requireVerifiedPersistence) {
+      throw new Error('Kintone record API is unavailable (kintone.app.record missing)');
+    }
+    return false;
+  }
+
+  if (typeof kintone.app.record.get !== 'function' || typeof kintone.app.record.set !== 'function') {
+    if (requireVerifiedPersistence) {
+      throw new Error('Kintone record get/set API functions are unavailable');
+    }
+    return false;
+  }
+
+  const currentData = kintone.app.record.get();
+  if (!currentData || !currentData.record) {
+    if (requireVerifiedPersistence) {
+      throw new Error('Current Kintone form record object is unavailable');
+    }
+    return false;
+  }
+
+  const kintoneRecord = currentData.record;
+
+  // 1. Verify required destination fields exist in Kintone form schema
+  if (requireVerifiedPersistence) {
+    for (const fieldCode of requiredFields) {
+      if (!kintoneRecord[fieldCode]) {
+        throw new Error(`ไม่พบช่องข้อมูล ${fieldCode} ในแบบฟอร์ม (App 794)\nField ${fieldCode} does not exist on Kintone form schema.`);
+      }
+    }
+  }
+
+  // 2. Clone record and copy matching source values
+  const targetRecord = JSON.parse(JSON.stringify(kintoneRecord));
+  Object.keys(record).forEach(k => {
+    if (targetRecord[k] && record[k] && record[k].value !== undefined) {
+      targetRecord[k].value = record[k].value;
+    }
+  });
+
+  // 3. Perform kintone.app.record.set
+  try {
+    kintone.app.record.set({ record: targetRecord });
+  } catch (e) {
+    if (requireVerifiedPersistence) {
+      throw new Error(`kintone.app.record.set failed: ${e.message}`);
+    }
+    console.warn('[MBO V2] syncRecordToKintone warning:', e);
+    return false;
+  }
+
+  // 4. Post-set read-back verification
+  if (requireVerifiedPersistence) {
+    const postSetData = kintone.app.record.get();
+    const postSetRecord = postSetData?.record;
+
+    if (!postSetRecord) {
+      throw new Error('Post-set Kintone form record read-back failed');
+    }
+
+    for (const fieldCode of requiredFields) {
+      const sourceVal = record[fieldCode]?.value;
+      const readBackVal = postSetRecord[fieldCode]?.value;
+      const fieldType = postSetRecord[fieldCode]?.type;
+
+      if (!isSemanticValueMatch(sourceVal, readBackVal, fieldType)) {
+        throw new Error(`Form state read-back mismatch for field ${fieldCode}: expected ${JSON.stringify(sourceVal)}, got ${JSON.stringify(readBackVal)}`);
+      }
+    }
+  }
+
+  return true;
+}
+
+if (typeof kintone !== 'undefined') {
   const ROUTING_APP_ID = 795;
   const EMPLOYEE_APP_ID = 53;
   const SCORING_APP_ID = 796;
-
-  let activeUiInstance = null;
-
-  globalThis.__MBO_APP__ = {
-    getActiveUiInstance: () => activeUiInstance,
-    syncRecordToKintone: (record, options) => syncRecordToKintone(record, options)
-  };
 
   function getMboAppId() {
     return kintone.app.getId() || 794;
@@ -2660,116 +2761,9 @@ class EmployeePartAUI {
     return BUSINESS_STAGES.CONFIGURATION_ERROR;
   }
 
-  function isSemanticValueMatch(valA, valB, fieldType) {
-    if (valA === valB) return true;
 
-    if (Array.isArray(valA) && Array.isArray(valB)) {
-      if (valA.length !== valB.length) return false;
-      return valA.every((item, idx) => {
-        const bItem = valB[idx];
-        if (typeof item === 'object' && item !== null && typeof bItem === 'object' && bItem !== null) {
-          return item.code === bItem.code;
-        }
-        return item === bItem;
-      });
-    }
 
-    if (fieldType === 'NUMBER' || typeof valA === 'number' || typeof valB === 'number') {
-      const numA = Number(valA);
-      const numB = Number(valB);
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return numA === numB;
-      }
-    }
 
-    const strA = String(valA ?? '').trim();
-    const strB = String(valB ?? '').trim();
-    return strA === strB;
-  }
-
-  /**
-   * Safe sync to Kintone internal form state preserving field.type
-   * When requireVerifiedPersistence is true, verifies that kintone.app.record.get()/set()
-   * succeeds, all required fields exist in form schema, and post-set read-back matches expected values.
-   */
-  function syncRecordToKintone(record, options = {}) {
-    const requireVerifiedPersistence = options.requireVerifiedPersistence === true;
-    const requiredFields = Array.isArray(options.requiredFields) ? options.requiredFields : [];
-
-    if (typeof kintone === 'undefined' || !kintone.app || !kintone.app.record) {
-      if (requireVerifiedPersistence) {
-        throw new Error('Kintone record API is unavailable (kintone.app.record missing)');
-      }
-      return false;
-    }
-
-    if (typeof kintone.app.record.get !== 'function' || typeof kintone.app.record.set !== 'function') {
-      if (requireVerifiedPersistence) {
-        throw new Error('Kintone record get/set API functions are unavailable');
-      }
-      return false;
-    }
-
-    const currentData = kintone.app.record.get();
-    if (!currentData || !currentData.record) {
-      if (requireVerifiedPersistence) {
-        throw new Error('Current Kintone form record object is unavailable');
-      }
-      return false;
-    }
-
-    const kintoneRecord = currentData.record;
-
-    // 1. Verify required destination fields exist in Kintone form schema
-    if (requireVerifiedPersistence) {
-      for (const fieldCode of requiredFields) {
-        if (!kintoneRecord[fieldCode]) {
-          throw new Error(`ไม่พบช่องข้อมูล ${fieldCode} ในแบบฟอร์ม (App 794)\nField ${fieldCode} does not exist on Kintone form schema.`);
-        }
-      }
-    }
-
-    // 2. Clone record and copy matching source values
-    const targetRecord = JSON.parse(JSON.stringify(kintoneRecord));
-    Object.keys(record).forEach(k => {
-      if (targetRecord[k] && record[k] && record[k].value !== undefined) {
-        targetRecord[k].value = record[k].value;
-      }
-    });
-
-    // 3. Perform kintone.app.record.set
-    try {
-      kintone.app.record.set({ record: targetRecord });
-    } catch (e) {
-      if (requireVerifiedPersistence) {
-        throw new Error(`kintone.app.record.set failed: ${e.message}`);
-      }
-      console.warn('[MBO V2] syncRecordToKintone warning:', e);
-      return false;
-    }
-
-    // 4. Post-set read-back verification
-    if (requireVerifiedPersistence) {
-      const postSetData = kintone.app.record.get();
-      const postSetRecord = postSetData?.record;
-
-      if (!postSetRecord) {
-        throw new Error('Post-set Kintone form record read-back failed');
-      }
-
-      for (const fieldCode of requiredFields) {
-        const sourceVal = record[fieldCode]?.value;
-        const readBackVal = postSetRecord[fieldCode]?.value;
-        const fieldType = postSetRecord[fieldCode]?.type;
-
-        if (!isSemanticValueMatch(sourceVal, readBackVal, fieldType)) {
-          throw new Error(`Form state read-back mismatch for field ${fieldCode}: expected ${JSON.stringify(sourceVal)}, got ${JSON.stringify(readBackVal)}`);
-        }
-      }
-    }
-
-    return true;
-  }
 
   // Hook 1: Record Show (Detail, Edit, Create)
   kintone.events.on(['app.record.detail.show', 'app.record.edit.show', 'app.record.create.show'], function (event) {
@@ -3079,10 +3073,8 @@ class EmployeePartAUI {
       return false; // Cancel transition
     }
 
-    return event;
   });
-
-})();
+}
 
 
 })();
