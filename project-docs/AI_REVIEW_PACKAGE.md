@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12D_D_NATIVE_HR_PROCESS_REPAIR** | **`PASS`** — Executed controlled native Process Management repair on App 794 (Revision 36); assigned status `15 HR Final Check` to controlled Sandbox UAT user `admin-form`; captured pre-write backup `backups/m10l-d-r12d-d-app794-hr-process-repair/2026-08-26T04-34-31-024Z`; verified 1 semantic diff before write; verified non-target Process semantics unchanged 100%; 0 record/schema/ACL/customization writes |
 | **M10L_D_R12D_B_HR_REPAIR_DESIGN** | **`PASS`** — Produced native Kintone repair design for `15 HR Final Check` authorization defect; selected `DIRECT_GROUP` / `DIRECT_USER` native Process assignee as primary boundary; discovered controlled UAT identity `admin-form` and production HR group `Manager HR_x52y75`; designed zero-real-user-impact Sandbox/Prod parity strategy; proposed minimal change set (R12D-C -> R12D-D -> R12E); 0 Kintone writes |
 | **M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT** | **`PASS`** — Completed read-only HR authorization audit of App 794 (`15 HR Final Check`); confirmed live Process assignee is unassigned `[]`, App/Record/Field ACL has no HR restriction, and runtime JS has no HR actor guard; classified as `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`; 0 Kintone writes |
 | **M10L_D_R12C_R1_POST_DEPLOY_CLOSURE** | **`PASS`** — Verified R12C deployed runtime (Revision 35, JS `54e4cd56`, CSS `3604d2b2`); reconciled canonical Process baseline to 16 states / 28 actions (Control Plane counting error in old 27 wording); verified Process semantic match; performed shallow browser runtime smoke (0 fatal MBO errors); captured HR Final Check config (`15 HR Final Check`, assignee type `NONE` / unassigned `[]`, Complete -> `16 Completed`, Return -> `11 Employee Self Evaluation`); 0 Kintone writes |
@@ -830,5 +831,57 @@ DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY REPAIR WRITE
+
+
+## M10L-D-R12D-D Controlled App794 HR Final Check Native Process Repair Evidence
+
+```text
+M10L_D_R12D_D_NATIVE_HR_PROCESS_REPAIR = COMPLETE
+STARTING_HEAD = cb0b5a2001e69b842c51aa8aed8515955bb94f97
+AUTHORIZATION_SCOPE = APP794_PROCESS_REPAIR_ONLY
+AUTHORIZATION_CONSUMED = YES
+PREWRITE_LIVE_REVISION = 35
+PREWRITE_PREVIEW_REVISION = 35
+PREWRITE_LIVE_PREVIEW_DRIFT = NO
+PREWRITE_PROCESS_STATE_COUNT = 16
+PREWRITE_PROCESS_ACTION_COUNT = 28
+PREWRITE_HR_STATUS_ASSIGNEE_TYPE = ONE
+PREWRITE_HR_STATUS_ASSIGNEE_ENTITIES = []
+CONTROLLED_SANDBOX_HR_USER = admin-form
+PRODUCTION_HR_GROUP_PRESENT_IN_TARGET = NO
+EXISTING_RECORD_COUNT_AT_STATUS_15 = 0
+PREWRITE_BACKUP_PATH = backups/m10l-d-r12d-d-app794-hr-process-repair/2026-08-26T04-34-31-024Z
+PREWRITE_BACKUP_READABLE = PASS
+PREWRITE_BACKUP_SHA256 = a52b2195105f2d955b2cf7c62958a0c5a5cf630c593936c2306c38765e182ea5
+PROCESS_SEMANTIC_DIFF_COUNT_BEFORE_WRITE = 1
+PROCESS_TARGET_ONLY_HR_ASSIGNEE_DIFF = PASS
+APP794_PROCESS_PUT_COUNT = 1
+APP794_DEPLOY_POST_COUNT = 1
+POSTDEPLOY_LIVE_REVISION = 36
+POSTDEPLOY_PREVIEW_REVISION = 36
+POSTDEPLOY_PROCESS_STATE_COUNT = 16
+POSTDEPLOY_PROCESS_ACTION_COUNT = 28
+POSTDEPLOY_HR_STATUS_ASSIGNEE_TYPE = ONE
+POSTDEPLOY_HR_STATUS_ASSIGNEE_ENTITIES = [{"entity":{"type":"USER","code":"admin-form"},"includeSubs":false}]
+POSTDEPLOY_NON_TARGET_PROCESS_SEMANTICS = PASS
+POSTDEPLOY_EXISTING_STATUS15_RECORD_COUNT = 0
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
+APP794_RECORD_WRITE = 0
+APP794_SCHEMA_WRITE = 0
+APP794_ACL_WRITE = 0
+APP794_CUSTOMIZE_WRITE = 0
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+ROLLBACK_EXECUTED = NO
+ROLLBACK_VERIFIED = NOT_REQUIRED
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY R12E WORKFLOW UAT WRITE
 ```
