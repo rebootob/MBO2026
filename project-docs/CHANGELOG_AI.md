@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Evaluated M10L-D-R12E-B5 Edge-Controlled Workflow Closure Browser-Control PASS Gate (0 Kintone writes/clicks executed): Verified Record #10 exists on App 794 (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`, synthetic identity PASS, `M1_G1` topology, `Requester/Manager/GM` = `hr`, `First_Manager` = `[]`). Identified Edge DevTools Remote Debugging Port 9222 is closed (`msedge.exe` running without `--remote-debugging-port=9222`). Zero Process/schema/ACL/customization writes or workflow clicks executed.
+- **2026-08-26**: Evaluated M10L-D-R12E-B6 Remote-Debug Edge Control Gate (0 Kintone writes/clicks executed): Successfully connected via CDP to local Microsoft Edge session on `127.0.0.1:9222`. Verified trusted page runtime user `kintone.getLoginUser().code === "hr"`. Navigated to App 794 Record #10 and verified runtime data (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`). Confirmed `R12E_B6_EDGE_CONTROL_GATE = PASS` 100%. Zero Process/schema/ACL/customization writes or workflow clicks executed.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.

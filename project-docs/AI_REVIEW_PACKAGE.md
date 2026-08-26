@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12E_B6_REMOTE_DEBUG_EDGE_CONTROL_GATE** | **`PASS`** — Evaluated R12E-B6 Edge Browser-Control PASS Gate; attached via CDP to dedicated Microsoft Edge session (`127.0.0.1:9222`); verified trusted page runtime user code `kintone.getLoginUser().code === "hr"`; navigated to App 794 Record #10 and read record runtime data (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`); 0 Kintone writes / workflow clicks executed |
 | **M10L_D_R12E_B5_EDGE_CONTROLLED_WORKFLOW_CLOSURE** | **`BLOCKED`** — Evaluated Browser-Control PASS Gate; verified Record #10 exists on App 794 (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`); identified Edge DevTools Remote Debugging Port 9222 is closed (`msedge.exe` running without `--remote-debugging-port=9222`); 0 Kintone writes/workflow clicks executed |
 | **M10L_D_R12E_B4_NORMALIZED_EXISTING_RECORD_WORKFLOW_UAT** | **`BLOCKED`** — Completed preclick safety gate on App 794 (Revision 38, 0 Process/config writes); verified Record #10 exists (`Record_Key MBO_UAT_M1G1_001|2026`, synthetic identity PASS, `M1_G1` topology, `Requester/Manager/GM` = `hr`, `First_Manager` = `[]`, status `03 Manager Objective Review`); confirmed native assignee enforcement (`GAIA_NT02` on `admin-form`) & tenant security policy (`CB_NO02` non-admin REST API header restriction) requiring interactive browser UI login page authentication as `hr` to execute normalization and 22 matrix transitions |
 | **M10L_D_R12E_B3_EXISTING_RECORD_BROWSER_UAT** | **`READONLY_PRECHECK_COMPLETE_STATUS_MISMATCH`** — Completed read-only precheck on App 794 (Revision 38, 0 Kintone writes/clicks); verified Record #10 exists (`Record_Key MBO_UAT_M1G1_001|2026`, synthetic identity PASS, `M1_G1` topology, `Requester/Manager/GM` = `hr`, `First_Manager` = `[]`); identified current status is `03 Manager Objective Review` (precheck requirement of `01 Draft Objective` failed); 0 record/schema/process/ACL writes |
@@ -1159,5 +1160,27 @@ KINTONE_WRITE_COUNT = 0
 WORKFLOW_ACTION_COUNT = 0
 CREDENTIAL_VALUE_EXPOSED = NO
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW; EDGE PROCESS MUST BE LAUNCHED WITH --remote-debugging-port=9222 TO PASS BROWSER-CONTROL GATE
+
+
+## M10L-D-R12E-B6 Remote-Debug Edge Control Gate Evidence
+
+```text
+R12E_B6_EDGE_CONTROL_GATE = PASS
+DEVTOOLS_ENDPOINT_127_0_0_1_9222 = REACHABLE
+BROWSER_ENGINE = Microsoft Edge
+BROWSER_PROFILE = DEDICATED_UAT_NONDEFAULT
+BROWSER_SESSION_CONTROLLABLE_BY_ANTIGRAVITY = YES
+BROWSER_AUTHENTICATED_USER = hr
+APP794_VISIBLE = YES
+UAT_RECORD_NUMBER = 10
+UAT_RECORD_KEY = MBO_UAT_M1G1_001|2026
+UAT_CURRENT_STATUS = 03 Manager Objective Review
+KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+CREDENTIAL_VALUE_EXPOSED = NO
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW; EDGE BROWSER CONTROL PASS PROVEN; READY FOR FRESH AUTHORIZATION TO EXECUTE NORMALIZATION AND 22 UAT MATRIX TRANSITIONS
 ```
