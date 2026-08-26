@@ -1,118 +1,171 @@
-# AI ACTIVE TASK — POST-CORE UI/UX V1 CANDIDATE R2 TOPOLOGY DISPLAY CORRECTION — GIT/LOCAL ONLY
+# AI ACTIVE TASK — APP794 UI/UX V1 CONTROLLED DEPLOY — AUTHORIZATION PENDING
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Primary target: App794 `MBO V2 Sandbox`
-> Mode: PROJECT CLOSE MODE / UIUX V1 / NARROW LOCAL CORRECTION
-> Kintone write/deploy authorization: **NONE — DO NOT WRITE OR DEPLOY KINTONE**
+> Target: App794 `MBO V2 Sandbox`
+> Mode: PROJECT CLOSE MODE / UIUX V1 DEPLOY
+> Kintone write/deploy authorization: **NONE YET — DO NOT WRITE OR DEPLOY KINTONE**
 
-## Review checkpoint
+## Independent review result
 
-R1 execution commit reviewed: `484050df857d5d5cfd050e40c7b655c73cdf3823`.
+`POST_CORE_UIUX_V1_CANDIDATE_R2 = PASS`
 
-R1 accepted:
-- First Manager route display now requires topology containing M2 **AND** populated `First_Manager_User`.
-- `M1_G1` with stale `First_Manager_User` no longer displays First Manager.
-- status `05 Objective Approved` now shows Objectives completed / Mid-Year waiting.
-- status `10 Mid-Year Completed` now shows Objectives + Mid-Year completed / Year-End waiting.
-- review statuses 03/04, 08/09, 13/14/15 show in-review in the correct macro phase.
-- prior STARTING_HEAD evidence typo corrected.
-- HTML escaping, build-only path, frozen Core preservation and zero-Kintone execution remain accepted.
+Reviewed candidate commit:
+`eca0de0b6ef9169ef10b7750dc6f29e03c458a09`
 
-## ONE REMAINING MUST FIX — non-empty invalid/unsupported topology is not fail-closed in display
+Locked candidate artifacts at that commit:
+- `dist/mbo-employee-app.js` Git blob: `f3b19a3565159fb2414dfd546a12741642b4b810`
+- `dist/mbo-employee.css` Git blob: `cac608dbc7494b65ab364055e687d6c50c2648b2`
+- deploy script `scripts/kintone/deploy-custom-ui.js` Git blob: `fbac06156833f76ad73bb24a050f56a1298daee4`
 
-R1 evidence claims `UNKNOWN_TOPOLOGY_DISPLAY_FAIL_CLOSED = PASS`, but source currently treats topology as unknown only when blank/null:
+Accepted candidate gates:
+- Core V1 frozen behavior preserved.
+- Exact UI topology classifier recognizes only `M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`.
+- non-empty invalid/blank topology display fails closed with warning.
+- G2 variants are display-only unsupported-current-V1 warnings.
+- invalid `M2` cannot expose First Manager route.
+- M1_G1/M1_M2_G1 presentation rules PASS.
+- status05/status10 lifecycle presentation PASS.
+- HTML escaping/non-mutation PASS.
+- build-only path exits before Kintone client/API/upload/deploy.
+- reported test suite: `555 total PASS` / R2 explicit UI file `96 PASS`.
+- R2 Kintone calls/writes/deploys = 0.
 
-`const isUnknownTopology = !rawTopology`
+Observation accepted, not a deploy blocker: R2 retained representative review-phase assertions (03/08/13) rather than all R1 detailed assertions; R2 did not modify the already-reviewed stage-nav behavior for 04/09/14/15.
 
-Therefore non-empty invalid values such as `INVALID_TOPOLOGY` are still treated as normal guidance. `_renderRouteContext()` also treats any non-empty topology as a normal badge, and `rawTopology.includes('M2')` can allow a fabricated/invalid value such as `INVALID_M2` to qualify for First Manager display if a stale user value exists.
+## NEXT ACTION — WAIT FOR FRESH USER AUTHORIZATION
 
-This is a presentation correctness defect. Frozen runtime already fails closed on unknown topology; UI must not present an invalid route as normal.
+Do nothing in Kintone until the user gives fresh explicit authorization for this exact App794 UI deployment.
 
-## Required behavior
+Accepted authorization phrase:
+`อนุมัติ controlled App794 UI/UX V1 deploy`
 
-Use an exact UI topology classifier/helper in the existing UI file. Do not change runtime routing/validation constants or services.
+Authorization is single-use and applies only to the deployment manifest below.
 
-Canonical topology names recognized by the architecture:
-- `M1_G1`
-- `M1_M2_G1`
-- `M1_G1_G2`
-- `M1_M2_G1_G2`
+# DEPLOYMENT MANIFEST — EXECUTE ONLY AFTER AUTHORIZATION IS RECORDED
 
-Presentation rules for current V1:
-1. `M1_G1` = normal current V1 route; no First Manager.
-2. `M1_M2_G1` = recognized M2 route context; First Manager displays only when `First_Manager_User` is populated.
-3. `M1_G1_G2` and `M1_M2_G1_G2` = recognized but **unsupported by current V1 workflow**; display a clear configuration/unsupported warning and do not portray a normal approval route.
-4. blank/null or any noncanonical value (`INVALID_TOPOLOGY`, `INVALID_M2`, etc.) = configuration warning/fail-closed presentation; do not portray a normal approval route and do not show First Manager as a valid route.
-5. Do not mutate record values or change routing/workflow behavior.
+## What
+Deploy the exact reviewed UI/UX V1 R2 candidate to App794 desktop customization only, then perform post-deploy readback and read-only browser smoke.
 
-## Allowed files
+## Where
+- App794 only.
+- Desktop JS/CSS customization only.
+- No mobile customization change.
+- No record/process/schema/ACL/notification/routing/scoring changes.
 
-Modify existing files only:
-- `src/ui/employee-part-a-ui.js`
-- `tests/objective-save-validation.test.js`
-- generated `dist/mbo-employee-app.js`
-- evidence docs only (`AI_REVIEW_PACKAGE.md`, `CURRENT_STATE.md`, `HANDOFF.md`, `IMPLEMENTATION_STATUS.md`, `CHANGELOG_AI.md`)
+## Pre-write safety gate — mandatory, immediately before first write
 
-Do not change CSS, deploy script or package.json unless technically unavoidable; if unavoidable, STOP and explain instead of expanding scope.
+1. Pull and verify branch HEAD equals the authorized task commit and candidate source/artifacts have not drifted.
+2. Verify candidate Git blobs still exactly:
+   - JS `f3b19a3565159fb2414dfd546a12741642b4b810`
+   - CSS `cac608dbc7494b65ab364055e687d6c50c2648b2`
+   - deploy script `fbac06156833f76ad73bb24a050f56a1298daee4`
+   If any differ: STOP before Kintone write.
+3. Calculate and record SHA-256 of exact candidate JS/CSS before upload.
+4. Fresh GET/readback App794 live + preview:
+   - revision;
+   - current desktop JS/CSS customization fileKeys/config;
+   - mobile customization config;
+   - Process state/action count;
+   - status15 assignee;
+   - six profile snapshot fields used by frozen Core.
+5. Create a **fresh immediately-pre-write App794 customization backup** containing enough information/assets/fileKeys to restore the current customization. Verify backup readability before write.
+6. Confirm Process remains exactly 16 states / 28 actions and status15 remains the current Sandbox boundary `ONE + USER: hr`.
+7. Confirm no unexpected live/preview/customization drift from the last reviewed App794 state. If unknown/material drift exists: STOP and preserve evidence.
+8. Mobile customization must be preserved exactly. If live mobile customization is non-empty or differs from the deployment script's empty mobile payload, do not overwrite it; STOP and report rather than silently clearing mobile assets.
 
-## Tests required
+## Authorized writes — exact maximum
 
-Extend the existing UI R1 test to prove:
-1. `M1_G1` + stale First Manager remains hidden.
-2. `M1_M2_G1` + populated First Manager remains valid for display.
-3. `INVALID_TOPOLOGY` returns warning/fail-closed display.
-4. `INVALID_M2` + populated First Manager does **not** display First Manager or normal route.
-5. blank/null remain warning/fail-closed.
-6. `M1_G1_G2` and `M1_M2_G1_G2` display unsupported-current-V1 warning and do not present a normal route.
-7. status05/status10/review-phase tests and escaping/non-mutation tests remain passing.
+After all pre-write gates PASS:
+- upload exact reviewed JS file: 1 file upload;
+- upload exact reviewed CSS file: 1 file upload;
+- App794 preview customization PUT: exactly 1;
+- App794 deploy POST: exactly 1.
 
-Execution:
-- run `npm test` exactly once after correction;
-- run `npm run ui:build` exactly once;
-- classic bundle parse/residue PASS;
-- inspect diff against `484050df...`;
-- Kintone calls/writes/deploys = 0.
+The customization payload must change only App794 desktop JS/CSS to the exact candidate files and preserve the reviewed mobile state.
 
-## Required evidence
+No source modification/rebuild is authorized during deployment. If rebuild is required or artifact hash differs: STOP.
 
-```text
-POST_CORE_UIUX_V1_CANDIDATE_R2 = COMPLETE / BLOCKED
-STARTING_HEAD = 484050df857d5d5cfd050e40c7b655c73cdf3823
-NONEMPTY_INVALID_TOPOLOGY_DISPLAY_FAIL_CLOSED = PASS/FAIL
-INVALID_M2_FIRST_MANAGER_DISPLAY_BLOCKED = PASS/FAIL
-G2_UNSUPPORTED_V1_DISPLAY_WARNING = PASS/FAIL
-M1_G1_ROUTE_PRESENTATION = PASS/FAIL
-M1_M2_G1_ROUTE_PRESENTATION = PASS/FAIL
-STATUS05_COMPLETION_PRESENTATION = PASS/FAIL
-STATUS10_COMPLETION_PRESENTATION = PASS/FAIL
-REVIEW_STATUS_PHASE_PRESENTATION = PASS/FAIL
-DYNAMIC_HTML_ESCAPE_GATE = PASS/FAIL
-NPM_TEST = actual/PASS/FAIL
-BUILD_ONLY_ZERO_KINTONE_CALL_GATE = PASS/FAIL
-CLASSIC_BUNDLE_PARSE = PASS/FAIL
-KINTONE_CALL_COUNT = 0
-KINTONE_WRITE_COUNT = 0
-FROZEN_CORE_CHANGE_COUNT = 0
-NEW_FILE_COUNT = 0
-GIT_DIFF_CHECK = PASS/FAIL
-GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW; IF PASS REQUEST FRESH APP794 UI DEPLOY AUTHORIZATION
-```
+## Post-deploy verification
+
+1. Poll deploy to SUCCESS.
+2. GET/readback live + preview App794 customization and revision.
+3. Download/read back deployed JS/CSS when possible and verify SHA-256 exactly equals the locked pre-upload candidate hashes.
+4. Verify Process still 16/28 and status15 still `ONE + USER: hr`.
+5. Verify six frozen profile snapshot fields remain unchanged/present.
+6. Verify mobile customization unchanged.
+7. Read-only browser smoke on real App794 page:
+   - no record create/edit/delete;
+   - no workflow action;
+   - confirm custom UI loads;
+   - no fatal MBO JavaScript errors;
+   - status guidance/header/route summary/lifecycle render visibly on an accessible existing record if one exists; if no safe existing record exists, use create-show only if it causes zero record write, otherwise smoke the app shell without creating data;
+   - do not use real-user workflow/notification testing.
+8. Record rollback readiness using the fresh pre-write backup. Roll back only if deployment/runtime is broken and rollback is within the authorized customization-only scope; otherwise STOP and request review.
 
 ## Hard boundaries
 
 Forbidden:
-- Kintone upload/customization PUT/deploy;
-- Process/schema/ACL/notification/record changes;
+- Process PUT or workflow remap;
+- schema/ACL/notification changes;
+- App794 record create/edit/delete/workflow action;
 - App795/App53/App796/other-app writes;
-- routing/scoring/workflow validation/Record_Key/native authorization changes;
-- custom workflow action buttons;
-- Dashboard work;
-- framework rewrite or new files.
+- source/test/dist edits or rebuild after authorization;
+- mobile customization clearing/change;
+- admin-form business workflow actions;
+- real-user workflow/notification tests;
+- Dashboard work.
+
+## Required evidence
+
+```text
+APP794_UIUX_V1_DEPLOY = COMPLETE / BLOCKED
+AUTHORIZATION_CONSUMED = YES/NO
+AUTHORIZED_CANDIDATE_COMMIT = eca0de0b6ef9169ef10b7750dc6f29e03c458a09
+CANDIDATE_JS_GIT_BLOB = f3b19a3565159fb2414dfd546a12741642b4b810
+CANDIDATE_CSS_GIT_BLOB = cac608dbc7494b65ab364055e687d6c50c2648b2
+CANDIDATE_JS_SHA256 = actual
+CANDIDATE_CSS_SHA256 = actual
+PREWRITE_LIVE_REVISION = actual
+PREWRITE_PREVIEW_REVISION = actual
+PREWRITE_PROCESS_STATE_COUNT = 16
+PREWRITE_PROCESS_ACTION_COUNT = 28
+PREWRITE_STATUS15_ASSIGNEE = USER:hr / exact actual
+PREWRITE_BACKUP_PATH = actual
+PREWRITE_BACKUP_READABLE = PASS/FAIL
+PREWRITE_MOBILE_CUSTOMIZATION_PRESERVED_GATE = PASS/FAIL
+FILE_UPLOAD_COUNT = actual
+CUSTOMIZATION_PUT_COUNT = actual
+DEPLOY_POST_COUNT = actual
+POSTDEPLOY_LIVE_REVISION = actual
+POSTDEPLOY_PREVIEW_REVISION = actual
+POSTDEPLOY_JS_SHA256_MATCH = PASS/FAIL
+POSTDEPLOY_CSS_SHA256_MATCH = PASS/FAIL
+POSTDEPLOY_PROCESS_16_28 = PASS/FAIL
+POSTDEPLOY_STATUS15_UNCHANGED = PASS/FAIL
+POSTDEPLOY_SIX_PROFILE_FIELDS_UNCHANGED = PASS/FAIL
+POSTDEPLOY_MOBILE_CUSTOMIZATION_UNCHANGED = PASS/FAIL
+BROWSER_UI_LOAD = PASS/FAIL
+BROWSER_FATAL_MBO_ERROR_COUNT = actual
+APP794_RECORD_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+PROCESS_CHANGE_COUNT = 0
+SCHEMA_CHANGE_COUNT = 0
+ACL_CHANGE_COUNT = 0
+NOTIFICATION_CHANGE_COUNT = 0
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+ROLLBACK_EXECUTED = YES/NO
+GIT_DIFF_CHECK = PASS/FAIL
+GIT_PUSH_SYNC = PASS/FAIL
+NEXT_ACTION = CHATGPT REVIEW; IF PASS MOVE TO DASHBOARD SPRINT
+```
 
 # STOP CONDITION
 
-After the narrow R2 source/test/build/evidence correction and push: **STOP**. Do not deploy App794.
+Without fresh explicit authorization: STOP with zero Kintone writes.
+After an authorized deploy + verification evidence is committed and pushed: STOP for ChatGPT review. Do not start Dashboard work automatically.
