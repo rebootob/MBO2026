@@ -1,13 +1,45 @@
-# AI ACTIVE TASK — R12E-A READ-ONLY ISOLATED WORKFLOW UAT LOCKDOWN
+# AI ACTIVE TASK — R12E-A READ-ONLY ISOLATED WORKFLOW UAT LOCKDOWN — ROLE-CORRECTED
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting reviewed/control-plane HEAD: `2767d6a800bc50dd212762591df416b137d5a178`
+> Starting control-plane HEAD before this correction: `704d59f8f5d906b0c4db297cd2a1ccc50546e50e`
 > Target App: App794 `MBO V2 Sandbox`
-> Mode: READ-ONLY UAT LOCKDOWN / ZERO KINTONE WRITES
-> Kintone write authorization: **NONE**
+> Mode: READ-ONLY / ZERO KINTONE WRITES / ZERO WORKFLOW ACTIONS
+> Kintone write authorization: NONE
+
+# NEW USER-CONFIRMED BUSINESS RULE — HIGHEST PRIORITY
+
+The user explicitly clarified:
+
+`admin-form` is NOT part of the normal MBO workflow.
+
+`admin-form` exists only as a technical administrator identity for inspection, debugging, controlled repair, troubleshooting, and verification. It has **no business authority to approve, return, complete, or otherwise act on behalf of Requester / Manager / GM / HR in workflow UAT or production workflow**.
+
+Therefore, effective immediately:
+
+- `ADMIN_FORM_ROLE = TECHNICAL_ADMIN_ONLY`
+- `ADMIN_FORM_WORKFLOW_AUTHORITY = NONE`
+- `ADMIN_FORM_MAY_APPROVE_FOR_OTHERS = NO`
+- `ADMIN_FORM_ALLOWED_AS_UAT_REQUESTER = NO`
+- `ADMIN_FORM_ALLOWED_AS_UAT_MANAGER = NO`
+- `ADMIN_FORM_ALLOWED_AS_UAT_GM = NO`
+- `ADMIN_FORM_ALLOWED_AS_UAT_HR_APPROVER = NO`
+
+This user decision overrides the earlier R12E-A draft assumption that `admin-form` could be used as UAT_A / Requester / HR actor.
+
+# R12D-D INTERPRETATION AFTER USER CORRECTION
+
+R12D-D technically changed App794 Sandbox status `15 HR Final Check` from an empty native assignee list to `USER: admin-form` while preserving 16 states / 28 actions.
+
+After the new business clarification, this configuration is classified only as:
+
+`TEMPORARY_SANDBOX_TECHNICAL_LOCK = USER: admin-form`
+
+It is NOT a valid business HR approval mapping and must NOT be used to execute `Complete` or `Return Final HR` during UAT.
+
+Do not roll it back in R12E-A because an empty assignee would recreate the prior open authorization defect. Leave it untouched and treat Workflow UAT as blocked until a separately authorized controlled UAT-HR remap is designed and approved.
 
 # NORTH STAR
 
@@ -15,361 +47,347 @@ Employee -> Verify Employee -> Resolve Routing -> Resolve Evaluation Profile -> 
 
 Current critical path:
 
-`Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Deploy PASS -> Native HR Authorization PASS -> Isolated Workflow UAT Lockdown -> Isolated Workflow UAT -> Functional UAT`
-
-R12D-D is independently reviewed PASS. Canonical current App794 Sandbox state:
-
-- live/preview revision `36 / 36`;
-- Process Management `16 states / 28 actions`;
-- all 17 active App795 routes are currently `M1_G1`;
-- `15 HR Final Check.assignee.type = ONE`;
-- `15 HR Final Check.assignee.entities = USER: admin-form`;
-- no record was at status 15 during R12D-D;
-- production HR group is NOT configured in Sandbox.
+`Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Deploy PASS -> Status15 Technical Lock PASS -> Role-Correct UAT Identity Lockdown -> Controlled UAT-HR Remap -> Isolated Workflow UAT -> Functional UAT`
 
 Hard user constraint:
 
-`REAL_USER_WORKFLOW_TEST = FORBIDDEN`
-`REAL_USER_NOTIFICATION_TEST = FORBIDDEN`
-`REAL_USER_IMPACT = 0`
+- no real-user workflow test;
+- no real-user notification test;
+- no real Manager/GM/HR approval merely for certification;
+- `REAL_USER_IMPACT = 0`.
 
-No real employee, Manager, GM, or HR user may be used merely to prove the workflow. No prior write authorization may be reused.
+# CONTROL-PLANE SOURCE FINDING — REUSE
 
-# CONTROL-PLANE SOURCE FINDING — REUSE, DO NOT REDISCOVER
+ChatGPT already verified from source:
 
-ChatGPT independently inspected the deployed source before opening this task:
+1. Employee lookup snapshots routing fields into App794 (`Requester_User`, `Manager_User`, `GM_User`, `First_Manager_User`, `Routing_Topology`).
+2. Process action runtime validates the App794 snapshot fields and does not re-query App795 during `app.record.detail.process.proceed`.
+3. Current active topology is `M1_G1`; First-Manager actions must fail closed.
 
-1. Employee lookup/UI initialization resolves App795 and snapshots these fields into the App794 record:
-   - `Requester_User`
-   - `Manager_User`
-   - `GM_User`
-   - `First_Manager_User`
-   - `Routing_Topology`
-   - detailed Manager/GM approver arrays.
-2. `app.record.detail.process.proceed` does **not** re-query App795. Runtime workflow validation uses the App794 record snapshot fields plus current Process status/action.
-3. For current `M1_G1`, direct Manager actions require `Manager_User`; Manager handover requires `GM_User`; requester/self handovers require `Requester_User`; First-Manager actions fail closed for non-M2 topology.
+Therefore isolated UAT can use a purpose-built synthetic App794 Sandbox record with controlled test identities in its snapshot fields, without modifying App795.
 
-Therefore a future isolated UAT may use a purpose-built App794 Sandbox UAT record whose routing snapshot fields point only to controlled UAT identities, without modifying App795 and without routing workflow to real approvers.
+Do not repeat source discovery.
 
-Do not spend Antigravity credit rediscovering this source behavior.
+# OBJECTIVE
 
-# OBJECTIVE OF R12E-A
+Produce a zero-write, exact role-correct UAT lockdown plan. Determine whether the project has enough **controlled non-business test identities** to simulate all required workflow roles without using `admin-form` as a business actor.
 
-Produce an exact, reviewable, zero-real-user-impact execution plan for R12E. Do **not** create/edit/delete any record and do **not** execute any Process action in this task.
+R12E-A must answer:
 
-R12E-A must answer conclusively:
+1. Is App794 live/preview still stable after R12D-D?
+2. What App794 notification rules could reach real users during a synthetic UAT?
+3. Are there existing controlled test identities that the user can legitimately designate as:
+   - `UAT_REQUESTER`
+   - `UAT_MANAGER`
+   - `UAT_GM`
+   - `UAT_HR`
+4. Can actor/session switching be performed for those identities?
+5. What exact Process change is required to replace the temporary status15 `admin-form` technical lock with `UAT_HR` before UAT?
+6. What exact synthetic UAT record and transition matrix will exercise current `M1_G1` workflow with zero real-user impact?
+7. What exact fresh authorization would be required later?
 
-1. Is the current App794 Process still safe and unchanged after R12D-D?
-2. Can a second existing **controlled** non-HR Kintone identity be proven available for UAT?
-3. Can two controlled identities safely model the active M1_G1 workflow without real recipients?
-4. Could App794 General / Per-record / Reminder notifications send messages to any real users when the proposed UAT record is created, edited, or transitioned?
-5. What exact UAT record shape, actor mapping, transition matrix, negative tests, cleanup, and rollback/stop behavior should R12E use?
-6. Is R12E ready for fresh user authorization, or what exact blocker/user input remains?
+# A. STARTUP / DRIFT GATE
 
-# A. GIT / BASELINE STARTUP GATE
+1. Pull latest same branch.
+2. Local HEAD must equal origin HEAD and include this task correction.
+3. Read canonical baseline in mandatory order.
+4. Confirm no source/dist/test drift.
+5. Do not run npm test/build.
+6. No previous Kintone authorization may be reused.
 
-1. Pull latest `ai/antigravity-wp002c`.
-2. Local HEAD must equal origin HEAD and must start at this task commit.
-3. Read canonical baseline in required order.
-4. Confirm:
-   - App794 Sandbox native HR boundary is canonical as `USER: admin-form`;
-   - App794 Process = 16/28;
-   - App795 = 17 active routes, all current `M1_G1`;
-   - production HR mapping remains a future go-live gate;
-   - no prior authorization covers R12E writes.
-5. Verify no `src/**`, `dist/**`, or `tests/**` change after reviewed/deployed runtime candidate. Do not run tests/build.
+# B. APP794 READ-ONLY PROCESS SNAPSHOT
 
-# B. FRESH APP794 READ-ONLY SAFETY SNAPSHOT
+Use minimum GETs.
 
-Use the minimum GETs necessary.
+Confirm:
 
-1. GET current live App794 Process Management.
-2. Confirm live revision remains `36` unless there is independently explainable read-only evidence. Any unexplained revision/process drift => `R12E_READY = NO`.
-3. Confirm:
-   - 16 states;
-   - 28 actions;
-   - current active M1_G1 path unchanged;
-   - status 15 type `ONE`;
-   - status 15 entity exactly `USER: admin-form`;
-   - production HR group absent.
-4. Confirm there is no pending preview Process drift. Do not change anything.
+- live/preview revisions aligned;
+- expected current revision remains `36` unless read-only evidence explains otherwise;
+- Process = 16 states / 28 actions;
+- active M1_G1 path unchanged;
+- status15 remains `ONE + USER: admin-form`;
+- production HR group is absent from Sandbox;
+- no pending preview drift.
 
-Do not repeat ACL/source audits from R12D-A/B unless an unexpected conflict appears.
+Classify current status15 as `TEMPORARY_SANDBOX_TECHNICAL_LOCK`, never as UAT HR business authority.
 
-# C. NOTIFICATION SAFETY AUDIT — READ ONLY / MANDATORY
+Unexpected drift => `R12E_EXECUTION_READY = NO`.
 
-The hard requirement is not merely “no workflow to real users”; no UAT create/edit/status operation may generate a notification to a real person.
+# C. NOTIFICATION SAFETY AUDIT — READ ONLY
 
-Read the current App794 notification configurations supported by the tenant/API, at minimum where available:
+Read the narrow current App794 notification configurations supported by the tenant/API, including where available:
 
 - General Notifications;
 - Per Record Notifications;
 - Reminder Notifications;
-- any additional native App794 notification setting that can be triggered by record create/edit/status transition.
+- other native notification rules capable of firing on create/edit/status transition.
 
-For every enabled rule record:
+For each enabled rule capture:
 
-- exact event/condition;
-- exact recipient expression/entity/field;
-- whether the proposed isolated UAT record could satisfy the condition;
-- whether recipients would resolve exclusively to controlled UAT identities or could include real users/groups/organizations/everyone.
-
-Classify:
-
-`UAT_NOTIFICATION_SAFETY = SAFE_WITH_CONTROLLED_SNAPSHOTS / BLOCKED_REAL_RECIPIENT_RISK / UNRESOLVED`
-
-If a notification rule may reach a real user during proposed R12E operations, do NOT propose disabling it in this task and do not write. Report the exact rule as a blocker and design the smallest later isolation change, which would require separate authorization.
-
-Native Process assignee/task routing to controlled UAT identities is acceptable. Routing to any real Manager/GM/HR is not.
-
-# D. CONTROLLED UAT IDENTITY LOCKDOWN — NARROW DISCOVERY ONLY
-
-Known controlled positive identity from R12D-B/D:
-
-`UAT_A = admin-form`
-
-Proposed two-account actor model if technically provable:
-
-- `UAT_A = admin-form` => Requester + HR Final Check
-- `UAT_B = one different controlled non-HR identity` => Manager + GM
-
-This two-account design allows alternating native assignee ownership and a genuine status-15 negative test: UAT_B must be denied while UAT_A is the native HR assignee.
-
-Rules:
-
-1. Re-confirm current authenticated executor user code = `admin-form`.
-2. Identify **one** second existing account only through the narrowest evidence available.
-3. Account existence is NOT sufficient. `UAT_B` must be classified controlled only if there is evidence that it is a test/admin/shared account available for controlled login during UAT without involving a real Manager/GM/HR recipient.
-4. Do not enumerate the whole user directory.
-5. Do not query the 17 real approver identities just to find a convenient account.
-6. Do not use `Manager HR_x52y75` or any real HR member as UAT_B.
-7. Do not expose or retrieve passwords/secrets.
-8. If control of a second identity cannot be proven read-only, report:
-   `SECOND_CONTROLLED_IDENTITY = USER_DESIGNATION_REQUIRED`
-   and specify what the user must provide/confirm before R12E.
-
-Required classification:
-
-`MINIMUM_CONTROLLED_IDENTITIES = 2`
-
-Do not silently reduce to one identity because that would not provide a real negative native-assignee test.
-
-# E. AUTHENTICATION / SESSION FEASIBILITY
-
-R12E will need actual actor switching. Determine without performing workflow:
-
-- whether Antigravity has an authenticated usable session only for `admin-form` or more than one controlled account;
-- whether the future UAT_B login would require a user-assisted login/session setup;
-- whether an approved REST authentication method can validly represent a specific non-assignee user for Update Status negative testing without exposing secrets.
-
-Do not assume API token behavior. Do not perform a status API call.
+- trigger/condition;
+- recipient source/entity/field;
+- whether a proposed synthetic UAT record could match;
+- whether any recipient could be a real person/group/organization/everyone.
 
 Classify:
+
+`UAT_NOTIFICATION_SAFETY = SAFE_WITH_CONTROLLED_IDENTITIES / BLOCKED_REAL_RECIPIENT_RISK / UNRESOLVED`
+
+Do not disable or modify notifications in this task.
+
+# D. CONTROLLED TEST IDENTITY LOCKDOWN — ADMIN-FORM EXCLUDED
+
+`admin-form` may be used by Antigravity only for technical inspection/debugging. It is not one of the workflow actors.
+
+Required role model for current M1_G1 UAT:
+
+- `UAT_REQUESTER` — controlled non-business test identity
+- `UAT_MANAGER` — controlled non-business test identity
+- `UAT_GM` — controlled non-business test identity
+- `UAT_HR` — controlled non-business test identity
+
+Prefer four distinct identities so role/assignee boundaries are actually exercised. A different workflow role may be reused only if there is an explicit pre-existing business/UAT reason and ChatGPT later accepts it; do not silently collapse roles.
+
+Identity discovery rules:
+
+1. Do not enumerate the full directory.
+2. Do not scan real App795 approvers looking for convenient accounts.
+3. Do not use a real Manager/GM/HR simply because the account exists.
+4. Do not retrieve passwords/secrets.
+5. Only classify an identity as controlled if evidence shows it is a non-business test/shared technical account suitable for UAT and the user can control the login/session.
+6. If exact controlled identities cannot be proven read-only, report for each missing role:
+   `USER_DESIGNATION_REQUIRED`.
+7. `admin-form` must appear only as `TECHNICAL_ADMIN`, never in role mapping.
+
+Required output:
+
+`MINIMUM_ROLE_CORRECT_CONTROLLED_IDENTITIES = 4` unless evidence supports a reviewed smaller role-separated design.
+
+# E. ACTOR SWITCH / AUTHENTICATION FEASIBILITY
+
+Without executing workflow, determine whether each future controlled test role can be represented through:
+
+- existing controlled browser sessions;
+- user-assisted login/session switching;
+- approved REST authentication that truly executes as the intended user.
+
+Do not assume an API token equals a target user. Do not perform a status update.
+
+Output per role and overall:
 
 `ACTOR_SWITCH_METHOD = EXISTING_CONTROLLED_BROWSER_SESSIONS / USER_ASSISTED_LOGIN_REQUIRED / CONTROLLED_REST_AUTH_AVAILABLE / UNRESOLVED`
 
-If user-assisted login is required, say so explicitly. That is not a defect.
+# F. REQUIRED PRE-UAT PROCESS REMAP — DESIGN ONLY
 
-# F. EXACT UAT RECORD DESIGN — PLAN ONLY, NO WRITE
+Because `admin-form` has no HR workflow authority, R12E cannot execute status15 while it remains the assignee.
 
-Prefer exactly **one** isolated UAT record if one record can cover all current M1_G1 active-path and return-path checks without ambiguity.
+Design a separate controlled pre-UAT Process repair:
 
-The record must be clearly non-business test data and must not impersonate or alter a real employee record.
+`15 HR Final Check.assignee.entities: USER admin-form -> USER UAT_HR`
 
-Design a deterministic future UAT marker/key, e.g. an unmistakable R12E UAT prefix, while respecting live App794 field types/required constraints and uniqueness rules. Read only the minimum App794 field schema needed to prove the record can be constructed.
+Requirements for the later repair:
 
-The future record must snapshot only controlled identities:
+- App794 Sandbox only;
+- retain assignee type `ONE`;
+- 16 states / 28 actions unchanged;
+- only one semantic Process diff;
+- no production HR group;
+- fresh backup;
+- existing status15 record count must be 0 before remap;
+- one Process PUT + one deploy only;
+- post-deploy readback;
+- zero record workflow actions during the remap.
+
+This future remap requires a fresh explicit user authorization. Do not execute it now.
+
+After UAT, design whether Sandbox should:
+
+- remain assigned to a dedicated `UAT_HR` for future regression testing; or
+- be moved to another approved safe non-production configuration.
+
+Never restore empty `[]` and never restore `admin-form` as a business HR actor.
+
+# G. SYNTHETIC UAT RECORD DESIGN — PLAN ONLY
+
+Prefer exactly one synthetic App794 UAT record if feasible.
+
+The record must be unmistakably test-only and must not impersonate/modify a real employee business record.
+
+Proposed snapshot model:
 
 - `Routing_Topology = M1_G1`
 - `First_Manager_User = []`
-- `Requester_User = [UAT_A]`
-- `Manager_User = [UAT_B]`
-- `GM_User = [UAT_B]`
-- status 15 remains fixed by Process Management to `admin-form` / UAT_A.
+- `Requester_User = [UAT_REQUESTER]`
+- `Manager_User = [UAT_MANAGER]`
+- `GM_User = [UAT_GM]`
+- status15 native assignee = `UAT_HR` after the separate controlled Process remap.
 
 Do not modify App795.
 
-Plan all objective/mid-year/final fields necessary for current ValidationEngine to allow the browser Process actions. Use minimal valid synthetic test values. Do not create artificial schema fields.
+Read only the minimum App794 schema needed to prove a synthetic record can satisfy required fields and ValidationEngine using minimal valid objective/mid-year/final values.
 
-DEC-029 guard:
-- this future record is permitted only as a reviewed functional UAT artifact, not a dummy canary for testing a write pipeline;
-- R12E must have an explicit functional test matrix and cleanup disposition;
-- no unrelated artificial records are allowed.
+DEC-029: this is a functional UAT artifact with a defined test matrix and cleanup plan, not a canary write-pipeline dummy.
 
-# G. UAT TRANSITION / NEGATIVE TEST MATRIX — PLAN ONLY
+# H. ROLE-CORRECT TRANSITION MATRIX — PLAN ONLY
 
-Design the exact current `M1_G1` functional matrix for the future R12E record.
+Plan the current M1_G1 direct path:
 
-At minimum the final R12E plan must cover:
+- `01 -> 03` Submit Objective to Manager — UAT_REQUESTER
+- `03 -> 04` Approve Objective — UAT_MANAGER
+- `04 -> 05` Approve Objective — UAT_GM
+- `05 -> 06` Start Mid-Year — UAT_REQUESTER
+- `06 -> 08` Submit Mid-Year to Manager — UAT_REQUESTER
+- `08 -> 09` Approve Mid-Year Manager — UAT_MANAGER
+- `09 -> 10` Approve Mid-Year GM — UAT_GM
+- `10 -> 11` Start Self Evaluation — UAT_REQUESTER
+- `11 -> 13` Submit Final to Manager — UAT_REQUESTER
+- `13 -> 14` Approve Final Manager — UAT_MANAGER
+- `14 -> 15` Approve Final GM — UAT_GM
+- `15 -> 16` Complete — UAT_HR
 
-### Direct path
-- `01 -> 03` Submit Objective to Manager
-- `03 -> 04` Approve Objective
-- `04 -> 05` Approve Objective
-- `05 -> 06` Start Mid-Year
-- `06 -> 08` Submit Mid-Year to Manager
-- `08 -> 09` Approve Mid-Year Manager
-- `09 -> 10` Approve Mid-Year GM
-- `10 -> 11` Start Self Evaluation
-- `11 -> 13` Submit Final to Manager
-- `13 -> 14` Approve Final Manager
-- `14 -> 15` Approve Final GM
-- `15 -> 16` Complete
+Plan return paths:
 
-### Active return paths
-- `03 -> 01` Return Objective
-- `04 -> 01` Return Objective
-- `08 -> 06` Return Mid-Year Manager
-- `09 -> 06` Return Mid-Year GM
-- `13 -> 11` Return Final Manager
-- `14 -> 11` Return Final GM
-- `15 -> 11` Return Final HR
+- `03 -> 01` Return Objective — UAT_MANAGER
+- `04 -> 01` Return Objective — UAT_GM
+- `08 -> 06` Return Mid-Year Manager — UAT_MANAGER
+- `09 -> 06` Return Mid-Year GM — UAT_GM
+- `13 -> 11` Return Final Manager — UAT_MANAGER
+- `14 -> 11` Return Final GM — UAT_GM
+- `15 -> 11` Return Final HR — UAT_HR
 
-### Required negative checks
-- M1_G1 First-Manager submit action must not proceed at objective/mid-year/final stages;
-- at status 15, UAT_B / non-assignee must be unable to execute `Complete` or `Return Final HR`;
-- after each denied attempt, status/assignee must be unchanged and no notification must be triggered.
+Required negative checks:
 
-Optimize the sequence to cover the matrix with the fewest status transitions and ideally one UAT record. It is acceptable to revisit stages via Return actions.
+- M1_G1 First-Manager submit action must not proceed at Objective/Mid-Year/Final employee stages;
+- at status15, one controlled non-HR workflow identity (prefer UAT_GM or UAT_MANAGER) must be denied `Complete` and `Return Final HR`;
+- after every denial: status and assignee unchanged, no notification to real users;
+- `admin-form` must NOT be used to attempt any positive or negative business workflow action.
 
-For each planned action state:
-- acting identity;
-- expected source status;
-- expected action;
-- expected destination or expected denial;
-- expected assignee after success;
-- required data-preparation fields before the action;
-- notification safety expectation.
+Optimize to the fewest transitions while preserving role correctness and evidence clarity.
 
-# H. RECORD CREATION / DATA PREPARATION EXECUTION METHOD — DESIGN ONLY
+# I. EXECUTION METHOD — DESIGN ONLY
 
-Design future R12E so business-function validation is actually exercised.
+For future R12E:
 
-Important distinction:
-- REST record creation/edit may be used to prepare synthetic UAT field values under exact authorization;
-- workflow Process actions intended to prove client runtime guards should be executed through the App794 browser UI so `app.record.detail.process.proceed` runs;
-- do not claim a REST-only status update proves the JavaScript workflow guard.
+- synthetic record create/edit may use narrowly authorized controlled record writes;
+- Process actions that prove the deployed client workflow guard should run through the App794 browser UI under the actual controlled role identity;
+- REST-only status updates must not be claimed as proof of JavaScript workflow guard behavior;
+- admin-form may observe/debug but must not execute business Process actions.
 
-Prefer browser Process actions for current path/negative guard proof. Record data preparation may use narrowly scoped controlled record writes if authorized later.
+# J. CLEANUP / NO-ORPHAN
 
-# I. CLEANUP / NO-ORPHAN DESIGN
+Prefer deleting exactly the synthetic UAT record after evidence capture unless governance requires a retained Sandbox test record.
 
-The future UAT record must have an explicit post-test disposition.
+If delete is proposed, the later authorization must explicitly include that exact record deletion.
 
-Evaluate the smallest safe option:
+Capture before cleanup:
 
-1. delete the exact synthetic UAT record after all evidence is captured; or
-2. retain it only if a durable Sandbox UAT evidence record is intentionally required by governance.
+- record key/id;
+- actor/action/status trace;
+- denied-action evidence;
+- notification safety evidence;
+- final status/assignee trace;
+- no-real-user-impact confirmation.
 
-Prefer no orphan test data. If deletion is proposed, it must be explicitly included in the future R12E authorization scope because record deletion is a Kintone write. Never delete business/historical records.
+Never delete business/historical records.
 
-Define what evidence must be captured before cleanup so deleting the test record does not destroy the review trail.
+# K. PROPOSED FUTURE AUTHORIZATION MANIFEST — OUTPUT ONLY
 
-# J. R12E AUTHORIZATION MANIFEST — OUTPUT ONLY
+R12E-A must produce a precise later write manifest including:
 
-Produce an exact proposed future authorization scope, but do not execute it.
+1. Pre-UAT Process remap `admin-form -> UAT_HR` at status15, exact one semantic diff.
+2. Exact controlled identities for Requester/Manager/GM/HR.
+3. Exact synthetic UAT record marker/key strategy.
+4. Max record create count.
+5. Bounded data-preparation edits.
+6. Exact allowed Process actions and exact expected denied attempts.
+7. Cleanup delete yes/no.
+8. App794 only.
+9. Zero App795/App53/App796/other-app writes.
+10. Zero schema/ACL/customization changes.
+11. Zero real-user recipients.
+12. Stop conditions.
 
-It must enumerate:
-
-- App794 only;
-- exact UAT identity A and B;
-- exact synthetic UAT record key/marker strategy;
-- maximum record create count;
-- maximum record edit/data-preparation count or bounded preparation steps;
-- exact allowed Process actions/attempts;
-- exact expected denied attempts;
-- whether cleanup delete is included;
-- zero Process Management config changes;
-- zero schema/ACL/customization changes;
-- zero App795/App53/App796/other app writes;
-- zero real-user recipients;
-- stop conditions.
-
-Do NOT ask for authorization inside the evidence. R12E-A ends with ChatGPT review.
+Do not request authorization inside the evidence. ChatGPT reviews first.
 
 # HARD SAFETY BOUNDARY
 
 Forbidden in R12E-A:
 
-- all Kintone POST/PUT/DELETE;
-- App794 record create/edit/delete;
-- all workflow/status actions or attempts;
+- any Kintone POST/PUT/DELETE;
+- record create/edit/delete;
+- workflow/status action or attempted action;
 - Change assignee;
-- notification-triggering action;
 - Process Management change;
-- notification settings change;
+- notification setting change;
 - schema/ACL/customization change;
-- App795/App53/App796/other app write;
+- App795/App53/App796/other-app write;
 - user/group/org/membership change;
 - password/secret retrieval;
-- broad user/group enumeration;
-- real user login solely for testing;
+- broad identity discovery;
+- real-user workflow login/test;
+- admin-form business workflow action;
 - npm tests/build;
 - source/dist/test changes;
-- browser workflow clicking.
+- browser workflow clicks.
 
 Allowed:
 
-- minimum App794 GETs for Process/schema/record-count/notification settings;
-- narrow current-user and controlled-candidate identity reads;
+- minimum GETs for App794 Process/schema/notification settings;
+- narrow reads for controlled test identity feasibility;
 - local/Git evidence inspection;
-- evidence/living-doc updates only.
+- evidence/living-doc Git updates only.
 
 # CREDIT-SAVING RULE
 
-- Reuse R12D-A/B/D evidence.
-- Reuse ChatGPT source finding in this task; do not re-audit code.
-- Do not query App795 unless a direct unresolved fact makes it unavoidable.
-- Do not enumerate approvers.
-- No browser workflow test.
-- No npm test/build.
-- Do not create a new evidence file; append one concise R12E-A block to `project-docs/AI_REVIEW_PACKAGE.md` and minimally update living docs.
-- Push same branch and STOP.
+Reuse R12D-A/B/D evidence and ChatGPT source findings. Do not repeat broad audits, App795 reads, source audits, npm tests, or browser workflow tests.
 
 # REQUIRED EVIDENCE
 
 ```text
 M10L_D_R12E_A_ISOLATED_UAT_LOCKDOWN = COMPLETE / PARTIAL / BLOCKED
-STARTING_HEAD = 2767d6a800bc50dd212762591df416b137d5a178
+ADMIN_FORM_ROLE = TECHNICAL_ADMIN_ONLY
+ADMIN_FORM_WORKFLOW_AUTHORITY = NONE
+ADMIN_FORM_USED_AS_UAT_ACTOR = NO
 KINTONE_WRITE_AUTHORIZATION = NONE
 LIVE_APP794_REVISION = actual
 PREVIEW_APP794_REVISION = actual
 LIVE_PREVIEW_DRIFT = NO/YES
 PROCESS_STATE_COUNT = actual
 PROCESS_ACTION_COUNT = actual
-STATUS15_ASSIGNEE = exact
-PROCESS_BASELINE_MATCH = PASS/FAIL
+STATUS15_CURRENT_ASSIGNEE = actual
+STATUS15_CURRENT_CLASSIFICATION = TEMPORARY_SANDBOX_TECHNICAL_LOCK
 GENERAL_NOTIFICATION_AUDIT = PASS/FAIL/UNRESOLVED
 PER_RECORD_NOTIFICATION_AUDIT = PASS/FAIL/UNRESOLVED
 REMINDER_NOTIFICATION_AUDIT = PASS/FAIL/UNRESOLVED
 OTHER_RELEVANT_NOTIFICATION_AUDIT = PASS/FAIL/NOT_APPLICABLE/UNRESOLVED
-UAT_NOTIFICATION_SAFETY = SAFE_WITH_CONTROLLED_SNAPSHOTS / BLOCKED_REAL_RECIPIENT_RISK / UNRESOLVED
-UAT_A = admin-form
-SECOND_CONTROLLED_IDENTITY = exact code / USER_DESIGNATION_REQUIRED / UNRESOLVED
-SECOND_CONTROLLED_IDENTITY_PROOF = concise evidence / NONE
-UAT_B = exact code / PENDING_USER_DESIGNATION
-MINIMUM_CONTROLLED_IDENTITIES = 2
-ACTOR_SWITCH_METHOD = EXISTING_CONTROLLED_BROWSER_SESSIONS / USER_ASSISTED_LOGIN_REQUIRED / CONTROLLED_REST_AUTH_AVAILABLE / UNRESOLVED
+UAT_NOTIFICATION_SAFETY = SAFE_WITH_CONTROLLED_IDENTITIES / BLOCKED_REAL_RECIPIENT_RISK / UNRESOLVED
+UAT_REQUESTER = exact / USER_DESIGNATION_REQUIRED
+UAT_MANAGER = exact / USER_DESIGNATION_REQUIRED
+UAT_GM = exact / USER_DESIGNATION_REQUIRED
+UAT_HR = exact / USER_DESIGNATION_REQUIRED
+MINIMUM_ROLE_CORRECT_CONTROLLED_IDENTITIES = actual proposed
+CONTROLLED_IDENTITY_PROOF = concise / INSUFFICIENT
+ACTOR_SWITCH_METHOD = exact / USER_ASSISTED_LOGIN_REQUIRED / UNRESOLVED
 APP795_CHANGE_REQUIRED_FOR_UAT = NO
-PROCESS_CONFIG_CHANGE_REQUIRED_FOR_UAT = NO
+PROCESS_CONFIG_CHANGE_REQUIRED_BEFORE_UAT = YES
+REQUIRED_PROCESS_CHANGE = status15 USER admin-form -> USER UAT_HR
 SCHEMA_CHANGE_REQUIRED_FOR_UAT = NO
 ACL_CHANGE_REQUIRED_FOR_UAT = NO
 CUSTOMIZATION_CHANGE_REQUIRED_FOR_UAT = NO
-UAT_RECORD_COUNT_PROPOSED = 1 / other exact number
+UAT_RECORD_COUNT_PROPOSED = exact
 UAT_RECORD_KEY_STRATEGY = exact
 UAT_RECORD_COLLISION_CHECK = PASS/FAIL/UNRESOLVED
 UAT_RECORD_SCHEMA_FEASIBILITY = PASS/FAIL/UNRESOLVED
-UAT_ACTOR_MAPPING = exact concise A/B mapping
 DIRECT_PATH_MATRIX_READY = PASS/FAIL
 RETURN_PATH_MATRIX_READY = PASS/FAIL
 FIRST_MANAGER_NEGATIVE_MATRIX_READY = PASS/FAIL
 STATUS15_NON_ASSIGNEE_NEGATIVE_MATRIX_READY = PASS/FAIL
-CLEANUP_STRATEGY = DELETE_EXACT_UAT_RECORD_AFTER_EVIDENCE / RETAIN_WITH_JUSTIFICATION / UNRESOLVED
+CLEANUP_STRATEGY = exact
 REAL_USER_WORKFLOW_TEST_REQUIRED = NO
 REAL_USER_NOTIFICATION_TEST_REQUIRED = NO
 REAL_USER_IMPACT_TARGET = 0
 R12E_EXECUTION_READY = YES/NO
-R12E_EXECUTION_BLOCKER = NONE / exact blocker
+R12E_EXECUTION_BLOCKER = NONE / exact
 PROPOSED_R12E_AUTHORIZATION_SCOPE = concise exact manifest
 KINTONE_GET_CALLS_THIS_TASK = actual
 KINTONE_WRITES_THIS_TASK = 0
@@ -381,11 +399,9 @@ DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = actual
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY R12E WRITE AUTHORIZATION
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY PROCESS OR WORKFLOW WRITE AUTHORIZATION
 ```
 
 # STOP CONDITION
 
-Push the read-only evidence/living-doc commit on `ai/antigravity-wp002c` and STOP.
-
-Do not perform R12E. Do not create a UAT record. Do not execute or attempt any Process action. Do not send any notification. A fresh explicit user authorization will be required only after ChatGPT reviews this lockdown result and the exact R12E manifest.
+Push read-only evidence on the same branch and STOP. Do not remap status15, create a UAT record, or execute any Process action. A new explicit user authorization will be required only after ChatGPT reviews this role-correct lockdown.
