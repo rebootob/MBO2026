@@ -111,22 +111,31 @@ R12D-D then performed an explicitly authorized controlled Sandbox Process repair
 - existing records at status15 were `0` before and after;
 - no record transition, notification, record/schema/ACL/customization write occurred.
 
-After the user's explicit clarification of `admin-form` authority, the R12D-D status15 mapping is **not a valid business HR approval mapping**. It is retained only as a temporary Sandbox technical lock to avoid reverting to the prior open/empty native assignee state.
+After the user's explicit clarification of `admin-form` authority, that R12D-D mapping was reclassified as a temporary Sandbox technical lock only.
 
-Canonical current classification:
+R12E-B then executed the separately authorized Project Close Mode remap:
+- pre-write live/preview revision `36 / 36`;
+- pre-write status15 record count `0`;
+- fresh pre-write backup readable;
+- exactly one Process semantic diff;
+- `15 HR Final Check.assignee.entities` changed from `USER: admin-form` to `USER: hr`;
+- `assignee.type = ONE` retained;
+- Process remained exactly **16 states / 28 actions**;
+- all non-target Process semantics remained unchanged;
+- post-deploy live/preview revision became `37 / 37`;
+- no synthetic UAT record was created and no workflow transition was executed in that attempt because browser UI login as `hr` was not yet available.
 
-`STATUS15_SANDBOX_CURRENT_ASSIGNEE = USER: admin-form`
+Canonical current Sandbox classification:
 
-`STATUS15_SANDBOX_CURRENT_CLASSIFICATION = TEMPORARY_SANDBOX_TECHNICAL_LOCK`
+`STATUS15_SANDBOX_CURRENT_ASSIGNEE = USER: hr`
+
+`STATUS15_SANDBOX_CURRENT_CLASSIFICATION = CONTROLLED_SANDBOX_UAT_BOUNDARY`
 
 `STATUS15_BUSINESS_HR_AUTHORIZATION_CERTIFIED = NO`
 
-While this temporary lock remains:
-- `admin-form` must not execute `Complete` or `Return Final HR`;
-- Workflow Functional UAT must not certify status15 behavior;
-- before isolated UAT, status15 must be remapped under a separately authorized controlled change to the user-approved Sandbox test account `hr`;
-- that remap must retain type `ONE`, preserve 16/28 Process semantics, require fresh backup/read-back, and require zero existing status15 records before write;
-- no real HR user may be used solely to prove the boundary.
+`FUNCTIONAL_WORKFLOW_UAT = NOT_COMPLETED`
+
+This current `hr` mapping is approved only for App794 Sandbox controlled UAT/regression. It is not the production HR authorization mapping and does not certify production role isolation.
 
 Production/go-live configuration remains a separate gate and must map the native status15 boundary to the approved production HR entity under a later reviewed change. No real-HR workflow or notification test is required solely for parity proof.
 
@@ -165,7 +174,7 @@ Confirmed Sandbox UAT logical mapping:
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
-- App794 Sandbox status15 currently has only a temporary technical lock; before closure UAT it must be remapped from `admin-form` to the user-approved controlled Sandbox test account `hr`.
+- App794 Sandbox status15 currently uses the user-approved controlled Sandbox UAT account `hr`; functional workflow UAT remains pending until browser UI execution under `hr` is completed.
 - `admin-form` is technical-admin-only and has no business approval authority.
 - Single-account `hr` Sandbox UAT may certify functional workflow behavior only, not production role isolation.
 - Production HR entity mapping remains a separate pre-go-live configuration/parity gate.
