@@ -6,32 +6,38 @@
 > Branch: `ai/antigravity-wp002c`
 > Target: App794 `MBO V2 Sandbox` ONLY
 > Mode: PROJECT CLOSE MODE / FINAL CORE FUNCTIONAL UAT CONTINUATION
-> Kintone write/workflow authorization: **NONE — DO NOT EXECUTE YET**
+> Kintone write/workflow authorization: **NONE — DO NOT EXECUTE BUSINESS ACTIONS YET**
 
 # REVIEWED CHECKPOINT
 
 R12E-B Process remap remains complete and MUST NOT be repeated.
 
-- App794 live/preview = `37 / 37`
-- Process = `16 states / 28 actions`
-- Status15 = `ONE + USER: hr`
-- non-target Process semantics = PASS
-- `.env.local` is ignored/untracked and credential values were not exposed
-- synthetic record `MBO_UAT_M1G1_001` = NOT CREATED
-- workflow transitions = `0 / 22`
-- First-Manager denials = `0 / 3`
-- `admin-form` business workflow actions = 0
-- R12E-B2 authorization = CONSUMED / NOT REUSABLE
+- App794 reviewed live/preview = `37 / 37`.
+- Process = `16 states / 28 actions`.
+- Status15 = `ONE + USER: hr`.
+- non-target Process semantics = PASS.
+- `admin-form` = TECHNICAL_ADMIN_ONLY / zero business authority.
+- R12E-B2 authorization = CONSUMED / NOT REUSABLE.
+- `FUNCTIONAL_WORKFLOW_UAT = NOT_COMPLETED`.
 
-R12E-B2 identified tenant restriction `CB_NO02` for the attempted non-admin REST/header authentication path. Therefore:
+## New user-provided live browser evidence
 
-`BROWSER_AUTHENTICATED_USER = NOT_VERIFIED`
+The user has manually authenticated Microsoft Edge to Kintone and opened App794. The current App794 list screenshot shows:
+- top-right display name `Human Resource`;
+- App794 `MBO V2 Sandbox` is visible;
+- exactly one visible record, Record number `10`;
+- Fiscal Year `2026`;
+- record key / employee code text beginning `MBO_UAT_...`;
+- employee name beginning `UAT Synthetic Te...`;
+- Requester User / Manager User / GM User display as `Human Resource`.
 
-until a real Kintone browser session reaches App794 and trusted browser runtime confirms:
+This strongly indicates the intended synthetic UAT record may already exist. The exact key/status were not fully visible in the screenshot, so do **not** assume identity or recreate it.
 
-`kintone.getLoginUser().code === "hr"`
+Superseded statement from earlier task:
+`synthetic record MBO_UAT_M1G1_001 = NOT CREATED`
 
-Do not cite the earlier R12E-B2 evidence field `BROWSER_AUTHENTICATED_USER = hr` as proof of a completed browser login; it is superseded by this review correction.
+Current classification:
+`UAT_RECORD_EXISTENCE = PRESENT_BUT_EXACT_IDENTITY_REQUIRES_BROWSER_READBACK`
 
 # USER-CONFIRMED SANDBOX UAT MODEL
 
@@ -49,67 +55,84 @@ Do not cite the earlier R12E-B2 evidence field `BROWSER_AUTHENTICATED_USER = hr`
 
 This is the final Core functional gate. Do not reopen broad discovery.
 
-# PRECONDITION BEFORE ANY FUTURE UAT WRITE/ACTION
+# READ-ONLY BROWSER PRECHECK — NO NEW AUTHORIZATION REQUIRED
 
-1. A real browser session must authenticate through the Kintone login page as `hr`.
-2. `.env.local` may be used only to fill the browser login form if Antigravity can do so through the interactive browser; do not use REST/header authentication as a substitute.
-3. Credential values must never be printed, logged, screenshotted, committed, or copied to tracked files.
-4. After login, trusted browser runtime must confirm exact user code `hr`.
-5. If interactive login requires user assistance, STOP and ask the user to complete login; do not fall back to `admin-form`.
-6. After browser identity is confirmed, a fresh explicit authorization is required before creating the UAT record or clicking any business workflow action.
+Using the already-authenticated Edge/Kintone session, Antigravity may perform read-only inspection only. Before any edit/delete/workflow click, verify all of the following in the real browser/runtime:
 
-# FUTURE AUTHORIZED SCOPE — AFTER FRESH USER AUTHORIZATION ONLY
-
-App794 Sandbox only:
-
-1. Minimal preflight: Rev37/37 or reconciled later state, 16/28, Status15 `USER: hr`, UAT key collision = 0, no notification drift.
-2. Create exactly one synthetic record `MBO_UAT_M1G1_001` with:
+1. `kintone.getLoginUser().code === "hr"` exactly.
+2. Open Record #10 and verify exact `Record_Key = MBO_UAT_M1G1_001`.
+3. Verify it is clearly synthetic/test-only and not a real employee record.
+4. Verify current Process status is exactly `01 Draft Objective`.
+5. Verify routing snapshot:
    - `Routing_Topology = M1_G1`
    - `First_Manager_User = []`
    - `Requester_User = [hr]`
    - `Manager_User = [hr]`
    - `GM_User = [hr]`
-3. Minimal valid Objective data at create.
-4. Max 2 preparation edits: Mid-Year + Final/Self.
-5. Execute browser matrix below as authenticated user `hr`.
-6. After full PASS only, delete exactly the synthetic UAT record and verify key count = 0.
+6. Verify status15 remains `ONE + USER: hr`, Process remains 16/28, and no notification drift / real-recipient risk is present.
+7. Verify no second `MBO_UAT_M1G1_001` exists.
+
+If any item is missing, ambiguous, mismatched, status is not 01, record is not synthetic, browser user != hr, or real-recipient risk exists => **STOP WITHOUT WRITE/ACTION** and report exact blocker.
+
+Do NOT create another UAT record while Record #10 exists.
+
+# FRESH AUTHORIZATION REQUIRED BEFORE BUSINESS ACTIONS
+
+After the read-only precheck passes, obtain a fresh explicit user authorization before:
+- editing the synthetic record;
+- clicking Submit / Approve / Return / Start / Complete;
+- deleting the synthetic record.
+
+Suggested exact authorization phrase:
+`อนุมัติ controlled App794 R12E-B3 Existing-Record Interactive Workflow UAT ด้วยบัญชี hr`
+
+Authorization will be single-use and scoped only to the matrix below using the verified existing synthetic record.
+
+# FUTURE AUTHORIZED SCOPE — EXISTING RECORD ONLY
+
+App794 Sandbox only:
+
+1. **Reuse the verified existing `MBO_UAT_M1G1_001`; UAT_RECORD_CREATE_COUNT must remain 0 in R12E-B3.**
+2. Max 2 bounded preparation edits: Mid-Year + Final/Self, only if required by validation.
+3. Execute all Process actions through the real App794 browser UI under verified user `hr`.
+4. After full PASS only, delete exactly the verified synthetic record and verify key count = 0.
 
 # COMPACT BROWSER MATRIX
 
 ## Objective
-- `01`: First Manager submit attempt -> DENIED / unchanged.
-- `01 -> 03` Submit Objective to Manager.
-- `03 -> 01` Return Objective.
-- `01 -> 03` resubmit.
-- `03 -> 04` Approve Objective.
-- `04 -> 05` Approve Objective.
+1. At `01`: `Submit Objective to First Manager` attempt -> DENIED / status unchanged.
+2. `01 -> 03` Submit Objective to Manager.
+3. `03 -> 01` Return Objective.
+4. `01 -> 03` resubmit.
+5. `03 -> 04` Approve Objective.
+6. `04 -> 05` Approve Objective.
 
 ## Mid-Year
-- `05 -> 06` Start Mid-Year.
-- bounded Mid-Year edit if required.
-- `06`: First Manager submit attempt -> DENIED / unchanged.
-- `06 -> 08` Submit Mid-Year to Manager.
-- `08 -> 06` Return Mid-Year Manager.
-- `06 -> 08` resubmit.
-- `08 -> 09` Approve Mid-Year Manager.
-- `09 -> 10` Approve Mid-Year GM.
+7. `05 -> 06` Start Mid-Year.
+8. Bounded Mid-Year data edit if required.
+9. At `06`: `Submit Mid-Year to First Manager` attempt -> DENIED / unchanged.
+10. `06 -> 08` Submit Mid-Year to Manager.
+11. `08 -> 06` Return Mid-Year Manager.
+12. `06 -> 08` resubmit.
+13. `08 -> 09` Approve Mid-Year Manager.
+14. `09 -> 10` Approve Mid-Year GM.
 
 ## Final
-- `10 -> 11` Start Self Evaluation.
-- bounded Final/Self edit if required.
-- `11`: First Manager submit attempt -> DENIED / unchanged.
-- `11 -> 13` Submit Final to Manager.
-- `13 -> 11` Return Final Manager.
-- `11 -> 13` resubmit.
-- `13 -> 14` Approve Final Manager.
-- `14 -> 15` Approve Final GM.
+15. `10 -> 11` Start Self Evaluation.
+16. Bounded Final/Self data edit if required.
+17. At `11`: `Submit Final to First Manager` attempt -> DENIED / unchanged.
+18. `11 -> 13` Submit Final to Manager.
+19. `13 -> 11` Return Final Manager.
+20. `11 -> 13` resubmit.
+21. `13 -> 14` Approve Final Manager.
+22. `14 -> 15` Approve Final GM.
 
 ## HR Final
-- `15 -> 11` Return Final HR.
-- `11 -> 13` resubmit.
-- `13 -> 14` Approve Final Manager.
-- `14 -> 15` Approve Final GM.
-- `15 -> 16` Complete.
+23. `15 -> 11` Return Final HR.
+24. `11 -> 13` resubmit.
+25. `13 -> 14` Approve Final Manager.
+26. `14 -> 15` Approve Final GM.
+27. `15 -> 16` Complete.
 
 Expected successful transitions = `22`.
 Expected First-Manager denials = `3`.
@@ -117,23 +140,24 @@ Expected First-Manager denials = `3`.
 # HARD BOUNDARIES
 
 Forbidden:
-- Process PUT/deploy/remap.
-- App795/App53/App796/other-app writes.
-- schema/ACL/customization/notification changes.
-- Change assignee.
-- REST-only status transitions claimed as browser proof.
-- `admin-form` business workflow action.
-- real-user Manager/GM/HR workflow testing.
-- credential exposure.
-- source/dist/tests changes or npm/build.
-- extra synthetic records or extra workflow permutations.
+- creating a second UAT record;
+- Process PUT/deploy/remap;
+- App795/App53/App796/other-app writes;
+- schema/ACL/customization/notification changes;
+- Change assignee;
+- REST-only status transitions claimed as browser proof;
+- `admin-form` business workflow action;
+- real Manager/GM/HR workflow testing;
+- credential exposure;
+- source/dist/tests changes or npm/build;
+- extra workflow permutations.
 
 # FAILURE / CLEANUP
 
 If any UAT step fails:
 - STOP immediately;
 - do not force status or Change assignee;
-- preserve synthetic record/evidence;
+- preserve exact synthetic record and evidence;
 - do not delete failed record until ChatGPT review.
 
 If full PASS:
@@ -143,20 +167,60 @@ If full PASS:
 - browser fatal MBO errors = 0;
 - real-user impact = 0;
 - admin-form business actions = 0;
-- delete exact synthetic record and verify cleanup;
+- delete exact verified synthetic record and verify cleanup;
 - push evidence and STOP.
 
 # PASS GATE
 
-`FUNCTIONAL_WORKFLOW_UAT = PASS` only after the interactive browser matrix above is actually executed under verified browser user `hr`.
+`FUNCTIONAL_WORKFLOW_UAT = PASS` only after the interactive browser matrix is actually executed under verified browser user `hr` using the verified existing synthetic record.
 
 Always report separately:
 `SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
 
-# NEXT STEP
+# REQUIRED EVIDENCE
 
-First establish the interactive Kintone browser session as `hr`.
+```text
+M10L_D_R12E_B3_EXISTING_RECORD_BROWSER_UAT = COMPLETE / BLOCKED
+AUTHORIZATION_SCOPE = APP794_R12E_B3_EXISTING_RECORD_UAT_ONLY
+AUTHORIZATION_CONSUMED = YES/NO
+BROWSER_AUTHENTICATED_USER = hr / actual
+UAT_RECORD_NUMBER = 10 / actual
+UAT_RECORD_KEY = actual
+UAT_RECORD_SYNTHETIC_IDENTITY = PASS/FAIL
+UAT_START_STATUS = actual
+UAT_ROUTING_TOPOLOGY = actual
+UAT_REQUESTER = actual
+UAT_MANAGER = actual
+UAT_GM = actual
+UAT_FIRST_MANAGER = actual
+UAT_RECORD_CREATE_COUNT = 0
+UAT_RECORD_EDIT_COUNT = actual
+PROCESS_PUT_COUNT = 0
+DEPLOY_POST_COUNT = 0
+EXPECTED_SUCCESSFUL_TRANSITIONS = 22
+ACTUAL_SUCCESSFUL_TRANSITIONS = actual
+EXPECTED_FIRST_MANAGER_DENIALS = 3
+ACTUAL_FIRST_MANAGER_DENIALS = actual
+FINAL_STATUS = actual
+BROWSER_FATAL_MBO_ERROR_COUNT = actual
+REAL_USER_NOTIFICATION_TRIGGERED = 0
+REAL_USER_WORKFLOW_IMPACT = 0
+ADMIN_FORM_BUSINESS_ACTION_COUNT = 0
+SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED
+FUNCTIONAL_WORKFLOW_UAT = PASS/FAIL/NOT_COMPLETED
+UAT_RECORD_DELETE_COUNT = actual
+UAT_RECORD_CLEANUP_VERIFIED = PASS/FAIL/NOT_EXECUTED
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+GIT_PUSH_SYNC = PASS/FAIL
+NEXT_ACTION = CHATGPT REVIEW; IF PASS FREEZE CORE V1 AND MOVE TO UI/DASHBOARD CLOSURE
+```
 
-After `kintone.getLoginUser().code === "hr"` is verified, obtain a fresh explicit user authorization for R12E-B3 before any record write or workflow action.
+# STOP CONDITION
 
-Until then: **NO KINTONE WRITE / NO WORKFLOW CLICK.**
+Until the read-only browser precheck passes and fresh authorization is granted: **NO EDIT / NO DELETE / NO BUSINESS WORKFLOW CLICK / NO KINTONE WRITE.**
