@@ -1,163 +1,161 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R4 DIFFICULTY EMPTY-STATE CORRECTION — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 USER VISUAL PREVIEW GATE — LOCAL ONLY
 
 > Control Plane: ChatGPT / Project Lead / Reviewer
-> Execution Plane: Antigravity standalone
+> Execution Plane: Antigravity standalone only when local execution is needed
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Current candidate: `8818477e4c5ad8d36804eb0bb68550eea019febb`
-> User-reported defect date: 2026-08-26
+> Reviewed candidate: `68c8d59741e2d046aa26ed2d3577379a2be3605b`
+> R4 independent review: **PASS_WITH_OBSERVATION**
 > Kintone write/deploy authorization: **NONE**
 
 ## 1. CURRENT GATE
 
-Core workflow remains frozen. R3 implementation exists locally/Git only and the User Visual Preview gate remains blocked by one newly reported Objective-entry UX defect.
+App794 Evaluation UI V2 local candidate is now approved for **USER VISUAL PREVIEW** only.
 
 Critical path:
-`App794 Evaluation UI V2 -> R4 Difficulty Empty-State Fix -> ChatGPT Review -> User Visual Preview -> Scoring Runtime/Persistence Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
+`Core ✅ -> Functional UAT ✅ -> UI/UX V1 ✅ -> Evaluation UI V2 Local Candidate ✅ -> User Visual Preview ⏳ -> Scoring Runtime/Persistence Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
 
-Do NOT deploy App794 in this task.
+No App794 deployment is authorized.
 
-## 2. USER-REPORTED DEFECT — DIFFICULTY LOOKS SELECTED WHEN RECORD IS ACTUALLY BLANK
+## 2. R4 REVIEW RESULT
 
-Observed behavior when creating a new MBO after Employee ID verification:
-- `Difficulty_i` physical record value is still blank/unselected.
-- UI nevertheless displays `3 : Difficult (ยาก)`.
-- UI colors the field green as if it already contains a valid editable value.
-- On Save, validation correctly reports that Difficulty was not selected.
+Independent review confirmed:
+- fake Difficulty default `3` removed;
+- blank Difficulty shows explicit empty placeholder;
+- blank editable Difficulty carries `data-required="true"` and existing field-state logic renders Required/Yellow;
+- stored values 1..4 continue to reflect actual record value;
+- blank read-only Difficulty shows `ยังไม่ได้ระบุ / Not selected`, not Level 3;
+- render does not mutate blank Difficulty to 3;
+- ValidationEngine still rejects blank/out-of-range Difficulty and accepts 1..4;
+- source and generated `dist/mbo-employee-app.js` are aligned for the R4 change;
+- R4 diff contains no workflow/routing/Record_Key/scoring-formula/schema/App796 changes;
+- 0 Kintone calls/writes/deploys reported.
 
-This is misleading because the visual state and saved record state disagree.
+Observation only:
+- R4 evidence records an incorrect `R4_EXECUTION_STARTING_HEAD`; actual Git parent is `81e47354ee5edc57ab79a468fe89f742e5228e09`.
+- Do not consume an Antigravity round solely to repair this documentation typo. Correct opportunistically in the next substantive evidence update.
 
-Confirmed source cause in `src/ui/employee-part-a-ui.js`:
-- Objective renderer uses `const diffVal = this._getVal(`Difficulty_${i}`) || '3';`
-- editable Difficulty `<select>` has no explicit blank/placeholder option;
-- editable Difficulty `<select>` does not declare `data-required="true"`;
-- therefore `_refreshSingleFieldHighlight()` cannot present blank Difficulty as Required/Yellow.
+## 3. USER VISUAL PREVIEW OBJECTIVE
 
-## 3. REQUIRED BEHAVIOR
+The business owner must be able to click through and visually review the App794 UI before any deployment.
 
-For every active Objective row:
+Preview must use the existing local Status Preview Lab and the same production UI renderer/components.
 
-### Blank record value
-If `Difficulty_i` is blank/null/undefined:
-- do NOT substitute Level 3 or any other business value;
-- editable select must show a blank placeholder such as:
-  `-- กรุณาเลือกระดับความยาก / Please select --`
-- placeholder value must be exactly empty string `""`;
-- field must have `data-required="true"`;
-- field state must render Yellow / `ต้องกรอก / Required` before Save;
-- no green Editable state while value is blank.
+User must be able to inspect all App794 Process statuses:
+1. `01 Draft Objective`
+2. `02 First Manager Objective Review`
+3. `03 Manager Objective Review`
+4. `04 GM Objective Review`
+5. `05 Objective Approved`
+6. `06 Employee Mid-Year`
+7. `07 First Manager Mid-Year Review`
+8. `08 Manager Mid-Year Review`
+9. `09 GM Mid-Year Review`
+10. `10 Mid-Year Completed`
+11. `11 Employee Self Evaluation`
+12. `12 First Manager Final Evaluation`
+13. `13 Manager Final Evaluation`
+14. `14 GM Final Evaluation`
+15. `15 HR Final Check`
+16. `16 Completed`
 
-### Selected record value
-If actual record value is `1`, `2`, `3`, or `4`:
-- display the exact stored value;
-- field may display Green / Editable when editable;
-- no change to existing Difficulty validation/business scale.
+Also allow visual selection of:
+- Appraiser count 1 / 2 / 3 / 4;
+- Active Appraiser slot within selected count;
+- Operational vs Management competency set where already supported by preview;
+- profile ratio 70/30, 60/40, 50/50;
+- Complete vs Incomplete appraisal fixtures.
 
-### Read-only/review statuses
-If Difficulty is blank on a locked/read-only Objective screen:
-- do NOT display `Level 3`;
-- show a neutral missing value such as `ยังไม่ได้ระบุ / Not selected`;
-- preserve locked/read-only styling.
+## 4. VISUAL ACCEPTANCE CHECKLIST
 
-### Persistence
-- UI display must always reflect the actual record value.
-- Do not write default `3` into the record merely by rendering.
-- User selection 1–4 must continue to sync through the existing field-change path.
+### Objectives
+- wide text areas for Objective, Action Plan, Additional Agreement;
+- Objective Count usable;
+- Weight compact and clear;
+- blank Difficulty = `-- กรุณาเลือกระดับความยาก / Please select --` and visually Required/Yellow;
+- selected Difficulty 1..4 displays actual selected value;
+- Total Weight feedback understandable;
+- Hoshin context readable.
 
-## 4. SCOPE
+### Mid-Year
+- wide text/card layout;
+- Progress % understandable;
+- Periodical Review, Mid-Year Result, Issue/Risk, Next Action have enough writing space;
+- Mid-Year attachment evidence area visible and understandable.
 
-Prefer modifying only:
-- `src/ui/employee-part-a-ui.js`
-- `tests/objective-save-validation.test.js`
-- generated `dist/mbo-employee-app.js`
-- concise living evidence docs
+### Self Evaluation
+- Actual Result and Self Comment wide enough;
+- Self Achievement understandable;
+- Self Evaluation attachment evidence area visible and understandable.
 
-Do not change:
-- Difficulty scale 1–4;
-- ValidationEngine business requirements except only if a focused test exposes an existing mismatch;
-- workflow/routing/Record_Key;
-- scoring formulas;
-- App796;
-- schema;
-- Process Management;
-- attachments;
-- Appraiser logic.
+### Appraiser Evaluation
+- neutral labels `1st Appraiser` ... `4th Appraiser`;
+- no scoring UI role names hardcoded as Manager/GM;
+- Part A and Part B clearly separated;
+- per-objective and per-competency comments understandable;
+- Appraiser completion/data completion/process progress understandable;
+- incomplete combined results visibly Pending, not certified;
+- attachment evidence from Mid-Year/Self visible as context;
+- slots 3/4 clearly preview/logical and not presented as live persistence.
 
-Preserve all R1/R2/R3 accepted UI work.
+### HR Final / Completed
+- read-only presentation;
+- Part A / Part B context understandable;
+- stored result context only shown as final when completeness permits;
+- incomplete result visibly Pending;
+- evidence attachments visible;
+- final process state/progress understandable.
 
-## 5. REQUIRED TESTS
+### Overall UX
+- 5-stage model is clear:
+  `Objectives -> Mid-Year -> Self Evaluation -> Appraiser Evaluation -> HR Final / Completed`;
+- no old 4-stage Year-End navigation confusion;
+- long-form fields are comfortably wide;
+- no misleading green state for required-but-empty fields;
+- no visual role confusion between Workflow Approver and Scoring Appraiser.
 
-Add focused coverage proving:
-1. blank `Difficulty_1` renders an empty placeholder, not Level 3;
-2. blank editable Difficulty has `data-required="true"` and Required/Yellow state;
-3. actual stored `Difficulty_1 = 3` renders `3 : Difficult` normally;
-4. blank read-only Difficulty does not render `Level 3` and instead shows missing/not-selected state;
-5. render does not mutate blank record Difficulty to `3`;
-6. existing Objective Save validation still blocks blank Difficulty;
-7. existing 1–4 Difficulty values remain valid;
-8. R3 regression tests remain passing.
+## 5. PREVIEW SAFETY
 
-Execution budget after implementation:
-- `npm test` once;
-- `npm run ui:build` once;
-- no Kintone browser/UAT;
-- Preview Lab local smoke only if needed to visually confirm blank vs selected Difficulty.
+Preview is LOCAL ONLY:
+- Kintone API calls = 0
+- Kintone writes = 0
+- record writes = 0
+- workflow actions = 0
+- deploy/upload = 0
+- schema/process/ACL/notification changes = 0
+- real-user workflow/notification = prohibited
 
-## 6. SAFETY
+Do not request any Kintone write authorization for visual preview.
 
-- Kintone calls required: 0
-- Kintone writes: 0
-- App794 deploy: NO
-- workflow actions: 0
-- schema/process/ACL/notification changes: 0
-- other app writes: 0
-- real-user workflow/notification: prohibited
+## 6. IF USER FINDS A VISUAL/UX DEFECT
 
-## 7. REQUIRED EVIDENCE
+Capture the exact:
+- status selected;
+- appraiser count/slot if relevant;
+- profile/ratio if relevant;
+- screenshot;
+- expected behavior.
 
-```text
-APP794_EVALUATION_UI_V2_R4_DIFFICULTY_EMPTY_STATE = COMPLETE / BLOCKED
-R4_EXECUTION_STARTING_HEAD = exact parent after pulling this task
-DIFFICULTY_BLANK_UI_DEFAULT_REMOVED = PASS/FAIL
-DIFFICULTY_BLANK_PLACEHOLDER = PASS/FAIL
-DIFFICULTY_REQUIRED_YELLOW_STATE = PASS/FAIL
-DIFFICULTY_STORED_3_DISPLAYS_3 = PASS/FAIL
-DIFFICULTY_READONLY_BLANK_NOT_LEVEL3 = PASS/FAIL
-RENDER_DOES_NOT_MUTATE_BLANK_DIFFICULTY = PASS/FAIL
-BLANK_DIFFICULTY_SAVE_VALIDATION = PASS/FAIL
-DIFFICULTY_1_TO_4_REGRESSION = PASS/FAIL
-R3_REGRESSION = PASS/FAIL
-APP794_KINTONE_CALL_COUNT = 0
-APP794_KINTONE_WRITE_COUNT = 0
-NPM_TEST = actual/PASS/FAIL
-UI_BUILD = PASS/FAIL
-GIT_DIFF_CHECK = PASS/FAIL
-GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
-```
+Bundle related visual corrections into one bounded local-only sprint. Do not deploy between preview corrections.
 
-## 8. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+## 7. IF USER APPROVES VISUAL PREVIEW
 
-**What:** remove the fake Difficulty Level 3 visual default and make blank Difficulty visibly required.
+Do NOT deploy immediately.
 
-**Where:** existing Objective renderer and focused tests only.
+Next Control Plane gate is **Scoring Runtime/Persistence Closure**, including at minimum:
+- production `Expected_Appraiser_Count` binding from approved configuration;
+- reviewed physical persistence strategy for 3rd/4th Appraisers before claiming production support;
+- scoring edit authority by stage/actor;
+- Part A / Part B persistence and completeness rules;
+- attachment runtime integration predeploy verification;
+- no certified final result before all required appraisal inputs are complete.
 
-**How:** use the actual `Difficulty_i` record value without `|| '3'`; add explicit empty select option and required metadata; render blank locked state truthfully.
+Only after candidate review may a fresh, explicit user authorization be requested for App794 deployment/write work.
 
-**Why:** the current UI falsely tells the user that Difficulty 3 is selected while Save validation correctly treats the record as blank.
+## 8. STOP CONDITION
 
-**Impact:** local candidate only; improves consistency between screen state and saved data.
+Current next action = **USER VISUAL PREVIEW**.
 
-**Risk:** accidentally changing existing valid Difficulty values or validation. Mitigate with blank + 1..4 regression tests.
-
-**Test:** section 5.
-
-**Rollback:** revert only the R4 implementation commit to candidate `8818477e4c5ad8d36804eb0bb68550eea019febb`; no Kintone rollback applies.
-
-## 9. STOP CONDITION
-
-Commit, push the same branch, and STOP.
-
-Do not deploy.
 Do not continue to Dashboard/Hoshin.
-Next gate is ChatGPT review, then User Visual Preview if PASS.
+Do not deploy App794.
+Do not mutate Kintone.
