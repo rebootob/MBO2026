@@ -383,3 +383,56 @@ User-confirmed on 2026-08-26 after visual Preview inspection:
 - Overdue callout should remain visibly red after dismissing the popup; dismissing the popup must not hide the underlying deadline status.
 - Future production notification outside the page (email/Kintone notification/etc.) is a separate notification design/persistence gate and is not authorized by this UI-only requirement.
 - Preview must demonstrate at least: >7 days green, 7 days amber, 1 day amber/orange, due today, overdue red + popup/toast, and completed green.
+
+## 22. Visual Hierarchy — Keep Secondary Information Compact And Clear
+
+User-confirmed on 2026-08-26 after R6-R3 visual inspection:
+
+- Main MBO work content is the visual priority. Deadline/status aids, native-comment context, and Workflow Action Timeline are **secondary information** and must not dominate the page.
+- Do not stack multiple large panels that repeat the same state. In particular, avoid showing a large urgency toast, a second large persistent urgency banner, and a separate large status/actor card with substantially duplicated information at the same time.
+- The persistent current-phase deadline/status presentation should be one compact bilingual status strip/callout. It may use a colored left border/background accent plus a clear status badge and the day count, but should not become a large hero panel.
+- Due-soon/due-today/overdue may still use one transient dismissible toast/popup, but the persistent strip underneath must remain compact and should not duplicate a paragraph of the same message.
+- The day count remains noticeable, but typography should be balanced with the form: approximately 16–18px for the main deadline number on desktop is preferred over oversized display text; helper/due-date text should be around 11–12px where practical.
+- Avoid excessive emoji/icon repetition. One meaningful icon per status area is enough.
+- Actor/action guidance should be visually merged with or placed adjacent to the compact status strip when practical instead of creating another large competing panel.
+- Color communicates status, not importance of content: red/orange/green accents should be restrained and readable, with sufficient contrast but without filling large page areas unnecessarily.
+
+### Workflow Action Timeline dense-grid rule
+
+- Timeline remains a table on desktop, but it is not primary content.
+- The table must have **clearly visible horizontal and vertical grid lines**. Use a stronger neutral border than the current very-light treatment so rows/columns are immediately distinguishable.
+- Header/body typography should be compact, approximately 11–12px on desktop; do not use large text for audit rows.
+- Cell padding should be compact (roughly 5–7px where practical) and row height should remain dense enough to scan many events quickly.
+- Header background may be light gray/blue, but keep it restrained. Result/Return badges should be small and not increase row height materially.
+- Thai + English labels remain, but compact two-line headers or concise paired labels are preferred over long oversized headings.
+- `Events Recorded` remains a small secondary badge.
+- Return/Reject rows may use a light red tint, but the grid must remain visible.
+- The Timeline section should remain collapsible so users can focus on the MBO form when history is not needed.
+
+## 23. User-Approved Preview -> App794 100% Parity Closure Plan
+
+User-confirmed on 2026-08-26:
+
+- After the local Preview UI is visually approved, **do not deploy by chasing one field/screen defect at a time**.
+- The next mandatory gate is a single `PREVIEW_TO_APP794_PARITY_CLOSURE` work package whose target is **100% parity with the user-approved Preview for the approved V1 scope** before deployment.
+- Preview and production App794 must use the same underlying UI components/source wherever possible. Preview-only wrappers/fixtures may differ, but business rendering logic must not fork into a second implementation.
+- Before any write/deploy, produce one complete parity manifest covering at least:
+  1. every five-stage UI section and physical Process status mapping;
+  2. every Objective/Mid-Year/Self/Appraiser/HR field code and adapter;
+  3. required/optional validation and Difficulty semantics;
+  4. Part A/Part B profiles, weights, competency sets, result calculations and completeness;
+  5. Appraiser 1..N route slots, actor/editability rules and native authorization boundary;
+  6. App795 routing dependencies, including executive-direct/3rd/4th Appraiser gaps if approved for live use;
+  7. App796 profile/appraiser-count dependencies;
+  8. Objective/Mid-Year/Self attachments and any schema gaps;
+  9. App800 five-phase calendar source and deadline/countdown behavior;
+  10. native Kintone Comments coexistence;
+  11. Workflow Action Timeline data source/persistence and full-history behavior;
+  12. bilingual labels, responsive layout, 4-Appraiser matrix behavior and no page overflow;
+  13. security/permission boundaries and fail-closed states.
+- Every Preview feature must be classified in the manifest as `BOUND`, `ADAPTER_REQUIRED`, `SCHEMA_REQUIRED`, `ROUTING_REQUIRED`, `APP796_REQUIRED`, `APP800_REQUIRED`, `AUDIT_SOURCE_REQUIRED`, or `NOT_IN_APPROVED_LIVE_SCOPE`. No silent gaps are allowed.
+- Any schema/routing/profile/calendar/audit changes required for 100% approved parity must be bundled into the same reviewed parity plan rather than discovered after deploy. They still require the appropriate fresh explicit Kintone authorization before execution.
+- Build and review one integrated App794 candidate after the manifest is closed; do not repeatedly patch live App794 to make it resemble Preview.
+- Before deployment require source/dist parity, field/schema read-back plan, route/profile parity, no fake fixture data, backup/rollback plan, candidate hashes, focused parity tests, and browser smoke plan.
+- Deployment remains a separate explicit authorization gate. User visual approval of Preview is not authorization to write Kintone.
+- `100% parity` means the approved live scope behaves and appears like the approved Preview. A capability still explicitly classified Preview Only is not falsely claimed live; if the user approves it for live use, its required schema/routing/profile work becomes part of the parity closure package before deployment.
