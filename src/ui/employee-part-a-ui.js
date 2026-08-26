@@ -1,5 +1,5 @@
 /**
- * Employee Part A & Part B UI Renderer - Evaluation UI V2 (R2 Corrected)
+ * Employee Part A & Part B UI Renderer - Evaluation UI V2 (R3 Corrected)
  * Source of Truth: exp/PMS_Staff & Chief_PART_A.xlsx & Bilingual Specification
  */
 
@@ -167,7 +167,7 @@ export function normalizeAppraiserData(record, appraiserCount = 2, previewOption
     let slotPartBRatedCount = 0;
 
     if (i === 1) {
-      // Legacy physical storage: Slot 1 maps to Manager_* (per item R2-02)
+      // Legacy physical storage: Slot 1 maps to Manager_*
       for (let k = 1; k <= activeObjCount; k++) {
         partAComments[k] = getVal(`Manager_Comment_${k}`) || previewOptions.slot1CommentsA?.[k] || '';
         const val = getVal(`Manager_Achievement_${k}`) || previewOptions.slot1RatingsA?.[k];
@@ -185,7 +185,7 @@ export function normalizeAppraiserData(record, appraiserCount = 2, previewOption
         }
       });
     } else if (i === 2) {
-      // Legacy physical storage: Slot 2 maps to GM_* (per item R2-02)
+      // Legacy physical storage: Slot 2 maps to GM_*
       for (let k = 1; k <= activeObjCount; k++) {
         partAComments[k] = getVal(`GM_Comment_${k}`) || previewOptions.slot2CommentsA?.[k] || '';
         const val = getVal(`GM_Achievement_${k}`) || previewOptions.slot2RatingsA?.[k];
@@ -409,7 +409,7 @@ export class EmployeePartAUI {
     this.previewOptions = options.previewOptions || {};
     this.isPreviewMode = Boolean(options.isPreviewMode || options.previewOptions?.isPreviewMode);
 
-    // Active slot index is constrained to 1..appraiserCount (R2-08)
+    // Active slot index is constrained to 1..appraiserCount
     const rawSlot = options.activeSlotIndex || options.previewOptions?.activeSlotIndex || 1;
     this.activeSlotIndex = Math.min(Math.max(parseInt(rawSlot, 10), 1), this.appraiserCount);
 
@@ -445,27 +445,32 @@ export class EmployeePartAUI {
       return;
     }
 
-    // Validate Competency Set Code (R2-05 Fail-Closed)
-    const compSetCode = this._getVal('Competency_Set_Code') || this.previewOptions.competencySetCode;
-    const applicableCompList = getApplicableCompetencies(compSetCode);
-    if (!applicableCompList) {
-      root.appendChild(this._renderErrorBanner(`ไม่พบข้อมูลชุดสมรรถนะ (Competency_Set_Code: "${escapeHtml(compSetCode || 'ว่าง')}") กรุณาติดต่อ HR / Administrator (CONFIGURATION ERROR)<br/>Invalid or missing Competency_Set_Code in configuration.`));
-      this.container.appendChild(root);
-      return;
-    }
-
-    // Validate PartA / PartB Weights (R2-06 Fail-Closed)
-    const partAWeight = parseFloat(this._getVal('PartA_Weight') || this.previewOptions.partAWeight || '');
-    const partBWeight = parseFloat(this._getVal('PartB_Weight') || this.previewOptions.partBWeight || '');
-    if (isNaN(partAWeight) || isNaN(partBWeight) || (partAWeight + partBWeight) !== 100) {
-      root.appendChild(this._renderErrorBanner(`ไม่พบสัดส่วนคะแนนประเมินที่ถูกต้อง (PartA_Weight + PartB_Weight ต้องเท่ากับ 100%) กรุณาติดต่อ HR / Administrator (CONFIGURATION ERROR)<br/>Invalid or missing PartA_Weight / PartB_Weight ratio configuration.`));
-      this.container.appendChild(root);
-      return;
-    }
-
-    // STEP 1: Lookup Banner on Create
+    // R3-01: STEP 1 Lookup section is rendered on Create BEFORE fail-closed scoring snapshot validation!
     if (this.isCreate) {
       root.appendChild(this._renderLookupSection());
+    }
+
+    // Fail-Closed Snapshot Validation ONLY applies when lookup has succeeded OR on existing saved records (R3-01)
+    const shouldValidateSnapshot = !(this.isCreate && !this.isEmployeeVerified);
+
+    if (shouldValidateSnapshot) {
+      // Validate Competency Set Code (R2-05 / R3-01 Fail-Closed)
+      const compSetCode = this._getVal('Competency_Set_Code') || this.previewOptions.competencySetCode;
+      const applicableCompList = getApplicableCompetencies(compSetCode);
+      if (!applicableCompList) {
+        root.appendChild(this._renderErrorBanner(`ไม่พบข้อมูลชุดสมรรถนะ (Competency_Set_Code: "${escapeHtml(compSetCode || 'ว่าง')}") กรุณาติดต่อ HR / Administrator (CONFIGURATION ERROR)<br/>Invalid or missing Competency_Set_Code in configuration.`));
+        this.container.appendChild(root);
+        return;
+      }
+
+      // Validate PartA / PartB Weights (R2-06 / R3-01 Fail-Closed)
+      const partAWeight = parseFloat(this._getVal('PartA_Weight') || this.previewOptions.partAWeight || '');
+      const partBWeight = parseFloat(this._getVal('PartB_Weight') || this.previewOptions.partBWeight || '');
+      if (isNaN(partAWeight) || isNaN(partBWeight) || (partAWeight + partBWeight) !== 100) {
+        root.appendChild(this._renderErrorBanner(`ไม่พบสัดส่วนคะแนนประเมินที่ถูกต้อง (PartA_Weight + PartB_Weight ต้องเท่ากับ 100%) กรุณาติดต่อ HR / Administrator (CONFIGURATION ERROR)<br/>Invalid or missing PartA_Weight / PartB_Weight ratio configuration.`));
+        this.container.appendChild(root);
+        return;
+      }
     }
 
     // Top Overall Process Progress Bar (5 Phases: Objectives -> Mid-Year -> Self Evaluation -> Appraiser Evaluation -> HR Final)
@@ -491,7 +496,7 @@ export class EmployeePartAUI {
     // Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
-    // Render exact 1 of 5 Visual Screens (No duplicate old 4-step nav R2-07)
+    // Render exact 1 of 5 Visual Screens
     if (visualScreen === 'objectives') {
       root.appendChild(this._renderScreenObjectives());
     } else if (visualScreen === 'midyear') {
@@ -584,7 +589,7 @@ export class EmployeePartAUI {
       return container;
     }
 
-    // Wide Card UX for Objectives (R2-01)
+    // Wide Card UX for Objectives
     const section = document.createElement('div');
     section.className = 'mbo-wide-card';
 
@@ -691,22 +696,7 @@ export class EmployeePartAUI {
       objBox.style.padding = '14px';
       objBox.style.background = '#ffffff';
 
-      // Read real Kintone attachment file values or preview fixture (R2-04 / R1-06)
-      const fileVal = this.record[`MidYear_Attachment_${i}`];
-      let realFileList = [];
-      if (fileVal && typeof fileVal === 'object' && Array.isArray(fileVal.value)) {
-        realFileList = fileVal.value.map(f => f.name || f.fileKey || 'Attachment');
-      }
-
-      let attachChipsHtml = '';
-      if (realFileList.length > 0) {
-        attachChipsHtml = realFileList.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('');
-      } else if (this.isPreviewMode) {
-        const fixtureFiles = this.previewOptions.midyearAttachments?.[i] || [`MidYear_Evidence_Obj${i}.pdf`];
-        attachChipsHtml = fixtureFiles.map(fn => `<span class="mbo-attachment-chip" style="border-style:dashed;">📄 ${escapeHtml(fn)} (Preview)</span>`).join('');
-      } else {
-        attachChipsHtml = '<span style="color:#94a3b8; font-size:12px;">No attachment / ไม่มีไฟล์แนบ</span>';
-      }
+      const attachChipsHtml = this._getAttachmentHtml(`MidYear_Attachment_${i}`, this.previewOptions.midyearAttachments?.[i]);
 
       objBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #f1f5f9; padding-bottom:6px;">
@@ -793,21 +783,7 @@ export class EmployeePartAUI {
       const selfAch = this._getVal(`Self_Achievement_${i}`) || '3';
       const selfComment = this._getVal(`Self_Comment_${i}`);
 
-      const fileVal = this.record[`Final_Attachment_${i}`];
-      let realFileList = [];
-      if (fileVal && typeof fileVal === 'object' && Array.isArray(fileVal.value)) {
-        realFileList = fileVal.value.map(f => f.name || f.fileKey || 'Attachment');
-      }
-
-      let attachChipsHtml = '';
-      if (realFileList.length > 0) {
-        attachChipsHtml = realFileList.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('');
-      } else if (this.isPreviewMode) {
-        const fixtureFiles = this.previewOptions.finalAttachments?.[i] || [`Final_Evidence_Obj${i}.pdf`];
-        attachChipsHtml = fixtureFiles.map(fn => `<span class="mbo-attachment-chip" style="border-style:dashed;">📄 ${escapeHtml(fn)} (Preview)</span>`).join('');
-      } else {
-        attachChipsHtml = '<span style="color:#94a3b8; font-size:12px;">No attachment / ไม่มีไฟล์แนบ</span>';
-      }
+      const attachChipsHtml = this._getAttachmentHtml(`Final_Attachment_${i}`, this.previewOptions.finalAttachments?.[i]);
 
       const objBox = document.createElement('div');
       objBox.style.marginBottom = '16px';
@@ -917,13 +893,13 @@ export class EmployeePartAUI {
       const actResult = this._getVal(`Actual_Result_${i}`);
       const selfAch = this._getVal(`Self_Achievement_${i}`) || '-';
 
-      // Read existing result fields (R2-03)
+      // Read existing result fields (R2-03 / R3-02)
       const mgrScore = this._getVal(`Manager_Objective_Score_${i}`);
       const gmScore = this._getVal(`GM_Objective_Score_${i}`);
       const avgScore = this._getVal(`Average_Objective_Score_${i}`);
       const mboPoint = this._getVal(`MBO_Point_${i}`);
 
-      // Attachment evidence context (R2-04)
+      // Attachment evidence context (R2-04 / R3-03)
       const midAttachHtml = this._getAttachmentHtml(`MidYear_Attachment_${i}`, this.previewOptions.midyearAttachments?.[i]);
       const selfAttachHtml = this._getAttachmentHtml(`Final_Attachment_${i}`, this.previewOptions.finalAttachments?.[i]);
 
@@ -933,6 +909,7 @@ export class EmployeePartAUI {
       objBox.style.borderRadius = '6px';
       objBox.style.padding = '12px';
       objBox.style.background = '#ffffff';
+      objBox.dataset.objIndex = String(i);
 
       let slotsHtml = '';
       appraiserInfo.slots.forEach(s => {
@@ -943,10 +920,12 @@ export class EmployeePartAUI {
         const ratingDataCode = s.slotIndex === 1 ? `Manager_Achievement_${i}` : (s.slotIndex === 2 ? `GM_Achievement_${i}` : '');
         const commentDataCode = s.slotIndex === 1 ? `Manager_Comment_${i}` : (s.slotIndex === 2 ? `GM_Comment_${i}` : '');
 
+        const slotTitle = (s.slotIndex >= 3) ? `${escapeHtml(s.label)} (Preview Logical Slot — No Kintone Field)` : escapeHtml(s.label);
+
         slotsHtml += `
           <div class="mbo-appraiser-slot-box" style="${isSlotEditable ? 'border-color: #3b82f6; background: #f0f9ff;' : ''}">
             <div class="mbo-appraiser-slot-header">
-              <span>${escapeHtml(s.label)}</span>
+              <span>${slotTitle}</span>
               ${s.isPartAComplete ? '<span style="color:#166534; font-size:11px;">✓ Complete</span>' : '<span style="color:#b45309; font-size:11px;">⏳ Pending</span>'}
             </div>
             <div style="margin-bottom: 6px;">
@@ -968,6 +947,26 @@ export class EmployeePartAUI {
         `;
       });
 
+      // R3-02: Stale Score/Result values MUST NOT look valid when appraisal is incomplete!
+      let resultContextHtml = '';
+      if (appraiserInfo.isFullyComplete) {
+        resultContextHtml = `
+          <div style="font-size:11.5px; color:#166534; background:#f0fdf4; padding:4px 8px; border-radius:4px; margin-bottom:8px; border:1px solid #bbf7d0;">
+            <strong>Result Context (Read-Only):</strong>
+            ${mgrScore ? `1st Score: ${escapeHtml(mgrScore)} | ` : ''}
+            ${gmScore ? `2nd Score: ${escapeHtml(gmScore)} | ` : ''}
+            Avg Score: <strong>${escapeHtml(avgScore || '-')}</strong> | MBO Point: <strong>${escapeHtml(mboPoint || '-')}</strong>
+          </div>
+        `;
+      } else {
+        resultContextHtml = `
+          <div style="font-size:11.5px; color:#991b1b; background:#fef2f2; padding:4px 8px; border-radius:4px; margin-bottom:8px; border:1px solid #fecaca;">
+            <strong>Combined Result Context:</strong> <span class="mbo-pending-badge">⚠️ Combined Result Pending / Incomplete</span>
+            ${(mgrScore || gmScore) ? ` <span style="color:#64748b; font-size:11px;">(Stored Appraiser Context: ${mgrScore ? `1st:${escapeHtml(mgrScore)} ` : ''}${gmScore ? `2nd:${escapeHtml(gmScore)}` : ''})</span>` : ''}
+          </div>
+        `;
+      }
+
       objBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <strong style="color:#0f172a; font-size:13.5px;">#${i} ${escapeHtml(objVal) || '(No objective title)'}</strong>
@@ -977,15 +976,7 @@ export class EmployeePartAUI {
           <strong>Actual Result:</strong> ${escapeHtml(actResult) || '(No actual result entered)'}
         </div>
 
-        ${(mgrScore || gmScore || avgScore || mboPoint) ? `
-          <div style="font-size:11.5px; color:#0369a1; background:#f0f9ff; padding:4px 8px; border-radius:4px; margin-bottom:8px; border:1px solid #bae6fd;">
-            <strong>Result Context (Read-Only):</strong>
-            ${mgrScore ? `1st Score: ${escapeHtml(mgrScore)} | ` : ''}
-            ${gmScore ? `2nd Score: ${escapeHtml(gmScore)} | ` : ''}
-            ${avgScore ? `Avg Score: ${escapeHtml(avgScore)} | ` : ''}
-            ${mboPoint ? `MBO Point: ${escapeHtml(mboPoint)}` : ''}
-          </div>
-        ` : ''}
+        ${resultContextHtml}
 
         <div class="mbo-appraiser-eval-grid">
           ${slotsHtml}
@@ -1020,10 +1011,12 @@ export class EmployeePartAUI {
         const ratingDataCode = s.slotIndex === 1 ? `Manager_Competency_Rating_${comp.id}` : (s.slotIndex === 2 ? `GM_Competency_Rating_${comp.id}` : '');
         const commentDataCode = s.slotIndex === 1 ? `Manager_Competency_Comment_${comp.id}` : (s.slotIndex === 2 ? `GM_Competency_Comment_${comp.id}` : '');
 
+        const slotTitle = (s.slotIndex >= 3) ? `${escapeHtml(s.label)} (Preview Logical Slot — No Kintone Field)` : escapeHtml(s.label);
+
         slotsHtml += `
           <div class="mbo-appraiser-slot-box" style="${isSlotEditable ? 'border-color: #3b82f6; background: #f0f9ff;' : ''}">
             <div class="mbo-appraiser-slot-header">
-              <span>${escapeHtml(s.label)}</span>
+              <span>${slotTitle}</span>
             </div>
             <div style="margin-bottom: 6px;">
               <label style="font-size:11px; font-weight:700; color:#475569;">Score [1-5]:</label>
@@ -1046,12 +1039,22 @@ export class EmployeePartAUI {
 
       const compResult = this._getVal(`Competency_Result_${comp.id}`);
 
+      let partBResultLabel = '';
+      if (comp.isCOCE) {
+        partBResultLabel = '<span class="mbo-coce-badge">Evaluated / Excluded from Score</span>';
+      } else if (appraiserInfo.isFullyComplete) {
+        partBResultLabel = `<span style="font-size:11px; color:#166534; font-weight:700;">Result: ${escapeHtml(compResult || '-')}</span>`;
+      } else {
+        partBResultLabel = '<span style="font-size:11px; color:#991b1b; font-weight:700;">Result: Pending / Incomplete</span>';
+      }
+
       const compCard = document.createElement('div');
       compCard.className = 'mbo-partb-card';
+      compCard.dataset.compId = String(comp.id);
       compCard.innerHTML = `
         <div class="mbo-partb-header">
           <div class="mbo-partb-title">${escapeHtml(comp.nameTH)}</div>
-          ${comp.isCOCE ? '<span class="mbo-coce-badge">Evaluated / Excluded from Score</span>' : (compResult ? `<span style="font-size:11px; color:#0369a1; font-weight:700;">Result: ${escapeHtml(compResult)}</span>` : '')}
+          ${partBResultLabel}
         </div>
         <div class="mbo-partb-desc">${escapeHtml(comp.desc)}</div>
         <div class="mbo-appraiser-eval-grid">
@@ -1153,7 +1156,7 @@ export class EmployeePartAUI {
 
     wrap.appendChild(execSummaryCard);
 
-    // Read-only Part A & Part B Breakdown (Strictly read-only, zero duplicate nav R2-09)
+    // Read-only Part A & Part B Breakdown (R3-03 Read-Only Result Context)
     const readOnlyBreakdown = this._renderReadOnlyAppraiserBreakdown(appraiserInfo);
     wrap.appendChild(readOnlyBreakdown);
 
@@ -1181,6 +1184,11 @@ export class EmployeePartAUI {
       const wVal = this._getVal(`Weight_${i}`) || '0';
       const actResult = this._getVal(`Actual_Result_${i}`);
 
+      const mgrScore = this._getVal(`Manager_Objective_Score_${i}`);
+      const gmScore = this._getVal(`GM_Objective_Score_${i}`);
+      const avgScore = this._getVal(`Average_Objective_Score_${i}`);
+      const mboPoint = this._getVal(`MBO_Point_${i}`);
+
       const midAttachHtml = this._getAttachmentHtml(`MidYear_Attachment_${i}`, this.previewOptions.midyearAttachments?.[i]);
       const selfAttachHtml = this._getAttachmentHtml(`Final_Attachment_${i}`, this.previewOptions.finalAttachments?.[i]);
 
@@ -1195,11 +1203,31 @@ export class EmployeePartAUI {
         `;
       });
 
+      let partAResultContext = '';
+      if (appraiserInfo.isFullyComplete) {
+        partAResultContext = `
+          <div style="font-size:11.5px; color:#166534; background:#f0fdf4; padding:6px 10px; border-radius:4px; margin-top:8px; border:1px solid #bbf7d0;">
+            <strong>Part A Result Context:</strong>
+            ${mgrScore ? `1st Score: ${escapeHtml(mgrScore)} | ` : ''}
+            ${gmScore ? `2nd Score: ${escapeHtml(gmScore)} | ` : ''}
+            Avg Score: <strong>${escapeHtml(avgScore || '-')}</strong> | MBO Point: <strong>${escapeHtml(mboPoint || '-')}</strong>
+          </div>
+        `;
+      } else {
+        partAResultContext = `
+          <div style="font-size:11.5px; color:#991b1b; background:#fef2f2; padding:6px 10px; border-radius:4px; margin-top:8px; border:1px solid #fecaca;">
+            <strong>Part A Result Context:</strong> <span class="mbo-pending-badge">⚠️ Combined Result Pending / Incomplete</span>
+            ${(mgrScore || gmScore) ? ` <span style="color:#64748b; font-size:11px;">(Stored Appraiser Context: ${mgrScore ? `1st:${escapeHtml(mgrScore)} ` : ''}${gmScore ? `2nd:${escapeHtml(gmScore)}` : ''})</span>` : ''}
+          </div>
+        `;
+      }
+
       html += `
         <div style="margin-bottom:10px; padding:10px; border:1px solid #e2e8f0; border-radius:6px;">
           <div style="font-weight:700; color:#0f172a; font-size:13px;">#${i} ${escapeHtml(objVal)} (Weight: ${escapeHtml(wVal)}%)</div>
           <div style="font-size:12px; color:#475569; margin:4px 0 8px 0;">Actual: ${escapeHtml(actResult || '-')}</div>
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:8px;">${slotsHtml}</div>
+          ${partAResultContext}
           <div style="margin-top:6px; font-size:11px; color:#64748b;">📎 Evidence Context: Mid-Year [${midAttachHtml}] | Self Eval [${selfAttachHtml}]</div>
         </div>
       `;
@@ -1208,6 +1236,8 @@ export class EmployeePartAUI {
     html += `<h3 style="color:#1e3a8a; font-size:14px; margin:16px 0 6px 0;">Part B: Competency Evaluation</h3>`;
 
     applicableCompList.forEach(comp => {
+      const compResult = this._getVal(`Competency_Result_${comp.id}`);
+
       let slotsHtml = '';
       appraiserInfo.slots.forEach(s => {
         const ratingVal = s.partBRatings[comp.id] || '-';
@@ -1219,12 +1249,22 @@ export class EmployeePartAUI {
         `;
       });
 
+      let compResultBadge = '';
+      if (comp.isCOCE) {
+        compResultBadge = '<span class="mbo-coce-badge">Evaluated / Excluded</span>';
+      } else if (appraiserInfo.isFullyComplete) {
+        compResultBadge = `<span style="font-size:11px; color:#166534; font-weight:700;">Result: ${escapeHtml(compResult || '-')}</span>`;
+      } else {
+        compResultBadge = '<span style="font-size:11px; color:#991b1b; font-weight:700;">Result: Pending / Incomplete</span>';
+      }
+
       html += `
         <div style="margin-bottom:8px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px;">
-          <div style="font-weight:700; color:#0f172a; font-size:12.5px;">
-            ${escapeHtml(comp.nameTH)} ${comp.isCOCE ? '<span class="mbo-coce-badge">Evaluated / Excluded</span>' : ''}
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:700; color:#0f172a; font-size:12.5px;">${escapeHtml(comp.nameTH)}</div>
+            ${compResultBadge}
           </div>
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:6px; margin-top:4px;">${slotsHtml}</div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:6px; margin-top:6px;">${slotsHtml}</div>
         </div>
       `;
     });
@@ -1254,7 +1294,7 @@ export class EmployeePartAUI {
     if (!this.root) return;
     this.root.querySelectorAll('.mbo-field').forEach(input => {
       const code = input.dataset.code;
-      // Do NOT sync fields without physical data-code or preview-only slots (R1-02 / R2-02)
+      // Do NOT sync fields without physical data-code or preview-only slots (R1-02 / R2-02 / R3-04)
       if (code) {
         const val = input.value !== undefined ? input.value : '';
         this._setVal(code, val);
@@ -1675,6 +1715,35 @@ export class EmployeePartAUI {
       });
     });
 
+    // R3-04: Truthful Slot 3/4 Preview Editing in Preview Lab Mode
+    if (this.isPreviewMode) {
+      root.querySelectorAll('[data-preview-slot]').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const slotIdx = e.target.dataset.previewSlot;
+          const tagName = e.target.tagName.toLowerCase();
+          const val = e.target.value;
+
+          if (!this.previewOptions[`slot${slotIdx}RatingsA`]) this.previewOptions[`slot${slotIdx}RatingsA`] = {};
+          if (!this.previewOptions[`slot${slotIdx}CommentsA`]) this.previewOptions[`slot${slotIdx}CommentsA`] = {};
+          if (!this.previewOptions[`slot${slotIdx}RatingsB`]) this.previewOptions[`slot${slotIdx}RatingsB`] = {};
+          if (!this.previewOptions[`slot${slotIdx}CommentsB`]) this.previewOptions[`slot${slotIdx}CommentsB`] = {};
+
+          const objBox = e.target.closest('[data-obj-index]');
+          const compBox = e.target.closest('[data-comp-id]');
+
+          if (objBox) {
+            const objIndex = objBox.dataset.objIndex;
+            if (tagName === 'select') this.previewOptions[`slot${slotIdx}RatingsA`][objIndex] = val;
+            if (tagName === 'textarea') this.previewOptions[`slot${slotIdx}CommentsA`][objIndex] = val;
+          } else if (compBox) {
+            const compId = compBox.dataset.compId;
+            if (tagName === 'select') this.previewOptions[`slot${slotIdx}RatingsB`][compId] = val;
+            if (tagName === 'textarea') this.previewOptions[`slot${slotIdx}CommentsB`][compId] = val;
+          }
+        });
+      });
+    }
+
     const countSelect = root.querySelector('#mbo-obj-count-select');
     if (countSelect) {
       countSelect.addEventListener('change', (e) => {
@@ -1722,11 +1791,7 @@ export class EmployeePartAUI {
         try {
           await this.executeLookup(code);
         } catch (err) {
-          const newMsgEl = this.root ? this.root.querySelector('#mbo-lookup-msg') : null;
-          if (newMsgEl) {
-            const formattedMsg = escapeHtml(err.message || '').replace(/\n/g, '<br/>');
-            newMsgEl.innerHTML = `<div style="color: #dc2626; line-height: 1.4; padding: 6px 0;">❌ ${formattedMsg}</div>`;
-          }
+          // Handled inside executeLookup
         }
       });
     }
@@ -1745,8 +1810,14 @@ export class EmployeePartAUI {
       this.clearValidationErrors();
       this.render();
     } catch (err) {
+      // R3-01: Keep/re-render retryable Lookup UI with error message on lookup failure
       this.isEmployeeVerified = false;
       this.render();
+      const newMsgEl = this.root ? this.root.querySelector('#mbo-lookup-msg') : null;
+      if (newMsgEl) {
+        const formattedMsg = escapeHtml(err.message || '').replace(/\n/g, '<br/>');
+        newMsgEl.innerHTML = `<div style="color: #dc2626; line-height: 1.4; padding: 6px 0;">❌ ${formattedMsg}</div>`;
+      }
       throw err;
     }
   }

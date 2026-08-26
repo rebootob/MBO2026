@@ -46,6 +46,7 @@ const makeMockElement = () => {
       find(children);
       return results;
     },
+    dataset: {},
     addEventListener: () => {},
     style: {}
   };
@@ -1369,7 +1370,7 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   uiInvalidWeight.render();
   assert.equal(uiInvalidWeight.root.innerHTML.includes('CONFIGURATION ERROR'), true, 'Invalid weight sum must fail closed');
 
-  // 16. Incomplete Ratings Fail Closed even if stale result fields exist (R2-03)
+  // 16. Incomplete Ratings Fail Closed even if stale result fields exist (R2-03, R3-02)
   const uiStale = new EmployeePartAUI({
     container: makeMockElement(),
     record: createMockRecord({
@@ -1377,10 +1378,77 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
       Manager_Achievement_1: { value: '4' },
       GM_Achievement_1: { value: '' }, // GM incomplete
       Manager_Objective_Score_1: { value: '4.00' },
-      GM_Objective_Score_1: { value: '4.00' } // Stale calculation
+      GM_Objective_Score_1: { value: '4.00' },
+      Average_Objective_Score_1: { value: '4.00' }, // Stale
+      MBO_Point_1: { value: '1.60' }, // Stale
+      Competency_Result_1: { value: '4.00' } // Stale
     }),
     stage: 'READ_ONLY'
   });
   uiStale.render();
-  assert.equal(uiStale.root.innerHTML.includes('Result Pending / Incomplete'), true, 'Incomplete ratings must display Pending banner even with stale result fields');
+  assert.equal(uiStale.root.innerHTML.includes('Combined Result Pending / Incomplete'), true, 'Incomplete ratings must hide certified combined results in Appraiser Evaluation');
+
+  // 17. Create Flow Before Lookup Defers Scoring Validation (R3-01)
+  const uiCreateBlank = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: {
+      Fiscal_Year: { value: 'FY2026' },
+      Employee_Code: { value: '' },
+      Competency_Set_Code: { value: '' }, // Blank snapshot
+      PartA_Weight: { value: '' },
+      PartB_Weight: { value: '' }
+    },
+    stage: 'NEW_RECORD',
+    isCreate: true,
+    isEditable: true
+  });
+  uiCreateBlank.render();
+  assert.equal(uiCreateBlank.root.innerHTML.includes('CONFIGURATION ERROR'), false, 'Create mode before lookup must NOT display CONFIGURATION ERROR');
+  assert.equal(uiCreateBlank.root.innerHTML.includes('STEP 1: ระบุพนักงาน'), true, 'Create mode before lookup must render STEP 1 Lookup UI');
+
+  // 18. Post-Lookup Fail-Closed Validation (R3-01)
+  const uiCreateVerifiedInvalid = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: {
+      Fiscal_Year: { value: 'FY2026' },
+      Employee_Code: { value: '0149' },
+      Competency_Set_Code: { value: 'INVALID_CODE' },
+      PartA_Weight: { value: '70' },
+      PartB_Weight: { value: '30' }
+    },
+    stage: 'NEW_RECORD',
+    isCreate: true,
+    isEditable: true
+  });
+  uiCreateVerifiedInvalid.isEmployeeVerified = true; // Lookup completed but returned invalid config
+  uiCreateVerifiedInvalid.render();
+  assert.equal(uiCreateVerifiedInvalid.root.innerHTML.includes('CONFIGURATION ERROR'), true, 'Post-lookup verified record with invalid competency set must fail closed');
+
+  // 19. HR Final Breakdown Stale Result Handling (R3-03)
+  const uiHrStale = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({
+      Status: { value: '15 HR Final Check' },
+      Manager_Achievement_1: { value: '4' },
+      GM_Achievement_1: { value: '' }, // Incomplete
+      Manager_Objective_Score_1: { value: '4.00' },
+      Average_Objective_Score_1: { value: '4.00' }
+    }),
+    stage: 'READ_ONLY'
+  });
+  uiHrStale.render();
+  assert.equal(uiHrStale.root.innerHTML.includes('Combined Result Pending / Incomplete'), true, 'HR Final breakdown must display Pending for incomplete combined results');
+
+  // 20. Slots 3 & 4 Preview Editing Truthful & No Physical Data-Code (R3-04)
+  const uiSlots34 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' } }),
+    stage: 'READ_ONLY',
+    appraiserCount: 4,
+    activeSlotIndex: 3,
+    isPreviewMode: true,
+    previewOptions: { isPreviewMode: true }
+  });
+  uiSlots34.render();
+  assert.equal(uiSlots34.root.innerHTML.includes('Preview Logical Slot'), true, 'Slots 3/4 must be labeled as Preview Logical Slot');
 });

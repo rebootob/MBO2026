@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_EVALUATION_UI_V2_R3** | **`PASS`** — Applied R3 local UI corrections (0 Kintone calls/writes/deploys): Create flow before-lookup scoring snapshot validation deferred until employee lookup succeeds (Lookup UI remains active and retryable); incomplete appraisal combined results strictly display `Pending / Incomplete` in Appraiser Evaluation & HR Final breakdown without certifying stale score values; HR Final breakdown carries forward read-only score context for complete/incomplete states; Slots 3/4 preview editing is truthful in Preview Lab mode with zero physical field aliasing; R2 parent SHA corrected in evidence provenance; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R2** | **`PASS`** — Applied R2 local UI corrections (0 Kintone calls/writes/deploys): Objectives wide card UX (`.mbo-wide-card`), per-item Part A & Part B appraiser comments (`Manager_Comment_i`, `GM_Comment_i`, `Manager_Competency_Comment_i`, `GM_Competency_Comment_i`), read-only score/result context, Appraiser & HR attachment evidence summaries, fail-closed competency set code validation, fail-closed weight configuration validation (0 hardcoded 70/30 production fallback), zero old 4-step secondary nav (`OLD_4_STEP_YEAR_END_NAV_VISIBLE = 0`), Preview incomplete mode working for appraiser counts 1–4, and active slot selector constrained to 1..N; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): real physical legacy scoring field adapter (`Manager_Achievement_*`, `GM_Achievement_*`, `Manager_Competency_Rating_*`, etc.), slots 3/4 zero physical alias, strict data-based completion, verified competency sets (Operational 6 items vs Management 8 items), functional profile ratio selector (70/30, 60/40, 50/50), production path zero fake file fallback, separate `MidYear_Next_Action_i` field, wide-text card layout, read-only HR final with zero nav duplication, functional active preview slot selector, 16-status process progress bar (5%-100%), and unknown status fail-closed banner; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_LOCAL_CANDIDATE** | **`PASS`** — Built App794 Evaluation UI V2 + Status Preview Lab local candidate (0 Kintone calls/writes/deploys): 5 distinct macro screens (`Objectives`, `Mid-Year`, `Self Evaluation`, `Appraiser Evaluation`, `HR Final`), 5-phase overall process progress bar, 1-4 appraiser slot rendering capacity with role-neutral labels (`1st` to `4th Appraiser`), Part A & Part B appraiser cards with COCE exclusion badge, attachment UX summary areas, and interactive Status Preview Lab (`npm run ui:preview`); 555/555 tests passing; bundle parse PASS |
@@ -1452,7 +1453,7 @@ NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
 ```text
 APP794_EVALUATION_UI_V2_R2 = COMPLETE
 REVIEWED_R1_CANDIDATE = 9201d5ef88b783846822d7d2469873715272e7bb
-R2_EXECUTION_STARTING_HEAD = fc0bca16773347f3b5eb423fb886dd6e8ebaaad1
+R2_EXECUTION_STARTING_HEAD = fc0bca16d1258e974d7f7063b88a217c5a1a65cc
 OBJECTIVES_WIDE_CARD_UX = PASS
 PARTA_COMMENT_PER_OBJECTIVE = PASS
 PARTB_COMMENT_PER_COMPETENCY = PASS
@@ -1472,6 +1473,42 @@ ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
 APP794_KINTONE_CALL_COUNT = 0
 APP794_KINTONE_WRITE_COUNT = 0
 APP796_MUTATION_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+NPM_TEST = 555 / PASS
+UI_BUILD = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+PREVIEW_LAB_LOAD = PASS
+PREVIEW_KINTONE_CALL_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
+```
+
+## App794 Evaluation UI V2 R3 Evidence
+
+```text
+APP794_EVALUATION_UI_V2_R3 = COMPLETE
+REVIEWED_R2_CANDIDATE = 4fafc85c2fd54ed1f392fa5f306a8935f0cfe634
+R3_EXECUTION_STARTING_HEAD = c5421bd526c4ca8654ff465d3ec62b069d3a776c
+CREATE_PRELOOKUP_UI_AVAILABLE = PASS
+CREATE_PRELOOKUP_SCORING_GATE_DEFERRED = PASS
+POSTLOOKUP_INVALID_COMPETENCY_FAIL_CLOSED = PASS
+POSTLOOKUP_INVALID_WEIGHT_FAIL_CLOSED = PASS
+LOOKUP_FAILURE_RETRY_UI = PASS
+INCOMPLETE_PARTA_COMBINED_RESULT_PENDING = PASS
+INCOMPLETE_PARTB_COMBINED_RESULT_PENDING = PASS
+COMPLETE_STORED_RESULT_CONTEXT = PASS
+HR_PARTA_RESULT_CONTEXT_READ_ONLY = PASS
+HR_PARTB_RESULT_CONTEXT_READ_ONLY = PASS
+HR_INCOMPLETE_RESULT_PENDING = PASS
+SLOT3_4_PREVIEW_STATE_TRUTHFUL = PASS
+SLOT3_4_NO_PHYSICAL_ALIAS = PASS
+R2_EVIDENCE_PARENT_SHA_CORRECTED = PASS
+PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE
+APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
+ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
 WORKFLOW_ACTION_COUNT = 0
 NPM_TEST = 555 / PASS
 UI_BUILD = PASS
