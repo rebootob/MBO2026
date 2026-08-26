@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R9_CHRONOLOGY_CLOSURE** | **`PASS`** — Forensic audit of local R8 backups (`01-36-07Z`, `01-36-20Z`, `01-36-33Z`) proved Backup 1 captured prior to first write (rev 29), proved 6 fields added via `POST` at `01:36:08Z` (rev 30), proved CSS re-upload required by Kintone `GAIA_BL01` REST API contract; 0 Kintone calls/writes |
 | **M10L_D_R8_CONTROLLED_REPAIR** | **`PASS`** — Added exact six scoring snapshot fields to live App 794 (`Profile_Code`, `PartA_Weight`, `PartB_Weight`, `Part_A_Scoring_Mode`, `Competency_Set_Code`, `Configuration_Hash`); deployed exact reviewed JS candidate `1a32388e` (live revision 32); captured durable backup `backups/m10l-d-r8-app794-six-field-repair/2026-08-26T01-36-33-310Z`; 0 record/ACL writes |
 | **M10L_D_R6_WORKFLOW_HOOK_CLOSURE** | **`PASS`** — Restored `return event;` in `app.record.detail.process.proceed` workflow handler; added direct success (`return event`) and failure (`return false`) regression tests (550/550 tests pass); zero dist `__MBO_APP__` residue; 0 Kintone writes |
 | **M10L_D_R5_REPOSITORY_CLOSURE** | **`PASS`** — Removed global test hook residue from source and dist; expanded fail-closed API-unavailable test matrix (548/548 tests pass); corrected controlled change plan HTTP methods (`POST` for add fields, `POST` for file upload, `PUT` for customize, `POST` for deploy) and permission evidence; 0 Kintone writes |
@@ -363,4 +364,54 @@ OTHER_APP_WRITE = 0
 NO_ORPHAN_ARTIFACT_GATE = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
+```
+
+## M10L-D-R9 Execution Chronology & Forensic Evidence
+
+### 1. Forensic Reconstruction of R8 Execution History (Local Artifact Audit)
+
+Audit of local backup artifacts created during R8 (`backups/m10l-d-r8-app794-six-field-repair/`):
+
+1. **Backup 1 (`2026-08-26T01-36-07-224Z`)**: Captured BEFORE any Kintone write.
+   - `live_settings.json` -> revision `29`
+   - `preview_settings.json` -> revision `29`
+   - `preview_fields.json` -> all 6 target fields absent.
+2. **First Kintone Write (`2026-08-26T01-36-08Z`)**:
+   - Operation: `POST /k/v1/preview/app/form/fields.json`
+   - Result: Created all 6 missing fields in preview schema; advanced preview revision `29` -> `30`.
+3. **First Customization Update Attempt**:
+   - Operation: `PUT /k/v1/preview/app/customize.json` referencing existing deployed CSS fileKey (`20260826003547D4...`) without re-uploading CSS via `POST /k/v1/file.json`.
+   - Result: Kintone REST API rejected request with HTTP 404 `GAIA_BL01`: `"The specified file (id: 20260826003547D4...) not found."`
+4. **Backup 2 (`2026-08-26T01-36-20-570Z`)**: Captured before second script run.
+   - `preview_settings.json` -> revision `30` (fields already created by Run 1).
+   - Re-uploaded both candidate JS and CSS via `POST /k/v1/file.json` to satisfy Kintone `GAIA_BL01` contract requirement.
+   - `PUT /k/v1/preview/app/customize.json` succeeded; advanced preview revision `30` -> `31`.
+   - Script assertion mismatch on fileKey representation stopped execution before deploy.
+5. **Backup 3 (`2026-08-26T01-36-33-310Z`)**: Final deployed run.
+   - `preview_settings.json` -> revision `31`.
+   - `PUT /k/v1/preview/app/customize.json` -> revision `32`.
+   - `POST /k/v1/preview/app/deploy.json` -> status `SUCCESS`. Live revision `32`.
+
+### 2. Required R9 Final Evidence Block
+
+```text
+M10L_D_R9 = COMPLETE
+FIRST_R8_KINTONE_WRITE = POST /k/v1/preview/app/form/fields.json @ 2026-08-26T01:36:08Z
+SIX_FIELDS_ADD_OPERATION = POST /k/v1/preview/app/form/fields.json @ 2026-08-26T01:36:08Z
+SIX_FIELDS_EXISTED_IN_PREVIEW_BEFORE_R8_FIRST_WRITE = NO
+PREVIEW_REVISION_31_CAUSE = Advanced 29->30 by POST fields (Run 1) and 30->31 by PUT customize (Run 2) prior to Run 3 deploy
+BACKUP_CAPTURED_BEFORE_FIRST_R8_WRITE = YES
+APP794_ADD_FIELDS_POST_COUNT_CORRECTED = 1
+CSS_REUPLOAD_CAUSE = Kintone GAIA_BL01 error on existing fileKey required fresh POST /k/v1/file.json upload for PUT customize
+CSS_FILEKEY_CHANGE_WAS_REQUIRED = YES
+R8_SCOPE_DEVIATION = CSS_REUPLOAD
+LIVE_APP794_REVISION_AT_R9_START = 32
+KINTONE_CALLS_THIS_TASK = 0
+KINTONE_WRITES_THIS_TASK = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW
 ```
