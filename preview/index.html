@@ -143,6 +143,16 @@
         <option value="incomplete">Incomplete (ยังลงคะแนนไม่ครบ)</option>
       </select>
     </div>
+
+    <div class="preview-lab-group">
+      <label>6. Viewer Role / บทบาทผู้เข้าดู (Preview Simulation)</label>
+      <select id="lab-viewer-role" class="preview-lab-select">
+        <option value="auto" selected>Auto (Infer from Status & Login)</option>
+        <option value="employee">Employee / Requester (พนักงานผู้รับการประเมิน)</option>
+        <option value="appraiser">Appraiser (ผู้ประเมิน)</option>
+        <option value="hr">HR Admin (เจ้าหน้าที่ HR)</option>
+      </select>
+    </div>
   </div>
 
   <!-- HR Phase Calendar Preview Panel & Technical Details Section -->
@@ -377,6 +387,7 @@
           isPreviewMode: true,
           previewNow: nowDate,
           activeSlotIndex: activeSlot,
+          viewerRole: document.getElementById('lab-viewer-role')?.value || 'auto',
           phaseCalendar,
           routeScenario,
           evalProfile,
@@ -425,7 +436,7 @@
         ui.render();
       }
 
-      ['lab-status', 'lab-route-scenario', 'lab-eval-profile', 'lab-completion', 'lab-slot', 'lab-topology', 'lab-now-date',
+      ['lab-status', 'lab-route-scenario', 'lab-eval-profile', 'lab-completion', 'lab-slot', 'lab-topology', 'lab-now-date', 'lab-viewer-role',
        'lab-cal-obj-start', 'lab-cal-obj-end', 'lab-cal-mid-start', 'lab-cal-mid-end',
        'lab-cal-self-start', 'lab-cal-self-end', 'lab-cal-app-start', 'lab-cal-app-end',
        'lab-cal-hr-start', 'lab-cal-hr-end'

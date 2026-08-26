@@ -1814,3 +1814,70 @@
   background: rgba(255, 255, 255, 0.4);
 }
 
+/* R6-R6: Historical Stage Review Navigation & Banner */
+.mbo-phase-step.clickable {
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.mbo-phase-step.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mbo-phase-step.viewing-history {
+  border: 2px solid #2563eb !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
+}
+
+.mbo-deadline-badge.mbo-deadline-history {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
+}
+
+.mbo-history-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #eff6ff;
+  border: 1.5px solid #2563eb;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  color: #1e3a8a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.mbo-back-to-current-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease-in-out;
+}
+
+.mbo-back-to-current-btn:hover {
+  background: #1d4ed8;
+}
+
+.mbo-restricted-notice {
+  padding: 18px 22px;
+  background: #f8fafc;
+  border: 1.5px solid #94a3b8;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin: 16px 0;
+}
+

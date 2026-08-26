@@ -1897,3 +1897,85 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
   assert.ok(uiOverdue.root.innerHTML.includes('pill-red'), 'Overdue countdown must render red pill highlight');
   assert.ok(uiOverdue.root.innerHTML.includes('mbo-timeline-table'), 'Timeline must be explicit grid table');
 });
+
+test('UI/UX V2 Candidate R6-R6 — Historical Stage Review Navigation', async () => {
+  const container = makeMockElement('div');
+
+  // 1. Clicking prior stage changes view state only; record.Status remains unchanged
+  const recordHr = createMockRecord({ Status: { value: '15 HR Final Check' } });
+  const uiHr = new EmployeePartAUI({
+    container,
+    record: recordHr,
+    stage: 'HR_FINAL',
+    isEditable: true,
+    previewOptions: { viewerRole: 'hr' }
+  });
+  uiHr.render();
+
+  assert.strictEqual(recordHr.Status.value, '15 HR Final Check');
+  assert.strictEqual(uiHr.selectedViewStage, null);
+
+  // Select historical Objectives stage
+  uiHr.selectedViewStage = 'objectives';
+  uiHr.render();
+  assert.strictEqual(recordHr.Status.value, '15 HR Final Check', 'record.Status must remain unchanged');
+  assert.ok(uiHr.root.querySelector('.mbo-history-banner'), 'History banner must be rendered');
+  assert.ok(uiHr.root.querySelector('.mbo-history-banner').innerHTML.includes('1. เป้าหมาย'), 'Banner must display target stage');
+
+  // 2. Back to Current Phase restores current-stage rendering
+  uiHr.selectedViewStage = null;
+  uiHr.render();
+  assert.strictEqual(uiHr.root.querySelector('.mbo-history-banner'), null, 'History banner removed when returning to current phase');
+  assert.strictEqual(recordHr.Status.value, '15 HR Final Check');
+
+  // 3. Future/unreached stage cannot be opened as history
+  const recordDraft = createMockRecord({ Status: { value: '01 Draft Objective' } });
+  const uiDraft = new EmployeePartAUI({
+    container,
+    record: recordDraft,
+    stage: 'OBJECTIVES',
+    isEditable: true
+  });
+  uiDraft.selectedViewStage = 'hr_final';
+  uiDraft.render();
+  assert.strictEqual(uiDraft.selectedViewStage, null, 'Unreached stage key must be reset to null');
+  assert.strictEqual(uiDraft.root.querySelector('.mbo-history-banner'), null, 'No history banner on unreached stage');
+
+  // 4. Employee viewer role restrictions
+  const uiEmp = new EmployeePartAUI({
+    container,
+    record: recordHr,
+    stage: 'HR_FINAL',
+    isEditable: false,
+    previewOptions: { viewerRole: 'employee' }
+  });
+  uiEmp.selectedViewStage = 'appraiser_eval';
+  uiEmp.render();
+  assert.ok(uiEmp.root.querySelector('.mbo-restricted-notice'), 'Employee must receive restricted notice for Appraiser Evaluation');
+
+  // 5. Appraiser history makes all columns read-only
+  const recordApp = createMockRecord({ Status: { value: '13 Manager Final Evaluation' } });
+  const uiApp = new EmployeePartAUI({
+    container,
+    record: recordApp,
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    previewOptions: { activeSlotIndex: 2, viewerRole: 'appraiser' }
+  });
+  uiApp.selectedViewStage = 'objectives';
+  uiApp.render();
+  assert.strictEqual(uiApp.root.querySelector('textarea:not([disabled])'), null, 'Historical view must render 0 editable textareas');
+
+  // 6. Completed record supports browsing all stages
+  const recordComp = createMockRecord({ Status: { value: '16 Completed' } });
+  const uiComp = new EmployeePartAUI({
+    container,
+    record: recordComp,
+    stage: 'HR_FINAL',
+    isEditable: false,
+    previewOptions: { viewerRole: 'hr' }
+  });
+  uiComp.selectedViewStage = 'appraiser_eval';
+  uiComp.render();
+  assert.ok(uiComp.root.querySelector('.mbo-history-banner'), 'Completed record supports browsing appraiser evaluation history');
+});

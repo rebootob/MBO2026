@@ -686,6 +686,7 @@ export class EmployeePartAUI {
     this.appraiserCount = options.appraiserCount || 2;
     this.previewOptions = options.previewOptions || {};
     this.isPreviewMode = Boolean(options.isPreviewMode || options.previewOptions?.isPreviewMode);
+    this.selectedViewStage = options.selectedViewStage || null;
 
     const rawSlot = options.activeSlotIndex || options.previewOptions?.activeSlotIndex || 1;
     this.activeSlotIndex = Math.min(Math.max(parseInt(rawSlot, 10), 1), this.appraiserCount);
@@ -713,13 +714,27 @@ export class EmployeePartAUI {
     }
 
     const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
-    const visualScreen = getVisualScreen(status);
+    const currentVisualScreen = getVisualScreen(status);
 
-    if (!visualScreen) {
+    if (!currentVisualScreen) {
       root.appendChild(this._renderErrorBanner('ไม่พบข้อมูลสถานะหรือสถานะไม่ถูกต้องตามระเบียบประเมิน (CONFIGURATION / UNKNOWN STATUS ERROR)<br/>Unrecognized status value in record. Please contact HR / Administrator.'));
       this.container.appendChild(root);
       return;
     }
+
+    const currentStageNum = getMacroStage(status);
+    const stageMap = { objectives: 1, midyear: 2, self_eval: 3, appraiser_eval: 4, hr_final: 5 };
+
+    if (this.selectedViewStage) {
+      const selectedStageNum = stageMap[this.selectedViewStage];
+      if (!selectedStageNum || (selectedStageNum > currentStageNum && status !== '16 Completed')) {
+        this.selectedViewStage = null;
+      }
+    }
+
+    const effectiveVisualScreen = this.selectedViewStage || currentVisualScreen;
+    const isHistoricalView = Boolean(this.selectedViewStage && effectiveVisualScreen !== currentVisualScreen);
+    this.isHistoricalView = isHistoricalView;
 
     // R3-01: STEP 1 Lookup section is rendered on Create BEFORE fail-closed scoring snapshot validation!
     if (this.isCreate) {
@@ -776,17 +791,45 @@ export class EmployeePartAUI {
     // Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
+    // R6-R6: Historical Stage Review Banner
+    if (isHistoricalView) {
+      root.appendChild(this._renderHistoryBanner(effectiveVisualScreen, status));
+    }
+
     // Render exact 1 of 5 Visual Screens
-    if (visualScreen === 'objectives') {
-      root.appendChild(this._renderScreenObjectives());
-    } else if (visualScreen === 'midyear') {
-      root.appendChild(this._renderScreenMidYear());
-    } else if (visualScreen === 'self_eval') {
-      root.appendChild(this._renderScreenSelfEval());
-    } else if (visualScreen === 'appraiser_eval') {
-      root.appendChild(this._renderScreenAppraiserEval());
-    } else if (visualScreen === 'hr_final') {
-      root.appendChild(this._renderScreenHrFinal());
+    const origStage = this.stage;
+    const origEditable = this.isEditable;
+
+    if (isHistoricalView) {
+      this.stage = BUSINESS_STAGES.READ_ONLY;
+      this.isEditable = false;
+    }
+
+    try {
+      if (effectiveVisualScreen === 'objectives') {
+        root.appendChild(this._renderScreenObjectives());
+      } else if (effectiveVisualScreen === 'midyear') {
+        root.appendChild(this._renderScreenMidYear());
+      } else if (effectiveVisualScreen === 'self_eval') {
+        root.appendChild(this._renderScreenSelfEval());
+      } else if (effectiveVisualScreen === 'appraiser_eval') {
+        const viewerRole = this.previewOptions.viewerRole || 'auto';
+        const isEmployeeViewer = (viewerRole === 'employee' || (viewerRole === 'auto' && currentStageNum < 4 && status !== '15 HR Final Check' && status !== '16 Completed'));
+
+        if (isEmployeeViewer) {
+          const restrictedNotice = document.createElement('div');
+          restrictedNotice.className = 'mbo-restricted-notice';
+          restrictedNotice.innerHTML = '🔒 ข้อมูลรายละเอียดการประเมิน Part A & Part B สงวนสิทธิ์สำหรับผู้ประเมินและ HR / Detailed Appraiser Evaluation ratings are restricted to authorized Appraiser and HR reviewers.';
+          root.appendChild(restrictedNotice);
+        } else {
+          root.appendChild(this._renderScreenAppraiserEval());
+        }
+      } else if (effectiveVisualScreen === 'hr_final') {
+        root.appendChild(this._renderScreenHrFinal());
+      }
+    } finally {
+      this.stage = origStage;
+      this.isEditable = origEditable;
     }
 
     // Native Kintone Comment Thread Coexistence Placeholder
@@ -803,6 +846,47 @@ export class EmployeePartAUI {
     if (this.currentErrors && this.currentErrors.length > 0) {
       this._renderInlineErrors(this.currentErrors);
     }
+  }
+
+  _renderHistoryBanner(viewScreenKey, currentStatus) {
+    const phases = [
+      { key: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
+      { key: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
+      { key: 'self_eval', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
+      { key: 'appraiser_eval', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
+      { key: 'hr_final', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
+    ];
+
+    const targetPhase = phases.find(p => p.key === viewScreenKey) || phases[0];
+    const banner = document.createElement('div');
+    banner.className = 'mbo-history-banner';
+    banner.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">📜</span>
+        <div>
+          <div style="font-weight:700; font-size:13px; color:#1e40af;">
+            กำลังดูข้อมูลย้อนหลัง: ${escapeHtml(targetPhase.nameTH)} (${escapeHtml(targetPhase.nameEN)}) — อ่านอย่างเดียว / Read Only
+          </div>
+          <div style="font-size:11px; color:#3b82f6; margin-top:2px;">
+            สถานะปัจจุบันของ Workflow ในระบบ: <strong>[${escapeHtml(currentStatus)}]</strong> (การดูย้อนหลังไม่มีผลต่อสถานะระบบ)
+          </div>
+        </div>
+      </div>
+      <button type="button" class="mbo-back-to-current-btn" data-action="back-to-current">
+        ↩️ กลับสู่ขั้นตอนปัจจุบัน / Back to Current Phase
+      </button>
+    `;
+
+    const backBtn = banner.querySelector('[data-action="back-to-current"]');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.selectedViewStage = null;
+        this.render();
+      });
+    }
+
+    return banner;
   }
 
   _renderOverallProgressBar(status) {
@@ -824,29 +908,54 @@ export class EmployeePartAUI {
     }
 
     const phases = [
-      { key: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
-      { key: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
-      { key: 'selfEvaluation', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
-      { key: 'appraiserEvaluation', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
-      { key: 'hrFinal', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
+      { key: 'objectives', calKey: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
+      { key: 'midyear', calKey: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
+      { key: 'self_eval', calKey: 'selfEvaluation', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
+      { key: 'appraiser_eval', calKey: 'appraiserEvaluation', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
+      { key: 'hr_final', calKey: 'hrFinal', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
     ];
 
     const currentStage = getMacroStage(status);
+    const currentVisualScreen = getVisualScreen(status);
+    const effectiveVisualScreen = (this.selectedViewStage && (phases.find(p => p.key === this.selectedViewStage)?.stage <= currentStage || status === '16 Completed'))
+      ? this.selectedViewStage
+      : currentVisualScreen;
+    const isHistoricalView = Boolean(this.selectedViewStage && effectiveVisualScreen !== currentVisualScreen);
 
     const phaseStepsHtml = phases.map(p => {
-      const deadline = getPhaseCalendarStatus(p.key, status, nowIso, calendar);
-      const isActive = (currentStage === p.stage);
+      const deadline = getPhaseCalendarStatus(p.calKey, status, nowIso, calendar);
+      const isCurrentStage = (currentStage === p.stage);
+      const isViewedStage = (effectiveVisualScreen === p.key);
+      const isReachable = (p.stage <= currentStage || status === '16 Completed');
+
       let stepClass = 'mbo-phase-step';
-      if (isActive) stepClass += ' active';
-      else if (currentStage > p.stage || deadline.status === 'Completed') stepClass += ' completed';
-      else if (deadline.status === 'Upcoming') stepClass += ' locked';
+      if (isViewedStage && isHistoricalView) {
+        stepClass += ' viewing-history';
+      } else if (isCurrentStage) {
+        stepClass += ' active';
+      } else if (currentStage > p.stage || deadline.status === 'Completed') {
+        stepClass += ' completed';
+      } else {
+        stepClass += ' locked';
+      }
+
+      if (isReachable) {
+        stepClass += ' clickable';
+      }
+
+      let badgeText = `[${escapeHtml(deadline.labelTH)} / ${escapeHtml(deadline.labelEN)}]`;
+      if (isViewedStage && isHistoricalView) {
+        badgeText = '[ Viewing / กำลังดู ]';
+      } else if (isCurrentStage) {
+        badgeText = '[ Current / ปัจจุบัน ]';
+      }
 
       return `
-        <div class="${stepClass}">
+        <div class="${stepClass}" ${isReachable ? `data-stage-key="${p.key}"` : ''} title="${isReachable ? 'คลิกเพื่อดูข้อมูลย้อนหลัง / Click to view history' : 'ยังไม่ถึงขั้นตอน / Unreached stage'}">
           <div style="font-size:12px; font-weight:700;">${escapeHtml(p.nameTH)}</div>
           <div style="font-size:10px; font-weight:600; opacity:0.9;">${escapeHtml(p.nameEN)}</div>
-          <div class="mbo-deadline-badge ${deadline.badgeClass}">
-            [${escapeHtml(deadline.labelTH)} / ${escapeHtml(deadline.labelEN)}]
+          <div class="mbo-deadline-badge ${isViewedStage && isHistoricalView ? 'mbo-deadline-history' : deadline.badgeClass}">
+            ${badgeText}
           </div>
           <div style="font-size:9.5px; margin-top:2px; opacity:0.85;">
             ${escapeHtml(deadline.daysTextEN)}
@@ -867,6 +976,24 @@ export class EmployeePartAUI {
         <span style="font-size:11px; color:#64748b;">📅 Simulated Date: <strong>${escapeHtml(nowIso)}</strong></span>
       </div>
     `;
+    card.querySelectorAll('.mbo-phase-step.clickable').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        const stageKey = el.getAttribute('data-stage-key');
+        if (!stageKey) return;
+        const targetPhase = phases.find(p => p.key === stageKey);
+        if (!targetPhase) return;
+        if (targetPhase.stage <= currentStage || status === '16 Completed') {
+          if (targetPhase.key === currentVisualScreen) {
+            this.selectedViewStage = null;
+          } else {
+            this.selectedViewStage = stageKey;
+          }
+          this.render();
+        }
+      });
+    });
+
     return card;
   }
 
