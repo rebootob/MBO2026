@@ -1,11 +1,10 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R2 USER VISUAL CORRECTION CLOSURE — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R3 DEADLINE URGENCY VISUAL CORRECTION — LOCAL ONLY
 
 > Control Plane: ChatGPT / Project Lead / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Prior R6 implementation commit: `3110a334c4aace8c9ba2586ac78887eb25bb8e9b`
-> Supersedes: R6-R1 task
+> Prior implementation: R6-R2 commit `b11af6d8c2df8193262ce87bfc51e15796947008`
 > Canonical UI baseline: `project-docs/CONFIRMED_BASELINE/UI_UX.md`
 > Kintone write/deploy authorization: **NONE**
 
@@ -24,353 +23,206 @@ Read completely, in this exact order:
 8. `project-docs/HANDOFF.md`
 9. `project-docs/AI_REVIEW_PACKAGE.md`
 
-Confirmed Baseline is canonical. If R6 source conflicts with it, fix the LOCAL candidate. Do not mutate Kintone.
+Confirmed Baseline is canonical.
 
-## 1. CURRENT GATE — UI IS THE HERO
+## 1. CURRENT GATE
 
-R6 is implemented locally but is **NOT user-visually approved**.
+R6-R2 local implementation exists and is under user visual inspection.
 
-The user is actively inspecting the UI. Finish the full App794 UI/UX V2 visual closure before Dashboard/Hoshin, persistence changes, Final UAT, or deploy.
+User finding: deadline/day-count information inside the five stage tiles is still too small and easy to miss, especially near deadline and overdue.
+
+This R6-R3 task is a **bounded visual correction only**. Preserve all R6-R2 behavior unless directly required for the deadline urgency correction.
 
 Critical path:
-`R6-R2 UI Visual Correction Closure -> ChatGPT Source Review -> User Visual Preview Approval -> Persistence/Runtime Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
+`R6-R3 Deadline Urgency Correction -> ChatGPT Review -> User Visual Preview -> continue UI closure`
 
 ## 2. HARD SAFETY BOUNDARY
 
-This task is LOCAL ONLY.
+LOCAL ONLY.
 
 - Kintone GET/POST/PUT/DELETE = 0.
-- App794 upload/deploy = 0.
+- App794 deploy/upload = 0.
 - Record/workflow/process/schema/ACL/notification writes = 0.
 - App795/App796/App797/App798/App800 writes = 0.
 - No real-user workflow/notification test.
-- No new Kintone authorization exists.
-- Do not create new Kintone fields.
-- Do not claim Preview UX equals secure production authorization.
+- No new Kintone fields.
+- No new production notification mechanism.
 
-## 3. PRESERVE ALL CANONICAL UI REQUIREMENTS
+## 3. REQUIRED DEADLINE UX
 
-Implement all current requirements in `CONFIRMED_BASELINE/UI_UX.md`, including:
-- exactly five bilingual macro stages;
-- Thai + English user-facing UI;
-- lifecycle-wide Appraiser route;
-- ordinal `1st/2nd/3rd/4th Appraiser` labels, never Manager/GM as business headings;
-- friendly Route Scenario selector with raw topology only in Technical Details;
-- Evaluation Profile separate from routing;
-- DGM/GM/VP Executive Direct -> President shown only as Preview Only / Routing Pending;
-- route-aware Process Progress;
-- Requester starts Mid-Year at 05->06 and Self Evaluation at 10->11 when HR calendar window is open;
-- HR phase dates owned by App800 contract;
-- horizontal high-volume entry layout;
-- Difficulty blank must not fake Level 3;
-- fail-closed incomplete scoring result;
-- Native Kintone Comments must remain usable after future deploy.
+Implement canonical `UI_UX.md` section 21.
 
-Search normal business-facing text for legacy `Manager`, `GM`, `First Manager` guidance and replace with ordinal Appraiser wording. Technical diagnostic/status metadata may retain legacy names only where necessary.
+### 3.1 Separate urgency callout
 
-## 4. OPTIONAL ATTACHMENTS — OBJECTIVES + MID-YEAR + SELF EVALUATION
+Do not rely only on the small text inside the five stage tiles.
 
-Each Objective must show `แนบไฟล์ / Attach File (Optional)` in:
-1. Objectives
-2. Mid-Year
-3. Self Evaluation
+For the **current active phase**, render a prominent bilingual urgency callout near the top process/stage area.
 
-Rules:
-- optional only; no Required styling;
-- Save/Submit must not fail solely because attachment is empty;
-- show existing/selected filenames and local Preview remove/replace affordance;
-- Appraiser Evaluation and HR Final carry Objective/Mid-Year/Self evidence forward read-only;
-- never invent fake production filenames.
-
-Persistence boundary:
-- existing Mid-Year `MidYear_Attachment_*` and Self legacy-compatible fields may use adapters;
-- if Objective attachment physical storage does not exist, Preview still renders UX but marks `OBJECTIVE_ATTACHMENT_PERSISTENCE = PENDING_SCHEMA_REVIEW`;
-- do not create schema in this task.
-
-## 5. MID-YEAR OBJECTIVE PROGRESS (%)
-
-Business meaning is employee-reported Objective progress.
-
-Required UX:
-- label `ความคืบหน้าของเป้าหมาย / Objective Progress (%)`;
-- helper `พนักงานระบุความคืบหน้าปัจจุบัน 0–100% / Employee-reported current progress 0–100%`;
-- clear numeric input 0..100;
-- slider may remain if synchronized with numeric input;
-- progress bar width exactly equals entered percentage;
-- NOT derived from dates, Process Progress, rating, or score;
-- status06 Requester can edit;
-- Appraiser review sees read-only;
-- <0 or >100 fails local validation.
-
-Keep visually separate from Process Progress.
-
-## 6. DEADLINE / DAYS REMAINING — HIGH VISIBILITY
-
-For every phase:
-- within active allowed period = GREEN emphasis;
-- overdue/incomplete = RED emphasis;
-- due today = strong AMBER/ORANGE;
-- upcoming = neutral/gray/blue;
-- completed = success/green without overdue alarm.
-
-Make the numeric message materially prominent:
+The visual focus is the number:
 - `เหลือ 12 วัน / 12 DAYS REMAINING`
+- `เหลือ 3 วัน / 3 DAYS REMAINING`
+- `ครบกำหนดวันนี้ / DUE TODAY`
 - `เกินกำหนด 76 วัน / 76 DAYS OVERDUE`
 
-Do not confuse deadline urgency with performance score.
+Show exact due date immediately adjacent/below:
+`ครบกำหนด 31 Mar 2026 / Due 31 Mar 2026`
 
-## 7. APPRAISER ACTIVE COLUMN FOLLOWS CURRENT ACTOR
+### 3.2 Urgency tiers
 
-All configured Appraiser columns remain visible to Appraisers, but only the current Appraiser's own column is editable.
+Use these deterministic UI tiers:
 
-Current `M1_G1`:
-- status13 -> 1st Appraiser active/editable;
-- status14 -> 2nd Appraiser active/editable.
+- `> 7 days remaining` -> GREEN / on-time normal emphasis.
+- `1..7 days remaining` -> AMBER/ORANGE / due-soon strong emphasis.
+- `0 days / due today` -> strong ORANGE/RED urgency.
+- `overdue` -> RED critical emphasis.
+- `completed` -> GREEN success, no overdue alarm.
+- `upcoming/not opened` -> neutral/blue/gray and no overdue popup.
 
-Generic `M1_M2_G1`:
-- status12 -> 1st Appraiser active;
-- status13 -> 2nd Appraiser active;
-- status14 -> 3rd Appraiser active.
+Do not treat green as performance score; this is deadline status only.
+
+### 3.3 Popup / toast behavior
+
+When the page/Preview is opened and the current phase is:
+- due-soon `1..7 days`, OR
+- due today, OR
+- overdue,
+
+show one dismissible bilingual popup/toast/banner.
+
+Example overdue:
+`⚠️ เกินกำหนด 76 วัน / 76 DAYS OVERDUE — กรุณาดำเนินการโดยเร็ว / Please take action as soon as possible.`
 
 Rules:
-- inactive columns visible + read-only;
-- previous Appraiser scores/comments remain visible to later Appraisers;
-- no Appraiser edits another Appraiser column;
-- HR Final shows all columns read-only;
-- 4th Appraiser may be Preview-only active-slot simulation and must not claim live Workflow/persistence support.
+- popup/toast may appear once per page load/session while the condition remains true;
+- dismissing it must not remove the persistent red/orange urgency callout;
+- no endless/reopening modal loop in the same page session;
+- do not implement browser notifications, email, Kintone notifications, or external alerts in this task.
 
-Preview control label:
-`ผู้ประเมินที่กำลังดำเนินการ / Current Appraiser (Preview)`
+### 3.4 Motion / accessibility
 
-For deterministic statuses, default active slot automatically. Manual override for future 4-Appraiser simulation must show `Preview Override`.
+Do **not** use continuously blinking text.
 
-Security note: read-only/disabled client controls are UX, not the security boundary.
+If motion is used:
+- use only a subtle pulse on border/icon/background for due-soon/due-today/overdue;
+- avoid aggressive flashing;
+- respect `prefers-reduced-motion` by disabling animation where practical.
 
-## 8. 3–4 APPRAISER RESPONSIVE MATRIX — NO PAGE OVERFLOW
+## 4. PRESERVE R6-R2
 
-User visual finding: 4-Appraiser Part A/Part B currently overflows and is difficult to read.
+Do not regress:
+- five bilingual stages;
+- route/appraiser behavior;
+- optional attachments;
+- Mid-Year Progress semantics;
+- Native Kintone Comments coexistence;
+- active Appraiser column behavior;
+- responsive 4-Appraiser matrix/no page overflow;
+- Workflow Action Timeline table;
+- Difficulty blank state;
+- current HR phase calendar model;
+- 0 Kintone calls in Preview.
 
-Mandatory correction:
-- **App794 page/body must not horizontally overflow because of the matrix.**
-- Matrix wrapper must be contained inside available content width (`max-width:100%`, `overflow-x:auto`, correct box sizing).
-- Horizontal scrolling, when unavoidable, must occur only inside the Part A/Part B matrix container.
-- Prefer sticky Objective/Competency first column while scrolling.
-- Result column may be compact/sticky-right where practical.
-- Active Appraiser column should be visibly emphasized and may be wider.
-- Inactive Appraiser columns remain visible but may use compact read-only rendering.
-- Inactive feedback can wrap/compact/expand on demand; do not force full editable textarea width for every inactive column.
-- Do not shrink controls/text to unusable sizes merely to fit four columns.
-- When actor changes, bring/scroll active Appraiser column into view automatically where practical.
-- Design must remain usable when native Kintone comment panel reduces available content width.
+Do not reopen Dashboard/Hoshin/routing persistence/scoring persistence/audit persistence.
 
-Target behavior:
-- 1–2 Appraisers: comfortable normal matrix.
-- 3 Appraisers: contained responsive matrix.
-- 4 Appraisers: contained compact matrix, no whole-page overflow, all Appraiser columns still inspectable.
+## 5. PREVIEW VISUAL MATRIX
 
-## 9. NATIVE KINTONE COMMENT THREAD — PRESERVE CONTRACT
+Preview must make these cases directly selectable or reproducible:
 
-Kintone record comments are used for Return/Reject discussion.
+1. 20 days remaining -> GREEN callout, no popup.
+2. 7 days remaining -> AMBER/ORANGE callout + popup/toast.
+3. 3 days remaining -> AMBER/ORANGE callout + popup/toast.
+4. 1 day remaining -> strong AMBER/ORANGE callout + popup/toast.
+5. Due today -> strong urgency + popup/toast.
+6. 1 day overdue -> RED callout + popup/toast.
+7. 76 days overdue -> RED prominent callout + popup/toast.
+8. Completed -> GREEN success, no overdue popup.
+9. Upcoming -> neutral, no urgent popup.
 
-Requirements:
-- custom UI must not intentionally hide/cover/disable native Comments;
-- Part A/Part B evaluator feedback does not replace record comments;
-- local Preview may show a non-persistent placeholder/reserved area:
-  `ความคิดเห็นใน Kintone / Kintone Comments (Native Platform)`;
-- do not build fake persistent comments;
-- deployed runtime accessibility remains `PENDING_DEPLOYED_BROWSER_VERIFICATION`.
+The selected/current phase tile may also carry a matching urgency accent, but the separate large callout remains mandatory.
 
-## 10. WORKFLOW ACTION TIMELINE — DESKTOP TABLE
-
-Add lifecycle-wide read-only section:
-`ประวัติการดำเนินการ / Workflow Action Timeline`
-
-### Desktop layout
-Use a structured TABLE as the primary presentation. Do not render one large card per event on desktop.
-
-Recommended columns:
-`# | ขั้นตอน / Stage | ผู้ดำเนินการ / Actor | ชื่อผู้ดำเนินการ / Person | การดำเนินการ / Action | วัน-เวลา / Date & Time | ผลลัพธ์ / Result | หมายเหตุ / Comments`
-
-Example rows:
-- Objectives | 1st Appraiser | Sompong (m01) | Approved | 14 Feb 2026 • 09:42 | Approved | —
-- Objectives | 2nd Appraiser | Vichai (g01) | Returned | 15 Feb 2026 • 10:18 | Returned | 💬 View Comments
-- Objectives | Employee | Employee 0118 | Resubmitted | 16 Feb 2026 • 08:30 | Submitted | —
-- Objectives | 2nd Appraiser | Vichai (g01) | Approved | 16 Feb 2026 • 13:05 | Approved | —
-- Appraiser Evaluation | 1st Appraiser | Sompong (m01) | Scoring Completed | 20 Nov 2026 • 14:22 | Completed | —
-
-Table UX:
-- chronological and easy to scan;
-- clear row separators or zebra rows;
-- compact bilingual Action/Result badges where useful;
-- Return/Reject row visually identifiable;
-- `💬 ดูความคิดเห็น / View Comments` indicator when applicable;
-- latest/current relevant row may be subtly highlighted;
-- whole table section may collapse to save vertical space;
-- `5 Events Recorded` may remain a small count badge next to heading;
-- mobile/narrow screens may transform same data into stacked cards.
-
-Audit semantics:
-- preserve ALL events; never overwrite Return -> correction -> Resubmit -> Approve history;
-- show Stage, ordinal Actor, actual Person, Action, exact date/time, Result, comment indicator;
-- timeline read-only;
-- do not fabricate timestamps from `Updated_datetime`, current status, or nonblank score fields;
-- Preview uses deterministic synthetic fixtures only.
-
-Persistence boundary:
-`WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW`
-
-Do not create Kintone fields/history storage or call live history/revision APIs in this sprint.
-
-## 11. PREVIEW VISUAL CHECK MATRIX
-
-Employee entry:
-- Objectives: optional Attachment visible.
-- status06 Mid-Year: numeric Progress 0..100 + synced bar + optional Attachment.
-- status11 Self Evaluation: optional Attachment.
-
-Appraiser:
-- M1_G1 status13 -> Appraiser1 active; Appraiser2 visible read-only.
-- M1_G1 status14 -> Appraiser2 active; Appraiser1 visible read-only with prior data.
-- M1_M2_G1 status12/13/14 -> active columns 1/2/3.
-- 4-Appraiser Preview -> active 1/2/3/4 simulation.
-- 4-Appraiser Part A + Part B -> no whole-page horizontal overflow.
-- active column remains obvious and usable.
-- inactive Appraiser values remain visible.
-
-Deadline:
-- on-time green;
-- due today amber/orange;
-- overdue red with large count;
-- completed green.
-
-Native Comments:
-- reserved/native-context layout visible in Preview without fake persistence.
-
-Workflow Action Timeline:
-- desktop renders as Table;
-- at least 5 events;
-- normal approve sequence;
-- Return -> Resubmit -> Approve all preserved;
-- Appraiser scoring timestamp;
-- HR Final completion timestamp;
-- ordinal Appraiser labels;
-- chronological order;
-- mobile fallback may be cards.
-
-## 12. FOCUSED TESTS / EXECUTION BUDGET
+## 6. FOCUSED TESTS / EXECUTION BUDGET
 
 Add/adjust focused tests for:
-1. Objective attachment optional area renders.
-2. Mid-Year attachment optional area renders.
-3. Self Evaluation attachment optional area renders.
-4. no attachment required validation.
-5. Mid-Year numeric Progress exactly drives bar width.
-6. Objective Progress independent from Process Progress.
-7. deadline on-time uses green semantics.
-8. overdue uses red prominent callout.
-9. M1_G1 status13 activates slot1 only.
-10. M1_G1 status14 activates slot2 only.
-11. M1_M2_G1 status12/13/14 activates slots1/2/3 exactly.
-12. inactive Appraiser columns visible/read-only.
-13. prior Appraiser values visible to next Appraiser.
-14. HR Final Appraiser columns all read-only.
-15. 4-Appraiser matrix wrapper contained to content width.
-16. no page/body horizontal overflow contract from matrix styles/structure.
-17. sticky/retained context column contract for wide matrix where implemented.
-18. user-facing guidance does not regress to Manager/GM headings.
-19. Workflow Action Timeline desktop renders `<table>` with required columns.
-20. Timeline renders actor + person + action + date/time + result.
-21. Return -> Resubmit -> Approve preserves all events.
-22. Timeline uses ordinal Appraiser names.
-23. Timeline fixture does not fabricate from Updated_datetime.
-24. Preview Kintone calls = 0.
+1. `>7` days -> green/on-time semantics, no urgent popup.
+2. `7` days -> due-soon class + popup.
+3. `1` day -> due-soon class + popup.
+4. due today -> urgent class + popup.
+5. overdue -> red class + prominent numeric text + popup.
+6. completed -> no overdue popup.
+7. dismiss does not remove persistent urgency callout.
+8. popup is not repeatedly recreated in same render/session without reset.
+9. reduced-motion CSS exists/animation disabled where implemented.
+10. Preview Kintone calls = 0.
 
 Execution budget:
-- `npm test` once after implementation;
+- run focused UI tests first;
+- `npm test` once only if source shared with production UI changed;
 - `npm run ui:build` once;
 - `npm run ui:preview` once;
 - local browser smoke only.
 
-Do not burn cycles on unrelated docs cleanup or unrelated broad tests.
+Do not rerun unrelated discovery or broad browser workflows.
 
-## 13. REQUIRED EVIDENCE
+## 7. REQUIRED EVIDENCE
 
 ```text
-APP794_EVALUATION_UI_V2_R6_R2 = COMPLETE / BLOCKED
+APP794_EVALUATION_UI_V2_R6_R3 = COMPLETE / BLOCKED
 EXECUTION_STARTING_HEAD = exact pulled task parent
-OBJECTIVE_ATTACHMENT_OPTIONAL_UI = PASS/FAIL
-OBJECTIVE_ATTACHMENT_PERSISTENCE = PENDING_SCHEMA_REVIEW
-MIDYEAR_ATTACHMENT_OPTIONAL_UI = PASS/FAIL
-SELF_ATTACHMENT_OPTIONAL_UI = PASS/FAIL
-ATTACHMENT_REQUIRED_VALIDATION_COUNT = 0 / actual
-MIDYEAR_PROGRESS_EMPLOYEE_ENTERED_0_100 = PASS/FAIL
-MIDYEAR_PROGRESS_BAR_EQUALS_INPUT = PASS/FAIL
-PROCESS_PROGRESS_SEPARATE_FROM_OBJECTIVE_PROGRESS = PASS/FAIL
-NATIVE_KINTONE_COMMENT_LAYOUT_PRESERVED_CONTRACT = PASS/FAIL
-NATIVE_KINTONE_COMMENT_RUNTIME_VERIFICATION = PENDING_DEPLOYED_BROWSER_VERIFICATION
-DEADLINE_ON_TIME_GREEN = PASS/FAIL
-DEADLINE_OVERDUE_RED_PROMINENT = PASS/FAIL
+DEADLINE_SEPARATE_URGENCY_CALLOUT = PASS/FAIL
+DEADLINE_GT7_GREEN = PASS/FAIL
+DEADLINE_7DAY_AMBER = PASS/FAIL
+DEADLINE_1DAY_AMBER = PASS/FAIL
 DEADLINE_DUE_TODAY_URGENT = PASS/FAIL
-M1_G1_STATUS13_ACTIVE_APPRAISER = 1 / actual
-M1_G1_STATUS14_ACTIVE_APPRAISER = 2 / actual
-M1_M2_G1_STATUS12_ACTIVE_APPRAISER = 1 / actual
-M1_M2_G1_STATUS13_ACTIVE_APPRAISER = 2 / actual
-M1_M2_G1_STATUS14_ACTIVE_APPRAISER = 3 / actual
-INACTIVE_APPRAISER_COLUMNS_VISIBLE_READONLY = PASS/FAIL
-PRIOR_APPRAISER_VALUES_VISIBLE_TO_NEXT = PASS/FAIL
-HR_FINAL_APPRAISER_COLUMNS_READONLY = PASS/FAIL
-APPRAISER4_WORKFLOW_PERSISTENCE = PREVIEW_ONLY_NOT_IMPLEMENTED
-FOUR_APPRAISER_MATRIX_CONTAINED = PASS/FAIL
-FOUR_APPRAISER_PAGE_BODY_OVERFLOW = 0 / actual
-FOUR_APPRAISER_ACTIVE_COLUMN_USABLE = PASS/FAIL
-WORKFLOW_ACTION_TIMELINE_UI = PASS/FAIL
-WORKFLOW_ACTION_TIMELINE_DESKTOP_TABLE = PASS/FAIL
-WORKFLOW_ACTION_TIMELINE_REQUIRED_COLUMNS = PASS/FAIL
-WORKFLOW_ACTION_TIMELINE_RETURN_RESUBMIT_HISTORY = PASS/FAIL
-WORKFLOW_ACTION_TIMELINE_ORDINAL_ACTORS = PASS/FAIL
-WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW
-WORKFLOW_ACTION_TIMELINE_KINTONE_HISTORY_SOURCE = NOT_CLAIMED_IN_UI_SPRINT
+DEADLINE_OVERDUE_RED = PASS/FAIL
+DEADLINE_76DAY_OVERDUE_PROMINENT = PASS/FAIL
+URGENT_POPUP_DUE_SOON = PASS/FAIL
+URGENT_POPUP_DUE_TODAY = PASS/FAIL
+URGENT_POPUP_OVERDUE = PASS/FAIL
+URGENT_POPUP_DISMISS_PRESERVES_CALLOUT = PASS/FAIL
+URGENT_POPUP_NO_LOOP = PASS/FAIL
+CONTINUOUS_BLINKING_TEXT = 0
+REDUCED_MOTION_SUPPORT = PASS/FAIL/NOT_APPLICABLE
+R6_R2_REGRESSION_CHECK = PASS/FAIL
 KINTONE_CALL_COUNT = 0
 KINTONE_WRITE_COUNT = 0
 DEPLOY_COUNT = 0
-NPM_TEST = actual/PASS/FAIL
+NPM_TEST = actual/PASS/NOT_RUN_WITH_REASON
 UI_BUILD = PASS/FAIL
 PREVIEW_MAIN_UI_RENDER = PASS/FAIL
 PREVIEW_KINTONE_CALL_COUNT = 0
-GIT_DIFF_CHECK = PASS/FAIL
 GIT_PUSH_SYNC = PASS/FAIL
 NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
 ```
 
-## 14. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+## 8. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
 
 What:
-- close the current visual defects and usability gaps in App794 Evaluation UI V2 Preview.
+- make current-phase deadline urgency impossible to miss without aggressive flashing.
 
 Where:
-- existing App794 UI source/styles/Preview/tests only; no new architecture unless justified by separation of concerns.
+- existing App794 UI deadline/progress rendering, CSS, Preview fixture/control, focused tests.
 
 How:
-- reuse current components; fix existing render/layout logic first; keep local fixtures deterministic; preserve baseline semantics.
+- reuse existing deadline calculation; change visual hierarchy and add local dismissible urgency toast/callout behavior.
 
 Why:
-- UI/UX is the user-confirmed critical path and must be visually approved before persistence/deploy work.
+- current user visual inspection shows the date/day count is too subtle to drive employee action.
 
 Impact:
-- local candidate/Preview only; zero Kintone runtime impact.
+- local Preview/candidate only; no Kintone runtime impact.
 
 Risk:
-- accidental source regression, page overflow, fake persistence assumptions, or hidden native Kintone UI dependencies.
+- excessive notification noise, inaccessible flashing, duplicated popup creation, or regression of stage layout.
 
 Test:
-- focused tests + one full npm test + one build + one Preview smoke as specified above.
+- focused deadline matrix + build/Preview smoke; full npm test only as specified.
 
 Rollback:
-- Git revert of this local implementation commit only. No Kintone rollback is required because Kintone writes are prohibited.
+- Git revert R6-R3 local implementation commit. No Kintone rollback because writes are prohibited.
 
-## 15. STOP CONDITION
+## 9. STOP CONDITION
 
-Commit and push the same `ai/antigravity-wp002c` branch.
+Commit and push same `ai/antigravity-wp002c` branch.
 Keep Preview Lab running if practical.
 STOP.
 
