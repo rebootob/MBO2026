@@ -1,225 +1,225 @@
-# AI ACTIVE TASK — R12C-R1 READ-ONLY POST-DEPLOY EVIDENCE CLOSURE
+# AI ACTIVE TASK — R12D-A READ-ONLY HR FINAL AUTHORIZATION AUDIT
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting reviewed deploy result: `9d4497e458d25f813da14f2bc0caac774df73cb5`
-> Control-plane baseline correction commit: `16031e74eb5583f38419accdfae6d4d789274e5e`
+> Starting reviewed result: `91a3574495d117bf628a394ce50f3e5781017709`
 > Target App: App794 `MBO V2 Sandbox`
-> Mode: READ-ONLY POST-DEPLOY CLOSURE
+> Mode: READ-ONLY AUTHORIZATION AUDIT
 > Kintone write authorization: NONE
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-R12C deployed the reviewed R12B-R1 workflow guard candidate to App794 and verified binary/hash preservation, but independent review found two evidence issues that must be closed before isolated Workflow UAT:
+R12C-R1 proved the deployed runtime is stable and the canonical Process Management baseline is 16 states / 28 actions. It also discovered an important live fact that requires authorization review before any Workflow UAT:
 
-1. R12C pre-write Process Management read-back counted `16 states / 28 actions`, while the old canonical/task wording incorrectly expected 27. Independent recount of the R12A matrix confirms 28 action rows. Control Plane has already corrected the canonical baseline to **16 states / 28 actions**. This task must verify the current live process against the R12C pre-write snapshot and classify the old 27 count as a documentation/counting error rather than silently claiming 27.
-2. R12C required a post-deploy shallow browser runtime load with fatal-console check, but the evidence block omitted those fields. This task must perform that missing read-only runtime smoke exactly once.
+- `14 GM Final Evaluation` + `Approve Final GM` -> `15 HR Final Check`;
+- live Process response shows `15 HR Final Check` assignee expression is empty / NONE;
+- `15 HR Final Check` contains `Complete` -> `16 Completed` and `Return Final HR` -> `11 Employee Self Evaluation`;
+- current runtime workflow validator has no HR-specific actor/current-user authorization guard; `Return Final HR` only validates the destination `Requester_User` snapshot.
 
-Also capture the exact existing HR Final Check assignee configuration from the same Process Management GET so the next HR-isolated UAT design can avoid another discovery round.
+This task must determine whether some other live Kintone authorization layer already restricts the HR Final Check actions to HR. Do not assume either defect or safety until the live Process and ACL configuration are inspected together.
 
 # CHANGE GOVERNANCE
 
 ## What
-Close R12C post-deploy evidence using GET/read-only browser verification only. Prove that the deployed App794 runtime and Process Management are stable and capture the exact HR Final Check actor configuration needed for isolated UAT design.
+Perform a narrow, read-only authorization audit of App794 around status `15 HR Final Check` and actions `Complete` / `Return Final HR`.
+
+Determine the effective enforcement layers visible from configuration:
+1. Process Management assignee/action conditions;
+2. App-level permissions;
+3. Record-level permissions and conditions;
+4. Field-level permissions only where they materially affect HR Final Check data/action safety;
+5. current repository JavaScript guard behavior.
+
+Then classify the HR Final Check authorization as one of:
+- `ENFORCED_BY_KINTONE_CONFIG`;
+- `ENFORCED_BY_RUNTIME_GUARD`;
+- `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`;
+- `UNRESOLVED_INSUFFICIENT_READ_ONLY_EVIDENCE`.
 
 ## Where
-- Kintone App794 live settings/customization/process via GET only.
-- Existing durable local R12C backup/log path:
-  `backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z`
-- Browser: App794 read-only page/detail load only.
-- Repository evidence docs only after verification.
+Read only:
+- live App794 Process Management;
+- live App794 App / Record / Field permission configuration;
+- existing repository source at current HEAD, especially the process proceed hook and `ValidationEngine.validateWorkflowAction()`;
+- existing R12C-R1 evidence where useful.
+
+Do not inspect unrelated apps unless an exact App794 ACL entry references an external entity whose identifier cannot otherwise be interpreted. Even then, do not enumerate a broad directory.
 
 ## How
 
-### A. Git gate
-1. Pull latest `ai/antigravity-wp002c` and verify local HEAD = origin HEAD.
-2. Confirm there is no `src/**`, `dist/**`, or `tests/**` drift after reviewed candidate `a980f064817cb3243fa57fce0c7c84619019311e`.
-3. Read the corrected canonical `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`; expected Process baseline is now exactly **16 states / 28 actions**.
-4. Do not run npm tests/build; no source changed.
+### A. Git / baseline gate
+1. Pull latest `ai/antigravity-wp002c`; local HEAD must equal origin HEAD.
+2. Read canonical baseline in order and confirm current App794 Process baseline = 16 states / 28 actions and current 17 App795 routes = `M1_G1`.
+3. Confirm no `src/**`, `dist/**`, or `tests/**` drift after reviewed deployed candidate `a980f064817cb3243fa57fce0c7c84619019311e`.
+4. Do not run build or npm tests; no source is changing.
 
-### B. R12C local evidence forensic — no Kintone call required
-Inspect the existing R12C task-specific backup/log artifacts only. Do not create replacement historical evidence.
+### B. Process Management exact audit — GET only
+Use one App794 Process Management GET and capture the exact raw semantics relevant to:
+- status `14 GM Final Evaluation`;
+- action `Approve Final GM` -> `15 HR Final Check`;
+- status `15 HR Final Check` assignee configuration, including assignee type and entities array/descriptor exactly as returned;
+- action `Complete` -> `16 Completed` including any action condition/filter condition;
+- action `Return Final HR` -> `11 Employee Self Evaluation` including any action condition/filter condition and destination assignee expression;
+- any built-in setting in status 15 that restricts who can execute actions.
 
-Verify if available:
-- pre-write live/preview revision = 33/33;
-- pre-write Process snapshot is readable;
-- pre-write Process snapshot contains 16 states / 28 action transitions;
-- pre-write JS/CSS hashes match R12C evidence;
-- any call-by-call revision snapshots/log entries around customization PUT and deploy POST.
+Do not infer `HR Group` from labels. Report the actual response shape.
 
-If a precise 33 -> 35 revision sequence can be proven from existing artifacts, report the sequence exactly. If not, report `REVISION_33_TO_35_FORENSIC_STATUS = NOT_FULLY_PROVABLE_FROM_RETAINED_EVIDENCE`; do not guess or invent Kintone behavior. This alone is not a runtime failure if current live/preview state, hashes and process snapshot are stable.
+### C. App794 permission audit — GET only
+Read the minimum live ACL configuration needed to determine whether non-HR identities are blocked from changing status 15:
+- App permissions;
+- Record permissions, including entry order/priority, conditions, entities, and edit/view/delete grants;
+- Field permissions only if they create a material HR-only enforcement boundary for data edited at Final Check.
 
-### C. Fresh live read-only verification
-Use the minimum GET calls necessary to read current App794 state. No other app discovery.
+For every potentially relevant rule, capture:
+- entity type/code/name available in the response;
+- permission flags;
+- condition/filter expression;
+- whether the rule is status-aware or otherwise capable of restricting `15 HR Final Check` actions.
 
-Verify:
-- current live revision;
-- current preview revision;
-- desktop customization and actual JS/CSS content hashes;
-- mobile customization;
-- Process Management full current config;
-- six scoring snapshot fields remain present if one already-planned GET is needed; avoid redundant calls if safely proven by retained R12C post-deploy evidence.
+Do not broaden into a general permission cleanup. Do not mutate ACL.
 
-Expected stable deployed runtime:
-- live revision = `35`;
-- preview revision should be consistent with fully deployed live state; record actual value, do not write to normalize it;
-- live JS SHA-256 = `54e4cd561654ab2c6008fef526013829d45c8cccce356fe522d798539822097a`;
-- live CSS SHA-256 = `3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0`;
-- Process Management = exactly **16 states / 28 actions**;
-- Process Management semantically matches the retained R12C pre-write Process snapshot exactly. Ignore non-semantic transport metadata only; do not ignore status/action/assignee/config differences.
+If the live ACL references a specific HR group/organization and exact membership is required to interpret whether it is a real HR-only boundary, perform only the narrowest official read-only lookup for that exact referenced entity if already supported by existing tooling/API. Otherwise report membership as unresolved; do not enumerate all users/groups.
 
-Any live JS/CSS mismatch or any semantic Process Management difference from the R12C pre-write snapshot -> `BLOCKED` for Workflow UAT. Do not repair.
+### D. Repository runtime guard audit — local only
+Inspect the current process proceed hook and `ValidationEngine.validateWorkflowAction()`.
 
-### D. Capture exact HR Final Check configuration from the same Process GET
-Without making extra broad discovery, extract the exact configuration for:
-- transition `14 GM Final Evaluation` + `Approve Final GM` -> `15 HR Final Check`;
-- assignee/actor expression of `15 HR Final Check`;
-- actor entity type (`GROUP`, `USER`, `ORGANIZATION`, none, or actual Kintone representation);
-- exact entity code/name/identifier visible in the Process response;
-- transition `15 HR Final Check` + `Complete` -> `16 Completed`;
-- transition `15 HR Final Check` + `Return Final HR` -> `11 Employee Self Evaluation` and its destination assignment rule.
+Explicitly determine:
+- whether `Complete` at status 15 has any current-user/HR authorization check;
+- whether `Return Final HR` has any current-user/HR authorization check;
+- whether JS validates only routing/destination snapshots rather than actor identity;
+- whether any other existing source module enforces HR-only access for those actions.
 
-Do NOT modify Process Management. Do NOT enumerate unrelated users/groups. If group membership is not included in the Process response, report `HR_GROUP_MEMBERSHIP = NOT_RESOLVED_THIS_TASK`; do not perform broad user-directory discovery in this credit-saving closure.
+Do not modify source.
 
-### E. Missing browser shallow-runtime smoke
-Perform exactly one authenticated browser read-only load of App794 using an existing record/detail page or another App794 page that actually loads the deployed customization.
+### E. Effective authorization decision
+Use only the evidence above. Do not rely on button visibility as authorization.
 
-Required:
-- page loads;
-- deployed customization initializes;
-- no fatal JavaScript/runtime error attributable to the MBO customization;
-- do not enter edit mode unless merely opening it would be required to load customization; prefer detail/read-only;
-- do not save/create/edit a record;
-- do not click `Submit`, `Approve`, `Return`, `Complete`, `Change assignee`, or any process action;
-- do not trigger notification.
+Classification rules:
 
-Record the target URL type/record ID if applicable, but do not copy sensitive business content into evidence unnecessarily.
+`ENFORCED_BY_KINTONE_CONFIG` only if a live Process/ACL rule demonstrably prevents non-HR users who otherwise can access the record from executing the HR Final Check status actions.
+
+`ENFORCED_BY_RUNTIME_GUARD` only if deployed source has a fail-closed actor check tied to a confirmed HR identity boundary.
+
+`DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER` if:
+- status 15 has no restrictive assignee/actor condition;
+- `Complete` / `Return Final HR` have no restrictive action condition;
+- ACL configuration does not establish an HR-only effective boundary for status-changing access; and
+- runtime source has no HR-specific actor authorization check.
+
+If ACL semantics cannot be conclusively evaluated from GET responses, use `UNRESOLVED_INSUFFICIENT_READ_ONLY_EVIDENCE`; do not force PASS/FAIL.
+
+### F. UAT implications
+Without executing UAT, state what the next design must do:
+- if authorization is already enforced: identify the exact controlled identity requirement for HR-isolated UAT;
+- if defect confirmed: propose the smallest production-correct repair options, clearly separating Process Management repair from runtime guard hardening;
+- preserve requirement `REAL_USER_IMPACT = 0` during future UAT;
+- do not configure or test the repair in this task.
 
 # Why
-Workflow UAT must test the exact deployed runtime, not only a successful customization API response. The process-count inconsistency must also be reconciled before UAT, and the HR-group actor must be known to design a zero-real-user-impact end-to-end UAT.
+Workflow UAT must not certify a path where a non-HR identity may be able to complete or return the HR Final Check stage. The project explicitly treats UI hiding as insufficient authorization and requires workflow transitions to fail closed.
 
 # Expected Impact
-- Zero Kintone writes.
-- Zero workflow transitions and zero notifications.
-- R12C deployment evidence becomes reviewable as runtime-complete.
-- Canonical workflow count is confirmed at 16/28.
-- Next UAT design can handle HR Final Check without rediscovering Process Management.
+Read-only evidence only. No live configuration or record state changes. The result will either clear the HR authorization blocker or convert it into a confirmed, precisely scoped repair task.
 
 # Risks
-- current App794 drift after R12C;
-- retained R12C backup/log insufficient to prove exact revision chronology;
-- browser smoke accidentally entering a process action;
-- HR assignee expression may reference a real group whose membership is not visible in Process config.
-
-All risks are handled by read-only operation and STOP/report behavior.
+- misreading empty Process assignee as equivalent to an HR group;
+- assuming App/Record ACL grants or denies status changes without checking actual conditions/order;
+- over-scanning user/group directories;
+- turning an audit into an unapproved repair;
+- falsely claiming real-user behavior from UI visibility alone.
 
 # TEST PLAN
 
-No repository test run.
+No npm test/build/browser workflow test.
 
 Required verification:
-1. Git/no-code-drift PASS.
-2. R12C retained backup readable PASS, or explicitly report missing forensic sub-artifact.
-3. R12C pre-write Process snapshot count = 16/28.
-4. Current live Process count = 16/28.
-5. Current Process semantic equality to R12C pre-write snapshot = PASS.
-6. Current live/preview revisions recorded.
-7. Live JS hash remains `54e4cd56...` PASS.
-8. Live CSS hash remains `3604d2b2...` PASS.
-9. Mobile customization preserved PASS.
-10. One browser shallow runtime load PASS, fatal MBO console error count = 0.
-11. Exact HR Final Check assignee descriptor captured from same Process GET.
-12. Zero Kintone writes / workflow actions / notifications.
+1. Git sync and no-code-drift PASS.
+2. Process baseline remains 16/28.
+3. Exact status-15 assignee config captured.
+4. Exact `Complete` and `Return Final HR` action conditions captured.
+5. App ACL captured and interpreted.
+6. Record ACL captured and interpreted, including conditions/order.
+7. Field ACL inspected only as needed.
+8. Runtime actor guard inspection completed.
+9. Effective authorization classification produced from evidence.
+10. Kintone writes = 0; workflow actions = 0; notifications = 0.
 
 # ROLLBACK PLAN
 
-None: this task is read-only. If any live drift or runtime defect is discovered, STOP and preserve evidence. Do not deploy, restore, edit records, or change Process Management without a new explicit user authorization and separate task.
+None: this task is read-only. If unexpected drift or ambiguous security configuration is found, STOP and preserve evidence. Do not repair without a separate task and fresh explicit user authorization for any Kintone write.
 
 # HARD SAFETY BOUNDARY
 
 Forbidden:
 - all Kintone POST/PUT/DELETE;
-- file upload;
-- customization PUT/deploy;
 - App794 record create/edit/save/delete;
-- App794 Process Management/schema/ACL change;
-- any workflow/process action;
+- workflow/process status action;
 - Change assignee;
+- Process Management change;
+- App/Record/Field ACL change;
+- customization upload/deploy;
 - App795/App53/App796 writes;
-- notification-generating action;
 - source/dist/test changes;
-- npm test/build.
+- npm test/build;
+- notification-generating action;
+- broad user/group enumeration.
 
 Allowed:
-- minimal App794 GETs;
-- local R12C backup/log inspection;
-- one browser read-only shallow runtime load;
-- evidence/living-doc Git updates after verification.
+- minimal App794 GETs for Process and ACL configuration;
+- narrow exact entity read-only lookup only if required to interpret a referenced ACL entity;
+- local source/evidence inspection;
+- living/evidence doc Git updates after audit.
 
 # CREDIT-SAVING RULE
 
-- Reuse one Process GET for action count, semantic comparison, and HR actor extraction.
-- Reuse retained R12C backup; no new backup is needed because there are no writes.
-- Do not repeat tests/build.
-- Exactly one browser load.
-- No broad user/group discovery.
+- One Process GET.
+- One GET per required ACL class where possible.
+- No browser smoke; R12C-R1 already proved runtime load.
+- No npm tests/build.
+- No App795 re-query unless a new direct dependency unexpectedly appears; current topology baseline is already confirmed.
+- No broad account inventory.
 - Push evidence and STOP.
 
 # REQUIRED EVIDENCE
 
-Append one concise correction/closure block to `project-docs/AI_REVIEW_PACKAGE.md`; do not delete or rewrite the historical R12C evidence block. Minimally update CURRENT_STATE/HANDOFF/IMPLEMENTATION_STATUS/CHANGELOG only if normally required.
+Append one concise R12D-A block to `project-docs/AI_REVIEW_PACKAGE.md`; minimally update CURRENT_STATE/HANDOFF/IMPLEMENTATION_STATUS/CHANGELOG if normally required. Do not create a new evidence file.
 
 ```text
-M10L_D_R12C_R1_POST_DEPLOY_CLOSURE = COMPLETE / PARTIAL / BLOCKED
-STARTING_DEPLOY_RESULT = 9d4497e458d25f813da14f2bc0caac774df73cb5
-CANONICAL_PROCESS_STATE_COUNT = 16
-CANONICAL_PROCESS_ACTION_COUNT = 28
-OLD_27_ACTION_COUNT_CLASSIFICATION = CONTROL_PLANE_COUNTING_ERROR / OTHER
-R12C_BACKUP_PATH = backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z
-R12C_BACKUP_READABLE = PASS/FAIL
-R12C_PREWRITE_PROCESS_STATE_COUNT = actual
-R12C_PREWRITE_PROCESS_ACTION_COUNT = actual
-REVISION_33_TO_35_FORENSIC_STATUS = PROVEN / NOT_FULLY_PROVABLE_FROM_RETAINED_EVIDENCE
-REVISION_SEQUENCE_EVIDENCE = actual concise sequence / unavailable
-CURRENT_LIVE_REVISION = actual
-CURRENT_PREVIEW_REVISION = actual
-CURRENT_LIVE_JS_SHA256 = actual
-LIVE_JS_HASH_STABLE = PASS/FAIL
-CURRENT_LIVE_CSS_SHA256 = actual
-LIVE_CSS_HASH_STABLE = PASS/FAIL
-MOBILE_CUSTOMIZE_STABLE = PASS/FAIL
-CURRENT_PROCESS_STATE_COUNT = actual
-CURRENT_PROCESS_ACTION_COUNT = actual
-PROCESS_SEMANTIC_MATCH_TO_R12C_PREWRITE = PASS/FAIL
-SIX_FIELD_SCHEMA_STABLE = PASS/FAIL/REUSED_R12C_EVIDENCE
-HR_FINAL_CHECK_SOURCE_STATUS = 14 GM Final Evaluation
-HR_FINAL_CHECK_SOURCE_ACTION = Approve Final GM
-HR_FINAL_CHECK_TARGET_STATUS = 15 HR Final Check
-HR_FINAL_CHECK_ASSIGNEE_TYPE = actual
-HR_FINAL_CHECK_ASSIGNEE_IDENTIFIER = actual
-HR_GROUP_MEMBERSHIP = actual / NOT_RESOLVED_THIS_TASK
-HR_COMPLETE_TARGET = 16 Completed
-HR_RETURN_TARGET = 11 Employee Self Evaluation
-HR_RETURN_DESTINATION_RULE = actual
-BROWSER_SHALLOW_RUNTIME_LOAD = PASS/FAIL
-BROWSER_TARGET = actual non-sensitive descriptor
-BROWSER_FATAL_MBO_CONSOLE_ERROR_COUNT = actual
-WORKFLOW_ACTION_EXECUTED = 0
-WORKFLOW_NOTIFICATION_TRIGGERED = 0
-APP794_WRITE_COUNT = 0
-OTHER_APP_WRITE_COUNT = 0
+M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT = COMPLETE / PARTIAL / BLOCKED
+STARTING_HEAD = 91a3574495d117bf628a394ce50f3e5781017709
+PROCESS_STATE_COUNT = actual
+PROCESS_ACTION_COUNT = actual
+HR_STATUS = 15 HR Final Check
+HR_STATUS_ASSIGNEE_TYPE = actual
+HR_STATUS_ASSIGNEE_ENTITIES = actual concise representation
+HR_COMPLETE_ACTION_FILTER = actual / NONE
+HR_RETURN_ACTION_FILTER = actual / NONE
+HR_RETURN_DESTINATION_ASSIGNEE = actual
+APP_ACL_RELEVANT_RULES = actual concise summary
+RECORD_ACL_RELEVANT_RULES = actual concise summary
+RECORD_ACL_RULE_ORDER_EVALUATED = PASS/FAIL/NOT_APPLICABLE
+FIELD_ACL_RELEVANT_RULES = actual concise summary / NOT_MATERIAL
+EXACT_HR_ENTITY_REFERENCED_BY_ACL = actual / NONE
+HR_ENTITY_MEMBERSHIP = actual / NOT_REQUIRED / NOT_RESOLVED
+RUNTIME_COMPLETE_HR_ACTOR_GUARD = PRESENT/ABSENT
+RUNTIME_RETURN_FINAL_HR_ACTOR_GUARD = PRESENT/ABSENT
+UI_HIDING_USED_AS_AUTHORIZATION = NO
+EFFECTIVE_HR_AUTHORIZATION_CLASSIFICATION = ENFORCED_BY_KINTONE_CONFIG / ENFORCED_BY_RUNTIME_GUARD / DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER / UNRESOLVED_INSUFFICIENT_READ_ONLY_EVIDENCE
+NON_HR_STATUS15_ACTION_RISK = BLOCKED_BY_CONFIG / BLOCKED_BY_RUNTIME / POSSIBLE / UNPROVEN
 KINTONE_GET_CALLS_THIS_TASK = actual
 KINTONE_WRITES_THIS_TASK = 0
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
 SRC_CHANGE_COUNT = 0
 DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
-CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+CONFIRMED_BASELINE_CONFLICT_COUNT = actual
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW FOR HR-ISOLATED WORKFLOW UAT DESIGN
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY HR AUTHORIZATION REPAIR OR WORKFLOW UAT
 ```
 
 Push same branch and STOP.
