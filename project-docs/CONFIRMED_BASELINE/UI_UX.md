@@ -444,3 +444,80 @@ User-confirmed on 2026-08-26:
 - Before deployment require source/dist parity, field/schema read-back plan, route/profile parity, no fake fixture data, backup/rollback plan, candidate hashes, focused parity tests, and browser smoke plan.
 - Deployment remains a separate explicit authorization gate. User visual approval of Preview is not authorization to write Kintone.
 - `100% parity` means the approved live scope behaves and appears like the approved Preview. A capability still explicitly classified Preview Only is not falsely claimed live; if the user approves it for live use, its required schema/routing/profile work becomes part of the parity closure package before deployment.
+
+## 24. Historical Stage Review Navigation — Read-Only By Role
+
+User-confirmed on 2026-08-26 during local Preview inspection:
+
+The five macro-stage tiles are not only a progress indicator. Once a stage has been reached, users with appropriate visibility must be able to click back to review prior-stage information without changing the real Kintone Workflow status.
+
+### Core navigation contract
+
+- Keep **current Workflow phase** and **selected viewing stage** as separate UI state.
+- Clicking a prior stage is a **view-only navigation action**. It must never mutate `Status`, execute a Process action, change assignee, save data, or move the Workflow backward.
+- Unreached future stages remain disabled/non-clickable for normal history navigation.
+- When a prior stage is selected, show a clear bilingual indicator such as `กำลังดูข้อมูลย้อนหลัง / Viewing Historical Stage — Read Only`.
+- The real current phase must remain visually identifiable even while another historical stage is selected.
+- Provide `กลับสู่ขั้นตอนปัจจุบัน / Back to Current Phase` so the user can return without hunting for the active tile.
+- Historical view must force all business input controls in the selected stage to read-only, even if that stage would normally contain editable controls when current.
+- Completed record (`16 Completed`) may expose all allowed stages as read-only according to viewer role.
+
+### Historical content by stage
+
+**1. Objectives history** should show the approved/stored Objective context, including where available:
+- Objective / expected result & target;
+- Action Plan;
+- Additional Agreement / Comment;
+- Weight;
+- Difficulty;
+- Objective attachment/evidence;
+- related route/audit context remains accessible through the existing Workflow Action Timeline.
+
+**2. Mid-Year history** should show:
+- Objective baseline/read-only context;
+- employee-entered Progress %;
+- Periodical Review;
+- Mid-Year Result;
+- Issue/Risk;
+- Next Action;
+- Mid-Year attachment/evidence.
+
+**3. Self Evaluation history** should show:
+- Objective baseline/read-only context;
+- Actual Result;
+- Self Achievement / self rating where applicable;
+- Self Comment;
+- Self Evaluation attachment/evidence.
+
+**4. Appraiser Evaluation history** should show, for authorized Appraiser/HR viewers:
+- Part A objective evaluation context;
+- Self result/rating context where applicable;
+- all configured Appraiser 1..N ratings/comments that the viewer is permitted to see;
+- result/combined score context;
+- Objective/Mid-Year/Self evidence carried forward;
+- Part B competency items with Appraiser 1..N scores/comments and result context;
+- all fields read-only when this is historical view.
+
+**5. HR Final / Completed history** should show the read-only final/closure summary and permitted final results/evidence.
+
+### Viewer-role visibility contract
+
+**Employee / Requester**
+- May review reached Objectives, Mid-Year, and Self Evaluation stages read-only.
+- This history feature does **not** automatically expose confidential Appraiser Evaluation rating/comment columns to the Employee.
+- Employee visibility of final/appraiser scoring remains governed by the separately approved authorization/visibility policy; do not expand it merely because history navigation exists.
+
+**Appraiser 1..N**
+- May review reached Objectives, Mid-Year, and Self Evaluation stages read-only.
+- May review Appraiser Evaluation according to the already-confirmed Appraiser-to-Appraiser visibility model: configured Appraisers can see one another's Appraiser columns.
+- When Appraiser Evaluation is the **current** stage, only the current actor's own column may be editable; when viewing it as history, **all Appraiser columns are read-only**.
+
+**HR Final / authorized HR viewer**
+- May review all reached stages, including complete Appraiser Evaluation Part A + Part B and all configured Appraiser columns, read-only except the separately authorized current HR action surface.
+
+### Security boundary
+
+- Preview may simulate viewer role with a local selector/fixture, but production users must not choose or elevate their own role.
+- UI hiding/read-only state is UX, not the authorization boundary.
+- Production parity must reconcile this history visibility with native Kintone Process/App/Record/Field permissions or another approved server-side/native access boundary before claiming secure role isolation.
+- Historical navigation does not authorize new schema, route, profile, or Kintone writes.
