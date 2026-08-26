@@ -51,6 +51,195 @@ export const DEFAULT_PHASE_CALENDAR = {
   hrFinal: { start: '2026-12-01', end: '2026-12-31', label: 'Dec 1 - Dec 31, 2026' }
 };
 
+export const ROUTE_SCENARIOS = {
+  CURRENT_STANDARD: {
+    id: 'CURRENT_STANDARD',
+    labelTH: 'เส้นทางมาตรฐานปัจจุบัน — ผู้ประเมิน 2 คน',
+    labelEN: 'Current Standard — 2 Appraisers',
+    topology: 'M1_G1',
+    appraiserCount: 2,
+    isRuntimeSupported: true
+  },
+  EXTENDED: {
+    id: 'EXTENDED',
+    labelTH: 'เส้นทางขยาย — ผู้ประเมิน 3 คน',
+    labelEN: 'Extended Route — 3 Appraisers',
+    topology: 'M1_M2_G1',
+    appraiserCount: 3,
+    isRuntimeSupported: true
+  },
+  EXECUTIVE_DIRECT: {
+    id: 'EXECUTIVE_DIRECT',
+    labelTH: 'เส้นทางผู้บริหารโดยตรง — ผู้ประเมิน 1 คน',
+    labelEN: 'Executive Direct — 1 Appraiser',
+    topology: 'M1_G1',
+    appraiserCount: 1,
+    isRuntimeSupported: false,
+    badgeText: 'Preview Only / Routing Pending'
+  },
+  FUTURE_CAPACITY: {
+    id: 'FUTURE_CAPACITY',
+    labelTH: 'เส้นทางรองรับอนาคต — ผู้ประเมิน 4 คน',
+    labelEN: 'Future Capacity — 4 Appraisers',
+    topology: 'M1_M2_G1',
+    appraiserCount: 4,
+    isRuntimeSupported: false,
+    badgeText: 'Preview Only'
+  }
+};
+
+export const EVALUATION_PROFILES = {
+  PROF_STAFF_OPERATIONAL: {
+    id: 'PROF_STAFF_OPERATIONAL',
+    nameTH: 'Staff / Chief (70/30)',
+    nameEN: 'Staff / Chief (70/30)',
+    partAWeight: 70,
+    partBWeight: 30,
+    compSetCode: 'COMP_SET_OPERATIONAL_V1',
+    suggestedRoute: 'CURRENT_STANDARD'
+  },
+  PROF_STAFF_JAPANESE: {
+    id: 'PROF_STAFF_JAPANESE',
+    nameTH: 'Japanese Staff (70/30)',
+    nameEN: 'Japanese Staff (70/30)',
+    partAWeight: 70,
+    partBWeight: 30,
+    compSetCode: 'COMP_SET_OPERATIONAL_V1',
+    suggestedRoute: 'CURRENT_STANDARD'
+  },
+  PROF_ASST_MGR: {
+    id: 'PROF_ASST_MGR',
+    nameTH: 'Assistant Manager (60/40)',
+    nameEN: 'Assistant Manager (60/40)',
+    partAWeight: 60,
+    partBWeight: 40,
+    compSetCode: 'COMP_SET_MANAGEMENT_V1',
+    suggestedRoute: 'CURRENT_STANDARD'
+  },
+  PROF_SECT_MGR: {
+    id: 'PROF_SECT_MGR',
+    nameTH: 'Section Manager (50/50)',
+    nameEN: 'Section Manager (50/50)',
+    partAWeight: 50,
+    partBWeight: 50,
+    compSetCode: 'COMP_SET_MANAGEMENT_V1',
+    suggestedRoute: 'CURRENT_STANDARD'
+  },
+  PROF_SR_MGR: {
+    id: 'PROF_SR_MGR',
+    nameTH: 'Senior Manager (50/50)',
+    nameEN: 'Senior Manager (50/50)',
+    partAWeight: 50,
+    partBWeight: 50,
+    compSetCode: 'COMP_SET_MANAGEMENT_V1',
+    suggestedRoute: 'CURRENT_STANDARD'
+  },
+  PROF_DGM: {
+    id: 'PROF_DGM',
+    nameTH: 'DGM (50/50)',
+    nameEN: 'DGM (50/50)',
+    partAWeight: 50,
+    partBWeight: 50,
+    compSetCode: 'COMP_SET_MANAGEMENT_V1',
+    suggestedRoute: 'EXECUTIVE_DIRECT'
+  },
+  PROF_GM: {
+    id: 'PROF_GM',
+    nameTH: 'GM (50/50)',
+    nameEN: 'GM (50/50)',
+    partAWeight: 50,
+    partBWeight: 50,
+    compSetCode: 'COMP_SET_MANAGEMENT_V1',
+    suggestedRoute: 'EXECUTIVE_DIRECT'
+  },
+  PROF_VP: {
+    id: 'PROF_VP',
+    nameTH: 'VP (50/50)',
+    nameEN: 'VP (50/50)',
+    partAWeight: 50,
+    partBWeight: 50,
+    compSetCode: 'COMP_SET_MANAGEMENT_V1',
+    suggestedRoute: 'EXECUTIVE_DIRECT'
+  }
+};
+
+export function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', isCompleted = false) {
+  if (isCompleted) {
+    return {
+      status: 'Completed',
+      labelTH: 'เสร็จแล้ว',
+      labelEN: 'Completed',
+      daysTextTH: 'ดำเนินการเสร็จสมบูรณ์เรียบร้อยแล้ว',
+      daysTextEN: 'Phase process completed',
+      badgeClass: 'mbo-deadline-completed',
+      isCompleted: true
+    };
+  }
+
+  const now = new Date(nowIso);
+  const start = new Date(startDateIso);
+  const end = new Date(endDateIso);
+
+  now.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const msPerDay = 86400000;
+
+  if (now < start) {
+    const diffDays = Math.ceil((start - now) / msPerDay);
+    return {
+      status: 'Upcoming',
+      labelTH: 'ยังไม่เปิด',
+      labelEN: 'Upcoming',
+      daysTextTH: `เริ่มใน ${diffDays} วัน (${startDateIso})`,
+      daysTextEN: `Opens in ${diffDays} days (${startDateIso})`,
+      badgeClass: 'mbo-deadline-upcoming',
+      isUpcoming: true,
+      diffDays
+    };
+  }
+
+  if (now > end) {
+    const overdueDays = Math.floor((now - end) / msPerDay);
+    return {
+      status: 'Overdue',
+      labelTH: 'เกินกำหนด',
+      labelEN: 'Overdue',
+      daysTextTH: `เกินกำหนด ${overdueDays} วัน (ครบกำหนด ${endDateIso})`,
+      daysTextEN: `${overdueDays} days overdue (Due ${endDateIso})`,
+      badgeClass: 'mbo-deadline-overdue',
+      isOverdue: true,
+      overdueDays
+    };
+  }
+
+  const remDays = Math.floor((end - now) / msPerDay);
+  if (remDays === 0) {
+    return {
+      status: 'Due Today',
+      labelTH: 'ครบกำหนดวันนี้',
+      labelEN: 'Due Today',
+      daysTextTH: `ครบกำหนดวันนี้ (${endDateIso})`,
+      daysTextEN: `Due today (${endDateIso})`,
+      badgeClass: 'mbo-deadline-due-today',
+      isDueToday: true,
+      remDays: 0
+    };
+  }
+
+  return {
+    status: 'Open',
+    labelTH: 'กำลังเปิด',
+    labelEN: 'Open',
+    daysTextTH: `เหลือ ${remDays} วัน (ครบกำหนด ${endDateIso})`,
+    daysTextEN: `${remDays} days remaining (Due ${endDateIso})`,
+    badgeClass: remDays <= 7 ? 'mbo-deadline-due-soon' : 'mbo-deadline-open',
+    isOpen: true,
+    remDays
+  };
+}
+
 export function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -167,21 +356,8 @@ export function getPhaseCalendarStatus(stageKey, currentStatus, nowIso = '2026-0
   const cal = calendar || DEFAULT_PHASE_CALENDAR;
   const dates = cal[stageKey] || { start: '2026-01-01', end: '2026-12-31', label: 'TBD' };
 
-  if (currentStage > targetStage) {
-    return { status: 'Completed', label: `Completed (${dates.label})` };
-  }
-
-  const now = new Date(nowIso);
-  const start = new Date(dates.start);
-  const end = new Date(dates.end);
-
-  if (now < start) {
-    return { status: 'Upcoming', label: `Upcoming (${dates.label})` };
-  }
-  if (now >= start && now <= end) {
-    return { status: 'Open', label: `Open (${dates.label})` };
-  }
-  return { status: 'Closed', label: `Closed (${dates.label})` };
+  const isCompleted = (currentStage > targetStage) || (currentStatus === '16 Completed');
+  return calculateDeadlineInfo(dates.start, dates.end, nowIso, isCompleted);
 }
 
 // Normalized Verified Business Competency Definitions (R2-05 Fail-Closed Selection)
@@ -622,28 +798,32 @@ export class EmployeePartAUI {
     }
 
     const phases = [
-      { key: 'objectives', name: '1. Objectives', stage: 1 },
-      { key: 'midyear', name: '2. Mid-Year', stage: 2 },
-      { key: 'selfEvaluation', name: '3. Self Evaluation', stage: 3 },
-      { key: 'appraiserEvaluation', name: '4. Appraiser Evaluation', stage: 4 },
-      { key: 'hrFinal', name: '5. HR Final / Completed', stage: 5 }
+      { key: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
+      { key: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
+      { key: 'selfEvaluation', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
+      { key: 'appraiserEvaluation', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
+      { key: 'hrFinal', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
     ];
 
     const currentStage = getMacroStage(status);
 
     const phaseStepsHtml = phases.map(p => {
-      const calStatus = getPhaseCalendarStatus(p.key, status, nowIso, calendar);
+      const deadline = getPhaseCalendarStatus(p.key, status, nowIso, calendar);
       const isActive = (currentStage === p.stage);
       let stepClass = 'mbo-phase-step';
       if (isActive) stepClass += ' active';
-      else if (currentStage > p.stage || calStatus.status === 'Completed') stepClass += ' completed';
-      else if (calStatus.status === 'Upcoming') stepClass += ' locked';
+      else if (currentStage > p.stage || deadline.status === 'Completed') stepClass += ' completed';
+      else if (deadline.status === 'Upcoming') stepClass += ' locked';
 
       return `
         <div class="${stepClass}">
-          <div style="font-size:12px; font-weight:700;">${escapeHtml(p.name)}</div>
-          <div style="font-size:10px; font-weight:normal; margin-top:2px; opacity:0.9;">
-            [${escapeHtml(calStatus.status)}] ${escapeHtml(calendar[p.key]?.label || '')}
+          <div style="font-size:12px; font-weight:700;">${escapeHtml(p.nameTH)}</div>
+          <div style="font-size:10px; font-weight:600; opacity:0.9;">${escapeHtml(p.nameEN)}</div>
+          <div class="mbo-deadline-badge ${deadline.badgeClass}">
+            [${escapeHtml(deadline.labelTH)} / ${escapeHtml(deadline.labelEN)}]
+          </div>
+          <div style="font-size:9.5px; margin-top:2px; opacity:0.85;">
+            ${escapeHtml(deadline.daysTextEN)}
           </div>
         </div>
       `;
@@ -710,14 +890,32 @@ export class EmployeePartAUI {
       badgeColor = '#6d28d9'; badgeBg = '#f3e8ff';
     } else if (currentStatus === '05 Objective Approved') {
       const calendar = this.previewOptions.phaseCalendar || DEFAULT_PHASE_CALENDAR;
-      actorTitle = '🔒 Waiting Boundary: Stage 1 Complete — Waiting for Mid-Year Phase Window';
-      actorDesc = `เป้าหมายได้รับการอนุมัติเรียบร้อยแล้ว อยู่ระหว่างรอเปิดช่วงเวลาทบทวนกลางปี (Mid-Year Start Date: ${calendar.midyear.start})`;
-      badgeColor = '#047857'; badgeBg = '#d1fae5';
+      const nowIso = this.previewOptions.previewNow || '2026-06-15';
+      const deadline = calculateDeadlineInfo(calendar.midyear.start, calendar.midyear.end, nowIso, false);
+
+      if (deadline.isUpcoming) {
+        actorTitle = '🔒 Waiting Boundary: 05 Objective Approved — ยังไม่ต้องดำเนินการ / No action required yet';
+        actorDesc = `เป้าหมายได้รับการอนุมัติเรียบร้อยแล้ว อยู่ระหว่างรอเปิดช่วงเวลาทบทวนกลางปี (Mid-Year opens in ${deadline.diffDays || 0} days on ${calendar.midyear.start})`;
+        badgeColor = '#047857'; badgeBg = '#d1fae5';
+      } else {
+        actorTitle = '🚀 Ready Boundary: 05 Objective Approved — พร้อมเริ่มทบทวนกลางปี / Ready to start Mid-Year';
+        actorDesc = `ช่วงเวลาทบทวนกลางปีเปิดแล้ว (พนักงาน Requester เป็นผู้ดำเนินการ: กรุณากดปุ่ม "Start Mid-Year" ในระบบ Kintone เพื่อเข้าสู่ช่วงทบทวนกลางปี)`;
+        badgeColor = '#0284c7'; badgeBg = '#e0f2fe';
+      }
     } else if (currentStatus === '10 Mid-Year Completed') {
       const calendar = this.previewOptions.phaseCalendar || DEFAULT_PHASE_CALENDAR;
-      actorTitle = '🔒 Waiting Boundary: Stage 2 Complete — Waiting for Self Evaluation Phase Window';
-      actorDesc = `การทบทวนกลางปีเสร็จสมบูรณ์เรียบร้อยแล้ว อยู่ระหว่างรอเปิดช่วงเวลาประเมินตนเองปลายปี (Self Eval Start Date: ${calendar.selfEvaluation.start})`;
-      badgeColor = '#047857'; badgeBg = '#d1fae5';
+      const nowIso = this.previewOptions.previewNow || '2026-06-15';
+      const deadline = calculateDeadlineInfo(calendar.selfEvaluation.start, calendar.selfEvaluation.end, nowIso, false);
+
+      if (deadline.isUpcoming) {
+        actorTitle = '🔒 Waiting Boundary: 10 Mid-Year Completed — ยังไม่ต้องดำเนินการ / No action required yet';
+        actorDesc = `การทบทวนกลางปีเสร็จสมบูรณ์เรียบร้อยแล้ว อยู่ระหว่างรอเปิดช่วงเวลาประเมินตนเองปลายปี (Self Evaluation opens in ${deadline.diffDays || 0} days on ${calendar.selfEvaluation.start})`;
+        badgeColor = '#047857'; badgeBg = '#d1fae5';
+      } else {
+        actorTitle = '🚀 Ready Boundary: 10 Mid-Year Completed — พร้อมเริ่มประเมินตนเอง / Ready to start Self Evaluation';
+        actorDesc = `ช่วงเวลาประเมินตนเองเปิดแล้ว (พนักงาน Requester เป็นผู้ดำเนินการ: กรุณากดปุ่ม "Start Self Evaluation" ในระบบ Kintone เพื่อเข้าสู่ช่วงประเมินตนเอง)`;
+        badgeColor = '#0284c7'; badgeBg = '#e0f2fe';
+      }
     } else if (currentStatus === '15 HR Final Check') {
       actorTitle = '🔍 Action Required: HR Final Check (ฝ่ายทรัพยากรบุคคล)';
       actorDesc = 'HR ตรวจสอบความถูกต้องและอนุมัติปิดรอบประเมิน MBO';
@@ -1671,24 +1869,26 @@ export class EmployeePartAUI {
 
     const rawTopology = this._getVal('Routing_Topology');
     const topInfo = classifyTopologyForUI(rawTopology);
+    const appCount = Math.min(Math.max(parseInt(this.appraiserCount || 2, 10), 1), 4);
 
+    const requesterUser = this._getValObj('Requester_User');
     const managerUser = this._getValObj('Manager_User');
     const gmUser = this._getValObj('GM_User');
     const firstManagerUser = this._getValObj('First_Manager_User');
 
     let topologyBadgeHtml = '';
     if (!topInfo.isCanonical) {
-      topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fef2f2; color: #dc2626;">Topology: ⚠️ Unrecognized (${escapeHtml(topInfo.raw || 'Not Specified')})</span>`;
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fef2f2; color: #dc2626;">Technical Details: ⚠️ Unrecognized Topology (${escapeHtml(topInfo.raw || 'Not Specified')})</span>`;
     } else if (topInfo.isG2) {
-      topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fffbe6; color: #b45309;">Topology: ⚠️ Unsupported in V1 (${escapeHtml(topInfo.raw)})</span>`;
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fffbe6; color: #b45309;">Technical Details: ⚠️ Unsupported in V1 (${escapeHtml(topInfo.raw)})</span>`;
     } else {
-      topologyBadgeHtml = `<span class="mbo-route-topology-badge">Topology: ${escapeHtml(topInfo.raw)}</span>`;
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge">Technical Details: ${escapeHtml(topInfo.raw)} (${appCount} Appraiser Slots)</span>`;
     }
 
     if (!topInfo.isSupportedV1) {
       card.innerHTML = `
         <div class="mbo-route-title">
-          <span>🔗 เส้นทางเสนออนุมัติ / Approval Route Summary</span>
+          <span>🔗 เส้นทางผู้ประเมินและอนุมัติ / Evaluation & Approval Route</span>
           ${topologyBadgeHtml}
         </div>
         <div style="padding: 10px; background: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; font-size: 12.5px; color: #b45309;">
@@ -1701,32 +1901,79 @@ export class EmployeePartAUI {
       return card;
     }
 
-    const isM2 = topInfo.isM1M2G1 && Array.isArray(firstManagerUser) && firstManagerUser.length > 0;
+    const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
+    const macroStage = getMacroStage(status);
+
+    const steps = [
+      {
+        slotIndex: 0,
+        roleTH: 'พนักงาน',
+        roleEN: 'Employee',
+        userName: formatUserDisplay(requesterUser) !== '-' ? formatUserDisplay(requesterUser) : (this._getVal('Employee_Name') || 'Requester Employee'),
+        statusBadge: macroStage === 1 ? 'กำลังดำเนินการ / Current' : 'ตรวจสอบแล้ว / Reviewed'
+      },
+      {
+        slotIndex: 1,
+        roleTH: 'ผู้ประเมินลำดับที่ 1',
+        roleEN: '1st Appraiser',
+        userName: formatUserDisplay(managerUser) !== '-' ? formatUserDisplay(managerUser) : '1st Appraiser',
+        statusBadge: macroStage === 4 ? 'ให้คะแนนแล้ว / Scored' : (macroStage > 1 ? 'ตรวจสอบแล้ว / Reviewed' : 'รอดำเนินการ / Waiting')
+      }
+    ];
+
+    if (appCount >= 2) {
+      steps.push({
+        slotIndex: 2,
+        roleTH: 'ผู้ประเมินลำดับที่ 2',
+        roleEN: '2nd Appraiser',
+        userName: formatUserDisplay(gmUser) !== '-' ? formatUserDisplay(gmUser) : '2nd Appraiser',
+        statusBadge: macroStage === 4 ? 'ให้คะแนนแล้ว / Scored' : (macroStage > 1 ? 'ตรวจสอบแล้ว / Reviewed' : 'รอดำเนินการ / Waiting')
+      });
+    }
+
+    if (appCount >= 3) {
+      steps.push({
+        slotIndex: 3,
+        roleTH: 'ผู้ประเมินลำดับที่ 3',
+        roleEN: '3rd Appraiser',
+        userName: formatUserDisplay(firstManagerUser) !== '-' ? formatUserDisplay(firstManagerUser) : (this.previewOptions.slot3Name || '3rd Appraiser (Preview)'),
+        statusBadge: macroStage === 4 ? 'ให้คะแนนแล้ว / Scored' : (macroStage > 1 ? 'ตรวจสอบแล้ว / Reviewed' : 'รอดำเนินการ / Waiting')
+      });
+    }
+
+    if (appCount >= 4) {
+      steps.push({
+        slotIndex: 4,
+        roleTH: 'ผู้ประเมินลำดับที่ 4',
+        roleEN: '4th Appraiser',
+        userName: this.previewOptions.slot4Name || '4th Appraiser (Preview)',
+        statusBadge: macroStage === 4 ? 'ให้คะแนนแล้ว / Scored' : (macroStage > 1 ? 'ตรวจสอบแล้ว / Reviewed' : 'รอดำเนินการ / Waiting')
+      });
+    }
+
+    steps.push({
+      slotIndex: 5,
+      roleTH: 'HR Final Check',
+      roleEN: 'HR Final / HR Admin',
+      userName: 'ฝ่ายทรัพยากรบุคคล / HR Control Center',
+      statusBadge: status === '16 Completed' ? 'เสร็จแล้ว / Completed' : (status === '15 HR Final Check' ? 'กำลังดำเนินการ / Current' : 'รอดำเนินการ / Waiting')
+    });
+
+    const routeStepsHtml = steps.map(s => `
+      <div class="mbo-route-step ${s.slotIndex === this.activeSlotIndex ? 'active-slot' : ''}">
+        <div style="font-size: 11px; font-weight: 700; color: #475569;">${escapeHtml(s.roleTH)} / ${escapeHtml(s.roleEN)}</div>
+        <div class="mbo-route-user" style="font-size: 12.5px; font-weight: 700; color: #0f172a; margin: 2px 0;">${escapeHtml(s.userName)}</div>
+        <div style="font-size: 10.5px; color: #0284c7; font-weight: 600;">[${escapeHtml(s.statusBadge)}]</div>
+      </div>
+    `).join('');
 
     card.innerHTML = `
       <div class="mbo-route-title">
-        <span>🔗 เส้นทางเสนออนุมัติ / Approval Route Summary</span>
+        <span>🔗 เส้นทางผู้ประเมินและอนุมัติ / Evaluation & Approval Route</span>
         ${topologyBadgeHtml}
       </div>
       <div class="mbo-route-grid">
-        ${isM2 ? `
-          <div class="mbo-route-step">
-            <span class="mbo-route-role">1st Manager (ผู้บังคับบัญชาชั้นต้น):</span>
-            <span class="mbo-route-user">${formatUserDisplay(firstManagerUser)}</span>
-          </div>
-        ` : ''}
-        <div class="mbo-route-step">
-          <span class="mbo-route-role">Manager (ผู้จัดการส่วนงาน):</span>
-          <span class="mbo-route-user">${formatUserDisplay(managerUser)}</span>
-        </div>
-        <div class="mbo-route-step">
-          <span class="mbo-route-role">GM (ผู้จัดการฝ่าย):</span>
-          <span class="mbo-route-user">${formatUserDisplay(gmUser)}</span>
-        </div>
-        <div class="mbo-route-step">
-          <span class="mbo-route-role">HR Final Check:</span>
-          <span class="mbo-route-user">HR Final Check (ตรวจสอบขั้นสุดท้าย)</span>
-        </div>
+        ${routeStepsHtml}
       </div>
     `;
     return card;

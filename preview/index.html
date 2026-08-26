@@ -69,81 +69,58 @@
 
   <div class="preview-lab-toolbar">
     <div class="preview-lab-title">
-      🧪 Status Preview Lab V2 R2
+      🧪 Status Preview Lab V2 R6 (UI Closure Master Sprint)
     </div>
 
+    <!-- Primary Business-First Controls -->
     <div class="preview-lab-group">
-      <label>1. Workflow Status (1-16)</label>
+      <label>1. Workflow Status / สถานะการประเมิน</label>
       <select id="lab-status" class="preview-lab-select">
-        <option value="01 Draft Objective">01 Draft Objective [Stage 1]</option>
-        <option value="02 First Manager Objective Review">02 First Manager Objective Review [Stage 1]</option>
-        <option value="03 Manager Objective Review">03 Manager Objective Review [Stage 1]</option>
-        <option value="04 GM Objective Review">04 GM Objective Review [Stage 1]</option>
-        <option value="05 Objective Approved">05 Objective Approved [Stage 1]</option>
-        <option value="06 Employee Mid-Year">06 Employee Mid-Year [Stage 2]</option>
-        <option value="07 First Manager Mid-Year Review">07 First Manager Mid-Year Review [Stage 2]</option>
-        <option value="08 Manager Mid-Year Review">08 Manager Mid-Year Review [Stage 2]</option>
-        <option value="09 GM Mid-Year Review">09 GM Mid-Year Review [Stage 2]</option>
-        <option value="10 Mid-Year Completed">10 Mid-Year Completed [Stage 2]</option>
-        <option value="11 Employee Self Evaluation">11 Employee Self Evaluation [Stage 3]</option>
-        <option value="12 First Manager Final Evaluation">12 First Manager Final Evaluation [Stage 4]</option>
-        <option value="13 Manager Final Evaluation">13 Manager Final Evaluation [Stage 4]</option>
-        <option value="14 GM Final Evaluation">14 GM Final Evaluation [Stage 4]</option>
-        <option value="15 HR Final Check">15 HR Final Check [Stage 5]</option>
-        <option value="16 Completed">16 Completed [Stage 5]</option>
+        <option value="01 Draft Objective">01 Draft Objective [Stage 1 Objectives]</option>
+        <option value="02 First Manager Objective Review">02 First Manager Objective Review [Stage 1 Objectives]</option>
+        <option value="03 Manager Objective Review">03 Manager Objective Review [Stage 1 Objectives]</option>
+        <option value="04 GM Objective Review">04 GM Objective Review [Stage 1 Objectives]</option>
+        <option value="05 Objective Approved">05 Objective Approved [Stage 1 Objectives]</option>
+        <option value="06 Employee Mid-Year">06 Employee Mid-Year [Stage 2 Mid-Year]</option>
+        <option value="07 First Manager Mid-Year Review">07 First Manager Mid-Year Review [Stage 2 Mid-Year]</option>
+        <option value="08 Manager Mid-Year Review">08 Manager Mid-Year Review [Stage 2 Mid-Year]</option>
+        <option value="09 GM Mid-Year Review">09 GM Mid-Year Review [Stage 2 Mid-Year]</option>
+        <option value="10 Mid-Year Completed">10 Mid-Year Completed [Stage 2 Mid-Year]</option>
+        <option value="11 Employee Self Evaluation">11 Employee Self Evaluation [Stage 3 Self Evaluation]</option>
+        <option value="12 First Manager Final Evaluation">12 First Manager Final Evaluation [Stage 4 Appraiser Evaluation]</option>
+        <option value="13 Manager Final Evaluation">13 Manager Final Evaluation [Stage 4 Appraiser Evaluation]</option>
+        <option value="14 GM Final Evaluation">14 GM Final Evaluation [Stage 4 Appraiser Evaluation]</option>
+        <option value="15 HR Final Check">15 HR Final Check [Stage 5 HR Final / Completed]</option>
+        <option value="16 Completed">16 Completed [Stage 5 HR Final / Completed]</option>
       </select>
     </div>
 
     <div class="preview-lab-group">
-      <label>2. Profile Ratio</label>
-      <select id="lab-ratio" class="preview-lab-select">
-        <option value="70/30">70/30 (Staff / Operational 6 Items)</option>
-        <option value="60/40">60/40 (Assistant Manager / Management 8 Items)</option>
-        <option value="50/50">50/50 (Section Manager / Management 8 Items)</option>
+      <label>2. Route Scenario / เส้นทางผู้ประเมิน & อนุมัติ</label>
+      <select id="lab-route-scenario" class="preview-lab-select">
+        <option value="CURRENT_STANDARD" selected>1. Current Standard — 2 Appraisers (ผู้ประเมิน 2 คน)</option>
+        <option value="EXTENDED">2. Extended Route — 3 Appraisers (ผู้ประเมิน 3 คน)</option>
+        <option value="EXECUTIVE_DIRECT">3. Executive Direct — 1 Appraiser (ผู้บริหาร 1 คน) [Preview Only / Routing Pending]</option>
+        <option value="FUTURE_CAPACITY">4. Future Capacity — 4 Appraisers (รองรับอนาคต 4 คน) [Preview Only]</option>
       </select>
     </div>
 
     <div class="preview-lab-group">
-      <label>3. Appraisers (1-4)</label>
-      <select id="lab-appraisers" class="preview-lab-select">
-        <option value="1">1 Appraiser</option>
-        <option value="2" selected>2 Appraisers (Default)</option>
-        <option value="3">3 Appraisers (Logical preview)</option>
-        <option value="4">4 Appraisers (Logical preview)</option>
+      <label>3. Evaluation Profile / โปรไฟล์การประเมิน (Part A : Part B)</label>
+      <select id="lab-eval-profile" class="preview-lab-select">
+        <option value="PROF_STAFF_OPERATIONAL">1. Staff / Chief — 70/30 (Operational 6 Items)</option>
+        <option value="PROF_STAFF_JAPANESE">2. Japanese Staff — 70/30 (Operational 6 Items)</option>
+        <option value="PROF_ASST_MGR">3. Assistant Manager — 60/40 (Management 8 Items)</option>
+        <option value="PROF_SECT_MGR">4. Section Manager — 50/50 (Management 8 Items)</option>
+        <option value="PROF_SR_MGR">5. Senior Manager — 50/50 (Management 8 Items)</option>
+        <option value="PROF_DGM">6. DGM — 50/50 (Management 8 Items)</option>
+        <option value="PROF_GM">7. GM — 50/50 (Management 8 Items)</option>
+        <option value="PROF_VP">8. VP — 50/50 (Management 8 Items)</option>
       </select>
     </div>
 
     <div class="preview-lab-group">
-      <label>4. Completion Mode</label>
-      <select id="lab-completion" class="preview-lab-select">
-        <option value="complete">Complete (All ratings filled)</option>
-        <option value="incomplete">Incomplete (Missing ratings)</option>
-      </select>
-    </div>
-
-    <div class="preview-lab-group">
-      <label>5. Active Editor Slot</label>
-      <select id="lab-slot" class="preview-lab-select">
-        <option value="1">1st Appraiser</option>
-        <option value="2">2nd Appraiser</option>
-        <option value="3">3rd Appraiser</option>
-        <option value="4">4th Appraiser</option>
-      </select>
-    </div>
-
-    <div class="preview-lab-group">
-      <label>6. Topology</label>
-      <select id="lab-topology" class="preview-lab-select">
-        <option value="M1_G1">M1_G1 (Canonical V1)</option>
-        <option value="M1_M2_G1">M1_M2_G1 (Canonical M2 V1)</option>
-        <option value="M1_G1_G2">M1_G1_G2 (Unsupported G2)</option>
-        <option value="M1_M2_G1_G2">M1_M2_G1_G2 (Unsupported G2)</option>
-        <option value="INVALID_TOPOLOGY">INVALID_TOPOLOGY (Unrecognized)</option>
-      </select>
-    </div>
-
-    <div class="preview-lab-group">
-      <label>7. Simulated Date</label>
+      <label>4. Simulated Date / วันที่จำลองประเมิน</label>
       <select id="lab-now-date" class="preview-lab-select">
         <option value="2026-02-15">Feb 15, 2026 (Stage 1 Objectives Open)</option>
         <option value="2026-06-15" selected>Jun 15, 2026 (Stage 2 Mid-Year Open)</option>
@@ -152,6 +129,73 @@
         <option value="2026-12-15">Dec 15, 2026 (Stage 5 HR Final Open)</option>
       </select>
     </div>
+
+    <div class="preview-lab-group">
+      <label>5. Rating Completion Mode / สถานะการลงคะแนน</label>
+      <select id="lab-completion" class="preview-lab-select">
+        <option value="complete">Complete (ลงคะแนนครบถ้วน)</option>
+        <option value="incomplete">Incomplete (ยังลงคะแนนไม่ครบ)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- HR Phase Calendar Preview Panel & Technical Details Section -->
+  <div style="background: #1e293b; padding: 10px 20px; border-bottom: 1px solid #334155; font-size: 12px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+    <details style="cursor: pointer; color: #94a3b8;">
+      <summary style="font-weight: 700; color: #38bdf8;">📅 HR Phase Calendar Preview / ตัวอย่างการกำหนดช่วงเวลาโดย HR (App800 Preview Contract)</summary>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; padding: 10px; background: #0f172a; border-radius: 6px; border: 1px solid #334155;">
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Stage 1 Objectives:</label><br/>
+          <input type="date" id="lab-cal-obj-start" value="2026-01-01" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;"> to
+          <input type="date" id="lab-cal-obj-end" value="2026-03-31" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;">
+        </div>
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Stage 2 Mid-Year:</label><br/>
+          <input type="date" id="lab-cal-mid-start" value="2026-06-01" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;"> to
+          <input type="date" id="lab-cal-mid-end" value="2026-07-31" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;">
+        </div>
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Stage 3 Self Eval:</label><br/>
+          <input type="date" id="lab-cal-self-start" value="2026-10-01" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;"> to
+          <input type="date" id="lab-cal-self-end" value="2026-10-31" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;">
+        </div>
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Stage 4 Appraiser Eval:</label><br/>
+          <input type="date" id="lab-cal-app-start" value="2026-11-01" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;"> to
+          <input type="date" id="lab-cal-app-end" value="2026-11-30" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;">
+        </div>
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Stage 5 HR Final:</label><br/>
+          <input type="date" id="lab-cal-hr-start" value="2026-12-01" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;"> to
+          <input type="date" id="lab-cal-hr-end" value="2026-12-31" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px; padding:2px 4px;">
+        </div>
+      </div>
+    </details>
+
+    <details style="cursor: pointer; color: #94a3b8;">
+      <summary style="font-weight: 700; color: #fbbf24;">⚙️ Advanced / Technical Details (Forensic & Diagnostic Controls)</summary>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; padding: 10px; background: #0f172a; border-radius: 6px; border: 1px solid #334155;">
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Raw Topology Override:</label><br/>
+          <select id="lab-topology" class="preview-lab-select" style="font-size:12px;">
+            <option value="M1_G1">M1_G1 (Canonical 13-Status V1 Route)</option>
+            <option value="M1_M2_G1">M1_M2_G1 (Canonical 16-Status M2 Route)</option>
+            <option value="M1_G1_G2">M1_G1_G2 (Unsupported G2 Topology)</option>
+            <option value="M1_M2_G1_G2">M1_M2_G1_G2 (Unsupported G2 Topology)</option>
+            <option value="INVALID_TOPOLOGY">INVALID_TOPOLOGY (Unrecognized)</option>
+          </select>
+        </div>
+        <div>
+          <label style="color:#94a3b8; font-weight:700;">Active Editor Slot Override:</label><br/>
+          <select id="lab-slot" class="preview-lab-select" style="font-size:12px;">
+            <option value="1">1. 1st Appraiser (ผู้ประเมินลำดับที่ 1)</option>
+            <option value="2">2. 2nd Appraiser (ผู้ประเมินลำดับที่ 2)</option>
+            <option value="3">3. 3rd Appraiser (ผู้ประเมินลำดับที่ 3)</option>
+            <option value="4">4. 4th Appraiser (ผู้ประเมินลำดับที่ 4)</option>
+          </select>
+        </div>
+      </div>
+    </details>
   </div>
 
   <div class="preview-container-wrap">
@@ -159,7 +203,7 @@
   </div>
 
   <script type="module">
-    import { EmployeePartAUI } from '/src/ui/employee-part-a-ui.js';
+    import { EmployeePartAUI, ROUTE_SCENARIOS, EVALUATION_PROFILES } from '/src/ui/employee-part-a-ui.js';
 
     (function() {
       const mount = document.getElementById('mbo-ui-mount');
@@ -227,6 +271,7 @@
         Manager_User: { value: [{ code: 'm01', name: 'Manager Sompong' }] },
         GM_User: { value: [{ code: 'g01', name: 'GM Vichai' }] },
         First_Manager_User: { value: [{ code: 'fm01', name: 'First Manager Anan' }] },
+        Requester_User: { value: [{ code: '0149', name: 'Somchai Prasert (สมชาย ประเสริฐ)' }] },
 
         // Real Physical Legacy Field Names & Scores (Slots 1 & 2)
         Manager_Comment_1: { value: 'ผลงานดีเยี่ยม ปฏิบัติงานได้ตามเป้าหมายและมีคุณภาพสูง' },
@@ -292,56 +337,43 @@
         Competency_Result_8: { value: '5.00' }
       };
 
-      function syncSlotOptions(appCount) {
-        const slotSelect = document.getElementById('lab-slot');
-        const currentSlotVal = parseInt(slotSelect.value, 10);
-        slotSelect.innerHTML = '';
-
-        const slotLabels = ['1st Appraiser', '2nd Appraiser', '3rd Appraiser', '4th Appraiser'];
-        for (let i = 1; i <= appCount; i++) {
-          const opt = document.createElement('option');
-          opt.value = String(i);
-          opt.textContent = `${i}. ${slotLabels[i - 1]}`;
-          if (i === Math.min(currentSlotVal, appCount)) {
-            opt.selected = true;
-          }
-          slotSelect.appendChild(opt);
-        }
-      }
-
       function updateLab() {
         const st = document.getElementById('lab-status').value;
-        const ratio = document.getElementById('lab-ratio').value;
-        const appCount = parseInt(document.getElementById('lab-appraisers').value, 10);
+        const routeScenarioId = document.getElementById('lab-route-scenario').value;
+        const evalProfileId = document.getElementById('lab-eval-profile').value;
         const compMode = document.getElementById('lab-completion').value;
         const topVal = document.getElementById('lab-topology').value;
 
-        syncSlotOptions(appCount);
+        const routeScenario = ROUTE_SCENARIOS[routeScenarioId] || ROUTE_SCENARIOS.CURRENT_STANDARD;
+        const evalProfile = EVALUATION_PROFILES[evalProfileId] || EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL;
+
+        const appCount = routeScenario.appraiserCount;
 
         const nowDate = document.getElementById('lab-now-date').value;
         const activeSlot = Math.min(parseInt(document.getElementById('lab-slot').value, 10), appCount);
 
         mockRecord.Status.value = st;
-        mockRecord.Routing_Topology.value = topVal;
+        mockRecord.Routing_Topology.value = routeScenario.topology || topVal;
 
-        if (ratio === '70/30') {
-          mockRecord.PartA_Weight.value = '70';
-          mockRecord.PartB_Weight.value = '30';
-          mockRecord.Competency_Set_Code.value = 'COMP_SET_OPERATIONAL_V1';
-        } else if (ratio === '60/40') {
-          mockRecord.PartA_Weight.value = '60';
-          mockRecord.PartB_Weight.value = '40';
-          mockRecord.Competency_Set_Code.value = 'COMP_SET_MANAGEMENT_V1';
-        } else if (ratio === '50/50') {
-          mockRecord.PartA_Weight.value = '50';
-          mockRecord.PartB_Weight.value = '50';
-          mockRecord.Competency_Set_Code.value = 'COMP_SET_MANAGEMENT_V1';
-        }
+        mockRecord.PartA_Weight.value = String(evalProfile.partAWeight);
+        mockRecord.PartB_Weight.value = String(evalProfile.partBWeight);
+        mockRecord.Competency_Set_Code.value = evalProfile.compSetCode;
+
+        const phaseCalendar = {
+          objectives: { start: document.getElementById('lab-cal-obj-start').value, end: document.getElementById('lab-cal-obj-end').value, label: `${document.getElementById('lab-cal-obj-start').value} to ${document.getElementById('lab-cal-obj-end').value}` },
+          midyear: { start: document.getElementById('lab-cal-mid-start').value, end: document.getElementById('lab-cal-mid-end').value, label: `${document.getElementById('lab-cal-mid-start').value} to ${document.getElementById('lab-cal-mid-end').value}` },
+          selfEvaluation: { start: document.getElementById('lab-cal-self-start').value, end: document.getElementById('lab-cal-self-end').value, label: `${document.getElementById('lab-cal-self-start').value} to ${document.getElementById('lab-cal-self-end').value}` },
+          appraiserEvaluation: { start: document.getElementById('lab-cal-app-start').value, end: document.getElementById('lab-cal-app-end').value, label: `${document.getElementById('lab-cal-app-start').value} to ${document.getElementById('lab-cal-app-end').value}` },
+          hrFinal: { start: document.getElementById('lab-cal-hr-start').value, end: document.getElementById('lab-cal-hr-end').value, label: `${document.getElementById('lab-cal-hr-start').value} to ${document.getElementById('lab-cal-hr-end').value}` }
+        };
 
         const previewOptions = {
           isPreviewMode: true,
           previewNow: nowDate,
           activeSlotIndex: activeSlot,
+          phaseCalendar,
+          routeScenario,
+          evalProfile,
           competencySetCode: mockRecord.Competency_Set_Code.value,
           partAWeight: mockRecord.PartA_Weight.value,
           partBWeight: mockRecord.PartB_Weight.value,
@@ -356,7 +388,6 @@
         };
 
         if (compMode === 'incomplete') {
-          // Incomplete mode removes required ratings for slot 1 AND others (R2-08)
           mockRecord.Manager_Achievement_1.value = '';
           mockRecord.Manager_Achievement_2.value = '';
           mockRecord.Manager_Achievement_3.value = '';
@@ -388,8 +419,13 @@
         ui.render();
       }
 
-      ['lab-status', 'lab-ratio', 'lab-appraisers', 'lab-completion', 'lab-slot', 'lab-topology', 'lab-now-date'].forEach(id => {
-        document.getElementById(id).addEventListener('change', updateLab);
+      ['lab-status', 'lab-route-scenario', 'lab-eval-profile', 'lab-completion', 'lab-slot', 'lab-topology', 'lab-now-date',
+       'lab-cal-obj-start', 'lab-cal-obj-end', 'lab-cal-mid-start', 'lab-cal-mid-end',
+       'lab-cal-self-start', 'lab-cal-self-end', 'lab-cal-app-start', 'lab-cal-app-end',
+       'lab-cal-hr-start', 'lab-cal-hr-end'
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateLab);
       });
 
       updateLab();

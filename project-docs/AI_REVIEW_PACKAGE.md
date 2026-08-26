@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_EVALUATION_UI_V2_R6_UI_CLOSURE** | **`PASS`** — Consolidated App794 Evaluation UI V2 R6 UI Closure Master Sprint complete (0 Kintone calls/writes/deploys): Redesigned top-navigation for 5 bilingual macro stages; converted Route Summary to bilingual ordinal Appraiser sequence (`1st Appraiser`, `2nd Appraiser`, etc., eliminating `Manager`/`GM` headings); redesigned Preview Lab to be Business-First with a single Route Scenario selector (`Current Standard — 2 Appraisers`, `Extended Route — 3 Appraisers`, `Executive Direct — 1 Appraiser [Preview Only / Routing Pending]`, `Future Capacity — 4 Appraisers [Preview Only]`) and 8 distinct Evaluation Profiles (`Staff/Chief`, `Japanese Staff`, `Assistant Manager`, `Section Manager`, `Senior Manager`, `DGM`, `GM`, `VP`); integrated HR Phase Calendar Preview panel for App800 contract simulation; added deterministic date countdowns (`Opens in X days`, `X days remaining`, `Due Today`, `X days overdue`, `Completed`); added Requester boundary action guidance for Status 05 (`Start Mid-Year`) and Status 10 (`Start Self Evaluation`); desktop horizontal spreadsheet row/grid layout maintained across all screens; 556/556 unit tests passing; dist bundle rebuilt |
 | **APP794_EVALUATION_UI_V2_R5** | **`PASS`** — Implemented R5 route-aware five-stage UX & desktop horizontal spreadsheet layout (0 Kintone calls/writes/deploys): M1_G1 applicable path (13 statuses, excluding 02/07/12) and M1_M2_G1 path (16 statuses) supported with fail-closed route mismatch warnings; static 16-status progress replaced with route-aware calculation; Stage 1 complete status 05 shows Mid-Year waiting boundary banner; Stage 2 complete status 10 shows Self Eval waiting boundary banner; HR Phase Calendar model & deterministic `previewNow` integrated; Actor-Aware presentation cards added; Objectives, Mid-Year, Self Eval, Appraiser Evaluation, and HR Final screens updated to desktop horizontal spreadsheet row/grid layout; Part A & Part B appraiser matrices support dynamic 1..4 appraiser columns; 555/555 unit tests passing; dist bundle rebuilt |
 | **APP794_PREVIEW_BOOTSTRAP_REPAIR** | **`PASS`** — Repaired local Preview Lab bootstrap (0 Kintone calls/writes/deploys): Root cause resolved (classic IIFE bundle `dist/mbo-employee-app.js` encapsulates `EmployeePartAUI` without global export); updated `scripts/ui-preview-server.js` to serve `/src/*` read-only with strict path traversal containment; updated `preview/index.html` to import `{ EmployeePartAUI }` directly from `/src/ui/employee-part-a-ui.js` via ES module; verified main MBO UI renders with 0 `ReferenceError` console errors across statuses 01, 06, 11, 13, 15, 16, appraisers 1–4, and ratios 70/30, 60/40, 50/50; production `dist/mbo-employee-app.js` remains 100% unchanged |
 | **APP794_EVALUATION_UI_V2_R4_DIFFICULTY_EMPTY_STATE** | **`PASS`** — Applied R4 local UI correction (0 Kintone calls/writes/deploys): Removed fake `Level 3` visual default on blank/unselected `Difficulty_i`; added explicit empty placeholder (`-- กรุณาเลือกระดับความยาก / Please select --`) with `data-required="true"` triggering yellow/Required field state before Save; blank read-only Difficulty renders neutral missing label (`ยังไม่ได้ระบุ / Not selected`); rendering does not mutate blank record state; 555/555 tests passing; bundle parse PASS |
@@ -1613,3 +1614,85 @@ GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
 NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
 ```
+
+## App794 Evaluation UI V2 R6 UI Closure Evidence
+
+```text
+APP794_EVALUATION_UI_V2_R6_UI_CLOSURE = COMPLETE
+EXECUTION_STARTING_HEAD = 99971fd85a338b94e783340cce111779961bee89
+CANONICAL_UI_BASELINE_READ = PASS
+UI_IS_CURRENT_CRITICAL_PATH = YES
+KINTONE_AUTHORIZATION = NONE
+
+FIVE_STAGE_THAI_ENGLISH = PASS
+LIFECYCLE_APPRAISER_SEQUENCE = PASS
+ROUTE_SUMMARY_ORDINAL_APPRAISERS = PASS
+ROUTE_SUMMARY_MANAGER_GM_HEADINGS = 0
+SAME_APPRAISERS_VISIBLE_ALL_5_STAGES = PASS
+
+PRIMARY_APPRAISERS_1_4_SELECTOR_REMOVED = PASS
+BUSINESS_ROUTE_SCENARIO_SELECTOR = PASS
+RAW_TOPOLOGY_MOVED_TO_TECHNICAL_DETAILS = PASS
+CURRENT_STANDARD_2_APPRAISERS = PASS
+EXTENDED_3_APPRAISERS = PASS
+EXECUTIVE_DIRECT_1_APPRAISER_PREVIEW = PASS
+EXECUTIVE_DIRECT_RUNTIME_CLAIM = ROUTING_PENDING
+FUTURE_4_APPRAISERS_PREVIEW = PASS
+
+EVALUATION_PROFILE_LABEL_CLEAR = PASS
+EIGHT_PROFILE_OPTIONS_VISIBLE = PASS
+PROFILE_ROUTE_SEPARATION = PASS
+
+STATUS05_REQUESTER_START_MIDYEAR = PASS
+STATUS10_REQUESTER_START_SELF = PASS
+BOUNDARY_PREOPEN_LOCKED = PASS
+BOUNDARY_OPEN_READY_GUIDANCE = PASS
+
+HR_PHASE_CALENDAR_PREVIEW_5_STAGES = PASS
+PHASE_CALENDAR_OWNER = APP800_HR_CONTROL_CENTER
+PHASE_CALENDAR_PERSISTENCE = PENDING_APP800_INTEGRATION
+PHASE_WINDOW_RUNTIME_ENFORCEMENT = PENDING_LATER_GATE
+
+COUNTDOWN_UPCOMING = PASS
+COUNTDOWN_DAYS_REMAINING = PASS
+COUNTDOWN_DUE_TODAY = PASS
+COUNTDOWN_OVERDUE = PASS
+COUNTDOWN_COMPLETED_OVERRIDE = PASS
+DETERMINISTIC_CALENDAR_DATE_ARITHMETIC = PASS
+
+PROCESS_PROGRESS_ROUTE_AWARE = PASS
+DATA_COMPLETION_VISIBLE = PASS
+APPRAISER_COMPLETENESS_VISIBLE = PASS
+
+OBJECTIVES_HORIZONTAL_DESKTOP = PASS
+MIDYEAR_HORIZONTAL_DESKTOP = PASS
+SELF_EVAL_HORIZONTAL_DESKTOP = PASS
+PARTA_DYNAMIC_1_TO_4_COLUMNS = PASS
+PARTB_DYNAMIC_1_TO_4_COLUMNS = PASS
+MIDYEAR_ATTACHMENT = PASS
+SELF_EVAL_ATTACHMENT = PASS
+APPRAISER_HR_EVIDENCE_CONTEXT = PASS
+R4_DIFFICULTY_REGRESSION = PASS
+APPRAISER_COMPLETENESS_REGRESSION = PASS
+
+APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
+PRODUCTION_GENERIC_ROUTE_PERSISTENCE = PENDING_LATER_GATE
+EXECUTIVE_ROUTE_PERSISTENCE = PENDING_LATER_GATE
+
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+APP795_WRITE_COUNT = 0
+APP796_WRITE_COUNT = 0
+APP800_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+
+NPM_TEST = 556 / PASS
+UI_BUILD = PASS
+PREVIEW_MAIN_UI_RENDER = PASS
+PREVIEW_CONSOLE_FATAL_ERROR_COUNT = 0
+PREVIEW_KINTONE_CALL_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
+```
+

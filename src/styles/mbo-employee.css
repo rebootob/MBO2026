@@ -1104,6 +1104,201 @@
 }
 
 .mbo-progress-bar-fill {
+.mbo-wide-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mbo-primary-navy);
+}
+
+.mbo-wide-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 4px;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* --- Appraiser Multi-Slot Evaluation Grid --- */
+.mbo-appraiser-eval-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.mbo-appraiser-slot-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.mbo-appraiser-slot-header {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* --- Part B Competency Cards --- */
+.mbo-partb-card {
+  background: var(--mbo-card-bg);
+  border: 1px solid var(--mbo-border);
+  border-radius: var(--mbo-radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.mbo-partb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mbo-partb-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mbo-partb-desc {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 10px;
+  line-height: 1.4;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #0ea5e9;
+}
+
+.mbo-coce-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.mbo-pending-badge {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+/* --- Attachment Evidence Summary Area --- */
+.mbo-attachment-section {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 10px;
+}
+
+.mbo-attachment-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mbo-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mbo-attachment-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* R5 Route-Aware Five-Stage UX Styles */
+.mbo-overall-progress-card {
+  background: #ffffff;
+  border: 1px solid var(--mbo-border);
+  border-radius: var(--mbo-radius);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.mbo-progress-phases {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mbo-phase-step {
+  flex: 1;
+  min-width: 140px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+  color: #475569;
+}
+
+.mbo-phase-step.active {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(30,58,138,0.25);
+}
+
+.mbo-phase-step.completed {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.mbo-phase-step.locked {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  opacity: 0.8;
+}
+
+.mbo-progress-bar-wrap {
+  width: 100%;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.mbo-progress-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #2563eb, #0284c7);
   transition: width 0.3s ease;
@@ -1111,4 +1306,51 @@
 
 .mbo-actor-banner-card {
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.mbo-deadline-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+.mbo-deadline-upcoming {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.mbo-deadline-open {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+
+.mbo-deadline-due-soon {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.mbo-deadline-due-today {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+  font-weight: 800;
+}
+
+.mbo-deadline-overdue {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  font-weight: 800;
+}
+
+.mbo-deadline-completed {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
 }

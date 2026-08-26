@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR, ROUTE_SCENARIOS, EVALUATION_PROFILES, calculateDeadlineInfo } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => {
   const children = [];
@@ -1175,7 +1175,7 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   });
   const uiM1G1 = new EmployeePartAUI({ record: m1g1WithStaleFm });
   const routeElM1G1 = uiM1G1._renderRouteContext();
-  assert.equal(routeElM1G1.innerHTML.includes('1st Manager'), false, 'M1_G1 record must NOT display First Manager route step even if stale First_Manager_User exists');
+  assert.equal(routeElM1G1.innerHTML.includes('3rd Appraiser'), false, 'M1_G1 record must NOT display 3rd Appraiser route step');
 
   // R2 item 2 — M1_M2_G1 + populated First Manager remains valid for display
   const m1m2g1WithFm = createMockRecord({
@@ -1184,9 +1184,9 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
     Manager_User: { value: [{ code: 'm01', name: 'Manager One' }] },
     GM_User: { value: [{ code: 'g01', name: 'GM One' }] }
   });
-  const uiM1M2G1 = new EmployeePartAUI({ record: m1m2g1WithFm });
+  const uiM1M2G1 = new EmployeePartAUI({ record: m1m2g1WithFm, appraiserCount: 3 });
   const routeElM1M2G1 = uiM1M2G1._renderRouteContext();
-  assert.equal(routeElM1M2G1.innerHTML.includes('1st Manager'), true, 'M1_M2_G1 record with First_Manager_User MUST display First Manager route step');
+  assert.equal(routeElM1M2G1.innerHTML.includes('3rd Appraiser'), true, 'M1_M2_G1 record with First_Manager_User MUST display 3rd Appraiser route step');
 
   // R2 item 3 — NONEMPTY_INVALID_TOPOLOGY returns warning/fail-closed display
   const invalidTopGuidance = getStatusGuidance('01 Draft Objective', 'INVALID_TOPOLOGY');
@@ -1570,4 +1570,90 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   uiHorizObj.isEmployeeVerified = true;
   uiHorizObj.render();
   assert.equal(uiHorizObj.root.querySelectorAll('.mbo-grid-table').length > 0, true, 'Objectives screen must render horizontal spreadsheet table');
+});
+
+test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadlines, Ordinal Appraiser Headings', () => {
+  // 1. ROUTE_SCENARIOS export exactness
+  assert.ok(ROUTE_SCENARIOS.CURRENT_STANDARD, 'CURRENT_STANDARD route scenario exists');
+  assert.equal(ROUTE_SCENARIOS.CURRENT_STANDARD.appraiserCount, 2);
+  assert.equal(ROUTE_SCENARIOS.EXTENDED.appraiserCount, 3);
+  assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.appraiserCount, 1);
+  assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.isRuntimeSupported, false);
+  assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.badgeText, 'Preview Only / Routing Pending');
+  assert.equal(ROUTE_SCENARIOS.FUTURE_CAPACITY.appraiserCount, 4);
+
+  // 2. EVALUATION_PROFILES export exactness (8 distinct profile keys)
+  assert.equal(Object.keys(EVALUATION_PROFILES).length, 8);
+  assert.equal(EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL.partAWeight, 70);
+  assert.equal(EVALUATION_PROFILES.PROF_ASST_MGR.partAWeight, 60);
+  assert.equal(EVALUATION_PROFILES.PROF_SECT_MGR.partAWeight, 50);
+  assert.equal(EVALUATION_PROFILES.PROF_DGM.suggestedRoute, 'EXECUTIVE_DIRECT');
+
+  // 3. calculateDeadlineInfo deterministic date arithmetic
+  const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
+  assert.equal(dlUpcoming.status, 'Upcoming');
+  assert.equal(dlUpcoming.isUpcoming, true);
+  assert.ok(dlUpcoming.daysTextEN.includes('Opens in'));
+
+  const dlOpen = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-06-15', false);
+  assert.equal(dlOpen.status, 'Open');
+  assert.ok(dlOpen.daysTextEN.includes('days remaining'));
+
+  const dlDueToday = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-07-31', false);
+  assert.equal(dlDueToday.status, 'Due Today');
+  assert.equal(dlDueToday.isDueToday, true);
+
+  const dlOverdue = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-08-05', false);
+  assert.equal(dlOverdue.status, 'Overdue');
+  assert.equal(dlOverdue.isOverdue, true);
+  assert.ok(dlOverdue.daysTextEN.includes('days overdue'));
+
+  const dlCompleted = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-08-05', true);
+  assert.equal(dlCompleted.status, 'Completed');
+  assert.equal(dlCompleted.isCompleted, true);
+
+  // 4. Route Summary Ordinal Headings & Bilingual Title
+  const uiRoute = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '01 Draft Objective' } }),
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true,
+    appraiserCount: 2
+  });
+  uiRoute.render();
+  assert.ok(uiRoute.root.innerHTML.includes('Evaluation &amp; Approval Route') || uiRoute.root.innerHTML.includes('Evaluation & Approval Route'));
+  assert.ok(uiRoute.root.innerHTML.includes('1st Appraiser'));
+  assert.ok(uiRoute.root.innerHTML.includes('2nd Appraiser'));
+  assert.equal(uiRoute.root.innerHTML.includes('Manager (ผู้จัดการส่วนงาน):'), false, 'Route summary must not use Manager as step heading');
+  assert.equal(uiRoute.root.innerHTML.includes('GM (ผู้จัดการฝ่าย):'), false, 'Route summary must not use GM as step heading');
+
+  // 5. Executive Direct 1 Appraiser Route Preview
+  const uiExecDirect = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '01 Draft Objective' } }),
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true,
+    appraiserCount: 1
+  });
+  uiExecDirect.render();
+  assert.ok(uiExecDirect.root.innerHTML.includes('1st Appraiser'));
+
+  // 6. Status 05 Boundary Guidance (Upcoming vs Open)
+  const uiStatus05Upcoming = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '05 Objective Approved' } }),
+    stage: 'READ_ONLY',
+    previewOptions: { previewNow: '2026-02-15' }
+  });
+  uiStatus05Upcoming.render();
+  assert.ok(uiStatus05Upcoming.root.innerHTML.includes('05 Objective Approved'));
+
+  const uiStatus05Open = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '05 Objective Approved' } }),
+    stage: 'READ_ONLY',
+    previewOptions: { previewNow: '2026-06-15' }
+  });
+  uiStatus05Open.render();
+  assert.ok(uiStatus05Open.root.innerHTML.includes('Start Mid-Year') || uiStatus05Open.root.innerHTML.includes('พร้อมเริ่มทบทวนกลางปี'));
 });
