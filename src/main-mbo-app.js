@@ -240,14 +240,15 @@ if (typeof kintone !== 'undefined') {
         const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
         const empProfile = empLookupRes.employee || empLookupRes;
 
-        // Step 2: Routing Validation from App 795 (Team-Aware)
+        // Step 2: Routing Validation from App 795 (Team-Aware + Position Priority)
         const loginUser = kintone.getLoginUser();
         const routing = await RoutingService.validateRequesterAccess(
           ROUTING_APP_ID,
           empProfile.Employee_Section,
           empProfile.Team,
           loginUser.code,
-          kintoneApiWrapper
+          kintoneApiWrapper,
+          empProfile.Employee_Position
         );
 
         // Step 3: Published Scoring Configuration Lookup from App 796

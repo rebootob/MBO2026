@@ -2438,13 +2438,18 @@ export class EmployeePartAUI {
     const gmUser = this._getValObj('GM_User');
     const firstManagerUser = this._getValObj('First_Manager_User');
 
+    const pos = this._getVal('Employee_Position') || '-';
+    const sec = this._getVal('Employee_Section') || '-';
+    const team = this._getVal('Team') || '-';
+    const routingKey = this._getVal('Routing_Key') || sec;
+
     let topologyBadgeHtml = '';
     if (!topInfo.isCanonical) {
       topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fef2f2; color: #dc2626;">Technical Details: ⚠️ Unrecognized Topology (${escapeHtml(topInfo.raw || 'Not Specified')})</span>`;
     } else if (topInfo.isG2) {
       topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fffbe6; color: #b45309;">Technical Details: ⚠️ Unsupported in V1 (${escapeHtml(topInfo.raw)})</span>`;
     } else {
-      topologyBadgeHtml = `<span class="mbo-route-topology-badge">Technical Details: ${escapeHtml(topInfo.raw)} (${appCount} Appraiser Slots)</span>`;
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge">Technical Details: ${escapeHtml(topInfo.raw)} (${appCount} Slots) | Pos: ${escapeHtml(pos)} | Sec: ${escapeHtml(sec)}${team !== '-' ? ` | Team: ${escapeHtml(team)}` : ''} | Rule: ${escapeHtml(routingKey)} | Source: App795</span>`;
     }
 
     if (!topInfo.isSupportedV1) {
