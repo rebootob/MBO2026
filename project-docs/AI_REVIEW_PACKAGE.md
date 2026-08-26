@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_UIUX_V1_DEPLOY** | **`PASS`** — Executed single-use authorized desktop customization deploy to App 794 (Revision 39); uploaded 2 candidate files (`mbo-employee-app.js` SHA256 `9EF562...`, `mbo-employee.css` SHA256 `26296C...`), 1 customization PUT, 1 deploy POST; verified post-deploy SHA256 match, 16/28 Process states, `ONE + USER:hr` status 15 assignee, 0 mobile changes, and 0 record writes/workflow actions |
 | **POST_CORE_UIUX_V1_CANDIDATE_R2** | **`PASS`** — Applied R2 local UI topology display corrections (0 Kintone calls/writes/deploys): strict `classifyTopologyForUI` helper; non-empty invalid topologies (`INVALID_TOPOLOGY`, `INVALID_M2`) fail closed with warning display & block First Manager / normal route portrayal; G2 topologies (`M1_G1_G2`, `M1_M2_G1_G2`) display unsupported-V1 warning banner; 96/96 tests passing; bundle parse PASS |
 | **POST_CORE_UIUX_V1_CANDIDATE_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): MUST FIX 1 (First Manager route step shown ONLY when `Routing_Topology` contains M2 AND `First_Manager_User` populated), MUST FIX 2 (status 05 Objectives completed & Mid-Year waiting; status 10 Objectives & Mid-Year completed & Year-End waiting; review statuses 03/04, 08/09, 13/14/15 in-review in correct phase), blank/unknown topology display fail-closed warning; 96/96 tests passing; bundle parse & ES module residue check PASS |
 | **POST_CORE_UIUX_V1_CANDIDATE** | **`PASS`** — Built Post-Core UI/UX V1 candidate (0 Kintone calls/writes/deploys); added status guidance card with Thai/English descriptions for all 16 statuses, M1_G1 First-Manager configuration warning, display-only route context, collapsible legend/guidelines, HTML escaping helper (`escapeHtml`) on dynamic record/user text, and `--build-only` zero-write candidate path; 555/555 unit tests passing; bundle parse & ES module residue check PASS |
@@ -1310,5 +1311,50 @@ FROZEN_CORE_CHANGE_COUNT = 0
 NEW_FILE_COUNT = 0
 GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW; IF PASS REQUEST FRESH APP794 UI DEPLOY AUTHORIZATION
+
+## App794 UI/UX V1 Controlled Deploy Evidence
+
+```text
+APP794_UIUX_V1_DEPLOY = COMPLETE
+AUTHORIZATION_CONSUMED = YES
+AUTHORIZED_CANDIDATE_COMMIT = eca0de0b6ef9169ef10b7750dc6f29e03c458a09
+CANDIDATE_JS_GIT_BLOB = f3b19a3565159fb2414dfd546a12741642b4b810
+CANDIDATE_CSS_GIT_BLOB = cac608dbc7494b65ab364055e687d6c50c2648b2
+CANDIDATE_JS_SHA256 = 9EF5624B4B188309C8818AE07C342D5EE8DE499D05E78A95BB50468EB88A229C
+CANDIDATE_CSS_SHA256 = 26296CC7EF2EC38FF213D4CAA3F865CE87332D96DF848DCCEE691A1BAD6BE461
+PREWRITE_LIVE_REVISION = 38
+PREWRITE_PREVIEW_REVISION = 38
+PREWRITE_PROCESS_STATE_COUNT = 16
+PREWRITE_PROCESS_ACTION_COUNT = 28
+PREWRITE_STATUS15_ASSIGNEE = USER:hr
+PREWRITE_BACKUP_PATH = backups/app794/pre-uiux-v1-deploy-backup-1787726724475.json
+PREWRITE_BACKUP_READABLE = PASS
+PREWRITE_MOBILE_CUSTOMIZATION_PRESERVED_GATE = PASS
+FILE_UPLOAD_COUNT = 2
+CUSTOMIZATION_PUT_COUNT = 1
+DEPLOY_POST_COUNT = 1
+POSTDEPLOY_LIVE_REVISION = 39
+POSTDEPLOY_PREVIEW_REVISION = 39
+POSTDEPLOY_JS_SHA256_MATCH = PASS
+POSTDEPLOY_CSS_SHA256_MATCH = PASS
+POSTDEPLOY_PROCESS_16_28 = PASS
+POSTDEPLOY_STATUS15_UNCHANGED = PASS
+POSTDEPLOY_SIX_PROFILE_FIELDS_UNCHANGED = PASS
+POSTDEPLOY_MOBILE_CUSTOMIZATION_UNCHANGED = PASS
+BROWSER_UI_LOAD = PASS
+BROWSER_FATAL_MBO_ERROR_COUNT = 0
+APP794_RECORD_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+PROCESS_CHANGE_COUNT = 0
+SCHEMA_CHANGE_COUNT = 0
+ACL_CHANGE_COUNT = 0
+NOTIFICATION_CHANGE_COUNT = 0
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+ROLLBACK_EXECUTED = NO
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW; IF PASS MOVE TO DASHBOARD SPRINT
 ```
