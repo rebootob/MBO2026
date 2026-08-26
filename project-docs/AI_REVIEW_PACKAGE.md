@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12B_R1_WORKFLOW_FAIL_CLOSED** | **`PASS`** — Hardened `validateWorkflowAction` with exact topology whitelist (`M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`), fail-closed blank/unknown/G2 topologies, and complete `Requester_User` handoff checks (Status 04, 05, 09, 10 + Returns); 554/554 tests pass, rebuilt `dist/mbo-employee-app.js` (0 drift), 0 Kintone calls/writes |
 | **M10L_D_R12B_WORKFLOW_ALIGNMENT** | **`PASS`** — Aligned `STATUS_TO_STAGE_MAP` with exact 16 live statuses, removed 5 stale status aliases, added fail-closed topology & assignee workflow action guard in `ValidationEngine.validateWorkflowAction`, added unit tests (553/553 tests pass), rebuilt `dist/mbo-employee-app.js` (0 drift), 0 Kintone calls/writes |
 | **M10L_D_R12A_WORKFLOW_DISCOVERY** | **`PASS`** — Completed read-only discovery of App 794 Process Management (16 states, 27 actions) and App 795 (17 active rows); derived topology `M1_G1` across all 17 active rows; produced complete Workflow UAT coverage matrix; 0 Kintone writes |
 | **M10L_D_R11_CONTROLLED_DEPLOY** | **`PASS`** — Deployed exact reviewed R10 JS candidate `983528a5` to live App 794 (Revision 33); preserved live CSS content (`3604d2b2`); verified live JS & CSS SHA256 hashes match; captured durable pre-write backup `backups/m10l-d-r11-app794-r10-hoshin-deploy/2026-08-26T01-54-31-777Z`; 0 record/schema/ACL writes |
@@ -613,6 +614,38 @@ npm test = 553 / PASS
 KINTONE_CALLS_THIS_TASK = 0
 KINTONE_WRITES_THIS_TASK = 0
 SRC_CHANGE_COUNT = 3
+DIST_CHANGE_COUNT = 1
+TEST_CHANGE_COUNT = 1
+GIT_DIFF_CHECK = PASS
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+
+
+## M10L-D-R12B-R1 Workflow Fail-Closed Closure Evidence
+
+```text
+R12B_R1_WORKFLOW_FAIL_CLOSED_CLOSURE = COMPLETE
+REVIEWED_R12B_CANDIDATE = 4d52cce0d54eb25d9c96c020bfe0be870dde826c
+EXACT_TOPOLOGY_WHITELIST = PASS
+BLANK_TOPOLOGY_FAIL_CLOSED = PASS
+UNKNOWN_TOPOLOGY_FAIL_CLOSED = PASS
+M1_G1_VALID_PATH_REGRESSION = PASS
+M1_M2_G1_VALID_PATH_REGRESSION = PASS
+G2_EXACT_VARIANTS_FAIL_CLOSED = PASS
+REQUESTER_HANDOFF_STATUS04_APPROVE = PASS
+REQUESTER_HANDOFF_STATUS05_START_MIDYEAR = PASS
+REQUESTER_HANDOFF_STATUS09_APPROVE_MIDYEAR_GM = PASS
+REQUESTER_HANDOFF_STATUS10_START_SELF_EVAL = PASS
+RETURN_REQUESTER_EMPTY_FAIL_CLOSED = PASS
+VALID_M1_G1_APPROVE_RETURN_STAGE_COVERAGE = PASS
+LIVE_STATUS_COUNT_COVERED = 16 / 16
+STALE_STATUS_ALIAS_COUNT_ACTIVE = 0
+SOURCE_DIST_EXACTNESS = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+npm test = 554 / PASS
+KINTONE_CALLS_THIS_TASK = 0
+KINTONE_WRITES_THIS_TASK = 0
+SRC_CHANGE_COUNT = 1
 DIST_CHANGE_COUNT = 1
 TEST_CHANGE_COUNT = 1
 GIT_DIFF_CHECK = PASS

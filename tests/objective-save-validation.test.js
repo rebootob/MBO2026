@@ -76,8 +76,10 @@ function createMockRecord(overrides = {}) {
     Part_A_Scoring_Mode: { value: 'DIFFICULTY_ACHIEVEMENT_MATRIX' },
     Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
     Configuration_Hash: { value: 'hash0118' },
-    Routing_Topology: { value: 'SINGLE_MANAGER' },
+    Routing_Topology: { value: 'M1_G1' },
     Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] },
     Record_Key: { value: 'REC0118' },
     Objective_Count: { value: '4' },
 
@@ -673,7 +675,7 @@ test('M10L-D-R6: app.record.detail.process.proceed handler returns exact event o
   const proceedEvent = {
     type: 'app.record.detail.process.proceed',
     record: validRecord,
-    action: { value: 'Submit to Manager' }
+    action: { value: 'Submit Objective to Manager' }
   };
 
   const res = proceedHook(proceedEvent);
@@ -895,4 +897,173 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     action: { value: 'Submit Objective to Manager' }
   };
   assert.equal(proceedHook(failUnknownStatus), false, 'Unknown status must return false on process proceed');
+});
+
+test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fail-closed guards', async () => {
+  const proceedHook = kintoneHandlers['app.record.detail.process.proceed'];
+  assert.ok(typeof proceedHook === 'function', 'process.proceed hook must be registered');
+
+  // 1. Blank Routing_Topology + Mid-Year direct submit -> FAIL CLOSED
+  const blankTopoRecord = createMockRecord({
+    Status: { value: '06 Employee Mid-Year' },
+    Routing_Topology: { value: '' },
+    Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] }
+  });
+  const failBlankTopo = {
+    type: 'app.record.detail.process.proceed',
+    record: blankTopoRecord,
+    action: { value: 'Submit Mid-Year to Manager' }
+  };
+  assert.equal(proceedHook(failBlankTopo), false, 'Blank topology must fail closed');
+
+  // 2. Unknown Routing_Topology + Final direct submit -> FAIL CLOSED
+  const unknownTopoRecord = createMockRecord({
+    Status: { value: '11 Employee Self Evaluation' },
+    Routing_Topology: { value: 'INVALID_TOPOLOGY' },
+    Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] }
+  });
+  const failUnknownTopo = {
+    type: 'app.record.detail.process.proceed',
+    record: unknownTopoRecord,
+    action: { value: 'Submit Final to Manager' }
+  };
+  assert.equal(proceedHook(failUnknownTopo), false, 'Unknown topology must fail closed');
+
+  // 3. Both G2 exact variants (M1_G1_G2 and M1_M2_G1_G2) -> FAIL CLOSED
+  ['M1_G1_G2', 'M1_M2_G1_G2'].forEach(g2Topo => {
+    const g2Record = createMockRecord({
+      Status: { value: '01 Draft Objective' },
+      Routing_Topology: { value: g2Topo },
+      Requester_User: { value: [{ code: 's1' }] },
+      First_Manager_User: { value: [{ code: 'fm1' }] },
+      Manager_User: { value: [{ code: 'm1' }] },
+      GM_User: { value: [{ code: 'g1' }] }
+    });
+    const failG2 = {
+      type: 'app.record.detail.process.proceed',
+      record: g2Record,
+      action: { value: g2Topo.includes('M2') ? 'Submit Objective to First Manager' : 'Submit Objective to Manager' }
+    };
+    assert.equal(proceedHook(failG2), false, `G2 variant ${g2Topo} must fail closed`);
+  });
+
+  // 4. Status 04 GM Objective Review + Approve Objective: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
+  const status04EmptyRequester = createMockRecord({
+    Status: { value: '04 GM Objective Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const failStatus04 = {
+    type: 'app.record.detail.process.proceed',
+    record: status04EmptyRequester,
+    action: { value: 'Approve Objective' }
+  };
+  assert.equal(proceedHook(failStatus04), false, 'Status 04 Approve Objective with empty Requester_User must fail closed');
+
+  const status04PopulatedRequester = createMockRecord({
+    Status: { value: '04 GM Objective Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const passStatus04 = {
+    type: 'app.record.detail.process.proceed',
+    record: status04PopulatedRequester,
+    action: { value: 'Approve Objective' }
+  };
+  assert.equal(proceedHook(passStatus04), passStatus04, 'Status 04 Approve Objective with populated Requester_User must pass');
+
+  // 5. Status 05 Objective Approved + Start Mid-Year: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
+  const status05EmptyRequester = createMockRecord({
+    Status: { value: '05 Objective Approved' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [] }
+  });
+  const failStatus05 = {
+    type: 'app.record.detail.process.proceed',
+    record: status05EmptyRequester,
+    action: { value: 'Start Mid-Year' }
+  };
+  assert.equal(proceedHook(failStatus05), false, 'Status 05 Start Mid-Year with empty Requester_User must fail closed');
+
+  const status05PopulatedRequester = createMockRecord({
+    Status: { value: '05 Objective Approved' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] }
+  });
+  const passStatus05 = {
+    type: 'app.record.detail.process.proceed',
+    record: status05PopulatedRequester,
+    action: { value: 'Start Mid-Year' }
+  };
+  assert.equal(proceedHook(passStatus05), passStatus05, 'Status 05 Start Mid-Year with populated Requester_User must pass');
+
+  // 6. Status 09 GM Mid-Year Review + Approve Mid-Year GM: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
+  const status09EmptyRequester = createMockRecord({
+    Status: { value: '09 GM Mid-Year Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const failStatus09 = {
+    type: 'app.record.detail.process.proceed',
+    record: status09EmptyRequester,
+    action: { value: 'Approve Mid-Year GM' }
+  };
+  assert.equal(proceedHook(failStatus09), false, 'Status 09 Approve Mid-Year GM with empty Requester_User must fail closed');
+
+  const status09PopulatedRequester = createMockRecord({
+    Status: { value: '09 GM Mid-Year Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const passStatus09 = {
+    type: 'app.record.detail.process.proceed',
+    record: status09PopulatedRequester,
+    action: { value: 'Approve Mid-Year GM' }
+  };
+  assert.equal(proceedHook(passStatus09), passStatus09, 'Status 09 Approve Mid-Year GM with populated Requester_User must pass');
+
+  // 7. Status 10 Mid-Year Completed + Start Self Evaluation: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
+  const status10EmptyRequester = createMockRecord({
+    Status: { value: '10 Mid-Year Completed' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [] }
+  });
+  const failStatus10 = {
+    type: 'app.record.detail.process.proceed',
+    record: status10EmptyRequester,
+    action: { value: 'Start Self Evaluation' }
+  };
+  assert.equal(proceedHook(failStatus10), false, 'Status 10 Start Self Evaluation with empty Requester_User must fail closed');
+
+  const status10PopulatedRequester = createMockRecord({
+    Status: { value: '10 Mid-Year Completed' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] }
+  });
+  const passStatus10 = {
+    type: 'app.record.detail.process.proceed',
+    record: status10PopulatedRequester,
+    action: { value: 'Start Self Evaluation' }
+  };
+  assert.equal(proceedHook(passStatus10), passStatus10, 'Status 10 Start Self Evaluation with populated Requester_User must pass');
+
+  // 8. Representative Return action with empty Requester_User -> FAIL CLOSED
+  const returnEmptyRequester = createMockRecord({
+    Status: { value: '08 Manager Mid-Year Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [] },
+    Manager_User: { value: [{ code: 'm1' }] }
+  });
+  const failReturnEmptyRequester = {
+    type: 'app.record.detail.process.proceed',
+    record: returnEmptyRequester,
+    action: { value: 'Return Mid-Year Manager' }
+  };
+  assert.equal(proceedHook(failReturnEmptyRequester), false, 'Return Mid-Year Manager with empty Requester_User must fail closed');
 });

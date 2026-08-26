@@ -273,7 +273,19 @@ export class ValidationEngine {
     const topology = this._val(record.Routing_Topology);
     const status = this._val(record.Status);
 
-    // 1. G2 Topology Guard: Any G2 topology is NOT supported by current 16-state Process Management
+    // 1. Exact Topology Whitelist Guard
+    const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+    if (!topology || !RECOGNIZED_TOPOLOGIES.includes(topology)) {
+      fieldErrors.push({
+        field: 'Routing_Topology',
+        messageTH: `รูปแบบเส้นทางการอนุมัติ "${topology || 'BLANK'}" ไม่ถูกต้องหรือยังไม่ได้ระบุ (UNKNOWN TOPOLOGY FAIL-CLOSED)`,
+        messageEN: `Routing topology "${topology || 'BLANK'}" is invalid or unmapped.`,
+        message: `รูปแบบเส้นทางการอนุมัติ "${topology || 'BLANK'}" ไม่ถูกต้องหรือยังไม่ได้ระบุ (UNKNOWN TOPOLOGY FAIL-CLOSED)\nRouting topology "${topology || 'BLANK'}" is invalid or unmapped.`
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    // 2. G2 Topology Guard: Any G2 topology is NOT supported by current 16-state Process Management
     if (topology.includes('G2')) {
       fieldErrors.push({
         field: 'Routing_Topology',
@@ -284,7 +296,7 @@ export class ValidationEngine {
       return this._formatResult(fieldErrors);
     }
 
-    // 2. First-Manager source states guard (02, 07, 12 require M2 topology)
+    // 3. First-Manager source states guard (02, 07, 12 require M2 topology)
     const firstMgrStates = [
       '02 First Manager Objective Review',
       '07 First Manager Mid-Year Review',
@@ -317,7 +329,7 @@ export class ValidationEngine {
     const hasGM = Array.isArray(record.GM_User?.value) && record.GM_User.value.length > 0;
     const hasRequester = Array.isArray(record.Requester_User?.value) && record.Requester_User.value.length > 0;
 
-    // 3. First-Manager Submit Actions Guard
+    // 4. First-Manager Submit Actions Guard
     if (firstManagerSubmits.includes(actionName)) {
       if (!topology.includes('M2')) {
         fieldErrors.push({
@@ -336,7 +348,7 @@ export class ValidationEngine {
       }
     }
 
-    // 4. Direct-Manager Submit Actions Guard
+    // 5. Direct-Manager Submit Actions Guard
     if (directManagerSubmits.includes(actionName)) {
       if (topology.includes('M2')) {
         fieldErrors.push({
@@ -355,7 +367,7 @@ export class ValidationEngine {
       }
     }
 
-    // 5. Hand-off Field Non-Empty Checks for Manager / GM / Requester handover actions
+    // 6. Manager Hand-over Actions Guard
     const managerHandoverActions = [
       'Approve Objective', // from 02 to 03
       'Approve Mid-Year First Manager', // from 07 to 08
@@ -372,6 +384,7 @@ export class ValidationEngine {
       }
     }
 
+    // 7. GM Hand-over Actions Guard
     const gmHandoverActions = [
       'Approve Objective', // from 03 to 04
       'Approve Mid-Year Manager', // from 08 to 09
@@ -388,6 +401,7 @@ export class ValidationEngine {
       }
     }
 
+    // 8. Complete Requester_User Hand-over Guard (Return & Self/Requester Hand-off Actions)
     const returnActions = [
       'Return Objective',
       'Return Mid-Year First Manager',
@@ -398,15 +412,21 @@ export class ValidationEngine {
       'Return Final GM',
       'Return Final HR'
     ];
-    if (returnActions.includes(actionName)) {
-      if (!hasRequester) {
-        fieldErrors.push({
-          field: 'Requester_User',
-          messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการส่งคืนรายการ`,
-          messageEN: `Requester_User is empty for action "${actionName}".`,
-          message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการส่งคืนรายการ\nRequester_User is empty for action "${actionName}".`
-        });
-      }
+
+    const isRequesterHandoffAction =
+      (status.startsWith('04') && actionName === 'Approve Objective') ||
+      (status.startsWith('05') && actionName === 'Start Mid-Year') ||
+      (status.startsWith('09') && actionName === 'Approve Mid-Year GM') ||
+      (status.startsWith('10') && actionName === 'Start Self Evaluation') ||
+      returnActions.includes(actionName);
+
+    if (isRequesterHandoffAction && !hasRequester) {
+      fieldErrors.push({
+        field: 'Requester_User',
+        messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+        messageEN: `Requester_User is empty for action "${actionName}".`,
+        message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+      });
     }
 
     return this._formatResult(fieldErrors);
