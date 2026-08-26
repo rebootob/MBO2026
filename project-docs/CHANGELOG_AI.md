@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R12B-R1 Workflow Fail-Closed Closure (0 Kintone writes executed): Hardened `ValidationEngine.validateWorkflowAction` in `src/validation/validation-engine.js` with exact topology whitelist (`M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`), fail-closed blank/unknown/G2 topologies, and complete `Requester_User` handoff checks (Status 04 GM Objective Review -> Approve Objective, Status 05 -> Start Mid-Year, Status 09 GM Mid-Year Review -> Approve Mid-Year GM, Status 10 -> Start Self Evaluation + all Return actions). Rebuilt `dist/mbo-employee-app.js` (0 drift) and added unit tests (554/554 suite tests passing).
+- **2026-08-26**: Executed M10L-D-R12C Controlled App794 R12B-R1 Workflow Guard Deploy under explicit single-use user authorization ("อนุมัติ controlled App794 R12B-R1 workflow guard deploy"): Captured durable pre-write backup (`backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z`), uploaded and deployed reviewed R12B-R1 JS candidate `54e4cd561654ab2c6008fef526013829d45c8cccce356fe522d798539822097a` and preserved CSS `3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0` to App 794 (Revision 35), verified live JS & CSS SHA256 matches 100%. 0 record/process/schema/ACL writes executed.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.
