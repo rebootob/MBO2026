@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_PREVIEW_BOOTSTRAP_REPAIR** | **`PASS`** — Repaired local Preview Lab bootstrap (0 Kintone calls/writes/deploys): Root cause resolved (classic IIFE bundle `dist/mbo-employee-app.js` encapsulates `EmployeePartAUI` without global export); updated `scripts/ui-preview-server.js` to serve `/src/*` read-only with strict path traversal containment; updated `preview/index.html` to import `{ EmployeePartAUI }` directly from `/src/ui/employee-part-a-ui.js` via ES module; verified main MBO UI renders with 0 `ReferenceError` console errors across statuses 01, 06, 11, 13, 15, 16, appraisers 1–4, and ratios 70/30, 60/40, 50/50; production `dist/mbo-employee-app.js` remains 100% unchanged |
 | **APP794_EVALUATION_UI_V2_R4_DIFFICULTY_EMPTY_STATE** | **`PASS`** — Applied R4 local UI correction (0 Kintone calls/writes/deploys): Removed fake `Level 3` visual default on blank/unselected `Difficulty_i`; added explicit empty placeholder (`-- กรุณาเลือกระดับความยาก / Please select --`) with `data-required="true"` triggering yellow/Required field state before Save; blank read-only Difficulty renders neutral missing label (`ยังไม่ได้ระบุ / Not selected`); rendering does not mutate blank record state; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R3** | **`PASS`** — Applied R3 local UI corrections (0 Kintone calls/writes/deploys): Create flow before-lookup scoring snapshot validation deferred until employee lookup succeeds (Lookup UI remains active and retryable); incomplete appraisal combined results strictly display `Pending / Incomplete` in Appraiser Evaluation & HR Final breakdown without certifying stale score values; HR Final breakdown carries forward read-only score context for complete/incomplete states; Slots 3/4 preview editing is truthful in Preview Lab mode with zero physical field aliasing; R2 parent SHA corrected in evidence provenance; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R2** | **`PASS`** — Applied R2 local UI corrections (0 Kintone calls/writes/deploys): Objectives wide card UX (`.mbo-wide-card`), per-item Part A & Part B appraiser comments (`Manager_Comment_i`, `GM_Comment_i`, `Manager_Competency_Comment_i`, `GM_Competency_Comment_i`), read-only score/result context, Appraiser & HR attachment evidence summaries, fail-closed competency set code validation, fail-closed weight configuration validation (0 hardcoded 70/30 production fallback), zero old 4-step secondary nav (`OLD_4_STEP_YEAR_END_NAV_VISIBLE = 0`), Preview incomplete mode working for appraiser counts 1–4, and active slot selector constrained to 1..N; 555/555 tests passing; bundle parse PASS |
@@ -1545,4 +1546,28 @@ PREVIEW_KINTONE_CALL_COUNT = 0
 GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
 NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
+```
+
+## App794 Evaluation UI V2 Preview Bootstrap Repair Evidence
+
+```text
+APP794_PREVIEW_BOOTSTRAP_REPAIR = COMPLETE
+EXECUTION_STARTING_HEAD = ed3cbf4be9090fc73afb32df508b5e28a5840d04
+ROOT_CAUSE = CLASSIC_IIFE_DOES_NOT_EXPORT_EMPLOYEEPARTAUI_GLOBAL
+PREVIEW_USES_ES_MODULE_SOURCE_IMPORT = PASS
+PREVIEW_SERVER_SRC_ROUTE = PASS
+SRC_ROUTE_PATH_TRAVERSAL_GUARD = PASS
+PRODUCTION_DIST_JS_UNCHANGED = PASS
+PREVIEW_MAIN_UI_RENDER = PASS
+EMPLOYEEPARTAUI_REFERENCE_ERROR_COUNT = 0
+STATUS_SMOKE_01_06_11_13_15_16 = PASS
+APPRAISER_1_TO_4_PREVIEW = PASS
+RATIO_70_30_60_40_50_50_PREVIEW = PASS
+PREVIEW_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+PREVIEW_SERVER_LEFT_RUNNING = YES
+NEXT_ACTION = USER VISUAL PREVIEW; NO DEPLOY
 ```

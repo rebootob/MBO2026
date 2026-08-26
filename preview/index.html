@@ -147,8 +147,9 @@
     <div id="mbo-ui-mount"></div>
   </div>
 
-  <script src="/mbo-employee-app.js"></script>
-  <script>
+  <script type="module">
+    import { EmployeePartAUI } from '/src/ui/employee-part-a-ui.js';
+
     (function() {
       const mount = document.getElementById('mbo-ui-mount');
 
