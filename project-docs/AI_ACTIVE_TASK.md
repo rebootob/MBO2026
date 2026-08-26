@@ -1,194 +1,173 @@
-# AI ACTIVE TASK — R12E-B CORE WORKFLOW CLOSURE SPRINT — AUTHORIZED
+# AI ACTIVE TASK — R12E-B2 CORE WORKFLOW UAT CONTINUATION — AUTHORIZATION PENDING
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting control-plane HEAD: `06a873155ae505f561946668f46d88a0852638e4`
 > Target: App794 `MBO V2 Sandbox` ONLY
-> Mode: PROJECT CLOSE MODE / CONTROLLED FUNCTIONAL WORKFLOW UAT
-> Fresh user authorization: **GRANTED ONCE** by exact instruction `อนุมัติ controlled App794 R12E-B Core Workflow Closure Sprint ด้วยบัญชี hr`
-> Authorization scope: this R12E-B manifest only; rollback only where explicitly defined below.
-> Authorization is SINGLE-USE and is consumed by this execution attempt. It does not authorize UI/Dashboard or later production writes.
+> Mode: PROJECT CLOSE MODE / FUNCTIONAL WORKFLOW UAT CONTINUATION
+> Kintone write/workflow authorization: **NONE YET — DO NOT EXECUTE**
+
+# CURRENT REVIEWED CHECKPOINT
+
+R12E-B Process remap is already complete and MUST NOT be repeated.
+
+Reviewed current Sandbox state:
+- App794 live/preview revision = `37 / 37` from R12E-B evidence.
+- Process = `16 states / 28 actions`.
+- `15 HR Final Check.assignee.type = ONE`.
+- `15 HR Final Check.assignee = USER: hr`.
+- non-target Process semantics = PASS.
+- synthetic record `MBO_UAT_M1G1_001` was NOT created.
+- workflow transitions executed = 0.
+- First-Manager denial attempts = 0.
+- `admin-form` business workflow actions = 0.
+- previous R12E-B authorization is CONSUMED and may not be reused.
+
+Canonical business rule:
+- `hr` is the user-approved controlled App794 Sandbox Workflow test account.
+- logical UAT roles Requester / Manager / GM / HR may all use `hr` for this Functional UAT only.
+- `admin-form` is TECHNICAL_ADMIN_ONLY and must execute zero business workflow actions.
+- this UAT proves functional flow only; production role isolation remains `NOT_TESTED`.
+- `REAL_USER_IMPACT = 0`.
 
 # NORTH STAR / CLOSE TARGET
 
-`Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Notification Safety PASS -> R12E-B Functional Workflow Closure -> CORE V1 FREEZE`
+`Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Notification Safety PASS -> R12E-B2 Functional Workflow UAT -> CORE V1 FREEZE`
 
-Project Close Mode: do not expand discovery or test all 28 permutations.
+Do not reopen discovery. Do not test all 28 permutations.
 
-User-confirmed Sandbox UAT mapping:
-- `UAT_REQUESTER = hr`
-- `UAT_MANAGER = hr`
-- `UAT_GM = hr`
-- `UAT_HR = hr`
-- `admin-form = TECHNICAL_ADMIN_ONLY`; **0 business workflow actions**.
+# PRECONDITION BEFORE FUTURE EXECUTION
 
-This single-account UAT proves functional state flow only.
-`SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
-`REAL_USER_IMPACT = 0`
-
-# AUTHORIZED CHANGES — APP794 ONLY
-
-Authorized normal-path writes/actions:
-1. Process remap: status `15 HR Final Check` assignee `USER admin-form -> USER hr`.
-   - retain `assignee.type = ONE`;
+1. User has App794 open in a browser session authenticated as Kintone account `hr`.
+2. Fresh explicit user authorization is recorded in this file by ChatGPT.
+3. Pull latest branch; local HEAD = origin HEAD = authorized continuation task commit.
+4. Read canonical baseline in mandatory order.
+5. Confirm no `src/**`, `dist/**`, `tests/**` drift. No npm/build.
+6. Minimal read-only preflight only:
+   - live/preview Process remain aligned at reviewed state or later reconciled state;
    - exactly 16 states / 28 actions;
-   - exactly 1 semantic Process diff;
-   - Process PUT max 1 + Deploy POST max 1.
-2. Create exactly 1 synthetic UAT record:
-   - key `MBO_UAT_M1G1_001`;
-   - `Routing_Topology = M1_G1`;
-   - `First_Manager_User = []`;
-   - `Requester_User = [hr]`;
-   - `Manager_User = [hr]`;
-   - `GM_User = [hr]`;
-   - minimal valid synthetic Objective/Mid-Year/Final data only;
-   - never edit/impersonate a business employee record.
-3. Synthetic record preparation edits: max 2 (Mid-Year + Final/Self Evaluation).
-4. Execute only the compact browser workflow matrix below while logged in as `hr`.
-5. After full PASS only, delete exactly the synthetic UAT record (max 1) and verify key no longer exists.
+   - status15 remains `ONE + USER: hr`;
+   - synthetic key `MBO_UAT_M1G1_001` collision count = 0;
+   - no unexpected real-recipient notification drift.
+7. Any drift, wrong browser identity, collision, or real-recipient risk => STOP before write.
 
-Forbidden: App795/App53/App796/other-app writes, schema/ACL/customization/notification-setting changes, Change assignee, source/dist/tests changes, npm test/build, extra UAT records/actions, real-user workflow/notification tests, any `admin-form` business action.
+# ABSOLUTELY FORBIDDEN IN R12E-B2
 
-# PREWRITE SAFETY GATE
+- Process Management PUT/deploy/remap of any kind.
+- restoring `admin-form` or empty `[]` to status15.
+- App795/App53/App796/other-app writes.
+- schema/ACL/customization/notification-setting changes.
+- Change assignee.
+- `admin-form` business workflow action.
+- real Manager/GM/HR workflow test.
+- extra synthetic records.
+- source/dist/tests changes or npm/build.
+- REST-only status transitions claimed as browser/runtime proof.
 
-Before first write:
-1. Pull latest; local HEAD must equal origin authorized task commit.
-2. Read canonical baseline in mandatory order.
-3. Confirm no `src/**`, `dist/**`, `tests/**` drift.
-4. GET App794 live/preview Process:
-   - expected `36 / 36` unless exact reviewed evidence explains otherwise;
-   - 16 states / 28 actions;
-   - status15 exactly `ONE + USER: admin-form`;
-   - all non-target Process semantics match baseline.
-5. Exact current record count at `15 HR Final Check` must be `0`.
-6. `MBO_UAT_M1G1_001` collision count must be `0`.
-7. Reuse R12E-A notification audit (`SAFE_WITH_CONTROLLED_IDENTITIES`). Re-read only if drift exists.
+# FUTURE AUTHORIZED WRITE/ACTION SCOPE — ONLY AFTER FRESH USER AUTHORIZATION
 
-Any mismatch/drift/real-recipient risk => **STOP BEFORE WRITE**.
+App794 only:
+1. Create exactly one synthetic UAT record with key `MBO_UAT_M1G1_001`.
+2. Snapshot routing:
+   - `Routing_Topology = M1_G1`
+   - `First_Manager_User = []`
+   - `Requester_User = [hr]`
+   - `Manager_User = [hr]`
+   - `GM_User = [hr]`
+3. Minimal valid Objective data at create.
+4. Max 2 bounded preparation edits: Mid-Year data + Final/Self data.
+5. Execute the compact browser matrix below while authenticated as `hr`.
+6. If full PASS only, delete exactly the synthetic UAT record and verify key count = 0.
 
-# FRESH PROCESS BACKUP
-
-Immediately before Process PUT create readable local-only backup under:
-`backups/m10l-d-r12e-b-core-workflow-closure/<timestamp>/`
-
-Must include raw live/preview Process config, revisions, 16/28 count, status15 block, status15 zero-record evidence, restorable prior payload, and integrity hash/manifest.
-Do not push backup contents.
-
-# STATUS15 REMAP
-
-Only permitted Process semantic mutation:
-`15 HR Final Check.assignee.entities: USER admin-form -> USER hr`
-
-Require semantic diff = 1.
-Deploy and read back:
-- live/preview aligned;
-- 16/28 unchanged;
-- status15 `ONE + USER: hr`;
-- all non-target semantics unchanged;
-- status15 record count still 0.
-
-If failure after Process write: rollback only from fresh R12E-B prewrite backup, deploy/read-back, then STOP.
-
-# COMPACT FUNCTIONAL UAT MATRIX — BROWSER UI AS `hr`
-
-Process actions intended to prove deployed runtime guards MUST use App794 browser UI so `app.record.detail.process.proceed` executes. If session is not `hr`, pause for user-assisted login; never substitute `admin-form`.
+# COMPACT BROWSER MATRIX
 
 ## Objective
-1. At `01`: attempt `Submit Objective to First Manager` -> expected DENIED / status unchanged.
-2. `01 -> 03` Submit Objective to Manager.
-3. `03 -> 01` Return Objective.
-4. `01 -> 03` resubmit.
-5. `03 -> 04` Approve Objective.
-6. `04 -> 05` Approve Objective.
+- At `01`: attempt `Submit Objective to First Manager` -> DENIED / status unchanged.
+- `01 -> 03` Submit Objective to Manager.
+- `03 -> 01` Return Objective.
+- `01 -> 03` resubmit.
+- `03 -> 04` Approve Objective.
+- `04 -> 05` Approve Objective.
 
 ## Mid-Year
-7. `05 -> 06` Start Mid-Year.
-8. Prepare valid Mid-Year data if required (bounded edit 1).
-9. At `06`: attempt `Submit Mid-Year to First Manager` -> expected DENIED / status unchanged.
-10. `06 -> 08` Submit Mid-Year to Manager.
-11. `08 -> 06` Return Mid-Year Manager.
-12. `06 -> 08` resubmit.
-13. `08 -> 09` Approve Mid-Year Manager.
-14. `09 -> 10` Approve Mid-Year GM.
+- `05 -> 06` Start Mid-Year.
+- bounded Mid-Year data edit if required.
+- At `06`: attempt `Submit Mid-Year to First Manager` -> DENIED / status unchanged.
+- `06 -> 08` Submit Mid-Year to Manager.
+- `08 -> 06` Return Mid-Year Manager.
+- `06 -> 08` resubmit.
+- `08 -> 09` Approve Mid-Year Manager.
+- `09 -> 10` Approve Mid-Year GM.
 
 ## Final
-15. `10 -> 11` Start Self Evaluation.
-16. Prepare valid Final/Self data if required (bounded edit 2).
-17. At `11`: attempt `Submit Final to First Manager` -> expected DENIED / status unchanged.
-18. `11 -> 13` Submit Final to Manager.
-19. `13 -> 11` Return Final Manager.
-20. `11 -> 13` resubmit.
-21. `13 -> 14` Approve Final Manager.
-22. `14 -> 15` Approve Final GM.
+- `10 -> 11` Start Self Evaluation.
+- bounded Final/Self data edit if required.
+- At `11`: attempt `Submit Final to First Manager` -> DENIED / status unchanged.
+- `11 -> 13` Submit Final to Manager.
+- `13 -> 11` Return Final Manager.
+- `11 -> 13` resubmit.
+- `13 -> 14` Approve Final Manager.
+- `14 -> 15` Approve Final GM.
 
-## HR Final representative return + finish
-23. `15 -> 11` Return Final HR.
-24. `11 -> 13` resubmit.
-25. `13 -> 14` Approve Final Manager.
-26. `14 -> 15` Approve Final GM.
-27. `15 -> 16` Complete.
+## HR Final
+- `15 -> 11` Return Final HR.
+- `11 -> 13` resubmit.
+- `13 -> 14` Approve Final Manager.
+- `14 -> 15` Approve Final GM.
+- `15 -> 16` Complete.
 
-Expected **successful transitions = 22**.
-Expected **First-Manager denied attempts = 3**.
-Do not add GM-return or other redundant permutations.
-No status15 non-assignee denial test is claimed because only controlled business-workflow account is `hr`.
+Expected successful transitions = `22`.
+Expected First-Manager denials = `3`.
 
-# FAILURE / CLEANUP RULE
+No status15 non-assignee denial test is required or claimed under the approved single-account closure model.
 
-If any workflow step unexpectedly fails:
-- STOP;
-- do not force status;
-- do not Change assignee;
-- preserve exact synthetic record and evidence for ChatGPT review;
-- do not delete failed record during this execution.
+# FAILURE / CLEANUP
 
-If and only if all matrix checks PASS:
-- capture record ID/key, full status/action trace, 3 denied attempts, final `16 Completed`, status15 assignee `hr`, browser fatal MBO error count, `REAL_USER_IMPACT=0`, `ADMIN_FORM_BUSINESS_ACTION_COUNT=0`;
-- delete exactly the UAT record identified by both ID and key;
-- verify key count returns 0.
+If any unexpected workflow failure occurs:
+- STOP immediately.
+- do not force status or Change assignee.
+- preserve the synthetic record and evidence.
+- do not delete the failed record in that execution.
 
-Successful closure leaves Sandbox status15 assigned to `hr` for future controlled regression; do not restore `admin-form` or empty `[]`.
+If and only if 22/22 transitions + 3/3 denials + final `16 Completed` pass:
+- capture browser/runtime evidence;
+- confirm fatal MBO errors = 0;
+- confirm real-user workflow/notification impact = 0;
+- confirm admin-form business actions = 0;
+- delete exactly the synthetic record;
+- verify key count = 0;
+- push evidence/living docs and STOP.
 
 # PASS GATE
 
-`FUNCTIONAL_WORKFLOW_UAT = PASS` only when:
-- Process remap/read-back PASS;
+`FUNCTIONAL_WORKFLOW_UAT = PASS` requires:
+- no Process config write in R12E-B2;
 - 22/22 successful transitions;
 - 3/3 First-Manager attempts denied with unchanged status;
-- final status = `16 Completed`;
+- final status `16 Completed`;
 - browser fatal MBO errors = 0;
-- real-user workflow/notification impact = 0;
+- real-user impact = 0;
 - admin-form business actions = 0;
-- synthetic record cleanup verified.
+- synthetic record cleanup PASS.
 
-Always report separately:
+Always report:
 `SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
 
 # REQUIRED EVIDENCE
 
 ```text
-M10L_D_R12E_B_CORE_WORKFLOW_CLOSURE = COMPLETE / BLOCKED / ROLLED_BACK
-AUTHORIZATION_SCOPE = APP794_R12E_B_CLOSURE_ONLY
+M10L_D_R12E_B2_WORKFLOW_UAT_CONTINUATION = COMPLETE / BLOCKED
+AUTHORIZATION_SCOPE = APP794_R12E_B2_UAT_ONLY
 AUTHORIZATION_CONSUMED = YES
 UAT_ACCOUNT = hr
-ADMIN_FORM_BUSINESS_ACTION_COUNT = 0
-PREWRITE_LIVE_REVISION = actual
-PREWRITE_PREVIEW_REVISION = actual
-PREWRITE_PROCESS_STATE_COUNT = actual
-PREWRITE_PROCESS_ACTION_COUNT = actual
-PREWRITE_STATUS15_ASSIGNEE = actual
-PREWRITE_STATUS15_RECORD_COUNT = actual
-PREWRITE_BACKUP_PATH = actual
-PREWRITE_BACKUP_READABLE = PASS/FAIL
-PROCESS_SEMANTIC_DIFF_COUNT = actual
-PROCESS_PUT_COUNT = actual
-DEPLOY_POST_COUNT = actual
-POSTDEPLOY_LIVE_REVISION = actual
-POSTDEPLOY_PREVIEW_REVISION = actual
-POSTDEPLOY_STATUS15_ASSIGNEE = actual
-POSTDEPLOY_NON_TARGET_PROCESS_SEMANTICS = PASS/FAIL
+PRECHECK_LIVE_REVISION = actual
+PRECHECK_PREVIEW_REVISION = actual
+PRECHECK_PROCESS_STATE_COUNT = 16
+PRECHECK_PROCESS_ACTION_COUNT = 28
+PRECHECK_STATUS15_ASSIGNEE = USER: hr
+PROCESS_PUT_COUNT = 0
+DEPLOY_POST_COUNT = 0
 UAT_RECORD_KEY = MBO_UAT_M1G1_001
 UAT_RECORD_ID = actual / NOT_CREATED
 UAT_RECORD_CREATE_COUNT = actual
@@ -201,11 +180,11 @@ FINAL_STATUS = actual
 BROWSER_FATAL_MBO_ERROR_COUNT = actual
 REAL_USER_NOTIFICATION_TRIGGERED = 0
 REAL_USER_WORKFLOW_IMPACT = 0
+ADMIN_FORM_BUSINESS_ACTION_COUNT = 0
 SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED
 FUNCTIONAL_WORKFLOW_UAT = PASS/FAIL/NOT_COMPLETED
 UAT_RECORD_DELETE_COUNT = actual
 UAT_RECORD_CLEANUP_VERIFIED = PASS/FAIL/NOT_EXECUTED
-ROLLBACK_EXECUTED = NO/YES
 APP795_WRITE = 0
 APP53_WRITE = 0
 APP796_WRITE = 0
@@ -217,4 +196,6 @@ GIT_PUSH_SYNC = PASS/FAIL
 NEXT_ACTION = CHATGPT REVIEW; IF PASS FREEZE CORE V1 AND MOVE TO UI/DASHBOARD CLOSURE
 ```
 
-After evidence/living-doc update, push same branch and STOP. Do not begin UI/Dashboard in this execution.
+# STOP CONDITION
+
+Until fresh explicit user authorization is recorded by ChatGPT: **DO NOT CREATE A RECORD, DO NOT CLICK ANY BUSINESS PROCESS ACTION, AND DO NOT WRITE KINTONE.**
