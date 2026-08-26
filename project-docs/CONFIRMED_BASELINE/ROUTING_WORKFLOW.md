@@ -124,29 +124,37 @@ Canonical current classification:
 While this temporary lock remains:
 - `admin-form` must not execute `Complete` or `Return Final HR`;
 - Workflow Functional UAT must not certify status15 behavior;
-- before isolated UAT, status15 must be remapped under a separately authorized controlled change to a **role-correct controlled UAT_HR identity**;
+- before isolated UAT, status15 must be remapped under a separately authorized controlled change to the user-approved Sandbox test account `hr`;
 - that remap must retain type `ONE`, preserve 16/28 Process semantics, require fresh backup/read-back, and require zero existing status15 records before write;
 - no real HR user may be used solely to prove the boundary.
 
 Production/go-live configuration remains a separate gate and must map the native status15 boundary to the approved production HR entity under a later reviewed change. No real-HR workflow or notification test is required solely for parity proof.
 
-## Isolated Workflow UAT Role-Separation Rule
+## Project Close Mode — Single-Account Sandbox Functional UAT
 
-Future isolated `M1_G1` Workflow UAT must use controlled non-business test identities representing the workflow roles and must preserve `REAL_USER_IMPACT = 0`.
+User-confirmed decision for **App794 Sandbox Functional UAT only**:
 
-Required logical roles:
-- `UAT_REQUESTER`
-- `UAT_MANAGER`
-- `UAT_GM`
-- `UAT_HR`
+- Kintone account `hr` is explicitly authorized by the user to be used as the controlled Workflow test account in App794 Sandbox.
+- To shorten project closure, the same controlled account may represent the logical UAT roles `UAT_REQUESTER`, `UAT_MANAGER`, `UAT_GM`, and `UAT_HR` in the synthetic Sandbox record.
+- `admin-form` remains excluded from every business workflow role and from positive/negative business workflow actions.
+- This single-account model is accepted only to prove the **functional state flow, business validation, return/resubmit behavior, and M1_G1 topology guards**.
+- It does **not** prove login-level separation of Requester vs Manager vs GM vs HR and must never be cited as production role-isolation evidence.
+- Because no second controlled business-workflow identity is used, a native status15 non-assignee denial test is not part of this closure UAT. No claim of such a runtime denial test may be made.
+- Production authorization remains a separate go-live gate and must be verified structurally from native Kintone Process/permission configuration without sending real-user workflow or notification solely for certification.
 
-`admin-form` is excluded from all four workflow roles.
+Confirmed Sandbox UAT logical mapping:
 
-Prefer distinct controlled identities so native assignee/role boundaries are genuinely exercised. A smaller identity set may be accepted only after explicit review showing role separation remains meaningful; roles must never be collapsed merely for convenience.
+`UAT_REQUESTER = hr`
 
-A controlled non-HR workflow identity must be used for the status15 negative test; `admin-form` must not be the negative tester.
+`UAT_MANAGER = hr`
 
-No real employee/Manager/GM/HR workflow or notification test is permitted solely for certification.
+`UAT_GM = hr`
+
+`UAT_HR = hr`
+
+`SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
+
+`REAL_USER_IMPACT = 0`
 
 ## Runtime Safety
 
@@ -157,12 +165,13 @@ No real employee/Manager/GM/HR workflow or notification test is permitted solely
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
-- App794 Sandbox status15 currently has only a temporary technical lock; business HR authorization remains unverified until role-correct controlled UAT-HR mapping and isolated UAT pass.
+- App794 Sandbox status15 currently has only a temporary technical lock; before closure UAT it must be remapped from `admin-form` to the user-approved controlled Sandbox test account `hr`.
 - `admin-form` is technical-admin-only and has no business approval authority.
+- Single-account `hr` Sandbox UAT may certify functional workflow behavior only, not production role isolation.
 - Production HR entity mapping remains a separate pre-go-live configuration/parity gate.
 - Shared Kintone account identity must never be described as individual employee authentication.
 - UI hiding alone is not an authorization boundary.
 
 ## Change Rule
 
-Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, or HR Final Check authorization boundary must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
+Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, Sandbox UAT actor model, or HR Final Check authorization boundary must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
