@@ -1,5 +1,5 @@
 /**
- * Employee Part A & Part B UI Renderer - Evaluation UI V2
+ * Employee Part A & Part B UI Renderer - Evaluation UI V2 (R1 Corrected)
  * Source of Truth: exp/PMS_Staff & Chief_PART_A.xlsx & Bilingual Specification
  */
 
@@ -69,35 +69,52 @@ export function getVisualScreen(status) {
   if (['15 HR Final Check', '16 Completed'].includes(currentStatus)) {
     return 'hr_final'; // Stage 5
   }
-  return 'objectives';
+  return null; // Fail closed for unknown status
 }
 
 export function getProcessProgress(status) {
-  const screen = getVisualScreen(status);
-  switch (screen) {
-    case 'objectives':
-      return { percent: 20, stepIndex: 1, label: '1. Objectives (01–05)' };
-    case 'midyear':
-      return { percent: 40, stepIndex: 2, label: '2. Mid-Year (06–10)' };
-    case 'self_eval':
-      return { percent: 60, stepIndex: 3, label: '3. Self Evaluation (11)' };
-    case 'appraiser_eval':
-      return { percent: 80, stepIndex: 4, label: '4. Appraiser Evaluation (12–14)' };
-    case 'hr_final':
-      return { percent: 100, stepIndex: 5, label: '5. HR Final / Completed (15–16)' };
-    default:
-      return { percent: 20, stepIndex: 1, label: '1. Objectives (01–05)' };
-  }
+  const currentStatus = String(status || '').trim();
+  const progressMap = {
+    '01 Draft Objective': { percent: 5, stepIndex: 1, label: '1. Objectives (01 Draft)' },
+    '02 First Manager Objective Review': { percent: 10, stepIndex: 1, label: '1. Objectives (02 First Mgr Review)' },
+    '03 Manager Objective Review': { percent: 15, stepIndex: 1, label: '1. Objectives (03 Mgr Review)' },
+    '04 GM Objective Review': { percent: 20, stepIndex: 1, label: '1. Objectives (04 GM Review)' },
+    '05 Objective Approved': { percent: 25, stepIndex: 1, label: '1. Objectives (05 Approved)' },
+    '06 Employee Mid-Year': { percent: 30, stepIndex: 2, label: '2. Mid-Year (06 Employee Input)' },
+    '07 First Manager Mid-Year Review': { percent: 35, stepIndex: 2, label: '2. Mid-Year (07 First Mgr Review)' },
+    '08 Manager Mid-Year Review': { percent: 40, stepIndex: 2, label: '2. Mid-Year (08 Mgr Review)' },
+    '09 GM Mid-Year Review': { percent: 45, stepIndex: 2, label: '2. Mid-Year (09 GM Review)' },
+    '10 Mid-Year Completed': { percent: 50, stepIndex: 2, label: '2. Mid-Year (10 Completed)' },
+    '11 Employee Self Evaluation': { percent: 60, stepIndex: 3, label: '3. Self Evaluation (11 Self Eval)' },
+    '12 First Manager Final Evaluation': { percent: 70, stepIndex: 4, label: '4. Appraiser Evaluation (12 First Mgr)' },
+    '13 Manager Final Evaluation': { percent: 80, stepIndex: 4, label: '4. Appraiser Evaluation (13 Mgr Final)' },
+    '14 GM Final Evaluation': { percent: 90, stepIndex: 4, label: '4. Appraiser Evaluation (14 GM Final)' },
+    '15 HR Final Check': { percent: 95, stepIndex: 5, label: '5. HR Final / Completed (15 HR Check)' },
+    '16 Completed': { percent: 100, stepIndex: 5, label: '5. HR Final / Completed (16 Completed)' }
+  };
+
+  return progressMap[currentStatus] || null;
 }
 
+// Normalized Verified Business Competency Definitions (R1-04)
 export const COMPETENCIES_LIST = [
-  { id: 1, nameTH: '1. Core: Achievement Orientation', nameEN: 'Achievement Orientation', desc: 'มุ่งมั่นในการทำงานให้บรรลุเป้าหมายอย่างมีประสิทธิภาพ / Drive for results and continuous improvement' },
-  { id: 2, nameTH: '2. Core: Service Mind', nameEN: 'Service Mind', desc: 'ส่งมอบบริการและตอบสนองความต้องการของผู้รับบริการอย่างมีคุณภาพ / Deliver quality service to stakeholders' },
-  { id: 3, nameTH: '3. Core: Expertise', nameEN: 'Expertise & Professionalism', desc: 'มีความรู้ความสามารถและพัฒนาทักษะการทำงานอย่างต่อเนื่อง / Demonstrate professional competence and technical skills' },
-  { id: 4, nameTH: '4. Core: Teamwork', nameEN: 'Teamwork & Collaboration', desc: 'ให้ความร่วมมือ สื่อสาร และสร้างสัมพันธภาพที่ดีในทีมงาน / Collaborate effectively across teams and departments' },
-  { id: 5, nameTH: '5. Core: Integrity & Ethics', nameEN: 'Integrity & Corporate Ethics', desc: 'ยึดมั่นในความถูกต้อง ความซื่อสัตย์ และปฏิบัติตามจริยธรรมองค์กร / Uphold high ethical standards and organizational compliance' },
-  { id: 6, nameTH: '6. Managerial/Functional: COCE (Compliance & Code of Ethics)', nameEN: 'COCE Compliance', desc: 'การปฏิบัติตามกฎระเบียบและจริยธรรมธุรกิจ [Evaluated / Excluded from Score] / Evaluated for compliance but excluded from numerical score weight', isCOCE: true }
+  { id: 1, nameTH: '1. Adaptability', nameEN: 'Adaptability', desc: 'ปรับตัวอย่างยืดหยุ่น ยอมรับการเปลี่ยนแปลงและเรียนรู้สิ่งใหม่ / Demonstrate flexibility and open-mindedness to organizational changes.' },
+  { id: 2, nameTH: '2. Problem Solving', nameEN: 'Problem Solving & Decision Making', desc: 'การแก้ปัญหาและการตัดสินใจอย่างมีหลักการ / Analyze root causes and make effective decisions.' },
+  { id: 3, nameTH: '3. Customer Focus', nameEN: 'Customer Focus & Service Excellence', desc: 'การมุ่งเน้นลูกค้าและผู้รับบริการ ส่งมอบบริการที่มีคุณภาพ / Prioritize internal/external customer needs and quality delivery.' },
+  { id: 4, nameTH: '4. Additional Value Creation', nameEN: 'Value Creation & Innovation', desc: 'การสร้างมูลค่าเพิ่มและนวัตกรรมใหม่ในงาน / Proactively seek improvements and innovative solutions.' },
+  { id: 5, nameTH: '5. Safety Awareness', nameEN: 'Safety & Environmental Awareness', desc: 'ความตระหนักด้านความปลอดภัยและสิ่งแวดล้อม / Adhere to safety standards and environmental responsibility.' },
+  { id: 6, nameTH: '6. Compliance / COCE', nameEN: 'Compliance & Code of Conduct (COCE)', desc: 'การปฏิบัติตามกฎระเบียบและจริยธรรมธุรกิจ [Evaluated / Excluded from Score] / Evaluated for compliance but excluded from numerical score weight.', isCOCE: true },
+  { id: 7, nameTH: '7. Leadership & People Management', nameEN: 'Leadership & People Management', desc: 'ภาวะผู้นำและการบริหารคน สร้างแรงจูงใจในการทำงาน / Lead, empower, and guide team members effectively.', isManagementOnly: true },
+  { id: 8, nameTH: '8. Strategy & Coaching', nameEN: 'Strategy & Coaching / Advising', desc: 'การกำหนดกลยุทธ์และการเป็นพี่เลี้ยงในการพัฒนาทีมงาน / Align with strategic goals and mentor staff.', isManagementOnly: true }
 ];
+
+export function getApplicableCompetencies(setCode) {
+  const isMgmt = String(setCode || '').trim() === 'COMP_SET_MANAGEMENT_V1';
+  if (isMgmt) {
+    return COMPETENCIES_LIST; // All 8
+  }
+  return COMPETENCIES_LIST.filter(c => !c.isManagementOnly); // 1..6
+}
 
 export function normalizeAppraiserData(record, appraiserCount = 2, previewOptions = {}) {
   const count = Math.min(Math.max(parseInt(appraiserCount || 2, 10), 1), 4);
@@ -111,65 +128,102 @@ export function normalizeAppraiserData(record, appraiserCount = 2, previewOption
     return String(field);
   };
 
+  const objCountVal = parseInt(getVal('Objective_Count') || '4', 10);
+  const activeObjCount = isNaN(objCountVal) ? 4 : Math.min(Math.max(objCountVal, 2), 10);
+
+  const compSetCode = getVal('Competency_Set_Code') || previewOptions.competencySetCode || 'COMP_SET_OPERATIONAL_V1';
+  const applicableCompList = getApplicableCompetencies(compSetCode);
+
   const slotLabels = ['1st Appraiser', '2nd Appraiser', '3rd Appraiser', '4th Appraiser'];
+
+  let totalRequiredPartARatings = count * activeObjCount;
+  let completedRequiredPartARatings = 0;
+
+  let totalRequiredPartBRatings = count * applicableCompList.length;
+  let completedRequiredPartBRatings = 0;
 
   for (let i = 1; i <= count; i++) {
     const label = slotLabels[i - 1];
-    let isCompleted = false;
     const partARatings = {};
     const partBRatings = {};
     let partAComment = '';
     let partBComment = '';
 
+    let slotPartARatedCount = 0;
+    let slotPartBRatedCount = 0;
+
     if (i === 1) {
-      partAComment = getVal('Manager_Comment_PartA') || previewOptions.slot1CommentA || '';
-      partBComment = getVal('Manager_Comment_PartB') || previewOptions.slot1CommentB || '';
-      let hasRating = false;
-      for (let k = 1; k <= 10; k++) {
-        const val = getVal(`Manager_PartA_Rating_${k}`) || previewOptions.slot1RatingsA?.[k];
+      // Legacy physical storage: Slot 1 maps to Manager_*
+      partAComment = getVal('Manager_Comment_1') || previewOptions.slot1CommentA || '';
+      partBComment = getVal('Manager_Competency_Comment_1') || previewOptions.slot1CommentB || '';
+
+      for (let k = 1; k <= activeObjCount; k++) {
+        const val = getVal(`Manager_Achievement_${k}`) || previewOptions.slot1RatingsA?.[k];
         if (val) {
-          partARatings[k] = val;
-          hasRating = true;
+          partARatings[k] = String(val);
+          slotPartARatedCount++;
         }
       }
-      for (let k = 1; k <= 6; k++) {
-        const val = getVal(`Manager_PartB_Score_${k}`) || previewOptions.slot1RatingsB?.[k];
-        if (val) partBRatings[k] = val;
-      }
-      isCompleted = hasRating || Boolean(previewOptions.slot1Completed);
+      applicableCompList.forEach(comp => {
+        const val = getVal(`Manager_Competency_Rating_${comp.id}`) || previewOptions.slot1RatingsB?.[comp.id];
+        if (val) {
+          partBRatings[comp.id] = String(val);
+          slotPartBRatedCount++;
+        }
+      });
     } else if (i === 2) {
-      partAComment = getVal('GM_Comment_PartA') || previewOptions.slot2CommentA || '';
-      partBComment = getVal('GM_Comment_PartB') || previewOptions.slot2CommentB || '';
-      let hasRating = false;
-      for (let k = 1; k <= 10; k++) {
-        const val = getVal(`GM_PartA_Rating_${k}`) || previewOptions.slot2RatingsA?.[k];
+      // Legacy physical storage: Slot 2 maps to GM_*
+      partAComment = getVal('GM_Comment_1') || previewOptions.slot2CommentA || '';
+      partBComment = getVal('GM_Competency_Comment_1') || previewOptions.slot2CommentB || '';
+
+      for (let k = 1; k <= activeObjCount; k++) {
+        const val = getVal(`GM_Achievement_${k}`) || previewOptions.slot2RatingsA?.[k];
         if (val) {
-          partARatings[k] = val;
-          hasRating = true;
+          partARatings[k] = String(val);
+          slotPartARatedCount++;
         }
       }
-      for (let k = 1; k <= 6; k++) {
-        const val = getVal(`GM_PartB_Score_${k}`) || previewOptions.slot2RatingsB?.[k];
-        if (val) partBRatings[k] = val;
-      }
-      isCompleted = hasRating || Boolean(previewOptions.slot2Completed);
+      applicableCompList.forEach(comp => {
+        const val = getVal(`GM_Competency_Rating_${comp.id}`) || previewOptions.slot2RatingsB?.[comp.id];
+        if (val) {
+          partBRatings[comp.id] = String(val);
+          slotPartBRatedCount++;
+        }
+      });
     } else {
-      // Slots 3 & 4 (Preview/Logical slots)
+      // Slots 3 & 4 (Preview/Logical slots only - MUST NOT ALIAS PHYSICAL FIELDS)
       partAComment = previewOptions[`slot${i}CommentA`] || '';
       partBComment = previewOptions[`slot${i}CommentB`] || '';
-      for (let k = 1; k <= 10; k++) {
-        if (previewOptions[`slot${i}RatingsA`]?.[k]) partARatings[k] = previewOptions[`slot${i}RatingsA`][k];
+
+      for (let k = 1; k <= activeObjCount; k++) {
+        const val = previewOptions[`slot${i}RatingsA`]?.[k];
+        if (val) {
+          partARatings[k] = String(val);
+          slotPartARatedCount++;
+        }
       }
-      for (let k = 1; k <= 6; k++) {
-        if (previewOptions[`slot${i}RatingsB`]?.[k]) partBRatings[k] = previewOptions[`slot${i}RatingsB`][k];
-      }
-      isCompleted = Boolean(previewOptions[`slot${i}Completed`]);
+      applicableCompList.forEach(comp => {
+        const val = previewOptions[`slot${i}RatingsB`]?.[comp.id];
+        if (val) {
+          partBRatings[comp.id] = String(val);
+          slotPartBRatedCount++;
+        }
+      });
     }
+
+    completedRequiredPartARatings += slotPartARatedCount;
+    completedRequiredPartBRatings += slotPartBRatedCount;
+
+    const isPartAComplete = (slotPartARatedCount === activeObjCount);
+    const isPartBComplete = (slotPartBRatedCount === applicableCompList.length);
+    const isSlotCompleted = isPartAComplete && isPartBComplete;
 
     slots.push({
       slotIndex: i,
       label,
-      isCompleted,
+      isCompleted: isSlotCompleted,
+      isPartAComplete,
+      isPartBComplete,
       partARatings,
       partBRatings,
       partAComment,
@@ -179,14 +233,24 @@ export function normalizeAppraiserData(record, appraiserCount = 2, previewOption
 
   const completedCount = slots.filter(s => s.isCompleted).length;
   const completionPercent = Math.round((completedCount / count) * 100);
-  const isFullyComplete = completedCount === count;
+  const isFullyComplete = (completedCount === count);
 
   return {
     slots,
     totalCount: count,
     completedCount,
     completionPercent,
-    isFullyComplete
+    isFullyComplete,
+    partA: {
+      completed: completedRequiredPartARatings,
+      total: totalRequiredPartARatings,
+      isComplete: completedRequiredPartARatings === totalRequiredPartARatings
+    },
+    partB: {
+      completed: completedRequiredPartBRatings,
+      total: totalRequiredPartBRatings,
+      isComplete: completedRequiredPartBRatings === totalRequiredPartBRatings
+    }
   };
 }
 
@@ -425,6 +489,8 @@ export class EmployeePartAUI {
     this.isCreate = options.isCreate || false;
     this.appraiserCount = options.appraiserCount || 2;
     this.previewOptions = options.previewOptions || {};
+    this.isPreviewMode = Boolean(options.isPreviewMode || options.previewOptions?.isPreviewMode);
+    this.activeSlotIndex = options.activeSlotIndex || options.previewOptions?.activeSlotIndex || 1;
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
     this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
@@ -451,6 +517,12 @@ export class EmployeePartAUI {
     const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
     const visualScreen = getVisualScreen(status);
 
+    if (!visualScreen) {
+      root.appendChild(this._renderErrorBanner('ไม่พบข้อมูลสถานะหรือสถานะไม่ถูกต้องตามระเบียบประเมิน (CONFIGURATION / UNKNOWN STATUS ERROR)<br/>Unrecognized status value in record. Please contact HR / Administrator.'));
+      this.container.appendChild(root);
+      return;
+    }
+
     // STEP 1: Lookup Banner on Create
     if (this.isCreate) {
       root.appendChild(this._renderLookupSection());
@@ -459,19 +531,19 @@ export class EmployeePartAUI {
     // Top Overall Process Progress Bar (5 Phases)
     root.appendChild(this._renderOverallProgressBar(status));
 
-    // Top Status & Workflow Guidance Card (Display-only guidance with topology warning)
+    // Top Status & Workflow Guidance Card
     root.appendChild(this._renderStatusGuidanceCard());
 
     // Header Section (Horizontal Summary)
     root.appendChild(this._renderHeader());
 
-    // Approval Route Context (Display-only route summary with strict topology classifier)
+    // Approval Route Context
     root.appendChild(this._renderRouteContext());
 
     // Collapsible Legend & Guidelines
     root.appendChild(this._renderCollapsibleLegendAndGuidelines());
 
-    // Custom Error Summary Area (Top of Table)
+    // Custom Error Summary Area
     const errorSummaryContainer = document.createElement('div');
     errorSummaryContainer.id = 'mbo-error-summary-anchor';
     root.appendChild(errorSummaryContainer);
@@ -506,16 +578,18 @@ export class EmployeePartAUI {
     const card = document.createElement('div');
     card.className = 'mbo-overall-progress-card';
 
-    const screen = getVisualScreen(status);
+    const visualScreen = getVisualScreen(status);
     const prog = getProcessProgress(status);
+
+    if (!prog) return card;
 
     card.innerHTML = `
       <div class="mbo-progress-phases">
-        <div class="mbo-phase-step ${screen === 'objectives' ? 'active' : (prog.stepIndex > 1 ? 'completed' : '')}">1. Objectives</div>
-        <div class="mbo-phase-step ${screen === 'midyear' ? 'active' : (prog.stepIndex > 2 ? 'completed' : '')}">2. Mid-Year</div>
-        <div class="mbo-phase-step ${screen === 'self_eval' ? 'active' : (prog.stepIndex > 3 ? 'completed' : '')}">3. Self Evaluation</div>
-        <div class="mbo-phase-step ${screen === 'appraiser_eval' ? 'active' : (prog.stepIndex > 4 ? 'completed' : '')}">4. Appraiser Evaluation</div>
-        <div class="mbo-phase-step ${screen === 'hr_final' ? 'active' : (prog.stepIndex > 5 ? 'completed' : '')}">5. HR Final / Completed</div>
+        <div class="mbo-phase-step ${visualScreen === 'objectives' ? 'active' : (prog.stepIndex > 1 ? 'completed' : '')}">1. Objectives</div>
+        <div class="mbo-phase-step ${visualScreen === 'midyear' ? 'active' : (prog.stepIndex > 2 ? 'completed' : '')}">2. Mid-Year</div>
+        <div class="mbo-phase-step ${visualScreen === 'self_eval' ? 'active' : (prog.stepIndex > 3 ? 'completed' : '')}">3. Self Evaluation</div>
+        <div class="mbo-phase-step ${visualScreen === 'appraiser_eval' ? 'active' : (prog.stepIndex > 4 ? 'completed' : '')}">4. Appraiser Evaluation</div>
+        <div class="mbo-phase-step ${visualScreen === 'hr_final' ? 'active' : (prog.stepIndex > 5 ? 'completed' : '')}">5. HR Final / Completed</div>
       </div>
       <div class="mbo-progress-bar-wrap">
         <div class="mbo-progress-bar-fill" style="width: ${prog.percent}%;"></div>
@@ -538,48 +612,113 @@ export class EmployeePartAUI {
     const wrap = document.createElement('div');
     wrap.appendChild(this._renderStageNav());
 
-    const container = document.createElement('div');
-    container.className = 'mbo-table-container';
+    const isMidEditable = this.isEditable && this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
 
     const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
     const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
 
-    const table = document.createElement('table');
-    table.className = 'mbo-grid-table';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th style="width: 45px; text-align: center;">#</th>
-          <th style="width: 25%;">
-            เป้าหมาย / Objective & Target <span style="color:#64748b;">[🔒 ล็อก]</span>
-            <span class="th-sub">[เป้าหมายที่บันทึกไว้ / Saved Objective]</span>
-          </th>
-          <th style="width: 140px;">
-            ความคืบหน้า / Progress (%) <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[0 - 100%]</span>
-          </th>
-          <th style="width: 22%;">
-            การทบทวนเป็นระยะ / Periodical Review Notes
-            <span class="th-sub">[บันทึกทบทวนผลงาน / Wide text input]</span>
-          </th>
-          <th style="width: 22%;">
-            ผลสำเร็จปัจจุบัน / Current Result
-            <span class="th-sub">[ผลสำเร็จปัจจุบัน / Milestone Results]</span>
-          </th>
-          <th style="width: 22%;">
-            ปัญหาและแนวทางแก้ไข / Issue, Risk & Next Action
-            <span class="th-sub">[ปัญหา อุปสรรค / Risks & Next Steps]</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Array.from({ length: count }, (_, idx) => this._renderMidYearRow(idx + 1)).join('')}
-      </tbody>
+    const section = document.createElement('div');
+    section.className = 'mbo-wide-card';
+    section.innerHTML = `
+      <div class="mbo-wide-card-header">
+        <span>STEP 3: ทบทวนกลางปี / Stage 2 — Mid-Year Progress & Review (1..${count})</span>
+        <span style="font-weight: normal; font-size: 12px; color: #475569;">[ความคืบหน้า และ บันทึกการทบทวนผลงาน / Wide Text UX]</span>
+      </div>
     `;
 
-    container.appendChild(table);
-    container.appendChild(this._renderWeightSummary());
-    wrap.appendChild(container);
+    for (let i = 1; i <= count; i++) {
+      const objVal = this._getVal(`Objective_${i}`);
+      const actVal = this._getVal(`Action_Plan_${i}`);
+      const wVal = this._getVal(`Weight_${i}`) || '0';
+      const prog = parseInt(this._getVal(`Progress_Percent_${i}`) || '0', 10);
+      const revVal = this._getVal(`Periodical_Review_${i}`);
+      const resVal = this._getVal(`MidYear_Result_${i}`);
+      const riskVal = this._getVal(`MidYear_Issue_Risk_${i}`);
+      const nextActVal = this._getVal(`MidYear_Next_Action_${i}`);
+
+      const objBox = document.createElement('div');
+      objBox.style.marginBottom = '16px';
+      objBox.style.border = '1px solid #cbd5e1';
+      objBox.style.borderRadius = '6px';
+      objBox.style.padding = '14px';
+      objBox.style.background = '#ffffff';
+
+      // Read real Kintone attachment file values or preview fixture
+      const fileVal = this.record[`MidYear_Attachment_${i}`];
+      let realFileList = [];
+      if (fileVal && typeof fileVal === 'object' && Array.isArray(fileVal.value)) {
+        realFileList = fileVal.value.map(f => f.name || f.fileKey || 'Attachment');
+      }
+
+      let attachChipsHtml = '';
+      if (realFileList.length > 0) {
+        attachChipsHtml = realFileList.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('');
+      } else if (this.isPreviewMode) {
+        const fixtureFiles = this.previewOptions.midyearAttachments?.[i] || [`MidYear_Evidence_Obj${i}.pdf`];
+        attachChipsHtml = fixtureFiles.map(fn => `<span class="mbo-attachment-chip" style="border-style:dashed;">📄 ${escapeHtml(fn)} (Preview)</span>`).join('');
+      } else {
+        attachChipsHtml = '<span style="color:#94a3b8; font-size:12px;">No attachment / ไม่มีไฟล์แนบ</span>';
+      }
+
+      objBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #f1f5f9; padding-bottom:6px;">
+          <strong style="color:#1e3a8a; font-size:14px;">#${i} ${escapeHtml(objVal) || '(No objective title)'}</strong>
+          <span style="font-size:12px; font-weight:700; color:#0369a1;">Weight: ${escapeHtml(wVal)}%</span>
+        </div>
+
+        <div style="font-size:12px; color:#475569; background:#f8fafc; padding:8px 12px; border-radius:4px; margin-bottom:12px;">
+          <strong>Action Plan:</strong> ${escapeHtml(actVal) || '-'}
+        </div>
+
+        <div style="margin-bottom:12px; background:#f0f9ff; padding:8px 12px; border-radius:4px; border:1px solid #bae6fd;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="font-size:12px; font-weight:700; color:#0369a1;">ความคืบหน้า / Progress: <strong>${prog}%</strong></label>
+            ${isMidEditable ? `
+              <input type="range" min="0" max="100" class="mbo-field mbo-prog-range" data-code="Progress_Percent_${i}" value="${prog}" style="width: 200px; cursor: pointer;" />
+            ` : ''}
+          </div>
+          <div class="mbo-progress-bar-container">
+            <div class="mbo-progress-bar-fill" style="width: ${prog}%;"></div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px; margin-bottom:10px;">
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:4px;">การทบทวนเป็นระยะ / Periodical Review Notes:</label>
+            <textarea class="mbo-wide-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="บันทึกทบทวนผลงาน...">${escapeHtml(revVal)}</textarea>
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:4px;">ผลสำเร็จปัจจุบัน / Current Milestone Result:</label>
+            <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Result_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ผลสำเร็จปัจจุบัน...">${escapeHtml(resVal)}</textarea>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:12px; margin-bottom:10px;">
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:4px;">ปัญหาและอุปสรรค / Issue & Risk:</label>
+            <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ปัญหาและอุปสรรค...">${escapeHtml(riskVal)}</textarea>
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:4px;">แนวทางแก้ไขขั้นต่อไป / Next Action Plan:</label>
+            <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Next_Action_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="แนวทางแก้ไขและแผนขั้นต่อไป...">${escapeHtml(nextActVal)}</textarea>
+          </div>
+        </div>
+
+        <div class="mbo-attachment-section">
+          <div class="mbo-attachment-title">📎 เอกสารแนบทบทวนกลางปี / Mid-Year Evidence Files:</div>
+          <div class="mbo-attachment-list">${attachChipsHtml}</div>
+          ${isMidEditable && this.isPreviewMode ? `
+            <div style="margin-top:6px; font-size:11px; color:#0369a1; background:#e0f2fe; padding:4px 8px; border-radius:4px; display:inline-block;">
+              [Preview-Only Upload Simulator] 📁 Select File... (Simulated Control Only - No Kintone Upload Call)
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      section.appendChild(objBox);
+    }
+
+    wrap.appendChild(section);
     return wrap;
   }
 
@@ -587,48 +726,103 @@ export class EmployeePartAUI {
     const wrap = document.createElement('div');
     wrap.appendChild(this._renderStageNav());
 
-    const container = document.createElement('div');
-    container.className = 'mbo-table-container';
+    const isSelfEditable = this.isEditable && this.stage === BUSINESS_STAGES.SELF_EVALUATION;
 
     const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
     const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
 
-    const table = document.createElement('table');
-    table.className = 'mbo-grid-table';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th style="width: 45px; text-align: center;">#</th>
-          <th style="width: 22%;">
-            เป้าหมาย / Objective & Target <span style="color:#64748b;">[🔒 ล็อก]</span>
-            <span class="th-sub">[เป้าหมายที่บันทึกไว้ / Saved Objective]</span>
-          </th>
-          <th style="width: 20%;">
-            ผลทบทวนกลางปี / Mid-Year Summary <span style="color:#64748b;">[🔒 ล็อก]</span>
-            <span class="th-sub">[ผลทบทวนกลางปี / Mid-Year Review]</span>
-          </th>
-          <th style="width: 26%;">
-            ผลการดำเนินงานจริง / Actual Result & Achievement <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[ผลงานจริงเมื่อสิ้นสุดรอบประเมิน / Wide text input]</span>
-          </th>
-          <th style="width: 170px;">
-            ประเมินตนเอง / Self Achievement [1-5] <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[ระดับผลสำเร็จ 1-5]</span>
-          </th>
-          <th style="width: 20%;">
-            ความคิดเห็นตนเอง / Self Comment / Reflection
-            <span class="th-sub">[ความเห็นประเมินตนเอง / Self Reflection]</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Array.from({ length: count }, (_, idx) => this._renderSelfEvalRow(idx + 1)).join('')}
-      </tbody>
+    const section = document.createElement('div');
+    section.className = 'mbo-wide-card';
+    section.innerHTML = `
+      <div class="mbo-wide-card-header">
+        <span>STEP 3: ประเมินตนเองปลายปี / Stage 3 — Self Evaluation (1..${count})</span>
+        <span style="font-weight: normal; font-size: 12px; color: #475569;">[ผลงานจริง ประเมินตนเอง และข้อคิดเห็น / Wide Text UX]</span>
+      </div>
     `;
 
-    container.appendChild(table);
-    container.appendChild(this._renderWeightSummary());
-    wrap.appendChild(container);
+    for (let i = 1; i <= count; i++) {
+      const objVal = this._getVal(`Objective_${i}`);
+      const wVal = this._getVal(`Weight_${i}`) || '0';
+      const prog = this._getVal(`Progress_Percent_${i}`) || '0';
+      const midRes = this._getVal(`MidYear_Result_${i}`);
+      const actResult = this._getVal(`Actual_Result_${i}`);
+      const selfAch = this._getVal(`Self_Achievement_${i}`) || '3';
+      const selfComment = this._getVal(`Self_Comment_${i}`);
+
+      const fileVal = this.record[`Final_Attachment_${i}`];
+      let realFileList = [];
+      if (fileVal && typeof fileVal === 'object' && Array.isArray(fileVal.value)) {
+        realFileList = fileVal.value.map(f => f.name || f.fileKey || 'Attachment');
+      }
+
+      let attachChipsHtml = '';
+      if (realFileList.length > 0) {
+        attachChipsHtml = realFileList.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('');
+      } else if (this.isPreviewMode) {
+        const fixtureFiles = this.previewOptions.finalAttachments?.[i] || [`Final_Evidence_Obj${i}.pdf`];
+        attachChipsHtml = fixtureFiles.map(fn => `<span class="mbo-attachment-chip" style="border-style:dashed;">📄 ${escapeHtml(fn)} (Preview)</span>`).join('');
+      } else {
+        attachChipsHtml = '<span style="color:#94a3b8; font-size:12px;">No attachment / ไม่มีไฟล์แนบ</span>';
+      }
+
+      const objBox = document.createElement('div');
+      objBox.style.marginBottom = '16px';
+      objBox.style.border = '1px solid #cbd5e1';
+      objBox.style.borderRadius = '6px';
+      objBox.style.padding = '14px';
+      objBox.style.background = '#ffffff';
+
+      objBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #f1f5f9; padding-bottom:6px;">
+          <strong style="color:#1e3a8a; font-size:14px;">#${i} ${escapeHtml(objVal) || '(No objective title)'}</strong>
+          <span style="font-size:12px; font-weight:700; color:#0369a1;">Weight: ${escapeHtml(wVal)}% | Mid-Year Progress: ${escapeHtml(prog)}%</span>
+        </div>
+
+        <div style="font-size:12px; color:#475569; background:#f8fafc; padding:8px 12px; border-radius:4px; margin-bottom:12px;">
+          <strong>Mid-Year Result Summary:</strong> ${escapeHtml(midRes) || '-'}
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">ผลการดำเนินงานจริง / Actual Result & Achievement *:</label>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Actual_Result_${i}" data-required="true" ${!isSelfEditable ? 'readonly' : ''} placeholder="สรุปผลงานจริงที่บรรลุเมื่อสิ้นปี...">${escapeHtml(actResult)}</textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">ประเมินตนเอง / Self Achievement [1-5] *:</label>
+            ${isSelfEditable ? `
+              <select class="mbo-cell-select mbo-field" data-code="Self_Achievement_${i}" style="width:100%; height:36px;">
+                <option value="1" ${selfAch === '1' ? 'selected' : ''}>1 : Rarely meet (ต่ำกว่าเป้า)</option>
+                <option value="2" ${selfAch === '2' ? 'selected' : ''}>2 : Partially meet (บางส่วน)</option>
+                <option value="3" ${selfAch === '3' ? 'selected' : ''}>3 : Fully meet (ตามเป้า)</option>
+                <option value="4" ${selfAch === '4' ? 'selected' : ''}>4 : Exceeded (เกินเป้า)</option>
+                <option value="5" ${selfAch === '5' ? 'selected' : ''}>5 : Remarkable (สูงสุด)</option>
+              </select>
+            ` : `
+              <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(selfAch)}" readonly style="height:36px;" />
+            `}
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:4px;">ความคิดเห็นตนเอง / Self Reflection:</label>
+            <textarea class="mbo-wide-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="ข้อคิดเห็นประกอบการประเมินตนเอง...">${escapeHtml(selfComment)}</textarea>
+          </div>
+        </div>
+
+        <div class="mbo-attachment-section">
+          <div class="mbo-attachment-title">📎 เอกสารแนบหลักฐานผลงาน / Self Evaluation Evidence Files:</div>
+          <div class="mbo-attachment-list">${attachChipsHtml}</div>
+          ${isSelfEditable && this.isPreviewMode ? `
+            <div style="margin-top:6px; font-size:11px; color:#0369a1; background:#e0f2fe; padding:4px 8px; border-radius:4px; display:inline-block;">
+              [Preview-Only Upload Simulator] 📁 Select File... (Simulated Control Only - No Kintone Upload Call)
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      section.appendChild(objBox);
+    }
+
+    wrap.appendChild(section);
     return wrap;
   }
 
@@ -637,6 +831,8 @@ export class EmployeePartAUI {
     wrap.appendChild(this._renderStageNav());
 
     const appraiserInfo = normalizeAppraiserData(this.record, this.appraiserCount, this.previewOptions);
+    const compSetCode = this._getVal('Competency_Set_Code') || this.previewOptions.competencySetCode || 'COMP_SET_OPERATIONAL_V1';
+    const applicableCompList = getApplicableCompetencies(compSetCode);
 
     // Top Appraiser Completion Card
     const compCard = document.createElement('div');
@@ -645,6 +841,9 @@ export class EmployeePartAUI {
       <div class="mbo-appraiser-completion-info">
         👥 สถานะการประเมินของผู้ประเมิน / Appraiser Evaluation Completion:
         <strong>${appraiserInfo.completedCount} / ${appraiserInfo.totalCount} Complete (${appraiserInfo.completionPercent}%)</strong>
+        <div style="font-size:11.5px; font-weight:normal; color:#475569; margin-top:2px;">
+          Part A Ratings: <strong>${appraiserInfo.partA.completed}/${appraiserInfo.partA.total}</strong> | Part B Ratings: <strong>${appraiserInfo.partB.completed}/${appraiserInfo.partB.total}</strong>
+        </div>
       </div>
       <div class="mbo-appraiser-slots-pills">
         ${appraiserInfo.slots.map(s => `
@@ -686,15 +885,21 @@ export class EmployeePartAUI {
       let slotsHtml = '';
       appraiserInfo.slots.forEach(s => {
         const ratingVal = s.partARatings[i] || '';
+        const isSlotEditable = this.isPreviewMode ? (s.slotIndex === parseInt(this.activeSlotIndex, 10)) : false;
+
+        // Legacy physical code for slots 1 & 2; NO PHYSICAL DATA CODE FOR SLOTS 3 & 4 (R1-02)
+        const ratingDataCode = s.slotIndex === 1 ? `Manager_Achievement_${i}` : (s.slotIndex === 2 ? `GM_Achievement_${i}` : '');
+        const commentDataCode = s.slotIndex === 1 ? `Manager_Comment_${i}` : (s.slotIndex === 2 ? `GM_Comment_${i}` : '');
+
         slotsHtml += `
-          <div class="mbo-appraiser-slot-box">
+          <div class="mbo-appraiser-slot-box" style="${isSlotEditable ? 'border-color: #3b82f6; background: #f0f9ff;' : ''}">
             <div class="mbo-appraiser-slot-header">
               <span>${escapeHtml(s.label)}</span>
-              ${s.isCompleted ? '<span style="color:#166534; font-size:11px;">✓ Complete</span>' : '<span style="color:#b45309; font-size:11px;">⏳ Pending</span>'}
+              ${s.isPartAComplete ? '<span style="color:#166534; font-size:11px;">✓ Complete</span>' : '<span style="color:#b45309; font-size:11px;">⏳ Pending</span>'}
             </div>
             <div style="margin-bottom: 6px;">
               <label style="font-size:11px; font-weight:700; color:#475569;">Rating [1-5]:</label>
-              <select class="mbo-cell-select mbo-field" data-code="${s.slotIndex === 1 ? 'Manager' : 'GM'}_PartA_Rating_${i}" style="margin-top:2px;">
+              <select class="mbo-cell-select ${ratingDataCode ? 'mbo-field' : ''}" ${ratingDataCode ? `data-code="${ratingDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'disabled' : ''} style="margin-top:2px; width:100%;">
                 <option value="" ${!ratingVal ? 'selected' : ''}>-- Select Rating --</option>
                 <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Rarely meet</option>
                 <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Partially meet</option>
@@ -705,7 +910,7 @@ export class EmployeePartAUI {
             </div>
             <div>
               <label style="font-size:11px; font-weight:700; color:#475569;">Feedback / Comment:</label>
-              <textarea class="mbo-wide-textarea mbo-field" data-code="${s.slotIndex === 1 ? 'Manager' : 'GM'}_Comment_PartA" style="min-height:50px; margin-top:2px;" placeholder="Appraiser comment...">${escapeHtml(s.partAComment)}</textarea>
+              <textarea class="mbo-wide-textarea ${commentDataCode ? 'mbo-field' : ''}" ${commentDataCode ? `data-code="${commentDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'readonly' : ''} style="min-height:50px; margin-top:2px;" placeholder="Appraiser comment...">${escapeHtml(s.partAComment)}</textarea>
             </div>
           </div>
         `;
@@ -732,23 +937,27 @@ export class EmployeePartAUI {
     partBSection.className = 'mbo-wide-card';
     partBSection.innerHTML = `
       <div class="mbo-wide-card-header">
-        <span>PART B: การประเมินสมรรถนะ / Part B Competency Evaluation (1..6)</span>
-        <span style="font-weight: normal; font-size: 12px; color: #475569;">[5 Core Competencies + 1 COCE]</span>
+        <span>PART B: การประเมินสมรรถนะ / Part B Competency Evaluation (${applicableCompList.length} Items)</span>
+        <span style="font-weight: normal; font-size: 12px; color: #475569;">[${escapeHtml(compSetCode)}]</span>
       </div>
     `;
 
-    COMPETENCIES_LIST.forEach(comp => {
+    applicableCompList.forEach(comp => {
       let slotsHtml = '';
       appraiserInfo.slots.forEach(s => {
         const ratingVal = s.partBRatings[comp.id] || '';
+        const isSlotEditable = this.isPreviewMode ? (s.slotIndex === parseInt(this.activeSlotIndex, 10)) : false;
+
+        const ratingDataCode = s.slotIndex === 1 ? `Manager_Competency_Rating_${comp.id}` : (s.slotIndex === 2 ? `GM_Competency_Rating_${comp.id}` : '');
+
         slotsHtml += `
-          <div class="mbo-appraiser-slot-box">
+          <div class="mbo-appraiser-slot-box" style="${isSlotEditable ? 'border-color: #3b82f6; background: #f0f9ff;' : ''}">
             <div class="mbo-appraiser-slot-header">
               <span>${escapeHtml(s.label)}</span>
             </div>
             <div style="margin-bottom: 6px;">
               <label style="font-size:11px; font-weight:700; color:#475569;">Score [1-5]:</label>
-              <select class="mbo-cell-select mbo-field" data-code="${s.slotIndex === 1 ? 'Manager' : 'GM'}_PartB_Score_${comp.id}" style="margin-top:2px;">
+              <select class="mbo-cell-select ${ratingDataCode ? 'mbo-field' : ''}" ${ratingDataCode ? `data-code="${ratingDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'disabled' : ''} style="margin-top:2px; width:100%;">
                 <option value="" ${!ratingVal ? 'selected' : ''}>-- Select Score --</option>
                 <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Unsatisfactory</option>
                 <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Needs Improvement</option>
@@ -786,7 +995,7 @@ export class EmployeePartAUI {
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <h3 style="margin:0; color:#166534; font-size:15px;">✅ สรุปการประเมินสมบูรณ์ / Evaluation Complete</h3>
-            <p style="margin:4px 0 0 0; font-size:12.5px; color:#475569;">ผู้ประเมินทุกท่านลงคะแนนครบถ้วนแล้ว พร้อมสำหรับการตรวจสอบขั้นสุดท้ายโดย HR</p>
+            <p style="margin:4px 0 0 0; font-size:12.5px; color:#475569;">ผู้ประเมินทุกท่านลงคะแนนครบถ้วนแล้ว (Part A & Part B Required Data Complete)</p>
           </div>
           <div style="font-weight:700; font-size:14px; color:#166534; background:#dcfce7; padding:8px 16px; border-radius:6px;">
             Part A + Part B Verified Complete
@@ -798,7 +1007,7 @@ export class EmployeePartAUI {
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
             <h3 style="margin:0; color:#991b1b; font-size:15px;">⏳ อยู่ระหว่างการลงคะแนน / Rating Incomplete</h3>
-            <p style="margin:4px 0 0 0; font-size:12.5px; color:#475569;">อยู่ระหว่างการรวบรวมผลประเมินจากผู้ประเมิน (${appraiserInfo.completedCount}/${appraiserInfo.totalCount} Complete)</p>
+            <p style="margin:4px 0 0 0; font-size:12.5px; color:#475569;">อยู่ระหว่างการรวบรวมผลประเมินจากผู้ประเมิน (${appraiserInfo.completedCount}/${appraiserInfo.totalCount} Complete Slots)</p>
           </div>
           <div>
             <span class="mbo-pending-badge">⚠️ Result Pending / Incomplete</span>
@@ -818,6 +1027,9 @@ export class EmployeePartAUI {
     const status = this._getVal('Status') || '15 HR Final Check';
     const isCompleted = status === '16 Completed';
     const appraiserInfo = normalizeAppraiserData(this.record, this.appraiserCount, this.previewOptions);
+
+    const partAWeight = this._getVal('PartA_Weight') || this.previewOptions.partAWeight || '70';
+    const partBWeight = this._getVal('PartB_Weight') || this.previewOptions.partBWeight || '30';
 
     const execSummaryCard = document.createElement('div');
     execSummaryCard.className = 'mbo-wide-card';
@@ -848,12 +1060,12 @@ export class EmployeePartAUI {
           </div>
         </div>
         <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
-          <div style="font-size:11px; font-weight:700; color:#64748b;">Part A Weight</div>
-          <div style="font-size:14px; font-weight:700; color:#0369a1; margin-top:2px;">70% (Objectives)</div>
+          <div style="font-size:11px; font-weight:700; color:#64748b;">Part A Weight (Objectives)</div>
+          <div style="font-size:14px; font-weight:700; color:#0369a1; margin-top:2px;">${escapeHtml(partAWeight)}%</div>
         </div>
         <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
-          <div style="font-size:11px; font-weight:700; color:#64748b;">Part B Weight</div>
-          <div style="font-size:14px; font-weight:700; color:#0369a1; margin-top:2px;">30% (Competency)</div>
+          <div style="font-size:11px; font-weight:700; color:#64748b;">Part B Weight (Competencies)</div>
+          <div style="font-size:14px; font-weight:700; color:#0369a1; margin-top:2px;">${escapeHtml(partBWeight)}%</div>
         </div>
         <div style="background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #e2e8f0;">
           <div style="font-size:11px; font-weight:700; color:#64748b;">Final Result Status</div>
@@ -866,15 +1078,85 @@ export class EmployeePartAUI {
 
     wrap.appendChild(execSummaryCard);
 
-    // Read-only Part A & Part B Breakdown
-    wrap.appendChild(this._renderScreenAppraiserEval());
+    // Read-only Part A & Part B Breakdown (Strictly read-only, zero duplicate nav)
+    const readOnlyBreakdown = this._renderReadOnlyAppraiserBreakdown(appraiserInfo);
+    wrap.appendChild(readOnlyBreakdown);
+
     return wrap;
+  }
+
+  _renderReadOnlyAppraiserBreakdown(appraiserInfo) {
+    const section = document.createElement('div');
+    section.className = 'mbo-wide-card';
+    const compSetCode = this._getVal('Competency_Set_Code') || this.previewOptions.competencySetCode || 'COMP_SET_OPERATIONAL_V1';
+    const applicableCompList = getApplicableCompetencies(compSetCode);
+
+    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+
+    let html = `
+      <div class="mbo-wide-card-header">
+        <span>📋 รายละเอียดผลประเมินย้อนหลัง / Evaluation Detail Breakdown (Read-Only)</span>
+      </div>
+      <h3 style="color:#1e3a8a; font-size:14px; margin:12px 0 6px 0;">Part A: Objectives Evaluation</h3>
+    `;
+
+    for (let i = 1; i <= count; i++) {
+      const objVal = this._getVal(`Objective_${i}`);
+      const wVal = this._getVal(`Weight_${i}`) || '0';
+      const actResult = this._getVal(`Actual_Result_${i}`);
+
+      let slotsHtml = '';
+      appraiserInfo.slots.forEach(s => {
+        const ratingVal = s.partARatings[i] || '-';
+        slotsHtml += `
+          <div style="background:#f8fafc; padding:8px 10px; border-radius:4px; border:1px solid #e2e8f0; font-size:12px;">
+            <strong>${escapeHtml(s.label)}:</strong> Rating: Level ${escapeHtml(ratingVal)} | Comment: "${escapeHtml(s.partAComment || '-')}"
+          </div>
+        `;
+      });
+
+      html += `
+        <div style="margin-bottom:10px; padding:10px; border:1px solid #e2e8f0; border-radius:6px;">
+          <div style="font-weight:700; color:#0f172a; font-size:13px;">#${i} ${escapeHtml(objVal)} (Weight: ${escapeHtml(wVal)}%)</div>
+          <div style="font-size:12px; color:#475569; margin:4px 0 8px 0;">Actual: ${escapeHtml(actResult || '-')}</div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:8px;">${slotsHtml}</div>
+        </div>
+      `;
+    }
+
+    html += `<h3 style="color:#1e3a8a; font-size:14px; margin:16px 0 6px 0;">Part B: Competency Evaluation</h3>`;
+
+    applicableCompList.forEach(comp => {
+      let slotsHtml = '';
+      appraiserInfo.slots.forEach(s => {
+        const ratingVal = s.partBRatings[comp.id] || '-';
+        slotsHtml += `
+          <div style="background:#f8fafc; padding:6px 10px; border-radius:4px; border:1px solid #e2e8f0; font-size:12px;">
+            <strong>${escapeHtml(s.label)}:</strong> Score: Level ${escapeHtml(ratingVal)}
+          </div>
+        `;
+      });
+
+      html += `
+        <div style="margin-bottom:8px; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px;">
+          <div style="font-weight:700; color:#0f172a; font-size:12.5px;">
+            ${escapeHtml(comp.nameTH)} ${comp.isCOCE ? '<span class="mbo-coce-badge">Evaluated / Excluded</span>' : ''}
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:6px; margin-top:4px;">${slotsHtml}</div>
+        </div>
+      `;
+    });
+
+    section.innerHTML = html;
+    return section;
   }
 
   syncFromDom() {
     if (!this.root) return;
     this.root.querySelectorAll('.mbo-field').forEach(input => {
       const code = input.dataset.code;
+      // Do NOT sync fields without physical data-code or preview-only slots (R1-02)
       if (code) {
         const val = input.value !== undefined ? input.value : '';
         this._setVal(code, val);
@@ -1093,7 +1375,6 @@ export class EmployeePartAUI {
       </div>
     `;
 
-    // Click on summary item jumps to field
     summaryCard.querySelectorAll('.mbo-error-item-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const field = btn.dataset.field;
@@ -1104,7 +1385,6 @@ export class EmployeePartAUI {
     summaryAnchor.innerHTML = '';
     summaryAnchor.appendChild(summaryCard);
 
-    // Apply red border & error message to each invalid field
     fieldErrors.forEach(err => {
       if (err.field === 'Total_Weight') {
         const box = this.root.querySelector('#mbo-weight-summary-box');
@@ -1288,7 +1568,7 @@ export class EmployeePartAUI {
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';
     bar.innerHTML = `
-      <span>STEP 3: Part A : MBO (1 แถว = 1 เป้าหมาย / 1 Objective = 1 Horizontal Row)</span>
+      <span>STEP 3: Part A : MBO (การตั้งเป้าหมายผลงาน / Objectives Setup)</span>
       <div style="font-size: 13px; font-weight: normal; display: flex; align-items: center; gap: 8px;">
         <span>จำนวนเป้าหมาย / Number of Objectives:</span>
         ${isObjEditable ? `
@@ -1310,208 +1590,85 @@ export class EmployeePartAUI {
       lockBanner.style.margin = '12px 0';
       lockBanner.style.color = '#64748b';
       lockBanner.innerHTML = `
-        <div style="font-size: 18px; margin-bottom: 6px;">🔒 ตารางตั้งเป้าหมายถูกล็อกชั่วคราว / Objective Grid is Locked</div>
+        <div style="font-size: 18px; margin-bottom: 6px;">🔒 ตารางตั้งเป้าหมายถูกล็อกชั่วคราว / Objective Setup is Locked</div>
         <div style="font-size: 13px;">กรุณาระบุรหัสพนักงานใน <strong>STEP 1</strong> และกดปุ่มค้นหาก่อนเพื่อปลดล็อกการตั้งเป้าหมาย<br/>Please identify and verify employee profile in STEP 1 to unlock objective setup.</div>
       `;
       container.appendChild(lockBanner);
       return container;
     }
 
-    const table = document.createElement('table');
-    table.className = 'mbo-grid-table';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th style="width: 45px; text-align: center;">#</th>
-          <th style="width: 32%;">
-            เป้าหมาย / Objectives (Expected result & target) <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[ระบุเป้าหมายและผลลัพธ์ที่คาดหวัง / Indicate expected result]</span>
-          </th>
-          <th style="width: 32%;">
-            แผนปฏิบัติการ / Action Plan (Activities to achieve obj.) <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[ระบุกิจกรรมและแผนงาน / Indicate activities & plan]</span>
-          </th>
-          <th style="width: 18%;">
-            ข้อตกลงเพิ่มเติม / Additional agreement / Comment
-            <span class="th-sub">[ข้อตกลงเพิ่มเติม / Any agreement]</span>
-          </th>
-          <th style="width: 95px; text-align: center;">
-            น้ำหนัก / Weight (%) <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[น้ำหนัก %]</span>
-          </th>
-          <th style="width: 180px;">
-            ระดับความยาก / Difficulty Level [1-4] <span style="color:#dc2626;">*</span>
-            <span class="th-sub">[ระดับความยาก 1-4]</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Array.from({ length: count }, (_, idx) => this._renderObjectiveInputRow(idx + 1, isObjEditable)).join('')}
-      </tbody>
-    `;
+    const section = document.createElement('div');
+    section.className = 'mbo-wide-card';
 
-    container.appendChild(table);
+    for (let i = 1; i <= count; i++) {
+      const objVal = this._getVal(`Objective_${i}`);
+      const actVal = this._getVal(`Action_Plan_${i}`);
+      const addVal = this._getVal(`Additional_Agreement_${i}`);
+      const wVal = this._getVal(`Weight_${i}`);
+      const diffVal = this._getVal(`Difficulty_${i}`) || '3';
+
+      const objBox = document.createElement('div');
+      objBox.style.marginBottom = '16px';
+      objBox.style.border = '1px solid #cbd5e1';
+      objBox.style.borderRadius = '6px';
+      objBox.style.padding = '14px';
+      objBox.style.background = '#ffffff';
+
+      objBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #f1f5f9; padding-bottom:6px;">
+          <strong style="color:#1e3a8a; font-size:14px;">#${i} เป้าหมายที่ ${i} / Objective #${i}</strong>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">เป้าหมายและผลลัพธ์ที่คาดหวัง / Objectives & Target *:</label>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Objective_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุเป้าหมายและผลลัพธ์ที่คาดหวัง...">${escapeHtml(objVal)}</textarea>
+          <span class="mbo-cell-tag" data-target="Objective_${i}"></span>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">แผนปฏิบัติการ / Action Plan *:</label>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Action_Plan_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุกิจกรรมและแผนงานเพื่อบรรลุเป้าหมาย...">${escapeHtml(actVal)}</textarea>
+          <span class="mbo-cell-tag" data-target="Action_Plan_${i}"></span>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:4px;">ข้อตกลงเพิ่มเติม / Additional Agreement / Comment:</label>
+          <textarea class="mbo-wide-textarea mbo-field" data-code="Additional_Agreement_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="ข้อตกลงเพิ่มเติม...">${escapeHtml(addVal)}</textarea>
+          <span class="mbo-cell-tag" data-target="Additional_Agreement_${i}"></span>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">น้ำหนัก / Weight (%) *:</label>
+            <input type="number" min="1" max="100" class="mbo-cell-input mbo-field mbo-weight-input" data-code="Weight_${i}" data-required="true" value="${escapeHtml(wVal)}" ${!isObjEditable ? 'readonly' : ''} style="height:36px; width:100%; text-align:center;" placeholder="30" />
+            <span class="mbo-cell-tag" data-target="Weight_${i}"></span>
+          </div>
+          <div>
+            <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">ระดับความยาก / Difficulty Level [1-4] *:</label>
+            ${isObjEditable ? `
+              <select class="mbo-cell-select mbo-field" data-code="Difficulty_${i}" style="height:36px; width:100%;">
+                <option value="1" ${diffVal === '1' ? 'selected' : ''}>1 : Normal (ง่าย)</option>
+                <option value="2" ${diffVal === '2' ? 'selected' : ''}>2 : Moderate (ปานกลาง)</option>
+                <option value="3" ${diffVal === '3' ? 'selected' : ''}>3 : Difficult (ยาก)</option>
+                <option value="4" ${diffVal === '4' ? 'selected' : ''}>4 : Challenging (ท้าทายมาก)</option>
+              </select>
+            ` : `
+              <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(diffVal)}" readonly style="height:36px;" />
+            `}
+            <span class="mbo-cell-tag" data-target="Difficulty_${i}"></span>
+          </div>
+        </div>
+      `;
+
+      section.appendChild(objBox);
+    }
+
+    container.appendChild(section);
 
     // Total Weight Summary
     container.appendChild(this._renderWeightSummary());
 
     return container;
-  }
-
-  _renderObjectiveInputRow(i, isObjEditable) {
-    const objVal = this._getVal(`Objective_${i}`);
-    const actVal = this._getVal(`Action_Plan_${i}`);
-    const addVal = this._getVal(`Additional_Agreement_${i}`);
-    const wVal = this._getVal(`Weight_${i}`);
-    const diffVal = this._getVal(`Difficulty_${i}`) || '3';
-
-    return `
-      <tr>
-        <td class="mbo-row-num-cell">${i}</td>
-        <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Objective_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุเป้าหมายและผลลัพธ์ / Indicate expected result and target...">${escapeHtml(objVal)}</textarea>
-          <span class="mbo-cell-tag" data-target="Objective_${i}"></span>
-        </td>
-        <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Action_Plan_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุกิจกรรมและแผนงาน / Indicate activities to achieve objective...">${escapeHtml(actVal)}</textarea>
-          <span class="mbo-cell-tag" data-target="Action_Plan_${i}"></span>
-        </td>
-        <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Additional_Agreement_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="ข้อตกลงเพิ่มเติม / Any agreement or comment...">${escapeHtml(addVal)}</textarea>
-          <span class="mbo-cell-tag" data-target="Additional_Agreement_${i}"></span>
-        </td>
-        <td style="vertical-align: middle; text-align: center;">
-          <input type="number" min="1" max="100" class="mbo-cell-input mbo-field mbo-weight-input" data-code="Weight_${i}" data-required="true" value="${escapeHtml(wVal)}" ${!isObjEditable ? 'readonly' : ''} style="text-align: center;" placeholder="30" />
-          <span class="mbo-cell-tag" data-target="Weight_${i}"></span>
-        </td>
-        <td style="vertical-align: middle;">
-          ${isObjEditable ? `
-            <select class="mbo-cell-select mbo-field" data-code="Difficulty_${i}">
-              <option value="1" ${diffVal === '1' ? 'selected' : ''}>1 : Normal (ง่าย)</option>
-              <option value="2" ${diffVal === '2' ? 'selected' : ''}>2 : Moderate (ปานกลาง)</option>
-              <option value="3" ${diffVal === '3' ? 'selected' : ''}>3 : Difficult (ยาก)</option>
-              <option value="4" ${diffVal === '4' ? 'selected' : ''}>4 : Challenging (ท้าทายมาก)</option>
-            </select>
-          ` : `
-            <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(diffVal)}" readonly />
-          `}
-          <span class="mbo-cell-tag" data-target="Difficulty_${i}"></span>
-        </td>
-      </tr>
-    `;
-  }
-
-  _renderMidYearRow(i) {
-    const isMidEditable = this.isEditable && this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
-    const objVal = this._getVal(`Objective_${i}`);
-    const actVal = this._getVal(`Action_Plan_${i}`);
-    const wVal = this._getVal(`Weight_${i}`) || '0';
-    const prog = parseInt(this._getVal(`Progress_Percent_${i}`) || '0', 10);
-    const revVal = this._getVal(`Periodical_Review_${i}`);
-    const resVal = this._getVal(`MidYear_Result_${i}`);
-    const riskVal = this._getVal(`MidYear_Issue_Risk_${i}`);
-
-    const attachFiles = this.previewOptions.midyearAttachments?.[i] || [
-      `MidYear_Evidence_Obj${i}.pdf`,
-      `Review_Notes_Q2_Obj${i}.xlsx`
-    ];
-
-    return `
-      <tr>
-        <td class="mbo-row-num-cell">${i}</td>
-        <td>
-          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">${escapeHtml(objVal) || '(No objective)'}</div>
-          <div style="font-size: 12px; color: #475569; white-space: pre-wrap;">${escapeHtml(actVal) || ''}</div>
-          <div style="margin-top: 6px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${escapeHtml(wVal)}%</div>
-        </td>
-        <td style="vertical-align: middle;">
-          <div style="font-weight: 700; text-align: center; margin-bottom: 4px;">${prog}%</div>
-          ${isMidEditable ? `
-            <input type="range" min="0" max="100" class="mbo-field mbo-prog-range" data-code="Progress_Percent_${i}" value="${prog}" style="width: 100%; cursor: pointer;" />
-          ` : ''}
-          <div class="mbo-progress-bar-container">
-            <div class="mbo-progress-bar-fill" style="width: ${prog}%;"></div>
-          </div>
-          <span class="mbo-cell-tag" data-target="Progress_Percent_${i}"></span>
-        </td>
-        <td>
-          <textarea class="mbo-wide-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="บันทึกทบทวนผลงาน / Review notes...">${escapeHtml(revVal)}</textarea>
-          <span class="mbo-cell-tag" data-target="Periodical_Review_${i}"></span>
-        </td>
-        <td>
-          <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Result_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ผลสำเร็จปัจจุบัน / Milestone results...">${escapeHtml(resVal)}</textarea>
-          <span class="mbo-cell-tag" data-target="MidYear_Result_${i}"></span>
-        </td>
-        <td>
-          <textarea class="mbo-wide-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ปัญหาและอุปสรรค / Risks & next action...">${escapeHtml(riskVal)}</textarea>
-          <span class="mbo-cell-tag" data-target="MidYear_Issue_Risk_${i}"></span>
-          <div class="mbo-attachment-section">
-            <div class="mbo-attachment-title">📎 เอกสารแนบทบทวนกลางปี / Mid-Year Evidence Files:</div>
-            <div class="mbo-attachment-list">
-              ${attachFiles.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('')}
-            </div>
-          </div>
-        </td>
-      </tr>
-    `;
-  }
-
-  _renderSelfEvalRow(i) {
-    const isSelfEditable = this.isEditable && this.stage === BUSINESS_STAGES.SELF_EVALUATION;
-    const objVal = this._getVal(`Objective_${i}`);
-    const wVal = this._getVal(`Weight_${i}`) || '0';
-    const prog = this._getVal(`Progress_Percent_${i}`) || '0';
-    const midRes = this._getVal(`MidYear_Result_${i}`);
-    const actResult = this._getVal(`Actual_Result_${i}`);
-    const selfAch = this._getVal(`Self_Achievement_${i}`) || '3';
-    const selfComment = this._getVal(`Self_Comment_${i}`);
-
-    const finalAttachFiles = this.previewOptions.finalAttachments?.[i] || [
-      `Final_Achievement_Evidence_Obj${i}.pdf`,
-      `Performance_Report_Obj${i}.docx`
-    ];
-
-    return `
-      <tr>
-        <td class="mbo-row-num-cell">${i}</td>
-        <td>
-          <div style="font-weight: 700; color: #0f172a;">${escapeHtml(objVal) || '(No objective)'}</div>
-          <div style="margin-top: 4px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${escapeHtml(wVal)}%</div>
-        </td>
-        <td>
-          <div style="font-size: 12px; font-weight: 600; color: #0369a1;">Mid-Year Progress: ${escapeHtml(prog)}%</div>
-          <div style="font-size: 12px; color: #475569; margin-top: 4px; white-space: pre-wrap;">${escapeHtml(midRes) || '-'}</div>
-        </td>
-        <td>
-          <textarea class="mbo-wide-textarea mbo-field" data-code="Actual_Result_${i}" data-required="true" ${!isSelfEditable ? 'readonly' : ''} placeholder="ผลงานจริง / Summary of actual results...">${escapeHtml(actResult)}</textarea>
-          <span class="mbo-cell-tag" data-target="Actual_Result_${i}"></span>
-          <div class="mbo-attachment-section">
-            <div class="mbo-attachment-title">📎 เอกสารแนบหลักฐานผลงาน / Self Eval Evidence Files:</div>
-            <div class="mbo-attachment-list">
-              ${finalAttachFiles.map(fn => `<span class="mbo-attachment-chip">📄 ${escapeHtml(fn)}</span>`).join('')}
-            </div>
-          </div>
-        </td>
-        <td style="vertical-align: middle;">
-          ${isSelfEditable ? `
-            <select class="mbo-cell-select mbo-field" data-code="Self_Achievement_${i}">
-              <option value="1" ${selfAch === '1' ? 'selected' : ''}>1 : Rarely meet (ต่ำกว่าเป้า)</option>
-              <option value="2" ${selfAch === '2' ? 'selected' : ''}>2 : Partially meet (บางส่วน)</option>
-              <option value="3" ${selfAch === '3' ? 'selected' : ''}>3 : Fully meet (ตามเป้า)</option>
-              <option value="4" ${selfAch === '4' ? 'selected' : ''}>4 : Exceeded (เกินเป้า)</option>
-              <option value="5" ${selfAch === '5' ? 'selected' : ''}>5 : Remarkable (สูงสุด)</option>
-            </select>
-          ` : `
-            <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(selfAch)}" readonly />
-          `}
-          <span class="mbo-cell-tag" data-target="Self_Achievement_${i}"></span>
-        </td>
-        <td>
-          <textarea class="mbo-wide-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="ความเห็นประกอบ / Self reflection...">${escapeHtml(selfComment)}</textarea>
-          <span class="mbo-cell-tag" data-target="Self_Comment_${i}"></span>
-        </td>
-      </tr>
-    `;
   }
 
   _renderWeightSummary() {
@@ -1526,7 +1683,6 @@ export class EmployeePartAUI {
   }
 
   _bindEvents(root) {
-    // Input changes
     root.querySelectorAll('.mbo-field').forEach(input => {
       input.addEventListener('input', (e) => {
         const code = e.target.dataset.code;
@@ -1534,7 +1690,6 @@ export class EmployeePartAUI {
         this._setVal(code, val);
         this.onFieldChange(code, val);
 
-        // Clear error for this field if corrected
         if (this.currentErrors && this.currentErrors.length > 0) {
           this.currentErrors = this.currentErrors.filter(err => err.field !== code);
           this._renderInlineErrors(this.currentErrors);
@@ -1546,16 +1701,15 @@ export class EmployeePartAUI {
           this._updateTotalWeightDisplay();
         }
         if (code.startsWith('Progress_Percent_')) {
-          const row = e.target.closest('tr');
+          const row = e.target.closest('div');
           const fill = row?.querySelector('.mbo-progress-bar-fill');
           if (fill) fill.style.width = `${val}%`;
-          const lbl = row?.querySelector('td:nth-child(3) div:first-child');
+          const lbl = row?.querySelector('label strong');
           if (lbl) lbl.textContent = `${val}%`;
         }
       });
     });
 
-    // Objective count selector
     const countSelect = root.querySelector('#mbo-obj-count-select');
     if (countSelect) {
       countSelect.addEventListener('change', (e) => {
@@ -1567,7 +1721,6 @@ export class EmployeePartAUI {
       });
     }
 
-    // Lookup input change listener (Reset verification if edited)
     const lookupInput = root.querySelector('#mbo-lookup-emp-input');
     if (lookupInput) {
       lookupInput.addEventListener('input', (e) => {
@@ -1590,7 +1743,6 @@ export class EmployeePartAUI {
       });
     }
 
-    // Lookup button
     const lookupBtn = root.querySelector('#mbo-lookup-btn');
     if (lookupBtn && lookupInput) {
       lookupBtn.addEventListener('click', async () => {
@@ -1646,7 +1798,6 @@ export class EmployeePartAUI {
     const val = input.value?.trim() || '';
     const isRequired = input.dataset.required === 'true';
 
-    // If currently in error state, keep it unless value changed or reset
     const isErr = this.currentErrors && this.currentErrors.some(err => err.field === code);
 
     input.classList.remove(

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App794 Evaluation UI V2 - Status Preview Lab</title>
+  <title>App794 Evaluation UI V2 R1 - Status Preview Lab</title>
   <link rel="stylesheet" href="/mbo-employee.css">
   <style>
     body {
@@ -69,7 +69,7 @@
 
   <div class="preview-lab-toolbar">
     <div class="preview-lab-title">
-      🧪 Status Preview Lab V2
+      🧪 Status Preview Lab V2 R1
     </div>
 
     <div class="preview-lab-group">
@@ -97,9 +97,9 @@
     <div class="preview-lab-group">
       <label>2. Profile Ratio</label>
       <select id="lab-ratio" class="preview-lab-select">
-        <option value="70/30">70/30 (Staff / Chief)</option>
-        <option value="60/40">60/40 (Assistant Manager)</option>
-        <option value="50/50">50/50 (Section Manager)</option>
+        <option value="70/30">70/30 (Staff / Operational 6 Items)</option>
+        <option value="60/40">60/40 (Assistant Manager / Management 8 Items)</option>
+        <option value="50/50">50/50 (Section Manager / Management 8 Items)</option>
       </select>
     </div>
 
@@ -166,6 +166,10 @@
         Objective_Count: { value: '3' },
         Routing_Topology: { value: 'M1_G1' },
 
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+
         Objective_1: { value: 'พัฒนาและส่งมอบระบบ MBO V2 ให้เสร็จตามกำหนดเวลา' },
         Action_Plan_1: { value: 'ออกแบบ Architecture, พัฒนา Frontend/Backend, และทดสอบ UAT ร่วมกับ HR' },
         Additional_Agreement_1: { value: 'ส่งมอบครบทุก Feature ภายใน Q3' },
@@ -175,6 +179,7 @@
         Periodical_Review_1: { value: 'ความคืบหน้าเป็นไปตามแผนงาน Q2' },
         MidYear_Result_1: { value: 'เสร็จสิ้นการพัฒนา Core Workflow' },
         MidYear_Issue_Risk_1: { value: 'ไม่มีอุปสรรคสำคัญ' },
+        MidYear_Next_Action_1: { value: 'ทดสอบ UAT และเตรียมเอกสารคู่มือ' },
         Actual_Result_1: { value: 'ส่งมอบระบบ MBO V2 ครบ 100% พร้อมคู่มือการใช้งาน' },
         Self_Achievement_1: { value: '4' },
         Self_Comment_1: { value: 'ส่งมอบงานได้ตรงตามเวลาและคุณภาพที่กำหนด' },
@@ -188,6 +193,7 @@
         Periodical_Review_2: { value: 'SLA เฉลี่ย 1.8 ชั่วโมง' },
         MidYear_Result_2: { value: 'ผ่านเกณฑ์ SLA 6 เดือนแรก' },
         MidYear_Issue_Risk_2: { value: 'อุปกรณ์ทดแทนมีจำนวนจำกัด' },
+        MidYear_Next_Action_2: { value: 'จัดซื้ออุปกรณ์สำรองเพิ่มเติม' },
         Actual_Result_2: { value: 'บรรลุเป้าหมาย SLA 1.5 ชั่วโมงตลอดทั้งปี' },
         Self_Achievement_2: { value: '4' },
         Self_Comment_2: { value: 'ได้รับการตอบรับที่ดีจากผู้ใช้งาน' },
@@ -201,6 +207,7 @@
         Periodical_Review_3: { value: 'อบรมครบแล้ว 6 หัวข้อแรก' },
         MidYear_Result_3: { value: 'คะแนนประเมินเฉลี่ย 90%' },
         MidYear_Issue_Risk_3: { value: 'จัดเวลาอบรมให้ตรงกัน' },
+        MidYear_Next_Action_3: { value: 'บันทึกวิดีโอสำหรับการเรียนรู้ย้อนหลัง' },
         Actual_Result_3: { value: 'อบรมครบ 12 หัวข้อ คะแนนเฉลี่ย 92%' },
         Self_Achievement_3: { value: '5' },
         Self_Comment_3: { value: 'ทีมงานมีความเข้าใจและนำไปปรับใช้ได้จริง' },
@@ -209,36 +216,42 @@
         GM_User: { value: [{ code: 'g01', name: 'GM Vichai' }] },
         First_Manager_User: { value: [{ code: 'fm01', name: 'First Manager Anan' }] },
 
-        Manager_Comment_PartA: { value: 'ผลงานดีเยี่ยม ปฏิบัติงานได้ตามเป้าหมายและมีคุณภาพสูง' },
-        Manager_Comment_PartB: { value: 'มีความเชี่ยวชาญและการทำงานเป็นทีมดีมาก' },
-        GM_Comment_PartA: { value: 'เห็นพ้องกับความเห็นของ Manager สมควรได้รับผลการประเมินระดับสูง' },
-        GM_Comment_PartB: { value: 'ปฏิบัติตามกฎระเบียบและจริยธรรมองค์กรอย่างเคร่งครัด' },
+        // Real Physical Legacy Field Names (Slots 1 & 2)
+        Manager_Comment_1: { value: 'ผลงานดีเยี่ยม ปฏิบัติงานได้ตามเป้าหมายและมีคุณภาพสูง' },
+        Manager_Competency_Comment_1: { value: 'มีความเชี่ยวชาญและการทำงานเป็นทีมดีมาก' },
+        GM_Comment_1: { value: 'เห็นพ้องกับความเห็นของ Manager สมควรได้รับผลการประเมินระดับสูง' },
+        GM_Competency_Comment_1: { value: 'ปฏิบัติตามกฎระเบียบและจริยธรรมองค์กรอย่างเคร่งครัด' },
 
-        Manager_PartA_Rating_1: { value: '4' },
-        Manager_PartA_Rating_2: { value: '4' },
-        Manager_PartA_Rating_3: { value: '5' },
+        Manager_Achievement_1: { value: '4' },
+        Manager_Achievement_2: { value: '4' },
+        Manager_Achievement_3: { value: '5' },
 
-        GM_PartA_Rating_1: { value: '4' },
-        GM_PartA_Rating_2: { value: '4' },
-        GM_PartA_Rating_3: { value: '5' },
+        GM_Achievement_1: { value: '4' },
+        GM_Achievement_2: { value: '4' },
+        GM_Achievement_3: { value: '5' },
 
-        Manager_PartB_Score_1: { value: '4' },
-        Manager_PartB_Score_2: { value: '4' },
-        Manager_PartB_Score_3: { value: '5' },
-        Manager_PartB_Score_4: { value: '4' },
-        Manager_PartB_Score_5: { value: '5' },
-        Manager_PartB_Score_6: { value: '5' },
+        Manager_Competency_Rating_1: { value: '4' },
+        Manager_Competency_Rating_2: { value: '4' },
+        Manager_Competency_Rating_3: { value: '5' },
+        Manager_Competency_Rating_4: { value: '4' },
+        Manager_Competency_Rating_5: { value: '5' },
+        Manager_Competency_Rating_6: { value: '5' },
+        Manager_Competency_Rating_7: { value: '4' },
+        Manager_Competency_Rating_8: { value: '5' },
 
-        GM_PartB_Score_1: { value: '4' },
-        GM_PartB_Score_2: { value: '4' },
-        GM_PartB_Score_3: { value: '5' },
-        GM_PartB_Score_4: { value: '4' },
-        GM_PartB_Score_5: { value: '5' },
-        GM_PartB_Score_6: { value: '5' }
+        GM_Competency_Rating_1: { value: '4' },
+        GM_Competency_Rating_2: { value: '4' },
+        GM_Competency_Rating_3: { value: '5' },
+        GM_Competency_Rating_4: { value: '4' },
+        GM_Competency_Rating_5: { value: '5' },
+        GM_Competency_Rating_6: { value: '5' },
+        GM_Competency_Rating_7: { value: '4' },
+        GM_Competency_Rating_8: { value: '5' }
       };
 
       function updateLab() {
         const st = document.getElementById('lab-status').value;
+        const ratio = document.getElementById('lab-ratio').value;
         const appCount = parseInt(document.getElementById('lab-appraisers').value, 10);
         const compMode = document.getElementById('lab-completion').value;
         const activeSlot = parseInt(document.getElementById('lab-slot').value, 10);
@@ -247,32 +260,46 @@
         mockRecord.Status.value = st;
         mockRecord.Routing_Topology.value = topVal;
 
+        if (ratio === '70/30') {
+          mockRecord.PartA_Weight.value = '70';
+          mockRecord.PartB_Weight.value = '30';
+          mockRecord.Competency_Set_Code.value = 'COMP_SET_OPERATIONAL_V1';
+        } else if (ratio === '60/40') {
+          mockRecord.PartA_Weight.value = '60';
+          mockRecord.PartB_Weight.value = '40';
+          mockRecord.Competency_Set_Code.value = 'COMP_SET_MANAGEMENT_V1';
+        } else if (ratio === '50/50') {
+          mockRecord.PartA_Weight.value = '50';
+          mockRecord.PartB_Weight.value = '50';
+          mockRecord.Competency_Set_Code.value = 'COMP_SET_MANAGEMENT_V1';
+        }
+
         const previewOptions = {
-          slot1Completed: true,
-          slot2Completed: compMode === 'complete',
-          slot3Completed: compMode === 'complete',
-          slot4Completed: compMode === 'complete',
+          isPreviewMode: true,
+          activeSlotIndex: activeSlot,
+          competencySetCode: mockRecord.Competency_Set_Code.value,
+          partAWeight: mockRecord.PartA_Weight.value,
+          partBWeight: mockRecord.PartB_Weight.value,
           slot3CommentA: 'Appraiser 3 Feedback: Excellent technical leadership.',
           slot3CommentB: 'Appraiser 3 Competency: Outstanding teamwork.',
           slot4CommentA: 'Appraiser 4 Feedback: Recommended for distinction.',
           slot4CommentB: 'Appraiser 4 Competency: High integrity.',
           slot3RatingsA: { 1: '4', 2: '4', 3: '5' },
-          slot3RatingsB: { 1: '4', 2: '4', 3: '5', 4: '4', 5: '5', 6: '5' },
+          slot3RatingsB: { 1: '4', 2: '4', 3: '5', 4: '4', 5: '5', 6: '5', 7: '4', 8: '5' },
           slot4RatingsA: { 1: '5', 2: '4', 3: '5' },
-          slot4RatingsB: { 1: '5', 2: '4', 3: '5', 4: '5', 5: '5', 6: '5' }
+          slot4RatingsB: { 1: '5', 2: '4', 3: '5', 4: '5', 5: '5', 6: '5', 7: '5', 8: '5' }
         };
 
         if (compMode === 'incomplete') {
-          previewOptions.slot2Completed = false;
-          previewOptions.slot3Completed = false;
-          previewOptions.slot4Completed = false;
-          mockRecord.GM_PartA_Rating_1.value = '';
-          mockRecord.GM_PartA_Rating_2.value = '';
-          mockRecord.GM_PartA_Rating_3.value = '';
+          mockRecord.GM_Achievement_1.value = '';
+          mockRecord.GM_Achievement_2.value = '';
+          mockRecord.GM_Achievement_3.value = '';
+          delete previewOptions.slot3RatingsA;
+          delete previewOptions.slot4RatingsA;
         } else {
-          mockRecord.GM_PartA_Rating_1.value = '4';
-          mockRecord.GM_PartA_Rating_2.value = '4';
-          mockRecord.GM_PartA_Rating_3.value = '5';
+          mockRecord.GM_Achievement_1.value = '4';
+          mockRecord.GM_Achievement_2.value = '4';
+          mockRecord.GM_Achievement_3.value = '5';
         }
 
         mount.innerHTML = '';
@@ -282,6 +309,8 @@
           stage: 'READ_ONLY',
           isEditable: true,
           appraiserCount: appCount,
+          activeSlotIndex: activeSlot,
+          isPreviewMode: true,
           previewOptions: previewOptions
         });
         ui.render();

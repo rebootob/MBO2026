@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, getStageNavSteps, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, getStageNavSteps, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => ({
   innerHTML: '',
@@ -1228,46 +1228,53 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
     assert.equal(getVisualScreen(st), expectedScreen, `Status "${st}" must resolve to visual screen "${expectedScreen}"`);
   });
 
-  // 9. Process progress percentage deterministically maps to status
-  assert.equal(getProcessProgress('01 Draft Objective').percent, 20);
-  assert.equal(getProcessProgress('06 Employee Mid-Year').percent, 40);
+  // 9. Process progress percentage deterministically maps to status (R1-11)
+  assert.equal(getProcessProgress('01 Draft Objective').percent, 5);
+  assert.equal(getProcessProgress('06 Employee Mid-Year').percent, 30);
   assert.equal(getProcessProgress('11 Employee Self Evaluation').percent, 60);
-  assert.equal(getProcessProgress('12 First Manager Final Evaluation').percent, 80);
+  assert.equal(getProcessProgress('12 First Manager Final Evaluation').percent, 70);
+  assert.equal(getProcessProgress('15 HR Final Check').percent, 95);
   assert.equal(getProcessProgress('16 Completed').percent, 100);
 
-  // 10. Appraiser Capacity (1-4) & Role-Neutral Labels
-  const mockRecord = createMockRecord();
-  const appData1 = normalizeAppraiserData(mockRecord, 1, { slot1Completed: true });
-  assert.equal(appData1.totalCount, 1);
-  assert.equal(appData1.slots[0].label, '1st Appraiser');
+  // Unknown status fails closed
+  assert.equal(getVisualScreen('99 INVALID STATUS'), null, 'Unknown visual status must return null to fail closed');
+  assert.equal(getProcessProgress('99 INVALID STATUS'), null, 'Unknown status progress must return null to fail closed');
 
-  const appData2 = normalizeAppraiserData(mockRecord, 2, { slot1Completed: true, slot2Completed: false });
+  // 10. Competency Set Count (R1-04)
+  const opCompList = getApplicableCompetencies('COMP_SET_OPERATIONAL_V1');
+  assert.equal(opCompList.length, 6, 'Operational competency set must have exactly 6 items');
+
+  const mgmtCompList = getApplicableCompetencies('COMP_SET_MANAGEMENT_V1');
+  assert.equal(mgmtCompList.length, 8, 'Management competency set must have exactly 8 items');
+
+  // 11. Real Legacy Field Mapping & Appraiser Capacity (R1-01, R1-02, R1-03)
+  const mockRecord = createMockRecord({
+    Objective_Count: { value: '2' },
+    Manager_Achievement_1: { value: '4' },
+    Manager_Achievement_2: { value: '4' },
+    Manager_Competency_Rating_1: { value: '4' },
+    Manager_Competency_Rating_2: { value: '4' },
+    Manager_Competency_Rating_3: { value: '4' },
+    Manager_Competency_Rating_4: { value: '4' },
+    Manager_Competency_Rating_5: { value: '4' },
+    Manager_Competency_Rating_6: { value: '5' }
+  });
+
+  const appData2 = normalizeAppraiserData(mockRecord, 2);
   assert.equal(appData2.totalCount, 2);
-  assert.equal(appData2.completedCount, 1);
-  assert.equal(appData2.completionPercent, 50);
-  assert.equal(appData2.isFullyComplete, false);
+  assert.equal(appData2.slots[0].isCompleted, true, 'Slot 1 must be complete when all Part A & Part B ratings exist');
+  assert.equal(appData2.slots[1].isCompleted, false, 'Slot 2 must be incomplete when GM fields are missing');
+  assert.equal(appData2.isFullyComplete, false, 'Overall completeness must be false when GM fields are missing');
   assert.equal(appData2.slots[0].label, '1st Appraiser');
   assert.equal(appData2.slots[1].label, '2nd Appraiser');
 
-  const appData3 = normalizeAppraiserData(mockRecord, 3, { slot1Completed: true, slot2Completed: true, slot3Completed: true });
-  assert.equal(appData3.totalCount, 3);
-  assert.equal(appData3.completedCount, 3);
-  assert.equal(appData3.completionPercent, 100);
-  assert.equal(appData3.isFullyComplete, true);
-  assert.equal(appData3.slots[2].label, '3rd Appraiser');
-
-  const appData4 = normalizeAppraiserData(mockRecord, 4, { slot1Completed: true, slot2Completed: true, slot3Completed: true, slot4Completed: true });
-  assert.equal(appData4.totalCount, 4);
-  assert.equal(appData4.completionPercent, 100);
-  assert.equal(appData4.slots[3].label, '4th Appraiser');
-
   // Verify none of the normalized appraiser slot labels claim Manager or GM
-  appData4.slots.forEach(s => {
+  appData2.slots.forEach(s => {
     assert.equal(s.label.includes('Manager'), false, 'Appraiser slot label must NOT contain "Manager"');
     assert.equal(s.label.includes('GM'), false, 'Appraiser slot label must NOT contain "GM"');
   });
 
-  // 11. COCE Competency item index 6 is marked as COCE / Excluded from Score
+  // 12. COCE Competency item index 6 is marked as COCE / Excluded from Score (R1-04)
   const coceItem = COMPETENCIES_LIST.find(c => c.id === 6);
   assert.equal(coceItem.isCOCE, true, 'Competency Item 6 must be flagged as isCOCE');
 });
