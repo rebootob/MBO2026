@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R6 Workflow Hook Regression Closure: Restored `return event;` on valid evaluation paths in `app.record.detail.process.proceed` handler in `src/main-mbo-app.js`, rebuilt `dist/mbo-employee-app.js` (verified 0 source/dist drift), added direct registered-hook unit tests for both success (`return event`) and failure (`return false`) paths (550/550 suite tests passing), preserved zero `__MBO_APP__` residue and API-unavailable test matrix from R5. 0 Kintone writes executed.
+- **2026-08-26**: Executed M10L-D-R7 Review Package Integrity Closure: Reconciled and cleanly deduplicated `project-docs/AI_REVIEW_PACKAGE.md` from R5 baseline (`1793b8a`), removed accidental duplicate M6/M7/forensic blocks and interrupted Section 4 plan steps, preserved R6 reviewed runtime candidate `1997754` with 0 source/dist/test changes (`src/**` = 0, `dist/**` = 0, `tests/**` = 0), and confirmed 550/550 suite tests passing. 0 Kintone writes executed.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.
