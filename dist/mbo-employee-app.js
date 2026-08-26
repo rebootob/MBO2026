@@ -24,12 +24,12 @@ const STATUS_TO_STAGE_MAP = {
   '07 First Manager Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
   '08 Manager Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
   '09 GM Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
-  '10 Mid-Year Approved': BUSINESS_STAGES.READ_ONLY,
+  '10 Mid-Year Completed': BUSINESS_STAGES.READ_ONLY,
   '11 Employee Self Evaluation': BUSINESS_STAGES.SELF_EVALUATION,
-  '12 First Manager Evaluation': BUSINESS_STAGES.READ_ONLY,
-  '13 Manager Evaluation': BUSINESS_STAGES.READ_ONLY,
-  '14 GM Evaluation': BUSINESS_STAGES.READ_ONLY,
-  '15 Evaluation Completed': BUSINESS_STAGES.READ_ONLY,
+  '12 First Manager Final Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '13 Manager Final Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '14 GM Final Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '15 HR Final Check': BUSINESS_STAGES.READ_ONLY,
   '16 Completed': BUSINESS_STAGES.READ_ONLY
 };
 
@@ -1341,6 +1341,178 @@ class ValidationEngine {
         }
       });
     }
+  }
+
+  /**
+   * Validate workflow action against record topology and assigned user fields
+   * @param {Object} record Kintone record object
+   * @param {string} actionName Name of process action (event.action?.value)
+   * @param {string} stage Resolved business stage from STATUS_TO_STAGE_MAP
+   * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
+   */
+  static validateWorkflowAction(record, actionName, stage) {
+    const fieldErrors = [];
+
+    if (!record) {
+      fieldErrors.push({
+        field: 'RECORD',
+        messageTH: 'ไม่พบข้อมูล Record',
+        messageEN: 'Record data not found',
+        message: 'ไม่พบข้อมูล Record\nRecord data not found'
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    if (stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
+      fieldErrors.push({
+        field: 'Status',
+        messageTH: 'สถานะขั้นตอนการทำงานไม่ถูกต้อง หรือไม่ตรงกับระบบ (CONFIGURATION_ERROR)',
+        messageEN: 'Workflow status is invalid or unmapped (CONFIGURATION_ERROR)',
+        message: 'สถานะขั้นตอนการทำงานไม่ถูกต้อง หรือไม่ตรงกับระบบ (CONFIGURATION_ERROR)\nWorkflow status is invalid or unmapped (CONFIGURATION_ERROR)'
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    const topology = this._val(record.Routing_Topology);
+    const status = this._val(record.Status);
+
+    // 1. G2 Topology Guard: Any G2 topology is NOT supported by current 16-state Process Management
+    if (topology.includes('G2')) {
+      fieldErrors.push({
+        field: 'Routing_Topology',
+        messageTH: `เส้นทางการอนุมัติรูปแบบ ${topology} ยังไม่รองรับในระบบปัจจุบัน (G2 UNSUPPORTED CONFIGURATION ERROR)`,
+        messageEN: `Routing topology ${topology} is not supported by current Process Management workflow.`,
+        message: `เส้นทางการอนุมัติรูปแบบ ${topology} ยังไม่รองรับในระบบปัจจุบัน (G2 UNSUPPORTED CONFIGURATION ERROR)\nRouting topology ${topology} is not supported by current Process Management workflow.`
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    // 2. First-Manager source states guard (02, 07, 12 require M2 topology)
+    const firstMgrStates = [
+      '02 First Manager Objective Review',
+      '07 First Manager Mid-Year Review',
+      '12 First Manager Final Evaluation'
+    ];
+    if (firstMgrStates.includes(status) && !topology.includes('M2')) {
+      fieldErrors.push({
+        field: 'Status',
+        messageTH: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี First Manager (M2 Topology) เท่านั้น`,
+        messageEN: `Status ${status} is valid only for topologies containing First Manager (M2).`,
+        message: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี First Manager (M2 Topology) เท่านั้น\nStatus ${status} is valid only for topologies containing First Manager (M2).`
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    const firstManagerSubmits = [
+      'Submit Objective to First Manager',
+      'Submit Mid-Year to First Manager',
+      'Submit Final to First Manager'
+    ];
+
+    const directManagerSubmits = [
+      'Submit Objective to Manager',
+      'Submit Mid-Year to Manager',
+      'Submit Final to Manager'
+    ];
+
+    const hasFirstManager = Array.isArray(record.First_Manager_User?.value) && record.First_Manager_User.value.length > 0;
+    const hasManager = Array.isArray(record.Manager_User?.value) && record.Manager_User.value.length > 0;
+    const hasGM = Array.isArray(record.GM_User?.value) && record.GM_User.value.length > 0;
+    const hasRequester = Array.isArray(record.Requester_User?.value) && record.Requester_User.value.length > 0;
+
+    // 3. First-Manager Submit Actions Guard
+    if (firstManagerSubmits.includes(actionName)) {
+      if (!topology.includes('M2')) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}`,
+          messageEN: `Action "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}.`,
+          message: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}\nAction "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}.`
+        });
+      } else if (!hasFirstManager) {
+        fieldErrors.push({
+          field: 'First_Manager_User',
+          messageTH: `ไม่พบข้อมูลผู้อนุมัติ First_Manager_User สำหรับการส่งรายการ (${actionName})`,
+          messageEN: `First_Manager_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้อนุมัติ First_Manager_User สำหรับการส่งรายการ (${actionName})\nFirst_Manager_User is empty for action "${actionName}".`
+        });
+      }
+    }
+
+    // 4. Direct-Manager Submit Actions Guard
+    if (directManagerSubmits.includes(actionName)) {
+      if (topology.includes('M2')) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น`,
+          messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
+          message: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น\nAction "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
+        });
+      } else if (!hasManager) {
+        fieldErrors.push({
+          field: 'Manager_User',
+          messageTH: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งรายการ (${actionName})`,
+          messageEN: `Manager_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งรายการ (${actionName})\nManager_User is empty for action "${actionName}".`
+        });
+      }
+    }
+
+    // 5. Hand-off Field Non-Empty Checks for Manager / GM / Requester handover actions
+    const managerHandoverActions = [
+      'Approve Objective', // from 02 to 03
+      'Approve Mid-Year First Manager', // from 07 to 08
+      'Approve Final First Manager' // from 12 to 13
+    ];
+    if (managerHandoverActions.includes(actionName) && (status.startsWith('02') || status.startsWith('07') || status.startsWith('12'))) {
+      if (!hasManager) {
+        fieldErrors.push({
+          field: 'Manager_User',
+          messageTH: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
+          messageEN: `Manager_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งเรื่องในขั้นตอนต่อไป\nManager_User is empty for action "${actionName}".`
+        });
+      }
+    }
+
+    const gmHandoverActions = [
+      'Approve Objective', // from 03 to 04
+      'Approve Mid-Year Manager', // from 08 to 09
+      'Approve Final Manager' // from 13 to 14
+    ];
+    if (gmHandoverActions.includes(actionName) && (status.startsWith('03') || status.startsWith('08') || status.startsWith('13'))) {
+      if (!hasGM) {
+        fieldErrors.push({
+          field: 'GM_User',
+          messageTH: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
+          messageEN: `GM_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป\nGM_User is empty for action "${actionName}".`
+        });
+      }
+    }
+
+    const returnActions = [
+      'Return Objective',
+      'Return Mid-Year First Manager',
+      'Return Mid-Year Manager',
+      'Return Mid-Year GM',
+      'Return Final First Manager',
+      'Return Final Manager',
+      'Return Final GM',
+      'Return Final HR'
+    ];
+    if (returnActions.includes(actionName)) {
+      if (!hasRequester) {
+        fieldErrors.push({
+          field: 'Requester_User',
+          messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการส่งคืนรายการ`,
+          messageEN: `Requester_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการส่งคืนรายการ\nRequester_User is empty for action "${actionName}".`
+        });
+      }
+    }
+
+    return this._formatResult(fieldErrors);
   }
 
   static _val(field) {
@@ -3067,8 +3239,19 @@ if (typeof kintone !== 'undefined') {
   // Hook 3: Process Action (Workflow Proceed)
   kintone.events.on('app.record.detail.process.proceed', function (event) {
     const record = event.record;
+    const actionName = event.action?.value || '';
     const stage = resolveBusinessStage(event);
 
+    // 1. Topology & Action Validation (Fail-Closed)
+    const actionValidation = ValidationEngine.validateWorkflowAction(record, actionName, stage);
+    if (!actionValidation.isValid) {
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors(actionValidation.fieldErrors);
+      }
+      return false; // Cancel transition
+    }
+
+    // 2. Stage Business Rule Validation
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
       if (activeUiInstance) {

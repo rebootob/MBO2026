@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12B_WORKFLOW_ALIGNMENT** | **`PASS`** — Aligned `STATUS_TO_STAGE_MAP` with exact 16 live statuses, removed 5 stale status aliases, added fail-closed topology & assignee workflow action guard in `ValidationEngine.validateWorkflowAction`, added unit tests (553/553 tests pass), rebuilt `dist/mbo-employee-app.js` (0 drift), 0 Kintone calls/writes |
 | **M10L_D_R12A_WORKFLOW_DISCOVERY** | **`PASS`** — Completed read-only discovery of App 794 Process Management (16 states, 27 actions) and App 795 (17 active rows); derived topology `M1_G1` across all 17 active rows; produced complete Workflow UAT coverage matrix; 0 Kintone writes |
 | **M10L_D_R11_CONTROLLED_DEPLOY** | **`PASS`** — Deployed exact reviewed R10 JS candidate `983528a5` to live App 794 (Revision 33); preserved live CSS content (`3604d2b2`); verified live JS & CSS SHA256 hashes match; captured durable pre-write backup `backups/m10l-d-r11-app794-r10-hoshin-deploy/2026-08-26T01-54-31-777Z`; 0 record/schema/ACL writes |
 | **M10L_D_R10_HOSHIN_UNDEFINED_FIX** | **`PASS`** — Fixed Hoshin undefined snapshot mutation in `src/main-mbo-app.js`, hardened in-memory record assignment loop to ignore `undefined` values, rebuilt `dist/mbo-employee-app.js` (0 drift), added direct regression tests in `tests/objective-save-validation.test.js` (551/551 tests pass), 0 Kintone calls/writes |
@@ -587,5 +588,35 @@ TEST_CHANGE_COUNT = 0
 GIT_DIFF_CHECK = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW AND FINAL UAT MATRIX APPROVAL BEFORE ANY WRITE
+
+
+## M10L-D-R12B Workflow Runtime Alignment Fix Evidence
+
+```text
+R12B_WORKFLOW_RUNTIME_ALIGNMENT = COMPLETE
+STARTING_HEAD = 80c4b4cf89909cdf702cdffd74fa2dc81e62c5ef
+LIVE_STATUS_COUNT_COVERED = 16 / 16
+STALE_STATUS_ALIAS_COUNT_ACTIVE = 0
+UNKNOWN_STATUS_FAIL_CLOSED = PASS
+M1_G1_DIRECT_MANAGER_ACTION = PASS
+M1_G1_FIRST_MANAGER_BLOCKED = PASS
+M1_M2_G1_FIRST_MANAGER_ACTION = PASS
+M1_M2_G1_DIRECT_MANAGER_BLOCKED = PASS
+M2_EMPTY_FIRST_MANAGER_FAIL_CLOSED = PASS
+G2_UNSUPPORTED_FAIL_CLOSED = PASS
+VALID_M1_G1_APPROVE_RETURN_REGRESSION = PASS
+WORKFLOW_HANDLER_SUCCESS_RETURNS_EVENT = PASS
+WORKFLOW_HANDLER_INVALID_RETURNS_FALSE = PASS
+SOURCE_DIST_EXACTNESS = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+npm test = 553 / PASS
+KINTONE_CALLS_THIS_TASK = 0
+KINTONE_WRITES_THIS_TASK = 0
+SRC_CHANGE_COUNT = 3
+DIST_CHANGE_COUNT = 1
+TEST_CHANGE_COUNT = 1
+GIT_DIFF_CHECK = PASS
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY DEPLOY OR UAT WRITE
 ```

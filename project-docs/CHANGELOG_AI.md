@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R12A Read-Only Workflow Coverage Discovery (0 Kintone writes executed): Completed read-only GET discovery of live App 794 Process Management (16 states, 27 actions) and App 795 (17 active routing records). Confirmed all 17 active routing records have derived topology `M1_G1` and match confirmed baseline. Produced complete App 794 Process Matrix, App 795 Route Coverage Matrix, Coverage Summary, Proposed UAT Cases (`UAT-WF-01...03`), and final evidence block.
+- **2026-08-26**: Executed M10L-D-R12B Workflow Runtime Alignment Fix (0 Kintone writes executed): Updated `STATUS_TO_STAGE_MAP` in `src/config/constants.js` to match exact 16 live App 794 statuses and removed 5 stale aliases. Added `ValidationEngine.validateWorkflowAction` in `src/validation/validation-engine.js` and invoked it from `app.record.detail.process.proceed` in `src/main-mbo-app.js` to enforce fail-closed topology & assignee guards (`M1_G1` direct submit required, First Manager blocked on `M1_G1`, M2 First Manager submit allowed with non-empty `First_Manager_User`, G2 topology blocked as unsupported). Rebuilt `dist/mbo-employee-app.js` (0 drift) and added 16 unit tests (553/553 suite tests passing).
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.

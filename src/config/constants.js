@@ -21,12 +21,12 @@ export const STATUS_TO_STAGE_MAP = {
   '07 First Manager Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
   '08 Manager Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
   '09 GM Mid-Year Review': BUSINESS_STAGES.READ_ONLY,
-  '10 Mid-Year Approved': BUSINESS_STAGES.READ_ONLY,
+  '10 Mid-Year Completed': BUSINESS_STAGES.READ_ONLY,
   '11 Employee Self Evaluation': BUSINESS_STAGES.SELF_EVALUATION,
-  '12 First Manager Evaluation': BUSINESS_STAGES.READ_ONLY,
-  '13 Manager Evaluation': BUSINESS_STAGES.READ_ONLY,
-  '14 GM Evaluation': BUSINESS_STAGES.READ_ONLY,
-  '15 Evaluation Completed': BUSINESS_STAGES.READ_ONLY,
+  '12 First Manager Final Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '13 Manager Final Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '14 GM Final Evaluation': BUSINESS_STAGES.READ_ONLY,
+  '15 HR Final Check': BUSINESS_STAGES.READ_ONLY,
   '16 Completed': BUSINESS_STAGES.READ_ONLY
 };
 

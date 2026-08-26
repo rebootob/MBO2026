@@ -731,3 +731,168 @@ test('M10L-D-R10: Employee lookup does not assign undefined Hoshin and preserves
     assert.notEqual(fieldObj?.value, undefined, `Field ${code} in form state must not have value === undefined`);
   }
 });
+
+test('M10L-D-R12B: STATUS_TO_STAGE_MAP covers all 16 exact live statuses and rejects 5 stale aliases', async () => {
+  const { STATUS_TO_STAGE_MAP, BUSINESS_STAGES } = await import('../src/config/constants.js');
+
+  const expected16 = [
+    '01 Draft Objective',
+    '02 First Manager Objective Review',
+    '03 Manager Objective Review',
+    '04 GM Objective Review',
+    '05 Objective Approved',
+    '06 Employee Mid-Year',
+    '07 First Manager Mid-Year Review',
+    '08 Manager Mid-Year Review',
+    '09 GM Mid-Year Review',
+    '10 Mid-Year Completed',
+    '11 Employee Self Evaluation',
+    '12 First Manager Final Evaluation',
+    '13 Manager Final Evaluation',
+    '14 GM Final Evaluation',
+    '15 HR Final Check',
+    '16 Completed'
+  ];
+
+  expected16.forEach(st => {
+    assert.ok(st in STATUS_TO_STAGE_MAP, `STATUS_TO_STAGE_MAP must recognize exact live status: ${st}`);
+    assert.notEqual(STATUS_TO_STAGE_MAP[st], BUSINESS_STAGES.CONFIGURATION_ERROR);
+  });
+
+  const staleAliases = [
+    '10 Mid-Year Approved',
+    '12 First Manager Evaluation',
+    '13 Manager Evaluation',
+    '14 GM Evaluation',
+    '15 Evaluation Completed'
+  ];
+
+  staleAliases.forEach(alias => {
+    assert.equal(STATUS_TO_STAGE_MAP[alias], undefined, `Stale alias "${alias}" must not exist in STATUS_TO_STAGE_MAP`);
+  });
+});
+
+test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & assignee guards', async () => {
+  const proceedHook = kintoneHandlers['app.record.detail.process.proceed'];
+  assert.ok(typeof proceedHook === 'function', 'process.proceed hook must be registered');
+
+  const validRecordM1G1 = createMockRecord({
+    Status: { value: '01 Draft Objective' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+
+  // 1. M1_G1 + Direct Manager Submit -> PASS
+  const passEvent1 = {
+    type: 'app.record.detail.process.proceed',
+    record: validRecordM1G1,
+    action: { value: 'Submit Objective to Manager' }
+  };
+  assert.equal(proceedHook(passEvent1), passEvent1, 'M1_G1 + direct Manager submit must pass');
+
+  // 2. M1_G1 + First Manager Submit -> FAIL CLOSED
+  const failEvent1 = {
+    type: 'app.record.detail.process.proceed',
+    record: validRecordM1G1,
+    action: { value: 'Submit Objective to First Manager' }
+  };
+  assert.equal(proceedHook(failEvent1), false, 'M1_G1 + First Manager submit must fail closed');
+
+  // 3. M1_M2_G1 + First Manager Submit with populated First_Manager_User -> PASS
+  const validRecordM2 = createMockRecord({
+    Status: { value: '01 Draft Objective' },
+    Routing_Topology: { value: 'M1_M2_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    First_Manager_User: { value: [{ code: 'fm1' }] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const passEvent2 = {
+    type: 'app.record.detail.process.proceed',
+    record: validRecordM2,
+    action: { value: 'Submit Objective to First Manager' }
+  };
+  assert.equal(proceedHook(passEvent2), passEvent2, 'M1_M2_G1 + First Manager submit must pass when First_Manager_User populated');
+
+  // 4. M1_M2_G1 + Direct Manager Submit -> FAIL CLOSED
+  const failEvent2 = {
+    type: 'app.record.detail.process.proceed',
+    record: validRecordM2,
+    action: { value: 'Submit Objective to Manager' }
+  };
+  assert.equal(proceedHook(failEvent2), false, 'M1_M2_G1 + direct Manager submit must fail closed');
+
+  // 5. M1_M2_G1 + First Manager Submit with EMPTY First_Manager_User -> FAIL CLOSED
+  const invalidRecordM2EmptyFM = createMockRecord({
+    Status: { value: '01 Draft Objective' },
+    Routing_Topology: { value: 'M1_M2_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    First_Manager_User: { value: [] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const failEvent3 = {
+    type: 'app.record.detail.process.proceed',
+    record: invalidRecordM2EmptyFM,
+    action: { value: 'Submit Objective to First Manager' }
+  };
+  assert.equal(proceedHook(failEvent3), false, 'M1_M2_G1 with empty First_Manager_User must fail closed');
+
+  // 6. G2 Topology Entry -> FAIL CLOSED
+  const invalidRecordG2 = createMockRecord({
+    Status: { value: '01 Draft Objective' },
+    Routing_Topology: { value: 'M1_G1_G2' },
+    Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const failEvent4 = {
+    type: 'app.record.detail.process.proceed',
+    record: invalidRecordG2,
+    action: { value: 'Submit Objective to Manager' }
+  };
+  assert.equal(proceedHook(failEvent4), false, 'G2 topology entry must fail closed');
+
+  // 7. Valid M1_G1 Manager/GM Approve & Return actions remain PASS
+  const approveRecordManager = createMockRecord({
+    Status: { value: '03 Manager Objective Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const passApproveManager = {
+    type: 'app.record.detail.process.proceed',
+    record: approveRecordManager,
+    action: { value: 'Approve Objective' }
+  };
+  assert.equal(proceedHook(passApproveManager), passApproveManager, 'Manager Approve Objective must pass on M1_G1');
+
+  const returnRecordManager = createMockRecord({
+    Status: { value: '03 Manager Objective Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 's1' }] },
+    Manager_User: { value: [{ code: 'm1' }] },
+    GM_User: { value: [{ code: 'g1' }] }
+  });
+  const passReturnManager = {
+    type: 'app.record.detail.process.proceed',
+    record: returnRecordManager,
+    action: { value: 'Return Objective' }
+  };
+  assert.equal(proceedHook(passReturnManager), passReturnManager, 'Manager Return Objective must pass on M1_G1');
+
+  // 8. Unknown Status -> FAIL CLOSED
+  const unknownStatusRecord = createMockRecord({
+    Status: { value: '99 Unknown Stage' },
+    Routing_Topology: { value: 'M1_G1' }
+  });
+  const failUnknownStatus = {
+    type: 'app.record.detail.process.proceed',
+    record: unknownStatusRecord,
+    action: { value: 'Submit Objective to Manager' }
+  };
+  assert.equal(proceedHook(failUnknownStatus), false, 'Unknown status must return false on process proceed');
+});

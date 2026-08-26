@@ -475,8 +475,19 @@ if (typeof kintone !== 'undefined') {
   // Hook 3: Process Action (Workflow Proceed)
   kintone.events.on('app.record.detail.process.proceed', function (event) {
     const record = event.record;
+    const actionName = event.action?.value || '';
     const stage = resolveBusinessStage(event);
 
+    // 1. Topology & Action Validation (Fail-Closed)
+    const actionValidation = ValidationEngine.validateWorkflowAction(record, actionName, stage);
+    if (!actionValidation.isValid) {
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors(actionValidation.fieldErrors);
+      }
+      return false; // Cancel transition
+    }
+
+    // 2. Stage Business Rule Validation
     const validation = ValidationEngine.validate(record, stage);
     if (!validation.isValid) {
       if (activeUiInstance) {
