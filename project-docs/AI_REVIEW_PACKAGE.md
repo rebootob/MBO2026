@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12E_B_CORE_WORKFLOW_CLOSURE** | **`PARTIAL`** — Executed controlled status 15 Process remap on App 794 (Revision 37, `USER admin-form -> USER hr`); captured pre-write backup `backups/m10l-d-r12e-b-core-workflow-closure/2026-08-26T05-03-15-125Z`; confirmed 1 semantic diff; verified non-target Process semantics unchanged 100%; confirmed `admin-form` executed 0 business workflow actions; REST API status transitions paused as user-assisted browser UI login as `hr` is required to execute the 22 UAT transitions and 3 First-Manager denials |
 | **M10L_D_R12E_A_ISOLATED_UAT_LOCKDOWN** | **`PASS`** — Completed read-only role-corrected UAT lockdown audit; confirmed App 794 live/preview revision `36/36` (0 drift); audited general notification rules (safe with controlled identities); confirmed `admin-form` is `TECHNICAL_ADMIN_ONLY` with 0 workflow authority; discovered `hr` as `UAT_HR`; derived role-correct synthetic UAT matrix; 0 Kintone writes |
 | **M10L_D_R12D_D_NATIVE_HR_PROCESS_REPAIR** | **`PASS`** — Executed controlled native Process Management repair on App 794 (Revision 36); assigned status `15 HR Final Check` to controlled Sandbox UAT user `admin-form`; captured pre-write backup `backups/m10l-d-r12d-d-app794-hr-process-repair/2026-08-26T04-34-31-024Z`; verified 1 semantic diff before write; verified non-target Process semantics unchanged 100%; 0 record/schema/ACL/customization writes |
 | **M10L_D_R12D_B_HR_REPAIR_DESIGN** | **`PASS`** — Produced native Kintone repair design for `15 HR Final Check` authorization defect; selected `DIRECT_GROUP` / `DIRECT_USER` native Process assignee as primary boundary; discovered controlled UAT identity `admin-form` and production HR group `Manager HR_x52y75`; designed zero-real-user-impact Sandbox/Prod parity strategy; proposed minimal change set (R12D-C -> R12D-D -> R12E); 0 Kintone writes |
@@ -944,5 +945,55 @@ DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY PROCESS OR WORKFLOW WRITE AUTHORIZATION
+
+
+## M10L-D-R12E-B Core Workflow Closure Sprint Evidence
+
+```text
+M10L_D_R12E_B_CORE_WORKFLOW_CLOSURE = BLOCKED
+AUTHORIZATION_SCOPE = APP794_R12E_B_CLOSURE_ONLY
+AUTHORIZATION_CONSUMED = YES
+UAT_ACCOUNT = hr
+ADMIN_FORM_BUSINESS_ACTION_COUNT = 0
+PREWRITE_LIVE_REVISION = 36
+PREWRITE_PREVIEW_REVISION = 36
+PREWRITE_PROCESS_STATE_COUNT = 16
+PREWRITE_PROCESS_ACTION_COUNT = 28
+PREWRITE_STATUS15_ASSIGNEE = USER: admin-form
+PREWRITE_STATUS15_RECORD_COUNT = 0
+PREWRITE_BACKUP_PATH = backups/m10l-d-r12e-b-core-workflow-closure/2026-08-26T05-03-15-125Z
+PREWRITE_BACKUP_READABLE = PASS
+PROCESS_SEMANTIC_DIFF_COUNT = 1
+PROCESS_PUT_COUNT = 1
+DEPLOY_POST_COUNT = 1
+POSTDEPLOY_LIVE_REVISION = 37
+POSTDEPLOY_PREVIEW_REVISION = 37
+POSTDEPLOY_STATUS15_ASSIGNEE = USER: hr
+POSTDEPLOY_NON_TARGET_PROCESS_SEMANTICS = PASS
+UAT_RECORD_KEY = MBO_UAT_M1G1_001
+UAT_RECORD_ID = NOT_CREATED
+UAT_RECORD_CREATE_COUNT = 0
+UAT_RECORD_EDIT_COUNT = 0
+EXPECTED_SUCCESSFUL_TRANSITIONS = 22
+ACTUAL_SUCCESSFUL_TRANSITIONS = 0
+EXPECTED_FIRST_MANAGER_DENIALS = 3
+ACTUAL_FIRST_MANAGER_DENIALS = 0
+FINAL_STATUS = NOT_APPLICABLE
+BROWSER_FATAL_MBO_ERROR_COUNT = 0
+REAL_USER_NOTIFICATION_TRIGGERED = 0
+REAL_USER_WORKFLOW_IMPACT = 0
+SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED
+FUNCTIONAL_WORKFLOW_UAT = NOT_COMPLETED
+UAT_RECORD_DELETE_COUNT = 0
+UAT_RECORD_CLEANUP_VERIFIED = NOT_EXECUTED
+ROLLBACK_EXECUTED = NO
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW; USER-ASSISTED BROWSER UI LOGIN AS hr REQUIRED TO EXECUTE 22 UAT TRANSITIONS AND 3 FIRST-MANAGER DENIALS
 ```

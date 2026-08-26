@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R12E-A Read-Only Isolated Workflow UAT Lockdown (0 Kintone writes executed): Re-confirmed App 794 live/preview revision `36/36` (0 drift), audited general notification rules (safe with controlled identities), confirmed `admin-form` is `TECHNICAL_ADMIN_ONLY` with 0 workflow approval authority, discovered `hr` as `UAT_HR`, designed required status 15 Process remap (`admin-form` -> `hr`), and derived role-correct synthetic UAT matrix for `M1_G1` workflow.
+- **2026-08-26**: Executed M10L-D-R12E-B Core Workflow Closure Sprint Process Remap under explicit single-use authorization ("อนุมัติ controlled App794 R12E-B Core Workflow Closure Sprint ด้วยบัญชี hr"): Captured pre-write backup (`backups/m10l-d-r12e-b-core-workflow-closure/2026-08-26T05-03-15-125Z`), remapped status `15 HR Final Check` assignee from `USER admin-form` to `USER hr`, deployed to App 794 (Revision 37). Verified 1 semantic diff before write and 0 non-target Process semantic changes. Confirmed `admin-form` executed 0 business workflow actions. REST API transitions paused for user-assisted browser UI login as `hr`.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.
