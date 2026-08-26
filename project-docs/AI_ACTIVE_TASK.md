@@ -1,257 +1,225 @@
-# AI ACTIVE TASK — R12C CONTROLLED APP794 R12B-R1 WORKFLOW GUARD DEPLOY
+# AI ACTIVE TASK — R12C-R1 READ-ONLY POST-DEPLOY EVIDENCE CLOSURE
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed deployment candidate: `a980f064817cb3243fa57fce0c7c84619019311e`
+> Starting reviewed deploy result: `9d4497e458d25f813da14f2bc0caac774df73cb5`
+> Control-plane baseline correction commit: `16031e74eb5583f38419accdfae6d4d789274e5e`
 > Target App: App794 `MBO V2 Sandbox`
-> Mode: CONTROLLED CUSTOMIZATION DEPLOY ONLY
-> User authorization: `อนุมัติ controlled App794 R12B-R1 workflow guard deploy`
-> Authorization scope: SINGLE-USE / THIS EXACT TASK ONLY
+> Mode: READ-ONLY POST-DEPLOY CLOSURE
+> Kintone write authorization: NONE
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-R12B-R1 passed independent review. The reviewed candidate aligns runtime with the confirmed 16-state App794 Process Management, blocks invalid/blank/unsupported routing topologies, blocks First-Manager actions for current `M1_G1`, and completes required Requester/Manager/GM hand-off fail-closed checks.
+R12C deployed the reviewed R12B-R1 workflow guard candidate to App794 and verified binary/hash preservation, but independent review found two evidence issues that must be closed before isolated Workflow UAT:
 
-This task deploys that exact reviewed JavaScript candidate to App794 only. It MUST NOT execute any workflow/process action and MUST NOT create or modify business records.
+1. R12C pre-write Process Management read-back counted `16 states / 28 actions`, while the old canonical/task wording incorrectly expected 27. Independent recount of the R12A matrix confirms 28 action rows. Control Plane has already corrected the canonical baseline to **16 states / 28 actions**. This task must verify the current live process against the R12C pre-write snapshot and classify the old 27 count as a documentation/counting error rather than silently claiming 27.
+2. R12C required a post-deploy shallow browser runtime load with fatal-console check, but the evidence block omitted those fields. This task must perform that missing read-only runtime smoke exactly once.
 
-# AUTHORIZATION BOUNDARY
-
-The user explicitly authorized exactly:
-
-`อนุมัติ controlled App794 R12B-R1 workflow guard deploy`
-
-This permits only the App794 customization write/deploy operations required to install the exact reviewed candidate.
-
-Allowed writes after all pre-write gates pass:
-- upload reviewed JS candidate file for App794 customization;
-- upload the existing live CSS content only if technically required by Kintone to preserve the customization set, and only if its SHA-256 is unchanged from the pre-write live CSS content;
-- one App794 customization PUT containing the intended preserved customization set;
-- one App794 deploy POST required to publish that preview revision.
-
-Forbidden writes:
-- App794 records;
-- App794 Process Management;
-- App794 form/schema fields;
-- App794 app/record/field ACL;
-- App795 routing records/schema/customization;
-- App53/App796 or any other app;
-- any workflow/process transition;
-- any Change Assignee action;
-- any notification-generating workflow action.
-
-Authorization expires when this task completes or stops. It MUST NOT be reused for retry, UAT, process changes, record changes, or any later task. If this task stops before deployment, fresh explicit authorization is required before another write attempt.
+Also capture the exact existing HR Final Check assignee configuration from the same Process Management GET so the next HR-isolated UAT design can avoid another discovery round.
 
 # CHANGE GOVERNANCE
 
 ## What
-Deploy the exact reviewed R12B-R1 JavaScript candidate from commit `a980f064817cb3243fa57fce0c7c84619019311e` to App794, preserving all non-target customization content and existing schema/process/ACL state.
+Close R12C post-deploy evidence using GET/read-only browser verification only. Prove that the deployed App794 runtime and Process Management are stable and capture the exact HR Final Check actor configuration needed for isolated UAT design.
 
 ## Where
-- Live Kintone App794 customization only.
-- Candidate artifact: deterministic `dist/mbo-employee-app.js` from reviewed commit `a980f064817cb3243fa57fce0c7c84619019311e`.
-- Preserve current App794 CSS and mobile customization exactly.
+- Kintone App794 live settings/customization/process via GET only.
+- Existing durable local R12C backup/log path:
+  `backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z`
+- Browser: App794 read-only page/detail load only.
+- Repository evidence docs only after verification.
 
 ## How
 
-### A. Git/candidate preflight — ZERO Kintone write
-1. Pull latest branch and verify local HEAD equals `origin/ai/antigravity-wp002c`.
-2. Verify reviewed candidate commit `a980f064817cb3243fa57fce0c7c84619019311e` is an ancestor of current HEAD.
-3. Verify there has been NO `src/**`, `dist/**`, or `tests/**` drift after candidate commit. The only expected post-candidate change is this task document/control-plane documentation.
-4. Compute SHA-256 and byte length of `dist/mbo-employee-app.js` exactly as it exists at the reviewed candidate/current no-drift tree. Record both as `CANDIDATE_JS_SHA256` and `CANDIDATE_JS_BYTES`.
-5. Classic-script parse the candidate before any Kintone write. Failure -> STOP.
+### A. Git gate
+1. Pull latest `ai/antigravity-wp002c` and verify local HEAD = origin HEAD.
+2. Confirm there is no `src/**`, `dist/**`, or `tests/**` drift after reviewed candidate `a980f064817cb3243fa57fce0c7c84619019311e`.
+3. Read the corrected canonical `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`; expected Process baseline is now exactly **16 states / 28 actions**.
+4. Do not run npm tests/build; no source changed.
 
-### B. Fresh live pre-write backup — GET only
-Immediately before the first permitted write, capture a NEW durable local backup under a task-specific path such as:
-`backups/m10l-d-r12c-app794-workflow-guard-deploy/<timestamp>`
+### B. R12C local evidence forensic — no Kintone call required
+Inspect the existing R12C task-specific backup/log artifacts only. Do not create replacement historical evidence.
 
-Backup/read back at minimum:
-- App794 live revision and preview revision;
-- live desktop customization list and fileKeys;
-- live mobile customization list;
-- actual live JS bytes/content SHA-256;
-- actual live CSS bytes/content SHA-256;
-- App794 form fields sufficient to confirm the six scoring snapshot fields remain present;
-- App794 Process Management read-only snapshot sufficient to confirm 16 states / 27 actions remain unchanged;
-- app settings needed for exact rollback/customization restoration.
+Verify if available:
+- pre-write live/preview revision = 33/33;
+- pre-write Process snapshot is readable;
+- pre-write Process snapshot contains 16 states / 28 action transitions;
+- pre-write JS/CSS hashes match R12C evidence;
+- any call-by-call revision snapshots/log entries around customization PUT and deploy POST.
 
-Backup must be readable before proceeding.
+If a precise 33 -> 35 revision sequence can be proven from existing artifacts, report the sequence exactly. If not, report `REVISION_33_TO_35_FORENSIC_STATUS = NOT_FULLY_PROVABLE_FROM_RETAINED_EVIDENCE`; do not guess or invent Kintone behavior. This alone is not a runtime failure if current live/preview state, hashes and process snapshot are stable.
 
-Expected pre-write state from last independently reviewed evidence:
-- live App794 revision = `33`;
-- preview App794 revision = `33`;
-- live JS SHA-256 = `983528a592020cc9a12d0e20a6a08d764b29a4e99836e3da908ba5ed30b5a81c`;
+### C. Fresh live read-only verification
+Use the minimum GET calls necessary to read current App794 state. No other app discovery.
+
+Verify:
+- current live revision;
+- current preview revision;
+- desktop customization and actual JS/CSS content hashes;
+- mobile customization;
+- Process Management full current config;
+- six scoring snapshot fields remain present if one already-planned GET is needed; avoid redundant calls if safely proven by retained R12C post-deploy evidence.
+
+Expected stable deployed runtime:
+- live revision = `35`;
+- preview revision should be consistent with fully deployed live state; record actual value, do not write to normalize it;
+- live JS SHA-256 = `54e4cd561654ab2c6008fef526013829d45c8cccce356fe522d798539822097a`;
 - live CSS SHA-256 = `3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0`;
-- six scoring snapshot fields still present;
-- Process Management still 16 states / 27 actions;
-- mobile customization preserved.
+- Process Management = exactly **16 states / 28 actions**;
+- Process Management semantically matches the retained R12C pre-write Process snapshot exactly. Ignore non-semantic transport metadata only; do not ignore status/action/assignee/config differences.
 
-If live/preview revision or content/state differs from this expected baseline in a material way -> `PREWRITE_DRIFT = YES` -> STOP BEFORE WRITE and report. Do not normalize or repair unrelated drift.
+Any live JS/CSS mismatch or any semantic Process Management difference from the R12C pre-write snapshot -> `BLOCKED` for Workflow UAT. Do not repair.
 
-### C. Candidate/live gate
-Before first write:
-1. Candidate JS SHA-256 must be different from the old live JS hash above; if unexpectedly identical, STOP and report.
-2. Candidate source/dist tree must still equal reviewed candidate semantics; any code drift -> STOP.
-3. CSS candidate is NOT being changed by this task. Preserve the exact pre-write CSS content hash.
-4. Process Management, form fields and ACL are not deployment targets and must not be mutated.
+### D. Capture exact HR Final Check configuration from the same Process GET
+Without making extra broad discovery, extract the exact configuration for:
+- transition `14 GM Final Evaluation` + `Approve Final GM` -> `15 HR Final Check`;
+- assignee/actor expression of `15 HR Final Check`;
+- actor entity type (`GROUP`, `USER`, `ORGANIZATION`, none, or actual Kintone representation);
+- exact entity code/name/identifier visible in the Process response;
+- transition `15 HR Final Check` + `Complete` -> `16 Completed`;
+- transition `15 HR Final Check` + `Return Final HR` -> `11 Employee Self Evaluation` and its destination assignment rule.
 
-### D. Controlled customization deploy
-Only after A-C PASS:
-1. Upload exact reviewed candidate JS once.
-2. Attempt/update App794 customization preserving the current customization set.
-3. If Kintone requires a fresh CSS fileKey to submit the preserved CSS customization, CSS re-upload is permitted ONLY when bytes SHA-256 exactly match the pre-write CSS hash. Record `CSS_REUPLOAD_TECHNICALLY_REQUIRED = YES`. Do not change CSS content.
-4. Submit exactly one successful intended customization PUT. If an attempted PUT fails due a fileKey constraint before any preview state changes, record the failed attempt accurately; do not conceal it. If resolving it would require anything beyond exact JS candidate + identical CSS re-upload, STOP.
-5. Deploy App794 preview to live once.
-6. Wait/read deploy status until `SUCCESS` or an explicit failure/timeout. Failure -> execute rollback from fresh pre-write backup if live/preview state was changed and rollback is safe/authorized by this task; otherwise STOP and report exact state.
+Do NOT modify Process Management. Do NOT enumerate unrelated users/groups. If group membership is not included in the Process response, report `HR_GROUP_MEMBERSHIP = NOT_RESOLVED_THIS_TASK`; do not perform broad user-directory discovery in this credit-saving closure.
 
-### E. Post-deploy verification — NO workflow action
-After deploy:
-- live App794 revision incremented as expected;
-- live JS bytes SHA-256 exactly equal `CANDIDATE_JS_SHA256`;
-- live CSS SHA-256 exactly equals pre-write CSS SHA-256;
-- mobile customization unchanged;
-- six scoring snapshot fields preserved;
-- Process Management still exactly 16 states / 27 actions and unchanged by this task;
-- no record/schema/process/ACL writes occurred;
-- one shallow browser smoke of App794 confirms customization loads with no fatal console/runtime error;
-- browser smoke MUST NOT click Submit/Approve/Return/Complete/Change Assignee and MUST NOT save/create/edit any record;
-- no workflow notification is triggered.
+### E. Missing browser shallow-runtime smoke
+Perform exactly one authenticated browser read-only load of App794 using an existing record/detail page or another App794 page that actually loads the deployed customization.
 
-Do not perform isolated Workflow UAT in this task.
+Required:
+- page loads;
+- deployed customization initializes;
+- no fatal JavaScript/runtime error attributable to the MBO customization;
+- do not enter edit mode unless merely opening it would be required to load customization; prefer detail/read-only;
+- do not save/create/edit a record;
+- do not click `Submit`, `Approve`, `Return`, `Complete`, `Change assignee`, or any process action;
+- do not trigger notification.
 
-## Why
-The repository candidate is reviewed and fail-closed, but Workflow UAT must exercise the code actually loaded by App794. Deploying the exact candidate under controlled backup/read-back gates is required before isolated UAT design/execution.
+Record the target URL type/record ID if applicable, but do not copy sensitive business content into evidence unnecessarily.
 
-## Expected Impact
-- App794 JavaScript customization advances from the R11 runtime to the reviewed R12B-R1 workflow guard runtime.
-- No business record, routing master, Process Management, schema or ACL changes.
-- No workflow recipient receives a task/notification from this deployment task.
+# Why
+Workflow UAT must test the exact deployed runtime, not only a successful customization API response. The process-count inconsistency must also be reconciled before UAT, and the HR-group actor must be known to design a zero-real-user-impact end-to-end UAT.
 
-## Risks
-- App794 customization fileKey behavior may require JS/CSS upload handling;
-- unintended live drift since Revision 33;
-- source/dist candidate mismatch;
-- customization deploy failure leaving preview/live revisions divergent;
-- accidental process action or business-record write during smoke testing.
+# Expected Impact
+- Zero Kintone writes.
+- Zero workflow transitions and zero notifications.
+- R12C deployment evidence becomes reviewable as runtime-complete.
+- Canonical workflow count is confirmed at 16/28.
+- Next UAT design can handle HR Final Check without rediscovering Process Management.
 
-All risks are controlled by STOP-on-drift, fresh backup, exact hash verification, narrow write allowlist, and no-workflow-action rule.
+# Risks
+- current App794 drift after R12C;
+- retained R12C backup/log insufficient to prove exact revision chronology;
+- browser smoke accidentally entering a process action;
+- HR assignee expression may reference a real group whose membership is not visible in Process config.
+
+All risks are handled by read-only operation and STOP/report behavior.
 
 # TEST PLAN
 
-Repository tests were already completed in reviewed R12B-R1 (`554/554 PASS`) and MUST NOT be rerun unless candidate drift is detected. Save Antigravity credit.
+No repository test run.
 
-Deployment verification only:
-1. Git/candidate no-drift gate PASS.
-2. Candidate classic parse PASS.
-3. Fresh pre-write backup/readability PASS.
-4. Live Revision 33 / Preview 33 pre-write or STOP.
-5. Old live JS/CSS hashes match expected baseline or STOP.
-6. Exact candidate live JS hash match after deploy.
-7. CSS content preservation hash match.
-8. Mobile customization preservation PASS.
-9. Six-field schema preservation PASS.
-10. Process Management unchanged 16 states / 27 actions PASS.
-11. Browser shallow-load runtime smoke PASS with zero process actions.
-12. Zero App794 record/process/schema/ACL writes.
-13. Zero App795/App53/App796/other-app writes.
-14. Git evidence/docs push same branch and STOP.
+Required verification:
+1. Git/no-code-drift PASS.
+2. R12C retained backup readable PASS, or explicitly report missing forensic sub-artifact.
+3. R12C pre-write Process snapshot count = 16/28.
+4. Current live Process count = 16/28.
+5. Current Process semantic equality to R12C pre-write snapshot = PASS.
+6. Current live/preview revisions recorded.
+7. Live JS hash remains `54e4cd56...` PASS.
+8. Live CSS hash remains `3604d2b2...` PASS.
+9. Mobile customization preserved PASS.
+10. One browser shallow runtime load PASS, fatal MBO console error count = 0.
+11. Exact HR Final Check assignee descriptor captured from same Process GET.
+12. Zero Kintone writes / workflow actions / notifications.
 
 # ROLLBACK PLAN
 
-Use ONLY the fresh R12C pre-write backup captured immediately before first write.
+None: this task is read-only. If any live drift or runtime defect is discovered, STOP and preserve evidence. Do not deploy, restore, edit records, or change Process Management without a new explicit user authorization and separate task.
 
-If the customization/deploy produces a bad live runtime or post-deploy hash/read-back failure:
-1. restore exact prior App794 desktop/mobile customization from the fresh backup, using restored files/bytes rather than stale historical fileKeys;
-2. deploy rollback preview;
-3. verify live JS/CSS hashes equal the fresh pre-write hashes and mobile customization is restored;
-4. do not modify records, Process Management, schema or ACL as part of rollback;
-5. record rollback calls/results exactly and STOP.
+# HARD SAFETY BOUNDARY
 
-If backup is incomplete/unreadable or rollback cannot be proven restorable before first write -> STOP BEFORE WRITE.
+Forbidden:
+- all Kintone POST/PUT/DELETE;
+- file upload;
+- customization PUT/deploy;
+- App794 record create/edit/save/delete;
+- App794 Process Management/schema/ACL change;
+- any workflow/process action;
+- Change assignee;
+- App795/App53/App796 writes;
+- notification-generating action;
+- source/dist/test changes;
+- npm test/build.
 
-# HARD SAFETY / STOP CONDITIONS
-
-STOP before write if any of these occur:
-- current code/dist differs from reviewed candidate `a980f064...`;
-- branch/local/remote mismatch;
-- pre-write live or preview revision is not expected `33` without an explained reviewed reason;
-- pre-write live JS hash differs from `983528a5...`;
-- pre-write CSS hash differs from `3604d2b2...`;
-- six scoring snapshot fields are missing/drifted;
-- Process Management is not the confirmed 16-state / 27-action configuration;
-- backup is unreadable/incomplete;
-- customization preservation cannot be proven.
-
-STOP immediately after any forbidden write is detected. Do not attempt to compensate silently.
+Allowed:
+- minimal App794 GETs;
+- local R12C backup/log inspection;
+- one browser read-only shallow runtime load;
+- evidence/living-doc Git updates after verification.
 
 # CREDIT-SAVING RULE
 
-- No broad discovery.
-- No `npm test` rerun unless drift forces STOP/report.
-- No source changes.
-- No UI/UX work.
-- No Workflow UAT.
-- No repeated browser tests: one shallow runtime load only after successful deploy.
-- Reuse existing controlled-deploy patterns/scripts where safe; do not create redundant tooling.
+- Reuse one Process GET for action count, semantic comparison, and HR actor extraction.
+- Reuse retained R12C backup; no new backup is needed because there are no writes.
+- Do not repeat tests/build.
+- Exactly one browser load.
+- No broad user/group discovery.
+- Push evidence and STOP.
 
 # REQUIRED EVIDENCE
 
-Append one concise R12C block to `project-docs/AI_REVIEW_PACKAGE.md`; minimally update CURRENT_STATE/HANDOFF/IMPLEMENTATION_STATUS/CHANGELOG if normally required. Do not create a new evidence file.
+Append one concise correction/closure block to `project-docs/AI_REVIEW_PACKAGE.md`; do not delete or rewrite the historical R12C evidence block. Minimally update CURRENT_STATE/HANDOFF/IMPLEMENTATION_STATUS/CHANGELOG only if normally required.
 
 ```text
-M10L_D_R12C_CONTROLLED_DEPLOY = COMPLETE / PARTIAL / BLOCKED
-USER_AUTHORIZATION = VERIFIED_SINGLE_USE_CONSUMED / NOT_CONSUMED_NO_WRITE
-AUTHORIZATION_TEXT = อนุมัติ controlled App794 R12B-R1 workflow guard deploy
-REVIEWED_CANDIDATE = a980f064817cb3243fa57fce0c7c84619019311e
-CANDIDATE_DRIFT = 0 / actual
-GIT_DIFF_CHECK = PASS/FAIL
-CANDIDATE_JS_SHA256 = actual
-CANDIDATE_JS_BYTES = actual
-CLASSIC_BUNDLE_PARSE = PASS/FAIL
-PREWRITE_LIVE_REVISION = actual
-PREWRITE_PREVIEW_REVISION = actual
-PREWRITE_DRIFT = NO/YES
-PREWRITE_JS_SHA256 = actual
-PREWRITE_CSS_SHA256 = actual
-PREWRITE_BACKUP_PATH = actual
-PREWRITE_BACKUP_GATE = PASS/FAIL
-PREWRITE_PROCESS_STATE_COUNT = actual
-PREWRITE_PROCESS_ACTION_COUNT = actual
-JS_FILE_UPLOAD_COUNT = actual
-CSS_FILE_UPLOAD_COUNT = actual
-CSS_REUPLOAD_TECHNICALLY_REQUIRED = YES/NO
-CUSTOMIZE_PUT_ATTEMPT_COUNT = actual
-CUSTOMIZE_PUT_SUCCESS_COUNT = actual
-DEPLOY_POST_COUNT = actual
-POST_DEPLOY_STATUS = actual
-POST_DEPLOY_LIVE_REVISION = actual
-LIVE_JS_SHA256 = actual
-LIVE_JS_HASH_MATCH = PASS/FAIL
-LIVE_CSS_SHA256 = actual
-LIVE_CSS_CONTENT_PRESERVED = PASS/FAIL
-MOBILE_CUSTOMIZE_PRESERVED = PASS/FAIL
-SIX_FIELD_SCHEMA_PRESERVED = PASS/FAIL
-PROCESS_MANAGEMENT_UNCHANGED_16_STATES_27_ACTIONS = PASS/FAIL
+M10L_D_R12C_R1_POST_DEPLOY_CLOSURE = COMPLETE / PARTIAL / BLOCKED
+STARTING_DEPLOY_RESULT = 9d4497e458d25f813da14f2bc0caac774df73cb5
+CANONICAL_PROCESS_STATE_COUNT = 16
+CANONICAL_PROCESS_ACTION_COUNT = 28
+OLD_27_ACTION_COUNT_CLASSIFICATION = CONTROL_PLANE_COUNTING_ERROR / OTHER
+R12C_BACKUP_PATH = backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z
+R12C_BACKUP_READABLE = PASS/FAIL
+R12C_PREWRITE_PROCESS_STATE_COUNT = actual
+R12C_PREWRITE_PROCESS_ACTION_COUNT = actual
+REVISION_33_TO_35_FORENSIC_STATUS = PROVEN / NOT_FULLY_PROVABLE_FROM_RETAINED_EVIDENCE
+REVISION_SEQUENCE_EVIDENCE = actual concise sequence / unavailable
+CURRENT_LIVE_REVISION = actual
+CURRENT_PREVIEW_REVISION = actual
+CURRENT_LIVE_JS_SHA256 = actual
+LIVE_JS_HASH_STABLE = PASS/FAIL
+CURRENT_LIVE_CSS_SHA256 = actual
+LIVE_CSS_HASH_STABLE = PASS/FAIL
+MOBILE_CUSTOMIZE_STABLE = PASS/FAIL
+CURRENT_PROCESS_STATE_COUNT = actual
+CURRENT_PROCESS_ACTION_COUNT = actual
+PROCESS_SEMANTIC_MATCH_TO_R12C_PREWRITE = PASS/FAIL
+SIX_FIELD_SCHEMA_STABLE = PASS/FAIL/REUSED_R12C_EVIDENCE
+HR_FINAL_CHECK_SOURCE_STATUS = 14 GM Final Evaluation
+HR_FINAL_CHECK_SOURCE_ACTION = Approve Final GM
+HR_FINAL_CHECK_TARGET_STATUS = 15 HR Final Check
+HR_FINAL_CHECK_ASSIGNEE_TYPE = actual
+HR_FINAL_CHECK_ASSIGNEE_IDENTIFIER = actual
+HR_GROUP_MEMBERSHIP = actual / NOT_RESOLVED_THIS_TASK
+HR_COMPLETE_TARGET = 16 Completed
+HR_RETURN_TARGET = 11 Employee Self Evaluation
+HR_RETURN_DESTINATION_RULE = actual
 BROWSER_SHALLOW_RUNTIME_LOAD = PASS/FAIL
-BROWSER_CONSOLE_FATAL = PASS/FAIL
+BROWSER_TARGET = actual non-sensitive descriptor
+BROWSER_FATAL_MBO_CONSOLE_ERROR_COUNT = actual
 WORKFLOW_ACTION_EXECUTED = 0
 WORKFLOW_NOTIFICATION_TRIGGERED = 0
-APP794_RECORD_WRITE = 0
-APP794_PROCESS_WRITE = 0
-APP794_SCHEMA_WRITE = 0
-APP794_ACL_WRITE = 0
-APP795_WRITE = 0
-APP53_WRITE = 0
-APP796_WRITE = 0
-OTHER_APP_WRITE = 0
-ROLLBACK_EXECUTED = YES/NO
-NO_ORPHAN_ARTIFACT_GATE = PASS/FAIL
+APP794_WRITE_COUNT = 0
+OTHER_APP_WRITE_COUNT = 0
+KINTONE_GET_CALLS_THIS_TASK = actual
+KINTONE_WRITES_THIS_TASK = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW BEFORE ISOLATED WORKFLOW UAT
+NEXT_ACTION = CHATGPT REVIEW FOR HR-ISOLATED WORKFLOW UAT DESIGN
 ```
 
 Push same branch and STOP.
