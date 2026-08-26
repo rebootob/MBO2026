@@ -120,11 +120,17 @@
     </div>
 
     <div class="preview-lab-group">
-      <label>4. Simulated Date / วันที่จำลองประเมิน</label>
+      <label>4. Simulated Date & Deadline Urgency / วันที่จำลองประเมิน & ระดับความเร่งด่วน</label>
       <select id="lab-now-date" class="preview-lab-select">
+        <option value="2026-06-15" selected>Jun 15, 2026 (Stage 2 Mid-Year — >7 days / Normal Green)</option>
+        <option value="2026-07-24">Jul 24, 2026 (Stage 2 Mid-Year — 7 days remaining / Amber Toast)</option>
+        <option value="2026-07-28">Jul 28, 2026 (Stage 2 Mid-Year — 3 days remaining / Amber Toast)</option>
+        <option value="2026-07-30">Jul 30, 2026 (Stage 2 Mid-Year — 1 day remaining / Amber-Orange Toast)</option>
+        <option value="2026-07-31">Jul 31, 2026 (Stage 2 Mid-Year — Due Today / Orange-Red Toast)</option>
+        <option value="2026-08-01">Aug 01, 2026 (Stage 2 Mid-Year — 1 day overdue / Red Toast)</option>
+        <option value="2026-10-15">Oct 15, 2026 (Stage 2 Mid-Year — 76 days overdue / Prominent Red Toast)</option>
         <option value="2026-02-15">Feb 15, 2026 (Stage 1 Objectives Open)</option>
-        <option value="2026-06-15" selected>Jun 15, 2026 (Stage 2 Mid-Year Open)</option>
-        <option value="2026-10-15">Oct 15, 2026 (Stage 3 Self Eval Open)</option>
+        <option value="2026-10-25">Oct 25, 2026 (Stage 3 Self Eval Open)</option>
         <option value="2026-11-15">Nov 15, 2026 (Stage 4 Appraiser Open)</option>
         <option value="2026-12-15">Dec 15, 2026 (Stage 5 HR Final Open)</option>
       </select>

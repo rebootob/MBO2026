@@ -2033,9 +2033,14 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
     };
   }
 
-  const now = new Date(nowIso);
-  const start = new Date(startDateIso);
-  const end = new Date(endDateIso);
+  const parseLocalDate = (isoStr) => {
+    const s = String(isoStr || '').trim();
+    return new Date(s.includes('T') ? s : `${s}T00:00:00`);
+  };
+
+  const now = parseLocalDate(nowIso);
+  const start = parseLocalDate(startDateIso);
+  const end = parseLocalDate(endDateIso);
 
   now.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
@@ -2044,7 +2049,7 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
   const msPerDay = 86400000;
 
   if (now < start) {
-    const diffDays = Math.ceil((start - now) / msPerDay);
+    const diffDays = Math.round((start - now) / msPerDay);
     return {
       status: 'Upcoming',
       labelTH: 'ยังไม่เปิด',
@@ -2060,7 +2065,7 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
   }
 
   if (now > end) {
-    const overdueDays = Math.floor((now - end) / msPerDay);
+    const overdueDays = Math.round((now - end) / msPerDay);
     return {
       status: 'Overdue',
       labelTH: 'เกินกำหนด',
@@ -2075,7 +2080,7 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
     };
   }
 
-  const remDays = Math.floor((end - now) / msPerDay);
+  const remDays = Math.round((end - now) / msPerDay);
   if (remDays === 0) {
     return {
       status: 'Due Today',
@@ -2091,6 +2096,7 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
     };
   }
 
+  const isDueSoon = remDays >= 1 && remDays <= 7;
   return {
     status: 'Open',
     labelTH: 'กำลังเปิด',
@@ -2099,8 +2105,9 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
     daysTextEN: `${remDays} days remaining (Due ${endDateIso})`,
     calloutTextTH: `เหลือ ${remDays} วัน`,
     calloutTextEN: `${remDays} DAYS REMAINING`,
-    badgeClass: remDays <= 7 ? 'mbo-deadline-due-soon' : 'mbo-deadline-open',
+    badgeClass: isDueSoon ? 'mbo-deadline-due-soon' : 'mbo-deadline-open',
     isOpen: true,
+    isDueSoon,
     remDays
   };
 }
@@ -2598,6 +2605,15 @@ class EmployeePartAUI {
     // Top Overall Process Progress Bar (5 Phases + Route Aware + Phase Calendar)
     root.appendChild(this._renderOverallProgressBar(status));
 
+    // R6-R3: Dismissible Urgency Toast (if due soon, due today, or overdue)
+    const urgencyToast = this._renderUrgencyToast(status);
+    if (urgencyToast) {
+      root.appendChild(urgencyToast);
+    }
+
+    // R6-R3: Separate Prominent Deadline Urgency Callout Banner
+    root.appendChild(this._renderDeadlineUrgencyBanner(status));
+
     // Top Status & Workflow Guidance Card
     root.appendChild(this._renderStatusGuidanceCard());
 
@@ -2713,6 +2729,130 @@ class EmployeePartAUI {
       </div>
     `;
     return card;
+  }
+
+  _renderDeadlineUrgencyBanner(status) {
+    const card = document.createElement('div');
+    card.className = 'mbo-deadline-urgency-container';
+
+    const phases = [
+      { key: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
+      { key: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
+      { key: 'selfEvaluation', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
+      { key: 'appraiserEvaluation', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
+      { key: 'hrFinal', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
+    ];
+
+    const currentStage = getMacroStage(status);
+    const activePhase = phases.find(p => p.stage === currentStage) || phases[0];
+    const calendar = this.previewOptions.phaseCalendar || DEFAULT_PHASE_CALENDAR;
+    const nowIso = this.previewOptions.previewNow || '2026-06-15';
+    const deadline = getPhaseCalendarStatus(activePhase.key, status, nowIso, calendar);
+
+    let bannerClass = 'mbo-urgency-green';
+    let icon = '⏳';
+
+    if (deadline.isCompleted) {
+      bannerClass = 'mbo-urgency-green';
+      icon = '✓';
+    } else if (deadline.isOverdue) {
+      bannerClass = 'mbo-urgency-red mbo-pulse-active';
+      icon = '🚨';
+    } else if (deadline.isDueToday) {
+      bannerClass = 'mbo-urgency-orange mbo-pulse-active';
+      icon = '⚠️';
+    } else if (deadline.isDueSoon || (deadline.remDays >= 1 && deadline.remDays <= 7)) {
+      bannerClass = 'mbo-urgency-amber mbo-pulse-active';
+      icon = '⏰';
+    } else if (deadline.isUpcoming) {
+      bannerClass = 'mbo-urgency-neutral';
+      icon = '📅';
+    }
+
+    const exactDueDate = calendar[activePhase.key]?.end || 'N/A';
+
+    card.innerHTML = `
+      <div class="mbo-urgency-callout ${bannerClass}">
+        <div class="mbo-urgency-icon">${icon}</div>
+        <div class="mbo-urgency-content">
+          <div class="mbo-urgency-phase-title">
+            📌 ขั้นตอนปัจจุบัน / CURRENT PHASE: ${escapeHtml(activePhase.nameTH)} (${escapeHtml(activePhase.nameEN)})
+          </div>
+          <div class="mbo-urgency-main-number">
+            ${escapeHtml(deadline.calloutTextTH)} / ${escapeHtml(deadline.calloutTextEN)}
+          </div>
+          <div class="mbo-urgency-sub-date">
+            📅 กำหนดส่งคงเหลือ / Phase Due Date: <strong>${escapeHtml(exactDueDate)}</strong> (วันที่จำลองประเมิน / Simulated Date: ${escapeHtml(nowIso)})
+          </div>
+        </div>
+      </div>
+    `;
+
+    return card;
+  }
+
+  _renderUrgencyToast(status) {
+    if (this._toastDismissed) return null;
+
+    const phases = [
+      { key: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
+      { key: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
+      { key: 'selfEvaluation', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
+      { key: 'appraiserEvaluation', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
+      { key: 'hrFinal', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
+    ];
+
+    const currentStage = getMacroStage(status);
+    const activePhase = phases.find(p => p.stage === currentStage) || phases[0];
+    const calendar = this.previewOptions.phaseCalendar || DEFAULT_PHASE_CALENDAR;
+    const nowIso = this.previewOptions.previewNow || '2026-06-15';
+    const deadline = getPhaseCalendarStatus(activePhase.key, status, nowIso, calendar);
+
+    const isDueSoon = deadline.isDueSoon || (deadline.remDays >= 1 && deadline.remDays <= 7);
+    const isDueToday = deadline.isDueToday;
+    const isOverdue = deadline.isOverdue;
+
+    if (!isDueSoon && !isDueToday && !isOverdue) {
+      return null;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `mbo-urgency-toast ${isOverdue ? 'overdue' : (isDueToday ? 'due-today' : 'due-soon')}`;
+
+    let msgTH = '';
+    if (isOverdue) {
+      msgTH = `⚠️ เกินกำหนด ${deadline.overdueDays || ''} วัน — กรุณาดำเนินการโดยเร็ว / Please take action as soon as possible.`;
+    } else if (isDueToday) {
+      msgTH = `⚠️ ครบกำหนดวันนี้ — กรุณาดำเนินการให้เสร็จสิ้นภายในวันนี้ / Due Today! Please complete your action today.`;
+    } else {
+      msgTH = `⏳ เหลือ ${deadline.remDays} วัน — กรุณาดำเนินการภายในกำหนด / Please complete action before deadline.`;
+    }
+
+    const toastBody = document.createElement('div');
+    toastBody.className = 'mbo-urgency-toast-body';
+
+    const toastText = document.createElement('div');
+    toastText.className = 'mbo-urgency-toast-text';
+    toastText.innerHTML = `<strong>${escapeHtml(activePhase.nameTH)}:</strong> ${escapeHtml(msgTH)}`;
+    toastBody.appendChild(toastText);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'mbo-urgency-toast-close';
+    closeBtn.type = 'button';
+    closeBtn.textContent = '✕ ปิด / Dismiss';
+    closeBtn.addEventListener('click', () => {
+      this._toastDismissed = true;
+      if (typeof toast.remove === 'function') {
+        toast.remove();
+      } else if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    });
+
+    toastBody.appendChild(closeBtn);
+    toast.appendChild(toastBody);
+
+    return toast;
   }
 
   _renderActorBanner(status) {

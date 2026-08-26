@@ -11,6 +11,7 @@ const makeMockElement = () => {
   let _innerHTML = '';
   const el = {
     className: '',
+    parentNode: null,
     get innerHTML() {
       const childHtml = children.map(c => c.innerHTML || '').join('');
       return _innerHTML + childHtml;
@@ -19,7 +20,22 @@ const makeMockElement = () => {
       _innerHTML = val;
     },
     children,
-    appendChild: (child) => { children.push(child); return child; },
+    appendChild: (child) => {
+      child.parentNode = el;
+      children.push(child);
+      return child;
+    },
+    removeChild: (child) => {
+      const idx = children.indexOf(child);
+      if (idx !== -1) children.splice(idx, 1);
+      child.parentNode = null;
+      return child;
+    },
+    remove: () => {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    },
     querySelector: (selector) => {
       const cls = selector.replace(/^[.#]/, '');
       const find = (arr) => {
@@ -47,7 +63,16 @@ const makeMockElement = () => {
       return results;
     },
     dataset: {},
-    addEventListener: () => {},
+    _listeners: {},
+    addEventListener(evt, fn) {
+      if (!this._listeners[evt]) this._listeners[evt] = [];
+      this._listeners[evt].push(fn);
+    },
+    click() {
+      if (this._listeners['click']) {
+        this._listeners['click'].forEach(fn => fn());
+      }
+    },
     style: {}
   };
   return el;
@@ -1789,4 +1814,78 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
   assert.ok(timelineHtml.includes('Returned for Revision') || timelineHtml.includes('Returned'), 'Timeline must preserve Return events');
   assert.ok(timelineHtml.includes('Resubmitted Objectives') || timelineHtml.includes('Resubmitted'), 'Timeline must preserve Resubmit events');
   assert.ok(timelineHtml.includes('1st Appraiser') && timelineHtml.includes('2nd Appraiser'), 'Timeline must use ordinal Appraiser names');
+
+  // 8. R6-R3 Deadline Urgency Matrix & Dismissible Toast Tests
+  // >7 Days Remaining (Green callout, no toast)
+  const uiGt7 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' } }),
+    stage: 'MID_YEAR',
+    previewOptions: { previewNow: '2026-06-15' }
+  });
+  uiGt7.render();
+  assert.ok(uiGt7.root.innerHTML.includes('mbo-urgency-green'), '>7 days remaining must use green callout');
+  assert.strictEqual(uiGt7.root.querySelector('.mbo-urgency-toast'), null, '>7 days remaining must not spawn urgent toast');
+
+  // 7 Days Remaining (Amber due-soon callout + toast)
+  const ui7Days = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' } }),
+    stage: 'MID_YEAR',
+    previewOptions: { previewNow: '2026-07-24' }
+  });
+  ui7Days.render();
+  assert.ok(ui7Days.root.innerHTML.includes('mbo-urgency-amber'), '7 days remaining must use amber due-soon callout');
+  assert.ok(ui7Days.root.querySelector('.mbo-urgency-toast'), '7 days remaining must spawn urgent toast');
+
+  // 1 Day Remaining (Amber/Orange due-soon callout + toast)
+  const ui1Day = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' } }),
+    stage: 'MID_YEAR',
+    previewOptions: { previewNow: '2026-07-30' }
+  });
+  ui1Day.render();
+  assert.ok(ui1Day.root.innerHTML.includes('mbo-urgency-amber') || ui1Day.root.innerHTML.includes('mbo-urgency-orange'), '1 day remaining must use amber/orange callout');
+  assert.ok(ui1Day.root.querySelector('.mbo-urgency-toast'), '1 day remaining must spawn urgent toast');
+
+  // Due Today (Orange/Red urgent callout + toast)
+  const uiDueToday = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' } }),
+    stage: 'MID_YEAR',
+    previewOptions: { previewNow: '2026-07-31' }
+  });
+  uiDueToday.render();
+  assert.ok(uiDueToday.root.innerHTML.includes('mbo-urgency-orange'), 'Due today must use orange urgent callout');
+  assert.ok(uiDueToday.root.querySelector('.mbo-urgency-toast'), 'Due today must spawn urgent toast');
+
+  // Overdue 76 Days (Red callout + prominent numeric text + toast)
+  const uiOverdue = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' } }),
+    stage: 'MID_YEAR',
+    previewOptions: { previewNow: '2026-10-15' }
+  });
+  uiOverdue.render();
+  assert.ok(uiOverdue.root.innerHTML.includes('mbo-urgency-red'), 'Overdue must use red callout');
+  assert.ok(uiOverdue.root.innerHTML.includes('76 DAYS OVERDUE'), 'Overdue callout must show prominent numeric text');
+  assert.ok(uiOverdue.root.querySelector('.mbo-urgency-toast'), 'Overdue must spawn urgent toast');
+
+  // Toast Dismissal preserves persistent callout
+  const toastBtn = uiOverdue.root.querySelector('.mbo-urgency-toast-close');
+  assert.ok(toastBtn, 'Toast must have dismiss button');
+  toastBtn.click();
+  assert.strictEqual(uiOverdue.root.querySelector('.mbo-urgency-toast'), null, 'Dismissing toast must remove toast node');
+  assert.ok(uiOverdue.root.innerHTML.includes('mbo-urgency-callout'), 'Dismissing toast must keep persistent urgency callout');
+
+  // Completed (Green callout, no toast)
+  const uiCompleted = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '16 Completed' } }),
+    stage: 'HR_FINAL',
+    previewOptions: { previewNow: '2026-12-15' }
+  });
+  uiCompleted.render();
+  assert.strictEqual(uiCompleted.root.querySelector('.mbo-urgency-toast'), null, 'Completed phase must not spawn urgent toast');
 });
