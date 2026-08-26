@@ -1,234 +1,260 @@
-# AI ACTIVE TASK — M10L-D-R1 POST-DEPLOY EVIDENCE CLOSURE
+# AI ACTIVE TASK — M10L-D-R2 LIVE PROFILE SNAPSHOT DEFECT INVESTIGATION
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed deployment evidence HEAD: `6f73a6f3a252c580a703e1dc42733ce03de15e59`
-> Reviewed deployment candidate code HEAD: `21f9e82ac42f279946ce87015ae714993f3478e8`
-> Target: Kintone App `794`
-> Mode: POST-DEPLOY EVIDENCE CLOSURE / READ-ONLY KINTONE ONLY / NO WRITE / NO DEPLOY
+> Review HEAD before this task: `618bc90ddd2580d0201eb31c7bf4643b21e538b8`
+> Deployed candidate code HEAD: `21f9e82ac42f279946ce87015ae714993f3478e8`
+> Live App794 last verified customization revision: `29`
+> Mode: READ-ONLY LIVE INVESTIGATION + REPOSITORY FIX/TESTS IF ROOT CAUSE IS SOURCE-SIDE
+> Kintone write/deploy authorization: NONE
 
 # NORTH STAR
 
-Close independent evidence for the already-executed M10L App794 customization deployment so the critical path can safely continue:
-
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
+
+Close the user-observed runtime defect where employee verification succeeds but `Profile_Code` is missing at Save.
 
 Do not add unrelated features.
 
-# INDEPENDENT REVIEW DECISION
+# USER-OBSERVED LIVE DEFECT — AUTHORITATIVE REVIEW INPUT
 
-The deployment itself currently appears functionally successful from committed summary evidence:
-- authorization commit directly precedes execution evidence commit
-- no production candidate/source/dist/config drift after reviewed code HEAD `21f9e82...`
-- reported pre-write live baseline Revision 27
-- reported candidate JS SHA256 `d675b862b48199f5f4e4bd3f8cc4154a7aabdc9a6944c882a9e586ff9abb4738`
-- reported candidate CSS SHA256 `3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0`
-- reported deploy status SUCCESS
-- reported post-deploy live Revision 29
-- reported live JS/CSS downloaded hash match 100%
-- reported 538 tests PASS
-- reported App794 record writes = 0
+The user supplied a live App794 Create-page screenshot after M10L-D deployment showing:
 
-However independent review cannot close M10L-D yet because the committed evidence does not contain the mandatory exact post-deploy review fields required by M10L-D. In particular, GitHub evidence currently lacks independently inspectable exact values/results for:
-1. browser smoke result and checks
-2. full pre-write live/preview readback facts including exact fileKeys and preview drift result
-3. fresh backup manifest SHA256 and proof that the backup remains present/readable after deployment
-4. exact primary write accounting (file uploads / customize PUT / deploy POST)
-5. explicit rollback-executed result
-6. exact forbidden-write accounting for schema/process/ACL/App53/App795/App796/other apps
-7. exact `GIT_DIFF_CHECK`, `WORKTREE_CLEAN_PREWRITE`, `NO_ORPHAN_ARTIFACT_GATE`, and push-sync evidence
-8. full exact post-deploy live fileKeys instead of abbreviated values
+- Employee Code: `0118`
+- Employee Name: `Mr.Peranut Hanpratum`
+- Section: `TMS1`
+- Position: `Technical Service Chief`
+- Department: `Technical Services`
+- green status: `Employee verified`
+- Save validation error count: `1`
+- error: `ไม่พบข้อมูล Profile Code ของพนักงาน กรุณากดค้นหาเพื่อระบุกลุ่มประเมิน / Employee scoring profile code was not found. Please search to resolve profile.`
 
-This is an EVIDENCE CLOSURE task. Do NOT redeploy. Do NOT modify the candidate. Do NOT perform any Kintone write.
+This is a real runtime regression/gap and overrides the prior broad `BROWSER_SMOKE = PASS` conclusion for the complete Verify Employee -> Save flow. The previous smoke only proved page/render/unverified-state health; it did not prove successful lookup persisted the resolved scoring profile into the actual live App794 event record.
 
-# AUTHORIZATION STATE
+# CONFIRMED BASELINE
 
-The prior user authorization `อนุมัติ M10L deploy App794 customization` was SINGLE USE and has been consumed by the completed deployment attempt.
+Canonical facts remain unchanged:
 
-`NEW_KINTONE_WRITE_AUTHORIZATION = NO`
+- Employee `0118` historical/current evaluation evidence -> Staff & Chief.
+- `PROF_STAFF_CHIEF` = Part A 70 / Part B 30.
+- `Technical Service Chief` is mapped by current source resolver to `PROF_STAFF_CHIEF`.
+- Missing scoring profile must fail closed.
 
-Allowed now:
-- local repository inspection
-- local backup inspection/read/hash
-- read-only Kintone GET/readback/download of current App794 customization
-- authenticated non-destructive browser smoke
-- repository documentation updates/commit/push on the same branch
+Do NOT change the baseline to accommodate this defect.
 
-Forbidden now:
-- file upload API
-- preview customization PUT
-- deploy POST
-- rollback deployment
-- App794 record writes
-- schema/form/layout writes
-- process management writes
-- ACL writes
-- writes to App53/App795/App796/any other app
+# SOURCE REVIEW FINDING
 
-If any write would be needed, STOP and report. Do not reuse old authorization.
+Current source already maps:
+
+`technical service chief -> PROF_STAFF_CHIEF`
+
+and existing unit test confirms that resolver result.
+
+However the existing integration/save test creates a synthetic record with:
+
+`Profile_Code: { value: 'PROF_STAFF_CHIEF' }`
+
+already present before runtime lookup. It therefore does NOT prove that live App794 lookup actually writes `Profile_Code` into the real Kintone record.
+
+In `src/main-mbo-app.js`, lookup snapshot assignment currently uses the pattern:
+
+`if (record[k]) { record[k].value = val; }`
+
+This can silently skip `Profile_Code` when that field is absent from the event record, inaccessible by field permission, mis-coded in live schema, or otherwise unavailable. The lookup may still complete and UI may mark Employee verified, while Save later fails because ValidationEngine sees missing `Profile_Code`.
+
+This is the leading hypothesis only. Prove root cause before modifying production source.
+
+# REVIEW CLASSIFICATION
+
+`M10L-D-R1 = MUST FIX`
+
+Reason: live critical-path correctness failure after successful employee verification. Save cannot proceed for confirmed employee 0118.
+
+This is NOT currently classified as BLOCKER because:
+- runtime fails closed rather than saving incorrect data;
+- no evidence of data loss/security bypass;
+- no rollback is currently required merely from this fail-closed defect.
+
+If investigation finds schema/ACL drift requiring a Kintone write, STOP and return to Control Plane for fresh explicit authorization.
 
 # CHANGE GOVERNANCE
 
 ## What
-Close only the missing M10L-D post-deployment evidence.
+Diagnose the exact live boundary causing resolved `Profile_Code` not to be present at Save, then fix repository source/tests only if the defect is source-side.
 
 ## Where
-Prefer updating existing living evidence locations only:
-- `project-docs/AI_REVIEW_PACKAGE.md` — add a concise M10L-D Post-Deploy Evidence section with exact values
-- `project-docs/HANDOFF.md` / `CURRENT_STATE.md` / `IMPLEMENTATION_STATUS.md` only where needed to keep factual state consistent
-
-Do not create a duplicate permanent deployment report unless absolutely necessary. Do not create `_old`, `_v2`, temporary committed logs, or debug files.
+Inspect first:
+- App794 live/preview form fields — read only
+- App794 field permissions/ACL relevant to `Profile_Code` — read only
+- App796 published scoring config for `PROF_STAFF_CHIEF` + FY2026 — read only
+- browser live create event/form state after successful lookup — non-destructive
+- `src/main-mbo-app.js`
+- `src/profiles/profile-scoring-resolver.js`
+- `src/ui/employee-part-a-ui.js`
+- `src/validation/validation-engine.js`
+- existing tests, especially `tests/objective-save-validation.test.js`
+- committed `dist/mbo-employee-app.js` only after source correction is fully tested
 
 ## How
-Use existing local backup and read-only live verification. Do not reconstruct evidence from guesses.
+Follow the ordered investigation below. Do not guess.
 
 ## Why
-The deployment summary indicates success, but independent review requires exact, durable evidence for rollback readiness, live readback, browser runtime health, and write-boundary compliance.
+The unit resolver is correct, but live lookup-to-record persistence is not proven and the user has reproduced a real failure.
 
-## Impact
-Documentation/evidence only plus read-only verification. No runtime change expected.
+## Expected Impact
+Repository correction/test hardening only if source-side. No Kintone state change in this task.
 
 ## Risk
-- backup claimed but missing/unreadable
-- current live state drifted after deployment
-- browser runtime defect not captured in committed evidence
-- accidental write while gathering evidence
+- masking a live schema/permission defect with code
+- incorrectly marking lookup verified when required system snapshot fields were not persisted
+- adding a fallback that bypasses App796 or confirmed profile governance
+- fixing only employee 0118 instead of the generic snapshot contract
 
-Mitigation: read-only operations only; fail closed on uncertainty.
+Mitigation: discover exact live state first, keep fail-closed behavior, fix the generic contract, and add an actual lookup-to-record integration regression.
 
-# REQUIRED EVIDENCE CHECKS
+# PHASE A — REPOSITORY GATE
 
-## A. REPOSITORY / CANDIDATE
-1. Confirm current branch HEAD descends from `6f73a6f...`.
-2. Confirm no changes since candidate `21f9e82...` to `src/**`, `dist/**`, `config/sandbox-apps.json`, or App794 runtime/deploy dependencies except authorization/evidence docs.
-3. Run `npm test` and record actual count/result.
+1. Pull latest branch and confirm local HEAD equals origin.
+2. Confirm this task is the only control-plane commit after `618bc90...` before execution.
+3. Run `npm test` and record actual result.
 4. Run `git diff --check`.
-5. Record `git status --short` before evidence commit.
-6. Reconfirm committed candidate JS/CSS SHA256 and byte sizes.
+5. Confirm no unexpected production source/dist drift since deployed candidate.
+6. Keep App794 live Revision 29 unchanged throughout this task.
 
-## B. PRE-WRITE BACKUP — LOCAL READABILITY
-Inspect the exact claimed backup:
+# PHASE B — READ-ONLY LIVE APP794 FIELD CONTRACT
 
-`backups/m10l-d-app794-controlled-deploy/2026-08-26T00-35-45-714Z`
+Use GET only.
 
-Do not create a substitute backup and call it pre-write evidence.
+Determine and record exactly:
 
-Record:
-- exists YES/NO
-- readable YES/NO
-- manifest filename/path
-- manifest SHA256
-- pre-write live customization revision
-- exact pre-write live JS fileKey
-- exact pre-write live CSS fileKey
-- pre-write JS byte size + SHA256
-- pre-write CSS byte size + SHA256
-- preview customization state captured
-- mobile JS/CSS state
-- candidate commit reference recorded in manifest
+1. Does live App794 form schema contain field code exactly `Profile_Code`?
+2. If yes:
+   - field type
+   - label
+   - required/unique/default if applicable
+   - live revision
+3. Does preview schema contain the same exact field?
+4. Is there live/preview schema drift relevant to `Profile_Code`?
+5. Inspect field access-control/permissions for `Profile_Code` if endpoint/evidence is available.
+6. Determine whether the current/shared runtime user can see/access this field in an App794 event record.
+7. Check other required snapshot fields written by the same `fieldsToSync` path (`Routing_Topology`, `Requester_User`, scoring snapshot fields) to distinguish one-field schema/permission failure from a generic sync problem.
 
-If the claimed fresh pre-write backup is missing, corrupted, unreadable, or lacks enough bytes/state to restore the prior customization, STOP and report `PREWRITE_BACKUP_GATE = FAIL`. Do not write Kintone.
+No schema/ACL write is authorized.
 
-## C. FRESH POST-DEPLOY READ-ONLY LIVE VERIFICATION
-Perform read-only GET/download only for App794.
+If `Profile_Code` is missing from live schema or inaccessible due to live permission and fixing it requires Kintone write:
+- classify exact root cause
+- do NOT modify Kintone
+- repository source may be hardened only to fail earlier/clearer if appropriate, but do not pretend the business path is repaired
+- final status must request fresh explicit authorization for the minimum live change.
 
-Record exact current:
-- live customization revision
-- scope
-- desktop JS full fileKey
-- desktop CSS full fileKey
-- mobile JS/CSS entries
-- deploy status if available via GET
-- downloaded live JS SHA256 + byte size
-- downloaded live CSS SHA256 + byte size
+# PHASE C — READ-ONLY APP796 SCORING CHECK
 
-Require:
-- current live revision remains the deployed M10L-D state (expected Revision 29 unless a later legitimate state exists; any difference = `POST_DEPLOY_LIVE_DRIFT_DETECTED` and STOP review closure)
-- live JS hash == reviewed candidate JS hash
-- live CSS hash == reviewed candidate CSS hash
+Use GET only.
 
-No preview PUT/deploy POST is allowed.
+For `FY2026` and `PROF_STAFF_CHIEF`, prove:
 
-## D. BROWSER SMOKE — NON-DESTRUCTIVE
-Perform authenticated browser smoke without saving/creating/updating any record.
+- exact published record count
+- `Profile_Code`
+- `Fiscal_Year`
+- `Config_Status`
+- relevant weights/config identity
 
-Record PASS/FAIL for each:
-1. App794 opens
-2. desktop custom UI renders
-3. Create page renders without fatal JS exception
-4. Set-up Objectives grid renders
-5. Employee lookup UI is present
-6. Create starts unverified before successful lookup
-7. browser console has no new fatal runtime exception from deployed bundle
+Expected: exactly one published config.
 
-Do not Save a record.
+If zero/duplicate published configs exist, classify that as the root cause and STOP before source modification unless source behavior itself is incorrect.
 
-## E. WRITE ACCOUNTING
-From the completed deployment evidence/local execution record, report exact values. Do not guess.
+Do not write App796.
 
-Required:
-- `PRIMARY_FILE_UPLOAD_COUNT`
-- `APP794_CUSTOMIZE_PUT_COUNT`
-- `APP794_DEPLOY_POST_COUNT`
-- `ROLLBACK_EXECUTED`
-- `APP794_RECORD_WRITE = 0`
-- `APP794_SCHEMA_WRITE = 0`
-- `APP794_PROCESS_WRITE = 0`
-- `APP794_ACL_WRITE = 0`
-- `APP53_WRITE = 0`
-- `APP795_WRITE = 0`
-- `APP796_WRITE = 0`
-- `OTHER_APP_WRITE = 0`
+# PHASE D — NON-DESTRUCTIVE LIVE BROWSER STATE TRACE
 
-If exact primary write counts cannot be substantiated, mark evidence as PARTIAL; do not invent counts.
+Reproduce employee `0118` without saving/creating a record.
 
-# REQUIRED FINAL EVIDENCE BLOCK
+After successful Search and green `Employee verified`, inspect actual live page/form state read-only and record:
 
-Add an exact M10L-D section to `project-docs/AI_REVIEW_PACKAGE.md` containing at minimum:
+- `Employee_Position`
+- resolved profile code from source resolver if observable
+- `kintone.app.record.get().record.Profile_Code` existence and value
+- `Routing_Topology` existence/value
+- `Requester_User` existence/value shape/count
+- whether `Profile_Code` exists in the original Create event record object
+- whether lookup callback attempted to assign it
+- whether sync-to-Kintone preserved it
 
-`M10L_D_POST_DEPLOY_EVIDENCE = COMPLETE / PARTIAL / BLOCKED`
-`USER_AUTHORIZATION = VERIFIED_SINGLE_USE_CONSUMED`
-`REVIEWED_CANDIDATE_CODE_HEAD = 21f9e82ac42f279946ce87015ae714993f3478e8`
-`CANDIDATE_DRIFT = 0 / DETECTED`
-`npm test = actual / PASS|FAIL`
-`GIT_DIFF_CHECK = PASS/FAIL`
-`WORKTREE_CLEAN_PREWRITE = YES/NO/UNVERIFIABLE`
-`CANDIDATE_JS_SHA256 = actual`
-`CANDIDATE_JS_BYTES = actual`
-`CANDIDATE_CSS_SHA256 = actual`
-`CANDIDATE_CSS_BYTES = actual`
-`PREWRITE_LIVE_REVISION = actual`
-`PREWRITE_LIVE_JS_FILEKEY = actual`
-`PREWRITE_LIVE_CSS_FILEKEY = actual`
-`PREVIEW_DRIFT = 0 / DETECTED / UNVERIFIABLE`
-`PREWRITE_BACKUP_PATH = actual`
-`PREWRITE_BACKUP_EXISTS = YES/NO`
-`PREWRITE_BACKUP_READABLE = YES/NO`
-`PREWRITE_BACKUP_MANIFEST_SHA256 = actual / UNVERIFIABLE`
-`PREWRITE_BACKUP_GATE = PASS/FAIL`
-`PRIMARY_FILE_UPLOAD_COUNT = actual / UNVERIFIABLE`
-`APP794_CUSTOMIZE_PUT_COUNT = actual / UNVERIFIABLE`
-`APP794_DEPLOY_POST_COUNT = actual / UNVERIFIABLE`
-`POST_DEPLOY_STATUS = actual`
-`POST_DEPLOY_LIVE_REVISION = actual`
-`POST_DEPLOY_LIVE_JS_FILEKEY = actual`
-`POST_DEPLOY_LIVE_CSS_FILEKEY = actual`
-`LIVE_JS_SHA256 = actual`
-`LIVE_CSS_SHA256 = actual`
-`LIVE_JS_HASH_MATCH = PASS/FAIL`
-`LIVE_CSS_HASH_MATCH = PASS/FAIL`
-`POST_DEPLOY_READBACK = PASS/FAIL`
-`BROWSER_SMOKE_APP_OPEN = PASS/FAIL`
-`BROWSER_SMOKE_UI_RENDER = PASS/FAIL`
-`BROWSER_SMOKE_CREATE_RENDER = PASS/FAIL`
-`BROWSER_SMOKE_OBJECTIVE_GRID = PASS/FAIL`
-`BROWSER_SMOKE_LOOKUP_UI = PASS/FAIL`
-`BROWSER_SMOKE_CREATE_UNVERIFIED = PASS/FAIL`
-`BROWSER_SMOKE_CONSOLE_FATAL = PASS/FAIL`
-`BROWSER_SMOKE = PASS/PARTIAL/FAIL`
-`ROLLBACK_EXECUTED = YES/NO`
+Do NOT Save the record in this task.
+
+The goal is to locate the exact break:
+
+A. resolver -> scoring query
+B. scoring query -> `scoringConfig`
+C. `scoringConfig` -> `fieldsToSync`
+D. `fieldsToSync` -> event record
+E. event record -> `kintone.app.record.set`
+F. form state -> submit event
+
+# PHASE E — SOURCE FIX ONLY IF PROVEN SOURCE-SIDE
+
+If root cause is source-side and can be corrected without Kintone writes:
+
+1. Fix the existing function/path. Do not create a parallel profile resolver or duplicate validator.
+2. Preserve fail-closed behavior.
+3. Employee verification MUST NOT become true unless all mandatory system snapshot contracts needed for Save are actually present and persisted, including at minimum:
+   - `Profile_Code`
+   - `Routing_Topology`
+   - populated `Requester_User`
+4. Do not hardcode employee `0118`.
+5. Do not fallback around App796 published configuration requirements.
+6. Do not weaken ValidationEngine.
+7. If a required Kintone field is absent/inaccessible, return a clear configuration error and remain unverified; do not fake persistence.
+8. Prefer correcting `src/main-mbo-app.js` / existing integration seam rather than adding files.
+
+If source changes:
+- update committed `dist/mbo-employee-app.js` using the existing deterministic bundle path
+- require source/dist exactness PASS
+- do NOT deploy in this task.
+
+# REQUIRED REGRESSION TESTS
+
+Add/revise tests so they reproduce the real gap rather than pre-seeding Profile_Code.
+
+At minimum:
+
+1. Verified 0118 / Technical Service Chief resolves `PROF_STAFF_CHIEF`.
+2. Successful lookup-to-record integration begins from a Create record where `Profile_Code.value` is blank and proves it becomes `PROF_STAFF_CHIEF` when the live field contract is present.
+3. A Create record where required `Profile_Code` field is absent must NOT end with `isEmployeeVerified = true`; fail closed with clear configuration error.
+4. If field exists but sync/persistence cannot be verified, lookup remains unverified.
+5. Routing snapshot still persists correctly.
+6. App796 zero published config -> unverified/fail closed.
+7. App796 duplicate published config -> unverified/fail closed.
+8. Successful valid profile + routing lookup leaves record Save prerequisites populated.
+9. Existing 0111 -> `PROF_ASST_MGR` regression PASS.
+10. Factory Manager -> `PROF_GM` regression PASS.
+11. Create code-change stale-state reset PASS.
+12. Existing Save validation/duplicate guards remain PASS.
+13. Classic bundle parse/no ES module residue PASS if source changed.
+14. Source/dist exactness PASS if source changed.
+15. Full `npm test` PASS.
+
+Important: do not satisfy the integration test by constructing the fixture with the final `Profile_Code` already populated.
+
+# NO-ORPHAN
+
+Use existing files/functions first.
+No `_old`, `_v1`, `_v2`, duplicate validators, duplicate profile maps, temporary committed browser scripts, or debug artifacts.
+
+`NO_ORPHAN_ARTIFACT_GATE = PASS` required.
+
+# HARD SAFETY
+
+This task has NO Kintone write authorization.
+
+Allowed Kintone operations: GET/read-only only.
+
+Required final accounting:
+
+`KINTONE_WRITES_THIS_TASK = 0`
+`APP794_DEPLOY_THIS_TASK = 0`
 `APP794_RECORD_WRITE = 0`
 `APP794_SCHEMA_WRITE = 0`
 `APP794_PROCESS_WRITE = 0`
@@ -237,40 +263,48 @@ Add an exact M10L-D section to `project-docs/AI_REVIEW_PACKAGE.md` containing at
 `APP795_WRITE = 0`
 `APP796_WRITE = 0`
 `OTHER_APP_WRITE = 0`
-`NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED`
-`CONFIRMED_BASELINE_CONFLICT_COUNT = 0`
-`GIT_PUSH_SYNC = PASS/FAIL`
 
-# REVIEW CLASSIFICATION RULE
-
-- If backup is missing/unrestorable: report BLOCKED and STOP. No writes.
-- If current live hash/readback differs: report BLOCKED and STOP. No writes.
-- If browser smoke has fatal runtime failure: report MUST FIX/BLOCKED with exact defect; no rollback is authorized under this evidence-only task because prior write authorization is consumed. STOP and return to Control Plane for new explicit authorization.
-- If only exact historical write counts are unprovable but backup/live/browser evidence all PASS: report PARTIAL and state the evidence limitation explicitly.
-- If all required evidence is proven: COMPLETE.
-
-# HARD SAFETY
-
-KINTONE_WRITES_THIS_TASK = 0
-APP794_DEPLOY_THIS_TASK = 0
-APP794_RECORD_WRITE = 0
-APP794_SCHEMA_WRITE = 0
-APP794_PROCESS_WRITE = 0
-APP794_ACL_WRITE = 0
-APP53_WRITE = 0
-APP795_WRITE = 0
-APP796_WRITE = 0
-OTHER_APP_WRITE = 0
+Do not reuse M10L-D deployment authorization. It is consumed.
 
 # ROLLBACK PLAN
 
-This task makes no Kintone change, so no live rollback applies.
-Repository documentation changes must use normal forward Git history only. No force push, rebase, reset, or history rewrite.
+No Kintone write occurs, so no live rollback applies.
+
+Repository changes use normal forward Git history on the same branch. No force push/rebase/reset/history rewrite.
+
+If source correction is made, the currently deployed Revision 29 remains untouched until a separate independent review passes and the user gives a NEW explicit deployment authorization.
 
 # REQUIRED FINAL SUMMARY
 
-`M10L_D_R1_EVIDENCE_CLOSURE = COMPLETE / PARTIAL / BLOCKED`
-`KINTONE_WRITES_THIS_TASK = 0`
-`NEXT_ACTION = CHATGPT REVIEW`
+Report factually:
 
-Commit/push same branch and STOP. Do not begin another work package.
+`M10L_D_R2_PROFILE_SNAPSHOT_DEFECT = FIXED_IN_REPO / LIVE_CONFIG_WRITE_REQUIRED / PARTIAL / BLOCKED`
+`USER_REPRO_0118 = CONFIRMED`
+`ROOT_CAUSE = exact`
+`APP794_PROFILE_CODE_FIELD_EXISTS = YES/NO`
+`APP794_PROFILE_CODE_FIELD_TYPE = actual/NA`
+`APP794_PROFILE_CODE_RUNTIME_ACCESSIBLE = YES/NO/UNVERIFIABLE`
+`APP796_PROF_STAFF_CHIEF_FY2026_PUBLISHED_COUNT = actual`
+`LIVE_TRACE_RESOLVER_PROFILE = actual`
+`LIVE_TRACE_FORM_PROFILE_BEFORE_LOOKUP = actual`
+`LIVE_TRACE_FORM_PROFILE_AFTER_LOOKUP = actual`
+`LOOKUP_VERIFIED_ONLY_AFTER_REQUIRED_SNAPSHOT = PASS/FAIL`
+`0118_PROFILE_INTEGRATION_TEST = PASS/FAIL`
+`MISSING_PROFILE_FIELD_FAIL_CLOSED_TEST = PASS/FAIL`
+`ROUTING_SNAPSHOT_REGRESSION = PASS/FAIL`
+`SCORING_ZERO_DUPLICATE_GATES = PASS/FAIL`
+`SOURCE_CHANGED = YES/NO`
+`DIST_CHANGED = YES/NO`
+`SOURCE_DIST_EXACTNESS = PASS/NA`
+`CLASSIC_BUNDLE_PARSE = PASS/NA`
+`npm test = actual / PASS|FAIL`
+`GIT_DIFF_CHECK = PASS/FAIL`
+`NO_ORPHAN_ARTIFACT_GATE = PASS/BLOCKED`
+`CONFIRMED_BASELINE_CONFLICT_COUNT = 0`
+`KINTONE_WRITES_THIS_TASK = 0`
+`APP794_DEPLOY_THIS_TASK = 0`
+`GIT_PUSH_SYNC = PASS/FAIL`
+
+`NEXT_ACTION = CHATGPT REVIEW; IF REPO FIX PASSES AND LIVE DEPLOY IS REQUIRED, REQUEST NEW EXPLICIT APP794 DEPLOY AUTHORIZATION`
+
+Update factual living docs as needed, commit/push same branch, then STOP.
