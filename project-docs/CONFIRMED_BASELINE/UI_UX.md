@@ -236,7 +236,8 @@ Preview must allow inspection of:
 - deadline states: upcoming, remaining days, due today, overdue, completed;
 - optional attachment areas at Objectives, Mid-Year, and Self Evaluation;
 - Appraiser active-column behavior;
-- a visual placeholder/reserved-space representation of the native Kintone comment panel if useful, without implementing fake persistence.
+- a visual placeholder/reserved-space representation of the native Kintone comment panel if useful, without implementing fake persistence;
+- Workflow Action Timeline fixtures including approve/return/resubmit/scoring timestamps.
 
 Preview must make clear which scenarios are current-runtime supported versus Preview Only / Routing Pending.
 
@@ -290,3 +291,47 @@ For the 4-Appraiser Preview-only scenario, the Preview Lab may simulate Appraise
 Security note:
 - Disabling non-current columns in client UI is UX, not an authorization boundary.
 - Production enforcement must later be reconciled with native Kintone Process/field/permission controls before claiming secure per-Appraiser edit isolation.
+
+## 20. Workflow Action Timeline / Audit Trail — Who Did What and When
+
+User-confirmed on 2026-08-26:
+
+App794 must provide a clear bilingual read-only frame showing **who performed each meaningful workflow/evaluation action, what action was performed, and the exact date/time**.
+
+Preferred heading:
+`ประวัติการดำเนินการ / Workflow Action Timeline`
+
+The timeline is lifecycle-wide and must be understandable without exposing legacy Manager/GM role names as the business role. Each entry should include, where known:
+- Macro stage: Objectives / Mid-Year / Self Evaluation / Appraiser Evaluation / HR Final.
+- Business actor slot: Employee/Requester, 1st Appraiser, 2nd Appraiser, 3rd Appraiser, 4th Appraiser, or HR Final.
+- Actual person display name/account.
+- Business action, for example `Submitted`, `Approved`, `Returned`, `Resubmitted`, `Started Mid-Year`, `Started Self Evaluation`, `Scoring Completed`, `HR Final Completed`.
+- Date and time with a consistent company-local presentation, e.g. `14 Feb 2026 • 09:42`.
+- Outcome/state such as Approved / Returned / Completed.
+- A non-authoritative comment indicator when a Return/Reject is associated with discussion, e.g. `💬 ดูความคิดเห็น / View Comments`; actual comment content remains in native Kintone Comments.
+
+Example business presentation:
+
+| Stage | Actor | Action | Date / Time |
+| --- | --- | --- | --- |
+| Objectives | 1st Appraiser | Approved | 14 Feb 2026 • 09:42 |
+| Objectives | 2nd Appraiser | Returned | 15 Feb 2026 • 10:18 |
+| Objectives | Employee | Resubmitted | 16 Feb 2026 • 08:30 |
+| Objectives | 2nd Appraiser | Approved | 16 Feb 2026 • 13:05 |
+| Appraiser Evaluation | 1st Appraiser | Scoring Completed | 20 Nov 2026 • 14:22 |
+
+Audit/history rules:
+- **Do not overwrite earlier actions.** Return -> correction -> resubmit -> approve must preserve all events in chronological order.
+- Timeline is read-only for normal users; it is an audit/presentation feature, not an editable log.
+- The timeline may be collapsible to save vertical space, but the latest/current relevant action should be easy to notice.
+- The same timeline should remain available across the five macro stages so users can understand how the record arrived at its current state.
+- Do not fabricate timestamps from record `Updated_datetime` or current status. A record-level modified time is not proof of which workflow actor performed which action.
+- Do not infer an action timestamp solely from a score field becoming nonblank unless the persistence contract explicitly records that event.
+- Local Preview must use clearly synthetic deterministic timeline fixtures only.
+
+Production persistence/source boundary:
+- Dedicated per-action timestamp/audit persistence has **not yet been certified** by the current UI-only review.
+- Before runtime implementation, perform a read-only inventory of available Kintone Process/history/revision capabilities and current App794 fields, then choose a durable audit strategy that preserves every event and actor.
+- If dedicated storage is required, schema/audit implementation is a separate reviewed change with fresh authorization; do not create fields silently in the UI sprint.
+- Until that gate is closed, canonical classification is `WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW`.
+- Native Kintone Comments and Workflow Action Timeline are complementary: Comments explain why; Timeline records who/action/when.
