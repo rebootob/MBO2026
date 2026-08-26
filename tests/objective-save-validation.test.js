@@ -6,6 +6,43 @@ import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js'
 import { EmployeeService } from '../src/services/employee-service.js';
 import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
 
+const makeMockElement = () => ({
+  innerHTML: '',
+  appendChild: () => {},
+  querySelector: () => null,
+  querySelectorAll: () => [],
+  addEventListener: () => {},
+  style: {}
+});
+
+const kintoneHandlers = {};
+const fakeApi = async () => ({ records: [] });
+fakeApi.url = (path) => path;
+
+globalThis.kintone = {
+  app: {
+    getId: () => 794,
+    record: {
+      setFieldShown: () => {},
+      getSpaceElement: makeMockElement,
+      getHeaderMenuSpaceElement: makeMockElement
+    }
+  },
+  api: fakeApi,
+  events: {
+    on: (events, handler) => {
+      const list = Array.isArray(events) ? events : [events];
+      list.forEach(evt => { kintoneHandlers[evt] = handler; });
+    }
+  }
+};
+globalThis.document = {
+  createElement: makeMockElement,
+  getElementById: () => null
+};
+
+await import('../src/main-mbo-app.js');
+
 function createMockRecord(overrides = {}) {
   const base = {
     Employee_Code: { value: '0118' },
@@ -85,6 +122,24 @@ test('M10L-R1: Missing Profile_Code, Routing_Topology, or empty Requester_User [
 
   const emptyRequesterRecord = createMockRecord({ Requester_User: { value: [] } });
   const res3 = ValidationEngine.validate(emptyRequesterRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res3.isValid, false);
+  assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
+});
+
+test('M10L-R3: Completely missing Requester_User field or null value blocks save', () => {
+  const missingPropRecord = createMockRecord();
+  delete missingPropRecord.Requester_User;
+  const res1 = ValidationEngine.validate(missingPropRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res1.isValid, false);
+  assert.ok(res1.fieldErrors.some(e => e.field === 'Employee_Code'));
+
+  const nullValRecord = createMockRecord({ Requester_User: { value: null } });
+  const res2 = ValidationEngine.validate(nullValRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res2.isValid, false);
+  assert.ok(res2.fieldErrors.some(e => e.field === 'Employee_Code'));
+
+  const undefinedValRecord = createMockRecord({ Requester_User: { value: undefined } });
+  const res3 = ValidationEngine.validate(undefinedValRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(res3.isValid, false);
   assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
 });
@@ -239,4 +294,32 @@ test('M10L: Profile resolver regressions (0111, 0118, Factory Manager)', async (
 
   const factoryMgr = await makeVerifiedSnapshot('Factory Manager');
   assert.equal(resolveProfileCode(factoryMgr), 'PROF_GM');
+});
+
+test('M10L-R3: Runtime submit hook blocks save (returns false) when activeUiInstance is null/unavailable', async () => {
+  const submitHook = kintoneHandlers['app.record.create.submit'];
+  assert.ok(typeof submitHook === 'function');
+
+  // When activeUiInstance is null/unavailable -> submit returns false (block save)
+  const validRecord = createMockRecord();
+  const event = { type: 'app.record.create.submit', record: validRecord };
+  const res = await submitHook(event);
+  assert.equal(res, false, 'Submit must return false (block save) when activeUiInstance is missing/null');
+});
+
+test('M10L-R3: Runtime submit hook proceeds (returns event) for valid existing Edit save with verified activeUiInstance', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const submitHook = kintoneHandlers['app.record.edit.submit'];
+  assert.ok(typeof showHook === 'function');
+  assert.ok(typeof submitHook === 'function');
+
+  const editRecord = createMockRecord({ $id: { value: '10' }, Status: { value: '01 Draft Objective' } });
+  const showEvent = { type: 'app.record.edit.show', record: editRecord };
+  showHook(showEvent);
+
+  // Trigger edit.submit with verified UI instance and zero duplicates
+  const submitEvent = { type: 'app.record.edit.submit', record: editRecord };
+  const res = await submitHook(submitEvent);
+
+  assert.equal(res, submitEvent, 'Valid Edit submit must return event object when UI is verified and validation passes');
 });

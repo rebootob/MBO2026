@@ -149,3 +149,66 @@ test('Kintone Field Reset: User Selection fields reset to [] and scalar fields r
   // Scalar fields must be empty string
   assert.equal(record.Employee_Name.value, '');
 });
+
+test('Classic Bundle: Committed source and dist M10L Save-gate exactness match', () => {
+  const distJs = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+
+  // 1. Verify committed dist bundle contains exact reviewed Save-gate guard snippets
+  assert.ok(
+    distJs.includes('Array.isArray(requesterUserVal) && requesterUserVal.length > 0'),
+    'dist bundle must contain strict Array.isArray check for Requester_User'
+  );
+  assert.ok(
+    distJs.includes('!activeUiInstance || activeUiInstance.isEmployeeVerified !== true'),
+    'dist bundle must contain fail-closed check for activeUiInstance'
+  );
+  assert.ok(
+    distJs.includes('this.isEmployeeVerified = !this.isCreate'),
+    'dist bundle must contain Create mode unverified initialization'
+  );
+
+  // 2. Rebuild in-memory bundle from source files and compare with committed dist bundle
+  const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
+  const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
+  const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
+  const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
+  const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
+  const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
+  const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
+  const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
+  const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
+  const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
+
+  const expectedJs = `
+(function() {
+  'use strict';
+
+  ${constantsJs}
+
+  ${fiscalYearEngineJs}
+
+  ${scoringConfigMasterJs}
+
+  ${profileScoringResolverJs}
+
+  ${hostResolverJs}
+
+  ${validationJs}
+
+  ${employeeServiceJs}
+
+  ${routingServiceJs}
+
+  ${uiJs}
+
+  ${mainJs}
+
+})();
+`;
+
+  assert.equal(
+    distJs.trim(),
+    expectedJs.trim(),
+    'Committed dist/mbo-employee-app.js must match source build output exactly (0 source/dist drift)'
+  );
+});
