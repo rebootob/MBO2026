@@ -1,74 +1,112 @@
-# AI ACTIVE TASK — M10L-D-R9 MINIMAL R8 EXECUTION CHRONOLOGY REVIEW
+# AI ACTIVE TASK — M10L-D-R10 HOSHIN UNDEFINED SNAPSHOT REGRESSION FIX
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed R8 result commit: `40f4245b124e2a906588df8943932da482b316ad`
-> Mode: LOCAL FORENSIC EVIDENCE ONLY / ZERO KINTONE CALLS
+> Starting reviewed HEAD: `b8a4edd14f56f6dae679659ceefc191d449ad164`
+> Mode: REPOSITORY FIX + TESTS ONLY
 > Kintone write/deploy authorization: NONE
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-R8 live result appears operational, but execution evidence contains chronology/scope contradictions that must be resolved before the deployment gate can close.
+# USER RUNTIME EVIDENCE
 
-# REVIEW DECISION
+On live App794 create page for employee 0118 after R8/R9:
+- Kintone fatal banner: `event.record['Department_Hoshin'].value is invalid.`
+- Kintone fatal banner: `event.record['Section_Hoshin'].value is invalid.`
+- inline fail-closed error: `Form state read-back mismatch for field Routing_Topology: expected "M1_G1", got undefined`
+- employee remains unverified and Objective Grid stays locked.
 
-`M10L-D-R8 = BLOCKED FOR EXECUTION-EVIDENCE REVIEW`
+Treat this screenshot as authoritative runtime evidence overriding prior broad browser-smoke PASS claims.
 
-Do NOT rollback and do NOT touch Kintone in R9.
+# PROVEN ROOT CAUSE FROM CURRENT SOURCE
 
-Facts requiring exact explanation:
-1. R8 task expected live=29 and preview=29 before write and required STOP on any drift, but evidence records:
-   - `PREWRITE_LIVE_REVISION = 29`
-   - `PREWRITE_PREVIEW_REVISION = 31`
-   - `PREWRITE_DRIFT_DETECTED = NO`
-2. R8 task expected one Add Fields POST, but evidence records `APP794_ADD_FIELDS_POST_COUNT = 0`, while all six fields became live by Revision 32.
-3. R8 task explicitly said not to re-upload unchanged CSS and to preserve existing CSS fileKey/order, but evidence records:
-   - `PRIMARY_CSS_FILE_UPLOAD_COUNT = 1`
-   - prewrite CSS fileKey `20260826003547D4A3CCF907BC42F69388B71AB8BDCD73264`
-   - post-deploy CSS fileKey `202608260136358B0ED89ACC4247F29A62FED47A59C0A7310`
-   - CSS hash remained identical.
-4. Backup timestamp is `2026-08-26T01-36-33-310Z`; determine whether any preview schema/customization write occurred before this backup.
+`src/services/employee-service.js` intentionally returns only the verified 9 employee header snapshot fields and explicitly excludes Hoshin. Therefore `empProfile.Department_Hoshin` and `empProfile.Section_Hoshin` are `undefined`.
+
+`src/main-mbo-app.js` currently includes both undefined values in `fieldsToSync`, then unconditionally does:
+
+`if (record[k]) record[k].value = val;`
+
+This poisons the Kintone event record with invalid `undefined` Hoshin values. The later verified form-state persistence/read-back then fails, surfacing Routing_Topology as undefined.
+
+Existing tests do not model this real Kintone failure: the mock `kintone.app.record.set()` simply replaces `currentFormRecord` and does not reject invalid field values.
+
+# CHANGE GOVERNANCE
+
+## What
+Fix only the undefined Hoshin snapshot mutation and harden snapshot assignment so absent source values cannot poison existing Kintone fields.
+
+## Where
+Prefer only:
+- `src/main-mbo-app.js`
+- `tests/objective-save-validation.test.js`
+- deterministic `dist/mbo-employee-app.js`
+- minimal living evidence docs after implementation
+
+Do not change `EmployeeService` Hoshin ownership unless a test proves that is required. Hoshin is not part of its verified employee snapshot contract.
+
+## How
+1. Do not include `Department_Hoshin` / `Section_Hoshin` in employee lookup snapshot assignment when source value is undefined.
+2. Harden the generic in-memory assignment loop so `undefined` never overwrites a Kintone field value.
+3. Preserve existing valid Hoshin/form values unchanged when lookup source does not own them.
+4. Preserve the 9 required core persistence fields and fail-closed read-back behavior.
+5. Do not weaken Routing_Topology verification.
+6. Do not add parallel sync functions or test globals.
+
+## Why
+Live Kintone rejects the poisoned Hoshin values, causing employee verification and Routing_Topology persistence to fail.
+
+## Impact
+0118 lookup should complete without invalid Hoshin errors; required snapshot fields can persist/read back; employee can become verified only after that succeeds.
+
+## Risks
+Accidentally skipping legitimate falsy values or weakening required snapshot persistence.
+
+## Test Plan
+Add focused regressions:
+- employee lookup source has no Hoshin values;
+- existing Department_Hoshin/Section_Hoshin values are not overwritten with undefined;
+- no field in assignment receives undefined from absent optional source values;
+- Routing_Topology persists and reads back as `M1_G1`;
+- 0118 becomes verified only after persistence passes;
+- Profile_Code remains `PROF_STAFF_CHIEF` and 70/30;
+- existing missing-field / set-throw / no-op / scoring zero-duplicate / workflow tests remain green;
+- classic bundle parse + source/dist exactness;
+- full `npm test` PASS.
+
+## Rollback Plan
+Repository-only rollback to starting reviewed HEAD if tests fail. No Kintone rollback because this task has zero Kintone writes.
 
 # CREDIT-SAVING RULE
 
-Do NOT perform broad discovery. Do NOT run browser smoke. Do NOT rerun npm tests. Do NOT inspect unrelated project history. Do NOT call Kintone.
+Do NOT perform broad discovery.
+Do NOT call Kintone.
+Do NOT run browser smoke.
+Do NOT inspect unrelated project history.
+Read only the two source/test files named above plus existing build command as needed.
+Make the minimum code change, run targeted tests first, then one full `npm test`, rebuild dist once, verify exactness, push and STOP.
 
-Use only:
-- local shell/history/transcript generated during R8;
-- the exact R8 backup folder and manifest;
-- any temporary execution script/log still present;
-- Git commit `40f4245...` only as needed for correlation.
+# REQUIRED EVIDENCE
 
-If exact chronology cannot be proven from local evidence, report `UNVERIFIABLE`; do not reconstruct from assumptions.
-
-# REQUIRED OUTPUT
-
-Append one concise R9 evidence block to `project-docs/AI_REVIEW_PACKAGE.md` only if facts are proven. Update living status docs only if needed. No source/dist/test changes.
-
-Required fields:
-
-`M10L_D_R9 = COMPLETE / PARTIAL / BLOCKED`
-`FIRST_R8_KINTONE_WRITE = exact method + timestamp / UNVERIFIABLE`
-`SIX_FIELDS_ADD_OPERATION = exact method + timestamp / UNVERIFIABLE`
-`SIX_FIELDS_EXISTED_IN_PREVIEW_BEFORE_R8_FIRST_WRITE = YES/NO/UNVERIFIABLE`
-`PREVIEW_REVISION_31_CAUSE = exact / UNVERIFIABLE`
-`BACKUP_CAPTURED_BEFORE_FIRST_R8_WRITE = YES/NO/UNVERIFIABLE`
-`APP794_ADD_FIELDS_POST_COUNT_CORRECTED = actual / UNVERIFIABLE`
-`CSS_REUPLOAD_CAUSE = exact / UNVERIFIABLE`
-`CSS_FILEKEY_CHANGE_WAS_REQUIRED = YES/NO/UNVERIFIABLE`
-`R8_SCOPE_DEVIATION = NONE / CSS_REUPLOAD / PREWRITE_GATE / MULTIPLE / UNVERIFIABLE`
-`LIVE_APP794_REVISION_AT_R9_START = 32 (from R8 evidence; DO NOT GET live)`
+`M10L_D_R10 = COMPLETE / PARTIAL / BLOCKED`
+`ROOT_CAUSE_HOSHIN_UNDEFINED = CONFIRMED`
+`UNDEFINED_FIELD_MUTATION_GUARD = PASS/FAIL`
+`HOSHIN_EXISTING_VALUE_PRESERVED = PASS/FAIL`
+`ROUTING_TOPOLOGY_READBACK_TEST = PASS/FAIL`
+`0118_PROFILE_REGRESSION = PASS/FAIL`
+`SOURCE_CHANGED = YES/NO`
+`DIST_CHANGED = YES/NO`
+`SOURCE_DIST_EXACTNESS = PASS/FAIL`
+`CLASSIC_BUNDLE_PARSE = PASS/FAIL`
+`npm test = actual / PASS|FAIL`
+`GIT_DIFF_CHECK = PASS/FAIL`
 `KINTONE_CALLS_THIS_TASK = 0`
 `KINTONE_WRITES_THIS_TASK = 0`
-`SRC_CHANGE_COUNT = 0`
-`DIST_CHANGE_COUNT = 0`
-`TEST_CHANGE_COUNT = 0`
-`GIT_DIFF_CHECK = PASS/FAIL`
+`APP794_DEPLOY_THIS_TASK = 0`
 `GIT_PUSH_SYNC = PASS/FAIL`
 `NEXT_ACTION = CHATGPT REVIEW`
 
-Commit/push same branch and STOP.
+Push same branch and STOP.
