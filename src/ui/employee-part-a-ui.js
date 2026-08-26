@@ -8,6 +8,7 @@ import { ValidationEngine } from '../validation/validation-engine.js';
 
 export class EmployeePartAUI {
   constructor(options = {}) {
+    EmployeePartAUI.lastInstance = this;
     this.container = options.container;
     this.record = options.record || {};
     this.stage = options.stage || BUSINESS_STAGES.READ_ONLY;
@@ -808,21 +809,10 @@ export class EmployeePartAUI {
           return;
         }
 
-        // Instantly reset verified state and clear stale snapshot before lookup
-        this.isEmployeeVerified = false;
-        if (typeof this.onEmployeeCodeChanged === 'function') {
-          this.onEmployeeCodeChanged(code);
-        }
-
         if (msgEl) msgEl.innerHTML = '<span style="color: #0369a1;">กำลังค้นหาข้อมูลจาก App 53 และตรวจสอบสิทธิ์... / Searching App 53 & verifying access...</span>';
         try {
-          await this.onLookupEmployee(code);
-          this.isEmployeeVerified = true;
-          this.clearValidationErrors();
-          this.render();
+          await this.executeLookup(code);
         } catch (err) {
-          this.isEmployeeVerified = false;
-          this.render();
           const newMsgEl = this.root ? this.root.querySelector('#mbo-lookup-msg') : null;
           if (newMsgEl) {
             const formattedMsg = String(err.message || '').replace(/\n/g, '<br/>');
@@ -830,6 +820,25 @@ export class EmployeePartAUI {
           }
         }
       });
+    }
+  }
+
+  async executeLookup(empCode) {
+    const code = String(empCode || '').trim();
+    if (!code) return;
+    this.isEmployeeVerified = false;
+    if (typeof this.onEmployeeCodeChanged === 'function') {
+      this.onEmployeeCodeChanged(code);
+    }
+    try {
+      await this.onLookupEmployee(code);
+      this.isEmployeeVerified = true;
+      this.clearValidationErrors();
+      this.render();
+    } catch (err) {
+      this.isEmployeeVerified = false;
+      this.render();
+      throw err;
     }
   }
 

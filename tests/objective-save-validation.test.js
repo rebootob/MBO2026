@@ -306,17 +306,15 @@ test('M10L-R3: Runtime submit hook proceeds (returns event) for valid existing E
   assert.equal(res, submitEvent, 'Valid Edit submit must return event object when UI is verified and validation passes');
 });
 
-test('M10L-D-R2: Employee 0118 Technical Service Chief lookup populates Profile_Code on record when absent initially', async () => {
+test('M10L-D-R3: Employee 0118 Technical Service Chief lookup populates schema-backed Profile_Code on record when field exists', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
   const submitHook = kintoneHandlers['app.record.create.submit'];
   assert.ok(typeof showHook === 'function');
 
-  // Create record with NO Profile_Code initially
-  const rawRecord = createMockRecord();
-  delete rawRecord.Profile_Code;
-  assert.equal(rawRecord.Profile_Code, undefined);
+  // Record with Profile_Code field existing (blank initially)
+  const rawRecord = createMockRecord({ Profile_Code: { value: '' } });
+  assert.equal(rawRecord.Profile_Code.value, '');
 
-  // Mock kintone API responses for App 53 (Employee 0118), App 795 (Routing), App 796 (Scoring)
   const mockApi = async (path, method, body) => {
     if (path.includes('app/form/fields')) return { properties: {} };
     if (path.includes('/k/v1/records') || path.includes('records.json')) {
@@ -379,32 +377,99 @@ test('M10L-D-R2: Employee 0118 Technical Service Chief lookup populates Profile_
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
 
-  // Execute lookup via onLookupEmployee option passed to UI instance
-  const uiOptions = showEvent.record._uiOptions || {};
-  assert.ok(typeof uiOptions.onLookupEmployee === 'function');
+  const ui = EmployeePartAUI.lastInstance;
+  assert.ok(ui, 'EmployeePartAUI instance must be captured via static lastInstance seam');
+  assert.equal(ui.isEmployeeVerified, false, 'Create UI must start unverified');
 
-  await uiOptions.onLookupEmployee('0118');
+  // Execute lookup
+  await ui.executeLookup('0118');
 
-  // Verify Profile_Code is now populated on record object
-  assert.ok(rawRecord.Profile_Code);
+  // Verify Profile_Code and routing fields are populated on existing record properties
   assert.equal(rawRecord.Profile_Code.value, 'PROF_STAFF_CHIEF');
   assert.equal(rawRecord.Routing_Topology.value, 'M1_G1');
   assert.deepEqual(rawRecord.Requester_User.value, [{ code: 'req1' }]);
+  assert.equal(ui.isEmployeeVerified, true, 'isEmployeeVerified must become true after successful lookup');
 
-  // Simulate lookup completion setting active UI verified status
-  const activeUi = rawRecord._uiInstance;
-  if (activeUi) activeUi.isEmployeeVerified = true;
+  // Verify record object contains ZERO test pollution properties
+  assert.equal(rawRecord._uiOptions, undefined, 'Business record payload must not contain _uiOptions');
+  assert.equal(rawRecord._uiInstance, undefined, 'Business record payload must not contain _uiInstance');
 
-  // Execute create submit hook and verify it proceeds (validation passes)
+  // Execute submit hook and verify it proceeds
   const submitEvent = { type: 'app.record.create.submit', record: rawRecord };
   const res = await submitHook(submitEvent);
-  assert.equal(res, submitEvent, 'Create submit hook must proceed when lookup populated Profile_Code and validation passes');
+  assert.equal(res, submitEvent, 'Create submit hook must proceed when lookup populated schema-backed Profile_Code');
 });
 
-test('M10L-D-R2: Employee lookup fails closed if scoring query finds 0 published configs', async () => {
+test('M10L-D-R3: Employee lookup fails closed (isEmployeeVerified = false) when required Profile_Code field is ABSENT from record schema', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
+  const submitHook = kintoneHandlers['app.record.create.submit'];
+  assert.ok(typeof showHook === 'function');
+
+  // Record with NO Profile_Code field on Kintone form schema
   const rawRecord = createMockRecord();
   delete rawRecord.Profile_Code;
+  assert.equal(rawRecord.Profile_Code, undefined);
+
+  const mockApi = async (path, method, body) => {
+    if (path.includes('app/form/fields')) return { properties: {} };
+    if (path.includes('app=53') || body?.app === 53 || body?.query?.includes('emp_text')) {
+      return {
+        records: [{
+          emp_text: { value: '0118' },
+          Text_2: { value: 'Technical Service Chief' },
+          Drop_down: { value: 'TMS1' }
+        }]
+      };
+    }
+    if (path.includes('app=795') || body?.app === 795 || body?.query?.includes('Section_Code')) {
+      return {
+        records: [{
+          Section_Code: { value: 'TMS1' },
+          Requester_User: { value: [{ code: 'req1' }] },
+          Routing_Topology: { value: 'M1_G1' }
+        }]
+      };
+    }
+    if (path.includes('app=796') || body?.app === 796 || body?.query?.includes('Profile_Code')) {
+      return {
+        records: [{
+          Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+          Fiscal_Year: { value: 'FY2026' }
+        }]
+      };
+    }
+    return { records: [] };
+  };
+  mockApi.url = (path) => path;
+  globalThis.kintone.api = mockApi;
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+
+  const ui = EmployeePartAUI.lastInstance;
+  assert.ok(ui);
+
+  // Execute lookup and verify it rejects due to missing Profile_Code field on Kintone schema
+  await assert.rejects(
+    async () => ui.executeLookup('0118'),
+    err => err.message.includes('ไม่พบช่องข้อมูล Profile_Code ในแบบฟอร์ม (App 794)')
+  );
+
+  // Verify Profile_Code property was NOT synthetically created on rawRecord
+  assert.equal(rawRecord.Profile_Code, undefined, 'Synthetic Profile_Code property must NOT be created on record');
+
+  // Verify form remains unverified
+  assert.equal(ui.isEmployeeVerified, false, 'isEmployeeVerified must remain false when schema field is absent');
+
+  // Verify submit hook blocks save (returns false)
+  const submitEvent = { type: 'app.record.create.submit', record: rawRecord };
+  const res = await submitHook(submitEvent);
+  assert.equal(res, false, 'Submit hook must return false when UI is unverified');
+});
+
+test('M10L-D-R3: Employee lookup fails closed if App 796 scoring query finds 0 published configs', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  const rawRecord = createMockRecord({ Profile_Code: { value: '' } });
 
   const mockApi = async (path, method, body) => {
     if (path.includes('app/form/fields')) return { properties: {} };
@@ -436,18 +501,18 @@ test('M10L-D-R2: Employee lookup fails closed if scoring query finds 0 published
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
-  const uiOptions = showEvent.record._uiOptions || {};
+  const ui = EmployeePartAUI.lastInstance;
 
   await assert.rejects(
-    async () => uiOptions.onLookupEmployee('0118'),
+    async () => ui.executeLookup('0118'),
     err => err.message.includes('ไม่พบการตั้งค่า Scoring Master')
   );
+  assert.equal(ui.isEmployeeVerified, false);
 });
 
-test('M10L-D-R2: Employee lookup fails closed if scoring query finds duplicate published configs', async () => {
+test('M10L-D-R3: Employee lookup fails closed if App 796 scoring query finds duplicate published configs', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
-  const rawRecord = createMockRecord();
-  delete rawRecord.Profile_Code;
+  const rawRecord = createMockRecord({ Profile_Code: { value: '' } });
 
   const mockApi = async (path, method, body) => {
     if (path.includes('app/form/fields')) return { properties: {} };
@@ -484,10 +549,11 @@ test('M10L-D-R2: Employee lookup fails closed if scoring query finds duplicate p
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
-  const uiOptions = showEvent.record._uiOptions || {};
+  const ui = EmployeePartAUI.lastInstance;
 
   await assert.rejects(
-    async () => uiOptions.onLookupEmployee('0118'),
+    async () => ui.executeLookup('0118'),
     err => err.message.includes('พบการตั้งค่า Scoring Master (App 796) ซ้ำซ้อน')
   );
+  assert.equal(ui.isEmployeeVerified, false);
 });

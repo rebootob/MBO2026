@@ -239,25 +239,22 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
         Object.entries(fieldsToSync).forEach(([k, val]) => {
           if (record[k]) {
             record[k].value = val;
-          } else {
-            const fieldType = Array.isArray(val) ? 'USER_SELECT' : 'SINGLE_LINE_TEXT';
-            record[k] = { type: fieldType, value: val };
           }
         });
 
-        // Assert mandatory snapshot prerequisites before employee verification succeeds
+        // Assert mandatory snapshot prerequisites exist in Kintone form schema before verification succeeds
         const profileVal = record.Profile_Code?.value;
         const routingVal = record.Routing_Topology?.value;
         const requesterVal = record.Requester_User?.value;
 
-        if (!profileVal || typeof profileVal !== 'string' || !profileVal.trim()) {
-          throw new Error(`ไม่พบข้อมูล Profile Code ของพนักงาน (${empProfile.Employee_Position})\nEmployee scoring profile code (${profileVal || 'missing'}) could not be persisted into record.`);
+        if (!record.Profile_Code || typeof profileVal !== 'string' || !profileVal.trim()) {
+          throw new Error(`ไม่พบช่องข้อมูล Profile_Code ในแบบฟอร์ม (App 794)\nField Profile_Code does not exist on App 794 form schema for position ${empProfile.Employee_Position}. Please contact HR / Administrator.`);
         }
-        if (!routingVal || typeof routingVal !== 'string' || !routingVal.trim()) {
-          throw new Error('ไม่พบข้อมูล Routing Topology ในระเบียน\nRouting Topology could not be persisted into record.');
+        if (!record.Routing_Topology || typeof routingVal !== 'string' || !routingVal.trim()) {
+          throw new Error('ไม่พบช่องข้อมูล Routing_Topology ในแบบฟอร์ม (App 794)\nField Routing_Topology does not exist on App 794 form schema. Please contact HR / Administrator.');
         }
-        if (!Array.isArray(requesterVal) || requesterVal.length === 0) {
-          throw new Error('ไม่พบข้อมูล Requester User ในระเบียน\nRequester User could not be persisted into record.');
+        if (!record.Requester_User || !Array.isArray(requesterVal) || requesterVal.length === 0) {
+          throw new Error('ไม่พบช่องข้อมูล Requester_User ในแบบฟอร์ม (App 794)\nField Requester_User does not exist on App 794 form schema. Please contact HR / Administrator.');
         }
 
         // Push directly to Kintone Form State
@@ -265,9 +262,7 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
       }
     };
 
-    record._uiOptions = options;
     const ui = new EmployeePartAUI(options);
-    record._uiInstance = ui;
     activeUiInstance = ui;
 
     try {
