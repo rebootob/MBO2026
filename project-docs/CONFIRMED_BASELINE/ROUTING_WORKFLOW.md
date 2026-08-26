@@ -23,6 +23,25 @@ Live read-only discovery on App795 confirmed all 17 active routing rows currentl
 
 This is the confirmed current live state, not permission to remove generic M2/G2 support from source architecture. Any future activation of M2/G2 requires separately reviewed App795 data plus compatible App794 Process Management support before use.
 
+## User-Facing Route Semantics — Confirmed 2026-08-26
+
+- Technical names such as `Manager_User`, `GM_User`, `First_Manager_User`, `M1_G1`, and `M1_M2_G1` are compatibility/storage details and must not become the business-facing evaluator role name.
+- User-facing evaluator route slots are ordinal: `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser` with Thai equivalents.
+- Do not infer a person's organizational title from the slot name. A slot may be occupied by Manager, GM, VP, President, or another approved evaluator.
+- Current App795 routing is section/team based. Therefore UI must not label `M1_G1` or another topology as belonging to a particular position unless a separately reviewed routing rule establishes it.
+- Business-facing Preview should use understandable route-scenario names and move raw topology codes to secondary Technical Details.
+
+## Confirmed Future Executive Routing Target — NOT YET IMPLEMENTED
+
+User-confirmed target on 2026-08-26:
+
+- For executive evaluation routing of **DGM / GM / VP**, the intended business route is **direct to President as the single evaluator/approver route member**.
+- User-facing representation is still `ผู้ประเมินลำดับที่ 1 / 1st Appraiser`; `President` may appear only as the resolved person's position metadata/name context, not as the route-slot label.
+- This target is **not currently implemented** in App795/App794 Process Management and must not be represented as live/runtime-ready.
+- During UI closure it may appear only as `Executive Direct — 1 Appraiser / Preview Only — Routing Pending`.
+- Before runtime implementation, reconcile App795 route data, App794 Process compatibility, App796 `Expected_Appraiser_Count`/scoring rules, and affected profile mappings. Any conflict must fail closed and receive a separate reviewed change plus fresh Kintone authorization.
+- Do not mutate the current 17 active App795 rows under the UI-only sprint.
+
 ## Confirmed Retired Section Rule
 
 - `TMT3` is a retired/obsolete section code and is no longer in use.
@@ -61,6 +80,20 @@ Mid-Year:
 
 Final Evaluation:
 `10 Mid-Year Completed -> 11 Employee Self Evaluation -> 13 Manager Final Evaluation -> 14 GM Final Evaluation -> 15 HR Final Check -> 16 Completed`
+
+### Confirmed Phase-Boundary Start Actions
+
+Current frozen workflow source assigns both boundary states to `Requester_User`:
+- `05 Objective Approved` -> assignee `Requester_User`; native Process action `Start Mid-Year` transitions `05 -> 06`.
+- `10 Mid-Year Completed` -> assignee `Requester_User`; native Process action `Start Self Evaluation` transitions `10 -> 11`.
+
+User-facing rule confirmed on 2026-08-26:
+- HR controls the Start/End date windows for each macro phase from App800 HR Control Center / Dashboard.
+- HR calendar dates do not themselves authorize or silently execute a Process transition.
+- In current V1, Requester/Employee is the workflow actor who clicks the native Kintone start action when the configured next-phase window is open.
+- Before the window opens, App794 shows a locked/waiting boundary with opening date/countdown.
+- When the window opens, App794 clearly tells Requester that the phase is ready and which native Kintone Process action must be used.
+- Automatic date-based Process transitions are out of scope and require separate architecture/security review if ever requested.
 
 ### First-Manager states present in Process Management
 
