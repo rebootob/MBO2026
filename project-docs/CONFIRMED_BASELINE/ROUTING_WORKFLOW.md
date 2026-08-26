@@ -43,13 +43,13 @@ This is the confirmed current live state, not permission to remove generic M2/G2
 
 TMG2 has no Admin route in the confirmed baseline.
 
-## App794 Workflow Baseline — Current Live Process (R12A / R12C Count Reconciliation)
-
-R12A live read-only discovery confirmed the App794 workflow matrix shown in the review evidence. Independent R12C pre-write read-back later counted the same configuration as **16 Process Management states and 28 actions**. Recounting the R12A matrix confirms it contains 28 action rows; the earlier `27 actions` wording was a Control Plane counting/documentation error, not evidence of a live Process Management change.
+## App794 Workflow Baseline — Current Live Process
 
 Canonical current count:
 - Process states: **16**
 - Process actions/transitions: **28**
+
+The earlier `27 actions` wording was a Control Plane counting/documentation error; independent recount and live read-back confirm 28.
 
 ### Current active `M1_G1` path
 
@@ -64,12 +64,12 @@ Final Evaluation:
 
 ### First-Manager states present in Process Management
 
-App794 also contains these First-Manager states/actions:
+App794 also contains:
 - `02 First Manager Objective Review`
 - `07 First Manager Mid-Year Review`
 - `12 First Manager Final Evaluation`
 
-They are not applicable to the current 17 active `M1_G1` routes because `First_Manager_User` is empty. Runtime must not allow an `M1_G1` record to enter a First-Manager action/path. Future M2 activation requires a reviewed compatible route and UAT before use.
+They are not applicable to the current 17 active `M1_G1` routes because `First_Manager_User` is empty. Runtime must not allow an `M1_G1` record to enter a First-Manager path. Future M2 activation requires reviewed compatible routing and UAT.
 
 ### Return / resubmit baseline
 
@@ -77,30 +77,76 @@ They are not applicable to the current 17 active `M1_G1` routes because `First_M
 - Mid-Year review return from Manager or GM -> `06 Employee Mid-Year`.
 - Final review return from Manager or GM -> `11 Employee Self Evaluation`.
 - HR final return -> `11 Employee Self Evaluation`.
-- Resubmission then follows the topology-appropriate route again.
+- Resubmission follows the topology-appropriate route again.
 
-## HR Final Check Native Authorization — App794 Sandbox (R12D-A / R12D-D)
+## Confirmed Technical Administrator Role — `admin-form`
 
-R12D-A read-only audit confirmed that App794 originally had no native authorization boundary at `15 HR Final Check`: status 15 used `assignee.type = ONE` with an empty assignee entities list `[]`, the `Complete` and `Return Final HR` actions had no restrictive action filter, App/Record/Field ACL did not create an HR-only boundary, and deployed JavaScript had no HR/current-actor authorization guard.
+User-confirmed business rule:
 
-R12D-D then performed an explicitly authorized, controlled native Process Management repair on **App794 Sandbox only**. Confirmed post-deploy state:
-- App794 live/preview revision: `36 / 36`.
-- Process structure remains exactly **16 states / 28 actions**.
-- `15 HR Final Check.assignee.type = ONE` remains unchanged.
-- `15 HR Final Check.assignee.entities` is now exactly the controlled Sandbox user `USER: admin-form`.
-- Production HR group `Manager HR_x52y75` is **not** present in the App794 Sandbox Process payload.
-- `Complete -> 16 Completed` is unchanged.
-- `Return Final HR -> 11 Employee Self Evaluation` is unchanged.
-- All non-target Process semantics match the pre-write snapshot.
-- Existing records at `15 HR Final Check` were `0` before and after the repair, so there is no legacy status-15 record carrying the prior unassigned semantics.
-- R12D-D executed no record transition, no workflow notification, and no record/schema/ACL/customization write.
+- `admin-form` is **not part of the normal MBO workflow**.
+- `admin-form` is a technical administrator identity used only for inspection, debugging, troubleshooting, controlled repair, and verification.
+- `admin-form` has **no business authority** to approve, return, complete, submit, or otherwise act on behalf of Requester, Manager, GM, or HR.
+- `admin-form` must never be represented as a workflow approver or as having delegated approval authority.
+- `admin-form` may inspect/debug workflow state but must not execute positive or negative business workflow UAT actions.
 
-Confirmed App794 Sandbox classification after R12D-D:
-`NATIVE_STATUS15_AUTHORIZATION_BOUNDARY = CONTROLLED_SANDBOX_USER_ADMIN_FORM`.
+Canonical classification:
 
-This resolves the prior **App794 Sandbox** missing-native-assignee blocker sufficiently to proceed to separately authorized isolated Workflow UAT. It does **not** certify the production HR mapping. Production/go-live configuration must map the same native Process boundary to the separately confirmed production HR entity under a later reviewed change; no real-HR workflow or notification test is required solely for parity proof.
+`ADMIN_FORM_ROLE = TECHNICAL_ADMIN_ONLY`
 
-Future isolated UAT must preserve `REAL_USER_IMPACT = 0`; no real HR/manager/GM workflow or notification test is permitted.
+`ADMIN_FORM_WORKFLOW_AUTHORITY = NONE`
+
+## HR Final Check Native Authorization — App794 Sandbox
+
+R12D-A confirmed that App794 originally had no native authorization boundary at `15 HR Final Check`: status15 used `assignee.type = ONE` with an empty entities list `[]`, actions had no restrictive filter, ACLs did not establish an HR-only boundary, and runtime JavaScript did not establish HR actor authorization.
+
+R12D-D then performed an explicitly authorized controlled Sandbox Process repair:
+- live/preview revision became `36 / 36`;
+- Process remained exactly **16 states / 28 actions**;
+- `15 HR Final Check.assignee.type = ONE` remained unchanged;
+- status15 assignee entity changed from empty `[]` to `USER: admin-form`;
+- production HR group `Manager HR_x52y75` was not added to Sandbox;
+- `Complete -> 16 Completed` unchanged;
+- `Return Final HR -> 11 Employee Self Evaluation` unchanged;
+- all non-target Process semantics matched the pre-write snapshot;
+- existing records at status15 were `0` before and after;
+- no record transition, notification, record/schema/ACL/customization write occurred.
+
+After the user's explicit clarification of `admin-form` authority, the R12D-D status15 mapping is **not a valid business HR approval mapping**. It is retained only as a temporary Sandbox technical lock to avoid reverting to the prior open/empty native assignee state.
+
+Canonical current classification:
+
+`STATUS15_SANDBOX_CURRENT_ASSIGNEE = USER: admin-form`
+
+`STATUS15_SANDBOX_CURRENT_CLASSIFICATION = TEMPORARY_SANDBOX_TECHNICAL_LOCK`
+
+`STATUS15_BUSINESS_HR_AUTHORIZATION_CERTIFIED = NO`
+
+While this temporary lock remains:
+- `admin-form` must not execute `Complete` or `Return Final HR`;
+- Workflow Functional UAT must not certify status15 behavior;
+- before isolated UAT, status15 must be remapped under a separately authorized controlled change to a **role-correct controlled UAT_HR identity**;
+- that remap must retain type `ONE`, preserve 16/28 Process semantics, require fresh backup/read-back, and require zero existing status15 records before write;
+- no real HR user may be used solely to prove the boundary.
+
+Production/go-live configuration remains a separate gate and must map the native status15 boundary to the approved production HR entity under a later reviewed change. No real-HR workflow or notification test is required solely for parity proof.
+
+## Isolated Workflow UAT Role-Separation Rule
+
+Future isolated `M1_G1` Workflow UAT must use controlled non-business test identities representing the workflow roles and must preserve `REAL_USER_IMPACT = 0`.
+
+Required logical roles:
+- `UAT_REQUESTER`
+- `UAT_MANAGER`
+- `UAT_GM`
+- `UAT_HR`
+
+`admin-form` is excluded from all four workflow roles.
+
+Prefer distinct controlled identities so native assignee/role boundaries are genuinely exercised. A smaller identity set may be accepted only after explicit review showing role separation remains meaningful; roles must never be collapsed merely for convenience.
+
+A controlled non-HR workflow identity must be used for the status15 negative test; `admin-form` must not be the negative tester.
+
+No real employee/Manager/GM/HR workflow or notification test is permitted solely for certification.
 
 ## Runtime Safety
 
@@ -111,11 +157,12 @@ Future isolated UAT must preserve `REAL_USER_IMPACT = 0`; no real HR/manager/GM 
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
-- App794 Sandbox `15 HR Final Check` is natively assigned to controlled user `admin-form`; isolated UAT must prove positive assignee behavior and negative non-assignee denial before Workflow Functional UAT can PASS.
-- Production HR entity mapping remains a separate pre-go-live configuration/parity gate and must not be tested by sending a real workflow/notification to HR solely for certification.
+- App794 Sandbox status15 currently has only a temporary technical lock; business HR authorization remains unverified until role-correct controlled UAT-HR mapping and isolated UAT pass.
+- `admin-form` is technical-admin-only and has no business approval authority.
+- Production HR entity mapping remains a separate pre-go-live configuration/parity gate.
 - Shared Kintone account identity must never be described as individual employee authentication.
 - UI hiding alone is not an authorization boundary.
 
 ## Change Rule
 
-Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, or HR Final Check authorization boundary must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
+Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, or HR Final Check authorization boundary must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
