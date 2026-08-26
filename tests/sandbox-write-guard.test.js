@@ -143,10 +143,20 @@ test('assertScoringMasterSupersessionAuthorization enforces strict security gate
     /SCORING SUPERSESSION BLOCKED: One-time write window is CLOSED/
   );
 
-  // 9. missing/malformed backup evidence
+  // 9a. missing backupEvidence entirely (even with legacy prewriteBackupVerified=true)
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A10', backupEvidence: null }, { ...validReq }),
-    /SCORING SUPERSESSION BLOCKED: Backup evidence must be a plain object/
+    () => {
+      const authWithoutBackup = { ...validAuth, authorizationId: 'A10a', prewriteBackupVerified: true };
+      delete authWithoutBackup.backupEvidence;
+      assertScoringMasterSupersessionAuthorization(authWithoutBackup, { ...validReq });
+    },
+    /SCORING SUPERSESSION BLOCKED: Structured backup evidence object is required/
+  );
+
+  // 9b. malformed backup evidence
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A10b', backupEvidence: null }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Structured backup evidence object is required/
   );
 
   // 10. backup app mismatch
@@ -161,27 +171,77 @@ test('assertScoringMasterSupersessionAuthorization enforces strict security gate
     /SCORING SUPERSESSION BLOCKED: Backup sha256 must be 64-char lowercase hex string/
   );
 
-  // 12. wrong predecessor ID / revision / master key / version
+  // 12a. missing authConfig.contractId
+  assert.throws(
+    () => {
+      const authNoContract = { ...validAuth, authorizationId: 'A12a' };
+      delete authNoContract.contractId;
+      assertScoringMasterSupersessionAuthorization(authNoContract, { ...validReq });
+    },
+    /SCORING SUPERSESSION BLOCKED: Contract ID must be exactly WP002C_SUPERSEDE_V1/
+  );
+
+  // 12b. wrong authConfig.contractId
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A12b', contractId: 'WRONG_AUTH_CONTRACT' }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Contract ID must be exactly WP002C_SUPERSEDE_V1/
+  );
+
+  // 12c. missing request contractId
+  assert.throws(
+    () => {
+      const reqNoContract = { ...validReq };
+      delete reqNoContract.contractId;
+      assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A12c' }, reqNoContract);
+    },
+    /SCORING SUPERSESSION BLOCKED: Contract ID must be exactly WP002C_SUPERSEDE_V1/
+  );
+
+  // 13. wrong predecessor ID / revision / master key / version
   assert.throws(
     () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A13' }, { ...validReq, predecessorRecordId: 'abc' }),
     /SCORING SUPERSESSION BLOCKED: Predecessor and new record IDs must be positive safe integer strings/
   );
 
-  // 13. wrong new ID / revision / master key / version
+  // 14. wrong new ID / revision / master key / version
   assert.throws(
     () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A14' }, { ...validReq, newMasterRecordKey: 'PROF_DGM::v1.0.0' }),
     /SCORING SUPERSESSION BLOCKED: Predecessor and new master record keys must be different/
   );
 
-  // 14. same record ID
+  // 15. same record ID
   assert.throws(
     () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A15' }, { ...validReq, predecessorRecordId: '10', newRecordId: '10' }),
     /SCORING SUPERSESSION BLOCKED: Predecessor record ID and new record ID must be different/
   );
 
-  // 15. wrong expected old/new statuses
+  // 16. missing each expected status field
+  for (const field of ['expectedPredecessorCurrentStatus', 'expectedPredecessorNextStatus', 'expectedNewCurrentStatus', 'expectedNewNextStatus']) {
+    assert.throws(
+      () => {
+        const reqMissingStatus = { ...validReq };
+        delete reqMissingStatus[field];
+        assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: `A16_${field}` }, reqMissingStatus);
+      },
+      /SCORING SUPERSESSION BLOCKED: Expected/
+    );
+  }
+
+  // 17. wrong each expected status field
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A16' }, { ...validReq, expectedPredecessorNextStatus: 'PUBLISHED' }),
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A17a' }, { ...validReq, expectedPredecessorCurrentStatus: 'DRAFT' }),
+    /SCORING SUPERSESSION BLOCKED: Expected predecessor current status must be PUBLISHED/
+  );
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A17b' }, { ...validReq, expectedPredecessorNextStatus: 'PUBLISHED' }),
     /SCORING SUPERSESSION BLOCKED: Expected predecessor next status must be SUPERSEDED/
+  );
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A17c' }, { ...validReq, expectedNewCurrentStatus: 'PUBLISHED' }),
+    /SCORING SUPERSESSION BLOCKED: Expected new current status must be VALIDATED/
+  );
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A17d' }, { ...validReq, expectedNewNextStatus: 'SUPERSEDED' }),
+    /SCORING SUPERSESSION BLOCKED: Expected new next status must be PUBLISHED/
   );
 });

@@ -283,10 +283,7 @@ export function assertScoringMasterSupersessionAuthorization(authConfig, request
     throw new Error('SCORING SUPERSESSION BLOCKED: Stage must be exactly STAGE_4D_SUPERSEDE_AND_PUBLISH.');
   }
 
-  if (requestConfig.contractId !== WP002C_SUPERSEDE_CONTRACT_ID) {
-    throw new Error('SCORING SUPERSESSION BLOCKED: Contract ID must be exactly WP002C_SUPERSEDE_V1.');
-  }
-  if (authConfig.contractId !== undefined && authConfig.contractId !== WP002C_SUPERSEDE_CONTRACT_ID) {
+  if (authConfig.contractId !== WP002C_SUPERSEDE_CONTRACT_ID || requestConfig.contractId !== WP002C_SUPERSEDE_CONTRACT_ID) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Contract ID must be exactly WP002C_SUPERSEDE_V1.');
   }
 
@@ -310,38 +307,34 @@ export function assertScoringMasterSupersessionAuthorization(authConfig, request
     throw new Error('SCORING SUPERSESSION BLOCKED: Explicit user authorization is required.');
   }
 
-  // Backup evidence check
-  if (authConfig.backupEvidence !== undefined) {
-    const backup = authConfig.backupEvidence;
-    if (!backup || typeof backup !== 'object' || Array.isArray(backup)) {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup evidence must be a plain object.');
-    }
-    if (backup.appId !== WP002C_SCORING_MASTER_APP_ID) {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup App ID mismatch.');
-    }
-    if (backup.appName !== WP002C_APPROVED_APP_NAME) {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup App name mismatch.');
-    }
-    if (typeof backup.snapshotScope !== 'string' || backup.snapshotScope.trim() === '') {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup snapshotScope must be non-empty string.');
-    }
-    if (backup.captured !== true || backup.verified !== true || backup.retainedUntilIndependentReview !== true) {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup must be captured, verified, and retained.');
-    }
-    if (typeof backup.artifactPath !== 'string' || backup.artifactPath.trim() === '') {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup artifactPath must be non-empty string.');
-    }
-    if (typeof backup.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(backup.sha256)) {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup sha256 must be 64-char lowercase hex string.');
-    }
-    if (typeof backup.capturedAt !== 'string' || backup.capturedAt.trim() === '') {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup capturedAt must be valid ISO-8601 string.');
-    }
-    if (typeof backup.recordCount !== 'number' || !Number.isSafeInteger(backup.recordCount) || backup.recordCount < 0) {
-      throw new Error('SCORING SUPERSESSION BLOCKED: Backup recordCount must be a non-negative integer.');
-    }
-  } else if (authConfig.prewriteBackupVerified !== true) {
-    throw new Error('SCORING SUPERSESSION BLOCKED: Pre-write backup evidence must be verified.');
+  // Mandatory structured backup evidence check
+  const backup = authConfig.backupEvidence;
+  if (!backup || typeof backup !== 'object' || Array.isArray(backup)) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Structured backup evidence object is required.');
+  }
+  if (backup.appId !== WP002C_SCORING_MASTER_APP_ID) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup App ID mismatch.');
+  }
+  if (backup.appName !== WP002C_APPROVED_APP_NAME) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup App name mismatch.');
+  }
+  if (typeof backup.snapshotScope !== 'string' || backup.snapshotScope.trim() === '') {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup snapshotScope must be non-empty string.');
+  }
+  if (backup.captured !== true || backup.verified !== true || backup.retainedUntilIndependentReview !== true) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup must be captured, verified, and retained.');
+  }
+  if (typeof backup.artifactPath !== 'string' || backup.artifactPath.trim() === '') {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup artifactPath must be non-empty string.');
+  }
+  if (typeof backup.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(backup.sha256)) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup sha256 must be 64-char lowercase hex string.');
+  }
+  if (typeof backup.capturedAt !== 'string' || backup.capturedAt.trim() === '' || isNaN(new Date(backup.capturedAt).getTime())) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup capturedAt must be valid ISO-8601 string.');
+  }
+  if (typeof backup.recordCount !== 'number' || !Number.isSafeInteger(backup.recordCount) || backup.recordCount < 0) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup recordCount must be a non-negative integer.');
   }
 
   const authorizationId = authConfig.authorizationId;
@@ -398,16 +391,16 @@ export function assertScoringMasterSupersessionAuthorization(authConfig, request
     throw new Error('SCORING SUPERSESSION BLOCKED: Predecessor version and new version must be different.');
   }
 
-  if (expectedPredecessorCurrentStatus !== undefined && expectedPredecessorCurrentStatus !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+  if (expectedPredecessorCurrentStatus !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Expected predecessor current status must be PUBLISHED.');
   }
-  if (expectedPredecessorNextStatus !== undefined && expectedPredecessorNextStatus !== CONFIG_LIFECYCLE_STATUS.SUPERSEDED) {
+  if (expectedPredecessorNextStatus !== CONFIG_LIFECYCLE_STATUS.SUPERSEDED) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Expected predecessor next status must be SUPERSEDED.');
   }
-  if (expectedNewCurrentStatus !== undefined && expectedNewCurrentStatus !== CONFIG_LIFECYCLE_STATUS.VALIDATED) {
+  if (expectedNewCurrentStatus !== CONFIG_LIFECYCLE_STATUS.VALIDATED) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Expected new current status must be VALIDATED.');
   }
-  if (expectedNewNextStatus !== undefined && expectedNewNextStatus !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+  if (expectedNewNextStatus !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Expected new next status must be PUBLISHED.');
   }
 

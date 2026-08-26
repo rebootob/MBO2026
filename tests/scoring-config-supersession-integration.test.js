@@ -161,8 +161,19 @@ test('M10M-R2D Cross-Layer Integration: full local supersession path Service -> 
         operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
         activeWindow: true,
         explicitUserAuthorization: true,
-        prewriteBackupVerified: true,
-        authorizationId: activeAuthId
+        authorizationId: activeAuthId,
+        backupEvidence: {
+          appId: 796,
+          appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+          snapshotScope: 'APP_796_PRE_SUPERSEDE_SNAPSHOT',
+          captured: true,
+          verified: true,
+          retainedUntilIndependentReview: true,
+          artifactPath: 'backups/delivery-sprint-03a/app796/2026-08-25T05-16-21-178Z',
+          sha256: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+          capturedAt: '2026-08-26T22:00:00Z',
+          recordCount: 8
+        }
       };
       return assertScoringMasterSupersessionAuthorization(authConfig, context);
     }
