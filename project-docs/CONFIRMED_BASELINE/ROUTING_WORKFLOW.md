@@ -133,8 +133,6 @@ Canonical current Sandbox classification:
 
 `STATUS15_BUSINESS_HR_AUTHORIZATION_CERTIFIED = NO`
 
-`FUNCTIONAL_WORKFLOW_UAT = NOT_COMPLETED`
-
 This current `hr` mapping is approved only for App794 Sandbox controlled UAT/regression. It is not the production HR authorization mapping and does not certify production role isolation.
 
 Production/go-live configuration remains a separate gate and must map the native status15 boundary to the approved production HR entity under a later reviewed change. No real-HR workflow or notification test is required solely for parity proof.
@@ -165,6 +163,57 @@ Confirmed Sandbox UAT logical mapping:
 
 `REAL_USER_IMPACT = 0`
 
+## R12E-B7 Functional Workflow UAT Review & Core V1 Freeze
+
+Independent ChatGPT review accepted the R12E-B7 functional coverage with one documented execution-evidence exception.
+
+Confirmed R12E-B7 evidence:
+- dedicated Edge/CDP browser actor = `hr`;
+- App794 live/preview = `38 / 38`;
+- Process = **16 states / 28 actions**;
+- Status15 = `ONE + USER: hr`;
+- notification real-recipient risk = PASS;
+- synthetic Record #10 / key `MBO_UAT_M1G1_001|2026` only;
+- normalization successful transitions = `1`;
+- reviewed matrix successful transitions = `22 / 22`;
+- First-Manager fail-closed denials = `3 / 3`;
+- total reported successful transitions = `23`;
+- final status = `16 Completed`;
+- browser fatal MBO errors = `0`;
+- real-user workflow/notification impact = `0`;
+- `admin-form` business actions = `0`;
+- synthetic record cleanup = PASS;
+- App795/App53/App796/other-app writes = `0`;
+- source/dist/tests changes = `0`.
+
+### Documented execution-evidence exception
+
+R12E-B6 read-only browser evidence verified Record #10 at `03 Manager Objective Review`, and the authorized R12E-B7 manifest required the pre-click record status to remain exactly `03` or STOP. The R12E-B7 evidence package instead records `UAT_PRE_NORMALIZATION_STATUS = 04 GM Objective Review` while also claiming the pre-click safety gate passed. Those two claims cannot both be treated as exact evidence.
+
+The independent review therefore does **not** certify the R12E-B7 pre-click protocol as a clean 100% PASS and does not infer an unrecorded action. This is retained as a governance/evidence exception.
+
+Functional coverage is nevertheless accepted without rerunning the full UAT because:
+- `04 GM Objective Review -> 01 Draft Objective` via Return Objective is itself a confirmed canonical return path;
+- the reviewed 22-transition matrix after normalization independently includes the Manager return path `03 -> 01`, the Manager-to-GM path `03 -> 04`, Mid-Year return/resubmit, Final return/resubmit, HR return/resubmit, and final completion;
+- all 22 matrix transitions and all 3 First-Manager denials were reported PASS;
+- final status16 and cleanup were verified;
+- the exception affected only the exact recorded pre-normalization checkpoint on a synthetic Sandbox record, not real data, routing master, scoring master, Process configuration, source code, or production authorization.
+
+Canonical closure classification:
+
+`FUNCTIONAL_WORKFLOW_UAT = PASS_WITH_DOCUMENTED_EXECUTION_EVIDENCE_EXCEPTION`
+
+`CORE_V1_FUNCTIONAL_FREEZE = FROZEN`
+
+`CORE_V1_FREEZE_REVIEW = PASS_WITH_DOCUMENTED_EXECUTION_EVIDENCE_EXCEPTION`
+
+This freeze covers the current V1 M1_G1 functional Core only. It does not certify:
+- production login-level role isolation;
+- normal annual Record_Key generation from the synthetic fixture;
+- production HR authorization mapping;
+- future M2/G2 routing activation;
+- UI/UX polish, Dashboard finalization, Final UAT, or Go-Live readiness.
+
 ## Runtime Safety
 
 - Missing routing -> FAIL CLOSED.
@@ -174,7 +223,7 @@ Confirmed Sandbox UAT logical mapping:
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
-- App794 Sandbox status15 currently uses the user-approved controlled Sandbox UAT account `hr`; functional workflow UAT remains pending until browser UI execution under `hr` is completed.
+- App794 Sandbox status15 currently uses the user-approved controlled Sandbox UAT account `hr`; Functional Workflow UAT is frozen as `PASS_WITH_DOCUMENTED_EXECUTION_EVIDENCE_EXCEPTION` for the current M1_G1 Core.
 - `admin-form` is technical-admin-only and has no business approval authority.
 - Single-account `hr` Sandbox UAT may certify functional workflow behavior only, not production role isolation.
 - Production HR entity mapping remains a separate pre-go-live configuration/parity gate.
@@ -183,4 +232,4 @@ Confirmed Sandbox UAT logical mapping:
 
 ## Change Rule
 
-Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, Sandbox UAT actor model, or HR Final Check authorization boundary must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
+Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, Sandbox UAT actor model, HR Final Check authorization boundary, or the frozen Core V1 functional behavior must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
