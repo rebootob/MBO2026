@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => ({
   innerHTML: '',
@@ -1066,4 +1066,83 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     action: { value: 'Return Mid-Year Manager' }
   };
   assert.equal(proceedHook(failReturnEmptyRequester), false, 'Return Mid-Year Manager with empty Requester_User must fail closed');
+});
+
+test('UI/UX V1 Candidate — Deterministic Status Guidance, Escaping & Presentation Safety', async (t) => {
+  // 1. Exact 16 statuses have deterministic UI lifecycle & guidance presentation
+  const all16Statuses = [
+    '01 Draft Objective',
+    '02 First Manager Objective Review',
+    '03 Manager Objective Review',
+    '04 GM Objective Review',
+    '05 Objective Approved',
+    '06 Employee Mid-Year',
+    '07 First Manager Mid-Year Review',
+    '08 Manager Mid-Year Review',
+    '09 GM Mid-Year Review',
+    '10 Mid-Year Completed',
+    '11 Employee Self Evaluation',
+    '12 First Manager Final Evaluation',
+    '13 Manager Final Evaluation',
+    '14 GM Final Evaluation',
+    '15 HR Final Check',
+    '16 Completed'
+  ];
+
+  all16Statuses.forEach(st => {
+    const guidanceMap = getStatusGuidance(st, 'M1_G1');
+    assert.ok(guidanceMap.th && guidanceMap.th.length > 0, `Status "${st}" must have Thai guidance text`);
+    assert.ok(guidanceMap.en && guidanceMap.en.length > 0, `Status "${st}" must have English guidance text`);
+
+    const stageNum = getMacroStage(st);
+    assert.ok(stageNum >= 1 && stageNum <= 4, `Status "${st}" must map deterministically to macro stage 1-4`);
+  });
+
+  // 2. M1_G1 + First-Manager status produces configuration-warning presentation
+  const fmObjectiveWarning = getStatusGuidance('02 First Manager Objective Review', 'M1_G1');
+  assert.equal(fmObjectiveWarning.isWarning, true, 'Status 02 on M1_G1 must flag isWarning = true');
+  assert.ok(fmObjectiveWarning.th.includes('ไม่ใช้ First Manager'), 'Warning TH must explain M1_G1 does not use First Manager');
+
+  const fmMidYearWarning = getStatusGuidance('07 First Manager Mid-Year Review', 'M1_G1');
+  assert.equal(fmMidYearWarning.isWarning, true, 'Status 07 on M1_G1 must flag isWarning = true');
+
+  const fmFinalWarning = getStatusGuidance('12 First Manager Final Evaluation', 'M1_G1');
+  assert.equal(fmFinalWarning.isWarning, true, 'Status 12 on M1_G1 must flag isWarning = true');
+
+  // M2_G1 topology does not flag warning for First Manager status
+  const fmM2Guidance = getStatusGuidance('02 First Manager Objective Review', 'M2_G1');
+  assert.equal(fmM2Guidance.isWarning, false, 'Status 02 on M2_G1 must not be flagged as warning');
+
+  // 3. User-list display prefers name then code
+  assert.equal(formatUserDisplay([{ name: 'John Doe', code: '0123' }]), 'John Doe (0123)', 'User display must prefer Name (Code)');
+  assert.equal(formatUserDisplay([{ code: '0123' }]), '0123', 'User display must fallback to Code if Name missing');
+  assert.equal(formatUserDisplay([]), '-', 'User display must return - for empty user list');
+  assert.equal(formatUserDisplay(null), '-', 'User display must return - for null user list');
+
+  // 4. HTML Escaping neutralizes <, >, &, quotes, event-handler and closing-textarea payloads
+  const payload1 = '<script>alert("XSS")</script>&\'';
+  const escaped1 = escapeHtml(payload1);
+  assert.equal(escaped1.includes('<script>'), false, 'Escaped output must not contain raw script tag');
+  assert.equal(escaped1.includes('&lt;script&gt;'), true, 'Escaped output must convert < and > to entities');
+  assert.equal(escaped1.includes('&amp;'), true, 'Escaped output must convert & to &amp;');
+  assert.equal(escaped1.includes('&quot;'), true, 'Escaped output must convert double quote to &quot;');
+  assert.equal(escaped1.includes('&#39;'), true, 'Escaped output must convert single quote to &#39;');
+
+  const payload2 = '</textarea><img src=x onerror=alert(1)>';
+  const escaped2 = escapeHtml(payload2);
+  assert.equal(escaped2.includes('</textarea>'), false, 'Escaped output must neutralize closing textarea tag');
+  assert.equal(escaped2.includes('&lt;/textarea&gt;'), true, 'Escaped output must encode closing textarea tag');
+
+  // 5. Presentation helpers do not mutate record business values
+  const rawRecord = createMockRecord({
+    Objective_1: { value: '<b>Sales Objective</b> & Goal' },
+    Employee_Name: { value: 'Test & User <Dev>' }
+  });
+  const recordSnapshotJson = JSON.stringify(rawRecord);
+
+  const uiInstance = new EmployeePartAUI({ record: rawRecord, stage: BUSINESS_STAGES.OBJECTIVE_INPUT, isEditable: true });
+  uiInstance.render();
+
+  assert.equal(JSON.stringify(rawRecord), recordSnapshotJson, 'UI rendering must not mutate record business values');
+  assert.equal(rawRecord.Objective_1.value, '<b>Sales Objective</b> & Goal', 'Business value in record must remain unescaped raw string');
 });

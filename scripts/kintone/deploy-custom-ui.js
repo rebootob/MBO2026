@@ -1,10 +1,16 @@
 import fs from 'node:fs';
 import { assertSandboxWriteTarget } from '../../src/core/sandbox-write-guard.js';
-import { kintoneRequest, getKintoneConnection } from '../../src/core/kintone-client.js';
-import sandboxRegistry from '../../config/sandbox-apps.json' with { type: 'json' };
 
-const app = sandboxRegistry.mboV2AppId;
-assertSandboxWriteTarget(app);
+const isBuildOnly = process.argv.includes('--build-only');
+
+const sandboxRegistryModule = isBuildOnly
+  ? JSON.parse(fs.readFileSync('config/sandbox-apps.json', 'utf8'))
+  : (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
+
+const app = sandboxRegistryModule.mboV2AppId;
+if (!isBuildOnly) {
+  assertSandboxWriteTarget(app);
+}
 
 function cleanEsModules(jsText) {
   return jsText
@@ -83,7 +89,14 @@ fs.writeFileSync('dist/mbo-employee.css', cssContent, 'utf8');
 
 console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
+if (isBuildOnly) {
+  console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
+  process.exit(0);
+}
+
 // 2. Upload Files to Kintone
+const { kintoneRequest, getKintoneConnection } = await import('../../src/core/kintone-client.js');
+
 async function uploadFile(filename, content, contentType) {
   const { baseUrl, headers } = getKintoneConnection();
   const formData = new FormData();

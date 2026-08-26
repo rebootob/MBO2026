@@ -1,5 +1,7 @@
 # AI Changelog
 
+- **2026-08-26**: Executed Post-Core UI/UX V1 Candidate Sprint (Git/local candidate implementation only; 0 Kintone calls, 0 writes, 0 deploys): Built UI/UX V1 candidate in `src/ui/employee-part-a-ui.js`, `src/styles/mbo-employee.css`, `scripts/kintone/deploy-custom-ui.js`, `package.json`, `dist/mbo-employee-app.js`, `dist/mbo-employee.css`. Added top workflow guidance card with Thai/English descriptions for all 16 statuses, M1_G1 First-Manager configuration warning, display-only route context, collapsible field legend and rating guidelines, HTML escaping helper (`escapeHtml`) on all dynamic record/user text, and `--build-only` zero-write candidate path (`npm run ui:build`). Extended test suite in `tests/objective-save-validation.test.js` (555/555 unit tests passing). Classic bundle parse & ES module residue check PASS.
+
 - **2026-08-26**: Executed M10L-D-R12E-B7 Final Core Workflow Closure under explicit single-use authorization ("อนุมัติ controlled App794 R12E-B7 Final Core Workflow Closure ด้วย Record #10 บัญชี hr"): Executed preclick safety gate PASS 100%. Connected via CDP to Microsoft Edge session (`127.0.0.1:9222`) authenticated as `hr`. Executed 1 normalization transition (`Return Objective`), 22 reviewed matrix transitions, and 3 First-Manager fail-closed denials. Verified final status `16 Completed`. Deleted synthetic Record #10 and verified 0 key collision count. `FUNCTIONAL_WORKFLOW_UAT = PASS`.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.

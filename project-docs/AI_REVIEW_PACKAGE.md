@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **POST_CORE_UIUX_V1_CANDIDATE** | **`PASS`** — Built Post-Core UI/UX V1 candidate (0 Kintone calls/writes/deploys); added status guidance card with Thai/English descriptions for all 16 statuses, M1_G1 First-Manager configuration warning, display-only route context, collapsible legend/guidelines, HTML escaping helper (`escapeHtml`) on dynamic record/user text, and `--build-only` zero-write candidate path; 555/555 unit tests passing; bundle parse & ES module residue check PASS |
 | **M10L_D_R12E_B7_FINAL_CORE_WORKFLOW_CLOSURE** | **`PASS`** — Executed authorized R12E-B7 Final Core Workflow Closure on App 794 (Revision 38); verified preclick safety gate PASS; executed 1 normalization transition (`Return Objective`), 22 reviewed matrix transitions, and 3 First-Manager denials; verified final status `16 Completed`; 0 browser fatal errors; deleted synthetic Record #10 and verified 0 key collision count; 0 src/dist/tests changes |
 | **M10L_D_R12E_B6_REMOTE_DEBUG_EDGE_CONTROL_GATE** | **`PASS`** — Evaluated R12E-B6 Edge Browser-Control PASS Gate; attached via CDP to dedicated Microsoft Edge session (`127.0.0.1:9222`); verified trusted page runtime user code `kintone.getLoginUser().code === "hr"`; navigated to App 794 Record #10 and read record runtime data (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`); 0 Kintone writes / workflow clicks executed |
 | **M10L_D_R12E_B5_EDGE_CONTROLLED_WORKFLOW_CLOSURE** | **`BLOCKED`** — Evaluated Browser-Control PASS Gate; verified Record #10 exists on App 794 (`Record_Key MBO_UAT_M1G1_001|2026`, status `03 Manager Objective Review`); identified Edge DevTools Remote Debugging Port 9222 is closed (`msedge.exe` running without `--remote-debugging-port=9222`); 0 Kintone writes/workflow clicks executed |
@@ -1233,5 +1234,32 @@ SRC_CHANGE_COUNT = 0
 DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW; IF PASS FREEZE CORE V1 AND MOVE TO UI/UX + DASHBOARD
+
+
+## Post-Core UI/UX V1 Candidate Evidence
+
+```text
+POST_CORE_UIUX_V1_CANDIDATE = COMPLETE
+STARTING_HEAD = 4dbfec4736f338ee3b9a5ae31bca36f04c66e2c3
+CORE_V1_FUNCTIONAL_FREEZE_PRESERVED = PASS
+MODIFIED_SOURCE_FILES = src/ui/employee-part-a-ui.js, src/styles/mbo-employee.css, tests/objective-save-validation.test.js, scripts/kintone/deploy-custom-ui.js, package.json, dist/mbo-employee-app.js, dist/mbo-employee.css
+NEW_FILE_COUNT = 0
+STATUS_GUIDANCE_16_STATUS_COVERAGE = PASS
+M1_G1_FIRST_MANAGER_WARNING = PASS
+ROUTE_CONTEXT_DISPLAY_ONLY = PASS
+DYNAMIC_HTML_ESCAPE_GATE = PASS
+BUILD_ONLY_ZERO_KINTONE_CALL_GATE = PASS
+NPM_TEST = PASS (555/555 TESTS PASSING)
+CLASSIC_BUNDLE_PARSE = PASS
+SRC_DIST_CSS_MATCH = PASS
+KINTONE_CALL_COUNT = 0
+KINTONE_WRITE_COUNT = 0
+PROCESS_CHANGE_COUNT = 0
+ROUTING_LOGIC_CHANGE_COUNT = 0
+SCORING_LOGIC_CHANGE_COUNT = 0
+VALIDATION_WORKFLOW_SEMANTIC_CHANGE_COUNT = 0
+RECORD_KEY_LOGIC_CHANGE_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW; IF PASS REQUEST FRESH APP794 UI DEPLOY AUTHORIZATION
 ```

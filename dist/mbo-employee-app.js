@@ -1,3 +1,4 @@
+
 (function() {
   'use strict';
 
@@ -1860,6 +1861,146 @@ class RoutingService {
 
 
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatUserDisplay(userArr) {
+  if (!userArr || !Array.isArray(userArr) || userArr.length === 0) return '-';
+  const u = userArr[0];
+  if (typeof u === 'string') return escapeHtml(u);
+  if (typeof u === 'object' && u !== null) {
+    if (u.name && u.code) return `${escapeHtml(u.name)} (${escapeHtml(u.code)})`;
+    if (u.name) return escapeHtml(u.name);
+    if (u.code) return escapeHtml(u.code);
+  }
+  return '-';
+}
+
+function getStatusGuidance(status, topology = 'M1_G1') {
+  const currentStatus = String(status || '').trim();
+  const isM1G1 = topology === 'M1_G1';
+
+  const firstManagerWarning = {
+    th: '⚠️ แจ้งเตือนคอนฟิก: เส้นทาง M1_G1 ไม่ใช้ First Manager หากพบสถานะนี้ กรุณาติดต่อ HR / Administrator',
+    en: '⚠️ Configuration warning: M1_G1 topology does not use First Manager. Please contact HR / Administrator.',
+    isWarning: true
+  };
+
+  const guidanceMap = {
+    '01 Draft Objective': {
+      th: 'กรอกเป้าหมายและแผนงานให้สมบูรณ์ (ผลรวมน้ำหนัก 100%) แล้วกดปุ่ม Submit ด้านบน เพื่อส่งให้ Manager พิจารณา',
+      en: 'Fill Objectives & Action Plan (Total Weight 100%), then click Submit above for Manager review.',
+      isWarning: false
+    },
+    '02 First Manager Objective Review': isM1G1 ? firstManagerWarning : {
+      th: 'อยู่ระหว่างการพิจารณาเป้าหมายโดย First Manager / ตรวจสอบเป้าหมายและอนุมัติผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under First Manager review for Objectives. Please review and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '03 Manager Objective Review': {
+      th: 'อยู่ระหว่างการพิจารณาเป้าหมายโดย Manager / ตรวจสอบเป้าหมายและอนุมัติผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under Manager review for Objectives. Please review and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '04 GM Objective Review': {
+      th: 'อยู่ระหว่างการพิจารณาเป้าหมายโดย GM / ตรวจสอบเป้าหมายและอนุมัติผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under GM review for Objectives. Please review and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '05 Objective Approved': {
+      th: 'เป้าหมายได้รับการอนุมัติเรียบร้อยแล้ว รอเริ่มขั้นตอนการทบทวนกลางปี',
+      en: 'Objectives Approved. Waiting to start Mid-Year review.',
+      isWarning: false
+    },
+    '06 Employee Mid-Year': {
+      th: 'กรอกผลการทบทวนกลางปีและความคืบหน้า แล้วกดปุ่ม Submit ด้านบน เพื่อส่งให้ Manager',
+      en: 'Fill Mid-Year progress & review notes, then click Submit above to Manager.',
+      isWarning: false
+    },
+    '07 First Manager Mid-Year Review': isM1G1 ? firstManagerWarning : {
+      th: 'อยู่ระหว่างการทบทวนกลางปีโดย First Manager / ตรวจสอบความคืบหน้าและอนุมัติผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under First Manager Mid-Year review. Please review and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '08 Manager Mid-Year Review': {
+      th: 'อยู่ระหว่างการทบทวนกลางปีโดย Manager / ตรวจสอบความคืบหน้าและอนุมัติผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under Manager Mid-Year review. Please review and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '09 GM Mid-Year Review': {
+      th: 'อยู่ระหว่างการทบทวนกลางปีโดย GM / ตรวจสอบความคืบหน้าและอนุมัติผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under GM Mid-Year review. Please review and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '10 Mid-Year Completed': {
+      th: 'การทบทวนกลางปีเสร็จสมบูรณ์ รอเริ่มขั้นตอนการประเมินตนเองปลายปี',
+      en: 'Mid-Year review completed. Waiting to start Year-End self-evaluation.',
+      isWarning: false
+    },
+    '11 Employee Self Evaluation': {
+      th: 'กรอกผลงานจริงและประเมินตนเองปลายปี แล้วกดปุ่ม Submit ด้านบน เพื่อส่งให้ Manager',
+      en: 'Fill actual results & self-evaluation, then click Submit above to Manager.',
+      isWarning: false
+    },
+    '12 First Manager Final Evaluation': isM1G1 ? firstManagerWarning : {
+      th: 'อยู่ระหว่างการประเมินผลงานปลายปีโดย First Manager / ตรวจสอบและประเมินผลผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under First Manager Final evaluation. Please evaluate and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '13 Manager Final Evaluation': {
+      th: 'อยู่ระหว่างการประเมินผลงานปลายปีโดย Manager / ตรวจสอบและประเมินผลผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under Manager Final evaluation. Please evaluate and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '14 GM Final Evaluation': {
+      th: 'อยู่ระหว่างการประเมินผลงานปลายปีโดย GM / ตรวจสอบและประเมินผลผ่านปุ่ม Kintone ด้านบน',
+      en: 'Under GM Final evaluation. Please evaluate and approve via Kintone buttons above.',
+      isWarning: false
+    },
+    '15 HR Final Check': {
+      th: 'อยู่ระหว่างการตรวจสอบขั้นสุดท้ายโดย HR Final Check',
+      en: 'Under HR Final check and verification.',
+      isWarning: false
+    },
+    '16 Completed': {
+      th: 'กระบวนการประเมิน MBO เสร็จสมบูรณ์เรียบร้อยแล้ว',
+      en: 'MBO Evaluation process fully completed.',
+      isWarning: false
+    }
+  };
+
+  return guidanceMap[currentStatus] || {
+    th: 'สถานะการทำงานปัจจุบัน (ดำเนินการผ่านปุ่ม Kintone ด้านบน)',
+    en: 'Current workflow status (Process actions available via Kintone buttons above).',
+    isWarning: false
+  };
+}
+
+function getMacroStage(status) {
+  const currentStatus = String(status || '').trim();
+
+  if (['01 Draft Objective', '02 First Manager Objective Review', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved'].includes(currentStatus)) {
+    return 1; // Objectives
+  }
+  if (['06 Employee Mid-Year', '07 First Manager Mid-Year Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed'].includes(currentStatus)) {
+    return 2; // Mid-Year
+  }
+  if (['11 Employee Self Evaluation', '12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check'].includes(currentStatus)) {
+    return 3; // Year-End
+  }
+  if (currentStatus === '16 Completed') {
+    return 4; // Completed
+  }
+  return 1;
+}
+
 class EmployeePartAUI {
   constructor(options = {}) {
     this.container = options.container;
@@ -1895,14 +2036,17 @@ class EmployeePartAUI {
       root.appendChild(this._renderLookupSection());
     }
 
+    // Top Status & Workflow Guidance Card (Display-only guidance)
+    root.appendChild(this._renderStatusGuidanceCard());
+
     // STEP 2: Header Section (Horizontal Summary)
     root.appendChild(this._renderHeader());
 
-    // Legend / State Indicator Bar (Bilingual)
-    root.appendChild(this._renderLegend());
+    // Approval Route Context (Display-only route summary)
+    root.appendChild(this._renderRouteContext());
 
-    // Rating Guidelines Reference
-    root.appendChild(this._renderGuidelines());
+    // Collapsible Legend & Guidelines
+    root.appendChild(this._renderCollapsibleLegendAndGuidelines());
 
     // Custom Error Summary Area (Top of Table)
     const errorSummaryContainer = document.createElement('div');
@@ -1912,7 +2056,7 @@ class EmployeePartAUI {
     // Hoshin Section (2 Columns Horizontal)
     root.appendChild(this._renderHoshin());
 
-    // Stage Navigation (Bilingual)
+    // Stage Navigation (4 Macro Stages)
     root.appendChild(this._renderStageNav());
 
     // STEP 3: Part A Spreadsheet Grid Table (1 Objective = 1 Row)
@@ -1989,6 +2133,110 @@ class EmployeePartAUI {
     }
   }
 
+  _renderStatusGuidanceCard() {
+    const card = document.createElement('div');
+    card.className = 'mbo-workflow-guidance-card';
+
+    const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
+    const topology = this._getVal('Routing_Topology') || 'M1_G1';
+    const guidance = getStatusGuidance(status, topology);
+
+    const cardClass = guidance.isWarning ? 'mbo-guidance-warning' : 'mbo-guidance-info';
+
+    card.className = `mbo-workflow-guidance-card ${cardClass}`;
+    card.innerHTML = `
+      <div class="mbo-guidance-header">
+        <div class="mbo-guidance-status-pill">
+          📌 สถานะปัจจุบัน / Current Status: <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="mbo-guidance-notice">
+          💡 การส่งเรื่อง / อนุมัติ / ดำเนินการขั้นตอนถัดไป กรุณากดปุ่มสั่งการด้านบนของ Kintone (Process action buttons)
+        </div>
+      </div>
+      <div class="mbo-guidance-body">
+        <div class="mbo-guidance-text-th">${escapeHtml(guidance.th)}</div>
+        <div class="mbo-guidance-text-en">${escapeHtml(guidance.en)}</div>
+      </div>
+    `;
+    return card;
+  }
+
+  _renderRouteContext() {
+    const card = document.createElement('div');
+    card.className = 'mbo-route-context-card';
+
+    const topology = this._getVal('Routing_Topology') || 'M1_G1';
+    const managerUser = this._getValObj('Manager_User');
+    const gmUser = this._getValObj('GM_User');
+    const firstManagerUser = this._getValObj('First_Manager_User');
+
+    const isM2 = topology.includes('M2') || (firstManagerUser && firstManagerUser.length > 0);
+
+    card.innerHTML = `
+      <div class="mbo-route-title">
+        <span>🔗 เส้นทางเสนออนุมัติ / Approval Route Summary</span>
+        <span class="mbo-route-topology-badge">Topology: ${escapeHtml(topology)}</span>
+      </div>
+      <div class="mbo-route-grid">
+        ${isM2 ? `
+          <div class="mbo-route-step">
+            <span class="mbo-route-role">1st Manager (ผู้บังคับบัญชาชั้นต้น):</span>
+            <span class="mbo-route-user">${formatUserDisplay(firstManagerUser)}</span>
+          </div>
+        ` : ''}
+        <div class="mbo-route-step">
+          <span class="mbo-route-role">Manager (ผู้จัดการส่วนงาน):</span>
+          <span class="mbo-route-user">${formatUserDisplay(managerUser)}</span>
+        </div>
+        <div class="mbo-route-step">
+          <span class="mbo-route-role">GM (ผู้จัดการฝ่าย):</span>
+          <span class="mbo-route-user">${formatUserDisplay(gmUser)}</span>
+        </div>
+        <div class="mbo-route-step">
+          <span class="mbo-route-role">HR Final Check:</span>
+          <span class="mbo-route-user">HR Final Check (ตรวจสอบขั้นสุดท้าย)</span>
+        </div>
+      </div>
+    `;
+    return card;
+  }
+
+  _renderCollapsibleLegendAndGuidelines() {
+    const card = document.createElement('div');
+    card.className = 'mbo-collapsible-card';
+    card.innerHTML = `
+      <details class="mbo-details" open>
+        <summary class="mbo-summary">
+          <span>📌 คำอธิบายสถานะช่องข้อมูลและเกณฑ์อ้างอิง / Field Legend & Rating Guidelines</span>
+          <span class="mbo-summary-hint">(กดเพื่อซ่อน/แสดง / Click to toggle)</span>
+        </summary>
+        <div class="mbo-details-body">
+          <div class="mbo-legend-row">
+            <div class="mbo-legend-title">สถานะช่องข้อมูล / Field State Key:</div>
+            <div class="mbo-legend-items">
+              <span class="mbo-legend-chip mbo-chip-editable">🟢 กรอกได้ / Editable</span>
+              <span class="mbo-legend-chip mbo-chip-required">🟡 ต้องกรอก / Required</span>
+              <span class="mbo-legend-chip mbo-chip-system">🔵 ข้อมูลจากระบบ / System Data</span>
+              <span class="mbo-legend-chip mbo-chip-locked">⚪ ระบบล็อก / Locked</span>
+              <span class="mbo-legend-chip mbo-chip-error">🔴 ไม่ถูกต้อง / Invalid</span>
+            </div>
+          </div>
+          <div class="mbo-guideline-row">
+            <div class="mbo-guideline-col">
+              <strong>ระดับความยาก / Difficulty Level [1-4]:</strong><br/>
+              Level 4: Challenging (ท้าทายมาก) | Level 3: Difficult (ยาก) | Level 2: Achievable normal (ปานกลาง) | Level 1: Easily achievable (ง่าย)
+            </div>
+            <div class="mbo-guideline-col">
+              <strong>ระดับผลงาน / Achievement Level [1-5]:</strong><br/>
+              Level 5: Remarkable (สูงสุด) | Level 4: Exceeding (เกินเป้า) | Level 3: Fully meet (ตามเป้า) | Level 2: Partially meet (บางส่วน) | Level 1: Rarely meet (ต่ำกว่าเป้า)
+            </div>
+          </div>
+        </div>
+      </details>
+    `;
+    return card;
+  }
+
   _renderInlineErrors(fieldErrors = []) {
     if (!this.root) return;
     const summaryAnchor = this.root.querySelector('#mbo-error-summary-anchor');
@@ -2002,17 +2250,18 @@ class EmployeePartAUI {
     const errorCount = fieldErrors.length;
     const summaryCard = document.createElement('div');
     summaryCard.className = 'mbo-error-summary-card';
+
     summaryCard.innerHTML = `
       <div class="mbo-error-summary-header">
         <span>⚠️ พบข้อมูลที่ต้องแก้ไข ${errorCount} รายการ / ${errorCount} items require correction</span>
       </div>
       <div class="mbo-error-summary-list">
         ${fieldErrors.map((err, idx) => `
-          <button type="button" class="mbo-error-item-btn" data-field="${err.field}">
+          <button type="button" class="mbo-error-item-btn" data-field="${escapeHtml(err.field)}">
             <span class="mbo-error-item-num">${idx + 1}</span>
             <div class="mbo-error-item-text">
-              <div>${err.messageTH}</div>
-              <div class="en-sub">${err.messageEN}</div>
+              <div>${escapeHtml(err.messageTH)}</div>
+              <div class="en-sub">${escapeHtml(err.messageEN)}</div>
             </div>
           </button>
         `).join('')}
@@ -2054,10 +2303,12 @@ class EmployeePartAUI {
 
         const tagEl = this.root.querySelector(`.mbo-cell-tag[data-target="${err.field}"]`);
         if (tagEl) {
+          const msgThFormatted = escapeHtml(err.messageTH || '').replace(/\n/g, '<br/>');
+          const msgEnFormatted = escapeHtml(err.messageEN || '').replace(/\n/g, '<br/>');
           tagEl.innerHTML = `
             <span class="mbo-cell-error-msg">
-              ❌ ${err.messageTH}<br/>
-              <span style="opacity: 0.85; font-size: 11px;">${err.messageEN}</span>
+              ❌ ${msgThFormatted}<br/>
+              <span style="opacity: 0.85; font-size: 11px;">${msgEnFormatted}</span>
             </span>
           `;
         }
@@ -2091,7 +2342,7 @@ class EmployeePartAUI {
         <div style="font-size: 13px;">${badgeText}</div>
       </div>
       <div style="display: flex; gap: 10px; align-items: center; max-width: 650px;">
-        <input type="text" id="mbo-lookup-emp-input" class="mbo-cell-input mbo-field-state-editable" placeholder="กรอกรหัสพนักงาน เช่น 0149 / Enter Employee ID..." value="${empCode}" style="flex: 1; font-weight: 600;" />
+        <input type="text" id="mbo-lookup-emp-input" class="mbo-cell-input mbo-field-state-editable" placeholder="กรอกรหัสพนักงาน เช่น 0149 / Enter Employee ID..." value="${escapeHtml(empCode)}" style="flex: 1; font-weight: 600;" />
         <button type="button" id="mbo-lookup-btn" style="background: #0284c7; color: white; border: none; padding: 0 18px; height: 36px; border-radius: 4px; font-weight: 600; cursor: pointer;">
           ค้นหาพนักงาน / Search
         </button>
@@ -2108,13 +2359,20 @@ class EmployeePartAUI {
     const fy = this._getVal('Fiscal_Year') || 'FY2026';
     const status = this.isCreate ? 'NEW RECORD (กำลังสร้าง)' : (this._getVal('Status') || '01 Draft Objective');
 
+    const empCode = this._getVal('Employee_Code');
+    const empName = this._getVal('Employee_Name');
+    const empSection = this._getVal('Employee_Section');
+    const empPosition = this._getVal('Employee_Position');
+    const empDept = this._getVal('Employee_Department');
+    const empStartDate = this._getVal('Employee_Start_Date');
+
     card.innerHTML = `
       <div class="mbo-title-bar">
         <h1 class="mbo-main-title">
-          แบบประเมินผลการปฏิบัติงาน / Management By Objectives for Staff & Chief
-          <span class="mbo-fy-badge">${fy}</span>
+          แบบประเมินผลการปฏิบัติงาน / Management By Objectives (MBO)
+          <span class="mbo-fy-badge">${escapeHtml(fy)}</span>
         </h1>
-        <div class="mbo-status-badge">${status}</div>
+        <div class="mbo-status-badge">${escapeHtml(status)}</div>
       </div>
       <div style="font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px;">
         STEP 2: ข้อมูลพนักงาน / Employee Information [🔵 ระบบ / System Data]
@@ -2122,81 +2380,39 @@ class EmployeePartAUI {
       <div class="mbo-profile-grid-horizontal">
         <div class="mbo-profile-item">
           <span class="mbo-profile-label">รหัส / Emp. ID</span>
-          <div class="mbo-profile-value" id="mbo-header-emp-code" title="${this._getVal('Employee_Code')}">${this._getVal('Employee_Code') || '-'}</div>
+          <div class="mbo-profile-value" id="mbo-header-emp-code" title="${escapeHtml(empCode)}">${escapeHtml(empCode) || '-'}</div>
         </div>
         <div class="mbo-profile-item">
           <span class="mbo-profile-label">ชื่อ-นามสกุล / Name</span>
-          <div class="mbo-profile-value" id="mbo-header-emp-name" title="${this._getVal('Employee_Name')}">${this._getVal('Employee_Name') || '-'}</div>
+          <div class="mbo-profile-value" id="mbo-header-emp-name" title="${escapeHtml(empName)}">${escapeHtml(empName) || '-'}</div>
         </div>
         <div class="mbo-profile-item">
           <span class="mbo-profile-label">ส่วนงาน / Section</span>
-          <div class="mbo-profile-value" id="mbo-header-emp-section" title="${this._getVal('Employee_Section')}">${this._getVal('Employee_Section') || '-'}</div>
+          <div class="mbo-profile-value" id="mbo-header-emp-section" title="${escapeHtml(empSection)}">${escapeHtml(empSection) || '-'}</div>
         </div>
         <div class="mbo-profile-item">
           <span class="mbo-profile-label">ตำแหน่ง / Position</span>
-          <div class="mbo-profile-value" id="mbo-header-emp-position" title="${this._getVal('Employee_Position')}">${this._getVal('Employee_Position') || '-'}</div>
+          <div class="mbo-profile-value" id="mbo-header-emp-position" title="${escapeHtml(empPosition)}">${escapeHtml(empPosition) || '-'}</div>
         </div>
         <div class="mbo-profile-item">
           <span class="mbo-profile-label">แผนก / Department</span>
-          <div class="mbo-profile-value" id="mbo-header-emp-dept" title="${this._getVal('Employee_Department')}">${this._getVal('Employee_Department') || '-'}</div>
+          <div class="mbo-profile-value" id="mbo-header-emp-dept" title="${escapeHtml(empDept)}">${escapeHtml(empDept) || '-'}</div>
         </div>
         <div class="mbo-profile-item">
           <span class="mbo-profile-label">วันเริ่มงาน / Start Date</span>
-          <div class="mbo-profile-value" id="mbo-header-emp-start-date" title="${this._getVal('Employee_Start_Date')}">${this._getVal('Employee_Start_Date') || '-'}</div>
+          <div class="mbo-profile-value" id="mbo-header-emp-start-date" title="${escapeHtml(empStartDate)}">${escapeHtml(empStartDate) || '-'}</div>
         </div>
       </div>
     `;
     return card;
-  }
-
-  _renderLegend() {
-    const card = document.createElement('div');
-    card.className = 'mbo-legend-card';
-    card.innerHTML = `
-      <div class="mbo-legend-title">📌 สถานะช่องข้อมูล / Field State Key:</div>
-      <div class="mbo-legend-items">
-        <div class="mbo-legend-item">
-          <span class="mbo-legend-chip mbo-chip-editable">🟢 กรอกได้ / Editable</span>
-        </div>
-        <div class="mbo-legend-item">
-          <span class="mbo-legend-chip mbo-chip-required">🟡 ต้องกรอก / Required</span>
-        </div>
-        <div class="mbo-legend-item">
-          <span class="mbo-legend-chip mbo-chip-system">🔵 ข้อมูลจากระบบ / System Data</span>
-        </div>
-        <div class="mbo-legend-item">
-          <span class="mbo-legend-chip mbo-chip-locked">⚪ ระบบล็อก / Locked</span>
-        </div>
-        <div class="mbo-legend-item">
-          <span class="mbo-legend-chip mbo-chip-error">🔴 ไม่ถูกต้อง / Invalid</span>
-        </div>
-      </div>
-    `;
-    return card;
-  }
-
-  _renderGuidelines() {
-    const box = document.createElement('div');
-    box.className = 'mbo-guideline-card';
-    box.innerHTML = `
-      <div class="mbo-guideline-title">📖 เกณฑ์อ้างอิง / Rating Scale Guidelines</div>
-      <div class="mbo-guideline-grid">
-        <div class="mbo-guideline-item">
-          <strong>ระดับความยาก / Difficulty Level [1-4]:</strong><br/>
-          Level 4: Challenging (ท้าทายมาก) | Level 3: Difficult (ยาก) | Level 2: Achievable normal (ปานกลาง) | Level 1: Easily achievable (ง่าย)
-        </div>
-        <div class="mbo-guideline-item">
-          <strong>ระดับผลงาน / Achievement Level [1-5]:</strong><br/>
-          Level 5: Remarkable (สูงสุด) | Level 4: Exceeding (เกินเป้า) | Level 3: Fully meet (ตามเป้า) | Level 2: Partially meet (บางส่วน) | Level 1: Rarely meet (ต่ำกว่าเป้า)
-        </div>
-      </div>
-    `;
-    return box;
   }
 
   _renderHoshin() {
     const grid = document.createElement('div');
     grid.className = 'mbo-hoshin-grid';
+
+    const deptHoshin = this._getVal('Department_Hoshin');
+    const secHoshin = this._getVal('Section_Hoshin');
 
     grid.innerHTML = `
       <div class="mbo-hoshin-box">
@@ -2204,14 +2420,14 @@ class EmployeePartAUI {
           <span>เป้าหมายแผนก / Department's Hoshin</span>
           <span class="mbo-hoshin-subtitle">(Set up by Dept. Manager) [🔵 ระบบ / System]</span>
         </h2>
-        <div class="mbo-hoshin-content" id="mbo-dept-hoshin-view">${this._getVal('Department_Hoshin') || '(No Department Hoshin set)'}</div>
+        <div class="mbo-hoshin-content" id="mbo-dept-hoshin-view">${escapeHtml(deptHoshin) || '(No Department Hoshin set)'}</div>
       </div>
       <div class="mbo-hoshin-box">
         <h2 class="mbo-hoshin-title">
           <span>เป้าหมายส่วนงาน / Section's Hoshin</span>
           <span class="mbo-hoshin-subtitle">(Set up by Sect. Manager) [🔵 ระบบ / System]</span>
         </h2>
-        <div class="mbo-hoshin-content" id="mbo-sec-hoshin-view">${this._getVal('Section_Hoshin') || '(No Section Hoshin set)'}</div>
+        <div class="mbo-hoshin-content" id="mbo-sec-hoshin-view">${escapeHtml(secHoshin) || '(No Section Hoshin set)'}</div>
       </div>
     `;
     return grid;
@@ -2221,23 +2437,33 @@ class EmployeePartAUI {
     const nav = document.createElement('div');
     nav.className = 'mbo-stage-nav';
 
-    const isObj = this.isCreate || this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT || this.stage === BUSINESS_STAGES.NEW_RECORD;
-    const isMid = this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
-    const isSelf = this.stage === BUSINESS_STAGES.SELF_EVALUATION;
+    const status = this.isCreate ? '01 Draft Objective' : (this._getVal('Status') || '01 Draft Objective');
+    const macroStage = getMacroStage(status);
 
-    const step1Class = isObj ? 'active' : 'completed';
-    const step2Class = isMid ? 'active' : (isSelf ? 'completed' : 'locked');
-    const step3Class = isSelf ? 'active' : 'locked';
+    const isInReview = ['03 Manager Objective Review', '04 GM Objective Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check'].includes(status);
+
+    const step1Class = macroStage === 1 ? 'active' : (macroStage > 1 ? 'completed' : 'locked');
+    const step2Class = macroStage === 2 ? 'active' : (macroStage > 2 ? 'completed' : 'locked');
+    const step3Class = macroStage === 3 ? 'active' : (macroStage > 3 ? 'completed' : 'locked');
+    const step4Class = macroStage === 4 ? 'completed' : 'locked';
+
+    const step1Sub = macroStage === 1 ? (isInReview ? '⏳ [In Review]' : '🔥 [Active]') : (macroStage > 1 ? '✅' : '');
+    const step2Sub = macroStage === 2 ? (isInReview ? '⏳ [In Review]' : '🔥 [Active]') : (macroStage > 2 ? '✅' : '🔒');
+    const step3Sub = macroStage === 3 ? (isInReview ? '⏳ [In Review]' : '🔥 [Active]') : (macroStage > 3 ? '✅' : '🔒');
+    const step4Sub = macroStage === 4 ? '✅ [Completed]' : '🔒';
 
     nav.innerHTML = `
       <div class="mbo-stage-step ${step1Class}">
-        1. ตั้งเป้าหมาย / Set up Objectives ${isObj ? '🔥 [Active]' : (isMid || isSelf ? '✅' : '')}
+        1. ตั้งเป้าหมาย / Objectives ${step1Sub}
       </div>
       <div class="mbo-stage-step ${step2Class}">
-        2. ทบทวนกลางปี / Mid-Year Progress ${isMid ? '🔥 [Active]' : (isSelf ? '✅' : (isObj ? '🔒' : ''))}
+        2. ทบทวนกลางปี / Mid-Year ${step2Sub}
       </div>
       <div class="mbo-stage-step ${step3Class}">
-        3. ประเมินตนเองปลายปี / Year-End Self Evaluation ${isSelf ? '🔥 [Active]' : '🔒'}
+        3. ประเมินปลายปี / Year-End ${step3Sub}
+      </div>
+      <div class="mbo-stage-step ${step4Class}">
+        4. เสร็จสิ้น / Completed ${step4Sub}
       </div>
     `;
     return nav;
@@ -2421,19 +2647,19 @@ class EmployeePartAUI {
       <tr>
         <td class="mbo-row-num-cell">${i}</td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Objective_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุเป้าหมายและผลลัพธ์ / Indicate expected result and target...">${objVal}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="Objective_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุเป้าหมายและผลลัพธ์ / Indicate expected result and target...">${escapeHtml(objVal)}</textarea>
           <span class="mbo-cell-tag" data-target="Objective_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Action_Plan_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุกิจกรรมและแผนงาน / Indicate activities to achieve objective...">${actVal}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="Action_Plan_${i}" data-required="true" ${!isObjEditable ? 'readonly' : ''} placeholder="ระบุกิจกรรมและแผนงาน / Indicate activities to achieve objective...">${escapeHtml(actVal)}</textarea>
           <span class="mbo-cell-tag" data-target="Action_Plan_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Additional_Agreement_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="ข้อตกลงเพิ่มเติม / Any agreement or comment...">${addVal}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="Additional_Agreement_${i}" ${!isObjEditable ? 'readonly' : ''} placeholder="ข้อตกลงเพิ่มเติม / Any agreement or comment...">${escapeHtml(addVal)}</textarea>
           <span class="mbo-cell-tag" data-target="Additional_Agreement_${i}"></span>
         </td>
         <td style="vertical-align: middle; text-align: center;">
-          <input type="number" min="1" max="100" class="mbo-cell-input mbo-field mbo-weight-input" data-code="Weight_${i}" data-required="true" value="${wVal}" ${!isObjEditable ? 'readonly' : ''} style="text-align: center;" placeholder="30" />
+          <input type="number" min="1" max="100" class="mbo-cell-input mbo-field mbo-weight-input" data-code="Weight_${i}" data-required="true" value="${escapeHtml(wVal)}" ${!isObjEditable ? 'readonly' : ''} style="text-align: center;" placeholder="30" />
           <span class="mbo-cell-tag" data-target="Weight_${i}"></span>
         </td>
         <td style="vertical-align: middle;">
@@ -2445,7 +2671,7 @@ class EmployeePartAUI {
               <option value="4" ${diffVal === '4' ? 'selected' : ''}>4 : Challenging (ท้าทายมาก)</option>
             </select>
           ` : `
-            <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${diffVal}" readonly />
+            <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(diffVal)}" readonly />
           `}
           <span class="mbo-cell-tag" data-target="Difficulty_${i}"></span>
         </td>
@@ -2467,9 +2693,9 @@ class EmployeePartAUI {
       <tr>
         <td class="mbo-row-num-cell">${i}</td>
         <td>
-          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">${objVal || '(No objective)'}</div>
-          <div style="font-size: 12px; color: #475569; white-space: pre-wrap;">${actVal || ''}</div>
-          <div style="margin-top: 6px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${wVal}%</div>
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">${escapeHtml(objVal) || '(No objective)'}</div>
+          <div style="font-size: 12px; color: #475569; white-space: pre-wrap;">${escapeHtml(actVal) || ''}</div>
+          <div style="margin-top: 6px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${escapeHtml(wVal)}%</div>
         </td>
         <td style="vertical-align: middle;">
           <div style="font-weight: 700; text-align: center; margin-bottom: 4px;">${prog}%</div>
@@ -2482,15 +2708,15 @@ class EmployeePartAUI {
           <span class="mbo-cell-tag" data-target="Progress_Percent_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="บันทึกทบทวนผลงาน / Review notes...">${revVal}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="Periodical_Review_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="บันทึกทบทวนผลงาน / Review notes...">${escapeHtml(revVal)}</textarea>
           <span class="mbo-cell-tag" data-target="Periodical_Review_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Result_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ผลสำเร็จปัจจุบัน / Milestone results...">${resVal}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Result_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ผลสำเร็จปัจจุบัน / Milestone results...">${escapeHtml(resVal)}</textarea>
           <span class="mbo-cell-tag" data-target="MidYear_Result_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ปัญหาและอุปสรรค / Risks & next action...">${riskVal}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} placeholder="ปัญหาและอุปสรรค / Risks & next action...">${escapeHtml(riskVal)}</textarea>
           <span class="mbo-cell-tag" data-target="MidYear_Issue_Risk_${i}"></span>
         </td>
       </tr>
@@ -2511,15 +2737,15 @@ class EmployeePartAUI {
       <tr>
         <td class="mbo-row-num-cell">${i}</td>
         <td>
-          <div style="font-weight: 700; color: #0f172a;">${objVal || '(No objective)'}</div>
-          <div style="margin-top: 4px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${wVal}%</div>
+          <div style="font-weight: 700; color: #0f172a;">${escapeHtml(objVal) || '(No objective)'}</div>
+          <div style="margin-top: 4px; font-size: 11px; font-weight: 700; color: #0369a1;">Weight: ${escapeHtml(wVal)}%</div>
         </td>
         <td>
-          <div style="font-size: 12px; font-weight: 600; color: #0369a1;">Mid-Year: ${prog}%</div>
-          <div style="font-size: 12px; color: #475569; margin-top: 4px; white-space: pre-wrap;">${midRes || '-'}</div>
+          <div style="font-size: 12px; font-weight: 600; color: #0369a1;">Mid-Year: ${escapeHtml(prog)}%</div>
+          <div style="font-size: 12px; color: #475569; margin-top: 4px; white-space: pre-wrap;">${escapeHtml(midRes) || '-'}</div>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Actual_Result_${i}" data-required="true" ${!isSelfEditable ? 'readonly' : ''} placeholder="ผลงานจริง / Summary of actual results...">${actResult}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="Actual_Result_${i}" data-required="true" ${!isSelfEditable ? 'readonly' : ''} placeholder="ผลงานจริง / Summary of actual results...">${escapeHtml(actResult)}</textarea>
           <span class="mbo-cell-tag" data-target="Actual_Result_${i}"></span>
         </td>
         <td style="vertical-align: middle;">
@@ -2532,12 +2758,12 @@ class EmployeePartAUI {
               <option value="5" ${selfAch === '5' ? 'selected' : ''}>5 : Remarkable (สูงสุด)</option>
             </select>
           ` : `
-            <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${selfAch}" readonly />
+            <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(selfAch)}" readonly />
           `}
           <span class="mbo-cell-tag" data-target="Self_Achievement_${i}"></span>
         </td>
         <td>
-          <textarea class="mbo-cell-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="ความเห็นประกอบ / Self reflection...">${selfComment}</textarea>
+          <textarea class="mbo-cell-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} placeholder="ความเห็นประกอบ / Self reflection...">${escapeHtml(selfComment)}</textarea>
           <span class="mbo-cell-tag" data-target="Self_Comment_${i}"></span>
         </td>
       </tr>
@@ -2558,19 +2784,19 @@ class EmployeePartAUI {
       <tr>
         <td class="mbo-row-num-cell">${i}</td>
         <td>
-          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">${objVal || '-'}</div>
-          <div style="font-size: 12px; color: #475569; white-space: pre-wrap;">${actVal || ''}</div>
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">${escapeHtml(objVal) || '-'}</div>
+          <div style="font-size: 12px; color: #475569; white-space: pre-wrap;">${escapeHtml(actVal) || ''}</div>
         </td>
-        <td style="text-align: center; vertical-align: middle; font-weight: 700;">${wVal}%</td>
-        <td style="text-align: center; vertical-align: middle;">Level ${diffVal}</td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700;">${escapeHtml(wVal)}%</td>
+        <td style="text-align: center; vertical-align: middle;">Level ${escapeHtml(diffVal)}</td>
         <td>
-          <div style="font-size: 12px; font-weight: 700; color: #0369a1;">Progress: ${prog}%</div>
-          <div style="font-size: 12px; color: #475569; margin-top: 2px;">${midRes || '-'}</div>
+          <div style="font-size: 12px; font-weight: 700; color: #0369a1;">Progress: ${escapeHtml(prog)}%</div>
+          <div style="font-size: 12px; color: #475569; margin-top: 2px;">${escapeHtml(midRes) || '-'}</div>
         </td>
         <td>
-          <div style="font-size: 12px; color: #0f172a; white-space: pre-wrap;">${actResult || '-'}</div>
+          <div style="font-size: 12px; color: #0f172a; white-space: pre-wrap;">${escapeHtml(actResult) || '-'}</div>
         </td>
-        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: #b45309;">Level ${selfAch}</td>
+        <td style="text-align: center; vertical-align: middle; font-weight: 700; color: #b45309;">Level ${escapeHtml(selfAch)}</td>
       </tr>
     `;
   }
@@ -2668,7 +2894,7 @@ class EmployeePartAUI {
         } catch (err) {
           const newMsgEl = this.root ? this.root.querySelector('#mbo-lookup-msg') : null;
           if (newMsgEl) {
-            const formattedMsg = String(err.message || '').replace(/\n/g, '<br/>');
+            const formattedMsg = escapeHtml(err.message || '').replace(/\n/g, '<br/>');
             newMsgEl.innerHTML = `<div style="color: #dc2626; line-height: 1.4; padding: 6px 0;">❌ ${formattedMsg}</div>`;
           }
         }
@@ -2763,6 +2989,14 @@ class EmployeePartAUI {
       box.className = 'mbo-weight-summary invalid';
       st.innerHTML = `❌ ไม่ถูกต้อง: ผลรวมต้องเท่ากับ 100% (ขาด/เกิน ${Math.abs(100 - total)}%) / Must equal 100%`;
     }
+  }
+
+  _getValObj(code) {
+    const field = this.record[code];
+    if (field && typeof field === 'object' && Array.isArray(field.value)) {
+      return field.value;
+    }
+    return [];
   }
 
   _getVal(code) {
