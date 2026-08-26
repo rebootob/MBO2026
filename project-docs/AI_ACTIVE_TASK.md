@@ -1,299 +1,917 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R6 HISTORICAL STAGE REVIEW NAVIGATION — LOCAL ONLY
+# AI ACTIVE TASK — M10M POSITION PRIORITY + TEAM-AWARE ROUTING
 
-> Control Plane: ChatGPT / Project Lead / Reviewer
+> Control Plane: ChatGPT / Project Lead / Architect / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Prior reviewed implementation: R6-R5 commit `80efb93b36b1897db945bd3721ba6c6c9d0aadaf`
-> Canonical UI baseline: `project-docs/CONFIRMED_BASELINE/UI_UX.md` section 24
-> Kintone write/deploy authorization: **NONE**
+> Target Kintone Apps: **App794 Sandbox + App795 MBO Routing Master Sandbox only**
+> Production authorization: **NONE**
+> Sandbox authorization: **App794/App795 only, after backup + local validation + explicit safety gates in this task**
+> Change strategy: **Surgical change / minimum blast radius / reuse existing resolver**
 
 ## 0. MANDATORY STARTUP
 
 Pull latest `ai/antigravity-wp002c` and verify local HEAD equals origin.
 
-Read completely, in this exact order:
-1. `project-docs/CONFIRMED_BASELINE/README.md`
-2. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
-3. `project-docs/CONFIRMED_BASELINE/LEGACY_PMS_APPS.md`
-4. `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
-5. `project-docs/CONFIRMED_BASELINE/UI_UX.md`
-6. `project-docs/AI_ACTIVE_TASK.md`
-7. `project-docs/CURRENT_STATE.md`
-8. `project-docs/HANDOFF.md`
-9. `project-docs/AI_REVIEW_PACKAGE.md`
-
-Confirmed Baseline is canonical.
-
-## 1. CURRENT USER REQUIREMENT
-
-The user wants the five top macro-stage tiles to support historical review, not only progress display.
-
-When a record is already at a later phase (for example HR Final), the user must be able to click back and see what was recorded in:
-- Objectives;
-- Mid-Year;
-- Self Evaluation;
-- and, for authorized Appraiser/HR viewers, Appraiser Evaluation results.
-
-This must be a read-only viewing function. It must never move the Kintone Workflow backward.
-
-Classification: **MUST IMPLEMENT UI / LOCAL ONLY BEFORE USER VISUAL APPROVAL**.
-
-## 2. HARD SAFETY BOUNDARY
-
-LOCAL ONLY.
-
-- Kintone GET/POST/PUT/DELETE = 0.
-- App794 upload/deploy = 0.
-- Record/workflow/process/schema/ACL/notification writes = 0.
-- App795/App796/App797/App798/App800 writes = 0.
-- No real-user workflow/notification test.
-- No new Kintone fields.
-- No routing/profile/calendar/audit persistence change.
-- Do not continue Dashboard/Hoshin or PREVIEW_TO_APP794_PARITY_CLOSURE yet.
-
-## 3. ARCHITECTURE RULE — CURRENT PHASE != VIEWED STAGE
-
-Implement a separate UI-only viewing state, e.g. `selectedViewStage` / equivalent.
-
-Mandatory behavior:
-- real `record.Status` remains authoritative current Workflow state;
-- `getMacroStage(record.Status)` remains the real current phase;
-- clicking a previously reached macro-stage tile changes only `selectedViewStage`;
-- clicking history must not mutate record values, status, assignee, route, score, or timestamps;
-- future/unreached stages are disabled for normal historical navigation;
-- completed record may browse all role-permitted stages;
-- provide `กลับสู่ขั้นตอนปัจจุบัน / Back to Current Phase`;
-- current Workflow phase remains visibly marked even while viewing another stage;
-- historical selected stage gets a clear bilingual `กำลังดูข้อมูลย้อนหลัง / Viewing Historical Stage — Read Only` indicator.
-
-Do not fake this by changing Preview `Status` when the user clicks a tile. The whole purpose is to prove browsing history while current Workflow remains unchanged.
-
-## 4. ROLE-AWARE HISTORY VISIBILITY
-
-Preview may add one local-only viewer-role selector/fixture for visual testing:
-- Employee / Requester
-- 1st Appraiser
-- 2nd Appraiser
-- 3rd Appraiser
-- 4th Appraiser
-- HR Final
-
-This is Preview simulation only. Production users must never self-select/elevate role.
-
-### 4.1 Employee / Requester
-
-May browse reached stages read-only:
-- Objectives
-- Mid-Year
-- Self Evaluation
-
-Do **not** expose Appraiser Evaluation detailed scoring/comments merely because the user clicked history.
-If the Employee selects a restricted stage in Preview, show a clear neutral restricted/permission message rather than rendering confidential Appraiser columns.
-
-### 4.2 Appraiser 1..N
-
-May browse reached:
-- Objectives read-only
-- Mid-Year read-only
-- Self Evaluation read-only
-- Appraiser Evaluation according to confirmed Appraiser-to-Appraiser visibility
-
-When Appraiser Evaluation is current and the viewer is the current actor, preserve existing active-column behavior.
-When Appraiser Evaluation is being viewed historically, **all Appraiser columns must become read-only**, including the viewer's own column.
-
-### 4.3 HR Final
-
-May browse all reached stages read-only, including:
-- Objectives
-- Mid-Year
-- Self Evaluation
-- complete Appraiser Evaluation Part A + Part B
-- all configured Appraiser columns
-- HR Final/Completed summary
-
-Only separately-authorized current HR action surfaces may be editable; historical stage content is always read-only.
-
-## 5. HISTORICAL STAGE CONTENT
-
-Reuse the same existing business components/renderers wherever possible. Do not create a duplicate second implementation for history.
-
-### Objectives history
-Show stored/approved context:
-- Objective / expected result & target
-- Action Plan
-- Additional Agreement / Comment
-- Weight
-- Difficulty
-- Objective attachment/evidence
-
-All read-only.
-
-### Mid-Year history
-Show:
-- Objective baseline/read-only context
-- Progress %
-- Periodical Review
-- Mid-Year Result
-- Issue/Risk
-- Next Action
-- Mid-Year attachment/evidence
-
-All read-only.
-
-### Self Evaluation history
-Show:
-- Objective baseline/read-only context
-- Actual Result
-- Self Achievement / self rating where applicable
-- Self Comment
-- Self Evaluation attachment/evidence
-
-All read-only.
-
-### Appraiser Evaluation history
-For authorized Appraiser/HR viewers show:
-- Part A Objective evaluation context
-- Self result/rating context
-- Appraiser 1..N ratings/comments
-- result/combined score context
-- Objective/Mid-Year/Self evidence carried forward
-- Part B Competency rows
-- Appraiser 1..N Part B scores/comments
-- result context
-
-Historical mode = every Appraiser cell read-only.
-
-### HR Final / Completed history
-Show existing read-only final/closure summary and permitted final result/evidence context.
-
-## 6. FIVE-STAGE TILE UX
-
-Keep the five-stage navigation compact and bilingual.
-
-Each tile may visually communicate independently:
-- stage completion/progress state;
-- whether the tile is clickable for historical review;
-- which stage is the real CURRENT WORKFLOW PHASE;
-- which stage is currently VIEWED.
-
-Avoid using the same highlight for both `CURRENT` and `VIEWING HISTORY`.
-Recommended:
-- current Workflow phase: clear `Current / ขั้นตอนปัจจุบัน` badge/outline;
-- selected historical stage: secondary `Viewing History / ดูย้อนหลัง` indicator;
-- completed prior stages: clickable cursor and subtle hover;
-- future stages: disabled/no click.
-
-## 7. AUDIT/TIMELINE COEXISTENCE
-
-Do not create a second audit system.
-The existing Workflow Action Timeline remains the audit source presentation.
-
-When viewing a historical stage, it is acceptable to:
-- keep the full Timeline visible; or
-- visually highlight/filter events for the selected stage if implementation is small and does not hide full-history access.
-
-Do not fabricate timestamps.
-
-## 8. SECURITY NOTE
-
-Historical read-only UI is not a security boundary.
-
-Production parity must later reconcile viewer visibility with native Kintone Process/App/Record/Field permissions or another approved native/server-side boundary.
-Do not claim secure Employee-vs-Appraiser score isolation from Preview-only DOM hiding.
-
-## 9. REGRESSION REQUIREMENTS
-
-Do not regress R6-R5/R6-R2 behavior:
-- five bilingual stages;
-- route-aware progress;
-- overdue red pill / deadline hierarchy;
-- explicit dense Timeline grid;
-- ordinal Appraiser route labels;
-- Appraiser active-column current-actor behavior;
-- 1..4 Appraiser Preview capacity;
-- contained 4-Appraiser matrix/no page-body overflow;
-- Objectives/Mid-Year/Self optional attachments;
-- Mid-Year employee-entered Progress 0..100;
-- Difficulty blank semantics;
-- HR phase calendar model;
-- Native Kintone Comments coexistence;
-- fail-closed incomplete scoring;
-- 0 Preview Kintone calls.
-
-## 10. REQUIRED TESTS
-
-Add focused tests proving at minimum:
-
-1. Clicking a completed prior stage changes view state only; `record.Status` remains unchanged.
-2. Historical view does not mutate Objective/Mid-Year/Self/Appraiser record fields.
-3. Historical stage controls are all read-only/disabled.
-4. `Back to Current Phase` restores current-stage rendering without changing status.
-5. Future/unreached stage cannot be opened as history.
-6. Employee can view Objectives/Mid-Year/Self history.
-7. Employee cannot see detailed Appraiser Evaluation columns through history navigation.
-8. Appraiser can view previous stages and Appraiser Evaluation history.
-9. Historical Appraiser Evaluation makes **all** Appraiser columns read-only.
-10. HR can view all reached stages including full Appraiser Evaluation Part A + Part B.
-11. Current Appraiser Evaluation still preserves active-current-column editability outside history mode.
-12. Completed record supports all role-permitted historical stages read-only.
-13. Existing overdue/timeline/4-appraiser regression tests remain PASS.
-
-Run:
-- `npm test` once;
-- `npm run ui:build` once;
-- Preview local browser smoke.
-
-## 11. PREVIEW VISUAL TARGET
-
-Demonstrate at least one later-state scenario, preferably `15 HR Final Check` and/or `16 Completed`:
-
-- Current stage visibly remains HR Final/Completed.
-- Click Objectives -> historical Objectives content appears read-only.
-- Click Mid-Year -> historical Mid-Year content appears read-only.
-- Click Self Evaluation -> historical Self content appears read-only.
-- As Appraiser/HR, click Appraiser Evaluation -> complete Part A/Part B results visible read-only.
-- Click `Back to Current Phase` -> returns to HR Final/Completed.
-- Route Progress and real current status never change during browsing.
-
-Also demonstrate Employee viewer does not receive detailed Appraiser Evaluation scoring by merely clicking the stage.
-
-## 12. REQUIRED EVIDENCE BLOCK
+Before changing anything, run and capture:
 
 ```text
-APP794_EVALUATION_UI_V2_R6_R6 = COMPLETE
-HISTORICAL_STAGE_NAVIGATION = PASS
-CURRENT_WORKFLOW_PHASE_SEPARATE_FROM_VIEW_STAGE = PASS
-HISTORY_STATUS_MUTATION_COUNT = 0
-HISTORY_RECORD_MUTATION_COUNT = 0
-BACK_TO_CURRENT_PHASE = PASS
-FUTURE_STAGE_HISTORY_BLOCKED = PASS
-EMPLOYEE_OBJECTIVES_HISTORY = PASS
-EMPLOYEE_MIDYEAR_HISTORY = PASS
-EMPLOYEE_SELF_HISTORY = PASS
-EMPLOYEE_APPRAISER_DETAIL_EXPOSURE = 0
-APPRAISER_HISTORY_ACCESS = PASS
-HISTORICAL_APPRAISER_ALL_COLUMNS_READONLY = PASS
-HR_FULL_HISTORY_ACCESS = PASS
-CURRENT_APPRAISER_ACTIVE_COLUMN_REGRESSION = 0
-R6_R5_VISUAL_REGRESSION = 0
-FOUR_APPRAISER_PAGE_BODY_OVERFLOW = 0
-KINTONE_CALL_COUNT = 0
-KINTONE_WRITE_COUNT = 0
-DEPLOY_COUNT = 0
-NPM_TEST = PASS
-UI_BUILD = PASS
-PREVIEW_MAIN_UI_RENDER = PASS
-PREVIEW_KINTONE_CALL_COUNT = 0
-GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
+git status
+git branch --show-current
+git log -1 --oneline
 ```
 
-## 13. STOP CONDITION
+Read completely, in this order:
+1. `project-docs/CONFIRMED_BASELINE/README.md`
+2. `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
+3. `project-docs/BUSINESS_RULES.md`
+4. `project-docs/ARCHITECTURE.md`
+5. `project-docs/FIELD_DICTIONARY.md`
+6. `project-docs/APP_REGISTRY.md`
+7. `project-docs/AI_ACTIVE_TASK.md`
+8. `project-docs/CURRENT_STATE.md`
+9. `project-docs/HANDOFF.md`
+10. `project-docs/AI_REVIEW_PACKAGE.md`
 
-Commit and push the same `ai/antigravity-wp002c` branch.
-Keep Preview Lab running if practical.
+Confirmed Baseline is canonical unless this active task explicitly introduces the new M10M routing rule.
+
+Do not start implementation until current routing behavior, files, field codes, and App795 schema are understood.
+
+---
+
+# 1. USER REQUIREMENT
+
+The user requires App794 routing to continue reading its route from **App795 — MBO Routing Master Sandbox**, but the routing decision must be enhanced to support:
+
+1. **Position Priority / Position Override**
+2. **GM must route to President regardless of Section/Team**
+3. **Team-aware routing**
+4. **TMG2 must be able to split routing by Team even when Section is the same**
+5. **Fail Closed** when a required route cannot be uniquely resolved
+6. Existing valid routing behavior must remain unchanged unless explicitly affected by the new rules
+
+The key defect/risk is this case:
+
+```text
+Position = GM
+Section  = TMH3
+```
+
+The system must **not** select the normal TMH3 route.
+
+Correct result:
+
+```text
+GM
+↓
+President
+```
+
+Likewise, if a GM belongs to TMG2 and has any Team value, the GM Position rule still wins.
+
+---
+
+# 2. HARD SAFETY BOUNDARY
+
+Allowed scope:
+- Local repository changes required for App794 routing logic / tests / Preview.
+- App795 Sandbox field/schema additions only if confirmed missing and truly required.
+- App795 Sandbox routing-rule record changes required by M10M.
+- App794 Sandbox customization upload/deploy only after all required local tests pass and backup/read-back gates pass.
+
+Forbidden:
+- Production App changes.
+- Any Kintone app other than App794/App795.
+- App796/App797/App798/App800 writes.
+- Rewrite of the entire routing architecture.
+- Duplicate routing resolver alongside the existing resolver.
+- Hard-coded real approver identity when App795 can represent the business rule.
+- Silent fallback to an unrelated route.
+- Workflow State Machine redesign.
+- Unrelated UI refactor.
+- Unrelated schema cleanup.
+
+If implementation would require any forbidden change: **STOP that part and report to ChatGPT.**
+
+---
+
+# 3. DISCOVERY FIRST — DO NOT GUESS
+
+Before modifying code or Kintone, identify the real current implementation.
+
+Required discovery:
+
+## 3.1 App794
+
+Find and report:
+- file(s) that load App795 routing records;
+- function(s) that resolve route / evaluator / approver;
+- function(s) that build `Route Scenario / เส้นทางผู้ประเมิน & อนุมัติ`;
+- current matching dimensions: Position / Division / Department / Section / Team / other;
+- current fallback logic;
+- current ambiguity handling;
+- current error handling;
+- where employee organization data comes from;
+- actual field codes used for Position, Department, Section, Team.
+
+## 3.2 App795
+
+Inspect actual Sandbox schema and active records.
+
+Report:
+- current routing field codes;
+- whether Priority already exists;
+- whether Position criterion already exists;
+- whether Team criterion already exists;
+- whether wildcard/blank semantics already exist;
+- current active TMG2 routing records;
+- current GM routing rule, if any;
+- how evaluator/approver/route stages are represented.
+
+## 3.3 Employee Source
+
+Determine actual Team values for employees whose Section = `TMG2`.
+
+Do **not** invent Team names.
+
+If multiple Team values exist under TMG2, report the exact distinct values and identify which routing records are needed.
+
+---
+
+# 4. BACKUP / CHECKPOINT — MANDATORY BEFORE WRITE
+
+Before modifying Kintone Sandbox:
+
+1. Create/verify a clean Git checkpoint.
+2. Export/read-back App795 schema relevant to routing.
+3. Export/read-back App795 current routing records.
+4. Record counts before change.
+5. Record affected Rule/Record IDs before change.
+6. Ensure rollback material exists.
+
+No App795 schema/data write and no App794 deploy before this gate passes.
+
+---
+
+# 5. TARGET ROUTING MODEL
+
+Routing Context should use the actual existing field codes but conceptually include:
+
+```text
+Position
+Department
+Section
+Team
+```
+
+Do not add duplicate employee fields if the source already contains them.
+
+Target resolution flow:
+
+```text
+Employee / MBO Record
+↓
+Build Routing Context
+(Position + Department + Section + Team)
+↓
+Load active App795 routing rules
+↓
+Match eligible rules
+↓
+Apply explicit Priority / specificity rules
+↓
+Require exactly one winning route
+↓
+Return Route Scenario / Evaluator / Approver
+```
+
+Business routing rules belong in App795 as much as practical. Code should remain a deterministic resolver, not a list of named-person special cases.
+
+---
+
+# 6. ROUTING PRECEDENCE
+
+Required logical precedence:
+
+```text
+1. Special Position Rule
+2. Position + Department + Section + Team
+3. Department + Section + Team
+4. Section + Team
+5. Existing normal routing rule
+6. No valid winner → BLOCK
+```
+
+Prefer implementing this through existing rule matching + explicit priority/specificity rather than a long nested `if/else` chain.
+
+If App795 already has a priority convention, reuse it.
+
+If no priority exists and a new field is required, use an explicit deterministic convention and document it. Recommended concept:
+
+```text
+smaller number = higher priority
+```
+
+but do not create a conflicting convention if the current design already defines one.
+
+---
+
+# 7. GM → PRESIDENT OVERRIDE — MANDATORY
+
+Required business rule:
+
+```text
+IF Requester Position = GM
+THEN Route = GM_TO_PRESIDENT / equivalent existing scenario
+AND next valid approval target = President
+AND ignore normal Section/Team routing for route selection
+```
+
+Examples that must PASS:
+
+```text
+GM + TMH3                  → President
+GM + TMG2 + <any Team>     → President
+GM + any other Section     → President
+```
+
+Once the GM Position rule wins, normal Section/Team routing must not override it.
+
+Do not hard-code a President email/name if App795 already supports selecting the destination by routing master data.
+
+If no valid President target can be resolved:
+
+```text
+APPROVER_NOT_FOUND
+```
+
+and BLOCK.
+
+---
+
+# 8. TEAM-AWARE ROUTING — MANDATORY
+
+Add/reuse Team as a routing criterion in App795 and in App794's routing context/resolver.
+
+The goal is to allow two employees with the same Section to take different routes based on Team.
+
+Concept:
+
+```text
+Section = TMG2
+Team    = <Team A>
+→ Route A
+```
+
+```text
+Section = TMG2
+Team    = <Team B>
+→ Route B
+```
+
+Use actual Team values discovered from the real Sandbox/employee source.
+
+Do not create fake Team values.
+
+---
+
+# 9. TMG2 STRICT TEAM RULE
+
+For `TMG2`, if Team is required to distinguish routes, Team must be treated as a strict criterion.
+
+Unsafe behavior that is forbidden:
+
+```text
+TMG2 + unknown/blank Team
+↓
+fallback to generic TMG2 route
+↓
+possibly wrong evaluator/approver
+```
+
+Required behavior:
+
+### Missing Team where TMG2 requires Team
+
+```text
+TEAM_REQUIRED
+BLOCK
+```
+
+### Unknown Team / no matching TMG2 Team rule
+
+```text
+ROUTE_NOT_FOUND
+BLOCK
+```
+
+### Multiple equally valid TMG2 rules
+
+```text
+AMBIGUOUS_ROUTE
+BLOCK
+```
+
+Principle:
+
+> Wrong routing is worse than blocked routing.
+
+Do not preserve a generic TMG2 fallback if it can bypass required Team separation.
+
+---
+
+# 10. APP795 SCHEMA / MASTER DATA
+
+Reuse existing fields first.
+
+Only if missing, consider the minimum required fields such as:
+
+```text
+Route_Priority
+Requester_Position
+Requester_Department
+Requester_Section
+Requester_Team
+Route_Scenario
+Evaluator
+Approver
+Active
+```
+
+These are conceptual/suggested field codes only.
+
+**Do not assume these exact codes.**
+
+If equivalent fields already exist, reuse them.
+
+Do not create duplicate fields with overlapping purpose.
+
+Required App795 master-data outcome:
+- a high-priority GM → President rule;
+- TMG2 Team-specific rules for the actual Teams that require separate routing;
+- existing valid rules preserved;
+- no unsafe duplicate rule at the same effective priority/specificity.
+
+Before each record/schema write, show/record intended Before → After values in the execution evidence.
+
+After each write, read back and verify.
+
+---
+
+# 11. APP794 ROUTING RESOLVER
+
+Modify the **existing** routing resolver.
+
+Do not create a second resolver unless architecture proves there is no reusable resolver.
+
+The existing resolver should receive/derive a context conceptually like:
+
+```javascript
+{
+  position,
+  department,
+  section,
+  team
+}
+```
+
+Use actual field names/codes discovered in Section 3.
+
+Required properties:
+- deterministic;
+- explicit candidate-rule matching;
+- explicit winner selection;
+- explicit error for no winner;
+- explicit error for ambiguity;
+- no silent route guessing;
+- preserve existing route output contract where possible.
+
+---
+
+# 12. ROUTE SCENARIO / เส้นทางผู้ประเมิน & อนุมัติ
+
+Update the existing App794 route preview/debug presentation with minimal UI change so HR/Admin/testers can understand why the route was selected.
+
+At minimum expose when technically safe/available:
+
+```text
+Position
+Department
+Section
+Team
+Matched Route Scenario
+Matched Rule / Rule ID
+Priority / specificity
+Source = App795
+Resolved Evaluator(s)
+Resolved Approver(s)
+```
+
+Example concept:
+
+```text
+Position: Staff
+Department: ...
+Section: TMG2
+Team: <actual team>
+
+Matched Rule: <rule id>
+Scenario: <scenario>
+Priority: <priority>
+Source: App795
+```
+
+Do not expose secrets or hidden credentials.
+
+This is for explainability/debugging, not a replacement security boundary.
+
+---
+
+# 13. WORKFLOW STATE MACHINE — DO NOT REDESIGN
+
+M10M changes **who the route resolves to**, not the overall MBO workflow lifecycle.
+
+Do not redesign workflow states such as Submit / Review / Approval / Approved / Reject unless a tiny integration adjustment is proven necessary.
+
+If a genuine Workflow State Machine change becomes necessary:
+
+**STOP and report before implementing it.**
+
+---
+
+# 14. FAIL-CLOSED VALIDATION
+
+Before returning/using a route, validate at minimum:
+
+```text
+Requester/employee context exists
+Position is available when required
+Section is available when required
+Team is available when the matched route class requires Team
+Matched rule is Active
+Exactly one winner exists
+Required evaluator exists
+Required approver exists
+No ambiguous equal-priority/specificity match exists
+```
+
+Error classes/messages must make the failure diagnosable.
+
+Required errors/equivalents:
+
+```text
+ROUTE_NOT_FOUND
+AMBIGUOUS_ROUTE
+TEAM_REQUIRED
+APPROVER_NOT_FOUND
+```
+
+Do not silently downgrade these to another unrelated route.
+
+---
+
+# 15. LOGGING / DIAGNOSTICS
+
+Add/reuse structured diagnostic logging sufficient to inspect:
+
+```text
+Employee / record identifier (minimum necessary)
+Position
+Department
+Section
+Team
+Candidate Rule IDs
+Matched Rule ID
+Priority / specificity
+Route Scenario
+Evaluator(s)
+Approver(s)
+Result / Error
+```
+
+Do not log:
+- API tokens;
+- auth headers;
+- passwords;
+- unnecessary sensitive personal data.
+
+---
+
+# 16. REQUIRED TEST MATRIX
+
+Use actual discovered Team values for TMG2 tests.
+
+## TC01 — GM in TMH3
+
+```text
+Position = GM
+Section  = TMH3
+```
+
+Expected:
+
+```text
+President
+PASS
+```
+
+## TC02 — GM in TMG2 with real Team
+
+```text
+Position = GM
+Section  = TMG2
+Team     = <actual valid TMG2 Team>
+```
+
+Expected:
+
+```text
+President
+```
+
+Must **not** enter the normal TMG2 Team route.
+
+## TC03 — Normal employee TMG2 Team A
+
+Use actual first distinct TMG2 Team.
+
+Expected: its configured Team-specific route.
+
+## TC04 — Normal employee TMG2 Team B
+
+Use actual second distinct TMG2 Team if present.
+
+Expected: its configured Team-specific route.
+
+If only one actual TMG2 Team exists, document that and create the appropriate deterministic test using the real data rather than inventing a second Team.
+
+## TC05 — Unknown TMG2 Team
+
+Expected:
+
+```text
+ROUTE_NOT_FOUND
+BLOCK
+```
+
+## TC06 — Missing TMG2 Team when Team required
+
+Expected:
+
+```text
+TEAM_REQUIRED
+BLOCK
+```
+
+## TC07 — Existing normal Section route
+
+Select a real non-TMG2 existing route that currently works.
+
+Expected:
+
+```text
+Before M10M route == After M10M route
+```
+
+## TC08 — Existing Manager/Appraiser route
+
+Select a real existing manager/appraiser scenario.
+
+Expected: no unintended routing change.
+
+## TC09 — Ambiguous rule
+
+Unit/fixture test with two equally valid winning rules at same effective priority/specificity.
+
+Expected:
+
+```text
+AMBIGUOUS_ROUTE
+BLOCK
+```
+
+## TC10 — Missing President destination for GM
+
+Unit/fixture test.
+
+Expected:
+
+```text
+APPROVER_NOT_FOUND
+BLOCK
+```
+
+---
+
+# 17. REGRESSION TEST — MANDATORY
+
+Build a Before/After matrix for every active routing scenario materially affected by the resolver change.
+
+Minimum evidence format:
+
+| Scenario | Before | After | Expected | Result |
+|---|---|---|---|---|
+| Existing normal route A | X | X | unchanged | PASS |
+| Existing normal route B | Y | Y | unchanged | PASS |
+| GM special route | old/wrong or absent | President | President | PASS |
+| TMG2 Team A | old | Team-specific | Team-specific | PASS |
+| TMG2 Team B | old | Team-specific | Team-specific | PASS |
+
+If an existing unrelated active route changes unexpectedly:
+
+**STOP DEPLOYMENT.**
+
+---
+
+# 18. LOCAL QUALITY GATES
+
+Run the repository's existing relevant tests plus focused M10M tests.
+
+At minimum:
+
+```text
+npm test
+```
+
+Run the appropriate build command defined by the repository/package scripts.
+
+If App794 has a Preview/local UI, perform a local browser smoke test for Route Scenario display.
+
+No Sandbox deploy until local test/build gates PASS.
+
+---
+
+# 19. SANDBOX DEPLOYMENT GATE
+
+Only after Sections 3–18 PASS:
+
+1. Verify backup/checkpoint again.
+2. Apply only required App795 Sandbox schema/data changes.
+3. Read back App795 and verify exact values/counts.
+4. Upload/deploy only required App794 Sandbox customization.
+5. Reload App794 Sandbox.
+6. Test required M10M routes in Sandbox without affecting Production.
+7. Re-run regression checks.
+8. Verify no other apps changed.
+
+If any read-back differs from intended state:
+
+**STOP and rollback.**
+
+---
+
+# 20. GIT GOVERNANCE
+
+Before implementation:
+
+```text
+git status
+git branch --show-current
+git log -1 --oneline
+```
+
+During implementation:
+- keep changes scoped;
+- reuse existing files/functions;
+- avoid new files unless separation of concerns clearly requires one;
+- do not commit credentials/secrets;
+- inspect `git diff` before commit.
+
+After implementation/tests:
+
+```text
+git diff
+git status
+```
+
+Commit and push the same branch only when required tests/evidence pass.
+
+Final implementation status remains:
+
+```text
+READY FOR CHATGPT REVIEW
+```
+
+Antigravity must not self-approve the Work Package.
+
+---
+
+# 21. ROLLBACK — MANDATORY
+
+Rollback must restore both code and Sandbox routing data/schema as applicable.
+
+Record:
+- base Git commit;
+- changed files;
+- App795 fields added/reused;
+- App795 record IDs changed/created;
+- App794 customization version/artifacts changed;
+- exact restore steps;
+- post-rollback verification.
+
+Rollback target:
+
+```text
+Pre-M10M App794 routing implementation
++
+Pre-M10M App795 routing master state
+```
+
+---
+
+# 22. FINAL REPORT REQUIRED
+
+Do not report only `Done`.
+
+Return the following evidence:
+
+## A. DISCOVERY
+
+```text
+App794 routing file(s):
+Resolver function(s):
+Route Scenario UI function(s):
+Employee source:
+Position field/code:
+Department field/code:
+Section field/code:
+Team field/code:
+App795 current matching method:
+App795 priority field/code:
+App795 position criterion field/code:
+App795 team criterion field/code:
+Actual TMG2 Team values found:
+```
+
+## B. BACKUP
+
+```text
+Git base commit:
+App795 pre-change record count:
+Affected rule IDs:
+Schema backup/read-back:
+Routing-data backup/read-back:
+Rollback artifact/location:
+```
+
+## C. CHANGES — APP794
+
+```text
+Files changed:
+Functions changed:
+Resolver behavior changed:
+Route Scenario display changed:
+```
+
+## D. CHANGES — APP795
+
+```text
+Fields added:
+Fields reused:
+Rules created:
+Rules updated:
+Rules disabled/removed if required:
+Post-change record count:
+```
+
+## E. GM RULE EVIDENCE
+
+```text
+GM + TMH3 → President = PASS/FAIL
+GM + TMG2 + <actual team> → President = PASS/FAIL
+```
+
+## F. TEAM ROUTING EVIDENCE
+
+List the actual TMG2 Team values and exact matched routes.
+
+```text
+TMG2 + <Team 1> → <Route> = PASS/FAIL
+TMG2 + <Team 2> → <Route> = PASS/FAIL
+Unknown Team → ROUTE_NOT_FOUND = PASS/FAIL
+Missing required Team → TEAM_REQUIRED = PASS/FAIL
+```
+
+## G. REGRESSION
+
+Report TC01–TC10 and relevant existing active routing scenarios as PASS/FAIL.
+
+## H. KINTONE CHANGE EVIDENCE
+
+```text
+Apps written: 794/795 only = PASS/FAIL
+Production write count = 0
+Other app write count = 0
+App795 read-back = PASS/FAIL
+App794 Sandbox smoke = PASS/FAIL
+```
+
+## I. GIT
+
+```text
+Branch:
+Commit before:
+Commit after:
+Files changed:
+git status:
+push sync:
+```
+
+## J. RISKS / OPEN ISSUES
+
+List all remaining risks or unresolved data questions.
+
+## K. ROLLBACK
+
+Provide exact rollback steps.
+
+---
+
+# 23. DEFINITION OF DONE
+
+M10M is complete only when all applicable items are proven:
+
+- [ ] Correct repo/branch verified
+- [ ] Existing routing implementation inspected before change
+- [ ] Actual App795 schema inspected
+- [ ] Actual TMG2 Team values inspected; no Team names invented
+- [ ] Backup/Git checkpoint created before Kintone write
+- [ ] App795 supports/reuses Position criterion
+- [ ] App795 supports/reuses Team criterion
+- [ ] App795 supports deterministic Priority/specificity
+- [ ] GM → President rule implemented in App795/equivalent master-driven design
+- [ ] GM override wins over Section and Team
+- [ ] TMG2 supports required Team-specific routing
+- [ ] Unknown TMG2 Team blocks
+- [ ] Missing required TMG2 Team blocks
+- [ ] Ambiguous route blocks
+- [ ] Missing President target blocks
+- [ ] Existing App794 resolver reused rather than duplicated
+- [ ] Route Scenario displays Team and matched-rule diagnostics where safe
+- [ ] Workflow State Machine not redesigned
+- [ ] Existing unrelated routes regression PASS
+- [ ] `npm test` PASS
+- [ ] relevant build PASS
+- [ ] Sandbox App795 read-back PASS
+- [ ] Sandbox App794 smoke PASS
+- [ ] Production write count = 0
+- [ ] Other-app write count = 0
+- [ ] Git diff reviewed
+- [ ] No secrets committed
+- [ ] Rollback verified/documented
+- [ ] Final report complete
+
+Do not mark COMPLETE if any mandatory item is missing.
+
+---
+
+# 24. REQUIRED EVIDENCE BLOCK
+
+Return an exact evidence block with real values filled in:
+
+```text
+M10M_POSITION_PRIORITY_TEAM_ROUTING = COMPLETE | BLOCKED
+APP794_EXISTING_RESOLVER_REUSED = PASS | FAIL
+APP795_SCHEMA_DISCOVERY = PASS | FAIL
+APP795_BACKUP = PASS | FAIL
+POSITION_PRIORITY = PASS | FAIL
+GM_TO_PRESIDENT = PASS | FAIL
+GM_SECTION_OVERRIDE = PASS | FAIL
+GM_TEAM_OVERRIDE = PASS | FAIL
+TEAM_AWARE_ROUTING = PASS | FAIL
+TMG2_TEAM_VALUES_DISCOVERED = <actual values>
+TMG2_TEAM_RULES = PASS | FAIL
+UNKNOWN_TMG2_TEAM_BLOCKED = PASS | FAIL
+MISSING_REQUIRED_TEAM_BLOCKED = PASS | FAIL
+AMBIGUOUS_ROUTE_BLOCKED = PASS | FAIL
+MISSING_PRESIDENT_BLOCKED = PASS | FAIL
+EXISTING_ROUTE_REGRESSION = PASS | FAIL
+ROUTE_SCENARIO_DIAGNOSTICS = PASS | FAIL
+WORKFLOW_STATE_MACHINE_CHANGE_COUNT = 0
+PRODUCTION_WRITE_COUNT = 0
+OTHER_APP_WRITE_COUNT = 0
+APP795_READBACK = PASS | FAIL
+APP794_SANDBOX_SMOKE = PASS | FAIL
+NPM_TEST = PASS | FAIL
+BUILD = PASS | FAIL
+SECRET_EXPOSURE_COUNT = 0
+ROLLBACK_READY = PASS | FAIL
+GIT_PUSH_SYNC = PASS | FAIL
+FINAL_STATUS = READY FOR CHATGPT REVIEW | BLOCKED
+```
+
+---
+
+# 25. STOP CONDITION
+
+After implementation, tests, Sandbox read-back/smoke, evidence, commit and push:
+
+```text
+FINAL STATUS: READY FOR CHATGPT REVIEW
+```
+
 STOP.
 
-Do not deploy App794.
-Do not modify any Kintone app.
+Do not self-approve.
+Do not deploy Production.
+Do not continue to another Work Package.
