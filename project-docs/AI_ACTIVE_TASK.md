@@ -1,215 +1,314 @@
-# AI ACTIVE TASK — R12D-A READ-ONLY HR FINAL AUTHORIZATION AUDIT
+# AI ACTIVE TASK — R12D-B HR AUTHORIZATION REPAIR DESIGN + ISOLATED UAT IDENTITY DISCOVERY
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting reviewed result: `91a3574495d117bf628a394ce50f3e5781017709`
+> Starting reviewed/control-plane HEAD: `485af5192ea9d9023f6245999aff5da1e696a79d`
 > Target App: App794 `MBO V2 Sandbox`
-> Mode: READ-ONLY AUTHORIZATION AUDIT
+> Mode: READ-ONLY REPAIR DESIGN + NARROW IDENTITY DISCOVERY
 > Kintone write authorization: NONE
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-R12C-R1 proved the deployed runtime is stable and the canonical Process Management baseline is 16 states / 28 actions. It also discovered an important live fact that requires authorization review before any Workflow UAT:
+Current critical path:
 
-- `14 GM Final Evaluation` + `Approve Final GM` -> `15 HR Final Check`;
-- live Process response shows `15 HR Final Check` assignee expression is empty / NONE;
-- `15 HR Final Check` contains `Complete` -> `16 Completed` and `Return Final HR` -> `11 Employee Self Evaluation`;
-- current runtime workflow validator has no HR-specific actor/current-user authorization guard; `Return Final HR` only validates the destination `Requester_User` snapshot.
+`Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Runtime Guard PASS -> Deploy PASS -> Runtime Evidence PASS -> HR Final Authorization BLOCKED -> Isolated Workflow UAT BLOCKED`
 
-This task must determine whether some other live Kintone authorization layer already restricts the HR Final Check actions to HR. Do not assume either defect or safety until the live Process and ACL configuration are inspected together.
+R12D-A confirmed a security/workflow defect at `15 HR Final Check`:
+
+- Process assignee type is `ONE` but assignee entities are empty `[]`;
+- `Complete -> 16 Completed` has no restrictive action filter;
+- `Return Final HR -> 11 Employee Self Evaluation` has no restrictive action filter;
+- App ACL grants `everyone` view/add/edit/delete;
+- Record ACL has no HR-only boundary;
+- Field ACL has no material HR-only authorization boundary;
+- deployed runtime JavaScript has no HR/current-actor authorization guard.
+
+Canonical classification is now:
+
+`DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`
+
+This task does NOT repair the defect. It must produce the smallest production-correct native Kintone repair design and the exact isolated-UAT identity requirements, while preserving:
+
+`REAL_USER_IMPACT = 0`
 
 # CHANGE GOVERNANCE
 
 ## What
-Perform a narrow, read-only authorization audit of App794 around status `15 HR Final Check` and actions `Complete` / `Return Final HR`.
 
-Determine the effective enforcement layers visible from configuration:
-1. Process Management assignee/action conditions;
-2. App-level permissions;
-3. Record-level permissions and conditions;
-4. Field-level permissions only where they materially affect HR Final Check data/action safety;
-5. current repository JavaScript guard behavior.
+Design, but do not execute, the HR Final Check authorization repair.
 
-Then classify the HR Final Check authorization as one of:
-- `ENFORCED_BY_KINTONE_CONFIG`;
-- `ENFORCED_BY_RUNTIME_GUARD`;
-- `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`;
-- `UNRESOLVED_INSUFFICIENT_READ_ONLY_EVIDENCE`.
+The design must:
+
+1. use a **native Kintone authorization boundary as the primary security control** for status `15 HR Final Check`;
+2. keep JavaScript only as optional defense-in-depth, never as the primary boundary;
+3. support isolated App794 Sandbox UAT using only existing controlled identities/accounts;
+4. avoid sending workflow/tasks/notifications to real HR, Manager, or GM during UAT;
+5. preserve a clear production mapping so Sandbox UAT can be certified by production-parity review without a real-user workflow test;
+6. minimize new schema/config/code and avoid unnecessary files/artifacts.
 
 ## Where
+
 Read only:
-- live App794 Process Management;
-- live App794 App / Record / Field permission configuration;
-- existing repository source at current HEAD, especially the process proceed hook and `ValidationEngine.validateWorkflowAction()`;
-- existing R12C-R1 evidence where useful.
 
-Do not inspect unrelated apps unless an exact App794 ACL entry references an external entity whose identifier cannot otherwise be interpreted. Even then, do not enumerate a broad directory.
+- current canonical baseline and R12D-A evidence;
+- current App794 Process Management configuration only if an exact assignee-expression detail is still needed;
+- existing repository source/security docs;
+- the narrowest supported Kintone identity/group lookup needed to identify an existing HR native entity or existing controlled UAT identity.
 
-## How
+Do not modify App794, any other Kintone app, any user/group/directory object, or source code.
 
-### A. Git / baseline gate
+# A. GIT / BASELINE GATE
+
 1. Pull latest `ai/antigravity-wp002c`; local HEAD must equal origin HEAD.
-2. Read canonical baseline in order and confirm current App794 Process baseline = 16 states / 28 actions and current 17 App795 routes = `M1_G1`.
-3. Confirm no `src/**`, `dist/**`, or `tests/**` drift after reviewed deployed candidate `a980f064817cb3243fa57fce0c7c84619019311e`.
-4. Do not run build or npm tests; no source is changing.
+2. Read the confirmed baseline in required order.
+3. Confirm:
+   - App794 Process baseline = 16 states / 28 actions;
+   - current 17 App795 routes = `M1_G1`;
+   - HR Final Check authorization blocker is canonical and unresolved;
+   - App794 remains `SANDBOX` / non-production.
+4. Confirm no `src/**`, `dist/**`, or `tests/**` drift after deployed candidate `a980f064817cb3243fa57fce0c7c84619019311e`.
+5. Do not run npm tests/build.
 
-### B. Process Management exact audit — GET only
-Use one App794 Process Management GET and capture the exact raw semantics relevant to:
-- status `14 GM Final Evaluation`;
-- action `Approve Final GM` -> `15 HR Final Check`;
-- status `15 HR Final Check` assignee configuration, including assignee type and entities array/descriptor exactly as returned;
-- action `Complete` -> `16 Completed` including any action condition/filter condition;
-- action `Return Final HR` -> `11 Employee Self Evaluation` including any action condition/filter condition and destination assignee expression;
-- any built-in setting in status 15 that restricts who can execute actions.
+# B. REUSE EXISTING R12D-A EVIDENCE FIRST
 
-Do not infer `HR Group` from labels. Report the actual response shape.
+Do not repeat the full R12D-A audit.
 
-### C. App794 permission audit — GET only
-Read the minimum live ACL configuration needed to determine whether non-HR identities are blocked from changing status 15:
-- App permissions;
-- Record permissions, including entry order/priority, conditions, entities, and edit/view/delete grants;
-- Field permissions only if they create a material HR-only enforcement boundary for data edited at Final Check.
+Reuse the already-confirmed facts:
 
-For every potentially relevant rule, capture:
-- entity type/code/name available in the response;
-- permission flags;
-- condition/filter expression;
-- whether the rule is status-aware or otherwise capable of restricting `15 HR Final Check` actions.
+- `15 HR Final Check`
+- `assignee.type = ONE`
+- `assignee.entities = []`
+- `Complete -> 16 Completed`, no action filter
+- `Return Final HR -> 11 Employee Self Evaluation`, no action filter
+- Return destination = `Requester_User`
+- App/Record/Field ACL provide no HR-only boundary
+- runtime HR actor guard absent
 
-Do not broaden into a general permission cleanup. Do not mutate ACL.
+Only issue a Process GET if needed to answer one specific repair-design question about the exact assignee expression shape. No broad Process rediscovery.
 
-If the live ACL references a specific HR group/organization and exact membership is required to interpret whether it is a real HR-only boundary, perform only the narrowest official read-only lookup for that exact referenced entity if already supported by existing tooling/API. Otherwise report membership as unresolved; do not enumerate all users/groups.
+# C. NATIVE KINTONE REPAIR MODEL — DESIGN ONLY
 
-### D. Repository runtime guard audit — local only
-Inspect the current process proceed hook and `ValidationEngine.validateWorkflowAction()`.
+Evaluate only native Kintone mechanisms that can actually form the primary authorization boundary at status 15.
 
-Explicitly determine:
-- whether `Complete` at status 15 has any current-user/HR authorization check;
-- whether `Return Final HR` has any current-user/HR authorization check;
-- whether JS validates only routing/destination snapshots rather than actor identity;
-- whether any other existing source module enforces HR-only access for those actions.
+At minimum compare these models if supported by the current tenant/API shape:
 
-Do not modify source.
+### Option 1 — Direct native HR entity on status 15
 
-### E. Effective authorization decision
-Use only the evidence above. Do not rely on button visibility as authorization.
+Examples of native entity types may include USER / GROUP / ORGANIZATION as actually supported by the Process response/API. Do not assume unsupported entity shapes.
 
-Classification rules:
+Determine:
+- whether status 15 can directly reference an existing HR native entity;
+- whether `assignee.type = ONE` with that entity produces an unambiguous actionable HR-only boundary;
+- whether the prior actor must select an individual assignee and whether that would be operationally acceptable;
+- notification/task behavior expected from the native assignment;
+- UAT implications.
 
-`ENFORCED_BY_KINTONE_CONFIG` only if a live Process/ACL rule demonstrably prevents non-HR users who otherwise can access the record from executing the HR Final Check status actions.
+### Option 2 — Record field driven native assignee
 
-`ENFORCED_BY_RUNTIME_GUARD` only if deployed source has a fail-closed actor check tied to a confirmed HR identity boundary.
+If the Process API supports a user-selection/field entity expression, evaluate a dedicated record field such as a future `HR_Final_Check_User` only as a design option.
 
-`DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER` if:
-- status 15 has no restrictive assignee/actor condition;
-- `Complete` / `Return Final HR` have no restrictive action condition;
-- ACL configuration does not establish an HR-only effective boundary for status-changing access; and
-- runtime source has no HR-specific actor authorization check.
+Do NOT create the field.
 
-If ACL semantics cannot be conclusively evaluated from GET responses, use `UNRESOLVED_INSUFFICIENT_READ_ONLY_EVIDENCE`; do not force PASS/FAIL.
+Assess:
+- extra App794 schema required;
+- how the field would be populated from a trusted source;
+- how it would be protected from employee/shared-account tampering;
+- whether it creates unnecessary complexity compared with a direct native entity.
 
-### F. UAT implications
-Without executing UAT, state what the next design must do:
-- if authorization is already enforced: identify the exact controlled identity requirement for HR-isolated UAT;
-- if defect confirmed: propose the smallest production-correct repair options, clearly separating Process Management repair from runtime guard hardening;
-- preserve requirement `REAL_USER_IMPACT = 0` during future UAT;
-- do not configure or test the repair in this task.
+### Option 3 — Record/App ACL as primary boundary
 
-# Why
-Workflow UAT must not certify a path where a non-HR identity may be able to complete or return the HR Final Check stage. The project explicitly treats UI hiding as insufficient authorization and requires workflow transitions to fail closed.
+Evaluate only if the live ACL model can cleanly enforce status-15-only HR authorization without breaking earlier employee/manager/GM workflow access.
 
-# Expected Impact
-Read-only evidence only. No live configuration or record state changes. The result will either clear the HR authorization blocker or convert it into a confirmed, precisely scoped repair task.
+Do not propose a broad ACL rewrite unless unavoidable.
 
-# Risks
-- misreading empty Process assignee as equivalent to an HR group;
-- assuming App/Record ACL grants or denies status changes without checking actual conditions/order;
-- over-scanning user/group directories;
-- turning an audit into an unapproved repair;
-- falsely claiming real-user behavior from UI visibility alone.
+### Mandatory design decision
 
-# TEST PLAN
+Select exactly one recommended **PRIMARY_NATIVE_BOUNDARY** and explain why it is the smallest production-correct option.
 
-No npm test/build/browser workflow test.
+The recommended repair must not depend on UI hiding or JavaScript for authorization.
 
-Required verification:
-1. Git sync and no-code-drift PASS.
-2. Process baseline remains 16/28.
-3. Exact status-15 assignee config captured.
-4. Exact `Complete` and `Return Final HR` action conditions captured.
-5. App ACL captured and interpreted.
-6. Record ACL captured and interpreted, including conditions/order.
-7. Field ACL inspected only as needed.
-8. Runtime actor guard inspection completed.
-9. Effective authorization classification produced from evidence.
-10. Kintone writes = 0; workflow actions = 0; notifications = 0.
+# D. OPTIONAL DEFENSE-IN-DEPTH JAVASCRIPT DESIGN
 
-# ROLLBACK PLAN
+Do not modify source in this task.
 
-None: this task is read-only. If unexpected drift or ambiguous security configuration is found, STOP and preserve evidence. Do not repair without a separate task and fresh explicit user authorization for any Kintone write.
+Determine whether an environment-neutral JavaScript guard can safely add defense-in-depth, for example by requiring the current authenticated Kintone user to be one of the current native assignees at status 15.
+
+Requirements:
+- no hard-coded production HR username in source;
+- no shared-account identity claim;
+- must fail closed if current assignee information is unavailable;
+- must not become the primary security boundary;
+- if Kintone event data cannot reliably provide the native assignee set, report `JS_DEFENSE_IN_DEPTH = NOT_RECOMMENDED / UNPROVEN` instead of inventing behavior.
+
+# E. NARROW EXISTING IDENTITY / GROUP DISCOVERY
+
+Purpose: find enough existing identities to support a zero-real-user-impact Sandbox UAT and, if possible, identify the production HR native entity.
+
+Hard constraints:
+- DO NOT create users, groups, organizations, or licenses;
+- DO NOT enumerate the entire user directory;
+- DO NOT enumerate the entire group directory if the API/tool cannot server-side narrow the search;
+- DO NOT alter memberships;
+- no broad employee scan.
+
+Allowed discovery sequence:
+
+1. Capture the current authenticated executor/admin Kintone user code as a possible controlled Sandbox UAT identity.
+2. Search only narrowly for an existing HR group/organization/entity using server-side search/filter if available (name/code containing an exact HR-related term is acceptable).
+3. If no narrow search is supported, report:
+   `PRODUCTION_HR_NATIVE_ENTITY = UNRESOLVED_WITHOUT_BROAD_DIRECTORY_ENUMERATION`
+   and STOP that discovery path.
+4. Identify whether at least one existing controlled Sandbox identity can serve as `UAT_HR` without involving a real HR recipient. Do not assume this if account control is not provable.
+5. For negative HR authorization testing, identify the required **role**, not necessarily a new account: a different existing controlled non-HR identity must attempt status-15 action and be denied by native Kintone.
+
+Do not use a real HR person merely to prove notification delivery.
+
+# F. SANDBOX UAT VS PRODUCTION PARITY DESIGN
+
+App794 is a Sandbox. Design the repair/UAT boundary accordingly.
+
+The preferred strategy should, if technically valid, separate:
+
+### Sandbox
+
+- status 15 native assignee = controlled UAT identity/entity only;
+- notifications/tasks target controlled UAT accounts only;
+- full `Complete` and `Return Final HR` behavior can be exercised;
+- non-HR controlled identity must be unable to execute status-15 actions;
+- `REAL_USER_IMPACT = 0`.
+
+### Production parity
+
+- production target entity = real HR native entity (group/user/organization as selected by the design);
+- Process topology/status/action structure remains identical to the Sandbox-certified shape, with only the authorized entity mapping differing where necessary;
+- production parity is verified read-only/static before go-live;
+- do NOT require a real HR workflow/notification test.
+
+If this split cannot provide sufficient security confidence, state why and propose the smallest alternative that still preserves zero real-user impact.
+
+# G. MINIMUM REPAIR CHANGE SET
+
+Produce an exact proposed change set, but execute none.
+
+Classify each as:
+
+- `REQUIRED_NATIVE_PROCESS_CHANGE`
+- `REQUIRED_SCHEMA_CHANGE`
+- `REQUIRED_ACL_CHANGE`
+- `OPTIONAL_JS_DEFENSE_IN_DEPTH`
+- `NOT_REQUIRED`
+
+For every proposed change specify:
+
+- What
+- Where
+- How
+- Why
+- Expected impact
+- Risk
+- Test plan
+- Rollback plan
+
+Do not bundle unrelated App794 permission cleanup into this repair.
+
+# H. NEXT CONTROLLED EXECUTION SPLIT
+
+Recommend the smallest execution sequence after ChatGPT review.
+
+Preferred separation:
+
+1. `R12D-C` — repository-only defense-in-depth code/tests, only if actually recommended; 0 Kintone writes.
+2. `R12D-D` — controlled App794 native Process repair under fresh explicit user authorization; no workflow record transitions.
+3. `R12E` — isolated Workflow Functional UAT using exact controlled identities and exact allowed records/transitions.
+
+If JS defense-in-depth is not needed before the native Process repair, say so and omit R12D-C to save credits.
+
+No write authorization is implied by this design task.
+
+# TEST / REVIEW PLAN FOR THIS TASK
+
+No runtime write test.
+
+Required outputs:
+
+1. Git/no-code-drift PASS.
+2. Primary native boundary selected.
+3. Direct entity vs field-driven vs ACL design compared sufficiently to justify selection.
+4. Sandbox UAT assignee strategy defined.
+5. Production HR native entity identified or explicitly unresolved without broad enumeration.
+6. Minimum controlled UAT identity count for HR-stage positive + negative testing stated.
+7. Exact minimum Process/schema/ACL/code change set proposed.
+8. `REAL_USER_IMPACT = 0` maintained.
+9. Kintone writes = 0; workflow actions = 0; notifications = 0.
 
 # HARD SAFETY BOUNDARY
 
 Forbidden:
+
 - all Kintone POST/PUT/DELETE;
-- App794 record create/edit/save/delete;
-- workflow/process status action;
-- Change assignee;
 - Process Management change;
 - App/Record/Field ACL change;
-- customization upload/deploy;
+- schema/customization change;
+- record create/edit/save/delete;
+- workflow/process action;
+- Change assignee;
+- notification-triggering action;
+- user/group/org creation or membership change;
 - App795/App53/App796 writes;
 - source/dist/test changes;
 - npm test/build;
-- notification-generating action;
 - broad user/group enumeration.
 
 Allowed:
-- minimal App794 GETs for Process and ACL configuration;
-- narrow exact entity read-only lookup only if required to interpret a referenced ACL entity;
-- local source/evidence inspection;
-- living/evidence doc Git updates after audit.
+
+- local repository/source/evidence inspection;
+- minimal App794 Process GET only if one exact design semantic remains unresolved;
+- narrow current-user identity read;
+- narrow HR entity lookup using server-side filtering/search only;
+- evidence/living-doc Git updates after design.
 
 # CREDIT-SAVING RULE
 
-- One Process GET.
-- One GET per required ACL class where possible.
-- No browser smoke; R12C-R1 already proved runtime load.
+- Reuse R12D-A Process + ACL evidence.
+- Kintone GET target: 0–3 total; do not repeat known reads.
+- No browser workflow test.
 - No npm tests/build.
-- No App795 re-query unless a new direct dependency unexpectedly appears; current topology baseline is already confirmed.
-- No broad account inventory.
-- Push evidence and STOP.
+- No App795 re-query.
+- No broad directory scan.
+- Do not create a new design/evidence file; append one concise block to `AI_REVIEW_PACKAGE.md` and minimally update living docs.
+- Push and STOP.
 
 # REQUIRED EVIDENCE
 
-Append one concise R12D-A block to `project-docs/AI_REVIEW_PACKAGE.md`; minimally update CURRENT_STATE/HANDOFF/IMPLEMENTATION_STATUS/CHANGELOG if normally required. Do not create a new evidence file.
-
 ```text
-M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT = COMPLETE / PARTIAL / BLOCKED
-STARTING_HEAD = 91a3574495d117bf628a394ce50f3e5781017709
-PROCESS_STATE_COUNT = actual
-PROCESS_ACTION_COUNT = actual
-HR_STATUS = 15 HR Final Check
-HR_STATUS_ASSIGNEE_TYPE = actual
-HR_STATUS_ASSIGNEE_ENTITIES = actual concise representation
-HR_COMPLETE_ACTION_FILTER = actual / NONE
-HR_RETURN_ACTION_FILTER = actual / NONE
-HR_RETURN_DESTINATION_ASSIGNEE = actual
-APP_ACL_RELEVANT_RULES = actual concise summary
-RECORD_ACL_RELEVANT_RULES = actual concise summary
-RECORD_ACL_RULE_ORDER_EVALUATED = PASS/FAIL/NOT_APPLICABLE
-FIELD_ACL_RELEVANT_RULES = actual concise summary / NOT_MATERIAL
-EXACT_HR_ENTITY_REFERENCED_BY_ACL = actual / NONE
-HR_ENTITY_MEMBERSHIP = actual / NOT_REQUIRED / NOT_RESOLVED
-RUNTIME_COMPLETE_HR_ACTOR_GUARD = PRESENT/ABSENT
-RUNTIME_RETURN_FINAL_HR_ACTOR_GUARD = PRESENT/ABSENT
-UI_HIDING_USED_AS_AUTHORIZATION = NO
-EFFECTIVE_HR_AUTHORIZATION_CLASSIFICATION = ENFORCED_BY_KINTONE_CONFIG / ENFORCED_BY_RUNTIME_GUARD / DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER / UNRESOLVED_INSUFFICIENT_READ_ONLY_EVIDENCE
-NON_HR_STATUS15_ACTION_RISK = BLOCKED_BY_CONFIG / BLOCKED_BY_RUNTIME / POSSIBLE / UNPROVEN
+M10L_D_R12D_B_HR_REPAIR_DESIGN = COMPLETE / PARTIAL / BLOCKED
+STARTING_HEAD = 485af5192ea9d9023f6245999aff5da1e696a79d
+CONFIRMED_DEFECT = DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER
+PRIMARY_NATIVE_BOUNDARY = DIRECT_USER / DIRECT_GROUP / DIRECT_ORGANIZATION / FIELD_ENTITY / RECORD_ACL / OTHER / UNRESOLVED
+PRIMARY_NATIVE_BOUNDARY_REASON = concise exact reason
+DIRECT_NATIVE_ENTITY_MODEL = RECOMMENDED / NOT_RECOMMENDED / UNSUPPORTED / UNRESOLVED
+FIELD_DRIVEN_ASSIGNEE_MODEL = RECOMMENDED / NOT_RECOMMENDED / UNSUPPORTED / UNRESOLVED
+ACL_PRIMARY_MODEL = RECOMMENDED / NOT_RECOMMENDED / UNSUPPORTED / UNRESOLVED
+REQUIRED_NATIVE_PROCESS_CHANGE = exact concise proposal / NONE
+REQUIRED_SCHEMA_CHANGE = exact concise proposal / NONE
+REQUIRED_ACL_CHANGE = exact concise proposal / NONE
+JS_DEFENSE_IN_DEPTH = RECOMMENDED / NOT_RECOMMENDED / UNPROVEN
+JS_DEFENSE_IN_DEPTH_DESIGN = concise proposal / NONE
+CURRENT_CONTROLLED_UAT_IDENTITY = actual code or UNRESOLVED
+PRODUCTION_HR_NATIVE_ENTITY = exact type+identifier / UNRESOLVED_WITHOUT_BROAD_DIRECTORY_ENUMERATION
+SANDBOX_HR_ASSIGNEE_STRATEGY = exact concise strategy
+PRODUCTION_HR_ASSIGNEE_STRATEGY = exact concise strategy / PENDING_ENTITY_CONFIRMATION
+MINIMUM_CONTROLLED_IDENTITIES_FOR_HR_STAGE_UAT = actual integer / UNRESOLVED
+NEGATIVE_NON_HR_TEST_IDENTITY_REQUIREMENT = exact role requirement
+REAL_USER_IMPACT = 0
+REAL_HR_WORKFLOW_TEST_REQUIRED = NO
+REAL_HR_NOTIFICATION_TEST_REQUIRED = NO
+PRODUCTION_PARITY_METHOD = concise method
+PROPOSED_EXECUTION_SEQUENCE = exact minimal rounds
 KINTONE_GET_CALLS_THIS_TASK = actual
 KINTONE_WRITES_THIS_TASK = 0
 WORKFLOW_ACTION_EXECUTED = 0
@@ -219,7 +318,7 @@ DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = actual
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY HR AUTHORIZATION REPAIR OR WORKFLOW UAT
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY REPAIR WRITE
 ```
 
 Push same branch and STOP.
