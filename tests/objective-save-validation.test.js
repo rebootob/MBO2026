@@ -1657,3 +1657,113 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   uiStatus05Open.render();
   assert.ok(uiStatus05Open.root.innerHTML.includes('Start Mid-Year') || uiStatus05Open.root.innerHTML.includes('พร้อมเริ่มทบทวนกลางปี'));
 });
+
+test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
+  // 1. Optional Attachment UI & 0 Required Field Errors for Empty Attachment
+  const uiObjAttach = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '01 Draft Objective' } }),
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true
+  });
+  uiObjAttach.render();
+  assert.ok(uiObjAttach.root.innerHTML.includes('Attach File') || uiObjAttach.root.innerHTML.includes('แนบไฟล์'));
+  assert.ok(uiObjAttach.root.innerHTML.includes('Optional'));
+
+  // Save validation passes with 0 attachment errors
+  const recordObjEmptyAttach = createMockRecord({ Status: { value: '01 Draft Objective' } });
+  const valResult = ValidationEngine.validate(recordObjEmptyAttach, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  const attachErrors = (valResult.errors || []).filter(e => e.field && e.field.includes('Attachment'));
+  assert.equal(attachErrors.length, 0, 'ATTACHMENT_REQUIRED_VALIDATION_COUNT must be 0');
+
+  // 2. Mid-Year Employee-Reported Progress (%) Input 0..100 & Progress Bar
+  const uiMidProg = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' }, Progress_Percent_1: { value: '75' } }),
+    stage: 'MIDYEAR_INPUT',
+    isEditable: true
+  });
+  uiMidProg.render();
+  assert.ok(uiMidProg.root.innerHTML.includes('ความคืบหน้าของเป้าหมาย') || uiMidProg.root.innerHTML.includes('Objective Progress'));
+  assert.ok(uiMidProg.root.innerHTML.includes('mbo-prog-num'));
+  assert.ok(uiMidProg.root.innerHTML.includes('75%') || uiMidProg.root.innerHTML.includes('value="75"'));
+
+  // 3. Native Kintone Comment Thread Coexistence Placeholder
+  assert.ok(uiMidProg.root.innerHTML.includes('Kintone Comments') || uiMidProg.root.innerHTML.includes('ความคิดเห็นใน Kintone'));
+
+  // 4. Prominent Deadline Urgency Callouts
+  const dlOnTime = calculateDeadlineInfo('2026-01-01', '2026-12-31', '2026-06-15');
+  assert.equal(dlOnTime.status, 'Open');
+  assert.ok(dlOnTime.badgeClass.includes('mbo-deadline-open'));
+
+  const dlOverdue = calculateDeadlineInfo('2026-01-01', '2026-03-31', '2026-06-15');
+  assert.equal(dlOverdue.status, 'Overdue');
+  assert.equal(dlOverdue.overdueDays, 76);
+  assert.equal(dlOverdue.calloutTextEN, '76 DAYS OVERDUE');
+
+  const dlDueToday = calculateDeadlineInfo('2026-01-01', '2026-06-15', '2026-06-15');
+  assert.equal(dlDueToday.status, 'Due Today');
+  assert.equal(dlDueToday.calloutTextEN, 'DUE TODAY');
+
+  // 5. Active Appraiser Column Mapping Follows Status & Topology
+  // M1_G1 Status 13 -> 1st Appraiser active (Slot 1)
+  const uiM1G1Status13 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' }, Routing_Topology: { value: 'M1_G1' } }),
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    appraiserCount: 2
+  });
+  uiM1G1Status13.render();
+  assert.ok(uiM1G1Status13.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 1'));
+
+  // M1_G1 Status 14 -> 2nd Appraiser active (Slot 2)
+  const uiM1G1Status14 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '14 GM Final Evaluation' }, Routing_Topology: { value: 'M1_G1' } }),
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    appraiserCount: 2
+  });
+  uiM1G1Status14.render();
+  assert.ok(uiM1G1Status14.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 2'));
+
+  // M1_M2_G1 Status 12 -> 1st Appraiser active (Slot 1)
+  const uiM1M2Status12 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '12 First Manager Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    appraiserCount: 3
+  });
+  uiM1M2Status12.render();
+  assert.ok(uiM1M2Status12.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 1'));
+
+  // M1_M2_G1 Status 13 -> 2nd Appraiser active (Slot 2)
+  const uiM1M2Status13 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    appraiserCount: 3
+  });
+  uiM1M2Status13.render();
+  assert.ok(uiM1M2Status13.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 2'));
+
+  // M1_M2_G1 Status 14 -> 3rd Appraiser active (Slot 3)
+  const uiM1M2Status14 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '14 GM Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
+    stage: 'APPRAISER_EVALUATION',
+    isEditable: true,
+    appraiserCount: 3
+  });
+  uiM1M2Status14.render();
+  assert.ok(uiM1M2Status14.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 3'));
+
+  // Inactive appraiser columns render visible and read-only
+  assert.ok(uiM1G1Status13.root.innerHTML.includes('[READ-ONLY / VISIBLE]'));
+
+  // 6. Workflow Action Timeline Frame (Read-Only Lifecycle Audit Trail)
+  assert.ok(uiM1G1Status13.root.innerHTML.includes('Workflow Action Timeline') || uiM1G1Status13.root.innerHTML.includes('ประวัติการดำเนินการ'));
+});

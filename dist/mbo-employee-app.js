@@ -2026,6 +2026,8 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
       labelEN: 'Completed',
       daysTextTH: 'ดำเนินการเสร็จสมบูรณ์เรียบร้อยแล้ว',
       daysTextEN: 'Phase process completed',
+      calloutTextTH: 'เสร็จสมบูรณ์',
+      calloutTextEN: 'COMPLETED',
       badgeClass: 'mbo-deadline-completed',
       isCompleted: true
     };
@@ -2049,6 +2051,8 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
       labelEN: 'Upcoming',
       daysTextTH: `เริ่มใน ${diffDays} วัน (${startDateIso})`,
       daysTextEN: `Opens in ${diffDays} days (${startDateIso})`,
+      calloutTextTH: `เริ่มใน ${diffDays} วัน`,
+      calloutTextEN: `Opens in ${diffDays} days`,
       badgeClass: 'mbo-deadline-upcoming',
       isUpcoming: true,
       diffDays
@@ -2063,6 +2067,8 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
       labelEN: 'Overdue',
       daysTextTH: `เกินกำหนด ${overdueDays} วัน (ครบกำหนด ${endDateIso})`,
       daysTextEN: `${overdueDays} days overdue (Due ${endDateIso})`,
+      calloutTextTH: `เกินกำหนด ${overdueDays} วัน`,
+      calloutTextEN: `${overdueDays} DAYS OVERDUE`,
       badgeClass: 'mbo-deadline-overdue',
       isOverdue: true,
       overdueDays
@@ -2077,6 +2083,8 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
       labelEN: 'Due Today',
       daysTextTH: `ครบกำหนดวันนี้ (${endDateIso})`,
       daysTextEN: `Due today (${endDateIso})`,
+      calloutTextTH: `ครบกำหนดวันนี้`,
+      calloutTextEN: `DUE TODAY`,
       badgeClass: 'mbo-deadline-due-today',
       isDueToday: true,
       remDays: 0
@@ -2089,6 +2097,8 @@ function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', 
     labelEN: 'Open',
     daysTextTH: `เหลือ ${remDays} วัน (ครบกำหนด ${endDateIso})`,
     daysTextEN: `${remDays} days remaining (Due ${endDateIso})`,
+    calloutTextTH: `เหลือ ${remDays} วัน`,
+    calloutTextEN: `${remDays} DAYS REMAINING`,
     badgeClass: remDays <= 7 ? 'mbo-deadline-due-soon' : 'mbo-deadline-open',
     isOpen: true,
     remDays
@@ -2624,6 +2634,12 @@ class EmployeePartAUI {
       root.appendChild(this._renderScreenHrFinal());
     }
 
+    // Native Kintone Comment Thread Coexistence Placeholder
+    root.appendChild(this._renderNativeCommentPlaceholder());
+
+    // Workflow Action Timeline Frame (Read-Only Lifecycle Audit Trail)
+    root.appendChild(this._renderWorkflowActionTimeline());
+
     this.container.appendChild(root);
     this._updateTotalWeightDisplay();
     this._refreshAllFieldHighlights(root);
@@ -2796,6 +2812,106 @@ class EmployeePartAUI {
     return card;
   }
 
+  _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
+    let recField = this.record[fieldCode];
+    if ((!recField || !recField.value || (Array.isArray(recField.value) && recField.value.length === 0)) && fieldCode.startsWith('Self_Attachment_')) {
+      const altCode = fieldCode.replace('Self_Attachment_', 'Final_Attachment_');
+      recField = this.record[altCode];
+    }
+    const rawVal = recField ? recField.value : null;
+    let fileName = null;
+    if (Array.isArray(rawVal) && rawVal.length > 0 && rawVal[0] && rawVal[0].name) {
+      fileName = rawVal[0].name;
+    } else if (rawVal && typeof rawVal === 'object' && rawVal.name) {
+      fileName = rawVal.name;
+    } else if (typeof rawVal === 'string' && rawVal) {
+      fileName = rawVal;
+    }
+
+    const mockFile = this.previewOptions.attachments?.[fieldCode] || (fileName ? { name: fileName } : null);
+
+    if (mockFile && mockFile.name) {
+      return `
+        <div class="mbo-attachment-badge">
+          📎 <span style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(mockFile.name)}</span>
+          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">✕</button>` : ''}
+        </div>
+      `;
+    }
+
+    if (isEditable) {
+      return `
+        <div class="mbo-attachment-box">
+          <label class="mbo-attachment-btn">
+            📎 แนบไฟล์ (เลือกได้ / Optional)
+            <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml(fieldCode)}" style="display:none;" />
+          </label>
+          <div style="font-size:9.5px; color:#64748b; margin-top:2px;">Optional evidence (${escapeHtml(stageLabel)})</div>
+        </div>
+      `;
+    }
+
+    return `<span style="font-size:11px; color:#94a3b8; font-style:italic;">ไม่มีไฟล์แนบ / No attachment</span>`;
+  }
+
+  _renderWorkflowActionTimeline() {
+    const card = document.createElement('div');
+    card.className = 'mbo-timeline-card';
+
+    const events = this.previewOptions.timelineEvents || [
+      { stage: '1. Objectives', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong', action: 'Approved Objectives', time: '14 Feb 2026 • 09:42', outcome: 'approved', commentNotice: false },
+      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai', action: 'Returned for Revision', time: '15 Feb 2026 • 10:18', outcome: 'returned', commentNotice: true },
+      { stage: '1. Objectives', actor: 'Employee / Requester (พนักงาน)', name: 'Somchai Prasert', action: 'Resubmitted Objectives', time: '16 Feb 2026 • 08:30', outcome: 'resubmitted', commentNotice: false },
+      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai', action: 'Approved Objectives', time: '16 Feb 2026 • 13:05', outcome: 'approved', commentNotice: false },
+      { stage: '4. Appraiser Evaluation', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong', action: 'Scoring Completed', time: '20 Nov 2026 • 14:22', outcome: 'approved', commentNotice: false }
+    ];
+
+    const itemsHtml = events.map(e => `
+      <div class="mbo-timeline-item ${escapeHtml(e.outcome)}">
+        <div>
+          <span style="font-size:10px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 6px; border-radius:4px; margin-right:6px;">[${escapeHtml(e.stage)}]</span>
+          <span class="mbo-timeline-actor">${escapeHtml(e.actor)}:</span>
+          <span style="font-weight:600; color:#0f172a;">${escapeHtml(e.name)}</span>
+          <span class="mbo-timeline-action" style="margin-left:8px;">➔ ${escapeHtml(e.action)}</span>
+          ${e.commentNotice ? `<span style="font-size:10.5px; color:#dc2626; font-weight:700; margin-left:6px;">💬 ดูความคิดเห็นใน Kintone / View Kintone Comments</span>` : ''}
+        </div>
+        <div class="mbo-timeline-time">🕒 ${escapeHtml(e.time)}</div>
+      </div>
+    `).join('');
+
+    card.innerHTML = `
+      <details open style="cursor:pointer;">
+        <summary class="mbo-timeline-title">
+          <span>📜 ประวัติการดำเนินการ / Workflow Action Timeline (Read-Only Audit Trail)</span>
+          <span style="font-size:11px; font-weight:600; color:#64748b;">${events.length} Events Recorded</span>
+        </summary>
+        <div class="mbo-timeline-grid" style="margin-top:10px;">
+          ${itemsHtml}
+        </div>
+      </details>
+    `;
+    return card;
+  }
+
+  _renderNativeCommentPlaceholder() {
+    const card = document.createElement('div');
+    card.className = 'mbo-native-comment-placeholder';
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong style="color:#0f172a; font-size:13px;">💬 ความคิดเห็นใน Kintone / Kintone Comments (Native Platform)</strong>
+          <div style="font-size:11.5px; color:#475569; margin-top:2px;">
+            เมื่อมีการส่งกลับให้แก้ไข (Return / Reject) ผู้ประเมินและพนักงานสามารถสื่อสารผ่านช่องทางความคิดเห็นหลักของ Kintone ทางด้านขวามือของหน้าจอ
+          </div>
+        </div>
+        <span style="font-size:10.5px; font-weight:700; background:#e2e8f0; color:#334155; padding:4px 8px; border-radius:4px; white-space:nowrap;">
+          Native Platform Coexistence
+        </span>
+      </div>
+    `;
+    return card;
+  }
+
   _renderScreenObjectives() {
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
@@ -2861,26 +2977,32 @@ class EmployeePartAUI {
       <thead>
         <tr>
           <th style="width: 40px; text-align: center;">#</th>
-          <th style="width: 32%;">
+          <th style="width: 28%;">
             เป้าหมายและผลลัพธ์ที่คาดหวัง / Objectives & Target *
             <span class="th-sub">[ระบุเป้าหมาย ตัวชี้วัด และค่าเป้าหมาย]</span>
           </th>
-          <th style="width: 32%;">
+          <th style="width: 28%;">
             แผนปฏิบัติการ / Action Plan *
             <span class="th-sub">[ระบุกิจกรรม ขั้นตอน และระยะเวลาดำเนินการ]</span>
           </th>
-          <th style="width: 18%;">
+          <th style="width: 16%;">
             ข้อตกลงเพิ่มเติม / Additional Agreement
             <span class="th-sub">[ข้อตกลงหรือหมายเหตุเพิ่มเติม]</span>
           </th>
-          <th style="width: 8%; text-align: center;">
+          <th style="width: 7%; text-align: center;">
             น้ำหนัก *
             <span class="th-sub">(Weight %)</span>
           </th>
-          <th style="width: 14%; text-align: center;">
+          <th style="width: 11%; text-align: center;">
             ความยาก *
             <span class="th-sub">[Difficulty 1-4]</span>
           </th>
+          <th style="width: 10%; text-align: center;">
+            แนบไฟล์ / Attach File
+            <span class="th-sub">(Optional)</span>
+          </th>
+        </tr>
+      </thead>
     `;
 
     const tbody = document.createElement('tbody');
@@ -2892,6 +3014,7 @@ class EmployeePartAUI {
       const addVal = this._getVal(`Additional_Agreement_${i}`);
       const wVal = this._getVal(`Weight_${i}`);
       const diffVal = this._getVal(`Difficulty_${i}`);
+      const attachHtml = this._renderAttachmentControl(`Objective_Attachment_${i}`, 'Objectives', isObjEditable);
 
       const tr = document.createElement('tr');
       tr.dataset.objIndex = String(i);
@@ -2926,6 +3049,9 @@ class EmployeePartAUI {
             <input type="text" class="mbo-cell-input mbo-field-state-locked" value="${diffVal ? `Level ${escapeHtml(diffVal)}` : 'ยังไม่ได้ระบุ / Not selected'}" readonly style="height:36px;" />
           `}
           <span class="mbo-cell-tag" data-target="Difficulty_${i}"></span>
+        </td>
+        <td style="vertical-align:top; text-align:center;">
+          ${attachHtml}
         </td>
       `;
       tbody.appendChild(tr);
@@ -2980,11 +3106,14 @@ class EmployeePartAUI {
       <thead>
         <tr>
           <th style="width:40px; text-align:center;">#</th>
-          <th style="width:24%;">เป้าหมาย & แผนงาน / Objective & Action Plan (Read-Only)</th>
-          <th style="width:14%;">ความคืบหน้า / Progress (%)</th>
-          <th style="width:18%;">ทบทวนเป็นระยะ / Periodical Review</th>
-          <th style="width:18%;">ผลสำเร็จปัจจุบัน / Milestone Result</th>
+          <th style="width:22%;">เป้าหมาย & แผนงาน / Objective & Action Plan (Read-Only)</th>
+          <th style="width:16%;">ความคืบหน้าของเป้าหมาย / Objective Progress (%)</th>
+          <th style="width:17%;">ทบทวนเป็นระยะ / Periodical Review</th>
+          <th style="width:17%;">ผลสำเร็จปัจจุบัน / Milestone Result</th>
           <th style="width:16%;">ปัญหาอุปสรรค / Issue & Next Action</th>
+          <th style="width:12%; text-align:center;">แนบไฟล์ / Attach File <span class="th-sub">(Optional)</span></th>
+        </tr>
+      </thead>
     `;
 
     const tbody = document.createElement('tbody');
@@ -2998,7 +3127,7 @@ class EmployeePartAUI {
       const resVal = this._getVal(`MidYear_Result_${i}`);
       const riskVal = this._getVal(`MidYear_Issue_Risk_${i}`);
       const nextActVal = this._getVal(`MidYear_Next_Action_${i}`);
-      const attachChipsHtml = this._getAttachmentHtml(`MidYear_Attachment_${i}`, this.previewOptions.midyearAttachments?.[i]);
+      const attachHtml = this._renderAttachmentControl(`MidYear_Attachment_${i}`, 'Mid-Year', isMidEditable);
 
       const tr = document.createElement('tr');
       tr.dataset.objIndex = String(i);
@@ -3010,12 +3139,22 @@ class EmployeePartAUI {
           <div style="font-size:12px; color:#475569; background:#f8fafc; padding:6px; border-radius:4px;">${escapeHtml(actVal) || '-'}</div>
         </td>
         <td>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <label style="font-size:11px; font-weight:700; color:#0369a1;">Progress: <strong>${prog}%</strong></label>
-            ${isMidEditable ? `<input type="range" min="0" max="100" class="mbo-field mbo-prog-range" data-code="Progress_Percent_${i}" value="${prog}" style="width:80px;" />` : ''}
+          <div style="font-size:10.5px; font-weight:700; color:#0369a1; margin-bottom:2px;">
+            ความคืบหน้าของเป้าหมาย / Objective Progress (%)
           </div>
-          <div class="mbo-progress-bar-container">
-            <div class="mbo-progress-bar-fill" style="width: ${prog}%;"></div>
+          <div style="font-size:9.5px; color:#64748b; margin-bottom:4px;">
+            พนักงานระบุความคืบหน้าปัจจุบัน 0–100% / Employee-reported current progress 0–100%
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            ${isMidEditable ? `
+              <input type="number" min="0" max="100" class="mbo-cell-input mbo-field mbo-prog-num" data-code="Progress_Percent_${i}" value="${prog}" style="width:60px; height:28px; font-size:12px; font-weight:700; text-align:center;" />
+              <input type="range" min="0" max="100" class="mbo-field mbo-prog-range" data-code="Progress_Percent_${i}" value="${prog}" style="width:80px;" />
+            ` : `
+              <strong style="font-size:13px; color:#0369a1;">${prog}%</strong>
+            `}
+          </div>
+          <div class="mbo-progress-bar-container" style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+            <div class="mbo-progress-bar-fill" style="width: ${prog}%; height:100%; background:#0284c7;"></div>
           </div>
         </td>
         <td>
@@ -3028,8 +3167,8 @@ class EmployeePartAUI {
           <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Issue_Risk_${i}" ${!isMidEditable ? 'readonly' : ''} style="min-height:38px; margin-bottom:4px;" placeholder="ปัญหา/อุปสรรค...">${escapeHtml(riskVal)}</textarea>
           <textarea class="mbo-cell-textarea mbo-field" data-code="MidYear_Next_Action_${i}" ${!isMidEditable ? 'readonly' : ''} style="min-height:38px;" placeholder="แนวทางแก้ไข...">${escapeHtml(nextActVal)}</textarea>
         </td>
-        <td>
-          <div class="mbo-attachment-list">${attachChipsHtml}</div>
+        <td style="vertical-align:top; text-align:center;">
+          ${attachHtml}
         </td>
       `;
       tbody.appendChild(tr);
@@ -3081,10 +3220,13 @@ class EmployeePartAUI {
       <thead>
         <tr>
           <th style="width:40px; text-align:center;">#</th>
-          <th style="width:25%;">เป้าหมาย / Objective (Read-Only)</th>
-          <th style="width:35%;">ผลการดำเนินงานจริง / Actual Result & Achievement *</th>
-          <th style="width:15%;">ประเมินตนเอง / Self Achievement [1-5] *</th>
-          <th style="width:15%;">ความคิดเห็นตนเอง / Self Reflection</th>
+          <th style="width:23%;">เป้าหมาย / Objective (Read-Only)</th>
+          <th style="width:33%;">ผลการดำเนินงานจริง / Actual Result & Achievement *</th>
+          <th style="width:14%;">ประเมินตนเอง / Self Achievement [1-5] *</th>
+          <th style="width:18%;">ความคิดเห็นตนเอง / Self Reflection</th>
+          <th style="width:12%; text-align:center;">แนบไฟล์ / Attach File <span class="th-sub">(Optional)</span></th>
+        </tr>
+      </thead>
     `;
 
     const tbody = document.createElement('tbody');
@@ -3096,7 +3238,7 @@ class EmployeePartAUI {
       const actResult = this._getVal(`Actual_Result_${i}`);
       const selfAch = this._getVal(`Self_Achievement_${i}`) || '3';
       const selfComment = this._getVal(`Self_Comment_${i}`);
-      const attachChipsHtml = this._getAttachmentHtml(`Final_Attachment_${i}`, this.previewOptions.finalAttachments?.[i]);
+      const attachHtml = this._renderAttachmentControl(`Self_Attachment_${i}`, 'Self Evaluation', isSelfEditable) || this._renderAttachmentControl(`Final_Attachment_${i}`, 'Self Evaluation', isSelfEditable);
 
       const tr = document.createElement('tr');
       tr.dataset.objIndex = String(i);
@@ -3125,8 +3267,8 @@ class EmployeePartAUI {
         <td>
           <textarea class="mbo-cell-textarea mbo-field" data-code="Self_Comment_${i}" ${!isSelfEditable ? 'readonly' : ''} style="min-height:80px;" placeholder="ข้อคิดเห็นประกอบการประเมินตนเอง...">${escapeHtml(selfComment)}</textarea>
         </td>
-        <td>
-          <div class="mbo-attachment-list">${attachChipsHtml}</div>
+        <td style="vertical-align:top; text-align:center;">
+          ${attachHtml}
         </td>
       `;
       tbody.appendChild(tr);
@@ -3143,6 +3285,21 @@ class EmployeePartAUI {
     const compSetCode = this._getVal('Competency_Set_Code') || this.previewOptions.competencySetCode;
     const applicableCompList = getApplicableCompetencies(compSetCode);
 
+    const currentStatus = this._getVal('Status') || '13 Manager Final Evaluation';
+    const rawTopology = this._getVal('Routing_Topology') || 'M1_G1';
+    const topInfo = classifyTopologyForUI(rawTopology);
+
+    let activeSlot = 1;
+    if (this.previewOptions.activeSlotIndex !== undefined && this.previewOptions.activeSlotIndex !== null) {
+      activeSlot = parseInt(this.previewOptions.activeSlotIndex, 10);
+    } else if (currentStatus === '12 First Manager Final Evaluation') {
+      activeSlot = 1;
+    } else if (currentStatus === '13 Manager Final Evaluation') {
+      activeSlot = topInfo.isM1M2G1 ? 2 : 1;
+    } else if (currentStatus === '14 GM Final Evaluation') {
+      activeSlot = topInfo.isM1M2G1 ? 3 : 2;
+    }
+
     // Top Appraiser Completion Card
     const compCard = document.createElement('div');
     compCard.className = 'mbo-appraiser-completion-card';
@@ -3152,12 +3309,13 @@ class EmployeePartAUI {
         <strong>${appraiserInfo.completedCount} / ${appraiserInfo.totalCount} Complete (${appraiserInfo.completionPercent}%)</strong>
         <div style="font-size:11.5px; font-weight:normal; color:#475569; margin-top:2px;">
           Part A Ratings: <strong>${appraiserInfo.partA.completed}/${appraiserInfo.partA.total}</strong> | Part B Ratings: <strong>${appraiserInfo.partB.completed}/${appraiserInfo.partB.total}</strong>
+          | Active Slot: <strong style="color:#0284c7;">Slot ${activeSlot} (${appraiserInfo.slots.find(s => s.slotIndex === activeSlot)?.label || ''})</strong>
         </div>
       </div>
       <div class="mbo-appraiser-slots-pills">
         ${appraiserInfo.slots.map(s => `
-          <span class="mbo-appraiser-slot-pill ${s.isCompleted ? 'done' : 'pending'}">
-            ${s.isCompleted ? '✓' : '⏳'} ${escapeHtml(s.label)}
+          <span class="mbo-appraiser-slot-pill ${s.isCompleted ? 'done' : 'pending'} ${s.slotIndex === activeSlot ? 'active' : ''}">
+            ${s.isCompleted ? '✓' : '⏳'} ${escapeHtml(s.label)} ${s.slotIndex === activeSlot ? '(Active)' : ''}
           </span>
         `).join('')}
       </div>
@@ -3185,7 +3343,8 @@ class EmployeePartAUI {
     let slotHeadersHtml = '';
     appraiserInfo.slots.forEach(s => {
       const slotTitle = (s.slotIndex >= 3) ? `${escapeHtml(s.label)} (Preview Logical Slot)` : escapeHtml(s.label);
-      slotHeadersHtml += `<th style="width: 16%;">${slotTitle}</th>`;
+      const isActiveCol = (s.slotIndex === activeSlot);
+      slotHeadersHtml += `<th style="width: 16%; ${isActiveCol ? 'background:#0284c7; color:#ffffff;' : ''}">${slotTitle} ${isActiveCol ? '★ Active' : ''}</th>`;
     });
 
     tableA.innerHTML = `
@@ -3193,8 +3352,11 @@ class EmployeePartAUI {
         <tr>
           <th style="width: 40px; text-align: center;">#</th>
           <th style="width: 22%;">เป้าหมาย & แผนงาน / Objective</th>
-          <th style="width: 18%;">ผลงานจริง / Actual Result</th>
+          <th style="width: 18%;">ผลงานจริง & หลักฐาน / Evidence Context</th>
           ${slotHeadersHtml}
+          <th style="width: 10%; text-align: center;">คะแนนสรุป / Result</th>
+        </tr>
+      </thead>
     `;
 
     const tbodyA = document.createElement('tbody');
@@ -3207,38 +3369,48 @@ class EmployeePartAUI {
       const actResult = this._getVal(`Actual_Result_${i}`);
       const selfAch = this._getVal(`Self_Achievement_${i}`) || '-';
 
-      const mgrScore = this._getVal(`Manager_Objective_Score_${i}`);
-      const gmScore = this._getVal(`GM_Objective_Score_${i}`);
       const avgScore = this._getVal(`Average_Objective_Score_${i}`);
       const mboPoint = this._getVal(`MBO_Point_${i}`);
 
-      const midAttachHtml = this._getAttachmentHtml(`MidYear_Attachment_${i}`, this.previewOptions.midyearAttachments?.[i]);
-      const selfAttachHtml = this._getAttachmentHtml(`Final_Attachment_${i}`, this.previewOptions.finalAttachments?.[i]);
+      const objAttachHtml = this._renderAttachmentControl(`Objective_Attachment_${i}`, 'Objectives', false);
+      const midAttachHtml = this._renderAttachmentControl(`MidYear_Attachment_${i}`, 'Mid-Year', false);
+      const selfAttachHtml = this._renderAttachmentControl(`Self_Attachment_${i}`, 'Self Evaluation', false);
 
       let slotCellsHtml = '';
       appraiserInfo.slots.forEach(s => {
         const ratingVal = s.partARatings[i] || '';
         const itemComment = s.partAComments[i] || '';
-        const isSlotEditable = this.isPreviewMode ? (s.slotIndex === parseInt(this.activeSlotIndex, 10)) : false;
+        const isSlotEditable = this.isEditable && (s.slotIndex === activeSlot);
 
         const ratingDataCode = s.slotIndex === 1 ? `Manager_Achievement_${i}` : (s.slotIndex === 2 ? `GM_Achievement_${i}` : '');
         const commentDataCode = s.slotIndex === 1 ? `Manager_Comment_${i}` : (s.slotIndex === 2 ? `GM_Comment_${i}` : '');
 
-        slotCellsHtml += `
-          <td style="${isSlotEditable ? 'background:#f0f9ff; border:1px solid #3b82f6;' : ''}">
-            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:2px;">Rating [1-5]:</div>
-            <select class="mbo-cell-select ${ratingDataCode ? 'mbo-field' : ''}" ${ratingDataCode ? `data-code="${ratingDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'disabled' : ''} style="height:32px; font-size:12px;">
-              <option value="" ${!ratingVal ? 'selected' : ''}>-- Select --</option>
-              <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Rarely meet</option>
-              <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Partially meet</option>
-              <option value="3" ${ratingVal === '3' ? 'selected' : ''}>3 : Fully meet</option>
-              <option value="4" ${ratingVal === '4' ? 'selected' : ''}>4 : Exceeded</option>
-              <option value="5" ${ratingVal === '5' ? 'selected' : ''}>5 : Remarkable</option>
-            </select>
-            <div style="font-size:11px; font-weight:700; color:#475569; margin:4px 0 2px 0;">Feedback:</div>
-            <textarea class="mbo-wide-textarea ${commentDataCode ? 'mbo-field' : ''}" ${commentDataCode ? `data-code="${commentDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'readonly' : ''} style="min-height:45px; font-size:12px;" placeholder="Comment...">${escapeHtml(itemComment)}</textarea>
-          </td>
-        `;
+        if (isSlotEditable) {
+          slotCellsHtml += `
+            <td style="background:#f0f9ff; border:2px solid #0284c7;">
+              <div style="font-size:10px; font-weight:700; color:#0284c7; margin-bottom:2px;">[EDITABLE / ACTIVE APPRAISER]</div>
+              <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:2px;">Rating [1-5]:</div>
+              <select class="mbo-cell-select ${ratingDataCode ? 'mbo-field' : ''}" ${ratingDataCode ? `data-code="${ratingDataCode}"` : `data-preview-slot="${s.slotIndex}"`} style="height:32px; font-size:12px;">
+                <option value="" ${!ratingVal ? 'selected' : ''}>-- Select --</option>
+                <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Rarely meet</option>
+                <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Partially meet</option>
+                <option value="3" ${ratingVal === '3' ? 'selected' : ''}>3 : Fully meet</option>
+                <option value="4" ${ratingVal === '4' ? 'selected' : ''}>4 : Exceeded</option>
+                <option value="5" ${ratingVal === '5' ? 'selected' : ''}>5 : Remarkable</option>
+              </select>
+              <div style="font-size:11px; font-weight:700; color:#475569; margin:4px 0 2px 0;">Feedback:</div>
+              <textarea class="mbo-wide-textarea ${commentDataCode ? 'mbo-field' : ''}" ${commentDataCode ? `data-code="${commentDataCode}"` : `data-preview-slot="${s.slotIndex}"`} style="min-height:45px; font-size:12px;" placeholder="Comment...">${escapeHtml(itemComment)}</textarea>
+            </td>
+          `;
+        } else {
+          slotCellsHtml += `
+            <td style="background:#f8fafc; color:#334155; font-size:12px;">
+              <div style="font-size:10px; font-weight:700; color:#64748b; margin-bottom:2px;">[READ-ONLY / VISIBLE]</div>
+              <strong>Score:</strong> ${ratingVal ? `L${escapeHtml(ratingVal)}` : '<span style="color:#94a3b8;">-</span>'}<br/>
+              <div style="margin-top:2px; font-style:italic; color:#475569;">"${escapeHtml(itemComment || 'No comment recorded')}"</div>
+            </td>
+          `;
+        }
       });
 
       let resultContextHtml = '';
@@ -3268,8 +3440,12 @@ class EmployeePartAUI {
           </div>
         </td>
         <td>
-          <div style="font-size:12px; color:#334155; background:#f8fafc; padding:6px; border-radius:4px; min-height:60px;">${escapeHtml(actResult) || '-'}</div>
-          <div style="margin-top:4px; font-size:10px; color:#64748b;">📎 Mid: ${midAttachHtml} | Self: ${selfAttachHtml}</div>
+          <div style="font-size:12px; color:#334155; background:#f8fafc; padding:6px; border-radius:4px; min-height:50px;">${escapeHtml(actResult) || '-'}</div>
+          <div style="margin-top:4px; font-size:9.5px; color:#64748b; display:flex; flex-direction:column; gap:2px;">
+            <div>📌 Obj File: ${objAttachHtml}</div>
+            <div>📌 Mid File: ${midAttachHtml}</div>
+            <div>📌 Self File: ${selfAttachHtml}</div>
+          </div>
         </td>
         ${slotCellsHtml}
         <td style="vertical-align:middle; text-align:center;">${resultContextHtml}</td>
@@ -3312,26 +3488,37 @@ class EmployeePartAUI {
       appraiserInfo.slots.forEach(s => {
         const ratingVal = s.partBRatings[comp.id] || '';
         const itemComment = s.partBComments[comp.id] || '';
-        const isSlotEditable = this.isPreviewMode ? (s.slotIndex === parseInt(this.activeSlotIndex, 10)) : false;
+        const isSlotEditable = this.isEditable && (s.slotIndex === activeSlot);
 
         const ratingDataCode = s.slotIndex === 1 ? `Manager_Competency_Rating_${comp.id}` : (s.slotIndex === 2 ? `GM_Competency_Rating_${comp.id}` : '');
         const commentDataCode = s.slotIndex === 1 ? `Manager_Competency_Comment_${comp.id}` : (s.slotIndex === 2 ? `GM_Competency_Comment_${comp.id}` : '');
 
-        slotCellsHtml += `
-          <td style="${isSlotEditable ? 'background:#f0f9ff; border:1px solid #3b82f6;' : ''}">
-            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:2px;">Score [1-5]:</div>
-            <select class="mbo-cell-select ${ratingDataCode ? 'mbo-field' : ''}" ${ratingDataCode ? `data-code="${ratingDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'disabled' : ''} style="height:32px; font-size:12px;">
-              <option value="" ${!ratingVal ? 'selected' : ''}>-- Select --</option>
-              <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Unsatisfactory</option>
-              <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Needs Improvement</option>
-              <option value="3" ${ratingVal === '3' ? 'selected' : ''}>3 : Meets Standard</option>
-              <option value="4" ${ratingVal === '4' ? 'selected' : ''}>4 : Exceeds Standard</option>
-              <option value="5" ${ratingVal === '5' ? 'selected' : ''}>5 : Outstanding</option>
-            </select>
-            <div style="font-size:11px; font-weight:700; color:#475569; margin:4px 0 2px 0;">Feedback:</div>
-            <textarea class="mbo-wide-textarea ${commentDataCode ? 'mbo-field' : ''}" ${commentDataCode ? `data-code="${commentDataCode}"` : `data-preview-slot="${s.slotIndex}"`} ${!isSlotEditable ? 'readonly' : ''} style="min-height:40px; font-size:12px;" placeholder="Comment...">${escapeHtml(itemComment)}</textarea>
-          </td>
-        `;
+        if (isSlotEditable) {
+          slotCellsHtml += `
+            <td style="background:#f0f9ff; border:2px solid #0284c7;">
+              <div style="font-size:10px; font-weight:700; color:#0284c7; margin-bottom:2px;">[EDITABLE / ACTIVE APPRAISER]</div>
+              <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:2px;">Score [1-5]:</div>
+              <select class="mbo-cell-select ${ratingDataCode ? 'mbo-field' : ''}" ${ratingDataCode ? `data-code="${ratingDataCode}"` : `data-preview-slot="${s.slotIndex}"`} style="height:32px; font-size:12px;">
+                <option value="" ${!ratingVal ? 'selected' : ''}>-- Select --</option>
+                <option value="1" ${ratingVal === '1' ? 'selected' : ''}>1 : Unsatisfactory</option>
+                <option value="2" ${ratingVal === '2' ? 'selected' : ''}>2 : Needs Improvement</option>
+                <option value="3" ${ratingVal === '3' ? 'selected' : ''}>3 : Meets Standard</option>
+                <option value="4" ${ratingVal === '4' ? 'selected' : ''}>4 : Exceeds Standard</option>
+                <option value="5" ${ratingVal === '5' ? 'selected' : ''}>5 : Outstanding</option>
+              </select>
+              <div style="font-size:11px; font-weight:700; color:#475569; margin:4px 0 2px 0;">Feedback:</div>
+              <textarea class="mbo-wide-textarea ${commentDataCode ? 'mbo-field' : ''}" ${commentDataCode ? `data-code="${commentDataCode}"` : `data-preview-slot="${s.slotIndex}"`} style="min-height:40px; font-size:12px;" placeholder="Comment...">${escapeHtml(itemComment)}</textarea>
+            </td>
+          `;
+        } else {
+          slotCellsHtml += `
+            <td style="background:#f8fafc; color:#334155; font-size:12px;">
+              <div style="font-size:10px; font-weight:700; color:#64748b; margin-bottom:2px;">[READ-ONLY / VISIBLE]</div>
+              <strong>Score:</strong> ${ratingVal ? `L${escapeHtml(ratingVal)}` : '<span style="color:#94a3b8;">-</span>'}<br/>
+              <div style="margin-top:2px; font-style:italic; color:#475569;">"${escapeHtml(itemComment || 'No comment recorded')}"</div>
+            </td>
+          `;
+        }
       });
 
       const compResult = this._getVal(`Competency_Result_${comp.id}`);
