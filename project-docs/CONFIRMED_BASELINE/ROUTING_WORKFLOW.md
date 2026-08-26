@@ -79,6 +79,23 @@ They are not applicable to the current 17 active `M1_G1` routes because `First_M
 - HR final return -> `11 Employee Self Evaluation`.
 - Resubmission then follows the topology-appropriate route again.
 
+## Confirmed HR Final Check Authorization Blocker (R12D-A)
+
+R12D-A read-only live audit confirmed the current App794 `15 HR Final Check` stage does **not** have an HR-only authorization boundary:
+- Process status `15 HR Final Check` reports assignee type `ONE` with an empty assignee entities list `[]`.
+- `Complete -> 16 Completed` has no restrictive action filter.
+- `Return Final HR -> 11 Employee Self Evaluation` has no restrictive action filter; its destination assignee is `Requester_User`.
+- Live App permissions grant `everyone` view/add/edit/delete; creator also has full rights.
+- Live Record ACL has no rights rules establishing an HR-only boundary.
+- Field ACL has no material HR-only boundary for this workflow decision.
+- Deployed runtime JavaScript has no current-user/HR actor authorization guard for `Complete` or `Return Final HR`; `Return Final HR` only validates that the destination `Requester_User` snapshot exists.
+
+Confirmed classification: `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`.
+
+This is a **security/workflow blocker** for Workflow Functional UAT and future go-live certification. A native Kintone authorization boundary must be designed, reviewed, and proven before status-15 UAT can pass. Client-side JavaScript may be used only as defense-in-depth and MUST NOT be treated as the primary authorization boundary.
+
+Future isolated UAT must preserve `REAL_USER_IMPACT = 0`; no real HR/manager/GM workflow or notification test is permitted solely to prove this boundary.
+
 ## Runtime Safety
 
 - Missing routing -> FAIL CLOSED.
@@ -88,9 +105,10 @@ They are not applicable to the current 17 active `M1_G1` routes because `First_M
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
+- HR Final Check must remain BLOCKED from UAT certification until an HR-only native Kintone authorization boundary is implemented and reviewed.
 - Shared Kintone account identity must never be described as individual employee authentication.
 - UI hiding alone is not an authorization boundary.
 
 ## Change Rule
 
-Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, or workflow path must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
+Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, or HR Final Check authorization boundary must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
