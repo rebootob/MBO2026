@@ -87,7 +87,8 @@ General rule:
 - one Objective = one horizontal row/grid;
 - long-text fields remain wide and multi-line (approximately 4–6 visible lines minimum where practical);
 - compact numeric/rating fields may be narrow;
-- horizontal scrolling is acceptable for very wide 3–4 appraiser matrices;
+- 3–4 Appraiser matrices must remain contained inside the App794 content width; **the overall page/body must not horizontally overflow**;
+- if additional horizontal width is unavoidable, scrolling must be confined to the matrix container only, with the first context column kept visible/sticky where practical;
 - do not revert to vertically stacked Objective/Action Plan/Comment fields on desktop by default.
 
 Objectives row:
@@ -107,6 +108,18 @@ Part B matrix:
 
 HR Final:
 read-only horizontal summary/matrix, not a long duplicate edit form.
+
+### Multi-Appraiser responsive behavior
+
+For 3–4 Appraisers:
+- active Appraiser column may be wider because it contains editable rating/comment controls;
+- inactive Appraiser columns remain visible but may use a more compact read-only presentation;
+- previous Appraiser feedback must remain readable, with expand-on-demand/tooltip/popover or wrapped compact text acceptable;
+- do not shrink textareas/selects to unusable widths merely to force every column into one viewport;
+- use a contained matrix wrapper (`max-width:100%`, `overflow-x:auto`) rather than allowing the whole Kintone page to overflow;
+- keep Objective/Competency identity visible while scrolling (sticky first column preferred);
+- Result Context may be compact/sticky-right where practical;
+- when the current Appraiser changes, the active column should be brought into view automatically or visually emphasized so the user does not need to search for it.
 
 ## 9. Attachment Requirement — Optional Evidence
 
@@ -236,8 +249,9 @@ Preview must allow inspection of:
 - deadline states: upcoming, remaining days, due today, overdue, completed;
 - optional attachment areas at Objectives, Mid-Year, and Self Evaluation;
 - Appraiser active-column behavior;
+- 4-Appraiser responsive/contained matrix with no page/body overflow;
 - a visual placeholder/reserved-space representation of the native Kintone comment panel if useful, without implementing fake persistence;
-- Workflow Action Timeline fixtures including approve/return/resubmit/scoring timestamps.
+- Workflow Action Timeline fixtures including approve/return/resubmit/scoring timestamps, rendered as a structured desktop table.
 
 Preview must make clear which scenarios are current-runtime supported versus Preview Only / Routing Pending.
 
@@ -301,7 +315,32 @@ App794 must provide a clear bilingual read-only frame showing **who performed ea
 Preferred heading:
 `ประวัติการดำเนินการ / Workflow Action Timeline`
 
-The timeline is lifecycle-wide and must be understandable without exposing legacy Manager/GM role names as the business role. Each entry should include, where known:
+### Desktop presentation — Table is mandatory
+
+On desktop, the primary presentation must be a structured, compact table rather than one large card per event.
+
+Recommended columns:
+
+| # | ขั้นตอน / Stage | ผู้ดำเนินการ / Actor | ชื่อผู้ดำเนินการ / Person | การดำเนินการ / Action | วัน-เวลา / Date & Time | ผลลัพธ์ / Result | หมายเหตุ / Comments |
+| ---: | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Objectives | 1st Appraiser | Sompong (m01) | Approved | 14 Feb 2026 • 09:42 | Approved | — |
+| 2 | Objectives | 2nd Appraiser | Vichai (g01) | Returned | 15 Feb 2026 • 10:18 | Returned | 💬 View Comments |
+| 3 | Objectives | Employee | Employee 0118 | Resubmitted | 16 Feb 2026 • 08:30 | Submitted | — |
+| 4 | Objectives | 2nd Appraiser | Vichai (g01) | Approved | 16 Feb 2026 • 13:05 | Approved | — |
+| 5 | Appraiser Evaluation | 1st Appraiser | Sompong (m01) | Scoring Completed | 20 Nov 2026 • 14:22 | Completed | — |
+
+Table UX rules:
+- chronological order is easy to scan;
+- zebra rows / row separators are encouraged;
+- Action and Result should use compact bilingual badges where useful;
+- Return/Reject rows should be visually distinguishable and may expose `💬 ดูความคิดเห็น / View Comments`;
+- latest/current relevant row may be highlighted subtly;
+- table may be collapsible as one whole section to save vertical space;
+- do not create one large card per event on desktop;
+- mobile/narrow screens may switch the same data into stacked cards if a table becomes unreadable;
+- event count such as `5 Events Recorded` may remain as a small summary badge next to the heading, not as the main content.
+
+Each event must still include, where known:
 - Macro stage: Objectives / Mid-Year / Self Evaluation / Appraiser Evaluation / HR Final.
 - Business actor slot: Employee/Requester, 1st Appraiser, 2nd Appraiser, 3rd Appraiser, 4th Appraiser, or HR Final.
 - Actual person display name/account.
@@ -310,20 +349,9 @@ The timeline is lifecycle-wide and must be understandable without exposing legac
 - Outcome/state such as Approved / Returned / Completed.
 - A non-authoritative comment indicator when a Return/Reject is associated with discussion, e.g. `💬 ดูความคิดเห็น / View Comments`; actual comment content remains in native Kintone Comments.
 
-Example business presentation:
-
-| Stage | Actor | Action | Date / Time |
-| --- | --- | --- | --- |
-| Objectives | 1st Appraiser | Approved | 14 Feb 2026 • 09:42 |
-| Objectives | 2nd Appraiser | Returned | 15 Feb 2026 • 10:18 |
-| Objectives | Employee | Resubmitted | 16 Feb 2026 • 08:30 |
-| Objectives | 2nd Appraiser | Approved | 16 Feb 2026 • 13:05 |
-| Appraiser Evaluation | 1st Appraiser | Scoring Completed | 20 Nov 2026 • 14:22 |
-
 Audit/history rules:
 - **Do not overwrite earlier actions.** Return -> correction -> resubmit -> approve must preserve all events in chronological order.
 - Timeline is read-only for normal users; it is an audit/presentation feature, not an editable log.
-- The timeline may be collapsible to save vertical space, but the latest/current relevant action should be easy to notice.
 - The same timeline should remain available across the five macro stages so users can understand how the record arrived at its current state.
 - Do not fabricate timestamps from record `Updated_datetime` or current status. A record-level modified time is not proof of which workflow actor performed which action.
 - Do not infer an action timestamp solely from a score field becoming nonblank unless the persistence contract explicitly records that event.
