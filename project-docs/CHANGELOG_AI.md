@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R12D-D Controlled App794 HR Final Check Native Process Repair under explicit single-use user authorization ("อนุมัติ controlled App794 R12D-D HR Final Check native Process repair"): Captured durable pre-write backup (`backups/m10l-d-r12d-d-app794-hr-process-repair/2026-08-26T04-34-31-024Z`), updated status `15 HR Final Check` assignee from empty `[]` to controlled Sandbox user `admin-form` (`USER`), deployed to App 794 (Revision 36). Verified 1 semantic diff before write and 0 non-target Process semantic changes. 0 record, schema, ACL, or customization writes executed.
+- **2026-08-26**: Executed M10L-D-R12E-A Read-Only Isolated Workflow UAT Lockdown (0 Kintone writes executed): Re-confirmed App 794 live/preview revision `36/36` (0 drift), audited general notification rules (safe with controlled identities), confirmed `admin-form` is `TECHNICAL_ADMIN_ONLY` with 0 workflow approval authority, discovered `hr` as `UAT_HR`, designed required status 15 Process remap (`admin-form` -> `hr`), and derived role-correct synthetic UAT matrix for `M1_G1` workflow.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.

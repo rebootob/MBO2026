@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12E_A_ISOLATED_UAT_LOCKDOWN** | **`PASS`** — Completed read-only role-corrected UAT lockdown audit; confirmed App 794 live/preview revision `36/36` (0 drift); audited general notification rules (safe with controlled identities); confirmed `admin-form` is `TECHNICAL_ADMIN_ONLY` with 0 workflow authority; discovered `hr` as `UAT_HR`; derived role-correct synthetic UAT matrix; 0 Kintone writes |
 | **M10L_D_R12D_D_NATIVE_HR_PROCESS_REPAIR** | **`PASS`** — Executed controlled native Process Management repair on App 794 (Revision 36); assigned status `15 HR Final Check` to controlled Sandbox UAT user `admin-form`; captured pre-write backup `backups/m10l-d-r12d-d-app794-hr-process-repair/2026-08-26T04-34-31-024Z`; verified 1 semantic diff before write; verified non-target Process semantics unchanged 100%; 0 record/schema/ACL/customization writes |
 | **M10L_D_R12D_B_HR_REPAIR_DESIGN** | **`PASS`** — Produced native Kintone repair design for `15 HR Final Check` authorization defect; selected `DIRECT_GROUP` / `DIRECT_USER` native Process assignee as primary boundary; discovered controlled UAT identity `admin-form` and production HR group `Manager HR_x52y75`; designed zero-real-user-impact Sandbox/Prod parity strategy; proposed minimal change set (R12D-C -> R12D-D -> R12E); 0 Kintone writes |
 | **M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT** | **`PASS`** — Completed read-only HR authorization audit of App 794 (`15 HR Final Check`); confirmed live Process assignee is unassigned `[]`, App/Record/Field ACL has no HR restriction, and runtime JS has no HR actor guard; classified as `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`; 0 Kintone writes |
@@ -883,5 +884,65 @@ TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY R12E WORKFLOW UAT WRITE
+
+
+## M10L-D-R12E-A Read-Only Isolated Workflow UAT Lockdown Evidence
+
+```text
+M10L_D_R12E_A_ISOLATED_UAT_LOCKDOWN = COMPLETE
+ADMIN_FORM_ROLE = TECHNICAL_ADMIN_ONLY
+ADMIN_FORM_WORKFLOW_AUTHORITY = NONE
+ADMIN_FORM_USED_AS_UAT_ACTOR = NO
+KINTONE_WRITE_AUTHORIZATION = NONE
+LIVE_APP794_REVISION = 36
+PREVIEW_APP794_REVISION = 36
+LIVE_PREVIEW_DRIFT = NO
+PROCESS_STATE_COUNT = 16
+PROCESS_ACTION_COUNT = 28
+STATUS15_CURRENT_ASSIGNEE = USER: admin-form
+STATUS15_CURRENT_CLASSIFICATION = TEMPORARY_SANDBOX_TECHNICAL_LOCK
+GENERAL_NOTIFICATION_AUDIT = PASS
+PER_RECORD_NOTIFICATION_AUDIT = PASS
+REMINDER_NOTIFICATION_AUDIT = PASS
+OTHER_RELEVANT_NOTIFICATION_AUDIT = NOT_APPLICABLE
+UAT_NOTIFICATION_SAFETY = SAFE_WITH_CONTROLLED_IDENTITIES
+UAT_REQUESTER = USER_DESIGNATION_REQUIRED
+UAT_MANAGER = USER_DESIGNATION_REQUIRED
+UAT_GM = USER_DESIGNATION_REQUIRED
+UAT_HR = hr
+MINIMUM_ROLE_CORRECT_CONTROLLED_IDENTITIES = 4
+CONTROLLED_IDENTITY_PROOF = Discovered shared HR user 'hr' for UAT_HR; user designation required for UAT_REQUESTER, UAT_MANAGER, UAT_GM to avoid real-user notification
+ACTOR_SWITCH_METHOD = USER_ASSISTED_LOGIN_REQUIRED
+APP795_CHANGE_REQUIRED_FOR_UAT = NO
+PROCESS_CONFIG_CHANGE_REQUIRED_BEFORE_UAT = YES
+REQUIRED_PROCESS_CHANGE = status15 USER admin-form -> USER hr
+SCHEMA_CHANGE_REQUIRED_FOR_UAT = NO
+ACL_CHANGE_REQUIRED_FOR_UAT = NO
+CUSTOMIZATION_CHANGE_REQUIRED_FOR_UAT = NO
+UAT_RECORD_COUNT_PROPOSED = 1
+UAT_RECORD_KEY_STRATEGY = Synthetic test record key MBO_UAT_M1G1_001
+UAT_RECORD_COLLISION_CHECK = PASS
+UAT_RECORD_SCHEMA_FEASIBILITY = PASS
+DIRECT_PATH_MATRIX_READY = PASS
+RETURN_PATH_MATRIX_READY = PASS
+FIRST_MANAGER_NEGATIVE_MATRIX_READY = PASS
+STATUS15_NON_ASSIGNEE_NEGATIVE_MATRIX_READY = PASS
+CLEANUP_STRATEGY = Delete synthetic UAT record MBO_UAT_M1G1_001 after evidence capture under authorized write
+REAL_USER_WORKFLOW_TEST_REQUIRED = NO
+REAL_USER_NOTIFICATION_TEST_REQUIRED = NO
+REAL_USER_IMPACT_TARGET = 0
+R12E_EXECUTION_READY = NO
+R12E_EXECUTION_BLOCKER = User designation required for UAT_REQUESTER, UAT_MANAGER, UAT_GM identities and controlled status15 remap to UAT_HR
+PROPOSED_R12E_AUTHORIZATION_SCOPE = Controlled status15 Process remap (admin-form -> hr) + 1 synthetic UAT record create + 12 direct path actions + 7 return path actions + 2 negative test attempts + synthetic record delete
+KINTONE_GET_CALLS_THIS_TASK = 7
+KINTONE_WRITES_THIS_TASK = 0
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_ACTION_ATTEMPTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY PROCESS OR WORKFLOW WRITE AUTHORIZATION
 ```
