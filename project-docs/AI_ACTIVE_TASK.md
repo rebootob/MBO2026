@@ -1,214 +1,222 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R2 CORRECTION — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 R3 CLOSURE — LOCAL ONLY
 
 > Control Plane: ChatGPT / Project Lead / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed R1 candidate: `9201d5ef88b783846822d7d2469873715272e7bb`
-> R1 review result: **MUST_FIX_LOCAL_R2**
+> Reviewed R2 candidate: `4fafc85c2fd54ed1f392fa5f306a8935f0cfe634`
+> R2 review result: **MUST_FIX_LOCAL_R3**
 > Kintone write/deploy authorization: **NONE**
 
-## 1. REVIEW SUMMARY
+## 1. NORTH STAR / CURRENT GATE
 
-R1 fixed the major first-pass defects: real slot1/2 physical field names, slots3/4 no physical alias, strict rating completeness, verified 6/8 competency sets, working ratio selector, no production fake-file fallback, separate Mid-Year Next Action, Mid/Self wide cards, HR read-only breakdown, active preview slot, exact 16-status process progress, and unknown-status fail-closed.
+Core workflow remains frozen and unchanged.
 
-However R1 is NOT ready for user visual approval because several UI/data-semantic gaps remain. Keep the R1 architecture and apply the smallest local-only corrections below.
+Current critical path:
+`Core Function ✅ -> Functional UAT ✅ -> UI/UX V1 ✅ -> App794 Evaluation UI V2 ⏳ -> User Visual Preview -> Scoring Runtime/Persistence Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
 
-## 2. MUST FIX R2-01 — OBJECTIVES MUST ALSO USE WIDE CARD UX
+R2 substantially improved the visual candidate and remains local-only, but it is not yet safe for user visual approval because three source/runtime semantics can mislead the preview and one Create-flow regression would break new-record startup if deployed.
 
-The user explicitly requires wide input areas because employees enter substantial text. R1 converted Mid-Year and Self Evaluation, but Objectives still uses the old spreadsheet grid.
+Keep all accepted R2 work. Apply only the minimum corrections below.
 
-Required:
-- Replace the Objectives production renderer with card-per-objective or max 2-column wide layout.
-- `Objective_i`, `Action_Plan_i`, `Additional_Agreement_i` must be wide textareas (roughly 4–6 readable lines minimum, resizable/auto-grow where practical).
-- `Weight_i`, `Difficulty_i`, Objective Count stay compact.
-- Keep all existing Objective editability/validation/100%-weight behavior.
-- Responsive narrow screens stack to one column.
-- Do not create a duplicate production renderer.
+## 2. R3-01 — CREATE FLOW MUST REMAIN USABLE BEFORE SCORING CONFIG EXISTS
 
-## 3. MUST FIX R2-02 — APPRAISER COMMENTS MUST BE PER ITEM
+### Defect
+`EmployeePartAUI.render()` currently validates `Competency_Set_Code` and `PartA_Weight` / `PartB_Weight` before rendering the Create Employee Lookup section.
 
-R1 normalizes only `Manager_Comment_1` / `GM_Comment_1` as one Part A comment and can therefore repeat Objective 1 comment across every objective.
+On a real `app.record.create.show`, those scoring snapshot fields are blank until the user searches/verifies the employee and `onLookupEmployee()` resolves App796. Therefore the R2 candidate would render `CONFIGURATION ERROR` immediately and never expose the employee Search control.
 
-Required Part A logical model:
-- `partAComments[i]` per objective.
-- slot1 reads `Manager_Comment_i`.
-- slot2 reads `GM_Comment_i`.
-- slots3/4 use preview-only per-objective comment fixtures/state.
-- render the matching comment for each objective only.
+This is a real regression if deployed.
 
-Required Part B logical model:
-- `partBComments[competencyId]` per competency.
-- slot1 reads `Manager_Competency_Comment_i`.
-- slot2 reads `GM_Competency_Comment_i`.
-- slots3/4 preview-only comments are per competency.
-- Appraiser Evaluation UI must visibly render a comment/feedback input or read-only area for EACH competency.
+### Required behavior
+- For `isCreate === true && isEmployeeVerified === false`:
+  - render the employee lookup section normally;
+  - render the locked/unverified Objective area as appropriate;
+  - do **not** fail on missing profile/competency/weight snapshot yet because lookup has not happened.
+- After employee lookup succeeds and `isEmployeeVerified === true`:
+  - enforce exact `Competency_Set_Code` fail-closed validation;
+  - enforce valid `PartA_Weight + PartB_Weight = 100` fail-closed validation.
+- On lookup failure:
+  - keep/re-render a retryable Lookup UI with the lookup error message;
+  - do not replace the whole page with a scoring configuration error merely because snapshot fields remain blank.
+- Existing saved records (edit/detail) with missing/invalid scoring snapshot remain fail-closed.
 
-Comments remain optional unless an existing rule says otherwise.
+Do not change `src/main-mbo-app.js` unless absolutely necessary. Prefer fixing validation placement/order inside the existing UI renderer.
 
-## 4. MUST FIX R2-03 — SHOW EXISTING SCORE / RESULT FIELDS; DO NOT FAKE CALCULATION
+## 3. R3-02 — STALE SCORE/RESULT VALUES MUST NOT LOOK VALID WHEN APPRAISAL IS INCOMPLETE
 
-The Appraiser screen currently shows only Achievement/Rating inputs. The design requirement also needs score/result context.
+### Defect
+R2 correctly shows the overall `Result Pending / Incomplete` banner, but per-objective result context still displays stored:
+- `Manager_Objective_Score_i`
+- `GM_Objective_Score_i`
+- `Average_Objective_Score_i`
+- `MBO_Point_i`
 
-Part A, per objective, when fields exist:
-- slot1 result: `Manager_Objective_Score_i`
-- slot2 result: `GM_Objective_Score_i`
-- combined result: `Average_Objective_Score_i`
-- weighted point: `MBO_Point_i`
+and Part B may display `Competency_Result_i`, even when required appraiser ratings are incomplete.
 
-Part B, per competency, when field exists:
-- combined result: `Competency_Result_i`
+The R2 test only checks that a Pending banner exists somewhere; it does not prove stale calculated values are withheld/clearly marked pending.
 
-Rules:
-- display existing record values read-only;
-- do NOT invent client-side certified production calculations in this sprint;
-- if required appraiser data is incomplete, result area must clearly remain `Pending / Incomplete` even if stale calculated fields happen to exist;
-- COCE remains evaluated and excluded from score.
+### Required behavior
+When `appraiserInfo.isFullyComplete === false`:
+- Combined/certified result presentation must clearly say `Pending / Incomplete`.
+- Do not portray `Average_Objective_Score_i`, `MBO_Point_i`, or `Competency_Result_i` as current final results.
+- If legacy per-appraiser stored score values are shown for diagnostic/read-only context, label them explicitly as stored/non-final context; they must not be visually presented as completed result.
+- COCE remains evaluated and excluded from numerical score.
 
-HR Final read-only breakdown must show the same available result context without editable controls.
+When all required appraiser data is complete:
+- existing stored result fields may be shown read-only;
+- do not add new certified client-side production calculation in this sprint.
 
-## 5. MUST FIX R2-04 — APPRAISER + HR MUST SHOW ATTACHMENT EVIDENCE CONTEXT
+## 4. R3-03 — HR FINAL MUST SHOW THE SAME READ-ONLY RESULT CONTEXT
 
-R1 displays attachments correctly in Mid-Year and Self screens, but Appraiser Evaluation and HR Final do not carry the evidence forward.
+### Defect
+`_renderReadOnlyAppraiserBreakdown()` currently shows ratings/comments/evidence but omits the R2-required result fields.
 
-Required:
-- Appraiser Evaluation: for each objective, show read-only Mid-Year attachment summary AND Self Evaluation attachment summary.
-- HR Final / Completed: same read-only evidence summary.
-- use real FILE values when present;
-- preview synthetic files only when explicit preview mode is active;
-- if none, show `No attachment / ไม่มีไฟล์แนบ`;
-- no upload API / no Kintone file writes.
+### Required HR Final / Completed presentation
+For each Objective, read-only display when appropriate:
+- `Manager_Objective_Score_i` as 1st Appraiser stored score context;
+- `GM_Objective_Score_i` as 2nd Appraiser stored score context;
+- `Average_Objective_Score_i` combined result only when completeness permits;
+- `MBO_Point_i` only when completeness permits.
 
-Keep `ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE`.
+For each Competency:
+- `Competency_Result_i` only when completeness permits;
+- COCE badge stays `Evaluated / Excluded from Score`.
 
-## 6. MUST FIX R2-05 — COMPETENCY SET SELECTION MUST FAIL CLOSED
+If appraisal is incomplete, HR breakdown must visibly remain Pending and must not certify stale combined result values.
 
-Current `getApplicableCompetencies()` treats every code other than exact Management as Operational. This silently turns blank/invalid config into a normal 6-item set.
+HR Final remains strictly read-only.
 
-Required:
-- exact `COMP_SET_OPERATIONAL_V1` -> 6 items;
-- exact `COMP_SET_MANAGEMENT_V1` -> 8 items;
-- blank/unknown -> configuration error / fail-closed UI; do not silently default to Operational in production.
-- Preview fixtures must always set an explicit valid competency code.
+## 5. R3-04 — PREVIEW-ONLY SLOT 3/4 EDITING MUST ACTUALLY USE PREVIEW STATE
 
-## 7. MUST FIX R2-06 — WEIGHTS MUST FAIL CLOSED; NO 70/30 PRODUCTION FALLBACK
+### Defect
+Slots 3/4 correctly have no physical Kintone `data-code`, but current controls use `data-preview-slot` without an event-binding path. They can look editable while changes are not committed to preview logical state and are lost on rerender.
 
-HR Final currently falls back to `70/30` if record/preview weights are missing.
+### Required behavior
+In explicit Preview Lab mode only:
+- selected active slot 3/4 Rating/Comment controls update preview-only logical state;
+- rerendering within the Preview Lab must preserve those simulated values for that current fixture session where practical;
+- no slot3/4 physical Kintone field code;
+- no `syncFromDom()` persistence into App794;
+- no Kintone API call.
 
-Required:
-- read `PartA_Weight` and `PartB_Weight` from record or explicit preview fixture only;
-- if missing/invalid or sum != 100, show configuration warning / Pending and do not portray normal final configuration;
-- do not hardcode 70/30 as production fallback.
+If implementing persistent preview editing would materially complicate the candidate, acceptable minimum is to remove misleading editability from slot3/4 and label them `Preview Logical Slot — Read-only Sample`. Do not leave controls appearing functionally editable when they are not.
 
-## 8. MUST FIX R2-07 — REMOVE/ALIGN OLD 4-STEP YEAR-END NAV
+## 6. R3-05 — EVIDENCE PROVENANCE CORRECTION
 
-V2 has five macro stages, but the old secondary navigation still shows four steps (`Objectives`, `Mid-Year`, `Year-End`, `Completed`). This conflicts with the new five-stage mental model.
+R2 evidence currently records:
+`R2_EXECUTION_STARTING_HEAD = fc0bca16773347f3b5eb423fb886dd6e8ebaaad1`
 
-Preferred:
-- keep the top 5-phase Process Progress as the single primary stage navigator;
-- remove the duplicate old 4-step stage nav from V2 screens and remove dead code/tests if no longer used.
+Actual Git parent of the R2 execution commit is:
+`fc0bca16d1258e974d7f7063b88a217c5a1a65cc`
 
-Alternative acceptable:
-- convert it to the exact same 5 stages: Objectives / Mid-Year / Self Evaluation / Appraiser Evaluation / HR Final-Completed.
+Correct the living evidence without rewriting Git history.
 
-Do NOT leave a visible old `Year-End` bucket that collapses Self + Appraiser + HR.
+## 7. ACCEPTED R2 FEATURES — PRESERVE
 
-## 9. MUST FIX R2-08 — PREVIEW COMPLETE/INCOMPLETE MUST WORK FOR 1–4 APPRAISERS
+Do not regress:
+- exact 16 status visual mapping;
+- 5-stage Process Progress;
+- Objectives / Mid-Year / Self wide-card UX;
+- separate MidYear Issue/Risk and Next Action;
+- real attachment names or `No attachment`; preview-only synthetic evidence only in explicit preview mode;
+- Appraiser neutral ordinal labels 1st..4th;
+- slot1/2 real legacy physical scoring field adapter;
+- slot3/4 zero physical alias;
+- strict Part A + Part B completeness including COCE evaluation;
+- Operational 6 / Management 8 competency sets;
+- invalid competency set fail-closed after configuration should exist;
+- 70/30, 60/40, 50/50 preview ratios;
+- invalid/missing weight config fail-closed after configuration should exist;
+- per-objective Appraiser comments;
+- per-competency Appraiser comments;
+- Appraiser/HR evidence summaries;
+- old 4-step Year-End secondary navigation removed;
+- active preview slot constrained to 1..selected appraiser count;
+- production scoring controls remain read-only until the later scoring-runtime gate;
+- `PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE`;
+- `APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED`;
+- `ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE`.
 
-Current Preview `Incomplete` mode clears slot2/3/4 data but leaves slot1 complete. Therefore `1 Appraiser + Incomplete` still appears complete.
+## 8. REQUIRED R3 TESTS
 
-Required:
-- completion selector must produce a clearly incomplete fixture for ANY selected appraiser count 1,2,3,4;
-- `Complete` must populate all required Part A + Part B data for all selected slots;
-- `Incomplete` must remove at least one required rating from a required selected slot;
-- active editor slot selector must clamp/filter to 1..selected appraiser count so the user never selects a non-existent active slot.
+Add only focused tests needed to close the findings:
 
-## 10. TEST COVERAGE MUST MATCH THE CLAIMS
+1. `isCreate=true`, unverified record with blank `Competency_Set_Code`, `PartA_Weight`, `PartB_Weight` renders Employee Lookup and does not render scoring CONFIGURATION ERROR.
+2. After simulated successful lookup/verified state, invalid competency set fails closed.
+3. After simulated successful lookup/verified state, invalid/missing weight ratio fails closed.
+4. Lookup failure with blank scoring snapshot remains retryable and retains Lookup UI.
+5. Incomplete appraisal + stale `Average_Objective_Score_i` / `MBO_Point_i` does not display them as valid final result.
+6. Incomplete appraisal + stale `Competency_Result_i` does not display it as valid final result.
+7. Complete appraisal may display existing stored combined Part A / Part B results read-only.
+8. HR Final breakdown displays Objective stored score context and complete combined result context read-only.
+9. HR Final incomplete state hides/marks combined result pending.
+10. slot3/4 Preview behavior is truthful: preview-only state updates OR read-only sample labeling; zero physical data-code remains.
+11. R2 accepted regressions remain passing: 16 statuses/progress, wide cards, attachments, per-item comments, invalid config gates, topology/XSS, no old 4-step nav.
 
-R1 evidence says many gates PASS, but the added tests do not directly prove several of them. Add focused tests, not broad duplicate suites.
+## 9. FILE / SCOPE BOUNDARY
 
-Required R2 tests:
-1. Objectives screen uses wide-card layout and not the old 6-column spreadsheet grid.
-2. Part A comments map per objective (`Comment_1` does not leak to objective 2).
-3. Part B comments map per competency and render.
-4. slot3/4 comments remain preview-only with no physical data-code.
-5. Part A result fields are read and shown only as read-only context.
-6. Part B `Competency_Result_i` is read and shown read-only.
-7. incomplete required ratings keep result status Pending even if result fields contain stale values.
-8. Appraiser screen renders Mid-Year + Self attachment evidence read-only.
-9. HR screen renders Mid-Year + Self attachment evidence read-only.
-10. invalid/blank competency set fails closed.
-11. missing/invalid weights fail closed; 70/30 is not a production fallback.
-12. old 4-step `Year-End` navigation is not visible in V2 (or exact 5-step replacement is proven).
-13. Preview incomplete works at appraiser counts 1,2,3,4.
-14. active preview slot is constrained to selected appraiser count.
-15. exact 16 status mapping/progress, topology/XSS, slot3/4 no physical alias, and production-bundle preview isolation remain passing.
+Prefer modifying only:
+- `src/ui/employee-part-a-ui.js`
+- `preview/index.html` only if needed for truthful slot3/4 preview state
+- `tests/objective-save-validation.test.js`
+- generated `dist/mbo-employee-app.js`
+- living evidence docs
 
-Run only after implementation is complete:
-1. `npm test` once.
-2. `npm run ui:build` once.
-3. `npm run ui:preview` once with one smoke.
+CSS only if a small visual label/state is needed.
 
-## 11. IMPORTANT PENDING ITEM — DO NOT SOLVE IN THIS R2
+Do not change frozen workflow/routing/Record_Key logic.
+Do not add schema fields.
+Do not mutate App796.
+Do not add another production renderer/framework.
 
-Production Appraiser Count binding is still not certified:
-- App796 has `Expected_Appraiser_Count` (current published configs 1 or 2; GM/VP = 1).
-- App794 currently does not snapshot `Expected_Appraiser_Count` in the six-profile-field snapshot.
-- production UI constructor still defaults to 2 when no explicit count is supplied.
+## 10. SAFETY / AUTHORIZATION
 
-For this R2, keep Preview capable of 1–4 and record:
-`PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE`
-
-Do NOT add App794 schema fields, mutate App796, query-write Kintone, or hardcode Profile_Code -> appraiser count in this UI sprint. This will be closed after user visual approval under a separately reviewed scoring-runtime/persistence gate.
-
-## 12. EVIDENCE PROVENANCE CORRECTION
-
-R1 evidence incorrectly recorded:
-`R1_EXECUTION_STARTING_HEAD = 7ff421639d67fb80a2cd60f9e160ef9170e0f8f9`
-
-Actual Git parent of R1 execution commit is:
-`7ff421657fea815f3fc807cf0f89a070ca95c4c6`
-
-Correct the living evidence without rewriting history.
-
-## 13. HARD BOUNDARIES
-
-- 0 Kintone calls required for this task; local/Git only.
-- No App794 upload/deploy/write.
-- No App795/App796/App797/App798/App800 writes.
+- **0 Kintone calls required**.
+- **0 Kintone writes**.
+- No App794 upload/deploy.
 - No Process/schema/ACL/notification changes.
+- No App795/App796/App797/App798/App800 writes.
 - No workflow actions.
 - No real-user workflow/notification.
-- No new framework.
-- Keep frozen Core unchanged.
+- Prior App794 deployment authorization is consumed/closed and cannot be reused.
 
-## 14. REQUIRED R2 EVIDENCE
+## 11. EXECUTION BUDGET
 
-Append concise evidence:
+After implementation is complete, run exactly:
+1. `npm test` once.
+2. `npm run ui:build` once.
+3. `npm run ui:preview` once with one local smoke sufficient to verify Preview Lab loads and the Appraiser screen renders.
+
+Do not run Kintone browser UAT.
+
+## 12. REQUIRED R3 EVIDENCE
+
+Append a concise block:
 
 ```text
-APP794_EVALUATION_UI_V2_R2 = COMPLETE / BLOCKED
-REVIEWED_R1_CANDIDATE = 9201d5ef88b783846822d7d2469873715272e7bb
-R2_EXECUTION_STARTING_HEAD = actual Git parent after pulling this manifest
-OBJECTIVES_WIDE_CARD_UX = PASS/FAIL
-PARTA_COMMENT_PER_OBJECTIVE = PASS/FAIL
-PARTB_COMMENT_PER_COMPETENCY = PASS/FAIL
-PARTA_RESULT_CONTEXT = PASS/FAIL
-PARTB_RESULT_CONTEXT = PASS/FAIL
-STALE_RESULT_WHEN_INCOMPLETE_FAIL_CLOSED = PASS/FAIL
-APPRAISER_ATTACHMENT_EVIDENCE = PASS/FAIL
-HR_ATTACHMENT_EVIDENCE = PASS/FAIL
-COMPETENCY_SET_INVALID_FAIL_CLOSED = PASS/FAIL
-WEIGHT_CONFIG_INVALID_FAIL_CLOSED = PASS/FAIL
-OLD_4_STEP_YEAR_END_NAV_VISIBLE = 0 / actual
-PREVIEW_INCOMPLETE_COUNTS_1_TO_4 = PASS/FAIL
-ACTIVE_SLOT_CONSTRAINED_TO_N = PASS/FAIL
+APP794_EVALUATION_UI_V2_R3 = COMPLETE / BLOCKED
+REVIEWED_R2_CANDIDATE = 4fafc85c2fd54ed1f392fa5f306a8935f0cfe634
+R3_EXECUTION_STARTING_HEAD = exact parent after pulling this task
+CREATE_PRELOOKUP_UI_AVAILABLE = PASS/FAIL
+CREATE_PRELOOKUP_SCORING_GATE_DEFERRED = PASS/FAIL
+POSTLOOKUP_INVALID_COMPETENCY_FAIL_CLOSED = PASS/FAIL
+POSTLOOKUP_INVALID_WEIGHT_FAIL_CLOSED = PASS/FAIL
+LOOKUP_FAILURE_RETRY_UI = PASS/FAIL
+INCOMPLETE_PARTA_COMBINED_RESULT_PENDING = PASS/FAIL
+INCOMPLETE_PARTB_COMBINED_RESULT_PENDING = PASS/FAIL
+COMPLETE_STORED_RESULT_CONTEXT = PASS/FAIL
+HR_PARTA_RESULT_CONTEXT_READ_ONLY = PASS/FAIL
+HR_PARTB_RESULT_CONTEXT_READ_ONLY = PASS/FAIL
+HR_INCOMPLETE_RESULT_PENDING = PASS/FAIL
+SLOT3_4_PREVIEW_STATE_TRUTHFUL = PASS/FAIL
+SLOT3_4_NO_PHYSICAL_ALIAS = PASS/FAIL
+R2_EVIDENCE_PARENT_SHA_CORRECTED = PASS/FAIL
 PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE
 APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
 ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
 APP794_KINTONE_CALL_COUNT = 0
 APP794_KINTONE_WRITE_COUNT = 0
-APP796_MUTATION_COUNT = 0
 WORKFLOW_ACTION_COUNT = 0
 NPM_TEST = actual/PASS/FAIL
 UI_BUILD = PASS/FAIL
@@ -220,10 +228,28 @@ GIT_PUSH_SYNC = PASS/FAIL
 NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
 ```
 
-## 15. STOP CONDITION
+## 13. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+
+**What:** close the final pre-preview Create-flow and score-presentation defects.
+
+**Where:** existing App794 Evaluation UI V2 renderer, local Preview Lab only if necessary, focused tests, generated bundle, living evidence.
+
+**How:** move/configure validation so it occurs only when scoring snapshot is expected to exist; make incomplete results explicitly pending; add missing HR read-only result context; make slots3/4 preview behavior truthful.
+
+**Why:** prevent a deployed Create-page dead end and prevent the user from visually approving stale/misleading score presentation.
+
+**Impact:** local candidate only; no live Kintone impact.
+
+**Risk:** UI regression in existing Objective/Mid/Self or fail-closed semantics. Mitigate with focused regression tests and one build/preview smoke.
+
+**Test:** section 8 + one full npm test/build/preview pass.
+
+**Rollback:** revert only the R3 implementation commit to the reviewed R2 candidate `4fafc85c2fd54ed1f392fa5f306a8935f0cfe634`; no Kintone rollback is applicable.
+
+## 14. STOP CONDITION
 
 Commit, push the same branch, and STOP.
 
 Do not deploy.
-Do not continue to Dashboard.
-The next gate is ChatGPT source review. Only after PASS should the user be asked to open the Status Preview Lab.
+Do not continue to Dashboard/Hoshin.
+Next gate = ChatGPT R3 source review. Only after PASS should the user be asked to open the Status Preview Lab for visual approval.
