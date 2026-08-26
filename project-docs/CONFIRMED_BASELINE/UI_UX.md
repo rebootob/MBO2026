@@ -75,7 +75,7 @@ Do not claim that a topology code belongs to a specific employee position unless
 ## 7. Evaluation Profile Is Separate From Route
 
 - `70/30`, `60/40`, and `50/50` are Part A / Part B scoring profile ratios. They are not routing topology names.
-- The UI should rename `Profile Ratio` to a clearer bilingual label such as `โปรไฟล์การประเมิน / Evaluation Profile (Part A : Part B)`.
+- The UI should use a clear bilingual label such as `โปรไฟล์การประเมิน / Evaluation Profile (Part A : Part B)`.
 - Do not infer appraiser count or route solely from the ratio selector.
 - Routing/profile runtime binding is a later persistence/runtime gate and must remain fail-closed when unresolved.
 
@@ -91,7 +91,7 @@ General rule:
 - do not revert to vertically stacked Objective/Action Plan/Comment fields on desktop by default.
 
 Objectives row:
-`# | Objective / Target | Action Plan | Additional Agreement | Weight | Difficulty`
+`# | Objective / Target | Action Plan | Additional Agreement | Weight | Difficulty | Attachment`
 
 Mid-Year row:
 `Objective (read-only) | Progress % | Periodical Review | Mid-Year Result | Issue/Risk | Next Action | Attachment`
@@ -108,12 +108,18 @@ Part B matrix:
 HR Final:
 read-only horizontal summary/matrix, not a long duplicate edit form.
 
-## 9. Attachment Requirement
+## 9. Attachment Requirement — Optional Evidence
 
-- Mid-Year must allow attachment/evidence per Objective.
-- Self Evaluation must allow attachment/evidence per Objective.
-- Appraiser Evaluation and HR Final must carry those attachments forward as read-only evidence context.
+User-confirmed on 2026-08-26:
+
+- **Objectives must provide an attachment/evidence area per Objective.**
+- **Mid-Year must provide an attachment/evidence area per Objective.**
+- **Self Evaluation must provide an attachment/evidence area per Objective.**
+- Attachments in all three stages are **OPTIONAL**. Save/Submit validation must never fail solely because no file is attached.
+- Appraiser Evaluation and HR Final must carry Objective, Mid-Year, and Self Evaluation evidence forward as read-only context where applicable.
 - Production UI must never invent/fallback fake file names when no attachment exists.
+- Existing legacy physical names may remain for compatibility (for example Self Evaluation evidence may still physically use a legacy `Final_Attachment_*` code); user-facing label must describe the business stage, not the legacy field name.
+- If App794 currently has no physical Objective attachment field, local Preview must still show the intended optional Objective attachment UX, but must label physical persistence as `PENDING_SCHEMA_REVIEW`. Do not invent a production field silently and do not mutate schema during the local UI closure sprint.
 
 ## 10. Difficulty Empty-State Rule
 
@@ -137,7 +143,7 @@ The five schedules are:
 - Appraiser Evaluation: start/end
 - HR Final: start/end
 
-## 12. Deadline / Days Remaining UX
+## 12. Deadline / Days Remaining UX — Strong Visual Urgency
 
 For every phase, App794 should show the date range and a simple bilingual time-to-deadline indicator that is easy for employees to understand.
 
@@ -147,9 +153,16 @@ Required states:
 - Due today: `ครบกำหนดวันนี้ / Due today`
 - Past due and not complete: `เกินกำหนด X วัน / X days overdue`
 - Completed: `เสร็จแล้ว / Completed` (do not show an alarming overdue message after completion)
-- Upcoming/Closed/Open/Completed badges remain bilingual.
 
-A visual progress/deadline bar may be used, but it must not confuse process completion percentage with performance score.
+Visual emphasis confirmed by user:
+- **Within the active allowed period / on time = GREEN emphasis.**
+- **Overdue = RED emphasis.**
+- Due today may use strong amber/orange urgency.
+- Upcoming may use neutral/gray/blue.
+- Completed may use success/green.
+- The numeric countdown/overdue value (for example `76 days overdue`) must be materially more prominent than ordinary helper text: larger/bolder badge or callout, easy to notice at a glance.
+
+A deadline/progress bar may be used, but it must not confuse process completion percentage with performance score.
 
 ## 13. Boundary Actions Between Phases
 
@@ -160,7 +173,7 @@ Current frozen workflow design assigns `05 Objective Approved` and `10 Mid-Year 
 Therefore for current V1 UX:
 - HR controls when the next phase is allowed to open through the HR phase calendar.
 - Requester/Employee is the current workflow actor who starts the phase using the native Kintone Process action when the window is open.
-- Before the phase start date, UI shows a waiting/locked boundary and the opening date/countdown.
+- Before the phase start date, UI shows a waiting/locked boundary with opening date/countdown.
 - When the phase window is open, UI clearly tells the Requester what action is available and that the native Kintone Process button must be used.
 - Do not auto-transition workflow based only on date in this UI closure sprint.
 - Any future automatic transition requires a separate reviewed architecture/security change.
@@ -186,15 +199,29 @@ HR Final:
 Completed:
 - fully read-only and no action required.
 
-## 15. Progress Indicators
+## 15. Progress Indicators — Keep Meanings Separate
 
-App794 should distinguish at least these concepts:
-- `ความคืบหน้ากระบวนการ / Process Progress`
-- `ความครบถ้วนของข้อมูล / Data Completion`
-- `ความครบถ้วนของผู้ประเมิน / Appraiser Completion` when relevant
-- phase deadline/countdown
+App794 must distinguish these concepts:
 
-Do not use process progress colors/percentages as if they were performance scores.
+1. `ความคืบหน้ากระบวนการ / Process Progress`
+   - route-aware Workflow progress;
+   - derived from current applicable Process status/path;
+   - not employee-entered performance progress.
+
+2. `ความคืบหน้าของเป้าหมายกลางปี / Mid-Year Objective Progress (%)`
+   - stored per Objective in `Progress_Percent_1..10` (or current compatible field codes);
+   - **employee-entered value from 0–100** during the Mid-Year requester stage;
+   - the visual bar width directly follows the entered numeric percentage;
+   - it is NOT calculated from dates, Workflow status, rating, or final score;
+   - Appraiser review states see it read-only.
+
+3. `ความครบถ้วนของข้อมูล / Data Completion`
+
+4. `ความครบถ้วนของผู้ประเมิน / Appraiser Completion` when relevant
+
+5. phase deadline/countdown
+
+Do not use process-progress or objective-progress colors/percentages as if they were performance scores.
 
 ## 16. Preview Lab Is a Visual Approval Tool
 
@@ -206,7 +233,10 @@ Preview must allow inspection of:
 - complete/incomplete scoring states;
 - active actor changes through Requester -> Appraiser(s) -> HR;
 - deterministic preview date and HR phase calendar;
-- deadline states: upcoming, remaining days, due today, overdue, completed.
+- deadline states: upcoming, remaining days, due today, overdue, completed;
+- optional attachment areas at Objectives, Mid-Year, and Self Evaluation;
+- Appraiser active-column behavior;
+- a visual placeholder/reserved-space representation of the native Kintone comment panel if useful, without implementing fake persistence.
 
 Preview must make clear which scenarios are current-runtime supported versus Preview Only / Routing Pending.
 
@@ -217,3 +247,46 @@ Preview must make clear which scenarios are current-runtime supported versus Pre
 - Preview-only 3rd/4th Appraiser capacity does not certify physical persistence.
 - Executive direct route preview does not certify App795/App794 runtime routing.
 - No Kintone write/deploy is authorized by this baseline.
+
+## 18. Native Kintone Comment Thread Must Remain Available
+
+User-confirmed operational need on 2026-08-26:
+
+- The native Kintone record comment thread is used when an Approver/Appraiser rejects/returns an MBO for correction.
+- App794 custom UI must **not intentionally hide, cover, disable, or make the native Kintone comment panel impractical to use**.
+- The user must still be able to read prior return/reject comments and add follow-up comments through the native Kintone comment capability according to Kintone permissions.
+- Custom UI comments inside Part A/Part B are separate evaluation comments and do not replace the native record conversation thread.
+- Local Preview must not create a fake persistent comment subsystem. It may show a clearly labeled non-persistent visual placeholder such as `ความคิดเห็นใน Kintone / Kintone Comments (Native Platform)` to validate layout/reserved space.
+- A later deployed-browser verification must confirm the real Kintone comment panel remains accessible and is not overlapped by custom UI.
+
+## 19. Appraiser Evaluation Active Column Follows Current Actor
+
+User-confirmed on 2026-08-26:
+
+At the Appraiser Evaluation stage, all configured Appraiser columns remain visible to the Appraisers, but only the current actor's own column is editable.
+
+Required behavior:
+- If `1st Appraiser` is the current action owner: Appraiser 1 column = ACTIVE/EDITABLE; Appraiser 2..N columns = VISIBLE + READ-ONLY.
+- If `2nd Appraiser` is current: Appraiser 2 column = ACTIVE/EDITABLE; Appraiser 1 and Appraiser 3..N = VISIBLE + READ-ONLY.
+- Apply the same rule to Appraiser 3 and Appraiser 4 where configured/simulated.
+- Previous Appraiser scores/comments remain visible to later Appraisers.
+- Appraisers can see one another's Appraiser columns, but cannot edit another Appraiser's column.
+- HR Final sees all Appraiser columns read-only.
+- This requirement confirms Appraiser-to-Appraiser visibility only; it does not independently expand Requester/employee visibility of confidential scoring data.
+
+Current technical status-to-ordinal mapping for supported preview topologies:
+
+### `M1_G1` (2 Appraisers)
+- `13 Manager Final Evaluation` -> user-facing **1st Appraiser active**
+- `14 GM Final Evaluation` -> user-facing **2nd Appraiser active**
+
+### `M1_M2_G1` (3 Appraisers)
+- `12 First Manager Final Evaluation` -> user-facing **1st Appraiser active**
+- `13 Manager Final Evaluation` -> user-facing **2nd Appraiser active**
+- `14 GM Final Evaluation` -> user-facing **3rd Appraiser active**
+
+For the 4-Appraiser Preview-only scenario, the Preview Lab may simulate Appraiser 1..4 active slots for visual validation, but must clearly state that 4th-slot physical Workflow/persistence is not currently implemented.
+
+Security note:
+- Disabling non-current columns in client UI is UX, not an authorization boundary.
+- Production enforcement must later be reconciled with native Kintone Process/field/permission controls before claiming secure per-Appraiser edit isolation.
