@@ -79,22 +79,28 @@ They are not applicable to the current 17 active `M1_G1` routes because `First_M
 - HR final return -> `11 Employee Self Evaluation`.
 - Resubmission then follows the topology-appropriate route again.
 
-## Confirmed HR Final Check Authorization Blocker (R12D-A)
+## HR Final Check Native Authorization — App794 Sandbox (R12D-A / R12D-D)
 
-R12D-A read-only live audit confirmed the current App794 `15 HR Final Check` stage does **not** have an HR-only authorization boundary:
-- Process status `15 HR Final Check` reports assignee type `ONE` with an empty assignee entities list `[]`.
-- `Complete -> 16 Completed` has no restrictive action filter.
-- `Return Final HR -> 11 Employee Self Evaluation` has no restrictive action filter; its destination assignee is `Requester_User`.
-- Live App permissions grant `everyone` view/add/edit/delete; creator also has full rights.
-- Live Record ACL has no rights rules establishing an HR-only boundary.
-- Field ACL has no material HR-only boundary for this workflow decision.
-- Deployed runtime JavaScript has no current-user/HR actor authorization guard for `Complete` or `Return Final HR`; `Return Final HR` only validates that the destination `Requester_User` snapshot exists.
+R12D-A read-only audit confirmed that App794 originally had no native authorization boundary at `15 HR Final Check`: status 15 used `assignee.type = ONE` with an empty assignee entities list `[]`, the `Complete` and `Return Final HR` actions had no restrictive action filter, App/Record/Field ACL did not create an HR-only boundary, and deployed JavaScript had no HR/current-actor authorization guard.
 
-Confirmed classification: `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`.
+R12D-D then performed an explicitly authorized, controlled native Process Management repair on **App794 Sandbox only**. Confirmed post-deploy state:
+- App794 live/preview revision: `36 / 36`.
+- Process structure remains exactly **16 states / 28 actions**.
+- `15 HR Final Check.assignee.type = ONE` remains unchanged.
+- `15 HR Final Check.assignee.entities` is now exactly the controlled Sandbox user `USER: admin-form`.
+- Production HR group `Manager HR_x52y75` is **not** present in the App794 Sandbox Process payload.
+- `Complete -> 16 Completed` is unchanged.
+- `Return Final HR -> 11 Employee Self Evaluation` is unchanged.
+- All non-target Process semantics match the pre-write snapshot.
+- Existing records at `15 HR Final Check` were `0` before and after the repair, so there is no legacy status-15 record carrying the prior unassigned semantics.
+- R12D-D executed no record transition, no workflow notification, and no record/schema/ACL/customization write.
 
-This is a **security/workflow blocker** for Workflow Functional UAT and future go-live certification. A native Kintone authorization boundary must be designed, reviewed, and proven before status-15 UAT can pass. Client-side JavaScript may be used only as defense-in-depth and MUST NOT be treated as the primary authorization boundary.
+Confirmed App794 Sandbox classification after R12D-D:
+`NATIVE_STATUS15_AUTHORIZATION_BOUNDARY = CONTROLLED_SANDBOX_USER_ADMIN_FORM`.
 
-Future isolated UAT must preserve `REAL_USER_IMPACT = 0`; no real HR/manager/GM workflow or notification test is permitted solely to prove this boundary.
+This resolves the prior **App794 Sandbox** missing-native-assignee blocker sufficiently to proceed to separately authorized isolated Workflow UAT. It does **not** certify the production HR mapping. Production/go-live configuration must map the same native Process boundary to the separately confirmed production HR entity under a later reviewed change; no real-HR workflow or notification test is required solely for parity proof.
+
+Future isolated UAT must preserve `REAL_USER_IMPACT = 0`; no real HR/manager/GM workflow or notification test is permitted.
 
 ## Runtime Safety
 
@@ -105,7 +111,8 @@ Future isolated UAT must preserve `REAL_USER_IMPACT = 0`; no real HR/manager/GM 
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
-- HR Final Check must remain BLOCKED from UAT certification until an HR-only native Kintone authorization boundary is implemented and reviewed.
+- App794 Sandbox `15 HR Final Check` is natively assigned to controlled user `admin-form`; isolated UAT must prove positive assignee behavior and negative non-assignee denial before Workflow Functional UAT can PASS.
+- Production HR entity mapping remains a separate pre-go-live configuration/parity gate and must not be tested by sending a real workflow/notification to HR solely for certification.
 - Shared Kintone account identity must never be described as individual employee authentication.
 - UI hiding alone is not an authorization boundary.
 
