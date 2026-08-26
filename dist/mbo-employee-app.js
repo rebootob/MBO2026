@@ -1861,6 +1861,8 @@ class RoutingService {
 
 
 
+const CANONICAL_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -1883,17 +1885,47 @@ function formatUserDisplay(userArr) {
   return '-';
 }
 
+function classifyTopologyForUI(topology) {
+  if (topology === null || topology === undefined) {
+    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: false, raw: '' };
+  }
+  const raw = String(topology).trim();
+  if (!raw || !CANONICAL_TOPOLOGIES.includes(raw)) {
+    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: false, raw };
+  }
+  if (raw === 'M1_G1_G2' || raw === 'M1_M2_G1_G2') {
+    return { isCanonical: true, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: true, raw };
+  }
+  return {
+    isCanonical: true,
+    isSupportedV1: true,
+    isM1G1: raw === 'M1_G1',
+    isM1M2G1: raw === 'M1_M2_G1',
+    isG2: false,
+    raw
+  };
+}
+
 function getStatusGuidance(status, topology) {
   const currentStatus = String(status || '').trim();
-  const rawTopology = topology !== null && topology !== undefined ? String(topology).trim() : '';
+  const topInfo = classifyTopologyForUI(topology);
 
-  const isUnknownTopology = !rawTopology;
-  const isM1G1 = rawTopology === 'M1_G1';
-
-  if (isUnknownTopology) {
+  if (!topInfo.isCanonical) {
     return {
-      th: '⚠️ แจ้งเตือนคอนฟิก: ไม่พบข้อมูล Routing Topology ในระเบียบประเมิน กรุณาติดต่อ HR / Administrator',
-      en: '⚠️ Configuration warning: Routing Topology not specified in record. Please contact HR / Administrator.',
+      th: topInfo.raw
+        ? `⚠️ แจ้งเตือนคอนฟิก: ข้อมูล Routing Topology ("${escapeHtml(topInfo.raw)}") ไม่ถูกต้องตามระเบียบประเมิน กรุณาติดต่อ HR / Administrator`
+        : '⚠️ แจ้งเตือนคอนฟิก: ไม่พบข้อมูล Routing Topology ในระเบียบประเมิน กรุณาติดต่อ HR / Administrator',
+      en: topInfo.raw
+        ? `⚠️ Configuration warning: Unrecognized Routing Topology ("${escapeHtml(topInfo.raw)}"). Please contact HR / Administrator.`
+        : '⚠️ Configuration warning: Routing Topology not specified in record. Please contact HR / Administrator.',
+      isWarning: true
+    };
+  }
+
+  if (topInfo.isG2) {
+    return {
+      th: `⚠️ แจ้งเตือนคอนฟิก: เส้นทาง ${escapeHtml(topInfo.raw)} ยังไม่เปิดใช้งานในระบบ MBO V1 ปัจจุบัน (รองรับ M1_G1 และ M1_M2_G1 เท่านั้น)`,
+      en: `⚠️ Configuration warning: Topology ${escapeHtml(topInfo.raw)} is unsupported in current V1 workflow. Please contact HR / Administrator.`,
       isWarning: true
     };
   }
@@ -1910,7 +1942,7 @@ function getStatusGuidance(status, topology) {
       en: 'Fill Objectives & Action Plan (Total Weight 100%), then click Submit above for Manager review.',
       isWarning: false
     },
-    '02 First Manager Objective Review': isM1G1 ? firstManagerWarning : {
+    '02 First Manager Objective Review': topInfo.isM1G1 ? firstManagerWarning : {
       th: 'อยู่ระหว่างการพิจารณาเป้าหมายโดย First Manager / ตรวจสอบเป้าหมายและอนุมัติผ่านปุ่ม Kintone ด้านบน',
       en: 'Under First Manager review for Objectives. Please review and approve via Kintone buttons above.',
       isWarning: false
@@ -1935,7 +1967,7 @@ function getStatusGuidance(status, topology) {
       en: 'Fill Mid-Year progress & review notes, then click Submit above to Manager.',
       isWarning: false
     },
-    '07 First Manager Mid-Year Review': isM1G1 ? firstManagerWarning : {
+    '07 First Manager Mid-Year Review': topInfo.isM1G1 ? firstManagerWarning : {
       th: 'อยู่ระหว่างการทบทวนกลางปีโดย First Manager / ตรวจสอบความคืบหน้าและอนุมัติผ่านปุ่ม Kintone ด้านบน',
       en: 'Under First Manager Mid-Year review. Please review and approve via Kintone buttons above.',
       isWarning: false
@@ -1960,7 +1992,7 @@ function getStatusGuidance(status, topology) {
       en: 'Fill actual results & self-evaluation, then click Submit above to Manager.',
       isWarning: false
     },
-    '12 First Manager Final Evaluation': isM1G1 ? firstManagerWarning : {
+    '12 First Manager Final Evaluation': topInfo.isM1G1 ? firstManagerWarning : {
       th: 'อยู่ระหว่างการประเมินผลงานปลายปีโดย First Manager / ตรวจสอบและประเมินผลผ่านปุ่ม Kintone ด้านบน',
       en: 'Under First Manager Final evaluation. Please evaluate and approve via Kintone buttons above.',
       isWarning: false
@@ -2270,18 +2302,38 @@ class EmployeePartAUI {
     card.className = 'mbo-route-context-card';
 
     const rawTopology = this._getVal('Routing_Topology');
+    const topInfo = classifyTopologyForUI(rawTopology);
+
     const managerUser = this._getValObj('Manager_User');
     const gmUser = this._getValObj('GM_User');
     const firstManagerUser = this._getValObj('First_Manager_User');
 
-    const hasTopologyM2 = Boolean(rawTopology && rawTopology.includes('M2'));
-    const hasFirstManagerUser = Array.isArray(firstManagerUser) && firstManagerUser.length > 0;
+    let topologyBadgeHtml = '';
+    if (!topInfo.isCanonical) {
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fef2f2; color: #dc2626;">Topology: ⚠️ Unrecognized (${escapeHtml(topInfo.raw || 'Not Specified')})</span>`;
+    } else if (topInfo.isG2) {
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge" style="background: #fffbe6; color: #b45309;">Topology: ⚠️ Unsupported in V1 (${escapeHtml(topInfo.raw)})</span>`;
+    } else {
+      topologyBadgeHtml = `<span class="mbo-route-topology-badge">Topology: ${escapeHtml(topInfo.raw)}</span>`;
+    }
 
-    const isM2 = hasTopologyM2 && hasFirstManagerUser;
+    if (!topInfo.isSupportedV1) {
+      card.innerHTML = `
+        <div class="mbo-route-title">
+          <span>🔗 เส้นทางเสนออนุมัติ / Approval Route Summary</span>
+          ${topologyBadgeHtml}
+        </div>
+        <div style="padding: 10px; background: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; font-size: 12.5px; color: #b45309;">
+          ⚠️ <strong>ไม่อยู่ในเส้นทางอนุมัติมาตรฐาน V1 / Unsupported V1 Approval Route</strong><br/>
+          ${topInfo.isG2
+            ? `เส้นทาง ${escapeHtml(topInfo.raw)} ยังไม่เปิดใช้งานในระบบ MBO V1 ปัจจุบัน (รองรับ M1_G1 และ M1_M2_G1 เท่านั้น)`
+            : `ข้อมูล Routing Topology (${escapeHtml(topInfo.raw || 'ว่าง')}) ไม่ถูกต้องตามระเบียบประเมิน`}
+        </div>
+      `;
+      return card;
+    }
 
-    const topologyBadgeHtml = rawTopology
-      ? `<span class="mbo-route-topology-badge">Topology: ${escapeHtml(rawTopology)}</span>`
-      : `<span class="mbo-route-topology-badge" style="background: #fef2f2; color: #dc2626;">Topology: ⚠️ Not Specified / Unknown</span>`;
+    const isM2 = topInfo.isM1M2G1 && Array.isArray(firstManagerUser) && firstManagerUser.length > 0;
 
     card.innerHTML = `
       <div class="mbo-route-title">

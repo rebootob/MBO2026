@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **POST_CORE_UIUX_V1_CANDIDATE_R2** | **`PASS`** — Applied R2 local UI topology display corrections (0 Kintone calls/writes/deploys): strict `classifyTopologyForUI` helper; non-empty invalid topologies (`INVALID_TOPOLOGY`, `INVALID_M2`) fail closed with warning display & block First Manager / normal route portrayal; G2 topologies (`M1_G1_G2`, `M1_M2_G1_G2`) display unsupported-V1 warning banner; 96/96 tests passing; bundle parse PASS |
 | **POST_CORE_UIUX_V1_CANDIDATE_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): MUST FIX 1 (First Manager route step shown ONLY when `Routing_Topology` contains M2 AND `First_Manager_User` populated), MUST FIX 2 (status 05 Objectives completed & Mid-Year waiting; status 10 Objectives & Mid-Year completed & Year-End waiting; review statuses 03/04, 08/09, 13/14/15 in-review in correct phase), blank/unknown topology display fail-closed warning; 96/96 tests passing; bundle parse & ES module residue check PASS |
 | **POST_CORE_UIUX_V1_CANDIDATE** | **`PASS`** — Built Post-Core UI/UX V1 candidate (0 Kintone calls/writes/deploys); added status guidance card with Thai/English descriptions for all 16 statuses, M1_G1 First-Manager configuration warning, display-only route context, collapsible legend/guidelines, HTML escaping helper (`escapeHtml`) on dynamic record/user text, and `--build-only` zero-write candidate path; 555/555 unit tests passing; bundle parse & ES module residue check PASS |
 | **M10L_D_R12E_B7_FINAL_CORE_WORKFLOW_CLOSURE** | **`PASS`** — Executed authorized R12E-B7 Final Core Workflow Closure on App 794 (Revision 38); verified preclick safety gate PASS; executed 1 normalization transition (`Return Objective`), 22 reviewed matrix transitions, and 3 First-Manager denials; verified final status `16 Completed`; 0 browser fatal errors; deleted synthetic Record #10 and verified 0 key collision count; 0 src/dist/tests changes |
@@ -1279,6 +1280,30 @@ NPM_TEST = PASS (96/96 EXPLICIT / 555 TOTAL TESTS PASSING)
 BUILD_ONLY_ZERO_KINTONE_CALL_GATE = PASS
 CLASSIC_BUNDLE_PARSE = PASS
 SRC_DIST_CSS_MATCH = PASS
+KINTONE_CALL_COUNT = 0
+KINTONE_WRITE_COUNT = 0
+FROZEN_CORE_CHANGE_COUNT = 0
+NEW_FILE_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+
+## Post-Core UI/UX V1 Candidate R2 Evidence
+
+```text
+POST_CORE_UIUX_V1_CANDIDATE_R2 = COMPLETE
+STARTING_HEAD = 484050df857d5d5cfd050e40c7b655c73cdf3823
+NONEMPTY_INVALID_TOPOLOGY_DISPLAY_FAIL_CLOSED = PASS
+INVALID_M2_FIRST_MANAGER_DISPLAY_BLOCKED = PASS
+G2_UNSUPPORTED_V1_DISPLAY_WARNING = PASS
+M1_G1_ROUTE_PRESENTATION = PASS
+M1_M2_G1_ROUTE_PRESENTATION = PASS
+STATUS05_COMPLETION_PRESENTATION = PASS
+STATUS10_COMPLETION_PRESENTATION = PASS
+REVIEW_STATUS_PHASE_PRESENTATION = PASS
+DYNAMIC_HTML_ESCAPE_GATE = PASS
+NPM_TEST = PASS (96/96 EXPLICIT / 555 TOTAL TESTS PASSING)
+BUILD_ONLY_ZERO_KINTONE_CALL_GATE = PASS
+CLASSIC_BUNDLE_PARSE = PASS
 KINTONE_CALL_COUNT = 0
 KINTONE_WRITE_COUNT = 0
 FROZEN_CORE_CHANGE_COUNT = 0
