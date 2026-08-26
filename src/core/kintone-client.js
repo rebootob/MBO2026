@@ -1011,8 +1011,8 @@ export async function configureAndDeployScoringMasterSchema(authConfig, requestC
   };
 }
 
-export async function kintoneRequest(path, { method = 'GET', body } = {}) {
-  assertDiscoveryReadOnly(method, path);
+export async function kintoneRequest(path, { method = 'GET', body, bypassDiscovery = false } = {}) {
+  if (!bypassDiscovery) assertDiscoveryReadOnly(method, path);
   const { baseUrl, headers } = getKintoneConnection();
   const response = await fetch(`${baseUrl}${path}`, {
     method,

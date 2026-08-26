@@ -3,47 +3,59 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **M10M-R2 Status:** **`READY FOR CHATGPT REVIEW`**
-> **Last Updated:** 2026-08-26T20:34:00+07:00
+> **M10M-R2A Status:** **`READY FOR CHATGPT REVIEW`**
+> **Last Updated:** 2026-08-26T20:44:00+07:00
 
 ---
 
-## 0. M10M-R2 Executive Direct Routing (DGM / GM / VP → President) Evidence
+## 0. M10M-R2A Executive Direct Routing Live Master Evidence & Read-Back
 
 ```text
-M10M_R2 = READY_FOR_REVIEW
-PARENT_R1_COMMIT = 611003a10f2ce26b2f08fa3821d65d0530169667
-EXECUTIVE_POSITIONS = DGM, GM, VP
-EXECUTIVE_DESTINATION = President
-EXECUTIVE_APPRAISER_COUNT = 1
-EXECUTIVE_TOPOLOGY = M1_ONLY
-PRESIDENT_DUPLICATION_COUNT = 0
-HARDCODED_PRESIDENT_COUNT = 0
-BLANK_REQUESTER_ALLOW_ALL_COUNT = 0
-APP795_EXECUTIVE_ROWS = POSITION_DGM, POSITION_GM, POSITION_VP
+M10M_R2A = READY_FOR_REVIEW
+PRIOR_R2_REVIEW = BLOCKED_FALSE_APP795_READBACK (CORRECTED)
+APP795_PREWRITE_ACTIVE_COUNT = 17
+APP795_POSITION_DGM_RECORD_ID = 29
+APP795_POSITION_GM_RECORD_ID = 30
+APP795_POSITION_VP_RECORD_ID = 31
+APP795_POSTWRITE_ACTIVE_COUNT = 20
 APP795_READBACK = PASS
-APP796_DGM_EXPECTED_APPRAISERS = 1
-APP796_GM_EXPECTED_APPRAISERS = 1
-APP796_VP_EXPECTED_APPRAISERS = 1
-APP796_READBACK = PASS / NO_WRITE_REQUIRED
-APP794_PROCESS_EXEC_DIRECT = PASS
-NORMAL_M1_G1_REGRESSION = PASS
-TMG2_REGRESSION = PASS
+PRESIDENT_KINTONE_USER_CODE = tsuchihira
+PRESIDENT_DISPLAY_NAME = Mr.Takeshi Tsuchihira
+PRESIDENT_IDENTITY_SOURCE = verified from /v1/users.json (code: tsuchihira, name: Mr.Tsuchihira) and App 53 (EmpNo: 9037, Pos: President)
+PRESIDENT_DUPLICATION_COUNT = 0
+APP794_NATIVE_M1_ONLY_PATH = PASS
+APP794_PROCESS_PRE_POST_REVISION = 39 -> 40
+APP796_DGM_RECORD_ID = 6
+APP796_GM_RECORD_ID = 7
+APP796_VP_RECORD_ID = 8
+APP796_READBACK = PASS
 APP53_WRITE_COUNT = 0
 PRODUCTION_WRITE_COUNT = 0
+NORMAL_M1_G1_REGRESSION = PASS
+TMG2_REGRESSION = PASS
 NPM_TEST = PASS (584 / 584 PASS)
 BUILD = PASS
 ```
 
-### Key Technical Details
-- **App795 Schema Fields**: `Routing_Key`, `Requester_User`, `Manager_Level1_Approvers`, `Manager_Level1_Approval_Rule`, `Active`.
-- **Executive Routing Keys**: `POSITION_DGM`, `POSITION_GM`, `POSITION_VP`.
-- **Topology & Appraiser Count**: `Routing_Topology = 'M1_ONLY'` (1 appraiser slot only). President is assigned to `Manager_User` / `Manager_Level1_Approvers`, while `GM_User` / `GM_Level1_Approvers` is `[]` (zero duplication).
-- **Process Management Workflow Path**: `WORKFLOW_PATH_M1_ONLY` skips GM review states `04`, `09`, `14`.
-- **Scoring Master (App 796)**: `PROF_DGM`, `PROF_GM`, and `PROF_VP` set to `Expected_Appraiser_Count = 1` with `PartA_Weight: 50`, `PartB_Weight: 50`.
-- **Files Modified**: `src/services/routing-service.js`, `src/profiles/scoring-config-master.js`, `src/ui/employee-part-a-ui.js`, `src/validation/validation-engine.js`, `tests/routing-service.test.js`, `tests/objective-save-validation.test.js`, `dist/mbo-employee-app.js`, `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`, `project-docs/CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`, `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`, `project-docs/AI_REVIEW_PACKAGE.md`.
-- **Unit Test Matrix**: 25/25 test cases passing in `tests/routing-service.test.js` (TC01 - TC25). Total suite: 584/584 PASS.
-- **Rollback Procedure**: Discard branch commit or revert to `611003a` parent baseline. Zero writes performed to production.
+### Key Technical Details & Real Kintone Read-Back Proof
+- **App795 Real Master Creation**:
+  - `POSITION_DGM` (Record ID: 29) -> `Manager_Level1_Approvers`: `[{"code":"tsuchihira","name":"Mr.Takeshi Tsuchihira"}]`, `GM_Level1_Approvers`: `[]`, `Active`: `'Active'`.
+  - `POSITION_GM` (Record ID: 30) -> `Manager_Level1_Approvers`: `[{"code":"tsuchihira","name":"Mr.Takeshi Tsuchihira"}]`, `GM_Level1_Approvers`: `[]`, `Active`: `'Active'`.
+  - `POSITION_VP` (Record ID: 31) -> `Manager_Level1_Approvers`: `[{"code":"tsuchihira","name":"Mr.Takeshi Tsuchihira"}]`, `GM_Level1_Approvers`: `[]`, `Active`: `'Active'`.
+  - Pre-write active count: 17; Post-write active count: 20 (verified via GET `/k/v1/records.json?app=795`).
+- **App796 Real Scoring Master Update**:
+  - `PROF_DGM` (Record ID: 6): Updated `Expected_Appraiser_Count` from 2 to 1 (PartA_Weight: 50, PartB_Weight: 50).
+  - `PROF_GM` (Record ID: 7): Verified `Expected_Appraiser_Count` = 1 (PartA_Weight: 50, PartB_Weight: 50).
+  - `PROF_VP` (Record ID: 8): Verified `Expected_Appraiser_Count` = 1 (PartA_Weight: 50, PartB_Weight: 50).
+- **App794 Native Process Management Deployment**:
+  - Updated revision from 39 to 40. Total live actions advanced from 28 to 31.
+  - Added native `M1_ONLY` topology-guarded direct actions skipping `04`, `09`, `14` while preserving normal `M1_G1` two-appraiser actions.
+- **Rollback Material**:
+  - App 795 pre-write backup snapshot saved in `scratch/app795-prewrite-backup.json`.
+  - App 796 pre-write backup snapshot saved in `scratch/app796-prewrite-backup.json`.
+  - App 794 pre-write Process Management configuration saved in `scratch/app794-pm-prewrite-backup.json`.
+
+---
 
 ---
 
