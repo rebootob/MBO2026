@@ -26,35 +26,32 @@ Do not add duplicate employee-master fields when App53 already provides the requ
 ## Position Normalization
 
 The Employee Namelist contains formatting/case variants of position labels. Confirmed examples include:
-- `General Manager`
-- `General manager`
-- leading/trailing-space variants on some other position names
-- abbreviation/name variants for some non-GM positions
+- `Deputy General Manager`, `DGM`
+- `General Manager`, `General manager`, `GM`
+- `Vice President`, `VP`
+- leading/trailing-space variants on position names
 
 Routing code must not depend on exact raw capitalization/spacing for a special-position decision.
 
-For M10M, normalize the confirmed General Manager variants to one canonical routing class, conceptually:
+For M10M-R2, normalize executive variants to canonical routing classes:
 
+`DEPUTY_GENERAL_MANAGER`
 `GENERAL_MANAGER`
+`VICE_PRESIDENT`
 
 This normalization is a technical classification step only. The business destination must still be resolved from App795; do not hard-code the President user in JavaScript.
 
-## Confirmed General Manager Population
+## Confirmed Executive Population & Routing (M10M-R2)
 
-The provided active Employee Namelist contains General Manager records across multiple Sections, including a confirmed real case:
+The active Employee Namelist contains Executive records across multiple Sections. Section-first routing is unsafe for Executives. The special Executive Position rule must be evaluated before normal Section/Team routing.
 
-- Position: `General Manager`
-- Section: `TMH3`
+Canonical M10M-R2 business rule:
 
-Therefore Section-first routing is unsafe for General Manager. The special Position rule must be evaluated before normal Section/Team routing.
+`DEPUTY_GENERAL_MANAGER -> President (M1_ONLY)`
+`GENERAL_MANAGER -> President (M1_ONLY)`
+`VICE_PRESIDENT -> President (M1_ONLY)`
 
-Canonical M10M business rule:
-
-`GENERAL_MANAGER -> President`
-
-for the current M10M scope.
-
-Do not automatically extend this implementation to DGM, VP, Senior Manager, or other positions solely by inference. Any broader executive rule must follow the separately confirmed routing baseline/change scope.
+President is the single appraiser slot (`1st Appraiser`). Non-executive positions do not receive Executive Direct routing.
 
 ## President Resolution
 

@@ -31,16 +31,15 @@ This is the confirmed current live state, not permission to remove generic M2/G2
 - Current App795 routing is section/team based. Therefore UI must not label `M1_G1` or another topology as belonging to a particular position unless a separately reviewed routing rule establishes it.
 - Business-facing Preview should use understandable route-scenario names and move raw topology codes to secondary Technical Details.
 
-## Confirmed Future Executive Routing Target — NOT YET IMPLEMENTED
+## Confirmed Executive Direct Routing Baseline — SANDBOX IMPLEMENTED / REVIEW PENDING
 
-User-confirmed target on 2026-08-26:
+User-confirmed executive direct routing baseline (M10M-R2):
 
-- For executive evaluation routing of **DGM / GM / VP**, the intended business route is **direct to President as the single evaluator/approver route member**.
-- User-facing representation is still `ผู้ประเมินลำดับที่ 1 / 1st Appraiser`; `President` may appear only as the resolved person's position metadata/name context, not as the route-slot label.
-- This target is **not currently implemented** in App795/App794 Process Management and must not be represented as live/runtime-ready.
-- During UI closure it may appear only as `Executive Direct — 1 Appraiser / Preview Only — Routing Pending`.
-- Before runtime implementation, reconcile App795 route data, App794 Process compatibility, App796 `Expected_Appraiser_Count`/scoring rules, and affected profile mappings. Any conflict must fail closed and receive a separate reviewed change plus fresh Kintone authorization.
-- Do not mutate the current 17 active App795 rows under the UI-only sprint.
+- For executive evaluation routing of **DGM / GM / VP** (`DEPUTY_GENERAL_MANAGER`, `GENERAL_MANAGER`, `VICE_PRESIDENT`), the route is **direct to President as the single evaluator/approver route member**.
+- User-facing representation is `ผู้ประเมินลำดับที่ 1 / 1st Appraiser`; `President` appears only as the resolved person's position metadata/name context.
+- Implementation topology: `M1_ONLY` (1 appraiser slot, `Expected_Appraiser_Count = 1`, single-appraiser workflow path skipping 04, 09, 14 GM review states).
+- Dedicated App795 routing keys: `POSITION_DGM`, `POSITION_GM`, `POSITION_VP`.
+- Status: `SANDBOX IMPLEMENTED / REVIEW PENDING`.
 
 ## Confirmed Retired Section Rule
 

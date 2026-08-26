@@ -11,9 +11,9 @@ These are the approved current MBO evaluation/scoring profile families. Do not c
 | Assistant Manager | `PROF_ASST_MGR` | 60 | 40 |
 | Section Manager | `PROF_SECTION_MGR` | 50 | 50 |
 | Senior Manager | `PROF_SENIOR_MGR` | 50 | 50 |
-| Deputy General Manager | `PROF_DGM` | 50 | 50 |
-| General Manager | `PROF_GM` | 50 | 50 |
-| Vice President | `PROF_VP` | 50 | 50 |
+| Deputy General Manager | `PROF_DGM` | 50 | 50 | 1 (`Executive Direct`) |
+| General Manager | `PROF_GM` | 50 | 50 | 1 (`Executive Direct`) |
+| Vice President | `PROF_VP` | 50 | 50 | 1 (`Executive Direct`) |
 
 ## Confirmed Scoring Appraiser Model
 

@@ -6,7 +6,20 @@
 import { BUSINESS_STAGES } from '../config/constants.js';
 import { ValidationEngine } from '../validation/validation-engine.js';
 
-export const CANONICAL_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+export const CANONICAL_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
+
+export const WORKFLOW_PATH_M1_ONLY = [
+  '01 Draft Objective',
+  '03 Manager Objective Review',
+  '05 Objective Approved',
+  '06 Employee Mid-Year',
+  '08 Manager Mid-Year Review',
+  '10 Mid-Year Completed',
+  '11 Employee Self Evaluation',
+  '13 Manager Final Evaluation',
+  '15 HR Final Check',
+  '16 Completed'
+];
 
 export const WORKFLOW_PATH_M1_G1 = [
   '01 Draft Objective',
@@ -72,10 +85,9 @@ export const ROUTE_SCENARIOS = {
     id: 'EXECUTIVE_DIRECT',
     labelTH: 'เส้นทางผู้บริหารโดยตรง — ผู้ประเมิน 1 คน',
     labelEN: 'Executive Direct — 1 Appraiser',
-    topology: 'M1_G1',
+    topology: 'M1_ONLY',
     appraiserCount: 1,
-    isRuntimeSupported: false,
-    badgeText: 'Preview Only / Routing Pending'
+    isRuntimeSupported: true
   },
   FUTURE_CAPACITY: {
     id: 'FUTURE_CAPACITY',
@@ -281,20 +293,21 @@ export function formatUserDisplay(userArr) {
 
 export function classifyTopologyForUI(topology) {
   if (topology === null || topology === undefined) {
-    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: false, raw: '' };
+    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isM1Only: false, isG2: false, raw: '' };
   }
   const raw = String(topology).trim();
   if (!raw || !CANONICAL_TOPOLOGIES.includes(raw)) {
-    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: false, raw };
+    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isM1Only: false, isG2: false, raw };
   }
   if (raw === 'M1_G1_G2' || raw === 'M1_M2_G1_G2') {
-    return { isCanonical: true, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: true, raw };
+    return { isCanonical: true, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isM1Only: false, isG2: true, raw };
   }
   return {
     isCanonical: true,
     isSupportedV1: true,
     isM1G1: raw === 'M1_G1',
     isM1M2G1: raw === 'M1_M2_G1',
+    isM1Only: raw === 'M1_ONLY',
     isG2: false,
     raw
   };
@@ -303,6 +316,7 @@ export function classifyTopologyForUI(topology) {
 export function getApplicableWorkflowPath(topology = 'M1_G1') {
   const topInfo = classifyTopologyForUI(topology);
   if (!topInfo.isCanonical || !topInfo.isSupportedV1) return null;
+  if (topInfo.isM1Only) return WORKFLOW_PATH_M1_ONLY;
   if (topInfo.isM1G1) return WORKFLOW_PATH_M1_G1;
   if (topInfo.isM1M2G1) return WORKFLOW_PATH_M1_M2_G1;
   return null;

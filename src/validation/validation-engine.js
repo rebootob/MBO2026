@@ -274,7 +274,7 @@ export class ValidationEngine {
     const status = this._val(record.Status);
 
     // 1. Exact Topology Whitelist Guard
-    const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+    const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
     if (!topology || !RECOGNIZED_TOPOLOGIES.includes(topology)) {
       fieldErrors.push({
         field: 'Routing_Topology',
@@ -391,7 +391,7 @@ export class ValidationEngine {
       'Approve Final Manager' // from 13 to 14
     ];
     if (gmHandoverActions.includes(actionName) && (status.startsWith('03') || status.startsWith('08') || status.startsWith('13'))) {
-      if (!hasGM) {
+      if (topology !== 'M1_ONLY' && !hasGM) {
         fieldErrors.push({
           field: 'GM_User',
           messageTH: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,

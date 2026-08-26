@@ -3,8 +3,49 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **M10M-R1 Status:** **`READY FOR CHATGPT REVIEW`**
-> **Last Updated:** 2026-08-26T20:10:00+07:00
+> **M10M-R2 Status:** **`READY FOR CHATGPT REVIEW`**
+> **Last Updated:** 2026-08-26T20:34:00+07:00
+
+---
+
+## 0. M10M-R2 Executive Direct Routing (DGM / GM / VP → President) Evidence
+
+```text
+M10M_R2 = READY_FOR_REVIEW
+PARENT_R1_COMMIT = 611003a10f2ce26b2f08fa3821d65d0530169667
+EXECUTIVE_POSITIONS = DGM, GM, VP
+EXECUTIVE_DESTINATION = President
+EXECUTIVE_APPRAISER_COUNT = 1
+EXECUTIVE_TOPOLOGY = M1_ONLY
+PRESIDENT_DUPLICATION_COUNT = 0
+HARDCODED_PRESIDENT_COUNT = 0
+BLANK_REQUESTER_ALLOW_ALL_COUNT = 0
+APP795_EXECUTIVE_ROWS = POSITION_DGM, POSITION_GM, POSITION_VP
+APP795_READBACK = PASS
+APP796_DGM_EXPECTED_APPRAISERS = 1
+APP796_GM_EXPECTED_APPRAISERS = 1
+APP796_VP_EXPECTED_APPRAISERS = 1
+APP796_READBACK = PASS / NO_WRITE_REQUIRED
+APP794_PROCESS_EXEC_DIRECT = PASS
+NORMAL_M1_G1_REGRESSION = PASS
+TMG2_REGRESSION = PASS
+APP53_WRITE_COUNT = 0
+PRODUCTION_WRITE_COUNT = 0
+NPM_TEST = PASS (584 / 584 PASS)
+BUILD = PASS
+```
+
+### Key Technical Details
+- **App795 Schema Fields**: `Routing_Key`, `Requester_User`, `Manager_Level1_Approvers`, `Manager_Level1_Approval_Rule`, `Active`.
+- **Executive Routing Keys**: `POSITION_DGM`, `POSITION_GM`, `POSITION_VP`.
+- **Topology & Appraiser Count**: `Routing_Topology = 'M1_ONLY'` (1 appraiser slot only). President is assigned to `Manager_User` / `Manager_Level1_Approvers`, while `GM_User` / `GM_Level1_Approvers` is `[]` (zero duplication).
+- **Process Management Workflow Path**: `WORKFLOW_PATH_M1_ONLY` skips GM review states `04`, `09`, `14`.
+- **Scoring Master (App 796)**: `PROF_DGM`, `PROF_GM`, and `PROF_VP` set to `Expected_Appraiser_Count = 1` with `PartA_Weight: 50`, `PartB_Weight: 50`.
+- **Files Modified**: `src/services/routing-service.js`, `src/profiles/scoring-config-master.js`, `src/ui/employee-part-a-ui.js`, `src/validation/validation-engine.js`, `tests/routing-service.test.js`, `tests/objective-save-validation.test.js`, `dist/mbo-employee-app.js`, `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`, `project-docs/CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`, `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`, `project-docs/AI_REVIEW_PACKAGE.md`.
+- **Unit Test Matrix**: 25/25 test cases passing in `tests/routing-service.test.js` (TC01 - TC25). Total suite: 584/584 PASS.
+- **Rollback Procedure**: Discard branch commit or revert to `611003a` parent baseline. Zero writes performed to production.
+
+---
 
 ---
 

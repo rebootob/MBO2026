@@ -359,7 +359,7 @@ export function getCanonicalBaselineMasterConfigs() {
       Fiscal_Year: 'FY2026',
       PartA_Weight: 50,
       PartB_Weight: 50,
-      Expected_Appraiser_Count: 2,
+      Expected_Appraiser_Count: 1,
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
       Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',

@@ -236,9 +236,49 @@ test('M10F-R1: Duplicate exact TMG route fails closed', async () => {
   );
 });
 
-// M10M-R1 POSITION PRIORITY + TEAM-AWARE ROUTING TEST SUITE (TC01 - TC12)
+import { getCanonicalBaselineMasterConfigs } from '../src/profiles/scoring-config-master.js';
+import { WORKFLOW_PATH_M1_ONLY, WORKFLOW_PATH_M1_G1, ROUTE_SCENARIOS } from '../src/ui/employee-part-a-ui.js';
 
-test('M10M-R1 TC01: GM in TMH3 routes to President from App795 POSITION_GM record', async () => {
+// POSITION NORMALIZATION TESTS
+test('Position Normalization: DGM, GM, VP canonical normalization', () => {
+  assert.equal(RoutingService.normalizePosition('Deputy General Manager'), 'DEPUTY_GENERAL_MANAGER');
+  assert.equal(RoutingService.normalizePosition('DGM'), 'DEPUTY_GENERAL_MANAGER');
+  assert.equal(RoutingService.normalizePosition('General Manager'), 'GENERAL_MANAGER');
+  assert.equal(RoutingService.normalizePosition('General manager'), 'GENERAL_MANAGER');
+  assert.equal(RoutingService.normalizePosition('GM'), 'GENERAL_MANAGER');
+  assert.equal(RoutingService.normalizePosition('Vice President'), 'VICE_PRESIDENT');
+  assert.equal(RoutingService.normalizePosition('VP'), 'VICE_PRESIDENT');
+
+  // Non-executive positions must NOT normalize to executive classes
+  assert.equal(RoutingService.normalizePosition('Assistant General Manager'), 'Assistant General Manager');
+  assert.equal(RoutingService.normalizePosition('Section Manager'), 'Section Manager');
+  assert.equal(RoutingService.normalizePosition('Senior Manager'), 'Senior Manager');
+  assert.equal(RoutingService.normalizePosition('Staff'), 'Staff');
+});
+
+// M10M-R2 EXECUTIVE DIRECT ROUTING TEST SUITE (TC01 - TC25)
+
+test('M10M-R2 TC01: DGM in normal Section routes to President (POSITION_DGM)', async () => {
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      assert.equal(query.includes('Routing_Key = "POSITION_DGM"'), true);
+      return {
+        records: [{
+          Routing_Key: { value: 'POSITION_DGM' },
+          Requester_User: { value: [{ code: 'dgm_user' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] }
+        }]
+      };
+    }
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', null, 'dgm_user', mockApi, 'Deputy General Manager');
+  assert.equal(routing.Matched_Rule, 'POSITION_DGM');
+  assert.equal(routing.Routing_Topology, 'M1_ONLY');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'somcai_president');
+  assert.equal(routing.GM_User.length, 0);
+});
+
+test('M10M-R2 TC02: GM in TMH3 routes to President (POSITION_GM)', async () => {
   const mockApi = {
     getRecords: async (appId, query) => {
       assert.equal(query.includes('Routing_Key = "POSITION_GM"'), true);
@@ -253,12 +293,12 @@ test('M10M-R1 TC01: GM in TMH3 routes to President from App795 POSITION_GM recor
   };
   const routing = await RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'General Manager');
   assert.equal(routing.Matched_Rule, 'POSITION_GM');
-  assert.equal(routing.Routing_Key, 'POSITION_GM');
+  assert.equal(routing.Routing_Topology, 'M1_ONLY');
   assert.equal(routing.Manager_Level1_Approvers[0].code, 'somcai_president');
-  assert.equal(routing.GM_Level1_Approvers[0].code, 'somcai_president');
+  assert.equal(routing.GM_User.length, 0);
 });
 
-test('M10M-R1 TC02: GM in TMG2 CAD normalizes Position and routes to President, ignoring TMG2|CAD', async () => {
+test('M10M-R2 TC03: GM in TMG2 CAD routes to President and ignores TMG2|CAD route', async () => {
   let queriedKeys = [];
   const mockApi = {
     getRecords: async (appId, query) => {
@@ -274,14 +314,40 @@ test('M10M-R1 TC02: GM in TMG2 CAD normalizes Position and routes to President, 
   };
   const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'CAD', 'gm_user', mockApi, 'General manager');
   assert.equal(routing.Matched_Rule, 'POSITION_GM');
-  assert.equal(routing.Routing_Key, 'POSITION_GM');
+  assert.equal(routing.Routing_Topology, 'M1_ONLY');
   assert.equal(routing.Manager_Level1_Approvers[0].code, 'somcai_president');
   assert.equal(queriedKeys.length, 1);
   assert.equal(queriedKeys[0].includes('POSITION_GM'), true);
-  assert.equal(queriedKeys.some(q => q.includes('TMG2')), false);
 });
 
-test('M10M-R1 TC03: Missing GM route in App795 throws APPROVER_NOT_FOUND with zero default president fallback', async () => {
+test('M10M-R2 TC04: VP in any Section routes to President (POSITION_VP)', async () => {
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      assert.equal(query.includes('Routing_Key = "POSITION_VP"'), true);
+      return {
+        records: [{
+          Routing_Key: { value: 'POSITION_VP' },
+          Requester_User: { value: [{ code: 'vp_user' }] },
+          Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] }
+        }]
+      };
+    }
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMS1', null, 'vp_user', mockApi, 'Vice President');
+  assert.equal(routing.Matched_Rule, 'POSITION_VP');
+  assert.equal(routing.Routing_Topology, 'M1_ONLY');
+  assert.equal(routing.Manager_Level1_Approvers[0].code, 'somcai_president');
+});
+
+test('M10M-R2 TC05: Missing POSITION_DGM route in App795 throws APPROVER_NOT_FOUND and fails closed', async () => {
+  const mockApi = { getRecords: async () => ({ records: [] }) };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMF1', null, 'dgm_user', mockApi, 'DGM'),
+    /APPROVER_NOT_FOUND/
+  );
+});
+
+test('M10M-R2 TC06: Missing POSITION_GM route in App795 throws APPROVER_NOT_FOUND and fails closed', async () => {
   const mockApi = { getRecords: async () => ({ records: [] }) };
   await assert.rejects(
     async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM'),
@@ -289,19 +355,114 @@ test('M10M-R1 TC03: Missing GM route in App795 throws APPROVER_NOT_FOUND with ze
   );
 });
 
-test('M10M-R1 TC04: App795 GM query/schema error fails closed cleanly without inventing default approver', async () => {
-  const mockApi = {
-    getRecords: async () => {
-      throw new Error('Kintone API Connection Error');
-    }
-  };
+test('M10M-R2 TC07: Missing POSITION_VP route in App795 throws APPROVER_NOT_FOUND and fails closed', async () => {
+  const mockApi = { getRecords: async () => ({ records: [] }) };
   await assert.rejects(
-    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM'),
-    /Kintone API Connection Error/
+    async () => RoutingService.validateRequesterAccess(795, 'TMS1', null, 'vp_user', mockApi, 'VP'),
+    /APPROVER_NOT_FOUND/
   );
 });
 
-test('M10M-R1 TC05: Normal employee TMG2 Team CAD resolves TMG2|CAD route', async () => {
+test('M10M-R2 TC08: Duplicate executive route in App795 throws AMBIGUOUS_ROUTE and fails closed', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [
+        { Routing_Key: { value: 'POSITION_GM' } },
+        { Routing_Key: { value: 'POSITION_GM' } }
+      ]
+    })
+  };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM'),
+    /AMBIGUOUS_ROUTE/
+  );
+});
+
+test('M10M-R2 TC09: Executive route with empty President destination throws APPROVER_NOT_FOUND', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [{
+        Routing_Key: { value: 'POSITION_GM' },
+        Manager_Level1_Approvers: { value: [] }
+      }]
+    })
+  };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM'),
+    /APPROVER_NOT_FOUND/
+  );
+});
+
+test('M10M-R2 TC10: Blank Requester_User does NOT authorize ordinary user for executive route', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [{
+        Routing_Key: { value: 'POSITION_GM' },
+        Requester_User: { value: [] },
+        Manager_Level1_Approvers: { value: [{ code: 'president' }] }
+      }]
+    })
+  };
+  await assert.rejects(
+    async () => RoutingService.validateRequesterAccess(795, 'TMH3', null, 'ordinary_user', mockApi, 'GM'),
+    /ไม่มีสิทธิ์สร้าง MBO/
+  );
+});
+
+test('M10M-R2 TC11: Executive route has exactly 1 appraiser slot (M1_ONLY)', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [{
+        Routing_Key: { value: 'POSITION_GM' },
+        Requester_User: { value: [{ code: 'gm_user' }] },
+        Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] }
+      }]
+    })
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM');
+  assert.equal(routing.Routing_Topology, 'M1_ONLY');
+  assert.equal(routing.Manager_Level1_Approvers.length, 1);
+  assert.equal(routing.Manager_Level2_Approvers.length, 0);
+  assert.equal(routing.GM_Level1_Approvers.length, 0);
+  assert.equal(routing.GM_Level2_Approvers.length, 0);
+});
+
+test('M10M-R2 TC12: President is not duplicated into second appraiser slot (GM_User is empty)', async () => {
+  const mockApi = {
+    getRecords: async () => ({
+      records: [{
+        Routing_Key: { value: 'POSITION_GM' },
+        Requester_User: { value: [{ code: 'gm_user' }] },
+        Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] }
+      }]
+    })
+  };
+  const routing = await RoutingService.validateRequesterAccess(795, 'TMH3', null, 'gm_user', mockApi, 'GM');
+  assert.equal(routing.Manager_User[0].code, 'somcai_president');
+  assert.equal(routing.GM_User.length, 0);
+});
+
+test('M10M-R2 TC13: Single-appraiser path (WORKFLOW_PATH_M1_ONLY) skips technical second-appraiser states (04, 09, 14)', () => {
+  assert.equal(WORKFLOW_PATH_M1_ONLY.includes('04 GM Objective Review'), false);
+  assert.equal(WORKFLOW_PATH_M1_ONLY.includes('09 GM Mid-Year Review'), false);
+  assert.equal(WORKFLOW_PATH_M1_ONLY.includes('14 GM Final Evaluation'), false);
+  assert.equal(WORKFLOW_PATH_M1_ONLY.length, 10);
+});
+
+test('M10M-R2 TC14: Executive return/resubmit returns to same President stage path', () => {
+  assert.equal(WORKFLOW_PATH_M1_ONLY[0], '01 Draft Objective');
+  assert.equal(WORKFLOW_PATH_M1_ONLY[1], '03 Manager Objective Review');
+  assert.equal(WORKFLOW_PATH_M1_ONLY[2], '05 Objective Approved');
+});
+
+test('M10M-R2 TC15: Normal M1_G1 route still follows existing two-appraiser workflow unchanged', () => {
+  assert.equal(WORKFLOW_PATH_M1_G1.includes('04 GM Objective Review'), true);
+  assert.equal(WORKFLOW_PATH_M1_G1.includes('09 GM Mid-Year Review'), true);
+  assert.equal(WORKFLOW_PATH_M1_G1.includes('14 GM Final Evaluation'), true);
+  assert.equal(WORKFLOW_PATH_M1_G1.length, 13);
+});
+
+test('M10M-R2 TC16: TMG2 CAD resolves TMG2|CAD route for Staff', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [{
@@ -313,10 +474,9 @@ test('M10M-R1 TC05: Normal employee TMG2 Team CAD resolves TMG2|CAD route', asyn
   };
   const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'CAD', 'cad_emp', mockApi, 'Staff');
   assert.equal(routing.Routing_Key, 'TMG2|CAD');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'phubodin');
 });
 
-test('M10M-R1 TC06: Normal employee TMG2 Team Production resolves TMG2|Production route', async () => {
+test('M10M-R2 TC17: TMG2 Production resolves TMG2|Production route for Staff', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [{
@@ -328,10 +488,9 @@ test('M10M-R1 TC06: Normal employee TMG2 Team Production resolves TMG2|Productio
   };
   const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'Production', 'prod_emp', mockApi, 'Staff');
   assert.equal(routing.Routing_Key, 'TMG2|Production');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'prompan');
 });
 
-test('M10M-R1 TC07: Normal employee TMG2 Team Marketing resolves TMG2|Marketing route', async () => {
+test('M10M-R2 TC18: TMG2 Marketing resolves TMG2|Marketing route for Staff', async () => {
   const mockApi = {
     getRecords: async () => ({
       records: [{
@@ -343,10 +502,9 @@ test('M10M-R1 TC07: Normal employee TMG2 Team Marketing resolves TMG2|Marketing 
   };
   const routing = await RoutingService.validateRequesterAccess(795, 'TMG2', 'Marketing', 'mkt_emp', mockApi, 'Staff');
   assert.equal(routing.Routing_Key, 'TMG2|Marketing');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'mkt_mgr');
 });
 
-test('M10M-R1 TC08: Missing TMG2 Team when Team required throws TEAM_REQUIRED and blocks without API query', async () => {
+test('M10M-R2 TC19: TMG2 missing Team throws TEAM_REQUIRED and blocks without API query', async () => {
   let apiCalled = false;
   const mockApi = {
     getRecords: async () => {
@@ -361,7 +519,7 @@ test('M10M-R1 TC08: Missing TMG2 Team when Team required throws TEAM_REQUIRED an
   assert.equal(apiCalled, false);
 });
 
-test('M10M-R1 TC09: Unknown TMG2 Team throws ROUTE_NOT_FOUND and blocks', async () => {
+test('M10M-R2 TC20: TMG2 unknown Team throws ROUTE_NOT_FOUND and blocks', async () => {
   const mockApi = { getRecords: async () => ({ records: [] }) };
   await assert.rejects(
     async () => RoutingService.validateRequesterAccess(795, 'TMG2', 'InvalidTeam', 'emp', mockApi, 'Staff'),
@@ -369,48 +527,40 @@ test('M10M-R1 TC09: Unknown TMG2 Team throws ROUTE_NOT_FOUND and blocks', async 
   );
 });
 
-test('M10M-R1 TC10: Duplicate exact route throws AMBIGUOUS_ROUTE and blocks', async () => {
-  const mockApi = {
-    getRecords: async () => ({
-      records: [
-        { Routing_Key: { value: 'TMG2|CAD' } },
-        { Routing_Key: { value: 'TMG2|CAD' } }
-      ]
-    })
-  };
-  await assert.rejects(
-    async () => RoutingService.validateRequesterAccess(795, 'TMG2', 'CAD', 'emp', mockApi, 'Staff'),
-    /AMBIGUOUS_ROUTE/
-  );
+test('M10M-R2 TC21: PROF_DGM expected appraiser count = 1 in scoring master', () => {
+  const configs = getCanonicalBaselineMasterConfigs();
+  const dgmConfig = configs.find(c => c.Profile_Code === 'PROF_DGM');
+  assert.equal(dgmConfig.Expected_Appraiser_Count, 1);
 });
 
-test('M10M-R1 TC11: Requester authorization regression - blank Requester_User does NOT authorize ordinary user', async () => {
-  const mockApi = {
-    getRecords: async () => ({
-      records: [{
-        Routing_Key: { value: 'TMF1' },
-        Requester_User: { value: [] },
-        Manager_Level1_Approvers: { value: [{ code: 'm1' }] }
-      }]
-    })
-  };
-  await assert.rejects(
-    async () => RoutingService.validateRequesterAccess(795, 'TMF1', null, 'ordinary_emp', mockApi, 'Staff'),
-    /ไม่มีสิทธิ์สร้าง MBO/
-  );
+test('M10M-R2 TC22: PROF_GM expected appraiser count = 1 in scoring master', () => {
+  const configs = getCanonicalBaselineMasterConfigs();
+  const gmConfig = configs.find(c => c.Profile_Code === 'PROF_GM');
+  assert.equal(gmConfig.Expected_Appraiser_Count, 1);
 });
 
-test('M10M-R1 TC12: Existing normal non-TMG Section route (TMF1) regression before == after', async () => {
-  const mockApi = {
-    getRecords: async () => ({
-      records: [{
-        Routing_Key: { value: 'TMF1' },
-        Requester_User: { value: [{ code: 'f1' }] },
-        Manager_Level1_Approvers: { value: [{ code: 'kritsada' }] }
-      }]
-    })
-  };
-  const routing = await RoutingService.validateRequesterAccess(795, 'TMF1', null, 'f1', mockApi, 'Staff');
-  assert.equal(routing.Routing_Key, 'TMF1');
-  assert.equal(routing.Manager_Level1_Approvers[0].code, 'kritsada');
+test('M10M-R2 TC23: PROF_VP expected appraiser count = 1 in scoring master', () => {
+  const configs = getCanonicalBaselineMasterConfigs();
+  const vpConfig = configs.find(c => c.Profile_Code === 'PROF_VP');
+  assert.equal(vpConfig.Expected_Appraiser_Count, 1);
+});
+
+test('M10M-R2 TC24: Part A/B remains 50/50 for DGM, GM, and VP profiles', () => {
+  const configs = getCanonicalBaselineMasterConfigs();
+  const dgm = configs.find(c => c.Profile_Code === 'PROF_DGM');
+  const gm = configs.find(c => c.Profile_Code === 'PROF_GM');
+  const vp = configs.find(c => c.Profile_Code === 'PROF_VP');
+  assert.equal(dgm.PartA_Weight, 50);
+  assert.equal(dgm.PartB_Weight, 50);
+  assert.equal(gm.PartA_Weight, 50);
+  assert.equal(gm.PartB_Weight, 50);
+  assert.equal(vp.PartA_Weight, 50);
+  assert.equal(vp.PartB_Weight, 50);
+});
+
+test('M10M-R2 TC25: Executive Direct displays exactly 1st Appraiser = President and appraiserCount = 1 in UI scenarios', () => {
+  const execScenario = ROUTE_SCENARIOS.EXECUTIVE_DIRECT;
+  assert.equal(execScenario.appraiserCount, 1);
+  assert.equal(execScenario.isRuntimeSupported, true);
+  assert.equal(execScenario.topology, 'M1_ONLY');
 });

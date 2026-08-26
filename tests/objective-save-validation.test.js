@@ -1603,8 +1603,7 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(ROUTE_SCENARIOS.CURRENT_STANDARD.appraiserCount, 2);
   assert.equal(ROUTE_SCENARIOS.EXTENDED.appraiserCount, 3);
   assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.appraiserCount, 1);
-  assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.isRuntimeSupported, false);
-  assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.badgeText, 'Preview Only / Routing Pending');
+  assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.isRuntimeSupported, true);
   assert.equal(ROUTE_SCENARIOS.FUTURE_CAPACITY.appraiserCount, 4);
 
   // 2. EVALUATION_PROFILES export exactness (8 distinct profile keys)

@@ -747,7 +747,7 @@ function getCanonicalBaselineMasterConfigs() {
       Fiscal_Year: 'FY2026',
       PartA_Weight: 50,
       PartB_Weight: 50,
-      Expected_Appraiser_Count: 2,
+      Expected_Appraiser_Count: 1,
       Appraiser_Weight_Rule_Code: APPRAISER_WEIGHT_RULES.EQUAL_DISTRIBUTION_V1,
       Part_A_Scoring_Mode: PART_A_SCORING_MODES.DIFFICULTY_ACHIEVEMENT_MATRIX,
       Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
@@ -1378,7 +1378,7 @@ class ValidationEngine {
     const status = this._val(record.Status);
 
     // 1. Exact Topology Whitelist Guard
-    const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+    const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
     if (!topology || !RECOGNIZED_TOPOLOGIES.includes(topology)) {
       fieldErrors.push({
         field: 'Routing_Topology',
@@ -1495,7 +1495,7 @@ class ValidationEngine {
       'Approve Final Manager' // from 13 to 14
     ];
     if (gmHandoverActions.includes(actionName) && (status.startsWith('03') || status.startsWith('08') || status.startsWith('13'))) {
-      if (!hasGM) {
+      if (topology !== 'M1_ONLY' && !hasGM) {
         fieldErrors.push({
           field: 'GM_User',
           messageTH: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
@@ -1750,8 +1750,8 @@ class EmployeeService {
 
   /**
  * Routing Service - App 795 Routing Master Validator & Topology Resolver
- * Pure New Model (Manager L1/L2, GM L1/L2)
- * Enhanced for M10M-R1 Position Priority & Team-Aware Routing
+ * Pure New Model (Manager L1/L2, GM L1/L2, Executive Direct M1_ONLY)
+ * Enhanced for M10M-R2 Executive Direct Routing (DGM / GM / VP -> President)
  */
 
 class RoutingService {
@@ -1762,15 +1762,21 @@ class RoutingService {
    */
   static normalizePosition(positionCode) {
     const clean = String(positionCode || '').trim();
-    if (/^General\s*Manager$/i.test(clean) || /^GM$/i.test(clean)) {
+    if (/^(Deputy\s*General\s*Manager|DGM)$/i.test(clean)) {
+      return 'DEPUTY_GENERAL_MANAGER';
+    }
+    if (/^(General\s*Manager|GM)$/i.test(clean)) {
       return 'GENERAL_MANAGER';
+    }
+    if (/^(Vice\s*President|VP)$/i.test(clean)) {
+      return 'VICE_PRESIDENT';
     }
     return clean;
   }
 
   /**
    * Validate current user access and resolve sequential routing topology from App 795
-   * Supports Position Priority (GM -> President) and Team-aware routing keys (Section_Code|Team)
+   * Supports Position Priority (DGM/GM/VP -> President) and Team-aware routing keys (Section_Code|Team)
    * @param {number} routingAppId
    * @param {string} sectionCode
    * @param {string} teamCode
@@ -1786,25 +1792,31 @@ class RoutingService {
     const cleanTeam = String(teamCode || '').trim();
     const cleanUser = String(loginUserCode || '').trim();
 
-    // 1. Position Priority Rule: GENERAL_MANAGER -> President Route in App795 (Section 3 & Section 6)
-    if (normalizedPos === 'GENERAL_MANAGER') {
-      const gmQuery = `Routing_Key = "POSITION_GM" and Active in ("Active") limit 2`;
-      const resp = await kintoneApi.getRecords(routingAppId, gmQuery);
-      const gmRecords = resp?.records || [];
+    // 1. Executive Direct Position Priority Rule: DGM / GM / VP -> President Route in App795 (M1_ONLY)
+    const isExecutiveDirect = ['DEPUTY_GENERAL_MANAGER', 'GENERAL_MANAGER', 'VICE_PRESIDENT'].includes(normalizedPos);
 
-      if (gmRecords.length === 0) {
-        throw new Error('ไม่พบข้อมูลการตั้งค่า Routing สำหรับตำแหน่ง GM (POSITION_GM) ใน Routing Master (App 795) (APPROVER_NOT_FOUND)\nRouting configuration for GM position (POSITION_GM) was not found in Routing Master.');
+    if (isExecutiveDirect) {
+      let routingKey = 'POSITION_GM';
+      if (normalizedPos === 'DEPUTY_GENERAL_MANAGER') routingKey = 'POSITION_DGM';
+      if (normalizedPos === 'VICE_PRESIDENT') routingKey = 'POSITION_VP';
+
+      const execQuery = `Routing_Key = "${routingKey}" and Active in ("Active") limit 2`;
+      const resp = await kintoneApi.getRecords(routingAppId, execQuery);
+      const execRecords = resp?.records || [];
+
+      if (execRecords.length === 0) {
+        throw new Error(`ไม่พบข้อมูลการตั้งค่า Routing สำหรับตำแหน่ง ${normalizedPos} (${routingKey}) ใน Routing Master (App 795) (APPROVER_NOT_FOUND)\nRouting configuration for executive position ${normalizedPos} (${routingKey}) was not found in Routing Master.`);
       }
 
-      if (gmRecords.length > 1) {
-        throw new Error('พบข้อมูล Routing ซ้ำซ้อนสำหรับ Routing Key POSITION_GM ใน Routing Master (App 795) (AMBIGUOUS_ROUTE)\nDuplicate active routing records found for key POSITION_GM in Routing Master.');
+      if (execRecords.length > 1) {
+        throw new Error(`พบข้อมูล Routing ซ้ำซ้อนสำหรับ Routing Key ${routingKey} ใน Routing Master (App 795) (AMBIGUOUS_ROUTE)\nDuplicate active routing records found for key ${routingKey} in Routing Master.`);
       }
 
-      const route = gmRecords[0];
+      const route = execRecords[0];
       const presidentApprover = route.Manager_Level1_Approvers?.value || route.GM_Level1_Approvers?.value || [];
 
       if (!presidentApprover || presidentApprover.length === 0) {
-        throw new Error('ไม่พบข้อมูลผู้อนุมัติสำหรับตำแหน่ง GM ใน Routing Master (App 795) (APPROVER_NOT_FOUND)\nNo valid approver target configured for GM position in Routing Master.');
+        throw new Error(`ไม่พบข้อมูลผู้อนุมัติสำหรับตำแหน่ง ${normalizedPos} ใน Routing Master (App 795) (APPROVER_NOT_FOUND)\nNo valid approver target configured for executive position ${normalizedPos} in Routing Master.`);
       }
 
       // Check requester authorization against App795 Requester_User list
@@ -1812,34 +1824,34 @@ class RoutingService {
       const isAuthorized = requesters.some(u => u.code === cleanUser) || cleanUser === 'Administrator' || cleanUser === 'admin-form';
 
       if (!isAuthorized) {
-        throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO สำหรับตำแหน่ง GM\nThis account (${cleanUser}) is not authorized to create an MBO for GM position.`);
+        throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO สำหรับตำแหน่ง ${cleanPosition}\nThis account (${cleanUser}) is not authorized to create an MBO for executive position ${cleanPosition}.`);
       }
 
       return {
-        Routing_Key: route.Routing_Key?.value || 'POSITION_GM',
+        Routing_Key: route.Routing_Key?.value || routingKey,
         Requester_User: requesters,
         Manager_Level1_Approvers: presidentApprover,
         Manager_Level1_Approval_Rule: route.Manager_Level1_Approval_Rule?.value || 'ALL',
         Manager_Level2_Approvers: [],
         Manager_Level2_Approval_Rule: 'ALL',
-        GM_Level1_Approvers: presidentApprover,
-        GM_Level1_Approval_Rule: route.GM_Level1_Approval_Rule?.value || 'ALL',
+        GM_Level1_Approvers: [],
+        GM_Level1_Approval_Rule: 'ALL',
         GM_Level2_Approvers: [],
         GM_Level2_Approval_Rule: 'ALL',
         Has_Manager_Level2: 'No',
         Has_GM_Level2: 'No',
-        Routing_Topology: 'M1_G1',
+        Routing_Topology: 'M1_ONLY',
         Manager_User: presidentApprover,
         First_Manager_User: [],
-        GM_User: presidentApprover,
-        Matched_Rule: 'POSITION_GM',
+        GM_User: [],
+        Matched_Rule: routingKey,
         Position: cleanPosition,
         Section: cleanSection,
         Team: cleanTeam
       };
     }
 
-    // 2. Section & Team Validation for Non-GM
+    // 2. Section & Team Validation for Non-Executive
     if (!cleanSection) {
       throw new Error('ไม่พบข้อมูล Section ของพนักงาน กรุณาตรวจสอบ Employee Master (App 53)\nEmployee section is missing in Employee Master.');
     }
@@ -1936,7 +1948,20 @@ class RoutingService {
 
 
 
-const CANONICAL_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+const CANONICAL_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
+
+const WORKFLOW_PATH_M1_ONLY = [
+  '01 Draft Objective',
+  '03 Manager Objective Review',
+  '05 Objective Approved',
+  '06 Employee Mid-Year',
+  '08 Manager Mid-Year Review',
+  '10 Mid-Year Completed',
+  '11 Employee Self Evaluation',
+  '13 Manager Final Evaluation',
+  '15 HR Final Check',
+  '16 Completed'
+];
 
 const WORKFLOW_PATH_M1_G1 = [
   '01 Draft Objective',
@@ -2002,10 +2027,9 @@ const ROUTE_SCENARIOS = {
     id: 'EXECUTIVE_DIRECT',
     labelTH: 'เส้นทางผู้บริหารโดยตรง — ผู้ประเมิน 1 คน',
     labelEN: 'Executive Direct — 1 Appraiser',
-    topology: 'M1_G1',
+    topology: 'M1_ONLY',
     appraiserCount: 1,
-    isRuntimeSupported: false,
-    badgeText: 'Preview Only / Routing Pending'
+    isRuntimeSupported: true
   },
   FUTURE_CAPACITY: {
     id: 'FUTURE_CAPACITY',
@@ -2211,20 +2235,21 @@ function formatUserDisplay(userArr) {
 
 function classifyTopologyForUI(topology) {
   if (topology === null || topology === undefined) {
-    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: false, raw: '' };
+    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isM1Only: false, isG2: false, raw: '' };
   }
   const raw = String(topology).trim();
   if (!raw || !CANONICAL_TOPOLOGIES.includes(raw)) {
-    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: false, raw };
+    return { isCanonical: false, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isM1Only: false, isG2: false, raw };
   }
   if (raw === 'M1_G1_G2' || raw === 'M1_M2_G1_G2') {
-    return { isCanonical: true, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isG2: true, raw };
+    return { isCanonical: true, isSupportedV1: false, isM1G1: false, isM1M2G1: false, isM1Only: false, isG2: true, raw };
   }
   return {
     isCanonical: true,
     isSupportedV1: true,
     isM1G1: raw === 'M1_G1',
     isM1M2G1: raw === 'M1_M2_G1',
+    isM1Only: raw === 'M1_ONLY',
     isG2: false,
     raw
   };
@@ -2233,6 +2258,7 @@ function classifyTopologyForUI(topology) {
 function getApplicableWorkflowPath(topology = 'M1_G1') {
   const topInfo = classifyTopologyForUI(topology);
   if (!topInfo.isCanonical || !topInfo.isSupportedV1) return null;
+  if (topInfo.isM1Only) return WORKFLOW_PATH_M1_ONLY;
   if (topInfo.isM1G1) return WORKFLOW_PATH_M1_G1;
   if (topInfo.isM1M2G1) return WORKFLOW_PATH_M1_M2_G1;
   return null;
