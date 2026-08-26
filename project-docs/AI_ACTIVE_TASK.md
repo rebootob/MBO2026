@@ -5,7 +5,7 @@
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
 > Mode: PROJECT CLOSE MODE / APP794 EVALUATION UX CLOSURE
-> Starting control-plane checkpoint: `b2d58e5fc723f694d746e74f4e7902ae9d735708`
+> Source baseline before task manifest: `b2d58e5fc723f694d746e74f4e7902ae9d735708`
 > Kintone write/deploy authorization: **NONE**
 
 # 1. WHY THIS TASK EXISTS
@@ -346,7 +346,8 @@ Required block:
 
 ```text
 APP794_EVALUATION_UI_V2_LOCAL_CANDIDATE = COMPLETE / BLOCKED
-STARTING_HEAD = b2d58e5fc723f694d746e74f4e7902ae9d735708
+SOURCE_BASELINE_BEFORE_TASK_MANIFEST = b2d58e5fc723f694d746e74f4e7902ae9d735708
+EXECUTION_STARTING_HEAD = actual HEAD after pulling latest task manifest
 FIVE_SCREEN_UI_GATE = PASS/FAIL
 STATUS_16_PREVIEW_COVERAGE = 16/16 or actual
 APPRAISER_SLOT_RENDER_CAPACITY = 1-4 / FAIL
