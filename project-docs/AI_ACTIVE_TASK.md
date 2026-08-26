@@ -1,432 +1,241 @@
-# AI ACTIVE TASK — M10M-R2B APP796 PUBLISHED INTEGRITY CLOSURE — READ ONLY
+# AI ACTIVE TASK — M10M-R2C APP796 DGM LIFECYCLE-CORRECT REPAIR DESIGN — NO WRITE
 
 > Control Plane: ChatGPT / Project Lead / Architect / Reviewer
-> Execution Plane: Antigravity standalone
+> Execution Plane: Antigravity standalone only when explicitly instructed
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Parent execution under review: `89eee588a4638beca57cb165c16970e887e3d2b6`
-> Target: App796 Sandbox published scoring integrity for `PROF_DGM`, `PROF_GM`, `PROF_VP`
+> Reviewed audit commit: `2862afd97031dc0a7c10f2ee270696d1949b3387`
+> Target: `PROF_DGM` App796 published integrity repair design
 > Kintone write/deploy authorization: **NONE**
-> Previous M10M-R2A write authorization: **CONSUMED / CLOSED / MUST NOT BE REUSED**
-> Required final status: `READY FOR CHATGPT REVIEW`
+> Previous M10M-R2A authorization: **CONSUMED / CLOSED / MUST NOT BE REUSED**
 
 ---
 
-## 0. CONTROL-PLANE CLASSIFICATION
+## 0. CONTROL-PLANE REVIEW RESULT
 
-The M10M-R2A Executive Direct implementation is **HOLD_PENDING_APP796_INTEGRITY_REVIEW**.
-
-Reason:
-
-- M10M-R2A changed App796 `PROF_DGM.Expected_Appraiser_Count` from `2` to `1` by direct record PUT.
-- `Expected_Appraiser_Count` is one of the 19 immutable payload fields used by `computeConfigurationHash()`.
-- App796 records are published scoring configurations.
-- The scoring lifecycle/publish service verifies immutable payload/hash equality and treats `PUBLISHED` as a lifecycle state that may transition only to `SUPERSEDED` or `RETIRED`; it does not define direct mutation of published immutable payload as a valid update path.
-
-Therefore the prior evidence line:
+M10M-R2B read-only audit established conclusively:
 
 ```text
-APP796_READBACK = PASS
-```
-
-proved only selected values, not published hash integrity.
-
-This task must determine the actual live state using GET/read-only evidence only.
-
----
-
-## 1. MANDATORY STARTUP
-
-Pull latest `ai/antigravity-wp002c` and verify local HEAD equals origin.
-
-Capture:
-
-```text
-git status
-git branch --show-current
-git rev-parse HEAD
-git rev-parse origin/ai/antigravity-wp002c
-```
-
-Read completely, in this order:
-
-1. `project-docs/CONFIRMED_BASELINE/README.md`
-2. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
-3. `project-docs/CONFIRMED_BASELINE/LEGACY_PMS_APPS.md`
-4. `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
-5. `project-docs/AI_ACTIVE_TASK.md`
-6. `project-docs/CURRENT_STATE.md`
-7. `project-docs/HANDOFF.md`
-8. `project-docs/AI_REVIEW_PACKAGE.md`
-9. `src/profiles/scoring-config-master.js`
-10. `src/services/scoring-config-master-service.js`
-11. `src/services/scoring-config-kintone-repository.js`
-
-Confirmed Baseline is authoritative.
-
----
-
-## 2. HARD SAFETY BOUNDARY — READ ONLY
-
-This task authorizes only read-only discovery and local computation.
-
-Allowed Kintone operations:
-
-```text
-GET only
-```
-
-Forbidden:
-
-```text
-POST = 0
-PUT = 0
-DELETE = 0
-DEPLOY = 0
-record update = 0
-schema update = 0
-ACL update = 0
-Process update = 0
-App794 write = 0
-App795 write = 0
-App796 write = 0
-App53 write = 0
-other-app write = 0
-```
-
-If any mismatch is found, **DO NOT REPAIR IT IN THIS TASK**.
-
-Do not reuse the previous M10M-R2A authorization.
-
-No browser workflow action. No notification action. No real-user workflow test.
-
----
-
-## 3. SOURCE INTEGRITY CONTRACT TO VERIFY
-
-`src/profiles/scoring-config-master.js` defines these 19 immutable payload fields:
-
-```text
-Master_Record_Key
-Profile_Code
-Profile_Family
-Scoring_Config_Code
-Scoring_Config_Version
-Effective_From
-Effective_To
-Fiscal_Year
-PartA_Weight
-PartB_Weight
-Expected_Appraiser_Count
-Appraiser_Weight_Rule_Code
-Part_A_Scoring_Mode
-Competency_Set_Code
-PartA_Rounding_Rule
-PartB_Raw_Rounding_Rule
-PartB_Weighted_Rounding_Rule
-Final_Rounding_Rule
-Supersedes_Config_Version
-```
-
-`Configuration_Hash` must equal SHA-256 produced by the repository's own:
-
-```js
-canonicalizeScoringConfigPayload(liveRecord)
-computeConfigurationHash(canonicalPayload)
-```
-
-Do not implement a different hash algorithm as the primary proof.
-
-Audit/lifecycle fields such as these are not part of the 19-field hash payload:
-
-```text
-Config_Status
-Published_At
-Published_By
-Configuration_Hash
-```
-
----
-
-## 4. LIVE APP796 READ — EXACT SCOPE
-
-Read the actual App796 Sandbox records for exactly:
-
-```text
-PROF_DGM
-PROF_GM
-PROF_VP
-```
-
-Prefer one GET query that returns all three records, or read the full eight-record App796 master if that is simpler under the existing helper. Do not mutate anything.
-
-For each target profile capture the exact live values of:
-
-```text
-$id
-$revision
-all 19 immutable payload fields
-Config_Status
-Configuration_Hash
-Published_By
-Published_At
-```
-
-Also record duplicate count per `Profile_Code + Fiscal_Year + Config_Status=PUBLISHED`.
-
-Required expected business values currently confirmed:
-
-```text
-PROF_DGM: PartA=50, PartB=50, Expected_Appraiser_Count=1
-PROF_GM:  PartA=50, PartB=50, Expected_Appraiser_Count=1
-PROF_VP:  PartA=50, PartB=50, Expected_Appraiser_Count=1
-```
-
-Do not treat those three values alone as integrity PASS.
-
----
-
-## 5. RECOMPUTE HASH FROM LIVE PAYLOAD
-
-For each of DGM / GM / VP:
-
-1. Flatten the Kintone record into the values expected by `canonicalizeScoringConfigPayload()`.
-2. Run `canonicalizeScoringConfigPayload(livePayload)` from current repo source.
-3. Run `computeConfigurationHash(canonicalPayload)` from current repo source.
-4. Compare:
-
-```text
-STORED_CONFIGURATION_HASH
-vs
-RECOMPUTED_LIVE_CONFIGURATION_HASH
-```
-
-Record exact full 64-character hashes.
-
-Primary integrity condition:
-
-```text
-Config_Status == PUBLISHED
-AND Stored Configuration_Hash is nonblank
-AND Stored Configuration_Hash == Recomputed live hash
-AND Master_Record_Key == Profile_Code + "::" + Scoring_Config_Version
-AND exactly one published config exists for that Profile_Code/Fiscal_Year effective scope
-```
-
-Do not change any field even if this condition fails.
-
----
-
-## 6. CONTROL-PLANE DIAGNOSTIC HASHES — SECONDARY ONLY
-
-These values were independently precomputed by the Control Plane from the current canonical source and are diagnostic cross-checks only. The primary proof remains recomputation from **actual live fields** using repo functions.
-
-```text
-CURRENT_SOURCE_EXPECTED_HASH_PROF_DGM_COUNT1 = 6067f92597eed02c50e472c8f99081ba9c7fe7bc14a69b58273e380c510bf043
-CURRENT_SOURCE_EXPECTED_HASH_PROF_GM_COUNT1  = 49b6912644339418e5f685dd9d90d3dd764a857449bf48ce2cf7cc0259c68130
-CURRENT_SOURCE_EXPECTED_HASH_PROF_VP_COUNT1  = a3157a453fed67544428160809e4353e229b6fabe1c740aec22ef8477795d452
-```
-
-Historical DGM source immediately before the R2 count change used `Expected_Appraiser_Count = 2`. Its diagnostic hash under the then-canonical payload is:
-
-```text
-HISTORICAL_DGM_COUNT2_HASH_DIAGNOSTIC = dbf21f31100d3a6878e1ffc5e5866f0fb0284596abda8b1f3555141e8337c10e
-```
-
-If live DGM has:
-
-```text
+PROF_DGM record ID 6
+Config_Status = PUBLISHED
 Expected_Appraiser_Count = 1
-Stored Configuration_Hash = historical count-2 hash
-Recomputed live hash = current count-1 hash
-```
-
-classify explicitly as:
-
-```text
+Stored Configuration_Hash = dbf21f31100d3a6878e1ffc5e5866f0fb0284596abda8b1f3555141e8337c10e
+Recomputed live hash = 6067f92597eed02c50e472c8f99081ba9c7fe7bc14a69b58273e380c510bf043
+HASH_MATCH = FAIL
 PUBLISHED_IMMUTABLE_MUTATION_CONFIRMED
 ```
 
-Do not repair.
+The stored hash matches the historical DGM payload with `Expected_Appraiser_Count = 2`; the live payload now has count `1`.
 
-If diagnostic hashes differ because another immutable live field differs from current source, report the exact differing immutable field(s); do not force a conclusion from the diagnostic constants.
+GM and VP pass hash integrity.
 
----
-
-## 7. REQUIRED RECORD-BY-RECORD RESULT
-
-Produce a compact table/evidence block for all three profiles:
+Canonical review classification:
 
 ```text
-PROFILE_CODE
-RECORD_ID
-REVISION
-CONFIG_STATUS
-MASTER_RECORD_KEY
-EXPECTED_APPRAISER_COUNT
-PART_A_WEIGHT
-PART_B_WEIGHT
-STORED_HASH
-RECOMPUTED_LIVE_HASH
-HASH_MATCH = PASS | FAIL
-PUBLISHED_UNIQUE = PASS | FAIL
-PUBLISH_AUDIT_FIELDS_PRESENT = PASS | FAIL
-INTEGRITY_RESULT = PASS | FAIL
-```
-
-If any immutable field is malformed/missing and canonicalization fails, classify that profile as FAIL and include the exact canonicalization error.
-
----
-
-## 8. OVERALL CLASSIFICATION
-
-Use exactly one overall result:
-
-### A. All three pass
-
-```text
-APP796_PUBLISHED_INTEGRITY = PASS
-M10M_R2A_APP796_GATE = PASS
-```
-
-### B. DGM or any target hash mismatch / published immutable mutation
-
-```text
+M10M_R2B_REVIEW = PASS_WITH_OBSERVATION
 APP796_PUBLISHED_INTEGRITY = MUST_FIX
 M10M_R2A_APP796_GATE = BLOCKED_PENDING_REPAIR_DESIGN
 ```
 
-### C. Cannot obtain complete read-only evidence
+Observations that do not require rerunning R2B:
+- R2B review package did not record exact `Published_By` / `Published_At` values despite the task requesting audit-field presence evidence.
+- `CURRENT_STATE.md` contains a stale `THIS_TASK_KINTONE_CALLS = 0` counter while R2B evidence reports `APP796_GET_COUNT = 1`.
+- Neither observation can convert the confirmed DGM hash mismatch into PASS.
+
+---
+
+## 1. REPAIR PRINCIPLE — DO NOT PATCH THE HASH
+
+Forbidden repair:
 
 ```text
-APP796_PUBLISHED_INTEGRITY = BLOCKED_READ_EVIDENCE
-M10M_R2A_APP796_GATE = BLOCKED
+keep the already-mutated PUBLISHED record as-is
++ overwrite Configuration_Hash with the new count-1 hash
 ```
 
-Do not use `PASS_WITH_OBSERVATION` for a hash mismatch. Hash mismatch on a published scoring config is a correctness/integrity defect.
+Reason: this would only make the integrity check green after the fact while violating the published immutable/versioned configuration model and destroying the meaning of `Configuration_Hash` as publish-time integrity evidence.
+
+The repair must preserve historical truth and use a lifecycle/version-correct approach.
 
 ---
 
-## 9. NO UNNECESSARY EXECUTION
+## 2. DESIGN GOAL
 
-Because this task is read-only and must not change runtime/source:
+Produce one exact, bounded repair manifest for `PROF_DGM` only that achieves all of the following:
 
-- Do **not** run browser smoke.
-- Do **not** run workflow UAT.
-- Do **not** run full `npm test` merely for phase movement.
-- Do **not** run full build merely for phase movement.
-- Do **not** edit source/dist/tests.
-
-A small local Node command/script used only to import the existing hash functions and compute hashes is allowed. Do not create a permanent new script unless necessary; prefer an ephemeral command or existing helper.
+1. restores integrity of the historical published DGM version;
+2. preserves the confirmed new business requirement `Expected_Appraiser_Count = 1` for Executive Direct DGM;
+3. does not delete historical configuration;
+4. does not mutate unrelated profiles;
+5. uses version/supersession semantics rather than silently rewriting published immutable content;
+6. leaves exactly one current effective published DGM configuration for FY2026;
+7. produces a correct `Configuration_Hash` generated by the existing repo hash contract;
+8. is fully reversible from a fresh pre-write backup;
+9. does not affect GM/VP, App795 routes, App794 process, or real-user workflow/notifications.
 
 ---
 
-## 10. DOCUMENTATION / GIT SCOPE
+## 3. REQUIRED CONTROL-PLANE DISCOVERY — READ ONLY / LOCAL ONLY
 
-After the read-only audit:
+Before any repair authorization is requested, inspect:
 
-Allowed Git changes are documentation/evidence only:
+- `src/profiles/scoring-config-master.js`
+- `src/services/scoring-config-master-service.js`
+- `src/services/scoring-config-kintone-repository.js`
+- relevant publish/seeding scripts and tests
+- `project-docs/DECISIONS.md` for DEC-023/024/035/036/038 and version immutability rules
+- current App796 DGM record (GET only) if additional fields/audit evidence are needed
+- any durable M10M-R2A App796 pre-write backup if it still exists and is readable
+- pre-R2 Git state showing the historical DGM immutable payload
+
+No Kintone writes are authorized for this design task.
+
+---
+
+## 4. REQUIRED DESIGN DECISION
+
+Evaluate the lifecycle-correct strategy. Preferred direction unless repository constraints prove otherwise:
+
+### Historical version restoration / preservation
+
+Establish the exact original immutable payload for `PROF_DGM::v1.0.0` (historically Count=2) from durable evidence.
+
+Do not assume that simply setting Count back to 2 is sufficient until all 19 immutable fields are proven to match the stored historical hash.
+
+### New corrected version
+
+Create a new DGM config version for the confirmed Executive Direct business rule:
 
 ```text
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
+Profile_Code = PROF_DGM
+Expected_Appraiser_Count = 1
+PartA_Weight = 50
+PartB_Weight = 50
 ```
 
-Do not change Confirmed Baseline to claim integrity PASS unless the live evidence actually proves it.
+Version identifier must be selected according to existing project versioning convention; do not invent `v1.0.1` or another version without checking current convention.
 
-Do not change source/dist/tests.
+The new version must receive a hash through the existing canonicalization/hash contract, not a manually invented hash.
 
-If mismatch is found, document the mismatch fact and STOP; repair design is a new Control Plane task and requires fresh explicit authorization before any Kintone write.
+### Supersession
 
----
+The old version must become historical/superseded through lifecycle metadata without deleting its content.
 
-## 11. REQUIRED FINAL EVIDENCE
-
-Report at minimum:
+Important current constraint:
 
 ```text
-M10M_R2B = READY_FOR_CHATGPT_REVIEW
-HEAD = <sha>
-APP796_GET_COUNT = <n>
-APP796_WRITE_COUNT = 0
-OTHER_KINTONE_WRITE_COUNT = 0
-
-DGM_RECORD_ID = <id>
-DGM_CONFIG_STATUS = <status>
-DGM_EXPECTED_APPRAISER_COUNT = <value>
-DGM_STORED_HASH = <hash>
-DGM_RECOMPUTED_LIVE_HASH = <hash>
-DGM_HASH_MATCH = PASS|FAIL
-DGM_INTEGRITY = PASS|FAIL
-
-GM_RECORD_ID = <id>
-GM_CONFIG_STATUS = <status>
-GM_EXPECTED_APPRAISER_COUNT = <value>
-GM_STORED_HASH = <hash>
-GM_RECOMPUTED_LIVE_HASH = <hash>
-GM_HASH_MATCH = PASS|FAIL
-GM_INTEGRITY = PASS|FAIL
-
-VP_RECORD_ID = <id>
-VP_CONFIG_STATUS = <status>
-VP_EXPECTED_APPRAISER_COUNT = <value>
-VP_STORED_HASH = <hash>
-VP_RECOMPUTED_LIVE_HASH = <hash>
-VP_HASH_MATCH = PASS|FAIL
-VP_INTEGRITY = PASS|FAIL
-
-APP796_PUBLISHED_INTEGRITY = PASS|MUST_FIX|BLOCKED_READ_EVIDENCE
-M10M_R2A_APP796_GATE = PASS|BLOCKED_PENDING_REPAIR_DESIGN|BLOCKED
-SOURCE_CHANGE_COUNT = 0
-DIST_CHANGE_COUNT = 0
-TEST_CHANGE_COUNT = 0
+SUPERSESSION_ACTIVATION = NOT_IMPLEMENTED / FAIL_CLOSED
 ```
+
+and current service rejects active `Supersedes_Config_Version` usage.
+
+Therefore determine the smallest safe implementation/configuration work required to support this one repair without creating a bypass around the normal publish integrity pipeline.
+
+Do not execute it in this task.
 
 ---
 
-## 12. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+## 5. REQUIRED REPAIR MANIFEST
+
+The design output must specify exactly:
 
 ### What
-Read-only integrity verification of published DGM/GM/VP scoring configurations.
+Every source/config/record change required.
 
 ### Where
-App796 Sandbox records plus existing scoring hash source functions.
+Exact files, functions, App796 record(s), field codes, and version identities.
 
 ### How
-GET live records -> flatten live values -> canonicalize with existing source -> recompute SHA-256 -> compare with stored `Configuration_Hash`.
+Ordered execution sequence including:
+
+1. fresh pre-write GET/backup;
+2. drift gate;
+3. historical v1.0.0 integrity restoration if required and justified;
+4. lifecycle/supersession support activation if required;
+5. creation/validation/hash of corrected DGM version;
+6. publish/supersede sequencing;
+7. post-write GET/read-back;
+8. exact hash verification;
+9. uniqueness/effective-period verification;
+10. rollback sequence.
 
 ### Why
-M10M-R2A directly changed an immutable published DGM field, so selected-value read-back is insufficient to prove scoring-master integrity.
+Why each mutation is necessary and why a direct hash patch is rejected.
 
-### Expected Impact
-Zero runtime change. Evidence only.
+### Impact
+DGM only unless a source-level generic supersession helper is required; no business behavior change outside DGM Executive Direct.
 
-### Risk
-Very low if GET-only boundary is respected. Main risk is accidentally reusing previous write script/authorization; this is explicitly forbidden.
+### Risks
+At minimum:
+- transient zero/multiple current-published DGM configs;
+- effective-period overlap;
+- failed supersession after old record state changes;
+- source/live divergence;
+- historical integrity corruption;
+- rollback ordering.
 
 ### Test Plan
-Hash/status/key/uniqueness/audit-field comparisons described above. No workflow/browser/full-suite execution.
+Targeted unit/integration tests only for changed supersession/publish behavior plus read-back/hash checks. Do not plan real-user workflow/notification tests.
 
-### Rollback Plan
-Not applicable: zero Kintone writes and zero source changes are permitted.
+### Rollback
+Exact reverse order using the fresh pre-write backup; preserve historical records and avoid deletion unless a newly-created, never-used repair candidate must be removed and deletion is separately reviewed/authorized.
 
 ---
 
-## 13. STOP CONDITION
+## 6. HARD BOUNDARIES
 
-After GET evidence and local hash computation:
-
-1. verify Kintone write count = 0;
-2. verify source/dist/test change count = 0;
-3. commit only allowed documentation/evidence updates if needed;
-4. push same branch;
-5. STOP.
-
-Do not repair App796 in this task.
-
-Final line must be exactly:
+Until the user gives a new explicit authorization after reviewing the repair manifest:
 
 ```text
-FINAL STATUS: READY FOR CHATGPT REVIEW
+App796 PUT/POST/DELETE = 0
+App794 write/deploy = 0
+App795 write = 0
+App53 write = 0
+other-app write = 0
+real-user workflow/notification = 0
+```
+
+Do not reuse any earlier authorization.
+
+Do not modify `PROF_GM` or `PROF_VP`; R2B proved both hashes pass.
+
+Do not deploy Preview/App794 UI while this scoring-integrity blocker is unresolved.
+
+---
+
+## 7. EXPECTED OUTPUT
+
+Control Plane / design review must end with one of:
+
+```text
+REPAIR_DESIGN = READY_FOR_USER_AUTHORIZATION
+```
+
+or
+
+```text
+REPAIR_DESIGN = BLOCKED_NEEDS_MORE_READ_ONLY_EVIDENCE
+```
+
+No repair execution is authorized by this task.
+
+---
+
+## 8. NEXT MILESTONE AFTER REPAIR
+
+Only after App796 DGM integrity is repaired and independently verified:
+
+```text
+M10M_R2A_APP796_GATE = PASS
+```
+
+Then resume:
+
+```text
+UI_V2_VISUAL_FREEZE ✅
+-> PREVIEW_TO_APP794_PARITY_CLOSURE
+-> App800 HR Calendar / Dashboard
+-> Hoshin Integration Closure
+-> Final UAT
+-> Go-Live
 ```
