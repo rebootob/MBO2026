@@ -400,14 +400,22 @@ User-confirmed on 2026-08-26 after R6-R3 visual inspection:
 ### Workflow Action Timeline dense-grid rule
 
 - Timeline remains a table on desktop, but it is not primary content.
-- The table must have **clearly visible horizontal and vertical grid lines**. Use a stronger neutral border than the current very-light treatment so rows/columns are immediately distinguishable.
+- The table must have **clearly visible horizontal and vertical grid lines**. Use explicit borders (`1px solid #475569` / `#64748b` or `#334155`) on `table`, `th`, and `td`, including the outer table border, so rows and columns are immediately and sharply distinguishable.
 - Header/body typography should be compact, approximately 11–12px on desktop; do not use large text for audit rows.
 - Cell padding should be compact (roughly 5–7px where practical) and row height should remain dense enough to scan many events quickly.
 - Header background may be light gray/blue, but keep it restrained. Result/Return badges should be small and not increase row height materially.
 - Thai + English labels remain, but compact two-line headers or concise paired labels are preferred over long oversized headings.
 - `Events Recorded` remains a small secondary badge.
-- Return/Reject rows may use a light red tint, but the grid must remain visible.
+- Return/Reject rows may use a light red tint, but the grid lines must remain distinctly visible.
 - The Timeline section should remain collapsible so users can focus on the MBO form when history is not needed.
+
+### Overdue Emphasis & Compact Status Strip rule (R6-R5)
+
+- User-confirmed on 2026-08-26 after R6-R4 visual review:
+- The overdue status/deadline state must be **visually prominent and immediately noticeable** without resorting to a giant hero panel or page clutter.
+- The primary key text `เกินกำหนด 76 วัน / 76 DAYS OVERDUE` (or current day count) must be the visual focus of the compact strip, rendered with a prominent red badge/pill (`.mbo-urgency-badge-pill`) or bold contrast highlight.
+- Exact due date (e.g. `📅 ครบกำหนด 31 Jul 2026`) must be secondary text placed below or beside the main countdown.
+- Keep the presentation as **ONE compact persistent status strip** (12-14px vertical padding, clean horizontal layout), avoiding redundant text, duplicate cards, or page clutter around the phase block.
 
 ## 23. User-Approved Preview -> App794 100% Parity Closure Plan
 

@@ -2745,22 +2745,28 @@ class EmployeePartAUI {
     const deadline = getPhaseCalendarStatus(activePhase.key, status, nowIso, calendar);
 
     let bannerClass = 'mbo-urgency-green';
+    let pillClass = 'pill-green';
     let icon = '⏳';
 
     if (deadline.isCompleted) {
       bannerClass = 'mbo-urgency-green';
+      pillClass = 'pill-green';
       icon = '✓';
     } else if (deadline.isOverdue) {
       bannerClass = 'mbo-urgency-red mbo-pulse-active';
+      pillClass = 'pill-red';
       icon = '🚨';
     } else if (deadline.isDueToday) {
       bannerClass = 'mbo-urgency-orange mbo-pulse-active';
+      pillClass = 'pill-orange';
       icon = '⚠️';
     } else if (deadline.isDueSoon || (deadline.remDays >= 1 && deadline.remDays <= 7)) {
       bannerClass = 'mbo-urgency-amber mbo-pulse-active';
+      pillClass = 'pill-amber';
       icon = '⏰';
     } else if (deadline.isUpcoming) {
       bannerClass = 'mbo-urgency-neutral';
+      pillClass = 'pill-neutral';
       icon = '📅';
     }
 
@@ -2790,11 +2796,11 @@ class EmployeePartAUI {
       <div class="mbo-urgency-callout mbo-compact-status-strip ${bannerClass}">
         <div class="mbo-urgency-icon">${icon}</div>
         <div class="mbo-urgency-content">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+          <div class="mbo-urgency-header-row">
             <div class="mbo-urgency-phase-title">
               📌 ${escapeHtml(activePhase.nameTH)} (${escapeHtml(activePhase.nameEN)}) — <span style="font-weight:600;">[${escapeHtml(currentStatus)}]</span>
             </div>
-            <div class="mbo-urgency-main-number">
+            <div class="mbo-urgency-badge-pill ${pillClass}">
               ${escapeHtml(deadline.calloutTextTH)} / ${escapeHtml(deadline.calloutTextEN)}
             </div>
           </div>

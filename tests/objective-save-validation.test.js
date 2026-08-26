@@ -1889,9 +1889,11 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
   uiCompleted.render();
   assert.strictEqual(uiCompleted.root.querySelector('.mbo-urgency-toast'), null, 'Completed phase must not spawn urgent toast');
 
-  // 9. R6-R4 Single Compact Status Strip & Dense Timeline Grid Tests
+  // 9. R6-R4/R6-R5 Single Compact Status Strip, Overdue Pill & Explicit Timeline Grid Tests
   assert.ok(uiOverdue.root.querySelector('.mbo-compact-status-strip'), 'Single compact status strip must be rendered');
   assert.strictEqual(uiOverdue.root.querySelectorAll('.mbo-status-guidance-card').length, 0, 'Must have 0 duplicate status guidance hero cards');
   assert.strictEqual(uiOverdue.root.querySelectorAll('.mbo-actor-banner-card').length, 0, 'Must have 0 duplicate actor banner hero cards');
-  assert.ok(uiOverdue.root.innerHTML.includes('mbo-timeline-table'), 'Timeline must be dense table');
+  assert.ok(uiOverdue.root.innerHTML.includes('mbo-urgency-badge-pill'), 'Overdue state must use prominent badge pill');
+  assert.ok(uiOverdue.root.innerHTML.includes('pill-red'), 'Overdue countdown must render red pill highlight');
+  assert.ok(uiOverdue.root.innerHTML.includes('mbo-timeline-table'), 'Timeline must be explicit grid table');
 });

@@ -1544,28 +1544,29 @@
   z-index: 12;
 }
 
-/* R6-R4: Desktop Workflow Action Timeline Dense Audit Table */
+/* R6-R5: Desktop Workflow Action Timeline Explicit Grid Table */
 .mbo-timeline-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 11.5px;
   margin-top: 6px;
-  border: 1px solid #94a3b8;
+  border: 1.5px solid #475569 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .mbo-timeline-table th {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: #e2e8f0;
+  color: #0f172a;
   font-weight: 700;
-  padding: 6px 8px;
-  border: 1px solid #94a3b8;
+  padding: 6px 9px;
+  border: 1px solid #475569 !important;
   text-align: left;
   font-size: 11.5px;
 }
 
 .mbo-timeline-table td {
-  padding: 5px 8px;
-  border: 1px solid #94a3b8;
+  padding: 5px 9px;
+  border: 1px solid #64748b !important;
   vertical-align: middle;
   background: #ffffff;
   font-size: 11.5px;
@@ -1592,22 +1593,22 @@
 .mbo-timeline-badge.approved {
   background: #dcfce7;
   color: #15803d;
-  border: 1px solid #bbf7d0;
+  border: 1px solid #86efac;
 }
 
 .mbo-timeline-badge.returned {
   background: #fee2e2;
   color: #991b1b;
-  border: 1px solid #fecaca;
+  border: 1px solid #fca5a5;
 }
 
 .mbo-timeline-badge.resubmitted {
   background: #fef3c7;
   color: #92400e;
-  border: 1px solid #fde68a;
+  border: 1px solid #fcd34d;
 }
 
-/* R6-R4: Single Compact Status/Deadline Strip */
+/* R6-R5: Single Compact Status/Deadline Strip & Prominent Overdue Pill */
 .mbo-compact-status-strip {
   display: flex;
   align-items: center;
@@ -1650,7 +1651,7 @@
 
 .mbo-urgency-red {
   background: #fef2f2;
-  border: 1.5px solid #dc2626;
+  border: 2px solid #dc2626;
   color: #b91c1c;
 }
 
@@ -1661,7 +1662,7 @@
 }
 
 .mbo-urgency-icon {
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -1670,20 +1671,69 @@
   flex-grow: 1;
 }
 
+.mbo-urgency-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .mbo-urgency-phase-title {
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  margin-bottom: 2px;
   opacity: 0.95;
 }
 
 .mbo-urgency-main-number {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.2;
+}
+
+/* R6-R5 Prominent Badge Pill */
+.mbo-urgency-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 800;
   letter-spacing: -0.2px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.mbo-urgency-badge-pill.pill-red {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+}
+
+.mbo-urgency-badge-pill.pill-orange {
+  background: #ea580c;
+  color: #ffffff;
+  border: 1px solid #c2410c;
+}
+
+.mbo-urgency-badge-pill.pill-amber {
+  background: #d97706;
+  color: #ffffff;
+  border: 1px solid #b45309;
+}
+
+.mbo-urgency-badge-pill.pill-green {
+  background: #16a34a;
+  color: #ffffff;
+  border: 1px solid #15803d;
+}
+
+.mbo-urgency-badge-pill.pill-neutral {
+  background: #64748b;
+  color: #ffffff;
+  border: 1px solid #475569;
 }
 
 .mbo-urgency-sub-date {
