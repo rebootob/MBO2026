@@ -174,7 +174,46 @@ For statuses with deterministic mapping (12/13/14), default it automatically fro
 
 If the user changes the active slot manually for 4-Appraiser future simulation, clearly show `Preview Override` and do not claim this is a live Process path.
 
-## 9. PRESERVE ALL PRIOR UI BASELINE REQUIREMENTS
+## 9. WORKFLOW ACTION TIMELINE — WHO / ACTION / DATE / TIME
+
+Add a clear lifecycle-wide read-only frame:
+
+`ประวัติการดำเนินการ / Workflow Action Timeline`
+
+Purpose: users must be able to see when each Requester/Appraiser/HR actor acted during each MBO stage.
+
+Each event row/card must show:
+- Stage / ขั้นตอน;
+- ordinal business actor: Employee/Requester, 1st Appraiser, 2nd Appraiser, 3rd Appraiser, 4th Appraiser, HR Final;
+- actual person name/account where fixture/source exists;
+- action: Submitted, Approved, Returned, Resubmitted, Started Mid-Year, Started Self Evaluation, Scoring Completed, HR Final Completed, etc.;
+- exact date and time in one consistent display format, e.g. `14 Feb 2026 • 09:42`;
+- outcome/status;
+- optional `💬 View Comments / ดูความคิดเห็น` indicator for Return/Reject events, pointing conceptually to native Kintone comments (do not fake comment persistence).
+
+Example preview sequence:
+- Objectives | 1st Appraiser | Approved | 14 Feb 2026 • 09:42
+- Objectives | 2nd Appraiser | Returned | 15 Feb 2026 • 10:18
+- Objectives | Employee | Resubmitted | 16 Feb 2026 • 08:30
+- Objectives | 2nd Appraiser | Approved | 16 Feb 2026 • 13:05
+- Appraiser Evaluation | 1st Appraiser | Scoring Completed | 20 Nov 2026 • 14:22
+
+History semantics:
+- preserve ALL events chronologically;
+- never overwrite earlier approve/return/resubmit actions;
+- latest relevant event may be visually emphasized but full history remains accessible;
+- timeline remains visible/collapsible across all five macro stages;
+- do not derive event timestamps from generic record Updated_datetime/current status;
+- do not infer scoring-complete time merely because a score field is nonblank.
+
+This sprint is Preview/UI only:
+- use deterministic synthetic fixtures only;
+- `WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW`;
+- do not add Kintone timestamp/history fields;
+- do not call live Kintone history/revision APIs;
+- later runtime closure must perform read-only inventory of Kintone Process/history/revision capabilities and App794 schema, then choose durable append-only audit storage if needed.
+
+## 10. PRESERVE ALL PRIOR UI BASELINE REQUIREMENTS
 
 Do not regress any confirmed behavior in `CONFIRMED_BASELINE/UI_UX.md`, including:
 - five bilingual macro stages;
@@ -193,7 +232,7 @@ Do not regress any confirmed behavior in `CONFIRMED_BASELINE/UI_UX.md`, includin
 
 Also search the R6 source for remaining user-facing `Manager`, `GM`, or `First Manager` guidance left in normal business UI. Technical status/detail strings may remain only where explicitly diagnostic. Replace business guidance with ordinal `Appraiser` wording.
 
-## 10. PREVIEW VISUAL CHECK MATRIX
+## 11. PREVIEW VISUAL CHECK MATRIX
 
 Preview at minimum:
 
@@ -217,7 +256,14 @@ Preview at minimum:
 ### Native comment layout
 - Preview indicates reserved native Kintone comment context without fake persistence.
 
-## 11. FOCUSED TESTS / EXECUTION BUDGET
+### Workflow Action Timeline
+- at least one normal approve sequence;
+- at least one Return -> Resubmit -> Approve history preserving all events;
+- Appraiser scoring timestamps;
+- HR Final completion timestamp;
+- chronological order and bilingual labels.
+
+## 12. FOCUSED TESTS / EXECUTION BUDGET
 
 Add tests for:
 1. Objective attachment optional area renders.
@@ -235,7 +281,11 @@ Add tests for:
 13. prior Appraiser values remain visible to next Appraiser.
 14. HR Final all Appraiser columns read-only.
 15. user-facing route/guidance does not regress to Manager/GM role headings.
-16. Preview Kintone calls = 0.
+16. Workflow Action Timeline renders actor + action + date + time.
+17. Return -> Resubmit -> Approve preserves all three events.
+18. timeline uses ordinal Appraiser names, not organizational role headings.
+19. timeline fixture does not fabricate from Updated_datetime.
+20. Preview Kintone calls = 0.
 
 Execution budget:
 - `npm test` once after implementation;
@@ -245,7 +295,7 @@ Execution budget:
 
 Do not burn cycles on unrelated docs cleanup or unrelated broad tests.
 
-## 12. REQUIRED EVIDENCE
+## 13. REQUIRED EVIDENCE
 
 ```text
 APP794_EVALUATION_UI_V2_R6_R1 = COMPLETE / BLOCKED
@@ -272,6 +322,11 @@ INACTIVE_APPRAISER_COLUMNS_VISIBLE_READONLY = PASS/FAIL
 PRIOR_APPRAISER_VALUES_VISIBLE_TO_NEXT = PASS/FAIL
 HR_FINAL_APPRAISER_COLUMNS_READONLY = PASS/FAIL
 APPRAISER4_WORKFLOW_PERSISTENCE = PREVIEW_ONLY_NOT_IMPLEMENTED
+WORKFLOW_ACTION_TIMELINE_UI = PASS/FAIL
+WORKFLOW_ACTION_TIMELINE_RETURN_RESUBMIT_HISTORY = PASS/FAIL
+WORKFLOW_ACTION_TIMELINE_ORDINAL_ACTORS = PASS/FAIL
+WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW
+WORKFLOW_ACTION_TIMELINE_KINTONE_HISTORY_SOURCE = NOT_CLAIMED_IN_UI_SPRINT
 KINTONE_CALL_COUNT = 0
 KINTONE_WRITE_COUNT = 0
 DEPLOY_COUNT = 0
@@ -284,7 +339,7 @@ GIT_PUSH_SYNC = PASS/FAIL
 NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
 ```
 
-## 13. STOP CONDITION
+## 14. STOP CONDITION
 
 Commit and push the same `ai/antigravity-wp002c` branch.
 Keep Preview Lab running if practical.
