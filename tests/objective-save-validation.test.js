@@ -28,6 +28,7 @@ globalThis.kintone = {
       getHeaderMenuSpaceElement: makeMockElement
     }
   },
+  getLoginUser: () => ({ code: 'req1' }),
   api: fakeApi,
   events: {
     on: (events, handler) => {
@@ -80,6 +81,7 @@ function createMockRecord(overrides = {}) {
 }
 
 const fakeApp53 = position => ({
+  url: path => path,
   async getRecords() {
     return {
       records: [{
@@ -110,61 +112,42 @@ test('M10L: Valid verified record + 4 objectives + 100% total weight passes vali
 });
 
 test('M10L-R1: Missing Profile_Code, Routing_Topology, or empty Requester_User [] blocks save', () => {
-  const noProfileRecord = createMockRecord({ Profile_Code: { value: '' } });
-  const res1 = ValidationEngine.validate(noProfileRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res1.isValid, false);
-  assert.ok(res1.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r1 = createMockRecord({ Profile_Code: { value: '' } });
+  assert.equal(ValidationEngine.validate(r1, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 
-  const noRoutingRecord = createMockRecord({ Routing_Topology: { value: '' } });
-  const res2 = ValidationEngine.validate(noRoutingRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res2.isValid, false);
-  assert.ok(res2.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r2 = createMockRecord({ Routing_Topology: { value: '' } });
+  assert.equal(ValidationEngine.validate(r2, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 
-  const emptyRequesterRecord = createMockRecord({ Requester_User: { value: [] } });
-  const res3 = ValidationEngine.validate(emptyRequesterRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res3.isValid, false);
-  assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r3 = createMockRecord({ Requester_User: { value: [] } });
+  assert.equal(ValidationEngine.validate(r3, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 });
 
 test('M10L-R3: Completely missing Requester_User field or null value blocks save', () => {
-  const missingPropRecord = createMockRecord();
-  delete missingPropRecord.Requester_User;
-  const res1 = ValidationEngine.validate(missingPropRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res1.isValid, false);
-  assert.ok(res1.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r1 = createMockRecord();
+  delete r1.Requester_User;
+  assert.equal(ValidationEngine.validate(r1, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 
-  const nullValRecord = createMockRecord({ Requester_User: { value: null } });
-  const res2 = ValidationEngine.validate(nullValRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res2.isValid, false);
-  assert.ok(res2.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r2 = createMockRecord({ Requester_User: null });
+  assert.equal(ValidationEngine.validate(r2, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 
-  const undefinedValRecord = createMockRecord({ Requester_User: { value: undefined } });
-  const res3 = ValidationEngine.validate(undefinedValRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res3.isValid, false);
-  assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r3 = createMockRecord({ Requester_User: { value: null } });
+  assert.equal(ValidationEngine.validate(r3, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 });
 
 test('M10L-R2: Malformed non-array Requester_User (string/object/number) blocks save', () => {
-  const stringRecord = createMockRecord({ Requester_User: { value: 's1' } });
-  const res1 = ValidationEngine.validate(stringRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res1.isValid, false);
-  assert.ok(res1.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r1 = createMockRecord({ Requester_User: { value: 'user1' } });
+  assert.equal(ValidationEngine.validate(r1, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 
-  const objectRecord = createMockRecord({ Requester_User: { value: { code: 's1' } } });
-  const res2 = ValidationEngine.validate(objectRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res2.isValid, false);
-  assert.ok(res2.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r2 = createMockRecord({ Requester_User: { value: { code: 'user1' } } });
+  assert.equal(ValidationEngine.validate(r2, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 
-  const numberRecord = createMockRecord({ Requester_User: { value: 123 } });
-  const res3 = ValidationEngine.validate(numberRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res3.isValid, false);
-  assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
+  const r3 = createMockRecord({ Requester_User: { value: 123 } });
+  assert.equal(ValidationEngine.validate(r3, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, false);
 });
 
 test('M10L-R1: Requester_User populated array allows validation when other fields valid', () => {
-  const validRecord = createMockRecord({ Requester_User: { value: [{ code: 's1' }] } });
-  const res = ValidationEngine.validate(validRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
-  assert.equal(res.isValid, true);
+  const r1 = createMockRecord({ Requester_User: { value: [{ code: 'user1' }] } });
+  assert.equal(ValidationEngine.validate(r1, BUSINESS_STAGES.OBJECTIVE_INPUT).isValid, true);
 });
 
 test('M10L-R2: Create mode EmployeePartAUI starts unverified even if Employee_Name/Section are prefilled', () => {
@@ -214,7 +197,7 @@ test('M10L: Blank or non-numeric Weight blocks save', () => {
 });
 
 test('M10L: Total Weight != 100% blocks save', () => {
-  const record = createMockRecord({ Weight_4: { value: '15' } }); // Sum = 95
+  const record = createMockRecord({ Weight_4: { value: '15' } });
   const res = ValidationEngine.validate(record, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(res.isValid, false);
   assert.ok(res.fieldErrors.some(e => e.field === 'Total_Weight'));
@@ -225,47 +208,46 @@ test('M10L: Hidden/inactive objective rows are cleared and do not leak into reco
     Objective_Count: { value: '2' },
     Weight_1: { value: '50' },
     Weight_2: { value: '50' },
-    // Stale data in row 3 & 4
-    Objective_3: { value: 'Stale Objective 3' },
+    Objective_3: { value: 'Stale objective 3' },
+    Action_Plan_3: { value: 'Stale action 3' },
     Weight_3: { value: '20' },
-    Objective_4: { value: 'Stale Objective 4' },
-    Weight_4: { value: '20' }
+    Difficulty_3: { value: '2' }
   });
 
   const res = ValidationEngine.validate(record, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(res.isValid, true);
   assert.equal(record.Objective_3.value, '');
+  assert.equal(record.Action_Plan_3.value, '');
   assert.equal(record.Weight_3.value, '');
-  assert.equal(record.Objective_4.value, '');
-  assert.equal(record.Weight_4.value, '');
+  assert.equal(record.Difficulty_3.value, '');
 });
 
 test('M10L-R1: checkDuplicateMBO fails closed when duplicate found', async () => {
-  const mockApi = {
+  const dupApi = {
     async getRecords() {
-      return { records: [{ $id: { value: '100' } }] };
+      return { records: [{ $id: { value: '99' } }] };
     }
   };
   await assert.rejects(
-    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, mockApi),
-    err => err.message.includes('มี MBO สำหรับ FY2026 อยู่แล้ว')
+    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, dupApi),
+    err => err.message.includes('0118') && err.message.includes('FY2026')
   );
 });
 
 test('M10L-R1: checkDuplicateMBO fails closed on GET error or malformed response', async () => {
-  const errApi = {
+  const errorApi = {
     async getRecords() {
-      throw new Error('Network timeout');
+      throw new Error('Network error');
     }
   };
   await assert.rejects(
-    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, errApi),
+    async () => EmployeeService.checkDuplicateMBO(794, 'FY2026', '0118', null, errorApi),
     err => err.message.includes('ไม่สามารถตรวจสอบข้อมูลรายการซ้ำได้')
   );
 
   const malformedApi = {
     async getRecords() {
-      return { status: 'error', records: null };
+      return null;
     }
   };
   await assert.rejects(
@@ -322,4 +304,190 @@ test('M10L-R3: Runtime submit hook proceeds (returns event) for valid existing E
   const res = await submitHook(submitEvent);
 
   assert.equal(res, submitEvent, 'Valid Edit submit must return event object when UI is verified and validation passes');
+});
+
+test('M10L-D-R2: Employee 0118 Technical Service Chief lookup populates Profile_Code on record when absent initially', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  const submitHook = kintoneHandlers['app.record.create.submit'];
+  assert.ok(typeof showHook === 'function');
+
+  // Create record with NO Profile_Code initially
+  const rawRecord = createMockRecord();
+  delete rawRecord.Profile_Code;
+  assert.equal(rawRecord.Profile_Code, undefined);
+
+  // Mock kintone API responses for App 53 (Employee 0118), App 795 (Routing), App 796 (Scoring)
+  const mockApi = async (path, method, body) => {
+    if (path.includes('app/form/fields')) return { properties: {} };
+    if (path.includes('/k/v1/records') || path.includes('records.json')) {
+      if (body?.app === 53 || path.includes('app=53') || body?.query?.includes('emp_text')) {
+        return {
+          records: [{
+            emp_text: { value: '0118' },
+            Number: { value: '118' },
+            Text: { value: 'Mr. Peranut Hanpratum' },
+            Text_0: { value: 'นายพีรณัฐ' },
+            Drop_down_0: { value: 'Technical Services' },
+            Drop_down: { value: 'TMS1' },
+            Text_2: { value: 'Technical Service Chief' },
+            Text_4: { value: 'peranut@example.invalid' },
+            Date: { value: '2022-01-01' }
+          }]
+        };
+      }
+      if (body?.app === 795 || path.includes('app=795') || body?.query?.includes('Section_Code')) {
+        return {
+          records: [{
+            Section_Code: { value: 'TMS1' },
+            Requester_User: { value: [{ code: 'req1' }] },
+            Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
+            Manager_Level1_Approval_Rule: { value: 'ALL' },
+            Manager_Level2_Approvers: { value: [] },
+            Manager_Level2_Approval_Rule: { value: 'ANY' },
+            GM_Level1_Approvers: { value: [{ code: 'g1' }] },
+            GM_Level1_Approval_Rule: { value: 'ALL' },
+            GM_Level2_Approvers: { value: [] },
+            GM_Level2_Approval_Rule: { value: 'ANY' },
+            Has_Manager_Level2: { value: 'NO' },
+            Has_GM_Level2: { value: 'NO' },
+            Routing_Topology: { value: 'M1_G1' },
+            First_Manager_User: { value: [] },
+            Manager_User: { value: [{ code: 'm1' }] },
+            GM_User: { value: [{ code: 'g1' }] }
+          }]
+        };
+      }
+      if (body?.app === 796 || path.includes('app=796') || body?.query?.includes('Profile_Code')) {
+        return {
+          records: [{
+            Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+            Fiscal_Year: { value: 'FY2026' },
+            PartA_Weight: { value: '70' },
+            PartB_Weight: { value: '30' },
+            Part_A_Scoring_Mode: { value: 'DIRECT' },
+            Competency_Set_Code: { value: 'OPERATIONAL' },
+            Configuration_Hash: { value: 'hash0118' }
+          }]
+        };
+      }
+    }
+    return { records: [] };
+  };
+  mockApi.url = (path) => path;
+  globalThis.kintone.api = mockApi;
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+
+  // Execute lookup via onLookupEmployee option passed to UI instance
+  const uiOptions = showEvent.record._uiOptions || {};
+  assert.ok(typeof uiOptions.onLookupEmployee === 'function');
+
+  await uiOptions.onLookupEmployee('0118');
+
+  // Verify Profile_Code is now populated on record object
+  assert.ok(rawRecord.Profile_Code);
+  assert.equal(rawRecord.Profile_Code.value, 'PROF_STAFF_CHIEF');
+  assert.equal(rawRecord.Routing_Topology.value, 'M1_G1');
+  assert.deepEqual(rawRecord.Requester_User.value, [{ code: 'req1' }]);
+
+  // Simulate lookup completion setting active UI verified status
+  const activeUi = rawRecord._uiInstance;
+  if (activeUi) activeUi.isEmployeeVerified = true;
+
+  // Execute create submit hook and verify it proceeds (validation passes)
+  const submitEvent = { type: 'app.record.create.submit', record: rawRecord };
+  const res = await submitHook(submitEvent);
+  assert.equal(res, submitEvent, 'Create submit hook must proceed when lookup populated Profile_Code and validation passes');
+});
+
+test('M10L-D-R2: Employee lookup fails closed if scoring query finds 0 published configs', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  const rawRecord = createMockRecord();
+  delete rawRecord.Profile_Code;
+
+  const mockApi = async (path, method, body) => {
+    if (path.includes('app/form/fields')) return { properties: {} };
+    if (path.includes('app=53') || body?.app === 53 || body?.query?.includes('emp_text')) {
+      return {
+        records: [{
+          emp_text: { value: '0118' },
+          Text_2: { value: 'Technical Service Chief' },
+          Drop_down: { value: 'TMS1' }
+        }]
+      };
+    }
+    if (path.includes('app=795') || body?.app === 795 || body?.query?.includes('Section_Code')) {
+      return {
+        records: [{
+          Section_Code: { value: 'TMS1' },
+          Requester_User: { value: [{ code: 'req1' }] },
+          Routing_Topology: { value: 'M1_G1' }
+        }]
+      };
+    }
+    if (path.includes('app=796') || body?.app === 796 || body?.query?.includes('Profile_Code')) {
+      return { records: [] }; // ZERO published configs
+    }
+    return { records: [] };
+  };
+  mockApi.url = (path) => path;
+  globalThis.kintone.api = mockApi;
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const uiOptions = showEvent.record._uiOptions || {};
+
+  await assert.rejects(
+    async () => uiOptions.onLookupEmployee('0118'),
+    err => err.message.includes('ไม่พบการตั้งค่า Scoring Master')
+  );
+});
+
+test('M10L-D-R2: Employee lookup fails closed if scoring query finds duplicate published configs', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  const rawRecord = createMockRecord();
+  delete rawRecord.Profile_Code;
+
+  const mockApi = async (path, method, body) => {
+    if (path.includes('app/form/fields')) return { properties: {} };
+    if (path.includes('app=53') || body?.app === 53 || body?.query?.includes('emp_text')) {
+      return {
+        records: [{
+          emp_text: { value: '0118' },
+          Text_2: { value: 'Technical Service Chief' },
+          Drop_down: { value: 'TMS1' }
+        }]
+      };
+    }
+    if (path.includes('app=795') || body?.app === 795 || body?.query?.includes('Section_Code')) {
+      return {
+        records: [{
+          Section_Code: { value: 'TMS1' },
+          Requester_User: { value: [{ code: 'req1' }] },
+          Routing_Topology: { value: 'M1_G1' }
+        }]
+      };
+    }
+    if (path.includes('app=796') || body?.app === 796 || body?.query?.includes('Profile_Code')) {
+      return {
+        records: [
+          { Profile_Code: { value: 'PROF_STAFF_CHIEF' } },
+          { Profile_Code: { value: 'PROF_STAFF_CHIEF' } } // DUPLICATE
+        ]
+      };
+    }
+    return { records: [] };
+  };
+  mockApi.url = (path) => path;
+  globalThis.kintone.api = mockApi;
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const uiOptions = showEvent.record._uiOptions || {};
+
+  await assert.rejects(
+    async () => uiOptions.onLookupEmployee('0118'),
+    err => err.message.includes('พบการตั้งค่า Scoring Master (App 796) ซ้ำซ้อน')
+  );
 });

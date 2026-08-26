@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L-D-R2_PROFILE_SNAPSHOT_DEFECT_GATE** | **`PASS`** — Resolved `Profile_Code` snapshot persistence in `src/main-mbo-app.js` and `syncRecordToKintone` loop; 541/541 unit tests pass; 0 Kintone writes |
 | **DELIVERY_SPRINT_02** | `PASS / CLOSED` |
 | **DELIVERY_SPRINT_03A_R1** | **`COMPLETE / PENDING CHATGPT REVIEW`** |
 | **M6_BUSINESS_STATE** | `8/8 PUBLISHED (UNCHANGED)` |

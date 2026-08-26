@@ -2690,7 +2690,7 @@ class EmployeePartAUI {
     }
 
     // 2. Instantiate and render Custom UI
-    const ui = new EmployeePartAUI({
+    const options = {
       container: uiHost,
       record: record,
       stage: stage,
@@ -2824,14 +2824,35 @@ class EmployeePartAUI {
         Object.entries(fieldsToSync).forEach(([k, val]) => {
           if (record[k]) {
             record[k].value = val;
+          } else {
+            const fieldType = Array.isArray(val) ? 'USER_SELECT' : 'SINGLE_LINE_TEXT';
+            record[k] = { type: fieldType, value: val };
           }
         });
+
+        // Assert mandatory snapshot prerequisites before employee verification succeeds
+        const profileVal = record.Profile_Code?.value;
+        const routingVal = record.Routing_Topology?.value;
+        const requesterVal = record.Requester_User?.value;
+
+        if (!profileVal || typeof profileVal !== 'string' || !profileVal.trim()) {
+          throw new Error(`ไม่พบข้อมูล Profile Code ของพนักงาน (${empProfile.Employee_Position})\nEmployee scoring profile code (${profileVal || 'missing'}) could not be persisted into record.`);
+        }
+        if (!routingVal || typeof routingVal !== 'string' || !routingVal.trim()) {
+          throw new Error('ไม่พบข้อมูล Routing Topology ในระเบียน\nRouting Topology could not be persisted into record.');
+        }
+        if (!Array.isArray(requesterVal) || requesterVal.length === 0) {
+          throw new Error('ไม่พบข้อมูล Requester User ในระเบียน\nRequester User could not be persisted into record.');
+        }
 
         // Push directly to Kintone Form State
         syncRecordToKintone(record);
       }
-    });
+    };
 
+    record._uiOptions = options;
+    const ui = new EmployeePartAUI(options);
+    record._uiInstance = ui;
     activeUiInstance = ui;
 
     try {
