@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — R12E-B4 NORMALIZED EXISTING-RECORD WORKFLOW CLOSURE — AUTHORIZATION PENDING
+# AI ACTIVE TASK — R12E-B4 NORMALIZED EXISTING-RECORD WORKFLOW CLOSURE — AUTHORIZED
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
@@ -6,16 +6,19 @@
 > Branch: `ai/antigravity-wp002c`
 > Target: App794 `MBO V2 Sandbox` ONLY
 > Mode: PROJECT CLOSE MODE / FINAL CORE FUNCTIONAL UAT
-> Kintone write/workflow authorization: **NONE — DO NOT EXECUTE BUSINESS ACTIONS YET**
+> Starting control-plane HEAD: `c44e4d021f8fbaf2d8ffd66031a15052457968d9`
+> Fresh user authorization: **GRANTED ONCE** by exact instruction `อนุมัติ controlled App794 R12E-B4 Normalize + Workflow Closure ด้วย Record #10 บัญชี hr`
+> Authorization scope: this R12E-B4 manifest only.
+> Authorization is SINGLE-USE and is consumed by this execution attempt. It does not authorize Process/config changes, production writes, UI/Dashboard work, or later tasks.
 
-# REVIEW RESULT / CURRENT CHECKPOINT
+# REVIEWED CHECKPOINT
 
 R12E-B3 read-only browser precheck is accepted as **PASS WITH START-STATE MISMATCH**.
 
 Verified from live read-only browser evidence:
 - browser authenticated Kintone user = `hr`;
 - Record #10 exists and is synthetic/test-only;
-- actual synthetic fixture key = `MBO_UAT_M1G1_001|2026`;
+- exact synthetic fixture key = `MBO_UAT_M1G1_001|2026`;
 - current status = `03 Manager Objective Review`;
 - `Routing_Topology = M1_G1`;
 - `Requester_User = [hr]`;
@@ -25,9 +28,7 @@ Verified from live read-only browser evidence:
 - R12E-B3 executed 0 Kintone writes, 0 record edits, 0 workflow clicks;
 - `admin-form` remains TECHNICAL_ADMIN_ONLY / zero business authority.
 
-The prior task assumption `Record_Key = MBO_UAT_M1G1_001` is superseded for this synthetic fixture by the live exact value `MBO_UAT_M1G1_001|2026`.
-
-Important scope statement: this synthetic fixture key does not follow the normal runtime `buildRecordKey(fiscalYear, employeeCode)` format. Therefore this Workflow UAT may certify workflow behavior only and must not be cited as evidence for normal annual Record_Key generation.
+This synthetic fixture key does not follow normal runtime `buildRecordKey(fiscalYear, employeeCode)` format. This UAT may certify workflow behavior only and must not be cited as evidence for normal annual Record_Key generation.
 
 # NORTH STAR / CLOSE TARGET
 
@@ -35,64 +36,67 @@ Important scope statement: this synthetic fixture key does not follow the normal
 
 Do not reopen broad discovery. Do not create another UAT record.
 
-# WHY START STATUS 03 IS SAFE TO NORMALIZE
+# CHANGE GOVERNANCE
 
-The existing synthetic record is already at `03 Manager Objective Review`. The confirmed M1_G1 baseline contains the legitimate return path:
+## What
+Use the existing controlled synthetic Record #10. First normalize its current workflow status from `03 Manager Objective Review` back to `01 Draft Objective` through the legitimate `Return Objective` action, then execute the compact functional workflow matrix and clean up the synthetic record after full PASS.
 
-`03 Manager Objective Review -> 01 Draft Objective` via `Return Objective` to `Requester_User`.
+## Where
+App794 Sandbox only, existing Record #10 / exact key `MBO_UAT_M1G1_001|2026`.
 
-Because this is the controlled synthetic record and Requester/Manager/GM all map to the approved UAT account `hr`, the next authorized execution may use exactly one initial controlled return action to normalize the fixture back to `01 Draft Objective`, then execute the previously reviewed compact matrix from its intended start.
+## How
+Pull latest -> mandatory baseline gate -> pre-click live drift/identity/notification check -> one browser normalization action -> 22 successful browser transitions + 3 First-Manager fail-closed attempts -> evidence -> delete exact synthetic record only after full PASS -> push -> STOP.
 
-No forced status, Change assignee, direct REST status mutation, or Process configuration change is allowed.
+## Why
+R12E-B3 proved the fixture is valid and controlled but found it already at status03. Returning it through the normal approved workflow path is safer and faster than creating a new record or forcing status.
 
-# FRESH AUTHORIZATION REQUIRED
+## Expected Impact
+Only the synthetic App794 Sandbox Record #10 is expected to move through workflow states and then be deleted after full PASS. Real-user workflow/notification impact target remains 0.
 
-Before any edit/delete/workflow click, obtain fresh explicit user authorization.
+## Risks
+Unexpected Rev38 configuration drift, wrong browser identity/session, notification drift to real recipients, validation failure, workflow transition failure, or accidental action on a non-synthetic record.
 
-Suggested exact phrase:
-`อนุมัติ controlled App794 R12E-B4 Normalize + Workflow Closure ด้วย Record #10 บัญชี hr`
+## Test Plan
+Exactly 1 normalization transition + 22 compact matrix successful transitions + 3 First-Manager fail-closed attempts, ending in `16 Completed`.
 
-Authorization is single-use and scoped only to this manifest.
+## Rollback / Failure Plan
+Process status transitions are not force-rolled back. If any step fails, STOP immediately, preserve Record #10 and evidence, do not Change assignee, do not force status, do not delete the failed fixture, and wait for ChatGPT review.
 
-# PREWRITE / PRECLICK SAFETY GATE
+# PRECLICK SAFETY GATE — BEFORE FIRST BUSINESS ACTION
 
-After authorization and immediately before the first workflow click:
-
-1. Pull latest; local HEAD = origin authorized-task commit.
+1. Pull latest `ai/antigravity-wp002c`; local HEAD must equal origin authorized task commit.
 2. Read canonical baseline in mandatory order.
-3. Confirm no `src/**`, `dist/**`, `tests/**` drift. No npm/build.
+3. Confirm no `src/**`, `dist/**`, `tests/**` drift. Do not run npm/build.
 4. Confirm real browser user exactly `hr`.
-5. Confirm Record #10 still has exact key `MBO_UAT_M1G1_001|2026`, is synthetic, and current status remains exactly `03 Manager Objective Review`.
+5. Confirm Record #10 still has exact key `MBO_UAT_M1G1_001|2026`, is synthetic/test-only, and status remains exactly `03 Manager Objective Review`.
 6. Confirm routing snapshot remains `M1_G1`, Requester/Manager/GM=`hr`, First Manager empty.
-7. Re-read live/preview App794 configuration because current app revision is reported as `38` after the prior reviewed Rev37 checkpoint:
+7. Re-read current App794 live/preview configuration because live evidence moved from Rev37 to Rev38 after the earlier checkpoint:
    - live/preview aligned at `38/38` or a later fully explained/reconciled revision;
    - Process exactly 16 states / 28 actions;
    - Status15 exactly `ONE + USER: hr`;
-   - no Process semantic drift affecting the approved M1_G1 matrix;
-   - no unexpected notification configuration / real-recipient risk.
-8. Verify there is no second synthetic record with the same exact key.
+   - M1_G1 Process semantics match canonical baseline;
+   - no unexpected notification config / real-recipient risk.
+8. Verify no duplicate Record #10 / exact key fixture exists.
+9. Confirm `admin-form` is not the active browser actor and will execute zero business actions.
 
-Any mismatch, unexplained relevant config drift, browser user != hr, duplicate fixture, or real-recipient risk => STOP BEFORE CLICK/WRITE.
+Any mismatch, unexplained relevant drift, browser user != `hr`, duplicate fixture, or real-recipient risk => **STOP BEFORE CLICK/WRITE**.
 
 # AUTHORIZED SCOPE — APP794 EXISTING RECORD #10 ONLY
 
-After all gates PASS:
+## A. Normalization transition
 
-## A. One normalization transition
-
-Execute through the real App794 browser UI as `hr`:
+Through the real App794 browser UI as `hr`:
 
 `03 Manager Objective Review -> 01 Draft Objective` using `Return Objective`.
 
 Expected `NORMALIZATION_SUCCESSFUL_TRANSITIONS = 1`.
-
 Immediately verify resulting status = `01 Draft Objective`.
-If not, STOP and preserve record.
+If not, STOP and preserve Record #10.
 
-## B. Compact functional matrix from status 01
+## B. Compact functional matrix from status01
 
 ### Objective
-1. At `01`: `Submit Objective to First Manager` attempt -> DENIED / status unchanged.
+1. At `01`: attempt `Submit Objective to First Manager` -> DENIED / status unchanged.
 2. `01 -> 03` Submit Objective to Manager.
 3. `03 -> 01` Return Objective.
 4. `01 -> 03` resubmit.
@@ -101,8 +105,8 @@ If not, STOP and preserve record.
 
 ### Mid-Year
 7. `05 -> 06` Start Mid-Year.
-8. Max 1 bounded Mid-Year preparation edit if required.
-9. At `06`: `Submit Mid-Year to First Manager` attempt -> DENIED / status unchanged.
+8. Max 1 bounded Mid-Year preparation edit if validation requires it.
+9. At `06`: attempt `Submit Mid-Year to First Manager` -> DENIED / status unchanged.
 10. `06 -> 08` Submit Mid-Year to Manager.
 11. `08 -> 06` Return Mid-Year Manager.
 12. `06 -> 08` resubmit.
@@ -111,8 +115,8 @@ If not, STOP and preserve record.
 
 ### Final
 15. `10 -> 11` Start Self Evaluation.
-16. Max 1 bounded Final/Self preparation edit if required.
-17. At `11`: `Submit Final to First Manager` attempt -> DENIED / status unchanged.
+16. Max 1 bounded Final/Self preparation edit if validation requires it.
+17. At `11`: attempt `Submit Final to First Manager` -> DENIED / status unchanged.
 18. `11 -> 13` Submit Final to Manager.
 19. `13 -> 11` Return Final Manager.
 20. `11 -> 13` resubmit.
@@ -138,14 +142,14 @@ If and only if normalization + 22/22 matrix transitions + 3/3 denials + final `1
 - confirm real-user workflow/notification impact = 0;
 - confirm `admin-form` business actions = 0;
 - delete exactly Record #10 / key `MBO_UAT_M1G1_001|2026`;
-- verify the exact key count returns 0;
+- verify exact key count = 0;
 - update evidence/living docs, push same branch, STOP.
 
 If any step fails:
 - STOP immediately;
 - do not force status;
 - do not Change assignee;
-- do not delete the failed synthetic record;
+- do not delete failed synthetic record;
 - preserve exact evidence for ChatGPT review.
 
 # HARD BOUNDARIES
@@ -241,4 +245,4 @@ NEXT_ACTION = CHATGPT REVIEW; IF PASS FREEZE CORE V1 AND MOVE TO UI/DASHBOARD
 
 # STOP CONDITION
 
-Until fresh explicit user authorization is recorded by ChatGPT: **NO EDIT / NO DELETE / NO BUSINESS WORKFLOW CLICK / NO KINTONE WRITE.**
+After evidence/living-doc update and push: STOP. Do not start UI/Dashboard or any other task in this execution.
