@@ -3,12 +3,69 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **M10M-R2A Status:** **`READY FOR CHATGPT REVIEW`**
-> **Last Updated:** 2026-08-26T20:44:00+07:00
+> **M10M-R2B Status:** **`READY FOR CHATGPT REVIEW`**
+> **Last Updated:** 2026-08-26T21:31:00+07:00
 
 ---
 
-## 0. M10M-R2A Executive Direct Routing Live Master Evidence & Read-Back
+## 0. M10M-R2B App796 Published Integrity Audit (Read-Only Evidence)
+
+```text
+M10M_R2B = READY_FOR_CHATGPT_REVIEW
+HEAD = c0b6aae8ec15b68ff210be767dcd7882d0a73e56
+APP796_GET_COUNT = 1
+APP796_WRITE_COUNT = 0
+OTHER_KINTONE_WRITE_COUNT = 0
+
+DGM_RECORD_ID = 6
+DGM_CONFIG_STATUS = PUBLISHED
+DGM_EXPECTED_APPRAISER_COUNT = 1
+DGM_STORED_HASH = dbf21f31100d3a6878e1ffc5e5866f0fb0284596abda8b1f3555141e8337c10e
+DGM_RECOMPUTED_LIVE_HASH = 6067f92597eed02c50e472c8f99081ba9c7fe7bc14a69b58273e380c510bf043
+DGM_HASH_MATCH = FAIL
+DGM_INTEGRITY = FAIL
+
+GM_RECORD_ID = 7
+GM_CONFIG_STATUS = PUBLISHED
+GM_EXPECTED_APPRAISER_COUNT = 1
+GM_STORED_HASH = 49b6912644339418e5f685dd9d90d3dd764a857449bf48ce2cf7cc0259c68130
+GM_RECOMPUTED_LIVE_HASH = 49b6912644339418e5f685dd9d90d3dd764a857449bf48ce2cf7cc0259c68130
+GM_HASH_MATCH = PASS
+GM_INTEGRITY = PASS
+
+VP_RECORD_ID = 8
+VP_CONFIG_STATUS = PUBLISHED
+VP_EXPECTED_APPRAISER_COUNT = 1
+VP_STORED_HASH = a3157a453fed67544428160809e4353e229b6fabe1c740aec22ef8477795d452
+VP_RECOMPUTED_LIVE_HASH = a3157a453fed67544428160809e4353e229b6fabe1c740aec22ef8477795d452
+VP_HASH_MATCH = PASS
+VP_INTEGRITY = PASS
+
+APP796_PUBLISHED_INTEGRITY = MUST_FIX
+M10M_R2A_APP796_GATE = BLOCKED_PENDING_REPAIR_DESIGN
+SOURCE_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+```
+
+### Detailed Record-by-Record Integrity Matrix
+| Profile Code | Record ID | Rev | Status | Expected Appraisers | Stored Hash | Recomputed Live Hash | Hash Match | Published Unique | Integrity Result |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `PROF_DGM` | 6 | 3 | `PUBLISHED` | 1 | `dbf21f31100...` | `6067f92597e...` | **FAIL** | PASS | **FAIL** |
+| `PROF_GM` | 7 | 2 | `PUBLISHED` | 1 | `49b69126443...` | `49b69126443...` | **PASS** | PASS | **PASS** |
+| `PROF_VP` | 8 | 2 | `PUBLISHED` | 1 | `a3157a453fe...` | `a3157a453fe...` | **PASS** | PASS | **PASS** |
+
+### Mismatch Analysis & Diagnosis
+- **`PROF_DGM` Record ID 6 Mutation Diagnosis**:
+  - In M10M-R2A, `Expected_Appraiser_Count` was directly mutated from `2` to `1` by PUT record update.
+  - The live stored hash (`dbf21f31100d3a6878e1ffc5e5866f0fb0284596abda8b1f3555141e8337c10e`) corresponds to the historical count-2 payload (`HISTORICAL_DGM_COUNT2_HASH_DIAGNOSTIC`).
+  - The recomputed hash over live fields (`6067f92597eed02c50e472c8f99081ba9c7fe7bc14a69b58273e380c510bf043`) corresponds to the current count-1 payload (`CURRENT_SOURCE_EXPECTED_HASH_PROF_DGM_COUNT1`).
+  - `PUBLISHED_IMMUTABLE_MUTATION_CONFIRMED`: Direct PUT mutation of an immutable payload field broke `Configuration_Hash` equality on published record ID 6.
+  - **No repair performed**: Per M10M-R2B read-only mandate, repair design requires explicit Control-Plane authorization.
+
+---
+
+## 0.1 M10M-R2A Executive Direct Routing Live Master Evidence & Read-Back
 
 ```text
 M10M_R2A = READY_FOR_REVIEW
