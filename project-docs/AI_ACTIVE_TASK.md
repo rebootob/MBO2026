@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — APP794 UI/UX V1 CONTROLLED DEPLOY — AUTHORIZATION PENDING
+# AI ACTIVE TASK — APP794 UI/UX V1 CONTROLLED DEPLOY — AUTHORIZED SINGLE-USE
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
@@ -6,7 +6,28 @@
 > Branch: `ai/antigravity-wp002c`
 > Target: App794 `MBO V2 Sandbox`
 > Mode: PROJECT CLOSE MODE / UIUX V1 DEPLOY
-> Kintone write/deploy authorization: **NONE YET — DO NOT WRITE OR DEPLOY KINTONE**
+> Kintone write/deploy authorization: **AUTHORIZED — SINGLE USE / APP794 DESKTOP CUSTOMIZATION ONLY**
+
+## Authorization record
+
+User authorization received exactly:
+`อนุมัติ controlled App794 UI/UX V1 deploy`
+
+Authorization classification:
+- `AUTHORIZATION_STATUS = ACTIVE_FOR_ONE_EXECUTION_ONLY`
+- `AUTHORIZED_APP = 794`
+- `AUTHORIZED_CHANGE = EXACT_REVIEWED_DESKTOP_JS_CSS_CUSTOMIZATION_DEPLOY_ONLY`
+- `AUTHORIZED_FILE_UPLOAD_MAX = 2` (1 reviewed JS + 1 reviewed CSS)
+- `AUTHORIZED_CUSTOMIZATION_PUT_MAX = 1`
+- `AUTHORIZED_DEPLOY_POST_MAX = 1`
+- `AUTHORIZED_RECORD_WRITE_COUNT = 0`
+- `AUTHORIZED_WORKFLOW_ACTION_COUNT = 0`
+- `AUTHORIZED_PROCESS_CHANGE_COUNT = 0`
+- `AUTHORIZED_SCHEMA_ACL_NOTIFICATION_CHANGE_COUNT = 0`
+- `AUTHORIZED_OTHER_APP_WRITE_COUNT = 0`
+- `AUTHORIZATION_REUSE = FORBIDDEN`
+
+This authorization is consumed by the next Antigravity execution attempt whether that attempt completes or STOPs after a safety gate. A rerun after STOP requires fresh explicit user authorization.
 
 ## Independent review result
 
@@ -35,16 +56,7 @@ Accepted candidate gates:
 
 Observation accepted, not a deploy blocker: R2 retained representative review-phase assertions (03/08/13) rather than all R1 detailed assertions; R2 did not modify the already-reviewed stage-nav behavior for 04/09/14/15.
 
-## NEXT ACTION — WAIT FOR FRESH USER AUTHORIZATION
-
-Do nothing in Kintone until the user gives fresh explicit authorization for this exact App794 UI deployment.
-
-Accepted authorization phrase:
-`อนุมัติ controlled App794 UI/UX V1 deploy`
-
-Authorization is single-use and applies only to the deployment manifest below.
-
-# DEPLOYMENT MANIFEST — EXECUTE ONLY AFTER AUTHORIZATION IS RECORDED
+# AUTHORIZED DEPLOYMENT MANIFEST — EXECUTE EXACTLY ONCE
 
 ## What
 Deploy the exact reviewed UI/UX V1 R2 candidate to App794 desktop customization only, then perform post-deploy readback and read-only browser smoke.
@@ -57,7 +69,7 @@ Deploy the exact reviewed UI/UX V1 R2 candidate to App794 desktop customization 
 
 ## Pre-write safety gate — mandatory, immediately before first write
 
-1. Pull and verify branch HEAD equals the authorized task commit and candidate source/artifacts have not drifted.
+1. Pull and verify branch HEAD equals this authorized task commit and candidate source/artifacts have not drifted.
 2. Verify candidate Git blobs still exactly:
    - JS `f3b19a3565159fb2414dfd546a12741642b4b810`
    - CSS `cac608dbc7494b65ab364055e687d6c50c2648b2`
@@ -122,7 +134,7 @@ Forbidden:
 
 ```text
 APP794_UIUX_V1_DEPLOY = COMPLETE / BLOCKED
-AUTHORIZATION_CONSUMED = YES/NO
+AUTHORIZATION_CONSUMED = YES
 AUTHORIZED_CANDIDATE_COMMIT = eca0de0b6ef9169ef10b7750dc6f29e03c458a09
 CANDIDATE_JS_GIT_BLOB = f3b19a3565159fb2414dfd546a12741642b4b810
 CANDIDATE_CSS_GIT_BLOB = cac608dbc7494b65ab364055e687d6c50c2648b2
@@ -167,5 +179,5 @@ NEXT_ACTION = CHATGPT REVIEW; IF PASS MOVE TO DASHBOARD SPRINT
 
 # STOP CONDITION
 
-Without fresh explicit authorization: STOP with zero Kintone writes.
-After an authorized deploy + verification evidence is committed and pushed: STOP for ChatGPT review. Do not start Dashboard work automatically.
+This authorization is single-use. If any pre-write safety gate fails, STOP with zero Kintone writes and mark authorization consumed; do not retry automatically.
+After the authorized deploy + verification evidence is committed and pushed: STOP for ChatGPT review. Do not start Dashboard work automatically.
