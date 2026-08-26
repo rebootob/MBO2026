@@ -45,20 +45,45 @@ test('assertSandboxWriteTarget blocks all writes when DISCOVERY_MODE is true', (
 test('assertScoringMasterSupersessionAuthorization enforces strict security gates', () => {
   const validAuth = {
     workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_4D_SUPERSEDE_AND_PUBLISH',
+    contractId: 'WP002C_SUPERSEDE_V1',
+    operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
     activeWindow: true,
     explicitUserAuthorization: true,
-    prewriteBackupVerified: true,
-    authorizationId: 'AUTH_SUPERSEDE_001'
+    authorizationId: 'AUTH_SUPERSEDE_001',
+    backupEvidence: {
+      appId: 796,
+      appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+      snapshotScope: 'APP_796_PRE_SUPERSEDE_SNAPSHOT',
+      captured: true,
+      verified: true,
+      retainedUntilIndependentReview: true,
+      artifactPath: 'backups/delivery-sprint-03a/app796/2026-08-25T05-16-21-178Z',
+      sha256: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+      capturedAt: '2026-08-26T22:00:00Z',
+      recordCount: 8
+    }
   };
 
   const validReq = {
     workPackageId: 'MBO-P03-WP-002C',
-    operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
+    stage: 'STAGE_4D_SUPERSEDE_AND_PUBLISH',
+    contractId: 'WP002C_SUPERSEDE_V1',
     appId: 796,
+    appName: 'MBO Profile & Scoring Configuration Master [Sandbox]',
+    operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
     predecessorRecordId: '6',
+    predecessorRevision: '3',
+    predecessorMasterRecordKey: 'PROF_DGM::v1.0.0',
     predecessorVersion: 'v1.0.0',
     newRecordId: '10',
-    newVersion: 'v1.1.0'
+    newRevision: '1',
+    newMasterRecordKey: 'PROF_DGM::v1.1.0',
+    newVersion: 'v1.1.0',
+    expectedPredecessorCurrentStatus: 'PUBLISHED',
+    expectedPredecessorNextStatus: 'SUPERSEDED',
+    expectedNewCurrentStatus: 'VALIDATED',
+    expectedNewNextStatus: 'PUBLISHED'
   };
 
   // Valid authorization passes and registers consumed ID
@@ -70,39 +95,93 @@ test('assertScoringMasterSupersessionAuthorization enforces strict security gate
     /SCORING SUPERSESSION BLOCKED: Authorization has already been consumed/
   );
 
-  // Missing explicitUserAuthorization fails
+  // 1. wrong/missing Work Package
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization(
-      { ...validAuth, authorizationId: 'AUTH_002', explicitUserAuthorization: false },
-      { ...validReq }
-    ),
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A02', workPackageId: 'WRONG_WP' }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Work package must be exactly MBO-P03-WP-002C/
+  );
+
+  // 2. wrong Stage
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A03', stage: 'WRONG_STAGE' }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Stage must be exactly STAGE_4D_SUPERSEDE_AND_PUBLISH/
+  );
+
+  // 3. wrong Contract ID
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A04' }, { ...validReq, contractId: 'WRONG_CONTRACT' }),
+    /SCORING SUPERSESSION BLOCKED: Contract ID must be exactly WP002C_SUPERSEDE_V1/
+  );
+
+  // 4. wrong App ID
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A05' }, { ...validReq, appId: 794 }),
+    /SCORING SUPERSESSION BLOCKED: Target App ID must be exactly 796/
+  );
+
+  // 5. wrong App Name
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A06' }, { ...validReq, appName: 'WRONG_APP_NAME' }),
+    /SCORING SUPERSESSION BLOCKED: Target App name mismatch/
+  );
+
+  // 6. wrong operation
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A07', operation: 'WRONG_OP' }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Operation must be exactly SCORING_CONFIG_SUPERSEDE_AND_PUBLISH/
+  );
+
+  // 7. explicitUserAuthorization != true
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A08', explicitUserAuthorization: false }, { ...validReq }),
     /SCORING SUPERSESSION BLOCKED: Explicit user authorization is required/
   );
 
-  // Inactive window fails
+  // 8. activeWindow != true
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization(
-      { ...validAuth, authorizationId: 'AUTH_003', activeWindow: false },
-      { ...validReq }
-    ),
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A09', activeWindow: false }, { ...validReq }),
     /SCORING SUPERSESSION BLOCKED: One-time write window is CLOSED/
   );
 
-  // Missing backup verification fails
+  // 9. missing/malformed backup evidence
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization(
-      { ...validAuth, authorizationId: 'AUTH_004', prewriteBackupVerified: false },
-      { ...validReq }
-    ),
-    /SCORING SUPERSESSION BLOCKED: Pre-write backup evidence must be verified/
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A10', backupEvidence: null }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Backup evidence must be a plain object/
   );
 
-  // Same record ID fails
+  // 10. backup app mismatch
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization(
-      { ...validAuth, authorizationId: 'AUTH_005' },
-      { ...validReq, predecessorRecordId: '10', newRecordId: '10' }
-    ),
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A11', backupEvidence: { ...validAuth.backupEvidence, appId: 795 } }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Backup App ID mismatch/
+  );
+
+  // 11. bad backup SHA-256
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A12', backupEvidence: { ...validAuth.backupEvidence, sha256: 'SHORT_HEX' } }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Backup sha256 must be 64-char lowercase hex string/
+  );
+
+  // 12. wrong predecessor ID / revision / master key / version
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A13' }, { ...validReq, predecessorRecordId: 'abc' }),
+    /SCORING SUPERSESSION BLOCKED: Predecessor and new record IDs must be positive safe integer strings/
+  );
+
+  // 13. wrong new ID / revision / master key / version
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A14' }, { ...validReq, newMasterRecordKey: 'PROF_DGM::v1.0.0' }),
+    /SCORING SUPERSESSION BLOCKED: Predecessor and new master record keys must be different/
+  );
+
+  // 14. same record ID
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A15' }, { ...validReq, predecessorRecordId: '10', newRecordId: '10' }),
     /SCORING SUPERSESSION BLOCKED: Predecessor record ID and new record ID must be different/
+  );
+
+  // 15. wrong expected old/new statuses
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A16' }, { ...validReq, expectedPredecessorNextStatus: 'PUBLISHED' }),
+    /SCORING SUPERSESSION BLOCKED: Expected predecessor next status must be SUPERSEDED/
   );
 });

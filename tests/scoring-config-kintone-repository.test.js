@@ -639,8 +639,12 @@ test('M10M-R2D Repository: activateSupersessionAtomically executes exact two-PUT
   const res = await repo.activateSupersessionAtomically({
     predecessorRecordId: '6',
     predecessorRevision: '3',
+    predecessorMasterRecordKey: 'PROF_DGM::v1.0.0',
+    predecessorVersion: 'v1.0.0',
     newRecordId: '10',
     newRevision: '1',
+    newMasterRecordKey: 'PROF_DGM::v1.1.0',
+    newVersion: 'v1.1.0',
     publishedBy: 'admin-form',
     publishedAt: '2026-08-26T21:30:00Z'
   });
@@ -677,8 +681,12 @@ test('M10M-R2D Repository: activateSupersessionAtomically same ID rejected', asy
     () => repo.activateSupersessionAtomically({
       predecessorRecordId: '6',
       predecessorRevision: '3',
+      predecessorMasterRecordKey: 'PROF_DGM::v1.0.0',
+      predecessorVersion: 'v1.0.0',
       newRecordId: '6', // same ID
       newRevision: '1',
+      newMasterRecordKey: 'PROF_DGM::v1.1.0',
+      newVersion: 'v1.1.0',
       publishedBy: 'admin-form',
       publishedAt: '2026-08-26T21:30:00Z'
     }),
@@ -696,8 +704,12 @@ test('M10M-R2D Repository: activateSupersessionAtomically authorizer false throw
     () => repo.activateSupersessionAtomically({
       predecessorRecordId: '6',
       predecessorRevision: '3',
+      predecessorMasterRecordKey: 'PROF_DGM::v1.0.0',
+      predecessorVersion: 'v1.0.0',
       newRecordId: '10',
       newRevision: '1',
+      newMasterRecordKey: 'PROF_DGM::v1.1.0',
+      newVersion: 'v1.1.0',
       publishedBy: 'admin-form',
       publishedAt: '2026-08-26T21:30:00Z'
     }),

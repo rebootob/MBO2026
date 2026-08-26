@@ -3,17 +3,46 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **M10M-R2D Status:** **`READY FOR CHATGPT REVIEW`**
-> **Last Updated:** 2026-08-26T21:58:00+07:00
+> **M10M-R2D-R1 Status:** **`READY FOR CHATGPT REVIEW`**
+> **Last Updated:** 2026-08-26T22:09:00+07:00
 
 ---
 
-## 0. M10M-R2D App796 Supersession Support + DGM Repair Candidate (Local Only)
+## 0. M10M-R2D-R1 App796 Supersession Final Local Correction (Read-Only Evidence)
+
+```text
+M10M_R2D_R1 = READY_FOR_CHATGPT_REVIEW
+REAL_REPOSITORY_INTEGRATION = PASS
+CROSS_LAYER_SUPERSESSION_TEST = PASS (1/1 PASS)
+SUPERSESSION_AUTH_GUARD = PASS
+ATOMIC_BULK_REPOSITORY = PASS
+DGM_V110_HASH = e69989df7118601b95b3c4df1a0d7cfc6c5b2c3bf3be124a0470d82ff079892e
+KINTONE_CALL_COUNT = 0
+KINTONE_WRITE_COUNT = 0
+SOURCE_CHANGED_FILES = src/services/scoring-config-master-service.js, src/services/scoring-config-kintone-repository.js, src/core/sandbox-write-guard.js
+TEST_CHANGED_FILES = tests/scoring-config-master-service.test.js, tests/scoring-config-kintone-repository.test.js, tests/sandbox-write-guard.test.js, tests/scoring-config-supersession-integration.test.js
+NPM_TEST = PASS (595/595 PASS)
+```
+
+### Corrections Applied in R2D-R1
+1. **Service ↔ Real Repository Mismatch Fixed**:
+   - Updated `ScoringConfigMasterService.publishSupersedingScoringConfig` to call `this.repository.findPublishedByProfileFiscalYear(...)` (matching real `ScoringConfigKintoneRepository` method signature).
+   - Updated `createValidatedRecord` invocation to pass complete 23-field validated record object payload (`Config_Status = 'VALIDATED'`, `Configuration_Hash`, `Published_By = ''`, `Published_At = ''`).
+2. **Real Cross-Layer Integration Test Added**:
+   - Added `tests/scoring-config-supersession-integration.test.js` executing the end-to-end local supersession pipeline: `ScoringConfigMasterService` $\to$ `ScoringConfigKintoneRepository` $\to$ `createScoringConfigRepositoryRequestBridge` $\to$ deterministic fake transport.
+3. **Hardened Supersession Authorization Guard**:
+   - Extended `assertScoringMasterSupersessionAuthorization` to validate `WP002C_SUPERSEDE_STAGE` (`STAGE_4D_SUPERSEDE_AND_PUBLISH`), `WP002C_SUPERSEDE_CONTRACT_ID` (`WP002C_SUPERSEDE_V1`), App ID 796, exact App Name (`WP002C_APPROVED_APP_NAME`), structured fresh backup evidence object (appId 796, appName, snapshotScope, captured=true, verified=true, retainedUntilIndependentReview=true, artifactPath, 64-hex sha256, ISO capturedAt, recordCount), and positive safe-integer revisions & record IDs.
+4. **Exact Identity Token Propagation**:
+   - Updated `ScoringConfigKintoneRepository.activateSupersessionAtomically` to accept and validate non-empty string identity tokens (`predecessorMasterRecordKey`, `predecessorVersion`, `newMasterRecordKey`, `newVersion`) and pass full authorization context to `authorizeWrite`.
+
+---
+
+## 0.1 M10M-R2D App796 Supersession Support + DGM Repair Candidate (Local Only)
 
 ```text
 M10M_R2D = READY_FOR_CHATGPT_REVIEW
-PARENT_HEAD = 985c077756d5985d8a43ca17ee92ad2a3058cc4a
-IMPLEMENTATION_HEAD = 2191cdf4d10d9e40899cfbb9f8412b9f21a0819e
+PARENT_HEAD = 2191cdf4d10d9e40899cfbb9f8412b9f21a0819e
+IMPLEMENTATION_HEAD = a2494f83afbc21955411111442546fb9e976e012
 KINTONE_CALL_COUNT = 0
 KINTONE_WRITE_COUNT = 0
 SOURCE_CHANGED_FILES = src/services/scoring-config-master-service.js, src/services/scoring-config-kintone-repository.js, src/core/kintone-client.js, src/core/sandbox-write-guard.js

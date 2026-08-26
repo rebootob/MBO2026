@@ -68,8 +68,8 @@ function createInMemoryRepo() {
       }
       return res;
     },
-    async activateSupersessionAtomically({ predecessorRecordId, predecessorRevision, newRecordId, newRevision, publishedBy, publishedAt }) {
-      calls.push({ method: 'activateSupersessionAtomically', predecessorRecordId, predecessorRevision, newRecordId, newRevision, publishedBy, publishedAt });
+    async activateSupersessionAtomically({ predecessorRecordId, predecessorRevision, predecessorMasterRecordKey, predecessorVersion, newRecordId, newRevision, newMasterRecordKey, newVersion, publishedBy, publishedAt }) {
+      calls.push({ method: 'activateSupersessionAtomically', predecessorRecordId, predecessorRevision, predecessorMasterRecordKey, predecessorVersion, newRecordId, newRevision, newMasterRecordKey, newVersion, publishedBy, publishedAt });
       const predRec = records.get(String(predecessorRecordId));
       const newRec = records.get(String(newRecordId));
       if (!predRec || !newRec) throw new Error('RECORD_NOT_FOUND');

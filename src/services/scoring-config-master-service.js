@@ -362,12 +362,12 @@ export class ScoringConfigMasterService {
     }
 
     // 6. Resolve published configs for same Profile/Fiscal Year
-    const publishedConfigs = await this.repository.queryPublishedByProfileAndFiscalYear(
+    const publishedConfigs = await this.repository.findPublishedByProfileFiscalYear(
       canonicalImmutable.Profile_Code,
       canonicalImmutable.Fiscal_Year
     );
     if (!Array.isArray(publishedConfigs)) {
-      throw new Error('REPOSITORY_RESPONSE_INVALID: queryPublishedByProfileAndFiscalYear must return array');
+      throw new Error('REPOSITORY_RESPONSE_INVALID: findPublishedByProfileFiscalYear must return array');
     }
 
     // Must find exactly 1 intended predecessor
@@ -425,8 +425,15 @@ export class ScoringConfigMasterService {
     // 8. Compute candidate expected hash
     const candidateExpectedHash = computeConfigurationHash(canonicalImmutable);
 
-    // 9. Create new record in VALIDATED
-    const createdId = await this.repository.createValidatedRecord(canonicalImmutable, candidateExpectedHash);
+    // 9. Create new record in VALIDATED using exact repository contract payload
+    const validatedPayload = {
+      ...canonicalImmutable,
+      Config_Status: CONFIG_LIFECYCLE_STATUS.VALIDATED,
+      Configuration_Hash: candidateExpectedHash,
+      Published_By: '',
+      Published_At: ''
+    };
+    const createdId = await this.repository.createValidatedRecord(validatedPayload);
     if (!createdId) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: createValidatedRecord returned invalid ID');
     }
@@ -466,12 +473,16 @@ export class ScoringConfigMasterService {
       throw new Error('TRUSTED_PUBLISHED_AT_INVALID: Trusted published date must be a valid timezone-aware ISO-8601 datetime');
     }
 
-    // 12. Call repository atomic supersession activation
+    // 12. Call repository atomic supersession activation with exact identity tokens
     await this.repository.activateSupersessionAtomically({
       predecessorRecordId: String(predecessorRecordId),
       predecessorRevision: String(predecessorRevision),
+      predecessorMasterRecordKey: predecessor.Master_Record_Key,
+      predecessorVersion: predecessor.Scoring_Config_Version,
       newRecordId: String(newRecordId),
       newRevision: String(newRevision),
+      newMasterRecordKey: canonicalImmutable.Master_Record_Key,
+      newVersion: canonicalImmutable.Scoring_Config_Version,
       publishedBy: publisher.trim(),
       publishedAt: publishedAt.trim()
     });
@@ -502,7 +513,7 @@ export class ScoringConfigMasterService {
     }
 
     // Verify exactly 1 current PUBLISHED config exists for Profile/FY (the new record)
-    const finalPublishedConfigs = await this.repository.queryPublishedByProfileAndFiscalYear(
+    const finalPublishedConfigs = await this.repository.findPublishedByProfileFiscalYear(
       canonicalImmutable.Profile_Code,
       canonicalImmutable.Fiscal_Year
     );

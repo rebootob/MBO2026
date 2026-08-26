@@ -1,4 +1,4 @@
-import { WP002C_SCORING_MASTER_APP_ID } from '../core/sandbox-write-guard.js';
+import { WP002C_SCORING_MASTER_APP_ID, WP002C_APPROVED_APP_NAME } from '../core/sandbox-write-guard.js';
 import {
   IMMUTABLE_PAYLOAD_FIELDS,
   EXCLUDED_AUDIT_FIELDS,
@@ -369,8 +369,12 @@ export class ScoringConfigKintoneRepository {
   async activateSupersessionAtomically({
     predecessorRecordId,
     predecessorRevision,
+    predecessorMasterRecordKey,
+    predecessorVersion,
     newRecordId,
     newRevision,
+    newMasterRecordKey,
+    newVersion,
     publishedBy,
     publishedAt
   } = {}) {
@@ -381,6 +385,26 @@ export class ScoringConfigKintoneRepository {
 
     if (strPredId === strNewId) {
       throw new Error('REPOSITORY_RESPONSE_INVALID: predecessorRecordId and newRecordId must be different');
+    }
+
+    if (typeof predecessorMasterRecordKey !== 'string' || predecessorMasterRecordKey.trim() === '' || predecessorMasterRecordKey !== predecessorMasterRecordKey.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: predecessorMasterRecordKey must be exact non-empty string');
+    }
+
+    if (typeof predecessorVersion !== 'string' || predecessorVersion.trim() === '' || predecessorVersion !== predecessorVersion.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: predecessorVersion must be exact non-empty string');
+    }
+
+    if (typeof newMasterRecordKey !== 'string' || newMasterRecordKey.trim() === '' || newMasterRecordKey !== newMasterRecordKey.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: newMasterRecordKey must be exact non-empty string');
+    }
+
+    if (typeof newVersion !== 'string' || newVersion.trim() === '' || newVersion !== newVersion.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: newVersion must be exact non-empty string');
+    }
+
+    if (predecessorMasterRecordKey === newMasterRecordKey || predecessorVersion === newVersion) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: predecessor and new master key and version must be different');
     }
 
     if (typeof publishedBy !== 'string' || publishedBy === '' || publishedBy !== publishedBy.trim()) {
@@ -394,12 +418,24 @@ export class ScoringConfigKintoneRepository {
     let authResult;
     try {
       authResult = this.authorizeWrite({
+        workPackageId: 'MBO-P03-WP-002C',
+        stage: 'STAGE_4D_SUPERSEDE_AND_PUBLISH',
+        contractId: 'WP002C_SUPERSEDE_V1',
         operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
         appId: this.appId,
+        appName: WP002C_APPROVED_APP_NAME,
         predecessorRecordId: strPredId,
         predecessorRevision: strPredRev,
+        predecessorMasterRecordKey,
+        predecessorVersion,
         newRecordId: strNewId,
         newRevision: strNewRev,
+        newMasterRecordKey,
+        newVersion,
+        expectedPredecessorCurrentStatus: CONFIG_LIFECYCLE_STATUS.PUBLISHED,
+        expectedPredecessorNextStatus: CONFIG_LIFECYCLE_STATUS.SUPERSEDED,
+        expectedNewCurrentStatus: CONFIG_LIFECYCLE_STATUS.VALIDATED,
+        expectedNewNextStatus: CONFIG_LIFECYCLE_STATUS.PUBLISHED,
         publishedBy: publishedBy.trim(),
         publishedAt: publishedAt.trim()
       });
