@@ -619,3 +619,88 @@ test('Stage 4B 53: repository source contains no fetch/process.env/.env/Kintone 
   assert.equal(sourceCode.includes('.env'), false);
   assert.equal(sourceCode.includes('getKintoneConnection'), false);
 });
+
+// --- M10M-R2D ATOMIC BULK REPOSITORY & BRIDGE TESTS ---
+test('M10M-R2D Repository: activateSupersessionAtomically executes exact two-PUT Bulk Request', async () => {
+  let capturedReq = null;
+  const { repo, authCalls } = createFakeAdapter(
+    async (reqOpts) => {
+      capturedReq = reqOpts;
+      return {
+        results: [
+          { id: '6', revision: '4' },
+          { id: '10', revision: '2' }
+        ]
+      };
+    },
+    () => true
+  );
+
+  const res = await repo.activateSupersessionAtomically({
+    predecessorRecordId: '6',
+    predecessorRevision: '3',
+    newRecordId: '10',
+    newRevision: '1',
+    publishedBy: 'admin-form',
+    publishedAt: '2026-08-26T21:30:00Z'
+  });
+
+  assert.equal(res, true);
+  assert.equal(authCalls.length, 1);
+  assert.equal(authCalls[0].operation, 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH');
+  assert.equal(authCalls[0].predecessorRecordId, '6');
+  assert.equal(authCalls[0].newRecordId, '10');
+
+  assert.equal(capturedReq.method, 'POST');
+  assert.equal(capturedReq.path, '/k/v1/bulkRequest.json');
+  assert.equal(capturedReq.body.requests.length, 2);
+
+  const [req0, req1] = capturedReq.body.requests;
+  assert.equal(req0.method, 'PUT');
+  assert.equal(req0.api, '/k/v1/record.json');
+  assert.equal(req0.payload.id, '6');
+  assert.equal(req0.payload.revision, '3');
+  assert.equal(req0.payload.record.Config_Status.value, 'SUPERSEDED');
+
+  assert.equal(req1.method, 'PUT');
+  assert.equal(req1.api, '/k/v1/record.json');
+  assert.equal(req1.payload.id, '10');
+  assert.equal(req1.payload.revision, '1');
+  assert.equal(req1.payload.record.Config_Status.value, 'PUBLISHED');
+  assert.equal(req1.payload.record.Published_By.value[0].code, 'admin-form');
+  assert.equal(req1.payload.record.Published_At.value, '2026-08-26T21:30:00Z');
+});
+
+test('M10M-R2D Repository: activateSupersessionAtomically same ID rejected', async () => {
+  const { repo } = createFakeAdapter();
+  await assert.rejects(
+    () => repo.activateSupersessionAtomically({
+      predecessorRecordId: '6',
+      predecessorRevision: '3',
+      newRecordId: '6', // same ID
+      newRevision: '1',
+      publishedBy: 'admin-form',
+      publishedAt: '2026-08-26T21:30:00Z'
+    }),
+    /REPOSITORY_RESPONSE_INVALID: predecessorRecordId and newRecordId must be different/
+  );
+});
+
+test('M10M-R2D Repository: activateSupersessionAtomically authorizer false throws WRITE_AUTHORIZATION_FAILED', async () => {
+  const { repo } = createFakeAdapter(
+    async () => ({ results: [{ revision: '4' }, { revision: '2' }] }),
+    () => false // deny
+  );
+
+  await assert.rejects(
+    () => repo.activateSupersessionAtomically({
+      predecessorRecordId: '6',
+      predecessorRevision: '3',
+      newRecordId: '10',
+      newRevision: '1',
+      publishedBy: 'admin-form',
+      publishedAt: '2026-08-26T21:30:00Z'
+    }),
+    (err) => err.message === 'WRITE_AUTHORIZATION_FAILED'
+  );
+});

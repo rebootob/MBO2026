@@ -3,12 +3,51 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **M10M-R2B Status:** **`READY FOR CHATGPT REVIEW`**
-> **Last Updated:** 2026-08-26T21:31:00+07:00
+> **M10M-R2D Status:** **`READY FOR CHATGPT REVIEW`**
+> **Last Updated:** 2026-08-26T21:58:00+07:00
 
 ---
 
-## 0. M10M-R2B App796 Published Integrity Audit (Read-Only Evidence)
+## 0. M10M-R2D App796 Supersession Support + DGM Repair Candidate (Local Only)
+
+```text
+M10M_R2D = READY_FOR_CHATGPT_REVIEW
+PARENT_HEAD = 985c077756d5985d8a43ca17ee92ad2a3058cc4a
+IMPLEMENTATION_HEAD = 2191cdf4d10d9e40899cfbb9f8412b9f21a0819e
+KINTONE_CALL_COUNT = 0
+KINTONE_WRITE_COUNT = 0
+SOURCE_CHANGED_FILES = src/services/scoring-config-master-service.js, src/services/scoring-config-kintone-repository.js, src/core/kintone-client.js, src/core/sandbox-write-guard.js
+TEST_CHANGED_FILES = tests/scoring-config-master-service.test.js, tests/scoring-config-kintone-repository.test.js, tests/sandbox-write-guard.test.js
+
+DGM_NEW_VERSION = v1.1.0
+DGM_NEW_MASTER_KEY = PROF_DGM::v1.1.0
+DGM_NEW_SUPERSEDES = v1.0.0
+DGM_NEW_EXPECTED_APPRAISER_COUNT = 1
+DGM_NEW_PART_A_B = 50/50
+DGM_NEW_HASH = e69989df7118601b95b3c4df1a0d7cfc6c5b2c3bf3be124a0470d82ff079892e
+
+SUPERSESSION_SERVICE = PASS
+ATOMIC_BULK_REPOSITORY = PASS
+BULK_BRIDGE_FAIL_CLOSED = PASS
+SUPERSESSION_AUTH_GUARD = PASS
+FORENSIC_RESTORE_MANIFEST = READY_NO_WRITE
+GM_VP_SCOPE_UNCHANGED = PASS
+APP794_APP795_SCOPE_UNCHANGED = PASS
+TARGETED_TESTS = PASS (10/10 PASS)
+NPM_TEST = PASS (594/594 PASS)
+NO_ORPHAN_ARTIFACT_GATE = PASS
+```
+
+### Key Technical Implementation Details (Local Only)
+- **Supersession Service Path**: Added `publishSupersedingScoringConfig` to `ScoringConfigMasterService`. Validates candidate non-`NONE` supersedes version, rejects self-supersession, canonicalizes 19 immutable fields, verifies exact published predecessor, computes candidate hash, creates candidate in `VALIDATED`, performs triple-hash readback verification, calls atomic supersession switch, and verifies post-switch old (`SUPERSEDED`) & new (`PUBLISHED`) record states.
+- **Atomic Bulk Repository Switch**: Added `activateSupersessionAtomically` to `ScoringConfigKintoneRepository` using `/k/v1/bulkRequest.json` with 2 revision-guarded PUT requests (Request 0: predecessor `SUPERSEDED`; Request 1: new record `PUBLISHED` + `Published_By` + `Published_At`).
+- **Bridge Bulk Request Validation**: Extended `createScoringConfigRepositoryRequestBridge` to validate `/k/v1/bulkRequest.json` POST payloads strictly for 2 PUT requests matching App 796 supersession schema.
+- **Strict Authorization Guard**: Implemented `assertScoringMasterSupersessionAuthorization` requiring process-local single-use authorization ID, explicit user approval, active window, pre-write backup verification, and unique positive safe-integer record IDs.
+- **Zero Kintone Contact**: 0 Kintone GET/POST/PUT/DELETE calls executed in this task.
+
+---
+
+## 0.1 M10M-R2B App796 Published Integrity Audit (Read-Only Evidence)
 
 ```text
 M10M_R2B = READY_FOR_CHATGPT_REVIEW

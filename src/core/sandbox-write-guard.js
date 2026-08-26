@@ -24,6 +24,7 @@ const consumedAppCreationAuthorizationIds = new Set();
 const consumedLiveActivationAuthorizationIds = new Set();
 const consumedSchemaAuthorizationIds = new Set();
 const consumedDropdownRepairAuthorizationIds = new Set();
+const consumedSupersessionAuthorizationIds = new Set();
 
 export const WP002C_LIVE_ACTIVATION_STAGE = 'STAGE_3A_LIVE_ACTIVATION';
 export const WP002C_SCHEMA_CONFIGURATION_STAGE = 'STAGE_3C_SCHEMA_CONFIGURATION';
@@ -263,6 +264,65 @@ export function assertScoringMasterSchemaAuthorization(authConfig, requestConfig
   }
 
   consumedSchemaAuthorizationIds.add(authConfig.authorizationId);
+  return true;
+}
+
+export function assertScoringMasterSupersessionAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('SCORING SUPERSESSION BLOCKED (FAIL-CLOSED): Missing authorization/request configuration.');
+  }
+
+  if (authConfig.workPackageId !== 'MBO-P03-WP-002C' || requestConfig.workPackageId !== 'MBO-P03-WP-002C') {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Work package must be exactly MBO-P03-WP-002C.');
+  }
+
+  if (requestConfig.operation !== 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH') {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Operation must be exactly SCORING_CONFIG_SUPERSEDE_AND_PUBLISH.');
+  }
+
+  if (requestConfig.appId !== WP002C_SCORING_MASTER_APP_ID) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Target App ID must be exactly 796.');
+  }
+
+  if (authConfig.activeWindow !== true) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: One-time write window is CLOSED.');
+  }
+
+  if (authConfig.explicitUserAuthorization !== true) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Explicit user authorization is required.');
+  }
+
+  if (authConfig.prewriteBackupVerified !== true) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Pre-write backup evidence must be verified.');
+  }
+
+  const authorizationId = authConfig.authorizationId;
+  if (typeof authorizationId !== 'string' || authorizationId.trim() === '') {
+    throw new Error('SCORING SUPERSESSION BLOCKED: A non-empty authorization ID is required.');
+  }
+
+  if (consumedSupersessionAuthorizationIds.has(authorizationId)) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Authorization has already been consumed.');
+  }
+
+  const { predecessorRecordId, predecessorVersion, newRecordId, newVersion } = requestConfig;
+  if (!isExactPositiveSafeIntegerString(predecessorRecordId) || !isExactPositiveSafeIntegerString(newRecordId)) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Predecessor and new record IDs must be positive safe integer strings.');
+  }
+
+  if (predecessorRecordId === newRecordId) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Predecessor record ID and new record ID must be different.');
+  }
+
+  if (typeof predecessorVersion !== 'string' || predecessorVersion.trim() === '' || typeof newVersion !== 'string' || newVersion.trim() === '') {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Predecessor version and new version must be non-empty strings.');
+  }
+
+  if (predecessorVersion.trim() === newVersion.trim()) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Predecessor version and new version must be different.');
+  }
+
+  consumedSupersessionAuthorizationIds.add(authorizationId);
   return true;
 }
 

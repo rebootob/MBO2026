@@ -5,7 +5,8 @@ import {
   PROTECTED_APP_IDS,
   WRITE_BLOCKED_APP_IDS,
   assertDiscoveryReadOnly,
-  assertSandboxWriteTarget
+  assertSandboxWriteTarget,
+  assertScoringMasterSupersessionAuthorization
 } from '../src/core/sandbox-write-guard.js';
 
 test('Discovery Mode Hard Write Lock is Active', () => {
@@ -39,4 +40,69 @@ test('assertSandboxWriteTarget blocks all writes when DISCOVERY_MODE is true', (
   assert.throws(() => assertSandboxWriteTarget(795), /DISCOVERY PHASE WRITE BLOCKED/);
   assert.throws(() => assertSandboxWriteTarget(53), /PROTECTED PRODUCTION APP/);
   assert.throws(() => assertSandboxWriteTarget(283), /PROTECTED PRODUCTION APP/);
+});
+
+test('assertScoringMasterSupersessionAuthorization enforces strict security gates', () => {
+  const validAuth = {
+    workPackageId: 'MBO-P03-WP-002C',
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    prewriteBackupVerified: true,
+    authorizationId: 'AUTH_SUPERSEDE_001'
+  };
+
+  const validReq = {
+    workPackageId: 'MBO-P03-WP-002C',
+    operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
+    appId: 796,
+    predecessorRecordId: '6',
+    predecessorVersion: 'v1.0.0',
+    newRecordId: '10',
+    newVersion: 'v1.1.0'
+  };
+
+  // Valid authorization passes and registers consumed ID
+  assert.equal(assertScoringMasterSupersessionAuthorization({ ...validAuth }, { ...validReq }), true);
+
+  // Replay attempt fails
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization({ ...validAuth }, { ...validReq }),
+    /SCORING SUPERSESSION BLOCKED: Authorization has already been consumed/
+  );
+
+  // Missing explicitUserAuthorization fails
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_002', explicitUserAuthorization: false },
+      { ...validReq }
+    ),
+    /SCORING SUPERSESSION BLOCKED: Explicit user authorization is required/
+  );
+
+  // Inactive window fails
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_003', activeWindow: false },
+      { ...validReq }
+    ),
+    /SCORING SUPERSESSION BLOCKED: One-time write window is CLOSED/
+  );
+
+  // Missing backup verification fails
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_004', prewriteBackupVerified: false },
+      { ...validReq }
+    ),
+    /SCORING SUPERSESSION BLOCKED: Pre-write backup evidence must be verified/
+  );
+
+  // Same record ID fails
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_005' },
+      { ...validReq, predecessorRecordId: '10', newRecordId: '10' }
+    ),
+    /SCORING SUPERSESSION BLOCKED: Predecessor record ID and new record ID must be different/
+  );
 });

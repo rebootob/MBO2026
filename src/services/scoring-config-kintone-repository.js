@@ -365,4 +365,108 @@ export class ScoringConfigKintoneRepository {
 
     return true;
   }
+
+  async activateSupersessionAtomically({
+    predecessorRecordId,
+    predecessorRevision,
+    newRecordId,
+    newRevision,
+    publishedBy,
+    publishedAt
+  } = {}) {
+    const strPredId = parseCallerSafeIntegerToken(predecessorRecordId, 'predecessorRecordId');
+    const strPredRev = parseCallerSafeIntegerToken(predecessorRevision, 'predecessorRevision');
+    const strNewId = parseCallerSafeIntegerToken(newRecordId, 'newRecordId');
+    const strNewRev = parseCallerSafeIntegerToken(newRevision, 'newRevision');
+
+    if (strPredId === strNewId) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: predecessorRecordId and newRecordId must be different');
+    }
+
+    if (typeof publishedBy !== 'string' || publishedBy === '' || publishedBy !== publishedBy.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_By must be non-empty exact string without whitespace');
+    }
+
+    if (typeof publishedAt !== 'string' || publishedAt === '' || publishedAt !== publishedAt.trim()) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Published_At must be non-empty exact string without whitespace');
+    }
+
+    let authResult;
+    try {
+      authResult = this.authorizeWrite({
+        operation: 'SCORING_CONFIG_SUPERSEDE_AND_PUBLISH',
+        appId: this.appId,
+        predecessorRecordId: strPredId,
+        predecessorRevision: strPredRev,
+        newRecordId: strNewId,
+        newRevision: strNewRev,
+        publishedBy: publishedBy.trim(),
+        publishedAt: publishedAt.trim()
+      });
+    } catch {
+      throw new Error('WRITE_AUTHORIZATION_FAILED');
+    }
+
+    if (authResult !== true) {
+      throw new Error('WRITE_AUTHORIZATION_FAILED');
+    }
+
+    const bulkBody = {
+      requests: [
+        {
+          method: 'PUT',
+          api: '/k/v1/record.json',
+          payload: {
+            app: this.appId,
+            id: strPredId,
+            revision: strPredRev,
+            record: {
+              Config_Status: { value: CONFIG_LIFECYCLE_STATUS.SUPERSEDED }
+            }
+          }
+        },
+        {
+          method: 'PUT',
+          api: '/k/v1/record.json',
+          payload: {
+            app: this.appId,
+            id: strNewId,
+            revision: strNewRev,
+            record: {
+              Config_Status: { value: CONFIG_LIFECYCLE_STATUS.PUBLISHED },
+              Published_By: { value: [{ code: publishedBy.trim() }] },
+              Published_At: { value: publishedAt.trim() }
+            }
+          }
+        }
+      ]
+    };
+
+    let res;
+    try {
+      res = await this.request({
+        method: 'POST',
+        path: '/k/v1/bulkRequest.json',
+        body: bulkBody
+      });
+    } catch {
+      throw new Error('KINTONE_REPOSITORY_REQUEST_FAILED');
+    }
+
+    if (!isPlainObject(res) || !Array.isArray(res.results) || res.results.length !== 2) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Bulk request response must contain results array of length 2');
+    }
+
+    const res0RevStr = parseStorageSafeIntegerToken(res.results[0]?.revision, 'bulk response item 0 revision');
+    const res1RevStr = parseStorageSafeIntegerToken(res.results[1]?.revision, 'bulk response item 1 revision');
+
+    if (Number(res0RevStr) <= Number(strPredRev)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Predecessor revision not advanced');
+    }
+    if (Number(res1RevStr) <= Number(strNewRev)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: New record revision not advanced');
+    }
+
+    return true;
+  }
 }

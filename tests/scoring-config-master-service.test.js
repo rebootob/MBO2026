@@ -6,7 +6,9 @@ import {
 } from '../src/services/scoring-config-master-service.js';
 import {
   getCanonicalBaselineMasterConfigs,
-  CONFIG_LIFECYCLE_STATUS
+  CONFIG_LIFECYCLE_STATUS,
+  canonicalizeScoringConfigPayload,
+  computeConfigurationHash
 } from '../src/profiles/scoring-config-master.js';
 
 function createInMemoryRepo() {
@@ -24,10 +26,20 @@ function createInMemoryRepo() {
       }
       return null;
     },
-    async createValidatedRecord(payload) {
-      calls.push({ method: 'createValidatedRecord', payload });
+    async createValidatedRecord(payload, expectedHash) {
+      calls.push({ method: 'createValidatedRecord', payload, expectedHash });
       const id = String(nextId++);
-      const newRec = { ...payload, $id: id, __recordId: id, __storageRevision: '1' };
+      const newRec = {
+        ...payload,
+        Config_Status: CONFIG_LIFECYCLE_STATUS.VALIDATED,
+        Configuration_Hash: expectedHash || payload.Configuration_Hash || '',
+        Published_By: payload.Published_By || '',
+        Published_At: payload.Published_At || '',
+        $id: id,
+        __recordId: id,
+        $revision: '1',
+        __storageRevision: '1'
+      };
       records.set(id, newRec);
       return id;
     },
@@ -45,6 +57,31 @@ function createInMemoryRepo() {
         }
       }
       return res;
+    },
+    async queryPublishedByProfileAndFiscalYear(profileCode, fiscalYear) {
+      calls.push({ method: 'queryPublishedByProfileAndFiscalYear', profileCode, fiscalYear });
+      const res = [];
+      for (const rec of records.values()) {
+        if (rec.Profile_Code === profileCode && rec.Fiscal_Year === fiscalYear && rec.Config_Status === CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+          res.push({ ...rec });
+        }
+      }
+      return res;
+    },
+    async activateSupersessionAtomically({ predecessorRecordId, predecessorRevision, newRecordId, newRevision, publishedBy, publishedAt }) {
+      calls.push({ method: 'activateSupersessionAtomically', predecessorRecordId, predecessorRevision, newRecordId, newRevision, publishedBy, publishedAt });
+      const predRec = records.get(String(predecessorRecordId));
+      const newRec = records.get(String(newRecordId));
+      if (!predRec || !newRec) throw new Error('RECORD_NOT_FOUND');
+      if (String(predRec.__storageRevision) !== String(predecessorRevision)) throw new Error('REVISION_CONFLICT');
+      if (String(newRec.__storageRevision) !== String(newRevision)) throw new Error('REVISION_CONFLICT');
+
+      const predNextRev = String(Number(predRec.__storageRevision || '1') + 1);
+      const newNextRev = String(Number(newRec.__storageRevision || '1') + 1);
+
+      records.set(String(predecessorRecordId), { ...predRec, Config_Status: CONFIG_LIFECYCLE_STATUS.SUPERSEDED, __storageRevision: predNextRev });
+      records.set(String(newRecordId), { ...newRec, Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED, Published_By: publishedBy, Published_At: publishedAt, __storageRevision: newNextRev });
+      return true;
     },
     async publishRecord(id, patch, expectedRevision) {
       calls.push({ method: 'publishRecord', id, patch, expectedRevision });
@@ -1188,5 +1225,171 @@ test('Stage 4A Concurrency: final numeric revision -> PUBLISH_VERIFICATION_FAILE
   await assert.rejects(
     () => service.publishScoringConfig(getValidCandidate()),
     /PUBLISH_VERIFICATION_FAILED/
+  );
+});
+
+// --- M10M-R2D SUPERSESSION SERVICE TESTS ---
+function getValidPredecessorDgmV100() {
+  const payload = {
+    Master_Record_Key: 'PROF_DGM::v1.0.0',
+    Profile_Code: 'PROF_DGM',
+    Profile_Family: 'PROFILE_MANAGEMENT',
+    Scoring_Config_Code: 'SCORE_CFG_DGM_V1',
+    Scoring_Config_Version: 'v1.0.0',
+    Effective_From: '2026-04-01',
+    Effective_To: '2027-03-31',
+    Fiscal_Year: 'FY2026',
+    PartA_Weight: '50',
+    PartB_Weight: '50',
+    Expected_Appraiser_Count: '2',
+    Appraiser_Weight_Rule_Code: 'EQUAL_DISTRIBUTION_V1',
+    Part_A_Scoring_Mode: 'DIFFICULTY_ACHIEVEMENT_MATRIX',
+    Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+    PartA_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    PartB_Raw_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    PartB_Weighted_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    Final_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    Supersedes_Config_Version: 'NONE'
+  };
+  const canonical = canonicalizeScoringConfigPayload(payload);
+  const hash = computeConfigurationHash(canonical);
+  return {
+    ...canonical,
+    Config_Status: CONFIG_LIFECYCLE_STATUS.PUBLISHED,
+    Published_By: 'admin-form',
+    Published_At: '2026-08-25T05:20:00Z',
+    Configuration_Hash: hash,
+    $id: '6',
+    __recordId: '6',
+    $revision: '1',
+    __storageRevision: '1'
+  };
+}
+
+function getValidCandidateDgmV110() {
+  return {
+    Master_Record_Key: 'PROF_DGM::v1.1.0',
+    Profile_Code: 'PROF_DGM',
+    Profile_Family: 'PROFILE_MANAGEMENT',
+    Scoring_Config_Code: 'SCORE_CFG_DGM_V1',
+    Scoring_Config_Version: 'v1.1.0',
+    Effective_From: '2026-04-01',
+    Effective_To: '2027-03-31',
+    Fiscal_Year: 'FY2026',
+    PartA_Weight: '50',
+    PartB_Weight: '50',
+    Expected_Appraiser_Count: '1',
+    Appraiser_Weight_Rule_Code: 'EQUAL_DISTRIBUTION_V1',
+    Part_A_Scoring_Mode: 'DIFFICULTY_ACHIEVEMENT_MATRIX',
+    Competency_Set_Code: 'COMP_SET_MANAGEMENT_V1',
+    PartA_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    PartB_Raw_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    PartB_Weighted_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    Final_Rounding_Rule: 'ROUNDING_LEGACY_PER_APP_CALC',
+    Supersedes_Config_Version: 'v1.0.0'
+  };
+}
+
+test('M10M-R2D Supersession: valid v1.0.0 predecessor + v1.1.0 candidate -> SUPERSESSION_PUBLISH_VERIFIED', async () => {
+  const repo = createInMemoryRepo();
+  const pred = getValidPredecessorDgmV100();
+  repo.records.set('6', pred);
+
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  const result = await service.publishSupersedingScoringConfig({ candidate: getValidCandidateDgmV110() });
+
+  assert.equal(result.status, 'SUPERSESSION_PUBLISH_VERIFIED');
+  assert.equal(result.predecessorRecordId, '6');
+  assert.equal(result.newMasterRecordKey, 'PROF_DGM::v1.1.0');
+  assert.equal(result.newConfigurationHash, 'e69989df7118601b95b3c4df1a0d7cfc6c5b2c3bf3be124a0470d82ff079892e');
+
+  // Verify predecessor status is SUPERSEDED and payload unchanged
+  const oldRec = repo.records.get('6');
+  assert.equal(oldRec.Config_Status, CONFIG_LIFECYCLE_STATUS.SUPERSEDED);
+  assert.equal(oldRec.Expected_Appraiser_Count, '2');
+  assert.equal(oldRec.Configuration_Hash, pred.Configuration_Hash);
+
+  // Verify new record status is PUBLISHED and count is 1
+  const newRec = repo.records.get(result.newRecordId);
+  assert.equal(newRec.Config_Status, CONFIG_LIFECYCLE_STATUS.PUBLISHED);
+  assert.equal(newRec.Expected_Appraiser_Count, '1');
+  assert.equal(newRec.Configuration_Hash, result.newConfigurationHash);
+
+  // Verify queryPublishedByProfileAndFiscalYear returns exactly 1 published record (the new record)
+  const publishedList = await repo.queryPublishedByProfileAndFiscalYear('PROF_DGM', 'FY2026');
+  assert.equal(publishedList.length, 1);
+  assert.equal(publishedList[0].__recordId, result.newRecordId);
+});
+
+test('M10M-R2D Supersession: Supersedes_Config_Version = NONE -> rejected', async () => {
+  const repo = createInMemoryRepo();
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  const cand = getValidCandidateDgmV110();
+  cand.Supersedes_Config_Version = 'NONE';
+
+  await assert.rejects(
+    () => service.publishSupersedingScoringConfig({ candidate: cand }),
+    /SUPERSEDING_PUBLISH_FAILED: Supersedes_Config_Version must be a non-empty string and cannot be NONE/
+  );
+});
+
+test('M10M-R2D Supersession: self-supersede -> rejected', async () => {
+  const repo = createInMemoryRepo();
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  const cand = getValidCandidateDgmV110();
+  cand.Supersedes_Config_Version = 'v1.1.0';
+
+  await assert.rejects(
+    () => service.publishSupersedingScoringConfig({ candidate: cand }),
+    /SUPERSEDING_PUBLISH_FAILED: Candidate cannot supersede itself/
+  );
+});
+
+test('M10M-R2D Supersession: missing predecessor -> fails closed before create', async () => {
+  const repo = createInMemoryRepo(); // empty repo
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishSupersedingScoringConfig({ candidate: getValidCandidateDgmV110() }),
+    /SUPERSEDING_PUBLISH_FAILED: Expected exactly 1 published predecessor/
+  );
+  assert.equal(repo.calls.filter(c => c.method === 'createValidatedRecord').length, 0);
+});
+
+test('M10M-R2D Supersession: predecessor stored/recomputed hash mismatch -> fails closed', async () => {
+  const repo = createInMemoryRepo();
+  const pred = getValidPredecessorDgmV100();
+  pred.Configuration_Hash = 'corrupted_hash_0000000000000000000000000000000000000000000000000';
+  repo.records.set('6', pred);
+
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishSupersedingScoringConfig({ candidate: getValidCandidateDgmV110() }),
+    /SUPERSEDING_PUBLISH_FAILED: Predecessor stored Configuration_Hash mismatch/
+  );
+  assert.equal(repo.calls.filter(c => c.method === 'createValidatedRecord').length, 0);
+});
+
+test('M10M-R2D Supersession: wrong profile predecessor -> fails closed', async () => {
+  const repo = createInMemoryRepo();
+  const pred = getValidPredecessorDgmV100();
+  pred.Profile_Code = 'PROF_GM'; // mismatch
+  repo.records.set('6', pred);
+
+  const audit = createInMemoryAuditProvider();
+  const service = new ScoringConfigMasterService({ repository: repo, auditProvider: audit });
+
+  await assert.rejects(
+    () => service.publishSupersedingScoringConfig({ candidate: getValidCandidateDgmV110() }),
+    /SUPERSEDING_PUBLISH_FAILED/
   );
 });

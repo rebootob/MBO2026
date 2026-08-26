@@ -323,4 +323,201 @@ export class ScoringConfigMasterService {
       publishedAt: publishedAt.trim()
     };
   }
+
+  async publishSupersedingScoringConfig({ candidate } = {}) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      throw new Error('CONFIG_PAYLOAD_INVALID: Candidate object is required');
+    }
+
+    if (typeof this.repository.activateSupersessionAtomically !== 'function') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: Repository missing activateSupersessionAtomically method');
+    }
+
+    // 1. Candidate must contain a real non-NONE Supersedes_Config_Version
+    const supersedesVersion = candidate.Supersedes_Config_Version;
+    if (typeof supersedesVersion !== 'string' || supersedesVersion.trim() === '' || supersedesVersion.trim() === 'NONE') {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Supersedes_Config_Version must be a non-empty string and cannot be NONE');
+    }
+    const cleanSupersedesVersion = supersedesVersion.trim();
+
+    // 2. Candidate cannot supersede itself
+    if (candidate.Scoring_Config_Version && candidate.Scoring_Config_Version.trim() === cleanSupersedesVersion) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Candidate cannot supersede itself');
+    }
+
+    // 3. Canonicalize & validate candidate 19 immutable fields
+    const canonicalImmutable = canonicalizeScoringConfigPayload(candidate);
+    validateScoringMasterConfig(canonicalImmutable);
+
+    // 4. Derive/verify Master_Record_Key
+    const expectedMasterKey = `${canonicalImmutable.Profile_Code}::${canonicalImmutable.Scoring_Config_Version}`;
+    if (canonicalImmutable.Master_Record_Key !== expectedMasterKey) {
+      throw new Error(`INVALID_MASTER_RECORD_KEY: Expected ${expectedMasterKey} but got ${canonicalImmutable.Master_Record_Key}`);
+    }
+
+    // 5. Reject duplicate new Master_Record_Key
+    const existingNewRecord = await this.repository.findByMasterKey(canonicalImmutable.Master_Record_Key);
+    if (existingNewRecord) {
+      throw new Error(`MASTER_CONFIG_DUPLICATE: Key ${canonicalImmutable.Master_Record_Key} already exists`);
+    }
+
+    // 6. Resolve published configs for same Profile/Fiscal Year
+    const publishedConfigs = await this.repository.queryPublishedByProfileAndFiscalYear(
+      canonicalImmutable.Profile_Code,
+      canonicalImmutable.Fiscal_Year
+    );
+    if (!Array.isArray(publishedConfigs)) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: queryPublishedByProfileAndFiscalYear must return array');
+    }
+
+    // Must find exactly 1 intended predecessor
+    const matchingPredecessors = publishedConfigs.filter(r => r.Scoring_Config_Version === cleanSupersedesVersion);
+    if (matchingPredecessors.length !== 1) {
+      throw new Error(`SUPERSEDING_PUBLISH_FAILED: Expected exactly 1 published predecessor with version '${cleanSupersedesVersion}', found ${matchingPredecessors.length}`);
+    }
+    const predecessor = matchingPredecessors[0];
+
+    // Predecessor validations
+    if (predecessor.Profile_Code !== canonicalImmutable.Profile_Code) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Predecessor Profile_Code mismatch');
+    }
+    if (predecessor.Fiscal_Year !== canonicalImmutable.Fiscal_Year) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Predecessor Fiscal_Year mismatch');
+    }
+    if (predecessor.Config_Status !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Predecessor Config_Status is not PUBLISHED');
+    }
+
+    // Validate predecessor payload & hash
+    let predCanonical;
+    try {
+      predCanonical = canonicalizeScoringConfigPayload(predecessor);
+    } catch {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Predecessor immutable payload malformed');
+    }
+    const predRecomputedHash = computeConfigurationHash(predCanonical);
+    if (!predecessor.Configuration_Hash || predecessor.Configuration_Hash !== predRecomputedHash) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Predecessor stored Configuration_Hash mismatch with recomputed hash');
+    }
+
+    const predecessorRecordId = predecessor.__recordId || predecessor.$id;
+    const predecessorRevision = predecessor.__storageRevision || predecessor.$revision;
+    if (!predecessorRecordId || !predecessorRevision) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: Predecessor recordId or storageRevision missing');
+    }
+
+    // 7. Effective Period Overlap check (must ignore only the target predecessor being superseded)
+    for (const pub of publishedConfigs) {
+      const pubId = pub.__recordId || pub.$id;
+      if (String(pubId) === String(predecessorRecordId)) {
+        continue; // ignore exact predecessor being superseded
+      }
+      validateOverlapRow(pub, canonicalImmutable.Profile_Code, canonicalImmutable.Fiscal_Year);
+      const candFrom = new Date(canonicalImmutable.Effective_From);
+      const candTo = new Date(canonicalImmutable.Effective_To);
+      const pubFrom = new Date(pub.Effective_From.trim());
+      const pubTo = new Date(pub.Effective_To.trim());
+      if (candFrom <= pubTo && candTo >= pubFrom) {
+        throw new Error(`EFFECTIVE_PERIOD_OVERLAP: Candidate overlaps with published config record ID '${pubId}'`);
+      }
+    }
+
+    // 8. Compute candidate expected hash
+    const candidateExpectedHash = computeConfigurationHash(canonicalImmutable);
+
+    // 9. Create new record in VALIDATED
+    const createdId = await this.repository.createValidatedRecord(canonicalImmutable, candidateExpectedHash);
+    if (!createdId) {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: createValidatedRecord returned invalid ID');
+    }
+    const newRecordId = String(createdId);
+
+    // 10. Read back new VALIDATED record and verify triple-hash equality
+    const newValidatedRecord = await this.repository.getByRecordId(newRecordId);
+    if (!newValidatedRecord || typeof newValidatedRecord !== 'object') {
+      throw new Error('REPOSITORY_RESPONSE_INVALID: getByRecordId for new record returned invalid payload');
+    }
+    if (newValidatedRecord.Config_Status !== CONFIG_LIFECYCLE_STATUS.VALIDATED) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: New record status is not VALIDATED before activation');
+    }
+    let newCanonical;
+    try {
+      newCanonical = canonicalizeScoringConfigPayload(newValidatedRecord);
+    } catch {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: New record immutable payload malformed');
+    }
+    const newRecomputedHash = computeConfigurationHash(newCanonical);
+    if (newValidatedRecord.Configuration_Hash !== candidateExpectedHash || newRecomputedHash !== candidateExpectedHash) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: New record hash mismatch before activation');
+    }
+
+    const newRevision = newValidatedRecord.__storageRevision || newValidatedRecord.$revision;
+    if (!newRevision) {
+      throw new Error('SUPERSEDING_PUBLISH_FAILED: New record storageRevision missing');
+    }
+
+    // 11. Obtain trusted audit metadata
+    const publisher = await this.auditProvider.getPublisherIdentity();
+    if (!publisher || typeof publisher !== 'string' || publisher.trim() === '') {
+      throw new Error('TRUSTED_PUBLISHER_INVALID: Trusted publisher identity is empty or invalid');
+    }
+    const publishedAt = await this.auditProvider.getPublishedAt();
+    if (!publishedAt || !isValidIsoDateTime(publishedAt)) {
+      throw new Error('TRUSTED_PUBLISHED_AT_INVALID: Trusted published date must be a valid timezone-aware ISO-8601 datetime');
+    }
+
+    // 12. Call repository atomic supersession activation
+    await this.repository.activateSupersessionAtomically({
+      predecessorRecordId: String(predecessorRecordId),
+      predecessorRevision: String(predecessorRevision),
+      newRecordId: String(newRecordId),
+      newRevision: String(newRevision),
+      publishedBy: publisher.trim(),
+      publishedAt: publishedAt.trim()
+    });
+
+    // 13. Final read-back verification for both old and new records
+    const finalOld = await this.repository.getByRecordId(predecessorRecordId);
+    const finalNew = await this.repository.getByRecordId(newRecordId);
+
+    if (finalOld.Config_Status !== CONFIG_LIFECYCLE_STATUS.SUPERSEDED) {
+      throw new Error('SUPERSEDING_PUBLISH_VERIFICATION_FAILED: Predecessor status is not SUPERSEDED after activation');
+    }
+    if (finalNew.Config_Status !== CONFIG_LIFECYCLE_STATUS.PUBLISHED) {
+      throw new Error('SUPERSEDING_PUBLISH_VERIFICATION_FAILED: New record status is not PUBLISHED after activation');
+    }
+
+    // Verify old immutable payload & hash unchanged
+    const finalOldCanonical = canonicalizeScoringConfigPayload(finalOld);
+    const finalOldHash = computeConfigurationHash(finalOldCanonical);
+    if (finalOld.Configuration_Hash !== predRecomputedHash || finalOldHash !== predRecomputedHash) {
+      throw new Error('SUPERSEDING_PUBLISH_VERIFICATION_FAILED: Predecessor immutable payload or hash was mutated during supersession');
+    }
+
+    // Verify new immutable payload & hash match
+    const finalNewCanonical = canonicalizeScoringConfigPayload(finalNew);
+    const finalNewHash = computeConfigurationHash(finalNewCanonical);
+    if (finalNew.Configuration_Hash !== candidateExpectedHash || finalNewHash !== candidateExpectedHash) {
+      throw new Error('SUPERSEDING_PUBLISH_VERIFICATION_FAILED: New record hash mismatch after activation');
+    }
+
+    // Verify exactly 1 current PUBLISHED config exists for Profile/FY (the new record)
+    const finalPublishedConfigs = await this.repository.queryPublishedByProfileAndFiscalYear(
+      canonicalImmutable.Profile_Code,
+      canonicalImmutable.Fiscal_Year
+    );
+    if (finalPublishedConfigs.length !== 1 || String(finalPublishedConfigs[0].__recordId || finalPublishedConfigs[0].$id) !== String(newRecordId)) {
+      throw new Error('SUPERSEDING_PUBLISH_VERIFICATION_FAILED: Query for published configs must return exactly 1 current record (the new record)');
+    }
+
+    return {
+      status: 'SUPERSESSION_PUBLISH_VERIFIED',
+      predecessorRecordId: String(predecessorRecordId),
+      newRecordId: String(newRecordId),
+      newMasterRecordKey: canonicalImmutable.Master_Record_Key,
+      newConfigurationHash: candidateExpectedHash,
+      publishedBy: publisher.trim(),
+      publishedAt: publishedAt.trim()
+    };
+  }
 }
