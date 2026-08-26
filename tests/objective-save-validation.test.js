@@ -1451,4 +1451,46 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
   });
   uiSlots34.render();
   assert.equal(uiSlots34.root.innerHTML.includes('Preview Logical Slot'), true, 'Slots 3/4 must be labeled as Preview Logical Slot');
+
+  // 21. Difficulty Empty-State Handling (R4-01..R4-08)
+  const blankDiffRecord = createMockRecord({ Status: { value: '01 Draft Objective' }, Difficulty_1: { value: '' } });
+  const uiBlankDiff = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: blankDiffRecord,
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true
+  });
+  uiBlankDiff.render();
+
+  // (1) Blank Difficulty renders empty placeholder, not Level 3
+  assert.equal(uiBlankDiff.root.innerHTML.includes('option value="" selected'), true, 'Blank Difficulty must select empty placeholder option');
+  assert.equal(uiBlankDiff.root.innerHTML.includes('-- กรุณาเลือกระดับความยาก / Please select --'), true, 'Blank Difficulty select must present placeholder text');
+
+  // (2) Blank editable Difficulty has data-required="true"
+  assert.equal(uiBlankDiff.root.innerHTML.includes('data-code="Difficulty_1" data-required="true"'), true, 'Blank Difficulty select must have data-required="true"');
+
+  // (3) Stored Difficulty_1 = '3' renders normally
+  const storedDiff3Record = createMockRecord({ Status: { value: '01 Draft Objective' }, Difficulty_1: { value: '3' } });
+  const uiStoredDiff3 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: storedDiff3Record,
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true
+  });
+  uiStoredDiff3.render();
+  assert.equal(uiStoredDiff3.root.innerHTML.includes('option value="3" selected'), true, 'Stored Difficulty 3 must select option 3');
+
+  // (4) Blank read-only Difficulty renders neutral missing state
+  const uiReadOnlyBlankDiff = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: blankDiffRecord,
+    stage: 'READ_ONLY',
+    isEditable: false
+  });
+  uiReadOnlyBlankDiff.render();
+  assert.equal(uiReadOnlyBlankDiff.root.innerHTML.includes('value="Level 3"'), false, 'Blank read-only Difficulty input must NOT have value="Level 3"');
+  assert.equal(uiReadOnlyBlankDiff.root.innerHTML.includes('value="ยังไม่ได้ระบุ / Not selected"'), true, 'Blank read-only Difficulty input must display neutral missing text');
+
+  // (5) Render does not mutate blank record Difficulty value
+  assert.equal(blankDiffRecord.Difficulty_1.value, '', 'Rendering blank Difficulty must NOT mutate record value to default 3');
 });

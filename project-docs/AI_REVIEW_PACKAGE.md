@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_EVALUATION_UI_V2_R4_DIFFICULTY_EMPTY_STATE** | **`PASS`** — Applied R4 local UI correction (0 Kintone calls/writes/deploys): Removed fake `Level 3` visual default on blank/unselected `Difficulty_i`; added explicit empty placeholder (`-- กรุณาเลือกระดับความยาก / Please select --`) with `data-required="true"` triggering yellow/Required field state before Save; blank read-only Difficulty renders neutral missing label (`ยังไม่ได้ระบุ / Not selected`); rendering does not mutate blank record state; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R3** | **`PASS`** — Applied R3 local UI corrections (0 Kintone calls/writes/deploys): Create flow before-lookup scoring snapshot validation deferred until employee lookup succeeds (Lookup UI remains active and retryable); incomplete appraisal combined results strictly display `Pending / Incomplete` in Appraiser Evaluation & HR Final breakdown without certifying stale score values; HR Final breakdown carries forward read-only score context for complete/incomplete states; Slots 3/4 preview editing is truthful in Preview Lab mode with zero physical field aliasing; R2 parent SHA corrected in evidence provenance; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R2** | **`PASS`** — Applied R2 local UI corrections (0 Kintone calls/writes/deploys): Objectives wide card UX (`.mbo-wide-card`), per-item Part A & Part B appraiser comments (`Manager_Comment_i`, `GM_Comment_i`, `Manager_Competency_Comment_i`, `GM_Competency_Comment_i`), read-only score/result context, Appraiser & HR attachment evidence summaries, fail-closed competency set code validation, fail-closed weight configuration validation (0 hardcoded 70/30 production fallback), zero old 4-step secondary nav (`OLD_4_STEP_YEAR_END_NAV_VISIBLE = 0`), Preview incomplete mode working for appraiser counts 1–4, and active slot selector constrained to 1..N; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R1** | **`PASS`** — Applied R1 local UI corrections (0 Kintone calls/writes/deploys): real physical legacy scoring field adapter (`Manager_Achievement_*`, `GM_Achievement_*`, `Manager_Competency_Rating_*`, etc.), slots 3/4 zero physical alias, strict data-based completion, verified competency sets (Operational 6 items vs Management 8 items), functional profile ratio selector (70/30, 60/40, 50/50), production path zero fake file fallback, separate `MidYear_Next_Action_i` field, wide-text card layout, read-only HR final with zero nav duplication, functional active preview slot selector, 16-status process progress bar (5%-100%), and unknown status fail-closed banner; 555/555 tests passing; bundle parse PASS |
@@ -1507,6 +1508,32 @@ R2_EVIDENCE_PARENT_SHA_CORRECTED = PASS
 PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE
 APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
 ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+NPM_TEST = 555 / PASS
+UI_BUILD = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+PREVIEW_LAB_LOAD = PASS
+PREVIEW_KINTONE_CALL_COUNT = 0
+GIT_DIFF_CHECK = PASS
+NEXT_ACTION = CHATGPT REVIEW; IF PASS USER VISUAL PREVIEW; NO DEPLOY
+```
+
+## App794 Evaluation UI V2 R4 Evidence
+
+```text
+APP794_EVALUATION_UI_V2_R4_DIFFICULTY_EMPTY_STATE = COMPLETE
+R4_EXECUTION_STARTING_HEAD = 81e47353f86e68074d2fe9ae8cd766e7ea9b1103
+DIFFICULTY_BLANK_UI_DEFAULT_REMOVED = PASS
+DIFFICULTY_BLANK_PLACEHOLDER = PASS
+DIFFICULTY_REQUIRED_YELLOW_STATE = PASS
+DIFFICULTY_STORED_3_DISPLAYS_3 = PASS
+DIFFICULTY_READONLY_BLANK_NOT_LEVEL3 = PASS
+RENDER_DOES_NOT_MUTATE_BLANK_DIFFICULTY = PASS
+BLANK_DIFFICULTY_SAVE_VALIDATION = PASS
+DIFFICULTY_1_TO_4_REGRESSION = PASS
+R3_REGRESSION = PASS
 APP794_KINTONE_CALL_COUNT = 0
 APP794_KINTONE_WRITE_COUNT = 0
 WORKFLOW_ACTION_COUNT = 0

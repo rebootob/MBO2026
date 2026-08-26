@@ -598,7 +598,7 @@ export class EmployeePartAUI {
       const actVal = this._getVal(`Action_Plan_${i}`);
       const addVal = this._getVal(`Additional_Agreement_${i}`);
       const wVal = this._getVal(`Weight_${i}`);
-      const diffVal = this._getVal(`Difficulty_${i}`) || '3';
+      const diffVal = this._getVal(`Difficulty_${i}`);
 
       const objBox = document.createElement('div');
       objBox.style.marginBottom = '16px';
@@ -639,14 +639,15 @@ export class EmployeePartAUI {
           <div>
             <label style="font-size:12px; font-weight:700; color:#dc2626; display:block; margin-bottom:4px;">ระดับความยาก / Difficulty Level [1-4] *:</label>
             ${isObjEditable ? `
-              <select class="mbo-cell-select mbo-field" data-code="Difficulty_${i}" style="height:36px; width:100%;">
+              <select class="mbo-cell-select mbo-field" data-code="Difficulty_${i}" data-required="true" style="height:36px; width:100%;">
+                <option value="" ${!diffVal ? 'selected' : ''}>-- กรุณาเลือกระดับความยาก / Please select --</option>
                 <option value="1" ${diffVal === '1' ? 'selected' : ''}>1 : Normal (ง่าย)</option>
                 <option value="2" ${diffVal === '2' ? 'selected' : ''}>2 : Moderate (ปานกลาง)</option>
                 <option value="3" ${diffVal === '3' ? 'selected' : ''}>3 : Difficult (ยาก)</option>
                 <option value="4" ${diffVal === '4' ? 'selected' : ''}>4 : Challenging (ท้าทายมาก)</option>
               </select>
             ` : `
-              <input type="text" class="mbo-cell-input mbo-field-state-locked" value="Level ${escapeHtml(diffVal)}" readonly style="height:36px;" />
+              <input type="text" class="mbo-cell-input mbo-field-state-locked" value="${diffVal ? `Level ${escapeHtml(diffVal)}` : 'ยังไม่ได้ระบุ / Not selected'}" readonly style="height:36px;" />
             `}
             <span class="mbo-cell-tag" data-target="Difficulty_${i}"></span>
           </div>
@@ -889,7 +890,7 @@ export class EmployeePartAUI {
     for (let i = 1; i <= count; i++) {
       const objVal = this._getVal(`Objective_${i}`);
       const wVal = this._getVal(`Weight_${i}`) || '0';
-      const diffVal = this._getVal(`Difficulty_${i}`) || '3';
+      const diffVal = this._getVal(`Difficulty_${i}`);
       const actResult = this._getVal(`Actual_Result_${i}`);
       const selfAch = this._getVal(`Self_Achievement_${i}`) || '-';
 
@@ -970,7 +971,7 @@ export class EmployeePartAUI {
       objBox.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <strong style="color:#0f172a; font-size:13.5px;">#${i} ${escapeHtml(objVal) || '(No objective title)'}</strong>
-          <span style="font-size:12px; font-weight:700; color:#0369a1;">Weight: ${escapeHtml(wVal)}% | Difficulty: Level ${escapeHtml(diffVal)} | Self Ach: Level ${escapeHtml(selfAch)}</span>
+          <span style="font-size:12px; font-weight:700; color:#0369a1;">Weight: ${escapeHtml(wVal)}% | Difficulty: ${diffVal ? `Level ${escapeHtml(diffVal)}` : 'ยังไม่ได้ระบุ / Not selected'} | Self Ach: Level ${escapeHtml(selfAch)}</span>
         </div>
         <div style="font-size:12px; color:#475569; background:#f8fafc; padding:6px 10px; border-radius:4px; margin-bottom:8px;">
           <strong>Actual Result:</strong> ${escapeHtml(actResult) || '(No actual result entered)'}
