@@ -1,101 +1,121 @@
-# AI ACTIVE TASK — R12E-B5 EDGE-CONTROLLED WORKFLOW CLOSURE — AUTHORIZATION PENDING
+# AI ACTIVE TASK — R12E-B6 REMOTE-DEBUG EDGE CONTROL GATE — AUTHORIZATION PENDING
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
 > Target: App794 `MBO V2 Sandbox` ONLY
-> Mode: PROJECT CLOSE MODE
+> Mode: PROJECT CLOSE MODE / BROWSER CONTROL ONLY
 > Kintone write/workflow authorization: **NONE — DO NOT EXECUTE BUSINESS ACTIONS**
 
-## Current reviewed state
+## Reviewed checkpoint
 
-R12E-B4 authorization is **CONSUMED / NOT REUSABLE**.
+R12E-B5 Browser-Control Gate = **BLOCKED**, safely.
 
-R12E-B4 execution result:
-- pre-click safety gate = PASS;
-- App794 live/preview = `38 / 38`;
-- Process = `16 states / 28 actions`;
-- Status15 = `ONE + USER: hr`;
-- Record #10 exact synthetic key = `MBO_UAT_M1G1_001|2026`;
-- status = `03 Manager Objective Review`;
-- topology = `M1_G1`;
-- Requester/Manager/GM = `hr`;
-- First Manager = empty;
-- real-user notification risk = PASS / target 0;
-- Process/config/schema/ACL/customization writes = 0;
-- normalization transitions = `0/1`;
-- matrix transitions = `0/22`;
-- First-Manager denials = `0/3`;
-- cleanup = NOT EXECUTED;
-- Functional Workflow UAT = NOT COMPLETED.
+Verified:
+- App794 remains live and readable.
+- Record #10 = synthetic key `MBO_UAT_M1G1_001|2026`.
+- Current status = `03 Manager Objective Review`.
+- topology = `M1_G1`.
+- Requester/Manager/GM = `hr`; First Manager empty.
+- browser identity evidence = `hr`.
+- Kintone writes = 0.
+- workflow actions = 0.
+- credential exposure = 0.
+- Antigravity-controllable Edge session = NO.
+- exact browser-control blocker: Microsoft Edge was running without `--remote-debugging-port=9222`; local Edge DevTools port 9222 was closed.
 
-The remaining blocker is **interactive browser control**, not workflow design or App794 configuration. Antigravity did not obtain a controllable authenticated Edge browser session even though the user separately opened Edge as `hr`.
+R12E-B4 authorization is consumed and MUST NOT be reused. No business action is authorized by this task.
 
 ## North Star
 
 `Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Status15 UAT Boundary PASS -> Edge Browser Control -> Functional Workflow UAT -> CORE V1 FREEZE -> UI/UX -> Dashboard -> Final UAT -> Go-Live`
 
-## What / Where / How / Why
+## Purpose
 
-**What:** Establish a browser session that Antigravity can actually control while authenticated to Kintone as `hr`; then, only after a new explicit authorization, reuse Record #10 for the already-reviewed workflow matrix.
+Establish one isolated Microsoft Edge process/profile that Antigravity can attach to through localhost DevTools remote debugging, while authenticated to Kintone as `hr`. This task is browser-control/read-only only.
 
-**Where:** Local Microsoft Edge + App794 Sandbox only.
+Do not attach to or modify the user's Chrome/ChatGPT session.
 
-**How:** Prefer an isolated Edge profile/process that Antigravity launches or attaches to. The user’s Chrome/ChatGPT session must remain untouched. Browser identity must be verified by trusted page runtime as exact user code `hr` before any future business action.
+## Required user-side Edge launch
 
-**Why:** The manually opened Edge session is visible to the user but was not controllable by Antigravity, so repeated R12E-B4 execution would only consume authorization/credits without running UAT.
+Use a dedicated non-default Edge profile directory and localhost remote debugging port 9222. Example Windows PowerShell launch pattern:
 
-**Impact:** No Kintone change in the browser-control preparation step.
+```powershell
+$edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+if (!(Test-Path $edge)) { $edge = "C:\Program Files\Microsoft\Edge\Application\msedge.exe" }
+& $edge --remote-debugging-port=9222 --remote-debugging-address=127.0.0.1 --user-data-dir="$env:TEMP\MBO-UAT-Edge" "https://ttmet.cybozu.com/k/794/"
+```
 
-**Risk:** Attaching to wrong browser/profile, credential exposure, or accidentally acting in the user’s Chrome session.
+Security boundary:
+- dedicated UAT profile only;
+- bind debugging to localhost `127.0.0.1` only;
+- do not reuse the user's normal/default Edge profile;
+- close this Edge process after UAT closure;
+- credential values must never be logged or committed.
 
-**Test Plan:** Browser-control-only gate: Antigravity must prove it can navigate/read App794 Record #10 in a real Edge page and verify `kintone.getLoginUser().code === "hr"` without any edit/workflow/delete.
+If Kintone login is required in that dedicated Edge window, authenticate as the user-approved Sandbox UAT account `hr`. `.env.local` may only be used to fill the real browser login form if Antigravity can do that without exposing values.
 
-**Rollback:** Close the isolated Edge process/profile. No Kintone rollback is needed because this gate is read-only.
+## R12E-B6 Browser-Control PASS gate — READ ONLY
+
+Antigravity may perform only the following after the dedicated Edge process is launched:
+
+1. Verify `127.0.0.1:9222` DevTools endpoint is reachable locally.
+2. Attach to the dedicated Edge page through DevTools/CDP.
+3. Navigate/read App794 only.
+4. Verify trusted page runtime exact identity: `kintone.getLoginUser().code === "hr"`.
+5. Open/read Record #10.
+6. Verify exact synthetic key `MBO_UAT_M1G1_001|2026`.
+7. Verify current status remains `03 Manager Objective Review`.
+8. Verify no edit/create/delete/workflow action occurred.
+
+Required evidence:
+
+```text
+R12E_B6_EDGE_CONTROL_GATE = PASS / BLOCKED
+DEVTOOLS_ENDPOINT_127_0_0_1_9222 = REACHABLE / CLOSED
+BROWSER_ENGINE = Microsoft Edge
+BROWSER_PROFILE = DEDICATED_UAT_NONDEFAULT
+BROWSER_SESSION_CONTROLLABLE_BY_ANTIGRAVITY = YES / NO
+BROWSER_AUTHENTICATED_USER = hr / actual
+APP794_VISIBLE = YES / NO
+UAT_RECORD_NUMBER = 10 / actual
+UAT_RECORD_KEY = MBO_UAT_M1G1_001|2026 / actual
+UAT_CURRENT_STATUS = actual
+KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+CREDENTIAL_VALUE_EXPOSED = NO
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+GIT_PUSH_SYNC = PASS / FAIL
+```
+
+If any required item fails: STOP with zero Kintone business action.
 
 ## Hard boundaries
 
-Until a new explicit Kintone authorization is recorded:
+Until a future fresh explicit authorization:
 - NO Submit / Approve / Return / Start / Complete;
 - NO record edit/delete/create;
 - NO Process PUT/deploy/remap;
 - NO App795/App53/App796/other-app write;
 - NO Change assignee;
-- NO `admin-form` business action;
 - NO REST-only status transition;
-- NO credential value in logs/docs/Git;
-- NO source/dist/tests change or npm/build.
+- NO `admin-form` business action;
+- NO source/dist/tests change or npm/build;
+- NO credential value in logs/docs/Git.
 
-## Browser-control PASS gate
+## Future final closure — NOT AUTHORIZED HERE
 
-Before requesting the final workflow authorization, Antigravity must be able to perform read-only browser inspection and report:
-
-```text
-EDGE_CONTROL_GATE = PASS
-BROWSER_ENGINE = Microsoft Edge
-BROWSER_SESSION_CONTROLLABLE_BY_ANTIGRAVITY = YES
-BROWSER_AUTHENTICATED_USER = hr
-APP794_VISIBLE = YES
-UAT_RECORD_NUMBER = 10
-UAT_RECORD_KEY = MBO_UAT_M1G1_001|2026
-UAT_CURRENT_STATUS = 03 Manager Objective Review
-KINTONE_WRITE_COUNT = 0
-WORKFLOW_ACTION_COUNT = 0
-CREDENTIAL_VALUE_EXPOSED = NO
-```
-
-If the gate cannot be proven, STOP without Kintone write and report the exact browser-control blocker.
-
-## Future final execution — not authorized yet
-
-Once browser control PASS is proven and the user grants one fresh exact authorization, execute the already-reviewed closure only:
+Only after `R12E_B6_EDGE_CONTROL_GATE = PASS` and a fresh user authorization:
 1. Record #10 `03 -> 01` via `Return Objective` normalization;
-2. 22 successful compact workflow transitions;
+2. 22 reviewed successful workflow transitions;
 3. 3 First-Manager fail-closed attempts;
 4. final `16 Completed`;
-5. delete exact synthetic Record #10 only after full PASS;
-6. evidence -> push -> STOP.
+5. delete exact synthetic Record #10 after full PASS;
+6. evidence -> push -> STOP;
+7. ChatGPT review -> if PASS, CORE V1 FREEZE.
 
 Always preserve:
 `SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
@@ -103,4 +123,4 @@ Always preserve:
 
 # STOP CONDITION
 
-Current state is **AUTHORIZATION PENDING / BROWSER CONTROL NOT YET PROVEN**. Do not execute Kintone business actions.
+Current state: **BROWSER CONTROL NOT YET PROVEN / NO KINTONE WRITE AUTHORIZATION**.
