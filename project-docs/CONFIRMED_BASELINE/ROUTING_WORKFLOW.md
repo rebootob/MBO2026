@@ -43,9 +43,13 @@ This is the confirmed current live state, not permission to remove generic M2/G2
 
 TMG2 has no Admin route in the confirmed baseline.
 
-## App794 Workflow Baseline — Current Live Process (R12A)
+## App794 Workflow Baseline — Current Live Process (R12A / R12C Count Reconciliation)
 
-R12A live read-only discovery confirmed App794 Revision 33 currently uses 16 Process Management states and 27 actions. The older six-state summary (`SUBMITTED -> HR_REVIEW -> GM_APPROVAL -> APPROVED -> EXECUTION_PENDING -> APPLIED`) is superseded and must not be used as the runtime source of truth.
+R12A live read-only discovery confirmed the App794 workflow matrix shown in the review evidence. Independent R12C pre-write read-back later counted the same configuration as **16 Process Management states and 28 actions**. Recounting the R12A matrix confirms it contains 28 action rows; the earlier `27 actions` wording was a Control Plane counting/documentation error, not evidence of a live Process Management change.
+
+Canonical current count:
+- Process states: **16**
+- Process actions/transitions: **28**
 
 ### Current active `M1_G1` path
 
