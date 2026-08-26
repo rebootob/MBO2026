@@ -1,418 +1,156 @@
-# AI ACTIVE TASK — M10M-R2A LIVE MASTER CORRECTION
+# AI ACTIVE TASK — M10M-R2B APP796 PUBLISHED INTEGRITY CLOSURE — READ ONLY
 
 > Control Plane: ChatGPT / Project Lead / Architect / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Blocked implementation commit: `44fa76df801e692631a005a9f1a25b82705931a4`
-> App53: READ-ONLY
-> App794: Sandbox only
-> App795: Sandbox Routing Master — WRITE AUTHORIZED ONLY FOR THIS TASK AFTER BACKUP
-> App796: Sandbox — inspect/read first; write only if actual config requires correction
-> Production authorization: NONE
-> Final status required: `READY FOR CHATGPT REVIEW`
+> Parent execution under review: `89eee588a4638beca57cb165c16970e887e3d2b6`
+> Target: App796 Sandbox published scoring integrity for `PROF_DGM`, `PROF_GM`, `PROF_VP`
+> Kintone write/deploy authorization: **NONE**
+> Previous M10M-R2A write authorization: **CONSUMED / CLOSED / MUST NOT BE REUSED**
+> Required final status: `READY FOR CHATGPT REVIEW`
 
 ---
 
-## 0. CONTROL-PLANE REVIEW RESULT — BLOCKED
+## 0. CONTROL-PLANE CLASSIFICATION
 
-The user manually checked App795 (`https://ttmet.cybozu.com/k/795/`) and confirmed that the following Executive Direct routing rows are **NOT PRESENT**:
+The M10M-R2A Executive Direct implementation is **HOLD_PENDING_APP796_INTEGRITY_REVIEW**.
+
+Reason:
+
+- M10M-R2A changed App796 `PROF_DGM.Expected_Appraiser_Count` from `2` to `1` by direct record PUT.
+- `Expected_Appraiser_Count` is one of the 19 immutable payload fields used by `computeConfigurationHash()`.
+- App796 records are published scoring configurations.
+- The scoring lifecycle/publish service verifies immutable payload/hash equality and treats `PUBLISHED` as a lifecycle state that may transition only to `SUPERSEDED` or `RETIRED`; it does not define direct mutation of published immutable payload as a valid update path.
+
+Therefore the prior evidence line:
 
 ```text
-POSITION_DGM
-POSITION_GM
-POSITION_VP
+APP796_READBACK = PASS
 ```
 
-Therefore the prior R2 evidence claim:
+proved only selected values, not published hash integrity.
 
-```text
-APP795_EXECUTIVE_ROWS = POSITION_DGM, POSITION_GM, POSITION_VP
-APP795_READBACK = PASS
-```
-
-is false / unsupported and MUST NOT remain as accepted evidence.
-
-M10M-R2 is **BLOCKED** until real App795 Sandbox master data exists and is read back successfully.
-
-Do not claim PASS based on unit mocks, local arrays, planned data, or documentation text.
+This task must determine the actual live state using GET/read-only evidence only.
 
 ---
 
-## 1. CONFIRMED BUSINESS RULE
+## 1. MANDATORY STARTUP
 
-For these Employee Positions from App53:
-
-```text
-Deputy General Manager (DGM)
-General Manager (GM)
-Vice President (VP)
-```
-
-required route is:
-
-```text
-DGM / GM / VP
-      ↓
-President
-      ↓
-1st Appraiser only
-```
-
-Exactly one appraiser slot.
-
-Forbidden:
-
-```text
-President → President
-```
-
-Executive Direct topology is conceptually:
-
-```text
-M1_ONLY
-```
-
-User-facing label:
-
-```text
-ผู้ประเมินลำดับที่ 1 / 1st Appraiser
-```
-
-Do not expose `Manager_Level1_Approvers` as a business role label; it is compatibility storage only.
-
----
-
-## 2. MANDATORY STARTUP
-
-Pull latest branch and confirm clean/safe state:
-
-```text
-git status
-git branch --show-current
-git log -5 --oneline
-```
-
-Read before work:
-
-1. `project-docs/CONFIRMED_BASELINE/README.md`
-2. `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
-3. `project-docs/CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`
-4. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
-5. `project-docs/AI_ACTIVE_TASK.md`
-6. `project-docs/AI_REVIEW_PACKAGE.md`
-7. relevant routing/process/scoring source and deployment scripts
-
-Important: the current baseline/documentation may contain the premature claim `SANDBOX IMPLEMENTED / REVIEW PENDING`. Because the user confirmed App795 rows do not exist, treat that runtime-implementation claim as incorrect until corrected by this task.
-
----
-
-## 3. DO NOT REWRITE THE ROUTING ENGINE
-
-The R2 code direction is acceptable in principle:
-
-- Position normalization for DGM / GM / VP
-- dedicated keys `POSITION_DGM`, `POSITION_GM`, `POSITION_VP`
-- `M1_ONLY`
-- `GM_User = []`
-- no President duplication
-
-Do not rewrite this architecture unless live Kintone constraints prove it invalid.
-
-Focus this task on closing the real Sandbox configuration/evidence gap and any real Process/config mismatch discovered during live verification.
-
----
-
-## 4. APP795 — REAL SANDBOX DISCOVERY FIRST
-
-Before any write:
-
-### 4.1 Read schema
-
-Read actual App795 form/schema and document exact field codes/types used for:
-
-```text
-Routing_Key
-Section_Code (if present/used)
-Team (if present/used)
-Requester_User
-Manager_Level1_Approvers
-Manager_Level1_Approval_Rule
-Manager_Level2_Approvers
-GM_Level1_Approvers
-GM_Level2_Approvers
-Active
-```
-
-Do not guess a field.
-
-### 4.2 Read all active routing rows
+Pull latest `ai/antigravity-wp002c` and verify local HEAD equals origin.
 
 Capture:
 
 ```text
-PREWRITE_ACTIVE_ROUTE_COUNT
+git status
+git branch --show-current
+git rev-parse HEAD
+git rev-parse origin/ai/antigravity-wp002c
 ```
 
-Verify existing 17-route baseline and exact TMG routes before mutation.
+Read completely, in this order:
 
-Specifically confirm existing keys include:
+1. `project-docs/CONFIRMED_BASELINE/README.md`
+2. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
+3. `project-docs/CONFIRMED_BASELINE/LEGACY_PMS_APPS.md`
+4. `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
+5. `project-docs/AI_ACTIVE_TASK.md`
+6. `project-docs/CURRENT_STATE.md`
+7. `project-docs/HANDOFF.md`
+8. `project-docs/AI_REVIEW_PACKAGE.md`
+9. `src/profiles/scoring-config-master.js`
+10. `src/services/scoring-config-master-service.js`
+11. `src/services/scoring-config-kintone-repository.js`
 
-```text
-TMG2|CAD
-TMG2|Production
-TMG2|Marketing
-```
-
-Do not modify or duplicate those rows.
-
-### 4.3 Confirm executive rows are absent
-
-Required pre-write evidence:
-
-```text
-POSITION_DGM = NOT_FOUND
-POSITION_GM  = NOT_FOUND
-POSITION_VP  = NOT_FOUND
-```
-
-If any are unexpectedly present, STOP and reconcile with user observation before writing.
+Confirmed Baseline is authoritative.
 
 ---
 
-## 5. PRESIDENT DESTINATION — NO INVENTION
+## 2. HARD SAFETY BOUNDARY — READ ONLY
 
-Determine the real Sandbox Kintone user identity representing the currently approved President destination from authoritative Kintone configuration/data.
+This task authorizes only read-only discovery and local computation.
 
-Do not invent:
-
-```text
-president
-somcai_president
-email guesses
-employee-name-derived user codes
-```
-
-App53 may be used READ-ONLY for employee/business identity context, but App53 employee name alone is not sufficient proof of a Kintone User code.
-
-Record evidence:
+Allowed Kintone operations:
 
 ```text
-PRESIDENT_KINTONE_USER_CODE = <actual value>
-PRESIDENT_DISPLAY_NAME = <actual value if available>
-PRESIDENT_IDENTITY_SOURCE = <where verified>
+GET only
 ```
 
-If the President Kintone destination cannot be verified, STOP. Do not write App795.
+Forbidden:
+
+```text
+POST = 0
+PUT = 0
+DELETE = 0
+DEPLOY = 0
+record update = 0
+schema update = 0
+ACL update = 0
+Process update = 0
+App794 write = 0
+App795 write = 0
+App796 write = 0
+App53 write = 0
+other-app write = 0
+```
+
+If any mismatch is found, **DO NOT REPAIR IT IN THIS TASK**.
+
+Do not reuse the previous M10M-R2A authorization.
+
+No browser workflow action. No notification action. No real-user workflow test.
 
 ---
 
-## 6. REQUESTER_USER FOR EXECUTIVE ROWS
+## 3. SOURCE INTEGRITY CONTRACT TO VERIFY
 
-Do not leave `Requester_User` blank unless an existing reviewed rule explicitly supports it.
+`src/profiles/scoring-config-master.js` defines these 19 immutable payload fields:
 
-Do not make blank requester mean allow-all.
+```text
+Master_Record_Key
+Profile_Code
+Profile_Family
+Scoring_Config_Code
+Scoring_Config_Version
+Effective_From
+Effective_To
+Fiscal_Year
+PartA_Weight
+PartB_Weight
+Expected_Appraiser_Count
+Appraiser_Weight_Rule_Code
+Part_A_Scoring_Mode
+Competency_Set_Code
+PartA_Rounding_Rule
+PartB_Raw_Rounding_Rule
+PartB_Weighted_Rounding_Rule
+Final_Rounding_Rule
+Supersedes_Config_Version
+```
 
-Inspect the actual requester boundary used by the Sandbox workflow and determine the correct authorized `Requester_User` for the Executive Direct rows.
+`Configuration_Hash` must equal SHA-256 produced by the repository's own:
 
-Because general employees may operate through a shared Kintone account, preserve the existing Kintone requester-boundary model; do not confuse Requester_User with the employee identity from App53.
+```js
+canonicalizeScoringConfigPayload(liveRecord)
+computeConfigurationHash(canonicalPayload)
+```
 
-Document the selected requester configuration before write.
+Do not implement a different hash algorithm as the primary proof.
+
+Audit/lifecycle fields such as these are not part of the 19-field hash payload:
+
+```text
+Config_Status
+Published_At
+Published_By
+Configuration_Hash
+```
 
 ---
 
-## 7. BACKUP GATE BEFORE APP795 WRITE
+## 4. LIVE APP796 READ — EXACT SCOPE
 
-Before writing App795:
-
-1. Export/read snapshot of all active App795 records.
-2. Record record IDs and all routing fields needed to restore.
-3. Store backup in the project's established safe backup/evidence location.
-4. Record pre-write active row count.
-5. Verify no duplicate target keys already exist.
-6. Prepare rollback instructions.
-
-No App795 write is allowed before this gate passes.
-
----
-
-## 8. CREATE REAL APP795 EXECUTIVE ROWS
-
-Create exactly three active Executive Direct routing rows unless actual schema requires an equivalent representation:
-
-### Row A
-
-```text
-Routing_Key = POSITION_DGM
-Requester_User = <verified requester boundary>
-Manager_Level1_Approvers = [<verified President Kintone user>]
-Manager_Level2_Approvers = []
-GM_Level1_Approvers = []
-GM_Level2_Approvers = []
-Active = Active
-```
-
-### Row B
-
-```text
-Routing_Key = POSITION_GM
-Requester_User = <verified requester boundary>
-Manager_Level1_Approvers = [<verified President Kintone user>]
-Manager_Level2_Approvers = []
-GM_Level1_Approvers = []
-GM_Level2_Approvers = []
-Active = Active
-```
-
-### Row C
-
-```text
-Routing_Key = POSITION_VP
-Requester_User = <verified requester boundary>
-Manager_Level1_Approvers = [<verified President Kintone user>]
-Manager_Level2_Approvers = []
-GM_Level1_Approvers = []
-GM_Level2_Approvers = []
-Active = Active
-```
-
-Do not put President in both M1 and G1.
-
-Do not alter the 17 existing normal routes.
-
-Expected active route count after successful creation, if baseline count is still exactly 17:
-
-```text
-20
-```
-
-But use actual pre-write count + 3 rather than blindly assuming 20.
-
----
-
-## 9. APP795 POST-WRITE READ-BACK — MANDATORY
-
-After write, query App795 again from Kintone.
-
-For each key, record:
-
-```text
-Record ID
-Routing_Key
-Requester_User
-Manager_Level1_Approvers
-Manager_Level2_Approvers
-GM_Level1_Approvers
-GM_Level2_Approvers
-Active
-```
-
-Required invariant for all three:
-
-```text
-exactly 1 active row per key
-exactly 1 President in first appraiser slot
-0 second-manager appraisers
-0 GM-level appraisers
-no duplicate President
-```
-
-Only after this may you state:
-
-```text
-APP795_READBACK = PASS
-```
-
-Screenshots alone are helpful but not sufficient; include structured API/read-back evidence.
-
----
-
-## 10. APP794 PROCESS MANAGEMENT — VERIFY REAL NATIVE PATH
-
-Do not confuse JavaScript/UI `WORKFLOW_PATH_M1_ONLY` with native Kintone Process Management.
-
-Read actual App794 Sandbox Process Management configuration.
-
-Current known baseline has 16 states / 28 actions and normal M1_G1 uses states 03→04, 08→09, 13→14.
-
-For `M1_ONLY`, verify the native Process can actually perform:
-
-```text
-Goal:
-01 Draft Objective
-→ 03 Manager Objective Review (President as 1st Appraiser)
-→ 05 Objective Approved
-
-Mid-Year:
-06 Employee Mid-Year
-→ 08 Manager Mid-Year Review (President)
-→ 10 Mid-Year Completed
-
-Final:
-11 Employee Self Evaluation
-→ 13 Manager Final Evaluation (President)
-→ 15 HR Final Check
-→ 16 Completed
-```
-
-Required skips:
-
-```text
-04 GM Objective Review
-09 GM Mid-Year Review
-14 GM Final Evaluation
-```
-
-### Critical rule
-
-If native Kintone Process Management does NOT contain safe M1_ONLY actions/conditions to make these skips based on topology, do NOT claim:
-
-```text
-APP794_PROCESS_EXEC_DIRECT = PASS
-```
-
-Instead implement the minimum Sandbox Process change required, with:
-
-- pre-write Process backup
-- semantic diff
-- preservation of all M1_G1 actions
-- no production write
-- post-deploy read-back
-- regression verification
-
-Do not remove 04/09/14 globally. They remain required for normal M1_G1 routes.
-
----
-
-## 11. VALIDATION ENGINE — ACTION SEMANTICS
-
-Check that `M1_ONLY` does not merely suppress the `GM_User missing` error while still sending the native action to a GM-review state.
-
-For each phase, validate the action/transition itself is topology-correct.
-
-Required:
-
-```text
-M1_ONLY at 03 -> next = 05
-M1_ONLY at 08 -> next = 10
-M1_ONLY at 13 -> next = 15
-```
-
-Normal M1_G1 remains:
-
-```text
-03 -> 04 -> 05
-08 -> 09 -> 10
-13 -> 14 -> 15
-```
-
-Add tests against action selection/validation, not just UI path arrays.
-
----
-
-## 12. APP796 — VERIFY REAL SCORING MASTER
-
-Read actual App796 Sandbox rows for:
+Read the actual App796 Sandbox records for exactly:
 
 ```text
 PROF_DGM
@@ -420,145 +158,275 @@ PROF_GM
 PROF_VP
 ```
 
-Required business configuration:
+Prefer one GET query that returns all three records, or read the full eight-record App796 master if that is simpler under the existing helper. Do not mutate anything.
+
+For each target profile capture the exact live values of:
+
+```text
+$id
+$revision
+all 19 immutable payload fields
+Config_Status
+Configuration_Hash
+Published_By
+Published_At
+```
+
+Also record duplicate count per `Profile_Code + Fiscal_Year + Config_Status=PUBLISHED`.
+
+Required expected business values currently confirmed:
+
+```text
+PROF_DGM: PartA=50, PartB=50, Expected_Appraiser_Count=1
+PROF_GM:  PartA=50, PartB=50, Expected_Appraiser_Count=1
+PROF_VP:  PartA=50, PartB=50, Expected_Appraiser_Count=1
+```
+
+Do not treat those three values alone as integrity PASS.
+
+---
+
+## 5. RECOMPUTE HASH FROM LIVE PAYLOAD
+
+For each of DGM / GM / VP:
+
+1. Flatten the Kintone record into the values expected by `canonicalizeScoringConfigPayload()`.
+2. Run `canonicalizeScoringConfigPayload(livePayload)` from current repo source.
+3. Run `computeConfigurationHash(canonicalPayload)` from current repo source.
+4. Compare:
+
+```text
+STORED_CONFIGURATION_HASH
+vs
+RECOMPUTED_LIVE_CONFIGURATION_HASH
+```
+
+Record exact full 64-character hashes.
+
+Primary integrity condition:
+
+```text
+Config_Status == PUBLISHED
+AND Stored Configuration_Hash is nonblank
+AND Stored Configuration_Hash == Recomputed live hash
+AND Master_Record_Key == Profile_Code + "::" + Scoring_Config_Version
+AND exactly one published config exists for that Profile_Code/Fiscal_Year effective scope
+```
+
+Do not change any field even if this condition fails.
+
+---
+
+## 6. CONTROL-PLANE DIAGNOSTIC HASHES — SECONDARY ONLY
+
+These values were independently precomputed by the Control Plane from the current canonical source and are diagnostic cross-checks only. The primary proof remains recomputation from **actual live fields** using repo functions.
+
+```text
+CURRENT_SOURCE_EXPECTED_HASH_PROF_DGM_COUNT1 = 6067f92597eed02c50e472c8f99081ba9c7fe7bc14a69b58273e380c510bf043
+CURRENT_SOURCE_EXPECTED_HASH_PROF_GM_COUNT1  = 49b6912644339418e5f685dd9d90d3dd764a857449bf48ce2cf7cc0259c68130
+CURRENT_SOURCE_EXPECTED_HASH_PROF_VP_COUNT1  = a3157a453fed67544428160809e4353e229b6fabe1c740aec22ef8477795d452
+```
+
+Historical DGM source immediately before the R2 count change used `Expected_Appraiser_Count = 2`. Its diagnostic hash under the then-canonical payload is:
+
+```text
+HISTORICAL_DGM_COUNT2_HASH_DIAGNOSTIC = dbf21f31100d3a6878e1ffc5e5866f0fb0284596abda8b1f3555141e8337c10e
+```
+
+If live DGM has:
 
 ```text
 Expected_Appraiser_Count = 1
-PartA_Weight = 50
-PartB_Weight = 50
+Stored Configuration_Hash = historical count-2 hash
+Recomputed live hash = current count-1 hash
 ```
 
-Do not claim `APP796_READBACK = PASS / NO_WRITE_REQUIRED` based only on `getCanonicalBaselineMasterConfigs()` source code.
-
-If App796 actual values differ:
-
-1. backup affected rows;
-2. show Before → After;
-3. update only these profiles;
-4. read back from Kintone;
-5. preserve all other scoring fields.
-
-If they already match, record actual Record IDs and values and make zero writes.
-
----
-
-## 13. APP53 READ-ONLY
-
-No writes to App53.
-
-Use confirmed baseline / read-only data for position context.
-
-No employee master mutation is authorized.
-
----
-
-## 14. TESTS — REQUIRED
-
-Keep all existing R2 tests and add live/config guards where testable.
-
-Minimum required local tests:
+classify explicitly as:
 
 ```text
-DGM -> POSITION_DGM -> M1_ONLY
-GM -> POSITION_GM -> M1_ONLY
-VP -> POSITION_VP -> M1_ONLY
-President exists in exactly one appraiser array
-GM_User = []
-missing executive route -> fail closed
-duplicate executive route -> fail closed
-blank Requester_User does not authorize ordinary user
-TMG2 CAD/Production/Marketing unchanged
-normal non-TMG route unchanged
-M1_ONLY action path skips 04/09/14
-M1_G1 action path still includes 04/09/14
-PROF_DGM/GM/VP expected appraiser count = 1
-Part A/B remains 50/50
+PUBLISHED_IMMUTABLE_MUTATION_CONFIRMED
 ```
 
-Run full suite and build.
+Do not repair.
+
+If diagnostic hashes differ because another immutable live field differs from current source, report the exact differing immutable field(s); do not force a conclusion from the diagnostic constants.
 
 ---
 
-## 15. CORRECT FALSE / PREMATURE DOCUMENTATION
+## 7. REQUIRED RECORD-BY-RECORD RESULT
 
-Update `project-docs/AI_REVIEW_PACKAGE.md`.
-
-Do not preserve unsupported claims from R2.
-
-The prior claim that App795 read-back already passed must be explicitly marked rejected/corrected.
-
-Also reconcile `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`:
-
-- Until real App795 + App794 native Process + App796 verification passes, status must NOT say runtime implementation is complete.
-- After all gates pass, update baseline to the exact verified Sandbox state.
-
-Do not alter user-confirmed business rule DGM/GM/VP → President single appraiser; only correct implementation-status claims.
-
----
-
-## 16. REQUIRED REVIEW EVIDENCE
-
-Final evidence must contain at minimum:
+Produce a compact table/evidence block for all three profiles:
 
 ```text
-M10M_R2A = READY_FOR_REVIEW
-PRIOR_R2_REVIEW = BLOCKED_FALSE_APP795_READBACK
-APP795_PREWRITE_ACTIVE_COUNT = <n>
-APP795_POSITION_DGM_RECORD_ID = <id>
-APP795_POSITION_GM_RECORD_ID = <id>
-APP795_POSITION_VP_RECORD_ID = <id>
-APP795_POSTWRITE_ACTIVE_COUNT = <n+3>
-APP795_READBACK = PASS
-PRESIDENT_KINTONE_USER_CODE = <actual verified code>
-PRESIDENT_DUPLICATION_COUNT = 0
-APP794_NATIVE_M1_ONLY_PATH = PASS
-APP794_PROCESS_PRE_POST_REVISION = <before> -> <after or unchanged>
-APP796_DGM_RECORD_ID = <id>
-APP796_GM_RECORD_ID = <id>
-APP796_VP_RECORD_ID = <id>
-APP796_READBACK = PASS
-APP53_WRITE_COUNT = 0
-PRODUCTION_WRITE_COUNT = 0
-NORMAL_M1_G1_REGRESSION = PASS
-TMG2_REGRESSION = PASS
-NPM_TEST = PASS (<count>/<count>)
-BUILD = PASS
+PROFILE_CODE
+RECORD_ID
+REVISION
+CONFIG_STATUS
+MASTER_RECORD_KEY
+EXPECTED_APPRAISER_COUNT
+PART_A_WEIGHT
+PART_B_WEIGHT
+STORED_HASH
+RECOMPUTED_LIVE_HASH
+HASH_MATCH = PASS | FAIL
+PUBLISHED_UNIQUE = PASS | FAIL
+PUBLISH_AUDIT_FIELDS_PRESENT = PASS | FAIL
+INTEGRITY_RESULT = PASS | FAIL
 ```
 
-If any value cannot be proven from real Kintone read-back, do not write PASS.
+If any immutable field is malformed/missing and canonicalization fails, classify that profile as FAIL and include the exact canonicalization error.
 
 ---
 
-## 17. ROLLBACK
+## 8. OVERALL CLASSIFICATION
 
-Document exact rollback:
+Use exactly one overall result:
 
-### App795
-Delete/revert only the three Executive rows created by this task, restoring the exact pre-write snapshot.
+### A. All three pass
 
-### App794 Process
-If changed, restore exact pre-write Process config and verify revision/semantic parity.
+```text
+APP796_PUBLISHED_INTEGRITY = PASS
+M10M_R2A_APP796_GATE = PASS
+```
 
-### App796
-If changed, restore exact pre-write values for PROF_DGM / PROF_GM / PROF_VP only.
+### B. DGM or any target hash mismatch / published immutable mutation
 
-### Git
-Provide parent commit and revert procedure.
+```text
+APP796_PUBLISHED_INTEGRITY = MUST_FIX
+M10M_R2A_APP796_GATE = BLOCKED_PENDING_REPAIR_DESIGN
+```
+
+### C. Cannot obtain complete read-only evidence
+
+```text
+APP796_PUBLISHED_INTEGRITY = BLOCKED_READ_EVIDENCE
+M10M_R2A_APP796_GATE = BLOCKED
+```
+
+Do not use `PASS_WITH_OBSERVATION` for a hash mismatch. Hash mismatch on a published scoring config is a correctness/integrity defect.
 
 ---
 
-## 18. STOP CONDITION
+## 9. NO UNNECESSARY EXECUTION
 
-After all required live evidence, tests, build, and documentation corrections:
+Because this task is read-only and must not change runtime/source:
 
-1. inspect `git diff`;
-2. confirm no credentials/secrets were committed;
-3. commit and push same branch;
-4. do not self-approve;
-5. stop exactly at:
+- Do **not** run browser smoke.
+- Do **not** run workflow UAT.
+- Do **not** run full `npm test` merely for phase movement.
+- Do **not** run full build merely for phase movement.
+- Do **not** edit source/dist/tests.
+
+A small local Node command/script used only to import the existing hash functions and compute hashes is allowed. Do not create a permanent new script unless necessary; prefer an ephemeral command or existing helper.
+
+---
+
+## 10. DOCUMENTATION / GIT SCOPE
+
+After the read-only audit:
+
+Allowed Git changes are documentation/evidence only:
+
+```text
+project-docs/AI_REVIEW_PACKAGE.md
+project-docs/CURRENT_STATE.md
+project-docs/HANDOFF.md
+```
+
+Do not change Confirmed Baseline to claim integrity PASS unless the live evidence actually proves it.
+
+Do not change source/dist/tests.
+
+If mismatch is found, document the mismatch fact and STOP; repair design is a new Control Plane task and requires fresh explicit authorization before any Kintone write.
+
+---
+
+## 11. REQUIRED FINAL EVIDENCE
+
+Report at minimum:
+
+```text
+M10M_R2B = READY_FOR_CHATGPT_REVIEW
+HEAD = <sha>
+APP796_GET_COUNT = <n>
+APP796_WRITE_COUNT = 0
+OTHER_KINTONE_WRITE_COUNT = 0
+
+DGM_RECORD_ID = <id>
+DGM_CONFIG_STATUS = <status>
+DGM_EXPECTED_APPRAISER_COUNT = <value>
+DGM_STORED_HASH = <hash>
+DGM_RECOMPUTED_LIVE_HASH = <hash>
+DGM_HASH_MATCH = PASS|FAIL
+DGM_INTEGRITY = PASS|FAIL
+
+GM_RECORD_ID = <id>
+GM_CONFIG_STATUS = <status>
+GM_EXPECTED_APPRAISER_COUNT = <value>
+GM_STORED_HASH = <hash>
+GM_RECOMPUTED_LIVE_HASH = <hash>
+GM_HASH_MATCH = PASS|FAIL
+GM_INTEGRITY = PASS|FAIL
+
+VP_RECORD_ID = <id>
+VP_CONFIG_STATUS = <status>
+VP_EXPECTED_APPRAISER_COUNT = <value>
+VP_STORED_HASH = <hash>
+VP_RECOMPUTED_LIVE_HASH = <hash>
+VP_HASH_MATCH = PASS|FAIL
+VP_INTEGRITY = PASS|FAIL
+
+APP796_PUBLISHED_INTEGRITY = PASS|MUST_FIX|BLOCKED_READ_EVIDENCE
+M10M_R2A_APP796_GATE = PASS|BLOCKED_PENDING_REPAIR_DESIGN|BLOCKED
+SOURCE_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+```
+
+---
+
+## 12. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+
+### What
+Read-only integrity verification of published DGM/GM/VP scoring configurations.
+
+### Where
+App796 Sandbox records plus existing scoring hash source functions.
+
+### How
+GET live records -> flatten live values -> canonicalize with existing source -> recompute SHA-256 -> compare with stored `Configuration_Hash`.
+
+### Why
+M10M-R2A directly changed an immutable published DGM field, so selected-value read-back is insufficient to prove scoring-master integrity.
+
+### Expected Impact
+Zero runtime change. Evidence only.
+
+### Risk
+Very low if GET-only boundary is respected. Main risk is accidentally reusing previous write script/authorization; this is explicitly forbidden.
+
+### Test Plan
+Hash/status/key/uniqueness/audit-field comparisons described above. No workflow/browser/full-suite execution.
+
+### Rollback Plan
+Not applicable: zero Kintone writes and zero source changes are permitted.
+
+---
+
+## 13. STOP CONDITION
+
+After GET evidence and local hash computation:
+
+1. verify Kintone write count = 0;
+2. verify source/dist/test change count = 0;
+3. commit only allowed documentation/evidence updates if needed;
+4. push same branch;
+5. STOP.
+
+Do not repair App796 in this task.
+
+Final line must be exactly:
 
 ```text
 FINAL STATUS: READY FOR CHATGPT REVIEW
 ```
-
-If App795 rows were not actually created and read back, final status MUST NOT be READY FOR REVIEW.
