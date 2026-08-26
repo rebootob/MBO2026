@@ -18,8 +18,8 @@ export class EmployeePartAUI {
     this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
     this.currentErrors = [];
 
-    // Verification state on Create
-    this.isEmployeeVerified = !this.isCreate || !!(this._getVal('Employee_Name') && this._getVal('Employee_Section'));
+    // Verification state: Create mode starts unverified until lookup succeeds. Edit/Detail starts verified.
+    this.isEmployeeVerified = !this.isCreate;
   }
 
   render() {

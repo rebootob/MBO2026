@@ -1198,9 +1198,7 @@ class ValidationEngine {
 
       const routingTopo = this._val(record.Routing_Topology);
       const requesterUserVal = record.Requester_User?.value;
-      const hasRequester = Array.isArray(requesterUserVal)
-        ? requesterUserVal.length > 0
-        : !!this._val(record.Requester_User);
+      const hasRequester = Array.isArray(requesterUserVal) && requesterUserVal.length > 0;
 
       if (!routingTopo || !hasRequester) {
         fieldErrors.push({
@@ -1683,8 +1681,8 @@ class EmployeePartAUI {
     this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
     this.currentErrors = [];
 
-    // Verification state on Create
-    this.isEmployeeVerified = !this.isCreate || !!(this._getVal('Employee_Name') && this._getVal('Employee_Section'));
+    // Verification state: Create mode starts unverified until lookup succeeds. Edit/Detail starts verified.
+    this.isEmployeeVerified = !this.isCreate;
   }
 
   render() {
@@ -2857,14 +2855,16 @@ class EmployeePartAUI {
       activeUiInstance.syncFromDom();
     }
 
-    // 2. Must verify employee before save
-    if (activeUiInstance && !activeUiInstance.isEmployeeVerified) {
-      activeUiInstance.showValidationErrors([{
-        field: 'Employee_Code',
-        messageTH: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก',
-        messageEN: 'Please enter Employee Code and click Search to verify employee profile before saving.',
-        message: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก'
-      }]);
+    // 2. Must verify employee before save (Fail-Closed: block if UI instance is missing or unverified)
+    if (!activeUiInstance || activeUiInstance.isEmployeeVerified !== true) {
+      if (activeUiInstance) {
+        activeUiInstance.showValidationErrors([{
+          field: 'Employee_Code',
+          messageTH: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก',
+          messageEN: 'Please enter Employee Code and click Search to verify employee profile before saving.',
+          message: 'กรุณาระบุรหัสพนักงานและกดค้นหาเพื่อยืนยันข้อมูลก่อนบันทึก'
+        }]);
+      }
       return false;
     }
 

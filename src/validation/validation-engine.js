@@ -94,9 +94,7 @@ export class ValidationEngine {
 
       const routingTopo = this._val(record.Routing_Topology);
       const requesterUserVal = record.Requester_User?.value;
-      const hasRequester = Array.isArray(requesterUserVal)
-        ? requesterUserVal.length > 0
-        : !!this._val(record.Requester_User);
+      const hasRequester = Array.isArray(requesterUserVal) && requesterUserVal.length > 0;
 
       if (!routingTopo || !hasRequester) {
         fieldErrors.push({

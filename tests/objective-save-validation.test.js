@@ -4,6 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
+import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
 
 function createMockRecord(overrides = {}) {
   const base = {
@@ -88,10 +89,45 @@ test('M10L-R1: Missing Profile_Code, Routing_Topology, or empty Requester_User [
   assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
 });
 
+test('M10L-R2: Malformed non-array Requester_User (string/object/number) blocks save', () => {
+  const stringRecord = createMockRecord({ Requester_User: { value: 's1' } });
+  const res1 = ValidationEngine.validate(stringRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res1.isValid, false);
+  assert.ok(res1.fieldErrors.some(e => e.field === 'Employee_Code'));
+
+  const objectRecord = createMockRecord({ Requester_User: { value: { code: 's1' } } });
+  const res2 = ValidationEngine.validate(objectRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res2.isValid, false);
+  assert.ok(res2.fieldErrors.some(e => e.field === 'Employee_Code'));
+
+  const numberRecord = createMockRecord({ Requester_User: { value: 123 } });
+  const res3 = ValidationEngine.validate(numberRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
+  assert.equal(res3.isValid, false);
+  assert.ok(res3.fieldErrors.some(e => e.field === 'Employee_Code'));
+});
+
 test('M10L-R1: Requester_User populated array allows validation when other fields valid', () => {
   const validRecord = createMockRecord({ Requester_User: { value: [{ code: 's1' }] } });
   const res = ValidationEngine.validate(validRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(res.isValid, true);
+});
+
+test('M10L-R2: Create mode EmployeePartAUI starts unverified even if Employee_Name/Section are prefilled', () => {
+  const recordWithPrefills = createMockRecord();
+  const createUi = new EmployeePartAUI({
+    isCreate: true,
+    record: recordWithPrefills
+  });
+  assert.equal(createUi.isEmployeeVerified, false);
+});
+
+test('M10L-R2: Edit mode EmployeePartAUI starts verified for existing saved records', () => {
+  const recordWithPrefills = createMockRecord();
+  const editUi = new EmployeePartAUI({
+    isCreate: false,
+    record: recordWithPrefills
+  });
+  assert.equal(editUi.isEmployeeVerified, true);
 });
 
 test('M10L: Missing Objective text blocks save', () => {
