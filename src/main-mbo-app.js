@@ -295,8 +295,6 @@ if (typeof kintone !== 'undefined') {
           Employee_Position: empProfile.Employee_Position,
           Employee_Email: empProfile.Employee_Email,
           Employee_Start_Date: empProfile.Employee_Start_Date,
-          Department_Hoshin: empProfile.Department_Hoshin,
-          Section_Hoshin: empProfile.Section_Hoshin,
           Requester_User: routing.Requester_User,
           Manager_Level1_Approvers: routing.Manager_Level1_Approvers,
           Manager_Level1_Approval_Rule: routing.Manager_Level1_Approval_Rule,
@@ -316,6 +314,13 @@ if (typeof kintone !== 'undefined') {
           Record_Key: generatedKey
         };
 
+        if (empProfile.Department_Hoshin !== undefined) {
+          fieldsToSync.Department_Hoshin = empProfile.Department_Hoshin;
+        }
+        if (empProfile.Section_Hoshin !== undefined) {
+          fieldsToSync.Section_Hoshin = empProfile.Section_Hoshin;
+        }
+
         if (scoringConfig) {
           if (scoringConfig.Profile_Code) fieldsToSync.Profile_Code = scoringConfig.Profile_Code;
           if (scoringConfig.PartA_Weight !== undefined) fieldsToSync.PartA_Weight = scoringConfig.PartA_Weight;
@@ -326,7 +331,7 @@ if (typeof kintone !== 'undefined') {
         }
 
         Object.entries(fieldsToSync).forEach(([k, val]) => {
-          if (record[k]) {
+          if (record[k] && val !== undefined) {
             record[k].value = val;
           }
         });

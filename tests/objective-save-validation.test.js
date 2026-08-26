@@ -37,7 +37,13 @@ globalThis.kintone = {
       set: (...args) => {
         if (typeof setApiOverride === 'function') return setApiOverride(...args);
         if (!args[0] || !args[0].record) throw new Error('Invalid set data');
-        currentFormRecord = args[0].record;
+        const rec = args[0].record;
+        for (const [code, fieldObj] of Object.entries(rec)) {
+          if (fieldObj && fieldObj.value === undefined) {
+            throw new Error(`event.record['${code}'].value is invalid.`);
+          }
+        }
+        currentFormRecord = rec;
       }
     }
   },
@@ -695,4 +701,33 @@ test('M10L-D-R6: app.record.detail.process.proceed handler returns false on inva
 
   const res = proceedHook(proceedEvent);
   assert.equal(res, false, 'process.proceed hook must return false when validation fails');
+});
+
+test('M10L-D-R10: Employee lookup does not assign undefined Hoshin and preserves existing Hoshin & Routing_Topology read-back', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord({
+    Department_Hoshin: { value: 'PRESERVED_DEPT_HOSHIN' },
+    Section_Hoshin: { value: 'PRESERVED_SEC_HOSHIN' }
+  });
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
+
+  await ui.executeLookup('0118');
+
+  assert.equal(ui.isEmployeeVerified, true, '0118 lookup must verify successfully');
+  assert.equal(currentFormRecord.Routing_Topology.value, 'M1_G1', 'Routing_Topology must persist and read back as M1_G1');
+  assert.equal(currentFormRecord.Profile_Code.value, 'PROF_STAFF_CHIEF', 'Profile_Code must persist as PROF_STAFF_CHIEF');
+  assert.equal(currentFormRecord.PartA_Weight.value, 70, 'PartA_Weight must persist as 70');
+  assert.equal(currentFormRecord.PartB_Weight.value, 30, 'PartB_Weight must persist as 30');
+  assert.equal(currentFormRecord.Department_Hoshin.value, 'PRESERVED_DEPT_HOSHIN', 'Existing Department_Hoshin value must be preserved');
+  assert.equal(currentFormRecord.Section_Hoshin.value, 'PRESERVED_SEC_HOSHIN', 'Existing Section_Hoshin value must be preserved');
+
+  // Verify no field in currentFormRecord has value === undefined
+  for (const [code, fieldObj] of Object.entries(currentFormRecord)) {
+    assert.notEqual(fieldObj?.value, undefined, `Field ${code} in form state must not have value === undefined`);
+  }
 });
