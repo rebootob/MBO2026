@@ -658,3 +658,41 @@ test('M10L-D-R4: Employee lookup fails closed if App 796 scoring query finds dup
   );
   assert.equal(ui.isEmployeeVerified, false);
 });
+
+test('M10L-D-R6: app.record.detail.process.proceed handler returns exact event on valid validation', async () => {
+  const proceedHook = kintoneHandlers['app.record.detail.process.proceed'];
+  assert.ok(typeof proceedHook === 'function', 'process.proceed hook must be registered');
+
+  const validRecord = createMockRecord({ Status: { value: '01 Draft Objective' } });
+  const proceedEvent = {
+    type: 'app.record.detail.process.proceed',
+    record: validRecord,
+    action: { value: 'Submit to Manager' }
+  };
+
+  const res = proceedHook(proceedEvent);
+  assert.equal(res, proceedEvent, 'process.proceed hook must return exact event object when valid');
+});
+
+test('M10L-D-R6: app.record.detail.process.proceed handler returns false on invalid validation', async () => {
+  const proceedHook = kintoneHandlers['app.record.detail.process.proceed'];
+  assert.ok(typeof proceedHook === 'function', 'process.proceed hook must be registered');
+
+  const invalidRecord = createMockRecord({
+    PartA_Objectives: {
+      type: 'SUBTABLE',
+      value: [
+        { id: '1', value: { Weight: { value: '50' } } }
+      ]
+    }
+  });
+
+  const proceedEvent = {
+    type: 'app.record.detail.process.proceed',
+    record: invalidRecord,
+    status: 'SUBMITTED'
+  };
+
+  const res = proceedHook(proceedEvent);
+  assert.equal(res, false, 'process.proceed hook must return false when validation fails');
+});

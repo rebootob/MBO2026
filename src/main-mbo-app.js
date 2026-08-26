@@ -480,5 +480,6 @@ if (typeof kintone !== 'undefined') {
       return false; // Cancel transition
     }
 
+    return event;
   });
 }

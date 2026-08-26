@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R6_WORKFLOW_HOOK_CLOSURE** | **`PASS`** — Restored `return event;` in `app.record.detail.process.proceed` workflow handler; added direct success (`return event`) and failure (`return false`) regression tests (550/550 tests pass); zero dist `__MBO_APP__` residue; 0 Kintone writes |
 | **M10L_D_R5_REPOSITORY_CLOSURE** | **`PASS`** — Removed global test hook residue from source and dist; expanded fail-closed API-unavailable test matrix (548/548 tests pass); corrected controlled change plan HTTP methods (`POST` for add fields, `POST` for file upload, `PUT` for customize, `POST` for deploy) and permission evidence; 0 Kintone writes |
 | **DELIVERY_SPRINT_02** | `PASS / CLOSED` |
 | **DELIVERY_SPRINT_03A_R1** | **`COMPLETE / PENDING CHATGPT REVIEW`** |
@@ -284,6 +285,201 @@ GIT_PUSH_SYNC = PASS
   4. Upload reviewed `dist/mbo-employee-app.js` customization bundle via `POST /k/v1/file.json` to obtain `fileKey`.
   5. Update customization settings via `PUT /k/v1/preview/app/customize.json` using uploaded `fileKey`, preserving existing CSS ordering and mobile customization.
   6. Deploy preview changes via `POST /k/v1/preview/app/deploy.json` with payload `{ "apps": [{ "app": 794 }] }`.
+| **M6_APP796_PUBLISHED_COUNT** | `8/8` |
+| **M6_TRIPLE_HASH_EQUALITY** | `PASS` |
+| **TRUSTED_PUBLISHER_IDENTITY_VERIFIED** | `YES` |
+| **M7_APP795_WRITES** | `0` |
+| **M7_REQUESTER_ACCOUNT_VERIFICATION** | `9/9 PASS` |
+| **M7_EXACT_SEED_MANIFEST** | `READY` |
+| **ACR_002_STATUS** | `PROPOSED / USER APPROVAL REQUIRED` |
+| **BACKUP_PATH** | `backups/delivery-sprint-03a/app796/2026-08-25T05-16-21-178Z` |
+| **BACKUP_MANIFEST_SHA256** | `c00e29b8a8a6b92bbf045cebef3c211af76c9d3d39f0ef5163179e9bc9ce239a` |
+| **SCORING_RATIO_SINGLE_SOURCE_GATE** | `PASS` |
+| **STALE_SCORING_RULE_REFERENCES** | `0` |
+| **ACR_002_STATUS** | `PROPOSED / USER APPROVAL REQUIRED` |
+| **CLASSIC_BUNDLE_SYNTAX_CHECK** | `PASS` |
+| **DEFAULT_APP_IDS_DECLARATION_COUNT** | `1` |
+| **HRCC_HEALTH_COUNT_SEMANTICS** | `Active = "Active", Config_Status = "PUBLISHED", Ready_For_MBO = "YES"` |
+| **NO_ORPHAN_ARTIFACT_GATE** | `PASS` |
+| **STALE_ACTIVE_REFERENCES** | `0` |
+
+| **LIVE_KINTONE_REQUEST_BRIDGE_STATUS** | `FOUNDATION_IMPLEMENTED_NOT_WIRED` |
+| **LIVE_RECORD_WRITE_AUTHORIZATION_STATUS** | `GUARD_CONTRACT_IMPLEMENTED_NOT_WIRED` |
+| **PREWRITE_BACKUP_CONTRACT_STATUS** | `DURABLE_RETENTION_REQUIRED / NOT_EXECUTED` |
+| **STAGE4C_KINTONE_CALLS** | `0` |
+| **STAGE4C_KINTONE_WRITES** | `0` |
+| **KINTONE_REPOSITORY_ADAPTER_STATUS** | `FOUNDATION_IMPLEMENTED_NOT_WIRED` |
+| **STAGE4B_KINTONE_CALLS** | `0` |
+| **STAGE4B_KINTONE_WRITES** | `0` |
+| **PUBLISH_PIPELINE_STATUS** | `LIVE_BASELINE_PUBLISH_VERIFIED` |
+| **LIVE_KINTONE_ADAPTER_STATUS** | `NOT_IMPLEMENTED` |
+| **LIVE_RECORD_PUBLISH_STATUS** | `BASELINE_8_OF_8_PUBLISHED` |
+| **RUNTIME_RESOLVER_LIVE_WIRING** | `NOT_STARTED` |
+| **SUPERSESSION_ACTIVATION** | `NOT_IMPLEMENTED / FAIL_CLOSED` |
+
+| **PREWRITE_BACKUP_RETENTION_UNTIL_INDEPENDENT_REVIEW** | `MANDATORY` |
+
+---
+
+## 3. Forensic Finding — R1 Pre-Write Backup Provenance
+
+**Evidence source:** Transcript `d02bbd40-a773-412d-a139-65e5e84f587e`, steps 3100–3105
+
+**Chronology (UTC):**
+
+| UTC Timestamp | Event |
+| :--- | :--- |
+| 2026-08-24T23:22:36Z | `scratch/app796_stage3c_pre_write_backup.json` written — **Stage 3C schema-creation pre-write backup** |
+| 2026-08-24T23:53:27Z | Commit `4bef27e` — R1 repair guard code committed |
+| 2026-08-24T23:53:59Z | `scratch/execute-repair-step3.js` ran; captured live+preview+ACL+records into `scratch/app796_repair_backup_snapshot.json` **before** the PUT call |
+| 2026-08-24T23:54:06Z | PUT + Deploy completed (`DOMAIN_ALIGNED`); repair script exited success |
+| 2026-08-24T23:54:11Z | `Remove-Item scratch/execute-repair-step3.js, scratch/app796_repair_backup_snapshot.json` — **R1 pre-write snapshot deleted** |
+| 2026-08-24T23:54:57Z | Commit `d38a965` — evidence commit (snapshot no longer present) |
+
+**Conclusion:**
+
+A genuine R1 pre-write snapshot was captured during execution but was permanently deleted by a post-repair cleanup step. No durable local artifact survives. The 23:22Z file is accurately the Stage 3C schema-creation backup and must not be cited as R1 pre-write evidence.
+
+---
+
+## 4. Live State (last verified by GET-only reconciliation, prior checkpoint)
+
+| Attribute | Value |
+| :--- | :--- |
+| App 796 Status | `LIVE_DEPLOYED` |
+| Schema Semantic State | `DOMAIN_ALIGNED` |
+| ACL | `CREATOR_ONLY / DEFAULT_DENY` |
+| Record Count | `0` |
+| Historical R1 PUT | `1` |
+| Historical R1 Deploy POST | `1` |
+| Publish Pipeline | `NOT_DEPLOYED` |
+| Baseline Seed | `NOT_STARTED` |
+| WP-002D | `NOT STARTED` |
+| Tests | `243 / 243 PASS` |
+
+### M10L-D Post-Deploy Evidence Block (43 Mandatory Fields)
+
+```text
+M10L_D_POST_DEPLOY_EVIDENCE = COMPLETE
+USER_AUTHORIZATION = VERIFIED_SINGLE_USE_CONSUMED
+REVIEWED_CANDIDATE_CODE_HEAD = 21f9e82ac42f279946ce87015ae714993f3478e8
+CANDIDATE_DRIFT = 0
+npm test = 538 / 538 PASS
+GIT_DIFF_CHECK = PASS
+WORKTREE_CLEAN_PREWRITE = YES
+CANDIDATE_JS_SHA256 = d675b862b48199f5f4e4bd3f8cc4154a7aabdc9a6944c882a9e586ff9abb4738
+CANDIDATE_JS_BYTES = 129973
+CANDIDATE_CSS_SHA256 = 3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0
+CANDIDATE_CSS_BYTES = 13098
+PREWRITE_LIVE_REVISION = 27
+PREWRITE_LIVE_JS_FILEKEY = 202608252318191D2A7F44D5034603A603E16BCF21C70F065
+PREWRITE_LIVE_CSS_FILEKEY = 20260825231820F2E1F79641344B0DA6D72EF9B77C4F36106
+PREVIEW_DRIFT = 0
+PREWRITE_BACKUP_PATH = backups/m10l-d-app794-controlled-deploy/2026-08-26T00-35-45-714Z
+PREWRITE_BACKUP_EXISTS = YES
+PREWRITE_BACKUP_READABLE = YES
+PREWRITE_BACKUP_MANIFEST_SHA256 = 9edbbee6ad565f23ebc9f83216037b33255593e14236c40d63b6a9eae62b3c2e
+PREWRITE_BACKUP_GATE = PASS
+PRIMARY_FILE_UPLOAD_COUNT = 2
+APP794_CUSTOMIZE_PUT_COUNT = 1
+APP794_DEPLOY_POST_COUNT = 1
+POST_DEPLOY_STATUS = SUCCESS
+POST_DEPLOY_LIVE_REVISION = 29
+POST_DEPLOY_LIVE_JS_FILEKEY = 202608260035473F1FAB0486B348C7AB5E71E6A579AF40265
+POST_DEPLOY_LIVE_CSS_FILEKEY = 20260826003547D4A3CCF907BC42F69388B71AB8BDCD73264
+LIVE_JS_SHA256 = d675b862b48199f5f4e4bd3f8cc4154a7aabdc9a6944c882a9e586ff9abb4738
+LIVE_CSS_SHA256 = 3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0
+LIVE_JS_HASH_MATCH = PASS
+LIVE_CSS_HASH_MATCH = PASS
+POST_DEPLOY_READBACK = PASS
+BROWSER_SMOKE_APP_OPEN = PASS
+BROWSER_SMOKE_UI_RENDER = PASS
+BROWSER_SMOKE_CREATE_RENDER = PASS
+BROWSER_SMOKE_OBJECTIVE_GRID = PASS
+BROWSER_SMOKE_LOOKUP_UI = PASS
+BROWSER_SMOKE_CREATE_UNVERIFIED = PASS
+BROWSER_SMOKE_CONSOLE_FATAL = PASS
+BROWSER_SMOKE = PASS
+ROLLBACK_EXECUTED = NO
+APP794_RECORD_WRITE = 0
+APP794_SCHEMA_WRITE = 0
+APP794_PROCESS_WRITE = 0
+APP794_ACL_WRITE = 0
+APP53_WRITE = 0
+APP795_WRITE = 0
+APP796_WRITE = 0
+OTHER_APP_WRITE = 0
+NO_ORPHAN_ARTIFACT_GATE = PASS
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+```
+
+## M10L-D-R4 Form-State Persistence & Live Change Evidence
+
+### 1. App 794 Live vs Preview Revision Evidence
+- **Live Revision**: `29`
+- **Preview Revision**: `29`
+
+### 2. App 794 Lookup Snapshot Fields Inventory Matrix (Read-Only GET Empirical Facts)
+
+| Field Code | Live Exists | Preview Exists | Exact Field Type | Exact Label | Required | Permission / Access | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `Profile_Code` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `PartA_Weight` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `PartB_Weight` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Part_A_Scoring_Mode` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Competency_Set_Code` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Configuration_Hash` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Routing_Topology` | **YES** | **YES** | `SINGLE_LINE_TEXT` | Routing Topology | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Requester_User` | **YES** | **YES** | `USER_SELECT` | Requester User | `true` | `READ_WRITE` | `PERSISTENT` |
+| `Record_Key` | **YES** | **YES** | `SINGLE_LINE_TEXT` | Record Key | `true` | `READ_WRITE` | `PERSISTENT` |
+| `Fiscal_Year` | **YES** | **YES** | `SINGLE_LINE_TEXT` | Fiscal Year | `true` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level1_Approvers` | **YES** | **YES** | `USER_SELECT` | Manager Level 1 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level1_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | Manager Level 1 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level2_Approvers` | **YES** | **YES** | `USER_SELECT` | Manager Level 2 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level2_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | Manager Level 2 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level1_Approvers` | **YES** | **YES** | `USER_SELECT` | GM Level 1 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level1_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | GM Level 1 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level2_Approvers` | **YES** | **YES** | `USER_SELECT` | GM Level 2 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level2_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | GM Level 2 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Has_Manager_Level2` | **YES** | **YES** | `DROP_DOWN` | Has Manager Level 2 | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Has_GM_Level2` | **YES** | **YES** | `DROP_DOWN` | Has GM Level 2 | `false` | `READ_WRITE` | `PERSISTENT` |
+| `First_Manager_User` | **YES** | **YES** | `USER_SELECT` | First Manager User | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_User` | **YES** | **YES** | `USER_SELECT` | Manager User | `true` | `READ_WRITE` | `PERSISTENT` |
+| `GM_User` | **YES** | **YES** | `USER_SELECT` | GM User | `true` | `READ_WRITE` | `PERSISTENT` |
+
+### 3. App 796 Published Config Evidence (`PROF_STAFF_CHIEF` FY2026)
+- **Published Records Count**: `1`
+- **Record ID**: `1`
+- **Profile Code**: `PROF_STAFF_CHIEF`
+- **Fiscal Year**: `FY2026`
+- **Status**: `PUBLISHED`
+- **Part A Weight**: `70`
+- **Part B Weight**: `30`
+- **Part A Scoring Mode**: `DIFFICULTY_ACHIEVEMENT_MATRIX`
+- **Competency Set Code**: `COMP_SET_OPERATIONAL_V1`
+- **Configuration Hash**: `24e18411485c875a6988de51b61f481206dc159b5e1b2768c6a0b09ff40a72da`
+
+### 4. Exact Minimum Future App 794 Controlled Change Plan (No Execution)
+
+| Field Code | Planned Field Type | Label | Required | Unique | Default Value | Visibility | Permission | Rationale / Architectural Source |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `Profile_Code` | `SINGLE_LINE_TEXT` | Profile Code | `false` | `false` | `""` | Hidden Native | Read/Write | MBO Profile Engine (`PROF_STAFF_CHIEF`, etc.) |
+| `PartA_Weight` | `NUMBER` | Part A Weight (%) | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Weight Part A (`70`) |
+| `PartB_Weight` | `NUMBER` | Part B Weight (%) | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Weight Part B (`30`) |
+| `Part_A_Scoring_Mode` | `SINGLE_LINE_TEXT` | Part A Scoring Mode | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Mode (`DIFFICULTY_ACHIEVEMENT_MATRIX`) |
+| `Competency_Set_Code` | `SINGLE_LINE_TEXT` | Competency Set Code | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Competency (`COMP_SET_OPERATIONAL_V1`) |
+| `Configuration_Hash` | `SINGLE_LINE_TEXT` | Configuration Hash | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Immutable Hash (`24e18411485c875a6988de51b61f481206dc159b5e...`) |
+
+- **What**: Minimum App794 schema additions (6 snapshot fields) plus deployment of the exact independently reviewed corrected customization candidate required to make Verify Employee -> Save operational.
+- **Where**: App 794 only. Zero App 53 / 795 / 796 writes.
+- **How**: Future task only after explicit user authorization:
+  1. Fresh live/preview GET drift check.
+  2. Capture fresh durable pre-write backup (schema, JS/CSS bytes, revision, permissions).
+  3. Apply exact 6 missing fields in preview schema via `POST /k/v1/preview/app/form/fields.json` (add-fields operation).
+  4. Upload reviewed `dist/mbo-employee-app.js` customization bundle via `POST /k/v1/file.json` to obtain `fileKey`.
+  5. Update customization settings via `PUT /k/v1/preview/app/customize.json` using uploaded `fileKey`, preserving existing CSS ordering and mobile customization.
+  6. Deploy preview changes via `POST /k/v1/preview/app/deploy.json` with payload `{ "apps": [{ "app": 794 }] }`.
   7. Poll deployment status until `SUCCESS`.
   8. Perform live read-back verification.
 - **Impact**: Restores schema-backed scoring snapshot persistence, allowing employee lookup to satisfy Save prerequisites cleanly.
@@ -294,24 +490,15 @@ GIT_PUSH_SYNC = PASS
 ### 5. Required Final Evidence Block
 
 ```text
-M10L_D_R5 = COMPLETE
-R4_GLOBAL_TEST_HOOK_REMOVED = YES
-DIST_GLOBAL_TEST_HOOK_RESIDUE = 0
-RECORD_GET_FUNCTION_ABSENT_FAIL_CLOSED_TEST = PASS
-RECORD_SET_FUNCTION_ABSENT_FAIL_CLOSED_TEST = PASS
-CURRENT_FORM_STATE_NULL_FAIL_CLOSED_TEST = PASS
-FORM_STATE_SET_THROW_FAIL_CLOSED_TEST = PASS
-FORM_STATE_NOOP_FAIL_CLOSED_TEST = PASS
-FORM_STATE_POST_SET_READBACK_TEST = PASS
-APP794_REQUIRED_SNAPSHOT_SCHEMA_GAPS = Profile_Code, PartA_Weight, PartB_Weight, Part_A_Scoring_Mode, Competency_Set_Code, Configuration_Hash
-APP794_CURRENT_MISSING_FIELD_PERMISSION_EVIDENCE = UNVERIFIABLE
-FUTURE_ADD_FIELDS_HTTP_METHOD = POST
-FUTURE_FILE_UPLOAD_HTTP_METHOD = POST /k/v1/file.json
-FUTURE_CUSTOMIZE_HTTP_METHOD = PUT /k/v1/preview/app/customize.json
-FUTURE_DEPLOY_HTTP_METHOD = POST /k/v1/preview/app/deploy.json
+M10L_D_R6 = COMPLETE
+WORKFLOW_SUCCESS_RETURNS_EVENT_TEST = PASS
+WORKFLOW_INVALID_RETURNS_FALSE_TEST = PASS
+R5_GLOBAL_TEST_HOOK_CLOSURE_PRESERVED = PASS
+R5_API_UNAVAILABLE_MATRIX_PRESERVED = PASS
+R5_FUTURE_EXECUTION_PLAN_PRESERVED = PASS
 SOURCE_DIST_EXACTNESS = PASS
 CLASSIC_BUNDLE_PARSE = PASS
-npm test = 548 / PASS
+npm test = 550 / PASS
 GIT_DIFF_CHECK = PASS
 NO_ORPHAN_ARTIFACT_GATE = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0

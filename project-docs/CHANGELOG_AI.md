@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R5 Final Repository & Execution-Plan Closure: Removed global test hook (`globalThis.__MBO_APP__`) from source `src/main-mbo-app.js` and classic bundle `dist/mbo-employee-app.js` (verified 0 residue), exported clean ES module functions `getActiveUiInstance` and `syncRecordToKintone` for unit testing, added explicit fail-closed test coverage for `kintone.app.record.get`/`set` being absent or returning null (548/548 suite tests passing), updated `project-docs/AI_REVIEW_PACKAGE.md` to specify exact Kintone API methods for the controlled change plan (`POST` for add fields, `POST` for file upload, `PUT` for customize, `POST` for deploy) and aligned permission evidence. 0 Kintone writes executed.
+- **2026-08-26**: Executed M10L-D-R6 Workflow Hook Regression Closure: Restored `return event;` on valid evaluation paths in `app.record.detail.process.proceed` handler in `src/main-mbo-app.js`, rebuilt `dist/mbo-employee-app.js` (verified 0 source/dist drift), added direct registered-hook unit tests for both success (`return event`) and failure (`return false`) paths (550/550 suite tests passing), preserved zero `__MBO_APP__` residue and API-unavailable test matrix from R5. 0 Kintone writes executed.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.
