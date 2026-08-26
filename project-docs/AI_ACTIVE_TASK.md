@@ -1,199 +1,158 @@
-# AI ACTIVE TASK — R12A READ-ONLY WORKFLOW COVERAGE DISCOVERY
+# AI ACTIVE TASK — R12B WORKFLOW RUNTIME ALIGNMENT FIX
 
 > Control Plane: ChatGPT / Independent Reviewer
 > Execution Plane: Antigravity standalone only
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting HEAD: `c5b75e14f6bf161fd63724fce56b3aa2738a94fb`
-> Last verified live App794: Revision `33`
-> Mode: READ-ONLY KINTONE DISCOVERY + UAT COVERAGE MATRIX ONLY
+> Starting HEAD: `80c4b4cf89909cdf702cdffd74fa2dc81e62c5ef`
+> Mode: REPOSITORY FIX + TESTS ONLY
 > Kintone write/deploy authorization: NONE
 
 # NORTH STAR
 
 Verify Employee -> Objectives -> Save -> Submit -> Workflow
 
-User has explicitly decided that Workflow UAT must NOT send a real workflow to real managers/GM as a final production-like test. The UAT design must achieve high confidence with zero real-user workflow/notification impact by using read-only certification plus isolated UAT accounts/records in later phases.
+R12A live discovery confirmed App794 Revision 33 has 16 states / 27 actions and all 17 active App795 routes are currently `M1_G1`. Review found two runtime correctness defects before Workflow UAT:
 
-This R12A task is discovery only. It must not execute any workflow action.
+1. `STATUS_TO_STAGE_MAP` does not exactly match five live status names (`10`, `12`-`15`), causing `CONFIGURATION_ERROR` and fail-closed workflow blockage.
+2. Current Process Management exposes First-Manager submit paths even though all live active routes are `M1_G1` and `First_Manager_User` is empty. Runtime must fail closed if an action does not match the record topology.
+
+Canonical baseline was reconciled by Control Plane in commit `80c4b4cf...`; read it first.
 
 # CHANGE GOVERNANCE
 
 ## What
-Read the live App794 Process Management definition and all 17 active App795 routing rows, then produce the minimum complete Workflow UAT coverage matrix.
+Align runtime status resolution and workflow-action validation with the confirmed live App794/App795 baseline.
 
 ## Where
-Read-only only:
-- App794 live Process Management configuration.
-- App794 live form field metadata only as needed to identify workflow assignee/routing snapshot field codes and field types.
-- App795 active routing records (expected 17).
-- Existing confirmed baseline only for comparison.
+Prefer only:
+- `src/config/constants.js`
+- `src/main-mbo-app.js`
+- `tests/objective-save-validation.test.js`
+- deterministic `dist/mbo-employee-app.js`
+- minimal living evidence docs after implementation
 
-Repository output only:
-- append one concise R12A evidence/matrix section to `project-docs/AI_REVIEW_PACKAGE.md`;
-- update CURRENT_STATE/HANDOFF only minimally if needed.
-
-Do not create new evidence files.
+Do not create a new module unless technically unavoidable.
 
 ## How
-1. Pull branch and require local HEAD == origin HEAD.
-2. Confirm the only new commit after R11 execution is this Control Plane task commit.
-3. Perform the minimum Kintone GET calls necessary.
-4. Read App794 live Process Management and extract exact live states, actions, source status, destination status, assignee type/configuration and any filter/condition relevant to routing.
-5. Read App795 exactly once using an active-row query sufficient to return all active rows; expected count = 17.
-6. For each route derive topology strictly from actual populated approver fields:
-   - `M1_G1`
-   - `M1_M2_G1`
-   - `M1_G1_G2`
-   - `M1_M2_G1_G2`
-   If another live topology exists, report it; do not force it into one of these labels.
-7. Capture Manager L1/L2 and GM L1/L2 approver counts and approval rules (`ANY`/`ALL` or actual live values).
-8. Cross-check TMG1/TMG2 exact team routing against confirmed baseline. Missing Team, missing exact route, duplicate route, or section fallback must remain fail-closed.
-9. Map each live workflow action/status to the App794 snapshot/user field(s) Kintone actually uses. Do not infer only from JavaScript aliases.
-10. Produce a minimum UAT coverage design that covers every unique live topology, every approval rule pattern, every workflow stage type, and every reject/resubmit path without sending workflow to real approvers.
+
+### A. Exact live status alignment
+Replace stale status keys so `STATUS_TO_STAGE_MAP` exactly recognizes all 16 confirmed live statuses:
+
+- `01 Draft Objective` -> `OBJECTIVE_INPUT`
+- `02 First Manager Objective Review` -> `READ_ONLY`
+- `03 Manager Objective Review` -> `READ_ONLY`
+- `04 GM Objective Review` -> `READ_ONLY`
+- `05 Objective Approved` -> `READ_ONLY`
+- `06 Employee Mid-Year` -> `MIDYEAR_INPUT`
+- `07 First Manager Mid-Year Review` -> `READ_ONLY`
+- `08 Manager Mid-Year Review` -> `READ_ONLY`
+- `09 GM Mid-Year Review` -> `READ_ONLY`
+- `10 Mid-Year Completed` -> `READ_ONLY`
+- `11 Employee Self Evaluation` -> `SELF_EVALUATION`
+- `12 First Manager Final Evaluation` -> `READ_ONLY`
+- `13 Manager Final Evaluation` -> `READ_ONLY`
+- `14 GM Final Evaluation` -> `READ_ONLY`
+- `15 HR Final Check` -> `READ_ONLY`
+- `16 Completed` -> `READ_ONLY`
+
+Remove/replace stale aliases (`10 Mid-Year Approved`, `12 First Manager Evaluation`, `13 Manager Evaluation`, `14 GM Evaluation`, `15 Evaluation Completed`) from the runtime map. Unknown status must remain `CONFIGURATION_ERROR` / fail closed.
+
+### B. Topology/action fail-closed guard
+Add one small pure workflow-action validator in existing source and invoke it from `app.record.detail.process.proceed` before allowing transition.
+
+Use the actual `event.action.value`, current process status, `Routing_Topology`, and relevant user fields. Required behavior:
+
+1. Current `M1_G1` / `M1_G1_G2` entry actions may use only direct Manager submit actions:
+   - `Submit Objective to Manager`
+   - `Submit Mid-Year to Manager`
+   - `Submit Final to Manager`
+2. Topologies containing M2 (`M1_M2_G1`, `M1_M2_G1_G2`) must use the corresponding First-Manager submit action and require non-empty `First_Manager_User`; direct-Manager submit must fail closed.
+3. First-Manager source states (`02`, `07`, `12`) require an M2 topology; if a non-M2 record somehow reaches one, block any proceed action fail-closed.
+4. Any G2 topology is NOT supported by the current 16-state live Process Management. Fail closed at workflow entry with a clear configuration error until separately reviewed G2 process states/actions exist.
+5. Required `Manager_User` / `GM_User` / `Requester_User` must not be empty for an action that hands work to that field.
+6. Do not alter normal Approve/Return semantics for valid current `M1_G1` records.
+7. Do not hide native buttons as an authorization control. This task is correctness/fail-closed logic; UI hiding can be later polish.
+
+Return `false` and surface a clear inline/system validation message on invalid topology/action. Valid action must still return the original `event`.
 
 ## Why
-We need strong workflow confidence while preventing notifications/tasks from reaching real managers and GM during UAT.
+Without exact status mapping, Mid-Year and Final transitions can be blocked by source/live drift. Without topology/action validation, users can choose an inapplicable First-Manager path and route to an empty assignee.
 
-## Expected Impact
-Zero live data/config changes. R12A should tell ChatGPT exactly how many isolated UAT records and controlled test accounts are required before any workflow write is authorized.
+## Impact
+Repository/runtime candidate becomes safe for isolated Workflow UAT after later controlled deploy. No live state changes in this task.
 
 ## Risks
-- confusing source-level intended routing with actual live Process Management;
-- under-testing multi-approver ANY/ALL behavior;
-- assuming four topologies when live data contains fewer/more;
-- accidentally triggering workflow or notification.
+- accidentally blocking valid Manager/GM approve/return actions;
+- accepting an unsupported G2 path;
+- weakening unknown-status fail-closed behavior;
+- test-only logic diverging from runtime.
 
-## Test / Verification Plan
-This is a read-only evidence task. Verify:
-- App795 active row count = 17 or report exact mismatch;
-- no duplicate active Routing_Key;
-- topology count/distribution sums to active route count;
-- all TMG rows match baseline exactly;
-- every populated Manager/GM approval level is represented in the UAT matrix;
-- every approval rule pattern used live is represented;
-- every App794 Process action is accounted for in the matrix or explicitly classified as out-of-scope with reason;
-- no Kintone write endpoints/actions occur.
+## Test Plan
+Add focused regressions in existing test file:
+
+1. All 16 exact live statuses resolve to expected business stages.
+2. Each five stale status aliases no longer resolves as valid live status.
+3. Unknown status -> `CONFIGURATION_ERROR`; process proceed returns `false`.
+4. `M1_G1` + direct Manager submit -> PASS.
+5. `M1_G1` + First Manager submit -> FAIL CLOSED.
+6. `M1_M2_G1` + First Manager submit with populated `First_Manager_User` -> PASS.
+7. `M1_M2_G1` + direct Manager submit -> FAIL CLOSED.
+8. M2 path with empty `First_Manager_User` -> FAIL CLOSED.
+9. G2 topology entry -> FAIL CLOSED.
+10. Current valid `M1_G1` Manager/GM approve + return actions remain PASS.
+11. Existing workflow hook success returns original event; invalid returns false.
+12. Existing 0118/Profile/Hoshin/Save regressions remain green.
+13. Build dist once; source/dist exactness + classic parse PASS.
+14. Run targeted tests first, then one full `npm test` only.
 
 ## Rollback Plan
-None required because Kintone writes are forbidden. Repository docs-only result can be reverted if evidence is wrong.
+Repository-only revert to Starting HEAD if regressions fail. No Kintone rollback because Kintone calls/writes are forbidden.
 
 # HARD SAFETY BOUNDARY
 
-FORBIDDEN in R12A:
-- no App794 record create/update/delete;
-- no Process Action / status transition;
-- no App794 process-management write;
-- no App794 schema/customization/ACL write;
-- no App795/App53/App796 write;
-- no browser clicking workflow buttons;
-- no notification test;
-- no source/dist/test change;
-- no deploy;
-- no creation of UAT accounts or records.
-
-If any required information cannot be obtained read-only, report `UNVERIFIABLE` and STOP. Do not substitute a write.
+- No Kintone GET/POST/PUT/DELETE.
+- No App794 record/process/schema/customization/ACL write.
+- No browser workflow action.
+- No notification test.
+- No App795/App53/App796 calls.
+- No deployment.
+- No UAT records/accounts.
+- Do not change confirmed routing data or live Process Management.
 
 # CREDIT-SAVING RULE
 
-Do NOT perform broad repository discovery.
-Do NOT rerun npm tests.
-Do NOT rebuild.
-Do NOT inspect unrelated apps/history.
-Do NOT perform browser smoke.
-Do NOT fetch all App53 employees.
-Do NOT evaluate all employees individually.
+Read only the baseline plus the files named in scope. Do not do broad discovery. Do not inspect unrelated history. Make the minimum code/test change, targeted test, one full suite, one build, evidence, push and STOP.
 
-Use live App794 Process Management + App795 17 active rows as the primary evidence. One read of App795 should be enough.
-
-# REQUIRED MATRIX OUTPUT
-
-## A. App794 Process Matrix
-For every live action provide:
-- Action name
-- From status
-- To status
-- Assignee/actor configuration
-- Relevant snapshot/user field(s)
-- Approval semantics if visible
-- Reject/resubmit relationship
-
-## B. App795 Route Coverage Matrix
-For all 17 active routes provide at minimum:
-- Routing_Key
-- Section_Code
-- Team
-- M1 count + rule
-- M2 count + rule
-- G1 count + rule
-- G2 count + rule
-- Derived topology
-- TMG exact-route baseline check PASS/FAIL/NA
-
-Do not expose unnecessary personal data beyond user codes required for technical routing evidence.
-
-## C. Coverage Summary
-Provide:
-- `ACTIVE_ROUTE_COUNT`
-- `UNIQUE_TOPOLOGY_COUNT`
-- topology distribution
-- approval-rule patterns actually present
-- `MAX_CONCURRENT_APPROVERS_AT_ONE_STAGE`
-- stages where ALL semantics require >1 independent approver
-- stages where ANY semantics with >1 approver require independent coverage
-- minimum controlled UAT account count needed to prove semantics correctly
-- minimum isolated UAT record count
-- which records can be reused for Reject/Resubmit to reduce record count
-- whether one controlled account is insufficient and why
-
-## D. Proposed UAT Cases
-Create IDs `UAT-WF-01...N` with:
-- topology/rule pattern covered
-- required number of controlled accounts
-- happy path stages covered
-- reject stage(s) covered
-- resubmit stage(s) covered
-- expected notification/assignment recipient = TEST ACCOUNT(S) ONLY
-- real-user impact = 0
-
-Coverage rule: every unique topology + every live ANY/ALL pattern + every Manager/GM level + reject/resubmit must be covered at least once.
-
-# REQUIRED FINAL EVIDENCE BLOCK
+# REQUIRED EVIDENCE
 
 ```text
-R12A_WORKFLOW_COVERAGE_DISCOVERY = COMPLETE / PARTIAL / BLOCKED
-LIVE_APP794_REVISION = actual
-APP794_PROCESS_GET = PASS/FAIL
-APP795_ACTIVE_ROUTE_COUNT = actual
-APP795_EXPECTED_17 = PASS/FAIL
-DUPLICATE_ACTIVE_ROUTING_KEY_COUNT = actual
-TMG_BASELINE_MATCH = PASS/FAIL
-UNIQUE_TOPOLOGY_COUNT = actual
-TOPOLOGY_DISTRIBUTION = actual
-APPROVAL_RULE_PATTERNS = actual
-MAX_CONCURRENT_APPROVERS_AT_ONE_STAGE = actual
-MINIMUM_CONTROLLED_UAT_ACCOUNT_COUNT = actual
-MINIMUM_ISOLATED_UAT_RECORD_COUNT = actual
-ALL_LIVE_PROCESS_ACTIONS_COVERED_BY_MATRIX = PASS/FAIL
-REJECT_RESUBMIT_COVERAGE_PLANNED = PASS/FAIL
-REAL_USER_WORKFLOW_EXECUTED = NO
-REAL_USER_NOTIFICATION_TRIGGERED = NO
-KINTONE_GET_CALLS = actual
-KINTONE_WRITE_CALLS = 0
-APP794_RECORD_WRITE = 0
-APP794_PROCESS_WRITE = 0
-APP794_SCHEMA_WRITE = 0
-APP794_CUSTOMIZE_WRITE = 0
-APP795_WRITE = 0
-APP53_WRITE = 0
-APP796_WRITE = 0
-SRC_CHANGE_COUNT = 0
-DIST_CHANGE_COUNT = 0
-TEST_CHANGE_COUNT = 0
+R12B_WORKFLOW_RUNTIME_ALIGNMENT = COMPLETE / PARTIAL / BLOCKED
+STARTING_HEAD = 80c4b4cf89909cdf702cdffd74fa2dc81e62c5ef
+LIVE_STATUS_COUNT_COVERED = actual / 16
+STALE_STATUS_ALIAS_COUNT_ACTIVE = actual
+UNKNOWN_STATUS_FAIL_CLOSED = PASS/FAIL
+M1_G1_DIRECT_MANAGER_ACTION = PASS/FAIL
+M1_G1_FIRST_MANAGER_BLOCKED = PASS/FAIL
+M1_M2_G1_FIRST_MANAGER_ACTION = PASS/FAIL
+M1_M2_G1_DIRECT_MANAGER_BLOCKED = PASS/FAIL
+M2_EMPTY_FIRST_MANAGER_FAIL_CLOSED = PASS/FAIL
+G2_UNSUPPORTED_FAIL_CLOSED = PASS/FAIL
+VALID_M1_G1_APPROVE_RETURN_REGRESSION = PASS/FAIL
+WORKFLOW_HANDLER_SUCCESS_RETURNS_EVENT = PASS/FAIL
+WORKFLOW_HANDLER_INVALID_RETURNS_FALSE = PASS/FAIL
+SOURCE_DIST_EXACTNESS = PASS/FAIL
+CLASSIC_BUNDLE_PARSE = PASS/FAIL
+npm test = actual / PASS|FAIL
+KINTONE_CALLS_THIS_TASK = 0
+KINTONE_WRITES_THIS_TASK = 0
+SRC_CHANGE_COUNT = actual
+DIST_CHANGE_COUNT = actual
+TEST_CHANGE_COUNT = actual
 GIT_DIFF_CHECK = PASS/FAIL
-CONFIRMED_BASELINE_CONFLICT_COUNT = actual
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS/FAIL
-NEXT_ACTION = CHATGPT REVIEW AND FINAL UAT MATRIX APPROVAL BEFORE ANY WRITE
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY DEPLOY OR UAT WRITE
 ```
 
 Push same branch and STOP.
