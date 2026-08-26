@@ -363,3 +363,23 @@ Production persistence/source boundary:
 - If dedicated storage is required, schema/audit implementation is a separate reviewed change with fresh authorization; do not create fields silently in the UI sprint.
 - Until that gate is closed, canonical classification is `WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW`.
 - Native Kintone Comments and Workflow Action Timeline are complementary: Comments explain why; Timeline records who/action/when.
+
+## 21. Deadline Urgency Interaction — Make Near-Due / Overdue Impossible To Miss
+
+User-confirmed on 2026-08-26 after visual Preview inspection:
+
+- The small date/countdown text inside the five stage tiles is not sufficient by itself for near-due or overdue work.
+- The current active phase must have a **separate prominent urgency callout** near the top of the App794 content, in addition to the compact stage tile.
+- Recommended urgency tiers for V1 Preview/UI:
+  - more than 7 days remaining: GREEN / on-time normal emphasis;
+  - 1–7 days remaining: AMBER/ORANGE / due-soon strong emphasis;
+  - due today: strong ORANGE/RED urgency;
+  - overdue: RED critical emphasis;
+  - completed: GREEN success, no overdue alarm.
+- The most important number must be the visual focus, e.g. `เหลือ 3 วัน / 3 DAYS REMAINING` or `เกินกำหนด 76 วัน / 76 DAYS OVERDUE`, with larger font/weight than phase name/helper text.
+- Include the exact due date immediately below or beside the large number, e.g. `ครบกำหนด 31 Mar 2026 / Due 31 Mar 2026`.
+- For **due-soon (1–7 days), due-today, or overdue**, show a dismissible bilingual popup/toast/banner when the record page/Preview is opened. It may reappear on a later page load/session while the condition remains true; do not create an endless modal loop.
+- Do **not** use continuously blinking text. If motion is used, prefer a subtle pulse on border/icon/background for urgent states only, and respect reduced-motion/accessibility preferences where possible.
+- Overdue callout should remain visibly red after dismissing the popup; dismissing the popup must not hide the underlying deadline status.
+- Future production notification outside the page (email/Kintone notification/etc.) is a separate notification design/persistence gate and is not authorized by this UI-only requirement.
+- Preview must demonstrate at least: >7 days green, 7 days amber, 1 day amber/orange, due today, overdue red + popup/toast, and completed green.
