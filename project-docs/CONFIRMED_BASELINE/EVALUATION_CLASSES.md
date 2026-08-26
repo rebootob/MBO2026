@@ -30,6 +30,7 @@ User-confirmed on 2026-08-26:
 - Completeness remains fail-closed: a final Part A, Part B, or overall result must not be represented as complete until all required scoring-appraiser inputs are complete. Missing appraisers do not receive automatic weight redistribution.
 - Existing published App796 configurations currently using 1 or 2 appraisers remain unchanged until a separately reviewed configuration change. Supporting capacity up to 4 does not itself change any profile's current published appraiser count.
 - Current App794/App796 source and physical storage that only implement 1–2 scoring persistence slots are an implementation limitation to be closed under a reviewed change; they are not the long-term business maximum.
+- **Evaluation profile/scoring ratio is not routing.** `70/30`, `60/40`, and `50/50` describe Part A / Part B weighting only. UI/runtime must not infer route topology, appraiser count, or specific evaluator identity from the ratio alone. Routing/profile binding must be resolved by reviewed configuration and fail closed when unresolved.
 
 ## Current Evidence Rule for Employee Classification
 
