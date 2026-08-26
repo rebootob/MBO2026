@@ -2611,14 +2611,8 @@ class EmployeePartAUI {
       root.appendChild(urgencyToast);
     }
 
-    // R6-R3: Separate Prominent Deadline Urgency Callout Banner
-    root.appendChild(this._renderDeadlineUrgencyBanner(status));
-
-    // Top Status & Workflow Guidance Card
-    root.appendChild(this._renderStatusGuidanceCard());
-
-    // R5 Actor-Aware Presentation Card
-    root.appendChild(this._renderActorBanner(status));
+    // R6-R4: SINGLE PERSISTENT COMPACT STATUS & DEADLINE STRIP
+    root.appendChild(this._renderCompactStatusStrip(status));
 
     // Header Section (Horizontal Summary)
     root.appendChild(this._renderHeader());
@@ -2728,6 +2722,91 @@ class EmployeePartAUI {
         <span style="font-size:11px; color:#64748b;">📅 Simulated Date: <strong>${escapeHtml(nowIso)}</strong></span>
       </div>
     `;
+    return card;
+  }
+
+  _renderCompactStatusStrip(status) {
+    const currentStatus = String(status || '').trim();
+    const rawTopology = this._getVal('Routing_Topology');
+    const topInfo = classifyTopologyForUI(rawTopology);
+
+    const phases = [
+      { key: 'objectives', nameTH: '1. เป้าหมาย', nameEN: 'Objectives', stage: 1 },
+      { key: 'midyear', nameTH: '2. ทบทวนกลางปี', nameEN: 'Mid-Year', stage: 2 },
+      { key: 'selfEvaluation', nameTH: '3. ประเมินตนเอง', nameEN: 'Self Evaluation', stage: 3 },
+      { key: 'appraiserEvaluation', nameTH: '4. การประเมินโดยผู้ประเมิน', nameEN: 'Appraiser Evaluation', stage: 4 },
+      { key: 'hrFinal', nameTH: '5. HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น', nameEN: 'HR Final / Completed', stage: 5 }
+    ];
+
+    const currentStage = getMacroStage(status);
+    const activePhase = phases.find(p => p.stage === currentStage) || phases[0];
+    const calendar = this.previewOptions.phaseCalendar || DEFAULT_PHASE_CALENDAR;
+    const nowIso = this.previewOptions.previewNow || '2026-06-15';
+    const deadline = getPhaseCalendarStatus(activePhase.key, status, nowIso, calendar);
+
+    let bannerClass = 'mbo-urgency-green';
+    let icon = '⏳';
+
+    if (deadline.isCompleted) {
+      bannerClass = 'mbo-urgency-green';
+      icon = '✓';
+    } else if (deadline.isOverdue) {
+      bannerClass = 'mbo-urgency-red mbo-pulse-active';
+      icon = '🚨';
+    } else if (deadline.isDueToday) {
+      bannerClass = 'mbo-urgency-orange mbo-pulse-active';
+      icon = '⚠️';
+    } else if (deadline.isDueSoon || (deadline.remDays >= 1 && deadline.remDays <= 7)) {
+      bannerClass = 'mbo-urgency-amber mbo-pulse-active';
+      icon = '⏰';
+    } else if (deadline.isUpcoming) {
+      bannerClass = 'mbo-urgency-neutral';
+      icon = '📅';
+    }
+
+    const exactDueDate = calendar[activePhase.key]?.end || 'N/A';
+    const statusGuidance = getStatusGuidance(status, rawTopology);
+
+    let actorSummary = '';
+    if (['01 Draft Objective', '06 Employee Mid-Year', '11 Employee Self Evaluation'].includes(currentStatus)) {
+      actorSummary = '👤 <strong>Action Required: Requester / Employee (พนักงาน):</strong> กรอกข้อมูลแล้วกดส่งเรื่องขออนุมัติ';
+    } else if (['02 First Manager Objective Review', '03 Manager Objective Review', '04 GM Objective Review', '07 First Manager Mid-Year Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review'].includes(currentStatus)) {
+      actorSummary = '👥 <strong>Action Required: Workflow Approver (ผู้อนุมัติ):</strong> ตรวจสอบและพิจารณาอนุมัติผ่านปุ่ม Kintone';
+    } else if (['12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation'].includes(currentStatus)) {
+      actorSummary = '👥 <strong>Action Required: Appraiser (ผู้ประเมิน):</strong> ให้คะแนน Part A & Part B แล้วกดอนุมัติ';
+    } else if (currentStatus === '05 Objective Approved') {
+      actorSummary = deadline.isUpcoming ? '🔒 <strong>รอเวลา:</strong> อยู่ระหว่างรอเปิดช่วงทบทวนกลางปี' : '🚀 <strong>พร้อมเริ่ม:</strong> พนักงานกดปุ่ม "Start Mid-Year" ใน Kintone';
+    } else if (currentStatus === '10 Mid-Year Completed') {
+      actorSummary = deadline.isUpcoming ? '🔒 <strong>รอเวลา:</strong> อยู่ระหว่างรอเปิดช่วงประเมินตนเอง' : '🚀 <strong>พร้อมเริ่ม:</strong> พนักงานกดปุ่ม "Start Self Evaluation" ใน Kintone';
+    } else if (currentStatus === '15 HR Final Check') {
+      actorSummary = '🏛️ <strong>HR Admin:</strong> ตรวจสอบความถูกต้องขั้นสุดท้ายแล้วกดเสร็จสิ้น';
+    } else if (currentStatus === '16 Completed') {
+      actorSummary = '✓ <strong>เสร็จสมบูรณ์:</strong> การประเมินเสร็จสิ้นเรียบร้อยแล้ว';
+    }
+
+    const card = document.createElement('div');
+    card.className = 'mbo-compact-status-strip-wrap';
+    card.innerHTML = `
+      <div class="mbo-urgency-callout mbo-compact-status-strip ${bannerClass}">
+        <div class="mbo-urgency-icon">${icon}</div>
+        <div class="mbo-urgency-content">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <div class="mbo-urgency-phase-title">
+              📌 ${escapeHtml(activePhase.nameTH)} (${escapeHtml(activePhase.nameEN)}) — <span style="font-weight:600;">[${escapeHtml(currentStatus)}]</span>
+            </div>
+            <div class="mbo-urgency-main-number">
+              ${escapeHtml(deadline.calloutTextTH)} / ${escapeHtml(deadline.calloutTextEN)}
+            </div>
+          </div>
+          <div class="mbo-urgency-sub-date">
+            <span>${actorSummary}</span>
+            <span style="margin-left:12px; color:#475569;">📅 ครบกำหนด: <strong>${escapeHtml(exactDueDate)}</strong></span>
+          </div>
+          ${statusGuidance && statusGuidance.isWarning ? `<div style="font-size:11px; font-weight:700; color:#b45309; margin-top:3px;">${escapeHtml(statusGuidance.th)}</div>` : ''}
+        </div>
+      </div>
+    `;
+
     return card;
   }
 
