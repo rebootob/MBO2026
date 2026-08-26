@@ -19,14 +19,17 @@ These are the approved current MBO evaluation/scoring profile families. Do not c
 
 User-confirmed on 2026-08-26:
 
-- Scoring Appraiser and Workflow Approver are separate business concepts. Never infer a scoring role title solely from a workflow title/position.
-- Scoring UI terminology is neutral and ordinal: `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser`.
-- Logical scoring architecture must support **1 to 4 required appraisers**.
-- The required count is configuration-driven for the annual evaluation profile; do not hardcode Manager/GM counts or role names.
+- Scoring Appraiser and Workflow Approver are separate business concepts/authorization concerns. Never infer an appraiser label or workflow authority solely from an organizational title.
+- User-facing appraiser terminology is neutral and ordinal: `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser`.
+- Logical architecture must support **1 to 4 configured appraiser slots**. The active count is configuration/route-driven; do not hardcode a fixed count or Manager/GM role names.
+- The **same configured appraiser sequence belongs to the MBO record for the whole annual lifecycle**, not only the final-scoring screen. It remains the evaluation route/context across Objectives, Mid-Year, Self Evaluation, Appraiser Evaluation, and HR Final/Completed.
+- Each macro stage may expose a different action for those same appraiser slots (review, approval, scoring, read-only context, or no action), but the UI must not create a different set of appraisers for each phase.
+- A person occupying Appraiser 1/2/3/4 may organizationally be a Manager, GM, VP, President, or another approved evaluator. Organizational title is data/context only and must not be used as the slot label.
+- Workflow technical storage/Process status names may retain legacy Manager/GM terminology for compatibility, but user-facing UI must present the resolved sequence as ordinal appraiser/evaluator slots unless HR-specific action is explicitly shown.
 - Appraiser weights derive from the configured expected count and approved weight rule. Under equal distribution: 1 = 100%; 2 = 50/50; 3 = 1/3 each; 4 = 25% each.
 - Completeness remains fail-closed: a final Part A, Part B, or overall result must not be represented as complete until all required scoring-appraiser inputs are complete. Missing appraisers do not receive automatic weight redistribution.
 - Existing published App796 configurations currently using 1 or 2 appraisers remain unchanged until a separately reviewed configuration change. Supporting capacity up to 4 does not itself change any profile's current published appraiser count.
-- Current App794/App796 source and physical storage that only implement 1–2 appraisers are an implementation limitation to be closed under a reviewed change; they are not the long-term business maximum.
+- Current App794/App796 source and physical storage that only implement 1–2 scoring persistence slots are an implementation limitation to be closed under a reviewed change; they are not the long-term business maximum.
 
 ## Current Evidence Rule for Employee Classification
 
