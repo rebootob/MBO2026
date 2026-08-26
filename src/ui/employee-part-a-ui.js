@@ -8,7 +8,6 @@ import { ValidationEngine } from '../validation/validation-engine.js';
 
 export class EmployeePartAUI {
   constructor(options = {}) {
-    EmployeePartAUI.lastInstance = this;
     this.container = options.container;
     this.record = options.record || {};
     this.stage = options.stage || BUSINESS_STAGES.READ_ONLY;

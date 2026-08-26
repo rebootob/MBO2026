@@ -78,7 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
-| **M10L_D_R3_SCHEMA_CONTRACT** | **`PASS`** — Removed R2 synthetic field creation and record pollution; implemented fail-closed schema-backed snapshot contract; inventoried live App 794 fields; 542/542 tests pass; 0 Kintone writes |
+| **M10L_D_R4_PERSISTENCE_CONTRACT** | **`PASS`** — Implemented fail-closed form-state persistence verification and post-set read-back in `syncRecordToKintone`; removed test-only `_lastInstance` seam; committed read-only GET inventory of App 794 (Revision 29, 6 missing fields) and App 796 evidence; 546/546 tests pass; 0 Kintone writes |
 | **DELIVERY_SPRINT_02** | `PASS / CLOSED` |
 | **DELIVERY_SPRINT_03A_R1** | **`COMPLETE / PENDING CHATGPT REVIEW`** |
 | **M6_BUSINESS_STATE** | `8/8 PUBLISHED (UNCHANGED)` |
@@ -215,5 +215,113 @@ APP796_WRITE = 0
 OTHER_APP_WRITE = 0
 NO_ORPHAN_ARTIFACT_GATE = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+```
+
+## M10L-D-R4 Form-State Persistence & Live Change Evidence
+
+### 1. App 794 Live vs Preview Revision Evidence
+- **Live Revision**: `29`
+- **Preview Revision**: `29`
+
+### 2. App 794 Lookup Snapshot Fields Inventory Matrix (Read-Only GET Empirical Facts)
+
+| Field Code | Live Exists | Preview Exists | Exact Field Type | Exact Label | Required | Permission / Access | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `Profile_Code` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `PartA_Weight` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `PartB_Weight` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Part_A_Scoring_Mode` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Competency_Set_Code` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Configuration_Hash` | **NO** | **NO** | N/A | N/A | N/A | `UNVERIFIABLE` | **MISSING SNAPSHOT FIELD** |
+| `Routing_Topology` | **YES** | **YES** | `SINGLE_LINE_TEXT` | Routing Topology | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Requester_User` | **YES** | **YES** | `USER_SELECT` | Requester User | `true` | `READ_WRITE` | `PERSISTENT` |
+| `Record_Key` | **YES** | **YES** | `SINGLE_LINE_TEXT` | Record Key | `true` | `READ_WRITE` | `PERSISTENT` |
+| `Fiscal_Year` | **YES** | **YES** | `SINGLE_LINE_TEXT` | Fiscal Year | `true` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level1_Approvers` | **YES** | **YES** | `USER_SELECT` | Manager Level 1 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level1_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | Manager Level 1 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level2_Approvers` | **YES** | **YES** | `USER_SELECT` | Manager Level 2 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_Level2_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | Manager Level 2 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level1_Approvers` | **YES** | **YES** | `USER_SELECT` | GM Level 1 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level1_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | GM Level 1 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level2_Approvers` | **YES** | **YES** | `USER_SELECT` | GM Level 2 Approvers | `false` | `READ_WRITE` | `PERSISTENT` |
+| `GM_Level2_Approval_Rule` | **YES** | **YES** | `DROP_DOWN` | GM Level 2 Approval Rule | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Has_Manager_Level2` | **YES** | **YES** | `DROP_DOWN` | Has Manager Level 2 | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Has_GM_Level2` | **YES** | **YES** | `DROP_DOWN` | Has GM Level 2 | `false` | `READ_WRITE` | `PERSISTENT` |
+| `First_Manager_User` | **YES** | **YES** | `USER_SELECT` | First Manager User | `false` | `READ_WRITE` | `PERSISTENT` |
+| `Manager_User` | **YES** | **YES** | `USER_SELECT` | Manager User | `true` | `READ_WRITE` | `PERSISTENT` |
+| `GM_User` | **YES** | **YES** | `USER_SELECT` | GM User | `true` | `READ_WRITE` | `PERSISTENT` |
+
+### 3. App 796 Published Config Evidence (`PROF_STAFF_CHIEF` FY2026)
+- **Published Records Count**: `1`
+- **Record ID**: `1`
+- **Profile Code**: `PROF_STAFF_CHIEF`
+- **Fiscal Year**: `FY2026`
+- **Status**: `PUBLISHED`
+- **Part A Weight**: `70`
+- **Part B Weight**: `30`
+- **Part A Scoring Mode**: `DIFFICULTY_ACHIEVEMENT_MATRIX`
+- **Competency Set Code**: `COMP_SET_OPERATIONAL_V1`
+- **Configuration Hash**: `24e18411485c875a6988de51b61f481206dc159b5e1b2768c6a0b09ff40a72da`
+
+### 4. Exact Minimum Future App 794 Controlled Change Plan (No Execution)
+
+| Field Code | Planned Field Type | Label | Required | Unique | Default Value | Visibility | Permission | Rationale / Architectural Source |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `Profile_Code` | `SINGLE_LINE_TEXT` | Profile Code | `false` | `false` | `""` | Hidden Native | Read/Write | MBO Profile Engine (`PROF_STAFF_CHIEF`, etc.) |
+| `PartA_Weight` | `NUMBER` | Part A Weight (%) | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Weight Part A (`70`) |
+| `PartB_Weight` | `NUMBER` | Part B Weight (%) | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Weight Part B (`30`) |
+| `Part_A_Scoring_Mode` | `SINGLE_LINE_TEXT` | Part A Scoring Mode | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Mode (`DIFFICULTY_ACHIEVEMENT_MATRIX`) |
+| `Competency_Set_Code` | `SINGLE_LINE_TEXT` | Competency Set Code | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Scoring Master Competency (`COMP_SET_OPERATIONAL_V1`) |
+| `Configuration_Hash` | `SINGLE_LINE_TEXT` | Configuration Hash | `false` | `false` | `""` | Hidden Native | Read/Write | App 796 Immutable Hash (`24e18411485c875a6988de51b61f481206dc159b5e...`) |
+
+- **What**: Minimum App794 schema additions (6 snapshot fields) plus deployment of the exact independently reviewed corrected customization candidate required to make Verify Employee -> Save operational.
+- **Where**: App 794 only. Zero App 53 / 795 / 796 writes.
+- **How**: Future task only after explicit user authorization:
+  1. Fresh live/preview GET drift check.
+  2. Capture fresh durable pre-write backup (schema, JS/CSS bytes, revision, permissions).
+  3. Apply exact 6 missing fields in preview schema via `PUT /k/v1/preview/app/form/fields.json?app=794`.
+  4. Upload reviewed `dist/mbo-employee-app.js` customization bundle via `POST /k/v1/preview/app/customize.json`.
+  5. Deploy preview changes via `POST /k/v1/preview/app/deploy.json?apps[0][app]=794`.
+  6. Wait for deployment `SUCCESS`.
+  7. Perform live read-back verification.
+- **Impact**: Restores schema-backed scoring snapshot persistence, allowing employee lookup to satisfy Save prerequisites cleanly.
+- **Risks**: Schema type mismatch, permission/access mismatch, incomplete snapshot fields.
+- **Test Plan**: Browser lookup for Employee 0118 (`Technical Service Chief` -> `PROF_STAFF_CHIEF`), 0111 (`PROF_ASST_MGR`), check all 9 snapshot fields written into form state, Save objectives, submit workflow.
+- **Rollback Plan**: Restore exact prior App 794 schema and Revision 29 customization bundle from fresh backup and redeploy.
+
+### 5. Required Final Evidence Block
+
+```text
+M10L_D_R4_PERSISTENCE_CONTRACT = COMPLETE
+R3_FORM_STATE_PERSISTENCE_GAP_FIXED = YES
+R3_TEST_ONLY_LASTINSTANCE_REMOVED = YES
+APP794_LIVE_REVISION = 29
+APP794_PREVIEW_REVISION = 29
+APP794_REQUIRED_SNAPSHOT_SCHEMA_GAPS = Profile_Code, PartA_Weight, PartB_Weight, Part_A_Scoring_Mode, Competency_Set_Code, Configuration_Hash
+APP794_REQUIRED_SNAPSHOT_PERMISSION_GAPS = NONE
+APP796_PROF_STAFF_CHIEF_FY2026_PUBLISHED_COUNT = 1
+APP796_PARTA_WEIGHT = 70
+APP796_PARTB_WEIGHT = 30
+APP796_PART_A_SCORING_MODE = DIFFICULTY_ACHIEVEMENT_MATRIX
+APP796_COMPETENCY_SET_CODE = COMP_SET_OPERATIONAL_V1
+PROFILE_FIELD_PRESENT_PERSISTENCE_TEST = PASS
+PROFILE_FIELD_ABSENT_FAIL_CLOSED_TEST = PASS
+FORM_STATE_POST_SET_READBACK_TEST = PASS
+FORM_STATE_SET_THROW_FAIL_CLOSED_TEST = PASS
+FORM_STATE_NOOP_FAIL_CLOSED_TEST = PASS
+REQUIRED_SCORING_SNAPSHOT_MISSING_FAIL_CLOSED_TEST = PASS
+ROUTING_SNAPSHOT_REGRESSION = PASS
+SCORING_ZERO_DUPLICATE_GATES = PASS
+SOURCE_DIST_EXACTNESS = PASS
+CLASSIC_BUNDLE_PARSE = PASS
+npm test = 546 / PASS
+GIT_DIFF_CHECK = PASS
+NO_ORPHAN_ARTIFACT_GATE = PASS
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+KINTONE_WRITES_THIS_TASK = 0
+APP794_DEPLOY_THIS_TASK = 0
+LIVE_CONFIG_WRITE_REQUIRED = YES
+EXACT_MINIMUM_LIVE_CHANGE = Add 6 snapshot fields to App 794 (Profile_Code: SINGLE_LINE_TEXT, PartA_Weight: NUMBER, PartB_Weight: NUMBER, Part_A_Scoring_Mode: SINGLE_LINE_TEXT, Competency_Set_Code: SINGLE_LINE_TEXT, Configuration_Hash: SINGLE_LINE_TEXT)
 GIT_PUSH_SYNC = PASS
 ```

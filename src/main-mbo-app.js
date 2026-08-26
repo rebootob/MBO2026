@@ -21,6 +21,11 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
 
   let activeUiInstance = null;
 
+  globalThis.__MBO_APP__ = {
+    getActiveUiInstance: () => activeUiInstance,
+    syncRecordToKintone: (record, options) => syncRecordToKintone(record, options)
+  };
+
   function getMboAppId() {
     return kintone.app.getId() || 794;
   }
@@ -62,25 +67,115 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
     return BUSINESS_STAGES.CONFIGURATION_ERROR;
   }
 
+  function isSemanticValueMatch(valA, valB, fieldType) {
+    if (valA === valB) return true;
+
+    if (Array.isArray(valA) && Array.isArray(valB)) {
+      if (valA.length !== valB.length) return false;
+      return valA.every((item, idx) => {
+        const bItem = valB[idx];
+        if (typeof item === 'object' && item !== null && typeof bItem === 'object' && bItem !== null) {
+          return item.code === bItem.code;
+        }
+        return item === bItem;
+      });
+    }
+
+    if (fieldType === 'NUMBER' || typeof valA === 'number' || typeof valB === 'number') {
+      const numA = Number(valA);
+      const numB = Number(valB);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA === numB;
+      }
+    }
+
+    const strA = String(valA ?? '').trim();
+    const strB = String(valB ?? '').trim();
+    return strA === strB;
+  }
+
   /**
    * Safe sync to Kintone internal form state preserving field.type
+   * When requireVerifiedPersistence is true, verifies that kintone.app.record.get()/set()
+   * succeeds, all required fields exist in form schema, and post-set read-back matches expected values.
    */
-  function syncRecordToKintone(record) {
-    try {
-      if (typeof kintone.app.record.get === 'function' && typeof kintone.app.record.set === 'function') {
-        const currentData = kintone.app.record.get();
-        if (currentData && currentData.record) {
-          Object.keys(record).forEach(k => {
-            if (currentData.record[k] && record[k] && record[k].value !== undefined) {
-              currentData.record[k].value = record[k].value;
-            }
-          });
-          kintone.app.record.set(currentData);
+  function syncRecordToKintone(record, options = {}) {
+    const requireVerifiedPersistence = options.requireVerifiedPersistence === true;
+    const requiredFields = Array.isArray(options.requiredFields) ? options.requiredFields : [];
+
+    if (typeof kintone === 'undefined' || !kintone.app || !kintone.app.record) {
+      if (requireVerifiedPersistence) {
+        throw new Error('Kintone record API is unavailable (kintone.app.record missing)');
+      }
+      return false;
+    }
+
+    if (typeof kintone.app.record.get !== 'function' || typeof kintone.app.record.set !== 'function') {
+      if (requireVerifiedPersistence) {
+        throw new Error('Kintone record get/set API functions are unavailable');
+      }
+      return false;
+    }
+
+    const currentData = kintone.app.record.get();
+    if (!currentData || !currentData.record) {
+      if (requireVerifiedPersistence) {
+        throw new Error('Current Kintone form record object is unavailable');
+      }
+      return false;
+    }
+
+    const kintoneRecord = currentData.record;
+
+    // 1. Verify required destination fields exist in Kintone form schema
+    if (requireVerifiedPersistence) {
+      for (const fieldCode of requiredFields) {
+        if (!kintoneRecord[fieldCode]) {
+          throw new Error(`ไม่พบช่องข้อมูล ${fieldCode} ในแบบฟอร์ม (App 794)\nField ${fieldCode} does not exist on Kintone form schema.`);
         }
       }
-    } catch (e) {
-      console.warn('[MBO V2] syncRecordToKintone warning:', e);
     }
+
+    // 2. Clone record and copy matching source values
+    const targetRecord = JSON.parse(JSON.stringify(kintoneRecord));
+    Object.keys(record).forEach(k => {
+      if (targetRecord[k] && record[k] && record[k].value !== undefined) {
+        targetRecord[k].value = record[k].value;
+      }
+    });
+
+    // 3. Perform kintone.app.record.set
+    try {
+      kintone.app.record.set({ record: targetRecord });
+    } catch (e) {
+      if (requireVerifiedPersistence) {
+        throw new Error(`kintone.app.record.set failed: ${e.message}`);
+      }
+      console.warn('[MBO V2] syncRecordToKintone warning:', e);
+      return false;
+    }
+
+    // 4. Post-set read-back verification
+    if (requireVerifiedPersistence) {
+      const postSetData = kintone.app.record.get();
+      const postSetRecord = postSetData?.record;
+
+      if (!postSetRecord) {
+        throw new Error('Post-set Kintone form record read-back failed');
+      }
+
+      for (const fieldCode of requiredFields) {
+        const sourceVal = record[fieldCode]?.value;
+        const readBackVal = postSetRecord[fieldCode]?.value;
+        const fieldType = postSetRecord[fieldCode]?.type;
+
+        if (!isSemanticValueMatch(sourceVal, readBackVal, fieldType)) {
+          throw new Error(`Form state read-back mismatch for field ${fieldCode}: expected ${JSON.stringify(sourceVal)}, got ${JSON.stringify(readBackVal)}`);
+        }
+      }
+    }
+
+    return true;
   }
 
   // Hook 1: Record Show (Detail, Edit, Create)
@@ -242,23 +337,23 @@ import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
           }
         });
 
-        // Assert mandatory snapshot prerequisites exist in Kintone form schema before verification succeeds
-        const profileVal = record.Profile_Code?.value;
-        const routingVal = record.Routing_Topology?.value;
-        const requesterVal = record.Requester_User?.value;
+        const CORE_SNAPSHOT_FIELDS = [
+          'Profile_Code',
+          'PartA_Weight',
+          'PartB_Weight',
+          'Part_A_Scoring_Mode',
+          'Competency_Set_Code',
+          'Configuration_Hash',
+          'Routing_Topology',
+          'Requester_User',
+          'Record_Key'
+        ];
 
-        if (!record.Profile_Code || typeof profileVal !== 'string' || !profileVal.trim()) {
-          throw new Error(`ไม่พบช่องข้อมูล Profile_Code ในแบบฟอร์ม (App 794)\nField Profile_Code does not exist on App 794 form schema for position ${empProfile.Employee_Position}. Please contact HR / Administrator.`);
-        }
-        if (!record.Routing_Topology || typeof routingVal !== 'string' || !routingVal.trim()) {
-          throw new Error('ไม่พบช่องข้อมูล Routing_Topology ในแบบฟอร์ม (App 794)\nField Routing_Topology does not exist on App 794 form schema. Please contact HR / Administrator.');
-        }
-        if (!record.Requester_User || !Array.isArray(requesterVal) || requesterVal.length === 0) {
-          throw new Error('ไม่พบช่องข้อมูล Requester_User ในแบบฟอร์ม (App 794)\nField Requester_User does not exist on App 794 form schema. Please contact HR / Administrator.');
-        }
-
-        // Push directly to Kintone Form State
-        syncRecordToKintone(record);
+        // Push directly to Kintone Form State with verified persistence and post-set read-back
+        syncRecordToKintone(record, {
+          requireVerifiedPersistence: true,
+          requiredFields: CORE_SNAPSHOT_FIELDS
+        });
       }
     };
 

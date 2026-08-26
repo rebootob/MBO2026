@@ -5,6 +5,8 @@ import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
 import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
+const getActiveUiInstance = () => globalThis.__MBO_APP__?.getActiveUiInstance();
+const syncRecordToKintone = (record, opts) => globalThis.__MBO_APP__?.syncRecordToKintone(record, opts);
 
 const makeMockElement = () => ({
   innerHTML: '',
@@ -16,6 +18,10 @@ const makeMockElement = () => ({
 });
 
 const kintoneHandlers = {};
+let currentFormRecord = null;
+let getApiOverride = null;
+let setApiOverride = null;
+
 const fakeApi = async () => ({ records: [] });
 fakeApi.url = (path) => path;
 
@@ -25,7 +31,16 @@ globalThis.kintone = {
     record: {
       setFieldShown: () => {},
       getSpaceElement: makeMockElement,
-      getHeaderMenuSpaceElement: makeMockElement
+      getHeaderMenuSpaceElement: makeMockElement,
+      get: (...args) => {
+        if (typeof getApiOverride === 'function') return getApiOverride(...args);
+        return currentFormRecord ? { record: currentFormRecord } : null;
+      },
+      set: (...args) => {
+        if (typeof setApiOverride === 'function') return setApiOverride(...args);
+        if (!args[0] || !args[0].record) throw new Error('Invalid set data');
+        currentFormRecord = args[0].record;
+      }
     }
   },
   getLoginUser: () => ({ code: 'req1' }),
@@ -52,8 +67,14 @@ function createMockRecord(overrides = {}) {
     Employee_Position: { value: 'Technical Service Chief' },
     Fiscal_Year: { value: 'FY2026' },
     Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' },
+    Part_A_Scoring_Mode: { value: 'DIFFICULTY_ACHIEVEMENT_MATRIX' },
+    Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+    Configuration_Hash: { value: 'hash0118' },
     Routing_Topology: { value: 'SINGLE_MANAGER' },
     Requester_User: { value: [{ code: 's1' }] },
+    Record_Key: { value: 'REC0118' },
     Objective_Count: { value: '4' },
 
     Objective_1: { value: 'Achieve sales KPI' },
@@ -64,7 +85,7 @@ function createMockRecord(overrides = {}) {
     Objective_2: { value: 'Improve service quality' },
     Action_Plan_2: { value: 'Conduct customer surveys' },
     Weight_2: { value: '30' },
-    Difficulty_2: { value: '3' },
+    Difficulty_2: { value: '2' },
 
     Objective_3: { value: 'Team development' },
     Action_Plan_3: { value: 'Train junior engineers' },
@@ -78,6 +99,84 @@ function createMockRecord(overrides = {}) {
   };
 
   return { ...base, ...overrides };
+}
+
+function createBlankFormStateRecord(overrides = {}) {
+  return createMockRecord({
+    Profile_Code: { value: '' },
+    PartA_Weight: { value: '' },
+    PartB_Weight: { value: '' },
+    Part_A_Scoring_Mode: { value: '' },
+    Competency_Set_Code: { value: '' },
+    Configuration_Hash: { value: '' },
+    Routing_Topology: { value: '' },
+    Requester_User: { value: [] },
+    Record_Key: { value: '' },
+    ...overrides
+  });
+}
+
+function setupMockKintoneApis() {
+  getApiOverride = null;
+  setApiOverride = null;
+  const mockApi = async (path, method, body) => {
+    if (path.includes('app/form/fields')) return { properties: {} };
+    if (path.includes('/k/v1/records') || path.includes('records.json')) {
+      if (body?.app === 53 || path.includes('app=53') || body?.query?.includes('emp_text')) {
+        return {
+          records: [{
+            emp_text: { value: '0118' },
+            Number: { value: '118' },
+            Text: { value: 'Mr. Peranut Hanpratum' },
+            Text_0: { value: 'นายพีรณัฐ' },
+            Drop_down_0: { value: 'Technical Services' },
+            Drop_down: { value: 'TMS1' },
+            Text_2: { value: 'Technical Service Chief' },
+            Text_4: { value: 'peranut@example.invalid' },
+            Date: { value: '2022-01-01' }
+          }]
+        };
+      }
+      if (body?.app === 795 || path.includes('app=795') || body?.query?.includes('Section_Code')) {
+        return {
+          records: [{
+            Section_Code: { value: 'TMS1' },
+            Requester_User: { value: [{ code: 'req1' }] },
+            Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
+            Manager_Level1_Approval_Rule: { value: 'ALL' },
+            Manager_Level2_Approvers: { value: [] },
+            Manager_Level2_Approval_Rule: { value: 'ANY' },
+            GM_Level1_Approvers: { value: [{ code: 'g1' }] },
+            GM_Level1_Approval_Rule: { value: 'ALL' },
+            GM_Level2_Approvers: { value: [] },
+            GM_Level2_Approval_Rule: { value: 'ANY' },
+            Has_Manager_Level2: { value: 'NO' },
+            Has_GM_Level2: { value: 'NO' },
+            Routing_Topology: { value: 'M1_G1' },
+            First_Manager_User: { value: [] },
+            Manager_User: { value: [{ code: 'm1' }] },
+            GM_User: { value: [{ code: 'g1' }] }
+          }]
+        };
+      }
+      if (body?.app === 796 || path.includes('app=796') || body?.query?.includes('Profile_Code')) {
+        return {
+          records: [{
+            Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+            Fiscal_Year: { value: 'FY2026' },
+            PartA_Weight: { value: '70' },
+            PartB_Weight: { value: '30' },
+            Part_A_Scoring_Mode: { value: 'DIFFICULTY_ACHIEVEMENT_MATRIX' },
+            Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+            Configuration_Hash: { value: '24e18411485c875a6988de51b61f481206dc159b5e1b2768c6a0b09ff40a72da' }
+          }]
+        };
+      }
+    }
+    return { records: [] };
+  };
+  mockApi.url = (path) => path;
+  globalThis.kintone.api = mockApi;
 }
 
 const fakeApp53 = position => ({
@@ -282,7 +381,6 @@ test('M10L-R3: Runtime submit hook blocks save (returns false) when activeUiInst
   const submitHook = kintoneHandlers['app.record.create.submit'];
   assert.ok(typeof submitHook === 'function');
 
-  // When activeUiInstance is null/unavailable -> submit returns false (block save)
   const validRecord = createMockRecord();
   const event = { type: 'app.record.create.submit', record: validRecord };
   const res = await submitHook(event);
@@ -296,212 +394,185 @@ test('M10L-R3: Runtime submit hook proceeds (returns event) for valid existing E
   assert.ok(typeof submitHook === 'function');
 
   const editRecord = createMockRecord({ $id: { value: '10' }, Status: { value: '01 Draft Objective' } });
+  currentFormRecord = editRecord;
   const showEvent = { type: 'app.record.edit.show', record: editRecord };
   showHook(showEvent);
 
-  // Trigger edit.submit with verified UI instance and zero duplicates
   const submitEvent = { type: 'app.record.edit.submit', record: editRecord };
   const res = await submitHook(submitEvent);
 
   assert.equal(res, submitEvent, 'Valid Edit submit must return event object when UI is verified and validation passes');
 });
 
-test('M10L-D-R3: Employee 0118 Technical Service Chief lookup populates schema-backed Profile_Code on record when field exists', async () => {
+test('M10L-D-R4: Employee 0118 Technical Service Chief lookup populates all 9 snapshot fields into form state and passes post-set read-back', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
   const submitHook = kintoneHandlers['app.record.create.submit'];
   assert.ok(typeof showHook === 'function');
 
-  // Record with Profile_Code field existing (blank initially)
-  const rawRecord = createMockRecord({ Profile_Code: { value: '' } });
-  assert.equal(rawRecord.Profile_Code.value, '');
-
-  const mockApi = async (path, method, body) => {
-    if (path.includes('app/form/fields')) return { properties: {} };
-    if (path.includes('/k/v1/records') || path.includes('records.json')) {
-      if (body?.app === 53 || path.includes('app=53') || body?.query?.includes('emp_text')) {
-        return {
-          records: [{
-            emp_text: { value: '0118' },
-            Number: { value: '118' },
-            Text: { value: 'Mr. Peranut Hanpratum' },
-            Text_0: { value: 'นายพีรณัฐ' },
-            Drop_down_0: { value: 'Technical Services' },
-            Drop_down: { value: 'TMS1' },
-            Text_2: { value: 'Technical Service Chief' },
-            Text_4: { value: 'peranut@example.invalid' },
-            Date: { value: '2022-01-01' }
-          }]
-        };
-      }
-      if (body?.app === 795 || path.includes('app=795') || body?.query?.includes('Section_Code')) {
-        return {
-          records: [{
-            Section_Code: { value: 'TMS1' },
-            Requester_User: { value: [{ code: 'req1' }] },
-            Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
-            Manager_Level1_Approval_Rule: { value: 'ALL' },
-            Manager_Level2_Approvers: { value: [] },
-            Manager_Level2_Approval_Rule: { value: 'ANY' },
-            GM_Level1_Approvers: { value: [{ code: 'g1' }] },
-            GM_Level1_Approval_Rule: { value: 'ALL' },
-            GM_Level2_Approvers: { value: [] },
-            GM_Level2_Approval_Rule: { value: 'ANY' },
-            Has_Manager_Level2: { value: 'NO' },
-            Has_GM_Level2: { value: 'NO' },
-            Routing_Topology: { value: 'M1_G1' },
-            First_Manager_User: { value: [] },
-            Manager_User: { value: [{ code: 'm1' }] },
-            GM_User: { value: [{ code: 'g1' }] }
-          }]
-        };
-      }
-      if (body?.app === 796 || path.includes('app=796') || body?.query?.includes('Profile_Code')) {
-        return {
-          records: [{
-            Profile_Code: { value: 'PROF_STAFF_CHIEF' },
-            Fiscal_Year: { value: 'FY2026' },
-            PartA_Weight: { value: '70' },
-            PartB_Weight: { value: '30' },
-            Part_A_Scoring_Mode: { value: 'DIRECT' },
-            Competency_Set_Code: { value: 'OPERATIONAL' },
-            Configuration_Hash: { value: 'hash0118' }
-          }]
-        };
-      }
-    }
-    return { records: [] };
-  };
-  mockApi.url = (path) => path;
-  globalThis.kintone.api = mockApi;
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
 
-  const ui = EmployeePartAUI.lastInstance;
-  assert.ok(ui, 'EmployeePartAUI instance must be captured via static lastInstance seam');
+  const ui = getActiveUiInstance();
+  assert.ok(ui, 'getActiveUiInstance must return active UI instance');
   assert.equal(ui.isEmployeeVerified, false, 'Create UI must start unverified');
 
   // Execute lookup
   await ui.executeLookup('0118');
 
-  // Verify Profile_Code and routing fields are populated on existing record properties
-  assert.equal(rawRecord.Profile_Code.value, 'PROF_STAFF_CHIEF');
-  assert.equal(rawRecord.Routing_Topology.value, 'M1_G1');
-  assert.deepEqual(rawRecord.Requester_User.value, [{ code: 'req1' }]);
-  assert.equal(ui.isEmployeeVerified, true, 'isEmployeeVerified must become true after successful lookup');
+  // Verify form state read-back contains populated snapshot fields
+  assert.equal(currentFormRecord.Profile_Code.value, 'PROF_STAFF_CHIEF');
+  assert.equal(String(currentFormRecord.PartA_Weight.value), '70');
+  assert.equal(String(currentFormRecord.PartB_Weight.value), '30');
+  assert.equal(currentFormRecord.Part_A_Scoring_Mode.value, 'DIFFICULTY_ACHIEVEMENT_MATRIX');
+  assert.equal(currentFormRecord.Competency_Set_Code.value, 'COMP_SET_OPERATIONAL_V1');
+  assert.equal(currentFormRecord.Configuration_Hash.value, '24e18411485c875a6988de51b61f481206dc159b5e1b2768c6a0b09ff40a72da');
+  assert.equal(currentFormRecord.Routing_Topology.value, 'M1_G1');
+  assert.deepEqual(currentFormRecord.Requester_User.value, [{ code: 'req1' }]);
+  assert.ok(currentFormRecord.Record_Key.value);
 
-  // Verify record object contains ZERO test pollution properties
-  assert.equal(rawRecord._uiOptions, undefined, 'Business record payload must not contain _uiOptions');
-  assert.equal(rawRecord._uiInstance, undefined, 'Business record payload must not contain _uiInstance');
+  // Verify UI verification state
+  assert.equal(ui.isEmployeeVerified, true, 'isEmployeeVerified must become true after successful form-state persistence');
 
-  // Execute submit hook and verify it proceeds
+  // Verify business record payload contains ZERO test pollution
+  assert.equal(rawRecord._uiOptions, undefined);
+  assert.equal(rawRecord._uiInstance, undefined);
+
+  // Submit hook must proceed
   const submitEvent = { type: 'app.record.create.submit', record: rawRecord };
   const res = await submitHook(submitEvent);
-  assert.equal(res, submitEvent, 'Create submit hook must proceed when lookup populated schema-backed Profile_Code');
+  assert.equal(res, submitEvent);
 });
 
-test('M10L-D-R3: Employee lookup fails closed (isEmployeeVerified = false) when required Profile_Code field is ABSENT from record schema', async () => {
+test('M10L-D-R4: Lookup fails closed when Profile_Code is absent from Kintone form state schema', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
   const submitHook = kintoneHandlers['app.record.create.submit'];
   assert.ok(typeof showHook === 'function');
 
-  // Record with NO Profile_Code field on Kintone form schema
+  setupMockKintoneApis();
   const rawRecord = createMockRecord();
-  delete rawRecord.Profile_Code;
-  assert.equal(rawRecord.Profile_Code, undefined);
-
-  const mockApi = async (path, method, body) => {
-    if (path.includes('app/form/fields')) return { properties: {} };
-    if (path.includes('app=53') || body?.app === 53 || body?.query?.includes('emp_text')) {
-      return {
-        records: [{
-          emp_text: { value: '0118' },
-          Text_2: { value: 'Technical Service Chief' },
-          Drop_down: { value: 'TMS1' }
-        }]
-      };
-    }
-    if (path.includes('app=795') || body?.app === 795 || body?.query?.includes('Section_Code')) {
-      return {
-        records: [{
-          Section_Code: { value: 'TMS1' },
-          Requester_User: { value: [{ code: 'req1' }] },
-          Routing_Topology: { value: 'M1_G1' }
-        }]
-      };
-    }
-    if (path.includes('app=796') || body?.app === 796 || body?.query?.includes('Profile_Code')) {
-      return {
-        records: [{
-          Profile_Code: { value: 'PROF_STAFF_CHIEF' },
-          Fiscal_Year: { value: 'FY2026' }
-        }]
-      };
-    }
-    return { records: [] };
-  };
-  mockApi.url = (path) => path;
-  globalThis.kintone.api = mockApi;
+  // Kintone form state is missing Profile_Code field
+  currentFormRecord = createBlankFormStateRecord();
+  delete currentFormRecord.Profile_Code;
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
+  const ui = getActiveUiInstance();
 
-  const ui = EmployeePartAUI.lastInstance;
-  assert.ok(ui);
-
-  // Execute lookup and verify it rejects due to missing Profile_Code field on Kintone schema
   await assert.rejects(
     async () => ui.executeLookup('0118'),
     err => err.message.includes('ไม่พบช่องข้อมูล Profile_Code ในแบบฟอร์ม (App 794)')
   );
 
-  // Verify Profile_Code property was NOT synthetically created on rawRecord
-  assert.equal(rawRecord.Profile_Code, undefined, 'Synthetic Profile_Code property must NOT be created on record');
+  assert.equal(currentFormRecord.Profile_Code, undefined, 'Profile_Code must NOT be synthetically created on form state');
+  assert.equal(ui.isEmployeeVerified, false, 'UI must remain unverified');
 
-  // Verify form remains unverified
-  assert.equal(ui.isEmployeeVerified, false, 'isEmployeeVerified must remain false when schema field is absent');
-
-  // Verify submit hook blocks save (returns false)
   const submitEvent = { type: 'app.record.create.submit', record: rawRecord };
   const res = await submitHook(submitEvent);
-  assert.equal(res, false, 'Submit hook must return false when UI is unverified');
+  assert.equal(res, false, 'Submit must return false when UI is unverified');
 });
 
-test('M10L-D-R3: Employee lookup fails closed if App 796 scoring query finds 0 published configs', async () => {
+test('M10L-D-R4: Lookup fails closed when kintone.app.record.get is unavailable', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
-  const rawRecord = createMockRecord({ Profile_Code: { value: '' } });
-
-  const mockApi = async (path, method, body) => {
-    if (path.includes('app/form/fields')) return { properties: {} };
-    if (path.includes('app=53') || body?.app === 53 || body?.query?.includes('emp_text')) {
-      return {
-        records: [{
-          emp_text: { value: '0118' },
-          Text_2: { value: 'Technical Service Chief' },
-          Drop_down: { value: 'TMS1' }
-        }]
-      };
-    }
-    if (path.includes('app=795') || body?.app === 795 || body?.query?.includes('Section_Code')) {
-      return {
-        records: [{
-          Section_Code: { value: 'TMS1' },
-          Requester_User: { value: [{ code: 'req1' }] },
-          Routing_Topology: { value: 'M1_G1' }
-        }]
-      };
-    }
-    if (path.includes('app=796') || body?.app === 796 || body?.query?.includes('Profile_Code')) {
-      return { records: [] }; // ZERO published configs
-    }
-    return { records: [] };
-  };
-  mockApi.url = (path) => path;
-  globalThis.kintone.api = mockApi;
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
-  const ui = EmployeePartAUI.lastInstance;
+  const ui = getActiveUiInstance();
+
+  getApiOverride = () => null;
+
+  await assert.rejects(
+    async () => ui.executeLookup('0118'),
+    err => err.message.includes('Current Kintone form record object is unavailable')
+  );
+
+  assert.equal(ui.isEmployeeVerified, false);
+});
+
+test('M10L-D-R4: Lookup fails closed when kintone.app.record.set throws an exception', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
+
+  setApiOverride = () => { throw new Error('Kintone set API permission error'); };
+
+  await assert.rejects(
+    async () => ui.executeLookup('0118'),
+    err => err.message.includes('kintone.app.record.set failed')
+  );
+
+  assert.equal(ui.isEmployeeVerified, false);
+});
+
+test('M10L-D-R4: Lookup fails closed when kintone.app.record.set is a no-op and read-back retains old value', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord({ Routing_Topology: { value: 'OLD_TOPOLOGY' } });
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
+
+  // setApi does nothing -> currentFormRecord remains unchanged with OLD_TOPOLOGY
+  setApiOverride = () => {};
+
+  await assert.rejects(
+    async () => ui.executeLookup('0118'),
+    err => err.message.includes('Form state read-back mismatch for field')
+  );
+
+  assert.equal(ui.isEmployeeVerified, false);
+});
+
+test('M10L-D-R4: Lookup fails closed when required scoring snapshot field (Configuration_Hash) is missing from Kintone schema', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
+  delete currentFormRecord.Configuration_Hash;
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
+
+  await assert.rejects(
+    async () => ui.executeLookup('0118'),
+    err => err.message.includes('ไม่พบช่องข้อมูล Configuration_Hash ในแบบฟอร์ม (App 794)')
+  );
+
+  assert.equal(ui.isEmployeeVerified, false);
+});
+
+test('M10L-D-R4: Employee lookup fails closed if App 796 scoring query finds 0 published configs', async () => {
+  const showHook = kintoneHandlers['app.record.create.show'];
+  setupMockKintoneApis();
+
+  // Override scoring query to return 0 records
+  const baseApi = globalThis.kintone.api;
+  globalThis.kintone.api = async (path, method, body) => {
+    if (path.includes('app=796') || body?.app === 796) return { records: [] };
+    return baseApi(path, method, body);
+  };
+  globalThis.kintone.api.url = (path) => path;
+
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
+
+  const showEvent = { type: 'app.record.create.show', record: rawRecord };
+  showHook(showEvent);
+  const ui = getActiveUiInstance();
 
   await assert.rejects(
     async () => ui.executeLookup('0118'),
@@ -510,46 +581,31 @@ test('M10L-D-R3: Employee lookup fails closed if App 796 scoring query finds 0 p
   assert.equal(ui.isEmployeeVerified, false);
 });
 
-test('M10L-D-R3: Employee lookup fails closed if App 796 scoring query finds duplicate published configs', async () => {
+test('M10L-D-R4: Employee lookup fails closed if App 796 scoring query finds duplicate published configs', async () => {
   const showHook = kintoneHandlers['app.record.create.show'];
-  const rawRecord = createMockRecord({ Profile_Code: { value: '' } });
+  setupMockKintoneApis();
 
-  const mockApi = async (path, method, body) => {
-    if (path.includes('app/form/fields')) return { properties: {} };
-    if (path.includes('app=53') || body?.app === 53 || body?.query?.includes('emp_text')) {
-      return {
-        records: [{
-          emp_text: { value: '0118' },
-          Text_2: { value: 'Technical Service Chief' },
-          Drop_down: { value: 'TMS1' }
-        }]
-      };
-    }
-    if (path.includes('app=795') || body?.app === 795 || body?.query?.includes('Section_Code')) {
-      return {
-        records: [{
-          Section_Code: { value: 'TMS1' },
-          Requester_User: { value: [{ code: 'req1' }] },
-          Routing_Topology: { value: 'M1_G1' }
-        }]
-      };
-    }
-    if (path.includes('app=796') || body?.app === 796 || body?.query?.includes('Profile_Code')) {
+  // Override scoring query to return 2 records
+  const baseApi = globalThis.kintone.api;
+  globalThis.kintone.api = async (path, method, body) => {
+    if (path.includes('app=796') || body?.app === 796) {
       return {
         records: [
           { Profile_Code: { value: 'PROF_STAFF_CHIEF' } },
-          { Profile_Code: { value: 'PROF_STAFF_CHIEF' } } // DUPLICATE
+          { Profile_Code: { value: 'PROF_STAFF_CHIEF' } }
         ]
       };
     }
-    return { records: [] };
+    return baseApi(path, method, body);
   };
-  mockApi.url = (path) => path;
-  globalThis.kintone.api = mockApi;
+  globalThis.kintone.api.url = (path) => path;
+
+  const rawRecord = createMockRecord();
+  currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
   showHook(showEvent);
-  const ui = EmployeePartAUI.lastInstance;
+  const ui = getActiveUiInstance();
 
   await assert.rejects(
     async () => ui.executeLookup('0118'),
