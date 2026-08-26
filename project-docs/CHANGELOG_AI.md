@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R12D-A Read-Only HR Final Authorization Audit (0 Kintone writes executed): Audited live App 794 Process Management status `15 HR Final Check` (assignee type `ONE`, entities `[]`), App ACL (`CREATOR` all, `everyone` view/add/edit/delete), Record ACL (`rights: []`), Field ACL (`rights: []`), and repository JS guard (`ValidationEngine.validateWorkflowAction`). Confirmed no live configuration or runtime guard layer restricts status 15 actions to HR users; classified effective authorization state as `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`.
+- **2026-08-26**: Executed M10L-D-R12D-B HR Authorization Repair Design + Isolated UAT Identity Discovery (0 Kintone writes executed): Selected native Process Management assignee (`DIRECT_GROUP` / `DIRECT_USER`) as primary security boundary for status `15 HR Final Check`. Discovered current admin user (`admin-form`) as controlled Sandbox UAT identity and existing HR group (`GROUP: Manager HR_x52y75`) as production target entity. Proposed zero-real-user-impact Sandbox/Prod parity strategy and minimal change sequence (R12D-C -> R12D-D -> R12E).
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.

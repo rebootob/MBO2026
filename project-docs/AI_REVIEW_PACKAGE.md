@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12D_B_HR_REPAIR_DESIGN** | **`PASS`** — Produced native Kintone repair design for `15 HR Final Check` authorization defect; selected `DIRECT_GROUP` / `DIRECT_USER` native Process assignee as primary boundary; discovered controlled UAT identity `admin-form` and production HR group `Manager HR_x52y75`; designed zero-real-user-impact Sandbox/Prod parity strategy; proposed minimal change set (R12D-C -> R12D-D -> R12E); 0 Kintone writes |
 | **M10L_D_R12D_A_HR_AUTHORIZATION_AUDIT** | **`PASS`** — Completed read-only HR authorization audit of App 794 (`15 HR Final Check`); confirmed live Process assignee is unassigned `[]`, App/Record/Field ACL has no HR restriction, and runtime JS has no HR actor guard; classified as `DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER`; 0 Kintone writes |
 | **M10L_D_R12C_R1_POST_DEPLOY_CLOSURE** | **`PASS`** — Verified R12C deployed runtime (Revision 35, JS `54e4cd56`, CSS `3604d2b2`); reconciled canonical Process baseline to 16 states / 28 actions (Control Plane counting error in old 27 wording); verified Process semantic match; performed shallow browser runtime smoke (0 fatal MBO errors); captured HR Final Check config (`15 HR Final Check`, assignee type `NONE` / unassigned `[]`, Complete -> `16 Completed`, Return -> `11 Employee Self Evaluation`); 0 Kintone writes |
 | **M10L_D_R12C_CONTROLLED_DEPLOY** | **`PASS`** — Deployed exact reviewed R12B-R1 JS candidate `54e4cd56` to live App 794 (Revision 35); preserved live CSS content (`3604d2b2`); verified live JS & CSS SHA256 hashes match 100%; captured durable pre-write backup `backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z`; 0 record/schema/process/ACL writes |
@@ -791,5 +792,43 @@ DIST_CHANGE_COUNT = 0
 TEST_CHANGE_COUNT = 0
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW BEFORE ANY HR AUTHORIZATION REPAIR OR WORKFLOW UAT
+
+
+## M10L-D-R12D-B HR Authorization Repair Design + Isolated UAT Identity Discovery Evidence
+
+```text
+M10L_D_R12D_B_HR_REPAIR_DESIGN = COMPLETE
+STARTING_HEAD = 485af5192ea9d9023f6245999aff5da1e696a79d
+CONFIRMED_DEFECT = DEFECT_CONFIRMED_NO_HR_AUTHORIZATION_LAYER
+PRIMARY_NATIVE_BOUNDARY = DIRECT_GROUP
+PRIMARY_NATIVE_BOUNDARY_REASON = Direct native Process Management assignee directly restricts status 15 actions server-side in Kintone native API without schema changes or complex ACL rules.
+DIRECT_NATIVE_ENTITY_MODEL = RECOMMENDED
+FIELD_DRIVEN_ASSIGNEE_MODEL = NOT_RECOMMENDED
+ACL_PRIMARY_MODEL = NOT_RECOMMENDED
+REQUIRED_NATIVE_PROCESS_CHANGE = Set status 15 HR Final Check assignee to target HR entity (admin-form for Sandbox UAT, Manager HR_x52y75 for Prod)
+REQUIRED_SCHEMA_CHANGE = NONE
+REQUIRED_ACL_CHANGE = NONE
+JS_DEFENSE_IN_DEPTH = RECOMMENDED
+JS_DEFENSE_IN_DEPTH_DESIGN = Add optional current-user assignee check in ValidationEngine.validateWorkflowAction for status 15 actions
+CURRENT_CONTROLLED_UAT_IDENTITY = admin-form
+PRODUCTION_HR_NATIVE_ENTITY = GROUP: Manager HR_x52y75
+SANDBOX_HR_ASSIGNEE_STRATEGY = Assign status 15 to controlled admin/UAT identity admin-form
+PRODUCTION_HR_ASSIGNEE_STRATEGY = Assign status 15 to production HR group Manager HR_x52y75
+MINIMUM_CONTROLLED_IDENTITIES_FOR_HR_STAGE_UAT = 2
+NEGATIVE_NON_HR_TEST_IDENTITY_REQUIREMENT = Non-HR controlled identity (e.g. employee/manager account) attempts status 15 action and is denied by native Kintone 403 / runtime guard
+REAL_USER_IMPACT = 0
+REAL_HR_WORKFLOW_TEST_REQUIRED = NO
+REAL_HR_NOTIFICATION_TEST_REQUIRED = NO
+PRODUCTION_PARITY_METHOD = Static structural Process audit matching Sandbox 16/28 topology to Production configuration with mapped HR group entity
+PROPOSED_EXECUTION_SEQUENCE = R12D-C (JS defense-in-depth code/tests) -> R12D-D (App 794 Process repair) -> R12E (Isolated Workflow UAT)
+KINTONE_GET_CALLS_THIS_TASK = 2
+KINTONE_WRITES_THIS_TASK = 0
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW BEFORE ANY REPAIR WRITE
 ```
