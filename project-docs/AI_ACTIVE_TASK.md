@@ -1,10 +1,11 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R1 USER VISUAL CORRECTION CLOSURE — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6-R2 USER VISUAL CORRECTION CLOSURE — LOCAL ONLY
 
 > Control Plane: ChatGPT / Project Lead / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
 > Prior R6 implementation commit: `3110a334c4aace8c9ba2586ac78887eb25bb8e9b`
+> Supersedes: R6-R1 task
 > Canonical UI baseline: `project-docs/CONFIRMED_BASELINE/UI_UX.md`
 > Kintone write/deploy authorization: **NONE**
 
@@ -23,18 +24,16 @@ Read completely, in this exact order:
 8. `project-docs/HANDOFF.md`
 9. `project-docs/AI_REVIEW_PACKAGE.md`
 
-The Confirmed Baseline is canonical. If R6 source conflicts with it, fix the LOCAL candidate. Do not mutate Kintone.
+Confirmed Baseline is canonical. If R6 source conflicts with it, fix the LOCAL candidate. Do not mutate Kintone.
 
-## 1. CURRENT GATE
+## 1. CURRENT GATE — UI IS THE HERO
 
 R6 is implemented locally but is **NOT user-visually approved**.
 
-The user is actively inspecting the UI and identified the correction set below. UI/UX remains the critical path.
+The user is actively inspecting the UI. Finish the full App794 UI/UX V2 visual closure before Dashboard/Hoshin, persistence changes, Final UAT, or deploy.
 
 Critical path:
-`R6-R1 UI Visual Correction Closure -> ChatGPT Source Review -> User Visual Preview Approval -> Persistence/Runtime Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
-
-Do not continue to Dashboard/Hoshin or deployment.
+`R6-R2 UI Visual Correction Closure -> ChatGPT Source Review -> User Visual Preview Approval -> Persistence/Runtime Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
 
 ## 2. HARD SAFETY BOUNDARY
 
@@ -46,246 +45,245 @@ This task is LOCAL ONLY.
 - App795/App796/App797/App798/App800 writes = 0.
 - No real-user workflow/notification test.
 - No new Kintone authorization exists.
-- Do not create new Kintone fields in this task.
-- Do not claim Preview behavior equals secure production authorization.
+- Do not create new Kintone fields.
+- Do not claim Preview UX equals secure production authorization.
 
-## 3. OPTIONAL ATTACHMENTS — OBJECTIVES + MID-YEAR + SELF EVALUATION
+## 3. PRESERVE ALL CANONICAL UI REQUIREMENTS
 
-User-confirmed requirement:
+Implement all current requirements in `CONFIRMED_BASELINE/UI_UX.md`, including:
+- exactly five bilingual macro stages;
+- Thai + English user-facing UI;
+- lifecycle-wide Appraiser route;
+- ordinal `1st/2nd/3rd/4th Appraiser` labels, never Manager/GM as business headings;
+- friendly Route Scenario selector with raw topology only in Technical Details;
+- Evaluation Profile separate from routing;
+- DGM/GM/VP Executive Direct -> President shown only as Preview Only / Routing Pending;
+- route-aware Process Progress;
+- Requester starts Mid-Year at 05->06 and Self Evaluation at 10->11 when HR calendar window is open;
+- HR phase dates owned by App800 contract;
+- horizontal high-volume entry layout;
+- Difficulty blank must not fake Level 3;
+- fail-closed incomplete scoring result;
+- Native Kintone Comments must remain usable after future deploy.
 
-Each Objective must have an optional evidence/attachment area in these three stages:
-1. `เป้าหมาย / Objectives`
-2. `ทบทวนกลางปี / Mid-Year`
-3. `ประเมินตนเอง / Self Evaluation`
+Search normal business-facing text for legacy `Manager`, `GM`, `First Manager` guidance and replace with ordinal Appraiser wording. Technical diagnostic/status metadata may retain legacy names only where necessary.
+
+## 4. OPTIONAL ATTACHMENTS — OBJECTIVES + MID-YEAR + SELF EVALUATION
+
+Each Objective must show `แนบไฟล์ / Attach File (Optional)` in:
+1. Objectives
+2. Mid-Year
+3. Self Evaluation
+
+Rules:
+- optional only; no Required styling;
+- Save/Submit must not fail solely because attachment is empty;
+- show existing/selected filenames and local Preview remove/replace affordance;
+- Appraiser Evaluation and HR Final carry Objective/Mid-Year/Self evidence forward read-only;
+- never invent fake production filenames.
+
+Persistence boundary:
+- existing Mid-Year `MidYear_Attachment_*` and Self legacy-compatible fields may use adapters;
+- if Objective attachment physical storage does not exist, Preview still renders UX but marks `OBJECTIVE_ATTACHMENT_PERSISTENCE = PENDING_SCHEMA_REVIEW`;
+- do not create schema in this task.
+
+## 5. MID-YEAR OBJECTIVE PROGRESS (%)
+
+Business meaning is employee-reported Objective progress.
 
 Required UX:
-- show `แนบไฟล์ / Attach File (Optional)` clearly per Objective;
-- no red Required state;
-- Save/Submit completeness must not fail solely because attachment is empty;
-- show selected/existing file name(s) and remove/replace affordance where appropriate in Preview;
-- Appraiser Evaluation and HR Final carry all evidence forward read-only by source stage: Objective / Mid-Year / Self Evaluation;
-- never invent fake production filenames when no file exists.
+- label `ความคืบหน้าของเป้าหมาย / Objective Progress (%)`;
+- helper `พนักงานระบุความคืบหน้าปัจจุบัน 0–100% / Employee-reported current progress 0–100%`;
+- clear numeric input 0..100;
+- slider may remain if synchronized with numeric input;
+- progress bar width exactly equals entered percentage;
+- NOT derived from dates, Process Progress, rating, or score;
+- status06 Requester can edit;
+- Appraiser review sees read-only;
+- <0 or >100 fails local validation.
 
-Physical persistence rules:
-- existing Mid-Year `MidYear_Attachment_*` and Self Evaluation legacy-compatible attachment fields may be represented by adapters;
-- do not silently invent an App794 Objective attachment Kintone field;
-- if Objective attachment physical storage does not exist, Preview must still show the intended UX and mark implementation metadata `OBJECTIVE_ATTACHMENT_PERSISTENCE = PENDING_SCHEMA_REVIEW`;
-- Preview file selection must stay local/non-persistent and perform zero Kintone calls.
+Keep visually separate from Process Progress.
 
-Add focused tests proving attachments are OPTIONAL and rendered in all three stages.
+## 6. DEADLINE / DAYS REMAINING — HIGH VISIBILITY
 
-## 4. MID-YEAR `PROGRESS (%)` — MAKE MEANING OBVIOUS
-
-The current bar is driven directly by employee-entered `Progress_Percent_i` 0..100. Preserve that business meaning.
-
-Required UX:
-- rename/clarify label to `ความคืบหน้าของเป้าหมาย / Objective Progress (%)`;
-- helper: `พนักงานระบุความคืบหน้าปัจจุบัน 0–100% / Employee-reported current progress 0–100%`;
-- provide a clear numeric input 0–100; slider may remain, but numeric input and slider must stay synchronized;
-- progress bar width = entered percentage exactly;
-- do NOT derive this value from calendar days, workflow progress, ratings, or scores;
-- requester status `06 Employee Mid-Year` may edit;
-- Appraiser review statuses see it read-only;
-- invalid <0 or >100 fails validation locally.
-
-Keep this visually distinct from top `ความคืบหน้ากระบวนการ / Process Progress`.
-
-## 5. NATIVE KINTONE COMMENT THREAD — PRESERVE IT
-
-Operational use confirmed by user:
-Kintone record comments are used when an MBO is Return/Reject back to the employee for correction.
-
-Requirements:
-- custom UI must not intentionally hide/cover/disable the native Kintone comment thread;
-- do not build a duplicate custom persistent comment system;
-- Part A/Part B evaluator comments are NOT a replacement for record comments;
-- in local Preview, add only a clearly non-persistent layout placeholder/reserved-side-area if helpful:
-  `ความคิดเห็นใน Kintone / Kintone Comments (Native Platform)`;
-- ensure desktop custom layout has a composition that can coexist with the native right-side Kintone comments panel without requiring microscopic fields;
-- record in evidence that real native Kintone comment accessibility remains `PENDING_DEPLOYED_BROWSER_VERIFICATION` because this sprint is local-only.
-
-## 6. DEADLINE / DAYS REMAINING — STRONGER EMPLOYEE URGENCY
-
-The current `X days overdue` text is too subtle.
-
-Required visual hierarchy:
-- active and within allowed date window = GREEN emphasis;
+For every phase:
+- within active allowed period = GREEN emphasis;
 - overdue/incomplete = RED emphasis;
-- due today = strong AMBER/ORANGE urgency;
+- due today = strong AMBER/ORANGE;
 - upcoming = neutral/gray/blue;
-- completed = success/green and no alarming overdue text.
+- completed = success/green without overdue alarm.
 
-The numeric callout must be prominent, for example:
+Make the numeric message materially prominent:
 - `เหลือ 12 วัน / 12 DAYS REMAINING`
 - `เกินกำหนด 76 วัน / 76 DAYS OVERDUE`
 
-Use a larger/bolder chip/card/callout than normal helper text. It must be readable at a glance and visually motivate action.
-
 Do not confuse deadline urgency with performance score.
 
-Test upcoming, open/on-time, due-today, overdue, completed.
+## 7. APPRAISER ACTIVE COLUMN FOLLOWS CURRENT ACTOR
 
-## 7. APPRAISER EVALUATION — ACTIVE COLUMN MUST FOLLOW CURRENT APPRAISER
+All configured Appraiser columns remain visible to Appraisers, but only the current Appraiser's own column is editable.
 
-This is mandatory.
+Current `M1_G1`:
+- status13 -> 1st Appraiser active/editable;
+- status14 -> 2nd Appraiser active/editable.
 
-All configured Appraiser columns are visible to Appraisers, but only the current action owner's own column is editable.
+Generic `M1_M2_G1`:
+- status12 -> 1st Appraiser active;
+- status13 -> 2nd Appraiser active;
+- status14 -> 3rd Appraiser active.
 
-### Current `M1_G1` mapping
-- status `13 Manager Final Evaluation` -> business-facing **1st Appraiser** column ACTIVE/EDITABLE;
-- status `14 GM Final Evaluation` -> business-facing **2nd Appraiser** column ACTIVE/EDITABLE.
+Rules:
+- inactive columns visible + read-only;
+- previous Appraiser scores/comments remain visible to later Appraisers;
+- no Appraiser edits another Appraiser column;
+- HR Final shows all columns read-only;
+- 4th Appraiser may be Preview-only active-slot simulation and must not claim live Workflow/persistence support.
 
-### Generic `M1_M2_G1` mapping
-- status `12 First Manager Final Evaluation` -> **1st Appraiser** active;
-- status `13 Manager Final Evaluation` -> **2nd Appraiser** active;
-- status `14 GM Final Evaluation` -> **3rd Appraiser** active.
-
-### Column behavior
-If 1st Appraiser is current:
-- Appraiser 1 = active/editable;
-- Appraiser 2..N = visible/read-only.
-
-If 2nd Appraiser is current:
-- Appraiser 2 = active/editable;
-- Appraiser 1 + Appraiser 3..N = visible/read-only.
-
-Apply same pattern for Appraiser 3/4 where configured/simulated.
-
-Important:
-- previous Appraiser ratings/comments remain visible to later Appraisers;
-- Appraisers see one another's columns;
-- no Appraiser can edit another Appraiser's column;
-- do not hide prior Appraiser values when advancing to next evaluator;
-- HR Final shows all Appraiser columns read-only;
-- this confirms Appraiser-to-Appraiser visibility only; do not independently expand Requester visibility of confidential scoring.
-
-Preview 4-Appraiser scenario may simulate active slot 1..4 but must state slot4 workflow/persistence is Preview Only.
-
-Security note:
-client disable/read-only is UX only. Do not claim secure production edit isolation until a later native Kintone authorization/permission review.
-
-## 8. PREVIEW CONTROL FOR ACTIVE APPRAISER
-
-The old generic `ACTIVE EDITOR SLOT` control may remain only as a Preview/Technical simulation aid, but make its business meaning clear:
-
+Preview control label:
 `ผู้ประเมินที่กำลังดำเนินการ / Current Appraiser (Preview)`
 
-For statuses with deterministic mapping (12/13/14), default it automatically from the selected route/status.
+For deterministic statuses, default active slot automatically. Manual override for future 4-Appraiser simulation must show `Preview Override`.
 
-If the user changes the active slot manually for 4-Appraiser future simulation, clearly show `Preview Override` and do not claim this is a live Process path.
+Security note: read-only/disabled client controls are UX, not the security boundary.
 
-## 9. WORKFLOW ACTION TIMELINE — WHO / ACTION / DATE / TIME
+## 8. 3–4 APPRAISER RESPONSIVE MATRIX — NO PAGE OVERFLOW
 
-Add a clear lifecycle-wide read-only frame:
+User visual finding: 4-Appraiser Part A/Part B currently overflows and is difficult to read.
 
+Mandatory correction:
+- **App794 page/body must not horizontally overflow because of the matrix.**
+- Matrix wrapper must be contained inside available content width (`max-width:100%`, `overflow-x:auto`, correct box sizing).
+- Horizontal scrolling, when unavoidable, must occur only inside the Part A/Part B matrix container.
+- Prefer sticky Objective/Competency first column while scrolling.
+- Result column may be compact/sticky-right where practical.
+- Active Appraiser column should be visibly emphasized and may be wider.
+- Inactive Appraiser columns remain visible but may use compact read-only rendering.
+- Inactive feedback can wrap/compact/expand on demand; do not force full editable textarea width for every inactive column.
+- Do not shrink controls/text to unusable sizes merely to fit four columns.
+- When actor changes, bring/scroll active Appraiser column into view automatically where practical.
+- Design must remain usable when native Kintone comment panel reduces available content width.
+
+Target behavior:
+- 1–2 Appraisers: comfortable normal matrix.
+- 3 Appraisers: contained responsive matrix.
+- 4 Appraisers: contained compact matrix, no whole-page overflow, all Appraiser columns still inspectable.
+
+## 9. NATIVE KINTONE COMMENT THREAD — PRESERVE CONTRACT
+
+Kintone record comments are used for Return/Reject discussion.
+
+Requirements:
+- custom UI must not intentionally hide/cover/disable native Comments;
+- Part A/Part B evaluator feedback does not replace record comments;
+- local Preview may show a non-persistent placeholder/reserved area:
+  `ความคิดเห็นใน Kintone / Kintone Comments (Native Platform)`;
+- do not build fake persistent comments;
+- deployed runtime accessibility remains `PENDING_DEPLOYED_BROWSER_VERIFICATION`.
+
+## 10. WORKFLOW ACTION TIMELINE — DESKTOP TABLE
+
+Add lifecycle-wide read-only section:
 `ประวัติการดำเนินการ / Workflow Action Timeline`
 
-Purpose: users must be able to see when each Requester/Appraiser/HR actor acted during each MBO stage.
+### Desktop layout
+Use a structured TABLE as the primary presentation. Do not render one large card per event on desktop.
 
-Each event row/card must show:
-- Stage / ขั้นตอน;
-- ordinal business actor: Employee/Requester, 1st Appraiser, 2nd Appraiser, 3rd Appraiser, 4th Appraiser, HR Final;
-- actual person name/account where fixture/source exists;
-- action: Submitted, Approved, Returned, Resubmitted, Started Mid-Year, Started Self Evaluation, Scoring Completed, HR Final Completed, etc.;
-- exact date and time in one consistent display format, e.g. `14 Feb 2026 • 09:42`;
-- outcome/status;
-- optional `💬 View Comments / ดูความคิดเห็น` indicator for Return/Reject events, pointing conceptually to native Kintone comments (do not fake comment persistence).
+Recommended columns:
+`# | ขั้นตอน / Stage | ผู้ดำเนินการ / Actor | ชื่อผู้ดำเนินการ / Person | การดำเนินการ / Action | วัน-เวลา / Date & Time | ผลลัพธ์ / Result | หมายเหตุ / Comments`
 
-Example preview sequence:
-- Objectives | 1st Appraiser | Approved | 14 Feb 2026 • 09:42
-- Objectives | 2nd Appraiser | Returned | 15 Feb 2026 • 10:18
-- Objectives | Employee | Resubmitted | 16 Feb 2026 • 08:30
-- Objectives | 2nd Appraiser | Approved | 16 Feb 2026 • 13:05
-- Appraiser Evaluation | 1st Appraiser | Scoring Completed | 20 Nov 2026 • 14:22
+Example rows:
+- Objectives | 1st Appraiser | Sompong (m01) | Approved | 14 Feb 2026 • 09:42 | Approved | —
+- Objectives | 2nd Appraiser | Vichai (g01) | Returned | 15 Feb 2026 • 10:18 | Returned | 💬 View Comments
+- Objectives | Employee | Employee 0118 | Resubmitted | 16 Feb 2026 • 08:30 | Submitted | —
+- Objectives | 2nd Appraiser | Vichai (g01) | Approved | 16 Feb 2026 • 13:05 | Approved | —
+- Appraiser Evaluation | 1st Appraiser | Sompong (m01) | Scoring Completed | 20 Nov 2026 • 14:22 | Completed | —
 
-History semantics:
-- preserve ALL events chronologically;
-- never overwrite earlier approve/return/resubmit actions;
-- latest relevant event may be visually emphasized but full history remains accessible;
-- timeline remains visible/collapsible across all five macro stages;
-- do not derive event timestamps from generic record Updated_datetime/current status;
-- do not infer scoring-complete time merely because a score field is nonblank.
+Table UX:
+- chronological and easy to scan;
+- clear row separators or zebra rows;
+- compact bilingual Action/Result badges where useful;
+- Return/Reject row visually identifiable;
+- `💬 ดูความคิดเห็น / View Comments` indicator when applicable;
+- latest/current relevant row may be subtly highlighted;
+- whole table section may collapse to save vertical space;
+- `5 Events Recorded` may remain a small count badge next to heading;
+- mobile/narrow screens may transform same data into stacked cards.
 
-This sprint is Preview/UI only:
-- use deterministic synthetic fixtures only;
-- `WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW`;
-- do not add Kintone timestamp/history fields;
-- do not call live Kintone history/revision APIs;
-- later runtime closure must perform read-only inventory of Kintone Process/history/revision capabilities and App794 schema, then choose durable append-only audit storage if needed.
+Audit semantics:
+- preserve ALL events; never overwrite Return -> correction -> Resubmit -> Approve history;
+- show Stage, ordinal Actor, actual Person, Action, exact date/time, Result, comment indicator;
+- timeline read-only;
+- do not fabricate timestamps from `Updated_datetime`, current status, or nonblank score fields;
+- Preview uses deterministic synthetic fixtures only.
 
-## 10. PRESERVE ALL PRIOR UI BASELINE REQUIREMENTS
+Persistence boundary:
+`WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW`
 
-Do not regress any confirmed behavior in `CONFIRMED_BASELINE/UI_UX.md`, including:
-- five bilingual macro stages;
-- lifecycle-wide appraiser route;
-- ordinal Appraiser labels instead of Manager/GM headings;
-- friendly Route Scenario selector and secondary technical topology details;
-- evaluation profile separate from routing;
-- DGM/GM/VP Executive Direct -> President as Preview Only / Routing Pending;
-- route-aware Process progress;
-- requester starts Mid-Year at 05->06 and Self Evaluation at 10->11 when HR window opens;
-- HR phase dates owned by App800 contract;
-- desktop horizontal high-volume-entry layout;
-- Difficulty blank has no fake Level 3 default;
-- fail-closed incomplete scoring result;
-- Thai + English user-facing UI.
-
-Also search the R6 source for remaining user-facing `Manager`, `GM`, or `First Manager` guidance left in normal business UI. Technical status/detail strings may remain only where explicitly diagnostic. Replace business guidance with ordinal `Appraiser` wording.
+Do not create Kintone fields/history storage or call live history/revision APIs in this sprint.
 
 ## 11. PREVIEW VISUAL CHECK MATRIX
 
-Preview at minimum:
+Employee entry:
+- Objectives: optional Attachment visible.
+- status06 Mid-Year: numeric Progress 0..100 + synced bar + optional Attachment.
+- status11 Self Evaluation: optional Attachment.
 
-### Employee entry
-- Objective: optional Attachment visible.
-- Mid-Year status06: numeric Progress 0..100 + synced bar + optional Attachment.
-- Self Evaluation status11: optional Attachment.
-
-### Appraiser
+Appraiser:
 - M1_G1 status13 -> Appraiser1 active; Appraiser2 visible read-only.
-- M1_G1 status14 -> Appraiser2 active; Appraiser1 visible read-only with its existing data.
-- M1_M2_G1 status12/13/14 -> active columns 1/2/3 respectively.
-- 4-Appraiser Preview -> simulate active 1/2/3/4.
+- M1_G1 status14 -> Appraiser2 active; Appraiser1 visible read-only with prior data.
+- M1_M2_G1 status12/13/14 -> active columns 1/2/3.
+- 4-Appraiser Preview -> active 1/2/3/4 simulation.
+- 4-Appraiser Part A + Part B -> no whole-page horizontal overflow.
+- active column remains obvious and usable.
+- inactive Appraiser values remain visible.
 
-### Deadline
+Deadline:
 - on-time green;
 - due today amber/orange;
 - overdue red with large count;
 - completed green.
 
-### Native comment layout
-- Preview indicates reserved native Kintone comment context without fake persistence.
+Native Comments:
+- reserved/native-context layout visible in Preview without fake persistence.
 
-### Workflow Action Timeline
-- at least one normal approve sequence;
-- at least one Return -> Resubmit -> Approve history preserving all events;
-- Appraiser scoring timestamps;
+Workflow Action Timeline:
+- desktop renders as Table;
+- at least 5 events;
+- normal approve sequence;
+- Return -> Resubmit -> Approve all preserved;
+- Appraiser scoring timestamp;
 - HR Final completion timestamp;
-- chronological order and bilingual labels.
+- ordinal Appraiser labels;
+- chronological order;
+- mobile fallback may be cards.
 
 ## 12. FOCUSED TESTS / EXECUTION BUDGET
 
-Add tests for:
+Add/adjust focused tests for:
 1. Objective attachment optional area renders.
 2. Mid-Year attachment optional area renders.
 3. Self Evaluation attachment optional area renders.
 4. no attachment required validation.
-5. Mid-Year progress numeric value exactly drives bar width.
-6. progress is independent from Process Progress.
-7. deadline open/on-time class is green semantics.
-8. overdue has red prominent callout.
+5. Mid-Year numeric Progress exactly drives bar width.
+6. Objective Progress independent from Process Progress.
+7. deadline on-time uses green semantics.
+8. overdue uses red prominent callout.
 9. M1_G1 status13 activates slot1 only.
 10. M1_G1 status14 activates slot2 only.
 11. M1_M2_G1 status12/13/14 activates slots1/2/3 exactly.
-12. inactive Appraiser columns remain visible/read-only.
-13. prior Appraiser values remain visible to next Appraiser.
-14. HR Final all Appraiser columns read-only.
-15. user-facing route/guidance does not regress to Manager/GM role headings.
-16. Workflow Action Timeline renders actor + action + date + time.
-17. Return -> Resubmit -> Approve preserves all three events.
-18. timeline uses ordinal Appraiser names, not organizational role headings.
-19. timeline fixture does not fabricate from Updated_datetime.
-20. Preview Kintone calls = 0.
+12. inactive Appraiser columns visible/read-only.
+13. prior Appraiser values visible to next Appraiser.
+14. HR Final Appraiser columns all read-only.
+15. 4-Appraiser matrix wrapper contained to content width.
+16. no page/body horizontal overflow contract from matrix styles/structure.
+17. sticky/retained context column contract for wide matrix where implemented.
+18. user-facing guidance does not regress to Manager/GM headings.
+19. Workflow Action Timeline desktop renders `<table>` with required columns.
+20. Timeline renders actor + person + action + date/time + result.
+21. Return -> Resubmit -> Approve preserves all events.
+22. Timeline uses ordinal Appraiser names.
+23. Timeline fixture does not fabricate from Updated_datetime.
+24. Preview Kintone calls = 0.
 
 Execution budget:
 - `npm test` once after implementation;
@@ -298,7 +296,7 @@ Do not burn cycles on unrelated docs cleanup or unrelated broad tests.
 ## 13. REQUIRED EVIDENCE
 
 ```text
-APP794_EVALUATION_UI_V2_R6_R1 = COMPLETE / BLOCKED
+APP794_EVALUATION_UI_V2_R6_R2 = COMPLETE / BLOCKED
 EXECUTION_STARTING_HEAD = exact pulled task parent
 OBJECTIVE_ATTACHMENT_OPTIONAL_UI = PASS/FAIL
 OBJECTIVE_ATTACHMENT_PERSISTENCE = PENDING_SCHEMA_REVIEW
@@ -322,7 +320,12 @@ INACTIVE_APPRAISER_COLUMNS_VISIBLE_READONLY = PASS/FAIL
 PRIOR_APPRAISER_VALUES_VISIBLE_TO_NEXT = PASS/FAIL
 HR_FINAL_APPRAISER_COLUMNS_READONLY = PASS/FAIL
 APPRAISER4_WORKFLOW_PERSISTENCE = PREVIEW_ONLY_NOT_IMPLEMENTED
+FOUR_APPRAISER_MATRIX_CONTAINED = PASS/FAIL
+FOUR_APPRAISER_PAGE_BODY_OVERFLOW = 0 / actual
+FOUR_APPRAISER_ACTIVE_COLUMN_USABLE = PASS/FAIL
 WORKFLOW_ACTION_TIMELINE_UI = PASS/FAIL
+WORKFLOW_ACTION_TIMELINE_DESKTOP_TABLE = PASS/FAIL
+WORKFLOW_ACTION_TIMELINE_REQUIRED_COLUMNS = PASS/FAIL
 WORKFLOW_ACTION_TIMELINE_RETURN_RESUBMIT_HISTORY = PASS/FAIL
 WORKFLOW_ACTION_TIMELINE_ORDINAL_ACTORS = PASS/FAIL
 WORKFLOW_ACTION_TIMELINE_PERSISTENCE = PENDING_AUDIT_DESIGN_REVIEW
@@ -339,7 +342,33 @@ GIT_PUSH_SYNC = PASS/FAIL
 NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
 ```
 
-## 14. STOP CONDITION
+## 14. WHAT / WHERE / HOW / WHY / IMPACT / RISK / TEST / ROLLBACK
+
+What:
+- close the current visual defects and usability gaps in App794 Evaluation UI V2 Preview.
+
+Where:
+- existing App794 UI source/styles/Preview/tests only; no new architecture unless justified by separation of concerns.
+
+How:
+- reuse current components; fix existing render/layout logic first; keep local fixtures deterministic; preserve baseline semantics.
+
+Why:
+- UI/UX is the user-confirmed critical path and must be visually approved before persistence/deploy work.
+
+Impact:
+- local candidate/Preview only; zero Kintone runtime impact.
+
+Risk:
+- accidental source regression, page overflow, fake persistence assumptions, or hidden native Kintone UI dependencies.
+
+Test:
+- focused tests + one full npm test + one build + one Preview smoke as specified above.
+
+Rollback:
+- Git revert of this local implementation commit only. No Kintone rollback is required because Kintone writes are prohibited.
+
+## 15. STOP CONDITION
 
 Commit and push the same `ai/antigravity-wp002c` branch.
 Keep Preview Lab running if practical.
