@@ -10,65 +10,117 @@
 
 # CURRENT REVIEWED CHECKPOINT
 
-R12E-B Process remap is already complete and MUST NOT be repeated.
+R12E-B Process remap is complete and MUST NOT be repeated.
 
-Reviewed current Sandbox state:
-- App794 live/preview revision = `37 / 37` from R12E-B evidence.
-- Process = `16 states / 28 actions`.
-- `15 HR Final Check.assignee.type = ONE`.
-- `15 HR Final Check.assignee = USER: hr`.
-- non-target Process semantics = PASS.
-- synthetic record `MBO_UAT_M1G1_001` was NOT created.
-- workflow transitions executed = 0.
-- First-Manager denial attempts = 0.
-- `admin-form` business workflow actions = 0.
-- previous R12E-B authorization is CONSUMED and may not be reused.
+- App794 live/preview = `37 / 37`
+- Process = `16 states / 28 actions`
+- Status15 = `ONE + USER: hr`
+- non-target Process semantics = PASS
+- synthetic record `MBO_UAT_M1G1_001` = NOT CREATED
+- workflow transitions = 0
+- First-Manager denials = 0
+- `admin-form` business workflow actions = 0
+- previous R12E-B authorization = CONSUMED / NOT REUSABLE
 
-Canonical business rule:
-- `hr` is the user-approved controlled App794 Sandbox Workflow test account.
-- logical UAT roles Requester / Manager / GM / HR may all use `hr` for this Functional UAT only.
-- `admin-form` is TECHNICAL_ADMIN_ONLY and must execute zero business workflow actions.
-- this UAT proves functional flow only; production role isolation remains `NOT_TESTED`.
-- `REAL_USER_IMPACT = 0`.
+User-approved Sandbox model:
+- `UAT_REQUESTER = hr`
+- `UAT_MANAGER = hr`
+- `UAT_GM = hr`
+- `UAT_HR = hr`
+- `admin-form = TECHNICAL_ADMIN_ONLY`
+- `SANDBOX_FUNCTIONAL_UAT_ROLE_ISOLATION_CLAIM = NOT_TESTED`
+- `REAL_USER_IMPACT = 0`
+
+# NEW LOCAL BROWSER LOGIN METHOD
+
+The user has updated local `.env.local` with the controlled `hr` test credentials.
+
+`.gitignore` already ignores `.env.*`; `.env.local` must remain local-only.
+
+Antigravity may use `.env.local` only to authenticate the Kintone browser session as `hr`.
+
+Credential safety rules:
+1. Never print, echo, log, screenshot, commit, push, summarize, or place any credential value in evidence/docs.
+2. Do not copy `.env.local` to another tracked file.
+3. Use the existing local environment variable names/loader. Do not rename or duplicate credential variables merely for this task.
+4. It is permitted to inspect variable NAMES locally if required, but never output VALUES.
+5. If username/password mapping is ambiguous or required credential is missing, STOP with `ENV_CREDENTIAL_MAPPING_UNRESOLVED`.
+6. Login must occur through the real Kintone browser page, not REST-only authentication.
+7. After browser login and before any record write/action, verify browser identity from Kintone runtime, e.g. `kintone.getLoginUser().code` (or equivalent trusted browser identity check) must equal exactly `hr`.
+8. If browser identity != `hr`, STOP. Never fall back to `admin-form`.
 
 # NORTH STAR / CLOSE TARGET
 
 `Verify Employee PASS -> Objectives PASS -> Save PASS -> Workflow Guard PASS -> Notification Safety PASS -> R12E-B2 Functional Workflow UAT -> CORE V1 FREEZE`
 
-Do not reopen discovery. Do not test all 28 permutations.
+Do not reopen discovery. Do not run npm/build. Do not test all 28 permutations.
 
-# PRECONDITION BEFORE FUTURE EXECUTION
+# CHANGE GOVERNANCE
 
-1. User has App794 open in a browser session authenticated as Kintone account `hr`.
-2. Fresh explicit user authorization is recorded in this file by ChatGPT.
-3. Pull latest branch; local HEAD = origin HEAD = authorized continuation task commit.
-4. Read canonical baseline in mandatory order.
-5. Confirm no `src/**`, `dist/**`, `tests/**` drift. No npm/build.
-6. Minimal read-only preflight only:
-   - live/preview Process remain aligned at reviewed state or later reconciled state;
-   - exactly 16 states / 28 actions;
-   - status15 remains `ONE + USER: hr`;
-   - synthetic key `MBO_UAT_M1G1_001` collision count = 0;
+## What
+After fresh user authorization only: authenticate browser as `hr`, create one synthetic App794 UAT record, execute the compact functional workflow matrix, capture evidence, and delete the synthetic record after full PASS.
+
+## Where
+App794 Sandbox only. Local `.env.local` is used only for browser authentication and remains untracked.
+
+## How
+Pull/latest gate -> local credential safety check -> browser login -> verify current Kintone user `hr` -> minimal read-only drift/collision check -> create one UAT record -> bounded browser workflow matrix -> evidence -> cleanup -> STOP.
+
+## Why
+This is the only remaining Core functional workflow closure gate. Process remap and notification safety are already complete.
+
+## Expected Impact
+If PASS, Functional Workflow Core V1 can be frozen and the project can move immediately to UI/Dashboard closure.
+
+## Risks
+Wrong browser identity, credential leakage, live Process drift, UAT key collision, unexpected workflow failure, or real-recipient notification drift.
+
+## Test Plan
+Exactly the matrix below: 22 successful transitions + 3 First-Manager fail-closed attempts.
+
+## Rollback / Failure Plan
+No Process/config rollback is permitted or needed in R12E-B2. If any UAT step fails, STOP, preserve the exact synthetic record/evidence, do not force status, do not Change assignee, and do not delete the failed record until ChatGPT review.
+
+# PRECONDITION BEFORE EXECUTION
+
+Fresh explicit user authorization must be recorded in this file by ChatGPT before any Kintone write or workflow click.
+
+Suggested exact phrase:
+`อนุมัติ controlled App794 R12E-B2 Workflow UAT Continuation ด้วยบัญชี hr จาก .env.local`
+
+After authorization:
+1. Pull latest branch; local HEAD = origin authorized task commit.
+2. Read canonical baseline in mandatory order.
+3. Confirm no `src/**`, `dist/**`, `tests/**` drift.
+4. Confirm `.env.local` is ignored/untracked; never display contents.
+5. Login browser to Kintone using local controlled `hr` credentials.
+6. Verify browser current user code exactly `hr`.
+7. Minimal read-only preflight only:
+   - live/preview Process aligned;
+   - 16 states / 28 actions;
+   - status15 `ONE + USER: hr`;
+   - `MBO_UAT_M1G1_001` collision count = 0;
    - no unexpected real-recipient notification drift.
-7. Any drift, wrong browser identity, collision, or real-recipient risk => STOP before write.
+8. Any mismatch => STOP before write.
 
-# ABSOLUTELY FORBIDDEN IN R12E-B2
+# ABSOLUTELY FORBIDDEN
 
-- Process Management PUT/deploy/remap of any kind.
+- Process Management PUT/deploy/remap.
 - restoring `admin-form` or empty `[]` to status15.
 - App795/App53/App796/other-app writes.
 - schema/ACL/customization/notification-setting changes.
 - Change assignee.
 - `admin-form` business workflow action.
 - real Manager/GM/HR workflow test.
-- extra synthetic records.
-- source/dist/tests changes or npm/build.
 - REST-only status transitions claimed as browser/runtime proof.
+- credential output/logging/commit.
+- source/dist/tests changes or npm/build.
+- extra synthetic records/actions.
 
-# FUTURE AUTHORIZED WRITE/ACTION SCOPE — ONLY AFTER FRESH USER AUTHORIZATION
+# AUTHORIZED UAT SCOPE — ONLY AFTER FRESH AUTHORIZATION
 
 App794 only:
-1. Create exactly one synthetic UAT record with key `MBO_UAT_M1G1_001`.
+1. Create exactly one synthetic record: `MBO_UAT_M1G1_001`.
 2. Snapshot routing:
    - `Routing_Topology = M1_G1`
    - `First_Manager_User = []`
@@ -76,9 +128,9 @@ App794 only:
    - `Manager_User = [hr]`
    - `GM_User = [hr]`
 3. Minimal valid Objective data at create.
-4. Max 2 bounded preparation edits: Mid-Year data + Final/Self data.
-5. Execute the compact browser matrix below while authenticated as `hr`.
-6. If full PASS only, delete exactly the synthetic UAT record and verify key count = 0.
+4. Max 2 preparation edits: Mid-Year + Final/Self.
+5. Execute all Process actions through App794 browser UI authenticated as `hr`.
+6. After full PASS only, delete exactly this UAT record and verify key count = 0.
 
 # COMPACT BROWSER MATRIX
 
@@ -120,32 +172,14 @@ App794 only:
 Expected successful transitions = `22`.
 Expected First-Manager denials = `3`.
 
-No status15 non-assignee denial test is required or claimed under the approved single-account closure model.
-
-# FAILURE / CLEANUP
-
-If any unexpected workflow failure occurs:
-- STOP immediately.
-- do not force status or Change assignee.
-- preserve the synthetic record and evidence.
-- do not delete the failed record in that execution.
-
-If and only if 22/22 transitions + 3/3 denials + final `16 Completed` pass:
-- capture browser/runtime evidence;
-- confirm fatal MBO errors = 0;
-- confirm real-user workflow/notification impact = 0;
-- confirm admin-form business actions = 0;
-- delete exactly the synthetic record;
-- verify key count = 0;
-- push evidence/living docs and STOP.
-
 # PASS GATE
 
 `FUNCTIONAL_WORKFLOW_UAT = PASS` requires:
-- no Process config write in R12E-B2;
+- browser authenticated identity = `hr`;
+- Process PUT = 0 / deploy = 0;
 - 22/22 successful transitions;
-- 3/3 First-Manager attempts denied with unchanged status;
-- final status `16 Completed`;
+- 3/3 First-Manager attempts denied with status unchanged;
+- final status = `16 Completed`;
 - browser fatal MBO errors = 0;
 - real-user impact = 0;
 - admin-form business actions = 0;
@@ -160,6 +194,10 @@ Always report:
 M10L_D_R12E_B2_WORKFLOW_UAT_CONTINUATION = COMPLETE / BLOCKED
 AUTHORIZATION_SCOPE = APP794_R12E_B2_UAT_ONLY
 AUTHORIZATION_CONSUMED = YES
+ENV_LOCAL_USED_FOR_BROWSER_LOGIN = YES/NO
+ENV_LOCAL_TRACKED_BY_GIT = NO
+CREDENTIAL_VALUE_EXPOSED = NO
+BROWSER_AUTHENTICATED_USER = hr / actual
 UAT_ACCOUNT = hr
 PRECHECK_LIVE_REVISION = actual
 PRECHECK_PREVIEW_REVISION = actual
@@ -198,4 +236,4 @@ NEXT_ACTION = CHATGPT REVIEW; IF PASS FREEZE CORE V1 AND MOVE TO UI/DASHBOARD CL
 
 # STOP CONDITION
 
-Until fresh explicit user authorization is recorded by ChatGPT: **DO NOT CREATE A RECORD, DO NOT CLICK ANY BUSINESS PROCESS ACTION, AND DO NOT WRITE KINTONE.**
+Until fresh explicit user authorization is recorded by ChatGPT: **DO NOT LOGIN AND EXECUTE THE UAT, DO NOT CREATE A RECORD, DO NOT CLICK ANY BUSINESS PROCESS ACTION, AND DO NOT WRITE KINTONE.**
