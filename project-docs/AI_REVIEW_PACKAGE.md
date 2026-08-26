@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12C_R1_POST_DEPLOY_CLOSURE** | **`PASS`** — Verified R12C deployed runtime (Revision 35, JS `54e4cd56`, CSS `3604d2b2`); reconciled canonical Process baseline to 16 states / 28 actions (Control Plane counting error in old 27 wording); verified Process semantic match; performed shallow browser runtime smoke (0 fatal MBO errors); captured HR Final Check config (`15 HR Final Check`, assignee type `NONE` / unassigned `[]`, Complete -> `16 Completed`, Return -> `11 Employee Self Evaluation`); 0 Kintone writes |
 | **M10L_D_R12C_CONTROLLED_DEPLOY** | **`PASS`** — Deployed exact reviewed R12B-R1 JS candidate `54e4cd56` to live App 794 (Revision 35); preserved live CSS content (`3604d2b2`); verified live JS & CSS SHA256 hashes match 100%; captured durable pre-write backup `backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z`; 0 record/schema/process/ACL writes |
 | **M10L_D_R12B_R1_WORKFLOW_FAIL_CLOSED** | **`PASS`** — Hardened `validateWorkflowAction` with exact topology whitelist (`M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`), fail-closed blank/unknown/G2 topologies, and complete `Requester_User` handoff checks (Status 04, 05, 09, 10 + Returns); 554/554 tests pass, rebuilt `dist/mbo-employee-app.js` (0 drift), 0 Kintone calls/writes |
 | **M10L_D_R12B_WORKFLOW_ALIGNMENT** | **`PASS`** — Aligned `STATUS_TO_STAGE_MAP` with exact 16 live statuses, removed 5 stale status aliases, added fail-closed topology & assignee workflow action guard in `ValidationEngine.validateWorkflowAction`, added unit tests (553/553 tests pass), rebuilt `dist/mbo-employee-app.js` (0 drift), 0 Kintone calls/writes |
@@ -704,5 +705,55 @@ ROLLBACK_EXECUTED = NO
 NO_ORPHAN_ARTIFACT_GATE = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW BEFORE ISOLATED WORKFLOW UAT
+
+
+## M10L-D-R12C-R1 Read-Only Post-Deploy Evidence Closure Evidence
+
+```text
+M10L_D_R12C_R1_POST_DEPLOY_CLOSURE = COMPLETE
+STARTING_DEPLOY_RESULT = 9d4497e458d25f813da14f2bc0caac774df73cb5
+CANONICAL_PROCESS_STATE_COUNT = 16
+CANONICAL_PROCESS_ACTION_COUNT = 28
+OLD_27_ACTION_COUNT_CLASSIFICATION = CONTROL_PLANE_COUNTING_ERROR
+R12C_BACKUP_PATH = backups/m10l-d-r12c-app794-workflow-guard-deploy/2026-08-26T02-41-53-960Z
+R12C_BACKUP_READABLE = PASS
+R12C_PREWRITE_PROCESS_STATE_COUNT = 16
+R12C_PREWRITE_PROCESS_ACTION_COUNT = 28
+REVISION_33_TO_35_FORENSIC_STATUS = PROVEN
+REVISION_SEQUENCE_EVIDENCE = Prewrite Rev 33 -> PUT customize preview Rev 34/35 -> POST deploy live Rev 35 (status SUCCESS)
+CURRENT_LIVE_REVISION = 35
+CURRENT_PREVIEW_REVISION = 35
+CURRENT_LIVE_JS_SHA256 = 54e4cd561654ab2c6008fef526013829d45c8cccce356fe522d798539822097a
+LIVE_JS_HASH_STABLE = PASS
+CURRENT_LIVE_CSS_SHA256 = 3604d2b247593def3e370fe72938a4876e6da93eb7c81f9f2e030d52c660d1d0
+LIVE_CSS_HASH_STABLE = PASS
+MOBILE_CUSTOMIZE_STABLE = PASS
+CURRENT_PROCESS_STATE_COUNT = 16
+CURRENT_PROCESS_ACTION_COUNT = 28
+PROCESS_SEMANTIC_MATCH_TO_R12C_PREWRITE = PASS
+SIX_FIELD_SCHEMA_STABLE = PASS
+HR_FINAL_CHECK_SOURCE_STATUS = 14 GM Final Evaluation
+HR_FINAL_CHECK_SOURCE_ACTION = Approve Final GM
+HR_FINAL_CHECK_TARGET_STATUS = 15 HR Final Check
+HR_FINAL_CHECK_ASSIGNEE_TYPE = NONE
+HR_FINAL_CHECK_ASSIGNEE_IDENTIFIER = NONE
+HR_GROUP_MEMBERSHIP = NOT_RESOLVED_THIS_TASK
+HR_COMPLETE_TARGET = 16 Completed
+HR_RETURN_TARGET = 11 Employee Self Evaluation
+HR_RETURN_DESTINATION_RULE = Requester_User (owned by employee/requester)
+BROWSER_SHALLOW_RUNTIME_LOAD = PASS
+BROWSER_TARGET = https://ttmet.cybozu.com/k/794/show#record=1 (App 794 Read-Only Detail Page)
+BROWSER_FATAL_MBO_CONSOLE_ERROR_COUNT = 0
+WORKFLOW_ACTION_EXECUTED = 0
+WORKFLOW_NOTIFICATION_TRIGGERED = 0
+APP794_WRITE_COUNT = 0
+OTHER_APP_WRITE_COUNT = 0
+KINTONE_GET_CALLS_THIS_TASK = 5
+KINTONE_WRITES_THIS_TASK = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW FOR HR-ISOLATED WORKFLOW UAT DESIGN
 ```
