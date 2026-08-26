@@ -1,182 +1,249 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI/SCORING UX REDESIGN + STATUS PREVIEW LAB — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 + STATUS PREVIEW LAB — LOCAL IMPLEMENTATION ONLY
 
-> Control Plane: ChatGPT / Independent Reviewer
-> Execution Plane: Antigravity standalone only when local/browser/Kintone execution is genuinely required
+> Control Plane: ChatGPT / Project Lead / Reviewer
+> Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
 > Mode: PROJECT CLOSE MODE / APP794 EVALUATION UX CLOSURE
+> Starting control-plane checkpoint: `b2d58e5fc723f694d746e74f4e7902ae9d735708`
 > Kintone write/deploy authorization: **NONE**
 
-## Why Dashboard is paused
+# 1. WHY THIS TASK EXISTS
 
-The previously deployed App794 UI/UX V1 is healthy at revision 39, but source review after user visual inspection confirmed a material usability/core gap: the custom UI has dedicated editable views for Objectives, Mid-Year, and Self Evaluation, while Manager/GM/HR final statuses currently fall into a generic READ_ONLY summary and do not provide a proper scoring UI for Part A / Part B.
+App794 UI/UX V1 is healthy at live revision 39, but source review and user visual inspection confirmed that the current custom UI only has meaningful dedicated screens for Objectives, Mid-Year, and Self Evaluation. Final statuses 12–16 fall into generic READ_ONLY presentation and do not expose a proper Part A / Part B appraiser-evaluation experience.
 
-Therefore Dashboard work is temporarily paused. The priority is to close App794 Evaluation & Scoring Runtime UX first, then resume Dashboard/Hoshin Control Center work.
+Dashboard implementation is paused until this App794 evaluation/scoring UX is visually closed.
 
-## Frozen boundaries that remain unchanged
+# 2. USER-CONFIRMED BUSINESS/UI RULES
 
-- App794 Process Management remains 16 states / 28 actions.
-- Current active routing remains M1_G1 for all 17 live App795 routes.
-- Workflow Approver and Scoring Appraiser are separate concepts.
-- Do not rename workflow statuses merely to fit scoring roles.
-- `admin-form` remains TECHNICAL_ADMIN_ONLY with zero business workflow authority.
-- App53 and all eight legacy PMS apps remain READ ONLY.
-- No real-user workflow/notification testing.
-- No Kintone writes/deploys until a later fresh explicit authorization.
+## 2.1 Five distinct macro screens
 
-# USER-CONFIRMED UI/SCORING DESIGN RULES
+The UI must NOT force every stage into one spreadsheet layout.
 
-## 1. Five Macro UI Stages
+1. `Objectives`
+2. `Mid-Year`
+3. `Self Evaluation`
+4. `Appraiser Evaluation`
+5. `HR Final / Completed`
 
-App794 must present five distinct business screens. Field sets are intentionally different by stage; do not force one spreadsheet layout to serve all stages.
+Exact current Process statuses remain unchanged at 16 states / 28 actions.
 
-### Stage 1 — Objectives
-Statuses 01–05.
-Primary content:
-- Department Hoshin / Section Hoshin display.
-- Objective.
-- Action Plan.
-- Additional Agreement / Comment.
-- Weight %.
-- Difficulty.
-- Objective completion/validation guidance.
+### Visual status-to-macro mapping
 
-### Stage 2 — Mid-Year
-Statuses 06–10.
-Primary content:
-- Objective / Weight / approved target as read-only context.
-- Progress %.
-- Periodical Review.
-- Mid-Year Result / Current Result.
-- Issue / Risk / Next Action.
-- Mid-Year Attachment / supporting evidence for each objective.
-- Large text-entry areas suitable for long user input.
+- 01–05 -> Objectives
+- 06–10 -> Mid-Year
+- 11 -> Self Evaluation
+- 12–14 -> Appraiser Evaluation
+- 15–16 -> HR Final / Completed
 
-### Stage 3 — Self Evaluation
-Status 11 as employee editable screen; later statuses may show this content read-only as context.
-Primary content:
-- Objective / Weight / Mid-Year context read-only.
-- Actual Result & Achievement.
-- Self Achievement.
-- Self Comment / Reflection.
-- Self Evaluation Attachment / supporting evidence for each objective (current physical field family `Final_Attachment_1..10` may be reused if semantically acceptable; do not rename physical fields without a reviewed migration need).
-- Large text-entry areas suitable for long user input.
+IMPORTANT: this is a PRESENTATION mapping only. Do NOT change the frozen workflow Process or silently change validation/workflow semantics merely to obtain a new screen.
 
-### Stage 4 — Appraiser Evaluation
-Statuses 12–14.
-This is a dedicated scoring screen, not a generic READ_ONLY summary.
+## 2.2 Scoring-appraiser terminology and capacity
 
-Business terminology:
-- NEVER label scoring columns as Manager / GM based only on workflow position.
-- Use neutral labels `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser`.
+Canonical baseline now confirms:
 - Workflow Approver != Scoring Appraiser.
-- Do not infer appraiser identity from `Manager_User` / `GM_User` unless a separately confirmed scoring-appraiser source explicitly maps them.
+- UI labels are `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser`.
+- Logical architecture supports 1–4 appraisers.
+- Render only the configured/fixture-required slots.
+- Do not display scoring columns as Manager/GM.
+- Do not infer appraiser identity from Manager/GM workflow fields in this task.
+- Existing published App796 1–2 counts are unchanged.
 
-Logical capacity:
-- Design UI and scoring model for 1–4 appraisers from the start.
-- Render only the required appraiser slots for the resolved profile/configuration.
-- Appraiser count and weights must be configuration-driven, not role-title-driven.
-- Current DEC-036 / App796 implementation allows only 1–2 and therefore conflicts with this new user-confirmed future-capacity requirement. Do not silently mutate runtime or App796. Record this as a required controlled scoring-architecture extension before deployment of 3–4-appraiser functionality.
+Current physical/source limitation:
+- existing App794 fields are Manager/GM-named two-slot fields;
+- current App796 validation/published configuration supports only 1–2;
+- true persistent 3rd/4th appraiser storage and actor binding are NOT part of this local visual sprint.
 
-Part A screen should show, at minimum:
-- Objective / Weight / Difficulty / Actual Result / Self score as context.
-- Appraiser 1..N rating/input.
-- Appraiser comment/input per applicable slot.
-- Objective result / scoring output when completeness requirements are satisfied.
+Therefore implement a logical UI model that can render 1–4 slots without claiming slots 3–4 are production-persisted.
 
-Part B screen should show, at minimum:
-- Competency item name and explanation.
-- Appraiser 1..N rating/input.
-- Appraiser comment/input where applicable.
-- Competency result.
-- COCE remains evaluated but excluded from score according to existing scoring governance.
+# 3. PHYSICAL-STORAGE STRATEGY FOR THIS SPRINT
 
-Fail-closed scoring UX:
-- Final score must not be presented as complete until every required appraiser input for Part A and Part B is complete.
-- No automatic reweighting when an expected appraiser is incomplete.
+## 3.1 Do not proliferate schema
 
-### Stage 5 — HR Final / Completed
-Statuses 15–16.
-Primary content:
-- Full read-only evaluation summary.
-- Part A raw/result/weighted score.
-- Part B raw/result/weighted score.
-- Final score / grade only when completeness gates pass.
-- Appraiser completion summary.
-- Hoshin/employee/profile snapshot context.
-- Attachment visibility/read-only access to Mid-Year and Self Evaluation evidence.
-- Audit/status guidance appropriate for HR Final Check vs Completed.
+Do NOT add Kintone fields, change form schema, change App796, or create another Kintone app in this task.
 
-## 2. Progress / Completion Visuals
+## 3.2 Compatibility abstraction
 
-The redesigned UI must include clear progress bars, but percentage meaning must be explicit.
+Create/keep one clear adapter/helper boundary between logical UI appraiser slots and existing record fields.
 
-### Overall Process Progress
-Five macro phases:
+For local preview:
+- synthetic fixture data may provide normalized Appraiser 1..4 identities, ratings, comments and completion states.
+
+For existing 1–2 physical fields:
+- it is acceptable for the adapter to READ existing Manager/GM-named scoring fields as legacy storage slot 1/2 when present;
+- the UI must still label them Appraiser 1/2 only;
+- do not use `Manager_User` / `GM_User` as authoritative scoring-appraiser identity in this sprint;
+- do not implement writes for slot 3/4.
+
+Keep this adapter small and explicit so physical persistence can be replaced later without rewriting UI components.
+
+# 4. FIVE SCREEN REQUIREMENTS
+
+## Stage 1 — Objectives (statuses 01–05)
+
+Editable only where existing business rules already permit objective entry; review/approved statuses are contextual/read-only.
+
+Show:
+- employee/profile summary;
+- Department Hoshin + Section Hoshin;
+- Objective;
+- Action Plan;
+- Additional Agreement / Comment;
+- Weight %;
+- Difficulty;
+- validation/completion guidance.
+
+Long-text fields must be wide. Prefer card-per-objective or wide sections rather than narrow spreadsheet cells.
+
+## Stage 2 — Mid-Year (statuses 06–10)
+
+Show approved Objective/Weight as read-only context plus:
+- Progress %;
+- Periodical Review;
+- Mid-Year Result / Current Result;
+- Issue / Risk / Next Action;
+- `MidYear_Attachment_1..10` evidence summary/control area.
+
+Long-text inputs: approx. 4–6 visible lines minimum and resizable/auto-grow where practical.
+
+## Stage 3 — Self Evaluation (status 11; later stages may show read-only context)
+
+Show:
+- Objective / Weight / Mid-Year context read-only;
+- Actual Result & Achievement;
+- Self Achievement;
+- Self Comment / Reflection;
+- `Final_Attachment_1..10` as Self Evaluation evidence for current physical compatibility.
+
+Long text must be wide and easy to read/edit.
+
+## Stage 4 — Appraiser Evaluation (statuses 12–14)
+
+Dedicated Part A + Part B screen. Do not use generic read-only summary as the entire page.
+
+### Part A
+At minimum show:
+- Objective;
+- Weight;
+- Difficulty;
+- Actual Result;
+- Self Achievement as context;
+- Appraiser 1..N rating/input;
+- Appraiser 1..N comment/input;
+- objective scoring/result display only when completeness permits.
+
+### Part B
+At minimum show:
+- competency business name;
+- short explanation/criteria placeholder from fixture/model;
+- Appraiser 1..N rating/input;
+- Appraiser 1..N comment/input;
+- competency result;
+- COCE clearly marked `Evaluated / Excluded from Score`.
+
+### Local preview editability
+The Status Preview Lab may simulate which appraiser slot is actively editing. Production actor-to-slot authorization is NOT certified by this task.
+
+## Stage 5 — HR Final / Completed (statuses 15–16)
+
+Read-only summary screen showing:
+- employee/profile/Hoshin context;
+- Part A completion/result/weight;
+- Part B completion/result/weight;
+- appraiser completion;
+- final score/grade placeholder only if logical completeness gates pass;
+- Mid-Year and Self Evaluation attachment evidence summary;
+- clear distinction between `15 HR Final Check` and `16 Completed`.
+
+Do NOT present mock scoring output as authoritative Kintone production score.
+
+# 5. PROGRESS / COMPLETION VISUALS
+
+Every stage should have a clear top progress area.
+
+## Overall Process Progress
+
+Display the five phases:
 `Objectives -> Mid-Year -> Self Evaluation -> Appraiser Evaluation -> HR Final / Completed`
 
-The bar indicates PROCESS COMPLETION only; it must never imply performance score quality.
+Include a percentage/progress bar. It represents PROCESS COMPLETION only, never performance quality.
 
-### Appraiser Completion
-For configured N appraisers:
-- 0/N = 0%
-- 1/N = 1/N completion
-- ...
-- N/N = 100%
+Use a deterministic presentation lookup based on status. Do not derive it from score values.
 
-Example for 4 appraisers: 0%, 25%, 50%, 75%, 100%.
+## Appraiser Completion
 
-### Data Completion
-Display stage-specific completeness such as:
-- Part A required inputs complete / total.
-- Part B required inputs complete / total.
-- Missing-data guidance.
+For fixture/configured N appraisers:
+- completed slots / N;
+- percentage = completed / N * 100;
+- support N=1..4.
 
-## 3. Wide Long-Text UX
+Examples:
+- 1/4 = 25%
+- 2/4 = 50%
+- 3/4 = 75%
+- 4/4 = 100%
 
-User explicitly expects substantial text entry.
+## Data Completion
 
-Design rules:
-- Objective, Action Plan, Additional Agreement, Periodical Review, Mid-Year Result, Issue/Risk/Next Action, Actual Result, Self Comment, and Appraiser Comments must use wide text areas.
-- Prefer card-per-objective or wide 1–2 column layouts over narrow Excel-like cells for long text.
-- Default long-text height should be useful for approximately 4–6 lines and remain user-resizable / auto-growing where practical.
-- Short numeric fields such as Weight, %, Difficulty, Rating may stay compact.
-- Supporting attachment control should be visually grouped with the related objective/evidence section.
-- Responsive layout must stack sensibly on narrower screens.
+Show useful stage-level completeness, especially:
+- Part A required inputs complete / total;
+- Part B required inputs complete / total;
+- missing-data guidance.
 
-## 4. Attachment UX
+Fail closed visually: incomplete required appraiser data means final result is `Pending / Incomplete`, not a partial final score.
 
-Mid-Year and Self Evaluation must visibly support attachments.
+# 6. ATTACHMENT UX — IMPORTANT
 
-Required behavior:
-- Each objective can show its supporting evidence attachment control/summary.
-- Display attached file names/count where practical.
-- During Appraiser Evaluation and HR Final/Completed, attachments are viewable/read-only context, not editable by those stages unless a later business rule explicitly authorizes it.
-- Attachment absence is not mandatory by default unless a separate business rule is approved.
-- Workflow stage changes/returns must not lose attachments.
+The user explicitly requires attachments at both Mid-Year and Self Evaluation.
 
-## 5. Hoshin visibility
+Local preview must visibly show attachment areas for each objective, including representative attached file names/counts.
 
-Keep Department Hoshin and Section Hoshin as strong context in Objective stage and as read-only reference later. Existing Hoshin governance remains separate and must still be closed before Final UAT.
+However this task must NOT invent unsafe fake Kintone persistence.
 
-# REQUIRED PRE-DEPLOY UI PREVIEW GATE
+Rules:
+- render existing record FILE values/read-only attachment summaries when available;
+- in preview, simulate upload controls visually with synthetic files;
+- clearly isolate any preview-only attachment control from production persistence;
+- do NOT call Kintone file upload API;
+- do NOT issue REST file uploads;
+- do NOT claim custom upload persistence is solved until a later Kintone/browser compatibility gate verifies the exact safe implementation;
+- Appraiser and HR screens show attachments as read-only evidence context.
 
-Before any App794 redesign candidate is deployed to Kintone, create a LOCAL-ONLY clickable preview/simulator called conceptually `Status Preview Lab`.
+Record an `ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE` evidence line unless source already contains a proven supported native method.
 
-Purpose: allow the user to visually inspect every App794 workflow status before deployment.
+# 7. SCORING RUNTIME SAFETY — DO NOT FAKE COMPLETION
 
-## Preview controls
+Source review identified design debt that must remain visible:
+- current source/schema-spec contains historical hardcoded Part A/B calculations such as 70/30 in some fields;
+- App794 annual snapshot currently does not prove every configuration attribute needed for generic 1–4 scoring persistence;
+- current App796 validator/source only accepts expected appraiser count 1–2.
 
-The preview must let the user click/select:
-- all 16 workflow statuses individually;
-- the five macro stages;
-- Profile / Part A-Part B ratio representative fixtures;
-- Appraiser count 1, 2, 3, or 4;
-- representative complete / incomplete data states where useful.
+Therefore this sprint is UI + logical preview, not scoring-engine certification.
 
-## 16 Status coverage
+Do NOT:
+- rewrite frozen scoring formulas casually;
+- mutate App796;
+- change current published profile counts;
+- claim 3–4 appraiser scoring persistence is production-ready;
+- show a partial/mocked final score as a certified result.
 
-Preview each exact current status:
+Use fixture/demo calculations only in the Status Preview Lab and label them clearly when necessary.
+
+# 8. STATUS PREVIEW LAB — REQUIRED DELIVERABLE
+
+Create a local-only clickable preview that renders the real redesigned UI component logic with synthetic fixture data.
+
+## Controls
+
+Must allow user to select:
+- all 16 exact statuses;
+- profile/weight examples: 70/30, 60/40, 50/50;
+- Appraiser count: 1, 2, 3, 4;
+- completion mode: complete / incomplete where useful;
+- active simulated appraiser slot 1..N for Appraiser Evaluation preview.
+
+## Exact status list
+
 1. 01 Draft Objective
 2. 02 First Manager Objective Review
 3. 03 Manager Objective Review
@@ -194,61 +261,145 @@ Preview each exact current status:
 15. 15 HR Final Check
 16. 16 Completed
 
-The preview must render the actual redesigned UI component logic against fixture/mock record data, not merely static screenshots, where practical.
+## Preview implementation requirements
 
-## Preview safety
+- local browser only;
+- no credentials;
+- no Kintone calls;
+- use clearly synthetic employee/appraiser names;
+- share/reuse actual UI render functions rather than creating a disconnected screenshot-only mock;
+- provide one easy command such as `npm run ui:preview` and print a localhost URL;
+- use a tiny built-in Node HTTP server if needed; do not add a large framework/dependency solely for preview;
+- preview server is development-only and must never be bundled into Kintone production assets.
 
-- Local browser only.
-- Zero Kintone REST calls.
-- Zero Kintone record writes.
-- Zero workflow actions.
-- Zero file uploads to Kintone.
-- No real employee/workflow data required; use clearly synthetic fixtures.
-- Credentials must not be required.
+# 9. PREFERRED FILE SCOPE
 
-## User visual approval gate
+Reuse existing architecture and avoid file sprawl.
 
-Do not request App794 deployment authorization until:
-1. implementation candidate passes source/tests/build review;
-2. Status Preview Lab is runnable;
-3. user has been given a clickable way to inspect each status;
-4. user has had an opportunity to request UI corrections.
+Expected existing files that may change:
+- `src/ui/employee-part-a-ui.js`
+- `src/styles/mbo-employee.css`
+- `tests/objective-save-validation.test.js` only if relevant
+- `package.json`
+- generated `dist/mbo-employee-app.js`
+- generated `dist/mbo-employee.css`
+- evidence living docs
 
-Expected classification after preview:
-- `UI_PREVIEW_APPROVED` -> prepare controlled App794 deploy manifest;
-- `UI_PREVIEW_MUST_FIX` -> local correction only, no Kintone deploy.
+New files are allowed ONLY when separation of concerns is clear. Preferred maximum new preview-specific files:
+- one preview HTML/JS entry or small preview folder;
+- one tiny local preview server script if required;
+- one focused preview/UI test file if existing test files would become unreasonably large.
 
-# IMPLEMENTATION STRATEGY
+Do not create duplicate production UI renderers.
 
-Minimize unnecessary rewrites.
+# 10. PRESENTATION MAPPING MUST NOT BREAK FROZEN CORE
 
-Preferred approach:
-- extend/refactor existing App794 UI renderer rather than create duplicate production UI stacks;
-- introduce stage-specific render functions/components inside the existing UI architecture;
-- add only the minimum new helper/module needed for scoring UI separation or preview harness when separation of concerns is clear;
-- reuse existing physical fields where semantically safe;
-- do not perform schema proliferation before physical storage review for 1–4 appraisers;
-- first implement LOGICAL 1–4 appraiser rendering and design, then separately review physical storage/schema requirements.
+Do not change App794 Process Management.
+Do not change routing logic.
+Do not change Record_Key logic.
+Do not change native authorization.
+Do not change notification config.
+Do not change App795.
+Do not change App796.
+Do not change App797/798/800.
+Do not perform workflow actions.
+Do not create/update/delete Kintone records.
 
-Important: current physical schema and code include Manager/GM-named scoring fields and current App796 restricts expected appraiser count to 1–2. These are known design-debt/compatibility constraints. Do not pretend 3–4 appraiser persistence already exists. The local UI may preview 1–4, but deployment of true 3–4 persistence requires a reviewed scoring/schema extension.
+Prefer a UI-specific status-to-screen mapper rather than changing frozen validation semantics in `STATUS_TO_STAGE_MAP` if that would alter process validation behavior.
 
-# CURRENT DELIVERABLE — DESIGN + LOCAL CANDIDATE ONLY
+# 11. REQUIRED TESTS
 
-Antigravity should eventually receive one consolidated local implementation sprint after Control Plane finishes the physical-storage/scoring design.
+Add focused tests proving at least:
+- exact 16 statuses resolve to one of the five visual screens;
+- status 01 vs 05 edit/read-only presentation differs correctly;
+- status 06 vs 10 differs correctly;
+- status 11 is Self Evaluation;
+- statuses 12/13/14 use Appraiser Evaluation screen;
+- statuses 15/16 use HR Final/Completed screen;
+- 1/2/3/4 appraiser slot rendering;
+- UI never labels scoring columns `Manager` or `GM`;
+- incomplete appraiser set does not present final result complete;
+- Appraiser completion percentage correct for 1..4;
+- attachment fixture summary renders for Mid-Year/Self and read-only later;
+- long-text fields use wide/resizable presentation classes;
+- XSS escaping remains intact;
+- existing topology display fail-closed tests remain intact;
+- production bundle does not include preview server-only runtime.
 
-Until then:
-- Kintone write/deploy authorization = NONE;
-- do not deploy App794;
-- do not mutate App796;
-- do not change Process Management;
-- do not alter App795 routing;
-- do not create real workflow records;
-- do not run real-user notifications.
+# 12. EXECUTION / TEST BUDGET
 
-# MILESTONE ORDER
+Avoid repeated expensive runs.
 
-`Core Workflow ✅ -> App794 UI/Scoring UX Redesign ⏳ -> Status Preview Lab/User Visual Approval -> Controlled App794 Deploy -> Hoshin Integration Closure -> Dashboard/HR Control Center -> Final UAT -> Go-Live`
+Run exactly:
+1. `npm test` once after implementation is complete.
+2. `npm run ui:build` once after tests.
+3. one local Preview Lab launch/smoke sufficient to prove the page loads and all selectors exist.
 
-# STOP CONDITION
+Do not run Kintone browser UAT in this task.
+Do not upload/deploy.
 
-Do not start Dashboard implementation and do not request Kintone deployment authorization until the Evaluation/Scoring UX candidate and Status Preview Lab have been reviewed.
+# 13. REQUIRED EVIDENCE
+
+Append concise evidence to `project-docs/AI_REVIEW_PACKAGE.md` and reconcile CURRENT_STATE/HANDOFF only as needed.
+
+Required block:
+
+```text
+APP794_EVALUATION_UI_V2_LOCAL_CANDIDATE = COMPLETE / BLOCKED
+STARTING_HEAD = b2d58e5fc723f694d746e74f4e7902ae9d735708
+FIVE_SCREEN_UI_GATE = PASS/FAIL
+STATUS_16_PREVIEW_COVERAGE = 16/16 or actual
+APPRAISER_SLOT_RENDER_CAPACITY = 1-4 / FAIL
+SCORING_ROLE_NEUTRAL_LABEL_GATE = PASS/FAIL
+WORKFLOW_APPROVER_SCORING_APPRAISER_SEPARATION = PASS/FAIL
+PROCESS_PROGRESS_GATE = PASS/FAIL
+APPRAISER_COMPLETION_GATE = PASS/FAIL
+DATA_COMPLETION_GATE = PASS/FAIL
+MIDYEAR_ATTACHMENT_UI_GATE = PASS/FAIL
+SELF_EVAL_ATTACHMENT_UI_GATE = PASS/FAIL
+ATTACHMENT_RUNTIME_INTEGRATION = PENDING_PREDEPLOY_GATE / PROVEN
+WIDE_TEXT_UX_GATE = PASS/FAIL
+PART_A_UI_GATE = PASS/FAIL
+PART_B_UI_GATE = PASS/FAIL
+COCE_EXCLUDED_DISPLAY_GATE = PASS/FAIL
+INCOMPLETE_FINAL_SCORE_FAIL_CLOSED_UI = PASS/FAIL
+APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
+APP796_MUTATION_COUNT = 0
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+FROZEN_PROCESS_CHANGE_COUNT = 0
+ROUTING_CHANGE_COUNT = 0
+RECORD_KEY_CHANGE_COUNT = 0
+NPM_TEST = actual/PASS/FAIL
+UI_BUILD = PASS/FAIL
+CLASSIC_BUNDLE_PARSE = PASS/FAIL
+PREVIEW_LAB_LOAD = PASS/FAIL
+PREVIEW_KINTONE_CALL_COUNT = 0
+NEW_PRODUCTION_UI_STACK_COUNT = 0
+GIT_DIFF_CHECK = PASS/FAIL
+GIT_PUSH_SYNC = PASS/FAIL
+NEXT_ACTION = CHATGPT REVIEW + USER VISUAL PREVIEW; NO DEPLOY YET
+```
+
+# 14. ROLLBACK PLAN
+
+This is Git/local only.
+
+If implementation fails:
+- do not touch Kintone;
+- revert only this candidate's Git/local changes by normal follow-up commit if required;
+- preserve prior deployed App794 revision 39 unchanged.
+
+# 15. STOP CONDITION
+
+After source + tests + build + Preview Lab + evidence are complete:
+- commit;
+- push same branch;
+- STOP.
+
+Do NOT request or perform Kintone deploy.
+Do NOT continue to Dashboard.
+Do NOT silently solve 3rd/4th appraiser persistence in this sprint.
+
+The next gate is ChatGPT source review followed by user visual inspection of the Status Preview Lab.
