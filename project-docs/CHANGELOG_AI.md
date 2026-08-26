@@ -1,6 +1,6 @@
 # AI Changelog
 
-- **2026-08-26**: Executed M10L-D-R11 Controlled App794 R10 Hoshin Regression Deploy under explicit single-use user authorization ("อนุมัติ controlled App794 R10 Hoshin regression deploy"): Created durable pre-write backup (`backups/m10l-d-r11-app794-r10-hoshin-deploy/2026-08-26T01-54-31-777Z`), uploaded and deployed reviewed R10 JS candidate `983528a5` and candidate CSS `3604d2b2` to App 794 (Revision 33), verified live JS & CSS SHA256 matches 100%, verified live read-back for 0118 (`PROF_STAFF_CHIEF`, 70/30, `M1_G1`). 0 record/schema/ACL writes executed.
+- **2026-08-26**: Executed M10L-D-R12A Read-Only Workflow Coverage Discovery (0 Kintone writes executed): Completed read-only GET discovery of live App 794 Process Management (16 states, 27 actions) and App 795 (17 active routing records). Confirmed all 17 active routing records have derived topology `M1_G1` and match confirmed baseline. Produced complete App 794 Process Matrix, App 795 Route Coverage Matrix, Coverage Summary, Proposed UAT Cases (`UAT-WF-01...03`), and final evidence block.
 
 - **2026-08-23**: Initialized repository, foundation discovery, live sandbox verification on Apps 794 & 795.
 - **2026-08-23**: Implemented Employee Part A UI, repaired desktop host resolver to `getSpaceElement('SPACE_HEADER')`.

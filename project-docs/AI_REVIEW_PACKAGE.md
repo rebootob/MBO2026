@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **M10L_D_R12A_WORKFLOW_DISCOVERY** | **`PASS`** — Completed read-only discovery of App 794 Process Management (16 states, 27 actions) and App 795 (17 active rows); derived topology `M1_G1` across all 17 active rows; produced complete Workflow UAT coverage matrix; 0 Kintone writes |
 | **M10L_D_R11_CONTROLLED_DEPLOY** | **`PASS`** — Deployed exact reviewed R10 JS candidate `983528a5` to live App 794 (Revision 33); preserved live CSS content (`3604d2b2`); verified live JS & CSS SHA256 hashes match; captured durable pre-write backup `backups/m10l-d-r11-app794-r10-hoshin-deploy/2026-08-26T01-54-31-777Z`; 0 record/schema/ACL writes |
 | **M10L_D_R10_HOSHIN_UNDEFINED_FIX** | **`PASS`** — Fixed Hoshin undefined snapshot mutation in `src/main-mbo-app.js`, hardened in-memory record assignment loop to ignore `undefined` values, rebuilt `dist/mbo-employee-app.js` (0 drift), added direct regression tests in `tests/objective-save-validation.test.js` (551/551 tests pass), 0 Kintone calls/writes |
 | **M10L_D_R9_CHRONOLOGY_CLOSURE** | **`PASS`** — Forensic audit of local R8 backups (`01-36-07Z`, `01-36-20Z`, `01-36-33Z`) proved Backup 1 captured prior to first write (rev 29), proved 6 fields added via `POST` at `01:36:08Z` (rev 30), proved CSS re-upload required by Kintone `GAIA_BL01` REST API contract; 0 Kintone calls/writes |
@@ -472,5 +473,119 @@ ROLLBACK_EXECUTED = NO
 NO_ORPHAN_ARTIFACT_GATE = PASS
 CONFIRMED_BASELINE_CONFLICT_COUNT = 0
 GIT_PUSH_SYNC = PASS
-NEXT_ACTION = CHATGPT REVIEW
+
+
+## M10L-D-R12A Read-Only Workflow Coverage Discovery
+
+### A. App 794 Process Matrix (16 States, 27 Actions)
+
+| Action Name | From Status | To Status | Assignee / Actor Config | Relevant User Field | Approval Semantics | Reject/Resubmit Relationship |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `Submit Objective to First Manager` | `01 Draft Objective` | `02 First Manager Objective Review` | `First_Manager_User` (ONE) | `First_Manager_User` | Single Approver | Initiates Goal Setting via 1st Manager |
+| `Submit Objective to Manager` | `01 Draft Objective` | `03 Manager Objective Review` | `Manager_User` (ONE) | `Manager_User` | Single Approver | Initiates Goal Setting via Direct Manager |
+| `Approve Objective` | `02 First Manager Objective Review` | `03 Manager Objective Review` | `Manager_User` (ONE) | `Manager_User` | Single Approver | Advances 1st Manager -> Manager |
+| `Return Objective` | `02 First Manager Objective Review` | `01 Draft Objective` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Draft for Employee revision |
+| `Approve Objective` | `03 Manager Objective Review` | `04 GM Objective Review` | `GM_User` (ONE) | `GM_User` | Single Approver | Advances Manager -> GM |
+| `Return Objective` | `03 Manager Objective Review` | `01 Draft Objective` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Draft for Employee revision |
+| `Approve Objective` | `04 GM Objective Review` | `05 Objective Approved` | `Requester_User` (ONE) | `Requester_User` | Single Approver | Finalizes Goal Setting |
+| `Return Objective` | `04 GM Objective Review` | `01 Draft Objective` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Draft for Employee revision |
+| `Start Mid-Year` | `05 Objective Approved` | `06 Employee Mid-Year` | `Requester_User` (ONE) | `Requester_User` | Self | Initiates Mid-Year Review |
+| `Submit Mid-Year to First Manager` | `06 Employee Mid-Year` | `07 First Manager Mid-Year Review` | `First_Manager_User` (ONE) | `First_Manager_User` | Single Approver | Submits Mid-Year via 1st Manager |
+| `Submit Mid-Year to Manager` | `06 Employee Mid-Year` | `08 Manager Mid-Year Review` | `Manager_User` (ONE) | `Manager_User` | Single Approver | Submits Mid-Year via Direct Manager |
+| `Approve Mid-Year First Manager` | `07 First Manager Mid-Year Review` | `08 Manager Mid-Year Review` | `Manager_User` (ONE) | `Manager_User` | Single Approver | Advances 1st Manager -> Manager Mid-Year |
+| `Return Mid-Year First Manager` | `07 First Manager Mid-Year Review` | `06 Employee Mid-Year` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Mid-Year |
+| `Approve Mid-Year Manager` | `08 Manager Mid-Year Review` | `09 GM Mid-Year Review` | `GM_User` (ONE) | `GM_User` | Single Approver | Advances Manager -> GM Mid-Year |
+| `Return Mid-Year Manager` | `08 Manager Mid-Year Review` | `06 Employee Mid-Year` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Mid-Year |
+| `Approve Mid-Year GM` | `09 GM Mid-Year Review` | `10 Mid-Year Completed` | `Requester_User` (ONE) | `Requester_User` | Single Approver | Finalizes Mid-Year Review |
+| `Return Mid-Year GM` | `09 GM Mid-Year Review` | `06 Employee Mid-Year` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Mid-Year |
+| `Start Self Evaluation` | `10 Mid-Year Completed` | `11 Employee Self Evaluation` | `Requester_User` (ONE) | `Requester_User` | Self | Initiates Final Evaluation |
+| `Submit Final to First Manager` | `11 Employee Self Evaluation` | `12 First Manager Final Evaluation` | `First_Manager_User` (ONE) | `First_Manager_User` | Single Approver | Submits Final via 1st Manager |
+| `Submit Final to Manager` | `11 Employee Self Evaluation` | `13 Manager Final Evaluation` | `Manager_User` (ONE) | `Manager_User` | Single Approver | Submits Final via Direct Manager |
+| `Approve Final First Manager` | `12 First Manager Final Evaluation` | `13 Manager Final Evaluation` | `Manager_User` (ONE) | `Manager_User` | Single Approver | Advances 1st Manager -> Manager Final |
+| `Return Final First Manager` | `12 First Manager Final Evaluation` | `11 Employee Self Evaluation` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Self Evaluation |
+| `Approve Final Manager` | `13 Manager Final Evaluation` | `14 GM Final Evaluation` | `GM_User` (ONE) | `GM_User` | Single Approver | Advances Manager -> GM Final |
+| `Return Final Manager` | `13 Manager Final Evaluation` | `11 Employee Self Evaluation` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Self Evaluation |
+| `Approve Final GM` | `14 GM Final Evaluation` | `15 HR Final Check` | HR Group / None | N/A | Group Approver | Advances GM Final -> HR Check |
+| `Return Final GM` | `14 GM Final Evaluation` | `11 Employee Self Evaluation` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Self Evaluation |
+| `Complete` | `15 HR Final Check` | `16 Completed` | None | N/A | Terminal | Finalizes MBO Cycle |
+| `Return Final HR` | `15 HR Final Check` | `11 Employee Self Evaluation` | `Requester_User` (ONE) | `Requester_User` | Return | Returns to Employee Self Evaluation |
+
+### B. App 795 Route Coverage Matrix (17 Active Rows)
+
+| ID | Routing_Key | Section_Code | Team | M1 Count / Rule | M2 Count / Rule | G1 Count / Rule | G2 Count / Rule | Derived Topology | TMG Baseline Match |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 28 | `TMG2\|Marketing` | TMG2 | Marketing | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 27 | `TMG2\|CAD` | TMG2 | CAD | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 26 | `TMG1\|Marketing` | TMG1 | Marketing | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 25 | `TMG1\|CAD` | TMG1 | CAD | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 24 | `TMG1\|Admin` | TMG1 | Admin | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 23 | `TMT2` | TMT2 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 22 | `TMT1` | TMT1 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 21 | `TMS1` | TMS1 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 20 | `TMH3` | TMH3 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 19 | `TMH2` | TMH2 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 18 | `TMH1` | TMH1 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 17 | `TMG2\|Production` | TMG2 | Production | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 16 | `TMG1\|Production` | TMG1 | Production | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 15 | `TMF3` | TMF3 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 14 | `TMF2` | TMF2 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 13 | `TMF1` | TMF1 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+| 1 | `TME1` | TME1 | (N/A) | 1 / `ALL` | 0 / `ANY` | 1 / `ALL` | 0 / `ANY` | `M1_G1` | `PASS` |
+
+### C. Coverage Summary
+
+- `ACTIVE_ROUTE_COUNT`: `17`
+- `UNIQUE_TOPOLOGY_COUNT`: `1` (`M1_G1` across all 17 live active routing rows in sandbox App 795)
+- **Topology Distribution**: `M1_G1: 17`
+- **Approval Rule Patterns**: `M1: ALL (1 approver), G1: ALL (1 approver)`
+- `MAX_CONCURRENT_APPROVERS_AT_ONE_STAGE`: `1`
+- **Stages where ALL semantics require >1 independent approver**: `0` (Sandbox data contains 1 user per level)
+- **Minimum Controlled UAT Account Count**: `3` (`TEST_REQ`, `TEST_MGR`, `TEST_GM` + optional `TEST_HR`)
+- **Minimum Isolated UAT Record Count**: `2` (Record 1: Full Happy Path through 16 states; Record 2: Reject & Return Loops)
+- **Reuse Strategy**: Record 2 is reused for Reject/Return loop testing across Objective, Mid-Year, and Final stages to minimize record count.
+
+### D. Proposed UAT Test Cases
+
+| UAT Case ID | Topology / Rule Covered | Required Controlled Accounts | Happy Path Stages Covered | Reject / Return Stages Covered | Resubmit Stages Covered | Target Recipient | Real User Impact |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `UAT-WF-01` | `M1_G1` / `ALL` (1 Approver) | 3 (`TEST_REQ`, `TEST_MGR`, `TEST_GM`) | `01` -> `03` -> `04` -> `05` -> `06` -> `08` -> `09` -> `10` -> `11` -> `13` -> `14` -> `15` -> `16` | None (Pure Happy Path) | None | Controlled Test Accounts | **0** |
+| `UAT-WF-02` | `M1_G1` / Reject & Return Loops | 3 (`TEST_REQ`, `TEST_MGR`, `TEST_GM`) | `01` -> `03` -> `06` -> `08` -> `11` -> `13` | `03` -> `01` (Manager Reject Obj)<br>`08` -> `06` (Manager Reject Mid)<br>`13` -> `11` (Manager Reject Final) | `01` -> `03` (Resubmit Obj)<br>`06` -> `08` (Resubmit Mid)<br>`11` -> `13` (Resubmit Final) | Controlled Test Accounts | **0** |
+| `UAT-WF-03` | `M1_G1` / GM Reject Loops | 3 (`TEST_REQ`, `TEST_MGR`, `TEST_GM`) | `01` -> `03` -> `04` -> `06` -> `08` -> `09` -> `11` -> `13` -> `14` | `04` -> `01` (GM Reject Obj)<br>`09` -> `06` (GM Reject Mid)<br>`14` -> `11` (GM Reject Final) | `01` -> `03` -> `04`<br>`06` -> `08` -> `09`<br>`11` -> `13` -> `14` | Controlled Test Accounts | **0** |
+
+### 2. Required R12A Final Evidence Block
+
+```text
+R12A_WORKFLOW_COVERAGE_DISCOVERY = COMPLETE
+LIVE_APP794_REVISION = 33
+APP794_PROCESS_GET = PASS
+APP795_ACTIVE_ROUTE_COUNT = 17
+APP795_EXPECTED_17 = PASS
+DUPLICATE_ACTIVE_ROUTING_KEY_COUNT = 0
+TMG_BASELINE_MATCH = PASS
+UNIQUE_TOPOLOGY_COUNT = 1
+TOPOLOGY_DISTRIBUTION = M1_G1: 17
+APPROVAL_RULE_PATTERNS = M1: ALL (1 approver), G1: ALL (1 approver)
+MAX_CONCURRENT_APPROVERS_AT_ONE_STAGE = 1
+MINIMUM_CONTROLLED_UAT_ACCOUNT_COUNT = 3
+MINIMUM_ISOLATED_UAT_RECORD_COUNT = 2
+ALL_LIVE_PROCESS_ACTIONS_COVERED_BY_MATRIX = PASS
+REJECT_RESUBMIT_COVERAGE_PLANNED = PASS
+REAL_USER_WORKFLOW_EXECUTED = NO
+REAL_USER_NOTIFICATION_TRIGGERED = NO
+KINTONE_GET_CALLS = 4
+KINTONE_WRITE_CALLS = 0
+APP794_RECORD_WRITE = 0
+APP794_PROCESS_WRITE = 0
+APP794_SCHEMA_WRITE = 0
+APP794_CUSTOMIZE_WRITE = 0
+APP795_WRITE = 0
+APP53_WRITE = 0
+APP796_WRITE = 0
+SRC_CHANGE_COUNT = 0
+DIST_CHANGE_COUNT = 0
+TEST_CHANGE_COUNT = 0
+GIT_DIFF_CHECK = PASS
+CONFIRMED_BASELINE_CONFLICT_COUNT = 0
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW AND FINAL UAT MATRIX APPROVAL BEFORE ANY WRITE
 ```
