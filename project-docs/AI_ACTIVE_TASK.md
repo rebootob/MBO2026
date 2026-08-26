@@ -1,337 +1,274 @@
-# AI ACTIVE TASK — APP794 EVALUATION UI V2 R5 ROUTE-AWARE FIVE-STAGE UX — LOCAL ONLY
+# AI ACTIVE TASK — APP794 EVALUATION UI V2 R6 LIFECYCLE APPRAISER ROUTE + BILINGUAL UX — LOCAL ONLY
 
 > Control Plane: ChatGPT / Project Lead / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Current reviewed branch HEAD before this task: `a7516bd3cc14f4aaa2b605b88e00e9597c475d6c`
+> Reviewed R5 implementation HEAD: `e1a8b49d02c2d9484a4fa97146c2faec1ca80e4e`
+> Canonical clarification commit: `8f5f317205b910288857931a8d873d45541abee8`
 > Kintone write/deploy authorization: **NONE**
 
-## 1. USER VISUAL REVIEW FINDINGS — CONFIRMED REQUIREMENTS
+## 1. CURRENT GATE
 
-The user reviewed the working local Status Preview Lab and identified six design corrections that must be incorporated before visual approval:
+R5 is **NOT user-visually approved**. The user clarified that the R5 actor model still contains a wrong business assumption.
 
-1. Physical Workflow status and the five business stages must not be confused.
-2. `05 Objective Approved` is the completed/waiting boundary after Objective approval; `06 Employee Mid-Year` is the next requester-input state when the Mid-Year phase opens. Likewise `10 Mid-Year Completed` is the completed/waiting boundary before `11 Employee Self Evaluation` opens.
-3. Desktop data-entry fields must use the intended **horizontal row layout**, not a vertically stacked card layout. Long-text fields must remain wide and comfortable.
-4. Not every employee/position traverses all 16 physical statuses. UI/progress must be **Routing_Topology aware**.
-5. HR must be able to define **Start / End** dates for each of the five macro stages.
-6. UI must clearly distinguish when the current work is owned by the Requester/Employee versus Workflow Approver versus Scoring Appraiser versus HR versus a waiting/no-action state.
+Critical path:
+`Evaluation UI V2 R5 -> R6 Lifecycle Appraiser Route + Bilingual UX -> ChatGPT Review -> User Visual Preview -> Scoring/Route Persistence Closure -> Dashboard/Hoshin -> Final UAT -> Go-Live`
 
-This task is LOCAL PREVIEW/CANDIDATE work only. Do not deploy or mutate Kintone.
+LOCAL ONLY. Do not deploy or mutate Kintone.
 
-## 2. CANONICAL WORKFLOW FACTS TO PRESERVE
+## 2. USER-CONFIRMED BUSINESS CORRECTION
 
-Do not change the frozen App794 Process configuration in this task.
+### 2.1 Appraisers belong to the whole MBO journey, not only Stage 4
 
-### Current M1_G1 active path
+The configured appraiser sequence is attached to the MBO record for the entire annual lifecycle:
 
-Current 17 live App795 routes are all `M1_G1`, therefore current normal path is:
+`Objectives -> Mid-Year -> Self Evaluation -> Appraiser Evaluation -> HR Final / Completed`
 
-`01 -> 03 -> 04 -> 05 -> 06 -> 08 -> 09 -> 10 -> 11 -> 13 -> 14 -> 15 -> 16`
+Do **not** create the impression that Appraiser 1/2/3/4 only appear at Final Evaluation.
 
-The route does **not** use:
-- `02 First Manager Objective Review`
-- `07 First Manager Mid-Year Review`
-- `12 First Manager Final Evaluation`
+The same sequence remains visible/contextual throughout all five stages. Their permitted action varies by stage:
+- Objectives: review/approval sequence after requester submits.
+- Mid-Year: review/approval sequence after requester submits.
+- Self Evaluation: requester enters self result; same appraiser route remains visible as the next evaluation chain.
+- Appraiser Evaluation: the same appraisers perform Part A/Part B scoring/evaluation according to configured rules.
+- HR Final/Completed: same evaluation route remains visible read-only as audit/context; HR Final remains a separate HR action.
 
-### Generic M1_M2_G1 path
+Do not invent a different appraiser set for each stage.
 
-When compatible M2 routing is active in future, the path is:
+### 2.2 Number of appraisers is not fixed at 2
 
-`01 -> 02 -> 03 -> 04 -> 05 -> 06 -> 07 -> 08 -> 09 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16`
+Logical capacity remains **1..4 configured appraiser slots**.
 
-### G2
+Do not assume every employee has exactly 2.
+Examples the UI/architecture must be able to represent without changing slot labels:
+- 1 appraiser only;
+- 2 appraisers;
+- 3 appraisers;
+- 4 appraisers.
 
-`M1_G1_G2` and `M1_M2_G1_G2` remain unsupported in current V1 and must render fail-closed warning rather than a fake normal path.
+The organizational position of a person is NOT the appraiser slot name. A single configured evaluator could organizationally be GM, VP, President, or another approved evaluator, but the UI label is still `1st Appraiser` / `ผู้ประเมินลำดับที่ 1`.
 
-## 3. FIVE MACRO STAGES — BUSINESS SEMANTICS
+Current live routing facts remain unchanged; this task does not claim App795 physical generic 1..4 persistence is already complete.
 
-The five top-level tabs remain:
+### 2.3 Workflow technical names are compatibility details, not user-facing role labels
 
-1. `Objectives`
-2. `Mid-Year`
-3. `Self Evaluation`
-4. `Appraiser Evaluation`
-5. `HR Final / Completed`
+Current source/physical fields/statuses include legacy names such as:
+- `First_Manager_User`
+- `Manager_User`
+- `GM_User`
+- `03 Manager Objective Review`
+- `04 GM Objective Review`
 
-They are business stages, not a one-to-one representation of physical Process statuses.
+Do NOT rename Kintone Process or schema in this local task.
 
-### Stage 1 — Objectives
-Physical statuses: `01/02/03/04/05` where route applicable.
+Instead add a UI adapter that resolves the applicable sequence into generic ordinal slots.
 
-- `01` = Requester entering Objectives.
-- `02/03/04` = approval/review states as applicable to route.
-- `05 Objective Approved` = Stage 1 COMPLETE and **waiting for Mid-Year phase window**.
-- At status05, do not portray Mid-Year as already active merely because it is the next status.
+Compatibility expectation for currently supported technical topologies:
+- `M1_G1`: populated technical route sequence is rendered as `1st Appraiser`, `2nd Appraiser`.
+- `M1_M2_G1`: populated technical route sequence is rendered as `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`.
+- Preview must also support generic fixture sequences of 1..4 people without needing Manager/GM titles.
 
-### Stage 2 — Mid-Year
-Physical statuses: `06/07/08/09/10` where route applicable.
+Do not expose the technical field name as business meaning.
 
-- `06` = Requester enters Mid-Year data.
-- `07/08/09` = review/approval states as applicable to route.
-- `10 Mid-Year Completed` = Stage 2 COMPLETE and **waiting for Self Evaluation phase window**.
+## 3. APPROVAL ROUTE SUMMARY — MUST BECOME ROLE-NEUTRAL
 
-### Stage 3 — Self Evaluation
-Physical status: `11`.
+Current `_renderRouteContext()` is wrong for user-facing business UI because it displays:
+- `1st Manager`
+- `Manager`
+- `GM`
 
-- Requester enters Year-End/Self Evaluation data.
-- When submitted, the process proceeds into the Appraiser Evaluation stage.
+Replace the main heading and role labels.
 
-### Stage 4 — Appraiser Evaluation
-Physical statuses: `12/13/14` where route applicable.
+Preferred title:
+`🔗 เส้นทางผู้ประเมินและอนุมัติ / Evaluation & Approval Route`
 
-- Keep **Workflow Approver** and **Scoring Appraiser** visually and conceptually separate.
-- Scoring terminology remains `1st Appraiser` ... `4th Appraiser`; do not label scoring columns Manager/GM.
+Each route member must be displayed as ordinal slot only:
+- `ผู้ประเมินลำดับที่ 1 / 1st Appraiser`
+- `ผู้ประเมินลำดับที่ 2 / 2nd Appraiser`
+- `ผู้ประเมินลำดับที่ 3 / 3rd Appraiser`
+- `ผู้ประเมินลำดับที่ 4 / 4th Appraiser`
 
-### Stage 5 — HR Final / Completed
-Physical statuses: `15/16`.
+Display actual resolved person's name/account beneath the slot.
 
-- `15` = HR Final Check.
-- `16` = Completed / final read-only.
+HR is separate and should display:
+`ตรวจสอบขั้นสุดท้ายโดย HR / HR Final Check`
 
-## 4. ROUTE-AWARE PROGRESS — MUST REPLACE STATIC 16-STATUS PERCENT MODEL
+Do not display `Manager`, `GM`, `VP`, `President`, or other organizational title as the route slot heading. If organizational title is later shown as optional metadata, it must be secondary context only and never determine the route label.
 
-Current `getProcessProgress()` uses a fixed 16-status 5%..100% map. Replace this with a route-aware helper such as:
+## 4. SAME APPRAISER ROUTE MUST APPEAR THROUGH ALL FIVE MACRO STAGES
 
-`getApplicableWorkflowPath(topology)`
+Add a compact persistent route/progress component usable at every stage.
 
-Requirements:
-- `M1_G1` returns only the 13 applicable statuses.
-- `M1_M2_G1` returns all applicable M2 statuses.
-- G2/invalid/blank topology = no normal progress path; show fail-closed configuration warning.
-- A status not applicable to the resolved route must be treated as configuration inconsistency, not silently assigned a normal percentage.
-- Process percentage should be based on position within the applicable path, not the full 16-state catalog.
-- The five macro-stage tabs should use `Completed / Active / Upcoming-Locked` visual state independently from physical status count.
+Example for a 3-person route:
 
-Preview Lab may still expose all 16 statuses for forensic testing, but it must clearly mark a selected status as `NOT APPLICABLE TO SELECTED ROUTE` when appropriate.
+`Requester -> 1st Appraiser -> 2nd Appraiser -> 3rd Appraiser -> HR Final`
 
-## 5. HR PHASE CALENDAR — UX CONTRACT NOW, PERSISTENCE LATER
+For each stage, visually indicate appraiser state such as:
+- `Waiting / รอดำเนินการ`
+- `Current / กำลังดำเนินการ`
+- `Reviewed / ตรวจสอบแล้ว`
+- `Scored / ให้คะแนนแล้ว`
+- `Completed / เสร็จแล้ว`
+
+Do not falsely mark scoring complete during Objectives/Mid-Year. Stage-specific action state must be truthful.
+
+At requester-owned states, show the route but highlight Requester as current actor.
+At appraiser-owned states, highlight the correct ordinal appraiser slot derived from route order, not from organizational title text.
+At waiting boundaries 05/10, show the full route read-only and next HR calendar opening date.
+At HR Final, route is read-only and HR is highlighted.
+
+## 5. USER-FACING STATUS GUIDANCE MUST STOP SAYING MANAGER/GM
 
-User-confirmed requirement: HR must be able to define Start and End for **each of the five macro stages**.
-
-For this local sprint implement the UI contract and deterministic preview fixture only. Do **not** create Kintone fields/apps yet.
-
-Preview model per Fiscal Year:
-
-```js
-{
-  objectives: { start, end },
-  midyear: { start, end },
-  selfEvaluation: { start, end },
-  appraiserEvaluation: { start, end },
-  hrFinal: { start, end }
-}
-```
-
-Required presentation:
-- each macro-stage tab shows its date range in compact form;
-- stage state can be `Upcoming`, `Open`, `Closed`, or `Completed`;
-- status05 should show `Objective Approved — Waiting for Mid-Year window` with Mid-Year start date;
-- status10 should show `Mid-Year Completed — Waiting for Self Evaluation window` with Self start date;
-- before Start: requester/appraiser entry controls for that stage are visually locked;
-- after End: show `Closed / Overdue` guidance, not fake active state;
-- preview must use a deterministic `previewNow` control/fixture so visual tests do not depend on machine date.
-
-Future physical storage/control should preferentially be integrated through the existing HR Control Center/App800 after a separate source/schema review. Do **not** create a new calendar app in this task.
-
-## 6. ACTOR-AWARE PRESENTATION
-
-Add a prominent `Current Action / ผู้รับผิดชอบขั้นตอนนี้` banner/card.
-
-### Requester / Employee-owned states
-At least `01`, `06`, `11`:
-- banner: `Action Required — Employee / Requester`;
-- current-stage input fields editable only when the phase window is Open;
-- approval/appraiser/HR sections read-only or not actionable;
-- route summary remains visible as context.
-
-### Workflow Approver-owned states
-Applicable `02/03/04`, `07/08/09`, and workflow approval portions of `12/13/14`:
-- banner: `Waiting for / Action Required by Workflow Approver`;
-- requester-entered data read-only;
-- show approval context clearly;
-- do not rename the workflow approver as a scoring appraiser.
-
-### Scoring Appraiser
-During Stage 4:
-- separate `Scoring Action` block from `Workflow Approval` block;
-- only the selected/configured Appraiser slot should appear editable in Preview simulation;
-- other Appraiser slots read-only;
-- slots 3/4 remain explicitly logical/preview-only until persistence closure.
-
-### Waiting boundary states
-`05` and `10`:
-- banner: `No action required now / Waiting for next HR phase window`;
-- all phase input fields read-only;
-- next phase Start date visible.
-
-### HR
-`15`:
-- banner: `Action Required — HR Final Check`;
-- final review/read-only scoring context;
-- no requester editing.
-
-### Completed
-`16`:
-- banner: `Completed — No action required`;
-- fully read-only.
-
-Preview Lab should include an actor simulation selector only for visual testing if needed. Production actor binding remains a later runtime/security gate and must not be falsely claimed complete here.
-
-## 7. DESKTOP HORIZONTAL LAYOUT — RESTORE INTENDED FORM DESIGN
-
-The user explicitly rejected the current vertically stacked field cards.
-
-### General desktop rule
-- one Objective = one horizontal row/card;
-- long-text fields remain wide with multi-line textareas;
-- use CSS grid/table-like layout with sensible minimum widths;
-- horizontal scrolling is acceptable when required for 3–4 Appraisers;
-- do not squeeze long text into tiny cells;
-- desktop must not stack Objective/Action Plan/etc. vertically by default.
-
-### Objectives suggested row
-
-`# | Objective / Target | Action Plan | Additional Agreement | Weight | Difficulty`
-
-Suggested relative emphasis:
-- Objective: large
-- Action Plan: large
-- Additional Agreement: medium
-- Weight: compact
-- Difficulty: compact
-
-Textarea height: approximately 4–6 lines minimum.
-
-### Mid-Year suggested row
-
-`Objective (read-only) | Progress % | Periodical Review | Mid-Year Result | Issue/Risk | Next Action | Attachment`
-
-Long text fields must be wide. Attachment remains associated with the same Objective row.
-
-### Self Evaluation suggested row
-
-`Objective (read-only) | Actual Result | Self Achievement | Self Comment | Attachment`
-
-### Appraiser Part A
-Use a horizontal evaluation matrix with a sticky/fixed Objective context column where practical:
-
-`Objective | Weight | Difficulty | Self | Appraiser 1 | Appraiser 2 | Appraiser 3 | Appraiser 4 | Result Context`
-
-Only render the number of Appraiser columns selected/configured.
-
-### Part B
-
-`Competency | Appraiser 1 | Appraiser 2 | Appraiser 3 | Appraiser 4 | Result Context`
-
-Per-appraiser comment may be expandable or directly below the rating within that appraiser cell, but must remain understandable.
-
-### HR Final
-Read-only horizontal summary/matrix; do not revert to a long vertical duplicate of the appraiser screen.
-
-Mobile responsiveness may stack later, but desktop visual approval requires horizontal layout first.
-
-## 8. PREVIEW LAB CHANGES
-
-Keep the working ES-module bootstrap from `a7516bd3...`.
-
-Add/adjust preview controls to make the new design inspectable:
-- Workflow Status 01..16
-- Routing Topology
-- Profile Ratio
-- Appraiser count 1..4
-- Active Appraiser slot
-- Completion mode Complete/Incomplete
-- Phase Calendar / deterministic `previewNow`
-- optional Actor Simulation if required to inspect requester/approver/appraiser/HR appearances
-
-Important:
-- selecting M1_G1 + status02/07/12 must visibly show `Not applicable to selected route` rather than normal workflow progress;
-- M1_G1 normal path must skip 02/07/12 in route display/progress;
-- M1_M2_G1 may include them;
-- unsupported G2 remains warning/fail-closed.
-
-## 9. WHAT NOT TO DO
-
-- Do not modify App794 Process Management.
-- Do not alter App795 routing data.
-- Do not create calendar schema/Kintone records.
-- Do not deploy/upload App794.
-- Do not claim production Appraiser 3/4 persistence.
-- Do not conflate Workflow Approver with Scoring Appraiser.
-- Do not use the 16-state catalog itself as an employee's route.
-- Do not run real-user workflow/notification tests.
-
-## 10. FILE / SCOPE BOUNDARY
-
-Prefer existing files only:
-- `src/ui/employee-part-a-ui.js`
-- `src/styles/employee-part-a.css` or existing relevant stylesheet
-- `preview/index.html`
-- `tests/objective-save-validation.test.js` or one existing relevant UI test file
-- `dist/mbo-employee-app.js` / CSS only as generated output when production source changes
-- living evidence docs
-
-Do not create another UI framework or duplicate renderer.
-
-## 11. REQUIRED TESTS / LOCAL VERIFICATION
-
-Add focused coverage for:
-
-1. M1_G1 applicable path excludes 02/07/12.
-2. M1_M2_G1 path includes 02/07/12.
-3. M1_G1 + status02/07/12 returns route/status mismatch warning.
-4. invalid/G2 topology remains fail-closed/unsupported.
-5. status05 macro view = Stage1 Completed + Stage2 Upcoming/Locked/Waiting with Mid-Year Start shown.
-6. status10 macro view = Stage2 Completed + Stage3 Upcoming/Locked/Waiting with Self Start shown.
-7. phase date badges show correct deterministic Upcoming/Open/Closed state.
-8. requester state renders requester action banner.
-9. approver state renders workflow approver banner and requester input read-only.
-10. appraiser stage visually separates Workflow Approval vs Scoring Action.
-11. status15 HR banner; status16 Completed banner.
-12. Objectives desktop renderer uses horizontal row/grid structure, not vertical stacked field sequence.
-13. Mid-Year and Self desktop renderers are horizontal row/grid.
-14. Part A/Part B appraiser matrices render 1..4 dynamic appraiser columns.
-15. existing Difficulty blank-state fix remains passing.
-16. existing Appraiser completeness/fail-closed tests remain passing.
-17. preview has zero Kintone calls.
+Current `getStatusGuidance()` contains phrases such as:
+- `ส่งให้ Manager`
+- `Manager review`
+- `GM review`
+- `First Manager`
+
+Replace user-facing guidance with route-aware ordinal language.
+
+Examples:
+- requester submit: `ส่งให้ผู้ประเมินลำดับถัดไป / Submit to next Appraiser`
+- first review step: `อยู่ระหว่างการพิจารณาโดยผู้ประเมินลำดับที่ 1 / Under review by 1st Appraiser`
+- second review step: `... 2nd Appraiser`
+- third review step: `... 3rd Appraiser`
+
+The raw Kintone technical status may be shown only as small diagnostic metadata in Preview/technical mode if useful; do not make `Manager Objective Review` the main business-facing status title.
+
+## 6. BILINGUAL THAI + ENGLISH IS MANDATORY
+
+This system is shared by Thai and Japanese staff. User-facing UI must consistently provide **Thai + English**.
+
+Default presentation rule:
+- Thai first where practical;
+- English immediately adjacent or directly below;
+- do not create Thai-only navigation/actions;
+- Japanese translation is not required in this task.
+
+### Required five-stage navigation labels
+
+1. `เป้าหมาย / Objectives`
+2. `ทบทวนกลางปี / Mid-Year`
+3. `ประเมินตนเอง / Self Evaluation`
+4. `การประเมินโดยผู้ประเมิน / Appraiser Evaluation`
+5. `HR ตรวจสอบขั้นสุดท้าย / เสร็จสิ้น / HR Final / Completed`
+
+Also make bilingual:
+- phase state badges: `กำลังเปิด / Open`, `ยังไม่เปิด / Upcoming`, `ปิดแล้ว / Closed`, `เสร็จแล้ว / Completed`;
+- actor banners;
+- route summary labels;
+- status guidance;
+- completion/result badges;
+- preview selector labels where user-facing;
+- important buttons/help text within the custom UI.
+
+Technical identifiers such as `M1_G1` may remain technical English codes.
+
+## 7. PRESERVE ACCEPTED R5 REQUIREMENTS
+
+Do not regress:
+- five macro stages separate from physical statuses;
+- route-aware progress;
+- M1_G1 excludes 02/07/12;
+- M1_M2_G1 includes 02/07/12;
+- G2/invalid fail-closed;
+- status05 waiting for Mid-Year HR window;
+- status10 waiting for Self Evaluation HR window;
+- HR five-stage Start/End preview calendar contract;
+- deterministic preview date;
+- desktop horizontal row/grid layout;
+- wide long-text fields;
+- Mid-Year and Self attachments;
+- Difficulty blank required state;
+- Part A/Part B appraiser matrices;
+- logical 1..4 appraiser capacity;
+- incomplete final results fail-closed.
+
+## 8. IMPORTANT ARCHITECTURE BOUNDARY
+
+Do not conflate these layers:
+
+1. **Business appraiser/evaluator sequence** — user-facing ordinal 1..4, lifecycle-wide.
+2. **Kintone workflow authorization/process actor** — technical/native security boundary.
+3. **Legacy physical field names** — compatibility storage currently named Manager/GM.
+
+The same person may participate in more than one layer, but the UI label must not infer organizational position from technical field/status names.
+
+Do not claim that production generic 1..4 routing/persistence is complete. That remains a later reviewed runtime/persistence gate.
+
+## 9. PREVIEW LAB REQUIREMENTS
+
+Keep local Preview Lab and add enough fixture control to inspect:
+- route with 1 appraiser;
+- route with 2 appraisers;
+- route with 3 appraisers;
+- route with 4 appraisers;
+- same appraiser sequence visible at Objectives, Mid-Year, Self Evaluation, Appraiser Evaluation, HR Final;
+- current actor advances correctly through requester/appraiser/HR examples;
+- 70/30, 60/40, 50/50 still work;
+- complete/incomplete still work;
+- bilingual five-stage menu visible.
+
+Preview fixture names may include examples such as a GM/VP/President, but route headings must remain Appraiser 1/2/3/4.
+
+No Kintone calls.
+
+## 10. FOCUSED TESTS
+
+Add/adjust coverage proving at minimum:
+
+1. route summary contains `1st Appraiser` / bilingual equivalent and no role heading `Manager`, `GM`, `1st Manager`;
+2. M1_G1 existing physical users map to ordinal Appraiser 1/2 in user UI;
+3. M1_M2_G1 maps to ordinal Appraiser 1/2/3;
+4. preview generic 1-person route renders exactly one Appraiser slot;
+5. preview 3-person and 4-person routes render exact slot count;
+6. the same resolved appraiser sequence is visible across all five macro stages;
+7. Objective/Mid-Year guidance uses `next Appraiser`, not `Manager/GM` business wording;
+8. actor banner identifies the applicable ordinal appraiser rather than Manager/GM;
+9. five macro-stage labels are Thai + English;
+10. phase calendar state labels are Thai + English;
+11. raw technical status is not the dominant business-facing status label;
+12. all accepted R5 route/calendar/horizontal/Difficulty/completeness regressions pass;
+13. Preview Kintone call count = 0.
 
 Execution budget:
 - `npm test` once after implementation;
 - `npm run ui:build` once;
 - `npm run ui:preview` once;
-- local browser smoke only, no Kintone UAT.
+- local browser smoke only.
+
+## 11. SAFETY
+
+- Kintone calls/writes: 0
+- App794 upload/deploy: 0
+- Process/schema/ACL/notification changes: 0
+- App795/App796/App797/App798/App800 writes: 0
+- no real-user workflow/notification
+- prior App794 deployment authorization remains consumed/closed
 
 ## 12. REQUIRED EVIDENCE
 
 ```text
-APP794_EVALUATION_UI_V2_R5 = COMPLETE / BLOCKED
+APP794_EVALUATION_UI_V2_R6 = COMPLETE / BLOCKED
 EXECUTION_STARTING_HEAD = exact parent after pulling task
-M1_G1_ROUTE_STATUSES = 13 / actual
-M1_G1_EXCLUDES_02_07_12 = PASS/FAIL
-M1_M2_G1_INCLUDES_02_07_12 = PASS/FAIL
-ROUTE_STATUS_MISMATCH_FAIL_CLOSED = PASS/FAIL
-STATIC_16_STATUS_PERCENT_REMOVED = PASS/FAIL
-STATUS05_WAITING_MIDYEAR_WINDOW = PASS/FAIL
-STATUS10_WAITING_SELF_WINDOW = PASS/FAIL
-FIVE_STAGE_PHASE_DATE_DISPLAY = PASS/FAIL
-DETERMINISTIC_PREVIEW_NOW = PASS/FAIL
-REQUESTER_ACTOR_VIEW = PASS/FAIL
-APPROVER_ACTOR_VIEW = PASS/FAIL
-SCORING_APPRAISER_SEPARATE_FROM_WORKFLOW_APPROVER = PASS/FAIL
-HR_ACTOR_VIEW = PASS/FAIL
-COMPLETED_READ_ONLY_VIEW = PASS/FAIL
-OBJECTIVES_HORIZONTAL_DESKTOP = PASS/FAIL
-MIDYEAR_HORIZONTAL_DESKTOP = PASS/FAIL
-SELF_EVAL_HORIZONTAL_DESKTOP = PASS/FAIL
-PARTA_DYNAMIC_1_TO_4_COLUMNS = PASS/FAIL
-PARTB_DYNAMIC_1_TO_4_COLUMNS = PASS/FAIL
+LIFECYCLE_APPRAISER_SEQUENCE = PASS/FAIL
+ROUTE_SUMMARY_ORDINAL_APPRAISERS = PASS/FAIL
+ROUTE_SUMMARY_MANAGER_GM_HEADINGS = 0 / actual
+M1_G1_APPRAISER_SLOT_MAPPING = PASS/FAIL
+M1_M2_G1_APPRAISER_SLOT_MAPPING = PASS/FAIL
+GENERIC_ROUTE_1_TO_4_PREVIEW = PASS/FAIL
+SAME_APPRAISERS_VISIBLE_ALL_5_STAGES = PASS/FAIL
+GUIDANCE_MANAGER_GM_BUSINESS_WORDING = 0 / actual
+ACTOR_BANNER_ORDINAL_APPRAISER = PASS/FAIL
+FIVE_STAGE_THAI_ENGLISH = PASS/FAIL
+PHASE_STATE_THAI_ENGLISH = PASS/FAIL
+R5_ROUTE_AWARE_REGRESSION = PASS/FAIL
+R5_HORIZONTAL_LAYOUT_REGRESSION = PASS/FAIL
 R4_DIFFICULTY_REGRESSION = PASS/FAIL
 APPRAISER_COMPLETENESS_REGRESSION = PASS/FAIL
-PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE
+PRODUCTION_GENERIC_ROUTE_PERSISTENCE = PENDING_LATER_GATE
 APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
-PHASE_CALENDAR_PERSISTENCE = NOT_IMPLEMENTED_PREVIEW_CONTRACT_ONLY
 APP794_KINTONE_CALL_COUNT = 0
 APP794_KINTONE_WRITE_COUNT = 0
 WORKFLOW_ACTION_COUNT = 0
@@ -344,18 +281,10 @@ GIT_PUSH_SYNC = PASS/FAIL
 NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
 ```
 
-## 13. SAFETY
+## 13. STOP CONDITION
 
-- 0 Kintone writes.
-- 0 App794 deploy/upload.
-- 0 Process/schema/ACL/notification changes.
-- 0 App795/App796/App797/App798/App800 writes.
-- real-user workflow/notification prohibited.
-- prior App794 authorization remains consumed/closed.
+Commit, push `ai/antigravity-wp002c`, keep Preview Lab available if practical, and STOP.
 
-## 14. STOP CONDITION
-
-Commit, push `ai/antigravity-wp002c`, keep local preview available if practical, and STOP.
-
-Next gate = ChatGPT source review, then user visual preview again.
-Do not continue to Scoring Runtime, Dashboard/Hoshin, Final UAT or Go-Live.
+Do not deploy App794.
+Do not modify Kintone.
+Do not continue to Dashboard/Hoshin until this visual/business model passes user review.
