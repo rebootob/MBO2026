@@ -141,6 +141,17 @@
         <option value="INVALID_TOPOLOGY">INVALID_TOPOLOGY (Unrecognized)</option>
       </select>
     </div>
+
+    <div class="preview-lab-group">
+      <label>7. Simulated Date</label>
+      <select id="lab-now-date" class="preview-lab-select">
+        <option value="2026-02-15">Feb 15, 2026 (Stage 1 Objectives Open)</option>
+        <option value="2026-06-15" selected>Jun 15, 2026 (Stage 2 Mid-Year Open)</option>
+        <option value="2026-10-15">Oct 15, 2026 (Stage 3 Self Eval Open)</option>
+        <option value="2026-11-15">Nov 15, 2026 (Stage 4 Appraiser Open)</option>
+        <option value="2026-12-15">Dec 15, 2026 (Stage 5 HR Final Open)</option>
+      </select>
+    </div>
   </div>
 
   <div class="preview-container-wrap">
@@ -307,6 +318,7 @@
 
         syncSlotOptions(appCount);
 
+        const nowDate = document.getElementById('lab-now-date').value;
         const activeSlot = Math.min(parseInt(document.getElementById('lab-slot').value, 10), appCount);
 
         mockRecord.Status.value = st;
@@ -328,6 +340,7 @@
 
         const previewOptions = {
           isPreviewMode: true,
+          previewNow: nowDate,
           activeSlotIndex: activeSlot,
           competencySetCode: mockRecord.Competency_Set_Code.value,
           partAWeight: mockRecord.PartA_Weight.value,
@@ -375,7 +388,7 @@
         ui.render();
       }
 
-      ['lab-status', 'lab-ratio', 'lab-appraisers', 'lab-completion', 'lab-slot', 'lab-topology'].forEach(id => {
+      ['lab-status', 'lab-ratio', 'lab-appraisers', 'lab-completion', 'lab-slot', 'lab-topology', 'lab-now-date'].forEach(id => {
         document.getElementById(id).addEventListener('change', updateLab);
       });
 

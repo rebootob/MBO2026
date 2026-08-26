@@ -78,6 +78,7 @@
 | **WP002C_STAGE4D_B_GATE** | **`PASS_WITH_OBSERVATIONS (PASSED / FROZEN)`** |
 | **STAGE4D_B_CONTROLLED_LIVE_GET_PREFLIGHT** | `PASSED / FROZEN` |
 | **DELIVERY_SPRINT_01_GATE** | **`PASS_WITH_OBSERVATIONS (CLOSED)`** (55e8f83) |
+| **APP794_EVALUATION_UI_V2_R5** | **`PASS`** — Implemented R5 route-aware five-stage UX & desktop horizontal spreadsheet layout (0 Kintone calls/writes/deploys): M1_G1 applicable path (13 statuses, excluding 02/07/12) and M1_M2_G1 path (16 statuses) supported with fail-closed route mismatch warnings; static 16-status progress replaced with route-aware calculation; Stage 1 complete status 05 shows Mid-Year waiting boundary banner; Stage 2 complete status 10 shows Self Eval waiting boundary banner; HR Phase Calendar model & deterministic `previewNow` integrated; Actor-Aware presentation cards added; Objectives, Mid-Year, Self Eval, Appraiser Evaluation, and HR Final screens updated to desktop horizontal spreadsheet row/grid layout; Part A & Part B appraiser matrices support dynamic 1..4 appraiser columns; 555/555 unit tests passing; dist bundle rebuilt |
 | **APP794_PREVIEW_BOOTSTRAP_REPAIR** | **`PASS`** — Repaired local Preview Lab bootstrap (0 Kintone calls/writes/deploys): Root cause resolved (classic IIFE bundle `dist/mbo-employee-app.js` encapsulates `EmployeePartAUI` without global export); updated `scripts/ui-preview-server.js` to serve `/src/*` read-only with strict path traversal containment; updated `preview/index.html` to import `{ EmployeePartAUI }` directly from `/src/ui/employee-part-a-ui.js` via ES module; verified main MBO UI renders with 0 `ReferenceError` console errors across statuses 01, 06, 11, 13, 15, 16, appraisers 1–4, and ratios 70/30, 60/40, 50/50; production `dist/mbo-employee-app.js` remains 100% unchanged |
 | **APP794_EVALUATION_UI_V2_R4_DIFFICULTY_EMPTY_STATE** | **`PASS`** — Applied R4 local UI correction (0 Kintone calls/writes/deploys): Removed fake `Level 3` visual default on blank/unselected `Difficulty_i`; added explicit empty placeholder (`-- กรุณาเลือกระดับความยาก / Please select --`) with `data-required="true"` triggering yellow/Required field state before Save; blank read-only Difficulty renders neutral missing label (`ยังไม่ได้ระบุ / Not selected`); rendering does not mutate blank record state; 555/555 tests passing; bundle parse PASS |
 | **APP794_EVALUATION_UI_V2_R3** | **`PASS`** — Applied R3 local UI corrections (0 Kintone calls/writes/deploys): Create flow before-lookup scoring snapshot validation deferred until employee lookup succeeds (Lookup UI remains active and retryable); incomplete appraisal combined results strictly display `Pending / Incomplete` in Appraiser Evaluation & HR Final breakdown without certifying stale score values; HR Final breakdown carries forward read-only score context for complete/incomplete states; Slots 3/4 preview editing is truthful in Preview Lab mode with zero physical field aliasing; R2 parent SHA corrected in evidence provenance; 555/555 tests passing; bundle parse PASS |
@@ -1570,4 +1571,45 @@ GIT_DIFF_CHECK = PASS
 GIT_PUSH_SYNC = PASS
 PREVIEW_SERVER_LEFT_RUNNING = YES
 NEXT_ACTION = USER VISUAL PREVIEW; NO DEPLOY
+```
+
+## App794 Evaluation UI V2 R5 Route-Aware Five-Stage UX Evidence
+
+```text
+APP794_EVALUATION_UI_V2_R5 = COMPLETE
+EXECUTION_STARTING_HEAD = 130535d21fe1f38d38dd9ac7f1dd1d97fd9e9925
+M1_G1_ROUTE_STATUSES = 13
+M1_G1_EXCLUDES_02_07_12 = PASS
+M1_M2_G1_INCLUDES_02_07_12 = PASS
+ROUTE_STATUS_MISMATCH_FAIL_CLOSED = PASS
+STATIC_16_STATUS_PERCENT_REMOVED = PASS
+STATUS05_WAITING_MIDYEAR_WINDOW = PASS
+STATUS10_WAITING_SELF_WINDOW = PASS
+FIVE_STAGE_PHASE_DATE_DISPLAY = PASS
+DETERMINISTIC_PREVIEW_NOW = PASS
+REQUESTER_ACTOR_VIEW = PASS
+APPROVER_ACTOR_VIEW = PASS
+SCORING_APPRAISER_SEPARATE_FROM_WORKFLOW_APPROVER = PASS
+HR_ACTOR_VIEW = PASS
+COMPLETED_READ_ONLY_VIEW = PASS
+OBJECTIVES_HORIZONTAL_DESKTOP = PASS
+MIDYEAR_HORIZONTAL_DESKTOP = PASS
+SELF_EVAL_HORIZONTAL_DESKTOP = PASS
+PARTA_DYNAMIC_1_TO_4_COLUMNS = PASS
+PARTB_DYNAMIC_1_TO_4_COLUMNS = PASS
+R4_DIFFICULTY_REGRESSION = PASS
+APPRAISER_COMPLETENESS_REGRESSION = PASS
+PRODUCTION_APPRAISER_COUNT_BINDING = PENDING_SCORING_RUNTIME_GATE
+APPRAISER_3_4_PERSISTENCE_CLAIM = NOT_IMPLEMENTED
+PHASE_CALENDAR_PERSISTENCE = NOT_IMPLEMENTED_PREVIEW_CONTRACT_ONLY
+APP794_KINTONE_CALL_COUNT = 0
+APP794_KINTONE_WRITE_COUNT = 0
+WORKFLOW_ACTION_COUNT = 0
+NPM_TEST = 555 / PASS
+UI_BUILD = PASS
+PREVIEW_MAIN_UI_RENDER = PASS
+PREVIEW_KINTONE_CALL_COUNT = 0
+GIT_DIFF_CHECK = PASS
+GIT_PUSH_SYNC = PASS
+NEXT_ACTION = CHATGPT REVIEW THEN USER VISUAL PREVIEW; NO DEPLOY
 ```

@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => {
   const children = [];
@@ -1261,17 +1261,20 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
     assert.equal(getVisualScreen(st), expectedScreen, `Status "${st}" must resolve to visual screen "${expectedScreen}"`);
   });
 
-  // 9. Process progress percentage deterministically maps to status (R1-11)
-  assert.equal(getProcessProgress('01 Draft Objective').percent, 5);
-  assert.equal(getProcessProgress('06 Employee Mid-Year').percent, 30);
-  assert.equal(getProcessProgress('11 Employee Self Evaluation').percent, 60);
-  assert.equal(getProcessProgress('12 First Manager Final Evaluation').percent, 70);
-  assert.equal(getProcessProgress('15 HR Final Check').percent, 95);
-  assert.equal(getProcessProgress('16 Completed').percent, 100);
+  // 9. Route-aware process progress percentage calculation (R5)
+  assert.equal(getProcessProgress('01 Draft Objective', 'M1_G1').percent, 8);
+  assert.equal(getProcessProgress('06 Employee Mid-Year', 'M1_G1').percent, 38);
+  assert.equal(getProcessProgress('11 Employee Self Evaluation', 'M1_G1').percent, 69);
+  assert.equal(getProcessProgress('15 HR Final Check', 'M1_G1').percent, 92);
+  assert.equal(getProcessProgress('16 Completed', 'M1_G1').percent, 100);
 
-  // Unknown status fails closed
+  assert.equal(getProcessProgress('01 Draft Objective', 'M1_M2_G1').percent, 6);
+  assert.equal(getProcessProgress('02 First Manager Objective Review', 'M1_M2_G1').percent, 13);
+  assert.equal(getProcessProgress('16 Completed', 'M1_M2_G1').percent, 100);
+
+  // Unknown status or invalid topology fails closed with isMismatch
   assert.equal(getVisualScreen('99 INVALID STATUS'), null, 'Unknown visual status must return null to fail closed');
-  assert.equal(getProcessProgress('99 INVALID STATUS'), null, 'Unknown status progress must return null to fail closed');
+  assert.equal(getProcessProgress('99 INVALID STATUS', 'M1_G1').isMismatch, true, 'Unknown status progress must return mismatch');
 
   // 10. Competency Set Count (R1-04, R2-05)
   const opCompList = getApplicableCompetencies('COMP_SET_OPERATIONAL_V1');
@@ -1330,7 +1333,7 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
     isEditable: true
   });
   uiObj.render();
-  assert.equal(uiObj.root.querySelectorAll('.mbo-wide-card').length, 1, 'Objectives screen must render wide card layout');
+  assert.equal(uiObj.root.querySelectorAll('.mbo-table-container').length, 1, 'Objectives screen must render horizontal table container');
 
   // 14. Appraiser & HR Screens render Attachment Evidence Context (R2-04)
   const uiAppraiser = new EmployeePartAUI({
@@ -1493,4 +1496,78 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
 
   // (5) Render does not mutate blank record Difficulty value
   assert.equal(blankDiffRecord.Difficulty_1.value, '', 'Rendering blank Difficulty must NOT mutate record value to default 3');
+
+  // 22. R5 Route-Aware Five-Stage UX Assertions
+  // (1) M1_G1 applicable path excludes 02/07/12 (13 statuses)
+  assert.equal(WORKFLOW_PATH_M1_G1.length, 13, 'M1_G1 path must contain exactly 13 applicable statuses');
+  assert.equal(WORKFLOW_PATH_M1_G1.includes('02 First Manager Objective Review'), false, 'M1_G1 path must exclude status 02');
+  assert.equal(WORKFLOW_PATH_M1_G1.includes('07 First Manager Mid-Year Review'), false, 'M1_G1 path must exclude status 07');
+  assert.equal(WORKFLOW_PATH_M1_G1.includes('12 First Manager Final Evaluation'), false, 'M1_G1 path must exclude status 12');
+
+  // (2) M1_M2_G1 path includes 02/07/12 (16 statuses)
+  assert.equal(WORKFLOW_PATH_M1_M2_G1.length, 16, 'M1_M2_G1 path must contain all 16 statuses');
+  assert.equal(WORKFLOW_PATH_M1_M2_G1.includes('02 First Manager Objective Review'), true, 'M1_M2_G1 path must include status 02');
+
+  // (3) M1_G1 + status 02 returns route/status mismatch warning
+  const progMismatch = getProcessProgress('02 First Manager Objective Review', 'M1_G1');
+  assert.equal(progMismatch.isMismatch, true, 'M1_G1 + status 02 must return route mismatch');
+
+  // (4) Invalid / G2 topology returns fail-closed mismatch
+  const progG2 = getProcessProgress('01 Draft Objective', 'M1_G1_G2');
+  assert.equal(progG2.isMismatch, true, 'G2 topology must return route mismatch');
+
+  // (5) Status 05 Waiting Boundary
+  const uiStatus05 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '05 Objective Approved' } }),
+    stage: 'READ_ONLY'
+  });
+  uiStatus05.render();
+  assert.equal(uiStatus05.root.innerHTML.includes('🔒 05 Objective Approved — Stage 1 Complete'), true, 'Status 05 must show Mid-Year waiting boundary banner');
+
+  // (6) Status 10 Waiting Boundary
+  const uiStatus10 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '10 Mid-Year Completed' } }),
+    stage: 'READ_ONLY'
+  });
+  uiStatus10.render();
+  assert.equal(uiStatus10.root.innerHTML.includes('🔒 10 Mid-Year Completed — Stage 2 Complete'), true, 'Status 10 must show Self Eval waiting boundary banner');
+
+  // (7) Phase Calendar Status calculation
+  const phaseCalUpcoming = getPhaseCalendarStatus('midyear', '01 Draft Objective', '2026-02-15');
+  assert.equal(phaseCalUpcoming.status, 'Upcoming', 'Mid-Year phase must be Upcoming on Feb 15');
+
+  const phaseCalOpen = getPhaseCalendarStatus('midyear', '06 Employee Mid-Year', '2026-06-15');
+  assert.equal(phaseCalOpen.status, 'Open', 'Mid-Year phase must be Open on Jun 15');
+
+  // (8) Actor-Aware Presentation Card
+  const uiActorReq = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '01 Draft Objective' } }),
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true
+  });
+  uiActorReq.render();
+  assert.equal(uiActorReq.root.innerHTML.includes('Action Required: Requester / Employee'), true, 'Status 01 must render Requester action banner');
+
+  const uiActorAppr = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '03 Manager Objective Review' } }),
+    stage: 'READ_ONLY'
+  });
+  uiActorAppr.render();
+  assert.equal(uiActorAppr.root.innerHTML.includes('Action Required: Workflow Approver'), true, 'Status 03 must render Workflow Approver banner');
+
+  // (9) Desktop Horizontal Spreadsheet Layout
+  const uiHorizObj = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Status: { value: '01 Draft Objective' } }),
+    stage: 'OBJECTIVE_INPUT',
+    isEditable: true,
+    isCreate: true
+  });
+  uiHorizObj.isEmployeeVerified = true;
+  uiHorizObj.render();
+  assert.equal(uiHorizObj.root.querySelectorAll('.mbo-grid-table').length > 0, true, 'Objectives screen must render horizontal spreadsheet table');
 });
