@@ -1,917 +1,534 @@
-# AI ACTIVE TASK — M10M POSITION PRIORITY + TEAM-AWARE ROUTING
+# AI ACTIVE TASK — M10M-R1 ROUTING CORRECTION AFTER CHATGPT REVIEW
 
 > Control Plane: ChatGPT / Project Lead / Architect / Reviewer
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Target Kintone Apps: **App794 Sandbox + App795 MBO Routing Master Sandbox only**
-> Production authorization: **NONE**
-> Sandbox authorization: **App794/App795 only, after backup + local validation + explicit safety gates in this task**
-> Change strategy: **Surgical change / minimum blast radius / reuse existing resolver**
+> Parent implementation under correction: `b3cb13e5ba615ad4cc0c4a8698448282d66aa4fe`
+> Target Kintone Apps: App794 Sandbox + App795 MBO Routing Master Sandbox only
+> App53: READ-ONLY employee-source discovery only
+> Production authorization: NONE
+> Final status required: `READY FOR CHATGPT REVIEW`
 
-## 0. MANDATORY STARTUP
+## 0. REVIEW RESULT
+
+The first M10M implementation is **BLOCKED / NOT APPROVED**.
+
+Do not deploy or self-approve commit `b3cb13e5` as complete.
+
+This R1 task corrects the implementation using confirmed Employee Master facts and the canonical baseline.
+
+## 1. MANDATORY STARTUP
 
 Pull latest `ai/antigravity-wp002c` and verify local HEAD equals origin.
 
-Before changing anything, run and capture:
+Run and capture:
 
 ```text
 git status
 git branch --show-current
-git log -1 --oneline
+git log -3 --oneline
 ```
 
-Read completely, in this order:
+Read completely before changing code:
+
 1. `project-docs/CONFIRMED_BASELINE/README.md`
 2. `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
-3. `project-docs/BUSINESS_RULES.md`
-4. `project-docs/ARCHITECTURE.md`
-5. `project-docs/FIELD_DICTIONARY.md`
-6. `project-docs/APP_REGISTRY.md`
-7. `project-docs/AI_ACTIVE_TASK.md`
-8. `project-docs/CURRENT_STATE.md`
-9. `project-docs/HANDOFF.md`
-10. `project-docs/AI_REVIEW_PACKAGE.md`
+3. `project-docs/CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`
+4. `project-docs/BUSINESS_RULES.md`
+5. `project-docs/ARCHITECTURE.md`
+6. `project-docs/AI_ACTIVE_TASK.md`
+7. `project-docs/CURRENT_STATE.md`
+8. `project-docs/HANDOFF.md`
+9. `project-docs/AI_REVIEW_PACKAGE.md`
 
-Confirmed Baseline is canonical unless this active task explicitly introduces the new M10M routing rule.
+Confirmed Baseline is authoritative.
 
-Do not start implementation until current routing behavior, files, field codes, and App795 schema are understood.
+If code/data conflicts with Confirmed Baseline, fail closed and report.
 
 ---
 
-# 1. USER REQUIREMENT
+## 2. CONFIRMED BUSINESS FACTS — DO NOT REDISCOVER BY GUESSING
 
-The user requires App794 routing to continue reading its route from **App795 — MBO Routing Master Sandbox**, but the routing decision must be enhanced to support:
+### 2.1 Employee Master
 
-1. **Position Priority / Position Override**
-2. **GM must route to President regardless of Section/Team**
-3. **Team-aware routing**
-4. **TMG2 must be able to split routing by Team even when Section is the same**
-5. **Fail Closed** when a required route cannot be uniquely resolved
-6. Existing valid routing behavior must remain unchanged unless explicitly affected by the new rules
+- App53 Employee Namelist is the employee routing-input source.
+- App53 access for this task is READ-ONLY.
+- Use real App53 Position / Section / Team values.
 
-The key defect/risk is this case:
+### 2.2 General Manager
+
+Confirmed raw Position variants include:
 
 ```text
-Position = GM
+General Manager
+General manager
+```
+
+Normalize these to one canonical routing class conceptually:
+
+```text
+GENERAL_MANAGER
+```
+
+Confirmed real risk case exists:
+
+```text
+Position = General Manager
 Section  = TMH3
 ```
 
-The system must **not** select the normal TMH3 route.
-
-Correct result:
+Required route:
 
 ```text
-GM
-↓
-President
+GENERAL_MANAGER
+→ dedicated GM route in App795
+→ configured President destination
 ```
 
-Likewise, if a GM belongs to TMG2 and has any Team value, the GM Position rule still wins.
+Section/Team must not override a winning GM Position rule.
+
+### 2.3 TMG2 Teams
+
+Confirmed active TMG2 Team values:
+
+```text
+Production
+CAD
+Marketing
+```
+
+Required exact routing keys:
+
+```text
+TMG2|Production
+TMG2|CAD
+TMG2|Marketing
+```
+
+TMG2 has no Admin route.
+
+### 2.4 TMG2 CAD
+
+User-confirmed:
+
+```text
+TMG2 + CAD
+```
+
+uses the **same evaluator/approver route** for CAD employees associated with both Die Casting and Injection context.
+
+Therefore:
+- keep one authoritative `TMG2|CAD` route;
+- do not add Section Name as a routing dimension for CAD;
+- do not create separate Die Casting CAD / Injection CAD routes.
 
 ---
 
-# 2. HARD SAFETY BOUNDARY
+## 3. MUST FIX — BLOCKER A: REMOVE HARD-CODED PRESIDENT
 
-Allowed scope:
-- Local repository changes required for App794 routing logic / tests / Preview.
-- App795 Sandbox field/schema additions only if confirmed missing and truly required.
-- App795 Sandbox routing-rule record changes required by M10M.
-- App794 Sandbox customization upload/deploy only after all required local tests pass and backup/read-back gates pass.
+Current blocked implementation contains fallback behavior equivalent to:
 
-Forbidden:
-- Production App changes.
-- Any Kintone app other than App794/App795.
-- App796/App797/App798/App800 writes.
-- Rewrite of the entire routing architecture.
-- Duplicate routing resolver alongside the existing resolver.
-- Hard-coded real approver identity when App795 can represent the business rule.
-- Silent fallback to an unrelated route.
-- Workflow State Machine redesign.
-- Unrelated UI refactor.
-- Unrelated schema cleanup.
-
-If implementation would require any forbidden change: **STOP that part and report to ChatGPT.**
-
----
-
-# 3. DISCOVERY FIRST — DO NOT GUESS
-
-Before modifying code or Kintone, identify the real current implementation.
-
-Required discovery:
-
-## 3.1 App794
-
-Find and report:
-- file(s) that load App795 routing records;
-- function(s) that resolve route / evaluator / approver;
-- function(s) that build `Route Scenario / เส้นทางผู้ประเมิน & อนุมัติ`;
-- current matching dimensions: Position / Division / Department / Section / Team / other;
-- current fallback logic;
-- current ambiguity handling;
-- current error handling;
-- where employee organization data comes from;
-- actual field codes used for Position, Department, Section, Team.
-
-## 3.2 App795
-
-Inspect actual Sandbox schema and active records.
-
-Report:
-- current routing field codes;
-- whether Priority already exists;
-- whether Position criterion already exists;
-- whether Team criterion already exists;
-- whether wildcard/blank semantics already exist;
-- current active TMG2 routing records;
-- current GM routing rule, if any;
-- how evaluator/approver/route stages are represented.
-
-## 3.3 Employee Source
-
-Determine actual Team values for employees whose Section = `TMG2`.
-
-Do **not** invent Team names.
-
-If multiple Team values exist under TMG2, report the exact distinct values and identify which routing records are needed.
-
----
-
-# 4. BACKUP / CHECKPOINT — MANDATORY BEFORE WRITE
-
-Before modifying Kintone Sandbox:
-
-1. Create/verify a clean Git checkpoint.
-2. Export/read-back App795 schema relevant to routing.
-3. Export/read-back App795 current routing records.
-4. Record counts before change.
-5. Record affected Rule/Record IDs before change.
-6. Ensure rollback material exists.
-
-No App795 schema/data write and no App794 deploy before this gate passes.
-
----
-
-# 5. TARGET ROUTING MODEL
-
-Routing Context should use the actual existing field codes but conceptually include:
-
-```text
-Position
-Department
-Section
-Team
+```javascript
+presidentApprover = [{ code: 'president' }];
 ```
 
-Do not add duplicate employee fields if the source already contains them.
+This is forbidden.
 
-Target resolution flow:
-
-```text
-Employee / MBO Record
-↓
-Build Routing Context
-(Position + Department + Section + Team)
-↓
-Load active App795 routing rules
-↓
-Match eligible rules
-↓
-Apply explicit Priority / specificity rules
-↓
-Require exactly one winning route
-↓
-Return Route Scenario / Evaluator / Approver
-```
-
-Business routing rules belong in App795 as much as practical. Code should remain a deterministic resolver, not a list of named-person special cases.
-
----
-
-# 6. ROUTING PRECEDENCE
-
-Required logical precedence:
+Also forbidden:
 
 ```text
-1. Special Position Rule
-2. Position + Department + Section + Team
-3. Department + Section + Team
-4. Section + Team
-5. Existing normal routing rule
-6. No valid winner → BLOCK
-```
-
-Prefer implementing this through existing rule matching + explicit priority/specificity rather than a long nested `if/else` chain.
-
-If App795 already has a priority convention, reuse it.
-
-If no priority exists and a new field is required, use an explicit deterministic convention and document it. Recommended concept:
-
-```text
-smaller number = higher priority
-```
-
-but do not create a conflicting convention if the current design already defines one.
-
----
-
-# 7. GM → PRESIDENT OVERRIDE — MANDATORY
-
-Required business rule:
-
-```text
-IF Requester Position = GM
-THEN Route = GM_TO_PRESIDENT / equivalent existing scenario
-AND next valid approval target = President
-AND ignore normal Section/Team routing for route selection
-```
-
-Examples that must PASS:
-
-```text
-GM + TMH3                  → President
-GM + TMG2 + <any Team>     → President
-GM + any other Section     → President
-```
-
-Once the GM Position rule wins, normal Section/Team routing must not override it.
-
-Do not hard-code a President email/name if App795 already supports selecting the destination by routing master data.
-
-If no valid President target can be resolved:
-
-```text
-APPROVER_NOT_FOUND
-```
-
-and BLOCK.
-
----
-
-# 8. TEAM-AWARE ROUTING — MANDATORY
-
-Add/reuse Team as a routing criterion in App795 and in App794's routing context/resolver.
-
-The goal is to allow two employees with the same Section to take different routes based on Team.
-
-Concept:
-
-```text
-Section = TMG2
-Team    = <Team A>
-→ Route A
-```
-
-```text
-Section = TMG2
-Team    = <Team B>
-→ Route B
-```
-
-Use actual Team values discovered from the real Sandbox/employee source.
-
-Do not create fake Team values.
-
----
-
-# 9. TMG2 STRICT TEAM RULE
-
-For `TMG2`, if Team is required to distinguish routes, Team must be treated as a strict criterion.
-
-Unsafe behavior that is forbidden:
-
-```text
-TMG2 + unknown/blank Team
-↓
-fallback to generic TMG2 route
-↓
-possibly wrong evaluator/approver
+App795 query error
+→ swallow exception
+→ invent/default President target
 ```
 
 Required behavior:
 
-### Missing Team where TMG2 requires Team
-
 ```text
-TEAM_REQUIRED
-BLOCK
+GM Position detected
+↓
+resolve dedicated GM route from App795
+↓
+exactly one valid active route found?
+    YES → use destination configured in App795
+    NO  → BLOCK
 ```
 
-### Unknown Team / no matching TMG2 Team rule
+If no valid destination exists:
 
 ```text
-ROUTE_NOT_FOUND
-BLOCK
+APPROVER_NOT_FOUND
 ```
 
-### Multiple equally valid TMG2 rules
+If App795 query/configuration itself is invalid or unavailable, fail closed with a diagnostic error.
 
-```text
-AMBIGUOUS_ROUTE
-BLOCK
-```
-
-Principle:
-
-> Wrong routing is worse than blocked routing.
-
-Do not preserve a generic TMG2 fallback if it can bypass required Team separation.
+Do not invent a Kintone user code, email, name, or approver identity in JavaScript.
 
 ---
 
-# 10. APP795 SCHEMA / MASTER DATA
+## 4. MUST FIX — BLOCKER B: RESTORE REQUESTER AUTHORIZATION
 
-Reuse existing fields first.
-
-Only if missing, consider the minimum required fields such as:
-
-```text
-Route_Priority
-Requester_Position
-Requester_Department
-Requester_Section
-Requester_Team
-Route_Scenario
-Evaluator
-Approver
-Active
-```
-
-These are conceptual/suggested field codes only.
-
-**Do not assume these exact codes.**
-
-If equivalent fields already exist, reuse them.
-
-Do not create duplicate fields with overlapping purpose.
-
-Required App795 master-data outcome:
-- a high-priority GM → President rule;
-- TMG2 Team-specific rules for the actual Teams that require separate routing;
-- existing valid rules preserved;
-- no unsafe duplicate rule at the same effective priority/specificity.
-
-Before each record/schema write, show/record intended Before → After values in the execution evidence.
-
-After each write, read back and verify.
-
----
-
-# 11. APP794 ROUTING RESOLVER
-
-Modify the **existing** routing resolver.
-
-Do not create a second resolver unless architecture proves there is no reusable resolver.
-
-The existing resolver should receive/derive a context conceptually like:
+The blocked implementation changed authorization to allow:
 
 ```javascript
-{
-  position,
-  department,
-  section,
-  team
-}
+requesters.length === 0
 ```
 
-Use actual field names/codes discovered in Section 3.
+as an automatic authorization condition.
 
-Required properties:
-- deterministic;
-- explicit candidate-rule matching;
-- explicit winner selection;
-- explicit error for no winner;
-- explicit error for ambiguity;
-- no silent route guessing;
-- preserve existing route output contract where possible.
+This is NOT approved and must be removed.
+
+Restore the previously reviewed behavior unless the canonical baseline explicitly says otherwise:
+
+```text
+authorized when:
+- current Kintone user is in Requester_User; OR
+- existing approved technical handling already present in the reviewed baseline applies.
+```
+
+Do not turn blank `Requester_User` into allow-all.
+
+Add a regression test proving an ordinary non-admin user is NOT authorized merely because `Requester_User` is blank.
+
+M10M is a routing change, not a requester-permission expansion.
 
 ---
 
-# 12. ROUTE SCENARIO / เส้นทางผู้ประเมิน & อนุมัติ
+## 5. APP795 — INSPECT REAL SCHEMA BEFORE QUERYING
 
-Update the existing App794 route preview/debug presentation with minimal UI change so HR/Admin/testers can understand why the route was selected.
+The blocked code references possible fields such as:
 
-At minimum expose when technically safe/available:
+```text
+Requester_Position
+Approver
+```
+
+without proving they exist in App795.
+
+Before implementing the final GM lookup:
+
+1. READ App795 Sandbox schema.
+2. READ active App795 routing records.
+3. Record exact real field codes.
+4. Confirm current exact TMG routes.
+5. Confirm whether a dedicated GM/Position route already exists.
+6. Confirm how destination users are represented.
+
+Do not issue a Kintone query against a field that does not exist.
+
+Do not use try/catch to hide a schema mismatch.
+
+### Preferred minimum-blast-radius design
+
+If existing App795 architecture can represent the special GM rule safely using an existing authoritative routing key, prefer a dedicated key such as:
+
+```text
+POSITION_GM
+```
+
+or the equivalent existing convention.
+
+App794 may select that special master key after Position normalization, but the actual evaluator/approver identity must come from App795.
+
+Do NOT add `Requester_Position` or `Route_Priority` fields merely because the previous prompt suggested conceptual names.
+
+Only add a new App795 field if actual schema analysis proves it is necessary and no existing field/key model can safely represent the rule.
+
+---
+
+## 6. ROUTING PRECEDENCE — R1 TARGET
+
+For current M10M scope:
+
+```text
+1. Normalize Position
+2. GENERAL_MANAGER?
+   YES → resolve dedicated GM App795 rule → President destination configured in master
+   NO  → continue normal routing
+3. TMG exact Section|Team route where applicable
+4. Normal existing Section route
+5. No exact valid route → BLOCK
+```
+
+Important:
+- Current R1 scope implements GM special routing only.
+- Do not infer/implement DGM, VP, Senior Manager, or other executive routing in this correction unless already explicitly required by a separate active implementation scope.
+- Existing Confirmed Baseline future-executive targets remain separate from this surgical R1 correction.
+
+---
+
+## 7. TMG2 STRICT BEHAVIOR
+
+For TMG2:
+
+### Valid
+
+```text
+TMG2|Production
+TMG2|CAD
+TMG2|Marketing
+```
+
+### Missing Team
+
+```text
+TEAM_REQUIRED
+BLOCK
+```
+
+### Unknown Team
+
+```text
+ROUTE_NOT_FOUND
+BLOCK
+```
+
+### Duplicate active exact route
+
+```text
+AMBIGUOUS_ROUTE
+BLOCK
+```
+
+Never fall back to generic `TMG2`.
+
+Do not create an Admin route for TMG2.
+
+---
+
+## 8. DO NOT INVENT TEST DATA AS BUSINESS EVIDENCE
+
+Focused unit tests may use fixtures, but fixture labels must reflect confirmed business values where the test claims business coverage.
+
+For TMG2 business tests use:
+
+```text
+CAD
+Production
+Marketing
+```
+
+Do not describe synthetic fixtures as live App53/App795 evidence.
+
+For approver identities, use values read from actual App795 only in evidence that claims current Sandbox master behavior.
+
+Unit mocks remain clearly labeled as mocks.
+
+---
+
+## 9. ROUTE PREVIEW / DEBUG EXPLAINABILITY
+
+Keep the minimal route explainability addition, but ensure it shows actual resolved data rather than fabricated priority metadata.
+
+Display when available:
 
 ```text
 Position
-Department
 Section
 Team
-Matched Route Scenario
-Matched Rule / Rule ID
-Priority / specificity
+Matched Rule / Routing Key
 Source = App795
-Resolved Evaluator(s)
-Resolved Approver(s)
+Resolved Appraiser route
 ```
 
-Example concept:
+Do not display a fake `Priority: 1/3/5` if no real App795 priority model exists.
 
-```text
-Position: Staff
-Department: ...
-Section: TMG2
-Team: <actual team>
-
-Matched Rule: <rule id>
-Scenario: <scenario>
-Priority: <priority>
-Source: App795
-```
-
-Do not expose secrets or hidden credentials.
-
-This is for explainability/debugging, not a replacement security boundary.
+If priority is not stored/configured in App795, describe precedence as resolver precedence, not master-data priority.
 
 ---
 
-# 13. WORKFLOW STATE MACHINE — DO NOT REDESIGN
+## 10. REQUIRED CODE TESTS
 
-M10M changes **who the route resolves to**, not the overall MBO workflow lifecycle.
+Add/fix tests at minimum:
 
-Do not redesign workflow states such as Submit / Review / Approval / Approved / Reject unless a tiny integration adjustment is proven necessary.
-
-If a genuine Workflow State Machine change becomes necessary:
-
-**STOP and report before implementing it.**
-
----
-
-# 14. FAIL-CLOSED VALIDATION
-
-Before returning/using a route, validate at minimum:
+### TC01 GM TMH3 with valid App795 GM rule
 
 ```text
-Requester/employee context exists
-Position is available when required
-Section is available when required
-Team is available when the matched route class requires Team
-Matched rule is Active
-Exactly one winner exists
-Required evaluator exists
-Required approver exists
-No ambiguous equal-priority/specificity match exists
+Position = General Manager
+Section = TMH3
 ```
 
-Error classes/messages must make the failure diagnosable.
+Expected:
+- GM special route selected;
+- destination comes from mocked/configured App795 GM record;
+- no TMH3 route lookup used as winner.
 
-Required errors/equivalents:
+### TC02 GM TMG2 CAD
 
 ```text
-ROUTE_NOT_FOUND
-AMBIGUOUS_ROUTE
-TEAM_REQUIRED
-APPROVER_NOT_FOUND
+Position = General manager
+Section = TMG2
+Team = CAD
 ```
 
-Do not silently downgrade these to another unrelated route.
+Expected:
+- Position normalized;
+- GM route wins;
+- `TMG2|CAD` does not become winner.
 
----
-
-# 15. LOGGING / DIAGNOSTICS
-
-Add/reuse structured diagnostic logging sufficient to inspect:
-
-```text
-Employee / record identifier (minimum necessary)
-Position
-Department
-Section
-Team
-Candidate Rule IDs
-Matched Rule ID
-Priority / specificity
-Route Scenario
-Evaluator(s)
-Approver(s)
-Result / Error
-```
-
-Do not log:
-- API tokens;
-- auth headers;
-- passwords;
-- unnecessary sensitive personal data.
-
----
-
-# 16. REQUIRED TEST MATRIX
-
-Use actual discovered Team values for TMG2 tests.
-
-## TC01 — GM in TMH3
-
-```text
-Position = GM
-Section  = TMH3
-```
+### TC03 GM route missing
 
 Expected:
 
 ```text
-President
-PASS
+APPROVER_NOT_FOUND or explicit fail-closed GM-route configuration error
 ```
 
-## TC02 — GM in TMG2 with real Team
+No fallback `president` user.
 
-```text
-Position = GM
-Section  = TMG2
-Team     = <actual valid TMG2 Team>
-```
+### TC04 App795 GM query/schema error
 
 Expected:
+- fail closed;
+- no default approver generated.
+
+### TC05 TMG2 CAD
+
+Expected exact `TMG2|CAD`.
+
+### TC06 TMG2 Production
+
+Expected exact `TMG2|Production`.
+
+### TC07 TMG2 Marketing
+
+Expected exact `TMG2|Marketing`.
+
+### TC08 TMG2 missing Team
+
+Expected `TEAM_REQUIRED`.
+
+### TC09 TMG2 unknown Team
+
+Expected `ROUTE_NOT_FOUND`.
+
+### TC10 duplicate exact route
+
+Expected `AMBIGUOUS_ROUTE`.
+
+### TC11 requester authorization regression
 
 ```text
-President
+Requester_User = []
+current user = ordinary user
 ```
 
-Must **not** enter the normal TMG2 Team route.
+Expected: access denied / NOT automatically authorized.
 
-## TC03 — Normal employee TMG2 Team A
+### TC12 existing normal non-TMG route regression
 
-Use actual first distinct TMG2 Team.
-
-Expected: its configured Team-specific route.
-
-## TC04 — Normal employee TMG2 Team B
-
-Use actual second distinct TMG2 Team if present.
-
-Expected: its configured Team-specific route.
-
-If only one actual TMG2 Team exists, document that and create the appropriate deterministic test using the real data rather than inventing a second Team.
-
-## TC05 — Unknown TMG2 Team
-
-Expected:
-
-```text
-ROUTE_NOT_FOUND
-BLOCK
-```
-
-## TC06 — Missing TMG2 Team when Team required
-
-Expected:
-
-```text
-TEAM_REQUIRED
-BLOCK
-```
-
-## TC07 — Existing normal Section route
-
-Select a real non-TMG2 existing route that currently works.
-
-Expected:
-
-```text
-Before M10M route == After M10M route
-```
-
-## TC08 — Existing Manager/Appraiser route
-
-Select a real existing manager/appraiser scenario.
-
-Expected: no unintended routing change.
-
-## TC09 — Ambiguous rule
-
-Unit/fixture test with two equally valid winning rules at same effective priority/specificity.
-
-Expected:
-
-```text
-AMBIGUOUS_ROUTE
-BLOCK
-```
-
-## TC10 — Missing President destination for GM
-
-Unit/fixture test.
-
-Expected:
-
-```text
-APPROVER_NOT_FOUND
-BLOCK
-```
+Expected before == after.
 
 ---
 
-# 17. REGRESSION TEST — MANDATORY
+## 11. APP53 READ-ONLY VALIDATION
 
-Build a Before/After matrix for every active routing scenario materially affected by the resolver change.
+Use App53 only to validate routing-input assumptions if Kintone access is available under current credentials.
 
-Minimum evidence format:
+Required read-only confirmation:
+- raw General Manager variants actually present;
+- TMG2 Team values include CAD / Production / Marketing;
+- no write to App53.
 
-| Scenario | Before | After | Expected | Result |
-|---|---|---|---|---|
-| Existing normal route A | X | X | unchanged | PASS |
-| Existing normal route B | Y | Y | unchanged | PASS |
-| GM special route | old/wrong or absent | President | President | PASS |
-| TMG2 Team A | old | Team-specific | Team-specific | PASS |
-| TMG2 Team B | old | Team-specific | Team-specific | PASS |
+If App53 cannot be read safely, use `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` as canonical input and report that live read was unavailable.
 
-If an existing unrelated active route changes unexpectedly:
-
-**STOP DEPLOYMENT.**
+Do not block code correction solely because App53 live read is unavailable when the confirmed baseline already contains the accepted facts.
 
 ---
 
-# 18. LOCAL QUALITY GATES
+## 12. APP795 SANDBOX DATA CHANGE GATE
 
-Run the repository's existing relevant tests plus focused M10M tests.
+Do not write App795 until:
+- local code correction passes tests;
+- actual App795 schema is documented;
+- pre-write routing record snapshot exists;
+- affected records are identified;
+- rollback material exists.
 
-At minimum:
+If current App795 already contains valid:
 
 ```text
-npm test
+TMG2|CAD
+TMG2|Production
+TMG2|Marketing
 ```
 
-Run the appropriate build command defined by the repository/package scripts.
+do not recreate or duplicate them.
 
-If App794 has a Preview/local UI, perform a local browser smoke test for Route Scenario display.
+Only create/modify the minimum GM-specific master row needed by the approved design.
 
-No Sandbox deploy until local test/build gates PASS.
+Before write, document Before → After.
+After write, read back exact values.
 
 ---
 
-# 19. SANDBOX DEPLOYMENT GATE
+## 13. APP794 SANDBOX DEPLOY GATE
 
-Only after Sections 3–18 PASS:
+Do not deploy App794 until:
 
-1. Verify backup/checkpoint again.
-2. Apply only required App795 Sandbox schema/data changes.
-3. Read back App795 and verify exact values/counts.
-4. Upload/deploy only required App794 Sandbox customization.
-5. Reload App794 Sandbox.
-6. Test required M10M routes in Sandbox without affecting Production.
-7. Re-run regression checks.
-8. Verify no other apps changed.
+```text
+npm test = PASS
+build = PASS
+focused M10M-R1 tests = PASS
+security regression test = PASS
+App795 read-back = PASS if App795 was changed
+```
 
-If any read-back differs from intended state:
-
-**STOP and rollback.**
+Production deploy remains forbidden.
 
 ---
 
-# 20. GIT GOVERNANCE
+## 14. REQUIRED REVIEW EVIDENCE
 
-Before implementation:
-
-```text
-git status
-git branch --show-current
-git log -1 --oneline
-```
-
-During implementation:
-- keep changes scoped;
-- reuse existing files/functions;
-- avoid new files unless separation of concerns clearly requires one;
-- do not commit credentials/secrets;
-- inspect `git diff` before commit.
-
-After implementation/tests:
+Update `project-docs/AI_REVIEW_PACKAGE.md` or the established review evidence location with an M10M-R1 section containing:
 
 ```text
-git diff
-git status
-```
-
-Commit and push the same branch only when required tests/evidence pass.
-
-Final implementation status remains:
-
-```text
-READY FOR CHATGPT REVIEW
-```
-
-Antigravity must not self-approve the Work Package.
-
----
-
-# 21. ROLLBACK — MANDATORY
-
-Rollback must restore both code and Sandbox routing data/schema as applicable.
-
-Record:
-- base Git commit;
-- changed files;
-- App795 fields added/reused;
-- App795 record IDs changed/created;
-- App794 customization version/artifacts changed;
-- exact restore steps;
-- post-rollback verification.
-
-Rollback target:
-
-```text
-Pre-M10M App794 routing implementation
-+
-Pre-M10M App795 routing master state
-```
-
----
-
-# 22. FINAL REPORT REQUIRED
-
-Do not report only `Done`.
-
-Return the following evidence:
-
-## A. DISCOVERY
-
-```text
-App794 routing file(s):
-Resolver function(s):
-Route Scenario UI function(s):
-Employee source:
-Position field/code:
-Department field/code:
-Section field/code:
-Team field/code:
-App795 current matching method:
-App795 priority field/code:
-App795 position criterion field/code:
-App795 team criterion field/code:
-Actual TMG2 Team values found:
-```
-
-## B. BACKUP
-
-```text
-Git base commit:
-App795 pre-change record count:
-Affected rule IDs:
-Schema backup/read-back:
-Routing-data backup/read-back:
-Rollback artifact/location:
-```
-
-## C. CHANGES — APP794
-
-```text
-Files changed:
-Functions changed:
-Resolver behavior changed:
-Route Scenario display changed:
-```
-
-## D. CHANGES — APP795
-
-```text
-Fields added:
-Fields reused:
-Rules created:
-Rules updated:
-Rules disabled/removed if required:
-Post-change record count:
-```
-
-## E. GM RULE EVIDENCE
-
-```text
-GM + TMH3 → President = PASS/FAIL
-GM + TMG2 + <actual team> → President = PASS/FAIL
-```
-
-## F. TEAM ROUTING EVIDENCE
-
-List the actual TMG2 Team values and exact matched routes.
-
-```text
-TMG2 + <Team 1> → <Route> = PASS/FAIL
-TMG2 + <Team 2> → <Route> = PASS/FAIL
-Unknown Team → ROUTE_NOT_FOUND = PASS/FAIL
-Missing required Team → TEAM_REQUIRED = PASS/FAIL
-```
-
-## G. REGRESSION
-
-Report TC01–TC10 and relevant existing active routing scenarios as PASS/FAIL.
-
-## H. KINTONE CHANGE EVIDENCE
-
-```text
-Apps written: 794/795 only = PASS/FAIL
-Production write count = 0
-Other app write count = 0
-App795 read-back = PASS/FAIL
-App794 Sandbox smoke = PASS/FAIL
-```
-
-## I. GIT
-
-```text
-Branch:
-Commit before:
-Commit after:
-Files changed:
-git status:
-push sync:
-```
-
-## J. RISKS / OPEN ISSUES
-
-List all remaining risks or unresolved data questions.
-
-## K. ROLLBACK
-
-Provide exact rollback steps.
-
----
-
-# 23. DEFINITION OF DONE
-
-M10M is complete only when all applicable items are proven:
-
-- [ ] Correct repo/branch verified
-- [ ] Existing routing implementation inspected before change
-- [ ] Actual App795 schema inspected
-- [ ] Actual TMG2 Team values inspected; no Team names invented
-- [ ] Backup/Git checkpoint created before Kintone write
-- [ ] App795 supports/reuses Position criterion
-- [ ] App795 supports/reuses Team criterion
-- [ ] App795 supports deterministic Priority/specificity
-- [ ] GM → President rule implemented in App795/equivalent master-driven design
-- [ ] GM override wins over Section and Team
-- [ ] TMG2 supports required Team-specific routing
-- [ ] Unknown TMG2 Team blocks
-- [ ] Missing required TMG2 Team blocks
-- [ ] Ambiguous route blocks
-- [ ] Missing President target blocks
-- [ ] Existing App794 resolver reused rather than duplicated
-- [ ] Route Scenario displays Team and matched-rule diagnostics where safe
-- [ ] Workflow State Machine not redesigned
-- [ ] Existing unrelated routes regression PASS
-- [ ] `npm test` PASS
-- [ ] relevant build PASS
-- [ ] Sandbox App795 read-back PASS
-- [ ] Sandbox App794 smoke PASS
-- [ ] Production write count = 0
-- [ ] Other-app write count = 0
-- [ ] Git diff reviewed
-- [ ] No secrets committed
-- [ ] Rollback verified/documented
-- [ ] Final report complete
-
-Do not mark COMPLETE if any mandatory item is missing.
-
----
-
-# 24. REQUIRED EVIDENCE BLOCK
-
-Return an exact evidence block with real values filled in:
-
-```text
-M10M_POSITION_PRIORITY_TEAM_ROUTING = COMPLETE | BLOCKED
-APP794_EXISTING_RESOLVER_REUSED = PASS | FAIL
-APP795_SCHEMA_DISCOVERY = PASS | FAIL
-APP795_BACKUP = PASS | FAIL
-POSITION_PRIORITY = PASS | FAIL
-GM_TO_PRESIDENT = PASS | FAIL
-GM_SECTION_OVERRIDE = PASS | FAIL
-GM_TEAM_OVERRIDE = PASS | FAIL
-TEAM_AWARE_ROUTING = PASS | FAIL
-TMG2_TEAM_VALUES_DISCOVERED = <actual values>
-TMG2_TEAM_RULES = PASS | FAIL
-UNKNOWN_TMG2_TEAM_BLOCKED = PASS | FAIL
-MISSING_REQUIRED_TEAM_BLOCKED = PASS | FAIL
-AMBIGUOUS_ROUTE_BLOCKED = PASS | FAIL
-MISSING_PRESIDENT_BLOCKED = PASS | FAIL
-EXISTING_ROUTE_REGRESSION = PASS | FAIL
-ROUTE_SCENARIO_DIAGNOSTICS = PASS | FAIL
-WORKFLOW_STATE_MACHINE_CHANGE_COUNT = 0
+M10M_R1 = READY_FOR_REVIEW
+PARENT_BLOCKED_COMMIT = b3cb13e5ba615ad4cc0c4a8698448282d66aa4fe
+HARDCODED_PRESIDENT_COUNT = 0
+GM_QUERY_ERROR_DEFAULT_FALLBACK_COUNT = 0
+BLANK_REQUESTER_ALLOW_ALL_COUNT = 0
+GENERAL_MANAGER_NORMALIZATION = PASS
+GM_TMH3_TO_MASTER_PRESIDENT_ROUTE = PASS
+GM_TMG2_CAD_POSITION_OVERRIDE = PASS
+TMG2_CAD_ROUTE = PASS
+TMG2_PRODUCTION_ROUTE = PASS
+TMG2_MARKETING_ROUTE = PASS
+TMG2_MISSING_TEAM_FAIL_CLOSED = PASS
+TMG2_UNKNOWN_TEAM_FAIL_CLOSED = PASS
+DUPLICATE_ROUTE_FAIL_CLOSED = PASS
+REQUESTER_AUTH_REGRESSION = PASS
+APP53_WRITE_COUNT = 0
 PRODUCTION_WRITE_COUNT = 0
-OTHER_APP_WRITE_COUNT = 0
-APP795_READBACK = PASS | FAIL
-APP794_SANDBOX_SMOKE = PASS | FAIL
-NPM_TEST = PASS | FAIL
-BUILD = PASS | FAIL
-SECRET_EXPOSURE_COUNT = 0
-ROLLBACK_READY = PASS | FAIL
-GIT_PUSH_SYNC = PASS | FAIL
-FINAL_STATUS = READY FOR CHATGPT REVIEW | BLOCKED
+NPM_TEST = PASS
+BUILD = PASS
 ```
+
+Also report:
+- actual App795 fields used;
+- actual GM routing-master key/record used or created;
+- App795 Before/After if changed;
+- App795 read-back result;
+- files changed;
+- test counts;
+- Git commit SHA;
+- rollback procedure.
 
 ---
 
-# 25. STOP CONDITION
+## 15. STOP CONDITION
 
-After implementation, tests, Sandbox read-back/smoke, evidence, commit and push:
+When correction is complete:
+
+1. Inspect `git diff`.
+2. Confirm no secrets/tokens were added.
+3. Commit and push the same `ai/antigravity-wp002c` branch.
+4. Do not self-approve.
+5. Stop with exactly:
 
 ```text
 FINAL STATUS: READY FOR CHATGPT REVIEW
 ```
 
-STOP.
-
-Do not self-approve.
-Do not deploy Production.
-Do not continue to another Work Package.
+Do not continue to unrelated work.
