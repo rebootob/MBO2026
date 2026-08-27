@@ -62,7 +62,35 @@ test('Admin Support Center — Corrective Round 2 Test Suite (B1-B5)', async (t)
     }, { message: /SCORING_CONFIG_AMBIGUOUS/ });
   });
 
-  await t.test('B1.4 Production provider never uses m01/g01 or invented topology/count fallback', async () => {
+  await t.test('B1.4 KintoneAdminDiagnosticProvider fails closed when App53 position cannot resolve expected Profile_Code', async () => {
+    const mockApp53Unmapped = { getRecords: async () => [{ Employee_Code: '0118', Employee_Position: 'UNKNOWN_INVALID_POSITION', Employee_Section: 'TMT1' }] };
+    const mockApp794Repo = { getRecords: async () => [{ $id: 101, Status: '01 Draft Objective' }] };
+    const p = new KintoneAdminDiagnosticProvider({ app53Repo: mockApp53Unmapped, app794Repo: mockApp794Repo });
+    await assert.rejects(async () => {
+      await p.checkEmployee('0118', '2026');
+    }, { message: /SCORING_CONFIG_NOT_FOUND/ });
+  });
+
+  await t.test('B1.5 KintoneAdminDiagnosticProvider fails closed when App796 record is missing Fiscal_Year or Config_Status', async () => {
+    const mockApp53Repo = { getRecords: async () => [{ Employee_Code: '0118', Employee_Position: 'Staff', Employee_Section: 'TMT1' }] };
+    const mockApp794Repo = { getRecords: async () => [{ $id: 101, Status: '01 Draft Objective' }] };
+
+    // Missing Fiscal_Year
+    const mockApp796MissingFy = { getRecords: async () => [{ Profile_Code: 'PROF_STAFF_CHIEF', PartA_Weight: 70, PartB_Weight: 30, Config_Status: 'PUBLISHED' }] };
+    const p1 = new KintoneAdminDiagnosticProvider({ app53Repo: mockApp53Repo, app794Repo: mockApp794Repo, app796Repo: mockApp796MissingFy });
+    await assert.rejects(async () => {
+      await p1.checkEmployee('0118', '2026');
+    }, { message: /SCORING_CONFIG_NOT_FOUND/ });
+
+    // Missing Config_Status
+    const mockApp796MissingStatus = { getRecords: async () => [{ Profile_Code: 'PROF_STAFF_CHIEF', PartA_Weight: 70, PartB_Weight: 30, Fiscal_Year: '2026' }] };
+    const p2 = new KintoneAdminDiagnosticProvider({ app53Repo: mockApp53Repo, app794Repo: mockApp794Repo, app796Repo: mockApp796MissingStatus });
+    await assert.rejects(async () => {
+      await p2.checkEmployee('0118', '2026');
+    }, { message: /SCORING_CONFIG_NOT_FOUND/ });
+  });
+
+  await t.test('B1.6 Production provider returns authoritativeProfile using real App796 record values without fallbacks', async () => {
     const mockApp53Repo = { getRecords: async () => [{ Employee_Code: '0118', Employee_Position: 'Staff', Employee_Section: 'TMT1' }] };
     const mockApp794Repo = { getRecords: async () => [{ $id: 101, Status: '01 Draft Objective' }] };
     const mockApp796Repo = { getRecords: async () => [{ Profile_Code: 'PROF_STAFF_CHIEF', PartA_Weight: 70, PartB_Weight: 30, Fiscal_Year: '2026', Config_Status: 'PUBLISHED' }] };
@@ -71,10 +99,13 @@ test('Admin Support Center — Corrective Round 2 Test Suite (B1-B5)', async (t)
     const p = new KintoneAdminDiagnosticProvider({ app53Repo: mockApp53Repo, app794Repo: mockApp794Repo, app796Repo: mockApp796Repo, app795Repo: mockApp795Repo });
     const res = await p.checkEmployee('0118', '2026');
 
+    assert.equal(res.authoritativeProfile.code, 'PROF_STAFF_CHIEF');
+    assert.equal(res.authoritativeProfile.fiscalYear, '2026');
+    assert.equal(res.authoritativeProfile.configStatus, 'PUBLISHED');
+    assert.equal(res.authoritativeProfile.partAWeight, 70);
+    assert.equal(res.authoritativeProfile.partBWeight, 30);
     assert.equal(res.authoritativeRoute.appraiser1, 'real_mgr_user');
     assert.equal(res.authoritativeRoute.appraiser2, 'real_gm_user');
-    assert.notEqual(res.authoritativeRoute.appraiser1, 'm01');
-    assert.notEqual(res.authoritativeRoute.appraiser2, 'g01');
   });
 
   // B2 Tests: App796 FY and PUBLISHED evidence mandatory

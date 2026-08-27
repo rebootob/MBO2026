@@ -236,7 +236,7 @@ export class KintoneAdminDiagnosticProvider {
 
     const mboRecord = mboRecords[0];
 
-    // 3. App796 Published Scoring Master Config Query (B1: Query by expected Profile_Code + FY + PUBLISHED)
+    // 3. App796 Published Scoring Master Config Query
     let expectedProfileCode = null;
     if (empPos) {
       try {
@@ -244,10 +244,14 @@ export class KintoneAdminDiagnosticProvider {
       } catch {}
     }
 
+    if (!expectedProfileCode) {
+      const err = new Error(`SCORING_CONFIG_NOT_FOUND: Cannot resolve expected Profile_Code from employee position "${empPos || 'N/A'}".`);
+      err.code = 'SCORING_CONFIG_NOT_FOUND';
+      throw err;
+    }
+
     let app796Records = [];
-    const pQuery = expectedProfileCode
-      ? `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") and Profile_Code = "${expectedProfileCode}" limit 2`
-      : `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") limit 2`;
+    const pQuery = `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") and Profile_Code = "${expectedProfileCode}" limit 2`;
 
     if (this.app796Repo) {
       app796Records = await this.app796Repo.getRecords(pQuery);
@@ -257,17 +261,36 @@ export class KintoneAdminDiagnosticProvider {
     }
 
     if (!app796Records || app796Records.length === 0) {
-      const err = new Error(`SCORING_CONFIG_NOT_FOUND: Published App796 config for profile "${expectedProfileCode || 'N/A'}" in FY ${cleanFy} not found.`);
+      const err = new Error(`SCORING_CONFIG_NOT_FOUND: Published App796 config for profile "${expectedProfileCode}" in FY ${cleanFy} not found.`);
       err.code = 'SCORING_CONFIG_NOT_FOUND';
       throw err;
     }
     if (app796Records.length > 1) {
-      const err = new Error(`SCORING_CONFIG_AMBIGUOUS: Multiple published App796 configs found for profile "${expectedProfileCode || 'N/A'}" in FY ${cleanFy}.`);
+      const err = new Error(`SCORING_CONFIG_AMBIGUOUS: Multiple published App796 configs found for profile "${expectedProfileCode}" in FY ${cleanFy}.`);
       err.code = 'SCORING_CONFIG_AMBIGUOUS';
       throw err;
     }
 
     const app796Obj = app796Records[0];
+    const recProfileCode = app796Obj.Profile_Code?.value || app796Obj.Profile_Code;
+    const recFy = app796Obj.Fiscal_Year?.value || app796Obj.Fiscal_Year;
+    const recStatus = app796Obj.Config_Status?.value || app796Obj.Config_Status;
+    const recPartA = app796Obj.PartA_Weight?.value ?? app796Obj.PartA_Weight;
+    const recPartB = app796Obj.PartB_Weight?.value ?? app796Obj.PartB_Weight;
+
+    const isApp796Valid = Boolean(
+      recProfileCode && recProfileCode === expectedProfileCode &&
+      recFy && recFy === cleanFy &&
+      recStatus && recStatus === 'PUBLISHED' &&
+      recPartA !== null && recPartA !== undefined &&
+      recPartB !== null && recPartB !== undefined
+    );
+
+    if (!isApp796Valid) {
+      const err = new Error(`SCORING_CONFIG_NOT_FOUND: App796 record for profile "${expectedProfileCode}" in FY ${cleanFy} has invalid or incomplete evidence.`);
+      err.code = 'SCORING_CONFIG_NOT_FOUND';
+      throw err;
+    }
 
     // 4. App795 Routing Master Query (B1: 0 records => ROUTE_NOT_FOUND, >1 => ROUTE_AMBIGUOUS)
     const normPos = empPos.trim().toLowerCase();
@@ -334,11 +357,11 @@ export class KintoneAdminDiagnosticProvider {
       appraiser1: mboRecord.First_Manager_User?.value?.[0]?.code || mboRecord.First_Manager_User || 'NOT_EVIDENCED',
       appraiser2: mboRecord.GM_User?.value?.[0]?.code || mboRecord.GM_User || 'NOT_EVIDENCED',
       authoritativeProfile: {
-        code: app796Obj.Profile_Code?.value || app796Obj.Profile_Code,
-        partAWeight: app796Obj.PartA_Weight?.value ?? app796Obj.PartA_Weight,
-        partBWeight: app796Obj.PartB_Weight?.value ?? app796Obj.PartB_Weight,
-        fiscalYear: app796Obj.Fiscal_Year?.value || app796Obj.Fiscal_Year || cleanFy,
-        configStatus: app796Obj.Config_Status?.value || app796Obj.Config_Status || 'PUBLISHED'
+        code: recProfileCode,
+        partAWeight: Number(recPartA),
+        partBWeight: Number(recPartB),
+        fiscalYear: recFy,
+        configStatus: recStatus
       },
       authoritativeRoute: {
         topology: app795Obj.Routing_Topology?.value || app795Obj.Routing_Topology || null,
