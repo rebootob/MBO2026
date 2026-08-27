@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — ADMIN SUPPORT CENTER DIAGNOSTIC HARDENING
+# AI ACTIVE TASK — ADMIN SUPPORT CENTER DIAGNOSTIC HARDENING + FAST REPAIR PREPARATION
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
@@ -23,18 +23,36 @@ ADMIN_FORM_BUSINESS_AUTHORITY = NONE
 PROCESS_STATES = 16
 PROCESS_ACTIONS = 28
 APP795 = AUTHORITATIVE ROUTING MASTER
-EVALUATION_PROFILE_AND_ROUTING = SEPARATE CONCERNS
+EVALUATION_PROFILE_AND_ROUTING = SEPARATE_CONCERNS
 ```
 
 Do not change Employee/Appraiser/HR accepted UI behavior.
 
 ## OBJECTIVE
 
-Harden Admin Support Center so `admin-form` can reliably diagnose three critical questions for every MBO record:
+Harden Admin Support Center so `admin-form` can reliably diagnose each employee / MBO record and prepare the safest repair path.
 
-1. **WORKFLOW TRACE** — Is the workflow running through the correct states/actors/active appraiser slot for the resolved topology?
-2. **EVALUATION PROFILE** — Is the record assigned the correct evaluation profile/Part A:Part B ratio for the employee classification?
-3. **ROUTE ASSIGNMENT** — Is the record assigned the correct Routing Key / topology / 1st..4th Appraisers for this employee/record?
+The primary operational flow must be simple:
+
+```text
+CHECK
+  ↓
+PREPARE REPAIR
+  ↓
+CONFIRM REPAIR (FUTURE / DISABLED IN THIS PACKAGE)
+```
+
+This package implements **CHECK + PREPARE REPAIR only**.
+
+Real repair/write remains disabled because Kintone authorization is NONE.
+
+The panel must answer:
+
+1. Is Evaluation Profile correct for Employee_Code + Fiscal Year?
+2. Is Routing / Routing_Key / topology / Appraiser 1..4 assignment correct?
+3. Is the workflow currently on the correct state / actor / active appraiser slot?
+4. If something is wrong, what is the root cause and authoritative source?
+5. What exact repair would be needed, where should it be applied, how many records are impacted, and what risk level does it have?
 
 The panel must distinguish **EXPECTED** vs **ACTUAL** vs **NOT EVIDENCED**. Never fabricate PASS from defaults.
 
@@ -88,7 +106,37 @@ ERROR / FAIL_CLOSED
 
 Only return PASS when supplied runtime/repository evidence proves it.
 
-## A. WORKFLOW TRACE / WORKFLOW ROUTE VALIDATION
+## A. EMPLOYEE-CENTRIC CHECK UX
+
+Admin Support Center must have an explicit employee-centric diagnostic contract.
+
+Conceptually:
+
+```text
+Employee Code: <code>
+Fiscal Year: <year>
+[ CHECK EMPLOYEE ]
+```
+
+For local Preview, use deterministic fixture inputs only; do not call Kintone.
+
+For future Production wiring, the lookup chain is authoritative:
+
+```text
+Employee_Code + Fiscal Year
+        ↓
+App53 Employee Master inputs
+        ↓
+Position / Section / Team
+        ├─→ Expected Evaluation Profile / App796
+        └─→ Expected Routing Key / App795
+        ↓
+Compare against App794 record snapshot
+```
+
+Do not implement live App53/App795/App796/App794 fetch in this package.
+
+## B. WORKFLOW TRACE / WORKFLOW ROUTE VALIDATION
 
 Add a dedicated read-only section/card/table named approximately:
 
@@ -99,7 +147,7 @@ Workflow Trace / Workflow Route Validation
 
 Purpose: let `admin-form` quickly detect whether workflow is running incorrectly.
 
-### A1. Expected Path
+### B1. Expected Path
 
 Use confirmed topology semantics to show the **expected path** for the resolved topology where supported.
 
@@ -115,7 +163,7 @@ M1_G1
 
 Do not invent support for future topology if runtime semantics are not confirmed.
 
-### A2. Current Workflow Consistency
+### B2. Current Workflow Consistency
 
 For current record show:
 
@@ -140,9 +188,9 @@ Current status unknown/unmapped -> ERROR / FAIL_CLOSED
 Required appraiser missing for current slot -> ERROR
 ```
 
-### A3. Workflow Log / Actual History Boundary
+### B3. Workflow Log / Actual History Boundary
 
-Important: do NOT fabricate a production workflow action log.
+Do NOT fabricate a production workflow action log.
 
 Current project baseline has production audit persistence/source still pending design. Therefore distinguish:
 
@@ -169,7 +217,7 @@ Preview fixture timestamps
 
 Preview may use deterministic synthetic history only when explicitly labeled `PREVIEW FIXTURE / NOT PRODUCTION AUDIT`.
 
-## B. EVALUATION PROFILE VALIDATION
+## C. EVALUATION PROFILE VALIDATION
 
 Add explicit **Expected vs Actual Evaluation Profile** diagnostic.
 
@@ -178,6 +226,8 @@ Evaluation Profile is NOT routing.
 Show where evidence exists:
 
 ```text
+Employee Code
+Fiscal Year
 Employee Position / classification input
 Expected Profile Code
 Actual Record Profile Code
@@ -185,7 +235,6 @@ Expected Part A Weight
 Actual Part A Weight
 Expected Part B Weight
 Actual Part B Weight
-Expected Appraiser Count if profile contract defines it
 Profile Source / App796 config identity/version where available
 PROFILE_MATCH = PASS / ERROR / NOT_EVIDENCED
 Mismatch reason
@@ -206,7 +255,7 @@ Do NOT assign `PROF_STAFF_CHIEF` merely because profile evidence is missing.
 
 If position/profile mapping evidence is unavailable, return `NOT_EVIDENCED`, not PASS.
 
-## C. ROUTE ASSIGNMENT VALIDATION
+## D. ROUTE ASSIGNMENT VALIDATION
 
 Add explicit **Expected vs Actual Route Assignment** diagnostic for each record/employee.
 
@@ -216,6 +265,7 @@ Show where evidence exists:
 
 ```text
 Employee Code
+Fiscal Year
 Position
 Section
 Team
@@ -266,9 +316,134 @@ App795 source/result
 
 Preview may show Route Scenario as secondary display context only, clearly marked Preview.
 
-## D. DIAGNOSTIC SNAPSHOT HARDENING
+## E. FAST REPAIR PREPARATION / ROOT-CAUSE CLASSIFICATION
 
-Current generic recursive serializer is too permissive.
+When CHECK returns ERROR, add a **Prepare Repair** stage that produces a repair candidate only. It must NOT write anything.
+
+The model must classify the root cause into exactly one safe recommendation where evidence supports it:
+
+```text
+FIX_THIS_RECORD
+FIX_EMPLOYEE_MASTER_FIRST
+FIX_ROUTING_MASTER_FIRST
+FIX_SCORING_PROFILE_MASTER_FIRST
+ESCALATE_WORKFLOW_REPAIR
+BLOCKED_NOT_ENOUGH_EVIDENCE
+NO_REPAIR_NEEDED
+```
+
+Decision semantics:
+
+```text
+Master sources proven correct + App794 snapshot stale/mismatched
+→ FIX_THIS_RECORD
+
+App53 Position/Section/Team proven wrong
+→ FIX_EMPLOYEE_MASTER_FIRST
+
+App53 inputs correct + App795 authoritative route proven wrong
+→ FIX_ROUTING_MASTER_FIRST
+
+Employee classification correct + App796/profile config proven wrong
+→ FIX_SCORING_PROFILE_MASTER_FIRST
+
+Workflow state/actor/path inconsistent or requires status/process manipulation
+→ ESCALATE_WORKFLOW_REPAIR
+
+Source of truth unresolved / missing evidence
+→ BLOCKED_NOT_ENOUGH_EVIDENCE
+
+Everything matches
+→ NO_REPAIR_NEEDED
+```
+
+### Repair Candidate Output
+
+For each candidate show:
+
+```text
+Employee Code
+Fiscal Year
+Problem Type
+Root Cause
+Authoritative Source
+Recommended Action
+Target App / Source
+Risk = LOW | MEDIUM | HIGH | BLOCKED
+Impact Scope = 1 record | N records | UNKNOWN
+Before
+After
+Fields affected
+Backup required = YES
+Read-back verification required = YES
+Rollback required = YES
+Execution status = NOT EXECUTED
+```
+
+For `FIX_THIS_RECORD`, allow a local Preview of exact before/after changes such as:
+
+```text
+Profile_Code
+Part_A_Weight
+Part_B_Weight
+Routing_Key
+Routing_Topology
+Expected_Appraiser_Count
+Appraiser slot references
+```
+
+Only include fields proven derived/stale and safe to rebind. Do not propose overwriting employee-authored objectives, appraiser ratings, comments, or HR decisions.
+
+For master repair recommendations, explicitly warn that impact may affect multiple employees/records and requires separate impact analysis.
+
+For workflow repair recommendations, do NOT propose a normal one-click state change. State:
+
+```text
+WORKFLOW_REPAIR_REQUIRES_SEPARATE_AUTHORIZED_PACKAGE
+```
+
+## F. FAST REPAIR UX
+
+Keep UI simple and operational.
+
+Recommended state flow:
+
+```text
+[ CHECK EMPLOYEE ]
+        ↓
+PASS / WARNING / ERROR summary
+        ↓
+[ PREPARE REPAIR ]  (only when ERROR and evidence sufficient)
+        ↓
+Exact Before / After + Root Cause + Impact + Risk
+        ↓
+[ CONFIRM REPAIR ]  DISABLED / FUTURE PACKAGE
+```
+
+The user-facing Admin Support Center should make the main recommendation obvious:
+
+```text
+App53   = PASS|ERROR|NOT_EVIDENCED
+App795  = PASS|ERROR|NOT_EVIDENCED
+App796  = PASS|ERROR|NOT_EVIDENCED
+App794  = PASS|ERROR|NOT_EVIDENCED
+
+Recommended Action:
+<one classified action>
+```
+
+Use status semantics:
+
+```text
+GREEN = PASS / no action
+AMBER = inspect / partial evidence
+RED = repair candidate
+GRAY = blocked / insufficient evidence
+```
+
+Do not let color be the only carrier of meaning; always show text status/reason.
+
+## G. DIAGNOSTIC SNAPSHOT HARDENING
 
 Change diagnostic snapshot to an **explicit allowlist contract**. Snapshot must contain only approved diagnostic fields/sections.
 
@@ -289,20 +464,21 @@ raw credential objects
 free-text confidential evaluation comments unless explicitly required later
 ```
 
-Include new sanitized summaries:
+Include sanitized summaries:
 
 ```text
 workflowValidation
 workflowHistorySourceStatus
 profileValidation
 routeValidation
+repairRecommendation
 healthSummary
 recordIdentity
 buildVersion
 validationErrors
 ```
 
-## E. HTML OUTPUT SAFETY
+## H. HTML OUTPUT SAFETY
 
 All record/config/user-derived strings rendered into Admin Support Center HTML must be escaped before interpolation.
 
@@ -310,7 +486,7 @@ Add a minimal shared/local HTML escaping helper; do not add dependencies.
 
 Test payloads containing `<script>`, `<img onerror=...>`, `&`, quotes must render as escaped text, never executable markup.
 
-## F. UI / INFORMATION ARCHITECTURE
+## I. UI / INFORMATION ARCHITECTURE
 
 Keep existing Admin Support Center, but make troubleshooting immediately readable.
 
@@ -318,9 +494,10 @@ Recommended sections/tabs:
 
 ```text
 1. System Health
-2. Record Diagnostic
+2. Employee / Record Check
 3. Workflow / Route / Profile Validation
-4. Controlled Repair — DISABLED
+4. Repair Preparation
+5. Controlled Repair — DISABLED
 ```
 
 Within validation section, show three compact blocks:
@@ -335,12 +512,13 @@ Use Expected / Actual / Result / Reason columns where practical.
 
 Do not redesign Employee/Appraiser/HR screens.
 
-## G. CONTROLLED REPAIR BOUNDARY
+## J. CONTROLLED REPAIR BOUNDARY
 
 Still disabled.
 
 ```text
 REPAIR_WRITE_IMPLEMENTED = NO
+CONFIRM_REPAIR_ENABLED = NO
 KINTONE_WRITE = 0
 WORKFLOW_ACTION = 0
 IMPERSONATION = 0
@@ -373,6 +551,16 @@ Add/update focused tests proving at minimum:
 18. snapshot uses allowlist and cannot dump arbitrary record/secrets
 19. HTML dynamic content escaped
 20. Controlled Repair remains disabled / zero business authority
+21. all master sources correct + stale App794 => FIX_THIS_RECORD
+22. App53 wrong => FIX_EMPLOYEE_MASTER_FIRST
+23. App795 wrong => FIX_ROUTING_MASTER_FIRST
+24. App796/profile config wrong => FIX_SCORING_PROFILE_MASTER_FIRST
+25. workflow inconsistency => ESCALATE_WORKFLOW_REPAIR
+26. missing authoritative evidence => BLOCKED_NOT_ENOUGH_EVIDENCE
+27. all validations match => NO_REPAIR_NEEDED
+28. repair candidate contains exact before/after but execution status remains NOT EXECUTED
+29. repair candidate never includes employee-authored objectives, ratings, confidential comments, or secrets
+30. CONFIRM REPAIR remains disabled
 ```
 
 Run targeted tests, full `npm test`, and build.
@@ -410,11 +598,15 @@ Return:
 IMPLEMENTATION_HEAD = <sha>
 ADMIN_FORM_EXACT_ID_GATE = PASS|FAIL
 FABRICATED_DIAGNOSTIC_DEFAULTS_REMOVED = PASS|FAIL
+EMPLOYEE_CENTRIC_CHECK = PASS|FAIL
 WORKFLOW_TRACE_VALIDATION = PASS|FAIL
 ACTUAL_WORKFLOW_HISTORY_BOUNDARY = PASS|FAIL
 EVALUATION_PROFILE_VALIDATION = PASS|FAIL
 ROUTE_ASSIGNMENT_VALIDATION = PASS|FAIL
 ACTIVE_APPRAISER_WORKFLOW_CONSISTENCY = PASS|FAIL
+REPAIR_ROOT_CAUSE_CLASSIFICATION = PASS|FAIL
+REPAIR_CANDIDATE_PREVIEW = PASS|FAIL
+CONFIRM_REPAIR = DISABLED|FAIL
 SNAPSHOT_ALLOWLIST = PASS|FAIL
 HTML_OUTPUT_ESCAPING = PASS|FAIL
 CONTROLLED_REPAIR = DISABLED|FAIL
