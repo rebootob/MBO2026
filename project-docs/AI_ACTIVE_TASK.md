@@ -1,218 +1,148 @@
-# AI ACTIVE TASK — D1 KINTONE-ONLY FINAL UI-ISOLATION CORRECTIVE
+# AI ACTIVE TASK — D1 KINTONE-ONLY LIVE CUTOVER AUTHORIZATION GATE
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Working branch: `ai/antigravity-wp002c`
-> Independently reviewed implementation: `d330514b4fddcb2c3e060209a4be50bb8fd2f24b`
-> Mode: MINIMUM SOURCE CORRECTIVE + LOCAL TESTS ONLY / NO LIVE KINTONE ACL-SCHEMA CHANGE / NO DEPLOY
+> Independently reviewed source commit: `63796999a321a24e1cbd29ceaad82b43980fe8ea`
+> Mode: CONTROL / PLAN ONLY — NO LIVE KINTONE WRITE OR DEPLOY WITHOUT EXPLICIT USER AUTHORIZATION
 
-## 0. REVIEW RESULT
+## 0. INDEPENDENT SOURCE REVIEW RESULT
 
-Accepted foundation from `d330514...`:
-- real blocking Login UI exists;
-- WebCrypto PBKDF2-SHA256 format is correct;
-- page-memory principal only;
-- Force Password Change UI exists;
-- normal Change Password UI includes current password;
+D1 Kintone-only source implementation is accepted for the next gate.
+
+Accepted source behavior:
+- real blocking MBO Login UI;
+- Username = Employee_Code;
+- WebCrypto PBKDF2-SHA256 `pbkdf2$100000$<saltHex>$<hashHex>`;
+- page-memory authentication only; reload/re-entry requires login again;
+- Force Password Change UI;
+- normal Change Password requires Current Password;
 - Logout clears page-memory and reloads;
-- failed-attempt + 15-minute lockout logic exists;
-- detail/edit mismatch has blocking notice and hides native fields;
-- authenticated Employee_Code suppresses employee lookup selector;
-- source/tests are scoped to D1 and no live Kintone write/deploy/ACL change was performed.
+- failed attempts + 15-minute temporary lockout;
+- `Account_Status=LOCKED` and `DISABLED` deny;
+- malformed failed-attempt / lockout state fails closed;
+- force password change requires `Force_Password_Change=YES`;
+- App794 index/list Employee Self view queries only authenticated Employee_Code and hides the unrestricted native list;
+- create/detail/edit gate fail-closed on missing gate/host;
+- authenticated create awaits existing App53 -> App795 -> App796 -> duplicate -> Record_Key -> snapshot resolution;
+- detail/edit employee mismatch blocks custom UI and hides native fields;
+- authenticated Employee Self does not expose Employee_Code lookup/selector;
+- blocked dynamic values use safe DOM text nodes/textContent.
 
-D1 SOURCE IS NOT YET ACCEPTED FOR LIVE CUTOVER because the following release blockers remain.
+Known architecture limitation remains:
+`DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT`.
 
-## B1 — INDEX/LIST MUST NOT REVEAL OTHER EMPLOYEES AFTER LOGIN
+GitHub has no CI/status/workflow evidence for the implementation commit. Do not claim CI PASS. Manual Kintone UI UAT remains mandatory before D1 closes.
 
-Current `app.record.index.show` only requires login and then returns the native App794 list. Under the shared Kintone account that list can contain other employees.
+## 1. LIVE CUTOVER IS NOT YET AUTHORIZED
 
-Required:
-- after login, authenticated Employee_Code is the only Employee Self context;
-- native unrestricted App794 list must NOT remain visible to Employee Self;
-- render a minimal Employee Self landing/index that queries App794 only with the authenticated Employee_Code, or an equivalent fail-closed custom index;
-- show only the authenticated employee's current/history MBO navigation needed for D1;
-- do not add D2 export/copy work here;
-- no user-supplied Employee_Code query;
-- ordinary UI for 0118 must not display 0119 records.
+Do NOT perform any of the following until ChatGPT records explicit user authorization:
+- App801 app permission change;
+- App801 record permission change;
+- App801 credential provisioning/update;
+- App794 customization upload/deploy;
+- App794 ACL change;
+- migration or D2-D7 work.
 
-This does NOT claim hard direct-URL/REST isolation; that known shared-account limitation remains documented.
-
-## B2 — INDEX GATE INITIALIZATION FAILURE MUST FAIL CLOSED
-
-Current index handler logs and `return event` when `mboLoginGate` is null, leaving native list visible.
-
-Required:
-- if gate is null/failed, render a full-screen blocking error/overlay and hide/cover native index content;
-- never return to an unrestricted native list on auth initialization failure.
-
-## B3 — RECORD HOST FAILURE MUST FAIL CLOSED
-
-Current record handler does:
+Current mandatory counters remain:
 
 ```text
-if (!uiHost) -> Retaining native form -> return event
-```
-
-This bypasses the MBO gate.
-
-Required:
-- do not retain native form unauthenticated;
-- use a safe fallback blocking host such as document.body / app wrapper, or otherwise hide native record fields and render a blocking error;
-- create/detail/edit must never show native employee MBO fields because `SPACE_HEADER` is missing.
-
-## B4 — AUTHENTICATED CREATE AUTOLOAD MUST BE AWAITED
-
-Current create path starts:
-
-```js
-ui.executeLookup(authenticatedEmployeeCode).catch(...)
-```
-
-and immediately returns the Kintone show event.
-
-Required:
-- make the authenticated create flow await the existing employee-resolution chain before considering setup complete;
-- preserve the existing one shared logic path:
-  authenticated Employee_Code
-  -> App53 EmployeeService.lookupEmployee()
-  -> App795 Routing
-  -> App796 Scoring
-  -> Duplicate Check
-  -> Record_Key
-  -> snapshot population;
-- if autoload fails, show a blocking/fail-closed visible state; do not silently leave a partially initialized Employee Self form;
-- do not duplicate business logic.
-
-## B5 — ACCOUNT_STATUS=LOCKED MUST DENY
-
-Current adapter accepts `LOCKED` as a valid status but login only unconditionally denies `DISABLED`; a `LOCKED` record with empty/expired Locked_Until can proceed.
-
-Required:
-- `Account_Status = LOCKED` => always `CREDENTIAL_DENIED`;
-- `Account_Status = DISABLED` => always deny;
-- temporary Failed_Attempts lockout continues to use `Locked_Until` while Account_Status remains ACTIVE;
-- malformed Failed_Attempts / malformed Locked_Until required state must fail closed rather than producing NaN or silently allowing.
-
-## B6 — FORCE CHANGE MUST REQUIRE FORCE FLAG
-
-`forceChangePassword()` must not change a credential whose current `Force_Password_Change` is not YES.
-
-Required:
-- re-read exact credential;
-- require `forceChange === true` before forced-password update;
-- otherwise deny without write;
-- gate still invokes this only after a valid password login produced `PASSWORD_CHANGE_REQUIRED`.
-
-## B7 — BLOCKED NOTICE MUST NOT INJECT RECORD DATA AS HTML
-
-Do not insert record Employee_Code or other record values into `innerHTML` without escaping.
-Use DOM `textContent` / safe nodes for dynamic values.
-
-## REQUIRED FOCUSED TEST EVIDENCE
-
-Add only missing focused tests, preferably extending existing D1 tests / existing main integration test.
-
-Prove:
-1. index gate null => native index is blocked, not returned visible;
-2. authenticated 0118 index renders/queries only 0118 MBO items and does not display 0119;
-3. missing SPACE_HEADER cannot expose native create/detail/edit form;
-4. create show does not complete authenticated setup until App53->795->796->duplicate->Record_Key autoload resolves;
-5. create autoload failure produces blocking state;
-6. `Account_Status=LOCKED` always denied even without Locked_Until;
-7. malformed Failed_Attempts / invalid Locked_Until fail closed;
-8. forceChangePassword is denied when Force_Password_Change=NO, zero update;
-9. detail/edit 0119 remains blocked for authenticated 0118;
-10. no regression in Login / force change / normal change / logout / PBKDF2 / page-memory tests;
-11. full `npm test` passes locally;
-12. `git diff --check` passes.
-
-Do not add broad duplicate test suites.
-
-## ALLOWED SOURCE SCOPE
-
-Prefer only existing D1 files:
-- `src/main-mbo-app.js`
-- `src/ui/mbo-kintone-auth-adapter.js`
-- `src/ui/mbo-kintone-login-gate.js`
-- `src/ui/employee-part-a-ui.js` only if genuinely required
-- existing D1 tests / existing main integration test
-- `dist/mbo-employee-app.js` only as normal rebuilt artifact after source passes
-
-Do not widen scope.
-
-## LIVE KINTONE — STILL FORBIDDEN
-
-Do NOT:
-- change App801 ACL or record permissions;
-- change Kintone schema;
-- provision/update real credentials;
-- deploy App794 customization;
-- change App794 ACL;
-- migrate data;
-- work on D2-D7;
-- merge/cherry-pick Codex branch.
-
-Mandatory report counters:
-
-```text
-KINTONE_READS_EXECUTED = 0
 KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
 APP801_ACL_CHANGE_EXECUTED = 0
 ```
 
-## VERIFICATION + DELIVERY
+## 2. LIVE APP801 FACT + SECURITY TRADE-OFF
 
-Run focused tests, then:
-
-```bash
-npm test
-git diff --check
-git status --short
-```
-
-Commit + push ONLY to `ai/antigravity-wp002c`.
-Maximum status:
+Current live fact from prior read-only reconciliation:
 
 ```text
-IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+APP801_APP_ACL_CURRENT:
+  CREATOR:null => full app/record rights
+  GROUP:everyone => view/add/edit/delete/import/export = false
+APP801_RECORD_ACL_CURRENT = NONE
+SHARED_EMPLOYEE_CAN_READ_APP801 = NO
+SHARED_EMPLOYEE_CAN_UPDATE_APP801 = NO
 ```
 
-Final report:
+The Kintone-only browser login needs the shared employee Kintone principal to:
+1. READ App801 credential data needed to verify Password_Hash;
+2. UPDATE App801 for failed attempts, Last_Login_At, and own password change.
+
+Because employees share one Kintone principal, native Kintone ACL cannot distinguish employee 0118 from 0119 inside App801. If that shared principal receives App801 read/edit rights, a technically capable user using direct Kintone REST can potentially read credential hashes and modify credential records outside the custom UI gate.
+
+This is an inherent Kintone-only/shared-account limitation. Do not hide or overstate it.
+
+Preferred minimum live permission change, once the exact shared Kintone USER code is proven and the user explicitly accepts the trade-off:
+- grant ONLY that exact shared Kintone USER principal the minimum App801 record rights required for browser login/password lifecycle;
+- prefer View=YES, Edit=YES, Add=NO, Delete=NO, Import=NO, Export=NO;
+- do not broaden to `GROUP:everyone` unless separately justified and explicitly authorized;
+- preserve creator/admin recovery access.
+
+Do not invent the shared Kintone user code. Prove it before write.
+
+## 3. CREDENTIAL PROVISIONING GATE
+
+Before any credential write, establish exact current App801 credential state read-only:
+- number of employee credential records;
+- duplicate Employee_Code records;
+- missing App53 employees;
+- malformed hashes/status/force-change values;
+- whether initial Employee_Code/Employee_Code credential provisioning is already complete.
+
+If provisioning is required, prepare an exact dry-run candidate only. Initial/default password is Employee_Code and must be stored only as PBKDF2 hash. No plaintext persistence.
+
+Actual provisioning remains a separate explicit Kintone WRITE authorization.
+
+## 4. CUSTOMIZATION DEPLOYMENT GATE
+
+Source artifact currently includes rebuilt `dist/mbo-employee-app.js` from the accepted D1 source.
+
+Before deployment:
+- identify exact current App794 JavaScript customization slots/files;
+- exact file to replace/add;
+- backup/read-back plan;
+- rollback artifact/version;
+- no unrelated customization replacement.
+
+Actual upload/deploy remains separate explicit authorization.
+
+## 5. REQUIRED MANUAL UAT BEFORE D1 CLOSE
+
+After separately authorized ACL/provision/deploy actions, manual UI UAT must prove at minimum:
+1. enter App794/list -> MBO Login appears;
+2. initial/default Employee_Code password behavior;
+3. Force Password Change completes;
+4. reload/re-entry asks Login again;
+5. new password login succeeds;
+6. wrong password denied and lockout behavior visible;
+7. Change Password requires correct current password;
+8. Logout immediately returns to Login on reload;
+9. login 0118 -> My MBO list shows only 0118 ordinary UI items;
+10. create -> App53/App795/App796/Record_Key autoload completes without Employee ID re-entry;
+11. detail/edit record 0119 while authenticated 0118 -> blocked UI;
+12. no Password_Hash/raw credential secret rendered in normal UI/DOM/storage;
+13. residual Access Check: 0118 own = ALLOW, 0119 = BLOCK in custom Employee Self path.
+
+Known limitation to document in UAT sign-off:
+- direct REST/native hard employee isolation is not guaranteed under the shared Kintone account.
+
+## 6. CURRENT STATUS / NEXT ACTION
 
 ```text
-HEAD_BEFORE =
-HEAD_AFTER =
-FILES_CHANGED =
-TEST_RESULTS =
-
-INDEX_EMPLOYEE_SELF_ONLY = IMPLEMENTED_PENDING_REVIEW
-INDEX_GATE_NULL_FAIL_CLOSED = IMPLEMENTED_PENDING_REVIEW
-RECORD_HOST_MISSING_FAIL_CLOSED = IMPLEMENTED_PENDING_REVIEW
-CREATE_AUTOLOAD_AWAITED = IMPLEMENTED_PENDING_REVIEW
-CREATE_AUTOLOAD_FAILURE_BLOCKED = IMPLEMENTED_PENDING_REVIEW
-ACCOUNT_STATUS_LOCKED_DENIED = IMPLEMENTED_PENDING_REVIEW
-MALFORMED_LOCKOUT_STATE_DENIED = IMPLEMENTED_PENDING_REVIEW
-FORCE_CHANGE_REQUIRES_FORCE_FLAG = IMPLEMENTED_PENDING_REVIEW
-BLOCKED_NOTICE_DYNAMIC_TEXT_SAFE = IMPLEMENTED_PENDING_REVIEW
-EMPLOYEE_0118_TO_0119_UI_SWITCH = BLOCKED_PENDING_REVIEW
-DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
-
-KINTONE_READS_EXECUTED = 0
-KINTONE_WRITES_EXECUTED = 0
-KINTONE_DEPLOY_EXECUTED = 0
-APP801_ACL_CHANGE_EXECUTED = 0
-D1_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+D1_SOURCE = PASS / ACCEPTED
+D1_LIVE_CUTOVER = BLOCKED_PENDING_EXPLICIT_USER_AUTHORIZATION
+D1_MANUAL_UAT = NOT_STARTED_FOR_LIVE_KINTONE_ONLY_BUILD
 ```
 
-Stop after commit + push. ChatGPT performs independent review.
+Execution Plane must STOP. Do not make live changes until a new explicitly authorized task is issued.
 
 ---
 
 # PROJECT CONTROL
 
-- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / KINTONE-ONLY / FINAL UI-ISOLATION CORRECTIVE
+- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / SOURCE ACCEPTED / LIVE CUTOVER AUTHORIZATION REQUIRED
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate Apps 283,310,305,643,307,640,715,716 -> App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 App800 HR Control Center end-to-end lifecycle = IN_PROGRESS
