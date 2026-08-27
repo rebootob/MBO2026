@@ -1,177 +1,23 @@
-# AI ACTIVE TASK — FINAL SURGICAL LOCAL CORRECTION
+# AI ACTIVE TASK — UI PARITY ONLY BEFORE FINAL KINTONE EXECUTION
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting HEAD: `7d482e85c54df2dfbd5c35664aec5cd5c4b8b8b7`
-> Mode: **CREDIT-SAVER / SURGICAL / TWO ISSUES ONLY**
+> Starting implementation HEAD: `0226b9445a9249ac019363caab8a9c13cea435ba`
+> Mode: **CREDIT-SAVER / UI PARITY ONLY / ONE ROUND ONLY**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY/BROWSER-SMOKE: **0 / 0 / 0 / 0**
 
 ## OBJECTIVE
 
-Close ONLY the final two local issues from independent review of `7d482e85...`:
+Close ONLY Gate 6: approved Preview -> actual App794 runtime parity.
 
-1. Make Legacy Migration canonical serialization and mapped-value reconciliation proof robust enough for data-integrity closure.
-2. Execute Preview -> actual App794 runtime parity using the already-identified repository-local approved Preview source.
+Do not touch Legacy Migration again unless a direct compile/test regression from the UI work forces a minimal repair. Independent review already accepts the migration local foundation as PASS_LOCAL_WITH_MINOR_TEST_GAP and it is NOT the target of this round.
 
-Do not reopen passed gates. Do not contact Kintone. Do not redesign frozen UI V2.
+After this round, STOP. Do not begin Final Kintone Execution.
 
-## ACCEPTED — DO NOT REGRESS
-
-- Gate 1 Login/Data Isolation local foundation.
-- Gate 2 Export local foundation.
-- Gate 4 HR Dashboard local foundation.
-- Gate 5 Copy Previous local foundation.
-- Gate 7 Hoshin local foundation.
-- Legacy migration flattened physical App794 candidate shape.
-- Legacy source-to-target mapping table.
-- Legacy unknown-field provenance preservation.
-- Legacy independent source coverage set.
-- Core real resolver integration using actual App795-shaped routing fixture and flattened App794 objective validation.
-- Schema delta manifest safety.
-
----
-
-# ISSUE A — LEGACY MIGRATION FINAL DATA-INTEGRITY PROOF
-
-Target existing:
-- `src/services/legacy-migration-service.js`
-- `tests/legacy-migration-service.test.js`
-
-Do NOT rewrite migration architecture.
-
-## A1. Canonical serializer must be collision-safe
-
-Current serializer is NOT safe enough because primitives are concatenated without JSON-safe type/escaping boundaries. Examples such as:
-
-```text
-["a,b"]
-["a", "b"]
-```
-
-must never canonicalize to the same value.
-
-Implement deterministic serialization with these properties:
-
-- object keys recursively sorted;
-- array order preserved;
-- primitives encoded with explicit JSON-safe representation and type-safe boundaries;
-- strings use proper escaping;
-- number/boolean/null remain distinguishable from strings such as `"1"`, `"true"`, `"null"`;
-- source objects are not mutated.
-
-A simple acceptable strategy is recursively building a normalized value with sorted object keys and then `JSON.stringify()` that normalized structure.
-
-Required tests:
-
-```text
-["a,b"] != ["a","b"]
-"1" != 1
-"true" != true
-objects with same semantic keys but different insertion order == equivalent
-nested objects with different key order == equivalent
-real attachment/object content difference == conflict
-```
-
-Expected:
-
-```text
-LEGACY_CANONICAL_SERIALIZER_COLLISION_SAFE = PASS
-LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE = PASS
-```
-
-## A2. MAPPED_TO_TARGET proof must verify expected value, not only target presence
-
-Current proof only checks target field exists/non-empty. Replace this with explicit expected-value verification.
-
-For every `MAPPED_TO_TARGET` reconciliation entry, determine the expected target value using the approved mapping/normalization rule and compare it against the actual candidate value after target normalization.
-
-At minimum verify:
-
-```text
-Drop_down_year               -> Fiscal_Year       using normalizeFiscalYear()
-Fiscal_Year                  -> Fiscal_Year       using normalizeFiscalYear()/canonical FY normalization
-Text_name                    -> Employee_Name     trimmed text
-Employee_Name                -> Employee_Name     trimmed text
-Text_area_action_plan_objN   -> Objective_N       trimmed text
-weight_a_objN                -> Weight_N          normalized numeric/text representation used by candidate
-Text_area_actual_result_objN -> Actual_Result_N   trimmed text
-dif_level_objN               -> Difficulty_N      normalized target representation
-Text_area                    -> Department_Hoshin_Title
-Text_area_0                  -> Section_Hoshin_Title
-```
-
-Do NOT compare raw `FY'2021` directly to normalized target `FY2021`; compare through the documented transform.
-
-Each mapped reconciliation entry should contain enough evidence for review, for example:
-
-```text
-sourceFieldCode
-targetFieldCode
-sourceValue
-expectedTargetValue
-actualTargetValue
-mappingRule
-mappingVerified = true|false
-```
-
-If a mapped field is present but the normalized target value does not match expectation:
-- increment invalid reconciliation / unexplained field loss;
-- do not claim field proof PASS;
-- preferably fail closed for the migration candidate if safe within the current service contract.
-
-## A3. Reconciliation proof must explicitly count missing / duplicate / invalid entries
-
-For each source record compute independently:
-
-```text
-nonEmptySourceFieldCodes
-reconciliationEntriesBySourceFieldCode
-missingReconciliation
-ambiguousDuplicateReconciliation
-invalidReconciliation
-```
-
-Then:
-
-```text
-recordUnexplainedFieldLoss =
-  missingReconciliation.length
-  + ambiguousDuplicateReconciliation.length
-  + invalidReconciliation.length
-```
-
-Do not rely on a loop that creates an entry and immediately marks that same field as reconciled without a separate validation pass.
-
-`coverageProof` should expose exact counts and codes.
-
-Required negative tests:
-- test-only injected missing reconciliation -> unexplained field loss > 0 or explicit fail-closed status;
-- duplicate reconciliation entries for one source field -> detected;
-- mapped candidate value tampered/mismatched -> invalid reconciliation detected;
-- preserved provenance value missing/tampered -> invalid reconciliation detected;
-- attachment pending without retained manifest -> invalid reconciliation detected.
-
-If production code does not naturally permit injecting a broken reconciliation state, expose/reuse a small pure validator helper rather than weakening production logic merely for testing.
-
-Expected:
-
-```text
-LEGACY_INDEPENDENT_FIELD_COVERAGE = PASS
-LEGACY_MAPPED_VALUE_PROOF = PASS
-LEGACY_PROVENANCE_VALUE_PROOF = PASS
-UNEXPLAINED_FIELD_LOSS_PROOF = PASS
-```
-
----
-
-# ISSUE B — EXECUTE PREVIEW -> ACTUAL APP794 PARITY NOW
-
-The Control Plane has already identified the repository-local sources. Do NOT spend another round searching for them and do NOT report PREVIEW_SOURCE_NOT_FOUND.
-
-Canonical local sources for this task:
+## CANONICAL SOURCES — ALREADY IDENTIFIED, DO NOT SEARCH AGAIN
 
 ```text
 APPROVED_PREVIEW_SOURCE = preview/index.html
@@ -179,42 +25,57 @@ APPROVED_PREVIEW_SOURCE = preview/index.html
 ACTUAL_APP794_RUNTIME_SOURCE =
 - src/main-mbo-app.js
 - src/ui/employee-part-a-ui.js
-- existing src/styles/* used by App794 bundle
+- existing src/styles/* used by App794
 
 BUILD OUTPUT =
 - dist/mbo-employee-app.js
 - dist/mbo-employee.css
+
+UI SOURCE OF TRUTH = project-docs/CONFIRMED_BASELINE/UI_UX.md
 ```
 
-Repository evidence also confirms `project-docs/CONFIRMED_BASELINE/UI_UX.md` is the frozen UI/UX source of truth. Read it before editing UI.
+Read `project-docs/CONFIRMED_BASELINE/UI_UX.md` before editing UI.
 
-## B1. Compare approved Preview against runtime source
+Do not report `PREVIEW_SOURCE_NOT_FOUND`.
 
-Perform a focused parity diff. Do not redesign.
+---
 
-Create a concise internal checklist from the frozen baseline and verify each item against actual App794 runtime:
+# GATE 6 — PREVIEW -> APP794 RUNTIME PARITY
+
+## 1. Focused parity audit first
+
+Compare `preview/index.html` with the actual App794 runtime implementation and classify each item:
+
+```text
+ALREADY_PARITY
+MISSING_RUNTIME
+LOCAL_WIRING_ONLY
+BLOCKED_PHYSICAL_SCHEMA
+```
+
+Check exactly these frozen baseline items:
 
 1. exactly five macro business stages;
 2. Thai + English user-facing guidance;
-3. lifecycle appraiser route uses ordinal labels `1st/2nd/3rd/4th Appraiser` / Thai equivalents, never Manager/GM as business slot labels;
-4. `Objective_Count` drives flattened `Objective_1..10` UI visibility/data handling;
-5. Difficulty blank state stays blank and does not visually default to 3;
-6. optional attachment/evidence areas for Objectives, Mid-Year, Self Evaluation where approved, without creating fake persistence fields;
-7. Mid-Year Progress % is employee-entered 0..100 and distinct from process progress;
-8. phase-calendar/deadline UX can consume injected App800 config and shows upcoming/open/due/overdue/completed semantics;
-9. waiting boundary states 05/10 guide Requester to native Kintone Start action when the window opens; no automatic date transition;
-10. Copy Previous UI control is wired to the corrected local candidate/preflight path but performs ZERO Kintone writes in this round;
-11. Hoshin display reads current/new FY snapshot/title fields when present;
-12. Export controls use normalized export foundation and preserve explicit `MISSING_LOCAL` when exact binary templates are absent;
-13. native Kintone comment thread remains available/not intentionally hidden;
-14. 3–4 appraiser matrices stay contained inside App794 content width; no body/page horizontal overflow;
-15. historical/read-only stages remain truthful and permission-aware.
+3. lifecycle route uses ordinal `ผู้ประเมินลำดับที่ 1..4 / 1st..4th Appraiser`; technical Manager/GM field names must not be the business-facing slot labels;
+4. `Objective_Count` controls flattened physical Objective slots, supporting App794 slots 1..10 without phantom objectives;
+5. Difficulty blank stays blank; editable blank shows the bilingual select prompt and must never visually default to Level 3;
+6. optional evidence/attachment UX exists for Objectives, Mid-Year, Self Evaluation as approved; if Objective attachment physical persistence is still unavailable, show the approved `PENDING_SCHEMA_REVIEW`/non-persisted state rather than inventing a field;
+7. Mid-Year Objective Progress is employee-entered 0..100 and visually/semantically separate from Process Progress and performance score;
+8. five-phase calendar/deadline presentation can consume injected normalized App800 config and show before-open/open/due-today/overdue/completed bilingual states; no production date hardcode;
+9. boundary states `05 Objective Approved` and `10 Mid-Year Completed` provide Requester guidance to use native `Start Mid-Year` / `Start Self Evaluation` when the configured window opens; no date-based auto-transition;
+10. Copy Previous UI uses the corrected local candidate/preflight foundation but performs ZERO Kintone write in this task;
+11. Hoshin display reads current/new-FY snapshot/title fields already available on the record/local input; no App797 GET;
+12. Export controls use normalized export foundation; exact template binary unavailable -> explicit `MISSING_LOCAL`, never fabricate a generic official workbook;
+13. native Kintone comment thread remains available and is not intentionally hidden/covered/disabled;
+14. 3–4 Appraiser matrices are contained inside App794 content width with matrix-only horizontal scrolling where needed; no page/body horizontal overflow; first context column remains readable/sticky where existing design supports it;
+15. historical/read-only/Completed presentation remains truthful and permission-aware; UI hiding is not authorization.
 
-## B2. Port only missing approved behavior
+Do not redesign visual direction. Port only approved behavior already represented by Preview/baseline.
 
-If a parity item is already implemented, leave it alone.
+## 2. Runtime implementation rules
 
-If missing, edit existing runtime source/functions/styles. Prefer:
+Prefer modifying existing files/functions only:
 
 ```text
 src/main-mbo-app.js
@@ -222,73 +83,108 @@ src/ui/employee-part-a-ui.js
 existing src/styles/*
 ```
 
-Do not create `_final`, `_v3`, replacement page, or parallel architecture.
+Do NOT create:
+- `_final`
+- `_v3`
+- replacement App794 page
+- parallel UI architecture
 
-Do not change frozen Process topology, routing rules, profile ratios, or UI visual direction.
+Reuse existing services/helpers when available.
 
-## B3. Local-only wiring rules
+Do not change:
+- Process state/action topology;
+- App795 routing rules;
+- App796 profile/scoring ratios;
+- App797 business rules;
+- App800 live data;
+- security/authorization model.
 
-This round must remain write-free.
+## 3. Local-only safety wiring
 
-- Copy Previous button may prepare/preview a candidate or invoke local pure service path only. No `kintone.api` write.
-- Phase Calendar must consume normalized injected/config data locally; no App800 GET in this task.
-- Hoshin display must use record/local snapshot fields; no App797 GET in this task.
-- Export may use local projection foundation; if binary template is unavailable, UI must say/template-state remain `MISSING_LOCAL` and not fabricate generic output.
-
-## B4. Build and tests
-
-Because UI source is expected to change, run:
-- targeted UI/unit tests as needed;
-- full `npm test` ONCE near completion;
-- `npm run ui:build` ONCE near completion.
-
-Verify bundle outputs changed only as expected.
-
-Expected:
-
-```text
-PREVIEW_TO_APP794_PARITY_LOCAL = PASS
-FROZEN_UI_REDESIGN = 0
-APP794_RUNTIME_WRITE = 0
-BUILD = PASS
-```
-
----
-
-# GOVERNANCE / HARD BOUNDARIES
+This round is UI parity, not live integration.
 
 ```text
 KINTONE_GET = 0
 KINTONE_WRITE = 0
 KINTONE_DEPLOY = 0
-BROWSER_SMOKE = 0
-APP53_WRITE = 0
-LEGACY_APP_WRITE = 0
 APP794_LIVE_WRITE = 0
 APP800_LIVE_GET = 0
 APP797_LIVE_GET = 0
+BROWSER_SMOKE = 0
 ```
 
-- Branch `ai/antigravity-wp002c` only.
-- Do not edit `CONFIRMED_BASELINE`.
-- Do not broaden scope.
-- Do not create new Kintone apps.
-- Do not mutate protected legacy apps/data.
-- Do not execute migration writes.
-- Do not deploy customization.
-- Update `project-docs/AI_REVIEW_PACKAGE.md`, `CURRENT_STATE.md`, and `HANDOFF.md` concisely after implementation with exact local evidence and remaining runtime-only blockers.
+Specific rules:
 
-## STOP CONDITIONS
+- Copy Previous control may call a pure/local candidate-builder path or show preflight result only. Do not call a Kintone create/update endpoint.
+- Phase Calendar receives config via injected/local normalized data only.
+- Hoshin consumes record/local snapshot data only.
+- Export may create/use local projection only; if exact template binary is unavailable, surface `MISSING_LOCAL` and stop short of pretending an official workbook was generated.
+- Do not hide native process controls as a substitute for authorization.
+
+## 4. Parity evidence
+
+Add/update focused tests if an existing UI test foundation exists. Do not create a huge new test architecture merely for this round.
+
+At minimum provide source-level/local evidence for:
+
+```text
+FIVE_STAGE_UI = PASS
+BILINGUAL_UI = PASS
+ORDINAL_APPRAISER_LABELS = PASS
+OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS
+DIFFICULTY_BLANK_STATE = PASS
+OPTIONAL_EVIDENCE_UX = PASS|PASS_WITH_SCHEMA_PENDING
+MIDYEAR_PROGRESS_SEMANTICS = PASS
+PHASE_CALENDAR_LOCAL_CONTRACT = PASS
+BOUNDARY_START_ACTION_GUIDANCE = PASS
+COPY_PREVIOUS_LOCAL_UI_WIRING = PASS
+HOSHIN_LOCAL_SNAPSHOT_UI = PASS
+EXPORT_LOCAL_FOUNDATION = PASS|MISSING_LOCAL_TEMPLATE
+NATIVE_COMMENT_THREAD_PRESERVED = PASS
+MULTI_APPRAISER_CONTAINMENT = PASS
+READ_ONLY_PERMISSION_TRUTHFULNESS = PASS
+```
+
+If a behavior is already present, document exact source evidence rather than rewriting it.
+
+## 5. Test/build discipline
+
+- Run targeted tests only as needed while implementing.
+- Run the full `npm test` suite ONCE near completion.
+- Because App794 UI source is expected to change, run `npm run ui:build` ONCE near completion.
+- Verify expected bundle outputs are updated.
+- No browser smoke and no Kintone deploy in this round.
+
+## 6. Governance docs
+
+After implementation, update concisely:
+
+```text
+project-docs/AI_REVIEW_PACKAGE.md
+project-docs/CURRENT_STATE.md
+project-docs/HANDOFF.md
+```
+
+Record exact local evidence and state that runtime/deploy verification remains for a separately authorized Final Kintone Execution round.
+
+Do NOT edit `project-docs/CONFIRMED_BASELINE/*`.
+
+---
+
+# STOP CONDITIONS
 
 STOP rather than guess if:
-- a physical App794 field required for parity is genuinely uncertain and cannot be confirmed from repo/export evidence;
-- a parity behavior would require changing frozen Process/routing/scoring semantics;
-- a required runtime action cannot be made local-only without a Kintone call;
-- a new P0/P1 security/data-integrity issue is found.
 
-Do NOT stop for `PREVIEW_SOURCE_NOT_FOUND`; the Control Plane has already identified `preview/index.html` as the approved repository-local Preview source for this task.
+- a required physical App794 field is genuinely uncertain and not supported by repo/export evidence;
+- closing parity would require changing frozen Process/routing/scoring semantics;
+- the UI behavior cannot be made local-only without Kintone access;
+- a new P0/P1 security or data-integrity issue is discovered.
 
-## REQUIRED FINAL REPORT
+Do NOT stop merely because a live Kintone verification is unavailable; implement local parity and clearly defer live verification.
+
+---
+
+# REQUIRED FINAL REPORT
 
 Return exactly:
 
@@ -299,19 +195,28 @@ KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
 
-LEGACY_CANONICAL_SERIALIZER_COLLISION_SAFE = PASS|BLOCKED
-LEGACY_INDEPENDENT_FIELD_COVERAGE = PASS|BLOCKED
-LEGACY_MAPPED_VALUE_PROOF = PASS|BLOCKED
-LEGACY_PROVENANCE_VALUE_PROOF = PASS|BLOCKED
-UNEXPLAINED_FIELD_LOSS_PROOF = PASS|BLOCKED
-LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE = PASS|BLOCKED
-
 APPROVED_PREVIEW_SOURCE = preview/index.html
 ACTUAL_APP794_RUNTIME_SOURCE = src/main-mbo-app.js + src/ui/employee-part-a-ui.js + existing src/styles/*
+
+FIVE_STAGE_UI = PASS|BLOCKED
+BILINGUAL_UI = PASS|BLOCKED
+ORDINAL_APPRAISER_LABELS = PASS|BLOCKED
+OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS|BLOCKED
+DIFFICULTY_BLANK_STATE = PASS|BLOCKED
+OPTIONAL_EVIDENCE_UX = PASS|PASS_WITH_SCHEMA_PENDING|BLOCKED
+MIDYEAR_PROGRESS_SEMANTICS = PASS|BLOCKED
+PHASE_CALENDAR_LOCAL_CONTRACT = PASS|BLOCKED
+BOUNDARY_START_ACTION_GUIDANCE = PASS|BLOCKED
+COPY_PREVIOUS_LOCAL_UI_WIRING = PASS|BLOCKED
+HOSHIN_LOCAL_SNAPSHOT_UI = PASS|BLOCKED
+EXPORT_LOCAL_FOUNDATION = PASS|MISSING_LOCAL_TEMPLATE|BLOCKED
+NATIVE_COMMENT_THREAD_PRESERVED = PASS|BLOCKED
+MULTI_APPRAISER_CONTAINMENT = PASS|BLOCKED
+READ_ONLY_PERMISSION_TRUTHFULNESS = PASS|BLOCKED
+
 PREVIEW_TO_APP794_PARITY_LOCAL = PASS|BLOCKED
 FROZEN_UI_REDESIGN = 0
 APP794_RUNTIME_WRITE = 0
-EXPORT_TEMPLATE_BINARY_ASSET = AVAILABLE|MISSING_LOCAL
 FULL_NPM_TEST = PASS|FAIL
 BUILD = PASS|FAIL
 FINAL_KINTONE_EXECUTION_READINESS = READY|BLOCKED
