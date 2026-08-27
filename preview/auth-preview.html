@@ -340,7 +340,7 @@
           </div>
 
           <div id="force-change-alert" class="alert alert-warning" data-i18n="forceAlert">
-            พบการใช้นับรหัสผ่านเริ่มต้นของระบบ คุณต้องเปลี่ยนรหัสผ่านใหม่ก่อนจึงจะสามารถเข้าถึงข้อมูล MBO ได้
+            พบการใช้รหัสผ่านเริ่มต้นของระบบ คุณต้องเปลี่ยนรหัสผ่านใหม่ก่อนจึงจะสามารถเข้าถึงข้อมูล MBO ได้
           </div>
 
           <form id="form-force-change" onsubmit="handleForceChange(event)">
@@ -428,39 +428,39 @@
           <div class="checklist-card">
             <div class="checklist-item">
               <input type="checkbox" id="chk-1">
-              <label for="chk-1" data-i18n="step1">1. เลือก Employee 0118 เข้าสู่ระบบด้วยรหัสผ่านเริ่มต้น `0118` &rarr; ระบบต้องนำไปยังหน้า Force Change</label>
+              <label for="chk-1" data-i18n="step1">1. เลือก Employee 0118 เข้าสู่ระบบด้วยรหัสผ่านเริ่มต้น `0118` → ระบบต้องนำไปยังหน้า Force Change</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-2">
-              <label for="chk-2" data-i18n="step2">2. ทดลองตั้งรหัสผ่านใหม่เป็น `0118` &rarr; ระบบต้องไม่อนุญาต (BLOCK)</label>
+              <label for="chk-2" data-i18n="step2">2. ทดลองตั้งรหัสผ่านใหม่เป็น `0118` → ระบบต้องไม่อนุญาต (BLOCK)</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-3">
-              <label for="chk-3" data-i18n="step3">3. ตั้งรหัสผ่านใหม่เป็น `Pass0118!` &rarr; สำเร็จ เข้าสู่หน้า Authenticated State</label>
+              <label for="chk-3" data-i18n="step3">3. ตั้งรหัสผ่านใหม่เป็น `Pass0118!` → สำเร็จ เข้าสู่หน้า Authenticated State</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-4">
-              <label for="chk-4" data-i18n="step4">4. ตรวจสอบสิทธิ์ข้อมูล Target `0118` &rarr; อนุญาต (EMPLOYEE_OWN_RECORD)</label>
+              <label for="chk-4" data-i18n="step4">4. ตรวจสอบสิทธิ์ข้อมูล Target `0118` → อนุญาต (EMPLOYEE_OWN_RECORD)</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-5">
-              <label for="chk-5" data-i18n="step5">5. ตรวจสอบสิทธิ์ข้อมูล Target `0119` &rarr; ปฏิเสธ (EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B)</label>
+              <label for="chk-5" data-i18n="step5">5. ตรวจสอบสิทธิ์ข้อมูล Target `0119` → ปฏิเสธ (EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B)</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-6">
-              <label for="chk-6" data-i18n="step6">6. กด ออกจากระบบ (Logout) &rarr; ยกเลิกเซสชันบนเซิร์ฟเวอร์เรียบร้อย</label>
+              <label for="chk-6" data-i18n="step6">6. กด ออกจากระบบ (Logout) → ยกเลิกเซสชันบนเซิร์ฟเวอร์เรียบร้อย</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-7">
-              <label for="chk-7" data-i18n="step7">7. ลองเข้าสู่ระบบด้วยรหัสผ่านเดิม `0118` &rarr; ปฏิเสธการเข้าสู่ระบบ (INVALID_CREDENTIALS)</label>
+              <label for="chk-7" data-i18n="step7">7. ลองเข้าสู่ระบบด้วยรหัสผ่านเดิม `0118` → ปฏิเสธการเข้าสู่ระบบ (INVALID_CREDENTIALS)</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-8">
-              <label for="chk-8" data-i18n="step8">8. เข้าสู่ระบบด้วยรหัสผ่านใหม่ `Pass0118!` &rarr; สำเร็จ เข้าสู่ Authenticated State โดยตรง</label>
+              <label for="chk-8" data-i18n="step8">8. เข้าสู่ระบบด้วยรหัสผ่านใหม่ `Pass0118!` → สำเร็จ เข้าสู่ Authenticated State โดยตรง</label>
             </div>
             <div class="checklist-item">
               <input type="checkbox" id="chk-9">
-              <label for="chk-9" data-i18n="step9">9. เลือก Principal `admin-form` พยายามเข้าสู่ระบบ &rarr; ปฏิเสธ Technical Admin ไม่ให้เป็น Employee Self</label>
+              <label for="chk-9" data-i18n="step9">9. เลือก Principal `admin-form` พยายามเข้าสู่ระบบ → ปฏิเสธ Technical Admin ไม่ให้เป็น Employee Self</label>
             </div>
           </div>
         </section>
@@ -561,7 +561,23 @@
         sec1: "PBKDF2 SHA-256 Hashing Server-only",
         sec2: "NO Password_Hash in Client HTML/JSON",
         sec3: "Opaque Session Token stored in HttpOnly Cookie",
-        sec4: "Fail-closed Credential Lockout Persistence"
+        sec4: "Fail-closed Credential Lockout Persistence",
+
+        // Runtime Feedback Dictionary
+        msgAuthenticating: "กำลังตรวจสอบสิทธิ์ฝั่งเซิร์ฟเวอร์...",
+        msgLoginFailedPrefix: "เข้าสู่ระบบไม่สำเร็จ",
+        msgNetworkErrorPrefix: "ข้อผิดพลาดเครือข่าย/เซิร์ฟเวอร์:",
+        msgServerErrorPrefix: "ข้อผิดพลาดเซิร์ฟเวอร์:",
+        msgPasswordMismatch: "รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน",
+        msgChangeFailedPrefix: "เปลี่ยนรหัสผ่านไม่สำเร็จ:",
+        msgPasswordSuccess: "เปลี่ยนรหัสผ่านสำเร็จ!",
+        msgLoggedOutSuccess: "ยกเลิกเซสชันสำเร็จ ออกจากระบบเรียบร้อยแล้ว",
+        msgAccessDeniedHeader: "ปฏิเสธการเข้าถึง:",
+        msgAccessDeniedMsg: "ยังไม่ได้ยืนยันตัวตน หรือต้องเปลี่ยนรหัสผ่านก่อน",
+        msgAccessAllowedHeader: "อนุญาตการเข้าถึง:",
+        msgAccessAllowedMsg: "ผู้ใช้มีสิทธิ์ในข้อมูลพนักงานเป้าหมาย",
+        msgAccessBlockedHeader: "ปฏิเสธการเข้าถึง:",
+        msgAccessErrorPrefix: "ข้อผิดพลาดในการตรวจสอบสิทธิ์:"
       },
       en: {
         appTitle: "MBO Login UAT Preview",
@@ -622,13 +638,82 @@
         sec1: "PBKDF2 SHA-256 Hashing Server-only",
         sec2: "NO Password_Hash in Client HTML/JSON",
         sec3: "Opaque Session Token stored in HttpOnly Cookie",
-        sec4: "Fail-closed Credential Lockout Persistence"
+        sec4: "Fail-closed Credential Lockout Persistence",
+
+        // Runtime Feedback Keys
+        msgAuthenticating: "Authenticating server-side...",
+        msgLoginFailedPrefix: "Login Failed",
+        msgNetworkErrorPrefix: "Network/Server Error:",
+        msgServerErrorPrefix: "Server Error:",
+        msgPasswordMismatch: "New passwords do not match.",
+        msgChangeFailedPrefix: "Password Change Failed:",
+        msgPasswordSuccess: "Password successfully changed!",
+        msgLoggedOutSuccess: "Session terminated cleanly. Logged out.",
+        msgAccessDeniedHeader: "ACCESS DENIED:",
+        msgAccessDeniedMsg: "Unauthenticated or Password Change Required.",
+        msgAccessAllowedHeader: "ACCESS ALLOWED:",
+        msgAccessAllowedMsg: "Principal authorized for target record.",
+        msgAccessBlockedHeader: "ACCESS BLOCKED:",
+        msgAccessErrorPrefix: "Access Check Error:"
       }
     };
 
     let currentLang = 'th';
     let currentAuthState = 'UNAUTHENTICATED'; // 'UNAUTHENTICATED' | 'PASSWORD_CHANGE_REQUIRED' | 'AUTHENTICATED'
     let activeTab = 'login';
+    let lastAccessCheckData = null;
+
+    function translateReason(reason, lang) {
+      if (!reason) return lang === 'th' ? 'ปฏิเสธการสิทธิ์' : 'Authentication denied.';
+
+      const reasonDict = {
+        th: {
+          'Invalid credentials.': 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+          'Account is locked.': 'บัญชีถูกล็อกเนื่องจากป้อนรหัสผ่านผิดเกินจำนวนครั้งที่กำหนด',
+          'Account is disabled.': 'บัญชีผู้ใช้ถูกระงับการใช้งาน',
+          'Technical admin identity cannot be used for employee business operations.': 'บัญชีแอดมินเทคนิคไม่สามารถใช้ทำรายการของพนักงานได้',
+          'MBO username must match the bound Employee_Code.': 'ชื่อผู้ใช้ MBO ต้องตรงกับรหัสพนักงานที่ผูกไว้กับ Kintone',
+          'Kintone user is not bound to a valid Employee_Code.': 'บัญชี Kintone ไม่ได้ผูกกับรหัสพนักงานที่ถูกต้อง',
+          'CANNOT_REUSE_DEFAULT_PASSWORD: New password cannot be equal to Employee Code default password.': 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเริ่มต้น (Employee Code)',
+          'CANNOT_REUSE_DEFAULT_PASSWORD': 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเริ่มต้น (Employee Code)',
+          'CURRENT_PASSWORD_REQUIRED: Current password is required for password change.': 'ต้องระบุรหัสผ่านปัจจุบันก่อนเปลี่ยนรหัสผ่าน',
+          'CURRENT_PASSWORD_REQUIRED': 'ต้องระบุรหัสผ่านปัจจุบันก่อนเปลี่ยนรหัสผ่าน',
+          'INVALID_CURRENT_PASSWORD: Current password verification failed.': 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
+          'INVALID_CURRENT_PASSWORD': 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
+          'EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B': 'พนักงาน ก ไม่อนุญาตให้เข้าถึงข้อมูลของ พนักงาน ข',
+          'EMPLOYEE_OWN_RECORD': 'อนุญาตสิทธิ์เจ้าของข้อมูลพนักงาน'
+        },
+        en: {
+          'Invalid credentials.': 'Invalid credentials.',
+          'Account is locked.': 'Account is locked due to excessive failed attempts.',
+          'Account is disabled.': 'Account is disabled.',
+          'Technical admin identity cannot be used for employee business operations.': 'Technical admin identity cannot be used for employee business operations.',
+          'MBO username must match the bound Employee_Code.': 'MBO username must match the bound Employee_Code.',
+          'Kintone user is not bound to a valid Employee_Code.': 'Kintone user is not bound to a valid Employee_Code.',
+          'CANNOT_REUSE_DEFAULT_PASSWORD: New password cannot be equal to Employee Code default password.': 'New password cannot equal default Employee Code.',
+          'CANNOT_REUSE_DEFAULT_PASSWORD': 'New password cannot equal default Employee Code.',
+          'CURRENT_PASSWORD_REQUIRED: Current password is required for password change.': 'Current password is required.',
+          'CURRENT_PASSWORD_REQUIRED': 'Current password is required.',
+          'INVALID_CURRENT_PASSWORD: Current password verification failed.': 'Current password verification failed.',
+          'INVALID_CURRENT_PASSWORD': 'Current password verification failed.',
+          'EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B': 'Employee A is not authorized to access Employee B record.',
+          'EMPLOYEE_OWN_RECORD': 'Employee authorized for own record.'
+        }
+      };
+
+      const langMap = reasonDict[lang] || reasonDict.th;
+      if (langMap[reason]) {
+        return langMap[reason];
+      }
+
+      for (const [key, val] of Object.entries(langMap)) {
+        if (reason.includes(key)) {
+          return val;
+        }
+      }
+
+      return reason;
+    }
 
     function setLanguage(lang) {
       currentLang = lang;
@@ -643,6 +728,10 @@
           el.innerText = dict[key];
         }
       });
+
+      if (lastAccessCheckData) {
+        renderAccessCheckResult(lastAccessCheckData);
+      }
     }
 
     function switchTab(tabId) {
@@ -734,8 +823,9 @@
     async function handleLogin(e) {
       e.preventDefault();
       const alertBox = document.getElementById('login-alert');
+      const dict = translations[currentLang];
       alertBox.className = 'alert alert-info';
-      alertBox.innerText = currentLang === 'th' ? 'กำลังตรวจสอบสิทธิ์ฝั่งเซิร์ฟเวอร์...' : 'Authenticating server-side...';
+      alertBox.innerText = dict.msgAuthenticating;
 
       const kintoneUserCode = document.getElementById('kintone-user').value;
       const mboUsername = document.getElementById('mbo-username').value;
@@ -755,23 +845,25 @@
           await checkActiveSession();
         } else {
           alertBox.className = 'alert alert-danger';
-          alertBox.innerText = 'Login Failed [' + data.status + ']: ' + (data.reason || 'Authentication denied.');
+          const locReason = translateReason(data.reason, currentLang);
+          alertBox.innerText = `${dict.msgLoginFailedPrefix} [${data.status}]: ${locReason}`;
         }
       } catch (err) {
         alertBox.className = 'alert alert-danger';
-        alertBox.innerText = 'Network/Server Error: ' + err.message;
+        alertBox.innerText = `${dict.msgNetworkErrorPrefix} ${err.message}`;
       }
     }
 
     async function handleForceChange(e) {
       e.preventDefault();
       const alertBox = document.getElementById('force-change-alert');
+      const dict = translations[currentLang];
       const newPassword = document.getElementById('force-new-pass').value;
       const confirmPassword = document.getElementById('force-confirm-pass').value;
 
       if (newPassword !== confirmPassword) {
         alertBox.className = 'alert alert-danger';
-        alertBox.innerText = currentLang === 'th' ? 'รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน' : 'Passwords do not match.';
+        alertBox.innerText = dict.msgPasswordMismatch;
         return;
       }
 
@@ -787,22 +879,24 @@
           await checkActiveSession();
         } else {
           alertBox.className = 'alert alert-danger';
-          alertBox.innerText = 'Password Change Failed: ' + (data.message || data.reason || 'Denied.');
+          const locReason = translateReason(data.reason || data.message, currentLang);
+          alertBox.innerText = `${dict.msgChangeFailedPrefix} ${locReason}`;
         }
       } catch (err) {
         alertBox.className = 'alert alert-danger';
-        alertBox.innerText = 'Server Error: ' + err.message;
+        alertBox.innerText = `${dict.msgServerErrorPrefix} ${err.message}`;
       }
     }
 
     async function handleNormalChange(e) {
       e.preventDefault();
+      const dict = translations[currentLang];
       const currentPassword = document.getElementById('normal-curr-pass').value;
       const newPassword = document.getElementById('normal-new-pass').value;
       const confirmPassword = document.getElementById('normal-confirm-pass').value;
 
       if (newPassword !== confirmPassword) {
-        alert(currentLang === 'th' ? 'รหัสผ่านใหม่ไม่ตรงกัน' : 'New passwords do not match.');
+        alert(dict.msgPasswordMismatch);
         return;
       }
 
@@ -815,33 +909,61 @@
         const data = await res.json();
 
         if (data.status === 'PASSWORD_CHANGED_SUCCESS') {
-          alert(currentLang === 'th' ? 'เปลี่ยนรหัสผ่านสำเร็จ!' : 'Password successfully changed!');
+          alert(dict.msgPasswordSuccess);
           document.getElementById('normal-curr-pass').value = '';
           document.getElementById('normal-new-pass').value = '';
           document.getElementById('normal-confirm-pass').value = '';
         } else {
-          alert('Password Change Failed: ' + (data.message || data.reason || 'Denied.'));
+          const locReason = translateReason(data.reason || data.message, currentLang);
+          alert(`${dict.msgChangeFailedPrefix} ${locReason}`);
         }
       } catch (err) {
-        alert('Server Error: ' + err.message);
+        alert(`${dict.msgServerErrorPrefix} ${err.message}`);
       }
     }
 
     async function handleLogout() {
+      const dict = translations[currentLang];
       try {
         await fetch('/api/auth/logout', { method: 'POST' });
         updateStateUI('UNAUTHENTICATED');
         const alertBox = document.getElementById('login-alert');
         alertBox.className = 'alert alert-success';
-        alertBox.innerText = currentLang === 'th' ? 'ยกเลิกเซสชันสำเร็จ ออกจากระบบแล้ว' : 'Session terminated cleanly. Logged out.';
+        alertBox.innerText = dict.msgLoggedOutSuccess;
       } catch (err) {
         console.error('Logout error', err);
       }
     }
 
+    function renderAccessCheckResult(data) {
+      const resultBox = document.getElementById('access-check-result');
+      const dict = translations[currentLang];
+
+      if (data.isError) {
+        resultBox.className = 'alert alert-danger';
+        resultBox.innerText = `${dict.msgAccessErrorPrefix} ${data.message}`;
+        return;
+      }
+
+      if (data.status === 401) {
+        resultBox.className = 'alert alert-danger';
+        resultBox.innerHTML = `<strong>${dict.msgAccessDeniedHeader}</strong> ${dict.msgAccessDeniedMsg}<br>Code: <code>${data.code}</code>`;
+        return;
+      }
+
+      if (data.authorized) {
+        const locCode = translateReason(data.code, currentLang);
+        resultBox.className = 'alert alert-success';
+        resultBox.innerHTML = `<strong>${dict.msgAccessAllowedHeader}</strong> ${dict.msgAccessAllowedMsg}<br>Code: <code>${data.code}</code> (${locCode})`;
+      } else {
+        const locReason = translateReason(data.code || data.reason, currentLang);
+        resultBox.className = 'alert alert-danger';
+        resultBox.innerHTML = `<strong>${dict.msgAccessBlockedHeader}</strong> ${locReason}<br>Code: <code>${data.code || 'ACCESS_DENIED'}</code>`;
+      }
+    }
+
     async function checkRecordAccess() {
       const targetEmpCode = document.getElementById('target-emp-code').value;
-      const resultBox = document.getElementById('access-check-result');
 
       try {
         const res = await fetch('/api/auth/access-check', {
@@ -850,23 +972,12 @@
           body: JSON.stringify({ targetEmployeeCode: targetEmpCode })
         });
         const data = await res.json();
-
-        if (res.status === 401) {
-          resultBox.className = 'alert alert-danger';
-          resultBox.innerHTML = '<strong>ACCESS DENIED:</strong> Unauthenticated or Password Change Required.<br>Code: <code>' + data.code + '</code>';
-          return;
-        }
-
-        if (data.authorized) {
-          resultBox.className = 'alert alert-success';
-          resultBox.innerHTML = '<strong>ACCESS ALLOWED:</strong> Principal authorized for target record.<br>Code: <code>' + data.code + '</code>';
-        } else {
-          resultBox.className = 'alert alert-danger';
-          resultBox.innerHTML = '<strong>ACCESS BLOCKED:</strong> ' + (data.reason || 'Data isolation enforced.') + '<br>Code: <code>' + data.code + '</code>';
-        }
+        data.status = res.status;
+        lastAccessCheckData = data;
+        renderAccessCheckResult(data);
       } catch (err) {
-        resultBox.className = 'alert alert-danger';
-        resultBox.innerText = 'Access Check Error: ' + err.message;
+        lastAccessCheckData = { isError: true, message: err.message };
+        renderAccessCheckResult(lastAccessCheckData);
       }
     }
 
