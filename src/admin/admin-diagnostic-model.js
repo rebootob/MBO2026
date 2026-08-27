@@ -1,13 +1,15 @@
 /**
- * Admin Diagnostic Model & Health Engine (Stage 2 Hardened)
+ * Admin Diagnostic Model & Health Engine (Baseline Correction Micro-Fix)
  * Pure logic for Technical Admin (admin-form) System Health, Workflow Trace, Profile/Route Validation,
  * Root-Cause Classification, Fast Repair Candidate Preparation, and Sanitized Snapshot.
+ *
+ * Source of Truth: project-docs/CONFIRMED_BASELINE/
  */
 
 export const BUILD_VERSION_INFO = {
-  version: '0.2.0',
-  commitSha: '0fcda0d4a6f4386ee39594bf4720f630b0e4b4c0',
-  buildTimestamp: '2026-08-27T12:15:00Z',
+  version: '0.2.1',
+  commitSha: '0977bf59a838748c69f8ee4920423459fb79eecb',
+  buildTimestamp: '2026-08-27T12:19:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -20,6 +22,25 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+export const CANONICAL_STATUSES = [
+  '01 Draft Objective',
+  '02 First Manager Objective Review',
+  '03 Manager Objective Review',
+  '04 GM Objective Review',
+  '05 Objective Approved',
+  '06 Employee Mid-Year',
+  '07 First Manager Mid-Year Review',
+  '08 Manager Mid-Year Review',
+  '09 GM Mid-Year Review',
+  '10 Mid-Year Completed',
+  '11 Employee Self Evaluation',
+  '12 First Manager Final Evaluation',
+  '13 Manager Final Evaluation',
+  '14 GM Final Evaluation',
+  '15 HR Final Check',
+  '16 Completed'
+];
 
 export class AdminDiagnosticModel {
   /**
@@ -48,6 +69,7 @@ export class AdminDiagnosticModel {
   /**
    * Evaluates System Health across 15 diagnostic indicators.
    * Removes fabricated defaults — missing evidence returns NOT_EVIDENCED / NOT_AVAILABLE.
+   * If critical evidence is missing, overallHealth returns INCOMPLETE_EVIDENCE instead of PASS.
    */
   static evaluateSystemHealth(context = {}) {
     const {
@@ -183,7 +205,7 @@ export class AdminDiagnosticModel {
       key: 'workflow_status',
       labelTH: 'สถานะกระบวนการ (Workflow Status & Actor)',
       labelEN: 'Workflow Status & Current Actor',
-      status: currentStatus ? 'PASS' : 'ERROR',
+      status: currentStatus ? (CANONICAL_STATUSES.includes(currentStatus) ? 'PASS' : 'ERROR') : 'ERROR',
       reason: currentStatus ? `Status: "${currentStatus}", Actor: "${currentActor || 'N/A'}"` : 'Current status missing'
     });
 
@@ -243,7 +265,8 @@ export class AdminDiagnosticModel {
 
     const hasError = items.some(i => i.status === 'ERROR');
     const hasWarning = items.some(i => i.status === 'WARNING');
-    const overallHealth = hasError ? 'ERROR' : (hasWarning ? 'WARNING' : 'PASS');
+    const hasUncertain = items.some(i => i.status === 'NOT_EVIDENCED' || i.status === 'NOT_AVAILABLE');
+    const overallHealth = hasError ? 'ERROR' : (hasWarning ? 'WARNING' : (hasUncertain ? 'INCOMPLETE_EVIDENCE' : 'PASS'));
 
     return {
       overallHealth,
@@ -254,7 +277,8 @@ export class AdminDiagnosticModel {
 
   /**
    * B. Evaluates Workflow Trace & Workflow State Consistency.
-   * Validates topology path expectations against actual record state.
+   * MUST use exact canonical App794 status names from CONFIRMED_BASELINE/ROUTING_WORKFLOW.md.
+   * MUST NOT fall back to M1_G1 when topology is missing/unknown.
    */
   static evaluateWorkflowTrace(context = {}) {
     const {
@@ -268,38 +292,57 @@ export class AdminDiagnosticModel {
       actualAuditHistory = null
     } = context;
 
-    if (!currentStatus) {
+    if (!currentStatus || !CANONICAL_STATUSES.includes(currentStatus)) {
       return {
         status: 'ERROR',
         isFailClosed: true,
-        reason: 'Current status is missing or unmapped',
+        reason: currentStatus ? `Current status "${currentStatus}" is non-canonical or unmapped` : 'Current status is missing',
         expectedPath: 'N/A',
         consistency: 'ERROR'
       };
     }
 
+    if (!topology) {
+      return {
+        status: 'NOT_EVIDENCED',
+        isFailClosed: false,
+        reason: 'Topology evidence not provided',
+        expectedPath: 'NOT_EVIDENCED',
+        consistency: 'NOT_EVIDENCED'
+      };
+    }
+
     const expectedPaths = {
-      M1_ONLY: ['01 Draft Objective', '03 Objective Self Check', '05 Approved Objective', '06 Mid-Year Self Check', '08 Approved Mid-Year', '10 Self Evaluation', '11 First Manager Evaluation', '13 Manager Final Evaluation', '15 HR Final Check', '16 Completed'],
-      M1_G1: ['01 Draft Objective', '03 Objective Self Check', '04 GM Objective Check', '05 Approved Objective', '06 Mid-Year Self Check', '08 Approved Mid-Year', '09 GM Mid-Year Check', '10 Self Evaluation', '11 First Manager Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed'],
-      M1_M2_G1: ['01 Draft Objective', '03 Objective Self Check', '04 GM Objective Check', '05 Approved Objective', '06 Mid-Year Self Check', '08 Approved Mid-Year', '09 GM Mid-Year Check', '10 Self Evaluation', '11 First Manager Evaluation', '12 Second Manager Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed'],
-      M1_G1_G2: ['01 Draft Objective', '03 Objective Self Check', '04 GM Objective Check', '05 Approved Objective', '06 Mid-Year Self Check', '08 Approved Mid-Year', '09 GM Mid-Year Check', '10 Self Evaluation', '11 First Manager Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed'],
-      M1_M2_G1_G2: ['01 Draft Objective', '03 Objective Self Check', '04 GM Objective Check', '05 Approved Objective', '06 Mid-Year Self Check', '08 Approved Mid-Year', '09 GM Mid-Year Check', '10 Self Evaluation', '11 First Manager Evaluation', '12 Second Manager Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed']
+      M1_ONLY: ['01 Draft Objective', '03 Manager Objective Review', '05 Objective Approved', '06 Employee Mid-Year', '08 Manager Mid-Year Review', '10 Mid-Year Completed', '11 Employee Self Evaluation', '13 Manager Final Evaluation', '15 HR Final Check', '16 Completed'],
+      M1_G1: ['01 Draft Objective', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved', '06 Employee Mid-Year', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed', '11 Employee Self Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed'],
+      M1_M2_G1: ['01 Draft Objective', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved', '06 Employee Mid-Year', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed', '11 Employee Self Evaluation', '12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed'],
+      M1_G1_G2: ['01 Draft Objective', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved', '06 Employee Mid-Year', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed', '11 Employee Self Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed'],
+      M1_M2_G1_G2: ['01 Draft Objective', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved', '06 Employee Mid-Year', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed', '11 Employee Self Evaluation', '12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed']
     };
 
-    const expectedPath = expectedPaths[topology] || expectedPaths.M1_G1;
-
-    // Detect topology state violations:
-    if (topology === 'M1_G1' && ['02 First Manager Objective Check', '07 First Manager Mid-Year Check', '12 Second Manager Evaluation'].includes(currentStatus)) {
+    const expectedPath = expectedPaths[topology];
+    if (!expectedPath) {
       return {
         status: 'ERROR',
         isFailClosed: true,
-        reason: `Topology "${topology}" invalidly entered First/Second Manager state "${currentStatus}"`,
+        reason: `Unknown or unsupported topology "${topology}"`,
+        expectedPath: 'N/A',
+        consistency: 'ERROR'
+      };
+    }
+
+    // Detect topology state violations using exact canonical status names:
+    if (topology === 'M1_G1' && ['02 First Manager Objective Review', '07 First Manager Mid-Year Review', '12 First Manager Final Evaluation'].includes(currentStatus)) {
+      return {
+        status: 'ERROR',
+        isFailClosed: true,
+        reason: `Topology "${topology}" invalidly entered First Manager state "${currentStatus}"`,
         expectedPath: expectedPath.join(' → '),
         consistency: 'ERROR'
       };
     }
 
-    if (topology === 'M1_ONLY' && ['04 GM Objective Check', '09 GM Mid-Year Check', '14 GM Final Evaluation'].includes(currentStatus)) {
+    if (topology === 'M1_ONLY' && ['04 GM Objective Review', '09 GM Mid-Year Review', '14 GM Final Evaluation'].includes(currentStatus)) {
       return {
         status: 'ERROR',
         isFailClosed: true,
@@ -309,12 +352,11 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // Active Appraiser Slot consistency
+    // Active Appraiser Slot consistency using canonical status names
     let expectedSlot = null;
-    if (currentStatus === '11 First Manager Evaluation') expectedSlot = 1;
-    else if (currentStatus === '12 Second Manager Evaluation') expectedSlot = 2;
-    else if (currentStatus === '13 Manager Final Evaluation') expectedSlot = topology === 'M1_ONLY' ? 1 : (topology === 'M1_M2_G1' ? 3 : 2);
-    else if (currentStatus === '14 GM Final Evaluation') expectedSlot = (topology === 'M1_M2_G1' ? 4 : (topology === 'M1_G1' ? 3 : (topology === 'M1_G1_G2' ? 3 : 2)));
+    if (currentStatus === '12 First Manager Final Evaluation') expectedSlot = 1;
+    else if (currentStatus === '13 Manager Final Evaluation') expectedSlot = topology === 'M1_ONLY' ? 1 : (topology === 'M1_M2_G1' ? 2 : 1);
+    else if (currentStatus === '14 GM Final Evaluation') expectedSlot = (topology === 'M1_M2_G1' ? 3 : (topology === 'M1_G1' ? 2 : (topology === 'M1_G1_G2' ? 2 : 2)));
 
     if (activeAppraiserSlot && expectedSlot && activeAppraiserSlot !== expectedSlot) {
       return {
@@ -326,9 +368,10 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // Required Appraiser presence for active slot
+    // Required Appraiser presence for active slot (only check if appraiser field context is supplied)
     const appraiserSlots = { 1: appraiser1, 2: appraiser2, 3: appraiser3, 4: appraiser4 };
-    if (expectedSlot && !appraiserSlots[expectedSlot]) {
+    const isAppraiserContextSupplied = Boolean(appraiser1 || appraiser2 || appraiser3 || appraiser4);
+    if (expectedSlot && isAppraiserContextSupplied && !appraiserSlots[expectedSlot]) {
       return {
         status: 'ERROR',
         isFailClosed: true,
@@ -343,7 +386,7 @@ export class AdminDiagnosticModel {
     return {
       status: 'PASS',
       isFailClosed: false,
-      reason: `Workflow status "${currentStatus}" is consistent with topology "${topology || 'M1_G1'}"`,
+      reason: `Workflow status "${currentStatus}" is consistent with topology "${topology}"`,
       expectedPath: expectedPath.join(' → '),
       consistency: 'PASS',
       historyStatus,
@@ -353,7 +396,8 @@ export class AdminDiagnosticModel {
 
   /**
    * C. Evaluates Expected vs Actual Evaluation Profile.
-   * Maps Position to authoritative Profile Code & Weight split.
+   * MUST use exact Profile Codes from CONFIRMED_BASELINE/EVALUATION_CLASSES.md:
+   * PROF_STAFF_CHIEF, PROF_JAPANESE_STAFF, PROF_ASST_MGR, PROF_SECTION_MGR, PROF_SENIOR_MGR, PROF_DGM, PROF_GM, PROF_VP.
    */
   static evaluateProfileMatch(context = {}) {
     const {
@@ -377,10 +421,10 @@ export class AdminDiagnosticModel {
     const positionMap = {
       'staff': { code: 'PROF_STAFF_CHIEF', name: 'Staff / Chief', a: 70, b: 30 },
       'chief': { code: 'PROF_STAFF_CHIEF', name: 'Staff / Chief', a: 70, b: 30 },
-      'japanese staff': { code: 'PROF_JP_STAFF', name: 'Japanese Staff', a: 70, b: 30 },
+      'japanese staff': { code: 'PROF_JAPANESE_STAFF', name: 'Japanese Staff', a: 70, b: 30 },
       'assistant manager': { code: 'PROF_ASST_MGR', name: 'Assistant Manager', a: 60, b: 40 },
-      'section manager': { code: 'PROF_SEC_MGR', name: 'Section Manager', a: 50, b: 50 },
-      'senior manager': { code: 'PROF_SR_MGR', name: 'Senior Manager', a: 50, b: 50 },
+      'section manager': { code: 'PROF_SECTION_MGR', name: 'Section Manager', a: 50, b: 50 },
+      'senior manager': { code: 'PROF_SENIOR_MGR', name: 'Senior Manager', a: 50, b: 50 },
       'dgm': { code: 'PROF_DGM', name: 'Deputy General Manager', a: 50, b: 50 },
       'deputy general manager': { code: 'PROF_DGM', name: 'Deputy General Manager', a: 50, b: 50 },
       'gm': { code: 'PROF_GM', name: 'General Manager', a: 50, b: 50 },
@@ -424,7 +468,8 @@ export class AdminDiagnosticModel {
 
   /**
    * D. Evaluates Expected vs Actual Route Assignment.
-   * Compares App53/App795 routing expectations against actual record fields.
+   * MUST use exact Executive Routing Keys: POSITION_DGM, POSITION_GM, POSITION_VP.
+   * If authoritative App795 route evidence is absent: ROUTE_ASSIGNMENT_CHECK = NOT_EVIDENCED.
    */
   static evaluateRouteMatch(context = {}) {
     const {
@@ -444,20 +489,46 @@ export class AdminDiagnosticModel {
     const normPos = (position || '').trim().toLowerCase();
 
     // Executive direct single-appraiser route check takes precedence
-    if (['gm', 'general manager', 'vp', 'vice president', 'dgm', 'deputy general manager'].includes(normPos)) {
+    const execKeyMap = {
+      'dgm': 'POSITION_DGM',
+      'deputy general manager': 'POSITION_DGM',
+      'gm': 'POSITION_GM',
+      'general manager': 'POSITION_GM',
+      'vp': 'POSITION_VP',
+      'vice president': 'POSITION_VP'
+    };
+
+    if (execKeyMap[normPos]) {
+      const expectedExecKey = execKeyMap[normPos];
+      const keyMatch = actualRoutingKey === expectedExecKey;
       const isExecTopology = actualTopology === 'M1_ONLY';
       const isExecCount = Number(actualAppraiserCount) === 1;
-      const isExecMatch = isExecTopology && isExecCount;
+
+      if (!authoritativeRoute) {
+        return {
+          status: 'NOT_EVIDENCED',
+          routeMatch: 'NOT_EVIDENCED',
+          expectedRoutingKey: expectedExecKey,
+          actualRoutingKey: actualRoutingKey || 'N/A',
+          expectedTopology: 'M1_ONLY',
+          actualTopology: actualTopology || 'N/A',
+          expectedAppraiserCount: 1,
+          actualAppraiserCount: actualAppraiserCount || 'N/A',
+          reason: 'Executive routing key checked; authoritative App795 route result evidence required for full PASS'
+        };
+      }
+
+      const isExecMatch = keyMatch && isExecTopology && isExecCount;
       return {
         status: isExecMatch ? 'PASS' : 'ERROR',
         routeMatch: isExecMatch ? 'PASS' : 'ERROR',
-        expectedRoutingKey: 'DIRECT_EXECUTIVE',
+        expectedRoutingKey: expectedExecKey,
         actualRoutingKey: actualRoutingKey || 'N/A',
         expectedTopology: 'M1_ONLY',
         actualTopology: actualTopology || 'N/A',
         expectedAppraiserCount: 1,
         actualAppraiserCount: actualAppraiserCount || 'N/A',
-        reason: isExecMatch ? 'Executive direct single-appraiser route matches' : 'Executive route mismatch: expected M1_ONLY / Count=1'
+        reason: isExecMatch ? `Executive direct single-appraiser route matches ${expectedExecKey}` : `Executive route mismatch: expected ${expectedExecKey} / M1_ONLY / Count=1`
       };
     }
 
@@ -487,13 +558,16 @@ export class AdminDiagnosticModel {
     if (!authoritativeRoute) {
       const keyMatch = actualRoutingKey === expectedKey;
       return {
-        status: keyMatch ? 'PASS' : 'WARNING',
-        routeMatch: keyMatch ? 'PASS' : 'WARNING',
+        status: 'NOT_EVIDENCED',
+        routeMatch: 'NOT_EVIDENCED',
+        routingKeyCheck: keyMatch ? 'PASS' : 'ERROR',
         expectedRoutingKey: expectedKey,
         actualRoutingKey: actualRoutingKey || 'N/A',
-        expectedTopology: 'M1_G1',
+        expectedTopology: 'NOT_EVIDENCED',
         actualTopology: actualTopology || 'N/A',
-        reason: keyMatch ? `Routing key matches "${expectedKey}"` : `Routing key mismatch: Expected "${expectedKey}", Actual "${actualRoutingKey || 'N/A'}"`
+        reason: keyMatch
+          ? `Routing key matches "${expectedKey}"; authoritative App795 route result required for overall route PASS`
+          : `Routing key mismatch: Expected "${expectedKey}", Actual "${actualRoutingKey || 'N/A'}"`
       };
     }
 
@@ -529,13 +603,12 @@ export class AdminDiagnosticModel {
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * Classifies root cause and prepares exact Before/After repair candidate.
+   * FIX_THIS_RECORD requires proven master inputs AND proven master outputs.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
     const routeEval = AdminDiagnosticModel.evaluateRouteMatch(context);
 
-    // Only evaluate workflow if currentStatus is provided
     let workflowEval = { status: 'PASS' };
     if (context.currentStatus) {
       workflowEval = AdminDiagnosticModel.evaluateWorkflowTrace(context);
@@ -546,6 +619,8 @@ export class AdminDiagnosticModel {
     const hasWorkflowError = workflowEval.status === 'ERROR';
     const isProfileUncertain = profileEval.status === 'NOT_EVIDENCED';
     const isRouteUncertain = routeEval.status === 'NOT_EVIDENCED';
+
+    const isMasterEvidenceProven = Boolean(context.authoritativeProfile || context.authoritativeRoute);
 
     let rootCause = 'NO_REPAIR_NEEDED';
     let problemType = 'NONE';
@@ -587,7 +662,7 @@ export class AdminDiagnosticModel {
       targetApp = 'App 794 (Process Management)';
       risk = 'HIGH';
       impactScope = '1 record';
-    } else if (hasProfileError || hasRouteError) {
+    } else if ((hasProfileError || hasRouteError) && isMasterEvidenceProven) {
       rootCause = 'FIX_THIS_RECORD';
       problemType = 'STALE_APP794_SNAPSHOT';
       authoritativeSource = 'App 53 / App 795 / App 796 Master Sources (Verified Correct)';
@@ -595,7 +670,7 @@ export class AdminDiagnosticModel {
       targetApp = 'App 794 (MBO Evaluation Record)';
       risk = 'LOW';
       impactScope = '1 record';
-    } else if (isProfileUncertain || isRouteUncertain) {
+    } else if (hasProfileError || hasRouteError || isProfileUncertain || isRouteUncertain) {
       rootCause = 'BLOCKED_NOT_ENOUGH_EVIDENCE';
       problemType = 'INSUFFICIENT_AUTHORITATIVE_EVIDENCE';
       authoritativeSource = 'Unknown / Unlinked Master Source';
@@ -605,7 +680,6 @@ export class AdminDiagnosticModel {
       impactScope = 'UNKNOWN';
     }
 
-    // Build Before / After diff for FIX_THIS_RECORD
     const beforeDiff = {
       Profile_Code: context.actualProfileCode || 'N/A',
       PartA_Weight: context.actualPartAWeight ?? 'N/A',
@@ -619,9 +693,9 @@ export class AdminDiagnosticModel {
       Profile_Code: profileEval.expectedProfileCode !== 'NOT_EVIDENCED' ? profileEval.expectedProfileCode : beforeDiff.Profile_Code,
       PartA_Weight: profileEval.expectedPartAWeight ?? beforeDiff.PartA_Weight,
       PartB_Weight: profileEval.expectedPartBWeight ?? beforeDiff.PartB_Weight,
-      Routing_Key: routeEval.expectedRoutingKey || beforeDiff.Routing_Key,
-      Routing_Topology: routeEval.expectedTopology || beforeDiff.Routing_Topology,
-      Appraiser_Count: routeEval.expectedAppraiserCount ?? beforeDiff.Appraiser_Count
+      Routing_Key: routeEval.expectedRoutingKey !== 'NOT_EVIDENCED' ? routeEval.expectedRoutingKey : beforeDiff.Routing_Key,
+      Routing_Topology: routeEval.expectedTopology !== 'NOT_EVIDENCED' ? routeEval.expectedTopology : beforeDiff.Routing_Topology,
+      Appraiser_Count: routeEval.expectedAppraiserCount !== 'NOT_EVIDENCED' ? routeEval.expectedAppraiserCount : beforeDiff.Appraiser_Count
     };
 
     return {
@@ -705,7 +779,6 @@ export class AdminDiagnosticModel {
       repairCandidate
     } = diagnosticData;
 
-    // Explicit Allowlist Contract
     const allowlisted = {
       recordIdentity: {
         recordId: recordDiag?.recordId || 'N/A',
@@ -733,7 +806,6 @@ export class AdminDiagnosticModel {
 
     const raw = JSON.parse(JSON.stringify(allowlisted));
 
-    // Sanitization step — recursive sanitization for keys matching password/secret/token/hash/cookie/auth_header
     const sanitizeObj = (obj) => {
       if (!obj || typeof obj !== 'object') return;
       for (const key of Object.keys(obj)) {
