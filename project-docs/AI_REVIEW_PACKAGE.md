@@ -4,20 +4,20 @@
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
 > **Gate 6 UI Parity Status:** **`PRODUCTION / SECURITY READINESS CLOSURE ASSESSMENT COMPLETE`**
-> **Last Updated:** 2026-08-27T11:43:00+07:00
+> **Last Updated:** 2026-08-27T11:47:00+07:00
 
 ---
 
 ## 0. PRODUCTION / SECURITY READINESS CLOSURE ASSESSMENT
 
 ```text
-ASSESSMENT_HEAD = 8b57636eb7b3fe32512d9a268329e65173451306
+ASSESSMENT_HEAD = 6861afe2e488acfbbeabe30553e90511d980a17e
 APP794_LOCAL_UI_CLOSURE = PASS
 FINAL_LOCAL_VISUAL_REGRESSION_GATE = PASS
 UI_FROZEN = YES
 
 P0_BLOCKERS = SECONDARY_PASSWORD_SECURITY, IDENTITY_AUTH_MODEL, APP801_READINESS, PRODUCTION_HR_AUTHORIZATION
-P1_BLOCKERS = APP800_READINESS
+P1_BLOCKERS = APP800_READINESS, ADMIN_FORM_DEBUG_INSPECTION
 P2_ITEMS = NONE
 
 IDENTITY_AUTH_MODEL = BASELINE_CONFLICT — Proposed secondary MBO account mapping conflicts with confirmed Kintone-only Requester_User baseline (ROUTING_WORKFLOW.md line 14).
@@ -27,6 +27,9 @@ PROCESS_16_28_CONSISTENCY = CLOSED — 16 states / 28 actions fully verified and
 APP800_READINESS = NEEDS_READ_ONLY_KINTONE_EVIDENCE — Live App800 phase calendar schema and record readback evidence needed for 5 macro stage date windows before production deployment.
 APP801_READINESS = BLOCKER_SECURITY — App801 as a Kintone credential store exposes password hashes to client-side API calls. Requires architecture decision to align with Kintone native SSO/login or trusted backend server.
 LEGACY_DATA_SAFETY = CLOSED — Legacy migration deferred (DEC-040); zero data-loss serializer and field preservation guards verified.
+ADMIN_FORM_DEBUG_INSPECTION = BLOCKER_IMPLEMENTATION — admin-form is strictly blocked from business workflow authority (ADMIN_FORM_BUSINESS_AUTHORITY = NONE / CLOSED), but a dedicated read-only Technical Admin Debug & Inspection Panel (15 diagnostic items) is not yet implemented in src/ui/.
+ADMIN_FORM_BUSINESS_AUTHORITY = NONE
+ADMIN_FORM_SECRET_EXPOSURE = PASS
 DELIVERY_INTEGRITY = CLOSED — APP794_LOCAL_UI_CLOSURE = PASS, FINAL_LOCAL_VISUAL_REGRESSION_GATE = PASS, UI_FROZEN = YES, modular source + compiled dist bundle verified.
 
 KINTONE_CALLS = 0
@@ -38,7 +41,7 @@ TEST_CHANGES = 0
 
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
 NEXT_RECOMMENDED_WORK_PACKAGE = WP-002D_PRODUCTION_SECURITY_ARCHITECTURE_DECISION
-REMAINING_BLOCKERS = SECONDARY_PASSWORD_SECURITY, IDENTITY_AUTH_MODEL, APP801_READINESS, PRODUCTION_HR_AUTHORIZATION, APP800_READINESS
+REMAINING_BLOCKERS = SECONDARY_PASSWORD_SECURITY, IDENTITY_AUTH_MODEL, APP801_READINESS, PRODUCTION_HR_AUTHORIZATION, APP800_READINESS, ADMIN_FORM_DEBUG_INSPECTION
 ```
 
 ### Detailed Finding Analysis & Recommended Execution Order
@@ -54,6 +57,10 @@ REMAINING_BLOCKERS = SECONDARY_PASSWORD_SECURITY, IDENTITY_AUTH_MODEL, APP801_RE
 
 3. **P1-1 APP800_READINESS** (`Read-Only Evidence Gate`):
    - *Issue*: Require read-only Kintone inspection of live App800 phase calendar records/schema to confirm production start/end date configuration for 5 macro stages.
+
+4. **P1-2 ADMIN_FORM_DEBUG_INSPECTION** (`Technical Admin Implementation Package`):
+   - *Security Status*: `admin-form` has **0 business workflow authority** (`ADMIN_FORM_BUSINESS_AUTHORITY = NONE`). `src/ui/employee-visibility.js` and `MboIdentityService` fail closed when `admin-form` is the logged-in user.
+   - *Implementation Status*: `BLOCKER_IMPLEMENTATION`. A dedicated read-only Technical Admin Debug & Inspection Panel (exposing 15 diagnostic items including record ID, MBO key, resolved topology, Objective_Count normalization, phase calendar, viewer role, validation errors, and build version without revealing secrets or granting business submit/approve buttons) needs to be implemented under a future UI package.
 
 ```text
 M10M_R2D_R1 = READY_FOR_CHATGPT_REVIEW
