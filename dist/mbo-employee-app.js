@@ -2717,10 +2717,7 @@ function resolveIdentityViewerRole(record, loginUserCode, options = {}) {
     return 'RESTRICTED';
   }
 
-  const requesterCodes = [
-    ...extractUserCodes(record.Requester_User),
-    ...extractUserCodes(record.Employee_Code)
-  ];
+  const requesterCodes = extractUserCodes(record.Requester_User);
   const isRequester = requesterCodes.includes(cleanLoginCode);
 
   const appraiserCodes = [
@@ -2740,16 +2737,13 @@ function resolveIdentityViewerRole(record, loginUserCode, options = {}) {
   ];
   const isHR = hrCodes.includes(cleanLoginCode);
 
-  if (isRequester) {
-    return 'EMPLOYEE';
-  }
+  const matchedRoles = [];
+  if (isRequester) matchedRoles.push('EMPLOYEE');
+  if (isAppraiser) matchedRoles.push('APPRAISER');
+  if (isHR) matchedRoles.push('HR');
 
-  if (isHR) {
-    return 'HR';
-  }
-
-  if (isAppraiser) {
-    return 'APPRAISER';
+  if (matchedRoles.length === 1) {
+    return matchedRoles[0];
   }
 
   return 'RESTRICTED';

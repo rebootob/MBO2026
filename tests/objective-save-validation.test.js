@@ -1864,6 +1864,39 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.deepEqual(extractUserCodes(null), []);
   assert.deepEqual(extractUserCodes(''), []);
 
+  // Scenario J: Employee_Code alone MUST NOT grant Requester/Employee role (Blocker 1)
+  const recEmpCodeOnly = createMockRecord({
+    Requester_User: { value: [{ code: 'otherUser', name: 'Other User' }] },
+    Employee_Code: { value: 'emp01' }
+  });
+  assert.equal(resolveIdentityViewerRole(recEmpCodeOnly, 'emp01', { isPreviewMode: false }), 'RESTRICTED', 'Employee_Code matching login without Requester_User MUST return RESTRICTED');
+
+  // Scenario K: Overlapping Roles MUST fail closed as RESTRICTED (Blocker 2)
+  const recOverlapReqMgr = createMockRecord({
+    Requester_User: { value: [{ code: 'same01' }] },
+    Manager_User: { value: [{ code: 'same01' }] }
+  });
+  assert.equal(resolveIdentityViewerRole(recOverlapReqMgr, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Overlapping Requester and Manager MUST return RESTRICTED');
+
+  const recOverlapReqHR = createMockRecord({
+    Requester_User: { value: [{ code: 'same01' }] },
+    HR_User: { value: [{ code: 'same01' }] }
+  });
+  assert.equal(resolveIdentityViewerRole(recOverlapReqHR, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Overlapping Requester and HR MUST return RESTRICTED');
+
+  const recOverlapMgrHR = createMockRecord({
+    Manager_User: { value: [{ code: 'same01' }] },
+    HR_User: { value: [{ code: 'same01' }] }
+  });
+  assert.equal(resolveIdentityViewerRole(recOverlapMgrHR, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Overlapping Manager and HR MUST return RESTRICTED');
+
+  const recOverlapAll = createMockRecord({
+    Requester_User: { value: [{ code: 'same01' }] },
+    First_Manager_User: { value: [{ code: 'same01' }] },
+    HR_User: { value: [{ code: 'same01' }] }
+  });
+  assert.equal(resolveIdentityViewerRole(recOverlapAll, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Overlapping Requester, Appraiser, and HR MUST return RESTRICTED');
+
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
   assert.equal(dlUpcoming.status, 'Upcoming');

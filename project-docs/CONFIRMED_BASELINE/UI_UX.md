@@ -537,3 +537,18 @@ The five macro-stage tiles are not only a progress indicator. Once a stage has b
 - UI hiding/read-only state is UX, not the authorization boundary.
 - Production parity must reconcile this history visibility with native Kintone Process/App/Record/Field permissions or another approved server-side/native access boundary before claiming secure role isolation.
 - Historical navigation does not authorize new schema, route, profile, or Kintone writes.
+
+## 31. Production Source Structure & Modular Code Standard
+
+Confirmed on 2026-08-27:
+
+```text
+PRODUCTION_SOURCE_STRUCTURE = MODULAR
+PRODUCTION_KINTONE_DELIVERY = BUILT_BUNDLE
+PREVIEW_AND_PRODUCTION_BUSINESS_RENDERING = SAME_SOURCE_MODULES_WHERE_PRACTICAL
+```
+
+- Source code under `src/` is structured modularly by domain responsibility for maintainability, testability, and security review.
+- Production receives a single compiled JavaScript bundle (`dist/mbo-employee-app.js`) for Kintone customization.
+- Preview and Production share business logic and rendering modules where practical to prevent implementation divergence.
+- Build output is the delivery artifact; source modules under `src/` are the maintainability source of truth.
