@@ -1,0 +1,195 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { MboKintoneAuthRepository } from '../src/services/mbo-auth-kintone-repository.js';
+import { MboAuthSessionService } from '../src/services/mbo-auth-session-service.js';
+import { MboPasswordDomainService } from '../src/services/mbo-password-service.js';
+
+describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adapter)', () => {
+
+  const validPasswordHash = MboPasswordDomainService.hashPassword('Pass0118!');
+
+  const sampleRecord = {
+    $id: { value: '101' },
+    Employee_Code: { value: '0118' },
+    Password_Hash: { value: validPasswordHash },
+    Password_Algorithm: { value: 'PBKDF2-SHA256' },
+    Force_Password_Change: { value: 'YES' },
+    Password_Changed_At: { value: null },
+    Password_Expires_At: { value: null },
+    Failed_Attempts: { value: '0' },
+    Locked_Until: { value: null },
+    Account_Status: { value: 'ACTIVE' }
+  };
+
+  it('1. exact Employee_Code returns one sanitized server credential domain object', async () => {
+    const mockTransport = {
+      async get(path) {
+        assert.match(path, /\/k\/v1\/records\.json\?app=801/);
+        assert.match(decodeURIComponent(path), /Employee_Code = "0118"/);
+        return { records: [sampleRecord] };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    const cred = await repo.getCredential('0118');
+
+    assert.equal(cred.Employee_Code, '0118');
+    assert.equal(cred.Password_Hash, validPasswordHash);
+    assert.equal(cred.Must_Change_Password, true);
+    assert.equal(cred.Failed_Login_Count, 0);
+    assert.equal(cred.Account_Status, 'ACTIVE');
+    assert.equal(cred.Locked_Until, null);
+  });
+
+  it('2. zero records => returns null (fail closed)', async () => {
+    const mockTransport = {
+      async get() {
+        return { records: [] };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    const cred = await repo.getCredential('9999');
+    assert.equal(cred, null);
+  });
+
+  it('3. duplicate Employee_Code => throws DUPLICATE_IDENTITY_RECORD (fail closed)', async () => {
+    const mockTransport = {
+      async get() {
+        return { records: [sampleRecord, sampleRecord] };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    await assert.rejects(
+      async () => await repo.getCredential('0118'),
+      /DUPLICATE_IDENTITY_RECORD/
+    );
+  });
+
+  it('4. update uses strict field allowlist and updates Kintone payload properly', async () => {
+    let putCalled = false;
+    let putPayload = null;
+
+    const mockTransport = {
+      async get() {
+        return { records: [sampleRecord] };
+      },
+      async put(path, body) {
+        putCalled = true;
+        putPayload = body;
+        return { revision: '5' };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    const res = await repo.updateCredential('0118', {
+      Failed_Login_Count: 3,
+      Must_Change_Password: false,
+      Account_Status: 'ACTIVE'
+    });
+
+    assert.equal(res.success, true);
+    assert.equal(res.recordId, 101);
+    assert.equal(res.revision, '5');
+    assert.equal(putCalled, true);
+    assert.equal(putPayload.app, 801);
+    assert.equal(putPayload.id, 101);
+    assert.equal(putPayload.record.Failed_Attempts.value, 3);
+    assert.equal(putPayload.record.Force_Password_Change.value, 'NO');
+    assert.equal(putPayload.record.Account_Status.value, 'ACTIVE');
+  });
+
+  it('5. unknown / identity-field mutation rejected', async () => {
+    const mockTransport = {
+      async get() { return { records: [sampleRecord] }; }
+    };
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+
+    // Attempting to mutate Employee_Code (immutable identity)
+    await assert.rejects(
+      async () => await repo.updateCredential('0118', { Employee_Code: '0119' }),
+      /UNAUTHORIZED_CREDENTIAL_MUTATION/
+    );
+
+    // Attempting to mutate unknown field
+    await assert.rejects(
+      async () => await repo.updateCredential('0118', { Unknown_Secret: '123' }),
+      /UNAUTHORIZED_CREDENTIAL_MUTATION/
+    );
+  });
+
+  it('6. malformed/missing required App801 field => fail closed', async () => {
+    const malformedRecord = {
+      $id: { value: '102' },
+      Employee_Code: { value: '0118' }
+      // Missing Password_Hash
+    };
+
+    const mockTransport = {
+      async get() { return { records: [malformedRecord] }; }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    await assert.rejects(
+      async () => await repo.getCredential('0118'),
+      /MALFORMED_CREDENTIAL_RECORD/
+    );
+  });
+
+  it('7. transport errors fail closed and do not expose secrets', async () => {
+    const mockTransport = {
+      async get() {
+        throw new Error('Kintone API rate limit exceeded');
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    await assert.rejects(
+      async () => await repo.getCredential('0118'),
+      (err) => {
+        assert.match(err.message, /Kintone API rate limit/);
+        assert.doesNotMatch(err.message, /pbkdf2/);
+        return true;
+      }
+    );
+  });
+
+  it('8. compatibility with MboAuthSessionService credentialStore interface', async () => {
+    let currentRecord = { ...sampleRecord };
+    const mockTransport = {
+      async get() {
+        return { records: [currentRecord] };
+      },
+      async put(path, body) {
+        if (body.record.Failed_Attempts) {
+          currentRecord = { ...currentRecord, Failed_Attempts: { value: String(body.record.Failed_Attempts.value) } };
+        }
+        return { revision: '2' };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+
+    const authService = new MboAuthSessionService({
+      credentialStore: repo,
+      sessionStore: {
+        async getSession() { return null; },
+        async setSession() { return true; },
+        async deleteSession() { return true; }
+      },
+      userMappings: [{ Kintone_User_Code: 'emp0118', Employee_Code: '0118' }]
+    });
+
+    // Wrong password attempt updates failed attempt count through repo adapter
+    const loginRes = await authService.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: 'WrongPassword!'
+    });
+
+    assert.equal(loginRes.status, 'INVALID_CREDENTIALS');
+    assert.equal(currentRecord.Failed_Attempts.value, '1');
+  });
+
+});
