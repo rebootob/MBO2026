@@ -117,26 +117,53 @@ export class MboKintoneAuthRepository {
     }
 
     const record = records[0];
+    const recEmpCode = String(record.Employee_Code?.value || '').trim();
 
-    if (!record.Employee_Code?.value || !record.Password_Hash?.value) {
-      throw new Error(`MALFORMED_CREDENTIAL_RECORD: Record ID ${record.$id?.value || 'unknown'} is missing required credential fields.`);
+    if (!recEmpCode || recEmpCode !== cleanCode) {
+      throw new Error(`CREDENTIAL_MISMATCH: Returned Employee_Code '${recEmpCode}' does not match requested '${cleanCode}'.`);
     }
 
-    const forceChangeValue = record.Force_Password_Change?.value;
-    const mustChangePassword = forceChangeValue === 'YES' || forceChangeValue === 'TRUE' || record.Must_Change_Password?.value === true || record.Must_Change_Password?.value === 'true';
+    if (!record.Password_Hash?.value || typeof record.Password_Hash.value !== 'string' || record.Password_Hash.value.trim() === '') {
+      throw new Error(`MALFORMED_CREDENTIAL_RECORD: Record ID ${record.$id?.value || 'unknown'} is missing Password_Hash.`);
+    }
 
-    const failedAttempts = Number(record.Failed_Attempts?.value ?? record.Failed_Login_Count?.value ?? 0);
+    // Account_Status: Must be explicit known value ('ACTIVE', 'DISABLED', 'LOCKED')
+    const accountStatus = record.Account_Status?.value;
+    if (!accountStatus || typeof accountStatus !== 'string' || !['ACTIVE', 'DISABLED', 'LOCKED'].includes(accountStatus.trim())) {
+      throw new Error(`MALFORMED_CREDENTIAL_RECORD: Account_Status '${accountStatus}' is missing or invalid.`);
+    }
+
+    // Force_Password_Change: Must be explicit known value ('YES', 'NO', 'TRUE', 'FALSE')
+    const forceChangeValue = record.Force_Password_Change?.value;
+    let mustChangePassword;
+    if (forceChangeValue === 'YES' || forceChangeValue === 'TRUE') {
+      mustChangePassword = true;
+    } else if (forceChangeValue === 'NO' || forceChangeValue === 'FALSE') {
+      mustChangePassword = false;
+    } else {
+      throw new Error(`MALFORMED_CREDENTIAL_RECORD: Force_Password_Change '${forceChangeValue}' is missing or invalid.`);
+    }
+
+    // Failed_Attempts: Must be present and parse to non-negative integer
+    const rawFailed = record.Failed_Attempts?.value ?? record.Failed_Login_Count?.value;
+    if (rawFailed === undefined || rawFailed === null || rawFailed === '') {
+      throw new Error('MALFORMED_CREDENTIAL_RECORD: Failed_Attempts is missing.');
+    }
+    const failedAttempts = Number(rawFailed);
+    if (!Number.isInteger(failedAttempts) || failedAttempts < 0) {
+      throw new Error(`MALFORMED_CREDENTIAL_RECORD: Failed_Attempts '${rawFailed}' is not a valid non-negative integer.`);
+    }
 
     return {
-      Employee_Code: String(record.Employee_Code.value).trim(),
+      Employee_Code: recEmpCode,
       Password_Hash: String(record.Password_Hash.value),
       Password_Algorithm: record.Password_Algorithm?.value ? String(record.Password_Algorithm.value) : 'PBKDF2-SHA256',
-      Must_Change_Password: Boolean(mustChangePassword),
+      Must_Change_Password: mustChangePassword,
       Password_Changed_At: record.Password_Changed_At?.value || null,
       Password_Expires_At: record.Password_Expires_At?.value || null,
-      Failed_Login_Count: Number.isFinite(failedAttempts) ? failedAttempts : 0,
+      Failed_Login_Count: failedAttempts,
       Locked_Until: record.Locked_Until?.value || null,
-      Account_Status: record.Account_Status?.value ? String(record.Account_Status.value) : 'ACTIVE'
+      Account_Status: accountStatus.trim()
     };
   }
 

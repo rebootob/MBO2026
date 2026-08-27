@@ -311,7 +311,14 @@ export class MboAuthSessionService {
       now
     });
 
-    await this.credentialStore.updateCredential(empCode, updatedCredential);
+    await this.credentialStore.updateCredential(empCode, {
+      Password_Hash: updatedCredential.Password_Hash,
+      Must_Change_Password: updatedCredential.Must_Change_Password,
+      Password_Changed_At: updatedCredential.Password_Changed_At,
+      Password_Expires_At: updatedCredential.Password_Expires_At,
+      Failed_Login_Count: updatedCredential.Failed_Login_Count,
+      Locked_Until: updatedCredential.Locked_Until
+    });
 
     // Create a new clean authorized session
     const newRawToken = MboAuthSessionService.generateSessionToken();

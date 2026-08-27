@@ -122,7 +122,10 @@ describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adap
   it('6. malformed/missing required App801 field => fail closed', async () => {
     const malformedRecord = {
       $id: { value: '102' },
-      Employee_Code: { value: '0118' }
+      Employee_Code: { value: '0118' },
+      Account_Status: { value: 'ACTIVE' },
+      Force_Password_Change: { value: 'YES' },
+      Failed_Attempts: { value: '0' }
       // Missing Password_Hash
     };
 
@@ -190,6 +193,90 @@ describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adap
 
     assert.equal(loginRes.status, 'INVALID_CREDENTIALS');
     assert.equal(currentRecord.Failed_Attempts.value, '1');
+  });
+
+  it('9. App801-backed changePassword() succeeds with auth service contract without mutating Employee_Code', async () => {
+    let currentRecord = { ...sampleRecord };
+    let putPayload = null;
+
+    const mockTransport = {
+      async get() {
+        return { records: [currentRecord] };
+      },
+      async put(path, body) {
+        putPayload = body;
+        return { revision: '3' };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    const inMemorySessions = new Map();
+
+    const authService = new MboAuthSessionService({
+      credentialStore: repo,
+      sessionStore: {
+        async getSession(tokenHash) { return inMemorySessions.get(tokenHash) || null; },
+        async setSession(tokenHash, sessionObj) { inMemorySessions.set(tokenHash, sessionObj); },
+        async deleteSession(tokenHash) { inMemorySessions.delete(tokenHash); }
+      },
+      userMappings: [{ Kintone_User_Code: 'emp0118', Employee_Code: '0118' }]
+    });
+
+    const loginRes = await authService.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: 'Pass0118!'
+    });
+
+    assert.equal(loginRes.status, 'PASSWORD_CHANGE_REQUIRED');
+
+    const changeRes = await authService.changePassword({
+      sessionToken: loginRes.sessionToken,
+      newPassword: 'NewSecurePass123!'
+    });
+
+    assert.equal(changeRes.status, 'PASSWORD_CHANGED_SUCCESS');
+    assert.equal(putPayload.app, 801);
+    assert.equal(putPayload.id, 101);
+    assert.equal(putPayload.record.Force_Password_Change.value, 'NO');
+    assert.equal(putPayload.record.Failed_Attempts.value, 0);
+    assert.equal(putPayload.record.Employee_Code, undefined);
+  });
+
+  it('10. missing/unknown Account Status fails closed', async () => {
+    const recMissingStatus = { ...sampleRecord, Account_Status: { value: '' } };
+    const repoMissing = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recMissingStatus] }; } } });
+    await assert.rejects(async () => await repoMissing.getCredential('0118'), /Account_Status/);
+
+    const recUnknownStatus = { ...sampleRecord, Account_Status: { value: 'UNKNOWN_STATE' } };
+    const repoUnknown = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recUnknownStatus] }; } } });
+    await assert.rejects(async () => await repoUnknown.getCredential('0118'), /Account_Status/);
+  });
+
+  it('11. missing/unknown force-change state fails closed', async () => {
+    const recMissingForce = { ...sampleRecord, Force_Password_Change: { value: '' } };
+    const repoMissing = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recMissingForce] }; } } });
+    await assert.rejects(async () => await repoMissing.getCredential('0118'), /Force_Password_Change/);
+
+    const recUnknownForce = { ...sampleRecord, Force_Password_Change: { value: 'MAYBE' } };
+    const repoUnknown = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recUnknownForce] }; } } });
+    await assert.rejects(async () => await repoUnknown.getCredential('0118'), /Force_Password_Change/);
+  });
+
+  it('12. malformed failed-attempt counter fails closed', async () => {
+    const recNegative = { ...sampleRecord, Failed_Attempts: { value: '-1' } };
+    const repoNeg = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recNegative] }; } } });
+    await assert.rejects(async () => await repoNeg.getCredential('0118'), /Failed_Attempts/);
+
+    const recNaN = { ...sampleRecord, Failed_Attempts: { value: 'abc' } };
+    const repoNaN = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recNaN] }; } } });
+    await assert.rejects(async () => await repoNaN.getCredential('0118'), /Failed_Attempts/);
+  });
+
+  it('13. returned Employee_Code mismatch fails closed', async () => {
+    const recMismatch = { ...sampleRecord, Employee_Code: { value: '0119' } };
+    const repo = new MboKintoneAuthRepository({ transport: { async get() { return { records: [recMismatch] }; } } });
+    await assert.rejects(async () => await repo.getCredential('0118'), /CREDENTIAL_MISMATCH/);
   });
 
 });
