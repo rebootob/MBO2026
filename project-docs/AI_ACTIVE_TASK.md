@@ -1,132 +1,105 @@
-# AI ACTIVE TASK — D7 UI TEST UNBLOCK / BROWSER-SAFE PREVIEW ONLY
+# AI ACTIVE TASK — D7 ADMIN PREVIEW RUNTIME FIX ONLY
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed implementation: `fea819a9834d84f6b3c14c004bc965fac249f984`
-> Mode: ONE RUNTIME BLOCKER ONLY / MINIMUM FIX
+> Reviewed implementation: `d6bf4173219dfa8bc655f1eb302bd8e2e45845c0`
+> Mode: ONE ADMIN UI RUNTIME BLOCKER / MINIMUM FIX ONLY
 > Kintone write/deploy/schema/process/ACL authorization: NONE
 
 ## 0. REVIEW RESULT
 
-The final App796 evidence-boundary source fix is accepted for D7.
-Manual UI smoke testing is currently BLOCKED because the local browser preview crashes before render.
+The previous `node:crypto` browser blocker is FIXED: normal Input Preview now renders.
 
-Observed browser error from user at `http://localhost:3000`:
-
-```text
-Access to script at 'node:crypto' ... has been blocked
-Failed to load resource: net::ERR_FAILED
-```
-
-Repository evidence confirms the browser import chain reaches Node-only crypto:
+Manual smoke test by user shows Technical Admin preview still crashes with:
 
 ```text
-preview/index.html
-  -> /src/ui/employee-part-a-ui.js
-  -> AdminDiagnosticModel / AdminSupportCenterUI
-  -> profile-scoring-resolver.js
-  -> scoring-config-master.js
-  -> import crypto from 'node:crypto'
+Uncaught TypeError: this._getActiveAppraiserSlot is not a function
+at EmployeePartAUI._renderSupportCenterIfAdmin (employee-part-a-ui.js:2730:33)
 ```
 
-`src/services/mbo-password-service.js` also uses `node:crypto`, but DO NOT solve D1 in this task unless it is proven to be part of this preview import chain.
+Repository confirms `_renderSupportCenterIfAdmin()` calls:
 
-Do NOT refactor unrelated code, redesign authentication, change hashing algorithms, change scoring rules, or work on D1-D6.
+```js
+activeAppraiserSlot: this._getActiveAppraiserSlot(status),
+```
 
-Target status after implementation:
+but `EmployeePartAUI` does not currently expose that method in the class source.
 
-`D7_UI_PREVIEW = READY_FOR_MANUAL_SMOKE_TEST`
+Do NOT work on D1-D6. Do NOT refactor unrelated UI. Do NOT change routing architecture. Do NOT touch Kintone.
+
+Target after implementation:
+
+`D7_ADMIN_PREVIEW = READY_FOR_MANUAL_SMOKE_TEST`
 
 Do not self-certify D7 final PASS.
 
-## 1. ONLY REQUIRED FIX — REMOVE NODE-ONLY CRYPTO FROM D7 BROWSER PREVIEW DEPENDENCY CHAIN
+## 1. ONLY REQUIRED FIX
 
-Goal:
+Primary file:
+- `src/ui/employee-part-a-ui.js`
 
-```text
-npm run ui:preview
-open http://localhost:3000
-=> page renders
-=> browser does NOT request/import node:crypto
-=> no node:crypto CORS / ERR_FAILED
-```
+Tests only if needed:
+- existing relevant UI/admin tests; do not create a new E2E framework.
 
-### Preferred minimal approach
-
-Keep Node-only hashing where it belongs. Do NOT rewrite crypto/hash behavior just to make the browser preview load.
-
-Instead, isolate the browser-safe profile policy needed by D7 from the Node-only scoring hash module.
-
-Minimum acceptable implementation pattern:
-
-1. Put/reuse only pure browser-safe profile policy data/functions in a small module, for example:
-   - `PROFILE_CODES`
-   - position -> profile mapping
-   - `getProfileCodeFromPosition()`
-2. `src/admin/admin-diagnostic-model.js` and `src/admin/admin-support-center.js` must import the pure browser-safe policy directly and must not pull `scoring-config-master.js` / `node:crypto` merely to resolve profile codes.
-3. Preserve existing public exports/API where practical so existing tests/source do not break.
-4. If an imported symbol such as `resolveProfileCode` is unused in D7 Admin code, remove that unused import instead of adding architecture.
-5. `src/profiles/scoring-config-master.js` may remain Node-only for synchronous SHA-256 configuration hashing. Do not change its hash semantics in this task.
-6. Do not modify `mbo-password-service.js` for this task unless source proves it is separately imported by the preview after the scoring-chain fix.
-
-A new small pure-policy file is allowed ONLY if required for separation of browser-safe policy from Node-only hashing. Do not create additional files beyond that.
+Required:
+1. Fix the missing `_getActiveAppraiserSlot(status)` runtime dependency using the EXISTING canonical workflow/topology rules. Prefer reusing an existing helper/data source if one already exists; otherwise add the smallest private helper in `EmployeePartAUI`.
+2. For statuses that are not an appraiser stage, return `null` / no active appraiser rather than inventing a slot.
+3. Preserve topology behavior:
+   - M1_ONLY = one direct appraiser
+   - M1_G1 = Manager then GM
+   - M1_M2_G1 = First Manager, Manager, GM
+   - do not production-certify unsupported future topology.
+4. Inspect ONLY the other helper calls inside `_renderSupportCenterIfAdmin()` (especially `_getStageCurrentActor(status)`) and ensure they actually exist/can execute. Fix another missing helper only if it is proven to be the immediate next runtime error in this same Admin render path.
+5. Do not change AdminDiagnosticModel/App796 logic already accepted unless strictly required for compilation.
+6. Keep Controlled Repair disabled.
+7. No Kintone read/write/deploy.
 
 ## 2. ACCEPTANCE CRITERIA
 
 All must be true:
+1. `npm run ui:preview` starts.
+2. Normal Input Preview still renders.
+3. Viewer Role = Technical Admin (`admin-form`) renders Admin Support Center instead of throwing.
+4. Browser Console has no app-caused `TypeError` from `_renderSupportCenterIfAdmin()`.
+5. No `node:crypto` browser request regression.
+6. Existing D7 App796 evidence behavior remains unchanged.
+7. Controlled Repair remains disabled.
 
-1. `npm run ui:preview` starts successfully.
-2. `http://localhost:3000` renders the existing Status Preview Lab body, not only the top toolbar.
-3. Browser Console has no `node:crypto` request/CORS/ERR_FAILED caused by the app.
-4. Technical Admin preview can render Admin Support Center when Viewer Role = Technical Admin (`admin-form`).
-5. Existing D7 App796 evidence behavior remains unchanged.
-6. Existing scoring configuration hash output/semantics remain unchanged.
-7. No Kintone read/write/deploy is executed.
+## 3. MINIMUM VERIFICATION
 
-## 3. MINIMUM TEST / VERIFICATION
-
-Run only what is necessary:
+Run only necessary verification plus regression:
 
 ```bash
 npm test -- tests/admin-support-center.test.js
 npm test
 npm run ui:build
 npm run ui:preview
-```
-
-For preview verification, inspect the local page/browser if your environment supports it. If not, report that limitation honestly and provide exact manual check instructions; do NOT claim browser PASS without browser evidence.
-
-Also run:
-
-```bash
 git diff --check
 git status --short
 ```
 
-Do not create a new E2E framework or add Playwright/Cypress only for this fix.
+If browser inspection is unavailable, report honestly. Do not claim manual browser PASS.
 
 ## 4. DELIVERY
 
-Commit only the minimum browser-unblock changes.
-
-Report:
+Commit only the minimum runtime fix and report:
 - exact commit SHA
 - exact files changed
 - root cause
-- exact import-chain fix
-- targeted test result
-- full npm test result
-- ui:build result
-- ui:preview startup result
-- whether browser render was actually verified
+- exact helper fix/reuse
+- whether any second missing helper in the same Admin path was proven and fixed
+- targeted/full tests
+- ui:build
+- ui:preview startup
+- browser actually verified: YES/NO
 - `KINTONE_READS_EXECUTED = 0`
 - `KINTONE_WRITES_EXECUTED = 0`
 - `KINTONE_DEPLOY_EXECUTED = 0`
-- `D7_UI_PREVIEW = READY_FOR_MANUAL_SMOKE_TEST` only if source/server conditions are met
+- `D7_ADMIN_PREVIEW = READY_FOR_MANUAL_SMOKE_TEST`
 
-Do NOT mark D7 final PASS. User/ChatGPT will perform the UI smoke test after preview loads.
+Do NOT mark D7 final PASS.
 
 ---
 
@@ -138,4 +111,4 @@ Do NOT mark D7 final PASS. User/ChatGPT will perform the UI smoke test after pre
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
 - D5 employee copy ONLY own previous planning fields = MUST_FIX
 - D6 full E2E / security / regression closure = BLOCKED
-- D7 Admin Support Center = SOURCE ACCEPTED / UI SMOKE TEST BLOCKED BY BROWSER IMPORT — THIS TASK
+- D7 Admin Support Center = SOURCE ACCEPTED / MANUAL UI SMOKE BLOCKED BY ADMIN RUNTIME ERROR — THIS TASK
