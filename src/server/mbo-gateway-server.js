@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { pathToFileURL } from 'node:url';
 import { MboAuthSessionService } from '../services/mbo-auth-session-service.js';
 import { MboKintoneAuthRepository } from '../services/mbo-auth-kintone-repository.js';
 import { MboEmployeeSelfGateway } from '../services/mbo-employee-self-gateway.js';
@@ -7,6 +8,7 @@ const COOKIE_NAME = 'mbo_session';
 const MAX_BODY_BYTES = 16 * 1024;
 
 export function parseGatewayConfig(env = process.env) {
+  if (!['production', 'development', 'test'].includes(env.NODE_ENV)) throw new Error('GATEWAY_CONFIG_INVALID_NODE_ENV');
   const production = env.NODE_ENV === 'production';
   const config = {
     production,
@@ -24,8 +26,14 @@ export function parseGatewayConfig(env = process.env) {
   if (!Number.isSafeInteger(config.port) || config.port < 1 || config.port > 65535) throw new Error('GATEWAY_CONFIG_INVALID_PORT');
   if (![config.app801Id, config.app794Id, config.app53Id].every(id => Number.isSafeInteger(id) && id > 0)) throw new Error('GATEWAY_CONFIG_INVALID_APP_ID');
   if (!config.outerSharedKintonePrincipal || !config.kintoneBaseUrl || !config.kintoneServerCredential) throw new Error('GATEWAY_CONFIG_MISSING_SERVER_SECRET_OR_KINTONE_SETTINGS');
-  if (!['Lax', 'Strict'].includes(config.cookieSameSite)) throw new Error('GATEWAY_CONFIG_INVALID_COOKIE_SAMESITE');
+  if (!['Lax', 'Strict', 'None'].includes(config.cookieSameSite)) throw new Error('GATEWAY_CONFIG_INVALID_COOKIE_SAMESITE');
+  if (config.cookieSameSite === 'None' && !config.cookieSecure) throw new Error('GATEWAY_CONFIG_NONE_REQUIRES_SECURE');
   if (production && (!config.allowedOrigin || !config.cookieSecure)) throw new Error('GATEWAY_CONFIG_PRODUCTION_COOKIE_ORIGIN_REQUIRED');
+  if (production) {
+    const origin = new URL(config.allowedOrigin);
+    const baseUrl = new URL(config.kintoneBaseUrl);
+    if (origin.protocol !== 'https:' || origin.origin !== config.allowedOrigin || baseUrl.protocol !== 'https:') throw new Error('GATEWAY_CONFIG_PRODUCTION_HTTPS_URL_REQUIRED');
+  }
   return config;
 }
 
@@ -34,7 +42,7 @@ function sessionCookie(token, config, expired = false) {
   return `${COOKIE_NAME}=${encodeURIComponent(expired ? '' : token)}; HttpOnly; Path=/; SameSite=${config.cookieSameSite};${config.cookieSecure ? ' Secure;' : ''}${expired ? ' Max-Age=0;' : ''}`;
 }
 function send(res, status, body, cookie) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...(cookie ? { 'Set-Cookie': cookie } : {}) });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...(res.corsHeaders || {}), ...(cookie ? { 'Set-Cookie': cookie } : {}) });
   res.end(JSON.stringify(body));
 }
 async function readJson(req) {
@@ -47,6 +55,13 @@ function stateChangingAllowed(req, config) {
   const origin = req.headers.origin;
   return !config.allowedOrigin || origin === config.allowedOrigin;
 }
+function corsHeaders(req, config) {
+  return req.headers.origin === config.allowedOrigin ? {
+    'Access-Control-Allow-Origin': config.allowedOrigin,
+    'Access-Control-Allow-Credentials': 'true',
+    Vary: 'Origin'
+  } : {};
+}
 function exactKeys(body, allowed) { return Object.keys(body).every(k => allowed.includes(k)); }
 
 export function createMboGatewayServer({ config, authService, employeeSelfGateway }) {
@@ -55,6 +70,12 @@ export function createMboGatewayServer({ config, authService, employeeSelfGatewa
     try {
       const url = new URL(req.url, 'http://localhost');
       const token = cookies(req.headers.cookie)[COOKIE_NAME];
+      res.corsHeaders = corsHeaders(req, config);
+      if (req.method === 'OPTIONS' && url.pathname.startsWith('/api/mbo/')) {
+        if (req.headers.origin !== config.allowedOrigin) return send(res, 403, { status: 'ORIGIN_DENIED' });
+        res.writeHead(204, { ...res.corsHeaders, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' });
+        return res.end();
+      }
       if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { status: 'OK' });
       if (['POST'].includes(req.method) && !stateChangingAllowed(req, config)) return send(res, 403, { status: 'ORIGIN_DENIED' });
       if (req.method === 'POST' && url.pathname === '/api/mbo/login') {
@@ -95,7 +116,7 @@ export function createRuntimeFromEnvironment(env = process.env) {
   return { config, server: createMboGatewayServer({ config, authService, employeeSelfGateway }) };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { config, server } = createRuntimeFromEnvironment();
   server.listen(config.port, () => console.log(`MBO trusted gateway listening on port ${config.port}`));
 }

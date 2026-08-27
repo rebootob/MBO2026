@@ -12,7 +12,7 @@ async function withServer(overrides, fn) {
     async logout(v) { calls.logout.push(v); return { status: 'LOGGED_OUT' }; }
   };
   const employeeSelfGateway = {
-    async getEmployeeSelfBootstrap(v) { calls.bootstrap.push(v); return overrides.bootstrapResult || { status: 'SUCCESS', employeeCode: '0118' }; },
+    async getEmployeeSelfBootstrap(v) { calls.bootstrap.push(v); return typeof overrides.bootstrapResult === 'function' ? overrides.bootstrapResult(v) : (overrides.bootstrapResult || { status: 'SUCCESS', employeeCode: '0118' }); },
     async listOwnMboHistory(v) { calls.history.push(v); return { status: 'SUCCESS', records: [] }; },
     async getOwnMboRecord(v) { calls.record.push(v); return v.recordId === '0119' ? { status: 'RECORD_NOT_FOUND' } : v.recordId.includes('"') ? { status: 'INVALID_ARGUMENT' } : { status: 'SUCCESS', record: { Employee_Code: { value: '0118' } } }; }
   };
@@ -70,5 +70,29 @@ test('change-password rotates cookie and logout invalidates it', async () => {
 
 test('production configuration fails closed without required origin/cookie/server secrets', () => {
   assert.throws(() => parseGatewayConfig({ NODE_ENV: 'production', PORT: '3000', MBO_OUTER_SHARED_KINTONE_PRINCIPAL: 'shared', KINTONE_BASE_URL: 'https://k.example', KINTONE_SERVER_CREDENTIAL: 'secret', MBO_COOKIE_SAMESITE: 'Lax', MBO_COOKIE_SECURE: 'false' }), /GATEWAY_CONFIG_PRODUCTION_COOKIE_ORIGIN_REQUIRED/);
-  assert.throws(() => parseGatewayConfig({ NODE_ENV: 'production', PORT: '3000', MBO_ALLOWED_ORIGIN: 'https://app.example', MBO_COOKIE_SECURE: 'true', MBO_COOKIE_SAMESITE: 'None', MBO_OUTER_SHARED_KINTONE_PRINCIPAL: 'shared', KINTONE_BASE_URL: 'https://k.example', KINTONE_SERVER_CREDENTIAL: 'secret' }), /GATEWAY_CONFIG_INVALID_COOKIE_SAMESITE/);
+  assert.doesNotThrow(() => parseGatewayConfig({ NODE_ENV: 'production', PORT: '3000', MBO_ALLOWED_ORIGIN: 'https://app.example', MBO_COOKIE_SECURE: 'true', MBO_COOKIE_SAMESITE: 'None', MBO_OUTER_SHARED_KINTONE_PRINCIPAL: 'shared', KINTONE_BASE_URL: 'https://k.example', KINTONE_SERVER_CREDENTIAL: 'secret' }));
+  assert.throws(() => parseGatewayConfig({ NODE_ENV: 'production', PORT: '3000', MBO_ALLOWED_ORIGIN: 'https://app.example', MBO_COOKIE_SECURE: 'false', MBO_COOKIE_SAMESITE: 'None', MBO_OUTER_SHARED_KINTONE_PRINCIPAL: 'shared', KINTONE_BASE_URL: 'https://k.example', KINTONE_SERVER_CREDENTIAL: 'secret' }), /GATEWAY_CONFIG_NONE_REQUIRES_SECURE/);
+  assert.throws(() => parseGatewayConfig({ NODE_ENV: 'prod', PORT: '3000', MBO_OUTER_SHARED_KINTONE_PRINCIPAL: 'shared', KINTONE_BASE_URL: 'https://k.example', KINTONE_SERVER_CREDENTIAL: 'secret' }), /GATEWAY_CONFIG_INVALID_NODE_ENV/);
+});
+
+test('exact-origin CORS preflight succeeds and wrong-origin requests fail closed', async () => {
+  await withServer({}, async (base) => {
+    const ok = await fetch(base + '/api/mbo/login', { method: 'OPTIONS', headers: { Origin: config.allowedOrigin } });
+    assert.equal(ok.status, 204); assert.equal(ok.headers.get('access-control-allow-origin'), config.allowedOrigin); assert.equal(ok.headers.get('access-control-allow-credentials'), 'true'); assert.equal(ok.headers.get('vary'), 'Origin');
+    const denied = await request(base, '/api/mbo/login', { method: 'OPTIONS', headers: { Origin: 'https://attacker.example' } });
+    assert.equal(denied.status, 403);
+    const wrongPost = await request(base, '/api/mbo/login', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.example' }, body: '{}' });
+    assert.equal(wrongPost.status, 403);
+  });
+});
+
+test('activation failures do not set a session cookie and restricted/malformed data calls stay denied', async () => {
+  await withServer({ loginResult: { status: 'ACTIVATION_CODE_REQUIRED' }, bootstrapResult: v => v.fiscalYear === 'FY2026' ? { status: 'UNAUTHORIZED' } : { status: 'INVALID_ARGUMENT' } }, async (base) => {
+    const login = await request(base, '/api/mbo/login', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: config.allowedOrigin }, body: JSON.stringify({ username: '0118', password: '0118' }) });
+    assert.equal(login.body.status, 'ACTIVATION_CODE_REQUIRED'); assert.equal(login.cookie, null);
+    const restricted = await request(base, '/api/mbo/bootstrap?fiscalYear=FY2026', { headers: { Cookie: 'mbo_session=restricted' } });
+    assert.equal(restricted.body.status, 'UNAUTHORIZED');
+    const malformed = await request(base, '/api/mbo/bootstrap?fiscalYear=FY2026%22%20or%201%3D1', { headers: { Cookie: 'mbo_session=opaque' } });
+    assert.equal(malformed.body.status, 'INVALID_ARGUMENT');
+  });
 });
