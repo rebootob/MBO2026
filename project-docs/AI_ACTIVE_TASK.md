@@ -1,278 +1,134 @@
-# AI ACTIVE TASK — ADMIN SUPPORT CENTER FINAL CLOSURE PACKAGE
+# AI ACTIVE TASK — ADMIN SUPPORT CENTER RESIDUAL CLOSURE / FINAL LOCAL GATE
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting implementation HEAD: `2765d272ae6e11909fc654fa7b72d4a35647c60b`
-> Mode: **FINAL LOCAL CLOSURE / ADMIN SUPPORT CENTER + REQUIRED SHARED LOGIC ONLY / NO KINTONE EXECUTION / NO DEPLOY**
+> Reviewed implementation HEAD: `5c63d887bad435a9b12628ea35a191146a7e013b`
+> Mode: **FINAL LOCAL CLOSURE / ADMIN SUPPORT + REQUIRED SHARED LOGIC ONLY / NO LIVE KINTONE / NO DEPLOY**
 > Kintone write/deploy authorization: **NONE**
 
-## 0. MANDATORY ENTRY RULE
+## 0. MANDATORY ENTRY
 
-Read ALL files under `project-docs/CONFIRMED_BASELINE/` before changing source.
+Read every file under `project-docs/CONFIRMED_BASELINE/` first. Baseline wins over source, tests, fixtures, living docs and this task if conflict exists.
 
-Baseline wins over source, tests, Preview fixtures, old docs, and previous task wording.
+Do NOT modify Confirmed Baseline in this package.
 
-Do not modify `CONFIRMED_BASELINE` in this package.
-
-Confirmed boundaries that MUST remain true:
+Confirmed invariants:
 
 ```text
 ADMIN_FORM_KINTONE_USER = admin-form
 ADMIN_FORM_ROLE = TECHNICAL_ADMIN_ONLY
 ADMIN_FORM_BUSINESS_AUTHORITY = NONE
-APP53 = AUTHORITATIVE EMPLOYEE MASTER INPUT
-APP795 = AUTHORITATIVE ROUTING MASTER
-APP796 = AUTHORITATIVE PUBLISHED SCORING/PROFILE CONFIG
+APP53 = EMPLOYEE MASTER INPUT
+APP795 = ROUTING MASTER
+APP796 = PUBLISHED PROFILE/SCORING MASTER
 APP794 = MBO RECORD / SNAPSHOT / PROCESS STATE
-PROCESS_STATES = 16
-PROCESS_ACTIONS = 28
-CURRENT_ACTIVE_STANDARD_ROUTE = M1_G1
-EXECUTIVE_DIRECT_ROUTE = M1_ONLY
-PROFILE_AND_ROUTING = SEPARATE CONCERNS
+PROCESS = 16 STATES / 28 ACTIONS
+CURRENT_STANDARD_ROUTE = M1_G1
+EXECUTIVE_DIRECT = M1_ONLY
+PROFILE != ROUTING
 CONFIRM_REPAIR = DISABLED
+LIVE_KINTONE_CALLS = 0
+KINTONE_WRITES = 0
 KINTONE_DEPLOY = 0
 ```
 
-This task is intentionally larger than a micro-fix. Fix the Admin Support Center chain end-to-end locally so the next independent review is not forced into another sequence of tiny patches.
+## 1. INDEPENDENT REVIEW RESULT AT HEAD 5c63d887...
+
+Accepted improvements:
+
+```text
+ROUTING_SERVICE_ADMIN_BYPASS_REMOVED = YES
+ADMIN_UI_EVENT_WIRING = PRESENT
+UNCERTAINTY_BADGE_FALSE_GREEN = FIXED
+REPAIR_DIFF_INCLUDES_APPRAISER_FIELDS = PARTIALLY IMPLEMENTED
+EXECUTIVE_APPRAISER1_CHECK = PRESENT
+CONTROLLED_REPAIR = DISABLED
+```
+
+However Admin Support Center is **NOT CLOSED**. The following residual defects are proven by source at reviewed HEAD and MUST be fixed.
 
 ---
 
-# 1. INDEPENDENT REVIEW FINDINGS TO FIX
+# P0-1 — ADMIN PROFILE DIAGNOSTIC STILL DUPLICATES PRODUCTION POLICY
 
-The current direction is useful, but **Admin Support Center is NOT closed yet**.
+`src/admin/admin-diagnostic-model.js::evaluateProfileMatch()` still contains its own small hard-coded `positionMap`.
 
-Deep review of current source found the following defects / incomplete contracts.
+This directly violates the previous closure requirement and can disagree with `src/profiles/profile-scoring-resolver.js`, which already owns the broader normalized title policy.
 
-## P0-A — `admin-form` business authorization leak in RoutingService
+Examples supported by production resolver but missing from Admin map include titles such as Senior Staff, Assistant Section Manager, Manager, Factory Manager, Advisor, Expatriate, Interpreter, engineering variants, etc.
 
-Current `RoutingService.validateRequesterAccess()` allows:
+### REQUIRED FIX
+
+There must be ONE reusable position/classification -> expected profile policy.
+
+Preferred minimal approach:
+
+1. Extract/reuse a pure shared function from `profile-scoring-resolver.js`, e.g. `resolveProfileCodeFromPosition(rawPosition)` or equivalent.
+2. Keep `resolveProfileCode(employeeSnapshot)` as the verified-snapshot production wrapper.
+3. Admin diagnostic must call the same shared pure policy after its provider has supplied verified App53 employee evidence.
+4. Remove the second position map from `src/admin/admin-diagnostic-model.js`.
+
+Do not weaken production verification. Do not invent historical-membership evidence. If historical classification conflict cannot be proven in the local provider, expose:
+
+```text
+CLASSIFICATION_HISTORY_EVIDENCE = NOT_AVAILABLE
+```
+
+and use current verified App53 position policy only with that limitation clearly labeled.
+
+Required tests:
+
+```text
+Admin and production shared policy return same code for every canonical mapped title.
+Senior Staff -> PROF_STAFF_CHIEF
+Assistant Section Manager -> PROF_ASST_MGR
+Manager -> PROF_SECTION_MGR
+Factory Manager -> PROF_GM
+Advisor/Expatriate -> PROF_JAPANESE_STAFF
+blank/unknown -> fail closed
+No independent admin position map remains.
+```
+
+---
+
+# P0-2 — AUTHORITATIVE ROUTE EVIDENCE IS STILL INCOMPLETE BUT CAN PASS
+
+Current `evaluateRouteMatch()` still uses permissive conditions equivalent to:
 
 ```javascript
-cleanUser === 'Administrator' || cleanUser === 'admin-form'
+!authoritativeRoute.appraiserN || actualMatches
 ```
 
-This conflicts directly with the confirmed baseline:
+Therefore a route claiming `appraiserCount = 2` may omit Appraiser 2 and still be treated as evidenced/PASS or safe enough for `FIX_THIS_RECORD`.
+
+The current tests also encode this unsafe assumption; e.g. a route with count 2 but only appraiser1 can qualify in repair scenarios.
+
+### REQUIRED FIX
+
+Create one function, e.g. `normalizeAuthoritativeRouteEvidence()` / `validateAuthoritativeRouteEvidence()`.
+
+For expected count N (1..4), authoritative route MUST contain:
 
 ```text
-ADMIN_FORM_BUSINESS_AUTHORITY = NONE
-```
-
-`admin-form` may inspect routing but MUST NOT gain requester/create/approve/return/score/complete authority.
-
-### Required fix
-
-Separate **route resolution** from **business requester authorization**.
-
-Preferred minimal architecture:
-
-```text
-resolveRoutingProfile(...)          -> read-only route resolution from App795
-assertRequesterAuthorized(...)      -> business authorization
-validateRequesterAccess(...)        -> composition for normal employee create flow
-```
-
-Exact naming may vary, but responsibilities MUST be separated.
-
-Rules:
-
-```text
-admin-form may call/read route-resolution logic for diagnostics
-admin-form MUST fail business requester authorization
-Administrator alias MUST NOT be silently treated as admin-form
-business requester authorization must come from Requester_User baseline only
-no technical-admin bypass
-```
-
-Do not hard-code `President` user code.
-
-Add security regression tests proving:
-
-```text
-admin-form route inspection = allowed through diagnostic/read-only resolver
-admin-form business requester authorization = denied
-administrator business requester bypass = denied unless independently baseline-authorized (currently it is not)
-normal Requester_User member = allowed
-non-member = denied
-```
-
----
-
-## P0-B — Employee Check UI is not a real employee-centric CHECK workflow yet
-
-`src/admin/admin-support-center.js` renders:
-
-```text
-Employee Code
-Fiscal Year
-[CHECK EMPLOYEE]
-```
-
-but the component is currently render-only. There is no owned controller/event contract that turns a typed employee code into a new diagnostic evidence bundle.
-
-This means the screen can look functional while only displaying the already supplied current-record context.
-
-### Required fix
-
-Implement a real Admin Support Center interaction/controller contract without contacting Kintone during this task.
-
-Required local architecture:
-
-```text
-AdminSupportCenterUI
-  -> bindEvents()/mount() or equivalent
-  -> CHECK EMPLOYEE callback
-  -> async diagnostic provider callback/repository
-  -> returns evidence bundle
-  -> re-renders selected Employee_Code + Fiscal Year results
-```
-
-Use dependency injection so tests can use deterministic fake providers.
-
-Production-intended provider contract MAY be wired to existing read-only services but MUST NOT execute a real Kintone call in this task.
-
-Suggested evidence bundle:
-
-```text
-employeeSnapshot            // App53-derived, verified
-mboRecordSnapshot           // App794 Employee_Code + Fiscal Year exact record
-routingExpectation          // App795 resolved authoritative route
-profileExpectation          // shared profile policy + App796 published config
-workflowCurrentState        // App794 current Process status
-workflowAuditHistory        // real audit source only; otherwise explicit unavailable status
-phaseConfigEvidence         // App800 only when actually supplied
-sourceVersions / identifiers
-```
-
-CHECK must be independent from employee edit/create behavior.
-
-**Do not mutate the current App794 record when admin checks another employee.**
-Do not call `onEmployeeCodeChanged` from Admin Support Center.
-Do not use employee business lookup as an implicit write path.
-
-### UI behavior
-
-```text
-blank Employee Code -> validation error, no lookup
-blank/invalid Fiscal Year -> validation error, no lookup
-loading state -> visible
-not found -> NOT_FOUND / NOT_EVIDENCED
-multiple App794 annual records -> ERROR / AMBIGUOUS_RECORD
-provider failure -> ERROR / fail closed
-successful evidence -> re-render all diagnostic sections
-```
-
-`NOT_EVIDENCED` must NOT appear as an editable input value; use blank input + placeholder/status text.
-
----
-
-## P0-C — Profile diagnostic duplicates and weakens the authoritative runtime profile resolver
-
-Current `AdminDiagnosticModel.evaluateProfileMatch()` contains its own small hard-coded `positionMap`.
-
-The repository already has `src/profiles/profile-scoring-resolver.js` with a broader frozen normalized-title policy and `resolveProfileCode()` using verified employee snapshot semantics.
-
-Duplicating profile policy in Admin diagnostics will drift and can produce a different answer from runtime.
-
-### Required fix
-
-Admin diagnostics MUST use the same canonical profile-resolution policy as production runtime.
-
-Prefer reuse of existing `normalizeTitle()` / `resolveProfileCode()` or extract one shared pure policy module if required to avoid coupling.
-
-Do NOT maintain a second independent position->profile map in `src/admin`.
-
-Respect baseline evidence semantics:
-
-```text
-verified employee snapshot required
-invalid/blank/unknown classification -> fail closed / NOT_EVIDENCED
-profile code must not be guessed merely to get coverage
-```
-
-If historical membership / promotion conflict evidence is not available to this local diagnostic provider, state that limitation explicitly; do not invent a historical decision.
-
----
-
-## P0-D — authoritativeProfile content validation is still too permissive
-
-Current logic permits missing `PartA_Weight` / `PartB_Weight` inside `authoritativeProfile` because undefined weights can be treated as matching.
-
-For a record repair candidate, authoritative App796 evidence must be complete enough to prove the intended profile snapshot.
-
-### Required fix
-
-For `PROFILE_MASTER_EVIDENCED = true`, require exact complete evidence:
-
-```text
-Profile_Code
-PartA_Weight
-PartB_Weight
-Fiscal_Year if part of provider contract
-Config_Status = PUBLISHED when supplied from App796
-Config identity/version/hash where available
-```
-
-At minimum, code + both weights are mandatory for repair authorization.
-
-Rules:
-
-```text
-missing code -> NOT_EVIDENCED
-missing PartA -> NOT_EVIDENCED
-missing PartB -> NOT_EVIDENCED
-wrong code -> ERROR / MASTER_CONFLICT
-wrong weights -> ERROR / MASTER_CONFLICT
-complete expected code+weights -> EVIDENCED
-```
-
-A malformed/incomplete object MUST NOT authorize `FIX_THIS_RECORD`.
-
----
-
-## P0-E — authoritativeRoute completeness is still too permissive for normal routes
-
-Current non-executive route comparison contains semantics like:
-
-```javascript
-!authoritativeRoute.appraiser1 || match
-```
-
-Therefore an App795 route object with no appraiser identities can still lead to route PASS if key/topology/count match.
-
-That does NOT answer the user's real support question:
-
-> Employee Code XX is assigned to the correct 1st/2nd/3rd/4th Appraiser or not?
-
-### Required fix
-
-Create one canonical normalized authoritative route contract.
-
-For any route expected count `N`:
-
-```text
-Routing_Key required
-Routing_Topology required
-Expected_Appraiser_Count required and valid 1..4
-required ordinal slots 1..N must each contain exactly one resolvable Kintone user code
-slots N+1..4 must be empty/not applicable unless topology contract explicitly requires them
-```
-
-Full `ROUTE_MATCH = PASS` requires exact comparison of:
-
-```text
-Routing_Key
+Routing_Key (or the exact derived key supplied separately and proven against App795 result)
 Routing_Topology
-Expected_Appraiser_Count
-Appraiser 1 user code
-Appraiser 2 user code (if required)
-Appraiser 3 user code (if required)
-Appraiser 4 user code (if required)
+Expected_Appraiser_Count = N
+exact Appraiser1..AppraiserN user codes
 ```
 
-Missing required authoritative slot => `NOT_EVIDENCED`, never PASS.
-Wrong actual slot => `ERROR`, reason must identify exact ordinal mismatch, e.g.:
+Required slots must be non-empty and normalize to exactly one Kintone user code each.
+
+Missing required authoritative slot:
+
+```text
+ROUTE_MASTER_EVIDENCE = NOT_EVIDENCED
+ROUTE_MATCH = NOT_EVIDENCED
+ROUTE_RECORD_REPAIR_SAFE = false
+```
+
+Actual mismatch in a required slot:
 
 ```text
 1ST_APPRAISER_MISMATCH
@@ -281,725 +137,519 @@ Wrong actual slot => `ERROR`, reason must identify exact ordinal mismatch, e.g.:
 4TH_APPRAISER_MISMATCH
 ```
 
-Unexpected extra actual slot beyond expected count => ERROR.
+Unexpected actual extra appraiser beyond expected count => ERROR.
 
-Executive DGM/GM/VP remains:
+Executive DGM/GM/VP remains strict count=1 + exact App795 Appraiser1.
+
+Required tests MUST include:
 
 ```text
-POSITION_DGM / POSITION_GM / POSITION_VP
-M1_ONLY
-count = 1
-Appraiser 1 exactly equals authoritative App795 configured President destination
+M1_G1 count=2 + authoritative appraiser1 only -> NOT_EVIDENCED
+M1_G1 count=2 + both authoritative slots + both actual match -> PASS
+M1_G1 wrong 2nd user -> ERROR 2ND_APPRAISER_MISMATCH
+M1_ONLY count=1 exact slot -> PASS
+extra actual slot beyond count -> ERROR
 ```
 
-Do not infer President user from title or hard-code a username.
+Remove/update any current test that accepts incomplete authoritative route evidence.
 
 ---
 
-## P0-F — Appraiser ordinal mapping from App794 storage is potentially wrong
+# P0-3 — ROUTE RESOLUTION AND REQUESTER AUTHORIZATION WERE NOT ACTUALLY SEPARATED
 
-Current `buildRecordDiagnostic()` uses fixed fallbacks such as:
+`RoutingService.validateRequesterAccess()` no longer contains the `admin-form` bypass, which is good, but the architecture remains one combined method that performs App795 resolution AND Requester_User authorization.
 
-```text
-appraiser1 <- First_Manager_User
-appraiser2 <- GM_User
-```
+That means Technical Admin cannot safely reuse the authoritative runtime resolver for diagnostics without pretending to be a business requester.
 
-This is incorrect for current `M1_G1`, where the ordinal route is logically:
+### REQUIRED FIX
 
-```text
-1st Appraiser = Manager_User
-2nd Appraiser = GM_User
-```
-
-For `M1_M2_G1`, ordinal mapping is:
+Refactor minimally:
 
 ```text
-1st = First_Manager_User
-2nd = Manager_User
-3rd = GM_User
+RoutingService.resolveRoutingProfile(...)
+  - App795 read-only resolution only
+  - Position priority / Section-Team semantics
+  - duplicate/missing/approver fail closed
+  - NO requester authorization
+
+RoutingService.assertRequesterAuthorized(route, loginUserCode)
+  - Requester_User exact membership only
+  - admin-form no bypass
+  - Administrator no bypass
+
+RoutingService.validateRequesterAccess(...)
+  - calls resolveRoutingProfile(...)
+  - calls assertRequesterAuthorized(...)
+  - returns same public result for existing employee create flow
 ```
 
-For `M1_ONLY`:
+Preserve current business behavior for legitimate Requester_User members.
+
+Admin diagnostic provider may reuse `resolveRoutingProfile()` only, never `validateRequesterAccess()`.
+
+Tests:
 
 ```text
-1st = Manager_User (executive single configured destination in current storage semantics)
+admin-form can use resolver in read-only diagnostic test
+admin-form fails assertRequesterAuthorized unless baseline Requester_User literally contains it (do not add such fixture as authority)
+Administrator fails bypass
+normal Requester_User member passes
+non-member fails
+existing TMG exact-team and executive direct behavior preserved
 ```
-
-### Required fix
-
-Add/reuse ONE canonical route-slot normalizer based on `Routing_Topology` and actual route fields.
-
-Do not let Admin Support Center invent its own slot mapping independently from runtime/Preview normalization.
-
-The normalized result should expose:
-
-```text
-expectedCount
-slots: [
-  { slot:1, userCode, sourceField },
-  ...
-]
-```
-
-Use this normalized ordinal representation everywhere in Admin diagnostics, route comparison, workflow active-slot check, snapshot, and repair diff.
-
-Add tests for M1_G1, M1_ONLY, M1_M2_G1, missing slot, and extra slot.
 
 ---
 
-## P0-G — Repair diff does not include the actual appraiser assignments
+# P0-4 — CHECK EMPLOYEE DEFAULT PROVIDER FABRICATES DATA AND IS NOT A PRODUCTION-INTENDED EVIDENCE PROVIDER
 
-Current route repair candidate includes:
+`AdminSupportCenterUI.defaultEmployeeProvider()` currently contains a hard-coded mock catalog and, for unknown codes, fabricates values such as employee name, MBO key and current status.
 
-```text
-Routing_Key
-Routing_Topology
-Expected_Appraiser_Count
-```
+A Preview fixture is acceptable, but it MUST NOT look like production evidence and MUST NOT become the default production-intended provider.
 
-but not Appraiser 1..4.
+### REQUIRED FIX
 
-This is incomplete because the main routing defect can be "wrong person assigned".
-
-### Required fix
-
-For a safe route-only or route+profile `FIX_THIS_RECORD` candidate, exact Before/After must include all changed ordinal appraiser assignments.
-
-Example:
+Separate providers explicitly:
 
 ```text
-1st_Appraiser: natta -> phubodin
-2nd_Appraiser: uchida -> uchida (unchanged; do not list if unchanged)
+createAdminPreviewFixtureProvider()       // deterministic local Preview only
+createAdminDiagnosticProvider(deps)       // production-intended READ-ONLY provider contract
 ```
 
-Prefer displaying ordinal business labels while retaining technical source fields in Technical Details.
+`AdminSupportCenterUI` must require/inject a provider. If no provider exists outside explicit Preview mode:
 
-Only include fields that actually differ.
-Do not show an "exact diff" for BLOCKED / NOT_EVIDENCED / NO_REPAIR_NEEDED.
+```text
+PROVIDER_NOT_CONFIGURED / NOT_EVIDENCED
+```
 
-Never include objectives, ratings, comments, HR decisions, password/secret material.
+Never fabricate employee identity for unknown Employee Code.
+
+Preview provider responses MUST carry:
+
+```text
+sourceMode = PREVIEW_FIXTURE
+isProductionEvidence = false
+```
+
+Unknown Preview code => NOT_FOUND fixture result, not fake employee name/status.
+
+Production-intended provider contract must be async and assemble a single evidence bundle from injected read-only dependencies. Do not execute Kintone in this task.
+
+Required bundle contract:
+
+```text
+employeeEvidence      // App53 exact/verified
+mboEvidence           // App794 Employee_Code + FY exact record
+profileEvidence       // shared policy + App796 exactly one published config
+routeEvidence         // App795 resolver output
+workflowEvidence      // App794 current state
+auditEvidenceStatus   // NOT_AVAILABLE/PENDING unless real source injected
+phaseEvidence         // only if supplied
+sourceMode
+sourceIdentifiers
+```
+
+Provider fail-closed cases:
+
+```text
+blank employee -> VALIDATION_ERROR
+invalid FY -> VALIDATION_ERROR
+App53 0 -> EMPLOYEE_NOT_FOUND
+App53 >1 -> EMPLOYEE_AMBIGUOUS
+App794 0 -> MBO_NOT_FOUND
+App794 >1 -> MBO_AMBIGUOUS
+App796 0 -> SCORING_CONFIG_NOT_FOUND
+App796 >1 -> SCORING_CONFIG_AMBIGUOUS
+App795 missing/duplicate -> fail closed
+provider exception -> ERROR
+```
+
+No current form mutation, no `kintone.app.record.set`, no Process action.
 
 ---
 
-## P0-H — Admin Support Center UI can visually misrepresent uncertainty
+# P0-5 — ADMIN UI ACCESS GATE MUST BE ENFORCED AT THE COMPONENT ENTRY POINT
 
-Current status style map does not explicitly define `INCOMPLETE_EVIDENCE`; fallback styling can resolve to PASS/green.
+`AdminDiagnosticModel.isTechnicalAdmin()` exists, but `AdminSupportCenterUI.renderHtml()` currently renders the full diagnostic panel from any supplied non-admin context unless an outer caller happens to protect it.
 
-Also Expected/Actual table cells can render a ✅ simply because two uncertainty strings are equal, e.g. `NOT_EVIDENCED === NOT_EVIDENCED`.
+Defense in depth is required.
 
-### Required fix
+### REQUIRED FIX
 
-```text
-PASS -> green
-WARNING -> amber
-ERROR -> red
-NOT_EVIDENCED / NOT_AVAILABLE / INCOMPLETE_EVIDENCE / PENDING_* -> gray/amber, never green
-BLOCKED -> gray
-```
-
-Do not calculate cell checkmarks by raw string equality when status is uncertain.
-
-Each row must show semantic status:
+At Admin Support Center mount/render entry:
 
 ```text
-MATCH
-MISMATCH
-NOT_EVIDENCED
-NOT_APPLICABLE
+normalize(loginUserCode) === admin-form -> render/mount panel
+anything else -> DO NOT render diagnostic data; return blocked/empty safe result
+missing -> blocked
 ```
 
-Color is secondary; text status is mandatory.
+Do not rely only on caller behavior.
+
+Tests:
+
+```text
+admin-form -> full panel
+ADMIN-FORM whitespace/case normalization -> allowed if retained
+hr -> panel content not rendered
+administrator -> panel content not rendered
+employee user -> panel content not rendered
+missing user -> panel content not rendered
+```
+
+This does not grant business workflow authority.
 
 ---
 
-## P0-I — CHECK / tabs / snapshot interaction must have real event wiring
+# P0-6 — WORKFLOW FUTURE TOPOLOGIES ARE STILL OVER-CERTIFIED
 
-The AdminSupportCenterUI currently returns HTML only.
+`evaluateWorkflowTrace()` still has expected-path arrays for `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2` and can return PASS solely from local semantics.
 
-Implement event wiring with cleanup to avoid duplicate handlers across re-render.
+Baseline explicitly says current 17 active routes are M1_G1 and future M2/G2 activation requires separately reviewed App795 data + compatible Process support/UAT. Executive M1_ONLY is separately confirmed sandbox context.
 
-Required locally testable interactions:
+### REQUIRED FIX
 
-```text
-tab switching
-CHECK EMPLOYEE
-Generate Diagnostic Snapshot
-Prepare Repair view/update
-```
-
-Snapshot button must actually reveal/copyable sanitized snapshot output.
-No inline eval or unsafe HTML.
-
-Do not enable Confirm Repair.
-
----
-
-## P0-J — Admin identity health check should validate technical-admin identity, not merely any non-empty login
-
-For Admin Support Center health:
-
-```text
-loginUserCode = admin-form -> PASS
-other login -> ERROR/BLOCKED
-missing -> ERROR
-```
-
-The feature must never display a healthy admin identity merely because some user code exists.
-
-Exact production gate remains normalized `admin-form` only.
-
----
-
-## P1-A — Production-intended diagnostic provider must be read-only and independent from business writes
-
-Implement a provider/repository interface locally, using fake transport in tests.
-
-If wiring a production-intended Kintone adapter, it may define GET requests only but **do not execute any Kintone call during this task**.
-
-Intended lookup by `Employee_Code + Fiscal Year`:
-
-```text
-1. App53: exact employee source snapshot
-2. Shared profile resolver: expected Profile_Code
-3. App796: exactly one PUBLISHED config for profile+FY; duplicate/missing fail closed
-4. App795: exact route result using position-priority then Section/Team semantics
-5. App794: exact annual record for Employee_Code+FY; 0 => NOT_FOUND, >1 => AMBIGUOUS_RECORD
-6. current workflow status from App794 record
-7. App800 status only if explicitly fetched/provided
-```
-
-Provider must NOT:
-
-```text
-PUT/POST/DELETE
-call kintone.app.record.set
-mutate current form
-trigger workflow actions
-impersonate requester/appraiser/HR
-```
-
-Keep Kintone execution count = 0 in this package.
-
----
-
-## P1-B — `Routing_Key` snapshot/integration must be evidence-complete
-
-Review the actual App794 schema/source usage before assuming a stored `Routing_Key` field exists.
-
-Current normal employee lookup resolves `routing.Routing_Key`, but `fieldsToSync` in `main-mbo-app.js` does not visibly persist `Routing_Key` in the reviewed section.
-
-Required:
-
-1. Inspect source/schema evidence already in repository.
-2. If App794 physical `Routing_Key` exists and is intended snapshot evidence, wire it consistently without Kintone deployment.
-3. If physical field does NOT exist or is unconfirmed, do NOT invent it; Admin diagnostic should distinguish:
-   - derived expected Routing Key from App53 inputs
-   - actual stored Routing Key = NOT_AVAILABLE
-   - current stored topology/appraiser fields
-4. Do not require schema change in this local package.
-5. Document `PENDING_SCHEMA_REVIEW` if needed.
-
----
-
-## P1-C — Workflow Trace: do not over-certify future topologies
-
-Confirmed current active App795 routes are `M1_G1`; Executive Direct `M1_ONLY` is separately confirmed sandbox implementation/review status.
-First-Manager states exist, but future M2/G2 activation requires separately reviewed routing + compatible Process support/UAT.
-
-Current Admin model contains expected paths for multiple future topology codes.
-
-### Required classification
-
-Do NOT return production-certified workflow PASS for an unreviewed future topology merely because a local array exists.
-
-Use explicit capability classification, e.g.:
+Add capability classification:
 
 ```text
 M1_G1 -> CURRENT_CONFIRMED
-M1_ONLY -> CONFIRMED_EXECUTIVE_DIRECT_CONTEXT
-M1_M2_G1 -> FUTURE / NOT_CURRENTLY_CERTIFIED unless evidence says otherwise
-M1_G1_G2 -> FUTURE / NOT_CURRENTLY_CERTIFIED
-M1_M2_G1_G2 -> FUTURE / NOT_CURRENTLY_CERTIFIED
+M1_ONLY -> EXECUTIVE_DIRECT_CONFIRMED_CONTEXT (retain sandbox/review qualification from baseline)
+M1_M2_G1 -> FUTURE_NOT_CERTIFIED
+M1_G1_G2 -> FUTURE_NOT_CERTIFIED
+M1_M2_G1_G2 -> FUTURE_NOT_CERTIFIED
 unknown -> ERROR / FAIL_CLOSED
 ```
 
-Preview may demonstrate future capacity but production diagnostic must label it non-certified.
+For future-not-certified topology in production-intended diagnostic mode:
+
+```text
+status = NOT_EVIDENCED or PENDING_CERTIFICATION
+consistency != PASS
+```
+
+Preview can show deterministic path capacity only when explicitly labeled PREVIEW/FUTURE, never production-certified PASS.
+
+Also correct any future-path arrays if retained for Preview so First-Manager states 02/07/12 are represented consistently with topology semantics; do not treat those arrays as certification.
 
 ---
 
-## P1-D — Workflow actual log / audit tracking remains an explicit blocker, not fake completeness
+# P0-7 — WORKFLOW ACTUAL HISTORY MUST REMAIN EXPLICITLY INCOMPLETE
 
-The user explicitly requires admin-form to track whether workflow actually ran incorrectly.
+Expected path/current-state checking is useful, but user requires admin-form to track whether workflow actually ran incorrectly.
 
-Current source can validate expected path + current state, but there is no confirmed production action-history persistence source.
+No confirmed production action-history persistence source currently exists.
 
-Do NOT synthesize history from:
-
-```text
-Updated_datetime
-current Status
-Date.now()
-Preview timestamps
-```
-
-### Required local closure
-
-Implement a clear audit-source contract in Admin diagnostics:
+Keep:
 
 ```text
-workflowExpectedPath
-workflowCurrentStateValidation
-workflowHistorySourceStatus
-workflowHistoryEntries[] only from real supplied audit evidence
+EXPECTED_WORKFLOW_PATH = AVAILABLE
+CURRENT_STATE_VALIDATION = AVAILABLE
+ACTUAL_TRANSITION_HISTORY = PENDING_AUDIT_DESIGN / NOT_AVAILABLE
 ```
 
-If no real source:
+Never derive history from Updated_datetime, current status, Date.now(), or Preview fixtures.
+
+Add an explicit `workflowAuditSourceStatus` contract and UI row. If a real audited history array is injected, validate its structure before labeling EVIDENCED; do not assume any arbitrary array is audited truth.
+
+Future audit candidate fields may be documented only, no schema changes:
 
 ```text
-WORKFLOW_ACTUAL_HISTORY = PENDING_AUDIT_DESIGN
+Phase, Action, Appraiser_Slot, Actor_Code, Action_At,
+From_Status, To_Status, Result, Reason/Comment_Ref, Record_Key
 ```
 
-Add a concise design note in living docs for the future authorized schema package. Preferred minimal candidate may be an App794 append-only `Approval_History` table or another reviewed audit mechanism, but DO NOT choose/implement a Kintone schema write in this task without authorization.
-
-The design note must identify required fields at minimum:
-
-```text
-Phase
-Action
-Appraiser_Slot / Actor_Role_Context
-Actor_Kintone_User_Code
-Action_At
-From_Status
-To_Status
-Result
-Comment/Reason reference if allowed by privacy policy
-Correlation/Record identity
-```
-
-Admin panel must clearly distinguish:
-
-```text
-EXPECTED PATH
-CURRENT STATE CHECK
-ACTUAL HISTORY (PENDING or EVIDENCED)
-```
-
-This is allowed to remain `PENDING_SCHEMA_AUTHORIZATION`; it must NOT block local CHECK/Profile/Route closure, but it DOES block claiming full production workflow-history tracking.
+`WORKFLOW_AUDIT_HISTORY_KINTONE_AUTHORIZATION_REQUIRED` remains an honest residual production blocker after local closure.
 
 ---
 
-## P1-E — Build/version evidence must not be misleading
+# P0-8 — PROFILE MASTER EVIDENCE MUST BE COMPLETE, NOT OPTIONAL WEIGHTS
 
-`BUILD_VERSION_INFO.commitSha` is manually hard-coded to a previous control/task commit.
+Repair authorization must require exact complete authoritative App796 evidence.
 
-A diagnostic build identifier must not look like the currently running implementation SHA if it is actually stale.
+For profile record repair safety require at minimum:
 
-Required:
+```text
+Profile_Code
+PartA_Weight
+PartB_Weight
+```
 
-- either inject deterministic build metadata through the existing build process,
-- or rename semantics to clearly state `controlTaskSha` / `sourceBuildId` and avoid claiming runtime commit identity,
-- no external dependency.
+If provider marks evidence as App796 published config, also require:
 
-Tests must prove it never silently identifies a parent/control commit as the implementation runtime SHA.
+```text
+Config_Status = PUBLISHED
+Fiscal_Year matching requested FY
+```
+
+and surface config identifier/version/hash when available.
+
+Missing either weight => NOT_EVIDENCED, never safe.
+Wrong code/weight/FY/status => MASTER_CONFLICT / ERROR, never safe.
+
+Do not use `undefined => acceptable` semantics.
 
 ---
 
-# 2. TARGET ADMIN SUPPORT CENTER OPERATING FLOW
+# P1-1 — ORDINAL APPRAISER NORMALIZATION MUST BE ONE SHARED CONTRACT
 
-Final local UX target:
+Verify `buildRecordDiagnostic()` and all Admin contexts use topology-aware ordinal mapping, not fixed field fallbacks.
 
-```text
-[ Employee Code ] [ Fiscal Year ] [ CHECK ]
-                  ↓
-          Evidence Collection
-                  ↓
-┌─────────────────────────────────────────────┐
-│ Employee / App53          PASS / ERROR      │
-│ Evaluation Profile       PASS / ERROR       │
-│ Routing Assignment       PASS / ERROR       │
-│ Workflow Current State   PASS / ERROR       │
-│ Actual Workflow History  EVIDENCED/PENDING  │
-└─────────────────────────────────────────────┘
-                  ↓
-        Root Cause Classification
-                  ↓
-[ PREPARE REPAIR ] only if safely evidenced
-                  ↓
- Before / After / Source / Impact / Risk
-                  ↓
-[ CONFIRM REPAIR ] = DISABLED
-```
-
-The most important business answer must be obvious:
+Required storage -> ordinal semantics:
 
 ```text
-Employee Code: XXXXX
-Fiscal Year: FY2026
+M1_G1:
+  1st = Manager_User / Manager_Level1
+  2nd = GM_User / GM_Level1
 
-Evaluation Profile
-Expected: ...
-Actual: ...
-Result: PASS / MISMATCH / NOT_EVIDENCED
-Source: App53 + shared profile policy + App796
+M1_M2_G1:
+  1st = First_Manager_User / Manager_Level2
+  2nd = Manager_User / Manager_Level1
+  3rd = GM_User / GM_Level1
 
-Routing
-Expected Routing Key: ...
-Actual/Stored Routing Key: ... or NOT_AVAILABLE
-Expected 1st..4th Appraiser: ...
-Actual 1st..4th Appraiser: ...
-Result: PASS / MISMATCH / NOT_EVIDENCED
-Source: App53 + App795
-
-Workflow
-Current Status: ...
-Expected current slot/actor: ...
-Actual slot/actor: ...
-Current State Result: PASS / ERROR
-Actual History: EVIDENCED / PENDING_AUDIT_DESIGN
+M1_ONLY:
+  1st = Manager_User / resolved executive single destination
 ```
+
+G2/future mappings may be modeled but remain future-not-certified.
+
+Prefer one pure normalizer in routing/evaluation shared logic and reuse it in Admin diagnostic, active-slot logic, repair diff and Preview where practical.
+
+Do not label slots Manager/GM in user-facing Admin comparison; use 1st..4th Appraiser with technical source field in details.
 
 ---
 
-# 3. REPAIR CLASSIFIER — FINAL REQUIRED SEMANTICS
+# P1-2 — REPAIR DIFF MUST LIST ONLY ACTUAL CHANGES AND ALL CHANGED APPRAISERS
 
-Allowed root-cause results:
+For safe route repair, compare before vs after and include only differing values:
 
 ```text
-NO_REPAIR_NEEDED
-FIX_THIS_RECORD
-FIX_EMPLOYEE_MASTER_FIRST
-FIX_ROUTING_MASTER_FIRST
-FIX_SCORING_PROFILE_MASTER_FIRST
-ESCALATE_WORKFLOW_REPAIR
-BLOCKED_NOT_ENOUGH_EVIDENCE
+Routing_Key (only if actual stored field evidence exists)
+Routing_Topology
+Expected_Appraiser_Count
+1st_Appraiser
+2nd_Appraiser
+3rd_Appraiser
+4th_Appraiser
 ```
 
-Rules:
+Do not list unchanged appraisers.
+Do not claim exact stored Routing_Key repair if App794 physical field is not evidenced.
+
+For BLOCKED / NOT_EVIDENCED / NO_REPAIR_NEEDED => no exact repair diff.
+
+No objectives, ratings, comments, HR decisions or secrets.
+
+---
+
+# P1-3 — ROUTING_KEY STORAGE EVIDENCE
+
+Inspect repository schema/source evidence for App794 physical `Routing_Key`.
+
+At reviewed source, normal lookup resolves `routing.Routing_Key` but the reviewed `fieldsToSync` section does not visibly persist Routing_Key.
+
+Do not invent schema.
+
+Required outcome:
 
 ```text
-App53 wrong -> FIX_EMPLOYEE_MASTER_FIRST
-App53 correct + App795 wrong -> FIX_ROUTING_MASTER_FIRST
-App53/profile classification correct + App796 wrong -> FIX_SCORING_PROFILE_MASTER_FIRST
-Masters fully evidenced correct + App794 stale -> FIX_THIS_RECORD
-workflow inconsistency requiring state/process manipulation -> ESCALATE_WORKFLOW_REPAIR
-missing/ambiguous source evidence -> BLOCKED_NOT_ENOUGH_EVIDENCE
-all exact match -> NO_REPAIR_NEEDED
-```
-
-Priority:
-
-```text
-workflow safety conflict > master defects > record stale repair > no repair
-```
-
-Do not infer master wrongness from a record mismatch alone.
-`isApp53InputWrong`, `isApp795RouteWrong`, `isApp796ProfileWrong` may remain provider-classified evidence only if their provenance is explicit; raw caller booleans must not become untrusted production authority.
-
-If practical, model evidence objects instead of free booleans:
-
-```text
-{ status, source, reason, verified }
+if physical App794 Routing_Key proven:
+  wire source consistently locally; no deploy
+else:
+  EXPECTED_ROUTING_KEY = derived/resolved App795 key
+  ACTUAL_STORED_ROUTING_KEY = NOT_AVAILABLE
+  ROUTING_KEY_REPAIR_FIELD = NOT_APPLICABLE
+  PENDING_SCHEMA_REVIEW documented if needed
 ```
 
 ---
 
-# 4. STRICT SECURITY / PRIVACY BOUNDARY
+# P1-4 — BUILD VERSION EVIDENCE IS STALE
 
-Must remain impossible from Admin Support Center:
+`BUILD_VERSION_INFO.commitSha` at reviewed HEAD is hard-coded to an older SHA (`9070bd...`) while implementation HEAD is `5c63d887...`.
 
-```text
-Submit MBO
-Approve
-Return
-Complete
-Score
-Change Process Status
-Act as Requester
-Act as Appraiser
-Act as HR
-Impersonate user
-Modify App53/App795/App796/App794
-Display password hash
-Display tokens/cookies/secrets
-Dump entire record
-```
+Do not present stale SHA as the current built bundle identifier.
 
-`admin-form` can inspect evidence only.
-
-Controlled Repair remains a future separately authorized package.
+Use deterministic build metadata generated/injected by build process if existing tooling supports it, or downgrade UI wording to clearly distinguish:
 
 ```text
-CONFIRM_REPAIR_ENABLED = NO
-REPAIR_WRITE_IMPLEMENTED = NO
+SOURCE_DECLARED_VERSION
+BUILD_METADATA_SOURCE
+BUILD_COMMIT = NOT_EVIDENCED
 ```
+
+Do not fabricate current commit SHA inside source before commit exists.
+
+Add test that stale hard-coded parent/control SHA is not represented as independently verified current build SHA.
 
 ---
 
-# 5. TEST MATRIX — MUST BE COMPREHENSIVE
+# P1-5 — UI SEMANTIC ROW STATUS
 
-Do not merely adjust tests to implementation. Tests must enforce baseline semantics.
+Keep the good uncertainty styling fix, and complete it:
 
-At minimum cover:
-
-## Security
-```text
-admin-form technical panel allowed
-administrator denied technical panel
-admin-form requester business bypass denied
-administrator requester business bypass denied
-Requester_User exact member allowed in normal business flow
-Employee_Code/status cannot elevate admin identity
-no business buttons/actions in admin surface
-```
-
-## Employee Check Controller
-```text
-CHECK button invokes injected provider once
-blank employee blocks
-invalid FY blocks
-provider loading state
-not found
-ambiguous App794 annual records
-provider error fail closed
-successful result rerenders selected employee
-checking another employee does not mutate current record
-re-render does not duplicate handlers
-```
-
-## Profile
-```text
-shared runtime profile resolver used / policy parity
-Staff/Chief
-Japanese Staff
-Assistant Manager
-Section Manager
-Senior Manager
-DGM/GM/VP
-known aliases from existing resolver
-unknown title fail closed
-unverified employee snapshot fail closed
-missing authoritative profile code/PartA/PartB -> NOT_EVIDENCED
-wrong authoritative code -> MASTER_CONFLICT
-wrong authoritative weights -> MASTER_CONFLICT
-complete App796 evidence -> EVIDENCED
-```
-
-## Routing
-```text
-non-TMG expected key
-TMG1/TMG2 exact Section|Team
-missing Team -> TEAM_REQUIRED / fail closed
-missing route -> ROUTE_NOT_FOUND
-ambiguous route -> AMBIGUOUS_ROUTE
-DGM/GM/VP Position keys
-M1_ONLY exact appraiser1
-M1_G1 exact appraiser1/appraiser2
-M1_M2_G1 ordinal mapping if represented locally
-missing required authoritative slot -> NOT_EVIDENCED
-wrong slot1/2/3/4 -> exact ordinal mismatch
-extra actual slot -> ERROR
-Routing Key alone never full PASS
-partial route object never full PASS
-```
-
-## Ordinal Storage Mapping
-```text
-M1_G1: Manager_User -> slot1; GM_User -> slot2
-M1_ONLY: Manager_User -> slot1
-M1_M2_G1: First_Manager_User -> slot1; Manager_User -> slot2; GM_User -> slot3
-missing required field
-extra field / inconsistent topology
-```
-
-## Workflow
-```text
-canonical 16 status names only
-M1_G1 cannot enter 02/07/12
-M1_ONLY cannot enter 04/09/14
-active slot consistency
-unknown status fail closed
-missing topology not PASS
-future/unreviewed topology not production-certified PASS
-history absent -> PENDING_AUDIT_DESIGN
-actual supplied audit entries preserved as evidence, not fabricated
-```
-
-## Repair
-```text
-profile-only stale -> exact profile fields only
-route-only stale -> exact routing + changed ordinal appraiser fields only
-profile+route stale -> both domains only when both masters fully evidenced
-bad/missing profile master blocks profile repair
-bad/missing route master blocks route repair
-workflow error always escalates
-blocked candidate shows no executable/exact repair diff
-NO_REPAIR_NEEDED shows no misleading changed fields
-Confirm Repair disabled
-```
-
-## UI/Snapshot
-```text
-INCOMPLETE_EVIDENCE not styled PASS
-NOT_EVIDENCED==NOT_EVIDENCED does not render MATCH checkmark
-HTML escaping
-snapshot explicit allowlist
-secret redaction defense-in-depth
-snapshot button works
-snapshot excludes evaluation comments/objectives/password material
-```
-
-Run:
-
-```text
-admin-targeted tests
-all related routing/profile tests
-full npm test
-normal build
-```
-
-If repo has no CI status, report local Antigravity execution evidence only; do not claim GitHub CI PASS.
+- `INCOMPLETE_EVIDENCE`, `PENDING_*`, `NOT_EVIDENCED`, `NOT_AVAILABLE` never green.
+- table row indicator must be derived from row-specific evidence, not global route/profile status plus raw equality.
+- Profile weight row must compare BOTH Part A and Part B, not just Part A.
+- Route table must visibly include expected/actual 1st..4th Appraisers for required slots.
+- Missing required slot must visibly show NOT_EVIDENCED.
+- Do not put literal `NOT_EVIDENCED` into editable Employee/FY input values; use blank input + placeholder/status.
 
 ---
 
-# 6. SOURCE SCOPE / ARCHITECTURE RULES
+# P1-6 — TEST QUALITY / FALSE POSITIVE REMOVAL
 
-Keep modular production source.
+Current tests prove useful cases but still contain false-safe route fixtures.
 
-Preferred ownership:
+Update tests so test data itself follows the authoritative evidence contract.
+
+Must add/retain at minimum:
 
 ```text
-src/admin/admin-diagnostic-model.js
-src/admin/admin-support-center.js
-src/admin/<one provider/controller module if justified>
-existing src/services/routing-service.js for separation of resolution/auth
-existing src/profiles/profile-scoring-resolver.js or a shared extracted pure policy
-existing appraiser normalizer/shared route-slot normalizer where appropriate
-minimal src/main-mbo-app.js wiring only
+SECURITY
+1 admin-form component entry allowed
+2 hr/administrator/employee component entry blocked
+3 admin-form has no requester bypass
+4 legitimate Requester_User passes business auth
+
+PROFILE
+5 every shared title-policy mapping parity test
+6 unknown/blank fail closed
+7 incomplete authoritative profile missing A/B blocked
+8 wrong published status/FY blocked when provider marks App796 evidence
+
+ROUTING
+9 M1_G1 complete 2-slot evidence PASS
+10 M1_G1 missing authoritative slot2 NOT_EVIDENCED
+11 wrong slot1 exact reason
+12 wrong slot2 exact reason
+13 extra actual slot ERROR
+14 M1_ONLY exact President-resolved slot PASS
+15 TMG missing Team fail closed
+16 duplicate/missing route fail closed through resolver tests
+17 route resolver usable without requester auth
+
+ORDINAL
+18 M1_G1 maps Manager_User -> 1st, GM_User -> 2nd
+19 M1_M2_G1 maps First_Manager -> 1st, Manager -> 2nd, GM -> 3rd
+20 M1_ONLY maps single destination -> 1st
+
+WORKFLOW
+21 M1_G1 current path validation
+22 M1_G1 First-Manager states fail closed
+23 M1_ONLY GM states fail closed
+24 future M2/G2 never production PASS without certification evidence
+25 missing actual audit source stays PENDING/NOT_AVAILABLE
+
+CHECK UI/PROVIDER
+26 blank emp/fy validation
+27 async provider success re-render
+28 provider NOT_FOUND
+29 ambiguous record
+30 provider error fail closed
+31 Preview fixture explicitly labeled non-production
+32 unknown fixture does not fabricate employee identity
+33 no current-record mutation / no write method invoked
+
+REPAIR
+34 profile-only safe diff contains only changed profile fields
+35 route-only safe diff contains only changed routing/appraiser fields
+36 incomplete route/profile evidence cannot FIX_THIS_RECORD
+37 blocked/no-repair has no exact diff
+38 CONFIRM REPAIR disabled
+
+UI
+39 no false green for uncertainty
+40 no equality-based MATCH for NOT_EVIDENCED
+41 both A and B weights determine profile weight row result
+
+BUILD/DOC
+42 build metadata does not falsely claim stale commit
+43 living docs match actual implementation status
 ```
 
-Do not create many micro-files.
-Do not refactor unrelated Employee/Appraiser/HR screens.
-Do not change accepted business UI presentation.
-Do not perform broad R2 refactor.
-
-Source remains `src/`.
-Production bundle remains `dist/mbo-employee-app.js` generated by normal build.
+Run all relevant existing routing/profile/security tests in addition to admin tests.
 
 ---
 
-# 7. NO KINTONE EXECUTION BOUNDARY
-
-During this package:
+# 2. PROHIBITED ACTIONS
 
 ```text
-KINTONE_RUNTIME_GET_EXECUTED = 0
-KINTONE_WRITE = 0
-KINTONE_DEPLOY = 0
-SCHEMA_CHANGE = 0
-PROCESS_CHANGE = 0
-ACL_CHANGE = 0
-WORKFLOW_ACTION = 0
-REAL_RECORD_MUTATION = 0
+NO live Kintone GET
+NO Kintone POST/PUT/DELETE
+NO kintone.app.record.set from Admin CHECK
+NO Process transition
+NO schema/process/ACL/customization deploy
+NO business impersonation
+NO enabling Confirm Repair
+NO modification of confirmed baseline
+NO broad Employee/Appraiser/HR UI redesign
 ```
 
-Production-intended read-only provider code may be implemented and tested against fake/injected transport only.
-
-Do NOT use live Kintone as evidence in this task.
+Existing normal employee business code may be minimally refactored only to extract shared pure/read-only policy and resolver responsibilities. Preserve its accepted behavior with regression tests.
 
 ---
 
-# 8. DOCUMENTATION CLEANUP
+# 3. REQUIRED EXECUTION ORDER
 
-Update only living docs:
-
-```text
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
-```
-
-Correct stale/contradictory wording.
-
-Admin Support Center status after this task must be reported honestly as one of:
-
-```text
-LOCAL_CHECK_AND_REPAIR_PREP = PASS
-LOCAL_CHECK_AND_REPAIR_PREP = IMPLEMENTED_BUT_NEEDS_FIX
-```
-
-Workflow actual-history status must remain separate:
-
-```text
-WORKFLOW_ACTUAL_HISTORY = PENDING_AUDIT_SCHEMA_AUTHORIZATION
-```
-
-unless a real already-existing evidence source is proven from repository material without Kintone contact.
-
-Do NOT write `DEFECTS_REMAINING = NONE` if workflow actual history persistence is still pending; classify it explicitly as a production/audit design blocker rather than a local CHECK defect.
-
-Do not repeat unsupported historical claims such as specific browser password implementation unless exact source is inspected in this execution.
+1. Read baseline.
+2. Inspect changed source and relevant profile/routing/UI integration.
+3. Write failing targeted tests for every residual defect above.
+4. Implement shared profile policy reuse.
+5. Split routing resolution from requester authorization.
+6. Implement strict authoritative route evidence + ordinal normalizer.
+7. Implement strict authoritative profile evidence.
+8. Separate Preview fixture provider from production-intended async read-only diagnostic provider.
+9. Enforce Admin component entry gate.
+10. Correct workflow capability certification + audit-source status.
+11. Correct repair diff and UI semantic evidence display.
+12. Resolve Routing_Key storage evidence without schema invention.
+13. Correct build metadata semantics.
+14. Run targeted admin tests.
+15. Run routing/profile/security related tests.
+16. Run full `npm test`.
+17. Run normal build.
+18. Verify source/dist parity.
+19. Update only living docs (`AI_REVIEW_PACKAGE.md`, `CURRENT_STATE.md`, `HANDOFF.md`) truthfully.
+20. Commit and push ONCE, then STOP for ChatGPT review.
 
 ---
 
-# 9. REQUIRED FINAL REPORT
+# 4. REQUIRED FINAL REPORT
 
 Return exact evidence:
 
 ```text
 IMPLEMENTATION_HEAD = <sha>
-PARENT_HEAD = 2765d272ae6e11909fc654fa7b72d4a35647c60b
-
-SOURCE_CHANGED_FILES = <exact list>
-TEST_CHANGED_FILES = <exact list>
-DIST_CHANGED_FILES = <exact list>
-DOC_CHANGED_FILES = <exact list>
-
-ADMIN_FORM_EXACT_GATE = PASS|FAIL
+ADMIN_COMPONENT_ID_GATE = PASS|FAIL
 ADMIN_FORM_BUSINESS_AUTHORITY = NONE|CONFLICT
-ADMIN_FORM_REQUESTER_BYPASS_REMOVED = PASS|FAIL
 ROUTE_RESOLUTION_AUTH_SEPARATION = PASS|FAIL
-
-EMPLOYEE_CHECK_INTERACTION = PASS|FAIL
-EMPLOYEE_CHECK_PROVIDER_CONTRACT = PASS|FAIL
+SHARED_PROFILE_POLICY = PASS|FAIL
+PROFILE_MASTER_EVIDENCE_STRICT = PASS|FAIL
+ROUTE_MASTER_EVIDENCE_STRICT = PASS|FAIL
+ORDINAL_APPRAISER_NORMALIZER = PASS|FAIL
+CHECK_EMPLOYEE_CONTROLLER = PASS|FAIL
+PREVIEW_FIXTURE_SEPARATION = PASS|FAIL
+PRODUCTION_DIAGNOSTIC_PROVIDER_CONTRACT = PASS|FAIL
 CURRENT_RECORD_MUTATION_FROM_ADMIN_CHECK = 0|FAIL
-
-PROFILE_SHARED_POLICY_PARITY = PASS|FAIL
-AUTHORITATIVE_PROFILE_COMPLETENESS = PASS|FAIL
-PROFILE_REPAIR_EVIDENCE = PASS|FAIL
-
-ROUTE_AUTHORITATIVE_COMPLETENESS = PASS|FAIL
-ORDINAL_APPRAISER_MAPPING = PASS|FAIL
-EXECUTIVE_APPRAISER_VALIDATION = PASS|FAIL
-NORMAL_ROUTE_APPRAISER_VALIDATION = PASS|FAIL
-EXTRA_SLOT_GUARD = PASS|FAIL
-
-WORKFLOW_CURRENT_STATE_VALIDATION = PASS|FAIL
+M1_G1_WORKFLOW_VALIDATION = PASS|FAIL
+M1_ONLY_WORKFLOW_VALIDATION = PASS|FAIL
 FUTURE_TOPOLOGY_CERTIFICATION_GUARD = PASS|FAIL
-WORKFLOW_ACTUAL_HISTORY = EVIDENCED|PENDING_AUDIT_SCHEMA_AUTHORIZATION|FAIL
-
-REPAIR_ROOT_CAUSE_CLASSIFIER = PASS|FAIL
-REPAIR_DIFF_INCLUDES_CHANGED_APPRAISERS = PASS|FAIL
-BLOCKED_REPAIR_HAS_NO_FAKE_DIFF = PASS|FAIL
+ACTUAL_WORKFLOW_HISTORY = PENDING_AUDIT_DESIGN|EVIDENCED
+ROUTING_KEY_STORAGE = STORED_PROVEN|NOT_AVAILABLE|PENDING_SCHEMA_REVIEW
+REPAIR_DIFF_EXACT_CHANGES_ONLY = PASS|FAIL
 CONFIRM_REPAIR = DISABLED|FAIL
-
-INCOMPLETE_EVIDENCE_UI = PASS|FAIL
-SNAPSHOT_ALLOWLIST = PASS|FAIL
-HTML_OUTPUT_ESCAPING = PASS|FAIL
-
-TARGETED_TESTS = <command/result/count>
-RELATED_TESTS = <command/result/count>
-NPM_TEST = <command/result/count>
-BUILD = <command/result>
-GITHUB_CI_EVIDENCE = PRESENT|ABSENT
-
-KINTONE_RUNTIME_GET_EXECUTED = 0
+UNCERTAINTY_UI = PASS|FAIL
+BUILD_METADATA_TRUTH = PASS|FAIL
+TARGETED_TESTS = <exact result>
+ROUTING_PROFILE_SECURITY_TESTS = <exact result>
+NPM_TEST = <exact result>
+BUILD = <exact result>
+SOURCE_DIST_PARITY = PASS|FAIL
+LIVE_KINTONE_CALLS = 0
 KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
-
-LOCAL_CHECK_AND_REPAIR_PREP = PASS|IMPLEMENTED_BUT_NEEDS_FIX
+DEFECTS_REMAINING = <exact list; expected production audit/auth blockers may remain>
+FINAL_LOCAL_ADMIN_SUPPORT_GATE = PASS|FAIL
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
-REMAINING_PRODUCTION_BLOCKERS = <exact list>
 ```
 
-Commit implementation + tests + generated dist + living docs, push once, then STOP for independent ChatGPT review.
+Do not report `DEFECTS_REMAINING = NONE` because actual production workflow audit persistence, production auth architecture, App800 readiness and go-live authorization remain separate gates unless independently evidenced later.
