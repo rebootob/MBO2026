@@ -71,6 +71,10 @@ export class MboPasswordDomainService {
       return { status: 'ACCOUNT_DISABLED', reason: 'Account is disabled.' };
     }
 
+    if (credentialRecord.Account_Status === 'LOCKED') {
+      return { status: 'ACCOUNT_LOCKED', lockedUntil: credentialRecord.Locked_Until || null, reason: 'Account is locked.' };
+    }
+
     if (credentialRecord.Locked_Until) {
       const lockTime = new Date(credentialRecord.Locked_Until);
       if (lockTime > now) {

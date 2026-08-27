@@ -118,6 +118,35 @@ test('PASSWORD_DOMAIN: locked account -> DENY', () => {
   assert.equal(evalResult.status, 'ACCOUNT_LOCKED');
 });
 
+test('PASSWORD_DOMAIN: hard Account_Status = LOCKED with null/expired Locked_Until -> DENY', () => {
+  const credNullLock = {
+    ...MboPasswordDomainService.provisionInitialCredential({ employeeCode: 'EMP001' }),
+    Account_Status: 'LOCKED',
+    Locked_Until: null
+  };
+
+  const evalNullRes = MboPasswordDomainService.evaluateCredentialState({
+    credentialRecord: credNullLock,
+    inputPassword: 'EMP001'
+  });
+
+  assert.equal(evalNullRes.status, 'ACCOUNT_LOCKED');
+
+  const pastLock = new Date(Date.now() - 600000).toISOString();
+  const credPastLock = {
+    ...MboPasswordDomainService.provisionInitialCredential({ employeeCode: 'EMP001' }),
+    Account_Status: 'LOCKED',
+    Locked_Until: pastLock
+  };
+
+  const evalPastRes = MboPasswordDomainService.evaluateCredentialState({
+    credentialRecord: credPastLock,
+    inputPassword: 'EMP001'
+  });
+
+  assert.equal(evalPastRes.status, 'ACCOUNT_LOCKED');
+});
+
 test('PASSWORD_DOMAIN: expired password -> password-change-required only', () => {
   const pastExpiry = new Date(Date.now() - 60000).toISOString();
   const cred = {
