@@ -1,279 +1,198 @@
-# AI ACTIVE TASK — D1-C3A FIRST-LOGIN ACTIVATION + APP801 SESSION RUNTIME ADAPTER
+# AI ACTIVE TASK — D1-C3A FINAL CORRECTIVE: SHARED-ACCOUNT IDENTITY + MANDATORY ACTIVATION
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Base HEAD before this control: `fce7088894a3a16f592e1ebe818a16edadcaa1e1`
-> Mode: MINIMUM SERVER-SIDE IMPLEMENTATION / NO LIVE KINTONE WRITE / NO DEPLOY / NO UI POLISH
+> Reviewed implementation: `ce60e3232965249b22099aba2ae72b17dde162da`
+> Mode: MINIMUM SECURITY CORRECTIVE ONLY / NO KINTONE WRITE / NO DEPLOY / NO UI
 
-## 0. USER DECISION — FROZEN FOR D1
+## 0. INDEPENDENT REVIEW RESULT
 
-User accepted the requirement for a secure first-login identity proof under the shared Kintone account model.
+Accepted from `ce60e323...`:
+- scope is limited to auth/session/activation source + focused tests;
+- no live Kintone read/write/deploy was executed;
+- activation hashing/expiry/used-state verification exists;
+- App801 single-active-session adapter structure exists and persists token hash only.
 
-Use this approved design:
+D1-C3A is NOT accepted yet because three security/runtime blockers remain.
 
-```text
-MBO Username = Employee_Code
-Initial MBO Password = Employee_Code
-First/default bootstrap login ALSO requires one-time HR Activation Code
-Activation Code is random and not derived from Employee_Code
-Activation Code is one-time and expires
-After successful activation + forced password change, normal login uses the new password and does not require activation again
-```
+## 1. B1 — CURRENT LOGIN STILL REQUIRES IMPOSSIBLE 1:1 KINTONE BINDING
 
-This is first-login identity proof only, not recurring MFA.
-
-Do NOT weaken/remove this requirement later merely to simplify implementation.
-
-## 1. VERIFIED CONTEXT — DO NOT REDISCOVER
-
-Accepted evidence already proves:
+Verified project facts already accepted:
 
 ```text
-APP801_PASSWORD_EXPIRES_FIELD = ABSENT
-APP801_KINTONE_USER_CODE_FIELD = ABSENT
-APP801_ACL = CREATOR full access; GROUP everyone deny all
-APP801_SINGLE_SESSION_MODEL = FEASIBLE
-APP794_APP_ACL = CREATOR full access; GROUP everyone view/add/edit/delete
-APP794_RECORD_ACL = NONE
-NATIVE_ACL_CAN_DISTINGUISH_0118_0119 = NO
+CURRENT_EMPLOYEE_KINTONE_MODEL = SHARED/GENERAL ACCOUNT
 IDENTITY_BINDING_SOURCE = NOT_AVAILABLE
-TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE
+NATIVE_KINTONE_ACL_CAN_DISTINGUISH_EMPLOYEE_0118_0119 = NO
 ```
 
-D1-A auth/session core source boundary is accepted.
-D1-C1 App801 credential repository source is accepted.
-D1-C2A hard LOCKED behavior is accepted.
-D1-C2B evidence package is accepted.
+But current `MboAuthSessionService.login()` still calls:
 
-Do NOT spend time re-reading Kintone ACL/schema in this package unless a source implementation detail truly cannot be resolved from the frozen facts above.
+```text
+MboIdentityService.resolveEmployeeIdentity(kintoneUserCode, userMappings)
+```
 
-## 2. GOAL
+before credential/activation verification. Therefore the real shared-account runtime fails with `IDENTITY_MAPPING_FAILED` before Activation Code can prove the employee.
 
-Prepare the trusted server-side auth runtime contract so the remaining D1 work can move to one controlled Kintone schema/write/deployment package.
+### Required correction
 
-Implement ONLY:
+Add one explicit, fail-closed employee-self identity mode for the approved shared-account architecture, e.g.:
 
-1. one-time Activation Code domain logic;
-2. bootstrap-login integration with the accepted `MboAuthSessionService`;
-3. App801 single-active-session adapter compatible with the accepted `sessionStore` contract;
-4. App801 activation-field mapping needed by the server-side repository/runtime;
-5. focused tests proving the above without any live Kintone mutation.
+```text
+identityMode = SHARED_KINTONE_SECONDARY_AUTH
+```
 
-No App794 data gateway yet in this commit.
-No hosting/deployment framework in this commit.
+Rules in this mode:
+1. `kintoneUserCode` must still exist as the authenticated outer Kintone admission/audit context.
+2. `admin-form` / Administrator remains blocked from becoming Employee Self.
+3. `mboUsername` is only an Employee_Code locator, NOT proof by itself.
+4. Look up exactly one trusted credential by `mboUsername`.
+5. Returned credential Employee_Code must exactly equal the requested `mboUsername`.
+6. Verify the MBO password server-side.
+7. If `Must_Change_Password = true`, require mandatory one-time Activation Code proof.
+8. Only successful password + required activation proof establishes the trusted session `employeeCode`.
+9. Later login after password change uses Employee_Code + private MBO password; Activation Code is not required.
 
-Target:
+Do NOT remove `MboIdentityService` or weaken its record-access authorization methods. The later App794 gateway must authorize records from the trusted session principal, not a browser-supplied Employee_Code.
 
-`D1C3A_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+For backward compatibility, existing `KINTONE_BOUND` behavior may remain as a separate explicit mode. Unknown/missing unsafe mode must not silently bypass security. The D1 trusted gateway will explicitly use `SHARED_KINTONE_SECONDARY_AUTH`.
 
-D1 overall remains `IN_PROGRESS`.
+## 2. B2 — ACTIVATION IS CURRENTLY OPTIONAL / FAIL-OPEN
 
-## 3. ALLOWED FILES — KEEP SMALL
+Current bootstrap code proceeds to issue a password-change session when any of these are absent:
+- activationStore itself;
+- `getActivation()` capability;
+- activation record / hash;
+- `consumeActivation()` capability.
 
-Preferred maximum source scope:
+This violates the frozen user decision.
 
-- NEW `src/services/mbo-activation-service.js`
-- `src/services/mbo-auth-session-service.js` — minimal bootstrap integration only
-- `src/services/mbo-auth-kintone-repository.js` — add activation mapping + single-session store class/adapter only
-- NEW `tests/mbo-activation-service.test.js`
+### Required correction
+
+Whenever `credentialRecord.Must_Change_Password === true`:
+
+```text
+activationStore.getActivation = REQUIRED
+activationStore.consumeActivation = REQUIRED
+activation record/hash = REQUIRED
+valid, unexpired, unused activation = REQUIRED
+consume success = REQUIRED BEFORE session issue
+```
+
+Fail closed with stable statuses/errors such as:
+- `ACTIVATION_STORE_INCOMPLETE`
+- `ACTIVATION_NOT_PROVISIONED`
+- existing `ACTIVATION_CODE_REQUIRED`
+- existing invalid/expired/used statuses
+- `ACTIVATION_CONSUME_FAILED`
+
+No restricted session token may be issued on any failure above.
+
+Also verify the validated activation record belongs to the same Employee_Code being authenticated.
+
+Activation Code is not a password substitute: wrong MBO password must still fail even when Activation Code is valid.
+
+## 3. B3 — ACTIVATION ENTROPY TOO LOW
+
+Current issuance truncates to 8 hex characters (~32-bit entropy) and there is no dedicated activation-attempt lockout.
+
+For this first-login identity proof, generate at least 64 bits of cryptographic entropy. Keep implementation simple, for example 8 random bytes encoded as 16 uppercase hex characters.
+
+Do not add a generic OTP/MFA framework.
+
+## 4. FROZEN POST-LOGIN UX/SECURITY INVARIANT
+
+After authentication succeeds, the trusted session already owns exactly one `employeeCode`.
+
+Therefore later Employee Self-Service must NOT ask the employee to type/select Employee ID again.
+
+Future App794 gateway behavior:
+
+```text
+session.employeeCode
+  -> load App53 facts for that employee
+  -> load/open/create only that employee's App794 MBO
+```
+
+Copy Previous / Export / History must also derive Employee_Code from the trusted session, never from a browser-selectable employee field.
+
+No UI work is authorized in this corrective package.
+
+## 5. ALLOWED FILES ONLY
+
+Prefer only:
+- `src/services/mbo-auth-session-service.js`
+- `src/services/mbo-activation-service.js`
 - `tests/mbo-auth-session-service.test.js`
-- `tests/mbo-auth-kintone-repository.test.js`
+- `tests/mbo-activation-service.test.js`
 
-Do not create a generic framework.
-Do not touch UI files.
-Do not touch D2-D7 source.
+Touch `mbo-auth-kintone-repository.js` only if a proven interface incompatibility makes it unavoidable; do not refactor it.
 
-## 4. ACTIVATION DOMAIN — REQUIRED
+## 6. MINIMUM TESTS
 
-### 4.1 Secret handling
+Add only enough regression tests to prove:
 
-Activation Code requirements:
-- generated with cryptographically secure randomness;
-- plaintext code is returned ONLY at issuance time to the trusted HR operation caller;
-- persistent storage uses `Activation_Code_Hash` only;
-- never log plaintext activation code;
-- never return hash to employee browser;
-- use constant-time comparison where applicable;
-- one-time use;
-- expiry required and fail closed if missing/invalid/expired;
-- already-used activation fails closed.
+1. shared outer Kintone principal + no 1:1 userMappings can authenticate Employee 0118 using correct MBO password + valid activation in explicit shared mode;
+2. same shared outer principal cannot authenticate 0118 with wrong password even with valid activation;
+3. missing activationStore capability => no session / fail closed;
+4. missing activation record/hash => no session / fail closed;
+5. missing consumeActivation capability or consume failure => no session / fail closed;
+6. valid activation belongs to another Employee_Code => fail closed;
+7. valid bootstrap proof -> restricted password-change session, then forced password change -> authorized session;
+8. later login with new password does not require activation;
+9. generated activation has >=64-bit entropy representation;
+10. technical admin remains blocked.
 
-Preferred domain API shape (names may vary minimally):
-
-```text
-generateActivation({ employeeCode, now, ttlHours })
-verifyActivation({ activationRecord, inputCode, now })
-```
-
-Generated persisted metadata should conceptually contain:
-
-```text
-Activation_Code_Hash
-Activation_Expires_At
-Activation_Used_At = null
-```
-
-Do not add MFA/TOTP.
-
-## 5. AUTH SESSION INTEGRATION — MINIMAL
-
-Modify bootstrap/default-password login only.
-
-Required order:
-
-```text
-1. trusted credential lookup
-2. verify Employee_Code bootstrap password server-side
-3. if bootstrap/default/force-change state -> require Activation Code proof
-4. invalid/missing/expired/used Activation Code -> NO session issued
-5. valid Activation Code -> mark activation used through trusted store
-6. only then issue restricted password-change session
-7. after successful password change -> normal authorized session
-8. later normal login with changed password -> no Activation Code required
-```
-
-The server must not accept Activation Code as a substitute for password verification.
-
-Accepted normal login/change-password/logout/session-revocation behavior must remain unchanged.
-
-Technical admin `admin-form` still cannot become employee-self.
-
-### Required store contract
-
-Use a narrow trusted dependency such as:
-
-```text
-activationStore.getActivation(employeeCode)
-activationStore.consumeActivation(employeeCode, usedAt)
-```
-
-or equivalent methods on the App801 repository. Missing store capability must fail closed whenever activation is required.
-
-## 6. APP801 PLANNED FIELD CONTRACT — CODE READY, NO LIVE WRITE
-
-Existing field still missing live:
-- `Password_Expires_At` — DATETIME
-
-Activation fields approved for the planned schema package:
-- `Activation_Code_Hash` — SINGLE_LINE_TEXT
-- `Activation_Expires_At` — DATETIME
-- `Activation_Used_At` — DATETIME
-
-Session fields already frozen for single-active-session-per-employee:
-- `Session_Token_Hash` — SINGLE_LINE_TEXT
-- `Session_Expires_At` — DATETIME
-- `Session_Requires_Password_Change` — DROP_DOWN `YES|NO`
-- `Session_Data_Authorized` — DROP_DOWN `YES|NO`
-- `Session_Kintone_User_Code` — SINGLE_LINE_TEXT
-
-Do NOT add a credential-level `Kintone_User_Code` identity field. The current shared-account model cannot use it as unique employee proof.
-
-### 6.1 App801 sessionStore adapter
-
-Implement server-only methods compatible with accepted auth core:
-
-```text
-getSession(tokenHash)
-setSession(tokenHash, sessionObj)
-deleteSession(tokenHash)
-```
-
-Rules:
-- token hash only; raw token never persisted;
-- single active session per Employee_Code;
-- `setSession` locates exactly one employee credential record and overwrites only the approved session fields;
-- `getSession` requires exact token-hash match and reconstructs the accepted session domain object;
-- `deleteSession` clears session fields only after exact token-hash match;
-- zero match for lookup => null where appropriate;
-- duplicates => fail closed;
-- malformed flags/expiry => fail closed;
-- no arbitrary Kintone field passthrough;
-- dependency-injected transport for tests;
-- unit tests MUST NOT call live Kintone.
-
-## 7. MINIMUM TESTS
-
-Activation tests:
-1. secure issuance returns plaintext once + stored hash metadata
-2. valid activation verifies
-3. wrong activation denied
-4. expired activation denied
-5. already-used activation denied
-6. malformed activation state denied
-
-Auth integration tests:
-7. bootstrap password with no activation -> denied/no session
-8. bootstrap password + wrong activation -> denied/no session
-9. bootstrap password + valid activation -> restricted `PASSWORD_CHANGE_REQUIRED` session
-10. activation is consumed once
-11. replay of same activation denied
-12. after forced password change, normal login with new password does not require activation
-
-App801 session adapter tests:
-13. set/get stores token hash only and reconstructs exact session state
-14. delete invalidates old token hash
-15. duplicate/malformed session record fails closed
-16. no raw session token in Kintone payload
-
-Keep existing auth/password/identity/repository tests passing.
+Keep existing password/session/repository tests passing. Do not add broad duplicate tests.
 
 Run:
 
 ```bash
-npm test -- tests/mbo-activation-service.test.js
-npm test -- tests/mbo-auth-session-service.test.js tests/mbo-auth-kintone-repository.test.js tests/mbo-activation-service.test.js
+npm test -- tests/mbo-activation-service.test.js tests/mbo-auth-session-service.test.js
 npm test -- tests/mbo-password-service.test.js tests/mbo-identity-service.test.js tests/mbo-auth-session-service.test.js tests/mbo-auth-kintone-repository.test.js tests/mbo-activation-service.test.js
 npm test
 git diff --check
 git status --short
 ```
 
-## 8. ABSOLUTE OUT OF SCOPE
+No CI claim without GitHub CI evidence.
 
-- NO live App801/App794 write
-- NO App801 schema change
-- NO App794 ACL change
-- NO Kintone deploy
-- NO gateway hosting/deployment framework
-- NO UI changes
-- NO MFA/TOTP
-- NO HR App800 activation screen yet
-- NO App794 employee-data gateway yet
-- NO D2-D7 implementation
-- NO unrelated refactor/docs cleanup
+## 7. OUT OF SCOPE
+
+- no Kintone schema/record/ACL write
+- no Kintone deploy
+- no Login/UI work
+- no App794 data gateway yet
+- no hosting framework yet
+- no App800 HR activation screen yet
+- no MFA/TOTP
+- no D2-D7 source work
+- no unrelated refactor
 
 Mandatory counters:
 
 ```text
-KINTONE_READS_EXECUTED = 0 unless truly required
 KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
 ```
 
-## 9. DELIVERY REPORT
+## 8. TARGET STATUS
 
-Report:
-- exact implementation commit SHA
-- files changed
-- activation API/contract implemented
-- bootstrap login activation behavior
-- App801 sessionStore adapter implemented YES/NO
-- targeted/full test results
-- `KINTONE_READS_EXECUTED = N`
-- `KINTONE_WRITES_EXECUTED = 0`
-- `KINTONE_DEPLOY_EXECUTED = 0`
-- `D1C3A_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
-- `D1_OVERALL_STATUS = IN_PROGRESS`
+Antigravity maximum:
 
-After independent review passes, the next package will be D1-C3B: employee-self App794 trusted data gateway + exact one-time Kintone schema/write/deployment authorization package.
+```text
+D1C3A_CORRECTIVE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+D1_OVERALL_STATUS = IN_PROGRESS
+```
+
+If this corrective passes independent review, next is D1-C3B only: trusted employee-self App794 gateway + exact App801 schema/write/runtime deployment authorization package.
 
 ---
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A THIS TASK
+- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A CORRECTIVE
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
