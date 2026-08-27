@@ -25,22 +25,20 @@ export class RoutingService {
   }
 
   /**
-   * Validate current user access and resolve sequential routing topology from App 795
+   * Pure Read-Only Route Resolution from App 795 (Zero Requester Authorization Check)
    * Supports Position Priority (DGM/GM/VP -> President) and Team-aware routing keys (Section_Code|Team)
    * @param {number} routingAppId
    * @param {string} sectionCode
    * @param {string} teamCode
-   * @param {string} loginUserCode
    * @param {Object} kintoneApi
    * @param {string} positionCode
-   * @returns {Object} Full Sequential Routing Profile
+   * @returns {Object} Resolved Routing Profile with Requester_User list
    */
-  static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = '') {
+  static async resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode = '') {
     const cleanPosition = String(positionCode || '').trim();
     const normalizedPos = RoutingService.normalizePosition(cleanPosition);
     const cleanSection = String(sectionCode || '').trim();
     const cleanTeam = String(teamCode || '').trim();
-    const cleanUser = String(loginUserCode || '').trim();
 
     // 1. Executive Direct Position Priority Rule: DGM / GM / VP -> President Route in App795 (M1_ONLY)
     const isExecutiveDirect = ['DEPUTY_GENERAL_MANAGER', 'GENERAL_MANAGER', 'VICE_PRESIDENT'].includes(normalizedPos);
@@ -69,13 +67,7 @@ export class RoutingService {
         throw new Error(`ไม่พบข้อมูลผู้อนุมัติสำหรับตำแหน่ง ${normalizedPos} ใน Routing Master (App 795) (APPROVER_NOT_FOUND)\nNo valid approver target configured for executive position ${normalizedPos} in Routing Master.`);
       }
 
-      // Check requester authorization against App795 Requester_User list
       const requesters = route.Requester_User?.value || [];
-      const isAuthorized = requesters.some(u => u.code === cleanUser);
-
-      if (!isAuthorized) {
-        throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO สำหรับตำแหน่ง ${cleanPosition}\nThis account (${cleanUser}) is not authorized to create an MBO for executive position ${cleanPosition}.`);
-      }
 
       return {
         Routing_Key: route.Routing_Key?.value || routingKey,
@@ -132,12 +124,6 @@ export class RoutingService {
 
     const route = records[0];
     const requesters = route.Requester_User?.value || [];
-    // Strict Requester Authorization (BLOCKER B Fix: NO blank Requester_User allow-all fallback)
-    const isAuthorized = requesters.some(u => u.code === cleanUser);
-
-    if (!isAuthorized) {
-      throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO สำหรับพนักงานใน Section ${cleanSection}\nThis account (${cleanUser}) is not authorized to create an MBO for section ${cleanSection}.`);
-    }
 
     // Pure New Model as Source of Truth
     const mgrL1 = route.Manager_Level1_Approvers?.value || [];
@@ -186,5 +172,49 @@ export class RoutingService {
       Section: cleanSection,
       Team: cleanTeam
     };
+  }
+
+  /**
+   * Asserts Business Requester Authorization against the resolved route's Requester_User list.
+   * `admin-form` and `Administrator` have 0 business requester authority unless listed in Requester_User.
+   * @param {Object} route Resolved route profile
+   * @param {string} loginUserCode Current login user code
+   */
+  static assertRequesterAuthorized(route, loginUserCode) {
+    const cleanUser = String(loginUserCode || '').trim();
+    if (!cleanUser) {
+      throw new Error('ไม่พบข้อมูลผู้ใช้งานที่เข้าสู่ระบบ\nLogged-in user code is missing.');
+    }
+
+    const requesters = route?.Requester_User || [];
+    const norm = (code) => String(code || '').trim().toLowerCase();
+    const isAuthorized = Array.isArray(requesters) && requesters.some(u => {
+      const uCode = typeof u === 'object' ? (u.code || u.value) : u;
+      return norm(uCode) === norm(cleanUser);
+    });
+
+    if (!isAuthorized) {
+      const cleanSection = route?.Section || '';
+      const cleanPosition = route?.Position || '';
+      const sectionInfo = cleanSection ? ` สำหรับพนักงานใน Section ${cleanSection}` : (cleanPosition ? ` สำหรับตำแหน่ง ${cleanPosition}` : '');
+      throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO${sectionInfo}\nThis account (${cleanUser}) is not authorized to create an MBO for this target.`);
+    }
+  }
+
+  /**
+   * Validate current user access and resolve sequential routing topology from App 795
+   * Composes `resolveRoutingProfile` + `assertRequesterAuthorized`.
+   * @param {number} routingAppId
+   * @param {string} sectionCode
+   * @param {string} teamCode
+   * @param {string} loginUserCode
+   * @param {Object} kintoneApi
+   * @param {string} positionCode
+   * @returns {Object} Full Sequential Routing Profile
+   */
+  static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = '') {
+    const route = await RoutingService.resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode);
+    RoutingService.assertRequesterAuthorized(route, loginUserCode);
+    return route;
   }
 }

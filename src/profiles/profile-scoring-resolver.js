@@ -100,11 +100,11 @@ export function normalizeTitle(rawTitle) {
   return rawTitle.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-export function resolveProfileCode(employeeSnapshot) {
-  if (!isVerifiedEmployeeSnapshot(employeeSnapshot)) {
-    throw new ProfileScoringResolverError('EMPLOYEE_SNAPSHOT_UNVERIFIED');
+export function getProfileCodeFromPosition(position) {
+  if (typeof position !== 'string' || position.trim() === '') {
+    throw new ProfileScoringResolverError('PROFILE_SOURCE_INVALID');
   }
-  const normalizedTitle = normalizeTitle(employeeSnapshot.Employee_Position);
+  const normalizedTitle = normalizeTitle(position);
   if (AMBIGUOUS_TITLES.has(normalizedTitle)) {
     throw new ProfileScoringResolverError('PROFILE_RESOLUTION_AMBIGUOUS');
   }
@@ -113,6 +113,13 @@ export function resolveProfileCode(employeeSnapshot) {
     throw new ProfileScoringResolverError('PROFILE_SOURCE_INVALID');
   }
   return profileCode;
+}
+
+export function resolveProfileCode(employeeSnapshot) {
+  if (!isVerifiedEmployeeSnapshot(employeeSnapshot)) {
+    throw new ProfileScoringResolverError('EMPLOYEE_SNAPSHOT_UNVERIFIED');
+  }
+  return getProfileCodeFromPosition(employeeSnapshot.Employee_Position);
 }
 
 function assertAuthenticatedContext(authenticatedContext) {

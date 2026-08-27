@@ -1,15 +1,19 @@
 /**
- * Admin Diagnostic Model & Health Engine (Baseline Correction Micro-Fix)
+ * Admin Diagnostic Model & Health Engine (Baseline Correction & Final Closure Package)
  * Pure logic for Technical Admin (admin-form) System Health, Workflow Trace, Profile/Route Validation,
- * Root-Cause Classification, Fast Repair Candidate Preparation, and Sanitized Snapshot.
+ * Topology-aware Ordinal Appraiser Slot Normalization, Root-Cause Classification, Fast Repair Candidate Preparation, and Sanitized Snapshot.
  *
  * Source of Truth: project-docs/CONFIRMED_BASELINE/
  */
 
+import { resolveProfileCode, getProfileCodeFromPosition } from '../profiles/profile-scoring-resolver.js';
+import { PROFILE_CODES } from '../profiles/scoring-config-master.js';
+
 export const BUILD_VERSION_INFO = {
   version: '0.2.4',
-  commitSha: '9070bd7276cb53d19e07b113274f44bd431018e9',
-  buildTimestamp: '2026-08-27T12:43:00Z',
+  sourceBuildId: 'WP-002C-FINAL-CLOSURE',
+  commitSha: '5c63d88691ec5fb6ff92a6cbbbfed72e4be0bb7e',
+  buildTimestamp: '2026-08-27T12:55:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -42,6 +46,17 @@ export const CANONICAL_STATUSES = [
   '16 Completed'
 ];
 
+export const CANONICAL_PROFILE_WEIGHTS = {
+  [PROFILE_CODES.STAFF_CHIEF]: { a: 70, b: 30 },
+  [PROFILE_CODES.JAPANESE_STAFF]: { a: 70, b: 30 },
+  [PROFILE_CODES.ASST_MGR]: { a: 60, b: 40 },
+  [PROFILE_CODES.SECTION_MGR]: { a: 50, b: 50 },
+  [PROFILE_CODES.SENIOR_MGR]: { a: 50, b: 50 },
+  [PROFILE_CODES.DGM]: { a: 50, b: 50 },
+  [PROFILE_CODES.GM]: { a: 50, b: 50 },
+  [PROFILE_CODES.VP]: { a: 50, b: 50 }
+};
+
 export class AdminDiagnosticModel {
   /**
    * P0 Security Gate: Strictly authorizes `admin-form` only for technical diagnostics.
@@ -67,10 +82,71 @@ export class AdminDiagnosticModel {
   }
 
   /**
+   * Topology-aware Ordinal Appraiser Slot Normalizer.
+   * Normalizes record/context fields into exact 1st..4th Appraiser ordinal slots based on Routing_Topology.
+   */
+  static normalizeAppraiserSlots(context = {}) {
+    const topology = context.topology || context.Routing_Topology || context.actualTopology || 'M1_G1';
+    
+    const getVal = (code) => {
+      const v = context[code];
+      if (!v) return '';
+      return AdminDiagnosticModel.normalizeUserCode(v);
+    };
+
+    let expectedCount = 2;
+    const slots = [];
+
+    if (topology === 'M1_ONLY') {
+      expectedCount = 1;
+      const user = getVal('appraiser1') || getVal('Manager_User') || getVal('First_Manager_User');
+      slots.push({ slot: 1, labelEN: '1st Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 1', userCode: user, sourceField: 'Manager_User' });
+    } else if (topology === 'M1_G1') {
+      expectedCount = 2;
+      const u1 = getVal('appraiser1') || getVal('Manager_User');
+      const u2 = getVal('appraiser2') || getVal('GM_User');
+      slots.push({ slot: 1, labelEN: '1st Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 1', userCode: u1, sourceField: 'Manager_User' });
+      slots.push({ slot: 2, labelEN: '2nd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 2', userCode: u2, sourceField: 'GM_User' });
+    } else if (topology === 'M1_M2_G1') {
+      expectedCount = 3;
+      const u1 = getVal('appraiser1') || getVal('First_Manager_User');
+      const u2 = getVal('appraiser2') || getVal('Manager_User');
+      const u3 = getVal('appraiser3') || getVal('GM_User');
+      slots.push({ slot: 1, labelEN: '1st Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 1', userCode: u1, sourceField: 'First_Manager_User' });
+      slots.push({ slot: 2, labelEN: '2nd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 2', userCode: u2, sourceField: 'Manager_User' });
+      slots.push({ slot: 3, labelEN: '3rd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 3', userCode: u3, sourceField: 'GM_User' });
+    } else if (topology === 'M1_G1_G2') {
+      expectedCount = 3;
+      const u1 = getVal('appraiser1') || getVal('Manager_User');
+      const u2 = getVal('appraiser2') || getVal('GM_User');
+      const u3 = getVal('appraiser3') || getVal('GM_Level2_Approvers');
+      slots.push({ slot: 1, labelEN: '1st Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 1', userCode: u1, sourceField: 'Manager_User' });
+      slots.push({ slot: 2, labelEN: '2nd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 2', userCode: u2, sourceField: 'GM_User' });
+      slots.push({ slot: 3, labelEN: '3rd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 3', userCode: u3, sourceField: 'GM_Level2_Approvers' });
+    } else if (topology === 'M1_M2_G1_G2') {
+      expectedCount = 4;
+      const u1 = getVal('appraiser1') || getVal('First_Manager_User');
+      const u2 = getVal('appraiser2') || getVal('Manager_User');
+      const u3 = getVal('appraiser3') || getVal('GM_User');
+      const u4 = getVal('appraiser4') || getVal('GM_Level2_Approvers');
+      slots.push({ slot: 1, labelEN: '1st Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 1', userCode: u1, sourceField: 'First_Manager_User' });
+      slots.push({ slot: 2, labelEN: '2nd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 2', userCode: u2, sourceField: 'Manager_User' });
+      slots.push({ slot: 3, labelEN: '3rd Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 3', userCode: u3, sourceField: 'GM_User' });
+      slots.push({ slot: 4, labelEN: '4th Appraiser', labelTH: 'ผู้ประเมินลำดับที่ 4', userCode: u4, sourceField: 'GM_Level2_Approvers' });
+    }
+
+    return {
+      topology,
+      expectedCount,
+      slots
+    };
+  }
+
+  /**
    * Evaluates System Health across 15 diagnostic indicators.
-   * Removes fabricated defaults — missing evidence returns NOT_EVIDENCED / NOT_AVAILABLE.
+   * Checks login user code strictly against admin-form.
    * Routing Key alone does NOT produce PASS.
-   * If critical evidence is missing, overallHealth returns INCOMPLETE_EVIDENCE instead of PASS.
+   * Overall health returns INCOMPLETE_EVIDENCE if critical evidence is missing.
    */
   static evaluateSystemHealth(context = {}) {
     const {
@@ -97,13 +173,16 @@ export class AdminDiagnosticModel {
 
     const items = [];
 
-    // 1. Identity Resolution
+    // 1. Identity Resolution (P0-J: Must strictly validate admin-form)
+    const isAdminUser = AdminDiagnosticModel.isTechnicalAdmin(loginUserCode);
     items.push({
       key: 'identity_resolution',
       labelTH: 'การระบุตัวตน Kintone (Identity Resolution)',
       labelEN: 'Kintone Identity Resolution',
-      status: loginUserCode ? 'PASS' : 'ERROR',
-      reason: loginUserCode ? `Logged in user: ${loginUserCode}` : 'Logged-in user code is missing'
+      status: isAdminUser ? 'PASS' : 'ERROR',
+      reason: isAdminUser
+        ? `Logged in technical admin: ${loginUserCode}`
+        : (loginUserCode ? `Access Denied: User "${loginUserCode}" is not authorized technical admin admin-form` : 'Logged-in user code is missing')
     });
 
     // 2. Requester Mapping
@@ -115,7 +194,7 @@ export class AdminDiagnosticModel {
       reason: requesterUserCodes.length > 0 ? `Requester user code(s): ${requesterUserCodes.join(', ')}` : 'Requester_User field is unassigned'
     });
 
-    // 3. Routing Resolution (MUST FIX 1: Routing Key alone != PASS)
+    // 3. Routing Resolution (Routing Key alone != PASS)
     let routingStatus = 'NOT_EVIDENCED';
     let routingReason = 'Routing resolution evidence not provided';
     if (routingResult?.status === 'FAIL_CLOSED' || routingResult?.isFailClosed) {
@@ -281,7 +360,7 @@ export class AdminDiagnosticModel {
       labelTH: 'เวอร์ชันระบบ (Bundle / Build Identifier)',
       labelEN: 'Bundle / Build Identifier',
       status: 'PASS',
-      reason: `v${BUILD_VERSION_INFO.version} (Commit ${BUILD_VERSION_INFO.commitSha.substring(0, 7)})`
+      reason: `v${BUILD_VERSION_INFO.version} (${BUILD_VERSION_INFO.sourceBuildId})`
     });
 
     const hasError = items.some(i => i.status === 'ERROR');
@@ -298,8 +377,7 @@ export class AdminDiagnosticModel {
 
   /**
    * B. Evaluates Workflow Trace & Workflow State Consistency.
-   * MUST use exact canonical App794 status names from CONFIRMED_BASELINE/ROUTING_WORKFLOW.md.
-   * MUST NOT fall back to M1_G1 when topology is missing/unknown.
+   * Prevents future topologies (M1_M2_G1, M1_G1_G2, M1_M2_G1_G2) from returning production-certified PASS.
    */
   static evaluateWorkflowTrace(context = {}) {
     const {
@@ -352,6 +430,12 @@ export class AdminDiagnosticModel {
       };
     }
 
+    // P1-C: Future topology over-certification guard
+    const isConfirmedTopology = topology === 'M1_G1' || topology === 'M1_ONLY';
+    const topologyCertificationStatus = topology === 'M1_G1'
+      ? 'CURRENT_CONFIRMED'
+      : (topology === 'M1_ONLY' ? 'CONFIRMED_EXECUTIVE_DIRECT_CONTEXT' : 'FUTURE_TOPOLOGY_NOT_PRODUCTION_CERTIFIED');
+
     // Detect topology state violations using exact canonical status names:
     if (topology === 'M1_G1' && ['02 First Manager Objective Review', '07 First Manager Mid-Year Review', '12 First Manager Final Evaluation'].includes(currentStatus)) {
       return {
@@ -402,14 +486,22 @@ export class AdminDiagnosticModel {
       };
     }
 
-    const historyStatus = actualAuditHistory ? 'EVIDENCED' : 'PENDING_AUDIT_DESIGN / NOT_AVAILABLE';
+    const historyStatus = (Array.isArray(actualAuditHistory) && actualAuditHistory.length > 0)
+      ? 'EVIDENCED'
+      : 'PENDING_AUDIT_SCHEMA_AUTHORIZATION';
+
+    const overallStatus = isConfirmedTopology ? 'PASS' : 'WARNING';
+    const reasonText = isConfirmedTopology
+      ? `Workflow status "${currentStatus}" is consistent with topology "${topology}"`
+      : `Topology "${topology}" is a future/unreviewed topology (FUTURE_TOPOLOGY_NOT_PRODUCTION_CERTIFIED)`;
 
     return {
-      status: 'PASS',
+      status: overallStatus,
       isFailClosed: false,
-      reason: `Workflow status "${currentStatus}" is consistent with topology "${topology}"`,
+      topologyCertificationStatus,
+      reason: reasonText,
       expectedPath: expectedPath.join(' → '),
-      consistency: 'PASS',
+      consistency: overallStatus,
       historyStatus,
       actualAuditHistory: actualAuditHistory || 'NOT_AVAILABLE'
     };
@@ -417,8 +509,7 @@ export class AdminDiagnosticModel {
 
   /**
    * C. Evaluates Expected vs Actual Evaluation Profile.
-   * MUST use exact Profile Codes from CONFIRMED_BASELINE/EVALUATION_CLASSES.md:
-   * PROF_STAFF_CHIEF, PROF_JAPANESE_STAFF, PROF_ASST_MGR, PROF_SECTION_MGR, PROF_SENIOR_MGR, PROF_DGM, PROF_GM, PROF_VP.
+   * Reuses canonical shared profile policy from src/profiles/profile-scoring-resolver.js.
    */
   static evaluateProfileMatch(context = {}) {
     const {
@@ -439,58 +530,55 @@ export class AdminDiagnosticModel {
       };
     }
 
-    const positionMap = {
-      'staff': { code: 'PROF_STAFF_CHIEF', name: 'Staff / Chief', a: 70, b: 30 },
-      'chief': { code: 'PROF_STAFF_CHIEF', name: 'Staff / Chief', a: 70, b: 30 },
-      'japanese staff': { code: 'PROF_JAPANESE_STAFF', name: 'Japanese Staff', a: 70, b: 30 },
-      'assistant manager': { code: 'PROF_ASST_MGR', name: 'Assistant Manager', a: 60, b: 40 },
-      'section manager': { code: 'PROF_SECTION_MGR', name: 'Section Manager', a: 50, b: 50 },
-      'senior manager': { code: 'PROF_SENIOR_MGR', name: 'Senior Manager', a: 50, b: 50 },
-      'dgm': { code: 'PROF_DGM', name: 'Deputy General Manager', a: 50, b: 50 },
-      'deputy general manager': { code: 'PROF_DGM', name: 'Deputy General Manager', a: 50, b: 50 },
-      'gm': { code: 'PROF_GM', name: 'General Manager', a: 50, b: 50 },
-      'general manager': { code: 'PROF_GM', name: 'General Manager', a: 50, b: 50 },
-      'vp': { code: 'PROF_VP', name: 'Vice President', a: 50, b: 50 },
-      'vice president': { code: 'PROF_VP', name: 'Vice President', a: 50, b: 50 }
-    };
+    let expectedCode = null;
+    if (position) {
+      try {
+        expectedCode = getProfileCodeFromPosition(position);
+      } catch {
+        return {
+          status: 'NOT_EVIDENCED',
+          reason: `Position "${position}" not found in authoritative position ratio mapping`,
+          expectedProfileCode: 'NOT_EVIDENCED',
+          actualProfileCode: actualProfileCode || 'N/A',
+          profileMatch: 'NOT_EVIDENCED'
+        };
+      }
+    }
 
-    const normPos = (position || '').trim().toLowerCase();
-    const expected = positionMap[normPos];
-
-    if (!expected) {
+    const expectedWeights = CANONICAL_PROFILE_WEIGHTS[expectedCode];
+    if (!expectedWeights) {
       return {
         status: 'NOT_EVIDENCED',
-        reason: `Position "${position || 'N/A'}" not found in authoritative position ratio mapping`,
-        expectedProfileCode: 'NOT_EVIDENCED',
+        reason: `Profile code "${expectedCode || 'N/A'}" weights missing in canonical weight table`,
+        expectedProfileCode: expectedCode || 'NOT_EVIDENCED',
         actualProfileCode: actualProfileCode || 'N/A',
         profileMatch: 'NOT_EVIDENCED'
       };
     }
 
-    const codeMatch = actualProfileCode === expected.code;
-    const aMatch = Number(actualPartAWeight) === expected.a;
-    const bMatch = Number(actualPartBWeight) === expected.b;
+    const codeMatch = actualProfileCode === expectedCode;
+    const aMatch = Number(actualPartAWeight) === expectedWeights.a;
+    const bMatch = Number(actualPartBWeight) === expectedWeights.b;
     const isMatch = codeMatch && aMatch && bMatch;
 
     return {
       status: isMatch ? 'PASS' : 'ERROR',
       profileMatch: isMatch ? 'PASS' : 'ERROR',
-      expectedProfileCode: expected.code,
+      expectedProfileCode: expectedCode,
       actualProfileCode: actualProfileCode || 'N/A',
-      expectedPartAWeight: expected.a,
+      expectedPartAWeight: expectedWeights.a,
       actualPartAWeight: actualPartAWeight !== undefined ? Number(actualPartAWeight) : 'N/A',
-      expectedPartBWeight: expected.b,
+      expectedPartBWeight: expectedWeights.b,
       actualPartBWeight: actualPartBWeight !== undefined ? Number(actualPartBWeight) : 'N/A',
       reason: isMatch
-        ? `Profile matches expected ${expected.code} (${expected.a}/${expected.b})`
-        : `Profile mismatch: Expected ${expected.code} (${expected.a}/${expected.b}), Actual ${actualProfileCode || 'N/A'} (${actualPartAWeight}/${actualPartBWeight})`
+        ? `Profile matches expected ${expectedCode} (${expectedWeights.a}/${expectedWeights.b})`
+        : `Profile mismatch: Expected ${expectedCode} (${expectedWeights.a}/${expectedWeights.b}), Actual ${actualProfileCode || 'N/A'} (${actualPartAWeight}/${actualPartBWeight})`
     };
   }
 
   /**
    * D. Evaluates Expected vs Actual Route Assignment.
-   * MUST use exact Executive Routing Keys: POSITION_DGM, POSITION_GM, POSITION_VP.
-   * Route validation checks exact Appraiser 1..4 assignments against App795 master data.
+   * Requires complete App795 route evidence (all required ordinal Appraiser 1..N identities).
    */
   static evaluateRouteMatch(context = {}) {
     const {
@@ -525,7 +613,7 @@ export class AdminDiagnosticModel {
       const isExecTopology = actualTopology === 'M1_ONLY';
       const isExecCount = Number(actualAppraiserCount) === 1;
 
-      const authAppraiser1 = authoritativeRoute?.appraiser1 || authoritativeRoute?.First_Manager_User;
+      const authAppraiser1 = authoritativeRoute?.appraiser1 || authoritativeRoute?.First_Manager_User || authoritativeRoute?.Manager_User;
 
       if (!authoritativeRoute || !authAppraiser1) {
         return {
@@ -586,7 +674,7 @@ export class AdminDiagnosticModel {
 
     // TMG Section exact-team routing rule
     const isTMG = (sectionCode || '').toUpperCase().startsWith('TMG');
-    let expectedKey = sectionCode || '';
+    let expectedKey = sectionCode || authoritativeRoute?.Routing_Key || authoritativeRoute?.Matched_Rule || '';
     if (isTMG) {
       if (!teamName || !teamName.trim()) {
         return {
@@ -615,19 +703,99 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // Compare against authoritative App795 route
+    // P0-E: Require complete App795 routing evidence for all 1..N ordinal slots
+    const expectedCount = Number(authoritativeRoute.appraiserCount || 2);
+    const authNorm = AdminDiagnosticModel.normalizeAppraiserSlots({
+      topology: authoritativeRoute.topology,
+      appraiser1: authoritativeRoute.appraiser1 || authoritativeRoute.Manager_User,
+      appraiser2: authoritativeRoute.appraiser2 || authoritativeRoute.GM_User,
+      appraiser3: authoritativeRoute.appraiser3,
+      appraiser4: authoritativeRoute.appraiser4,
+      First_Manager_User: authoritativeRoute.First_Manager_User,
+      Manager_User: authoritativeRoute.Manager_User,
+      GM_User: authoritativeRoute.GM_User
+    });
+
+    const actualNorm = AdminDiagnosticModel.normalizeAppraiserSlots({
+      topology: actualTopology,
+      appraiser1: actualAppraiser1,
+      appraiser2: actualAppraiser2,
+      appraiser3: actualAppraiser3,
+      appraiser4: actualAppraiser4,
+      First_Manager_User: context.First_Manager_User,
+      Manager_User: context.Manager_User,
+      GM_User: context.GM_User
+    });
+
+    // Check if authoritative route is missing required slot 1..N
+    for (let i = 1; i <= expectedCount; i++) {
+      const authSlot = authNorm.slots.find(s => s.slot === i);
+      if (!authSlot || !authSlot.userCode) {
+        return {
+          status: 'NOT_EVIDENCED',
+          routeMatch: 'NOT_EVIDENCED',
+          expectedRoutingKey: expectedKey,
+          actualRoutingKey: actualRoutingKey || 'N/A',
+          reason: `Authoritative App795 route is missing required user identity for Slot ${i}`
+        };
+      }
+    }
+
     const keyMatch = actualRoutingKey === expectedKey;
     const topMatch = actualTopology === authoritativeRoute.topology;
-    const countMatch = Number(actualAppraiserCount) === authoritativeRoute.appraiserCount;
+    const countMatch = Number(actualAppraiserCount) === expectedCount;
 
+    // Check slot by slot for mismatch
     const norm = AdminDiagnosticModel.normalizeUserCode;
-    const a1Match = !authoritativeRoute.appraiser1 || norm(actualAppraiser1) === norm(authoritativeRoute.appraiser1);
-    const a2Match = !authoritativeRoute.appraiser2 || norm(actualAppraiser2) === norm(authoritativeRoute.appraiser2);
-    const a3Match = !authoritativeRoute.appraiser3 || norm(actualAppraiser3) === norm(authoritativeRoute.appraiser3);
-    const a4Match = !authoritativeRoute.appraiser4 || norm(actualAppraiser4) === norm(authoritativeRoute.appraiser4);
+    let slotMismatchReason = null;
 
-    const isAppraiserMatch = a1Match && a2Match && a3Match && a4Match;
-    const isFullMatch = keyMatch && topMatch && countMatch && isAppraiserMatch;
+    for (let i = 1; i <= expectedCount; i++) {
+      const authUser = authNorm.slots.find(s => s.slot === i)?.userCode || '';
+      const actualUser = actualNorm.slots.find(s => s.slot === i)?.userCode || '';
+
+      if (norm(authUser) !== norm(actualUser)) {
+        const ordinalLabels = { 1: '1ST', 2: '2ND', 3: '3RD', 4: '4TH' };
+        slotMismatchReason = `${ordinalLabels[i]}_APPRAISER_MISMATCH: Actual ${i}st/nd/rd/th Appraiser (${actualUser || 'empty'}) does not match authoritative App795 (${authUser})`;
+        break;
+      }
+    }
+
+    // Check if actual route contains extra slots beyond expected count
+    let extraSlotError = null;
+    const actualTotalSlotsPresent = [actualAppraiser1, actualAppraiser2, actualAppraiser3, actualAppraiser4].filter(Boolean).length;
+    if (actualTotalSlotsPresent > expectedCount) {
+      extraSlotError = `EXTRA_APPRAISER_SLOT_ERROR: Actual record has ${actualTotalSlotsPresent} appraiser slots, but expected topology count is ${expectedCount}`;
+    }
+
+    if (slotMismatchReason) {
+      return {
+        status: 'ERROR',
+        routeMatch: 'ERROR',
+        expectedRoutingKey: expectedKey,
+        actualRoutingKey: actualRoutingKey || 'N/A',
+        expectedTopology: authoritativeRoute.topology,
+        actualTopology: actualTopology || 'N/A',
+        expectedAppraiserCount: expectedCount,
+        actualAppraiserCount: actualAppraiserCount || 'N/A',
+        reason: slotMismatchReason
+      };
+    }
+
+    if (extraSlotError) {
+      return {
+        status: 'ERROR',
+        routeMatch: 'ERROR',
+        expectedRoutingKey: expectedKey,
+        actualRoutingKey: actualRoutingKey || 'N/A',
+        expectedTopology: authoritativeRoute.topology,
+        actualTopology: actualTopology || 'N/A',
+        expectedAppraiserCount: expectedCount,
+        actualAppraiserCount: actualAppraiserCount || 'N/A',
+        reason: extraSlotError
+      };
+    }
+
+    const isFullMatch = keyMatch && topMatch && countMatch;
 
     return {
       status: isFullMatch ? 'PASS' : 'ERROR',
@@ -636,7 +804,7 @@ export class AdminDiagnosticModel {
       actualRoutingKey: actualRoutingKey || 'N/A',
       expectedTopology: authoritativeRoute.topology,
       actualTopology: actualTopology || 'N/A',
-      expectedAppraiserCount: authoritativeRoute.appraiserCount,
+      expectedAppraiserCount: expectedCount,
       actualAppraiserCount: actualAppraiserCount || 'N/A',
       expectedAppraiser1: authoritativeRoute.appraiser1 || 'N/A',
       actualAppraiser1: actualAppraiser1 || 'N/A',
@@ -648,14 +816,14 @@ export class AdminDiagnosticModel {
       actualAppraiser4: actualAppraiser4 || 'N/A',
       reason: isFullMatch
         ? 'Route assignment matches authoritative App795 master'
-        : (!isAppraiserMatch ? 'APPRAISER_ASSIGNMENT_MISMATCH: Actual appraisers differ from authoritative App795 master' : 'Route assignment mismatch with App795 master')
+        : 'Route assignment mismatch with App795 master'
     };
   }
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * Validates authoritativeProfile and authoritativeRoute CONTENT.
-   * Includes changed appraiser assignments in repair diff when route repair is safe.
+   * Strictly validates authoritativeProfile and authoritativeRoute CONTENT.
+   * Produces field diff ONLY for actual changed fields in safe FIX_THIS_RECORD candidates.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
@@ -675,7 +843,7 @@ export class AdminDiagnosticModel {
     const isProfileOk = profileEval.status === 'PASS';
     const isRouteOk = routeEval.status === 'PASS';
 
-    // Validate authoritativeProfile CONTENT (Profile_Code, PartA_Weight, PartB_Weight)
+    // Validate authoritativeProfile CONTENT strictly (P0-D: code + PartA + PartB mandatory)
     let isProfileMasterProven = false;
     if (context.authoritativeProfile) {
       const authCode = context.authoritativeProfile.code || context.authoritativeProfile.Profile_Code;
@@ -683,13 +851,20 @@ export class AdminDiagnosticModel {
       const authB = context.authoritativeProfile.partBWeight ?? context.authoritativeProfile.PartB_Weight;
 
       const codeMatch = profileEval.expectedProfileCode !== 'NOT_EVIDENCED' && authCode === profileEval.expectedProfileCode;
-      const aMatch = authA === undefined || (profileEval.expectedPartAWeight !== null && Number(authA) === profileEval.expectedPartAWeight);
-      const bMatch = authB === undefined || (profileEval.expectedPartBWeight !== null && Number(authB) === profileEval.expectedPartBWeight);
+      const aMatch = authA !== undefined && authA !== null && profileEval.expectedPartAWeight !== null && Number(authA) === profileEval.expectedPartAWeight;
+      const bMatch = authB !== undefined && authB !== null && profileEval.expectedPartBWeight !== null && Number(authB) === profileEval.expectedPartBWeight;
 
       isProfileMasterProven = Boolean(codeMatch && aMatch && bMatch);
     }
 
-    const isRouteMasterProven = Boolean(context.authoritativeRoute && (context.authoritativeRoute.topology || context.authoritativeRoute.appraiserCount || context.authoritativeRoute.appraiser1));
+    // Validate authoritativeRoute CONTENT strictly (P0-E: topology + appraiserCount + appraiser1 mandatory)
+    let isRouteMasterProven = false;
+    if (context.authoritativeRoute) {
+      const top = context.authoritativeRoute.topology;
+      const count = context.authoritativeRoute.appraiserCount;
+      const a1 = context.authoritativeRoute.appraiser1;
+      isRouteMasterProven = Boolean(top && count && a1);
+    }
 
     const profileMasterEvidenced = isProfileMasterProven;
     const routeMasterEvidenced = isRouteMasterProven;
@@ -814,39 +989,65 @@ export class AdminDiagnosticModel {
     const afterDiff = {};
     const fieldsAffected = [];
 
-    if (profileRepairSafe || (!hasProfileError && !hasRouteError)) {
-      beforeDiff.Profile_Code = context.actualProfileCode || 'NOT_EVIDENCED';
-      beforeDiff.PartA_Weight = context.actualPartAWeight ?? 'NOT_EVIDENCED';
-      beforeDiff.PartB_Weight = context.actualPartBWeight ?? 'NOT_EVIDENCED';
-
-      afterDiff.Profile_Code = profileEval.expectedProfileCode !== 'NOT_EVIDENCED' ? profileEval.expectedProfileCode : beforeDiff.Profile_Code;
-      afterDiff.PartA_Weight = profileEval.expectedPartAWeight ?? beforeDiff.PartA_Weight;
-      afterDiff.PartB_Weight = profileEval.expectedPartBWeight ?? beforeDiff.PartB_Weight;
-
-      fieldsAffected.push('Profile_Code', 'PartA_Weight', 'PartB_Weight');
-    }
-
-    if (routeRepairSafe || (!hasProfileError && !hasRouteError)) {
-      beforeDiff.Routing_Key = context.actualRoutingKey || 'NOT_EVIDENCED';
-      beforeDiff.Routing_Topology = context.actualTopology || 'NOT_EVIDENCED';
-      beforeDiff.Appraiser_Count = context.actualAppraiserCount ?? 'NOT_EVIDENCED';
-
-      afterDiff.Routing_Key = routeEval.expectedRoutingKey !== 'NOT_EVIDENCED' ? routeEval.expectedRoutingKey : beforeDiff.Routing_Key;
-      afterDiff.Routing_Topology = routeEval.expectedTopology !== 'NOT_EVIDENCED' ? routeEval.expectedTopology : beforeDiff.Routing_Topology;
-      afterDiff.Appraiser_Count = routeEval.expectedAppraiserCount !== 'NOT_EVIDENCED' ? routeEval.expectedAppraiserCount : beforeDiff.Appraiser_Count;
-
-      fieldsAffected.push('Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count');
-
-      if (context.authoritativeRoute) {
-        if (context.authoritativeRoute.appraiser1 !== undefined) {
-          beforeDiff.Appraiser1 = context.actualAppraiser1 || 'NOT_EVIDENCED';
-          afterDiff.Appraiser1 = context.authoritativeRoute.appraiser1;
-          fieldsAffected.push('Appraiser1');
+    // P0-G & Item 10: Only include actual changed fields in FIX_THIS_RECORD
+    if (rootCause === 'FIX_THIS_RECORD') {
+      if (profileRepairSafe) {
+        if (context.actualProfileCode !== profileEval.expectedProfileCode && profileEval.expectedProfileCode !== 'NOT_EVIDENCED') {
+          beforeDiff.Profile_Code = context.actualProfileCode || 'NOT_EVIDENCED';
+          afterDiff.Profile_Code = profileEval.expectedProfileCode;
+          fieldsAffected.push('Profile_Code');
         }
-        if (context.authoritativeRoute.appraiser2 !== undefined) {
-          beforeDiff.Appraiser2 = context.actualAppraiser2 || 'NOT_EVIDENCED';
-          afterDiff.Appraiser2 = context.authoritativeRoute.appraiser2;
-          fieldsAffected.push('Appraiser2');
+        if (Number(context.actualPartAWeight) !== profileEval.expectedPartAWeight && profileEval.expectedPartAWeight !== null) {
+          beforeDiff.PartA_Weight = context.actualPartAWeight ?? 'NOT_EVIDENCED';
+          afterDiff.PartA_Weight = profileEval.expectedPartAWeight;
+          fieldsAffected.push('PartA_Weight');
+        }
+        if (Number(context.actualPartBWeight) !== profileEval.expectedPartBWeight && profileEval.expectedPartBWeight !== null) {
+          beforeDiff.PartB_Weight = context.actualPartBWeight ?? 'NOT_EVIDENCED';
+          afterDiff.PartB_Weight = profileEval.expectedPartBWeight;
+          fieldsAffected.push('PartB_Weight');
+        }
+      }
+
+      if (routeRepairSafe) {
+        if (context.actualRoutingKey !== routeEval.expectedRoutingKey && routeEval.expectedRoutingKey !== 'NOT_EVIDENCED') {
+          beforeDiff.Routing_Key = context.actualRoutingKey || 'NOT_EVIDENCED';
+          afterDiff.Routing_Key = routeEval.expectedRoutingKey;
+          fieldsAffected.push('Routing_Key');
+        }
+        if (context.actualTopology !== routeEval.expectedTopology && routeEval.expectedTopology !== 'NOT_EVIDENCED') {
+          beforeDiff.Routing_Topology = context.actualTopology || 'NOT_EVIDENCED';
+          afterDiff.Routing_Topology = routeEval.expectedTopology;
+          fieldsAffected.push('Routing_Topology');
+        }
+        if (Number(context.actualAppraiserCount) !== routeEval.expectedAppraiserCount && routeEval.expectedAppraiserCount !== 'NOT_EVIDENCED') {
+          beforeDiff.Appraiser_Count = context.actualAppraiserCount ?? 'NOT_EVIDENCED';
+          afterDiff.Appraiser_Count = routeEval.expectedAppraiserCount;
+          fieldsAffected.push('Expected_Appraiser_Count');
+        }
+
+        if (context.authoritativeRoute) {
+          const norm = AdminDiagnosticModel.normalizeUserCode;
+          if (context.authoritativeRoute.appraiser1 !== undefined && norm(context.actualAppraiser1) !== norm(context.authoritativeRoute.appraiser1)) {
+            beforeDiff.Appraiser1 = context.actualAppraiser1 || 'NOT_EVIDENCED';
+            afterDiff.Appraiser1 = context.authoritativeRoute.appraiser1;
+            fieldsAffected.push('1st Appraiser');
+          }
+          if (context.authoritativeRoute.appraiser2 !== undefined && norm(context.actualAppraiser2) !== norm(context.authoritativeRoute.appraiser2)) {
+            beforeDiff.Appraiser2 = context.actualAppraiser2 || 'NOT_EVIDENCED';
+            afterDiff.Appraiser2 = context.authoritativeRoute.appraiser2;
+            fieldsAffected.push('2nd Appraiser');
+          }
+          if (context.authoritativeRoute.appraiser3 !== undefined && norm(context.actualAppraiser3) !== norm(context.authoritativeRoute.appraiser3)) {
+            beforeDiff.Appraiser3 = context.actualAppraiser3 || 'NOT_EVIDENCED';
+            afterDiff.Appraiser3 = context.authoritativeRoute.appraiser3;
+            fieldsAffected.push('3rd Appraiser');
+          }
+          if (context.authoritativeRoute.appraiser4 !== undefined && norm(context.actualAppraiser4) !== norm(context.authoritativeRoute.appraiser4)) {
+            beforeDiff.Appraiser4 = context.actualAppraiser4 || 'NOT_EVIDENCED';
+            afterDiff.Appraiser4 = context.authoritativeRoute.appraiser4;
+            fieldsAffected.push('4th Appraiser');
+          }
         }
       }
     }
@@ -879,8 +1080,7 @@ export class AdminDiagnosticModel {
 
   /**
    * Builds detailed read-only Record Diagnostic object.
-   * REMOVED FABRICATED DEFAULTS ('2026', 'admin-form', 'PASS').
-   * Reads Routing_Key storage evidence without inventing schema.
+   * Distinguishes derived expected Routing_Key from stored Routing_Key (NOT_AVAILABLE if physical field unconfirmed).
    */
   static buildRecordDiagnostic(record, options = {}) {
     const getVal = (code) => {
@@ -890,6 +1090,8 @@ export class AdminDiagnosticModel {
       if (typeof field === 'object' && 'value' in field) return field.value ?? '';
       return String(field);
     };
+
+    const storedRoutingKeyVal = getVal('Routing_Key');
 
     return {
       recordId: getVal('$id') || options.recordId || 'NOT_EVIDENCED',
@@ -908,7 +1110,8 @@ export class AdminDiagnosticModel {
       appraiser2: options.appraiser2 || getVal('GM_User') || 'NOT_EVIDENCED',
       appraiser3: options.appraiser3 || 'NOT_EVIDENCED',
       appraiser4: options.appraiser4 || 'NOT_EVIDENCED',
-      routingKey: getVal('Routing_Key') || options.routingKey || 'NOT_EVIDENCED',
+      storedRoutingKey: storedRoutingKeyVal || options.storedRoutingKey || 'NOT_AVAILABLE',
+      routingKey: storedRoutingKeyVal || options.routingKey || 'NOT_EVIDENCED',
       sectionCode: getVal('Section_Code') || options.sectionCode || 'NOT_EVIDENCED',
       teamName: getVal('Team') || options.teamName || 'NOT_EVIDENCED',
       routingResult: options.routingResult || null,

@@ -1,47 +1,21 @@
 /**
- * Admin Support Center UI Component (Stage 2 Hardened)
- * Read-only Technical Admin Diagnostic Panel for Kintone user `admin-form`.
+ * Admin Support Center UI Component & Diagnostic Providers
+ * Read-only Technical Admin Diagnostic Panel strictly restricted to Kintone user `admin-form`.
+ *
+ * Source of Truth: project-docs/CONFIRMED_BASELINE/
  */
 
 import { AdminDiagnosticModel, escapeHtml } from './admin-diagnostic-model.js';
 
-export class AdminSupportCenterUI {
-  constructor(options = {}) {
-    this.container = options.container || null;
-    this.diagnosticContext = options.diagnosticContext || {};
-    this.activeTab = options.activeTab || 'health';
-    this.employeeProvider = options.employeeProvider || AdminSupportCenterUI.defaultEmployeeProvider;
-  }
-
-  /**
-   * Default local employee diagnostic provider for testing/checking employee lookup.
-   */
-  static defaultEmployeeProvider(empCode, fiscalYear) {
-    if (!empCode) {
-      return {
-        employeeCode: 'NOT_EVIDENCED',
-        fiscalYear: fiscalYear || 'NOT_EVIDENCED',
-        recordId: 'NOT_EVIDENCED',
-        mboKey: 'NOT_EVIDENCED',
-        employeeName: 'NOT_EVIDENCED',
-        requesterUser: 'NOT_EVIDENCED',
-        currentStatus: 'NOT_EVIDENCED',
-        routingKey: 'NOT_EVIDENCED',
-        sectionCode: 'NOT_EVIDENCED',
-        teamName: 'NOT_EVIDENCED',
-        appraiser1: 'NOT_EVIDENCED',
-        appraiser2: 'NOT_EVIDENCED',
-        appraiser3: 'NOT_EVIDENCED',
-        appraiser4: 'NOT_EVIDENCED'
-      };
-    }
-
-    const clean = String(empCode).trim();
-
-    const mockCatalog = {
+/**
+ * Mock Diagnostic Provider for local preview, unit testing, and offline diagnostic checks.
+ */
+export class MockAdminDiagnosticProvider {
+  constructor(catalog = {}) {
+    this.catalog = {
       '0118': {
         employeeCode: '0118',
-        fiscalYear: fiscalYear || '2026',
+        fiscalYear: '2026',
         recordId: '101',
         mboKey: 'MBO_2026_0118',
         employeeName: 'Technical Service Chief',
@@ -65,7 +39,7 @@ export class AdminSupportCenterUI {
       },
       '0111': {
         employeeCode: '0111',
-        fiscalYear: fiscalYear || '2026',
+        fiscalYear: '2026',
         recordId: '102',
         mboKey: 'MBO_2026_0111',
         employeeName: 'Assistant Manager 0111',
@@ -89,7 +63,7 @@ export class AdminSupportCenterUI {
       },
       'DGM001': {
         employeeCode: 'DGM001',
-        fiscalYear: fiscalYear || '2026',
+        fiscalYear: '2026',
         recordId: '103',
         mboKey: 'MBO_2026_DGM001',
         employeeName: 'Deputy General Manager',
@@ -110,46 +84,154 @@ export class AdminSupportCenterUI {
         appraiser4: 'NOT_EVIDENCED',
         authoritativeProfile: { code: 'PROF_DGM', partAWeight: 50, partBWeight: 50 },
         authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1, appraiser1: 'president_user' }
-      }
-    };
-
-    return mockCatalog[clean] || {
-      employeeCode: clean,
-      fiscalYear: fiscalYear || 'NOT_EVIDENCED',
-      recordId: 'NOT_EVIDENCED',
-      mboKey: `MBO_${fiscalYear || 'FY'}_${clean}`,
-      employeeName: `Employee ${clean}`,
-      requesterUser: clean,
-      currentStatus: '01 Draft Objective',
-      routingKey: 'NOT_EVIDENCED',
-      sectionCode: 'NOT_EVIDENCED',
-      teamName: 'NOT_EVIDENCED',
-      appraiser1: 'NOT_EVIDENCED',
-      appraiser2: 'NOT_EVIDENCED',
-      appraiser3: 'NOT_EVIDENCED',
-      appraiser4: 'NOT_EVIDENCED'
+      },
+      ...catalog
     };
   }
 
+  async checkEmployee(empCode, fiscalYear) {
+    const cleanEmp = String(empCode || '').trim();
+    const cleanFy = String(fiscalYear || '').trim();
+
+    if (!cleanEmp) {
+      throw new Error('EMPLOYEE_CODE_REQUIRED: Please enter an Employee Code to check.');
+    }
+    if (!cleanFy) {
+      throw new Error('FISCAL_YEAR_REQUIRED: Please enter a Fiscal Year (e.g. 2026).');
+    }
+
+    if (cleanEmp === 'AMBIGUOUS_EMP') {
+      const err = new Error(`พบเรคคอร์ด App 794 ซ้ำซ้อนสำหรับพนักงาน ${cleanEmp} ใน ${cleanFy} (AMBIGUOUS_RECORD)\nMultiple App794 records found for employee.`);
+      err.code = 'AMBIGUOUS_RECORD';
+      throw err;
+    }
+
+    if (cleanEmp === 'ERROR_EMP') {
+      throw new Error('PROVIDER_ERROR: Diagnostic provider error occurred during employee check.');
+    }
+
+    const match = this.catalog[cleanEmp];
+    if (!match) {
+      return {
+        employeeCode: cleanEmp,
+        fiscalYear: cleanFy,
+        recordId: 'NOT_FOUND',
+        mboKey: `MBO_${cleanFy}_${cleanEmp}`,
+        employeeName: `Employee ${cleanEmp}`,
+        requesterUser: cleanEmp,
+        currentStatus: 'NOT_EVIDENCED',
+        routingKey: 'NOT_EVIDENCED',
+        sectionCode: 'NOT_EVIDENCED',
+        teamName: 'NOT_EVIDENCED',
+        appraiser1: 'NOT_EVIDENCED',
+        appraiser2: 'NOT_EVIDENCED',
+        appraiser3: 'NOT_EVIDENCED',
+        appraiser4: 'NOT_EVIDENCED',
+        isNotFound: true
+      };
+    }
+
+    return {
+      ...match,
+      employeeCode: cleanEmp,
+      fiscalYear: cleanFy
+    };
+  }
+}
+
+/**
+ * Production-Intended Read-Only Async Kintone Diagnostic Provider.
+ * Constructs read-only queries against App53, App795, App796, App794 without Kintone writes or record mutations.
+ * In this task, transport is injected or simulated to guarantee 0 live Kintone API calls.
+ */
+export class KintoneAdminDiagnosticProvider {
+  constructor(options = {}) {
+    this.kintoneApi = options.kintoneApi || null;
+    this.appIds = options.appIds || { app53: 53, app795: 795, app796: 796, app794: 794 };
+  }
+
+  async checkEmployee(empCode, fiscalYear) {
+    if (!this.kintoneApi) {
+      throw new Error('KINTONE_API_NOT_WIRED: Production Kintone diagnostic adapter transport is unwired for zero-Kintone task safety.');
+    }
+    const cleanEmp = String(empCode || '').trim();
+    const cleanFy = String(fiscalYear || '').trim();
+    if (!cleanEmp) throw new Error('EMPLOYEE_CODE_REQUIRED');
+    if (!cleanFy) throw new Error('FISCAL_YEAR_REQUIRED');
+
+    // 1. App53 Employee Master Query
+    const empResp = await this.kintoneApi.getRecords(this.appIds.app53, `Employee_Code = "${cleanEmp}" limit 2`);
+    const empRecords = empResp?.records || [];
+    if (empRecords.length === 0) {
+      return { employeeCode: cleanEmp, fiscalYear: cleanFy, recordId: 'NOT_FOUND', isNotFound: true };
+    }
+
+    // 2. App794 MBO Annual Record Query
+    const mboResp = await this.kintoneApi.getRecords(this.appIds.app794, `Employee_Code = "${cleanEmp}" and Fiscal_Year = "${cleanFy}" limit 2`);
+    const mboRecords = mboResp?.records || [];
+    if (mboRecords.length > 1) {
+      const err = new Error('AMBIGUOUS_RECORD');
+      err.code = 'AMBIGUOUS_RECORD';
+      throw err;
+    }
+
+    const record = mboRecords[0] || null;
+
+    return {
+      employeeCode: cleanEmp,
+      fiscalYear: cleanFy,
+      recordId: record ? String(record.$id?.value || '') : 'NOT_FOUND',
+      mboKey: record ? String(record.Record_Key?.value || '') : 'NOT_EVIDENCED',
+      currentStatus: record ? String(record.Status?.value || '') : 'NOT_EVIDENCED'
+    };
+  }
+}
+
+export class AdminSupportCenterUI {
+  constructor(options = {}) {
+    this.container = options.container || null;
+    this.diagnosticContext = options.diagnosticContext || {};
+    this.activeTab = options.activeTab || 'health';
+    this.diagnosticProvider = options.diagnosticProvider || new MockAdminDiagnosticProvider();
+    this.checkErrorMessage = null;
+    this.checkLoading = false;
+  }
+
   /**
-   * Helper to return truth-based indicator icons for UI tables.
-   * FIX: Prevents false green checkmarks for NOT_EVIDENCED / INCOMPLETE_EVIDENCE states.
+   * Helper to return truth-based indicator badges for UI tables.
+   * Color is secondary; explicit text status (MATCH, MISMATCH, NOT_EVIDENCED, NOT_APPLICABLE) is mandatory.
    */
-  static getMatchIcon(status, isMatch) {
+  static getMatchBadge(status, isMatch) {
     if (status === 'NOT_EVIDENCED' || status === 'NOT_AVAILABLE' || status === null || status === undefined) {
-      return '<span style="color:#94a3b8; font-size:12px;">⚪ NOT_EVIDENCED</span>';
+      return '<span style="background:#475569; color:#f8fafc; padding:2px 8px; border-radius:3px; font-weight:bold; font-size:11px;">⚪ NOT_EVIDENCED</span>';
+    }
+    if (status === 'NOT_APPLICABLE') {
+      return '<span style="background:#64748b; color:#f8fafc; padding:2px 8px; border-radius:3px; font-weight:bold; font-size:11px;">⚪ NOT_APPLICABLE</span>';
     }
     if (status === 'PASS' || isMatch === true) {
-      return '<span style="color:#10b981; font-size:12px;">✅ MATCH</span>';
+      return '<span style="background:#059669; color:#ffffff; padding:2px 8px; border-radius:3px; font-weight:bold; font-size:11px;">✅ MATCH</span>';
     }
-    return '<span style="color:#ef4444; font-size:12px;">❌ MISMATCH</span>';
+    return '<span style="background:#dc2626; color:#ffffff; padding:2px 8px; border-radius:3px; font-weight:bold; font-size:11px;">❌ MISMATCH</span>';
   }
 
   /**
-   * Renders the complete Admin Support Center panel HTML with HTML Output Escaping.
+   * Renders the complete Admin Support Center panel HTML with HTML Output Escaping and security gates.
    */
   renderHtml(context = {}) {
     const activeCtx = { ...this.diagnosticContext, ...context };
+
+    // P0 Security Gate: Technical admin admin-form ONLY
+    if (!AdminDiagnosticModel.isTechnicalAdmin(activeCtx.loginUserCode)) {
+      return `
+        <div id="admin-support-center-panel" style="background:#450a0a; border:2px solid #ef4444; border-radius:8px; padding:20px; margin:20px 0; color:#fca5a5; font-family:sans-serif;">
+          <h3 style="margin:0 0 8px 0; color:#f87171; font-size:16px;">⛔ ACCESS DENIED / ปฏิเสธการเข้าถึง</h3>
+          <div style="font-size:12px; line-height:1.5;">
+            ศูนย์ตรวจสอบระบบสำหรับผู้ดูแล (Admin Support Center) สงวนสิทธิ์เฉพาะบัญชีผู้ดูแลระบบเชิงเทคนิค <code>admin-form</code> เท่านั้น<br/>
+            User code <strong>"${escapeHtml(activeCtx.loginUserCode || 'UNAUTHENTICATED')}"</strong> is not authorized to access read-only Technical Admin Diagnostics.
+          </div>
+        </div>
+      `;
+    }
 
     const health = AdminDiagnosticModel.evaluateSystemHealth(activeCtx);
     const recordDiag = AdminDiagnosticModel.buildRecordDiagnostic(activeCtx.record, activeCtx);
@@ -184,7 +266,7 @@ export class AdminSupportCenterUI {
       BLOCKED: 'background:#475569; color:#ffffff;'
     };
 
-    const getIcon = AdminSupportCenterUI.getMatchIcon;
+    const getBadge = AdminSupportCenterUI.getMatchBadge;
 
     return `
       <div id="admin-support-center-panel" style="background:#0f172a; border:2px solid #3b82f6; border-radius:8px; padding:20px; margin:20px 0; color:#f8fafc; font-family:sans-serif;">
@@ -257,25 +339,31 @@ export class AdminSupportCenterUI {
             <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
               <div>
                 <label style="font-size:11px; color:#94a3b8; display:block; margin-bottom:4px;">Employee Code / รหัสพนักงาน</label>
-                <input type="text" id="admin-check-emp-code" value="${escapeHtml(recordDiag.employeeCode)}" style="background:#0f172a; border:1px solid #475569; color:#f8fafc; padding:6px 10px; border-radius:4px; font-size:12px; width:160px;" />
+                <input type="text" id="admin-check-emp-code" value="${recordDiag.employeeCode === 'NOT_EVIDENCED' ? '' : escapeHtml(recordDiag.employeeCode)}" placeholder="Enter Employee Code (e.g. 0118)" style="background:#0f172a; border:1px solid #475569; color:#f8fafc; padding:6px 10px; border-radius:4px; font-size:12px; width:180px;" />
               </div>
               <div>
                 <label style="font-size:11px; color:#94a3b8; display:block; margin-bottom:4px;">Fiscal Year / ปีงบประมาณ</label>
-                <input type="text" id="admin-check-fy" value="${escapeHtml(recordDiag.fiscalYear)}" style="background:#0f172a; border:1px solid #475569; color:#f8fafc; padding:6px 10px; border-radius:4px; font-size:12px; width:100px;" />
+                <input type="text" id="admin-check-fy" value="${recordDiag.fiscalYear === 'NOT_EVIDENCED' ? '' : escapeHtml(recordDiag.fiscalYear)}" placeholder="e.g. 2026" style="background:#0f172a; border:1px solid #475569; color:#f8fafc; padding:6px 10px; border-radius:4px; font-size:12px; width:100px;" />
               </div>
               <div style="margin-top:16px;">
                 <button type="button" id="admin-btn-check-employee" style="background:#2563eb; color:#ffffff; border:none; padding:7px 16px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">
-                  🔍 CHECK EMPLOYEE
+                  ${this.checkLoading ? '⏳ CHECKING...' : '🔍 CHECK EMPLOYEE'}
                 </button>
               </div>
             </div>
+
+            ${this.checkErrorMessage ? `
+              <div style="background:#450a0a; border:1px solid #ef4444; color:#fca5a5; padding:8px 12px; border-radius:4px; font-size:12px; margin-bottom:12px;">
+                ❌ ${escapeHtml(this.checkErrorMessage)}
+              </div>
+            ` : ''}
 
             <table style="width:100%; border-collapse:collapse; font-size:12px; color:#cbd5e1; background:#0f172a; border-radius:6px; overflow:hidden;">
               <tbody>
                 <tr style="border-bottom:1px solid #334155;"><td style="padding:8px 12px; font-weight:bold; width:220px; color:#94a3b8;">Record ID / MBO Key:</td><td style="padding:8px 12px;">${escapeHtml(recordDiag.recordId)} / ${escapeHtml(recordDiag.mboKey)}</td></tr>
                 <tr style="border-bottom:1px solid #334155;"><td style="padding:8px 12px; font-weight:bold; color:#94a3b8;">Employee Name / Requester:</td><td style="padding:8px 12px;">${escapeHtml(recordDiag.employeeName)} • Requester: ${escapeHtml(recordDiag.requesterUser)}</td></tr>
                 <tr style="border-bottom:1px solid #334155;"><td style="padding:8px 12px; font-weight:bold; color:#94a3b8;">Current Workflow Status:</td><td style="padding:8px 12px; color:#38bdf8; font-weight:bold;">${escapeHtml(recordDiag.currentStatus)}</td></tr>
-                <tr style="border-bottom:1px solid #334155;"><td style="padding:8px 12px; font-weight:bold; color:#94a3b8;">Routing Key / Topology:</td><td style="padding:8px 12px;">Key: ${escapeHtml(recordDiag.routingKey)} • ${escapeHtml(recordDiag.sectionCode)} | ${escapeHtml(recordDiag.teamName)}</td></tr>
+                <tr style="border-bottom:1px solid #334155;"><td style="padding:8px 12px; font-weight:bold; color:#94a3b8;">Routing Key / Stored Key:</td><td style="padding:8px 12px;">Derived: ${escapeHtml(recordDiag.routingKey)} • Stored: ${escapeHtml(recordDiag.storedRoutingKey)}</td></tr>
                 <tr><td style="padding:8px 12px; font-weight:bold; color:#94a3b8;">Appraiser Slot Sequence:</td><td style="padding:8px 12px;">1st: ${escapeHtml(recordDiag.appraiser1)} | 2nd: ${escapeHtml(recordDiag.appraiser2)} | 3rd: ${escapeHtml(recordDiag.appraiser3)} | 4th: ${escapeHtml(recordDiag.appraiser4)}</td></tr>
               </tbody>
             </table>
@@ -325,13 +413,13 @@ export class AdminSupportCenterUI {
                   <td style="padding:4px; font-weight:bold;">Profile Code</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.expectedProfileCode)}</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.actualProfileCode)}</td>
-                  <td style="padding:4px;">${getIcon(profileMatch.status, profileMatch.expectedProfileCode === profileMatch.actualProfileCode)}</td>
+                  <td style="padding:4px;">${getBadge(profileMatch.status, profileMatch.expectedProfileCode === profileMatch.actualProfileCode)}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px; font-weight:bold;">Part A / Part B Weight</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.expectedPartAWeight)}% / ${escapeHtml(profileMatch.expectedPartBWeight)}%</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.actualPartAWeight)}% / ${escapeHtml(profileMatch.actualPartBWeight)}%</td>
-                  <td style="padding:4px;">${getIcon(profileMatch.status, profileMatch.expectedPartAWeight === profileMatch.actualPartAWeight)}</td>
+                  <td style="padding:4px;">${getBadge(profileMatch.status, profileMatch.expectedPartAWeight === profileMatch.actualPartAWeight)}</td>
                 </tr>
               </tbody>
             </table>
@@ -360,19 +448,19 @@ export class AdminSupportCenterUI {
                   <td style="padding:4px; font-weight:bold;">Routing Key</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.expectedRoutingKey)}</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.actualRoutingKey)}</td>
-                  <td style="padding:4px;">${getIcon(routeMatch.status, routeMatch.expectedRoutingKey === routeMatch.actualRoutingKey)}</td>
+                  <td style="padding:4px;">${getBadge(routeMatch.status, routeMatch.expectedRoutingKey === routeMatch.actualRoutingKey)}</td>
                 </tr>
                 <tr style="border-bottom:1px solid #334155;">
                   <td style="padding:4px; font-weight:bold;">Routing Topology</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.expectedTopology)}</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.actualTopology)}</td>
-                  <td style="padding:4px;">${getIcon(routeMatch.status, routeMatch.expectedTopology === routeMatch.actualTopology)}</td>
+                  <td style="padding:4px;">${getBadge(routeMatch.status, routeMatch.expectedTopology === routeMatch.actualTopology)}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px; font-weight:bold;">Appraiser Count</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.expectedAppraiserCount)}</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.actualAppraiserCount)}</td>
-                  <td style="padding:4px;">${getIcon(routeMatch.status, routeMatch.expectedAppraiserCount === routeMatch.actualAppraiserCount)}</td>
+                  <td style="padding:4px;">${getBadge(routeMatch.status, routeMatch.expectedAppraiserCount === routeMatch.actualAppraiserCount)}</td>
                 </tr>
               </tbody>
             </table>
@@ -468,68 +556,76 @@ export class AdminSupportCenterUI {
   }
 
   /**
-   * Attaches interactive DOM event listeners to a rendered container element.
-   * Handles tab switching, Check Employee lookup, and snapshot toggling locally without Kintone writes.
+   * Attaches interactive DOM event listeners to a rendered container element with clean delegation.
    */
   attachEventListeners(rootContainer) {
     if (!rootContainer) return;
+    this.container = rootContainer;
 
-    // 1. Tab Switching
-    const tabButtons = rootContainer.querySelectorAll('.admin-tab-btn');
-    tabButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const targetTab = btn.getAttribute('data-tab');
-        if (!targetTab || btn.disabled) return;
-        this.activeTab = targetTab;
+    // Remove existing event listener if attached previously to prevent duplicates
+    if (this._boundClickHandler) {
+      rootContainer.removeEventListener('click', this._boundClickHandler);
+    }
 
-        // Hide all tab contents
-        const contents = ['health', 'check', 'validation', 'candidate', 'repair'];
-        contents.forEach(id => {
-          const el = rootContainer.querySelector(`#admin-tab-content-${id}`);
-          if (el) el.style.display = id === targetTab ? 'block' : 'none';
-        });
+    this._boundClickHandler = async (e) => {
+      // 1. Tab Switching
+      const tabBtn = e.target.closest('.admin-tab-btn');
+      if (tabBtn && !tabBtn.disabled) {
+        const targetTab = tabBtn.getAttribute('data-tab');
+        if (targetTab) {
+          this.activeTab = targetTab;
+          this.reRender();
+        }
+        return;
+      }
 
-        // Highlight tab buttons
-        tabButtons.forEach(b => {
-          const isTarget = b.getAttribute('data-tab') === targetTab;
-          if (b.disabled) return;
-          b.style.background = isTarget ? '#1e40af' : '#1e293b';
-          b.style.color = isTarget ? '#ffffff' : '#60a5fa';
-        });
-      });
-    });
-
-    // 2. Check Employee Action
-    const checkBtn = rootContainer.querySelector('#admin-btn-check-employee');
-    if (checkBtn) {
-      checkBtn.addEventListener('click', () => {
+      // 2. Check Employee Action
+      const checkBtn = e.target.closest('#admin-btn-check-employee');
+      if (checkBtn && !this.checkLoading) {
         const empCodeInput = rootContainer.querySelector('#admin-check-emp-code');
         const fyInput = rootContainer.querySelector('#admin-check-fy');
-        const empCode = empCodeInput ? empCodeInput.value : '';
-        const fy = fyInput ? fyInput.value : '';
+        const empCode = empCodeInput ? empCodeInput.value.trim() : '';
+        const fy = fyInput ? fyInput.value.trim() : '';
 
-        const recordData = this.employeeProvider(empCode, fy);
-        this.diagnosticContext = {
-          ...this.diagnosticContext,
-          ...recordData,
-          employeeCode: empCode,
-          fiscalYear: fy
-        };
+        this.checkErrorMessage = null;
+        this.checkLoading = true;
+        this.reRender();
 
-        // Re-render HTML into rootContainer
-        rootContainer.innerHTML = this.renderHtml();
-        this.attachEventListeners(rootContainer);
-      });
-    }
+        try {
+          const result = await this.diagnosticProvider.checkEmployee(empCode, fy);
+          this.diagnosticContext = {
+            ...this.diagnosticContext,
+            ...result,
+            employeeCode: empCode,
+            fiscalYear: fy
+          };
+          this.checkLoading = false;
+          this.reRender();
+        } catch (err) {
+          this.checkLoading = false;
+          this.checkErrorMessage = err.message || 'Error occurred during employee check';
+          this.reRender();
+        }
+        return;
+      }
 
-    // 3. Snapshot Toggle Action
-    const snapshotBtn = rootContainer.querySelector('#admin-snapshot-btn');
-    const snapshotOutput = rootContainer.querySelector('#admin-snapshot-output');
-    if (snapshotBtn && snapshotOutput) {
-      snapshotBtn.addEventListener('click', () => {
-        const isHidden = snapshotOutput.style.display === 'none';
-        snapshotOutput.style.display = isHidden ? 'block' : 'none';
-      });
-    }
+      // 3. Snapshot Action
+      const snapshotBtn = e.target.closest('#admin-snapshot-btn');
+      if (snapshotBtn) {
+        const outputEl = rootContainer.querySelector('#admin-snapshot-output');
+        if (outputEl) {
+          outputEl.style.display = outputEl.style.display === 'none' ? 'block' : 'none';
+        }
+        return;
+      }
+    };
+
+    rootContainer.addEventListener('click', this._boundClickHandler);
+  }
+
+  reRender() {
+    if (!this.container) return;
+    this.container.innerHTML = this.renderHtml();
+    this.attachEventListeners(this.container);
   }
 }
