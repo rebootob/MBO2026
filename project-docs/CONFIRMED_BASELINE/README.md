@@ -34,6 +34,7 @@ Temporary status, blockers, one-time commands, pending-review claims, transient 
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — confirmed Multi-AI role model, Antigravity low-credit policy, Control Center/Active Task model, mandatory baseline-promotion rule, and review/new-chat governance.
+- `D1_AUTH_SECURITY.md` — confirmed Kintone-only D1 authentication/security architecture, App801 credential model, page-memory auth, lockout/password rules, Employee Self gate, dedicated `MBO_EMPLOYEE_ACCESS` group model, App801 ACL target, and D1 UAT closure rule.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights, and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
 - `ROUTING_WORKFLOW.md` — confirmed App795 routing model and workflow rules.
