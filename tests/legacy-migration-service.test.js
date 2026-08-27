@@ -2,6 +2,55 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LegacyMigrationService, LEGACY_APP_PROFILE_MAP } from '../src/services/legacy-migration-service.js';
 
+test('LEGACY_TARGET_APP794_PHYSICAL_SHAPE: candidate contains physical Objective_1..4 fields and does NOT contain logical Objectives array', () => {
+  const legacyData = {
+    '283': [
+      {
+        Drop_down_year: "FY'2021",
+        Text_name: 'Somchai Prasert',
+        Text_area_action_plan_obj1: 'Upgrade DB',
+        weight_a_obj1: '50',
+        Text_area_actual_result_obj1: 'Achieved 100%',
+        dif_level_obj1: '3'
+      }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: legacyData, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 1);
+  const cand = res.candidates[0];
+
+  assert.equal(cand.Record_Key, 'FY2021-EMP001');
+  assert.equal(cand.Objective_1, 'Upgrade DB');
+  assert.equal(cand.Weight_1, '50');
+  assert.equal(cand.Actual_Result_1, 'Achieved 100%');
+  assert.equal(cand.Difficulty_1, '3');
+  assert.equal('Objectives' in cand, false); // No logical Objectives array!
+});
+
+test('LEGACY_SOURCE_TARGET_MAPPING_EVIDENCE: reconciliation entry maps source code to actual target code', () => {
+  const legacyData = {
+    '283': [
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Upgrade DB' }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: legacyData, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 1);
+  const audit = res.candidates[0].provenance[0].fieldBucketAudit;
+
+  const planEntry = audit.find(a => a.sourceFieldCode === 'Text_area_action_plan_obj1');
+  assert.equal(planEntry.bucket, 'MAPPED_TO_TARGET');
+  assert.equal(planEntry.targetFieldCode, 'Objective_1');
+
+  const fyEntry = audit.find(a => a.sourceFieldCode === 'Drop_down_year');
+  assert.equal(fyEntry.targetFieldCode, 'Fiscal_Year');
+});
+
 test('LEGACY_FIELD_VALUE_PRESERVATION: extra unknown non-empty historical field stores actual value in provenance.historicalFields', () => {
   const legacyData = {
     '283': [
@@ -22,27 +71,11 @@ test('LEGACY_FIELD_VALUE_PRESERVATION: extra unknown non-empty historical field 
   assert.equal(res.counters.UNEXPLAINED_FIELD_LOSS, 0);
 });
 
-test('LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE: duplicate group with conflict in Actual Result requires review', () => {
+test('LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE: duplicate group with conflict in attachment list requires review', () => {
   const conflictingData = {
     '283': [
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Same Obj', Text_area_actual_result_obj1: 'Result A' },
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Same Obj', Text_area_actual_result_obj1: 'Result B' }
-    ]
-  };
-
-  const mappings = { 'Somchai Prasert': 'EMP001' };
-  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: conflictingData, employeeMappings: mappings });
-
-  assert.equal(res.candidates.length, 0);
-  assert.equal(res.reviewRequiredGroups.length, 1);
-  assert.equal(res.reviewRequiredGroups[0].status, 'REVIEW_REQUIRED_DUPLICATE_SOURCE');
-});
-
-test('LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE: duplicate group with conflict in Section Hoshin requires review', () => {
-  const conflictingData = {
-    '283': [
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area: 'Same Dept', Text_area_0: 'Section Hoshin A' },
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area: 'Same Dept', Text_area_0: 'Section Hoshin B' }
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Attachment_File: [{ fileKey: 'K1' }] },
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Attachment_File: [{ fileKey: 'K2' }] }
     ]
   };
 

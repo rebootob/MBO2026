@@ -16,6 +16,31 @@ export const LEGACY_APP_PROFILE_MAP = {
   716: 'PROF_JAPANESE_STAFF'
 };
 
+export const SOURCE_TO_TARGET_FIELD_MAP = {
+  Drop_down_year: 'Fiscal_Year',
+  Fiscal_Year: 'Fiscal_Year',
+  Text_name: 'Employee_Name',
+  Employee_Name: 'Employee_Name',
+  Text_area: 'Department_Hoshin_Title',
+  Text_area_0: 'Section_Hoshin_Title',
+  Text_area_action_plan_obj1: 'Objective_1',
+  Text_area_action_plan_obj2: 'Objective_2',
+  Text_area_action_plan_obj3: 'Objective_3',
+  Text_area_action_plan_obj4: 'Objective_4',
+  weight_a_obj1: 'Weight_1',
+  weight_a_obj2: 'Weight_2',
+  weight_a_obj3: 'Weight_3',
+  weight_a_obj4: 'Weight_4',
+  Text_area_actual_result_obj1: 'Actual_Result_1',
+  Text_area_actual_result_obj2: 'Actual_Result_2',
+  Text_area_actual_result_obj3: 'Actual_Result_3',
+  Text_area_actual_result_obj4: 'Actual_Result_4',
+  dif_level_obj1: 'Difficulty_1',
+  dif_level_obj2: 'Difficulty_2',
+  dif_level_obj3: 'Difficulty_3',
+  dif_level_obj4: 'Difficulty_4'
+};
+
 export class LegacyMigrationService {
   /**
    * Normalizes raw Drop_down_year values (e.g. "FY'2021" -> "FY2021").
@@ -51,20 +76,23 @@ export class LegacyMigrationService {
 
   /**
    * Full projection deep equivalence comparator across ALL non-empty normalized business/provenance fields.
+   * Uses stable JSON stringification for structured/array fields.
    */
   static areDuplicateItemsEquivalent(itemA, itemB) {
     if (itemA.targetProfileCode !== itemB.targetProfileCode) return false;
     const recA = itemA.rawRecord;
     const recB = itemB.rawRecord;
 
-    // Collect all non-empty keys across both records
     const allKeys = new Set([...Object.keys(recA), ...Object.keys(recB)]);
 
     for (const key of allKeys) {
       if (key.startsWith('$')) continue; // Ignore system fields like $id, $revision
 
-      const valA = String(unwrapField(recA[key]) || '').trim();
-      const valB = String(unwrapField(recB[key]) || '').trim();
+      const unwrappedA = unwrapField(recA[key]);
+      const unwrappedB = unwrapField(recB[key]);
+
+      const valA = (unwrappedA !== null && typeof unwrappedA === 'object') ? JSON.stringify(unwrappedA) : String(unwrappedA || '').trim();
+      const valB = (unwrappedB !== null && typeof unwrappedB === 'object') ? JSON.stringify(unwrappedB) : String(unwrappedB || '').trim();
 
       if (valA !== valB) {
         return false;
@@ -122,23 +150,24 @@ export class LegacyMigrationService {
           }
         }
 
-        // Field-level reconciliation bucket audit with ACTUAL preserved values
+        // Field-level reconciliation bucket audit with explicit source -> target mapping evidence
         const fieldBucketAudit = [];
         const historicalFields = {};
 
         for (const [fCode, fVal] of Object.entries(rec)) {
           const unwrappedVal = unwrapField(fVal);
-          const strVal = String(unwrappedVal || '').trim();
+          const strVal = (unwrappedVal !== null && typeof unwrappedVal === 'object') ? JSON.stringify(unwrappedVal) : String(unwrappedVal || '').trim();
           if (!strVal) continue; // Empty fields ignored
 
           totalReconciledFields++;
+          const actualTargetCode = SOURCE_TO_TARGET_FIELD_MAP[fCode];
 
-          if (fCode.startsWith('Text_area_action_plan') || fCode.startsWith('weight_a') || fCode === 'Text_name' || fCode === 'Drop_down_year') {
+          if (actualTargetCode) {
             fieldBucketAudit.push({
               sourceFieldCode: fCode,
               bucket: 'MAPPED_TO_TARGET',
               sourceValue: strVal,
-              targetFieldCode: fCode
+              targetFieldCode: actualTargetCode
             });
           } else if (fCode.toLowerCase().includes('attachment') || fCode.toLowerCase().includes('file')) {
             fieldBucketAudit.push({
@@ -163,6 +192,15 @@ export class LegacyMigrationService {
               sourceValue: strVal,
               provenancePath: `provenance.historicalFields.${fCode}`
             });
+          }
+        }
+
+        // Validate field-level reconciliation proof
+        for (const auditItem of fieldBucketAudit) {
+          if (auditItem.bucket === 'MAPPED_TO_TARGET' && !auditItem.targetFieldCode) {
+            totalUnexplainedFieldLoss++;
+          } else if (auditItem.bucket === 'PRESERVED_IN_PROVENANCE' && !auditItem.provenancePath) {
+            totalUnexplainedFieldLoss++;
           }
         }
 
@@ -214,7 +252,6 @@ export class LegacyMigrationService {
 
     for (const [groupKey, groupItems] of logicalGroups.entries()) {
       if (groupItems.length > 1) {
-        // Full projection deep equivalence check across ALL group items
         let allEquivalent = true;
         for (let i = 1; i < groupItems.length; i++) {
           if (!this.areDuplicateItemsEquivalent(groupItems[0], groupItems[i])) {
@@ -224,7 +261,6 @@ export class LegacyMigrationService {
         }
 
         if (!allEquivalent) {
-          // Classify as REVIEW_REQUIRED_DUPLICATE_SOURCE; do NOT create candidate!
           reviewRequiredGroups.push({
             groupKey,
             status: 'REVIEW_REQUIRED_DUPLICATE_SOURCE',
@@ -243,24 +279,36 @@ export class LegacyMigrationService {
         const primary = groupItems[0];
         const rec = primary.rawRecord;
 
-        // Build target objective fields (slots 1..4)
-        const objectives = [];
+        // Count populated objective slots (1..4)
+        let populatedSlots = 0;
         for (let i = 1; i <= 4; i++) {
           const title = readString(rec, `Text_area_action_plan_obj${i}`);
           const weight = readString(rec, `weight_a_obj${i}`);
-          if (title || weight) {
-            objectives.push({
-              slotIndex: i,
-              title,
-              weight: Number(weight || 0),
-              difficultyProvenance: readString(rec, `dif_level_obj${i}`),
-              actualResult: readString(rec, `Text_area_actual_result_obj${i}`),
-              scoreApp1: readString(rec, `score_app1_obj${i}`),
-              scoreApp2: readString(rec, `score_app2_obj${i}`),
-              achieveApp1: readString(rec, `app1_achieve_obj${i}`),
-              achieveApp2: readString(rec, `app2_achieve_obj${i}`)
-            });
-          }
+          if (title || weight) populatedSlots = i;
+        }
+        const objCount = Math.max(populatedSlots, 1);
+
+        // Build target write-ready physical candidate with REAL App794 flattened fields (NO Objectives array!)
+        const targetRecordKey = `${primary.sourceFiscalYear}-${primary.employeeCode}`;
+        const candidateObj = {
+          Record_Key: targetRecordKey,
+          Fiscal_Year: primary.sourceFiscalYear,
+          Employee_Code: primary.employeeCode,
+          Employee_Name: primary.legacyName,
+          Profile_Code: primary.targetProfileCode,
+          Workflow_Status: 'COMPLETED',
+          Is_Migrated_Record: true,
+          Objective_Count: String(objCount),
+          Department_Hoshin_Title: readString(rec, 'Text_area') || 'SOURCE_NOT_AVAILABLE',
+          Section_Hoshin_Title: readString(rec, 'Text_area_0') || 'SOURCE_NOT_AVAILABLE'
+        };
+
+        // Populate physical slots 1..4
+        for (let i = 1; i <= 4; i++) {
+          candidateObj[`Objective_${i}`] = readString(rec, `Text_area_action_plan_obj${i}`);
+          candidateObj[`Weight_${i}`] = readString(rec, `weight_a_obj${i}`);
+          candidateObj[`Actual_Result_${i}`] = readString(rec, `Text_area_actual_result_obj${i}`);
+          candidateObj[`Difficulty_${i}`] = readString(rec, `dif_level_obj${i}`);
         }
 
         const provenanceList = groupItems.map(item => ({
@@ -280,21 +328,10 @@ export class LegacyMigrationService {
           fieldBucketAudit: item.fieldBucketAudit
         }));
 
-        candidates.push({
-          targetRecordKey: `${primary.sourceFiscalYear}-${primary.employeeCode}`,
-          Fiscal_Year: primary.sourceFiscalYear,
-          Employee_Code: primary.employeeCode,
-          Employee_Name: primary.legacyName,
-          Profile_Code: primary.targetProfileCode,
-          Workflow_Status: 'COMPLETED',
-          Is_Migrated_Record: true,
-          Objectives: objectives,
-          Department_Hoshin_Title: readString(rec, 'Text_area') || 'SOURCE_NOT_AVAILABLE',
-          Section_Hoshin_Title: readString(rec, 'Text_area_0') || 'SOURCE_NOT_AVAILABLE',
-          Migration_Provenance: JSON.stringify(provenanceList),
-          provenance: provenanceList
-        });
+        candidateObj.Migration_Provenance = JSON.stringify(provenanceList);
+        candidateObj.provenance = provenanceList;
 
+        candidates.push(candidateObj);
         successCount++;
       } catch (err) {
         failedCount++;
