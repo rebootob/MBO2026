@@ -218,7 +218,8 @@ export class MboAuthSessionService {
 
   /**
    * Changes password through trusted session boundary.
-   * B2: Rejects expired or malformed session state.
+   * Rejects expired or malformed session state.
+   * Fails closed if session revocation (deleteSession) is unavailable.
    */
   async changePassword({ sessionToken, currentPassword, newPassword, now = new Date() }) {
     if (!sessionToken || typeof sessionToken !== 'string') {
@@ -228,8 +229,13 @@ export class MboAuthSessionService {
       throw new Error('NEW_PASSWORD_REQUIRED: newPassword is required.');
     }
 
-    if (!this.sessionStore || typeof this.sessionStore.getSession !== 'function') {
-      throw new Error('SESSION_STORE_NOT_CONFIGURED');
+    if (
+      !this.sessionStore ||
+      typeof this.sessionStore.getSession !== 'function' ||
+      typeof this.sessionStore.setSession !== 'function' ||
+      typeof this.sessionStore.deleteSession !== 'function'
+    ) {
+      throw new Error('SESSION_STORE_INCOMPLETE: sessionStore must provide getSession(), setSession(), and deleteSession().');
     }
 
     const oldTokenHash = MboAuthSessionService.hashToken(sessionToken);
@@ -239,7 +245,7 @@ export class MboAuthSessionService {
       throw new Error('INVALID_SESSION: Session is invalid or expired.');
     }
 
-    // B2: Expiry Check
+    // Expiry Check
     if (!session.expiresAt || typeof session.expiresAt !== 'string') {
       throw new Error('EXPIRED_SESSION: Session expiresAt is missing or invalid.');
     }
@@ -248,7 +254,7 @@ export class MboAuthSessionService {
       throw new Error('EXPIRED_SESSION: Session has expired.');
     }
 
-    // B2: Strict Session State Validation
+    // Strict Session State Validation
     const isForceChange = session.requiresPasswordChange === true && session.isDataAuthorized === false;
     const isNormalChange = session.requiresPasswordChange === false && session.isDataAuthorized === true;
 
@@ -264,7 +270,7 @@ export class MboAuthSessionService {
       throw new Error('CANNOT_REUSE_DEFAULT_PASSWORD: New password cannot be equal to Employee Code default password.');
     }
 
-    // B1: Credential store check
+    // Credential store check
     if (
       !this.credentialStore ||
       typeof this.credentialStore.getCredential !== 'function' ||
@@ -289,6 +295,9 @@ export class MboAuthSessionService {
       }
     }
 
+    // Revoke old session BEFORE mutating credential or issuing new token
+    await this.sessionStore.deleteSession(oldTokenHash);
+
     // Execute password change
     const updatedCredential = MboPasswordDomainService.changePassword({
       credentialRecord,
@@ -298,11 +307,6 @@ export class MboAuthSessionService {
     });
 
     await this.credentialStore.updateCredential(empCode, updatedCredential);
-
-    // Revoke old session
-    if (typeof this.sessionStore.deleteSession === 'function') {
-      await this.sessionStore.deleteSession(oldTokenHash);
-    }
 
     // Create a new clean authorized session
     const newRawToken = MboAuthSessionService.generateSessionToken();
@@ -328,16 +332,21 @@ export class MboAuthSessionService {
   }
 
   /**
-   * Revokes/deletes active session on logout.
+   * Revokes/deletes active session on logout. Fails closed if sessionStore revocation capability is unavailable.
    */
   async logout(sessionToken) {
     if (!sessionToken || typeof sessionToken !== 'string') {
       return { status: 'LOGGED_OUT' };
     }
-    if (this.sessionStore && typeof this.sessionStore.deleteSession === 'function') {
-      const tokenHash = MboAuthSessionService.hashToken(sessionToken);
-      await this.sessionStore.deleteSession(tokenHash);
+    if (
+      !this.sessionStore ||
+      typeof this.sessionStore.deleteSession !== 'function'
+    ) {
+      throw new Error('SESSION_STORE_INCOMPLETE: sessionStore must provide deleteSession().');
     }
+
+    const tokenHash = MboAuthSessionService.hashToken(sessionToken);
+    await this.sessionStore.deleteSession(tokenHash);
     return { status: 'LOGGED_OUT' };
   }
 }

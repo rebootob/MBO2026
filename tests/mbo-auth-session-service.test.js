@@ -53,7 +53,22 @@ class FakeSessionStore {
   }
 }
 
-test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', async (t) => {
+class NoDeleteSessionStore {
+  constructor() {
+    this.sessions = new Map();
+  }
+
+  async getSession(tokenHash) {
+    const sess = this.sessions.get(tokenHash);
+    return sess ? JSON.parse(JSON.stringify(sess)) : null;
+  }
+
+  async setSession(tokenHash, sessionObj) {
+    this.sessions.set(tokenHash, JSON.parse(JSON.stringify(sessionObj)));
+  }
+}
+
+test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corrective)', async (t) => {
   const userMappings = [
     { Kintone_User_Code: 'emp0118', Employee_Code: '0118', Account_Status: 'ACTIVE' },
     { Kintone_User_Code: 'emp0119', Employee_Code: '0119', Account_Status: 'ACTIVE' },
@@ -63,6 +78,81 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
   const initial0118Cred = MboPasswordDomainService.provisionInitialCredential({
     employeeCode: '0118',
     kintoneUserCode: 'emp0118'
+  });
+
+  // Revocation Test 1: sessionStore without deleteSession() => changePassword fails closed
+  await t.test('R1. changePassword() fails closed if sessionStore deleteSession capability is missing', async () => {
+    const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
+    const noDeleteSessStore = new NoDeleteSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: noDeleteSessStore, userMappings });
+
+    const rawToken = 'force_token_123';
+    const tokenHash = MboAuthSessionService.hashToken(rawToken);
+    await noDeleteSessStore.setSession(tokenHash, {
+      tokenHash,
+      employeeCode: '0118',
+      kintoneUserCode: 'emp0118',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      requiresPasswordChange: true,
+      isDataAuthorized: false
+    });
+
+    await assert.rejects(async () => {
+      await service.changePassword({ sessionToken: rawToken, newPassword: 'NewSecurePassword123!' });
+    }, { message: /SESSION_STORE_INCOMPLETE/ });
+  });
+
+  // Revocation Test 2: Successful password change revokes old token and issues new token
+  await t.test('R2. Successful password change revokes old token and activates new token', async () => {
+    const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    const oldToken = loginRes.sessionToken;
+
+    const changeRes = await service.changePassword({ sessionToken: oldToken, newPassword: 'NewSecurePassword123!' });
+    const newToken = changeRes.sessionToken;
+
+    // Old token MUST produce null principal
+    const oldPrincipal = await service.getAuthenticatedPrincipal(oldToken);
+    assert.equal(oldPrincipal, null);
+
+    // New token MUST produce valid principal
+    const newPrincipal = await service.getAuthenticatedPrincipal(newToken);
+    assert.ok(newPrincipal);
+    assert.equal(newPrincipal.employeeCode, '0118');
+  });
+
+  // Revocation Test 3: sessionStore without deleteSession() => logout fails closed
+  await t.test('R3. logout() fails closed if sessionStore deleteSession capability is missing', async () => {
+    const noDeleteSessStore = new NoDeleteSessionStore();
+    const service = new MboAuthSessionService({ sessionStore: noDeleteSessStore, userMappings });
+
+    await assert.rejects(async () => {
+      await service.logout('some_active_token');
+    }, { message: /SESSION_STORE_INCOMPLETE/ });
+  });
+
+  // Revocation Test 4: Successful logout invalidates session token
+  await t.test('R4. Successful logout invalidates session token', async () => {
+    const normalCred = MboPasswordDomainService.changePassword({
+      credentialRecord: initial0118Cred,
+      newPassword: 'SecurePassword123!',
+      passwordMaxAgeDays: 90
+    });
+    const credStore = new FakeCredentialStore({ '0118': normalCred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: 'SecurePassword123!' });
+    const token = loginRes.sessionToken;
+
+    assert.ok(await service.getAuthenticatedPrincipal(token));
+    const logoutRes = await service.logout(token);
+    assert.equal(logoutRes.status, 'LOGGED_OUT');
+    assert.equal(await service.getAuthenticatedPrincipal(token), null);
   });
 
   // B1.1: Missing updateCredential fails closed / configuration error
@@ -152,7 +242,6 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
 
     const rawToken = 'malformed_token_123';
     const tokenHash = MboAuthSessionService.hashToken(rawToken);
-    // Malformed flags: both true
     await sessStore.setSession(tokenHash, {
       tokenHash,
       employeeCode: '0118',
@@ -173,13 +262,11 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
     const sessStore = new FakeSessionStore();
     const service = new MboAuthSessionService({ sessionStore: sessStore, userMappings });
 
-    // Missing expiresAt
     const rawToken1 = 'token_no_exp';
     const hash1 = MboAuthSessionService.hashToken(rawToken1);
     await sessStore.setSession(hash1, { tokenHash: hash1, employeeCode: '0118', requiresPasswordChange: false, isDataAuthorized: true });
     assert.equal(await service.getAuthenticatedPrincipal(rawToken1), null);
 
-    // Invalid expiresAt string
     const rawToken2 = 'token_bad_exp';
     const hash2 = MboAuthSessionService.hashToken(rawToken2);
     await sessStore.setSession(hash2, { tokenHash: hash2, employeeCode: '0118', expiresAt: 'INVALID_DATE', requiresPasswordChange: false, isDataAuthorized: true });
@@ -282,7 +369,6 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
     const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: 'SecurePassword123!' });
     const principal = await service.getAuthenticatedPrincipal(loginRes.sessionToken);
 
-    // Attempt to access Employee 0119 records
     const authResult = MboIdentityService.authorizeEmployeeRecordAccess({
       authenticatedUser: principal,
       targetEmployeeCode: '0119',
@@ -321,11 +407,9 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
 
     assert.equal(changeRes.status, 'PASSWORD_CHANGED_SUCCESS');
 
-    // Old password '0118' now fails
     const oldLoginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
     assert.equal(oldLoginRes.status, 'INVALID_CREDENTIALS');
 
-    // New password authenticates
     const newLoginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: 'NewSecurePassword123!' });
     assert.equal(newLoginRes.status, 'AUTHENTICATED_SUCCESS');
   });
@@ -343,7 +427,6 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
 
     const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: 'CurrentSecurePass1!' });
 
-    // Missing current password -> error
     await assert.rejects(async () => {
       await service.changePassword({
         sessionToken: loginRes.sessionToken,
@@ -351,7 +434,6 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
       });
     }, { message: /CURRENT_PASSWORD_REQUIRED/ });
 
-    // Wrong current password -> error
     await assert.rejects(async () => {
       await service.changePassword({
         sessionToken: loginRes.sessionToken,
@@ -360,7 +442,6 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', 
       });
     }, { message: /INVALID_CURRENT_PASSWORD/ });
 
-    // Valid current password -> success
     const changeRes = await service.changePassword({
       sessionToken: loginRes.sessionToken,
       currentPassword: 'CurrentSecurePass1!',
