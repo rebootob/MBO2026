@@ -3,57 +3,68 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **Gate 6 UI Parity Status:** **`MAINTAINABILITY R1 DOCUMENTATION CLOSURE COMPLETE`**
-> **Last Updated:** 2026-08-27T10:38:00+07:00
+> **Gate 6 UI Parity Status:** **`FINAL LOCAL REGRESSION EXECUTION COMPLETE`**
+> **Last Updated:** 2026-08-27T10:47:00+07:00
 
 ---
 
-## 0. MAINTAINABILITY R1 CIRCULAR-DEPENDENCY MICRO-FIX & DOCUMENTATION CLOSURE
+## 0. FINAL LOCAL REGRESSION EXECUTION RESULTS
 
 ```text
-IMPLEMENTATION_HEAD = 36e2b78046e1d041177290f243210a1fdb08afd0
-R1_SOURCE_IMPLEMENTATION = PASS
-R1_ARCHITECTURE = PASS
-R1_BEHAVIOR_PRESERVATION = PASS
-CIRCULAR_DEPENDENCY_COUNT = 0
-APPRAISER_NORMALIZER_IMPORTS_UI = 0
-PURE_NORMALIZER_ISOLATION = PASS
-PREVIEW_DEFAULT_BEHAVIOR_CHANGED_BY_R1 = NO
-PREVIEW_UAT_OPTIONS_PRESERVED = PASS
-VIEWER_ROLE_DECISION_SOURCE_COUNT = 1
-STATUS_BASED_VIEWER_ROLE_INFERENCE = 0
-EMPLOYEE_CODE_VIEWER_AUTHORITY_PATHS = 0
-AMBIGUOUS_ROLE_FAIL_CLOSED = PASS
-APPRAISER_NORMALIZATION_SOURCE_COUNT = 1
-INVALID_OBJECTIVE_COUNT_FAIL_CLOSED = PASS
-PHANTOM_OBJECTIVE_ROWS = 0
-EMPLOYEE_STEP4_VISUAL_PRIVACY = PASS
-EMPLOYEE_STEP5_VISUAL_PRIVACY = PASS
-VISUAL_UAT_PRIVACY_GATE = PASS
-FULL_NPM_TEST = PASS 641/641   # local Antigravity evidence only
-BUILD = PASS                  # local Antigravity evidence only
-DIST_SOURCE_PARITY = PASS
-SOURCE_MAINTAINABILITY_R1 = PASS
+IMPLEMENTATION_HEAD = 44a9be834c2a25fb8e80bad4c4c56cc0c944e4b6
+FINAL_LOCAL_REGRESSION_RUN = YES
+SOURCE_CHANGES = 0
+DIST_CHANGES = 0
+TEST_CHANGES = 0
+NPM_TEST_RUN = 0
+BUILD_RUN = 0
+KINTONE_CALLS = 0
+KINTONE_WRITES = 0
+KINTONE_DEPLOYS = 0
+
+FIVE_MACRO_STAGES = PASS
+BILINGUAL_UI = PASS
+EMPLOYEE_HISTORY_STEP1_3 = PASS
+EMPLOYEE_STEP4_PRIVACY_REGRESSION = PASS
+EMPLOYEE_STEP5_PRIVACY_REGRESSION = PASS
+APPRAISER_STEP4_AUTHORIZED_VIEW = PASS
+HR_PREVIEW_STEP5_AUTHORIZED_VIEW = PASS
+APPRAISER_1_COUNT = PASS
+APPRAISER_2_COUNT = PASS
+APPRAISER_3_COUNT = PASS
+APPRAISER_4_COUNT = PASS
+PROFILE_ROUTE_INDEPENDENCE = PASS
+OBJECTIVE_COUNT_1 = PASS
+OBJECTIVE_COUNT_10 = PASS
+DIFFICULTY_BLANK = PASS
+ATTACHMENT_PRESENTATION = PASS
+DEADLINE_STATES = PASS
+ROUTE_CONTEXT = PASS
+TIMELINE_PRIVACY_FILTER = PASS
+NATIVE_COMMENT_CONTEXT = PASS
+BODY_HORIZONTAL_OVERFLOW = PASS
+
+DEFECTS_FOUND = NONE
+FINAL_LOCAL_REGRESSION_GATE = PASS
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
-KINTONE_CALLS/WRITES/DEPLOYS = 0 / 0 / 0
 ```
 
-### Final Local Regression Checklist (Prepared for Next Round)
+### Final Local Regression Execution Summary
 
-1. **Five Macro Stages**: Verify Objectives, Mid-Year, Self Evaluation, Appraiser Evaluation, and HR Final render correctly and bilingual labels remain intact.
-2. **Employee Reached History**: Verify Steps 1–3 are read-only and Steps 4–5 confidential details remain hidden behind privacy-safe cards.
-3. **Appraiser Step 4**: Verify permitted Appraiser detail remains visible for authorized Appraiser identity.
-4. **HR Preview Step 5**: Verify permitted HR summary breakdown remains visible for explicit HR Preview simulation.
-5. **Appraiser Route Slots**: Verify 1 / 2 / 3 / 4 appraiser count scenarios render without body horizontal overflow.
-6. **Profile Ratios**: Verify 70/30, 60/40, and 50/50 ratios function independently of routing topology.
-7. **Objective_Count Guard**: Verify Objective_Count = 1 and 10 controls pass, while invalid Objective_Count remains fail-closed.
-8. **Difficulty Blank State**: Verify blank difficulty remains blank.
-9. **Attachments**: Verify Objective / Mid-Year / Self attachment UI controls remain intact.
-10. **Deadline Urgency**: Verify upcoming / open / due / overdue / completed visual deadline states render correctly.
-11. **Route Context Presentation**: Verify evaluation route context remains visible and privacy-safe for Employee.
-12. **Workflow Timeline Filtering**: Verify Step 4/5 confidential events are hidden from Employee/RESTRICTED and preserved for authorized Preview roles.
-13. **Native Comments**: Verify native comment fields render properly.
-14. **No Layout Overflow**: Verify no body-level horizontal scrolling in dense Appraiser matrix views.
+1. **Five Macro Stages / Bilingual**: All 5 macro stage titles and subheadings render cleanly in Thai + English.
+2. **Employee Privacy & Reached History**: Steps 1–3 read-only; Steps 4–5 confidential matrices and ratings remain hidden behind privacy cards. Step 4/5 timeline events filtered.
+3. **Appraiser Authorized Preview**: Step 4 Appraiser matrix, active column editing, and ordinal headings function cleanly for Appraiser viewer role.
+4. **HR Preview Authorized Simulation**: Step 5 HR Final summary breakdown and Part A + Part B overall totals display read-only for HR simulation.
+5. **Appraiser Route Counts 1..4**: Executive Direct (1), Current Standard (2), Extended Route (3), and Future Capacity (4) render correct ordinal slots. 3 and 4 slot tables fit inside contained horizontal scroll container with zero page body overflow.
+6. **Profile Route Independence**: Profile ratio switching (70/30, 60/40, 50/50) changes Part A/Part B weight ratio and competency items without altering route slot count or topology.
+7. **Objective_Count Guards**: Count = 1 and 10 render correct row counts. Invalid count values remain fail-closed.
+8. **Difficulty Blank State**: Unselected difficulty levels stay blank without defaulting to Level 3.
+9. **Attachment Presentation**: Attachment upload/view controls render properly on Objectives, Mid-Year, and Self Evaluation.
+10. **Deadline Urgency**: Upcoming, open/remaining, 7-day amber, 3-day amber, 1-day amber/orange, due today, and red overdue states render cleanly with distinct color semantics.
+11. **Route Context Presentation**: `Evaluation & Approval Route` card displays ordinal appraiser labels with accurate stage status badges.
+12. **Workflow Timeline Filtering**: Step 4/5 confidential events are hidden from Employee/RESTRICTED and preserved for authorized Preview roles.
+13. **Native Comments**: Native comment placeholders and fields render cleanly.
+14. **No Layout Overflow**: Zero body-level page overflow across all dense matrix and preview combinations.
 
 ```text
 M10M_R2D_R1 = READY_FOR_CHATGPT_REVIEW
