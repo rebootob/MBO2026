@@ -1,411 +1,433 @@
-# AI ACTIVE TASK — ADMIN SUPPORT CENTER LOCAL IMPLEMENTATION
+# AI ACTIVE TASK — ADMIN SUPPORT CENTER DIAGNOSTIC HARDENING
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting implementation HEAD: `b2f0a5647e1436e16ec65550ae069fac2ed0be6f`
-> Mode: **LOCAL IMPLEMENTATION / NO KINTONE / NO DEPLOY**
+> Starting review HEAD: `0fcda0d4a6f4386ee39594bf4720f630b0e4b4c0`
+> Mode: **LOCAL MICRO-FIX / ADMIN SUPPORT CENTER ONLY / NO KINTONE / NO DEPLOY**
 > Kintone authorization: **NONE**
 
-## CONFIRMED ENTRY STATE
+## REVIEW RESULT BEFORE THIS TASK
 
 Read `project-docs/CONFIRMED_BASELINE/` first.
 
-Confirmed facts for this package:
+Independent ChatGPT review found the Admin Support Center implementation direction useful, but it is **NOT yet accepted as final PASS**.
+
+Confirmed business boundary:
 
 ```text
-APP794_LOCAL_UI_CLOSURE = PASS
-FINAL_LOCAL_VISUAL_REGRESSION_GATE = PASS
-UI_FROZEN = YES
-ADMIN_FORM_KINTONE_USER = YES
+ADMIN_FORM_KINTONE_USER = admin-form
 ADMIN_FORM_ROLE = TECHNICAL_ADMIN_ONLY
 ADMIN_FORM_BUSINESS_AUTHORITY = NONE
 PROCESS_STATES = 16
 PROCESS_ACTIONS = 28
-FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
+APP795 = AUTHORITATIVE ROUTING MASTER
+EVALUATION_PROFILE_AND_ROUTING = SEPARATE CONCERNS
 ```
 
-`admin-form` is a real Kintone user account. It may receive dedicated technical diagnostic capability, but must never gain normal business workflow authority.
-
-Do not redesign or refactor the already accepted Employee/Appraiser/HR UI.
+Do not change Employee/Appraiser/HR accepted UI behavior.
 
 ## OBJECTIVE
 
-Implement the first safe local version of **Admin Support Center** for Kintone user `admin-form`.
+Harden Admin Support Center so `admin-form` can reliably diagnose three critical questions for every MBO record:
 
-This package is for supportability and troubleshooting only.
+1. **WORKFLOW TRACE** — Is the workflow running through the correct states/actors/active appraiser slot for the resolved topology?
+2. **EVALUATION PROFILE** — Is the record assigned the correct evaluation profile/Part A:Part B ratio for the employee classification?
+3. **ROUTE ASSIGNMENT** — Is the record assigned the correct Routing Key / topology / 1st..4th Appraisers for this employee/record?
 
-The Admin Support Center must make it easy to answer:
+The panel must distinguish **EXPECTED** vs **ACTUAL** vs **NOT EVIDENCED**. Never fabricate PASS from defaults.
 
-1. What is wrong?
-2. Where is the failure?
-3. What authoritative source/config produced the current value?
-4. What is the fail-closed reason?
-5. What should a technical administrator inspect next?
+## P0 SECURITY FIX — EXACT ADMIN IDENTITY
 
-The first implementation MUST remain read-only.
+Current code incorrectly allows `administrator` in addition to `admin-form`.
 
-Do NOT implement real repair/write operations in this package.
-
-## ACCESS BOUNDARY
-
-Production-intended gate:
+Fix production-intended access gate to exactly:
 
 ```javascript
-kintone.getLoginUser().code === 'admin-form'
+normalize(kintoneLoginUserCode) === 'admin-form'
 ```
 
-Use the existing identity abstraction where practical; do not duplicate identity logic unnecessarily.
+Case/outer whitespace normalization is acceptable if consistent, but NO second alias/user may be granted access.
 
-Expected behavior:
+Required:
 
 ```text
-admin-form             -> Admin Support Center available
-Employee               -> not available
-Appraiser              -> not available
-HR                     -> not available unless separately authorized later
-ambiguous/restricted   -> not available
+admin-form = ALLOW
+ADMIN-FORM = ALLOW if normalization retained
+administrator = DENY
+hr = DENY
+Employee_Code=admin-form with different login = DENY
+workflow status cannot elevate access
 ```
 
-Do not use `Employee_Code`, workflow status, position, or route membership to grant technical-admin access.
+## P0 DIAGNOSTIC TRUTH — REMOVE FABRICATED DEFAULTS
 
-## UI STRUCTURE
-
-Create a clearly separated technical-admin surface titled approximately:
+Current diagnostic model contains unsafe/misleading defaults such as:
 
 ```text
-Admin Support Center
-ศูนย์ตรวจสอบระบบสำหรับผู้ดูแล
-TECHNICAL ADMIN / READ-ONLY DIAGNOSTICS
+expectedAppraiserCount = 2
+routingResult = PASS/M1_G1
+profileCode = PROF_STAFF_CHIEF
+Part A/B = 70/30
+App800 status = PASS
+schema state = PASS
+fallback fiscal year / other inferred values presented as truth
 ```
 
-Prefer 3 conceptual tabs/sections:
+Remove any default that can make unknown production data appear valid.
+
+Missing evidence must render one of:
 
 ```text
-1. System Health
-2. Record Diagnostic
-3. Controlled Repair
-```
-
-For this package:
-
-```text
-System Health = IMPLEMENT
-Record Diagnostic = IMPLEMENT
-Controlled Repair = PLACEHOLDER / DISABLED ONLY
-```
-
-The disabled Controlled Repair area must clearly state that repair requires a separate authorized maintenance package.
-
-Do not expose any active write/repair button.
-
-## A. SYSTEM HEALTH
-
-Provide a compact health summary that can classify each diagnostic item as:
-
-```text
-PASS
-WARNING
-ERROR
-BLOCKED
 NOT_AVAILABLE
+NOT_EVIDENCED
+PENDING_DESIGN
+ERROR / FAIL_CLOSED
 ```
 
-Include where evidence is available locally/runtime:
+Only return PASS when supplied runtime/repository evidence proves it.
+
+## A. WORKFLOW TRACE / WORKFLOW ROUTE VALIDATION
+
+Add a dedicated read-only section/card/table named approximately:
 
 ```text
-Identity resolution
-Requester mapping
-Routing resolution
-Current Active Appraiser slot
-Evaluation Profile resolution
-Objective_Count / objective completeness
-Scoring completeness
-Phase calendar/config resolution
-Workflow status/current actor
-Viewer/privacy resolution
-App800 config state
-App801 auth-contract state (masked/status only)
-Attachment mapping state
-Schema/field expectation state where safely detectable
-Bundle/source version identifier
-Overall health summary
+Workflow Trace / Workflow Route Validation
+การตรวจสอบเส้นทาง Workflow
 ```
 
-The summary should expose human-readable reason text rather than only raw booleans.
+Purpose: let `admin-form` quickly detect whether workflow is running incorrectly.
 
-Example style only; do not hardcode fake production truth:
+### A1. Expected Path
+
+Use confirmed topology semantics to show the **expected path** for the resolved topology where supported.
+
+Examples:
 
 ```text
-Routing: ERROR — exact TMG route not resolved
-Active Appraiser: PASS — 2nd Appraiser
-Scoring: WARNING — Part B incomplete
+M1_ONLY
+01 -> 03 -> 05 -> 06 -> 08 -> 10 -> 11 -> 13 -> 15 -> 16
+
+M1_G1
+01 -> 03 -> 04 -> 05 -> 06 -> 08 -> 09 -> 10 -> 11 -> 13 -> 14 -> 15 -> 16
 ```
 
-## B. RECORD DIAGNOSTIC
+Do not invent support for future topology if runtime semantics are not confirmed.
 
-Provide a structured read-only diagnostic view for the current App794 record when enough data is available.
+### A2. Current Workflow Consistency
 
-Include, where supported:
+For current record show:
 
 ```text
-Record ID
-MBO Key
-Fiscal Year
-Employee Code / employee identity inputs
-Requester_User
-Logged-in Kintone user code
-Current Process Status
-Current workflow actor
-Resolved Active Appraiser slot
-1st Appraiser
-2nd Appraiser
-3rd Appraiser
-4th Appraiser
+Current Status
+Resolved Topology
+Expected Current Actor Type/Slot
+Actual Current Actor/assignee evidence when supplied
+Expected Active Appraiser Slot
+Actual Active Appraiser Slot
+Consistency = PASS / ERROR / NOT_EVIDENCED
+Reason
+```
+
+Detect at minimum:
+
+```text
+M1_G1 record enters First-Manager state 02/07/12 -> ERROR / FAIL_CLOSED
+M1_ONLY record enters GM state 04/09/14 -> ERROR / FAIL_CLOSED
+Active appraiser slot inconsistent with current appraiser workflow state -> ERROR
+Current status unknown/unmapped -> ERROR / FAIL_CLOSED
+Required appraiser missing for current slot -> ERROR
+```
+
+### A3. Workflow Log / Actual History Boundary
+
+Important: do NOT fabricate a production workflow action log.
+
+Current project baseline has production audit persistence/source still pending design. Therefore distinguish:
+
+```text
+EXPECTED_WORKFLOW_PATH = available from confirmed process/topology
+CURRENT_STATE_VALIDATION = available from current record/runtime context
+ACTUAL_TRANSITION_HISTORY = only available if a real audited source is supplied
+```
+
+If no real production audit source exists, display:
+
+```text
+ACTUAL_WORKFLOW_HISTORY = PENDING_AUDIT_DESIGN / NOT_AVAILABLE
+```
+
+Never synthesize transition timestamps/history from:
+
+```text
+Updated_datetime
+current status
+Date.now()
+Preview fixture timestamps
+```
+
+Preview may use deterministic synthetic history only when explicitly labeled `PREVIEW FIXTURE / NOT PRODUCTION AUDIT`.
+
+## B. EVALUATION PROFILE VALIDATION
+
+Add explicit **Expected vs Actual Evaluation Profile** diagnostic.
+
+Evaluation Profile is NOT routing.
+
+Show where evidence exists:
+
+```text
+Employee Position / classification input
+Expected Profile Code
+Actual Record Profile Code
+Expected Part A Weight
+Actual Part A Weight
+Expected Part B Weight
+Actual Part B Weight
+Expected Appraiser Count if profile contract defines it
+Profile Source / App796 config identity/version where available
+PROFILE_MATCH = PASS / ERROR / NOT_EVIDENCED
+Mismatch reason
+```
+
+Use confirmed evaluation class baseline:
+
+```text
+Staff/Chief = 70/30
+Japanese Staff = 70/30
+Assistant Manager = 60/40
+Section Manager = 50/50
+Senior Manager = 50/50
+DGM/GM/VP = 50/50
+```
+
+Do NOT assign `PROF_STAFF_CHIEF` merely because profile evidence is missing.
+
+If position/profile mapping evidence is unavailable, return `NOT_EVIDENCED`, not PASS.
+
+## C. ROUTE ASSIGNMENT VALIDATION
+
+Add explicit **Expected vs Actual Route Assignment** diagnostic for each record/employee.
+
+Production route validation must use authoritative routing semantics, NOT Preview `Route Scenario` labels as truth.
+
+Show where evidence exists:
+
+```text
+Employee Code
+Position
+Section
+Team
+Expected Routing Key
+Actual/Stored Routing Key
+Expected Topology
+Actual/Stored Topology
 Expected Appraiser Count
-Routing Key
-Section / Team routing inputs
-Route resolution result
-Route fail-closed reason
-Evaluation Profile
-Part A weight
-Part B weight
-Objective_Count
-Objective completeness
-Rating/completion state
-App800 phase/config resolution status
-Viewer role / privacy resolver result
-Validation errors
-Workflow/audit diagnostic source status
-Build/source version
+Actual Appraiser Count
+Expected 1st Appraiser
+Actual 1st Appraiser
+Expected 2nd Appraiser
+Actual 2nd Appraiser
+Expected 3rd Appraiser
+Actual 3rd Appraiser
+Expected 4th Appraiser
+Actual 4th Appraiser
+ROUTE_MATCH = PASS / ERROR / NOT_EVIDENCED
+Reason
+Authoritative Source = App53 inputs + App795 route result
 ```
 
-Do not fabricate missing values. Render clear `NOT AVAILABLE`, `PENDING DESIGN`, or fail-closed reason where appropriate.
-
-## C. DIAGNOSTIC SNAPSHOT
-
-Implement a safe **Generate Diagnostic Snapshot** capability for local/support use.
-
-The snapshot should be copyable text or downloadable local JSON/text only if this fits the existing project architecture without unnecessary new dependency.
-
-Prefer a simple deterministic plain object/string output.
-
-It may contain:
+Confirmed routing rules:
 
 ```text
-record identity
-employee/requester identity inputs
-workflow status/current actor
-routing inputs/results
-appraiser slots
-active appraiser slot
-evaluation profile
-objective count/completeness
-scoring completion summary
-phase/config status
-privacy/viewer result
-validation/fail-closed errors
-bundle/source version
+Non-TMG -> Routing_Key = Section_Code
+TMG1/TMG2 -> Routing_Key = Section_Code + "|" + Team
+TMG missing Team / missing exact row / duplicate row -> FAIL CLOSED
+TMG must never fall back to Section-only
+DGM/GM/VP -> dedicated POSITION_DGM / POSITION_GM / POSITION_VP direct-President single-appraiser route where confirmed
 ```
 
-It MUST NOT contain:
+For route/appraiser identity comparison normalize Kintone user codes safely and compare exact slot sequence. Never infer organization title from ordinal slot.
+
+### Route Scenario terminology
+
+`CURRENT_STANDARD`, `EXTENDED`, `EXECUTIVE_DIRECT`, `FUTURE_CAPACITY` are Preview/business presentation scenarios. They must NOT be treated as authoritative Production assignment IDs unless separately persisted/reviewed.
+
+Admin production diagnostics should prioritize:
+
+```text
+Routing_Key
+Routing_Topology
+Expected_Appraiser_Count
+1st..4th resolved Kintone user codes
+App795 source/result
+```
+
+Preview may show Route Scenario as secondary display context only, clearly marked Preview.
+
+## D. DIAGNOSTIC SNAPSHOT HARDENING
+
+Current generic recursive serializer is too permissive.
+
+Change diagnostic snapshot to an **explicit allowlist contract**. Snapshot must contain only approved diagnostic fields/sections.
+
+Never blindly clone arbitrary input or entire Kintone record.
+
+Keep recursive redaction as defense-in-depth, but allowlisting is primary.
+
+Exclude:
 
 ```text
 Password_Hash
 password
 secret
 token
-session cookie
+cookie
 authorization header
-raw credential material
+raw credential objects
+free-text confidential evaluation comments unless explicitly required later
 ```
 
-Do not dump the entire Kintone record blindly.
-
-## D. CONTROLLED REPAIR — DISABLED CONTRACT ONLY
-
-Show a disabled/placeholder area describing the future guarded maintenance workflow:
+Include new sanitized summaries:
 
 ```text
-Reason / Ticket
-Backup
-Pre-check
-Exact Diff Preview
-Explicit Confirmation
-Execute One Repair
-Read-back Verification
-Audit Log
-Rollback Information
+workflowValidation
+workflowHistorySourceStatus
+profileValidation
+routeValidation
+healthSummary
+recordIdentity
+buildVersion
+validationErrors
 ```
 
-But for this task:
+## E. HTML OUTPUT SAFETY
+
+All record/config/user-derived strings rendered into Admin Support Center HTML must be escaped before interpolation.
+
+Add a minimal shared/local HTML escaping helper; do not add dependencies.
+
+Test payloads containing `<script>`, `<img onerror=...>`, `&`, quotes must render as escaped text, never executable markup.
+
+## F. UI / INFORMATION ARCHITECTURE
+
+Keep existing Admin Support Center, but make troubleshooting immediately readable.
+
+Recommended sections/tabs:
+
+```text
+1. System Health
+2. Record Diagnostic
+3. Workflow / Route / Profile Validation
+4. Controlled Repair — DISABLED
+```
+
+Within validation section, show three compact blocks:
+
+```text
+Workflow Trace
+Evaluation Profile Check
+Route Assignment Check
+```
+
+Use Expected / Actual / Result / Reason columns where practical.
+
+Do not redesign Employee/Appraiser/HR screens.
+
+## G. CONTROLLED REPAIR BOUNDARY
+
+Still disabled.
 
 ```text
 REPAIR_WRITE_IMPLEMENTED = NO
 KINTONE_WRITE = 0
 WORKFLOW_ACTION = 0
-SCHEMA_CHANGE = 0
-PROCESS_CHANGE = 0
-ACL_CHANGE = 0
+IMPERSONATION = 0
 ```
 
-## STRICTLY FORBIDDEN BUSINESS ACTIONS
-
-`admin-form` must not receive these capabilities:
-
-```text
-Submit MBO
-Approve Objective
-Return Objective
-Approve Mid-Year
-Return Mid-Year
-Score as Appraiser
-Complete HR Final
-Return HR Final
-Act as Requester
-Act as Appraiser
-Act as HR
-Change Workflow Status
-Impersonate another business user
-```
-
-If an existing UI component exposes one of these actions while Admin Support Center is active, ensure the technical admin surface does not make that action available through the new feature.
-
-Do not broaden Kintone native permissions in this package.
-
-## SECRET / PRIVACY RULES
-
-Least privilege applies.
-
-- Never display password hashes or credential secrets.
-- Never dump App801 credential records into browser diagnostics.
-- Show only auth-contract/config health needed for troubleshooting.
-- Do not expose more Employee/Appraiser/HR confidential data than needed to diagnose routing/workflow/configuration.
-- Prefer IDs/codes/status/reason over free-text confidential evaluation comments.
-- Diagnostic snapshot must be explicitly sanitized.
-
-## SOURCE STRUCTURE
-
-Keep modular production-source rules.
-
-Prefer a small number of clearly owned modules such as:
-
-```text
-src/admin/admin-support-center.js
-src/admin/admin-diagnostic-model.js
-```
-
-Exact filenames may vary if an existing module is a better fit.
-
-Do NOT create many micro-files.
-Do NOT move or refactor unrelated Employee/Appraiser/HR rendering.
-Do NOT perform R2 route/timeline refactor.
-
-`src/` remains source of truth.
-Production delivery remains the built bundle.
-
-## PREVIEW / LOCAL TESTABILITY
-
-Provide a local Preview path/fixture for Admin Support Center that does not require a real Kintone call.
-
-The Preview must allow inspection of at least:
-
-```text
-healthy record
-routing fail-closed record
-incomplete scoring record
-missing config/not-available record
-```
-
-Synthetic fixture data must be visibly Preview/local only and must never leak into production runtime.
+No Approve/Return/Submit/Complete/Score/Change Status capability.
 
 ## TEST REQUIREMENTS
 
-Add focused tests for at least:
+Add/update focused tests proving at minimum:
 
 ```text
-admin-form access allowed
-non-admin access denied
-Employee_Code cannot grant admin access
-workflow status cannot grant admin access
-technical admin surface exposes no business action capability
-active appraiser diagnostic follows resolved current slot
-routing fail-closed reason rendered/modeled
-missing data remains NOT_AVAILABLE rather than fabricated
-snapshot sanitizes Password_Hash/password/secret/token fields
-snapshot does not blindly serialize full record
-Controlled Repair remains disabled
+1. exact admin-form identity gate; administrator denied
+2. no Employee_Code/status elevation
+3. missing route/profile/App800/schema evidence never defaults to PASS
+4. M1_G1 in First-Manager state fails diagnostic
+5. M1_ONLY in GM state fails diagnostic
+6. active appraiser slot follows current workflow and mismatch is detected
+7. unknown workflow status fails closed
+8. expected vs actual profile match PASS
+9. profile mismatch ERROR
+10. missing profile evidence NOT_EVIDENCED
+11. expected vs actual routing match PASS
+12. wrong Routing_Key ERROR
+13. wrong appraiser user in any ordinal slot ERROR
+14. wrong appraiser count ERROR
+15. TMG exact-team missing route FAIL_CLOSED
+16. Preview Route Scenario is not used as Production routing authority
+17. actual workflow history absent => PENDING_AUDIT_DESIGN/NOT_AVAILABLE, not synthetic history
+18. snapshot uses allowlist and cannot dump arbitrary record/secrets
+19. HTML dynamic content escaped
+20. Controlled Repair remains disabled / zero business authority
 ```
 
-Run targeted tests and full `npm test`.
-Run build if required by the repository's normal bundle workflow.
+Run targeted tests, full `npm test`, and build.
 
-Do not claim PASS if test/build evidence is unavailable.
-
-## NO KINTONE BOUNDARY
+## HARD BOUNDARY
 
 ```text
 KINTONE_GET = 0
 KINTONE_WRITE = 0
 KINTONE_DEPLOY = 0
-APP53_CALL = 0
-APP794_CALL = 0
-APP795_CALL = 0
-APP796_CALL = 0
-APP797_CALL = 0
-APP800_CALL = 0
-APP801_CALL = 0
+SCHEMA_CHANGE = 0
+PROCESS_CHANGE = 0
+ACL_CHANGE = 0
+EMPLOYEE_APPRAISER_HR_UI_REDESIGN = 0
 ```
 
-No Kintone browser smoke in this package.
-No schema/process/ACL/customization write.
-
-## DOCUMENTATION
-
-After implementation/tests, update only the necessary living docs:
+Allowed implementation scope:
 
 ```text
-project-docs/AI_REVIEW_PACKAGE.md
-project-docs/CURRENT_STATE.md
-project-docs/HANDOFF.md
+src/admin/**
+minimal existing integration wiring only if required
+preview/** only for local Admin fixture/visibility
+admin-focused tests
+built dist bundle via normal build
+living review docs
 ```
 
-Do not modify `CONFIRMED_BASELINE` unless a new fact is explicitly user-confirmed and separately reviewed.
+Do not modify Confirmed Baseline.
 
 ## REQUIRED FINAL REPORT
 
-Return exactly enough evidence for independent review:
+Return:
 
 ```text
 IMPLEMENTATION_HEAD = <sha>
-SOURCE_CHANGED_FILES = <exact list>
-TEST_CHANGED_FILES = <exact list>
-PREVIEW_CHANGED_FILES = <exact list>
-DIST_CHANGED_FILES = <exact list or NONE>
-
-ADMIN_FORM_KINTONE_USER_GATE = PASS|FAIL
-NON_ADMIN_ACCESS_DENIED = PASS|FAIL
-ADMIN_FORM_BUSINESS_AUTHORITY = NONE|CONFLICT
-SYSTEM_HEALTH = PASS|FAIL
-RECORD_DIAGNOSTIC = PASS|FAIL
-DIAGNOSTIC_SNAPSHOT = PASS|FAIL
-SNAPSHOT_SECRET_SANITIZATION = PASS|FAIL
-ACTIVE_APPRAISER_DIAGNOSTIC = PASS|FAIL
-ROUTING_FAIL_CLOSED_DIAGNOSTIC = PASS|FAIL
+ADMIN_FORM_EXACT_ID_GATE = PASS|FAIL
+FABRICATED_DIAGNOSTIC_DEFAULTS_REMOVED = PASS|FAIL
+WORKFLOW_TRACE_VALIDATION = PASS|FAIL
+ACTUAL_WORKFLOW_HISTORY_BOUNDARY = PASS|FAIL
+EVALUATION_PROFILE_VALIDATION = PASS|FAIL
+ROUTE_ASSIGNMENT_VALIDATION = PASS|FAIL
+ACTIVE_APPRAISER_WORKFLOW_CONSISTENCY = PASS|FAIL
+SNAPSHOT_ALLOWLIST = PASS|FAIL
+HTML_OUTPUT_ESCAPING = PASS|FAIL
 CONTROLLED_REPAIR = DISABLED|FAIL
-
+ADMIN_FORM_BUSINESS_AUTHORITY = NONE|CONFLICT
+APP794_EMPLOYEE_APPRAISER_HR_UI_CHANGED = NO|YES
 TARGETED_TESTS = <result>
 NPM_TEST = <result>
 BUILD = <result>
-
 KINTONE_CALLS = 0
 KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
-
-APP794_EMPLOYEE_APPRAISER_HR_UI_CHANGED = NO|YES
+DEFECTS_REMAINING = <exact list or NONE>
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
-REMAINING_BLOCKERS = <exact list>
 ```
 
-Commit implementation + tests + required docs, push once, then STOP for ChatGPT review.
+Commit and push once, then STOP for ChatGPT review.
