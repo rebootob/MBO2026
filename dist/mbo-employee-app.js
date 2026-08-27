@@ -2043,8 +2043,8 @@ const ROUTE_SCENARIOS = {
 };
 
 const EVALUATION_PROFILES = {
-  PROF_STAFF_OPERATIONAL: {
-    id: 'PROF_STAFF_OPERATIONAL',
+  PROF_STAFF_CHIEF: {
+    id: 'PROF_STAFF_CHIEF',
     nameTH: 'Staff / Chief (70/30)',
     nameEN: 'Staff / Chief (70/30)',
     partAWeight: 70,
@@ -2052,8 +2052,8 @@ const EVALUATION_PROFILES = {
     compSetCode: 'COMP_SET_OPERATIONAL_V1',
     suggestedRoute: 'CURRENT_STANDARD'
   },
-  PROF_STAFF_JAPANESE: {
-    id: 'PROF_STAFF_JAPANESE',
+  PROF_JAPANESE_STAFF: {
+    id: 'PROF_JAPANESE_STAFF',
     nameTH: 'Japanese Staff (70/30)',
     nameEN: 'Japanese Staff (70/30)',
     partAWeight: 70,
@@ -2070,8 +2070,8 @@ const EVALUATION_PROFILES = {
     compSetCode: 'COMP_SET_MANAGEMENT_V1',
     suggestedRoute: 'CURRENT_STANDARD'
   },
-  PROF_SECT_MGR: {
-    id: 'PROF_SECT_MGR',
+  PROF_SECTION_MGR: {
+    id: 'PROF_SECTION_MGR',
     nameTH: 'Section Manager (50/50)',
     nameEN: 'Section Manager (50/50)',
     partAWeight: 50,
@@ -2079,8 +2079,8 @@ const EVALUATION_PROFILES = {
     compSetCode: 'COMP_SET_MANAGEMENT_V1',
     suggestedRoute: 'CURRENT_STANDARD'
   },
-  PROF_SR_MGR: {
-    id: 'PROF_SR_MGR',
+  PROF_SENIOR_MGR: {
+    id: 'PROF_SENIOR_MGR',
     nameTH: 'Senior Manager (50/50)',
     nameEN: 'Senior Manager (50/50)',
     partAWeight: 50,
@@ -2116,6 +2116,11 @@ const EVALUATION_PROFILES = {
     suggestedRoute: 'EXECUTIVE_DIRECT'
   }
 };
+
+// Aliases for backward compatibility
+EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL = EVALUATION_PROFILES.PROF_STAFF_CHIEF;
+EVALUATION_PROFILES.PROF_SECT_MGR = EVALUATION_PROFILES.PROF_SECTION_MGR;
+EVALUATION_PROFILES.PROF_SR_MGR = EVALUATION_PROFILES.PROF_SENIOR_MGR;
 
 function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', isCompleted = false) {
   if (isCompleted) {

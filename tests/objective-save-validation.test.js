@@ -1606,11 +1606,10 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.isRuntimeSupported, true);
   assert.equal(ROUTE_SCENARIOS.FUTURE_CAPACITY.appraiserCount, 4);
 
-  // 2. EVALUATION_PROFILES export exactness (8 distinct profile keys)
-  assert.equal(Object.keys(EVALUATION_PROFILES).length, 8);
-  assert.equal(EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL.partAWeight, 70);
+  assert.equal(Object.keys(EVALUATION_PROFILES).filter(k => !['PROF_STAFF_OPERATIONAL', 'PROF_SECT_MGR', 'PROF_SR_MGR'].includes(k)).length, 8);
+  assert.equal(EVALUATION_PROFILES.PROF_STAFF_CHIEF.partAWeight, 70);
   assert.equal(EVALUATION_PROFILES.PROF_ASST_MGR.partAWeight, 60);
-  assert.equal(EVALUATION_PROFILES.PROF_SECT_MGR.partAWeight, 50);
+  assert.equal(EVALUATION_PROFILES.PROF_SECTION_MGR.partAWeight, 50);
   assert.equal(EVALUATION_PROFILES.PROF_DGM.suggestedRoute, 'EXECUTIVE_DIRECT');
 
   // 3. calculateDeadlineInfo deterministic date arithmetic

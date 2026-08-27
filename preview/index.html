@@ -108,11 +108,11 @@
     <div class="preview-lab-group">
       <label>3. Evaluation Profile / โปรไฟล์การประเมิน (Part A : Part B)</label>
       <select id="lab-eval-profile" class="preview-lab-select">
-        <option value="PROF_STAFF_OPERATIONAL">1. Staff / Chief — 70/30 (Operational 6 Items)</option>
-        <option value="PROF_STAFF_JAPANESE">2. Japanese Staff — 70/30 (Operational 6 Items)</option>
+        <option value="PROF_STAFF_CHIEF">1. Staff / Chief — 70/30 (Operational 6 Items)</option>
+        <option value="PROF_JAPANESE_STAFF">2. Japanese Staff — 70/30 (Operational 6 Items)</option>
         <option value="PROF_ASST_MGR">3. Assistant Manager — 60/40 (Management 8 Items)</option>
-        <option value="PROF_SECT_MGR">4. Section Manager — 50/50 (Management 8 Items)</option>
-        <option value="PROF_SR_MGR">5. Senior Manager — 50/50 (Management 8 Items)</option>
+        <option value="PROF_SECTION_MGR">4. Section Manager — 50/50 (Management 8 Items)</option>
+        <option value="PROF_SENIOR_MGR">5. Senior Manager — 50/50 (Management 8 Items)</option>
         <option value="PROF_DGM">6. DGM — 50/50 (Management 8 Items)</option>
         <option value="PROF_GM">7. GM — 50/50 (Management 8 Items)</option>
         <option value="PROF_VP">8. VP — 50/50 (Management 8 Items)</option>
@@ -361,7 +361,7 @@
         const topVal = document.getElementById('lab-topology').value;
 
         const routeScenario = ROUTE_SCENARIOS[routeScenarioId] || ROUTE_SCENARIOS.CURRENT_STANDARD;
-        const evalProfile = EVALUATION_PROFILES[evalProfileId] || EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL;
+        const evalProfile = EVALUATION_PROFILES[evalProfileId] || EVALUATION_PROFILES.PROF_STAFF_CHIEF;
 
         const appCount = routeScenario.appraiserCount;
 
