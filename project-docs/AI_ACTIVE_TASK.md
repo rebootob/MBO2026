@@ -1,33 +1,38 @@
-# AI ACTIVE TASK — D1-B BILINGUAL RUNTIME MESSAGE CORRECTIVE ONLY
+# AI ACTIVE TASK — D1-B FINAL BILINGUAL LOGOUT FEEDBACK FIX ONLY
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Independently reviewed implementation: `0f0ff087a9fcbb4611d5269548f704ea388114d2`
+> Independently reviewed implementation: `111533d5e62f618ac88ad035db759026e4f77db8`
 > D1-A status: CLOSED / SOURCE + SECURITY BOUNDARY ACCEPTED
-> Mode: ONE UI LOCALIZATION BLOCKER ONLY / MINIMUM FIX
+> Mode: ONE UI MESSAGE BLOCKER ONLY / MINIMUM FIX
 > Kintone read/write/deploy/schema/process/ACL authorization: NONE
 
 ## 0. REVIEW RESULT
 
-The D1-B visual polish is substantially accepted:
+The bilingual runtime corrective is accepted except for ONE remaining user-visible path.
+
+Accepted:
 - only `preview/auth-preview.html` changed
-- top header/menu/tabs added
-- TH/EN switch added
-- static translations use a centralized `translations.th` / `translations.en` dictionary
-- tab availability follows auth state
-- D1-A auth/security core and preview server were NOT changed
+- login failure/network failure localized
+- force + normal password-change failure localized
+- password mismatch localized
+- access-check allow/block/unauthenticated/error localized
+- language switching re-renders prior access-check feedback without resetting auth state
+- no server/auth core/App801/Kintone change
 
-One user-visible bilingual blocker remains before visual UAT can be accepted:
+One final blocker remains from the existing acceptance requirement `logout success/failure`:
 
-Runtime feedback/error messages are still hardcoded in English in several paths, including examples such as:
-- `Login Failed ... Authentication denied.`
-- `Network/Server Error ...`
-- `Password Change Failed ...`
-- `Server Error ...`
+`handleLogout()` still handles failure only with:
 
-This means Thai mode is not fully Thai/English-capable for user feedback.
+```js
+console.error('Logout error', err);
+```
+
+The user receives no visible Thai/English logout-failure message.
+
+Also fix the obvious Thai fallback typo currently equivalent to `ปฏิเสธการสิทธิ์` while touching this same UI file.
 
 Target implementer result:
 
@@ -37,48 +42,31 @@ Do NOT self-certify D1 PASS.
 
 ---
 
-## ONLY REQUIRED FIX — BILINGUAL RUNTIME FEEDBACK
+## ONLY REQUIRED FIX
 
 Allowed file only:
 - `preview/auth-preview.html`
 
+1. Add centralized TH/EN logout-failure feedback key(s) in the existing translation dictionary.
+2. In `handleLogout()` catch/failure path, show a visible localized message to the user.
+3. Do NOT switch UI to unauthenticated state when logout request itself fails; keep the current authenticated state until a successful logout is confirmed.
+4. Fix the Thai fallback wording typo in `translateReason()` to a natural safe Thai fallback, e.g. `การยืนยันตัวตนไม่สำเร็จ`.
+5. Do not redesign/refactor anything else.
+
 Do NOT modify:
 - `scripts/ui-preview-server.js`
-- any `src/services/*` auth/password/identity core
+- `src/services/*`
 - App801
 - Kintone
 - D2-D7
 
-### Required minimum behavior
-
-1. Move user-visible runtime feedback strings into the existing translation dictionary or a tiny centralized helper using that dictionary.
-2. Thai mode must show Thai-friendly feedback for:
-   - login failure
-   - network/server failure
-   - force password-change failure
-   - normal password-change failure
-   - logout success/failure
-   - access-check allow/block/unauthenticated/error
-   - password confirmation mismatch
-3. English mode must show equivalent English messages.
-4. Internal status/code may remain visible, e.g. `INVALID_CREDENTIALS`, but user-facing explanation/prefix must follow selected language.
-5. Unknown backend `reason` values must not force the whole UI message to English in Thai mode. Use a localized safe fallback; technical code/reason can be shown separately if useful.
-6. Fix obvious Thai wording/typos in the same UI file only if encountered; do not redesign the page again.
-7. Language switching must not reload the page and must not disturb auth/session state.
-
-### Security invariants — MUST remain unchanged
-
-- no `Password_Hash` in browser UI/source/API client rendering
+Security invariants unchanged:
+- no Password_Hash in browser
 - no raw session token in client JSON/localStorage/sessionStorage
-- no browser import of `node:crypto`
+- no browser `node:crypto`
 - auth decisions remain server-side
-- no Kintone read/write/deploy
-
----
 
 ## MINIMUM VERIFICATION
-
-Run only:
 
 ```bash
 npm run ui:preview
@@ -86,18 +74,13 @@ git diff --check
 git status --short
 ```
 
-If the preview server is already running and serves the edited file dynamically, do not kill/restart it unnecessarily. Otherwise start it and leave it running for user UAT.
-
-Manual source-level checks:
-- TH button changes static labels and runtime feedback to Thai
-- EN button changes static labels and runtime feedback to English
-- Login / Force Change / Session / Access Check / UAT Guide tabs still work by state
-- existing `/` Status Preview Lab still remains available
+Leave preview running for user UAT if started.
 
 Report:
 - exact commit SHA
-- files changed
-- runtime strings centralized YES/NO
+- exact file changed
+- localized logout failure visible YES/NO
+- Thai fallback typo fixed YES/NO
 - preview URL
 - `BROWSER_VERIFIED = YES/NO`
 - `KINTONE_READS_EXECUTED = 0`
@@ -111,7 +94,7 @@ Report:
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B BILINGUAL UI CORRECTIVE THIS TASK
+- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B FINAL BILINGUAL LOGOUT FEEDBACK FIX
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
