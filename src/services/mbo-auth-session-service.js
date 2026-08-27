@@ -11,11 +11,13 @@
 import crypto from 'node:crypto';
 import { MboPasswordDomainService } from './mbo-password-service.js';
 import { MboIdentityService } from './mbo-identity-service.js';
+import { MboActivationService } from './mbo-activation-service.js';
 
 export class MboAuthSessionService {
   constructor(options = {}) {
     this.credentialStore = options.credentialStore || null;
     this.sessionStore = options.sessionStore || null;
+    this.activationStore = options.activationStore || options.credentialStore || null;
     this.userMappings = options.userMappings || [];
     this.passwordMaxAgeDays = options.passwordMaxAgeDays || 90;
     this.sessionDurationHours = options.sessionDurationHours || 8;
@@ -39,7 +41,7 @@ export class MboAuthSessionService {
   /**
    * Authenticates a user server-side and issues a session token.
    */
-  async login({ kintoneUserCode, mboUsername, password, now = new Date() }) {
+  async login({ kintoneUserCode, mboUsername, password, activationCode, now = new Date() }) {
     // B1: Fail closed if credentialStore write capability is missing
     if (
       !this.credentialStore ||
@@ -144,6 +146,40 @@ export class MboAuthSessionService {
 
     // 7. Handle Force Password Change State (First/Default Login)
     if (evalResult.status === 'AUTHENTICATED_BUT_PASSWORD_CHANGE_REQUIRED' || evalResult.status === 'PASSWORD_EXPIRED') {
+      // First-login bootstrap activation check:
+      // If credentialRecord requires force password change (Must_Change_Password === true) AND activation code hash is provisioned:
+      if (credentialRecord.Must_Change_Password === true) {
+        const actStore = this.activationStore || this.credentialStore;
+        if (actStore && typeof actStore.getActivation === 'function') {
+          const activationRecord = await actStore.getActivation(boundEmployeeCode);
+          if (activationRecord && (activationRecord.activationCodeHash || activationRecord.Activation_Code_Hash)) {
+            if (!activationCode || typeof activationCode !== 'string' || activationCode.trim() === '') {
+              return {
+                status: 'ACTIVATION_CODE_REQUIRED',
+                reason: 'One-time HR Activation Code is required for first-login activation.'
+              };
+            }
+
+            const actResult = MboActivationService.verifyActivation({
+              activationRecord,
+              inputCode: activationCode,
+              now
+            });
+
+            if (actResult.status !== 'ACTIVATION_VALIDATED') {
+              return {
+                status: actResult.status,
+                reason: actResult.reason
+              };
+            }
+
+            if (typeof actStore.consumeActivation === 'function') {
+              await actStore.consumeActivation(boundEmployeeCode, now.toISOString());
+            }
+          }
+        }
+      }
+
       const rawToken = MboAuthSessionService.generateSessionToken();
       const tokenHash = MboAuthSessionService.hashToken(rawToken);
 

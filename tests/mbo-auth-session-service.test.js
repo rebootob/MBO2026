@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { MboAuthSessionService } from '../src/services/mbo-auth-session-service.js';
 import { MboPasswordDomainService } from '../src/services/mbo-password-service.js';
 import { MboIdentityService } from '../src/services/mbo-identity-service.js';
+import { MboActivationService } from '../src/services/mbo-activation-service.js';
 
 // Simple in-memory fake stores for testing
 class FakeCredentialStore {
@@ -20,6 +21,21 @@ class FakeCredentialStore {
     const updated = { ...existing, ...patch };
     this.credentials.set(empCode, updated);
     return updated;
+  }
+
+  async getActivation(empCode) {
+    const cred = await this.getCredential(empCode);
+    if (!cred) return null;
+    return {
+      employeeCode: cred.Employee_Code,
+      activationCodeHash: cred.Activation_Code_Hash || null,
+      activationExpiresAt: cred.Activation_Expires_At || null,
+      activationUsedAt: cred.Activation_Used_At || null
+    };
+  }
+
+  async consumeActivation(empCode, usedAt = new Date().toISOString()) {
+    return await this.updateCredential(empCode, { Activation_Used_At: usedAt });
   }
 }
 
@@ -509,5 +525,115 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const res = await service.login({ kintoneUserCode: 'admin-form', mboUsername: 'ADMIN', password: '0118' });
 
     assert.equal(res.status, 'TECHNICAL_ADMIN_CANNOT_BECOME_EMPLOYEE_SELF');
+  });
+
+  await t.test('13. bootstrap password with no activation -> denied/no session', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0118' });
+    const credWithAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    const credStore = new FakeCredentialStore({ '0118': credWithAct });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    assert.equal(loginRes.status, 'ACTIVATION_CODE_REQUIRED');
+  });
+
+  await t.test('14. bootstrap password + wrong activation -> denied/no session', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0118' });
+    const credWithAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    const credStore = new FakeCredentialStore({ '0118': credWithAct });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: 'WRONG123'
+    });
+    assert.equal(loginRes.status, 'INVALID_ACTIVATION_CODE');
+  });
+
+  await t.test('15. bootstrap password + valid activation -> restricted PASSWORD_CHANGE_REQUIRED session & consumed once', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0118' });
+    const credWithAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    const credStore = new FakeCredentialStore({ '0118': credWithAct });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: actIssuance.activationCode
+    });
+
+    assert.equal(loginRes.status, 'PASSWORD_CHANGE_REQUIRED');
+    assert.ok(loginRes.sessionToken);
+
+    // Verify activation is consumed
+    const updatedRecord = await credStore.getCredential('0118');
+    assert.ok(updatedRecord.Activation_Used_At);
+
+    // Replay of same activation code fails
+    const replayRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: actIssuance.activationCode
+    });
+
+    assert.equal(replayRes.status, 'ACTIVATION_ALREADY_USED');
+  });
+
+  await t.test('16. after forced password change, normal login with new password does not require activation', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0118' });
+    const credWithAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    const credStore = new FakeCredentialStore({ '0118': credWithAct });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: actIssuance.activationCode
+    });
+
+    const changeRes = await service.changePassword({
+      sessionToken: loginRes.sessionToken,
+      newPassword: 'MyNewSecurePassword123!'
+    });
+
+    assert.equal(changeRes.status, 'PASSWORD_CHANGED_SUCCESS');
+
+    // Normal login with new password requires NO activation code
+    const normalLoginRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: 'MyNewSecurePassword123!'
+    });
+
+    assert.equal(normalLoginRes.status, 'AUTHENTICATED_SUCCESS');
   });
 });

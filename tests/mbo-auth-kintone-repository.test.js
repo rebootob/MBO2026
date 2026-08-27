@@ -279,4 +279,109 @@ describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adap
     await assert.rejects(async () => await repo.getCredential('0118'), /CREDENTIAL_MISMATCH/);
   });
 
+  it('14. sessionStore set/get stores token hash only and reconstructs exact session state', async () => {
+    let storedRecord = { ...sampleRecord };
+    let putPayload = null;
+
+    const mockTransport = {
+      async get(path) {
+        if (path.includes('Session_Token_Hash')) {
+          return { records: [storedRecord] };
+        }
+        return { records: [storedRecord] };
+      },
+      async put(path, body) {
+        putPayload = body;
+        if (body.record.Session_Token_Hash) {
+          storedRecord = {
+            ...storedRecord,
+            Session_Token_Hash: body.record.Session_Token_Hash,
+            Session_Expires_At: body.record.Session_Expires_At,
+            Session_Requires_Password_Change: body.record.Session_Requires_Password_Change,
+            Session_Data_Authorized: body.record.Session_Data_Authorized,
+            Session_Kintone_User_Code: body.record.Session_Kintone_User_Code
+          };
+        }
+        return { revision: '10' };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+
+    const sampleTokenHash = 'a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890';
+    const expiresAt = new Date(Date.now() + 8 * 3600 * 1000).toISOString();
+
+    await repo.setSession(sampleTokenHash, {
+      employeeCode: '0118',
+      kintoneUserCode: 'emp0118',
+      expiresAt,
+      requiresPasswordChange: false,
+      isDataAuthorized: true
+    });
+
+    assert.equal(putPayload.record.Session_Token_Hash.value, sampleTokenHash);
+    assert.equal(putPayload.record.Session_Requires_Password_Change.value, 'NO');
+    assert.equal(putPayload.record.Session_Data_Authorized.value, 'YES');
+    assert.equal(putPayload.record.Session_Kintone_User_Code.value, 'emp0118');
+
+    const retrievedSession = await repo.getSession(sampleTokenHash);
+    assert.ok(retrievedSession);
+    assert.equal(retrievedSession.tokenHash, sampleTokenHash);
+    assert.equal(retrievedSession.employeeCode, '0118');
+    assert.equal(retrievedSession.kintoneUserCode, 'emp0118');
+    assert.equal(retrievedSession.requiresPasswordChange, false);
+    assert.equal(retrievedSession.isDataAuthorized, true);
+  });
+
+  it('15. deleteSession clears session fields and invalidates token hash', async () => {
+    let storedRecord = {
+      ...sampleRecord,
+      Session_Token_Hash: { value: 'hash123' },
+      Session_Expires_At: { value: new Date(Date.now() + 3600000).toISOString() },
+      Session_Requires_Password_Change: { value: 'NO' },
+      Session_Data_Authorized: { value: 'YES' },
+      Session_Kintone_User_Code: { value: 'emp0118' }
+    };
+    let deletePutCalled = false;
+
+    const mockTransport = {
+      async get() {
+        return { records: [storedRecord] };
+      },
+      async put(path, body) {
+        deletePutCalled = true;
+        assert.equal(body.record.Session_Token_Hash.value, null);
+        assert.equal(body.record.Session_Expires_At.value, null);
+        storedRecord = { ...storedRecord, Session_Token_Hash: { value: null } };
+        return { revision: '11' };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    const deleteRes = await repo.deleteSession('hash123');
+
+    assert.equal(deleteRes, true);
+    assert.equal(deletePutCalled, true);
+  });
+
+  it('16. duplicate session records throws DUPLICATE_SESSION_RECORD', async () => {
+    const sessionRec = {
+      ...sampleRecord,
+      Session_Token_Hash: { value: 'dupHash' },
+      Session_Expires_At: { value: new Date(Date.now() + 3600000).toISOString() }
+    };
+
+    const mockTransport = {
+      async get() {
+        return { records: [sessionRec, sessionRec] };
+      }
+    };
+
+    const repo = new MboKintoneAuthRepository({ transport: mockTransport, appId: 801 });
+    await assert.rejects(
+      async () => await repo.getSession('dupHash'),
+      /DUPLICATE_SESSION_RECORD/
+    );
+  });
+
 });
