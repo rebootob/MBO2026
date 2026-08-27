@@ -11,7 +11,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
       loginUserCode: 'admin-form',
       requesterUserCodes: ['EMP01'],
       routingKey: 'TMS1',
-      routingResult: null, // missing authoritative routingResult
+      routingResult: null,
       profileCode: 'PROF_STAFF_CHIEF',
       evalProfile: { nameEN: 'Staff' },
       activeObjCount: 4,
@@ -46,21 +46,93 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(routeItem.status, 'PASS');
   });
 
+  await t.test('Requirement 3.1: Bad authoritativeProfile object cannot authorize FIX_THIS_RECORD', () => {
+    const candidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Staff', // expects PROF_STAFF_CHIEF
+      actualProfileCode: 'PROF_ASST_MGR', // profile error
+      actualPartAWeight: 60,
+      actualPartBWeight: 40,
+      authoritativeProfile: { code: 'PROF_WRONG_CODE' } // bad authoritativeProfile code
+    });
+
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Bad authoritativeProfile code MUST forbid FIX_THIS_RECORD');
+    assert.equal(candidate.profileMasterEvidenced, false);
+    assert.equal(candidate.profileRecordRepairSafe, false);
+  });
+
+  await t.test('Requirement 3.2: Wrong profile weights cannot authorize repair', () => {
+    const candidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Assistant Manager', // expects PROF_ASST_MGR 60/40
+      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualPartAWeight: 70,
+      actualPartBWeight: 30,
+      authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 70, partBWeight: 30 } // wrong weights (70/30 instead of 60/40)
+    });
+
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Conflicting weights MUST forbid FIX_THIS_RECORD');
+    assert.equal(candidate.profileMasterEvidenced, false);
+    assert.equal(candidate.profileRecordRepairSafe, false);
+  });
+
+  await t.test('Requirement 3.3: DGM correct key/topology/count but wrong Appraiser1 => ERROR', () => {
+    const res = AdminDiagnosticModel.evaluateRouteMatch({
+      position: 'DGM',
+      actualRoutingKey: 'POSITION_DGM',
+      actualTopology: 'M1_ONLY',
+      actualAppraiserCount: 1,
+      actualAppraiser1: 'wrong_user',
+      authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1, appraiser1: 'president_user' }
+    });
+
+    assert.equal(res.status, 'ERROR');
+    assert.equal(res.routeMatch, 'ERROR');
+    assert.ok(res.reason.includes('1ST_APPRAISER_MISMATCH'));
+  });
+
+  await t.test('Requirement 3.4: GM missing authoritative appraiser1 => NOT_EVIDENCED', () => {
+    const res = AdminDiagnosticModel.evaluateRouteMatch({
+      position: 'GM',
+      actualRoutingKey: 'POSITION_GM',
+      actualTopology: 'M1_ONLY',
+      actualAppraiserCount: 1,
+      actualAppraiser1: 'gm_user',
+      authoritativeRoute: null // missing authoritative route/appraiser1
+    });
+
+    assert.equal(res.status, 'NOT_EVIDENCED');
+    assert.equal(res.routeMatch, 'NOT_EVIDENCED');
+  });
+
+  await t.test('Requirement 3.5: VP full authoritative route + matching Appraiser1 => PASS', () => {
+    const res = AdminDiagnosticModel.evaluateRouteMatch({
+      position: 'VP',
+      actualRoutingKey: 'POSITION_VP',
+      actualTopology: 'M1_ONLY',
+      actualAppraiserCount: 1,
+      actualAppraiser1: 'vp_boss',
+      authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1, appraiser1: 'vp_boss' }
+    });
+
+    assert.equal(res.status, 'PASS');
+    assert.equal(res.routeMatch, 'PASS');
+    assert.equal(res.expectedRoutingKey, 'POSITION_VP');
+  });
+
   await t.test('4. Profile mismatch + route evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
-      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualProfileCode: 'PROF_STAFF_CHIEF',
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
       actualRoutingKey: 'TMS1',
       actualTopology: 'M1_G1',
       actualAppraiserCount: 2,
-      authoritativeProfile: null, // missing profile evidence
-      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 } // route evidence supplied
+      authoritativeProfile: null,
+      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 }
     });
 
-    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Route evidence MUST NOT authorize repair for Profile mismatch');
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
     assert.equal(candidate.profileMasterEvidenced, false);
     assert.equal(candidate.routeMasterEvidenced, true);
   });
@@ -72,14 +144,14 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
-      actualRoutingKey: 'WRONG_KEY', // route error
+      actualRoutingKey: 'WRONG_KEY',
       actualTopology: 'M1_ONLY',
       actualAppraiserCount: 1,
-      authoritativeProfile: { code: 'PROF_STAFF_CHIEF' }, // profile evidence supplied
-      authoritativeRoute: null // missing route evidence
+      authoritativeProfile: { code: 'PROF_STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
+      authoritativeRoute: null
     });
 
-    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Profile evidence MUST NOT authorize repair for Route mismatch');
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
     assert.equal(candidate.profileMasterEvidenced, true);
     assert.equal(candidate.routeMasterEvidenced, false);
   });
@@ -87,7 +159,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
   await t.test('6. Profile-only mismatch + authoritativeProfile -> safe record candidate ONLY for profile fields', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
-      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualProfileCode: 'PROF_STAFF_CHIEF',
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
@@ -101,8 +173,8 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(candidate.rootCause, 'FIX_THIS_RECORD');
     assert.equal(candidate.profileRecordRepairSafe, true);
     assert.equal(candidate.routeRecordRepairSafe, false);
-    assert.deepEqual(candidate.fieldsAffected, ['Profile_Code', 'PartA_Weight', 'PartB_Weight'], 'Fields affected must include ONLY profile fields');
-    assert.equal(candidate.before.Routing_Key, undefined, 'Routing_Key must not leak into profile-only repair diff');
+    assert.deepEqual(candidate.fieldsAffected, ['Profile_Code', 'PartA_Weight', 'PartB_Weight']);
+    assert.equal(candidate.before.Routing_Key, undefined);
   });
 
   await t.test('7. Route-only mismatch + authoritativeRoute -> safe record candidate ONLY for routing fields', () => {
@@ -112,44 +184,42 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
-      actualRoutingKey: 'WRONG_KEY', // route error
+      actualRoutingKey: 'WRONG_KEY',
       actualTopology: 'M1_ONLY',
       actualAppraiserCount: 1,
       actualAppraiser1: 'wrong_user',
-      authoritativeProfile: { code: 'PROF_STAFF_CHIEF' },
+      authoritativeProfile: { code: 'PROF_STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
       authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm01', appraiser2: 'g01' }
     });
 
     assert.equal(candidate.rootCause, 'FIX_THIS_RECORD');
     assert.equal(candidate.profileRecordRepairSafe, false);
     assert.equal(candidate.routeRecordRepairSafe, true);
-    assert.deepEqual(candidate.fieldsAffected, ['Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count'], 'Fields affected must include ONLY routing fields');
-    assert.equal(candidate.before.Profile_Code, undefined, 'Profile_Code must not leak into route-only repair diff');
+    assert.deepEqual(candidate.fieldsAffected, ['Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count']);
+    assert.equal(candidate.before.Profile_Code, undefined);
   });
 
   await t.test('8. Profile+Route mismatch requires BOTH master evidences for FIX_THIS_RECORD', () => {
-    // Case A: Both master evidences supplied
     const fullCandidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
-      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualProfileCode: 'PROF_STAFF_CHIEF',
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
-      actualRoutingKey: 'WRONG_KEY', // route error
-      authoritativeProfile: { code: 'PROF_ASST_MGR' },
+      actualRoutingKey: 'WRONG_KEY',
+      authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40 },
       authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 }
     });
     assert.equal(fullCandidate.rootCause, 'FIX_THIS_RECORD');
 
-    // Case B: Only profile master evidence supplied
     const partialCandidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
-      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualProfileCode: 'PROF_STAFF_CHIEF',
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
-      actualRoutingKey: 'WRONG_KEY', // route error
-      authoritativeProfile: { code: 'PROF_ASST_MGR' },
+      actualRoutingKey: 'WRONG_KEY',
+      authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40 },
       authoritativeRoute: null
     });
     assert.equal(partialCandidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
@@ -157,9 +227,9 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
 
   await t.test('9, 10, 11. Record diagnostic defaults removed', () => {
     const diag = AdminDiagnosticModel.buildRecordDiagnostic(null, {});
-    assert.equal(diag.fiscalYear, 'NOT_EVIDENCED', 'Fiscal year must NOT default to 2026');
-    assert.equal(diag.loggedInUserCode, 'NOT_EVIDENCED', 'Logged in user must NOT default to admin-form');
-    assert.equal(diag.phaseCalendarStatus, 'NOT_EVIDENCED', 'Phase calendar status must NOT default to PASS');
+    assert.equal(diag.fiscalYear, 'NOT_EVIDENCED');
+    assert.equal(diag.loggedInUserCode, 'NOT_EVIDENCED');
+    assert.equal(diag.phaseCalendarStatus, 'NOT_EVIDENCED');
     assert.equal(diag.currentStatus, 'NOT_EVIDENCED');
 
     const snapshot = AdminDiagnosticModel.generateDiagnosticSnapshot({});
@@ -171,7 +241,6 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(AdminDiagnosticModel.evaluateWorkflowTrace({ currentStatus: '01 Draft Objective', topology: 'M1_G1' }).status, 'PASS');
     assert.equal(AdminDiagnosticModel.evaluateWorkflowTrace({ currentStatus: '02 First Manager Objective Review', topology: 'M1_G1' }).status, 'ERROR');
     assert.equal(AdminDiagnosticModel.evaluateProfileMatch({ position: 'Japanese Staff', actualProfileCode: 'PROF_JAPANESE_STAFF', actualPartAWeight: 70, actualPartBWeight: 30 }).status, 'PASS');
-    assert.equal(AdminDiagnosticModel.evaluateRouteMatch({ position: 'DGM', actualRoutingKey: 'POSITION_DGM', actualTopology: 'M1_ONLY', actualAppraiserCount: 1, authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1 } }).status, 'PASS');
   });
 
   await t.test('13 & 14. CONFIRM REPAIR remains disabled; gate intact', () => {

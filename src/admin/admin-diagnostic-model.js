@@ -7,9 +7,9 @@
  */
 
 export const BUILD_VERSION_INFO = {
-  version: '0.2.2',
-  commitSha: '7ee24c2a96fcec13271172443ca00f3e8dab8c5f',
-  buildTimestamp: '2026-08-27T12:24:00Z',
+  version: '0.2.3',
+  commitSha: 'b1716d907129f75df6c70bc63ee7a9db18ecda11',
+  buildTimestamp: '2026-08-27T12:33:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -473,7 +473,7 @@ export class AdminDiagnosticModel {
   /**
    * D. Evaluates Expected vs Actual Route Assignment.
    * MUST use exact Executive Routing Keys: POSITION_DGM, POSITION_GM, POSITION_VP.
-   * If authoritative App795 route evidence is absent: ROUTE_ASSIGNMENT_CHECK = NOT_EVIDENCED.
+   * Executive route validation MUST verify appraiser1 user code against authoritative App795 appraiser1.
    */
   static evaluateRouteMatch(context = {}) {
     const {
@@ -492,7 +492,7 @@ export class AdminDiagnosticModel {
 
     const normPos = (position || '').trim().toLowerCase();
 
-    // Executive direct single-appraiser route check takes precedence
+    // Executive direct single-appraiser route check
     const execKeyMap = {
       'dgm': 'POSITION_DGM',
       'deputy general manager': 'POSITION_DGM',
@@ -508,7 +508,9 @@ export class AdminDiagnosticModel {
       const isExecTopology = actualTopology === 'M1_ONLY';
       const isExecCount = Number(actualAppraiserCount) === 1;
 
-      if (!authoritativeRoute) {
+      const authAppraiser1 = authoritativeRoute?.appraiser1 || authoritativeRoute?.First_Manager_User;
+
+      if (!authoritativeRoute || !authAppraiser1) {
         return {
           status: 'NOT_EVIDENCED',
           routeMatch: 'NOT_EVIDENCED',
@@ -518,11 +520,30 @@ export class AdminDiagnosticModel {
           actualTopology: actualTopology || 'N/A',
           expectedAppraiserCount: 1,
           actualAppraiserCount: actualAppraiserCount || 'N/A',
-          reason: 'Executive routing key checked; authoritative App795 route result evidence required for full PASS'
+          reason: 'Executive routing key checked; authoritative App795 appraiser1 evidence required for full PASS'
         };
       }
 
-      const isExecMatch = keyMatch && isExecTopology && isExecCount;
+      const norm = AdminDiagnosticModel.normalizeUserCode;
+      const appraiser1Match = norm(actualAppraiser1) === norm(authAppraiser1);
+
+      if (!appraiser1Match) {
+        return {
+          status: 'ERROR',
+          routeMatch: 'ERROR',
+          expectedRoutingKey: expectedExecKey,
+          actualRoutingKey: actualRoutingKey || 'N/A',
+          expectedTopology: 'M1_ONLY',
+          actualTopology: actualTopology || 'N/A',
+          expectedAppraiserCount: 1,
+          actualAppraiserCount: actualAppraiserCount || 'N/A',
+          expectedAppraiser1: authAppraiser1,
+          actualAppraiser1: actualAppraiser1 || 'N/A',
+          reason: '1ST_APPRAISER_MISMATCH: Actual 1st Appraiser does not match authoritative App795 executive route'
+        };
+      }
+
+      const isExecMatch = keyMatch && isExecTopology && isExecCount && appraiser1Match;
       return {
         status: isExecMatch ? 'PASS' : 'ERROR',
         routeMatch: isExecMatch ? 'PASS' : 'ERROR',
@@ -532,6 +553,8 @@ export class AdminDiagnosticModel {
         actualTopology: actualTopology || 'N/A',
         expectedAppraiserCount: 1,
         actualAppraiserCount: actualAppraiserCount || 'N/A',
+        expectedAppraiser1: authAppraiser1,
+        actualAppraiser1: actualAppraiser1 || 'N/A',
         reason: isExecMatch ? `Executive direct single-appraiser route matches ${expectedExecKey}` : `Executive route mismatch: expected ${expectedExecKey} / M1_ONLY / Count=1`
       };
     }
@@ -607,10 +630,8 @@ export class AdminDiagnosticModel {
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * MUST FIX 2: Domain-specific master evidence checking.
-   * Profile mismatch requires authoritativeProfile.
-   * Route mismatch requires authoritativeRoute.
-   * Cross-domain evidence leaks are forbidden.
+   * Validates authoritativeProfile CONTENT against expected employee classification.
+   * Bad authoritative profile content forbids FIX_THIS_RECORD.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
@@ -630,8 +651,21 @@ export class AdminDiagnosticModel {
     const isProfileOk = profileEval.status === 'PASS';
     const isRouteOk = routeEval.status === 'PASS';
 
-    const isProfileMasterProven = Boolean(context.authoritativeProfile);
-    const isRouteMasterProven = Boolean(context.authoritativeRoute);
+    // FIX 1: Validate authoritativeProfile CONTENT (Profile_Code, PartA_Weight, PartB_Weight)
+    let isProfileMasterProven = false;
+    if (context.authoritativeProfile) {
+      const authCode = context.authoritativeProfile.code || context.authoritativeProfile.Profile_Code;
+      const authA = context.authoritativeProfile.partAWeight ?? context.authoritativeProfile.PartA_Weight;
+      const authB = context.authoritativeProfile.partBWeight ?? context.authoritativeProfile.PartB_Weight;
+
+      const codeMatch = profileEval.expectedProfileCode !== 'NOT_EVIDENCED' && authCode === profileEval.expectedProfileCode;
+      const aMatch = authA === undefined || (profileEval.expectedPartAWeight !== null && Number(authA) === profileEval.expectedPartAWeight);
+      const bMatch = authB === undefined || (profileEval.expectedPartBWeight !== null && Number(authB) === profileEval.expectedPartBWeight);
+
+      isProfileMasterProven = Boolean(codeMatch && aMatch && bMatch);
+    }
+
+    const isRouteMasterProven = Boolean(context.authoritativeRoute && (context.authoritativeRoute.topology || context.authoritativeRoute.appraiserCount || context.authoritativeRoute.appraiser1));
 
     const profileMasterEvidenced = isProfileMasterProven;
     const routeMasterEvidenced = isRouteMasterProven;
@@ -719,7 +753,7 @@ export class AdminDiagnosticModel {
         rootCause = 'BLOCKED_NOT_ENOUGH_EVIDENCE';
         problemType = 'INSUFFICIENT_AUTHORITATIVE_EVIDENCE';
         authoritativeSource = 'Unknown / Unlinked Scoring Master Source';
-        recommendedAction = 'Profile mismatch detected. Authoritative App 796 profile evidence is required before preparing record repair.';
+        recommendedAction = 'Profile mismatch detected. Authoritative App 796 profile evidence matching expected employee classification is required before preparing record repair.';
         targetApp = 'N/A';
         risk = 'BLOCKED';
         impactScope = 'UNKNOWN';
@@ -808,7 +842,7 @@ export class AdminDiagnosticModel {
 
   /**
    * Builds detailed read-only Record Diagnostic object.
-   * MUST FIX 3: Remove fabricated defaults ('2026', 'admin-form', 'PASS').
+   * REMOVED FABRICATED DEFAULTS ('2026', 'admin-form', 'PASS').
    */
   static buildRecordDiagnostic(record, options = {}) {
     const getVal = (code) => {
