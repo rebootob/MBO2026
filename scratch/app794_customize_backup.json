@@ -1,0 +1,32 @@
+{
+  "scope": "ALL",
+  "desktop": {
+    "js": [
+      {
+        "type": "FILE",
+        "file": {
+          "fileKey": "20260826134317C576EC8CB1CC4F66B0605CB67ED96AC5202",
+          "name": "mbo-employee-app.js",
+          "contentType": "text/javascript",
+          "size": "163493"
+        }
+      }
+    ],
+    "css": [
+      {
+        "type": "FILE",
+        "file": {
+          "fileKey": "20260826134317E5A1BF4046CD4890A23D2B31E3DECFF6118",
+          "name": "mbo-employee.css",
+          "contentType": "text/css",
+          "size": "16256"
+        }
+      }
+    ]
+  },
+  "mobile": {
+    "js": [],
+    "css": []
+  },
+  "revision": "40"
+}
