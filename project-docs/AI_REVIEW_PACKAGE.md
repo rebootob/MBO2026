@@ -3,12 +3,57 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **Gate 6 UI Parity Status:** **`GATE 6 UI PARITY LOCAL CLOSURE COMPLETE`**
-> **Last Updated:** 2026-08-27T08:18:00+07:00
+> **Gate 6 UI Parity Status:** **`MAINTAINABILITY R1 DOCUMENTATION CLOSURE COMPLETE`**
+> **Last Updated:** 2026-08-27T10:38:00+07:00
 
 ---
 
-## 0. M10M-R2D-R1 App796 Supersession Final Local Correction (Read-Only Evidence)
+## 0. MAINTAINABILITY R1 CIRCULAR-DEPENDENCY MICRO-FIX & DOCUMENTATION CLOSURE
+
+```text
+IMPLEMENTATION_HEAD = 36e2b78046e1d041177290f243210a1fdb08afd0
+R1_SOURCE_IMPLEMENTATION = PASS
+R1_ARCHITECTURE = PASS
+R1_BEHAVIOR_PRESERVATION = PASS
+CIRCULAR_DEPENDENCY_COUNT = 0
+APPRAISER_NORMALIZER_IMPORTS_UI = 0
+PURE_NORMALIZER_ISOLATION = PASS
+PREVIEW_DEFAULT_BEHAVIOR_CHANGED_BY_R1 = NO
+PREVIEW_UAT_OPTIONS_PRESERVED = PASS
+VIEWER_ROLE_DECISION_SOURCE_COUNT = 1
+STATUS_BASED_VIEWER_ROLE_INFERENCE = 0
+EMPLOYEE_CODE_VIEWER_AUTHORITY_PATHS = 0
+AMBIGUOUS_ROLE_FAIL_CLOSED = PASS
+APPRAISER_NORMALIZATION_SOURCE_COUNT = 1
+INVALID_OBJECTIVE_COUNT_FAIL_CLOSED = PASS
+PHANTOM_OBJECTIVE_ROWS = 0
+EMPLOYEE_STEP4_VISUAL_PRIVACY = PASS
+EMPLOYEE_STEP5_VISUAL_PRIVACY = PASS
+VISUAL_UAT_PRIVACY_GATE = PASS
+FULL_NPM_TEST = PASS 641/641   # local Antigravity evidence only
+BUILD = PASS                  # local Antigravity evidence only
+DIST_SOURCE_PARITY = PASS
+SOURCE_MAINTAINABILITY_R1 = PASS
+FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
+KINTONE_CALLS/WRITES/DEPLOYS = 0 / 0 / 0
+```
+
+### Final Local Regression Checklist (Prepared for Next Round)
+
+1. **Five Macro Stages**: Verify Objectives, Mid-Year, Self Evaluation, Appraiser Evaluation, and HR Final render correctly and bilingual labels remain intact.
+2. **Employee Reached History**: Verify Steps 1–3 are read-only and Steps 4–5 confidential details remain hidden behind privacy-safe cards.
+3. **Appraiser Step 4**: Verify permitted Appraiser detail remains visible for authorized Appraiser identity.
+4. **HR Preview Step 5**: Verify permitted HR summary breakdown remains visible for explicit HR Preview simulation.
+5. **Appraiser Route Slots**: Verify 1 / 2 / 3 / 4 appraiser count scenarios render without body horizontal overflow.
+6. **Profile Ratios**: Verify 70/30, 60/40, and 50/50 ratios function independently of routing topology.
+7. **Objective_Count Guard**: Verify Objective_Count = 1 and 10 controls pass, while invalid Objective_Count remains fail-closed.
+8. **Difficulty Blank State**: Verify blank difficulty remains blank.
+9. **Attachments**: Verify Objective / Mid-Year / Self attachment UI controls remain intact.
+10. **Deadline Urgency**: Verify upcoming / open / due / overdue / completed visual deadline states render correctly.
+11. **Route Context Presentation**: Verify evaluation route context remains visible and privacy-safe for Employee.
+12. **Workflow Timeline Filtering**: Verify Step 4/5 confidential events are hidden from Employee/RESTRICTED and preserved for authorized Preview roles.
+13. **Native Comments**: Verify native comment fields render properly.
+14. **No Layout Overflow**: Verify no body-level horizontal scrolling in dense Appraiser matrix views.
 
 ```text
 M10M_R2D_R1 = READY_FOR_CHATGPT_REVIEW
