@@ -14,6 +14,7 @@ This folder contains business, technical, security, UI/UX, routing, data, and go
 8. Historical evidence may support a decision, but does not become a current baseline until independently reviewed/accepted or explicitly confirmed by the user.
 9. NO_ORPHAN_ARTIFACT_GATE applies to this folder.
 10. Baseline promotion is a Control Plane responsibility. Do not spend Antigravity credit on baseline maintenance unless ChatGPT explicitly assigns a narrow baseline-only task.
+11. AI must follow `DOCUMENT_CONTROL.md`: historical/superseded documents remain available for audit but are not reread by default.
 
 ## What Must Be Promoted
 
@@ -33,7 +34,8 @@ Temporary status, blockers, one-time commands, pending-review claims, transient 
 
 ## Canonical Files
 
-- `AI_OPERATING_GOVERNANCE.md` — confirmed Multi-AI role model, Antigravity low-credit policy, Control Center/Active Task model, mandatory baseline-promotion rule, and review/new-chat governance.
+- `AI_OPERATING_GOVERNANCE.md` — confirmed Multi-AI role model, Antigravity low-credit policy, Control Center/Active Task model, mandatory baseline-promotion rule, reusable Kintone skill-extraction rule, and review/new-chat governance.
+- `DOCUMENT_CONTROL.md` — confirmed lean document policy: Core Read Set, task-triggered documents, and default-ignore historical/superseded files.
 - `D1_AUTH_SECURITY.md` — confirmed Kintone-only D1 authentication/security architecture, App801 credential model, page-memory auth, lockout/password rules, Employee Self gate, dedicated `MBO_EMPLOYEE_ACCESS` group model, App801 ACL target, and D1 UAT closure rule.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights, and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
@@ -45,11 +47,12 @@ Temporary status, blockers, one-time commands, pending-review claims, transient 
 
 For every future `review`, reviewer must:
 
-1. Read `AI_CONTROL_CENTER.md` and the relevant files in this folder.
+1. Read `AI_CONTROL_CENTER.md` and only the relevant files in this folder.
 2. Compare implementation/evidence against confirmed facts.
 3. Independently accept/reject new evidence.
 4. **Promote every newly accepted important durable fact into this folder before closing the control cycle.**
-5. Treat conflicts as MUST FIX/BLOCKER according to impact.
-6. Update Control Center / Active Task to match the promoted baseline.
+5. Extract reusable Kintone knowledge into `skills/kintone/` when the knowledge is generalizable beyond MBO2026.
+6. Treat conflicts as MUST FIX/BLOCKER according to impact.
+7. Update Control Center / Active Task to match the promoted baseline.
 
 This folder is intentionally concise. Detailed execution logs remain outside it; confirmed durable truth belongs here.
