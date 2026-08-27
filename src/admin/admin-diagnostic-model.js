@@ -7,9 +7,9 @@
  */
 
 export const BUILD_VERSION_INFO = {
-  version: '0.2.3',
-  commitSha: 'b1716d907129f75df6c70bc63ee7a9db18ecda11',
-  buildTimestamp: '2026-08-27T12:33:00Z',
+  version: '0.2.4',
+  commitSha: '9070bd7276cb53d19e07b113274f44bd431018e9',
+  buildTimestamp: '2026-08-27T12:43:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -44,8 +44,8 @@ export const CANONICAL_STATUSES = [
 
 export class AdminDiagnosticModel {
   /**
-   * P0 Security Gate: Strictly authorizes `admin-form` only (case/whitespace-insensitive).
-   * Explicitly DENIES `administrator`, `hr`, `EMP...`, status 15, or Employee_Code=admin-form under a different login.
+   * P0 Security Gate: Strictly authorizes `admin-form` only for technical diagnostics.
+   * `admin-form` has 0 Business Workflow Authority and CANNOT perform requester/approval business actions.
    */
   static isTechnicalAdmin(loginUserCode) {
     if (!loginUserCode || typeof loginUserCode !== 'string') return false;
@@ -205,21 +205,38 @@ export class AdminDiagnosticModel {
     });
 
     // 9. Workflow Status & Current Actor
+    let wfStatus = 'NOT_EVIDENCED';
+    let wfReason = 'Current workflow status evidence missing';
+    if (currentStatus) {
+      if (CANONICAL_STATUSES.includes(currentStatus)) {
+        wfStatus = 'PASS';
+        wfReason = `Status: "${currentStatus}", Actor: "${currentActor || 'N/A'}"`;
+      } else {
+        wfStatus = 'ERROR';
+        wfReason = `Current status "${currentStatus}" is non-canonical or unmapped`;
+      }
+    }
     items.push({
       key: 'workflow_status',
       labelTH: 'สถานะกระบวนการ (Workflow Status & Actor)',
       labelEN: 'Workflow Status & Current Actor',
-      status: currentStatus ? (CANONICAL_STATUSES.includes(currentStatus) ? 'PASS' : 'ERROR') : 'ERROR',
-      reason: currentStatus ? `Status: "${currentStatus}", Actor: "${currentActor || 'N/A'}"` : 'Current status missing'
+      status: wfStatus,
+      reason: wfReason
     });
 
     // 10. Viewer / Privacy Resolution
+    let viewerStatus = 'NOT_EVIDENCED';
+    let viewerReason = 'Viewer role evidence missing';
+    if (resolvedViewerRole) {
+      viewerStatus = 'PASS';
+      viewerReason = `Viewer Role: ${resolvedViewerRole}`;
+    }
     items.push({
       key: 'viewer_privacy',
       labelTH: 'สิทธิ์การมองเห็น (Viewer Privacy Resolution)',
       labelEN: 'Viewer Privacy Resolution',
-      status: resolvedViewerRole ? 'PASS' : 'ERROR',
-      reason: resolvedViewerRole ? `Viewer Role: ${resolvedViewerRole}` : 'Failed to resolve viewer role'
+      status: viewerStatus,
+      reason: viewerReason
     });
 
     // 11. App800 Config State
@@ -268,9 +285,9 @@ export class AdminDiagnosticModel {
     });
 
     const hasError = items.some(i => i.status === 'ERROR');
-    const hasWarning = items.some(i => i.status === 'WARNING');
     const hasUncertain = items.some(i => i.status === 'NOT_EVIDENCED' || i.status === 'NOT_AVAILABLE');
-    const overallHealth = hasError ? 'ERROR' : (hasWarning ? 'WARNING' : (hasUncertain ? 'INCOMPLETE_EVIDENCE' : 'PASS'));
+    const hasWarning = items.some(i => i.status === 'WARNING');
+    const overallHealth = hasError ? 'ERROR' : (hasUncertain ? 'INCOMPLETE_EVIDENCE' : (hasWarning ? 'WARNING' : 'PASS'));
 
     return {
       overallHealth,
@@ -372,7 +389,7 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // Required Appraiser presence for active slot (only check if appraiser field context is supplied)
+    // Required Appraiser presence for active slot
     const appraiserSlots = { 1: appraiser1, 2: appraiser2, 3: appraiser3, 4: appraiser4 };
     const isAppraiserContextSupplied = Boolean(appraiser1 || appraiser2 || appraiser3 || appraiser4);
     if (expectedSlot && isAppraiserContextSupplied && !appraiserSlots[expectedSlot]) {
@@ -473,7 +490,7 @@ export class AdminDiagnosticModel {
   /**
    * D. Evaluates Expected vs Actual Route Assignment.
    * MUST use exact Executive Routing Keys: POSITION_DGM, POSITION_GM, POSITION_VP.
-   * Executive route validation MUST verify appraiser1 user code against authoritative App795 appraiser1.
+   * Route validation checks exact Appraiser 1..4 assignments against App795 master data.
    */
   static evaluateRouteMatch(context = {}) {
     const {
@@ -609,7 +626,8 @@ export class AdminDiagnosticModel {
     const a3Match = !authoritativeRoute.appraiser3 || norm(actualAppraiser3) === norm(authoritativeRoute.appraiser3);
     const a4Match = !authoritativeRoute.appraiser4 || norm(actualAppraiser4) === norm(authoritativeRoute.appraiser4);
 
-    const isFullMatch = keyMatch && topMatch && countMatch && a1Match && a2Match && a3Match && a4Match;
+    const isAppraiserMatch = a1Match && a2Match && a3Match && a4Match;
+    const isFullMatch = keyMatch && topMatch && countMatch && isAppraiserMatch;
 
     return {
       status: isFullMatch ? 'PASS' : 'ERROR',
@@ -624,14 +642,20 @@ export class AdminDiagnosticModel {
       actualAppraiser1: actualAppraiser1 || 'N/A',
       expectedAppraiser2: authoritativeRoute.appraiser2 || 'N/A',
       actualAppraiser2: actualAppraiser2 || 'N/A',
-      reason: isFullMatch ? 'Route assignment matches authoritative App795 master' : 'Route assignment mismatch with App795 master'
+      expectedAppraiser3: authoritativeRoute.appraiser3 || 'N/A',
+      actualAppraiser3: actualAppraiser3 || 'N/A',
+      expectedAppraiser4: authoritativeRoute.appraiser4 || 'N/A',
+      actualAppraiser4: actualAppraiser4 || 'N/A',
+      reason: isFullMatch
+        ? 'Route assignment matches authoritative App795 master'
+        : (!isAppraiserMatch ? 'APPRAISER_ASSIGNMENT_MISMATCH: Actual appraisers differ from authoritative App795 master' : 'Route assignment mismatch with App795 master')
     };
   }
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * Validates authoritativeProfile CONTENT against expected employee classification.
-   * Bad authoritative profile content forbids FIX_THIS_RECORD.
+   * Validates authoritativeProfile and authoritativeRoute CONTENT.
+   * Includes changed appraiser assignments in repair diff when route repair is safe.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
@@ -651,7 +675,7 @@ export class AdminDiagnosticModel {
     const isProfileOk = profileEval.status === 'PASS';
     const isRouteOk = routeEval.status === 'PASS';
 
-    // FIX 1: Validate authoritativeProfile CONTENT (Profile_Code, PartA_Weight, PartB_Weight)
+    // Validate authoritativeProfile CONTENT (Profile_Code, PartA_Weight, PartB_Weight)
     let isProfileMasterProven = false;
     if (context.authoritativeProfile) {
       const authCode = context.authoritativeProfile.code || context.authoritativeProfile.Profile_Code;
@@ -812,6 +836,19 @@ export class AdminDiagnosticModel {
       afterDiff.Appraiser_Count = routeEval.expectedAppraiserCount !== 'NOT_EVIDENCED' ? routeEval.expectedAppraiserCount : beforeDiff.Appraiser_Count;
 
       fieldsAffected.push('Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count');
+
+      if (context.authoritativeRoute) {
+        if (context.authoritativeRoute.appraiser1 !== undefined) {
+          beforeDiff.Appraiser1 = context.actualAppraiser1 || 'NOT_EVIDENCED';
+          afterDiff.Appraiser1 = context.authoritativeRoute.appraiser1;
+          fieldsAffected.push('Appraiser1');
+        }
+        if (context.authoritativeRoute.appraiser2 !== undefined) {
+          beforeDiff.Appraiser2 = context.actualAppraiser2 || 'NOT_EVIDENCED';
+          afterDiff.Appraiser2 = context.authoritativeRoute.appraiser2;
+          fieldsAffected.push('Appraiser2');
+        }
+      }
     }
 
     return {
@@ -843,6 +880,7 @@ export class AdminDiagnosticModel {
   /**
    * Builds detailed read-only Record Diagnostic object.
    * REMOVED FABRICATED DEFAULTS ('2026', 'admin-form', 'PASS').
+   * Reads Routing_Key storage evidence without inventing schema.
    */
   static buildRecordDiagnostic(record, options = {}) {
     const getVal = (code) => {
@@ -870,7 +908,7 @@ export class AdminDiagnosticModel {
       appraiser2: options.appraiser2 || getVal('GM_User') || 'NOT_EVIDENCED',
       appraiser3: options.appraiser3 || 'NOT_EVIDENCED',
       appraiser4: options.appraiser4 || 'NOT_EVIDENCED',
-      routingKey: options.routingKey || 'NOT_EVIDENCED',
+      routingKey: getVal('Routing_Key') || options.routingKey || 'NOT_EVIDENCED',
       sectionCode: getVal('Section_Code') || options.sectionCode || 'NOT_EVIDENCED',
       teamName: getVal('Team') || options.teamName || 'NOT_EVIDENCED',
       routingResult: options.routingResult || null,

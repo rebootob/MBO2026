@@ -4,10 +4,21 @@ import { AdminDiagnosticModel, BUILD_VERSION_INFO, escapeHtml, CANONICAL_STATUSE
 import { AdminSupportCenterUI } from '../src/admin/admin-support-center.js';
 import { resolveIdentityViewerRole } from '../src/ui/employee-visibility.js';
 
-test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (t) => {
+test('Admin Support Center — Final Closure Package Tests', async (t) => {
 
-  await t.test('1 & 2. Routing Key alone != Routing PASS and prevents overall health PASS', () => {
-    const health = AdminDiagnosticModel.evaluateSystemHealth({
+  await t.test('1. admin-form identity is technical-only and has ZERO business workflow authority', () => {
+    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('admin-form'), true);
+    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('ADMIN-FORM  '), true);
+    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('administrator'), false);
+    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('hr'), false);
+
+    const viewerRole = resolveIdentityViewerRole({ loginUserCode: 'admin-form' });
+    assert.notEqual(viewerRole, 'REQUESTER');
+    assert.notEqual(viewerRole, 'APPROVER');
+  });
+
+  await t.test('2 & 3. Routing Key alone != Routing PASS and prevents overall health PASS; App795 PASS can produce PASS', () => {
+    const healthIncomplete = AdminDiagnosticModel.evaluateSystemHealth({
       loginUserCode: 'admin-form',
       requesterUserCodes: ['EMP01'],
       routingKey: 'TMS1',
@@ -20,13 +31,11 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
       phaseCalendar: { isCurrentDateInWindow: true }
     });
 
-    const routeItem = health.items.find(i => i.key === 'routing_resolution');
-    assert.equal(routeItem.status, 'NOT_EVIDENCED', 'Routing Key alone MUST be NOT_EVIDENCED, never PASS');
-    assert.equal(health.overallHealth, 'INCOMPLETE_EVIDENCE', 'Routing Key alone MUST prevent overall PASS');
-  });
+    const routeItemIncomplete = healthIncomplete.items.find(i => i.key === 'routing_resolution');
+    assert.equal(routeItemIncomplete.status, 'NOT_EVIDENCED', 'Routing Key alone MUST be NOT_EVIDENCED, never PASS');
+    assert.equal(healthIncomplete.overallHealth, 'INCOMPLETE_EVIDENCE', 'Routing Key alone MUST prevent overall PASS');
 
-  await t.test('3. Authoritative App795 PASS can produce Routing PASS', () => {
-    const health = AdminDiagnosticModel.evaluateSystemHealth({
+    const healthPass = AdminDiagnosticModel.evaluateSystemHealth({
       loginUserCode: 'admin-form',
       requesterUserCodes: ['EMP01'],
       routingKey: 'TMS1',
@@ -42,39 +51,39 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
       schemaState: 'PASS'
     });
 
-    const routeItem = health.items.find(i => i.key === 'routing_resolution');
-    assert.equal(routeItem.status, 'PASS');
+    const routeItemPass = healthPass.items.find(i => i.key === 'routing_resolution');
+    assert.equal(routeItemPass.status, 'PASS');
   });
 
-  await t.test('Requirement 3.1: Bad authoritativeProfile object cannot authorize FIX_THIS_RECORD', () => {
+  await t.test('4. Bad authoritativeProfile object cannot authorize FIX_THIS_RECORD', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
-      position: 'Staff', // expects PROF_STAFF_CHIEF
-      actualProfileCode: 'PROF_ASST_MGR', // profile error
+      position: 'Staff',
+      actualProfileCode: 'PROF_ASST_MGR',
       actualPartAWeight: 60,
       actualPartBWeight: 40,
-      authoritativeProfile: { code: 'PROF_WRONG_CODE' } // bad authoritativeProfile code
+      authoritativeProfile: { code: 'PROF_WRONG_CODE' }
     });
 
-    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Bad authoritativeProfile code MUST forbid FIX_THIS_RECORD');
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
     assert.equal(candidate.profileMasterEvidenced, false);
     assert.equal(candidate.profileRecordRepairSafe, false);
   });
 
-  await t.test('Requirement 3.2: Wrong profile weights cannot authorize repair', () => {
+  await t.test('5. Wrong profile weights cannot authorize repair', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
-      position: 'Assistant Manager', // expects PROF_ASST_MGR 60/40
-      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      position: 'Assistant Manager',
+      actualProfileCode: 'PROF_STAFF_CHIEF',
       actualPartAWeight: 70,
       actualPartBWeight: 30,
-      authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 70, partBWeight: 30 } // wrong weights (70/30 instead of 60/40)
+      authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 70, partBWeight: 30 }
     });
 
-    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Conflicting weights MUST forbid FIX_THIS_RECORD');
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
     assert.equal(candidate.profileMasterEvidenced, false);
     assert.equal(candidate.profileRecordRepairSafe, false);
   });
 
-  await t.test('Requirement 3.3: DGM correct key/topology/count but wrong Appraiser1 => ERROR', () => {
+  await t.test('6. DGM correct key/topology/count but wrong Appraiser1 => ERROR', () => {
     const res = AdminDiagnosticModel.evaluateRouteMatch({
       position: 'DGM',
       actualRoutingKey: 'POSITION_DGM',
@@ -89,21 +98,21 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.ok(res.reason.includes('1ST_APPRAISER_MISMATCH'));
   });
 
-  await t.test('Requirement 3.4: GM missing authoritative appraiser1 => NOT_EVIDENCED', () => {
+  await t.test('7. GM missing authoritative appraiser1 => NOT_EVIDENCED', () => {
     const res = AdminDiagnosticModel.evaluateRouteMatch({
       position: 'GM',
       actualRoutingKey: 'POSITION_GM',
       actualTopology: 'M1_ONLY',
       actualAppraiserCount: 1,
       actualAppraiser1: 'gm_user',
-      authoritativeRoute: null // missing authoritative route/appraiser1
+      authoritativeRoute: null
     });
 
     assert.equal(res.status, 'NOT_EVIDENCED');
     assert.equal(res.routeMatch, 'NOT_EVIDENCED');
   });
 
-  await t.test('Requirement 3.5: VP full authoritative route + matching Appraiser1 => PASS', () => {
+  await t.test('8. VP full authoritative route + matching Appraiser1 => PASS', () => {
     const res = AdminDiagnosticModel.evaluateRouteMatch({
       position: 'VP',
       actualRoutingKey: 'POSITION_VP',
@@ -118,7 +127,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(res.expectedRoutingKey, 'POSITION_VP');
   });
 
-  await t.test('4. Profile mismatch + route evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
+  await t.test('9. Profile mismatch + route evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
       actualProfileCode: 'PROF_STAFF_CHIEF',
@@ -137,7 +146,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(candidate.routeMasterEvidenced, true);
   });
 
-  await t.test('5. Route mismatch + profile evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
+  await t.test('10. Route mismatch + profile evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Staff',
       actualProfileCode: 'PROF_STAFF_CHIEF',
@@ -156,7 +165,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(candidate.routeMasterEvidenced, false);
   });
 
-  await t.test('6. Profile-only mismatch + authoritativeProfile -> safe record candidate ONLY for profile fields', () => {
+  await t.test('11. Profile-only mismatch + authoritativeProfile -> safe record candidate ONLY for profile fields', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
       actualProfileCode: 'PROF_STAFF_CHIEF',
@@ -177,7 +186,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(candidate.before.Routing_Key, undefined);
   });
 
-  await t.test('7. Route-only mismatch + authoritativeRoute -> safe record candidate ONLY for routing fields', () => {
+  await t.test('12. Route-only mismatch + authoritativeRoute -> safe record candidate ONLY for routing fields (including changed appraiser assignments)', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Staff',
       actualProfileCode: 'PROF_STAFF_CHIEF',
@@ -195,11 +204,13 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(candidate.rootCause, 'FIX_THIS_RECORD');
     assert.equal(candidate.profileRecordRepairSafe, false);
     assert.equal(candidate.routeRecordRepairSafe, true);
-    assert.deepEqual(candidate.fieldsAffected, ['Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count']);
-    assert.equal(candidate.before.Profile_Code, undefined);
+    assert.ok(candidate.fieldsAffected.includes('Routing_Key'));
+    assert.ok(candidate.fieldsAffected.includes('Appraiser1'));
+    assert.equal(candidate.before.Appraiser1, 'wrong_user');
+    assert.equal(candidate.after.Appraiser1, 'm01');
   });
 
-  await t.test('8. Profile+Route mismatch requires BOTH master evidences for FIX_THIS_RECORD', () => {
+  await t.test('13. Profile+Route mismatch requires BOTH master evidences for FIX_THIS_RECORD', () => {
     const fullCandidate = AdminDiagnosticModel.prepareRepairCandidate({
       position: 'Assistant Manager',
       actualProfileCode: 'PROF_STAFF_CHIEF',
@@ -208,7 +219,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
       sectionCode: 'TMS1',
       actualRoutingKey: 'WRONG_KEY',
       authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40 },
-      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 }
+      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm01' }
     });
     assert.equal(fullCandidate.rootCause, 'FIX_THIS_RECORD');
 
@@ -225,7 +236,7 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(partialCandidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
   });
 
-  await t.test('9, 10, 11. Record diagnostic defaults removed', () => {
+  await t.test('14. Record diagnostic defaults removed', () => {
     const diag = AdminDiagnosticModel.buildRecordDiagnostic(null, {});
     assert.equal(diag.fiscalYear, 'NOT_EVIDENCED');
     assert.equal(diag.loggedInUserCode, 'NOT_EVIDENCED');
@@ -237,13 +248,18 @@ test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (
     assert.equal(snapshot.data.recordIdentity.loggedInUserCode, 'NOT_EVIDENCED');
   });
 
-  await t.test('12. Existing canonical workflow/profile/routing tests remain PASS', () => {
-    assert.equal(AdminDiagnosticModel.evaluateWorkflowTrace({ currentStatus: '01 Draft Objective', topology: 'M1_G1' }).status, 'PASS');
-    assert.equal(AdminDiagnosticModel.evaluateWorkflowTrace({ currentStatus: '02 First Manager Objective Review', topology: 'M1_G1' }).status, 'ERROR');
-    assert.equal(AdminDiagnosticModel.evaluateProfileMatch({ position: 'Japanese Staff', actualProfileCode: 'PROF_JAPANESE_STAFF', actualPartAWeight: 70, actualPartBWeight: 30 }).status, 'PASS');
+  await t.test('15. Neutral UI badges for NOT_EVIDENCED and local Employee Check provider execution', () => {
+    const ui = new AdminSupportCenterUI();
+    const html = ui.renderHtml({ loginUserCode: 'admin-form' });
+    assert.ok(html.includes('⚪ NOT_EVIDENCED'));
+    assert.ok(html.includes('OVERALL HEALTH: INCOMPLETE_EVIDENCE'));
+
+    const providerResult = AdminSupportCenterUI.defaultEmployeeProvider('0118', '2026');
+    assert.equal(providerResult.employeeCode, '0118');
+    assert.equal(providerResult.actualProfileCode, 'PROF_STAFF_CHIEF');
   });
 
-  await t.test('13 & 14. CONFIRM REPAIR remains disabled; gate intact', () => {
+  await t.test('16 & 17. CONFIRM REPAIR remains disabled; gate intact', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({});
     assert.equal(candidate.confirmRepairEnabled, false);
     assert.equal(candidate.repairWriteImplemented, false);

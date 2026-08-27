@@ -9,19 +9,154 @@ export class AdminSupportCenterUI {
   constructor(options = {}) {
     this.container = options.container || null;
     this.diagnosticContext = options.diagnosticContext || {};
-    this.activeTab = 'health';
+    this.activeTab = options.activeTab || 'health';
+    this.employeeProvider = options.employeeProvider || AdminSupportCenterUI.defaultEmployeeProvider;
+  }
+
+  /**
+   * Default local employee diagnostic provider for testing/checking employee lookup.
+   */
+  static defaultEmployeeProvider(empCode, fiscalYear) {
+    if (!empCode) {
+      return {
+        employeeCode: 'NOT_EVIDENCED',
+        fiscalYear: fiscalYear || 'NOT_EVIDENCED',
+        recordId: 'NOT_EVIDENCED',
+        mboKey: 'NOT_EVIDENCED',
+        employeeName: 'NOT_EVIDENCED',
+        requesterUser: 'NOT_EVIDENCED',
+        currentStatus: 'NOT_EVIDENCED',
+        routingKey: 'NOT_EVIDENCED',
+        sectionCode: 'NOT_EVIDENCED',
+        teamName: 'NOT_EVIDENCED',
+        appraiser1: 'NOT_EVIDENCED',
+        appraiser2: 'NOT_EVIDENCED',
+        appraiser3: 'NOT_EVIDENCED',
+        appraiser4: 'NOT_EVIDENCED'
+      };
+    }
+
+    const clean = String(empCode).trim();
+
+    const mockCatalog = {
+      '0118': {
+        employeeCode: '0118',
+        fiscalYear: fiscalYear || '2026',
+        recordId: '101',
+        mboKey: 'MBO_2026_0118',
+        employeeName: 'Technical Service Chief',
+        requesterUser: '0118',
+        currentStatus: '01 Draft Objective',
+        routingKey: 'TMT1',
+        sectionCode: 'TMT1',
+        teamName: 'Technical Service',
+        position: 'Staff',
+        actualProfileCode: 'PROF_STAFF_CHIEF',
+        actualPartAWeight: 70,
+        actualPartBWeight: 30,
+        actualTopology: 'M1_G1',
+        actualAppraiserCount: 2,
+        appraiser1: 'm01',
+        appraiser2: 'g01',
+        appraiser3: 'NOT_EVIDENCED',
+        appraiser4: 'NOT_EVIDENCED',
+        authoritativeProfile: { code: 'PROF_STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
+        authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm01', appraiser2: 'g01' }
+      },
+      '0111': {
+        employeeCode: '0111',
+        fiscalYear: fiscalYear || '2026',
+        recordId: '102',
+        mboKey: 'MBO_2026_0111',
+        employeeName: 'Assistant Manager 0111',
+        requesterUser: '0111',
+        currentStatus: '01 Draft Objective',
+        routingKey: 'TMS1',
+        sectionCode: 'TMS1',
+        teamName: '',
+        position: 'Assistant Manager',
+        actualProfileCode: 'PROF_ASST_MGR',
+        actualPartAWeight: 60,
+        actualPartBWeight: 40,
+        actualTopology: 'M1_G1',
+        actualAppraiserCount: 2,
+        appraiser1: 'm02',
+        appraiser2: 'g01',
+        appraiser3: 'NOT_EVIDENCED',
+        appraiser4: 'NOT_EVIDENCED',
+        authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40 },
+        authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm02', appraiser2: 'g01' }
+      },
+      'DGM001': {
+        employeeCode: 'DGM001',
+        fiscalYear: fiscalYear || '2026',
+        recordId: '103',
+        mboKey: 'MBO_2026_DGM001',
+        employeeName: 'Deputy General Manager',
+        requesterUser: 'DGM001',
+        currentStatus: '01 Draft Objective',
+        routingKey: 'POSITION_DGM',
+        sectionCode: '',
+        teamName: '',
+        position: 'DGM',
+        actualProfileCode: 'PROF_DGM',
+        actualPartAWeight: 50,
+        actualPartBWeight: 50,
+        actualTopology: 'M1_ONLY',
+        actualAppraiserCount: 1,
+        appraiser1: 'president_user',
+        appraiser2: 'NOT_EVIDENCED',
+        appraiser3: 'NOT_EVIDENCED',
+        appraiser4: 'NOT_EVIDENCED',
+        authoritativeProfile: { code: 'PROF_DGM', partAWeight: 50, partBWeight: 50 },
+        authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1, appraiser1: 'president_user' }
+      }
+    };
+
+    return mockCatalog[clean] || {
+      employeeCode: clean,
+      fiscalYear: fiscalYear || 'NOT_EVIDENCED',
+      recordId: 'NOT_EVIDENCED',
+      mboKey: `MBO_${fiscalYear || 'FY'}_${clean}`,
+      employeeName: `Employee ${clean}`,
+      requesterUser: clean,
+      currentStatus: '01 Draft Objective',
+      routingKey: 'NOT_EVIDENCED',
+      sectionCode: 'NOT_EVIDENCED',
+      teamName: 'NOT_EVIDENCED',
+      appraiser1: 'NOT_EVIDENCED',
+      appraiser2: 'NOT_EVIDENCED',
+      appraiser3: 'NOT_EVIDENCED',
+      appraiser4: 'NOT_EVIDENCED'
+    };
+  }
+
+  /**
+   * Helper to return truth-based indicator icons for UI tables.
+   * FIX: Prevents false green checkmarks for NOT_EVIDENCED / INCOMPLETE_EVIDENCE states.
+   */
+  static getMatchIcon(status, isMatch) {
+    if (status === 'NOT_EVIDENCED' || status === 'NOT_AVAILABLE' || status === null || status === undefined) {
+      return '<span style="color:#94a3b8; font-size:12px;">⚪ NOT_EVIDENCED</span>';
+    }
+    if (status === 'PASS' || isMatch === true) {
+      return '<span style="color:#10b981; font-size:12px;">✅ MATCH</span>';
+    }
+    return '<span style="color:#ef4444; font-size:12px;">❌ MISMATCH</span>';
   }
 
   /**
    * Renders the complete Admin Support Center panel HTML with HTML Output Escaping.
    */
   renderHtml(context = {}) {
-    const health = AdminDiagnosticModel.evaluateSystemHealth(context);
-    const recordDiag = AdminDiagnosticModel.buildRecordDiagnostic(context.record, context);
-    const workflowTrace = AdminDiagnosticModel.evaluateWorkflowTrace(context);
-    const profileMatch = AdminDiagnosticModel.evaluateProfileMatch(context);
-    const routeMatch = AdminDiagnosticModel.evaluateRouteMatch(context);
-    const repairCandidate = AdminDiagnosticModel.prepareRepairCandidate(context);
+    const activeCtx = { ...this.diagnosticContext, ...context };
+
+    const health = AdminDiagnosticModel.evaluateSystemHealth(activeCtx);
+    const recordDiag = AdminDiagnosticModel.buildRecordDiagnostic(activeCtx.record, activeCtx);
+    const workflowTrace = AdminDiagnosticModel.evaluateWorkflowTrace(activeCtx);
+    const profileMatch = AdminDiagnosticModel.evaluateProfileMatch(activeCtx);
+    const routeMatch = AdminDiagnosticModel.evaluateRouteMatch(activeCtx);
+    const repairCandidate = AdminDiagnosticModel.prepareRepairCandidate(activeCtx);
 
     const snapshot = AdminDiagnosticModel.generateDiagnosticSnapshot({
       health,
@@ -36,6 +171,7 @@ export class AdminSupportCenterUI {
       PASS: 'background:#059669; color:#ffffff;',
       WARNING: 'background:#d97706; color:#ffffff;',
       ERROR: 'background:#dc2626; color:#ffffff;',
+      INCOMPLETE_EVIDENCE: 'background:#1e40af; color:#ffffff;',
       BLOCKED: 'background:#475569; color:#ffffff;',
       NOT_EVIDENCED: 'background:#475569; color:#ffffff;',
       NOT_AVAILABLE: 'background:#64748b; color:#ffffff;'
@@ -47,6 +183,8 @@ export class AdminSupportCenterUI {
       HIGH: 'background:#dc2626; color:#ffffff;',
       BLOCKED: 'background:#475569; color:#ffffff;'
     };
+
+    const getIcon = AdminSupportCenterUI.getMatchIcon;
 
     return `
       <div id="admin-support-center-panel" style="background:#0f172a; border:2px solid #3b82f6; border-radius:8px; padding:20px; margin:20px 0; color:#f8fafc; font-family:sans-serif;">
@@ -62,7 +200,7 @@ export class AdminSupportCenterUI {
             </div>
           </div>
           <div>
-            <span style="font-size:12px; padding:6px 12px; border-radius:4px; font-weight:bold; ${statusBadgeClass[health.overallHealth] || statusBadgeClass.PASS}">
+            <span style="font-size:12px; padding:6px 12px; border-radius:4px; font-weight:bold; ${statusBadgeClass[health.overallHealth] || statusBadgeClass.INCOMPLETE_EVIDENCE}">
               OVERALL HEALTH: ${escapeHtml(health.overallHealth)}
             </span>
           </div>
@@ -75,16 +213,16 @@ export class AdminSupportCenterUI {
 
         <!-- Section Tabs -->
         <div style="display:flex; gap:8px; border-bottom:1px solid #334155; margin-bottom:15px; padding-bottom:10px; overflow-x:auto;">
-          <button type="button" class="admin-tab-btn" data-tab="health" style="background:#1e293b; border:1px solid #3b82f6; color:#60a5fa; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
+          <button type="button" class="admin-tab-btn" data-tab="health" style="background:${this.activeTab === 'health' ? '#1e40af' : '#1e293b'}; border:1px solid #3b82f6; color:${this.activeTab === 'health' ? '#ffffff' : '#60a5fa'}; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
             1. System Health (สุขภาพระบบ)
           </button>
-          <button type="button" class="admin-tab-btn" data-tab="check" style="background:#1e293b; border:1px solid #475569; color:#94a3b8; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
+          <button type="button" class="admin-tab-btn" data-tab="check" style="background:${this.activeTab === 'check' ? '#1e40af' : '#1e293b'}; border:1px solid #475569; color:${this.activeTab === 'check' ? '#ffffff' : '#94a3b8'}; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
             2. Employee Check (ตรวจสอบพนักงาน)
           </button>
-          <button type="button" class="admin-tab-btn" data-tab="validation" style="background:#1e293b; border:1px solid #475569; color:#94a3b8; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
+          <button type="button" class="admin-tab-btn" data-tab="validation" style="background:${this.activeTab === 'validation' ? '#1e40af' : '#1e293b'}; border:1px solid #475569; color:${this.activeTab === 'validation' ? '#ffffff' : '#94a3b8'}; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
             3. Workflow & Route Trace (ตรวจสอบเส้นทาง)
           </button>
-          <button type="button" class="admin-tab-btn" data-tab="candidate" style="background:#1e293b; border:1px solid #475569; color:#94a3b8; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
+          <button type="button" class="admin-tab-btn" data-tab="candidate" style="background:${this.activeTab === 'candidate' ? '#1e40af' : '#1e293b'}; border:1px solid #475569; color:${this.activeTab === 'candidate' ? '#ffffff' : '#94a3b8'}; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px; white-space:nowrap;">
             4. Repair Candidate (เตรียมการซ่อมแซม)
           </button>
           <button type="button" class="admin-tab-btn" data-tab="repair" style="background:#1e293b; border:1px solid #475569; color:#64748b; padding:8px 12px; border-radius:4px; cursor:not-allowed; font-size:12px; white-space:nowrap;" disabled>
@@ -93,7 +231,7 @@ export class AdminSupportCenterUI {
         </div>
 
         <!-- Tab 1: System Health -->
-        <div id="admin-tab-content-health" style="display:block;">
+        <div id="admin-tab-content-health" style="display:${this.activeTab === 'health' ? 'block' : 'none'};">
           <h3 style="font-size:14px; color:#e2e8f0; margin-top:0;">รายการตรวจสอบตัวชี้วัดสุขภาพระบบ (15 Diagnostic Indicators)</h3>
           <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:10px; margin-bottom:15px;">
             ${health.items.map(item => `
@@ -113,7 +251,7 @@ export class AdminSupportCenterUI {
         </div>
 
         <!-- Tab 2: Employee Check -->
-        <div id="admin-tab-content-check" style="display:none;">
+        <div id="admin-tab-content-check" style="display:${this.activeTab === 'check' ? 'block' : 'none'};">
           <h3 style="font-size:14px; color:#e2e8f0; margin-top:0;">Employee-Centric Record Check (การตรวจสอบข้อมูลประจำตัวพนักงาน)</h3>
           <div style="background:#1e293b; border:1px solid #334155; padding:15px; border-radius:6px; margin-bottom:15px;">
             <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
@@ -145,7 +283,7 @@ export class AdminSupportCenterUI {
         </div>
 
         <!-- Tab 3: Workflow & Route Validation -->
-        <div id="admin-tab-content-validation" style="display:none;">
+        <div id="admin-tab-content-validation" style="display:${this.activeTab === 'validation' ? 'block' : 'none'};">
           <h3 style="font-size:14px; color:#e2e8f0; margin-top:0;">Workflow Trace, Profile & Route Validation</h3>
 
           <!-- Card 1: Workflow Trace -->
@@ -187,13 +325,13 @@ export class AdminSupportCenterUI {
                   <td style="padding:4px; font-weight:bold;">Profile Code</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.expectedProfileCode)}</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.actualProfileCode)}</td>
-                  <td style="padding:4px;">${profileMatch.expectedProfileCode === profileMatch.actualProfileCode ? '✅' : '❌'}</td>
+                  <td style="padding:4px;">${getIcon(profileMatch.status, profileMatch.expectedProfileCode === profileMatch.actualProfileCode)}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px; font-weight:bold;">Part A / Part B Weight</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.expectedPartAWeight)}% / ${escapeHtml(profileMatch.expectedPartBWeight)}%</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.actualPartAWeight)}% / ${escapeHtml(profileMatch.actualPartBWeight)}%</td>
-                  <td style="padding:4px;">${profileMatch.expectedPartAWeight === profileMatch.actualPartAWeight ? '✅' : '❌'}</td>
+                  <td style="padding:4px;">${getIcon(profileMatch.status, profileMatch.expectedPartAWeight === profileMatch.actualPartAWeight)}</td>
                 </tr>
               </tbody>
             </table>
@@ -222,19 +360,19 @@ export class AdminSupportCenterUI {
                   <td style="padding:4px; font-weight:bold;">Routing Key</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.expectedRoutingKey)}</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.actualRoutingKey)}</td>
-                  <td style="padding:4px;">${routeMatch.expectedRoutingKey === routeMatch.actualRoutingKey ? '✅' : '❌'}</td>
+                  <td style="padding:4px;">${getIcon(routeMatch.status, routeMatch.expectedRoutingKey === routeMatch.actualRoutingKey)}</td>
                 </tr>
                 <tr style="border-bottom:1px solid #334155;">
                   <td style="padding:4px; font-weight:bold;">Routing Topology</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.expectedTopology)}</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.actualTopology)}</td>
-                  <td style="padding:4px;">${routeMatch.expectedTopology === routeMatch.actualTopology ? '✅' : '❌'}</td>
+                  <td style="padding:4px;">${getIcon(routeMatch.status, routeMatch.expectedTopology === routeMatch.actualTopology)}</td>
                 </tr>
                 <tr>
                   <td style="padding:4px; font-weight:bold;">Appraiser Count</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.expectedAppraiserCount)}</td>
                   <td style="padding:4px;">${escapeHtml(routeMatch.actualAppraiserCount)}</td>
-                  <td style="padding:4px;">${routeMatch.expectedAppraiserCount === routeMatch.actualAppraiserCount ? '✅' : '❌'}</td>
+                  <td style="padding:4px;">${getIcon(routeMatch.status, routeMatch.expectedAppraiserCount === routeMatch.actualAppraiserCount)}</td>
                 </tr>
               </tbody>
             </table>
@@ -243,7 +381,7 @@ export class AdminSupportCenterUI {
         </div>
 
         <!-- Tab 4: Repair Candidate -->
-        <div id="admin-tab-content-candidate" style="display:none;">
+        <div id="admin-tab-content-candidate" style="display:${this.activeTab === 'candidate' ? 'block' : 'none'};">
           <h3 style="font-size:14px; color:#e2e8f0; margin-top:0;">Prepare Repair Candidate (เตรียมข้อมูลและเปรียบเทียบก่อน-หลังซ่อมแซม)</h3>
           
           <div style="background:#1e293b; border:1px solid #334155; padding:15px; border-radius:6px; margin-bottom:15px;">
@@ -276,13 +414,15 @@ export class AdminSupportCenterUI {
                 </tr>
               </thead>
               <tbody>
-                ${Object.keys(repairCandidate.before).map(field => `
+                ${Object.keys(repairCandidate.before).length > 0 ? Object.keys(repairCandidate.before).map(field => `
                   <tr style="border-bottom:1px solid #1e293b;">
                     <td style="padding:6px 10px; font-weight:bold;">${escapeHtml(field)}</td>
                     <td style="padding:6px 10px; color:#fca5a5;">${escapeHtml(repairCandidate.before[field])}</td>
                     <td style="padding:6px 10px; color:#6ee7b7;">${escapeHtml(repairCandidate.after[field])}</td>
                   </tr>
-                `).join('')}
+                `).join('') : `
+                  <tr><td colspan="3" style="padding:8px 10px; color:#94a3b8; text-align:center;">No safe field diff available (BLOCKED or NO_REPAIR_NEEDED)</td></tr>
+                `}
               </tbody>
             </table>
 
@@ -325,5 +465,71 @@ export class AdminSupportCenterUI {
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Attaches interactive DOM event listeners to a rendered container element.
+   * Handles tab switching, Check Employee lookup, and snapshot toggling locally without Kintone writes.
+   */
+  attachEventListeners(rootContainer) {
+    if (!rootContainer) return;
+
+    // 1. Tab Switching
+    const tabButtons = rootContainer.querySelectorAll('.admin-tab-btn');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetTab = btn.getAttribute('data-tab');
+        if (!targetTab || btn.disabled) return;
+        this.activeTab = targetTab;
+
+        // Hide all tab contents
+        const contents = ['health', 'check', 'validation', 'candidate', 'repair'];
+        contents.forEach(id => {
+          const el = rootContainer.querySelector(`#admin-tab-content-${id}`);
+          if (el) el.style.display = id === targetTab ? 'block' : 'none';
+        });
+
+        // Highlight tab buttons
+        tabButtons.forEach(b => {
+          const isTarget = b.getAttribute('data-tab') === targetTab;
+          if (b.disabled) return;
+          b.style.background = isTarget ? '#1e40af' : '#1e293b';
+          b.style.color = isTarget ? '#ffffff' : '#60a5fa';
+        });
+      });
+    });
+
+    // 2. Check Employee Action
+    const checkBtn = rootContainer.querySelector('#admin-btn-check-employee');
+    if (checkBtn) {
+      checkBtn.addEventListener('click', () => {
+        const empCodeInput = rootContainer.querySelector('#admin-check-emp-code');
+        const fyInput = rootContainer.querySelector('#admin-check-fy');
+        const empCode = empCodeInput ? empCodeInput.value : '';
+        const fy = fyInput ? fyInput.value : '';
+
+        const recordData = this.employeeProvider(empCode, fy);
+        this.diagnosticContext = {
+          ...this.diagnosticContext,
+          ...recordData,
+          employeeCode: empCode,
+          fiscalYear: fy
+        };
+
+        // Re-render HTML into rootContainer
+        rootContainer.innerHTML = this.renderHtml();
+        this.attachEventListeners(rootContainer);
+      });
+    }
+
+    // 3. Snapshot Toggle Action
+    const snapshotBtn = rootContainer.querySelector('#admin-snapshot-btn');
+    const snapshotOutput = rootContainer.querySelector('#admin-snapshot-output');
+    if (snapshotBtn && snapshotOutput) {
+      snapshotBtn.addEventListener('click', () => {
+        const isHidden = snapshotOutput.style.display === 'none';
+        snapshotOutput.style.display = isHidden ? 'block' : 'none';
+      });
+    }
   }
 }

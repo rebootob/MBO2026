@@ -1821,7 +1821,7 @@ class RoutingService {
 
       // Check requester authorization against App795 Requester_User list
       const requesters = route.Requester_User?.value || [];
-      const isAuthorized = requesters.some(u => u.code === cleanUser) || cleanUser === 'Administrator' || cleanUser === 'admin-form';
+      const isAuthorized = requesters.some(u => u.code === cleanUser);
 
       if (!isAuthorized) {
         throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO สำหรับตำแหน่ง ${cleanPosition}\nThis account (${cleanUser}) is not authorized to create an MBO for executive position ${cleanPosition}.`);
@@ -1883,7 +1883,7 @@ class RoutingService {
     const route = records[0];
     const requesters = route.Requester_User?.value || [];
     // Strict Requester Authorization (BLOCKER B Fix: NO blank Requester_User allow-all fallback)
-    const isAuthorized = requesters.some(u => u.code === cleanUser) || cleanUser === 'Administrator' || cleanUser === 'admin-form';
+    const isAuthorized = requesters.some(u => u.code === cleanUser);
 
     if (!isAuthorized) {
       throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO สำหรับพนักงานใน Section ${cleanSection}\nThis account (${cleanUser}) is not authorized to create an MBO for section ${cleanSection}.`);
