@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MBO 2026 — D1 Login & Session Boundary Local UAT Preview</title>
+  <link rel="stylesheet" href="/mbo-employee.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #f8fafc;
+    }
+    .uat-header {
+      background: #1e293b;
+      border-bottom: 2px solid #3b82f6;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .uat-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .uat-banner {
+      background: #854d0e;
+      color: #fef08a;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+    .uat-container {
+      max-width: 1000px;
+      margin: 32px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .uat-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .uat-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #93c5fd;
+      margin-top: 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      color: #f8fafc;
+      font-size: 14px;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+    .btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .btn-warning {
+      background: #d97706;
+      color: white;
+    }
+    .btn-warning:hover {
+      background: #b45309;
+    }
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .alert-info {
+      background: #1e3a8a;
+      color: #bfdbfe;
+      border: 1px solid #1d4ed8;
+    }
+    .alert-success {
+      background: #14532d;
+      color: #bbf7d0;
+      border: 1px solid #15803d;
+    }
+    .alert-warning {
+      background: #78350f;
+      color: #fef08a;
+      border: 1px solid #b45309;
+    }
+    .alert-danger {
+      background: #7f1d1d;
+      color: #fecaca;
+      border: 1px solid #b91c1c;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    .badge-success { background: #166534; color: #86efac; }
+    .badge-danger { background: #991b1b; color: #fca5a5; }
+    .badge-warning { background: #854d0e; color: #fef08a; }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .checklist-item input {
+      margin-top: 2px;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <header class="uat-header">
+    <div class="uat-title">
+      🔒 MBO 2026 — D1 Login & Session Boundary Local UAT Preview
+    </div>
+    <div class="uat-banner">
+      LOCAL D1 LOGIN UAT — NO KINTONE WRITE / NO PRODUCTION DATA
+    </div>
+  </header>
+
+  <main class="uat-container">
+    
+    <!-- LEFT PANEL: Auth Forms (Login / Force Change / Authenticated Principal) -->
+    <section class="uat-card">
+      
+      <!-- 1. LOGIN STATE -->
+      <div id="section-login">
+        <h2 class="uat-card-title">
+          <span>Employee Login</span>
+          <span class="badge badge-warning">Unauthenticated</span>
+        </h2>
+        
+        <div id="login-alert" class="alert alert-info">
+          Please select a simulated Kintone principal and enter MBO credentials.
+        </div>
+
+        <form id="form-login" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="kintone-user">Simulated Kintone Principal (LOCAL TEST FIXTURE ONLY)</label>
+            <select id="kintone-user" class="form-control" onchange="autoFillUsername(this.value)">
+              <option value="emp0118">Employee 0118 (emp0118)</option>
+              <option value="emp0119">Employee 0119 (emp0119)</option>
+              <option value="admin-form">Technical Admin (admin-form)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="mbo-username">MBO Username</label>
+            <input type="text" id="mbo-username" class="form-control" value="0118" required>
+          </div>
+
+          <div class="form-group">
+            <label for="mbo-password">Password</label>
+            <input type="password" id="mbo-password" class="form-control" value="0118" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;">Sign In</button>
+        </form>
+      </div>
+
+      <!-- 2. FORCE CHANGE PASSWORD STATE -->
+      <div id="section-force-change" class="hidden">
+        <h2 class="uat-card-title">
+          <span>Force Change Password Required</span>
+          <span class="badge badge-warning">Password Change Required</span>
+        </h2>
+
+        <div id="force-change-alert" class="alert alert-warning">
+          Default bootstrap password detected. You MUST change your password before accessing MBO data.
+        </div>
+
+        <form id="form-force-change" onsubmit="handleForceChange(event)">
+          <div class="form-group">
+            <label for="force-new-pass">New Password</label>
+            <input type="password" id="force-new-pass" class="form-control" placeholder="Enter new secure password" required>
+            <small style="color:#94a3b8; font-size:12px;">New password MUST NOT equal default Employee Code.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="force-confirm-pass">Confirm New Password</label>
+            <input type="password" id="force-confirm-pass" class="form-control" placeholder="Confirm new secure password" required>
+          </div>
+
+          <button type="submit" class="btn btn-warning" style="width:100%;">Set New Password & Authenticate</button>
+        </form>
+      </div>
+
+      <!-- 3. AUTHENTICATED PRINCIPAL STATE -->
+      <div id="section-authenticated" class="hidden">
+        <h2 class="uat-card-title">
+          <span>Active Authenticated Session</span>
+          <span class="badge badge-success">Data Authorized</span>
+        </h2>
+
+        <div id="auth-status-card" class="alert alert-success">
+          <strong>Authenticated Principal:</strong> <span id="disp-emp-code">0118</span><br>
+          <strong>Kintone Binding:</strong> <span id="disp-kintone-user">emp0118</span><br>
+          <strong>Session Status:</strong> AUTHORIZED_MBO_DATA_PRINCIPAL
+        </div>
+
+        <h3 style="font-size:14px; color:#cbd5e1; margin-top:20px; margin-bottom:10px;">Change Own Password</h3>
+        <form id="form-normal-change" onsubmit="handleNormalChange(event)" style="margin-bottom:20px;">
+          <div class="form-group">
+            <label for="normal-curr-pass">Current Password</label>
+            <input type="password" id="normal-curr-pass" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="normal-new-pass">New Password</label>
+            <input type="password" id="normal-new-pass" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="normal-confirm-pass">Confirm New Password</label>
+            <input type="password" id="normal-confirm-pass" class="form-control" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Change Password</button>
+        </form>
+
+        <button onclick="handleLogout()" class="btn btn-danger" style="width:100%;">Logout / Terminate Session</button>
+      </div>
+
+    </section>
+
+
+    <!-- RIGHT PANEL: Data Isolation & UAT Checklist -->
+    <section class="uat-card">
+      
+      <!-- DATA ISOLATION UAT AREA -->
+      <h2 class="uat-card-title">
+        <span>Employee Data Isolation UAT</span>
+      </h2>
+
+      <div class="form-group">
+        <label for="target-emp-code">Target Record Employee Code</label>
+        <input type="text" id="target-emp-code" class="form-control" value="0118" placeholder="e.g. 0118 or 0119">
+      </div>
+
+      <button onclick="checkRecordAccess()" class="btn btn-primary" style="margin-bottom:16px;">Check Record Access Authority</button>
+
+      <div id="access-check-result" class="alert alert-info">
+        Perform a check to verify trusted server authorization.
+      </div>
+
+      <!-- UAT MANUAL TEST CHECKLIST -->
+      <h2 class="uat-card-title" style="margin-top:28px;">
+        <span>Manual UAT Test Sequence</span>
+      </h2>
+
+      <div class="checklist">
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-1">
+          <label for="chk-1">1. Select Employee 0118, login with default pass `0118` &rarr; FORCE password change state.</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-2">
+          <label for="chk-2">2. Try setting new password = `0118` &rarr; BLOCKED (default reuse prohibited).</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-3">
+          <label for="chk-3">3. Set new password `Pass0118!` &rarr; SUCCESS, enters Authenticated State.</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-4">
+          <label for="chk-4">4. Access check Target `0118` &rarr; ALLOWED (EMPLOYEE_OWN_RECORD).</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-5">
+          <label for="chk-5">5. Access check Target `0119` &rarr; BLOCKED (EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B).</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-6">
+          <label for="chk-6">6. Click Logout &rarr; Session terminated, back to Login UI.</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-7">
+          <label for="chk-7">7. Login with old password `0118` &rarr; DENIED (INVALID_CREDENTIALS).</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-8">
+          <label for="chk-8">8. Login with new password `Pass0118!` &rarr; SUCCESS directly to Authenticated State.</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="chk-9">
+          <label for="chk-9">9. Select `admin-form` principal &rarr; BLOCKED from employee-self operation.</label>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    function autoFillUsername(kintoneUser) {
+      const usernameInput = document.getElementById('mbo-username');
+      const passwordInput = document.getElementById('mbo-password');
+      if (kintoneUser === 'emp0118') {
+        usernameInput.value = '0118';
+        passwordInput.value = '0118';
+      } else if (kintoneUser === 'emp0119') {
+        usernameInput.value = '0119';
+        passwordInput.value = '0119';
+      } else if (kintoneUser === 'admin-form') {
+        usernameInput.value = 'ADMIN';
+        passwordInput.value = '0118';
+      }
+    }
+
+    async function checkActiveSession() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.authenticated) {
+          showAuthenticatedState(data.employeeCode, data.kintoneUserCode);
+        } else {
+          showLoginState();
+        }
+      } catch (err) {
+        console.error('Failed to check active session', err);
+        showLoginState();
+      }
+    }
+
+    function showLoginState() {
+      document.getElementById('section-login').classList.remove('hidden');
+      document.getElementById('section-force-change').classList.add('hidden');
+      document.getElementById('section-authenticated').classList.add('hidden');
+    }
+
+    function showForceChangeState(employeeCode) {
+      document.getElementById('section-login').classList.add('hidden');
+      document.getElementById('section-force-change').classList.remove('hidden');
+      document.getElementById('section-authenticated').classList.add('hidden');
+      document.getElementById('force-new-pass').value = '';
+      document.getElementById('force-confirm-pass').value = '';
+    }
+
+    function showAuthenticatedState(employeeCode, kintoneUserCode) {
+      document.getElementById('section-login').classList.add('hidden');
+      document.getElementById('section-force-change').classList.add('hidden');
+      document.getElementById('section-authenticated').classList.remove('hidden');
+      document.getElementById('disp-emp-code').innerText = employeeCode;
+      document.getElementById('disp-kintone-user').innerText = kintoneUserCode;
+      document.getElementById('target-emp-code').value = employeeCode;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById('login-alert');
+      alertBox.className = 'alert alert-info';
+      alertBox.innerText = 'Authenticating server-side...';
+
+      const kintoneUserCode = document.getElementById('kintone-user').value;
+      const mboUsername = document.getElementById('mbo-username').value;
+      const password = document.getElementById('mbo-password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kintoneUserCode, mboUsername, password })
+        });
+        const data = await res.json();
+
+        if (data.status === 'PASSWORD_CHANGE_REQUIRED') {
+          showForceChangeState(data.employeeCode);
+        } else if (data.status === 'AUTHENTICATED_SUCCESS') {
+          await checkActiveSession();
+        } else {
+          alertBox.className = 'alert alert-danger';
+          alertBox.innerText = 'Login Failed [' + data.status + ']: ' + (data.reason || 'Authentication denied.');
+        }
+      } catch (err) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.innerText = 'Network/Server Error: ' + err.message;
+      }
+    }
+
+    async function handleForceChange(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById('force-change-alert');
+      const newPassword = document.getElementById('force-new-pass').value;
+      const confirmPassword = document.getElementById('force-confirm-pass').value;
+
+      if (newPassword !== confirmPassword) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.innerText = 'Passwords do not match.';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword })
+        });
+        const data = await res.json();
+
+        if (data.status === 'PASSWORD_CHANGED_SUCCESS') {
+          await checkActiveSession();
+        } else {
+          alertBox.className = 'alert alert-danger';
+          alertBox.innerText = 'Password Change Failed: ' + (data.message || data.reason || 'Denied.');
+        }
+      } catch (err) {
+        alertBox.className = 'alert alert-danger';
+        alertBox.innerText = 'Server Error: ' + err.message;
+      }
+    }
+
+    async function handleNormalChange(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById('login-alert');
+      const currentPassword = document.getElementById('normal-curr-pass').value;
+      const newPassword = document.getElementById('normal-new-pass').value;
+      const confirmPassword = document.getElementById('normal-confirm-pass').value;
+
+      if (newPassword !== confirmPassword) {
+        alert('New passwords do not match.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+        const data = await res.json();
+
+        if (data.status === 'PASSWORD_CHANGED_SUCCESS') {
+          alert('Password successfully changed!');
+          document.getElementById('normal-curr-pass').value = '';
+          document.getElementById('normal-new-pass').value = '';
+          document.getElementById('normal-confirm-pass').value = '';
+        } else {
+          alert('Password Change Failed: ' + (data.message || data.reason || 'Denied.'));
+        }
+      } catch (err) {
+        alert('Server Error: ' + err.message);
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        showLoginState();
+        const alertBox = document.getElementById('login-alert');
+        alertBox.className = 'alert alert-success';
+        alertBox.innerText = 'Session terminated cleanly. Logged out.';
+      } catch (err) {
+        console.error('Logout error', err);
+      }
+    }
+
+    async function checkRecordAccess() {
+      const targetEmpCode = document.getElementById('target-emp-code').value;
+      const resultBox = document.getElementById('access-check-result');
+      
+      try {
+        const res = await fetch('/api/auth/access-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetEmployeeCode: targetEmpCode })
+        });
+        const data = await res.json();
+
+        if (res.status === 401) {
+          resultBox.className = 'alert alert-danger';
+          resultBox.innerHTML = '<strong>ACCESS DENIED:</strong> Unauthenticated or Password Change Required.<br><code>' + data.code + '</code>';
+          return;
+        }
+
+        if (data.authorized) {
+          resultBox.className = 'alert alert-success';
+          resultBox.innerHTML = '<strong>ACCESS ALLOWED:</strong> Principal authorized for target record.<br>Code: <code>' + data.code + '</code>';
+        } else {
+          resultBox.className = 'alert alert-danger';
+          resultBox.innerHTML = '<strong>ACCESS BLOCKED:</strong> ' + (data.reason || 'Data isolation enforced.') + '<br>Code: <code>' + data.code + '</code>';
+        }
+      } catch (err) {
+        resultBox.className = 'alert alert-danger';
+        resultBox.innerText = 'Access Check Error: ' + err.message;
+      }
+    }
+
+    // Initialize check on page load
+    checkActiveSession();
+  </script>
+</body>
+</html>
