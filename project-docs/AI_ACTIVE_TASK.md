@@ -1,150 +1,238 @@
-# AI ACTIVE TASK — D1 KINTONE-ONLY LIVE CUTOVER AUTHORIZATION GATE
+# AI ACTIVE TASK — D1 KINTONE-ONLY LIVE CUTOVER — AUTHORIZED STAGED EXECUTION
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Working branch: `ai/antigravity-wp002c`
-> Independently reviewed source commit: `63796999a321a24e1cbd29ceaad82b43980fe8ea`
-> Mode: CONTROL / PLAN ONLY — NO LIVE KINTONE WRITE OR DEPLOY WITHOUT EXPLICIT USER AUTHORIZATION
+> Accepted D1 source commit: `63796999a321a24e1cbd29ceaad82b43980fe8ea`
+> User authorization: **D1 LIVE CUTOVER APPROVED**
+> Mode: CONTROLLED LIVE KINTONE EXECUTION / MINIMUM SCOPE ONLY
 
-## 0. INDEPENDENT SOURCE REVIEW RESULT
+## 0. AUTHORIZATION BOUNDARY
 
-D1 Kintone-only source implementation is accepted for the next gate.
+The user explicitly authorized D1 live cutover.
 
-Accepted source behavior:
-- real blocking MBO Login UI;
-- Username = Employee_Code;
-- WebCrypto PBKDF2-SHA256 `pbkdf2$100000$<saltHex>$<hashHex>`;
-- page-memory authentication only; reload/re-entry requires login again;
-- Force Password Change UI;
-- normal Change Password requires Current Password;
-- Logout clears page-memory and reloads;
-- failed attempts + 15-minute temporary lockout;
-- `Account_Status=LOCKED` and `DISABLED` deny;
-- malformed failed-attempt / lockout state fails closed;
-- force password change requires `Force_Password_Change=YES`;
-- App794 index/list Employee Self view queries only authenticated Employee_Code and hides the unrestricted native list;
-- create/detail/edit gate fail-closed on missing gate/host;
-- authenticated create awaits existing App53 -> App795 -> App796 -> duplicate -> Record_Key -> snapshot resolution;
-- detail/edit employee mismatch blocks custom UI and hides native fields;
-- authenticated Employee Self does not expose Employee_Code lookup/selector;
-- blocked dynamic values use safe DOM text nodes/textContent.
+Authorized in this package:
+1. live READ-ONLY discovery needed to prove exact Kintone facts;
+2. backup/read-back of current App801 ACL and App794 customization before change;
+3. App801 app permission change ONLY for the exact proven shared employee Kintone USER principal;
+4. App794 D1 customization upload/deploy using the accepted `dist/mbo-employee-app.js` artifact, after backup;
+5. live read-back verification after each change;
+6. preparation for manual UI UAT.
 
-Known architecture limitation remains:
-`DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT`.
-
-GitHub has no CI/status/workflow evidence for the implementation commit. Do not claim CI PASS. Manual Kintone UI UAT remains mandatory before D1 closes.
-
-## 1. LIVE CUTOVER IS NOT YET AUTHORIZED
-
-Do NOT perform any of the following until ChatGPT records explicit user authorization:
-- App801 app permission change;
-- App801 record permission change;
-- App801 credential provisioning/update;
-- App794 customization upload/deploy;
+NOT authorized in this package:
 - App794 ACL change;
-- migration or D2-D7 work.
+- App53/795/796 schema/process/data modification;
+- D2-D7 work;
+- migration;
+- external gateway/server;
+- broad refactor;
+- `GROUP:everyone` App801 permission broadening;
+- mass credential provisioning unless separately authorized below.
 
-Current mandatory counters remain:
+## 1. STAGE A — LIVE READ-ONLY PRECHECK (MANDATORY FIRST)
 
-```text
-KINTONE_WRITES_EXECUTED = 0
-KINTONE_DEPLOY_EXECUTED = 0
-APP801_ACL_CHANGE_EXECUTED = 0
-```
+Before any write, prove and record:
 
-## 2. LIVE APP801 FACT + SECURITY TRADE-OFF
+### A1 — Exact shared employee Kintone principal
+Do NOT invent this value.
+Use live Kintone evidence to identify the exact USER code used by ordinary/shared employee access.
 
-Current live fact from prior read-only reconciliation:
+Required output:
+`SHARED_EMPLOYEE_KINTONE_USER_CODE = <exact code> | NOT_PROVEN`
 
-```text
-APP801_APP_ACL_CURRENT:
-  CREATOR:null => full app/record rights
-  GROUP:everyone => view/add/edit/delete/import/export = false
-APP801_RECORD_ACL_CURRENT = NONE
-SHARED_EMPLOYEE_CAN_READ_APP801 = NO
-SHARED_EMPLOYEE_CAN_UPDATE_APP801 = NO
-```
+If NOT_PROVEN: STOP before any ACL write or deployment and report blocker.
 
-The Kintone-only browser login needs the shared employee Kintone principal to:
-1. READ App801 credential data needed to verify Password_Hash;
-2. UPDATE App801 for failed attempts, Last_Login_At, and own password change.
+### A2 — App801 current permission snapshot
+Read exact current App801 app ACL and record ACL.
+Save rollback evidence locally/repository evidence package without secrets.
 
-Because employees share one Kintone principal, native Kintone ACL cannot distinguish employee 0118 from 0119 inside App801. If that shared principal receives App801 read/edit rights, a technically capable user using direct Kintone REST can potentially read credential hashes and modify credential records outside the custom UI gate.
+Expected prior fact:
+- CREATOR has rights;
+- GROUP everyone denied;
+- record ACL none.
 
-This is an inherent Kintone-only/shared-account limitation. Do not hide or overstate it.
+If live state differs, report exact difference before write.
 
-Preferred minimum live permission change, once the exact shared Kintone USER code is proven and the user explicitly accepts the trade-off:
-- grant ONLY that exact shared Kintone USER principal the minimum App801 record rights required for browser login/password lifecycle;
-- prefer View=YES, Edit=YES, Add=NO, Delete=NO, Import=NO, Export=NO;
-- do not broaden to `GROUP:everyone` unless separately justified and explicitly authorized;
-- preserve creator/admin recovery access.
+### A3 — App801 credential readiness
+READ-ONLY inspect:
+- total credential count;
+- duplicate Employee_Code count/list;
+- malformed Password_Hash / Account_Status / Force_Password_Change / lockout state count;
+- exact presence/readiness of test employees `0118` and `0119`;
+- whether initial Employee_Code/Employee_Code hash provisioning appears already complete.
 
-Do not invent the shared Kintone user code. Prove it before write.
+DO NOT expose Password_Hash values in reports/logs.
+Only report structural validity/counts.
 
-## 3. CREDENTIAL PROVISIONING GATE
+Required:
+`CREDENTIAL_0118_READY = YES|NO`
+`CREDENTIAL_0119_READY = YES|NO`
+`MASS_PROVISIONING_REQUIRED = YES|NO|UNKNOWN`
 
-Before any credential write, establish exact current App801 credential state read-only:
-- number of employee credential records;
-- duplicate Employee_Code records;
-- missing App53 employees;
-- malformed hashes/status/force-change values;
-- whether initial Employee_Code/Employee_Code credential provisioning is already complete.
+If 0118 or 0119 is not ready, STOP before deploy and report an exact provisioning candidate plan. Do NOT create credentials in this package.
 
-If provisioning is required, prepare an exact dry-run candidate only. Initial/default password is Employee_Code and must be stored only as PBKDF2 hash. No plaintext persistence.
+### A4 — App794 customization snapshot
+Read exact current live App794 JS customization slots/files.
+Create backup/rollback evidence before replacing anything.
+Identify exactly which current file/slot will be replaced or added.
 
-Actual provisioning remains a separate explicit Kintone WRITE authorization.
+Required:
+`APP794_CURRENT_CUSTOMIZATION = <exact files/slots>`
+`APP794_ROLLBACK_READY = YES|NO`
 
-## 4. CUSTOMIZATION DEPLOYMENT GATE
+If rollback cannot be proven: STOP before deploy.
 
-Source artifact currently includes rebuilt `dist/mbo-employee-app.js` from the accepted D1 source.
+## 2. STAGE B — APP801 MINIMUM ACL CUTOVER (AUTHORIZED CONDITIONALLY)
 
-Before deployment:
-- identify exact current App794 JavaScript customization slots/files;
-- exact file to replace/add;
-- backup/read-back plan;
-- rollback artifact/version;
-- no unrelated customization replacement.
+Proceed ONLY if:
+- `SHARED_EMPLOYEE_KINTONE_USER_CODE` is exactly proven;
+- App801 current ACL has been backed up/read back;
+- no unexpected ACL conflict exists.
 
-Actual upload/deploy remains separate explicit authorization.
+Change App801 permission for ONLY that exact USER principal:
 
-## 5. REQUIRED MANUAL UAT BEFORE D1 CLOSE
+- View records = YES
+- Edit records = YES
+- Add records = NO
+- Delete records = NO
+- Import = NO
+- Export = NO
+- App administration/settings = NO
 
-After separately authorized ACL/provision/deploy actions, manual UI UAT must prove at minimum:
-1. enter App794/list -> MBO Login appears;
-2. initial/default Employee_Code password behavior;
-3. Force Password Change completes;
-4. reload/re-entry asks Login again;
+Preserve creator/admin recovery access.
+Do NOT grant `GROUP:everyone`.
+Do NOT add record ACL rules in this package unless the live platform requires an exact minimal rule to preserve the above behavior; if so STOP and report before widening scope.
+
+After write, immediately read back and prove exact resulting permissions.
+
+Required:
+`APP801_ACL_CHANGE_EXECUTED = 1`
+`APP801_SHARED_USER_VIEW = YES`
+`APP801_SHARED_USER_EDIT = YES`
+`APP801_SHARED_USER_ADD_DELETE_IMPORT_EXPORT = NO`
+`APP801_GROUP_EVERYONE_REMAINS_DENIED = YES`
+
+If read-back differs, rollback App801 ACL to backup and STOP.
+
+## 3. STAGE C — APP794 D1 CUSTOMIZATION DEPLOY (AUTHORIZED CONDITIONALLY)
+
+Proceed ONLY if:
+- Stage B read-back PASS;
+- 0118 and 0119 credentials are structurally READY;
+- App794 rollback backup is ready;
+- accepted artifact corresponds to D1 source commit `63796999...` or later reviewed control-only descendants with identical D1 artifact.
+
+Deploy ONLY the accepted D1 App794 customization artifact.
+Do not replace unrelated customization files.
+
+After deploy:
+- read back customization configuration;
+- confirm the expected JS artifact is active;
+- no unrelated slots changed.
+
+If deployment/read-back fails, rollback to the exact backed-up App794 customization and STOP.
+
+Required:
+`KINTONE_DEPLOY_EXECUTED = 1`
+`APP794_D1_CUSTOMIZATION_ACTIVE = YES|NO`
+`UNRELATED_CUSTOMIZATION_CHANGED = NO`
+
+## 4. STAGE D — MANUAL UI UAT GATE
+
+After successful Stage B+C, STOP automated changes and prepare the user for manual UI UAT.
+
+Manual UAT must prove:
+1. App794/list shows MBO Login on entry;
+2. login 0118 with current/default credential behavior;
+3. Force Password Change when applicable;
+4. reload/re-entry requires Login again;
 5. new password login succeeds;
-6. wrong password denied and lockout behavior visible;
+6. wrong password denied; lockout path visible;
 7. Change Password requires correct current password;
-8. Logout immediately returns to Login on reload;
-9. login 0118 -> My MBO list shows only 0118 ordinary UI items;
-10. create -> App53/App795/App796/Record_Key autoload completes without Employee ID re-entry;
-11. detail/edit record 0119 while authenticated 0118 -> blocked UI;
-12. no Password_Hash/raw credential secret rendered in normal UI/DOM/storage;
-13. residual Access Check: 0118 own = ALLOW, 0119 = BLOCK in custom Employee Self path.
+8. Logout causes Login requirement again;
+9. 0118 My MBO list shows only 0118 ordinary UI items;
+10. Create auto-loads App53 -> App795 -> App796 -> Duplicate -> Record_Key without Employee ID re-entry;
+11. detail/edit 0119 while authenticated 0118 is blocked;
+12. no Password_Hash/raw secret rendered in UI/DOM/storage;
+13. residual Access Check: 0118 own = ALLOW; 0119 = BLOCK in custom Employee Self path.
 
-Known limitation to document in UAT sign-off:
-- direct REST/native hard employee isolation is not guaranteed under the shared Kintone account.
+Known accepted limitation:
+`DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT`
 
-## 6. CURRENT STATUS / NEXT ACTION
+Do NOT close D1 until manual UAT evidence is reviewed by ChatGPT.
+
+## 5. CREDENTIAL PROVISIONING — EXPLICITLY NOT INCLUDED YET
+
+If live precheck proves credentials are missing or incomplete, produce an exact dry-run provisioning plan only:
+- source employee set from App53;
+- exact candidate Employee_Code list/count;
+- default password = Employee_Code;
+- PBKDF2 hash only, no plaintext persistence;
+- Force_Password_Change = YES;
+- Account_Status = ACTIVE;
+- duplicate/malformed exclusions;
+- rollback/reconciliation plan.
+
+Then STOP for separate provisioning authorization.
+
+## 6. GIT / EVIDENCE
+
+Before live change:
+- `git pull --ff-only origin ai/antigravity-wp002c`
+- record `HEAD_BEFORE`
+- do not modify D1 source unless needed only for evidence scripts and approved scope;
+- commit only evidence/control docs if changed;
+- push only `ai/antigravity-wp002c`.
+
+Do not commit secrets, raw Password_Hash values, API tokens, cookies, passwords, or confidential Kintone credentials.
+
+## 7. FINAL EXECUTION REPORT
+
+Report exactly:
 
 ```text
-D1_SOURCE = PASS / ACCEPTED
-D1_LIVE_CUTOVER = BLOCKED_PENDING_EXPLICIT_USER_AUTHORIZATION
-D1_MANUAL_UAT = NOT_STARTED_FOR_LIVE_KINTONE_ONLY_BUILD
+HEAD_BEFORE =
+HEAD_AFTER =
+
+SHARED_EMPLOYEE_KINTONE_USER_CODE =
+APP801_ACL_BACKUP_READY =
+APP801_ACL_CHANGE_EXECUTED = 0|1
+APP801_SHARED_USER_VIEW =
+APP801_SHARED_USER_EDIT =
+APP801_SHARED_USER_ADD_DELETE_IMPORT_EXPORT =
+APP801_GROUP_EVERYONE_REMAINS_DENIED =
+
+APP801_CREDENTIAL_COUNT =
+APP801_DUPLICATE_EMPLOYEE_CODES =
+APP801_MALFORMED_CREDENTIAL_COUNT =
+CREDENTIAL_0118_READY =
+CREDENTIAL_0119_READY =
+MASS_PROVISIONING_REQUIRED =
+
+APP794_CURRENT_CUSTOMIZATION =
+APP794_ROLLBACK_READY =
+KINTONE_DEPLOY_EXECUTED = 0|1
+APP794_D1_CUSTOMIZATION_ACTIVE =
+UNRELATED_CUSTOMIZATION_CHANGED = NO
+
+KINTONE_READS_EXECUTED =
+KINTONE_WRITES_EXECUTED =
+MANUAL_UAT_STATUS = NOT_STARTED | READY_FOR_USER
+
+D1_STATUS = LIVE_CUTOVER_PENDING_MANUAL_UAT | BLOCKED_PRECHECK
 ```
 
-Execution Plane must STOP. Do not make live changes until a new explicitly authorized task is issued.
+Stop after Stage D handoff or any fail-closed blocker.
+ChatGPT independently reviews live evidence before D1 closure.
 
 ---
 
 # PROJECT CONTROL
 
-- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / SOURCE ACCEPTED / LIVE CUTOVER AUTHORIZATION REQUIRED
+- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / SOURCE PASS / LIVE CUTOVER AUTHORIZED
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
-- D3 migrate Apps 283,310,305,643,307,640,715,716 -> App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
+- D3 Apps 283,310,305,643,307,640,715,716 -> App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 App800 HR Control Center end-to-end lifecycle = IN_PROGRESS
 - D5 copy ONLY own prior Objective / Action Plan / Additional Agreement / Weight = MUST_FIX
 - D6 integrated E2E/security/regression = BLOCKED
