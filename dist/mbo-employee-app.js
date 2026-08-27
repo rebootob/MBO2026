@@ -2391,6 +2391,18 @@ function normalizeAppraiserData(record, appraiserCount = 2, previewOptions = {})
   };
 
   const activeObjCount = parseObjectiveCount(getVal('Objective_Count'));
+  if (activeObjCount === null) {
+    return {
+      slots: [],
+      totalCount: count,
+      completedCount: 0,
+      completionPercent: 0,
+      isFullyComplete: false,
+      isInvalidConfig: true,
+      partA: { completed: 0, total: 0, isComplete: false },
+      partB: { completed: 0, total: 0, isComplete: false }
+    };
+  }
 
   const compSetCode = getVal('Competency_Set_Code') || previewOptions.competencySetCode;
   const applicableCompList = getApplicableCompetencies(compSetCode);
@@ -2402,7 +2414,9 @@ function normalizeAppraiserData(record, appraiserCount = 2, previewOptions = {})
       completedCount: 0,
       completionPercent: 0,
       isFullyComplete: false,
-      isInvalidConfig: true
+      isInvalidConfig: true,
+      partA: { completed: 0, total: 0, isComplete: false },
+      partB: { completed: 0, total: 0, isComplete: false }
     };
   }
 

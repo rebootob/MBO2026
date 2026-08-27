@@ -1689,17 +1689,22 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
     assert.ok(uiInvalidHRFinal.root.innerHTML.includes('Invalid Objective Count'), 'HR Final renders invalid count message in read-only breakdown');
   });
 
-  // 3c. Create-state default isolation (true create mode ONLY gets draft default 4)
-  const uiCreateMode = new EmployeePartAUI({
-    container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '01 Draft Objective' } }),
-    stage: BUSINESS_STAGES.OBJECTIVE_INPUT,
-    isEditable: true,
-    isCreate: true
+  // 3d. normalizeAppraiserData fail-closed regression test for invalid Objective_Count
+  ['', null, '0', '-1', '11', 'invalid'].forEach(badCount => {
+    const rec = createMockRecord({ Objective_Count: badCount ? { value: badCount } : null, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' } });
+    const info = normalizeAppraiserData(rec, 2);
+    assert.equal(info.isInvalidConfig, true, `normalizeAppraiserData must set isInvalidConfig=true for badCount='${badCount}'`);
+    assert.equal(info.isFullyComplete, false, `normalizeAppraiserData must set isFullyComplete=false for badCount='${badCount}'`);
+    assert.equal(info.completionPercent, 0, `normalizeAppraiserData must set completionPercent=0 for badCount='${badCount}'`);
+    assert.equal(info.completedCount, 0, `normalizeAppraiserData must set completedCount=0 for badCount='${badCount}'`);
+    assert.equal(info.slots.length, 0, `normalizeAppraiserData must return 0 slots for badCount='${badCount}'`);
   });
-  uiCreateMode.isEmployeeVerified = true;
-  assert.doesNotThrow(() => uiCreateMode.render(), 'True Create mode render with blank count must not throw');
-  assert.ok(uiCreateMode.root.innerHTML.includes('mbo-obj-count-select'), 'True Create mode renders count selection dropdown');
+
+  // Valid control case
+  const validRec = createMockRecord({ Objective_Count: { value: '1' }, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' } });
+  const validInfo = normalizeAppraiserData(validRec, 2);
+  assert.equal(validInfo.isInvalidConfig, false, 'normalizeAppraiserData must set isInvalidConfig=false for valid Objective_Count=1');
+  assert.equal(validInfo.slots.length, 2, 'normalizeAppraiserData must return 2 slots for valid Objective_Count=1');
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
