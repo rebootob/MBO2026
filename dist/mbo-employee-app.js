@@ -4595,6 +4595,46 @@ class EmployeePartAUI {
     return box;
   }
 
+  _getActiveAppraiserSlot(status) {
+    if (!status) return null;
+    const top = this._getVal('Routing_Topology') || (this.previewOptions?.routeScenario?.topology) || 'M1_G1';
+
+    if (['02 First Manager Objective Review', '07 First Manager Mid-Year Review', '12 First Manager Final Evaluation'].includes(status)) {
+      return (top === 'M1_M2_G1' || top === 'M1_M2_G1_G2') ? 1 : null;
+    }
+    if (['03 Manager Objective Review', '08 Manager Mid-Year Review', '13 Manager Final Evaluation'].includes(status)) {
+      if (top === 'M1_ONLY' || top === 'M1_G1' || top === 'M1_G1_G2') return 1;
+      if (top === 'M1_M2_G1' || top === 'M1_M2_G1_G2') return 2;
+      return 1;
+    }
+    if (['04 GM Objective Review', '09 GM Mid-Year Review', '14 GM Final Evaluation'].includes(status)) {
+      if (top === 'M1_G1' || top === 'M1_G1_G2') return 2;
+      if (top === 'M1_M2_G1' || top === 'M1_M2_G1_G2') return 3;
+      return null;
+    }
+    return null;
+  }
+
+  _getStageCurrentActor(status) {
+    const s = String(status || '').trim();
+    if (['01 Draft Objective', '06 Employee Mid-Year', '11 Employee Self Evaluation'].includes(s)) {
+      return 'EMPLOYEE';
+    }
+    if (['02 First Manager Objective Review', '07 First Manager Mid-Year Review', '12 First Manager Final Evaluation'].includes(s)) {
+      return 'FIRST_MANAGER';
+    }
+    if (['03 Manager Objective Review', '08 Manager Mid-Year Review', '13 Manager Final Evaluation'].includes(s)) {
+      return 'MANAGER';
+    }
+    if (['04 GM Objective Review', '09 GM Mid-Year Review', '14 GM Final Evaluation'].includes(s)) {
+      return 'GM';
+    }
+    if (s === '15 HR Final Check') {
+      return 'HR';
+    }
+    return 'NONE';
+  }
+
   _renderSupportCenterIfAdmin(root, status) {
     const loginUser = this.previewOptions?.simulatedLoginUserCode ||
       (this.previewOptions?.viewerRole === 'admin' ? 'admin-form' : '') ||
