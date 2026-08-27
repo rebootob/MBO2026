@@ -3580,6 +3580,9 @@ class EmployeePartAUI {
   }
 
   _renderScreenMidYear() {
+    const container = document.createElement('div');
+    container.className = 'mbo-table-container';
+
     const isMidEditable = this.isEditable && this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
 
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
@@ -3598,9 +3601,6 @@ class EmployeePartAUI {
       container.appendChild(errCard);
       return container;
     }
-
-    const container = document.createElement('div');
-    container.className = 'mbo-table-container';
 
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';
@@ -3707,6 +3707,9 @@ class EmployeePartAUI {
   }
 
   _renderScreenSelfEval() {
+    const container = document.createElement('div');
+    container.className = 'mbo-table-container';
+
     const isSelfEditable = this.isEditable && this.stage === BUSINESS_STAGES.SELF_EVALUATION;
 
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
@@ -3725,9 +3728,6 @@ class EmployeePartAUI {
       container.appendChild(errCard);
       return container;
     }
-
-    const container = document.createElement('div');
-    container.className = 'mbo-table-container';
 
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';
@@ -5015,6 +5015,17 @@ class EmployeePartAUI {
 
   _updateTotalWeightDisplay() {
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
+    const box = document.getElementById('mbo-weight-summary-box');
+    const txt = document.getElementById('mbo-weight-calc-text');
+    const st = document.getElementById('mbo-weight-calc-status');
+    if (!box || !txt || !st) return;
+
+    if (count === null) {
+      box.className = 'mbo-weight-summary invalid';
+      txt.textContent = 'ผลรวมน้ำหนัก / Total Weight: Invalid Objective_Count (1..10)';
+      st.textContent = '❌ Invalid Count';
+      return;
+    }
 
     let total = 0;
     const parts = [];
@@ -5023,11 +5034,6 @@ class EmployeePartAUI {
       total += isNaN(w) ? 0 : w;
       parts.push(`${w || 0}%`);
     }
-
-    const box = document.getElementById('mbo-weight-summary-box');
-    const txt = document.getElementById('mbo-weight-calc-text');
-    const st = document.getElementById('mbo-weight-calc-status');
-    if (!box || !txt || !st) return;
 
     txt.textContent = `ผลรวมน้ำหนัก / Total Weight: ${parts.join(' + ')} = ${total}%`;
     if (Math.round(total) === 100) {

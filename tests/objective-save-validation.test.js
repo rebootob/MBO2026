@@ -1638,6 +1638,36 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(parseObjectiveCount('11'), null);
   assert.equal(parseObjectiveCount('invalid'), null);
 
+  // 3b. Screen rendering with invalid Objective_Count (No throw, no phantom rows)
+  ['invalid', '', '0', '11'].forEach(badCount => {
+    const uiInvalidMid = new EmployeePartAUI({
+      container: makeMockElement(),
+      record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '07 First Manager Mid-Year Review' } }),
+      stage: BUSINESS_STAGES.MIDYEAR_INPUT,
+      isEditable: true
+    });
+    assert.doesNotThrow(() => uiInvalidMid.render(), `MidYear render with Objective_Count='${badCount}' must not throw`);
+    assert.ok(uiInvalidMid.root.innerHTML.includes('Invalid Objective Count'), 'MidYear renders invalid count message');
+
+    const uiInvalidSelf = new EmployeePartAUI({
+      container: makeMockElement(),
+      record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '11 Employee Self Evaluation' } }),
+      stage: BUSINESS_STAGES.SELF_EVALUATION,
+      isEditable: true
+    });
+    assert.doesNotThrow(() => uiInvalidSelf.render(), `SelfEval render with Objective_Count='${badCount}' must not throw`);
+    assert.ok(uiInvalidSelf.root.innerHTML.includes('Invalid Objective Count'), 'SelfEval renders invalid count message');
+
+    const uiInvalidAppr = new EmployeePartAUI({
+      container: makeMockElement(),
+      record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '12 First Manager Final Evaluation' } }),
+      stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
+      isEditable: true
+    });
+    assert.doesNotThrow(() => uiInvalidAppr.render(), `AppraiserEval render with Objective_Count='${badCount}' must not throw`);
+    assert.ok(uiInvalidAppr.root.innerHTML.includes('Invalid Objective Count'), 'AppraiserEval renders invalid count message');
+  });
+
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
   assert.equal(dlUpcoming.status, 'Upcoming');
