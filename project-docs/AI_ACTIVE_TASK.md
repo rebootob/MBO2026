@@ -1,29 +1,27 @@
-# AI ACTIVE TASK — D1-A MINIMAL SECURITY CORRECTIVE ONLY
+# AI ACTIVE TASK — D1-A FINAL SESSION REVOCATION BLOCKER ONLY
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Independently reviewed implementation: `a66b94a997ee4883c717fb8f39bb293330521bde`
-> Mode: TWO SECURITY BLOCKERS ONLY / MINIMUM FIX
+> Independently reviewed implementation: `0bd2c1111aa6ce2375ca2170661d67138d9772c5`
+> Mode: ONE SECURITY BLOCKER ONLY / MINIMUM FIX
 > Kintone write/deploy/schema/process/ACL authorization: NONE
 
 ## 0. REVIEW RESULT
 
-D1-A architecture is substantially accepted. Do NOT rewrite it.
+D1-A B1 and B2 are accepted from source review:
+- credentialStore now requires `getCredential()` + `updateCredential()` and fails closed otherwise
+- failed-login threshold persists count + `Locked_Until`
+- expired/missing/invalid `expiresAt` fails closed
+- malformed session flags fail closed
+- force-change and normal self-change state separation is correct
 
-Accepted:
-- Node/server-only auth core using `node:crypto`
-- reuse of `MboPasswordDomainService` and `MboIdentityService`
-- random opaque session token + server-side token hash
-- force-change session is not authorized for MBO data
-- sanitized client result does not expose `Password_Hash`
-- session principal is used for Employee A/B authorization
-- logout/revoke exists
+Do NOT change those areas again unless required by the blocker below.
 
-Independent review found ONLY TWO remaining security blockers. Fix only these blockers and their focused tests.
+One FINAL D1-A blocker remains from the ORIGINAL D1-A acceptance requirement: session revocation must be real, not optional.
 
-Target implementer result remains:
+Target implementer result:
 
 `D1A_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
@@ -31,67 +29,76 @@ Do NOT self-certify D1 or D1-A PASS.
 
 ---
 
-## B1 — CREDENTIAL LOCKOUT PERSISTENCE MUST FAIL CLOSED
+## ONLY BLOCKER — SESSION REVOCATION MUST FAIL CLOSED
 
-Files allowed:
+Allowed files only:
 - `src/services/mbo-auth-session-service.js`
 - `tests/mbo-auth-session-service.test.js`
 
-Current issue:
-`login()` treats `credentialStore.updateCredential` as optional. If the adapter exposes `getCredential` but not `updateCredential`, invalid-password attempts can continue without persisting `Failed_Login_Count` / `Locked_Until`.
+Current unsafe behavior:
 
-Required minimum fix:
-- The trusted credential adapter used by login must provide BOTH `getCredential()` and `updateCredential()`.
-- If required write capability is absent, fail closed with a configuration error; do not authenticate normally and do not silently skip failed-attempt persistence.
-- Wrong-password threshold must persist both final failed count and `Locked_Until`.
-- Do not add a database or App801 adapter in this task.
+1. `changePassword()` currently does:
 
-Minimum tests:
-1. missing `updateCredential` => fail closed / configuration error.
-2. credential at failed-count 4 + wrong password => count 5 and non-null `Locked_Until` are actually persisted.
+```js
+if (typeof this.sessionStore.deleteSession === 'function') {
+  await this.sessionStore.deleteSession(oldTokenHash);
+}
+```
 
----
+So password change can succeed and a new token can be issued even when the old token cannot actually be revoked.
 
-## B2 — PASSWORD CHANGE MUST REJECT EXPIRED OR MALFORMED SESSION STATE
+2. `logout()` currently returns:
 
-Current issue:
-`changePassword()` reads a session from the store but does not validate session expiry before changing the credential. It also treats any session that is not exactly a normal authorized session as effectively force-change, which can allow malformed session state to bypass current-password proof.
+```text
+LOGGED_OUT
+```
 
-Required minimum fix:
-- Before any password change, require a valid unexpired server session.
-- `expiresAt` must be present, parseable, and strictly in the future; missing/invalid/expired => reject.
-- Accept only one of these exact trusted states:
-  - force-change: `requiresPasswordChange === true` AND `isDataAuthorized === false`
-  - normal self-change: `requiresPasswordChange === false` AND `isDataAuthorized === true`
-- Any other flag combination => fail closed.
-- Normal self-change still requires valid current password.
-- Force-change may set the new password without re-entering current password because the bootstrap password was already verified when that restricted session was issued.
-- New password must still not equal Employee_Code.
-- Keep old-session revoke/new-session rotation behavior.
-- Also make `getAuthenticatedPrincipal()` fail closed if session `expiresAt` is missing or invalid; an indefinite/malformed session must never become an authenticated principal.
+even when `sessionStore.deleteSession()` does not exist, meaning the old token may remain active.
 
-Minimum tests:
-3. expired force-change session cannot change password.
-4. expired normal session cannot change password.
-5. malformed session flags cannot change password without current-password proof.
-6. missing/invalid `expiresAt` cannot produce authenticated principal.
-7. valid force-change and valid normal password-change paths still pass.
+This violates the original D1-A requirement that password change rotates/revokes the old session and logout invalidates the session token.
+
+### Required minimum fix
+
+- A session store used for authenticated session lifecycle must provide the capabilities needed by each operation; do not silently skip revocation.
+- `changePassword()` must fail closed if the old session cannot be revoked.
+- Do not mutate the password credential and then falsely report success if session revocation is unavailable.
+- Prefer a safe order where inability to revoke the old session is detected before credential mutation/new-session issuance.
+- After successful password change:
+  - old token MUST resolve to no authenticated principal
+  - new token MUST resolve to the same trusted employee principal
+- `logout()` must not report successful logout when revocation capability is unavailable/fails. Return/throw a clear fail-closed result/error.
+- Successful logout MUST make the old token unusable.
+- Keep raw session tokens out of the session store; keep existing token-hash behavior.
+- Do not add a database, HTTP server, framework, App801 adapter, UI, or Kintone integration.
+
+### Minimum tests only
+
+Add only focused tests proving:
+
+1. sessionStore without `deleteSession()` => `changePassword()` fails closed BEFORE successful credential/session rotation.
+2. successful password change => old token no longer produces a principal; new token does.
+3. sessionStore without `deleteSession()` => logout does NOT falsely return successful `LOGGED_OUT`.
+4. successful logout => old token no longer produces a principal.
+
+Keep all existing D1-A, password-domain, identity tests passing.
 
 ---
 
 ## DO NOT EXPAND SCOPE
 
 Do NOT:
-- build Login UI
+- build Login UI in this commit
 - build HTTP endpoints/server
 - implement App801 GET/WRITE
 - change Kintone ACL/schema/process
 - deploy anything
-- work on direct URL/API integration yet
+- work on direct URL/API integration
 - change password hashing algorithm
 - invent password complexity policy
 - touch D2-D7
 - refactor unrelated auth code
+
+Once this blocker passes independent review, the NEXT package will be **D1-B Minimal Login UI Preview for user manual UAT**.
 
 ## VERIFICATION
 
@@ -119,7 +126,7 @@ Report:
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A TWO SECURITY BLOCKERS THIS TASK
+- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A FINAL SESSION REVOCATION BLOCKER
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
