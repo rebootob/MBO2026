@@ -1,179 +1,146 @@
-# AI ACTIVE TASK — D1-C2B EXACT READ-ONLY RUNTIME FACTS ONLY
+# AI ACTIVE TASK — D1-C3 TRUSTED RUNTIME + FIRST-LOGIN IDENTITY DECISION GATE
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed implementation: `51a98831e108dd60571f60863c891852e0b874b8`
-> Mode: FASTEST SAFE PATH / FACT GATHERING ONLY / NO SOURCE CHANGES / NO KINTONE WRITE OR DEPLOY
+> Reviewed evidence commit: `6eae5fb6eab8a9c11d0444191857e6ad18ded22f`
+> Mode: HOLD IMPLEMENTATION UNTIL USER ARCHITECTURE DECISION / NO KINTONE WRITE / NO SOURCE CHANGES
 
 ## 0. INDEPENDENT REVIEW RESULT
 
 Accepted:
-- D1-C1 source corrective = ACCEPTED.
-- D1-C2A `Account_Status === LOCKED` fix = PASS by source review.
-- Scope = PASS (password service + focused test only).
+- D1-A trusted password/session source boundary = CLOSED.
+- D1-B source/UI = ACCEPTED; user UAT passed bootstrap force change, default-password reuse block, wrong-password lockout, changed-password login, and logout. Access-check screenshot remains residual evidence only and does not block architecture work.
+- D1-C1 App801 credential repository source corrective = ACCEPTED.
+- D1-C2A hard `Account_Status = LOCKED` fix = PASS.
+- D1-C2B evidence package = PASS as factual planning evidence.
 
-Not accepted:
-- The D1-C2A closure manifest is NOT exact enough for one user authorization.
-- Its commit reports `KINTONE_READS_EXECUTED = 0`, so it did not provide the required exact current ACL principals.
-- `PROPOSED_KINTONE_WRITE_MANIFEST` is ambiguous (`App801 or dedicated Session App`).
-- `IDENTITY_BINDING_SOURCE = NOT_AVAILABLE` and `TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE` remain blockers.
-- App794 direct URL/REST isolation remains `UNSAFE`.
+D1 overall is NOT PASS.
 
-GitHub has no CI/status evidence for the reviewed commit. Do not claim CI PASS.
+## 1. VERIFIED CURRENT RUNTIME FACTS
 
-## 1. GOAL — ONE LAST READ-ONLY FACT PACKAGE
-
-Do NOT implement more auth code.
-Do NOT change UI.
-Do NOT modify Kintone.
-
-Collect only the exact facts needed for ChatGPT to make the final architecture/write decision without another speculative cycle.
-
-Prefer <= 8 Kintone GET requests total. Never print secrets, Password_Hash, tokens, MFA values, or full credential records.
-
-## 2. EXACT READS REQUIRED
-
-### A. App801
-Read only:
-1. form field schema relevant to auth/session lifecycle;
-2. App ACL;
-3. record ACL if configured/available.
-
-Report exact:
-- current field codes/types/options;
-- exact ACL entities/principals and rights;
-- confirm `Password_Expires_At` absent/present;
-- confirm whether `Kintone_User_Code` absent/present.
-
-### B. App794
-Read only:
-1. App ACL;
-2. Record ACL.
-
-Report exact:
-- each entity/principal/group relevant to employee/general/shared access;
-- the exact rule that makes direct record URL/REST access unsafe;
-- HR/appraiser/admin principals/rules that must be preserved;
-- whether native Kintone ACL can distinguish Employee 0118 from Employee 0119 under the CURRENT authenticated Kintone account model.
-
-Do not say merely `everyone`; include the exact returned entity type/code/name when available.
-
-### C. Identity binding source
-Read App53 form schema only first.
-
-If App53 contains an actual Kintone user-code/user-selector binding field, read ONLY `Employee_Code` + that binding field (minimum fields, no names/other employee data) and compute ambiguity locally without printing the employee list.
-
-If App53 has no such field, report exactly:
-`IDENTITY_BINDING_SOURCE = NOT_AVAILABLE`
-
-If another already-existing authoritative source is proven by repository/live configuration, name it exactly. Do not invent one.
-
-Report:
-- `KINTONE_USER_BINDING_UNIQUE = YES | NO | NOT_PROVEN`
-- if NO, only the conflicting principal code and count; do not dump employee data.
-
-### D. Trusted runtime
-Repository review already shows only local Node tooling/preview and Kintone deployment scripts, not a deployed trusted auth backend.
-
-Confirm whether there is any ACTUAL existing trusted runtime/configuration in the project environment. Do not create one.
-
-Report exactly:
-`TRUSTED_BACKEND_RUNTIME = <actual runtime> | NOT_AVAILABLE`
-
-The local `npm run ui:preview` process is NOT production/sandbox-deployed infrastructure.
-
-## 3. LOCK THE SMALLEST SESSION DESIGN — NO “OR” OPTIONS
-
-For planning purposes, prefer the existing App801 as a **single-active-session-per-employee** store unless a live Kintone constraint proves this impossible.
-
-Proposed minimum App801 session fields to validate against Kintone capabilities:
-- `Password_Expires_At` — DATETIME
-- `Session_Token_Hash` — SINGLE_LINE_TEXT (hash only; never raw token)
-- `Session_Expires_At` — DATETIME
-- `Session_Requires_Password_Change` — DROP_DOWN `YES|NO`
-- `Session_Data_Authorized` — DROP_DOWN `YES|NO`
-- `Session_Kintone_User_Code` — SINGLE_LINE_TEXT
-
-Do NOT add them yet.
-Do NOT propose a new Session App unless a specific Kintone limitation makes the App801 single-session model unsafe/impossible; if so, state that exact limitation.
-
-Identity field `Kintone_User_Code` for the credential record itself must NOT be added speculatively until Section C proves the authoritative mapping model.
-
-## 4. REQUIRED EXACT REPORT
-
-Create an evidence-only commit (`--allow-empty` is allowed) with NO source/doc changes after this control commit. Put the facts in the commit message body and completion report.
-
-Required:
+From D1-C2B evidence:
 
 ```text
-D1C2A_LOCKED_SOURCE_FIX = PASS_PENDING_CHATGPT_FINAL_ACCEPTANCE
+APP801_PASSWORD_EXPIRES_FIELD = ABSENT
+APP801_KINTONE_USER_CODE_FIELD = ABSENT
+APP801_ACL = CREATOR full access; GROUP everyone deny all
+APP801_RECORD_ACL = NONE
+APP801_SINGLE_SESSION_MODEL = FEASIBLE
 
-APP801_PASSWORD_EXPIRES_FIELD = PRESENT | ABSENT
-APP801_KINTONE_USER_CODE_FIELD = PRESENT | ABSENT
-APP801_ACL = <exact entities/rights>
-APP801_RECORD_ACL = <exact rules or NONE>
-APP801_SINGLE_SESSION_MODEL = FEASIBLE | NOT_FEASIBLE:<exact reason>
+APP794_APP_ACL = CREATOR full access; GROUP everyone view/add/edit/delete
+APP794_RECORD_ACL = NONE
+APP794_UNSAFE_PRINCIPAL = GROUP everyone
+NATIVE_ACL_CAN_DISTINGUISH_0118_0119 = NO
 
-APP794_APP_ACL = <exact entities/rights>
-APP794_RECORD_ACL = <exact rules>
-APP794_UNSAFE_PRINCIPAL = <exact entity/rule>
-APP794_PRESERVE_PRIVILEGED_RULES = <exact HR/appraiser/admin rules>
-NATIVE_ACL_CAN_DISTINGUISH_0118_0119 = YES | NO | NOT_PROVEN
-
-IDENTITY_BINDING_SOURCE = <exact source> | NOT_AVAILABLE
-KINTONE_USER_BINDING_UNIQUE = YES | NO | NOT_PROVEN
-TRUSTED_BACKEND_RUNTIME = <exact runtime> | NOT_AVAILABLE
-
-FINAL_PROPOSED_KINTONE_WRITE_MANIFEST =
-- App801: <one exact field list; no alternatives>
-- App801 ACL: <exact change or NO_CHANGE>
-- App794 ACL: <exact rule/entity changes, or BLOCKED_PENDING_RUNTIME if impossible before runtime choice>
-
-NON_KINTONE_RUNTIME_BLOCKER = <exact item or NONE>
-
-KINTONE_READS_EXECUTED = N
-KINTONE_WRITES_EXECUTED = 0
-KINTONE_DEPLOY_EXECUTED = 0
-SOURCE_FILES_CHANGED = 0
-DOC_FILES_CHANGED_BY_ANTIGRAVITY = 0
-D1C2B_STATUS = EVIDENCE_READY_FOR_INDEPENDENT_REVIEW | BLOCKED_WITH_EXACT_EVIDENCE
-D1_OVERALL_STATUS = IN_PROGRESS
+IDENTITY_BINDING_SOURCE = NOT_AVAILABLE
+KINTONE_USER_BINDING_UNIQUE = NOT_PROVEN
+TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE
 ```
 
-## 5. STOP CONDITIONS
+Repository environment also contains only local Node/Kintone tooling; no deployed trusted auth backend target is configured.
 
-Stop and report, do not design around it, if either is true:
-- current Kintone principal model cannot uniquely bind one Employee_Code;
-- no trusted backend runtime exists and App794 native ACL cannot enforce secondary-MBO-login identity.
+## 2. ARCHITECTURE BLOCKER — DO NOT BYPASS
 
-These are architecture/runtime blockers, not reasons to weaken security.
+Current accepted `MboIdentityService` requires a deterministic one-Kintone-user -> one-Employee_Code mapping before secondary MBO username validation.
 
-## 6. OUT OF SCOPE
+The current operating model uses shared/general Kintone access for employees, so native Kintone identity cannot distinguish individual employees behind the shared account.
 
-- no source changes
-- no tests needed because no source changes
-- no UI work
-- no App801/App794 schema/ACL writes
-- no credential provisioning
-- no session-store implementation
-- no deploy
-- no backend framework/hosting creation
-- no MFA
-- no D2-D7 work
+Security consequence:
+- Removing the Kintone binding requirement without replacing it is NOT allowed.
+- Allowing initial `Employee_Code / Employee_Code` as the only proof under a shared account would allow first-login impersonation when another person's Employee_Code is known.
+- Client-side hiding cannot fix this.
+- App794 ACL cannot distinguish 0118 from 0119 under the shared principal.
 
-Run only:
-```bash
-git diff --check
-git status --short
+Therefore D1 requires BOTH:
+1. a deployed trusted backend/gateway that owns App801 secrets and App794 employee-self data access; and
+2. a secure first-login bootstrap identity proof compatible with the user's requirement that initial MBO username/password remain Employee_Code.
+
+## 3. CONTROL-PLANE RECOMMENDATION — FASTEST SAFE PATH
+
+Recommended architecture for user approval:
+
+### A. Trusted MBO Auth/Data Gateway
+- Portable Node.js server-side service using the already accepted auth/session/repository modules.
+- Kintone browser JS never receives App801 privileged credential/API token.
+- Gateway keeps Kintone privileged credentials server-side.
+- Gateway establishes the secondary MBO session and exposes only authorized employee-self App794 operations.
+- Employee browser does NOT directly use App794 unrestricted REST access after cutover.
+- Deployment host is an operational choice; internal Windows/Linux server behind HTTPS is preferred when available. Exact host can be selected later without rewriting the auth domain.
+
+### B. First-Login Activation Proof — RECOMMENDED
+Keep the user's requested bootstrap credentials:
+```text
+Username = Employee_Code
+Initial Password = Employee_Code
 ```
+But first-ever bootstrap login must additionally require a one-time HR-issued Activation Code (random, not derived from Employee_Code).
+
+Security properties:
+- store only `Activation_Code_Hash`, never plaintext;
+- one-time use;
+- expire after configurable period;
+- after successful activation + forced password change, normal logins use the new private password and no activation code;
+- HR can later issue/reset activation through App800 trusted operations.
+
+This is NOT recurring MFA. It is only first-login identity proof required because the Kintone outer account is shared.
+
+## 4. DO NOT EXECUTE YET
+
+Until the user approves the architecture above (or explicitly chooses another secure bootstrap proof):
+- no App801 schema writes;
+- no App794 ACL writes;
+- no gateway implementation;
+- no deployment;
+- no weakening/removal of identity security checks;
+- no D1 PASS claim.
+
+## 5. EXPECTED WRITE/IMPLEMENTATION PACKAGE AFTER USER APPROVAL
+
+The next package should combine the minimum required work so the user is not asked repeatedly:
+
+### App801 schema additions (planned, not authorized yet)
+Credential lifecycle:
+- `Password_Expires_At` — DATETIME
+
+Session lifecycle (single active session per employee):
+- `Session_Token_Hash` — SINGLE_LINE_TEXT
+- `Session_Expires_At` — DATETIME
+- `Session_Requires_Password_Change` — DROP_DOWN YES|NO
+- `Session_Data_Authorized` — DROP_DOWN YES|NO
+- `Session_Kintone_User_Code` — SINGLE_LINE_TEXT (outer Kintone principal audit context, not unique employee proof)
+
+First-login activation, if approved:
+- `Activation_Code_Hash` — SINGLE_LINE_TEXT
+- `Activation_Expires_At` — DATETIME
+- `Activation_Used_At` — DATETIME
+
+### Runtime implementation
+- trusted Node gateway
+- App801 credential/session adapters
+- activation verification
+- employee-self App794 gateway authorization
+- HttpOnly/Secure session cookie or equivalent opaque session boundary
+
+### App794 ACL
+Do NOT change App794 ACL until the trusted gateway is operational and verified, to avoid locking users out prematurely.
+After gateway UAT, remove unsafe `GROUP everyone` direct record access while preserving creator/HR/appraiser/approved privileged access based on exact current rules.
+
+## 6. USER DECISION REQUIRED
+
+Control Plane should ask the user ONE decision:
+
+`Approve recommended D1 architecture: Trusted Node Gateway + one-time HR Activation Code for first login while retaining Employee_Code/Employee_Code bootstrap?`
+
+If YES, create one tightly controlled D1-C3 implementation/write package.
+If NO, obtain the user's preferred secure first-login identity proof/runtime and re-evaluate before implementation.
 
 ---
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2A LOCKED FIX SOURCE PASS / D1-C2B THIS TASK
+- D1 Login + password change + strict employee data isolation = BLOCKED_ARCHITECTURE_DECISION / source auth accepted / runtime not deployed
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
