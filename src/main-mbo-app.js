@@ -194,12 +194,17 @@ if (typeof kintone !== 'undefined') {
     }
 
     // 2. Instantiate and render Custom UI
+    const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
+    const loginUserCode = loginUser?.code || null;
+
     const options = {
       container: uiHost,
       record: record,
       stage: stage,
       isEditable: isCreate || isEdit,
       isCreate: isCreate,
+      loginUserCode: loginUserCode,
+      isPreviewMode: false,
       onFieldChange: (code, val) => {
         if (record[code]) {
           record[code].value = val;

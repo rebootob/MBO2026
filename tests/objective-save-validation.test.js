@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR, ROUTE_SCENARIOS, EVALUATION_PROFILES, calculateDeadlineInfo, parseObjectiveCount, normalizeProfileCode, getEvaluationProfile } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR, ROUTE_SCENARIOS, EVALUATION_PROFILES, calculateDeadlineInfo, parseObjectiveCount, normalizeProfileCode, getEvaluationProfile, resolveIdentityViewerRole, extractUserCodes } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => {
   const children = [];
@@ -1369,7 +1369,9 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
       Final_Attachment_1: { value: [{ name: 'final_ev.pdf' }] }
     }),
     stage: 'READ_ONLY',
-    isEditable: false
+    isEditable: false,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiAppraiser.render();
   assert.equal(uiAppraiser.root.innerHTML.includes('mid_ev.pdf'), true, 'Appraiser screen must show Mid-Year evidence');
@@ -1383,7 +1385,9 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
       Final_Attachment_1: { value: [{ name: 'final_ev.pdf' }] }
     }),
     stage: 'READ_ONLY',
-    isEditable: false
+    isEditable: false,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'hr' }
   });
   uiHr.render();
   assert.equal(uiHr.root.innerHTML.includes('mid_ev.pdf'), true, 'HR screen must show Mid-Year evidence');
@@ -1411,7 +1415,9 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
       MBO_Point_1: { value: '1.60' }, // Stale
       Competency_Result_1: { value: '4.00' } // Stale
     }),
-    stage: 'READ_ONLY'
+    stage: 'READ_ONLY',
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiStale.render();
   assert.equal(uiStale.root.innerHTML.includes('Combined Result Pending / Incomplete'), true, 'Incomplete ratings must hide certified combined results in Appraiser Evaluation');
@@ -1462,7 +1468,9 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
       Manager_Objective_Score_1: { value: '4.00' },
       Average_Objective_Score_1: { value: '4.00' }
     }),
-    stage: 'READ_ONLY'
+    stage: 'READ_ONLY',
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'hr' }
   });
   uiHrStale.render();
   assert.equal(uiHrStale.root.innerHTML.includes('Combined Result Pending / Incomplete'), true, 'HR Final breakdown must display Pending for incomplete combined results');
@@ -1475,7 +1483,7 @@ test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Gui
     appraiserCount: 4,
     activeSlotIndex: 3,
     isPreviewMode: true,
-    previewOptions: { isPreviewMode: true }
+    previewOptions: { isPreviewMode: true, viewerRole: 'appraiser' }
   });
   uiSlots34.render();
   assert.equal(uiSlots34.root.innerHTML.includes('Preview Logical Slot'), true, 'Slots 3/4 must be labeled as Preview Logical Slot');
@@ -1674,7 +1682,9 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
       container: makeMockElement(),
       record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '12 First Manager Final Evaluation' } }),
       stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
-      isEditable: true
+      isEditable: true,
+      isPreviewMode: true,
+      previewOptions: { viewerRole: 'appraiser' }
     });
     assert.doesNotThrow(() => uiInvalidAppr.render(), `AppraiserEval render with Objective_Count='${badCount}' must not throw`);
     assert.ok(uiInvalidAppr.root.innerHTML.includes('Invalid Objective Count'), 'AppraiserEval renders invalid count message');
@@ -1683,7 +1693,9 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
       container: makeMockElement(),
       record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '15 HR Final Check' } }),
       stage: BUSINESS_STAGES.HR_FINAL_CHECK,
-      isEditable: false
+      isEditable: false,
+      isPreviewMode: true,
+      previewOptions: { viewerRole: 'hr' }
     });
     assert.doesNotThrow(() => uiInvalidHRFinal.render(), `HR Final render with Objective_Count='${badCount}' must not throw`);
     assert.ok(uiInvalidHRFinal.root.innerHTML.includes('Invalid Objective Count'), 'HR Final renders invalid count message in read-only breakdown');
@@ -1706,78 +1718,151 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(validInfo.isInvalidConfig, false, 'normalizeAppraiserData must set isInvalidConfig=false for valid Objective_Count=1');
   assert.equal(validInfo.slots.length, 2, 'normalizeAppraiserData must return 2 slots for valid Objective_Count=1');
 
-  // 3e. EMPLOYEE STEP 4-5 PRIVACY GATE TESTS
-  // Scenario A: Employee viewer + current Step 4 (Appraiser Eval)
+  // 3e. IDENTITY-BASED VIEWER ROLE RESOLUTION & PRIVACY GATE MATRIX
+  // Scenario A: Employee identity + Status 13 Manager Final Evaluation -> EMPLOYEE, Step 4 detail hidden, privacy card shown
+  const recEmpStep4 = createMockRecord({
+    Objective_Count: { value: '4' },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' },
+    Requester_User: { value: [{ code: 'emp01', name: 'Somchai Employee' }] },
+    First_Manager_User: { value: [{ code: 'mgr01', name: 'Manager One' }] },
+    Routing_Topology: { value: 'CURRENT_STANDARD' },
+    Status: { value: '13 Manager Final Evaluation' }
+  });
   const uiEmpStep4 = new EmployeePartAUI({
     container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '12 First Manager Final Evaluation' } }),
+    record: recEmpStep4,
     stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
     isEditable: false,
-    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+    loginUserCode: 'emp01',
+    isPreviewMode: false
   });
+  assert.equal(uiEmpStep4._getResolvedViewerRole(), 'EMPLOYEE', 'Employee login user code resolves to EMPLOYEE role');
   assert.doesNotThrow(() => uiEmpStep4.render(), 'Employee viewer on Step 4 must render without throwing');
   assert.ok(uiEmpStep4.root.innerHTML.includes('Appraiser Evaluation in progress'), 'Employee viewer sees privacy-safe card on Step 4');
   assert.ok(!uiEmpStep4.root.innerHTML.includes('Appraiser Evaluation Completion'), 'Appraiser card must be absent for Employee on Step 4');
 
-  // Scenario B: Employee viewer + current Step 5 (HR Final)
+  // Scenario B: Employee identity + Status 15 HR Final Check -> EMPLOYEE, HR detail hidden, HR role NOT inferred from status 15/16
+  const recEmpStep5 = createMockRecord({
+    Objective_Count: { value: '4' },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' },
+    Requester_User: { value: [{ code: 'emp01', name: 'Somchai Employee' }] },
+    Routing_Topology: { value: 'CURRENT_STANDARD' },
+    Status: { value: '15 HR Final Check' }
+  });
   const uiEmpStep5 = new EmployeePartAUI({
     container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '15 HR Final Check' } }),
+    record: recEmpStep5,
     stage: BUSINESS_STAGES.HR_FINAL_CHECK,
     isEditable: false,
-    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+    loginUserCode: 'emp01',
+    isPreviewMode: false
   });
-  assert.doesNotThrow(() => uiEmpStep5.render(), 'Employee viewer on Step 5 must render without throwing');
+  assert.equal(uiEmpStep5._getResolvedViewerRole(), 'EMPLOYEE', 'Status 15 must NOT elevate Employee to HR role');
+  assert.doesNotThrow(() => uiEmpStep5.render());
   assert.ok(uiEmpStep5.root.innerHTML.includes('HR Final Review in progress'), 'Employee viewer sees privacy-safe card on Step 5');
   assert.ok(!uiEmpStep5.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR summary breakdown must be absent for Employee on Step 5');
 
-  // Scenario C: Employee history navigation & navigator step clickability
-  const uiEmpNav = new EmployeePartAUI({
+  // Scenario C: Appraiser identity + Status 13 -> APPRAISER, Step 4 permitted detail preserved
+  const recApprStep4 = createMockRecord({
+    Objective_Count: { value: '4' },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' },
+    Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+    Requester_User: { value: [{ code: 'emp01', name: 'Employee' }] },
+    First_Manager_User: { value: [{ code: 'mgr01', name: 'Manager' }] },
+    Manager_User: { value: [{ code: 'mgr01', name: 'Manager' }] },
+    Routing_Topology: { value: 'M1_M2_G1' },
+    Status: { value: '12 First Manager Final Evaluation' }
+  });
+  const uiApprViewer = new EmployeePartAUI({
     container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'M1_G1' }, Status: { value: '15 HR Final Check' } }),
+    record: recApprStep4,
+    stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
+    isEditable: true,
+    loginUserCode: 'mgr01',
+    isPreviewMode: false
+  });
+  assert.equal(uiApprViewer._getResolvedViewerRole(), 'APPRAISER', 'Appraiser login user code resolves to APPRAISER role');
+  assert.doesNotThrow(() => uiApprViewer.render());
+  assert.ok(uiApprViewer.root.innerHTML.includes('Appraiser Evaluation Completion'), 'Appraiser completion card must be present for Appraiser viewer');
+
+  // Scenario D: Unknown login identity + Status 13 -> RESTRICTED, Step 4 detail absent
+  const uiUnknownStep4 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: recApprStep4,
+    stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
+    isEditable: true,
+    loginUserCode: 'stranger99',
+    isPreviewMode: false
+  });
+  assert.equal(uiUnknownStep4._getResolvedViewerRole(), 'RESTRICTED', 'Unknown login user resolves to RESTRICTED');
+  uiUnknownStep4.render();
+  assert.ok(uiUnknownStep4.root.innerHTML.includes('Appraiser Evaluation in progress'), 'RESTRICTED viewer sees privacy-safe card on Step 4');
+  assert.ok(!uiUnknownStep4.root.innerHTML.includes('Appraiser Evaluation Completion'), 'Appraiser detail absent for RESTRICTED viewer');
+
+  // Scenario E: Unknown login identity + Status 15 -> RESTRICTED, HR detail absent
+  const uiUnknownStep5 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: recEmpStep5,
     stage: BUSINESS_STAGES.HR_FINAL_CHECK,
     isEditable: false,
-    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+    loginUserCode: 'stranger99',
+    isPreviewMode: false
   });
-  uiEmpNav.render();
-  const navHtml = uiEmpNav.root.innerHTML;
-  assert.ok(navHtml.includes('data-stage-key="objectives"'), 'Step 1 tile remains clickable for Employee');
-  assert.ok(!navHtml.includes('data-stage-key="appraiser_eval"'), 'Step 4 tile must not be clickable for Employee');
-  assert.ok(!navHtml.includes('data-stage-key="hr_final"'), 'Step 5 tile must not be clickable for Employee');
+  assert.equal(uiUnknownStep5._getResolvedViewerRole(), 'RESTRICTED', 'Unknown login user on Status 15 resolves to RESTRICTED');
+  uiUnknownStep5.render();
+  assert.ok(uiUnknownStep5.root.innerHTML.includes('HR Final Review in progress'), 'RESTRICTED viewer sees privacy-safe card on Step 5');
+  assert.ok(!uiUnknownStep5.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR detail absent for RESTRICTED viewer');
 
-  // Scenario D: Employee Timeline filtering
+  // Scenario F: Preview mode + explicit Employee/Appraiser/HR selector -> simulation preserved
+  const uiPreviewHR = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: recEmpStep5,
+    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+    isEditable: false,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'hr', partAWeight: 70, partBWeight: 30 }
+  });
+  assert.equal(uiPreviewHR._getResolvedViewerRole(), 'HR', 'Explicit previewOptions.viewerRole works in Preview Mode');
+  uiPreviewHR.render();
+  assert.ok(uiPreviewHR.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR summary breakdown present in Preview mode simulation');
+
+  // Scenario G: Non-preview mode + previewOptions.viewerRole='hr' -> MUST NOT escalate role
+  const uiNonPreviewEscalation = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: recEmpStep5,
+    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+    isEditable: false,
+    loginUserCode: 'emp01',
+    isPreviewMode: false,
+    previewOptions: { viewerRole: 'hr', partAWeight: 70, partBWeight: 30 }
+  });
+  assert.equal(uiNonPreviewEscalation._getResolvedViewerRole(), 'EMPLOYEE', 'Non-preview mode MUST NOT escalate role via previewOptions');
+  uiNonPreviewEscalation.render();
+  assert.ok(!uiNonPreviewEscalation.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR summary breakdown absent when non-preview escalation attempted');
+
+  // Scenario H: Employee Timeline filtering
   const uiEmpTimeline = new EmployeePartAUI({
     container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '15 HR Final Check' } }),
+    record: recEmpStep5,
     stage: BUSINESS_STAGES.HR_FINAL_CHECK,
     isEditable: false,
-    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+    loginUserCode: 'emp01',
+    isPreviewMode: false
   });
   uiEmpTimeline.render();
   const timelineHtml = uiEmpTimeline.root.querySelector('.mbo-timeline-card')?.innerHTML || '';
   assert.ok(!timelineHtml.includes('4. Appraiser Evaluation'), 'Step 4 timeline events must be absent for Employee');
 
-  // Scenario E: Appraiser viewer preserved
-  const uiApprViewer = new EmployeePartAUI({
-    container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' }, Routing_Topology: { value: 'M1_M2_G1' }, Status: { value: '12 First Manager Final Evaluation' } }),
-    stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
-    isEditable: true,
-    previewOptions: { viewerRole: 'appraiser', partAWeight: 70, partBWeight: 30 }
-  });
-  assert.doesNotThrow(() => uiApprViewer.render());
-  assert.ok(uiApprViewer.root.innerHTML.includes('Appraiser Evaluation Completion'), 'Appraiser completion card must be present for Appraiser viewer');
-
-  // Scenario F: HR viewer preserved
-  const uiHRViewer = new EmployeePartAUI({
-    container: makeMockElement(),
-    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' }, Routing_Topology: { value: 'M1_G1' }, Status: { value: '15 HR Final Check' } }),
-    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
-    isEditable: false,
-    previewOptions: { viewerRole: 'hr', partAWeight: 70, partBWeight: 30 }
-  });
-  assert.doesNotThrow(() => uiHRViewer.render());
-  assert.ok(uiHRViewer.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR summary breakdown must be present for HR viewer');
+  // Scenario I: extractUserCodes & USER_SELECT edge cases
+  assert.deepEqual(extractUserCodes([{ code: '0118', name: 'Somchai' }]), ['0118']);
+  assert.deepEqual(extractUserCodes({ code: 'M01', name: 'Mgr' }), ['m01']);
+  assert.deepEqual(extractUserCodes('USER02'), ['user02']);
+  assert.deepEqual(extractUserCodes({ value: [{ code: '0118' }] }), ['0118']);
+  assert.deepEqual(extractUserCodes(null), []);
+  assert.deepEqual(extractUserCodes(''), []);
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
@@ -1902,7 +1987,9 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
     record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' }, Routing_Topology: { value: 'M1_G1' } }),
     stage: 'APPRAISER_EVALUATION',
     isEditable: true,
-    appraiserCount: 2
+    appraiserCount: 2,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiM1G1Status13.render();
   assert.ok(uiM1G1Status13.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 1'));
@@ -1913,7 +2000,9 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
     record: createMockRecord({ Status: { value: '14 GM Final Evaluation' }, Routing_Topology: { value: 'M1_G1' } }),
     stage: 'APPRAISER_EVALUATION',
     isEditable: true,
-    appraiserCount: 2
+    appraiserCount: 2,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiM1G1Status14.render();
   assert.ok(uiM1G1Status14.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 2'));
@@ -1924,7 +2013,9 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
     record: createMockRecord({ Status: { value: '12 First Manager Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
     stage: 'APPRAISER_EVALUATION',
     isEditable: true,
-    appraiserCount: 3
+    appraiserCount: 3,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiM1M2Status12.render();
   assert.ok(uiM1M2Status12.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 1'));
@@ -1935,7 +2026,9 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
     record: createMockRecord({ Status: { value: '13 Manager Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
     stage: 'APPRAISER_EVALUATION',
     isEditable: true,
-    appraiserCount: 3
+    appraiserCount: 3,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiM1M2Status13.render();
   assert.ok(uiM1M2Status13.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 2'));
@@ -1946,7 +2039,9 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
     record: createMockRecord({ Status: { value: '14 GM Final Evaluation' }, Routing_Topology: { value: 'M1_M2_G1' } }),
     stage: 'APPRAISER_EVALUATION',
     isEditable: true,
-    appraiserCount: 3
+    appraiserCount: 3,
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser' }
   });
   uiM1M2Status14.render();
   assert.ok(uiM1M2Status14.root.innerHTML.includes('Active Slot: <strong style="color:#0284c7;">Slot 3'));
@@ -1958,7 +2053,8 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
     stage: 'APPRAISER_EVALUATION',
     isEditable: true,
     appraiserCount: 4,
-    previewOptions: { activeSlotIndex: 2 }
+    isPreviewMode: true,
+    previewOptions: { viewerRole: 'appraiser', activeSlotIndex: 2 }
   });
   ui4Appraiser.render();
   assert.ok(ui4Appraiser.root.innerHTML.includes('mbo-table-container'), 'Matrix must be wrapped in mbo-table-container');
@@ -2067,12 +2163,13 @@ test('UI/UX V2 Candidate R6-R6 — Historical Stage Review Navigation', async ()
   const container = makeMockElement('div');
 
   // 1. Clicking prior stage changes view state only; record.Status remains unchanged
-  const recordHr = createMockRecord({ Status: { value: '15 HR Final Check' } });
+  const recordHr = createMockRecord({ Status: { value: '15 HR Final Check' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' } });
   const uiHr = new EmployeePartAUI({
     container,
     record: recordHr,
     stage: 'HR_FINAL',
     isEditable: true,
+    isPreviewMode: true,
     previewOptions: { viewerRole: 'hr' }
   });
   uiHr.render();
@@ -2112,6 +2209,7 @@ test('UI/UX V2 Candidate R6-R6 — Historical Stage Review Navigation', async ()
     record: recordHr,
     stage: 'HR_FINAL',
     isEditable: false,
+    isPreviewMode: true,
     previewOptions: { viewerRole: 'employee' }
   });
   uiEmp.selectedViewStage = 'appraiser_eval';

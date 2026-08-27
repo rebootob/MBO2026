@@ -2667,6 +2667,94 @@ function getMacroStage(status) {
   }
 }
 
+function extractUserCodes(fieldVal) {
+  if (!fieldVal) return [];
+
+  let raw = fieldVal;
+  if (typeof fieldVal === 'object' && fieldVal !== null && !Array.isArray(fieldVal) && 'value' in fieldVal) {
+    raw = fieldVal.value;
+  }
+
+  if (!raw) return [];
+
+  if (Array.isArray(raw)) {
+    const codes = [];
+    for (const item of raw) {
+      if (item && typeof item === 'object' && item.code) {
+        codes.push(String(item.code).trim().toLowerCase());
+      } else if (typeof item === 'string' && item.trim()) {
+        codes.push(item.trim().toLowerCase());
+      }
+    }
+    return codes;
+  }
+
+  if (typeof raw === 'object' && raw.code) {
+    return [String(raw.code).trim().toLowerCase()];
+  }
+
+  if (typeof raw === 'string' && raw.trim()) {
+    return [raw.trim().toLowerCase()];
+  }
+
+  return [];
+}
+
+function resolveIdentityViewerRole(record, loginUserCode, options = {}) {
+  const isPreviewMode = Boolean(options.isPreviewMode || options.previewOptions?.isPreviewMode);
+  const rawRole = options.previewOptions?.viewerRole || options.viewerRole;
+
+  if (isPreviewMode && rawRole && ['employee', 'appraiser', 'hr'].includes(String(rawRole).toLowerCase())) {
+    return String(rawRole).toUpperCase();
+  }
+
+  if (!loginUserCode || typeof loginUserCode !== 'string' || !loginUserCode.trim()) {
+    return 'RESTRICTED';
+  }
+
+  const cleanLoginCode = loginUserCode.trim().toLowerCase();
+  if (!record) {
+    return 'RESTRICTED';
+  }
+
+  const requesterCodes = [
+    ...extractUserCodes(record.Requester_User),
+    ...extractUserCodes(record.Employee_Code)
+  ];
+  const isRequester = requesterCodes.includes(cleanLoginCode);
+
+  const appraiserCodes = [
+    ...extractUserCodes(record.First_Manager_User),
+    ...extractUserCodes(record.Manager_User),
+    ...extractUserCodes(record.GM_User),
+    ...extractUserCodes(record.Manager_Level1_Approvers),
+    ...extractUserCodes(record.Manager_Level2_Approvers),
+    ...extractUserCodes(record.GM_Level1_Approvers),
+    ...extractUserCodes(record.GM_Level2_Approvers)
+  ];
+  const isAppraiser = appraiserCodes.includes(cleanLoginCode);
+
+  const hrCodes = [
+    ...extractUserCodes(record.HR_User),
+    ...extractUserCodes(options.hrUserList)
+  ];
+  const isHR = hrCodes.includes(cleanLoginCode);
+
+  if (isRequester) {
+    return 'EMPLOYEE';
+  }
+
+  if (isHR) {
+    return 'HR';
+  }
+
+  if (isAppraiser) {
+    return 'APPRAISER';
+  }
+
+  return 'RESTRICTED';
+}
+
 class EmployeePartAUI {
   constructor(options = {}) {
     this.container = options.container;
@@ -2677,6 +2765,7 @@ class EmployeePartAUI {
     this.appraiserCount = options.appraiserCount || 2;
     this.previewOptions = options.previewOptions || {};
     this.isPreviewMode = Boolean(options.isPreviewMode || options.previewOptions?.isPreviewMode);
+    this.loginUserCode = options.loginUserCode || options.previewOptions?.loginUserCode || null;
     this.selectedViewStage = options.selectedViewStage || null;
 
     const rawSlot = options.activeSlotIndex || options.previewOptions?.activeSlotIndex || 1;
@@ -2691,21 +2780,10 @@ class EmployeePartAUI {
   }
 
   _getResolvedViewerRole() {
-    const rawRole = (this.previewOptions && this.previewOptions.viewerRole) ? String(this.previewOptions.viewerRole).toLowerCase() : 'auto';
-    if (rawRole === 'employee') return 'EMPLOYEE';
-    if (rawRole === 'appraiser') return 'APPRAISER';
-    if (rawRole === 'hr') return 'HR';
-
-    const status = this._getVal('Status') || '01 Draft Objective';
-    if (['15 HR Final Check', '16 Completed'].includes(status)) {
-      return 'HR';
-    }
-    if (['02 First Manager Objective Review', '03 Manager Objective Review', '04 GM Objective Review',
-         '07 First Manager Mid-Year Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review',
-         '12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation'].includes(status)) {
-      return 'APPRAISER';
-    }
-    return 'EMPLOYEE';
+    return resolveIdentityViewerRole(this.record, this.loginUserCode, {
+      isPreviewMode: this.isPreviewMode,
+      previewOptions: this.previewOptions
+    });
   }
 
   render() {
@@ -2823,7 +2901,7 @@ class EmployeePartAUI {
         root.appendChild(this._renderScreenSelfEval());
       } else if (effectiveVisualScreen === 'appraiser_eval') {
         const resolvedRole = this._getResolvedViewerRole();
-        if (resolvedRole === 'EMPLOYEE') {
+        if (['EMPLOYEE', 'RESTRICTED'].includes(resolvedRole)) {
           const privacyCard = document.createElement('div');
           privacyCard.className = 'mbo-restricted-notice mbo-wide-card';
           privacyCard.style.padding = '24px 20px';
@@ -2847,7 +2925,7 @@ class EmployeePartAUI {
         }
       } else if (effectiveVisualScreen === 'hr_final') {
         const resolvedRole = this._getResolvedViewerRole();
-        if (resolvedRole === 'EMPLOYEE') {
+        if (['EMPLOYEE', 'RESTRICTED'].includes(resolvedRole)) {
           const hrPrivacyCard = document.createElement('div');
           hrPrivacyCard.className = 'mbo-restricted-notice mbo-wide-card';
           hrPrivacyCard.style.padding = '24px 20px';
@@ -5347,12 +5425,17 @@ if (typeof kintone !== 'undefined') {
     }
 
     // 2. Instantiate and render Custom UI
+    const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
+    const loginUserCode = loginUser?.code || null;
+
     const options = {
       container: uiHost,
       record: record,
       stage: stage,
       isEditable: isCreate || isEdit,
       isCreate: isCreate,
+      loginUserCode: loginUserCode,
+      isPreviewMode: false,
       onFieldChange: (code, val) => {
         if (record[code]) {
           record[code].value = val;
