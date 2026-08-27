@@ -133,8 +133,13 @@ export class MboAuthSessionService {
       });
     }
 
-    if (!this.sessionStore || typeof this.sessionStore.setSession !== 'function') {
-      throw new Error('SESSION_STORE_NOT_CONFIGURED: sessionStore is required.');
+    if (
+      !this.sessionStore ||
+      typeof this.sessionStore.getSession !== 'function' ||
+      typeof this.sessionStore.setSession !== 'function' ||
+      typeof this.sessionStore.deleteSession !== 'function'
+    ) {
+      throw new Error('SESSION_STORE_INCOMPLETE: sessionStore must provide getSession(), setSession(), and deleteSession().');
     }
 
     // 7. Handle Force Password Change State (First/Default Login)

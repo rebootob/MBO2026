@@ -80,6 +80,33 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     kintoneUserCode: 'emp0118'
   });
 
+  // Login Revocation-Capability Gate 1: Initial login fails closed if deleteSession is missing
+  await t.test('G1. Initial login fails closed without issuing session token if deleteSession capability is missing', async () => {
+    const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
+    const noDeleteSessStore = new NoDeleteSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: noDeleteSessStore, userMappings });
+
+    await assert.rejects(async () => {
+      await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    }, { message: /SESSION_STORE_INCOMPLETE/ });
+  });
+
+  // Login Revocation-Capability Gate 2: Normal login fails closed if deleteSession is missing
+  await t.test('G2. Normal login fails closed without issuing session token if deleteSession capability is missing', async () => {
+    const normalCred = MboPasswordDomainService.changePassword({
+      credentialRecord: initial0118Cred,
+      newPassword: 'SecurePassword123!',
+      passwordMaxAgeDays: 90
+    });
+    const credStore = new FakeCredentialStore({ '0118': normalCred });
+    const noDeleteSessStore = new NoDeleteSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: noDeleteSessStore, userMappings });
+
+    await assert.rejects(async () => {
+      await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: 'SecurePassword123!' });
+    }, { message: /SESSION_STORE_INCOMPLETE/ });
+  });
+
   // Revocation Test 1: sessionStore without deleteSession() => changePassword fails closed
   await t.test('R1. changePassword() fails closed if sessionStore deleteSession capability is missing', async () => {
     const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
