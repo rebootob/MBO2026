@@ -1,57 +1,95 @@
-# AI ACTIVE TASK — UI PARITY ONLY / WEB DEMO REFERENCE LOCK
+# AI ACTIVE TASK — UI PARITY MICRO-FIX BEFORE FINAL KINTONE EXECUTION
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting implementation HEAD: `0226b9445a9249ac019363caab8a9c13cea435ba`
-> Mode: **CREDIT-SAVER / UI PARITY ONLY / ONE ROUND ONLY**
+> Starting implementation HEAD: `06870344fd7075429aceca5413249e54d64a96cc`
+> Mode: **CREDIT-SAVER / UI MICRO-FIX / THREE DEFECTS ONLY**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY/BROWSER-SMOKE: **0 / 0 / 0 / 0**
 
 ## OBJECTIVE
 
-Close ONLY Gate 6: port the approved Web Demo UI/UX into the actual App794 runtime without redesign and without any Kintone call/write/deploy.
+Close ONLY the three remaining source-level UI parity defects found by independent review of `06870344...`.
 
-Do not touch Legacy Migration, routing, scoring, Hoshin business logic, authentication, or Kintone configuration unless a direct UI compile regression forces a minimal repair.
+Do not redesign the Web Demo. Do not reopen migration, Hoshin, export architecture, routing master, scoring master, authentication, or Kintone configuration.
 
-After implementation: run tests/build once as instructed, update handoff docs, commit, push, and STOP.
-
----
-
-# CANONICAL SOURCES — LOCKED
+Locked references:
 
 ```text
 WEB_DEMO_VISUAL_REFERENCE = preview/index.html
 UI_BASELINE = project-docs/CONFIRMED_BASELINE/UI_UX.md
 EVALUATION_PROFILE_BASELINE = project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md
+ROUTING_BASELINE = project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
 
 ACTUAL_APP794_RUNTIME_SOURCE =
 - src/main-mbo-app.js
 - src/ui/employee-part-a-ui.js
 - existing src/styles/* used by App794
-
-BUILD_OUTPUT =
-- dist/mbo-employee-app.js
-- dist/mbo-employee.css
 ```
 
-The Web Demo is the visual/interaction reference, but **Confirmed Baseline wins over stale demo data values**.
+Confirmed Baseline overrides stale demo/runtime convenience values.
 
-## Mandatory Web Demo profile-code correction
+---
 
-The current `preview/index.html` still contains stale Profile_Code values such as:
+# DEFECT 1 — OBJECTIVE_COUNT MUST SUPPORT 1..10 WITHOUT PHANTOM OBJECTIVES
+
+Independent review found runtime code in Appraiser Evaluation equivalent to:
+
+```js
+const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
+const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+```
+
+This incorrectly forces `Objective_Count = 1` to render 2 objective rows.
+
+## Required behavior
+
+- Valid `Objective_Count` range is **1..10**.
+- `Objective_Count = 1` renders exactly 1 objective.
+- `Objective_Count = 10` renders exactly 10 objectives.
+- Never create phantom objective rows merely to satisfy a UI minimum.
+- Blank/invalid count must use an explicit safe policy consistent with existing record/data contract; do not silently invent 4 objectives unless existing baseline/source contract explicitly requires it.
+- Apply consistently across all five screens where objective-row count is used, not only Appraiser Evaluation.
+- Preserve flattened physical fields `Objective_1..10`.
+
+Prefer a small existing/shared helper if practical rather than repeated count-clamping logic.
+
+Required focused tests:
 
 ```text
-PROF_STAFF_OPERATIONAL
-PROF_STAFF_JAPANESE
-PROF_SECT_MGR
-PROF_SR_MGR
+Objective_Count=1  -> exactly 1 rendered/logical slot
+Objective_Count=2  -> exactly 2
+Objective_Count=10 -> exactly 10
+no phantom slot beyond Objective_Count
+invalid/out-of-range -> safe deterministic behavior
 ```
 
-These MUST NOT be copied into runtime.
+Expected:
 
-Canonical profile codes are exactly:
+```text
+OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS
+PHANTOM_OBJECTIVE_ROWS = 0
+```
+
+---
+
+# DEFECT 2 — CANONICAL PROFILE MAP MUST NOT CONTAIN STALE KEYS
+
+The Web Demo selector is now canonical, but runtime currently mutates `EVALUATION_PROFILES` with stale aliases such as:
+
+```js
+EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL = EVALUATION_PROFILES.PROF_STAFF_CHIEF;
+EVALUATION_PROFILES.PROF_SECT_MGR = EVALUATION_PROFILES.PROF_SECTION_MGR;
+EVALUATION_PROFILES.PROF_SR_MGR = EVALUATION_PROFILES.PROF_SENIOR_MGR;
+```
+
+This makes the claim `STALE_PROFILE_CODES_IN_RUNTIME = 0` false.
+
+## Required behavior
+
+`EVALUATION_PROFILES` canonical keys must be exactly:
 
 ```text
 PROF_STAFF_CHIEF
@@ -64,20 +102,24 @@ PROF_GM
 PROF_VP
 ```
 
-Required mapping for the Web Demo selector/reference:
+If backward compatibility with historical preview/test values is genuinely needed, use a separate normalization adapter/helper, for example conceptually:
 
 ```text
-Staff / Chief       -> PROF_STAFF_CHIEF
-Japanese Staff      -> PROF_JAPANESE_STAFF
-Assistant Manager   -> PROF_ASST_MGR
-Section Manager     -> PROF_SECTION_MGR
-Senior Manager      -> PROF_SENIOR_MGR
-DGM                 -> PROF_DGM
-GM                  -> PROF_GM
-VP                  -> PROF_VP
+legacy input code -> canonical code -> EVALUATION_PROFILES[canonical]
 ```
 
-Update `preview/index.html` itself if necessary so the approved Web Demo no longer advertises stale Profile_Code values. This is a data-contract correction, NOT a UI redesign.
+Do NOT add stale keys back into the canonical profile object.
+
+Legacy alias input may normalize fail-safe, but all output/state shown to business/runtime must be canonical.
+
+Required tests:
+
+```text
+Object.keys(EVALUATION_PROFILES) = exactly 8 canonical keys
+stale profile input aliases normalize to canonical value if compatibility is retained
+preview contains no stale profile code
+runtime canonical map contains no stale profile key
+```
 
 Expected:
 
@@ -89,49 +131,94 @@ STALE_PROFILE_CODES_IN_RUNTIME = 0
 
 ---
 
-# GATE 6 — WEB DEMO -> APP794 RUNTIME PARITY
+# DEFECT 3 — PROFILE MUST NOT INFER PRODUCTION ROUTING
 
-Read `UI_UX.md` before editing. Compare `preview/index.html` against runtime and classify each item as `ALREADY_PARITY`, `MISSING_RUNTIME`, `LOCAL_WIRING_ONLY`, or `BLOCKED_PHYSICAL_SCHEMA`.
+Current profile fixture/object still includes values such as:
 
-Close these approved items only:
-
-1. exactly five macro stages: Objectives, Mid-Year, Self Evaluation, Appraiser Evaluation, HR Final/Completed;
-2. Thai + English user-facing guidance;
-3. evaluator route uses ordinal `ผู้ประเมินลำดับที่ 1..4 / 1st..4th Appraiser`; technical Manager/GM names are storage details only;
-4. Evaluation Profile and Routing remain separate concepts;
-5. `Objective_Count` controls flattened `Objective_1..10` slots without phantom objectives;
-6. Difficulty blank remains blank and shows bilingual required prompt, never default Level 3;
-7. optional evidence UX for Objectives, Mid-Year, Self Evaluation; if physical Objective attachment is unavailable, use truthful `PENDING_SCHEMA_REVIEW`, never invent a field;
-8. Mid-Year Progress % is employee-entered 0..100 and separate from process progress/performance score;
-9. five-phase HR Calendar consumes injected/local normalized App800 contract and shows before-open/open/due/overdue/completed states; no production hardcoded dates;
-10. status 05/10 boundary UX tells Requester to use native `Start Mid-Year` / `Start Self Evaluation` when open; no date auto-transition;
-11. Copy Previous UI uses corrected local preflight/candidate foundation, but performs zero Kintone writes;
-12. Hoshin display uses record/local current/new FY snapshot/title data; no App797 GET;
-13. Export uses normalized local foundation; exact template absent -> explicit `MISSING_LOCAL`, never fake official workbook;
-14. native Kintone comment thread remains available/not intentionally hidden or covered;
-15. 3–4 Appraiser matrices remain inside App794 content width with matrix-only horizontal scroll; no body/page overflow;
-16. historical/read-only/Completed states remain truthful and permission-aware; UI hiding is not authorization;
-17. route scenario/profile controls present in Web Demo are preview diagnostics only where appropriate; do not expose preview-only routing capacity as production-supported behavior;
-18. Web Demo canonical profile codes are corrected as specified above before parity is claimed.
-
-## Implementation rules
-
-Prefer existing files/functions only:
-
-```text
-preview/index.html                 // only for stale demo contract correction
-src/main-mbo-app.js
-src/ui/employee-part-a-ui.js
-existing src/styles/*
+```js
+suggestedRoute: 'CURRENT_STANDARD'
+suggestedRoute: 'EXECUTIVE_DIRECT'
 ```
 
-Do not create `_final`, `_v3`, replacement pages, or parallel UI architecture.
+Confirmed baseline states:
 
-Do not change Process topology, App795 routes, profile weights, App797 business rules, App800 live data, or authorization model.
+```text
+Evaluation Profile / Part A:B ratio != Routing
+```
+
+Routing must be resolved from approved routing context/App795, not inferred merely from profile code/ratio.
+
+## Required investigation
+
+Search all production/runtime usages of:
+
+```text
+suggestedRoute
+EVALUATION_PROFILES[...].suggestedRoute
+profile -> route inference
+```
+
+Classify each use as:
+
+```text
+PREVIEW_DIAGNOSTIC_ONLY
+PRODUCTION_RUNTIME
+UNUSED
+```
+
+## Required behavior
+
+- Production App794 runtime must NOT choose or overwrite `Routing_Topology`, appraiser count, or evaluator identities from `Profile_Code`, profile ratio, or `suggestedRoute`.
+- Runtime routing remains driven by existing resolved routing record/context.
+- If `suggestedRoute` is only needed by `preview/index.html`, move/keep it in Preview-only diagnostics or rename/document so it cannot be mistaken for production routing authority.
+- If unused in production, remove it from the production canonical profile definitions if safe.
+- Executive Direct remains a routing decision from reviewed App795/executive rules, not because `PROF_DGM/PROF_GM/PROF_VP` has a suggested route field in UI profile data.
+- Do not alter App795, route topology, or Process Management in this task.
+
+Required focused tests/source assertions:
+
+```text
+changing Profile_Code alone does not change production Routing_Topology
+profile ratio alone does not change appraiser count
+production route display consumes record/resolved routing context
+preview-only route suggestion cannot write/override runtime routing
+```
+
+Expected:
+
+```text
+PROFILE_ROUTE_SEPARATION = PASS
+PROFILE_TO_PRODUCTION_ROUTE_INFERENCE = 0
+```
 
 ---
 
-# LOCAL-ONLY SAFETY
+# ACCEPTED UI ITEMS — DO NOT REWRITE
+
+Independent review already accepts these source foundations. Preserve them unless a direct regression is discovered:
+
+```text
+FIVE_STAGE_UI = PASS_SOURCE
+BILINGUAL_UI = PASS_SOURCE
+ORDINAL_APPRAISER_LABELS = PASS_SOURCE
+DIFFICULTY_BLANK_STATE = PASS_SOURCE
+OPTIONAL_EVIDENCE_UX = PASS_WITH_SCHEMA_PENDING
+MIDYEAR_PROGRESS_SEMANTICS = PASS_SOURCE
+PHASE_CALENDAR_LOCAL_CONTRACT = PASS_SOURCE
+BOUNDARY_START_ACTION_GUIDANCE = PASS_SOURCE
+COPY_PREVIOUS_LOCAL_UI_WIRING = PASS_SOURCE
+HOSHIN_LOCAL_SNAPSHOT_UI = PASS_SOURCE
+EXPORT_LOCAL_FOUNDATION = MISSING_LOCAL_TEMPLATE
+NATIVE_COMMENT_THREAD_PRESERVED = PASS_SOURCE_REVIEW_PENDING_VISUAL
+MULTI_APPRAISER_CONTAINMENT = PASS_SOURCE_REVIEW_PENDING_VISUAL
+READ_ONLY_PERMISSION_TRUTHFULNESS = PASS_SOURCE
+```
+
+Do not redesign these parts.
+
+---
+
+# LOCAL-ONLY HARD BOUNDARY
 
 ```text
 KINTONE_GET = 0
@@ -141,56 +228,29 @@ BROWSER_SMOKE = 0
 APP53_WRITE = 0
 LEGACY_APP_WRITE = 0
 APP794_LIVE_WRITE = 0
+APP795_LIVE_GET = 0
+APP796_LIVE_GET = 0
 APP800_LIVE_GET = 0
 APP797_LIVE_GET = 0
 ```
 
-- Copy Previous: local/pure candidate/preflight only.
-- Phase Calendar: injected/local normalized config only.
-- Hoshin: record/local snapshot only.
-- Export: local projection only; exact binary unavailable -> `MISSING_LOCAL`.
-- Native Process/permission controls remain the security boundary.
+No Kintone calls of any kind in this round.
+
+Do not edit `project-docs/CONFIRMED_BASELINE/*`.
+
+Prefer existing files/functions. Do not create `_final`, `_v3`, replacement UI, parallel profile/routing architecture, or duplicate helper modules without a clear need.
 
 ---
 
-# REQUIRED LOCAL EVIDENCE
+# TEST / BUILD
 
-Provide exact source evidence for:
-
-```text
-WEB_DEMO_PROFILE_CODES_CANONICAL = PASS
-FIVE_STAGE_UI = PASS
-BILINGUAL_UI = PASS
-ORDINAL_APPRAISER_LABELS = PASS
-PROFILE_ROUTE_SEPARATION = PASS
-OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS
-DIFFICULTY_BLANK_STATE = PASS
-OPTIONAL_EVIDENCE_UX = PASS|PASS_WITH_SCHEMA_PENDING
-MIDYEAR_PROGRESS_SEMANTICS = PASS
-PHASE_CALENDAR_LOCAL_CONTRACT = PASS
-BOUNDARY_START_ACTION_GUIDANCE = PASS
-COPY_PREVIOUS_LOCAL_UI_WIRING = PASS
-HOSHIN_LOCAL_SNAPSHOT_UI = PASS
-EXPORT_LOCAL_FOUNDATION = PASS|MISSING_LOCAL_TEMPLATE
-NATIVE_COMMENT_THREAD_PRESERVED = PASS
-MULTI_APPRAISER_CONTAINMENT = PASS
-READ_ONLY_PERMISSION_TRUTHFULNESS = PASS
-PREVIEW_ONLY_RUNTIME_CLAIMS = 0
-```
-
-If an item already exists, do not rewrite it; document exact source evidence.
-
----
-
-# TEST / BUILD DISCIPLINE
-
-- Run targeted tests only as needed during implementation.
+- Run targeted tests while implementing as needed.
 - Run full `npm test` exactly ONCE near completion.
-- Run `npm run ui:build` exactly ONCE near completion.
-- Verify only expected bundle outputs changed.
+- Run `npm run ui:build` exactly ONCE near completion if UI/runtime source changed.
+- Verify expected dist bundle update.
 - No browser smoke and no deploy.
 
-Update concisely after implementation:
+Update concisely:
 
 ```text
 project-docs/AI_REVIEW_PACKAGE.md
@@ -198,19 +258,7 @@ project-docs/CURRENT_STATE.md
 project-docs/HANDOFF.md
 ```
 
-Do not edit `project-docs/CONFIRMED_BASELINE/*`.
-
----
-
-# STOP CONDITIONS
-
-STOP rather than guess if:
-- a required physical App794 field is genuinely uncertain and unsupported by repo/export evidence;
-- parity would require changing frozen Process/routing/scoring semantics;
-- a behavior cannot be made local-only without Kintone access;
-- a new P0/P1 security/data-integrity issue is found.
-
-Do NOT stop for Preview source discovery; `preview/index.html` is already locked as the Web Demo reference.
+Do not claim visual UAT PASS. User visual inspection remains a separate mandatory gate before deploy.
 
 ---
 
@@ -226,35 +274,19 @@ KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
 
 WEB_DEMO_VISUAL_REFERENCE = preview/index.html
-ACTUAL_APP794_RUNTIME_SOURCE = src/main-mbo-app.js + src/ui/employee-part-a-ui.js + existing src/styles/*
-
+OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS|BLOCKED
+PHANTOM_OBJECTIVE_ROWS = <count>
 WEB_DEMO_PROFILE_CODES_CANONICAL = PASS|BLOCKED
 STALE_PROFILE_CODES_IN_PREVIEW = <count>
 STALE_PROFILE_CODES_IN_RUNTIME = <count>
-FIVE_STAGE_UI = PASS|BLOCKED
-BILINGUAL_UI = PASS|BLOCKED
-ORDINAL_APPRAISER_LABELS = PASS|BLOCKED
 PROFILE_ROUTE_SEPARATION = PASS|BLOCKED
-OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS|BLOCKED
-DIFFICULTY_BLANK_STATE = PASS|BLOCKED
-OPTIONAL_EVIDENCE_UX = PASS|PASS_WITH_SCHEMA_PENDING|BLOCKED
-MIDYEAR_PROGRESS_SEMANTICS = PASS|BLOCKED
-PHASE_CALENDAR_LOCAL_CONTRACT = PASS|BLOCKED
-BOUNDARY_START_ACTION_GUIDANCE = PASS|BLOCKED
-COPY_PREVIOUS_LOCAL_UI_WIRING = PASS|BLOCKED
-HOSHIN_LOCAL_SNAPSHOT_UI = PASS|BLOCKED
-EXPORT_LOCAL_FOUNDATION = PASS|MISSING_LOCAL_TEMPLATE|BLOCKED
-NATIVE_COMMENT_THREAD_PRESERVED = PASS|BLOCKED
-MULTI_APPRAISER_CONTAINMENT = PASS|BLOCKED
-READ_ONLY_PERMISSION_TRUTHFULNESS = PASS|BLOCKED
-PREVIEW_ONLY_RUNTIME_CLAIMS = <count>
+PROFILE_TO_PRODUCTION_ROUTE_INFERENCE = <count>
 
-PREVIEW_TO_APP794_PARITY_LOCAL = PASS|BLOCKED
-FROZEN_UI_REDESIGN = 0
-APP794_RUNTIME_WRITE = 0
 FULL_NPM_TEST = PASS|FAIL
-BUILD = PASS|FAIL
-FINAL_KINTONE_EXECUTION_READINESS = READY|BLOCKED
+BUILD = PASS|NOT_REQUIRED|FAIL
+SOURCE_UI_PARITY_READINESS = READY|BLOCKED
+VISUAL_UAT = NOT_RUN
+FINAL_KINTONE_EXECUTION_READINESS = BLOCKED_PENDING_VISUAL_UAT|BLOCKED
 
 CHANGED_FILES = <exact list>
 REMAINING_BLOCKERS = <exact list or NONE>
