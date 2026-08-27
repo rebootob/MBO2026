@@ -1,5 +1,5 @@
 /**
- * Admin Diagnostic Model & Health Engine (Baseline Correction & Final Closure Package)
+ * Admin Diagnostic Model & Health Engine (D7 Corrective Package)
  * Pure logic for Technical Admin (admin-form) System Health, Workflow Trace, Profile/Route Validation,
  * Topology-aware Ordinal Appraiser Slot Normalization, Root-Cause Classification, Fast Repair Candidate Preparation, and Sanitized Snapshot.
  *
@@ -11,9 +11,9 @@ import { PROFILE_CODES } from '../profiles/scoring-config-master.js';
 
 export const BUILD_VERSION_INFO = {
   version: '0.2.4',
-  sourceBuildId: 'WP-002C-FINAL-CLOSURE',
-  commitSha: '5c63d88691ec5fb6ff92a6cbbbfed72e4be0bb7e',
-  buildTimestamp: '2026-08-27T12:55:00Z',
+  sourceBuildId: 'WP-002C-CORRECTIVE-PACKAGE',
+  commitSha: 'NOT_EVIDENCED',
+  buildTimestamp: '2026-08-27T13:33:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -82,7 +82,7 @@ export class AdminDiagnosticModel {
   }
 
   /**
-   * Topology-aware Ordinal Appraiser Slot Normalizer.
+   * Topology-aware Ordinal Appraiser Slot Normalizer (P0-E).
    * Normalizes record/context fields into exact 1st..4th Appraiser ordinal slots based on Routing_Topology.
    */
   static normalizeAppraiserSlots(context = {}) {
@@ -173,7 +173,7 @@ export class AdminDiagnosticModel {
 
     const items = [];
 
-    // 1. Identity Resolution (P0-J: Must strictly validate admin-form)
+    // 1. Identity Resolution (P0 Security Gate)
     const isAdminUser = AdminDiagnosticModel.isTechnicalAdmin(loginUserCode);
     items.push({
       key: 'identity_resolution',
@@ -354,13 +354,13 @@ export class AdminDiagnosticModel {
       reason: schemaState === 'PASS' ? 'Physical fields match expected App794 contract' : 'Schema live inspection not evidenced'
     });
 
-    // 15. Bundle / Source Version Identifier
+    // 15. Bundle / Source Version Identifier (P0-G: Truthful build metadata)
     items.push({
       key: 'bundle_version',
       labelTH: 'เวอร์ชันระบบ (Bundle / Build Identifier)',
       labelEN: 'Bundle / Build Identifier',
       status: 'PASS',
-      reason: `v${BUILD_VERSION_INFO.version} (${BUILD_VERSION_INFO.sourceBuildId})`
+      reason: `v${BUILD_VERSION_INFO.version} (${BUILD_VERSION_INFO.sourceBuildId}) • Commit: ${BUILD_VERSION_INFO.commitSha}`
     });
 
     const hasError = items.some(i => i.status === 'ERROR');
@@ -376,8 +376,9 @@ export class AdminDiagnosticModel {
   }
 
   /**
-   * B. Evaluates Workflow Trace & Workflow State Consistency.
+   * B. Evaluates Workflow Trace & Workflow State Consistency (P0-D Truth Boundary).
    * Prevents future topologies (M1_M2_G1, M1_G1_G2, M1_M2_G1_G2) from returning production-certified PASS.
+   * Validates audit history entries structurally before setting historyStatus = 'EVIDENCED'.
    */
   static evaluateWorkflowTrace(context = {}) {
     const {
@@ -486,9 +487,27 @@ export class AdminDiagnosticModel {
       };
     }
 
-    const historyStatus = (Array.isArray(actualAuditHistory) && actualAuditHistory.length > 0)
-      ? 'EVIDENCED'
-      : 'PENDING_AUDIT_SCHEMA_AUTHORIZATION';
+    // P0-D: Strict Structural Audit History Validation
+    let historyStatus = 'PENDING_AUDIT_SCHEMA_AUTHORIZATION';
+    let isAuditStructurallyValid = false;
+
+    if (Array.isArray(actualAuditHistory) && actualAuditHistory.length > 0) {
+      isAuditStructurallyValid = actualAuditHistory.every(entry =>
+        entry &&
+        typeof entry === 'object' &&
+        Boolean(entry.actor || entry.actorKintoneUserCode || entry.actorCode) &&
+        Boolean(entry.fromStatus || entry.from_status) &&
+        Boolean(entry.toStatus || entry.to_status) &&
+        Boolean(entry.action || entry.result) &&
+        Boolean(entry.timestamp || entry.actionAt || entry.action_at)
+      );
+
+      if (isAuditStructurallyValid) {
+        historyStatus = 'EVIDENCED';
+      } else {
+        historyStatus = 'INVALID_AUDIT_STRUCTURE';
+      }
+    }
 
     const overallStatus = isConfirmedTopology ? 'PASS' : 'WARNING';
     const reasonText = isConfirmedTopology
@@ -503,7 +522,7 @@ export class AdminDiagnosticModel {
       expectedPath: expectedPath.join(' → '),
       consistency: overallStatus,
       historyStatus,
-      actualAuditHistory: actualAuditHistory || 'NOT_AVAILABLE'
+      actualAuditHistory: isAuditStructurallyValid ? actualAuditHistory : 'NOT_AVAILABLE'
     };
   }
 
@@ -822,8 +841,8 @@ export class AdminDiagnosticModel {
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * Strictly validates authoritativeProfile and authoritativeRoute CONTENT.
-   * Produces field diff ONLY for actual changed fields in safe FIX_THIS_RECORD candidates.
+   * Strictly validates authoritativeProfile and authoritativeRoute CONTENT (P0-C).
+   * P0-F: Does NOT include Routing_Key in diff if stored routing key is NOT_AVAILABLE / unproven.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
@@ -843,26 +862,30 @@ export class AdminDiagnosticModel {
     const isProfileOk = profileEval.status === 'PASS';
     const isRouteOk = routeEval.status === 'PASS';
 
-    // Validate authoritativeProfile CONTENT strictly (P0-D: code + PartA + PartB mandatory)
+    // P0-C: Validate authoritativeProfile CONTENT strictly (code + PartA + PartB + FY + Status mandatory)
     let isProfileMasterProven = false;
     if (context.authoritativeProfile) {
       const authCode = context.authoritativeProfile.code || context.authoritativeProfile.Profile_Code;
       const authA = context.authoritativeProfile.partAWeight ?? context.authoritativeProfile.PartA_Weight;
       const authB = context.authoritativeProfile.partBWeight ?? context.authoritativeProfile.PartB_Weight;
+      const authFy = context.authoritativeProfile.Fiscal_Year || context.authoritativeProfile.fiscalYear;
+      const authStatus = context.authoritativeProfile.Config_Status || context.authoritativeProfile.configStatus;
 
       const codeMatch = profileEval.expectedProfileCode !== 'NOT_EVIDENCED' && authCode === profileEval.expectedProfileCode;
       const aMatch = authA !== undefined && authA !== null && profileEval.expectedPartAWeight !== null && Number(authA) === profileEval.expectedPartAWeight;
       const bMatch = authB !== undefined && authB !== null && profileEval.expectedPartBWeight !== null && Number(authB) === profileEval.expectedPartBWeight;
+      const fyMatch = !authFy || !context.fiscalYear || authFy === context.fiscalYear;
+      const statusMatch = !authStatus || authStatus === 'PUBLISHED';
 
-      isProfileMasterProven = Boolean(codeMatch && aMatch && bMatch);
+      isProfileMasterProven = Boolean(codeMatch && aMatch && bMatch && fyMatch && statusMatch);
     }
 
-    // Validate authoritativeRoute CONTENT strictly (P0-E: topology + appraiserCount + appraiser1 mandatory)
+    // Validate authoritativeRoute CONTENT strictly (topology + appraiserCount + appraiser1 mandatory)
     let isRouteMasterProven = false;
     if (context.authoritativeRoute) {
       const top = context.authoritativeRoute.topology;
       const count = context.authoritativeRoute.appraiserCount;
-      const a1 = context.authoritativeRoute.appraiser1;
+      const a1 = context.authoritativeRoute.appraiser1 || context.authoritativeRoute.Manager_User;
       isRouteMasterProven = Boolean(top && count && a1);
     }
 
@@ -989,7 +1012,7 @@ export class AdminDiagnosticModel {
     const afterDiff = {};
     const fieldsAffected = [];
 
-    // P0-G & Item 10: Only include actual changed fields in FIX_THIS_RECORD
+    // P0-G & P0-F: Only include actual changed fields in FIX_THIS_RECORD
     if (rootCause === 'FIX_THIS_RECORD') {
       if (profileRepairSafe) {
         if (context.actualProfileCode !== profileEval.expectedProfileCode && profileEval.expectedProfileCode !== 'NOT_EVIDENCED') {
@@ -1010,8 +1033,10 @@ export class AdminDiagnosticModel {
       }
 
       if (routeRepairSafe) {
-        if (context.actualRoutingKey !== routeEval.expectedRoutingKey && routeEval.expectedRoutingKey !== 'NOT_EVIDENCED') {
-          beforeDiff.Routing_Key = context.actualRoutingKey || 'NOT_EVIDENCED';
+        // P0-F Gate: Only include Routing_Key in diff if actual stored Routing_Key is physically evidenced (not NOT_AVAILABLE)
+        const isRoutingKeyStored = context.actualRoutingKey && context.actualRoutingKey !== 'NOT_AVAILABLE';
+        if (isRoutingKeyStored && context.actualRoutingKey !== routeEval.expectedRoutingKey && routeEval.expectedRoutingKey !== 'NOT_EVIDENCED') {
+          beforeDiff.Routing_Key = context.actualRoutingKey;
           afterDiff.Routing_Key = routeEval.expectedRoutingKey;
           fieldsAffected.push('Routing_Key');
         }
@@ -1028,24 +1053,29 @@ export class AdminDiagnosticModel {
 
         if (context.authoritativeRoute) {
           const norm = AdminDiagnosticModel.normalizeUserCode;
-          if (context.authoritativeRoute.appraiser1 !== undefined && norm(context.actualAppraiser1) !== norm(context.authoritativeRoute.appraiser1)) {
+          const authA1 = context.authoritativeRoute.appraiser1 || context.authoritativeRoute.Manager_User;
+          const authA2 = context.authoritativeRoute.appraiser2 || context.authoritativeRoute.GM_User;
+          const authA3 = context.authoritativeRoute.appraiser3;
+          const authA4 = context.authoritativeRoute.appraiser4;
+
+          if (authA1 !== undefined && norm(context.actualAppraiser1) !== norm(authA1)) {
             beforeDiff.Appraiser1 = context.actualAppraiser1 || 'NOT_EVIDENCED';
-            afterDiff.Appraiser1 = context.authoritativeRoute.appraiser1;
+            afterDiff.Appraiser1 = authA1;
             fieldsAffected.push('1st Appraiser');
           }
-          if (context.authoritativeRoute.appraiser2 !== undefined && norm(context.actualAppraiser2) !== norm(context.authoritativeRoute.appraiser2)) {
+          if (authA2 !== undefined && norm(context.actualAppraiser2) !== norm(authA2)) {
             beforeDiff.Appraiser2 = context.actualAppraiser2 || 'NOT_EVIDENCED';
-            afterDiff.Appraiser2 = context.authoritativeRoute.appraiser2;
+            afterDiff.Appraiser2 = authA2;
             fieldsAffected.push('2nd Appraiser');
           }
-          if (context.authoritativeRoute.appraiser3 !== undefined && norm(context.actualAppraiser3) !== norm(context.authoritativeRoute.appraiser3)) {
+          if (authA3 !== undefined && norm(context.actualAppraiser3) !== norm(authA3)) {
             beforeDiff.Appraiser3 = context.actualAppraiser3 || 'NOT_EVIDENCED';
-            afterDiff.Appraiser3 = context.authoritativeRoute.appraiser3;
+            afterDiff.Appraiser3 = authA3;
             fieldsAffected.push('3rd Appraiser');
           }
-          if (context.authoritativeRoute.appraiser4 !== undefined && norm(context.actualAppraiser4) !== norm(context.authoritativeRoute.appraiser4)) {
+          if (authA4 !== undefined && norm(context.actualAppraiser4) !== norm(authA4)) {
             beforeDiff.Appraiser4 = context.actualAppraiser4 || 'NOT_EVIDENCED';
-            afterDiff.Appraiser4 = context.authoritativeRoute.appraiser4;
+            afterDiff.Appraiser4 = authA4;
             fieldsAffected.push('4th Appraiser');
           }
         }
@@ -1080,7 +1110,7 @@ export class AdminDiagnosticModel {
 
   /**
    * Builds detailed read-only Record Diagnostic object.
-   * Distinguishes derived expected Routing_Key from stored Routing_Key (NOT_AVAILABLE if physical field unconfirmed).
+   * P0-F: Distinguishes derived expected Routing_Key from stored Routing_Key (NOT_AVAILABLE if physical field unconfirmed).
    */
   static buildRecordDiagnostic(record, options = {}) {
     const getVal = (code) => {

@@ -1,5 +1,5 @@
 /**
- * Admin Support Center UI Component & Diagnostic Providers
+ * Admin Support Center UI Component & Diagnostic Providers (D7 Corrective Package)
  * Read-only Technical Admin Diagnostic Panel strictly restricted to Kintone user `admin-form`.
  *
  * Source of Truth: project-docs/CONFIRMED_BASELINE/
@@ -9,9 +9,12 @@ import { AdminDiagnosticModel, escapeHtml } from './admin-diagnostic-model.js';
 
 /**
  * Mock Diagnostic Provider for local preview, unit testing, and offline diagnostic checks.
+ * Explicitly labeled sourceMode = 'PREVIEW_FIXTURE', isProductionEvidence = false.
  */
 export class MockAdminDiagnosticProvider {
   constructor(catalog = {}) {
+    this.sourceMode = 'PREVIEW_FIXTURE';
+    this.isProductionEvidence = false;
     this.catalog = {
       '0118': {
         employeeCode: '0118',
@@ -34,8 +37,10 @@ export class MockAdminDiagnosticProvider {
         appraiser2: 'g01',
         appraiser3: 'NOT_EVIDENCED',
         appraiser4: 'NOT_EVIDENCED',
-        authoritativeProfile: { code: 'PROF_STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
-        authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm01', appraiser2: 'g01' }
+        authoritativeProfile: { code: 'PROF_STAFF_CHIEF', partAWeight: 70, partBWeight: 30, fiscalYear: '2026', configStatus: 'PUBLISHED' },
+        authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm01', appraiser2: 'g01' },
+        sourceMode: 'PREVIEW_FIXTURE',
+        isProductionEvidence: false
       },
       '0111': {
         employeeCode: '0111',
@@ -58,8 +63,10 @@ export class MockAdminDiagnosticProvider {
         appraiser2: 'g01',
         appraiser3: 'NOT_EVIDENCED',
         appraiser4: 'NOT_EVIDENCED',
-        authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40 },
-        authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm02', appraiser2: 'g01' }
+        authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40, fiscalYear: '2026', configStatus: 'PUBLISHED' },
+        authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm02', appraiser2: 'g01' },
+        sourceMode: 'PREVIEW_FIXTURE',
+        isProductionEvidence: false
       },
       'DGM001': {
         employeeCode: 'DGM001',
@@ -82,8 +89,10 @@ export class MockAdminDiagnosticProvider {
         appraiser2: 'NOT_EVIDENCED',
         appraiser3: 'NOT_EVIDENCED',
         appraiser4: 'NOT_EVIDENCED',
-        authoritativeProfile: { code: 'PROF_DGM', partAWeight: 50, partBWeight: 50 },
-        authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1, appraiser1: 'president_user' }
+        authoritativeProfile: { code: 'PROF_DGM', partAWeight: 50, partBWeight: 50, fiscalYear: '2026', configStatus: 'PUBLISHED' },
+        authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1, appraiser1: 'president_user' },
+        sourceMode: 'PREVIEW_FIXTURE',
+        isProductionEvidence: false
       },
       ...catalog
     };
@@ -111,14 +120,16 @@ export class MockAdminDiagnosticProvider {
     }
 
     const match = this.catalog[cleanEmp];
+
+    // P0-A: Unknown preview employee returns NOT_FOUND only. Does NOT fabricate Name, Requester, MBO Key, or Status.
     if (!match) {
       return {
         employeeCode: cleanEmp,
         fiscalYear: cleanFy,
         recordId: 'NOT_FOUND',
-        mboKey: `MBO_${cleanFy}_${cleanEmp}`,
-        employeeName: `Employee ${cleanEmp}`,
-        requesterUser: cleanEmp,
+        mboKey: 'NOT_EVIDENCED',
+        employeeName: 'NOT_EVIDENCED',
+        requesterUser: 'NOT_EVIDENCED',
         currentStatus: 'NOT_EVIDENCED',
         routingKey: 'NOT_EVIDENCED',
         sectionCode: 'NOT_EVIDENCED',
@@ -127,62 +138,144 @@ export class MockAdminDiagnosticProvider {
         appraiser2: 'NOT_EVIDENCED',
         appraiser3: 'NOT_EVIDENCED',
         appraiser4: 'NOT_EVIDENCED',
-        isNotFound: true
+        isNotFound: true,
+        sourceMode: 'PREVIEW_FIXTURE',
+        isProductionEvidence: false
       };
     }
 
     return {
       ...match,
       employeeCode: cleanEmp,
-      fiscalYear: cleanFy
+      fiscalYear: cleanFy,
+      sourceMode: 'PREVIEW_FIXTURE',
+      isProductionEvidence: false
     };
   }
 }
 
 /**
- * Production-Intended Read-Only Async Kintone Diagnostic Provider.
- * Constructs read-only queries against App53, App795, App796, App794 without Kintone writes or record mutations.
- * In this task, transport is injected or simulated to guarantee 0 live Kintone API calls.
+ * Production-Intended Read-Only Async Kintone Diagnostic Provider (P0-B).
+ * Assembles a single READ-ONLY diagnostic evidence bundle from injected dependencies for App53, App794, App795, App796.
+ * Zero live Kintone calls executed without injected test transport or API adapter.
  */
 export class KintoneAdminDiagnosticProvider {
   constructor(options = {}) {
+    this.sourceMode = 'PRODUCTION_KINTONE';
+    this.isProductionEvidence = true;
     this.kintoneApi = options.kintoneApi || null;
     this.appIds = options.appIds || { app53: 53, app795: 795, app796: 796, app794: 794 };
+    this.app53Repo = options.app53Repo || null;
+    this.app794Repo = options.app794Repo || null;
+    this.app795Repo = options.app795Repo || null;
+    this.app796Repo = options.app796Repo || null;
   }
 
   async checkEmployee(empCode, fiscalYear) {
-    if (!this.kintoneApi) {
-      throw new Error('KINTONE_API_NOT_WIRED: Production Kintone diagnostic adapter transport is unwired for zero-Kintone task safety.');
-    }
     const cleanEmp = String(empCode || '').trim();
     const cleanFy = String(fiscalYear || '').trim();
+
     if (!cleanEmp) throw new Error('EMPLOYEE_CODE_REQUIRED');
     if (!cleanFy) throw new Error('FISCAL_YEAR_REQUIRED');
 
     // 1. App53 Employee Master Query
-    const empResp = await this.kintoneApi.getRecords(this.appIds.app53, `Employee_Code = "${cleanEmp}" limit 2`);
-    const empRecords = empResp?.records || [];
-    if (empRecords.length === 0) {
-      return { employeeCode: cleanEmp, fiscalYear: cleanFy, recordId: 'NOT_FOUND', isNotFound: true };
+    let empRecords = [];
+    if (this.app53Repo) {
+      empRecords = await this.app53Repo.getRecords(`Employee_Code = "${cleanEmp}" limit 2`);
+    } else if (this.kintoneApi) {
+      const resp = await this.kintoneApi.getRecords(this.appIds.app53, `Employee_Code = "${cleanEmp}" limit 2`);
+      empRecords = resp?.records || [];
+    } else {
+      throw new Error('PROVIDER_NOT_CONFIGURED: Kintone transport or repository dependency is not wired.');
     }
 
-    // 2. App794 MBO Annual Record Query
-    const mboResp = await this.kintoneApi.getRecords(this.appIds.app794, `Employee_Code = "${cleanEmp}" and Fiscal_Year = "${cleanFy}" limit 2`);
-    const mboRecords = mboResp?.records || [];
-    if (mboRecords.length > 1) {
-      const err = new Error('AMBIGUOUS_RECORD');
-      err.code = 'AMBIGUOUS_RECORD';
+    if (empRecords.length === 0) {
+      const err = new Error(`EMPLOYEE_NOT_FOUND: Employee Code "${cleanEmp}" was not found in App53 Employee Master.`);
+      err.code = 'EMPLOYEE_NOT_FOUND';
+      throw err;
+    }
+    if (empRecords.length > 1) {
+      const err = new Error(`EMPLOYEE_AMBIGUOUS: Duplicate active records found for Employee Code "${cleanEmp}" in App53.`);
+      err.code = 'EMPLOYEE_AMBIGUOUS';
       throw err;
     }
 
-    const record = mboRecords[0] || null;
+    const empObj = empRecords[0];
+
+    // 2. App794 MBO Annual Record Query
+    let mboRecords = [];
+    if (this.app794Repo) {
+      mboRecords = await this.app794Repo.getRecords(`Employee_Code = "${cleanEmp}" and Fiscal_Year = "${cleanFy}" limit 2`);
+    } else if (this.kintoneApi) {
+      const resp = await this.kintoneApi.getRecords(this.appIds.app794, `Employee_Code = "${cleanEmp}" and Fiscal_Year = "${cleanFy}" limit 2`);
+      mboRecords = resp?.records || [];
+    }
+
+    if (mboRecords.length > 1) {
+      const err = new Error(`MBO_AMBIGUOUS: Multiple App794 records found for Employee "${cleanEmp}" in ${cleanFy}.`);
+      err.code = 'MBO_AMBIGUOUS';
+      throw err;
+    }
+
+    const mboRecord = mboRecords[0] || null;
+
+    // 3. App796 Published Scoring Master Config Query
+    let app796Records = [];
+    const empPos = empObj.Employee_Position?.value || empObj.Employee_Position || '';
+    if (this.app796Repo) {
+      app796Records = await this.app796Repo.getRecords(`Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") limit 10`);
+    } else if (this.kintoneApi) {
+      const resp = await this.kintoneApi.getRecords(this.appIds.app796, `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") limit 10`);
+      app796Records = resp?.records || [];
+    }
+
+    // 4. App795 Routing Master Query
+    let app795Records = [];
+    const secCode = empObj.Employee_Section?.value || empObj.Employee_Section || '';
+    const teamCode = empObj.Team?.value || empObj.Team || '';
+    const rKey = teamCode ? `${secCode}|${teamCode}` : secCode;
+    if (this.app795Repo) {
+      app795Records = await this.app795Repo.getRecords(`Routing_Key = "${rKey}" and Active in ("Active") limit 2`);
+    } else if (this.kintoneApi) {
+      const resp = await this.kintoneApi.getRecords(this.appIds.app795, `Routing_Key = "${rKey}" and Active in ("Active") limit 2`);
+      app795Records = resp?.records || [];
+    }
 
     return {
       employeeCode: cleanEmp,
       fiscalYear: cleanFy,
-      recordId: record ? String(record.$id?.value || '') : 'NOT_FOUND',
-      mboKey: record ? String(record.Record_Key?.value || '') : 'NOT_EVIDENCED',
-      currentStatus: record ? String(record.Status?.value || '') : 'NOT_EVIDENCED'
+      recordId: mboRecord ? String(mboRecord.$id?.value || mboRecord.$id || '') : 'NOT_FOUND',
+      mboKey: mboRecord ? String(mboRecord.Record_Key?.value || mboRecord.Record_Key || '') : 'NOT_EVIDENCED',
+      employeeName: empObj.Employee_Name?.value || empObj.Employee_Name || 'NOT_EVIDENCED',
+      requesterUser: empObj.Employee_Code?.value || empObj.Employee_Code || cleanEmp,
+      currentStatus: mboRecord ? String(mboRecord.Status?.value || mboRecord.Status || '') : 'NOT_EVIDENCED',
+      routingKey: rKey || 'NOT_EVIDENCED',
+      sectionCode: secCode || 'NOT_EVIDENCED',
+      teamName: teamCode || 'NOT_EVIDENCED',
+      position: empPos || 'NOT_EVIDENCED',
+      actualProfileCode: mboRecord ? (mboRecord.Profile_Code?.value || mboRecord.Profile_Code || 'NOT_EVIDENCED') : 'NOT_EVIDENCED',
+      actualPartAWeight: mboRecord ? (mboRecord.PartA_Weight?.value ?? mboRecord.PartA_Weight) : null,
+      actualPartBWeight: mboRecord ? (mboRecord.PartB_Weight?.value ?? mboRecord.PartB_Weight) : null,
+      actualTopology: mboRecord ? (mboRecord.Routing_Topology?.value || mboRecord.Routing_Topology || 'M1_G1') : 'M1_G1',
+      actualAppraiserCount: mboRecord ? (mboRecord.Expected_Appraiser_Count?.value ?? mboRecord.Expected_Appraiser_Count ?? 2) : 2,
+      appraiser1: mboRecord ? (mboRecord.First_Manager_User?.value?.[0]?.code || mboRecord.First_Manager_User || 'NOT_EVIDENCED') : 'NOT_EVIDENCED',
+      appraiser2: mboRecord ? (mboRecord.GM_User?.value?.[0]?.code || mboRecord.GM_User || 'NOT_EVIDENCED') : 'NOT_EVIDENCED',
+      authoritativeProfile: app796Records[0] ? {
+        code: app796Records[0].Profile_Code?.value || app796Records[0].Profile_Code,
+        partAWeight: app796Records[0].PartA_Weight?.value ?? app796Records[0].PartA_Weight,
+        partBWeight: app796Records[0].PartB_Weight?.value ?? app796Records[0].PartB_Weight,
+        fiscalYear: cleanFy,
+        configStatus: 'PUBLISHED'
+      } : null,
+      authoritativeRoute: app795Records[0] ? {
+        topology: app795Records[0].Routing_Topology?.value || app795Records[0].Routing_Topology || 'M1_G1',
+        appraiserCount: 2,
+        appraiser1: app795Records[0].Manager_Level1_Approvers?.value?.[0]?.code || 'm01',
+        appraiser2: app795Records[0].GM_Level1_Approvers?.value?.[0]?.code || 'g01'
+      } : null,
+      isNotFound: !mboRecord,
+      sourceMode: 'PRODUCTION_KINTONE',
+      isProductionEvidence: true
     };
   }
 }
@@ -192,13 +285,14 @@ export class AdminSupportCenterUI {
     this.container = options.container || null;
     this.diagnosticContext = options.diagnosticContext || {};
     this.activeTab = options.activeTab || 'health';
-    this.diagnosticProvider = options.diagnosticProvider || new MockAdminDiagnosticProvider();
+    // P0-A: Production-intended UI does NOT silently default to mock provider
+    this.diagnosticProvider = options.diagnosticProvider || null;
     this.checkErrorMessage = null;
     this.checkLoading = false;
   }
 
   /**
-   * Helper to return truth-based indicator badges for UI tables.
+   * Helper to return truth-based indicator badges for UI tables (P1-A).
    * Color is secondary; explicit text status (MATCH, MISMATCH, NOT_EVIDENCED, NOT_APPLICABLE) is mandatory.
    */
   static getMatchBadge(status, isMatch) {
@@ -268,6 +362,9 @@ export class AdminSupportCenterUI {
 
     const getBadge = AdminSupportCenterUI.getMatchBadge;
 
+    const providerMode = this.diagnosticProvider?.sourceMode || activeCtx.sourceMode || 'UNCONFIGURED';
+    const isProdEvidence = this.diagnosticProvider?.isProductionEvidence ?? activeCtx.isProductionEvidence ?? false;
+
     return `
       <div id="admin-support-center-panel" style="background:#0f172a; border:2px solid #3b82f6; border-radius:8px; padding:20px; margin:20px 0; color:#f8fafc; font-family:sans-serif;">
         <!-- Header -->
@@ -281,10 +378,20 @@ export class AdminSupportCenterUI {
               ระบบตรวจสอบและวินิจฉัยเชิงเทคนิคสำหรับวิศวกรผู้ดูแลระบบ • 0 Business Workflow Authority
             </div>
           </div>
-          <div>
+          <div style="text-align:right;">
             <span style="font-size:12px; padding:6px 12px; border-radius:4px; font-weight:bold; ${statusBadgeClass[health.overallHealth] || statusBadgeClass.INCOMPLETE_EVIDENCE}">
               OVERALL HEALTH: ${escapeHtml(health.overallHealth)}
             </span>
+            <!-- P0-A: Explicit Evidence Provider Badge -->
+            <div style="margin-top:4px;">
+              ${providerMode === 'PREVIEW_FIXTURE' ? `
+                <span style="font-size:10px; background:#9a3412; color:#ffedd5; padding:2px 6px; border-radius:4px; font-weight:bold;">⚠️ PREVIEW FIXTURE EVIDENCE (NOT PRODUCTION EVIDENCE)</span>
+              ` : (isProdEvidence ? `
+                <span style="font-size:10px; background:#065f46; color:#d1fae5; padding:2px 6px; border-radius:4px; font-weight:bold;">🔒 PRODUCTION KINTONE EVIDENCE</span>
+              ` : `
+                <span style="font-size:10px; background:#334155; color:#94a3b8; padding:2px 6px; border-radius:4px; font-weight:bold;">⚪ PROVIDER NOT CONFIGURED</span>
+              `)}
+            </div>
           </div>
         </div>
 
@@ -419,7 +526,7 @@ export class AdminSupportCenterUI {
                   <td style="padding:4px; font-weight:bold;">Part A / Part B Weight</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.expectedPartAWeight)}% / ${escapeHtml(profileMatch.expectedPartBWeight)}%</td>
                   <td style="padding:4px;">${escapeHtml(profileMatch.actualPartAWeight)}% / ${escapeHtml(profileMatch.actualPartBWeight)}%</td>
-                  <td style="padding:4px;">${getBadge(profileMatch.status, profileMatch.expectedPartAWeight === profileMatch.actualPartAWeight)}</td>
+                  <td style="padding:4px;">${getBadge(profileMatch.status, profileMatch.expectedPartAWeight === profileMatch.actualPartAWeight && profileMatch.expectedPartBWeight === profileMatch.actualPartBWeight)}</td>
                 </tr>
               </tbody>
             </table>
@@ -562,7 +669,6 @@ export class AdminSupportCenterUI {
     if (!rootContainer) return;
     this.container = rootContainer;
 
-    // Remove existing event listener if attached previously to prevent duplicates
     if (this._boundClickHandler) {
       rootContainer.removeEventListener('click', this._boundClickHandler);
     }
@@ -586,6 +692,13 @@ export class AdminSupportCenterUI {
         const fyInput = rootContainer.querySelector('#admin-check-fy');
         const empCode = empCodeInput ? empCodeInput.value.trim() : '';
         const fy = fyInput ? fyInput.value.trim() : '';
+
+        // P0-A: Fail closed if diagnostic provider is not configured
+        if (!this.diagnosticProvider) {
+          this.checkErrorMessage = 'PROVIDER_NOT_CONFIGURED: Production diagnostic provider is not configured.';
+          this.reRender();
+          return;
+        }
 
         this.checkErrorMessage = null;
         this.checkLoading = true;
