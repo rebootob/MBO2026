@@ -1,299 +1,566 @@
-# AI ACTIVE TASK — PROJECT CLOSE ROUND 1: LOCAL SECURITY + APP796 HARDENING
+# AI ACTIVE TASK — PROJECT CLOSE ROUND 2: BUNDLED LOCAL CLOSURE
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting HEAD: `a707aa88a05bf3a5276a67020b06d9908321779f`
-> Mode: **CREDIT-SAVER / PROJECT CLOSE / ONE BUNDLED ROUND**
+> Starting HEAD: `98ccaef354a756f3b238d7b021b1bbce5827203d`
+> Mode: **CREDIT-SAVER / PROJECT CLOSE / ONE LARGE LOCAL ROUND**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY: **0 / 0 / 0**
 
 ## OBJECTIVE
 
-Close the remaining local App796 authorization defect and implement the safest possible local foundation for **Gate 1 — MBO Login + Employee Data Isolation** in one source/test round.
+Complete as much of the remaining MBO2026 closure as possible LOCALLY in one implementation/test round so that only one later controlled Kintone deploy/write/read-back round remains.
 
-Do not contact Kintone. Do not deploy. Do not browser-smoke. Do not perform broad discovery outside the repository. Do not reopen frozen UI V2.
+Do not contact Kintone. Do not browser-smoke. Do not deploy. Do not modify production/legacy apps. Do not reopen approved UI V2 visual design.
 
-## CONFIRMED BUSINESS DESIGN — MBO LOGIN
+## REVIEW INPUT — ROUND 1
 
-Employees already have Kintone user accounts. The requested additional login is an **MBO application login after Kintone login**, not a replacement for Kintone authentication.
-
-Target user flow:
+Round 1 HEAD `98ccaef354a756f3b238d7b021b1bbce5827203d` review:
 
 ```text
-Kintone authenticated user
-  -> resolve/bind Kintone_User_Code to App53 Employee_Code
-  -> MBO Login screen
-  -> Username = Employee_Code
-  -> default MBO password = Employee_Code
-  -> first successful MBO login forces password change
-  -> new password is never stored in plaintext
-  -> password expiration supported
-  -> forgotten password = HR reset to Employee_Code + force change
-  -> MBO access continues only after successful identity and account checks
+APP796_TIMEZONE_GUARD = PASS
+IDENTITY_FOUNDATION = PASS_WITH_MUST_FIX
+PASSWORD_DOMAIN_FOUNDATION = PASS_WITH_MUST_FIX
+TRUSTED_SERVER_BOUNDARY = NO
+MBO_SECONDARY_PASSWORD_SECURE_BACKEND = BLOCKED_NO_TRUSTED_SERVER_BOUNDARY
 ```
 
-Required App801 logical fields/contract:
+Three required corrections:
+
+1. `HR` / `APPROVER` access must NOT be granted merely because a caller supplies the role string. Require an authoritative role assertion/context.
+2. Technical admin (`admin-form` / `isTechnicalAdmin`) must NEVER silently become employee business identity. Technical-admin employee-self access must fail closed regardless of Employee_Code value.
+3. Password max age must be injected/configured. Remove hard-coded `expiryDays = 90` business default.
+
+Do not undo the App796 timezone-aware guard.
+
+---
+
+# MANDATORY 7 FINAL CLOSURE GATES
+
+The final product must be designed toward all seven gates. This local round should close source/test readiness for as many as possible:
+
+1. Login + Data Isolation
+2. Excel + PDF Export
+3. Legacy 8-App Migration -> App794
+4. HR Dashboard Full-Cycle Management
+5. Copy Previous MBO
+6. Core App794/App795/App796 Integration
+7. Hoshin Governance + MBO Integration
+
+If a gate depends on live Kintone state, prepare the exact local implementation/manifest/test contract and leave runtime execution for the final authorized round.
+
+---
+
+# GATE 1 — SECURITY CORRECTIONS + SAFE INTEGRATION
+
+## 1A. Identity / role authorization
+
+Keep Kintone authenticated identity as the primary enforceable platform security boundary.
+
+Fix `MboIdentityService` so:
 
 ```text
-Employee_Code
-Kintone_User_Code
-Password_Hash
-Must_Change_Password
-Password_Changed_At
-Password_Expires_At
-Failed_Login_Count
-Locked_Until
-Account_Status
+EMPLOYEE:
+  authenticated Kintone identity -> exactly one bound Employee_Code
+  target Employee_Code must equal bound Employee_Code
+
+TECHNICAL ADMIN:
+  isTechnicalAdmin=true -> DENY employee-self business operation always
+
+HR / APPROVER:
+  caller-supplied role string alone is NEVER sufficient
+  require an authoritativeRoleContext / roleClaims / authorization predicate from trusted Kintone/runtime role resolution
+  missing/unverified claim -> DENY
 ```
 
-Account status minimum values:
+Do not invent production HR/approver membership data in tests. Use deterministic injected authoritative claims.
 
-```text
-ACTIVE
-DISABLED
-```
+## 1B. Password lifecycle
 
-No security questions.
-No plaintext password field.
-No password in App794, JS constants, Git, logs, URLs, sessionStorage, localStorage, or test snapshots.
+Keep the existing password-domain foundation, but:
 
-## CRITICAL SECURITY RULE — DO NOT FAKE A SECURITY BOUNDARY
+- remove hard-coded 90-day max age;
+- require/inject `passwordMaxAgeDays` (or equivalent config object);
+- invalid/missing max-age when expiry calculation is required -> FAIL CLOSED;
+- failed-attempt threshold and lock duration remain injected/configurable;
+- no plaintext persistence/logging/storage;
+- no security questions.
 
-Kintone authenticated identity remains the primary platform security boundary.
+## 1C. Secondary password runtime blocker
 
-The additional MBO password **must not be implemented as client-side-only authorization** if doing so exposes `Password_Hash` or permits JavaScript bypass to become the only access-control boundary.
+Repository review confirmed there is no trusted application-server boundary today.
 
-Before implementing MBO password verification, inspect the existing repository architecture LOCALLY and determine whether there is an existing trusted server-side/service execution boundary that can:
-
-1. read App801 credential material without exposing hashes to the employee browser;
-2. verify a password with a modern one-way password KDF;
-3. bind the verified MBO identity to the already-authenticated Kintone user;
-4. return only a limited authentication/session result to the browser.
-
-### If a trusted server-side boundary already exists
-
-Implement against the existing architecture. Do not invent a second parallel platform.
-
-Password hashing requirements:
-- prefer existing approved password-hashing dependency/pattern if present;
-- otherwise use a modern password KDF appropriate to the runtime (Argon2id preferred; bcrypt/scrypt acceptable when runtime/dependency constraints justify it);
-- unique salt per password;
-- constant-time verification through the selected library/runtime;
-- never reversible encryption for password storage.
-
-### If NO trusted server-side boundary exists
-
-**FAIL CLOSED.**
-
-Do NOT implement insecure browser-only password verification.
-Do NOT expose App801 hashes to employees.
-Do NOT claim Gate 1 password authentication is complete.
-
-In that case implement only the reusable domain contracts/tests that are safe locally and report exactly:
+Therefore:
 
 ```text
 MBO_SECONDARY_PASSWORD_SECURE_BACKEND = BLOCKED_NO_TRUSTED_SERVER_BOUNDARY
 ```
 
-This is a valid blocker report and is preferred over an insecure implementation.
+Do NOT create browser-only hash verification and do NOT expose App801 hashes to employee browser code.
 
-## GATE 1 — IDENTITY BINDING + DATA ISOLATION
+Continue to implement safe domain contracts, App801 schema/payload preparation, first-login/change/reset state machine, but do not falsely claim runtime secondary-password completion.
 
-Because every employee has a Kintone account, production identity isolation must bind:
-
-```text
-Authenticated Kintone User Code
-  -> authoritative employee mapping
-  -> Employee_Code
-  -> authorized App794 MBO record(s)
-```
-
-Security invariant:
+The later final report must distinguish:
 
 ```text
-EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B
+KINTONE_IDENTITY_DATA_ISOLATION = implementation gate
+MBO_SECONDARY_PASSWORD_RUNTIME = blocked pending trusted backend
 ```
 
-Implement/finalize local source contracts and tests so that:
+Do not let this blocker prevent closure of unrelated gates.
 
-1. logged-in Kintone user is mandatory;
-2. identity mapping must resolve exactly one active Employee_Code;
-3. missing mapping fails closed;
-4. duplicate/ambiguous mapping fails closed;
-5. MBO username must equal the bound Employee_Code;
-6. requested App794 employee scope must equal the bound Employee_Code for employee role;
-7. direct URL / alternate view / API helper code must reuse the same authorization predicate where represented in this codebase;
-8. technical admin identity must never be silently treated as employee business identity;
-9. HR/approver access remains role-authorized and must not be confused with employee-self access.
+---
 
-Do not rely on UI hiding alone.
+# GATE 6 — PREVIEW -> APP794 100% PARITY CLOSURE
 
-## PASSWORD LIFECYCLE DOMAIN RULES
+`UI_V2_VISUAL_FREEZE = PASS`.
 
-Implement locally where architecturally appropriate:
+Do NOT redesign approved UI. Treat Preview Lab as the approved source of truth and close parity as one package, not field-by-field patching.
 
-### Initial provisioning
+Required local work:
+
+1. Compare `preview/index.html`, current App794 UI source, `dist/mbo-employee-app.js`, CSS, UI helpers, and approved UI baseline.
+2. Move/reuse approved Preview behavior into maintainable source modules using existing architecture.
+3. Preserve all confirmed UI rules:
+   - 5 stages: Objectives / Mid-Year / Self Evaluation / Appraiser Evaluation / HR Final/Completed
+   - Thai + English
+   - ordinal Appraiser 1–4 labels only
+   - same appraiser sequence through annual lifecycle
+   - historical stage navigation read-only
+   - attachments for Objectives/Mid-Year/Self Evaluation
+   - Mid-Year user-entered progress %
+   - native comments retained for Return/Reject
+   - deadline/countdown/overdue
+   - Workflow Action Timeline
+   - prior-stage review for Appraiser/HR
+   - permission-aware employee history
+4. Do not alter frozen workflow topology/business paths.
+5. Build local dist only once at the end if required.
+
+Expected local status:
 
 ```text
-Username = Employee_Code
-Initial password = Employee_Code
-Must_Change_Password = true
-Account_Status = ACTIVE
+PREVIEW_TO_APP794_PARITY_LOCAL = PASS
+UI_V2_VISUAL_REDESIGN = 0
 ```
 
-The initial password must immediately be converted to `Password_Hash`; plaintext must not persist.
+---
 
-### First login
+# GATE 7 — HOSHIN GOVERNANCE + MBO INTEGRATION
 
-Correct initial password + correct identity binding:
+Reuse App797 foundation. Do not create a replacement Hoshin app.
+
+Implement/finalize local domain/service/UI contracts for:
 
 ```text
-AUTHENTICATED_BUT_PASSWORD_CHANGE_REQUIRED
+Hoshin statuses: DRAFT / READY / PUBLISHED / INACTIVE
+Levels: Department Hoshin + Section Hoshin
+Selection: Fiscal Year + organization + effective date + PUBLISHED only
 ```
 
-No normal MBO access until password is changed.
-
-### Password change
-
-On success:
+Create-MBO readiness:
 
 ```text
-Password_Hash = newly generated hash
-Must_Change_Password = false
-Password_Changed_At = now
-Password_Expires_At = configured expiry
-Failed_Login_Count = 0
-Locked_Until = cleared
+Employee -> App53 org -> FY
+  -> exactly one valid Department Hoshin
+  -> exactly one valid Section Hoshin
+  -> READY_FOR_MBO
 ```
 
-### Password expiry
-
-Expired password may authenticate only into password-change-required state. It must not grant normal MBO access.
-
-Keep max-age configuration reusable; do not hardcode a business value unless an existing confirmed project setting already defines it.
-
-### Failed login / lock
-
-Provide deterministic domain behavior for failed count and temporary lock. Do not invent an aggressive production threshold if not already configured; keep threshold/duration injectable/configurable.
-
-### HR reset
-
-HR reset semantics:
+Fail closed errors:
 
 ```text
-new temporary/default password = Employee_Code
-Must_Change_Password = true
-Failed_Login_Count = 0
-Locked_Until = cleared
+NO_DEPARTMENT_HOSHIN
+NO_SECTION_HOSHIN
+MULTIPLE_ACTIVE_HOSHIN
+HOSHIN_NOT_PUBLISHED
+HOSHIN_OUTSIDE_EFFECTIVE_DATE
+ORGANIZATION_MISMATCH
 ```
 
-Reset must not reveal the old password because the old password must be unrecoverable.
-
-## APP796 — R2D-R2 MINOR CLOSURE
-
-Current R2D-R2 fixed the major defects, but `backupEvidence.capturedAt` currently accepts any JavaScript-parsable date.
-
-The reviewed contract requires **timezone-aware ISO-8601**.
-
-Fix `assertScoringMasterSupersessionAuthorization()` so `capturedAt` must:
-
-1. be a non-empty string;
-2. be valid ISO-8601 datetime;
-3. explicitly include `Z` or a numeric UTC offset such as `+07:00` / `-05:00`;
-4. reject timezone-less strings such as `2026-08-26T22:00:00`.
-
-Add focused positive/negative tests.
-
-Do not change supersession service business logic, bulk request shape, DGM candidate fields, hashes, or repository atomicity in this round.
-Do not execute DGM repair.
-
-## SOURCE SCOPE
-
-Use existing files/modules first. Avoid unnecessary new files.
-
-Allowed source changes only where needed for:
-- App796 timezone-aware authorization correction;
-- MBO auth/account domain contracts;
-- identity binding/data isolation authorization;
-- password lifecycle services/adapters if a trusted server-side boundary already exists;
-- directly affected build entrypoints only if required.
-
-Do not refactor unrelated code.
-Do not modify legacy app code/data.
-Do not modify frozen UI V2 except a minimal integration hook only if absolutely necessary for compile/test; no visual redesign.
-
-## REQUIRED TEST COVERAGE
-
-At minimum cover:
+App794 snapshot contract:
 
 ```text
-APP796_TIMEZONE_AWARE_CAPTURED_AT
-  valid Z timestamp -> PASS
-  valid +07:00 timestamp -> PASS
-  missing timezone -> DENY
-  malformed timestamp -> DENY
-
-IDENTITY_BINDING
-  valid Kintone user -> exactly one Employee_Code -> PASS
-  no mapping -> DENY
-  ambiguous mapping -> DENY
-  MBO username != bound Employee_Code -> DENY
-
-EMPLOYEE_DATA_ISOLATION
-  employee own record -> PASS
-  Employee A requests Employee B -> DENY
-
-PASSWORD_DOMAIN
-  initial credential -> force-change state
-  plaintext is never returned/persisted by domain API
-  correct password -> PASS state
-  wrong password -> failed count behavior
-  disabled account -> DENY
-  locked account -> DENY
-  expired password -> password-change-required only
-  successful password change -> new hash + expiry metadata
-  HR reset -> default Employee_Code-derived hash + force change
+Hoshin_Fiscal_Year
+Department_Hoshin_ID
+Department_Hoshin_Title
+Department_Hoshin_Snapshot
+Section_Hoshin_ID
+Section_Hoshin_Title
+Section_Hoshin_Snapshot
+Hoshin_Snapshot_At
 ```
 
-If secure backend is absent, password-verification integration tests must not pretend a client-side implementation is secure. Test only safe domain contracts and report the blocker.
+Historical MBO snapshot is immutable against later App797 edits.
 
-## HARD BOUNDARIES
+Copy Previous must resolve NEW fiscal-year Hoshin, never reuse prior-year Hoshin snapshot.
+
+Migration must preserve historical source Hoshin if source contains it; if absent mark `SOURCE_NOT_AVAILABLE`, never fabricate current Hoshin backwards.
+
+Keep Hoshin separate from routing.
+
+Expected local tests:
+
+```text
+HOSHIN_MASTER_GATE
+HOSHIN_DUAL_LEVEL_GATE
+HOSHIN_SNAPSHOT_GATE
+HOSHIN_COPY_FORWARD_GATE
+HOSHIN_EXPORT_GATE
+```
+
+---
+
+# GATE 5 — COPY PREVIOUS MBO
+
+Reuse `AnnualRecordService` / existing annual-record architecture. Do not build a parallel annual-record path.
+
+Implement preview + create-candidate semantics:
+
+```text
+FY previous -> preview -> current FY Draft
+```
+
+Copy ONLY planning fields:
+
+- Objective title/description
+- KPI
+- Target
+- Measurement
+- Weight
+- planning notes
+
+Never copy:
+
+- Actual Result
+- Achievement
+- Self/Appraiser score
+- comments/evaluation comments
+- approvals
+- timestamps
+- workflow status/history
+- revision/final result
+- prior-year Hoshin snapshot
+
+Current-year creation must regenerate:
+
+- Fiscal Year
+- Record_Key
+- routing snapshot
+- scoring/config snapshot
+- NEW FY Department/Section Hoshin snapshot
+- initial workflow state
+
+Employee may copy only own MBO; HR path requires authoritative HR role assertion.
+Duplicate `{FY}-{Employee}` must fail closed using existing duplicate guard.
+
+Expected local gate:
+
+```text
+COPY_PREVIOUS_MBO_LOCAL = PASS
+```
+
+---
+
+# GATE 4 — APP800 HR DASHBOARD + PHASE CALENDAR
+
+Reuse current App800 HR Control Center / dashboard implementation. Do not create another HRCC app.
+
+Complete local source for:
+
+## Dashboard filters
+- Fiscal Year
+- Division
+- Department
+- Section
+- Team
+- Position
+- Employee
+- Status
+- Approver
+
+## Overview counts
+- Total
+- Not Started
+- Draft
+- Waiting Approval
+- Returned
+- Rejected
+- In Progress
+- Completed
+- Overdue
+- Routing Error
+- Config Error
+- Missing Approver
+
+## Employee monitor
+- employee identity/org
+- current MBO
+- current workflow status/stage
+- appraiser sequence/topology
+- stage progress
+- Part A / Part B / final result
+- history/migration source
+- blocking errors
+
+## HR operational actions — local contract only in this round
+- initiate
+- inspect
+- correct allowable master-linked values
+- reassign approver through governed path
+- recalc routing
+- return/reopen/resume when business rules allow
+- carry forward / copy previous
+- scoring monitor
+- Excel/PDF export
+- history
+- diagnose blocker
+
+No unrestricted HR bypass. All workflow-changing actions must preserve auditability and native Process constraints.
+
+## Phase Calendar
+HR configures open/close windows for:
+- Objectives
+- Mid-Year
+- Self Evaluation
+- Appraiser Evaluation
+- HR Final
+
+Calendar must gate availability/message/countdown only. Dates do NOT silently execute Kintone Process transitions.
+
+Expected local status:
+
+```text
+HR_DASHBOARD_LOCAL = PASS
+PHASE_CALENDAR_LOCAL = PASS
+```
+
+---
+
+# GATE 2 — EXCEL + PDF EXPORT
+
+Do NOT create a generic spreadsheet layout.
+
+Confirmed project export doc already requires historical approved format and dynamic 10-objective handling.
+
+Control Plane inspected the supplied historical templates. Use these findings as the design contract:
+
+## Part A
+- historical form structure is `A1:BF49`
+- same overall layout family is used across Staff/Chief, Assistant Manager/Specialist, GM samples
+- profile-specific Part A weight shown in form:
+  - Staff / Chief = 70%
+  - Assistant Manager = 60%
+  - Manager-level / GM-family = 50% according to approved evaluation profile
+- historical template visibly contains employee header, rating scales, Department/Section Hoshin area, objective rows, self evaluation, Appraiser 1/2 evaluation, comments, totals, evaluation-by/signature/date area
+- old physical form shows 4 objective rows; new design must support Objective 1–10 without losing historical formatting semantics
+
+## Part B
+Historical competency forms are separate workbook/sheet layouts and vary by profile/competency set. Preserve approved profile-specific competency content and configured Part B weighting; do not infer competency count solely from filename/sample text.
+
+## Required exports
+- Part A workbook
+- Part B workbook
+- Combined workbook containing both
+- PDF using the same approved data/scoring source and visually matching the approved MBO layout as closely as technically possible
+
+## Dynamic 5–10 objectives
+Use deterministic row expansion or overflow-page/sheet strategy while preserving:
+- formulas
+- merged-cell semantics
+- borders/alignment
+- print setup/page continuity
+- totals
+- appraiser columns
+
+## Template binary rule
+If the exact `.xlsx` binary templates are not present in the repository/local workspace accessible to Antigravity, DO NOT fabricate replacements and DO NOT block unrelated gates.
+Implement the export mapping/renderer contract and report:
+
+```text
+EXPORT_TEMPLATE_BINARY_ASSET = MISSING_LOCAL | AVAILABLE
+```
+
+If missing, leave exact binary-template integration for the final execution round after assets are placed locally; do not substitute a generic template.
+
+Expected local tests should cover data mapping for:
+- Staff/Chief 70/30
+- Assistant Manager 60/40
+- Manager/GM-family 50/50
+- 4 objectives
+- 10 objectives
+- Thai/English text
+- current vs historical snapshot
+- employee-self vs authorized approver vs HR export authorization
+
+---
+
+# GATE 3 — LEGACY 8-APP MIGRATION -> APP794
+
+Legacy apps remain permanently READ ONLY:
+
+```text
+283, 305, 307, 310, 640, 643, 715, 716
+```
+
+Do not call them in this local round.
+
+Implement/finalize local migration pipeline using injected/exported records:
+
+```text
+inventory
+-> map source app/profile/FY/employee
+-> normalize
+-> group logical MBO records
+-> detect duplicate FY/Employee
+-> merge deterministically
+-> validate target candidate
+-> preserve provenance
+-> produce dry-run manifest
+```
+
+Required provenance:
+- source app
+- source record id
+- source revision when available
+- source fiscal year
+- migration batch id
+- migration time placeholder/contract
+- verification status
+- attachment provenance
+
+Rules:
+- never silently discard attachments
+- unexplained data loss = 0
+- legacy originals never modified/deleted
+- historical records become read-only historical MBO context after migration
+- historical Hoshin: preserve source if present; otherwise `SOURCE_NOT_AVAILABLE`
+- do not resolve present-day Hoshin backwards
+
+Prepare reconciliation counters:
+
+```text
+SOURCE_RECORDS
+LOGICAL_MBO_GROUPS
+SUCCESS
+MERGED
+SKIPPED_EXPLAINED
+FAILED
+UNEXPLAINED_DATA_LOSS
+TARGET_EXPECTED_COUNT
+```
+
+Expected local gate:
+
+```text
+LEGACY_MIGRATION_DRY_RUN_ENGINE = PASS
+UNEXPLAINED_DATA_LOSS = 0 on deterministic fixtures
+```
+
+---
+
+# APP796 — KEEP READY FOR FINAL REPAIR ROUND
+
+Round 1 timezone fix passed. Do not touch App796 business data.
+
+Preserve existing DGM repair workflow for later authorized execution:
+
+```text
+A restore PROF_DGM v1.0.0 Expected_Appraiser_Count 1 -> 2
+B verify historical hash
+C create PROF_DGM::v1.1.0 Count=1 VALIDATED
+D triple-hash
+E atomic old PUBLISHED->SUPERSEDED + new VALIDATED->PUBLISHED
+F exactly one current DGM PUBLISHED
+```
+
+No Kintone execution now.
+
+---
+
+# CORE INTEGRATION TESTS
+
+Add/adjust tests for the real integrated annual path, using pure/injected adapters only:
+
+```text
+Employee
+-> identity binding
+-> routing resolution
+-> scoring profile/config resolution
+-> Hoshin resolution/snapshot
+-> annual record candidate
+-> objectives validation
+-> copy previous candidate
+-> export projection
+-> HR dashboard projection
+```
+
+Must preserve:
+- M1_G1 current routes
+- M1_ONLY executive direct DGM/GM/VP -> President
+- TMG1/TMG2 exact Team matching
+- TMT3 fail closed
+- Appraiser slots 1–4 architecture
+- profile != routing
+
+No live Kintone calls.
+
+---
+
+# CODE QUALITY / CHANGE RULES
+
+- Reuse existing modules first.
+- New files only for clear separation of concerns.
+- Do not duplicate business rules across UI/services/export/migration.
+- Prefer pure domain/service functions with injected repositories/adapters.
+- Do not rewrite working frozen core unnecessarily.
+- Do not update stale docs broadly.
+- Do not add dead placeholder code merely to claim a gate.
+- No browser runtime test this round.
+
+---
+
+# HARD BOUNDARIES
 
 ```text
 KINTONE_CALLS = 0
 KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
+REAL_USER_ACTION = 0
+REAL_NOTIFICATION = 0
 APP53_WRITE = 0
 LEGACY_APP_WRITE = 0
 APP794_LIVE_WRITE = 0
 APP795_LIVE_WRITE = 0
 APP796_LIVE_WRITE = 0
+APP797_LIVE_WRITE = 0
+APP800_LIVE_WRITE = 0
 APP801_LIVE_WRITE = 0
-REAL_USER_ACTION = 0
-REAL_NOTIFICATION = 0
 UI_V2_REDESIGN = 0
+DGM_REPAIR_EXECUTION = 0
 ```
 
-Do not edit `CURRENT_STATE.md`, `HANDOFF.md`, `AI_REVIEW_PACKAGE.md`, or baseline docs in this execution round unless implementation literally cannot be understood without a one-line status correction. Prefer no docs churn.
+---
 
-## EXECUTION PLAN — ONE ROUND ONLY
+# EXECUTION PLAN — ONE ANTIGRAVITY ROUND
 
-1. Confirm branch is `ai/antigravity-wp002c` and pull latest.
-2. Read this `AI_ACTIVE_TASK.md`.
-3. Inspect only directly relevant local auth/security/App801/App794 authorization code and App796 guard/tests.
-4. Determine whether a trusted server-side boundary already exists.
-5. Implement all safe local changes in this package.
-6. Run targeted tests once.
-7. Run `npm test` once because source changed.
-8. Build only if the changed source requires it under existing project convention.
-9. Confirm zero Kintone/browser/network execution.
-10. Commit and push same branch.
-11. STOP for ChatGPT review.
+1. Confirm branch and pull latest.
+2. Read this task only after confirmed baseline/project docs per repository governance.
+3. Inspect existing source only for the features in this task; do not broad-discover Kintone.
+4. Fix the three Round 1 security defects first.
+5. Implement bundled local closures Gate 6 -> Gate 7 -> Gate 5 -> Gate 4 -> Gate 2 -> Gate 3, reusing existing architecture.
+6. Add focused tests during implementation but do not repeatedly run the full suite.
+7. Run targeted tests once near completion.
+8. Run `npm test` ONCE after all source changes.
+9. Run `npm run ui:build` ONCE only if App794/UI source changed.
+10. Confirm no Kintone/browser/network execution.
+11. Commit and push one coherent implementation commit (or minimal logically necessary commits; avoid micro-commit churn).
+12. STOP for ChatGPT review.
 
-## REQUIRED RETURN
+# REQUIRED RETURN
 
 Return only:
 
@@ -302,14 +569,27 @@ STATUS: READY FOR CHATGPT REVIEW
 START_HEAD:
 END_HEAD:
 FILES_CHANGED:
-TRUSTED_SERVER_BOUNDARY: YES | NO
-MBO_SECONDARY_PASSWORD_SECURE_BACKEND: IMPLEMENTED_LOCAL | BLOCKED_NO_TRUSTED_SERVER_BOUNDARY
-IDENTITY_BINDING: PASS | BLOCKED
-EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B_LOCAL_GATE: PASS | BLOCKED
-APP796_TIMEZONE_GUARD: PASS
+
+ROUND1_SECURITY_FIXES:
+  HR_APPROVER_AUTHORIZATION:
+  TECH_ADMIN_ISOLATION:
+  PASSWORD_MAX_AGE_CONFIG:
+
+GATE1_KINTONE_IDENTITY_DATA_ISOLATION:
+MBO_SECONDARY_PASSWORD_SECURE_BACKEND:
+GATE2_EXPORT_LOCAL:
+EXPORT_TEMPLATE_BINARY_ASSET:
+GATE3_MIGRATION_DRY_RUN:
+GATE4_HR_DASHBOARD_LOCAL:
+PHASE_CALENDAR_LOCAL:
+GATE5_COPY_PREVIOUS_LOCAL:
+GATE6_PREVIEW_APP794_PARITY_LOCAL:
+GATE7_HOSHIN_INTEGRATION_LOCAL:
+CORE_794_795_796_INTEGRATION_LOCAL:
+
 TARGETED_TESTS:
 NPM_TEST:
-BUILD:
+UI_BUILD:
 KINTONE_CALLS: 0
 KINTONE_WRITES: 0
 KINTONE_DEPLOYS: 0
