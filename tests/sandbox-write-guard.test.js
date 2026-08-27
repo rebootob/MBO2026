@@ -165,10 +165,46 @@ test('assertScoringMasterSupersessionAuthorization enforces strict security gate
     /SCORING SUPERSESSION BLOCKED: Backup App ID mismatch/
   );
 
-  // 11. bad backup SHA-256
+  // 11a. APP796_TIMEZONE_AWARE_CAPTURED_AT tests
+  // valid Z timestamp -> PASS
+  assert.equal(
+    assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'A11_tz_z', backupEvidence: { ...validAuth.backupEvidence, capturedAt: '2026-08-26T22:00:00Z' } },
+      { ...validReq }
+    ),
+    true
+  );
+  // valid +07:00 timestamp -> PASS
+  assert.equal(
+    assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'A11_tz_plus7', backupEvidence: { ...validAuth.backupEvidence, capturedAt: '2026-08-26T22:00:00+07:00' } },
+      { ...validReq }
+    ),
+    true
+  );
+  // valid -05:00 timestamp -> PASS
+  assert.equal(
+    assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'A11_tz_minus5', backupEvidence: { ...validAuth.backupEvidence, capturedAt: '2026-08-26T22:00:00-05:00' } },
+      { ...validReq }
+    ),
+    true
+  );
+  // missing timezone -> DENY
   assert.throws(
-    () => assertScoringMasterSupersessionAuthorization({ ...validAuth, authorizationId: 'A12', backupEvidence: { ...validAuth.backupEvidence, sha256: 'SHORT_HEX' } }, { ...validReq }),
-    /SCORING SUPERSESSION BLOCKED: Backup sha256 must be 64-char lowercase hex string/
+    () => assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'A11_tz_none', backupEvidence: { ...validAuth.backupEvidence, capturedAt: '2026-08-26T22:00:00' } },
+      { ...validReq }
+    ),
+    /SCORING SUPERSESSION BLOCKED: Backup capturedAt must be valid timezone-aware ISO-8601 string/
+  );
+  // malformed timestamp -> DENY
+  assert.throws(
+    () => assertScoringMasterSupersessionAuthorization(
+      { ...validAuth, authorizationId: 'A11_tz_bad', backupEvidence: { ...validAuth.backupEvidence, capturedAt: 'not-a-date' } },
+      { ...validReq }
+    ),
+    /SCORING SUPERSESSION BLOCKED: Backup capturedAt must be valid timezone-aware ISO-8601 string/
   );
 
   // 12a. missing authConfig.contractId

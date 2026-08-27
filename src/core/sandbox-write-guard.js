@@ -270,6 +270,38 @@ export function assertScoringMasterSchemaAuthorization(authConfig, requestConfig
   return true;
 }
 
+function isTimezoneAwareIsoDateTime(str) {
+  if (typeof str !== 'string') return false;
+  const trimmed = str.trim();
+  const isoRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|([+-])(\d{2}):(\d{2}))$/;
+  const match = isoRegex.exec(trimmed);
+  if (!match) return false;
+
+  const [, yearStr, monthStr, dayStr, hourStr, minStr, secStr, , , tzSign, tzHourStr, tzMinStr] = match;
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  const hour = parseInt(hourStr, 10);
+  const minute = parseInt(minStr, 10);
+  const second = parseInt(secStr, 10);
+
+  if (month < 1 || month > 12) return false;
+  if (hour > 23 || minute > 59 || second > 59) return false;
+
+  if (tzSign) {
+    const tzHour = parseInt(tzHourStr, 10);
+    const tzMin = parseInt(tzMinStr, 10);
+    if (tzHour > 23 || tzMin > 59) return false;
+  }
+
+  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  const daysInMonth = [0, 31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day < 1 || day > daysInMonth[month]) return false;
+
+  const dt = new Date(trimmed);
+  return !isNaN(dt.getTime());
+}
+
 export function assertScoringMasterSupersessionAuthorization(authConfig, requestConfig) {
   if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
     throw new Error('SCORING SUPERSESSION BLOCKED (FAIL-CLOSED): Missing authorization/request configuration.');
@@ -330,8 +362,8 @@ export function assertScoringMasterSupersessionAuthorization(authConfig, request
   if (typeof backup.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(backup.sha256)) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Backup sha256 must be 64-char lowercase hex string.');
   }
-  if (typeof backup.capturedAt !== 'string' || backup.capturedAt.trim() === '' || isNaN(new Date(backup.capturedAt).getTime())) {
-    throw new Error('SCORING SUPERSESSION BLOCKED: Backup capturedAt must be valid ISO-8601 string.');
+  if (!isTimezoneAwareIsoDateTime(backup.capturedAt)) {
+    throw new Error('SCORING SUPERSESSION BLOCKED: Backup capturedAt must be valid timezone-aware ISO-8601 string.');
   }
   if (typeof backup.recordCount !== 'number' || !Number.isSafeInteger(backup.recordCount) || backup.recordCount < 0) {
     throw new Error('SCORING SUPERSESSION BLOCKED: Backup recordCount must be a non-negative integer.');
