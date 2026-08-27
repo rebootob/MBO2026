@@ -1,6 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LegacyMigrationService, LEGACY_APP_PROFILE_MAP } from '../src/services/legacy-migration-service.js';
+import { LegacyMigrationService, canonicalSerialize } from '../src/services/legacy-migration-service.js';
+
+test('LEGACY_CANONICAL_STRUCTURED_COMPARE: objects with different key insertion order compare equivalent', () => {
+  const obj1 = { b: 2, a: 1, c: { y: 'bar', x: 'foo' } };
+  const obj2 = { a: 1, b: 2, c: { x: 'foo', y: 'bar' } };
+
+  assert.equal(canonicalSerialize(obj1), canonicalSerialize(obj2));
+
+  const equivalentData1 = {
+    '283': [
+      { $id: '100', Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Attachment_File: [{ b: 2, a: 1 }] },
+      { $id: '101', Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Attachment_File: [{ a: 1, b: 2 }] }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: equivalentData1, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 1);
+  assert.equal(res.counters.MERGED, 1);
+  assert.equal(res.counters.UNEXPLAINED_DATA_LOSS, 0);
+});
+
+test('LEGACY_INDEPENDENT_FIELD_COVERAGE: every non-empty source field is accounted for in coverageProof', () => {
+  const legacyData = {
+    '283': [
+      {
+        Drop_down_year: "FY'2021",
+        Text_name: 'Somchai Prasert',
+        Text_area_action_plan_obj1: 'Upgrade DB',
+        weight_a_obj1: '50',
+        Custom_Field_1: 'Custom Value 1'
+      }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: legacyData, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 1);
+  const prov = res.candidates[0].provenance[0];
+  assert.equal(prov.coverageProof.totalNonEmptyFields, 5);
+  assert.equal(prov.coverageProof.reconciledFieldsCount, 5);
+  assert.equal(prov.coverageProof.missingReconciliationCount, 0);
+  assert.equal(res.counters.UNEXPLAINED_FIELD_LOSS, 0);
+});
 
 test('LEGACY_TARGET_APP794_PHYSICAL_SHAPE: candidate contains physical Objective_1..4 fields and does NOT contain logical Objectives array', () => {
   const legacyData = {

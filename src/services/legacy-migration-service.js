@@ -41,6 +41,22 @@ export const SOURCE_TO_TARGET_FIELD_MAP = {
   dif_level_obj4: 'Difficulty_4'
 };
 
+/**
+ * Deterministic/canonical JSON serializer with recursively sorted object keys.
+ */
+export function canonicalSerialize(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val !== 'object') return String(val).trim();
+
+  if (Array.isArray(val)) {
+    return '[' + val.map(canonicalSerialize).join(',') + ']';
+  }
+
+  const sortedKeys = Object.keys(val).sort();
+  const pairs = sortedKeys.map(k => `${JSON.stringify(k)}:${canonicalSerialize(val[k])}`);
+  return '{' + pairs.join(',') + '}';
+}
+
 export class LegacyMigrationService {
   /**
    * Normalizes raw Drop_down_year values (e.g. "FY'2021" -> "FY2021").
@@ -75,8 +91,7 @@ export class LegacyMigrationService {
   }
 
   /**
-   * Full projection deep equivalence comparator across ALL non-empty normalized business/provenance fields.
-   * Uses stable JSON stringification for structured/array fields.
+   * Full projection deep equivalence comparator using canonical object key sorting.
    */
   static areDuplicateItemsEquivalent(itemA, itemB) {
     if (itemA.targetProfileCode !== itemB.targetProfileCode) return false;
@@ -88,11 +103,8 @@ export class LegacyMigrationService {
     for (const key of allKeys) {
       if (key.startsWith('$')) continue; // Ignore system fields like $id, $revision
 
-      const unwrappedA = unwrapField(recA[key]);
-      const unwrappedB = unwrapField(recB[key]);
-
-      const valA = (unwrappedA !== null && typeof unwrappedA === 'object') ? JSON.stringify(unwrappedA) : String(unwrappedA || '').trim();
-      const valB = (unwrappedB !== null && typeof unwrappedB === 'object') ? JSON.stringify(unwrappedB) : String(unwrappedB || '').trim();
+      const valA = canonicalSerialize(unwrapField(recA[key]));
+      const valB = canonicalSerialize(unwrapField(recB[key]));
 
       if (valA !== valB) {
         return false;
@@ -112,7 +124,6 @@ export class LegacyMigrationService {
 
     let countSkippedUnresolvedFY = 0;
     let countSkippedUnresolvedIdentity = 0;
-    let totalReconciledFields = 0;
     let totalUnexplainedFieldLoss = 0;
 
     // 1. Inventory & Map
@@ -150,59 +161,64 @@ export class LegacyMigrationService {
           }
         }
 
+        // Build independent source field coverage set
+        const nonEmptySourceFieldCodes = [];
+        for (const [key, val] of Object.entries(rec)) {
+          const unwrapped = unwrapField(val);
+          const serialized = canonicalSerialize(unwrapped);
+          if (serialized !== '') {
+            nonEmptySourceFieldCodes.push(key);
+          }
+        }
+
         // Field-level reconciliation bucket audit with explicit source -> target mapping evidence
         const fieldBucketAudit = [];
         const historicalFields = {};
+        const reconciledSourceFieldCodes = new Set();
 
-        for (const [fCode, fVal] of Object.entries(rec)) {
+        for (const fCode of nonEmptySourceFieldCodes) {
+          const fVal = rec[fCode];
           const unwrappedVal = unwrapField(fVal);
-          const strVal = (unwrappedVal !== null && typeof unwrappedVal === 'object') ? JSON.stringify(unwrappedVal) : String(unwrappedVal || '').trim();
-          if (!strVal) continue; // Empty fields ignored
+          const serializedVal = canonicalSerialize(unwrappedVal);
 
-          totalReconciledFields++;
+          reconciledSourceFieldCodes.add(fCode);
           const actualTargetCode = SOURCE_TO_TARGET_FIELD_MAP[fCode];
 
           if (actualTargetCode) {
             fieldBucketAudit.push({
               sourceFieldCode: fCode,
               bucket: 'MAPPED_TO_TARGET',
-              sourceValue: strVal,
+              sourceValue: serializedVal,
               targetFieldCode: actualTargetCode
             });
           } else if (fCode.toLowerCase().includes('attachment') || fCode.toLowerCase().includes('file')) {
             fieldBucketAudit.push({
               sourceFieldCode: fCode,
               bucket: 'ATTACHMENT_TRANSFER_PENDING',
-              sourceValue: strVal,
+              sourceValue: serializedVal,
               explainedReason: 'ATTACHMENT_TRANSFER_PENDING_UNTIL_UPLOAD'
             });
           } else if (fCode.startsWith('$')) {
             fieldBucketAudit.push({
               sourceFieldCode: fCode,
               bucket: 'SKIPPED_EXPLAINED',
-              sourceValue: strVal,
+              sourceValue: serializedVal,
               explainedReason: 'KINTONE_SYSTEM_METADATA'
             });
           } else {
             // PRESERVED_IN_PROVENANCE: actual normalized value stored in provenance!
-            historicalFields[fCode] = strVal;
+            historicalFields[fCode] = serializedVal;
             fieldBucketAudit.push({
               sourceFieldCode: fCode,
               bucket: 'PRESERVED_IN_PROVENANCE',
-              sourceValue: strVal,
+              sourceValue: serializedVal,
               provenancePath: `provenance.historicalFields.${fCode}`
             });
           }
         }
 
-        // Validate field-level reconciliation proof
-        for (const auditItem of fieldBucketAudit) {
-          if (auditItem.bucket === 'MAPPED_TO_TARGET' && !auditItem.targetFieldCode) {
-            totalUnexplainedFieldLoss++;
-          } else if (auditItem.bucket === 'PRESERVED_IN_PROVENANCE' && !auditItem.provenancePath) {
-            totalUnexplainedFieldLoss++;
-          }
-        }
+        // Calculate missing reconciliation codes independently
+        const missingReconciliation = nonEmptySourceFieldCodes.filter(c => !reconciledSourceFieldCodes.has(c));
 
         inventory.push({
           sourceAppId: appId,
@@ -218,6 +234,9 @@ export class LegacyMigrationService {
           fileFields,
           historicalFields,
           fieldBucketAudit,
+          nonEmptySourceFieldCodes,
+          reconciledSourceFieldCodes: Array.from(reconciledSourceFieldCodes),
+          missingReconciliation,
           rawRecord: rec
         });
       }
@@ -311,6 +330,30 @@ export class LegacyMigrationService {
           candidateObj[`Difficulty_${i}`] = readString(rec, `dif_level_obj${i}`);
         }
 
+        // Validate independent field-level reconciliation proof against candidate & provenance
+        let recordUnexplainedLoss = 0;
+        for (const item of groupItems) {
+          if (item.missingReconciliation.length > 0) {
+            recordUnexplainedLoss += item.missingReconciliation.length;
+          }
+
+          for (const auditItem of item.fieldBucketAudit) {
+            if (auditItem.bucket === 'MAPPED_TO_TARGET') {
+              const candVal = candidateObj[auditItem.targetFieldCode];
+              if (candVal === undefined || candVal === '') {
+                recordUnexplainedLoss++;
+              }
+            } else if (auditItem.bucket === 'PRESERVED_IN_PROVENANCE') {
+              const provVal = item.historicalFields[auditItem.sourceFieldCode];
+              if (provVal === undefined || provVal === '') {
+                recordUnexplainedLoss++;
+              }
+            }
+          }
+        }
+
+        totalUnexplainedFieldLoss += recordUnexplainedLoss;
+
         const provenanceList = groupItems.map(item => ({
           sourceAppId: item.sourceAppId,
           sourceRecordId: item.sourceRecordId,
@@ -325,7 +368,12 @@ export class LegacyMigrationService {
           attachmentProvenance: item.fileFields.length > 0 ? 'ATTACHMENT_TRANSFER_PENDING' : 'NONE',
           attachedFiles: item.fileFields,
           historicalFields: item.historicalFields,
-          fieldBucketAudit: item.fieldBucketAudit
+          fieldBucketAudit: item.fieldBucketAudit,
+          coverageProof: {
+            totalNonEmptyFields: item.nonEmptySourceFieldCodes.length,
+            reconciledFieldsCount: item.reconciledSourceFieldCodes.length,
+            missingReconciliationCount: item.missingReconciliation.length
+          }
         }));
 
         candidateObj.Migration_Provenance = JSON.stringify(provenanceList);
