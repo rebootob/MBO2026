@@ -572,6 +572,7 @@
         msgChangeFailedPrefix: "เปลี่ยนรหัสผ่านไม่สำเร็จ:",
         msgPasswordSuccess: "เปลี่ยนรหัสผ่านสำเร็จ!",
         msgLoggedOutSuccess: "ยกเลิกเซสชันสำเร็จ ออกจากระบบเรียบร้อยแล้ว",
+        msgLogoutFailedPrefix: "ออกจากระบบไม่สำเร็จ:",
         msgAccessDeniedHeader: "ปฏิเสธการเข้าถึง:",
         msgAccessDeniedMsg: "ยังไม่ได้ยืนยันตัวตน หรือต้องเปลี่ยนรหัสผ่านก่อน",
         msgAccessAllowedHeader: "อนุญาตการเข้าถึง:",
@@ -649,6 +650,7 @@
         msgChangeFailedPrefix: "Password Change Failed:",
         msgPasswordSuccess: "Password successfully changed!",
         msgLoggedOutSuccess: "Session terminated cleanly. Logged out.",
+        msgLogoutFailedPrefix: "Logout Failed:",
         msgAccessDeniedHeader: "ACCESS DENIED:",
         msgAccessDeniedMsg: "Unauthenticated or Password Change Required.",
         msgAccessAllowedHeader: "ACCESS ALLOWED:",
@@ -664,7 +666,7 @@
     let lastAccessCheckData = null;
 
     function translateReason(reason, lang) {
-      if (!reason) return lang === 'th' ? 'ปฏิเสธการสิทธิ์' : 'Authentication denied.';
+      if (!reason) return lang === 'th' ? 'การยืนยันตัวตนไม่สำเร็จ' : 'Authentication denied.';
 
       const reasonDict = {
         th: {
@@ -925,13 +927,20 @@
     async function handleLogout() {
       const dict = translations[currentLang];
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        updateStateUI('UNAUTHENTICATED');
-        const alertBox = document.getElementById('login-alert');
-        alertBox.className = 'alert alert-success';
-        alertBox.innerText = dict.msgLoggedOutSuccess;
+        const res = await fetch('/api/auth/logout', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok && data.status === 'LOGGED_OUT') {
+          updateStateUI('UNAUTHENTICATED');
+          const alertBox = document.getElementById('login-alert');
+          alertBox.className = 'alert alert-success';
+          alertBox.innerText = dict.msgLoggedOutSuccess;
+        } else {
+          const locReason = translateReason(data.reason || data.error, currentLang);
+          alert(`${dict.msgLogoutFailedPrefix} ${locReason}`);
+        }
       } catch (err) {
         console.error('Logout error', err);
+        alert(`${dict.msgLogoutFailedPrefix} ${err.message}`);
       }
     }
 
