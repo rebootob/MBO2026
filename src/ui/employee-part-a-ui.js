@@ -575,6 +575,7 @@ export class EmployeePartAUI {
     this.onFieldChange = options.onFieldChange || (() => {});
     this.onLookupEmployee = options.onLookupEmployee || (() => {});
     this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
+    this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
     this.currentErrors = [];
 
     this.isEmployeeVerified = !this.isCreate;
@@ -625,7 +626,7 @@ export class EmployeePartAUI {
     this.isHistoricalView = isHistoricalView;
 
     // R3-01: STEP 1 Lookup section is rendered on Create BEFORE fail-closed scoring snapshot validation!
-    if (this.isCreate) {
+    if (this.isCreate && !this.authenticatedEmployeeCode) {
       root.appendChild(this._renderLookupSection());
     }
 
@@ -3030,6 +3031,9 @@ export class EmployeePartAUI {
   }
 
   async executeLookup(empCode) {
+    if (this.authenticatedEmployeeCode && empCode !== this.authenticatedEmployeeCode) {
+      throw new Error('AUTHENTICATED_EMPLOYEE_CODE_MISMATCH');
+    }
     const code = String(empCode || '').trim();
     if (!code) return;
     this.isEmployeeVerified = false;

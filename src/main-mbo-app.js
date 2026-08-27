@@ -9,8 +9,12 @@ import { ValidationEngine } from './validation/validation-engine.js';
 import { EmployeeService } from './services/employee-service.js';
 import { RoutingService } from './services/routing-service.js';
 import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
+import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
 
 let activeUiInstance = null;
+let mboLoginGate = null;
+
+export function setMboLoginGate(gate) { mboLoginGate = gate; }
 
 export function getActiveUiInstance() {
   return activeUiInstance;
@@ -197,6 +201,14 @@ if (typeof kintone !== 'undefined') {
     const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
     const loginUserCode = loginUser?.code || null;
 
+    const authenticatedEmployeeCode = mboLoginGate?.getEmployeeCode?.() || null;
+    if (mboLoginGate && !authenticatedEmployeeCode) {
+      return event; // Login UI adapter must establish page-memory context before Employee Self renders.
+    }
+    if (mboLoginGate && !isCreate && record.Employee_Code?.value && record.Employee_Code.value !== authenticatedEmployeeCode) {
+      return event; // Fail closed: authenticated employee cannot render another employee's custom UI.
+    }
+    if (mboLoginGate && isCreate && record.Employee_Code) record.Employee_Code.value = authenticatedEmployeeCode;
     const options = {
       container: uiHost,
       record: record,
@@ -204,6 +216,7 @@ if (typeof kintone !== 'undefined') {
       isEditable: isCreate || isEdit,
       isCreate: isCreate,
       loginUserCode: loginUserCode,
+      authenticatedEmployeeCode,
       isPreviewMode: false,
       onFieldChange: (code, val) => {
         if (record[code]) {
