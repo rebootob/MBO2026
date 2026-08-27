@@ -10,6 +10,7 @@ import { EmployeeService } from './services/employee-service.js';
 import { RoutingService } from './services/routing-service.js';
 import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
 import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
+import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
 
 let activeUiInstance = null;
 let mboLoginGate = null;
@@ -144,6 +145,9 @@ if (typeof kintone !== 'undefined') {
       return resp;
     }
   };
+  if (!mboLoginGate) {
+    mboLoginGate = new MboKintoneLoginGate(new MboKintoneAuthAdapter({ api: { getRecords: kintoneApiWrapper.getRecords, updateRecord: async (app, id, record) => kintone.api(kintone.api.url('/k/v1/record.json', true), 'PUT', { app, id: Number(id), record }) } }));
+  }
 
   function hideAllNativeFields(record) {
     Object.keys(record).forEach(code => {
@@ -201,10 +205,8 @@ if (typeof kintone !== 'undefined') {
     const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
     const loginUserCode = loginUser?.code || null;
 
-    const authenticatedEmployeeCode = mboLoginGate?.getEmployeeCode?.() || null;
-    if (mboLoginGate && !authenticatedEmployeeCode) {
-      return event; // Login UI adapter must establish page-memory context before Employee Self renders.
-    }
+    const authenticatedEmployeeCode = mboLoginGate ? await mboLoginGate.requireLogin(uiHost) : null;
+    if (!authenticatedEmployeeCode) return event;
     if (mboLoginGate && !isCreate && record.Employee_Code?.value && record.Employee_Code.value !== authenticatedEmployeeCode) {
       return event; // Fail closed: authenticated employee cannot render another employee's custom UI.
     }
