@@ -22,10 +22,24 @@ test('PASSWORD_DOMAIN: plaintext is never returned/persisted by domain API', () 
   });
   const jsonStr = JSON.stringify(cred);
   assert.equal(jsonStr.includes('EMP001'), true); // Employee_Code is present
-  // Make sure no raw password string field exists
   assert.equal(cred.password, undefined);
   assert.equal(cred.rawPassword, undefined);
   assert.equal(cred.plaintextPassword, undefined);
+});
+
+test('PASSWORD_DOMAIN: missing passwordMaxAgeDays config fails closed on changePassword', () => {
+  const cred = MboPasswordDomainService.provisionInitialCredential({
+    employeeCode: 'EMP001'
+  });
+
+  assert.throws(
+    () => MboPasswordDomainService.changePassword({
+      credentialRecord: cred,
+      newPassword: 'MyNewSecurePassword#2026'
+      // missing passwordMaxAgeDays
+    }),
+    /PASSWORD_MAX_AGE_CONFIG_REQUIRED/
+  );
 });
 
 test('PASSWORD_DOMAIN: initial credential evaluation -> AUTHENTICATED_BUT_PASSWORD_CHANGE_REQUIRED', () => {
@@ -121,7 +135,7 @@ test('PASSWORD_DOMAIN: expired password -> password-change-required only', () =>
   assert.equal(evalResult.requiresPasswordChange, true);
 });
 
-test('PASSWORD_DOMAIN: successful password change -> new hash + expiry metadata', () => {
+test('PASSWORD_DOMAIN: successful password change with explicit passwordMaxAgeDays -> new hash + expiry metadata', () => {
   const cred = MboPasswordDomainService.provisionInitialCredential({
     employeeCode: 'EMP001'
   });
@@ -129,7 +143,7 @@ test('PASSWORD_DOMAIN: successful password change -> new hash + expiry metadata'
   const updatedCred = MboPasswordDomainService.changePassword({
     credentialRecord: cred,
     newPassword: 'MyNewSecurePassword#2026',
-    expiryDays: 90
+    passwordMaxAgeDays: 90
   });
 
   assert.equal(updatedCred.Must_Change_Password, false);
@@ -154,7 +168,8 @@ test('PASSWORD_DOMAIN: HR reset -> default Employee_Code-derived hash + force ch
   });
   const changedCred = MboPasswordDomainService.changePassword({
     credentialRecord: cred,
-    newPassword: 'CustomPassword'
+    newPassword: 'CustomPassword',
+    passwordMaxAgeDays: 90
   });
 
   const resetCred = MboPasswordDomainService.hrResetPassword({

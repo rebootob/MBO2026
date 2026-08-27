@@ -120,14 +120,19 @@ export class MboPasswordDomainService {
 
   /**
    * Executes password change.
+   * Requires explicit passwordMaxAgeDays configuration parameter.
    * Updates Password_Hash, clears Must_Change_Password, resets failed count & lock, sets expiry.
    */
-  static changePassword({ credentialRecord, newPassword, expiryDays = 90, now = new Date() }) {
+  static changePassword({ credentialRecord, newPassword, passwordMaxAgeDays, now = new Date() }) {
     if (!credentialRecord || typeof credentialRecord !== 'object') {
       throw new Error('credentialRecord is required.');
     }
+    if (typeof passwordMaxAgeDays !== 'number' || !Number.isSafeInteger(passwordMaxAgeDays) || passwordMaxAgeDays <= 0) {
+      throw new Error('PASSWORD_MAX_AGE_CONFIG_REQUIRED: passwordMaxAgeDays must be a positive integer.');
+    }
+
     const newHash = this.hashPassword(newPassword);
-    const expiresAt = new Date(now.getTime() + expiryDays * 86400000).toISOString();
+    const expiresAt = new Date(now.getTime() + passwordMaxAgeDays * 86400000).toISOString();
 
     return {
       ...credentialRecord,

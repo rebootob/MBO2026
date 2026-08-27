@@ -372,4 +372,108 @@ export class AnnualRecordService {
 
     return true;
   }
+
+  /**
+   * Gate 5: Copy Previous MBO Candidate Generator
+   * Copies ONLY planning fields from prior-year record.
+   * Regenerates new FY Record_Key, routing, scoring, and new FY Hoshin snapshot.
+   */
+  static generateCopyPreviousCandidate({
+    priorYearRecord,
+    newFiscalYear,
+    authenticatedUser,
+    userRole = 'EMPLOYEE',
+    authoritativeRoleContext = null
+  }) {
+    if (!priorYearRecord || typeof priorYearRecord !== 'object') {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_INVALID_SOURCE',
+        'ไม่พบข้อมูล MBO ปีก่อนหน้าที่จะคัดลอก',
+        'Prior year MBO record is required for copy previous operation.'
+      );
+    }
+
+    const priorEmpCode = String(priorYearRecord.Employee_Code?.value || priorYearRecord.Employee_Code || '').trim();
+    if (!priorEmpCode) {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_SOURCE_MISSING_EMPLOYEE',
+        'ข้อมูล MBO ปีก่อนหน้าขาดรหัสพนักงาน',
+        'Prior year MBO record is missing Employee_Code.'
+      );
+    }
+
+    // Security check: Employee may copy only own MBO; HR path requires authoritative role context
+    if (userRole === 'EMPLOYEE') {
+      if (!authenticatedUser || authenticatedUser.employeeCode !== priorEmpCode) {
+        throw new AnnualRecordError(
+          'COPY_PREVIOUS_UNAUTHORIZED',
+          'พนักงานสามารถคัดลอกได้เฉพาะ MBO ของตนเองเท่านั้น',
+          'Employees can only copy their own previous MBO records.'
+        );
+      }
+    } else if (userRole === 'HR') {
+      const isVerified = authoritativeRoleContext && (
+        typeof authoritativeRoleContext.hasVerifiedRole === 'function'
+          ? authoritativeRoleContext.hasVerifiedRole('HR', priorEmpCode)
+          : authoritativeRoleContext.isAuthorizedHR === true
+      );
+      if (!isVerified) {
+        throw new AnnualRecordError(
+          'COPY_PREVIOUS_UNAUTHORIZED_HR',
+          'การคัดลอก MBO โดย HR ต้องได้รับการยืนยันสิทธิ์ HR ที่ถูกต้อง',
+          'HR copy operation requires authoritative HR role verification.'
+        );
+      }
+    } else {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_UNAUTHORIZED_ROLE',
+        'บทบาทของคุณไม่มีสิทธิ์คัดลอก MBO',
+        `Role ${userRole} is not authorized to perform copy previous MBO.`
+      );
+    }
+
+    const cleanNewFY = String(newFiscalYear).trim();
+    const newRecordKey = generateRecordKey(cleanNewFY, priorEmpCode);
+
+    // Extract objective rows (1 to 10) copying ONLY planning fields
+    const copiedObjectives = [];
+    const rawObjectives = priorYearRecord.Objectives || priorYearRecord.objectives || [];
+    if (Array.isArray(rawObjectives)) {
+      for (const obj of rawObjectives) {
+        copiedObjectives.push({
+          Objective_Title: obj.Objective_Title || obj.Title || '',
+          Objective_Description: obj.Objective_Description || obj.Description || '',
+          KPI: obj.KPI || '',
+          Target: obj.Target || '',
+          Measurement: obj.Measurement || '',
+          Weight: obj.Weight || 0,
+          Planning_Notes: obj.Planning_Notes || obj.Notes || ''
+          // EXCLUDED: Actual_Result, Achievement, Self_Score, Appraiser_Score, Comments, Timestamps
+        });
+      }
+    }
+
+    return {
+      status: 'COPY_PREVIOUS_CANDIDATE_READY',
+      newFiscalYear: cleanNewFY,
+      newRecordKey,
+      employeeCode: priorEmpCode,
+      copiedObjectivesCount: copiedObjectives.length,
+      planningCandidate: {
+        Fiscal_Year: { value: cleanNewFY },
+        Record_Key: { value: newRecordKey },
+        Employee_Code: { value: priorEmpCode },
+        Employee_Name: { value: priorYearRecord.Employee_Name?.value || priorYearRecord.Employee_Name || '' },
+        Employee_Name_TH: { value: priorYearRecord.Employee_Name_TH?.value || priorYearRecord.Employee_Name_TH || '' },
+        Employee_Department: { value: priorYearRecord.Employee_Department?.value || priorYearRecord.Employee_Department || '' },
+        Employee_Section: { value: priorYearRecord.Employee_Section?.value || priorYearRecord.Employee_Section || '' },
+        Employee_Position: { value: priorYearRecord.Employee_Position?.value || priorYearRecord.Employee_Position || '' },
+        Objectives: copiedObjectives,
+        // Reset state
+        Workflow_Status: 'DRAFT',
+        Department_Hoshin_Snapshot: null, // Must be freshly resolved for NEW FY
+        Section_Hoshin_Snapshot: null
+      }
+    };
+  }
 }

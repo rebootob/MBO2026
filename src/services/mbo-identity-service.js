@@ -75,8 +75,10 @@ export class MboIdentityService {
 
   /**
    * Authorizes employee data access ensuring EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B.
+   * Technical Admin identity (admin-form / isTechnicalAdmin) CANNOT perform employee-self business ops.
+   * HR / APPROVER role access requires authoritativeRoleContext assertion.
    */
-  static authorizeEmployeeRecordAccess({ authenticatedUser, targetEmployeeCode, userRole = 'EMPLOYEE' }) {
+  static authorizeEmployeeRecordAccess({ authenticatedUser, targetEmployeeCode, userRole = 'EMPLOYEE', authoritativeRoleContext = null }) {
     if (!authenticatedUser || !authenticatedUser.employeeCode) {
       return {
         authorized: false,
@@ -85,12 +87,17 @@ export class MboIdentityService {
       };
     }
 
-    // Technical admin identity must not be silently treated as employee business identity
-    if (authenticatedUser.isTechnicalAdmin && (!authenticatedUser.employeeCode || authenticatedUser.employeeCode === 'ADMIN')) {
+    // Technical admin identity isolation — NEVER silently treated as employee business identity
+    const isTechAdminUser = authenticatedUser.isTechnicalAdmin === true ||
+      authenticatedUser.kintoneUserCode === 'Administrator' ||
+      authenticatedUser.kintoneUserCode === 'admin-form' ||
+      authenticatedUser.employeeCode === 'ADMIN';
+
+    if (isTechAdminUser) {
       return {
         authorized: false,
-        code: 'TECHNICAL_ADMIN_NOT_BUSINESS_EMPLOYEE',
-        reason: 'Technical admin identity cannot perform employee self operations.'
+        code: 'TECHNICAL_ADMIN_CANNOT_PERFORM_BUSINESS_EMPLOYEE_SELF',
+        reason: 'Technical admin identity cannot perform employee self business operations.'
       };
     }
 
@@ -113,6 +120,34 @@ export class MboIdentityService {
     }
 
     if (userRole === 'HR' || userRole === 'APPROVER') {
+      // Require authoritativeRoleContext — caller-supplied role string alone is NEVER sufficient
+      if (!authoritativeRoleContext || typeof authoritativeRoleContext !== 'object') {
+        return {
+          authorized: false,
+          code: 'UNVERIFIED_AUTHORITATIVE_ROLE_CLAIM',
+          reason: `Role ${userRole} requires authoritative role context.`
+        };
+      }
+
+      let isVerified = false;
+      if (typeof authoritativeRoleContext.hasVerifiedRole === 'function') {
+        isVerified = authoritativeRoleContext.hasVerifiedRole(userRole, cleanTarget);
+      } else if (userRole === 'HR' && authoritativeRoleContext.isAuthorizedHR === true) {
+        isVerified = true;
+      } else if (userRole === 'APPROVER' && typeof authoritativeRoleContext.isAuthorizedApproverFor === 'function') {
+        isVerified = authoritativeRoleContext.isAuthorizedApproverFor(cleanTarget);
+      } else if (Array.isArray(authoritativeRoleContext.verifiedRoles)) {
+        isVerified = authoritativeRoleContext.verifiedRoles.includes(userRole);
+      }
+
+      if (!isVerified) {
+        return {
+          authorized: false,
+          code: 'UNVERIFIED_AUTHORITATIVE_ROLE_CLAIM',
+          reason: `Role claim ${userRole} is not verified by authoritative role context for target ${cleanTarget}.`
+        };
+      }
+
       return {
         authorized: true,
         role: userRole,

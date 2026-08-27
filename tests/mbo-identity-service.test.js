@@ -92,26 +92,66 @@ test('EMPLOYEE_DATA_ISOLATION: Employee A requests Employee B -> DENY', () => {
   assert.equal(result.code, 'EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B');
 });
 
-test('EMPLOYEE_DATA_ISOLATION: technical admin identity without employee code -> DENY', () => {
-  const authUser = { isTechnicalAdmin: true, employeeCode: 'ADMIN', kintoneUserCode: 'admin' };
-  const result = MboIdentityService.authorizeEmployeeRecordAccess({
-    authenticatedUser: authUser,
+test('EMPLOYEE_DATA_ISOLATION: technical admin identity (admin-form / isTechnicalAdmin) DENIED employee self business ops', () => {
+  const authUser1 = { isTechnicalAdmin: true, employeeCode: 'EMP001', kintoneUserCode: 'admin' };
+  const result1 = MboIdentityService.authorizeEmployeeRecordAccess({
+    authenticatedUser: authUser1,
     targetEmployeeCode: 'EMP001',
     userRole: 'EMPLOYEE'
   });
+  assert.equal(result1.authorized, false);
+  assert.equal(result1.code, 'TECHNICAL_ADMIN_CANNOT_PERFORM_BUSINESS_EMPLOYEE_SELF');
 
-  assert.equal(result.authorized, false);
-  assert.equal(result.code, 'TECHNICAL_ADMIN_NOT_BUSINESS_EMPLOYEE');
+  const authUser2 = { employeeCode: 'EMP001', kintoneUserCode: 'admin-form' };
+  const result2 = MboIdentityService.authorizeEmployeeRecordAccess({
+    authenticatedUser: authUser2,
+    targetEmployeeCode: 'EMP001',
+    userRole: 'EMPLOYEE'
+  });
+  assert.equal(result2.authorized, false);
+  assert.equal(result2.code, 'TECHNICAL_ADMIN_CANNOT_PERFORM_BUSINESS_EMPLOYEE_SELF');
 });
 
-test('EMPLOYEE_DATA_ISOLATION: HR/approver access remains role-authorized', () => {
-  const authUser = { employeeCode: 'HR001', kintoneUserCode: 'hr_user' };
-  const result = MboIdentityService.authorizeEmployeeRecordAccess({
+test('EMPLOYEE_DATA_ISOLATION: HR/approver access DENIED without authoritative role context', () => {
+  const authUser = { employeeCode: 'EMP001', kintoneUserCode: 'somchai_k' };
+
+  // Caller passing role string alone -> DENY
+  const resultWithoutCtx = MboIdentityService.authorizeEmployeeRecordAccess({
     authenticatedUser: authUser,
-    targetEmployeeCode: 'EMP001',
+    targetEmployeeCode: 'EMP002',
     userRole: 'HR'
   });
+  assert.equal(resultWithoutCtx.authorized, false);
+  assert.equal(resultWithoutCtx.code, 'UNVERIFIED_AUTHORITATIVE_ROLE_CLAIM');
 
-  assert.equal(result.authorized, true);
-  assert.equal(result.role, 'HR');
+  // Caller with unverified role context -> DENY
+  const unverifiedCtx = {
+    hasVerifiedRole: () => false
+  };
+  const resultUnverified = MboIdentityService.authorizeEmployeeRecordAccess({
+    authenticatedUser: authUser,
+    targetEmployeeCode: 'EMP002',
+    userRole: 'HR',
+    authoritativeRoleContext: unverifiedCtx
+  });
+  assert.equal(resultUnverified.authorized, false);
+  assert.equal(resultUnverified.code, 'UNVERIFIED_AUTHORITATIVE_ROLE_CLAIM');
+});
+
+test('EMPLOYEE_DATA_ISOLATION: HR/approver access PASSES with verified authoritative role context', () => {
+  const authUser = { employeeCode: 'HR001', kintoneUserCode: 'hr_user' };
+
+  const verifiedCtx = {
+    hasVerifiedRole: (role, target) => role === 'HR' && target === 'EMP002'
+  };
+  const resultVerified = MboIdentityService.authorizeEmployeeRecordAccess({
+    authenticatedUser: authUser,
+    targetEmployeeCode: 'EMP002',
+    userRole: 'HR',
+    authoritativeRoleContext: verifiedCtx
+  });
+
+  assert.equal(resultVerified.authorized, true);
+  assert.equal(resultVerified.role, 'HR');
+  assert.equal(resultVerified.employeeCode, 'EMP002');
 });
