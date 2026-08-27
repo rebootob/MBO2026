@@ -1,91 +1,102 @@
-# AI ACTIVE TASK — MICRO FINAL CORRECTION BEFORE FINAL KINTONE EXECUTION
+# AI ACTIVE TASK — LAST LOCAL CLOSURE BEFORE FINAL KINTONE EXECUTION
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting HEAD: `ec226874c5ddf0947868789f87a29581620c98ed`
-> Mode: **CREDIT-SAVER / MICRO FINAL CORRECTION / ONE ROUND ONLY**
+> Starting HEAD: `f5a7dfd5829081d9b0b7deb2e22826fd1a64cdf7`
+> Mode: **CREDIT-SAVER / LAST LOCAL CLOSURE / TWO BLOCKERS ONLY**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY/BROWSER-SMOKE: **0 / 0 / 0 / 0**
 
 ## OBJECTIVE
 
-Close ONLY the four remaining local blockers from the independent review of `ec226874...`. Do not reopen passed gates, do not redesign frozen UI V2, and do not contact Kintone. After this task, the intended next step is one controlled Final Kintone Execution round only.
+Close ONLY the two blockers remaining after independent review of `f5a7dfd...`:
+
+1. Gate 3 Legacy Migration must emit real physical App794 flattened candidates and produce a real field-aware reconciliation proof.
+2. Gate 6 Preview -> App794 parity must be completed from approved repository-local source, or STOP with `PREVIEW_SOURCE_NOT_FOUND` if that source cannot be identified.
+
+Do not reopen already-passed local gates. Do not contact Kintone. Do not redesign frozen UI V2.
 
 ## ACCEPTED — DO NOT REGRESS
 
-- Gate 2 export Profile_Code mapping and unknown-profile fail-closed.
+- Gate 2 export local foundation.
+- Gate 4 HR dashboard local foundation.
+- Gate 5 Copy Previous current-year routing/scoring/Hoshin composition and duplicate preflight.
+- Gate 7 Hoshin code authority, inclusive effective dates, malformed-date fail-closed, real physical matching fields.
+- App795 real route resolver integration fixture.
+- App796 scoring/profile foundation and timezone backup guard.
 - shared Kintone normalizer.
-- App796 timezone guard and prior identity/security fixes.
-- App795 route resolution is now exercised locally.
-- App797 canonical CURRENT_READY + Ready_For_MBO + Active adapter.
-- HR dashboard raw Kintone field handling.
-- schema manifest exact app names and removal of invented 90/5/30 defaults.
-- Copy Previous flattened App794 shape and dependency/duplicate preflight gates.
+- schema delta manifest exact app names and no invented password-policy defaults.
+- identity/security corrections already accepted.
 
 ---
 
-# BLOCKER 1 — COPY PREVIOUS MUST COMPOSE CURRENT-YEAR ROUTING + SCORING INTO APP794 PHYSICAL CANDIDATE
+# BLOCKER A — LEGACY MIGRATION MUST TARGET REAL APP794 PHYSICAL SHAPE
 
-Target: existing `src/services/annual-record-service.js` and existing tests only unless an existing mapper should be reused.
+Target: existing `src/services/legacy-migration-service.js` and existing migration tests. Reuse normalizers/mappers already present.
 
-Current defect: `newRoutingSnapshot` and `newScoringConfig` are validated but mostly returned outside `planningCandidate`. The candidate must be write-ready against existing approved App794 physical fields.
+## A1. Candidate shape
 
-Populate ONLY already-confirmed physical fields that exist in App794 and are supported by current routing/scoring contracts. At minimum, when available from the injected current-year snapshots, compose:
+Current defect: migration candidate still returns logical `Objectives: [...]`, which is NOT a physical App794 field.
+
+For a migratable historical logical record, emit a target candidate using actual App794 flattened fields. At minimum:
 
 ```text
+Record_Key
+Fiscal_Year
+Employee_Code
+Employee_Name
 Profile_Code
-Routing_Topology
-Requester_User
-First_Manager_User      // only if existing routing snapshot supplies it / field exists
-Manager_User
-GM_User
-PartA_Weight
-PartB_Weight
+Workflow_Status
+Is_Migrated_Record
+Objective_Count
+Objective_1 ... Objective_4
+Action_Plan_1 ... Action_Plan_4      // when source semantics support it
+Weight_1 ... Weight_4
+Difficulty_1 ... Difficulty_4        // when source value exists and target field exists
+Actual_Result_1 ... Actual_Result_4  // historical actual values when mapped by confirmed contract
+Department_Hoshin_Title
+Section_Hoshin_Title
+Migration_Provenance
 ```
 
-If the repository/export contract confirms additional existing routing snapshot fields required by App794, reuse them; do not invent new physical field names.
+Use only confirmed physical App794 fields. Do NOT create `Objectives` array/table in target candidate.
 
-Rules:
-- values must come from NEW FY routing/scoring inputs, never prior-year App794 values.
-- preserve Kintone `{ value: ... }` shape appropriate to each physical field.
-- USER_SELECT fields must use the existing resolved user arrays/codes, not display strings.
-- if a required routing/scoring value needed for a write-ready candidate is missing/malformed, FAIL CLOSED with an explicit error instead of emitting partial READY.
-- do not write to Kintone.
+Historical appraiser scores/achievements/competency/totals that do not have a safe one-to-one target field must remain in structured provenance, not be silently projected into a guessed field.
 
-Tests:
-- candidate contains new FY Profile_Code / Routing_Topology / PartA_Weight / PartB_Weight.
-- applicable requester/approver user fields come from NEW routing snapshot.
-- prior-year routing/scoring values are not reused.
-- malformed required routing/scoring snapshot fails closed.
+`Record_Key` must be deterministic `{FY}-{Employee_Code}` using the normalized FY and authoritative App53 employee mapping.
 
-Expected:
+## A2. Explicit source -> target mapping evidence
+
+For every source field classified `MAPPED_TO_TARGET`, `targetFieldCode` must be the ACTUAL target code, not the source code.
+
+Examples:
 
 ```text
-COPY_PREVIOUS_WRITE_READY_INTEGRATION = PASS
+Drop_down_year                  -> Fiscal_Year
+Text_name                       -> Employee_Name
+Text_area_action_plan_obj1      -> Objective_1
+weight_a_obj1                   -> Weight_1
+Text_area_actual_result_obj1    -> Actual_Result_1
+Text_area                       -> Department_Hoshin_Title
+Text_area_0                     -> Section_Hoshin_Title
 ```
 
----
+If source semantics are not a safe one-to-one mapping, use `PRESERVED_IN_PROVENANCE` instead of guessing.
 
-# BLOCKER 2 — LEGACY MIGRATION MUST PRESERVE VALUES, NOT ONLY BUCKET LABELS
+## A3. Reconciliation proof must be computed, not initialized
 
-Target: existing `src/services/legacy-migration-service.js` and existing tests.
-
-Current defect: `fieldBucketAudit` can say `PRESERVED_IN_PROVENANCE` without persisting the actual historical field value, and `totalUnexplainedFieldLoss` is initialized to zero without a real field-level proof. Duplicate equivalence also compares too few business fields.
-
-## Required reconciliation model
-
-For EVERY non-empty source business field, store an explicit reconciliation entry containing at least:
+Every non-empty source field must have exactly one valid reconciliation record containing:
 
 ```text
 sourceFieldCode
 bucket
-sourceValue (normalized serializable value; for sensitive/system-only fields use appropriate existing safe representation)
+sourceValue
 targetFieldCode OR provenancePath OR explainedReason
 ```
 
-Allowed buckets remain:
+Allowed buckets:
 
 ```text
 MAPPED_TO_TARGET
@@ -95,169 +106,105 @@ SKIPPED_EXPLAINED
 CONFLICT_REVIEW_REQUIRED
 ```
 
-A `PRESERVED_IN_PROVENANCE` entry is valid only if its actual normalized value is included in structured provenance/history.
+Validation rules:
 
-Attachments must preserve their manifest metadata and stay `ATTACHMENT_TRANSFER_PENDING` until later authorized upload.
+- `MAPPED_TO_TARGET` requires non-empty `targetFieldCode` and that field/value is represented in target candidate or an explicitly documented derived mapping.
+- `PRESERVED_IN_PROVENANCE` requires non-empty `provenancePath` and the actual normalized value persisted there.
+- `ATTACHMENT_TRANSFER_PENDING` requires attachment manifest metadata retained.
+- `SKIPPED_EXPLAINED` requires explicit reason.
+- conflicts must not create a migration candidate.
 
-## Real field-aware proof
-
-Compute unexplained field loss from reconciliation coverage, not row arithmetic.
+Compute:
 
 ```text
-UNEXPLAINED_FIELD_LOSS = count of non-empty source business fields with no valid reconciliation entry/value/reason
+UNEXPLAINED_FIELD_LOSS = number of non-empty source fields without a valid reconciliation entry
 ```
 
-Do not report zero by initialization alone.
+Do not keep a variable at zero without validation. `UNEXPLAINED_DATA_LOSS=0` is PASS only if row/group accounting AND field reconciliation both pass.
 
-`UNEXPLAINED_DATA_LOSS=0` may be claimed only when row/group accounting AND field-level coverage are both complete.
+## A4. Duplicate groups
 
-## Duplicate equivalence
+The full-projection comparison from the previous round may remain, but make it deterministic for structured/array fields such as attachment lists. Do not rely on `String(array/object)` because distinct structured values can collapse to the same string representation.
 
-For groups `{FY, Employee_Code}` with >1 source record, deterministic equivalence must include ALL non-empty normalized business/provenance-relevant values, including as applicable:
-- objectives/action plans
-- weights/difficulty
-- actual results
-- appraiser scores/achievements/comments where present
-- competency/rating/totals
-- Department and Section historical Hoshin
-- attachments/manifests
-- any extra non-empty historical business field preserved in provenance
+Normalize values into stable serializable form before comparison.
 
-Do not use a hand-picked short list that can miss conflicts.
+Equivalent duplicates may use one representative only AFTER full equivalence is proven, with provenance retained from every source row.
 
-Equivalent duplicate rows may merge only when their normalized business projections are proven equivalent. Then using one deterministic representative for target projection is acceptable ONLY because equivalence has been proven, while provenance from all source rows is retained.
+Any differing business/provenance-relevant value -> `REVIEW_REQUIRED_DUPLICATE_SOURCE`, no target candidate.
 
-Any conflict -> no candidate + `REVIEW_REQUIRED_DUPLICATE_SOURCE` + reconciliation entries identify conflict fields.
+## A5. Required tests
 
-Never fabricate source id/revision.
+Add/update tests proving:
 
-Tests required:
-- extra unknown non-empty legacy business field: actual value is present in provenance and unexplained field loss remains 0.
-- deliberately remove/classify no reconciliation for a non-empty field -> unexplained field loss >0.
-- same-profile duplicate with conflict in Actual Result -> review required.
-- conflict in Section Hoshin -> review required.
-- conflict in attachment manifest -> review required.
-- equivalent duplicates merge and retain provenance from every source record.
+- migration candidate contains physical `Objective_1`, `Weight_1`, etc. and does NOT contain `Objectives`.
+- `Text_area_action_plan_obj1` reconciliation points to `Objective_1`, not back to its own source code.
+- historical Actual Result maps correctly where confirmed.
+- extra unknown non-empty field value is preserved in provenance.
+- a deliberately unreconciled non-empty field causes `UNEXPLAINED_FIELD_LOSS > 0` or a fail-closed result; do not fake success.
+- attachment list conflict between duplicate rows -> `REVIEW_REQUIRED_DUPLICATE_SOURCE`.
+- Section Hoshin / Actual Result / competency or other preserved field conflict -> review required.
+- equivalent duplicate rows merge with provenance from all sources.
 
 Expected:
 
 ```text
-LEGACY_FIELD_VALUE_PRESERVATION = PASS
+LEGACY_TARGET_APP794_PHYSICAL_SHAPE = PASS
+LEGACY_SOURCE_TARGET_MAPPING_EVIDENCE = PASS
 LEGACY_FIELD_AWARE_RECONCILIATION = PASS
-LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE = PASS
 UNEXPLAINED_FIELD_LOSS_PROOF = PASS
+LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE = PASS
 ```
 
 ---
 
-# BLOCKER 3 — HOSHIN MALFORMED DATE MUST FAIL CLOSED + REMOVE FAKE PHYSICAL FALLBACKS
+# BLOCKER B — PREVIEW -> ACTUAL APP794 PARITY
 
-Target: existing `src/services/hoshin-service.js` and existing tests.
+This is the ONLY UI work in this task.
 
-Keep accepted code authority and inclusive-date behavior, but fix these remaining defects.
+## B1. Identify approved local Preview source first
 
-## Strict calendar-date validation
-
-`YYYY-MM-DD` regex alone is insufficient. Reject impossible dates such as:
+Before modifying UI, inspect repository-local files/history/documentation enough to identify BOTH:
 
 ```text
-2026-99-99
-2026-02-30
-2026-13-01
+APPROVED_PREVIEW_SOURCE = <exact path(s)>
+ACTUAL_APP794_RUNTIME_SOURCE = <exact path(s)>
 ```
 
-For App797 DATE fields, validate that year/month/day form a real calendar date and round-trip exactly.
+Do not use Kintone or browser smoke to discover this.
 
-If `Effective_From` or `Effective_To` is non-empty but invalid -> fail closed with an explicit Hoshin effective-date/configuration error. Reuse an established code if appropriate; otherwise use one precise code and test it. Do not silently treat malformed dates as missing.
-
-Keep inclusive comparison by calendar date.
-
-## Real schema only
-
-Remove authorization/matching fallbacks to non-existent App797 physical fields from the runtime resolver:
+If approved Preview source cannot be identified with repository evidence, STOP immediately and report:
 
 ```text
-Level
-Department
-Section
-Title
+PREVIEW_TO_APP794_PARITY_LOCAL = BLOCKED_PREVIEW_SOURCE_NOT_FOUND
+PREVIEW_SOURCE_NOT_FOUND = <what was searched / why ambiguous>
 ```
 
-Use only the confirmed real schema for matching/status. Display title may use `Hoshin_TH` then `Hoshin_EN`; do not use fake physical `Title`.
+Do NOT guess, recreate, or redesign the UI.
 
-Snapshot ID may use real `Hoshin_Key` and/or real Kintone `$id` if present; do not invent alternate physical business fields.
+## B2. If source is identifiable, close parity using existing files/functions/styles
 
-Tests required:
-- `2026-99-99` fails closed.
-- `2026-02-30` fails closed.
-- valid leap/date boundaries work.
-- existing before/inside/end-date/after tests remain PASS.
-- same name wrong code remains `ORGANIZATION_MISMATCH`.
+No redesign. Preserve frozen UI V2.
 
-Expected:
+Verify/port only approved behavior already defined:
 
-```text
-HOSHIN_MALFORMED_DATE_FAIL_CLOSED = PASS
-HOSHIN_REAL_PHYSICAL_FIELDS_ONLY = PASS
-```
-
----
-
-# BLOCKER 4 — CLOSE GATE 6 UI PARITY + FIX CORE TEST STAGE
-
-## 4A. Core integration test stage defect
-
-Target existing `tests/core-794-795-796-integration.test.js`.
-
-Current defect: it uses `BUSINESS_STAGES.OBJECTIVES_SUBMISSION`, which does not exist. Change the test to the real stage used by the validation engine (`BUSINESS_STAGES.OBJECTIVE_INPUT` or the exact existing stage contract).
-
-Make the flattened fixture truly satisfy objective validation:
-- Employee_Code / Employee_Name / Fiscal_Year
-- Profile_Code
-- Routing_Topology
-- Requester_User
-- Objective_Count
-- Objective_N
-- Action_Plan_N
-- Weight_N total 100
-- Difficulty_N valid 1..4
-
-Then assert `ValidationEngine.validate(...).isValid === true`.
-
-This test must continue to exercise actual App795 route resolution, App796 scoring, App797 Hoshin, Copy Previous, export, and HR dashboard.
-
-Expected:
-
-```text
-CORE_OBJECTIVE_VALIDATION_REAL_STAGE = PASS
-CORE_REAL_RESOLVER_INTEGRATION = PASS_REAL_FIXTURES
-```
-
-## 4B. Preview -> actual App794 parity
-
-This was not executed in the previous commit. Do it now, but do NOT redesign UI V2.
-
-First inspect existing repository-local Preview source and current actual App794 customization source. If the exact approved Preview source cannot be identified locally, STOP and report `PREVIEW_SOURCE_NOT_FOUND`; do not guess.
-
-Prefer editing existing App794 UI/runtime files. Do not create `_final`, `_v3`, or parallel replacement UI files.
-
-Close only approved parity gaps already defined:
-- frozen five-stage MBO guided UI.
+- five-stage guided MBO UI.
 - bilingual labels/status guidance.
-- approver display uses ordinal `1st/2nd/3rd/4th Appraiser` semantics.
-- Objective_Count controls flattened physical objective slots.
-- Phase Calendar can consume normalized injected App800 config contract.
-- Copy Previous UI control uses corrected local candidate builder/preflight flow but MUST NOT perform Kintone write in this task.
-- Hoshin display reads new FY snapshot fields when available.
-- Export controls use the normalized export foundation; if template binary is unavailable keep explicit `MISSING_LOCAL` state.
-- preserve frozen process/status semantics and visual design.
+- ordinal `1st/2nd/3rd/4th Appraiser` display semantics.
+- `Objective_Count` controls physical flattened objective slots.
+- Phase Calendar consumes normalized injected App800 config contract.
+- Copy Previous control calls corrected local candidate/preflight flow, but executes ZERO Kintone writes in this round.
+- Hoshin display reads new FY snapshot/title fields.
+- Export controls use normalized export foundation and preserve `MISSING_LOCAL` when exact Excel template binary is absent.
+- frozen process/status semantics remain unchanged.
 
-If local source wiring is possible, update actual source and build once near completion. If some runtime action truly requires Kintone, local wiring may be PASS while that specific runtime verification remains for Final Kintone Execution; document exactly what remains.
+Prefer existing runtime/UI/style files. Do not create `_final`, `_v3`, replacement app, or parallel UI architecture.
 
-Expected:
+If source changes require build, build exactly once near completion.
+
+Expected if source exists:
 
 ```text
-PREVIEW_TO_APP794_PARITY_LOCAL = PASS|BLOCKED_PREVIEW_SOURCE_NOT_FOUND
+PREVIEW_TO_APP794_PARITY_LOCAL = PASS
 FROZEN_UI_REDESIGN = 0
 APP794_RUNTIME_WRITE = 0
 ```
@@ -266,25 +213,25 @@ APP794_RUNTIME_WRITE = 0
 
 # GOVERNANCE / TEST RULES
 
-- Work only on `ai/antigravity-wp002c`.
-- 0 Kintone calls, 0 writes, 0 deploys, 0 browser smoke.
-- No protected legacy app/data modification.
-- Do not broaden scope beyond the four blockers above.
-- Reuse existing functions/files; avoid new files unless clearly necessary.
-- Run targeted tests only as needed during implementation.
+- Branch: `ai/antigravity-wp002c` only.
+- 0 Kintone GET, 0 Kintone write, 0 deploy, 0 browser smoke.
+- Do not modify protected legacy apps/data.
+- Do not reopen passed gates unless a direct regression is discovered.
+- No broad discovery beyond repository-local evidence needed for these two blockers.
+- Run targeted tests only when needed.
 - Run full `npm test` ONCE near completion.
-- If UI source changes, build App794 bundle ONCE near completion.
-- Update `project-docs/AI_REVIEW_PACKAGE.md`, `CURRENT_STATE.md`, and `HANDOFF.md` with exact evidence and remaining runtime-only blockers.
+- Build App794 ONCE only if UI source changes require it.
+- Update `project-docs/AI_REVIEW_PACKAGE.md`, `CURRENT_STATE.md`, and `HANDOFF.md` with exact result/evidence.
 - Do not edit `CONFIRMED_BASELINE`.
 
 ## STOP CONDITIONS
 
 STOP rather than guess if:
-- Preview source cannot be identified locally.
-- a physical Kintone field is uncertain and not already supported by repository/export evidence.
-- a fix requires Kintone access.
-- any change conflicts with frozen routing/scoring/UI/process baseline.
-- a new security/data-integrity P0/P1 issue is discovered outside this task.
+- approved Preview source cannot be identified locally;
+- physical target field is uncertain and not supported by repository/export evidence;
+- completion would require Kintone access;
+- implementation would conflict with frozen UI/routing/scoring/process baseline;
+- a new P0/P1 security/data-integrity issue is discovered.
 
 ## REQUIRED FINAL REPORT
 
@@ -297,16 +244,14 @@ KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
 
-COPY_PREVIOUS_WRITE_READY_INTEGRATION = PASS|BLOCKED
-LEGACY_FIELD_VALUE_PRESERVATION = PASS|BLOCKED
+LEGACY_TARGET_APP794_PHYSICAL_SHAPE = PASS|BLOCKED
+LEGACY_SOURCE_TARGET_MAPPING_EVIDENCE = PASS|BLOCKED
 LEGACY_FIELD_AWARE_RECONCILIATION = PASS|BLOCKED
-LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE = PASS|BLOCKED
 UNEXPLAINED_FIELD_LOSS_PROOF = PASS|BLOCKED
-HOSHIN_MALFORMED_DATE_FAIL_CLOSED = PASS|BLOCKED
-HOSHIN_REAL_PHYSICAL_FIELDS_ONLY = PASS|BLOCKED
-CORE_OBJECTIVE_VALIDATION_REAL_STAGE = PASS|BLOCKED
-CORE_REAL_RESOLVER_INTEGRATION = PASS|BLOCKED
+LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE = PASS|BLOCKED
 PREVIEW_TO_APP794_PARITY_LOCAL = PASS|BLOCKED_PREVIEW_SOURCE_NOT_FOUND|BLOCKED
+APPROVED_PREVIEW_SOURCE = <exact path(s)|NOT_FOUND>
+ACTUAL_APP794_RUNTIME_SOURCE = <exact path(s)|NOT_FOUND>
 EXPORT_TEMPLATE_BINARY_ASSET = AVAILABLE|MISSING_LOCAL
 FULL_NPM_TEST = PASS|FAIL
 BUILD = PASS|NOT_REQUIRED|FAIL
