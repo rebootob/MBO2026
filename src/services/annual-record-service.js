@@ -477,6 +477,20 @@ export class AnnualRecordService {
     const cleanNewFY = String(newFiscalYear).trim();
     const newRecordKey = generateRecordKey(cleanNewFY, priorEmpCode);
 
+    // Validate current-year routing and scoring snapshot fields (Fail Closed)
+    const profileCodeVal = newScoringConfig.Profile_Code || newScoringConfig.profileCode || '';
+    const partAWeightVal = newScoringConfig.PartA_Weight !== undefined ? String(newScoringConfig.PartA_Weight) : '';
+    const partBWeightVal = newScoringConfig.PartB_Weight !== undefined ? String(newScoringConfig.PartB_Weight) : '';
+    const routingTopologyVal = newRoutingSnapshot.Routing_Topology || newRoutingSnapshot.topology || '';
+
+    if (!profileCodeVal || partAWeightVal === '' || !routingTopologyVal) {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_INVALID_DEPENDENCY',
+        'ข้อมูล Routing หรือ Scoring Snapshot สำหรับปีงบประมาณใหม่ไม่สมบูรณ์',
+        'Injected current-year routing or scoring snapshot is missing required fields.'
+      );
+    }
+
     // Project raw/flattened prior year objectives
     const rawObjectives = projectApp794Objectives(priorYearRecord);
     const copiedCount = Math.min(Math.max(rawObjectives.length, 1), 10);
@@ -493,6 +507,18 @@ export class AnnualRecordService {
       Employee_Position: { value: readString(priorYearRecord, 'Employee_Position') },
       Workflow_Status: { value: 'DRAFT' },
       Objective_Count: { value: String(copiedCount) },
+
+      // Injected Current-Year Scoring Profile Physical Fields
+      Profile_Code: { value: profileCodeVal },
+      PartA_Weight: { value: partAWeightVal },
+      PartB_Weight: { value: partBWeightVal },
+
+      // Injected Current-Year Routing Physical Fields
+      Routing_Topology: { value: routingTopologyVal },
+      Requester_User: { value: newRoutingSnapshot.Requester_User || [] },
+      Manager_User: { value: newRoutingSnapshot.Manager_User || newRoutingSnapshot.Manager_Level1_Approvers || [] },
+      First_Manager_User: { value: newRoutingSnapshot.First_Manager_User || newRoutingSnapshot.Manager_Level2_Approvers || [] },
+      GM_User: { value: newRoutingSnapshot.GM_User || newRoutingSnapshot.GM_Level1_Approvers || [] },
 
       // Hoshin Snapshot from new FY
       Hoshin_Fiscal_Year: { value: newHoshinSnapshot.Hoshin_Fiscal_Year || cleanNewFY },

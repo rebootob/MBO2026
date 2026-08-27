@@ -22,22 +22,40 @@ export class HoshinService {
   }
 
   /**
-   * Parses YYYY-MM-DD string or Date object to calendar date string YYYY-MM-DD.
+   * Strict calendar date parser with real YYYY-MM-DD boundary verification.
+   * Returns 'INVALID_DATE' if date string is malformed or invalid calendar date (e.g. 2026-99-99, 2026-02-30).
    */
   static toCalendarDateString(dateInput) {
     if (!dateInput) return null;
+
     if (typeof dateInput === 'string') {
       const trimmed = dateInput.trim().slice(0, 10);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        const parts = trimmed.split('-').map(Number);
+        const y = parts[0];
+        const m = parts[1];
+        const d = parts[2];
+        const dateObj = new Date(Date.UTC(y, m - 1, d));
+        if (
+          dateObj.getUTCFullYear() === y &&
+          dateObj.getUTCMonth() === m - 1 &&
+          dateObj.getUTCDate() === d
+        ) {
+          return trimmed;
+        }
+        return 'INVALID_DATE';
+      }
+      return 'INVALID_DATE';
     }
+
     const d = new Date(dateInput);
-    if (isNaN(d.getTime())) return null;
+    if (isNaN(d.getTime())) return 'INVALID_DATE';
     return d.toISOString().slice(0, 10);
   }
 
   /**
    * Resolves dual-level (Department + Section) PUBLISHED Hoshin records for MBO Creation.
-   * Requires exact Scope_Code / Department_Code / Section_Code authority.
+   * Uses real App797 physical fields only (Scope_Type, Scope_Code, Department_Code, Section_Code).
    */
   static resolveHoshinForMBO({ department, section, fiscalYear, effectiveDate = new Date(), hoshinRecords = [] }) {
     if (!department || !section || !fiscalYear) {
@@ -49,29 +67,22 @@ export class HoshinService {
     const cleanFY = String(fiscalYear).trim();
 
     const targetCalDate = this.toCalendarDateString(effectiveDate);
-    if (!targetCalDate) {
-      throw new Error('HOSHIN_RESOLUTION_INVALID: Effective date is invalid.');
+    if (!targetCalDate || targetCalDate === 'INVALID_DATE') {
+      throw new Error('HOSHIN_INVALID_EFFECTIVE_DATE: Target effective date is invalid.');
     }
 
     // 1. Filter records matching FY
     const fyRecords = hoshinRecords.filter(rec => readString(rec, 'Fiscal_Year') === cleanFY);
 
-    // 2. Check for organization code mismatch first across FY records
-    const deptScopeRecords = fyRecords.filter(rec => {
-      const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Level');
-      return scopeType === 'DEPARTMENT';
-    });
+    // 2. Filter scope records using real physical field Scope_Type
+    const deptScopeRecords = fyRecords.filter(rec => readString(rec, 'Scope_Type') === 'DEPARTMENT');
+    const sectScopeRecords = fyRecords.filter(rec => readString(rec, 'Scope_Type') === 'SECTION');
 
-    const sectScopeRecords = fyRecords.filter(rec => {
-      const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Level');
-      return scopeType === 'SECTION';
-    });
-
-    // Check if Department records exist but codes don't match (e.g. name only match)
+    // Check organization code authority using Scope_Code / Department_Code / Section_Code
     if (deptScopeRecords.length > 0) {
       const hasCodeMatch = deptScopeRecords.some(rec => {
         const scopeCode = readString(rec, 'Scope_Code');
-        const deptCode = readString(rec, 'Department_Code') || readString(rec, 'Department');
+        const deptCode = readString(rec, 'Department_Code');
         return scopeCode === cleanDeptCode || deptCode === cleanDeptCode;
       });
       if (!hasCodeMatch) {
@@ -82,7 +93,7 @@ export class HoshinService {
     if (sectScopeRecords.length > 0) {
       const hasCodeMatch = sectScopeRecords.some(rec => {
         const scopeCode = readString(rec, 'Scope_Code');
-        const sectCode = readString(rec, 'Section_Code') || readString(rec, 'Section');
+        const sectCode = readString(rec, 'Section_Code');
         return scopeCode === cleanSectCode || sectCode === cleanSectCode;
       });
       if (!hasCodeMatch) {
@@ -97,7 +108,7 @@ export class HoshinService {
 
     for (const rec of deptScopeRecords) {
       const scopeCode = readString(rec, 'Scope_Code');
-      const deptCode = readString(rec, 'Department_Code') || readString(rec, 'Department');
+      const deptCode = readString(rec, 'Department_Code');
       const isCodeMatch = (scopeCode === cleanDeptCode || deptCode === cleanDeptCode);
 
       if (!isCodeMatch) continue;
@@ -108,9 +119,16 @@ export class HoshinService {
         continue;
       }
 
-      // Check effective dates inclusively by calendar date
-      const effFromCal = this.toCalendarDateString(readString(rec, 'Effective_From'));
-      const effToCal = this.toCalendarDateString(readString(rec, 'Effective_To'));
+      // Check effective dates strictly
+      const rawEffFrom = readString(rec, 'Effective_From');
+      const rawEffTo = readString(rec, 'Effective_To');
+
+      const effFromCal = this.toCalendarDateString(rawEffFrom);
+      const effToCal = this.toCalendarDateString(rawEffTo);
+
+      if (effFromCal === 'INVALID_DATE' || effToCal === 'INVALID_DATE') {
+        throw new Error(`HOSHIN_INVALID_EFFECTIVE_DATE: Department Hoshin for ${cleanDeptCode} has malformed effective date.`);
+      }
 
       if (effFromCal && targetCalDate < effFromCal) {
         deptOutsideEffectiveDate = true;
@@ -147,7 +165,7 @@ export class HoshinService {
 
     for (const rec of sectScopeRecords) {
       const scopeCode = readString(rec, 'Scope_Code');
-      const sectCode = readString(rec, 'Section_Code') || readString(rec, 'Section');
+      const sectCode = readString(rec, 'Section_Code');
       const isCodeMatch = (scopeCode === cleanSectCode || sectCode === cleanSectCode);
 
       if (!isCodeMatch) continue;
@@ -158,8 +176,15 @@ export class HoshinService {
         continue;
       }
 
-      const effFromCal = this.toCalendarDateString(readString(rec, 'Effective_From'));
-      const effToCal = this.toCalendarDateString(readString(rec, 'Effective_To'));
+      const rawEffFrom = readString(rec, 'Effective_From');
+      const rawEffTo = readString(rec, 'Effective_To');
+
+      const effFromCal = this.toCalendarDateString(rawEffFrom);
+      const effToCal = this.toCalendarDateString(rawEffTo);
+
+      if (effFromCal === 'INVALID_DATE' || effToCal === 'INVALID_DATE') {
+        throw new Error(`HOSHIN_INVALID_EFFECTIVE_DATE: Section Hoshin for ${cleanSectCode} has malformed effective date.`);
+      }
 
       if (effFromCal && targetCalDate < effFromCal) {
         sectOutsideEffectiveDate = true;
@@ -189,12 +214,12 @@ export class HoshinService {
 
     const sectHoshin = sectMatches[0];
 
-    // 5. Construct clean normalized snapshot for App 794
+    // 5. Construct clean normalized snapshot using real physical fields Hoshin_TH / Hoshin_EN / Hoshin_Key / $id
     const nowIso = new Date().toISOString();
-    const deptTitle = readString(deptHoshin, 'Hoshin_TH') || readString(deptHoshin, 'Hoshin_EN') || readString(deptHoshin, 'Title');
-    const sectTitle = readString(sectHoshin, 'Hoshin_TH') || readString(sectHoshin, 'Hoshin_EN') || readString(sectHoshin, 'Title');
-    const deptId = readString(deptHoshin, 'Record_ID') || String(deptHoshin.$id?.value || deptHoshin.$id || deptHoshin.Hoshin_Key || '');
-    const sectId = readString(sectHoshin, 'Record_ID') || String(sectHoshin.$id?.value || sectHoshin.$id || sectHoshin.Hoshin_Key || '');
+    const deptTitle = readString(deptHoshin, 'Hoshin_TH') || readString(deptHoshin, 'Hoshin_EN');
+    const sectTitle = readString(sectHoshin, 'Hoshin_TH') || readString(sectHoshin, 'Hoshin_EN');
+    const deptId = String(deptHoshin.$id?.value || deptHoshin.$id || deptHoshin.Hoshin_Key || '');
+    const sectId = String(sectHoshin.$id?.value || sectHoshin.$id || sectHoshin.Hoshin_Key || '');
 
     return {
       status: 'READY_FOR_MBO',

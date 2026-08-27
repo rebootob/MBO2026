@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AnnualRecordService } from '../src/services/annual-record-service.js';
 
-test('COPY_PREVIOUS_REAL_APP794_SHAPE: copies physical planning fields to flattened App 794 candidate and excludes evaluation fields', () => {
+test('COPY_PREVIOUS_WRITE_READY_INTEGRATION: composes new FY routing and scoring physical fields into candidateRecord', () => {
   const priorYearMbo = {
     Fiscal_Year: { value: 'FY2025' },
     Record_Key: { value: 'FY2025-EMP001' },
@@ -22,13 +22,26 @@ test('COPY_PREVIOUS_REAL_APP794_SHAPE: copies physical planning fields to flatte
 
   const authUser = { employeeCode: 'EMP001', kintoneUserCode: 'somchai_k' };
 
+  const newRouting = {
+    Routing_Topology: 'M1_G1',
+    Requester_User: [{ code: 'somchai_k' }],
+    Manager_User: [{ code: 'mgr1' }],
+    GM_User: [{ code: 'gm1' }]
+  };
+
+  const newScoring = {
+    Profile_Code: 'PROF_STAFF_CHIEF',
+    PartA_Weight: 70,
+    PartB_Weight: 30
+  };
+
   const result = AnnualRecordService.generateCopyPreviousCandidate({
     priorYearRecord: priorYearMbo,
     newFiscalYear: 'FY2026',
     authenticatedUser: authUser,
     userRole: 'EMPLOYEE',
-    newRoutingSnapshot: { topology: 'M1_G1' },
-    newScoringConfig: { PartA_Weight: 50 },
+    newRoutingSnapshot: newRouting,
+    newScoringConfig: newScoring,
     newHoshinSnapshot: { Hoshin_Fiscal_Year: 'FY2026', Department_Hoshin_Snapshot: '{"new":"snapshot"}' },
     duplicatePreflightResult: { checked: true, exists: false }
   });
@@ -36,37 +49,42 @@ test('COPY_PREVIOUS_REAL_APP794_SHAPE: copies physical planning fields to flatte
   assert.equal(result.status, 'COPY_PREVIOUS_CANDIDATE_READY');
   assert.equal(result.newFiscalYear, 'FY2026');
   assert.equal(result.newRecordKey, 'FY2026-EMP001');
-  assert.equal(result.copiedObjectivesCount, 1);
 
   const cand = result.planningCandidate;
+  assert.equal(cand.Profile_Code.value, 'PROF_STAFF_CHIEF');
+  assert.equal(cand.PartA_Weight.value, '70');
+  assert.equal(cand.PartB_Weight.value, '30');
+  assert.equal(cand.Routing_Topology.value, 'M1_G1');
+  assert.deepEqual(cand.Manager_User.value, [{ code: 'mgr1' }]);
+  assert.deepEqual(cand.GM_User.value, [{ code: 'gm1' }]);
+
   assert.equal(cand.Objective_1.value, 'Upgrade Core DB');
   assert.equal(cand.Weight_1.value, '50');
   assert.equal('Actual_Result_1' in cand, false);
   assert.equal('Self_Achievement_1' in cand, false);
   assert.equal('Objectives' in cand, false); // No non-physical Objectives array!
-  assert.equal(cand.Department_Hoshin_Snapshot.value, '{"new":"snapshot"}');
 });
 
-test('COPY_PREVIOUS_DEPENDENCY_FAIL_CLOSED: fails closed if any required current-year dependency is missing', () => {
+test('COPY_PREVIOUS_DEPENDENCY_FAIL_CLOSED: fails closed if malformed routing or scoring snapshot provided', () => {
   const priorYearMbo = {
     Fiscal_Year: { value: 'FY2025' },
     Employee_Code: { value: 'EMP001' }
   };
   const authUser = { employeeCode: 'EMP001', kintoneUserCode: 'somchai_k' };
 
-  // Missing routing
+  // Malformed scoring config (missing Profile_Code)
   assert.throws(
     () => AnnualRecordService.generateCopyPreviousCandidate({
       priorYearRecord: priorYearMbo,
       newFiscalYear: 'FY2026',
       authenticatedUser: authUser,
       userRole: 'EMPLOYEE',
-      newRoutingSnapshot: null,
-      newScoringConfig: {},
+      newRoutingSnapshot: { Routing_Topology: 'M1_G1' },
+      newScoringConfig: { PartA_Weight: 50 }, // Missing Profile_Code!
       newHoshinSnapshot: {},
       duplicatePreflightResult: { checked: true, exists: false }
     }),
-    (err) => err.code === 'COPY_PREVIOUS_MISSING_DEPENDENCY'
+    (err) => err.code === 'COPY_PREVIOUS_INVALID_DEPENDENCY'
   );
 });
 
@@ -84,8 +102,8 @@ test('COPY_PREVIOUS_DUPLICATE_PREFLIGHT: fails closed if duplicate preflight unc
       newFiscalYear: 'FY2026',
       authenticatedUser: authUser,
       userRole: 'EMPLOYEE',
-      newRoutingSnapshot: {},
-      newScoringConfig: {},
+      newRoutingSnapshot: { Routing_Topology: 'M1_G1' },
+      newScoringConfig: { Profile_Code: 'PROF_STAFF_CHIEF', PartA_Weight: 70 },
       newHoshinSnapshot: {},
       duplicatePreflightResult: { checked: true, exists: true }
     }),
@@ -106,8 +124,8 @@ test('COPY_PREVIOUS_REAL_APP794_SHAPE: Employee copying another employee MBO fai
       newFiscalYear: 'FY2026',
       authenticatedUser: authUser,
       userRole: 'EMPLOYEE',
-      newRoutingSnapshot: {},
-      newScoringConfig: {},
+      newRoutingSnapshot: { Routing_Topology: 'M1_G1' },
+      newScoringConfig: { Profile_Code: 'PROF_STAFF_CHIEF', PartA_Weight: 70 },
       newHoshinSnapshot: {},
       duplicatePreflightResult: { checked: true, exists: false }
     }),

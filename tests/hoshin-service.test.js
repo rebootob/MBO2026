@@ -33,6 +33,34 @@ test('HOSHIN_CODE_AUTHORITY: code match succeeds for Department and Section', ()
   assert.equal(res.snapshot.Department_Hoshin_Title, 'IT Hoshin');
 });
 
+test('HOSHIN_MALFORMED_DATE_FAIL_CLOSED: fails closed on impossible or malformed calendar dates', () => {
+  const badRecords = [
+    {
+      Hoshin_Key: 'H1', Scope_Type: 'DEPARTMENT', Department_Code: 'IT', Fiscal_Year: 'FY2026',
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active',
+      Effective_From: '2026-99-99', Effective_To: '2027-03-31'
+    }
+  ];
+
+  assert.throws(
+    () => HoshinService.resolveHoshinForMBO({ department: 'IT', section: 'Software Dev', fiscalYear: 'FY2026', hoshinRecords: badRecords }),
+    /HOSHIN_INVALID_EFFECTIVE_DATE/
+  );
+
+  const feb30Records = [
+    {
+      Hoshin_Key: 'H1', Scope_Type: 'DEPARTMENT', Department_Code: 'IT', Fiscal_Year: 'FY2026',
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active',
+      Effective_From: '2026-02-30', Effective_To: '2027-03-31'
+    }
+  ];
+
+  assert.throws(
+    () => HoshinService.resolveHoshinForMBO({ department: 'IT', section: 'Software Dev', fiscalYear: 'FY2026', hoshinRecords: feb30Records }),
+    /HOSHIN_INVALID_EFFECTIVE_DATE/
+  );
+});
+
 test('HOSHIN_ORGANIZATION_MISMATCH: throws ORGANIZATION_MISMATCH when department/section codes do not match', () => {
   const hoshinRecords = [
     {

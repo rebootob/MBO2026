@@ -2,19 +2,54 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LegacyMigrationService, LEGACY_APP_PROFILE_MAP } from '../src/services/legacy-migration-service.js';
 
-test('LEGACY_DUPLICATE_CONFLICT_FAIL_CLOSED: classifies conflicting duplicate source records as REVIEW_REQUIRED_DUPLICATE_SOURCE without selecting primary winner', () => {
+test('LEGACY_FIELD_VALUE_PRESERVATION: extra unknown non-empty historical field stores actual value in provenance.historicalFields', () => {
+  const legacyData = {
+    '283': [
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Custom_Bonus_Notes: 'Bonus approved 2021' }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: legacyData, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 1);
+  const prov = res.candidates[0].provenance[0];
+  assert.equal(prov.historicalFields.Custom_Bonus_Notes, 'Bonus approved 2021');
+
+  const auditEntry = prov.fieldBucketAudit.find(a => a.sourceFieldCode === 'Custom_Bonus_Notes');
+  assert.equal(auditEntry.bucket, 'PRESERVED_IN_PROVENANCE');
+  assert.equal(auditEntry.sourceValue, 'Bonus approved 2021');
+  assert.equal(res.counters.UNEXPLAINED_FIELD_LOSS, 0);
+});
+
+test('LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE: duplicate group with conflict in Actual Result requires review', () => {
   const conflictingData = {
     '283': [
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Obj Version A' },
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Obj Version B' }
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Same Obj', Text_area_actual_result_obj1: 'Result A' },
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Same Obj', Text_area_actual_result_obj1: 'Result B' }
     ]
   };
 
   const mappings = { 'Somchai Prasert': 'EMP001' };
   const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: conflictingData, employeeMappings: mappings });
 
-  assert.equal(res.status, 'MIGRATION_DRY_RUN_COMPLETE');
-  assert.equal(res.candidates.length, 0); // No candidate generated for conflicting duplicate!
+  assert.equal(res.candidates.length, 0);
+  assert.equal(res.reviewRequiredGroups.length, 1);
+  assert.equal(res.reviewRequiredGroups[0].status, 'REVIEW_REQUIRED_DUPLICATE_SOURCE');
+});
+
+test('LEGACY_DUPLICATE_FULL_PROJECTION_COMPARE: duplicate group with conflict in Section Hoshin requires review', () => {
+  const conflictingData = {
+    '283': [
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area: 'Same Dept', Text_area_0: 'Section Hoshin A' },
+      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area: 'Same Dept', Text_area_0: 'Section Hoshin B' }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: conflictingData, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 0);
   assert.equal(res.reviewRequiredGroups.length, 1);
   assert.equal(res.reviewRequiredGroups[0].status, 'REVIEW_REQUIRED_DUPLICATE_SOURCE');
 });

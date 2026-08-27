@@ -50,27 +50,26 @@ export class LegacyMigrationService {
   }
 
   /**
-   * Deep equivalence comparator for non-empty mapped business values across duplicate source items.
+   * Full projection deep equivalence comparator across ALL non-empty normalized business/provenance fields.
    */
   static areDuplicateItemsEquivalent(itemA, itemB) {
     if (itemA.targetProfileCode !== itemB.targetProfileCode) return false;
     const recA = itemA.rawRecord;
     const recB = itemB.rawRecord;
 
-    // Compare objective slots 1..4
-    for (let i = 1; i <= 4; i++) {
-      const planA = readString(recA, `Text_area_action_plan_obj${i}`);
-      const planB = readString(recB, `Text_area_action_plan_obj${i}`);
-      if (planA !== planB) return false;
+    // Collect all non-empty keys across both records
+    const allKeys = new Set([...Object.keys(recA), ...Object.keys(recB)]);
 
-      const wtA = readString(recA, `weight_a_obj${i}`);
-      const wtB = readString(recB, `weight_a_obj${i}`);
-      if (wtA !== wtB) return false;
+    for (const key of allKeys) {
+      if (key.startsWith('$')) continue; // Ignore system fields like $id, $revision
+
+      const valA = String(unwrapField(recA[key]) || '').trim();
+      const valB = String(unwrapField(recB[key]) || '').trim();
+
+      if (valA !== valB) {
+        return false;
+      }
     }
-
-    const deptHoshinA = readString(recA, 'Text_area');
-    const deptHoshinB = readString(recB, 'Text_area');
-    if (deptHoshinA !== deptHoshinB) return false;
 
     return true;
   }
@@ -123,21 +122,47 @@ export class LegacyMigrationService {
           }
         }
 
-        // Field-level reconciliation bucket audit
+        // Field-level reconciliation bucket audit with ACTUAL preserved values
         const fieldBucketAudit = [];
+        const historicalFields = {};
+
         for (const [fCode, fVal] of Object.entries(rec)) {
-          const strVal = String(unwrapField(fVal) || '').trim();
+          const unwrappedVal = unwrapField(fVal);
+          const strVal = String(unwrappedVal || '').trim();
           if (!strVal) continue; // Empty fields ignored
 
           totalReconciledFields++;
+
           if (fCode.startsWith('Text_area_action_plan') || fCode.startsWith('weight_a') || fCode === 'Text_name' || fCode === 'Drop_down_year') {
-            fieldBucketAudit.push({ field: fCode, bucket: 'MAPPED_TO_TARGET' });
+            fieldBucketAudit.push({
+              sourceFieldCode: fCode,
+              bucket: 'MAPPED_TO_TARGET',
+              sourceValue: strVal,
+              targetFieldCode: fCode
+            });
           } else if (fCode.toLowerCase().includes('attachment') || fCode.toLowerCase().includes('file')) {
-            fieldBucketAudit.push({ field: fCode, bucket: 'ATTACHMENT_TRANSFER_PENDING' });
+            fieldBucketAudit.push({
+              sourceFieldCode: fCode,
+              bucket: 'ATTACHMENT_TRANSFER_PENDING',
+              sourceValue: strVal,
+              explainedReason: 'ATTACHMENT_TRANSFER_PENDING_UNTIL_UPLOAD'
+            });
           } else if (fCode.startsWith('$')) {
-            fieldBucketAudit.push({ field: fCode, bucket: 'SKIPPED_EXPLAINED' });
+            fieldBucketAudit.push({
+              sourceFieldCode: fCode,
+              bucket: 'SKIPPED_EXPLAINED',
+              sourceValue: strVal,
+              explainedReason: 'KINTONE_SYSTEM_METADATA'
+            });
           } else {
-            fieldBucketAudit.push({ field: fCode, bucket: 'PRESERVED_IN_PROVENANCE' });
+            // PRESERVED_IN_PROVENANCE: actual normalized value stored in provenance!
+            historicalFields[fCode] = strVal;
+            fieldBucketAudit.push({
+              sourceFieldCode: fCode,
+              bucket: 'PRESERVED_IN_PROVENANCE',
+              sourceValue: strVal,
+              provenancePath: `provenance.historicalFields.${fCode}`
+            });
           }
         }
 
@@ -153,6 +178,7 @@ export class LegacyMigrationService {
           identityStatus: identityRes.status,
           targetProfileCode,
           fileFields,
+          historicalFields,
           fieldBucketAudit,
           rawRecord: rec
         });
@@ -188,7 +214,7 @@ export class LegacyMigrationService {
 
     for (const [groupKey, groupItems] of logicalGroups.entries()) {
       if (groupItems.length > 1) {
-        // Check equivalence across all group items
+        // Full projection deep equivalence check across ALL group items
         let allEquivalent = true;
         for (let i = 1; i < groupItems.length; i++) {
           if (!this.areDuplicateItemsEquivalent(groupItems[0], groupItems[i])) {
@@ -250,6 +276,7 @@ export class LegacyMigrationService {
           verificationStatus: 'VERIFIED_NORMALIZED',
           attachmentProvenance: item.fileFields.length > 0 ? 'ATTACHMENT_TRANSFER_PENDING' : 'NONE',
           attachedFiles: item.fileFields,
+          historicalFields: item.historicalFields,
           fieldBucketAudit: item.fieldBucketAudit
         }));
 

@@ -130,16 +130,19 @@ test('CORE_REAL_RESOLVER_INTEGRATION: complete real-resolver annual lifecycle pa
   const initPayload = AnnualRecordService.buildInitializationPayload('FY2026', empSnapshot);
   assert.equal(initPayload.Record_Key.value, 'FY2026-EMP100');
 
-  // 8. Validation Engine Objectives Verification with REAL Flattened App794 Record Shape
+  // 8. Validation Engine Objectives Verification with REAL Flattened App794 Record Shape on OBJECTIVE_INPUT Stage
   const flattenedRecord = {
     Employee_Code: { value: 'EMP100' },
     Employee_Name: { value: 'Somchai Prasert' },
     Fiscal_Year: { value: 'FY2026' },
+    Profile_Code: { value: 'PROF_SECTION_MGR' },
+    Routing_Topology: { value: 'M1_G1' },
+    Requester_User: { value: [{ code: 'somchai_k' }] },
     Objective_Count: { value: '2' },
-    Objective_1: { value: 'Obj 1' }, Action_Plan_1: { value: 'Desc 1' }, Weight_1: { value: '50' },
-    Objective_2: { value: 'Obj 2' }, Action_Plan_2: { value: 'Desc 2' }, Weight_2: { value: '50' }
+    Objective_1: { value: 'Obj 1' }, Action_Plan_1: { value: 'Desc 1' }, Weight_1: { value: '50' }, Difficulty_1: { value: '3' },
+    Objective_2: { value: 'Obj 2' }, Action_Plan_2: { value: 'Desc 2' }, Weight_2: { value: '50' }, Difficulty_2: { value: '3' }
   };
-  const valResult = ValidationEngine.validate(flattenedRecord, BUSINESS_STAGES.OBJECTIVES_SUBMISSION);
+  const valResult = ValidationEngine.validate(flattenedRecord, BUSINESS_STAGES.OBJECTIVE_INPUT);
   assert.equal(valResult.isValid, true);
 
   // 9. Copy Previous Integrated Candidate Generation with dependencies & preflight
@@ -164,6 +167,8 @@ test('CORE_REAL_RESOLVER_INTEGRATION: complete real-resolver annual lifecycle pa
   });
   assert.equal(copyRes.status, 'COPY_PREVIOUS_CANDIDATE_READY');
   assert.equal(copyRes.planningCandidate.Objective_1.value, 'Prior Obj');
+  assert.equal(copyRes.planningCandidate.Profile_Code.value, 'PROF_SECTION_MGR');
+  assert.equal(copyRes.planningCandidate.Routing_Topology.value, 'M1_G1');
   assert.equal('Actual_Result_1' in copyRes.planningCandidate, false);
 
   // 10. Export Projection from real flattened record
