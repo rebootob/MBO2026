@@ -2,9 +2,12 @@
  * HR Dashboard & Phase Calendar Governance Service (App 800 HR Control Center Integration)
  */
 
+import { readString, readNumber, readUserCodes } from '../core/kintone-normalizer.js';
+
 export class HrDashboardService {
   /**
    * Applies structured multi-criteria filters to MBO record collections.
+   * Handles raw Kintone { value } shapes via shared normalizer.
    */
   static filterRecords(records = [], filters = {}) {
     if (!Array.isArray(records)) return [];
@@ -12,37 +15,40 @@ export class HrDashboardService {
     return records.filter(rec => {
       if (!rec) return false;
 
-      if (filters.fiscalYear && String(rec.Fiscal_Year || rec.Fiscal_Year?.value || '').trim() !== String(filters.fiscalYear).trim()) {
+      if (filters.fiscalYear && readString(rec, 'Fiscal_Year') !== String(filters.fiscalYear).trim()) {
         return false;
       }
-      if (filters.division && String(rec.Employee_Division || rec.Employee_Division?.value || '').trim() !== String(filters.division).trim()) {
+      if (filters.division && readString(rec, 'Employee_Division') !== String(filters.division).trim()) {
         return false;
       }
-      if (filters.department && String(rec.Employee_Department || rec.Employee_Department?.value || '').trim() !== String(filters.department).trim()) {
+      if (filters.department && readString(rec, 'Employee_Department') !== String(filters.department).trim()) {
         return false;
       }
-      if (filters.section && String(rec.Employee_Section || rec.Employee_Section?.value || '').trim() !== String(filters.section).trim()) {
+      if (filters.section && readString(rec, 'Employee_Section') !== String(filters.section).trim()) {
         return false;
       }
-      if (filters.team && String(rec.Team || rec.Team?.value || '').trim() !== String(filters.team).trim()) {
+      if (filters.team && readString(rec, 'Team') !== String(filters.team).trim()) {
         return false;
       }
-      if (filters.position && String(rec.Employee_Position || rec.Employee_Position?.value || '').trim() !== String(filters.position).trim()) {
+      if (filters.position && readString(rec, 'Employee_Position') !== String(filters.position).trim()) {
         return false;
       }
-      if (filters.employeeCode && String(rec.Employee_Code || rec.Employee_Code?.value || '').trim() !== String(filters.employeeCode).trim()) {
+      if (filters.employeeCode && readString(rec, 'Employee_Code') !== String(filters.employeeCode).trim()) {
         return false;
       }
-      if (filters.status && String(rec.Workflow_Status || rec.Workflow_Status?.value || rec.Config_Status?.value || '').trim() !== String(filters.status).trim()) {
-        return false;
+      if (filters.status) {
+        const wfStatus = readString(rec, 'Workflow_Status') || readString(rec, 'Config_Status') || readString(rec, 'Status');
+        if (wfStatus !== String(filters.status).trim()) return false;
       }
       if (filters.approverUserCode) {
-        const app1 = rec.Appraiser_1_User?.value?.[0]?.code || rec.Appraiser_1_User || '';
-        const app2 = rec.Appraiser_2_User?.value?.[0]?.code || rec.Appraiser_2_User || '';
-        const mgr = rec.Manager_User?.value?.[0]?.code || rec.Manager_User || '';
-        const gm = rec.GM_User?.value?.[0]?.code || rec.GM_User || '';
         const searchCode = String(filters.approverUserCode).trim();
-        if (app1 !== searchCode && app2 !== searchCode && mgr !== searchCode && gm !== searchCode) {
+        const app1Codes = readUserCodes(rec, 'Appraiser_1_User');
+        const app2Codes = readUserCodes(rec, 'Appraiser_2_User');
+        const mgrCodes = readUserCodes(rec, 'Manager_User');
+        const gmCodes = readUserCodes(rec, 'GM_User');
+
+        const allApprovers = [...app1Codes, ...app2Codes, ...mgrCodes, ...gmCodes];
+        if (!allApprovers.includes(searchCode)) {
           return false;
         }
       }
@@ -52,7 +58,7 @@ export class HrDashboardService {
   }
 
   /**
-   * Computes overview summary counts for HR Dashboard.
+   * Computes overview summary counts for HR Dashboard from Kintone records.
    */
   static computeOverviewCounts(records = []) {
     const counts = {
@@ -73,23 +79,29 @@ export class HrDashboardService {
     const now = new Date();
 
     for (const rec of records) {
-      const status = String(rec.Workflow_Status || rec.Workflow_Status?.value || rec.Status || '').trim().toUpperCase();
+      const status = readString(rec, 'Workflow_Status') || readString(rec, 'Status');
+      const statusUpper = status.toUpperCase();
 
-      if (!status || status === 'NOT_STARTED') counts.notStarted++;
-      else if (status.includes('DRAFT')) counts.draft++;
-      else if (status.includes('SUBMITTED') || status.includes('WAITING') || status.includes('APPROVAL')) counts.waitingApproval++;
-      else if (status.includes('RETURNED')) counts.returned++;
-      else if (status.includes('REJECTED')) counts.rejected++;
-      else if (status.includes('COMPLETED') || status.includes('FINISHED')) counts.completed++;
+      if (!statusUpper || statusUpper === 'NOT_STARTED') counts.notStarted++;
+      else if (statusUpper.includes('DRAFT')) counts.draft++;
+      else if (statusUpper.includes('SUBMITTED') || statusUpper.includes('WAITING') || statusUpper.includes('APPROVAL')) counts.waitingApproval++;
+      else if (statusUpper.includes('RETURNED')) counts.returned++;
+      else if (statusUpper.includes('REJECTED')) counts.rejected++;
+      else if (statusUpper.includes('COMPLETED') || statusUpper.includes('FINISHED')) counts.completed++;
       else counts.inProgress++;
 
-      if (rec.Has_Routing_Error || status.includes('ROUTING_ERROR')) counts.routingError++;
-      if (rec.Has_Config_Error || status.includes('CONFIG_ERROR')) counts.configError++;
-      if (rec.Missing_Approver) counts.missingApprover++;
+      const hasRoutingErr = readString(rec, 'Has_Routing_Error') === 'true' || statusUpper.includes('ROUTING_ERROR');
+      const hasConfigErr = readString(rec, 'Has_Config_Error') === 'true' || statusUpper.includes('CONFIG_ERROR');
+      const missingApp = readString(rec, 'Missing_Approver') === 'true';
 
-      if (rec.Due_Date) {
-        const due = new Date(rec.Due_Date);
-        if (!isNaN(due.getTime()) && due < now && !status.includes('COMPLETED')) {
+      if (hasRoutingErr) counts.routingError++;
+      if (hasConfigErr) counts.configError++;
+      if (missingApp) counts.missingApprover++;
+
+      const dueDateStr = readString(rec, 'Due_Date');
+      if (dueDateStr) {
+        const due = new Date(dueDateStr);
+        if (!isNaN(due.getTime()) && due < now && !statusUpper.includes('COMPLETED')) {
           counts.overdue++;
         }
       }
@@ -99,9 +111,8 @@ export class HrDashboardService {
   }
 
   /**
-   * Phase Calendar Engine: Evaluates stage window availability & countdown messages.
+   * Phase Calendar Engine: Evaluates stage window availability & countdown messages from App 800 config.
    * Dates gate UI availability & countdown messaging ONLY.
-   * Does NOT silently execute Kintone process status transitions.
    */
   static evaluatePhaseCalendarWindow({ phaseName, openDate, closeDate, currentDate = new Date() }) {
     const now = new Date(currentDate);

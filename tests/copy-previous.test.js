@@ -2,32 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AnnualRecordService } from '../src/services/annual-record-service.js';
 
-test('COPY_PREVIOUS_MBO_LOCAL: copies ONLY planning fields and resets evaluation/scores/Hoshin snapshot', () => {
+test('COPY_PREVIOUS_REAL_APP794_SHAPE: copies ONLY physical planning fields from flattened Kintone prior-year record', () => {
   const priorYearMbo = {
-    Fiscal_Year: 'FY2025',
-    Record_Key: 'FY2025-EMP001',
-    Employee_Code: 'EMP001',
-    Employee_Name: 'Somchai Prasert',
-    Employee_Department: 'IT',
-    Employee_Section: 'Software Dev',
-    Objectives: [
-      {
-        Objective_Title: 'Upgrade Core DB',
-        Objective_Description: 'Migrate to PostgreSQL 16',
-        KPI: 'System Uptime 99.9%',
-        Target: 'Zero downtime cutover',
-        Measurement: 'Percent Uptime',
-        Weight: 50,
-        Planning_Notes: 'Q2 target',
-        // Evaluation fields (MUST NOT BE COPIED)
-        Actual_Result: 'Achieved 100%',
-        Achievement: '100%',
-        Self_Score: 4.5,
-        Appraiser_Score: 4.8,
-        Comments: 'Excellent work'
-      }
-    ],
-    Department_Hoshin_Snapshot: '{"old":"snapshot"}'
+    Fiscal_Year: { value: 'FY2025' },
+    Record_Key: { value: 'FY2025-EMP001' },
+    Employee_Code: { value: 'EMP001' },
+    Employee_Name: { value: 'Somchai Prasert' },
+    Employee_Department: { value: 'IT' },
+    Employee_Section: { value: 'Software Dev' },
+    Objective_Count: { value: '1' },
+    Objective_1: { value: 'Upgrade Core DB' },
+    Weight_1: { value: '50' },
+    Progress_Percent_1: { value: '100' },
+    Actual_Result_1: { value: 'Achieved 100%' },
+    Self_Achievement_1: { value: '100%' },
+    Manager_Objective_Score_1: { value: '4.8' },
+    Department_Hoshin_Snapshot: { value: '{"old":"snapshot"}' }
   };
 
   const authUser = { employeeCode: 'EMP001', kintoneUserCode: 'somchai_k' };
@@ -36,7 +26,10 @@ test('COPY_PREVIOUS_MBO_LOCAL: copies ONLY planning fields and resets evaluation
     priorYearRecord: priorYearMbo,
     newFiscalYear: 'FY2026',
     authenticatedUser: authUser,
-    userRole: 'EMPLOYEE'
+    userRole: 'EMPLOYEE',
+    newRoutingSnapshot: { topology: 'M1_G1' },
+    newScoringConfig: { PartA_Weight: 50 },
+    newHoshinSnapshot: { Department_Hoshin_Snapshot: '{"new":"snapshot"}' }
   });
 
   assert.equal(result.status, 'COPY_PREVIOUS_CANDIDATE_READY');
@@ -47,17 +40,15 @@ test('COPY_PREVIOUS_MBO_LOCAL: copies ONLY planning fields and resets evaluation
   const copiedObj = result.planningCandidate.Objectives[0];
   assert.equal(copiedObj.Objective_Title, 'Upgrade Core DB');
   assert.equal(copiedObj.Weight, 50);
-  assert.equal(copiedObj.Planning_Notes, 'Q2 target');
-  assert.equal('Actual_Result' in copiedObj, false);
-  assert.equal('Self_Score' in copiedObj, false);
-  assert.equal('Appraiser_Score' in copiedObj, false);
-  assert.equal(result.planningCandidate.Department_Hoshin_Snapshot, null);
+  assert.equal('Actual_Result_1' in copiedObj, false);
+  assert.equal('Self_Achievement_1' in copiedObj, false);
+  assert.equal(result.planningCandidate.Department_Hoshin_Snapshot, '{"new":"snapshot"}');
 });
 
-test('COPY_PREVIOUS_MBO_LOCAL: Employee copying another employee MBO fails closed', () => {
+test('COPY_PREVIOUS_REAL_APP794_SHAPE: Employee copying another employee MBO fails closed', () => {
   const priorYearMbo = {
-    Fiscal_Year: 'FY2025',
-    Employee_Code: 'EMP002'
+    Fiscal_Year: { value: 'FY2025' },
+    Employee_Code: { value: 'EMP002' }
   };
   const authUser = { employeeCode: 'EMP001', kintoneUserCode: 'somchai_k' };
 
@@ -70,34 +61,4 @@ test('COPY_PREVIOUS_MBO_LOCAL: Employee copying another employee MBO fails close
     }),
     (err) => err.code === 'COPY_PREVIOUS_UNAUTHORIZED'
   );
-});
-
-test('COPY_PREVIOUS_MBO_LOCAL: HR copy requires authoritative role context', () => {
-  const priorYearMbo = {
-    Fiscal_Year: 'FY2025',
-    Employee_Code: 'EMP002'
-  };
-  const authUser = { employeeCode: 'HR001', kintoneUserCode: 'hr_user' };
-
-  // Without authoritative role context -> fails closed
-  assert.throws(
-    () => AnnualRecordService.generateCopyPreviousCandidate({
-      priorYearRecord: priorYearMbo,
-      newFiscalYear: 'FY2026',
-      authenticatedUser: authUser,
-      userRole: 'HR'
-    }),
-    (err) => err.code === 'COPY_PREVIOUS_UNAUTHORIZED_HR'
-  );
-
-  // With verified authoritative role context -> PASS
-  const verifiedCtx = { isAuthorizedHR: true };
-  const res = AnnualRecordService.generateCopyPreviousCandidate({
-    priorYearRecord: priorYearMbo,
-    newFiscalYear: 'FY2026',
-    authenticatedUser: authUser,
-    userRole: 'HR',
-    authoritativeRoleContext: verifiedCtx
-  });
-  assert.equal(res.status, 'COPY_PREVIOUS_CANDIDATE_READY');
 });

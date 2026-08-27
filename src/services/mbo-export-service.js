@@ -1,11 +1,21 @@
 /**
  * MBO Export Projection Service (Gate 2 Excel + PDF Export)
- * Maps App 794 MBO records and scoring configurations into structured export projections
- * matching approved historical Part A & Part B form specifications.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { readString, readNumber, projectApp794Objectives } from '../core/kintone-normalizer.js';
+
+export const PROFILE_WEIGHT_MAP = {
+  PROF_STAFF_CHIEF: { profileFamily: 'STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
+  PROF_JAPANESE_STAFF: { profileFamily: 'STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
+  PROF_ASST_MGR: { profileFamily: 'ASSISTANT_MANAGER', partAWeight: 60, partBWeight: 40 },
+  PROF_SECTION_MGR: { profileFamily: 'MANAGEMENT', partAWeight: 50, partBWeight: 50 },
+  PROF_SENIOR_MGR: { profileFamily: 'MANAGEMENT', partAWeight: 50, partBWeight: 50 },
+  PROF_DGM: { profileFamily: 'MANAGEMENT', partAWeight: 50, partBWeight: 50 },
+  PROF_GM: { profileFamily: 'EXECUTIVE', partAWeight: 50, partBWeight: 50 },
+  PROF_VP: { profileFamily: 'EXECUTIVE', partAWeight: 50, partBWeight: 50 }
+};
 
 export class MboExportService {
   /**
@@ -25,71 +35,53 @@ export class MboExportService {
   }
 
   /**
-   * Resolves Part A & Part B weighting by Profile Code / Position.
+   * Resolves Part A & Part B weighting strictly by Profile_Code.
+   * Fails closed with EXPORT_PROFILE_UNRESOLVED if profile is missing/unknown.
    */
-  static resolveProfileWeighting(profileCodeOrPosition) {
-    const code = String(profileCodeOrPosition || '').toUpperCase();
-    if (code.includes('STAFF') || code.includes('CHIEF') || code.includes('OPERATIONAL')) {
-      return { profileFamily: 'STAFF_CHIEF', partAWeight: 70, partBWeight: 30 };
+  static resolveProfileWeighting(profileCode) {
+    const code = String(profileCode || '').trim().toUpperCase();
+    if (!code || !PROFILE_WEIGHT_MAP[code]) {
+      throw new Error(`EXPORT_PROFILE_UNRESOLVED: Profile_Code '${profileCode}' is missing or unmapped.`);
     }
-    if (code.includes('ASST') || code.includes('ASSISTANT') || code.includes('SPECIALIST')) {
-      return { profileFamily: 'ASSISTANT_MANAGER', partAWeight: 60, partBWeight: 40 };
-    }
-    return { profileFamily: 'MANAGER_GM', partAWeight: 50, partBWeight: 50 };
+    return PROFILE_WEIGHT_MAP[code];
   }
 
   /**
-   * Project MBO Record into Part A Export Projection (dynamic 5-10 objectives).
+   * Project MBO Record into Part A Export Projection (exact 4-10 objectives).
    */
   static projectPartAExport({ mboRecord, profileCode }) {
     if (!mboRecord) throw new Error('mboRecord is required.');
-    const weighting = this.resolveProfileWeighting(profileCode || mboRecord.Employee_Position);
 
-    const rawObjectives = mboRecord.Objectives || mboRecord.objectives || [];
-    const objectives = [];
+    const targetProfileCode = profileCode || readString(mboRecord, 'Profile_Code');
+    const weighting = this.resolveProfileWeighting(targetProfileCode);
 
-    for (let i = 0; i < Math.min(Math.max(rawObjectives.length, 5), 10); i++) {
-      const obj = rawObjectives[i] || {};
-      objectives.push({
-        itemIndex: i + 1,
-        title: obj.Objective_Title || obj.Title || '',
-        description: obj.Objective_Description || obj.Description || '',
-        kpi: obj.KPI || '',
-        target: obj.Target || '',
-        measurement: obj.Measurement || '',
-        weight: Number(obj.Weight || 0),
-        actualResult: obj.Actual_Result || '',
-        achievement: obj.Achievement || '',
-        selfScore: Number(obj.Self_Score || 0),
-        appraiserScore: Number(obj.Appraiser_Score || obj.Appraiser_1_Score || 0)
-      });
-    }
-
+    const objectives = projectApp794Objectives(mboRecord);
     const totalWeight = objectives.reduce((acc, curr) => acc + curr.weight, 0);
 
     return {
       exportType: 'PART_A_WORKBOOK',
       header: {
-        employeeCode: String(mboRecord.Employee_Code || ''),
-        employeeName: String(mboRecord.Employee_Name || ''),
-        employeeNameTH: String(mboRecord.Employee_Name_TH || ''),
-        department: String(mboRecord.Employee_Department || ''),
-        section: String(mboRecord.Employee_Section || ''),
-        position: String(mboRecord.Employee_Position || ''),
-        fiscalYear: String(mboRecord.Fiscal_Year || ''),
+        employeeCode: readString(mboRecord, 'Employee_Code'),
+        employeeName: readString(mboRecord, 'Employee_Name'),
+        employeeNameTH: readString(mboRecord, 'Employee_Name_TH'),
+        department: readString(mboRecord, 'Employee_Department'),
+        section: readString(mboRecord, 'Employee_Section'),
+        position: readString(mboRecord, 'Employee_Position'),
+        fiscalYear: readString(mboRecord, 'Fiscal_Year'),
+        profileCode: targetProfileCode,
         profileFamily: weighting.profileFamily,
         partAWeightPercent: weighting.partAWeight
       },
       hoshin: {
-        departmentHoshinTitle: String(mboRecord.Department_Hoshin_Title || ''),
-        sectionHoshinTitle: String(mboRecord.Section_Hoshin_Title || '')
+        departmentHoshinTitle: readString(mboRecord, 'Department_Hoshin_Title') || readString(mboRecord, 'Department_Hoshin'),
+        sectionHoshinTitle: readString(mboRecord, 'Section_Hoshin_Title') || readString(mboRecord, 'Section_Hoshin')
       },
       objectivesCount: objectives.length,
       totalWeight,
       objectives,
       summary: {
-        rawPartAScore: Number(mboRecord.PartA_Raw_Score || 0),
-        weightedPartAScore: Number(mboRecord.PartA_Weighted_Score || 0)
+        rawPartAScore: readNumber(mboRecord, 'PartA_Raw_Score', 0),
+        weightedPartAScore: readNumber(mboRecord, 'PartA_Weighted_Score', 0)
       }
     };
   }
@@ -99,7 +91,8 @@ export class MboExportService {
    */
   static projectCombinedExport({ mboRecord, profileCode, competencyItems = [] }) {
     const partA = this.projectPartAExport({ mboRecord, profileCode });
-    const weighting = this.resolveProfileWeighting(profileCode || mboRecord.Employee_Position);
+    const targetProfileCode = profileCode || readString(mboRecord, 'Profile_Code');
+    const weighting = this.resolveProfileWeighting(targetProfileCode);
 
     return {
       exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
@@ -107,12 +100,12 @@ export class MboExportService {
       partB: {
         partBWeightPercent: weighting.partBWeight,
         competencyItems,
-        rawPartBScore: Number(mboRecord.PartB_Raw_Score || 0),
-        weightedPartBScore: Number(mboRecord.PartB_Weighted_Score || 0)
+        rawPartBScore: readNumber(mboRecord, 'PartB_Raw_Score', 0),
+        weightedPartBScore: readNumber(mboRecord, 'PartB_Weighted_Score', 0)
       },
       finalResult: {
-        finalWeightedScore: Number(mboRecord.Final_Score || 0),
-        grade: String(mboRecord.Final_Grade || '')
+        finalWeightedScore: readNumber(mboRecord, 'Final_Score', 0),
+        grade: readString(mboRecord, 'Final_Grade')
       }
     };
   }

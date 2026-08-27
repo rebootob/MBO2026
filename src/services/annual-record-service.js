@@ -4,6 +4,7 @@
 
 import { getJapaneseFiscalYear, generateRecordKey } from '../core/fiscal-year-engine.js';
 import { EmployeeService } from './employee-service.js';
+import { readString, readNumber, projectApp794Objectives } from '../core/kintone-normalizer.js';
 
 export class AnnualRecordError extends Error {
   constructor(code, userMessageTH, userMessageEN, cause = null) {
@@ -375,15 +376,18 @@ export class AnnualRecordService {
 
   /**
    * Gate 5: Copy Previous MBO Candidate Generator
-   * Copies ONLY planning fields from prior-year record.
-   * Regenerates new FY Record_Key, routing, scoring, and new FY Hoshin snapshot.
+   * Copies ONLY physical planning fields from prior-year record.
+   * Requires injected current-year dependencies (new FY routing, scoring, Hoshin snapshot).
    */
   static generateCopyPreviousCandidate({
     priorYearRecord,
     newFiscalYear,
     authenticatedUser,
     userRole = 'EMPLOYEE',
-    authoritativeRoleContext = null
+    authoritativeRoleContext = null,
+    newRoutingSnapshot = null,
+    newScoringConfig = null,
+    newHoshinSnapshot = null
   }) {
     if (!priorYearRecord || typeof priorYearRecord !== 'object') {
       throw new AnnualRecordError(
@@ -393,7 +397,7 @@ export class AnnualRecordService {
       );
     }
 
-    const priorEmpCode = String(priorYearRecord.Employee_Code?.value || priorYearRecord.Employee_Code || '').trim();
+    const priorEmpCode = readString(priorYearRecord, 'Employee_Code');
     if (!priorEmpCode) {
       throw new AnnualRecordError(
         'COPY_PREVIOUS_SOURCE_MISSING_EMPLOYEE',
@@ -435,23 +439,18 @@ export class AnnualRecordService {
     const cleanNewFY = String(newFiscalYear).trim();
     const newRecordKey = generateRecordKey(cleanNewFY, priorEmpCode);
 
-    // Extract objective rows (1 to 10) copying ONLY planning fields
-    const copiedObjectives = [];
-    const rawObjectives = priorYearRecord.Objectives || priorYearRecord.objectives || [];
-    if (Array.isArray(rawObjectives)) {
-      for (const obj of rawObjectives) {
-        copiedObjectives.push({
-          Objective_Title: obj.Objective_Title || obj.Title || '',
-          Objective_Description: obj.Objective_Description || obj.Description || '',
-          KPI: obj.KPI || '',
-          Target: obj.Target || '',
-          Measurement: obj.Measurement || '',
-          Weight: obj.Weight || 0,
-          Planning_Notes: obj.Planning_Notes || obj.Notes || ''
-          // EXCLUDED: Actual_Result, Achievement, Self_Score, Appraiser_Score, Comments, Timestamps
-        });
-      }
-    }
+    // Project raw/flattened prior year objectives
+    const rawObjectives = projectApp794Objectives(priorYearRecord);
+    const copiedObjectives = rawObjectives.map(obj => ({
+      slotIndex: obj.slotIndex,
+      Objective_Title: obj.title,
+      Objective_Description: obj.description,
+      KPI: obj.kpi,
+      Target: obj.target,
+      Measurement: obj.measurement,
+      Weight: obj.weight
+      // EXCLUDED: Progress_Percent, Actual_Result, Self_*, Manager_*, GM_*, Average_Objective_Score, attachments, old Hoshin
+    }));
 
     return {
       status: 'COPY_PREVIOUS_CANDIDATE_READY',
@@ -459,20 +458,23 @@ export class AnnualRecordService {
       newRecordKey,
       employeeCode: priorEmpCode,
       copiedObjectivesCount: copiedObjectives.length,
+      newRoutingSnapshot,
+      newScoringConfig,
+      newHoshinSnapshot,
       planningCandidate: {
         Fiscal_Year: { value: cleanNewFY },
         Record_Key: { value: newRecordKey },
         Employee_Code: { value: priorEmpCode },
-        Employee_Name: { value: priorYearRecord.Employee_Name?.value || priorYearRecord.Employee_Name || '' },
-        Employee_Name_TH: { value: priorYearRecord.Employee_Name_TH?.value || priorYearRecord.Employee_Name_TH || '' },
-        Employee_Department: { value: priorYearRecord.Employee_Department?.value || priorYearRecord.Employee_Department || '' },
-        Employee_Section: { value: priorYearRecord.Employee_Section?.value || priorYearRecord.Employee_Section || '' },
-        Employee_Position: { value: priorYearRecord.Employee_Position?.value || priorYearRecord.Employee_Position || '' },
+        Employee_Name: { value: readString(priorYearRecord, 'Employee_Name') },
+        Employee_Name_TH: { value: readString(priorYearRecord, 'Employee_Name_TH') },
+        Employee_Department: { value: readString(priorYearRecord, 'Employee_Department') },
+        Employee_Section: { value: readString(priorYearRecord, 'Employee_Section') },
+        Employee_Position: { value: readString(priorYearRecord, 'Employee_Position') },
         Objectives: copiedObjectives,
         // Reset state
         Workflow_Status: 'DRAFT',
-        Department_Hoshin_Snapshot: null, // Must be freshly resolved for NEW FY
-        Section_Hoshin_Snapshot: null
+        Department_Hoshin_Snapshot: newHoshinSnapshot ? newHoshinSnapshot.Department_Hoshin_Snapshot : null,
+        Section_Hoshin_Snapshot: newHoshinSnapshot ? newHoshinSnapshot.Section_Hoshin_Snapshot : null
       }
     };
   }
