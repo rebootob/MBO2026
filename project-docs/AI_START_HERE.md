@@ -1,166 +1,85 @@
 # AI START HERE — MBO2026
 
-> **Mandatory for every AI: ChatGPT, Antigravity, Codex, Claude, or any future assistant.**
->
-> Before planning, reviewing, coding, changing Kintone, or reporting project status, read:
->
-> **`project-docs/AI_CONTROL_CENTER.md` FIRST.**
+> Mandatory entry point for every AI working on MBO2026.
 
----
+## 1. Do Not Browse the Repository First
 
-## 0. Absolute First Read
+Before planning, reviewing, coding, or changing Kintone:
 
-1. **[`project-docs/AI_CONTROL_CENTER.md`](./AI_CONTROL_CENTER.md)** — current operational truth, D1–D7 status, authorization ledger, latest accepted/pending evidence, next action owner, and Antigravity low-credit policy.
-2. **[`project-docs/CONFIRMED_BASELINE/README.md`](./CONFIRMED_BASELINE/README.md)** — durable source-of-truth rules and mandatory baseline-promotion policy.
+1. Fetch current HEAD of `ai/antigravity-wp002c`.
+2. Read `project-docs/AI_CONTROL_CENTER.md`.
+3. Read `project-docs/AI_DOCUMENT_INDEX.md`.
+4. Read `project-docs/CONFIRMED_BASELINE/README.md`.
+5. Use the Document Index to open **only** the Baseline/evidence files relevant to the current task.
+6. Read `project-docs/AI_ACTIVE_TASK.md` if execution is involved.
 
-Do not start by reading the whole repository.
-Do not ask the user to repeat project history before reading the Control Center and relevant Confirmed Baseline.
+Do not read the whole `project-docs/` tree.
+Do not read all Confirmed Baseline files automatically.
+Do not ask the user to repeat history already available in Git/GitHub.
 
----
+## 2. Authority Order
 
-## 1. Authority Order
+1. `project-docs/CONFIRMED_BASELINE/` — durable confirmed project truth.
+2. `project-docs/00_MASTER_JOBLIST.md` — D1–D7 completeness/no-drop authority.
+3. `project-docs/AI_CONTROL_CENTER.md` — current status/authorization/blocker/next owner.
+4. `project-docs/AI_ACTIVE_TASK.md` — one current execution packet.
+5. Git/Kintone evidence — actual implementation facts.
 
-When facts conflict:
+If evidence conflicts with Baseline, stop and reconcile before execution.
 
-1. `project-docs/CONFIRMED_BASELINE/` = confirmed durable business / technical / security / governance semantics.
-2. `project-docs/00_MASTER_JOBLIST.md` = D1–D7 completeness / no-drop authority.
-3. `project-docs/AI_CONTROL_CENTER.md` = current operational state / authorization / next action / credit policy.
-4. `project-docs/AI_ACTIVE_TASK.md` = current short executor package only.
-5. Git/Kintone evidence = implementation facts; repository evidence beats chat memory.
+## 3. Permanent Roles
 
-Report conflicts. Never silently overwrite Confirmed Baseline semantics.
-
----
-
-## 2. Mandatory Baseline Promotion Rule
-
-Every important durable fact that becomes confirmed MUST be promoted into `project-docs/CONFIRMED_BASELINE/` in the same control cycle.
-
-Do not leave confirmed important facts only in:
-- chat history;
-- AI_CONTROL_CENTER;
-- AI_ACTIVE_TASK;
-- screenshots;
-- execution evidence;
-- CHANGELOG/HANDOFF.
-
-Baseline-worthy facts include confirmed architecture, source-of-truth definitions, app IDs, field semantics, authentication/security design, role/permission model, routing/workflow/scoring rules, mandatory UI/UX rules, migration authority, and durable AI governance.
-
-Temporary status/blockers/pending-review claims remain in Control Center/evidence until independently accepted as a durable rule.
-
-**Baseline promotion is primarily ChatGPT Control Plane responsibility. Do not spend Antigravity credit on it unless an exact narrow task explicitly requires Antigravity.**
-
----
-
-## 3. Role-Based Reading — Do Not Over-Read
-
-### ChatGPT / Control Plane / Independent Reviewer
-
-Read in this order:
-
-1. `AI_CONTROL_CENTER.md`
-2. current Git branch HEAD
-3. `CONFIRMED_BASELINE/README.md` + only relevant canonical baseline files
-4. `AI_ACTIVE_TASK.md`
-5. `00_MASTER_JOBLIST.md` when D1–D7 completeness/context is needed
-6. latest relevant commit/diff/source/test/evidence
-
-Read broader historical docs only when a real conflict or missing fact requires them.
-
-### Antigravity / Execution Plane
-
-Read only:
-
-1. `AI_CONTROL_CENTER.md`
-2. `AI_ACTIVE_TASK.md`
-3. exact files explicitly listed in the active task
-
-Antigravity must NOT read the entire repo or all project documents by default.
-It must NOT enter planning mode when the Active Task already contains an approved execution plan.
-
-### Codex or Other Execution AI
-
-If explicitly selected by the user, follow the same low-credit / execution-only rules as Antigravity unless Control Plane states otherwise.
-Do not silently switch execution planes.
-
----
-
-## 4. Permanent Role Contract
-
-**ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer**
-
-ChatGPT owns planning, design, broad repository analysis, Git review, PASS/FAIL decisions, status tracking, Confirmed Baseline promotion, writing the Control Center, and creating the short Active Task.
+**ChatGPT = Control Plane**
+- plan, design, inspect Git, review, decide PASS/FAIL/BLOCKED;
+- maintain Baseline, Control Center, Document Index, Active Task;
+- extract reusable Kintone Skills.
 
 **Antigravity = Low-Credit Execution Plane**
+- use only for actual implementation/live Kintone/local runtime work ChatGPT cannot perform;
+- read only Control Center + Active Task + explicitly listed files;
+- no broad planning/repository archaeology/self-review/long reports by default.
 
-Use Antigravity only for actual source implementation, live Kintone operations, environment-specific build/runtime work, or other exact execution that ChatGPT cannot directly perform.
+Full governance:
+`project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`
 
-Do not spend Antigravity credit on planning, repository archaeology, self-review, long reports, repeated UAT, broad tests, or documentation maintenance unless specifically required.
+Document-read policy:
+`project-docs/CONFIRMED_BASELINE/DOCUMENT_CONTROL.md`
 
-Full policy is in `AI_CONTROL_CENTER.md` and `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`.
+## 4. Mandatory Knowledge Rules
 
----
+When a durable important project fact becomes confirmed:
+→ update `project-docs/CONFIRMED_BASELINE/` in the same control cycle.
 
-## 5. Seven Mandatory Closeout Jobs — No Drop
+When a reusable Kintone technique/lesson is discovered:
+→ update `skills/kintone/` in the same review/control cycle when practical.
 
-```text
-D1 = Login + Password Change + Employee-Self MBO Gate
-D2 = Excel + PDF Export in Original/Legacy Format
-D3 = 8 Legacy PMS Apps -> App794 Migration
-D4 = HR Control Center / App800 End-to-End Management
-D5 = Copy Own Previous MBO / Carry Forward
-D6 = Integrated E2E / Security / Regression Closure
-D7 = Admin Support Center Completion
-```
+Do not spend Antigravity credit on these documentation tasks unless exact execution is required.
 
-Current status is tracked in `AI_CONTROL_CENTER.md`.
-Acceptance detail remains in `00_MASTER_JOBLIST.md` and Confirmed Baseline.
-
----
-
-## 6. Core Governance
-
-- App53 and legacy PMS Apps 283, 310, 305, 643, 307, 640, 715, 716 remain protected/read-only unless a separately approved operation says otherwise.
-- `admin-form` = Technical Admin only; zero business workflow authority.
-- No Kintone POST/PUT/DELETE/deploy outside the current approved authorization boundary.
-- No false PASS; implementer cannot self-certify independent review.
-- Execution Plane maximum state is `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or an equivalent pending-review state.
-- Manual live UI UAT remains mandatory where the Control Center/Baseline says it is a closure gate.
-- Do not repeat approvals already granted unless scope/risk materially changes.
-- Newly confirmed important durable information must be promoted to Confirmed Baseline before the control cycle is considered complete.
-
----
-
-## 7. Standard Working Loop
+## 5. D1–D7 No-Drop
 
 ```text
-ChatGPT reads Control Center + relevant Baseline + Git
-        ↓
-ChatGPT decides smallest next step
-        ↓
-If execution needed -> short AI_ACTIVE_TASK
-        ↓
-Antigravity executes only that task
-        ↓
-commit + push + STOP
-        ↓
-User says review
-        ↓
-ChatGPT independently re-fetches GitHub
-        ↓
-PASS / corrective / blocker
-        ↓
-Promote any newly confirmed durable fact to CONFIRMED_BASELINE
-        ↓
-Update AI_CONTROL_CENTER / AI_ACTIVE_TASK
+D1 Login + Password Change + Employee-Self MBO Gate
+D2 Excel + PDF Legacy Format Export
+D3 8 Legacy PMS Apps -> App794 Migration
+D4 App800 HR Control Center End-to-End
+D5 Copy Own Previous MBO
+D6 Integrated E2E / Security / Regression
+D7 Admin Support Center
 ```
 
----
+Current status is in `AI_CONTROL_CENTER.md`.
 
-## 8. New Chat
+## 6. User Shorthand
 
-For a fresh ChatGPT conversation, use:
+`review` → ChatGPT re-fetches HEAD and independently reviews exact latest evidence.
 
-**`project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`**
+`ต่อ` / `ต่อไป` → ChatGPT re-fetches HEAD + Control Center, chooses the smallest next action, and invokes Antigravity only if actual execution is needed.
 
-The new chat must reconstruct project truth from GitHub, beginning with `AI_CONTROL_CENTER.md` and relevant Confirmed Baseline, instead of relying on copied chat history.
+`อนุมัติ ...` → record the exact authorization boundary; do not widen it silently.
+
+## 7. New Chat
+
+Use only:
+`project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`
+
+That is the single canonical reusable new-chat prompt for MBO2026.
