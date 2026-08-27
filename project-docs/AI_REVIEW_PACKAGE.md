@@ -3,68 +3,57 @@
 > **Document Standard:** Provider-Neutral Technical Review Package (`DEC-030`)
 > **Target Audience:** Independent Reviewers (ChatGPT, OpenAI Codex, Claude, Human QA)
 > **WP-002C Stage 4A/4B/4C/4D-A/4D-B Status:** **`STAGE 4A, 4B, 4C, 4D-A & 4D-B PASSED / FROZEN`**
-> **Gate 6 UI Parity Status:** **`FINAL LOCAL REGRESSION EXECUTION COMPLETE`**
-> **Last Updated:** 2026-08-27T10:47:00+07:00
+> **Gate 6 UI Parity Status:** **`PRODUCTION / SECURITY READINESS CLOSURE ASSESSMENT COMPLETE`**
+> **Last Updated:** 2026-08-27T11:43:00+07:00
 
 ---
 
-## 0. FINAL LOCAL REGRESSION EXECUTION RESULTS
+## 0. PRODUCTION / SECURITY READINESS CLOSURE ASSESSMENT
 
 ```text
-IMPLEMENTATION_HEAD = 44a9be834c2a25fb8e80bad4c4c56cc0c944e4b6
-FINAL_LOCAL_REGRESSION_RUN = YES
-SOURCE_CHANGES = 0
-DIST_CHANGES = 0
-TEST_CHANGES = 0
-NPM_TEST_RUN = 0
-BUILD_RUN = 0
+ASSESSMENT_HEAD = 8b57636eb7b3fe32512d9a268329e65173451306
+APP794_LOCAL_UI_CLOSURE = PASS
+FINAL_LOCAL_VISUAL_REGRESSION_GATE = PASS
+UI_FROZEN = YES
+
+P0_BLOCKERS = SECONDARY_PASSWORD_SECURITY, IDENTITY_AUTH_MODEL, APP801_READINESS, PRODUCTION_HR_AUTHORIZATION
+P1_BLOCKERS = APP800_READINESS
+P2_ITEMS = NONE
+
+IDENTITY_AUTH_MODEL = BASELINE_CONFLICT — Proposed secondary MBO account mapping conflicts with confirmed Kintone-only Requester_User baseline (ROUTING_WORKFLOW.md line 14).
+SECONDARY_PASSWORD_SECURITY = BLOCKER_SECURITY — Password hashing uses Node crypto (pbkdf2Sync) which cannot run safely in browser JS. Password verification in browser code exposes hashes and secrets. Requires trusted backend server infrastructure.
+PRODUCTION_HR_AUTHORIZATION = BLOCKER_KINTONE_CONFIGURATION — Sandbox status15 assignee USER: hr is a controlled UAT boundary account. Production App794 Process Management requires configuration of official Production HR entity group before go-live.
+PROCESS_16_28_CONSISTENCY = CLOSED — 16 states / 28 actions fully verified and aligned across baseline, runtime validator, and test suite.
+APP800_READINESS = NEEDS_READ_ONLY_KINTONE_EVIDENCE — Live App800 phase calendar schema and record readback evidence needed for 5 macro stage date windows before production deployment.
+APP801_READINESS = BLOCKER_SECURITY — App801 as a Kintone credential store exposes password hashes to client-side API calls. Requires architecture decision to align with Kintone native SSO/login or trusted backend server.
+LEGACY_DATA_SAFETY = CLOSED — Legacy migration deferred (DEC-040); zero data-loss serializer and field preservation guards verified.
+DELIVERY_INTEGRITY = CLOSED — APP794_LOCAL_UI_CLOSURE = PASS, FINAL_LOCAL_VISUAL_REGRESSION_GATE = PASS, UI_FROZEN = YES, modular source + compiled dist bundle verified.
+
 KINTONE_CALLS = 0
 KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
+SOURCE_CHANGES = 0
+DIST_CHANGES = 0
+TEST_CHANGES = 0
 
-FIVE_MACRO_STAGES = PASS
-BILINGUAL_UI = PASS
-EMPLOYEE_HISTORY_STEP1_3 = PASS
-EMPLOYEE_STEP4_PRIVACY_REGRESSION = PASS
-EMPLOYEE_STEP5_PRIVACY_REGRESSION = PASS
-APPRAISER_STEP4_AUTHORIZED_VIEW = PASS
-HR_PREVIEW_STEP5_AUTHORIZED_VIEW = PASS
-APPRAISER_1_COUNT = PASS
-APPRAISER_2_COUNT = PASS
-APPRAISER_3_COUNT = PASS
-APPRAISER_4_COUNT = PASS
-PROFILE_ROUTE_INDEPENDENCE = PASS
-OBJECTIVE_COUNT_1 = PASS
-OBJECTIVE_COUNT_10 = PASS
-DIFFICULTY_BLANK = PASS
-ATTACHMENT_PRESENTATION = PASS
-DEADLINE_STATES = PASS
-ROUTE_CONTEXT = PASS
-TIMELINE_PRIVACY_FILTER = PASS
-NATIVE_COMMENT_CONTEXT = PASS
-BODY_HORIZONTAL_OVERFLOW = PASS
-
-DEFECTS_FOUND = NONE
-FINAL_LOCAL_REGRESSION_GATE = PASS
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED
+NEXT_RECOMMENDED_WORK_PACKAGE = WP-002D_PRODUCTION_SECURITY_ARCHITECTURE_DECISION
+REMAINING_BLOCKERS = SECONDARY_PASSWORD_SECURITY, IDENTITY_AUTH_MODEL, APP801_READINESS, PRODUCTION_HR_AUTHORIZATION, APP800_READINESS
 ```
 
-### Final Local Regression Execution Summary
+### Detailed Finding Analysis & Recommended Execution Order
 
-1. **Five Macro Stages / Bilingual**: All 5 macro stage titles and subheadings render cleanly in Thai + English.
-2. **Employee Privacy & Reached History**: Steps 1–3 read-only; Steps 4–5 confidential matrices and ratings remain hidden behind privacy cards. Step 4/5 timeline events filtered.
-3. **Appraiser Authorized Preview**: Step 4 Appraiser matrix, active column editing, and ordinal headings function cleanly for Appraiser viewer role.
-4. **HR Preview Authorized Simulation**: Step 5 HR Final summary breakdown and Part A + Part B overall totals display read-only for HR simulation.
-5. **Appraiser Route Counts 1..4**: Executive Direct (1), Current Standard (2), Extended Route (3), and Future Capacity (4) render correct ordinal slots. 3 and 4 slot tables fit inside contained horizontal scroll container with zero page body overflow.
-6. **Profile Route Independence**: Profile ratio switching (70/30, 60/40, 50/50) changes Part A/Part B weight ratio and competency items without altering route slot count or topology.
-7. **Objective_Count Guards**: Count = 1 and 10 render correct row counts. Invalid count values remain fail-closed.
-8. **Difficulty Blank State**: Unselected difficulty levels stay blank without defaulting to Level 3.
-9. **Attachment Presentation**: Attachment upload/view controls render properly on Objectives, Mid-Year, and Self Evaluation.
-10. **Deadline Urgency**: Upcoming, open/remaining, 7-day amber, 3-day amber, 1-day amber/orange, due today, and red overdue states render cleanly with distinct color semantics.
-11. **Route Context Presentation**: `Evaluation & Approval Route` card displays ordinal appraiser labels with accurate stage status badges.
-12. **Workflow Timeline Filtering**: Step 4/5 confidential events are hidden from Employee/RESTRICTED and preserved for authorized Preview roles.
-13. **Native Comments**: Native comment placeholders and fields render cleanly.
-14. **No Layout Overflow**: Zero body-level page overflow across all dense matrix and preview combinations.
+1. **P0-1 SECONDARY_PASSWORD_SECURITY & P0-2 IDENTITY_AUTH_MODEL & P0-3 APP801_READINESS** (`WP-002D Architecture Decision`):
+   - *Issue*: `MboPasswordDomainService` imports Node.js `crypto` module (`pbkdf2Sync`), which cannot run in browser JS without breaking or exposing secrets. Storing/checking password hashes in client JS or Kintone App 801 violates basic web security boundaries.
+   - *Conflict*: `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` establishes `Requester_User` as the Kintone native identity boundary (`kintone.getLoginUser()`).
+   - *Recommended Action*: Confirm Kintone native login SSO as the sole production identity model, removing browser password verification and App801 client credential store dependencies.
+
+2. **P0-4 PRODUCTION_HR_AUTHORIZATION** (`Go-Live Configuration Gate`):
+   - *Issue*: Sandbox status 15 assignee `USER: hr` is a synthetic UAT account.
+   - *Recommended Action*: Map `15 HR Final Check` assignee entity in Production App 794 Process Management to official Production HR group (`Manager HR_x52y75` or dedicated HR group) during go-live configuration gate.
+
+3. **P1-1 APP800_READINESS** (`Read-Only Evidence Gate`):
+   - *Issue*: Require read-only Kintone inspection of live App800 phase calendar records/schema to confirm production start/end date configuration for 5 macro stages.
 
 ```text
 M10M_R2D_R1 = READY_FOR_CHATGPT_REVIEW
