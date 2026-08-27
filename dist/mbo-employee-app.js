@@ -1952,6 +1952,8 @@ class RoutingService {
 
 
 
+
+
 const CANONICAL_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
 
 const WORKFLOW_PATH_M1_ONLY = [
@@ -2575,6 +2577,9 @@ class EmployeePartAUI {
         return;
       }
     }
+
+    // Admin Support Center Panel (Technical Admin Only)
+    this._renderSupportCenterIfAdmin(root, status);
 
     // Top Overall Process Progress Bar (5 Phases + Route Aware + Phase Calendar)
     root.appendChild(this._renderOverallProgressBar(status));
@@ -4630,6 +4635,81 @@ class EmployeePartAUI {
       <div id="mbo-lookup-msg" style="font-size: 12px; margin-top: 6px;"></div>
     `;
     return box;
+  }
+
+  _renderSupportCenterIfAdmin(root, status) {
+    const loginUser = this.previewOptions?.simulatedLoginUserCode ||
+      (this.previewOptions?.viewerRole === 'admin' ? 'admin-form' : '') ||
+      (typeof kintone !== 'undefined' ? kintone.getLoginUser()?.code : '');
+
+    if (!AdminDiagnosticModel.isTechnicalAdmin(loginUser)) {
+      return;
+    }
+
+    const adminCenter = new AdminSupportCenterUI();
+    const adminDiv = document.createElement('div');
+    adminDiv.className = 'mbo-admin-support-center-wrapper';
+
+    const diagContext = {
+      loginUserCode: loginUser,
+      requesterUserCodes: extractUserCodes(this._getVal('Requester_User')),
+      routingKey: (this._getVal('Section_Code') || '') + (this._getVal('Team') ? '|' + this._getVal('Team') : ''),
+      routingResult: { status: 'PASS', topology: this._getVal('Routing_Topology') || 'M1_G1' },
+      activeAppraiserSlot: this._getActiveAppraiserSlot(status),
+      profileCode: this.evalProfileCode,
+      evalProfile: this.evalProfile,
+      activeObjCount: this.activeObjCount,
+      isObjCountValid: true,
+      currentStatus: status,
+      currentActor: this._getStageCurrentActor(status),
+      resolvedViewerRole: this.resolvedViewerRole,
+      record: this.record,
+      recordId: this._getVal('$id'),
+      mboKey: this._getVal('Record_Key'),
+      fiscalYear: this._getVal('Fiscal_Year') || '2026',
+      employeeCode: this._getVal('Employee_Code'),
+      employeeName: this._getVal('Employee_Name'),
+      requesterUser: extractUserCodes(this._getVal('Requester_User')).join(', '),
+      appraiser1: extractUserCodes(this._getVal('First_Manager_User')).join(', '),
+      appraiser2: extractUserCodes(this._getVal('GM_User')).join(', '),
+      sectionCode: this._getVal('Section_Code'),
+      teamName: this._getVal('Team')
+    };
+
+    adminDiv.innerHTML = adminCenter.renderHtml(diagContext);
+    root.appendChild(adminDiv);
+
+    // Bind event handlers for tab switching & diagnostic snapshot
+    const tabBtns = adminDiv.querySelectorAll('.admin-tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tab = e.currentTarget.getAttribute('data-tab');
+        if (!tab || tab === 'repair') return;
+
+        tabBtns.forEach(b => {
+          b.style.border = '1px solid #475569';
+          b.style.color = '#94a3b8';
+        });
+        e.currentTarget.style.border = '1px solid #3b82f6';
+        e.currentTarget.style.color = '#60a5fa';
+
+        const healthTab = adminDiv.querySelector('#admin-tab-content-health');
+        const recordTab = adminDiv.querySelector('#admin-tab-content-record');
+        const repairTab = adminDiv.querySelector('#admin-tab-content-repair');
+
+        if (healthTab) healthTab.style.display = (tab === 'health' ? 'block' : 'none');
+        if (recordTab) recordTab.style.display = (tab === 'record' ? 'block' : 'none');
+        if (repairTab) repairTab.style.display = (tab === 'repair' ? 'block' : 'none');
+      });
+    });
+
+    const snapBtn = adminDiv.querySelector('#admin-snapshot-btn');
+    const snapOutput = adminDiv.querySelector('#admin-snapshot-output');
+    if (snapBtn && snapOutput) {
+      snapBtn.addEventListener('click', () => {
+        snapOutput.style.display = (snapOutput.style.display === 'none' ? 'block' : 'none');
+      });
+    }
   }
 
   _renderHeader() {
