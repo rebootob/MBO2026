@@ -1640,6 +1640,18 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
 
   // 3b. Screen rendering with invalid Objective_Count (No throw, no phantom rows)
   ['invalid', '', '0', '11'].forEach(badCount => {
+    // Existing record in OBJECTIVE_INPUT stage with invalid count -> FAIL CLOSED (MUST NOT render 4 objectives)
+    const uiInvalidObjExist = new EmployeePartAUI({
+      container: makeMockElement(),
+      record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '01 Draft Objective' } }),
+      stage: BUSINESS_STAGES.OBJECTIVE_INPUT,
+      isEditable: true,
+      isCreate: false
+    });
+    assert.doesNotThrow(() => uiInvalidObjExist.render(), `Existing Objectives render with Objective_Count='${badCount}' must not throw`);
+    assert.ok(uiInvalidObjExist.root.innerHTML.includes('Invalid Objective Count'), 'Existing Objectives renders invalid count message');
+    assert.equal(uiInvalidObjExist.root.innerHTML.includes('Objective 1'), false, 'Existing Objectives with invalid count must render zero objective rows');
+
     const uiInvalidMid = new EmployeePartAUI({
       container: makeMockElement(),
       record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '07 First Manager Mid-Year Review' } }),
@@ -1666,7 +1678,28 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
     });
     assert.doesNotThrow(() => uiInvalidAppr.render(), `AppraiserEval render with Objective_Count='${badCount}' must not throw`);
     assert.ok(uiInvalidAppr.root.innerHTML.includes('Invalid Objective Count'), 'AppraiserEval renders invalid count message');
+
+    const uiInvalidHRFinal = new EmployeePartAUI({
+      container: makeMockElement(),
+      record: createMockRecord({ Objective_Count: { value: badCount }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '15 HR Final Check' } }),
+      stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+      isEditable: false
+    });
+    assert.doesNotThrow(() => uiInvalidHRFinal.render(), `HR Final render with Objective_Count='${badCount}' must not throw`);
+    assert.ok(uiInvalidHRFinal.root.innerHTML.includes('Invalid Objective Count'), 'HR Final renders invalid count message in read-only breakdown');
   });
+
+  // 3c. Create-state default isolation (true create mode ONLY gets draft default 4)
+  const uiCreateMode = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '01 Draft Objective' } }),
+    stage: BUSINESS_STAGES.OBJECTIVE_INPUT,
+    isEditable: true,
+    isCreate: true
+  });
+  uiCreateMode.isEmployeeVerified = true;
+  assert.doesNotThrow(() => uiCreateMode.render(), 'True Create mode render with blank count must not throw');
+  assert.ok(uiCreateMode.root.innerHTML.includes('mbo-obj-count-select'), 'True Create mode renders count selection dropdown');
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);

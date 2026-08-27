@@ -3416,8 +3416,8 @@ class EmployeePartAUI {
     const isObjEditable = this.isEditable && isObjectiveStage && this.isEmployeeVerified;
 
     let count = parseObjectiveCount(this._getVal('Objective_Count'));
-    if (count === null && isObjectiveStage) {
-      count = 4; // Explicit UI draft default
+    if (count === null && this.isCreate === true) {
+      count = 4; // True create/new record draft default choice in UI selection
     }
 
     if (count === null) {
