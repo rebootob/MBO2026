@@ -1,125 +1,75 @@
-# AI ACTIVE TASK — D7 MINIMAL CORRECTIVE ROUND 2
+# AI ACTIVE TASK — D7 FINAL MINIMAL FIX / APP796 EVIDENCE ONLY
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Reviewed implementation: `c96eed10cc852ee66d146d18309425bbeaed73f5`
-> Mode: MINIMUM SOURCE + TEST FIXES ONLY
+> Reviewed implementation: `d29d69decd27ccd07ad6778556269c0d9aeabfc3`
+> Mode: ONE BLOCKER ONLY / MINIMUM SOURCE + TEST FIX
 > Kintone write/deploy/schema/process/ACL authorization: NONE
 
-## 0. PURPOSE
+## 0. REVIEW RESULT
 
-Independent review of `c96eed10...` found that D7 is still **NOT PASS**.
+Independent review accepts B3, B4 and B5 from Round 2.
+B1/B2 are substantially fixed, but ONE remaining App796 evidence-boundary defect still blocks D7 PASS.
 
-Do **NOT** perform broad refactoring, cleanup, redesign, new features, or unrelated improvements.
-Fix ONLY the minimum blockers below.
+Do NOT refactor, redesign, clean up unrelated code, add features, change architecture, or touch other D1-D6 work in this task.
 
 Target implementer status remains:
 
 `D7_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
-Do not self-certify PASS.
+## 1. ONLY BLOCKER — APP796 AUTHORITATIVE EVIDENCE MUST NEVER BE FABRICATED
 
-## 1. CRITICAL BLOCKERS ONLY
+File to change:
+- `src/admin/admin-support-center.js`
 
-### B1 — Production provider must fail closed and must not fabricate authoritative evidence
+Tests only as needed:
+- `tests/admin-support-center.test.js`
 
-File: `src/admin/admin-support-center.js`
+Current provider already queries App796 by requested FY + PUBLISHED + expected profile when profile resolution succeeds, and already rejects 0 / duplicate records.
 
-Current problems:
-- App794 zero records currently returns a NOT_FOUND-shaped bundle instead of required `MBO_NOT_FOUND` fail-closed error.
-- App795 zero/duplicate is not rejected.
-- App796 zero/duplicate is not rejected.
-- App796 query can return multiple published profiles and code currently takes `[0]` instead of proving the exact expected profile.
-- App795 appraiser fields currently contain hard-coded fallbacks such as `m01` / `g01`.
-- authoritative topology/count values must come from evidence; do not invent defaults for production evidence.
+Remaining defects:
 
-Required minimum fix:
-- App794 0 => `MBO_NOT_FOUND`; >1 => `MBO_AMBIGUOUS`.
-- App795 0 => fail closed; >1 => fail closed.
-- App796 0 => `SCORING_CONFIG_NOT_FOUND`; >1 => `SCORING_CONFIG_AMBIGUOUS`.
-- Select/query App796 by the expected profile resolved from verified App53 position + requested FY + `PUBLISHED`.
-- Remove all fabricated production appraiser/topology/count fallbacks.
-- Required App795 slots must be real evidence only.
-
-### B2 — App796 FY and PUBLISHED evidence are mandatory in repair safety
-
-File: `src/admin/admin-diagnostic-model.js`
-
-Current unsafe logic allows missing FY/status:
+1. If App53 position cannot resolve an expected Profile_Code, provider currently falls back to a broad FY+PUBLISHED App796 query. This can select an unrelated published profile.
+2. Returned `authoritativeProfile` currently fabricates evidence when fields are absent:
 
 ```js
-const fyMatch = !authFy || !context.fiscalYear || authFy === context.fiscalYear;
-const statusMatch = !authStatus || authStatus === 'PUBLISHED';
+fiscalYear: app796Obj.Fiscal_Year?.value || app796Obj.Fiscal_Year || cleanFy,
+configStatus: app796Obj.Config_Status?.value || app796Obj.Config_Status || 'PUBLISHED'
 ```
 
-Required minimum fix:
-- missing FY => NOT PROVEN
-- missing status => NOT PROVEN
-- FY must exactly equal requested FY
-- status must exactly equal `PUBLISHED`
-- missing/wrong code/PartA/PartB/FY/status must never produce repair-safe evidence
+This violates the evidence boundary because missing App796 Fiscal_Year / Config_Status can become apparently valid evidence.
 
-### B3 — `buildRecordDiagnostic()` must use topology-aware ordinal mapping
+### REQUIRED MINIMUM FIX
 
-File: `src/admin/admin-diagnostic-model.js`
+- If verified App53 position cannot resolve `expectedProfileCode`, fail closed before accepting any App796 record. Do not run/use an unscoped published-profile fallback as authoritative evidence.
+- After exactly one App796 record is returned, read the REAL record fields and validate them before building `authoritativeProfile`:
+  - `Profile_Code` present and exactly equals `expectedProfileCode`
+  - `Fiscal_Year` present and exactly equals requested FY
+  - `Config_Status` present and exactly equals `PUBLISHED`
+  - `PartA_Weight` present
+  - `PartB_Weight` present
+- Missing/wrong authoritative App796 evidence => fail closed / error. Do not fabricate defaults.
+- Returned `authoritativeProfile.fiscalYear` and `.configStatus` must come from the actual App796 record only. No `cleanFy` / `'PUBLISHED'` fallback.
+- Do not change B3/B4/B5 code unless required only to keep existing tests compiling.
+- No Kintone calls are authorized in this task.
 
-Current code still maps fixed fields:
-- appraiser1 from `First_Manager_User`
-- appraiser2 from `GM_User`
+## 2. MINIMUM TESTS
 
-This is wrong for `M1_G1` and `M1_ONLY`.
+Add only the tests required to prove this blocker:
 
-Required minimum fix:
-- reuse existing `normalizeAppraiserSlots()`
-- M1_G1 => 1st Manager, 2nd GM
-- M1_M2_G1 => 1st First Manager, 2nd Manager, 3rd GM
-- M1_ONLY => 1st executive direct destination
+1. unresolvable App53 position cannot accept arbitrary App796 profile.
+2. App796 record missing `Fiscal_Year` fails closed.
+3. App796 record missing `Config_Status` fails closed.
+4. App796 wrong Profile_Code / FY / status fails closed (can be one compact test if practical).
+5. valid exact App796 record still returns authoritativeProfile using real record values.
 
-Do not add new routing architecture.
-
-### B4 — Routing_Key repair must require explicit physical-storage evidence
-
-Files: `src/admin/admin-support-center.js`, `src/admin/admin-diagnostic-model.js`
-
-Current provider supplies derived `rKey` as `actualRoutingKey`, and repair logic treats any non-`NOT_AVAILABLE` value as if App794 physically stores Routing_Key.
-
-Required minimum fix:
-- keep derived expected routing key separate from stored App794 routing key.
-- only include `Routing_Key` in repair diff when an explicit flag/evidence proves the physical App794 field exists and the stored value was actually read.
-- otherwise `storedRoutingKey = NOT_AVAILABLE` and Routing_Key must not appear in exact repair diff.
-
-### B5 — Build metadata row must not say PASS when commit is NOT_EVIDENCED
-
-File: `src/admin/admin-diagnostic-model.js`
-
-Current row contains `Commit: NOT_EVIDENCED` but its status is hard-coded `PASS`.
-
-Required minimum fix:
-- when commit SHA is `NOT_EVIDENCED`, bundle/build evidence row status must be `NOT_EVIDENCED`, not PASS.
-
-## 2. MINIMUM REQUIRED TESTS
-
-Only add/adjust tests needed to prove the blockers above:
-
-1. App794 missing => `MBO_NOT_FOUND`.
-2. App795 missing + duplicate => fail closed.
-3. App796 missing + duplicate => fail closed.
-4. Production provider never uses `m01/g01` or invented topology/count fallback.
-5. App796 missing FY => repair unsafe.
-6. App796 missing status => repair unsafe.
-7. App796 wrong FY/non-PUBLISHED => repair unsafe.
-8. `buildRecordDiagnostic()` M1_G1 mapping is correct.
-9. `buildRecordDiagnostic()` M1_ONLY mapping is correct.
-10. derived Routing_Key without physical storage evidence is absent from repair diff.
-11. `BUILD_VERSION_INFO.commitSha = NOT_EVIDENCED` cannot render build evidence status PASS.
-
-Do not expand test scope beyond what is needed for these blockers unless an existing test must be updated to remain correct.
+Keep existing B1-B5 regression tests passing.
 
 ## 3. VERIFICATION
 
-Run only the necessary verification plus full regression:
+Run:
 
 ```bash
 npm test -- tests/admin-support-center.test.js
@@ -129,15 +79,14 @@ git diff --check
 git status --short
 ```
 
-If an existing source/dist parity command already exists, run it. Do not invent a new parity framework.
+If an existing source/dist parity command already exists, run it. Do not invent a new framework.
 
 ## 4. DELIVERY
 
-Commit only the minimum corrective changes.
+Commit only this minimal fix.
 Report:
 - exact commit SHA
 - files changed
-- B1..B5 result
 - targeted test result
 - full npm test result
 - build result
@@ -147,7 +96,6 @@ Report:
 - `D7_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
 Do NOT edit Confirmed Baseline.
-Do NOT change Kintone.
 Do NOT deploy.
 Do NOT mark D6 PASS.
 Do NOT self-certify D7 PASS.
@@ -162,4 +110,4 @@ Do NOT self-certify D7 PASS.
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
 - D5 employee copy ONLY own previous planning fields = MUST_FIX
 - D6 full E2E / security / regression closure = BLOCKED
-- D7 Admin Support Center = MUST_FIX / THIS TASK
+- D7 Admin Support Center = MUST_FIX — ONE FINAL APP796 EVIDENCE BLOCKER
