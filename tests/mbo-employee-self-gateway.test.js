@@ -396,6 +396,42 @@ describe('MboEmployeeSelfGateway Unit Test Suite (D1-C3B Final Corrective)', () 
     assert.equal(res.status, 'EMPLOYEE_CODE_MISMATCH_IN_RECORD');
   });
 
+  it('B3.4a. App794 response missing Employee_Code fails closed with no record returned', async () => {
+    const missingEmployeeCodeRecord = { ...sampleApp794Record0118 };
+    delete missingEmployeeCodeRecord.Employee_Code;
+    const authService = createMockAuthService({
+      'valid_token_0118': { employeeCode: '0118', isTechnicalAdmin: false }
+    });
+    const gateway = new MboEmployeeSelfGateway({
+      authService,
+      transport: { async get() { return { records: [missingEmployeeCodeRecord] }; } }
+    });
+
+    const res = await gateway.getOwnMboRecord({ sessionToken: 'valid_token_0118', recordId: '79401' });
+
+    assert.equal(res.status, 'EMPLOYEE_CODE_MISMATCH_IN_RECORD');
+    assert.equal(res.record, undefined);
+  });
+
+  it('B3.4b. malformed trusted session employeeCode fails closed before App53 or App794 calls', async () => {
+    let kintoneCalls = 0;
+    const authService = createMockAuthService({
+      'malformed_employee_code': { employeeCode: '0118" or $id > 0', isTechnicalAdmin: false }
+    });
+    const gateway = new MboEmployeeSelfGateway({
+      authService,
+      transport: { async get() { kintoneCalls += 1; return { records: [] }; } }
+    });
+
+    const res = await gateway.getEmployeeSelfBootstrap({
+      sessionToken: 'malformed_employee_code',
+      fiscalYear: 'FY2026'
+    });
+
+    assert.equal(res.status, 'UNAUTHORIZED_PRINCIPAL');
+    assert.equal(kintoneCalls, 0);
+  });
+
   it('B3.5. existing 0118 -> 0119 direct-record denial remains passing', async () => {
     let recordQuery = null;
     const mockTransport = {

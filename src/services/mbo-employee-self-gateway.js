@@ -16,6 +16,7 @@
 
 import { EmployeeService } from './employee-service.js';
 import { CONFIDENTIAL_FIELDS } from '../config/constants.js';
+import { normalizeEmployeeCode } from '../core/fiscal-year-engine.js';
 
 /** Canonical fiscal year pattern: FY followed by exactly 4 digits. */
 const FISCAL_YEAR_RE = /^FY\d{4}$/i;
@@ -94,7 +95,17 @@ export class MboEmployeeSelfGateway {
       return { status: 'UNAUTHORIZED_PRINCIPAL', reason: 'Technical admin cannot perform employee-self operations.' };
     }
 
-    return { status: 'AUTHORIZED', principal, employeeCode: String(principal.employeeCode).trim() };
+    let employeeCode;
+    try {
+      employeeCode = normalizeEmployeeCode(principal.employeeCode);
+    } catch {
+      return {
+        status: 'UNAUTHORIZED_PRINCIPAL',
+        reason: 'Session employee code is invalid or unauthorized.'
+      };
+    }
+
+    return { status: 'AUTHORIZED', principal, employeeCode };
   }
 
   /**
@@ -139,10 +150,10 @@ export class MboEmployeeSelfGateway {
   _sanitizeApp794Record(rec, trustedEmployeeCode) {
     if (!rec || typeof rec !== 'object') return null;
 
-    // B3: Verify Employee_Code.value matches trusted session employee
+    // B3: Verify an explicitly present, canonical Employee_Code matches trusted session employee.
     const recEmpCode = rec.Employee_Code?.value;
-    if (typeof recEmpCode === 'string' && recEmpCode.trim() !== trustedEmployeeCode) {
-      return null; // Fail closed — mismatched Employee_Code in returned record
+    if (typeof recEmpCode !== 'string' || recEmpCode.trim() === '' || recEmpCode.trim() !== trustedEmployeeCode) {
+      return null; // Fail closed — missing, malformed, or mismatched Employee_Code
     }
 
     const clean = { ...rec };
