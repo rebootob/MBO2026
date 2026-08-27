@@ -4,7 +4,37 @@
  * and comments into a structured logical slot representation.
  */
 
-import { parseObjectiveCount, getApplicableCompetencies } from '../ui/employee-part-a-ui.js';
+export function parseObjectiveCount(rawVal, fallback = null) {
+  if (rawVal === null || rawVal === undefined || rawVal === '') return fallback;
+  const str = String(rawVal).trim();
+  if (!/^\d+$/.test(str)) return fallback;
+  const countVal = parseInt(str, 10);
+  if (countVal < 1 || countVal > 10) return fallback;
+  return countVal;
+}
+
+// Normalized Verified Business Competency Definitions (R2-05 Fail-Closed Selection)
+export const COMPETENCIES_LIST = [
+  { id: 1, nameTH: '1. Adaptability', nameEN: 'Adaptability', desc: 'ปรับตัวอย่างยืดหยุ่น ยอมรับการเปลี่ยนแปลงและเรียนรู้สิ่งใหม่ / Demonstrate flexibility and open-mindedness to organizational changes.' },
+  { id: 2, nameTH: '2. Problem Solving', nameEN: 'Problem Solving & Decision Making', desc: 'การแก้ปัญหาและการตัดสินใจอย่างมีหลักการ / Analyze root causes and make effective decisions.' },
+  { id: 3, nameTH: '3. Customer Focus', nameEN: 'Customer Focus & Service Excellence', desc: 'การมุ่งเน้นลูกค้าและผู้รับบริการ ส่งมอบบริการที่มีคุณภาพ / Prioritize internal/external customer needs and quality delivery.' },
+  { id: 4, nameTH: '4. Additional Value Creation', nameEN: 'Value Creation & Innovation', desc: 'การสร้างมูลค่าเพิ่มและนวัตกรรมใหม่ในงาน / Proactively seek improvements and innovative solutions.' },
+  { id: 5, nameTH: '5. Safety Awareness', nameEN: 'Safety & Environmental Awareness', desc: 'ความตระหนักด้านความปลอดภัยและสิ่งแวดล้อม / Adhere to safety standards and environmental responsibility.' },
+  { id: 6, nameTH: '6. Compliance / COCE', nameEN: 'Compliance & Code of Conduct (COCE)', desc: 'การปฏิบัติตามกฎระเบียบและจริยธรรมธุรกิจ [Evaluated / Excluded from Score] / Evaluated for compliance but excluded from numerical score weight.', isCOCE: true },
+  { id: 7, nameTH: '7. Leadership & People Management', nameEN: 'Leadership & People Management', desc: 'ภาวะผู้นำและการบริหารคน สร้างแรงจูงใจในการทำงาน / Lead, empower, and guide team members effectively.', isManagementOnly: true },
+  { id: 8, nameTH: '8. Strategy & Coaching', nameEN: 'Strategy & Coaching / Advising', desc: 'การกำหนดกลยุทธ์และการเป็นพี่เลี้ยงในการพัฒนาทีมงาน / Align with strategic goals and mentor staff.', isManagementOnly: true }
+];
+
+export function getApplicableCompetencies(setCode) {
+  const code = String(setCode || '').trim();
+  if (code === 'COMP_SET_OPERATIONAL_V1') {
+    return COMPETENCIES_LIST.filter(c => !c.isManagementOnly); // 6 items
+  }
+  if (code === 'COMP_SET_MANAGEMENT_V1') {
+    return COMPETENCIES_LIST; // 8 items
+  }
+  return null; // Fail closed for invalid/blank competency set code
+}
 
 export function normalizeAppraiserData(record, appraiserCount = 2, previewOptions = {}) {
   const count = Math.min(Math.max(parseInt(appraiserCount || 2, 10), 1), 4);

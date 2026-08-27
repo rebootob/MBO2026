@@ -1899,10 +1899,11 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   });
   assert.equal(resolveIdentityViewerRole(recOverlapAll, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Overlapping Requester, Appraiser, and HR MUST return RESTRICTED');
 
-  // Direct Module Import Parity Assertions (Refactor R1)
+  // Direct Module Import Parity Assertions (Refactor R1 Micro-Fix)
   assert.equal(directResolveIdentityViewerRole(recOverlapAll, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Directly imported resolveIdentityViewerRole must return RESTRICTED');
   assert.deepEqual(directExtractUserCodes([{ code: 'EMP01' }]), ['emp01'], 'Directly imported extractUserCodes must function identically');
   assert.deepEqual(directNormalizeAppraiserData(validRec, 2), validInfo, 'Directly imported normalizeAppraiserData must match exported function result');
+  assert.equal(typeof directNormalizeAppraiserData, 'function', 'appraiser-normalizer module is directly importable without circular UI dependency');
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
