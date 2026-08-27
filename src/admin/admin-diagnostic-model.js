@@ -7,9 +7,9 @@
  */
 
 export const BUILD_VERSION_INFO = {
-  version: '0.2.1',
-  commitSha: '0977bf59a838748c69f8ee4920423459fb79eecb',
-  buildTimestamp: '2026-08-27T12:19:00Z',
+  version: '0.2.2',
+  commitSha: '7ee24c2a96fcec13271172443ca00f3e8dab8c5f',
+  buildTimestamp: '2026-08-27T12:24:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -69,6 +69,7 @@ export class AdminDiagnosticModel {
   /**
    * Evaluates System Health across 15 diagnostic indicators.
    * Removes fabricated defaults — missing evidence returns NOT_EVIDENCED / NOT_AVAILABLE.
+   * Routing Key alone does NOT produce PASS.
    * If critical evidence is missing, overallHealth returns INCOMPLETE_EVIDENCE instead of PASS.
    */
   static evaluateSystemHealth(context = {}) {
@@ -114,15 +115,18 @@ export class AdminDiagnosticModel {
       reason: requesterUserCodes.length > 0 ? `Requester user code(s): ${requesterUserCodes.join(', ')}` : 'Requester_User field is unassigned'
     });
 
-    // 3. Routing Resolution
+    // 3. Routing Resolution (MUST FIX 1: Routing Key alone != PASS)
     let routingStatus = 'NOT_EVIDENCED';
     let routingReason = 'Routing resolution evidence not provided';
     if (routingResult?.status === 'FAIL_CLOSED' || routingResult?.isFailClosed) {
       routingStatus = 'ERROR';
       routingReason = `Routing fail-closed: ${routingResult.reason || 'No matching App795 route'}`;
-    } else if (routingResult?.status === 'PASS' || routingKey) {
+    } else if (routingResult?.status === 'PASS') {
       routingStatus = 'PASS';
-      routingReason = `Routing key: ${routingKey || 'Resolved'}`;
+      routingReason = `Routing resolved via App795: ${routingKey || 'Verified'}`;
+    } else if (routingKey) {
+      routingStatus = 'NOT_EVIDENCED';
+      routingReason = `Routing key "${routingKey}" checked; authoritative App795 route result evidence required for PASS`;
     }
     items.push({
       key: 'routing_resolution',
@@ -603,7 +607,10 @@ export class AdminDiagnosticModel {
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * FIX_THIS_RECORD requires proven master inputs AND proven master outputs.
+   * MUST FIX 2: Domain-specific master evidence checking.
+   * Profile mismatch requires authoritativeProfile.
+   * Route mismatch requires authoritativeRoute.
+   * Cross-domain evidence leaks are forbidden.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
@@ -620,7 +627,18 @@ export class AdminDiagnosticModel {
     const isProfileUncertain = profileEval.status === 'NOT_EVIDENCED';
     const isRouteUncertain = routeEval.status === 'NOT_EVIDENCED';
 
-    const isMasterEvidenceProven = Boolean(context.authoritativeProfile || context.authoritativeRoute);
+    const isProfileOk = profileEval.status === 'PASS';
+    const isRouteOk = routeEval.status === 'PASS';
+
+    const isProfileMasterProven = Boolean(context.authoritativeProfile);
+    const isRouteMasterProven = Boolean(context.authoritativeRoute);
+
+    const profileMasterEvidenced = isProfileMasterProven;
+    const routeMasterEvidenced = isRouteMasterProven;
+
+    // Domain safety guards
+    const profileRepairSafe = hasProfileError && isProfileMasterProven;
+    const routeRepairSafe = hasRouteError && isRouteMasterProven;
 
     let rootCause = 'NO_REPAIR_NEEDED';
     let problemType = 'NONE';
@@ -662,15 +680,69 @@ export class AdminDiagnosticModel {
       targetApp = 'App 794 (Process Management)';
       risk = 'HIGH';
       impactScope = '1 record';
-    } else if ((hasProfileError || hasRouteError) && isMasterEvidenceProven) {
-      rootCause = 'FIX_THIS_RECORD';
-      problemType = 'STALE_APP794_SNAPSHOT';
-      authoritativeSource = 'App 53 / App 795 / App 796 Master Sources (Verified Correct)';
-      recommendedAction = 'Rebind stale Profile_Code, Weights, or Routing fields on this App 794 record snapshot.';
-      targetApp = 'App 794 (MBO Evaluation Record)';
+    } else if (isProfileOk && isRouteOk) {
+      rootCause = 'NO_REPAIR_NEEDED';
+      problemType = 'NONE';
+      authoritativeSource = 'All master sources & record fields aligned';
+      recommendedAction = 'No repair required. System is operating normally.';
+      targetApp = 'N/A';
       risk = 'LOW';
-      impactScope = '1 record';
-    } else if (hasProfileError || hasRouteError || isProfileUncertain || isRouteUncertain) {
+      impactScope = '0 records';
+    } else if ((hasProfileError || isProfileUncertain) && (hasRouteError || isRouteUncertain)) {
+      if (profileRepairSafe && routeRepairSafe) {
+        rootCause = 'FIX_THIS_RECORD';
+        problemType = 'STALE_APP794_SNAPSHOT';
+        authoritativeSource = 'App 53 / App 795 / App 796 Master Sources (Both Verified Correct)';
+        recommendedAction = 'Rebind stale Profile_Code, Weights, and Routing fields on this App 794 record snapshot.';
+        targetApp = 'App 794 (MBO Evaluation Record)';
+        risk = 'LOW';
+        impactScope = '1 record';
+      } else {
+        rootCause = 'BLOCKED_NOT_ENOUGH_EVIDENCE';
+        problemType = 'INSUFFICIENT_AUTHORITATIVE_EVIDENCE';
+        authoritativeSource = 'Unknown / Partial Master Source';
+        recommendedAction = 'Both Profile and Route evidence are required before preparing record repair.';
+        targetApp = 'N/A';
+        risk = 'BLOCKED';
+        impactScope = 'UNKNOWN';
+      }
+    } else if (hasProfileError) {
+      if (profileRepairSafe && (!isRouteUncertain || isRouteMasterProven)) {
+        rootCause = 'FIX_THIS_RECORD';
+        problemType = 'STALE_APP794_PROFILE_SNAPSHOT';
+        authoritativeSource = 'App 796 Profile & Scoring Master (Verified Correct)';
+        recommendedAction = 'Rebind stale Profile_Code and Weights on this App 794 record snapshot.';
+        targetApp = 'App 794 (MBO Evaluation Record)';
+        risk = 'LOW';
+        impactScope = '1 record';
+      } else {
+        rootCause = 'BLOCKED_NOT_ENOUGH_EVIDENCE';
+        problemType = 'INSUFFICIENT_AUTHORITATIVE_EVIDENCE';
+        authoritativeSource = 'Unknown / Unlinked Scoring Master Source';
+        recommendedAction = 'Profile mismatch detected. Authoritative App 796 profile evidence is required before preparing record repair.';
+        targetApp = 'N/A';
+        risk = 'BLOCKED';
+        impactScope = 'UNKNOWN';
+      }
+    } else if (hasRouteError) {
+      if (routeRepairSafe && (!isProfileUncertain || isProfileMasterProven)) {
+        rootCause = 'FIX_THIS_RECORD';
+        problemType = 'STALE_APP794_ROUTE_SNAPSHOT';
+        authoritativeSource = 'App 795 Routing Master (Verified Correct)';
+        recommendedAction = 'Rebind stale Routing fields on this App 794 record snapshot.';
+        targetApp = 'App 794 (MBO Evaluation Record)';
+        risk = 'LOW';
+        impactScope = '1 record';
+      } else {
+        rootCause = 'BLOCKED_NOT_ENOUGH_EVIDENCE';
+        problemType = 'INSUFFICIENT_AUTHORITATIVE_EVIDENCE';
+        authoritativeSource = 'Unknown / Unlinked Routing Master Source';
+        recommendedAction = 'Route mismatch detected. Authoritative App 795 route evidence is required before preparing record repair.';
+        targetApp = 'N/A';
+        risk = 'BLOCKED';
+        impactScope = 'UNKNOWN';
+      }
+    } else {
       rootCause = 'BLOCKED_NOT_ENOUGH_EVIDENCE';
       problemType = 'INSUFFICIENT_AUTHORITATIVE_EVIDENCE';
       authoritativeSource = 'Unknown / Unlinked Master Source';
@@ -680,27 +752,37 @@ export class AdminDiagnosticModel {
       impactScope = 'UNKNOWN';
     }
 
-    const beforeDiff = {
-      Profile_Code: context.actualProfileCode || 'N/A',
-      PartA_Weight: context.actualPartAWeight ?? 'N/A',
-      PartB_Weight: context.actualPartBWeight ?? 'N/A',
-      Routing_Key: context.actualRoutingKey || 'N/A',
-      Routing_Topology: context.actualTopology || 'N/A',
-      Appraiser_Count: context.actualAppraiserCount ?? 'N/A'
-    };
+    const beforeDiff = {};
+    const afterDiff = {};
+    const fieldsAffected = [];
 
-    const afterDiff = {
-      Profile_Code: profileEval.expectedProfileCode !== 'NOT_EVIDENCED' ? profileEval.expectedProfileCode : beforeDiff.Profile_Code,
-      PartA_Weight: profileEval.expectedPartAWeight ?? beforeDiff.PartA_Weight,
-      PartB_Weight: profileEval.expectedPartBWeight ?? beforeDiff.PartB_Weight,
-      Routing_Key: routeEval.expectedRoutingKey !== 'NOT_EVIDENCED' ? routeEval.expectedRoutingKey : beforeDiff.Routing_Key,
-      Routing_Topology: routeEval.expectedTopology !== 'NOT_EVIDENCED' ? routeEval.expectedTopology : beforeDiff.Routing_Topology,
-      Appraiser_Count: routeEval.expectedAppraiserCount !== 'NOT_EVIDENCED' ? routeEval.expectedAppraiserCount : beforeDiff.Appraiser_Count
-    };
+    if (profileRepairSafe || (!hasProfileError && !hasRouteError)) {
+      beforeDiff.Profile_Code = context.actualProfileCode || 'NOT_EVIDENCED';
+      beforeDiff.PartA_Weight = context.actualPartAWeight ?? 'NOT_EVIDENCED';
+      beforeDiff.PartB_Weight = context.actualPartBWeight ?? 'NOT_EVIDENCED';
+
+      afterDiff.Profile_Code = profileEval.expectedProfileCode !== 'NOT_EVIDENCED' ? profileEval.expectedProfileCode : beforeDiff.Profile_Code;
+      afterDiff.PartA_Weight = profileEval.expectedPartAWeight ?? beforeDiff.PartA_Weight;
+      afterDiff.PartB_Weight = profileEval.expectedPartBWeight ?? beforeDiff.PartB_Weight;
+
+      fieldsAffected.push('Profile_Code', 'PartA_Weight', 'PartB_Weight');
+    }
+
+    if (routeRepairSafe || (!hasProfileError && !hasRouteError)) {
+      beforeDiff.Routing_Key = context.actualRoutingKey || 'NOT_EVIDENCED';
+      beforeDiff.Routing_Topology = context.actualTopology || 'NOT_EVIDENCED';
+      beforeDiff.Appraiser_Count = context.actualAppraiserCount ?? 'NOT_EVIDENCED';
+
+      afterDiff.Routing_Key = routeEval.expectedRoutingKey !== 'NOT_EVIDENCED' ? routeEval.expectedRoutingKey : beforeDiff.Routing_Key;
+      afterDiff.Routing_Topology = routeEval.expectedTopology !== 'NOT_EVIDENCED' ? routeEval.expectedTopology : beforeDiff.Routing_Topology;
+      afterDiff.Appraiser_Count = routeEval.expectedAppraiserCount !== 'NOT_EVIDENCED' ? routeEval.expectedAppraiserCount : beforeDiff.Appraiser_Count;
+
+      fieldsAffected.push('Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count');
+    }
 
     return {
-      employeeCode: context.employeeCode || 'N/A',
-      fiscalYear: context.fiscalYear || '2026',
+      employeeCode: context.employeeCode || 'NOT_EVIDENCED',
+      fiscalYear: context.fiscalYear || 'NOT_EVIDENCED',
       problemType,
       rootCause,
       authoritativeSource,
@@ -708,9 +790,13 @@ export class AdminDiagnosticModel {
       targetApp,
       risk,
       impactScope,
+      profileMasterEvidenced,
+      routeMasterEvidenced,
+      profileRecordRepairSafe: profileRepairSafe,
+      routeRecordRepairSafe: routeRepairSafe,
       before: beforeDiff,
       after: afterDiff,
-      fieldsAffected: ['Profile_Code', 'PartA_Weight', 'PartB_Weight', 'Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count'],
+      fieldsAffected,
       backupRequired: 'YES',
       readbackRequired: 'YES',
       rollbackRequired: 'YES',
@@ -722,6 +808,7 @@ export class AdminDiagnosticModel {
 
   /**
    * Builds detailed read-only Record Diagnostic object.
+   * MUST FIX 3: Remove fabricated defaults ('2026', 'admin-form', 'PASS').
    */
   static buildRecordDiagnostic(record, options = {}) {
     const getVal = (code) => {
@@ -733,33 +820,33 @@ export class AdminDiagnosticModel {
     };
 
     return {
-      recordId: getVal('$id') || options.recordId || 'N/A',
-      mboKey: getVal('Record_Key') || options.mboKey || 'N/A',
-      fiscalYear: getVal('Fiscal_Year') || options.fiscalYear || '2026',
-      employeeCode: getVal('Employee_Code') || options.employeeCode || 'N/A',
-      employeeName: getVal('Employee_Name') || options.employeeName || 'N/A',
-      requesterUser: getVal('Requester_User') || options.requesterUser || 'N/A',
-      loggedInUserCode: options.loggedInUserCode || 'admin-form',
-      currentStatus: getVal('Status') || options.currentStatus || 'N/A',
-      currentActor: options.currentActor || 'N/A',
-      resolvedViewerRole: options.resolvedViewerRole || 'RESTRICTED',
+      recordId: getVal('$id') || options.recordId || 'NOT_EVIDENCED',
+      mboKey: getVal('Record_Key') || options.mboKey || 'NOT_EVIDENCED',
+      fiscalYear: getVal('Fiscal_Year') || options.fiscalYear || 'NOT_EVIDENCED',
+      employeeCode: getVal('Employee_Code') || options.employeeCode || 'NOT_EVIDENCED',
+      employeeName: getVal('Employee_Name') || options.employeeName || 'NOT_EVIDENCED',
+      requesterUser: getVal('Requester_User') || options.requesterUser || 'NOT_EVIDENCED',
+      loggedInUserCode: options.loggedInUserCode || 'NOT_EVIDENCED',
+      currentStatus: getVal('Status') || options.currentStatus || 'NOT_EVIDENCED',
+      currentActor: options.currentActor || 'NOT_EVIDENCED',
+      resolvedViewerRole: options.resolvedViewerRole || 'NOT_EVIDENCED',
       activeAppraiserSlot: options.activeAppraiserSlot || null,
       expectedAppraiserCount: options.expectedAppraiserCount || null,
-      appraiser1: options.appraiser1 || getVal('First_Manager_User') || 'N/A',
-      appraiser2: options.appraiser2 || getVal('GM_User') || 'N/A',
-      appraiser3: options.appraiser3 || 'N/A',
-      appraiser4: options.appraiser4 || 'N/A',
-      routingKey: options.routingKey || 'N/A',
-      sectionCode: getVal('Section_Code') || options.sectionCode || 'N/A',
-      teamName: getVal('Team') || options.teamName || 'N/A',
+      appraiser1: options.appraiser1 || getVal('First_Manager_User') || 'NOT_EVIDENCED',
+      appraiser2: options.appraiser2 || getVal('GM_User') || 'NOT_EVIDENCED',
+      appraiser3: options.appraiser3 || 'NOT_EVIDENCED',
+      appraiser4: options.appraiser4 || 'NOT_EVIDENCED',
+      routingKey: options.routingKey || 'NOT_EVIDENCED',
+      sectionCode: getVal('Section_Code') || options.sectionCode || 'NOT_EVIDENCED',
+      teamName: getVal('Team') || options.teamName || 'NOT_EVIDENCED',
       routingResult: options.routingResult || null,
       profileCode: getVal('Profile_Code') || options.profileCode || null,
       partAWeight: options.partAWeight || null,
       partBWeight: options.partBWeight || null,
-      objectiveCount: getVal('Objective_Count') || options.objectiveCount || 'N/A',
+      objectiveCount: getVal('Objective_Count') || options.objectiveCount || 'NOT_EVIDENCED',
       isObjCountValid: options.isObjCountValid !== false,
       scoringCompleteness: options.scoringCompleteness || { isComplete: false },
-      phaseCalendarStatus: options.phaseCalendarStatus || 'PASS',
+      phaseCalendarStatus: options.phaseCalendarStatus || 'NOT_EVIDENCED',
       validationErrors: options.validationErrors || [],
       buildVersion: BUILD_VERSION_INFO
     };
@@ -781,12 +868,12 @@ export class AdminDiagnosticModel {
 
     const allowlisted = {
       recordIdentity: {
-        recordId: recordDiag?.recordId || 'N/A',
-        mboKey: recordDiag?.mboKey || 'N/A',
-        fiscalYear: recordDiag?.fiscalYear || '2026',
-        employeeCode: recordDiag?.employeeCode || 'N/A',
-        loggedInUserCode: recordDiag?.loggedInUserCode || 'admin-form',
-        currentStatus: recordDiag?.currentStatus || 'N/A'
+        recordId: recordDiag?.recordId || 'NOT_EVIDENCED',
+        mboKey: recordDiag?.mboKey || 'NOT_EVIDENCED',
+        fiscalYear: recordDiag?.fiscalYear || 'NOT_EVIDENCED',
+        employeeCode: recordDiag?.employeeCode || 'NOT_EVIDENCED',
+        loggedInUserCode: recordDiag?.loggedInUserCode || 'NOT_EVIDENCED',
+        currentStatus: recordDiag?.currentStatus || 'NOT_EVIDENCED'
       },
       healthSummary: health ? { overallHealth: health.overallHealth, evaluatedAt: health.evaluatedAt } : null,
       workflowValidation: workflowTrace || null,

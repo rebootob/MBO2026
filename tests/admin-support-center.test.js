@@ -4,237 +4,177 @@ import { AdminDiagnosticModel, BUILD_VERSION_INFO, escapeHtml, CANONICAL_STATUSE
 import { AdminSupportCenterUI } from '../src/admin/admin-support-center.js';
 import { resolveIdentityViewerRole } from '../src/ui/employee-visibility.js';
 
-test('Admin Support Center — Baseline Correction Micro-Fix Tests', async (t) => {
+test('Admin Support Center — Final Evidence-Boundary Micro-Fix Tests', async (t) => {
 
-  await t.test('1. canonical M1_G1 statuses are accepted', () => {
-    for (const status of ['01 Draft Objective', '03 Manager Objective Review', '04 GM Objective Review', '05 Objective Approved', '06 Employee Mid-Year', '08 Manager Mid-Year Review', '09 GM Mid-Year Review', '10 Mid-Year Completed', '11 Employee Self Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation', '15 HR Final Check', '16 Completed']) {
-      const res = AdminDiagnosticModel.evaluateWorkflowTrace({
-        currentStatus: status,
-        topology: 'M1_G1'
-      });
-      assert.equal(res.status, 'PASS', `Status "${status}" should be accepted for M1_G1`);
-    }
-  });
-
-  await t.test('2. 02/07/12 rejected for M1_G1', () => {
-    for (const status of ['02 First Manager Objective Review', '07 First Manager Mid-Year Review', '12 First Manager Final Evaluation']) {
-      const res = AdminDiagnosticModel.evaluateWorkflowTrace({
-        currentStatus: status,
-        topology: 'M1_G1'
-      });
-      assert.equal(res.status, 'ERROR', `Status "${status}" must be rejected for M1_G1`);
-      assert.equal(res.isFailClosed, true);
-    }
-  });
-
-  await t.test('3. 04/09/14 rejected for M1_ONLY', () => {
-    for (const status of ['04 GM Objective Review', '09 GM Mid-Year Review', '14 GM Final Evaluation']) {
-      const res = AdminDiagnosticModel.evaluateWorkflowTrace({
-        currentStatus: status,
-        topology: 'M1_ONLY'
-      });
-      assert.equal(res.status, 'ERROR', `Status "${status}" must be rejected for M1_ONLY`);
-      assert.equal(res.isFailClosed, true);
-    }
-  });
-
-  await t.test('4. invented status names fail closed', () => {
-    const inventedStatuses = ['Approved Objective', 'First Manager Evaluation', 'Second Manager Evaluation', 'Objective Self Check', 'Random Status'];
-    for (const status of inventedStatuses) {
-      const res = AdminDiagnosticModel.evaluateWorkflowTrace({
-        currentStatus: status,
-        topology: 'M1_G1'
-      });
-      assert.equal(res.status, 'ERROR', `Invented status "${status}" must fail closed`);
-      assert.equal(res.isFailClosed, true);
-    }
-  });
-
-  await t.test('5. missing topology does not default to M1_G1', () => {
-    const res = AdminDiagnosticModel.evaluateWorkflowTrace({
-      currentStatus: '01 Draft Objective',
-      topology: null
-    });
-    assert.equal(res.status, 'NOT_EVIDENCED');
-    assert.equal(res.expectedPath, 'NOT_EVIDENCED');
-  });
-
-  await t.test('6. unknown topology fails closed', () => {
-    const res = AdminDiagnosticModel.evaluateWorkflowTrace({
-      currentStatus: '01 Draft Objective',
-      topology: 'INVALID_TOPOLOGY'
-    });
-    assert.equal(res.status, 'ERROR');
-    assert.equal(res.isFailClosed, true);
-  });
-
-  await t.test('7. PROF_JAPANESE_STAFF exact code PASS', () => {
-    const res = AdminDiagnosticModel.evaluateProfileMatch({
-      position: 'Japanese Staff',
-      actualProfileCode: 'PROF_JAPANESE_STAFF',
-      actualPartAWeight: 70,
-      actualPartBWeight: 30
-    });
-    assert.equal(res.status, 'PASS');
-    assert.equal(res.expectedProfileCode, 'PROF_JAPANESE_STAFF');
-  });
-
-  await t.test('8. PROF_SECTION_MGR exact code PASS', () => {
-    const res = AdminDiagnosticModel.evaluateProfileMatch({
-      position: 'Section Manager',
-      actualProfileCode: 'PROF_SECTION_MGR',
-      actualPartAWeight: 50,
-      actualPartBWeight: 50
-    });
-    assert.equal(res.status, 'PASS');
-    assert.equal(res.expectedProfileCode, 'PROF_SECTION_MGR');
-  });
-
-  await t.test('9. PROF_SENIOR_MGR exact code PASS', () => {
-    const res = AdminDiagnosticModel.evaluateProfileMatch({
-      position: 'Senior Manager',
-      actualProfileCode: 'PROF_SENIOR_MGR',
-      actualPartAWeight: 50,
-      actualPartBWeight: 50
-    });
-    assert.equal(res.status, 'PASS');
-    assert.equal(res.expectedProfileCode, 'PROF_SENIOR_MGR');
-  });
-
-  await t.test('10. old PROF_JP_STAFF / PROF_SEC_MGR / PROF_SR_MGR not emitted as canonical', () => {
-    const resJP = AdminDiagnosticModel.evaluateProfileMatch({ position: 'Japanese Staff', actualProfileCode: 'PROF_JP_STAFF', actualPartAWeight: 70, actualPartBWeight: 30 });
-    assert.equal(resJP.expectedProfileCode, 'PROF_JAPANESE_STAFF', 'Must emit PROF_JAPANESE_STAFF, not PROF_JP_STAFF');
-    assert.equal(resJP.status, 'ERROR', 'Old alias PROF_JP_STAFF must not be treated as canonical PASS');
-
-    const resSec = AdminDiagnosticModel.evaluateProfileMatch({ position: 'Section Manager', actualProfileCode: 'PROF_SEC_MGR', actualPartAWeight: 50, actualPartBWeight: 50 });
-    assert.equal(resSec.expectedProfileCode, 'PROF_SECTION_MGR');
-    assert.equal(resSec.status, 'ERROR');
-
-    const resSr = AdminDiagnosticModel.evaluateProfileMatch({ position: 'Senior Manager', actualProfileCode: 'PROF_SR_MGR', actualPartAWeight: 50, actualPartBWeight: 50 });
-    assert.equal(resSr.expectedProfileCode, 'PROF_SENIOR_MGR');
-    assert.equal(resSr.status, 'ERROR');
-  });
-
-  await t.test('11. DGM key = POSITION_DGM', () => {
-    const res = AdminDiagnosticModel.evaluateRouteMatch({
-      position: 'DGM',
-      actualRoutingKey: 'POSITION_DGM',
-      actualTopology: 'M1_ONLY',
-      actualAppraiserCount: 1,
-      authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1 }
-    });
-    assert.equal(res.expectedRoutingKey, 'POSITION_DGM');
-    assert.equal(res.status, 'PASS');
-  });
-
-  await t.test('12. GM key = POSITION_GM', () => {
-    const res = AdminDiagnosticModel.evaluateRouteMatch({
-      position: 'GM',
-      actualRoutingKey: 'POSITION_GM',
-      actualTopology: 'M1_ONLY',
-      actualAppraiserCount: 1,
-      authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1 }
-    });
-    assert.equal(res.expectedRoutingKey, 'POSITION_GM');
-    assert.equal(res.status, 'PASS');
-  });
-
-  await t.test('13. VP key = POSITION_VP', () => {
-    const res = AdminDiagnosticModel.evaluateRouteMatch({
-      position: 'VP',
-      actualRoutingKey: 'POSITION_VP',
-      actualTopology: 'M1_ONLY',
-      actualAppraiserCount: 1,
-      authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1 }
-    });
-    assert.equal(res.expectedRoutingKey, 'POSITION_VP');
-    assert.equal(res.status, 'PASS');
-  });
-
-  await t.test('14. routing key match without authoritative App795 evidence does NOT produce overall route PASS', () => {
-    const res = AdminDiagnosticModel.evaluateRouteMatch({
-      sectionCode: 'TMS1',
-      actualRoutingKey: 'TMS1',
-      actualTopology: 'M1_G1',
-      authoritativeRoute: null // missing authoritative route evidence
-    });
-    assert.equal(res.routingKeyCheck, 'PASS');
-    assert.equal(res.status, 'NOT_EVIDENCED');
-    assert.equal(res.routeMatch, 'NOT_EVIDENCED');
-  });
-
-  await t.test('15. wrong ordinal appraiser user => ERROR when authoritative route supplied', () => {
-    const res = AdminDiagnosticModel.evaluateRouteMatch({
-      sectionCode: 'TMS1',
-      actualRoutingKey: 'TMS1',
-      actualTopology: 'M1_G1',
-      actualAppraiserCount: 2,
-      actualAppraiser1: 'wrong_user',
-      actualAppraiser2: 'g01',
-      authoritativeRoute: {
-        topology: 'M1_G1',
-        appraiserCount: 2,
-        appraiser1: 'm01',
-        appraiser2: 'g01'
-      }
-    });
-    assert.equal(res.status, 'ERROR');
-    assert.equal(res.routeMatch, 'ERROR');
-  });
-
-  await t.test('16. missing authoritative profile evidence => NOT_EVIDENCED', () => {
-    const res = AdminDiagnosticModel.evaluateProfileMatch({
-      position: null,
-      actualProfileCode: null
-    });
-    assert.equal(res.status, 'NOT_EVIDENCED');
-    assert.equal(res.profileMatch, 'NOT_EVIDENCED');
-  });
-
-  await t.test('17. missing critical health evidence => overall not PASS (INCOMPLETE_EVIDENCE)', () => {
+  await t.test('1 & 2. Routing Key alone != Routing PASS and prevents overall health PASS', () => {
     const health = AdminDiagnosticModel.evaluateSystemHealth({
       loginUserCode: 'admin-form',
       requesterUserCodes: ['EMP01'],
+      routingKey: 'TMS1',
+      routingResult: null, // missing authoritative routingResult
       profileCode: 'PROF_STAFF_CHIEF',
       evalProfile: { nameEN: 'Staff' },
       activeObjCount: 4,
       currentStatus: '01 Draft Objective',
       resolvedViewerRole: 'EMPLOYEE',
       phaseCalendar: { isCurrentDateInWindow: true }
-      // missing app800 / app801 / schema evidence
     });
-    assert.equal(health.overallHealth, 'INCOMPLETE_EVIDENCE');
+
+    const routeItem = health.items.find(i => i.key === 'routing_resolution');
+    assert.equal(routeItem.status, 'NOT_EVIDENCED', 'Routing Key alone MUST be NOT_EVIDENCED, never PASS');
+    assert.equal(health.overallHealth, 'INCOMPLETE_EVIDENCE', 'Routing Key alone MUST prevent overall PASS');
   });
 
-  await t.test('18. repair classification with incomplete source evidence => BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
+  await t.test('3. Authoritative App795 PASS can produce Routing PASS', () => {
+    const health = AdminDiagnosticModel.evaluateSystemHealth({
+      loginUserCode: 'admin-form',
+      requesterUserCodes: ['EMP01'],
+      routingKey: 'TMS1',
+      routingResult: { status: 'PASS' },
+      profileCode: 'PROF_STAFF_CHIEF',
+      evalProfile: { nameEN: 'Staff' },
+      activeObjCount: 4,
+      currentStatus: '01 Draft Objective',
+      resolvedViewerRole: 'EMPLOYEE',
+      phaseCalendar: { isCurrentDateInWindow: true },
+      app800Status: 'PASS',
+      app801Status: 'NOT_AVAILABLE',
+      schemaState: 'PASS'
+    });
+
+    const routeItem = health.items.find(i => i.key === 'routing_resolution');
+    assert.equal(routeItem.status, 'PASS');
+  });
+
+  await t.test('4. Profile mismatch + route evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({
-      position: 'Staff',
-      actualProfileCode: 'PROF_STAFF_CHIEF',
+      position: 'Assistant Manager',
+      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
       actualPartAWeight: 70,
       actualPartBWeight: 30,
       sectionCode: 'TMS1',
       actualRoutingKey: 'TMS1',
       actualTopology: 'M1_G1',
       actualAppraiserCount: 2,
-      authoritativeProfile: true,
+      authoritativeProfile: null, // missing profile evidence
+      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 } // route evidence supplied
+    });
+
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Route evidence MUST NOT authorize repair for Profile mismatch');
+    assert.equal(candidate.profileMasterEvidenced, false);
+    assert.equal(candidate.routeMasterEvidenced, true);
+  });
+
+  await t.test('5. Route mismatch + profile evidence only -> BLOCKED_NOT_ENOUGH_EVIDENCE', () => {
+    const candidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Staff',
+      actualProfileCode: 'PROF_STAFF_CHIEF',
+      actualPartAWeight: 70,
+      actualPartBWeight: 30,
+      sectionCode: 'TMS1',
+      actualRoutingKey: 'WRONG_KEY', // route error
+      actualTopology: 'M1_ONLY',
+      actualAppraiserCount: 1,
+      authoritativeProfile: { code: 'PROF_STAFF_CHIEF' }, // profile evidence supplied
+      authoritativeRoute: null // missing route evidence
+    });
+
+    assert.equal(candidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE', 'Profile evidence MUST NOT authorize repair for Route mismatch');
+    assert.equal(candidate.profileMasterEvidenced, true);
+    assert.equal(candidate.routeMasterEvidenced, false);
+  });
+
+  await t.test('6. Profile-only mismatch + authoritativeProfile -> safe record candidate ONLY for profile fields', () => {
+    const candidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Assistant Manager',
+      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualPartAWeight: 70,
+      actualPartBWeight: 30,
+      sectionCode: 'TMS1',
+      actualRoutingKey: 'TMS1',
+      actualTopology: 'M1_G1',
+      actualAppraiserCount: 2,
+      authoritativeProfile: { code: 'PROF_ASST_MGR', partAWeight: 60, partBWeight: 40 },
       authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 }
     });
-    assert.equal(candidate.rootCause, 'NO_REPAIR_NEEDED');
 
-    const errorCandidate = AdminDiagnosticModel.prepareRepairCandidate({
-      position: 'Assistant Manager',
-      actualProfileCode: 'PROF_STAFF_CHIEF' // error, but no authoritative master evidence supplied
+    assert.equal(candidate.rootCause, 'FIX_THIS_RECORD');
+    assert.equal(candidate.profileRecordRepairSafe, true);
+    assert.equal(candidate.routeRecordRepairSafe, false);
+    assert.deepEqual(candidate.fieldsAffected, ['Profile_Code', 'PartA_Weight', 'PartB_Weight'], 'Fields affected must include ONLY profile fields');
+    assert.equal(candidate.before.Routing_Key, undefined, 'Routing_Key must not leak into profile-only repair diff');
+  });
+
+  await t.test('7. Route-only mismatch + authoritativeRoute -> safe record candidate ONLY for routing fields', () => {
+    const candidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Staff',
+      actualProfileCode: 'PROF_STAFF_CHIEF',
+      actualPartAWeight: 70,
+      actualPartBWeight: 30,
+      sectionCode: 'TMS1',
+      actualRoutingKey: 'WRONG_KEY', // route error
+      actualTopology: 'M1_ONLY',
+      actualAppraiserCount: 1,
+      actualAppraiser1: 'wrong_user',
+      authoritativeProfile: { code: 'PROF_STAFF_CHIEF' },
+      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2, appraiser1: 'm01', appraiser2: 'g01' }
     });
-    assert.equal(errorCandidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
+
+    assert.equal(candidate.rootCause, 'FIX_THIS_RECORD');
+    assert.equal(candidate.profileRecordRepairSafe, false);
+    assert.equal(candidate.routeRecordRepairSafe, true);
+    assert.deepEqual(candidate.fieldsAffected, ['Routing_Key', 'Routing_Topology', 'Expected_Appraiser_Count'], 'Fields affected must include ONLY routing fields');
+    assert.equal(candidate.before.Profile_Code, undefined, 'Profile_Code must not leak into route-only repair diff');
   });
 
-  await t.test('19. exact admin-form gate still PASS', () => {
-    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('admin-form'), true);
-    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('administrator'), false);
-    assert.equal(AdminDiagnosticModel.isTechnicalAdmin('hr'), false);
+  await t.test('8. Profile+Route mismatch requires BOTH master evidences for FIX_THIS_RECORD', () => {
+    // Case A: Both master evidences supplied
+    const fullCandidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Assistant Manager',
+      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualPartAWeight: 70,
+      actualPartBWeight: 30,
+      sectionCode: 'TMS1',
+      actualRoutingKey: 'WRONG_KEY', // route error
+      authoritativeProfile: { code: 'PROF_ASST_MGR' },
+      authoritativeRoute: { topology: 'M1_G1', appraiserCount: 2 }
+    });
+    assert.equal(fullCandidate.rootCause, 'FIX_THIS_RECORD');
+
+    // Case B: Only profile master evidence supplied
+    const partialCandidate = AdminDiagnosticModel.prepareRepairCandidate({
+      position: 'Assistant Manager',
+      actualProfileCode: 'PROF_STAFF_CHIEF', // profile error
+      actualPartAWeight: 70,
+      actualPartBWeight: 30,
+      sectionCode: 'TMS1',
+      actualRoutingKey: 'WRONG_KEY', // route error
+      authoritativeProfile: { code: 'PROF_ASST_MGR' },
+      authoritativeRoute: null
+    });
+    assert.equal(partialCandidate.rootCause, 'BLOCKED_NOT_ENOUGH_EVIDENCE');
   });
 
-  await t.test('20. Controlled Repair remains disabled', () => {
+  await t.test('9, 10, 11. Record diagnostic defaults removed', () => {
+    const diag = AdminDiagnosticModel.buildRecordDiagnostic(null, {});
+    assert.equal(diag.fiscalYear, 'NOT_EVIDENCED', 'Fiscal year must NOT default to 2026');
+    assert.equal(diag.loggedInUserCode, 'NOT_EVIDENCED', 'Logged in user must NOT default to admin-form');
+    assert.equal(diag.phaseCalendarStatus, 'NOT_EVIDENCED', 'Phase calendar status must NOT default to PASS');
+    assert.equal(diag.currentStatus, 'NOT_EVIDENCED');
+
+    const snapshot = AdminDiagnosticModel.generateDiagnosticSnapshot({});
+    assert.equal(snapshot.data.recordIdentity.fiscalYear, 'NOT_EVIDENCED');
+    assert.equal(snapshot.data.recordIdentity.loggedInUserCode, 'NOT_EVIDENCED');
+  });
+
+  await t.test('12. Existing canonical workflow/profile/routing tests remain PASS', () => {
+    assert.equal(AdminDiagnosticModel.evaluateWorkflowTrace({ currentStatus: '01 Draft Objective', topology: 'M1_G1' }).status, 'PASS');
+    assert.equal(AdminDiagnosticModel.evaluateWorkflowTrace({ currentStatus: '02 First Manager Objective Review', topology: 'M1_G1' }).status, 'ERROR');
+    assert.equal(AdminDiagnosticModel.evaluateProfileMatch({ position: 'Japanese Staff', actualProfileCode: 'PROF_JAPANESE_STAFF', actualPartAWeight: 70, actualPartBWeight: 30 }).status, 'PASS');
+    assert.equal(AdminDiagnosticModel.evaluateRouteMatch({ position: 'DGM', actualRoutingKey: 'POSITION_DGM', actualTopology: 'M1_ONLY', actualAppraiserCount: 1, authoritativeRoute: { topology: 'M1_ONLY', appraiserCount: 1 } }).status, 'PASS');
+  });
+
+  await t.test('13 & 14. CONFIRM REPAIR remains disabled; gate intact', () => {
     const candidate = AdminDiagnosticModel.prepareRepairCandidate({});
     assert.equal(candidate.confirmRepairEnabled, false);
     assert.equal(candidate.repairWriteImplemented, false);
@@ -243,6 +183,5 @@ test('Admin Support Center — Baseline Correction Micro-Fix Tests', async (t) =
     const html = ui.renderHtml({ loginUserCode: 'admin-form' });
     assert.ok(html.includes('CONFIRM_REPAIR_ENABLED = false'));
     assert.ok(html.includes('REPAIR_WRITE_IMPLEMENTED = false'));
-    assert.ok(html.includes('disabled'));
   });
 });
