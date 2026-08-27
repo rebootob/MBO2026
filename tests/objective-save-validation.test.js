@@ -4,7 +4,7 @@ import { ValidationEngine } from '../src/validation/validation-engine.js';
 import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
-import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR, ROUTE_SCENARIOS, EVALUATION_PROFILES, calculateDeadlineInfo } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR, ROUTE_SCENARIOS, EVALUATION_PROFILES, calculateDeadlineInfo, parseObjectiveCount, normalizeProfileCode, getEvaluationProfile } from '../src/ui/employee-part-a-ui.js';
 
 const makeMockElement = () => {
   const children = [];
@@ -1606,11 +1606,26 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.isRuntimeSupported, true);
   assert.equal(ROUTE_SCENARIOS.FUTURE_CAPACITY.appraiserCount, 4);
 
-  assert.equal(Object.keys(EVALUATION_PROFILES).filter(k => !['PROF_STAFF_OPERATIONAL', 'PROF_SECT_MGR', 'PROF_SR_MGR'].includes(k)).length, 8);
+  // 2. EVALUATION_PROFILES export exactness (8 canonical keys, no stale keys in EVALUATION_PROFILES map, no suggestedRoute)
+  assert.equal(Object.keys(EVALUATION_PROFILES).length, 8);
+  assert.equal('PROF_STAFF_OPERATIONAL' in EVALUATION_PROFILES, false);
+  assert.equal('PROF_SECT_MGR' in EVALUATION_PROFILES, false);
+  assert.equal('PROF_SR_MGR' in EVALUATION_PROFILES, false);
+  assert.equal(normalizeProfileCode('PROF_STAFF_OPERATIONAL'), 'PROF_STAFF_CHIEF');
+  assert.equal(normalizeProfileCode('PROF_SECT_MGR'), 'PROF_SECTION_MGR');
+  assert.equal(normalizeProfileCode('PROF_SR_MGR'), 'PROF_SENIOR_MGR');
   assert.equal(EVALUATION_PROFILES.PROF_STAFF_CHIEF.partAWeight, 70);
   assert.equal(EVALUATION_PROFILES.PROF_ASST_MGR.partAWeight, 60);
   assert.equal(EVALUATION_PROFILES.PROF_SECTION_MGR.partAWeight, 50);
-  assert.equal(EVALUATION_PROFILES.PROF_DGM.suggestedRoute, 'EXECUTIVE_DIRECT');
+  assert.equal('suggestedRoute' in EVALUATION_PROFILES.PROF_DGM, false);
+
+  // 3. parseObjectiveCount range tests (1..10, no phantom slots)
+  assert.equal(parseObjectiveCount('1'), 1);
+  assert.equal(parseObjectiveCount('2'), 2);
+  assert.equal(parseObjectiveCount('10'), 10);
+  assert.equal(parseObjectiveCount('0'), 4);
+  assert.equal(parseObjectiveCount('11'), 10);
+  assert.equal(parseObjectiveCount('invalid'), 4);
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);

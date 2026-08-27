@@ -100,6 +100,12 @@ export const ROUTE_SCENARIOS = {
   }
 };
 
+export function parseObjectiveCount(rawVal, fallback = 4) {
+  const countVal = parseInt(String(rawVal || '').trim(), 10);
+  if (isNaN(countVal) || countVal < 1) return fallback;
+  return Math.min(countVal, 10);
+}
+
 export const EVALUATION_PROFILES = {
   PROF_STAFF_CHIEF: {
     id: 'PROF_STAFF_CHIEF',
@@ -107,8 +113,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'Staff / Chief (70/30)',
     partAWeight: 70,
     partBWeight: 30,
-    compSetCode: 'COMP_SET_OPERATIONAL_V1',
-    suggestedRoute: 'CURRENT_STANDARD'
+    compSetCode: 'COMP_SET_OPERATIONAL_V1'
   },
   PROF_JAPANESE_STAFF: {
     id: 'PROF_JAPANESE_STAFF',
@@ -116,8 +121,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'Japanese Staff (70/30)',
     partAWeight: 70,
     partBWeight: 30,
-    compSetCode: 'COMP_SET_OPERATIONAL_V1',
-    suggestedRoute: 'CURRENT_STANDARD'
+    compSetCode: 'COMP_SET_OPERATIONAL_V1'
   },
   PROF_ASST_MGR: {
     id: 'PROF_ASST_MGR',
@@ -125,8 +129,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'Assistant Manager (60/40)',
     partAWeight: 60,
     partBWeight: 40,
-    compSetCode: 'COMP_SET_MANAGEMENT_V1',
-    suggestedRoute: 'CURRENT_STANDARD'
+    compSetCode: 'COMP_SET_MANAGEMENT_V1'
   },
   PROF_SECTION_MGR: {
     id: 'PROF_SECTION_MGR',
@@ -134,8 +137,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'Section Manager (50/50)',
     partAWeight: 50,
     partBWeight: 50,
-    compSetCode: 'COMP_SET_MANAGEMENT_V1',
-    suggestedRoute: 'CURRENT_STANDARD'
+    compSetCode: 'COMP_SET_MANAGEMENT_V1'
   },
   PROF_SENIOR_MGR: {
     id: 'PROF_SENIOR_MGR',
@@ -143,8 +145,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'Senior Manager (50/50)',
     partAWeight: 50,
     partBWeight: 50,
-    compSetCode: 'COMP_SET_MANAGEMENT_V1',
-    suggestedRoute: 'CURRENT_STANDARD'
+    compSetCode: 'COMP_SET_MANAGEMENT_V1'
   },
   PROF_DGM: {
     id: 'PROF_DGM',
@@ -152,8 +153,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'DGM (50/50)',
     partAWeight: 50,
     partBWeight: 50,
-    compSetCode: 'COMP_SET_MANAGEMENT_V1',
-    suggestedRoute: 'EXECUTIVE_DIRECT'
+    compSetCode: 'COMP_SET_MANAGEMENT_V1'
   },
   PROF_GM: {
     id: 'PROF_GM',
@@ -161,8 +161,7 @@ export const EVALUATION_PROFILES = {
     nameEN: 'GM (50/50)',
     partAWeight: 50,
     partBWeight: 50,
-    compSetCode: 'COMP_SET_MANAGEMENT_V1',
-    suggestedRoute: 'EXECUTIVE_DIRECT'
+    compSetCode: 'COMP_SET_MANAGEMENT_V1'
   },
   PROF_VP: {
     id: 'PROF_VP',
@@ -170,15 +169,26 @@ export const EVALUATION_PROFILES = {
     nameEN: 'VP (50/50)',
     partAWeight: 50,
     partBWeight: 50,
-    compSetCode: 'COMP_SET_MANAGEMENT_V1',
-    suggestedRoute: 'EXECUTIVE_DIRECT'
+    compSetCode: 'COMP_SET_MANAGEMENT_V1'
   }
 };
 
-// Aliases for backward compatibility
-EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL = EVALUATION_PROFILES.PROF_STAFF_CHIEF;
-EVALUATION_PROFILES.PROF_SECT_MGR = EVALUATION_PROFILES.PROF_SECTION_MGR;
-EVALUATION_PROFILES.PROF_SR_MGR = EVALUATION_PROFILES.PROF_SENIOR_MGR;
+export function normalizeProfileCode(rawCode) {
+  if (!rawCode || typeof rawCode !== 'string') return 'PROF_STAFF_CHIEF';
+  const clean = rawCode.trim();
+  const legacyAliasMap = {
+    PROF_STAFF_OPERATIONAL: 'PROF_STAFF_CHIEF',
+    PROF_SECT_MGR: 'PROF_SECTION_MGR',
+    PROF_SR_MGR: 'PROF_SENIOR_MGR'
+  };
+  const canonical = legacyAliasMap[clean] || clean;
+  return EVALUATION_PROFILES[canonical] ? canonical : 'PROF_STAFF_CHIEF';
+}
+
+export function getEvaluationProfile(rawCode) {
+  const canonicalCode = normalizeProfileCode(rawCode);
+  return EVALUATION_PROFILES[canonicalCode];
+}
 
 export function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', isCompleted = false) {
   if (isCompleted) {
@@ -431,8 +441,7 @@ export function normalizeAppraiserData(record, appraiserCount = 2, previewOption
     return String(field);
   };
 
-  const objCountVal = parseInt(getVal('Objective_Count') || '4', 10);
-  const activeObjCount = isNaN(objCountVal) ? 4 : Math.min(Math.max(objCountVal, 2), 10);
+  const activeObjCount = parseObjectiveCount(getVal('Objective_Count'));
 
   const compSetCode = getVal('Competency_Set_Code') || previewOptions.competencySetCode;
   const applicableCompList = getApplicableCompetencies(compSetCode);
@@ -1454,8 +1463,7 @@ export class EmployeePartAUI {
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+    const count = parseObjectiveCount(this._getVal('Objective_Count'));
 
     const isObjectiveStage = this.isCreate || this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT || this.stage === BUSINESS_STAGES.NEW_RECORD;
     const isObjEditable = this.isEditable && isObjectiveStage && this.isEmployeeVerified;
@@ -1468,7 +1476,7 @@ export class EmployeePartAUI {
         <span>จำนวนเป้าหมาย / Number of Objectives:</span>
         ${isObjEditable ? `
           <select id="mbo-obj-count-select" class="mbo-cell-select" style="width: 65px; height: 28px; font-size: 13px; padding: 2px 6px; background: #ffffff;">
-            ${[2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${count === n ? 'selected' : ''}>${n}</option>`).join('')}
+            ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${count === n ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
         ` : `<strong>${count} Objectives</strong>`}
       </div>
@@ -1606,8 +1614,7 @@ export class EmployeePartAUI {
   _renderScreenMidYear() {
     const isMidEditable = this.isEditable && this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+    const count = parseObjectiveCount(this._getVal('Objective_Count'));
 
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
@@ -1719,8 +1726,7 @@ export class EmployeePartAUI {
   _renderScreenSelfEval() {
     const isSelfEditable = this.isEditable && this.stage === BUSINESS_STAGES.SELF_EVALUATION;
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+    const count = parseObjectiveCount(this._getVal('Objective_Count'));
 
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
@@ -1860,8 +1866,7 @@ export class EmployeePartAUI {
     `;
     wrap.appendChild(compCard);
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+    const count = parseObjectiveCount(this._getVal('Objective_Count'));
 
     // PART A Horizontal Matrix Table Container
     const partAContainer = document.createElement('div');
@@ -2190,8 +2195,7 @@ export class EmployeePartAUI {
     const compSetCode = this._getVal('Competency_Set_Code') || this.previewOptions.competencySetCode;
     const applicableCompList = getApplicableCompetencies(compSetCode);
 
-    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-    const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+    const count = parseObjectiveCount(this._getVal('Objective_Count'));
 
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';
@@ -2982,8 +2986,7 @@ export class EmployeePartAUI {
   }
 
   _updateTotalWeightDisplay() {
-    const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-    const count = isNaN(countVal) ? 4 : countVal;
+    const count = parseObjectiveCount(this._getVal('Objective_Count'));
 
     let total = 0;
     const parts = [];
