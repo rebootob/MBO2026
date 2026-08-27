@@ -9,6 +9,44 @@
 > Mode: MINIMAL LOCAL UI UAT ONLY / NO PRODUCTION INTEGRATION
 > Kintone read/write/deploy/schema/process/ACL authorization: NONE
 
+## IMMEDIATE EXECUTION REQUEST — START THE PREVIEW SERVER FOR THE USER NOW
+
+The D1-B implementation commit already exists. The user attempted to open localhost and received `ERR_CONNECTION_REFUSED` because the preview server was not running.
+
+Antigravity must now run the preview server from the MBO2026 repository root on the user's machine and LEAVE THE PREVIEW TERMINAL RUNNING so the user can open the UI.
+
+Run exactly:
+
+```bash
+git branch --show-current
+git rev-parse HEAD
+npm run ui:preview
+```
+
+Required checks:
+- branch must be `ai/antigravity-wp002c`
+- server startup must print the localhost preview URLs
+- expected D1-B URL: `http://localhost:3000/auth-preview.html`
+- existing preview should remain available at `http://localhost:3000/`
+- do NOT make any code change merely because the server was stopped
+- do NOT run Kintone commands
+- do NOT deploy anything
+- do NOT stop the server after reporting success; leave the terminal/process running for user UAT
+- if port 3000 is already occupied or startup fails, report the exact terminal error first. Do not kill unrelated processes and do not patch code unless a concrete code defect is proven.
+
+Report immediately after starting:
+- exact branch
+- exact HEAD
+- `UI_PREVIEW_PROCESS = RUNNING` or exact startup error
+- exact D1-B URL
+- `KINTONE_READS_EXECUTED = 0`
+- `KINTONE_WRITES_EXECUTED = 0`
+- `KINTONE_DEPLOY_EXECUTED = 0`
+
+This run request does NOT authorize new implementation scope.
+
+---
+
 ## 0. REVIEW RESULT
 
 D1-A Trusted Auth / Session Boundary is accepted from independent source review.
