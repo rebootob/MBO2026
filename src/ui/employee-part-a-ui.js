@@ -748,6 +748,24 @@ export class EmployeePartAUI {
     this.isEmployeeVerified = !this.isCreate;
   }
 
+  _getResolvedViewerRole() {
+    const rawRole = (this.previewOptions && this.previewOptions.viewerRole) ? String(this.previewOptions.viewerRole).toLowerCase() : 'auto';
+    if (rawRole === 'employee') return 'EMPLOYEE';
+    if (rawRole === 'appraiser') return 'APPRAISER';
+    if (rawRole === 'hr') return 'HR';
+
+    const status = this._getVal('Status') || '01 Draft Objective';
+    if (['15 HR Final Check', '16 Completed'].includes(status)) {
+      return 'HR';
+    }
+    if (['02 First Manager Objective Review', '03 Manager Objective Review', '04 GM Objective Review',
+         '07 First Manager Mid-Year Review', '08 Manager Mid-Year Review', '09 GM Mid-Year Review',
+         '12 First Manager Final Evaluation', '13 Manager Final Evaluation', '14 GM Final Evaluation'].includes(status)) {
+      return 'APPRAISER';
+    }
+    return 'EMPLOYEE';
+  }
+
   render() {
     if (!this.container) return;
     this.container.innerHTML = '';
@@ -862,19 +880,53 @@ export class EmployeePartAUI {
       } else if (effectiveVisualScreen === 'self_eval') {
         root.appendChild(this._renderScreenSelfEval());
       } else if (effectiveVisualScreen === 'appraiser_eval') {
-        const viewerRole = this.previewOptions.viewerRole || 'auto';
-        const isEmployeeViewer = (viewerRole === 'employee' || (viewerRole === 'auto' && currentStageNum < 4 && status !== '15 HR Final Check' && status !== '16 Completed'));
-
-        if (isEmployeeViewer) {
-          const restrictedNotice = document.createElement('div');
-          restrictedNotice.className = 'mbo-restricted-notice';
-          restrictedNotice.innerHTML = '🔒 ข้อมูลรายละเอียดการประเมิน Part A & Part B สงวนสิทธิ์สำหรับผู้ประเมินและ HR / Detailed Appraiser Evaluation ratings are restricted to authorized Appraiser and HR reviewers.';
-          root.appendChild(restrictedNotice);
+        const resolvedRole = this._getResolvedViewerRole();
+        if (resolvedRole === 'EMPLOYEE') {
+          const privacyCard = document.createElement('div');
+          privacyCard.className = 'mbo-restricted-notice mbo-wide-card';
+          privacyCard.style.padding = '24px 20px';
+          privacyCard.style.margin = '12px 0';
+          privacyCard.style.background = '#f8fafc';
+          privacyCard.style.border = '1px solid #cbd5e1';
+          privacyCard.style.borderRadius = '8px';
+          privacyCard.style.textAlign = 'center';
+          privacyCard.innerHTML = `
+            <div style="font-size:16px; font-weight:700; color:#0f172a; margin-bottom:6px;">
+              🔒 อยู่ระหว่างการประเมินโดยผู้ประเมิน / Appraiser Evaluation in progress
+            </div>
+            <div style="font-size:13px; color:#475569;">
+              ข้อมูลรายละเอียดการประเมิน Part A & Part B และผลคะแนนถูกสงวนสิทธิ์สำหรับผู้ประเมินตามลำดับขั้นและ HR<br/>
+              Detailed Appraiser Evaluation ratings, comments, and scoring context are restricted to authorized Appraiser and HR reviewers.
+            </div>
+          `;
+          root.appendChild(privacyCard);
         } else {
           root.appendChild(this._renderScreenAppraiserEval());
         }
       } else if (effectiveVisualScreen === 'hr_final') {
-        root.appendChild(this._renderScreenHrFinal());
+        const resolvedRole = this._getResolvedViewerRole();
+        if (resolvedRole === 'EMPLOYEE') {
+          const hrPrivacyCard = document.createElement('div');
+          hrPrivacyCard.className = 'mbo-restricted-notice mbo-wide-card';
+          hrPrivacyCard.style.padding = '24px 20px';
+          hrPrivacyCard.style.margin = '12px 0';
+          hrPrivacyCard.style.background = '#f0f9ff';
+          hrPrivacyCard.style.border = '1px solid #bae6fd';
+          hrPrivacyCard.style.borderRadius = '8px';
+          hrPrivacyCard.style.textAlign = 'center';
+          hrPrivacyCard.innerHTML = `
+            <div style="font-size:16px; font-weight:700; color:#0369a1; margin-bottom:6px;">
+              🔒 HR กำลังตรวจสอบผลขั้นสุดท้าย / HR Final Review in progress
+            </div>
+            <div style="font-size:13px; color:#334155;">
+              ผลการประเมินสรุปและรายละเอียดขั้นสุดท้ายอยู่ระหว่างการตรวจสอบโดยฝ่ายทรัพยากรบุคคล<br/>
+              Final evaluation summary breakdown is restricted to authorized HR reviewers.
+            </div>
+          `;
+          root.appendChild(hrPrivacyCard);
+        } else {
+          root.appendChild(this._renderScreenHrFinal());
+        }
       }
     } finally {
       this.stage = origStage;
@@ -971,11 +1023,12 @@ export class EmployeePartAUI {
       : currentVisualScreen;
     const isHistoricalView = Boolean(this.selectedViewStage && effectiveVisualScreen !== currentVisualScreen);
 
+    const resolvedRole = this._getResolvedViewerRole();
     const phaseStepsHtml = phases.map(p => {
       const deadline = getPhaseCalendarStatus(p.calKey, status, nowIso, calendar);
       const isCurrentStage = (currentStage === p.stage);
       const isViewedStage = (effectiveVisualScreen === p.key);
-      const isReachable = (p.stage <= currentStage || status === '16 Completed');
+      const isReachable = (p.stage <= currentStage || status === '16 Completed') && (resolvedRole !== 'EMPLOYEE' || p.stage <= 3);
 
       let stepClass = 'mbo-phase-step';
       if (isViewedStage && isHistoricalView) {
@@ -999,8 +1052,14 @@ export class EmployeePartAUI {
         badgeText = '[ Current / ปัจจุบัน ]';
       }
 
+      const tooltipText = isReachable 
+        ? 'คลิกเพื่อดูข้อมูลย้อนหลัง / Click to view history' 
+        : (resolvedRole === 'EMPLOYEE' && p.stage >= 4 
+            ? 'รายละเอียดสงวนสิทธิ์สำหรับผู้ประเมิน/HR / Restricted to Appraisers/HR' 
+            : 'ยังไม่ถึงขั้นตอน / Unreached stage');
+
       return `
-        <div class="${stepClass}" ${isReachable ? `data-stage-key="${p.key}"` : ''} title="${isReachable ? 'คลิกเพื่อดูข้อมูลย้อนหลัง / Click to view history' : 'ยังไม่ถึงขั้นตอน / Unreached stage'}">
+        <div class="${stepClass}" ${isReachable ? `data-stage-key="${p.key}"` : ''} title="${tooltipText}">
           <div style="font-size:12px; font-weight:700;">${escapeHtml(p.nameTH)}</div>
           <div style="font-size:10px; font-weight:600; opacity:0.9;">${escapeHtml(p.nameEN)}</div>
           <div class="mbo-deadline-badge ${isViewedStage && isHistoricalView ? 'mbo-deadline-history' : deadline.badgeClass}">
@@ -1404,13 +1463,21 @@ export class EmployeePartAUI {
     const card = document.createElement('div');
     card.className = 'mbo-timeline-card';
 
-    const events = this.previewOptions.timelineEvents || [
+    const resolvedRole = this._getResolvedViewerRole();
+    let events = this.previewOptions.timelineEvents || [
       { stage: '1. Objectives', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Approved Objectives', time: '14 Feb 2026 • 09:42', outcome: 'approved', commentNotice: false },
       { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Returned for Revision', time: '15 Feb 2026 • 10:18', outcome: 'returned', commentNotice: true },
       { stage: '1. Objectives', actor: 'Employee / Requester (พนักงาน)', name: 'Somchai Prasert (0118)', action: 'Resubmitted Objectives', time: '16 Feb 2026 • 08:30', outcome: 'resubmitted', commentNotice: false },
       { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Approved Objectives', time: '16 Feb 2026 • 13:05', outcome: 'approved', commentNotice: false },
       { stage: '4. Appraiser Evaluation', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Scoring Completed', time: '20 Nov 2026 • 14:22', outcome: 'approved', commentNotice: false }
     ];
+
+    if (resolvedRole === 'EMPLOYEE') {
+      events = events.filter(e => {
+        const stageStr = String(e.stage || '').toLowerCase();
+        return !stageStr.includes('4.') && !stageStr.includes('5.') && !stageStr.includes('appraiser evaluation') && !stageStr.includes('hr final');
+      });
+    }
 
     const rowsHtml = events.map((e, idx) => {
       const outcomeClass = escapeHtml(e.outcome || 'approved');

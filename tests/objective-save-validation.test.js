@@ -1706,6 +1706,79 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(validInfo.isInvalidConfig, false, 'normalizeAppraiserData must set isInvalidConfig=false for valid Objective_Count=1');
   assert.equal(validInfo.slots.length, 2, 'normalizeAppraiserData must return 2 slots for valid Objective_Count=1');
 
+  // 3e. EMPLOYEE STEP 4-5 PRIVACY GATE TESTS
+  // Scenario A: Employee viewer + current Step 4 (Appraiser Eval)
+  const uiEmpStep4 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '12 First Manager Final Evaluation' } }),
+    stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
+    isEditable: false,
+    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+  });
+  assert.doesNotThrow(() => uiEmpStep4.render(), 'Employee viewer on Step 4 must render without throwing');
+  assert.ok(uiEmpStep4.root.innerHTML.includes('Appraiser Evaluation in progress'), 'Employee viewer sees privacy-safe card on Step 4');
+  assert.ok(!uiEmpStep4.root.innerHTML.includes('Appraiser Evaluation Completion'), 'Appraiser card must be absent for Employee on Step 4');
+
+  // Scenario B: Employee viewer + current Step 5 (HR Final)
+  const uiEmpStep5 = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '15 HR Final Check' } }),
+    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+    isEditable: false,
+    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+  });
+  assert.doesNotThrow(() => uiEmpStep5.render(), 'Employee viewer on Step 5 must render without throwing');
+  assert.ok(uiEmpStep5.root.innerHTML.includes('HR Final Review in progress'), 'Employee viewer sees privacy-safe card on Step 5');
+  assert.ok(!uiEmpStep5.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR summary breakdown must be absent for Employee on Step 5');
+
+  // Scenario C: Employee history navigation & navigator step clickability
+  const uiEmpNav = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'M1_G1' }, Status: { value: '15 HR Final Check' } }),
+    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+    isEditable: false,
+    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+  });
+  uiEmpNav.render();
+  const navHtml = uiEmpNav.root.innerHTML;
+  assert.ok(navHtml.includes('data-stage-key="objectives"'), 'Step 1 tile remains clickable for Employee');
+  assert.ok(!navHtml.includes('data-stage-key="appraiser_eval"'), 'Step 4 tile must not be clickable for Employee');
+  assert.ok(!navHtml.includes('data-stage-key="hr_final"'), 'Step 5 tile must not be clickable for Employee');
+
+  // Scenario D: Employee Timeline filtering
+  const uiEmpTimeline = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Routing_Topology: { value: 'CURRENT_STANDARD' }, Status: { value: '15 HR Final Check' } }),
+    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+    isEditable: false,
+    previewOptions: { viewerRole: 'employee', partAWeight: 70, partBWeight: 30 }
+  });
+  uiEmpTimeline.render();
+  const timelineHtml = uiEmpTimeline.root.querySelector('.mbo-timeline-card')?.innerHTML || '';
+  assert.ok(!timelineHtml.includes('4. Appraiser Evaluation'), 'Step 4 timeline events must be absent for Employee');
+
+  // Scenario E: Appraiser viewer preserved
+  const uiApprViewer = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' }, Routing_Topology: { value: 'M1_M2_G1' }, Status: { value: '12 First Manager Final Evaluation' } }),
+    stage: BUSINESS_STAGES.APPRAISER_EVALUATION,
+    isEditable: true,
+    previewOptions: { viewerRole: 'appraiser', partAWeight: 70, partBWeight: 30 }
+  });
+  assert.doesNotThrow(() => uiApprViewer.render());
+  assert.ok(uiApprViewer.root.innerHTML.includes('Appraiser Evaluation Completion'), 'Appraiser completion card must be present for Appraiser viewer');
+
+  // Scenario F: HR viewer preserved
+  const uiHRViewer = new EmployeePartAUI({
+    container: makeMockElement(),
+    record: createMockRecord({ Objective_Count: { value: '4' }, PartA_Weight: { value: '70' }, PartB_Weight: { value: '30' }, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' }, Routing_Topology: { value: 'M1_G1' }, Status: { value: '15 HR Final Check' } }),
+    stage: BUSINESS_STAGES.HR_FINAL_CHECK,
+    isEditable: false,
+    previewOptions: { viewerRole: 'hr', partAWeight: 70, partBWeight: 30 }
+  });
+  assert.doesNotThrow(() => uiHRViewer.render());
+  assert.ok(uiHRViewer.root.innerHTML.includes('Part A Weight (Objectives)'), 'HR summary breakdown must be present for HR viewer');
+
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
   assert.equal(dlUpcoming.status, 'Upcoming');

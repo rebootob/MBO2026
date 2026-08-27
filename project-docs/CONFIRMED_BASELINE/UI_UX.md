@@ -289,6 +289,22 @@ Required behavior:
 - HR Final sees all Appraiser columns read-only.
 - This requirement confirms Appraiser-to-Appraiser visibility only; it does not independently expand Requester/employee visibility of confidential scoring data.
 
+## 19.1 Employee / Requester Step 4–5 Privacy Gate (Confirmed 2026-08-27)
+
+User-confirmed on 2026-08-27:
+- **Employee / Requester must not see Step 4 Appraiser Evaluation detail or Step 5 HR Final detail.**
+- For resolved viewer role `EMPLOYEE` / `REQUESTER`:
+  - `Step 1 Objectives` = ALLOWED
+  - `Step 2 Mid-Year` = ALLOWED
+  - `Step 3 Self Evaluation` = ALLOWED
+  - `Step 4 Appraiser Evaluation` = DETAIL HIDDEN (matrix, ratings, comments, combined scores absent)
+  - `Step 5 HR Final` = DETAIL HIDDEN (breakdown, calibration, final result absent)
+- **Top Navigator**: The 5 stage tiles remain a high-level process progress indicator, but Step 4 and Step 5 tiles are disabled/non-clickable for Employee history navigation.
+- **Current Process in Step 4 or 5**: Employee sees a compact bilingual privacy-safe status card (`อยู่ระหว่างการประเมินโดยผู้ประเมิน / Appraiser Evaluation in progress` or `HR กำลังตรวจสอบผลขั้นสุดท้าย / HR Final Review in progress`).
+- **Timeline**: Step 4 and Step 5 rows are filtered/hidden for Employee. Safe Step 1–3 history remains visible.
+- **Appraiser & HR Viewers**: Full permitted visibility for Appraiser 1..N and HR remains intact.
+- Security note: UI hiding is a client-side presentation privacy gate, not a backend authorization boundary. Native Kintone permissions remain the security boundary.
+
 Current technical status-to-ordinal mapping for supported preview topologies:
 
 ### `M1_G1` (2 Appraisers)
