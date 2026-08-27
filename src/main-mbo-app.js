@@ -9,8 +9,24 @@ import { ValidationEngine } from './validation/validation-engine.js';
 import { EmployeeService } from './services/employee-service.js';
 import { RoutingService } from './services/routing-service.js';
 import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
+import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
+import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
 
 let activeUiInstance = null;
+
+/**
+ * D1: Module-level MBO Login Gate. Initialized to null → fail closed.
+ * Set by production initialization block or by setMboLoginGate() in tests.
+ */
+let mboLoginGate = null;
+
+/**
+ * Allows test injection of a mock gate. Never self-authorize live cutover.
+ * @param {MboKintoneLoginGate|null} gate
+ */
+export function setMboLoginGate(gate) {
+  mboLoginGate = gate;
+}
 
 export function getActiveUiInstance() {
   return activeUiInstance;
@@ -141,6 +157,23 @@ if (typeof kintone !== 'undefined') {
     }
   };
 
+  // D1: Production gate initialization — fail closed if gate cannot be created.
+  if (!mboLoginGate) {
+    try {
+      const app801Api = {
+        getRecords: (appId, query) => kintoneApiWrapper.getRecords(appId, query),
+        updateRecord: (appId, id, record) =>
+          kintone.api(kintone.api.url('/k/v1/record.json', true), 'PUT', {
+            app: appId, id: Number(id), record
+          })
+      };
+      mboLoginGate = new MboKintoneLoginGate(new MboKintoneAuthAdapter({ api: app801Api }));
+    } catch (initErr) {
+      console.error('[MBO V2] FATAL: Failed to initialize MBO Login Gate.', initErr);
+      // mboLoginGate remains null → all record handlers will fail closed
+    }
+  }
+
   function hideAllNativeFields(record) {
     Object.keys(record).forEach(code => {
       try {
@@ -149,6 +182,18 @@ if (typeof kintone !== 'undefined') {
         // ignore system fields that cannot be hidden
       }
     });
+  }
+
+  /**
+   * Render a visible, full-page blocking access-denied notice on the host element.
+   */
+  function renderBlockedNotice(host, title, detail) {
+    host.innerHTML = '';
+    const box = document.createElement('div');
+    box.style.cssText = 'padding:32px;border:2px solid #c00;border-radius:8px;background:#fff5f5;font-family:sans-serif;max-width:600px;';
+    box.innerHTML = `<h2 style="margin:0 0 12px;color:#c00;font-size:18px;">⛔ ${title}</h2>` +
+      `<p style="margin:0;color:#555;font-size:14px;">${detail}</p>`;
+    host.appendChild(box);
   }
 
   /**
@@ -168,21 +213,38 @@ if (typeof kintone !== 'undefined') {
     return BUSINESS_STAGES.CONFIGURATION_ERROR;
   }
 
+  // Hook 0: Index/List — require login before any list content is accessible.
+  kintone.events.on('app.record.index.show', async function (event) {
+    if (!mboLoginGate) {
+      // Gate not initialized — block silently; content inaccessible.
+      console.error('[MBO V2] Login gate not initialized on index.show. Access blocked.');
+      return event;
+    }
+    const host = document.querySelector('.gaia-app-wrapper') || document.body;
+    const authCode = await mboLoginGate.requireLogin(host);
+    if (!authCode) {
+      console.error('[MBO V2] Authentication not obtained on index.show.');
+      return event;
+    }
+    return event;
+  });
 
+  function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode) {
+    // 4. D1: Render auth controls bar (Change Password, Logout).
+    if (mboLoginGate && typeof mboLoginGate.renderAuthBar === 'function') {
+      mboLoginGate.renderAuthBar(uiHost, authenticatedEmployeeCode);
+    }
 
-
-
-  // Hook 1: Record Show (Detail, Edit, Create)
-  kintone.events.on(['app.record.detail.show', 'app.record.edit.show', 'app.record.create.show'], function (event) {
-    const record = event.record;
-    const isCreate = event.type === 'app.record.create.show';
-    const isEdit = event.type === 'app.record.edit.show';
-    const isDetail = event.type === 'app.record.detail.show';
-
-    // 1. Resolve UI host element safely
-    const uiHost = getRecordUiHost('SPACE_HEADER');
-    if (!uiHost) {
-      console.warn('[MBO V2] Custom UI host element not found. Retaining native form.');
+    // 5. D1: Detail/Edit — block if record belongs to a different employee.
+    if (!isCreate && record.Employee_Code?.value &&
+        record.Employee_Code.value !== authenticatedEmployeeCode) {
+      renderBlockedNotice(uiHost,
+        'Access Denied',
+        `This MBO record belongs to a different employee.<br>` +
+        `Authenticated: <strong>${authenticatedEmployeeCode}</strong><br>` +
+        `Record: <strong>${record.Employee_Code.value}</strong>`
+      );
+      hideAllNativeFields(record);
       return event;
     }
 
@@ -204,6 +266,8 @@ if (typeof kintone !== 'undefined') {
       isEditable: isCreate || isEdit,
       isCreate: isCreate,
       loginUserCode: loginUserCode,
+      // D1: bind authenticated Employee_Code so lookup UI is suppressed and context is locked
+      authenticatedEmployeeCode: authenticatedEmployeeCode,
       isPreviewMode: false,
       onFieldChange: (code, val) => {
         if (record[code]) {
@@ -368,10 +432,66 @@ if (typeof kintone !== 'undefined') {
     try {
       ui.render();
       hideAllNativeFields(record);
+      // D1: Create flow — auto-execute full employee resolution chain using authenticated code.
+      if (isCreate && authenticatedEmployeeCode) {
+        ui.executeLookup(authenticatedEmployeeCode).catch(err => {
+          console.error('[MBO V2] Authenticated auto-lookup failed:', err);
+        });
+      }
     } catch (renderError) {
       console.error('[MBO V2] Error rendering custom UI:', renderError);
     }
 
+    return event;
+  }
+
+  // Hook 1: Record Show (Detail, Edit, Create)
+  kintone.events.on(['app.record.detail.show', 'app.record.edit.show', 'app.record.create.show'], function (event) {
+    const record = event.record;
+    const isCreate = event.type === 'app.record.create.show';
+    const isEdit = event.type === 'app.record.edit.show';
+    const isDetail = event.type === 'app.record.detail.show';
+
+    // 1. Resolve UI host element safely
+    const uiHost = getRecordUiHost('SPACE_HEADER');
+    if (!uiHost) {
+      console.warn('[MBO V2] Custom UI host element not found. Retaining native form.');
+      return event;
+    }
+
+    // 2. D1: Fail closed — gate must be initialized before any Employee Self render.
+    if (!mboLoginGate) {
+      renderBlockedNotice(uiHost,
+        'MBO Login Gate Not Initialized',
+        'The MBO authentication system could not be started. Please contact your administrator. [FAIL_CLOSED_GATE_NULL]'
+      );
+      hideAllNativeFields(record);
+      return event;
+    }
+
+    // 3. D1: Require authentication — handles string (sync) or Promise (async)
+    const authResult = mboLoginGate.requireLogin(uiHost);
+    if (typeof authResult === 'string') {
+      return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authResult);
+    } else if (authResult && typeof authResult.then === 'function') {
+      return authResult.then(authenticatedEmployeeCode => {
+        if (!authenticatedEmployeeCode) {
+          renderBlockedNotice(uiHost,
+            'Authentication Required',
+            'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]'
+          );
+          hideAllNativeFields(record);
+          return event;
+        }
+        return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode);
+      });
+    }
+
+    renderBlockedNotice(uiHost,
+      'Authentication Required',
+      'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]'
+    );
+    hideAllNativeFields(record);
     return event;
   });
 

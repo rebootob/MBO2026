@@ -126,7 +126,7 @@ globalThis.document = {
   getElementById: () => null
 };
 
-const { getActiveUiInstance, syncRecordToKintone } = await import('../src/main-mbo-app.js');
+const { getActiveUiInstance, syncRecordToKintone, setMboLoginGate } = await import('../src/main-mbo-app.js');
 
 function createMockRecord(overrides = {}) {
   const base = {
@@ -188,6 +188,11 @@ function createBlankFormStateRecord(overrides = {}) {
 }
 
 function setupMockKintoneApis() {
+  setMboLoginGate({
+    getEmployeeCode: () => '0118',
+    requireLogin: () => '0118',
+    renderAuthBar: () => {}
+  });
   getApiOverride = null;
   setApiOverride = null;
   const mockApi = async (path, method, body) => {
@@ -459,6 +464,7 @@ test('M10L-R3: Runtime submit hook blocks save (returns false) when activeUiInst
 });
 
 test('M10L-R3: Runtime submit hook proceeds (returns event) for valid existing Edit save with verified activeUiInstance', async () => {
+  setupMockKintoneApis();
   const showHook = kintoneHandlers['app.record.edit.show'];
   const submitHook = kintoneHandlers['app.record.edit.submit'];
   assert.ok(typeof showHook === 'function');
