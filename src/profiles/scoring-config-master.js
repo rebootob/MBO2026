@@ -1,22 +1,7 @@
 import crypto from 'node:crypto';
+import { PROFILE_CODES } from './profile-codes-policy.js';
 
-/**
- * MBO V2 Phase 3 WP-002A: Scoring Configuration Master Foundation
- * 
- * Master Record Identity: Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}
- * Governance Rules: DEC-035 (LIVE_KINTONE_FIRST), DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS), DEC-038 (KINTONE_ONLY)
- */
-
-export const PROFILE_CODES = {
-  STAFF_CHIEF: 'PROF_STAFF_CHIEF',
-  JAPANESE_STAFF: 'PROF_JAPANESE_STAFF',
-  ASST_MGR: 'PROF_ASST_MGR',
-  SECTION_MGR: 'PROF_SECTION_MGR',
-  SENIOR_MGR: 'PROF_SENIOR_MGR',
-  DGM: 'PROF_DGM',
-  GM: 'PROF_GM',
-  VP: 'PROF_VP'
-};
+export { PROFILE_CODES };
 
 export const PROFILE_FAMILIES = {
   PROFILE_STAFF_CHIEF: 'PROFILE_STAFF_CHIEF',

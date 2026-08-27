@@ -6,8 +6,7 @@
  * Source of Truth: project-docs/CONFIRMED_BASELINE/
  */
 
-import { resolveProfileCode, getProfileCodeFromPosition } from '../profiles/profile-scoring-resolver.js';
-import { PROFILE_CODES } from '../profiles/scoring-config-master.js';
+import { PROFILE_CODES, getProfileCodeFromPosition } from '../profiles/profile-codes-policy.js';
 
 export const BUILD_VERSION_INFO = {
   version: '0.2.4',

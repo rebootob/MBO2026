@@ -6,7 +6,7 @@
  */
 
 import { AdminDiagnosticModel, escapeHtml } from './admin-diagnostic-model.js';
-import { getProfileCodeFromPosition } from '../profiles/profile-scoring-resolver.js';
+import { getProfileCodeFromPosition } from '../profiles/profile-codes-policy.js';
 
 /**
  * Mock Diagnostic Provider for local preview, unit testing, and offline diagnostic checks.
