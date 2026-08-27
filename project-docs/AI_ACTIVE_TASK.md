@@ -1,109 +1,130 @@
-# AI ACTIVE TASK — D1-C3B TRUSTED EMPLOYEE-SELF DATA GATEWAY + EXACT CUTOVER MANIFEST
+# AI ACTIVE TASK — D1-C3B FINAL CORRECTIVE: QUERY-SAFE EMPLOYEE GATEWAY + EXACT CUTOVER FACTS
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Independently reviewed implementation: `0bec4f4d4408c7cc7dcba1ddd7be90dcafb282ef`
-> Mode: FASTEST SAFE PATH / MINIMUM SERVER-SIDE DATA BOUNDARY / NO LIVE KINTONE WRITE OR DEPLOY
+> Reviewed implementation: `f9258223a16849fa87965b00325d2eaf05dbb460`
+> Mode: MINIMUM D1 SECURITY CORRECTIVE + READ-ONLY CUTOVER FACTS / NO KINTONE WRITE / NO DEPLOY / NO UI
 
-## 0. INDEPENDENT REVIEW RESULT — D1-C3A ACCEPTED
+## 0. INDEPENDENT REVIEW RESULT
 
-Accepted from `0bec4f4d...` by source review:
-- explicit `SHARED_KINTONE_SECONDARY_AUTH` mode exists;
-- shared outer Kintone principal no longer requires impossible one-user-to-one-Employee_Code mapping in that explicit mode;
-- MBO password remains mandatory and server-side;
-- `Must_Change_Password === true` requires activation store + provisioned valid code + successful consume before restricted session issue;
-- activation mismatch/replay/expired/wrong code fail closed;
-- activation generation is 8 random bytes = 64-bit entropy / 16 uppercase hex chars;
-- technical admin remains blocked;
-- App801 repository enforces exact Employee_Code lookup and duplicate fail-closed;
-- no live Kintone write/deploy occurred.
+Accepted from `f9258223...`:
+- source scope is small: new employee-self gateway + focused tests only;
+- trusted principal is resolved through the accepted auth service;
+- employeeCode is derived from trusted session, not a browser employee selector;
+- App794 queries include employee scope;
+- technical admin / invalid session denial structure exists;
+- no Kintone write or deploy occurred.
 
-GitHub has no CI/status evidence for this commit. Do NOT claim CI PASS.
+D1-C3B is NOT accepted yet because the following concrete runtime/security blockers remain.
 
-Minor test gaps (missing-capability test can fail earlier at credentialStore gate; no isolated consume-failure test) are NOT a reason to reopen C3A. Keep them for D6 regression unless a concrete runtime defect appears.
+## 1. B1 — BROWSER QUERY INPUT CAN ALTER KINTONE QUERY LOGIC
 
-Classification:
+Current gateway interpolates browser-supplied `fiscalYear` and `recordId` directly into Kintone query strings.
 
-```text
-D1C3A_SOURCE = PASS / ACCEPTED
-D1_OVERALL = IN_PROGRESS
-```
+This can allow quote/operator injection and can weaken the intended `Employee_Code = session.employeeCode` scope.
 
-## 1. FROZEN EMPLOYEE SELF UX/SECURITY RULE
+### Required correction
 
-After MBO authentication succeeds, the trusted session owns exactly one Employee_Code.
+- `fiscalYear`, when supplied, must be validated against the canonical MBO fiscal-year contract `^FY\d{4}$` (case-insensitive is acceptable, normalize to uppercase). Reject anything else before any Kintone call.
+- `recordId` must normalize to a positive integer-string only: `^\d+$`. Reject quotes, spaces, operators, decimals, signs, or other characters before any Kintone call.
+- Never interpolate unvalidated browser-controlled query fragments.
+- Employee_Code remains trusted-session-only and must satisfy the existing canonical Employee Code rules.
 
-Employee Self-Service MUST NOT ask the employee to type/select Employee ID again.
+Add focused tests proving malicious fiscalYear / recordId strings cannot change query scope and result in `INVALID_ARGUMENT` with zero Kintone call.
 
-Canonical flow:
+## 2. B2 — APP53 LOOKUP DOES NOT USE THE CANONICAL APP53 CONTRACT
 
-```text
-MBO login
- -> trusted session.employeeCode
- -> App53 employee facts for session.employeeCode
- -> App794 current/history only for session.employeeCode
-```
-
-Browser-supplied Employee_Code is never an authorization input.
-
-Copy Previous, Export, History, direct record lookup and future write operations must all derive Employee_Code from the trusted session.
-
-## 2. GOAL — ONE SMALL TRUSTED DATA BOUNDARY
-
-Implement ONLY the server-side employee-self read gateway contract needed to prove D1 isolation after login.
-
-Preferred new source:
-- `src/services/mbo-employee-self-gateway.js`
-- `tests/mbo-employee-self-gateway.test.js`
-
-Reuse existing auth/session and Kintone transport patterns. Do NOT create a generic web framework, router framework or UI.
-
-### Required server-only API/service behavior
-
-A minimal class/service may expose equivalent methods:
+Current gateway queries:
 
 ```text
-getEmployeeSelfBootstrap({ sessionToken, fiscalYear })
-listOwnMboHistory({ sessionToken })
-getOwnMboRecord({ sessionToken, recordId })
+emp_text = "<code>" OR Employee_Code = "<code>"
 ```
 
-Rules:
-1. Resolve principal ONLY by `MboAuthSessionService.getAuthenticatedPrincipal(sessionToken)` or injected equivalent trusted principal resolver.
-2. Missing/expired/force-change/non-data-authorized session => deny.
-3. Derive `employeeCode` ONLY from trusted principal.
-4. App53 is READ ONLY. Query exact Employee_Code and fail closed on zero/duplicate active identity ambiguity.
-5. App794 query must ALWAYS include exact `Employee_Code = session.employeeCode` scope.
-6. `getOwnMboRecord(recordId)` must fetch/verify both recordId AND Employee_Code scope; record id alone is never sufficient.
-7. Employee 0118 session cannot read/list/bootstrap 0119 even if browser sends/changes recordId, fiscal year, URL or query values.
-8. Never return credential/session hashes or confidential fields that employee is not allowed to see.
-9. No employeeCode selector/input is part of the employee-self service contract.
-10. Transport is dependency-injected and server-only; tests must not call live Kintone.
+But the accepted `EmployeeService` proves App53 canonical Employee Code is `emp_text`, with numeric fallback through field `Number`. `Employee_Code` is a normalized domain field, not the canonical App53 field code.
 
-Do NOT implement App794 writes in this package.
-Do NOT implement D2 export or D5 copy here.
+### Required correction
 
-## 3. MINIMUM TESTS ONLY
+Reuse `EmployeeService.lookupEmployee(employeeCode, kintoneApiAdapter)` instead of duplicating App53 identity logic.
 
-Prove at minimum:
-1. authenticated 0118 bootstrap queries App53/App794 with 0118 from session, not caller input;
-2. 0118 history returns only 0118 query scope;
-3. 0118 direct recordId lookup uses `recordId AND Employee_Code=0118` and cannot expose 0119;
-4. missing/expired/non-data-authorized principal denied;
-5. duplicate App53 employee identity fails closed;
-6. gateway has no employeeCode request parameter used for authorization;
-7. sanitized result contains no Password_Hash, Activation_Code_Hash, Session_Token_Hash;
-8. technical admin/non-employee-self principal cannot use employee-self gateway.
+Create only a tiny adapter over the gateway transport if needed:
 
-Do not duplicate broad auth tests already accepted.
+```text
+getRecords(appId, query) -> trusted server transport GET
+```
 
-## 4. EXACT APP801 SCHEMA CUTOVER MANIFEST — PLAN ONLY
+Benefits required:
+- App53 canonical `emp_text` / `Number` query behavior reused;
+- exactly-one and canonical identity consistency reused;
+- Employee Self receives the canonical safe employee snapshot, not the whole raw App53 record.
 
-No live schema change yet.
+Do NOT modify `EmployeeService` unless a proven incompatibility exists.
 
-Freeze the required App801 additions as ONE exact list unless current source contract proves otherwise:
+## 3. B3 — RAW APP794 RECORD CAN LEAK CONFIDENTIAL EMPLOYEE-HIDDEN FIELDS
+
+Current `_sanitizeRecord()` removes only auth hashes/secrets and otherwise returns the full App794 record.
+
+The repository already defines `CONFIDENTIAL_FIELDS` in `src/config/constants.js`, including Manager/GM scores/comments, weighted scores, final confidential score and grade.
+
+### Required correction
+
+For every App794 record returned through Employee Self:
+- strip ALL field codes in existing `CONFIDENTIAL_FIELDS`;
+- strip Password/Activation/Session/TOTP/recovery secrets as already intended;
+- verify returned `Employee_Code.value` exactly equals trusted `session.employeeCode` before returning it;
+- if an App794 response contains a mismatched or missing Employee_Code where a record is expected, fail closed and return no record data.
+
+Apply this to:
+- bootstrap current record;
+- history list;
+- direct record lookup.
+
+Do not invent a second confidential-field list. Reuse `CONFIDENTIAL_FIELDS`.
+
+## 4. REQUIRED TESTS — ONLY NEW RISKS
+
+Add focused tests only for:
+1. invalid/malicious fiscalYear rejected before Kintone call;
+2. invalid/malicious recordId rejected before Kintone call;
+3. App53 bootstrap reuses canonical EmployeeService behavior (`emp_text` / `Number`) and returns canonical employee snapshot;
+4. App794 confidential fields are absent from bootstrap/history/direct-record responses;
+5. App794 response with Employee_Code different from session employee fails closed;
+6. existing 0118 -> 0119 direct-record denial remains passing.
+
+Keep existing gateway/auth tests passing. Do not duplicate broad D1 tests.
+
+## 5. EXACT CUTOVER FACTS — COMPLETE THE PART MISSED IN THE FIRST C3B COMMIT
+
+No live changes. Use only minimum READ-ONLY Kintone GETs, preferably <= 3, to freeze App794 cutover facts if current repo evidence is not sufficient.
+
+Read only as needed:
+- App794 form fields relevant to Requester/Appraiser/Approver access;
+- App794 App ACL;
+- App794 Record ACL.
+
+Report exact current field/principal codes. Do not invent HR groups/users.
+
+Required output:
+
+```text
+APP794_APP_ACL_CURRENT = <exact entities/rights>
+APP794_RECORD_ACL_CURRENT = <exact rules or NONE>
+APP794_PRIVILEGED_USER_FIELDS = <exact existing Requester/Appraiser/Approver field codes>
+APP794_ACL_CUTOVER = READY:<exact proposed preserve/deny rules> | BLOCKED_PRIVILEGED_RULES_NOT_PROVEN
+```
+
+Known unsafe employee rule must remain identified:
+
+```text
+GROUP everyone direct App794 view/query access = UNSAFE
+```
+
+Do NOT execute ACL changes yet.
+
+## 6. APP801 EXACT SCHEMA MANIFEST — PLAN ONLY
+
+Freeze exactly these 9 additions for the later authorized schema package:
 
 ```text
 Password_Expires_At                  DATETIME
@@ -117,112 +138,90 @@ Session_Data_Authorized              DROP_DOWN YES|NO
 Session_Kintone_User_Code            SINGLE_LINE_TEXT
 ```
 
-Do NOT add credential-level `Kintone_User_Code` as employee identity proof.
-App801 ACL remains current deny-all for GROUP everyone unless exact evidence requires otherwise.
+`APP801_ACL_CHANGE = NO_CHANGE` unless a new exact read proves otherwise.
 
-## 5. APP794 DIRECT-ACCESS CUTOVER MANIFEST — READ ONLY / EXACT FACTS
+Do NOT add credential-level Kintone_User_Code as identity proof.
 
-Known accepted fact:
+## 7. TRUSTED RUNTIME FACT
+
+Do not create hosting in this package.
+
+If no actual server host/runtime has been configured, report:
 
 ```text
-APP794_APP_ACL = CREATOR full access; GROUP everyone view/add/edit/delete
-APP794_RECORD_ACL = NONE
-DIRECT_EMPLOYEE_ACCESS = UNSAFE
+TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE
 ```
 
-D1 cannot close while shared employee browser can directly read/query arbitrary App794 records.
-
-Use minimum READ-ONLY Kintone GETs only if necessary to identify exact existing App794 fields/entities that can preserve legitimate HR/appraiser/approver access during cutover.
-
-Report exact:
-- authoritative App794 user/user-selection field codes for Appraiser/Approver access, if they exist;
-- exact HR/group/user principal codes already proven in configuration, if any;
-- whether a record-permission design can deny shared/general employee direct records while preserving legitimate privileged users;
-- if exact privileged rule cannot yet be proven, state `APP794_ACL_CUTOVER = BLOCKED_PRIVILEGED_RULES_NOT_PROVEN` rather than guessing.
-
-Do NOT execute ACL change.
-Do NOT invent HR group/user codes.
-
-## 6. TRUSTED RUNTIME CUTOVER FACT
-
-Existing evidence says:
-
-`TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE`
-
-Do not create/deploy hosting in this package.
-
-Provide the minimum portable runtime contract only:
+Required future runtime remains:
 - Node server-side process;
-- App801/App794 privileged Kintone credential/API token stays server-side;
-- opaque HttpOnly/Secure session cookie at the eventual HTTP boundary;
-- employee browser calls gateway, not App794 REST directly.
+- privileged App801/App794 Kintone credential/token server-side only;
+- opaque HttpOnly/Secure session boundary;
+- Employee Self browser uses gateway, never direct unrestricted App794 REST.
 
-If no actual host is configured, keep:
+## 8. ALLOWED FILES / SCOPE
 
-`TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE`
+Preferred source changes only:
+- `src/services/mbo-employee-self-gateway.js`
+- `tests/mbo-employee-self-gateway.test.js`
 
-This is an operational deployment blocker, not permission to move secrets into browser JS.
+Existing imports from `EmployeeService`, `CONFIDENTIAL_FIELDS`, and fiscal-year/employee validation utilities are allowed.
 
-## 7. REQUIRED DELIVERY REPORT
+No auth changes.
+No UI changes.
+No App794 writes.
+No App801 writes/schema changes.
+No ACL changes.
+No deploy.
+No D2-D7 implementation.
+No generic framework/refactor.
 
-Report exactly:
+## 9. VERIFICATION
+
+Run:
+
+```bash
+npm test -- tests/mbo-employee-self-gateway.test.js
+npm test -- tests/mbo-password-service.test.js tests/mbo-identity-service.test.js tests/mbo-auth-session-service.test.js tests/mbo-auth-kintone-repository.test.js tests/mbo-activation-service.test.js tests/mbo-employee-self-gateway.test.js
+npm test
+git diff --check
+git status --short
+```
+
+No CI claim without GitHub CI evidence.
+
+## 10. DELIVERY REPORT
+
+Report:
 
 ```text
-D1C3A_SOURCE = PASS_ACCEPTED
 EMPLOYEE_SELF_GATEWAY = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW | BLOCKED:<reason>
-EMPLOYEE_CODE_SOURCE = TRUSTED_SESSION_ONLY
-APP53_EMPLOYEE_LOOKUP = IMPLEMENTED | BLOCKED
-APP794_OWN_SCOPE_QUERY = IMPLEMENTED | BLOCKED
-APP794_DIRECT_RECORD_SCOPE = IMPLEMENTED | BLOCKED
+QUERY_INPUT_VALIDATION = PASS_PENDING_REVIEW
+APP53_CANONICAL_LOOKUP = REUSED_EMPLOYEE_SERVICE
+APP794_RETURN_SCOPE_VERIFY = PASS_PENDING_REVIEW
+APP794_CONFIDENTIAL_FILTER = REUSED_CONFIDENTIAL_FIELDS
 
-APP801_SCHEMA_MANIFEST = EXACT_9_FIELDS_ABOVE | CORRECTED_WITH_REASON
-APP801_ACL_CHANGE = NO_CHANGE | <exact proposed change>
+APP801_SCHEMA_MANIFEST = EXACT_9_FIELDS
+APP801_ACL_CHANGE = NO_CHANGE | <exact reason>
+APP794_APP_ACL_CURRENT = <exact>
+APP794_RECORD_ACL_CURRENT = <exact>
+APP794_PRIVILEGED_USER_FIELDS = <exact>
 APP794_ACL_CUTOVER = READY:<exact rules> | BLOCKED_PRIVILEGED_RULES_NOT_PROVEN
 TRUSTED_BACKEND_RUNTIME = <exact runtime> | NOT_AVAILABLE
 
 KINTONE_READS_EXECUTED = N
 KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
-D1C3B_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW | BLOCKED_WITH_EXACT_EVIDENCE
+D1C3B_CORRECTIVE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW | BLOCKED_WITH_EXACT_EVIDENCE
 D1_OVERALL_STATUS = IN_PROGRESS
 ```
 
-## 8. VERIFICATION
-
-Run only relevant tests plus full regression:
-
-```bash
-npm test -- tests/mbo-employee-self-gateway.test.js
-npm test -- tests/mbo-auth-session-service.test.js tests/mbo-auth-kintone-repository.test.js tests/mbo-employee-self-gateway.test.js
-npm test
-git diff --check
-git status --short
-```
-
-No CI claim without GitHub evidence.
-
-## 9. ABSOLUTE OUT OF SCOPE
-
-- no live App801 schema write
-- no App801 credential provisioning
-- no App794 record/schema/ACL write
-- no Kintone deploy
-- no hosting/deployment framework
-- no UI changes
-- no App800 activation UI
-- no D2 export implementation
-- no D3 migration write
-- no D4 lifecycle work
-- no D5 copy implementation
-- no D6 broad E2E yet
-- no D7 changes
-- no unrelated refactor/docs cleanup
+If this passes independent review, Control Plane decides the exact one-time live schema/runtime/ACL authorization package. Do not self-authorize live cutover.
 
 ---
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A SOURCE PASS / D1-C3B THIS TASK
+- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A PASS / D1-C3B CORRECTIVE
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
