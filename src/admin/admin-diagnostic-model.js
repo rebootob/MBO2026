@@ -1,5 +1,5 @@
 /**
- * Admin Diagnostic Model & Health Engine (D7 Corrective Package)
+ * Admin Diagnostic Model & Health Engine (D7 Corrective Round 2)
  * Pure logic for Technical Admin (admin-form) System Health, Workflow Trace, Profile/Route Validation,
  * Topology-aware Ordinal Appraiser Slot Normalization, Root-Cause Classification, Fast Repair Candidate Preparation, and Sanitized Snapshot.
  *
@@ -11,9 +11,9 @@ import { PROFILE_CODES } from '../profiles/scoring-config-master.js';
 
 export const BUILD_VERSION_INFO = {
   version: '0.2.4',
-  sourceBuildId: 'WP-002C-CORRECTIVE-PACKAGE',
+  sourceBuildId: 'WP-002C-CORRECTIVE-ROUND2',
   commitSha: 'NOT_EVIDENCED',
-  buildTimestamp: '2026-08-27T13:33:00Z',
+  buildTimestamp: '2026-08-27T13:39:00Z',
   environment: 'LOCAL_PREVIEW / SANDBOX'
 };
 
@@ -74,15 +74,20 @@ export class AdminDiagnosticModel {
   static normalizeUserCode(code) {
     if (!code) return '';
     if (typeof code === 'string') return code.trim().toLowerCase();
+    if (Array.isArray(code)) {
+      if (code.length > 0) return AdminDiagnosticModel.normalizeUserCode(code[0]);
+      return '';
+    }
     if (typeof code === 'object') {
       if (typeof code.code === 'string') return code.code.trim().toLowerCase();
       if (typeof code.value === 'string') return code.value.trim().toLowerCase();
+      if (Array.isArray(code.value) && code.value.length > 0) return AdminDiagnosticModel.normalizeUserCode(code.value[0]);
     }
     return String(code).trim().toLowerCase();
   }
 
   /**
-   * Topology-aware Ordinal Appraiser Slot Normalizer (P0-E).
+   * Topology-aware Ordinal Appraiser Slot Normalizer (P0-E & B3).
    * Normalizes record/context fields into exact 1st..4th Appraiser ordinal slots based on Routing_Topology.
    */
   static normalizeAppraiserSlots(context = {}) {
@@ -144,9 +149,7 @@ export class AdminDiagnosticModel {
 
   /**
    * Evaluates System Health across 15 diagnostic indicators.
-   * Checks login user code strictly against admin-form.
-   * Routing Key alone does NOT produce PASS.
-   * Overall health returns INCOMPLETE_EVIDENCE if critical evidence is missing.
+   * B5 Fix: When commitSha is 'NOT_EVIDENCED', bundle_version status is NOT_EVIDENCED, not PASS.
    */
   static evaluateSystemHealth(context = {}) {
     const {
@@ -354,12 +357,13 @@ export class AdminDiagnosticModel {
       reason: schemaState === 'PASS' ? 'Physical fields match expected App794 contract' : 'Schema live inspection not evidenced'
     });
 
-    // 15. Bundle / Source Version Identifier (P0-G: Truthful build metadata)
+    // 15. Bundle / Source Version Identifier (B5 Fix: NOT_EVIDENCED when commitSha is NOT_EVIDENCED)
+    const isCommitEvidenced = BUILD_VERSION_INFO.commitSha && BUILD_VERSION_INFO.commitSha !== 'NOT_EVIDENCED';
     items.push({
       key: 'bundle_version',
       labelTH: 'เวอร์ชันระบบ (Bundle / Build Identifier)',
       labelEN: 'Bundle / Build Identifier',
-      status: 'PASS',
+      status: isCommitEvidenced ? 'PASS' : 'NOT_EVIDENCED',
       reason: `v${BUILD_VERSION_INFO.version} (${BUILD_VERSION_INFO.sourceBuildId}) • Commit: ${BUILD_VERSION_INFO.commitSha}`
     });
 
@@ -377,8 +381,6 @@ export class AdminDiagnosticModel {
 
   /**
    * B. Evaluates Workflow Trace & Workflow State Consistency (P0-D Truth Boundary).
-   * Prevents future topologies (M1_M2_G1, M1_G1_G2, M1_M2_G1_G2) from returning production-certified PASS.
-   * Validates audit history entries structurally before setting historyStatus = 'EVIDENCED'.
    */
   static evaluateWorkflowTrace(context = {}) {
     const {
@@ -431,13 +433,11 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // P1-C: Future topology over-certification guard
     const isConfirmedTopology = topology === 'M1_G1' || topology === 'M1_ONLY';
     const topologyCertificationStatus = topology === 'M1_G1'
       ? 'CURRENT_CONFIRMED'
       : (topology === 'M1_ONLY' ? 'CONFIRMED_EXECUTIVE_DIRECT_CONTEXT' : 'FUTURE_TOPOLOGY_NOT_PRODUCTION_CERTIFIED');
 
-    // Detect topology state violations using exact canonical status names:
     if (topology === 'M1_G1' && ['02 First Manager Objective Review', '07 First Manager Mid-Year Review', '12 First Manager Final Evaluation'].includes(currentStatus)) {
       return {
         status: 'ERROR',
@@ -458,7 +458,6 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // Active Appraiser Slot consistency using canonical status names
     let expectedSlot = null;
     if (currentStatus === '12 First Manager Final Evaluation') expectedSlot = 1;
     else if (currentStatus === '13 Manager Final Evaluation') expectedSlot = topology === 'M1_ONLY' ? 1 : (topology === 'M1_M2_G1' ? 2 : 1);
@@ -474,7 +473,6 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // Required Appraiser presence for active slot
     const appraiserSlots = { 1: appraiser1, 2: appraiser2, 3: appraiser3, 4: appraiser4 };
     const isAppraiserContextSupplied = Boolean(appraiser1 || appraiser2 || appraiser3 || appraiser4);
     if (expectedSlot && isAppraiserContextSupplied && !appraiserSlots[expectedSlot]) {
@@ -487,7 +485,6 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // P0-D: Strict Structural Audit History Validation
     let historyStatus = 'PENDING_AUDIT_SCHEMA_AUTHORIZATION';
     let isAuditStructurallyValid = false;
 
@@ -616,7 +613,6 @@ export class AdminDiagnosticModel {
 
     const normPos = (position || '').trim().toLowerCase();
 
-    // Executive direct single-appraiser route check
     const execKeyMap = {
       'dgm': 'POSITION_DGM',
       'deputy general manager': 'POSITION_DGM',
@@ -691,7 +687,6 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // TMG Section exact-team routing rule
     const isTMG = (sectionCode || '').toUpperCase().startsWith('TMG');
     let expectedKey = sectionCode || authoritativeRoute?.Routing_Key || authoritativeRoute?.Matched_Rule || '';
     if (isTMG) {
@@ -722,7 +717,6 @@ export class AdminDiagnosticModel {
       };
     }
 
-    // P0-E: Require complete App795 routing evidence for all 1..N ordinal slots
     const expectedCount = Number(authoritativeRoute.appraiserCount || 2);
     const authNorm = AdminDiagnosticModel.normalizeAppraiserSlots({
       topology: authoritativeRoute.topology,
@@ -746,7 +740,6 @@ export class AdminDiagnosticModel {
       GM_User: context.GM_User
     });
 
-    // Check if authoritative route is missing required slot 1..N
     for (let i = 1; i <= expectedCount; i++) {
       const authSlot = authNorm.slots.find(s => s.slot === i);
       if (!authSlot || !authSlot.userCode) {
@@ -764,7 +757,6 @@ export class AdminDiagnosticModel {
     const topMatch = actualTopology === authoritativeRoute.topology;
     const countMatch = Number(actualAppraiserCount) === expectedCount;
 
-    // Check slot by slot for mismatch
     const norm = AdminDiagnosticModel.normalizeUserCode;
     let slotMismatchReason = null;
 
@@ -779,7 +771,6 @@ export class AdminDiagnosticModel {
       }
     }
 
-    // Check if actual route contains extra slots beyond expected count
     let extraSlotError = null;
     const actualTotalSlotsPresent = [actualAppraiser1, actualAppraiser2, actualAppraiser3, actualAppraiser4].filter(Boolean).length;
     if (actualTotalSlotsPresent > expectedCount) {
@@ -841,8 +832,8 @@ export class AdminDiagnosticModel {
 
   /**
    * E. Fast Repair Preparation & Root-Cause Classifier.
-   * Strictly validates authoritativeProfile and authoritativeRoute CONTENT (P0-C).
-   * P0-F: Does NOT include Routing_Key in diff if stored routing key is NOT_AVAILABLE / unproven.
+   * B2 Fix: App796 Fiscal_Year and Config_Status = 'PUBLISHED' evidence are MANDATORY for profileMasterEvidenced.
+   * B4 Fix: Routing_Key ONLY appears in repair diff if isPhysicalRoutingKeyProven === true.
    */
   static prepareRepairCandidate(context = {}) {
     const profileEval = AdminDiagnosticModel.evaluateProfileMatch(context);
@@ -862,7 +853,7 @@ export class AdminDiagnosticModel {
     const isProfileOk = profileEval.status === 'PASS';
     const isRouteOk = routeEval.status === 'PASS';
 
-    // P0-C: Validate authoritativeProfile CONTENT strictly (code + PartA + PartB + FY + Status mandatory)
+    // B2 Fix: Mandatory strict check on FY and Config_Status = 'PUBLISHED'
     let isProfileMasterProven = false;
     if (context.authoritativeProfile) {
       const authCode = context.authoritativeProfile.code || context.authoritativeProfile.Profile_Code;
@@ -874,13 +865,13 @@ export class AdminDiagnosticModel {
       const codeMatch = profileEval.expectedProfileCode !== 'NOT_EVIDENCED' && authCode === profileEval.expectedProfileCode;
       const aMatch = authA !== undefined && authA !== null && profileEval.expectedPartAWeight !== null && Number(authA) === profileEval.expectedPartAWeight;
       const bMatch = authB !== undefined && authB !== null && profileEval.expectedPartBWeight !== null && Number(authB) === profileEval.expectedPartBWeight;
-      const fyMatch = !authFy || !context.fiscalYear || authFy === context.fiscalYear;
-      const statusMatch = !authStatus || authStatus === 'PUBLISHED';
+      // B2: authFy and authStatus must BE PRESENT and MATCH EXACTLY
+      const fyMatch = Boolean(authFy && context.fiscalYear && authFy === context.fiscalYear);
+      const statusMatch = Boolean(authStatus && authStatus === 'PUBLISHED');
 
       isProfileMasterProven = Boolean(codeMatch && aMatch && bMatch && fyMatch && statusMatch);
     }
 
-    // Validate authoritativeRoute CONTENT strictly (topology + appraiserCount + appraiser1 mandatory)
     let isRouteMasterProven = false;
     if (context.authoritativeRoute) {
       const top = context.authoritativeRoute.topology;
@@ -892,7 +883,6 @@ export class AdminDiagnosticModel {
     const profileMasterEvidenced = isProfileMasterProven;
     const routeMasterEvidenced = isRouteMasterProven;
 
-    // Domain safety guards
     const profileRepairSafe = hasProfileError && isProfileMasterProven;
     const routeRepairSafe = hasRouteError && isRouteMasterProven;
 
@@ -1012,7 +1002,6 @@ export class AdminDiagnosticModel {
     const afterDiff = {};
     const fieldsAffected = [];
 
-    // P0-G & P0-F: Only include actual changed fields in FIX_THIS_RECORD
     if (rootCause === 'FIX_THIS_RECORD') {
       if (profileRepairSafe) {
         if (context.actualProfileCode !== profileEval.expectedProfileCode && profileEval.expectedProfileCode !== 'NOT_EVIDENCED') {
@@ -1033,13 +1022,15 @@ export class AdminDiagnosticModel {
       }
 
       if (routeRepairSafe) {
-        // P0-F Gate: Only include Routing_Key in diff if actual stored Routing_Key is physically evidenced (not NOT_AVAILABLE)
-        const isRoutingKeyStored = context.actualRoutingKey && context.actualRoutingKey !== 'NOT_AVAILABLE';
-        if (isRoutingKeyStored && context.actualRoutingKey !== routeEval.expectedRoutingKey && routeEval.expectedRoutingKey !== 'NOT_EVIDENCED') {
-          beforeDiff.Routing_Key = context.actualRoutingKey;
+        // B4 Fix: Routing_Key ONLY appears in repair diff if physical field is explicitly proven
+        const isPhysicalKeyProven = context.isPhysicalRoutingKeyProven === true;
+        const storedKey = context.actualStoredRoutingKey || context.actualRoutingKey;
+        if (isPhysicalKeyProven && storedKey && storedKey !== 'NOT_AVAILABLE' && storedKey !== routeEval.expectedRoutingKey && routeEval.expectedRoutingKey !== 'NOT_EVIDENCED') {
+          beforeDiff.Routing_Key = storedKey;
           afterDiff.Routing_Key = routeEval.expectedRoutingKey;
           fieldsAffected.push('Routing_Key');
         }
+
         if (context.actualTopology !== routeEval.expectedTopology && routeEval.expectedTopology !== 'NOT_EVIDENCED') {
           beforeDiff.Routing_Topology = context.actualTopology || 'NOT_EVIDENCED';
           afterDiff.Routing_Topology = routeEval.expectedTopology;
@@ -1110,18 +1101,46 @@ export class AdminDiagnosticModel {
 
   /**
    * Builds detailed read-only Record Diagnostic object.
-   * P0-F: Distinguishes derived expected Routing_Key from stored Routing_Key (NOT_AVAILABLE if physical field unconfirmed).
+   * B3 Fix: Uses normalizeAppraiserSlots for topology-aware appraiser slot mapping.
+   * B4 Fix: Distinguishes derived expected Routing_Key from stored Routing_Key (NOT_AVAILABLE if physical field unconfirmed).
    */
   static buildRecordDiagnostic(record, options = {}) {
     const getVal = (code) => {
       if (!record) return '';
       const field = record[code];
       if (field === null || field === undefined) return '';
-      if (typeof field === 'object' && 'value' in field) return field.value ?? '';
+      if (typeof field === 'object' && field !== null) {
+        if (Array.isArray(field.value) && field.value.length > 0) {
+          return field.value[0]?.code || field.value[0] || '';
+        }
+        if ('value' in field) return field.value ?? '';
+      }
+      if (Array.isArray(field) && field.length > 0) {
+        return field[0]?.code || field[0] || '';
+      }
       return String(field);
     };
 
-    const storedRoutingKeyVal = getVal('Routing_Key');
+    const hasPhysicalKeyField = options.isPhysicalRoutingKeyProven === true || (record && 'Routing_Key' in record);
+    const storedRoutingKeyVal = hasPhysicalKeyField ? (getVal('Routing_Key') || options.actualStoredRoutingKey || 'NOT_AVAILABLE') : 'NOT_AVAILABLE';
+
+    // B3 Fix: Topology-aware ordinal appraiser slot mapping
+    const normAppraisers = AdminDiagnosticModel.normalizeAppraiserSlots({
+      topology: options.actualTopology || getVal('Routing_Topology') || 'M1_G1',
+      appraiser1: options.appraiser1,
+      appraiser2: options.appraiser2,
+      appraiser3: options.appraiser3,
+      appraiser4: options.appraiser4,
+      First_Manager_User: getVal('First_Manager_User'),
+      Manager_User: getVal('Manager_User'),
+      GM_User: getVal('GM_User'),
+      GM_Level2_Approvers: getVal('GM_Level2_Approvers')
+    });
+
+    const getSlotUser = (slotNum) => {
+      const s = normAppraisers.slots.find(x => x.slot === slotNum);
+      return s && s.userCode ? s.userCode : 'NOT_EVIDENCED';
+    };
 
     return {
       recordId: getVal('$id') || options.recordId || 'NOT_EVIDENCED',
@@ -1135,13 +1154,14 @@ export class AdminDiagnosticModel {
       currentActor: options.currentActor || 'NOT_EVIDENCED',
       resolvedViewerRole: options.resolvedViewerRole || 'NOT_EVIDENCED',
       activeAppraiserSlot: options.activeAppraiserSlot || null,
-      expectedAppraiserCount: options.expectedAppraiserCount || null,
-      appraiser1: options.appraiser1 || getVal('First_Manager_User') || 'NOT_EVIDENCED',
-      appraiser2: options.appraiser2 || getVal('GM_User') || 'NOT_EVIDENCED',
-      appraiser3: options.appraiser3 || 'NOT_EVIDENCED',
-      appraiser4: options.appraiser4 || 'NOT_EVIDENCED',
-      storedRoutingKey: storedRoutingKeyVal || options.storedRoutingKey || 'NOT_AVAILABLE',
-      routingKey: storedRoutingKeyVal || options.routingKey || 'NOT_EVIDENCED',
+      expectedAppraiserCount: options.expectedAppraiserCount || normAppraisers.expectedCount,
+      appraiser1: options.appraiser1 || getSlotUser(1),
+      appraiser2: options.appraiser2 || getSlotUser(2),
+      appraiser3: options.appraiser3 || getSlotUser(3),
+      appraiser4: options.appraiser4 || getSlotUser(4),
+      storedRoutingKey: storedRoutingKeyVal,
+      isPhysicalRoutingKeyProven: hasPhysicalKeyField,
+      routingKey: options.routingKey || (hasPhysicalKeyField && storedRoutingKeyVal !== 'NOT_AVAILABLE' ? storedRoutingKeyVal : 'NOT_EVIDENCED'),
       sectionCode: getVal('Section_Code') || options.sectionCode || 'NOT_EVIDENCED',
       teamName: getVal('Team') || options.teamName || 'NOT_EVIDENCED',
       routingResult: options.routingResult || null,

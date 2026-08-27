@@ -1,11 +1,12 @@
 /**
- * Admin Support Center UI Component & Diagnostic Providers (D7 Corrective Package)
+ * Admin Support Center UI Component & Diagnostic Providers (D7 Corrective Round 2)
  * Read-only Technical Admin Diagnostic Panel strictly restricted to Kintone user `admin-form`.
  *
  * Source of Truth: project-docs/CONFIRMED_BASELINE/
  */
 
 import { AdminDiagnosticModel, escapeHtml } from './admin-diagnostic-model.js';
+import { getProfileCodeFromPosition } from '../profiles/profile-scoring-resolver.js';
 
 /**
  * Mock Diagnostic Provider for local preview, unit testing, and offline diagnostic checks.
@@ -25,6 +26,8 @@ export class MockAdminDiagnosticProvider {
         requesterUser: '0118',
         currentStatus: '01 Draft Objective',
         routingKey: 'TMT1',
+        storedRoutingKey: 'TMT1',
+        isPhysicalRoutingKeyProven: true,
         sectionCode: 'TMT1',
         teamName: 'Technical Service',
         position: 'Staff',
@@ -51,6 +54,8 @@ export class MockAdminDiagnosticProvider {
         requesterUser: '0111',
         currentStatus: '01 Draft Objective',
         routingKey: 'TMS1',
+        storedRoutingKey: 'TMS1',
+        isPhysicalRoutingKeyProven: true,
         sectionCode: 'TMS1',
         teamName: '',
         position: 'Assistant Manager',
@@ -77,6 +82,8 @@ export class MockAdminDiagnosticProvider {
         requesterUser: 'DGM001',
         currentStatus: '01 Draft Objective',
         routingKey: 'POSITION_DGM',
+        storedRoutingKey: 'POSITION_DGM',
+        isPhysicalRoutingKeyProven: true,
         sectionCode: '',
         teamName: '',
         position: 'DGM',
@@ -110,8 +117,8 @@ export class MockAdminDiagnosticProvider {
     }
 
     if (cleanEmp === 'AMBIGUOUS_EMP') {
-      const err = new Error(`พบเรคคอร์ด App 794 ซ้ำซ้อนสำหรับพนักงาน ${cleanEmp} ใน ${cleanFy} (AMBIGUOUS_RECORD)\nMultiple App794 records found for employee.`);
-      err.code = 'AMBIGUOUS_RECORD';
+      const err = new Error(`MBO_AMBIGUOUS: Multiple App794 records found for employee ${cleanEmp} in ${cleanFy}.`);
+      err.code = 'MBO_AMBIGUOUS';
       throw err;
     }
 
@@ -121,7 +128,6 @@ export class MockAdminDiagnosticProvider {
 
     const match = this.catalog[cleanEmp];
 
-    // P0-A: Unknown preview employee returns NOT_FOUND only. Does NOT fabricate Name, Requester, MBO Key, or Status.
     if (!match) {
       return {
         employeeCode: cleanEmp,
@@ -132,6 +138,8 @@ export class MockAdminDiagnosticProvider {
         requesterUser: 'NOT_EVIDENCED',
         currentStatus: 'NOT_EVIDENCED',
         routingKey: 'NOT_EVIDENCED',
+        storedRoutingKey: 'NOT_AVAILABLE',
+        isPhysicalRoutingKeyProven: false,
         sectionCode: 'NOT_EVIDENCED',
         teamName: 'NOT_EVIDENCED',
         appraiser1: 'NOT_EVIDENCED',
@@ -155,9 +163,10 @@ export class MockAdminDiagnosticProvider {
 }
 
 /**
- * Production-Intended Read-Only Async Kintone Diagnostic Provider (P0-B).
+ * Production-Intended Read-Only Async Kintone Diagnostic Provider (B1 Fix).
  * Assembles a single READ-ONLY diagnostic evidence bundle from injected dependencies for App53, App794, App795, App796.
  * Zero live Kintone calls executed without injected test transport or API adapter.
+ * Fails closed on missing or ambiguous records for all 4 apps. Does NOT fabricate fallbacks.
  */
 export class KintoneAdminDiagnosticProvider {
   constructor(options = {}) {
@@ -189,7 +198,7 @@ export class KintoneAdminDiagnosticProvider {
       throw new Error('PROVIDER_NOT_CONFIGURED: Kintone transport or repository dependency is not wired.');
     }
 
-    if (empRecords.length === 0) {
+    if (!empRecords || empRecords.length === 0) {
       const err = new Error(`EMPLOYEE_NOT_FOUND: Employee Code "${cleanEmp}" was not found in App53 Employee Master.`);
       err.code = 'EMPLOYEE_NOT_FOUND';
       throw err;
@@ -201,8 +210,11 @@ export class KintoneAdminDiagnosticProvider {
     }
 
     const empObj = empRecords[0];
+    const empPos = empObj.Employee_Position?.value || empObj.Employee_Position || '';
+    const secCode = empObj.Employee_Section?.value || empObj.Employee_Section || '';
+    const teamCode = empObj.Team?.value || empObj.Team || '';
 
-    // 2. App794 MBO Annual Record Query
+    // 2. App794 MBO Annual Record Query (B1: 0 records => MBO_NOT_FOUND, >1 => MBO_AMBIGUOUS)
     let mboRecords = [];
     if (this.app794Repo) {
       mboRecords = await this.app794Repo.getRecords(`Employee_Code = "${cleanEmp}" and Fiscal_Year = "${cleanFy}" limit 2`);
@@ -211,29 +223,65 @@ export class KintoneAdminDiagnosticProvider {
       mboRecords = resp?.records || [];
     }
 
+    if (!mboRecords || mboRecords.length === 0) {
+      const err = new Error(`MBO_NOT_FOUND: App794 MBO record not found for Employee "${cleanEmp}" in Fiscal Year ${cleanFy}.`);
+      err.code = 'MBO_NOT_FOUND';
+      throw err;
+    }
     if (mboRecords.length > 1) {
       const err = new Error(`MBO_AMBIGUOUS: Multiple App794 records found for Employee "${cleanEmp}" in ${cleanFy}.`);
       err.code = 'MBO_AMBIGUOUS';
       throw err;
     }
 
-    const mboRecord = mboRecords[0] || null;
+    const mboRecord = mboRecords[0];
 
-    // 3. App796 Published Scoring Master Config Query
+    // 3. App796 Published Scoring Master Config Query (B1: Query by expected Profile_Code + FY + PUBLISHED)
+    let expectedProfileCode = null;
+    if (empPos) {
+      try {
+        expectedProfileCode = getProfileCodeFromPosition(empPos);
+      } catch {}
+    }
+
     let app796Records = [];
-    const empPos = empObj.Employee_Position?.value || empObj.Employee_Position || '';
+    const pQuery = expectedProfileCode
+      ? `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") and Profile_Code = "${expectedProfileCode}" limit 2`
+      : `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") limit 2`;
+
     if (this.app796Repo) {
-      app796Records = await this.app796Repo.getRecords(`Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") limit 10`);
+      app796Records = await this.app796Repo.getRecords(pQuery);
     } else if (this.kintoneApi) {
-      const resp = await this.kintoneApi.getRecords(this.appIds.app796, `Fiscal_Year = "${cleanFy}" and Config_Status in ("PUBLISHED") limit 10`);
+      const resp = await this.kintoneApi.getRecords(this.appIds.app796, pQuery);
       app796Records = resp?.records || [];
     }
 
-    // 4. App795 Routing Master Query
+    if (!app796Records || app796Records.length === 0) {
+      const err = new Error(`SCORING_CONFIG_NOT_FOUND: Published App796 config for profile "${expectedProfileCode || 'N/A'}" in FY ${cleanFy} not found.`);
+      err.code = 'SCORING_CONFIG_NOT_FOUND';
+      throw err;
+    }
+    if (app796Records.length > 1) {
+      const err = new Error(`SCORING_CONFIG_AMBIGUOUS: Multiple published App796 configs found for profile "${expectedProfileCode || 'N/A'}" in FY ${cleanFy}.`);
+      err.code = 'SCORING_CONFIG_AMBIGUOUS';
+      throw err;
+    }
+
+    const app796Obj = app796Records[0];
+
+    // 4. App795 Routing Master Query (B1: 0 records => ROUTE_NOT_FOUND, >1 => ROUTE_AMBIGUOUS)
+    const normPos = empPos.trim().toLowerCase();
+    const execKeyMap = {
+      'dgm': 'POSITION_DGM',
+      'deputy general manager': 'POSITION_DGM',
+      'gm': 'POSITION_GM',
+      'general manager': 'POSITION_GM',
+      'vp': 'POSITION_VP',
+      'vice president': 'POSITION_VP'
+    };
+    const rKey = execKeyMap[normPos] || (teamCode ? `${secCode}|${teamCode}` : secCode);
+
     let app795Records = [];
-    const secCode = empObj.Employee_Section?.value || empObj.Employee_Section || '';
-    const teamCode = empObj.Team?.value || empObj.Team || '';
-    const rKey = teamCode ? `${secCode}|${teamCode}` : secCode;
     if (this.app795Repo) {
       app795Records = await this.app795Repo.getRecords(`Routing_Key = "${rKey}" and Active in ("Active") limit 2`);
     } else if (this.kintoneApi) {
@@ -241,39 +289,66 @@ export class KintoneAdminDiagnosticProvider {
       app795Records = resp?.records || [];
     }
 
+    if (!app795Records || app795Records.length === 0) {
+      const err = new Error(`ROUTE_NOT_FOUND: Active App795 route for key "${rKey}" not found.`);
+      err.code = 'ROUTE_NOT_FOUND';
+      throw err;
+    }
+    if (app795Records.length > 1) {
+      const err = new Error(`ROUTE_AMBIGUOUS: Multiple active App795 routes found for key "${rKey}".`);
+      err.code = 'ROUTE_AMBIGUOUS';
+      throw err;
+    }
+
+    const app795Obj = app795Records[0];
+
+    // Check physical storage of Routing_Key on App794 record (B4)
+    const isPhysicalRoutingKeyProven = Boolean(mboRecord && 'Routing_Key' in mboRecord && mboRecord.Routing_Key !== null && mboRecord.Routing_Key !== undefined);
+    const storedRoutingKey = isPhysicalRoutingKeyProven ? (mboRecord.Routing_Key?.value || mboRecord.Routing_Key || 'NOT_AVAILABLE') : 'NOT_AVAILABLE';
+
+    // Extract real appraiser user codes without hardcoded fallbacks like 'm01' or 'g01'
+    const a1 = app795Obj.Manager_Level1_Approvers?.value?.[0]?.code || app795Obj.First_Manager_User?.value?.[0]?.code || app795Obj.Manager_User?.value?.[0]?.code || app795Obj.appraiser1 || null;
+    const a2 = app795Obj.GM_Level1_Approvers?.value?.[0]?.code || app795Obj.GM_User?.value?.[0]?.code || app795Obj.appraiser2 || null;
+    const a3 = app795Obj.GM_Level2_Approvers?.value?.[0]?.code || app795Obj.appraiser3 || null;
+    const a4 = app795Obj.appraiser4 || null;
+
     return {
       employeeCode: cleanEmp,
       fiscalYear: cleanFy,
-      recordId: mboRecord ? String(mboRecord.$id?.value || mboRecord.$id || '') : 'NOT_FOUND',
-      mboKey: mboRecord ? String(mboRecord.Record_Key?.value || mboRecord.Record_Key || '') : 'NOT_EVIDENCED',
+      recordId: String(mboRecord.$id?.value || mboRecord.$id || ''),
+      mboKey: String(mboRecord.Record_Key?.value || mboRecord.Record_Key || 'NOT_EVIDENCED'),
       employeeName: empObj.Employee_Name?.value || empObj.Employee_Name || 'NOT_EVIDENCED',
       requesterUser: empObj.Employee_Code?.value || empObj.Employee_Code || cleanEmp,
-      currentStatus: mboRecord ? String(mboRecord.Status?.value || mboRecord.Status || '') : 'NOT_EVIDENCED',
+      currentStatus: String(mboRecord.Status?.value || mboRecord.Status || 'NOT_EVIDENCED'),
       routingKey: rKey || 'NOT_EVIDENCED',
+      storedRoutingKey,
+      isPhysicalRoutingKeyProven,
       sectionCode: secCode || 'NOT_EVIDENCED',
       teamName: teamCode || 'NOT_EVIDENCED',
       position: empPos || 'NOT_EVIDENCED',
-      actualProfileCode: mboRecord ? (mboRecord.Profile_Code?.value || mboRecord.Profile_Code || 'NOT_EVIDENCED') : 'NOT_EVIDENCED',
-      actualPartAWeight: mboRecord ? (mboRecord.PartA_Weight?.value ?? mboRecord.PartA_Weight) : null,
-      actualPartBWeight: mboRecord ? (mboRecord.PartB_Weight?.value ?? mboRecord.PartB_Weight) : null,
-      actualTopology: mboRecord ? (mboRecord.Routing_Topology?.value || mboRecord.Routing_Topology || 'M1_G1') : 'M1_G1',
-      actualAppraiserCount: mboRecord ? (mboRecord.Expected_Appraiser_Count?.value ?? mboRecord.Expected_Appraiser_Count ?? 2) : 2,
-      appraiser1: mboRecord ? (mboRecord.First_Manager_User?.value?.[0]?.code || mboRecord.First_Manager_User || 'NOT_EVIDENCED') : 'NOT_EVIDENCED',
-      appraiser2: mboRecord ? (mboRecord.GM_User?.value?.[0]?.code || mboRecord.GM_User || 'NOT_EVIDENCED') : 'NOT_EVIDENCED',
-      authoritativeProfile: app796Records[0] ? {
-        code: app796Records[0].Profile_Code?.value || app796Records[0].Profile_Code,
-        partAWeight: app796Records[0].PartA_Weight?.value ?? app796Records[0].PartA_Weight,
-        partBWeight: app796Records[0].PartB_Weight?.value ?? app796Records[0].PartB_Weight,
-        fiscalYear: cleanFy,
-        configStatus: 'PUBLISHED'
-      } : null,
-      authoritativeRoute: app795Records[0] ? {
-        topology: app795Records[0].Routing_Topology?.value || app795Records[0].Routing_Topology || 'M1_G1',
-        appraiserCount: 2,
-        appraiser1: app795Records[0].Manager_Level1_Approvers?.value?.[0]?.code || 'm01',
-        appraiser2: app795Records[0].GM_Level1_Approvers?.value?.[0]?.code || 'g01'
-      } : null,
-      isNotFound: !mboRecord,
+      actualProfileCode: mboRecord.Profile_Code?.value || mboRecord.Profile_Code || 'NOT_EVIDENCED',
+      actualPartAWeight: mboRecord.PartA_Weight?.value ?? mboRecord.PartA_Weight ?? null,
+      actualPartBWeight: mboRecord.PartB_Weight?.value ?? mboRecord.PartB_Weight ?? null,
+      actualTopology: mboRecord.Routing_Topology?.value || mboRecord.Routing_Topology || 'NOT_EVIDENCED',
+      actualAppraiserCount: mboRecord.Expected_Appraiser_Count?.value ?? mboRecord.Expected_Appraiser_Count ?? null,
+      appraiser1: mboRecord.First_Manager_User?.value?.[0]?.code || mboRecord.First_Manager_User || 'NOT_EVIDENCED',
+      appraiser2: mboRecord.GM_User?.value?.[0]?.code || mboRecord.GM_User || 'NOT_EVIDENCED',
+      authoritativeProfile: {
+        code: app796Obj.Profile_Code?.value || app796Obj.Profile_Code,
+        partAWeight: app796Obj.PartA_Weight?.value ?? app796Obj.PartA_Weight,
+        partBWeight: app796Obj.PartB_Weight?.value ?? app796Obj.PartB_Weight,
+        fiscalYear: app796Obj.Fiscal_Year?.value || app796Obj.Fiscal_Year || cleanFy,
+        configStatus: app796Obj.Config_Status?.value || app796Obj.Config_Status || 'PUBLISHED'
+      },
+      authoritativeRoute: {
+        topology: app795Obj.Routing_Topology?.value || app795Obj.Routing_Topology || null,
+        appraiserCount: app795Obj.Expected_Appraiser_Count?.value ?? app795Obj.Expected_Appraiser_Count ?? null,
+        appraiser1: a1,
+        appraiser2: a2,
+        appraiser3: a3,
+        appraiser4: a4
+      },
+      isNotFound: false,
       sourceMode: 'PRODUCTION_KINTONE',
       isProductionEvidence: true
     };
@@ -293,7 +368,6 @@ export class AdminSupportCenterUI {
 
   /**
    * Helper to return truth-based indicator badges for UI tables (P1-A).
-   * Color is secondary; explicit text status (MATCH, MISMATCH, NOT_EVIDENCED, NOT_APPLICABLE) is mandatory.
    */
   static getMatchBadge(status, isMatch) {
     if (status === 'NOT_EVIDENCED' || status === 'NOT_AVAILABLE' || status === null || status === undefined) {
@@ -382,7 +456,7 @@ export class AdminSupportCenterUI {
             <span style="font-size:12px; padding:6px 12px; border-radius:4px; font-weight:bold; ${statusBadgeClass[health.overallHealth] || statusBadgeClass.INCOMPLETE_EVIDENCE}">
               OVERALL HEALTH: ${escapeHtml(health.overallHealth)}
             </span>
-            <!-- P0-A: Explicit Evidence Provider Badge -->
+            <!-- Explicit Evidence Provider Badge -->
             <div style="margin-top:4px;">
               ${providerMode === 'PREVIEW_FIXTURE' ? `
                 <span style="font-size:10px; background:#9a3412; color:#ffedd5; padding:2px 6px; border-radius:4px; font-weight:bold;">⚠️ PREVIEW FIXTURE EVIDENCE (NOT PRODUCTION EVIDENCE)</span>
