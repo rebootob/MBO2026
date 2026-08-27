@@ -1,67 +1,54 @@
-# AI ACTIVE TASK — IDENTITY-BASED VIEWER ROLE RESOLUTION / PRIVACY CLOSURE
+# AI ACTIVE TASK — FINAL IDENTITY PRIVACY MICRO-FIX + PRODUCTION MODULAR CODE STANDARD
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting implementation HEAD: `8beb16792f3cdbeeb6f76933d0de061f0da6a64d`
-> Mode: **VISUAL-UAT PRIVACY CLOSURE / ONE ROUND / FAIL-CLOSED / NO KINTONE**
+> Starting implementation HEAD: `49ddaab5abcccbea7ba3ef4bf45a22f6c7110fc0`
+> Mode: **FINAL PRIVACY MICRO-FIX / ONE ROUND / NO LARGE REFACTOR / NO KINTONE**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY/BROWSER-SMOKE: **0 / 0 / 0 / 0**
 
-## WHY THIS TASK EXISTS
+## USER-CONFIRMED PRODUCTION CODE STANDARD — 2026-08-27
 
-Independent review found a privacy blocker in the current Step 4–5 privacy implementation.
+The user confirmed that the maintainable modular JavaScript approach must also apply to the real Production App794 implementation, not only to Preview/local development.
 
-Current UI method `_getResolvedViewerRole()` can infer viewer role from the record Process `Status` when Preview role is `auto` / no explicit role is supplied.
-
-That is unsafe.
-
-Example:
+Record this decision in the existing canonical `project-docs/CONFIRMED_BASELINE/UI_UX.md` (or the most appropriate existing canonical architecture/code-governance section in that same baseline; do not create a duplicate baseline file):
 
 ```text
-Login user = Employee / Requester
-Record Status = 13 Manager Final Evaluation
+PRODUCTION_SOURCE_STRUCTURE = MODULAR
+PRODUCTION_KINTONE_DELIVERY = BUILT_BUNDLE
+PREVIEW_AND_PRODUCTION_BUSINESS_RENDERING = SAME_SOURCE_MODULES_WHERE_PRACTICAL
 ```
 
-The record status describes **where the workflow is**, not **who is viewing the record**.
+Confirmed intent:
 
-Therefore this is prohibited:
+- Source code in `src/` must be split by clear domain responsibility when that materially improves maintainability, debugging, testability, or security review.
+- Do NOT create micro-files or split merely because a function is long.
+- Prefer modifying existing modules/functions before creating a new file unless there is a clear separation-of-concerns reason.
+- Preview and Production must not become two independent business implementations.
+- Production may continue to receive a single built JavaScript bundle such as `dist/mbo-employee-app.js` for simple Kintone customization deployment.
+- Build output is not the maintainability source of truth; source modules under `src/` are.
+- A later post-Visual-UAT controlled refactor may separate responsibilities such as viewer visibility, route presentation, timeline presentation, and scoring normalization, but it must preserve behavior and tests.
 
-```text
-Status 12/13/14 -> viewer = APPRAISER
-Status 15/16    -> viewer = HR
-```
-
-Production `src/main-mbo-app.js` currently does not inject a trusted viewer role, so status-based fallback can expose confidential Step 4/5 content to an Employee.
-
-Confirmed UI privacy baseline remains:
-
-```text
-Employee Step 1 Objectives       = allowed
-Employee Step 2 Mid-Year         = allowed
-Employee Step 3 Self Evaluation  = allowed
-Employee Step 4 Appraiser Eval   = detail hidden
-Employee Step 5 HR Final         = detail hidden
-```
-
-Do not edit `project-docs/CONFIRMED_BASELINE/*` in this round unless implementation discovers a direct contradiction. The existing baseline already records the Employee Step 4–5 privacy rule.
+**Important for this round:** record the standard only. Do NOT perform the broad modular refactor now. First close the two identity/privacy defects below.
 
 ---
 
 # OBJECTIVE
 
-Replace status-based viewer-role inference with **identity-based, fail-closed resolution** and wire the production Kintone login identity into the UI in one coherent round.
+Close the last two independently verified identity-role defects in `resolveIdentityViewerRole()` without redesigning UI and without broad refactoring.
 
-Do NOT redesign the UI.
-Do NOT reopen MBO secondary-password architecture, App801, migration, routing-master design, scoring-master design, Hoshin, schema, Process Management, or Kintone permissions.
+Primary source:
 
-Primary files expected:
+```text
+src/ui/employee-part-a-ui.js
+```
+
+Production wiring remains:
 
 ```text
 src/main-mbo-app.js
-src/ui/employee-part-a-ui.js
-tests/objective-save-validation.test.js
 ```
 
 Build output:
@@ -70,366 +57,257 @@ Build output:
 dist/mbo-employee-app.js
 ```
 
----
-
-# 1. ABSOLUTE RULE — STATUS IS NOT VIEWER IDENTITY
-
-Remove production viewer-role inference from Process Status.
-
-After this task, there must be **zero production code paths** equivalent to:
+Confirmed privacy baseline remains:
 
 ```text
-status -> APPRAISER viewer
-status -> HR viewer
-```
-
-Status may still determine:
-
-```text
-current workflow phase
-current business stage
-action guidance
-current route actor context
-```
-
-Status must NOT determine:
-
-```text
-who the logged-in viewer is
-whether the viewer may see Step 4 confidential scoring
-whether the viewer may see Step 5 HR detail
-```
-
-Expected:
-
-```text
-STATUS_BASED_VIEWER_ROLE_INFERENCE = 0
+Employee Step 1 = allowed
+Employee Step 2 = allowed
+Employee Step 3 = allowed
+Employee Step 4 detail = hidden
+Employee Step 5 detail = hidden
 ```
 
 ---
 
-# 2. PRODUCTION LOGIN IDENTITY SOURCE
+# BLOCKER 1 — EMPLOYEE_CODE MUST NOT BE A KINTONE LOGIN AUTHORITY
 
-In Kintone runtime, use the existing native identity source:
+Current implementation incorrectly builds requester identity from both:
 
 ```js
-kintone.getLoginUser().code
+Requester_User
+Employee_Code
 ```
 
-Read only. No Kintone API call is required.
+Current pattern to remove:
 
-`src/main-mbo-app.js` must pass trusted identity context into `EmployeePartAUI` instead of leaving production role resolution to status inference.
+```js
+const requesterCodes = [
+  ...extractUserCodes(record.Requester_User),
+  ...extractUserCodes(record.Employee_Code)
+];
+```
 
-Recommended minimal option shape:
+This is unsafe because `Employee_Code` is business/master data and is not currently a confirmed Kintone login-user identity field in the frozen architecture.
+
+For this local privacy resolver:
 
 ```text
-loginUserCode = <kintone login user code>
-resolvedViewerRole = <role resolved from identity/record context, or RESTRICTED>
+REQUESTER_IDENTITY_AUTHORITY = Requester_User
+EMPLOYEE_CODE_AS_LOGIN_AUTHORITY = PROHIBITED
 ```
 
-Do not allow a normal production user to set their own role through Preview controls or arbitrary query/UI state.
+Required behavior:
 
-Preview role simulation may remain available only when the UI is explicitly in Preview mode.
+```text
+Requester_User matches loginUserCode -> requester candidate = true
+Employee_Code matches loginUserCode but Requester_User does not -> requester candidate = false
+```
+
+Do not add an App53 lookup or new identity mapping in this task.
+Do not invent equivalence between Employee_Code and Kintone user code.
 
 Expected:
 
 ```text
-PRODUCTION_LOGIN_IDENTITY_WIRED = PASS
-PREVIEW_ROLE_SIMULATION_ISOLATED = PASS
+EMPLOYEE_CODE_VIEWER_AUTHORITY_PATHS = 0
+REQUESTER_USER_PRIMARY_IDENTITY_MATCH = PASS
 ```
 
 ---
 
-# 3. IDENTITY MATCHING — USE EXISTING RECORD ROUTE IDENTITIES
+# BLOCKER 2 — OVERLAPPING ROLES MUST FAIL CLOSED
 
-Use the smallest pure/helper implementation possible.
+Current implementation calculates booleans but then applies precedence:
 
-Existing record identity fields already present in runtime may include:
-
-```text
-Requester_User
-First_Manager_User
-Manager_User
-GM_User
-Manager_Level1_Approvers
-Manager_Level2_Approvers
-GM_Level1_Approvers
-GM_Level2_Approvers
+```js
+if (isRequester) return 'EMPLOYEE';
+if (isHR) return 'HR';
+if (isAppraiser) return 'APPRAISER';
 ```
 
-Support Kintone USER_SELECT shapes safely:
+This violates the locked task rule for ambiguous identity.
 
-```text
-[{ code: 'user01', name: '...' }]
-```
-
-and compatible single-value/object/string forms only where existing source already uses them.
-
-Do not infer identity from display name, position title, department, section, scoring profile, route topology, or Process Status.
-
-### Employee / Requester
-
-If the login user code matches the authoritative requester/user identity on the record, resolve:
-
-```text
-EMPLOYEE
-```
-
-For current architecture, `Requester_User` is the primary record-level identity field for this local privacy gate unless a more authoritative already-existing App794 field is proven in source.
-
-### Appraiser
-
-If the login user code matches one or more configured Appraiser/Approver user fields for the record, resolve:
-
-```text
-APPRAISER
-```
-
-Matching must be identity-based, not status-based.
-
-An Appraiser may view Step 4 confidential content according to the already-confirmed Appraiser visibility model; editability/current-slot rules remain separately status/route driven.
-
-### HR
-
-Do **not** invent HR authority.
-
-If the repository already contains a reviewed authoritative HR role/user resolver, reuse it.
-
-If no authoritative HR identity source exists locally, production HR role resolution in this task must remain fail-closed:
-
-```text
-HR_AUTHORITY_SOURCE = NOT_AVAILABLE_LOCAL
--> do not infer HR from Status 15/16
--> unresolved viewer = RESTRICTED
-```
-
-Preview may continue to simulate `HR` only in explicit Preview mode for Visual UAT.
-
-Do not query Kintone groups/users/apps in this task.
-
----
-
-# 4. AMBIGUOUS / UNKNOWN IDENTITY MUST FAIL CLOSED
-
-If login identity cannot be resolved safely, return:
+When one login identity matches more than one business-role class on the same record and no separately confirmed canonical precedence exists, return:
 
 ```text
 RESTRICTED
 ```
 
-Do NOT default unknown identity to:
+Required pure decision model:
 
 ```text
-EMPLOYEE
-APPRAISER
-HR
+matches = [requester?, appraiser?, hr?]
+roleMatchCount = number of true classes
+
+0 matches -> RESTRICTED
+1 match requester -> EMPLOYEE
+1 match appraiser -> APPRAISER
+1 match hr -> HR
+2+ matches -> RESTRICTED
 ```
 
-If the same login user matches conflicting business roles on the same record and no existing canonical precedence is already proven, fail closed as `RESTRICTED` rather than guessing.
+Examples that MUST return `RESTRICTED`:
 
-For `RESTRICTED` viewer:
+```text
+Requester_User + Manager_User = same login user
+Requester_User + HR authority = same login user
+Manager_User + HR authority = same login user
+Requester + Appraiser + HR = same login user
+```
 
-- Step 4 confidential detail = hidden
-- Step 5 confidential detail = hidden
-- sensitive Timeline Step 4/5 rows = hidden
-- no sensitive Appraiser/HR history navigation
-- show a compact bilingual configuration/access message; do not expose scoring values while unresolved
-
-Safe Step 1–3 visibility may remain only if existing record-level access already permits it and the viewer is not being elevated by this helper. Do not claim this UI gate is the native authorization boundary.
+Do not invent priority ordering.
 
 Expected:
 
 ```text
-UNKNOWN_VIEWER_ROLE = RESTRICTED
 AMBIGUOUS_VIEWER_ROLE = RESTRICTED
-FAIL_OPEN_VIEWER_ROLE_DEFAULTS = 0
+ROLE_PRECEDENCE_GUESS_PATHS = 0
 ```
 
 ---
 
-# 5. PREVIEW SIMULATION RULE
+# HR RULE — KEEP FAIL CLOSED
 
-`previewOptions.viewerRole = employee|appraiser|hr` may continue to drive Visual UAT **only when `isPreviewMode === true`**.
+Do not expand HR authority in this task.
 
-Outside explicit Preview mode:
+Current project evidence says Production HR authority is not yet certified by this local UI resolver. If no authoritative production HR resolver is already available in source:
 
 ```text
-previewOptions.viewerRole
+HR_PRODUCTION_AUTHORITY_SOURCE = NOT_AVAILABLE_LOCAL
 ```
 
-must not elevate or override production identity resolution.
+and unknown HR-like identities remain `RESTRICTED`.
+
+Do NOT infer HR from:
+
+```text
+Status 15
+Status 16
+position/title
+profile
+section/department
+```
+
+Preview may still simulate HR only under explicit `isPreviewMode === true`.
+
+---
+
+# PREVIEW OVERRIDE ISOLATION — RETAIN
+
+Reconfirm:
+
+```text
+isPreviewMode=true + viewerRole=employee/appraiser/hr -> Preview simulation allowed
+isPreviewMode=false + viewerRole=hr -> must NOT elevate production role
+```
+
+Do not loosen this guard.
+
+---
+
+# REQUIRED REGRESSION TEST MATRIX
+
+Use the existing test framework only. Keep the suite compact but cover all identity classes directly.
 
 Required tests:
 
 ```text
-production-like UI + previewOptions.viewerRole='hr' + isPreviewMode=false
--> MUST NOT become HR merely from previewOptions
-```
+A. Requester_User='emp01', login='emp01'
+   -> EMPLOYEE
 
-Expected:
-
-```text
-PREVIEW_ROLE_ESCALATION_IN_PRODUCTION = 0
-```
-
----
-
-# 6. STEP 4/5 PRIVACY BEHAVIOR AFTER IDENTITY RESOLUTION
-
-Preserve the accepted render gates from `8beb167...`, but key them from trusted resolved role.
-
-### EMPLOYEE
-
-```text
-Step 4 detail = HIDDEN
-Step 5 detail = HIDDEN
-Step 4 history navigation = DISABLED
-Step 5 history navigation = DISABLED
-Timeline Step 4 rows = 0
-Timeline Step 5 rows = 0
-```
-
-If actual Workflow Status is 12/13/14 while Employee is logged in, Employee must still see only the Step 4 privacy-safe process card.
-
-If actual Workflow Status is 15/16 while Employee is logged in, Employee must still not become HR and must not see HR Final breakdown.
-
-### APPRAISER
-
-Identity-matched Appraiser:
-
-```text
-Step 4 permitted detail = PRESERVED
-Step 5 HR-only confidential detail = do not elevate automatically
-```
-
-Appraiser current-column editability may still depend on status/route slot after identity is already resolved.
-
-### HR
-
-Only a trusted HR authority source may resolve HR in production.
-Preview HR simulation remains available for Visual UAT.
-
----
-
-# 7. REQUIRED TEST MATRIX — ONE ROUND
-
-Use existing test framework. Do not create another framework.
-
-At minimum add/adjust tests for:
-
-```text
-A. Employee identity + Status 13 Manager Final Evaluation
-   -> resolved role EMPLOYEE
-   -> Step 4 matrix absent
-   -> rating/comment/result internals absent
-   -> privacy card present
-
-B. Employee identity + Status 15 HR Final Check
-   -> resolved role EMPLOYEE
-   -> HR detail absent
-   -> HR role NOT inferred from status
-
-C. Appraiser identity + Status 13
-   -> resolved role APPRAISER
-   -> Step 4 permitted detail preserved
-
-D. Unknown login identity + Status 13
+B. Requester_User='someoneElse', Employee_Code='emp01', login='emp01'
    -> RESTRICTED
-   -> Step 4 detail absent
+   -> proves Employee_Code does not grant Employee role
 
-E. Unknown login identity + Status 15
+C. Manager_User='mgr01', login='mgr01'
+   -> APPRAISER
+
+D. Requester_User='same01' AND Manager_User='same01', login='same01'
    -> RESTRICTED
-   -> HR detail absent
 
-F. Preview mode + explicit Employee/Appraiser/HR selector
-   -> simulation preserved
+E. Requester_User='same01' AND HR authority fixture='same01', login='same01'
+   -> RESTRICTED
 
-G. Non-preview mode + previewOptions.viewerRole='hr'
-   -> no role escalation
+F. Manager_User='same01' AND HR authority fixture='same01', login='same01'
+   -> RESTRICTED
 
-H. Employee Timeline
-   -> Step 4/5 rows hidden even when record is currently Step 4/5
+G. requester + appraiser + HR all same
+   -> RESTRICTED
 
-I. Identity helper USER_SELECT handling
-   -> exact code match works
-   -> name-only/nonmatching/blank does not grant role
+H. unknown login
+   -> RESTRICTED
+
+I. Employee identity + Status 13
+   -> EMPLOYEE
+   -> Step 4 sensitive detail hidden
+
+J. Employee identity + Status 15
+   -> EMPLOYEE
+   -> Step 5 sensitive detail hidden
+
+K. non-preview + previewOptions.viewerRole='hr'
+   -> no escalation
+
+L. explicit Preview mode + viewerRole='hr'
+   -> HR simulation preserved
 ```
 
-If current tests hardcode auto role from status, replace those expectations rather than layering exceptions.
+Also verify Timeline Step 4/5 filtering still follows resolved `EMPLOYEE` / `RESTRICTED` privacy behavior.
 
 ---
 
-# 8. SOURCE SWEEP BEFORE FINAL TEST
+# SOURCE-CODE STRUCTURE RULE FOR THIS PATCH
 
-Before final test/build, search the runtime source for all viewer-role decisions.
+This patch is intentionally tiny.
 
-Inspect at least:
+Do NOT create multiple new files just to satisfy the modular standard.
+
+If the identity helper can remain a small coherent pure helper in the current module for this final privacy correction, keep it there.
+
+After Visual UAT is passed, a separate `MAINTAINABILITY / BUG-ISOLATION REFACTOR` work package may move pure responsibilities into modules such as:
 
 ```text
-_getResolvedViewerRole
-viewerRole
-resolvedViewerRole
-loginUserCode
-kintone.getLoginUser
-Status
-APPRAISER
-HR
-EMPLOYEE
-RESTRICTED
+src/ui/employee-visibility.js
+src/ui/route-context-ui.js
+src/ui/workflow-timeline-ui.js
+src/evaluation/appraiser-normalizer.js
 ```
 
-Report:
+That future refactor must be behavior-preserving and Production-bound through the same build pipeline.
+
+---
+
+# SCAN BEFORE CLOSURE
+
+Before reporting PASS, search the applicable runtime source for all viewer-role decision paths and verify:
 
 ```text
-VIEWER_ROLE_DECISION_PATHS_SCANNED = <count>
 STATUS_BASED_VIEWER_ROLE_INFERENCE = 0
-PRODUCTION_PREVIEW_ROLE_OVERRIDES = 0
+EMPLOYEE_CODE_VIEWER_AUTHORITY_PATHS = 0
+ROLE_PRECEDENCE_GUESS_PATHS = 0
 UNKNOWN_FAIL_OPEN_PATHS = 0
+PRODUCTION_PREVIEW_ROLE_OVERRIDES = 0
 ```
 
-Do not merely change the most visible call site.
+Do not count Preview fixtures as production decision paths.
 
 ---
 
-# 9. LOCAL-ONLY / SECURITY BOUNDARY
+# TEST / BUILD / DOCS — ONE ROUND
 
-```text
-KINTONE_API_GET = 0
-KINTONE_WRITE = 0
-KINTONE_DEPLOY = 0
-BROWSER_SMOKE = 0
-```
-
-Calling `kintone.getLoginUser()` in production source is allowed because it is the native already-available login identity accessor and does not perform a Kintone REST call/write.
-
-This task is a UI privacy/data-exposure gate only.
-
-Do not claim:
-
-```text
-PRODUCTION_AUTHORIZATION_SECURITY = COMPLETE
-```
-
-Native Kintone record/field/process permissions remain the real authorization boundary and require their own deployment/UAT verification later.
-
-Do not reopen the separate MBO secondary-password/trusted-backend architecture in this task.
-
----
-
-# 10. TEST / BUILD / DOCS
-
-1. Implement one coherent identity-resolution patch.
-2. Add focused regression tests.
-3. Run targeted tests during implementation as needed.
-4. Run full `npm test` exactly ONCE near completion.
-5. Run `npm run ui:build` exactly ONCE near completion.
-6. Verify expected dist update.
-7. Update concisely:
-   - `project-docs/AI_REVIEW_PACKAGE.md`
-   - `project-docs/CURRENT_STATE.md`
-   - `project-docs/HANDOFF.md`
-8. Do not edit Confirmed Baseline unless a true contradiction is found.
+1. Update Confirmed Baseline with the user-confirmed Production modular-source / built-bundle standard.
+2. Fix only the two identity defects.
+3. Add the focused ambiguity/Employee_Code regression tests.
+4. Run targeted tests as needed.
+5. Run full `npm test` exactly ONCE near completion.
+6. Run `npm run ui:build` exactly ONCE near completion.
+7. Verify source/dist parity for changed runtime source.
+8. Update `project-docs/AI_REVIEW_PACKAGE.md`, `CURRENT_STATE.md`, and `HANDOFF.md` concisely.
 9. Commit once, push, STOP.
+
+No broad refactor in this round.
+No Kintone calls/writes/deploys.
+No Process/ACL/schema changes.
 
 ---
 
@@ -439,40 +317,33 @@ Return exactly:
 
 ```text
 IMPLEMENTATION_HEAD = <sha>
-KINTONE_API_CALLS = 0
+KINTONE_CALLS = 0
 KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
 
-PRODUCTION_LOGIN_IDENTITY_WIRED = PASS|FAIL
-STATUS_BASED_VIEWER_ROLE_INFERENCE = <count>
-PREVIEW_ROLE_SIMULATION_ISOLATED = PASS|FAIL
-PREVIEW_ROLE_ESCALATION_IN_PRODUCTION = <count>
+PRODUCTION_MODULAR_SOURCE_STANDARD_RECORDED = PASS|FAIL
+PRODUCTION_KINTONE_BUILT_BUNDLE_STANDARD_RECORDED = PASS|FAIL
+BROAD_REFACTOR_PERFORMED = NO
 
-EMPLOYEE_IDENTITY_STATUS13_ROLE = EMPLOYEE|FAIL
-EMPLOYEE_STATUS13_STEP4_DETAIL = HIDDEN|FAIL
-EMPLOYEE_IDENTITY_STATUS15_ROLE = EMPLOYEE|FAIL
-EMPLOYEE_STATUS15_STEP5_DETAIL = HIDDEN|FAIL
-APPRAISER_IDENTITY_RESOLUTION = PASS|FAIL
-UNKNOWN_VIEWER_ROLE = RESTRICTED|FAIL
+REQUESTER_USER_PRIMARY_IDENTITY_MATCH = PASS|FAIL
+EMPLOYEE_CODE_VIEWER_AUTHORITY_PATHS = <count>
 AMBIGUOUS_VIEWER_ROLE = RESTRICTED|FAIL
-FAIL_OPEN_VIEWER_ROLE_DEFAULTS = <count>
-
-EMPLOYEE_TIMELINE_STEP4_ROWS = 0|FAIL
-EMPLOYEE_TIMELINE_STEP5_ROWS = 0|FAIL
-APPRAISER_STEP4_VISIBILITY = PRESERVED|FAIL
-HR_PRODUCTION_AUTHORITY_SOURCE = VERIFIED_EXISTING|NOT_AVAILABLE_LOCAL
-HR_STATUS_INFERENCE = 0|FAIL
-
-VIEWER_ROLE_DECISION_PATHS_SCANNED = <count>
+ROLE_PRECEDENCE_GUESS_PATHS = <count>
+STATUS_BASED_VIEWER_ROLE_INFERENCE = <count>
+UNKNOWN_VIEWER_ROLE = RESTRICTED|FAIL
 PRODUCTION_PREVIEW_ROLE_OVERRIDES = <count>
-UNKNOWN_FAIL_OPEN_PATHS = <count>
+
+EMPLOYEE_STATUS13_STEP4_DETAIL = HIDDEN|FAIL
+EMPLOYEE_STATUS15_STEP5_DETAIL = HIDDEN|FAIL
+EMPLOYEE_TIMELINE_STEP4_ROWS = <count>
+EMPLOYEE_TIMELINE_STEP5_ROWS = <count>
 
 TARGETED_IDENTITY_PRIVACY_TESTS = PASS|FAIL
 FULL_NPM_TEST = PASS|FAIL
 BUILD = PASS|FAIL
 SOURCE_IDENTITY_PRIVACY_READINESS = READY|BLOCKED
-VISUAL_UAT = NOT_RUN
+VISUAL_UAT_PRIVACY_RECHECK = READY|BLOCKED
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED_PENDING_VISUAL_UAT|BLOCKED
 
 CHANGED_FILES = <exact list>
@@ -480,4 +351,3 @@ REMAINING_BLOCKERS = <exact list or NONE>
 ```
 
 Commit and push local changes, then STOP.
-Do not begin Kintone deployment.
