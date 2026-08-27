@@ -1,47 +1,89 @@
-# AI Start Here — Master Entry Point for Multi-AI Development
+# AI START HERE — MBO2026
 
-> **Mandatory Rule for All AI Assistants (Antigravity, Codex, Claude, ChatGPT, etc.):**  
-> Before analyzing, planning, reviewing, or executing any task in this repository, you MUST read `project-docs/00_MASTER_JOBLIST.md` first. The seven D1–D7 closeout jobs in that file must never be dropped across chats or handoffs.
+> **Mandatory for every AI: ChatGPT, Antigravity, Codex, Claude, or any future assistant.**
+>
+> Before planning, reviewing, coding, changing Kintone, or reporting project status, read:
+>
+> **`project-docs/AI_CONTROL_CENTER.md` FIRST.**
 
 ---
 
 ## 0. Absolute First Read
 
-1. **[`project-docs/00_MASTER_JOBLIST.md`](./00_MASTER_JOBLIST.md)** — master job completeness, continuity, no-drop control, D1–D7 scoreboard, and new-chat continuation contract.
+1. **[`project-docs/AI_CONTROL_CENTER.md`](./AI_CONTROL_CENTER.md)** — current operational truth, D1–D7 status, authorization ledger, latest accepted/pending evidence, next action owner, and Antigravity low-credit policy.
 
-If this file conflicts with `project-docs/CONFIRMED_BASELINE/` on a confirmed business/technical fact, the Confirmed Baseline wins for semantics and the conflict must be reported. `00_MASTER_JOBLIST.md` remains authoritative for the fact that all seven closeout jobs must stay in scope.
-
----
-
-## 1. Mandatory Reading Order
-
-After `00_MASTER_JOBLIST.md`, read in this exact order:
-
-1. **[`project-docs/CONFIRMED_BASELINE/README.md`](./CONFIRMED_BASELINE/README.md)** and **ALL files under `project-docs/CONFIRMED_BASELINE/`** — confirmed source of truth.
-2. **[`project-docs/AI_START_HERE.md`](./AI_START_HERE.md)** — this orientation document.
-3. **[`project-docs/AI_ACTIVE_TASK.md`](./AI_ACTIVE_TASK.md)** — current tactical execution package.
-4. **[`project-docs/TODAY_MBO_CLOSEOUT_MISSION.md`](./TODAY_MBO_CLOSEOUT_MISSION.md)** — current seven-deliverable closeout mission when present.
-5. **[`project-docs/AI_REVIEW_PACKAGE.md`](./AI_REVIEW_PACKAGE.md)** — latest standardized Work Package review package.
-6. **[`project-docs/AI_HANDOFF_PROTOCOL.md`](./AI_HANDOFF_PROTOCOL.md)** — Multi-AI handoff & continuity rules.
-7. **[`project-docs/IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md)** — authoritative current phase, active AI, and review status.
-8. **[`project-docs/CURRENT_STATE.md`](./CURRENT_STATE.md)** — live system state & active apps.
-9. **[`project-docs/HANDOFF.md`](./HANDOFF.md)** — operational handoff notes & exact next action.
-10. **[`project-docs/implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md`](./implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md)** — consolidated target architecture.
-11. Relevant frozen architecture blueprints in `project-docs/architecture-redesign/`.
-12. **[`project-docs/BUSINESS_RULES.md`](./BUSINESS_RULES.md)** — authoritative business rules & weights where not superseded by Confirmed Baseline.
-13. **[`project-docs/DECISIONS.md`](./DECISIONS.md)** — architectural decision log.
-14. **[`project-docs/OPEN_ISSUES.md`](./OPEN_ISSUES.md)** — open questions & observations.
-15. **[`project-docs/DEFECT_REGISTER.md`](./DEFECT_REGISTER.md)** — active bug tracking register.
-16. Relevant test matrices (`ROUTING_TEST_MATRIX.md`, `SCORING_TEST_MATRIX.md`, `GUIDED_UX_TEST_MATRIX.md`).
+Do not start by reading the whole repository.
+Do not ask the user to repeat project history before reading the Control Center.
 
 ---
 
-## 2. Seven Mandatory Closeout Jobs — No-Drop Index
+## 1. Authority Order
 
-Every AI handoff/review must retain these IDs:
+When facts conflict:
+
+1. `project-docs/CONFIRMED_BASELINE/` = confirmed business / technical semantics.
+2. `project-docs/00_MASTER_JOBLIST.md` = D1–D7 completeness / no-drop authority.
+3. `project-docs/AI_CONTROL_CENTER.md` = current operational state / authorization / next action / credit policy.
+4. `project-docs/AI_ACTIVE_TASK.md` = current short executor package only.
+5. Git/Kintone evidence = implementation facts; repository evidence beats chat memory.
+
+Report conflicts. Never silently overwrite Confirmed Baseline semantics.
+
+---
+
+## 2. Role-Based Reading — Do Not Over-Read
+
+### ChatGPT / Control Plane / Independent Reviewer
+
+Read in this order:
+
+1. `AI_CONTROL_CENTER.md`
+2. current Git branch HEAD
+3. `AI_ACTIVE_TASK.md`
+4. `00_MASTER_JOBLIST.md` when D1–D7 completeness/context is needed
+5. only relevant file(s) in `CONFIRMED_BASELINE/`
+6. latest relevant commit/diff/source/test/evidence
+
+Read broader historical docs only when a real conflict or missing fact requires them.
+
+### Antigravity / Execution Plane
+
+Read only:
+
+1. `AI_CONTROL_CENTER.md`
+2. `AI_ACTIVE_TASK.md`
+3. exact files explicitly listed in the active task
+
+Antigravity must NOT read the entire repo or all project documents by default.
+It must NOT enter planning mode when the Active Task already contains an approved execution plan.
+
+### Codex or Other Execution AI
+
+If explicitly selected by the user, follow the same low-credit / execution-only rules as Antigravity unless Control Plane states otherwise.
+Do not silently switch execution planes.
+
+---
+
+## 3. Permanent Role Contract
+
+**ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer**
+
+ChatGPT owns planning, design, broad repository analysis, Git review, PASS/FAIL decisions, status tracking, writing the Control Center, and creating the short Active Task.
+
+**Antigravity = Low-Credit Execution Plane**
+
+Use Antigravity only for actual source implementation, live Kintone operations, environment-specific build/runtime work, or other exact execution that ChatGPT cannot directly perform.
+
+Do not spend Antigravity credit on planning, repository archaeology, self-review, long reports, repeated UAT, broad tests, or documentation maintenance unless specifically required.
+
+Full policy is in `AI_CONTROL_CENTER.md`.
+
+---
+
+## 4. Seven Mandatory Closeout Jobs — No Drop
 
 ```text
-D1 = Login + Password Change + Strict Employee Data Isolation
+D1 = Login + Password Change + Employee-Self MBO Gate
 D2 = Excel + PDF Export in Original/Legacy Format
 D3 = 8 Legacy PMS Apps -> App794 Migration
 D4 = HR Control Center / App800 End-to-End Management
@@ -50,25 +92,51 @@ D6 = Integrated E2E / Security / Regression Closure
 D7 = Admin Support Center Completion
 ```
 
-Details and acceptance criteria live in `project-docs/00_MASTER_JOBLIST.md`.
+Current status is tracked in `AI_CONTROL_CENTER.md`.
+Acceptance detail remains in `00_MASTER_JOBLIST.md` and Confirmed Baseline.
 
 ---
 
-## 3. Core Governance Invariants
+## 5. Core Governance
 
-* **Hard Write Lock by Default:** No POST/PUT/DELETE or deploy to Kintone unless the exact operation has an approved Work Package and explicit authorization.
-* **Protected Sources:** App53 and legacy PMS Apps 283, 310, 305, 643, 307, 640, 715, 716 remain READ ONLY.
-* **No Orphan Policy:** Any replaced field, script, or configuration must follow the retirement lifecycle (`Orphan Count = 0`).
-* **Frozen Architecture Protection:** Do not modify frozen/confirmed design without the required architecture-change/user-decision process.
-* **Security Release Blocker:** Employee A must never see/export/copy/query Employee B data unless explicitly authorized by a legitimate role.
-* **Admin Boundary:** `admin-form` is Technical Admin only and has zero business workflow authority.
-* **No False PASS:** Implementation success is not independent review success. Preserve `IMPLEMENTED_PENDING_REVIEW` until reviewed.
-* **Stop and Report:** Complete the authorized work package, test it, update living docs/job status, commit/push, report in Thai, then STOP for independent review when required.
+- App53 and legacy PMS Apps 283, 310, 305, 643, 307, 640, 715, 716 remain protected/read-only unless a separately approved operation says otherwise.
+- `admin-form` = Technical Admin only; zero business workflow authority.
+- No Kintone POST/PUT/DELETE/deploy outside the current approved authorization boundary.
+- No false PASS; implementer cannot self-certify independent review.
+- Execution Plane maximum state is `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or an equivalent pending-review state.
+- Manual live UI UAT remains mandatory where the Control Center says it is a closure gate.
+- Do not repeat approvals already granted unless scope/risk materially changes.
 
 ---
 
-## 4. New-Chat Continuity
+## 6. Standard Working Loop
 
-When ChatGPT context becomes too long, do not copy the entire old conversation manually. Start a new chat using the **New Chat Continuation Prompt** stored in Section 6 of `project-docs/00_MASTER_JOBLIST.md`.
+```text
+ChatGPT reads Control Center + Git
+        ↓
+ChatGPT decides smallest next step
+        ↓
+If execution needed -> short AI_ACTIVE_TASK
+        ↓
+Antigravity executes only that task
+        ↓
+commit + push + STOP
+        ↓
+User says review
+        ↓
+ChatGPT independently re-fetches GitHub
+        ↓
+PASS / corrective / blocker
+        ↓
+ChatGPT updates Control Center
+```
 
-The new chat must reconstruct truth from GitHub repository evidence first, then continue the highest-priority unfinished D1–D7 item without asking the user to repeat project history unless a genuinely unresolved business decision exists.
+---
+
+## 7. New Chat
+
+For a fresh ChatGPT conversation, use:
+
+**`project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`**
+
+The new chat must reconstruct project truth from GitHub, beginning with `AI_CONTROL_CENTER.md`, instead of relying on copied chat history.
