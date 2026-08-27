@@ -29,9 +29,9 @@ export class MboActivationService {
     }
 
     const cleanEmpCode = employeeCode.trim();
-    // Generate random 8-character uppercase alphanumeric code
-    const rawBytes = crypto.randomBytes(6);
-    const plaintextCode = rawBytes.toString('hex').toUpperCase().slice(0, 8);
+    // Generate 8 random bytes => 16 uppercase hex characters (64 bits entropy)
+    const rawBytes = crypto.randomBytes(8);
+    const plaintextCode = rawBytes.toString('hex').toUpperCase();
     const activationCodeHash = this.hashActivationCode(plaintextCode);
     const expiresAt = new Date(now.getTime() + ttlHours * 3600 * 1000).toISOString();
 

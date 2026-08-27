@@ -91,10 +91,17 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     { Kintone_User_Code: 'admin-form', Employee_Code: 'ADMIN', Account_Status: 'ACTIVE' }
   ];
 
-  const initial0118Cred = MboPasswordDomainService.provisionInitialCredential({
-    employeeCode: '0118',
-    kintoneUserCode: 'emp0118'
-  });
+  const sampleActivation0118 = MboActivationService.generateActivation({ employeeCode: '0118' });
+
+  const initial0118Cred = {
+    ...MboPasswordDomainService.provisionInitialCredential({
+      employeeCode: '0118',
+      kintoneUserCode: 'emp0118'
+    }),
+    Activation_Code_Hash: sampleActivation0118.record.Activation_Code_Hash,
+    Activation_Expires_At: sampleActivation0118.record.Activation_Expires_At,
+    Activation_Used_At: null
+  };
 
   // Login Revocation-Capability Gate 1: Initial login fails closed if deleteSession is missing
   await t.test('G1. Initial login fails closed without issuing session token if deleteSession capability is missing', async () => {
@@ -103,7 +110,7 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: noDeleteSessStore, userMappings });
 
     await assert.rejects(async () => {
-      await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+      await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: sampleActivation0118.activationCode });
     }, { message: /SESSION_STORE_INCOMPLETE/ });
   });
 
@@ -152,7 +159,7 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const sessStore = new FakeSessionStore();
     const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
 
-    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: sampleActivation0118.activationCode });
     const oldToken = loginRes.sessionToken;
 
     const changeRes = await service.changePassword({ sessionToken: oldToken, newPassword: 'NewSecurePassword123!' });
@@ -322,7 +329,7 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const sessStore = new FakeSessionStore();
     const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
 
-    const res = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    const res = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: sampleActivation0118.activationCode });
 
     assert.equal(res.status, 'PASSWORD_CHANGE_REQUIRED');
     assert.equal(res.employeeCode, '0118');
@@ -336,7 +343,7 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const sessStore = new FakeSessionStore();
     const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
 
-    const res = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    const res = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: sampleActivation0118.activationCode });
     const principal = await service.getAuthenticatedPrincipal(res.sessionToken);
 
     assert.equal(principal, null);
@@ -427,7 +434,7 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const sessStore = new FakeSessionStore();
     const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
 
-    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: sampleActivation0118.activationCode });
 
     await assert.rejects(async () => {
       await service.changePassword({
@@ -442,7 +449,7 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     const sessStore = new FakeSessionStore();
     const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
 
-    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    const loginRes = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: sampleActivation0118.activationCode });
     const changeRes = await service.changePassword({
       sessionToken: loginRes.sessionToken,
       newPassword: 'NewSecurePassword123!'
@@ -635,5 +642,122 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite (Final Revocation Corre
     });
 
     assert.equal(normalLoginRes.status, 'AUTHENTICATED_SUCCESS');
+  });
+
+  await t.test('17. SHARED_KINTONE_SECONDARY_AUTH mode authenticates 0118 with outer shared user + correct MBO password + valid activation without userMappings', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0118' });
+    const credWithAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    const credStore = new FakeCredentialStore({ '0118': credWithAct });
+    const sessStore = new FakeSessionStore();
+    // Empty userMappings!
+    const service = new MboAuthSessionService({
+      credentialStore: credStore,
+      sessionStore: sessStore,
+      userMappings: [],
+      identityMode: 'SHARED_KINTONE_SECONDARY_AUTH'
+    });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'shared-kintone-user',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: actIssuance.activationCode
+    });
+
+    assert.equal(loginRes.status, 'PASSWORD_CHANGE_REQUIRED');
+    assert.ok(loginRes.sessionToken);
+  });
+
+  await t.test('18. SHARED_KINTONE_SECONDARY_AUTH mode denies 0118 with wrong password even with valid activation', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0118' });
+    const credWithAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    const credStore = new FakeCredentialStore({ '0118': credWithAct });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({
+      credentialStore: credStore,
+      sessionStore: sessStore,
+      userMappings: [],
+      identityMode: 'SHARED_KINTONE_SECONDARY_AUTH'
+    });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'shared-kintone-user',
+      mboUsername: '0118',
+      password: 'WRONG_PASSWORD',
+      activationCode: actIssuance.activationCode
+    });
+
+    assert.equal(loginRes.status, 'INVALID_CREDENTIALS');
+  });
+
+  await t.test('19. missing activationStore capability fails closed with error', async () => {
+    const credStore = new ReadOnlyCredentialStore({ '0118': initial0118Cred }); // no updateCredential or activationStore
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({
+      credentialStore: credStore,
+      sessionStore: sessStore,
+      activationStore: null
+    });
+
+    await assert.rejects(
+      async () => await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118', activationCode: '123' }),
+      /CREDENTIAL_STORE_INCOMPLETE|ACTIVATION_STORE_INCOMPLETE/
+    );
+  });
+
+  await t.test('20. missing activation record/hash fails closed with ACTIVATION_NOT_PROVISIONED', async () => {
+    const unprovisionedCred = MboPasswordDomainService.provisionInitialCredential({ employeeCode: '0118' });
+    const credStore = new FakeCredentialStore({ '0118': unprovisionedCred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: 'ANY_CODE'
+    });
+
+    assert.equal(loginRes.status, 'ACTIVATION_NOT_PROVISIONED');
+  });
+
+  await t.test('21. activation employee mismatch fails closed with ACTIVATION_EMPLOYEE_MISMATCH', async () => {
+    const actIssuance = MboActivationService.generateActivation({ employeeCode: '0119' }); // Belongs to 0119
+    const credWithWrongAct = {
+      ...initial0118Cred,
+      Activation_Code_Hash: actIssuance.record.Activation_Code_Hash,
+      Activation_Expires_At: actIssuance.record.Activation_Expires_At,
+      Activation_Used_At: null
+    };
+    // Store maps getActivation('0118') to 0119's activation record
+    const credStore = new FakeCredentialStore({ '0118': credWithWrongAct });
+    credStore.getActivation = async () => ({
+      employeeCode: '0119',
+      activationCodeHash: actIssuance.record.Activation_Code_Hash,
+      activationExpiresAt: actIssuance.record.Activation_Expires_At,
+      activationUsedAt: null
+    });
+
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const loginRes = await service.login({
+      kintoneUserCode: 'emp0118',
+      mboUsername: '0118',
+      password: '0118',
+      activationCode: actIssuance.activationCode
+    });
+
+    assert.equal(loginRes.status, 'ACTIVATION_EMPLOYEE_MISMATCH');
   });
 });

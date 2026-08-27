@@ -12,7 +12,7 @@ describe('MboActivationService Unit Test Suite (D1-C3A First-Login Activation)',
 
     assert.equal(issuance.employeeCode, '0118');
     assert.ok(issuance.activationCode);
-    assert.equal(issuance.activationCode.length, 8);
+    assert.equal(issuance.activationCode.length, 16);
     assert.equal(issuance.record.Employee_Code, '0118');
     assert.ok(issuance.record.Activation_Code_Hash);
     assert.ok(issuance.record.Activation_Expires_At);

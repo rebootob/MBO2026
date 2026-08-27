@@ -19,6 +19,7 @@ export class MboAuthSessionService {
     this.sessionStore = options.sessionStore || null;
     this.activationStore = options.activationStore || options.credentialStore || null;
     this.userMappings = options.userMappings || [];
+    this.identityMode = options.identityMode || 'KINTONE_BOUND';
     this.passwordMaxAgeDays = options.passwordMaxAgeDays || 90;
     this.sessionDurationHours = options.sessionDurationHours || 8;
   }
@@ -41,7 +42,9 @@ export class MboAuthSessionService {
   /**
    * Authenticates a user server-side and issues a session token.
    */
-  async login({ kintoneUserCode, mboUsername, password, activationCode, now = new Date() }) {
+  async login({ kintoneUserCode, mboUsername, password, activationCode, identityMode, now = new Date() }) {
+    const effectiveIdentityMode = identityMode || this.identityMode || 'KINTONE_BOUND';
+
     // B1: Fail closed if credentialStore write capability is missing
     if (
       !this.credentialStore ||
@@ -63,35 +66,55 @@ export class MboAuthSessionService {
       };
     }
 
-    // 2. Identity Resolution via MboIdentityService
-    const identityResult = MboIdentityService.resolveEmployeeIdentity({
-      kintoneUserCode,
-      userMappings: this.userMappings
-    });
-
-    if (identityResult.status !== 'IDENTITY_BOUND') {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
       return {
         status: 'IDENTITY_MAPPING_FAILED',
-        reason: identityResult.reason || 'Kintone user is not bound to a valid Employee_Code.'
+        reason: 'Outer Kintone user code is required.'
       };
     }
 
-    const boundEmployeeCode = identityResult.employeeCode;
+    let boundEmployeeCode = null;
 
-    // 3. Username Validation
-    const usernameResult = MboIdentityService.validateMboUsername({
-      mboUsername,
-      boundEmployeeCode
-    });
+    // 2. Identity Resolution & Mode Selection
+    if (effectiveIdentityMode === 'SHARED_KINTONE_SECONDARY_AUTH') {
+      if (!mboUsername || typeof mboUsername !== 'string' || mboUsername.trim() === '') {
+        return {
+          status: 'USERNAME_MISMATCH',
+          reason: 'MBO username (Employee_Code) is required in SHARED_KINTONE_SECONDARY_AUTH mode.'
+        };
+      }
+      boundEmployeeCode = mboUsername.trim();
+    } else if (effectiveIdentityMode === 'KINTONE_BOUND') {
+      const identityResult = MboIdentityService.resolveEmployeeIdentity({
+        kintoneUserCode,
+        userMappings: this.userMappings
+      });
 
-    if (usernameResult.status !== 'USERNAME_VALIDATED') {
-      return {
-        status: 'USERNAME_MISMATCH',
-        reason: 'MBO username must match the bound Employee_Code.'
-      };
+      if (identityResult.status !== 'IDENTITY_BOUND') {
+        return {
+          status: 'IDENTITY_MAPPING_FAILED',
+          reason: identityResult.reason || 'Kintone user is not bound to a valid Employee_Code.'
+        };
+      }
+
+      boundEmployeeCode = identityResult.employeeCode;
+
+      const usernameResult = MboIdentityService.validateMboUsername({
+        mboUsername,
+        boundEmployeeCode
+      });
+
+      if (usernameResult.status !== 'USERNAME_VALIDATED') {
+        return {
+          status: 'USERNAME_MISMATCH',
+          reason: 'MBO username must match the bound Employee_Code.'
+        };
+      }
+    } else {
+      throw new Error(`UNSUPPORTED_IDENTITY_MODE: identityMode '${effectiveIdentityMode}' is not supported.`);
     }
 
-    // 4. Load Credential Record from Credential Store
+    // 3. Load Credential Record from Credential Store
     const credentialRecord = await this.credentialStore.getCredential(boundEmployeeCode);
     if (!credentialRecord) {
       return {
@@ -100,14 +123,21 @@ export class MboAuthSessionService {
       };
     }
 
-    // 5. Evaluate Credential State via MboPasswordDomainService
+    if (credentialRecord.Employee_Code && credentialRecord.Employee_Code !== boundEmployeeCode) {
+      return {
+        status: 'INVALID_CREDENTIALS',
+        reason: 'Credential record Employee_Code mismatch.'
+      };
+    }
+
+    // 4. Evaluate Credential State via MboPasswordDomainService
     const evalResult = MboPasswordDomainService.evaluateCredentialState({
       credentialRecord,
       inputPassword: password,
       now
     });
 
-    // 6. B1: Handle Invalid Credentials / Failed Attempt / Lockout with mandatory persistence
+    // 5. Handle Invalid Credentials / Failed Attempt / Lockout with mandatory persistence
     if (evalResult.status === 'INVALID_CREDENTIALS') {
       await this.credentialStore.updateCredential(boundEmployeeCode, {
         Failed_Login_Count: evalResult.failedLoginCount,
@@ -144,39 +174,62 @@ export class MboAuthSessionService {
       throw new Error('SESSION_STORE_INCOMPLETE: sessionStore must provide getSession(), setSession(), and deleteSession().');
     }
 
-    // 7. Handle Force Password Change State (First/Default Login)
+    // 6. Handle Force Password Change State (First/Default Login)
     if (evalResult.status === 'AUTHENTICATED_BUT_PASSWORD_CHANGE_REQUIRED' || evalResult.status === 'PASSWORD_EXPIRED') {
       // First-login bootstrap activation check:
-      // If credentialRecord requires force password change (Must_Change_Password === true) AND activation code hash is provisioned:
+      // Whenever Must_Change_Password === true, activation code is STRICTLY MANDATORY and FAIL-CLOSED!
       if (credentialRecord.Must_Change_Password === true) {
         const actStore = this.activationStore || this.credentialStore;
-        if (actStore && typeof actStore.getActivation === 'function') {
-          const activationRecord = await actStore.getActivation(boundEmployeeCode);
-          if (activationRecord && (activationRecord.activationCodeHash || activationRecord.Activation_Code_Hash)) {
-            if (!activationCode || typeof activationCode !== 'string' || activationCode.trim() === '') {
-              return {
-                status: 'ACTIVATION_CODE_REQUIRED',
-                reason: 'One-time HR Activation Code is required for first-login activation.'
-              };
-            }
+        if (
+          !actStore ||
+          typeof actStore.getActivation !== 'function' ||
+          typeof actStore.consumeActivation !== 'function'
+        ) {
+          throw new Error('ACTIVATION_STORE_INCOMPLETE: activationStore must provide getActivation() and consumeActivation().');
+        }
 
-            const actResult = MboActivationService.verifyActivation({
-              activationRecord,
-              inputCode: activationCode,
-              now
-            });
+        const activationRecord = await actStore.getActivation(boundEmployeeCode);
+        if (!activationRecord || (!activationRecord.activationCodeHash && !activationRecord.Activation_Code_Hash)) {
+          return {
+            status: 'ACTIVATION_NOT_PROVISIONED',
+            reason: 'HR Activation Code has not been provisioned for this account.'
+          };
+        }
 
-            if (actResult.status !== 'ACTIVATION_VALIDATED') {
-              return {
-                status: actResult.status,
-                reason: actResult.reason
-              };
-            }
+        const recEmpCode = activationRecord.employeeCode || activationRecord.Employee_Code;
+        if (recEmpCode && recEmpCode !== boundEmployeeCode) {
+          return {
+            status: 'ACTIVATION_EMPLOYEE_MISMATCH',
+            reason: 'Activation record does not match requested employee code.'
+          };
+        }
 
-            if (typeof actStore.consumeActivation === 'function') {
-              await actStore.consumeActivation(boundEmployeeCode, now.toISOString());
-            }
-          }
+        if (!activationCode || typeof activationCode !== 'string' || activationCode.trim() === '') {
+          return {
+            status: 'ACTIVATION_CODE_REQUIRED',
+            reason: 'One-time HR Activation Code is required for first-login activation.'
+          };
+        }
+
+        const actResult = MboActivationService.verifyActivation({
+          activationRecord,
+          inputCode: activationCode,
+          now
+        });
+
+        if (actResult.status !== 'ACTIVATION_VALIDATED') {
+          return {
+            status: actResult.status,
+            reason: actResult.reason
+          };
+        }
+
+        const consumeRes = await actStore.consumeActivation(boundEmployeeCode, now.toISOString());
+        if (!consumeRes) {
+          return {
+            status: 'ACTIVATION_CONSUME_FAILED',
+            reason: 'Failed to consume activation code.'
+          };
         }
       }
 

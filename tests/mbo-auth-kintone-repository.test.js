@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { MboKintoneAuthRepository } from '../src/services/mbo-auth-kintone-repository.js';
 import { MboAuthSessionService } from '../src/services/mbo-auth-session-service.js';
 import { MboPasswordDomainService } from '../src/services/mbo-password-service.js';
+import { MboActivationService } from '../src/services/mbo-activation-service.js';
 
 describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adapter)', () => {
 
   const validPasswordHash = MboPasswordDomainService.hashPassword('Pass0118!');
+  const sampleActivation = MboActivationService.generateActivation({ employeeCode: '0118' });
 
   const sampleRecord = {
     $id: { value: '101' },
@@ -18,7 +20,10 @@ describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adap
     Password_Expires_At: { value: null },
     Failed_Attempts: { value: '0' },
     Locked_Until: { value: null },
-    Account_Status: { value: 'ACTIVE' }
+    Account_Status: { value: 'ACTIVE' },
+    Activation_Code_Hash: { value: sampleActivation.record.Activation_Code_Hash },
+    Activation_Expires_At: { value: sampleActivation.record.Activation_Expires_At },
+    Activation_Used_At: { value: null }
   };
 
   it('1. exact Employee_Code returns one sanitized server credential domain object', async () => {
@@ -225,7 +230,8 @@ describe('MboKintoneAuthRepository Unit Test Suite (D1-C1 App801 Credential Adap
     const loginRes = await authService.login({
       kintoneUserCode: 'emp0118',
       mboUsername: '0118',
-      password: 'Pass0118!'
+      password: 'Pass0118!',
+      activationCode: sampleActivation.activationCode
     });
 
     assert.equal(loginRes.status, 'PASSWORD_CHANGE_REQUIRED');
