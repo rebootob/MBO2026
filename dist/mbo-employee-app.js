@@ -4694,11 +4694,15 @@ class EmployeePartAUI {
         e.currentTarget.style.color = '#60a5fa';
 
         const healthTab = adminDiv.querySelector('#admin-tab-content-health');
-        const recordTab = adminDiv.querySelector('#admin-tab-content-record');
+        const checkTab = adminDiv.querySelector('#admin-tab-content-check');
+        const valTab = adminDiv.querySelector('#admin-tab-content-validation');
+        const candTab = adminDiv.querySelector('#admin-tab-content-candidate');
         const repairTab = adminDiv.querySelector('#admin-tab-content-repair');
 
         if (healthTab) healthTab.style.display = (tab === 'health' ? 'block' : 'none');
-        if (recordTab) recordTab.style.display = (tab === 'record' ? 'block' : 'none');
+        if (checkTab) checkTab.style.display = (tab === 'check' ? 'block' : 'none');
+        if (valTab) valTab.style.display = (tab === 'validation' ? 'block' : 'none');
+        if (candTab) candTab.style.display = (tab === 'candidate' ? 'block' : 'none');
         if (repairTab) repairTab.style.display = (tab === 'repair' ? 'block' : 'none');
       });
     });
