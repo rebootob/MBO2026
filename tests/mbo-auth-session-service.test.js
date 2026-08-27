@@ -23,6 +23,17 @@ class FakeCredentialStore {
   }
 }
 
+class ReadOnlyCredentialStore {
+  constructor(initialData = {}) {
+    this.credentials = new Map(Object.entries(initialData));
+  }
+
+  async getCredential(empCode) {
+    const cred = this.credentials.get(empCode);
+    return cred ? JSON.parse(JSON.stringify(cred)) : null;
+  }
+}
+
 class FakeSessionStore {
   constructor() {
     this.sessions = new Map();
@@ -42,7 +53,7 @@ class FakeSessionStore {
   }
 }
 
-test('D1-A Trusted Auth & Opaque Session Core Test Suite', async (t) => {
+test('D1-A Trusted Auth & Opaque Session Core Test Suite (B1 & B2 Corrective)', async (t) => {
   const userMappings = [
     { Kintone_User_Code: 'emp0118', Employee_Code: '0118', Account_Status: 'ACTIVE' },
     { Kintone_User_Code: 'emp0119', Employee_Code: '0119', Account_Status: 'ACTIVE' },
@@ -54,11 +65,128 @@ test('D1-A Trusted Auth & Opaque Session Core Test Suite', async (t) => {
     kintoneUserCode: 'emp0118'
   });
 
-  const initial0119Cred = MboPasswordDomainService.provisionInitialCredential({
-    employeeCode: '0119',
-    kintoneUserCode: 'emp0119'
+  // B1.1: Missing updateCredential fails closed / configuration error
+  await t.test('B1.1 Missing updateCredential in credentialStore fails closed on login', async () => {
+    const readOnlyStore = new ReadOnlyCredentialStore({ '0118': initial0118Cred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: readOnlyStore, sessionStore: sessStore, userMappings });
+
+    await assert.rejects(async () => {
+      await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: '0118' });
+    }, { message: /CREDENTIAL_STORE_INCOMPLETE/ });
   });
 
+  // B1.2: Failed count 4 + wrong password => persists count 5 and non-null Locked_Until
+  await t.test('B1.2 Failed count 4 + wrong password persists count 5 and non-null Locked_Until', async () => {
+    const cred4 = { ...initial0118Cred, Failed_Login_Count: 4 };
+    const credStore = new FakeCredentialStore({ '0118': cred4 });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const res = await service.login({ kintoneUserCode: 'emp0118', mboUsername: '0118', password: 'wrongpassword' });
+
+    assert.equal(res.status, 'INVALID_CREDENTIALS');
+    assert.equal(res.reason, 'Account is locked.');
+
+    const updatedCred = await credStore.getCredential('0118');
+    assert.equal(updatedCred.Failed_Login_Count, 5);
+    assert.ok(updatedCred.Locked_Until);
+  });
+
+  // B2.1: Expired force-change session cannot change password
+  await t.test('B2.1 Expired force-change session cannot change password', async () => {
+    const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const rawToken = 'force_token_123';
+    const tokenHash = MboAuthSessionService.hashToken(rawToken);
+    await sessStore.setSession(tokenHash, {
+      tokenHash,
+      employeeCode: '0118',
+      kintoneUserCode: 'emp0118',
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
+      expiresAt: new Date(Date.now() - 3600000).toISOString(), // expired 1hr ago
+      requiresPasswordChange: true,
+      isDataAuthorized: false
+    });
+
+    await assert.rejects(async () => {
+      await service.changePassword({ sessionToken: rawToken, newPassword: 'NewSecurePassword123!' });
+    }, { message: /EXPIRED_SESSION/ });
+  });
+
+  // B2.2: Expired normal session cannot change password
+  await t.test('B2.2 Expired normal session cannot change password', async () => {
+    const normalCred = MboPasswordDomainService.changePassword({
+      credentialRecord: initial0118Cred,
+      newPassword: 'CurrentPassword123!',
+      passwordMaxAgeDays: 90
+    });
+    const credStore = new FakeCredentialStore({ '0118': normalCred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const rawToken = 'normal_token_123';
+    const tokenHash = MboAuthSessionService.hashToken(rawToken);
+    await sessStore.setSession(tokenHash, {
+      tokenHash,
+      employeeCode: '0118',
+      kintoneUserCode: 'emp0118',
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
+      expiresAt: new Date(Date.now() - 3600000).toISOString(), // expired 1hr ago
+      requiresPasswordChange: false,
+      isDataAuthorized: true
+    });
+
+    await assert.rejects(async () => {
+      await service.changePassword({ sessionToken: rawToken, currentPassword: 'CurrentPassword123!', newPassword: 'NextPassword123!' });
+    }, { message: /EXPIRED_SESSION/ });
+  });
+
+  // B2.3: Malformed session state flags cannot change password
+  await t.test('B2.3 Malformed session state flags fail closed on changePassword', async () => {
+    const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ credentialStore: credStore, sessionStore: sessStore, userMappings });
+
+    const rawToken = 'malformed_token_123';
+    const tokenHash = MboAuthSessionService.hashToken(rawToken);
+    // Malformed flags: both true
+    await sessStore.setSession(tokenHash, {
+      tokenHash,
+      employeeCode: '0118',
+      kintoneUserCode: 'emp0118',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      requiresPasswordChange: true,
+      isDataAuthorized: true
+    });
+
+    await assert.rejects(async () => {
+      await service.changePassword({ sessionToken: rawToken, newPassword: 'NewSecurePassword123!' });
+    }, { message: /MALFORMED_SESSION_STATE/ });
+  });
+
+  // B2.4: Missing or invalid expiresAt cannot produce authenticated principal
+  await t.test('B2.4 Missing or invalid expiresAt cannot produce authenticated principal', async () => {
+    const sessStore = new FakeSessionStore();
+    const service = new MboAuthSessionService({ sessionStore: sessStore, userMappings });
+
+    // Missing expiresAt
+    const rawToken1 = 'token_no_exp';
+    const hash1 = MboAuthSessionService.hashToken(rawToken1);
+    await sessStore.setSession(hash1, { tokenHash: hash1, employeeCode: '0118', requiresPasswordChange: false, isDataAuthorized: true });
+    assert.equal(await service.getAuthenticatedPrincipal(rawToken1), null);
+
+    // Invalid expiresAt string
+    const rawToken2 = 'token_bad_exp';
+    const hash2 = MboAuthSessionService.hashToken(rawToken2);
+    await sessStore.setSession(hash2, { tokenHash: hash2, employeeCode: '0118', expiresAt: 'INVALID_DATE', requiresPasswordChange: false, isDataAuthorized: true });
+    assert.equal(await service.getAuthenticatedPrincipal(rawToken2), null);
+  });
+
+  // Standard D1-A Core Acceptance Tests
   await t.test('1. Initial login returns PASSWORD_CHANGE_REQUIRED state', async () => {
     const credStore = new FakeCredentialStore({ '0118': initial0118Cred });
     const sessStore = new FakeSessionStore();

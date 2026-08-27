@@ -1,5 +1,5 @@
 /**
- * MBO Server-Side Trusted Authentication & Opaque Session Core (D1-A)
+ * MBO Server-Side Trusted Authentication & Opaque Session Core (D1-A Corrective)
  *
  * Security Boundary Notice:
  * - Server-side / Node-only module (uses node:crypto for token generation & hashing).
@@ -40,6 +40,15 @@ export class MboAuthSessionService {
    * Authenticates a user server-side and issues a session token.
    */
   async login({ kintoneUserCode, mboUsername, password, now = new Date() }) {
+    // B1: Fail closed if credentialStore write capability is missing
+    if (
+      !this.credentialStore ||
+      typeof this.credentialStore.getCredential !== 'function' ||
+      typeof this.credentialStore.updateCredential !== 'function'
+    ) {
+      throw new Error('CREDENTIAL_STORE_INCOMPLETE: credentialStore must provide both getCredential() and updateCredential().');
+    }
+
     // 1. Technical admin identity check — admin-form CANNOT become an employee-self principal
     if (
       kintoneUserCode === 'admin-form' ||
@@ -81,10 +90,6 @@ export class MboAuthSessionService {
     }
 
     // 4. Load Credential Record from Credential Store
-    if (!this.credentialStore || typeof this.credentialStore.getCredential !== 'function') {
-      throw new Error('CREDENTIAL_STORE_NOT_CONFIGURED: credentialStore is required.');
-    }
-
     const credentialRecord = await this.credentialStore.getCredential(boundEmployeeCode);
     if (!credentialRecord) {
       return {
@@ -100,14 +105,13 @@ export class MboAuthSessionService {
       now
     });
 
-    // 6. Handle Invalid Credentials / Failed Attempt / Lockout
+    // 6. B1: Handle Invalid Credentials / Failed Attempt / Lockout with mandatory persistence
     if (evalResult.status === 'INVALID_CREDENTIALS') {
-      if (typeof this.credentialStore.updateCredential === 'function') {
-        await this.credentialStore.updateCredential(boundEmployeeCode, {
-          Failed_Login_Count: evalResult.failedLoginCount,
-          Locked_Until: evalResult.lockedUntil
-        });
-      }
+      await this.credentialStore.updateCredential(boundEmployeeCode, {
+        Failed_Login_Count: evalResult.failedLoginCount,
+        Locked_Until: evalResult.lockedUntil
+      });
+
       return {
         status: 'INVALID_CREDENTIALS',
         reason: evalResult.isLocked ? 'Account is locked.' : 'Invalid credentials.'
@@ -123,12 +127,10 @@ export class MboAuthSessionService {
 
     // Reset failed count on successful authentication
     if (credentialRecord.Failed_Login_Count > 0 || credentialRecord.Locked_Until) {
-      if (typeof this.credentialStore.updateCredential === 'function') {
-        await this.credentialStore.updateCredential(boundEmployeeCode, {
-          Failed_Login_Count: 0,
-          Locked_Until: null
-        });
-      }
+      await this.credentialStore.updateCredential(boundEmployeeCode, {
+        Failed_Login_Count: 0,
+        Locked_Until: null
+      });
     }
 
     if (!this.sessionStore || typeof this.sessionStore.setSession !== 'function') {
@@ -186,7 +188,7 @@ export class MboAuthSessionService {
 
   /**
    * Retrieves trusted server-side principal for an active session token.
-   * Returns null if session is invalid, expired, or not authorized for data access.
+   * B2: Returns null if session is invalid, expired, or has malformed state flags.
    */
   async getAuthenticatedPrincipal(sessionToken, now = new Date()) {
     if (!sessionToken || typeof sessionToken !== 'string') return null;
@@ -197,14 +199,14 @@ export class MboAuthSessionService {
 
     if (!session || typeof session !== 'object') return null;
 
-    // Must be data authorized (force-change sessions are NOT data authorized)
-    if (session.isDataAuthorized !== true || session.requiresPasswordChange === true) {
-      return null;
-    }
+    // B2: Fail closed if expiresAt is missing, invalid, or expired
+    if (!session.expiresAt || typeof session.expiresAt !== 'string') return null;
+    const expTime = new Date(session.expiresAt);
+    if (isNaN(expTime.getTime()) || expTime <= now) return null;
 
-    if (session.expiresAt) {
-      const expTime = new Date(session.expiresAt);
-      if (expTime <= now) return null;
+    // B2: Exact trusted normal session state only
+    if (session.isDataAuthorized !== true || session.requiresPasswordChange !== false) {
+      return null;
     }
 
     return {
@@ -216,6 +218,7 @@ export class MboAuthSessionService {
 
   /**
    * Changes password through trusted session boundary.
+   * B2: Rejects expired or malformed session state.
    */
   async changePassword({ sessionToken, currentPassword, newPassword, now = new Date() }) {
     if (!sessionToken || typeof sessionToken !== 'string') {
@@ -236,6 +239,23 @@ export class MboAuthSessionService {
       throw new Error('INVALID_SESSION: Session is invalid or expired.');
     }
 
+    // B2: Expiry Check
+    if (!session.expiresAt || typeof session.expiresAt !== 'string') {
+      throw new Error('EXPIRED_SESSION: Session expiresAt is missing or invalid.');
+    }
+    const expTime = new Date(session.expiresAt);
+    if (isNaN(expTime.getTime()) || expTime <= now) {
+      throw new Error('EXPIRED_SESSION: Session has expired.');
+    }
+
+    // B2: Strict Session State Validation
+    const isForceChange = session.requiresPasswordChange === true && session.isDataAuthorized === false;
+    const isNormalChange = session.requiresPasswordChange === false && session.isDataAuthorized === true;
+
+    if (!isForceChange && !isNormalChange) {
+      throw new Error('MALFORMED_SESSION_STATE: Session state flags are invalid.');
+    }
+
     const empCode = session.employeeCode;
     const cleanNewPass = newPassword.trim();
 
@@ -244,13 +264,22 @@ export class MboAuthSessionService {
       throw new Error('CANNOT_REUSE_DEFAULT_PASSWORD: New password cannot be equal to Employee Code default password.');
     }
 
+    // B1: Credential store check
+    if (
+      !this.credentialStore ||
+      typeof this.credentialStore.getCredential !== 'function' ||
+      typeof this.credentialStore.updateCredential !== 'function'
+    ) {
+      throw new Error('CREDENTIAL_STORE_INCOMPLETE: credentialStore must provide both getCredential() and updateCredential().');
+    }
+
     const credentialRecord = await this.credentialStore.getCredential(empCode);
     if (!credentialRecord) {
       throw new Error('CREDENTIAL_RECORD_NOT_FOUND');
     }
 
     // Normal session requires current password proof
-    if (session.isDataAuthorized === true && !session.requiresPasswordChange) {
+    if (isNormalChange) {
       if (!currentPassword) {
         throw new Error('CURRENT_PASSWORD_REQUIRED: Current password is required for password change.');
       }
