@@ -5,6 +5,8 @@ import { BUSINESS_STAGES } from '../src/config/constants.js';
 import { resolveProfileCode } from '../src/profiles/profile-scoring-resolver.js';
 import { EmployeeService } from '../src/services/employee-service.js';
 import { EmployeePartAUI, escapeHtml, formatUserDisplay, getStatusGuidance, getMacroStage, classifyTopologyForUI, CANONICAL_TOPOLOGIES, getVisualScreen, getProcessProgress, normalizeAppraiserData, COMPETENCIES_LIST, getApplicableCompetencies, WORKFLOW_PATH_M1_G1, WORKFLOW_PATH_M1_M2_G1, getApplicableWorkflowPath, getPhaseCalendarStatus, DEFAULT_PHASE_CALENDAR, ROUTE_SCENARIOS, EVALUATION_PROFILES, calculateDeadlineInfo, parseObjectiveCount, normalizeProfileCode, getEvaluationProfile, resolveIdentityViewerRole, extractUserCodes } from '../src/ui/employee-part-a-ui.js';
+import { extractUserCodes as directExtractUserCodes, resolveIdentityViewerRole as directResolveIdentityViewerRole } from '../src/ui/employee-visibility.js';
+import { normalizeAppraiserData as directNormalizeAppraiserData } from '../src/evaluation/appraiser-normalizer.js';
 
 const makeMockElement = () => {
   const children = [];
@@ -1896,6 +1898,11 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
     HR_User: { value: [{ code: 'same01' }] }
   });
   assert.equal(resolveIdentityViewerRole(recOverlapAll, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Overlapping Requester, Appraiser, and HR MUST return RESTRICTED');
+
+  // Direct Module Import Parity Assertions (Refactor R1)
+  assert.equal(directResolveIdentityViewerRole(recOverlapAll, 'same01', { isPreviewMode: false }), 'RESTRICTED', 'Directly imported resolveIdentityViewerRole must return RESTRICTED');
+  assert.deepEqual(directExtractUserCodes([{ code: 'EMP01' }]), ['emp01'], 'Directly imported extractUserCodes must function identically');
+  assert.deepEqual(directNormalizeAppraiserData(validRec, 2), validInfo, 'Directly imported normalizeAppraiserData must match exported function result');
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
