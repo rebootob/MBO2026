@@ -280,6 +280,31 @@ describe('D1 MboKintoneAuthAdapter', () => {
     assert.equal(calls.length, 0, 'Zero Kintone calls must be made for malformed Employee_Code');
   });
 
+  it('B5. login returns CREDENTIAL_DENIED for Account_Status=LOCKED even without Locked_Until', async () => {
+    const { hash } = await makeHashedCredential('pw');
+    const api = makeApi({ hash, status: 'LOCKED', lockedUntil: null });
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+    const result = await adapter.login({ username: '0118', password: 'pw' });
+    assert.equal(result.status, 'CREDENTIAL_DENIED');
+    assert.equal(result.reason, 'Account is locked.');
+  });
+
+  it('B5b. login returns CREDENTIAL_DENIED for malformed Failed_Attempts (non-numeric)', async () => {
+    const { hash } = await makeHashedCredential('pw');
+    const api = makeApi({ hash, failedAttempts: 'invalid_number' });
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+    const result = await adapter.login({ username: '0118', password: 'pw' });
+    assert.equal(result.status, 'CREDENTIAL_DENIED');
+  });
+
+  it('B5c. login returns CREDENTIAL_DENIED for malformed Locked_Until (invalid date string)', async () => {
+    const { hash } = await makeHashedCredential('pw');
+    const api = makeApi({ hash, lockedUntil: 'not-a-valid-date' });
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+    const result = await adapter.login({ username: '0118', password: 'pw' });
+    assert.equal(result.status, 'CREDENTIAL_DENIED');
+  });
+
   // ── changePassword ───────────────────────────────────────────────────────
 
   it('15. changePassword rejects wrong current password', async () => {
@@ -333,14 +358,14 @@ describe('D1 MboKintoneAuthAdapter', () => {
 
   it('18. forceChangePassword rejects newPassword equal to employeeCode', async () => {
     const { hash } = await makeHashedCredential('any');
-    const api = makeApi({ hash });
+    const api = makeApi({ hash, force: 'YES' });
     const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
     const result = await adapter.forceChangePassword({ employeeCode: '0118', newPassword: '0118' });
     assert.equal(result.status, 'INVALID_PASSWORD');
     assert.equal(api.updates.length, 0);
   });
 
-  it('forceChangePassword succeeds without requiring currentPassword', async () => {
+  it('forceChangePassword succeeds without requiring currentPassword when Force_Password_Change=YES', async () => {
     const { hash } = await makeHashedCredential('old');
     const api = makeApi({ hash, force: 'YES' });
     const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
@@ -349,6 +374,15 @@ describe('D1 MboKintoneAuthAdapter', () => {
     assert.equal(result.employeeCode, '0118');
     const update = api.updates[0];
     assert.equal(update.fields.Force_Password_Change.value, 'NO');
+  });
+
+  it('B6. forceChangePassword is denied when Force_Password_Change=NO (zero update)', async () => {
+    const { hash } = await makeHashedCredential('old');
+    const api = makeApi({ hash, force: 'NO' });
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+    const result = await adapter.forceChangePassword({ employeeCode: '0118', newPassword: 'FreshNew1' });
+    assert.equal(result.status, 'CREDENTIAL_DENIED');
+    assert.equal(api.updates.length, 0, 'Zero updates must be executed when forceChange is not required');
   });
 
 });

@@ -136,11 +136,25 @@ export class MboKintoneAuthAdapter {
     const hash = get('Password_Hash');
     const status = get('Account_Status');
     const force = get('Force_Password_Change');
+    const failedRaw = get('Failed_Attempts');
+    const lockedUntilRaw = get('Locked_Until');
 
     if (storedCode !== code) throw new Error('MALFORMED_CREDENTIAL');
     if (typeof hash !== 'string' || !hash) throw new Error('MALFORMED_CREDENTIAL');
     if (!['ACTIVE', 'LOCKED', 'DISABLED'].includes(status)) throw new Error('MALFORMED_CREDENTIAL');
     if (!['YES', 'NO'].includes(force)) throw new Error('MALFORMED_CREDENTIAL');
+
+    // B5: Malformed Failed_Attempts / Locked_Until fail closed
+    let failedAttempts = 0;
+    if (failedRaw !== null && failedRaw !== undefined && failedRaw !== '') {
+      const parsedFailed = Number(failedRaw);
+      if (isNaN(parsedFailed) || parsedFailed < 0) throw new Error('MALFORMED_CREDENTIAL');
+      failedAttempts = parsedFailed;
+    }
+
+    if (lockedUntilRaw !== null && lockedUntilRaw !== undefined && lockedUntilRaw !== '') {
+      if (isNaN(Date.parse(lockedUntilRaw))) throw new Error('MALFORMED_CREDENTIAL');
+    }
 
     return {
       id: r.$id?.value,
@@ -148,8 +162,8 @@ export class MboKintoneAuthAdapter {
       hash,
       status,
       forceChange: force === 'YES',
-      lockedUntil: get('Locked_Until'),
-      failedAttempts: Number(get('Failed_Attempts') || 0)
+      lockedUntil: lockedUntilRaw || null,
+      failedAttempts
     };
   }
 
@@ -175,14 +189,17 @@ export class MboKintoneAuthAdapter {
       return { status: 'CREDENTIAL_DENIED', reason: err.message };
     }
 
-    // DISABLED: always deny
+    // B5: Account_Status = LOCKED or DISABLED: always deny
     if (cred.status === 'DISABLED') {
       return { status: 'CREDENTIAL_DENIED', reason: 'Account is disabled.' };
     }
+    if (cred.status === 'LOCKED') {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Account is locked.' };
+    }
 
-    // LOCKED with active lockout period
+    // ACTIVE status with temporary lockout period in effect
     if (cred.lockedUntil && new Date(cred.lockedUntil) > this.now()) {
-      return { status: 'CREDENTIAL_DENIED', reason: 'Account is locked. Please try again later.' };
+      return { status: 'CREDENTIAL_DENIED', reason: 'Account is temporarily locked. Please try again later.' };
     }
 
     // Verify password
@@ -261,6 +278,7 @@ export class MboKintoneAuthAdapter {
   /**
    * Applies a forced password change without requiring current password verification.
    * Only invoked from a PASSWORD_CHANGE_REQUIRED gate state.
+   * B6: Requires cred.forceChange === true (Force_Password_Change = YES).
    * newPassword must not equal employeeCode.
    */
   async forceChangePassword({ employeeCode, newPassword }) {
@@ -269,6 +287,11 @@ export class MboKintoneAuthAdapter {
       cred = await this._getCredential(employeeCode);
     } catch (err) {
       return { status: 'CREDENTIAL_DENIED', reason: err.message };
+    }
+
+    // B6: Deny forced change if Force_Password_Change is not YES
+    if (cred.forceChange !== true) {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Force password change is not required for this account.' };
     }
 
     if (newPassword === cred.code) {

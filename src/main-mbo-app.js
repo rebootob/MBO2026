@@ -185,15 +185,140 @@ if (typeof kintone !== 'undefined') {
   }
 
   /**
-   * Render a visible, full-page blocking access-denied notice on the host element.
+   * B7: Render a visible, full-page blocking access-denied notice on host using textContent.
    */
   function renderBlockedNotice(host, title, detail) {
+    if (!host) host = document.body;
     host.innerHTML = '';
     const box = document.createElement('div');
-    box.style.cssText = 'padding:32px;border:2px solid #c00;border-radius:8px;background:#fff5f5;font-family:sans-serif;max-width:600px;';
-    box.innerHTML = `<h2 style="margin:0 0 12px;color:#c00;font-size:18px;">⛔ ${title}</h2>` +
-      `<p style="margin:0;color:#555;font-size:14px;">${detail}</p>`;
+    box.style.cssText = 'padding:32px;border:2px solid #c00;border-radius:8px;background:#fff5f5;font-family:sans-serif;max-width:600px;margin:20px auto;';
+
+    const h2 = document.createElement('h2');
+    h2.style.cssText = 'margin:0 0 12px;color:#c00;font-size:18px;';
+    h2.textContent = `⛔ ${title}`;
+
+    const p = document.createElement('p');
+    p.style.cssText = 'margin:0;color:#555;font-size:14px;white-space:pre-wrap;line-height:1.5;';
+    p.textContent = String(detail || '');
+
+    box.appendChild(h2);
+    box.appendChild(p);
     host.appendChild(box);
+  }
+
+  /**
+   * B1: Renders Employee Self custom index for authenticated Employee_Code.
+   * Hides unrestricted native App794 list and queries App794 ONLY for authenticatedEmployeeCode.
+   */
+  async function renderEmployeeSelfIndex(event, host, authenticatedEmployeeCode) {
+    // Hide native unrestricted record list
+    const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
+    if (recordList) {
+      recordList.style.display = 'none';
+    }
+
+    // Render auth bar
+    if (mboLoginGate && typeof mboLoginGate.renderAuthBar === 'function') {
+      mboLoginGate.renderAuthBar(host, authenticatedEmployeeCode);
+    }
+
+    const headerSpace = (typeof kintone !== 'undefined' && kintone.app && kintone.app.getHeaderSpaceElement)
+      ? kintone.app.getHeaderSpaceElement()
+      : null;
+    const containerHost = headerSpace || host;
+
+    let indexContainer = containerHost.querySelector('[data-mbo-custom-index]');
+    if (indexContainer) {
+      indexContainer.innerHTML = '';
+    } else {
+      indexContainer = document.createElement('div');
+      indexContainer.setAttribute('data-mbo-custom-index', '');
+      indexContainer.style.cssText = 'padding:20px;font-family:sans-serif;background:#fff;';
+      containerHost.appendChild(indexContainer);
+    }
+
+    const appId = getMboAppId();
+    const query = `Employee_Code = "${authenticatedEmployeeCode}" order by Fiscal_Year desc`;
+
+    let records = [];
+    try {
+      const res = await kintoneApiWrapper.getRecords(appId, query);
+      records = res?.records || [];
+    } catch (err) {
+      renderBlockedNotice(indexContainer, 'Error Loading MBO Records', `Failed to load records for ${authenticatedEmployeeCode}: ${err.message}`);
+      return event;
+    }
+
+    const title = document.createElement('h2');
+    title.style.cssText = 'margin:0 0 16px;font-size:18px;color:#333;';
+    title.textContent = `My MBO Records (${authenticatedEmployeeCode})`;
+    indexContainer.appendChild(title);
+
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'margin-bottom:16px;';
+    const createBtn = document.createElement('a');
+    createBtn.textContent = '+ Create New MBO';
+    createBtn.href = `/k/${appId}/edit`;
+    createBtn.style.cssText = 'display:inline-block;padding:8px 16px;background:#0057b8;color:#fff;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;';
+    btnRow.appendChild(createBtn);
+    indexContainer.appendChild(btnRow);
+
+    if (records.length === 0) {
+      const emptyMsg = document.createElement('p');
+      emptyMsg.style.cssText = 'color:#666;font-size:14px;';
+      emptyMsg.textContent = `No MBO records found for employee code ${authenticatedEmployeeCode}.`;
+      indexContainer.appendChild(emptyMsg);
+      return event;
+    }
+
+    const table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:14px;';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr style="background:#f5f5f5;border-bottom:2px solid #ddd;text-align:left;">' +
+      '<th style="padding:10px;">Fiscal Year</th>' +
+      '<th style="padding:10px;">Record Key</th>' +
+      '<th style="padding:10px;">Status</th>' +
+      '<th style="padding:10px;">Action</th>' +
+      '</tr>';
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    records.forEach(rec => {
+      const tr = document.createElement('tr');
+      tr.style.cssText = 'border-bottom:1px solid #eee;';
+
+      const fyTd = document.createElement('td');
+      fyTd.style.cssText = 'padding:10px;';
+      fyTd.textContent = rec.Fiscal_Year?.value || '-';
+
+      const keyTd = document.createElement('td');
+      keyTd.style.cssText = 'padding:10px;';
+      keyTd.textContent = rec.Record_Key?.value || '-';
+
+      const statusTd = document.createElement('td');
+      statusTd.style.cssText = 'padding:10px;';
+      statusTd.textContent = rec.Status?.value || '-';
+
+      const actionTd = document.createElement('td');
+      actionTd.style.cssText = 'padding:10px;';
+      const viewLink = document.createElement('a');
+      viewLink.textContent = 'View / Edit';
+      viewLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
+      viewLink.style.cssText = 'color:#0057b8;text-decoration:underline;';
+      actionTd.appendChild(viewLink);
+
+      tr.appendChild(fyTd);
+      tr.appendChild(keyTd);
+      tr.appendChild(statusTd);
+      tr.appendChild(actionTd);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    indexContainer.appendChild(table);
+
+    return event;
   }
 
   /**
@@ -214,18 +339,44 @@ if (typeof kintone !== 'undefined') {
   }
 
   // Hook 0: Index/List — require login before any list content is accessible.
-  kintone.events.on('app.record.index.show', async function (event) {
-    if (!mboLoginGate) {
-      // Gate not initialized — block silently; content inaccessible.
-      console.error('[MBO V2] Login gate not initialized on index.show. Access blocked.');
-      return event;
-    }
+  kintone.events.on('app.record.index.show', function (event) {
     const host = document.querySelector('.gaia-app-wrapper') || document.body;
-    const authCode = await mboLoginGate.requireLogin(host);
-    if (!authCode) {
-      console.error('[MBO V2] Authentication not obtained on index.show.');
+
+    // B2: If gate is null/failed, render blocking notice and hide native index
+    if (!mboLoginGate) {
+      renderBlockedNotice(host,
+        'MBO Login Gate Not Initialized',
+        'The MBO authentication system could not be started. Access blocked. [FAIL_CLOSED_GATE_NULL]'
+      );
+      const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
+      if (recordList) recordList.style.display = 'none';
       return event;
     }
+
+    const authResult = mboLoginGate.requireLogin(host);
+    if (typeof authResult === 'string') {
+      return renderEmployeeSelfIndex(event, host, authResult);
+    } else if (authResult && typeof authResult.then === 'function') {
+      return authResult.then(authenticatedEmployeeCode => {
+        if (!authenticatedEmployeeCode) {
+          renderBlockedNotice(host,
+            'Authentication Required',
+            'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]'
+          );
+          const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
+          if (recordList) recordList.style.display = 'none';
+          return event;
+        }
+        return renderEmployeeSelfIndex(event, host, authenticatedEmployeeCode);
+      });
+    }
+
+    renderBlockedNotice(host,
+      'Authentication Required',
+      'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]'
+    );
+    const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
+    if (recordList) recordList.style.display = 'none';
     return event;
   });
 
@@ -240,9 +391,7 @@ if (typeof kintone !== 'undefined') {
         record.Employee_Code.value !== authenticatedEmployeeCode) {
       renderBlockedNotice(uiHost,
         'Access Denied',
-        `This MBO record belongs to a different employee.<br>` +
-        `Authenticated: <strong>${authenticatedEmployeeCode}</strong><br>` +
-        `Record: <strong>${record.Employee_Code.value}</strong>`
+        `This MBO record belongs to a different employee.\nAuthenticated: ${authenticatedEmployeeCode}\nRecord: ${record.Employee_Code.value}`
       );
       hideAllNativeFields(record);
       return event;
@@ -432,14 +581,24 @@ if (typeof kintone !== 'undefined') {
     try {
       ui.render();
       hideAllNativeFields(record);
-      // D1: Create flow — auto-execute full employee resolution chain using authenticated code.
-      if (isCreate && authenticatedEmployeeCode) {
-        ui.executeLookup(authenticatedEmployeeCode).catch(err => {
-          console.error('[MBO V2] Authenticated auto-lookup failed:', err);
-        });
-      }
     } catch (renderError) {
       console.error('[MBO V2] Error rendering custom UI:', renderError);
+    }
+
+    // B4: Authenticated Create Autoload MUST be awaited.
+    // Fail closed if lookup fails; do not leave an unverified form.
+    if (isCreate && authenticatedEmployeeCode) {
+      const lookupPromise = ui.executeLookup(authenticatedEmployeeCode);
+      if (lookupPromise && typeof lookupPromise.then === 'function') {
+        return lookupPromise.then(() => event).catch(err => {
+          renderBlockedNotice(uiHost,
+            'Employee Profile Resolution Failed',
+            `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`
+          );
+          hideAllNativeFields(record);
+          return event;
+        });
+      }
     }
 
     return event;
@@ -452,10 +611,15 @@ if (typeof kintone !== 'undefined') {
     const isEdit = event.type === 'app.record.edit.show';
     const isDetail = event.type === 'app.record.detail.show';
 
-    // 1. Resolve UI host element safely
-    const uiHost = getRecordUiHost('SPACE_HEADER');
+    // 1. B3: Resolve UI host element safely. If missing, fail closed without retaining native form.
+    let uiHost = getRecordUiHost('SPACE_HEADER');
     if (!uiHost) {
-      console.warn('[MBO V2] Custom UI host element not found. Retaining native form.');
+      uiHost = document.querySelector('.gaia-app-wrapper') || document.body;
+      renderBlockedNotice(uiHost,
+        'Custom UI Host Missing',
+        'Required UI header element (SPACE_HEADER) was not found. Access blocked. [FAIL_CLOSED_NO_HOST]'
+      );
+      hideAllNativeFields(record);
       return event;
     }
 
