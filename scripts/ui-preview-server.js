@@ -200,7 +200,13 @@ const server = http.createServer(async (req, res) => {
         const token = cookies.mbo_session_token || '';
 
         if (token) {
-          try { await authService.logout(token); } catch (e) {}
+          try {
+            await authService.logout(token);
+          } catch (err) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ status: 'LOGOUT_FAILED', reason: err.message }));
+            return;
+          }
         }
 
         res.setHeader('Set-Cookie', 'mbo_session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Strict');
