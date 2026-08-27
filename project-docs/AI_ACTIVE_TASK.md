@@ -1,21 +1,19 @@
-# AI ACTIVE TASK — ACCELERATED FINAL UI SOURCE CLOSURE BEFORE VISUAL UAT
+# AI ACTIVE TASK — FINAL SOURCE CLOSURE BEFORE VISUAL UAT
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting implementation HEAD: `bf126b156075c332c191f94eb94512f5a218eb8c`
-> Mode: **CREDIT-SAVER / TARGETED CLOSURE SWEEP / ONE ROUND ONLY**
+> Starting implementation HEAD: `03f4841ccd41a2e95e06ac5c1a3d42fc371f7815`
+> Mode: **CREDIT-SAVER / LAST SOURCE CORRECTION / ONE ROUND ONLY**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY/BROWSER-SMOKE: **0 / 0 / 0 / 0**
 
 ## OBJECTIVE
 
-Close the remaining **source-level UI fail-closed runtime defect** and perform one focused regression sweep across the same affected render paths so we do not discover the same class of bug one function at a time.
+Close the last independently verified source-level UI parity defect before user Visual UAT.
 
-This is NOT a redesign and NOT a broad refactor.
-
-Do not reopen migration, routing master, scoring master, Hoshin business logic, export architecture, authentication, Kintone schema, or Process Management.
+Do NOT redesign the Web Demo and do NOT reopen migration, routing master, scoring master, Hoshin, export, authentication, Kintone schema, Process Management, security architecture, or other unrelated work.
 
 Locked references:
 
@@ -23,7 +21,6 @@ Locked references:
 WEB_DEMO_VISUAL_REFERENCE = preview/index.html
 UI_BASELINE = project-docs/CONFIRMED_BASELINE/UI_UX.md
 EVALUATION_PROFILE_BASELINE = project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md
-ROUTING_BASELINE = project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
 PRIMARY_RUNTIME_SOURCE = src/ui/employee-part-a-ui.js
 DIST_OUTPUT = dist/mbo-employee-app.js
 ```
@@ -32,196 +29,199 @@ Confirmed Baseline overrides convenience defaults.
 
 ---
 
-# BLOCKER A — INVALID OBJECTIVE_COUNT ERROR UI MUST NEVER THROW
+# BLOCKER — CREATE-STATE DEFAULT MUST NOT MASK INVALID PERSISTED OBJECTIVE_COUNT
 
-Independent review of `bf126b...` found a Temporal Dead Zone / declaration-order defect in invalid-count branches.
-
-Current problematic pattern exists at least in Mid-Year and Self Evaluation:
+Independent review of `03f4841...` found this remaining unsafe semantic path in the Objectives screen:
 
 ```js
-const count = parseObjectiveCount(...);
-if (count === null) {
-  const errCard = ...;
-  container.appendChild(errCard); // container referenced here
-  return container;
+const isObjectiveStage =
+  this.isCreate ||
+  this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT ||
+  this.stage === BUSINESS_STAGES.NEW_RECORD;
+
+let count = parseObjectiveCount(this._getVal('Objective_Count'));
+
+if (count === null && isObjectiveStage) {
+  count = 4;
 }
-const container = document.createElement('div'); // declared too late
 ```
 
-This causes:
+This allows an existing/persisted record in `OBJECTIVE_INPUT` with blank/invalid `Objective_Count` to be silently reinterpreted as 4 objectives.
+
+That is not allowed.
+
+## Required behavior
+
+### True create/new-record state
+
+A drafting convenience default of 4 is allowed only when the UI is unquestionably creating a new record and no persisted invalid record is being reinterpreted.
+
+Use an explicit create predicate. Preferred minimum:
 
 ```text
-ReferenceError: Cannot access 'container' before initialization
+this.isCreate === true
 ```
 
-when persisted `Objective_Count` is invalid.
+If `BUSINESS_STAGES.NEW_RECORD` is also used, first prove from existing runtime construction that it represents only a true unsaved/new record. Do not assume this from the name alone.
 
-## Required fix
-
-Use the smallest safe correction.
-
-Preferred pattern:
+Expected create behavior:
 
 ```text
-create the screen container/wrapper first
--> parse Objective_Count
--> if invalid, append bilingual error card
--> return safely
--> otherwise continue normal rendering
+true create + blank Objective_Count -> initialize/render 4 as UI draft default
 ```
 
-Do NOT reintroduce an invalid-record fallback such as 4.
+This must not silently write to Kintone in this task.
 
-Existing explicit draft/create-state UI initialization may remain only where it is clearly create-state behavior and does not reinterpret invalid persisted record data.
+### Existing/persisted record
 
----
-
-# BLOCKER B — ONE-PASS FAIL-CLOSED RENDER PATH SWEEP
-
-Before editing, inspect every `parseObjectiveCount(...)` use in `src/ui/employee-part-a-ui.js`.
-
-For each use classify:
+For any existing record, including stage `OBJECTIVE_INPUT`:
 
 ```text
-CREATE_OBJECTIVES
-MIDYEAR
-SELF_EVALUATION
-APPRAISER_EVALUATION
-HR_FINAL_OR_SUMMARY
-TOTAL_WEIGHT_OR_COMPLETION_HELPER
-OTHER
+blank/null/0/-1/11/non-numeric/malformed Objective_Count
 ```
 
-For every path verify BOTH valid and invalid behavior.
-
-## Valid behavior
-
-```text
-1  -> exactly 1 objective slot/row
-2  -> exactly 2
-10 -> exactly 10
-```
-
-No phantom rows beyond `Objective_Count`.
-
-## Invalid persisted-record behavior
-
-For:
-
-```text
-blank
-null
-0
--1
-11
-non-numeric text
-malformed numeric string
-```
-
-required behavior is:
+must produce:
 
 ```text
 NO THROW
-NO fabricated objective rows
-NO silent write/change of Objective_Count
-NO fallback to 4 for persisted invalid data
-truthful bilingual data-quality/configuration message where screen rendering needs user feedback
-fail-closed calculation/completion behavior for non-visual helpers
+NO fallback to 4
+NO invented Objective_1..4 rows
+NO write/change of Objective_Count
+truthful bilingual invalid-data/configuration state
 ```
 
-Do not allow `null` to flow into loops, arithmetic, completion percentages, or scoring contexts in a way that accidentally behaves like zero/NaN without an explicit fail-closed decision.
-
-### Required source-sweep evidence
-
-Report every `parseObjectiveCount` call site and its final disposition:
-
-```text
-<function/path> = SAFE_VALID_AND_INVALID
-```
+Valid `1..10` remains unchanged.
 
 Expected:
 
 ```text
-OBJECTIVE_COUNT_RENDER_PATHS_SCANNED = <count>
-OBJECTIVE_COUNT_UNSAFE_RENDER_PATHS = 0
-OBJECTIVE_COUNT_INVALID_RUNTIME_THROWS = 0
+CREATE_STATE_DEFAULT_ISOLATION = PASS
+PERSISTED_OBJECTIVE_INVALID_FAIL_CLOSED = PASS
 PHANTOM_OBJECTIVE_ROWS = 0
 ```
 
 ---
 
-# BLOCKER C — REGRESSION TESTS MUST EXERCISE RENDER PATHS, NOT ONLY HELPERS
+# REQUIRED REGRESSION TEST COMPLETION
 
-The previous tests prove:
+Use the existing test file/foundation. Do not create a new framework.
 
-```text
-parseObjectiveCount('invalid') -> null
-normalizeProfileCode('UNKNOWN_PROFILE') -> null
-```
-
-but did not render invalid-record screens and therefore missed the TDZ crash.
-
-Add focused regression tests using the existing mock UI/test foundation. Do not create a new test framework.
-
-At minimum test:
+Add/verify these render-path tests:
 
 ```text
-Objectives persisted/read-only invalid Objective_Count -> no throw, no invented rows, error state
-Mid-Year invalid Objective_Count -> no throw, no invented rows, error state
-Self Evaluation invalid Objective_Count -> no throw, no invented rows, error state
-Appraiser Evaluation invalid Objective_Count -> no throw, no invented rows, error state
-HR Final / summary invalid Objective_Count -> no throw, no invented rows, error state where applicable
+1. true create/new record + blank Objective_Count
+   -> no throw
+   -> explicit draft default behavior allowed
+   -> renders 4 only in true create context
+
+2. existing Objectives record + invalid Objective_Count
+   -> no throw
+   -> bilingual invalid-count state
+   -> zero invented objective rows
+   -> MUST NOT render as 4 objectives
+
+3. HR Final + invalid Objective_Count
+   -> no throw
+   -> invalid-count state in read-only breakdown
+   -> zero invented objective rows
 ```
 
-Also retain valid range assertions:
+Retain the already added invalid render tests for:
+
+```text
+Mid-Year
+Self Evaluation
+Appraiser Evaluation
+```
+
+Retain parser tests:
 
 ```text
 1 -> 1
 2 -> 2
 10 -> 10
+blank/null/0/-1/11/text -> null
 ```
-
-If create/new-record intentionally initializes 4 as a UI drafting convenience, add a test proving that this behavior applies **only to explicit create/new-record state**, not to an invalid persisted/read-only record.
 
 Expected:
 
 ```text
-INVALID_COUNT_RENDER_TESTS = PASS
+OBJECTIVES_EXISTING_INVALID_RENDER_TEST = PASS
+HR_FINAL_INVALID_RENDER_TEST = PASS
+MIDYEAR_INVALID_RENDER_TEST = PASS
+SELF_EVAL_INVALID_RENDER_TEST = PASS
+APPRAISER_INVALID_RENDER_TEST = PASS
 VALID_COUNT_RENDER_TESTS = PASS
-CREATE_STATE_DEFAULT_ISOLATION = PASS|NOT_APPLICABLE
 ```
 
 ---
 
-# PROFILE FAIL-CLOSED REGRESSION CHECK — VERIFY ONLY, DO NOT REDESIGN
+# FINAL TARGETED SOURCE SWEEP
 
-The profile correction from `bf126b...` is accepted in principle. Verify no regression while touching UI code:
+Before the final test/build, inspect every current `parseObjectiveCount(` call site in `src/ui/employee-part-a-ui.js` and report exact function/path classification.
+
+For each call site prove:
 
 ```text
-CANONICAL_PROFILE_KEYS = exactly 8
-PROF_STAFF_OPERATIONAL -> PROF_STAFF_CHIEF
-PROF_STAFF_JAPANESE -> PROF_JAPANESE_STAFF
-PROF_SECT_MGR -> PROF_SECTION_MGR
-PROF_SR_MGR -> PROF_SENIOR_MGR
-blank/null/unknown -> unresolved/null
-getEvaluationProfile(unresolved) -> null
+valid 1..10 = correct
+invalid persisted data = fail closed
+no null arithmetic accident
+no loop silently treating null as zero
+no variable reference before declaration
+no create default leaking into persisted record paths
+```
+
+Specially inspect:
+
+```text
+_renderScreenObjectives
+_renderScreenMidYear
+_renderScreenSelfEval
+_renderScreenAppraiserEval
+_renderScreenHrFinal / _renderReadOnlyAppraiserBreakdown
+normalizeAppraiserData
+_updateTotalWeightDisplay
+any other current caller
+```
+
+`normalizeAppraiserData` currently receives `activeObjCount = parseObjectiveCount(...)`. If invalid Objective_Count can reach arithmetic such as `count * activeObjCount`, make the smallest explicit fail-closed correction so invalid config does not obtain misleading zero-complete semantics. Do not broaden architecture.
+
+Expected:
+
+```text
+OBJECTIVE_COUNT_CALL_SITES_REVIEWED = <actual count>
+OBJECTIVE_COUNT_UNSAFE_CALL_SITES = 0
+OBJECTIVE_COUNT_INVALID_RUNTIME_THROWS = 0
+NULL_ARITHMETIC_SEMANTIC_LEAKS = 0
+```
+
+---
+
+# PROFILE / ROUTE REGRESSION CHECK — VERIFY ONLY
+
+Do not redesign. Preserve and verify:
+
+```text
+CANONICAL_PROFILE_KEYS = 8
+LEGACY_PROFILE_ALIAS_NORMALIZATION = PASS
+UNKNOWN_PROFILE_FAIL_CLOSED = PASS
 PROFILE_DEFAULT_FABRICATION = 0
+PROFILE_ROUTE_SEPARATION = PASS
 PROFILE_TO_PRODUCTION_ROUTE_INFERENCE = 0
 ```
 
-Do not add `suggestedRoute` back to production profile definitions.
+Do not reintroduce `suggestedRoute` into production profile definitions.
 
 ---
 
-# ACCEPTED UI FOUNDATION — PRESERVE
+# ACCEPTED UI FOUNDATION — DO NOT REWRITE
 
-Do not rewrite these areas unless the targeted correction directly breaks them:
+Preserve:
 
 ```text
 FIVE_STAGE_UI = PASS_SOURCE
 BILINGUAL_UI = PASS_SOURCE
 ORDINAL_APPRAISER_LABELS = PASS_SOURCE
-PROFILE_ROUTE_SEPARATION = PASS
 DIFFICULTY_BLANK_STATE = PASS_SOURCE
 OPTIONAL_EVIDENCE_UX = PASS_WITH_SCHEMA_PENDING
 MIDYEAR_PROGRESS_SEMANTICS = PASS_SOURCE
@@ -235,31 +235,24 @@ MULTI_APPRAISER_CONTAINMENT = PASS_SOURCE_REVIEW_PENDING_VISUAL
 READ_ONLY_PERMISSION_TRUTHFULNESS = PASS_SOURCE
 ```
 
-Do not redesign `preview/index.html` in this round.
+No `preview/index.html` redesign in this round.
 
 ---
 
-# SPEED + QUALITY EXECUTION RULES
+# SPEED + QUALITY RULES
 
-To reduce another review loop:
-
-1. Inspect all relevant `parseObjectiveCount` call sites BEFORE making changes.
-2. Make the smallest coherent fix, preferably reusing one existing error-card/helper pattern rather than copy/paste if that can be done without broad refactor.
-3. Run targeted UI tests while implementing.
-4. Before final test/build, re-scan the affected source for:
-   - `parseObjectiveCount(`
-   - `count === null`
-   - `container.appendChild`
-   - `wrap.appendChild`
-   - Objective loops using `count`
-   - arithmetic/completion logic using objective count
-5. Confirm no local variable is referenced before declaration in any new invalid-count path.
+1. Inspect all relevant call sites first.
+2. Make one coherent minimal patch.
+3. Add all missing regression tests in the same round.
+4. Run targeted tests during implementation as needed.
+5. Re-scan affected source before final run.
 6. Run full `npm test` exactly ONCE near completion.
 7. Run `npm run ui:build` exactly ONCE near completion.
-8. Verify expected dist update.
-9. Update docs once, commit once, push, STOP.
+8. Verify expected dist output only.
+9. Update governance docs once.
+10. Commit once, push, STOP.
 
-No broad cleanup. No unrelated formatting sweep.
+No broad cleanup and no unrelated refactor.
 
 ---
 
@@ -275,12 +268,12 @@ LEGACY_APP_WRITE = 0
 APP794_LIVE_WRITE = 0
 APP795_LIVE_GET = 0
 APP796_LIVE_GET = 0
-APP800_LIVE_GET = 0
 APP797_LIVE_GET = 0
+APP800_LIVE_GET = 0
 ```
 
 Do not edit `project-docs/CONFIRMED_BASELINE/*`.
-Do not create `_final`, `_v3`, replacement UI, parallel architecture, or duplicate modules without clear necessity.
+Do not create parallel `_final`, `_v3`, replacement UI, or duplicate architecture.
 
 ---
 
@@ -295,7 +288,7 @@ project-docs/HANDOFF.md
 ```
 
 Do NOT claim Visual UAT PASS.
-Do NOT claim Final Kintone Execution READY beyond `BLOCKED_PENDING_VISUAL_UAT`.
+If this source gate passes, next step is user Visual UAT.
 
 ---
 
@@ -310,15 +303,21 @@ KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
 
-OBJECTIVE_COUNT_VALID_1_TO_10 = PASS|BLOCKED
-OBJECTIVE_COUNT_INVALID_FAIL_CLOSED = PASS|BLOCKED
-OBJECTIVE_COUNT_RENDER_PATHS_SCANNED = <count>
-OBJECTIVE_COUNT_UNSAFE_RENDER_PATHS = <count>
-OBJECTIVE_COUNT_INVALID_RUNTIME_THROWS = <count>
+CREATE_STATE_DEFAULT_ISOLATION = PASS|FAIL
+PERSISTED_OBJECTIVE_INVALID_FAIL_CLOSED = PASS|FAIL
 PHANTOM_OBJECTIVE_ROWS = <count>
-INVALID_COUNT_RENDER_TESTS = PASS|FAIL
+
+OBJECTIVES_EXISTING_INVALID_RENDER_TEST = PASS|FAIL
+MIDYEAR_INVALID_RENDER_TEST = PASS|FAIL
+SELF_EVAL_INVALID_RENDER_TEST = PASS|FAIL
+APPRAISER_INVALID_RENDER_TEST = PASS|FAIL
+HR_FINAL_INVALID_RENDER_TEST = PASS|FAIL
 VALID_COUNT_RENDER_TESTS = PASS|FAIL
-CREATE_STATE_DEFAULT_ISOLATION = PASS|NOT_APPLICABLE|FAIL
+
+OBJECTIVE_COUNT_CALL_SITES_REVIEWED = <actual count>
+OBJECTIVE_COUNT_UNSAFE_CALL_SITES = <count>
+OBJECTIVE_COUNT_INVALID_RUNTIME_THROWS = <count>
+NULL_ARITHMETIC_SEMANTIC_LEAKS = <count>
 
 CANONICAL_PROFILE_KEYS = PASS|BLOCKED
 LEGACY_PROFILE_ALIAS_NORMALIZATION = PASS|BLOCKED
