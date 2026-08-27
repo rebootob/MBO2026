@@ -27,6 +27,7 @@ Confirmed routing/workflow baseline must be read first. In particular:
 - App794 canonical Process = 16 states / 28 actions.
 - Current Sandbox status15 assignee `USER: hr` is only a controlled Sandbox UAT boundary and is NOT certified Production HR authorization.
 - `Requester_User` remains the confirmed Kintone shared workflow/requester boundary under the Kintone-only baseline.
+- `admin-form` is a technical administrator identity only. It has no business workflow authority to submit, approve, return, complete, or act on behalf of Requester/Appraiser/HR.
 - Production authorization is a separate go-live gate.
 
 ## OBJECTIVE
@@ -43,7 +44,8 @@ The output must tell ChatGPT exactly:
 3. which are baseline conflicts requiring a user/architecture decision;
 4. which require implementation;
 5. which require later controlled Kintone read/write authorization;
-6. the safest execution order to close them.
+6. the safest execution order to close them;
+7. whether a safe `admin-form` Technical Admin Debug / Inspection mode is already present, incomplete, or needs a later implementation package.
 
 ## REQUIRED FIRST READ
 
@@ -145,7 +147,66 @@ Assess known production-readiness safeguards visible in repository evidence, inc
 
 Only report issues supported by repository evidence. If not found, mark `NOT_EVIDENCED`, not PASS.
 
-### H. UI Freeze / Delivery Integrity
+### H. Technical Admin / `admin-form` Debug & Inspection Mode
+
+User requirement for production supportability:
+
+`admin-form` must have a safe technical inspection/debug capability for troubleshooting and data verification, while remaining completely outside business approval authority.
+
+Assess current source/docs/Preview/Admin tooling for whether a dedicated or clearly separated Technical Admin mode already exists.
+
+Expected safe capability SHOULD allow authorized technical admin to inspect, preferably read-only:
+
+```text
+1. Record identity / Record ID / MBO key / Fiscal Year
+2. Employee identity inputs and resolved `Requester_User`
+3. Current Kintone Process status
+4. Current workflow actor / resolved current appraiser slot
+5. Full configured route 1st–4th Appraiser and source/routing key
+6. App795 route resolution inputs/results and fail-closed reason
+7. Evaluation Profile / Part A : Part B profile resolution
+8. Objective_Count and normalization/completeness state
+9. Relevant App800 phase-calendar/config resolution state
+10. Relevant App801 auth-contract state WITHOUT exposing password hashes/secrets
+11. Viewer-role/privacy resolver result and reason
+12. Field mapping / source-app references used by the record
+13. Workflow/audit timeline diagnostic source and any pending audit-design limitation
+14. Explicit validation/fail-closed errors in human-readable form
+15. Source/bundle/version/build identifier useful for support diagnosis
+```
+
+The admin/debug view must NOT grant or simulate business authority in Production.
+
+Forbidden for `admin-form` in normal production operation:
+
+```text
+SUBMIT_MBO = NO
+APPROVE_OBJECTIVE = NO
+RETURN_OBJECTIVE = NO
+APPROVE_MIDYEAR = NO
+RETURN_MIDYEAR = NO
+SCORE_AS_APPRAISER = NO
+COMPLETE_HR_FINAL = NO
+RETURN_HR_FINAL = NO
+ACT_AS_REQUESTER = NO
+ACT_AS_APPRAISER = NO
+ACT_AS_HR = NO
+CHANGE_WORKFLOW_STATUS = NO
+```
+
+Also assess whether debug output could leak confidential Employee/Appraiser/HR data beyond what a technical administrator genuinely needs. Recommend least-privilege exposure, clear `TECHNICAL ADMIN / READ-ONLY DIAGNOSTICS` labeling, and auditability for any future repair/write function.
+
+Do NOT implement the debug mode in this assessment task.
+
+Classify:
+- `CLOSED` only if the safe capability is already evidenced and respects the no-business-authority boundary;
+- `BLOCKER_IMPLEMENTATION` if a technical debug/inspection view is required but missing/incomplete;
+- `BLOCKER_SECURITY` if existing admin tooling can accidentally execute business actions or expose secrets;
+- `BASELINE_CONFLICT` if any document/source treats `admin-form` as business approver/actor.
+
+For any future repair capability, explicitly separate it from read-only diagnostics and require a separately authorized guarded maintenance workflow. Do not bundle repair/write privileges into the normal debug page.
+
+### I. UI Freeze / Delivery Integrity
 
 Verify:
 - Production source structure remains modular;
@@ -183,7 +244,7 @@ Return blockers grouped:
 
 ```text
 P0 = security / authorization / data-loss risk
-P1 = production correctness / workflow/config consistency
+P1 = production correctness / workflow/config consistency / operational supportability
 P2 = maintainability / documentation / non-blocking evidence
 ```
 
@@ -205,6 +266,7 @@ SCHEMA_CHANGE = 0
 PROCESS_CHANGE = 0
 ACL_CHANGE = 0
 UI_REFACTOR = 0
+ADMIN_DEBUG_IMPLEMENTATION = 0
 ```
 
 Allowed changes after assessment:
@@ -238,6 +300,9 @@ PROCESS_16_28_CONSISTENCY = <classification + summary>
 APP800_READINESS = <classification + summary>
 APP801_READINESS = <classification + summary>
 LEGACY_DATA_SAFETY = <classification + summary>
+ADMIN_FORM_DEBUG_INSPECTION = <classification + summary>
+ADMIN_FORM_BUSINESS_AUTHORITY = NONE|CONFLICT_FOUND
+ADMIN_FORM_SECRET_EXPOSURE = PASS|BLOCKED|NOT_EVIDENCED
 DELIVERY_INTEGRITY = <classification + summary>
 
 KINTONE_CALLS = 0
