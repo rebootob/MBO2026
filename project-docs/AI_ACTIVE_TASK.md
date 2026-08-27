@@ -1,254 +1,176 @@
-# AI ACTIVE TASK — D1-C4A PORTABLE TRUSTED NODE GATEWAY RUNTIME PACKAGE
+# AI ACTIVE TASK — D1-C4A FINAL CORRECTIVE: BROWSER TOPOLOGY + PORTABLE STARTUP
 
 > Control Plane: ChatGPT
 > Execution Plane: Codex (temporary replacement for Antigravity)
 > Repository: `rebootob/MBO2026`
 > Canonical integration branch: `ai/antigravity-wp002c`
 > Codex execution branch: `ai/codex-d1c3b`
-> Independently reviewed implementation: `127a872f431e8a6ae41e9348e8f151d6ef0d123f`
-> Mode: PORTABLE SERVER RUNTIME PACKAGE ONLY / NO LIVE KINTONE WRITE / NO DEPLOY / NO ACL CHANGE / NO UI
+> Reviewed implementation: `1b18defa00451d37c591feff2f3dfa6cfb33b521`
+> Mode: MINIMUM RUNTIME CORRECTIVE ONLY / NO KINTONE WRITE / NO DEPLOY / NO ACL CHANGE / NO UI
 
-## 0. INDEPENDENT REVIEW RESULT — D1-C3B ACCEPTED
+## 0. INDEPENDENT REVIEW RESULT
 
-Accepted from `127a872f...`:
-- App794 missing/malformed/mismatched `Employee_Code` fails closed;
-- trusted `session.employeeCode` is validated by canonical `normalizeEmployeeCode()` before App53/App794 query use;
-- query injection defenses remain enforced;
-- App53 lookup reuses canonical `EmployeeService`;
-- Employee Self App794 responses strip existing `CONFIDENTIAL_FIELDS` and auth/session secrets;
-- 0118 -> 0119 record isolation remains enforced;
-- App794 live facts were read with 3 READ-ONLY GETs;
-- Kintone writes/deploys remained zero.
+Accepted foundation from `1b18defa...`:
+- source scope is limited to env contract, one Node HTTP runtime, focused runtime tests and one deployment note;
+- configured shared outer Kintone principal is server-controlled and browser injection is rejected;
+- raw session token is placed in an HttpOnly cookie and not returned in JSON;
+- accepted auth/session/employee-self services are reused rather than duplicated;
+- Employee_Code authorization remains trusted-session-only;
+- production mode requires Secure cookie + an allowed origin;
+- App801/App53/App794 secrets remain server-side;
+- Kintone READ/WRITE/DEPLOY counters remain zero;
+- no live host deployment occurred.
 
-Accepted cutover facts:
+GitHub has no CI/workflow/status evidence. Do not claim CI PASS.
 
-```text
-APP794_APP_ACL_CURRENT = CREATOR full record rights; GROUP everyone record view/add/edit/delete enabled
-APP794_RECORD_ACL_CURRENT = NONE
-APP794_PRIVILEGED_USER_FIELDS = Requester_User, Manager_Level1_Approvers, Manager_Level2_Approvers, GM_Level1_Approvers, GM_Level2_Approvers (USER_SELECT)
-APP794_UNSAFE_EMPLOYEE_RULE = GROUP everyone direct App794 record access
-APP794_ACL_CUTOVER = BLOCKED_PRIVILEGED_RULES_NOT_PROVEN
-APP801_SCHEMA_MANIFEST = EXACT_9_FIELDS
-APP801_ACL_CHANGE = NO_CHANGE
-TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE
-```
+D1-C4A is NOT accepted yet because the runtime is not topology-neutral/portable enough for the actual browser boundary.
 
-GitHub has no CI/workflow/status evidence for the implementation commit. Do not claim CI PASS.
+## 1. B1 — CROSS-ORIGIN KINTONE BROWSER PATH IS NOT IMPLEMENTED
 
-Classification:
+Current server accepts `MBO_ALLOWED_ORIGIN` but sends no CORS headers and does not handle OPTIONS preflight.
 
-```text
-D1C3B_SOURCE_AND_EVIDENCE = PASS / ACCEPTED
-D1_OVERALL = IN_PROGRESS
-```
+A Kintone-hosted Employee UI calling a gateway on a different origin will preflight `POST application/json`; current runtime returns 404/no CORS and login cannot reach the gateway.
 
-## 1. GOAL
+### Required correction
 
-Build the minimum **portable Node.js trusted gateway runtime package** around the already accepted auth/session/employee-self services so the project is deployable later to an approved internal Windows/Linux server or VM.
+Implement a minimal exact-origin CORS boundary without a framework:
+- never use `*` when cookies/credentials are used;
+- if request `Origin` exactly equals configured `MBO_ALLOWED_ORIGIN`, emit:
+  - `Access-Control-Allow-Origin: <exact configured origin>`
+  - `Access-Control-Allow-Credentials: true`
+  - `Vary: Origin`
+- handle OPTIONS only for the gateway API with exact allowed origin;
+- allow only required methods `GET, POST, OPTIONS` and required request header `Content-Type`;
+- disallowed Origin => fail closed (403) for state-changing requests and preflight;
+- do not create a generic CORS framework.
 
-This package is CODE + LOCAL TESTS ONLY.
+Document that browser requests from a distinct origin must use `credentials: include`; no UI implementation is authorized here.
 
-Do NOT deploy it anywhere.
-Do NOT modify Kintone.
-Do NOT choose/invent a production host.
+## 2. B2 — COOKIE TOPOLOGY MUST SUPPORT SAME-SITE OR CROSS-SITE SAFELY
 
-The runtime must remain portable and host-neutral.
+Current config accepts only `SameSite=Lax|Strict` and deliberately rejects `None`.
 
-## 2. TRUST BOUNDARY
+That makes a cross-site Kintone -> gateway session impossible even though final topology has not been chosen.
 
-Frozen architecture:
+### Required correction
 
-```text
-Employee Browser
-  -> Trusted Node Gateway
-      -> MboAuthSessionService
-      -> MboKintoneAuthRepository / App801
-      -> EmployeeService / App53 READ ONLY
-      -> MboEmployeeSelfGateway / App794
-```
+Allow exactly:
+- `Strict`
+- `Lax`
+- `None`
 
 Rules:
-1. Kintone/App801 privileged credentials or API tokens are server-side environment secrets only.
-2. Never embed secrets in browser JS, source files, tests, logs, responses, or Git.
-3. Employee identity after login comes only from trusted session `employeeCode`.
-4. Browser must never supply/select another Employee_Code as an authorization input.
-5. Explicit auth identity mode for Employee Self is `SHARED_KINTONE_SECONDARY_AUTH`.
-6. Outer shared Kintone admission/audit principal must be a server-controlled configuration value, not trusted from a browser request field.
-7. Technical admin remains unable to become Employee Self.
-8. Raw session tokens must not be persisted; server persistence uses token hash only.
-9. Password/Activation/Session hashes must never be returned to browser.
-10. Force-password-change session has no MBO data authorization.
+- `SameSite=None` requires `Secure=true` always;
+- production always requires `Secure=true`;
+- do not default silently to `None`;
+- topology remains explicit through environment configuration.
 
-## 3. MINIMUM PORTABLE RUNTIME API
+Add focused tests for:
+- production `SameSite=None + Secure=true + HTTPS allowed origin` accepted;
+- `SameSite=None + Secure=false` rejected;
+- `Lax/Strict` remain valid when otherwise safe.
 
-Implement a small Node server runtime using existing project dependencies where possible. Do NOT introduce a large framework if Node built-ins are sufficient.
+## 3. B3 — PRODUCTION CONFIG FAIL-CLOSED HARDENING
 
-Preferred runtime entrypoint may be equivalent to:
+Current parser treats any `NODE_ENV` other than exact `production` as non-production, so a typo like `prod` can silently enable insecure cookie behavior.
 
+Also `MBO_ALLOWED_ORIGIN` and `KINTONE_BASE_URL` are only non-empty strings.
+
+### Required correction
+
+Keep it minimal:
+- require `NODE_ENV` to be one of explicit supported values (`production`, `development`, `test`) when parsing runtime environment; unknown value => fail closed;
+- production `MBO_ALLOWED_ORIGIN` must be one absolute HTTPS origin only (scheme + host + optional port; no path/query/hash);
+- production `KINTONE_BASE_URL` must be a valid HTTPS base URL;
+- never log server credential values.
+
+Local tests may still directly inject a config object into `createMboGatewayServer()` without using production env parsing.
+
+## 4. B4 — WINDOWS ENTRYPOINT IS NOT PORTABLE
+
+Current direct-run guard:
+
+```js
+import.meta.url === `file://${process.argv[1]}`
+```
+
+is not portable for Windows `C:\...` paths.
+
+### Required correction
+
+Use Node URL/path utilities (`pathToFileURL` or equivalent built-in approach) so:
+
+```text
+node src/server/mbo-gateway-server.js
+```
+
+works as the documented direct entrypoint on both Windows and Linux.
+
+Do not add a framework or OS-specific launcher unless strictly necessary.
+
+## 5. MINIMUM HTTP REGRESSION TESTS STILL REQUIRED
+
+The first C4A tests mock the services but do not yet prove several runtime-boundary requirements from the task.
+
+Add only focused tests for these missing risks:
+1. OPTIONS preflight from exact configured origin succeeds with exact CORS headers and credentials support;
+2. wrong Origin preflight/state-changing request is denied;
+3. first/default login result `ACTIVATION_CODE_REQUIRED` sets NO session cookie;
+4. `PASSWORD_CHANGE_REQUIRED` cookie cannot obtain data when the employee gateway/auth composition reports an unauthorized/restricted session;
+5. malformed fiscalYear through `/api/mbo/bootstrap` remains `INVALID_ARGUMENT` (use a composed/focused fake that actually enforces the accepted validation, not a mock that always returns success);
+6. password change rotates HttpOnly cookie and does not expose token in JSON;
+7. logout clears cookie; accepted auth-service session invalidation remains delegated to the already-tested service;
+8. response JSON does not expose Password_Hash / Activation_Code_Hash / Session_Token_Hash / raw session token.
+
+Do not duplicate the complete auth/service test suites.
+
+## 6. DEPLOYMENT NOTE CORRECTION
+
+Update the existing `project-docs/D1-C4A_GATEWAY_RUNTIME_DEPLOYMENT.md` only as needed:
+- distinguish SAME-SITE vs CROSS-SITE browser topology;
+- CROSS-SITE requires exact-origin CORS + browser `credentials: include` + `SameSite=None; Secure`;
+- SAME-SITE may use Lax/Strict according to approved topology;
+- retain Windows/Linux portability;
+- do not claim rollback removes browser/server session state automatically. State that stopping/removing the gateway route makes sessions unusable while stopped; explicit App801 session revocation/clearing, if later required, is a separately authorized Kintone operation.
+
+No new deployment document.
+
+## 7. ALLOWED FILES ONLY
+
+Prefer only:
 - `src/server/mbo-gateway-server.js`
+- `tests/mbo-gateway-server.test.js`
+- `.env.example`
+- `project-docs/D1-C4A_GATEWAY_RUNTIME_DEPLOYMENT.md`
 
-Keep supporting files minimal and justified.
+No auth/session/activation/employee gateway changes unless a proven interface incompatibility makes it unavoidable. Stop and report before widening source scope.
 
-Expose only the minimum HTTP contract needed for D1:
+## 8. OUT OF SCOPE / FORBIDDEN
 
-```text
-POST /api/mbo/login
-POST /api/mbo/change-password
-POST /api/mbo/logout
-GET  /api/mbo/bootstrap?fiscalYear=FY2026
-GET  /api/mbo/history
-GET  /api/mbo/records/:recordId
-GET  /health
-```
-
-### Login
-Request body may contain only:
-- `username` = MBO Employee_Code locator
-- `password`
-- `activationCode` only when first/default login requires it
-
-Do NOT accept browser-supplied `kintoneUserCode` as trusted identity.
-Use a server-controlled configured outer shared principal for the accepted shared-account mode.
-
-### Session boundary
-Use an opaque server session cookie at HTTP boundary.
-Cookie must be:
-- `HttpOnly`
-- `Secure` in production mode
-- explicit `Path=/`
-- explicit SameSite policy controlled by configuration/topology
-
-Because final hosting origin is not chosen yet, do NOT silently choose a cross-site production cookie policy. Runtime must fail closed in production mode if required origin/cookie security configuration is missing.
-
-For local automated tests only, a clearly isolated test mode may permit loopback HTTP behavior without weakening production defaults.
-
-### State-changing requests
-Login/change-password/logout must reject malformed methods/content types/bodies and must enforce an explicit origin policy when an allowed browser origin is configured.
-Do not create a generic auth/CSRF framework.
-
-### Data endpoints
-Bootstrap/history/direct-record endpoints must call the accepted `MboEmployeeSelfGateway`; do not duplicate its Employee_Code authorization logic.
-
-## 4. RUNTIME CONFIG CONTRACT
-
-Create only an example/config contract with placeholders, never real secrets.
-
-Required logical configuration:
-
-```text
-NODE_ENV
-PORT
-MBO_ALLOWED_ORIGIN
-MBO_COOKIE_SECURE
-MBO_COOKIE_SAMESITE
-MBO_OUTER_SHARED_KINTONE_PRINCIPAL
-KINTONE_BASE_URL
-KINTONE_APP801_ID=801
-KINTONE_APP794_ID=794
-KINTONE_APP53_ID=53
-KINTONE_SERVER_CREDENTIAL=<server-side secret reference only>
-```
-
-If repository already has an env/config pattern, reuse it rather than creating a duplicate system.
-
-Do not commit any live API token/password/cookie secret.
-
-## 5. KINTONE TRANSPORT
-
-Reuse existing `MboKintoneAuthRepository` and existing server-side transport patterns.
-Do not redesign credential storage.
-
-No live write/read is required for this package unless an existing test/preflight explicitly needs READ-ONLY evidence. Prefer mocks/local tests.
+- no live gateway deployment
+- no DNS/TLS provisioning
+- no Windows/Linux host changes
+- no Kintone schema write
+- no App801 field creation
+- no credential provisioning
+- no App794 ACL change
+- no Kintone customization deploy
+- no employee UI changes
+- no D2-D7 implementation
+- no migration
+- no unrelated refactor
 
 Mandatory:
 
 ```text
 KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
+LIVE_SERVER_DEPLOY_EXECUTED = 0
 ```
 
-## 6. LOCAL TESTS — MINIMUM REQUIRED
+## 9. VERIFICATION
 
-Add focused runtime tests proving at least:
-
-1. login request uses configured server-side shared outer principal, ignoring/rejecting browser attempts to inject a Kintone principal;
-2. first/default login without required activation cannot obtain usable data session;
-3. successful force-change login receives restricted session boundary and data endpoint remains denied;
-4. after password change, authorized session can bootstrap own employee data;
-5. 0118 session cannot read 0119 record through direct record route;
-6. malformed fiscalYear/recordId remains denied through HTTP boundary;
-7. technical admin Employee Self attempt remains denied;
-8. logout invalidates session;
-9. no Password_Hash / Activation_Code_Hash / Session_Token_Hash is returned;
-10. production-mode startup/config fails closed when required security/origin/cookie settings are absent or unsafe.
-
-Do not duplicate the whole service test suite.
-
-## 7. DEPLOYMENT PACKAGE — PLAN ONLY
-
-Provide a minimal deployment/rollback contract, not a live deployment.
-
-Target portability:
-- Windows Server/Windows VM with Node.js; OR
-- Linux VM with Node.js.
-
-Document only what is required to run as a service/process and what environment variables are needed.
-Do not install OS packages remotely.
-Do not provision DNS/certificates/firewall/service accounts.
-Do not invent a server hostname/IP.
-
-Required result:
-
-```text
-PORTABLE_RUNTIME_PACKAGE = READY | BLOCKED:<reason>
-TRUSTED_BACKEND_RUNTIME = NOT_DEPLOYED
-LIVE_HOST_DECISION = REQUIRED_AFTER_SOURCE_REVIEW
-```
-
-## 8. APP801 / APP794 — FROZEN, NO LIVE CHANGE
-
-Do not change App801 schema in this package.
-Keep exact future App801 additions frozen:
-
-```text
-Password_Expires_At                  DATETIME
-Activation_Code_Hash                 SINGLE_LINE_TEXT
-Activation_Expires_At                DATETIME
-Activation_Used_At                   DATETIME
-Session_Token_Hash                   SINGLE_LINE_TEXT
-Session_Expires_At                   DATETIME
-Session_Requires_Password_Change     DROP_DOWN YES|NO
-Session_Data_Authorized              DROP_DOWN YES|NO
-Session_Kintone_User_Code            SINGLE_LINE_TEXT
-```
-
-Do not change App794 ACL.
-Current cutover remains:
-
-```text
-APP794_ACL_CUTOVER = BLOCKED_PRIVILEGED_RULES_NOT_PROVEN
-```
-
-Do not guess HR/appraiser/admin principal codes.
-
-## 9. OUT OF SCOPE
-
-- no live gateway deployment
-- no DNS / TLS certificate provisioning
-- no Windows/Linux server changes
-- no Kintone schema write
-- no credential provisioning
-- no App794 ACL change
-- no Kintone customization deploy
-- no employee UI redesign
-- no App800 activation screen
-- no D2-D7 implementation
-- no migration
-- no unrelated refactor
-
-## 10. VERIFICATION
-
-Run focused runtime tests plus current D1 regression and full workspace tests:
+Run:
 
 ```bash
 npm test -- tests/mbo-gateway-server.test.js
@@ -258,39 +180,33 @@ git diff --check
 git status --short
 ```
 
-If the exact runtime test filename differs, report it explicitly.
 No CI claim without GitHub CI evidence.
 
-## 11. DELIVERY REPORT
+## 10. DELIVERY REPORT
 
-Commit + push only to the Codex execution branch.
+Commit + push only to `ai/codex-d1c3b`.
 Maximum implementer status is `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
 
-Report exactly:
+Report:
 
 ```text
-HEAD_BEFORE =
-HEAD_AFTER =
-FILES_CHANGED =
-TEST_RESULTS =
-
-D1C3B_SOURCE_AND_EVIDENCE = PASS_ACCEPTED
-PORTABLE_RUNTIME_PACKAGE = READY_PENDING_REVIEW | BLOCKED:<reason>
-RUNTIME_HTTP_BOUNDARY = IMPLEMENTED | BLOCKED
-SERVER_CONTROLLED_SHARED_PRINCIPAL = IMPLEMENTED | BLOCKED
-OPAQUE_HTTPONLY_SESSION_COOKIE = IMPLEMENTED | BLOCKED
-PRODUCTION_CONFIG_FAIL_CLOSED = IMPLEMENTED | BLOCKED
-EMPLOYEE_CODE_AUTHORIZATION_SOURCE = TRUSTED_SESSION_ONLY
-
+CORS_EXACT_ORIGIN = IMPLEMENTED_PENDING_REVIEW
+CORS_PREFLIGHT = IMPLEMENTED_PENDING_REVIEW
+COOKIE_SAMESITE_TOPOLOGY = STRICT_LAX_NONE_WITH_SECURE_GUARD
+PRODUCTION_CONFIG_FAIL_CLOSED = IMPLEMENTED_PENDING_REVIEW
+WINDOWS_LINUX_DIRECT_ENTRYPOINT = IMPLEMENTED_PENDING_REVIEW
+ACTIVATION_FAILURE_NO_COOKIE = PROVEN_PENDING_REVIEW
+RESTRICTED_SESSION_DATA_DENIAL_HTTP = PROVEN_PENDING_REVIEW
+MALFORMED_FY_HTTP_DENIAL = PROVEN_PENDING_REVIEW
+PORTABLE_RUNTIME_PACKAGE = READY_PENDING_INDEPENDENT_REVIEW
+TRUSTED_BACKEND_RUNTIME = NOT_DEPLOYED
 APP801_SCHEMA_MANIFEST = EXACT_9_FIELDS_NO_WRITE
 APP794_ACL_CUTOVER = BLOCKED_PRIVILEGED_RULES_NOT_PROVEN
-TRUSTED_BACKEND_RUNTIME = NOT_DEPLOYED
-LIVE_HOST_DECISION = REQUIRED_AFTER_SOURCE_REVIEW
-
 KINTONE_READS_EXECUTED = N
 KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
-D1C4A_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW | BLOCKED_WITH_EXACT_EVIDENCE
+LIVE_SERVER_DEPLOY_EXECUTED = 0
+D1C4A_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 D1_OVERALL_STATUS = IN_PROGRESS
 ```
 
@@ -300,7 +216,7 @@ Stop after commit + push. ChatGPT performs independent review.
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A PASS / D1-C3B PASS / D1-C4A PORTABLE RUNTIME PACKAGE
+- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A PASS / D1-C3B PASS / D1-C4A FINAL CORRECTIVE
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
