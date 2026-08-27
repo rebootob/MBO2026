@@ -1,19 +1,19 @@
-# AI ACTIVE TASK — UI PARITY MICRO-FIX BEFORE FINAL KINTONE EXECUTION
+# AI ACTIVE TASK — FINAL FAIL-CLOSED UI MICRO-FIX BEFORE VISUAL UAT
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity standalone
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Starting implementation HEAD: `06870344fd7075429aceca5413249e54d64a96cc`
-> Mode: **CREDIT-SAVER / UI MICRO-FIX / THREE DEFECTS ONLY**
+> Starting implementation HEAD: `60fc6acb8e16b492d0703cfc7b150840b750bc91`
+> Mode: **CREDIT-SAVER / TWO FAIL-CLOSED DEFECTS ONLY**
 > Kintone authorization: **NONE**
 > Kintone GET/WRITE/DEPLOY/BROWSER-SMOKE: **0 / 0 / 0 / 0**
 
 ## OBJECTIVE
 
-Close ONLY the three remaining source-level UI parity defects found by independent review of `06870344...`.
+Close ONLY the two remaining source-level fail-closed defects found by independent review of `60fc6ac...`.
 
-Do not redesign the Web Demo. Do not reopen migration, Hoshin, export architecture, routing master, scoring master, authentication, or Kintone configuration.
+Do not redesign the Web Demo. Do not reopen migration, routing, scoring, Hoshin, export architecture, authentication, or Kintone configuration.
 
 Locked references:
 
@@ -22,74 +22,102 @@ WEB_DEMO_VISUAL_REFERENCE = preview/index.html
 UI_BASELINE = project-docs/CONFIRMED_BASELINE/UI_UX.md
 EVALUATION_PROFILE_BASELINE = project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md
 ROUTING_BASELINE = project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
-
-ACTUAL_APP794_RUNTIME_SOURCE =
-- src/main-mbo-app.js
-- src/ui/employee-part-a-ui.js
-- existing src/styles/* used by App794
+ACTUAL_APP794_RUNTIME_SOURCE = src/ui/employee-part-a-ui.js + existing runtime bundle
 ```
 
-Confirmed Baseline overrides stale demo/runtime convenience values.
+Confirmed Baseline overrides convenience defaults.
 
 ---
 
-# DEFECT 1 — OBJECTIVE_COUNT MUST SUPPORT 1..10 WITHOUT PHANTOM OBJECTIVES
+# DEFECT 1 — INVALID OBJECTIVE_COUNT MUST FAIL CLOSED
 
-Independent review found runtime code in Appraiser Evaluation equivalent to:
+Current helper effectively does:
 
 ```js
-const countVal = parseInt(this._getVal('Objective_Count') || '4', 10);
-const count = isNaN(countVal) ? 4 : Math.min(Math.max(countVal, 2), 10);
+parseObjectiveCount(blank|0|invalid) -> 4
 ```
 
-This incorrectly forces `Objective_Count = 1` to render 2 objective rows.
+This silently invents four objective rows when source data is invalid or missing. There is no confirmed baseline authorizing that fallback.
 
 ## Required behavior
 
-- Valid `Objective_Count` range is **1..10**.
-- `Objective_Count = 1` renders exactly 1 objective.
-- `Objective_Count = 10` renders exactly 10 objectives.
-- Never create phantom objective rows merely to satisfy a UI minimum.
-- Blank/invalid count must use an explicit safe policy consistent with existing record/data contract; do not silently invent 4 objectives unless existing baseline/source contract explicitly requires it.
-- Apply consistently across all five screens where objective-row count is used, not only Appraiser Evaluation.
-- Preserve flattened physical fields `Objective_1..10`.
+Valid production values are exactly integers `1..10`.
 
-Prefer a small existing/shared helper if practical rather than repeated count-clamping logic.
+```text
+1  -> 1
+2  -> 2
+10 -> 10
+```
+
+For production/runtime record data:
+
+```text
+blank
+non-numeric
+0
+negative
+>10
+```
+
+must NOT silently become 4 or another plausible business value.
+
+Use an explicit fail-closed result. Acceptable pattern:
+
+```text
+parseObjectiveCount(raw) -> valid integer 1..10 OR null
+```
+
+or a small structured result such as:
+
+```text
+{ ok:false, code:'OBJECTIVE_COUNT_INVALID' }
+```
+
+Runtime UI behavior on invalid count:
+- render no invented objective rows;
+- show concise bilingual data-quality / configuration error;
+- do not silently write/change `Objective_Count`;
+- do not fabricate Objective 1..4;
+- existing create/new-record UX may use a separately explicit UI initialization only if it is clearly a user-selectable create-state default and is NOT used to reinterpret invalid persisted record data. Keep persisted invalid data fail-closed.
+
+Apply consistently wherever `Objective_Count` drives rendering, completion, scoring context, or total-weight display.
 
 Required focused tests:
 
 ```text
-Objective_Count=1  -> exactly 1 rendered/logical slot
-Objective_Count=2  -> exactly 2
-Objective_Count=10 -> exactly 10
-no phantom slot beyond Objective_Count
-invalid/out-of-range -> safe deterministic behavior
+1 -> exactly 1
+2 -> exactly 2
+10 -> exactly 10
+blank -> invalid/fail closed, zero invented rows
+0 -> invalid/fail closed
+-1 -> invalid/fail closed
+11 -> invalid/fail closed (do NOT clamp to 10)
+text -> invalid/fail closed
 ```
 
 Expected:
 
 ```text
-OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS
+OBJECTIVE_COUNT_VALID_1_TO_10 = PASS
+OBJECTIVE_COUNT_INVALID_FAIL_CLOSED = PASS
 PHANTOM_OBJECTIVE_ROWS = 0
 ```
 
 ---
 
-# DEFECT 2 — CANONICAL PROFILE MAP MUST NOT CONTAIN STALE KEYS
+# DEFECT 2 — UNKNOWN PROFILE_CODE MUST FAIL CLOSED
 
-The Web Demo selector is now canonical, but runtime currently mutates `EVALUATION_PROFILES` with stale aliases such as:
+Current helper effectively does:
 
 ```js
-EVALUATION_PROFILES.PROF_STAFF_OPERATIONAL = EVALUATION_PROFILES.PROF_STAFF_CHIEF;
-EVALUATION_PROFILES.PROF_SECT_MGR = EVALUATION_PROFILES.PROF_SECTION_MGR;
-EVALUATION_PROFILES.PROF_SR_MGR = EVALUATION_PROFILES.PROF_SENIOR_MGR;
+blank/unknown -> PROF_STAFF_CHIEF
 ```
 
-This makes the claim `STALE_PROFILE_CODES_IN_RUNTIME = 0` false.
+This violates the confirmed evaluation baseline. Blank/invalid/unresolved profile must not be fabricated merely to obtain coverage.
 
 ## Required behavior
 
-`EVALUATION_PROFILES` canonical keys must be exactly:
+Known canonical input returns itself:
 
 ```text
 PROF_STAFF_CHIEF
@@ -102,102 +130,68 @@ PROF_GM
 PROF_VP
 ```
 
-If backward compatibility with historical preview/test values is genuinely needed, use a separate normalization adapter/helper, for example conceptually:
+Known historical aliases may normalize only when the mapping is explicit and unambiguous. Preserve compatibility mappings already justified, and include the prior Web Demo alias if compatibility is retained:
 
 ```text
-legacy input code -> canonical code -> EVALUATION_PROFILES[canonical]
+PROF_STAFF_OPERATIONAL -> PROF_STAFF_CHIEF
+PROF_STAFF_JAPANESE    -> PROF_JAPANESE_STAFF
+PROF_SECT_MGR          -> PROF_SECTION_MGR
+PROF_SR_MGR            -> PROF_SENIOR_MGR
 ```
 
-Do NOT add stale keys back into the canonical profile object.
-
-Legacy alias input may normalize fail-safe, but all output/state shown to business/runtime must be canonical.
-
-Required tests:
+But:
 
 ```text
-Object.keys(EVALUATION_PROFILES) = exactly 8 canonical keys
-stale profile input aliases normalize to canonical value if compatibility is retained
-preview contains no stale profile code
-runtime canonical map contains no stale profile key
+blank
+null
+unknown code
+malformed value
+```
+
+must return unresolved/fail-closed (`null`, `PROFILE_NOT_RESOLVED`, etc.), NOT `PROF_STAFF_CHIEF`.
+
+`getEvaluationProfile()` must also fail closed when code is unresolved; it must not return a Staff/Chief profile by default.
+
+Runtime UI behavior:
+- show truthful bilingual unresolved-profile/configuration message;
+- do not infer Part A/B ratio, competency set, route, appraiser count, or evaluator identity from a missing/unknown profile;
+- do not overwrite the record's profile;
+- routing remains independently resolved from routing context/App795.
+
+Required focused tests:
+
+```text
+all 8 canonical codes -> resolve to themselves
+legacy aliases -> canonical equivalents
+PROF_STAFF_JAPANESE -> PROF_JAPANESE_STAFF if compatibility retained
+blank/null -> unresolved
+UNKNOWN_PROFILE -> unresolved
+getEvaluationProfile(unresolved) -> null/explicit unresolved
+no Staff/Chief fallback for invalid profile
 ```
 
 Expected:
 
 ```text
+CANONICAL_PROFILE_KEYS = PASS
+LEGACY_PROFILE_ALIAS_NORMALIZATION = PASS
+UNKNOWN_PROFILE_FAIL_CLOSED = PASS
+PROFILE_DEFAULT_FABRICATION = 0
+```
+
+---
+
+# ACCEPTED — DO NOT REWRITE
+
+Preserve the already accepted source behavior:
+
+```text
+OBJECTIVE_COUNT valid 1..10 support
 WEB_DEMO_PROFILE_CODES_CANONICAL = PASS
 STALE_PROFILE_CODES_IN_PREVIEW = 0
 STALE_PROFILE_CODES_IN_RUNTIME = 0
-```
-
----
-
-# DEFECT 3 — PROFILE MUST NOT INFER PRODUCTION ROUTING
-
-Current profile fixture/object still includes values such as:
-
-```js
-suggestedRoute: 'CURRENT_STANDARD'
-suggestedRoute: 'EXECUTIVE_DIRECT'
-```
-
-Confirmed baseline states:
-
-```text
-Evaluation Profile / Part A:B ratio != Routing
-```
-
-Routing must be resolved from approved routing context/App795, not inferred merely from profile code/ratio.
-
-## Required investigation
-
-Search all production/runtime usages of:
-
-```text
-suggestedRoute
-EVALUATION_PROFILES[...].suggestedRoute
-profile -> route inference
-```
-
-Classify each use as:
-
-```text
-PREVIEW_DIAGNOSTIC_ONLY
-PRODUCTION_RUNTIME
-UNUSED
-```
-
-## Required behavior
-
-- Production App794 runtime must NOT choose or overwrite `Routing_Topology`, appraiser count, or evaluator identities from `Profile_Code`, profile ratio, or `suggestedRoute`.
-- Runtime routing remains driven by existing resolved routing record/context.
-- If `suggestedRoute` is only needed by `preview/index.html`, move/keep it in Preview-only diagnostics or rename/document so it cannot be mistaken for production routing authority.
-- If unused in production, remove it from the production canonical profile definitions if safe.
-- Executive Direct remains a routing decision from reviewed App795/executive rules, not because `PROF_DGM/PROF_GM/PROF_VP` has a suggested route field in UI profile data.
-- Do not alter App795, route topology, or Process Management in this task.
-
-Required focused tests/source assertions:
-
-```text
-changing Profile_Code alone does not change production Routing_Topology
-profile ratio alone does not change appraiser count
-production route display consumes record/resolved routing context
-preview-only route suggestion cannot write/override runtime routing
-```
-
-Expected:
-
-```text
 PROFILE_ROUTE_SEPARATION = PASS
 PROFILE_TO_PRODUCTION_ROUTE_INFERENCE = 0
-```
-
----
-
-# ACCEPTED UI ITEMS — DO NOT REWRITE
-
-Independent review already accepts these source foundations. Preserve them unless a direct regression is discovered:
-
-```text
 FIVE_STAGE_UI = PASS_SOURCE
 BILINGUAL_UI = PASS_SOURCE
 ORDINAL_APPRAISER_LABELS = PASS_SOURCE
@@ -213,8 +207,6 @@ NATIVE_COMMENT_THREAD_PRESERVED = PASS_SOURCE_REVIEW_PENDING_VISUAL
 MULTI_APPRAISER_CONTAINMENT = PASS_SOURCE_REVIEW_PENDING_VISUAL
 READ_ONLY_PERMISSION_TRUTHFULNESS = PASS_SOURCE
 ```
-
-Do not redesign these parts.
 
 ---
 
@@ -234,21 +226,18 @@ APP800_LIVE_GET = 0
 APP797_LIVE_GET = 0
 ```
 
-No Kintone calls of any kind in this round.
-
 Do not edit `project-docs/CONFIRMED_BASELINE/*`.
-
-Prefer existing files/functions. Do not create `_final`, `_v3`, replacement UI, parallel profile/routing architecture, or duplicate helper modules without a clear need.
+Prefer existing helper/functions. Do not create `_final`, `_v3`, replacement UI, or parallel architecture.
 
 ---
 
 # TEST / BUILD
 
-- Run targeted tests while implementing as needed.
+- Run targeted tests as needed.
 - Run full `npm test` exactly ONCE near completion.
-- Run `npm run ui:build` exactly ONCE near completion if UI/runtime source changed.
-- Verify expected dist bundle update.
-- No browser smoke and no deploy.
+- Run `npm run ui:build` exactly ONCE near completion because runtime UI source will change.
+- Verify expected dist bundle update only.
+- No browser smoke and no Kintone deploy.
 
 Update concisely:
 
@@ -258,7 +247,7 @@ project-docs/CURRENT_STATE.md
 project-docs/HANDOFF.md
 ```
 
-Do not claim visual UAT PASS. User visual inspection remains a separate mandatory gate before deploy.
+Do NOT claim Visual UAT PASS. If source closes, next step is user Visual UAT of the Web Demo/runtime UI.
 
 ---
 
@@ -273,17 +262,18 @@ KINTONE_WRITES = 0
 KINTONE_DEPLOYS = 0
 BROWSER_SMOKE = 0
 
-WEB_DEMO_VISUAL_REFERENCE = preview/index.html
-OBJECTIVE_COUNT_FLATTENED_SLOTS = PASS|BLOCKED
+OBJECTIVE_COUNT_VALID_1_TO_10 = PASS|BLOCKED
+OBJECTIVE_COUNT_INVALID_FAIL_CLOSED = PASS|BLOCKED
 PHANTOM_OBJECTIVE_ROWS = <count>
-WEB_DEMO_PROFILE_CODES_CANONICAL = PASS|BLOCKED
-STALE_PROFILE_CODES_IN_PREVIEW = <count>
-STALE_PROFILE_CODES_IN_RUNTIME = <count>
+CANONICAL_PROFILE_KEYS = PASS|BLOCKED
+LEGACY_PROFILE_ALIAS_NORMALIZATION = PASS|BLOCKED
+UNKNOWN_PROFILE_FAIL_CLOSED = PASS|BLOCKED
+PROFILE_DEFAULT_FABRICATION = <count>
 PROFILE_ROUTE_SEPARATION = PASS|BLOCKED
 PROFILE_TO_PRODUCTION_ROUTE_INFERENCE = <count>
 
 FULL_NPM_TEST = PASS|FAIL
-BUILD = PASS|NOT_REQUIRED|FAIL
+BUILD = PASS|FAIL
 SOURCE_UI_PARITY_READINESS = READY|BLOCKED
 VISUAL_UAT = NOT_RUN
 FINAL_KINTONE_EXECUTION_READINESS = BLOCKED_PENDING_VISUAL_UAT|BLOCKED
@@ -292,4 +282,4 @@ CHANGED_FILES = <exact list>
 REMAINING_BLOCKERS = <exact list or NONE>
 ```
 
-Commit and push authorized local changes, then STOP. Do not begin Final Kintone Execution.
+Commit and push authorized local changes, then STOP. Do not begin Visual UAT automation or Final Kintone Execution.
