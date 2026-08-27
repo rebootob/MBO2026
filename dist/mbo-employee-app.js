@@ -2042,10 +2042,13 @@ const ROUTE_SCENARIOS = {
   }
 };
 
-function parseObjectiveCount(rawVal, fallback = 4) {
-  const countVal = parseInt(String(rawVal || '').trim(), 10);
-  if (isNaN(countVal) || countVal < 1) return fallback;
-  return Math.min(countVal, 10);
+function parseObjectiveCount(rawVal, fallback = null) {
+  if (rawVal === null || rawVal === undefined || rawVal === '') return fallback;
+  const str = String(rawVal).trim();
+  if (!/^\d+$/.test(str)) return fallback;
+  const countVal = parseInt(str, 10);
+  if (countVal < 1 || countVal > 10) return fallback;
+  return countVal;
 }
 
 const EVALUATION_PROFILES = {
@@ -2116,20 +2119,24 @@ const EVALUATION_PROFILES = {
 };
 
 function normalizeProfileCode(rawCode) {
-  if (!rawCode || typeof rawCode !== 'string') return 'PROF_STAFF_CHIEF';
+  if (!rawCode || typeof rawCode !== 'string') return null;
   const clean = rawCode.trim();
+  if (!clean) return null;
+
   const legacyAliasMap = {
     PROF_STAFF_OPERATIONAL: 'PROF_STAFF_CHIEF',
+    PROF_STAFF_JAPANESE: 'PROF_JAPANESE_STAFF',
     PROF_SECT_MGR: 'PROF_SECTION_MGR',
     PROF_SR_MGR: 'PROF_SENIOR_MGR'
   };
+
   const canonical = legacyAliasMap[clean] || clean;
-  return EVALUATION_PROFILES[canonical] ? canonical : 'PROF_STAFF_CHIEF';
+  return EVALUATION_PROFILES[canonical] ? canonical : null;
 }
 
 function getEvaluationProfile(rawCode) {
   const canonicalCode = normalizeProfileCode(rawCode);
-  return EVALUATION_PROFILES[canonicalCode];
+  return canonicalCode ? EVALUATION_PROFILES[canonicalCode] : null;
 }
 
 function calculateDeadlineInfo(startDateIso, endDateIso, nowIso = '2026-06-15', isCompleted = false) {
@@ -3405,10 +3412,29 @@ class EmployeePartAUI {
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
 
-    const count = parseObjectiveCount(this._getVal('Objective_Count'));
-
     const isObjectiveStage = this.isCreate || this.stage === BUSINESS_STAGES.OBJECTIVE_INPUT || this.stage === BUSINESS_STAGES.NEW_RECORD;
     const isObjEditable = this.isEditable && isObjectiveStage && this.isEmployeeVerified;
+
+    let count = parseObjectiveCount(this._getVal('Objective_Count'));
+    if (count === null && isObjectiveStage) {
+      count = 4; // Explicit UI draft default
+    }
+
+    if (count === null) {
+      const errCard = document.createElement('div');
+      errCard.style.padding = '20px';
+      errCard.style.margin = '12px 0';
+      errCard.style.background = '#fef2f2';
+      errCard.style.border = '1px solid #fca5a5';
+      errCard.style.borderRadius = '6px';
+      errCard.style.color = '#991b1b';
+      errCard.innerHTML = `
+        <div style="font-size:15px; font-weight:700;">⚠️ ไม่พบข้อมูลจำนวนเป้าหมายที่ถูกต้อง (1..10) / Invalid Objective Count (1..10)</div>
+        <div style="font-size:12.5px; margin-top:4px;">ค่า Objective_Count ในระเบียนข้อมูลเป็นค่าว่าง หรือไม่ถูกต้อง / Objective_Count is invalid or missing in record data.</div>
+      `;
+      container.appendChild(errCard);
+      return container;
+    }
 
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';
@@ -3557,6 +3583,21 @@ class EmployeePartAUI {
     const isMidEditable = this.isEditable && this.stage === BUSINESS_STAGES.MIDYEAR_INPUT;
 
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
+    if (count === null) {
+      const errCard = document.createElement('div');
+      errCard.style.padding = '20px';
+      errCard.style.margin = '12px 0';
+      errCard.style.background = '#fef2f2';
+      errCard.style.border = '1px solid #fca5a5';
+      errCard.style.borderRadius = '6px';
+      errCard.style.color = '#991b1b';
+      errCard.innerHTML = `
+        <div style="font-size:15px; font-weight:700;">⚠️ ไม่พบข้อมูลจำนวนเป้าหมายที่ถูกต้อง (1..10) / Invalid Objective Count (1..10)</div>
+        <div style="font-size:12.5px; margin-top:4px;">ค่า Objective_Count ในระเบียนข้อมูลเป็นค่าว่าง หรือไม่ถูกต้อง / Objective_Count is invalid or missing in record data.</div>
+      `;
+      container.appendChild(errCard);
+      return container;
+    }
 
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
@@ -3669,6 +3710,21 @@ class EmployeePartAUI {
     const isSelfEditable = this.isEditable && this.stage === BUSINESS_STAGES.SELF_EVALUATION;
 
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
+    if (count === null) {
+      const errCard = document.createElement('div');
+      errCard.style.padding = '20px';
+      errCard.style.margin = '12px 0';
+      errCard.style.background = '#fef2f2';
+      errCard.style.border = '1px solid #fca5a5';
+      errCard.style.borderRadius = '6px';
+      errCard.style.color = '#991b1b';
+      errCard.innerHTML = `
+        <div style="font-size:15px; font-weight:700;">⚠️ ไม่พบข้อมูลจำนวนเป้าหมายที่ถูกต้อง (1..10) / Invalid Objective Count (1..10)</div>
+        <div style="font-size:12.5px; margin-top:4px;">ค่า Objective_Count ในระเบียนข้อมูลเป็นค่าว่าง หรือไม่ถูกต้อง / Objective_Count is invalid or missing in record data.</div>
+      `;
+      container.appendChild(errCard);
+      return container;
+    }
 
     const container = document.createElement('div');
     container.className = 'mbo-table-container';
@@ -3809,6 +3865,21 @@ class EmployeePartAUI {
     wrap.appendChild(compCard);
 
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
+    if (count === null) {
+      const errCard = document.createElement('div');
+      errCard.style.padding = '20px';
+      errCard.style.margin = '12px 0';
+      errCard.style.background = '#fef2f2';
+      errCard.style.border = '1px solid #fca5a5';
+      errCard.style.borderRadius = '6px';
+      errCard.style.color = '#991b1b';
+      errCard.innerHTML = `
+        <div style="font-size:15px; font-weight:700;">⚠️ ไม่พบข้อมูลจำนวนเป้าหมายที่ถูกต้อง (1..10) / Invalid Objective Count (1..10)</div>
+        <div style="font-size:12.5px; margin-top:4px;">ค่า Objective_Count ในระเบียนข้อมูลเป็นค่าว่าง หรือไม่ถูกต้อง / Objective_Count is invalid or missing in record data.</div>
+      `;
+      wrap.appendChild(errCard);
+      return wrap;
+    }
 
     // PART A Horizontal Matrix Table Container
     const partAContainer = document.createElement('div');
@@ -4138,6 +4209,21 @@ class EmployeePartAUI {
     const applicableCompList = getApplicableCompetencies(compSetCode);
 
     const count = parseObjectiveCount(this._getVal('Objective_Count'));
+    if (count === null) {
+      const errCard = document.createElement('div');
+      errCard.style.padding = '20px';
+      errCard.style.margin = '12px 0';
+      errCard.style.background = '#fef2f2';
+      errCard.style.border = '1px solid #fca5a5';
+      errCard.style.borderRadius = '6px';
+      errCard.style.color = '#991b1b';
+      errCard.innerHTML = `
+        <div style="font-size:15px; font-weight:700;">⚠️ ไม่พบข้อมูลจำนวนเป้าหมายที่ถูกต้อง (1..10) / Invalid Objective Count (1..10)</div>
+        <div style="font-size:12.5px; margin-top:4px;">ค่า Objective_Count ในระเบียนข้อมูลเป็นค่าว่าง หรือไม่ถูกต้อง / Objective_Count is invalid or missing in record data.</div>
+      `;
+      container.appendChild(errCard);
+      return container;
+    }
 
     const bar = document.createElement('div');
     bar.className = 'mbo-table-header-bar';

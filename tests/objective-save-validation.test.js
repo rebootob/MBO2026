@@ -1606,26 +1606,37 @@ test('UI/UX V1 Candidate R6 — Route Scenarios, Profiles, HR Calendar, Deadline
   assert.equal(ROUTE_SCENARIOS.EXECUTIVE_DIRECT.isRuntimeSupported, true);
   assert.equal(ROUTE_SCENARIOS.FUTURE_CAPACITY.appraiserCount, 4);
 
-  // 2. EVALUATION_PROFILES export exactness (8 canonical keys, no stale keys in EVALUATION_PROFILES map, no suggestedRoute)
+  // 2. EVALUATION_PROFILES export exactness (8 canonical keys, fail-closed for unknown profiles)
   assert.equal(Object.keys(EVALUATION_PROFILES).length, 8);
   assert.equal('PROF_STAFF_OPERATIONAL' in EVALUATION_PROFILES, false);
   assert.equal('PROF_SECT_MGR' in EVALUATION_PROFILES, false);
   assert.equal('PROF_SR_MGR' in EVALUATION_PROFILES, false);
+  assert.equal(normalizeProfileCode('PROF_STAFF_CHIEF'), 'PROF_STAFF_CHIEF');
+  assert.equal(normalizeProfileCode('PROF_JAPANESE_STAFF'), 'PROF_JAPANESE_STAFF');
   assert.equal(normalizeProfileCode('PROF_STAFF_OPERATIONAL'), 'PROF_STAFF_CHIEF');
+  assert.equal(normalizeProfileCode('PROF_STAFF_JAPANESE'), 'PROF_JAPANESE_STAFF');
   assert.equal(normalizeProfileCode('PROF_SECT_MGR'), 'PROF_SECTION_MGR');
   assert.equal(normalizeProfileCode('PROF_SR_MGR'), 'PROF_SENIOR_MGR');
+  assert.equal(normalizeProfileCode(''), null);
+  assert.equal(normalizeProfileCode(null), null);
+  assert.equal(normalizeProfileCode('UNKNOWN_PROFILE'), null);
+  assert.equal(getEvaluationProfile('UNKNOWN_PROFILE'), null);
+  assert.equal(getEvaluationProfile(null), null);
   assert.equal(EVALUATION_PROFILES.PROF_STAFF_CHIEF.partAWeight, 70);
   assert.equal(EVALUATION_PROFILES.PROF_ASST_MGR.partAWeight, 60);
   assert.equal(EVALUATION_PROFILES.PROF_SECTION_MGR.partAWeight, 50);
   assert.equal('suggestedRoute' in EVALUATION_PROFILES.PROF_DGM, false);
 
-  // 3. parseObjectiveCount range tests (1..10, no phantom slots)
+  // 3. parseObjectiveCount range & fail-closed tests (1..10, invalid -> null)
   assert.equal(parseObjectiveCount('1'), 1);
   assert.equal(parseObjectiveCount('2'), 2);
   assert.equal(parseObjectiveCount('10'), 10);
-  assert.equal(parseObjectiveCount('0'), 4);
-  assert.equal(parseObjectiveCount('11'), 10);
-  assert.equal(parseObjectiveCount('invalid'), 4);
+  assert.equal(parseObjectiveCount(''), null);
+  assert.equal(parseObjectiveCount(null), null);
+  assert.equal(parseObjectiveCount('0'), null);
+  assert.equal(parseObjectiveCount('-1'), null);
+  assert.equal(parseObjectiveCount('11'), null);
+  assert.equal(parseObjectiveCount('invalid'), null);
 
   // 3. calculateDeadlineInfo deterministic date arithmetic
   const dlUpcoming = calculateDeadlineInfo('2026-06-01', '2026-07-31', '2026-02-15', false);
