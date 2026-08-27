@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LegacyMigrationService, canonicalSerialize } from '../src/services/legacy-migration-service.js';
 
-test('LEGACY_CANONICAL_STRUCTURED_COMPARE: objects with different key insertion order compare equivalent', () => {
+test('LEGACY_CANONICAL_SERIALIZER_COLLISION_SAFE: distinguishes arrays with commas, types, and sorts object keys recursively', () => {
+  assert.notEqual(canonicalSerialize(['a,b']), canonicalSerialize(['a', 'b']));
+  assert.notEqual(canonicalSerialize('1'), canonicalSerialize(1));
+  assert.notEqual(canonicalSerialize('true'), canonicalSerialize(true));
+
   const obj1 = { b: 2, a: 1, c: { y: 'bar', x: 'foo' } };
   const obj2 = { a: 1, b: 2, c: { x: 'foo', y: 'bar' } };
-
   assert.equal(canonicalSerialize(obj1), canonicalSerialize(obj2));
 
   const equivalentData1 = {
@@ -21,6 +24,37 @@ test('LEGACY_CANONICAL_STRUCTURED_COMPARE: objects with different key insertion 
   assert.equal(res.candidates.length, 1);
   assert.equal(res.counters.MERGED, 1);
   assert.equal(res.counters.UNEXPLAINED_DATA_LOSS, 0);
+});
+
+test('LEGACY_MAPPED_VALUE_PROOF: verifies expected vs actual candidate target values for mapped fields', () => {
+  const legacyData = {
+    '283': [
+      {
+        Drop_down_year: "FY'2021",
+        Text_name: 'Somchai Prasert',
+        Text_area_action_plan_obj1: 'Upgrade DB',
+        weight_a_obj1: '50'
+      }
+    ]
+  };
+
+  const mappings = { 'Somchai Prasert': 'EMP001' };
+  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: legacyData, employeeMappings: mappings });
+
+  assert.equal(res.candidates.length, 1);
+  const audit = res.candidates[0].provenance[0].fieldBucketAudit;
+
+  const planEntry = audit.find(a => a.sourceFieldCode === 'Text_area_action_plan_obj1');
+  assert.equal(planEntry.bucket, 'MAPPED_TO_TARGET');
+  assert.equal(planEntry.targetFieldCode, 'Objective_1');
+  assert.equal(planEntry.expectedTargetValue, 'Upgrade DB');
+  assert.equal(planEntry.actualTargetValue, 'Upgrade DB');
+  assert.equal(planEntry.mappingVerified, true);
+
+  const fyEntry = audit.find(a => a.sourceFieldCode === 'Drop_down_year');
+  assert.equal(fyEntry.expectedTargetValue, 'FY2021');
+  assert.equal(fyEntry.actualTargetValue, 'FY2021');
+  assert.equal(fyEntry.mappingVerified, true);
 });
 
 test('LEGACY_INDEPENDENT_FIELD_COVERAGE: every non-empty source field is accounted for in coverageProof', () => {
@@ -73,27 +107,6 @@ test('LEGACY_TARGET_APP794_PHYSICAL_SHAPE: candidate contains physical Objective
   assert.equal(cand.Actual_Result_1, 'Achieved 100%');
   assert.equal(cand.Difficulty_1, '3');
   assert.equal('Objectives' in cand, false); // No logical Objectives array!
-});
-
-test('LEGACY_SOURCE_TARGET_MAPPING_EVIDENCE: reconciliation entry maps source code to actual target code', () => {
-  const legacyData = {
-    '283': [
-      { Drop_down_year: "FY'2021", Text_name: 'Somchai Prasert', Text_area_action_plan_obj1: 'Upgrade DB' }
-    ]
-  };
-
-  const mappings = { 'Somchai Prasert': 'EMP001' };
-  const res = LegacyMigrationService.executeDryRunMigration({ legacyRecordsMap: legacyData, employeeMappings: mappings });
-
-  assert.equal(res.candidates.length, 1);
-  const audit = res.candidates[0].provenance[0].fieldBucketAudit;
-
-  const planEntry = audit.find(a => a.sourceFieldCode === 'Text_area_action_plan_obj1');
-  assert.equal(planEntry.bucket, 'MAPPED_TO_TARGET');
-  assert.equal(planEntry.targetFieldCode, 'Objective_1');
-
-  const fyEntry = audit.find(a => a.sourceFieldCode === 'Drop_down_year');
-  assert.equal(fyEntry.targetFieldCode, 'Fiscal_Year');
 });
 
 test('LEGACY_FIELD_VALUE_PRESERVATION: extra unknown non-empty historical field stores actual value in provenance.historicalFields', () => {

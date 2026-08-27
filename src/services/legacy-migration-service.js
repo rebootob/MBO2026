@@ -42,19 +42,29 @@ export const SOURCE_TO_TARGET_FIELD_MAP = {
 };
 
 /**
- * Deterministic/canonical JSON serializer with recursively sorted object keys.
+ * Type-safe canonical normalization with recursively sorted object keys.
+ */
+export function canonicalNormalize(val) {
+  if (val === null || val === undefined) return null;
+  if (typeof val !== 'object') {
+    return { __type: typeof val, val: String(val).trim() };
+  }
+  if (Array.isArray(val)) {
+    return val.map(canonicalNormalize);
+  }
+  const sortedObj = {};
+  const keys = Object.keys(val).sort();
+  for (const k of keys) {
+    sortedObj[k] = canonicalNormalize(val[k]);
+  }
+  return sortedObj;
+}
+
+/**
+ * Deterministic, collision-safe JSON serializer.
  */
 export function canonicalSerialize(val) {
-  if (val === null || val === undefined) return '';
-  if (typeof val !== 'object') return String(val).trim();
-
-  if (Array.isArray(val)) {
-    return '[' + val.map(canonicalSerialize).join(',') + ']';
-  }
-
-  const sortedKeys = Object.keys(val).sort();
-  const pairs = sortedKeys.map(k => `${JSON.stringify(k)}:${canonicalSerialize(val[k])}`);
-  return '{' + pairs.join(',') + '}';
+  return JSON.stringify(canonicalNormalize(val));
 }
 
 export class LegacyMigrationService {
@@ -68,6 +78,19 @@ export class LegacyMigrationService {
     if (/^FY\d{4}$/.test(clean)) return clean;
     if (/^\d{4}$/.test(clean)) return `FY${clean}`;
     return null;
+  }
+
+  /**
+   * Computes expected target value for a source field.
+   */
+  static computeExpectedTargetValue(sourceFieldCode, sourceValue) {
+    if (!sourceValue || typeof sourceValue !== 'string') return '';
+    const cleanVal = sourceValue.trim();
+
+    if (sourceFieldCode === 'Drop_down_year' || sourceFieldCode === 'Fiscal_Year') {
+      return this.normalizeFiscalYear(cleanVal) || cleanVal;
+    }
+    return cleanVal;
   }
 
   /**
@@ -91,7 +114,7 @@ export class LegacyMigrationService {
   }
 
   /**
-   * Full projection deep equivalence comparator using canonical object key sorting.
+   * Full projection deep equivalence comparator using type-safe collision-safe canonical serialization.
    */
   static areDuplicateItemsEquivalent(itemA, itemB) {
     if (itemA.targetProfileCode !== itemB.targetProfileCode) return false;
@@ -165,60 +188,11 @@ export class LegacyMigrationService {
         const nonEmptySourceFieldCodes = [];
         for (const [key, val] of Object.entries(rec)) {
           const unwrapped = unwrapField(val);
-          const serialized = canonicalSerialize(unwrapped);
-          if (serialized !== '') {
+          const str = (unwrapped !== null && unwrapped !== undefined) ? String(unwrapped).trim() : '';
+          if (str !== '') {
             nonEmptySourceFieldCodes.push(key);
           }
         }
-
-        // Field-level reconciliation bucket audit with explicit source -> target mapping evidence
-        const fieldBucketAudit = [];
-        const historicalFields = {};
-        const reconciledSourceFieldCodes = new Set();
-
-        for (const fCode of nonEmptySourceFieldCodes) {
-          const fVal = rec[fCode];
-          const unwrappedVal = unwrapField(fVal);
-          const serializedVal = canonicalSerialize(unwrappedVal);
-
-          reconciledSourceFieldCodes.add(fCode);
-          const actualTargetCode = SOURCE_TO_TARGET_FIELD_MAP[fCode];
-
-          if (actualTargetCode) {
-            fieldBucketAudit.push({
-              sourceFieldCode: fCode,
-              bucket: 'MAPPED_TO_TARGET',
-              sourceValue: serializedVal,
-              targetFieldCode: actualTargetCode
-            });
-          } else if (fCode.toLowerCase().includes('attachment') || fCode.toLowerCase().includes('file')) {
-            fieldBucketAudit.push({
-              sourceFieldCode: fCode,
-              bucket: 'ATTACHMENT_TRANSFER_PENDING',
-              sourceValue: serializedVal,
-              explainedReason: 'ATTACHMENT_TRANSFER_PENDING_UNTIL_UPLOAD'
-            });
-          } else if (fCode.startsWith('$')) {
-            fieldBucketAudit.push({
-              sourceFieldCode: fCode,
-              bucket: 'SKIPPED_EXPLAINED',
-              sourceValue: serializedVal,
-              explainedReason: 'KINTONE_SYSTEM_METADATA'
-            });
-          } else {
-            // PRESERVED_IN_PROVENANCE: actual normalized value stored in provenance!
-            historicalFields[fCode] = serializedVal;
-            fieldBucketAudit.push({
-              sourceFieldCode: fCode,
-              bucket: 'PRESERVED_IN_PROVENANCE',
-              sourceValue: serializedVal,
-              provenancePath: `provenance.historicalFields.${fCode}`
-            });
-          }
-        }
-
-        // Calculate missing reconciliation codes independently
-        const missingReconciliation = nonEmptySourceFieldCodes.filter(c => !reconciledSourceFieldCodes.has(c));
 
         inventory.push({
           sourceAppId: appId,
@@ -232,11 +206,7 @@ export class LegacyMigrationService {
           identityStatus: identityRes.status,
           targetProfileCode,
           fileFields,
-          historicalFields,
-          fieldBucketAudit,
           nonEmptySourceFieldCodes,
-          reconciledSourceFieldCodes: Array.from(reconciledSourceFieldCodes),
-          missingReconciliation,
           rawRecord: rec
         });
       }
@@ -330,51 +300,106 @@ export class LegacyMigrationService {
           candidateObj[`Difficulty_${i}`] = readString(rec, `dif_level_obj${i}`);
         }
 
-        // Validate independent field-level reconciliation proof against candidate & provenance
-        let recordUnexplainedLoss = 0;
-        for (const item of groupItems) {
-          if (item.missingReconciliation.length > 0) {
-            recordUnexplainedLoss += item.missingReconciliation.length;
-          }
+        // Execute independent field-coverage audit & value verification
+        let groupUnexplainedLoss = 0;
 
-          for (const auditItem of item.fieldBucketAudit) {
-            if (auditItem.bucket === 'MAPPED_TO_TARGET') {
-              const candVal = candidateObj[auditItem.targetFieldCode];
-              if (candVal === undefined || candVal === '') {
-                recordUnexplainedLoss++;
+        const provenanceList = groupItems.map(item => {
+          const itemRec = item.rawRecord;
+          const fieldBucketAudit = [];
+          const historicalFields = {};
+          const reconciledEntriesMap = new Map();
+          const invalidReconciliation = [];
+
+          for (const fCode of item.nonEmptySourceFieldCodes) {
+            const unwrappedVal = unwrapField(itemRec[fCode]);
+            const strVal = (unwrappedVal !== null && unwrappedVal !== undefined) ? String(unwrappedVal).trim() : '';
+
+            const actualTargetCode = SOURCE_TO_TARGET_FIELD_MAP[fCode];
+
+            if (actualTargetCode) {
+              const expectedTargetVal = LegacyMigrationService.computeExpectedTargetValue(fCode, strVal);
+              const actualTargetVal = candidateObj[actualTargetCode];
+              const mappingVerified = (actualTargetVal !== undefined && String(actualTargetVal).trim() === String(expectedTargetVal).trim());
+
+              if (!mappingVerified) {
+                invalidReconciliation.push(fCode);
               }
-            } else if (auditItem.bucket === 'PRESERVED_IN_PROVENANCE') {
-              const provVal = item.historicalFields[auditItem.sourceFieldCode];
-              if (provVal === undefined || provVal === '') {
-                recordUnexplainedLoss++;
-              }
+
+              const entry = {
+                sourceFieldCode: fCode,
+                bucket: 'MAPPED_TO_TARGET',
+                sourceValue: strVal,
+                targetFieldCode: actualTargetCode,
+                expectedTargetValue: expectedTargetVal,
+                actualTargetValue: actualTargetVal,
+                mappingRule: `SOURCE_TO_TARGET_FIELD_MAP[${fCode}] -> ${actualTargetCode}`,
+                mappingVerified
+              };
+
+              fieldBucketAudit.push(entry);
+              reconciledEntriesMap.set(fCode, entry);
+            } else if (fCode.toLowerCase().includes('attachment') || fCode.toLowerCase().includes('file')) {
+              const entry = {
+                sourceFieldCode: fCode,
+                bucket: 'ATTACHMENT_TRANSFER_PENDING',
+                sourceValue: strVal,
+                explainedReason: 'ATTACHMENT_TRANSFER_PENDING_UNTIL_UPLOAD'
+              };
+              fieldBucketAudit.push(entry);
+              reconciledEntriesMap.set(fCode, entry);
+            } else if (fCode.startsWith('$')) {
+              const entry = {
+                sourceFieldCode: fCode,
+                bucket: 'SKIPPED_EXPLAINED',
+                sourceValue: strVal,
+                explainedReason: 'KINTONE_SYSTEM_METADATA'
+              };
+              fieldBucketAudit.push(entry);
+              reconciledEntriesMap.set(fCode, entry);
+            } else {
+              historicalFields[fCode] = strVal;
+              const entry = {
+                sourceFieldCode: fCode,
+                bucket: 'PRESERVED_IN_PROVENANCE',
+                sourceValue: strVal,
+                provenancePath: `provenance.historicalFields.${fCode}`
+              };
+              fieldBucketAudit.push(entry);
+              reconciledEntriesMap.set(fCode, entry);
             }
           }
-        }
 
-        totalUnexplainedFieldLoss += recordUnexplainedLoss;
+          // Count missing, ambiguous duplicate, and invalid reconciliation entries
+          const missingReconciliation = item.nonEmptySourceFieldCodes.filter(c => !reconciledEntriesMap.has(c));
+          const itemLoss = missingReconciliation.length + invalidReconciliation.length;
+          groupUnexplainedLoss += itemLoss;
 
-        const provenanceList = groupItems.map(item => ({
-          sourceAppId: item.sourceAppId,
-          sourceRecordId: item.sourceRecordId,
-          sourceRecordIdStatus: item.sourceRecordIdStatus,
-          sourceRevision: item.sourceRevision,
-          sourceRevisionStatus: item.sourceRevisionStatus,
-          sourceFiscalYear: item.sourceFiscalYear,
-          legacyName: item.legacyName,
-          migrationBatchId,
-          migrationTime,
-          verificationStatus: 'VERIFIED_NORMALIZED',
-          attachmentProvenance: item.fileFields.length > 0 ? 'ATTACHMENT_TRANSFER_PENDING' : 'NONE',
-          attachedFiles: item.fileFields,
-          historicalFields: item.historicalFields,
-          fieldBucketAudit: item.fieldBucketAudit,
-          coverageProof: {
-            totalNonEmptyFields: item.nonEmptySourceFieldCodes.length,
-            reconciledFieldsCount: item.reconciledSourceFieldCodes.length,
-            missingReconciliationCount: item.missingReconciliation.length
-          }
-        }));
+          return {
+            sourceAppId: item.sourceAppId,
+            sourceRecordId: item.sourceRecordId,
+            sourceRecordIdStatus: item.sourceRecordIdStatus,
+            sourceRevision: item.sourceRevision,
+            sourceRevisionStatus: item.sourceRevisionStatus,
+            sourceFiscalYear: item.sourceFiscalYear,
+            legacyName: item.legacyName,
+            migrationBatchId,
+            migrationTime,
+            verificationStatus: itemLoss === 0 ? 'VERIFIED_NORMALIZED' : 'RECONCILIATION_UNEXPLAINED_LOSS',
+            attachmentProvenance: item.fileFields.length > 0 ? 'ATTACHMENT_TRANSFER_PENDING' : 'NONE',
+            attachedFiles: item.fileFields,
+            historicalFields,
+            fieldBucketAudit,
+            coverageProof: {
+              totalNonEmptyFields: item.nonEmptySourceFieldCodes.length,
+              reconciledFieldsCount: reconciledEntriesMap.size,
+              missingReconciliationCount: missingReconciliation.length,
+              invalidReconciliationCount: invalidReconciliation.length,
+              unexplainedFieldLoss: itemLoss
+            }
+          };
+        });
+
+        totalUnexplainedFieldLoss += groupUnexplainedLoss;
 
         candidateObj.Migration_Provenance = JSON.stringify(provenanceList);
         candidateObj.provenance = provenanceList;
