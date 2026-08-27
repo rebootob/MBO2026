@@ -68,21 +68,33 @@ TOTP_Secret_Encrypted:SINGLE_LINE_TEXT
 Recovery_Codes_Hashed:MULTI_LINE_TEXT
 ```
 
-The existing accepted App801 auth/session/activation contracts additionally require these absent physical fields to be reusable without redesign:
+For the selected Kintone-only minimum UX, page-memory context is used, activation is not required, and password expiry is non-blocking. The old server activation/session manifest is not a schema requirement:
+
+`KINTONE_SCHEMA_WRITE_REQUIRED = NO`
+
+## App801 ACL reconciliation — 2026-08-27
+
+Two additional read-only GETs established the current native App801 access boundary:
 
 ```text
-Password_Expires_At:DATETIME
-Activation_Code_Hash:SINGLE_LINE_TEXT
-Activation_Expires_At:DATETIME
-Activation_Used_At:DATETIME
-Session_Token_Hash:SINGLE_LINE_TEXT
-Session_Expires_At:DATETIME
-Session_Requires_Password_Change:DROP_DOWN YES|NO
-Session_Data_Authorized:DROP_DOWN YES|NO
-Session_Kintone_User_Code:SINGLE_LINE_TEXT
+APP801_APP_ACL_CURRENT =
+  CREATOR:null: appEditable/view/add/edit/delete/import/export=true
+  GROUP:everyone: appEditable/view/add/edit/delete/import/export=false
+APP801_RECORD_ACL_CURRENT = NONE
 ```
 
-Therefore `KINTONE_SCHEMA_WRITE_REQUIRED = YES` for exactly those nine fields before an implementation can reuse the accepted first-login activation and persisted-session contracts. This plan performs no write.
+The shared/common employee principal is covered by the exact `GROUP:everyone` rule shown above. It cannot read or update App801 records under the present ACL. There is no record-permission rule that changes this conclusion.
+
+```text
+SHARED_EMPLOYEE_CAN_READ_APP801 = NO
+SHARED_EMPLOYEE_CAN_UPDATE_APP801 = NO
+APP801_HASH_DIRECT_REST_EXPOSURE = NO
+APP801_CREDENTIAL_DIRECT_REST_MUTATION_RISK = NO
+KINTONE_ONLY_LOGIN_RUNTIME = BLOCKED_APP801_BROWSER_READ
+KINTONE_ACL_CHANGE_REQUIRED = YES: a separately reviewed native App801 permission design must grant the shared employee browser the minimum required App801 access; this plan does not authorize or define that ACL change.
+```
+
+The browser-side WebCrypto adapter remains the later source plan only. Its PBKDF2-SHA256 format must stay compatible with `pbkdf2$100000$<saltHex>$<hashHex>`, but it cannot be implemented as a functional App801 browser login while current native App801 read is denied.
 
 ## Future deployment boundary
 
