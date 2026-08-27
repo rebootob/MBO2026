@@ -1,185 +1,179 @@
-# AI ACTIVE TASK — D1-C2A EXACT RUNTIME CLOSURE MANIFEST + ONE LOCKED-STATE FIX ONLY
+# AI ACTIVE TASK — D1-C2B EXACT READ-ONLY RUNTIME FACTS ONLY
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
-> Independently reviewed implementation: `1ff2ca63e515d65405b2d766855f3c2639b5e2b3`
-> Mode: FASTEST SAFE PATH / MINIMUM SOURCE FIX + READ-ONLY RUNTIME MANIFEST / NO KINTONE WRITE OR DEPLOY
+> Reviewed implementation: `51a98831e108dd60571f60863c891852e0b874b8`
+> Mode: FASTEST SAFE PATH / FACT GATHERING ONLY / NO SOURCE CHANGES / NO KINTONE WRITE OR DEPLOY
 
-## 0. D1-C1 INDEPENDENT REVIEW RESULT
+## 0. INDEPENDENT REVIEW RESULT
 
-Accepted source corrections from `1ff2ca63...`:
-- B1 PASS: `changePassword()` now passes only mutable lifecycle fields to `credentialStore.updateCredential()`.
-- B2 PASS: repository now fails closed on Employee_Code mismatch, missing/unknown Account_Status, missing/unknown Force_Password_Change, and malformed Failed_Attempts.
-- Scope PASS: only the three allowed auth/test files changed.
+Accepted:
+- D1-C1 source corrective = ACCEPTED.
+- D1-C2A `Account_Status === LOCKED` fix = PASS by source review.
+- Scope = PASS (password service + focused test only).
 
-D1-C1 is NOT runtime PASS. Classify:
+Not accepted:
+- The D1-C2A closure manifest is NOT exact enough for one user authorization.
+- Its commit reports `KINTONE_READS_EXECUTED = 0`, so it did not provide the required exact current ACL principals.
+- `PROPOSED_KINTONE_WRITE_MANIFEST` is ambiguous (`App801 or dedicated Session App`).
+- `IDENTITY_BINDING_SOURCE = NOT_AVAILABLE` and `TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE` remain blockers.
+- App794 direct URL/REST isolation remains `UNSAFE`.
 
-`D1C1_SOURCE_CORRECTIVE = ACCEPTED`
-`D1C1_RUNTIME = BLOCKED_WITH_EXACT_EVIDENCE`
+GitHub has no CI/status evidence for the reviewed commit. Do not claim CI PASS.
 
-The implementation commit reported these live preflight facts:
+## 1. GOAL — ONE LAST READ-ONLY FACT PACKAGE
 
-```text
-APP801_RECORD_COUNT = 0
-APP801_DIRECT_EMPLOYEE_BROWSER_ACCESS = DENIED
-DIRECT_URL_CROSS_EMPLOYEE_ISOLATION = UNSAFE
-DIRECT_REST_CROSS_EMPLOYEE_ISOLATION = UNSAFE
-SESSION_STORE_PERSISTENCE = BACKEND_REQUIRED
-KINTONE_WRITES_EXECUTED = 0
-KINTONE_DEPLOY_EXECUTED = 0
-```
+Do NOT implement more auth code.
+Do NOT change UI.
+Do NOT modify Kintone.
 
-Important independent review findings:
+Collect only the exact facts needed for ChatGPT to make the final architecture/write decision without another speculative cycle.
 
-### R1 — App801 schema is missing Password_Expires_At
-The reported exact App801 field list contains `Password_Changed_At` but does NOT contain `Password_Expires_At`.
-The accepted `MboPasswordDomainService.changePassword()` always calculates and persists `Password_Expires_At`, and login checks it for expiry.
-Therefore the current App801 adapter cannot be called live-ready: a real Kintone PUT containing a non-existent `Password_Expires_At` field would fail.
+Prefer <= 8 Kintone GET requests total. Never print secrets, Password_Hash, tokens, MFA values, or full credential records.
 
-Do NOT remove password expiry behavior merely to fit the current schema.
-Do NOT add the field in this task because Kintone schema writes are not yet authorized.
+## 2. EXACT READS REQUIRED
 
-### R2 — Account_Status = LOCKED is not explicitly denied by password domain
-Live schema reports `Account_Status` choices `ACTIVE | DISABLED | LOCKED`.
-Current password domain explicitly denies `DISABLED`, but `LOCKED` is only denied when `Locked_Until` is a future timestamp.
-A hard/manual `Account_Status = LOCKED` must fail closed even when `Locked_Until` is null/expired.
-This is the ONLY source logic fix authorized in this package.
+### A. App801
+Read only:
+1. form field schema relevant to auth/session lifecycle;
+2. App ACL;
+3. record ACL if configured/available.
 
-### R3 — Direct App794 URL/REST isolation is UNSAFE
-This is a D1 release blocker. Client-side hiding is not a security boundary.
-No ACL change is authorized in this package.
+Report exact:
+- current field codes/types/options;
+- exact ACL entities/principals and rights;
+- confirm `Password_Expires_At` absent/present;
+- confirm whether `Kintone_User_Code` absent/present.
 
-### R4 — Persistent session store is absent
-Accepted auth core requires `getSession / setSession / deleteSession` with hashed tokens and reliable revocation.
-Existing App801 schema does not currently provide the accepted session lifecycle.
-Do not invent/execute schema changes yet.
+### B. App794
+Read only:
+1. App ACL;
+2. Record ACL.
 
-### R5 — Kintone-user binding uniqueness is NOT independently proven
-The implementation commit reports `KINTONE_USER_BINDING_UNIQUE = YES`, but the same evidence reports App801 record count = 0 and the reported App801 schema list contains no `Kintone_User_Code` field.
-Treat this as `NOT_PROVEN` until the exact authoritative binding source and ambiguity result are shown.
-If one Kintone principal maps to more than one employee under the accepted one-principal-to-one-Employee_Code contract, report `IDENTITY_BINDING_BLOCKER`; do not bypass by trusting typed Employee_Code.
+Report exact:
+- each entity/principal/group relevant to employee/general/shared access;
+- the exact rule that makes direct record URL/REST access unsafe;
+- HR/appraiser/admin principals/rules that must be preserved;
+- whether native Kintone ACL can distinguish Employee 0118 from Employee 0119 under the CURRENT authenticated Kintone account model.
 
-## 1. SOURCE FIX — ONLY ONE SMALL FIX
+Do not say merely `everyone`; include the exact returned entity type/code/name when available.
 
-Allowed source files:
-- `src/services/mbo-password-service.js`
-- `tests/mbo-password-service.test.js`
+### C. Identity binding source
+Read App53 form schema only first.
+
+If App53 contains an actual Kintone user-code/user-selector binding field, read ONLY `Employee_Code` + that binding field (minimum fields, no names/other employee data) and compute ambiguity locally without printing the employee list.
+
+If App53 has no such field, report exactly:
+`IDENTITY_BINDING_SOURCE = NOT_AVAILABLE`
+
+If another already-existing authoritative source is proven by repository/live configuration, name it exactly. Do not invent one.
+
+Report:
+- `KINTONE_USER_BINDING_UNIQUE = YES | NO | NOT_PROVEN`
+- if NO, only the conflicting principal code and count; do not dump employee data.
+
+### D. Trusted runtime
+Repository review already shows only local Node tooling/preview and Kintone deployment scripts, not a deployed trusted auth backend.
+
+Confirm whether there is any ACTUAL existing trusted runtime/configuration in the project environment. Do not create one.
+
+Report exactly:
+`TRUSTED_BACKEND_RUNTIME = <actual runtime> | NOT_AVAILABLE`
+
+The local `npm run ui:preview` process is NOT production/sandbox-deployed infrastructure.
+
+## 3. LOCK THE SMALLEST SESSION DESIGN — NO “OR” OPTIONS
+
+For planning purposes, prefer the existing App801 as a **single-active-session-per-employee** store unless a live Kintone constraint proves this impossible.
+
+Proposed minimum App801 session fields to validate against Kintone capabilities:
+- `Password_Expires_At` — DATETIME
+- `Session_Token_Hash` — SINGLE_LINE_TEXT (hash only; never raw token)
+- `Session_Expires_At` — DATETIME
+- `Session_Requires_Password_Change` — DROP_DOWN `YES|NO`
+- `Session_Data_Authorized` — DROP_DOWN `YES|NO`
+- `Session_Kintone_User_Code` — SINGLE_LINE_TEXT
+
+Do NOT add them yet.
+Do NOT propose a new Session App unless a specific Kintone limitation makes the App801 single-session model unsafe/impossible; if so, state that exact limitation.
+
+Identity field `Kintone_User_Code` for the credential record itself must NOT be added speculatively until Section C proves the authoritative mapping model.
+
+## 4. REQUIRED EXACT REPORT
+
+Create an evidence-only commit (`--allow-empty` is allowed) with NO source/doc changes after this control commit. Put the facts in the commit message body and completion report.
 
 Required:
-- `Account_Status === 'LOCKED'` => deny with `ACCOUNT_LOCKED` before password verification, regardless of `Locked_Until`.
-- preserve existing timed `Locked_Until` behavior for ACTIVE accounts.
-- add one focused regression test for hard `Account_Status = LOCKED` with null/expired `Locked_Until`.
-
-Do not refactor password code.
-
-## 2. READ-ONLY D1 RUNTIME CLOSURE MANIFEST
-
-Use only minimum Kintone GETs needed. No source implementation beyond Section 1.
-No Kintone mutation.
-
-Produce in commit body / completion report the exact facts needed for ONE later user authorization.
-
-### 2.1 App801 exact closure manifest
-Confirm READ ONLY:
-- exact current fields/types/options relevant to credential lifecycle
-- confirm `Password_Expires_At` absent/present
-- exact current App801 app/record ACL principals relevant to employee browser denial
-- exact authoritative source of `Kintone_User_Code -> Employee_Code` binding, if any
-- exact ambiguity result; do not claim uniqueness from zero records alone
-
-Propose, but DO NOT execute, the minimum required App801 changes for the accepted auth contract.
-At minimum assess:
-- `Password_Expires_At` DATETIME
-- smallest persistent session-store model supporting hashed token lookup, expiry, force-change/data-authorized flags, Kintone principal binding, set/get/delete/revoke
-
-Prefer the smallest design; do not create a new app/framework unless existing App801 genuinely cannot support it safely.
-Never store raw session tokens.
-
-### 2.2 App794 exact direct-access blocker manifest
-Read current App794 app/record ACL configuration and report:
-- exact principals/groups/accounts that currently allow unsafe general/shared employee direct record URL access
-- exact principals/groups/accounts that currently allow unsafe direct REST query access
-- HR/appraiser/admin access that must not be accidentally removed
-
-Propose the smallest ACL change needed so employee-self access is NOT dependent on browser-side hiding.
-Do NOT execute it.
-
-### 2.3 Trusted runtime boundary
-State exactly where the accepted server-only auth/session/repository code can run for sandbox UAT.
-If no real trusted backend runtime exists, report:
-
-`TRUSTED_BACKEND_RUNTIME = NOT_AVAILABLE`
-
-Do not pretend the Local Preview server is production/sandbox-deployed infrastructure.
-Do not add a hosting framework in this task.
-
-## 3. REQUIRED OUTPUT — EXACT ONE-APPROVAL MANIFEST
-
-End report must contain:
 
 ```text
-D1C1_SOURCE_CORRECTIVE = ACCEPTED
-D1C1_RUNTIME = BLOCKED_WITH_EXACT_EVIDENCE
-LOCKED_ACCOUNT_DOMAIN_FIX = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+D1C2A_LOCKED_SOURCE_FIX = PASS_PENDING_CHATGPT_FINAL_ACCEPTANCE
 
 APP801_PASSWORD_EXPIRES_FIELD = PRESENT | ABSENT
-APP801_SESSION_STORE_READY = YES | NO
+APP801_KINTONE_USER_CODE_FIELD = PRESENT | ABSENT
+APP801_ACL = <exact entities/rights>
+APP801_RECORD_ACL = <exact rules or NONE>
+APP801_SINGLE_SESSION_MODEL = FEASIBLE | NOT_FEASIBLE:<exact reason>
+
+APP794_APP_ACL = <exact entities/rights>
+APP794_RECORD_ACL = <exact rules>
+APP794_UNSAFE_PRINCIPAL = <exact entity/rule>
+APP794_PRESERVE_PRIVILEGED_RULES = <exact HR/appraiser/admin rules>
+NATIVE_ACL_CAN_DISTINGUISH_0118_0119 = YES | NO | NOT_PROVEN
+
 IDENTITY_BINDING_SOURCE = <exact source> | NOT_AVAILABLE
 KINTONE_USER_BINDING_UNIQUE = YES | NO | NOT_PROVEN
-DIRECT_URL_CROSS_EMPLOYEE_ISOLATION = PROVEN | UNSAFE | NOT_PROVEN
-DIRECT_REST_CROSS_EMPLOYEE_ISOLATION = PROVEN | UNSAFE | NOT_PROVEN
 TRUSTED_BACKEND_RUNTIME = <exact runtime> | NOT_AVAILABLE
 
-PROPOSED_KINTONE_WRITE_MANIFEST =
-- exact App801 schema fields to add/change, if required
-- exact App794 ACL changes, if required
-- any exact App801 ACL adjustment, if required
+FINAL_PROPOSED_KINTONE_WRITE_MANIFEST =
+- App801: <one exact field list; no alternatives>
+- App801 ACL: <exact change or NO_CHANGE>
+- App794 ACL: <exact rule/entity changes, or BLOCKED_PENDING_RUNTIME if impossible before runtime choice>
+
+NON_KINTONE_RUNTIME_BLOCKER = <exact item or NONE>
 
 KINTONE_READS_EXECUTED = N
 KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
-
-D1C2A_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW | BLOCKED_WITH_EXACT_EVIDENCE
+SOURCE_FILES_CHANGED = 0
+DOC_FILES_CHANGED_BY_ANTIGRAVITY = 0
+D1C2B_STATUS = EVIDENCE_READY_FOR_INDEPENDENT_REVIEW | BLOCKED_WITH_EXACT_EVIDENCE
 D1_OVERALL_STATUS = IN_PROGRESS
 ```
 
-The proposed write manifest is a PLAN ONLY. It is NOT authorization.
-After independent review, ChatGPT will request the user's explicit authorization once for the exact required Kintone operations.
+## 5. STOP CONDITIONS
 
-## 4. VERIFICATION
+Stop and report, do not design around it, if either is true:
+- current Kintone principal model cannot uniquely bind one Employee_Code;
+- no trusted backend runtime exists and App794 native ACL cannot enforce secondary-MBO-login identity.
+
+These are architecture/runtime blockers, not reasons to weaken security.
+
+## 6. OUT OF SCOPE
+
+- no source changes
+- no tests needed because no source changes
+- no UI work
+- no App801/App794 schema/ACL writes
+- no credential provisioning
+- no session-store implementation
+- no deploy
+- no backend framework/hosting creation
+- no MFA
+- no D2-D7 work
 
 Run only:
-
 ```bash
-npm test -- tests/mbo-password-service.test.js
-npm test -- tests/mbo-password-service.test.js tests/mbo-identity-service.test.js tests/mbo-auth-session-service.test.js tests/mbo-auth-kintone-repository.test.js
-npm test
 git diff --check
 git status --short
 ```
-
-No CI claim without evidence.
-
-## 5. OUT OF SCOPE
-
-- no Login/UI changes
-- no App801 schema write
-- no App801 credential provisioning/write
-- no App794/App801 ACL write
-- no Kintone deploy
-- no session-store implementation yet
-- no new backend/hosting framework
-- no MFA/TOTP
-- no D2-D7 implementation
-- no unrelated refactor/docs cleanup
 
 ---
 
 # MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED + RUNTIME BLOCKED / D1-C2A THIS TASK
+- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + UAT ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2A LOCKED FIX SOURCE PASS / D1-C2B THIS TASK
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
