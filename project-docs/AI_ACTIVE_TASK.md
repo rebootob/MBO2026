@@ -1,129 +1,128 @@
-# AI ACTIVE TASK — D1-C4B LIVE HOST DECISION GATE
+# AI ACTIVE TASK — D1 REBASE: KINTONE-ONLY MBO LOGIN GATE
 
 > Control Plane: ChatGPT
 > Execution Plane: Codex (temporary replacement for Antigravity)
 > Repository: `rebootob/MBO2026`
 > Canonical integration branch: `ai/antigravity-wp002c`
 > Codex execution branch: `ai/codex-d1c3b`
-> Independently reviewed implementation: `5c56bf2c9f68650e28179ccc1e016b25cb036ecd`
-> Mode: USER DECISION GATE / NO IMPLEMENTATION / NO KINTONE WRITE / NO DEPLOY
+> User architecture decision: 2026-08-27
+> Mode: KINTONE-ONLY / NO EXTERNAL GATEWAY / NO SERVER / NO VM / NO EXTERNAL APP
 
-## 0. INDEPENDENT REVIEW RESULT — D1-C4A ACCEPTED
+## 0. USER REQUIREMENT — OVERRIDES THE PREVIOUS LIVE HOST GATE
 
-Accepted from `5c56bf2c...`:
-- portable Node trusted gateway runtime exists;
-- exact-origin credential CORS and OPTIONS preflight are implemented;
-- cookie topology explicitly supports `Strict`, `Lax`, and `None`, with `SameSite=None` requiring `Secure=true`;
-- production mode fails closed for unsupported NODE_ENV, missing origin, insecure cookie, or non-HTTPS production origin/base URL;
-- direct Node entrypoint uses `pathToFileURL()` and is portable across Windows/Linux path formats;
-- login uses the server-controlled shared outer Kintone principal;
-- browser receives opaque HttpOnly cookie only; raw session token/hashes are not returned in JSON;
-- Employee Self authorization remains trusted-session Employee_Code only;
-- activation failure does not set a session cookie;
-- restricted session data denial, malformed fiscal-year denial, password-change cookie rotation, logout cookie clearing are covered by focused runtime tests;
-- no Kintone read/write/deploy and no live server deployment occurred.
+The user explicitly requires the MBO solution to finish entirely inside Kintone.
 
-GitHub has no CI/workflow/status evidence. Do not claim CI PASS.
+Do NOT require or deploy:
+- Node Gateway;
+- Windows/Linux Server or VM;
+- reverse proxy;
+- external hosting;
+- external authentication service;
+- external database.
 
-Classification:
+The accepted portable gateway code may remain in Git as unused/reversible work, but it is NOT part of the chosen production architecture unless the user later changes this decision explicitly.
 
-```text
-D1C4A_SOURCE = PASS / ACCEPTED
-PORTABLE_RUNTIME_PACKAGE = ACCEPTED_NOT_DEPLOYED
-TRUSTED_BACKEND_RUNTIME = NOT_DEPLOYED
-D1_OVERALL = IN_PROGRESS
-```
+## 1. REQUIRED USER EXPERIENCE
 
-## 1. CURRENT BLOCKER — LIVE HOST NOT CHOSEN
-
-No implementation is authorized until the user selects/provides the trusted gateway host/topology.
-
-Required user decision/facts:
+Every time an employee enters the MBO app/workspace:
 
 ```text
-HOST_PLATFORM = WINDOWS_SERVER_VM | LINUX_VM | TEMPORARY_UAT_WINDOWS_PC
-HOST_LOCATION = <internal company host / network location>
-BROWSER_TO_GATEWAY_TOPOLOGY = SAME_SITE_REVERSE_PROXY | CROSS_SITE_HTTPS
-HTTPS_ENDPOINT = <planned HTTPS origin or NOT_AVAILABLE_YET>
-SERVER_CAN_REACH_KINTONE = YES | NO | NOT_PROVEN
-EMPLOYEE_BROWSER_CAN_REACH_SERVER = YES | NO | NOT_PROVEN
+Open MBO
+  -> show MBO Login modal/page
+      Username = Employee_Code
+      Password = employee MBO password stored/managed in Kintone auth data
+  -> validate login
+  -> on success bind current in-page MBO principal = Employee_Code
+  -> automatically load that employee's App53 profile and App794 MBO
 ```
 
-Preferred production direction:
-- approved always-on internal Windows Server/VM or Linux VM;
-- HTTPS only;
-- same-site/reverse-proxy topology is preferred when practical;
-- cross-site topology is allowed only with exact-origin CORS, `credentials: include`, and `SameSite=None; Secure`.
+Rules:
+- do not ask Employee ID again after successful MBO login;
+- employee-facing MBO actions use the authenticated MBO Employee_Code;
+- entering/re-entering MBO requires MBO login again;
+- initial/default credential remains Employee_Code / Employee_Code unless current accepted implementation already requires first-login password change/activation;
+- employee can change own MBO password;
+- logout clears the in-page MBO authenticated state;
+- do not add an external runtime dependency.
 
-Do not invent hostname/IP/certificate/server availability.
+## 2. AUTH DATA
 
-## 2. FROZEN NEXT LIVE CUTOVER SEQUENCE — NOT YET AUTHORIZED
+Use App801 as the Kintone auth-data app.
 
-After host decision and a separate explicit user authorization, Control Plane will issue one exact live package in this order:
+Do NOT store plaintext password if the existing accepted hash-based implementation can be reused.
 
-1. deploy trusted gateway to the approved host;
-2. verify `/health` and gateway-to-Kintone connectivity;
-3. add the exact 9 App801 runtime fields;
-4. provision credentials/activation data through an approved server-side process;
-5. run 0118/0119 gateway UAT while App794 direct access is still unchanged;
-6. prove exact privileged App794 access rules to preserve;
-7. change App794 ACL only after gateway path is proven usable;
-8. final D1-B/D1 runtime UAT and rollback verification.
+Prefer existing fields/contracts already implemented and proven in source; do not redesign auth unless the Kintone-only boundary requires a minimal adapter.
 
-No step above is authorized by this document.
+The goal is a Kintone customization login gate, not a separate infrastructure project.
 
-## 3. FROZEN APP801 9-FIELD MANIFEST
+## 3. IMPORTANT SECURITY CLASSIFICATION
+
+Current company model uses a shared/common Kintone account for general employees.
+
+Therefore, under Kintone-only architecture:
+- native Kintone App794 ACL cannot distinguish employee 0118 from 0119 when both use the same underlying Kintone account;
+- an MBO login implemented only in browser-side Kintone customization is an APPLICATION/UI AUTHORIZATION GATE;
+- it does NOT create a cryptographically separate native Kintone principal;
+- it cannot by itself guarantee protection against a technically capable user bypassing customization through direct Kintone record URL/REST if the shared Kintone account still has those native permissions.
+
+Do not falsely claim hard native Kintone isolation under the shared-account model.
+
+For the user's chosen scope, implement the strongest practical Kintone-only application gate and keep direct-URL/REST limitation explicitly documented.
+
+## 4. CURRENT IMMEDIATE TASK
+
+Do NOT continue D1-C4B host decision work.
+Do NOT deploy the portable Node gateway.
+
+Codex must first perform a narrow Kintone-only reconciliation and implementation plan:
+
+1. inspect existing D1 login UI/customization source already in repo;
+2. identify the smallest changes needed so opening MBO always requires MBO username/password;
+3. after login, bind employee context once and remove/disable any employee Employee_Code selector/input inside Employee Self;
+4. reuse existing App53/App794 employee-self filtering by the authenticated MBO Employee_Code where possible;
+5. reuse existing password-change/logout behavior where possible;
+6. identify exactly what App801 fields already exist and the minimum missing fields actually required for Kintone-only operation;
+7. do NOT implement or deploy external gateway/runtime;
+8. do NOT change Kintone schema/ACL/deploy without separate explicit user authorization.
+
+## 5. REQUIRED REPORT BEFORE ANY LIVE KINTONE WRITE
+
+Report:
 
 ```text
-Password_Expires_At                  DATETIME
-Activation_Code_Hash                 SINGLE_LINE_TEXT
-Activation_Expires_At                DATETIME
-Activation_Used_At                   DATETIME
-Session_Token_Hash                   SINGLE_LINE_TEXT
-Session_Expires_At                   DATETIME
-Session_Requires_Password_Change     DROP_DOWN YES|NO
-Session_Data_Authorized              DROP_DOWN YES|NO
-Session_Kintone_User_Code            SINGLE_LINE_TEXT
+KINTONE_ONLY_ARCHITECTURE = ACCEPTED
+EXTERNAL_GATEWAY_REQUIRED = NO
+MBO_LOGIN_EVERY_ENTRY = YES
+EMPLOYEE_ID_REENTRY_AFTER_LOGIN = NO
+APP801_AUTH_SOURCE = <exact existing fields used>
+APP801_MISSING_REQUIRED_FIELDS = <exact list or NONE>
+EMPLOYEE_SELF_CONTEXT_SOURCE = AUTHENTICATED_MBO_EMPLOYEE_CODE
+DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
+SOURCE_CHANGES_REQUIRED = <exact files>
+KINTONE_SCHEMA_WRITE_REQUIRED = YES:<exact fields> | NO
+KINTONE_CUSTOMIZATION_DEPLOY_REQUIRED = YES | NO
+KINTONE_WRITES_EXECUTED = 0
+KINTONE_DEPLOY_EXECUTED = 0
+STATUS = PLAN_READY_FOR_INDEPENDENT_REVIEW
 ```
 
-`APP801_ACL_CHANGE = NO_CHANGE` unless later live evidence proves otherwise.
+No live write/deploy in this planning/reconciliation package.
 
-## 4. APP794 CUTOVER STATUS
+## 6. OUT OF SCOPE
 
-Current accepted facts:
-
-```text
-APP794_RECORD_ACL_CURRENT = NONE
-APP794_UNSAFE_EMPLOYEE_RULE = GROUP everyone direct record view/add/edit/delete enabled
-APP794_PRIVILEGED_USER_FIELDS = Requester_User, Manager_Level1_Approvers, Manager_Level2_Approvers, GM_Level1_Approvers, GM_Level2_Approvers
-APP794_ACL_CUTOVER = BLOCKED_PRIVILEGED_RULES_NOT_PROVEN
-```
-
-Do not remove `GROUP everyone` until:
-- gateway is deployed and proven reachable;
-- Employee Self works through the gateway;
-- exact HR/appraiser/approver/admin rules to preserve are proven;
-- user explicitly authorizes the ACL change.
-
-## 5. EXECUTION RULE
-
-Until the host decision is supplied:
-
-```text
-SOURCE_CHANGES = 0
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-KINTONE_DEPLOY = 0
-LIVE_SERVER_DEPLOY = 0
-```
-
-Codex/Antigravity must STOP and wait. Do not create hosting, deploy, change schema, provision credentials, or alter ACL by assumption.
+- no external server/VM;
+- no Node gateway deployment;
+- no DNS/TLS/reverse proxy;
+- no external auth service;
+- no App794 ACL cutover based on the abandoned gateway architecture;
+- no D2-D7 work in this package;
+- no unrelated refactor.
 
 ---
 
-# MANDATORY PROJECT CONTROL — DO NOT DROP
+# MANDATORY PROJECT CONTROL
 
-- D1 Login + password change + strict employee data isolation = IN_PROGRESS / D1-A CLOSED / D1-B SOURCE ACCEPTED + FINAL ACCESS CHECK RESIDUAL / D1-C1 SOURCE ACCEPTED / D1-C2 EVIDENCE ACCEPTED / D1-C3A PASS / D1-C3B PASS / D1-C4A PASS / D1-C4B LIVE HOST DECISION GATE
+- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / ARCHITECTURE REBASED TO KINTONE-ONLY
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
