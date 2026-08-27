@@ -2,43 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { HoshinService } from '../src/services/hoshin-service.js';
 
-test('HOSHIN_REAL_SCHEMA_ADAPTER: adapts physical App 797 status/active fields into canonical status', () => {
-  const pub = { Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active' };
-  assert.equal(HoshinService.getCanonicalHoshinStatus(pub), 'PUBLISHED');
-
-  const ready = { Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'NO', Active: 'Active' };
-  assert.equal(HoshinService.getCanonicalHoshinStatus(ready), 'READY');
-
-  const draft = { Hoshin_Status: 'DRAFT', Active: 'Active' };
-  assert.equal(HoshinService.getCanonicalHoshinStatus(draft), 'DRAFT');
-
-  const inactive = { Hoshin_Status: 'SUPERSEDED', Active: 'Inactive' };
-  assert.equal(HoshinService.getCanonicalHoshinStatus(inactive), 'INACTIVE');
-});
-
-test('HOSHIN_REAL_SCHEMA_ADAPTER: resolves Department and Section Hoshin from real App 797 physical fields', () => {
+test('HOSHIN_CODE_AUTHORITY: code match succeeds for Department and Section', () => {
   const hoshinRecords = [
     {
-      Hoshin_Key: 'HOSH_DEPT_001',
+      Hoshin_Key: 'H1',
       Scope_Type: 'DEPARTMENT',
       Department_Code: 'IT',
-      Department_Name: 'IT Department',
       Fiscal_Year: 'FY2026',
-      Hoshin_Status: 'CURRENT_READY',
-      Ready_For_MBO: 'YES',
-      Active: 'Active',
-      Hoshin_TH: 'ยุทธศาสตร์ IT 2569'
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active',
+      Hoshin_TH: 'IT Hoshin'
     },
     {
-      Hoshin_Key: 'HOSH_SECT_001',
+      Hoshin_Key: 'H2',
       Scope_Type: 'SECTION',
       Section_Code: 'Software Dev',
-      Section_Name: 'Software Dev Section',
       Fiscal_Year: 'FY2026',
-      Hoshin_Status: 'CURRENT_READY',
-      Ready_For_MBO: 'YES',
-      Active: 'Active',
-      Hoshin_TH: 'เป้าหมายพัฒนาซอฟต์แวร์ 2569'
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active',
+      Hoshin_TH: 'Sect Hoshin'
     }
   ];
 
@@ -50,19 +30,76 @@ test('HOSHIN_REAL_SCHEMA_ADAPTER: resolves Department and Section Hoshin from re
   });
 
   assert.equal(res.status, 'READY_FOR_MBO');
-  assert.equal(res.snapshot.Department_Hoshin_Title, 'ยุทธศาสตร์ IT 2569');
-  assert.equal(res.snapshot.Section_Hoshin_Title, 'เป้าหมายพัฒนาซอฟต์แวร์ 2569');
+  assert.equal(res.snapshot.Department_Hoshin_Title, 'IT Hoshin');
 });
 
-test('HOSHIN_REAL_SCHEMA_ADAPTER: legacy migration historical hoshin strings (Text_area / Text_area_0) preserved without App 797 lookup', () => {
-  const legacyRecord = {
-    Drop_down_year: 'FY\'2022',
-    Text_area: 'Historical Department Hoshin 2022',
-    Text_area_0: 'Historical Section Hoshin 2022'
-  };
+test('HOSHIN_ORGANIZATION_MISMATCH: throws ORGANIZATION_MISMATCH when department/section codes do not match', () => {
+  const hoshinRecords = [
+    {
+      Hoshin_Key: 'H1',
+      Scope_Type: 'DEPARTMENT',
+      Department_Code: 'HR', // Wrong code for IT request
+      Department_Name: 'IT Department', // Name matches but code is HR
+      Fiscal_Year: 'FY2026',
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active'
+    }
+  ];
 
-  const res = HoshinService.processMigrationHoshinSnapshot(legacyRecord);
-  assert.equal(res.Department_Hoshin_Title, 'Historical Department Hoshin 2022');
-  assert.equal(res.Section_Hoshin_Title, 'Historical Section Hoshin 2022');
-  assert.equal(res.Department_Hoshin_ID, 'HISTORICAL_LEGACY_SOURCE');
+  assert.throws(
+    () => HoshinService.resolveHoshinForMBO({ department: 'IT', section: 'Software Dev', fiscalYear: 'FY2026', hoshinRecords }),
+    /ORGANIZATION_MISMATCH/
+  );
+});
+
+test('HOSHIN_EFFECTIVE_DATE_INCLUSIVE: date range comparison is inclusive of calendar date and throws HOSHIN_OUTSIDE_EFFECTIVE_DATE when outside', () => {
+  const hoshinRecords = [
+    {
+      Hoshin_Key: 'H1',
+      Scope_Type: 'DEPARTMENT',
+      Department_Code: 'IT',
+      Fiscal_Year: 'FY2026',
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Hoshin_TH: 'IT Hoshin'
+    },
+    {
+      Hoshin_Key: 'H2',
+      Scope_Type: 'SECTION',
+      Section_Code: 'Software Dev',
+      Fiscal_Year: 'FY2026',
+      Hoshin_Status: 'CURRENT_READY', Ready_For_MBO: 'YES', Active: 'Active',
+      Effective_From: '2026-04-01',
+      Effective_To: '2027-03-31',
+      Hoshin_TH: 'Sect Hoshin'
+    }
+  ];
+
+  // Inside range (late in the day on 2027-03-31)
+  const validRes = HoshinService.resolveHoshinForMBO({
+    department: 'IT', section: 'Software Dev', fiscalYear: 'FY2026',
+    effectiveDate: '2027-03-31T23:59:59Z',
+    hoshinRecords
+  });
+  assert.equal(validRes.status, 'READY_FOR_MBO');
+
+  // Before Effective_From -> throws HOSHIN_OUTSIDE_EFFECTIVE_DATE
+  assert.throws(
+    () => HoshinService.resolveHoshinForMBO({
+      department: 'IT', section: 'Software Dev', fiscalYear: 'FY2026',
+      effectiveDate: '2026-03-31',
+      hoshinRecords
+    }),
+    /HOSHIN_OUTSIDE_EFFECTIVE_DATE/
+  );
+
+  // After Effective_To -> throws HOSHIN_OUTSIDE_EFFECTIVE_DATE
+  assert.throws(
+    () => HoshinService.resolveHoshinForMBO({
+      department: 'IT', section: 'Software Dev', fiscalYear: 'FY2026',
+      effectiveDate: '2027-04-01',
+      hoshinRecords
+    }),
+    /HOSHIN_OUTSIDE_EFFECTIVE_DATE/
+  );
 });

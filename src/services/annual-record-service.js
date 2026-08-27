@@ -376,8 +376,8 @@ export class AnnualRecordService {
 
   /**
    * Gate 5: Copy Previous MBO Candidate Generator
-   * Copies ONLY physical planning fields from prior-year record.
-   * Requires injected current-year dependencies (new FY routing, scoring, Hoshin snapshot).
+   * Copies ONLY physical planning fields from prior-year record into real App794 flattened field shape.
+   * Requires injected current-year dependencies (new FY routing, scoring, Hoshin snapshot, duplicate preflight).
    */
   static generateCopyPreviousCandidate({
     priorYearRecord,
@@ -387,13 +387,51 @@ export class AnnualRecordService {
     authoritativeRoleContext = null,
     newRoutingSnapshot = null,
     newScoringConfig = null,
-    newHoshinSnapshot = null
+    newHoshinSnapshot = null,
+    duplicatePreflightResult = null
   }) {
     if (!priorYearRecord || typeof priorYearRecord !== 'object') {
       throw new AnnualRecordError(
         'COPY_PREVIOUS_INVALID_SOURCE',
         'ไม่พบข้อมูล MBO ปีก่อนหน้าที่จะคัดลอก',
         'Prior year MBO record is required for copy previous operation.'
+      );
+    }
+
+    // 1. Dependency Validation (Fail Closed)
+    if (!newRoutingSnapshot || typeof newRoutingSnapshot !== 'object') {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_MISSING_DEPENDENCY',
+        'ขาดข้อมูล Routing สำหรับปีงบประมาณใหม่',
+        'Missing new fiscal year routing snapshot.'
+      );
+    }
+    if (!newScoringConfig || typeof newScoringConfig !== 'object') {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_MISSING_DEPENDENCY',
+        'ขาดข้อมูล Scoring Configuration สำหรับปีงบประมาณใหม่',
+        'Missing new fiscal year scoring configuration.'
+      );
+    }
+    if (!newHoshinSnapshot || typeof newHoshinSnapshot !== 'object') {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_MISSING_DEPENDENCY',
+        'ขาดข้อมูล Hoshin Snapshot สำหรับปีงบประมาณใหม่',
+        'Missing new fiscal year Hoshin snapshot.'
+      );
+    }
+    if (!duplicatePreflightResult || typeof duplicatePreflightResult !== 'object' || duplicatePreflightResult.checked !== true) {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_MISSING_DEPENDENCY',
+        'ยังไม่ได้ดำเนินการตรวจสอบการสร้าง MBO ซ้ำซ้อน',
+        'Duplicate check preflight must be executed before candidate generation.'
+      );
+    }
+    if (duplicatePreflightResult.exists === true) {
+      throw new AnnualRecordError(
+        'COPY_PREVIOUS_DUPLICATE_EXISTS',
+        'มีข้อมูล MBO สำหรับปีงบประมาณใหม่ในระบบแล้ว ไม่สามารถคัดลอกซ้ำได้',
+        'An MBO record already exists for the new fiscal year. Copy operation blocked.'
       );
     }
 
@@ -441,41 +479,61 @@ export class AnnualRecordService {
 
     // Project raw/flattened prior year objectives
     const rawObjectives = projectApp794Objectives(priorYearRecord);
-    const copiedObjectives = rawObjectives.map(obj => ({
-      slotIndex: obj.slotIndex,
-      Objective_Title: obj.title,
-      Objective_Description: obj.description,
-      KPI: obj.kpi,
-      Target: obj.target,
-      Measurement: obj.measurement,
-      Weight: obj.weight
-      // EXCLUDED: Progress_Percent, Actual_Result, Self_*, Manager_*, GM_*, Average_Objective_Score, attachments, old Hoshin
-    }));
+    const copiedCount = Math.min(Math.max(rawObjectives.length, 1), 10);
+
+    // Build real App794 write-ready flattened candidate object
+    const candidateRecord = {
+      Fiscal_Year: { value: cleanNewFY },
+      Record_Key: { value: newRecordKey },
+      Employee_Code: { value: priorEmpCode },
+      Employee_Name: { value: readString(priorYearRecord, 'Employee_Name') },
+      Employee_Name_TH: { value: readString(priorYearRecord, 'Employee_Name_TH') },
+      Employee_Department: { value: readString(priorYearRecord, 'Employee_Department') },
+      Employee_Section: { value: readString(priorYearRecord, 'Employee_Section') },
+      Employee_Position: { value: readString(priorYearRecord, 'Employee_Position') },
+      Workflow_Status: { value: 'DRAFT' },
+      Objective_Count: { value: String(copiedCount) },
+
+      // Hoshin Snapshot from new FY
+      Hoshin_Fiscal_Year: { value: newHoshinSnapshot.Hoshin_Fiscal_Year || cleanNewFY },
+      Department_Hoshin_ID: { value: newHoshinSnapshot.Department_Hoshin_ID || '' },
+      Department_Hoshin_Title: { value: newHoshinSnapshot.Department_Hoshin_Title || '' },
+      Department_Hoshin_Snapshot: { value: newHoshinSnapshot.Department_Hoshin_Snapshot || '' },
+      Section_Hoshin_ID: { value: newHoshinSnapshot.Section_Hoshin_ID || '' },
+      Section_Hoshin_Title: { value: newHoshinSnapshot.Section_Hoshin_Title || '' },
+      Section_Hoshin_Snapshot: { value: newHoshinSnapshot.Section_Hoshin_Snapshot || '' },
+      Hoshin_Snapshot_At: { value: newHoshinSnapshot.Hoshin_Snapshot_At || '' }
+    };
+
+    // Populate flattened physical objective fields 1..10
+    for (let i = 1; i <= 10; i++) {
+      const srcObj = rawObjectives[i - 1];
+      if (i <= copiedCount && srcObj) {
+        candidateRecord[`Objective_${i}`] = { value: srcObj.title || readString(priorYearRecord, `Objective_${i}`) };
+        candidateRecord[`Action_Plan_${i}`] = { value: srcObj.description || readString(priorYearRecord, `Action_Plan_${i}`) };
+        candidateRecord[`Additional_Agreement_${i}`] = { value: readString(priorYearRecord, `Additional_Agreement_${i}`) };
+        candidateRecord[`Weight_${i}`] = { value: String(srcObj.weight || readNumber(priorYearRecord, `Weight_${i}`, 0)) };
+        candidateRecord[`Difficulty_${i}`] = { value: readString(priorYearRecord, `Difficulty_${i}`) };
+      } else {
+        candidateRecord[`Objective_${i}`] = { value: '' };
+        candidateRecord[`Action_Plan_${i}`] = { value: '' };
+        candidateRecord[`Additional_Agreement_${i}`] = { value: '' };
+        candidateRecord[`Weight_${i}`] = { value: '0' };
+        candidateRecord[`Difficulty_${i}`] = { value: '' };
+      }
+    }
 
     return {
       status: 'COPY_PREVIOUS_CANDIDATE_READY',
       newFiscalYear: cleanNewFY,
       newRecordKey,
       employeeCode: priorEmpCode,
-      copiedObjectivesCount: copiedObjectives.length,
+      copiedObjectivesCount: copiedCount,
       newRoutingSnapshot,
       newScoringConfig,
       newHoshinSnapshot,
-      planningCandidate: {
-        Fiscal_Year: { value: cleanNewFY },
-        Record_Key: { value: newRecordKey },
-        Employee_Code: { value: priorEmpCode },
-        Employee_Name: { value: readString(priorYearRecord, 'Employee_Name') },
-        Employee_Name_TH: { value: readString(priorYearRecord, 'Employee_Name_TH') },
-        Employee_Department: { value: readString(priorYearRecord, 'Employee_Department') },
-        Employee_Section: { value: readString(priorYearRecord, 'Employee_Section') },
-        Employee_Position: { value: readString(priorYearRecord, 'Employee_Position') },
-        Objectives: copiedObjectives,
-        // Reset state
-        Workflow_Status: 'DRAFT',
-        Department_Hoshin_Snapshot: newHoshinSnapshot ? newHoshinSnapshot.Department_Hoshin_Snapshot : null,
-        Section_Hoshin_Snapshot: newHoshinSnapshot ? newHoshinSnapshot.Section_Hoshin_Snapshot : null
-      }
+      duplicatePreflightResult,
+      planningCandidate: candidateRecord
     };
   }
 }

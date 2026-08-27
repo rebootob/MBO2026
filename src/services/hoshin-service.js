@@ -22,106 +22,174 @@ export class HoshinService {
   }
 
   /**
+   * Parses YYYY-MM-DD string or Date object to calendar date string YYYY-MM-DD.
+   */
+  static toCalendarDateString(dateInput) {
+    if (!dateInput) return null;
+    if (typeof dateInput === 'string') {
+      const trimmed = dateInput.trim().slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    }
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10);
+  }
+
+  /**
    * Resolves dual-level (Department + Section) PUBLISHED Hoshin records for MBO Creation.
+   * Requires exact Scope_Code / Department_Code / Section_Code authority.
    */
   static resolveHoshinForMBO({ department, section, fiscalYear, effectiveDate = new Date(), hoshinRecords = [] }) {
     if (!department || !section || !fiscalYear) {
       throw new Error('HOSHIN_RESOLUTION_INVALID: department, section, and fiscalYear are required.');
     }
 
-    const cleanDept = String(department).trim();
-    const cleanSect = String(section).trim();
+    const cleanDeptCode = String(department).trim();
+    const cleanSectCode = String(section).trim();
     const cleanFY = String(fiscalYear).trim();
-    const targetDt = new Date(effectiveDate);
+
+    const targetCalDate = this.toCalendarDateString(effectiveDate);
+    if (!targetCalDate) {
+      throw new Error('HOSHIN_RESOLUTION_INVALID: Effective date is invalid.');
+    }
 
     // 1. Filter records matching FY
-    const fyRecords = hoshinRecords.filter(rec => {
-      const fy = readString(rec, 'Fiscal_Year');
-      return fy === cleanFY;
+    const fyRecords = hoshinRecords.filter(rec => readString(rec, 'Fiscal_Year') === cleanFY);
+
+    // 2. Check for organization code mismatch first across FY records
+    const deptScopeRecords = fyRecords.filter(rec => {
+      const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Level');
+      return scopeType === 'DEPARTMENT';
     });
 
-    // Check status and date range
-    const activeRecords = [];
-    for (const rec of fyRecords) {
-      const canonicalStatus = this.getCanonicalHoshinStatus(rec);
+    const sectScopeRecords = fyRecords.filter(rec => {
+      const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Level');
+      return scopeType === 'SECTION';
+    });
 
-      const effFromStr = readString(rec, 'Effective_From');
-      const effToStr = readString(rec, 'Effective_To');
-
-      if (effFromStr || effToStr) {
-        const fromDt = effFromStr ? new Date(effFromStr) : null;
-        const toDt = effToStr ? new Date(effToStr) : null;
-        if ((fromDt && targetDt < fromDt) || (toDt && targetDt > toDt)) {
-          if (canonicalStatus === 'PUBLISHED') {
-            // Evaluated outside effective period
-          }
-          continue;
-        }
-      }
-
-      if (canonicalStatus === 'PUBLISHED') {
-        activeRecords.push(rec);
+    // Check if Department records exist but codes don't match (e.g. name only match)
+    if (deptScopeRecords.length > 0) {
+      const hasCodeMatch = deptScopeRecords.some(rec => {
+        const scopeCode = readString(rec, 'Scope_Code');
+        const deptCode = readString(rec, 'Department_Code') || readString(rec, 'Department');
+        return scopeCode === cleanDeptCode || deptCode === cleanDeptCode;
+      });
+      if (!hasCodeMatch) {
+        throw new Error(`ORGANIZATION_MISMATCH: Department code '${cleanDeptCode}' does not match Hoshin record Scope_Code/Department_Code.`);
       }
     }
 
-    // 2. Department Hoshin resolution
-    const deptMatches = activeRecords.filter(rec => {
-      const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Hoshin_Level') || readString(rec, 'Level');
-      const scopeCode = readString(rec, 'Scope_Code');
-      const scopeName = readString(rec, 'Scope_Name');
-      const deptCode = readString(rec, 'Department_Code') || readString(rec, 'Department');
-      const deptName = readString(rec, 'Department_Name');
+    if (sectScopeRecords.length > 0) {
+      const hasCodeMatch = sectScopeRecords.some(rec => {
+        const scopeCode = readString(rec, 'Scope_Code');
+        const sectCode = readString(rec, 'Section_Code') || readString(rec, 'Section');
+        return scopeCode === cleanSectCode || sectCode === cleanSectCode;
+      });
+      if (!hasCodeMatch) {
+        throw new Error(`ORGANIZATION_MISMATCH: Section code '${cleanSectCode}' does not match Hoshin record Scope_Code/Section_Code.`);
+      }
+    }
 
-      return (scopeType === 'DEPARTMENT') &&
-        (scopeCode === cleanDept || scopeName === cleanDept || deptCode === cleanDept || deptName === cleanDept);
-    });
+    // 3. Department Hoshin resolution with calendar-date effective range
+    const deptMatches = [];
+    let deptOutsideEffectiveDate = false;
+    let deptNotPublished = false;
+
+    for (const rec of deptScopeRecords) {
+      const scopeCode = readString(rec, 'Scope_Code');
+      const deptCode = readString(rec, 'Department_Code') || readString(rec, 'Department');
+      const isCodeMatch = (scopeCode === cleanDeptCode || deptCode === cleanDeptCode);
+
+      if (!isCodeMatch) continue;
+
+      const canonicalStatus = this.getCanonicalHoshinStatus(rec);
+      if (canonicalStatus !== 'PUBLISHED') {
+        deptNotPublished = true;
+        continue;
+      }
+
+      // Check effective dates inclusively by calendar date
+      const effFromCal = this.toCalendarDateString(readString(rec, 'Effective_From'));
+      const effToCal = this.toCalendarDateString(readString(rec, 'Effective_To'));
+
+      if (effFromCal && targetCalDate < effFromCal) {
+        deptOutsideEffectiveDate = true;
+        continue;
+      }
+      if (effToCal && targetCalDate > effToCal) {
+        deptOutsideEffectiveDate = true;
+        continue;
+      }
+
+      deptMatches.push(rec);
+    }
 
     if (deptMatches.length === 0) {
-      const unpublishedDept = fyRecords.find(rec => {
-        const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Level');
-        const deptCode = readString(rec, 'Department_Code') || readString(rec, 'Department');
-        const deptName = readString(rec, 'Department_Name');
-        return scopeType === 'DEPARTMENT' && (deptCode === cleanDept || deptName === cleanDept);
-      });
-
-      if (unpublishedDept) {
-        const statusStr = this.getCanonicalHoshinStatus(unpublishedDept);
-        if (statusStr !== 'PUBLISHED') {
-          throw new Error(`HOSHIN_NOT_PUBLISHED: Department Hoshin for ${cleanDept} FY ${cleanFY} is in status ${statusStr}.`);
-        }
+      if (deptOutsideEffectiveDate) {
+        throw new Error(`HOSHIN_OUTSIDE_EFFECTIVE_DATE: Department Hoshin for ${cleanDeptCode} is outside effective period.`);
       }
-      throw new Error(`NO_DEPARTMENT_HOSHIN: No PUBLISHED Department Hoshin found for ${cleanDept} FY ${cleanFY}.`);
+      if (deptNotPublished) {
+        throw new Error(`HOSHIN_NOT_PUBLISHED: Department Hoshin for ${cleanDeptCode} is not in PUBLISHED status.`);
+      }
+      throw new Error(`NO_DEPARTMENT_HOSHIN: No PUBLISHED Department Hoshin found for ${cleanDeptCode} FY ${cleanFY}.`);
     }
 
     if (deptMatches.length > 1) {
-      throw new Error(`MULTIPLE_ACTIVE_HOSHIN: Multiple active PUBLISHED Department Hoshins found for ${cleanDept} FY ${cleanFY}.`);
+      throw new Error(`MULTIPLE_ACTIVE_HOSHIN: Multiple active PUBLISHED Department Hoshins found for ${cleanDeptCode} FY ${cleanFY}.`);
     }
 
     const deptHoshin = deptMatches[0];
 
-    // 3. Section Hoshin resolution
-    const sectMatches = activeRecords.filter(rec => {
-      const scopeType = readString(rec, 'Scope_Type') || readString(rec, 'Level');
-      const scopeCode = readString(rec, 'Scope_Code');
-      const scopeName = readString(rec, 'Scope_Name');
-      const sectCode = readString(rec, 'Section_Code') || readString(rec, 'Section');
-      const sectName = readString(rec, 'Section_Name');
+    // 4. Section Hoshin resolution
+    const sectMatches = [];
+    let sectOutsideEffectiveDate = false;
+    let sectNotPublished = false;
 
-      return (scopeType === 'SECTION') &&
-        (scopeCode === cleanSect || scopeName === cleanSect || sectCode === cleanSect || sectName === cleanSect);
-    });
+    for (const rec of sectScopeRecords) {
+      const scopeCode = readString(rec, 'Scope_Code');
+      const sectCode = readString(rec, 'Section_Code') || readString(rec, 'Section');
+      const isCodeMatch = (scopeCode === cleanSectCode || sectCode === cleanSectCode);
+
+      if (!isCodeMatch) continue;
+
+      const canonicalStatus = this.getCanonicalHoshinStatus(rec);
+      if (canonicalStatus !== 'PUBLISHED') {
+        sectNotPublished = true;
+        continue;
+      }
+
+      const effFromCal = this.toCalendarDateString(readString(rec, 'Effective_From'));
+      const effToCal = this.toCalendarDateString(readString(rec, 'Effective_To'));
+
+      if (effFromCal && targetCalDate < effFromCal) {
+        sectOutsideEffectiveDate = true;
+        continue;
+      }
+      if (effToCal && targetCalDate > effToCal) {
+        sectOutsideEffectiveDate = true;
+        continue;
+      }
+
+      sectMatches.push(rec);
+    }
 
     if (sectMatches.length === 0) {
-      throw new Error(`NO_SECTION_HOSHIN: No PUBLISHED Section Hoshin found for ${cleanSect} FY ${cleanFY}.`);
+      if (sectOutsideEffectiveDate) {
+        throw new Error(`HOSHIN_OUTSIDE_EFFECTIVE_DATE: Section Hoshin for ${cleanSectCode} is outside effective period.`);
+      }
+      if (sectNotPublished) {
+        throw new Error(`HOSHIN_NOT_PUBLISHED: Section Hoshin for ${cleanSectCode} is not in PUBLISHED status.`);
+      }
+      throw new Error(`NO_SECTION_HOSHIN: No PUBLISHED Section Hoshin found for ${cleanSectCode} FY ${cleanFY}.`);
     }
 
     if (sectMatches.length > 1) {
-      throw new Error(`MULTIPLE_ACTIVE_HOSHIN: Multiple active PUBLISHED Section Hoshins found for ${cleanSect} FY ${cleanFY}.`);
+      throw new Error(`MULTIPLE_ACTIVE_HOSHIN: Multiple active PUBLISHED Section Hoshins found for ${cleanSectCode} FY ${cleanFY}.`);
     }
 
     const sectHoshin = sectMatches[0];
 
-    // 4. Construct clean normalized snapshot for App 794
+    // 5. Construct clean normalized snapshot for App 794
     const nowIso = new Date().toISOString();
     const deptTitle = readString(deptHoshin, 'Hoshin_TH') || readString(deptHoshin, 'Hoshin_EN') || readString(deptHoshin, 'Title');
     const sectTitle = readString(sectHoshin, 'Hoshin_TH') || readString(sectHoshin, 'Hoshin_EN') || readString(sectHoshin, 'Title');
@@ -136,8 +204,8 @@ export class HoshinService {
         Department_Hoshin_Title: deptTitle,
         Department_Hoshin_Snapshot: JSON.stringify({
           hoshinKey: readString(deptHoshin, 'Hoshin_Key'),
-          departmentCode: readString(deptHoshin, 'Department_Code'),
-          departmentName: readString(deptHoshin, 'Department_Name'),
+          departmentCode: readString(deptHoshin, 'Department_Code') || readString(deptHoshin, 'Scope_Code'),
+          departmentName: readString(deptHoshin, 'Department_Name') || readString(deptHoshin, 'Scope_Name'),
           hoshinTH: readString(deptHoshin, 'Hoshin_TH'),
           hoshinEN: readString(deptHoshin, 'Hoshin_EN'),
           version: readString(deptHoshin, 'Version')
@@ -146,8 +214,8 @@ export class HoshinService {
         Section_Hoshin_Title: sectTitle,
         Section_Hoshin_Snapshot: JSON.stringify({
           hoshinKey: readString(sectHoshin, 'Hoshin_Key'),
-          sectionCode: readString(sectHoshin, 'Section_Code'),
-          sectionName: readString(sectHoshin, 'Section_Name'),
+          sectionCode: readString(sectHoshin, 'Section_Code') || readString(sectHoshin, 'Scope_Code'),
+          sectionName: readString(sectHoshin, 'Section_Name') || readString(sectHoshin, 'Scope_Name'),
           hoshinTH: readString(sectHoshin, 'Hoshin_TH'),
           hoshinEN: readString(sectHoshin, 'Hoshin_EN'),
           version: readString(sectHoshin, 'Version')

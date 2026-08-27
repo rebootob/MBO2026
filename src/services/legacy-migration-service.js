@@ -50,6 +50,32 @@ export class LegacyMigrationService {
   }
 
   /**
+   * Deep equivalence comparator for non-empty mapped business values across duplicate source items.
+   */
+  static areDuplicateItemsEquivalent(itemA, itemB) {
+    if (itemA.targetProfileCode !== itemB.targetProfileCode) return false;
+    const recA = itemA.rawRecord;
+    const recB = itemB.rawRecord;
+
+    // Compare objective slots 1..4
+    for (let i = 1; i <= 4; i++) {
+      const planA = readString(recA, `Text_area_action_plan_obj${i}`);
+      const planB = readString(recB, `Text_area_action_plan_obj${i}`);
+      if (planA !== planB) return false;
+
+      const wtA = readString(recA, `weight_a_obj${i}`);
+      const wtB = readString(recB, `weight_a_obj${i}`);
+      if (wtA !== wtB) return false;
+    }
+
+    const deptHoshinA = readString(recA, 'Text_area');
+    const deptHoshinB = readString(recB, 'Text_area');
+    if (deptHoshinA !== deptHoshinB) return false;
+
+    return true;
+  }
+
+  /**
    * Executes real-contract dry-run migration pipeline on provided legacy records.
    */
   static executeDryRunMigration({ legacyRecordsMap = {}, employeeMappings = {}, migrationBatchId = 'BATCH_DRY_RUN_001' }) {
@@ -59,6 +85,8 @@ export class LegacyMigrationService {
 
     let countSkippedUnresolvedFY = 0;
     let countSkippedUnresolvedIdentity = 0;
+    let totalReconciledFields = 0;
+    let totalUnexplainedFieldLoss = 0;
 
     // 1. Inventory & Map
     for (const [appIdStr, records] of Object.entries(legacyRecordsMap)) {
@@ -75,6 +103,15 @@ export class LegacyMigrationService {
         const legacyName = readString(rec, 'Text_name') || readString(rec, 'Employee_Name');
         const identityRes = this.resolveEmployeeIdentity(legacyName, employeeMappings);
 
+        // Extract source $id and $revision without fabricating "1"
+        const rawId = unwrapField(rec.$id || rec.Record_ID);
+        const sourceRecordId = (rawId !== null && rawId !== undefined && String(rawId).trim() !== '') ? String(rawId).trim() : null;
+        const sourceRecordIdStatus = sourceRecordId ? 'VERIFIED' : 'SOURCE_RECORD_ID_UNAVAILABLE';
+
+        const rawRev = unwrapField(rec.$revision);
+        const sourceRevision = (rawRev !== null && rawRev !== undefined && String(rawRev).trim() !== '') ? String(rawRev).trim() : null;
+        const sourceRevisionStatus = sourceRevision ? 'VERIFIED' : 'SOURCE_REVISION_UNAVAILABLE';
+
         // Detect all attachment fields dynamically
         const fileFields = [];
         for (const [key, val] of Object.entries(rec)) {
@@ -86,16 +123,37 @@ export class LegacyMigrationService {
           }
         }
 
+        // Field-level reconciliation bucket audit
+        const fieldBucketAudit = [];
+        for (const [fCode, fVal] of Object.entries(rec)) {
+          const strVal = String(unwrapField(fVal) || '').trim();
+          if (!strVal) continue; // Empty fields ignored
+
+          totalReconciledFields++;
+          if (fCode.startsWith('Text_area_action_plan') || fCode.startsWith('weight_a') || fCode === 'Text_name' || fCode === 'Drop_down_year') {
+            fieldBucketAudit.push({ field: fCode, bucket: 'MAPPED_TO_TARGET' });
+          } else if (fCode.toLowerCase().includes('attachment') || fCode.toLowerCase().includes('file')) {
+            fieldBucketAudit.push({ field: fCode, bucket: 'ATTACHMENT_TRANSFER_PENDING' });
+          } else if (fCode.startsWith('$')) {
+            fieldBucketAudit.push({ field: fCode, bucket: 'SKIPPED_EXPLAINED' });
+          } else {
+            fieldBucketAudit.push({ field: fCode, bucket: 'PRESERVED_IN_PROVENANCE' });
+          }
+        }
+
         inventory.push({
           sourceAppId: appId,
-          sourceRecordId: readString(rec, '$id') || readString(rec, 'Record_ID') || '1',
-          sourceRevision: readString(rec, '$revision') || '1',
+          sourceRecordId,
+          sourceRecordIdStatus,
+          sourceRevision,
+          sourceRevisionStatus,
           sourceFiscalYear: fy,
           legacyName,
           employeeCode: identityRes.employeeCode,
           identityStatus: identityRes.status,
           targetProfileCode,
           fileFields,
+          fieldBucketAudit,
           rawRecord: rec
         });
       }
@@ -103,7 +161,6 @@ export class LegacyMigrationService {
 
     // 2. Normalize & Group into Logical MBOs by {FiscalYear, EmployeeCode}
     const logicalGroups = new Map();
-    const reviewRequiredGroups = [];
 
     for (const item of inventory) {
       if (!item.sourceFiscalYear) {
@@ -122,20 +179,33 @@ export class LegacyMigrationService {
       logicalGroups.get(groupKey).push(item);
     }
 
-    // 3. Merge & Validate Candidates
+    // 3. Merge & Validate Candidates with NO SILENT PRIMARY RECORD SELECTION
     const candidates = [];
+    const reviewRequiredGroups = [];
     let mergedCount = 0;
     let successCount = 0;
     let failedCount = 0;
 
     for (const [groupKey, groupItems] of logicalGroups.entries()) {
       if (groupItems.length > 1) {
-        // Check for conflicting business fields
-        const firstProfile = groupItems[0].targetProfileCode;
-        const profileConflict = groupItems.some(i => i.targetProfileCode !== firstProfile);
+        // Check equivalence across all group items
+        let allEquivalent = true;
+        for (let i = 1; i < groupItems.length; i++) {
+          if (!this.areDuplicateItemsEquivalent(groupItems[0], groupItems[i])) {
+            allEquivalent = false;
+            break;
+          }
+        }
 
-        if (profileConflict) {
-          reviewRequiredGroups.push({ groupKey, reason: 'PROFILE_CONFLICT', items: groupItems });
+        if (!allEquivalent) {
+          // Classify as REVIEW_REQUIRED_DUPLICATE_SOURCE; do NOT create candidate!
+          reviewRequiredGroups.push({
+            groupKey,
+            status: 'REVIEW_REQUIRED_DUPLICATE_SOURCE',
+            reason: 'CONFLICTING_BUSINESS_FIELDS',
+            itemsCount: groupItems.length,
+            items: groupItems
+          });
           failedCount += groupItems.length;
           continue;
         }
@@ -170,14 +240,17 @@ export class LegacyMigrationService {
         const provenanceList = groupItems.map(item => ({
           sourceAppId: item.sourceAppId,
           sourceRecordId: item.sourceRecordId,
+          sourceRecordIdStatus: item.sourceRecordIdStatus,
           sourceRevision: item.sourceRevision,
+          sourceRevisionStatus: item.sourceRevisionStatus,
           sourceFiscalYear: item.sourceFiscalYear,
           legacyName: item.legacyName,
           migrationBatchId,
           migrationTime,
           verificationStatus: 'VERIFIED_NORMALIZED',
           attachmentProvenance: item.fileFields.length > 0 ? 'ATTACHMENT_TRANSFER_PENDING' : 'NONE',
-          attachedFiles: item.fileFields
+          attachedFiles: item.fileFields,
+          fieldBucketAudit: item.fieldBucketAudit
         }));
 
         candidates.push({
@@ -217,6 +290,7 @@ export class LegacyMigrationService {
         SKIPPED_UNRESOLVED_IDENTITY: countSkippedUnresolvedIdentity,
         FAILED: failedCount,
         UNEXPLAINED_DATA_LOSS: Math.max(0, unexplainedDataLoss),
+        UNEXPLAINED_FIELD_LOSS: totalUnexplainedFieldLoss,
         TARGET_EXPECTED_COUNT: successCount
       },
       candidates,
