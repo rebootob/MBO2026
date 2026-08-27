@@ -1,91 +1,94 @@
-# AI ACTIVE TASK — D1 LIVE CUTOVER — STAGE A COMPLETION ONLY
+# AI ACTIVE TASK — D1 LIVE CUTOVER — USER PRINCIPAL IDENTIFICATION GATE
 
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity
 > Repository: `rebootob/MBO2026`
 > Working branch: `ai/antigravity-wp002c`
 > Accepted D1 source commit: `63796999a321a24e1cbd29ceaad82b43980fe8ea`
+> Independently reviewed Stage A evidence commit: `2eb1e1a3eb0a1d54e048cfd935093ec284412a5d`
 > User authorization: **D1 LIVE CUTOVER APPROVED**
-> Independently reviewed Stage A partial-evidence commit: `740767082c876a275ac7a709b15763e971b5e926`
-> Mode: READ-ONLY LIVE PRECHECK COMPLETION ONLY / NO ACL WRITE / NO DEPLOY
+> Mode: CONTROL GATE / WAITING EXACT EMPLOYEE KINTONE PRINCIPAL / NO LIVE WRITE / NO DEPLOY
 
-## 0. REVIEW RESULT
+## 0. INDEPENDENT REVIEW — STAGE A ACCEPTED AS BLOCKED PRECHECK
 
-Accepted evidence already captured:
-- App801 ACL backup exists and shows CREATOR recovery rights plus GROUP:everyone denied;
-- App794 customization backup exists and shows desktop JS `mbo-employee-app.js`, desktop CSS `mbo-employee.css`, revision 40;
-- no App801 ACL write or App794 deploy evidence exists in Git after authorization.
+Accepted live facts from Stage A:
 
-Stage A is INCOMPLETE because the repository does not yet contain proof of:
-1. exact ordinary/shared employee Kintone USER code;
-2. App801 credential readiness/counts, especially 0118 and 0119;
-3. mass-provisioning requirement classification;
-4. explicit App794 rollback-ready conclusion.
+```text
+APP801_ACL_BACKUP_READY = YES
+APP801_RECORD_ACL_CURRENT = NONE
+APP801_ACL_CHANGE_EXECUTED = 0
+APP801_CREDENTIAL_COUNT = 0
+APP801_DUPLICATE_EMPLOYEE_CODES = 0
+APP801_MALFORMED_CREDENTIAL_COUNT = 0
+CREDENTIAL_0118_READY = NO
+CREDENTIAL_0119_READY = NO
+MASS_PROVISIONING_REQUIRED = YES
+APP53_ACTIVE_EMPLOYEE_CANDIDATES = 281
+APP794_ROLLBACK_READY = YES
+KINTONE_WRITES_EXECUTED = 0
+KINTONE_DEPLOY_EXECUTED = 0
+```
 
-Therefore Stage B/C MUST NOT execute yet.
+Stage A also reported:
 
-## 1. EXECUTE ONLY STAGE A COMPLETION
+```text
+SHARED_EMPLOYEE_KINTONE_USER_CODE = NOT_PROVEN
+KINTONE_USER_ACCOUNT_COUNT_OBSERVED = 49
+```
 
-Perform READ-ONLY Kintone discovery only.
+The statement "no shared account exists" is NOT accepted as proven solely from the user-directory count. 281 active employee candidates vs 49 Kintone accounts leaves the actual ordinary-employee access model unresolved.
 
-### A1 — Prove exact shared employee Kintone principal
-Use live Kintone/account evidence to identify the exact Kintone USER code used by the ordinary/shared employee account.
+Therefore:
 
-Do NOT infer it from employee codes, names, screenshots, old docs, or admin account identity.
+```text
+STAGE_A_DISCOVERY = COMPLETE
+D1_LIVE_CUTOVER = BLOCKED_ON_EMPLOYEE_KINTONE_PRINCIPAL
+```
 
-Required output:
-`SHARED_EMPLOYEE_KINTONE_USER_CODE = <exact code> | NOT_PROVEN`
+## 1. REQUIRED USER FACT BEFORE NEXT LIVE WRITE
 
-If NOT_PROVEN, stop with `D1_STATUS = BLOCKED_PRECHECK`.
+Control Plane needs the exact Kintone login account / USER code used by an ordinary employee when entering App794.
 
-### A2 — App801 ACL read-back
-Re-read current App801 app ACL + record ACL and compare with the existing backup.
+Acceptable proof is ONE of:
+1. user supplies the exact ordinary/shared Kintone username/code;
+2. a screenshot or value from `kintone.getLoginUser().code` while logged in as the ordinary employee account;
+3. equivalent direct live evidence that unambiguously identifies the principal.
 
-Required:
-- CREATOR recovery rights preserved;
-- GROUP:everyone remains denied;
-- record ACL state explicitly stated.
+Do NOT guess from the 49-user directory.
+Do NOT use `admin-form` as employee authority.
+Do NOT grant `GROUP:everyone`.
 
-NO WRITE.
+If the access model is mixed or there are multiple shared employee accounts, list the exact principal(s) and stop for Control Plane design before ACL change.
 
-### A3 — App801 credential readiness
-READ ONLY. Report structural information only; never reveal Password_Hash values.
+## 2. CREDENTIAL PROVISIONING FACT
 
-Required:
-- `APP801_CREDENTIAL_COUNT = <number>`
-- `APP801_DUPLICATE_EMPLOYEE_CODES = <count + codes if any>`
-- `APP801_MALFORMED_CREDENTIAL_COUNT = <number>`
-- `CREDENTIAL_0118_READY = YES|NO`
-- `CREDENTIAL_0119_READY = YES|NO`
-- `MASS_PROVISIONING_REQUIRED = YES|NO|UNKNOWN`
+App801 currently contains 0 credential records, therefore D1 cannot function live until credentials exist.
 
-A credential is structurally ready only if the expected Employee_Code exists exactly once and required auth state is valid enough for D1 browser login. Do not print the hash itself.
+Current approved design remains:
+- source employee candidates from App53;
+- default initial password = Employee_Code;
+- store PBKDF2-SHA256 hash only: `pbkdf2$100000$<saltHex>$<hashHex>`;
+- `Force_Password_Change = YES`;
+- `Account_Status = ACTIVE`;
+- no plaintext password persistence;
+- duplicate/invalid Employee_Code fail closed.
 
-If 0118 or 0119 is not ready, prepare an exact provisioning DRY-RUN plan only and stop. Do not create/update credentials.
+However, bulk creation of the 281 candidate credentials is NOT authorized by this control-gate task.
+A separate exact provisioning write package will be issued after the employee Kintone principal/access model is resolved.
 
-### A4 — App794 customization rollback readiness
-Re-read current customization and compare with `scratch/app794_customize_backup.json`.
-
-Required:
-`APP794_CURRENT_CUSTOMIZATION = <exact slots/files>`
-`APP794_ROLLBACK_READY = YES|NO`
-
-Do not upload/deploy anything.
-
-## 2. STRICTLY FORBIDDEN THIS ROUND
+## 3. STRICTLY FORBIDDEN WHILE THIS GATE IS OPEN
 
 - NO App801 ACL write
-- NO record permission write
-- NO credential create/update/reset
+- NO App801 credential create/update/reset
 - NO App794 customization upload/deploy
 - NO App794 ACL change
+- NO GROUP:everyone broadening
 - NO App53/795/796 write
 - NO migration
-- NO D2-D7 work
-- NO external gateway/server
-- NO GROUP:everyone broadening
+- NO D2-D7 implementation
+- NO external server/gateway
 
-Mandatory counters:
+Mandatory counters remain:
 
 ```text
 APP801_ACL_CHANGE_EXECUTED = 0
@@ -93,50 +96,39 @@ KINTONE_WRITES_EXECUTED = 0
 KINTONE_DEPLOY_EXECUTED = 0
 ```
 
-## 3. GIT / EVIDENCE RULE
+## 4. NEXT CONTROL SEQUENCE AFTER PRINCIPAL IS PROVEN
 
-Do not commit secrets, passwords, raw Password_Hash values, API tokens, cookies, session material, or confidential credentials.
+Once the exact employee Kintone principal/access model is proven, ChatGPT will issue the next minimum package in this order:
 
-Prefer one sanitized evidence file under `project-docs/` rather than more raw scratch dumps.
+1. exact App801 credential provisioning authorization/package;
+2. provision + reconcile credential records;
+3. minimum App801 ACL cutover for the proven principal(s);
+4. deploy accepted App794 D1 customization;
+5. manual UAT 0118/0119;
+6. independent review and D1 closure.
 
-Commit + push only to `ai/antigravity-wp002c`.
+Do not skip the manual UAT gate.
 
-## 4. FINAL REPORT
+## 5. CURRENT STATUS
 
 ```text
-HEAD_BEFORE =
-HEAD_AFTER =
-
-SHARED_EMPLOYEE_KINTONE_USER_CODE =
-APP801_ACL_BACKUP_READY = YES
-APP801_RECORD_ACL_CURRENT =
-APP801_ACL_CHANGE_EXECUTED = 0
-
-APP801_CREDENTIAL_COUNT =
-APP801_DUPLICATE_EMPLOYEE_CODES =
-APP801_MALFORMED_CREDENTIAL_COUNT =
-CREDENTIAL_0118_READY =
-CREDENTIAL_0119_READY =
-MASS_PROVISIONING_REQUIRED =
-
-APP794_CURRENT_CUSTOMIZATION =
-APP794_ROLLBACK_READY =
-
-KINTONE_READS_EXECUTED =
-KINTONE_WRITES_EXECUTED = 0
-KINTONE_DEPLOY_EXECUTED = 0
-
-NEXT_STAGE_ELIGIBLE = YES|NO
-D1_STATUS = STAGE_A_PASS_PENDING_INDEPENDENT_REVIEW | BLOCKED_PRECHECK
+D1_SOURCE = PASS / ACCEPTED
+D1_STAGE_A = COMPLETE / BLOCKED_PRECHECK FACTS ACCEPTED
+D1_EMPLOYEE_KINTONE_PRINCIPAL = NOT_PROVEN
+D1_CREDENTIALS = NOT_PROVISIONED
+D1_APP801_ACL_CUTOVER = NOT_STARTED
+D1_APP794_DEPLOY = NOT_STARTED
+D1_MANUAL_UAT = NOT_STARTED
+D1_STATUS = BLOCKED_USER_PRINCIPAL_IDENTIFICATION
 ```
 
-STOP after commit + push. Do not self-start Stage B even if `NEXT_STAGE_ELIGIBLE = YES`. ChatGPT performs independent review first.
+Execution Plane must STOP until Control Plane supplies a new task.
 
 ---
 
 # PROJECT CONTROL
 
-- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / SOURCE PASS / LIVE CUTOVER AUTHORIZED / STAGE A COMPLETION
+- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / SOURCE PASS / STAGE A COMPLETE / BLOCKED ON EMPLOYEE KINTONE PRINCIPAL
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 Apps 283,310,305,643,307,640,715,716 -> App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 App800 HR Control Center end-to-end lifecycle = IN_PROGRESS
