@@ -1,206 +1,221 @@
-# AI ACTIVE TASK — D1 KINTONE-ONLY FINAL RECONCILIATION: MINIMAL LOGIN + APP801 ACL FACTS
+# AI ACTIVE TASK — D1 KINTONE-ONLY SOURCE IMPLEMENTATION: MBO LOGIN GATE
 
 > Control Plane: ChatGPT
 > Execution Plane: Codex (temporary replacement for Antigravity)
 > Repository: `rebootob/MBO2026`
 > Canonical integration branch: `ai/antigravity-wp002c`
 > Codex execution branch: `ai/codex-d1c3b`
-> Reviewed plan commit: `1a66bda60e78465406dab4393f2f6aabac848711`
-> Mode: MINIMUM KINTONE-ONLY CLOSURE / READ-ONLY FACTS / NO LIVE WRITE / NO DEPLOY
+> Independently reviewed reconciliation commit: `cc9cc537a42d484428d26905240087582bb1970a`
+> Mode: SOURCE + LOCAL TESTS ONLY / NO LIVE KINTONE WRITE / NO ACL CHANGE / NO DEPLOY
 
-## 0. INDEPENDENT REVIEW RESULT
+## 0. INDEPENDENT REVIEW RESULT — RECONCILIATION ACCEPTED
 
-Accepted from the Codex plan:
-- Kintone-only architecture is correctly recognized;
-- no external gateway/server/VM is required by the user;
-- MBO Login must appear on every MBO entry;
-- successful login binds Employee Self to the authenticated MBO Employee_Code;
-- Employee ID must not be entered/selected again after login;
-- existing App53 lookup and App794 Employee_Code scoping paths were identified;
-- current App801 physical auth fields were read with one READ-ONLY GET;
-- no Kintone write/deploy occurred.
-
-NOT accepted from the plan:
-1. The conclusion that all 9 old server/session/activation fields are required is over-scoped for the user's new architecture.
-2. The plan did not prove current App801 App ACL / Record ACL for the actual shared employee Kintone principal. Browser-only authentication cannot work unless the browser principal can read the App801 credential record, and password change / failed-attempt updates cannot work unless it can update the required fields.
-
-GitHub has no CI/workflow/status evidence for the docs-only plan. Do not claim CI PASS.
-
-## 1. USER REQUIREMENT — MINIMAL, FROZEN
-
-Production architecture is KINTONE ONLY.
-
-Required UX:
-
-```text
-Open MBO
-  -> ask MBO Username / Password every time
-  -> Username = Employee_Code
-  -> validate against App801 credential data
-  -> success binds current in-page Employee Self context = authenticated Employee_Code
-  -> auto-load App53 + own App794
-  -> no Employee ID input/selector after login
-  -> leaving/re-entering MBO requires login again
-```
-
-No external Node Gateway, Server, VM, external hosting, external DB, reverse proxy, or external auth service.
-
-## 2. MINIMAL AUTH CONTRACT — DO NOT CARRY SERVER SESSION DESIGN FORWARD
-
-For this chosen architecture:
-- authenticated MBO context is PAGE-MEMORY ONLY;
-- no persisted MBO session token is required;
-- no Activation Code is required unless the user explicitly requests it later;
-- no external/server session store is required;
-- password expiry is not a D1 closure requirement unless an existing physical field already supports it and no extra schema is needed.
-
-Therefore these old server/runtime fields are NOT required by the current user scope and must not be requested merely to preserve the abandoned gateway design:
-
-```text
-Activation_Code_Hash
-Activation_Expires_At
-Activation_Used_At
-Session_Token_Hash
-Session_Expires_At
-Session_Requires_Password_Change
-Session_Data_Authorized
-Session_Kintone_User_Code
-```
-
-`Password_Expires_At` is optional/non-blocking for the current minimal login requirement; do not create it solely for D1 unless separately justified and authorized.
-
-Current App801 fields already observed and relevant to the minimal login include:
-
-```text
-Employee_Code
-Password_Hash
-Password_Algorithm
-Password_Changed_At
-Force_Password_Change
-Account_Status
-Failed_Attempts
-Locked_Until
-Last_Login_At
-Credential_Version
-```
-
-MFA fields are not part of this D1 package.
-
-## 3. PASSWORD VERIFICATION — BROWSER-SAFE, SAME HASH FORMAT
-
-Existing repository hash format is PBKDF2 SHA-256:
-
-```text
-pbkdf2$100000$<saltHex>$<hashHex>
-```
-
-The later Kintone-only implementation must use browser Web Crypto (`crypto.subtle`, PBKDF2/SHA-256) or equivalent browser-native API to verify/create the SAME format.
-
-Do NOT import `node:crypto` modules into Kintone browser customization.
-Do NOT downgrade to plaintext password storage.
-Do NOT log/render `Password_Hash`.
-
-## 4. IMMEDIATE TASK — EXACT APP801 ACL FACTS ONLY + CORRECTED MINIMAL PLAN
-
-Perform the minimum READ-ONLY Kintone inspection needed, preferably <= 2 additional GETs:
-
-1. App801 App ACL / app permissions.
-2. App801 Record ACL / record permissions.
-
-Report exact entities/principal codes and rights. Do not guess.
-
-Determine specifically for the shared/common employee Kintone principal/group:
-- can it READ App801 records?
-- can it UPDATE App801 records?
-
-This matters because Kintone browser customization runs with the current Kintone user's native permissions.
-
-If employee browser READ is denied:
-```text
-KINTONE_ONLY_LOGIN_RUNTIME = BLOCKED_APP801_BROWSER_READ
-```
-
-If employee browser READ is allowed, explicitly record:
-```text
-APP801_HASH_DIRECT_REST_EXPOSURE = YES_UNDER_SHARED_PRINCIPAL
-```
-
-If employee browser UPDATE is allowed, explicitly record:
-```text
-APP801_CREDENTIAL_DIRECT_REST_MUTATION_RISK = YES_UNDER_SHARED_PRINCIPAL
-```
-
-These are known limitations of the user's chosen Kintone-only/shared-account design. Do not hide or mislabel them as hard isolation.
-
-## 5. RECONCILE SCHEMA REQUIREMENT
-
-Do not reuse the old 9-field server manifest as a requirement.
-
-For the user's minimal Kintone-only login, determine from the current physical App801 fields whether schema write is actually needed.
-
-Expected result unless exact evidence proves otherwise:
-
-```text
-KINTONE_SCHEMA_WRITE_REQUIRED = NO
-```
-
-If you believe a field is truly required, list only that field and explain why the current UX cannot work without it.
-
-## 6. SOURCE IMPLEMENTATION PLAN — KEEP SMALL
-
-Do not implement yet. Correct/freeze the later source change set only.
-
-Preferred minimal source plan:
-- `src/ui/mbo-kintone-login-gate.js` — login/change-password/logout UI and page-memory authenticated Employee_Code;
-- `src/ui/mbo-kintone-auth-adapter.js` — browser Kintone API + WebCrypto PBKDF2 adapter, no Node imports;
-- `src/main-mbo-app.js` — gate before Employee Self render; App53/App794 auto-load from authenticated Employee_Code;
-- `src/ui/employee-part-a-ui.js` — no Employee_Code lookup/input for authenticated Employee Self;
-- existing build/deploy path only when later separately authorized.
-
-No external gateway/server runtime changes.
-
-## 7. REQUIRED REPORT
+Accepted live facts:
 
 ```text
 KINTONE_ONLY_ARCHITECTURE = ACCEPTED
 EXTERNAL_GATEWAY_REQUIRED = NO
-MBO_LOGIN_EVERY_ENTRY = YES
-EMPLOYEE_ID_REENTRY_AFTER_LOGIN = NO
 PAGE_MEMORY_AUTH_CONTEXT = YES
 ACTIVATION_CODE_REQUIRED = NO
 PERSISTED_SESSION_FIELDS_REQUIRED = NO
+KINTONE_SCHEMA_WRITE_REQUIRED = NO
 
-APP801_AUTH_SOURCE = <exact existing fields>
-APP801_APP_ACL_CURRENT = <exact entities + rights>
-APP801_RECORD_ACL_CURRENT = <exact rules or NONE>
-SHARED_EMPLOYEE_CAN_READ_APP801 = YES | NO | NOT_PROVEN
-SHARED_EMPLOYEE_CAN_UPDATE_APP801 = YES | NO | NOT_PROVEN
-APP801_HASH_DIRECT_REST_EXPOSURE = YES_UNDER_SHARED_PRINCIPAL | NO | NOT_PROVEN
-APP801_CREDENTIAL_DIRECT_REST_MUTATION_RISK = YES_UNDER_SHARED_PRINCIPAL | NO | NOT_PROVEN
-
-KINTONE_ONLY_LOGIN_RUNTIME = READY_FOR_SOURCE_IMPLEMENTATION | BLOCKED_APP801_BROWSER_READ | BLOCKED:<exact reason>
-KINTONE_SCHEMA_WRITE_REQUIRED = NO | YES:<exact minimal field(s)>
-KINTONE_ACL_CHANGE_REQUIRED = NO | YES:<exact reason/rules not yet authorized>
-
-PASSWORD_VERIFY_FORMAT = PBKDF2_SHA256_100000_WEBCRYPTO_COMPATIBLE
-EMPLOYEE_SELF_CONTEXT_SOURCE = AUTHENTICATED_MBO_EMPLOYEE_CODE
-SOURCE_CHANGES_REQUIRED = <exact files>
-KINTONE_CUSTOMIZATION_DEPLOY_REQUIRED = YES | NO
-
-DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
-KINTONE_READS_EXECUTED = N
-KINTONE_WRITES_EXECUTED = 0
-KINTONE_DEPLOY_EXECUTED = 0
-STATUS = PLAN_READY_FOR_INDEPENDENT_REVIEW
+APP801_APP_ACL_CURRENT =
+  CREATOR:null => appEditable/view/add/edit/delete/import/export=true
+  GROUP:everyone => appEditable/view/add/edit/delete/import/export=false
+APP801_RECORD_ACL_CURRENT = NONE
+SHARED_EMPLOYEE_CAN_READ_APP801 = NO
+SHARED_EMPLOYEE_CAN_UPDATE_APP801 = NO
+KINTONE_ONLY_LOGIN_RUNTIME = BLOCKED_APP801_BROWSER_READ
 ```
 
-No live Kintone write, schema change, ACL change, credential provisioning, or customization deployment in this package.
+Therefore current live App801 ACL blocks browser runtime. Do NOT change ACL in this package. The purpose of this package is to finish and test the Kintone-only source so the later live authorization can be one controlled ACL + customization deployment package.
+
+GitHub has no CI/workflow/status evidence for the reconciliation commit. Do not claim CI PASS.
+
+## 1. FROZEN USER EXPERIENCE
+
+Every time an employee enters MBO, including the App794 entry/list page and any create/detail/edit record entry:
+
+```text
+Open MBO
+  -> MBO Login gate
+  -> Username = Employee_Code
+  -> Password = MBO password from App801
+  -> successful login binds authenticated Employee_Code in PAGE MEMORY ONLY
+  -> no Employee ID selector/input after login
+  -> load only the authenticated employee context in the custom Employee Self UI
+```
+
+Leaving/reloading/re-entering MBO must require login again.
+
+Initial/default password remains Employee_Code. If `Force_Password_Change = YES`, successful default login must require password change before Employee Self data is rendered.
+
+Employee can change own password and logout. Logout clears page-memory auth context only.
+
+No Activation Code. No persisted MBO session token. No localStorage/sessionStorage/cookie auth persistence.
+
+## 2. SECURITY CLASSIFICATION — DO NOT OVERCLAIM
+
+This is a Kintone customization/application login gate under a shared Kintone account.
+
+It is NOT hard native Kintone employee isolation. Direct URL/REST bypass cannot be guaranteed against a technically capable user while the shared Kintone principal retains native App794 access.
+
+Do not claim otherwise.
+
+App801 hash data must never be rendered, logged, copied into DOM attributes, localStorage/sessionStorage, cookies, query strings, or error messages.
+
+The later live ACL decision will explicitly accept or reject the browser-readable App801 hash tradeoff. This source package does not make that live decision.
+
+## 3. REQUIRED SOURCE IMPLEMENTATION — MINIMUM ONLY
+
+Preferred change set:
+
+1. `src/ui/mbo-kintone-auth-adapter.js` NEW
+   - browser-only Kintone API adapter for App801;
+   - NO Node imports;
+   - use Web Crypto (`crypto.subtle`) PBKDF2 SHA-256;
+   - verify existing format exactly:
+     `pbkdf2$100000$<saltHex>$<hashHex>`;
+   - create new password hash in same format using `crypto.getRandomValues()` salt;
+   - exact one credential record by normalized Employee_Code, duplicate/missing/malformed fail closed;
+   - map physical fields exactly: `Employee_Code`, `Password_Hash`, `Password_Algorithm`, `Password_Changed_At`, `Force_Password_Change`, `Account_Status`, `Failed_Attempts`, `Locked_Until`, `Last_Login_At`, `Credential_Version`;
+   - preserve existing lockout semantics where practical;
+   - expose sanitized results only; never return Password_Hash outside adapter internals;
+   - password change update contract: Password_Hash, Password_Changed_At, Force_Password_Change=NO, Failed_Attempts reset, Locked_Until clear; Last_Login_At as applicable;
+   - do not use old Activation/Session fields.
+
+2. `src/ui/mbo-kintone-login-gate.js` NEW
+   - modal/full blocking login gate;
+   - username/password only;
+   - `Force_Password_Change=YES` => force new password before data authorization;
+   - normal own-password change action;
+   - logout action;
+   - authenticated principal stored only in module/class page memory;
+   - no localStorage/sessionStorage/cookie auth persistence;
+   - return/expose only authenticated Employee_Code, never credential/hash data.
+
+3. `src/main-mbo-app.js` MODIFY
+   - App794-only gate must run before Employee Self custom UI render;
+   - cover App794 entry/list plus create/detail/edit flows as technically supported by current customization;
+   - after authentication, Employee Self source = authenticated MBO Employee_Code only;
+   - App53 lookup must reuse `EmployeeService.lookupEmployee(authenticatedEmployeeCode, kintoneApiWrapper)`;
+   - create flow binds record Employee_Code from authenticated context;
+   - detail/edit flow must compare record Employee_Code to authenticated context and block custom Employee Self rendering on mismatch;
+   - do not trust Employee_Code from URL/query/input for authorization;
+   - preserve current routing/scoring/record-key logic after the authenticated employee has been resolved;
+   - no external gateway/server calls.
+
+4. `src/ui/employee-part-a-ui.js` MODIFY
+   - authenticated Employee Self must not render `_renderLookupSection()` / `#mbo-lookup-emp-input`;
+   - Employee_Code display only;
+   - reject mutation/lookup to a different Employee_Code when authenticated context is present;
+   - keep admin/support behavior separate; do not grant technical admin Employee Self authority.
+
+5. Focused tests only. Prefer:
+   - `tests/mbo-kintone-auth-adapter.test.js`
+   - `tests/mbo-kintone-login-gate.test.js`
+   - update existing main/UI tests only if required.
+
+Do not modify deploy scripts/manifests in this package unless build/test cannot include the modules without a minimal manifest change. If that happens, report exact reason and keep deploy execution zero.
+
+## 4. REQUIRED TEST EVIDENCE
+
+Prove at minimum:
+
+1. PBKDF2 WebCrypto verification is compatible with the existing `pbkdf2$100000$...` format.
+2. wrong password denied.
+3. malformed/duplicate/missing App801 credential fails closed.
+4. disabled/locked credential denied.
+5. default login with `Force_Password_Change=YES` cannot render Employee Self until password change succeeds.
+6. password change creates same PBKDF2 format and never returns/logs hash.
+7. successful login returns/binds only normalized authenticated Employee_Code.
+8. page auth state is memory-only; no localStorage/sessionStorage/cookie persistence.
+9. 0118 authenticated context cannot switch lookup/input to 0119.
+10. detail/edit record for 0119 is blocked from 0118 custom Employee Self context.
+11. create flow binds Employee_Code from authenticated context, not free-form input.
+12. logout clears in-page auth context.
+13. no Node `crypto` import in Kintone browser modules.
+14. existing D1 and full workspace tests still pass.
+
+Because current live App801 ACL denies employee browser access, local tests must use injected/mock Kintone API data; do NOT weaken or change live ACL for tests.
+
+## 5. LIVE KINTONE — STRICTLY FORBIDDEN THIS PACKAGE
+
+Do NOT:
+- change App801 ACL;
+- change App801 record permissions;
+- add/remove App801 fields;
+- provision/update real credentials;
+- deploy App794 customization;
+- change App794 ACL;
+- execute migration;
+- deploy or modify external server/gateway runtime.
+
+Mandatory:
+
+```text
+KINTONE_WRITES_EXECUTED = 0
+KINTONE_DEPLOY_EXECUTED = 0
+APP801_ACL_CHANGE_EXECUTED = 0
+```
+
+## 6. VERIFICATION
+
+Run focused new tests, relevant D1 regression, then:
+
+```bash
+npm test
+git diff --check
+git status --short
+```
+
+No CI claim without GitHub CI evidence.
+
+## 7. DELIVERY REPORT
+
+Commit + push only to `ai/codex-d1c3b`.
+Do NOT push directly to `ai/antigravity-wp002c`.
+
+Maximum status:
+`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+
+Report:
+
+```text
+HEAD_BEFORE =
+HEAD_AFTER =
+FILES_CHANGED =
+TEST_RESULTS =
+
+KINTONE_ONLY_ARCHITECTURE = ACCEPTED
+MBO_LOGIN_EVERY_ENTRY = IMPLEMENTED_PENDING_REVIEW
+PAGE_MEMORY_AUTH_CONTEXT = IMPLEMENTED_PENDING_REVIEW
+EMPLOYEE_ID_REENTRY_AFTER_LOGIN = NO
+WEBCRYPTO_PBKDF2_COMPATIBILITY = PROVEN_PENDING_REVIEW
+FORCE_PASSWORD_CHANGE = IMPLEMENTED_PENDING_REVIEW
+OWN_PASSWORD_CHANGE = IMPLEMENTED_PENDING_REVIEW
+LOGOUT_PAGE_CONTEXT_CLEAR = IMPLEMENTED_PENDING_REVIEW
+EMPLOYEE_SELF_CONTEXT_SOURCE = AUTHENTICATED_MBO_EMPLOYEE_CODE
+EMPLOYEE_0118_TO_0119_UI_SWITCH = BLOCKED_PENDING_REVIEW
+APP801_SCHEMA_WRITE_REQUIRED = NO
+APP801_LIVE_ACL_CURRENT = BLOCKS_SHARED_EMPLOYEE_BROWSER
+LIVE_RUNTIME_STATUS = BLOCKED_PENDING_SEPARATE_APP801_ACL_AUTHORIZATION
+
+KINTONE_READS_EXECUTED = 0
+KINTONE_WRITES_EXECUTED = 0
+KINTONE_DEPLOY_EXECUTED = 0
+APP801_ACL_CHANGE_EXECUTED = 0
+D1_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+Stop after commit + push. ChatGPT performs independent review.
 
 ---
 
-# MANDATORY PROJECT CONTROL
+# MANDATORY PROJECT CONTROL — DO NOT DROP
 
-- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / KINTONE-ONLY / FINAL ACL RECONCILIATION
+- D1 Login + password change + employee-self MBO gate = IN_PROGRESS / KINTONE-ONLY / SOURCE IMPLEMENTATION
 - D2 Excel + PDF legacy-format export = IN_PROGRESS
 - D3 migrate ALL history from Apps 283, 310, 305, 643, 307, 640, 715, 716 into App794 = IN_PROGRESS / WRITE NOT AUTHORIZED
 - D4 HR Control Center / App800 end-to-end lifecycle = IN_PROGRESS
