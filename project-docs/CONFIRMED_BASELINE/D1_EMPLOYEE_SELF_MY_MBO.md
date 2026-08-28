@@ -22,7 +22,19 @@ User-facing list action must be view-oriented, not delete-oriented. The list mus
 
 Opening a list row/action must navigate to the owned App794 record detail view. Existing lifecycle/stage rules continue to decide whether any current record functionality is editable; this baseline does not widen edit rights.
 
-## 3. Employee-Self Delete Policy
+## 3. Status Display Rule
+
+The My MBO `สถานะ / Status` column must reflect the authoritative workflow status.
+
+Canonical final workflow status is `16 Completed`.
+
+Display rule:
+- when the authoritative App794 workflow status is `16 Completed` or already `Completed`, display exactly `Completed` in My MBO;
+- while the workflow is still `15 HR Final Check`, do **not** display `Completed` yet;
+- do not infer completion from Fiscal Year, dates, score presence, or any other heuristic;
+- this is a My MBO display normalization only and does not change workflow/routing semantics.
+
+## 4. Employee-Self Delete Policy
 
 Employee-Self users must **not be able to delete App794 MBO records**.
 
@@ -37,7 +49,7 @@ Required protection layers:
 
 Technical-admin/HR deletion policy is outside this baseline unless separately authorized. Do not silently remove technical administration capabilities.
 
-## 4. UX
+## 5. UX
 
 My MBO should remain the approved bilingual coherent shell.
 
@@ -49,7 +61,7 @@ Recommended list columns:
 
 The primary record action should be a bilingual view/detail action such as `ดูรายละเอียด / View Details` or `ดูย้อนหลัง / View History`; do not label the list action `View / Edit` as a blanket promise of edit rights.
 
-## 5. Non-Goals
+## 6. Non-Goals
 
 This baseline does not authorize:
 - App794 deploy;
