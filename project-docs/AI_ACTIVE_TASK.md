@@ -1,86 +1,99 @@
-# AI ACTIVE TASK — HOLD / INDEPENDENT APP794 LIVE VERIFICATION
+# AI ACTIVE TASK — HOLD / D1 SESSION CONTINUITY ARCHITECTURE DECISION
 
 > Execution Plane: Antigravity  
 > Branch: `ai/antigravity-wp002c`  
 > Mode: **NO EXECUTION NOW**
 
-## Current Review State
+## Current Live Finding
 
-Corrective redeploy executor evidence commit:
-
-```text
-9072100f7c62651b5710f03872bcad1831a6fefa
-```
-
-Executor reported:
+User live UAT shows:
 
 ```text
-DEPLOY_STATUS = SUCCESS
-LIVE_REVISION_AFTER = 42
-PREVIEW_REVISION_AFTER = 42
-TARGET_JS_CONTENT_HASH_MATCH = YES
-CSS_CONTENT_HASH_MATCH = YES
-NON_TARGET_CUSTOMIZATION_PRESERVED = YES
-CSS_UPLOAD_COUNT = 0
-SOURCE_FILES_MODIFIED = 0
-UAT_EXECUTED = 0
+Login succeeds
+My MBO list renders
+Click + Create New MBO
+-> native App794 create page loads
+-> MBO Login is required again
 ```
 
-ChatGPT independent Git scope review confirms the executor commit changes only the D1 evidence document.
+Source cause is confirmed:
 
-However, live App794 state is not yet independently verified by the Control Plane/user-side read-only check.
+```text
+createBtn.href = `/k/${appId}/edit`
++ MBO principal is page-memory only
++ new Kintone page lifecycle resets principal
+```
+
+The previous `FAIL_CLOSED_GATE_NULL` runtime initialization defect is no longer the visible blocker.
+
+## Architecture Conflict
+
+Current durable baseline says:
+
+```text
+AUTH_STATE = PAGE_MEMORY_ONLY
+RELOAD_OR_REENTRY = REQUIRE_LOGIN_AGAIN
+NO_SESSION_STORAGE_AUTH
+NO_BROWSER_TOKEN_PERSISTENCE
+```
+
+The user's current UAT expectation rejects repeated login during normal internal App794 navigation.
+
+This requires a deliberate auth architecture change. Do not improvise a persistence shortcut.
 
 ## STOP Rules
 
-Until ChatGPT replaces this HOLD with a new exact Active Task, Antigravity must not:
+Until ChatGPT records an explicit architecture decision and replaces this HOLD, Antigravity must not:
 
-- upload any file to Kintone;
-- perform Kintone POST/PUT/DELETE;
-- retry App794 deploy;
-- rollback/restore App794 customization;
-- modify source/tests/build logic/dist;
-- refactor JavaScript modules;
-- modify `employee-part-a-ui.js`;
+- modify source/tests/build/dist;
+- add sessionStorage/localStorage auth state;
+- add browser token logic;
+- add App801 fields;
+- modify App801 records/schema/ACL;
+- upload/deploy/redeploy App794;
+- retry/rollback previous deploy;
+- refactor JavaScript;
 - modify `main-mbo-app.js`;
-- modify App801 credentials;
-- modify App53/795/796;
-- change group/ACL;
-- start UAT;
+- modify `employee-part-a-ui.js`;
 - start D2-D7 implementation;
-- run a duplicate live read-audit;
-- create follow-on work on its own.
+- run a broad repo scan;
+- create follow-on work.
 
-## Next Independent Proof
+## Proposed Direction — NOT YET AUTHORIZED
 
-The user will open live App794 and run the READ-ONLY verifier supplied by ChatGPT.
-
-Required proof includes:
+Preferred secure Kintone-only pattern:
 
 ```text
-LIVE_REVISION = 42
-PREVIEW_REVISION = 42
-SCOPE = ALL
-DESKTOP_JS_COUNT = 1
-TARGET_JS_COUNT = 1
-TARGET_JS_GIT_BLOB_SHA = 2a9a3c5bfe896b51f482c016f66863bffeddb679
-DESKTOP_CSS_COUNT = 1
-TARGET_CSS_COUNT = 1
-CSS_GIT_BLOB_SHA = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
-MOBILE_JS_COUNT = 0
-MOBILE_CSS_COUNT = 0
-LOGIN_GATE_RUNTIME_VISIBLE = YES / no FAIL_CLOSED_GATE_NULL
+mbo-session-manager.js
+  -> random 256-bit session token
+  -> raw token stored only in sessionStorage for same-tab continuity
+  -> App801 stores only token hash + expiry
+  -> every new page revalidates token against App801/account state
+  -> tampered Employee_Code/token fails closed
+  -> logout/password change invalidates session
 ```
 
-If the user-side live verification passes, ChatGPT may accept the redeploy and issue the next D1 UAT gate.
+This is a proposal only. It is not an execution task and does not authorize App801 schema/write changes.
 
-If it fails, no automatic correction/retry/rollback is authorized.
+## Modularity Rule
+
+Any accepted session implementation must remain separate by responsibility:
+
+```text
+mbo-kintone-auth-adapter.js = credential/account verification
+mbo-kintone-login-gate.js   = login/password UI
+mbo-session-manager.js      = session continuity only
+main-mbo-app.js             = orchestration only
+```
+
+No catch-all implementation.
 
 ## Next Action
 
 ```text
-NEXT_ACTION_OWNER = User
+NEXT_ACTION_OWNER = User / ChatGPT
 ANTIGRAVITY_REQUIRED = NO
-STATUS = HOLD_PENDING_INDEPENDENT_APP794_LIVE_VERIFICATION
+STATUS = HOLD_PENDING_D1_SESSION_CONTINUITY_DECISION
 ```
 
 STOP.
