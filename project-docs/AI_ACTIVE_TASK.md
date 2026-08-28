@@ -1,46 +1,74 @@
-# AI ACTIVE TASK — D1 EMPLOYEE-SELF INDEX VISUAL EVIDENCE ONLY
+# AI ACTIVE TASK — D1 MY MBO HISTORY + EMPLOYEE-SELF NO-DELETE
 
-Mode: **LOCAL PREVIEW / EVIDENCE ONLY — ZERO SOURCE CHANGE — ZERO KINTONE WRITE**
+Mode: **SOURCE / BUILD / TEST / LOCAL PREVIEW ONLY — ZERO KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
-Max status: `VISUAL_EVIDENCE_READY_FOR_USER_REVIEW`
+Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
-## Read only
+Read only:
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this file
-3. `project-docs/CONFIRMED_BASELINE/UI_UX.md`
-4. current `src/ui/employee-self-index-ui.js`
+3. `project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
+4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
+5. `src/ui/employee-self-index-ui.js`
+6. relevant App794 event registration in `src/main-mbo-app.js`
+7. focused tests only
 
 Do not scan repo.
 
-## Task
-Show/capture the current Employee-Self index candidate from commit `9319be2d64778a08071aa476a809aebc2542dc1e` using local preview only.
+## Fix only this requirement
 
-The visual must show:
-- Kintone-style/global header context remains visible and is not covered;
-- duplicate native index list/toolbar does not create the old fragmented layout;
-- one coherent Employee-Self shell/card;
-- `รหัสพนักงาน / Employee Code`;
-- `เปลี่ยนรหัสผ่าน / Change Password`;
-- `ออกจากระบบ / Logout`;
-- exact title `MBO ของฉัน / My MBO`;
-- `+ สร้าง MBO ใหม่ / Create New MBO`;
-- bilingual empty state or representative list.
+### A. My MBO history list
+- Keep exact ownership query from authenticated MBO Employee Code only.
+- Keep newest Fiscal Year first.
+- Show all returned MBO records for that employee.
+- Change row action from blanket `ดู / แก้ไข (View / Edit)` to a view/history label such as:
+  `ดูย้อนหลัง / View History`
+  or `ดูรายละเอียด / View Details`.
+- Action opens the owned App794 record detail page.
+- No Delete action anywhere in Employee-Self list UI.
+- Preserve approved one-shell bilingual visual design.
 
-Use the existing candidate code. If a temporary local-only harness is required to render it, keep it outside the repository or delete it before finishing.
+### B. Employee-Self delete guard
+- Employee-Self MBO users must not delete App794 records.
+- Add a small dedicated delete-policy/guard module; keep `main-mbo-app.js` orchestration-only.
+- Register the supported App794 detail delete-submit event through main orchestration.
+- Resolve authenticated MBO principal through the existing login gate/session path; do not duplicate auth logic.
+- If the request is Employee-Self, cancel deletion fail-closed with a bilingual user message.
+- Missing/invalid MBO principal must also fail closed.
+- Do not add any REST/API delete implementation.
+- Do not alter technical-admin/HR deletion policy outside this Employee-Self scope.
+
+### C. Tests
+Must prove:
+- query contains exact authenticated Employee Code and `Fiscal_Year desc`;
+- representative multiple-year records render in descending returned order;
+- each history action links to the matching owned detail record;
+- no Delete control is rendered by Employee-Self list;
+- Employee-Self detail delete event is cancelled;
+- missing/invalid MBO principal delete is cancelled fail-closed;
+- no cross-employee/access/session semantics changed;
+- main remains orchestration-only.
+
+Run:
+```text
+npm run ui:build
+npm test
+```
+
+Local Preview:
+- show representative records for one employee, e.g. FY2026/FY2025/FY2024;
+- show the view/history action;
+- no Delete action.
 
 ## Forbidden
-- NO production/source edits
-- NO test edits
-- NO dist edits
-- NO committed preview code
 - NO Kintone write/upload/deploy
+- NO App794 ACL write
 - NO App801 write
 - NO deploy-guard fix
-- NO Create-handler/auth/session/routing/scoring changes
+- NO Create-handler rework
+- NO auth/session/routing/scoring semantics change
+- NO broad refactor
 - NO D2-D7
 
-## Delivery
-- Provide screenshot(s) to the user for visual approval.
-- Git working tree must end clean.
-- Do not create a new implementation commit.
-- STOP after visual evidence is shown.
+Commit + push one concise implementation commit, then STOP.
+Do not Self-PASS.
