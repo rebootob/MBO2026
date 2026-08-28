@@ -266,14 +266,14 @@ export class MboKintoneAuthAdapter {
 
   /**
    * Stores server-side session metadata in App801 for employeeCode.
-   * Corrective B: requires non-empty kintoneUserCode.
+   * Corrective A: requires exact non-empty kintoneUserCode (no trim/lowercase mutation).
    */
   async storeSession({ employeeCode, tokenHash, issuedAt, expiresAt, kintoneUserCode }) {
     if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
       throw new Error('INVALID_TOKEN_HASH');
     }
 
-    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
       throw new Error('MISSING_KINTONE_PRINCIPAL');
     }
 
@@ -290,7 +290,7 @@ export class MboKintoneAuthAdapter {
       Session_Issued_At: { value: issuedAt },
       Session_Expires_At: { value: expiresAt },
       Session_Credential_Version: { value: cred.credentialVersion },
-      Session_Kintone_User: { value: kintoneUserCode.trim() }
+      Session_Kintone_User: { value: kintoneUserCode }
     });
 
     return { status: 'SESSION_STORED', employeeCode: cred.code };
@@ -307,8 +307,8 @@ export class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Invalid token hash format.' };
       }
 
-      // Corrective B: require non-empty currentKintoneUserCode
-      if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode.trim() === '') {
+      // Corrective A: require exact non-empty currentKintoneUserCode
+      if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
         return { status: 'INVALID_SESSION', reason: 'Missing current Kintone user.' };
       }
 
@@ -340,7 +340,7 @@ export class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Account is not active.' };
       }
 
-      // Corrective C: Force_Password_Change must equal exactly 'NO'
+      // Force_Password_Change must equal exactly 'NO'
       if (force !== 'NO') {
         return { status: 'INVALID_SESSION', reason: 'Password change is required.' };
       }
@@ -353,7 +353,7 @@ export class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Session has expired.' };
       }
 
-      // Corrective A: Credential_Version must be a positive integer
+      // Credential_Version must be a positive integer
       if (credVerRaw === null || credVerRaw === undefined || credVerRaw === '') {
         return { status: 'INVALID_SESSION', reason: 'Missing credential version.' };
       }
@@ -370,12 +370,12 @@ export class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Credential version mismatch.' };
       }
 
-      // Corrective B: Kintone Principal binding must be exact
-      if (!sessKintoneUser || typeof sessKintoneUser !== 'string' || sessKintoneUser.trim() === '') {
+      // Corrective A: Kintone Principal binding must be EXACT (case-sensitive, no trim mutation)
+      if (!sessKintoneUser || typeof sessKintoneUser !== 'string' || sessKintoneUser !== sessKintoneUser.trim() || !sessKintoneUser.trim()) {
         return { status: 'INVALID_SESSION', reason: 'Missing session Kintone user.' };
       }
 
-      if (sessKintoneUser.trim().toLowerCase() !== currentKintoneUserCode.trim().toLowerCase()) {
+      if (sessKintoneUser !== currentKintoneUserCode) {
         return { status: 'INVALID_SESSION', reason: 'Kintone user mismatch.' };
       }
 
@@ -390,7 +390,7 @@ export class MboKintoneAuthAdapter {
 
   /**
    * Revokes session fields in App801 for tokenHash.
-   * Corrective D: Revoke failure must remain observable (throws error on missing/duplicate/server fail).
+   * Corrective B: Revoke failure throws stable error string (SESSION_NOT_FOUND, DUPLICATE_SESSION_TOKEN_HASH, SERVER_REVOKE_FAILED).
    */
   async revokeSession({ tokenHash }) {
     if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
@@ -408,13 +408,17 @@ export class MboKintoneAuthAdapter {
     }
 
     const recId = records[0].$id?.value;
-    await this.api.updateRecord(this.appId, recId, {
-      Session_Token_Hash: { value: null },
-      Session_Issued_At: { value: null },
-      Session_Expires_At: { value: null },
-      Session_Credential_Version: { value: null },
-      Session_Kintone_User: { value: null }
-    });
+    try {
+      await this.api.updateRecord(this.appId, recId, {
+        Session_Token_Hash: { value: null },
+        Session_Issued_At: { value: null },
+        Session_Expires_At: { value: null },
+        Session_Credential_Version: { value: null },
+        Session_Kintone_User: { value: null }
+      });
+    } catch {
+      throw new Error('SERVER_REVOKE_FAILED');
+    }
 
     return { status: 'SESSION_REVOKED' };
   }

@@ -112,23 +112,23 @@ export class MboSessionManager {
 
   /**
    * Issues a new session for an authenticated Employee_Code:
-   * 1. Generates 256-bit token
-   * 2. Computes SHA-256 token hash
-   * 3. Calculates 8-hour expiry
-   * 4. Validates current Kintone user code
+   * 1. Validates current Kintone user code (must be exact non-empty string, no whitespace mutation)
+   * 2. Generates 256-bit token
+   * 3. Computes SHA-256 token hash
+   * 4. Calculates 8-hour expiry
    * 5. Stores session metadata in App801 via adapter
    * 6. Writes raw token to sessionStorage
    *
-   * Corrective F: Returns only non-secret outcome metadata (no raw token or hash).
+   * Public outcome returns ONLY non-secret metadata (no raw token or hash).
    *
    * @param {string} employeeCode
    * @returns {Promise<{ status: 'SESSION_ISSUED', expiresAt: string }>}
    */
   async issueSession(employeeCode) {
     const kintoneUser = this.getKintoneUser();
-    const kintoneUserCode = kintoneUser?.code || '';
+    const kintoneUserCode = kintoneUser?.code;
 
-    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
       throw new Error('MISSING_KINTONE_PRINCIPAL');
     }
 
@@ -144,7 +144,7 @@ export class MboSessionManager {
       tokenHash,
       issuedAt,
       expiresAt,
-      kintoneUserCode: kintoneUserCode.trim()
+      kintoneUserCode
     });
 
     this.setLocalToken(token);
@@ -156,7 +156,7 @@ export class MboSessionManager {
    * Restores and validates session from local sessionStorage token against App801.
    * Clears local token and returns null if missing, invalid, or expired.
    *
-   * Corrective F: Returns only authenticated Employee_Code (no raw token).
+   * Public outcome returns ONLY authenticated Employee_Code (no raw token).
    *
    * @returns {Promise<{ employeeCode: string }|null>}
    */
@@ -173,9 +173,9 @@ export class MboSessionManager {
     }
 
     const kintoneUser = this.getKintoneUser();
-    const currentKintoneUserCode = kintoneUser?.code || '';
+    const currentKintoneUserCode = kintoneUser?.code;
 
-    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode.trim() === '') {
+    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
       this.clearLocalToken();
       return null;
     }
@@ -184,7 +184,7 @@ export class MboSessionManager {
     try {
       res = await this.adapter.validateSession({
         tokenHash,
-        currentKintoneUserCode: currentKintoneUserCode.trim()
+        currentKintoneUserCode
       });
     } catch {
       this.clearLocalToken();
@@ -203,14 +203,14 @@ export class MboSessionManager {
 
   /**
    * Revokes the current local session.
-   * Corrective D: Clears local token unconditionally, but reports server revocation failure if adapter.revokeSession throws.
+   * Clears local token unconditionally, but reports sanitized server revocation failure status.
    *
    * @returns {Promise<{ status: 'SESSION_REVOKED'|'REVOKE_FAILED', serverRevoked?: boolean, reason?: string }>}
    */
   async revokeSession() {
     const token = this.getLocalToken();
     let serverRevoked = false;
-    let serverError = null;
+    let serverReason = null;
 
     if (token) {
       try {
@@ -220,14 +220,19 @@ export class MboSessionManager {
           serverRevoked = true;
         }
       } catch (err) {
-        serverError = err.message || 'Revocation failed on server';
+        const msg = err.message || '';
+        if (['INVALID_TOKEN_HASH', 'SESSION_NOT_FOUND', 'DUPLICATE_SESSION_TOKEN_HASH'].includes(msg)) {
+          serverReason = msg;
+        } else {
+          serverReason = 'SERVER_REVOKE_FAILED';
+        }
       }
     }
 
     this.clearLocalToken();
 
-    if (serverError) {
-      return { status: 'REVOKE_FAILED', reason: serverError };
+    if (serverReason) {
+      return { status: 'REVOKE_FAILED', reason: serverReason };
     }
 
     return { status: 'SESSION_REVOKED', serverRevoked };

@@ -2015,7 +2015,7 @@ class MboKintoneAuthAdapter {
       throw new Error('INVALID_TOKEN_HASH');
     }
 
-    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
       throw new Error('MISSING_KINTONE_PRINCIPAL');
     }
 
@@ -2032,7 +2032,7 @@ class MboKintoneAuthAdapter {
       Session_Issued_At: { value: issuedAt },
       Session_Expires_At: { value: expiresAt },
       Session_Credential_Version: { value: cred.credentialVersion },
-      Session_Kintone_User: { value: kintoneUserCode.trim() }
+      Session_Kintone_User: { value: kintoneUserCode }
     });
 
     return { status: 'SESSION_STORED', employeeCode: cred.code };
@@ -2045,8 +2045,8 @@ class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Invalid token hash format.' };
       }
 
-      // Corrective B: require non-empty currentKintoneUserCode
-      if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode.trim() === '') {
+      // Corrective A: require exact non-empty currentKintoneUserCode
+      if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
         return { status: 'INVALID_SESSION', reason: 'Missing current Kintone user.' };
       }
 
@@ -2078,7 +2078,7 @@ class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Account is not active.' };
       }
 
-      // Corrective C: Force_Password_Change must equal exactly 'NO'
+      // Force_Password_Change must equal exactly 'NO'
       if (force !== 'NO') {
         return { status: 'INVALID_SESSION', reason: 'Password change is required.' };
       }
@@ -2091,7 +2091,7 @@ class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Session has expired.' };
       }
 
-      // Corrective A: Credential_Version must be a positive integer
+      // Credential_Version must be a positive integer
       if (credVerRaw === null || credVerRaw === undefined || credVerRaw === '') {
         return { status: 'INVALID_SESSION', reason: 'Missing credential version.' };
       }
@@ -2108,12 +2108,12 @@ class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Credential version mismatch.' };
       }
 
-      // Corrective B: Kintone Principal binding must be exact
-      if (!sessKintoneUser || typeof sessKintoneUser !== 'string' || sessKintoneUser.trim() === '') {
+      // Corrective A: Kintone Principal binding must be EXACT (case-sensitive, no trim mutation)
+      if (!sessKintoneUser || typeof sessKintoneUser !== 'string' || sessKintoneUser !== sessKintoneUser.trim() || !sessKintoneUser.trim()) {
         return { status: 'INVALID_SESSION', reason: 'Missing session Kintone user.' };
       }
 
-      if (sessKintoneUser.trim().toLowerCase() !== currentKintoneUserCode.trim().toLowerCase()) {
+      if (sessKintoneUser !== currentKintoneUserCode) {
         return { status: 'INVALID_SESSION', reason: 'Kintone user mismatch.' };
       }
 
@@ -2143,13 +2143,17 @@ class MboKintoneAuthAdapter {
     }
 
     const recId = records[0].$id?.value;
-    await this.api.updateRecord(this.appId, recId, {
-      Session_Token_Hash: { value: null },
-      Session_Issued_At: { value: null },
-      Session_Expires_At: { value: null },
-      Session_Credential_Version: { value: null },
-      Session_Kintone_User: { value: null }
-    });
+    try {
+      await this.api.updateRecord(this.appId, recId, {
+        Session_Token_Hash: { value: null },
+        Session_Issued_At: { value: null },
+        Session_Expires_At: { value: null },
+        Session_Credential_Version: { value: null },
+        Session_Kintone_User: { value: null }
+      });
+    } catch {
+      throw new Error('SERVER_REVOKE_FAILED');
+    }
 
     return { status: 'SESSION_REVOKED' };
   }
@@ -2319,9 +2323,9 @@ class MboSessionManager {
   
   async issueSession(employeeCode) {
     const kintoneUser = this.getKintoneUser();
-    const kintoneUserCode = kintoneUser?.code || '';
+    const kintoneUserCode = kintoneUser?.code;
 
-    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
       throw new Error('MISSING_KINTONE_PRINCIPAL');
     }
 
@@ -2337,7 +2341,7 @@ class MboSessionManager {
       tokenHash,
       issuedAt,
       expiresAt,
-      kintoneUserCode: kintoneUserCode.trim()
+      kintoneUserCode
     });
 
     this.setLocalToken(token);
@@ -2359,9 +2363,9 @@ class MboSessionManager {
     }
 
     const kintoneUser = this.getKintoneUser();
-    const currentKintoneUserCode = kintoneUser?.code || '';
+    const currentKintoneUserCode = kintoneUser?.code;
 
-    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode.trim() === '') {
+    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
       this.clearLocalToken();
       return null;
     }
@@ -2370,7 +2374,7 @@ class MboSessionManager {
     try {
       res = await this.adapter.validateSession({
         tokenHash,
-        currentKintoneUserCode: currentKintoneUserCode.trim()
+        currentKintoneUserCode
       });
     } catch {
       this.clearLocalToken();
@@ -2391,7 +2395,7 @@ class MboSessionManager {
   async revokeSession() {
     const token = this.getLocalToken();
     let serverRevoked = false;
-    let serverError = null;
+    let serverReason = null;
 
     if (token) {
       try {
@@ -2401,14 +2405,19 @@ class MboSessionManager {
           serverRevoked = true;
         }
       } catch (err) {
-        serverError = err.message || 'Revocation failed on server';
+        const msg = err.message || '';
+        if (['INVALID_TOKEN_HASH', 'SESSION_NOT_FOUND', 'DUPLICATE_SESSION_TOKEN_HASH'].includes(msg)) {
+          serverReason = msg;
+        } else {
+          serverReason = 'SERVER_REVOKE_FAILED';
+        }
       }
     }
 
     this.clearLocalToken();
 
-    if (serverError) {
-      return { status: 'REVOKE_FAILED', reason: serverError };
+    if (serverReason) {
+      return { status: 'REVOKE_FAILED', reason: serverReason };
     }
 
     return { status: 'SESSION_REVOKED', serverRevoked };
@@ -2528,6 +2537,112 @@ class MboKintoneLoginGate {
   }
 
   // ---------------------------------------------------------------------------
+  // Production Action Handlers (exercised directly by tests and DOM listeners)
+  // ---------------------------------------------------------------------------
+
+  async _handleLoginAction({ username, password }) {
+    let result;
+    try {
+      result = await this.adapter.login({ username, password });
+    } catch (err) {
+      return { status: 'CREDENTIAL_DENIED', reason: err.message || 'Login error' };
+    }
+
+    if (result.status === 'AUTHENTICATED') {
+      if (this.sessionManager) {
+        try {
+          await this.sessionManager.issueSession(result.employeeCode);
+        } catch {
+          this._principal = null;
+          this._pendingForceChange = false;
+          return { status: 'SESSION_ISSUE_FAILED', reason: 'Failed to create session.' };
+        }
+      }
+      this._principal = { employeeCode: result.employeeCode };
+      this._pendingForceChange = false;
+      return { status: 'AUTHENTICATED', employeeCode: result.employeeCode };
+    }
+
+    if (result.status === 'PASSWORD_CHANGE_REQUIRED') {
+      this._principal = { employeeCode: result.employeeCode };
+      this._pendingForceChange = true;
+      return { status: 'PASSWORD_CHANGE_REQUIRED', employeeCode: result.employeeCode };
+    }
+
+    return result;
+  }
+
+  async _handleForceChangeAction({ newPassword, confirmPassword }) {
+    if (!this._principal || !this._pendingForceChange) {
+      return { status: 'CREDENTIAL_DENIED', reason: 'No pending force change state.' };
+    }
+    if (newPassword !== confirmPassword) {
+      return { status: 'INVALID_PASSWORD', reason: 'Passwords do not match.' };
+    }
+    let result;
+    try {
+      result = await this.adapter.forceChangePassword({
+        employeeCode: this._principal.employeeCode,
+        newPassword
+      });
+    } catch (err) {
+      return { status: 'CREDENTIAL_DENIED', reason: err.message || 'Error saving password.' };
+    }
+
+    if (result.status === 'PASSWORD_CHANGED') {
+      if (this.sessionManager) {
+        try {
+          await this.sessionManager.issueSession(this._principal.employeeCode);
+        } catch {
+          return { status: 'SESSION_ISSUE_FAILED', reason: 'Failed to create session.' };
+        }
+      }
+      this._pendingForceChange = false;
+      return { status: 'PASSWORD_CHANGED', employeeCode: this._principal.employeeCode };
+    }
+    return result;
+  }
+
+  async _handleChangePasswordAction({ currentPassword, newPassword, confirmPassword }) {
+    const code = this.getEmployeeCode();
+    if (!code) {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Not authenticated.' };
+    }
+    if (newPassword !== confirmPassword) {
+      return { status: 'INVALID_PASSWORD', reason: 'New passwords do not match.' };
+    }
+
+    let result;
+    try {
+      result = await this.adapter.changePassword({ employeeCode: code, currentPassword, newPassword });
+    } catch (err) {
+      return { status: 'CREDENTIAL_DENIED', reason: err.message || 'Error changing password.' };
+    }
+
+    if (result.status === 'PASSWORD_CHANGED') {
+      let sessionOk = true;
+      if (this.sessionManager) {
+        try {
+          await this.sessionManager.issueSession(code);
+        } catch {
+          sessionOk = false;
+        }
+      }
+
+      if (!sessionOk) {
+        if (this.sessionManager) this.sessionManager.clearLocalToken();
+        this._principal = null;
+        this._pendingForceChange = false;
+        this._onReload();
+        return { status: 'SESSION_RENEWAL_FAILED', employeeCode: code };
+      }
+
+      return { status: 'PASSWORD_CHANGED', employeeCode: code };
+    }
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
   // Internal: Login overlay
   // ---------------------------------------------------------------------------
 
@@ -2584,45 +2699,26 @@ class MboKintoneLoginGate {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Logging in…';
 
-      const username = form.querySelector('[name="username"]').value;
-      const password = form.querySelector('[name="password"]').value;
+      const username = form.querySelector('[name="username"]')?.value || '';
+      const password = form.querySelector('[name="password"]')?.value || '';
 
-      let result;
-      try {
-        result = await this.adapter.login({ username, password });
-      } catch (err) {
-        errorEl.textContent = 'Login error. Please try again.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Login';
-        return;
-      }
+      const actionRes = await this._handleLoginAction({ username, password });
 
-      if (result.status === 'AUTHENTICATED') {
-        if (this.sessionManager) {
-          try {
-            await this.sessionManager.issueSession(result.employeeCode);
-          } catch (sessionErr) {
-            errorEl.textContent = 'Failed to create session. Please try again.';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Login';
-            return;
-          }
-        }
-        this._principal = { employeeCode: result.employeeCode };
-        this._pendingForceChange = false;
+      if (actionRes.status === 'AUTHENTICATED') {
         overlay.remove();
-        resolve(result.employeeCode);
-      } else if (result.status === 'PASSWORD_CHANGE_REQUIRED') {
-        this._principal = { employeeCode: result.employeeCode };
-        this._pendingForceChange = true;
+        resolve(actionRes.employeeCode);
+      } else if (actionRes.status === 'PASSWORD_CHANGE_REQUIRED') {
         card.innerHTML = '';
         this._renderForceChangeCard(card, overlay, resolve);
-      } else if (result.status === 'INVALID_CREDENTIALS') {
+      } else if (actionRes.status === 'INVALID_CREDENTIALS') {
         errorEl.textContent = 'Invalid Employee Code or password.';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Login';
+      } else if (actionRes.status === 'SESSION_ISSUE_FAILED') {
+        errorEl.textContent = 'Failed to create session. Please try again.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
       } else {
-        // CREDENTIAL_DENIED
         errorEl.textContent = 'Account is locked or disabled. Please contact HR.';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Login';
@@ -2674,46 +2770,19 @@ class MboKintoneLoginGate {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorEl.textContent = '';
-      const newPassword = form.querySelector('[name="newPassword"]').value;
-      const confirmPassword = form.querySelector('[name="confirmPassword"]').value;
-
-      if (newPassword !== confirmPassword) {
-        errorEl.textContent = 'Passwords do not match.';
-        return;
-      }
+      const newPassword = form.querySelector('[name="newPassword"]')?.value || '';
+      const confirmPassword = form.querySelector('[name="confirmPassword"]')?.value || '';
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Saving…';
 
-      let result;
-      try {
-        result = await this.adapter.forceChangePassword({
-          employeeCode: this._principal.employeeCode,
-          newPassword
-        });
-      } catch (err) {
-        errorEl.textContent = 'Error saving password. Please try again.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Set New Password';
-        return;
-      }
+      const actionRes = await this._handleForceChangeAction({ newPassword, confirmPassword });
 
-      if (result.status === 'PASSWORD_CHANGED') {
-        if (this.sessionManager) {
-          try {
-            await this.sessionManager.issueSession(this._principal.employeeCode);
-          } catch (sessionErr) {
-            errorEl.textContent = 'Failed to create session. Please try again.';
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Set New Password';
-            return;
-          }
-        }
-        this._pendingForceChange = false;
+      if (actionRes.status === 'PASSWORD_CHANGED') {
         overlay.remove();
-        resolve(this._principal.employeeCode);
+        resolve(actionRes.employeeCode);
       } else {
-        errorEl.textContent = result.reason || 'Could not change password.';
+        errorEl.textContent = actionRes.reason || 'Could not change password.';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Set New Password';
       }
@@ -2788,48 +2857,16 @@ class MboKintoneLoginGate {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorEl.textContent = '';
-      const currentPassword = form.querySelector('[name="currentPassword"]').value;
-      const newPassword = form.querySelector('[name="newPassword"]').value;
-      const confirmPassword = form.querySelector('[name="confirmPassword"]').value;
-
-      if (newPassword !== confirmPassword) {
-        errorEl.textContent = 'New passwords do not match.';
-        return;
-      }
+      const currentPassword = form.querySelector('[name="currentPassword"]')?.value || '';
+      const newPassword = form.querySelector('[name="newPassword"]')?.value || '';
+      const confirmPassword = form.querySelector('[name="confirmPassword"]')?.value || '';
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Saving…';
 
-      let result;
-      try {
-        result = await this.adapter.changePassword({ employeeCode, currentPassword, newPassword });
-      } catch (err) {
-        errorEl.textContent = 'Error. Please try again.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Change Password';
-        return;
-      }
+      const actionRes = await this._handleChangePasswordAction({ currentPassword, newPassword, confirmPassword });
 
-      if (result.status === 'PASSWORD_CHANGED') {
-        let sessionOk = true;
-        if (this.sessionManager) {
-          try {
-            await this.sessionManager.issueSession(employeeCode);
-          } catch {
-            sessionOk = false;
-          }
-        }
-
-        // Corrective E: If replacement session issue failed, fail closed (clear local token, clear principal, reload)
-        if (!sessionOk) {
-          if (this.sessionManager) this.sessionManager.clearLocalToken();
-          this._principal = null;
-          this._pendingForceChange = false;
-          overlay.remove();
-          this._onReload();
-          return;
-        }
-
+      if (actionRes.status === 'PASSWORD_CHANGED') {
         overlay.remove();
         const confirmEl = ce('div');
         if (confirmEl) {
@@ -2839,8 +2876,10 @@ class MboKintoneLoginGate {
           document.body.appendChild(confirmEl);
           setTimeout(() => confirmEl.remove(), 3000);
         }
+      } else if (actionRes.status === 'SESSION_RENEWAL_FAILED') {
+        overlay.remove();
       } else {
-        errorEl.textContent = result.reason || 'Could not change password.';
+        errorEl.textContent = actionRes.reason || 'Could not change password.';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Change Password';
       }
