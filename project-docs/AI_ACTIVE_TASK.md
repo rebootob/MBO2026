@@ -30,21 +30,40 @@ This task fixes source/build/test only. It does **not** authorize redeploy.
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this `project-docs/AI_ACTIVE_TASK.md`
 3. `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
-4. `scripts/kintone/deploy-custom-ui.js`
-5. `src/ui/mbo-kintone-auth-adapter.js`
-6. `src/ui/mbo-kintone-login-gate.js`
-7. `src/core/fiscal-year-engine.js`
-8. `src/main-mbo-app.js`
-9. `tests/classic-bundle.test.js`
-10. `tests/mbo-kintone-auth-adapter.test.js`
-11. `tests/record-key.test.js` only if needed for the Employee-Code/Record-Key correction
-12. `dist/mbo-employee-app.js`
-13. `dist/mbo-employee.css`
+4. `project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` — Source-Code Modularity section
+5. `scripts/kintone/deploy-custom-ui.js`
+6. `src/ui/mbo-kintone-auth-adapter.js`
+7. `src/ui/mbo-kintone-login-gate.js`
+8. `src/core/fiscal-year-engine.js`
+9. `src/main-mbo-app.js`
+10. `tests/classic-bundle.test.js`
+11. `tests/mbo-kintone-auth-adapter.test.js`
+12. `tests/record-key.test.js` only if needed for the Employee-Code/Record-Key correction
+13. `dist/mbo-employee-app.js`
+14. `dist/mbo-employee.css`
 
 Do not scan repository/history.
 Do not create a planning package.
 
-## 2. Corrective A — Bundle Dependency Completeness
+## 2. Mandatory Architecture Guard — Keep Source Modular
+
+The project now has a confirmed mandatory source-code modularity rule.
+
+For this corrective task:
+
+- **DO NOT** copy `MboKintoneAuthAdapter`, `MboKintoneLoginGate`, password logic, or other feature logic into `src/main-mbo-app.js`;
+- keep `src/ui/mbo-kintone-auth-adapter.js` as the authentication adapter module;
+- keep `src/ui/mbo-kintone-login-gate.js` as the login-gate/UI module;
+- `src/main-mbo-app.js` must remain primarily bootstrap / event registration / orchestration;
+- fix dependency inclusion in the build path, not by collapsing separate modules into one maintainable source file;
+- a single `dist/mbo-employee-app.js` is acceptable only as **generated deployment output**;
+- never manually maintain/correct business logic directly inside `dist/mbo-employee-app.js`;
+- do not create duplicate implementations of an existing feature;
+- do not perform a broad unrelated decomposition/refactor in this corrective package.
+
+This task does **not** authorize splitting unrelated legacy-large modules such as `employee-part-a-ui.js`; that must be controlled separately after the current D1 blocker is cleared. However, no new unrelated functionality may be added to such catch-all files.
+
+## 3. Corrective A — Bundle Dependency Completeness
 
 Update the existing build path in `scripts/kintone/deploy-custom-ui.js` so the classic bundle includes, before `main-mbo-app.js`:
 
@@ -53,7 +72,7 @@ src/ui/mbo-kintone-auth-adapter.js
 src/ui/mbo-kintone-login-gate.js
 ```
 
-Use the existing file/function structure; do not introduce a new bundler or broad refactor.
+Keep both as independent source modules. The build may concatenate/package them into the generated classic bundle only at build time.
 
 Required built artifact facts:
 
@@ -63,7 +82,7 @@ MboKintoneLoginGate definition   = exactly 1
 main-mbo-app initialization occurs only after both definitions
 ```
 
-## 3. Corrective B — Tests Must Catch Missing Runtime Dependencies
+## 4. Corrective B — Tests Must Catch Missing Runtime Dependencies
 
 Update existing tests, primarily `tests/classic-bundle.test.js`.
 
@@ -75,11 +94,12 @@ Required tests must prove at minimum:
 2. committed/rebuilt classic bundle contains exactly one definition of `MboKintoneLoginGate`;
 3. bundle still has zero ES-module `import` / `export` residue;
 4. bundle can execute a minimal initialization path with a safe fake/stub Kintone environment far enough to prove the two auth classes are runtime-resolvable; no real Kintone network call;
-5. source -> build -> committed `dist/mbo-employee-app.js` exactness remains proven.
+5. source -> build -> committed `dist/mbo-employee-app.js` exactness remains proven;
+6. test/build structure proves auth definitions originate from the dedicated source modules rather than duplicate copies inserted into `main-mbo-app.js`.
 
 Do not weaken the existing fail-closed behavior.
 
-## 4. Corrective C — Employee Code Must Match Confirmed Baseline
+## 5. Corrective C — Employee Code Must Match Confirmed Baseline
 
 The Baseline confirms Employee Code is a string identifier and real accepted examples include:
 
@@ -128,7 +148,7 @@ The injection-string test must prove zero Kintone calls are made.
 
 Do not broaden the character set beyond what is required by confirmed data.
 
-## 5. Corrective D — Future JS-Only Deploy Must Preserve Non-Target FILE Entries
+## 6. Corrective D — Future JS-Only Deploy Must Preserve Non-Target FILE Entries
 
 Fix the existing deployment implementation so that a future single-target JS replacement does **not** automatically re-upload unchanged CSS.
 
@@ -144,7 +164,7 @@ Required design within the existing script/function structure:
 
 This task changes the deployment script source only. **DO NOT execute its live deployment mode.**
 
-## 6. Build / Test Gates
+## 7. Build / Test Gates
 
 Execute locally only:
 
@@ -162,6 +182,7 @@ CLASSIC_BUNDLE_PARSE = PASS
 AUTH_ADAPTER_DEFINITION_COUNT = 1
 LOGIN_GATE_DEFINITION_COUNT = 1
 AUTH_RUNTIME_RESOLUTION_TEST = PASS
+MODULAR_SOURCE_GUARD = PASS
 EMPLOYEE_CODE_50.03 = PASS
 EMPLOYEE_CODE_50.02 = PASS
 EMPLOYEE_CODE_0050_2 = PASS
@@ -174,7 +195,7 @@ DIST_CSS_UNCHANGED = YES
 
 If CSS changes, STOP and do not hide/revert unrelated changes without reporting them.
 
-## 7. Explicitly Forbidden
+## 8. Explicitly Forbidden
 
 - NO Kintone POST/PUT/DELETE;
 - NO App794 customization upload/update/deploy;
@@ -187,9 +208,11 @@ If CSS changes, STOP and do not hide/revert unrelated changes without reporting 
 - NO UAT;
 - NO new feature/UI polish;
 - NO broad refactor;
+- NO merging multiple feature/menu implementations into `main-mbo-app.js` or another catch-all source file;
+- NO manual editing of generated `dist/mbo-employee-app.js` as the source of truth;
 - NO new planning/docs package.
 
-## 8. Delivery
+## 9. Delivery
 
 Commit only the necessary source/build/test changes and regenerated `dist/mbo-employee-app.js`.
 
@@ -208,6 +231,7 @@ NPM_TEST_RESULT
 AUTH_ADAPTER_DEFINITION_COUNT
 LOGIN_GATE_DEFINITION_COUNT
 AUTH_RUNTIME_RESOLUTION_TEST
+MODULAR_SOURCE_GUARD
 EMPLOYEE_CODE_SPECIAL_FORMAT_TESTS
 DIST_CSS_UNCHANGED
 KINTONE_WRITES_EXECUTED = 0
