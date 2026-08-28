@@ -72,7 +72,7 @@ Keep skills concise and operational. Prefer patterns/checklists over narrative h
 ## 4. Current Skill Index
 
 - `safe-live-change.md`
-  - backup -> exact change -> immediate read-back -> rollback on mismatch
+  - backup -> exact change -> immediate read-back -> rollback on mismatch; preserve unchanged Kintone customization FILE entries/fileKeys instead of re-uploading non-target files
 
 - `shared-account-application-auth.md`
   - application-level employee identity on top of shared Kintone principals and its hard-isolation limitations
@@ -84,7 +84,7 @@ Keep skills concise and operational. Prefer patterns/checklists over narrative h
   - browser-compatible PBKDF2 password hashing plus create-only credential reconciliation and independent read-only post-provision verification without exposing secret material
 
 - `fail-closed-customization.md`
-  - design Kintone customization gates so missing host/init/data errors do not expose native sensitive UI
+  - fail-closed protected UI plus classic-bundle runtime dependency verification; syntax-only bundle checks do not prove required auth modules/classes are present
 
 ---
 
