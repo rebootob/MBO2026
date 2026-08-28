@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE=128 PASS / APP801 PROVISIONING PASS / SESSION ARCHITECTURE+SOURCE+TEST PASS / APP801 SESSION SCHEMA PASS / SESSION LIST→CREATE LIVE PASS / MODULE-AWARE BUNDLE PASS / CREATE-HANDLER CORRECTIVE STILL OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE=128 PASS / APP801 PROVISIONING PASS / SESSION ARCHITECTURE+SOURCE+TEST PASS / APP801 SESSION SCHEMA PASS / SESSION LIST→CREATE LIVE PASS / MODULE-AWARE BUNDLE PASS / CREATE-HANDLER SOURCE+TEST PASS / EMPLOYEE-SELF INDEX UX CORRECTIVE NEXT / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -31,133 +31,109 @@ APP801_SESSION_SCHEMA_WRITE              = PASS / ACCEPTED AFTER INDEPENDENT LIV
 APP794_SESSION_CONTINUITY_DEPLOY         = EXECUTED / REVISION 43 / PARTIAL RUNTIME ACCEPTANCE ONLY
 D1_SESSION_LIST_TO_CREATE_CONTINUITY     = PASS / USER-SIDE LIVE OBSERVATION
 D1_BUNDLE_DEPENDENCY_CORRECTIVE          = PASS / ACCEPTED AT 2a766d0e25c5308a5b5eb56a6bc293c452646b70
-D1_CREATE_HANDLER_CORRECTIVE             = CORRECTIVE REQUIRED AFTER REVIEW OF 7ec027daf2cb7e6915a09b794594d0eb65cf7806
+D1_CREATE_HANDLER_CORRECTIVE             = PASS / ACCEPTED AT 162d1088b5ca943ea5477878fc8fbc393132a79e
+D1_EMPLOYEE_SELF_INDEX_UX                = OPEN / USER LIVE VISUAL DEFECT CONFIRMED
 APP794_DEPLOY_GUARD_INTEGRATION          = OPEN / MUST BE RESOLVED BEFORE ANY FUTURE LIVE DEPLOY
 D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
 D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately recorded
 ```
 
-No new App794 deploy is authorized by the current source corrective.
+No new App794 deploy is authorized.
 
-## 3. Independent Review — Create-Handler Commit
+## 3. Independent Review — Create-Handler Final Corrective
 
-Executor commit reviewed:
+Executor commit:
 
 ```text
-7ec027daf2cb7e6915a09b794594d0eb65cf7806
+162d1088b5ca943ea5477878fc8fbc393132a79e
 ```
 
 Task base:
 
 ```text
-bb2f7ba1703f8b5827de07f62611839d97709aa1
+50848cb1455a525e76eb72956894c7a1dfc54214
 ```
 
-Exactly one executor commit is ahead of the task base.
+Exactly one executor commit is ahead of the task base and changed only:
+- `src/main-mbo-app.js`
+- `tests/create-handler-form-state.test.js`
+- generated `dist/mbo-employee-app.js`
 
-Accepted direction:
-- local `isAutoloadingInCreateHandler` lifecycle flag is appropriate;
-- during awaited authenticated `ui.executeLookup()` the callback paths suppress `syncRecordToKintone()`;
-- success and failure focused tests exercise the production bundle and prove zero `kintone.app.record.get()/set()` calls during the awaited autoload path;
-- CSS source/dist remain unchanged and byte-identical;
-- no Kintone write/deploy was authorized.
-
-## 4. Blocking Findings — Narrow Corrective Required
-
-### A. Unrelated business behavior changed
-
-The task explicitly required existing business behavior to stay identical. The executor removed:
+Accepted findings:
 
 ```text
-Department_Hoshin
-Section_Hoshin
+CREATE_AUTOLOAD_FORM_STATE_AUTHORITY     = event.record
+CREATE_AUTOLOAD_RECORD_GET_CALLS         = 0 IN FOCUSED PRODUCTION-BUNDLE TEST PATH
+CREATE_AUTOLOAD_RECORD_SET_CALLS         = 0 IN FOCUSED PRODUCTION-BUNDLE TEST PATH
+POST_HANDLER_INTERACTIVE_SYNC            = REQUIRED / NON-SKIPPABLE TEST
+SUCCESS_VERIFIED_STATE                   = REQUIRED TRUE / NON-SKIPPABLE TEST
+FAILURE_VERIFIED_STATE                   = REQUIRED FALSE / NON-SKIPPABLE TEST
+DEPARTMENT_HOSHIN_CLEAR_BEHAVIOR         = RESTORED
+SECTION_HOSHIN_CLEAR_BEHAVIOR            = RESTORED
+MISSING_FIELD_OBJECT_FABRICATION         = REMOVED
+REQUIRED_SNAPSHOT_FIELD_MISSING          = FAIL CLOSED
+CSS_CHANGE                               = NONE
+KINTONE_WRITE                            = 0 BY TASK SCOPE
 ```
 
-from the existing `fieldsToClear` behavior in `onEmployeeCodeChanged()`.
+GitHub has no CI/workflow run for this commit. Local `npm run ui:build` / `npm test` remains executor evidence; independent static review found no remaining blocker in the requested Create-handler corrective.
 
-That change is unrelated to the Create-handler lifecycle defect and must be reverted.
-
-### B. Do not fabricate missing Kintone field objects
-
-The executor changed several writes from:
+Current generated JS Git blob:
 
 ```text
-if (record[field]) record[field].value = value
+d07b588a74aadebe0e2f577aad4443629e20986d
 ```
 
-to creating missing objects such as:
+## 4. User Live Visual Finding — Employee-Self Index
+
+User live screenshot on App794 confirms two UX defects after successful login:
+
+1. **Logout / Change Password auth controls are not visible on the My MBO index page.**
+2. **The My MBO index looks fragmented/raw**: custom title/button/content are rendered separately from the authentication controls and the remaining native Kintone index chrome leaves the page visually awkward.
+
+Independent source review explains the host mismatch:
+- `renderEmployeeSelfIndex()` calls `mboLoginGate.renderAuthBar(host, employeeCode)` where `host` is `.gaia-app-wrapper` / document body fallback;
+- the actual custom My MBO index is then mounted to `kintone.app.getHeaderSpaceElement()` when available;
+- `renderAuthBar()` inserts directly into the supplied host and is therefore mounted into a different, unstable Kintone DOM region from the custom index.
+
+Required UX direction:
+- use a stable Kintone custom host for authenticated Employee-Self controls;
+- auth controls and My MBO index must render as one coherent shell on index pages;
+- visible bilingual identity/session controls: Employee Code, Change Password, Logout;
+- bilingual My MBO title, Create action and empty state;
+- do not hide/cover Kintone global navigation, breadcrumb or comment functionality;
+- no business/routing/scoring/authentication semantics change;
+- visual approval required before any redeploy.
+
+## 5. Separate Pre-Deploy Guard Integration Finding
+
+Existing deployment guard remains fail-closed:
 
 ```text
-record[field] = { value: ... }
+DISCOVERY_MODE      = true
+WRITE_ALLOWED_APPS  = []
 ```
 
-This silently changes form-state/schema behavior and exceeds the requirement to populate the handler-provided existing `event.record` fields.
-
-Required correction:
-- preserve the original field-existence semantics;
-- do not synthesize arbitrary Kintone form fields;
-- for fields required for the authenticated create snapshot, fail closed with a stable error if a required field is missing from `event.record` rather than inventing the field object.
-
-### C. Verified-state and post-handler-sync tests may skip
-
-Current focused tests contain conditional assertions such as:
-
-```text
-if (activeUi) { ... }
-```
-
-If the production bundle does not expose the UI instance, the test can pass without proving:
-- `isEmployeeVerified = true` after successful autoload;
-- `isEmployeeVerified = false` after failure;
-- post-handler interactive sync reaches `kintone.app.record.set()`.
-
-The next test correction must make these proofs mandatory, not optional/skippable. Use a narrow test hook or smallest production orchestration boundary if needed; do not broaden business logic.
-
-## 5. Current Verdict
-
-```text
-CREATE_HANDLER_LIFECYCLE_DIRECTION       = PROVISIONAL PASS
-CREATE_AUTOLOAD_RECORD_GET_CALLS         = 0 IN FOCUSED TEST PATH
-CREATE_AUTOLOAD_RECORD_SET_CALLS         = 0 IN FOCUSED TEST PATH
-BUSINESS_BEHAVIOR_PRESERVATION           = FAIL / CORRECTIVE REQUIRED
-MISSING_FIELD_FABRICATION                = FAIL / CORRECTIVE REQUIRED
-VERIFIED_STATE_TEST_PROOF                = INCOMPLETE
-POST_HANDLER_SYNC_TEST_PROOF             = INCOMPLETE
-APP794_DEPLOY                            = BLOCKED / NOT AUTHORIZED
-```
-
-GitHub has no CI statuses/workflow run for this commit. Do not claim independent `npm test` PASS.
+while `deploy-custom-ui.js` currently calls `assertSandboxWriteTarget(app)` with default arguments. This integration mismatch must be resolved in a separate narrow source/test gate before any future App794 live deploy. Do not disable the permanent protected-app rules.
 
 ## 6. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER              = Antigravity
-ANTIGRAVITY_REQUIRED           = YES — ONE NARROW CREATE-HANDLER FINAL CORRECTIVE
+ANTIGRAVITY_REQUIRED           = YES — ONE NARROW EMPLOYEE-SELF INDEX SHELL/LOGOUT UX CORRECTIVE
 KINTONE_WRITE                  = NO
 APP794_DEPLOY                  = NO
 APP801_WRITE                   = NO
 DEPLOY_GUARD_FIX               = NO IN THIS PACKAGE
-EMPLOYEE_PART_A_UI_EDIT        = NO
-BUSINESS_UI_REFACTOR           = NO
+BUSINESS_LOGIC_CHANGE          = NO
 D2_D7_WRITE                    = NO
 MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-Required next corrective:
-1. keep the accepted lifecycle flag/suppression behavior;
-2. restore original `Department_Hoshin` / `Section_Hoshin` clearing behavior;
-3. remove all new missing-field object fabrication from this corrective;
-4. fail closed for missing required create-snapshot fields instead of creating fake Kintone field objects;
-5. make Verified Create State and post-handler interactive sync tests mandatory and non-skippable;
-6. preserve failure-path zero record.get/set proof;
-7. `npm run ui:build` + `npm test`;
-8. commit + push one concise corrective commit and STOP.
-
-After Create-handler source/test acceptance, Control Plane will separately close the App794 deploy-guard integration before asking for one combined corrective live deploy authorization.
+After source/test/visual acceptance of the Employee-Self shell, Control Plane will separately close App794 deploy-guard integration, then request one combined corrective live deploy authorization.
 
 ## 7. Reusable Lessons
 
-- Production browser bundling must follow the real module dependency graph; do not strip imports and maintain a second manual module list.
-- A bundle change must test both dependency closure and the executable deployment entrypoint consuming the built artifact.
-- Kintone `app.record.create.show` asynchronous autoload must use the handler-provided `event.record` as the in-handler form-state authority; direct `kintone.app.record.get()/set()` calls belong outside the active event handler.
-- A narrow event-lifecycle corrective must not silently change unrelated snapshot/field-clearing business behavior.
+- Kintone custom controls that must persist should mount to documented Kintone custom/header/space elements rather than arbitrary internal wrapper DOM.
+- Employee-Self auth controls and the Employee-Self index should share one stable UI shell instead of rendering into unrelated hosts.
+- UI visual acceptance remains mandatory even when auth/session/tests are technically correct.
