@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / BUNDLE+EMPLOYEE-CODE FIX PROVISIONALLY PASS / PREVIEW FILEKEY FIX PROVISIONALLY PASS / PRE-UPLOAD SAFETY STILL CORRECTIVE |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / SOURCE CORRECTIVE PASS / CORRECTIVE REDEPLOY AWAITING AUTHORIZATION |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -24,19 +24,19 @@ No AI may silently drop D1–D7.
 ## 2. Authorization Ledger
 
 ```text
-D1_SOURCE_IMPLEMENTATION            = CORRECTIVE REVIEW IN PROGRESS
-D1_LIVE_CUTOVER                     = IN PROGRESS / BLOCKED AT APP794 RUNTIME
+D1_SOURCE_IMPLEMENTATION            = SOURCE CORRECTIVE ACCEPTED / PRE-DEPLOY TEST GATE REQUIRED
+D1_LIVE_CUTOVER                     = IN PROGRESS / BLOCKED PENDING CORRECTIVE REDEPLOY
 DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED / PASS
 APP801_GROUP_ACL_MODEL              = APPROVED / PASS
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
 D1_CANDIDATE_USER_EXPORT_AUDIT      = PASS / 128 ACCEPTED CANDIDATES
 APP801_CREDENTIAL_BULK_PROVISIONING = PASS / INDEPENDENTLY LIVE VERIFIED 2026-08-28
 APP794_D1_CUSTOMIZATION_DEPLOY      = EXECUTED / NOT ACCEPTED
-APP794_REDEPLOY                     = NOT AUTHORIZED
+APP794_CORRECTIVE_REDEPLOY          = NOT AUTHORIZED / WAITING EXACT USER APPROVAL
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
 ```
 
-The prior App794 deploy authorization is consumed. No materially changed artifact may be redeployed until a new exact authorization is recorded after source acceptance.
+The prior App794 deploy authorization is consumed. A corrective redeploy is a new production-impacting action and requires exact user authorization.
 
 ## 3. Accepted D1 State That Remains Valid
 
@@ -47,97 +47,71 @@ CREDENTIAL_CANDIDATE_GATE = PASS / 128
 APP801_PROVISIONING = PASS / 128 / independently live verified
 ```
 
-Manual final D1 UAT remains `BLOCKED / NOT STARTED`.
+Manual final D1 UAT remains `BLOCKED / NOT STARTED` until corrective redeploy succeeds and is independently verified.
 
-## 4. Independent Review — Commit 5f08dd6a4b2f7ad1f245df0f8e1de2d4ac7297b7
+## 4. Independent Source Review — Commit ed1d8e8573efeb47845cc07dcd81853842ed307e
 
-Exact Git comparison from parent `dc3bdaff8df70eaac6c95512cb0e3f7c76ff0ece` proves this executor commit changes only:
+Exact Git comparison from parent `d30ff50a3299c86dfc828a59a39da20dff23a4ea` proves the executor commit changes only:
 
 ```text
 scripts/kintone/deploy-custom-ui.js
 tests/deploy-customization-preservation.test.js
 ```
 
-No business/UI/auth module, CSS, dist bundle, Baseline, Control Center, or D2-D7 source was changed by the executor commit.
+No business/UI/auth module, CSS, generated dist artifact, Baseline, Control Center, Active Task, or D2-D7 source was changed by the executor commit.
 
-### Accepted parts
+### Accepted corrections
 
-1. Full preflight is now called before `uploadFile()` in the live path.
-2. Missing/blank scope and Preview revision are checked before upload.
-3. URL/FILE entry types and basic entry fields are checked before upload.
-4. Target missing/ambiguous checks occur before upload.
-5. Preview non-target FILE keys remain the source for Preview PUT preservation.
-6. Only the target JS is uploaded; CSS is not uploaded.
-7. The corrective stays outside `main-mbo-app.js` and does not violate the confirmed modular source architecture.
+1. Full deterministic preflight remains before `uploadFile()`.
+2. Both Live and Preview customization must explicitly contain `desktop` / `mobile` objects and `js` / `css` arrays; missing structure no longer defaults silently to empty arrays during preflight.
+3. Customization scope is restricted to `ALL | ADMIN | NONE` and Live must equal Preview.
+4. Preview revision must resolve to a positive integer and `-1` is rejected so revision checking is not disabled.
+5. Target identification is exactly one Preview desktop JS FILE named `mbo-employee-app.js`.
+6. The old-fileKey exemption is scoped by exact object identity to that single Preview desktop JS target entry only.
+7. Same-named FILE entries in desktop CSS / mobile JS / mobile CSS remain non-target and require valid Preview fileKeys.
+8. Preview non-target FILE keys remain preserved in the Preview PUT payload.
+9. Only replacement JS is uploaded by the live path; CSS is not uploaded.
+10. Source modularity remains intact; no code was moved into `main-mbo-app.js` and no broad refactor was mixed into the production corrective.
 
-### Remaining blocking findings
+### Independent API contract check
 
-The source package is still **CORRECTIVE** because deterministic invalid states can still pass preflight and fail only after the JS upload.
+Cybozu documentation independently confirms:
+- customization scope values are `ALL`, `ADMIN`, `NONE`;
+- update `revision` accepts number/string;
+- `revision = -1` or omitted revision disables revision checking;
+- retained FILE keys for a Preview customization update should come from Preview/Test customization state.
 
-#### A. Target fileKey exemption is too broad
+### Test-execution evidence limitation
 
-Current Preview FILE-key validation exempts any preview FILE whose `file.name === targetFileName`, regardless of section.
-
-Only the exact replacement target in `preview.desktop.js` may be exempt from requiring its old Preview fileKey. A same-named FILE under desktop CSS or mobile JS/CSS is non-target and must retain a valid Preview fileKey.
-
-Otherwise a malformed same-named retained FILE can pass preflight, then `buildPreviewCustomizePayload()` fails after the new JS has already been uploaded.
-
-#### B. Missing section/list structure can silently become empty arrays
-
-`validateEntryList(list = [])` and topology helpers currently treat an absent `desktop.css`, `mobile.js`, or `mobile.css` as `[]`.
-
-If the same structure is absent in both live and preview responses, preflight can accept malformed/unknown response structure and the PUT builder can silently construct empty arrays.
-
-Live and Preview responses must explicitly contain `desktop` and `mobile` objects with `js` and `css` arrays before upload.
-
-#### C. Scope must be a valid Kintone customization scope
-
-Official Kintone customization scope values are:
+GitHub exposes no CI status or workflow run for this commit. Therefore:
 
 ```text
-ALL
-ADMIN
-NONE
+STATIC_SOURCE_REVIEW = PASS
+FOCUSED_TEST_SOURCE_REVIEW = PASS
+GITHUB_CI_EXECUTION_EVIDENCE = NONE
+NPM_TEST_EXECUTION = NOT INDEPENDENTLY PROVEN BY GITHUB
 ```
 
-A non-empty unknown string must not pass preflight.
-
-#### D. Revision validation must actually preserve concurrency protection
-
-Kintone documents that `revision = -1` disables revision checking. Current preflight accepts any non-empty revision, including `-1` or a non-numeric value.
-
-The preflight must require the Preview revision returned by Kintone to be a valid positive integer revision and must reject `-1` so the PUT remains concurrency-guarded.
-
-GitHub has no CI/status check for this commit, so `npm test` is not independently proven by GitHub status.
+This does not require another source corrective. Instead, any future corrective redeploy task must run `npm run ui:build` and `npm test` as a mandatory local pre-deploy gate and must execute zero Kintone writes if either fails.
 
 Therefore:
 
 ```text
-COMMIT_5F08_PREFLIGHT_ORDER = PASS
-COMMIT_5F08_BASIC_ENTRY_VALIDATION = PASS
-COMMIT_5F08_FULL_FAIL_CLOSED_PREFLIGHT = CORRECTIVE REQUIRED
-SOURCE_PACKAGE_OVERALL = NOT PASS YET
-APP794_REDEPLOY = BLOCKED / NOT AUTHORIZED
+COMMIT_ED1_FINAL_PREFLIGHT_CORRECTIVE = PASS
+D1_SOURCE_CORRECTIVE_PACKAGE = PASS / ACCEPTED FOR CONTROLLED REDEPLOY
+APP794_CORRECTIVE_REDEPLOY = WAITING USER AUTHORIZATION
 ```
 
-## 5. Exact Next Corrective Scope
+## 5. Current Artifact Identity
 
-The next executor task is SOURCE / TEST ONLY and must be the smallest final pre-upload safety correction.
+At accepted source commit `ed1d8e8573efeb47845cc07dcd81853842ed307e`:
 
-Required correction:
+```text
+dist/mbo-employee-app.js Git blob SHA = 2a9a3c5bfe896b51f482c016f66863bffeddb679
+dist/mbo-employee.css    Git blob SHA = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+```
 
-1. Require explicit `desktop` and `mobile` objects in both live and Preview customization.
-2. Require explicit `js` and `css` arrays in each object; missing lists must fail closed instead of defaulting to `[]`.
-3. Accept scope only from `ALL | ADMIN | NONE`, and require live == Preview scope.
-4. Require Preview revision to be a positive integer value and reject `-1` / malformed revisions.
-5. Identify the exact target as one FILE entry named `mbo-employee-app.js` in `preview.desktop.js`.
-6. Only that exact target entry may omit its old Preview fileKey because it will be replaced.
-7. Every other Preview FILE in desktop/mobile JS/CSS must have a non-empty Preview fileKey, even if its filename happens to equal the target filename.
-8. All above checks must finish before `uploadFile()`.
-9. Add focused tests proving each invalid structure causes zero upload/write calls.
-10. Do not refactor deployment tooling or business modules beyond this exact defect.
-
-No Kintone write/deploy is authorized in this corrective task.
+The corrective commit itself did not change either dist artifact. Future redeploy must rebuild locally first and confirm the generated target JS is source-consistent; unchanged CSS must not be uploaded.
 
 ## 6. Source Architecture Decision — Confirmed
 
@@ -147,22 +121,31 @@ Canonical modular source rules live in:
 project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md
 ```
 
-No Big-Bang refactor is allowed during this D1 production corrective. The large `src/ui/employee-part-a-ui.js` decomposition starts only after the active D1 blocker is stable.
+No Big-Bang refactor is allowed during D1 live stabilization. The large `src/ui/employee-part-a-ui.js` decomposition begins only after the D1 live blocker is stable and must proceed one feature/menu extraction at a time.
 
 ## 7. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES
-DUPLICATE_WORK_RISK = LOW — exact unresolved preflight defects only
+NEXT_ACTION_OWNER = User / Control Plane authorization decision
+ANTIGRAVITY_REQUIRED = NO
+DUPLICATE_WORK_RISK = HIGH if executor runs before authorization
 ```
 
-Antigravity may execute only the new `project-docs/AI_ACTIVE_TASK.md`, push one narrow source/test commit, and STOP.
+If the user approves `App794 Corrective Redeploy`, ChatGPT will issue one exact redeploy Active Task with:
+- local `npm run ui:build` + `npm test` before any remote write;
+- backup/read-back of effective and Preview customization;
+- strict preflight before upload;
+- upload target JS only;
+- preserve non-target Preview fileKeys including CSS;
+- Preview PUT with exact revision;
+- deploy and poll;
+- post-deploy effective read-back and artifact verification;
+- STOP before UAT.
 
 ## 8. Knowledge / Baseline Maintenance
 
 Baseline promotion:
-`NONE — no durable business rule changed in this review.`
+`NONE — existing SOURCE_CODE_ARCHITECTURE baseline already covers the durable architecture rule.`
 
 Reusable Kintone skill extraction:
-`PASS — customization preflight must validate exact target context, explicit response structure, valid scope, and a revision value that does not disable concurrency checking before file upload.`
+`NO NEW UPDATE REQUIRED — skills/kintone/safe-live-change.md already records explicit structure, exact-target fileKey preservation, valid scope, Preview/Test fileKeys, and revision concurrency safeguards.`
