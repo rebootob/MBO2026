@@ -35,6 +35,7 @@ Temporary status, blockers, one-time commands, pending-review claims, transient 
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — confirmed Multi-AI role model, Antigravity low-credit policy, Control Center/Active Task model, mandatory baseline-promotion rule, reusable Kintone skill-extraction rule, and review/new-chat governance.
+- `SOURCE_CODE_ARCHITECTURE.md` — confirmed modular JavaScript architecture, feature/menu separation, main-entry responsibilities, controlled decomposition sequence, generated-dist rules, and low-credit Antigravity execution pattern for refactoring.
 - `DOCUMENT_CONTROL.md` — confirmed lean document policy: Core Read Set, task-triggered documents, and default-ignore historical/superseded files.
 - `D1_AUTH_SECURITY.md` — confirmed Kintone-only D1 authentication/security architecture, App801 credential model, page-memory auth, lockout/password rules, Employee Self gate, dedicated `MBO_EMPLOYEE_ACCESS` group model, App801 ACL target, and D1 UAT closure rule.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights, and lifecycle appraiser model.
