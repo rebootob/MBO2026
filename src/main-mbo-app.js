@@ -13,6 +13,7 @@ import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
 import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
 import { MboSessionManager } from './ui/mbo-session-manager.js';
 import { EmployeeSelfIndexUI } from './ui/employee-self-index-ui.js';
+import { DeleteGuardPolicy } from './security/delete-guard-policy.js';
 
 let activeUiInstance = null;
 
@@ -722,5 +723,11 @@ if (typeof kintone !== 'undefined') {
     }
 
     return event;
+  });
+
+  // Hook 4: Record Deletion Submission Guard (Fail-Closed)
+  kintone.events.on(['app.record.detail.delete.submit', 'app.record.index.delete.submit'], function (event) {
+    const policy = new DeleteGuardPolicy({ mboLoginGate });
+    return policy.evaluateDeleteSubmit(event);
   });
 }

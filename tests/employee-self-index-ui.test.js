@@ -181,3 +181,88 @@ test('Employee-Self Index UI: Renders stable HeaderSpace shell, exactly 1 auth b
   assert.ok(emptyP.textContent.includes('ไม่พบบันทึก MBO สำหรับรหัสพนักงาน 0113'));
   assert.ok(emptyP.textContent.includes('No MBO records found for employee code 0113.'));
 });
+
+test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc, renders history links, zero delete UI, and blocks delete submits', async () => {
+  const headerSpaceEl = createMockElement('div');
+  headerSpaceEl.setAttribute('id', 'header-space');
+
+  globalThis.document = {
+    querySelector: () => null,
+    body: createMockElement('body'),
+    createElement: (tag) => createMockElement(tag)
+  };
+
+  globalThis.kintone = {
+    app: {
+      getHeaderSpaceElement: () => headerSpaceEl
+    }
+  };
+
+  let executedQuery = '';
+  const mockApiWrapper = {
+    getRecords: async (appId, query) => {
+      executedQuery = query;
+      return {
+        records: [
+          { $id: { value: '301' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113' }, Status: { value: 'NEW_RECORD' } },
+          { $id: { value: '201' }, Fiscal_Year: { value: 'FY2025' }, Record_Key: { value: 'FY2025-0113' }, Status: { value: 'APPROVED' } },
+          { $id: { value: '101' }, Fiscal_Year: { value: 'FY2024' }, Record_Key: { value: 'FY2024-0113' }, Status: { value: 'APPROVED' } }
+        ]
+      };
+    }
+  };
+
+  const ui = new EmployeeSelfIndexUI({
+    kintoneApiWrapper: mockApiWrapper,
+    getMboAppId: () => 794,
+    mboLoginGate: { renderAuthBar: () => {} },
+    renderBlockedNotice: () => {}
+  });
+
+  await ui.render({ type: 'app.record.index.show' }, null, '0113');
+
+  // 1. Exact Employee_Code query & Fiscal_Year desc
+  assert.equal(executedQuery, 'Employee_Code = "0113" order by Fiscal_Year desc');
+
+  const customIndex = headerSpaceEl.querySelector('[data-mbo-custom-index]');
+  assert.ok(customIndex, 'Index container must be present');
+
+  // 2. Action links are View History ("ดูย้อนหลัง / View History")
+  const historyLinks = customIndex.querySelectorAll('[data-mbo-history-link]');
+  assert.equal(historyLinks.length, 3, 'Exactly 3 history links for 3 years of records');
+
+  assert.equal(historyLinks[0].textContent, 'ดูย้อนหลัง / View History');
+  assert.equal(historyLinks[0].href, '/k/794/show#record=301');
+
+  assert.equal(historyLinks[1].textContent, 'ดูย้อนหลัง / View History');
+  assert.equal(historyLinks[1].href, '/k/794/show#record=201');
+
+  assert.equal(historyLinks[2].textContent, 'ดูย้อนหลัง / View History');
+  assert.equal(historyLinks[2].href, '/k/794/show#record=101');
+
+  // 3. ZERO Delete UI present
+  const allText = JSON.stringify(customIndex);
+  assert.equal(allText.includes('Delete'), false, 'Zero Delete action text allowed in My MBO UI');
+  assert.equal(allText.includes('ลบ'), false, 'Zero Thai delete text allowed in My MBO UI');
+
+  // 4. DeleteGuardPolicy: Blocks Employee-Self detail/index delete submit
+  const { DeleteGuardPolicy } = await import('../src/security/delete-guard-policy.js');
+  const policy = new DeleteGuardPolicy({
+    getAuthenticatedEmployeeCode: () => '0113'
+  });
+
+  const evt1 = { error: null };
+  const res1 = policy.evaluateDeleteSubmit(evt1);
+  assert.equal(res1, false, 'Deletion submit must be blocked (return false)');
+  assert.ok(evt1.error.includes('การลบบันทึก MBO ไม่อนุญาตสำหรับพนักงาน'), 'Event error must communicate employee prohibition');
+
+  // 5. DeleteGuardPolicy: Blocks unauthenticated deletion submit fail-closed
+  const unauthPolicy = new DeleteGuardPolicy({
+    getAuthenticatedEmployeeCode: () => null
+  });
+
+  const evt2 = { error: null };
+  const res2 = unauthPolicy.evaluateDeleteSubmit(evt2);
+  assert.equal(res2, false, 'Unauthenticated deletion submit must be blocked (return false)');
+  assert.ok(evt2.error.includes('Authentication required'), 'Unauthenticated deletion must fail closed');
+});

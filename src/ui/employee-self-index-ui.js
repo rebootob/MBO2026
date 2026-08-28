@@ -133,7 +133,8 @@ export class EmployeeSelfIndexUI {
       const actionTd = document.createElement('td');
       actionTd.style.cssText = 'padding:12px;text-align:right;';
       const viewLink = document.createElement('a');
-      viewLink.textContent = 'ดู / แก้ไข (View / Edit)';
+      viewLink.setAttribute('data-mbo-history-link', '');
+      viewLink.textContent = 'ดูย้อนหลัง / View History';
       viewLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
       viewLink.style.cssText = 'color:#2563eb;text-decoration:none;font-weight:500;';
       actionTd.appendChild(viewLink);

@@ -6543,7 +6543,8 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
         const actionTd = document.createElement("td");
         actionTd.style.cssText = "padding:12px;text-align:right;";
         const viewLink = document.createElement("a");
-        viewLink.textContent = "\u0E14\u0E39 / \u0E41\u0E01\u0E49\u0E44\u0E02 (View / Edit)";
+        viewLink.setAttribute("data-mbo-history-link", "");
+        viewLink.textContent = "\u0E14\u0E39\u0E22\u0E49\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E07 / View History";
         viewLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
         viewLink.style.cssText = "color:#2563eb;text-decoration:none;font-weight:500;";
         actionTd.appendChild(viewLink);
@@ -6556,6 +6557,38 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
       table.appendChild(tbody);
       contentBox.appendChild(table);
       return event;
+    }
+  };
+
+  // src/security/delete-guard-policy.js
+  var DeleteGuardPolicy = class {
+    constructor(options = {}) {
+      this.mboLoginGate = options.mboLoginGate;
+      this.getAuthenticatedEmployeeCode = options.getAuthenticatedEmployeeCode;
+    }
+    /**
+     * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
+     * Blocks record deletion fail-closed for Employee-Self users and unauthenticated sessions.
+     * @param {Object} event Kintone deletion submit event
+     * @returns {boolean|Object} Returns false or event with event.error set to block deletion
+     */
+    evaluateDeleteSubmit(event = {}) {
+      let authEmpCode = null;
+      if (typeof this.getAuthenticatedEmployeeCode === "function") {
+        authEmpCode = this.getAuthenticatedEmployeeCode();
+      } else if (this.mboLoginGate && typeof this.mboLoginGate.getAuthenticatedEmployeeCode === "function") {
+        authEmpCode = this.mboLoginGate.getAuthenticatedEmployeeCode();
+      }
+      if (!authEmpCode) {
+        if (typeof event === "object" && event !== null) {
+          event.error = "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E01\u0E32\u0E23\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A / Authentication required to perform record operations.";
+        }
+        return false;
+      }
+      if (typeof event === "object" && event !== null) {
+        event.error = "\u0E01\u0E32\u0E23\u0E25\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 MBO \u0E44\u0E21\u0E48\u0E2D\u0E19\u0E38\u0E0D\u0E32\u0E15\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19 / Deleting MBO records is strictly prohibited for Employee-Self.";
+      }
+      return false;
     }
   };
 
@@ -7154,6 +7187,10 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         return false;
       }
       return event;
+    });
+    kintone.events.on(["app.record.detail.delete.submit", "app.record.index.delete.submit"], function(event) {
+      const policy = new DeleteGuardPolicy({ mboLoginGate });
+      return policy.evaluateDeleteSubmit(event);
     });
   }
 })();

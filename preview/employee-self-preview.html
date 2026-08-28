@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Self Index UI — Local Preview</title>
+  <link rel="stylesheet" href="../src/styles/mbo-employee.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 0;
+    }
+    .gaia-header {
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .gaia-argus-app-breadcrumb {
+      background: #f8fafc;
+      padding: 10px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .gaia-app-workspace {
+      max-width: 1080px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    #header-space {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Preserved Kintone-style Header Bar -->
+  <div class="gaia-header">
+    <span>Cybozu Kintone — App 794 (MBO Master App)</span>
+    <span>System Administrator</span>
+  </div>
+
+  <!-- Preserved Kintone-style Breadcrumb -->
+  <div class="gaia-argus-app-breadcrumb">
+    Apps &gt; MBO Evaluation 2026 (App 794) &gt; My MBO Index
+  </div>
+
+  <!-- Main Kintone Workspace & HeaderSpace -->
+  <div class="gaia-app-workspace">
+    <div id="header-space"></div>
+  </div>
+
+  <!-- Instantiate Actual Production EmployeeSelfIndexUI Component -->
+  <script type="module">
+    import { EmployeeSelfIndexUI } from '../src/ui/employee-self-index-ui.js';
+    import { MboKintoneLoginGate } from '../src/ui/mbo-kintone-login-gate.js';
+
+    const headerSpace = document.getElementById('header-space');
+    window.kintone = {
+      app: {
+        getHeaderSpaceElement: () => headerSpace
+      }
+    };
+
+    const mockGate = new MboKintoneLoginGate({
+      adapter: {},
+      sessionManager: {},
+      onReload: () => console.log('[Local Preview] Reload triggered')
+    });
+    mockGate.logout = async () => console.log('[Local Preview] Logout triggered');
+
+    const mockApiWrapper = {
+      getRecords: async () => ({
+        records: [
+          { $id: { value: '301' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113' }, Status: { value: 'NEW_RECORD' } },
+          { $id: { value: '201' }, Fiscal_Year: { value: 'FY2025' }, Record_Key: { value: 'FY2025-0113' }, Status: { value: 'APPROVED' } },
+          { $id: { value: '101' }, Fiscal_Year: { value: 'FY2024' }, Record_Key: { value: 'FY2024-0113' }, Status: { value: 'APPROVED' } }
+        ]
+      })
+    };
+
+    const ui = new EmployeeSelfIndexUI({
+      kintoneApiWrapper: mockApiWrapper,
+      getMboAppId: () => 794,
+      mboLoginGate: mockGate,
+      renderBlockedNotice: () => {}
+    });
+
+    await ui.render({ type: 'app.record.index.show' }, headerSpace, '0113');
+  </script>
+</body>
+</html>
