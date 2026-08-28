@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / SOURCE CORRECTIVE PASS / APP794 CORRECTIVE REDEPLOY REPORTED SUCCESS / INDEPENDENT LIVE VERIFICATION PENDING |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / SOURCE CORRECTIVE PASS / LIVE LOGIN GATE RECOVERED / UAT DEFECT: INTERNAL NAVIGATION REQUIRES RE-LOGIN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -25,18 +25,18 @@ No AI may silently drop D1–D7.
 
 ```text
 D1_SOURCE_IMPLEMENTATION            = SOURCE CORRECTIVE ACCEPTED
-D1_LIVE_CUTOVER                     = IN PROGRESS / REDEPLOY REPORTED COMPLETE / INDEPENDENT LIVE VERIFICATION PENDING
+D1_LIVE_CUTOVER                     = IN PROGRESS / LOGIN GATE RUNTIME RECOVERED / NAVIGATION SESSION DEFECT OPEN
 DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED / PASS
 APP801_GROUP_ACL_MODEL              = APPROVED / PASS
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
 D1_CANDIDATE_USER_EXPORT_AUDIT      = PASS / 128 ACCEPTED CANDIDATES
 APP801_CREDENTIAL_BULK_PROVISIONING = PASS / INDEPENDENTLY LIVE VERIFIED 2026-08-28
 APP794_D1_CUSTOMIZATION_DEPLOY      = EXECUTED / NOT ACCEPTED
-APP794_CORRECTIVE_REDEPLOY          = EXECUTED / PENDING INDEPENDENT LIVE VERIFICATION
+APP794_CORRECTIVE_REDEPLOY          = EXECUTED / ORIGINAL RUNTIME NULL DEFECT RECOVERED / FULL D1 ACCEPTANCE BLOCKED BY NEW UAT FINDING
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
 ```
 
-The exact corrective redeploy authorization has been consumed. No retry, rollback, further deploy, UAT, or source refactor is authorized by that approval.
+The corrective redeploy authorization is consumed. No retry, rollback, new deploy, source refactor, App801 schema change, session implementation, or D2-D7 work is authorized by that approval.
 
 ## 3. Accepted D1 State That Remains Valid
 
@@ -46,104 +46,115 @@ APP801_GROUP_ACL = PASS
 CREDENTIAL_CANDIDATE_GATE = PASS / 128
 APP801_PROVISIONING = PASS / 128 / independently live verified
 D1_SOURCE_CORRECTIVE_PACKAGE = PASS
+LOGIN_GATE_RUNTIME_INITIALIZATION = RECOVERED IN LIVE UI
 ```
 
-Manual final D1 UAT remains `BLOCKED / NOT STARTED` until the corrective redeploy is independently verified from the user side.
+Final D1 UAT is NOT PASS.
 
 ## 4. Executor Redeploy Evidence — Commit 9072100f7c62651b5710f03872bcad1831a6fefa
 
-Exact Git comparison from the authorizing Active Task commit `c9f91c54e527ffffd28d13ebd5685af5afe130d0` proves the executor commit changes only:
+Exact Git comparison from authorizing commit `c9f91c54e527ffffd28d13ebd5685af5afe130d0` proves the executor evidence commit changes only:
 
 ```text
 project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md
 ```
 
-No source, test, build logic, CSS, dist artifact, Control Center, Active Task, App794 business module, or D2-D7 file was changed in the executor evidence commit.
+Executor reported build/test 804/804, revision 41 -> 42, target JS hash match, CSS hash preservation, CSS upload = 0, no source edit and no UAT execution.
 
-### Executor-reported results — NOT YET INDEPENDENTLY ACCEPTED
+These remain executor-reported live facts except where independently observed below.
+
+## 5. Independent Live Observation — Navigation Reauthentication Defect
+
+User screenshots from live App794 independently prove:
+
+1. the prior `FAIL_CLOSED_GATE_NULL` runtime initialization failure is no longer the visible behavior;
+2. MBO Login Gate renders and accepts login;
+3. authenticated My MBO list renders for the employee context;
+4. clicking `+ Create New MBO` navigates to the native create URL and immediately presents MBO Login again instead of continuing the authenticated MBO interaction.
+
+Source review confirms the cause:
 
 ```text
-LOCAL_BUILD_AND_TEST_GATE = PASS (reported 804/804)
-LOCAL_JS_GIT_BLOB_SHA = 2a9a3c5bfe896b51f482c016f66863bffeddb679
-STRICT_PREFLIGHT_RESULT = PASS
-LIVE_REVISION_BEFORE = 41
-PREVIEW_REVISION_BEFORE = 41
-LIVE_REVISION_AFTER = 42
-PREVIEW_REVISION_AFTER = 42
-DEPLOY_STATUS = SUCCESS
-DEPLOYED_JS_GIT_BLOB_SHA = 2a9a3c5bfe896b51f482c016f66863bffeddb679
-TARGET_JS_CONTENT_HASH_MATCH = YES
-CSS_CONTENT_HASH_MATCH = YES
-NON_TARGET_CUSTOMIZATION_PRESERVED = YES
-TARGET_JS_UPLOAD_COUNT = 1
-CSS_UPLOAD_COUNT = 0
-PREVIEW_CUSTOMIZATION_PUT_COUNT = 1
-APP794_DEPLOY_REQUEST_COUNT = 1
-SOURCE_FILES_MODIFIED = 0
-UAT_EXECUTED = 0
+renderEmployeeSelfIndex()
+  -> createBtn.href = `/k/${appId}/edit`
+  -> full Kintone page navigation / new JS page lifecycle
+
+MboKintoneLoginGate
+  -> principal stored only in instance/page memory
+  -> new page initializes _principal = null
+  -> requireLogin() renders login again
 ```
 
-These claims are consistent with the authorized packet, but executor self-report cannot self-certify PASS.
+This matches the CURRENT durable D1 baseline, which explicitly says authentication is PAGE MEMORY ONLY and reload/re-entry requires MBO Login again.
 
-## 5. Independent Review Verdict
+Therefore this is not a redeploy regression. It is a newly rejected UX/security architecture behavior discovered during live UAT.
+
+## 6. Required Architecture Decision Before Fix
+
+User expectation is now:
 
 ```text
-GIT_SCOPE_REVIEW = PASS
-EXECUTOR_EVIDENCE_FORMAT = PASS
-LIVE_APP794_STATE = NOT YET INDEPENDENTLY VERIFIED
-APP794_CORRECTIVE_REDEPLOY = PENDING INDEPENDENT LIVE VERIFICATION
-FINAL_D1_UAT = BLOCKED
+After successful MBO login, internal App794 navigation such as:
+List -> Create
+List -> Detail/Edit
+Create/Edit -> return to List
+must not require repeated MBO login during the same intended MBO browser session.
 ```
 
-Control Plane has no direct authenticated Kintone connector for this environment. Therefore the next proof must come from a user-side READ-ONLY verification in live App794.
+This conflicts with the existing baseline rule that every reload/re-entry requires login and that sessionStorage/browser token persistence is forbidden.
 
-Required independent checks:
+Do NOT implement a weak shortcut such as storing only Employee_Code / authenticated=true in localStorage, sessionStorage, URL, window.name, or hidden DOM. Those values are user-tamperable and would allow custom-gate impersonation.
+
+Preferred proposed architecture for review:
 
 ```text
-LIVE_REVISION = 42
-PREVIEW_REVISION = 42
-SCOPE = ALL
-DESKTOP_JS_COUNT = 1
-TARGET_JS_COUNT = 1
-TARGET_JS_GIT_BLOB_SHA = 2a9a3c5bfe896b51f482c016f66863bffeddb679
-DESKTOP_CSS_COUNT = 1
-TARGET_CSS_COUNT = 1
-CSS_GIT_BLOB_SHA = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
-MOBILE_JS_COUNT = 0
-MOBILE_CSS_COUNT = 0
-LOGIN_GATE_RUNTIME_VISIBLE = YES / no FAIL_CLOSED_GATE_NULL
+SHORT-LIVED OPAQUE MBO SESSION TOKEN
+- successful login generates cryptographically random 256-bit token;
+- browser sessionStorage stores only the raw short-lived bearer token plus non-secret identity reference needed for lookup;
+- App801 stores only SHA-256(token) and expiry metadata, never the raw token;
+- every new App794 page validates token hash + Employee_Code + Account_Status + Force_Password_Change + expiry before restoring in-page principal;
+- mismatched/tampered identity or token fails closed to Login;
+- Logout clears browser token and invalidates server-side token state;
+- password change / disabled / locked account invalidates or denies the token;
+- browser/tab close clears browser-side session state;
+- no plaintext password / Password_Hash / credential salt stored in browser session state.
 ```
 
-If all pass, the corrective redeploy may be accepted and D1 may proceed to final manual live UAT.
+This architecture requires an explicit user/Control Plane decision because it changes the durable PAGE-MEMORY-ONLY auth rule and likely requires dedicated App801 session metadata fields / writes.
 
-If any fail, do not retry, rollback, or modify source automatically. Record the exact mismatch and require a new Control Plane decision.
+No App801 schema/write change is currently authorized.
 
-## 6. Source Architecture Decision — Confirmed
+## 7. JavaScript Modularity Requirement
 
-Canonical modular source rules remain in:
+Any future session implementation must follow `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`.
+
+Required separation conceptually:
 
 ```text
-project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md
+mbo-kintone-auth-adapter.js   = credential/account verification
+mbo-kintone-login-gate.js     = login/change-password UI gate
+mbo-session-manager.js        = session token issue/restore/invalidate/expiry only
+main-mbo-app.js               = bootstrap/orchestration only
 ```
 
-No Big-Bang refactor is allowed during D1 live stabilization. No JavaScript modularization starts before the live deploy gate is accepted.
+Do not place session implementation into `main-mbo-app.js` or `employee-part-a-ui.js`.
 
-## 7. Exact Next Action
+## 8. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = User
+NEXT_ACTION_OWNER = User / ChatGPT architecture decision
 ANTIGRAVITY_REQUIRED = NO
-DUPLICATE_WORK_RISK = HIGH if executor performs another deploy/read-audit
+APP794_DEPLOY = NO
+APP801_SCHEMA_WRITE = NO
+SESSION_SOURCE_IMPLEMENTATION = NO
 ```
 
-User runs the read-only App794 verifier and sends the console table/screenshot to ChatGPT.
+Antigravity remains HOLD until the session-continuity architecture is explicitly accepted and ChatGPT issues a narrow source/schema plan.
 
-Antigravity remains HOLD. No UAT yet.
-
-## 8. Knowledge / Baseline Maintenance
+## 9. Knowledge / Baseline Maintenance
 
 Baseline promotion:
-`NONE — live redeploy is not independently accepted yet.`
+`PENDING — existing PAGE-MEMORY-ONLY rule remains current until explicit user decision changes it.`
 
-Reusable Kintone skill extraction:
-`NO NEW UPDATE REQUIRED — existing safe-live-change skill already covers this pattern.`
+Reusable skill extraction:
+`NONE yet — architecture is proposed, not accepted.`
