@@ -1,65 +1,46 @@
-# AI ACTIVE TASK — D1 EMPLOYEE-SELF INDEX UX FINAL CORRECTIVE
+# AI ACTIVE TASK — D1 EMPLOYEE-SELF INDEX VISUAL EVIDENCE ONLY
 
-Mode: **SOURCE / TEST / LOCAL PREVIEW ONLY — ZERO KINTONE WRITE**
+Mode: **LOCAL PREVIEW / EVIDENCE ONLY — ZERO SOURCE CHANGE — ZERO KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
-Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+Max status: `VISUAL_EVIDENCE_READY_FOR_USER_REVIEW`
 
-Read only:
+## Read only
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this file
 3. `project-docs/CONFIRMED_BASELINE/UI_UX.md`
-4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-5. current index/auth UI source + focused tests
+4. current `src/ui/employee-self-index-ui.js`
 
 Do not scan repo.
 
-## Fix only these points
+## Task
+Show/capture the current Employee-Self index candidate from commit `9319be2d64778a08071aa476a809aebc2542dc1e` using local preview only.
 
-1. Keep the accepted HeaderSpace one-shell design and existing Logout session revoke/clear/reload semantics.
+The visual must show:
+- Kintone-style/global header context remains visible and is not covered;
+- duplicate native index list/toolbar does not create the old fragmented layout;
+- one coherent Employee-Self shell/card;
+- `รหัสพนักงาน / Employee Code`;
+- `เปลี่ยนรหัสผ่าน / Change Password`;
+- `ออกจากระบบ / Logout`;
+- exact title `MBO ของฉัน / My MBO`;
+- `+ สร้าง MBO ใหม่ / Create New MBO`;
+- bilingual empty state or representative list.
 
-2. Extract the Employee-Self index DOM renderer from `main-mbo-app.js` into one cohesive module:
-```text
-src/ui/employee-self-index-ui.js
-```
-`main-mbo-app.js` must only resolve host/data and orchestrate rendering. No business/routing/scoring/session duplication.
+Use the existing candidate code. If a temporary local-only harness is required to render it, keep it outside the repository or delete it before finishing.
 
-3. Exact user-facing index wording:
-```text
-MBO ของฉัน / My MBO
-+ สร้าง MBO ใหม่ / Create New MBO
-รหัสพนักงาน / Employee Code: <code>
-เปลี่ยนรหัสผ่าน / Change Password
-ออกจากระบบ / Logout
-```
-Empty state/table remain bilingual.
-
-4. Revert the unrelated `build-mbo-ui.js` write-pipeline change from commit `1cc3f9c...` to the previously accepted esbuild `outfile` behavior. Do not redesign bundling.
-
-5. Add focused non-live UI tests that MUST execute and prove:
-- HeaderSpace shell is preferred;
-- auth bar + My MBO share one shell;
-- exactly one auth bar;
-- Employee Code / Change Password / Logout visible;
-- Logout calls existing gate logout path;
-- exact My MBO title + Create + empty state bilingual.
-
-6. Local visual proof: show/capture the Employee-Self index candidate before any deploy. It must look like one coherent card/shell and must not cover Kintone global header/breadcrumb. If native index-only controls still make the page visibly fragmented, hide only those duplicate index controls in the narrowest safe way; do not hide global navigation.
-
-Run:
-```text
-npm run ui:build
-npm test
-```
-
-Forbidden:
+## Forbidden
+- NO production/source edits
+- NO test edits
+- NO dist edits
+- NO committed preview code
 - NO Kintone write/upload/deploy
 - NO App801 write
 - NO deploy-guard fix
-- NO Create-handler change
-- NO auth/session semantics change
-- NO routing/scoring/business change
-- NO broad refactor
+- NO Create-handler/auth/session/routing/scoring changes
 - NO D2-D7
 
-Commit + push one concise commit, then STOP.
-Do not Self-PASS.
+## Delivery
+- Provide screenshot(s) to the user for visual approval.
+- Git working tree must end clean.
+- Do not create a new implementation commit.
+- STOP after visual evidence is shown.
