@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SESSION PASS / APP801 SCHEMA PASS / LIST→CREATE SESSION PASS / MODULE BUNDLE PASS / CREATE-HANDLER SOURCE+TEST PASS / EMPLOYEE-SELF INDEX UX FINAL CORRECTIVE / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SESSION PASS / APP801 SCHEMA PASS / LIST→CREATE SESSION PASS / MODULE BUNDLE PASS / CREATE-HANDLER SOURCE+TEST PASS / EMPLOYEE-SELF INDEX SOURCE+TEST PASS / VISUAL APPROVAL PENDING / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -30,7 +30,8 @@ APP794_SESSION_CONTINUITY_DEPLOY         = EXECUTED / REVISION 43 / PARTIAL RUNT
 D1_SESSION_LIST_TO_CREATE_CONTINUITY     = PASS / USER LIVE OBSERVATION
 D1_BUNDLE_DEPENDENCY_CORRECTIVE          = PASS / ACCEPTED AT 2a766d0e...
 D1_CREATE_HANDLER_CORRECTIVE             = PASS / ACCEPTED AT 162d1088...
-D1_EMPLOYEE_SELF_INDEX_UX                = CORRECTIVE REQUIRED AFTER REVIEW OF 1cc3f9cd...
+D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST       = PASS / ACCEPTED AT 9319be2d...
+D1_EMPLOYEE_SELF_INDEX_VISUAL            = PENDING USER VISUAL APPROVAL
 APP794_DEPLOY_GUARD_INTEGRATION          = OPEN / MUST CLOSE BEFORE FUTURE LIVE DEPLOY
 D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
 D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately recorded
@@ -38,103 +39,113 @@ D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately reco
 
 No new App794 deploy is authorized.
 
-## 3. Independent Review — Employee-Self Shell Commit
+## 3. Independent Review — Final Employee-Self Index Corrective
 
 Executor commit:
 
 ```text
-1cc3f9cde15f6fe66f33daed0ba96980740b752b
+9319be2d64778a08071aa476a809aebc2542dc1e
 ```
 
 Task base:
 
 ```text
-3b83be5d5cb4dd94ccc648ef268ab68370df0ffa
+281722252cf907c8f767ba1022a4f5c094c97e85
 ```
 
 Exactly one executor commit is ahead. Changed files:
+- `src/ui/employee-self-index-ui.js` added
 - `src/main-mbo-app.js`
-- `src/ui/mbo-kintone-login-gate.js`
+- `tests/employee-self-index-ui.test.js` added
+- `tests/classic-bundle.test.js`
 - `scripts/kintone/build-mbo-ui.js`
-- `tests/mbo-session-manager.test.js`
 - generated `dist/mbo-employee-app.js`
 
-### Accepted direction
+### Accepted source/test findings
 
 ```text
-INDEX_STABLE_HOST_FIRST                 = PASS — HeaderSpace resolved before fallback
-AUTH_BAR_AND_INDEX_SAME_SHELL           = PASS
-EMPLOYEE_CODE_VISIBLE_BILINGUAL         = PASS
-CHANGE_PASSWORD_VISIBLE_BILINGUAL       = PASS
-LOGOUT_VISIBLE_BILINGUAL                = PASS
-LOGOUT_SEMANTICS_CHANGED                = NO
-CREATE_ACTION_BILINGUAL                 = PASS
-EMPTY_STATE_BILINGUAL                   = PASS
-TABLE_LABELS_BILINGUAL                  = PASS
-KINTONE_WRITE                           = 0 BY TASK SCOPE
-APP794_DEPLOY                           = 0 BY TASK SCOPE
+EMPLOYEE_SELF_RENDERER_MODULE            = PASS — extracted to employee-self-index-ui.js
+MAIN_ORCHESTRATION_BOUNDARY              = PASS — main delegates rendering
+HEADERSPACE_PREFERRED_HOST               = PASS
+AUTH_BAR_AND_INDEX_SAME_SHELL            = PASS
+EXACT_ONE_AUTH_BAR_TEST                  = PRESENT / NON-SKIPPABLE
+EMPLOYEE_CODE_VISIBLE_BILINGUAL          = PASS
+CHANGE_PASSWORD_VISIBLE_BILINGUAL        = PASS
+LOGOUT_VISIBLE_BILINGUAL                 = PASS
+LOGOUT_BUTTON_CALLS_EXISTING_GATE_PATH   = PASS
+MY_MBO_TITLE_EXACT                       = PASS — MBO ของฉัน / My MBO
+CREATE_ACTION_BILINGUAL                  = PASS
+EMPTY_STATE_BILINGUAL                    = PASS
+TABLE_LABELS_BILINGUAL                   = PASS
+NATIVE_DUPLICATE_INDEX_CONTROLS          = NARROW HIDE CANDIDATE ONLY
+BUILD_PIPELINE                           = RETURNED TO ESBUILD OUTFILE BEHAVIOR
+CSS_CHANGE                               = NONE
+AUTH_SESSION_SEMANTICS_CHANGE            = NONE OBSERVED
+ROUTING_SCORING_BUSINESS_CHANGE          = NONE OBSERVED
+KINTONE_WRITE                            = 0 BY TASK SCOPE
+APP794_DEPLOY                            = 0 BY TASK SCOPE
 ```
 
-The existing logout path still calls gate logout -> session revoke/clear -> reload. Authentication/session architecture was not changed.
+The focused test uses the production `EmployeeSelfIndexUI` module and verifies HeaderSpace mounting, exactly one auth bar, Employee Code, Change Password, Logout button path, exact title, Create action and bilingual empty state.
 
-### Blocking findings
+GitHub has no CI/status/workflow run for this commit. Do not claim independent `npm test` execution PASS. Static independent review found no remaining source/test blocker in this package; the next controlled pre-deploy gate must run the required build/test again.
 
-1. **Required focused UX proofs are missing.**
-   - Active Task required non-live proof for stable shell, exactly one auth bar, visible Employee Code/Change Password/Logout, logout using existing gate path, bilingual title/create/empty state.
-   - Executor changed only `tests/mbo-session-manager.test.js` minimally; no focused Employee-Self index rendering test was added.
+## 4. Remaining UX Gate — Visual Approval Only
 
-2. **Source architecture boundary not respected.**
-   - `renderEmployeeSelfIndex()` remains a growing DOM renderer in `main-mbo-app.js`.
-   - Confirmed modular rule says main must stay orchestration-only and cohesive UI belongs in a dedicated module.
-   - Final corrective must extract only this index renderer into `src/ui/employee-self-index-ui.js`; no broad refactor.
+The UI/UX Baseline requires user visual inspection before App794 redeploy.
 
-3. **Unrelated build pipeline change.**
-   - `scripts/kintone/build-mbo-ui.js` changed from esbuild `outfile` write to `write:false` + manual `fs.writeFileSync()`.
-   - This is not required for the Employee-Self UX defect and touches the deployment artifact pipeline unnecessarily.
-   - Revert build script to the previously accepted module-aware implementation unless an unavoidable focused test demonstrates necessity.
+No Local Preview screenshot/evidence was committed or otherwise available to the reviewer for commit `9319be2d...`.
 
-4. **Title does not match the approved UX wording.**
-   - Required: `MBO ของฉัน / My MBO`.
-   - Implemented: `รายการ MBO ของฉัน / My MBO Records (<employeeCode>)`.
-   - Employee code already belongs in the auth toolbar; main title should remain clean.
+Therefore:
 
-5. **Visual closure not yet proven.**
-   - User's original complaint also included the native index toolbar / large raw Kintone area looking fragmented.
-   - Current source still hides record list body but does not yet provide reviewed visual evidence that the resulting Kintone index chrome is clean.
-   - UI/UX Baseline requires local visual approval before redeploy.
+```text
+EMPLOYEE_SELF_INDEX_SOURCE_TEST = PASS / ACCEPTED
+EMPLOYEE_SELF_INDEX_VISUAL      = PENDING
+APP794_DEPLOY                   = BLOCKED / NOT AUTHORIZED
+```
 
-GitHub has no CI/workflow run for this executor commit. Do not claim independent `npm test` PASS.
+Visual evidence must show the current candidate with:
+- Kintone global header/breadcrumb still visible;
+- duplicate native index toolbar/list controls not creating the old fragmented look;
+- one coherent Employee-Self card/shell;
+- visible Employee Code, Change Password, Logout;
+- `MBO ของฉัน / My MBO` and Create action;
+- empty state or representative record list.
 
-## 4. Exact Next Action
+No production source change is authorized merely to produce this evidence.
+
+## 5. Separate Pre-Deploy Guard Gate
+
+Existing deployment guard remains fail-closed:
+
+```text
+DISCOVERY_MODE      = true
+WRITE_ALLOWED_APPS  = []
+```
+
+while the App794 deploy script uses the default `assertSandboxWriteTarget(app)` path. This remains a separate source/test gate after visual approval. Do not disable permanent protected-app rules.
+
+## 6. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER              = Antigravity
-ANTIGRAVITY_REQUIRED           = YES — ONE FINAL NARROW EMPLOYEE-SELF INDEX UX CORRECTIVE
+ANTIGRAVITY_REQUIRED           = YES — VISUAL EVIDENCE ONLY
+SOURCE_CHANGE                  = NO
+TEST_CHANGE                    = NO
+DIST_CHANGE                    = NO
 KINTONE_WRITE                  = NO
 APP794_DEPLOY                  = NO
 APP801_WRITE                   = NO
-DEPLOY_GUARD_FIX               = NO IN THIS PACKAGE
-BUSINESS_LOGIC_CHANGE          = NO
-SESSION_LOGIC_CHANGE           = NO
+DEPLOY_GUARD_FIX               = NO IN THIS TASK
 D2_D7_WRITE                    = NO
-MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-Final corrective must:
-- preserve same-shell HeaderSpace + existing logout semantics;
-- extract Employee-Self index UI into one dedicated module;
-- use exact title `MBO ของฉัน / My MBO`;
-- add focused non-live rendering/logout tests;
-- revert unrelated build-pipeline change;
-- produce local Preview evidence showing the index no longer looks fragmented, while preserving Kintone global header/breadcrumb;
-- build/test, commit/push, STOP.
+Capture/show the current Employee-Self index candidate locally without modifying production source. User visual approval is required. After approval, Control Plane will close the separate App794 deploy-guard integration gate, then request one combined corrective live deploy authorization.
 
-After visual/source/test acceptance, Control Plane will close the separate App794 deploy-guard integration gate and then request one combined corrective live deploy authorization.
-
-## 5. Reusable Lessons
+## 7. Reusable Lessons
 
 - Persistent Kintone custom controls should mount in documented custom/header/space elements, not arbitrary internal wrapper DOM.
 - Auth controls and Employee-Self index should share one stable shell.
 - `main-mbo-app.js` remains orchestration; cohesive index rendering belongs in a UI module.
-- Do not modify the deployment build pipeline for a visual corrective unless the change is proven necessary.
-- Visual approval is mandatory before App794 UI redeploy.
+- UI source/test acceptance and user visual acceptance are separate gates.
+- Do not modify deployment build mechanics for a visual-only defect unless technically necessary.
