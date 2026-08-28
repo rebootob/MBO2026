@@ -108,19 +108,41 @@ if (isBuildOnly) {
 }
 
 // Helper Functions Exported for Unit Testing & Customization Payload Building
+const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
+
+function validateContainers(customization, label) {
+  if (!customization || typeof customization !== 'object') {
+    throw new Error(`TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: ${label} customization is missing or invalid.`);
+  }
+  if (!customization.desktop || typeof customization.desktop !== 'object') {
+    throw new Error(`MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD: ${label} customization is missing desktop object.`);
+  }
+  if (!customization.mobile || typeof customization.mobile !== 'object') {
+    throw new Error(`MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD: ${label} customization is missing mobile object.`);
+  }
+  if (!Array.isArray(customization.desktop.js)) {
+    throw new Error(`MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD: ${label} customization desktop.js must be an array.`);
+  }
+  if (!Array.isArray(customization.desktop.css)) {
+    throw new Error(`MISSING_DESKTOP_CSS_ARRAY_BLOCKED_PRE_UPLOAD: ${label} customization desktop.css must be an array.`);
+  }
+  if (!Array.isArray(customization.mobile.js)) {
+    throw new Error(`MISSING_MOBILE_JS_ARRAY_BLOCKED_PRE_UPLOAD: ${label} customization mobile.js must be an array.`);
+  }
+  if (!Array.isArray(customization.mobile.css)) {
+    throw new Error(`MISSING_MOBILE_CSS_ARRAY_BLOCKED_PRE_UPLOAD: ${label} customization mobile.css must be an array.`);
+  }
+}
+
 export function validateTopologyAlignment(liveCustomize, previewCustomize) {
-  if (!liveCustomize || typeof liveCustomize !== 'object') {
-    throw new Error('TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: Live customization is missing or invalid.');
-  }
-  if (!previewCustomize || typeof previewCustomize !== 'object') {
-    throw new Error('TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: Preview customization is missing or invalid.');
-  }
+  validateContainers(liveCustomize, 'Live');
+  validateContainers(previewCustomize, 'Preview');
 
   if (liveCustomize.scope !== previewCustomize.scope) {
     throw new Error(`TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: Scope mismatch between live (${liveCustomize.scope}) and preview (${previewCustomize.scope}).`);
   }
 
-  const compareEntries = (liveList = [], previewList = [], sectionName) => {
+  const compareEntries = (liveList, previewList, sectionName) => {
     if (liveList.length !== previewList.length) {
       throw new Error(`TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: ${sectionName} entry count mismatch between live (${liveList.length}) and preview (${previewList.length}).`);
     }
@@ -142,44 +164,61 @@ export function validateTopologyAlignment(liveCustomize, previewCustomize) {
     }
   };
 
-  compareEntries(liveCustomize.desktop?.js, previewCustomize.desktop?.js, 'desktop.js');
-  compareEntries(liveCustomize.desktop?.css, previewCustomize.desktop?.css, 'desktop.css');
-  compareEntries(liveCustomize.mobile?.js, previewCustomize.mobile?.js, 'mobile.js');
-  compareEntries(liveCustomize.mobile?.css, previewCustomize.mobile?.css, 'mobile.css');
+  compareEntries(liveCustomize.desktop.js, previewCustomize.desktop.js, 'desktop.js');
+  compareEntries(liveCustomize.desktop.css, previewCustomize.desktop.css, 'desktop.css');
+  compareEntries(liveCustomize.mobile.js, previewCustomize.mobile.js, 'mobile.js');
+  compareEntries(liveCustomize.mobile.css, previewCustomize.mobile.css, 'mobile.css');
 
   return true;
 }
 
 export function validatePreflight({ liveCustomize, previewCustomize, targetFileName = 'mbo-employee-app.js' }) {
-  if (!liveCustomize || typeof liveCustomize !== 'object') {
-    throw new Error('TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: Live customization is missing or invalid.');
-  }
-  if (!previewCustomize || typeof previewCustomize !== 'object') {
-    throw new Error('TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: Preview customization is missing or invalid.');
-  }
+  // 1. Explicit containers & lists
+  validateContainers(liveCustomize, 'Live');
+  validateContainers(previewCustomize, 'Preview');
 
-  // 1. Scope must be non-empty string and match between live & preview
-  if (!liveCustomize.scope || typeof liveCustomize.scope !== 'string' || liveCustomize.scope.trim() === '') {
-    throw new Error('MISSING_SCOPE_BLOCKED_PRE_UPLOAD: Live customization scope is missing or blank.');
+  // 2. Strict Kintone scope validation
+  if (!liveCustomize.scope || typeof liveCustomize.scope !== 'string' || !VALID_SCOPES.has(liveCustomize.scope)) {
+    throw new Error(`INVALID_SCOPE_BLOCKED_PRE_UPLOAD: Live customization scope is invalid (${liveCustomize.scope}).`);
   }
-  if (!previewCustomize.scope || typeof previewCustomize.scope !== 'string' || previewCustomize.scope.trim() === '') {
-    throw new Error('MISSING_SCOPE_BLOCKED_PRE_UPLOAD: Preview customization scope is missing or blank.');
+  if (!previewCustomize.scope || typeof previewCustomize.scope !== 'string' || !VALID_SCOPES.has(previewCustomize.scope)) {
+    throw new Error(`INVALID_SCOPE_BLOCKED_PRE_UPLOAD: Preview customization scope is invalid (${previewCustomize.scope}).`);
   }
   if (liveCustomize.scope !== previewCustomize.scope) {
     throw new Error(`TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: Scope mismatch between live (${liveCustomize.scope}) and preview (${previewCustomize.scope}).`);
   }
 
-  // 2. Preview revision must be present and non-empty
-  const revStr = previewCustomize.revision !== null && previewCustomize.revision !== undefined ? String(previewCustomize.revision).trim() : '';
-  if (!revStr) {
+  // 3. Preview revision validation (concurrency protection)
+  const rev = previewCustomize.revision;
+  if (rev === undefined || rev === null || (typeof rev === 'string' && rev.trim() === '')) {
     throw new Error('MISSING_REVISION_BLOCKED_PRE_UPLOAD: Preview customization revision is missing or blank.');
   }
+  if (rev === -1 || rev === '-1') {
+    throw new Error('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: Preview customization revision -1 disables concurrency protection.');
+  }
+  const numRev = Number(rev);
+  if (isNaN(numRev) || !Number.isInteger(numRev)) {
+    throw new Error(`REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: Preview customization revision "${rev}" is non-integer/malformed.`);
+  }
+  if (numRev <= 0) {
+    throw new Error(`REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD: Preview customization revision ${numRev} is not a positive integer.`);
+  }
 
-  // 3. Entry validation (supported types, URLs, file names, retained fileKeys)
-  const validateEntryList = (list = [], sectionName, isPreview = false) => {
-    if (!Array.isArray(list)) {
-      throw new Error(`MALFORMED_ENTRY_BLOCKED_PRE_UPLOAD: ${sectionName} is not an array.`);
-    }
+  // 4. Require exactly ONE target entry in preview.desktop.js
+  const previewDesktopJs = previewCustomize.desktop.js;
+  const targetEntries = previewDesktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
+
+  if (targetEntries.length === 0) {
+    throw new Error(`TARGET_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetFileName} in preview customization.`);
+  }
+  if (targetEntries.length > 1) {
+    throw new Error(`TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetFileName} in preview customization.`);
+  }
+
+  const exactTargetEntry = targetEntries[0];
+
+  // 5. Entry structural & fileKey validation across all lists
+  const validateEntryList = (list, sectionName, isPreview = false, targetEntry = null) => {
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
       if (!e || typeof e !== 'object') {
@@ -196,49 +235,47 @@ export function validatePreflight({ liveCustomize, previewCustomize, targetFileN
         if (!e.file || typeof e.file !== 'object' || !e.file.name || typeof e.file.name !== 'string' || e.file.name.trim() === '') {
           throw new Error(`MALFORMED_FILE_NAME_BLOCKED_PRE_UPLOAD: ${sectionName}[${i}] has missing or empty file.name.`);
         }
-        if (isPreview && e.file.name !== targetFileName) {
-          if (!e.file.fileKey || typeof e.file.fileKey !== 'string' || e.file.fileKey.trim() === '') {
-            throw new Error(`MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD: ${sectionName}[${i}] (${e.file.name}) is missing preview fileKey.`);
+        if (isPreview) {
+          const isExactTarget = (e === targetEntry);
+          if (!isExactTarget) {
+            if (!e.file.fileKey || typeof e.file.fileKey !== 'string' || e.file.fileKey.trim() === '') {
+              let errCode = 'MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD';
+              if (e.file.name === targetFileName) {
+                if (sectionName.includes('desktop.css')) errCode = 'SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD';
+                else if (sectionName.includes('mobile.js')) errCode = 'SAME_FILENAME_MOBILE_JS_MISSING_KEY_BLOCKED_PRE_UPLOAD';
+                else if (sectionName.includes('mobile.css')) errCode = 'SAME_FILENAME_MOBILE_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD';
+              }
+              throw new Error(`${errCode}: ${sectionName}[${i}] (${e.file.name}) is missing preview fileKey.`);
+            }
           }
         }
       }
     }
   };
 
-  validateEntryList(liveCustomize.desktop?.js, 'live desktop.js');
-  validateEntryList(liveCustomize.desktop?.css, 'live desktop.css');
-  validateEntryList(liveCustomize.mobile?.js, 'live mobile.js');
-  validateEntryList(liveCustomize.mobile?.css, 'live mobile.css');
+  validateEntryList(liveCustomize.desktop.js, 'live desktop.js');
+  validateEntryList(liveCustomize.desktop.css, 'live desktop.css');
+  validateEntryList(liveCustomize.mobile.js, 'live mobile.js');
+  validateEntryList(liveCustomize.mobile.css, 'live mobile.css');
 
-  validateEntryList(previewCustomize.desktop?.js, 'preview desktop.js', true);
-  validateEntryList(previewCustomize.desktop?.css, 'preview desktop.css', true);
-  validateEntryList(previewCustomize.mobile?.js, 'preview mobile.js', true);
-  validateEntryList(previewCustomize.mobile?.css, 'preview mobile.css', true);
+  validateEntryList(previewCustomize.desktop.js, 'preview desktop.js', true, exactTargetEntry);
+  validateEntryList(previewCustomize.desktop.css, 'preview desktop.css', true, exactTargetEntry);
+  validateEntryList(previewCustomize.mobile.js, 'preview mobile.js', true, exactTargetEntry);
+  validateEntryList(previewCustomize.mobile.css, 'preview mobile.css', true, exactTargetEntry);
 
-  // 4. Topology alignment
+  // 6. Topology alignment
   validateTopologyAlignment(liveCustomize, previewCustomize);
-
-  // 5. Require exactly ONE target entry matching targetFileName in preview desktop JS
-  const previewDesktopJs = previewCustomize.desktop?.js || [];
-  const targetEntries = previewDesktopJs.filter(e => e.type === 'FILE' && e.file?.name === targetFileName);
-
-  if (targetEntries.length === 0) {
-    throw new Error(`TARGET_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetFileName} in preview customization.`);
-  }
-  if (targetEntries.length > 1) {
-    throw new Error(`TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetFileName} in preview customization.`);
-  }
 
   return true;
 }
 
-export function normalizeCustomizeEntries(entries = [], targetFileName = null, newJsFileKey = null) {
+export function normalizeCustomizeEntries(entries = [], targetEntryRef = null, newJsFileKey = null) {
   return entries.map(entry => {
     if (entry.type === 'URL') {
       return { type: 'URL', url: entry.url };
     }
     if (entry.type === 'FILE') {
-      const isTarget = targetFileName && entry.file?.name === targetFileName;
+      const isTarget = targetEntryRef && entry === targetEntryRef;
       const fileKey = isTarget ? newJsFileKey : entry.file?.fileKey;
       if (!fileKey) {
         throw new Error(`MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD: Missing fileKey for FILE entry ${entry.file?.name || 'unknown'}.`);
@@ -250,20 +287,22 @@ export function normalizeCustomizeEntries(entries = [], targetFileName = null, n
 }
 
 export function buildPreviewCustomizePayload({ app, previewCustomize, targetFileName = 'mbo-employee-app.js', newJsFileKey }) {
-  if (!previewCustomize || typeof previewCustomize !== 'object') {
-    throw new Error('PREVIEW_CUSTOMIZATION_MISSING: previewCustomize is required.');
-  }
-  if (!previewCustomize.scope || typeof previewCustomize.scope !== 'string' || previewCustomize.scope.trim() === '') {
-    throw new Error('MISSING_SCOPE_BLOCKED_PRE_UPLOAD: previewCustomize.scope is missing.');
+  validateContainers(previewCustomize, 'Preview');
+
+  if (!previewCustomize.scope || typeof previewCustomize.scope !== 'string' || !VALID_SCOPES.has(previewCustomize.scope)) {
+    throw new Error(`INVALID_SCOPE_BLOCKED_PRE_UPLOAD: previewCustomize.scope is invalid (${previewCustomize.scope}).`);
   }
 
-  const revStr = previewCustomize.revision !== null && previewCustomize.revision !== undefined ? String(previewCustomize.revision).trim() : '';
-  if (!revStr) {
+  const rev = previewCustomize.revision;
+  if (rev === undefined || rev === null || (typeof rev === 'string' && rev.trim() === '')) {
     throw new Error('MISSING_REVISION_BLOCKED_PRE_UPLOAD: previewCustomize.revision is missing.');
   }
+  if (rev === -1 || rev === '-1') {
+    throw new Error('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: previewCustomize.revision -1 disables concurrency protection.');
+  }
 
-  const desktopJs = previewCustomize.desktop?.js || [];
-  const targetEntries = desktopJs.filter(e => e.type === 'FILE' && e.file?.name === targetFileName);
+  const desktopJs = previewCustomize.desktop.js;
+  const targetEntries = desktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
 
   if (targetEntries.length === 0) {
     throw new Error(`TARGET_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetFileName} in preview customization.`);
@@ -272,10 +311,12 @@ export function buildPreviewCustomizePayload({ app, previewCustomize, targetFile
     throw new Error(`TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetFileName} in preview customization.`);
   }
 
-  const normalizedDesktopJs = normalizeCustomizeEntries(desktopJs, targetFileName, newJsFileKey);
-  const normalizedDesktopCss = normalizeCustomizeEntries(previewCustomize.desktop?.css, null, null);
-  const normalizedMobileJs = normalizeCustomizeEntries(previewCustomize.mobile?.js, null, null);
-  const normalizedMobileCss = normalizeCustomizeEntries(previewCustomize.mobile?.css, null, null);
+  const exactTargetEntry = targetEntries[0];
+
+  const normalizedDesktopJs = normalizeCustomizeEntries(desktopJs, exactTargetEntry, newJsFileKey);
+  const normalizedDesktopCss = normalizeCustomizeEntries(previewCustomize.desktop.css, null, null);
+  const normalizedMobileJs = normalizeCustomizeEntries(previewCustomize.mobile.js, null, null);
+  const normalizedMobileCss = normalizeCustomizeEntries(previewCustomize.mobile.css, null, null);
 
   return {
     app,

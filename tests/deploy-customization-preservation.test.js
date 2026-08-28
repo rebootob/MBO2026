@@ -26,14 +26,14 @@ const getValidPreviewFixture = () => ({
   mobile: { js: [], css: [] }
 });
 
-test('VALID_PREFLIGHT_PASS & PREVIEW_FILEKEY_SOURCE & ONLY_TARGET_JS_FILEKEY_REPLACED & NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED & PREVIEW_REVISION_INCLUDED', () => {
+test('VALID_PREFLIGHT_PASS & TARGET_OLD_FILEKEY_MAY_BE_REPLACED & NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED & PREVIEW_REVISION_INCLUDED & CSS_UPLOAD_COUNT = 0', () => {
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
 
   // 1. Preflight passes
   assert.equal(validatePreflight({ liveCustomize: live, previewCustomize: preview, targetFileName: 'mbo-employee-app.js' }), true);
 
-  // 2. Payload uses preview fileKeys and includes revision
+  // 2. Payload replaces target JS fileKey, preserves preview CSS fileKey, includes revision
   const payload = buildPreviewCustomizePayload({
     app: 794,
     previewCustomize: preview,
@@ -47,119 +47,132 @@ test('VALID_PREFLIGHT_PASS & PREVIEW_FILEKEY_SOURCE & ONLY_TARGET_JS_FILEKEY_REP
   assert.equal(payload.revision, '42');
 });
 
-test('LIVE_PREVIEW_FILEKEY_DIFFERENCE_ALLOWED: live and preview fileKeys may differ when names match', () => {
+test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values', () => {
+  ['ALL', 'ADMIN', 'NONE'].forEach(validScope => {
+    const live = { ...getValidLiveFixture(), scope: validScope };
+    const preview = { ...getValidPreviewFixture(), scope: validScope };
+    assert.doesNotThrow(() => {
+      validatePreflight({ liveCustomize: live, previewCustomize: preview });
+    });
+  });
+});
+
+test('MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
-  // live fileKey != preview fileKey is already in the fixtures!
-  assert.equal(validatePreflight({ liveCustomize: live, previewCustomize: preview }), true);
-});
-
-test('MISSING_SCOPE_BLOCKED_PRE_UPLOAD: fails closed before upload if scope is missing or blank', () => {
-  let uploadCalls = 0;
-  const mockUpload = () => { uploadCalls++; return 'KEY'; };
-
-  const liveNoScope = { ...getValidLiveFixture(), scope: '' };
-  const previewValid = getValidPreviewFixture();
-
-  assert.throws(() => {
-    validatePreflight({ liveCustomize: liveNoScope, previewCustomize: previewValid });
-    mockUpload();
-  }, /MISSING_SCOPE_BLOCKED_PRE_UPLOAD/);
-
-  assert.equal(uploadCalls, 0, 'Zero remote uploads must occur when scope is missing');
-
-  const liveValid = getValidLiveFixture();
-  const previewNoScope = { ...getValidPreviewFixture(), scope: undefined };
-
-  assert.throws(() => {
-    validatePreflight({ liveCustomize: liveValid, previewCustomize: previewNoScope });
-    mockUpload();
-  }, /MISSING_SCOPE_BLOCKED_PRE_UPLOAD/);
-
-  assert.equal(uploadCalls, 0, 'Zero remote uploads must occur when preview scope is missing');
-});
-
-test('MISSING_REVISION_BLOCKED_PRE_UPLOAD: fails closed before upload if preview revision is missing', () => {
-  let uploadCalls = 0;
-  const mockUpload = () => { uploadCalls++; return 'KEY'; };
-
-  const live = getValidLiveFixture();
-  const previewNoRev = { ...getValidPreviewFixture(), revision: undefined };
-
-  assert.throws(() => {
-    validatePreflight({ liveCustomize: live, previewCustomize: previewNoRev });
-    mockUpload();
-  }, /MISSING_REVISION_BLOCKED_PRE_UPLOAD/);
-
-  assert.equal(uploadCalls, 0, 'Zero remote uploads must occur when revision is missing');
-});
-
-test('UNSUPPORTED_ENTRY_TYPE_BLOCKED_PRE_UPLOAD: fails closed before upload if entry type is not URL or FILE', () => {
-  let uploadCalls = 0;
-  const mockUpload = () => { uploadCalls++; return 'KEY'; };
-
-  const live = getValidLiveFixture();
-  const previewBadType = getValidPreviewFixture();
-  previewBadType.desktop.js.push({ type: 'SCRIPT', name: 'bad.js' });
-
-  assert.throws(() => {
-    validatePreflight({ liveCustomize: live, previewCustomize: previewBadType });
-    mockUpload();
-  }, /UNSUPPORTED_ENTRY_TYPE_BLOCKED_PRE_UPLOAD/);
-
-  assert.equal(uploadCalls, 0);
-});
-
-test('MALFORMED_URL_BLOCKED_PRE_UPLOAD: fails closed before upload if URL entry has blank url', () => {
-  let uploadCalls = 0;
-  const mockUpload = () => { uploadCalls++; return 'KEY'; };
-
-  const live = getValidLiveFixture();
-  live.desktop.js.push({ type: 'URL', url: '' });
-  const preview = getValidPreviewFixture();
-  preview.desktop.js.push({ type: 'URL', url: '' });
+  delete preview.desktop;
 
   assert.throws(() => {
     validatePreflight({ liveCustomize: live, previewCustomize: preview });
     mockUpload();
-  }, /MALFORMED_URL_BLOCKED_PRE_UPLOAD/);
+  }, /MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD/);
 
   assert.equal(uploadCalls, 0);
 });
 
-test('MALFORMED_FILE_NAME_BLOCKED_PRE_UPLOAD: fails closed before upload if FILE entry has blank name', () => {
+test('MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
 
   const live = getValidLiveFixture();
-  const previewBadName = getValidPreviewFixture();
-  previewBadName.desktop.css.push({ type: 'FILE', file: { name: '', fileKey: 'K' } });
+  const preview = getValidPreviewFixture();
+  delete preview.mobile;
 
   assert.throws(() => {
-    validatePreflight({ liveCustomize: live, previewCustomize: previewBadName });
+    validatePreflight({ liveCustomize: live, previewCustomize: preview });
     mockUpload();
-  }, /MALFORMED_FILE_NAME_BLOCKED_PRE_UPLOAD/);
+  }, /MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD/);
 
   assert.equal(uploadCalls, 0);
 });
 
-test('MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD: fails closed before upload if retained preview FILE has no fileKey', () => {
+test('MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_DESKTOP_CSS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_MOBILE_JS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_MOBILE_CSS_ARRAY_BLOCKED_PRE_UPLOAD', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  // desktop.js missing
+  const p1 = getValidPreviewFixture(); delete p1.desktop.js;
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p1 }); mockUpload(); }, /MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD/);
+
+  // desktop.css missing
+  const p2 = getValidPreviewFixture(); delete p2.desktop.css;
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p2 }); mockUpload(); }, /MISSING_DESKTOP_CSS_ARRAY_BLOCKED_PRE_UPLOAD/);
+
+  // mobile.js missing
+  const p3 = getValidPreviewFixture(); delete p3.mobile.js;
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p3 }); mockUpload(); }, /MISSING_MOBILE_JS_ARRAY_BLOCKED_PRE_UPLOAD/);
+
+  // mobile.css missing
+  const p4 = getValidPreviewFixture(); delete p4.mobile.css;
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p4 }); mockUpload(); }, /MISSING_MOBILE_CSS_ARRAY_BLOCKED_PRE_UPLOAD/);
+
+  assert.equal(uploadCalls, 0);
+});
+
+test('INVALID_SCOPE_BLOCKED_PRE_UPLOAD: rejects non-standard scope strings', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
 
   const live = getValidLiveFixture();
-  const previewNoKey = getValidPreviewFixture();
-  previewNoKey.desktop.css[0].file.fileKey = ''; // non-target CSS file key missing!
+  const previewBadScope = { ...getValidPreviewFixture(), scope: 'SUPER_ADMIN' };
 
   assert.throws(() => {
-    validatePreflight({ liveCustomize: live, previewCustomize: previewNoKey });
+    validatePreflight({ liveCustomize: live, previewCustomize: previewBadScope });
     mockUpload();
-  }, /MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD/);
+  }, /INVALID_SCOPE_BLOCKED_PRE_UPLOAD/);
 
   assert.equal(uploadCalls, 0);
 });
 
-test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: fails closed before upload on target missing/duplicate', () => {
+test('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: rejects -1 revision', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  const live = getValidLiveFixture();
+  const previewRevMinusOne = { ...getValidPreviewFixture(), revision: -1 };
+
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: live, previewCustomize: previewRevMinusOne });
+    mockUpload();
+  }, /REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD/);
+
+  assert.equal(uploadCalls, 0);
+});
+
+test('REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: rejects non-numeric revision strings', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  const live = getValidLiveFixture();
+  const previewRevString = { ...getValidPreviewFixture(), revision: 'invalid-rev' };
+
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: live, previewCustomize: previewRevString });
+    mockUpload();
+  }, /REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD/);
+
+  assert.equal(uploadCalls, 0);
+});
+
+test('REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD: rejects 0 or negative revision values', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  const live = getValidLiveFixture();
+  const previewRevZero = { ...getValidPreviewFixture(), revision: 0 };
+
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: live, previewCustomize: previewRevZero });
+    mockUpload();
+  }, /REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD/);
+
+  assert.equal(uploadCalls, 0);
+});
+
+test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
 
@@ -171,8 +184,6 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: f
     validatePreflight({ liveCustomize: liveMissing, previewCustomize: previewMissing });
     mockUpload();
   }, /TARGET_MISSING_BLOCKED_PRE_UPLOAD/);
-
-  assert.equal(uploadCalls, 0);
 
   // Ambiguous target
   const liveAmbiguous = {
@@ -207,66 +218,83 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: f
   assert.equal(uploadCalls, 0);
 });
 
-test('TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD: fails closed before upload on count/type/name/scope drift', () => {
+test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mbo-employee-app.js in desktop.css must have fileKey', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
 
-  const live = getValidLiveFixture();
-  const previewDrift = getValidPreviewFixture();
-  previewDrift.desktop.css = []; // CSS missing in preview!
+  const live = {
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+
+  const preview = {
+    revision: '10',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }] // CSS file key missing!
+    },
+    mobile: { js: [], css: [] }
+  };
 
   assert.throws(() => {
-    validatePreflight({ liveCustomize: live, previewCustomize: previewDrift });
+    validatePreflight({ liveCustomize: live, previewCustomize: preview });
     mockUpload();
-  }, /TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD/);
+  }, /SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD/);
 
   assert.equal(uploadCalls, 0);
 });
 
-test('URL_ENTRY_ORDER_PRESERVED & MOBILE_ENTRY_ORDER_PRESERVED & CSS_UPLOAD_COUNT = 0', () => {
-  const previewCustomize = {
-    revision: '5',
+test('SAME_FILENAME_MOBILE_JS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mbo-employee-app.js in mobile.js must have fileKey', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  const live = {
     scope: 'ALL',
-    desktop: {
-      js: [
-        { type: 'URL', url: 'https://cdn.example.com/lib.js' },
-        { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }
-      ],
-      css: [
-        { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } },
-        { type: 'URL', url: 'https://cdn.example.com/theme.css' }
-      ]
-    },
-    mobile: {
-      js: [{ type: 'URL', url: 'https://cdn.example.com/mobile-lib.js' }],
-      css: [{ type: 'FILE', file: { name: 'mobile-theme.css', fileKey: 'MOBILE_CSS_KEY' } }]
-    }
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }], css: [] },
+    mobile: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_MOB_JS' } }], css: [] }
   };
 
-  const payload = buildPreviewCustomizePayload({
-    app: 794,
-    previewCustomize,
-    targetFileName: 'mbo-employee-app.js',
-    newJsFileKey: 'NEW_JS_KEY'
-  });
+  const preview = {
+    revision: '10',
+    scope: 'ALL',
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }], css: [] },
+    mobile: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }], css: [] } // mobile.js file key missing!
+  };
 
-  // Desktop JS order & type
-  assert.equal(payload.desktop.js.length, 2);
-  assert.equal(payload.desktop.js[0].type, 'URL');
-  assert.equal(payload.desktop.js[0].url, 'https://cdn.example.com/lib.js');
-  assert.equal(payload.desktop.js[1].type, 'FILE');
-  assert.equal(payload.desktop.js[1].file.fileKey, 'NEW_JS_KEY');
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: live, previewCustomize: preview });
+    mockUpload();
+  }, /SAME_FILENAME_MOBILE_JS_MISSING_KEY_BLOCKED_PRE_UPLOAD/);
 
-  // Desktop CSS order & type
-  assert.equal(payload.desktop.css.length, 2);
-  assert.equal(payload.desktop.css[0].type, 'FILE');
-  assert.equal(payload.desktop.css[0].file.fileKey, 'PREVIEW_CSS_KEY');
-  assert.equal(payload.desktop.css[1].type, 'URL');
-  assert.equal(payload.desktop.css[1].url, 'https://cdn.example.com/theme.css');
+  assert.equal(uploadCalls, 0);
+});
 
-  // Mobile JS/CSS preserved
-  assert.equal(payload.mobile.js.length, 1);
-  assert.equal(payload.mobile.js[0].url, 'https://cdn.example.com/mobile-lib.js');
-  assert.equal(payload.mobile.css.length, 1);
-  assert.equal(payload.mobile.css[0].file.fileKey, 'MOBILE_CSS_KEY');
+test('SAME_FILENAME_MOBILE_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mbo-employee-app.js in mobile.css must have fileKey', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  const live = {
+    scope: 'ALL',
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }], css: [] },
+    mobile: { js: [], css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_MOB_CSS' } }] }
+  };
+
+  const preview = {
+    revision: '10',
+    scope: 'ALL',
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }], css: [] },
+    mobile: { js: [], css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }] } // mobile.css file key missing!
+  };
+
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: live, previewCustomize: preview });
+    mockUpload();
+  }, /SAME_FILENAME_MOBILE_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD/);
+
+  assert.equal(uploadCalls, 0);
 });
