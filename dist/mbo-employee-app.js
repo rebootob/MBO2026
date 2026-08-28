@@ -5488,26 +5488,29 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
       const bar = ce("div");
       if (!bar) return;
       bar.setAttribute("data-mbo-auth-bar", "");
-      styled(bar, "display:flex;align-items:center;gap:12px;justify-content:flex-end;padding:8px 16px;background:#f0f0f0;border-bottom:1px solid #ddd;font-size:13px;");
+      styled(bar, "display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:13px;border-radius:8px 8px 0 0;");
       const label = ce("span");
-      label.textContent = `Logged in: ${employeeCode}`;
-      styled(label, "color:#444;flex:1;");
+      label.textContent = `\u0E23\u0E2B\u0E31\u0E2A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19 / Employee Code: ${employeeCode}`;
+      styled(label, "color:#334155;font-weight:600;");
+      const actionsContainer = ce("div");
+      styled(actionsContainer, "display:flex;align-items:center;gap:8px;");
       const changePwBtn = ce("button");
-      changePwBtn.textContent = "Change Password";
-      styled(changePwBtn, "padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;");
+      changePwBtn.textContent = "\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19 / Change Password";
+      styled(changePwBtn, "padding:5px 12px;cursor:pointer;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#334155;font-size:12px;font-weight:500;");
       changePwBtn.addEventListener("click", () => {
         this._renderChangePasswordDialog(document.body, employeeCode);
       });
       const logoutBtn = ce("button");
-      logoutBtn.textContent = "Logout";
-      styled(logoutBtn, "padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;");
+      logoutBtn.textContent = "\u0E2D\u0E2D\u0E01\u0E08\u0E32\u0E01\u0E23\u0E30\u0E1A\u0E1A / Logout";
+      styled(logoutBtn, "padding:5px 12px;cursor:pointer;border:1px solid #fca5a5;border-radius:6px;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:500;");
       logoutBtn.addEventListener("click", async () => {
         await this.logout();
         this._onReload();
       });
+      actionsContainer.appendChild(changePwBtn);
+      actionsContainer.appendChild(logoutBtn);
       bar.appendChild(label);
-      bar.appendChild(changePwBtn);
-      bar.appendChild(logoutBtn);
+      bar.appendChild(actionsContainer);
       host.insertBefore(bar, host.firstChild);
       return bar;
     }
@@ -6838,9 +6841,6 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       if (recordList) {
         recordList.style.display = "none";
       }
-      if (mboLoginGate && typeof mboLoginGate.renderAuthBar === "function") {
-        mboLoginGate.renderAuthBar(host, authenticatedEmployeeCode);
-      }
       const headerSpace = typeof kintone !== "undefined" && kintone.app && kintone.app.getHeaderSpaceElement ? kintone.app.getHeaderSpaceElement() : null;
       const containerHost = headerSpace || host;
       let indexContainer = containerHost.querySelector("[data-mbo-custom-index]");
@@ -6849,9 +6849,15 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       } else {
         indexContainer = document.createElement("div");
         indexContainer.setAttribute("data-mbo-custom-index", "");
-        indexContainer.style.cssText = "padding:20px;font-family:sans-serif;background:#fff;";
+        indexContainer.style.cssText = "font-family:sans-serif;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:20px;overflow:hidden;";
         containerHost.appendChild(indexContainer);
       }
+      if (mboLoginGate && typeof mboLoginGate.renderAuthBar === "function") {
+        mboLoginGate.renderAuthBar(indexContainer, authenticatedEmployeeCode);
+      }
+      const contentBox = document.createElement("div");
+      contentBox.style.cssText = "padding:20px;";
+      indexContainer.appendChild(contentBox);
       const appId = getMboAppId();
       const query = `Employee_Code = "${authenticatedEmployeeCode}" order by Fiscal_Year desc`;
       let records = [];
@@ -6859,52 +6865,58 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         const res = await kintoneApiWrapper.getRecords(appId, query);
         records = res?.records || [];
       } catch (err) {
-        renderBlockedNotice(indexContainer, "Error Loading MBO Records", `Failed to load records for ${authenticatedEmployeeCode}: ${err.message}`);
+        renderBlockedNotice(contentBox, "\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 / Error Loading MBO Records", `\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E42\u0E2B\u0E25\u0E14\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 MBO \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A ${authenticatedEmployeeCode}: ${err.message}`);
         return event;
       }
+      const headerRow = document.createElement("div");
+      headerRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;";
       const title = document.createElement("h2");
-      title.style.cssText = "margin:0 0 16px;font-size:18px;color:#333;";
-      title.textContent = `My MBO Records (${authenticatedEmployeeCode})`;
-      indexContainer.appendChild(title);
-      const btnRow = document.createElement("div");
-      btnRow.style.cssText = "margin-bottom:16px;";
+      title.style.cssText = "margin:0;font-size:18px;font-weight:600;color:#1e293b;";
+      title.textContent = `\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 MBO \u0E02\u0E2D\u0E07\u0E09\u0E31\u0E19 / My MBO Records (${authenticatedEmployeeCode})`;
       const createBtn = document.createElement("a");
-      createBtn.textContent = "+ Create New MBO";
+      createBtn.textContent = "+ \u0E2A\u0E23\u0E49\u0E32\u0E07 MBO \u0E43\u0E2B\u0E21\u0E48 / Create New MBO";
       createBtn.href = `/k/${appId}/edit`;
-      createBtn.style.cssText = "display:inline-block;padding:8px 16px;background:#0057b8;color:#fff;text-decoration:none;border-radius:4px;font-size:14px;font-weight:bold;";
-      btnRow.appendChild(createBtn);
-      indexContainer.appendChild(btnRow);
+      createBtn.style.cssText = "display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);";
+      headerRow.appendChild(title);
+      headerRow.appendChild(createBtn);
+      contentBox.appendChild(headerRow);
       if (records.length === 0) {
+        const emptyCard = document.createElement("div");
+        emptyCard.style.cssText = "padding:32px 16px;text-align:center;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;margin-top:8px;";
         const emptyMsg = document.createElement("p");
-        emptyMsg.style.cssText = "color:#666;font-size:14px;";
-        emptyMsg.textContent = `No MBO records found for employee code ${authenticatedEmployeeCode}.`;
-        indexContainer.appendChild(emptyMsg);
+        emptyMsg.style.cssText = "color:#64748b;font-size:14px;margin:0 0 12px;line-height:1.5;white-space:pre-wrap;";
+        emptyMsg.textContent = "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 MBO \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E23\u0E2B\u0E31\u0E2A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19 " + authenticatedEmployeeCode + "\nNo MBO records found for employee code " + authenticatedEmployeeCode + ".";
+        emptyCard.appendChild(emptyMsg);
+        contentBox.appendChild(emptyCard);
         return event;
       }
       const table = document.createElement("table");
-      table.style.cssText = "width:100%;border-collapse:collapse;font-size:14px;";
+      table.style.cssText = "width:100%;border-collapse:collapse;font-size:14px;margin-top:8px;";
       const thead = document.createElement("thead");
-      thead.innerHTML = '<tr style="background:#f5f5f5;border-bottom:2px solid #ddd;text-align:left;"><th style="padding:10px;">Fiscal Year</th><th style="padding:10px;">Record Key</th><th style="padding:10px;">Status</th><th style="padding:10px;">Action</th></tr>';
+      thead.innerHTML = '<tr style="background:#f1f5f9;border-bottom:2px solid #e2e8f0;text-align:left;color:#475569;font-weight:600;"><th style="padding:10px 12px;">\u0E1B\u0E35\u0E07\u0E1A\u0E1B\u0E23\u0E30\u0E21\u0E32\u0E13 / Fiscal Year</th><th style="padding:10px 12px;">\u0E23\u0E2B\u0E31\u0E2A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 / Record Key</th><th style="padding:10px 12px;">\u0E2A\u0E16\u0E32\u0E19\u0E30 / Status</th><th style="padding:10px 12px;text-align:right;">\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23 / Action</th></tr>';
       table.appendChild(thead);
       const tbody = document.createElement("tbody");
       records.forEach((rec) => {
         const tr = document.createElement("tr");
-        tr.style.cssText = "border-bottom:1px solid #eee;";
+        tr.style.cssText = "border-bottom:1px solid #f1f5f9;";
         const fyTd = document.createElement("td");
-        fyTd.style.cssText = "padding:10px;";
+        fyTd.style.cssText = "padding:12px;color:#334155;";
         fyTd.textContent = rec.Fiscal_Year?.value || "-";
         const keyTd = document.createElement("td");
-        keyTd.style.cssText = "padding:10px;";
+        keyTd.style.cssText = "padding:12px;color:#334155;font-family:monospace;";
         keyTd.textContent = rec.Record_Key?.value || "-";
         const statusTd = document.createElement("td");
-        statusTd.style.cssText = "padding:10px;";
-        statusTd.textContent = rec.Status?.value || "-";
+        statusTd.style.cssText = "padding:12px;";
+        const statusBadge = document.createElement("span");
+        statusBadge.textContent = rec.Status?.value || "-";
+        statusBadge.style.cssText = "display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;";
+        statusTd.appendChild(statusBadge);
         const actionTd = document.createElement("td");
-        actionTd.style.cssText = "padding:10px;";
+        actionTd.style.cssText = "padding:12px;text-align:right;";
         const viewLink = document.createElement("a");
-        viewLink.textContent = "View / Edit";
+        viewLink.textContent = "\u0E14\u0E39 / \u0E41\u0E01\u0E49\u0E44\u0E02 (View / Edit)";
         viewLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
-        viewLink.style.cssText = "color:#0057b8;text-decoration:underline;";
+        viewLink.style.cssText = "color:#2563eb;text-decoration:none;font-weight:500;";
         actionTd.appendChild(viewLink);
         tr.appendChild(fyTd);
         tr.appendChild(keyTd);
@@ -6913,7 +6925,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      indexContainer.appendChild(table);
+      contentBox.appendChild(table);
       return event;
     }
     kintone.events.on("app.record.index.show", function(event) {

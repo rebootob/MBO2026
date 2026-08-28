@@ -4,6 +4,8 @@ import * as esbuild from 'esbuild';
 export async function buildMboUi(options = {}) {
   fs.mkdirSync('dist', { recursive: true });
 
+  const finalOutfile = options.outfile || 'dist/mbo-employee-app.js';
+
   const result = await esbuild.build({
     entryPoints: ['src/main-mbo-app.js'],
     bundle: true,
@@ -13,9 +15,13 @@ export async function buildMboUi(options = {}) {
     minify: false,
     sourcemap: false,
     metafile: true,
-    outfile: 'dist/mbo-employee-app.js',
+    write: false,
     ...options
   });
+
+  if (result.outputFiles && result.outputFiles.length > 0) {
+    fs.writeFileSync(finalOutfile, result.outputFiles[0].contents);
+  }
 
   fs.copyFileSync('src/styles/mbo-employee.css', 'dist/mbo-employee.css');
 

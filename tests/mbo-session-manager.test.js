@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { buildMboUi } from '../scripts/kintone/build-mbo-ui.js';
 import { MboSessionManager } from '../src/ui/mbo-session-manager.js';
 import { MboKintoneAuthAdapter } from '../src/ui/mbo-kintone-auth-adapter.js';
 import { MboKintoneLoginGate } from '../src/ui/mbo-kintone-login-gate.js';
@@ -690,7 +691,8 @@ test('NEW_LOGIN_INVALIDATES_PRIOR_SESSION & LOGOUT_REVOKES_AND_CLEARS_PRINCIPAL'
 // 4. Classic Bundle Proof
 // ---------------------------------------------------------------------------
 
-test('BUNDLE_RUNTIME_RESULT & SESSION_MANAGER_DEFINITION_COUNT = 1 & AUTH_ADAPTER_DEFINITION_COUNT = 1 & LOGIN_GATE_DEFINITION_COUNT = 1', () => {
+test('BUNDLE_RUNTIME_RESULT & SESSION_MANAGER_DEFINITION_COUNT = 1 & AUTH_ADAPTER_DEFINITION_COUNT = 1 & LOGIN_GATE_DEFINITION_COUNT = 1', async () => {
+  await buildMboUi();
   const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
 
   const strippedCode = bundleCode.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');

@@ -116,31 +116,36 @@ export class MboKintoneLoginGate {
     const bar = ce('div');
     if (!bar) return;
     bar.setAttribute('data-mbo-auth-bar', '');
-    styled(bar, 'display:flex;align-items:center;gap:12px;justify-content:flex-end;' +
-      'padding:8px 16px;background:#f0f0f0;border-bottom:1px solid #ddd;font-size:13px;');
+    styled(bar, 'display:flex;align-items:center;justify-content:space-between;gap:12px;' +
+      'padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:13px;border-radius:8px 8px 0 0;');
 
     const label = ce('span');
-    label.textContent = `Logged in: ${employeeCode}`;
-    styled(label, 'color:#444;flex:1;');
+    label.textContent = `รหัสพนักงาน / Employee Code: ${employeeCode}`;
+    styled(label, 'color:#334155;font-weight:600;');
+
+    const actionsContainer = ce('div');
+    styled(actionsContainer, 'display:flex;align-items:center;gap:8px;');
 
     const changePwBtn = ce('button');
-    changePwBtn.textContent = 'Change Password';
-    styled(changePwBtn, 'padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;');
+    changePwBtn.textContent = 'เปลี่ยนรหัสผ่าน / Change Password';
+    styled(changePwBtn, 'padding:5px 12px;cursor:pointer;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#334155;font-size:12px;font-weight:500;');
     changePwBtn.addEventListener('click', () => {
       this._renderChangePasswordDialog(document.body, employeeCode);
     });
 
     const logoutBtn = ce('button');
-    logoutBtn.textContent = 'Logout';
-    styled(logoutBtn, 'padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;');
+    logoutBtn.textContent = 'ออกจากระบบ / Logout';
+    styled(logoutBtn, 'padding:5px 12px;cursor:pointer;border:1px solid #fca5a5;border-radius:6px;background:#fef2f2;color:#991b1b;font-size:12px;font-weight:500;');
     logoutBtn.addEventListener('click', async () => {
       await this.logout();
       this._onReload();
     });
 
+    actionsContainer.appendChild(changePwBtn);
+    actionsContainer.appendChild(logoutBtn);
+
     bar.appendChild(label);
-    bar.appendChild(changePwBtn);
-    bar.appendChild(logoutBtn);
+    bar.appendChild(actionsContainer);
     host.insertBefore(bar, host.firstChild);
     return bar;
   }
