@@ -1,59 +1,49 @@
-# AI ACTIVE TASK — D1 EMPLOYEE-SELF INDEX SHELL / LOGOUT UX CORRECTIVE
+# AI ACTIVE TASK — D1 EMPLOYEE-SELF INDEX UX FINAL CORRECTIVE
 
-Mode: **SOURCE / BUILD / TEST / LOCAL PREVIEW ONLY — ZERO KINTONE WRITE**
+Mode: **SOURCE / TEST / LOCAL PREVIEW ONLY — ZERO KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
 Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
-## Read only
+Read only:
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this file
 3. `project-docs/CONFIRMED_BASELINE/UI_UX.md`
 4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-5. relevant index/auth-host sections of:
-   - `src/main-mbo-app.js`
-   - `src/ui/mbo-kintone-login-gate.js`
-   - `src/ui/host-resolver.js`
-6. focused UI/auth tests only
+5. current index/auth UI source + focused tests
 
 Do not scan repo.
 
-## Fix only this UX defect
+## Fix only these points
 
-User live evidence: My MBO index shows no visible Logout and looks fragmented/raw.
+1. Keep the accepted HeaderSpace one-shell design and existing Logout session revoke/clear/reload semantics.
 
-Required result:
+2. Extract the Employee-Self index DOM renderer from `main-mbo-app.js` into one cohesive module:
+```text
+src/ui/employee-self-index-ui.js
+```
+`main-mbo-app.js` must only resolve host/data and orchestrate rendering. No business/routing/scoring/session duplication.
 
-1. **Stable one-shell index host**
-   - resolve `kintone.app.getHeaderSpaceElement()` first for index Employee-Self UI;
-   - auth controls + My MBO content must render into the same stable custom shell;
-   - do not mount persistent auth controls directly into `.gaia-app-wrapper`.
+3. Exact user-facing index wording:
+```text
+MBO ของฉัน / My MBO
++ สร้าง MBO ใหม่ / Create New MBO
+รหัสพนักงาน / Employee Code: <code>
+เปลี่ยนรหัสผ่าน / Change Password
+ออกจากระบบ / Logout
+```
+Empty state/table remain bilingual.
 
-2. **Visible bilingual auth toolbar**
-   - `รหัสพนักงาน / Employee Code: <code>`
-   - `เปลี่ยนรหัสผ่าน / Change Password`
-   - `ออกจากระบบ / Logout`
-   - Logout must call the existing session revoke/clear/reload path; do not change auth semantics.
+4. Revert the unrelated `build-mbo-ui.js` write-pipeline change from commit `1cc3f9c...` to the previously accepted esbuild `outfile` behavior. Do not redesign bundling.
 
-3. **Clean bilingual My MBO index**
-   - title: `MBO ของฉัน / My MBO`
-   - primary action: `+ สร้าง MBO ใหม่ / Create New MBO`
-   - empty state bilingual; do not show debug-style `My MBO Records (0113)` as the main heading;
-   - coherent card/shell spacing, readable desktop width, no giant raw white block feeling;
-   - preserve Kintone global header/breadcrumb/comment functionality.
-
-4. **Architecture**
-   - keep `main-mbo-app.js` orchestration-only;
-   - if UI rendering grows, create/use one cohesive `employee-self-index-ui.js` module rather than adding a large renderer to main;
-   - no business/routing/scoring/session logic duplication.
-
-## Tests
-Must prove without live Kintone:
-- index auth bar mounts in stable header-space shell;
+5. Add focused non-live UI tests that MUST execute and prove:
+- HeaderSpace shell is preferred;
+- auth bar + My MBO share one shell;
 - exactly one auth bar;
-- Employee Code + Change Password + Logout visible;
-- Logout button uses existing gate logout path;
-- My MBO title/create/empty state bilingual;
-- no login/session/routing/scoring behavior change.
+- Employee Code / Change Password / Logout visible;
+- Logout calls existing gate logout path;
+- exact My MBO title + Create + empty state bilingual.
+
+6. Local visual proof: show/capture the Employee-Self index candidate before any deploy. It must look like one coherent card/shell and must not cover Kintone global header/breadcrumb. If native index-only controls still make the page visibly fragmented, hide only those duplicate index controls in the narrowest safe way; do not hide global navigation.
 
 Run:
 ```text
@@ -61,13 +51,13 @@ npm run ui:build
 npm test
 ```
 
-## Forbidden
+Forbidden:
 - NO Kintone write/upload/deploy
-- NO App794 deploy
 - NO App801 write
 - NO deploy-guard fix
-- NO Create-handler rework
-- NO employee/routing/scoring semantics change
+- NO Create-handler change
+- NO auth/session semantics change
+- NO routing/scoring/business change
 - NO broad refactor
 - NO D2-D7
 
