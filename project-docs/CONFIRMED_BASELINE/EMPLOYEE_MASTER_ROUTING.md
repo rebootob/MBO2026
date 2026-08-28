@@ -5,6 +5,7 @@ Status: CONFIRMED / CANONICAL FOR MBO ROUTING INPUT
 Evidence basis:
 - User-provided Employee Namelist export from App53.
 - User confirmation on 2026-08-26 for TMG2 CAD routing semantics.
+- User-confirmed App53 active-status field semantics on 2026-08-28.
 
 ## Source of Truth
 
@@ -22,6 +23,25 @@ App794 routing context must be able to derive at least:
 - Active/Inactive employee status where needed to identify the current valid person/master row
 
 Do not add duplicate employee-master fields when App53 already provides the required source data.
+
+## Confirmed App53 Active / Inactive Semantics
+
+Canonical employee active-status source in App53:
+
+```text
+Field Code = Number_0
+Label      = Status
+Type       = NUMBER
+1          = Active / current employee
+0          = Inactive / former employee
+blank      = unknown / not accepted as Active
+```
+
+Rules:
+- use `Number_0 = 1` when a flow requires the current/Active employee population;
+- `Number_0 = 0` is not current/Active;
+- blank `Number_0` must fail closed where current employee status is required until the source row is corrected/confirmed;
+- the Kintone system field code `Status` is workflow/process status and is not the employee Active/Inactive source.
 
 ## Position Normalization
 
@@ -121,6 +141,7 @@ M10M does not authorize widening requester access.
 
 Any future change to:
 - App53 routing-source semantics;
+- App53 `Number_0` active/inactive semantics;
 - General Manager position normalization;
 - TMG2 Team membership/route split;
 - TMG2 CAD same-route decision;
