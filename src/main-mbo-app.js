@@ -32,6 +32,9 @@ export function setMboLoginGate(gate) {
 export function getActiveUiInstance() {
   return activeUiInstance;
 }
+if (typeof globalThis !== 'undefined') {
+  globalThis.getActiveUiInstance = getActiveUiInstance;
+}
 
 function isSemanticValueMatch(valA, valB, fieldType) {
   if (valA === valB) return true;
@@ -449,22 +452,18 @@ if (typeof kintone !== 'undefined') {
         const fieldsToClear = [
           'Employee_Name', 'Employee_Name_TH', 'Employee_Section',
           'Employee_Department', 'Employee_Position', 'Employee_Email',
-          'Employee_Start_Date', 'Record_Key',
+          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
           'Manager_Level1_Approvers', 'Manager_Level2_Approvers',
           'GM_Level1_Approvers', 'GM_Level2_Approvers',
           'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology',
           'First_Manager_User', 'Manager_User', 'GM_User', 'Requester_User'
         ];
-        if (!record.Employee_Code) {
-          record.Employee_Code = { value: newCode };
-        } else {
+        if (record.Employee_Code) {
           record.Employee_Code.value = newCode;
         }
         fieldsToClear.forEach(k => {
           const clearVal = USER_SELECT_FIELDS.has(k) ? [] : '';
-          if (!record[k]) {
-            record[k] = { value: clearVal };
-          } else {
+          if (record[k]) {
             record[k].value = clearVal;
           }
         });
@@ -568,17 +567,6 @@ if (typeof kintone !== 'undefined') {
           if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
         }
 
-        Object.entries(fieldsToSync).forEach(([k, val]) => {
-          if (val !== undefined) {
-            if (!record[k]) {
-              record[k] = { value: val };
-            } else {
-              record[k].value = val;
-            }
-          }
-        });
-
-
         const CORE_SNAPSHOT_FIELDS = [
           'Profile_Code',
           'PartA_Weight',
@@ -590,6 +578,19 @@ if (typeof kintone !== 'undefined') {
           'Requester_User',
           'Record_Key'
         ];
+
+        // Fail-closed if any required snapshot field is missing from form state schema
+        for (const fieldCode of CORE_SNAPSHOT_FIELDS) {
+          if (!record[fieldCode]) {
+            throw new Error(`ไม่พบช่องข้อมูล ${fieldCode} ในแบบฟอร์ม (App 794)\nField ${fieldCode} does not exist on Kintone form schema.`);
+          }
+        }
+
+        Object.entries(fieldsToSync).forEach(([k, val]) => {
+          if (val !== undefined && record[k]) {
+            record[k].value = val;
+          }
+        });
 
         // Push directly to Kintone Form State with verified persistence and post-set read-back
         if (!isAutoloadingInCreateHandler) {

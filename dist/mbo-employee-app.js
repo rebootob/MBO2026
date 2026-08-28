@@ -6449,6 +6449,9 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
   function getActiveUiInstance() {
     return activeUiInstance;
   }
+  if (typeof globalThis !== "undefined") {
+    globalThis.getActiveUiInstance = getActiveUiInstance;
+  }
   function isSemanticValueMatch(valA, valB, fieldType) {
     if (valA === valB) return true;
     if (Array.isArray(valA) && Array.isArray(valB)) {
@@ -6627,6 +6630,8 @@ Record: ${record.Employee_Code.value}`
             "Employee_Position",
             "Employee_Email",
             "Employee_Start_Date",
+            "Department_Hoshin",
+            "Section_Hoshin",
             "Record_Key",
             "Manager_Level1_Approvers",
             "Manager_Level2_Approvers",
@@ -6640,16 +6645,12 @@ Record: ${record.Employee_Code.value}`
             "GM_User",
             "Requester_User"
           ];
-          if (!record.Employee_Code) {
-            record.Employee_Code = { value: newCode };
-          } else {
+          if (record.Employee_Code) {
             record.Employee_Code.value = newCode;
           }
           fieldsToClear.forEach((k) => {
             const clearVal = USER_SELECT_FIELDS.has(k) ? [] : "";
-            if (!record[k]) {
-              record[k] = { value: clearVal };
-            } else {
+            if (record[k]) {
               record[k].value = clearVal;
             }
           });
@@ -6740,15 +6741,6 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             if (scoringConfig.Competency_Set_Code) fieldsToSync.Competency_Set_Code = scoringConfig.Competency_Set_Code;
             if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
           }
-          Object.entries(fieldsToSync).forEach(([k, val]) => {
-            if (val !== void 0) {
-              if (!record[k]) {
-                record[k] = { value: val };
-              } else {
-                record[k].value = val;
-              }
-            }
-          });
           const CORE_SNAPSHOT_FIELDS = [
             "Profile_Code",
             "PartA_Weight",
@@ -6760,6 +6752,17 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             "Requester_User",
             "Record_Key"
           ];
+          for (const fieldCode of CORE_SNAPSHOT_FIELDS) {
+            if (!record[fieldCode]) {
+              throw new Error(`\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E0A\u0E48\u0E2D\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 ${fieldCode} \u0E43\u0E19\u0E41\u0E1A\u0E1A\u0E1F\u0E2D\u0E23\u0E4C\u0E21 (App 794)
+Field ${fieldCode} does not exist on Kintone form schema.`);
+            }
+          }
+          Object.entries(fieldsToSync).forEach(([k, val]) => {
+            if (val !== void 0 && record[k]) {
+              record[k].value = val;
+            }
+          });
           if (!isAutoloadingInCreateHandler) {
             syncRecordToKintone(record, {
               requireVerifiedPersistence: true,

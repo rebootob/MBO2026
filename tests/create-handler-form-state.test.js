@@ -225,11 +225,9 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   assert.equal(returnedEvent.record.Configuration_Hash.value, '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
 
   // C. PROOF: Active UI verified state
-  // Save gate validation on NEW_RECORD stage with populated record must pass
-  const activeUi = globalThis.getActiveUiInstance ? globalThis.getActiveUiInstance() : null;
-  if (activeUi) {
-    assert.equal(activeUi.isEmployeeVerified, true, 'active UI isEmployeeVerified must be true');
-  }
+  const activeUi = globalThis.getActiveUiInstance();
+  assert.ok(activeUi, 'getActiveUiInstance must return active UI instance');
+  assert.equal(activeUi.isEmployeeVerified, true, 'active UI isEmployeeVerified must be true');
 
   // E. PROOF: Post-handler interactive sync preserved
   // Override kintone.app.record.get/set to return valid object to test post-handler sync behavior
@@ -238,10 +236,9 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   globalThis.kintone.app.record.set = ({ record: newRec }) => { postSyncCalls++; };
 
   // Simulate subsequent user interactive edit
-  if (activeUi && typeof activeUi.onFieldChange === 'function') {
-    activeUi.onFieldChange('Fiscal_Year', 'FY2026');
-    assert.ok(postSyncCalls > 0, 'Post-handler interactive sync must reach kintone.app.record.set');
-  }
+  assert.equal(typeof activeUi.onFieldChange, 'function', 'activeUi.onFieldChange must be a function');
+  activeUi.onFieldChange('Fiscal_Year', 'FY2026');
+  assert.ok(postSyncCalls > 0, 'Post-handler interactive sync must reach kintone.app.record.set');
 });
 
 test('Create Handler Form State Corrective: Lookup failure path remains fail-closed with 0 kintone.app.record.get/set calls', async () => {
@@ -340,8 +337,7 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
   assert.equal(recordGetCalls, 0, 'Failure path must make 0 record.get calls');
   assert.equal(recordSetCalls, 0, 'Failure path must make 0 record.set calls');
 
-  const activeUi = globalThis.getActiveUiInstance ? globalThis.getActiveUiInstance() : null;
-  if (activeUi) {
-    assert.equal(activeUi.isEmployeeVerified, false, 'Failed lookup must leave isEmployeeVerified = false');
-  }
+  const activeUi = globalThis.getActiveUiInstance();
+  assert.ok(activeUi, 'getActiveUiInstance must return active UI instance');
+  assert.equal(activeUi.isEmployeeVerified, false, 'Failed lookup must leave isEmployeeVerified = false');
 });
