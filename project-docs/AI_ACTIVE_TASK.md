@@ -1,242 +1,179 @@
-# AI ACTIVE TASK — D1 APP794 BUNDLE + EMPLOYEE-CODE CORRECTIVE
+# AI ACTIVE TASK — D1 PREVIEW FILEKEY PRESERVATION CORRECTIVE
 
 > Read `project-docs/AI_CONTROL_CENTER.md` FIRST.  
 > Execution Plane: Antigravity  
 > Branch: `ai/antigravity-wp002c`  
-> Mode: **SOURCE / BUILD / TEST ONLY — NO LIVE KINTONE WRITE**
+> Mode: **SOURCE / TEST ONLY — NO LIVE KINTONE WRITE**
 
-## 0. Review Verdict / Why This Task Exists
+## 0. Review State
 
-The App794 deploy at executor evidence commit:
-
-```text
-94b55b43944bdf95a0fd598aabcb8db5bf91e190
-```
-
-is **NOT ACCEPTED**.
-
-Independent live evidence shows:
+Corrective commit under review:
 
 ```text
-FAIL_CLOSED_GATE_NULL
+5044eb47f0302327e6bc180d504f72132f6a0fbe
 ```
 
-and Git inspection proves the deployed classic bundle references `MboKintoneAuthAdapter` and `MboKintoneLoginGate` without including their class definitions.
+The bundle inclusion, modular-source guard, Employee Code format correction, and CSS Git preservation are provisionally accepted.
 
-This task fixes source/build/test only. It does **not** authorize redeploy.
+**Do not redo those corrections.**
+
+One blocking defect remains in the future deploy implementation: retained FILE keys for a Preview customization PUT are currently taken from Production/effective customization instead of Preview/Test customization.
 
 ## 1. Read Only These Inputs
 
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this `project-docs/AI_ACTIVE_TASK.md`
-3. `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
-4. `project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` — Source-Code Modularity section
-5. `scripts/kintone/deploy-custom-ui.js`
-6. `src/ui/mbo-kintone-auth-adapter.js`
-7. `src/ui/mbo-kintone-login-gate.js`
-8. `src/core/fiscal-year-engine.js`
-9. `src/main-mbo-app.js`
-10. `tests/classic-bundle.test.js`
-11. `tests/mbo-kintone-auth-adapter.test.js`
-12. `tests/record-key.test.js` only if needed for the Employee-Code/Record-Key correction
-13. `dist/mbo-employee-app.js`
-14. `dist/mbo-employee.css`
+3. `project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` — Source-Code Modularity section
+4. `scripts/kintone/deploy-custom-ui.js`
+5. a focused deploy-customization test file only
 
 Do not scan repository/history.
-Do not create a planning package.
+Do not reopen bundle/auth/Employee-Code implementation unless a direct regression from this narrow change requires it.
 
-## 2. Mandatory Architecture Guard — Keep Source Modular
+## 2. Exact Defect to Fix
 
-The project now has a confirmed mandatory source-code modularity rule.
-
-For this corrective task:
-
-- **DO NOT** copy `MboKintoneAuthAdapter`, `MboKintoneLoginGate`, password logic, or other feature logic into `src/main-mbo-app.js`;
-- keep `src/ui/mbo-kintone-auth-adapter.js` as the authentication adapter module;
-- keep `src/ui/mbo-kintone-login-gate.js` as the login-gate/UI module;
-- `src/main-mbo-app.js` must remain primarily bootstrap / event registration / orchestration;
-- fix dependency inclusion in the build path, not by collapsing separate modules into one maintainable source file;
-- a single `dist/mbo-employee-app.js` is acceptable only as **generated deployment output**;
-- never manually maintain/correct business logic directly inside `dist/mbo-employee-app.js`;
-- do not create duplicate implementations of an existing feature;
-- do not perform a broad unrelated decomposition/refactor in this corrective package.
-
-This task does **not** authorize splitting unrelated legacy-large modules such as `employee-part-a-ui.js`; that must be controlled separately after the current D1 blocker is cleared. However, no new unrelated functionality may be added to such catch-all files.
-
-## 3. Corrective A — Bundle Dependency Completeness
-
-Update the existing build path in `scripts/kintone/deploy-custom-ui.js` so the classic bundle includes, before `main-mbo-app.js`:
+Current incorrect pattern:
 
 ```text
-src/ui/mbo-kintone-auth-adapter.js
-src/ui/mbo-kintone-login-gate.js
+GET /k/v1/app/customize.json
+  -> reuse Production FILE fileKeys
+  -> PUT /k/v1/preview/app/customize.json
 ```
 
-Keep both as independent source modules. The build may concatenate/package them into the generated classic bundle only at build time.
+Kintone Preview customization update must retain existing uploaded files using FILE keys from Preview/Test customization state.
 
-Required built artifact facts:
+Correct pattern:
 
 ```text
-MboKintoneAuthAdapter definition = exactly 1
-MboKintoneLoginGate definition   = exactly 1
-main-mbo-app initialization occurs only after both definitions
+GET effective/live customization
+GET preview/test customization
+  -> verify safe topology/scope alignment
+  -> identify target in preview state
+  -> upload replacement JS target only
+  -> construct Preview PUT payload from preview state
+  -> preserve preview non-target FILE keys
+  -> include preview revision
 ```
 
-## 4. Corrective B — Tests Must Catch Missing Runtime Dependencies
+## 3. Required Implementation
 
-Update existing tests, primarily `tests/classic-bundle.test.js`.
+Update `scripts/kintone/deploy-custom-ui.js` only as needed so future live mode does all of the following:
 
-Do not merely duplicate the build script's source list and assert syntax parses.
-
-Required tests must prove at minimum:
-
-1. committed/rebuilt classic bundle contains exactly one definition of `MboKintoneAuthAdapter`;
-2. committed/rebuilt classic bundle contains exactly one definition of `MboKintoneLoginGate`;
-3. bundle still has zero ES-module `import` / `export` residue;
-4. bundle can execute a minimal initialization path with a safe fake/stub Kintone environment far enough to prove the two auth classes are runtime-resolvable; no real Kintone network call;
-5. source -> build -> committed `dist/mbo-employee-app.js` exactness remains proven;
-6. test/build structure proves auth definitions originate from the dedicated source modules rather than duplicate copies inserted into `main-mbo-app.js`.
-
-Do not weaken the existing fail-closed behavior.
-
-## 5. Corrective C — Employee Code Must Match Confirmed Baseline
-
-The Baseline confirms Employee Code is a string identifier and real accepted examples include:
+1. Read effective/live state from `/k/v1/app/customize.json`.
+2. Read Preview/Test state from `/k/v1/preview/app/customize.json`.
+3. Before uploading anything, fail closed if live vs preview scope/topology differ unexpectedly.
+   - compare scope;
+   - compare ordered desktop/mobile entry counts;
+   - compare entry type;
+   - compare URL value for URL entries;
+   - compare FILE name for FILE entries;
+   - do not require live fileKey == preview fileKey.
+4. In Preview/Test desktop JS, require exactly one FILE named `mbo-employee-app.js`.
+5. Upload only the replacement `mbo-employee-app.js`.
+6. Build the Preview PUT body from Preview/Test customization state.
+7. Normalize PUT entries to API-supported fields only:
 
 ```text
-50.03
-50.02
-0050_2
+URL  -> { type: 'URL', url: ... }
+FILE -> { type: 'FILE', file: { fileKey: ... } }
 ```
 
-Current `[A-Za-z0-9_-]+` validation incorrectly rejects the dot-containing codes.
+8. Replace only the target JS `fileKey` with the newly uploaded target key.
+9. Preserve all non-target Preview/Test FILE keys exactly, including CSS.
+10. Preserve ordering, mobile entries, URL entries, and scope exactly.
+11. Include `revision: previewCustomize.revision` in the Preview PUT request.
+12. Fail closed if scope/revision/entry structure is malformed or target is missing/ambiguous.
+13. Do not upload CSS.
+14. Keep build-only mode free of Kintone network calls.
 
-Correct the existing validation consistently in:
+Do not change modular source architecture. Do not move this logic into `main-mbo-app.js`.
 
-- `src/ui/mbo-kintone-auth-adapter.js`
-- `src/core/fiscal-year-engine.js`
-- corresponding Record Key validation/generation
-- focused tests
+## 4. Focused Tests
 
-A safe intended character set for the current confirmed data is:
+Add or update one focused test for deploy customization preservation. A new dedicated test file is allowed here because deployment-preservation logic is a separate responsibility.
+
+Tests must prove at minimum:
 
 ```text
-[A-Za-z0-9_.-]+
+PREVIEW_FILEKEY_SOURCE = PASS
+ONLY_TARGET_JS_FILEKEY_REPLACED = PASS
+NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED = PASS
+URL_ENTRY_ORDER_PRESERVED = PASS
+MOBILE_ENTRY_ORDER_PRESERVED = PASS
+SCOPE_PRESERVED = PASS
+PREVIEW_REVISION_INCLUDED = PASS
+LIVE_PREVIEW_FILEKEY_DIFFERENCE_ALLOWED = PASS
+LIVE_PREVIEW_TOPOLOGY_DRIFT_BLOCKED = PASS
+TARGET_MISSING_BLOCKED = PASS
+TARGET_AMBIGUOUS_BLOCKED = PASS
+CSS_UPLOAD_COUNT = 0
 ```
 
-Preserve exact string identity and leading zeros.
+Do not make tests depend on real Kintone.
 
-Required PASS examples:
+## 5. Regression Gates
 
-```text
-0118
-50.03
-50.02
-0050_2
-```
-
-Required FAIL examples must include at least:
-
-```text
-blank
-numeric non-string input
-employee code containing a space
-0118" or "1"="1
-```
-
-The injection-string test must prove zero Kintone calls are made.
-
-Do not broaden the character set beyond what is required by confirmed data.
-
-## 6. Corrective D — Future JS-Only Deploy Must Preserve Non-Target FILE Entries
-
-Fix the existing deployment implementation so that a future single-target JS replacement does **not** automatically re-upload unchanged CSS.
-
-Required design within the existing script/function structure:
-
-1. read current live customization at execution time when not in build-only mode;
-2. identify exactly one target desktop FILE `mbo-employee-app.js`;
-3. upload only the replacement JS target;
-4. construct the new customization payload from current live state;
-5. preserve current scope, ordering, URL entries, mobile entries and all non-target FILE entries using their existing fileKeys;
-6. do not upload `mbo-employee.css` merely to preserve it;
-7. fail closed if target JS is missing/ambiguous or live state cannot be read safely.
-
-This task changes the deployment script source only. **DO NOT execute its live deployment mode.**
-
-## 7. Build / Test Gates
-
-Execute locally only:
+Run locally:
 
 ```text
 npm run ui:build
 npm test
 ```
 
-Also run the focused tests needed to make failures easy to diagnose if useful.
-
-Required post-build evidence:
+Confirm:
 
 ```text
-CLASSIC_BUNDLE_PARSE = PASS
 AUTH_ADAPTER_DEFINITION_COUNT = 1
 LOGIN_GATE_DEFINITION_COUNT = 1
-AUTH_RUNTIME_RESOLUTION_TEST = PASS
-MODULAR_SOURCE_GUARD = PASS
 EMPLOYEE_CODE_50.03 = PASS
 EMPLOYEE_CODE_50.02 = PASS
 EMPLOYEE_CODE_0050_2 = PASS
-INJECTION_STRING_REJECTED_ZERO_KINTONE_CALLS = PASS
-SOURCE_DIST_EXACTNESS = PASS
-DIST_CSS_GIT_BLOB_BEFORE = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
-DIST_CSS_GIT_BLOB_AFTER  = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
 DIST_CSS_UNCHANGED = YES
 ```
 
-If CSS changes, STOP and do not hide/revert unrelated changes without reporting them.
+If an already-correct bundle/auth/Employee-Code behavior regresses, fix only the direct regression and report it.
 
-## 8. Explicitly Forbidden
+## 6. Explicitly Forbidden
 
 - NO Kintone POST/PUT/DELETE;
-- NO App794 customization upload/update/deploy;
+- NO App794 upload/update/deploy;
 - NO rollback;
 - NO App794 record write;
-- NO App801 write/reset/delete;
+- NO App801 write;
 - NO App53/795/796 write;
 - NO group/ACL change;
-- NO D2-D7 implementation;
 - NO UAT;
-- NO new feature/UI polish;
+- NO D2-D7 implementation;
 - NO broad refactor;
-- NO merging multiple feature/menu implementations into `main-mbo-app.js` or another catch-all source file;
-- NO manual editing of generated `dist/mbo-employee-app.js` as the source of truth;
-- NO new planning/docs package.
+- NO copying feature logic into `main-mbo-app.js`;
+- NO manual business-logic edits directly in `dist/mbo-employee-app.js`;
+- NO reimplementation of the already corrected bundle/Employee-Code work.
 
-## 9. Delivery
+## 7. Delivery
 
-Commit only the necessary source/build/test changes and regenerated `dist/mbo-employee-app.js`.
+Commit only the necessary deploy-script/test changes plus generated dist only if `npm run ui:build` legitimately changes it. CSS must remain unchanged.
 
 Do not modify Baseline, Control Center, or Active Task.
-Do not commit secrets or live file downloads.
+Do not commit secrets or live Kintone downloads.
 
 Push one concise corrective commit and STOP.
 
-Final executor report <= 15 lines and include:
+Final report <= 15 lines:
 
 ```text
 COMMIT_SHA
 FILES_CHANGED
 UI_BUILD_RESULT
 NPM_TEST_RESULT
-AUTH_ADAPTER_DEFINITION_COUNT
-LOGIN_GATE_DEFINITION_COUNT
-AUTH_RUNTIME_RESOLUTION_TEST
-MODULAR_SOURCE_GUARD
-EMPLOYEE_CODE_SPECIAL_FORMAT_TESTS
+PREVIEW_FILEKEY_SOURCE
+ONLY_TARGET_JS_FILEKEY_REPLACED
+NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED
+PREVIEW_REVISION_INCLUDED
+TOPOLOGY_DRIFT_BLOCKED
 DIST_CSS_UNCHANGED
 KINTONE_WRITES_EXECUTED = 0
 APP794_DEPLOY_EXECUTED = 0
-SOURCE_CORRECTIVE_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
 Maximum status:
@@ -245,4 +182,4 @@ Maximum status:
 IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-STOP after push. ChatGPT performs the next independent review before any corrective deploy is considered.
+STOP after push. ChatGPT reviews again before any corrective redeploy can be considered.
