@@ -152,3 +152,58 @@ SECRET_MATERIAL_EXPOSED        = NO
 ```
 
 This closes the App801 credential-provisioning gate. It does **not** by itself authorize App794 deployment or close D1; App794 deployment authorization/gate and final manual UI UAT remain separate steps.
+
+---
+
+## 12. App794 D1 Accepted Customization Deploy
+
+### Pre-Deploy Authorization & Artifact Identity
+```text
+TARGET_APP                             = 794
+ACCEPTED_SOURCE_COMMIT                 = 63796999a321a24e1cbd29ceaad82b43980fe8ea
+TARGET_PATH                            = dist/mbo-employee-app.js
+EXPECTED_GIT_BLOB_SHA                  = 96ec6424e7b7f528e82117b566ac96accb0ffb16
+LOCAL_GIT_BLOB_SHA                     = 96ec6424e7b7f528e82117b566ac96accb0ffb16
+ARTIFACT_IDENTITY_STATUS               = PASS
+```
+
+### Pre-Deploy Live Customization & Backup
+```text
+APP794_REVISION_BEFORE                 = 40
+PRE_DEPLOY_SCOPE                       = ALL
+PRE_DEPLOY_DESKTOP_JS_COUNT            = 1 (mbo-employee-app.js)
+PRE_DEPLOY_DESKTOP_CSS_COUNT           = 1 (mbo-employee.css)
+PRE_DEPLOY_MOBILE_JS_COUNT             = 0
+PRE_DEPLOY_MOBILE_CSS_COUNT            = 0
+ROLLBACK_BACKUP_PATH                   = scratch/app794_predeploy_backup.json
+APP794_ROLLBACK_READY                  = YES
+```
+
+### Deployment & Post-Deploy Read-Back Verification
+```text
+APP794_REVISION_AFTER                  = 41
+DEPLOYMENT_COMPLETED                   = YES
+TARGET_FILE_NAME_AFTER                 = mbo-employee-app.js
+LOCAL_JS_CONTENT_SHA256                = 29d7f0280d43273cc57a65c6b9c9f2d3a53496635398c1503342d350c8411ffe
+DEPLOYED_JS_CONTENT_SHA256             = 29d7f0280d43273cc57a65c6b9c9f2d3a53496635398c1503342d350c8411ffe
+TARGET_CONTENT_HASH_MATCH              = YES
+NON_TARGET_CUSTOMIZATION_PRESERVED    = YES
+ROLLBACK_RESULT                        = NOT_NEEDED
+```
+
+### Mandatory Counters
+```text
+APP794_CUSTOMIZATION_WRITES_EXECUTED   = 3 (upload mbo-employee-app.js + upload mbo-employee.css + PUT preview customize)
+APP794_DEPLOY_EXECUTED                 = 1 (POST preview deploy)
+APP794_ROLLBACK_WRITES_EXECUTED        = 0
+APP794_ROLLBACK_DEPLOY_EXECUTED        = 0
+APP794_RECORD_WRITES_EXECUTED          = 0
+APP801_WRITES_EXECUTED                 = 0
+APP53_795_796_WRITES_EXECUTED          = 0
+GROUP_ACL_WRITES_EXECUTED              = 0
+D2_D7_WRITES_EXECUTED                  = 0
+SOURCE_FILES_CHANGED                   = 0
+
+APP794_DEPLOY_STATUS                   = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
