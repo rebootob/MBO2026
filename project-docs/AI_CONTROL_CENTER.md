@@ -11,26 +11,28 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / SESSION ARCHITECTURE+SOURCE+TEST PASS / APP801 SESSION SCHEMA PASS / APP794 SESSION CONTINUITY DEPLOY APPROVED + EXECUTION NEXT / CREATE-HANDLER DEFECT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE=128 PASS / APP801 PROVISIONING PASS / SESSION ARCHITECTURE+SOURCE+TEST PASS / APP801 SESSION SCHEMA PASS / SESSION LIST→CREATE CONTINUITY LIVE PASS / APP794 RUNTIME CORRECTIVE REQUIRED / CREATE-HANDLER DEFECT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
 | D5 | Copy own previous MBO only | 🔴 MUST FIX |
 | D6 | Integrated E2E / Security / Regression | 🔴 BLOCKED |
-| D7 | Admin Support Center | ✅ PASS / CLOSED |
+| D7 | Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED, BUT APP794 CLASSIC-BUNDLE INTEGRATION DEFECT NOW OPEN UNDER D1 RUNTIME |
 
 No AI may silently drop D1–D7.
 
-## 2. Authorization Ledger
+## 2. Authorization / Gate Ledger
 
 ```text
 D1_SESSION_CONTINUITY_ARCHITECTURE       = APPROVED / BASELINED
 D1_SESSION_SOURCE_IMPLEMENTATION         = PASS / ACCEPTED
 D1_SESSION_TEST_EVIDENCE                 = PASS / ACCEPTED
 APP801_SESSION_SCHEMA_WRITE              = PASS / ACCEPTED AFTER INDEPENDENT LIVE/PREVIEW READBACK
-APP794_SESSION_CONTINUITY_DEPLOY          = APPROVED 2026-08-28 / DEPLOY-ONLY / APP794 ONLY
-D1_LIVE_CUTOVER                          = IN PROGRESS / SESSION CONTINUITY DEPLOY NEXT / FINAL UAT BLOCKED
-D1_CREATE_HANDLER_CORRECTIVE             = OPEN / SEPARATE WORK PACKAGE / NOT AUTHORIZED IN DEPLOY TASK
+APP794_SESSION_CONTINUITY_DEPLOY          = EXECUTED / REVISION 43 / RUNTIME NOT ACCEPTED YET
+D1_SESSION_LIST_TO_CREATE_CONTINUITY      = PASS / USER-SIDE LIVE OBSERVATION
+D1_BUNDLE_DEPENDENCY_CORRECTIVE           = SOURCE+TEST NEXT / NO LIVE WRITE
+D1_CREATE_HANDLER_CORRECTIVE              = OPEN / SEPARATE SOURCE+TEST PACKAGE AFTER BUNDLE REVIEW
+D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
 DEDICATED_MBO_ACCESS_GROUP_MODEL         = APPROVED / PASS
 APP801_GROUP_ACL_MODEL                    = APPROVED / PASS
 D1_CREDENTIAL_CANDIDATE_RULE             = ACCEPTED / BASELINED
@@ -39,164 +41,143 @@ APP801_CREDENTIAL_BULK_PROVISIONING      = PASS / INDEPENDENTLY LIVE VERIFIED 20
 D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately recorded
 ```
 
-This authorization does **not** authorize source/refactor changes, Create-handler correction, UAT, App801 record/schema writes, record writes in App794, ACL/process/view/layout changes, CSS replacement, or D2-D7 writes.
+No additional App794 deploy is authorized by this corrective classification.
 
-## 3. Accepted Session Continuity Deployment Package
+## 3. App794 Session Continuity Deploy — Executor Evidence
 
-Accepted session source commit:
-
-```text
-7133e2934b0e8f7ea710e03d195157354e0d95b8
-```
-
-Accepted final test-proof commit:
+Executor evidence commit:
 
 ```text
-9d9db0f2456b5b3407b8dae830493c0eb9a9cc7f
+2adb8201f025aabe0da6f62fecf53e61f04862b6
 ```
 
-Locked target artifact:
+Executor reports:
 
 ```text
-PATH                 = dist/mbo-employee-app.js
-TARGET_GIT_BLOB_SHA  = d0294229bf0f7ccdf4d161632648bc885794c347
-CSS_GIT_BLOB_SHA     = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+LIVE_REVISION_BEFORE             = 42
+LIVE_REVISION_AFTER              = 43
+TARGET_JS_BLOB                   = d0294229bf0f7ccdf4d161632648bc885794c347
+CSS_BLOB                         = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+TARGET_JS_UPLOAD_COUNT           = 1
+CSS_UPLOAD_COUNT                 = 0
+PREVIEW_CUSTOMIZATION_PUT_COUNT  = 1
+APP794_DEPLOY_REQUEST_COUNT      = 1
+APP794_RECORD_WRITES_EXECUTED    = 0
+APP801_WRITES_EXECUTED           = 0
 ```
 
-Independent repository checks already proved:
-- current branch target JS blob = accepted target JS blob;
-- current branch CSS blob = `1359dfae...`;
-- after accepted source commit, only tests/docs changed before this authorization; no source/dist session implementation drift was introduced.
+Repository scope of executor commit is evidence-only. Runtime acceptance is determined separately from user-side live evidence below.
 
-Last independently reviewed App794 live baseline before this session deployment:
+## 4. Independent User-Side Live Runtime Evidence
+
+Observed on App794 Live after the session deployment:
 
 ```text
-LAST_ACCEPTED_LIVE_REVISION          = 42
-LAST_ACCEPTED_LIVE_TARGET_JS_BLOB    = 2a9a3c5bfe896b51f482c016f66863bffeddb679
-LAST_ACCEPTED_LIVE_CSS_BLOB          = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
-LAST_ACCEPTED_SCOPE                  = ALL
-LAST_ACCEPTED_DESKTOP_JS_COUNT       = 1
-LAST_ACCEPTED_DESKTOP_CSS_COUNT      = 1
-LAST_ACCEPTED_MOBILE_JS_COUNT        = 0
-LAST_ACCEPTED_MOBILE_CSS_COUNT       = 0
+Authenticated Employee_Code = 0113
+List page shows: My MBO Records (0113)
+User clicks: + Create New MBO
+Browser reaches: /k/794/edit
+MBO Login screen does NOT reappear
 ```
 
-These are drift-detection expectations, not permission to assume current production state. Fresh Live/Preview reads are mandatory before any upload.
-
-## 4. Mandatory Pre-Write Gates
-
-Before any remote Kintone write/file upload:
-
-1. sync canonical branch and require clean working tree;
-2. run `npm run ui:build`;
-3. run `npm test`;
-4. require rebuilt `dist/mbo-employee-app.js` Git blob to remain exactly `d0294229bf0f7ccdf4d161632648bc885794c347`;
-5. require rebuilt `dist/mbo-employee.css` Git blob to remain exactly `1359dfae16d1224580210a5a6cd366fb20bcf6f8`;
-6. if build creates any unexpected source/dist difference or target identity changes, STOP with zero Kintone writes — do not fix source in this task;
-7. READ-ONLY dependency check: App801 Live schema must still contain the five accepted Session fields with correct types; no App801 write;
-8. fresh-read App794 effective/live and Preview/Test customization;
-9. save rollback-ready Live+Preview customization metadata and downloadable target/non-target file identity locally;
-10. complete full deterministic `validatePreflight()` before upload;
-11. require current Live/Preview topology/scope to be aligned and no unexplained customization drift;
-12. require existing effective target JS content to match the last accepted live JS artifact unless Control Plane has documented a later accepted App794 change;
-13. require effective CSS content to match accepted CSS blob;
-14. invalid/missing/ambiguous target, malformed structure, invalid scope/revision, missing retained Preview fileKey, unexpected topology/content drift, or App801 dependency mismatch => BLOCK BEFORE UPLOAD.
-
-Mandatory local build/test is executor-reported because GitHub currently has no CI proof. It is still a hard pre-write gate.
-
-## 5. Exact Authorized Remote Change
-
-Only after every pre-write gate passes:
+Therefore:
 
 ```text
-TARGET_APP       = 794
-TARGET_ENTRY     = Preview desktop.js FILE named mbo-employee-app.js
-TARGET_ARTIFACT  = exact accepted JS blob d0294229...
+SESSION_CONTINUITY_LIST_TO_CREATE = PASS
 ```
 
-Allowed write sequence only:
-1. upload exactly one `mbo-employee-app.js` file;
-2. build Preview customization PUT from fresh Preview state;
-3. preserve scope/order/URLs/mobile entries and every non-target Preview FILE key;
-4. include the exact accepted latest positive Preview revision (never `-1`);
-5. PUT App794 Preview customization;
-6. deploy App794 only;
-7. poll until deployment reports SUCCESS.
+This independently proves the original page-reload login-loop defect is corrected for List -> Create in the same browser tab.
 
-Required counters:
+However Create page then fails with two separate runtime blockers.
+
+### Blocker A — Classic Bundle Dependency Closure Failure
+
+Browser console shows:
 
 ```text
-TARGET_JS_UPLOAD_COUNT             = 1
-CSS_UPLOAD_COUNT                   = 0
-OTHER_FILE_UPLOAD_COUNT            = 0
-PREVIEW_CUSTOMIZATION_PUT_COUNT    = 1
-APP794_DEPLOY_REQUEST_COUNT        = 1
-APP794_RECORD_WRITES_EXECUTED      = 0
-APP801_SCHEMA_WRITES_EXECUTED      = 0
-APP801_RECORD_WRITES_EXECUTED      = 0
-APP53_795_796_WRITES_EXECUTED      = 0
-GROUP_ACL_WRITES_EXECUTED          = 0
-PROCESS_VIEW_LAYOUT_WRITES         = 0
-D2_D7_WRITES_EXECUTED              = 0
+[MBO V2] Error rendering custom UI: ReferenceError: AdminDiagnosticModel is not defined
+at EmployeePartAUI._renderSupportCenterIfAdmin(...)
 ```
 
-## 6. Mandatory Post-Deploy Verification
+Independent source review found:
+- `src/ui/employee-part-a-ui.js` imports `AdminDiagnosticModel` and `AdminSupportCenterUI`;
+- it also imports `employee-visibility.js` and `appraiser-normalizer.js`;
+- `src/profiles/profile-scoring-resolver.js` imports `profile-codes-policy.js`;
+- current `scripts/kintone/deploy-custom-ui.js` manually strips ES imports/exports and concatenates an incomplete hard-coded file list;
+- that hard-coded list omits at least:
+  - `src/profiles/profile-codes-policy.js`
+  - `src/ui/employee-visibility.js`
+  - `src/evaluation/appraiser-normalizer.js`
+  - `src/admin/admin-diagnostic-model.js`
+  - `src/admin/admin-support-center.js`
+- current `tests/classic-bundle.test.js` mirrors the same incomplete list and only proves selected Auth/Session/Login symbols, so tests can report green while EmployeePartAUI runtime dependencies are missing.
 
-After deployment reports SUCCESS:
-- fresh-read effective Live customization and Preview customization;
-- verify Live/Preview topology/scope are aligned after deployment;
-- identify/download effective target JS and verify content as the exact accepted artifact (`d0294229...` Git blob or equivalent byte/content hash proof);
-- identify/download effective CSS and verify unchanged against `1359dfae...`;
-- verify every non-target entry, URL, mobile section, order and scope remains preserved;
-- capture revision before/after and target/non-target identities in sanitized evidence.
+Important architectural finding:
+manual source flattening by regex is no longer acceptable as the canonical production bundle strategy because it does not preserve ES-module lexical scope/import aliases and can silently omit transitive dependencies.
 
-If deployment/readback/hash/preservation verification fails:
+Verdict:
 
 ```text
-STOP
-NO RETRY
-NO AUTOMATIC ROLLBACK
-NO SOURCE FIX
-NO UAT
+CLASSIC_BUNDLE_RUNTIME_INTEGRITY = CORRECTIVE REQUIRED
 ```
 
-Wait for Control Plane instruction. A successful HTTP response alone is never PASS.
+### Blocker B — Create Event/Form-State Defect
 
-## 7. Separate Create-Handler Defect
-
-Still open and explicitly out of scope:
+Create page shows:
 
 ```text
 Employee Profile Resolution Failed
 You cannot call kintone.app.record.get() in handler or during processing a handler.
 ```
 
-Do not fix it in the App794 Session Continuity Deploy task. It remains a separate narrow source/test work package after this deployment is independently reviewed.
+Independent source review confirms `app.record.create.show` awaits authenticated autoload, whose `onLookupEmployee` path calls `syncRecordToKintone()`. That function calls `kintone.app.record.get()/set()` while the Kintone event handler is still processing.
 
-## 8. Exact Next Action
+Verdict:
+
+```text
+CREATE_HANDLER_FORM_STATE = CORRECTIVE REQUIRED / STILL SEPARATE
+```
+
+Do not mix this into the first bundle corrective.
+
+## 5. Corrective Sequencing — Minimize Risk and Deploy Count
+
+Use separate source/test review gates but only one future live corrective deploy:
+
+```text
+A. MODULE-AWARE BUNDLE CORRECTIVE — SOURCE/TEST ONLY
+   -> independent review
+B. CREATE-HANDLER FORM-STATE CORRECTIVE — SOURCE/TEST ONLY
+   -> independent review
+C. ONE COMBINED APP794 CORRECTIVE DEPLOY
+   -> requires new exact user authorization
+   -> independent deployment review
+D. Final D1 UAT
+```
+
+This preserves small reviewable changes while avoiding two production deployment cycles.
+
+## 6. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES — ONE NARROW APP794 DEPLOY-ONLY EXECUTION
-SOURCE_CHANGE = NO
-TEST_CHANGE = NO except executing existing tests
-DIST_CHANGE = NO except deterministic rebuild must reproduce locked blobs
-KINTONE_WRITE = APP794 CUSTOMIZATION ONLY AS AUTHORIZED ABOVE
+ANTIGRAVITY_REQUIRED = YES — ONE NARROW SOURCE/TEST BUILD-INTEGRITY CORRECTIVE
+KINTONE_WRITE = NO
+APP794_DEPLOY = NO
 APP801_WRITE = NO
-CREATE_HANDLER_FIX = NO
-UAT = NO
+CREATE_HANDLER_FIX = NO IN THIS PACKAGE
+BUSINESS_UI_REFACTOR = NO
+EMPLOYEE_PART_A_UI_EDIT = NO
 D2_D7_WRITE = NO
 MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-After executor evidence is pushed, ChatGPT independently reviews the deployment. No UAT or Create-handler work starts automatically.
+The next Active Task must replace manual regex/manual-file-list production bundling with a module-aware browser bundle while preserving separate source modules. `main-mbo-app.js` may receive only the minimum import wiring needed to keep Node-only modules out of the browser dependency graph; it must not absorb business logic.
 
-## 9. Knowledge / Baseline Maintenance
+## 7. Architecture / Reusable Lessons
 
-Baseline promotion:
-`NONE — session architecture already canonical.`
-
-Reusable rule:
-- when deploying an already-reviewed generated artifact, rebuild must reproduce the locked artifact identity before any production write;
-- verify expected current live content before replacing it so an unexplained external/customization change is not silently overwritten;
-- preserve non-target Preview fileKeys and never re-upload unchanged CSS merely to reconstruct a customization payload.
+- Separate source modules remain mandatory; one generated Kintone deployment bundle is allowed only as generated output.
+- A green syntax-only classic-bundle test is insufficient when the build strips imports manually.
+- Production bundle tests must prove dependency graph closure, not only selected class definition counts.
+- Do not duplicate the production bundle module list independently inside tests; the build graph/manifest must be one source of truth or generated by a real module-aware bundler.
+- Browser bundle entry must not pull Node-only dependencies such as `node:crypto` into Kintone runtime.
