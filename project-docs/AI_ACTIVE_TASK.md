@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — D1 PREVIEW FILEKEY PRESERVATION CORRECTIVE
+# AI ACTIVE TASK — D1 PRE-UPLOAD SAFETY CORRECTIVE
 
 > Read `project-docs/AI_CONTROL_CENTER.md` FIRST.  
 > Execution Plane: Antigravity  
@@ -7,17 +7,17 @@
 
 ## 0. Review State
 
-Corrective commit under review:
+Corrective commit reviewed:
 
 ```text
-5044eb47f0302327e6bc180d504f72132f6a0fbe
+e55dbf5c1003ca3bdc071228fd6daf97956e16c9
 ```
 
-The bundle inclusion, modular-source guard, Employee Code format correction, and CSS Git preservation are provisionally accepted.
+Preview/Test fileKey sourcing and non-target preservation are provisionally accepted.
 
-**Do not redo those corrections.**
+**Do not redo bundle/auth/Employee-Code/fileKey corrections.**
 
-One blocking defect remains in the future deploy implementation: retained FILE keys for a Preview customization PUT are currently taken from Production/effective customization instead of Preview/Test customization.
+One safety defect remains: some validation happens only after the replacement JS file has already been uploaded.
 
 ## 1. Read Only These Inputs
 
@@ -25,91 +25,87 @@ One blocking defect remains in the future deploy implementation: retained FILE k
 2. this `project-docs/AI_ACTIVE_TASK.md`
 3. `project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` — Source-Code Modularity section
 4. `scripts/kintone/deploy-custom-ui.js`
-5. a focused deploy-customization test file only
+5. `tests/deploy-customization-preservation.test.js`
 
 Do not scan repository/history.
-Do not reopen bundle/auth/Employee-Code implementation unless a direct regression from this narrow change requires it.
+Do not reopen unrelated source.
 
 ## 2. Exact Defect to Fix
 
-Current incorrect pattern:
+Current unsafe order:
 
 ```text
-GET /k/v1/app/customize.json
-  -> reuse Production FILE fileKeys
-  -> PUT /k/v1/preview/app/customize.json
+read live/preview
+partial topology validation
+UPLOAD JS
+then validate target/payload details
 ```
 
-Kintone Preview customization update must retain existing uploaded files using FILE keys from Preview/Test customization state.
-
-Correct pattern:
+Required safe order:
 
 ```text
-GET effective/live customization
-GET preview/test customization
-  -> verify safe topology/scope alignment
-  -> identify target in preview state
-  -> upload replacement JS target only
-  -> construct Preview PUT payload from preview state
-  -> preserve preview non-target FILE keys
-  -> include preview revision
+read live/preview
+FULL deterministic preflight validation
+  -> explicit valid scope
+  -> explicit preview revision
+  -> valid entry structures/types
+  -> topology alignment
+  -> exactly one target
+  -> all retained preview FILE keys present
+ONLY THEN upload target JS once
+build payload from already validated preview state
+PUT preview with preview revision
 ```
+
+No remote write/file upload may happen before full preflight passes.
 
 ## 3. Required Implementation
 
-Update `scripts/kintone/deploy-custom-ui.js` only as needed so future live mode does all of the following:
+Update existing deploy implementation only as needed:
 
-1. Read effective/live state from `/k/v1/app/customize.json`.
-2. Read Preview/Test state from `/k/v1/preview/app/customize.json`.
-3. Before uploading anything, fail closed if live vs preview scope/topology differ unexpectedly.
-   - compare scope;
-   - compare ordered desktop/mobile entry counts;
-   - compare entry type;
-   - compare URL value for URL entries;
-   - compare FILE name for FILE entries;
-   - do not require live fileKey == preview fileKey.
-4. In Preview/Test desktop JS, require exactly one FILE named `mbo-employee-app.js`.
-5. Upload only the replacement `mbo-employee-app.js`.
-6. Build the Preview PUT body from Preview/Test customization state.
-7. Normalize PUT entries to API-supported fields only:
+1. Add/reuse a focused preflight helper; do not move logic into `main-mbo-app.js`.
+2. Validate live and preview customization before upload.
+3. `scope` must be explicitly present and valid; do not silently fallback to `ALL` for malformed/missing source state.
+4. Preview `revision` must be present/non-empty before upload and must be included in Preview PUT.
+5. Validate all desktop/mobile JS/CSS entries before upload:
+   - supported type only: `URL` or `FILE`;
+   - URL entry requires non-empty string `url`;
+   - FILE entry requires non-empty string `file.name` for topology validation;
+   - Preview FILE entry retained in payload requires non-empty string `file.fileKey`.
+6. Live-vs-preview fileKey difference remains allowed.
+7. Require exactly one Preview desktop FILE target named `mbo-employee-app.js` before upload.
+8. Missing/ambiguous target must fail before upload.
+9. Topology/scope drift must fail before upload.
+10. Only after preflight PASS may exactly one replacement JS upload occur.
+11. Continue to upload no CSS and preserve Preview non-target fileKeys/order/URL/mobile/scope.
+12. Keep modular source architecture intact.
+13. Keep build-only mode free of Kintone network calls.
 
-```text
-URL  -> { type: 'URL', url: ... }
-FILE -> { type: 'FILE', file: { fileKey: ... } }
-```
-
-8. Replace only the target JS `fileKey` with the newly uploaded target key.
-9. Preserve all non-target Preview/Test FILE keys exactly, including CSS.
-10. Preserve ordering, mobile entries, URL entries, and scope exactly.
-11. Include `revision: previewCustomize.revision` in the Preview PUT request.
-12. Fail closed if scope/revision/entry structure is malformed or target is missing/ambiguous.
-13. Do not upload CSS.
-14. Keep build-only mode free of Kintone network calls.
-
-Do not change modular source architecture. Do not move this logic into `main-mbo-app.js`.
+Do not broaden this into a deployment-framework refactor.
 
 ## 4. Focused Tests
 
-Add or update one focused test for deploy customization preservation. A new dedicated test file is allowed here because deployment-preservation logic is a separate responsibility.
-
-Tests must prove at minimum:
+Update the existing focused test file. Tests must prove at minimum:
 
 ```text
-PREVIEW_FILEKEY_SOURCE = PASS
+VALID_PREFLIGHT_PASS = PASS
+MISSING_SCOPE_BLOCKED_PRE_UPLOAD = PASS
+MISSING_REVISION_BLOCKED_PRE_UPLOAD = PASS
+UNSUPPORTED_ENTRY_TYPE_BLOCKED_PRE_UPLOAD = PASS
+MALFORMED_URL_BLOCKED_PRE_UPLOAD = PASS
+MALFORMED_FILE_NAME_BLOCKED_PRE_UPLOAD = PASS
+MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD = PASS
+TARGET_MISSING_BLOCKED_PRE_UPLOAD = PASS
+TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD = PASS
+TOPOLOGY_DRIFT_BLOCKED_PRE_UPLOAD = PASS
+LIVE_PREVIEW_FILEKEY_DIFFERENCE_ALLOWED = PASS
 ONLY_TARGET_JS_FILEKEY_REPLACED = PASS
 NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED = PASS
-URL_ENTRY_ORDER_PRESERVED = PASS
-MOBILE_ENTRY_ORDER_PRESERVED = PASS
-SCOPE_PRESERVED = PASS
 PREVIEW_REVISION_INCLUDED = PASS
-LIVE_PREVIEW_FILEKEY_DIFFERENCE_ALLOWED = PASS
-LIVE_PREVIEW_TOPOLOGY_DRIFT_BLOCKED = PASS
-TARGET_MISSING_BLOCKED = PASS
-TARGET_AMBIGUOUS_BLOCKED = PASS
 CSS_UPLOAD_COUNT = 0
 ```
 
-Do not make tests depend on real Kintone.
+Prefer a testable function boundary that lets tests prove the upload/write callback count remains zero for invalid preflight states. Do not call real Kintone.
 
 ## 5. Regression Gates
 
@@ -120,7 +116,7 @@ npm run ui:build
 npm test
 ```
 
-Confirm:
+Confirm no regression in already corrected areas:
 
 ```text
 AUTH_ADAPTER_DEFINITION_COUNT = 1
@@ -131,12 +127,11 @@ EMPLOYEE_CODE_0050_2 = PASS
 DIST_CSS_UNCHANGED = YES
 ```
 
-If an already-correct bundle/auth/Employee-Code behavior regresses, fix only the direct regression and report it.
-
 ## 6. Explicitly Forbidden
 
 - NO Kintone POST/PUT/DELETE;
-- NO App794 upload/update/deploy;
+- NO file upload to Kintone;
+- NO App794 customization deploy;
 - NO rollback;
 - NO App794 record write;
 - NO App801 write;
@@ -145,16 +140,16 @@ If an already-correct bundle/auth/Employee-Code behavior regresses, fix only the
 - NO UAT;
 - NO D2-D7 implementation;
 - NO broad refactor;
-- NO copying feature logic into `main-mbo-app.js`;
-- NO manual business-logic edits directly in `dist/mbo-employee-app.js`;
-- NO reimplementation of the already corrected bundle/Employee-Code work.
+- NO merging modules into `main-mbo-app.js`;
+- NO manual business-logic edits in generated `dist/mbo-employee-app.js`;
+- NO reimplementation of already provisionally accepted fixes.
 
 ## 7. Delivery
 
-Commit only the necessary deploy-script/test changes plus generated dist only if `npm run ui:build` legitimately changes it. CSS must remain unchanged.
+Commit only necessary deploy-script/test changes plus generated dist only if build legitimately changes it. CSS must remain unchanged.
 
 Do not modify Baseline, Control Center, or Active Task.
-Do not commit secrets or live Kintone downloads.
+Do not commit secrets/live downloads.
 
 Push one concise corrective commit and STOP.
 
@@ -165,11 +160,13 @@ COMMIT_SHA
 FILES_CHANGED
 UI_BUILD_RESULT
 NPM_TEST_RESULT
-PREVIEW_FILEKEY_SOURCE
-ONLY_TARGET_JS_FILEKEY_REPLACED
-NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED
-PREVIEW_REVISION_INCLUDED
-TOPOLOGY_DRIFT_BLOCKED
+VALID_PREFLIGHT_PASS
+MISSING_REVISION_BLOCKED_PRE_UPLOAD
+MISSING_SCOPE_BLOCKED_PRE_UPLOAD
+TARGET_MISSING_BLOCKED_PRE_UPLOAD
+TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD
+MALFORMED_ENTRY_BLOCKED_PRE_UPLOAD
+ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT
 DIST_CSS_UNCHANGED
 KINTONE_WRITES_EXECUTED = 0
 APP794_DEPLOY_EXECUTED = 0
@@ -182,4 +179,4 @@ Maximum status:
 IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-STOP after push. ChatGPT reviews again before any corrective redeploy can be considered.
+STOP after push. ChatGPT reviews before any corrective redeploy is considered.
