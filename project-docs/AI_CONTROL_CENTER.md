@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / BUNDLE+EMPLOYEE-CODE CORRECTIVE PROVISIONALLY PASS / PREVIEW FILEKEY FIX PROVISIONALLY PASS / PRE-UPLOAD SAFETY COMMIT PENDING INDEPENDENT REVIEW |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / BUNDLE+EMPLOYEE-CODE FIX PROVISIONALLY PASS / PREVIEW FILEKEY FIX PROVISIONALLY PASS / PRE-UPLOAD SAFETY STILL CORRECTIVE |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -49,69 +49,120 @@ APP801_PROVISIONING = PASS / 128 / independently live verified
 
 Manual final D1 UAT remains `BLOCKED / NOT STARTED`.
 
-## 4. Pending Independent Review — Commit 5f08dd6a4b2f7ad1f245df0f8e1de2d4ac7297b7
+## 4. Independent Review — Commit 5f08dd6a4b2f7ad1f245df0f8e1de2d4ac7297b7
 
-Antigravity pushed:
-
-```text
-5f08dd6a4b2f7ad1f245df0f8e1de2d4ac7297b7
-fix(deploy): enforce strict pre-upload preflight safety gate before file upload
-```
-
-Parent:
+Exact Git comparison from parent `dc3bdaff8df70eaac6c95512cb0e3f7c76ff0ece` proves this executor commit changes only:
 
 ```text
-dc3bdaff8df70eaac6c95512cb0e3f7c76ff0ece
+scripts/kintone/deploy-custom-ui.js
+tests/deploy-customization-preservation.test.js
 ```
 
-This commit executed the previously authorized SOURCE/TEST-only pre-upload safety corrective.
+No business/UI/auth module, CSS, dist bundle, Baseline, Control Center, or D2-D7 source was changed by the executor commit.
 
-Current state:
+### Accepted parts
+
+1. Full preflight is now called before `uploadFile()` in the live path.
+2. Missing/blank scope and Preview revision are checked before upload.
+3. URL/FILE entry types and basic entry fields are checked before upload.
+4. Target missing/ambiguous checks occur before upload.
+5. Preview non-target FILE keys remain the source for Preview PUT preservation.
+6. Only the target JS is uploaded; CSS is not uploaded.
+7. The corrective stays outside `main-mbo-app.js` and does not violate the confirmed modular source architecture.
+
+### Remaining blocking findings
+
+The source package is still **CORRECTIVE** because deterministic invalid states can still pass preflight and fail only after the JS upload.
+
+#### A. Target fileKey exemption is too broad
+
+Current Preview FILE-key validation exempts any preview FILE whose `file.name === targetFileName`, regardless of section.
+
+Only the exact replacement target in `preview.desktop.js` may be exempt from requiring its old Preview fileKey. A same-named FILE under desktop CSS or mobile JS/CSS is non-target and must retain a valid Preview fileKey.
+
+Otherwise a malformed same-named retained FILE can pass preflight, then `buildPreviewCustomizePayload()` fails after the new JS has already been uploaded.
+
+#### B. Missing section/list structure can silently become empty arrays
+
+`validateEntryList(list = [])` and topology helpers currently treat an absent `desktop.css`, `mobile.js`, or `mobile.css` as `[]`.
+
+If the same structure is absent in both live and preview responses, preflight can accept malformed/unknown response structure and the PUT builder can silently construct empty arrays.
+
+Live and Preview responses must explicitly contain `desktop` and `mobile` objects with `js` and `css` arrays before upload.
+
+#### C. Scope must be a valid Kintone customization scope
+
+Official Kintone customization scope values are:
 
 ```text
-PENDING_REVIEW_EVIDENCE = 5f08dd6a4b2f7ad1f245df0f8e1de2d4ac7297b7
-ANTIGRAVITY_EXECUTION = STOPPED / HOLD
-APP794_REDEPLOY = NOT AUTHORIZED
+ALL
+ADMIN
+NONE
 ```
 
-Do not start another Antigravity task until ChatGPT independently reviews this exact commit.
+A non-empty unknown string must not pass preflight.
 
-## 5. Source Architecture Decision — Confirmed
+#### D. Revision validation must actually preserve concurrency protection
 
-The user confirmed that MBO2026 JavaScript must be separated systematically by feature/menu/responsibility so defects can be isolated and changes are easier to review.
+Kintone documents that `revision = -1` disables revision checking. Current preflight accepts any non-empty revision, including `-1` or a non-numeric value.
 
-Canonical detailed architecture now lives in:
+The preflight must require the Preview revision returned by Kintone to be a valid positive integer revision and must reject `-1` so the PUT remains concurrency-guarded.
+
+GitHub has no CI/status check for this commit, so `npm test` is not independently proven by GitHub status.
+
+Therefore:
+
+```text
+COMMIT_5F08_PREFLIGHT_ORDER = PASS
+COMMIT_5F08_BASIC_ENTRY_VALIDATION = PASS
+COMMIT_5F08_FULL_FAIL_CLOSED_PREFLIGHT = CORRECTIVE REQUIRED
+SOURCE_PACKAGE_OVERALL = NOT PASS YET
+APP794_REDEPLOY = BLOCKED / NOT AUTHORIZED
+```
+
+## 5. Exact Next Corrective Scope
+
+The next executor task is SOURCE / TEST ONLY and must be the smallest final pre-upload safety correction.
+
+Required correction:
+
+1. Require explicit `desktop` and `mobile` objects in both live and Preview customization.
+2. Require explicit `js` and `css` arrays in each object; missing lists must fail closed instead of defaulting to `[]`.
+3. Accept scope only from `ALL | ADMIN | NONE`, and require live == Preview scope.
+4. Require Preview revision to be a positive integer value and reject `-1` / malformed revisions.
+5. Identify the exact target as one FILE entry named `mbo-employee-app.js` in `preview.desktop.js`.
+6. Only that exact target entry may omit its old Preview fileKey because it will be replaced.
+7. Every other Preview FILE in desktop/mobile JS/CSS must have a non-empty Preview fileKey, even if its filename happens to equal the target filename.
+8. All above checks must finish before `uploadFile()`.
+9. Add focused tests proving each invalid structure causes zero upload/write calls.
+10. Do not refactor deployment tooling or business modules beyond this exact defect.
+
+No Kintone write/deploy is authorized in this corrective task.
+
+## 6. Source Architecture Decision — Confirmed
+
+Canonical modular source rules live in:
 
 ```text
 project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md
 ```
 
-Key operational rule:
-- no Big-Bang refactor;
-- no broad refactor mixed into a production corrective;
-- ChatGPT designs the exact module boundary first;
-- Antigravity receives at most one narrow feature/menu extraction per work package;
-- source structural change and production deploy are separate gates unless explicitly authorized;
-- `dist/mbo-employee-app.js` remains generated output only.
+No Big-Bang refactor is allowed during this D1 production corrective. The large `src/ui/employee-part-a-ui.js` decomposition starts only after the active D1 blocker is stable.
 
-Current architectural hotspot observed: `src/ui/employee-part-a-ui.js` is a large multi-responsibility module and should be decomposed incrementally only after the active D1 blocker is stable/reviewed.
-
-## 6. Exact Next Action
+## 7. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = ChatGPT
-ANTIGRAVITY_REQUIRED = NO
-DUPLICATE_WORK_RISK = HIGH IF ANOTHER TASK IS ISSUED BEFORE REVIEW
+NEXT_ACTION_OWNER = Antigravity
+ANTIGRAVITY_REQUIRED = YES
+DUPLICATE_WORK_RISK = LOW — exact unresolved preflight defects only
 ```
 
-ChatGPT must first independently review commit `5f08dd6a4b2f7ad1f245df0f8e1de2d4ac7297b7`.
+Antigravity may execute only the new `project-docs/AI_ACTIVE_TASK.md`, push one narrow source/test commit, and STOP.
 
-No source refactor package is to be issued until the current D1 corrective review is closed.
-
-## 7. Knowledge / Baseline Maintenance
+## 8. Knowledge / Baseline Maintenance
 
 Baseline promotion:
-`PASS — modular JavaScript source architecture and controlled decomposition strategy recorded in SOURCE_CODE_ARCHITECTURE.md.`
+`NONE — no durable business rule changed in this review.`
 
 Reusable Kintone skill extraction:
-`No additional skill required from this user architecture decision; this is project source architecture, not Kintone-specific reusable behavior.`
+`PASS — customization preflight must validate exact target context, explicit response structure, valid scope, and a revision value that does not disable concurrency checking before file upload.`
