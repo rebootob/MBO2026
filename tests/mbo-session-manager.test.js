@@ -501,6 +501,23 @@ test('ISSUE_RESULT_EXPOSES_NO_RAW_TOKEN_OR_HASH & RESTORE_RESULT_EXPOSES_NO_RAW_
 
   const jsonStr = JSON.stringify({ issueRes, restoreRes });
   assert.equal(/[0-9a-f]{64}/i.test(jsonStr), false);
+
+  // Proof C: Static source code verification (comments stripped)
+  const sources = [
+    fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'),
+    fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'),
+    fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8')
+  ];
+
+  for (const src of sources) {
+    const stripped = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');
+    assert.equal(/console\.(log|error|warn|info)\s*\([^)]*token/i.test(stripped), false, 'No console logging of raw token');
+    assert.equal(/innerHTML\s*=.*token/i.test(stripped), false, 'No innerHTML assignment of token');
+    assert.equal(/textContent\s*=.*token/i.test(stripped), false, 'No textContent assignment of token');
+    assert.equal(/location\.(href|search|hash)\s*=.*token/i.test(stripped), false, 'No URL assignment of token');
+    assert.equal(/localStorage\b/.test(stripped), false, 'No localStorage usage');
+    assert.equal(/document\.cookie\b/.test(stripped), false, 'No cookie usage');
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -559,11 +576,35 @@ test('FORCE_CHANGE_ISSUES_SESSION_ONLY_AFTER_PASSWORD_CHANGE & FORCE_CHANGE_SESS
   assert.equal(loginRes.status, 'PASSWORD_CHANGE_REQUIRED');
   assert.equal(gate.getEmployeeCode(), null); // blocked until change
 
-  // 2. Force change submit
+  // 2. Force change submit success
   const forceRes = await gate._handleForceChangeAction({ newPassword: 'newPw123', confirmPassword: 'newPw123' });
   assert.equal(forceRes.status, 'PASSWORD_CHANGED');
   assert.equal(gate.getEmployeeCode(), 'EMP001'); // now authorized
   assert.notEqual(storage.getItem('ttmet.mbo794.session.v1'), null);
+
+  // Proof A: Force change submit when session issue fails -> fails closed, returns SESSION_ISSUE_FAILED, does not authorize
+  const apiFail = createMockApp801Api([{ Employee_Code: 'EMP002', Credential_Version: 1, Force_Password_Change: 'YES' }]);
+  const adapterFail = new MboKintoneAuthAdapter({ api: apiFail, cryptoImpl: cryptoMock });
+  adapterFail.verifyPassword = async () => true;
+
+  const storageFail = createMockStorage();
+  const smFail = new MboSessionManager({
+    adapter: adapterFail,
+    sessionStorageImpl: storageFail,
+    cryptoImpl: cryptoMock,
+    getKintoneUser: () => ({ code: 'user001' })
+  });
+  const gateFail = new MboKintoneLoginGate(adapterFail, { sessionManager: smFail });
+
+  await gateFail._handleLoginAction({ username: 'EMP002', password: 'tempPassword' });
+  assert.equal(gateFail._pendingForceChange, true);
+
+  smFail.issueSession = async () => { throw new Error('SESSION_STORE_FAIL'); };
+  const forceFailRes = await gateFail._handleForceChangeAction({ newPassword: 'newPw456', confirmPassword: 'newPw456' });
+
+  assert.equal(forceFailRes.status, 'SESSION_ISSUE_FAILED');
+  assert.equal(gateFail.getEmployeeCode(), null); // remains unauthorized
+  assert.equal(storageFail.getItem('ttmet.mbo794.session.v1'), null); // no session stored
 });
 
 test('PASSWORD_CHANGE_REPLACEMENT_SESSION_SUCCESS & PASSWORD_CHANGE_REPLACEMENT_SESSION_FAILURE_FAILS_CLOSED', async () => {
@@ -627,6 +668,16 @@ test('NEW_LOGIN_INVALIDATES_PRIOR_SESSION & LOGOUT_REVOKES_AND_CLEARS_PRINCIPAL'
   await gate._handleLoginAction({ username: 'EMP001', password: 'pw' });
   const token2 = storage.getItem('ttmet.mbo794.session.v1');
   assert.notEqual(token1, token2);
+
+  // Proof B: Direct proof that token1 is invalidated on server
+  storage.setItem('ttmet.mbo794.session.v1', token1);
+  const restoreToken1 = await sm.restoreSession();
+  assert.equal(restoreToken1, null, 'Prior session token1 must fail restore because server hash was overwritten by login 2');
+
+  // token2 remains valid on server
+  storage.setItem('ttmet.mbo794.session.v1', token2);
+  const restoreToken2 = await sm.restoreSession();
+  assert.equal(restoreToken2?.employeeCode, 'EMP001');
 
   // Logout revokes and clears principal
   const logoutRes = await gate.logout();
