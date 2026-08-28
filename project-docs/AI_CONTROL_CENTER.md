@@ -24,7 +24,7 @@ Do not browse/read historical project docs by default.
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / PROVISIONING REPORTED COMPLETE / INDEPENDENT LIVE VERIFICATION PENDING |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / APP794 DEPLOY GATE NEXT |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -43,12 +43,14 @@ DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED
 APP801_GROUP_ACL_MODEL              = APPROVED / LIVE RECONCILED
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
 D1_CANDIDATE_USER_EXPORT_AUDIT      = PASS / 128 ACCEPTED CANDIDATES
-APP801_CREDENTIAL_BULK_PROVISIONING = APPROVED 2026-08-28 / EXACT TARGET = 128
-APP794_D1_CUSTOMIZATION_DEPLOY      = BLOCKED UNTIL PROVISIONING INDEPENDENTLY ACCEPTED
+APP801_CREDENTIAL_BULK_PROVISIONING = PASS / INDEPENDENTLY LIVE VERIFIED 2026-08-28
+APP794_D1_CUSTOMIZATION_DEPLOY      = DO NOT EXECUTE YET / EXACT DEPLOY AUTHORIZATION TO BE RESOLVED BEFORE WRITE
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
 ```
 
-Provisioning approval remains exact and does not authorize overwrite/reset, population expansion, App794 deploy, or D2-D7 writes.
+Provisioning authorization was exact and is now consumed/closed. It does not authorize any credential reset/overwrite, population expansion, App794 deploy, or D2-D7 write.
+
+Do not repeatedly ask for an unchanged approval already proven by repository evidence. If exact App794 deploy authorization cannot be proven from current repository control records, require a fresh exact authorization before that production write.
 
 ## 4. D1 Accepted State
 
@@ -58,11 +60,14 @@ Accepted source commit:
 Accepted live group + App801 ACL evidence:
 `b9d4fa830c4c0e3b827362e143639f9a307adbac`
 
-Credential candidate gate:
+Accepted credential candidate gate:
 `PASS / 128 accepted candidates`
 
-Provisioning evidence commit under review:
+Executor provisioning evidence commit:
 `7263013834a9f27d2486fa29767250dd90bef9ca`
+
+Independent provisioning acceptance evidence:
+`project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md`
 
 Manual final UAT:
 `NOT STARTED`
@@ -98,74 +103,62 @@ format = pbkdf2$100000$<saltHex>$<hashHex>
 Force_Password_Change = YES
 ```
 
-## 6. Independent Review — Provisioning Evidence Commit 72630138
+## 6. Independent Review — App801 Provisioning PASS
 
-Review verdict:
+The executor evidence alone was not accepted. The user subsequently ran the ChatGPT-supplied **READ-ONLY** App801 Console verifier and returned the summarized live result.
 
-```text
-PENDING INDEPENDENT LIVE VERIFICATION
-NOT YET ACCEPTED AS PASS
-```
-
-### Accepted Git Facts
-- commit `72630138...` is directly based on the authorizing Active Task commit `674261f8...`;
-- the commit changes only `project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md`;
-- no source-code or deployment file is changed in that Git commit;
-- the evidence document contains no plaintext passwords, raw password hashes, salts, API tokens, cookies, or full 128-code employee list.
-
-### Executor-Reported Live Claims — Pending Independent Acceptance
-The evidence reports:
+Independent live result:
 
 ```text
-APP53_ACTIVE_ROWS = 204
-APP53_ACTIVE_BLANK_EMPLOYEE_CODE_ROWS = 76
-APP53_ELIGIBLE_CREDENTIAL_CANDIDATES = 128
-APP801_EXISTING_TARGET_ROWS = 0
-APP801_MISSING_TARGET_CODES_BEFORE = 128
-APP801_CREDENTIAL_ROWS_CREATED = 128
-BATCH_COUNT = 2 (100 + 28)
-APP801_TOTAL_RECORDS_AFTER = 128
-APP801_TARGET_UNIQUE_CREDENTIAL_CODES_AFTER = 128
-APP801_TARGET_DUPLICATE_CODES_AFTER = NONE
-APP801_MISSING_TARGET_CODES_AFTER = 0
-APP801_EXISTING_ROWS_UPDATED = 0
-APP794_DEPLOY_EXECUTED = 0
-D2_D7_WRITES_EXECUTED = 0
+TOTAL_RECORDS                   = 128
+UNIQUE_EMPLOYEE_CODES           = 128
+DUPLICATE_CODE_COUNT            = 0
+HASH_FORMAT_OK                  = true
+DEFAULT_PASSWORD_HASH_VERIFY_OK = true
+UNIQUE_SALTS                    = true
+PASSWORD_ALGORITHM_OK           = true
+FORCE_PASSWORD_CHANGE_OK        = true
+ACCOUNT_STATUS_OK               = true
+FAILED_ATTEMPTS_OK              = true
+LOCKED_UNTIL_BLANK_OK           = true
+CREDENTIAL_VERSION_OK           = true
+CODE_0118_PRESENT               = true
+CODE_0171_PRESENT               = true
+CODE_0119_ABSENT                = true
+CODE_0284_ABSENT                = true
+OVERALL_PASS                    = true
 ```
 
-It also reports PBKDF2-SHA256 / 100000 iterations, `Force_Password_Change=YES`, `Account_Status=ACTIVE`, `Failed_Attempts=0`, and `Credential_Version=1` for created rows.
+Independent-review decision:
 
-### Why PASS Is Withheld
-Git proves only that Antigravity recorded these claims; it does not independently prove the current live App801 records. The Control Plane currently has no direct Kintone connector for an independent read-back. Per project governance, executor self-report cannot self-certify the live production result.
+```text
+APP801_CREDENTIAL_PROVISIONING = PASS / ACCEPTED
+LIVE_TARGET_CREDENTIAL_COUNT   = 128
+LIVE_TARGET_DUPLICATES         = NONE
+PASSWORD_MODEL_VERIFIED        = PASS
+```
 
-## 7. Exact Independent Verification Required
+No App801 provisioning retry is required or allowed under the consumed authorization.
 
-Use one user-run, READ-ONLY App801 Console verification. It must verify without printing secrets:
+## 7. Remaining D1 Gate
 
-1. total App801 rows = 128;
-2. 128 unique non-blank Employee_Code values and no duplicates;
-3. special presence: `0118=YES`, `0171=YES`, `0119=NO`, `0284=NO`;
-4. all 128 hashes match the expected `pbkdf2$100000$...` format;
-5. all 128 hashes cryptographically verify against initial password = their own Employee_Code without printing password/hash/salt;
-6. all 128 salts are unique;
-7. `Password_Algorithm = PBKDF2-SHA256` for all rows;
-8. `Force_Password_Change = YES` for all rows;
-9. `Account_Status = ACTIVE` for all rows;
-10. `Failed_Attempts = 0` for all rows;
-11. `Locked_Until` blank for all rows;
-12. `Credential_Version = 1` for all rows.
-
-If any check fails, provisioning remains CORRECTIVE/BLOCKED and App794 stays blocked.
+1. resolve exact authorization for App794 D1 customization deploy before any production customization write;
+2. after authorized deploy, perform immediate live read-back/deployment verification;
+3. independently review deployment evidence;
+4. perform final manual D1 UI UAT covering login, forced password change, reload/re-entry, wrong-password lockout, own-password change, logout, Employee-Self isolation, create autoload, cross-employee block, and no secret exposure;
+5. D1 is not CLOSED until final UAT is independently accepted.
 
 ## 8. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER = User
 ANTIGRAVITY_REQUIRED = NO
-DUPLICATE_WORK_RISK = YES if Antigravity performs another provisioning/read audit
+DUPLICATE_WORK_RISK = YES if provisioning is repeated
 ```
 
-User runs the read-only App801 Console verifier supplied by ChatGPT and returns only the summarized Console result / screenshot.
+Next decision:
+- confirm/record exact App794 D1 customization deploy authorization if the current repository cannot prove an existing exact approval;
+- until then Antigravity remains stopped.
 
 ## 9. Active Task
 
@@ -175,12 +168,10 @@ Current executor state:
 Expected mode:
 `HOLD / NO EXECUTION`
 
-Antigravity must not retry provisioning, deploy App794, or begin UAT.
-
 ## 10. Knowledge Maintenance
 
 Baseline promotion from this review:
-`NONE — no new durable architecture truth is proven by executor self-report.`
+`NONE — the live count/status is operational evidence; D1 architecture/password/candidate semantics are already baselined.`
 
 Reusable Kintone skill extraction:
-`PENDING — finalize after independent live provisioning verification; do not encode unverified production claims as reusable truth.`
+`PASS — updated skills/kintone/browser-webcrypto-pbkdf2.md with create-only reconciliation and independent read-only post-provision verification without exposing secret material.`
