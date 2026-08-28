@@ -182,10 +182,23 @@ Security limitation remains: a Kintone principal granted App801 View/Edit throug
 
 App53 Employee Namelist is the employee source of truth for deciding which employee identities may receive App801 MBO credentials.
 
+Confirmed employee active-status semantics:
+
+```text
+Field Code = Number_0
+Label      = Status
+Type       = NUMBER
+1          = Active / current employee
+0          = Inactive / former employee
+blank      = unknown / not accepted as Active
+```
+
+The Kintone system field code `Status` is not the employee Active/Inactive source.
+
 A credential candidate must satisfy all of the following:
 
 ```text
-1. App53 row is current/Active.
+1. App53 Number_0 = 1.
 2. Employee_Code source value (`emp_text`) is present and non-blank.
 3. That Employee_Code identifies exactly one active App53 employee row.
 ```
@@ -196,6 +209,8 @@ Rules:
 - Values containing punctuation or underscores, such as `50.03`, `50.02`, or `0050_2`, remain eligible when they otherwise satisfy the Active + non-blank + unique rule.
 - A blank Employee_Code cannot receive an App801 credential because D1 Username and initial/default password are both Employee_Code; such rows remain excluded until App53 source data is corrected.
 - When the same Employee_Code exists on more than one active App53 row, fail closed for that code. Do not arbitrarily choose one row and do not silently deduplicate. All conflicting active rows for that Employee_Code remain excluded until the App53 source-of-truth conflict is resolved.
+- `Number_0 = 0` rows are excluded from the active candidate population.
+- blank `Number_0` rows fail closed and do not receive credentials until App53 source status is corrected/confirmed.
 - Do not create a credential for an employee code that is absent from App53.
 - Provisioning must preserve the canonical Employee_Code identity semantics used by the authenticated Employee-Self gate; no synthetic replacement code may be invented during provisioning.
 
@@ -234,6 +249,7 @@ Any future change to:
 - `MBO_EMPLOYEE_ACCESS` group model;
 - App801 ACL model;
 - Employee Self identity binding;
+- App53 `Number_0` active-status semantics;
 - credential-candidate eligibility semantics;
 - lockout/password rules;
 - D1 hard-isolation limitation;
