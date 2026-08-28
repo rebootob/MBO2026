@@ -178,7 +178,32 @@ Security limitation remains: a Kintone principal granted App801 View/Edit throug
 
 ---
 
-## 8. Live Cutover / UAT Closure Rule
+## 8. App53 Credential Candidate Eligibility
+
+App53 Employee Namelist is the employee source of truth for deciding which employee identities may receive App801 MBO credentials.
+
+A credential candidate must satisfy all of the following:
+
+```text
+1. App53 row is current/Active.
+2. Employee_Code source value (`emp_text`) is present and non-blank.
+3. That Employee_Code identifies exactly one active App53 employee row.
+```
+
+Rules:
+- Employee_Code is an identifier string, not a numeric quantity.
+- Do **not** invent a numeric-only validation rule.
+- Values containing punctuation or underscores, such as `50.03`, `50.02`, or `0050_2`, remain eligible when they otherwise satisfy the Active + non-blank + unique rule.
+- A blank Employee_Code cannot receive an App801 credential because D1 Username and initial/default password are both Employee_Code; such rows remain excluded until App53 source data is corrected.
+- When the same Employee_Code exists on more than one active App53 row, fail closed for that code. Do not arbitrarily choose one row and do not silently deduplicate. All conflicting active rows for that Employee_Code remain excluded until the App53 source-of-truth conflict is resolved.
+- Do not create a credential for an employee code that is absent from App53.
+- Provisioning must preserve the canonical Employee_Code identity semantics used by the authenticated Employee-Self gate; no synthetic replacement code may be invented during provisioning.
+
+Candidate-set counts are operational evidence and belong in `AI_CONTROL_CENTER.md` / execution evidence, not in this durable Baseline.
+
+---
+
+## 9. Live Cutover / UAT Closure Rule
 
 Source implementation alone cannot close D1.
 
@@ -200,7 +225,7 @@ D1 is not PASS/CLOSED until ChatGPT independently reviews the final live UAT evi
 
 ---
 
-## 9. Change Rule
+## 10. Change Rule
 
 Any future change to:
 - Kintone-only architecture;
@@ -209,6 +234,7 @@ Any future change to:
 - `MBO_EMPLOYEE_ACCESS` group model;
 - App801 ACL model;
 - Employee Self identity binding;
+- credential-candidate eligibility semantics;
 - lockout/password rules;
 - D1 hard-isolation limitation;
 
