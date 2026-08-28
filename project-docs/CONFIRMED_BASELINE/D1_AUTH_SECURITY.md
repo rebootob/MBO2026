@@ -25,27 +25,29 @@ Do not claim native hard employee-level isolation under this architecture.
 
 ---
 
-## 2. MBO Login Identity
+## 2. MBO Login Identity / Session Continuity
 
-Every time an employee enters/re-enters/reloads the MBO application:
-- show the MBO Login gate;
-- Username = `Employee_Code`;
-- Password = MBO password stored/managed through App801;
-- successful login binds the current in-page Employee Self context to that exact authenticated Employee_Code;
-- do not ask the employee to select/re-enter Employee ID after successful login;
-- employee A must not be able to switch the custom Employee Self context to employee B.
+Username = `Employee_Code` and Password = the MBO password stored/managed through App801.
 
-Authentication state is **PAGE MEMORY ONLY**.
+Successful authentication binds Employee Self context to the exact authenticated Employee_Code. The user must not be asked to select/re-enter Employee ID after successful login, and employee A must not be able to switch the custom Employee Self context to employee B.
 
-Forbidden auth persistence:
-- no localStorage auth session;
-- no sessionStorage auth session;
-- no cookie-based custom MBO auth persistence;
-- no persistent browser token used to skip the next MBO login.
+The former PAGE-MEMORY-ONLY rule is superseded by the explicitly approved short-lived session-continuity architecture in:
 
-Reload/re-entry requires MBO login again.
+```text
+project-docs/CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md
+```
 
-Logout clears the in-page authentication context and returns the page to the blocking MBO Login gate.
+Current rule:
+- initial entry without a valid MBO session shows Login;
+- a validated short-lived session may survive normal same-tab App794 page navigation/reload;
+- raw session token is stored only in `sessionStorage` for the current tab;
+- App801 stores only token hash + session metadata;
+- browser-stored Employee_Code/authenticated flags are not trusted as identity proof;
+- session restore must revalidate App801 account/session state and current Kintone principal;
+- tab/browser-session close, expiry, invalid/tampered session, or failed validation requires Login again;
+- localStorage/cookie/custom persistent auth tokens remain forbidden.
+
+Logout clears the in-page principal, clears browser session token, revokes the server-side session when resolvable, and returns to the blocking MBO Login gate.
 
 ---
 
@@ -78,6 +80,8 @@ On first/forced-change login, the employee must change the password before Emplo
 
 Normal own-password change requires verification of the current password before the new password is saved.
 
+`Credential_Version` is a positive-integer credential generation marker and is also used by the approved session-continuity model to invalidate sessions across password changes.
+
 ---
 
 ## 4. Account State / Lockout
@@ -89,7 +93,8 @@ Confirmed behavior:
 - wrong-password attempts increment `Failed_Attempts`;
 - 5 failed attempts trigger 15-minute lockout;
 - successful login resets the applicable failed-attempt state and updates `Last_Login_At`;
-- forced-password-change state is controlled by `Force_Password_Change=YES`.
+- forced-password-change state is controlled by `Force_Password_Change=YES`;
+- session restoration must also deny disabled/locked/forced-change accounts.
 
 ---
 
@@ -174,7 +179,7 @@ Preserve creator/admin recovery rights.
 Keep `GROUP:everyone` denied.
 No App801 record ACL rule is part of the approved baseline unless a future explicit architecture change is confirmed.
 
-Security limitation remains: a Kintone principal granted App801 View/Edit through the shared/access group may technically use native/direct Kintone REST outside the custom UI to read credential hashes or mutate credential records. This risk is inherent to the approved Kintone-only shared-principal model and must remain documented.
+Security limitation remains: a Kintone principal granted App801 View/Edit through the shared/access group may technically use native/direct Kintone REST outside the custom UI to read credential hashes or mutate credential/session records. This risk is inherent to the approved Kintone-only shared-principal model and must remain documented.
 
 ---
 
@@ -223,20 +228,25 @@ Candidate-set counts are operational evidence and belong in `AI_CONTROL_CENTER.m
 Source implementation alone cannot close D1.
 
 Final D1 closure requires live manual UI UAT proving at minimum:
-- blocking Login on App794 entry;
+- blocking Login on initial App794 entry without valid session;
 - initial/default credential behavior;
 - Force Password Change;
-- reload/re-entry requires Login again;
+- same-tab session continuity across List/Create/Detail/Edit and reload;
+- new tab/browser session without token requires Login;
+- expired/tampered/wrong-principal session fails closed;
 - new password login works;
 - wrong-password / lockout behavior;
-- normal Change Password requires current password;
-- Logout re-blocks;
+- normal Change Password requires current password and rotates session;
+- Logout revokes/clears session and re-blocks;
 - Employee A custom My MBO list shows only A's ordinary UI items;
 - create autoload path completes without Employee ID re-entry;
 - Employee A opening Employee B detail/edit is visibly blocked;
-- no raw Password_Hash/plain password appears in normal UI/DOM/storage.
+- no raw session token, Password_Hash, or plaintext password appears in normal UI/DOM/logs;
+- no trusted Employee_Code/authenticated flag is taken from user-tamperable browser storage.
 
 D1 is not PASS/CLOSED until ChatGPT independently reviews the final live UAT evidence.
+
+The separate Create-handler defect documented in `D1_SESSION_CONTINUITY.md` must also be resolved before D1 closure.
 
 ---
 
@@ -245,7 +255,7 @@ D1 is not PASS/CLOSED until ChatGPT independently reviews the final live UAT evi
 Any future change to:
 - Kintone-only architecture;
 - App801 credential format;
-- page-memory-only auth rule;
+- short-lived session architecture / token lifetime / storage model;
 - `MBO_EMPLOYEE_ACCESS` group model;
 - App801 ACL model;
 - Employee Self identity binding;
@@ -254,4 +264,4 @@ Any future change to:
 - lockout/password rules;
 - D1 hard-isolation limitation;
 
-requires explicit user/Control Plane decision and must be updated in this baseline in the same control cycle.
+requires explicit user/Control Plane decision and must be updated in the applicable Confirmed Baseline in the same control cycle.
