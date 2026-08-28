@@ -199,3 +199,49 @@ D1_CREDENTIAL_PROVISIONING_WRITE = NOT_AUTHORIZED_YET
 D1_APP794_DEPLOY              = WAITING
 D1_MANUAL_UAT                 = WAITING
 ```
+
+---
+
+## 9. Corrective Review Follow-up (2026-08-28 Re-run)
+
+### Pre-Write Live Read-Back State
+```text
+GROUP_EXISTS                 = YES (ID: 86, Code: MBO_EMPLOYEE_ACCESS)
+GROUP_CURRENT_MEMBERS_BEFORE = (empty)
+REQUIRED_9_PRESENT_BEFORE    = NO
+APP801_CURRENT_GROUP_ACL     = GROUP:MBO_EMPLOYEE_ACCESS view=true edit=true add=false del=false appAdmin=false
+APP801_EVERYONE_DENIED       = YES
+APP801_ACL_REVISION          = 5
+MULTI_PRINCIPAL_COUNT_VERIFIED = 9 (f1, f2, f3, tmh, e1, s1, g_request, t1, t2 - all VERIFIED active)
+```
+
+### Exact Membership API Result
+- **API Endpoint**: `PUT /v1/group/users.json`
+- **Request Body Shape**: `{"code":"MBO_EMPLOYEE_ACCESS","users":["f1","f2","f3","tmh","e1","s1","g_request","t1","t2"]}` (string array of user codes)
+- **HTTP Status**: `200`
+- **Error Code / Message**: `none`
+- **GROUP_MEMBERSHIP_WRITE_EXECUTED**: `1`
+- **MEMBERS_AFTER**: `e1, f1, f2, f3, g_request, s1, t1, t2, tmh`
+- **REQUIRED_9_PRESENT_AFTER**: `YES`
+- **GROUP_MEMBERSHIP_RESULT**: `PASS`
+
+### Final App801 ACL Read-Back
+- Live App801 ACL matches Baseline target exactly (Revision 5).
+- `APP801_ACL_WRITE_EXECUTED = 0` (no ACL change needed; already matched target).
+- `APP801_GROUP_VIEW_EDIT = YES`
+- `APP801_GROUP_EXTRA_PRIVILEGES = NO`
+- `APP801_EVERYONE_DENIED_AFTER = YES`
+- `APP801_RECORD_ACL_CHANGE_EXECUTED = 0`
+- `APP801_ACL_RESULT = PASS`
+
+### Mandatory Counters & Final Corrective Status
+```text
+APP801_CREDENTIAL_WRITES_EXECUTED = 0
+APP794_DEPLOY_EXECUTED            = 0
+D2_D7_WRITES_EXECUTED             = 0
+
+D1_MEMBERSHIP_RECONCILIATION     = PASS
+D1_APP801_ACL_RECONCILIATION      = PASS
+OVERALL_CORRECTIVE_STATUS         = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
