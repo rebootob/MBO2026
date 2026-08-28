@@ -207,3 +207,70 @@ SOURCE_FILES_CHANGED                   = 0
 APP794_DEPLOY_STATUS                   = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
+---
+
+## 11. App794 Corrective Redeploy — D1 Runtime Recovery
+
+### Pre-Deploy Authorization & Artifact Identity
+```text
+TARGET_APP                             = 794
+AUTHORIZED_SOURCE_COMMIT               = ed1d8e8573efeb47845cc07dcd81853842ed307e
+TARGET_PATH                            = dist/mbo-employee-app.js
+EXPECTED_GIT_BLOB_SHA                  = 2a9a3c5bfe896b51f482c016f66863bffeddb679
+LOCAL_GIT_BLOB_SHA                     = 2a9a3c5bfe896b51f482c016f66863bffeddb679
+LOCAL_BUILD_AND_TEST_GATE              = PASS (804/804 tests passed 100%)
+ARTIFACT_IDENTITY_STATUS               = PASS
+```
+
+### Pre-Deploy Live Customization & Backup
+```text
+LIVE_REVISION_BEFORE                   = 41
+PREVIEW_REVISION_BEFORE                = 41
+PRE_DEPLOY_SCOPE                       = ALL
+PRE_DEPLOY_DESKTOP_JS_COUNT            = 1 (mbo-employee-app.js)
+PRE_DEPLOY_DESKTOP_CSS_COUNT           = 1 (mbo-employee.css)
+PRE_DEPLOY_MOBILE_JS_COUNT             = 0
+PRE_DEPLOY_MOBILE_CSS_COUNT            = 0
+ROLLBACK_BACKUP_PATH                   = scratch/app794_live_redeploy_backup.json & scratch/app794_preview_redeploy_backup.json
+STRICT_PREFLIGHT_RESULT                = PASS (validatePreflight 100%)
+APP794_ROLLBACK_READY                  = YES
+```
+
+### Deployment & Post-Deploy Read-Back Verification
+```text
+LIVE_REVISION_AFTER                    = 42
+PREVIEW_REVISION_AFTER                 = 42
+DEPLOY_STATUS                          = SUCCESS
+TARGET_FILE_NAME_AFTER                 = mbo-employee-app.js
+EXPECTED_JS_GIT_BLOB_SHA               = 2a9a3c5bfe896b51f482c016f66863bffeddb679
+DEPLOYED_JS_GIT_BLOB_SHA               = 2a9a3c5bfe896b51f482c016f66863bffeddb679
+TARGET_JS_CONTENT_HASH_MATCH           = YES
+PRE_DEPLOY_CSS_GIT_BLOB_SHA            = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+POST_DEPLOY_CSS_GIT_BLOB_SHA           = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+CSS_CONTENT_HASH_MATCH                 = YES
+NON_TARGET_CUSTOMIZATION_PRESERVED     = YES
+ROLLBACK_RESULT                        = NOT_NEEDED
+```
+
+### Mandatory Counters
+```text
+KINTONE_WRITES_EXECUTED                = 3 (1 x JS upload + 1 x Preview PUT + 1 x Deploy request)
+TARGET_JS_UPLOAD_COUNT                 = 1 (mbo-employee-app.js)
+CSS_UPLOAD_COUNT                       = 0
+OTHER_FILE_UPLOAD_COUNT                = 0
+PREVIEW_CUSTOMIZATION_PUT_COUNT        = 1
+APP794_DEPLOY_REQUEST_COUNT            = 1
+APP794_RECORD_WRITES_EXECUTED          = 0
+APP801_WRITES_EXECUTED                 = 0
+APP53_WRITES_EXECUTED                  = 0
+APP795_WRITES_EXECUTED                 = 0
+APP796_WRITES_EXECUTED                 = 0
+GROUP_ACL_WRITES_EXECUTED              = 0
+D2_D7_WRITES_EXECUTED                  = 0
+ROLLBACK_WRITES_EXECUTED               = 0
+UAT_EXECUTED                           = 0
+SOURCE_FILES_MODIFIED                  = 0
+
+APP794_REDEPLOY_STATUS                 = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
