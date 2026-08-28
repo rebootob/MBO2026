@@ -24,7 +24,7 @@ Do not browse/read historical project docs by default.
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE CUTOVER IN PROGRESS / latest group+ACL execution pending independent review |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE CUTOVER IN PROGRESS / CORRECTIVE REQUIRED FOR GROUP MEMBERSHIP + ACL STATE |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -41,6 +41,7 @@ D1_SOURCE_IMPLEMENTATION            = APPROVED / SOURCE ACCEPTED
 D1_LIVE_CUTOVER                     = APPROVED
 DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED
 APP801_GROUP_ACL_MODEL              = APPROVED
+D1_GROUP_MEMBERSHIP_CORRECTIVE      = COVERED BY EXISTING D1 LIVE CUTOVER AUTHORIZATION
 APP801_CREDENTIAL_BULK_PROVISIONING = NOT AUTHORIZED YET
 APP794_D1_CUSTOMIZATION_DEPLOY      = WAITING CURRENT GATE / DO NOT EXECUTE YET
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
@@ -61,81 +62,94 @@ Source status:
 `PASS / ACCEPTED`
 
 Live cutover status:
-`IN PROGRESS`
+`IN PROGRESS / CORRECTIVE REQUIRED`
 
 Manual final UAT:
 `NOT STARTED`
 
-## 5. Latest Pending Review Evidence
+## 5. Independent Review — Evidence Commit 2cd8d707
 
-Execution Plane evidence commit:
+Review target:
 `2cd8d707d6fcb42c627b3c8302c3f93f629029f9`
 
-Execution Plane reported:
-- 9 Kintone principals verified;
-- `MBO_EMPLOYEE_ACCESS` group created;
-- group membership write did not complete and required 9 members were reported not yet present;
-- App801 app ACL changed to grant the group View/Edit only;
-- `GROUP:everyone` remained denied;
+Independent review verdict:
+
+```text
+CORRECTIVE / NOT ACCEPTED AS PASS
+```
+
+### Accepted Git Facts
+- commit `2cd8d707...` adds the sanitized evidence document `project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md`;
+- it does not contain a source-code implementation change;
+- approved Baseline remains the dedicated `MBO_EMPLOYEE_ACCESS` group model with App801 View/Edit-only group ACL and `GROUP:everyone` denied.
+
+### Reported Live Claims — Not Yet Independently Accepted
+The executor reported:
+- 9 principals verified;
+- group `MBO_EMPLOYEE_ACCESS` created;
+- required 9 members were not successfully written/present;
+- App801 app ACL was nevertheless changed to the group target;
 - no App801 credential writes;
-- provisioning dry-run reported 281 active candidates and 198 valid candidates;
-- 0118 included, 0119 not found;
 - App794 D1 customization not deployed.
 
-**These are pending-review claims, not accepted facts yet.**
+These remain live claims until the next exact read-back proves current Kintone state.
 
-Exact evidence file is default-ignore except for this review:
-`project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md`
+### Review Findings
+1. **Sequencing violation / MUST CORRECT** — the authorizing Active Task required successful group setup + membership read-back before App801 ACL cutover. The evidence reports membership incomplete but ACL cutover executed anyway.
+2. **Root-cause claim rejected** — `CB_IJ01 Invalid JSON string` does not by itself prove insufficient permission. Request shape/serialization, HTTP status, error code/body, and actual User API authority must be checked before classifying the failure.
+3. **198 provisioning candidates NOT ACCEPTED** — the current Baseline/authorization does not establish a numeric-only Employee_Code rule. Excluding `50.03`, `50.02`, `0050_2` solely as non-numeric is therefore not independently accepted. Candidate rules remain unresolved.
+4. **No bulk provisioning authorization** — App801 credential writes remain forbidden.
+5. **No App794 deploy yet** — deploy remains blocked by the current D1 gate.
 
-## 6. Current Blockers / Open D1 Questions
+## 6. Current D1 Blockers
 
-Before credential provisioning/deploy can proceed, Control Plane must independently resolve:
+Before provisioning or App794 deploy:
 
-1. actual membership state of `MBO_EMPLOYEE_ACCESS`;
-2. whether the reported membership API failure proves a permission issue or only a request/payload issue;
-3. credential candidate rule from App53;
-4. 79 blank `emp_text` records;
-5. codes `50.03`, `50.02`, `0050_2` — valid identifiers or exclusions;
-6. duplicate Employee_Code `9000`;
-7. absence of test employee `0119` and selection of a valid second isolation-test employee if needed.
+1. live-read current `MBO_EMPLOYEE_ACCESS` group state and exact membership;
+2. prove the exact reason membership update failed, using sanitized HTTP status/error evidence;
+3. complete/reconcile the required 9 members only through an authorized admin path;
+4. live-read current App801 app ACL and reconcile it only after membership is proven;
+5. define/accept the App53 credential-candidate rule;
+6. resolve 79 blank `emp_text` records;
+7. decide treatment of `50.03`, `50.02`, `0050_2` without inventing a numeric-only rule;
+8. resolve duplicate Employee_Code `9000`;
+9. handle missing test employee `0119` / choose another valid second isolation-test employee if required.
 
 No bulk credential provisioning until these are accepted/resolved.
 
 ## 7. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = ChatGPT
-ANTIGRAVITY_REQUIRED = NO
+NEXT_ACTION_OWNER = Antigravity
+ANTIGRAVITY_REQUIRED = YES
+DUPLICATE_WORK_RISK = NO
 ```
 
-Next action:
-- independently review `2cd8d707...` using current Git/Kintone evidence;
-- accept/reject each reported live fact;
-- promote durable accepted facts into Confirmed Baseline;
-- extract reusable Kintone learning into `skills/kintone/` if applicable;
-- update this Control Center;
-- only then decide whether a new short Active Task is needed.
+Next action is one narrow corrective packet only:
+- live-read group members + current App801 ACL;
+- validate exact Cybozu group-membership request/authority;
+- reconcile required group membership if authorized;
+- immediate read-back;
+- verify/reconcile App801 ACL only when membership gate passes;
+- commit sanitized evidence and STOP.
 
-Antigravity must remain stopped until a new Active Task is issued.
+No planning, source work, credential provisioning, App794 deploy, or D2-D7 work.
 
 ## 8. Active Task
 
-Current executor state:
+Current executor instruction:
 `project-docs/AI_ACTIVE_TASK.md`
 
-Expected mode now:
-`HOLD / PENDING INDEPENDENT REVIEW`
+Expected executor maximum status:
+`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
 ## 9. Knowledge Maintenance
 
-Confirmed durable project fact:
-→ `project-docs/CONFIRMED_BASELINE/`
+Baseline promotion from this review:
+`NONE — no new durable project-specific truth beyond existing confirmed D1 model.`
 
-Reusable Kintone engineering lesson:
-→ `skills/kintone/`
-
-Document discovery:
-→ `project-docs/AI_DOCUMENT_INDEX.md`
+Reusable Kintone skill extracted/updated:
+`skills/kintone/dedicated-group-acl-pattern.md`
 
 Historical evidence:
-→ keep in Git, do not reread by default.
+→ keep in Git; do not treat executor self-report as accepted live truth.
