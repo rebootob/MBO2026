@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — D1 MODULE-AWARE BUNDLE FINAL CORRECTIVE
+# AI ACTIVE TASK — D1 CREATE-HANDLER FORM-STATE CORRECTIVE
 
 > Read `project-docs/AI_CONTROL_CENTER.md` FIRST.
 > Execution Plane: Antigravity
@@ -7,24 +7,19 @@
 
 ## 0. Why This Task Exists
 
-Independent review of executor commit:
+User-side App794 Live evidence proves Session Continuity List -> Create now works, but `/k/794/edit` fails with:
 
 ```text
-ef39edb59f6693b824c69b80d628f5f9e7a314cd
+Employee Profile Resolution Failed
+You cannot call kintone.app.record.get() in handler or during processing a handler.
 ```
 
-accepted the module-aware esbuild architecture direction, runtime dependency closure approach, browser-safe runtime profile resolver, and unchanged CSS.
+Independent source review confirms the authenticated Create autoload is awaited inside `app.record.create.show` and calls `EmployeePartAUI.executeLookup()`. During that lookup:
+- `onEmployeeCodeChanged()` can call `syncRecordToKintone(record)`;
+- `onLookupEmployee()` later calls `syncRecordToKintone(record, {requireVerifiedPersistence:true,...})`;
+- `syncRecordToKintone()` calls `kintone.app.record.get()/set()` while the Kintone event handler is still processing.
 
-But two narrow blockers remain:
-
-```text
-A. scripts/kintone/deploy-custom-ui.js has broken variable/lifecycle scope after build extraction
-B. esbuild is declared as ^0.28.2 instead of exact-pinned 0.28.2
-```
-
-This task fixes only those blockers plus a focused no-network regression test.
-
-Do NOT fix the separate Create-handler `kintone.app.record.get()` defect in this task.
+This task fixes only that Create-handler form-state lifecycle defect.
 
 Maximum executor status:
 
@@ -37,101 +32,144 @@ IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this `project-docs/AI_ACTIVE_TASK.md`
 3. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-4. `scripts/kintone/build-mbo-ui.js`
-5. `scripts/kintone/deploy-custom-ui.js`
-6. `tests/classic-bundle.test.js`
-7. `tests/deploy-customization-preservation.test.js` only if useful for the focused no-network proof
-8. `package.json`
-9. `package-lock.json`
+4. relevant `app.record.create.show` / `setupRecordUiWithAuth` / `syncRecordToKintone` sections of `src/main-mbo-app.js`
+5. relevant `executeLookup()` / `isEmployeeVerified` behavior in `src/ui/employee-part-a-ui.js` — READ ONLY unless tests prove a strictly necessary change
+6. existing focused tests that already exercise main/create/authenticated Employee Self flow
+7. `tests/classic-bundle.test.js` only for generated bundle regression
+8. `scripts/kintone/build-mbo-ui.js`
 
 Do not scan repository/history broadly.
 Do not reopen D2-D7.
-Do not read/modify `employee-part-a-ui.js` or business UI source.
+Do not work on the deployment guard integration in this task.
 
-## 2. Corrective A — Repair Deploy Entrypoint Scope
+## 2. Mandatory Architecture / Behavior
 
-Current defect:
-- `app` is assigned in the direct-execution block without a declaration;
-- `fullJs` is declared block-local and later used by the live deployment block outside its lexical scope.
-
-Repair this without changing accepted Kintone safety semantics.
-
-Preferred shape:
-- keep build logic in `build-mbo-ui.js`;
-- give deployment execution one clear lifecycle where `app` and built JS artifact remain in valid scope through preflight/upload/PUT/deploy;
-- importing `deploy-custom-ui.js` for unit tests must cause zero Kintone network/write side effects;
-- direct build-only behavior, if retained, must still perform zero Kintone writes;
-- direct deploy execution must still call `assertSandboxWriteTarget(app)` before any Kintone write.
-
-Do not redesign accepted preflight/topology/revision/fileKey logic.
-Do not weaken CSS-upload prohibition.
-
-Required preserved behavior:
+During authenticated autoload inside the active `app.record.create.show` handler:
 
 ```text
-FULL_DETERMINISTIC_PREFLIGHT_BEFORE_UPLOAD = YES
-TARGET_JS_UPLOAD_ONLY                       = YES
-CSS_UPLOAD_COUNT                            = 0
-PREVIEW_PAYLOAD_FROM_PREVIEW_STATE          = YES
-LATEST_POSITIVE_REVISION_INCLUDED           = YES
-NON_TARGET_PREVIEW_FILEKEYS_PRESERVED       = YES
-DEPLOY_APP794_ONLY                          = YES
+FORM_STATE_AUTHORITY = event.record
+kintone.app.record.get() CALL COUNT = 0
+kintone.app.record.set() CALL COUNT = 0
 ```
 
-## 3. Corrective B — Exact-Pin esbuild
+The handler may perform the required READ-ONLY Kintone REST calls to:
+- App53 employee lookup;
+- App795 routing lookup;
+- App796 scoring lookup;
+- App794 duplicate check.
 
-Change dependency declaration to exactly:
+Those reads remain allowed and must retain existing fail-closed behavior.
 
-```json
-"esbuild": "0.28.2"
-```
+Populate the existing `event.record` object directly with the resolved employee/routing/scoring/snapshot values, then return the populated event after the awaited autoload succeeds.
 
-Update/regenerate `package-lock.json` so the root package dependency is also exact `0.28.2` and lockfile remains internally consistent.
+After the create-show handler has completed, existing interactive UI edits may continue to use the normal live form-state sync behavior.
 
-Do not change esbuild version to another version.
+Do NOT globally disable `syncRecordToKintone()` for Create pages.
+Do NOT remove post-handler form-state synchronization needed by later user interaction.
 
-## 4. Focused No-Network Regression Proof
+## 3. Narrow Implementation Boundary
 
-Add a narrow testable boundary/proof that catches the exact deploy-entrypoint scope regression without calling Kintone.
+Preferred correction is a small explicit lifecycle/context boundary in `src/main-mbo-app.js`, because Kintone event lifecycle orchestration belongs in the main entry module.
 
-The test must prove at minimum:
-- production artifact preparation can obtain the built `dist/mbo-employee-app.js` content in a scope usable by deployment orchestration;
-- App794 id resolution/default or injected test value is held in valid declared scope;
-- importing the deploy module itself executes zero remote network/write calls;
-- build/preparation path does not depend on undeclared globals;
-- existing `validatePreflight()` / `buildPreviewCustomizePayload()` exports remain callable in tests.
+Acceptable pattern:
+- establish an `authenticatedCreateAutoloadInHandler` / equivalent local lifecycle state only while the awaited initial `ui.executeLookup(authenticatedEmployeeCode)` is running;
+- `onEmployeeCodeChanged` and `onLookupEmployee` mutate the captured `event.record` directly during that state and MUST NOT call `syncRecordToKintone()`;
+- after the initial autoload settles, clear that lifecycle state in a `finally`-safe way;
+- normal post-handler callbacks retain existing `syncRecordToKintone()` behavior.
 
-Preferred implementation: extract/retain a small pure/local preparation helper rather than static string matching.
+Do not add unrelated business logic to `main-mbo-app.js`.
+Do not create a large new abstraction for a one-flag event lifecycle fix.
+A tiny helper is allowed only if it materially improves testability and remains orchestration-only.
 
-Do NOT run the real deploy command as a test.
-Do NOT call Kintone.
+## 4. Existing Business Behavior Must Stay Identical
 
-## 5. Preserve Accepted Module-Aware Bundle
+Do not change:
+- MBO login/session behavior;
+- Employee Code binding to authenticated employee;
+- App53 lookup/candidate rules;
+- App795 routing/team/position behavior;
+- App796 scoring/profile mapping;
+- Record_Key generation;
+- duplicate check;
+- snapshot field set;
+- Requester/Approver values;
+- validation rules;
+- Save gate;
+- Detail/Edit cross-employee block;
+- CSS/UI design;
+- Admin Support Center behavior;
+- module-aware esbuild architecture.
 
-Do not undo the accepted direction from `ef39edb...`.
+Do not change Fiscal Year semantics in this task.
 
-Required:
+## 5. Required Tests — Must Exercise Production Path
+
+Add/extend focused tests that invoke the actual production Create-handler path or the smallest exported/testable production orchestration boundary. Do not merely duplicate the intended logic inside the test.
+
+Required proofs:
+
+### A. Authenticated Create Autoload — No Forbidden Form API
+
+Simulate an authenticated `app.record.create.show` flow with fake Kintone environment where:
 
 ```text
-ENTRY      = src/main-mbo-app.js
-BUNDLE     = true
-FORMAT     = iife
-PLATFORM   = browser
-MINIFY     = false
-SOURCEMAP  = false
+kintone.app.record.get = throws/counter
+kintone.app.record.set = throws/counter
 ```
 
-Keep:
-- `scripts/kintone/build-mbo-ui.js` as dedicated build module;
-- `src/profiles/runtime-profile-resolver.js` as browser-safe resolver;
-- source modules separate;
-- admin/visibility/appraiser/profile/auth/session/login modules in browser graph;
-- `src/profiles/scoring-config-master.js` absent from browser graph;
-- `node:crypto` absent from browser graph.
+During the awaited initial authenticated autoload require:
 
-No business/source refactor.
+```text
+CREATE_AUTOLOAD_RECORD_GET_CALLS = 0
+CREATE_AUTOLOAD_RECORD_SET_CALLS = 0
+CREATE_AUTOLOAD_HANDLER_RESULT   = event
+```
 
-## 6. Required Tests
+### B. Event Record Populated
+
+After successful autoload, prove the same `event.record` contains the expected resolved values at minimum:
+
+```text
+Employee_Code = authenticated Employee_Code
+Employee_Name populated
+Fiscal_Year populated/preserved
+Record_Key deterministic
+Requester_User populated
+Routing_Topology populated
+Profile_Code populated
+PartA_Weight populated
+PartB_Weight populated
+Competency_Set_Code populated
+Configuration_Hash populated when provided by App796 fixture
+```
+
+Use injected READ-ONLY fake API fixtures; do not call live Kintone.
+
+### C. Verified Create State
+
+After successful authenticated autoload:
+
+```text
+active UI isEmployeeVerified = true
+```
+
+and the Save gate must not fail solely because the initial authenticated profile is unverified.
+
+### D. Failure Remains Fail-Closed
+
+At least one lookup/routing/scoring/duplicate failure path must prove:
+- no forbidden `kintone.app.record.get/set` call during handler;
+- Create does not become verified;
+- blocking/error path remains visible/returned safely;
+- no record write occurs.
+
+### E. Post-Handler Interactive Sync Preserved
+
+Prove that after the initial handler lifecycle state is cleared, the normal interactive callback path can still reach existing `syncRecordToKintone()` behavior in a fake environment.
+
+This prevents solving the defect by permanently disabling form synchronization on Create pages.
+
+### F. Existing Regressions
 
 Run:
 
@@ -140,53 +178,47 @@ npm run ui:build
 npm test
 ```
 
-Required proofs:
-
-```text
-MODULE_AWARE_BUILD_SUCCEEDS             = PASS
-DIST_CLASSIC_IIFE_PARSE                 = PASS
-DEPENDENCY_GRAPH_CLOSURE                = PASS
-ADMIN_DIAGNOSTIC_RUNTIME_PROOF          = PASS
-RUNTIME_PROFILE_RESOLVER_PROOF          = PASS
-SCORING_CONFIG_MASTER_BROWSER_GRAPH     = ABSENT
-NODE_CRYPTO_BROWSER_GRAPH               = ABSENT
-DEPLOY_ENTRYPOINT_SCOPE_REGRESSION      = PASS
-DEPLOY_IMPORT_NETWORK_CALL_COUNT        = 0
-ESBUILD_EXACT_PIN                       = 0.28.2
-```
-
-All existing D1 Auth/Session/Login/employee-code tests must remain green.
+Require existing:
+- Session/Auth/Login tests green;
+- Employee Code `50.03`, `50.02`, `0050_2` green;
+- module-aware dependency graph tests green;
+- AdminDiagnostic runtime proof green;
+- runtime profile resolver proof green;
+- deploy-customization preservation tests green.
 
 GitHub has no CI proof; report local execution as executor evidence only.
 
-## 7. CSS / Dist Rules
+## 6. Dist / CSS Rules
+
+`dist/mbo-employee-app.js` may change only as generated esbuild output caused by the accepted source correction.
 
 ```text
 src/styles/mbo-employee.css = UNCHANGED
 dist/mbo-employee.css       = byte-identical to source
 ```
 
-`dist/mbo-employee-app.js` may change only as generated output caused by legitimate source/build corrections.
-
 Never manually edit dist business logic.
 
-## 8. Explicitly Forbidden
+## 7. Explicitly Forbidden
 
 - NO Kintone POST/PUT/DELETE/file upload/deploy;
 - NO App794 production write;
 - NO App801 write;
 - NO App53/App795/App796 write;
-- NO Create-handler corrective;
-- NO change to `syncRecordToKintone()` behavior;
-- NO `employee-part-a-ui.js` edit;
+- NO App794 record write;
+- NO deployment-guard integration fix in this task;
+- NO `sandbox-write-guard.js` edit;
 - NO Session/Auth architecture change;
+- NO bundle architecture redesign;
+- NO broad refactor;
+- NO `employee-part-a-ui.js` edit unless a production-path test proves it is strictly necessary and executor reports the blocker before expanding scope;
 - NO CSS source change;
 - NO D2-D7 work;
-- NO broad refactor;
 - NO production deploy;
+- NO UAT;
 - NO self-PASS.
 
-If the corrective requires touching business/UI logic or changing accepted Kintone safety behavior:
+If the fix requires changing business/routing/scoring semantics or a broad UI refactor:
 
 ```text
 STOP
@@ -194,25 +226,21 @@ REPORT BLOCKER
 DO NOT EXPAND SCOPE
 ```
 
-## 9. Expected Changed Files
+## 8. Expected Changed Files
 
 Prefer only:
 
 ```text
-package.json
-package-lock.json
-scripts/kintone/deploy-custom-ui.js
-focused deploy/build test file(s)
-dist/mbo-employee-app.js only if deterministic build legitimately changes it
+src/main-mbo-app.js
+focused create-handler test file(s)
+dist/mbo-employee-app.js   (generated)
 ```
 
-`build-mbo-ui.js` should change only if strictly necessary for a clean testable local preparation boundary.
+No deploy-script change expected.
+No package/dependency change expected.
+No CSS change expected.
 
-No `main-mbo-app.js` change expected.
-No `runtime-profile-resolver.js` change expected.
-No `employee-part-a-ui.js` change allowed.
-
-## 10. Delivery
+## 9. Delivery
 
 Commit + push one concise corrective commit, then STOP.
 
@@ -220,19 +248,21 @@ Return only sanitized evidence:
 
 ```text
 COMMIT_SHA
+CREATE_AUTOLOAD_FORM_STATE_MODE
+CREATE_AUTOLOAD_RECORD_GET_CALLS
+CREATE_AUTOLOAD_RECORD_SET_CALLS
+EVENT_RECORD_POPULATION_PROOF
+CREATE_VERIFIED_STATE_PROOF
+FAIL_CLOSED_FAILURE_PROOF
+POST_HANDLER_SYNC_PRESERVED
 MODULE_AWARE_BUILD_RESULT
 NPM_TEST_RESULT
-ESBUILD_DECLARATION
-DEPLOY_ENTRYPOINT_SCOPE_REGRESSION
-DEPLOY_IMPORT_NETWORK_CALL_COUNT
-EXPECTED_RUNTIME_MODULES_INCLUDED
-NODE_CRYPTO_BROWSER_GRAPH
-SCORING_CONFIG_MASTER_BROWSER_GRAPH
 CSS_SOURCE_CHANGED = NO
 KINTONE_WRITES_EXECUTED = 0
 APP794_DEPLOY_EXECUTED = 0
-CREATE_HANDLER_FIX_EXECUTED = 0
+APP801_WRITES_EXECUTED = 0
+DEPLOY_GUARD_FIX_EXECUTED = 0
 STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-STOP. ChatGPT independently reviews before the separate Create-handler corrective begins.
+STOP. ChatGPT independently reviews before any deployment-guard correction or live deploy authorization.
