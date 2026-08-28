@@ -24,7 +24,7 @@ Do not browse/read historical project docs by default.
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE GROUP+APP801 ACL PASS / CANDIDATE AUDIT PASS = 128 / BULK PROVISIONING AUTHORIZATION PENDING |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE GROUP+APP801 ACL PASS / CANDIDATE AUDIT PASS = 128 / BULK PROVISIONING APPROVED + EXECUTION NEXT |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -43,10 +43,18 @@ DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED
 APP801_GROUP_ACL_MODEL              = APPROVED / LIVE RECONCILED
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
 D1_CANDIDATE_USER_EXPORT_AUDIT      = PASS / 128 ACCEPTED CANDIDATES
-APP801_CREDENTIAL_BULK_PROVISIONING = NOT AUTHORIZED YET
+APP801_CREDENTIAL_BULK_PROVISIONING = APPROVED 2026-08-28 / EXACT TARGET POPULATION = 128 ACCEPTED CANDIDATES
 APP794_D1_CUSTOMIZATION_DEPLOY      = WAITING CREDENTIAL GATE / DO NOT EXECUTE YET
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
 ```
+
+Approval scope is exact:
+- authorize App801 credential provisioning for the already accepted 128-candidate population only;
+- safe create-only reconciliation is required;
+- do not overwrite/reset existing App801 credential rows;
+- do not expand the population if App53 has changed;
+- no App794 deploy is included in this approval;
+- no D2-D7 write is included.
 
 Do not repeatedly ask for the same unchanged approval.
 New approval is required only when scope/risk materially changes or a new production-impacting write is introduced.
@@ -69,7 +77,7 @@ Source status:
 `PASS / ACCEPTED`
 
 Live cutover status:
-`IN PROGRESS / GROUP+ACL PASS / CANDIDATE GATE PASS / PROVISIONING NOT YET AUTHORIZED`
+`IN PROGRESS / GROUP+ACL PASS / CANDIDATE GATE PASS / PROVISIONING APPROVED / EXECUTION PENDING`
 
 Manual final UAT:
 `NOT STARTED`
@@ -148,48 +156,63 @@ The earlier expected count `200` is superseded and rejected. It incorrectly trea
 
 No full employee list or personal details are committed to Git.
 
-## 8. Remaining D1 Gate
+## 8. Approved Provisioning Safety Gates
 
-Before any App801 credential write:
+Before the first App801 credential write, Antigravity must:
 
-1. obtain explicit user authorization for App801 bulk credential provisioning for the accepted 128-candidate population;
-2. after authorization, perform a narrow pre-write App801 read-back/reconciliation so existing credential rows are not duplicated or overwritten blindly;
-3. create only the required missing credentials using the confirmed D1 password model;
-4. immediate post-write read-back and sanitized evidence;
-5. independently review provisioning before App794 customization deploy;
-6. App794 deploy remains blocked until credential provisioning is accepted;
-7. final D1 closure still requires manual UI UAT.
+1. minimally live-read App53 fields needed to regenerate the candidate set in memory (`emp_text`, `Number_0`, record identity only if needed);
+2. require the current live candidate count and rules to still resolve to exactly the accepted 128 population; if not, STOP with zero credential writes;
+3. minimally read App801 existing credential identities using `Employee_Code` and non-secret metadata only; do not retrieve/render raw `Password_Hash` unless technically unavoidable;
+4. fail closed on duplicate App801 rows for any target Employee_Code;
+5. classify target population into existing unique rows vs missing rows;
+6. preserve every existing credential row — NO overwrite, reset, rehash, password change, or account-state modification under this authorization;
+7. create only missing credential rows;
+8. use the confirmed password model for each newly created row:
+   - Username/Employee_Code = exact Employee_Code string;
+   - initial password = exact Employee_Code string;
+   - PBKDF2-SHA256, iterations 100000;
+   - stored hash format `pbkdf2$100000$<saltHex>$<hashHex>`;
+   - unique cryptographically random salt per new credential;
+   - `Force_Password_Change = YES`;
+   - never persist/log/commit plaintext password;
+   - never commit raw password hashes to Git;
+9. verify exact live App801 schema/options immediately before creation; if a required non-secret field value (for example Account_Status/Password_Algorithm/default version semantics) cannot be proven from the live schema + confirmed implementation model, STOP before writing rather than inventing a value;
+10. immediate post-write read-back by Employee_Code only plus non-secret metadata;
+11. evidence must contain counts/status only — no full employee list, plaintext, salts, or hashes.
 
-## 9. Exact Next Action
+Maximum executor status remains:
+`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+
+## 9. Remaining D1 Gate
+
+After provisioning execution:
+
+1. ChatGPT independently reviews provisioning evidence;
+2. App794 customization deploy remains blocked until provisioning is accepted;
+3. final D1 closure still requires manual UI UAT.
+
+## 10. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = User
-ANTIGRAVITY_REQUIRED = NO
-DUPLICATE_WORK_RISK = YES if candidate audit is repeated
+NEXT_ACTION_OWNER = Antigravity
+ANTIGRAVITY_REQUIRED = YES
+DUPLICATE_WORK_RISK = NO
 ```
 
-Waiting for exact authorization decision:
+Execute exactly one narrow App801 create-only provisioning packet according to `project-docs/AI_ACTIVE_TASK.md`, commit sanitized evidence, then STOP.
 
-```text
-APP801_CREDENTIAL_BULK_PROVISIONING = APPROVE | DO_NOT_APPROVE
-TARGET_POPULATION = 128 accepted active unique Employee_Code candidates
-```
+## 11. Active Task
 
-Until approval, Antigravity remains stopped and no Kintone credential writes are allowed.
-
-## 10. Active Task
-
-Current executor state:
+Current executor instruction:
 `project-docs/AI_ACTIVE_TASK.md`
 
-Expected mode now:
-`HOLD / WAITING USER PROVISIONING AUTHORIZATION`
+Expected executor maximum status:
+`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
-## 11. Knowledge Maintenance
+## 12. Knowledge Maintenance
 
 Baseline promotion this cycle:
-- `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` — confirmed `Number_0` active/inactive semantics.
-- `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` — D1 candidate rule bound to the confirmed App53 active-status field.
+`NONE — user authorization is operational scope, not a new durable architecture rule.`
 
 Skill extraction:
-`NONE REQUIRED — this cycle confirms project-specific source semantics rather than a new reusable Kintone technique.`
+`NONE YET — extract only after independent review of actual provisioning execution.`
