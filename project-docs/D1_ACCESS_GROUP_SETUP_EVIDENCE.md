@@ -274,3 +274,62 @@ SOURCE_FILES_MODIFIED                  = 0
 APP794_REDEPLOY_STATUS                 = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
+## 13. App801 Session Schema Write
+
+### Scope & Prewrite Discovery
+```text
+AUTHORIZATION_SCOPE                    = APP801_SESSION_SCHEMA_WRITE APPROVED 2026-08-28
+APP_ID                                 = 801
+LIVE_REVISION_BEFORE                   = 5
+PREVIEW_REVISION_BEFORE                = 5
+LIVE_FINGERPRINT_BEFORE                = efd54ee27885ae62fb61e8316cdce7aa6eba1a9d9f1984e33a5a60b59d837185
+PREVIEW_FINGERPRINT_BEFORE             = efd54ee27885ae62fb61e8316cdce7aa6eba1a9d9f1984e33a5a60b59d837185
+PENDING_PREVIEW_DRIFT_RESULT           = PASS (0 unrelated Preview drift)
+EXISTING_TARGET_CONFLICT_RESULT        = PASS (0 target fields existed, 0 type conflicts)
+BACKUP_STATUS                          = PASS (scratch/app801_schema_prewrite_backup.json saved)
+```
+
+### Schema Add & Preview Read-Back
+```text
+FIELDS_ADDED                           = 5 (Session_Token_Hash, Session_Issued_At, Session_Expires_At, Session_Credential_Version, Session_Kintone_User)
+FIELD_TYPES_SPECIFIED                  = Session_Token_Hash: SINGLE_LINE_TEXT, Session_Issued_At: DATETIME, Session_Expires_At: DATETIME, Session_Credential_Version: NUMBER, Session_Kintone_User: SINGLE_LINE_TEXT
+PREVIEW_REVISION_AFTER_ADD             = 6
+PREVIEW_READBACK_RESULT                = PASS (All 5 fields verified in Preview with correct types)
+```
+
+### Deployment & Live Postdeploy Verification
+```text
+DEPLOYMENT_REQUEST_STATUS              = SUCCESS
+DEPLOYMENT_POLLING_RESULT              = SUCCESS (Attempt 1/20)
+LIVE_REVISION_AFTER_DEPLOY             = 6
+LIVE_VERIFIED_FIELD_COUNT              = 5
+Session_Token_Hash                     = VERIFIED LIVE (SINGLE_LINE_TEXT)
+Session_Issued_At                      = VERIFIED LIVE (DATETIME)
+Session_Expires_At                     = VERIFIED LIVE (DATETIME)
+Session_Credential_Version             = VERIFIED LIVE (NUMBER)
+Session_Kintone_User                   = VERIFIED LIVE (SINGLE_LINE_TEXT)
+NON_TARGET_SCHEMA_PRESERVED            = YES
+```
+
+### Mandatory Counters
+```text
+APP801_SCHEMA_READS_EXECUTED           = 4 (Prewrite Live/Preview, Post-Add Preview, Post-Deploy Live)
+APP801_SCHEMA_WRITES_EXECUTED          = 1 (POST /k/v1/preview/app/form/fields.json for App 801)
+APP801_DEPLOY_EXECUTED                 = 1 (POST /k/v1/preview/app/deploy.json for App 801)
+APP801_RECORD_WRITES_EXECUTED          = 0
+APP801_CREDENTIAL_RECORDS_UPDATED      = 0
+APP801_CREDENTIAL_RECORDS_CREATED      = 0
+APP801_CREDENTIAL_RECORDS_DELETED      = 0
+APP794_CUSTOMIZATION_WRITES_EXECUTED    = 0
+APP794_DEPLOY_EXECUTED                 = 0
+APP53_795_796_WRITES_EXECUTED          = 0
+GROUP_ACL_WRITES_EXECUTED              = 0
+PROCESS_VIEW_LAYOUT_WRITES_EXECUTED    = 0
+SOURCE_FILES_CHANGED                   = 0
+TEST_FILES_CHANGED                     = 0
+DIST_FILES_CHANGED                     = 0
+D2_D7_WRITES_EXECUTED                  = 0
+
+SCHEMA_RESULT                          = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
