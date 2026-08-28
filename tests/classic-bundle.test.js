@@ -13,10 +13,10 @@ import { AdminSupportCenterUI } from '../src/admin/admin-support-center.js';
 import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
 
 test('Classic Bundle: Module-aware build produces valid IIFE browser script without ES module residue', async () => {
-  const result = await buildMboUi();
+  const result = await buildMboUi({ outfile: 'dist/mbo-employee-app-classic-test.js' });
   assert.ok(result, 'esbuild build result must be returned');
 
-  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+  const bundleCode = fs.readFileSync('dist/mbo-employee-app-classic-test.js', 'utf8');
 
   // 1. Classic Bundle Syntax Parse
   assert.doesNotThrow(() => {
