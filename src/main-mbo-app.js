@@ -11,6 +11,7 @@ import { RoutingService } from './services/routing-service.js';
 import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
 import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
 import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
+import { MboSessionManager } from './ui/mbo-session-manager.js';
 
 let activeUiInstance = null;
 
@@ -167,7 +168,12 @@ if (typeof kintone !== 'undefined') {
             app: appId, id: Number(id), record
           })
       };
-      mboLoginGate = new MboKintoneLoginGate(new MboKintoneAuthAdapter({ api: app801Api }));
+      const authAdapter = new MboKintoneAuthAdapter({ api: app801Api });
+      const sessionManager = new MboSessionManager({
+        adapter: authAdapter,
+        getKintoneUser: () => (typeof kintone !== 'undefined' && kintone.getLoginUser ? kintone.getLoginUser() : null)
+      });
+      mboLoginGate = new MboKintoneLoginGate(authAdapter, { sessionManager });
     } catch (initErr) {
       console.error('[MBO V2] FATAL: Failed to initialize MBO Login Gate.', initErr);
       // mboLoginGate remains null → all record handlers will fail closed

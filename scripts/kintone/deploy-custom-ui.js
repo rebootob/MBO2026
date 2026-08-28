@@ -40,6 +40,7 @@ const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-e
 const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
 const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
 const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
 const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
 const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
 const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
@@ -65,6 +66,8 @@ const fullJs = `
   ${routingServiceJs}
 
   ${authAdapterJs}
+
+  ${sessionManagerJs}
 
   ${loginGateJs}
 

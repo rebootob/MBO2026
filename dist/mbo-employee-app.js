@@ -1892,6 +1892,13 @@ class MboKintoneAuthAdapter {
     const force = get('Force_Password_Change');
     const failedRaw = get('Failed_Attempts');
     const lockedUntilRaw = get('Locked_Until');
+    const credVerRaw = get('Credential_Version');
+
+    const sessHash = get('Session_Token_Hash');
+    const sessIssued = get('Session_Issued_At');
+    const sessExpires = get('Session_Expires_At');
+    const sessCredVerRaw = get('Session_Credential_Version');
+    const sessKintoneUser = get('Session_Kintone_User');
 
     if (storedCode !== code) throw new Error('MALFORMED_CREDENTIAL');
     if (typeof hash !== 'string' || !hash) throw new Error('MALFORMED_CREDENTIAL');
@@ -1910,6 +1917,25 @@ class MboKintoneAuthAdapter {
       if (isNaN(Date.parse(lockedUntilRaw))) throw new Error('MALFORMED_CREDENTIAL');
     }
 
+    // Credential_Version must be a positive integer (default to 1 if blank/missing for backward compatibility)
+    let credentialVersion = 1;
+    if (credVerRaw !== null && credVerRaw !== undefined && credVerRaw !== '') {
+      const parsedVer = Number(credVerRaw);
+      if (isNaN(parsedVer) || !Number.isInteger(parsedVer) || parsedVer <= 0) {
+        throw new Error('MALFORMED_CREDENTIAL');
+      }
+      credentialVersion = parsedVer;
+    }
+
+    let sessionCredentialVersion = null;
+    if (sessCredVerRaw !== null && sessCredVerRaw !== undefined && sessCredVerRaw !== '') {
+      const parsedSessVer = Number(sessCredVerRaw);
+      if (isNaN(parsedSessVer) || !Number.isInteger(parsedSessVer) || parsedSessVer <= 0) {
+        throw new Error('MALFORMED_CREDENTIAL');
+      }
+      sessionCredentialVersion = parsedSessVer;
+    }
+
     return {
       id: r.$id?.value,
       code,
@@ -1917,7 +1943,13 @@ class MboKintoneAuthAdapter {
       status,
       forceChange: force === 'YES',
       lockedUntil: lockedUntilRaw || null,
-      failedAttempts
+      failedAttempts,
+      credentialVersion,
+      sessionTokenHash: sessHash || null,
+      sessionIssuedAt: sessIssued || null,
+      sessionExpiresAt: sessExpires || null,
+      sessionCredentialVersion,
+      sessionKintoneUser: sessKintoneUser || null
     };
   }
 
@@ -1975,6 +2007,141 @@ class MboKintoneAuthAdapter {
   }
 
   // ---------------------------------------------------------------------------
+  // Public: Session operations
+  // ---------------------------------------------------------------------------
+
+  
+  async storeSession({ employeeCode, tokenHash, issuedAt, expiresAt, kintoneUserCode }) {
+    if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+      throw new Error('INVALID_TOKEN_HASH');
+    }
+
+    const cred = await this._getCredential(employeeCode);
+    if (cred.status !== 'ACTIVE') {
+      throw new Error('CREDENTIAL_NOT_ACTIVE');
+    }
+    if (cred.forceChange) {
+      throw new Error('FORCE_PASSWORD_CHANGE_REQUIRED');
+    }
+
+    await this.api.updateRecord(this.appId, cred.id, {
+      Session_Token_Hash: { value: tokenHash.toLowerCase() },
+      Session_Issued_At: { value: issuedAt },
+      Session_Expires_At: { value: expiresAt },
+      Session_Credential_Version: { value: cred.credentialVersion },
+      Session_Kintone_User: { value: kintoneUserCode || '' }
+    });
+
+    return { status: 'SESSION_STORED', employeeCode: cred.code };
+  }
+
+  
+  async validateSession({ tokenHash, currentKintoneUserCode }) {
+    try {
+      if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+        return { status: 'INVALID_SESSION', reason: 'Invalid token hash format.' };
+      }
+
+      const hashLower = tokenHash.toLowerCase();
+      const result = await this.api.getRecords(this.appId, `Session_Token_Hash = "${hashLower}" limit 2`);
+      const records = result?.records || [];
+
+      if (records.length === 0) {
+        return { status: 'INVALID_SESSION', reason: 'Session token not found.' };
+      }
+      if (records.length > 1) {
+        return { status: 'INVALID_SESSION', reason: 'Duplicate session token hash.' };
+      }
+
+      const r = records[0];
+      const get = key => r[key]?.value ?? null;
+
+      const code = get('Employee_Code');
+      const status = get('Account_Status');
+      const force = get('Force_Password_Change');
+      const expiresAtRaw = get('Session_Expires_At');
+      const credVerRaw = get('Credential_Version');
+      const sessCredVerRaw = get('Session_Credential_Version');
+      const sessKintoneUser = get('Session_Kintone_User');
+
+      // Canonical employee code validation
+      const normalizedCode = this._normalizeEmployeeCode(code);
+      if (status !== 'ACTIVE') {
+        return { status: 'INVALID_SESSION', reason: 'Account is not active.' };
+      }
+      if (force === 'YES') {
+        return { status: 'INVALID_SESSION', reason: 'Password change is required.' };
+      }
+
+      // Check Expiration
+      if (!expiresAtRaw || isNaN(Date.parse(expiresAtRaw))) {
+        return { status: 'INVALID_SESSION', reason: 'Invalid or missing expiry date.' };
+      }
+      if (new Date(expiresAtRaw) <= this.now()) {
+        return { status: 'INVALID_SESSION', reason: 'Session has expired.' };
+      }
+
+      // Check Credential Version
+      let credVer = 1;
+      if (credVerRaw !== null && credVerRaw !== undefined && credVerRaw !== '') {
+        const parsed = Number(credVerRaw);
+        if (isNaN(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
+          return { status: 'INVALID_SESSION', reason: 'Malformed credential version.' };
+        }
+        credVer = parsed;
+      }
+
+      if (sessCredVerRaw === null || sessCredVerRaw === undefined || sessCredVerRaw === '') {
+        return { status: 'INVALID_SESSION', reason: 'Missing session credential version.' };
+      }
+      const sessCredVer = Number(sessCredVerRaw);
+      if (isNaN(sessCredVer) || sessCredVer !== credVer) {
+        return { status: 'INVALID_SESSION', reason: 'Credential version mismatch.' };
+      }
+
+      // Check Kintone Principal Binding
+      if (currentKintoneUserCode && sessKintoneUser) {
+        if (sessKintoneUser.toLowerCase() !== currentKintoneUserCode.toLowerCase()) {
+          return { status: 'INVALID_SESSION', reason: 'Kintone user mismatch.' };
+        }
+      }
+
+      return {
+        status: 'VALID_SESSION',
+        employeeCode: normalizedCode
+      };
+    } catch (err) {
+      return { status: 'INVALID_SESSION', reason: err.message };
+    }
+  }
+
+  
+  async revokeSession({ tokenHash }) {
+    try {
+      if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+        return { status: 'SESSION_REVOKED' };
+      }
+      const hashLower = tokenHash.toLowerCase();
+      const result = await this.api.getRecords(this.appId, `Session_Token_Hash = "${hashLower}" limit 2`);
+      const records = result?.records || [];
+
+      if (records.length === 1) {
+        const recId = records[0].$id?.value;
+        await this.api.updateRecord(this.appId, recId, {
+          Session_Token_Hash: { value: null },
+          Session_Issued_At: { value: null },
+          Session_Expires_At: { value: null },
+          Session_Credential_Version: { value: null },
+          Session_Kintone_User: { value: null }
+        });
+      }
+    } catch {
+      // ignore server errors on revocation
+    }
+    return { status: 'SESSION_REVOKED' };
+  }
+
+  // ---------------------------------------------------------------------------
   // Public: changePassword (normal authenticated change — requires current password)
   // ---------------------------------------------------------------------------
 
@@ -1997,15 +2164,23 @@ class MboKintoneAuthAdapter {
     }
 
     const newHash = await this.createPasswordHash(newPassword);
+    const newCredVersion = cred.credentialVersion + 1;
+
     await this.api.updateRecord(this.appId, cred.id, {
       Password_Hash: { value: newHash },
       Password_Changed_At: { value: this.now().toISOString() },
       Force_Password_Change: { value: 'NO' },
       Failed_Attempts: { value: 0 },
-      Locked_Until: { value: null }
+      Locked_Until: { value: null },
+      Credential_Version: { value: newCredVersion },
+      Session_Token_Hash: { value: null },
+      Session_Issued_At: { value: null },
+      Session_Expires_At: { value: null },
+      Session_Credential_Version: { value: null },
+      Session_Kintone_User: { value: null }
     });
 
-    return { status: 'PASSWORD_CHANGED', employeeCode: cred.code };
+    return { status: 'PASSWORD_CHANGED', employeeCode: cred.code, newCredentialVersion: newCredVersion };
   }
 
   // ---------------------------------------------------------------------------
@@ -2021,7 +2196,6 @@ class MboKintoneAuthAdapter {
       return { status: 'CREDENTIAL_DENIED', reason: err.message };
     }
 
-    // B6: Deny forced change if Force_Password_Change is not YES
     if (cred.forceChange !== true) {
       return { status: 'CREDENTIAL_DENIED', reason: 'Force password change is not required for this account.' };
     }
@@ -2031,15 +2205,179 @@ class MboKintoneAuthAdapter {
     }
 
     const newHash = await this.createPasswordHash(newPassword);
+    const newCredVersion = cred.credentialVersion + 1;
+
     await this.api.updateRecord(this.appId, cred.id, {
       Password_Hash: { value: newHash },
       Password_Changed_At: { value: this.now().toISOString() },
       Force_Password_Change: { value: 'NO' },
       Failed_Attempts: { value: 0 },
-      Locked_Until: { value: null }
+      Locked_Until: { value: null },
+      Credential_Version: { value: newCredVersion },
+      Session_Token_Hash: { value: null },
+      Session_Issued_At: { value: null },
+      Session_Expires_At: { value: null },
+      Session_Credential_Version: { value: null },
+      Session_Kintone_User: { value: null }
     });
 
-    return { status: 'PASSWORD_CHANGED', employeeCode: cred.code };
+    return { status: 'PASSWORD_CHANGED', employeeCode: cred.code, newCredentialVersion: newCredVersion };
+  }
+}
+
+
+  
+
+const SESSION_STORAGE_KEY = 'ttmet.mbo794.session.v1';
+const ABSOLUTE_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+function hexEncode(buffer) {
+  return [...new Uint8Array(buffer)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+class MboSessionManager {
+  
+  constructor({
+    adapter,
+    getKintoneUser = () => (typeof kintone !== 'undefined' && kintone.getLoginUser ? kintone.getLoginUser() : null),
+    sessionStorageImpl = globalThis.sessionStorage,
+    cryptoImpl = globalThis.crypto,
+    now = () => new Date()
+  } = {}) {
+    if (!adapter) throw new Error('MISSING_AUTH_ADAPTER');
+    this.adapter = adapter;
+    this.getKintoneUser = getKintoneUser;
+    this.sessionStorage = sessionStorageImpl;
+    this.crypto = cryptoImpl;
+    this.now = now;
+  }
+
+  
+  generateToken() {
+    const bytes = new Uint8Array(32);
+    this.crypto.getRandomValues(bytes);
+    return hexEncode(bytes);
+  }
+
+  
+  async hashToken(token) {
+    if (typeof token !== 'string' || !/^[0-9a-f]{64}$/i.test(token)) {
+      throw new Error('INVALID_TOKEN_FORMAT');
+    }
+    const enc = new TextEncoder();
+    const data = enc.encode(token.toLowerCase());
+    const buffer = await this.crypto.subtle.digest('SHA-256', data);
+    return hexEncode(buffer);
+  }
+
+  
+  getLocalToken() {
+    try {
+      if (!this.sessionStorage) return null;
+      const val = this.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (typeof val !== 'string' || !/^[0-9a-f]{64}$/i.test(val)) return null;
+      return val.toLowerCase();
+    } catch {
+      return null;
+    }
+  }
+
+  
+  setLocalToken(token) {
+    if (typeof token !== 'string' || !/^[0-9a-f]{64}$/i.test(token)) {
+      throw new Error('INVALID_TOKEN_FORMAT');
+    }
+    if (this.sessionStorage) {
+      this.sessionStorage.setItem(SESSION_STORAGE_KEY, token.toLowerCase());
+    }
+  }
+
+  
+  clearLocalToken() {
+    try {
+      if (this.sessionStorage) {
+        this.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    } catch {
+      // ignore storage errors on clear
+    }
+  }
+
+  
+  async issueSession(employeeCode) {
+    const token = this.generateToken();
+    const tokenHash = await this.hashToken(token);
+
+    const currentTime = this.now();
+    const issuedAt = currentTime.toISOString();
+    const expiresAt = new Date(currentTime.getTime() + ABSOLUTE_TTL_MS).toISOString();
+
+    const kintoneUser = this.getKintoneUser();
+    const kintoneUserCode = kintoneUser?.code || '';
+
+    await this.adapter.storeSession({
+      employeeCode,
+      tokenHash,
+      issuedAt,
+      expiresAt,
+      kintoneUserCode
+    });
+
+    this.setLocalToken(token);
+
+    return { token, tokenHash, expiresAt };
+  }
+
+  
+  async restoreSession() {
+    const token = this.getLocalToken();
+    if (!token) return null;
+
+    let tokenHash;
+    try {
+      tokenHash = await this.hashToken(token);
+    } catch {
+      this.clearLocalToken();
+      return null;
+    }
+
+    const kintoneUser = this.getKintoneUser();
+    const currentKintoneUserCode = kintoneUser?.code || '';
+
+    let res;
+    try {
+      res = await this.adapter.validateSession({
+        tokenHash,
+        currentKintoneUserCode
+      });
+    } catch {
+      this.clearLocalToken();
+      return null;
+    }
+
+    if (res?.status === 'VALID_SESSION' && res.employeeCode) {
+      return {
+        employeeCode: res.employeeCode,
+        sessionToken: token
+      };
+    }
+
+    this.clearLocalToken();
+    return null;
+  }
+
+  
+  async revokeSession() {
+    const token = this.getLocalToken();
+    if (token) {
+      try {
+        const tokenHash = await this.hashToken(token);
+        await this.adapter.revokeSession({ tokenHash });
+      } catch {
+        // ignore server revocation failure, local clear is mandatory
+      }
+    }
+    this.clearLocalToken();
   }
 }
 
@@ -2059,9 +2397,10 @@ function ce(tag) {
 
 class MboKintoneLoginGate {
   
-  constructor(adapter, { onReload = null } = {}) {
+  constructor(adapter, { sessionManager = null, onReload = null } = {}) {
     this.adapter = adapter;
-    this._principal = null;       // { employeeCode: string } — page memory only
+    this.sessionManager = sessionManager;
+    this._principal = null;       // { employeeCode: string } — page memory
     this._pendingForceChange = false;
     this._onReload = onReload || (() => {
       if (typeof location !== 'undefined') location.reload();
@@ -2079,7 +2418,14 @@ class MboKintoneLoginGate {
   }
 
   
-  logout() {
+  async logout() {
+    if (this.sessionManager) {
+      try {
+        await this.sessionManager.revokeSession();
+      } catch {
+        // ignore errors during revocation
+      }
+    }
     this._principal = null;
     this._pendingForceChange = false;
   }
@@ -2088,6 +2434,19 @@ class MboKintoneLoginGate {
   async requireLogin(host) {
     const code = this.getEmployeeCode();
     if (code) return code;
+
+    if (this.sessionManager) {
+      try {
+        const restored = await this.sessionManager.restoreSession();
+        if (restored?.employeeCode) {
+          this._principal = { employeeCode: restored.employeeCode };
+          this._pendingForceChange = false;
+          return restored.employeeCode;
+        }
+      } catch {
+        // fail closed to overlay on restore failure
+      }
+    }
 
     return new Promise((resolve) => {
       this._renderLoginOverlay(host, resolve);
@@ -2120,8 +2479,8 @@ class MboKintoneLoginGate {
     const logoutBtn = ce('button');
     logoutBtn.textContent = 'Logout';
     styled(logoutBtn, 'padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;');
-    logoutBtn.addEventListener('click', () => {
-      this.logout();
+    logoutBtn.addEventListener('click', async () => {
+      await this.logout();
       this._onReload();
     });
 
@@ -2203,6 +2562,16 @@ class MboKintoneLoginGate {
       }
 
       if (result.status === 'AUTHENTICATED') {
+        if (this.sessionManager) {
+          try {
+            await this.sessionManager.issueSession(result.employeeCode);
+          } catch (sessionErr) {
+            errorEl.textContent = 'Failed to create session. Please try again.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login';
+            return;
+          }
+        }
         this._principal = { employeeCode: result.employeeCode };
         this._pendingForceChange = false;
         overlay.remove();
@@ -2294,6 +2663,16 @@ class MboKintoneLoginGate {
       }
 
       if (result.status === 'PASSWORD_CHANGED') {
+        if (this.sessionManager) {
+          try {
+            await this.sessionManager.issueSession(this._principal.employeeCode);
+          } catch (sessionErr) {
+            errorEl.textContent = 'Failed to create session. Please try again.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Set New Password';
+            return;
+          }
+        }
         this._pendingForceChange = false;
         overlay.remove();
         resolve(this._principal.employeeCode);
@@ -2396,8 +2775,14 @@ class MboKintoneLoginGate {
       }
 
       if (result.status === 'PASSWORD_CHANGED') {
+        if (this.sessionManager) {
+          try {
+            await this.sessionManager.issueSession(employeeCode);
+          } catch {
+            // ignore session re-issue error if password change succeeded
+          }
+        }
         overlay.remove();
-        // Brief confirmation — use a status div if available
         const confirmEl = ce('div');
         if (confirmEl) {
           styled(confirmEl, 'position:fixed;top:20px;right:20px;z-index:2147483647;' +
@@ -5605,6 +5990,7 @@ class EmployeePartAUI {
 
 
 
+
 let activeUiInstance = null;
 
 
@@ -5754,7 +6140,12 @@ if (typeof kintone !== 'undefined') {
             app: appId, id: Number(id), record
           })
       };
-      mboLoginGate = new MboKintoneLoginGate(new MboKintoneAuthAdapter({ api: app801Api }));
+      const authAdapter = new MboKintoneAuthAdapter({ api: app801Api });
+      const sessionManager = new MboSessionManager({
+        adapter: authAdapter,
+        getKintoneUser: () => (typeof kintone !== 'undefined' && kintone.getLoginUser ? kintone.getLoginUser() : null)
+      });
+      mboLoginGate = new MboKintoneLoginGate(authAdapter, { sessionManager });
     } catch (initErr) {
       console.error('[MBO V2] FATAL: Failed to initialize MBO Login Gate.', initErr);
       // mboLoginGate remains null → all record handlers will fail closed

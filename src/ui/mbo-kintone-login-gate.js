@@ -2,16 +2,12 @@
  * MboKintoneLoginGate — Blocking MBO Login Gate for App794 Kintone Customization (D1)
  *
  * Security boundary:
- * - Authenticated principal stored ONLY in module-level page memory.
- * - NO localStorage / sessionStorage / cookie persistence.
- * - Logout clears page-memory context only (followed by location.reload for clean re-entry).
+ * - Authenticated principal stored in module-level page memory.
+ * - Integrates with MboSessionManager for short-lived session continuity.
+ * - Logout revokes session token and clears page-memory context followed by reload.
  * - Force Password Change state must be resolved before Employee Self data is authorized.
- * - Returns only authenticated Employee_Code; never credential/hash data.
+ * - Returns only authenticated Employee_Code; never credential/hash/token data.
  * - Requires dom injection point (host element); fails closed if null.
- *
- * Architecture note: This is a UI application login gate. It does NOT provide
- * hard native Kintone record-level employee isolation, which requires ACL changes.
- * DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT.
  */
 
 const BASE_STYLE = 'font-family:sans-serif;box-sizing:border-box;';
@@ -29,11 +25,13 @@ export class MboKintoneLoginGate {
   /**
    * @param {import('./mbo-kintone-auth-adapter.js').MboKintoneAuthAdapter} adapter
    * @param {object} [options]
+   * @param {import('./mbo-session-manager.js').MboSessionManager|null} [options.sessionManager=null]
    * @param {function} [options.onReload] - injectable for tests; defaults to location.reload
    */
-  constructor(adapter, { onReload = null } = {}) {
+  constructor(adapter, { sessionManager = null, onReload = null } = {}) {
     this.adapter = adapter;
-    this._principal = null;       // { employeeCode: string } — page memory only
+    this.sessionManager = sessionManager;
+    this._principal = null;       // { employeeCode: string } — page memory
     this._pendingForceChange = false;
     this._onReload = onReload || (() => {
       if (typeof location !== 'undefined') location.reload();
@@ -55,10 +53,17 @@ export class MboKintoneLoginGate {
   }
 
   /**
-   * Clears page-memory authentication context.
+   * Clears page-memory authentication context and revokes session token if sessionManager is present.
    * Caller should follow with reload to re-trigger the login gate.
    */
-  logout() {
+  async logout() {
+    if (this.sessionManager) {
+      try {
+        await this.sessionManager.revokeSession();
+      } catch {
+        // ignore errors during revocation
+      }
+    }
     this._principal = null;
     this._pendingForceChange = false;
   }
@@ -66,6 +71,7 @@ export class MboKintoneLoginGate {
   /**
    * Ensures the user is authenticated before Employee Self content renders.
    * If already authenticated and no force-change pending → resolves immediately.
+   * Otherwise attempts session restore if sessionManager is present.
    * Otherwise → renders a full-page blocking login overlay on `host`.
    *
    * @param {HTMLElement} host - DOM element that hosts the gate overlay
@@ -74,6 +80,19 @@ export class MboKintoneLoginGate {
   async requireLogin(host) {
     const code = this.getEmployeeCode();
     if (code) return code;
+
+    if (this.sessionManager) {
+      try {
+        const restored = await this.sessionManager.restoreSession();
+        if (restored?.employeeCode) {
+          this._principal = { employeeCode: restored.employeeCode };
+          this._pendingForceChange = false;
+          return restored.employeeCode;
+        }
+      } catch {
+        // fail closed to overlay on restore failure
+      }
+    }
 
     return new Promise((resolve) => {
       this._renderLoginOverlay(host, resolve);
@@ -112,8 +131,8 @@ export class MboKintoneLoginGate {
     const logoutBtn = ce('button');
     logoutBtn.textContent = 'Logout';
     styled(logoutBtn, 'padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;');
-    logoutBtn.addEventListener('click', () => {
-      this.logout();
+    logoutBtn.addEventListener('click', async () => {
+      await this.logout();
       this._onReload();
     });
 
@@ -195,6 +214,16 @@ export class MboKintoneLoginGate {
       }
 
       if (result.status === 'AUTHENTICATED') {
+        if (this.sessionManager) {
+          try {
+            await this.sessionManager.issueSession(result.employeeCode);
+          } catch (sessionErr) {
+            errorEl.textContent = 'Failed to create session. Please try again.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login';
+            return;
+          }
+        }
         this._principal = { employeeCode: result.employeeCode };
         this._pendingForceChange = false;
         overlay.remove();
@@ -286,6 +315,16 @@ export class MboKintoneLoginGate {
       }
 
       if (result.status === 'PASSWORD_CHANGED') {
+        if (this.sessionManager) {
+          try {
+            await this.sessionManager.issueSession(this._principal.employeeCode);
+          } catch (sessionErr) {
+            errorEl.textContent = 'Failed to create session. Please try again.';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Set New Password';
+            return;
+          }
+        }
         this._pendingForceChange = false;
         overlay.remove();
         resolve(this._principal.employeeCode);
@@ -388,8 +427,14 @@ export class MboKintoneLoginGate {
       }
 
       if (result.status === 'PASSWORD_CHANGED') {
+        if (this.sessionManager) {
+          try {
+            await this.sessionManager.issueSession(employeeCode);
+          } catch {
+            // ignore session re-issue error if password change succeeded
+          }
+        }
         overlay.remove();
-        // Brief confirmation — use a status div if available
         const confirmEl = ce('div');
         if (confirmEl) {
           styled(confirmEl, 'position:fixed;top:20px;right:20px;z-index:2147483647;' +

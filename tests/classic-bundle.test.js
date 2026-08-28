@@ -24,6 +24,7 @@ test('Classic Bundle: App 794 Javascript bundle parses as classic script with ze
   const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
   const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
   const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+  const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
   const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
   const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
   const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
@@ -50,6 +51,8 @@ test('Classic Bundle: App 794 Javascript bundle parses as classic script with ze
 
   ${authAdapterJs}
 
+  ${sessionManagerJs}
+
   ${loginGateJs}
 
   ${uiJs}
@@ -73,15 +76,18 @@ test('Classic Bundle: App 794 Javascript bundle parses as classic script with ze
   // 4. Zero broken } from '...' residue
   assert.equal(/}\s*from\s*['"]/.test(fullJs), false, 'fullJs must contain 0 broken from residue');
 
-  // 5. Auth Adapter and Login Gate definition counts
+  // 5. Auth Adapter, Session Manager, and Login Gate definition counts
   const authAdapterMatches = fullJs.match(/\bclass\s+MboKintoneAuthAdapter\b/g) || [];
   assert.equal(authAdapterMatches.length, 1, 'fullJs must contain exactly 1 definition of MboKintoneAuthAdapter');
+
+  const sessionManagerMatches = fullJs.match(/\bclass\s+MboSessionManager\b/g) || [];
+  assert.equal(sessionManagerMatches.length, 1, 'fullJs must contain exactly 1 definition of MboSessionManager');
 
   const loginGateMatches = fullJs.match(/\bclass\s+MboKintoneLoginGate\b/g) || [];
   assert.equal(loginGateMatches.length, 1, 'fullJs must contain exactly 1 definition of MboKintoneLoginGate');
 });
 
-test('Classic Bundle: MboKintoneAuthAdapter and MboKintoneLoginGate runtime resolution in bundle scope', () => {
+test('Classic Bundle: MboKintoneAuthAdapter, MboSessionManager, and MboKintoneLoginGate runtime resolution in bundle scope', () => {
   const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
   const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
   const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
@@ -91,6 +97,7 @@ test('Classic Bundle: MboKintoneAuthAdapter and MboKintoneLoginGate runtime reso
   const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
   const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
   const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+  const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
   const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
   const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
 
@@ -104,11 +111,15 @@ test('Classic Bundle: MboKintoneAuthAdapter and MboKintoneLoginGate runtime reso
     ${employeeServiceJs}
     ${routingServiceJs}
     ${authAdapterJs}
+    ${sessionManagerJs}
     ${loginGateJs}
     ${uiJs}
 
     if (typeof MboKintoneAuthAdapter !== 'function') {
       throw new Error('MboKintoneAuthAdapter is not a function/class');
+    }
+    if (typeof MboSessionManager !== 'function') {
+      throw new Error('MboSessionManager is not a function/class');
     }
     if (typeof MboKintoneLoginGate !== 'function') {
       throw new Error('MboKintoneLoginGate is not a function/class');
@@ -117,20 +128,25 @@ test('Classic Bundle: MboKintoneAuthAdapter and MboKintoneLoginGate runtime reso
     // Verify instantiation far enough to prove classes are resolvable without Kintone network call
     const stubApi = { getRecords: async () => ({ records: [] }), updateRecord: async () => {} };
     const adapter = new MboKintoneAuthAdapter({ api: stubApi });
-    const gate = new MboKintoneLoginGate(adapter);
+    const sessionManager = new MboSessionManager({ adapter, cryptoImpl: globalThis.crypto });
+    const gate = new MboKintoneLoginGate(adapter, { sessionManager });
 
     return {
       adapterType: typeof adapter,
+      sessionManagerType: typeof sessionManager,
       gateType: typeof gate,
       adapterHasLogin: typeof adapter.login === 'function',
+      sessionManagerHasRestore: typeof sessionManager.restoreSession === 'function',
       gateHasRequireLogin: typeof gate.requireLogin === 'function'
     };
   `;
 
   const result = new Function(testScript)();
   assert.equal(result.adapterType, 'object');
+  assert.equal(result.sessionManagerType, 'object');
   assert.equal(result.gateType, 'object');
   assert.equal(result.adapterHasLogin, true);
+  assert.equal(result.sessionManagerHasRestore, true);
   assert.equal(result.gateHasRequireLogin, true);
 });
 
@@ -254,6 +270,7 @@ test('Classic Bundle: Committed source and dist M10L Save-gate exactness match',
   const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
   const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
   const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+  const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
   const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
   const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
   const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
@@ -279,6 +296,8 @@ test('Classic Bundle: Committed source and dist M10L Save-gate exactness match',
   ${routingServiceJs}
 
   ${authAdapterJs}
+
+  ${sessionManagerJs}
 
   ${loginGateJs}
 
