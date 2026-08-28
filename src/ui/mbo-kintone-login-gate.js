@@ -57,15 +57,17 @@ export class MboKintoneLoginGate {
    * Caller should follow with reload to re-trigger the login gate.
    */
   async logout() {
+    let revokeResult = null;
     if (this.sessionManager) {
       try {
-        await this.sessionManager.revokeSession();
+        revokeResult = await this.sessionManager.revokeSession();
       } catch {
         // ignore errors during revocation
       }
     }
     this._principal = null;
     this._pendingForceChange = false;
+    return revokeResult;
   }
 
   /**
@@ -427,13 +429,25 @@ export class MboKintoneLoginGate {
       }
 
       if (result.status === 'PASSWORD_CHANGED') {
+        let sessionOk = true;
         if (this.sessionManager) {
           try {
             await this.sessionManager.issueSession(employeeCode);
           } catch {
-            // ignore session re-issue error if password change succeeded
+            sessionOk = false;
           }
         }
+
+        // Corrective E: If replacement session issue failed, fail closed (clear local token, clear principal, reload)
+        if (!sessionOk) {
+          if (this.sessionManager) this.sessionManager.clearLocalToken();
+          this._principal = null;
+          this._pendingForceChange = false;
+          overlay.remove();
+          this._onReload();
+          return;
+        }
+
         overlay.remove();
         const confirmEl = ce('div');
         if (confirmEl) {

@@ -9,6 +9,7 @@
  * - Absolute TTL = 8 hours. NO sliding refresh.
  * - Bound to Kintone Principal and Credential Version.
  * - Fails closed on any expired, missing, tampered, or mismatched token.
+ * - Public API methods return ONLY non-secret metadata (no raw token or hash leakage).
  */
 
 const SESSION_STORAGE_KEY = 'ttmet.mbo794.session.v1';
@@ -114,13 +115,23 @@ export class MboSessionManager {
    * 1. Generates 256-bit token
    * 2. Computes SHA-256 token hash
    * 3. Calculates 8-hour expiry
-   * 4. Stores session metadata in App801 via adapter
-   * 5. Writes raw token to sessionStorage
+   * 4. Validates current Kintone user code
+   * 5. Stores session metadata in App801 via adapter
+   * 6. Writes raw token to sessionStorage
+   *
+   * Corrective F: Returns only non-secret outcome metadata (no raw token or hash).
    *
    * @param {string} employeeCode
-   * @returns {Promise<{ token: string, tokenHash: string, expiresAt: string }>}
+   * @returns {Promise<{ status: 'SESSION_ISSUED', expiresAt: string }>}
    */
   async issueSession(employeeCode) {
+    const kintoneUser = this.getKintoneUser();
+    const kintoneUserCode = kintoneUser?.code || '';
+
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+      throw new Error('MISSING_KINTONE_PRINCIPAL');
+    }
+
     const token = this.generateToken();
     const tokenHash = await this.hashToken(token);
 
@@ -128,28 +139,26 @@ export class MboSessionManager {
     const issuedAt = currentTime.toISOString();
     const expiresAt = new Date(currentTime.getTime() + ABSOLUTE_TTL_MS).toISOString();
 
-    const kintoneUser = this.getKintoneUser();
-    const kintoneUserCode = kintoneUser?.code || '';
-
     await this.adapter.storeSession({
       employeeCode,
       tokenHash,
       issuedAt,
       expiresAt,
-      kintoneUserCode
+      kintoneUserCode: kintoneUserCode.trim()
     });
 
     this.setLocalToken(token);
 
-    return { token, tokenHash, expiresAt };
+    return { status: 'SESSION_ISSUED', expiresAt };
   }
 
   /**
    * Restores and validates session from local sessionStorage token against App801.
-   * Returns authenticated Employee_Code if valid.
    * Clears local token and returns null if missing, invalid, or expired.
    *
-   * @returns {Promise<{ employeeCode: string, sessionToken: string }|null>}
+   * Corrective F: Returns only authenticated Employee_Code (no raw token).
+   *
+   * @returns {Promise<{ employeeCode: string }|null>}
    */
   async restoreSession() {
     const token = this.getLocalToken();
@@ -166,11 +175,16 @@ export class MboSessionManager {
     const kintoneUser = this.getKintoneUser();
     const currentKintoneUserCode = kintoneUser?.code || '';
 
+    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode.trim() === '') {
+      this.clearLocalToken();
+      return null;
+    }
+
     let res;
     try {
       res = await this.adapter.validateSession({
         tokenHash,
-        currentKintoneUserCode
+        currentKintoneUserCode: currentKintoneUserCode.trim()
       });
     } catch {
       this.clearLocalToken();
@@ -179,8 +193,7 @@ export class MboSessionManager {
 
     if (res?.status === 'VALID_SESSION' && res.employeeCode) {
       return {
-        employeeCode: res.employeeCode,
-        sessionToken: token
+        employeeCode: res.employeeCode
       };
     }
 
@@ -189,18 +202,34 @@ export class MboSessionManager {
   }
 
   /**
-   * Revokes the current local session both on server (App801) and locally (sessionStorage).
+   * Revokes the current local session.
+   * Corrective D: Clears local token unconditionally, but reports server revocation failure if adapter.revokeSession throws.
+   *
+   * @returns {Promise<{ status: 'SESSION_REVOKED'|'REVOKE_FAILED', serverRevoked?: boolean, reason?: string }>}
    */
   async revokeSession() {
     const token = this.getLocalToken();
+    let serverRevoked = false;
+    let serverError = null;
+
     if (token) {
       try {
         const tokenHash = await this.hashToken(token);
-        await this.adapter.revokeSession({ tokenHash });
-      } catch {
-        // ignore server revocation failure, local clear is mandatory
+        const res = await this.adapter.revokeSession({ tokenHash });
+        if (res?.status === 'SESSION_REVOKED') {
+          serverRevoked = true;
+        }
+      } catch (err) {
+        serverError = err.message || 'Revocation failed on server';
       }
     }
+
     this.clearLocalToken();
+
+    if (serverError) {
+      return { status: 'REVOKE_FAILED', reason: serverError };
+    }
+
+    return { status: 'SESSION_REVOKED', serverRevoked };
   }
 }

@@ -47,6 +47,7 @@ function makeApi(overrides = {}) {
     force: 'NO',
     failedAttempts: 0,
     lockedUntil: null,
+    credentialVersion: 1,
   };
   const c = { ...defaults, ...overrides };
 
@@ -58,6 +59,7 @@ function makeApi(overrides = {}) {
     Force_Password_Change: { value: c.force },
     Failed_Attempts: { value: c.failedAttempts },
     Locked_Until: { value: c.lockedUntil },
+    Credential_Version: { value: c.credentialVersion },
     Last_Login_At: { value: null },
     Password_Changed_At: { value: null },
   };

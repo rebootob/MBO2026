@@ -163,14 +163,13 @@ export class MboKintoneAuthAdapter {
       if (isNaN(Date.parse(lockedUntilRaw))) throw new Error('MALFORMED_CREDENTIAL');
     }
 
-    // Credential_Version must be a positive integer (default to 1 if blank/missing for backward compatibility)
-    let credentialVersion = 1;
-    if (credVerRaw !== null && credVerRaw !== undefined && credVerRaw !== '') {
-      const parsedVer = Number(credVerRaw);
-      if (isNaN(parsedVer) || !Number.isInteger(parsedVer) || parsedVer <= 0) {
-        throw new Error('MALFORMED_CREDENTIAL');
-      }
-      credentialVersion = parsedVer;
+    // Corrective A: Credential_Version must be a positive integer and fail closed if missing/blank/non-integer/<=0
+    if (credVerRaw === null || credVerRaw === undefined || credVerRaw === '') {
+      throw new Error('MALFORMED_CREDENTIAL');
+    }
+    const credentialVersion = Number(credVerRaw);
+    if (isNaN(credentialVersion) || !Number.isInteger(credentialVersion) || credentialVersion <= 0) {
+      throw new Error('MALFORMED_CREDENTIAL');
     }
 
     let sessionCredentialVersion = null;
@@ -267,10 +266,15 @@ export class MboKintoneAuthAdapter {
 
   /**
    * Stores server-side session metadata in App801 for employeeCode.
+   * Corrective B: requires non-empty kintoneUserCode.
    */
   async storeSession({ employeeCode, tokenHash, issuedAt, expiresAt, kintoneUserCode }) {
     if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
       throw new Error('INVALID_TOKEN_HASH');
+    }
+
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+      throw new Error('MISSING_KINTONE_PRINCIPAL');
     }
 
     const cred = await this._getCredential(employeeCode);
@@ -286,7 +290,7 @@ export class MboKintoneAuthAdapter {
       Session_Issued_At: { value: issuedAt },
       Session_Expires_At: { value: expiresAt },
       Session_Credential_Version: { value: cred.credentialVersion },
-      Session_Kintone_User: { value: kintoneUserCode || '' }
+      Session_Kintone_User: { value: kintoneUserCode.trim() }
     });
 
     return { status: 'SESSION_STORED', employeeCode: cred.code };
@@ -301,6 +305,11 @@ export class MboKintoneAuthAdapter {
     try {
       if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
         return { status: 'INVALID_SESSION', reason: 'Invalid token hash format.' };
+      }
+
+      // Corrective B: require non-empty currentKintoneUserCode
+      if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode.trim() === '') {
+        return { status: 'INVALID_SESSION', reason: 'Missing current Kintone user.' };
       }
 
       const hashLower = tokenHash.toLowerCase();
@@ -330,7 +339,9 @@ export class MboKintoneAuthAdapter {
       if (status !== 'ACTIVE') {
         return { status: 'INVALID_SESSION', reason: 'Account is not active.' };
       }
-      if (force === 'YES') {
+
+      // Corrective C: Force_Password_Change must equal exactly 'NO'
+      if (force !== 'NO') {
         return { status: 'INVALID_SESSION', reason: 'Password change is required.' };
       }
 
@@ -342,29 +353,30 @@ export class MboKintoneAuthAdapter {
         return { status: 'INVALID_SESSION', reason: 'Session has expired.' };
       }
 
-      // Check Credential Version
-      let credVer = 1;
-      if (credVerRaw !== null && credVerRaw !== undefined && credVerRaw !== '') {
-        const parsed = Number(credVerRaw);
-        if (isNaN(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
-          return { status: 'INVALID_SESSION', reason: 'Malformed credential version.' };
-        }
-        credVer = parsed;
+      // Corrective A: Credential_Version must be a positive integer
+      if (credVerRaw === null || credVerRaw === undefined || credVerRaw === '') {
+        return { status: 'INVALID_SESSION', reason: 'Missing credential version.' };
+      }
+      const credVer = Number(credVerRaw);
+      if (isNaN(credVer) || !Number.isInteger(credVer) || credVer <= 0) {
+        return { status: 'INVALID_SESSION', reason: 'Malformed credential version.' };
       }
 
       if (sessCredVerRaw === null || sessCredVerRaw === undefined || sessCredVerRaw === '') {
         return { status: 'INVALID_SESSION', reason: 'Missing session credential version.' };
       }
       const sessCredVer = Number(sessCredVerRaw);
-      if (isNaN(sessCredVer) || sessCredVer !== credVer) {
+      if (isNaN(sessCredVer) || !Number.isInteger(sessCredVer) || sessCredVer <= 0 || sessCredVer !== credVer) {
         return { status: 'INVALID_SESSION', reason: 'Credential version mismatch.' };
       }
 
-      // Check Kintone Principal Binding
-      if (currentKintoneUserCode && sessKintoneUser) {
-        if (sessKintoneUser.toLowerCase() !== currentKintoneUserCode.toLowerCase()) {
-          return { status: 'INVALID_SESSION', reason: 'Kintone user mismatch.' };
-        }
+      // Corrective B: Kintone Principal binding must be exact
+      if (!sessKintoneUser || typeof sessKintoneUser !== 'string' || sessKintoneUser.trim() === '') {
+        return { status: 'INVALID_SESSION', reason: 'Missing session Kintone user.' };
+      }
+
+      if (sessKintoneUser.trim().toLowerCase() !== currentKintoneUserCode.trim().toLowerCase()) {
+        return { status: 'INVALID_SESSION', reason: 'Kintone user mismatch.' };
       }
 
       return {
@@ -378,29 +390,32 @@ export class MboKintoneAuthAdapter {
 
   /**
    * Revokes session fields in App801 for tokenHash.
+   * Corrective D: Revoke failure must remain observable (throws error on missing/duplicate/server fail).
    */
   async revokeSession({ tokenHash }) {
-    try {
-      if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
-        return { status: 'SESSION_REVOKED' };
-      }
-      const hashLower = tokenHash.toLowerCase();
-      const result = await this.api.getRecords(this.appId, `Session_Token_Hash = "${hashLower}" limit 2`);
-      const records = result?.records || [];
-
-      if (records.length === 1) {
-        const recId = records[0].$id?.value;
-        await this.api.updateRecord(this.appId, recId, {
-          Session_Token_Hash: { value: null },
-          Session_Issued_At: { value: null },
-          Session_Expires_At: { value: null },
-          Session_Credential_Version: { value: null },
-          Session_Kintone_User: { value: null }
-        });
-      }
-    } catch {
-      // ignore server errors on revocation
+    if (typeof tokenHash !== 'string' || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+      throw new Error('INVALID_TOKEN_HASH');
     }
+    const hashLower = tokenHash.toLowerCase();
+    const result = await this.api.getRecords(this.appId, `Session_Token_Hash = "${hashLower}" limit 2`);
+    const records = result?.records || [];
+
+    if (records.length === 0) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    if (records.length > 1) {
+      throw new Error('DUPLICATE_SESSION_TOKEN_HASH');
+    }
+
+    const recId = records[0].$id?.value;
+    await this.api.updateRecord(this.appId, recId, {
+      Session_Token_Hash: { value: null },
+      Session_Issued_At: { value: null },
+      Session_Expires_At: { value: null },
+      Session_Credential_Version: { value: null },
+      Session_Kintone_User: { value: null }
+    });
+
     return { status: 'SESSION_REVOKED' };
   }
 
