@@ -16,7 +16,10 @@
     "sandbox:deploy": "node --env-file-if-exists=.env.local scripts/kintone/deploy-sandbox-apps.js",
     "sandbox:smoke-test": "node --env-file-if-exists=.env.local scripts/kintone/smoke-test-sandbox-apps.js",
     "ui:deploy": "node --env-file-if-exists=.env.local scripts/kintone/deploy-custom-ui.js",
-    "ui:build": "node scripts/kintone/deploy-custom-ui.js --build-only",
+    "ui:build": "node scripts/kintone/build-mbo-ui.js",
     "ui:preview": "node scripts/ui-preview-server.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

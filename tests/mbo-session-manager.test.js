@@ -693,12 +693,15 @@ test('NEW_LOGIN_INVALIDATES_PRIOR_SESSION & LOGOUT_REVOKES_AND_CLEARS_PRINCIPAL'
 test('BUNDLE_RUNTIME_RESULT & SESSION_MANAGER_DEFINITION_COUNT = 1 & AUTH_ADAPTER_DEFINITION_COUNT = 1 & LOGIN_GATE_DEFINITION_COUNT = 1', () => {
   const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
 
-  assert.equal(/\bimport\b/.test(bundleCode), false);
-  assert.equal(/\bexport\b/.test(bundleCode), false);
+  const strippedCode = bundleCode.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');
+  assert.equal(/(^|\n)\s*import[\s{]/m.test(strippedCode), false);
+  assert.equal(/(^|\n)\s*export[\s{]/m.test(strippedCode), false);
 
-  const smMatches = bundleCode.match(/class MboSessionManager\b/g) || [];
-  const adapterMatches = bundleCode.match(/class MboKintoneAuthAdapter\b/g) || [];
-  const gateMatches = bundleCode.match(/class MboKintoneLoginGate\b/g) || [];
+
+  const smMatches = bundleCode.match(/\b(var|class)\s+MboSessionManager\b/g) || [];
+  const adapterMatches = bundleCode.match(/\b(var|class)\s+MboKintoneAuthAdapter\b/g) || [];
+  const gateMatches = bundleCode.match(/\b(var|class)\s+MboKintoneLoginGate\b/g) || [];
+
 
   assert.equal(smMatches.length, 1);
   assert.equal(adapterMatches.length, 1);

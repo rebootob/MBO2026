@@ -8,7 +8,7 @@ import { EmployeePartAUI } from './ui/employee-part-a-ui.js';
 import { ValidationEngine } from './validation/validation-engine.js';
 import { EmployeeService } from './services/employee-service.js';
 import { RoutingService } from './services/routing-service.js';
-import { resolveProfileCode } from './profiles/profile-scoring-resolver.js';
+import { resolveProfileCodeForSnapshot as resolveProfileCode } from './profiles/runtime-profile-resolver.js';
 import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
 import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
 import { MboSessionManager } from './ui/mbo-session-manager.js';

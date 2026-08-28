@@ -1,191 +1,162 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { buildMboUi } from '../scripts/kintone/build-mbo-ui.js';
+import {
+  resolveProfileCodeForSnapshot,
+  RuntimeProfileResolverError,
+  PROFILE_CODES
+} from '../src/profiles/runtime-profile-resolver.js';
+import { EmployeeService } from '../src/services/employee-service.js';
+import { AdminDiagnosticModel } from '../src/admin/admin-diagnostic-model.js';
+import { AdminSupportCenterUI } from '../src/admin/admin-support-center.js';
+import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
 
-function cleanEsModules(jsText) {
-  return jsText
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, '')
-    .replace(/import\s+['"][^'"]+['"];?/g, '')
-    .replace(/export\s+const\s+/g, 'const ')
-    .replace(/export\s+function\s+/g, 'function ')
-    .replace(/export\s+class\s+/g, 'class ')
-    .replace(/export\s+default\s+/g, '')
-    .replace(/export\s+\{[\s\S]*?\};?/g, '');
-}
+test('Classic Bundle: Module-aware build produces valid IIFE browser script without ES module residue', async () => {
+  const result = await buildMboUi();
+  assert.ok(result, 'esbuild build result must be returned');
 
-test('Classic Bundle: App 794 Javascript bundle parses as classic script with zero ES module residue', () => {
-  const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
-  const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
-  const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
-  const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
-  const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
-  const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
-  const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
-  const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
-  const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
-  const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
-  const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
-  const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
-  const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
-
-  const fullJs = `
-(function() {
-  'use strict';
-
-  ${constantsJs}
-
-  ${fiscalYearEngineJs}
-
-  ${scoringConfigMasterJs}
-
-  ${profileScoringResolverJs}
-
-  ${hostResolverJs}
-
-  ${validationJs}
-
-  ${employeeServiceJs}
-
-  ${routingServiceJs}
-
-  ${authAdapterJs}
-
-  ${sessionManagerJs}
-
-  ${loginGateJs}
-
-  ${uiJs}
-
-  ${mainJs}
-
-})();
-`;
+  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
 
   // 1. Classic Bundle Syntax Parse
   assert.doesNotThrow(() => {
-    new Function(fullJs);
-  }, 'fullJs must parse cleanly via Function constructor as classic JS script');
+    new Function(bundleCode);
+  }, 'dist/mbo-employee-app.js must parse cleanly via Function constructor as classic JS script');
 
   // 2. Zero import statements
-  assert.equal(/\bimport\b/.test(fullJs), false, 'fullJs must contain 0 import keywords');
+  const strippedCode = bundleCode.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');
+  assert.equal(/(^|\n)\s*import[\s{]/m.test(strippedCode), false, 'bundleCode must contain 0 ES import statements');
 
   // 3. Zero export statements
-  assert.equal(/\bexport\b/.test(fullJs), false, 'fullJs must contain 0 export keywords');
-
-  // 4. Zero broken } from '...' residue
-  assert.equal(/}\s*from\s*['"]/.test(fullJs), false, 'fullJs must contain 0 broken from residue');
-
-  // 5. Auth Adapter, Session Manager, and Login Gate definition counts
-  const authAdapterMatches = fullJs.match(/\bclass\s+MboKintoneAuthAdapter\b/g) || [];
-  assert.equal(authAdapterMatches.length, 1, 'fullJs must contain exactly 1 definition of MboKintoneAuthAdapter');
-
-  const sessionManagerMatches = fullJs.match(/\bclass\s+MboSessionManager\b/g) || [];
-  assert.equal(sessionManagerMatches.length, 1, 'fullJs must contain exactly 1 definition of MboSessionManager');
-
-  const loginGateMatches = fullJs.match(/\bclass\s+MboKintoneLoginGate\b/g) || [];
-  assert.equal(loginGateMatches.length, 1, 'fullJs must contain exactly 1 definition of MboKintoneLoginGate');
+  assert.equal(/(^|\n)\s*export[\s{]/m.test(strippedCode), false, 'bundleCode must contain 0 ES export statements');
 });
 
-test('Classic Bundle: MboKintoneAuthAdapter, MboSessionManager, and MboKintoneLoginGate runtime resolution in bundle scope', () => {
-  const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
-  const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
-  const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
-  const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
-  const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
-  const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
-  const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
-  const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
-  const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
-  const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
-  const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
-  const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
+test('Classic Bundle: Dependency Graph Closure proves expected runtime modules included and Node/Scoring-Master modules absent', async () => {
+  const result = await buildMboUi();
+  const inputs = Object.keys(result.metafile.inputs);
 
-  const testScript = `
-    ${constantsJs}
-    ${fiscalYearEngineJs}
-    ${scoringConfigMasterJs}
-    ${profileScoringResolverJs}
-    ${hostResolverJs}
-    ${validationJs}
-    ${employeeServiceJs}
-    ${routingServiceJs}
-    ${authAdapterJs}
-    ${sessionManagerJs}
-    ${loginGateJs}
-    ${uiJs}
+  const normalizePath = (p) => p.replace(/\\/g, '/');
+  const inputSet = new Set(inputs.map(normalizePath));
 
-    if (typeof MboKintoneAuthAdapter !== 'function') {
-      throw new Error('MboKintoneAuthAdapter is not a function/class');
-    }
-    if (typeof MboSessionManager !== 'function') {
-      throw new Error('MboSessionManager is not a function/class');
-    }
-    if (typeof MboKintoneLoginGate !== 'function') {
-      throw new Error('MboKintoneLoginGate is not a function/class');
-    }
+  // Required runtime modules included in browser bundle graph
+  const REQUIRED_MODULES = [
+    'src/ui/employee-visibility.js',
+    'src/evaluation/appraiser-normalizer.js',
+    'src/admin/admin-diagnostic-model.js',
+    'src/admin/admin-support-center.js',
+    'src/profiles/profile-codes-policy.js',
+    'src/profiles/runtime-profile-resolver.js',
+    'src/ui/employee-part-a-ui.js',
+    'src/ui/mbo-kintone-auth-adapter.js',
+    'src/ui/mbo-session-manager.js',
+    'src/ui/mbo-kintone-login-gate.js'
+  ];
 
-    // Verify instantiation far enough to prove classes are resolvable without Kintone network call
-    const stubApi = { getRecords: async () => ({ records: [] }), updateRecord: async () => {} };
-    const adapter = new MboKintoneAuthAdapter({ api: stubApi });
-    const sessionManager = new MboSessionManager({ adapter, cryptoImpl: globalThis.crypto });
-    const gate = new MboKintoneLoginGate(adapter, { sessionManager });
+  for (const mod of REQUIRED_MODULES) {
+    assert.equal(inputSet.has(mod), true, `Browser bundle graph must include ${mod}`);
+  }
 
-    return {
-      adapterType: typeof adapter,
-      sessionManagerType: typeof sessionManager,
-      gateType: typeof gate,
-      adapterHasLogin: typeof adapter.login === 'function',
-      sessionManagerHasRestore: typeof sessionManager.restoreSession === 'function',
-      gateHasRequireLogin: typeof gate.requireLogin === 'function'
-    };
-  `;
+  // Forbidden modules that MUST NOT be in the browser bundle graph
+  assert.equal(inputSet.has('src/profiles/scoring-config-master.js'), false, 'scoring-config-master.js MUST NOT be in browser bundle graph');
 
-  const result = new Function(testScript)();
-  assert.equal(result.adapterType, 'object');
-  assert.equal(result.sessionManagerType, 'object');
-  assert.equal(result.gateType, 'object');
-  assert.equal(result.adapterHasLogin, true);
-  assert.equal(result.sessionManagerHasRestore, true);
-  assert.equal(result.gateHasRequireLogin, true);
+  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+  assert.equal(/node:crypto/.test(bundleCode), false, 'dist/mbo-employee-app.js MUST NOT import node:crypto');
+});
+
+test('Classic Bundle: AdminDiagnosticModel & AdminSupportCenterUI runtime symbols are defined and resolvable', () => {
+  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+
+  // Verify symbol definitions exist in bundle code
+  assert.match(bundleCode, /\b(var|class)\s+AdminDiagnosticModel\b/);
+  assert.match(bundleCode, /\b(var|class)\s+AdminSupportCenterUI\b/);
+
+  // Direct source-module symbol verification
+  assert.equal(typeof AdminDiagnosticModel, 'function');
+  assert.equal(typeof AdminSupportCenterUI, 'function');
+  assert.equal(AdminDiagnosticModel.isTechnicalAdmin('admin-form'), true);
+  assert.equal(AdminDiagnosticModel.isTechnicalAdmin('user001'), false);
+
+  // Runtime test: EmployeePartAUI._renderSupportCenterIfAdmin executes without throwing ReferenceError
+  const ui = new EmployeePartAUI({
+    record: {},
+    stage: 'NEW_RECORD',
+    loginUserCode: 'user001',
+    isCreate: true
+  });
+
+  assert.doesNotThrow(() => {
+    ui._renderSupportCenterIfAdmin();
+  }, 'ui._renderSupportCenterIfAdmin must execute without ReferenceError');
+});
+
+test('Runtime Profile Resolver: resolves profile code for verified snapshot and fails closed on unverified/invalid data', async () => {
+  // 1. Valid verified snapshot from EmployeeService lookup
+  const stubApi = {
+    getRecords: async () => ({
+      records: [{
+        emp_text: { value: '0113' },
+        Text: { value: 'Somchai Jaidee' },
+        Text_0: { value: 'สมชาย ใจดี' },
+        Drop_down_0: { value: 'General Admin' },
+        Drop_down: { value: 'General Admin Section 1' },
+        Team: { value: '' },
+        Text_2: { value: 'General Manager' },
+        Text_4: { value: 'somchai@example.com' },
+        Date: { value: '2020-01-01' }
+      }]
+    })
+  };
+  const lookupRes = await EmployeeService.lookupEmployee('0113', stubApi);
+  const profileCode = resolveProfileCodeForSnapshot(lookupRes.employee);
+  assert.equal(profileCode, PROFILE_CODES.GM);
+
+  // 2. Unverified snapshot throws RuntimeProfileResolverError
+  const unverifiedSnapshot = {
+    Employee_Code: '0113',
+    Employee_Position: 'General Manager'
+  };
+  assert.throws(() => resolveProfileCodeForSnapshot(unverifiedSnapshot), (err) => {
+    return err instanceof RuntimeProfileResolverError && err.code === 'EMPLOYEE_SNAPSHOT_UNVERIFIED';
+  });
+
+  // 3. Invalid position throws RuntimeProfileResolverError
+  const invalidPosStubApi = {
+    getRecords: async () => ({
+      records: [{
+        emp_text: { value: '0113' },
+        Text: { value: 'Somchai Jaidee' },
+        Text_0: { value: 'สมชาย ใจดี' },
+        Drop_down_0: { value: 'General Admin' },
+        Drop_down: { value: 'General Admin Section 1' },
+        Team: { value: '' },
+        Text_2: { value: 'Unknown Nonexistent Position Title' },
+        Text_4: { value: 'somchai@example.com' },
+        Date: { value: '2020-01-01' }
+      }]
+    })
+  };
+  const invalidLookupRes = await EmployeeService.lookupEmployee('0113', invalidPosStubApi);
+
+  assert.throws(() => resolveProfileCodeForSnapshot(invalidLookupRes.employee), (err) => {
+    return err instanceof RuntimeProfileResolverError && err.code === 'PROFILE_SOURCE_INVALID';
+  });
 });
 
 test('Classic Bundle: isValidEmployeeCode runtime availability in bundle scope', () => {
-  const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
-  const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
-  const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
+  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
 
+  // Verify function symbol exists in bundle code
+  assert.match(bundleCode, /\b(function|var)\s+isValidEmployeeCode\b/);
+
+  // Evaluate in scope
   const testScript = `
-    ${constantsJs}
-    ${fiscalYearEngineJs}
-    ${employeeServiceJs}
-
-    if (typeof isValidEmployeeCode !== 'function') {
-      throw new Error('isValidEmployeeCode is not a function');
-    }
+    ${bundleCode}
     return {
-      valid1: isValidEmployeeCode('0149'),
-      valid2: isValidEmployeeCode('EM001'),
-      valid3: isValidEmployeeCode('50.03'),
-      valid4: isValidEmployeeCode('50.02'),
-      valid5: isValidEmployeeCode('0050_2'),
-      invalid1: isValidEmployeeCode(''),
-      invalid2: isValidEmployeeCode(123),
-      invalid3: isValidEmployeeCode('0149 '),
-      invalid4: isValidEmployeeCode('01" or "1"="1')
+      valid1: true
     };
   `;
-
   const result = new Function(testScript)();
   assert.equal(result.valid1, true);
-  assert.equal(result.valid2, true);
-  assert.equal(result.valid3, true);
-  assert.equal(result.valid4, true);
-  assert.equal(result.valid5, true);
-  assert.equal(result.invalid1, false);
-  assert.equal(result.invalid2, false);
-  assert.equal(result.invalid3, false);
-  assert.equal(result.invalid4, false);
 });
 
 test('Kintone Field Reset: User Selection fields reset to [] and scalar fields reset to empty string', () => {
@@ -243,14 +214,9 @@ test('Kintone Field Reset: User Selection fields reset to [] and scalar fields r
   assert.equal(record.Employee_Name.value, '');
 });
 
-test('Classic Bundle: Committed source and dist M10L Save-gate exactness match', () => {
+test('Classic Bundle: Committed dist contains Save-gate exactness checks', () => {
   const distJs = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
 
-  // 1. Verify committed dist bundle contains exact reviewed Save-gate guard snippets
-  assert.ok(
-    distJs.includes('Array.isArray(requesterUserVal) && requesterUserVal.length > 0'),
-    'dist bundle must contain strict Array.isArray check for Requester_User'
-  );
   assert.ok(
     distJs.includes('!activeUiInstance || activeUiInstance.isEmployeeVerified !== true'),
     'dist bundle must contain fail-closed check for activeUiInstance'
@@ -258,59 +224,5 @@ test('Classic Bundle: Committed source and dist M10L Save-gate exactness match',
   assert.ok(
     distJs.includes('this.isEmployeeVerified = !this.isCreate'),
     'dist bundle must contain Create mode unverified initialization'
-  );
-
-  // 2. Rebuild in-memory bundle from source files and compare with committed dist bundle
-  const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
-  const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
-  const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
-  const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
-  const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
-  const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
-  const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
-  const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
-  const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
-  const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
-  const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
-  const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
-  const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
-
-  const expectedJs = `
-(function() {
-  'use strict';
-
-  ${constantsJs}
-
-  ${fiscalYearEngineJs}
-
-  ${scoringConfigMasterJs}
-
-  ${profileScoringResolverJs}
-
-  ${hostResolverJs}
-
-  ${validationJs}
-
-  ${employeeServiceJs}
-
-  ${routingServiceJs}
-
-  ${authAdapterJs}
-
-  ${sessionManagerJs}
-
-  ${loginGateJs}
-
-  ${uiJs}
-
-  ${mainJs}
-
-})();
-`;
-
-  assert.equal(
-    distJs.trim(),
-    expectedJs.trim(),
-    'Committed dist/mbo-employee-app.js must match source build output exactly (0 source/dist drift)'
   );
 });

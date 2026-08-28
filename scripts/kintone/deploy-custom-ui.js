@@ -4,111 +4,43 @@ import { assertSandboxWriteTarget } from '../../src/core/sandbox-write-guard.js'
 const isBuildOnly = process.argv.includes('--build-only');
 const isExecutedAsScript = process.argv[1] && (process.argv[1].endsWith('deploy-custom-ui.js') || process.argv[1].endsWith('deploy-custom-ui'));
 
-let app = 794;
-if (isExecutedAsScript && !isBuildOnly) {
-  const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
-  app = sandboxRegistryModule.mboV2AppId;
-  assertSandboxWriteTarget(app);
-} else {
+import { buildMboUi } from './build-mbo-ui.js';
+
+if (isExecutedAsScript) {
+  if (!isBuildOnly) {
+    const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
+    app = sandboxRegistryModule.mboV2AppId;
+    assertSandboxWriteTarget(app);
+  }
+
+  await buildMboUi();
+
+  const fullJs = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+
+  // Validation Gate: Classic Bundle Parse & ES Module Residue Check
   try {
-    const registry = JSON.parse(fs.readFileSync('config/sandbox-apps.json', 'utf8'));
-    app = registry.mboV2AppId || 794;
-  } catch {
-    app = 794;
+    new Function(fullJs);
+  } catch (err) {
+    throw new Error(`CLASSIC_BUNDLE_PARSE FAILED: ${err.message}`);
+  }
+
+  if (/\bimport\b/.test(fullJs)) {
+    throw new Error('ES_MODULE_IMPORT_COUNT > 0: Bundle contains import statements');
+  }
+
+  if (/\bexport\b/.test(fullJs)) {
+    throw new Error('ES_MODULE_EXPORT_COUNT > 0: Bundle contains export statements');
+  }
+
+  console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
+
+  if (isBuildOnly) {
+    console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
+    process.exit(0);
   }
 }
 
-function cleanEsModules(jsText) {
-  return jsText
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, '')
-    .replace(/import\s+['"][^'"]+['"];?/g, '')
-    .replace(/export\s+const\s+/g, 'const ')
-    .replace(/export\s+function\s+/g, 'function ')
-    .replace(/export\s+class\s+/g, 'class ')
-    .replace(/export\s+default\s+/g, '')
-    .replace(/export\s+\{[\s\S]*?\};?/g, '');
-}
 
-// 1. Build Single JS File
-const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
-const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
-const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
-const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
-const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
-const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
-const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
-const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
-const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
-const sessionManagerJs = cleanEsModules(fs.readFileSync('src/ui/mbo-session-manager.js', 'utf8'));
-const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
-const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
-const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
-
-const fullJs = `
-(function() {
-  'use strict';
-
-  ${constantsJs}
-
-  ${fiscalYearEngineJs}
-
-  ${scoringConfigMasterJs}
-
-  ${profileScoringResolverJs}
-
-  ${hostResolverJs}
-
-  ${validationJs}
-
-  ${employeeServiceJs}
-
-  ${routingServiceJs}
-
-  ${authAdapterJs}
-
-  ${sessionManagerJs}
-
-  ${loginGateJs}
-
-  ${uiJs}
-
-  ${mainJs}
-
-})();
-`;
-
-// Validation Gate: Classic Bundle Parse & ES Module Residue Check
-try {
-  new Function(fullJs);
-} catch (err) {
-  throw new Error(`CLASSIC_BUNDLE_PARSE FAILED: ${err.message}`);
-}
-
-if (/\bimport\b/.test(fullJs)) {
-  throw new Error('ES_MODULE_IMPORT_COUNT > 0: Bundle contains import statements');
-}
-
-if (/\bexport\b/.test(fullJs)) {
-  throw new Error('ES_MODULE_EXPORT_COUNT > 0: Bundle contains export statements');
-}
-
-if (/}\s*from\s*['"]/.test(fullJs)) {
-  throw new Error('BROKEN_FROM_RESIDUE_COUNT > 0: Bundle contains broken from residue');
-}
-
-fs.mkdirSync('dist', { recursive: true });
-fs.writeFileSync('dist/mbo-employee-app.js', fullJs, 'utf8');
-
-const cssContent = fs.readFileSync('src/styles/mbo-employee.css', 'utf8');
-fs.writeFileSync('dist/mbo-employee.css', cssContent, 'utf8');
-
-console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
-
-if (isBuildOnly) {
-  console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
-  process.exit(0);
-}
 
 // Helper Functions Exported for Unit Testing & Customization Payload Building
 const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
