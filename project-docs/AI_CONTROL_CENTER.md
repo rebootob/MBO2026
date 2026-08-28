@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / LOGIN GATE LIVE RECOVERED / SESSION ARCHITECTURE BASELINED / SESSION SOURCE PASS / FINAL TEST-PROOF CORRECTIVE ONLY / CREATE-HANDLER DEFECT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / LOGIN GATE LIVE RECOVERED / SESSION ARCHITECTURE BASELINED / SESSION SOURCE+TEST PACKAGE PASS / APP801 SESSION SCHEMA AUTHORIZATION NEXT / CREATE-HANDLER DEFECT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -25,10 +25,10 @@ No AI may silently drop D1–D7.
 
 ```text
 D1_SESSION_CONTINUITY_ARCHITECTURE       = APPROVED / BASELINED
-D1_SESSION_SOURCE_IMPLEMENTATION         = SOURCE PASS AFTER INDEPENDENT REVIEW OF 7133e2934b0e8f7ea710e03d195157354e0d95b8
-D1_SESSION_TEST_EVIDENCE                 = FINAL CORRECTIVE REQUIRED / TEST-ONLY
+D1_SESSION_SOURCE_IMPLEMENTATION         = PASS / ACCEPTED AFTER INDEPENDENT REVIEW
+D1_SESSION_TEST_EVIDENCE                 = PASS / ACCEPTED AFTER REVIEW OF 9d9db0f2456b5b3407b8dae830493c0eb9a9cc7f
 D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
-APP801_SESSION_SCHEMA_WRITE              = NOT AUTHORIZED
+APP801_SESSION_SCHEMA_WRITE              = NOT AUTHORIZED / USER DECISION NEXT
 APP794_SESSION_CONTINUITY_DEPLOY          = NOT AUTHORIZED
 D1_CREATE_HANDLER_CORRECTIVE             = OPEN / SEPARATE WORK PACKAGE
 DEDICATED_MBO_ACCESS_GROUP_MODEL         = APPROVED / PASS
@@ -39,123 +39,114 @@ APP801_CREDENTIAL_BULK_PROVISIONING      = PASS / INDEPENDENTLY LIVE VERIFIED 20
 D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately recorded
 ```
 
-No schema/write/deploy authorization is implied by the session architecture approval or source PASS.
+No schema/write/deploy authorization is implied by session source/test PASS.
 
-## 3. Independent Review — Final Principal/Test Corrective Commit
+## 3. Independent Review — Final Test-Only Proof Commit
 
 Reviewed executor commit:
 
 ```text
-7133e2934b0e8f7ea710e03d195157354e0d95b8
-fix(session): enforce exact Kintone principal binding, sanitize revoke errors, and restore full regression test suite
+9d9db0f2456b5b3407b8dae830493c0eb9a9cc7f
+test(session): add explicit proofs for force-change issue failure, server session overwrite, and token non-exposure
 ```
 
-Exact comparison from authorizing task commit `165ecc5b74cb472e47049640ee9aa1d28cf29a7b` shows only:
+Exact comparison from authorizing task commit `8972d35994af17e8cc4e874d00f6aec5addfcd81` shows exactly one changed file:
 
 ```text
-src/ui/mbo-kintone-auth-adapter.js
-src/ui/mbo-session-manager.js
-src/ui/mbo-kintone-login-gate.js
 tests/mbo-session-manager.test.js
-dist/mbo-employee-app.js   GENERATED
 ```
 
 Scope protections PASS:
-- no `src/main-mbo-app.js` change;
-- no `employee-part-a-ui.js` change;
-- no CSS change;
-- no Create-handler corrective;
-- no Deploy script change;
-- no Baseline/governance edit by executor;
-- no schema/live-write/deploy evidence.
+- source files changed = 0;
+- dist files changed = 0;
+- CSS changed = 0;
+- no App801 schema/live-write evidence;
+- no App794 deploy evidence;
+- no Create-handler work;
+- no D2-D7 work.
 
-### Source accepted
+### Final proof A — Force-change session issue failure
 
-```text
-MODULAR_SOURCE_BOUNDARY = PASS
-EXACT_KINTONE_PRINCIPAL_BINDING = PASS
-PRINCIPAL_WHITESPACE_FAIL_CLOSED = PASS
-CASE_DIFFERENCE_FAIL_CLOSED = PASS
-CREDENTIAL_VERSION_FAIL_CLOSED = PASS
-FORCE_PASSWORD_CHANGE_RESTORE_FAIL_CLOSED = PASS
-REVOKE_FAILURE_SANITIZATION = PASS
-RAW_TOKEN_API_BOUNDARY = PASS
-PASSWORD_CHANGE_RENEWAL_FAILURE_FAIL_CLOSED = PASS
-LOGIN_GATE_PRODUCTION_HANDLER_EXTRACTION = PASS
-DOM_LISTENERS_USE_PRODUCTION_HANDLERS = PASS
-MAIN_ORCHESTRATION_BOUNDARY = PASS
-```
+Accepted proof:
+- establishes PASSWORD_CHANGE_REQUIRED state through actual `MboKintoneLoginGate._handleLoginAction()`;
+- makes the actual session issue path fail;
+- calls actual `_handleForceChangeAction()`;
+- result = `SESSION_ISSUE_FAILED`;
+- `gate.getEmployeeCode() === null`;
+- no usable local session token exists.
 
-The Login Gate lifecycle helpers remain Login-Gate-owned and are called by the real DOM listeners; they are not test-only shadow logic.
-
-### Regression restoration accepted
-
-Restored direct regression coverage includes:
+Verdict:
 
 ```text
-TOKEN_256_BIT_RANDOM
-RAW_TOKEN_ONLY_IN_SESSION_STORAGE
-TOKEN_HASH_SHA256
-TTL_EXACT_8_HOURS
-NO_SLIDING_REFRESH
-VALID_SESSION_RESTORE
-EXPIRED_SESSION_BLOCKED
-TAMPERED_TOKEN_BLOCKED
-DISABLED_ACCOUNT_BLOCKED
-LOCKED_ACCOUNT_BLOCKED
-FORCE_PASSWORD_CHANGE_SESSION_BLOCKED
-CREDENTIAL_VERSION_MISMATCH_BLOCKED
-PASSWORD_CHANGE_INCREMENTS_CREDENTIAL_VERSION
-PASSWORD_CHANGE_ROTATES_OLD_SERVER_SESSION
-LOGOUT_REVOKES_AND_CLEARS_LOCAL_SESSION
-BUNDLE_RUNTIME / DEFINITION COUNTS
+FORCE_CHANGE_FAILURE_PROOF = PASS
 ```
 
-### Remaining test-proof gaps only
+### Final proof B — One active session per Employee_Code
 
-1. `FORCE_CHANGE_SESSION_ISSUE_FAILURE_DOES_NOT_AUTHORIZE`
-   - current combined test title includes the failure case;
-   - body proves only successful force-change/session issuance;
-   - must execute actual `_handleForceChangeAction()` with session issuance failure and prove Employee Self remains unauthorized.
+Accepted proof:
+- login1 captures token1;
+- login2 captures token2;
+- token1 != token2;
+- token1 is put back into sessionStorage and actual `restoreSession()` returns null because App801 session hash was overwritten by login2;
+- token2 is put back and restores the correct Employee_Code.
 
-2. `NEW_LOGIN_INVALIDATES_PRIOR_SESSION`
-   - current test proves local token1 != token2;
-   - that does not independently prove old server token is invalidated;
-   - must restore token1 after second login and prove restore fails, then prove token2 remains valid if appropriate.
+Verdict:
 
-3. `SESSION_TOKEN_NOT_LOGGED_OR_RENDERED`
-   - current proof checks only returned object serialization;
-   - Active Task required meaningful source/runtime proof;
-   - add a focused static/runtime assertion that session/auth/login modules do not console-log/render the raw token/hash and that Session Manager owns browser token storage.
+```text
+OLD_SESSION_INVALIDATION_PROOF = PASS
+ONE_ACTIVE_SESSION_PER_EMPLOYEE = PASS
+```
 
-No new source defect is required to close these three proof gaps unless the new tests reveal one.
+### Final proof C — Token non-exposure
 
-GitHub provides no CI/status/workflow run for this commit, so local `npm test` execution is not independently proven by GitHub.
+Accepted combined proof:
+- Session Manager public issue/restore results expose no raw token/hash;
+- runtime result serialization contains no 64-char bearer token/hash;
+- focused source-text assertions (comments stripped) cover Session Manager/Auth Adapter/Login Gate for console logging, DOM text/HTML, location href/search/hash, localStorage and cookies;
+- independent source review found raw token ownership remains inside `mbo-session-manager.js` + the dedicated sessionStorage key only.
+
+Verdict:
+
+```text
+TOKEN_EXPOSURE_PROOF = PASS
+```
+
+GitHub still has no CI/status/workflow run for the test commit. Therefore executor-reported local `npm test` is not independently proven by GitHub; however the requested test implementation/proof completeness is independently accepted from source review. Before any future production deploy, `npm test` remains a mandatory pre-write gate.
 
 Independent verdict:
 
 ```text
 GIT_SCOPE_REVIEW = PASS
 SESSION_SECURITY_SOURCE = PASS
-EXACT_PRINCIPAL_BINDING = PASS
-REGRESSION_TEST_RESTORATION = PASS
-TEST_PROOF_COMPLETENESS = CORRECTIVE_REQUIRED / 3 NARROW CASES
-SESSION_SOURCE_PACKAGE = SOURCE PASS / TEST EVIDENCE PENDING
-APP801_SESSION_SCHEMA_AUTHORIZATION = BLOCKED UNTIL FINAL TEST PROOF REVIEW
-APP794_SESSION_DEPLOY = BLOCKED
+SESSION_TEST_PROOF_COMPLETENESS = PASS
+SESSION_SOURCE_TEST_PACKAGE = PASS / ACCEPTED
+APP801_SESSION_SCHEMA_AUTHORIZATION = NEXT USER DECISION
+APP794_SESSION_DEPLOY = BLOCKED UNTIL SCHEMA + SOURCE ARTIFACT GATES COMPLETE
 ```
 
-## 4. Durable Architecture Remains Correct
+## 4. App801 Session Schema — Exact Pending Scope
 
-Canonical architecture remains:
+Canonical required fields from `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`:
 
 ```text
-project-docs/CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md
-project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md
-project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md
+Session_Token_Hash          SINGLE_LINE_TEXT
+Session_Issued_At           DATETIME
+Session_Expires_At          DATETIME
+Session_Credential_Version  NUMBER
+Session_Kintone_User        SINGLE_LINE_TEXT
 ```
 
-No Baseline change is required.
+Pending production schema write rules if/when explicitly authorized:
+- App801 only;
+- fresh live form/schema read before write;
+- create only missing exact fields;
+- do not rename/delete/modify unrelated fields;
+- no App801 credential record writes in schema task;
+- no App794 deploy;
+- no D2-D7 writes;
+- immediate schema read-back;
+- backup/rollback-ready metadata before write;
+- STOP after evidence + independent review.
 
 ## 5. Separate Create-Handler Defect
 
@@ -166,27 +157,27 @@ Employee Profile Resolution Failed
 You cannot call kintone.app.record.get() in handler or during processing a handler.
 ```
 
-Do not mix this into session test completion.
+Do not mix this into App801 session schema work.
 
 ## 6. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES — ONE FINAL TEST-ONLY PROOF COMMIT
-SOURCE_CHANGE = NO unless a new test proves a real defect, then STOP instead of fixing
-KINTONE_WRITE = NO
-APP801_SCHEMA_WRITE = NO
+NEXT_ACTION_OWNER = User / Control Plane
+ANTIGRAVITY_REQUIRED = NO / HOLD
+PENDING_DECISION = APP801_SESSION_SCHEMA_WRITE authorization
+KINTONE_WRITE = NO until explicit authorization
 APP794_DEPLOY = NO
 CREATE_HANDLER_FIX = NO
-MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-After final test-only push, ChatGPT independently reviews. If accepted, next gate is exact App801 Session Schema authorization.
+If user authorizes exact App801 Session Schema Write, ChatGPT records authorization and issues one narrow schema-only Active Task to Antigravity.
 
 ## 7. Knowledge / Baseline Maintenance
 
 Baseline promotion:
-`NONE — architecture already baselined.`
+`NONE — canonical session architecture already baselined.`
 
-Reusable skill extraction:
-`PENDING until final test evidence is accepted.`
+Reusable implementation lesson:
+- security test names are not proof by themselves; verify each claimed failure path actually executes;
+- one-active-session semantics require proving prior token restore fails after server hash overwrite, not only that tokens differ;
+- secret non-exposure should combine runtime public-result checks with focused source/static checks.
