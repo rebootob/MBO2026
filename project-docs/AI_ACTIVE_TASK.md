@@ -1,61 +1,67 @@
-# AI ACTIVE TASK — HOLD
+# AI ACTIVE TASK — HOLD / WAITING USER PROVISIONING AUTHORIZATION
 
-> Control Plane: ChatGPT
-> Execution Plane: Antigravity
-> Branch: `ai/antigravity-wp002c`
+> Control Plane: ChatGPT  
+> Execution Plane: Antigravity  
+> Branch: `ai/antigravity-wp002c`  
 > Mode: **NO EXECUTION**
 
-## Reason
+## Accepted D1 Candidate Gate
 
-The user supplied a current read-only App53 CSV directly to ChatGPT. The previous App53 candidate read-only audit is superseded and must not be repeated.
+The user supplied a current read-only App53 export directly to ChatGPT and confirmed the App53 active-status business meaning:
 
-## Current Provisional Audit
+```text
+Number_0 = 1 -> Active / current employee
+Number_0 = 0 -> Inactive / former employee
+Number_0 blank -> unknown / fail closed
+```
+
+ChatGPT independently accepted:
 
 ```text
 APP53_TOTAL_ROWS = 281
-NUMBER_0_1_ROWS = 204
-NUMBER_0_0_ROWS = 75
-NUMBER_0_BLANK_ROWS = 2
-TOTAL_BLANK_EMP_TEXT_ROWS = 79
-```
-
-If App53 field `Number_0` is confirmed as the Active/Inactive field with `1 = Active`, then:
-
-```text
 APP53_ACTIVE_ROWS = 204
-ACTIVE_BLANK_EMP_TEXT_ROWS = 76
-ACTIVE_UNIQUE_NONBLANK_CANDIDATES = 128
-ACTIVE_DUPLICATE_CODES = NONE
+APP53_ACTIVE_BLANK_EMPLOYEE_CODE_ROWS = 76
+APP53_DUPLICATE_ACTIVE_CODES = NONE
+APP53_ELIGIBLE_CREDENTIAL_CANDIDATES = 128
 ```
 
-Additional observations:
-- `9000` appears twice, both `Number_0=0`.
-- `50.03`, `50.02`, `0050_2`, `0118` are unique and `Number_0=1`.
-- `0119` is absent.
-- `0284` has a non-blank Employee_Code and blank `Number_0`.
+Special handling:
+- `50.03`, `50.02`, `0050_2`, `0118` = eligible;
+- `0119` = absent / no credential;
+- duplicate `9000` rows are inactive and do not create an active conflict;
+- `0284` has blank active status and is excluded until source status is resolved;
+- second isolation-UAT code `0171` is eligible.
 
-## Current Gate
+The prior Antigravity candidate audit is superseded and must not be repeated.
 
-Wait for the user to provide the App53 schema metadata for field `Number_0`:
+## Current Authorization Gate
 
 ```text
-code
-label
-type
+APP801_CREDENTIAL_BULK_PROVISIONING = NOT AUTHORIZED YET
+TARGET_POPULATION = 128 accepted candidates
 ```
 
-## Forbidden Until New Task
+## Strictly Forbidden Until New Task
 
-- no App53 audit
-- no Kintone write
-- no App801 credential provisioning
-- no App794 deploy
-- no source change
-- no D2-D7 work
+- NO App801 credential create/update/reset;
+- NO App801 bulk provisioning;
+- NO App794 customization upload/deploy;
+- NO App53/795/796 write;
+- NO group/ACL change;
+- NO source change;
+- NO D2-D7 work;
+- NO duplicate candidate audit;
+- NO planning package from Antigravity.
+
+## Next Action Owner
 
 ```text
 NEXT_ACTION_OWNER = User
 ANTIGRAVITY_REQUIRED = NO
 ```
 
-STOP until ChatGPT issues a new exact task.
+Wait for explicit user approval or rejection of App801 credential bulk provisioning.
+
+If approval is later recorded, ChatGPT will replace this HOLD file with one narrow execution packet containing pre-write App801 reconciliation, safe create-only provisioning, immediate read-back, zero-secret evidence rules, and STOP.
+
+Antigravity must STOP now.
