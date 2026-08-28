@@ -13,7 +13,7 @@ ChatGPT owns:
 - Project Lead / Architect / scope control;
 - planning and requirement reconciliation;
 - GitHub inspection and independent review;
-- PASS / FAIL / BLOCKED decisions;
+- PASS / CORRECTIVE / BLOCKED decisions;
 - authorization tracking;
 - D1–D7 continuity;
 - Confirmed Baseline promotion;
@@ -35,9 +35,68 @@ Use Antigravity only when actual execution capability is required:
 
 Antigravity is not the default planner, historian, reviewer, knowledge-base writer, or long-report agent.
 
+Execution Plane cannot self-promote its work to PASS.
+
 ---
 
-## 2. Low-Credit Rules
+## 2. Authority by Purpose — Mandatory
+
+Do not treat all control documents as one flat precedence list. Each source has a different authority purpose.
+
+### A. `project-docs/CONFIRMED_BASELINE/`
+Authoritative for **what the system is required/confirmed to mean**:
+- durable business rules;
+- architecture;
+- security/authentication model;
+- permissions/authority boundaries;
+- routing/workflow/scoring semantics;
+- mandatory UI/UX;
+- durable governance.
+
+Actual implementation evidence does not silently rewrite Confirmed Baseline. If implementation differs, the implementation is nonconformant until the user/Control Plane explicitly changes and promotes the baseline.
+
+### B. `project-docs/00_MASTER_JOBLIST.md`
+Authoritative for **D1–D7 completeness / no-drop obligations**.
+
+### C. `project-docs/AI_CONTROL_CENTER.md`
+Authoritative for **current independently accepted operational state**:
+- accepted status;
+- authorization ledger;
+- blocker;
+- next owner/action;
+- accepted vs pending-review evidence.
+
+### D. `project-docs/AI_ACTIVE_TASK.md`
+Authoritative only for **the exact execution scope currently assigned/authorized**.
+
+It is NOT evidence that the assigned action actually happened or succeeded.
+
+### E. Actual Git / Kintone evidence
+Authoritative for **what was actually observed or implemented**:
+- changed files;
+- commits/diffs;
+- source behavior;
+- live Kintone configuration/read-back;
+- test/UAT evidence.
+
+For factual implementation state, actual evidence overrides claims written in an Active Task, executor report, chat message, or stale status document.
+
+### Conflict handling
+
+If evidence differs from Confirmed Baseline:
+- do NOT change the baseline automatically;
+- classify implementation as mismatch/corrective/blocker according to impact.
+
+If new evidence differs from `AI_CONTROL_CENTER.md`:
+- mark it as pending independent review;
+- independently review it before promoting the operational status.
+
+If `AI_ACTIVE_TASK.md` says an action should happen but evidence shows it did not happen:
+- report the action as NOT COMPLETED.
+
+---
+
+## 3. Low-Credit Rules
 
 Antigravity must not normally spend credit on:
 - whole-repository/document scans;
@@ -65,27 +124,66 @@ Default delivery:
 - concise result;
 - STOP for ChatGPT review.
 
-Execution Plane cannot self-promote its work to PASS.
+---
+
+## 4. Check Before Do / No Duplicate Work
+
+Before proposing or starting work, Control Plane must determine whether the same work is already:
+- completed/accepted;
+- pending independent review;
+- currently assigned in an Active Task;
+- already authorized;
+- being executed by another AI/user path.
+
+Rules:
+- Completed/Accepted -> do not repeat.
+- Pending Review -> review before reimplementation.
+- Existing Active Task -> do not create a competing task without a concrete reason.
+- Existing unchanged authorization -> do not ask the user to approve it again.
 
 ---
 
-## 3. Canonical Control Layers
+## 5. No Unsolicited Work / Scope Discipline
+
+AI may reason and recommend inside the current problem, but it must not create work for itself merely because something could be improved.
+
+Do not silently:
+- add features/requirements;
+- refactor unrelated code;
+- redesign architecture;
+- add unnecessary tests/docs/scripts/files;
+- polish unrelated UI;
+- open future work;
+- fix adjacent issues;
+- switch execution AI;
+- work on another D-item outside the current gate.
+
+Such work requires at least one of:
+- current acceptance criteria require it;
+- Confirmed Baseline requires it;
+- current Active Task explicitly includes it;
+- user explicitly authorizes it.
+
+---
+
+## 6. Canonical Control Layers
 
 ```text
-Durable confirmed project truth -> project-docs/CONFIRMED_BASELINE/
-Current operational truth       -> project-docs/AI_CONTROL_CENTER.md
-Current executor instruction    -> project-docs/AI_ACTIVE_TASK.md
-Document routing                -> project-docs/AI_DOCUMENT_INDEX.md
-Actual implementation evidence  -> Git / Kintone
+Durable confirmed project truth          -> project-docs/CONFIRMED_BASELINE/
+D1–D7 completeness                       -> project-docs/00_MASTER_JOBLIST.md
+Current accepted operational truth       -> project-docs/AI_CONTROL_CENTER.md
+Current executor scope                    -> project-docs/AI_ACTIVE_TASK.md
+Document routing                         -> project-docs/AI_DOCUMENT_INDEX.md
+Actual implementation/live evidence      -> Git / Kintone
 Reusable cross-project Kintone knowledge -> skills/kintone/
-New-chat entry prompt           -> project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md
+New-chat entry prompt                    -> project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md
 ```
 
-Do not create parallel status, handoff, baseline, skill, or master-prompt sources unless there is a clear separation-of-concerns reason.
+Do not create parallel status, handoff, baseline, skill, or master-prompt sources unless separation of concerns genuinely requires it.
 
 ---
 
-## 4. Confirmed Baseline Promotion — Mandatory
+## 7. Confirmed Baseline Promotion — Mandatory
 
 Every important durable fact that becomes confirmed must be promoted into `project-docs/CONFIRMED_BASELINE/` in the same control cycle.
 
@@ -108,14 +206,12 @@ Baseline promotion is a ChatGPT Control Plane responsibility.
 
 ---
 
-## 5. Lean Document Control — Mandatory
+## 8. Lean Document Control — Mandatory
 
 Before searching/browsing project documents, AI must use:
-
 `project-docs/AI_DOCUMENT_INDEX.md`
 
 Detailed read-minimization/default-ignore rules live in:
-
 `project-docs/CONFIRMED_BASELINE/DOCUMENT_CONTROL.md`
 
 Rules:
@@ -123,34 +219,27 @@ Rules:
 - do not read all Baseline files every time;
 - use task-triggered routing;
 - historical/superseded docs remain in Git for audit but are default-ignore;
-- repository search is escalation after the Index cannot route the task.
+- repository search is escalation only after the Index cannot route the task.
 
 ---
 
-## 6. Reusable Kintone Skill Extraction — Mandatory
+## 9. Reusable Kintone Skill Extraction — Mandatory
 
-After every independent review, ChatGPT must evaluate:
-
-```text
-Did this work produce a reusable Kintone technique, failure mode,
-safety rule, API behavior, implementation pattern, migration method,
-security lesson, UI pattern, or test method that can help another project?
-```
+After every independent review, ChatGPT must evaluate whether the work produced a reusable Kintone technique, failure mode, safety rule, API behavior, implementation pattern, migration method, security lesson, UI pattern, or test method.
 
 If YES:
-1. generalize the lesson so it is not MBO2026-specific;
+1. generalize it so it is not MBO2026-specific;
 2. update an existing skill under `skills/kintone/` if possible;
 3. create a new skill only when no existing skill fits;
-4. update `skills/kintone/README.md` index;
-5. update `AI_DOCUMENT_INDEX.md` only when routing changes;
-6. never store secrets/project credentials in skills;
-7. do not spend Antigravity credit on this unless exact execution is required.
+4. update `skills/kintone/README.md`;
+5. never store secrets/project credentials in skills;
+6. do not spend Antigravity credit on skill writing unless exact execution is required.
 
-Skills are reusable engineering knowledge, not project truth. Project-specific confirmed facts still belong in Confirmed Baseline.
+Skills are reusable engineering knowledge, not project truth.
 
 ---
 
-## 7. Review Contract
+## 10. Review Contract
 
 When user says `review`, ChatGPT must:
 1. re-fetch canonical branch HEAD;
@@ -166,7 +255,7 @@ When user says `review`, ChatGPT must:
 
 ---
 
-## 8. New-Chat Contract
+## 11. New-Chat Contract
 
 `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` is the single canonical reusable prompt for starting a fresh ChatGPT session.
 
@@ -176,23 +265,24 @@ Every fresh session reconstructs truth from:
 3. `AI_CONTROL_CENTER.md`;
 4. `AI_DOCUMENT_INDEX.md`;
 5. relevant Confirmed Baseline only;
-6. `AI_ACTIVE_TASK.md`;
+6. `AI_ACTIVE_TASK.md` when execution is current;
 7. exact latest Git/Kintone evidence.
 
-Do not ask the user to repeat established history available in the repository.
+No live change starts automatically on chat startup. The first response reports state and waits for the user.
 
 ---
 
-## 9. Operating Principle
+## 12. Operating Principle
 
 ```text
-Baseline = durable project truth
-Control Center = current state
-Active Task = one executor job
-Document Index = find without searching
-Skills = reusable Kintone knowledge
-ChatGPT = think/control/review/document
-Antigravity = execute only when necessary
+Baseline      = what is durably confirmed/required
+Control Center= what is independently accepted now
+Active Task   = what executor is allowed to do now
+Evidence      = what actually happened
+Document Index= where to read next without searching
+Skills        = reusable Kintone knowledge
+ChatGPT       = think/control/review/document
+Antigravity   = execute only when necessary
 ```
 
 This governance remains mandatory unless explicitly changed by the user and promoted into Confirmed Baseline.
