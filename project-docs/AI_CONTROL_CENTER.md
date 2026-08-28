@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / APP794 LIVE FAIL-CLOSED / SOURCE+BUNDLE CORRECTIVE REQUIRED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / BUNDLE+EMPLOYEE-CODE CORRECTIVE PROVISIONALLY PASS / DEPLOY-SCRIPT FILEKEY CORRECTIVE REQUIRED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -24,19 +24,19 @@ No AI may silently drop D1–D7.
 ## 2. Authorization Ledger
 
 ```text
-D1_SOURCE_IMPLEMENTATION            = CORRECTIVE REQUIRED / PREVIOUS SOURCE ACCEPTANCE REOPENED BY LIVE RUNTIME EVIDENCE
+D1_SOURCE_IMPLEMENTATION            = CORRECTIVE REVIEW IN PROGRESS
 D1_LIVE_CUTOVER                     = IN PROGRESS / BLOCKED AT APP794 RUNTIME
 DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED / PASS
 APP801_GROUP_ACL_MODEL              = APPROVED / PASS
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
 D1_CANDIDATE_USER_EXPORT_AUDIT      = PASS / 128 ACCEPTED CANDIDATES
 APP801_CREDENTIAL_BULK_PROVISIONING = PASS / INDEPENDENTLY LIVE VERIFIED 2026-08-28
-APP794_D1_CUSTOMIZATION_DEPLOY      = EXECUTED / NOT ACCEPTED / CORRECTIVE SOURCE REQUIRED
-APP794_REDEPLOY                     = NOT AUTHORIZED IN CURRENT CORRECTIVE TASK
+APP794_D1_CUSTOMIZATION_DEPLOY      = EXECUTED / NOT ACCEPTED
+APP794_REDEPLOY                     = NOT AUTHORIZED
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
 ```
 
-The prior App794 deploy authorization is consumed. It does not authorize a corrective redeploy of a materially changed artifact.
+The prior App794 deploy authorization is consumed. No materially changed artifact may be redeployed until a new exact authorization is recorded after source acceptance.
 
 ## 3. Accepted D1 State That Remains Valid
 
@@ -47,89 +47,87 @@ CREDENTIAL_CANDIDATE_GATE = PASS / 128
 APP801_PROVISIONING = PASS / 128 / independently live verified
 ```
 
-These accepted gates are not reopened by the App794 bundle defect.
-
 Manual final D1 UAT remains `BLOCKED / NOT STARTED`.
 
-## 4. App794 Deploy Review — CORRECTIVE
+## 4. Corrective Source Review — Commit 5044eb47f0302327e6bc180d504f72132f6a0fbe
 
-Executor deploy evidence commit:
-`94b55b43944bdf95a0fd598aabcb8db5bf91e190`
+Independent Git review compared exact parent `0e636b2fd024e6aedc94ac893e70fecaaf425a14` to corrective commit `5044eb47f0302327e6bc180d504f72132f6a0fbe`.
 
-The executor reported revision 40 -> 41 and successful target-file hash verification. Git proves the evidence commit changed only the evidence document, not source.
-
-The deployment is **not accepted** because subsequent independent live evidence and source inspection prove the deployed runtime is nonfunctional.
-
-### Independent live evidence
-The user opened live App794 after deployment and the page displayed:
+Changed files are limited to the authorized source/build/test scope:
 
 ```text
-MBO Login Gate Not Initialized
-The MBO authentication system could not be started. Access blocked.
-[FAIL_CLOSED_GATE_NULL]
-```
-
-This is a safe fail-closed outcome from an exposure perspective, but D1 is not functional and cannot proceed to UAT.
-
-### Proven root cause — incomplete classic bundle
-`src/main-mbo-app.js` imports and constructs:
-
-```text
-MboKintoneAuthAdapter
-MboKintoneLoginGate
-```
-
-But the deployed `dist/mbo-employee-app.js` references these names without containing their class definitions.
-
-`scripts/kintone/deploy-custom-ui.js` manually concatenates source files but omits:
-
-```text
+dist/mbo-employee-app.js
+scripts/kintone/deploy-custom-ui.js
+src/core/fiscal-year-engine.js
 src/ui/mbo-kintone-auth-adapter.js
-src/ui/mbo-kintone-login-gate.js
+tests/classic-bundle.test.js
+tests/mbo-kintone-auth-adapter.test.js
 ```
 
-Therefore login-gate initialization throws at runtime, the catch path leaves `mboLoginGate = null`, and App794 correctly falls into `[FAIL_CLOSED_GATE_NULL]`.
+Not changed:
+- `src/main-mbo-app.js`;
+- dedicated login-gate source module;
+- CSS source/dist;
+- Baseline / Control Center / Active Task;
+- D2-D7 files.
 
-### Proven test gap
-`tests/classic-bundle.test.js` rebuilds the expected bundle using the same incomplete source-file list as the build script. Syntax parsing therefore passes even though required runtime classes are missing. A syntax-only classic-bundle test is insufficient for runtime dependency completeness.
+### Provisionally accepted corrections
 
-### Additional Baseline mismatch — Employee Code format
-Confirmed D1 Baseline allows real Employee Codes containing punctuation, including:
+1. Classic bundle build order now includes `src/ui/mbo-kintone-auth-adapter.js` and `src/ui/mbo-kintone-login-gate.js` before `src/main-mbo-app.js`.
+2. Dedicated auth modules remain separate; no class/function copy was inserted into `main-mbo-app.js`.
+3. `tests/classic-bundle.test.js` now checks one auth-adapter definition, one login-gate definition, runtime class resolution/instantiation, and source-to-dist exactness.
+4. Employee Code validation now allows the confirmed string character set `[A-Za-z0-9_.-]+` and preserves leading zeroes.
+5. Focused auth tests include `50.03`, `50.02`, `0050_2`, and rejection of injection syntax before any Kintone call.
+6. `dist/mbo-employee.css` is absent from the diff and therefore unchanged in Git.
+
+These corrections resolve the previously proven missing-class runtime root cause at source level, subject to final local-test evidence and the remaining deploy-script blocker below.
+
+## 5. Blocking Finding — Wrong FileKey Environment for Preview PUT
+
+`deploy-custom-ui.js` currently reads retained customization entries from:
 
 ```text
-50.03
-50.02
-0050_2
+GET /k/v1/app/customize.json
 ```
 
-Current source in `src/ui/mbo-kintone-auth-adapter.js` and `src/core/fiscal-year-engine.js` restricts codes to `[A-Za-z0-9_-]+`, which rejects the dot-containing confirmed codes. This must be corrected consistently before the next source acceptance.
-
-### Non-target CSS deviation
-The prior exact deploy scope allowed only the accepted JS target to change, but `scripts/kintone/deploy-custom-ui.js` always re-uploads both JS and CSS and rebuilds the customization payload with both new fileKeys. This explains the executor-reported CSS upload and can cause non-target metadata drift even when CSS bytes are unchanged.
-
-## 5. Independent Review Verdict
+and then forwards those retained FILE entries into:
 
 ```text
-APP794_DEPLOY_REVIEW = CORRECTIVE / NOT PASS
-LIVE_D1_RUNTIME = FAIL-CLOSED / NONFUNCTIONAL
-SOURCE_ACCEPTANCE = REOPENED FOR NARROW CORRECTIVE
-FINAL_D1_UAT = BLOCKED
+PUT /k/v1/preview/app/customize.json
 ```
 
-No rollback is ordered automatically. The current live state is visibly fail-closed; an improvised production rollback/redeploy would itself be another write and is outside the source-only corrective scope.
+This is not accepted.
 
-## 6. Exact Corrective Scope
+Kintone's customization update contract requires an unchanged uploaded FILE retained in a Preview PUT to use the `fileKey` obtained from the Preview/Test-environment customization read (`GET /k/v1/preview/app/customize.json`). Production/effective FILE keys must not be assumed valid for Preview PUT.
 
-The next executor task is **SOURCE / BUILD / TEST ONLY**. It must:
+The current code also forwards raw GET FILE objects. The corrective implementation must construct the PUT payload using only the fields accepted by the update API (`type + url` for URL entries, `type + file.fileKey` for FILE entries).
 
-1. include `mbo-kintone-auth-adapter.js` and `mbo-kintone-login-gate.js` in the classic bundle before `main-mbo-app.js`;
-2. add a runtime-completeness test that would fail if required auth classes are omitted; syntax-only checks are not sufficient;
-3. align Employee Code validation/Record Key handling with the confirmed Baseline so `50.03`, `50.02`, and `0050_2` are accepted while injection strings/quotes/spaces remain rejected;
-4. change the deployment implementation so future single-file JS replacement preserves existing non-target live customization entries/fileKeys and does not automatically re-upload unchanged CSS;
-5. rebuild `dist/mbo-employee-app.js` using build-only mode;
-6. prove `dist/mbo-employee.css` remains byte-identical / Git-blob-identical;
-7. run the required focused tests plus full `npm test`;
-8. commit source/build/test changes and STOP for independent review.
+Therefore:
+
+```text
+CORRECTIVE_COMMIT_5044_BUNDLE_FIX = PROVISIONALLY PASS
+CORRECTIVE_COMMIT_5044_EMPLOYEE_CODE_FIX = PROVISIONALLY PASS
+CORRECTIVE_COMMIT_5044_DEPLOY_PRESERVATION = CORRECTIVE REQUIRED
+SOURCE_PACKAGE_OVERALL = NOT PASS YET
+APP794_REDEPLOY = BLOCKED / NOT AUTHORIZED
+```
+
+## 6. Exact Next Corrective Scope
+
+The next executor task is SOURCE / TEST ONLY and must not redo accepted work.
+
+It must correct `scripts/kintone/deploy-custom-ui.js` so a future JS-only replacement:
+
+1. reads both effective/live customization and Preview/Test customization;
+2. fails closed if live and preview topology/scope differ unexpectedly before the change;
+3. obtains retained FILE keys from Preview/Test customization, not Production customization;
+4. identifies exactly one target desktop FILE named `mbo-employee-app.js`;
+5. uploads only the replacement JS;
+6. constructs the Preview PUT payload from the Preview/Test state using only supported update fields;
+7. preserves order, scope, URL entries, mobile entries, and all non-target preview FILE keys;
+8. includes the Preview revision in the PUT request to guard against concurrent change;
+9. does not upload CSS;
+10. has focused tests proving only the target JS key changes and CSS/non-target keys remain the Preview keys.
 
 No Kintone write/deploy is authorized in this corrective task.
 
@@ -138,15 +136,15 @@ No Kintone write/deploy is authorized in this corrective task.
 ```text
 NEXT_ACTION_OWNER = Antigravity
 ANTIGRAVITY_REQUIRED = YES
-DUPLICATE_WORK_RISK = NO
+DUPLICATE_WORK_RISK = LOW — task is limited to the unresolved fileKey/API-contract defect
 ```
 
-Antigravity must execute only `project-docs/AI_ACTIVE_TASK.md`, push one corrective source commit, and STOP.
+Antigravity must execute only the new `project-docs/AI_ACTIVE_TASK.md`, push one narrow source/test commit, and STOP.
 
 ## 8. Knowledge Maintenance
 
 Baseline promotion:
-`NONE — the existing Baseline was correct; implementation/build artifacts were inconsistent with it.`
+`NONE — no durable business/architecture rule changed.`
 
 Reusable Kintone skill extraction:
-`PASS — update existing skills for classic-bundle runtime dependency completeness and preservation of non-target Kintone FILE customization entries/fileKeys.`
+`PASS — update safe-live-change guidance to distinguish Production customization read-back from Preview fileKeys required by Preview customization PUT.`
