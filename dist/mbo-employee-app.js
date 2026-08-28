@@ -2,9 +2,7 @@
 (function() {
   'use strict';
 
-  /**
- * MBO System Constants & Enums
- */
+  
 
 const BUSINESS_STAGES = {
   NEW_RECORD: 'NEW_RECORD',
@@ -153,12 +151,7 @@ const CONFIDENTIAL_FIELDS = [
   "Final_Grade"
 ];
 
-/**
- * Build deterministic Record Key preserving leading zeroes
- * @param {string} fiscalYear e.g. "FY2026"
- * @param {string} employeeCode e.g. "0149"
- * @returns {string} e.g. "FY2026-0149"
- */
+
 function buildRecordKey(fiscalYear, employeeCode) {
   const fy = String(fiscalYear || '').trim();
   const emp = String(employeeCode || '').trim();
@@ -169,19 +162,7 @@ function buildRecordKey(fiscalYear, employeeCode) {
 }
 
 
-  /**
- * Japanese Fiscal Year & Record Key Engine (MBO V2 Pure Foundation)
- *
- * Rules:
- * 1. Japanese Fiscal Year runs from 1 April to 31 March.
- *    - Example: 2027-04-01 to 2028-03-31 is FY2027.
- *    - Example: 2027-03-31 is FY2026.
- * 2. Employee Code is strictly required to be a String matching /^[A-Za-z0-9_-]+$/, preserving leading zeros (e.g. "0149").
- *    Numeric input (e.g. 149), spaces (e.g. "01 49"), slashes, and symbols are rejected to prevent silent corruption.
- * 3. Fiscal Year must match /^FY\d{4}$/i.
- * 4. Record Key is strictly formatted as "{Fiscal_Year}-{Employee_Code}" (e.g. "FY2027-0149") and must satisfy /^FY\d{4}-[A-Za-z0-9_-]+$/.
- * 5. Strict date/time validation rejects invalid calendar dates and invalid timestamp hours/minutes/seconds.
- */
+  
 
 function isLeapYear(year) {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
@@ -192,12 +173,7 @@ function getDaysInMonth(year, month) {
   return days[month - 1];
 }
 
-/**
- * Parse and strictly validate a date input (string or Date object).
- * Rejects invalid calendar dates, invalid months/days, invalid hours/minutes/seconds, and trailing garbage.
- * @param {Date|string} dateInput - Date object or ISO date string (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss...)
- * @returns {{ year: number, month: number, day: number }}
- */
+
 function parseAndValidateDate(dateInput) {
   if (dateInput === null || dateInput === undefined) {
     throw new Error('Date input cannot be null or undefined.');
@@ -287,11 +263,7 @@ function parseAndValidateDate(dateInput) {
   return { year, month, day };
 }
 
-/**
- * Calculate the Japanese Fiscal Year from a strictly validated date.
- * @param {Date|string} dateInput - Date object or ISO date string (YYYY-MM-DD)
- * @returns {string} Fiscal Year string in format "FYXXXX" (e.g. "FY2027")
- */
+
 function getJapaneseFiscalYear(dateInput = new Date()) {
   const { year, month } = parseAndValidateDate(dateInput);
 
@@ -300,30 +272,22 @@ function getJapaneseFiscalYear(dateInput = new Date()) {
   return `FY${fiscalYearNumber}`;
 }
 
-/**
- * Validate that a string qualifies as a canonical Employee Code.
- * Must match /^[A-Za-z0-9_-]+$/.
- * @param {any} code - Value to test
- * @returns {boolean} True if code is non-empty string matching /^[A-Za-z0-9_-]+$/
- */
+
 function isValidEmployeeCode(code) {
   if (typeof code !== 'string') {
+    return false;
+  }
+  if (code !== code.trim()) {
     return false;
   }
   const trimmed = code.trim();
   if (trimmed.length === 0) {
     return false;
   }
-  return /^[A-Za-z0-9_-]+$/.test(trimmed);
+  return /^[A-Za-z0-9_.-]+$/.test(trimmed);
 }
 
-/**
- * Normalize and strictly validate an Employee Code.
- * Enforces String type and format /^[A-Za-z0-9_-]+$/ to guarantee canonical leading zeros are never destroyed.
- * Rejects numeric inputs (e.g. 149), spaces (e.g. "01 49"), slashes, and non-string types.
- * @param {string} code - Raw employee code input (must be string)
- * @returns {string} Canonical preserved string representation (e.g. "0149")
- */
+
 function normalizeEmployeeCode(code) {
   if (code === null || code === undefined) {
     throw new Error('Employee Code cannot be null or undefined.');
@@ -338,33 +302,29 @@ function normalizeEmployeeCode(code) {
     throw new Error('Employee Code cannot be empty.');
   }
 
-  if (!/^[A-Za-z0-9_-]+$/.test(strCode)) {
-    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must contain only alphanumeric characters, underscores, and hyphens (no spaces or slashes).`);
+  if (code !== code.trim()) {
+    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must not contain leading or trailing spaces.`);
+  }
+
+  if (!/^[A-Za-z0-9_.-]+$/.test(strCode)) {
+    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must contain only alphanumeric characters, underscores, hyphens, and dots (no spaces or slashes).`);
   }
 
   return strCode;
 }
 
-/**
- * Validate that a given Record Key conforms to standard MBO V2 format.
- * @param {string} recordKey - Record Key string to validate
- * @returns {boolean} True if format matches /^FY\d{4}-[A-Za-z0-9_-]+$/
- */
+
 function isValidRecordKeyFormat(recordKey) {
   if (!recordKey || typeof recordKey !== 'string') {
     return false;
   }
-  return /^FY\d{4}-[A-Za-z0-9_-]+$/.test(recordKey.trim());
+  if (recordKey !== recordKey.trim()) {
+    return false;
+  }
+  return /^FY\d{4}-[A-Za-z0-9_.-]+$/.test(recordKey.trim());
 }
 
-/**
- * Generate standard MBO Record Key from Fiscal Year and Employee Code.
- * Validates that Fiscal Year matches /^FY\d{4}$/i and Employee Code satisfies canonical contract.
- * Guarantees that the returned Record Key satisfies isValidRecordKeyFormat() === true.
- * @param {string} fiscalYear - Fiscal Year string (e.g. "FY2027")
- * @param {string} employeeCode - Canonical string Employee Code (e.g. "0149")
- * @returns {string} Standard Record Key (e.g. "FY2027-0149")
- */
+
 function generateRecordKey(fiscalYear, employeeCode) {
   if (!fiscalYear || typeof fiscalYear !== 'string') {
     throw new Error('Fiscal Year is required and must be a string.');
@@ -440,9 +400,7 @@ const CONFIG_LIFECYCLE_STATUS = {
   RETIRED: 'RETIRED'
 };
 
-/**
- * 19 Immutable Payload Fields for Configuration Hash computation
- */
+
 const IMMUTABLE_PAYLOAD_FIELDS = [
   'Master_Record_Key',
   'Profile_Code',
@@ -465,9 +423,7 @@ const IMMUTABLE_PAYLOAD_FIELDS = [
   'Supersedes_Config_Version'
 ];
 
-/**
- * Explicitly excluded audit/lifecycle fields (must NOT affect Configuration_Hash)
- */
+
 const EXCLUDED_AUDIT_FIELDS = [
   'Config_Status',
   'Published_At',
@@ -475,9 +431,7 @@ const EXCLUDED_AUDIT_FIELDS = [
   'Configuration_Hash'
 ];
 
-/**
- * Generates deterministic Master_Record_Key = {Profile_Code}::{Scoring_Config_Version}
- */
+
 function generateMasterRecordKey(profileCode, scoringConfigVersion) {
   if (!profileCode || typeof profileCode !== 'string' || profileCode.trim() === '') {
     throw new Error('PROFILE_CODE_INVALID: Profile_Code is required');
@@ -488,9 +442,7 @@ function generateMasterRecordKey(profileCode, scoringConfigVersion) {
   return `${profileCode.trim()}::${scoringConfigVersion.trim()}`;
 }
 
-/**
- * Computes deterministic SHA-256 hash over the 19 immutable payload fields only
- */
+
 function computeConfigurationHash(configPayload) {
   if (!configPayload || typeof configPayload !== 'object') {
     throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
@@ -506,9 +458,7 @@ function computeConfigurationHash(configPayload) {
   return crypto.createHash('sha256').update(canonicalJson, 'utf8').digest('hex');
 }
 
-/**
- * Validates a Master Configuration Record against MBO V2 scoring invariants
- */
+
 function validateScoringMasterConfig(configPayload, existingKeys = []) {
   if (!configPayload || typeof configPayload !== 'object') {
     throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
@@ -606,9 +556,7 @@ function validateScoringMasterConfig(configPayload, existingKeys = []) {
   };
 }
 
-/**
- * Returns canonical frozen baseline configurations for ALL 8 evaluation groups
- */
+
 function getCanonicalBaselineMasterConfigs() {
   return [
     {
@@ -789,10 +737,7 @@ function getCanonicalBaselineMasterConfigs() {
     }
   ];
 }
-/**
- * Canonicalizes a scoring config payload to enforce strict string representations 
- * for the 19 immutable fields, enabling stable hash computation across number/string formats.
- */
+
 function canonicalizeScoringConfigPayload(payload) {
   if (!payload || typeof payload !== 'object') {
     throw new Error('CONFIG_PAYLOAD_INVALID: Payload object is required');
@@ -856,10 +801,7 @@ function canonicalizeScoringConfigPayload(payload) {
 }
 
 
-  /**
- * Phase 3 WP-002B: profile resolution and read-only scoring configuration resolver.
- * This module deliberately has no Kintone adapter: master records are injected.
- */
+  
 
 
 
@@ -884,7 +826,7 @@ class ProfileScoringResolverError extends Error {
   }
 }
 
-/** Applies the frozen title normalization policy. */
+
 function normalizeTitle(rawTitle) {
   try {
     return policyNormalizeTitle(rawTitle);
@@ -996,9 +938,7 @@ function resolveProfileScoringConfig({
 }
 
 
-  /**
- * Safe Host Resolver for Kintone Record UI
- */
+  
 
 function getRecordUiHost(preferredSpaceId = 'SPACE_HEADER') {
   if (typeof kintone === 'undefined' || !kintone.app || !kintone.app.record) {
@@ -1030,19 +970,12 @@ function getRecordUiHost(preferredSpaceId = 'SPACE_HEADER') {
 }
 
 
-  /**
- * Business Rule Validation Engine (Bilingual Thai / English + Field-level errors)
- */
+  
 
 
 
 class ValidationEngine {
-  /**
-   * Validate record against stage business rules
-   * @param {Object} record Kintone record object
-   * @param {string} stage Current business stage
-   * @returns {Object} { isValid: boolean, fieldErrors: Array<{field: string, messageTH: string, messageEN: string, message: string}>, errors: string[] }
-   */
+  
   static validate(record, stage) {
     const fieldErrors = [];
 
@@ -1272,13 +1205,7 @@ class ValidationEngine {
     }
   }
 
-  /**
-   * Validate workflow action against record topology and assigned user fields
-   * @param {Object} record Kintone record object
-   * @param {string} actionName Name of process action (event.action?.value)
-   * @param {string} stage Resolved business stage from STATUS_TO_STAGE_MAP
-   * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
-   */
+  
   static validateWorkflowAction(record, actionName, stage) {
     const fieldErrors = [];
 
@@ -1474,9 +1401,7 @@ class ValidationEngine {
 }
 
 
-  /**
- * Employee Service - Read-only lookup from App 53 (Employee Namelist)
- */
+  
 
 
 
@@ -1491,11 +1416,7 @@ function getSnapshotFingerprint(snapshot) {
   return JSON.stringify(SNAPSHOT_FIELDS.map(field => snapshot[field] ?? null));
 }
 
-/**
- * Returns true only for an unmodified snapshot object created by a successful
- * EmployeeService.lookupEmployee call. This is provenance evidence, not an
- * authentication or authorization boundary.
- */
+
 function isVerifiedEmployeeSnapshot(snapshot) {
   const registeredFingerprint = verifiedSnapshotFingerprints.get(snapshot);
   return typeof registeredFingerprint === 'string' &&
@@ -1514,13 +1435,7 @@ class EmployeeLookupError extends Error {
 }
 
 class EmployeeService {
-  /**
-   * Lookup employee by Employee Code in App 53 (Read-Only)
-   * Canonical Business Employee Code is sourced strictly from App53.emp_text.
-   * @param {string} empCode - Input employee code string
-   * @param {Object} kintoneApi - Kintone API client instance
-   * @returns {Promise<{ status: string, employee: Object }>}
-   */
+  
   static async lookupEmployee(empCode, kintoneApi) {
     // 1. Strict Input Validation before API call
     if (empCode === null || empCode === undefined) {
@@ -1645,9 +1560,7 @@ class EmployeeService {
     return { status: 'EMPLOYEE_FOUND', employee };
   }
 
-  /**
-   * Check for duplicate MBO in App 794 for Fiscal Year + Employee Code
-   */
+  
   static async checkDuplicateMBO(mboAppId, fiscalYear, empCode, currentRecordId, kintoneApi) {
     const cleanCode = String(empCode || '').trim();
     const cleanFY = String(fiscalYear || '').trim();
@@ -1676,18 +1589,10 @@ class EmployeeService {
 }
 
 
-  /**
- * Routing Service - App 795 Routing Master Validator & Topology Resolver
- * Pure New Model (Manager L1/L2, GM L1/L2, Executive Direct M1_ONLY)
- * Enhanced for M10M-R2 Executive Direct Routing (DGM / GM / VP -> President)
- */
+  
 
 class RoutingService {
-  /**
-   * Normalize position string to canonical routing position class
-   * @param {string} positionCode
-   * @returns {string} Normalized Position Class
-   */
+  
   static normalizePosition(positionCode) {
     const clean = String(positionCode || '').trim();
     if (/^(Deputy\s*General\s*Manager|DGM)$/i.test(clean)) {
@@ -1702,16 +1607,7 @@ class RoutingService {
     return clean;
   }
 
-  /**
-   * Pure Read-Only Route Resolution from App 795 (Zero Requester Authorization Check)
-   * Supports Position Priority (DGM/GM/VP -> President) and Team-aware routing keys (Section_Code|Team)
-   * @param {number} routingAppId
-   * @param {string} sectionCode
-   * @param {string} teamCode
-   * @param {Object} kintoneApi
-   * @param {string} positionCode
-   * @returns {Object} Resolved Routing Profile with Requester_User list
-   */
+  
   static async resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode = '') {
     const cleanPosition = String(positionCode || '').trim();
     const normalizedPos = RoutingService.normalizePosition(cleanPosition);
@@ -1852,12 +1748,7 @@ class RoutingService {
     };
   }
 
-  /**
-   * Asserts Business Requester Authorization against the resolved route's Requester_User list.
-   * `admin-form` and `Administrator` have 0 business requester authority unless listed in Requester_User.
-   * @param {Object} route Resolved route profile
-   * @param {string} loginUserCode Current login user code
-   */
+  
   static assertRequesterAuthorized(route, loginUserCode) {
     const cleanUser = String(loginUserCode || '').trim();
     if (!cleanUser) {
@@ -1879,17 +1770,7 @@ class RoutingService {
     }
   }
 
-  /**
-   * Validate current user access and resolve sequential routing topology from App 795
-   * Composes `resolveRoutingProfile` + `assertRequesterAuthorized`.
-   * @param {number} routingAppId
-   * @param {string} sectionCode
-   * @param {string} teamCode
-   * @param {string} loginUserCode
-   * @param {Object} kintoneApi
-   * @param {string} positionCode
-   * @returns {Object} Full Sequential Routing Profile
-   */
+  
   static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = '') {
     const route = await RoutingService.resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode);
     RoutingService.assertRequesterAuthorized(route, loginUserCode);
@@ -1898,10 +1779,677 @@ class RoutingService {
 }
 
 
-  /**
- * Employee Part A & Part B UI Renderer - Evaluation UI V2 (R5 Route-Aware Five-Stage UX)
- * Source of Truth: exp/PMS_Staff & Chief_PART_A.xlsx & Bilingual Specification
- */
+  
+
+const PBKDF2_ITERATIONS = 100000;
+const PBKDF2_HASH = 'SHA-256';
+const PBKDF2_KEY_LEN_BITS = 256;
+const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_FAILED_ATTEMPTS = 5;
+const enc = new TextEncoder();
+
+function hexEncode(buffer) {
+  return [...new Uint8Array(buffer)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexDecode(hexStr) {
+  if (hexStr.length % 2 !== 0) return new Uint8Array(0);
+  const bytes = new Uint8Array(hexStr.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+class MboKintoneAuthAdapter {
+  
+  constructor({ api, appId = 801, cryptoImpl = globalThis.crypto, now = () => new Date() } = {}) {
+    this.api = api;
+    this.appId = appId;
+    this.crypto = cryptoImpl;
+    this.now = now;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: Employee_Code canonical validation
+  // ---------------------------------------------------------------------------
+
+  _normalizeEmployeeCode(code) {
+    if (typeof code !== 'string') throw new Error('INVALID_EMPLOYEE_CODE');
+    if (code !== code.trim()) throw new Error('INVALID_EMPLOYEE_CODE');
+    const trimmed = code.trim();
+    if (!trimmed || !/^[A-Za-z0-9_.-]+$/.test(trimmed)) throw new Error('INVALID_EMPLOYEE_CODE');
+    return trimmed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: PBKDF2 crypto
+  // ---------------------------------------------------------------------------
+
+  async _deriveHash(password, saltBytes) {
+    const keyMaterial = await this.crypto.subtle.importKey(
+      'raw',
+      enc.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    const bits = await this.crypto.subtle.deriveBits(
+      { name: 'PBKDF2', hash: PBKDF2_HASH, salt: saltBytes, iterations: PBKDF2_ITERATIONS },
+      keyMaterial,
+      PBKDF2_KEY_LEN_BITS
+    );
+    return hexEncode(bits);
+  }
+
+  
+  async verifyPassword(password, storedHash) {
+    try {
+      if (typeof storedHash !== 'string') return false;
+      const parts = storedHash.split('$');
+      if (parts.length !== 4) return false;
+      if (parts[0] !== 'pbkdf2') return false;
+      if (parts[1] !== String(PBKDF2_ITERATIONS)) return false;
+      if (!/^[0-9a-f]+$/i.test(parts[2]) || parts[2].length === 0) return false;
+      if (!/^[0-9a-f]{64}$/i.test(parts[3])) return false;
+      const saltBytes = hexDecode(parts[2]);
+      const computed = await this._deriveHash(password, saltBytes);
+      return computed === parts[3].toLowerCase();
+    } catch {
+      return false;
+    }
+  }
+
+  
+  async createPasswordHash(password) {
+    if (typeof password !== 'string' || password.length === 0) {
+      throw new Error('INVALID_PASSWORD');
+    }
+    const saltBytes = new Uint8Array(16);
+    this.crypto.getRandomValues(saltBytes);
+    const hashHex = await this._deriveHash(password, saltBytes);
+    return `pbkdf2$${PBKDF2_ITERATIONS}$${hexEncode(saltBytes)}$${hashHex}`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: App801 credential fetch
+  // ---------------------------------------------------------------------------
+
+  async _getCredential(employeeCode) {
+    const code = this._normalizeEmployeeCode(employeeCode);
+    const result = await this.api.getRecords(this.appId, `Employee_Code = "${code}" limit 2`);
+    const records = result?.records || [];
+
+    if (records.length === 0) throw new Error('CREDENTIAL_NOT_FOUND');
+    if (records.length > 1) throw new Error('DUPLICATE_CREDENTIAL');
+
+    const r = records[0];
+    const get = key => r[key]?.value ?? null;
+
+    const storedCode = get('Employee_Code');
+    const hash = get('Password_Hash');
+    const status = get('Account_Status');
+    const force = get('Force_Password_Change');
+    const failedRaw = get('Failed_Attempts');
+    const lockedUntilRaw = get('Locked_Until');
+
+    if (storedCode !== code) throw new Error('MALFORMED_CREDENTIAL');
+    if (typeof hash !== 'string' || !hash) throw new Error('MALFORMED_CREDENTIAL');
+    if (!['ACTIVE', 'LOCKED', 'DISABLED'].includes(status)) throw new Error('MALFORMED_CREDENTIAL');
+    if (!['YES', 'NO'].includes(force)) throw new Error('MALFORMED_CREDENTIAL');
+
+    // B5: Malformed Failed_Attempts / Locked_Until fail closed
+    let failedAttempts = 0;
+    if (failedRaw !== null && failedRaw !== undefined && failedRaw !== '') {
+      const parsedFailed = Number(failedRaw);
+      if (isNaN(parsedFailed) || parsedFailed < 0) throw new Error('MALFORMED_CREDENTIAL');
+      failedAttempts = parsedFailed;
+    }
+
+    if (lockedUntilRaw !== null && lockedUntilRaw !== undefined && lockedUntilRaw !== '') {
+      if (isNaN(Date.parse(lockedUntilRaw))) throw new Error('MALFORMED_CREDENTIAL');
+    }
+
+    return {
+      id: r.$id?.value,
+      code,
+      hash,
+      status,
+      forceChange: force === 'YES',
+      lockedUntil: lockedUntilRaw || null,
+      failedAttempts
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public: login
+  // ---------------------------------------------------------------------------
+
+  
+  async login({ username, password }) {
+    let cred;
+    try {
+      cred = await this._getCredential(username);
+    } catch (err) {
+      return { status: 'CREDENTIAL_DENIED', reason: err.message };
+    }
+
+    // B5: Account_Status = LOCKED or DISABLED: always deny
+    if (cred.status === 'DISABLED') {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Account is disabled.' };
+    }
+    if (cred.status === 'LOCKED') {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Account is locked.' };
+    }
+
+    // ACTIVE status with temporary lockout period in effect
+    if (cred.lockedUntil && new Date(cred.lockedUntil) > this.now()) {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Account is temporarily locked. Please try again later.' };
+    }
+
+    // Verify password
+    const valid = await this.verifyPassword(password, cred.hash);
+    if (!valid) {
+      const newFailed = cred.failedAttempts + 1;
+      const lockedUntil = newFailed >= MAX_FAILED_ATTEMPTS
+        ? new Date(this.now().getTime() + LOCK_DURATION_MS).toISOString()
+        : null;
+      await this.api.updateRecord(this.appId, cred.id, {
+        Failed_Attempts: { value: newFailed },
+        Locked_Until: { value: lockedUntil }
+      });
+      return { status: 'INVALID_CREDENTIALS' };
+    }
+
+    // Successful authentication — reset failed state, update last login
+    await this.api.updateRecord(this.appId, cred.id, {
+      Failed_Attempts: { value: 0 },
+      Locked_Until: { value: null },
+      Last_Login_At: { value: this.now().toISOString() }
+    });
+
+    return {
+      status: cred.forceChange ? 'PASSWORD_CHANGE_REQUIRED' : 'AUTHENTICATED',
+      employeeCode: cred.code
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public: changePassword (normal authenticated change — requires current password)
+  // ---------------------------------------------------------------------------
+
+  
+  async changePassword({ employeeCode, currentPassword, newPassword }) {
+    let cred;
+    try {
+      cred = await this._getCredential(employeeCode);
+    } catch (err) {
+      return { status: 'CREDENTIAL_DENIED', reason: err.message };
+    }
+
+    const valid = await this.verifyPassword(currentPassword, cred.hash);
+    if (!valid) {
+      return { status: 'INVALID_CREDENTIALS', reason: 'Current password is incorrect.' };
+    }
+
+    if (newPassword === cred.code) {
+      return { status: 'INVALID_PASSWORD', reason: 'New password cannot be the same as your Employee Code.' };
+    }
+
+    const newHash = await this.createPasswordHash(newPassword);
+    await this.api.updateRecord(this.appId, cred.id, {
+      Password_Hash: { value: newHash },
+      Password_Changed_At: { value: this.now().toISOString() },
+      Force_Password_Change: { value: 'NO' },
+      Failed_Attempts: { value: 0 },
+      Locked_Until: { value: null }
+    });
+
+    return { status: 'PASSWORD_CHANGED', employeeCode: cred.code };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public: forceChangePassword (initial/forced change — no current password required)
+  // ---------------------------------------------------------------------------
+
+  
+  async forceChangePassword({ employeeCode, newPassword }) {
+    let cred;
+    try {
+      cred = await this._getCredential(employeeCode);
+    } catch (err) {
+      return { status: 'CREDENTIAL_DENIED', reason: err.message };
+    }
+
+    // B6: Deny forced change if Force_Password_Change is not YES
+    if (cred.forceChange !== true) {
+      return { status: 'CREDENTIAL_DENIED', reason: 'Force password change is not required for this account.' };
+    }
+
+    if (newPassword === cred.code) {
+      return { status: 'INVALID_PASSWORD', reason: 'New password cannot be the same as your Employee Code.' };
+    }
+
+    const newHash = await this.createPasswordHash(newPassword);
+    await this.api.updateRecord(this.appId, cred.id, {
+      Password_Hash: { value: newHash },
+      Password_Changed_At: { value: this.now().toISOString() },
+      Force_Password_Change: { value: 'NO' },
+      Failed_Attempts: { value: 0 },
+      Locked_Until: { value: null }
+    });
+
+    return { status: 'PASSWORD_CHANGED', employeeCode: cred.code };
+  }
+}
+
+
+  
+
+const BASE_STYLE = 'font-family:sans-serif;box-sizing:border-box;';
+
+function styled(el, css) {
+  el.style.cssText = BASE_STYLE + css;
+  return el;
+}
+
+function ce(tag) {
+  return typeof document !== 'undefined' ? document.createElement(tag) : null;
+}
+
+class MboKintoneLoginGate {
+  
+  constructor(adapter, { onReload = null } = {}) {
+    this.adapter = adapter;
+    this._principal = null;       // { employeeCode: string } — page memory only
+    this._pendingForceChange = false;
+    this._onReload = onReload || (() => {
+      if (typeof location !== 'undefined') location.reload();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public API
+  // ---------------------------------------------------------------------------
+
+  
+  getEmployeeCode() {
+    if (!this._principal || this._pendingForceChange) return null;
+    return this._principal.employeeCode;
+  }
+
+  
+  logout() {
+    this._principal = null;
+    this._pendingForceChange = false;
+  }
+
+  
+  async requireLogin(host) {
+    const code = this.getEmployeeCode();
+    if (code) return code;
+
+    return new Promise((resolve) => {
+      this._renderLoginOverlay(host, resolve);
+    });
+  }
+
+  
+  renderAuthBar(host, employeeCode) {
+    if (!host) return;
+    const existing = host.querySelector('[data-mbo-auth-bar]');
+    if (existing) existing.remove();
+
+    const bar = ce('div');
+    if (!bar) return;
+    bar.setAttribute('data-mbo-auth-bar', '');
+    styled(bar, 'display:flex;align-items:center;gap:12px;justify-content:flex-end;' +
+      'padding:8px 16px;background:#f0f0f0;border-bottom:1px solid #ddd;font-size:13px;');
+
+    const label = ce('span');
+    label.textContent = `Logged in: ${employeeCode}`;
+    styled(label, 'color:#444;flex:1;');
+
+    const changePwBtn = ce('button');
+    changePwBtn.textContent = 'Change Password';
+    styled(changePwBtn, 'padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;');
+    changePwBtn.addEventListener('click', () => {
+      this._renderChangePasswordDialog(document.body, employeeCode);
+    });
+
+    const logoutBtn = ce('button');
+    logoutBtn.textContent = 'Logout';
+    styled(logoutBtn, 'padding:4px 10px;cursor:pointer;border:1px solid #bbb;border-radius:4px;background:#fff;font-size:13px;');
+    logoutBtn.addEventListener('click', () => {
+      this.logout();
+      this._onReload();
+    });
+
+    bar.appendChild(label);
+    bar.appendChild(changePwBtn);
+    bar.appendChild(logoutBtn);
+    host.insertBefore(bar, host.firstChild);
+    return bar;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: Login overlay
+  // ---------------------------------------------------------------------------
+
+  _removeOverlay(host, attr) {
+    if (!host || !host.querySelector) return;
+    const el = host.querySelector(`[${attr}]`);
+    if (el) el.remove();
+  }
+
+  _renderLoginOverlay(host, resolve) {
+    if (!host) return;
+    this._removeOverlay(host, 'data-mbo-login-overlay');
+
+    const overlay = ce('div');
+    overlay.setAttribute('data-mbo-login-overlay', '');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'MBO Login');
+    styled(overlay, 'position:fixed;inset:0;z-index:2147483647;background:#fff;' +
+      'display:flex;align-items:center;justify-content:center;');
+
+    const card = ce('div');
+    styled(card, 'min-width:320px;max-width:400px;padding:32px;' +
+      'box-shadow:0 4px 24px rgba(0,0,0,.18);border-radius:8px;background:#fff;');
+
+    const title = ce('h2');
+    title.textContent = 'MBO Login';
+    styled(title, 'margin:0 0 20px;font-size:20px;color:#222;');
+
+    const form = ce('form');
+    form.setAttribute('data-mbo-login-form', '');
+    form.setAttribute('autocomplete', 'on');
+
+    form.appendChild(this._labeledInput('Employee Code', 'username', 'text', 'username'));
+    form.appendChild(this._labeledInput('Password', 'password', 'password', 'current-password'));
+
+    const errorEl = ce('p');
+    errorEl.setAttribute('data-mbo-error', '');
+    errorEl.setAttribute('role', 'alert');
+    styled(errorEl, 'color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;');
+
+    const submitBtn = ce('button');
+    submitBtn.type = 'submit';
+    submitBtn.textContent = 'Login';
+    styled(submitBtn, 'width:100%;padding:10px;background:#0057b8;color:#fff;' +
+      'border:none;border-radius:4px;font-size:15px;cursor:pointer;');
+
+    form.appendChild(errorEl);
+    form.appendChild(submitBtn);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Logging in…';
+
+      const username = form.querySelector('[name="username"]').value;
+      const password = form.querySelector('[name="password"]').value;
+
+      let result;
+      try {
+        result = await this.adapter.login({ username, password });
+      } catch (err) {
+        errorEl.textContent = 'Login error. Please try again.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+        return;
+      }
+
+      if (result.status === 'AUTHENTICATED') {
+        this._principal = { employeeCode: result.employeeCode };
+        this._pendingForceChange = false;
+        overlay.remove();
+        resolve(result.employeeCode);
+      } else if (result.status === 'PASSWORD_CHANGE_REQUIRED') {
+        this._principal = { employeeCode: result.employeeCode };
+        this._pendingForceChange = true;
+        card.innerHTML = '';
+        this._renderForceChangeCard(card, overlay, resolve);
+      } else if (result.status === 'INVALID_CREDENTIALS') {
+        errorEl.textContent = 'Invalid Employee Code or password.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+      } else {
+        // CREDENTIAL_DENIED
+        errorEl.textContent = 'Account is locked or disabled. Please contact HR.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
+      }
+    });
+
+    card.appendChild(title);
+    card.appendChild(form);
+    overlay.appendChild(card);
+    host.appendChild(overlay);
+
+    const usernameInput = form.querySelector('[name="username"]');
+    if (usernameInput) usernameInput.focus();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: Force Password Change card (replaces login card content)
+  // ---------------------------------------------------------------------------
+
+  _renderForceChangeCard(card, overlay, resolve) {
+    const title = ce('h2');
+    title.textContent = 'Password Change Required';
+    styled(title, 'margin:0 0 8px;font-size:20px;color:#222;');
+
+    const note = ce('p');
+    note.textContent = 'You must set a new password before continuing.';
+    styled(note, 'margin:0 0 20px;font-size:13px;color:#666;');
+
+    const form = ce('form');
+    form.setAttribute('data-mbo-force-change-form', '');
+
+    form.appendChild(this._labeledInput('New Password', 'newPassword', 'password', 'new-password'));
+    form.appendChild(this._labeledInput('Confirm New Password', 'confirmPassword', 'password', 'new-password'));
+
+    const errorEl = ce('p');
+    errorEl.setAttribute('data-mbo-error', '');
+    errorEl.setAttribute('role', 'alert');
+    styled(errorEl, 'color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;');
+
+    const submitBtn = ce('button');
+    submitBtn.type = 'submit';
+    submitBtn.textContent = 'Set New Password';
+    styled(submitBtn, 'width:100%;padding:10px;background:#0057b8;color:#fff;' +
+      'border:none;border-radius:4px;font-size:15px;cursor:pointer;');
+
+    form.appendChild(errorEl);
+    form.appendChild(submitBtn);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.textContent = '';
+      const newPassword = form.querySelector('[name="newPassword"]').value;
+      const confirmPassword = form.querySelector('[name="confirmPassword"]').value;
+
+      if (newPassword !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match.';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving…';
+
+      let result;
+      try {
+        result = await this.adapter.forceChangePassword({
+          employeeCode: this._principal.employeeCode,
+          newPassword
+        });
+      } catch (err) {
+        errorEl.textContent = 'Error saving password. Please try again.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Set New Password';
+        return;
+      }
+
+      if (result.status === 'PASSWORD_CHANGED') {
+        this._pendingForceChange = false;
+        overlay.remove();
+        resolve(this._principal.employeeCode);
+      } else {
+        errorEl.textContent = result.reason || 'Could not change password.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Set New Password';
+      }
+    });
+
+    card.appendChild(title);
+    card.appendChild(note);
+    card.appendChild(form);
+
+    const firstInput = form.querySelector('[name="newPassword"]');
+    if (firstInput) firstInput.focus();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: Change Password dialog (authenticated own-password change)
+  // ---------------------------------------------------------------------------
+
+  _renderChangePasswordDialog(host, employeeCode) {
+    if (!host) return;
+    this._removeOverlay(host, 'data-mbo-change-pw-overlay');
+
+    const overlay = ce('div');
+    overlay.setAttribute('data-mbo-change-pw-overlay', '');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Change Password');
+    styled(overlay, 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.5);' +
+      'display:flex;align-items:center;justify-content:center;');
+
+    const card = ce('div');
+    styled(card, 'min-width:320px;max-width:400px;padding:32px;background:#fff;' +
+      'border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.2);');
+
+    const title = ce('h3');
+    title.textContent = 'Change Password';
+    styled(title, 'margin:0 0 20px;font-size:18px;color:#222;');
+
+    const form = ce('form');
+    form.setAttribute('data-mbo-change-pw-form', '');
+
+    form.appendChild(this._labeledInput('Current Password', 'currentPassword', 'password', 'current-password'));
+    form.appendChild(this._labeledInput('New Password', 'newPassword', 'password', 'new-password'));
+    form.appendChild(this._labeledInput('Confirm New Password', 'confirmPassword', 'password', 'new-password'));
+
+    const errorEl = ce('p');
+    errorEl.setAttribute('data-mbo-error', '');
+    errorEl.setAttribute('role', 'alert');
+    styled(errorEl, 'color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;');
+
+    const btnRow = ce('div');
+    styled(btnRow, 'display:flex;gap:8px;');
+
+    const submitBtn = ce('button');
+    submitBtn.type = 'submit';
+    submitBtn.textContent = 'Change Password';
+    styled(submitBtn, 'flex:1;padding:10px;background:#0057b8;color:#fff;' +
+      'border:none;border-radius:4px;font-size:14px;cursor:pointer;');
+
+    const cancelBtn = ce('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = 'Cancel';
+    styled(cancelBtn, 'flex:1;padding:10px;background:#fff;color:#333;' +
+      'border:1px solid #ccc;border-radius:4px;font-size:14px;cursor:pointer;');
+    cancelBtn.addEventListener('click', () => overlay.remove());
+
+    btnRow.appendChild(submitBtn);
+    btnRow.appendChild(cancelBtn);
+
+    form.appendChild(errorEl);
+    form.appendChild(btnRow);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.textContent = '';
+      const currentPassword = form.querySelector('[name="currentPassword"]').value;
+      const newPassword = form.querySelector('[name="newPassword"]').value;
+      const confirmPassword = form.querySelector('[name="confirmPassword"]').value;
+
+      if (newPassword !== confirmPassword) {
+        errorEl.textContent = 'New passwords do not match.';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving…';
+
+      let result;
+      try {
+        result = await this.adapter.changePassword({ employeeCode, currentPassword, newPassword });
+      } catch (err) {
+        errorEl.textContent = 'Error. Please try again.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Change Password';
+        return;
+      }
+
+      if (result.status === 'PASSWORD_CHANGED') {
+        overlay.remove();
+        // Brief confirmation — use a status div if available
+        const confirmEl = ce('div');
+        if (confirmEl) {
+          styled(confirmEl, 'position:fixed;top:20px;right:20px;z-index:2147483647;' +
+            'background:#2a7;color:#fff;padding:12px 20px;border-radius:6px;font-size:14px;');
+          confirmEl.textContent = 'Password changed successfully.';
+          document.body.appendChild(confirmEl);
+          setTimeout(() => confirmEl.remove(), 3000);
+        }
+      } else {
+        errorEl.textContent = result.reason || 'Could not change password.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Change Password';
+      }
+    });
+
+    card.appendChild(title);
+    card.appendChild(form);
+    overlay.appendChild(card);
+    host.appendChild(overlay);
+
+    const firstInput = form.querySelector('[name="currentPassword"]');
+    if (firstInput) firstInput.focus();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal: helper — labeled input group
+  // ---------------------------------------------------------------------------
+
+  _labeledInput(labelText, name, type, autocomplete) {
+    const group = ce('div');
+    styled(group, 'margin-bottom:16px;');
+
+    const label = ce('label');
+    label.textContent = labelText;
+    styled(label, 'display:block;margin-bottom:4px;font-size:14px;color:#555;');
+
+    const input = ce('input');
+    input.name = name;
+    input.type = type;
+    input.required = true;
+    input.setAttribute('autocomplete', autocomplete || 'off');
+    styled(input, 'width:100%;padding:8px 12px;border:1px solid #ccc;' +
+      'border-radius:4px;font-size:14px;');
+
+    group.appendChild(label);
+    group.appendChild(input);
+    return group;
+  }
+}
+
+
+  
 
 
 
@@ -5045,9 +5593,7 @@ class EmployeePartAUI {
 }
 
 
-  /**
- * TTMET MBO V2 - Main Entry Point for Kintone Customization
- */
+  
 
 
 
@@ -5061,16 +5607,10 @@ class EmployeePartAUI {
 
 let activeUiInstance = null;
 
-/**
- * D1: Module-level MBO Login Gate. Initialized to null → fail closed.
- * Set by production initialization block or by setMboLoginGate() in tests.
- */
+
 let mboLoginGate = null;
 
-/**
- * Allows test injection of a mock gate. Never self-authorize live cutover.
- * @param {MboKintoneLoginGate|null} gate
- */
+
 function setMboLoginGate(gate) {
   mboLoginGate = gate;
 }
@@ -5231,9 +5771,7 @@ if (typeof kintone !== 'undefined') {
     });
   }
 
-  /**
-   * B7: Render a visible, full-page blocking access-denied notice on host using textContent.
-   */
+  
   function renderBlockedNotice(host, title, detail) {
     if (!host) host = document.body;
     host.innerHTML = '';
@@ -5253,10 +5791,7 @@ if (typeof kintone !== 'undefined') {
     host.appendChild(box);
   }
 
-  /**
-   * B1: Renders Employee Self custom index for authenticated Employee_Code.
-   * Hides unrestricted native App794 list and queries App794 ONLY for authenticatedEmployeeCode.
-   */
+  
   async function renderEmployeeSelfIndex(event, host, authenticatedEmployeeCode) {
     // Hide native unrestricted record list
     const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
@@ -5368,11 +5903,7 @@ if (typeof kintone !== 'undefined') {
     return event;
   }
 
-  /**
-   * Resolve Business Stage based on Event Type and Workflow Status
-   * On Create: Returns NEW_RECORD without reading Process Management Status
-   * On Edit/Detail: Reads Process Status from saved record
-   */
+  
   function resolveBusinessStage(event) {
     if (event.type === 'app.record.create.show' || event.type === 'app.record.create.submit') {
       return BUSINESS_STAGES.NEW_RECORD;

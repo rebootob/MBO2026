@@ -280,6 +280,38 @@ describe('D1 MboKintoneAuthAdapter', () => {
     assert.equal(calls.length, 0, 'Zero Kintone calls must be made for malformed Employee_Code');
   });
 
+  it('2c. login with special formatted Employee Codes (50.03, 50.02, 0050_2) succeeds for valid credential', async () => {
+    const specialCodes = ['50.03', '50.02', '0050_2'];
+    for (const code of specialCodes) {
+      const { hash } = await makeHashedCredential('pass123', code);
+      const api = makeApi({ employeeCode: code, hash });
+      const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+      const result = await adapter.login({ username: code, password: 'pass123' });
+      assert.equal(result.status, 'AUTHENTICATED');
+      assert.equal(result.employeeCode, code);
+    }
+  });
+
+  it('2d. login with leading/trailing or inner space rejects cleanly with zero Kintone calls', async () => {
+    const calls = [];
+    const api = {
+      getRecords: async () => { calls.push('get'); return { records: [] }; },
+      updateRecord: async () => { calls.push('update'); }
+    };
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+
+    const r1 = await adapter.login({ username: ' 0118', password: 'pw' });
+    assert.equal(r1.status, 'CREDENTIAL_DENIED');
+
+    const r2 = await adapter.login({ username: '0118 ', password: 'pw' });
+    assert.equal(r2.status, 'CREDENTIAL_DENIED');
+
+    const r3 = await adapter.login({ username: '01 18', password: 'pw' });
+    assert.equal(r3.status, 'CREDENTIAL_DENIED');
+
+    assert.equal(calls.length, 0, 'Zero Kintone calls must be made for spaced Employee_Code');
+  });
+
   it('B5. login returns CREDENTIAL_DENIED for Account_Status=LOCKED even without Locked_Until', async () => {
     const { hash } = await makeHashedCredential('pw');
     const api = makeApi({ hash, status: 'LOCKED', lockedUntil: null });

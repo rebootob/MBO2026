@@ -14,6 +14,7 @@ if (!isBuildOnly) {
 
 function cleanEsModules(jsText) {
   return jsText
+    .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, '')
     .replace(/import\s+['"][^'"]+['"];?/g, '')
     .replace(/export\s+const\s+/g, 'const ')
@@ -32,6 +33,8 @@ const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js',
 const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
 const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
 const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
+const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
 const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
 const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
 
@@ -54,6 +57,10 @@ const fullJs = `
   ${employeeServiceJs}
 
   ${routingServiceJs}
+
+  ${authAdapterJs}
+
+  ${loginGateJs}
 
   ${uiJs}
 
@@ -121,22 +128,38 @@ async function uploadFile(filename, content, contentType) {
   return data.fileKey;
 }
 
-const jsFileKey = await uploadFile('mbo-employee-app.js', fullJs, 'text/javascript');
-const cssFileKey = await uploadFile('mbo-employee.css', cssContent, 'text/css');
+// Read live customization to preserve non-target entries
+const liveCustomize = await kintoneRequest(`/k/v1/app/customize.json?app=${app}`);
+const desktopJsEntries = liveCustomize.desktop?.js || [];
+const targetEntries = desktopJsEntries.filter(e => e.type === 'FILE' && e.file?.name === 'mbo-employee-app.js');
 
-// 3. Put Customization to Preview
+if (targetEntries.length !== 1) {
+  throw new Error(`DEPLOY BLOCKED: Expected exactly 1 desktop FILE entry named mbo-employee-app.js, found ${targetEntries.length}`);
+}
+
+const jsFileKey = await uploadFile('mbo-employee-app.js', fullJs, 'text/javascript');
+
+// Replace fileKey for target entry only; preserve desktop CSS, mobile entries, and scope
+const updatedDesktopJs = desktopJsEntries.map(entry => {
+  if (entry.type === 'FILE' && entry.file?.name === 'mbo-employee-app.js') {
+    return { type: 'FILE', file: { fileKey: jsFileKey } };
+  }
+  return entry;
+});
+
+// 3. Put Customization to Preview (preserving non-target entries)
 await kintoneRequest('/k/v1/preview/app/customize.json', {
   method: 'PUT',
   body: {
     app,
-    scope: 'ALL',
+    scope: liveCustomize.scope || 'ALL',
     desktop: {
-      js: [{ type: 'FILE', file: { fileKey: jsFileKey } }],
-      css: [{ type: 'FILE', file: { fileKey: cssFileKey } }]
+      js: updatedDesktopJs,
+      css: liveCustomize.desktop?.css || []
     },
     mobile: {
-      js: [],
-      css: []
+      js: liveCustomize.mobile?.js || [],
+      css: liveCustomize.mobile?.css || []
     }
   }
 });

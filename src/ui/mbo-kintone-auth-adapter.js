@@ -7,7 +7,7 @@
  * - App801 fields used: Employee_Code, Password_Hash, Password_Algorithm,
  *   Force_Password_Change, Account_Status, Failed_Attempts, Locked_Until,
  *   Last_Login_At, Password_Changed_At, Credential_Version.
- * - Canonical Employee_Code format: /^[A-Za-z0-9_-]+$/ only.
+ * - Canonical Employee_Code format: /^[A-Za-z0-9_.-]+$/ only.
  * - Exactly one App801 record per Employee_Code; duplicate/missing/malformed → fail closed.
  * - 5 failed attempts → 15-minute lockout (Locked_Until).
  * - PBKDF2 format: pbkdf2$100000$<saltHex>$<hashHex> (SHA-256, 256-bit output).
@@ -57,8 +57,9 @@ export class MboKintoneAuthAdapter {
 
   _normalizeEmployeeCode(code) {
     if (typeof code !== 'string') throw new Error('INVALID_EMPLOYEE_CODE');
+    if (code !== code.trim()) throw new Error('INVALID_EMPLOYEE_CODE');
     const trimmed = code.trim();
-    if (!trimmed || !/^[A-Za-z0-9_-]+$/.test(trimmed)) throw new Error('INVALID_EMPLOYEE_CODE');
+    if (!trimmed || !/^[A-Za-z0-9_.-]+$/.test(trimmed)) throw new Error('INVALID_EMPLOYEE_CODE');
     return trimmed;
   }
 

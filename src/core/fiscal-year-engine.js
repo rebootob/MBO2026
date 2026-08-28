@@ -5,10 +5,10 @@
  * 1. Japanese Fiscal Year runs from 1 April to 31 March.
  *    - Example: 2027-04-01 to 2028-03-31 is FY2027.
  *    - Example: 2027-03-31 is FY2026.
- * 2. Employee Code is strictly required to be a String matching /^[A-Za-z0-9_-]+$/, preserving leading zeros (e.g. "0149").
+ * 2. Employee Code is strictly required to be a String matching /^[A-Za-z0-9_.-]+$/, preserving leading zeros (e.g. "0149").
  *    Numeric input (e.g. 149), spaces (e.g. "01 49"), slashes, and symbols are rejected to prevent silent corruption.
  * 3. Fiscal Year must match /^FY\d{4}$/i.
- * 4. Record Key is strictly formatted as "{Fiscal_Year}-{Employee_Code}" (e.g. "FY2027-0149") and must satisfy /^FY\d{4}-[A-Za-z0-9_-]+$/.
+ * 4. Record Key is strictly formatted as "{Fiscal_Year}-{Employee_Code}" (e.g. "FY2027-0149") and must satisfy /^FY\d{4}-[A-Za-z0-9_.-]+$/.
  * 5. Strict date/time validation rejects invalid calendar dates and invalid timestamp hours/minutes/seconds.
  */
 
@@ -139,16 +139,19 @@ export function isValidEmployeeCode(code) {
   if (typeof code !== 'string') {
     return false;
   }
+  if (code !== code.trim()) {
+    return false;
+  }
   const trimmed = code.trim();
   if (trimmed.length === 0) {
     return false;
   }
-  return /^[A-Za-z0-9_-]+$/.test(trimmed);
+  return /^[A-Za-z0-9_.-]+$/.test(trimmed);
 }
 
 /**
  * Normalize and strictly validate an Employee Code.
- * Enforces String type and format /^[A-Za-z0-9_-]+$/ to guarantee canonical leading zeros are never destroyed.
+ * Enforces String type and format /^[A-Za-z0-9_.-]+$/ to guarantee canonical leading zeros are never destroyed.
  * Rejects numeric inputs (e.g. 149), spaces (e.g. "01 49"), slashes, and non-string types.
  * @param {string} code - Raw employee code input (must be string)
  * @returns {string} Canonical preserved string representation (e.g. "0149")
@@ -167,8 +170,12 @@ export function normalizeEmployeeCode(code) {
     throw new Error('Employee Code cannot be empty.');
   }
 
-  if (!/^[A-Za-z0-9_-]+$/.test(strCode)) {
-    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must contain only alphanumeric characters, underscores, and hyphens (no spaces or slashes).`);
+  if (code !== code.trim()) {
+    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must not contain leading or trailing spaces.`);
+  }
+
+  if (!/^[A-Za-z0-9_.-]+$/.test(strCode)) {
+    throw new Error(`Invalid Employee Code format: "${code}". Employee Code must contain only alphanumeric characters, underscores, hyphens, and dots (no spaces or slashes).`);
   }
 
   return strCode;
@@ -177,13 +184,16 @@ export function normalizeEmployeeCode(code) {
 /**
  * Validate that a given Record Key conforms to standard MBO V2 format.
  * @param {string} recordKey - Record Key string to validate
- * @returns {boolean} True if format matches /^FY\d{4}-[A-Za-z0-9_-]+$/
+ * @returns {boolean} True if format matches /^FY\d{4}-[A-Za-z0-9_.-]+$/
  */
 export function isValidRecordKeyFormat(recordKey) {
   if (!recordKey || typeof recordKey !== 'string') {
     return false;
   }
-  return /^FY\d{4}-[A-Za-z0-9_-]+$/.test(recordKey.trim());
+  if (recordKey !== recordKey.trim()) {
+    return false;
+  }
+  return /^FY\d{4}-[A-Za-z0-9_.-]+$/.test(recordKey.trim());
 }
 
 /**

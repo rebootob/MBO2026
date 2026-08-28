@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 function cleanEsModules(jsText) {
   return jsText
+    .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/import\s+[\s\S]*?\s+from\s+['"][^'"]+['"];?/g, '')
     .replace(/import\s+['"][^'"]+['"];?/g, '')
     .replace(/export\s+const\s+/g, 'const ')
@@ -22,6 +23,8 @@ test('Classic Bundle: App 794 Javascript bundle parses as classic script with ze
   const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
   const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
   const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
+  const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+  const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
   const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
   const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
 
@@ -45,6 +48,10 @@ test('Classic Bundle: App 794 Javascript bundle parses as classic script with ze
 
   ${routingServiceJs}
 
+  ${authAdapterJs}
+
+  ${loginGateJs}
+
   ${uiJs}
 
   ${mainJs}
@@ -65,6 +72,66 @@ test('Classic Bundle: App 794 Javascript bundle parses as classic script with ze
 
   // 4. Zero broken } from '...' residue
   assert.equal(/}\s*from\s*['"]/.test(fullJs), false, 'fullJs must contain 0 broken from residue');
+
+  // 5. Auth Adapter and Login Gate definition counts
+  const authAdapterMatches = fullJs.match(/\bclass\s+MboKintoneAuthAdapter\b/g) || [];
+  assert.equal(authAdapterMatches.length, 1, 'fullJs must contain exactly 1 definition of MboKintoneAuthAdapter');
+
+  const loginGateMatches = fullJs.match(/\bclass\s+MboKintoneLoginGate\b/g) || [];
+  assert.equal(loginGateMatches.length, 1, 'fullJs must contain exactly 1 definition of MboKintoneLoginGate');
+});
+
+test('Classic Bundle: MboKintoneAuthAdapter and MboKintoneLoginGate runtime resolution in bundle scope', () => {
+  const constantsJs = cleanEsModules(fs.readFileSync('src/config/constants.js', 'utf8'));
+  const fiscalYearEngineJs = cleanEsModules(fs.readFileSync('src/core/fiscal-year-engine.js', 'utf8'));
+  const scoringConfigMasterJs = cleanEsModules(fs.readFileSync('src/profiles/scoring-config-master.js', 'utf8'));
+  const profileScoringResolverJs = cleanEsModules(fs.readFileSync('src/profiles/profile-scoring-resolver.js', 'utf8'));
+  const hostResolverJs = cleanEsModules(fs.readFileSync('src/ui/host-resolver.js', 'utf8'));
+  const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
+  const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
+  const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
+  const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+  const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
+  const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
+
+  const testScript = `
+    ${constantsJs}
+    ${fiscalYearEngineJs}
+    ${scoringConfigMasterJs}
+    ${profileScoringResolverJs}
+    ${hostResolverJs}
+    ${validationJs}
+    ${employeeServiceJs}
+    ${routingServiceJs}
+    ${authAdapterJs}
+    ${loginGateJs}
+    ${uiJs}
+
+    if (typeof MboKintoneAuthAdapter !== 'function') {
+      throw new Error('MboKintoneAuthAdapter is not a function/class');
+    }
+    if (typeof MboKintoneLoginGate !== 'function') {
+      throw new Error('MboKintoneLoginGate is not a function/class');
+    }
+
+    // Verify instantiation far enough to prove classes are resolvable without Kintone network call
+    const stubApi = { getRecords: async () => ({ records: [] }), updateRecord: async () => {} };
+    const adapter = new MboKintoneAuthAdapter({ api: stubApi });
+    const gate = new MboKintoneLoginGate(adapter);
+
+    return {
+      adapterType: typeof adapter,
+      gateType: typeof gate,
+      adapterHasLogin: typeof adapter.login === 'function',
+      gateHasRequireLogin: typeof gate.requireLogin === 'function'
+    };
+  `;
+
+  const result = new Function(testScript)();
+  assert.equal(result.adapterType, 'object');
+  assert.equal(result.gateType, 'object');
+  assert.equal(result.adapterHasLogin, true);
+  assert.equal(result.gateHasRequireLogin, true);
 });
 
 test('Classic Bundle: isValidEmployeeCode runtime availability in bundle scope', () => {
@@ -83,16 +150,26 @@ test('Classic Bundle: isValidEmployeeCode runtime availability in bundle scope',
     return {
       valid1: isValidEmployeeCode('0149'),
       valid2: isValidEmployeeCode('EM001'),
+      valid3: isValidEmployeeCode('50.03'),
+      valid4: isValidEmployeeCode('50.02'),
+      valid5: isValidEmployeeCode('0050_2'),
       invalid1: isValidEmployeeCode(''),
-      invalid2: isValidEmployeeCode(123)
+      invalid2: isValidEmployeeCode(123),
+      invalid3: isValidEmployeeCode('0149 '),
+      invalid4: isValidEmployeeCode('01" or "1"="1')
     };
   `;
 
   const result = new Function(testScript)();
   assert.equal(result.valid1, true);
   assert.equal(result.valid2, true);
+  assert.equal(result.valid3, true);
+  assert.equal(result.valid4, true);
+  assert.equal(result.valid5, true);
   assert.equal(result.invalid1, false);
   assert.equal(result.invalid2, false);
+  assert.equal(result.invalid3, false);
+  assert.equal(result.invalid4, false);
 });
 
 test('Kintone Field Reset: User Selection fields reset to [] and scalar fields reset to empty string', () => {
@@ -176,6 +253,8 @@ test('Classic Bundle: Committed source and dist M10L Save-gate exactness match',
   const validationJs = cleanEsModules(fs.readFileSync('src/validation/validation-engine.js', 'utf8'));
   const employeeServiceJs = cleanEsModules(fs.readFileSync('src/services/employee-service.js', 'utf8'));
   const routingServiceJs = cleanEsModules(fs.readFileSync('src/services/routing-service.js', 'utf8'));
+  const authAdapterJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-auth-adapter.js', 'utf8'));
+  const loginGateJs = cleanEsModules(fs.readFileSync('src/ui/mbo-kintone-login-gate.js', 'utf8'));
   const uiJs = cleanEsModules(fs.readFileSync('src/ui/employee-part-a-ui.js', 'utf8'));
   const mainJs = cleanEsModules(fs.readFileSync('src/main-mbo-app.js', 'utf8'));
 
@@ -198,6 +277,10 @@ test('Classic Bundle: Committed source and dist M10L Save-gate exactness match',
   ${employeeServiceJs}
 
   ${routingServiceJs}
+
+  ${authAdapterJs}
+
+  ${loginGateJs}
 
   ${uiJs}
 
