@@ -373,3 +373,66 @@ APP801_SESSION_SCHEMA_GATE            = CLOSED
 ```
 
 This acceptance does not authorize App794 Session Continuity deployment, Create-handler correction, UAT mutation, or any D2-D7 write.
+
+## 15. App794 Session Continuity Deploy
+
+### Scope & Pre-Deploy Discovery
+```text
+AUTHORIZATION_SCOPE                    = APP794_SESSION_CONTINUITY_DEPLOY APPROVED 2026-08-28
+SOURCE_COMMIT                          = 7133e2934b0e8f7ea710e03d195157354e0d95b8
+TEST_PROOF_COMMIT                      = 9d9db0f2456b5b3407b8dae830493c0eb9a9cc7f
+LOCKED_TARGET_JS_BLOB                  = d0294229bf0f7ccdf4d161632648bc885794c347
+EXPECTED_CSS_BLOB                      = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+LOCAL_BUILD_RESULT                     = PASS (dist/mbo-employee-app.js rebuilt deterministically)
+NPM_TEST_RESULT                        = PASS (825/825 tests passed 100%)
+LOCAL_JS_BLOB_AFTER_BUILD              = d0294229bf0f7ccdf4d161632648bc885794c347 (MATCH)
+LOCAL_CSS_BLOB_AFTER_BUILD             = 1359dfae16d1224580210a5a6cd366fb20bcf6f8 (MATCH)
+APP801_DEPENDENCY_GATE                 = PASS (All 5 session fields verified on App801)
+LIVE_REVISION_BEFORE                   = 42
+PREVIEW_REVISION_BEFORE                = 42
+PRE_DEPLOY_LIVE_JS_BLOB                = 2a9a3c5bfe896b51f482c016f66863bffeddb679 (MATCH)
+PRE_DEPLOY_LIVE_CSS_BLOB               = 1359dfae16d1224580210a5a6cd366fb20bcf6f8 (MATCH)
+STRICT_PREFLIGHT_RESULT                = PASS (validatePreflight 100%)
+ROLLBACK_BACKUP_PATH                   = scratch/app794_live_redeploy_backup.json & scratch/app794_preview_redeploy_backup.json
+```
+
+### Deployment & Post-Deploy Read-Back Verification
+```text
+TARGET_JS_UPLOAD_COUNT                 = 1 (mbo-employee-app.js, fileKey: eaa45d91-b0f4-48e6-9b41-7ffe7ca33511)
+CSS_UPLOAD_COUNT                       = 0
+OTHER_FILE_UPLOAD_COUNT                = 0
+PREVIEW_CUSTOMIZATION_PUT_COUNT        = 1 (revision 43)
+APP794_DEPLOY_REQUEST_COUNT            = 1
+DEPLOYMENT_POLLING_RESULT              = SUCCESS (Attempt 3/20)
+LIVE_REVISION_AFTER                    = 43
+PREVIEW_REVISION_AFTER                 = 43
+DEPLOYED_TARGET_JS_BLOB                = d0294229bf0f7ccdf4d161632648bc885794c347 (MATCH)
+POST_DEPLOY_CSS_BLOB                   = 1359dfae16d1224580210a5a6cd366fb20bcf6f8 (MATCH)
+TARGET_CONTENT_HASH_MATCH              = YES
+CSS_CONTENT_HASH_MATCH                 = YES
+NON_TARGET_CUSTOMIZATION_PRESERVED     = YES
+LIVE_PREVIEW_ALIGNMENT_AFTER           = PASS
+```
+
+### Mandatory Counters
+```text
+APP794_CUSTOMIZATION_WRITES_EXECUTED    = 2 (1 x File Upload + 1 x Preview PUT)
+APP794_DEPLOY_REQUEST_COUNT            = 1
+APP794_RECORD_WRITES_EXECUTED          = 0
+APP801_SCHEMA_WRITES_EXECUTED          = 0
+APP801_RECORD_WRITES_EXECUTED          = 0
+APP53_WRITES_EXECUTED                  = 0
+APP795_WRITES_EXECUTED                 = 0
+APP796_WRITES_EXECUTED                 = 0
+GROUP_ACL_WRITES_EXECUTED              = 0
+PROCESS_VIEW_LAYOUT_WRITES_EXECUTED    = 0
+CREATE_HANDLER_FIX_EXECUTED            = 0
+UAT_EXECUTED                           = 0
+D2_D7_WRITES_EXECUTED                  = 0
+ROLLBACK_WRITES_EXECUTED               = 0
+SOURCE_FILES_CHANGED                   = 0
+TEST_FILES_CHANGED                     = 0
+DIST_FILES_CHANGED                     = 0
+
+DEPLOYMENT_RESULT                      = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
