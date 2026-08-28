@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — D1 MY MBO HISTORY + EMPLOYEE-SELF NO-DELETE
+# AI ACTIVE TASK — D1 MY MBO DELETE GUARD + COMPLETED DISPLAY CORRECTIVE
 
 Mode: **SOURCE / BUILD / TEST / LOCAL PREVIEW ONLY — ZERO KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
@@ -8,46 +8,58 @@ Read only:
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this file
 3. `project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
-4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-5. `src/ui/employee-self-index-ui.js`
-6. relevant App794 event registration in `src/main-mbo-app.js`
-7. focused tests only
+4. `src/ui/employee-self-index-ui.js`
+5. `src/security/delete-guard-policy.js`
+6. `src/ui/mbo-kintone-login-gate.js` public API only
+7. relevant delete registration in `src/main-mbo-app.js`
+8. focused tests only
 
 Do not scan repo.
 
-## Fix only this requirement
+## Fix only these two points
 
-### A. My MBO history list
-- Keep exact ownership query from authenticated MBO Employee Code only.
-- Keep newest Fiscal Year first.
-- Show all returned MBO records for that employee.
-- Change row action from blanket `ดู / แก้ไข (View / Edit)` to a view/history label such as:
-  `ดูย้อนหลัง / View History`
-  or `ดูรายละเอียด / View Details`.
-- Action opens the owned App794 record detail page.
-- No Delete action anywhere in Employee-Self list UI.
-- Preserve approved one-shell bilingual visual design.
+### A. Delete Guard integration
+Current defect: `MboKintoneLoginGate` public method is `getEmployeeCode()`, but the new policy looks for `getAuthenticatedEmployeeCode()`.
 
-### B. Employee-Self delete guard
-- Employee-Self MBO users must not delete App794 records.
-- Add a small dedicated delete-policy/guard module; keep `main-mbo-app.js` orchestration-only.
-- Register the supported App794 detail delete-submit event through main orchestration.
-- Resolve authenticated MBO principal through the existing login gate/session path; do not duplicate auth logic.
-- If the request is Employee-Self, cancel deletion fail-closed with a bilingual user message.
-- Missing/invalid MBO principal must also fail closed.
-- Do not add any REST/API delete implementation.
-- Do not alter technical-admin/HR deletion policy outside this Employee-Self scope.
+Required:
+- use the real existing gate API `mboLoginGate.getEmployeeCode()`;
+- do not add/rename/duplicate auth APIs;
+- Employee-Self authenticated principal -> delete submit blocked fail-closed;
+- missing/invalid Employee-Self principal -> blocked fail-closed;
+- do not make a new Admin/HR authorization policy in this corrective;
+- keep policy in `src/security/delete-guard-policy.js` and main orchestration-only;
+- no REST delete implementation.
 
-### C. Tests
-Must prove:
-- query contains exact authenticated Employee Code and `Fiscal_Year desc`;
-- representative multiple-year records render in descending returned order;
-- each history action links to the matching owned detail record;
-- no Delete control is rendered by Employee-Self list;
-- Employee-Self detail delete event is cancelled;
-- missing/invalid MBO principal delete is cancelled fail-closed;
-- no cross-employee/access/session semantics changed;
-- main remains orchestration-only.
+Focused test must use a production-compatible gate object exposing `getEmployeeCode()` and must fail if the code again calls a nonexistent auth method.
+
+### B. My MBO Completed display
+Canonical statuses include:
+- `15 HR Final Check`
+- `16 Completed`
+
+Required display:
+- raw `16 Completed` -> display exactly `Completed`;
+- raw `Completed` -> display exactly `Completed`;
+- raw `15 HR Final Check` -> must NOT display `Completed`;
+- no completion inference from year/date/scores;
+- display normalization only; do not alter workflow/routing/status storage.
+
+Keep already accepted history behavior unchanged:
+- exact Employee_Code query;
+- Fiscal_Year desc;
+- `ดูย้อนหลัง / View History` links;
+- no Delete UI.
+
+## Tests
+Add/fix focused tests proving:
+- production-compatible `getEmployeeCode()` integration;
+- authenticated Employee-Self delete blocked;
+- missing principal delete blocked;
+- no invented `getAuthenticatedEmployeeCode()` dependency;
+- `16 Completed` renders `Completed`;
+- `Completed` renders `Completed`;
+- `15 HR Final Check` does not render `Completed`;
+- accepted history query/links remain unchanged.
 
 Run:
 ```text
@@ -56,19 +68,20 @@ npm test
 ```
 
 Local Preview:
-- show representative records for one employee, e.g. FY2026/FY2025/FY2024;
-- show the view/history action;
-- no Delete action.
+- FY2026 status `15 HR Final Check`;
+- FY2025 status `16 Completed` but display `Completed`;
+- FY2024 status `Completed` display `Completed`;
+- keep View History and no Delete action.
 
 ## Forbidden
 - NO Kintone write/upload/deploy
 - NO App794 ACL write
 - NO App801 write
 - NO deploy-guard fix
-- NO Create-handler rework
-- NO auth/session/routing/scoring semantics change
+- NO auth/session redesign
+- NO workflow/routing/scoring change
 - NO broad refactor
 - NO D2-D7
 
-Commit + push one concise implementation commit, then STOP.
+Commit + push one concise corrective commit, then STOP.
 Do not Self-PASS.
