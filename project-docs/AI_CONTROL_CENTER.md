@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SESSION PASS / APP801 SCHEMA PASS / LIST→CREATE SESSION PASS / MODULE BUNDLE PASS / CREATE-HANDLER SOURCE+TEST PASS / EMPLOYEE-SELF INDEX SOURCE+TEST+VISUAL PASS / MY MBO HISTORY+NO-DELETE SOURCE GATE NEXT / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SESSION PASS / APP801 SCHEMA PASS / LIST→CREATE SESSION PASS / MODULE BUNDLE PASS / CREATE-HANDLER PASS / EMPLOYEE-SELF INDEX SOURCE+TEST+VISUAL PASS / MY MBO HISTORY PASS / DELETE GUARD+COMPLETED DISPLAY CORRECTIVE / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -32,7 +32,9 @@ D1_BUNDLE_DEPENDENCY_CORRECTIVE          = PASS / ACCEPTED AT 2a766d0e...
 D1_CREATE_HANDLER_CORRECTIVE             = PASS / ACCEPTED AT 162d1088...
 D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST       = PASS / ACCEPTED AT 9319be2d...
 D1_EMPLOYEE_SELF_INDEX_VISUAL            = PASS / USER APPROVED 2026-08-29
-D1_MY_MBO_HISTORY_NO_DELETE              = OPEN / CONFIRMED BASELINE
+D1_MY_MBO_HISTORY_LIST                   = PASS / ACCEPTED FROM 0ff03457...
+D1_EMPLOYEE_SELF_DELETE_GUARD            = CORRECTIVE REQUIRED
+D1_MY_MBO_COMPLETED_STATUS_DISPLAY       = CONFIRMED / CORRECTIVE REQUIRED
 APP794_DELETE_PERMISSION_READONLY_CHECK  = PENDING AFTER SOURCE GATE
 APP794_DEPLOY_GUARD_INTEGRATION          = OPEN / MUST CLOSE BEFORE FUTURE LIVE DEPLOY
 D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
@@ -41,73 +43,75 @@ D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately reco
 
 No new App794 deploy is authorized.
 
-## 3. Employee-Self Index Visual Acceptance
+## 3. Independent Review — Executor Commit 0ff03457...
 
-User reviewed the local Employee-Self candidate and explicitly said the list is visually good.
+Task base:
+`c0a12a91e8643a8fbb34164cf3f88b998ffb226a`
 
-Accepted visual properties:
-- coherent one-card/shell layout;
-- visible Employee Code;
-- visible Change Password and Logout;
-- exact `MBO ของฉัน / My MBO` heading;
-- visible Create New MBO action;
-- clean empty state;
-- no duplicate native index list/toolbar fragmentation in the candidate.
+Executor:
+`0ff034573357169a6f603b44a6000b0322dcd657`
 
-Visual approval closes the prior UX visual gate. It does not authorize deployment.
+Exactly one executor commit is ahead.
 
-## 4. New Confirmed Requirement — My MBO History + No Delete
+Accepted:
+- exact query `Employee_Code = "<authenticated>" order by Fiscal_Year desc`;
+- representative FY2026/FY2025/FY2024 history rows;
+- `ดูย้อนหลัง / View History` links to matching App794 detail record;
+- no Delete control in Employee-Self My MBO list;
+- dedicated delete policy module created;
+- main only registers the delete event and delegates;
+- no Kintone write/deploy/ACL write in this package.
 
-Canonical baseline:
+Blocking defect:
+- production `MboKintoneLoginGate` exposes `getEmployeeCode()`;
+- new `DeleteGuardPolicy` attempts `mboLoginGate.getAuthenticatedEmployeeCode()`, which does not exist;
+- therefore production policy resolves no authenticated employee from the actual gate and falls into the unauthenticated block path;
+- because the handler is globally registered, this is not acceptable evidence of an Employee-Self-only policy and can unintentionally affect non-Employee-Self contexts.
+
+Test gap:
+- focused test injects a custom callback named `getAuthenticatedEmployeeCode`, so it does not exercise the production gate interface and therefore misses the defect.
+
+## 4. Newly Confirmed Status Display Requirement
+
+Canonical final workflow status is already `16 Completed` in the existing canonical workflow status set.
+
+User requirement:
+- after HR final processing is completed and authoritative workflow status is `16 Completed`, My MBO must display exactly `Completed`;
+- `15 HR Final Check` is not yet Completed;
+- no heuristic completion inference;
+- display-only normalization; do not change workflow/routing.
+
+Canonical baseline updated:
 `project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
 
-Required behavior:
-- show only records whose `Employee_Code` exactly matches the authenticated MBO Employee Code;
-- newest Fiscal Year first;
-- employee can open prior MBO records from the list for history/detail review;
-- list action must be view-oriented, not blanket `View / Edit`;
-- no Delete action in Employee-Self custom UI;
-- Employee-Self delete attempt from App794 detail must fail closed through a supported Kintone delete-submit guard;
-- no REST/API delete path for Employee-Self;
-- existing cross-employee ownership gate remains unchanged.
-
-Important security note:
-UI hiding alone is not sufficient. After source/test acceptance, perform a READ-ONLY check of App794 Kintone permissions. If the shared/employee-facing Kintone principal still has Delete permission, an ACL change requires separate explicit user authorization.
-
-## 5. Existing Pre-Deploy Guard Gate
-
-Existing deployment guard remains fail-closed:
-
-```text
-DISCOVERY_MODE      = true
-WRITE_ALLOWED_APPS  = []
-```
-
-while the App794 deploy script uses the default `assertSandboxWriteTarget(app)` path. This remains a separate source/test gate after the My MBO history/no-delete source gate. Do not disable permanent protected-app rules.
-
-## 6. Exact Next Action
+## 5. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER              = Antigravity
-ANTIGRAVITY_REQUIRED           = YES — MY MBO HISTORY + EMPLOYEE-SELF NO-DELETE SOURCE/TEST ONLY
+ANTIGRAVITY_REQUIRED           = YES — ONE NARROW SOURCE/TEST CORRECTIVE
 KINTONE_WRITE                  = NO
 APP794_DEPLOY                  = NO
-APP801_WRITE                   = NO
 APP794_ACL_WRITE               = NO
+APP801_WRITE                   = NO
 DEPLOY_GUARD_FIX               = NO IN THIS PACKAGE
 D2_D7_WRITE                    = NO
 MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-After this source/test gate passes:
-1. Control Plane performs/readies App794 Delete permission READ-ONLY verification;
-2. close Deploy Guard Integration;
+Correct only:
+1. delete guard must consume the real existing login-gate API (`getEmployeeCode()`), with a test that uses a real-compatible gate shape and proves Employee-Self + missing principal behavior without inventing a second auth interface;
+2. preserve history list behavior already accepted;
+3. My MBO status display maps authoritative `16 Completed` / `Completed` -> `Completed`, while `15 HR Final Check` must not display Completed;
+4. do not change workflow status itself.
+
+After this gate passes:
+1. App794 Delete permission READ-ONLY verification;
+2. Deploy Guard Integration;
 3. request one combined App794 corrective deploy authorization;
-4. run final D1 UAT.
+4. final D1 UAT.
 
-## 7. Reusable Lessons
+## 6. Reusable Lessons
 
-- Employee-Self list ownership must be derived from authenticated MBO Employee Code, never from a user-selectable target.
-- Historical viewing and edit rights are separate concepts; list navigation should not promise edit rights.
-- `no delete` is a security rule, not merely a hidden-button UX rule.
-- UI-level delete suppression should be paired with a fail-closed application guard and, where appropriate, Kintone permission hardening.
+- Focused tests must exercise the real production interface, not an invented callback name that bypasses integration risk.
+- Employee-Self no-delete is a security policy; hidden UI alone is insufficient.
+- Final workflow status and user-facing status label may be normalized for clarity without changing workflow semantics.
