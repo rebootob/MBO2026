@@ -81,7 +81,7 @@ Keep skills concise and operational. Prefer patterns/checklists over narrative h
   - manage multiple shared/access accounts through a dedicated Kintone group instead of per-user app ACL rows
 
 - `browser-webcrypto-pbkdf2.md`
-  - browser-compatible PBKDF2 password hashing format and implementation constraints
+  - browser-compatible PBKDF2 password hashing plus create-only credential reconciliation and independent read-only post-provision verification without exposing secret material
 
 - `fail-closed-customization.md`
   - design Kintone customization gates so missing host/init/data errors do not expose native sensitive UI
