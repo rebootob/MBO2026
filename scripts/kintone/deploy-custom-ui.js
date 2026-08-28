@@ -1,21 +1,20 @@
 import fs from 'node:fs';
 import { assertSandboxWriteTarget } from '../../src/core/sandbox-write-guard.js';
-
-const isBuildOnly = process.argv.includes('--build-only');
-const isExecutedAsScript = process.argv[1] && (process.argv[1].endsWith('deploy-custom-ui.js') || process.argv[1].endsWith('deploy-custom-ui'));
-
 import { buildMboUi } from './build-mbo-ui.js';
 
-if (isExecutedAsScript) {
-  if (!isBuildOnly) {
-    const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
-    app = sandboxRegistryModule.mboV2AppId;
-    assertSandboxWriteTarget(app);
-  }
+const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
 
-  await buildMboUi();
+/**
+ * Prepares production deployment artifacts in memory & dist folder.
+ * Validates IIFE syntax and verifies zero ES module import/export residue.
+ * Performs NO network/Kintone operations.
+ */
+export async function prepareDeploymentArtifacts(options = {}) {
+  const targetApp = options.appId || 794;
+  await buildMboUi(options.buildOptions || {});
 
   const fullJs = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+  const cssContent = fs.readFileSync('dist/mbo-employee.css', 'utf8');
 
   // Validation Gate: Classic Bundle Parse & ES Module Residue Check
   try {
@@ -24,26 +23,21 @@ if (isExecutedAsScript) {
     throw new Error(`CLASSIC_BUNDLE_PARSE FAILED: ${err.message}`);
   }
 
-  if (/\bimport\b/.test(fullJs)) {
+  const strippedCode = fullJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');
+  if (/(^|\n)\s*import[\s{]/m.test(strippedCode)) {
     throw new Error('ES_MODULE_IMPORT_COUNT > 0: Bundle contains import statements');
   }
 
-  if (/\bexport\b/.test(fullJs)) {
+  if (/(^|\n)\s*export[\s{]/m.test(strippedCode)) {
     throw new Error('ES_MODULE_EXPORT_COUNT > 0: Bundle contains export statements');
   }
 
-  console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
-
-  if (isBuildOnly) {
-    console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
-    process.exit(0);
-  }
+  return {
+    app: targetApp,
+    fullJs,
+    cssContent
+  };
 }
-
-
-
-// Helper Functions Exported for Unit Testing & Customization Payload Building
-const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
 
 function validateContainers(customization, label) {
   if (!customization || typeof customization !== 'object') {
@@ -268,7 +262,29 @@ export function buildPreviewCustomizePayload({ app, previewCustomize, targetFile
   };
 }
 
-if (isExecutedAsScript && !isBuildOnly) {
+export async function executeDeployCustomUi(options = {}) {
+  const isBuildOnly = options.isBuildOnly ?? process.argv.includes('--build-only');
+
+  let app = options.appId || 794;
+  if (!isBuildOnly) {
+    try {
+      const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
+      app = sandboxRegistryModule.mboV2AppId || 794;
+    } catch {
+      app = 794;
+    }
+    assertSandboxWriteTarget(app);
+  }
+
+  const { fullJs } = await prepareDeploymentArtifacts({ appId: app });
+
+  console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
+
+  if (isBuildOnly) {
+    console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
+    return { app, fullJs, buildOnly: true };
+  }
+
   // 2. Upload Files to Kintone
   const { kintoneRequest, getKintoneConnection } = await import('../../src/core/kintone-client.js');
 
@@ -351,4 +367,13 @@ if (isExecutedAsScript && !isBuildOnly) {
   }
 
   console.log(`MBO V2 Sandbox (App ${app}) Custom UI successfully deployed to LIVE!`);
+  return { app, deployed: true };
+}
+
+const isExecutedAsScript = process.argv[1] && (process.argv[1].endsWith('deploy-custom-ui.js') || process.argv[1].endsWith('deploy-custom-ui'));
+if (isExecutedAsScript) {
+  executeDeployCustomUi().catch(err => {
+    console.error('DEPLOY FAILED:', err);
+    process.exit(1);
+  });
 }

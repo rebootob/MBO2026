@@ -20,6 +20,6 @@
     "ui:preview": "node scripts/ui-preview-server.js"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "0.28.2"
   }
 }

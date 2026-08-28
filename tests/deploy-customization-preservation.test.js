@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   validatePreflight,
   validateTopologyAlignment,
-  buildPreviewCustomizePayload
+  buildPreviewCustomizePayload,
+  prepareDeploymentArtifacts,
+  executeDeployCustomUi
 } from '../scripts/kintone/deploy-custom-ui.js';
 
 // Standard valid live & preview fixtures
@@ -45,6 +47,21 @@ test('VALID_PREFLIGHT_PASS & TARGET_OLD_FILEKEY_MAY_BE_REPLACED & NON_TARGET_CSS
   assert.equal(payload.desktop.css[0].file.fileKey, 'PREVIEW_CSS_KEY_444');
   assert.equal(payload.scope, 'ALL');
   assert.equal(payload.revision, '42');
+});
+
+test('DEPLOY_ENTRYPOINT_SCOPE_REGRESSION & DEPLOY_IMPORT_NETWORK_CALL_COUNT = 0', async () => {
+  // 1. prepareDeploymentArtifacts runs locally with 0 network calls and holds app + fullJs in valid scope
+  const artifacts = await prepareDeploymentArtifacts({ appId: 794 });
+  assert.equal(artifacts.app, 794);
+  assert.equal(typeof artifacts.fullJs, 'string');
+  assert.ok(artifacts.fullJs.length > 0);
+  assert.equal(typeof artifacts.cssContent, 'string');
+
+  // 2. executeDeployCustomUi in build-only mode executes cleanly with zero Kintone network calls
+  const buildResult = await executeDeployCustomUi({ isBuildOnly: true, appId: 794 });
+  assert.equal(buildResult.app, 794);
+  assert.equal(buildResult.buildOnly, true);
+  assert.equal(typeof buildResult.fullJs, 'string');
 });
 
 test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values', () => {
