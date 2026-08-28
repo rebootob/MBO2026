@@ -491,11 +491,11 @@ test('M10L-D-R4: Employee 0118 Technical Service Chief lookup populates all 9 sn
   currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
 
   const ui = getActiveUiInstance();
   assert.ok(ui, 'getActiveUiInstance must return active UI instance');
-  assert.equal(ui.isEmployeeVerified, false, 'Create UI must start unverified');
+  assert.equal(ui.isEmployeeVerified, true, 'Create UI is verified after autoload');
 
   // Execute lookup
   await ui.executeLookup('0118');
@@ -536,7 +536,7 @@ test('M10L-D-R4: Lookup fails closed when Profile_Code is absent from Kintone fo
   delete currentFormRecord.Profile_Code;
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   await assert.rejects(
@@ -559,7 +559,7 @@ test('M10L-D-R5: Lookup fails closed when kintone.app.record.get is not a functi
   currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   const originalGet = globalThis.kintone.app.record.get;
@@ -583,7 +583,7 @@ test('M10L-D-R5: Lookup fails closed when kintone.app.record.set is not a functi
   currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   const originalSet = globalThis.kintone.app.record.set;
@@ -606,7 +606,7 @@ test('M10L-D-R5: Lookup fails closed when kintone.app.record.get returns null (m
   const rawRecord = createMockRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   getApiOverride = () => null;
@@ -626,7 +626,7 @@ test('M10L-D-R4: Lookup fails closed when kintone.app.record.set throws an excep
   currentFormRecord = createBlankFormStateRecord();
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   setApiOverride = () => { throw new Error('Kintone set API permission error'); };
@@ -646,7 +646,7 @@ test('M10L-D-R4: Lookup fails closed when kintone.app.record.set is a no-op and 
   currentFormRecord = createBlankFormStateRecord({ Routing_Topology: { value: 'OLD_TOPOLOGY' } });
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   // setApi does nothing -> currentFormRecord remains unchanged with OLD_TOPOLOGY
@@ -668,7 +668,7 @@ test('M10L-D-R4: Lookup fails closed when required scoring snapshot field (Confi
   delete currentFormRecord.Configuration_Hash;
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   await assert.rejects(
@@ -786,7 +786,7 @@ test('M10L-D-R10: Employee lookup does not assign undefined Hoshin and preserves
   });
 
   const showEvent = { type: 'app.record.create.show', record: rawRecord };
-  showHook(showEvent);
+  await showHook(showEvent);
   const ui = getActiveUiInstance();
 
   await ui.executeLookup('0118');

@@ -387,6 +387,8 @@ if (typeof kintone !== 'undefined') {
   });
 
   function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode) {
+    let isAutoloadingInCreateHandler = false;
+
     // 4. D1: Render auth controls bar (Change Password, Logout).
     if (mboLoginGate && typeof mboLoginGate.renderAuthBar === 'function') {
       mboLoginGate.renderAuthBar(uiHost, authenticatedEmployeeCode);
@@ -428,7 +430,9 @@ if (typeof kintone !== 'undefined') {
         if (record[code]) {
           record[code].value = val;
         }
-        syncRecordToKintone(record);
+        if (!isAutoloadingInCreateHandler) {
+          syncRecordToKintone(record);
+        }
       },
       onEmployeeCodeChanged: (newCode) => {
         const USER_SELECT_FIELDS = new Set([
@@ -445,19 +449,28 @@ if (typeof kintone !== 'undefined') {
         const fieldsToClear = [
           'Employee_Name', 'Employee_Name_TH', 'Employee_Section',
           'Employee_Department', 'Employee_Position', 'Employee_Email',
-          'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
+          'Employee_Start_Date', 'Record_Key',
           'Manager_Level1_Approvers', 'Manager_Level2_Approvers',
           'GM_Level1_Approvers', 'GM_Level2_Approvers',
           'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology',
           'First_Manager_User', 'Manager_User', 'GM_User', 'Requester_User'
         ];
-        if (record.Employee_Code) record.Employee_Code.value = newCode;
+        if (!record.Employee_Code) {
+          record.Employee_Code = { value: newCode };
+        } else {
+          record.Employee_Code.value = newCode;
+        }
         fieldsToClear.forEach(k => {
-          if (record[k]) {
-            record[k].value = USER_SELECT_FIELDS.has(k) ? [] : '';
+          const clearVal = USER_SELECT_FIELDS.has(k) ? [] : '';
+          if (!record[k]) {
+            record[k] = { value: clearVal };
+          } else {
+            record[k].value = clearVal;
           }
         });
-        syncRecordToKintone(record);
+        if (!isAutoloadingInCreateHandler) {
+          syncRecordToKintone(record);
+        }
       },
       onLookupEmployee: async (empCode) => {
         // Step 1: Employee Lookup from App 53 (Read-Only)
@@ -556,10 +569,15 @@ if (typeof kintone !== 'undefined') {
         }
 
         Object.entries(fieldsToSync).forEach(([k, val]) => {
-          if (record[k] && val !== undefined) {
-            record[k].value = val;
+          if (val !== undefined) {
+            if (!record[k]) {
+              record[k] = { value: val };
+            } else {
+              record[k].value = val;
+            }
           }
         });
+
 
         const CORE_SNAPSHOT_FIELDS = [
           'Profile_Code',
@@ -574,10 +592,12 @@ if (typeof kintone !== 'undefined') {
         ];
 
         // Push directly to Kintone Form State with verified persistence and post-set read-back
-        syncRecordToKintone(record, {
-          requireVerifiedPersistence: true,
-          requiredFields: CORE_SNAPSHOT_FIELDS
-        });
+        if (!isAutoloadingInCreateHandler) {
+          syncRecordToKintone(record, {
+            requireVerifiedPersistence: true,
+            requiredFields: CORE_SNAPSHOT_FIELDS
+          });
+        }
       }
     };
 
@@ -594,21 +614,29 @@ if (typeof kintone !== 'undefined') {
     // B4: Authenticated Create Autoload MUST be awaited.
     // Fail closed if lookup fails; do not leave an unverified form.
     if (isCreate && authenticatedEmployeeCode) {
+      isAutoloadingInCreateHandler = true;
       const lookupPromise = ui.executeLookup(authenticatedEmployeeCode);
       if (lookupPromise && typeof lookupPromise.then === 'function') {
         return lookupPromise.then(() => event).catch(err => {
+          console.error('[MBO V2] Employee profile resolution failed during create show autoload:', err);
           renderBlockedNotice(uiHost,
             'Employee Profile Resolution Failed',
             `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`
           );
           hideAllNativeFields(record);
           return event;
+        }).finally(() => {
+          isAutoloadingInCreateHandler = false;
         });
+      } else {
+        isAutoloadingInCreateHandler = false;
       }
     }
 
     return event;
   }
+
+
 
   // Hook 1: Record Show (Detail, Edit, Create)
   kintone.events.on(['app.record.detail.show', 'app.record.edit.show', 'app.record.create.show'], function (event) {

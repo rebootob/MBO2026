@@ -6569,6 +6569,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       }
       return BUSINESS_STAGES.CONFIGURATION_ERROR;
     }, setupRecordUiWithAuth = function(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode) {
+      let isAutoloadingInCreateHandler = false;
       if (mboLoginGate && typeof mboLoginGate.renderAuthBar === "function") {
         mboLoginGate.renderAuthBar(uiHost, authenticatedEmployeeCode);
       }
@@ -6603,7 +6604,9 @@ Record: ${record.Employee_Code.value}`
           if (record[code]) {
             record[code].value = val;
           }
-          syncRecordToKintone(record);
+          if (!isAutoloadingInCreateHandler) {
+            syncRecordToKintone(record);
+          }
         },
         onEmployeeCodeChanged: (newCode) => {
           const USER_SELECT_FIELDS = /* @__PURE__ */ new Set([
@@ -6624,8 +6627,6 @@ Record: ${record.Employee_Code.value}`
             "Employee_Position",
             "Employee_Email",
             "Employee_Start_Date",
-            "Department_Hoshin",
-            "Section_Hoshin",
             "Record_Key",
             "Manager_Level1_Approvers",
             "Manager_Level2_Approvers",
@@ -6639,13 +6640,22 @@ Record: ${record.Employee_Code.value}`
             "GM_User",
             "Requester_User"
           ];
-          if (record.Employee_Code) record.Employee_Code.value = newCode;
+          if (!record.Employee_Code) {
+            record.Employee_Code = { value: newCode };
+          } else {
+            record.Employee_Code.value = newCode;
+          }
           fieldsToClear.forEach((k) => {
-            if (record[k]) {
-              record[k].value = USER_SELECT_FIELDS.has(k) ? [] : "";
+            const clearVal = USER_SELECT_FIELDS.has(k) ? [] : "";
+            if (!record[k]) {
+              record[k] = { value: clearVal };
+            } else {
+              record[k].value = clearVal;
             }
           });
-          syncRecordToKintone(record);
+          if (!isAutoloadingInCreateHandler) {
+            syncRecordToKintone(record);
+          }
         },
         onLookupEmployee: async (empCode) => {
           const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
@@ -6731,8 +6741,12 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
           }
           Object.entries(fieldsToSync).forEach(([k, val]) => {
-            if (record[k] && val !== void 0) {
-              record[k].value = val;
+            if (val !== void 0) {
+              if (!record[k]) {
+                record[k] = { value: val };
+              } else {
+                record[k].value = val;
+              }
             }
           });
           const CORE_SNAPSHOT_FIELDS = [
@@ -6746,10 +6760,12 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             "Requester_User",
             "Record_Key"
           ];
-          syncRecordToKintone(record, {
-            requireVerifiedPersistence: true,
-            requiredFields: CORE_SNAPSHOT_FIELDS
-          });
+          if (!isAutoloadingInCreateHandler) {
+            syncRecordToKintone(record, {
+              requireVerifiedPersistence: true,
+              requiredFields: CORE_SNAPSHOT_FIELDS
+            });
+          }
         }
       };
       const ui = new EmployeePartAUI(options);
@@ -6761,9 +6777,11 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
         console.error("[MBO V2] Error rendering custom UI:", renderError);
       }
       if (isCreate && authenticatedEmployeeCode) {
+        isAutoloadingInCreateHandler = true;
         const lookupPromise = ui.executeLookup(authenticatedEmployeeCode);
         if (lookupPromise && typeof lookupPromise.then === "function") {
           return lookupPromise.then(() => event).catch((err) => {
+            console.error("[MBO V2] Employee profile resolution failed during create show autoload:", err);
             renderBlockedNotice(
               uiHost,
               "Employee Profile Resolution Failed",
@@ -6771,7 +6789,11 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             );
             hideAllNativeFields(record);
             return event;
+          }).finally(() => {
+            isAutoloadingInCreateHandler = false;
           });
+        } else {
+          isAutoloadingInCreateHandler = false;
         }
       }
       return event;
