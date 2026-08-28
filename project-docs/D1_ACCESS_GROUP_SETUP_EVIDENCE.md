@@ -245,3 +245,75 @@ D1_APP801_ACL_RECONCILIATION      = PASS
 OVERALL_CORRECTIVE_STATUS         = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
+---
+
+## 10. App801 Credential Provisioning — 128 Candidate Gate
+
+### Pre-Write Freshness & Reconciliation Summary
+```text
+APP53_TOTAL_ROWS                       = 281
+APP53_ACTIVE_ROWS                      = 204
+APP53_ACTIVE_BLANK_EMPLOYEE_CODE_ROWS = 76
+APP53_DUPLICATE_ACTIVE_CODES           = NONE
+APP53_ELIGIBLE_CREDENTIAL_CANDIDATES   = 128
+
+SPECIAL_CANDIDATE_GATE_CHECKS:
+  50.03  eligible = true
+  50.02  eligible = true
+  0050_2 eligible = true
+  0118   eligible = true
+  0171   eligible = true
+  0119   eligible = false (expected: false/absent)
+  0284   eligible = false (expected: false/excluded)
+  9000   eligible = false (expected: false/inactive duplicate)
+
+APP801_EXISTING_TARGET_ROWS            = 0
+APP801_EXISTING_UNIQUE_TARGET_CODES   = 0
+APP801_MISSING_TARGET_CODES            = 128
+APP801_DUPLICATE_TARGET_CODES          = NONE
+```
+
+### Batch Provisioning Execution Result
+```text
+PROVISIONING_RESULT                    = SUCCESS
+BATCH_COUNT                            = 2 (Batch 1: 100 records, Batch 2: 28 records)
+APP801_CREDENTIAL_ROWS_CREATED         = 128
+RECORD_ID_RANGE                        = 1..128
+PASSWORD_ALGORITHM                     = PBKDF2-SHA256
+PBKDF2_ITERATIONS                      = 100000
+HASH_FORMAT                            = pbkdf2$100000$<saltHex>$<hashHex>
+FORCE_PASSWORD_CHANGE                  = YES
+ACCOUNT_STATUS                         = ACTIVE
+FAILED_ATTEMPTS                        = 0
+CREDENTIAL_VERSION                     = 1
+```
+
+### Post-Write Read-Back Verification
+```text
+APP801_TOTAL_RECORDS_AFTER             = 128
+APP801_TARGET_UNIQUE_CREDENTIAL_CODES_AFTER = 128
+APP801_TARGET_DUPLICATE_CODES_AFTER    = NONE
+APP801_MISSING_TARGET_CODES_AFTER      = 0
+
+SPECIAL_CODE_PRESENCE_AFTER:
+  0118 credential present              = YES
+  0171 credential present              = YES
+  0119 credential present from this task = NO
+  0284 credential present from this task = NO
+```
+
+### Mandatory Counters
+```text
+APP53_WRITES_EXECUTED                  = 0
+APP801_EXISTING_ROWS_UPDATED           = 0
+APP801_CREDENTIAL_ROWS_CREATED         = 128
+APP801_CREDENTIAL_WRITES_EXECUTED      = 2
+APP794_DEPLOY_EXECUTED                 = 0
+APP794_WRITES_EXECUTED                 = 0
+GROUP_ACL_WRITES_EXECUTED              = 0
+D2_D7_WRITES_EXECUTED                  = 0
+
+PROVISIONING_GATE_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+
