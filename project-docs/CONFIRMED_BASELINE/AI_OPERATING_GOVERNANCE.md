@@ -272,7 +272,26 @@ No live change starts automatically on chat startup. The first response reports 
 
 ---
 
-## 12. Operating Principle
+## 12. Source-Code Modularity — Mandatory
+
+MBO2026 source code must be organized by responsibility / feature / menu. Do not accumulate unrelated business logic, UI menu logic, authentication logic, export logic, routing logic, and helper logic into one large JavaScript source file.
+
+Required architecture rules:
+- each cohesive feature or menu should normally have its own JavaScript module/file;
+- `src/main-mbo-app.js` is primarily bootstrap / event registration / orchestration and must not become a catch-all feature implementation file;
+- existing dedicated modules such as authentication adapter and login gate must remain separate modules; do not solve bundling/runtime errors by copying their class/function bodies into `main-mbo-app.js`;
+- shared utilities should be extracted only when genuinely reused; do not create one file per trivial helper merely for file-count purity;
+- when changing an existing feature, prefer editing its existing module before creating a duplicate or competing implementation;
+- new menus/features should be separated by concern so defects can be isolated and reviewed with small diffs;
+- generated deployment artifacts under `dist/` may be a single classic-script bundle when required by Kintone deployment, but that bundle is generated output only and is not the canonical maintainable source;
+- never manually maintain business logic directly in the generated `dist/mbo-employee-app.js` bundle;
+- source-to-dist build/tests must prove that every required module is included exactly once and in dependency-safe order.
+
+This modularity rule is mandatory for future work and for any corrective change that touches affected source structure.
+
+---
+
+## 13. Operating Principle
 
 ```text
 Baseline      = what is durably confirmed/required
