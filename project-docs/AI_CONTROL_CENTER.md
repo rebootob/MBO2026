@@ -24,7 +24,7 @@ Do not browse/read historical project docs by default.
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE CUTOVER IN PROGRESS / CORRECTIVE REQUIRED FOR GROUP MEMBERSHIP + ACL STATE |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE GROUP+APP801 ACL PASS / CREDENTIAL PROVISIONING GATE PENDING |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -40,8 +40,7 @@ No AI may silently drop D1–D7.
 D1_SOURCE_IMPLEMENTATION            = APPROVED / SOURCE ACCEPTED
 D1_LIVE_CUTOVER                     = APPROVED
 DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED
-APP801_GROUP_ACL_MODEL              = APPROVED
-D1_GROUP_MEMBERSHIP_CORRECTIVE      = COVERED BY EXISTING D1 LIVE CUTOVER AUTHORIZATION
+APP801_GROUP_ACL_MODEL              = APPROVED / LIVE RECONCILED
 APP801_CREDENTIAL_BULK_PROVISIONING = NOT AUTHORIZED YET
 APP794_D1_CUSTOMIZATION_DEPLOY      = WAITING CURRENT GATE / DO NOT EXECUTE YET
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
@@ -61,95 +60,93 @@ Durable D1 architecture/security truth:
 Source status:
 `PASS / ACCEPTED`
 
+Live group + App801 ACL corrective evidence accepted:
+`b9d4fa830c4c0e3b827362e143639f9a307adbac`
+
 Live cutover status:
-`IN PROGRESS / CORRECTIVE REQUIRED`
+`IN PROGRESS / GROUP+ACL GATE PASS`
 
 Manual final UAT:
 `NOT STARTED`
 
-## 5. Independent Review — Evidence Commit 2cd8d707
+## 5. Independent Review — Evidence Commit b9d4fa83
 
 Review target:
-`2cd8d707d6fcb42c627b3c8302c3f93f629029f9`
+`b9d4fa830c4c0e3b827362e143639f9a307adbac`
 
 Independent review verdict:
 
 ```text
-CORRECTIVE / NOT ACCEPTED AS PASS
+PASS — D1 GROUP MEMBERSHIP + APP801 ACL CORRECTIVE GATE
 ```
 
-### Accepted Git Facts
-- commit `2cd8d707...` adds the sanitized evidence document `project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md`;
-- it does not contain a source-code implementation change;
-- approved Baseline remains the dedicated `MBO_EMPLOYEE_ACCESS` group model with App801 View/Edit-only group ACL and `GROUP:everyone` denied.
+### Accepted Evidence
+- branch HEAD advanced only by the expected corrective evidence commit;
+- `MBO_EMPLOYEE_ACCESS` existed and was empty before corrective membership reconciliation;
+- all 9 required principals were reported active/verified;
+- membership update used `PUT /v1/group/users.json` with the authorized request shape;
+- membership write returned HTTP 200;
+- immediate read-back showed all 9 required principals present: `f1, f2, f3, tmh, e1, s1, g_request, t1, t2`;
+- App801 app ACL read-back matched the confirmed Baseline target at revision 5;
+- no App801 ACL rewrite was needed;
+- `GROUP:everyone` remained denied;
+- no record ACL change occurred;
+- no App801 credential write, App794 deploy, or D2-D7 write occurred.
 
-### Reported Live Claims — Not Yet Independently Accepted
-The executor reported:
-- 9 principals verified;
-- group `MBO_EMPLOYEE_ACCESS` created;
-- required 9 members were not successfully written/present;
-- App801 app ACL was nevertheless changed to the group target;
-- no App801 credential writes;
-- App794 D1 customization not deployed.
+### Scope / Governance Check
+The executor stayed within `AI_ACTIVE_TASK.md`:
+- corrective group membership only;
+- App801 ACL verification only after membership PASS;
+- evidence updated in the existing evidence file;
+- no duplicate evidence document;
+- no source change;
+- no prohibited credential/deploy work.
 
-These remain live claims until the next exact read-back proves current Kintone state.
+The earlier `CB_IJ01 Invalid JSON string` issue is resolved operationally: the documented request shape succeeded with HTTP 200. No permission-failure conclusion is carried forward.
 
-### Review Findings
-1. **Sequencing violation / MUST CORRECT** — the authorizing Active Task required successful group setup + membership read-back before App801 ACL cutover. The evidence reports membership incomplete but ACL cutover executed anyway.
-2. **Root-cause claim rejected** — `CB_IJ01 Invalid JSON string` does not by itself prove insufficient permission. Request shape/serialization, HTTP status, error code/body, and actual User API authority must be checked before classifying the failure.
-3. **198 provisioning candidates NOT ACCEPTED** — the current Baseline/authorization does not establish a numeric-only Employee_Code rule. Excluding `50.03`, `50.02`, `0050_2` solely as non-numeric is therefore not independently accepted. Candidate rules remain unresolved.
-4. **No bulk provisioning authorization** — App801 credential writes remain forbidden.
-5. **No App794 deploy yet** — deploy remains blocked by the current D1 gate.
+## 6. Remaining D1 Blockers / Decisions
 
-## 6. Current D1 Blockers
+Group/ACL corrective is no longer a blocker.
 
-Before provisioning or App794 deploy:
+Before App801 credential bulk provisioning or App794 deploy:
 
-1. live-read current `MBO_EMPLOYEE_ACCESS` group state and exact membership;
-2. prove the exact reason membership update failed, using sanitized HTTP status/error evidence;
-3. complete/reconcile the required 9 members only through an authorized admin path;
-4. live-read current App801 app ACL and reconcile it only after membership is proven;
-5. define/accept the App53 credential-candidate rule;
-6. resolve 79 blank `emp_text` records;
-7. decide treatment of `50.03`, `50.02`, `0050_2` without inventing a numeric-only rule;
-8. resolve duplicate Employee_Code `9000`;
-9. handle missing test employee `0119` / choose another valid second isolation-test employee if required.
-
-No bulk credential provisioning until these are accepted/resolved.
+1. define and independently accept the App53 credential-candidate rule;
+2. resolve 79 blank `emp_text` records;
+3. decide treatment of `50.03`, `50.02`, `0050_2` without inventing a numeric-only rule;
+4. resolve duplicate Employee_Code `9000`;
+5. handle missing test employee `0119` / choose another valid second isolation-test employee if needed;
+6. after candidate set is accepted, obtain/record authorization for App801 credential bulk provisioning before any credential write;
+7. App794 deploy remains blocked until the provisioning gate is safely resolved.
 
 ## 7. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES
+NEXT_ACTION_OWNER = ChatGPT
+ANTIGRAVITY_REQUIRED = NO
 DUPLICATE_WORK_RISK = NO
 ```
 
-Next action is one narrow corrective packet only:
-- live-read group members + current App801 ACL;
-- validate exact Cybozu group-membership request/authority;
-- reconcile required group membership if authorized;
-- immediate read-back;
-- verify/reconcile App801 ACL only when membership gate passes;
-- commit sanitized evidence and STOP.
-
-No planning, source work, credential provisioning, App794 deploy, or D2-D7 work.
+Next action:
+- Control Plane independently resolve the credential-candidate rule from App53 and existing accepted project rules/evidence;
+- determine treatment of blanks, non-numeric-looking codes, duplicate `9000`, and test-account replacement;
+- do not provision credentials yet;
+- only issue a new short Antigravity task when an actual live execution step is ready and authorized.
 
 ## 8. Active Task
 
-Current executor instruction:
+Current executor state:
 `project-docs/AI_ACTIVE_TASK.md`
 
-Expected executor maximum status:
-`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+Expected mode now:
+`HOLD / NO EXECUTION`
 
 ## 9. Knowledge Maintenance
 
 Baseline promotion from this review:
-`NONE — no new durable project-specific truth beyond existing confirmed D1 model.`
+`NONE — successful current membership/ACL state is operational evidence; the durable group/ACL model was already confirmed in D1_AUTH_SECURITY.md.`
 
-Reusable Kintone skill extracted/updated:
-`skills/kintone/dedicated-group-acl-pattern.md`
+Reusable Kintone skill:
+`skills/kintone/dedicated-group-acl-pattern.md` already contains the reusable atomic cutover/API/error-handling lesson; no duplicate skill update required this cycle.
 
 Historical evidence:
-→ keep in Git; do not treat executor self-report as accepted live truth.
+→ keep in Git; accepted current operational state is summarized here.
