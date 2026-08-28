@@ -24,7 +24,7 @@ Do not browse/read historical project docs by default.
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE GROUP+APP801 ACL PASS / CREDENTIAL CANDIDATE RULE ACCEPTED / LIVE CANDIDATE AUDIT NEXT |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE GROUP+APP801 ACL PASS / CANDIDATE RULE ACCEPTED / USER APP53 EXPORT AUDITED / ACTIVE FIELD SEMANTICS CONFIRMATION PENDING |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -42,7 +42,7 @@ D1_LIVE_CUTOVER                     = APPROVED
 DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED
 APP801_GROUP_ACL_MODEL              = APPROVED / LIVE RECONCILED
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
-D1_CANDIDATE_LIVE_READ_AUDIT        = READ-ONLY / NO NEW WRITE AUTHORIZATION REQUIRED
+D1_CANDIDATE_USER_EXPORT_AUDIT      = COMPLETED / PROVISIONAL UNTIL ACTIVE FIELD SEMANTICS CONFIRMED
 APP801_CREDENTIAL_BULK_PROVISIONING = NOT AUTHORIZED YET
 APP794_D1_CUSTOMIZATION_DEPLOY      = WAITING CURRENT GATE / DO NOT EXECUTE YET
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
@@ -69,7 +69,7 @@ Source status:
 `PASS / ACCEPTED`
 
 Live cutover status:
-`IN PROGRESS / GROUP+ACL GATE PASS / CANDIDATE AUDIT PENDING`
+`IN PROGRESS / GROUP+ACL GATE PASS / USER EXPORT CANDIDATE AUDIT PROVISIONAL`
 
 Manual final UAT:
 `NOT STARTED`
@@ -93,58 +93,101 @@ Accepted handling:
 - duplicate active Employee_Code fails closed for all conflicting rows; do not silently select/deduplicate one row.
 - an absent Employee_Code such as `0119` must not receive a synthetic credential.
 
-Based on the earlier evidence counts only, the expected safe candidate count is:
+## 6. User-Provided App53 Export Audit — 2026-08-28
+
+The user exported current App53 data read-only and supplied the CSV directly to ChatGPT. This supersedes the planned Antigravity read-only candidate audit and avoids duplicate execution.
+
+Export columns:
 
 ```text
-281 active rows
-- 79 blank Employee_Code rows
-- 2 conflicting active rows for duplicate code 9000
-= 200 expected candidates
+$id
+emp_text
+Text_2
+Status
+Number_0
 ```
 
-This `200` is an expected operational count, not yet accepted live read-back. Antigravity must now verify the current App53 state read-only.
+Observed current data:
 
-## 6. Remaining D1 Gate
+```text
+APP53_TOTAL_ROWS = 281
+STATUS_FIELD_BLANK_ROWS = 281
+NUMBER_0_VALUE_1_ROWS = 204
+NUMBER_0_VALUE_0_ROWS = 75
+NUMBER_0_BLANK_ROWS = 2
+TOTAL_BLANK_EMP_TEXT_ROWS = 79
+```
+
+If and only if live field `Number_0` is confirmed to be the Active/Inactive field with `1 = Active`, then the candidate audit result is:
+
+```text
+APP53_ACTIVE_ROWS = 204
+APP53_ACTIVE_BLANK_EMPLOYEE_CODE_ROWS = 76
+APP53_ACTIVE_NONBLANK_ROWS = 128
+APP53_DUPLICATE_ACTIVE_CODES = NONE
+APP53_DUPLICATE_ACTIVE_ROWS_EXCLUDED = 0
+APP53_ELIGIBLE_CREDENTIAL_CANDIDATES = 128
+```
+
+Special-code observations under the same `Number_0=1` assumption:
+
+```text
+50.03  = present / Number_0=1 / unique
+50.02  = present / Number_0=1 / unique
+0050_2 = present / Number_0=1 / unique
+0118   = present / Number_0=1 / unique
+0119   = not present
+```
+
+Duplicate code `9000` exists on two rows, but both rows have `Number_0=0`; therefore it is not an active-code conflict if `Number_0=1` is confirmed as Active.
+
+One non-blank code `0284` has `Number_0` blank and must fail closed until its active/inactive state is known.
+
+Potential second isolation-UAT code from the export:
+
+```text
+0171
+```
+
+It is unique, non-blank, ordinary/non-executive, and has `Number_0=1`; eligibility remains conditional on confirming `Number_0=1` means Active.
+
+The earlier expected count `200` is rejected as unsupported by the user export; it incorrectly treated all 281 App53 rows as active and treated inactive duplicate `9000` rows as an active conflict.
+
+## 7. Remaining D1 Gate
 
 Before any credential write:
 
-1. live-read App53 and recalculate candidates using the accepted rule;
-2. prove exact current counts for active / blank / duplicate / eligible candidates;
-3. confirm current status of `50.03`, `50.02`, `0050_2` under the rule;
-4. confirm `0118` remains eligible;
-5. confirm `0119` is absent or report if the live master has changed;
-6. nominate one additional valid active unique employee code for later two-employee isolation UAT; no credential write yet;
-7. after ChatGPT independently accepts the live candidate audit, obtain/record separate authorization for App801 bulk credential provisioning;
-8. App794 deploy remains blocked until provisioning is safely completed and reviewed.
+1. confirm exact live field label/type for `Number_0` and exact meaning of values `1` / `0`;
+2. if `Number_0=1` is confirmed Active, accept the 128-person candidate set above;
+3. decide/resolve the one non-blank row `0284` whose `Number_0` is blank;
+4. after ChatGPT accepts the candidate audit, obtain/record separate authorization for App801 bulk credential provisioning;
+5. App794 deploy remains blocked until provisioning is safely completed and reviewed.
 
-## 7. Exact Next Action
+## 8. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES
-DUPLICATE_WORK_RISK = NO
+NEXT_ACTION_OWNER = User
+ANTIGRAVITY_REQUIRED = NO
+DUPLICATE_WORK_RISK = YES if Antigravity runs the superseded candidate audit
 ```
 
-Next action is one narrow READ-ONLY candidate audit only:
-- read current App53 active employee rows;
-- calculate exact candidate set by the Baseline rule;
-- report only sanitized counts + exception codes + a small test-candidate sample;
-- optionally read App801 credential count to prove it remains unchanged;
-- no Kintone writes of any kind;
-- commit sanitized evidence and STOP.
+Next action:
+- user runs one read-only console schema check for App53 field `Number_0`;
+- return field code + label + type only;
+- ChatGPT then finalizes the candidate count without Antigravity.
 
-## 8. Active Task
+## 9. Active Task
 
-Current executor instruction:
+Current executor state:
 `project-docs/AI_ACTIVE_TASK.md`
 
-Expected executor maximum status:
-`READ_AUDIT_COMPLETE_PENDING_INDEPENDENT_REVIEW`
+Expected mode now:
+`HOLD / WAITING USER APP53 FIELD CONFIRMATION`
 
-## 9. Knowledge Maintenance
+## 10. Knowledge Maintenance
 
-Baseline promotion this cycle:
-`project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` — credential candidate eligibility semantics.
+Baseline promotion:
+`NONE — candidate eligibility rule is already baselined; current App53 counts are operational evidence.`
 
 Skill extraction:
-`NONE REQUIRED YET — this is a control-cycle rule resolution, not a new independent-review learning cycle.`
+`NONE REQUIRED — user-provided read-only export replaced an unnecessary executor audit.`
