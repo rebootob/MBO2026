@@ -333,3 +333,43 @@ D2_D7_WRITES_EXECUTED                  = 0
 SCHEMA_RESULT                          = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
+---
+
+## 14. Independent App801 Session Schema Readback — Control Plane PASS
+
+The user ran the ChatGPT-supplied **READ-ONLY** browser-console verifier from an authenticated Kintone session after the App801 schema deployment. The verifier used only Live/Preview schema GET APIs; no record or schema write was performed.
+
+Observed result from the user-provided screenshot:
+
+```text
+APP_ID                               = 801
+LIVE_REVISION                        = 6
+PREVIEW_REVISION                     = 6
+LIVE_PREVIEW_SCHEMA_EQUAL_NOW        = true
+LIVE_TARGETS_PASS                    = true
+PREVIEW_TARGETS_PASS                 = true
+TARGET_FIELD_COUNT                   = 5
+OVERALL_PASS                         = true
+```
+
+Per-field independent verification:
+
+```text
+Session_Token_Hash          = SINGLE_LINE_TEXT / required false / unique false / unsafeDefault false / PASS
+Session_Issued_At           = DATETIME         / required false / unsafeDefault false / PASS
+Session_Expires_At          = DATETIME         / required false / unsafeDefault false / PASS
+Session_Credential_Version  = NUMBER           / required false / unsafeDefault false / PASS
+Session_Kintone_User        = SINGLE_LINE_TEXT / required false / unique false / unsafeDefault false / PASS
+```
+
+Independent decision:
+
+```text
+APP801_SESSION_SCHEMA_WRITE           = PASS / ACCEPTED
+LIVE_PREVIEW_POSTDEPLOY_ALIGNMENT     = PASS
+TARGET_FIELD_TYPES_AND_SAFETY         = PASS
+UNEXPLAINED_POSTDEPLOY_REVISION_DRIFT = NONE OBSERVED
+APP801_SESSION_SCHEMA_GATE            = CLOSED
+```
+
+This acceptance does not authorize App794 Session Continuity deployment, Create-handler correction, UAT mutation, or any D2-D7 write.
