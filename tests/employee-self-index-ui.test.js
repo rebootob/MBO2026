@@ -182,7 +182,7 @@ test('Employee-Self Index UI: Renders stable HeaderSpace shell, exactly 1 auth b
   assert.ok(emptyP.textContent.includes('No MBO records found for employee code 0113.'));
 });
 
-test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc, renders history links, zero delete UI, and blocks delete submits', async () => {
+test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc, formats statuses correctly, renders history links, zero delete UI, and blocks delete submits', async () => {
   const headerSpaceEl = createMockElement('div');
   headerSpaceEl.setAttribute('id', 'header-space');
 
@@ -204,9 +204,9 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
       executedQuery = query;
       return {
         records: [
-          { $id: { value: '301' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113' }, Status: { value: 'NEW_RECORD' } },
-          { $id: { value: '201' }, Fiscal_Year: { value: 'FY2025' }, Record_Key: { value: 'FY2025-0113' }, Status: { value: 'APPROVED' } },
-          { $id: { value: '101' }, Fiscal_Year: { value: 'FY2024' }, Record_Key: { value: 'FY2024-0113' }, Status: { value: 'APPROVED' } }
+          { $id: { value: '301' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113' }, Status: { value: '15 HR Final Check' } },
+          { $id: { value: '201' }, Fiscal_Year: { value: 'FY2025' }, Record_Key: { value: 'FY2025-0113' }, Status: { value: '16 Completed' } },
+          { $id: { value: '101' }, Fiscal_Year: { value: 'FY2024' }, Record_Key: { value: 'FY2024-0113' }, Status: { value: 'Completed' } }
         ]
       };
     }
@@ -227,7 +227,23 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
   const customIndex = headerSpaceEl.querySelector('[data-mbo-custom-index]');
   assert.ok(customIndex, 'Index container must be present');
 
-  // 2. Action links are View History ("ดูย้อนหลัง / View History")
+  // 2. Status formatting rules:
+  // - "16 Completed" -> "Completed"
+  // - "Completed" -> "Completed"
+  // - "15 HR Final Check" -> MUST NOT be "Completed" ("15 HR Final Check")
+  const { formatDisplayStatus } = await import('../src/ui/employee-self-index-ui.js');
+  assert.equal(formatDisplayStatus('16 Completed'), 'Completed');
+  assert.equal(formatDisplayStatus('Completed'), 'Completed');
+  assert.equal(formatDisplayStatus('15 HR Final Check'), '15 HR Final Check');
+  assert.notEqual(formatDisplayStatus('15 HR Final Check'), 'Completed');
+
+  const statusBadges = customIndex.querySelectorAll('[data-mbo-status-badge]');
+  assert.equal(statusBadges.length, 3, 'Exactly 3 status badges rendered');
+  assert.equal(statusBadges[0].textContent, '15 HR Final Check', 'FY2026 must render 15 HR Final Check, NOT Completed');
+  assert.equal(statusBadges[1].textContent, 'Completed', 'FY2025 (16 Completed) must render Completed');
+  assert.equal(statusBadges[2].textContent, 'Completed', 'FY2024 (Completed) must render Completed');
+
+  // 3. Action links are View History ("ดูย้อนหลัง / View History")
   const historyLinks = customIndex.querySelectorAll('[data-mbo-history-link]');
   assert.equal(historyLinks.length, 3, 'Exactly 3 history links for 3 years of records');
 
@@ -240,29 +256,32 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
   assert.equal(historyLinks[2].textContent, 'ดูย้อนหลัง / View History');
   assert.equal(historyLinks[2].href, '/k/794/show#record=101');
 
-  // 3. ZERO Delete UI present
+  // 4. ZERO Delete UI present
   const allText = JSON.stringify(customIndex);
   assert.equal(allText.includes('Delete'), false, 'Zero Delete action text allowed in My MBO UI');
   assert.equal(allText.includes('ลบ'), false, 'Zero Thai delete text allowed in My MBO UI');
 
-  // 4. DeleteGuardPolicy: Blocks Employee-Self detail/index delete submit
+  // 5. DeleteGuardPolicy: Blocks Employee-Self detail/index delete submit using production mboLoginGate shape
   const { DeleteGuardPolicy } = await import('../src/security/delete-guard-policy.js');
-  const policy = new DeleteGuardPolicy({
-    getAuthenticatedEmployeeCode: () => '0113'
-  });
+
+  const mockGateAuth = {
+    getEmployeeCode: () => '0113'
+  };
+  const policyAuth = new DeleteGuardPolicy({ mboLoginGate: mockGateAuth });
 
   const evt1 = { error: null };
-  const res1 = policy.evaluateDeleteSubmit(evt1);
+  const res1 = policyAuth.evaluateDeleteSubmit(evt1);
   assert.equal(res1, false, 'Deletion submit must be blocked (return false)');
   assert.ok(evt1.error.includes('การลบบันทึก MBO ไม่อนุญาตสำหรับพนักงาน'), 'Event error must communicate employee prohibition');
 
-  // 5. DeleteGuardPolicy: Blocks unauthenticated deletion submit fail-closed
-  const unauthPolicy = new DeleteGuardPolicy({
-    getAuthenticatedEmployeeCode: () => null
-  });
+  // 6. DeleteGuardPolicy: Blocks unauthenticated deletion submit fail-closed
+  const mockGateUnauth = {
+    getEmployeeCode: () => null
+  };
+  const policyUnauth = new DeleteGuardPolicy({ mboLoginGate: mockGateUnauth });
 
   const evt2 = { error: null };
-  const res2 = unauthPolicy.evaluateDeleteSubmit(evt2);
+  const res2 = policyUnauth.evaluateDeleteSubmit(evt2);
   assert.equal(res2, false, 'Unauthenticated deletion submit must be blocked (return false)');
   assert.ok(evt2.error.includes('Authentication required'), 'Unauthenticated deletion must fail closed');
 });

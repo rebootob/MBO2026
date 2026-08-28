@@ -1,28 +1,24 @@
 /**
  * Security Guard: Employee-Self Delete Protection Policy
  * Enforces strict fail-closed deletion prohibition for Employee-Self users and unauthenticated sessions.
+ * Integrates directly with mboLoginGate.getEmployeeCode() without adding any new auth API surface.
  */
 
 export class DeleteGuardPolicy {
   constructor(options = {}) {
     this.mboLoginGate = options.mboLoginGate;
-    this.getAuthenticatedEmployeeCode = options.getAuthenticatedEmployeeCode;
   }
 
   /**
    * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
    * Blocks record deletion fail-closed for Employee-Self users and unauthenticated sessions.
    * @param {Object} event Kintone deletion submit event
-   * @returns {boolean|Object} Returns false or event with event.error set to block deletion
+   * @returns {boolean} Returns false to block deletion and sets event.error
    */
   evaluateDeleteSubmit(event = {}) {
-    let authEmpCode = null;
-
-    if (typeof this.getAuthenticatedEmployeeCode === 'function') {
-      authEmpCode = this.getAuthenticatedEmployeeCode();
-    } else if (this.mboLoginGate && typeof this.mboLoginGate.getAuthenticatedEmployeeCode === 'function') {
-      authEmpCode = this.mboLoginGate.getAuthenticatedEmployeeCode();
-    }
+    const authEmpCode = (this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === 'function')
+      ? this.mboLoginGate.getEmployeeCode()
+      : null;
 
     if (!authEmpCode) {
       if (typeof event === 'object' && event !== null) {

@@ -149,12 +149,7 @@ test('Classic Bundle: isValidEmployeeCode runtime availability in bundle scope',
   assert.match(bundleCode, /\b(function|var)\s+isValidEmployeeCode\b/);
 
   // Evaluate in scope
-  const testScript = `
-    ${bundleCode}
-    return {
-      valid1: true
-    };
-  `;
+  const testScript = bundleCode + '\nreturn { valid1: true };';
   const result = new Function(testScript)();
   assert.equal(result.valid1, true);
 });

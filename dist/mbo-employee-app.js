@@ -6444,6 +6444,14 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
   };
 
   // src/ui/employee-self-index-ui.js
+  function formatDisplayStatus(rawStatus) {
+    if (!rawStatus) return "-";
+    const str = String(rawStatus).trim();
+    if (str === "16 Completed" || str === "Completed") {
+      return "Completed";
+    }
+    return str;
+  }
   var EmployeeSelfIndexUI = class {
     constructor(options = {}) {
       this.kintoneApiWrapper = options.kintoneApiWrapper;
@@ -6534,11 +6542,15 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
         const keyTd = document.createElement("td");
         keyTd.style.cssText = "padding:12px;color:#334155;font-family:monospace;";
         keyTd.textContent = rec.Record_Key?.value || "-";
+        const rawStatus = rec.Status?.value || "-";
+        const displayStatus = formatDisplayStatus(rawStatus);
         const statusTd = document.createElement("td");
         statusTd.style.cssText = "padding:12px;";
         const statusBadge = document.createElement("span");
-        statusBadge.textContent = rec.Status?.value || "-";
-        statusBadge.style.cssText = "display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;";
+        statusBadge.setAttribute("data-mbo-status-badge", "");
+        statusBadge.textContent = displayStatus;
+        const isCompleted = displayStatus === "Completed";
+        statusBadge.style.cssText = isCompleted ? "display:inline-block;padding:3px 8px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;" : "display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;";
         statusTd.appendChild(statusBadge);
         const actionTd = document.createElement("td");
         actionTd.style.cssText = "padding:12px;text-align:right;";
@@ -6564,21 +6576,15 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
   var DeleteGuardPolicy = class {
     constructor(options = {}) {
       this.mboLoginGate = options.mboLoginGate;
-      this.getAuthenticatedEmployeeCode = options.getAuthenticatedEmployeeCode;
     }
     /**
      * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
      * Blocks record deletion fail-closed for Employee-Self users and unauthenticated sessions.
      * @param {Object} event Kintone deletion submit event
-     * @returns {boolean|Object} Returns false or event with event.error set to block deletion
+     * @returns {boolean} Returns false to block deletion and sets event.error
      */
     evaluateDeleteSubmit(event = {}) {
-      let authEmpCode = null;
-      if (typeof this.getAuthenticatedEmployeeCode === "function") {
-        authEmpCode = this.getAuthenticatedEmployeeCode();
-      } else if (this.mboLoginGate && typeof this.mboLoginGate.getAuthenticatedEmployeeCode === "function") {
-        authEmpCode = this.mboLoginGate.getAuthenticatedEmployeeCode();
-      }
+      const authEmpCode = this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === "function" ? this.mboLoginGate.getEmployeeCode() : null;
       if (!authEmpCode) {
         if (typeof event === "object" && event !== null) {
           event.error = "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E01\u0E32\u0E23\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A / Authentication required to perform record operations.";

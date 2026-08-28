@@ -4,6 +4,15 @@
  * Only hides duplicate native index list controls while preserving global Kintone navigation/breadcrumbs.
  */
 
+export function formatDisplayStatus(rawStatus) {
+  if (!rawStatus) return '-';
+  const str = String(rawStatus).trim();
+  if (str === '16 Completed' || str === 'Completed') {
+    return 'Completed';
+  }
+  return str;
+}
+
 export class EmployeeSelfIndexUI {
   constructor(options = {}) {
     this.kintoneApiWrapper = options.kintoneApiWrapper;
@@ -123,11 +132,18 @@ export class EmployeeSelfIndexUI {
       keyTd.style.cssText = 'padding:12px;color:#334155;font-family:monospace;';
       keyTd.textContent = rec.Record_Key?.value || '-';
 
+      const rawStatus = rec.Status?.value || '-';
+      const displayStatus = formatDisplayStatus(rawStatus);
+
       const statusTd = document.createElement('td');
       statusTd.style.cssText = 'padding:12px;';
       const statusBadge = document.createElement('span');
-      statusBadge.textContent = rec.Status?.value || '-';
-      statusBadge.style.cssText = 'display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;';
+      statusBadge.setAttribute('data-mbo-status-badge', '');
+      statusBadge.textContent = displayStatus;
+      const isCompleted = displayStatus === 'Completed';
+      statusBadge.style.cssText = isCompleted
+        ? 'display:inline-block;padding:3px 8px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;'
+        : 'display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;';
       statusTd.appendChild(statusBadge);
 
       const actionTd = document.createElement('td');
