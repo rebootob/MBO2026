@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / LOGIN GATE LIVE RECOVERED / SESSION ARCHITECTURE BASELINED / SESSION SOURCE+TEST PACKAGE PASS / APP801 SESSION SCHEMA WRITE APPROVED + EXECUTION NEXT / CREATE-HANDLER DEFECT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / LOGIN GATE LIVE RECOVERED / SESSION ARCHITECTURE BASELINED / SESSION SOURCE+TEST PACKAGE PASS / APP801 SESSION SCHEMA EXECUTED + INDEPENDENT LIVE READBACK REQUIRED / CREATE-HANDLER DEFECT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -28,7 +28,7 @@ D1_SESSION_CONTINUITY_ARCHITECTURE       = APPROVED / BASELINED
 D1_SESSION_SOURCE_IMPLEMENTATION         = PASS / ACCEPTED AFTER INDEPENDENT REVIEW
 D1_SESSION_TEST_EVIDENCE                 = PASS / ACCEPTED AFTER REVIEW OF 9d9db0f2456b5b3407b8dae830493c0eb9a9cc7f
 D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
-APP801_SESSION_SCHEMA_WRITE              = APPROVED 2026-08-28 / EXACT FIVE SESSION FIELDS ONLY
+APP801_SESSION_SCHEMA_WRITE              = EXECUTED / PROVISIONALLY CONSISTENT / INDEPENDENT LIVE READBACK REQUIRED
 APP794_SESSION_CONTINUITY_DEPLOY          = NOT AUTHORIZED
 D1_CREATE_HANDLER_CORRECTIVE             = OPEN / SEPARATE WORK PACKAGE
 DEDICATED_MBO_ACCESS_GROUP_MODEL         = APPROVED / PASS
@@ -39,61 +39,85 @@ APP801_CREDENTIAL_BULK_PROVISIONING      = PASS / INDEPENDENTLY LIVE VERIFIED 20
 D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately recorded
 ```
 
-This authorization is schema-only. It does NOT authorize App801 record writes, credential resets/updates, App794 deploy, Create-handler correction, source/refactor work, UAT data mutation, ACL changes, or D2-D7 writes.
+## 3. Independent Review — App801 Session Schema Executor Commit
 
-## 3. Accepted Session Source/Test Package
-
-Accepted source base:
+Reviewed executor commit:
 
 ```text
-7133e2934b0e8f7ea710e03d195157354e0d95b8
+594c4a6338b809acad7ea39719b2a800ecfd9c04
+docs(evidence): record App801 session schema write execution and live verification
 ```
 
-Accepted final test proof:
+Exact compare from authorizing task commit `e1488efde42c457c5ef838e48555b860f8455c60` shows exactly one repository file changed:
 
 ```text
-9d9db0f2456b5b3407b8dae830493c0eb9a9cc7f
+project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md
 ```
 
-Independent result:
+Repository scope protections PASS:
+- source files changed = 0;
+- test files changed = 0;
+- dist/CSS changed = 0;
+- no App794 repository customization/deploy change;
+- no Create-handler work;
+- no D2-D7 repository work.
+
+Executor evidence reports:
 
 ```text
-SESSION_SECURITY_SOURCE = PASS
-SESSION_TEST_PROOF_COMPLETENESS = PASS
-SESSION_SOURCE_TEST_PACKAGE = PASS / ACCEPTED
+LIVE_REVISION_BEFORE            = 5
+PREVIEW_REVISION_BEFORE         = 5
+LIVE_FINGERPRINT_BEFORE         = efd54ee27885ae62fb61e8316cdce7aa6eba1a9d9f1984e33a5a60b59d837185
+PREVIEW_FINGERPRINT_BEFORE      = efd54ee27885ae62fb61e8316cdce7aa6eba1a9d9f1984e33a5a60b59d837185
+PENDING_PREVIEW_DRIFT_RESULT    = PASS / executor-reported
+FIELDS_ADDED                    = exact 5 authorized session fields
+PREVIEW_REVISION_AFTER_ADD      = 6
+DEPLOYMENT_POLLING_RESULT       = SUCCESS / executor-reported
+LIVE_REVISION_AFTER_DEPLOY      = 6
+APP801_SCHEMA_WRITES_EXECUTED   = 1
+APP801_DEPLOY_EXECUTED          = 1
+APP801_RECORD_WRITES_EXECUTED   = 0
+APP794_DEPLOY_EXECUTED          = 0
+SOURCE_FILES_CHANGED            = 0
 ```
 
-No further Session source/test work is authorized in the App801 schema task.
+The evidence is internally consistent with the authorized scope. However all Live/Preview Kintone facts above are executor self-report. The committed evidence does not include a post-deploy canonical fingerprint or a sanitized prewrite non-target field map sufficient for Control Plane to independently reconstruct `NON_TARGET_SCHEMA_PRESERVED = YES` from Git alone.
 
-## 4. App801 Session Schema — Authorized Exact Scope
-
-Canonical required fields from `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`:
+Independent verdict:
 
 ```text
-Session_Token_Hash          SINGLE_LINE_TEXT
-Session_Issued_At           DATETIME
-Session_Expires_At          DATETIME
-Session_Credential_Version  NUMBER
-Session_Kintone_User        SINGLE_LINE_TEXT
+GIT_SCOPE_REVIEW = PASS
+EXECUTOR_SCHEMA_EVIDENCE_CONSISTENCY = PASS
+LIVE_TARGET_SCHEMA = AWAITING INDEPENDENT READBACK
+NON_TARGET_SCHEMA_PRESERVATION = PROVISIONAL / NOT YET INDEPENDENTLY PROVEN
+APP801_SESSION_SCHEMA_GATE = NOT CLOSED YET
+APP794_SESSION_CONTINUITY_DEPLOY = BLOCKED / NOT AUTHORIZED
 ```
 
-Production authorization rules:
-- App801 only;
-- fresh Live and Preview form/schema reads before any write;
-- verify there is no unrelated pending Preview schema drift that would be published by this deployment;
-- if Live/Preview differ outside the exact authorized target, BLOCK before write;
-- if any target field already exists with the wrong type, BLOCK; do not rename/delete/recreate it;
-- create only exact target fields that are truly missing;
-- if all five already exist with correct types and no pending drift exists, perform zero writes and report `ALREADY_PRESENT_NO_WRITE`;
-- do not rename/delete/modify unrelated fields;
-- do not modify App801 field permissions, app permissions, process management, views, layout, record data, credentials, or session values;
-- no App794 deploy;
-- no D2-D7 writes;
-- keep rollback-ready prewrite schema metadata locally; no automatic rollback/destructive deletion if verification fails;
-- after schema add, deploy/apply App801 settings only through the normal Kintone app-setting deployment path;
-- poll until deployment completion; HTTP acceptance alone is not PASS;
-- fresh Live read-back after deployment must prove all five fields exist exactly once with correct types and all unrelated fields/settings remain unchanged;
-- append sanitized evidence and STOP for independent review.
+No further Kintone write is required for this review. Antigravity must remain HOLD.
+
+## 4. Independent Live Readback Required
+
+User/Control Plane must perform one READ-ONLY App801 schema verification from a currently authenticated Kintone browser session.
+
+Required independent checks:
+
+```text
+App ID = 801
+Live revision = 6 or later with no unexplained change
+Preview revision matches Live after completed deployment
+Live and Preview schema semantically match now
+Session_Token_Hash          = SINGLE_LINE_TEXT / required false / unique false / no default
+Session_Issued_At           = DATETIME / required false / no default
+Session_Expires_At          = DATETIME / required false / no default
+Session_Credential_Version  = NUMBER / required false / no default
+Session_Kintone_User        = SINGLE_LINE_TEXT / required false / unique false / no default
+all five target fields exist exactly once
+```
+
+This readback must use GET/read-only APIs only. No record API and no schema write/deploy is authorized.
+
+If the independent readback passes, Control Plane may close `APP801_SESSION_SCHEMA_WRITE = PASS / ACCEPTED` and then consider the next exact gate. If it fails, STOP and investigate; no automatic repair.
 
 ## 5. Separate Create-Handler Defect
 
@@ -104,31 +128,29 @@ Employee Profile Resolution Failed
 You cannot call kintone.app.record.get() in handler or during processing a handler.
 ```
 
-Do not mix this into App801 session schema work.
+Do not mix it into schema verification.
 
 ## 6. Exact Next Action
 
 ```text
-NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES — ONE NARROW APP801 SCHEMA-ONLY EXECUTION
-KINTONE_WRITE = APP801 SCHEMA ONLY / EXACT FIVE FIELDS
+NEXT_ACTION_OWNER = User / Control Plane
+ANTIGRAVITY_REQUIRED = NO / HOLD
+KINTONE_WRITE = NO
 APP801_RECORD_WRITE = NO
+APP801_SCHEMA_WRITE = NO FURTHER WRITE
 APP794_DEPLOY = NO
 SOURCE_CHANGE = NO
-TEST_CHANGE = NO
 CREATE_HANDLER_FIX = NO
 D2_D7_WRITE = NO
-MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+PENDING_ACTION = INDEPENDENT READ-ONLY APP801 LIVE/PREVIEW SCHEMA VERIFICATION
 ```
-
-After executor evidence is pushed, ChatGPT performs an independent review. Live schema acceptance may require a separate user-side read-only verification before the schema gate is closed.
 
 ## 7. Knowledge / Baseline Maintenance
 
 Baseline promotion:
 `NONE — canonical session architecture already baselined.`
 
-Reusable implementation lesson:
-- before publishing Kintone schema changes, compare Live and Preview state so unrelated pending Preview work cannot be accidentally deployed;
-- create-only schema reconciliation must block on same-code/wrong-type conflicts rather than deleting/recreating fields;
-- production schema acceptance requires post-deploy Live read-back, not only a successful write response.
+Reusable lesson:
+- executor post-deploy readback is useful evidence but is not independent acceptance;
+- for high-risk schema changes, retain enough sanitized prewrite/postwrite metadata to independently prove non-target preservation;
+- do not spend another Antigravity write cycle when a user-side read-only verification can close the gate safely.
