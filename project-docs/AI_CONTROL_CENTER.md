@@ -24,7 +24,7 @@ Do not browse/read historical project docs by default.
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / LIVE GROUP+APP801 ACL PASS / CANDIDATE AUDIT PASS = 128 / BULK PROVISIONING APPROVED + EXECUTION NEXT |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SOURCE PASS / GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / PROVISIONING REPORTED COMPLETE / INDEPENDENT LIVE VERIFICATION PENDING |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -43,176 +43,144 @@ DEDICATED_MBO_ACCESS_GROUP_MODEL    = APPROVED
 APP801_GROUP_ACL_MODEL              = APPROVED / LIVE RECONCILED
 D1_CREDENTIAL_CANDIDATE_RULE        = ACCEPTED / BASELINED
 D1_CANDIDATE_USER_EXPORT_AUDIT      = PASS / 128 ACCEPTED CANDIDATES
-APP801_CREDENTIAL_BULK_PROVISIONING = APPROVED 2026-08-28 / EXACT TARGET POPULATION = 128 ACCEPTED CANDIDATES
-APP794_D1_CUSTOMIZATION_DEPLOY      = WAITING CREDENTIAL GATE / DO NOT EXECUTE YET
+APP801_CREDENTIAL_BULK_PROVISIONING = APPROVED 2026-08-28 / EXACT TARGET = 128
+APP794_D1_CUSTOMIZATION_DEPLOY      = BLOCKED UNTIL PROVISIONING INDEPENDENTLY ACCEPTED
 D2-D7 LIVE WRITES                   = NOT AUTHORIZED unless separately recorded
 ```
 
-Approval scope is exact:
-- authorize App801 credential provisioning for the already accepted 128-candidate population only;
-- safe create-only reconciliation is required;
-- do not overwrite/reset existing App801 credential rows;
-- do not expand the population if App53 has changed;
-- no App794 deploy is included in this approval;
-- no D2-D7 write is included.
-
-Do not repeatedly ask for the same unchanged approval.
-New approval is required only when scope/risk materially changes or a new production-impacting write is introduced.
+Provisioning approval remains exact and does not authorize overwrite/reset, population expansion, App794 deploy, or D2-D7 writes.
 
 ## 4. D1 Accepted State
 
 Accepted source commit:
 `63796999a321a24e1cbd29ceaad82b43980fe8ea`
 
-Live group + App801 ACL corrective evidence accepted:
+Accepted live group + App801 ACL evidence:
 `b9d4fa830c4c0e3b827362e143639f9a307adbac`
 
-Credential-candidate rule Baseline:
-`project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
+Credential candidate gate:
+`PASS / 128 accepted candidates`
 
-App53 active-status semantics Baseline:
-`project-docs/CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`
-
-Source status:
-`PASS / ACCEPTED`
-
-Live cutover status:
-`IN PROGRESS / GROUP+ACL PASS / CANDIDATE GATE PASS / PROVISIONING APPROVED / EXECUTION PENDING`
+Provisioning evidence commit under review:
+`7263013834a9f27d2486fa29767250dd90bef9ca`
 
 Manual final UAT:
 `NOT STARTED`
 
-## 5. Confirmed App53 Active Status Semantics
+## 5. Confirmed Candidate / Password Rules
 
-User-confirmed on 2026-08-28:
+App53 active source:
 
 ```text
-Field Code = Number_0
-Label      = Status
-Type       = NUMBER
-1          = Active / current employee
-0          = Inactive / former employee
-blank      = unknown / not accepted as Active
+Number_0 = 1 -> Active/current
+Number_0 = 0 -> Inactive/former
+Number_0 blank -> unknown / fail closed
 ```
 
-The Kintone system field code `Status` is not the employee Active/Inactive source.
-
-## 6. Accepted Credential Candidate Rule
-
-Candidate =
+Candidate:
 
 ```text
-App53 Number_0 = 1
-+ non-blank Employee_Code (emp_text)
+Number_0 = 1
++ non-blank emp_text
 + Employee_Code unique across active rows
 ```
 
-Additional rules:
-- Employee_Code is a string identifier; no numeric-only rule.
-- `Number_0 = 0` is excluded.
-- blank `Number_0` fails closed.
-- blank `emp_text` is excluded.
-- duplicate Employee_Code across active rows excludes all conflicting active rows.
-- absent Employee_Code must not receive a synthetic credential.
+Accepted candidate population = `128`.
 
-## 7. Accepted User-Provided App53 Audit — 2026-08-28
-
-The user supplied a current read-only App53 CSV directly to ChatGPT. ChatGPT independently recalculated the candidate population from the file and the user confirmed the business meaning of `Number_0`.
-
-Observed data:
+Confirmed new-credential model:
 
 ```text
-APP53_TOTAL_ROWS = 281
+Username / Employee_Code = exact Employee_Code
+initial password = exact Employee_Code
+PBKDF2-SHA256
+iterations = 100000
+format = pbkdf2$100000$<saltHex>$<hashHex>
+Force_Password_Change = YES
+```
+
+## 6. Independent Review — Provisioning Evidence Commit 72630138
+
+Review verdict:
+
+```text
+PENDING INDEPENDENT LIVE VERIFICATION
+NOT YET ACCEPTED AS PASS
+```
+
+### Accepted Git Facts
+- commit `72630138...` is directly based on the authorizing Active Task commit `674261f8...`;
+- the commit changes only `project-docs/D1_ACCESS_GROUP_SETUP_EVIDENCE.md`;
+- no source-code or deployment file is changed in that Git commit;
+- the evidence document contains no plaintext passwords, raw password hashes, salts, API tokens, cookies, or full 128-code employee list.
+
+### Executor-Reported Live Claims — Pending Independent Acceptance
+The evidence reports:
+
+```text
 APP53_ACTIVE_ROWS = 204
-APP53_INACTIVE_ROWS = 75
-APP53_UNKNOWN_STATUS_ROWS = 2
-TOTAL_BLANK_EMP_TEXT_ROWS = 79
 APP53_ACTIVE_BLANK_EMPLOYEE_CODE_ROWS = 76
-APP53_ACTIVE_NONBLANK_ROWS = 128
-APP53_DUPLICATE_ACTIVE_CODES = NONE
-APP53_DUPLICATE_ACTIVE_ROWS_EXCLUDED = 0
 APP53_ELIGIBLE_CREDENTIAL_CANDIDATES = 128
+APP801_EXISTING_TARGET_ROWS = 0
+APP801_MISSING_TARGET_CODES_BEFORE = 128
+APP801_CREDENTIAL_ROWS_CREATED = 128
+BATCH_COUNT = 2 (100 + 28)
+APP801_TOTAL_RECORDS_AFTER = 128
+APP801_TARGET_UNIQUE_CREDENTIAL_CODES_AFTER = 128
+APP801_TARGET_DUPLICATE_CODES_AFTER = NONE
+APP801_MISSING_TARGET_CODES_AFTER = 0
+APP801_EXISTING_ROWS_UPDATED = 0
+APP794_DEPLOY_EXECUTED = 0
+D2_D7_WRITES_EXECUTED = 0
 ```
 
-Accepted exception handling:
+It also reports PBKDF2-SHA256 / 100000 iterations, `Force_Password_Change=YES`, `Account_Status=ACTIVE`, `Failed_Attempts=0`, and `Credential_Version=1` for created rows.
+
+### Why PASS Is Withheld
+Git proves only that Antigravity recorded these claims; it does not independently prove the current live App801 records. The Control Plane currently has no direct Kintone connector for an independent read-back. Per project governance, executor self-report cannot self-certify the live production result.
+
+## 7. Exact Independent Verification Required
+
+Use one user-run, READ-ONLY App801 Console verification. It must verify without printing secrets:
+
+1. total App801 rows = 128;
+2. 128 unique non-blank Employee_Code values and no duplicates;
+3. special presence: `0118=YES`, `0171=YES`, `0119=NO`, `0284=NO`;
+4. all 128 hashes match the expected `pbkdf2$100000$...` format;
+5. all 128 hashes cryptographically verify against initial password = their own Employee_Code without printing password/hash/salt;
+6. all 128 salts are unique;
+7. `Password_Algorithm = PBKDF2-SHA256` for all rows;
+8. `Force_Password_Change = YES` for all rows;
+9. `Account_Status = ACTIVE` for all rows;
+10. `Failed_Attempts = 0` for all rows;
+11. `Locked_Until` blank for all rows;
+12. `Credential_Version = 1` for all rows.
+
+If any check fails, provisioning remains CORRECTIVE/BLOCKED and App794 stays blocked.
+
+## 8. Exact Next Action
 
 ```text
-50.03  = ELIGIBLE
-50.02  = ELIGIBLE
-0050_2 = ELIGIBLE
-0118   = ELIGIBLE
-0119   = NOT_FOUND / no credential
-9000   = duplicated only on inactive rows / no active conflict
-0284   = Number_0 blank / NOT ELIGIBLE until source status is resolved
+NEXT_ACTION_OWNER = User
+ANTIGRAVITY_REQUIRED = NO
+DUPLICATE_WORK_RISK = YES if Antigravity performs another provisioning/read audit
 ```
 
-Second isolation-UAT employee code:
+User runs the read-only App801 Console verifier supplied by ChatGPT and returns only the summarized Console result / screenshot.
 
-```text
-0171 = ELIGIBLE
-```
+## 9. Active Task
 
-The earlier expected count `200` is superseded and rejected. It incorrectly treated all 281 App53 rows as active.
-
-No full employee list or personal details are committed to Git.
-
-## 8. Approved Provisioning Safety Gates
-
-Before the first App801 credential write, Antigravity must:
-
-1. minimally live-read App53 fields needed to regenerate the candidate set in memory (`emp_text`, `Number_0`, record identity only if needed);
-2. require the current live candidate count and rules to still resolve to exactly the accepted 128 population; if not, STOP with zero credential writes;
-3. minimally read App801 existing credential identities using `Employee_Code` and non-secret metadata only; do not retrieve/render raw `Password_Hash` unless technically unavoidable;
-4. fail closed on duplicate App801 rows for any target Employee_Code;
-5. classify target population into existing unique rows vs missing rows;
-6. preserve every existing credential row — NO overwrite, reset, rehash, password change, or account-state modification under this authorization;
-7. create only missing credential rows;
-8. use the confirmed password model for each newly created row:
-   - Username/Employee_Code = exact Employee_Code string;
-   - initial password = exact Employee_Code string;
-   - PBKDF2-SHA256, iterations 100000;
-   - stored hash format `pbkdf2$100000$<saltHex>$<hashHex>`;
-   - unique cryptographically random salt per new credential;
-   - `Force_Password_Change = YES`;
-   - never persist/log/commit plaintext password;
-   - never commit raw password hashes to Git;
-9. verify exact live App801 schema/options immediately before creation; if a required non-secret field value (for example Account_Status/Password_Algorithm/default version semantics) cannot be proven from the live schema + confirmed implementation model, STOP before writing rather than inventing a value;
-10. immediate post-write read-back by Employee_Code only plus non-secret metadata;
-11. evidence must contain counts/status only — no full employee list, plaintext, salts, or hashes.
-
-Maximum executor status remains:
-`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
-
-## 9. Remaining D1 Gate
-
-After provisioning execution:
-
-1. ChatGPT independently reviews provisioning evidence;
-2. App794 customization deploy remains blocked until provisioning is accepted;
-3. final D1 closure still requires manual UI UAT.
-
-## 10. Exact Next Action
-
-```text
-NEXT_ACTION_OWNER = Antigravity
-ANTIGRAVITY_REQUIRED = YES
-DUPLICATE_WORK_RISK = NO
-```
-
-Execute exactly one narrow App801 create-only provisioning packet according to `project-docs/AI_ACTIVE_TASK.md`, commit sanitized evidence, then STOP.
-
-## 11. Active Task
-
-Current executor instruction:
+Current executor state:
 `project-docs/AI_ACTIVE_TASK.md`
 
-Expected executor maximum status:
-`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+Expected mode:
+`HOLD / NO EXECUTION`
 
-## 12. Knowledge Maintenance
+Antigravity must not retry provisioning, deploy App794, or begin UAT.
 
-Baseline promotion this cycle:
-`NONE — user authorization is operational scope, not a new durable architecture rule.`
+## 10. Knowledge Maintenance
 
-Skill extraction:
-`NONE YET — extract only after independent review of actual provisioning execution.`
+Baseline promotion from this review:
+`NONE — no new durable architecture truth is proven by executor self-report.`
+
+Reusable Kintone skill extraction:
+`PENDING — finalize after independent live provisioning verification; do not encode unverified production claims as reusable truth.`
