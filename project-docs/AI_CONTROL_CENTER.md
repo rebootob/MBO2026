@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / BUNDLE+EMPLOYEE-CODE CORRECTIVE PROVISIONALLY PASS / DEPLOY-SCRIPT FILEKEY CORRECTIVE REQUIRED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 GROUP+APP801 ACL PASS / CANDIDATE PASS=128 / APP801 PROVISIONING PASS / BUNDLE+EMPLOYEE-CODE CORRECTIVE PROVISIONALLY PASS / PREVIEW FILEKEY FIX PROVISIONALLY PASS / PRE-UPLOAD SAFETY CORRECTIVE REQUIRED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -49,85 +49,80 @@ APP801_PROVISIONING = PASS / 128 / independently live verified
 
 Manual final D1 UAT remains `BLOCKED / NOT STARTED`.
 
-## 4. Corrective Source Review — Commit 5044eb47f0302327e6bc180d504f72132f6a0fbe
+## 4. Corrective Review — Commit e55dbf5c1003ca3bdc071228fd6daf97956e16c9
 
-Independent Git review compared exact parent `0e636b2fd024e6aedc94ac893e70fecaaf425a14` to corrective commit `5044eb47f0302327e6bc180d504f72132f6a0fbe`.
-
-Changed files are limited to the authorized source/build/test scope:
+Git comparison from exact parent `3c0173a1bbda94c9e67a7cd2c8c768b800aa7c39` proves the commit changes only:
 
 ```text
-dist/mbo-employee-app.js
 scripts/kintone/deploy-custom-ui.js
-src/core/fiscal-year-engine.js
-src/ui/mbo-kintone-auth-adapter.js
-tests/classic-bundle.test.js
-tests/mbo-kintone-auth-adapter.test.js
+tests/deploy-customization-preservation.test.js
 ```
 
-Not changed:
-- `src/main-mbo-app.js`;
-- dedicated login-gate source module;
-- CSS source/dist;
-- Baseline / Control Center / Active Task;
-- D2-D7 files.
+No bundle/auth/Employee-Code/CSS/business module was reopened.
 
 ### Provisionally accepted corrections
 
-1. Classic bundle build order now includes `src/ui/mbo-kintone-auth-adapter.js` and `src/ui/mbo-kintone-login-gate.js` before `src/main-mbo-app.js`.
-2. Dedicated auth modules remain separate; no class/function copy was inserted into `main-mbo-app.js`.
-3. `tests/classic-bundle.test.js` now checks one auth-adapter definition, one login-gate definition, runtime class resolution/instantiation, and source-to-dist exactness.
-4. Employee Code validation now allows the confirmed string character set `[A-Za-z0-9_.-]+` and preserves leading zeroes.
-5. Focused auth tests include `50.03`, `50.02`, `0050_2`, and rejection of injection syntax before any Kintone call.
-6. `dist/mbo-employee.css` is absent from the diff and therefore unchanged in Git.
+1. Script now reads both effective/live and Preview/Test customization.
+2. Retained FILE keys used for Preview PUT are sourced from Preview/Test state, not Production/effective state.
+3. Preview PUT entries are normalized to supported shapes only:
+   - URL -> `{ type, url }`
+   - FILE -> `{ type, file: { fileKey } }`
+4. Only target `mbo-employee-app.js` is uploaded by the live path; CSS upload was removed.
+5. Non-target Preview FILE keys, order, URL entries, mobile entries and scope are preserved by payload construction.
+6. Focused tests cover Preview-vs-live fileKey differences, target replacement, CSS Preview key preservation, order, drift, missing target and ambiguous target.
 
-These corrections resolve the previously proven missing-class runtime root cause at source level, subject to final local-test evidence and the remaining deploy-script blocker below.
+## 5. Blocking Finding — Validation Happens Too Late
 
-## 5. Blocking Finding — Wrong FileKey Environment for Preview PUT
+The source package is still **NOT PASS** because some fail-closed checks occur only after the replacement JS is already uploaded.
 
-`deploy-custom-ui.js` currently reads retained customization entries from:
-
-```text
-GET /k/v1/app/customize.json
-```
-
-and then forwards those retained FILE entries into:
+Current live order:
 
 ```text
-PUT /k/v1/preview/app/customize.json
+GET live customize
+GET preview customize
+validateTopologyAlignment(...)
+UPLOAD replacement JS
+buildPreviewCustomizePayload(...)
+  -> only here checks target missing/ambiguous
+  -> only here checks retained preview fileKey presence
+  -> revision is optional
 ```
 
-This is not accepted.
+This violates the intended safety order. A malformed preview state, missing/ambiguous target, missing retained fileKey, or missing revision can cause a Kintone file upload before the operation is blocked.
 
-Kintone's customization update contract requires an unchanged uploaded FILE retained in a Preview PUT to use the `fileKey` obtained from the Preview/Test-environment customization read (`GET /k/v1/preview/app/customize.json`). Production/effective FILE keys must not be assumed valid for Preview PUT.
-
-The current code also forwards raw GET FILE objects. The corrective implementation must construct the PUT payload using only the fields accepted by the update API (`type + url` for URL entries, `type + file.fileKey` for FILE entries).
+Additional strictness gaps:
+- `buildPreviewCustomizePayload()` defaults missing scope to `ALL` instead of failing closed;
+- missing Preview revision is allowed instead of being mandatory;
+- `validateTopologyAlignment()` does not reject unsupported/malformed entry types before upload if both live/preview topology happen to match.
 
 Therefore:
 
 ```text
-CORRECTIVE_COMMIT_5044_BUNDLE_FIX = PROVISIONALLY PASS
-CORRECTIVE_COMMIT_5044_EMPLOYEE_CODE_FIX = PROVISIONALLY PASS
-CORRECTIVE_COMMIT_5044_DEPLOY_PRESERVATION = CORRECTIVE REQUIRED
+PREVIEW_FILEKEY_SOURCE = PROVISIONALLY PASS
+NON_TARGET_PREVIEW_FILEKEY_PRESERVATION = PROVISIONALLY PASS
+PRE_UPLOAD_FAIL_CLOSED_GATE = CORRECTIVE REQUIRED
 SOURCE_PACKAGE_OVERALL = NOT PASS YET
 APP794_REDEPLOY = BLOCKED / NOT AUTHORIZED
 ```
 
 ## 6. Exact Next Corrective Scope
 
-The next executor task is SOURCE / TEST ONLY and must not redo accepted work.
+The next executor task is SOURCE / TEST ONLY. Do not redo accepted bundle/auth/Employee-Code/fileKey work.
 
-It must correct `scripts/kintone/deploy-custom-ui.js` so a future JS-only replacement:
+Required correction:
 
-1. reads both effective/live customization and Preview/Test customization;
-2. fails closed if live and preview topology/scope differ unexpectedly before the change;
-3. obtains retained FILE keys from Preview/Test customization, not Production customization;
-4. identifies exactly one target desktop FILE named `mbo-employee-app.js`;
-5. uploads only the replacement JS;
-6. constructs the Preview PUT payload from the Preview/Test state using only supported update fields;
-7. preserves order, scope, URL entries, mobile entries, and all non-target preview FILE keys;
-8. includes the Preview revision in the PUT request to guard against concurrent change;
-9. does not upload CSS;
-10. has focused tests proving only the target JS key changes and CSS/non-target keys remain the Preview keys.
+1. validate live + preview customization completely **before any upload**;
+2. require valid explicit scope; no fallback to `ALL` when source state is missing/malformed;
+3. require non-empty Preview revision before upload and include it in PUT;
+4. validate every entry before upload:
+   - supported type only (`URL` / `FILE`);
+   - URL requires non-empty url;
+   - FILE requires non-empty name for topology comparison;
+   - every retained Preview FILE requires non-empty preview fileKey;
+5. require exactly one Preview desktop JS target `mbo-employee-app.js` before upload;
+6. fail before upload on target missing/ambiguous;
+7. only after full preflight passes may the script upload exactly one target JS;
+8. focused tests must prove invalid states result in zero upload/write calls.
 
 No Kintone write/deploy is authorized in this corrective task.
 
@@ -136,10 +131,10 @@ No Kintone write/deploy is authorized in this corrective task.
 ```text
 NEXT_ACTION_OWNER = Antigravity
 ANTIGRAVITY_REQUIRED = YES
-DUPLICATE_WORK_RISK = LOW — task is limited to the unresolved fileKey/API-contract defect
+DUPLICATE_WORK_RISK = LOW — only unresolved pre-upload safety gate remains
 ```
 
-Antigravity must execute only the new `project-docs/AI_ACTIVE_TASK.md`, push one narrow source/test commit, and STOP.
+Antigravity must execute only `project-docs/AI_ACTIVE_TASK.md`, push one narrow source/test commit, and STOP.
 
 ## 8. Knowledge Maintenance
 
@@ -147,4 +142,4 @@ Baseline promotion:
 `NONE — no durable business/architecture rule changed.`
 
 Reusable Kintone skill extraction:
-`PASS — update safe-live-change guidance to distinguish Production customization read-back from Preview fileKeys required by Preview customization PUT.`
+`PASS — safe live changes must complete all deterministic validation before the first irreversible/remote write, including file upload.`
