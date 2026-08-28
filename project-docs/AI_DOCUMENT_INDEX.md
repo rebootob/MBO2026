@@ -40,6 +40,7 @@ Antigravity does **not** need this whole index unless the Active Task explicitly
 | Current project status / what next | `AI_CONTROL_CENTER.md` | `00_MASTER_JOBLIST.md` |
 | Current executor instruction | `AI_ACTIVE_TASK.md` | none |
 | AI workflow / low-credit / review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `CONFIRMED_BASELINE/DOCUMENT_CONTROL.md` |
+| Source architecture / modular JavaScript / file separation / refactor plan | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`, exact affected source files |
 | Which document should I read? | `AI_DOCUMENT_INDEX.md` | search only if no route exists |
 | D1 login / password / App801 / shared Kintone account | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | exact latest D1 evidence/diff |
 | D1 live group / App801 ACL audit | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `D1_ACCESS_GROUP_SETUP_EVIDENCE.md` only for exact audit |
@@ -73,6 +74,9 @@ Antigravity does **not** need this whole index unless the Active Task explicitly
 ### Open by domain only
 - `AI_OPERATING_GOVERNANCE.md`
   - AI roles, Control Plane/Execution Plane, review rules, low-credit rules, Baseline promotion, Skill extraction
+
+- `SOURCE_CODE_ARCHITECTURE.md`
+  - modular JavaScript architecture, feature/menu file separation, main-entry boundaries, incremental decomposition, generated-dist rules, Antigravity low-credit refactor pattern
 
 - `DOCUMENT_CONTROL.md`
   - Core Read Set, default-ignore files, no-rediscovery rules
