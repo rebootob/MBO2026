@@ -86,21 +86,29 @@ Live must never display preview/sample fixture filenames. Preview may use clearl
 
 If the custom UI owns file selection/upload, use Kintone-native file handling only.
 
-Canonical browser flow:
+Canonical browser persistence flow confirmed after Live UAT defect correction:
 1. user selects local file(s);
 2. UI records local `PENDING` state and shows filename(s);
-3. upload through Kintone file upload API using browser-safe Kintone request context;
-4. receive upload `fileKey`;
-5. bind returned `fileKey` to the exact target Kintone FILE field through the existing create/edit record lifecycle;
-6. after persistence/read-back, render saved filenames from the actual FILE field.
+3. create/edit submit performs existing local validation first;
+4. upload pending files through Kintone `POST /k/v1/file.json` and receive temporary upload `fileKey` values;
+5. **DO NOT mutate Kintone FILE fields in `app.record.create.submit` / `app.record.edit.submit` event records**;
+6. keep an in-memory prepared attachment plan;
+7. for saved-file removal/change, keep an explicit desired retained-file snapshot per canonical attachment field, independent of the later submit `event.record` object;
+8. allow the native Kintone record save to complete;
+9. in `app.record.create.submit.success` / `app.record.edit.submit.success`, use `event.appId` + `event.recordId` and Kintone Update Record REST API (`PUT /k/v1/record.json`) to bind the exact target FILE field(s);
+10. after persistence/read-back, render actual saved filenames from Kintone.
 
-Implementation notes:
-- use multipart `POST /k/v1/file.json` / `FormData` in the supported Kintone browser pattern;
-- use Kintone request token / same-origin request requirements as applicable;
-- do not confuse upload-time `fileKey` with a later file key/reference returned by record-read APIs;
-- fail visibly on upload/binding failure;
-- unit tests must not perform Live network writes;
-- if immediate upload creates unsafe orphan-file behavior, an explicit pending-file model with submit-boundary upload/binding is preferred.
+Confirmed source/test invariants:
+- pre-save upload failure may cancel submit fail-closed;
+- post-save binding failure must truthfully state that the record already saved but attachment binding failed, and must not disappear silently during normal redirect;
+- zero pending/dirty attachment state causes no attachment REST update;
+- unrelated attachment fields must not be included in the REST update payload;
+- retained saved fileKeys remain unless the user explicitly removes them;
+- remove + add on the same field must produce the exact desired retained + new fileKey set;
+- Self Evaluation uses the canonical `Final_Attachment_n` FILE fields in the current App794 schema; UI alias/fallback behavior must resolve to those canonical fields;
+- use multipart `FormData`, same-origin Kintone context/request token as applicable;
+- do not confuse upload-time fileKey with later record-read references;
+- unit tests must not perform Live network writes.
 
 External file hosting/storage is forbidden for D1.
 
@@ -122,11 +130,19 @@ Before accepting a corrective implementation, tests must cover at minimum:
 - multiple real files;
 - selected/pending file state;
 - pending remove/change;
+- real saved-file removal desired state through the registered submit handler using a separate submit-event record;
+- remove + add exact desired state;
 - upload error visibly remains not-saved;
 - exact target-field binding;
 - unrelated attachment fields unchanged;
-- Objective/Mid-Year/Self attachment regression;
+- Objective/Mid-Year/Self(Final) attachment regression;
+- create/edit zero-pending non-mutation;
+- create/edit pending upload non-mutation;
+- submit.success exact REST binding;
+- post-save failure visible/no-silent-redirect behavior;
 - Live never shows preview fixture filename.
+
+Do not reduce regression coverage to make a corrective pass. Obsolete tests may only be replaced by equivalent-or-stronger coverage with an explicit evidence note.
 
 ---
 
@@ -147,5 +163,6 @@ Any future proposal to:
 - store D1 attachments outside Kintone;
 - hide filenames/state from users;
 - change optional attachment semantics;
+- return to direct FILE-field mutation inside create/edit submit event objects;
 
 requires explicit user decision and Baseline update.
