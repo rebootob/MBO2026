@@ -1,9 +1,9 @@
-# AI ACTIVE TASK — D1 ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE
+# AI ACTIVE TASK — D1 ATTACHMENT SUBMIT-LIFECYCLE TEST + EVIDENCE CORRECTIVE
 
-Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE**
+Mode: **ANTIGRAVITY TEST/EVIDENCE ONLY — NO LIVE WRITE**
 Branch: `ai/antigravity-wp002c`
 
-> This task supersedes the broader Timeline + Attachment corrective. Independent review of commit `7247df478eab2a4320019040df1740457b0bfc69` accepted Timeline source truthfulness and attachment display/pending/remove source behavior, but found missing create/edit submit integration for actual upload+binding.
+> This task follows Independent Review of commit `9b91d10422d7ec424e636dae4f37d3846fa55bb4`. Production submit integration source is accepted. The remaining gap is handler-level verification plus fresh full-suite/build evidence.
 
 ## Mandatory architecture
 
@@ -21,102 +21,81 @@ Relevant durable baseline:
 ## Accepted source state — DO NOT REIMPLEMENT
 
 ```text
-TIMELINE_LIVE_TRUTHFULNESS_SOURCE       = PASS
-TIMELINE_PREVIEW_FIXTURE_GATE           = PASS
-ATTACHMENT_ZERO/MULTIPLE_DISPLAY        = PASS
-ATTACHMENT_PENDING_DISPLAY              = PASS
-ATTACHMENT_INPUT_HANDLER                = PASS
-ATTACHMENT_REMOVE_HANDLER               = PASS
-ATTACHMENT_PREVIEW_LEAK_GUARD           = PASS
-MBO_ATTACHMENT_SERVICE                  = PASS / KINTONE-ONLY
+TIMELINE_LIVE_TRUTHFULNESS_SOURCE        = PASS
+ATTACHMENT_DISPLAY/PENDING/REMOVE_SOURCE = PASS
+MBO_ATTACHMENT_SERVICE_SOURCE            = PASS
+ATTACHMENT_SUBMIT_INTEGRATION_SOURCE     = PASS
 ```
 
-Do not rewrite Timeline logic. Do not redesign attachment UI. Do not reopen routing/scoring/auth/App795/App796/Create-handler work.
+The accepted submit source already calls:
+`await activeUiInstance.uploadPendingAttachments({ record: event.record })`
+after local validation and before successful return, with fail-closed cancellation on upload error.
 
-## Exact defect to fix
+Do not redesign Timeline, attachment UI, upload service, routing, scoring, auth, reset-password, App795/App796, or D2-D7.
 
-`src/main-mbo-app.js` handles:
-- `app.record.create.submit`
-- `app.record.edit.submit`
+## Exact verification defect
 
-but currently does not invoke pending attachment upload/binding before returning the submit event.
+Current `tests/timeline-truthfulness-and-attachment.test.js` adds tests named `SUBMIT_LIFECYCLE_*`, but they call `EmployeePartAUI.uploadPendingAttachments()` directly. They do not execute the actual registered `app.record.create.submit` / `app.record.edit.submit` handler in `src/main-mbo-app.js`.
 
-`EmployeePartAUI.uploadPendingAttachments()` and `src/services/mbo-attachment-service.js` exist, but service-only existence does not persist files unless the submit lifecycle invokes it against the exact current submit record.
+Also, the test renamed to `real click handler removes pending file` still directly splices the model and does not trigger the real click handler.
 
-## Required behavior
+The previous verification document reports results from the earlier gate and is not fresh evidence for the final submit-integration commit.
 
-For both create and edit submit:
+## Required tests
 
-1. keep existing `syncFromDom()` and fail-closed employee/Record_Key/duplicate/business validation behavior;
-2. do **not** upload files until those local checks have passed;
-3. immediately before successful `return event`, if there are pending attachments:
-   - invoke Kintone-only pending upload/binding;
-   - bind fileKeys to the exact current `event.record` FILE fields;
-   - ensure Objective / Mid-Year / Self (`Final_` fallback where applicable) target only the requested field;
-4. on upload/bind error:
-   - mark/display not-saved/error state;
-   - cancel submit fail-closed;
-   - do not pretend the file was saved;
-5. no attachment remains optional; zero pending attachments must submit normally;
-6. unrelated attachment fields must remain unchanged.
+Add the smallest focused harness needed to exercise the actual registered Kintone submit handler path.
 
-### Record-object correctness
-
-Do not assume the record object retained from `show` is the same object as `event.record` during submit.
-
-Choose the smallest safe integration, for example by allowing `uploadPendingAttachments()` to accept the exact submit record or otherwise explicitly passing `event.record` to the attachment service.
-
-`src/main-mbo-app.js` must remain orchestration-only.
-
-## Focused tests — mandatory
-
-Add/adjust tests that exercise the **real submit lifecycle**, not only the service in isolation:
-
-1. create submit + zero pending files => no upload call; submit succeeds unchanged;
-2. edit submit + zero pending files => no upload call; submit succeeds unchanged;
-3. create submit + pending Objective file => upload called once; returned fileKey appears on exact `event.record.Objective_Attachment_n`;
-4. edit submit + pending Mid-Year/Self file => exact target field only;
+Must prove:
+1. create submit + zero pending files => no upload call; submit succeeds;
+2. edit submit + zero pending files => no upload call; submit succeeds;
+3. create submit + pending Objective file => handler calls upload after validation and returned fileKey lands on exact `event.record.Objective_Attachment_n`;
+4. edit submit + pending Mid-Year or Self file => exact target field only;
 5. unrelated attachment field remains unchanged;
-6. upload failure => submit cancelled and visible not-saved/error state;
+6. upload failure from handler path => handler returns/cancels fail-closed and visible error path is invoked;
 7. no Live network calls in tests;
-8. existing 12 timeline/attachment focused tests remain PASS;
-9. Timeline Live/Preview regression remains PASS.
+8. Timeline Live/Preview regressions remain PASS;
+9. existing attachment service/UI tests remain PASS.
 
-If practical, improve the pending-remove focused test so it exercises the real remove handler rather than manually splicing the model.
+For pending-remove coverage, either:
+- trigger the actual remove click handler in the test; OR
+- rename the test so it does not falsely claim real-handler coverage.
 
-## Mandatory checks
+## Fresh execution evidence required
 
-- new submit-lifecycle focused tests PASS;
-- existing `tests/timeline-truthfulness-and-attachment.test.js` PASS;
-- full `npm test` PASS;
-- module-aware build/build-only PASS;
-- no external dependency/service;
-- no Live App794/App801/App795/App796 write;
-- no deploy/customization write;
-- no routing/scoring/auth/reset-password change;
-- no D2-D7 change.
-
-## Preferred source scope
-
-Expected files:
-- `src/main-mbo-app.js`
-- `src/ui/employee-part-a-ui.js` only if needed to pass the exact current submit record safely
-- `tests/timeline-truthfulness-and-attachment.test.js` and/or one tightly focused submit-lifecycle test file
-
-Do not modify `src/services/mbo-attachment-service.js` unless a real integration defect requires a minimal change.
-
-## Evidence required
-
-Report:
-- START_HEAD fetched at execution start;
+For the new final SHA, record:
+- START_HEAD;
 - changed files;
-- exact create/edit submit integration behavior;
-- proof binding targets the exact submit `event.record`;
-- focused tests/results;
-- full `npm test` result;
-- build-only result;
+- focused handler-level test names/results;
+- focused timeline/attachment suite result;
+- full `npm test` exact pass count/result;
+- module-aware build/build-only result;
 - `LIVE_KINTONE_WRITE = 0`;
+- `LIVE_DEPLOY_OCCURRED = NO`;
 - final commit SHA.
+
+Update `project-docs/D1_LIVE_TIMELINE_ATTACHMENT_VERIFICATION.md` or create one tightly scoped replacement evidence file so the evidence clearly corresponds to the new final SHA.
+
+## Preferred scope
+
+Expected changes:
+- `tests/timeline-truthfulness-and-attachment.test.js` and/or one small handler-focused test file;
+- verification evidence document;
+- rebuilt `dist` only if the normal mandatory build changes it.
+
+Production source changes are **not authorized by default**. Change `src/main-mbo-app.js` / UI/service only if a real handler-level test exposes a genuine defect, and report that defect explicitly.
+
+## Forbidden
+
+```text
+APP794 DEPLOY                = NO
+APP794 RECORD/ACL WRITE      = NO
+APP801 WRITE                 = NO
+APP795/796 WRITE             = NO
+LIVE FILE UPLOAD DURING TEST = NO
+ROUTING/SCORING/AUTH/RESET   = NO
+D2-D7                        = NO
+EXTERNAL SERVICE             = NO
+```
 
 Commit + push to `ai/antigravity-wp002c`.
 STOP.
