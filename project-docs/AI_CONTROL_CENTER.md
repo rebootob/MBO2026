@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — D1 PASSWORD RESET CORE R1 SOURCE ACCEPTED BY INDEPENDENT CHATGPT REVIEW; LIVE APP794 REV57 UNCHANGED
+> Updated: 2026-08-30 — D1 PASSWORD RESET CORE R1 SOURCE ACCEPTED; NEW USER LIVE REGRESSION EVIDENCE OPENS APP794 WP2 R4 ERROR-STATE BACK NAV SOURCE CORRECTIVE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** WP2 R3 UI remains CLOSED / App794 Live Revision 57 accepted known-good. D1 Password Reset Core R1 source is now independently ACCEPTED. Production HR/`admin-form` reset surface + authority + deploy/UAT remain open. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source = independently ACCEPTED. App794 Rev57 remains accepted for prior WP2 R3 normal UI, but new user screenshot proves an uncovered fatal/error path where Back to My MBO is missing. WP2 R4 source-only corrective is now assigned. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -19,7 +19,7 @@
 | D6 | 🔴 Integrated E2E / Security / Regression pending until constituent work is ready. |
 | D7 | ✅ Admin Support Center source functionality CLOSED; reopen only on a new proven defect. |
 
-## 2. Accepted Live App794 Baseline — WP2 R3
+## 2. Accepted Live App794 Baseline — Rev57
 
 ```text
 LIVE_REVISION               = 57
@@ -30,13 +30,14 @@ LIVE_JS_IDENTITY            = ac22a56cb9d78001384241fe12745f7a2da3da84
 LIVE_CSS_IDENTITY           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 EXECUTOR_TECH_READBACK      = PASS / EXACT PAIR
 INDEPENDENT_GIT_REVIEW      = PASS
-USER_RUNTIME_UAT            = PASS
-CURRENT_LIVE_RUNTIME        = ACCEPTED KNOWN-GOOD
+PRIOR_USER_RUNTIME_UAT      = PASS FOR WP2 R3 TARGET AREAS
 ```
 
-WP2 R3 remains CLOSED. Do not reopen without regression evidence.
+Important status refinement:
+- Rev57 remains the accepted known-good Live baseline for My MBO structured table, normal Detail/Edit Back navigation, Native Comment Mirror and the previously accepted R3 scope.
+- New screenshot evidence on 2026-08-30 proves an **additional uncovered fatal/error-state navigation defect**. This does not invalidate every prior R3 acceptance, but it opens a new narrow corrective R4.
 
-## 3. D1 Password Reset Core R1 — Independent Review
+## 3. D1 Password Reset Core R1 — Accepted
 
 ```text
 R1_SOURCE_COMMIT            = e77c891407d5ccfa3d52401a28922f37a2b1b959
@@ -46,69 +47,61 @@ R1_LIVE_APP801_WRITE        = NONE
 R1_STATUS                   = D1_PASSWORD_RESET_CORE_R1_SOURCE_ACCEPTED
 ```
 
-Accepted source behavior in `src/ui/mbo-kintone-auth-adapter.js`:
-- `resetMboPassword({ employeeCode })` uses the canonical Kintone-only auth adapter.
-- Temporary password = exact canonical `Employee_Code`.
-- PBKDF2-SHA256 / 100000 hash is generated via the adapter's existing Web Crypto implementation.
-- `Force_Password_Change = YES`.
-- `Failed_Attempts = 0`; temporary `Locked_Until` is cleared.
-- positive-integer `Credential_Version` increments by exactly 1.
-- all active App801 `Session_*` fields are cleared.
-- `Account_Status` is not included in the update payload, so permanent `LOCKED` / `DISABLED` state is preserved.
-- missing/duplicate/malformed credential state fails closed through the canonical credential lookup/validation path.
-- success result exposes no password/hash/token/session secret.
+Accepted reset primitive remains source-only and is not part of the current UI corrective.
 
-Focused committed tests in `tests/mbo-kintone-auth-adapter.test.js` exercise required R1 contracts, including ACTIVE, permanent LOCKED/DISABLED, temporary lock clear, missing/duplicate/malformed credential versions, special canonical Employee_Code formats and invalid Employee_Code rejection.
+## 4. New User Regression Evidence — App794 Error Screen
 
-Generated `dist/mbo-employee-app.js` contains the reviewed source-equivalent reset primitive. No App800/D7/Auth Bridge/schema/ACL source change is part of the R1 implementation commit.
+User screenshot on 2026-08-30 shows an existing App794 record page with:
+- authenticated UI state / Logout visible;
+- fatal bilingual system error message (preparation/render failure class);
+- **no visible `← กลับหน้า My MBO / Back to My MBO` navigation**.
 
-### Verification evidence boundary
+This conflicts with the established UI runtime rule that existing Detail/Edit Back navigation must survive fail-closed/early-return states.
 
-Executor reported:
+Existing source evidence:
+- canonical Back component is `src/ui/employee-record-navigation.js`;
+- normal `EmployeePartAUI.render()` attempts to mount Back immediately after root creation for non-Create pages;
+- therefore the defect is treated as an uncovered error/fallback orchestration path or equivalent runtime path, not authorization to duplicate/rewrite the Back component.
+
+Required user-facing behavior:
 
 ```text
-node --test tests/mbo-kintone-auth-adapter.test.js                                  = 40/40 PASS
-node --test tests/mbo-session-manager.test.js tests/mbo-kintone-login-gate.test.js = 39/39 PASS
-npm run ui:build                                                                    = PASS
-node --test tests/classic-bundle.test.js tests/safety-guard.test.js                 = 223/223 PASS
+Existing Detail/Edit normal state = exactly 1 Back control
+Existing Detail/Edit fatal/error state = exactly 1 Back control
+Create = 0 Back controls
+Label = ← กลับหน้า My MBO / Back to My MBO
+Target = /k/794/ (same tab)
 ```
 
-GitHub exposes no commit status checks for `e77c891...`, so do not claim independent CI confirmation beyond the reviewed committed source/tests/dist and executor-reported command results.
+The error itself must remain fail-closed and visible. Back navigation must perform no Kintone write and must not alter auth/session/workflow state.
 
-## 4. Governance Review Note
-
-Antigravity changed `AI_ACTIVE_TASK.md` and `AI_CONTROL_CENTER.md` in the implementation commit although the R1 packet did not authorize executor ownership of those Control Plane documents.
-
-This is treated as an out-of-scope documentation/governance deviation, not a source-code defect. ChatGPT normalized both control documents during this review.
-
-Future executor rule remains: do not modify `AI_CONTROL_CENTER.md`, promote status, or replace/close the Active Task unless the exact packet explicitly instructs that document change.
-
-No new durable Baseline fact was created by R1; the implementation conforms to the already-confirmed password-reset semantics in `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`.
-
-## 5. Current Gate
+## 5. Current Active Task
 
 ```text
-CURRENT_GATE                  = D1 PASSWORD RESET CORE R1 SOURCE ACCEPTED / CONTROL PLANE HOLD
-CURRENT_MODE                  = NO ACTIVE EXECUTION / NO LIVE WRITE
-WP2_R3_STATUS                 = CLOSED / REV57 ACCEPTED KNOWN-GOOD
-D1_RESET_CORE_R1              = SOURCE PASS
+ACTIVE_TASK   = APP794 WP2 R4 ERROR-STATE BACK NAV / SOURCE-ONLY
+OWNER         = ANTIGRAVITY
+LIVE_WRITE    = FORBIDDEN
+DEPLOY        = FORBIDDEN
+SOURCE_SCOPE  = exact UI navigation/fallback files + focused tests only
+```
+
+Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
+
+## 6. Current Gate
+
+```text
+CURRENT_GATE                  = APP794 WP2 R4 ERROR-STATE BACK NAV SOURCE IMPLEMENTATION / PENDING CHATGPT REVIEW
+CURRENT_MODE                  = SOURCE-ONLY EXECUTION / NO LIVE WRITE
+D1_PASSWORD_RESET_CORE_R1     = SOURCE PASS / ACCEPTED
+WP2_R3_PRIOR_SCOPE            = ACCEPTED / DO NOT BROADLY REOPEN
+WP2_R4_ERROR_NAV              = NEW REGRESSION CORRECTIVE
 D1_OVERALL                    = IN PROGRESS
 LIVE_DEPLOY_AUTHORIZED        = NO
 ACTIVE_KINTONE_WRITE_AUTH     = NONE
 APP801_LIVE_WRITE             = NO
 ROLLBACK_AUTH                 = NONE
-NEXT_OWNER                    = USER / CHATGPT CONTROL PLANE
+NEXT_OWNER                    = ANTIGRAVITY FOR EXACT R4 SOURCE PACKET
 ```
-
-## 6. Next D1 Reset Boundary — NOT YET ASSIGNED
-
-The next reset stage is the authorized Production reset surface for:
-- HR-authorized users; and
-- `admin-form` Technical Admin / recovery.
-
-Before source execution is opened, Control Plane must define/verify the exact authorization evidence and surface. The final UI must require explicit target Employee_Code confirmation, show observable success/failure, withhold the capability from employee/shared principals, and later prove Live reset/session invalidation/forced-change behavior through separately authorized deployment and UAT.
-
-Do not start R2, deploy, or write App801 automatically.
 
 ## 7. Authorization Ledger
 
@@ -120,3 +113,5 @@ ACTIVE_KINTONE_WRITE_AUTH    = NONE
 ACTIVE_DEPLOY_AUTH           = NONE
 ROLLBACK_AUTH                = NONE
 ```
+
+No source acceptance or user screenshot authorizes a Live deploy.
