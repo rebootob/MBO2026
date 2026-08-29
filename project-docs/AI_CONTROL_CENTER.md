@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — USER AUTHORIZED APP794 ATTACHMENT CORRECTIVE DEPLOY
+> Updated: 2026-08-29 — INDEPENDENT PASS: APP794 ATTACHMENT CORRECTIVE DEPLOYMENT
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / prior accepted D1 states remain PASS / APP794 LIVE REV46 / TIMELINE TRUTHFULNESS PASS / ATTACHMENT POST-SAVE REST CORE PASS / POST-SAVE FAILURE VISIBILITY SOURCE PASS / DESIRED SAVED-FILE SNAPSHOT PASS / REGRESSION COVERAGE PASS / **APP794 ATTACHMENT CORRECTIVE DEPLOY AUTHORIZED ONE-SHOT** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / prior accepted D1 states remain PASS / APP794 LIVE REV47 / TIMELINE TRUTHFULNESS PASS / ATTACHMENT SOURCE+TEST PASS / ATTACHMENT CORRECTIVE DEPLOYMENT PASS / **LIVE ATTACHMENT FUNCTIONAL UAT REQUIRED** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -27,7 +27,7 @@ No AI may silently drop D1–D7.
 D1_ARCHITECTURE                    = KINTONE-ONLY
 EXTERNAL_SERVER_SERVICE            = FORBIDDEN
 AUTH_BRIDGE                        = CANCELLED / DO NOT IMPLEMENT
-APP794_LIVE_CUSTOMIZATION_REVISION = 46 (PRE-DEPLOY)
+APP794_LIVE_CUSTOMIZATION_REVISION = 47
 SOURCE_MODULARITY_POLICY           = MANDATORY / NO CATCH-ALL SOURCE FILES
 ```
 
@@ -48,118 +48,88 @@ SOURCE_OWNERSHIP_MODULAR                       = PASS
 Reviewed source/test candidate:
 `2aed3578b710e0283c7a436e7fa7a225ec3e7afb`
 
-Current Control Plane authorization-start HEAD before recording this authorization:
-`497f9ddc58e3eb34c7b01f3f6d6d5c22330ef47e`
+## 3. Independent Deployment Review — PASS
 
-Only Control Plane documentation exists after the reviewed source candidate; production source must not change during deployment.
-
-## 3. User Authorization — One-Shot
-
-User explicitly authorized:
-
+User one-shot authorization:
 `อนุมัติ App794 deploy D1 Attachment persistence corrective`
 
-This authorization is exact and one-shot.
+Authorization execution-start HEAD:
+`3b9fc3a7088ea529bb2acfce24734f3761e43e15`
 
-Authorized:
-- fetch latest canonical branch and verify provenance;
-- run required preflight;
-- run build/build-only needed for deployment readiness;
-- backup current App794 customization revision 46 and exact Live asset provenance before any deploy;
-- deploy App794 customization only using the already-reviewed attachment corrective candidate;
-- wait for Kintone deployment completion;
-- read back Live customization revision/assets and compare against reviewed candidate;
-- create concise deployment evidence;
-- commit + push evidence only;
-- rollback only to the exact pre-deploy App794 customization snapshot if deploy or readback fails.
+Executor deployment evidence commit:
+`072db7d3736efe55ae0a1705844c74a1c00e482f`
 
-Not authorized:
+Independent Git review confirms:
+- `2aed357... -> 3b9fc3a...` changed only Control Plane/Baseline documentation; no production source changed after reviewed candidate;
+- `3b9fc3a... -> 072db7d...` changed only `project-docs/D1_ATTACHMENT_PERSISTENCE_CORRECTIVE_EVIDENCE.md`;
+- reviewed candidate `dist/mbo-employee-app.js` Git blob SHA = `97273c29e80c4f6cbfa6982360fdba03c8c43076`;
+- deployment evidence reports Live post-deploy JS identity/hash = the same `97273c29e80c4f6cbfa6982360fdba03c8c43076`;
+- reviewed candidate CSS Git blob SHA = `1359dfae16d1224580210a5a6cd366fb20bcf6f8`, matching reported Live post-deploy CSS;
+- reported pre-deploy JS identity/hash `66424ab0949ca4767fbeb06118adfff593775014` independently matches the previously accepted rev46 bundle Git blob;
+- reported Live App794 customization revision changed `46 -> 47`;
+- reported deploy status = SUCCESS; candidate readback match = YES; rollback = NO;
+- reported forbidden write counters remain zero: App794 record/ACL/schema/process, App801, App795/796;
+- executor maximum status remained `DEPLOYED_PENDING_INDEPENDENT_REVIEW`.
+
+Therefore:
 
 ```text
-SOURCE / REFACTOR CHANGE       = NO
-APP794 RECORD WRITE            = NO
-APP794 ACL/SCHEMA/PROCESS      = NO
-APP801 WRITE                   = NO
-APP795/796 WRITE               = NO
-ROUTING/SCORING CHANGE         = NO
-AUTH/SESSION/RESET CHANGE      = NO
-D2-D7 EXECUTION                = NO
-EXTERNAL SERVICE               = NO
+APP794_ATTACHMENT_CORRECTIVE_DEPLOYMENT = PASS
+APP794_LIVE_REVISION                    = 47
+ONE_SHOT_DEPLOY_AUTHORIZATION           = CONSUMED / CLOSED
 ```
 
-Rollback permission is narrow emergency recovery for this same App794 customization deployment only. It does not authorize any other production mutation.
+The deployment PASS proves deployment provenance/readback, not functional business behavior. Live attachment UAT is still required.
 
 ## 4. Exact Current Gate
 
 ```text
-CURRENT_GATE       = APP794 D1 ATTACHMENT PERSISTENCE CORRECTIVE DEPLOY
-CURRENT_MODE       = AUTHORIZED ONE-SHOT DEPLOYMENT EXECUTION
-NEXT_ACTION_OWNER  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-APP794 DEPLOY      = YES — ONE-SHOT ACTIVE
-APP794 RECORD WRITE= NO
-LIVE ACL/SCHEMA    = NO
+CURRENT_GATE       = D1 APP794 ATTACHMENT LIVE FUNCTIONAL UAT
+CURRENT_MODE       = USER LIVE UAT / CONTROL PLANE REVIEW
+NEXT_ACTION_OWNER  = USER + CHATGPT
+ANTIGRAVITY        = DO NOTHING
+APP794 DEPLOY      = NO — PRIOR ONE-SHOT CONSUMED
+AI LIVE WRITE      = NO
 APP801 WRITE       = NO
 APP795/796 WRITE   = NO
 D2-D7 WRITE        = NO
 SOURCE CHANGE      = NO
 ```
 
-The authorization is consumed when the authorized deploy sequence completes or is aborted/rolled back and evidence is committed. It must not be reused for another deployment.
+Do not reuse the consumed deployment authorization.
 
-## 5. Required Deployment Evidence
+## 5. Required Live UAT
 
-Evidence must include at minimum:
-- START_HEAD;
-- reviewed source candidate SHA;
-- changed files during execution;
-- preflight result;
-- build result;
-- pre-deploy App794 customization revision;
-- backup/snapshot provenance sufficient for exact rollback;
-- deployment result;
-- post-deploy customization revision;
-- Live JS/CSS asset identity/hash/readback and comparison to candidate;
-- rollback occurred YES/NO and reason;
-- `APP794_RECORD_WRITE = 0`;
-- `APP794_ACL_SCHEMA_PROCESS_WRITE = 0`;
-- `APP801_WRITE = 0`;
-- `APP795_796_WRITE = 0`;
-- final commit SHA containing evidence;
-- maximum executor status `DEPLOYED_PENDING_INDEPENDENT_REVIEW`.
+Use an appropriate App794 test record and verify manually in Live revision 47:
+1. Save with no attachment;
+2. add one Objective attachment and Save;
+3. reload/detail and confirm saved filename persists;
+4. add multiple Objective attachments and Save;
+5. remove one saved attachment and Save, confirm only intended file is removed after reload;
+6. remove + add in the same field and Save, confirm exact desired final set;
+7. verify an unrelated attachment field is unchanged;
+8. verify Mid-Year attachment persistence;
+9. verify Self Evaluation attachment persists through canonical `Final_Attachment_n`;
+10. verify no `event.record[...].type is invalid` customization error;
+11. verify Timeline Live truthfulness remains unchanged.
 
-No executor self-PASS.
+If any Live UAT step fails, capture the exact screen/error/record context and return to Control Plane review before any source change or redeploy.
 
-## 6. Post-Deploy Gate — Not Yet Accepted
-
-After Antigravity stops, ChatGPT must independently review Git/evidence before the deployment is accepted.
-
-Only after Independent Deployment PASS may user + ChatGPT run Live UAT for:
-- Save with no attachment;
-- one Objective attachment;
-- multiple attachments;
-- persisted filenames after reload;
-- remove one saved attachment;
-- remove + add same field;
-- unrelated field unchanged;
-- Mid-Year attachment;
-- Self Evaluation attachment via canonical `Final_Attachment_n`;
-- no `event.record[...].type is invalid` error;
-- Timeline truthfulness unchanged.
-
-## 7. Development Governance
+## 6. Development Governance
 
 - Antigravity performs only execution requiring local/runtime access.
 - ChatGPT owns diagnosis, planning, Git independent review and Control Plane docs.
-- No source/refactor work is needed or authorized during this deployment.
-- Keep the deployment task narrow; stop immediately after evidence commit/push.
+- No source/refactor/deploy work is currently authorized.
+- Live UAT evidence must precede any further corrective deployment decision.
 
-## 8. Handoff
+## 7. Handoff
 
 ```text
 SOURCE_TEST_REVIEW          = PASS
-DEPLOY_READY                = YES
-DEPLOY_AUTHORIZATION        = ACTIVE / ONE-SHOT
-AUTHORIZED_SCOPE            = APP794 D1 ATTACHMENT PERSISTENCE CORRECTIVE DEPLOY ONLY
-NEXT OWNER                  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-MAX EXECUTOR STATUS         = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+DEPLOYMENT_REVIEW           = PASS
+APP794_LIVE_REVISION        = 47
+DEPLOY_AUTHORIZATION        = CONSUMED / CLOSED
+LIVE_FUNCTIONAL_UAT         = REQUIRED
+NEXT OWNER                  = USER + CHATGPT
+ANTIGRAVITY                 = DO NOTHING
 ```
