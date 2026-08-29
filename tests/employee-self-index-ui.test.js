@@ -433,6 +433,190 @@ test('DETAIL_EXISTING_RECORD_BACK_TO_MY_MBO_VISIBLE & EDIT_EXISTING_RECORD_BACK_
   }
 });
 
+test('COMMENTS_SHORT_PAGE_NEWER_TRUE_CONTINUES: Short page (<10 items) with newer=true MUST continue fetching next page using exact returned count offset', async () => {
+  const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
+
+  let getCommentsCallCount = 0;
+  const queriedParams = [];
+  const mockApiWrapper = {
+    getComments: async (appId, recordId, options) => {
+      getCommentsCallCount++;
+      queriedParams.push({ appId, recordId, options });
+      if (options.offset === 0) {
+        // Short page 1: returns 4 items (< 10 limit), but newer is true
+        return {
+          comments: [
+            { id: '1', text: 'Comment 1', createdAt: '2026-08-29T10:00:00Z', creator: { name: 'User 1' } },
+            { id: '2', text: 'Comment 2', createdAt: '2026-08-29T10:01:00Z', creator: { name: 'User 2' } },
+            { id: '3', text: 'Comment 3', createdAt: '2026-08-29T10:02:00Z', creator: { name: 'User 3' } },
+            { id: '4', text: 'Comment 4', createdAt: '2026-08-29T10:03:00Z', creator: { name: 'User 4' } }
+          ],
+          older: false,
+          newer: true
+        };
+      } else {
+        // Page 2: offset is 4, returns remaining 3 items, newer is false
+        return {
+          comments: [
+            { id: '5', text: 'Comment 5', createdAt: '2026-08-29T10:04:00Z', creator: { name: 'User 5' } },
+            { id: '6', text: 'Comment 6', createdAt: '2026-08-29T10:05:00Z', creator: { name: 'User 6' } },
+            { id: '7', text: 'Comment 7', createdAt: '2026-08-29T10:06:00Z', creator: { name: 'User 7' } }
+          ],
+          older: true,
+          newer: false
+        };
+      }
+    }
+  };
+
+  const createMockContainer = () => {
+    const children = [];
+    const attrMap = new Map();
+    const mockContainer = {
+      tagName: 'DIV',
+      children,
+      innerHTML: '',
+      appendChild: (c) => { children.push(c); return c; },
+      querySelector: (sel) => {
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+          }
+          for (const child of el.children || []) {
+            const res = find(child);
+            if (res) return res;
+          }
+          return null;
+        };
+        return find(mockContainer);
+      },
+      querySelectorAll: (sel) => {
+        const res = [];
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+          }
+          for (const child of el.children || []) {
+            find(child);
+          }
+        };
+        find(mockContainer);
+        return res;
+      },
+      setAttribute: (k, v) => attrMap.set(k, String(v)),
+      getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null
+    };
+    return mockContainer;
+  };
+
+  const origDocument = globalThis.document;
+  const origKintone = globalThis.kintone;
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: (tag) => {
+      const children = [];
+      const attrMap = new Map();
+      return {
+        tagName: tag.toUpperCase(),
+        children,
+        _innerHTML: '',
+        get innerHTML() { return this._innerHTML; },
+        set innerHTML(val) {
+          this._innerHTML = val;
+          if (val === '') children.length = 0;
+        },
+        textContent: '',
+        style: {},
+        appendChild: (c) => { children.push(c); return c; },
+        setAttribute: (k, v) => attrMap.set(k, String(v)),
+        getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
+        querySelector: (sel) => {
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) return el;
+            }
+            for (const c of el.children || []) {
+              const res = search(c);
+              if (res) return res;
+            }
+            return null;
+          };
+          for (const c of children || []) {
+            const res = search(c);
+            if (res) return res;
+          }
+          return null;
+        },
+        querySelectorAll: (sel) => {
+          const res = [];
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) res.push(el);
+            }
+            for (const c of el.children || []) {
+              search(c);
+            }
+          };
+          for (const c of children || []) {
+            search(c);
+          }
+          return res;
+        },
+        addEventListener: () => {}
+      };
+    }
+  };
+  globalThis.kintone = {
+    app: { getHeaderSpaceElement: () => null },
+    getLoginUser: () => ({ code: '0113' })
+  };
+
+  try {
+    const container = createMockContainer();
+    const ui = new EmployeePartAUI({
+      container,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        $id: { value: '501' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: mockApiWrapper
+    });
+
+    ui.render();
+    await new Promise(r => setTimeout(r, 50));
+
+    assert.equal(getCommentsCallCount, 2, 'Short page with newer=true MUST continue to page 2');
+    assert.equal(queriedParams[0].options.offset, 0);
+    assert.equal(queriedParams[1].options.offset, 4, 'Page 2 offset must equal actual count 4 of first page');
+
+    const threadList = container.querySelector('[data-mbo-comment-thread]');
+    assert.ok(threadList, 'Comment thread list must render');
+    assert.equal(threadList.children.length, 7, 'All 7 comments across pages 1 and 2 must render in order');
+
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.kintone = origKintone;
+  }
+});
+
 test('COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES & COMMENTS_ASC_FINAL_PAGE_NEWER_FALSE_STOPS & COMMENTS_MORE_THAN_10_ALL_RENDERED & COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_EXISTING_EDIT_LOADS_NATIVE_THREAD', async () => {
   const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
 

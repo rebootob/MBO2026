@@ -1560,9 +1560,15 @@ export class EmployeePartAUI {
       allComments = allComments.concat(comments);
 
       // Kintone Get Record Comments REST API semantics for order='asc':
-      // resp.newer === false indicates the end of the comment thread (newest comment reached).
-      // resp.older === false indicates the beginning of the comment thread (Page 1 for order='asc').
-      if (resp?.newer === false || comments.length < limit) {
+      // - comments.length === 0 => stop safely (handled above)
+      // - resp.newer === false => newest comment reached, stop complete
+      // - non-empty page + resp.newer === true => MUST continue, even if comments.length < limit
+      // - if resp.newer is omitted, fallback to comments.length < limit check
+      if (resp?.newer === false) {
+        hasMore = false;
+      } else if (resp?.newer === true) {
+        offset += comments.length;
+      } else if (comments.length < limit) {
         hasMore = false;
       } else {
         offset += comments.length;

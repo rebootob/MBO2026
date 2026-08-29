@@ -3810,7 +3810,11 @@ Requester_User is empty for action "${actionName}".`
           break;
         }
         allComments = allComments.concat(comments);
-        if (resp?.newer === false || comments.length < limit) {
+        if (resp?.newer === false) {
+          hasMore = false;
+        } else if (resp?.newer === true) {
+          offset += comments.length;
+        } else if (comments.length < limit) {
           hasMore = false;
         } else {
           offset += comments.length;
