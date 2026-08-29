@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — APP795 ACCESS CORRECTION / AUTHORIZED ONE-SHOT
+# AI ACTIVE TASK — APP795 ACCESS CORRECTION PASS / USER CREATE-SHOW UAT
 
-Mode: **USER + CONTROL PLANE LIVE SETTINGS CORRECTION — EXACT ONE-SHOT**
+Mode: **USER + CONTROL PLANE LIVE UAT — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
 
 ## Mandatory architecture
@@ -11,105 +11,50 @@ External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
 ```
 
-## Current accepted state
+## Accepted correction state
 
-```text
-APP794_CORRECTIVE_DEPLOY_ROUND_2 = PASS
-APP794 LIVE customization revision = 45
-EMPLOYEE_SELF_UI_LIVE_UAT = PASS
-LOGOUT_VISIBLE_LIVE = PASS
-OLD CREATE-HANDLER DEFECT = RESOLVED
-CREATE_INITIALIZATION_E2E = BLOCKED / APP795 READ 403
-APP795_APP_ACL_REVISION = 8
-APP795_APP_GROUP = PRIVATE / USER SCREENSHOT CONFIRMED
-```
-
-App795 is the authoritative routing master. App794 Create must read App795 and fail closed if routing cannot be read.
-
-## Authorization
-
-User explicitly authorized:
-`อนุมัติ App795 Access Correction`
-
-Authorization ID:
+Authorization:
 `APP795-ACCESS-CORRECTION-20260829-01`
 
-Exact target: App795 settings only.
-
-## Exact correction
-
-### Stage 1 — ACL first while App795 remains Private
-
-Preserve current CREATOR rights exactly.
-
-Set exact App795 App ACL to:
+User evidence confirms the exact authorized App795 settings correction completed:
 
 ```text
-CREATOR:
-  View       YES
-  Add        YES
-  Edit       YES
-  Delete     YES
-  Manage App YES
-  Import     YES
-  Export     YES
-
-GROUP MBO_EMPLOYEE_ACCESS:
-  View       YES
-  Add        NO
-  Edit       NO
-  Delete     NO
-  Manage App NO
-  Import     NO
-  Export     NO
-
-GROUP everyone:
-  View       NO
-  Add        NO
-  Edit       NO
-  Delete     NO
-  Manage App NO
-  Import     NO
-  Export     NO
+APP795 ACL revision              = 8 -> 9
+CREATOR                          = full rights preserved
+MBO_EMPLOYEE_ACCESS              = View only
+Everyone                         = all permissions NO
+APP795_ACL_CORRECTION_OVERALL_PASS = true
+APP795 App Group                 = Public
 ```
 
-Use the fresh current ACL revision when performing the write. Fail closed if the pre-write ACL no longer matches the reviewed baseline or revision is not the expected fresh value.
+Classification:
+```text
+APP795_ACCESS_CORRECTION         = PASS / USER LIVE EVIDENCE
+APP795_ACCESS_CORRECTION_AUTH    = CONSUMED / CLOSED
+APP795 APP ACL WRITE             = NO
+APP795 APP GROUP WRITE           = NO
+```
 
-Immediately GET/read-back ACL and verify the exact three rows above.
+No further settings write is authorized from this authorization.
 
-### Stage 2 — App Group only after ACL read-back PASS
+## Exact next action — User Live UAT only
 
-Only after Stage 1 read-back passes:
-- change App795 App Group `Private -> Public`;
-- make no other App Group change;
-- visually/read-only verify App795 now shows `Public`.
-
-Reason for order: the current stored `everyone` ACL is broad. Switching to Public before tightening ACL could temporarily expose Add/Edit/Delete.
-
-### Stage 3 — user UAT
-
-Under employee-facing Kintone principal `s1` with MBO Employee Code `0113`:
-1. App795 read used by Create must no longer return 403;
-2. `0113 -> Create New MBO` should complete create-show initialization;
-3. do not save/create a business record merely for this check unless separately authorized.
-
-## Critical one-shot rule
-
-Authorization is considered consumed once the first App795 ACL write is attempted successfully at the transport/API layer.
-
-If ACL write/read-back or App Group result is uncertain:
-- STOP;
-- no automatic retry;
-- do not widen permissions;
-- recover read-only evidence and return to Control Plane.
+Under employee-facing Kintone principal `s1` and authenticated MBO Employee Code `0113`:
+1. open App794 My MBO;
+2. click `+ Create New MBO`;
+3. verify `/k/794/edit` opens without MBO re-login;
+4. verify App795 routing GET no longer returns 403;
+5. verify `Employee Profile Resolution Failed` is absent;
+6. verify create-show fields initialize normally;
+7. open Console and capture any remaining red error if present;
+8. DO NOT click Save / create a business record in this UAT.
 
 ## Forbidden
 
-- NO App795 record/routing-data write
+- NO App795 ACL/App Group/record/routing write
 - NO App794 deploy/retry/upload/ACL/record write
 - NO App801 write
 - NO source change
-- NO routing data change
 - NO workflow/scoring change
 - NO Reset Password UI implementation in this task
 - NO Auth Bridge / external service
@@ -118,20 +63,20 @@ If ACL write/read-back or App Group result is uncertain:
 ## Authorization state
 
 ```text
-APP795 APP ACL WRITE     = YES / EXACT ONE-SHOT
-APP795 APP GROUP WRITE   = YES / PRIVATE -> PUBLIC ONLY AFTER ACL READ-BACK PASS
-APP795 RECORD WRITE      = NO
-APP794 DEPLOY            = NO
-APP794 ACL WRITE         = NO
-APP794 RECORD WRITE      = NO
-APP801 WRITE             = NO
-SOURCE CHANGE            = NO
-EXTERNAL SERVICE         = NO
-D2-D7 WRITE              = NO
+APP795 APP ACL WRITE   = NO / CLOSED
+APP795 APP GROUP WRITE = NO / CLOSED
+APP795 RECORD WRITE    = NO
+APP794 DEPLOY          = NO
+APP794 ACL WRITE       = NO
+APP794 RECORD WRITE    = NO
+APP801 WRITE           = NO
+SOURCE CHANGE          = NO
+EXTERNAL SERVICE       = NO
+D2-D7 WRITE            = NO
 ```
 
-## Executor
+## Antigravity
 
-Prefer user/Control Plane controlled settings execution for this narrow correction. Antigravity remains HOLD unless Control Plane explicitly delegates execution.
+HOLD. No executor task is active.
 
-After correction and UAT evidence, STOP for independent review.
+After user Create-show evidence is reviewed, Control Plane will determine whether D1 Create initialization passes or identify the next narrow blocker.
