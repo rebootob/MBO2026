@@ -5,7 +5,7 @@
   "description": "TTMET MBO / PMS V2 Kintone sandbox tooling",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "test": "node --test tests/*.test.js services/mbo-auth-bridge/tests/*.test.js",
     "test:safety": "node --test tests/sandbox-write-guard.test.js",
     "connection:test": "node --env-file-if-exists=.env.local scripts/kintone/connection-test.js",
     "sandbox:create": "node --env-file-if-exists=.env.local scripts/kintone/create-sandbox-apps.js",

@@ -1,0 +1,14 @@
+{
+  "name": "mbo-auth-bridge",
+  "version": "1.0.0",
+  "description": "MBO Auth Bridge Core Service (Node.js 20)",
+  "type": "module",
+  "main": "src/router.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
