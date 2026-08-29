@@ -6,6 +6,8 @@
 import { BUSINESS_STAGES } from '../config/constants.js';
 import { ValidationEngine } from '../validation/validation-engine.js';
 import { extractUserCodes, resolveIdentityViewerRole } from './employee-visibility.js';
+import { EmployeeRecordNavigation } from './employee-record-navigation.js';
+import { EmployeeCommentMirror } from './employee-comment-mirror.js';
 import {
   parseObjectiveCount,
   COMPETENCIES_LIST,
@@ -600,32 +602,11 @@ export class EmployeePartAUI {
   }
 
   _renderBackToMyMboBar() {
-    const bar = document.createElement('div');
-    bar.className = 'mbo-back-nav-bar';
-    if (typeof bar.setAttribute === 'function') {
-      bar.setAttribute('data-mbo-back-nav-bar', '');
-    }
-
-    const appId = this._getAppId();
-    const link = document.createElement('a');
-    link.className = 'mbo-back-to-home-link';
-    if (typeof link.setAttribute === 'function') {
-      link.setAttribute('data-mbo-back-link', '');
-    }
-    link.href = `/k/${appId}/`;
-    link.textContent = '← กลับหน้า My MBO / Back to My MBO';
-
-    if (typeof link.addEventListener === 'function') {
-      link.addEventListener('click', (e) => {
-        if (typeof this.onNavigateHome === 'function') {
-          e.preventDefault();
-          this.onNavigateHome();
-        }
-      });
-    }
-
-    bar.appendChild(link);
-    return bar;
+    const nav = new EmployeeRecordNavigation({
+      appId: this._getAppId(),
+      onNavigateHome: this.onNavigateHome
+    });
+    return nav.renderBackToMyMboBar({ isCreate: this.isCreate });
   }
 
   _getResolvedViewerRole() {
@@ -1536,211 +1517,43 @@ export class EmployeePartAUI {
   }
 
   async _fetchRecordComments(appId, recordId) {
-    const limit = 10;
-    let offset = 0;
-    let allComments = [];
-    let hasMore = true;
-
-    while (hasMore) {
-      let resp = null;
-      if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === 'function') {
-        resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: 'asc' });
-      } else if (typeof kintone !== 'undefined' && typeof kintone.api === 'function') {
-        const url = kintone.api.url('/k/v1/record/comments.json', true);
-        resp = await kintone.api(url, 'GET', { app: appId, record: recordId, limit, offset, order: 'asc' });
-      } else {
-        break;
-      }
-
-      const comments = Array.isArray(resp?.comments) ? resp.comments : [];
-      if (comments.length === 0) {
-        break;
-      }
-
-      allComments = allComments.concat(comments);
-
-      // Kintone Get Record Comments REST API semantics for order='asc':
-      // - comments.length === 0 => stop safely (handled above)
-      // - resp.newer === false => newest comment reached, stop complete
-      // - non-empty page + resp.newer === true => MUST continue, even if comments.length < limit
-      // - if resp.newer is omitted, fallback to comments.length < limit check
-      if (resp?.newer === false) {
-        hasMore = false;
-      } else if (resp?.newer === true) {
-        offset += comments.length;
-      } else if (comments.length < limit) {
-        hasMore = false;
-      } else {
-        offset += comments.length;
-      }
-    }
-
-    return allComments;
+    const mirror = new EmployeeCommentMirror({
+      kintoneApiWrapper: this.kintoneApiWrapper,
+      getAppId: () => this._getAppId()
+    });
+    return mirror.fetchRecordComments(appId, recordId);
   }
 
   async _loadAndRenderComments(bodyContainer) {
     if (!bodyContainer) return;
-    bodyContainer.innerHTML = '';
-
     const recordId = this.record?.$id?.value;
     const appId = this._getAppId();
 
-    if (!recordId) {
-      const emptyNotice = document.createElement('div');
-      emptyNotice.className = 'mbo-comment-empty-notice';
-      if (typeof emptyNotice.setAttribute === 'function') {
-        emptyNotice.setAttribute('data-mbo-comment-empty', '');
-      }
-      emptyNotice.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.';
-      bodyContainer.appendChild(emptyNotice);
-      return;
-    }
+    const mirror = new EmployeeCommentMirror({
+      kintoneApiWrapper: this.kintoneApiWrapper,
+      getAppId: () => this._getAppId()
+    });
+    const renderedPanel = mirror.renderNativeCommentMirror({
+      appId,
+      recordId,
+      isCreate: this.isCreate
+    });
 
-    const loadingEl = document.createElement('div');
-    loadingEl.className = 'mbo-comment-loading';
-    loadingEl.textContent = 'กำลังโหลดความคิดเห็น... / Loading comments...';
-    bodyContainer.appendChild(loadingEl);
-
-    try {
-      const comments = await this._fetchRecordComments(appId, recordId);
-      bodyContainer.innerHTML = '';
-
-      if (!comments || comments.length === 0) {
-        const emptyNotice = document.createElement('div');
-        emptyNotice.className = 'mbo-comment-empty-notice';
-        if (typeof emptyNotice.setAttribute === 'function') {
-          emptyNotice.setAttribute('data-mbo-comment-empty', '');
-        }
-        emptyNotice.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.\n(สามารถเพิ่มความคิดเห็นได้ที่แถบด้านขวา / Add comments via native right panel)';
-        bodyContainer.appendChild(emptyNotice);
-        return;
-      }
-
-      const threadList = document.createElement('div');
-      threadList.className = 'mbo-comment-thread-list';
-      if (typeof threadList.setAttribute === 'function') {
-        threadList.setAttribute('data-mbo-comment-thread', '');
-      }
-
-      comments.forEach(comment => {
-        const item = document.createElement('div');
-        item.className = 'mbo-comment-item';
-        if (typeof item.setAttribute === 'function') {
-          item.setAttribute('data-mbo-comment-item', '');
-        }
-
-        const metaRow = document.createElement('div');
-        metaRow.className = 'mbo-comment-meta';
-
-        const authorName = document.createElement('span');
-        authorName.className = 'mbo-comment-author';
-        if (typeof authorName.setAttribute === 'function') {
-          authorName.setAttribute('data-mbo-comment-author', '');
-        }
-        authorName.textContent = comment.creator?.name || comment.creator?.code || 'Unknown User';
-
-        const timeStamp = document.createElement('span');
-        timeStamp.className = 'mbo-comment-time';
-        if (typeof timeStamp.setAttribute === 'function') {
-          timeStamp.setAttribute('data-mbo-comment-time', '');
-        }
-        timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString('th-TH') : '';
-
-        metaRow.appendChild(authorName);
-        metaRow.appendChild(timeStamp);
-
-        const textBody = document.createElement('div');
-        textBody.className = 'mbo-comment-text';
-        if (typeof textBody.setAttribute === 'function') {
-          textBody.setAttribute('data-mbo-comment-text', '');
-        }
-        textBody.textContent = comment.text || '';
-
-        item.appendChild(metaRow);
-        item.appendChild(textBody);
-
-        threadList.appendChild(item);
-      });
-
-      bodyContainer.appendChild(threadList);
-    } catch (err) {
-      bodyContainer.innerHTML = '';
-      const errorNotice = document.createElement('div');
-      errorNotice.className = 'mbo-comment-error-notice';
-      if (typeof errorNotice.setAttribute === 'function') {
-        errorNotice.setAttribute('data-mbo-comment-error', '');
-      }
-      errorNotice.textContent = `ไม่สามารถโหลดความคิดเห็นได้ / Could not load comments: ${err.message}`;
-      bodyContainer.appendChild(errorNotice);
-    }
+    const renderedBody = renderedPanel.querySelector('.mbo-comment-body') || renderedPanel;
+    bodyContainer.innerHTML = renderedBody.innerHTML;
   }
 
   _renderNativeCommentMirror() {
-    const card = document.createElement('div');
-    card.className = 'mbo-native-comment-mirror';
-    if (typeof card.setAttribute === 'function') {
-      card.setAttribute('data-mbo-comment-section', '');
-    }
-
-    const header = document.createElement('div');
-    header.className = 'mbo-comment-header';
-
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'mbo-comment-title';
-
-    const titleText = document.createElement('span');
-    titleText.className = 'mbo-comment-title-text';
-    titleText.innerHTML = '💬 ความคิดเห็นใน Kintone / Kintone Comments (Native Mirror)';
-
-    const subtitleText = document.createElement('div');
-    subtitleText.className = 'mbo-comment-subtitle';
-    subtitleText.innerHTML = 'แสดงความคิดเห็นล่าสุดจากระบบ Kintone (อ่านอย่างเดียว / Read-only mirror)';
-
-    titleDiv.appendChild(titleText);
-    titleDiv.appendChild(subtitleText);
-
-    header.appendChild(titleDiv);
-
-    const bodyContainer = document.createElement('div');
-    bodyContainer.className = 'mbo-comment-body-container';
-    if (typeof bodyContainer.setAttribute === 'function') {
-      bodyContainer.setAttribute('data-mbo-comment-body', '');
-    }
-
-    if (!this.isCreate) {
-      const refreshBtn = document.createElement('button');
-      refreshBtn.type = 'button';
-      refreshBtn.className = 'mbo-btn-refresh-comments';
-      if (typeof refreshBtn.setAttribute === 'function') {
-        refreshBtn.setAttribute('data-mbo-refresh-comments', '');
-      }
-      refreshBtn.textContent = '🔄 รีเฟรชความคิดเห็น / Refresh Comments';
-
-      if (typeof refreshBtn.addEventListener === 'function') {
-        refreshBtn.addEventListener('click', async () => {
-          await this._loadAndRenderComments(bodyContainer);
-        });
-      }
-      header.appendChild(refreshBtn);
-    }
-
-    card.appendChild(header);
-    card.appendChild(bodyContainer);
-
-    if (this.isCreate) {
-      const createMsg = document.createElement('div');
-      createMsg.className = 'mbo-comment-empty-notice';
-      if (typeof createMsg.setAttribute === 'function') {
-        createMsg.setAttribute('data-mbo-comment-create-notice', '');
-      }
-      createMsg.textContent = 'ยังไม่มีความคิดเห็น (คำขอใหม่ที่ยังไม่ได้บันทึก) / No comments yet (unpersisted new record).';
-      bodyContainer.appendChild(createMsg);
-      return card;
-    }
-
-    this._loadAndRenderComments(bodyContainer);
-
-    return card;
+    const mirror = new EmployeeCommentMirror({
+      kintoneApiWrapper: this.kintoneApiWrapper,
+      getAppId: () => this._getAppId()
+    });
+    const recordId = this.record?.$id?.value;
+    return mirror.renderNativeCommentMirror({
+      appId: this._getAppId(),
+      recordId,
+      isCreate: this.isCreate
+    });
   }
 
   _renderScreenObjectives() {
