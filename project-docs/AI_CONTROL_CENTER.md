@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — INDEPENDENT PASS: D1 ATTACHMENT SUBMIT-LIFECYCLE SOURCE + TEST GATE
+> Updated: 2026-08-29 — ONE-SHOT APP794 D1 TIMELINE + ATTACHMENT DEPLOY AUTHORIZED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING+REMOVE PASS / ATTACHMENT SUBMIT INTEGRATION SOURCE PASS / HANDLER-LEVEL TEST+EVIDENCE PASS / AWAITING NEW APP794 DEPLOY AUTHORIZATION / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+PRIOR DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING+REMOVE PASS / ATTACHMENT SUBMIT INTEGRATION SOURCE PASS / HANDLER-LEVEL TEST+EVIDENCE PASS / ONE-SHOT APP794 TIMELINE+ATTACHMENT DEPLOY AUTHORIZED / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -49,97 +49,90 @@ DIRECT_URL_REST_HARD_ISOLATION          = NOT_GUARANTEED_UNDER_SHARED_KINTONE_AC
 SOURCE_MODULARITY_POLICY                = MANDATORY / NO CATCH-ALL SOURCE FILES
 ```
 
-Do not reopen accepted App795/App796 permissions, requester routing, Create handler, Login/session architecture, or App794 deploy tooling unless new evidence directly requires it.
+Do not reopen accepted App795/App796 permissions, requester routing, Create handler, Login/session architecture, or deploy tooling unless new evidence directly requires it.
 
-## 3. Accepted Timeline / Attachment Source State
+## 3. Accepted Timeline / Attachment Gate
+
+Independent Review accepted:
 
 ```text
-D1_LIVE_TIMELINE_TRUTHFULNESS_SOURCE = PASS
-D1_ATTACHMENT_DISPLAY_SOURCE         = PASS
-D1_ATTACHMENT_PENDING_REMOVE_SOURCE  = PASS
-D1_ATTACHMENT_UPLOAD_SERVICE_SOURCE  = PASS
-D1_ATTACHMENT_SUBMIT_INTEGRATION_SOURCE = PASS
+D1_LIVE_TIMELINE_TRUTHFULNESS_SOURCE       = PASS
+D1_ATTACHMENT_DISPLAY_SOURCE               = PASS
+D1_ATTACHMENT_PENDING_REMOVE_SOURCE        = PASS
+D1_ATTACHMENT_UPLOAD_SERVICE_SOURCE        = PASS
+D1_ATTACHMENT_SUBMIT_INTEGRATION_SOURCE    = PASS
+D1_SUBMIT_LIFECYCLE_TEST_PROOF             = PASS
+D1_TIMELINE_ATTACHMENT_SOURCE_TEST_GATE    = PASS
 ```
 
-Live timeline fixtures are Preview-gated. Attachment UI has truthful zero/multiple/pending states, real remove-handler coverage, Kintone-only upload, exact submit-record binding, and fail-closed submit cancellation on upload failure.
-
-## 4. Independent Review — Commit 433f310
-
-Reviewed executor commit:
+Accepted executor candidate:
 `433f3106f4f7de0627098dab1f22fb7d032a542d`
 
-Changed files are limited to:
-- `tests/timeline-truthfulness-and-attachment.test.js`
-- `project-docs/D1_LIVE_TIMELINE_ATTACHMENT_VERIFICATION.md`
+Evidence accepted:
+- focused tests 17/17 PASS;
+- full npm test 869/869 PASS;
+- module-aware build-only PASS;
+- no Live Kintone write during source/test gate;
+- no unauthorized production source change in verification commit.
 
-No production source changed. This is compliant with the exact TEST/EVIDENCE-only authorization and with the rule that Antigravity performs only necessary execution work.
+Commits after `433f310...` up to the authorization point were Control Plane documentation only.
 
-### 4.1 Handler-Level Verification — PASS
+## 4. Current Authorization — Exact One-Shot Scope
 
-Actual test inspection confirms the suite now registers and invokes the real Kintone handlers from `src/main-mbo-app.js`:
-- `app.record.create.submit`
-- `app.record.edit.submit`
+User explicitly authorized on 2026-08-29:
 
-The tests cover:
-- create submit with zero pending attachments;
-- edit submit with zero pending attachments;
-- create submit with pending Objective attachment and exact `event.record` binding;
-- edit submit with pending Mid-Year attachment while unrelated Objective attachment remains unchanged;
-- upload failure returning `false` with visible validation error;
-- actual attachment remove button click handler dispatch;
-- Timeline Live/Preview regression coverage.
+`App794 deploy D1 Timeline + Attachment corrective`
 
-Therefore:
+Control Plane interpretation is exact and narrow:
 
 ```text
-D1_SUBMIT_LIFECYCLE_TEST_PROOF = PASS
+APP794 CUSTOMIZATION BUILD/DEPLOY/READBACK = YES / ONE SHOT
+APP794 PRE-DEPLOY CUSTOMIZATION BACKUP      = YES
+APP794 EXACT ROLLBACK IF DEPLOY FAILS       = YES / ONLY TO PRE-DEPLOY SNAPSHOT
+APP794 RECORD WRITE                         = NO
+APP794 ACL WRITE                            = NO
+APP794 SCHEMA WRITE                         = NO
+APP794 PROCESS WRITE                        = NO
+APP801 WRITE                                = NO
+APP795/796 WRITE                            = NO
+ROUTING/SCORING CHANGE                      = NO
+AUTH/RESET CHANGE                           = NO
+SOURCE CHANGE/REFACTOR                      = NO
+D2-D7 EXECUTION                             = NO
+EXTERNAL SERVICE                            = NO
 ```
 
-### 4.2 Fresh Execution Evidence — ACCEPTED
-
-Verification evidence for this exact gate records:
-
-```text
-START_HEAD             = f288973c84c033146e6bab63c555b3d53f9fe181
-FOCUSED_TESTS          = PASS (17/17)
-NPM_TEST               = PASS (869/869)
-BUILD_ONLY             = PASS
-LIVE_KINTONE_WRITE     = 0
-LIVE_DEPLOY_OCCURRED   = NO
-EXECUTOR_MAX_STATUS    = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
-```
-
-Independent source/test inspection found no contradictory evidence and no unauthorized production-source change.
-
-Therefore:
-
-```text
-INDEPENDENT_REVIEW_433F310 = PASS
-D1_TIMELINE_ATTACHMENT_SOURCE_TEST_GATE = PASS
-APP794_DEPLOY_READY_FROM_SOURCE_TEST_PERSPECTIVE = YES
-```
-
-This does NOT authorize deployment.
+This authorization is single-use and must not be reused for another deployment.
 
 ## 5. Exact Current Gate
 
 ```text
-CURRENT_GATE = AWAIT NEW EXPLICIT ONE-SHOT APP794 DEPLOY AUTHORIZATION
-APP794 DEPLOY = NO / NOT YET AUTHORIZED
-LIVE KINTONE WRITE = NO
-NEXT ACTION OWNER = USER / CONTROL PLANE
-ANTIGRAVITY ACTION = NONE UNTIL NEW EXECUTION AUTHORIZATION
+CURRENT_GATE       = APP794 D1 TIMELINE + ATTACHMENT CORRECTIVE DEPLOY
+CURRENT_MODE       = ONE-SHOT LIVE CUSTOMIZATION DEPLOY AUTHORIZED
+NEXT_ACTION_OWNER  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+APP794 DEPLOY      = YES / SINGLE USE
 ```
 
-No additional source/test work is required for the current Timeline + Attachment corrective unless new evidence reveals a defect.
+Active Task:
+`project-docs/AI_ACTIVE_TASK.md`
 
-## 6. Next D1 Sequence After User Authorization
+Antigravity must perform only the minimum execution that requires its local/runtime environment:
+1. sync canonical branch;
+2. verify no `src/`, `dist/`, or `tests/` changes after accepted candidate `433f310...`;
+3. build + build-only preflight;
+4. fresh readback and local backup of current App794 customization;
+5. deploy only App794 customization;
+6. read back deployment completion and active customization assets;
+7. rollback only if deployment/readback fails;
+8. write one concise evidence document, commit/push, STOP.
 
-If and only if the user explicitly authorizes the new App794 corrective deployment:
-1. Control Plane records exact one-shot scope;
-2. Antigravity performs only the minimal approved App794 customization build/deploy/readback operation;
-3. independent review of deployment evidence;
-4. Live UAT covering:
+No additional source/test/refactor work is authorized.
+
+## 6. Post-Deploy Sequence
+
+After Antigravity stops:
+1. ChatGPT independently reviews deployment evidence;
+2. if deployment evidence PASS, perform/guide Live UAT for:
    - no fabricated workflow events/comments;
    - native Kintone Comments remains authoritative;
    - zero/one/multiple real filenames;
@@ -147,38 +140,22 @@ If and only if the user explicitly authorizes the new App794 corrective deployme
    - saved/persisted state after save;
    - remove/change truthful behavior;
    - no preview filename leak;
-5. then production HR / `admin-form` Reset MBO Password UI;
-6. remaining session/security UAT;
-7. final D1 closure review.
+3. then continue D1 HR/admin Reset MBO Password UI and remaining security UAT under separate authorization/work packages as required.
 
-## 7. Authorization State
-
-```text
-NEXT_ACTION_OWNER              = USER / CONTROL PLANE
-APP794 DEPLOY                  = NO / NEW EXPLICIT AUTH REQUIRED
-APP794 ACL/RECORD WRITE        = NO
-APP801 WRITE                   = NO
-APP795/796 WRITE               = NO
-SOURCE CHANGE                  = NO CURRENT SOURCE TASK
-EXTERNAL SERVICE               = NO
-D2-D7 WRITE                    = NO
-```
-
-All prior App794 deploy authorizations remain consumed/closed.
-
-## 8. Development Governance Reminder
+## 7. Development Governance Reminder
 
 - Antigravity is used only for execution that genuinely requires the local/runtime environment.
-- ChatGPT owns analysis, planning, Git review, independent acceptance, Control Center/Baseline/Active Task maintenance.
-- Source must remain modular by feature/responsibility; do not grow catch-all files.
-- `main-mbo-app.js` remains orchestration-only.
-- generated `dist` may be bundled, but maintainable source must stay modular.
+- ChatGPT owns analysis, architecture, Git review, acceptance, Control Center/Baseline/Active Task maintenance.
+- Maintain modular source by feature/responsibility; do not accumulate unrelated implementation in catch-all files.
+- `src/main-mbo-app.js` remains orchestration-only.
+- generated `dist` may be bundled; maintainable source must remain modular.
+- do not mix refactor with this deployment gate.
 
-## 9. Handoff State
+## 8. Handoff State
 
 ```text
-CURRENT_GATE   = AWAIT NEW APP794 DEPLOY AUTHORIZATION
-CURRENT_MODE   = NO EXECUTION AUTHORIZED
-REVIEW_RESULT  = PASS
-NEXT OWNER     = USER / CONTROL PLANE
+CURRENT_GATE   = APP794 D1 TIMELINE + ATTACHMENT CORRECTIVE DEPLOY
+CURRENT_MODE   = ONE-SHOT DEPLOY AUTHORIZED
+REVIEW_RESULT  = SOURCE/TEST PASS
+NEXT OWNER     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 ```
