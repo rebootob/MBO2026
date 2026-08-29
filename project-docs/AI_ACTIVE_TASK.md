@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — HOLD / APP794 DELETE PERMISSION READ-ONLY VERIFICATION
+# AI ACTIVE TASK — HOLD / APP794 ACL CORRECTION AUTHORIZATION REQUIRED
 
-Mode: **CONTROL PLANE + USER READ-ONLY VERIFICATION — ANTIGRAVITY HOLD**
+Mode: **CONTROL PLANE + USER — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
 
 ## Mandatory architecture
@@ -15,45 +15,37 @@ Auth Bridge = CANCELLED / DO NOT CONTINUE
 
 `APP794_DEPLOY_GUARD_INTEGRATION = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b`
 
-Accepted chain:
-- narrow one-time App794 deploy authorization gate;
-- exact target binding for authorization/request/options/registry/actual deploy target = integer 794;
-- registry drift/missing/malformed target fails closed;
-- ephemeral exact `[794]` sandbox allow-list only;
-- protected apps remain hard-blocked;
-- build-only remains zero live authorization / zero Kintone-network path.
+App794 ACL read-only evidence under Kintone login `admin-form`:
+- CREATOR has full rights;
+- GROUP `everyone` currently has View/Add/Edit/Delete = true;
+- `MBO_EMPLOYEE_ACCESS` row is absent;
+- therefore Employee-Self Kintone-level Delete permission is not safely denied.
 
-No executor implementation task is active.
+Current gate:
+`APP794_DELETE_PERMISSION_READONLY_CHECK = FAIL / ACL CORRECTION REQUIRED`
 
-## Next required step
+## Target correction — not yet authorized
 
-Verify App794 effective Delete permission in READ-ONLY mode only:
-- use an employee-facing/shared Kintone principal such as `s1`;
-- open an existing App794 **record detail** page;
-- run `kintone.app.record.getPermissions()`;
-- capture only current Kintone user, App ID, Record ID, `editRecord`, `deleteRecord`;
-- do not modify ACL;
-- do not modify records;
-- do not deploy customization;
-- do not expose business record contents.
+Minimum App794 App Permission target:
+- `MBO_EMPLOYEE_ACCESS`: View=YES, Add=YES, Edit=YES, Delete=NO, Manage=NO, Import=NO, Export=NO;
+- `Everyone`: all permissions NO;
+- App creator / `admin-form`: retain technical administration rights.
 
-Expected interpretation:
-- `deleteRecord = false` -> permission gate PASS for that representative principal/record;
-- `deleteRecord = true` -> ACL correction required, but NO ACL write is authorized; obtain separate explicit user authorization first.
+Do not modify record ACL, workflow, customization, App801, or any other app in the same operation.
 
 ## Authorization state
 
 ```text
-APP794 DEPLOY      = NO
-APP794 ACL WRITE   = NO
-APP794 RECORD WRITE= NO
-APP801 WRITE       = NO
-SOURCE CHANGE      = NO
-EXTERNAL SERVICE   = NO
-D2-D7 WRITE        = NO
+APP794 ACL WRITE    = NO / EXPLICIT USER AUTHORIZATION REQUIRED
+APP794 DEPLOY       = NO
+APP794 RECORD WRITE = NO
+APP801 WRITE        = NO
+SOURCE CHANGE       = NO
+EXTERNAL SERVICE    = NO
+D2-D7 WRITE         = NO
 ```
 
 ## Antigravity
 
 HOLD.
-Do not start deploy, ACL changes, source changes, App801 work, Auth Bridge work, or D2-D7 work until a new Active Task is issued by Control Plane.
+Do not start ACL changes, deploy, source changes, App801 work, Auth Bridge work, or D2-D7 work until a new Active Task is issued after explicit user authorization.
