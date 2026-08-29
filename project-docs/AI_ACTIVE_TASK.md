@@ -1,7 +1,9 @@
-# AI ACTIVE TASK — D1 APP794 EDIT ATTACHMENT PRESERVATION CORRECTIVE
+# AI ACTIVE TASK — D1 APP794 EDIT ATTACHMENT FAIL-CLOSED CORRECTIVE
 
 Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
+Reviewed candidate: `5bde56db0aa741a1064817454db028184556fe1d`
+Independent verdict: **CORRECTIVE**
 
 ## Accepted State
 
@@ -13,76 +15,92 @@ MIDYEAR_ATTACHMENT_FIELDS          = FILE 10/10
 FINAL_ATTACHMENT_FIELDS            = FILE 10/10
 INITIAL_SAVE_ONE_FILE              = PASS
 INITIAL_SAVE_MULTIPLE_FILES        = PASS
-EDIT_ADD_NEW_FILE                  = FAIL
-EDIT_MULTI_FILE_PRESERVATION       = FAIL
+EDIT_ADD_NEW_FILE                  = LIVE FAIL
+EDIT_MULTI_FILE_PRESERVATION       = LIVE FAIL
 SCHEMA_AUTHORIZATION               = CONSUMED / CLOSED
 DEPLOY_AUTHORIZATION               = NONE
 ```
 
-Do NOT reopen the schema-gap corrective. Objective FILE fields now exist.
+Do NOT reopen schema. Do NOT deploy.
 
-## Confirmed Platform Constraint
+## Accepted Candidate Progress
 
-Kintone `app.record.edit.submit` does not provide retrievable Attachment field values.
+Candidate `5bde56d...` correctly:
+- added authoritative GET Record support for Edit;
+- passes `persistedRecord` to attachment planning;
+- prefers persisted FILE values when the GET succeeds;
+- added realistic tests where edit-submit Attachment value is empty;
+- proves preservation of multiple existing files under successful GET.
 
-Kintone Update Record Attachment semantics require the request to contain all existing fileKeys that must remain. Existing files omitted from the Attachment value array are deleted.
+Keep these improvements.
 
-Therefore **never use `event.record[AttachmentField].value` from `app.record.edit.submit` as the authoritative retained-file base**.
+## Blocking Review Finding
 
-## Current Source Defect
-
-Current orchestration passes:
-
-```js
-activeUiInstance.preparePendingAttachments({ record: event.record })
-```
-
-Current attachment service falls back to:
+Current source is unsafe when the persisted GET fails:
 
 ```js
-record[targetCode]?.value
+try {
+  persistedRecord = await kintoneApiWrapper.getRecord(appId, recordId);
+} catch (fetchErr) {
+  console.warn(...);
+}
 ```
 
-for add-only edit operations when no explicit removal snapshot exists.
+Execution then continues with `persistedRecord = null`.
 
-That path is invalid for Edit because submit-event Attachment values are unavailable/non-authoritative.
+The attachment service currently does:
+
+```js
+const sourceRecord = options.persistedRecord || record;
+```
+
+This falls back to `app.record.edit.submit event.record`, which is forbidden as an authoritative Attachment source.
+
+For Edit attachment changes, inability to obtain authoritative persisted attachment state must **fail closed**, not degrade to submit-event Attachment values.
 
 ## Exact Corrective Design
 
-### Edit flow only
+For **Edit only**:
 
-When at least one attachment field has pending/dirty state:
+1. Detect whether any attachment field actually has pending/dirty/desired-state change.
+2. If there is no attachment change:
+   - do not require persisted Attachment GET;
+   - preserve normal non-attachment Edit Save behavior.
+3. If attachment state changed:
+   - require valid App ID and Record ID;
+   - require Kintone-native GET Record;
+   - GET must succeed before any pending file upload starts;
+   - require a persisted record object;
+   - for every target attachment field whose desired plan depends on existing state, require the persisted canonical FILE field to exist with an array value.
+4. If required persisted read/field validation fails:
+   - show truthful attachment validation error;
+   - return false / cancel submit;
+   - upload count must remain zero;
+   - prepared plan must remain null/empty;
+   - no post-save bind can occur.
+5. Never use `edit.submit event.record[Attachment].value` as retained-file fallback when persisted state is required.
+6. Add-only = every persisted existing fileKey + every new upload fileKey.
+7. Explicit saved-file removal snapshot remains authoritative.
+8. Remove+add = exact retained saved fileKeys + all new upload fileKeys.
+9. Unrelated attachment fields stay out of the PUT plan.
+10. Create flow remains unchanged.
 
-1. Validation must run first as today.
-2. Before attachment plan construction, GET the current persisted App794 record using Kintone-native GET Record with current `event.appId` + `event.recordId`.
-3. Use the persisted record's FILE arrays as the authoritative existing-file base.
-4. For add-only:
-   - preserve every existing saved fileKey;
-   - append every newly uploaded temporary fileKey.
-5. For explicit removal:
-   - the UI desired-state snapshot remains authoritative for the user's removal intent;
-   - do not re-add removed fileKeys from the persisted GET base.
-6. For remove + add:
-   - exact result = retained saved fileKeys + all new uploaded fileKeys.
-7. Only exact target attachment field(s) enter the post-save PUT plan.
-8. Unrelated attachment fields remain absent from the PUT payload.
-9. `app.record.edit.submit` event.record Attachment objects remain untouched.
-10. Create flow behavior must remain unchanged.
-
-Preferred ownership:
-- `src/services/mbo-attachment-service.js` — persisted-record read/helper and plan semantics if needed.
-- `src/ui/employee-part-a-ui.js` — only attachment-state adapter if needed.
-- `src/main-mbo-app.js` — orchestration only; minimal edit-submit call wiring.
-- `tests/timeline-truthfulness-and-attachment.test.js` — focused regression.
-- generated dist only through normal build.
-
-Do not broad-refactor.
+Minimal implementation preferred. `src/main-mbo-app.js` stays orchestration-only.
 
 ## Required Tests
 
-Add/adjust tests to prove the real Kintone limitation, not an idealized fixture.
+Keep all current tests. Add exact fail-closed cases:
 
-Required exact cases:
+```text
+EDIT_GET_RECORD_FAILURE_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED
+EDIT_GET_RECORD_NULL_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED
+EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED
+EDIT_FAILURE_PATH_DOES_NOT_UPLOAD_NEW_FILE
+EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET
+EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE
+```
+
+Also retain/pass:
 
 ```text
 EDIT_ADD_ONLY_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE_PRESERVES_ALL_EXISTING
@@ -100,33 +118,19 @@ TIMELINE_REGRESSION
 NO_LIVE_NETWORK_IN_TESTS
 ```
 
-### Critical realistic fixture rule
+Critical test rule: simulate GET throw/null/missing target FILE field while `edit.submit` contains empty or misleading Attachment values. The test must prove Save is cancelled before upload and no fallback occurs.
 
-For edit-submit tests, the submit-event record must intentionally NOT expose usable Attachment values, e.g.:
+## Allowed Files
 
-```js
-Objective_Attachment_1: { type: 'FILE', value: [] }
-```
+Only as required by the narrow corrective:
+- `src/main-mbo-app.js`
+- `src/services/mbo-attachment-service.js`
+- `src/ui/employee-part-a-ui.js` only if a small attachment-dirty-state helper is needed
+- `tests/timeline-truthfulness-and-attachment.test.js`
+- generated `dist/mbo-employee-app.js` / CSS only through normal build
+- existing attachment corrective evidence document
 
-while the mocked Kintone GET Record response contains the actual persisted files, e.g. 3 existing fileKeys.
-
-The test must fail if the implementation reads existing saved files from the submit event instead of the GET Record response.
-
-## Regression Expectations
-
-Existing previously accepted attachment behavior must stay intact:
-- initial one-file create/save;
-- initial multiple-file create/save;
-- saved-file remove;
-- remove + add;
-- multiple saved-file rendering;
-- Objective/Mid-Year/Final exact field separation;
-- Self -> Final fallback;
-- zero-pending causes no attachment update;
-- timeline truthfulness;
-- no preview fixture leak.
-
-Do not remove tests to make the suite pass.
+No schema/config changes. No unrelated refactor.
 
 ## Verification
 
@@ -135,7 +139,7 @@ Run and record:
 ```text
 START_HEAD
 CHANGED_FILES
-DESIGN_SUMMARY
+REVIEW_BLOCKER_FIXED
 FOCUSED_ATTACHMENT_TESTS
 FULL_NPM_TEST
 NPM_RUN_UI_BUILD
@@ -148,7 +152,7 @@ FINAL_COMMIT_SHA
 ## Strict Boundary
 
 ```text
-SOURCE CHANGE                  = YES — exact Edit attachment preservation corrective only
+SOURCE CHANGE                  = YES — narrow fail-closed Edit attachment corrective only
 APP794 CUSTOMIZATION DEPLOY    = NO
 APP794 FORM/SCHEMA/LAYOUT      = NO WRITE
 APP794 RECORD WRITE            = NO LIVE WRITE
