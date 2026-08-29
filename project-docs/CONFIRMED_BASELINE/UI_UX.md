@@ -552,3 +552,36 @@ PREVIEW_AND_PRODUCTION_BUSINESS_RENDERING = SAME_SOURCE_MODULES_WHERE_PRACTICAL
 - Production receives a single compiled JavaScript bundle (`dist/mbo-employee-app.js`) for Kintone customization.
 - Preview and Production share business logic and rendering modules where practical to prevent implementation divergence.
 - Build output is the delivery artifact; source modules under `src/` are the maintainability source of truth.
+
+## 32. Back to My MBO — Normal vs Fatal Create Recovery
+
+User-confirmed on 2026-08-30 from Live App794 error-state review.
+
+Canonical control:
+
+`← กลับหน้า My MBO / Back to My MBO`
+
+Target for App794:
+
+`/k/794/` in the same tab.
+
+Required visibility:
+
+```text
+Normal successful Create                         = HIDDEN
+Create auth/login-required before authentication = HIDDEN
+Authenticated Create fatal/autoload/duplicate error = VISIBLE exactly once
+Normal existing Detail/Edit                      = VISIBLE exactly once
+Existing Detail/Edit fatal/blocking error         = VISIBLE exactly once
+```
+
+The confirmed fatal Create example is an authenticated `app.record.create.show` flow where automatic Employee profile preparation detects that the same Employee_Code already has an MBO for the Fiscal Year and renders `Employee Profile Resolution Failed` / duplicate-creation blocking feedback. That terminal screen must still provide the Back to My MBO recovery control.
+
+Rules:
+- normal Create remains free of the record-level Back bar;
+- do not treat `isCreate=true` as sufficient reason to hide recovery navigation on a terminal authenticated error screen;
+- login/auth-required Create states are not the same as authenticated fatal business/preparation errors;
+- reuse the canonical navigation component; do not duplicate raw link markup;
+- Back is navigation only and must not save, change record/workflow state, or mutate MBO auth/session state;
+- fail-closed validation and the original error message remain intact;
+- tests must separately cover normal Create, auth-required Create, authenticated fatal Create, normal Detail/Edit, and fatal Detail/Edit.
