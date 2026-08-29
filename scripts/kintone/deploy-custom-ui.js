@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { assertSandboxWriteTarget } from '../../src/core/sandbox-write-guard.js';
+import { assertSandboxWriteTarget, assertApp794CustomizationDeployAuthorization } from '../../src/core/sandbox-write-guard.js';
 import { buildMboUi } from './build-mbo-ui.js';
 
 const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
@@ -264,26 +264,30 @@ export function buildPreviewCustomizePayload({ app, previewCustomize, targetFile
 
 export async function executeDeployCustomUi(options = {}) {
   const isBuildOnly = options.isBuildOnly ?? process.argv.includes('--build-only');
-
   let app = options.appId || 794;
-  if (!isBuildOnly) {
-    try {
-      const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
-      app = sandboxRegistryModule.mboV2AppId || 794;
-    } catch {
-      app = 794;
-    }
-    assertSandboxWriteTarget(app);
-  }
-
-  const { fullJs } = await prepareDeploymentArtifacts({ appId: app });
-
-  console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
   if (isBuildOnly) {
+    const { fullJs } = await prepareDeploymentArtifacts({ appId: app, buildOptions: options.buildOptions });
+    console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
     console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
     return { app, fullJs, buildOnly: true };
   }
+
+  // 1. Require narrow App794 customization deploy authorization BEFORE any network/upload path
+  assertApp794CustomizationDeployAuthorization(options.authConfig, options.requestConfig);
+
+  try {
+    const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
+    app = sandboxRegistryModule.mboV2AppId || app;
+  } catch {
+    app = 794;
+  }
+
+  // 2. Validate write target with ephemeral allow-list and dryRunBypassDiscovery
+  assertSandboxWriteTarget(app, undefined, [app], { dryRunBypassDiscovery: true });
+
+  const { fullJs } = await prepareDeploymentArtifacts({ appId: app, buildOptions: options.buildOptions });
+  console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
   // 2. Upload Files to Kintone
   const { kintoneRequest, getKintoneConnection } = await import('../../src/core/kintone-client.js');

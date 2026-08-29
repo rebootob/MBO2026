@@ -36,6 +36,13 @@ export const WP002C_SUPERSEDE_STAGE = 'STAGE_4D_SUPERSEDE_AND_PUBLISH';
 export const WP002C_SUPERSEDE_CONTRACT_ID = 'WP002C_SUPERSEDE_V1';
 export const WP002C_SCORING_MASTER_APP_ID = 796;
 
+export const APP794_CUSTOMIZATION_DEPLOY_STAGE = 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY';
+export const APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE = 'MBO-P03-WP-002C';
+export const APP794_CUSTOMIZATION_DEPLOY_OPERATION = 'APP794_CUSTOMIZATION_DEPLOY';
+export const APP794_MBO_V2_APP_ID = 794;
+
+const consumedApp794DeployAuthorizationIds = new Set();
+
 /**
  * Backwards compatibility: WRITE_BLOCKED_APP_IDS includes all protected apps + any app not in allow-list
  */
@@ -93,6 +100,65 @@ export function assertSandboxWriteTarget(appId, registry = sandboxRegistry, allo
   }
 
   return appId;
+}
+
+/**
+ * Narrow authorization for exactly App 794 Customization Deploy.
+ * Requires explicit user authorization, active window, non-empty single-use authorization ID,
+ * exact App ID 794, and operation APP794_CUSTOMIZATION_DEPLOY.
+ * Fails closed on missing/malformed/wrong target/replayed authorization.
+ * HARD BLOCKS permanent protected apps (53, 283, 305, 307, 310, 640, 643, 715, 716).
+ */
+export function assertApp794CustomizationDeployAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('APP794 DEPLOY BLOCKED (FAIL-CLOSED): Missing or corrupted authorization/request configuration.');
+  }
+
+  const targetAppId = requestConfig.appId ?? requestConfig.targetAppId ?? authConfig.appId;
+  if (!Number.isInteger(targetAppId) || targetAppId <= 0) {
+    throw new Error('APP794 DEPLOY BLOCKED: Target application ID must be a positive integer.');
+  }
+
+  // Absolute invariant: Permanent Protected apps are NEVER writable under any circumstances
+  if (PROTECTED_APP_IDS.includes(targetAppId) || (authConfig.appId && PROTECTED_APP_IDS.includes(authConfig.appId))) {
+    throw new Error(`WRITE BLOCKED: App ${targetAppId} is a permanent PROTECTED PRODUCTION APP and cannot be modified.`);
+  }
+
+  if (targetAppId !== APP794_MBO_V2_APP_ID || (authConfig.appId && authConfig.appId !== APP794_MBO_V2_APP_ID)) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Target App ID must be exactly ${APP794_MBO_V2_APP_ID}.`);
+  }
+
+  if (authConfig.workPackageId !== APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE || requestConfig.workPackageId !== APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Work package must be exactly ${APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE}.`);
+  }
+
+  if (authConfig.stage !== APP794_CUSTOMIZATION_DEPLOY_STAGE || requestConfig.stage !== APP794_CUSTOMIZATION_DEPLOY_STAGE) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Stage must be exactly ${APP794_CUSTOMIZATION_DEPLOY_STAGE}.`);
+  }
+
+  if (authConfig.operation !== APP794_CUSTOMIZATION_DEPLOY_OPERATION || requestConfig.operation !== APP794_CUSTOMIZATION_DEPLOY_OPERATION) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Operation must be exactly ${APP794_CUSTOMIZATION_DEPLOY_OPERATION}.`);
+  }
+
+  if (authConfig.activeWindow !== true) {
+    throw new Error('APP794 DEPLOY BLOCKED: One-time write window is CLOSED.');
+  }
+
+  if (authConfig.explicitUserAuthorization !== true) {
+    throw new Error('APP794 DEPLOY BLOCKED: Explicit user authorization is required.');
+  }
+
+  const authorizationId = authConfig.authorizationId;
+  if (typeof authorizationId !== 'string' || authorizationId.trim() === '') {
+    throw new Error('APP794 DEPLOY BLOCKED: A non-empty authorization ID is required.');
+  }
+
+  if (consumedApp794DeployAuthorizationIds.has(authorizationId)) {
+    throw new Error('APP794 DEPLOY BLOCKED: Authorization has already been consumed.');
+  }
+
+  consumedApp794DeployAuthorizationIds.add(authorizationId);
+  return true;
 }
 
 /**

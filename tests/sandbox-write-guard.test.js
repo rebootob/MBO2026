@@ -281,3 +281,75 @@ test('assertScoringMasterSupersessionAuthorization enforces strict security gate
     /SCORING SUPERSESSION BLOCKED: Expected new next status must be PUBLISHED/
   );
 });
+
+test('assertApp794CustomizationDeployAuthorization enforces narrow single-use authorization and hard blocks protected apps', async () => {
+  const {
+    WRITE_ALLOWED_APPS,
+    assertApp794CustomizationDeployAuthorization
+  } = await import('../src/core/sandbox-write-guard.js');
+
+  // 1. Default WRITE_ALLOWED_APPS remains empty
+  assert.equal(WRITE_ALLOWED_APPS.length, 0, 'WRITE_ALLOWED_APPS must default to empty array');
+
+  const validAuth = {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    authorizationId: 'APP794_DEPLOY_AUTH_001',
+    appId: 794
+  };
+
+  const validReq = {
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    appId: 794
+  };
+
+  // Valid authorization passes
+  assert.equal(assertApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }), true);
+
+  // Replay attempt fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }),
+    /APP794 DEPLOY BLOCKED: Authorization has already been consumed/
+  );
+
+  // Wrong App ID (e.g. 795) fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_APP' },
+      { ...validReq, appId: 795 }
+    ),
+    /APP794 DEPLOY BLOCKED: Target App ID must be exactly 794/
+  );
+
+  // Protected production app (53) hard blocks even with valid authorization structure
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_PROTECTED_53', appId: 53 },
+      { ...validReq, appId: 53 }
+    ),
+    /WRITE BLOCKED: App 53 is a permanent PROTECTED PRODUCTION APP/
+  );
+
+  // Missing explicitUserAuthorization fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_NO_EXPLICIT', explicitUserAuthorization: false },
+      { ...validReq }
+    ),
+    /APP794 DEPLOY BLOCKED: Explicit user authorization is required/
+  );
+
+  // Closed window fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_CLOSED_WINDOW', activeWindow: false },
+      { ...validReq }
+    ),
+    /APP794 DEPLOY BLOCKED: One-time write window is CLOSED/
+  );
+});
