@@ -1,17 +1,17 @@
 # MBO2026 — AI CONTROL CENTER
 
-> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
-> Repository: `rebootob/MBO2026`  
-> Branch: `ai/antigravity-wp002c`  
-> Control Plane: ChatGPT  
-> Execution Plane: Antigravity only when actual execution is required  
-> Updated: 2026-08-29 — NEW-CHAT HANDOFF SYNCHRONIZED
+> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.
+> Repository: `rebootob/MBO2026`
+> Branch: `ai/antigravity-wp002c`
+> Control Plane: ChatGPT
+> Execution Plane: Antigravity only when actual execution is required
+> Updated: 2026-08-29 — INDEPENDENT REVIEW OF D1 TIMELINE/ATTACHMENT CORRECTIVE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / LIVE TIMELINE TRUTHFULNESS + ATTACHMENT CORRECTIVE ACTIVE / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE SOURCE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING UI SOURCE PASS / ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE REQUIRED / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -21,180 +21,154 @@
 
 No AI may silently drop D1–D7.
 
-## 2. Non-Negotiable Architecture / Gate Ledger
+## 2. Non-Negotiable Architecture / Accepted State
 
 ```text
-D1_ARCHITECTURE                         = KINTONE-ONLY / USER RECONFIRMED 2026-08-29
+D1_ARCHITECTURE                         = KINTONE-ONLY
 EXTERNAL_SERVER_SERVICE                 = FORBIDDEN
 AUTH_BRIDGE                             = CANCELLED / DO NOT IMPLEMENT
 SERVICES_MBO_AUTH_BRIDGE                = ABANDONED EXPERIMENT / NOT PRODUCTION PATH
 D1_SESSION_CONTINUITY_ARCHITECTURE      = PASS
 APP801_SESSION_SCHEMA_WRITE             = PASS / ACCEPTED
-D1_CREATE_HANDLER_CORRECTIVE            = PASS / SOURCE ACCEPTED / DEPLOYED / LIVE old handler error absent
+D1_CREATE_HANDLER_CORRECTIVE            = PASS / DEPLOYED / LIVE old handler error absent
 D1_EMPLOYEE_SELF_INDEX_VISUAL           = PASS / LIVE CONFIRMED
-D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = PASS / BASELINED / PRODUCTION ADMIN UI STILL TO IMPLEMENT
+D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = BASELINED / PRODUCTION ADMIN UI STILL OPEN
 D1_RESET_PASSWORD_0113                  = PASS / ONE-TIME MANUAL RESET AUTH CONSUMED
-D1_FORCE_PASSWORD_CHANGE_0113           = PASS / USER LIVE OBSERVATION
-D1_LOGIN_0113_TO_MY_MBO                 = PASS / USER LIVE OBSERVATION
-D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS / USER LIVE OBSERVATION
+D1_FORCE_PASSWORD_CHANGE_0113           = PASS
+D1_LOGIN_0113_TO_MY_MBO                 = PASS
+D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS
 APP794_ACL_CORRECTION                   = PASS / REVISION 43 -> 44
 APP794_CORRECTIVE_DEPLOY_ROUND_2        = PASS / LIVE CUSTOMIZATION REVISION 45
-APP795_ACCESS_CORRECTION                = PASS / ACL REVISION 8 -> 9 / APP GROUP PUBLIC
+APP795_ACCESS_CORRECTION                = PASS / APP GROUP PUBLIC / MBO_EMPLOYEE_ACCESS VIEW-ONLY
 TMH2_REQUESTER_AUTH_UNDER_s1            = DENIED / EXPECTED BUSINESS BOUNDARY
-TMH2_REQUESTER_AUTH_UNDER_tmh           = PASS / LIVE FLOW ADVANCED PAST ROUTING VALIDATION
-APP796_PRECHANGE_DISCOVERY              = ACL REVISION 5 / CREATOR FULL / EVERYONE ALL-NO / PRIVATE APP GROUP
-APP796_SETTINGS_CHANGE                  = USER-EXECUTED WITHOUT PRIOR CONTROL-PLANE WRITE AUTHORIZATION / CURRENT EFFECT VERIFIED
-APP796_EFFECTIVE_ACCESS                 = MBO_EMPLOYEE_ACCESS VIEW-ONLY / EVERYONE ALL-NO / APP GROUP PUBLIC / USER SCREENSHOT EVIDENCE
-APP796_RUNTIME_READ_FOR_CREATE          = PASS / LIVE CREATE-SHOW ADVANCED PAST SCORING LOOKUP UNDER `tmh`
-D1_CREATE_SHOW_INITIALIZATION           = PASS / USER LIVE SCREENSHOT 2026-08-29
-D1_LIVE_TIMELINE_TRUTHFULNESS           = FAIL / SOURCE FALLS BACK TO HARD-CODED SAMPLE EVENTS IN LIVE WHEN NO timelineEvents DATA
-D1_NATIVE_KINTONE_COMMENTS              = AUTHORITATIVE RECORD CONVERSATION CHANNEL / USER LIVE PANEL SHOWED `No comments available`
-D1_ATTACHMENT_DISPLAY                   = FAIL / CURRENT CUSTOM CONTROL DOES NOT TRUTHFULLY COVER ALL FILES/STATES
-D1_ATTACHMENT_EDIT_LIFECYCLE            = FAIL / CUSTOM FILE INPUT/REMOVE LACK COMPLETE EVENT + UPLOAD/BIND LIFECYCLE
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL UI TRUTHFULNESS+ATTACHMENT CORRECTIVE + HR/ADMIN RESET UI + REMAINING D1 SECURITY/UAT
-D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
+TMH2_REQUESTER_AUTH_UNDER_tmh           = PASS
+APP796_EFFECTIVE_ACCESS                 = PASS / APP GROUP PUBLIC / MBO_EMPLOYEE_ACCESS VIEW-ONLY
+APP796_RUNTIME_READ_FOR_CREATE          = PASS
+D1_CREATE_SHOW_INITIALIZATION           = PASS
+DIRECT_URL_REST_HARD_ISOLATION          = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
 ```
 
-## 3. KINTONE-ONLY Security Ceiling — Do Not Reopen Incorrectly
+Do not reopen accepted App795/App796 permissions, requester routing, Create handler, Login/session architecture, or App794 deploy tooling unless new evidence directly requires it.
 
-Current durable authority is `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`.
+## 3. Independent Review — Commit 7247df4
 
-Under the approved Kintone-only model, employee-facing/shared principals in `MBO_EMPLOYEE_ACCESS` require the exact App801 access defined by that Baseline. Do not revive older docs that say all employee-browser App801 access is prohibited.
+Reviewed executor commit:
+`7247df478eab2a4320019040df1740457b0bfc69`
 
-Accepted limitation remains:
+Executor commit added only:
+`project-docs/D1_LIVE_TIMELINE_ATTACHMENT_VERIFICATION.md`
+
+The executor report claimed 864/864 full tests, 12/12 focused tests, build-only PASS and zero Live writes. Those are executor evidence, not self-PASS.
+
+### 3.1 Timeline Truthfulness — SOURCE PASS
+
+Actual source inspection of `src/ui/employee-part-a-ui.js` shows:
+- explicit Preview gate using `isPreviewMode` / `previewOptions.isPreviewMode`;
+- supplied `timelineEvents` are rendered when provided;
+- hard-coded fixtures are used only under explicit Preview mode;
+- Live with no authoritative events sets `rawEvents = []` and renders truthful empty state.
+
+Therefore:
 
 ```text
-DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
+D1_LIVE_TIMELINE_TRUTHFULNESS_SOURCE = PASS
 ```
 
-Do not claim hard Employee_Code-level native REST isolation inside one shared Kintone principal.
+Important provenance correction: the same source blob already existed at START_HEAD `52566ce`; therefore the prior Control Center/Active Task statement that START_HEAD still had unconditional Live fixture fallback was stale and is superseded by actual Git source evidence.
 
-## 4. Accepted Live Evidence — Must Not Be Reimplemented
+### 3.2 Attachment Display / Pending UI — SOURCE PASS
 
-### App794 Employee-Self
-- Employee Code `0113` MBO login/session continuity works.
-- My MBO shell, Change Password and Logout are Live.
-- Create reaches `/k/794/edit` without MBO re-login.
-- old `kintone.app.record.get() in handler` defect is resolved.
-- Create-show under correct Kintone principal `tmh` loads Employee `0113`, Section `TMH2`, Position `Section Manager`, routing/appraisers, scoring profile and custom MBO UI.
+Actual `employee-part-a-ui.js` contains:
+- zero-file No attachment state;
+- all saved filenames rendering;
+- pending filename + Pending save marker;
+- file-input change handler;
+- pending/saved remove button handler;
+- Live preview-file suppression;
+- `uploadPendingAttachments()` adapter to `mbo-attachment-service.js`.
 
-### App795 / requester boundary
-- App795 App Group = Public.
-- ACL: `MBO_EMPLOYEE_ACCESS` View-only; Everyone all-NO.
-- `s1` is not an authorized requester for Employee 0113 / TMH2.
-- `tmh` is the correct shared Kintone requester boundary for this route.
-- Do not weaken `RoutingService.assertRequesterAuthorized()` to make `s1` pass.
+`src/services/mbo-attachment-service.js` provides Kintone-only multipart `/k/v1/file.json` upload and exact FILE-field binding logic.
 
-### App796
-- Effective state: App Group Public, `MBO_EMPLOYEE_ACCESS` View-only, Everyone all-NO.
-- runtime scoring lookup succeeds under `tmh`.
-- governance note: user executed the App796 settings change before explicit Control Plane write authorization; do not retroactively call that write authorized.
-- no further App796 write is authorized.
-
-## 5. Current Live UI Correctness Defects
-
-### A. Fabricated workflow/comment history
-
-Existing App794 detail screenshot showed native Kintone Comments = `No comments available`, while custom `Workflow Action Timeline` displayed sample Approved/Returned/Resubmitted events.
-
-Independent source inspection found `_renderWorkflowActionTimeline()` falls back to hard-coded sample events whenever `previewOptions.timelineEvents` is absent.
-
-This is a **Live data-truthfulness defect**, not merely UI polish.
-
-Required durable rule is now in:
-`CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md`.
-
-### B. Attachment lifecycle/display incomplete
-
-Independent source inspection found:
-- `_renderAttachmentControl()` can read existing FILE field data but does not present a complete all-file lifecycle;
-- current control can surface only the first filename in the relevant branch;
-- `.mbo-attachment-file-input` has no complete selection/upload/bind handler in `_bindEvents()`;
-- `.mbo-attachment-remove-btn` has no complete remove lifecycle;
-- user therefore cannot reliably distinguish selected/pending/saved/multiple-file state.
-
-Required target:
-- no file = explicit No attachment;
-- local selected = every filename + Pending save;
-- saved = every actual Kintone filename;
-- editable remove/change = exact target field only;
-- Live never shows preview fixture filenames;
-- Kintone FILE fields only, no external storage.
-
-## 6. Current Active Task — Exact Next Execution
-
-`AI_ACTIVE_TASK.md` currently authorizes:
+Therefore:
 
 ```text
-D1 LIVE TIMELINE TRUTHFULNESS + ATTACHMENT CORRECTIVE
-MODE = ANTIGRAVITY SOURCE/TEST ONLY
+D1_ATTACHMENT_DISPLAY_SOURCE        = PASS
+D1_ATTACHMENT_PENDING_REMOVE_SOURCE = PASS
+D1_ATTACHMENT_UPLOAD_SERVICE_SOURCE = PASS
+```
+
+### 3.3 Attachment Submit Lifecycle — CORRECTIVE REQUIRED
+
+Actual `src/main-mbo-app.js` create/edit submit handler currently:
+1. calls `activeUiInstance.syncFromDom()`;
+2. validates employee/Record_Key/duplicates/business rules;
+3. returns `event`.
+
+It does **not** call `activeUiInstance.uploadPendingAttachments(...)` or the attachment service before returning the submit event.
+
+The focused test `tests/timeline-truthfulness-and-attachment.test.js` tests `uploadAndBindPendingAttachments()` in isolation, but does not prove that Kintone create/edit submit invokes upload/binding. Its pending-remove test also mutates the pending array directly rather than exercising the real click handler.
+
+Therefore:
+
+```text
+D1_ATTACHMENT_SUBMIT_INTEGRATION = FAIL / MUST FIX
+INDEPENDENT_REVIEW_7247DF4        = CORRECTIVE
+APP794_DEPLOY_READY               = NO
+```
+
+This is the only remaining blocker inside the current Timeline/Attachment gate. Do not reimplement Timeline or attachment display/pending UI.
+
+## 4. Exact Current Gate
+
+Current gate:
+
+```text
+D1 ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE
+MODE = SOURCE/TEST ONLY
 LIVE KINTONE WRITE = NO
 APP794 DEPLOY = NO
 ```
 
-Expected execution scope:
-- `src/ui/employee-part-a-ui.js` first;
-- at most one small helper/module only if clearly justified for attachment pending/upload state;
-- focused tests + full `npm test` + module-aware build;
-- zero Live Kintone writes;
-- commit + push;
-- STOP; Antigravity cannot self-PASS.
+Required correction:
+- wire pending attachment upload/binding into both `app.record.create.submit` and `app.record.edit.submit`;
+- perform upload only after all local fail-closed validation/duplicate checks have passed, as late as safely possible before returning `event`;
+- bind resulting fileKeys to the exact current submit `event.record` FILE fields;
+- if upload/bind fails, visibly fail closed and cancel submit; never claim saved;
+- preserve optional attachment semantics;
+- preserve unrelated attachment fields;
+- no Live calls in tests;
+- add focused submit-lifecycle integration tests, not service-only tests.
 
-**New chat must not assume this task has executed.** Re-fetch HEAD and inspect commits/diff first.
+## 5. D1 Priority After Current Corrective
 
-## 7. D1 Still Open — Priority After Current Corrective
+1. independent review of attachment submit integration;
+2. if PASS, obtain a NEW explicit one-shot App794 deploy authorization;
+3. deploy App794 customization only after exact authorization;
+4. Live UAT: no fabricated timeline/comments; zero/one/multiple attachment names; pending-before-save; persisted-after-save; remove/change; no preview leak;
+5. production HR / `admin-form` Reset MBO Password UI;
+6. remaining session/security UAT;
+7. final D1 closure review.
 
-Priority order:
-1. independently review timeline truthfulness + attachment source/test corrective;
-2. if PASS, obtain a NEW explicit App794 deploy authorization before Live customization deploy;
-3. Live UAT timeline/comments/attachment behavior;
-4. implement production HR / `admin-form` Reset MBO Password UI/function inside Kintone;
-5. remaining session/security UAT: reload, independent tab, tampered/expired session, wrong Kintone principal, logout revoke, own password rotation, disabled/locked restore denial;
-6. wrong-password 5-attempt / 15-minute lockout UAT — requires separate explicit App801 mutation authorization;
-7. own detail/edit continuity + cross-employee block evidence;
-8. no-secret-exposure check;
-9. final independent D1 closure review.
-
-Do not skip the current UI-data truthfulness defect and jump directly to reset UI.
-
-## 8. Authorization State at Handoff
+## 6. Authorization State
 
 ```text
-NEXT_ACTION_OWNER              = ANTIGRAVITY / SOURCE+TEST ONLY IF TASK NOT YET EXECUTED
+NEXT_ACTION_OWNER              = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 APP794 DEPLOY                  = NO
 APP794 ACL/RECORD WRITE        = NO
 APP801 WRITE                   = NO
 APP795/796 WRITE               = NO
-SOURCE CHANGE                  = YES / ONLY EXACT CURRENT ACTIVE TASK
+SOURCE CHANGE                  = YES / ONLY ATTACHMENT SUBMIT-LIFECYCLE CORRECTIVE
 EXTERNAL SERVICE               = NO
 D2-D7 WRITE                    = NO
 ```
 
-All previous App794 deploy one-shot authorizations are consumed/closed. Do not reuse them.
-App795 access-correction authorization is consumed/closed.
-No App796 authorization is active.
+All prior App794 deploy authorizations are consumed/closed. A new deployment requires new explicit user authorization after source/test independent PASS.
 
-## 9. New-Chat Handoff Read Set
-
-For the current gate, a new ChatGPT chat should read:
-1. current HEAD;
-2. `AI_CONTROL_CENTER.md`;
-3. `AI_DOCUMENT_INDEX.md`;
-4. `CONFIRMED_BASELINE/README.md`;
-5. `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md`;
-6. `CONFIRMED_BASELINE/UI_UX.md` only where needed;
-7. `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` only where needed;
-8. `AI_ACTIVE_TASK.md`;
-9. exact latest diff/evidence after the handoff commit.
-
-Do NOT broad-read historical handoff/current-state/review-package files.
-Do NOT revive Auth Bridge.
-
-## 10. Handoff State
+## 7. Handoff State
 
 ```text
-HANDOFF_READY = YES
-CURRENT_GATE  = D1 LIVE TIMELINE TRUTHFULNESS + ATTACHMENT CORRECTIVE
-CURRENT_MODE  = SOURCE/TEST ONLY / NO LIVE WRITE
-NEXT REVIEW   = USER SAYS `review` AFTER ANTIGRAVITY COMMIT/PUSH
+CURRENT_GATE   = D1 ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE
+CURRENT_MODE   = SOURCE/TEST ONLY / NO LIVE WRITE
+REVIEW_RESULT  = CORRECTIVE
+NEXT OWNER     = ANTIGRAVITY
 ```
