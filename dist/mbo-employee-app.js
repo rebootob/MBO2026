@@ -931,54 +931,96 @@ Requester_User is empty for action "${actionName}".`
         try {
           const comments = await this.fetchRecordComments(appId, recordId);
           bodyContainer.innerHTML = "";
+          const tableContainer = document.createElement("div");
+          tableContainer.className = "mbo-comment-table-container";
+          const table = document.createElement("table");
+          table.className = "mbo-comment-table mbo-timeline-table";
+          if (typeof table.setAttribute === "function") {
+            table.setAttribute("data-mbo-comment-table", "");
+          }
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          const thNum = document.createElement("th");
+          thNum.className = "mbo-comment-num-col";
+          thNum.textContent = "#";
+          const thAuthor = document.createElement("th");
+          thAuthor.className = "mbo-comment-author-col";
+          thAuthor.textContent = "\u0E1C\u0E39\u0E49\u0E41\u0E2A\u0E14\u0E07\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 / Author";
+          const thDate = document.createElement("th");
+          thDate.className = "mbo-comment-date-col";
+          thDate.textContent = "\u0E27\u0E31\u0E19-\u0E40\u0E27\u0E25\u0E32 / Date & Time";
+          const thComment = document.createElement("th");
+          thComment.className = "mbo-comment-text-col";
+          thComment.textContent = "\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 / Comment";
+          trHead.appendChild(thNum);
+          trHead.appendChild(thAuthor);
+          trHead.appendChild(thDate);
+          trHead.appendChild(thComment);
+          thead.appendChild(trHead);
+          table.appendChild(thead);
+          const tbody = document.createElement("tbody");
+          if (typeof tbody.setAttribute === "function") {
+            tbody.setAttribute("data-mbo-comment-thread", "");
+          }
           if (!comments || comments.length === 0) {
-            const emptyNotice = document.createElement("div");
-            emptyNotice.className = "mbo-comment-empty-notice";
-            if (typeof emptyNotice.setAttribute === "function") {
-              emptyNotice.setAttribute("data-mbo-comment-empty", "");
+            const emptyRow = document.createElement("tr");
+            const emptyTd = document.createElement("td");
+            emptyTd.colSpan = 4;
+            emptyTd.className = "mbo-comment-empty-cell mbo-comment-empty-notice";
+            if (typeof emptyTd.setAttribute === "function") {
+              emptyTd.setAttribute("data-mbo-comment-empty", "");
             }
-            emptyNotice.textContent = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E35\u0E49 / No comments for this record yet.\n(\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49\u0E17\u0E35\u0E48\u0E41\u0E16\u0E1A\u0E14\u0E49\u0E32\u0E19\u0E02\u0E27\u0E32 / Add comments via native right panel)";
-            bodyContainer.appendChild(emptyNotice);
-            return;
+            emptyTd.textContent = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E35\u0E49 / No comments for this record yet.";
+            emptyRow.appendChild(emptyTd);
+            tbody.appendChild(emptyRow);
+          } else {
+            comments.forEach((comment, idx) => {
+              const row = document.createElement("tr");
+              row.className = "mbo-comment-item";
+              if (typeof row.setAttribute === "function") {
+                row.setAttribute("data-mbo-comment-item", "");
+                row.setAttribute("data-mbo-comment-row", "");
+              }
+              const tdNum = document.createElement("td");
+              tdNum.className = "mbo-comment-num-col";
+              tdNum.textContent = String(idx + 1);
+              const tdAuthor = document.createElement("td");
+              tdAuthor.className = "mbo-comment-author-col";
+              const authorName = document.createElement("span");
+              authorName.className = "mbo-comment-author";
+              if (typeof authorName.setAttribute === "function") {
+                authorName.setAttribute("data-mbo-comment-author", "");
+              }
+              authorName.textContent = comment.creator?.name || comment.creator?.code || "Unknown User";
+              tdAuthor.appendChild(authorName);
+              const tdDate = document.createElement("td");
+              tdDate.className = "mbo-comment-date-col";
+              const timeStamp = document.createElement("span");
+              timeStamp.className = "mbo-comment-time";
+              if (typeof timeStamp.setAttribute === "function") {
+                timeStamp.setAttribute("data-mbo-comment-time", "");
+              }
+              timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString("th-TH") : "";
+              tdDate.appendChild(timeStamp);
+              const tdComment = document.createElement("td");
+              tdComment.className = "mbo-comment-text-col";
+              const textContent = document.createElement("div");
+              textContent.className = "mbo-comment-text";
+              if (typeof textContent.setAttribute === "function") {
+                textContent.setAttribute("data-mbo-comment-text", "");
+              }
+              textContent.textContent = comment.text || "";
+              tdComment.appendChild(textContent);
+              row.appendChild(tdNum);
+              row.appendChild(tdAuthor);
+              row.appendChild(tdDate);
+              row.appendChild(tdComment);
+              tbody.appendChild(row);
+            });
           }
-          const threadList = document.createElement("div");
-          threadList.className = "mbo-comment-thread-list";
-          if (typeof threadList.setAttribute === "function") {
-            threadList.setAttribute("data-mbo-comment-thread", "");
-          }
-          comments.forEach((comment) => {
-            const item = document.createElement("div");
-            item.className = "mbo-comment-item";
-            if (typeof item.setAttribute === "function") {
-              item.setAttribute("data-mbo-comment-item", "");
-            }
-            const metaRow = document.createElement("div");
-            metaRow.className = "mbo-comment-meta";
-            const authorName = document.createElement("span");
-            authorName.className = "mbo-comment-author";
-            if (typeof authorName.setAttribute === "function") {
-              authorName.setAttribute("data-mbo-comment-author", "");
-            }
-            authorName.textContent = comment.creator?.name || comment.creator?.code || "Unknown User";
-            const timeStamp = document.createElement("span");
-            timeStamp.className = "mbo-comment-time";
-            if (typeof timeStamp.setAttribute === "function") {
-              timeStamp.setAttribute("data-mbo-comment-time", "");
-            }
-            timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString("th-TH") : "";
-            metaRow.appendChild(authorName);
-            metaRow.appendChild(timeStamp);
-            const textContent = document.createElement("div");
-            textContent.className = "mbo-comment-text";
-            if (typeof textContent.setAttribute === "function") {
-              textContent.setAttribute("data-mbo-comment-text", "");
-            }
-            textContent.textContent = comment.text || "";
-            item.appendChild(metaRow);
-            item.appendChild(textContent);
-            threadList.appendChild(item);
-          });
-          bodyContainer.appendChild(threadList);
+          table.appendChild(tbody);
+          tableContainer.appendChild(table);
+          bodyContainer.appendChild(tableContainer);
         } catch (err) {
           bodyContainer.innerHTML = "";
           const errEl = document.createElement("div");
@@ -7360,6 +7402,7 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
       createBtn.setAttribute("data-mbo-create-btn", "");
       createBtn.textContent = "+ \u0E2A\u0E23\u0E49\u0E32\u0E07 MBO \u0E43\u0E2B\u0E21\u0E48 / Create New MBO";
       createBtn.href = `/k/${appId}/edit`;
+      createBtn.className = "mbo-btn-create";
       createBtn.style.cssText = "display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);";
       headerRow.appendChild(title);
       headerRow.appendChild(createBtn);
@@ -7375,13 +7418,41 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
         contentBox.appendChild(emptyCard);
         return event;
       }
-      const cardList = document.createElement("div");
-      cardList.className = "mbo-record-card-list";
-      cardList.setAttribute("data-mbo-record-list", "");
+      const tableContainer = document.createElement("div");
+      tableContainer.className = "mbo-my-mbo-table-container mbo-table-container";
+      if (typeof tableContainer.setAttribute === "function") {
+        tableContainer.setAttribute("data-mbo-index-table-container", "");
+        tableContainer.setAttribute("data-mbo-record-list", "");
+      }
+      const table = document.createElement("table");
+      table.className = "mbo-my-mbo-table mbo-grid-table";
+      if (typeof table.setAttribute === "function") {
+        table.setAttribute("data-mbo-index-table", "");
+      }
+      const thead = document.createElement("thead");
+      const trHead = document.createElement("tr");
+      const thFy = document.createElement("th");
+      thFy.textContent = "Fiscal Year / \u0E1B\u0E35\u0E07\u0E1A\u0E1B\u0E23\u0E30\u0E21\u0E32\u0E13";
+      const thStatus = document.createElement("th");
+      thStatus.textContent = "Status / \u0E2A\u0E16\u0E32\u0E19\u0E30";
+      const thKey = document.createElement("th");
+      thKey.textContent = "Record Key / \u0E23\u0E2B\u0E31\u0E2A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01";
+      const thAction = document.createElement("th");
+      thAction.style.textAlign = "right";
+      thAction.textContent = "Action / \u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23";
+      trHead.appendChild(thFy);
+      trHead.appendChild(thStatus);
+      trHead.appendChild(thKey);
+      trHead.appendChild(thAction);
+      thead.appendChild(trHead);
+      table.appendChild(thead);
+      const tbody = document.createElement("tbody");
       records.forEach((rec) => {
-        const card = document.createElement("div");
-        card.className = "mbo-record-card";
-        card.setAttribute("data-mbo-record-card", "");
+        const row = document.createElement("tr");
+        if (typeof row.setAttribute === "function") {
+          row.setAttribute("data-mbo-record-card", "");
+          row.setAttribute("data-mbo-record-row", "");
+        }
         const rawFy = rec.Fiscal_Year?.value || "-";
         const fyDisplay = rawFy.startsWith("FY") || rawFy === "-" ? rawFy : `FY ${rawFy}`;
         const keyVal = rec.Record_Key?.value || "-";
@@ -7389,40 +7460,49 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
         const displayStatus = formatDisplayStatus(rawStatus);
         const isCompleted = displayStatus === "Completed" || rawStatus === "16 Completed" || rawStatus === "Completed";
         const actionLabel = isCompleted ? "\u0E14\u0E39\u0E22\u0E49\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E07 / View History" : "\u0E40\u0E1B\u0E34\u0E14 MBO / Open MBO";
-        const cardHeader = document.createElement("div");
-        cardHeader.className = "mbo-record-card-header";
-        const fyEl = document.createElement("div");
+        const tdFy = document.createElement("td");
+        const fyEl = document.createElement("span");
         fyEl.className = "mbo-record-fy";
-        fyEl.setAttribute("data-mbo-fy", "");
+        if (typeof fyEl.setAttribute === "function") {
+          fyEl.setAttribute("data-mbo-fy", "");
+        }
         fyEl.textContent = fyDisplay;
+        tdFy.appendChild(fyEl);
+        const tdStatus = document.createElement("td");
         const statusBadge = document.createElement("span");
-        statusBadge.setAttribute("data-mbo-status-badge", "");
+        if (typeof statusBadge.setAttribute === "function") {
+          statusBadge.setAttribute("data-mbo-status-badge", "");
+        }
         statusBadge.className = isCompleted ? "mbo-status-badge mbo-status-completed" : "mbo-status-badge mbo-status-active";
-        statusBadge.style.cssText = isCompleted ? "display:inline-block;padding:3px 10px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;" : "display:inline-block;padding:3px 10px;border-radius:12px;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:600;";
         statusBadge.textContent = displayStatus;
-        cardHeader.appendChild(fyEl);
-        cardHeader.appendChild(statusBadge);
-        const cardBody = document.createElement("div");
-        cardBody.className = "mbo-record-card-body";
-        const keyEl = document.createElement("div");
+        tdStatus.appendChild(statusBadge);
+        const tdKey = document.createElement("td");
+        const keyEl = document.createElement("code");
         keyEl.className = "mbo-record-key";
-        keyEl.setAttribute("data-mbo-record-key", "");
-        keyEl.textContent = `Record Key: ${keyVal}`;
-        cardBody.appendChild(keyEl);
-        const cardFooter = document.createElement("div");
-        cardFooter.className = "mbo-record-card-footer";
+        if (typeof keyEl.setAttribute === "function") {
+          keyEl.setAttribute("data-mbo-record-key", "");
+        }
+        keyEl.textContent = keyVal;
+        tdKey.appendChild(keyEl);
+        const tdAction = document.createElement("td");
+        tdAction.style.textAlign = "right";
         const actionLink = document.createElement("a");
-        actionLink.setAttribute(isCompleted ? "data-mbo-history-link" : "data-mbo-open-link", "");
+        if (typeof actionLink.setAttribute === "function") {
+          actionLink.setAttribute(isCompleted ? "data-mbo-history-link" : "data-mbo-open-link", "");
+        }
         actionLink.className = isCompleted ? "mbo-card-action-btn mbo-btn-history" : "mbo-card-action-btn mbo-btn-open";
         actionLink.textContent = actionLabel;
         actionLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
-        cardFooter.appendChild(actionLink);
-        card.appendChild(cardHeader);
-        card.appendChild(cardBody);
-        card.appendChild(cardFooter);
-        cardList.appendChild(card);
+        tdAction.appendChild(actionLink);
+        row.appendChild(tdFy);
+        row.appendChild(tdStatus);
+        row.appendChild(tdKey);
+        row.appendChild(tdAction);
+        tbody.appendChild(row);
       });
-      contentBox.appendChild(cardList);
+      table.appendChild(tbody);
+      tableContainer.appendChild(table);
+      contentBox.appendChild(tableContainer);
       return event;
     }
   };

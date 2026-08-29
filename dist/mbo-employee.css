@@ -1103,7 +1103,6 @@
   overflow: hidden;
 }
 
-.mbo-progress-bar-fill {
 .mbo-wide-card-header {
   display: flex;
   justify-content: space-between;
@@ -2025,44 +2024,52 @@
   font-weight: 800;
 }
 
-/* Responsive My MBO Record Cards */
-.mbo-record-card-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 18px;
-  margin-top: 16px;
-}
-
-.mbo-record-card {
+/* Responsive My MBO Table & Cards */
+.mbo-index-table-container,
+.mbo-my-mbo-table-container {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-top: 3px solid #2563eb;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 18px;
+  overflow-x: auto;
+  margin-top: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: all 0.15s ease;
 }
 
-.mbo-record-card:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.12);
-  transform: translateY(-2px);
+.mbo-my-mbo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
 
-.mbo-record-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f1f5f9;
+.mbo-my-mbo-table th {
+  background: #1e3a8a;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-align: left;
+  padding: 11px 16px;
+  border: 1px solid #1e3a8a;
+  white-space: nowrap;
+}
+
+.mbo-my-mbo-table td {
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+.mbo-my-mbo-table tr:nth-child(even) td {
+  background-color: #f8fafc;
+}
+
+.mbo-my-mbo-table tr:hover td {
+  background-color: #f1f5f9;
 }
 
 .mbo-record-fy {
-  font-size: 16px;
+  display: inline-block;
+  font-size: 13.5px;
   font-weight: 800;
   color: #1e3a8a;
   background: #dbeafe;
@@ -2071,38 +2078,27 @@
   letter-spacing: 0.3px;
 }
 
-.mbo-record-card-body {
-  margin-bottom: 16px;
-  flex: 1;
-}
-
 .mbo-record-key {
   font-size: 12px;
   color: #475569;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   background: #f8fafc;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
-}
-
-.mbo-record-card-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-top: auto;
 }
 
 .mbo-card-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 18px;
+  padding: 7px 16px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .mbo-card-action-btn.mbo-btn-open {
@@ -2128,7 +2124,7 @@
   color: #1d4ed8;
 }
 
-/* Native Comment Mirror Section */
+/* Native Comment Mirror Section (Table Presentation) */
 .mbo-native-comment-mirror {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -2179,35 +2175,81 @@
   color: #1d4ed8;
 }
 
-.mbo-comment-thread-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.mbo-comment-table-container {
+  overflow-x: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
   margin-top: 8px;
 }
 
-.mbo-comment-item {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 12px 14px;
+.mbo-comment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
 
-.mbo-comment-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+.mbo-comment-table th {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 12px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.mbo-comment-table td {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  vertical-align: top;
+  background: #ffffff;
+}
+
+.mbo-comment-table tr:nth-child(even) td {
+  background-color: #f8fafc;
+}
+
+.mbo-comment-table tr:hover td {
+  background-color: #f1f5f9;
+}
+
+.mbo-comment-num-col {
+  width: 48px;
+  text-align: center;
+  font-weight: 700;
+  color: #1e3a8a;
+  background: #f1f5f9 !important;
+}
+
+.mbo-comment-author-col {
+  width: 180px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.mbo-comment-date-col {
+  width: 170px;
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.mbo-comment-text-col {
+  color: #334155;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .mbo-comment-author {
-  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .mbo-comment-time {
-  font-size: 11px;
+  font-size: 12px;
   color: #64748b;
 }
 
@@ -2219,14 +2261,12 @@
   word-break: break-word;
 }
 
-.mbo-comment-empty-notice {
-  padding: 20px;
+.mbo-comment-empty-cell {
+  padding: 20px !important;
   text-align: center;
   color: #64748b;
   font-size: 13px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 6px;
+  background: #f8fafc !important;
   white-space: pre-wrap;
   line-height: 1.5;
 }
@@ -2246,6 +2286,7 @@
   color: #991b1b;
   font-size: 13px;
 }
+
 
 
 

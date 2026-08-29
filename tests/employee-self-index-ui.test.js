@@ -803,8 +803,8 @@ test('COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES & COMMENTS_ASC_FINAL_P
 
     // COMMENTS_TEXT_RENDERED_WITHOUT_HTML_INJECTION & COMMENTS_RENDER_AUTHOR_BODY_TIMESTAMP
     const firstItem = threadList.children[0];
-    const authorEl = firstItem.children[0].children[0];
-    const textEl = firstItem.children[1];
+    const authorEl = firstItem.querySelector('[data-mbo-comment-author]');
+    const textEl = firstItem.querySelector('[data-mbo-comment-text]');
     assert.equal(authorEl.textContent, 'User 1');
     assert.equal(textEl.textContent, 'Comment 1 content <script>alert("xss")</script>');
     assert.equal(textEl.innerHTML, '', 'InnerHTML must remain empty when using safe textContent');
@@ -1128,7 +1128,7 @@ test('COMMENTS_REFRESH_RELOADS_THREAD & COMMENTS_REFRESH_PERFORMS_ZERO_RECORD_WR
     assert.equal(getCommentsCallCount, 1, 'Initial render performs 1 GET comments call');
     const threadList1 = container.querySelector('[data-mbo-comment-thread]');
     assert.equal(threadList1.children.length, 1);
-    assert.equal(threadList1.children[0].children[1].textContent, 'Initial comment 1');
+    assert.equal(threadList1.children[0].querySelector('[data-mbo-comment-text]').textContent, 'Initial comment 1');
 
     // Simulate new comment added natively in Kintone right panel
     currentCommentDataset.push({
@@ -1143,7 +1143,7 @@ test('COMMENTS_REFRESH_RELOADS_THREAD & COMMENTS_REFRESH_PERFORMS_ZERO_RECORD_WR
 
     const threadList2 = container.querySelector('[data-mbo-comment-thread]');
     assert.equal(threadList2.children.length, 2, 'Mirrored thread must update with newly fetched comments');
-    assert.equal(threadList2.children[1].children[1].textContent, 'New native comment 2');
+    assert.equal(threadList2.children[1].querySelector('[data-mbo-comment-text]').textContent, 'New native comment 2');
 
   } finally {
     globalThis.document = origDocument;

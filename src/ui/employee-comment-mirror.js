@@ -2,6 +2,7 @@
  * Employee Native Comment Mirror Component
  * Canonical owner for read-only Kintone comment mirror & Refresh.
  * Rendered on existing Detail & Edit screens; strictly 0 comment GET on Create.
+ * Presentation: Compact structured table matching Workflow Action Timeline visual language.
  */
 
 export class EmployeeCommentMirror {
@@ -142,63 +143,115 @@ export class EmployeeCommentMirror {
         const comments = await this.fetchRecordComments(appId, recordId);
         bodyContainer.innerHTML = '';
 
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'mbo-comment-table-container';
+
+        const table = document.createElement('table');
+        table.className = 'mbo-comment-table mbo-timeline-table';
+        if (typeof table.setAttribute === 'function') {
+          table.setAttribute('data-mbo-comment-table', '');
+        }
+
+        const thead = document.createElement('thead');
+        const trHead = document.createElement('tr');
+
+        const thNum = document.createElement('th');
+        thNum.className = 'mbo-comment-num-col';
+        thNum.textContent = '#';
+
+        const thAuthor = document.createElement('th');
+        thAuthor.className = 'mbo-comment-author-col';
+        thAuthor.textContent = 'ผู้แสดงความคิดเห็น / Author';
+
+        const thDate = document.createElement('th');
+        thDate.className = 'mbo-comment-date-col';
+        thDate.textContent = 'วัน-เวลา / Date & Time';
+
+        const thComment = document.createElement('th');
+        thComment.className = 'mbo-comment-text-col';
+        thComment.textContent = 'ความคิดเห็น / Comment';
+
+        trHead.appendChild(thNum);
+        trHead.appendChild(thAuthor);
+        trHead.appendChild(thDate);
+        trHead.appendChild(thComment);
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        if (typeof tbody.setAttribute === 'function') {
+          tbody.setAttribute('data-mbo-comment-thread', '');
+        }
+
         if (!comments || comments.length === 0) {
-          const emptyNotice = document.createElement('div');
-          emptyNotice.className = 'mbo-comment-empty-notice';
-          if (typeof emptyNotice.setAttribute === 'function') {
-            emptyNotice.setAttribute('data-mbo-comment-empty', '');
+          const emptyRow = document.createElement('tr');
+          const emptyTd = document.createElement('td');
+          emptyTd.colSpan = 4;
+          emptyTd.className = 'mbo-comment-empty-cell mbo-comment-empty-notice';
+          if (typeof emptyTd.setAttribute === 'function') {
+            emptyTd.setAttribute('data-mbo-comment-empty', '');
           }
-          emptyNotice.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.\n(สามารถเพิ่มความคิดเห็นได้ที่แถบด้านขวา / Add comments via native right panel)';
-          bodyContainer.appendChild(emptyNotice);
-          return;
+          emptyTd.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.';
+          emptyRow.appendChild(emptyTd);
+          tbody.appendChild(emptyRow);
+        } else {
+          comments.forEach((comment, idx) => {
+            const row = document.createElement('tr');
+            row.className = 'mbo-comment-item';
+            if (typeof row.setAttribute === 'function') {
+              row.setAttribute('data-mbo-comment-item', '');
+              row.setAttribute('data-mbo-comment-row', '');
+            }
+
+            // 1. Index # cell
+            const tdNum = document.createElement('td');
+            tdNum.className = 'mbo-comment-num-col';
+            tdNum.textContent = String(idx + 1);
+
+            // 2. Author cell
+            const tdAuthor = document.createElement('td');
+            tdAuthor.className = 'mbo-comment-author-col';
+            const authorName = document.createElement('span');
+            authorName.className = 'mbo-comment-author';
+            if (typeof authorName.setAttribute === 'function') {
+              authorName.setAttribute('data-mbo-comment-author', '');
+            }
+            authorName.textContent = comment.creator?.name || comment.creator?.code || 'Unknown User';
+            tdAuthor.appendChild(authorName);
+
+            // 3. Date & Time cell
+            const tdDate = document.createElement('td');
+            tdDate.className = 'mbo-comment-date-col';
+            const timeStamp = document.createElement('span');
+            timeStamp.className = 'mbo-comment-time';
+            if (typeof timeStamp.setAttribute === 'function') {
+              timeStamp.setAttribute('data-mbo-comment-time', '');
+            }
+            timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString('th-TH') : '';
+            tdDate.appendChild(timeStamp);
+
+            // 4. Comment text cell
+            const tdComment = document.createElement('td');
+            tdComment.className = 'mbo-comment-text-col';
+            const textContent = document.createElement('div');
+            textContent.className = 'mbo-comment-text';
+            if (typeof textContent.setAttribute === 'function') {
+              textContent.setAttribute('data-mbo-comment-text', '');
+            }
+            textContent.textContent = comment.text || '';
+            tdComment.appendChild(textContent);
+
+            row.appendChild(tdNum);
+            row.appendChild(tdAuthor);
+            row.appendChild(tdDate);
+            row.appendChild(tdComment);
+            tbody.appendChild(row);
+          });
         }
 
-        const threadList = document.createElement('div');
-        threadList.className = 'mbo-comment-thread-list';
-        if (typeof threadList.setAttribute === 'function') {
-          threadList.setAttribute('data-mbo-comment-thread', '');
-        }
-
-        comments.forEach(comment => {
-          const item = document.createElement('div');
-          item.className = 'mbo-comment-item';
-          if (typeof item.setAttribute === 'function') {
-            item.setAttribute('data-mbo-comment-item', '');
-          }
-
-          const metaRow = document.createElement('div');
-          metaRow.className = 'mbo-comment-meta';
-
-          const authorName = document.createElement('span');
-          authorName.className = 'mbo-comment-author';
-          if (typeof authorName.setAttribute === 'function') {
-            authorName.setAttribute('data-mbo-comment-author', '');
-          }
-          authorName.textContent = comment.creator?.name || comment.creator?.code || 'Unknown User';
-
-          const timeStamp = document.createElement('span');
-          timeStamp.className = 'mbo-comment-time';
-          if (typeof timeStamp.setAttribute === 'function') {
-            timeStamp.setAttribute('data-mbo-comment-time', '');
-          }
-          timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString('th-TH') : '';
-
-          metaRow.appendChild(authorName);
-          metaRow.appendChild(timeStamp);
-
-          const textContent = document.createElement('div');
-          textContent.className = 'mbo-comment-text';
-          if (typeof textContent.setAttribute === 'function') {
-            textContent.setAttribute('data-mbo-comment-text', '');
-          }
-          textContent.textContent = comment.text || '';
-
-          item.appendChild(metaRow);
-          item.appendChild(textContent);
-          threadList.appendChild(item);
-        });
-
-        bodyContainer.appendChild(threadList);
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+        bodyContainer.appendChild(tableContainer);
       } catch (err) {
         bodyContainer.innerHTML = '';
         const errEl = document.createElement('div');
