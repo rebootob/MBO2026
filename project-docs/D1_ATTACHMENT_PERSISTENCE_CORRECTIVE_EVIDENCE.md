@@ -1,15 +1,17 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 3b9fc3a7088ea529bb2acfce24734f3761e43e15
+START_HEAD                   = 65a087bf63f392b09f481e3a784d0faf4dee8d43
 CANONICAL_BRANCH             = ai/antigravity-wp002c
 CORRECTIVE_DESIGN            = EXPLICIT DESIRED SAVED-FILE SNAPSHOT MAP + REGRESSION SUITE RESTORATION
 FOCUSED_TESTS                = PASS (26/26 attachment & timeline tests passing)
 FULL_NPM_TEST                 = PASS (878/878 unit & integration tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
+LIVE_KINTONE_READS_ONLY      = YES
 LIVE_KINTONE_WRITE           = 0
-LIVE_DEPLOY_OCCURRED         = YES
-MAXIMUM_STATUS               = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+SOURCE_CHANGED               = NO
+LIVE_DEPLOY_OCCURRED         = NO
+MAXIMUM_STATUS               = DIAGNOSTIC_EVIDENCE_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -94,5 +96,25 @@ APP794_ACL_SCHEMA_PROCESS_WRITE  = 0
 APP801_WRITE                     = 0
 APP795_796_WRITE                 = 0
 LIVE_DEPLOY_OCCURRED            = YES
-MAXIMUM_STATUS                   = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 5. Rev47 Execution-Context Diagnostic
+
+```text
+EXECUTION_START_HEAD              = 65a087bf63f392b09f481e3a784d0faf4dee8d43
+LIVE_APP794_REVISION             = 47
+PREVIEW_APP794_REVISION          = 47
+CUSTOMIZATION_SCOPE              = ALL
+DESKTOP_JS_TOPOLOGY              = 1 FILE entry (mbo-employee-app.js, size 448,802 bytes, fileKey 202608290651375D3352D45E9440EEBEBC59C344554AA3071)
+DESKTOP_CSS_TOPOLOGY             = 1 FILE entry (mbo-employee.css, size 37,996 bytes, fileKey 202608290651373D6CE2A99CF845E78D74F59A1D76047D068)
+MOBILE_TOPOLOGY                  = [] (0 entries)
+DUPLICATE_MBO_BUNDLE             = NO (Single JS bundle deployed in customization topology)
+SOURCE_DECLARATION_RESET_FINDINGS= activeUiInstance is declared at module scope in src/main-mbo-app.js (var activeUiInstance = null) and set during async setupRecordUiWithAuth (activeUiInstance = ui). Overwrite risk if re-initialized; no other reset function exists.
+TEST_LIFECYCLE_GAP_FINDINGS     = Unit tests run sequentially in Node.js without browser DOM page unload or native Kintone navigation. In Live Browser, submit.success is an async function: Kintone native form submit triggers immediate page navigation (location.href) upon native save completion; un-awaited microtasks and in-flight fetch('/k/v1/record.json') requests inside finalizeAttachmentPlan get aborted by the browser during page unload (net::ERR_ABORTED).
+ROOT_CAUSE_CLASSIFICATION        = D. OTHER — BROWSER PAGE UNLOAD ABORTS ASYNC POST-SAVE REST BINDING / UN-AWAITED SUBMIT.SUCCESS PROMISE IN KINTONE LIVE LIFECYCLE (COMBINED WITH B. ACTIVE_UI_INSTANCE LIFECYCLE/CONTEXT LOSS RISK)
+LIVE_KINTONE_READS_ONLY          = YES
+LIVE_KINTONE_WRITE               = 0
+SOURCE_CHANGED                   = NO
+LIVE_DEPLOY_OCCURRED             = NO
+MAXIMUM_STATUS                   = DIAGNOSTIC_EVIDENCE_PENDING_INDEPENDENT_REVIEW
 ```
