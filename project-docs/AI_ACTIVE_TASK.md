@@ -1,26 +1,26 @@
-# AI ACTIVE TASK — HOLD / APP794 DELETE PERMISSION READ-ONLY VERIFICATION
+# AI ACTIVE TASK — HOLD / D1 AUTH ARCHITECTURE DECISION
 
-Mode: **CONTROL PLANE + USER READ-ONLY VERIFICATION — ANTIGRAVITY HOLD**
+Mode: **CONTROL PLANE + USER DECISION — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
 
-## Current status
+## Confirmed live blocker
 
-`D1_EMPLOYEE_SELF_DELETE_GUARD = PASS / ACCEPTED AT 1b2930eb...`
+- Employee `0113` credential in App801 is healthy (`ACTIVE`, failed attempts 0, no lock, no force change).
+- Shared Kintone principal `s1` receives `CB_NO02` / HTTP 403 when opening or REST-reading App801.
+- Current browser-direct App801 auth therefore cannot work for `s1`.
+- Do **not** widen App801 ACL to `s1` as a shortcut.
 
-No executor implementation task is active.
+## Preferred architecture awaiting user approval
 
-## Next required step
+```text
+App794 Browser
+  -> Trusted Auth Bridge (HTTPS)
+      -> App801 using server-side-only Kintone credential/API token
+```
 
-Verify App794 Kintone App Permissions / ACL in READ-ONLY mode only:
-- determine whether the shared/employee-facing Kintone principal(s) have Delete permission;
-- do not modify ACL;
-- do not modify records;
-- do not deploy customization;
-- do not expose business record contents.
-
-If Delete permission is allowed for the employee-facing/shared principal, any ACL correction requires separate explicit user authorization.
+Browser must not receive/read `Password_Hash`, privileged Kintone secrets, or raw App801 credential/session rows.
 
 ## Antigravity
 
 HOLD.
-Do not start Deploy Guard, deploy, ACL change, source change, App801 work, or D2-D7 work until a new Active Task is issued by the Control Plane.
+Do not change Source, App801 ACL, App801 records, App794 customization, Deploy Guard, or D2-D7 until a new Active Task is issued after architecture approval.
