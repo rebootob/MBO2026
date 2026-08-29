@@ -1,32 +1,33 @@
 # D1 LIVE TIMELINE TRUTHFULNESS + ATTACHMENT CORRECTIVE VERIFICATION EVIDENCE
 
 ```text
-START_HEAD                   = 52566ce5ee4ca591167b827d2dc9533b307104e4
+START_HEAD                   = f288973c84c033146e6bab63c555b3d53f9fe181
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-NPM_TEST                     = PASS (864/864 unit & integration tests passing)
-FOCUSED_TESTS                = PASS (12/12 timeline & attachment tests passing)
+NPM_TEST                     = PASS (869/869 unit & integration tests passing)
+FOCUSED_TESTS                = PASS (17/17 timeline & attachment tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE           = 0
 LIVE_DEPLOY_OCCURRED         = NO
 MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-## Summary of Source Correctives Implemented
+## Summary of Verification Evidence
 
-1. **Workflow Action Timeline (`src/ui/employee-part-a-ui.js`):**
-   - Live mode without `timelineEvents` input displays `0 Events Recorded` and `ยังไม่มีประวัติการดำเนินการ / No workflow history available`.
-   - Zero hard-coded sample events (Sompong/Vichai/Returned/Approved/View Comments) are fabricated in Live mode.
-   - Preview sample fixtures are permitted ONLY when `isPreviewMode === true`.
-   - When authoritative `timelineEvents` are supplied, ONLY real supplied events are rendered.
+1. **Submit-Lifecycle Handler Tests (`tests/timeline-truthfulness-and-attachment.test.js`):**
+   - Verified `app.record.create.submit` and `app.record.edit.submit` registered hooks in `src/main-mbo-app.js`.
+   - `SUBMIT_HANDLER_PATH_CREATE_ZERO_PENDING_ATTACHMENTS`: Create submit with zero pending files returns submit event cleanly with 0 upload network calls.
+   - `SUBMIT_HANDLER_PATH_EDIT_ZERO_PENDING_ATTACHMENTS`: Edit submit with zero pending files returns submit event cleanly with 0 upload network calls.
+   - `SUBMIT_HANDLER_PATH_CREATE_PENDING_ATTACHMENT_UPLOAD_AND_BIND`: Create submit with pending attachment invokes `/k/v1/file.json` upload after local validation passes and binds returned `fileKey` to exact `event.record.Objective_Attachment_1` field.
+   - `SUBMIT_HANDLER_PATH_EDIT_PENDING_MIDYEAR_ATTACHMENT_UNRELATED_UNTOUCHED`: Edit submit with pending Mid-Year attachment binds `fileKey` to target field leaving existing Objective attachment fields untouched.
+   - `SUBMIT_HANDLER_PATH_UPLOAD_FAILURE_FAILS_CLOSED`: Upload failure during submit handler execution catches exception, renders inline validation error, and returns `false` (canceling submit fail-closed).
 
-2. **Attachment Lifecycle & Display (`src/ui/employee-part-a-ui.js`):**
-   - Displays `ไม่มีไฟล์แนบ / No attachment` when no files exist in read-only mode.
-   - Displays ALL actual filenames from Kintone FILE fields for saved attachments.
-   - Displays selected local files immediately with `(รอบันทึก / Pending save)` markers in editable mode.
-   - Supports removal of pending or saved attachments cleanly without touching unrelated fields.
-   - Live mode ignores preview mock attachment filenames.
+2. **DOM Remove Handler Event Dispatch Test:**
+   - `ATTACHMENT_REAL_REMOVE_BUTTON_CLICK_EVENT`: Dispatches real DOM `'click'` event to button element with `mbo-attachment-remove-btn` class and dataset attributes. Verifies click listener splices `pendingAttachments` array without touching unrelated fields.
 
-3. **Kintone Upload Boundary (`src/services/mbo-attachment-service.js`):**
-   - Multipart `POST /k/v1/file.json` via `FormData` with `X-Requested-With: XMLHttpRequest` and `kintone.getRequestToken()`.
-   - Captures returned upload `fileKey` and binds to exact requested FILE fields (`Objective_Attachment_n`, `MidYear_Attachment_n`, `Self_Attachment_n` / `Final_Attachment_n`).
-   - Fails closed with visible error on upload failures. Zero live network calls in unit test suite.
+3. **Timeline & Attachment Core Suite Regressions:**
+   - All 12 prior timeline truthfulness, fixture gating, multi-file display, pending save, and fallback tests remain 100% PASS.
+
+4. **Repository & Build Integrity:**
+   - Full repository test suite: **869/869 PASS**
+   - Candidate bundle build (`npm run ui:build`): **PASS** (`dist/mbo-employee-app.js` & `dist/mbo-employee.css` built cleanly)
+   - Module-aware build-only deploy check (`node --env-file=.env.local scripts/kintone/deploy-custom-ui.js --build-only`): **PASS** (Zero Kintone upload/API calls)
