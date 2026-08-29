@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — INDEPENDENT PASS: APP794 ATTACHMENT CORRECTIVE DEPLOYMENT
+> Updated: 2026-08-29 — LIVE UAT FAIL: REV47 ATTACHMENT DOES NOT PERSIST
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / prior accepted D1 states remain PASS / APP794 LIVE REV47 / TIMELINE TRUTHFULNESS PASS / ATTACHMENT SOURCE+TEST PASS / ATTACHMENT CORRECTIVE DEPLOYMENT PASS / **LIVE ATTACHMENT FUNCTIONAL UAT REQUIRED** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / prior accepted D1 states remain PASS / APP794 LIVE REV47 / TIMELINE TRUTHFULNESS PASS / ATTACHMENT SOURCE+TEST PASS / ATTACHMENT DEPLOYMENT PASS / **LIVE SAVE WITHOUT FILE PASS / ADD ONE OBJECTIVE FILE SAVE BASE RECORD PASS BUT FILE DOES NOT PERSIST — DIAGNOSTIC REQUIRED** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -31,105 +31,138 @@ APP794_LIVE_CUSTOMIZATION_REVISION = 47
 SOURCE_MODULARITY_POLICY           = MANDATORY / NO CATCH-ALL SOURCE FILES
 ```
 
-Accepted and DO NOT REIMPLEMENT without new evidence:
+Previously accepted and not disproved by this UAT:
 
 ```text
-PRE_SAVE_UPLOAD_TO_FILEKEY                     = PASS
-SUBMIT_EVENT_ATTACHMENT_NON_MUTATION           = PASS
-CREATE_EDIT_SUBMIT_SUCCESS_HOOKS               = PASS
-POST_SAVE_UPDATE_RECORD_REST_ARCHITECTURE      = PASS
-POST_SAVE_FAILURE_VISIBLE_SOURCE               = PASS
-EXPLICIT_DESIRED_SAVED_FILE_SNAPSHOT           = PASS
-REAL_HANDLER_SEPARATE_SUBMIT_RECORD_REMOVAL    = PASS
-TIMELINE_ATTACHMENT_REGRESSION_COVERAGE        = PASS
-SOURCE_OWNERSHIP_MODULAR                       = PASS
+SUBMIT_EVENT_ATTACHMENT_NON_MUTATION       = PASS
+POST_SAVE_UPDATE_RECORD_REST_DESIGN        = SOURCE/TEST PASS
+POST_SAVE_FAILURE_VISIBLE_SOURCE           = SOURCE/TEST PASS
+EXPLICIT_DESIRED_SAVED_FILE_SNAPSHOT       = SOURCE/TEST PASS
+TIMELINE_ATTACHMENT_REGRESSION_COVERAGE    = PASS
+SOURCE_OWNERSHIP_MODULAR                   = PASS
+APP794_REV47_DEPLOYMENT_PROVENANCE         = PASS
 ```
 
-Reviewed source/test candidate:
-`2aed3578b710e0283c7a436e7fa7a225ec3e7afb`
+The Live UAT failure means **functional attachment persistence is NOT PASS** despite source/test and deployment provenance PASS.
 
-## 3. Independent Deployment Review — PASS
+## 3. Live UAT Evidence — Rev47
 
-User one-shot authorization:
-`อนุมัติ App794 deploy D1 Attachment persistence corrective`
+User manually tested an existing App794 Objective-stage record in edit mode.
 
-Authorization execution-start HEAD:
-`3b9fc3a7088ea529bb2acfce24734f3761e43e15`
+Observed:
 
-Executor deployment evidence commit:
-`072db7d3736efe55ae0a1705844c74a1c00e482f`
+```text
+UAT_01_SAVE_WITH_NO_ATTACHMENT                 = PASS
+UAT_02_ADD_ONE_OBJECTIVE_ATTACHMENT_SAVE       = FAIL
+BASE_RECORD_SAVE_WITH_SELECTED_FILE            = PASS
+OLD event.record['...'].type is invalid ERROR  = NOT OBSERVED
+VISIBLE_POST_SAVE_BIND_ERROR/ALERT              = NOT OBSERVED
+POST_SAVE_DETAIL_ATTACHMENT_DISPLAY             = NO ATTACHMENT
+UAT_03_FILENAME_PERSISTS_AFTER_SAVE/RELOAD      = FAIL / NOT PRESENT
+```
 
-Independent Git review confirms:
-- `2aed357... -> 3b9fc3a...` changed only Control Plane/Baseline documentation; no production source changed after reviewed candidate;
-- `3b9fc3a... -> 072db7d...` changed only `project-docs/D1_ATTACHMENT_PERSISTENCE_CORRECTIVE_EVIDENCE.md`;
-- reviewed candidate `dist/mbo-employee-app.js` Git blob SHA = `97273c29e80c4f6cbfa6982360fdba03c8c43076`;
-- deployment evidence reports Live post-deploy JS identity/hash = the same `97273c29e80c4f6cbfa6982360fdba03c8c43076`;
-- reviewed candidate CSS Git blob SHA = `1359dfae16d1224580210a5a6cd366fb20bcf6f8`, matching reported Live post-deploy CSS;
-- reported pre-deploy JS identity/hash `66424ab0949ca4767fbeb06118adfff593775014` independently matches the previously accepted rev46 bundle Git blob;
-- reported Live App794 customization revision changed `46 -> 47`;
-- reported deploy status = SUCCESS; candidate readback match = YES; rollback = NO;
-- reported forbidden write counters remain zero: App794 record/ACL/schema/process, App801, App795/796;
-- executor maximum status remained `DEPLOYED_PENDING_INDEPENDENT_REVIEW`.
+Screenshot evidence shows:
+- edit page displays one selected Objective attachment in a pending/selected state before Save;
+- native Kintone Save completes and returns to the detail page;
+- the same Objective attachment cell then displays `ไม่มีไฟล์แนบ / No attachment`;
+- DevTools screenshot supplied after the operation does not show a visible customization error.
 
 Therefore:
 
 ```text
-APP794_ATTACHMENT_CORRECTIVE_DEPLOYMENT = PASS
-APP794_LIVE_REVISION                    = 47
-ONE_SHOT_DEPLOY_AUTHORIZATION           = CONSUMED / CLOSED
+APP794_REV47_ATTACHMENT_FUNCTIONAL_UAT = FAIL
 ```
 
-The deployment PASS proves deployment provenance/readback, not functional business behavior. Live attachment UAT is still required.
+Do not continue multi-file/remove/Mid-Year/Self attachment UAT until the one-file persistence path is diagnosed.
 
-## 4. Exact Current Gate
+## 4. Current Source Inspection / Diagnostic Hypothesis
+
+Live rev47 source currently does:
 
 ```text
-CURRENT_GATE       = D1 APP794 ATTACHMENT LIVE FUNCTIONAL UAT
-CURRENT_MODE       = USER LIVE UAT / CONTROL PLANE REVIEW
+app.record.edit.submit
+  -> activeUiInstance.preparePendingAttachments({ record: event.record })
+  -> upload pending file(s)
+  -> keep preparedAttachmentPlan in EmployeePartAUI instance
+  -> return event
+
+app.record.edit.submit.success
+  -> if activeUiInstance && recordId
+  -> activeUiInstance.finalizeAttachmentPlan({ appId, recordId })
+  -> PUT attachment plan using Kintone Update Record REST API
+```
+
+`syncFromDom()` does not clear attachment state; it only copies `.mbo-field` values into the record.
+
+Because Live Save succeeds, the prior FILE-field event-object mutation defect is resolved. Because the file is absent after Save and no visible post-save error was observed, the next diagnostic must distinguish:
+1. Upload File API never executes / does not succeed;
+2. upload succeeds but prepared plan is unexpectedly empty/lost;
+3. `submit.success` does not enter the finalize branch (for example missing expected in-memory state);
+4. Update Record REST call is absent;
+5. Update Record REST call occurs but returns an error that navigation/log clearing hid.
+
+Do NOT patch from hypothesis alone.
+
+## 5. Exact Current Gate
+
+```text
+CURRENT_GATE       = D1 APP794 REV47 ATTACHMENT LIVE BIND DIAGNOSTIC
+CURRENT_MODE       = USER READ-ONLY BROWSER DIAGNOSTIC + CONTROL PLANE REVIEW
 NEXT_ACTION_OWNER  = USER + CHATGPT
 ANTIGRAVITY        = DO NOTHING
-APP794 DEPLOY      = NO — PRIOR ONE-SHOT CONSUMED
+APP794 DEPLOY      = NO — prior one-shot consumed
+SOURCE CHANGE      = NO
 AI LIVE WRITE      = NO
 APP801 WRITE       = NO
 APP795/796 WRITE   = NO
 D2-D7 WRITE        = NO
-SOURCE CHANGE      = NO
 ```
 
-Do not reuse the consumed deployment authorization.
+## 6. Required Next Evidence — Browser DevTools Only
 
-## 5. Required Live UAT
+Repeat only the **one Objective attachment** test with DevTools open.
 
-Use an appropriate App794 test record and verify manually in Live revision 47:
-1. Save with no attachment;
-2. add one Objective attachment and Save;
-3. reload/detail and confirm saved filename persists;
-4. add multiple Objective attachments and Save;
-5. remove one saved attachment and Save, confirm only intended file is removed after reload;
-6. remove + add in the same field and Save, confirm exact desired final set;
-7. verify an unrelated attachment field is unchanged;
-8. verify Mid-Year attachment persistence;
-9. verify Self Evaluation attachment persists through canonical `Final_Attachment_n`;
-10. verify no `event.record[...].type is invalid` customization error;
-11. verify Timeline Live truthfulness remains unchanged.
+Before repeating:
+- Network tab: enable **Preserve log**;
+- Console tab: enable **Preserve log**;
+- clear previous logs.
 
-If any Live UAT step fails, capture the exact screen/error/record context and return to Control Plane review before any source change or redeploy.
+Then select one file and Save.
 
-## 6. Development Governance
-
-- Antigravity performs only execution requiring local/runtime access.
-- ChatGPT owns diagnosis, planning, Git independent review and Control Plane docs.
-- No source/refactor/deploy work is currently authorized.
-- Live UAT evidence must precede any further corrective deployment decision.
-
-## 7. Handoff
+Capture whether these requests occur:
 
 ```text
-SOURCE_TEST_REVIEW          = PASS
-DEPLOYMENT_REVIEW           = PASS
-APP794_LIVE_REVISION        = 47
-DEPLOY_AUTHORIZATION        = CONSUMED / CLOSED
-LIVE_FUNCTIONAL_UAT         = REQUIRED
+POST /k/v1/file.json
+PUT  /k/v1/record.json
+```
+
+For each matching request capture:
+- HTTP status;
+- response body/error if any;
+- for PUT, request payload field code and fileKey may be shown but do not expose credentials/tokens.
+
+Also capture any console line beginning with:
+- `[MBO V2] Attachment submit upload error:`
+- `[MBO V2] Attachment post-save finalize error:`
+
+This diagnostic is read-only observation of the user's manual UAT and authorizes no AI/executor Live mutation.
+
+## 7. Governance
+
+- Antigravity must not patch or redeploy until Control Plane identifies the smallest source corrective.
+- Prior one-shot deployment authorization is consumed/closed.
+- Deployment PASS remains provenance PASS only; Live functional persistence remains FAIL.
+- No broad refactor.
+- Keep `src/main-mbo-app.js` orchestration-only.
+
+## 8. Handoff
+
+```text
+DEPLOYMENT_PROVENANCE       = PASS
+LIVE_SAVE_NO_FILE           = PASS
+LIVE_ONE_FILE_PERSISTENCE   = FAIL
+OLD_TYPE_INVALID_ERROR      = RESOLVED / NOT OBSERVED
+NEXT STEP                   = PRESERVE-LOG NETWORK/CONSOLE DIAGNOSTIC
 NEXT OWNER                  = USER + CHATGPT
 ANTIGRAVITY                 = DO NOTHING
 ```
