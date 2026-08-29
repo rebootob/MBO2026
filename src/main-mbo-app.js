@@ -695,10 +695,10 @@ if (typeof kintone !== 'undefined') {
       activeUiInstance.clearValidationErrors();
     }
 
-    // 6. Attachment Submit Lifecycle Integration (Kintone-Only Upload & Field Binding)
+    // 6. Attachment Submit Lifecycle Integration (Pre-Save File Upload & Plan Preparation)
     if (activeUiInstance) {
       try {
-        await activeUiInstance.uploadPendingAttachments({ record: event.record });
+        await activeUiInstance.preparePendingAttachments({ record: event.record });
       } catch (err) {
         console.error('[MBO V2] Attachment submit upload error:', err);
         activeUiInstance.showValidationErrors([{
@@ -708,6 +708,30 @@ if (typeof kintone !== 'undefined') {
           message: `Attachment upload failed: ${err.message}`
         }]);
         return false; // Fail closed: cancel submit
+      }
+    }
+
+    return event;
+  });
+
+  // Hook 3: Record Submit Success (Post-Save Attachment REST Finalization)
+  kintone.events.on(['app.record.create.submit.success', 'app.record.edit.submit.success'], async function (event) {
+    const appId = event.appId || getMboAppId();
+    const recordId = event.recordId || event.record?.$id?.value;
+
+    if (activeUiInstance && recordId) {
+      try {
+        await activeUiInstance.finalizeAttachmentPlan({ appId, recordId });
+      } catch (err) {
+        console.error('[MBO V2] Attachment post-save finalize error:', err);
+        if (typeof activeUiInstance.showValidationErrors === 'function') {
+          activeUiInstance.showValidationErrors([{
+            field: 'Objective_Attachment_1',
+            messageTH: `บันทึกข้อมูลสำเร็จ แต่เกิดข้อผิดพลาดในการบันทึกไฟล์แนบ: ${err.message}`,
+            messageEN: `Record saved, but attachment binding failed: ${err.message}`,
+            message: `Record saved, but attachment binding failed: ${err.message}`
+          }]);
+        }
       }
     }
 

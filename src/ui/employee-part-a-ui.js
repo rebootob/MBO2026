@@ -3204,18 +3204,34 @@ export class EmployeePartAUI {
     }
   }
 
-  async uploadPendingAttachments(options = {}) {
-    const { uploadAndBindPendingAttachments } = await import('../services/mbo-attachment-service.js');
+  async preparePendingAttachments(options = {}) {
+    const { prepareAttachmentPlan } = await import('../services/mbo-attachment-service.js');
     const targetRecord = options.record || this.record;
-    const res = await uploadAndBindPendingAttachments(targetRecord, this.pendingAttachments || {}, options);
-    if (targetRecord !== this.record && targetRecord && typeof targetRecord === 'object') {
-      Object.keys(targetRecord).forEach(key => {
-        if (key.includes('Attachment')) {
-          this.record[key] = targetRecord[key];
-        }
-      });
+    const plan = await prepareAttachmentPlan(targetRecord, this.pendingAttachments || {}, options);
+    this.preparedAttachmentPlan = (plan && Object.keys(plan).length > 0) ? plan : null;
+    return this.preparedAttachmentPlan;
+  }
+
+  async finalizeAttachmentPlan(options = {}) {
+    const { finalizeAttachmentPlan } = await import('../services/mbo-attachment-service.js');
+    const appId = options.appId || 794;
+    const recordId = options.recordId;
+    if (!this.preparedAttachmentPlan || Object.keys(this.preparedAttachmentPlan).length === 0) {
+      return { updated: false };
     }
+    const plan = this.preparedAttachmentPlan;
+    const res = await finalizeAttachmentPlan(appId, recordId, plan, options);
+    this.preparedAttachmentPlan = null;
+    this.pendingAttachments = {};
     return res;
+  }
+
+  async uploadPendingAttachments(options = {}) {
+    const plan = await this.preparePendingAttachments(options);
+    if (options.recordId) {
+      return await this.finalizeAttachmentPlan(options);
+    }
+    return plan;
   }
 
   async executeLookup(empCode) {

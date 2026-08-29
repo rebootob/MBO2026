@@ -17,6 +17,8 @@
   // src/services/mbo-attachment-service.js
   var mbo_attachment_service_exports = {};
   __export(mbo_attachment_service_exports, {
+    finalizeAttachmentPlan: () => finalizeAttachmentPlan,
+    prepareAttachmentPlan: () => prepareAttachmentPlan,
     uploadAndBindPendingAttachments: () => uploadAndBindPendingAttachments,
     uploadKintoneFile: () => uploadKintoneFile
   });
@@ -61,14 +63,15 @@
     }
     return data.fileKey;
   }
-  async function uploadAndBindPendingAttachments(record, pendingAttachments = {}, options = {}) {
+  async function prepareAttachmentPlan(record, pendingAttachments = {}, options = {}) {
     if (!record || typeof record !== "object") {
-      throw new Error("uploadAndBindPendingAttachments failed: invalid record object");
+      throw new Error("prepareAttachmentPlan failed: invalid record object");
     }
+    const plan = {};
     const fieldCodes = Object.keys(pendingAttachments);
     for (const fieldCode of fieldCodes) {
       const pendingItems = pendingAttachments[fieldCode];
-      if (!Array.isArray(pendingItems) || pendingItems.length === 0) continue;
+      if (!Array.isArray(pendingItems)) continue;
       let targetCode = fieldCode;
       if (!record[targetCode] && targetCode.startsWith("Self_Attachment_")) {
         const altCode = "Final_Attachment_" + targetCode.slice("Self_Attachment_".length);
@@ -78,10 +81,12 @@
       }
       const currentVal = record[targetCode]?.value;
       const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+      let modified = false;
       for (const item of pendingItems) {
         if (item.status === "saved" && item.fileKey) {
-          if (!savedFiles.some((f) => f.fileKey === item.fileKey)) {
+          if (!savedFiles.some((f) => f && f.fileKey === item.fileKey)) {
             savedFiles.push({ fileKey: item.fileKey, name: item.name });
+            modified = true;
           }
           continue;
         }
@@ -92,6 +97,7 @@
             item.fileKey = fileKey;
             item.status = "saved";
             savedFiles.push({ fileKey, name: item.name });
+            modified = true;
           } catch (err) {
             item.status = "error";
             item.error = err.message;
@@ -99,9 +105,68 @@
           }
         }
       }
-      record[targetCode] = { value: savedFiles };
+      if (pendingItems.length > 0 || modified) {
+        plan[targetCode] = {
+          value: savedFiles.filter((f) => Boolean(f && f.fileKey)).map((f) => ({ fileKey: f.fileKey }))
+        };
+      }
     }
-    return record;
+    return plan;
+  }
+  async function finalizeAttachmentPlan(appId, recordId, plan, options = {}) {
+    if (!appId || !recordId) {
+      throw new Error("finalizeAttachmentPlan failed: missing appId or recordId");
+    }
+    if (!plan || typeof plan !== "object" || Object.keys(plan).length === 0) {
+      return { updated: false };
+    }
+    const payload = {
+      app: Number(appId),
+      id: String(recordId),
+      record: plan
+    };
+    const updateRecordFn = options.updateRecord || (async (reqPayload) => {
+      const fetchFn = options.fetch || globalThis.fetch;
+      if (typeof fetchFn === "function") {
+        const headers = {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        };
+        if (globalThis.kintone?.getRequestToken) {
+          try {
+            const token = globalThis.kintone.getRequestToken();
+            if (token) headers["X-Cybozu-RequestToken"] = token;
+          } catch (err) {
+          }
+        }
+        const res = await fetchFn("/k/v1/record.json", {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(reqPayload)
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(`Kintone Update Record REST API failed: HTTP ${res.status}${text ? ` (${text})` : ""}`);
+        }
+        return await res.json();
+      }
+      if (globalThis.kintone?.api && globalThis.kintone?.api?.url) {
+        const url = globalThis.kintone.api.url("/k/v1/record.json", true);
+        return await globalThis.kintone.api(url, "PUT", reqPayload);
+      }
+      throw new Error("updateRecord failed: fetch or kintone.api unavailable");
+    });
+    const resData = await updateRecordFn(payload);
+    return { updated: true, response: resData };
+  }
+  async function uploadAndBindPendingAttachments(record, pendingAttachments = {}, options = {}) {
+    const plan = await prepareAttachmentPlan(record, pendingAttachments, options);
+    const recordId = options.recordId || record?.$id?.value;
+    if (recordId) {
+      const appId = options.appId || 794;
+      await finalizeAttachmentPlan(appId, recordId, plan, options);
+    }
+    return plan;
   }
   var init_mbo_attachment_service = __esm({
     "src/services/mbo-attachment-service.js"() {
@@ -5137,18 +5202,32 @@ Requester_User is empty for action "${actionName}".`
         this.render();
       }
     }
-    async uploadPendingAttachments(options = {}) {
-      const { uploadAndBindPendingAttachments: uploadAndBindPendingAttachments2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
+    async preparePendingAttachments(options = {}) {
+      const { prepareAttachmentPlan: prepareAttachmentPlan2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
       const targetRecord = options.record || this.record;
-      const res = await uploadAndBindPendingAttachments2(targetRecord, this.pendingAttachments || {}, options);
-      if (targetRecord !== this.record && targetRecord && typeof targetRecord === "object") {
-        Object.keys(targetRecord).forEach((key) => {
-          if (key.includes("Attachment")) {
-            this.record[key] = targetRecord[key];
-          }
-        });
+      const plan = await prepareAttachmentPlan2(targetRecord, this.pendingAttachments || {}, options);
+      this.preparedAttachmentPlan = plan && Object.keys(plan).length > 0 ? plan : null;
+      return this.preparedAttachmentPlan;
+    }
+    async finalizeAttachmentPlan(options = {}) {
+      const { finalizeAttachmentPlan: finalizeAttachmentPlan2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
+      const appId = options.appId || 794;
+      const recordId = options.recordId;
+      if (!this.preparedAttachmentPlan || Object.keys(this.preparedAttachmentPlan).length === 0) {
+        return { updated: false };
       }
+      const plan = this.preparedAttachmentPlan;
+      const res = await finalizeAttachmentPlan2(appId, recordId, plan, options);
+      this.preparedAttachmentPlan = null;
+      this.pendingAttachments = {};
       return res;
+    }
+    async uploadPendingAttachments(options = {}) {
+      const plan = await this.preparePendingAttachments(options);
+      if (options.recordId) {
+        return await this.finalizeAttachmentPlan(options);
+      }
+      return plan;
     }
     async executeLookup(empCode) {
       const code = String(empCode || "").trim();
@@ -7441,7 +7520,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       }
       if (activeUiInstance) {
         try {
-          await activeUiInstance.uploadPendingAttachments({ record: event.record });
+          await activeUiInstance.preparePendingAttachments({ record: event.record });
         } catch (err) {
           console.error("[MBO V2] Attachment submit upload error:", err);
           activeUiInstance.showValidationErrors([{
@@ -7451,6 +7530,26 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             message: `Attachment upload failed: ${err.message}`
           }]);
           return false;
+        }
+      }
+      return event;
+    });
+    kintone.events.on(["app.record.create.submit.success", "app.record.edit.submit.success"], async function(event) {
+      const appId = event.appId || getMboAppId();
+      const recordId = event.recordId || event.record?.$id?.value;
+      if (activeUiInstance && recordId) {
+        try {
+          await activeUiInstance.finalizeAttachmentPlan({ appId, recordId });
+        } catch (err) {
+          console.error("[MBO V2] Attachment post-save finalize error:", err);
+          if (typeof activeUiInstance.showValidationErrors === "function") {
+            activeUiInstance.showValidationErrors([{
+              field: "Objective_Attachment_1",
+              messageTH: `\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E41\u0E15\u0E48\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A: ${err.message}`,
+              messageEN: `Record saved, but attachment binding failed: ${err.message}`,
+              message: `Record saved, but attachment binding failed: ${err.message}`
+            }]);
+          }
         }
       }
       return event;

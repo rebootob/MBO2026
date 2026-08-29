@@ -1,6 +1,7 @@
 /**
  * MBO Attachment Service
- * Handles Kintone browser file uploads via POST /k/v1/file.json and exact field binding.
+ * Handles Kintone browser file uploads via POST /k/v1/file.json and
+ * Kintone-supported post-save REST attachment field binding via PUT /k/v1/record.json.
  * Kintone-only session context; no external storage or external service dependencies.
  */
 
@@ -57,18 +58,26 @@ export async function uploadKintoneFile(file, options = {}) {
 }
 
 /**
- * Uploads pending attachments for a record and binds fileKeys to exact Kintone FILE fields.
- * Fails closed on upload error. Preserves unrelated attachment rows.
+ * Prepares the attachment binding plan during app.record.create.submit / edit.submit.
+ * Uploads pending local files to Kintone Upload File API (POST /k/v1/file.json) and receives fileKeys.
+ *
+ * CRITICAL KINTONE INVARIANT:
+ * - Does NOT mutate event.record Attachment fields directly!
+ * - Leaves event.record Attachment fields completely untouched during submit.
+ * - Constructs and returns an attachment plan object mapping target field codes
+ *   to their intended post-save REST update payload ({ value: [{ fileKey }, ...] }).
  */
-export async function uploadAndBindPendingAttachments(record, pendingAttachments = {}, options = {}) {
+export async function prepareAttachmentPlan(record, pendingAttachments = {}, options = {}) {
   if (!record || typeof record !== 'object') {
-    throw new Error('uploadAndBindPendingAttachments failed: invalid record object');
+    throw new Error('prepareAttachmentPlan failed: invalid record object');
   }
 
+  const plan = {};
   const fieldCodes = Object.keys(pendingAttachments);
+
   for (const fieldCode of fieldCodes) {
     const pendingItems = pendingAttachments[fieldCode];
-    if (!Array.isArray(pendingItems) || pendingItems.length === 0) continue;
+    if (!Array.isArray(pendingItems)) continue;
 
     let targetCode = fieldCode;
     if (!record[targetCode] && targetCode.startsWith('Self_Attachment_')) {
@@ -80,11 +89,13 @@ export async function uploadAndBindPendingAttachments(record, pendingAttachments
 
     const currentVal = record[targetCode]?.value;
     const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+    let modified = false;
 
     for (const item of pendingItems) {
       if (item.status === 'saved' && item.fileKey) {
-        if (!savedFiles.some(f => f.fileKey === item.fileKey)) {
+        if (!savedFiles.some(f => f && f.fileKey === item.fileKey)) {
           savedFiles.push({ fileKey: item.fileKey, name: item.name });
+          modified = true;
         }
         continue;
       }
@@ -96,6 +107,7 @@ export async function uploadAndBindPendingAttachments(record, pendingAttachments
           item.fileKey = fileKey;
           item.status = 'saved';
           savedFiles.push({ fileKey, name: item.name });
+          modified = true;
         } catch (err) {
           item.status = 'error';
           item.error = err.message;
@@ -104,8 +116,84 @@ export async function uploadAndBindPendingAttachments(record, pendingAttachments
       }
     }
 
-    record[targetCode] = { value: savedFiles };
+    if (pendingItems.length > 0 || modified) {
+      plan[targetCode] = {
+        value: savedFiles.filter(f => Boolean(f && f.fileKey)).map(f => ({ fileKey: f.fileKey }))
+      };
+    }
   }
 
-  return record;
+  return plan;
+}
+
+/**
+ * Finalizes attachment field binding via Kintone Update Record REST API (PUT /k/v1/record.json).
+ * Executed in app.record.create.submit.success / app.record.edit.submit.success.
+ */
+export async function finalizeAttachmentPlan(appId, recordId, plan, options = {}) {
+  if (!appId || !recordId) {
+    throw new Error('finalizeAttachmentPlan failed: missing appId or recordId');
+  }
+
+  if (!plan || typeof plan !== 'object' || Object.keys(plan).length === 0) {
+    return { updated: false };
+  }
+
+  const payload = {
+    app: Number(appId),
+    id: String(recordId),
+    record: plan
+  };
+
+  const updateRecordFn = options.updateRecord || (async (reqPayload) => {
+    const fetchFn = options.fetch || globalThis.fetch;
+    if (typeof fetchFn === 'function') {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      };
+      if (globalThis.kintone?.getRequestToken) {
+        try {
+          const token = globalThis.kintone.getRequestToken();
+          if (token) headers['X-Cybozu-RequestToken'] = token;
+        } catch (err) {
+          // Fallback
+        }
+      }
+      const res = await fetchFn('/k/v1/record.json', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(reqPayload)
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Kintone Update Record REST API failed: HTTP ${res.status}${text ? ` (${text})` : ''}`);
+      }
+      return await res.json();
+    }
+
+    if (globalThis.kintone?.api && globalThis.kintone?.api?.url) {
+      const url = globalThis.kintone.api.url('/k/v1/record.json', true);
+      return await globalThis.kintone.api(url, 'PUT', reqPayload);
+    }
+
+    throw new Error('updateRecord failed: fetch or kintone.api unavailable');
+  });
+
+  const resData = await updateRecordFn(payload);
+  return { updated: true, response: resData };
+}
+
+/**
+ * Uploads pending attachments for a record and binds fileKeys to exact Kintone FILE fields.
+ * Wraps prepareAttachmentPlan and finalizeAttachmentPlan when recordId is provided.
+ */
+export async function uploadAndBindPendingAttachments(record, pendingAttachments = {}, options = {}) {
+  const plan = await prepareAttachmentPlan(record, pendingAttachments, options);
+  const recordId = options.recordId || record?.$id?.value;
+  if (recordId) {
+    const appId = options.appId || 794;
+    await finalizeAttachmentPlan(appId, recordId, plan, options);
+  }
+  return plan;
 }
