@@ -243,18 +243,20 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
   assert.equal(statusBadges[1].textContent, 'Completed', 'FY2025 (16 Completed) must render Completed');
   assert.equal(statusBadges[2].textContent, 'Completed', 'FY2024 (Completed) must render Completed');
 
-  // 3. Action links are View History ("ดูย้อนหลัง / View History")
+  // 3. Action links follow action label rule:
+  // - Non-completed ("15 HR Final Check") -> "เปิด MBO / Open MBO" [data-mbo-open-link]
+  // - Completed ("16 Completed", "Completed") -> "ดูย้อนหลัง / View History" [data-mbo-history-link]
+  const openLinks = customIndex.querySelectorAll('[data-mbo-open-link]');
+  assert.equal(openLinks.length, 1, 'Exactly 1 open link for non-completed record');
+  assert.equal(openLinks[0].textContent, 'เปิด MBO / Open MBO');
+  assert.equal(openLinks[0].href, '/k/794/show#record=301');
+
   const historyLinks = customIndex.querySelectorAll('[data-mbo-history-link]');
-  assert.equal(historyLinks.length, 3, 'Exactly 3 history links for 3 years of records');
-
+  assert.equal(historyLinks.length, 2, 'Exactly 2 history links for completed records');
   assert.equal(historyLinks[0].textContent, 'ดูย้อนหลัง / View History');
-  assert.equal(historyLinks[0].href, '/k/794/show#record=301');
-
+  assert.equal(historyLinks[0].href, '/k/794/show#record=201');
   assert.equal(historyLinks[1].textContent, 'ดูย้อนหลัง / View History');
-  assert.equal(historyLinks[1].href, '/k/794/show#record=201');
-
-  assert.equal(historyLinks[2].textContent, 'ดูย้อนหลัง / View History');
-  assert.equal(historyLinks[2].href, '/k/794/show#record=101');
+  assert.equal(historyLinks[1].href, '/k/794/show#record=101');
 
   // 4. ZERO Delete UI present
   const allText = JSON.stringify(customIndex);
@@ -289,3 +291,145 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
   assert.equal(typeof policyAuth.getAuthenticatedEmployeeCode, 'undefined', 'Must NOT add/invent getAuthenticatedEmployeeCode method');
   assert.equal(typeof mockGateAuth.getAuthenticatedEmployeeCode, 'undefined', 'Must NOT invent getAuthenticatedEmployeeCode on gate');
 });
+
+test('DETAIL_EXISTING_RECORD_BACK_TO_MY_MBO_VISIBLE & EDIT_EXISTING_RECORD_BACK_TO_MY_MBO_VISIBLE: Existing Detail and Edit show Back to My MBO bar', async () => {
+  const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
+
+  const createMockContainer = () => {
+    const children = [];
+    const attrMap = new Map();
+    const mockContainer = {
+      tagName: 'DIV',
+      children,
+      innerHTML: '',
+      appendChild: (c) => { children.push(c); return c; },
+      querySelector: (sel) => {
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+          }
+          for (const child of el.children || []) {
+            const res = find(child);
+            if (res) return res;
+          }
+          return null;
+        };
+        return find(mockContainer);
+      },
+      querySelectorAll: (sel) => {
+        const res = [];
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+          }
+          for (const child of el.children || []) {
+            find(child);
+          }
+        };
+        find(mockContainer);
+        return res;
+      },
+      setAttribute: (k, v) => attrMap.set(k, String(v)),
+      getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null
+    };
+    return mockContainer;
+  };
+
+  const origDocument = globalThis.document;
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: (tag) => {
+      const children = [];
+      const attrMap = new Map();
+      return {
+        tagName: tag.toUpperCase(),
+        children,
+        innerHTML: '',
+        textContent: '',
+        style: {},
+        appendChild: (c) => { children.push(c); return c; },
+        setAttribute: (k, v) => attrMap.set(k, String(v)),
+        getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        addEventListener: () => {}
+      };
+    }
+  };
+
+  const origKintone = globalThis.kintone;
+  try {
+    globalThis.kintone = {
+      app: {
+        getHeaderSpaceElement: () => null
+      },
+      getLoginUser: () => ({ code: '0113' })
+    };
+
+    // 1. Detail Existing Record
+    const detailContainer = createMockContainer();
+    const detailUi = new EmployeePartAUI({
+      container: detailContainer,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      }
+    });
+    detailUi.render();
+
+    const detailNav = detailContainer.querySelector('[data-mbo-back-nav-bar]');
+    assert.ok(detailNav, 'Detail existing record must render Back to My MBO bar');
+    const detailLink = detailContainer.querySelector('[data-mbo-back-link]');
+    assert.ok(detailLink, 'Detail existing record must render Back to My MBO link');
+    assert.equal(detailLink.textContent, '← กลับหน้า My MBO / Back to My MBO');
+    assert.equal(detailLink.href, '/k/794/');
+
+    // 2. Edit Existing Record
+    const editContainer = createMockContainer();
+    const editUi = new EmployeePartAUI({
+      container: editContainer,
+      isCreate: false,
+      isEditable: true,
+      appId: 794,
+      record: {
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      }
+    });
+    editUi.render();
+
+    const editNav = editContainer.querySelector('[data-mbo-back-nav-bar]');
+    assert.ok(editNav, 'Edit existing record must render Back to My MBO bar');
+    const editLink = editContainer.querySelector('[data-mbo-back-link]');
+    assert.ok(editLink, 'Edit existing record must render Back to My MBO link');
+    assert.equal(editLink.textContent, '← กลับหน้า My MBO / Back to My MBO');
+    assert.equal(editLink.href, '/k/794/');
+
+    // 3. CREATE_RECORD_BACK_TO_MY_MBO_HIDDEN
+    const createContainer = createMockContainer();
+    const createUi = new EmployeePartAUI({
+      container: createContainer,
+      isCreate: true,
+      isEditable: true,
+      appId: 794,
+      record: {}
+    });
+    createUi.render();
+
+    const createNav = createContainer.querySelector('[data-mbo-back-nav-bar]');
+    assert.equal(createNav, null, 'Create record must NOT render Back to My MBO bar');
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.kintone = origKintone;
+  }
+});
+

@@ -577,10 +577,54 @@ export class EmployeePartAUI {
     this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {});
     // D1: authenticated Employee_Code bound from MBO Login Gate (page-memory only)
     this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
+    this.appId = options.appId || options.previewOptions?.appId || null;
+    this.onNavigateHome = options.onNavigateHome || null;
     this.currentErrors = [];
     this.preparedAttachmentPlan = null;
 
     this.isEmployeeVerified = !this.isCreate;
+  }
+
+  _getAppId() {
+    if (this.appId) return this.appId;
+    if (typeof kintone !== 'undefined' && kintone?.app?.getId) {
+      const id = kintone.app.getId();
+      if (id) return id;
+    }
+    if (typeof window !== 'undefined' && window.location?.pathname) {
+      const match = window.location.pathname.match(/\/k\/(\d+)\//);
+      if (match) return match[1];
+    }
+    return 794;
+  }
+
+  _renderBackToMyMboBar() {
+    const bar = document.createElement('div');
+    bar.className = 'mbo-back-nav-bar';
+    if (typeof bar.setAttribute === 'function') {
+      bar.setAttribute('data-mbo-back-nav-bar', '');
+    }
+
+    const appId = this._getAppId();
+    const link = document.createElement('a');
+    link.className = 'mbo-back-to-home-link';
+    if (typeof link.setAttribute === 'function') {
+      link.setAttribute('data-mbo-back-link', '');
+    }
+    link.href = `/k/${appId}/`;
+    link.textContent = '← กลับหน้า My MBO / Back to My MBO';
+
+    if (typeof link.addEventListener === 'function') {
+      link.addEventListener('click', (e) => {
+        if (typeof this.onNavigateHome === 'function') {
+          e.preventDefault();
+          this.onNavigateHome();
+        }
+      });
+    }
+
+    bar.appendChild(link);
+    return bar;
   }
 
   _getResolvedViewerRole() {
@@ -652,6 +696,11 @@ export class EmployeePartAUI {
         this.container.appendChild(root);
         return;
       }
+    }
+
+    // Top Navigation: Back to My MBO (Existing Records Only: Detail & Edit, NOT on Create)
+    if (!this.isCreate) {
+      root.appendChild(this._renderBackToMyMboBar());
     }
 
     // Admin Support Center Panel (Technical Admin Only)

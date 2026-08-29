@@ -1979,3 +1979,123 @@
   margin: 16px 0;
 }
 
+/* Top Navigation Bar: Back to My MBO */
+.mbo-back-nav-bar {
+  margin-bottom: 14px;
+}
+
+.mbo-back-to-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+}
+
+.mbo-back-to-home-link:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  text-decoration: none;
+}
+
+/* Responsive My MBO Record Cards */
+.mbo-record-card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.mbo-record-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mbo-record-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+.mbo-record-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mbo-record-fy {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.mbo-record-card-body {
+  margin-bottom: 16px;
+  flex: 1;
+}
+
+.mbo-record-key {
+  font-size: 12px;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.mbo-record-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
+}
+
+.mbo-card-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.mbo-card-action-btn.mbo-btn-open {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.mbo-card-action-btn.mbo-btn-open:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.mbo-card-action-btn.mbo-btn-history {
+  background: #f1f5f9;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+}
+
+.mbo-card-action-btn.mbo-btn-history:hover {
+  background: #e2e8f0;
+  color: #1d4ed8;
+}
+
+

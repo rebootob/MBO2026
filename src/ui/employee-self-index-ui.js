@@ -107,63 +107,71 @@ export class EmployeeSelfIndexUI {
       return event;
     }
 
-    const table = document.createElement('table');
-    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:14px;margin-top:8px;';
+    const cardList = document.createElement('div');
+    cardList.className = 'mbo-record-card-list';
+    cardList.setAttribute('data-mbo-record-list', '');
 
-    const thead = document.createElement('thead');
-    thead.innerHTML = '<tr style="background:#f1f5f9;border-bottom:2px solid #e2e8f0;text-align:left;color:#475569;font-weight:600;">' +
-      '<th style="padding:10px 12px;">ปีงบประมาณ / Fiscal Year</th>' +
-      '<th style="padding:10px 12px;">รหัสบันทึก / Record Key</th>' +
-      '<th style="padding:10px 12px;">สถานะ / Status</th>' +
-      '<th style="padding:10px 12px;text-align:right;">การดำเนินการ / Action</th>' +
-      '</tr>';
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
     records.forEach(rec => {
-      const tr = document.createElement('tr');
-      tr.style.cssText = 'border-bottom:1px solid #f1f5f9;';
+      const card = document.createElement('div');
+      card.className = 'mbo-record-card';
+      card.setAttribute('data-mbo-record-card', '');
 
-      const fyTd = document.createElement('td');
-      fyTd.style.cssText = 'padding:12px;color:#334155;';
-      fyTd.textContent = rec.Fiscal_Year?.value || '-';
-
-      const keyTd = document.createElement('td');
-      keyTd.style.cssText = 'padding:12px;color:#334155;font-family:monospace;';
-      keyTd.textContent = rec.Record_Key?.value || '-';
-
+      const rawFy = rec.Fiscal_Year?.value || '-';
+      const fyDisplay = (rawFy.startsWith('FY') || rawFy === '-') ? rawFy : `FY ${rawFy}`;
+      const keyVal = rec.Record_Key?.value || '-';
       const rawStatus = rec.Status?.value || '-';
       const displayStatus = formatDisplayStatus(rawStatus);
+      const isCompleted = (displayStatus === 'Completed' || rawStatus === '16 Completed' || rawStatus === 'Completed');
+      const actionLabel = isCompleted ? 'ดูย้อนหลัง / View History' : 'เปิด MBO / Open MBO';
 
-      const statusTd = document.createElement('td');
-      statusTd.style.cssText = 'padding:12px;';
+      const cardHeader = document.createElement('div');
+      cardHeader.className = 'mbo-record-card-header';
+
+      const fyEl = document.createElement('div');
+      fyEl.className = 'mbo-record-fy';
+      fyEl.setAttribute('data-mbo-fy', '');
+      fyEl.textContent = fyDisplay;
+
       const statusBadge = document.createElement('span');
       statusBadge.setAttribute('data-mbo-status-badge', '');
-      statusBadge.textContent = displayStatus;
-      const isCompleted = displayStatus === 'Completed';
+      statusBadge.className = isCompleted ? 'mbo-status-badge mbo-status-completed' : 'mbo-status-badge mbo-status-active';
       statusBadge.style.cssText = isCompleted
-        ? 'display:inline-block;padding:3px 8px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;'
-        : 'display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;';
-      statusTd.appendChild(statusBadge);
+        ? 'display:inline-block;padding:3px 10px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;'
+        : 'display:inline-block;padding:3px 10px;border-radius:12px;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:600;';
+      statusBadge.textContent = displayStatus;
 
-      const actionTd = document.createElement('td');
-      actionTd.style.cssText = 'padding:12px;text-align:right;';
-      const viewLink = document.createElement('a');
-      viewLink.setAttribute('data-mbo-history-link', '');
-      viewLink.textContent = 'ดูย้อนหลัง / View History';
-      viewLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
-      viewLink.style.cssText = 'color:#2563eb;text-decoration:none;font-weight:500;';
-      actionTd.appendChild(viewLink);
+      cardHeader.appendChild(fyEl);
+      cardHeader.appendChild(statusBadge);
 
-      tr.appendChild(fyTd);
-      tr.appendChild(keyTd);
-      tr.appendChild(statusTd);
-      tr.appendChild(actionTd);
-      tbody.appendChild(tr);
+      const cardBody = document.createElement('div');
+      cardBody.className = 'mbo-record-card-body';
+
+      const keyEl = document.createElement('div');
+      keyEl.className = 'mbo-record-key';
+      keyEl.setAttribute('data-mbo-record-key', '');
+      keyEl.textContent = `Record Key: ${keyVal}`;
+
+      cardBody.appendChild(keyEl);
+
+      const cardFooter = document.createElement('div');
+      cardFooter.className = 'mbo-record-card-footer';
+
+      const actionLink = document.createElement('a');
+      actionLink.setAttribute(isCompleted ? 'data-mbo-history-link' : 'data-mbo-open-link', '');
+      actionLink.className = isCompleted ? 'mbo-card-action-btn mbo-btn-history' : 'mbo-card-action-btn mbo-btn-open';
+      actionLink.textContent = actionLabel;
+      actionLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
+
+      cardFooter.appendChild(actionLink);
+
+      card.appendChild(cardHeader);
+      card.appendChild(cardBody);
+      card.appendChild(cardFooter);
+
+      cardList.appendChild(card);
     });
 
-    table.appendChild(tbody);
-    contentBox.appendChild(table);
+    contentBox.appendChild(cardList);
 
     return event;
   }

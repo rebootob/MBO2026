@@ -2969,9 +2969,48 @@ Requester_User is empty for action "${actionName}".`
       this.onEmployeeCodeChanged = options.onEmployeeCodeChanged || (() => {
       });
       this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
+      this.appId = options.appId || options.previewOptions?.appId || null;
+      this.onNavigateHome = options.onNavigateHome || null;
       this.currentErrors = [];
       this.preparedAttachmentPlan = null;
       this.isEmployeeVerified = !this.isCreate;
+    }
+    _getAppId() {
+      if (this.appId) return this.appId;
+      if (typeof kintone !== "undefined" && kintone?.app?.getId) {
+        const id = kintone.app.getId();
+        if (id) return id;
+      }
+      if (typeof window !== "undefined" && window.location?.pathname) {
+        const match = window.location.pathname.match(/\/k\/(\d+)\//);
+        if (match) return match[1];
+      }
+      return 794;
+    }
+    _renderBackToMyMboBar() {
+      const bar = document.createElement("div");
+      bar.className = "mbo-back-nav-bar";
+      if (typeof bar.setAttribute === "function") {
+        bar.setAttribute("data-mbo-back-nav-bar", "");
+      }
+      const appId = this._getAppId();
+      const link = document.createElement("a");
+      link.className = "mbo-back-to-home-link";
+      if (typeof link.setAttribute === "function") {
+        link.setAttribute("data-mbo-back-link", "");
+      }
+      link.href = `/k/${appId}/`;
+      link.textContent = "\u2190 \u0E01\u0E25\u0E31\u0E1A\u0E2B\u0E19\u0E49\u0E32 My MBO / Back to My MBO";
+      if (typeof link.addEventListener === "function") {
+        link.addEventListener("click", (e) => {
+          if (typeof this.onNavigateHome === "function") {
+            e.preventDefault();
+            this.onNavigateHome();
+          }
+        });
+      }
+      bar.appendChild(link);
+      return bar;
     }
     _getResolvedViewerRole() {
       return resolveIdentityViewerRole(this.record, this.loginUserCode, {
@@ -3027,6 +3066,9 @@ Requester_User is empty for action "${actionName}".`
           this.container.appendChild(root);
           return;
         }
+      }
+      if (!this.isCreate) {
+        root.appendChild(this._renderBackToMyMboBar());
       }
       this._renderSupportCenterIfAdmin(root, status);
       root.appendChild(this._renderOverallProgressBar(status));
@@ -7109,47 +7151,54 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
         contentBox.appendChild(emptyCard);
         return event;
       }
-      const table = document.createElement("table");
-      table.style.cssText = "width:100%;border-collapse:collapse;font-size:14px;margin-top:8px;";
-      const thead = document.createElement("thead");
-      thead.innerHTML = '<tr style="background:#f1f5f9;border-bottom:2px solid #e2e8f0;text-align:left;color:#475569;font-weight:600;"><th style="padding:10px 12px;">\u0E1B\u0E35\u0E07\u0E1A\u0E1B\u0E23\u0E30\u0E21\u0E32\u0E13 / Fiscal Year</th><th style="padding:10px 12px;">\u0E23\u0E2B\u0E31\u0E2A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 / Record Key</th><th style="padding:10px 12px;">\u0E2A\u0E16\u0E32\u0E19\u0E30 / Status</th><th style="padding:10px 12px;text-align:right;">\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23 / Action</th></tr>';
-      table.appendChild(thead);
-      const tbody = document.createElement("tbody");
+      const cardList = document.createElement("div");
+      cardList.className = "mbo-record-card-list";
+      cardList.setAttribute("data-mbo-record-list", "");
       records.forEach((rec) => {
-        const tr = document.createElement("tr");
-        tr.style.cssText = "border-bottom:1px solid #f1f5f9;";
-        const fyTd = document.createElement("td");
-        fyTd.style.cssText = "padding:12px;color:#334155;";
-        fyTd.textContent = rec.Fiscal_Year?.value || "-";
-        const keyTd = document.createElement("td");
-        keyTd.style.cssText = "padding:12px;color:#334155;font-family:monospace;";
-        keyTd.textContent = rec.Record_Key?.value || "-";
+        const card = document.createElement("div");
+        card.className = "mbo-record-card";
+        card.setAttribute("data-mbo-record-card", "");
+        const rawFy = rec.Fiscal_Year?.value || "-";
+        const fyDisplay = rawFy.startsWith("FY") || rawFy === "-" ? rawFy : `FY ${rawFy}`;
+        const keyVal = rec.Record_Key?.value || "-";
         const rawStatus = rec.Status?.value || "-";
         const displayStatus = formatDisplayStatus(rawStatus);
-        const statusTd = document.createElement("td");
-        statusTd.style.cssText = "padding:12px;";
+        const isCompleted = displayStatus === "Completed" || rawStatus === "16 Completed" || rawStatus === "Completed";
+        const actionLabel = isCompleted ? "\u0E14\u0E39\u0E22\u0E49\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E07 / View History" : "\u0E40\u0E1B\u0E34\u0E14 MBO / Open MBO";
+        const cardHeader = document.createElement("div");
+        cardHeader.className = "mbo-record-card-header";
+        const fyEl = document.createElement("div");
+        fyEl.className = "mbo-record-fy";
+        fyEl.setAttribute("data-mbo-fy", "");
+        fyEl.textContent = fyDisplay;
         const statusBadge = document.createElement("span");
         statusBadge.setAttribute("data-mbo-status-badge", "");
+        statusBadge.className = isCompleted ? "mbo-status-badge mbo-status-completed" : "mbo-status-badge mbo-status-active";
+        statusBadge.style.cssText = isCompleted ? "display:inline-block;padding:3px 10px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;" : "display:inline-block;padding:3px 10px;border-radius:12px;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:600;";
         statusBadge.textContent = displayStatus;
-        const isCompleted = displayStatus === "Completed";
-        statusBadge.style.cssText = isCompleted ? "display:inline-block;padding:3px 8px;border-radius:12px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;" : "display:inline-block;padding:3px 8px;border-radius:12px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:500;";
-        statusTd.appendChild(statusBadge);
-        const actionTd = document.createElement("td");
-        actionTd.style.cssText = "padding:12px;text-align:right;";
-        const viewLink = document.createElement("a");
-        viewLink.setAttribute("data-mbo-history-link", "");
-        viewLink.textContent = "\u0E14\u0E39\u0E22\u0E49\u0E2D\u0E19\u0E2B\u0E25\u0E31\u0E07 / View History";
-        viewLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
-        viewLink.style.cssText = "color:#2563eb;text-decoration:none;font-weight:500;";
-        actionTd.appendChild(viewLink);
-        tr.appendChild(fyTd);
-        tr.appendChild(keyTd);
-        tr.appendChild(statusTd);
-        tr.appendChild(actionTd);
-        tbody.appendChild(tr);
+        cardHeader.appendChild(fyEl);
+        cardHeader.appendChild(statusBadge);
+        const cardBody = document.createElement("div");
+        cardBody.className = "mbo-record-card-body";
+        const keyEl = document.createElement("div");
+        keyEl.className = "mbo-record-key";
+        keyEl.setAttribute("data-mbo-record-key", "");
+        keyEl.textContent = `Record Key: ${keyVal}`;
+        cardBody.appendChild(keyEl);
+        const cardFooter = document.createElement("div");
+        cardFooter.className = "mbo-record-card-footer";
+        const actionLink = document.createElement("a");
+        actionLink.setAttribute(isCompleted ? "data-mbo-history-link" : "data-mbo-open-link", "");
+        actionLink.className = isCompleted ? "mbo-card-action-btn mbo-btn-history" : "mbo-card-action-btn mbo-btn-open";
+        actionLink.textContent = actionLabel;
+        actionLink.href = `/k/${appId}/show#record=${rec.$id?.value}`;
+        cardFooter.appendChild(actionLink);
+        card.appendChild(cardHeader);
+        card.appendChild(cardBody);
+        card.appendChild(cardFooter);
+        cardList.appendChild(card);
       });
-      table.appendChild(tbody);
-      contentBox.appendChild(table);
+      contentBox.appendChild(cardList);
       return event;
     }
   };
