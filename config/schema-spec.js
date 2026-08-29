@@ -92,7 +92,7 @@ export const mboFields = {
 
 for (let i = 1; i <= 10; i += 1) {
   Object.assign(mboFields, {
-    [`Objective_${i}`]: area(`Objective ${i}`), [`Action_Plan_${i}`]: area(`Action Plan ${i}`), [`Additional_Agreement_${i}`]: area(`Additional Agreement ${i}`),
+    [`Objective_${i}`]: area(`Objective ${i}`), [`Action_Plan_${i}`]: area(`Action Plan ${i}`), [`Additional_Agreement_${i}`]: area(`Additional Agreement ${i}`), [`Objective_Attachment_${i}`]: file(`Objective Attachment ${i}`),
     [`Weight_${i}`]: number(`Weight ${i} (%)`, { minValue: '0', maxValue: '100' }), [`Difficulty_${i}`]: number(`Difficulty ${i}`, { minValue: '1', maxValue: '4' }),
     [`Progress_Percent_${i}`]: number(`Progress ${i} (%)`, { minValue: '0', maxValue: '100' }), [`Periodical_Review_${i}`]: area(`Periodical Review ${i}`),
     [`MidYear_Result_${i}`]: area(`Mid-Year Result ${i}`), [`MidYear_Issue_Risk_${i}`]: area(`Mid-Year Issue / Risk ${i}`), [`MidYear_Next_Action_${i}`]: area(`Mid-Year Next Action ${i}`), [`MidYear_Attachment_${i}`]: file(`Mid-Year Attachment ${i}`),

@@ -1,17 +1,15 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 6ca617a1345201009f9d1d85f11fdb47737d3a2e
+START_HEAD                   = a23af90864908bda463f18bc4466d10b8d954d3a
 CANONICAL_BRANCH             = ai/antigravity-wp002c
 CORRECTIVE_DESIGN            = EXPLICIT DESIRED SAVED-FILE SNAPSHOT MAP + REGRESSION SUITE RESTORATION
 FOCUSED_TESTS                = PASS (26/26 attachment & timeline tests passing)
 FULL_NPM_TEST                 = PASS (878/878 unit & integration tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
-LIVE_KINTONE_READS_ONLY      = YES
-LIVE_KINTONE_WRITE           = 0
-SOURCE_CHANGED               = NO
-LIVE_DEPLOY_OCCURRED         = NO
-MAXIMUM_STATUS               = DIAGNOSTIC_EVIDENCE_PENDING_INDEPENDENT_REVIEW
+LIVE_KINTONE_WRITE           = 0 (Form schema settings deploy only, 0 record writes)
+LIVE_DEPLOY_OCCURRED         = NO (Zero JS/CSS customization deploy)
+MAXIMUM_STATUS               = SCHEMA_APPLIED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -37,6 +35,7 @@ MAXIMUM_STATUS               = DIAGNOSTIC_EVIDENCE_PENDING_INDEPENDENT_REVIEW
 - [src/services/mbo-attachment-service.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/services/mbo-attachment-service.js): Updated `prepareAttachmentPlan` to accept and use `options.desiredSavedFiles` map for desired saved-file state.
 - [src/ui/employee-part-a-ui.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/ui/employee-part-a-ui.js): Updated `_removeSavedAttachmentFile` to record explicit snapshot `this.desiredSavedFiles[targetCode]`, passed `desiredSavedFiles` in `preparePendingAttachments`, and cleared `desiredSavedFiles` in `finalizeAttachmentPlan`.
 - [tests/timeline-truthfulness-and-attachment.test.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/timeline-truthfulness-and-attachment.test.js): Updated focused tests covering all 26 Timeline and Attachment regression & real-handler assertions.
+- [config/schema-spec.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/config/schema-spec.js): Added `Objective_Attachment_1..10` optional `FILE` field definitions to `mboFields`.
 
 ## 3. Test & Build Verification Results
 
@@ -137,5 +136,39 @@ LIVE_KINTONE_READS_ONLY                  = YES
 LIVE_KINTONE_WRITE                       = 0
 SOURCE_CHANGED                           = NO
 LIVE_DEPLOY_OCCURRED                     = NO
-MAXIMUM_STATUS                           = DIAGNOSTIC_EVIDENCE_PENDING_INDEPENDENT_REVIEW
+```
+
+## 7. App794 Objective Attachment Schema Corrective Execution
+
+```text
+AUTHORIZATION_ID                          = APP794-D1-OBJECTIVE-ATTACHMENT-SCHEMA-20260829-01
+EXECUTION_START_HEAD                      = a23af90864908bda463f18bc4466d10b8d954d3a
+AUTHORIZATION_CONSUMED                    = YES
+PRE_LIVE_FORM_REVISION                    = 47
+PRE_PREVIEW_FORM_REVISION                 = 47
+PRE_SCHEMA_BACKUP                         = CAPTURED (scratch/app794_pre_schema_*.json)
+PRE_LAYOUT_BACKUP                         = CAPTURED (scratch/app794_pre_schema_*.json)
+PRE_OBJECTIVE_FIELDS                      = 0/10
+PRE_MIDYEAR_FIELDS                        = 10/10 FILE
+PRE_FINAL_FIELDS                          = 10/10 FILE
+CONFIG_SCHEMA_UPDATED                     = YES (config/schema-spec.js updated for Objective_Attachment_1..10)
+PREVIEW_ADD_FIELDS_RESULT                 = SUCCESS
+PREVIEW_LAYOUT_RESULT                     = SUCCESS (Automatic minimal placement on field creation)
+PREVIEW_OBJECTIVE_READBACK                = 10/10 FILE
+APP_SETTINGS_APPLY_RESULT                 = SUCCESS (Deploy status SUCCESS)
+LIVE_DEPLOY_STATUS                        = SUCCESS
+POST_LIVE_FORM_REVISION                   = 48
+LIVE_OBJECTIVE_READBACK                   = 10/10 FILE
+LIVE_MIDYEAR_READBACK                     = 10/10 FILE
+LIVE_FINAL_READBACK                       = 10/10 FILE
+UNRELATED_SCHEMA_DRIFT                    = NONE
+UNRELATED_LAYOUT_DRIFT                    = NONE except exact minimal new-field placement
+APP794_RECORD_WRITE                       = 0
+APP794_CUSTOMIZATION_DEPLOY               = NO (Zero JS/CSS customization deploy)
+APP794_ACL_PROCESS_WRITE                  = 0
+APP801_WRITE                              = 0
+APP795_796_WRITE                          = 0
+ROLLBACK_PERFORMED                        = NO
+ROLLBACK_RESULT                           = N/A
+MAXIMUM_STATUS                            = SCHEMA_APPLIED_PENDING_INDEPENDENT_REVIEW
 ```
