@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / DEPLOY GUARD PASS / APP794 ACL PASS / CREATE SOURCE FIX ACCEPTED BUT OLD LIVE CUSTOMIZATION / CORRECTIVE DEPLOY AUTHORIZATION NEXT / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / DEPLOY GUARD PASS / APP794 ACL PASS / APP794 CORRECTIVE DEPLOY AUTHORIZED / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -46,10 +46,11 @@ D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS / USER LIVE OBSERVATION
 D1_CREATE_LIVE_RUNTIME                  = FAIL / OLD LIVE CUSTOMIZATION
 APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b
 APP794_DELETE_PERMISSION_READONLY_CHECK = PASS / RESOLVED BY APP-ACL CORRECTION
-APP794_ACL_CORRECTION                   = PASS / USER LIVE WRITE + READ-BACK / REVISION 43 -> 44
+APP794_ACL_CORRECTION                   = PASS / USER LIVE WRITE + READ-BACK / ACL REVISION 43 -> 44
 APP794_ACL_WRITE_AUTHORIZATION          = CONSUMED / CLOSED
-APP794_CORRECTIVE_DEPLOY                = NOT AUTHORIZED YET / NEXT USER DECISION
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL CORRECTIVE DEPLOY + REMAINING UAT + ADMIN RESET UI UAT
+APP794_CORRECTIVE_DEPLOY                = AUTHORIZED BY USER 2026-08-29 / EXACT ONE-SHOT
+APP794_DEPLOY_AUTHORIZATION_ID          = APP794-CORRECTIVE-DEPLOY-20260829-01
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL DEPLOY REVIEW + REMAINING UAT + ADMIN RESET UI UAT
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
@@ -66,40 +67,22 @@ D1 must finish entirely inside Kintone. No external server, auth service, databa
 - Reset `0113` = PASS; Force Password Change = PASS; Login -> My MBO = PASS; List -> Create keeps session = PASS.
 
 ### App794 Create
-- Live `/k/794/edit` still fails only because deployed App794 customization is older than the already-accepted Create-handler source corrective.
-- Do not reopen the accepted Create source fix unless the future corrective deploy still reproduces the error.
+- Live `/k/794/edit` currently fails because deployed App794 customization is older than the accepted Create-handler source corrective.
+- Do not reopen the accepted Create source fix unless the corrective deploy still reproduces the error.
 
 ### App794 App ACL
-Initial read-only evidence under `admin-form` showed:
-- CREATOR full rights;
-- GROUP `everyone`: View/Add/Edit/Delete=true;
-- no `MBO_EMPLOYEE_ACCESS` row.
-
-User explicitly authorized **App794 ACL Correction**. One fail-closed App794-only ACL write was executed and read back successfully:
+User-authorized App794-only ACL correction passed live read-back:
 - ACL revision `43 -> 44`;
-- CREATOR rights preserved full;
+- CREATOR full rights preserved;
 - `MBO_EMPLOYEE_ACCESS`: View=true, Add=true, Edit=true, Delete=false, Manage=false, Import=false, Export=false;
 - `everyone`: all permissions false;
-- console evidence: `APP794_ACL_CORRECTION_OVERALL_PASS = true`.
-
-Therefore:
-```text
-APP794_DELETE_PERMISSION_READONLY_CHECK = PASS
-APP794_ACL_CORRECTION                  = PASS
-APP794_ACL_WRITE_AUTHORIZATION         = CONSUMED
-```
-
-No record ACL, workflow, App801, record, customization, or other-app write was included in that authorization.
+- evidence: `APP794_ACL_CORRECTION_OVERALL_PASS = true`.
 
 ## 5. HR / admin-form Password Reset Requirement
 
 Permanent D1 requirement remains: HR-authorized users and `admin-form` need an in-Kintone Reset MBO Password function; employee/shared users must not receive it. Reset semantics remain Employee_Code temporary password, Force Change YES, failed attempts 0, clear temporary lock/session, increment Credential_Version once, never change Account_Status, exact one-record fail-closed targeting.
 
-Manual reset of `0113` proved the reset semantics only. Production administrative UI/function is still open and remains mandatory before final D1 closure.
-
-Preferred product placement is an authorized Kintone administrative surface, not Employee-Self UI. This requirement may be delivered through the App800 HR Control Center / controlled recovery surface for HR and `admin-form`; do not expose it to `MBO_EMPLOYEE_ACCESS` employee/shared principals.
-
-This open admin-reset requirement does **not** authorize any App800/App801 write now and does not widen the pending App794 corrective deploy scope.
+Manual reset of `0113` proved reset semantics only. Production administrative UI/function remains mandatory before final D1 closure. It is explicitly OUTSIDE this App794 corrective deploy authorization.
 
 ## 6. Independent Review — App794 Deploy Guard
 
@@ -111,30 +94,21 @@ Accepted implementation chain:
 - `8fa69bec7683bd64dbbd65fd3adf38bd1535e29b` closed the deterministic registry-drift test gap using `validateApp794DeployTargetBinding()` and the real deploy entrypoint uses the same helper.
 
 Accepted invariants:
-- `options.appId`, registry `mboV2AppId`, authorization/request and actual live target must resolve to exact integer `794`;
+- authorization/request/options/registry/actual live target must all resolve to exact integer `794`;
 - registry missing/malformed/drifted target fails closed;
-- generic sandbox guard uses literal ephemeral `[794]`, never a mutable global allow-list;
-- `DISCOVERY_MODE` remains true and global `WRITE_ALLOWED_APPS` remains empty;
-- protected Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain hard-blocked;
-- build-only requires no live authorization and exits before Kintone/network path;
-- no App794 business/auth/Create/UI source or generated dist was changed in the guard packages.
+- generic sandbox guard uses literal ephemeral `[794]`;
+- `DISCOVERY_MODE = true`, global `WRITE_ALLOWED_APPS = []`;
+- Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain hard-blocked;
+- build-only exits before Kintone/network path.
 
-GitHub has no CI/status checks for the accepted commit. Therefore this review accepts the source/test design and repository diff; it does not claim an independent hosted CI `npm test` PASS.
+## 7. Exact Authorized Action — APP794 CORRECTIVE DEPLOY
 
-## 7. Exact Next Action — APP794 CORRECTIVE DEPLOY AUTHORIZATION
+User explicitly authorized **App794 Corrective Deploy** on 2026-08-29.
 
-All pre-deploy safety gates required for the App794 corrective customization deployment are now closed:
-- App801 browser access blocker resolved;
-- Login / Force Change / My MBO / List→Create continuity proven live;
-- module-aware browser bundle accepted;
-- Create-handler source corrective accepted;
-- Employee-Self index/history/Completed/no-delete source accepted;
-- App794 Deploy Guard accepted;
-- App794 Kintone App ACL no-delete correction accepted.
+Authorization ID:
+`APP794-CORRECTIVE-DEPLOY-20260829-01`
 
-A **new explicit user authorization** is required before any App794 customization deployment.
-
-Intended one-deploy corrective scope:
+Exact one-deploy scope only:
 1. accepted module-aware App794 bundle;
 2. accepted Create-handler corrective;
 3. accepted Employee-Self coherent index shell / Logout / My MBO;
@@ -142,33 +116,59 @@ Intended one-deploy corrective scope:
 5. accepted Employee-Self no-delete source guard;
 6. current App794 customization artifact produced through accepted deploy-guard tooling.
 
-Do NOT include:
-- App801 schema/ACL/data changes;
-- App794 App ACL changes (already completed and authorization consumed);
-- App794 record writes;
+Required preconditions before live write:
+- sync exact branch HEAD and clean working tree;
+- confirm App794 registry target is exact integer 794;
+- run `npm test` and stop on failure;
+- run build-only deploy path and stop on failure;
+- no new source/business change in this execution package.
+
+Live execution must use the accepted narrow guard with exact values:
+```text
+appId        = 794
+workPackage  = MBO-P03-WP-002C
+stage        = STAGE_D1_APP794_CUSTOMIZATION_DEPLOY
+operation    = APP794_CUSTOMIZATION_DEPLOY
+authorizationId = APP794-CORRECTIVE-DEPLOY-20260829-01
+explicitUserAuthorization = true
+activeWindow = true
+```
+
+After deploy, capture evidence without business contents:
+- source HEAD used;
+- build/test result;
+- App794 target identity;
+- customization preflight/revision evidence;
+- upload target filename `mbo-employee-app.js`;
+- deploy request + final `SUCCESS`;
+- live customization read-back/revision if available;
+- zero App801/ACL/record/other-app writes.
+
+Authorization is consumed after the one successful guarded live deploy attempt. Do not retry a failed post-write deploy automatically; STOP and return evidence for Control Plane review.
+
+Forbidden in this authorization:
+- App801 schema/ACL/data/credential changes;
+- further App794 App ACL change;
+- App794 record writes/deletes;
 - routing/scoring/workflow changes;
-- HR/admin reset UI implementation;
+- HR/admin Password Reset UI implementation;
 - Auth Bridge / external service;
 - D2-D7 writes.
 
 ```text
-NEXT_ACTION_OWNER              = USER AUTHORIZATION REQUIRED
-ANTIGRAVITY_REQUIRED           = NO UNTIL USER APPROVES DEPLOY
-KINTONE_LIVE_WRITE             = NO CURRENT AUTHORIZATION
-APP794_DEPLOY                  = NO CURRENT AUTHORIZATION
-APP794_ACL_WRITE               = NO / CONSUMED
+NEXT_ACTION_OWNER              = ANTIGRAVITY
+ANTIGRAVITY_REQUIRED           = YES / EXECUTION ONLY
+APP794_DEPLOY                  = YES / EXACT ONE-SHOT
+APP794_ACL_WRITE               = NO / PRIOR AUTHORIZATION CONSUMED
 APP794_RECORD_WRITE            = NO
 APP801_WRITE                   = NO
 SOURCE_CHANGE                  = NO
 EXTERNAL_SERVICE_WORK          = NO
 D2_D7_WRITE                    = NO
+MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-After exact corrective deploy authorization and successful deploy:
-1. independently review deployment evidence/revision and source identity;
-2. rerun Create live UAT;
-3. run remaining D1 session/security UAT;
-4. implement/test the mandatory HR + `admin-form` Password Reset administrative UI before final D1 closure.
+After Antigravity deploy evidence arrives, ChatGPT must independently review before any further live action.
 
 ## 8. Handoff Checkpoint
 
