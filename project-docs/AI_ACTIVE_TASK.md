@@ -1,12 +1,13 @@
-# AI ACTIVE TASK — D1 APP794 ATTACHMENT LONG-FILENAME UI ONE-SHOT DEPLOY
+# AI ACTIVE TASK — D1 APP794 LONG-FILENAME UI USER LIVE UAT HOLD
 
-Mode: **ANTIGRAVITY ONE-SHOT APP794 CUSTOMIZATION DEPLOY — EXACT AUTHORIZATION ONLY**
+Mode: **CONTROL PLANE HOLD — ANTIGRAVITY DO NOTHING / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
-Live App794 customization revision before task: `49`
+Live App794 customization revision: `50`
 Reviewed source candidate: `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`
-Independent source verdict: **PASS**
+Deployment evidence commit: `66076b3a2d0e1b547cc84468cc7cd7a014a35960`
+Independent deployment verdict: **PASS**
 Authorization ID: `APP794-D1-LONG-FILENAME-UI-DEPLOY-20260829-01`
-Authorization status at task creation: **AUTHORIZED / ONE-SHOT / UNCONSUMED**
+Authorization status: **CONSUMED / CLOSED**
 
 ## Accepted State
 
@@ -14,125 +15,51 @@ Authorization status at task creation: **AUTHORIZED / ONE-SHOT / UNCONSUMED**
 ATTACHMENT_PERSISTENCE_SOURCE      = PASS
 ATTACHMENT_PERSISTENCE_DEPLOYMENT  = PASS / REV49
 ATTACHMENT_PERSISTENCE_LIVE_REPORT = USER REPORTS WORKING
-LONG_FILENAME_DELETE_VISIBILITY    = LIVE FAIL ON REV49
 LONG_FILENAME_UI_SOURCE_CORRECTIVE = PASS
-REVIEWED_CANDIDATE                 = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
+LONG_FILENAME_UI_DEPLOYMENT        = PASS / REV50
+LIVE_UI_FUNCTIONAL_STATUS          = PENDING USER UAT
 ```
 
-Do not reopen schema or attachment persistence logic.
+## Independent Deployment Review Findings
 
-## Exact User Authorization
+Accepted because:
+- execution commit `66076b3a...` is the direct child of authorized HEAD `6e3e615c...`;
+- executor changed deployment evidence only;
+- source/dist/schema/tests were unchanged during deployment;
+- preflight PASS;
+- focused 45/45 and full 897/897 test runs reported PASS;
+- UI build and module-aware build-only reported PASS with 0 Kintone calls;
+- rollback snapshots existed before write;
+- Kintone deployment status SUCCESS;
+- App794 customization revision advanced 49 -> 50;
+- post-deploy JS identity equals reviewed candidate JS blob `43731e5c26dc441659e2f3687f58d1c7237279a5`;
+- post-deploy CSS identity equals reviewed candidate CSS blob `c407e30a0eb87c6e0c3f2f55cc4fc6163816695d`;
+- topology stayed Scope ALL / 1 Desktop JS / 1 Desktop CSS / 0 Mobile;
+- record/schema/layout/ACL/process/App801/App795/App796 writes = 0;
+- authorization is consumed and cannot be reused.
 
-User authorized:
-
-`อนุมัติ App794 deploy Attachment Long-Filename UI corrective candidate 1abd434`
-
-This authorizes only one App794 customization deployment attempt of the already-reviewed candidate. It does not authorize source fixes, schema/layout changes, business-record writes, ACL/process changes, or work on other apps.
-
-## Mandatory Pre-Deploy Gate
-
-Before any Kintone customization write:
-
-1. Re-fetch canonical branch HEAD.
-2. Read `project-docs/AI_CONTROL_CENTER.md` and this Active Task.
-3. Verify reviewed candidate remains exactly `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`.
-4. Verify production source/generated candidate bundle have not drifted after candidate review; only Control Plane docs may differ.
-5. Run deterministic preflight.
-6. Run focused attachment/timeline tests required by current deploy safety gate; do not edit source/tests to make them pass.
-7. Run `npm run ui:build`.
-8. Run module-aware build-only deployment check and prove 0 Kintone calls.
-9. Verify built `dist/mbo-employee-app.js` and `dist/mbo-employee.css` correspond to the reviewed candidate. Unexpected content/hash drift => STOP.
-10. Read current App794 customization settings/revision and capture exact desktop JS/CSS identities/topology.
-11. Capture rollback snapshot of current Live/Preview App794 customization BEFORE write.
-
-If any gate fails, STOP. Do not patch, rebuild a different candidate, widen scope, or deploy under this authorization.
-
-## Authorized Deployment Scope
-
-Only after every pre-deploy gate passes:
+## Current Gate
 
 ```text
-TARGET_APP                    = 794
-WRITE_TYPE                    = KINTONE APP CUSTOMIZATION JS/CSS ONLY
-REVIEWED_CANDIDATE            = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
-SOURCE CHANGE                 = FORBIDDEN
-TEST CHANGE                   = FORBIDDEN DURING DEPLOY
-SCHEMA/LAYOUT WRITE           = FORBIDDEN
-BUSINESS RECORD WRITE         = FORBIDDEN
-ACL/PROCESS WRITE             = FORBIDDEN
-APP801 WRITE                  = FORBIDDEN
-APP795/796 WRITE              = FORBIDDEN
-ROUTING/SCORING/AUTH/RESET    = FORBIDDEN
-D2-D7 EXECUTION               = FORBIDDEN
-EXTERNAL SERVICE/STORAGE      = FORBIDDEN
-BROAD REFACTOR                = FORBIDDEN
+CURRENT_GATE                  = USER LIVE UAT ON APP794 REV50
+NEXT_ACTION_OWNER             = USER
+ANTIGRAVITY EXECUTION         = NO
+SOURCE CHANGE                 = NO
+APP794 CUSTOMIZATION DEPLOY   = NO
+APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
+APP794 ACL/PROCESS            = NO
+APP801                        = NO
+APP795/796                    = NO
+ROUTING/SCORING/AUTH/RESET    = NO
+D2-D7 EXECUTION               = NO
+EXTERNAL SERVICE/STORAGE      = NO
 ```
 
-Deploy only the reviewed App794 desktop customization JS/CSS generated from the accepted candidate. Do not add/remove unrelated customization entries or mobile customization.
+Do not self-start further source work or deployment.
 
-## Post-Deploy Readback
+## Required User UAT
 
-After the one customization write attempt:
-
-1. Wait for Kintone deployment status `SUCCESS` or definitive failure.
-2. Read back App794 customization revision/settings.
-3. Read back desktop JS/CSS identities/topology.
-4. Prove deployed JS/CSS match the reviewed candidate bundle exactly.
-5. Verify no unexpected customization topology change.
-6. Verify no business-record/schema/layout/ACL/process/App801/App795/App796 write occurred.
-7. If readback does not match candidate, use the captured rollback snapshot only if existing safe tooling supports the exact rollback, record result, and STOP. No second forward attempt under this authorization.
-
-## Required Evidence
-
-Append deployment evidence to `project-docs/D1_ATTACHMENT_PERSISTENCE_CORRECTIVE_EVIDENCE.md` including at minimum:
-
-```text
-AUTHORIZATION_ID
-EXECUTION_START_HEAD
-REVIEWED_SOURCE_CANDIDATE_SHA
-SOURCE_CHANGED_DURING_DEPLOY
-DIST_CHANGED_FROM_REVIEWED_CANDIDATE
-PRECHECK_RESULT
-FOCUSED_ATTACHMENT_TESTS
-FULL_NPM_TEST_IF_RUN
-UI_BUILD_RESULT
-BUILD_ONLY_RESULT
-PRE_DEPLOY_APP794_CUSTOMIZATION_REVISION
-PRE_DEPLOY_JS_IDENTITY_HASH
-PRE_DEPLOY_CSS_IDENTITY_HASH
-PRE_DEPLOY_CUSTOMIZATION_TOPOLOGY
-ROLLBACK_SNAPSHOT_REFERENCE
-DEPLOY_RESULT
-POST_DEPLOY_APP794_CUSTOMIZATION_REVISION
-POST_DEPLOY_JS_IDENTITY_HASH
-POST_DEPLOY_CSS_IDENTITY_HASH
-POST_DEPLOY_CUSTOMIZATION_TOPOLOGY
-CANDIDATE_READBACK_MATCH
-CUSTOMIZATION_TOPOLOGY_DRIFT
-ROLLBACK_OCCURRED
-ROLLBACK_REASON
-APP794_RECORD_WRITE = 0
-APP794_SCHEMA_LAYOUT_WRITE = 0
-APP794_ACL_PROCESS_WRITE = 0
-APP801_WRITE = 0
-APP795_796_WRITE = 0
-AUTHORIZATION_CONSUMED = YES
-LIVE_DEPLOY_OCCURRED
-FINAL_COMMIT_SHA
-```
-
-Commit + push deployment evidence only after execution. Do not modify production source as part of evidence recording.
-
-## Stop Rule
-
-After exactly one deployment attempt, authorization is consumed whether the attempt succeeds, fails, or is rolled back. STOP for ChatGPT independent review.
-
-Maximum executor status:
-`DEPLOYED_PENDING_INDEPENDENT_REVIEW`
-
-Do not self-PASS the deployment. Do not perform user Live UAT.
-
-## User UAT After Independent Deployment Review PASS
+Use App794 normal Live UI on revision 50:
 
 ```text
 UAT_UI_01 long saved filename stays inside cell and ellipsizes
@@ -143,3 +70,9 @@ UAT_UI_05 saved remove still removes only selected file after Save
 UAT_UI_06 Objective / Mid-Year / Final(Self) visual regression
 UAT_UI_07 attachment persistence remains working
 ```
+
+User may report results incrementally. If a case fails, capture the exact visible behavior/screenshot and STOP further corrective deployment until ChatGPT reviews it.
+
+## Closure Rule
+
+Do not mark the Live long-filename UI defect PASS until relevant user UAT succeeds. Deployment provenance PASS is not equivalent to Live functional PASS.
