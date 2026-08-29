@@ -1,7 +1,7 @@
 # CONFIRMED BASELINE — SOURCE CODE ARCHITECTURE
 
 > Status: **CONFIRMED / MANDATORY**  
-> Confirmed by user decision: 2026-08-28  
+> Confirmed by user decision: 2026-08-28; strengthened by user decision: 2026-08-29  
 > Scope: MBO2026 maintainable JavaScript source organization and controlled modularization
 
 ---
@@ -361,3 +361,165 @@ ChatGPT performs the independent acceptance decision.
 Changing this architecture policy requires an explicit user/Control Plane decision and Baseline update.
 
 Routine implementation must conform to this document without rediscovering the modularization strategy each time.
+
+---
+
+## 16. One Feature = One Canonical Owner — Mandatory
+
+Every user-visible or business function must have one clearly identifiable canonical source owner.
+
+Examples:
+
+```text
+Login / session gate        -> auth/login modules
+My MBO list                 -> employee-self My MBO module
+Create MBO                  -> create module
+Detail / Edit UI            -> detail/edit modules
+Comments mirror             -> comments/read-only module or clearly owned detail submodule
+Attachments                 -> attachment module/service
+Copy Previous MBO           -> copy-previous module
+Routing                     -> routing service/module
+Scoring                     -> scoring/core module
+Excel/PDF export            -> dedicated export modules
+HR Control Center           -> HR feature module
+```
+
+Rules:
+- the same feature must not have parallel implementations in multiple files;
+- if legacy duplicate logic exists, choose one canonical owner before further feature work;
+- another module may call the owner through a small public API, but must not copy its internal implementation;
+- a reviewer must be able to answer “where does this feature live?” with one primary module/path.
+
+If ownership is ambiguous, the change is not ready for Live deployment.
+
+---
+
+## 17. Feature Boundary Rule — UI / Service / Domain / Adapter
+
+Within a larger feature, separate responsibilities when they become meaningful:
+
+```text
+Feature Controller / View
+    -> rendering, user events, view state
+
+Service
+    -> use-case flow, orchestration across data sources
+
+Domain/Core
+    -> pure business rules/calculations/validation
+
+Kintone Adapter / Repository
+    -> REST/API calls, record/file transport, Kintone-specific payloads
+```
+
+Do not embed large Kintone REST request construction directly throughout UI renderers.
+Do not hide business rules inside CSS/DOM manipulation helpers.
+Do not make data-access modules responsible for visual rendering.
+
+Small features may combine layers when still cohesive, but must split once mixed responsibilities make debugging/review difficult.
+
+---
+
+## 18. Change Locality Rule — Keep Diffs Inside the Function Being Changed
+
+Every work package must identify:
+- target feature;
+- canonical owner module(s);
+- expected supporting service/core module(s);
+- exact tests;
+- generated artifact affected.
+
+Default expectation:
+**a feature change should modify only its owner module and the minimum shared dependencies/tests necessary.**
+
+If one small feature request requires touching many unrelated modules, Control Plane must stop and determine whether:
+- ownership is wrong;
+- responsibilities are coupled;
+- work should be split;
+- a shared service should own the common rule.
+
+Broad cross-feature changes require explicit architecture justification before implementation.
+
+---
+
+## 19. No Copy-Paste Architecture
+
+Never fix dependency, bundling, import, runtime-order, or visibility problems by copying an existing function/class into another feature file.
+
+Forbidden patterns:
+- duplicate auth/session implementation;
+- duplicate attachment upload/download logic;
+- duplicate routing/scoring rules;
+- duplicate status formatting/business mapping maintained separately;
+- copied feature renderer with minor edits instead of a shared component or separate canonical feature owner.
+
+When functionality is reused:
+1. call the canonical owner/service; or
+2. extract a genuinely shared helper/service; or
+3. create an adapter/interface when dependencies differ.
+
+`NO_DUPLICATE_IMPLEMENTATION = PASS` is a mandatory review gate.
+
+---
+
+## 20. Feature-Level Tests and Upgrade Traceability
+
+Tests must mirror functional ownership closely enough that a future maintainer can locate the safety net for the feature being changed.
+
+For each important feature, maintain focused coverage for its key contracts.
+Examples:
+- My MBO query/sort/action/navigation tests;
+- Comment pagination/refresh/read-only tests;
+- Attachment persistence/retrieval tests;
+- Auth/session rotation/isolation tests;
+- Routing/scoring tests;
+- Copy Previous MBO mapping/exclusion tests;
+- Export-format compatibility tests.
+
+Every future implementation task should state:
+
+```text
+FEATURE
+CANONICAL_SOURCE_OWNER
+SUPPORTING_MODULES
+FOCUSED_TESTS
+GENERATED_DIST_OUTPUT
+LIVE_RESOURCE_IF_ANY
+```
+
+This map makes upgrades, defects, review and rollback traceable without broad repository scanning.
+
+---
+
+## 21. Deployment Bundling Does Not Remove Feature Ownership
+
+Kintone may receive one generated JS bundle and one generated CSS file, but every change inside that release must still be traceable back to its source feature module and focused tests.
+
+Before approving a release, reviewer must be able to map:
+
+```text
+User-requested change
+    -> source feature module(s)
+    -> focused tests
+    -> generated dist identity
+    -> deployment manifest
+```
+
+If this chain is unclear, the release is not ready for Live.
+
+---
+
+## 22. Future Refactor Priority After Live Stabilization
+
+Once the current production recovery/UI corrective is fully stable, Control Plane should prioritize incremental decomposition of large multi-responsibility modules, especially `src/ui/employee-part-a-ui.js`, by extracting one feature at a time.
+
+Likely extraction candidates include:
+- Back/navigation shell;
+- Native Comment mirror;
+- attachment presentation/actions;
+- workflow timeline presentation;
+- objective grid/editor;
+- route display;
+- shared field-state UI helpers.
+
+This priority is architectural guidance only. It does not authorize refactoring during an active production incident.
