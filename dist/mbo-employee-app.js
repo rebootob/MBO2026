@@ -832,7 +832,7 @@ Requester_User is empty for action "${actionName}".`
       }
       let allComments = [];
       let offset = 0;
-      const limit = 50;
+      const limit = 10;
       let page = 0;
       const maxPages = 1e4;
       let prevOffset = -1;

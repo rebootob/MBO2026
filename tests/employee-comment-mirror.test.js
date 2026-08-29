@@ -118,6 +118,61 @@ function setupMockDocument() {
   };
 }
 
+test('COMMENT_DIRECT_KINTONE_REQUEST_LIMIT = 10 & PRODUCTION_PATH: Direct globalThis.kintone.api GET request uses limit 10', async () => {
+  setupMockDocument();
+  const origKintone = globalThis.kintone;
+
+  const capturedRequests = [];
+  globalThis.kintone = {
+    api: async (url, method, params) => {
+      capturedRequests.push({ url, method, params });
+      return {
+        comments: [
+          { id: '1', creator: { name: 'User A' }, text: 'Comment 1', createdAt: '2026-08-29T10:00:00Z' }
+        ],
+        newer: false
+      };
+    }
+  };
+  globalThis.kintone.api.url = (path) => `https://ttmet.cybozu.com${path}`;
+
+  try {
+    // kintoneApiWrapper is null/absent to force production globalThis.kintone.api path
+    const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: null });
+    const comments = await mirror.fetchRecordComments(794, 1001);
+
+    assert.equal(capturedRequests.length, 1, 'Exactly 1 kintone.api GET request executed');
+    const req = capturedRequests[0];
+    assert.equal(req.url, 'https://ttmet.cybozu.com/k/v1/record/comments.json');
+    assert.equal(req.method, 'GET');
+    assert.equal(req.params.app, 794);
+    assert.equal(req.params.record, 1001);
+    assert.equal(req.params.order, 'asc');
+    assert.equal(req.params.offset, 0);
+    assert.equal(req.params.limit, 10, 'CRITICAL: Kintone Get Comments limit MUST be strictly 10');
+    assert.equal(comments.length, 1);
+  } finally {
+    globalThis.kintone = origKintone;
+  }
+});
+
+test('COMMENT_LIMIT_OVER_10_BLOCKED_BY_TEST: Any limit > 10 is rejected by strict assertion', async () => {
+  setupMockDocument();
+  let requestedLimit = null;
+  const mockApi = {
+    getComments: async (appId, recordId, options) => {
+      requestedLimit = options.limit;
+      return { comments: [], newer: false };
+    }
+  };
+
+  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
+  await mirror.fetchRecordComments(794, 123);
+
+  assert.equal(requestedLimit, 10, 'Requested limit must equal 10');
+  assert.ok(requestedLimit <= 10, 'Limit > 10 must be blocked');
+});
+
 test('COMMENT_CREATE_MIRROR_ABSENT & COMMENT_CREATE_GET_COUNT = 0: On Create screen, comment mirror is absent and GET count is 0', async () => {
   setupMockDocument();
   let getCommentsCallCount = 0;
@@ -147,10 +202,12 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   setupMockDocument();
   let fetchedAppId = null;
   let fetchedRecordId = null;
+  let fetchedLimit = null;
   const mockApi = {
-    getComments: async (appId, recordId) => {
+    getComments: async (appId, recordId, options) => {
       fetchedAppId = appId;
       fetchedRecordId = recordId;
+      fetchedLimit = options.limit;
       return {
         comments: [
           { id: '1', creator: { name: 'Somchai' }, text: 'Objective looks good.', createdAt: '2026-02-15T09:00:00Z' },
@@ -162,13 +219,13 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   };
 
   const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-  // Pass string inputs '794' and '123' to test input parsing
   const panel = mirror.renderNativeCommentMirror({ appId: '794', recordId: '123', isCreate: false });
 
   await new Promise(r => setTimeout(r, 50));
 
   assert.equal(fetchedAppId, 794, 'appId must be parsed to numeric 794');
   assert.equal(fetchedRecordId, 123, 'recordId must be parsed to numeric 123');
+  assert.equal(fetchedLimit, 10, 'limit must equal 10');
   const items = panel.querySelectorAll('[data-mbo-comment-item]');
   assert.equal(items.length, 2, 'Must render 2 comment items');
 
@@ -179,6 +236,38 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   const texts = panel.querySelectorAll('[data-mbo-comment-text]');
   assert.equal(texts[0].textContent, 'Objective looks good.');
   assert.equal(texts[1].textContent, 'Approved.');
+});
+
+test('COMMENT_REFRESH_REFETCH: Clicking Refresh button re-fetches comments thread', async () => {
+  setupMockDocument();
+  let fetchCount = 0;
+  const mockApi = {
+    getComments: async () => {
+      fetchCount++;
+      return {
+        comments: [
+          { id: String(fetchCount), creator: { name: `User ${fetchCount}` }, text: `Comment ${fetchCount}` }
+        ],
+        newer: false
+      };
+    }
+  };
+
+  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
+  const panel = mirror.renderNativeCommentMirror({ appId: 794, recordId: 555, isCreate: false });
+
+  await new Promise(r => setTimeout(r, 50));
+  assert.equal(fetchCount, 1, 'Initial load executes 1 fetch');
+
+  const refreshBtn = panel.querySelector('[data-mbo-refresh-comments]');
+  assert.ok(refreshBtn, 'Refresh button must be present');
+
+  await refreshBtn.click();
+  await new Promise(r => setTimeout(r, 50));
+
+  assert.equal(fetchCount, 2, 'Clicking Refresh button must execute second fetch');
+  const author = panel.querySelector('[data-mbo-comment-author]');
+  assert.equal(author.textContent, 'User 2');
 });
 
 test('COMMENT_INVALID_INPUT_RETURNS_EMPTY_WITHOUT_NETWORK_CALL: Falsy or non-numeric recordId returns empty array without GET call', async () => {
@@ -202,19 +291,20 @@ test('COMMENT_INVALID_INPUT_RETURNS_EMPTY_WITHOUT_NETWORK_CALL: Falsy or non-num
   assert.deepEqual(result3, []);
 });
 
-test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGES_PASS: Pages through 101+ pages (>5,000 comments) completely', async () => {
+test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_OVER_100_PAGES_PASS: Pages through 101+ pages using 10-comment pages completely', async () => {
   setupMockDocument();
   let callCount = 0;
-  const totalPagesToTest = 105;
+  const totalPagesToTest = 105; // 105 pages * 10 comments = 1050 comments!
 
   const mockApi = {
     getComments: async (appId, recordId, options) => {
       callCount++;
+      assert.equal(options.limit, 10, 'Each page request must use limit=10');
       const currentOffset = options.offset;
-      const currentPageIndex = Math.floor(currentOffset / 50);
+      const currentPageIndex = Math.floor(currentOffset / 10);
 
       if (currentPageIndex < totalPagesToTest - 1) {
-        const pageComments = Array.from({ length: 50 }, (_, i) => ({
+        const pageComments = Array.from({ length: 10 }, (_, i) => ({
           id: String(currentOffset + i + 1),
           creator: { name: `User ${currentOffset + i + 1}` },
           text: `Comment ${currentOffset + i + 1}`
@@ -222,7 +312,7 @@ test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGE
         return { comments: pageComments, newer: true };
       }
 
-      const lastComments = Array.from({ length: 10 }, (_, i) => ({
+      const lastComments = Array.from({ length: 4 }, (_, i) => ({
         id: String(currentOffset + i + 1),
         creator: { name: `User ${currentOffset + i + 1}` },
         text: `Comment ${currentOffset + i + 1}`
@@ -234,10 +324,10 @@ test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGE
   const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
   const comments = await mirror.fetchRecordComments(794, '789');
 
-  assert.equal(callCount, 105, 'Must execute 105 API calls without being truncated at page 100');
-  assert.equal(comments.length, 104 * 50 + 10, 'Total retrieved comments must equal 5210');
+  assert.equal(callCount, 105, 'Must execute 105 API calls of 10 items without being truncated');
+  assert.equal(comments.length, 104 * 10 + 4, 'Total retrieved comments must equal 1044');
   assert.equal(comments[0].id, '1');
-  assert.equal(comments[5209].id, '5210');
+  assert.equal(comments[1043].id, '1044');
 });
 
 test('COMMENT_PAGINATION_SAFETY_CAP_EXCEEDED_THROWS: Safety ceiling throws explicit error caught as non-blocking UI error', async () => {
@@ -245,7 +335,7 @@ test('COMMENT_PAGINATION_SAFETY_CAP_EXCEEDED_THROWS: Safety ceiling throws expli
 
   const mockApi = {
     getComments: async (appId, recordId, options) => ({
-      comments: Array.from({ length: 50 }, (_, i) => ({
+      comments: Array.from({ length: 10 }, (_, i) => ({
         id: String(options.offset + i + 1),
         creator: { name: 'Infinite User' },
         text: 'Infinite Comment'
@@ -258,7 +348,7 @@ test('COMMENT_PAGINATION_SAFETY_CAP_EXCEEDED_THROWS: Safety ceiling throws expli
   fastMirror.fetchRecordComments = async (appId, recordId) => {
     let allComments = [];
     let offset = 0;
-    const limit = 50;
+    const limit = 10;
     let page = 0;
     const maxPages = 5;
     let prevOffset = -1;
