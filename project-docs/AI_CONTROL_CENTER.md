@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / 0113 PASSWORD RESET AUTHORIZED / HR+ADMIN RESET REQUIREMENT BASELINED / LOGIN UAT AFTER RESET / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / 0113 PASSWORD RESET PASS / FORCE-CHANGE LOGIN UAT NEXT / HR+ADMIN RESET REQUIREMENT BASELINED / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -43,9 +43,9 @@ APP801_PRIVATE_APP_GROUP_BLOCKER         = CONFIRMED ROOT CAUSE
 APP801_APP_GROUP_PUBLIC_CORRECTION       = USER APPLIED 2026-08-29
 APP801_SHARED_PRINCIPAL_s1_LIVE_ACCESS  = PASS / USER LIVE SCREENSHOT / 128 RECORDS VISIBLE
 D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = PASS / USER CONFIRMED + BASELINED
-D1_RESET_PASSWORD_0113_AUTHORIZATION    = AUTHORIZED / EXACT EMPLOYEE 0113 ONLY
-D1_RESET_PASSWORD_0113_EXECUTION        = NEXT / USER CONSOLE UNDER admin-form
-D1_LOGIN_0113_LIVE_UAT                  = AFTER RESET
+D1_RESET_PASSWORD_0113_AUTHORIZATION    = CONSUMED / EXACT EMPLOYEE 0113 ONLY
+D1_RESET_PASSWORD_0113_EXECUTION        = PASS / USER CONSOLE READ-BACK
+D1_LOGIN_0113_FORCE_CHANGE_UAT          = NEXT
 APP794_DELETE_PERMISSION_READONLY_CHECK = PENDING
 APP794_DEPLOY_GUARD_INTEGRATION         = OPEN / BEFORE NEXT LIVE DEPLOY
 D1_LIVE_CUTOVER                         = BLOCKED UNTIL REMAINING D1 UAT
@@ -54,6 +54,7 @@ D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recor
 
 No App794 deploy is currently authorized.
 No external server/service/hosting/secret work is authorized.
+No further App801 credential write is authorized by the consumed 0113 reset approval.
 
 ## 3. User-Confirmed Non-Negotiable Constraint
 
@@ -77,7 +78,6 @@ Canonical Baselines:
 ## 4. Accepted Live Evidence — App801 Access Blocker Resolved
 
 User live verification established:
-- Employee_Code `0113` credential before reset: `Account_Status=ACTIVE`, `Failed_Attempts=0`, `Locked_Until` blank, `Force_Password_Change=NO`, `Credential_Version=1`;
 - Kintone principal `s1` is a member of `MBO_EMPLOYEE_ACCESS`;
 - App801 permission row for `MBO_EMPLOYEE_ACCESS` is View=YES, Edit=YES, Add/Delete/Manage/Import/Export=NO;
 - `Everyone` is denied;
@@ -85,37 +85,49 @@ User live verification established:
 - user changed App801 App Group to `Public` while preserving the permission rows;
 - after apply, `s1` can open App801 and sees 128 records; therefore the previous `CB_NO02` blocker is resolved.
 
-A subsequent MBO Login attempt for `0113` used an unknown/forgotten password and correctly returned `Invalid Employee Code or password.` User then authorized a reset for exactly Employee_Code `0113`.
+## 5. Accepted Live Evidence — Reset Password 0113
 
-## 5. Password Reset Requirement / Current Authorization
+User explicitly authorized exactly one App801 reset for Employee_Code `0113` and executed the Control Plane script under Kintone `admin-form`.
 
-Permanent D1 requirement:
-- HR-authorized users and `admin-form` must have an in-Kintone MBO Password Reset function;
-- employee/shared users must not receive the administrative reset function;
-- reset temporary password = exact Employee_Code;
-- `Force_Password_Change=YES`;
-- `Failed_Attempts=0`;
-- clear temporary `Locked_Until`;
-- increment `Credential_Version` exactly once;
-- clear all App801 session fields;
-- do not change `Account_Status` or re-enable DISABLED/LOCKED accounts;
-- exact one-record target, fail closed on missing/duplicate/malformed identity.
-
-Current one-time authorization:
+Read-back evidence:
 
 ```text
-TARGET                 = Employee_Code 0113 only
-TEMPORARY_PASSWORD     = 0113
-EXECUTOR               = user via Kintone Console under admin-form
-APP801_RECORD_WRITE    = AUTHORIZED for this exact reset only
-OTHER_EMPLOYEE_WRITES  = FORBIDDEN
-ACL / APP GROUP WRITE  = NOT PART OF THIS AUTHORIZATION
-APP794 DEPLOY          = NO
+Employee_Code                     = 0113
+Account_Status                    = ACTIVE (unchanged)
+Force_Password_Change             = YES
+Failed_Attempts                   = 0
+Locked_Until                      = blank
+Credential_Version                = 2
+Session_Token_Hash_Cleared        = true
+Session_Issued_At_Cleared         = true
+Session_Expires_At_Cleared        = true
+Session_Credential_Version_Cleared= true
+Session_Kintone_User_Cleared      = true
+RESET_0113_OVERALL_PASS           = true
 ```
 
-Authorization is consumed when the exact reset succeeds and read-back confirms the target state.
+Therefore:
+- reset authorization is consumed;
+- temporary password is `0113`;
+- next valid login must enter mandatory password-change flow before Employee-Self content;
+- do not repeat the reset unless separately authorized.
 
-## 6. Kintone-Only Permission Target
+## 6. Permanent HR/Admin Password Reset Requirement
+
+HR-authorized users and `admin-form` must have an in-Kintone administrative MBO Password Reset function.
+
+Required semantics:
+- temporary password = exact Employee_Code;
+- canonical PBKDF2-SHA256 / 100000 storage;
+- `Force_Password_Change=YES`;
+- `Failed_Attempts=0` and clear temporary `Locked_Until`;
+- increment valid positive `Credential_Version` exactly once;
+- clear all session fields;
+- never change `Account_Status` and never re-enable DISABLED/LOCKED accounts;
+- exact one-record target and fail closed on missing/duplicate/malformed identity;
+- employee/shared users must not receive this administrative reset capability.
+
+## 7. Kintone-Only Permission Target
 
 ```text
 GROUP: MBO_EMPLOYEE_ACCESS
@@ -136,28 +148,25 @@ Initial group principals include:
 
 Known security ceiling remains accepted/documented: under a shared Kintone principal, native REST hard isolation by Employee_Code is not guaranteed. Do not claim otherwise and do not embed privileged API tokens in browser JavaScript.
 
-## 7. Exact Next Action — RESET 0113 THEN LOGIN UAT
+## 8. Exact Next Action — FORCE PASSWORD CHANGE UAT
 
-1. Under Kintone login `admin-form`, run the Control Plane supplied reset verifier/write for exactly Employee_Code `0113`.
-2. Script must fail closed unless exactly one App801 row exists and credential metadata is valid.
-3. Read-back must prove Force Change YES, failed attempts 0, lock blank, credential version incremented, and all session fields cleared without exposing Password_Hash.
-4. After reset succeeds, return to Kintone principal `s1` and App794.
-5. Login once with Employee Code `0113`, temporary password `0113`.
-6. Expected next behavior = mandatory password-change flow, not My MBO directly.
-7. STOP and send evidence before any further source/deploy work.
-
-Do not intentionally test repeated wrong-password lockout yet.
+Using Kintone principal `s1`:
+1. open App794;
+2. login once with Employee Code `0113`, temporary password `0113`;
+3. expected result = mandatory password-change UI, not My MBO directly;
+4. do not intentionally enter a wrong password;
+5. capture the result and STOP before any source/deploy work.
 
 ```text
 NEXT_ACTION_OWNER              = USER + CONTROL PLANE
 ANTIGRAVITY_REQUIRED           = NO / HOLD
-APP801_RESET_0113_WRITE        = AUTHORIZED EXACTLY ONCE
+APP801_RESET_0113_WRITE        = CONSUMED / NO FURTHER WRITE
 APP794_DEPLOY                  = NO
 EXTERNAL_SERVICE_WORK          = NO
 D2_D7_WRITE                    = NO
 ```
 
-## 8. Handoff Checkpoint
+## 9. Handoff Checkpoint
 
 A new ChatGPT/AI session must start from:
 
