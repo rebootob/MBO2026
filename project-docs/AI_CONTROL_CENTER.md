@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — EDIT ATTACHMENT CORRECTIVE REVIEW = CORRECTIVE / FAIL-CLOSED GAP
+> Updated: 2026-08-29 — EDIT ATTACHMENT FAIL-CLOSED REVIEW = CORRECTIVE / MULTI-TARGET PREFLIGHT GAP
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / App794 customization rev47 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / initial one-file + multiple-file attachment Save PASS / **Edit attachment preservation candidate partially correct but independent review found unsafe fallback when authoritative persisted GET fails — CORRECTIVE REQUIRED before deploy** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / App794 customization rev47 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / initial one-file + multiple-file attachment Save PASS / Edit attachment authoritative-GET + single-target fail-closed candidate improved, but **multi-target persisted-field validation can occur after an earlier target upload has already started — CORRECTIVE REQUIRED before deploy** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -53,58 +53,64 @@ EDIT_MULTI_FILE_PRESERVATION        = FAIL — multiple files may collapse to on
 
 Executor candidate:
 
-`5bde56db0aa741a1064817454db028184556fe1d`
+`a5c758564f7a6ef77f2ee0865c32d1149c308107`
 
-Accepted parts:
-- edit submit attempts Kintone GET Record and passes `persistedRecord` into attachment planning;
-- `prepareAttachmentPlan()` prefers `options.persistedRecord` for retained saved-fileKeys;
-- realistic tests use empty/unavailable Attachment value in the edit-submit record;
-- tests prove 1 existing + 1 new, 3 existing + 1 new, 2 existing + 2 new, and remove+add desired state;
-- focused evidence reports 31/31 PASS; full suite 883/883 PASS; UI build and build-only PASS;
-- no Live Kintone write and no customization deploy were reported;
-- GitHub has no CI status checks for this commit, so local executor test/build evidence remains local evidence only.
+Accepted improvements:
+- Edit only requests authoritative persisted record when attachment state is pending/dirty/desired;
+- normal Edit with zero attachment change skips attachment GET;
+- GET error/null cancels submit before upload;
+- Edit planning no longer falls back to `edit.submit` attachment values when persisted state is required;
+- missing single target persisted FILE field fails closed before upload;
+- realistic tests retain prior preservation cases and add GET failure/null/missing-field/no-change/no-fallback cases;
+- focused evidence reports 36/36 PASS; full suite 888/888 PASS; UI build and build-only PASS;
+- Git diff is within authorized source/test/generated-dist/evidence scope;
+- no Live Kintone write or customization deploy is reported;
+- GitHub has no CI status checks, so local executor test/build results remain local evidence only.
 
 ## 5. Independent Review Verdict — CORRECTIVE
 
-Blocking defect:
+Blocking defect: **all changed attachment targets are not prevalidated before any upload begins.**
 
-`src/main-mbo-app.js` catches persisted GET Record failure, logs `console.warn`, then continues with `persistedRecord = null`.
+Current `prepareAttachmentPlan()` validates persisted FILE state and then processes/uploads pending files inside the same per-field loop.
 
-`src/services/mbo-attachment-service.js` then uses:
+Destructive/safety example:
 
-```js
-const sourceRecord = options.persistedRecord || record;
+```text
+Edit changes Objective_Attachment_1 and Objective_Attachment_2
+Persisted target 1 = valid
+Persisted target 2 = missing/invalid
+
+loop target 1 -> validates -> uploads new file for target 1
+loop target 2 -> detects missing persisted FILE field -> throws -> submit cancelled
 ```
 
-which falls back to the `app.record.edit.submit` event record.
+The business record is protected because submit is cancelled, but the fail-closed contract required persisted-state validation failure to occur **before any pending upload**. The current single-target missing-field test does not prove the multi-target atomic preflight case.
 
-That fallback is forbidden for an Edit operation that changes attachments because Attachment values in `app.record.edit.submit` are non-authoritative/unavailable. A transient GET failure can therefore recreate the same destructive risk: incomplete desired fileKey array -> existing files omitted -> existing files removed/collapsed.
+Therefore candidate `a5c7585...` is not deploy-ready.
 
-There is no focused test proving GET failure/null fails closed; the added tests only cover successful authoritative GET.
+## 6. Required Corrective — Atomic Attachment Preflight
 
-## 6. Required Corrective
-
-For Edit attachment changes only:
-1. determine whether attachment state is pending/dirty before requiring persisted-state read;
-2. if there is no attachment change, normal non-attachment Edit Save must not be blocked by attachment GET;
-3. if there is an attachment change, App ID + Record ID + authoritative persisted-record read are mandatory;
-4. if GET throws, returns null, or cannot provide the target persisted FILE field(s), cancel submit visibly and **do not upload/bind anything**;
-5. never fall back to `edit.submit event.record` as the retained-file source when persisted state is required;
-6. add-only = all persisted existing fileKeys + all new fileKeys;
-7. explicit removal snapshot remains authoritative;
-8. remove+add = exact retained fileKeys + all new fileKeys;
+For Edit with attachment changes:
+1. GET the authoritative persisted record exactly once before uploads;
+2. resolve the complete set of canonical target attachment fields that will be processed, including `Self_Attachment_n -> Final_Attachment_n` aliasing;
+3. before calling Upload File API for any target, prevalidate every target whose plan depends on persisted state;
+4. each required target must exist in persisted record and have an array FILE value;
+5. if any required target is missing/invalid, throw/cancel before the first upload;
+6. explicit saved-file desired-state snapshots remain authoritative for removal targets and need not be rebuilt from submit-event values;
+7. after full preflight succeeds, construct/upload plans as already designed;
+8. never fall back to `edit.submit` Attachment values;
 9. Create flow remains unchanged;
-10. unrelated attachment fields remain absent from update payload.
+10. unrelated fields remain absent from the final PUT payload.
 
 ## 7. Exact Current Gate
 
 ```text
-CURRENT_GATE          = D1 APP794 EDIT ATTACHMENT PRESERVATION — FAIL-CLOSED CORRECTIVE
+CURRENT_GATE          = D1 APP794 EDIT ATTACHMENT PRESERVATION — ATOMIC PREFLIGHT CORRECTIVE
 CURRENT_MODE          = ANTIGRAVITY SOURCE/TEST ONLY
 NEXT_ACTION_OWNER     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-REVIEWED_CANDIDATE    = 5bde56db0aa741a1064817454db028184556fe1d
+REVIEWED_CANDIDATE    = a5c758564f7a6ef77f2ee0865c32d1149c308107
 INDEPENDENT_VERDICT   = CORRECTIVE
-SOURCE CHANGE         = YES — narrow fail-closed corrective only
+SOURCE CHANGE         = YES — narrow atomic preflight corrective only
 APP794 CUSTOMIZATION  = NO DEPLOY
 APP794 FORM/SCHEMA    = NO WRITE
 APP794 RECORD WRITE   = NO LIVE WRITE
@@ -116,9 +122,12 @@ D2-D7 WRITE           = NO
 
 ## 8. Required Proof Before Deploy Can Be Considered
 
-Must preserve existing successful cases and add at minimum:
+Retain all current passing tests and add at minimum:
 
 ```text
+EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD
+EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD
+EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS
 EDIT_GET_RECORD_FAILURE_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED
 EDIT_GET_RECORD_NULL_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED
 EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED
