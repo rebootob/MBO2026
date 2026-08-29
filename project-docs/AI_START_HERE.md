@@ -11,27 +11,30 @@ Before planning, reviewing, coding, or changing Kintone:
 3. Read `project-docs/AI_DOCUMENT_INDEX.md`.
 4. Read `project-docs/CONFIRMED_BASELINE/README.md`.
 5. Use the Document Index to open **only** the Baseline/evidence files relevant to the current task.
-6. Read `project-docs/AI_ACTIVE_TASK.md` if execution is involved.
+6. Read `project-docs/AI_ACTIVE_TASK.md` if execution is involved or if reviewing the execution it authorized.
 
 Do not read the whole `project-docs/` tree.
 Do not read all Confirmed Baseline files automatically.
 Do not ask the user to repeat history already available in Git/GitHub.
+Do not start a Live write/deploy during startup.
 
-## 2. Authority Order
+Repository/live evidence beats chat memory.
 
-1. `project-docs/CONFIRMED_BASELINE/` — durable confirmed project truth.
-2. `project-docs/00_MASTER_JOBLIST.md` — D1–D7 completeness/no-drop authority.
-3. `project-docs/AI_CONTROL_CENTER.md` — current status/authorization/blocker/next owner.
-4. `project-docs/AI_ACTIVE_TASK.md` — one current execution packet.
-5. Git/Kintone evidence — actual implementation facts.
+## 2. Authority Is By Purpose — Not One Flat Order
 
-If evidence conflicts with Baseline, stop and reconcile before execution.
+- `project-docs/CONFIRMED_BASELINE/` = durable confirmed business/technical/security truth.
+- `project-docs/00_MASTER_JOBLIST.md` = D1–D7 completeness and no-drop authority.
+- `project-docs/AI_CONTROL_CENTER.md` = current independently accepted state, blockers, authorization and next owner.
+- `project-docs/AI_ACTIVE_TASK.md` = exact current execution packet only; it is not evidence that execution succeeded.
+- Git/Kintone evidence = what actually exists/ran/live-read-back.
+
+If implementation evidence conflicts with Baseline, stop and reconcile before further execution.
 
 ## 3. Permanent Roles
 
 **ChatGPT = Control Plane**
-- plan, design, inspect Git, review, decide PASS/FAIL/BLOCKED;
-- maintain Baseline, Control Center, Document Index, Active Task;
+- plan, design, inspect Git, review, decide PASS/CORRECTIVE/BLOCKED;
+- maintain Baseline, Control Center, Document Index, Active Task and new-chat handoff;
 - extract reusable Kintone Skills.
 
 **Antigravity = Low-Credit Execution Plane**
@@ -67,19 +70,29 @@ D6 Integrated E2E / Security / Regression
 D7 Admin Support Center
 ```
 
-Current status is in `AI_CONTROL_CENTER.md`.
+Current status is in `AI_CONTROL_CENTER.md`; detailed acceptance/no-drop criteria are in `00_MASTER_JOBLIST.md`.
 
-## 6. User Shorthand
+## 6. Critical D1 Constraint
 
-`review` → ChatGPT re-fetches HEAD and independently reviews exact latest evidence.
+```text
+D1 = KINTONE-ONLY
+External server/service = FORBIDDEN
+Auth Bridge = CANCELLED / DO NOT CONTINUE
+```
 
-`ต่อ` / `ต่อไป` → ChatGPT re-fetches HEAD + Control Center, chooses the smallest next action, and invokes Antigravity only if actual execution is needed.
+Do not revive `services/mbo-auth-bridge/` from historical files or chat memory.
 
-`อนุมัติ ...` → record the exact authorization boundary; do not widen it silently.
+## 7. User Shorthand
 
-## 7. New Chat
+`review` → ChatGPT re-fetches HEAD and independently reviews exact latest evidence against the authorizing Active Task + relevant Baseline.
+
+`ต่อ` / `ต่อไป` → ChatGPT re-fetches HEAD + Control Center, checks duplicate/pending work, chooses the smallest next action, and invokes Antigravity only if actual execution is needed.
+
+`อนุมัติ ...` → record the exact authorization boundary; do not widen it silently and do not reuse a consumed one-shot authorization.
+
+## 8. New Chat
 
 Use only:
 `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`
 
-That is the single canonical reusable new-chat prompt for MBO2026.
+That file is the single canonical reusable new-chat prompt. It includes a current handoff checkpoint, but a new chat must still re-fetch HEAD / Control Center / Active Task and must not treat the embedded checkpoint as newer than repository evidence.
