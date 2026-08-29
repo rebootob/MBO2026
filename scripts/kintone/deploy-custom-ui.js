@@ -57,6 +57,67 @@ export function isWorktreeClean() {
 }
 
 /**
+ * Pure pre-build source-state validator.
+ * Validates manifest existence, appId=794, exact 40-char SHA equality, and worktree cleanliness
+ * BEFORE candidate build and BEFORE any Kintone network GET call.
+ */
+export function validatePrebuildSourceManifest({
+  releaseManifest,
+  currentGitHead = getCurrentGitHead(),
+  worktreeClean = isWorktreeClean(),
+  isBuildOnly = false
+}) {
+  if (isBuildOnly && !releaseManifest) {
+    return true;
+  }
+
+  if (!releaseManifest || typeof releaseManifest !== 'object') {
+    throw new Error('MISSING_RELEASE_MANIFEST_BLOCKED_BEFORE_BUILD_AND_NETWORK: Release manifest object is required in Live mode.');
+  }
+
+  const { appId, sourceCommit } = releaseManifest;
+
+  if (appId === undefined || appId === null || appId !== 794) {
+    throw new Error(`MANIFEST_APP_ID_MISMATCH_BLOCKED_BEFORE_BUILD_AND_NETWORK: Manifest appId (${appId}) must be integer 794.`);
+  }
+
+  if (!sourceCommit || typeof sourceCommit !== 'string' || sourceCommit.trim() === '') {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_BEFORE_BUILD_AND_NETWORK: Manifest sourceCommit field is missing or empty.');
+  }
+
+  const trimmedSourceCommit = sourceCommit.trim();
+  if (trimmedSourceCommit.length < 40) {
+    throw new Error(`SHORT_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK: Manifest sourceCommit "${sourceCommit}" must be an exact 40-character hexadecimal Git SHA.`);
+  }
+
+  if (trimmedSourceCommit.length > 40 || !/^[0-9a-f]{40}$/i.test(trimmedSourceCommit)) {
+    throw new Error(`MALFORMED_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK: Manifest sourceCommit "${sourceCommit}" is not a valid 40-character hexadecimal Git SHA.`);
+  }
+
+  if (!currentGitHead || typeof currentGitHead !== 'string' || currentGitHead.trim() === '') {
+    throw new Error('UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_BUILD_AND_NETWORK: Cannot resolve repository Git HEAD before Live execution.');
+  }
+
+  const trimmedHead = currentGitHead.trim();
+  if (trimmedHead.length !== 40 || !/^[0-9a-f]{40}$/i.test(trimmedHead)) {
+    throw new Error(`UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_BUILD_AND_NETWORK: Current repository Git HEAD "${currentGitHead}" is not a valid 40-character SHA.`);
+  }
+
+  const lowerSourceSha = trimmedSourceCommit.toLowerCase();
+  const lowerHeadSha = trimmedHead.toLowerCase();
+
+  if (lowerSourceSha !== lowerHeadSha) {
+    throw new Error(`SOURCE_COMMIT_MISMATCH_BLOCKED_BEFORE_BUILD_AND_NETWORK: Manifest sourceCommit (${sourceCommit}) does not match exact repository HEAD (${currentGitHead}).`);
+  }
+
+  if (worktreeClean !== true) {
+    throw new Error('DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK: Working tree has uncommitted or untracked changes before Live execution.');
+  }
+
+  return true;
+}
+
+/**
  * Prepares production deployment artifacts in memory & dist folder.
  * Validates IIFE syntax and verifies zero ES module import/export residue.
  * Performs NO network/Kintone operations.
@@ -612,28 +673,28 @@ export async function executeDeployCustomUi(options = {}) {
   // 4. Validate write target with literal ephemeral allow-list [794] and dryRunBypassDiscovery
   assertSandboxWriteTarget(794, sandboxRegistryModule, [794], { dryRunBypassDiscovery: true });
 
-  // 5. Live Source Identity & Cleanliness check BEFORE BUILD / UPLOAD:
-  // DO NOT accept caller options.currentGitHead in Live mode! Derive strictly internally.
+  // 5. PRE-BUILD SOURCE MANIFEST GATE (BEFORE BUILD AND BEFORE ANY KINTONE GET/NETWORK CALL):
   const gitHead = getCurrentGitHead();
-  if (!gitHead || typeof gitHead !== 'string' || gitHead.trim().length !== 40 || !/^[0-9a-f]{40}$/i.test(gitHead.trim())) {
-    throw new Error('UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE: Cannot resolve repository Git HEAD before Live execution.');
-  }
+  const clean = isWorktreeClean();
 
-  if (!isWorktreeClean()) {
-    throw new Error('DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD: Working tree has uncommitted or untracked changes before Live execution.');
-  }
+  validatePrebuildSourceManifest({
+    releaseManifest: options.releaseManifest,
+    currentGitHead: gitHead,
+    worktreeClean: clean,
+    isBuildOnly: false
+  });
 
-  // 6. Build exact candidate artifacts
+  // 6. ONLY AFTER PRE-BUILD GATE PASSES: Build candidate artifacts
   const artifacts = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
   console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
-  // Read live and preview customization
+  // 7. ONLY AFTER BUILD: Read live and preview customization from Kintone
   const { kintoneRequest, getKintoneConnection } = await import('../../src/core/kintone-client.js');
 
   const liveCustomize = await kintoneRequest(`/k/v1/app/customize.json?app=${app}`);
   const previewCustomize = await kintoneRequest(`/k/v1/preview/app/customize.json?app=${app}`);
 
-  // PREFLIGHT: FULL DETERMINISTIC VALIDATION BEFORE ANY UPLOAD!
+  // 8. PREFLIGHT: FULL DETERMINISTIC VALIDATION OF BUILT JS/CSS + SCOPE/TOPOLOGY
   validatePreflight({
     liveCustomize,
     previewCustomize,
@@ -644,7 +705,7 @@ export async function executeDeployCustomUi(options = {}) {
     candidateCssBlobSha: artifacts.cssBlobSha,
     currentGitHead: gitHead,
     isBuildOnly: false,
-    checkWorktreeClean: true
+    checkWorktreeClean: false
   });
 
   // Upload candidate JS and candidate CSS

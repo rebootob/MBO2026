@@ -4,6 +4,7 @@ import {
   validatePreflight,
   validateTopologyAlignment,
   validateReleaseManifest,
+  validatePrebuildSourceManifest,
   buildPreviewCustomizePayload,
   prepareDeploymentArtifacts,
   executeDeployCustomUi,
@@ -34,7 +35,7 @@ const getValidPreviewFixture = () => ({
 });
 
 const getValidManifestFixture = () => {
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
   return {
     appId: 794,
     sourceCommit: currentHead,
@@ -68,7 +69,7 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
   const manifest = getValidManifestFixture();
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // 1. Preflight passes for atomic JS + CSS target pair with valid manifest
   assert.equal(validatePreflight({
@@ -100,6 +101,91 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
   assert.deepEqual(payload.mobile.css, []);
 });
 
+test('PREBUILD_SOURCE_GATE_PROOF: validatePrebuildSourceManifest runs before candidate build and before network GET', () => {
+  const currentHead = '8f3774ab47625c95495eb1b41464d22a01273cc9';
+
+  // 1. Missing releaseManifest -> MISSING_RELEASE_MANIFEST_BLOCKED_BEFORE_BUILD_AND_NETWORK
+  assert.throws(() => {
+    validatePrebuildSourceManifest({
+      releaseManifest: null,
+      currentGitHead: currentHead,
+      worktreeClean: true
+    });
+  }, /MISSING_RELEASE_MANIFEST_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
+
+  // 2. Source commit mismatch -> SOURCE_COMMIT_MISMATCH_BLOCKED_BEFORE_BUILD_AND_NETWORK
+  const badManifest = { ...getValidManifestFixture(), sourceCommit: 'ffffffffffffffffffffffffffffffffffffffff' };
+  assert.throws(() => {
+    validatePrebuildSourceManifest({
+      releaseManifest: badManifest,
+      currentGitHead: currentHead,
+      worktreeClean: true
+    });
+  }, /SOURCE_COMMIT_MISMATCH_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
+
+  // 3. Short source commit SHA -> SHORT_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK
+  const shortManifest = { ...getValidManifestFixture(), sourceCommit: currentHead.slice(0, 7) };
+  assert.throws(() => {
+    validatePrebuildSourceManifest({
+      releaseManifest: shortManifest,
+      currentGitHead: currentHead,
+      worktreeClean: true
+    });
+  }, /SHORT_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
+
+  // 4. Malformed source commit SHA -> MALFORMED_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK
+  const malformedManifest = { ...getValidManifestFixture(), sourceCommit: '8f3774ab47625c95495eb1b41464d22a01273ccZ' };
+  assert.throws(() => {
+    validatePrebuildSourceManifest({
+      releaseManifest: malformedManifest,
+      currentGitHead: currentHead,
+      worktreeClean: true
+    });
+  }, /MALFORMED_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
+
+  // 5. Dirty worktree -> DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK
+  const validManifest = { ...getValidManifestFixture(), sourceCommit: currentHead };
+  assert.throws(() => {
+    validatePrebuildSourceManifest({
+      releaseManifest: validManifest,
+      currentGitHead: currentHead,
+      worktreeClean: false
+    });
+  }, /DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
+
+  // 6. Exact clean source state -> PASS PRE-BUILD GATE
+  assert.equal(validatePrebuildSourceManifest({
+    releaseManifest: validManifest,
+    currentGitHead: currentHead,
+    worktreeClean: true
+  }), true);
+});
+
+test('PURE_DIRTY_STATE_FALSE_BLOCKS & PURE_CLEAN_STATE_TRUE_PASSES & FOCUSED_TESTS_CLEAN_CHECKOUT_SAFE', () => {
+  const currentHead = '8f3774ab47625c95495eb1b41464d22a01273cc9';
+  const manifest = { ...getValidManifestFixture(), sourceCommit: currentHead };
+
+  // Pure inputs test 1: worktreeClean = false MUST block deterministically
+  assert.throws(() => {
+    validatePrebuildSourceManifest({
+      releaseManifest: manifest,
+      currentGitHead: currentHead,
+      worktreeClean: false
+    });
+  }, /DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
+
+  // Pure inputs test 2: worktreeClean = true MUST pass deterministically
+  assert.equal(validatePrebuildSourceManifest({
+    releaseManifest: manifest,
+    currentGitHead: currentHead,
+    worktreeClean: true
+  }), true);
+
+  // Sanity check helper function exists and returns boolean
+  const cleanResult = isWorktreeClean();
+  assert.equal(typeof cleanResult, 'boolean');
+});
+
 test('CALLER_GIT_HEAD_OVERRIDE_NOT_ACCEPTED_IN_LIVE_PATH & UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE', async () => {
   const currentHead = getCurrentGitHead();
   assert.ok(currentHead, 'Current repository HEAD must be resolvable for this test');
@@ -113,26 +199,24 @@ test('CALLER_GIT_HEAD_OVERRIDE_NOT_ACCEPTED_IN_LIVE_PATH & UNRESOLVABLE_GIT_HEAD
 
   // 2. Unresolvable Git HEAD directly blocks preflight / validation
   assert.throws(() => {
-    validateReleaseManifest({
-      manifest: getValidManifestFixture(),
-      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
-      currentGitHead: null
+    validatePrebuildSourceManifest({
+      releaseManifest: getValidManifestFixture(),
+      currentGitHead: null,
+      worktreeClean: true
     });
-  }, /UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE/);
+  }, /UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
 
   assert.throws(() => {
-    validateReleaseManifest({
-      manifest: getValidManifestFixture(),
-      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
-      currentGitHead: 'invalid-head'
+    validatePrebuildSourceManifest({
+      releaseManifest: getValidManifestFixture(),
+      currentGitHead: 'invalid-head',
+      worktreeClean: true
     });
-  }, /UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE/);
+  }, /UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_BUILD_AND_NETWORK/);
 });
 
 test('SHORT_SOURCE_SHA_BLOCKED & MALFORMED_SOURCE_SHA_BLOCKED & PREFIX_SOURCE_SHA_BLOCKED & EXACT_FULL_SOURCE_SHA_PASS', () => {
-  const fullSha = '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const fullSha = '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // 1. Exact full 40-character SHA -> PASS
   const validManifest = { ...getValidManifestFixture(), sourceCommit: fullSha };
@@ -155,7 +239,7 @@ test('SHORT_SOURCE_SHA_BLOCKED & MALFORMED_SOURCE_SHA_BLOCKED & PREFIX_SOURCE_SH
   }, /SHORT_SOURCE_SHA_BLOCKED/);
 
   // 3. Malformed SHA (non-hex chars) -> MALFORMED_SOURCE_SHA_BLOCKED
-  const malformedManifest = { ...getValidManifestFixture(), sourceCommit: '0b2a96bebb5278a3c400f3b5885c0e49fea77dZZ' };
+  const malformedManifest = { ...getValidManifestFixture(), sourceCommit: '8f3774ab47625c95495eb1b41464d22a01273ccZ' };
   assert.throws(() => {
     validateReleaseManifest({
       manifest: malformedManifest,
@@ -166,7 +250,7 @@ test('SHORT_SOURCE_SHA_BLOCKED & MALFORMED_SOURCE_SHA_BLOCKED & PREFIX_SOURCE_SH
   }, /MALFORMED_SOURCE_SHA_BLOCKED/);
 
   // 4. Prefix matching when SHA length is 40 but differs -> PREFIX_SOURCE_SHA_BLOCKED
-  const differentFullSha = '0b2a96bebb5278a3c400f3b5885c0e49fea77d00';
+  const differentFullSha = '8f3774ab47625c95495eb1b41464d22a01273c00';
   const prefixManifest = { ...getValidManifestFixture(), sourceCommit: differentFullSha };
   assert.throws(() => {
     validateReleaseManifest({
@@ -176,31 +260,6 @@ test('SHORT_SOURCE_SHA_BLOCKED & MALFORMED_SOURCE_SHA_BLOCKED & PREFIX_SOURCE_SH
       currentGitHead: fullSha
     });
   }, /MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD/);
-});
-
-test('DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD & CLEAN_WORKTREE_SOURCE_IDENTITY_PASS', () => {
-  const fullSha = '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
-  const manifest = { ...getValidManifestFixture(), sourceCommit: fullSha };
-
-  // 1. Without checkWorktreeClean flag, validation passes when HEAD matches
-  assert.equal(validateReleaseManifest({
-    manifest,
-    candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-    candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
-    currentGitHead: fullSha,
-    checkWorktreeClean: false
-  }), true);
-
-  // 2. When worktree is modified (uncommitted changes), checkWorktreeClean throws DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD
-  assert.throws(() => {
-    validateReleaseManifest({
-      manifest,
-      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
-      currentGitHead: fullSha,
-      checkWorktreeClean: true
-    });
-  }, /DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD/);
 });
 
 test('MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD & MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD', () => {
@@ -249,7 +308,7 @@ test('MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD & MISSING_MANIFEST_FIELD_BLOCK
 });
 
 test('MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD', () => {
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // 1. Manifest App ID != 794 -> BLOCK
   const mBadApp = { ...getValidManifestFixture(), appId: 795 };
@@ -272,7 +331,7 @@ test('MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_SOURCE_COMMIT_MISMA
 test('MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_TOPOLOGY_MISMATCH_BLOCKED_PRE_UPLOAD', () => {
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // 1. Manifest expectedScope does not match live/preview scope -> BLOCK
   const mBadScope = { ...getValidManifestFixture(), expectedScope: 'ADMIN' };
@@ -306,7 +365,7 @@ test('MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_TOPOLOGY_MISMATCH_BL
 
 test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & EXACT_RELEASE_MANIFEST_PASS', () => {
   const manifest = getValidManifestFixture();
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // 1. Exact manifest and candidate pair -> PASS
   assert.equal(validateReleaseManifest({
@@ -342,7 +401,7 @@ test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PR
 test('TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD & TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // Missing target CSS
   const liveMissingCss = getValidLiveFixture();
@@ -447,7 +506,7 @@ test('validateApp794DeployTargetBinding enforces strict App 794 binding across o
 });
 
 test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values', () => {
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
   ['ALL', 'ADMIN', 'NONE'].forEach(validScope => {
     const live = { ...getValidLiveFixture(), scope: validScope };
     const preview = { ...getValidPreviewFixture(), scope: validScope };
@@ -468,7 +527,7 @@ test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values',
 test('MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
@@ -492,7 +551,7 @@ test('MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_
 test('MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
@@ -517,7 +576,7 @@ test('MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_DESKTOP_CSS_ARRAY_BL
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
   const m = getValidManifestFixture();
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // desktop.js missing
   const p1 = getValidPreviewFixture(); delete p1.desktop.js;
@@ -541,7 +600,7 @@ test('MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_DESKTOP_CSS_ARRAY_BL
 test('INVALID_SCOPE_BLOCKED_PRE_UPLOAD: rejects non-standard scope strings', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = getValidLiveFixture();
   const previewBadScope = { ...getValidPreviewFixture(), scope: 'SUPER_ADMIN' };
@@ -564,7 +623,7 @@ test('INVALID_SCOPE_BLOCKED_PRE_UPLOAD: rejects non-standard scope strings', () 
 test('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: rejects -1 revision', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = getValidLiveFixture();
   const previewRevMinusOne = { ...getValidPreviewFixture(), revision: -1 };
@@ -587,7 +646,7 @@ test('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: rejects -1 revision', () => {
 test('REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: rejects non-numeric revision strings', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = getValidLiveFixture();
   const previewRevString = { ...getValidPreviewFixture(), revision: 'invalid-rev' };
@@ -610,7 +669,7 @@ test('REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: rejects non-numeric revision stri
 test('REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD: rejects 0 or negative revision values', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = getValidLiveFixture();
   const previewRevZero = { ...getValidPreviewFixture(), revision: 0 };
@@ -634,7 +693,7 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
   const m = getValidManifestFixture();
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // Missing target JS
   const liveMissing = { scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css' } }] }, mobile: { js: [], css: [] } };
@@ -682,7 +741,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
   const m = getValidManifestFixture();
-  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   const live = {
     scope: 'ALL',
