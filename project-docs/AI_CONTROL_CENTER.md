@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / CREATE SOURCE FIX ACCEPTED BUT OLD LIVE CUSTOMIZATION / DEPLOY GUARD PASS / APP794 DELETE PERMISSION READ-ONLY CHECK NEXT / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / CREATE SOURCE FIX ACCEPTED BUT OLD LIVE CUSTOMIZATION / DEPLOY GUARD PASS / APP794 ACL CORRECTION REQUIRED / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -45,9 +45,11 @@ D1_LOGIN_0113_TO_MY_MBO                 = PASS / USER LIVE OBSERVATION
 D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS / USER LIVE OBSERVATION
 D1_CREATE_LIVE_RUNTIME                  = FAIL / OLD LIVE CUSTOMIZATION
 APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b
-APP794_DELETE_PERMISSION_READONLY_CHECK = NEXT / CONTROL PLANE + USER READ-ONLY VERIFICATION
+APP794_DELETE_PERMISSION_READONLY_CHECK = FAIL / ACL CORRECTION REQUIRED
+APP794_ACL_LIVE_EVIDENCE                = EVERYONE VIEW+ADD+EDIT+DELETE TRUE; MBO_EMPLOYEE_ACCESS ROW ABSENT
+APP794_ACL_WRITE                         = NOT AUTHORIZED YET
 APP794_CORRECTIVE_DEPLOY                = NOT AUTHORIZED YET
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL DELETE-PERMISSION CHECK + CORRECTIVE DEPLOY + REMAINING UAT
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL ACL CORRECTION + CORRECTIVE DEPLOY + REMAINING UAT
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
@@ -89,34 +91,40 @@ Accepted invariants:
 
 GitHub has no CI/status checks for the accepted commit. Therefore this review accepts the source/test design and repository diff; it does not claim an independent hosted CI `npm test` PASS.
 
-## 7. Exact Next Action — APP794 DELETE PERMISSION READ-ONLY CHECK
+## 7. App794 ACL Read-Only Evidence — 2026-08-29
 
-Before requesting a new App794 corrective deploy authorization, verify the effective Delete permission for the employee-facing/shared Kintone principal(s) in READ-ONLY mode.
+Read-only App ACL was fetched from App794 under Kintone login `admin-form` using `GET /k/v1/app/acl.json`.
 
-Preferred evidence:
-- log in using an employee-facing/shared Kintone principal such as `s1`;
-- open an existing App794 **record detail** page;
-- run `kintone.app.record.getPermissions()` and capture only current user/app/record plus `deleteRecord`/`editRecord` booleans;
-- do not modify ACL, records, customization, or credentials.
+Observed effective app-level rows:
+- CREATOR: View/Add/Edit/Delete/Manage/Import/Export = true;
+- GROUP `everyone`: View=true, Add=true, Edit=true, Delete=true, Manage=false, Import=false, Export=false;
+- no explicit `MBO_EMPLOYEE_ACCESS` row was present in the returned ACL.
 
-If effective `deleteRecord = false`, mark this gate PASS.
-If effective `deleteRecord = true`, do not change ACL yet; record `ACL CORRECTION REQUIRED` and obtain separate explicit user authorization before any permission write.
+Interpretation:
+- employee-facing/shared Kintone users currently inherit an app-level Delete permission through `everyone`;
+- the Employee-Self source delete guard remains useful defense-in-depth, but Kintone ACL itself is not compliant with the no-delete requirement;
+- `APP794_DELETE_PERMISSION_READONLY_CHECK = FAIL / ACL CORRECTION REQUIRED`.
+
+No ACL write is authorized yet.
+
+Target minimum ACL correction for Employee-Self access:
+- `MBO_EMPLOYEE_ACCESS`: View=YES, Add=YES, Edit=YES (subject to separately governed record/workflow rules), Delete=NO, Manage=NO, Import=NO, Export=NO;
+- `Everyone`: all permissions NO;
+- App creator / `admin-form`: retain technical administration rights;
+- do not change record ACL/workflow in the same operation unless separately authorized.
+
+After ACL correction, perform read-back and representative `s1` verification before opening App794 corrective deploy authorization.
 
 ```text
-NEXT_ACTION_OWNER              = CONTROL PLANE + USER
-ANTIGRAVITY_REQUIRED           = NO / HOLD
-KINTONE_LIVE_WRITE             = NO
-APP801_WRITE                   = NO
+NEXT_ACTION_OWNER              = USER AUTHORIZATION REQUIRED
+ANTIGRAVITY_REQUIRED           = NO UNTIL ACL WRITE IS EXPLICITLY AUTHORIZED
+KINTONE_LIVE_WRITE             = NO CURRENT AUTHORIZATION
+APP794_ACL_WRITE               = NO CURRENT AUTHORIZATION
 APP794_DEPLOY                  = NO
-APP794_ACL_WRITE               = NO
+APP801_WRITE                   = NO
 EXTERNAL_SERVICE_WORK          = NO
 D2_D7_WRITE                    = NO
 ```
-
-After Delete Permission PASS:
-1. request a new exact App794 corrective deploy authorization;
-2. deploy once with accepted module-aware bundle + Create-handler fix + Employee-Self shell/history/Completed/no-delete changes;
-3. rerun Create live UAT and remaining D1 security/session UAT.
 
 ## 8. Handoff Checkpoint
 
