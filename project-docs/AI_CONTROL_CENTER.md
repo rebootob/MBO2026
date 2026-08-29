@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SESSION PASS / APP801 SCHEMA PASS / LIST→CREATE SESSION PASS / MODULE BUNDLE PASS / CREATE-HANDLER PASS / EMPLOYEE-SELF INDEX SOURCE+TEST+VISUAL PASS / MY MBO HISTORY PASS / DELETE GUARD+COMPLETED DISPLAY CORRECTIVE / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 SESSION PASS / APP801 SCHEMA PASS / LIST→CREATE SESSION PASS / MODULE BUNDLE PASS / CREATE-HANDLER PASS / EMPLOYEE-SELF INDEX SOURCE+TEST+VISUAL PASS / MY MBO HISTORY PASS / COMPLETED DISPLAY PASS / DELETE GUARD CORRECTIVE / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -33,8 +33,8 @@ D1_CREATE_HANDLER_CORRECTIVE             = PASS / ACCEPTED AT 162d1088...
 D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST       = PASS / ACCEPTED AT 9319be2d...
 D1_EMPLOYEE_SELF_INDEX_VISUAL            = PASS / USER APPROVED 2026-08-29
 D1_MY_MBO_HISTORY_LIST                   = PASS / ACCEPTED FROM 0ff03457...
-D1_EMPLOYEE_SELF_DELETE_GUARD            = CORRECTIVE REQUIRED
-D1_MY_MBO_COMPLETED_STATUS_DISPLAY       = CONFIRMED / CORRECTIVE REQUIRED
+D1_MY_MBO_COMPLETED_STATUS_DISPLAY       = PASS / ACCEPTED AT abfd6f95...
+D1_EMPLOYEE_SELF_DELETE_GUARD            = CORRECTIVE REQUIRED / GLOBAL DENY-ALL RISK
 APP794_DELETE_PERMISSION_READONLY_CHECK  = PENDING AFTER SOURCE GATE
 APP794_DEPLOY_GUARD_INTEGRATION          = OPEN / MUST CLOSE BEFORE FUTURE LIVE DEPLOY
 D1_LIVE_CUTOVER                          = IN PROGRESS / FINAL UAT BLOCKED
@@ -43,48 +43,40 @@ D2-D7 LIVE WRITES                        = NOT AUTHORIZED unless separately reco
 
 No new App794 deploy is authorized.
 
-## 3. Independent Review — Executor Commit 0ff03457...
+## 3. Independent Review — Executor Commit abfd6f95...
 
 Task base:
-`c0a12a91e8643a8fbb34164cf3f88b998ffb226a`
+`8cf1dc98c8cfaa8d0c1c5c62fac9cc999a82ca81`
 
 Executor:
-`0ff034573357169a6f603b44a6000b0322dcd657`
+`abfd6f9521fa7ad415588fe1e96f75f1bdaa695e`
 
 Exactly one executor commit is ahead.
 
-Accepted:
-- exact query `Employee_Code = "<authenticated>" order by Fiscal_Year desc`;
-- representative FY2026/FY2025/FY2024 history rows;
-- `ดูย้อนหลัง / View History` links to matching App794 detail record;
-- no Delete control in Employee-Self My MBO list;
-- dedicated delete policy module created;
-- main only registers the delete event and delegates;
-- no Kintone write/deploy/ACL write in this package.
+### Accepted
+- `DeleteGuardPolicy` now consumes the real production gate API `mboLoginGate.getEmployeeCode()`;
+- invented `getAuthenticatedEmployeeCode()` dependency removed;
+- focused tests use a production-compatible gate shape;
+- raw `16 Completed` -> display `Completed`;
+- raw `Completed` -> display `Completed`;
+- raw `15 HR Final Check` remains `15 HR Final Check`;
+- status normalization is display-only;
+- exact Employee_Code query, Fiscal_Year desc, View History links and zero Delete UI remain intact;
+- Kintone supports both `app.record.detail.delete.submit` and `app.record.index.delete.submit` pre-delete events; returning false cancels deletion;
+- no Kintone write/deploy/ACL write occurred in this source/test package.
 
-Blocking defect:
-- production `MboKintoneLoginGate` exposes `getEmployeeCode()`;
-- new `DeleteGuardPolicy` attempts `mboLoginGate.getAuthenticatedEmployeeCode()`, which does not exist;
-- therefore production policy resolves no authenticated employee from the actual gate and falls into the unauthenticated block path;
-- because the handler is globally registered, this is not acceptable evidence of an Employee-Self-only policy and can unintentionally affect non-Employee-Self contexts.
+### Remaining blocker — scope of Delete Guard
+Current production policy returns `false` both when an Employee-Self principal exists and when it does not.
 
-Test gap:
-- focused test injects a custom callback named `getAuthenticatedEmployeeCode`, so it does not exercise the production gate interface and therefore misses the defect.
+Because the delete handler is registered globally on App794, a missing MBO Employee-Self principal would also block deletion for non-Employee-Self contexts such as HR/technical-admin. This violates the confirmed boundary that Employee-Self no-delete must not silently remove Admin/HR capabilities.
 
-## 4. Newly Confirmed Status Display Requirement
+The canonical baseline has been clarified:
+- authenticated MBO Employee-Self principal -> block delete;
+- no authenticated MBO Employee-Self principal -> this policy abstains and returns the original event unchanged;
+- Kintone ACL plus separately governed Admin/HR policy remain authoritative outside Employee-Self;
+- missing/invalid Employee-Self sessions are already blocked from Employee-Self rendering by the Login Gate and will be covered by the pending App794 Delete-permission READ-ONLY check.
 
-Canonical final workflow status is already `16 Completed` in the existing canonical workflow status set.
-
-User requirement:
-- after HR final processing is completed and authoritative workflow status is `16 Completed`, My MBO must display exactly `Completed`;
-- `15 HR Final Check` is not yet Completed;
-- no heuristic completion inference;
-- display-only normalization; do not change workflow/routing.
-
-Canonical baseline updated:
-`project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
-
-## 5. Exact Next Action
+## 4. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER              = Antigravity
@@ -98,11 +90,12 @@ D2_D7_WRITE                    = NO
 MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-Correct only:
-1. delete guard must consume the real existing login-gate API (`getEmployeeCode()`), with a test that uses a real-compatible gate shape and proves Employee-Self + missing principal behavior without inventing a second auth interface;
-2. preserve history list behavior already accepted;
-3. My MBO status display maps authoritative `16 Completed` / `Completed` -> `Completed`, while `15 HR Final Check` must not display Completed;
-4. do not change workflow status itself.
+Correct only Delete Guard scope:
+1. `mboLoginGate.getEmployeeCode()` returns an authenticated Employee_Code -> set bilingual error and return `false`;
+2. no authenticated MBO Employee-Self principal -> return the original event unchanged; do not create HR/Admin rules here;
+3. retain both supported PC delete-submit registrations;
+4. preserve Completed display and history behavior unchanged;
+5. focused tests must prove Employee-Self blocked and non-Employee-Self/no-MBO-principal path is not globally denied.
 
 After this gate passes:
 1. App794 Delete permission READ-ONLY verification;
@@ -110,8 +103,9 @@ After this gate passes:
 3. request one combined App794 corrective deploy authorization;
 4. final D1 UAT.
 
-## 6. Reusable Lessons
+## 5. Reusable Lessons
 
-- Focused tests must exercise the real production interface, not an invented callback name that bypasses integration risk.
-- Employee-Self no-delete is a security policy; hidden UI alone is insufficient.
+- Security guards must be scoped to the actor/context they govern; fail-closed must not become accidental global deny-all.
+- Focused tests must exercise real production interfaces.
+- Employee-Self no-delete requires layered protection: custom UI + Employee-Self event guard + Kintone permission verification.
 - Final workflow status and user-facing status label may be normalized for clarity without changing workflow semantics.
