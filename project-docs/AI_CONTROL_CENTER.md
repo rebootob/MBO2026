@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — INDEPENDENT REVIEW OF D1 TIMELINE/ATTACHMENT CORRECTIVE
+> Updated: 2026-08-29 — INDEPENDENT REVIEW OF D1 ATTACHMENT SUBMIT INTEGRATION
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE SOURCE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING UI SOURCE PASS / ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE REQUIRED / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE SOURCE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING UI SOURCE PASS / ATTACHMENT SUBMIT SOURCE INTEGRATION PASS / SUBMIT-LIFECYCLE TEST+EVIDENCE CORRECTIVE REQUIRED / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -50,98 +50,102 @@ DIRECT_URL_REST_HARD_ISOLATION          = NOT_GUARANTEED_UNDER_SHARED_KINTONE_AC
 
 Do not reopen accepted App795/App796 permissions, requester routing, Create handler, Login/session architecture, or App794 deploy tooling unless new evidence directly requires it.
 
-## 3. Independent Review — Commit 7247df4
+## 3. Previously Accepted Timeline / Attachment Source State
 
-Reviewed executor commit:
-`7247df478eab2a4320019040df1740457b0bfc69`
-
-Executor commit added only:
-`project-docs/D1_LIVE_TIMELINE_ATTACHMENT_VERIFICATION.md`
-
-The executor report claimed 864/864 full tests, 12/12 focused tests, build-only PASS and zero Live writes. Those are executor evidence, not self-PASS.
-
-### 3.1 Timeline Truthfulness — SOURCE PASS
-
-Actual source inspection of `src/ui/employee-part-a-ui.js` shows:
-- explicit Preview gate using `isPreviewMode` / `previewOptions.isPreviewMode`;
-- supplied `timelineEvents` are rendered when provided;
-- hard-coded fixtures are used only under explicit Preview mode;
-- Live with no authoritative events sets `rawEvents = []` and renders truthful empty state.
-
-Therefore:
+Independent review of prior source established:
 
 ```text
 D1_LIVE_TIMELINE_TRUTHFULNESS_SOURCE = PASS
+D1_ATTACHMENT_DISPLAY_SOURCE         = PASS
+D1_ATTACHMENT_PENDING_REMOVE_SOURCE  = PASS
+D1_ATTACHMENT_UPLOAD_SERVICE_SOURCE  = PASS
 ```
 
-Important provenance correction: the same source blob already existed at START_HEAD `52566ce`; therefore the prior Control Center/Active Task statement that START_HEAD still had unconditional Live fixture fallback was stale and is superseded by actual Git source evidence.
+Live timeline fixtures are Preview-gated. Attachment UI has truthful zero/multiple/pending states, input/remove handlers and a Kintone-only upload service.
 
-### 3.2 Attachment Display / Pending UI — SOURCE PASS
+## 4. Independent Review — Commit 9b91d10
 
-Actual `employee-part-a-ui.js` contains:
-- zero-file No attachment state;
-- all saved filenames rendering;
-- pending filename + Pending save marker;
-- file-input change handler;
-- pending/saved remove button handler;
-- Live preview-file suppression;
-- `uploadPendingAttachments()` adapter to `mbo-attachment-service.js`.
+Reviewed executor commit:
+`9b91d10422d7ec424e636dae4f37d3846fa55bb4`
 
-`src/services/mbo-attachment-service.js` provides Kintone-only multipart `/k/v1/file.json` upload and exact FILE-field binding logic.
+Changed files are limited to:
+- `src/main-mbo-app.js`
+- `src/ui/employee-part-a-ui.js`
+- `tests/timeline-truthfulness-and-attachment.test.js`
+- rebuilt `dist/mbo-employee-app.js`
+
+### 4.1 Attachment Submit Integration — SOURCE PASS
+
+Actual source inspection confirms the create/edit submit handler now:
+1. retains existing `syncFromDom()`;
+2. retains employee verification, Record_Key, duplicate and business validation;
+3. only after those checks pass, calls `await activeUiInstance.uploadPendingAttachments({ record: event.record })`;
+4. passes the exact current Kintone submit `event.record`, rather than assuming the record retained from show is identical;
+5. returns `false` on upload/bind error and raises visible validation error;
+6. otherwise returns the submit event normally.
+
+`EmployeePartAUI.uploadPendingAttachments()` now accepts an explicit target record and calls the existing Kintone-only attachment service against that record.
 
 Therefore:
 
 ```text
-D1_ATTACHMENT_DISPLAY_SOURCE        = PASS
-D1_ATTACHMENT_PENDING_REMOVE_SOURCE = PASS
-D1_ATTACHMENT_UPLOAD_SERVICE_SOURCE = PASS
+D1_ATTACHMENT_SUBMIT_INTEGRATION_SOURCE = PASS
 ```
 
-### 3.3 Attachment Submit Lifecycle — CORRECTIVE REQUIRED
+No routing, scoring, auth, reset-password, App795/App796 or D2-D7 source changes were observed in this commit.
 
-Actual `src/main-mbo-app.js` create/edit submit handler currently:
-1. calls `activeUiInstance.syncFromDom()`;
-2. validates employee/Record_Key/duplicates/business rules;
-3. returns `event`.
+### 4.2 Verification Coverage — CORRECTIVE REQUIRED
 
-It does **not** call `activeUiInstance.uploadPendingAttachments(...)` or the attachment service before returning the submit event.
+The Active Task explicitly required tests exercising the **real submit lifecycle**, not only the service/UI method in isolation.
 
-The focused test `tests/timeline-truthfulness-and-attachment.test.js` tests `uploadAndBindPendingAttachments()` in isolation, but does not prove that Kintone create/edit submit invokes upload/binding. Its pending-remove test also mutates the pending array directly rather than exercising the real click handler.
+The newly added tests are named `SUBMIT_LIFECYCLE_*`, but they directly instantiate `EmployeePartAUI` and call `ui.uploadPendingAttachments(...)`. They do not exercise the registered `app.record.create.submit` / `app.record.edit.submit` handler in `src/main-mbo-app.js`.
+
+Specific gaps:
+- no test proves create-submit handler calls upload after successful validation;
+- no test proves edit-submit handler calls upload after successful validation;
+- no handler-level test proves upload failure returns `false`;
+- no handler-level test proves zero pending attachments pass through create/edit normally;
+- the renamed `ATTACHMENT_REMOVE_PENDING_FILE: real click handler...` test still directly splices `pendingAttachments` rather than dispatching the actual remove click handler, so the test name overstates coverage.
+
+Repository evidence for commit `9b91d10` also contains no new full-suite/build verification record. GitHub combined commit status has no status checks. The older verification document still reports 864/864 and 12/12 from the earlier gate and cannot prove the new commit's expanded suite/build.
 
 Therefore:
 
 ```text
-D1_ATTACHMENT_SUBMIT_INTEGRATION = FAIL / MUST FIX
-INDEPENDENT_REVIEW_7247DF4        = CORRECTIVE
-APP794_DEPLOY_READY               = NO
+INDEPENDENT_REVIEW_9B91D10             = CORRECTIVE
+D1_ATTACHMENT_SUBMIT_INTEGRATION_SOURCE = PASS
+D1_SUBMIT_LIFECYCLE_TEST_PROOF          = FAIL / MUST FIX
+APP794_DEPLOY_READY                      = NO
 ```
 
-This is the only remaining blocker inside the current Timeline/Attachment gate. Do not reimplement Timeline or attachment display/pending UI.
+Do not rewrite the production submit integration unless a proper handler-level test exposes a real defect.
 
-## 4. Exact Current Gate
+## 5. Exact Current Gate
 
 Current gate:
 
 ```text
-D1 ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE
+D1 ATTACHMENT SUBMIT-LIFECYCLE TEST + EVIDENCE CORRECTIVE
 MODE = SOURCE/TEST ONLY
 LIVE KINTONE WRITE = NO
 APP794 DEPLOY = NO
 ```
 
 Required correction:
-- wire pending attachment upload/binding into both `app.record.create.submit` and `app.record.edit.submit`;
-- perform upload only after all local fail-closed validation/duplicate checks have passed, as late as safely possible before returning `event`;
-- bind resulting fileKeys to the exact current submit `event.record` FILE fields;
-- if upload/bind fails, visibly fail closed and cancel submit; never claim saved;
-- preserve optional attachment semantics;
-- preserve unrelated attachment fields;
-- no Live calls in tests;
-- add focused submit-lifecycle integration tests, not service-only tests.
+- add focused tests that execute the real registered create/edit submit handler path;
+- prove zero-pending create/edit returns success without upload;
+- prove pending create/edit uploads only after validation and binds fileKey to exact `event.record` field;
+- prove unrelated attachment fields remain unchanged;
+- prove upload failure cancels submit fail-closed;
+- keep existing timeline/attachment tests PASS;
+- correct the pending-remove test so it actually executes the real remove handler or rename it truthfully;
+- run focused tests, full `npm test`, and module-aware build/build-only;
+- record exact results for the new final SHA;
+- no Live Kintone writes or deploy.
 
-## 5. D1 Priority After Current Corrective
+## 6. D1 Priority After Current Corrective
 
-1. independent review of attachment submit integration;
+1. independent review of submit-lifecycle handler tests + fresh full-suite/build evidence;
 2. if PASS, obtain a NEW explicit one-shot App794 deploy authorization;
 3. deploy App794 customization only after exact authorization;
 4. Live UAT: no fabricated timeline/comments; zero/one/multiple attachment names; pending-before-save; persisted-after-save; remove/change; no preview leak;
@@ -149,7 +153,7 @@ Required correction:
 6. remaining session/security UAT;
 7. final D1 closure review.
 
-## 6. Authorization State
+## 7. Authorization State
 
 ```text
 NEXT_ACTION_OWNER              = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
@@ -157,17 +161,17 @@ APP794 DEPLOY                  = NO
 APP794 ACL/RECORD WRITE        = NO
 APP801 WRITE                   = NO
 APP795/796 WRITE               = NO
-SOURCE CHANGE                  = YES / ONLY ATTACHMENT SUBMIT-LIFECYCLE CORRECTIVE
+SOURCE CHANGE                  = TEST/EVIDENCE ONLY; PRODUCTION SOURCE ONLY IF HANDLER TEST EXPOSES A REAL DEFECT
 EXTERNAL SERVICE               = NO
 D2-D7 WRITE                    = NO
 ```
 
 All prior App794 deploy authorizations are consumed/closed. A new deployment requires new explicit user authorization after source/test independent PASS.
 
-## 7. Handoff State
+## 8. Handoff State
 
 ```text
-CURRENT_GATE   = D1 ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE
+CURRENT_GATE   = D1 ATTACHMENT SUBMIT-LIFECYCLE TEST + EVIDENCE CORRECTIVE
 CURRENT_MODE   = SOURCE/TEST ONLY / NO LIVE WRITE
 REVIEW_RESULT  = CORRECTIVE
 NEXT OWNER     = ANTIGRAVITY
