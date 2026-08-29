@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import {
   validatePreflight,
   validateTopologyAlignment,
+  validateReleaseManifest,
   buildPreviewCustomizePayload,
   prepareDeploymentArtifacts,
   executeDeployCustomUi,
-  validateApp794DeployTargetBinding
+  validateApp794DeployTargetBinding,
+  gitBlobSha
 } from '../scripts/kintone/deploy-custom-ui.js';
 
 // Standard valid live & preview fixtures
@@ -29,40 +31,122 @@ const getValidPreviewFixture = () => ({
   mobile: { js: [], css: [] }
 });
 
-test('VALID_PREFLIGHT_PASS & TARGET_OLD_FILEKEY_MAY_BE_REPLACED & NON_TARGET_CSS_PREVIEW_FILEKEY_PRESERVED & PREVIEW_REVISION_INCLUDED & CSS_UPLOAD_COUNT = 0', () => {
+test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () => {
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
 
-  // 1. Preflight passes
-  assert.equal(validatePreflight({ liveCustomize: live, previewCustomize: preview, targetFileName: 'mbo-employee-app.js' }), true);
+  // 1. Preflight passes for atomic JS + CSS target pair
+  assert.equal(validatePreflight({ liveCustomize: live, previewCustomize: preview, targetFileName: 'mbo-employee-app.js', targetCssFileName: 'mbo-employee.css' }), true);
 
-  // 2. Payload replaces target JS fileKey, preserves preview CSS fileKey, includes revision
+  // 2. Payload replaces BOTH target JS fileKey AND target CSS fileKey
   const payload = buildPreviewCustomizePayload({
     app: 794,
     previewCustomize: preview,
     targetFileName: 'mbo-employee-app.js',
-    newJsFileKey: 'NEW_UPLOADED_JS_KEY_999'
+    targetCssFileName: 'mbo-employee.css',
+    newJsFileKey: 'NEW_UPLOADED_JS_KEY_999',
+    newCssFileKey: 'NEW_UPLOADED_CSS_KEY_888'
   });
 
   assert.equal(payload.desktop.js[0].file.fileKey, 'NEW_UPLOADED_JS_KEY_999');
-  assert.equal(payload.desktop.css[0].file.fileKey, 'PREVIEW_CSS_KEY_444');
+  assert.equal(payload.desktop.css[0].file.fileKey, 'NEW_UPLOADED_CSS_KEY_888');
   assert.equal(payload.scope, 'ALL');
   assert.equal(payload.revision, '42');
+  assert.deepEqual(payload.mobile.js, []);
+  assert.deepEqual(payload.mobile.css, []);
 });
 
-test('DEPLOY_ENTRYPOINT_SCOPE_REGRESSION & DEPLOY_IMPORT_NETWORK_CALL_COUNT = 0', async () => {
-  // 1. prepareDeploymentArtifacts runs locally with 0 network calls and holds app + fullJs in valid scope
+test('TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD & TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD', () => {
+  let uploadCalls = 0;
+  const mockUpload = () => { uploadCalls++; return 'KEY'; };
+
+  // Missing target CSS
+  const liveMissingCss = getValidLiveFixture();
+  const previewMissingCss = getValidPreviewFixture();
+  previewMissingCss.desktop.css = []; // No target mbo-employee.css!
+
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: liveMissingCss, previewCustomize: previewMissingCss });
+    mockUpload();
+  }, /TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD/);
+
+  // Ambiguous target CSS
+  const liveAmbiguousCss = getValidLiveFixture();
+  const previewAmbiguousCss = getValidPreviewFixture();
+  previewAmbiguousCss.desktop.css = [
+    { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K1' } },
+    { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K2' } }
+  ];
+
+  assert.throws(() => {
+    validatePreflight({ liveCustomize: liveAmbiguousCss, previewCustomize: previewAmbiguousCss });
+    mockUpload();
+  }, /TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD/);
+
+  assert.equal(uploadCalls, 0);
+});
+
+test('MIXED_RELEASE_BLOCKED_PRE_UPLOAD & MANIFEST_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD', () => {
+  const expectedJs = '1111111111111111111111111111111111111111';
+  const expectedCss = '2222222222222222222222222222222222222222';
+
+  // 1. Both match -> PASS
+  assert.equal(validateReleaseManifest({
+    expectedJsBlobSha: expectedJs,
+    expectedCssBlobSha: expectedCss,
+    candidateJsBlobSha: expectedJs,
+    candidateCssBlobSha: expectedCss
+  }), true);
+
+  // 2. JS matches but CSS identity mismatches -> MIXED_RELEASE_BLOCKED_PRE_UPLOAD
+  assert.throws(() => {
+    validateReleaseManifest({
+      expectedJsBlobSha: expectedJs,
+      expectedCssBlobSha: expectedCss,
+      candidateJsBlobSha: expectedJs,
+      candidateCssBlobSha: 'BAD_CSS_HASH'
+    });
+  }, /MIXED_RELEASE_BLOCKED_PRE_UPLOAD: CSS identity mismatched/);
+
+  // 3. CSS matches but JS identity mismatches -> MIXED_RELEASE_BLOCKED_PRE_UPLOAD
+  assert.throws(() => {
+    validateReleaseManifest({
+      expectedJsBlobSha: expectedJs,
+      expectedCssBlobSha: expectedCss,
+      candidateJsBlobSha: 'BAD_JS_HASH',
+      candidateCssBlobSha: expectedCss
+    });
+  }, /MIXED_RELEASE_BLOCKED_PRE_UPLOAD: JS identity mismatched/);
+
+  // 4. Both mismatch -> MANIFEST_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD
+  assert.throws(() => {
+    validateReleaseManifest({
+      expectedJsBlobSha: expectedJs,
+      expectedCssBlobSha: expectedCss,
+      candidateJsBlobSha: 'BAD_JS_HASH',
+      candidateCssBlobSha: 'BAD_CSS_HASH'
+    });
+  }, /MANIFEST_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD/);
+});
+
+test('BUILD_ONLY_ZERO_NETWORK & DEPLOY_ENTRYPOINT_SCOPE_REGRESSION', async () => {
+  // 1. prepareDeploymentArtifacts runs locally with 0 network calls and holds app, fullJs, cssContent, jsBlobSha, cssBlobSha
   const artifacts = await prepareDeploymentArtifacts({ appId: 794 });
   assert.equal(artifacts.app, 794);
   assert.equal(typeof artifacts.fullJs, 'string');
   assert.ok(artifacts.fullJs.length > 0);
   assert.equal(typeof artifacts.cssContent, 'string');
+  assert.equal(artifacts.jsBlobSha, gitBlobSha(artifacts.fullJs));
+  assert.equal(artifacts.cssBlobSha, gitBlobSha(artifacts.cssContent));
 
   // 2. executeDeployCustomUi in build-only mode executes cleanly with zero Kintone network calls
   const buildResult = await executeDeployCustomUi({ isBuildOnly: true, appId: 794 });
   assert.equal(buildResult.app, 794);
   assert.equal(buildResult.buildOnly, true);
   assert.equal(typeof buildResult.fullJs, 'string');
+  assert.equal(typeof buildResult.cssContent, 'string');
+  assert.equal(buildResult.jsBlobSha, gitBlobSha(buildResult.fullJs));
+  assert.equal(buildResult.cssBlobSha, gitBlobSha(buildResult.cssContent));
 
   // 3. executeDeployCustomUi in live mode without authorization blocks before network operations
   await assert.rejects(
@@ -238,16 +322,16 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
 
-  // Missing target
-  const liveMissing = { scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js' } }], css: [] }, mobile: { js: [], css: [] } };
-  const previewMissing = { revision: '1', scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js', fileKey: 'K' } }], css: [] }, mobile: { js: [], css: [] } };
+  // Missing target JS
+  const liveMissing = { scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css' } }] }, mobile: { js: [], css: [] } };
+  const previewMissing = { revision: '1', scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js', fileKey: 'K' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K2' } }] }, mobile: { js: [], css: [] } };
 
   assert.throws(() => {
     validatePreflight({ liveCustomize: liveMissing, previewCustomize: previewMissing });
     mockUpload();
   }, /TARGET_MISSING_BLOCKED_PRE_UPLOAD/);
 
-  // Ambiguous target
+  // Ambiguous target JS
   const liveAmbiguous = {
     scope: 'ALL',
     desktop: {
@@ -255,7 +339,7 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
         { type: 'FILE', file: { name: 'mbo-employee-app.js' } },
         { type: 'FILE', file: { name: 'mbo-employee-app.js' } }
       ],
-      css: []
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -267,7 +351,7 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
         { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'K1' } },
         { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'K2' } }
       ],
-      css: []
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K3' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -288,7 +372,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
     scope: 'ALL',
     desktop: {
       js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_CSS_KEY' } }]
+      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_CSS_KEY' } }, { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS2' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -298,7 +382,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
     scope: 'ALL',
     desktop: {
       js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }] // CSS file key missing!
+      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }, { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS2' } }] // CSS file key missing!
     },
     mobile: { js: [], css: [] }
   };
@@ -317,14 +401,14 @@ test('SAME_FILENAME_MOBILE_JS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE na
 
   const live = {
     scope: 'ALL',
-    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }], css: [] },
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY' } }] },
     mobile: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_MOB_JS' } }], css: [] }
   };
 
   const preview = {
     revision: '10',
     scope: 'ALL',
-    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }], css: [] },
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }] },
     mobile: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }], css: [] } // mobile.js file key missing!
   };
 
@@ -342,14 +426,14 @@ test('SAME_FILENAME_MOBILE_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE n
 
   const live = {
     scope: 'ALL',
-    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }], css: [] },
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY' } }] },
     mobile: { js: [], css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_MOB_CSS' } }] }
   };
 
   const preview = {
     revision: '10',
     scope: 'ALL',
-    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }], css: [] },
+    desktop: { js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }] },
     mobile: { js: [], css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }] } // mobile.css file key missing!
   };
 

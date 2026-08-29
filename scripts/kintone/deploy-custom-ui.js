@@ -1,8 +1,17 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { assertSandboxWriteTarget, assertApp794CustomizationDeployAuthorization } from '../../src/core/sandbox-write-guard.js';
 import { buildMboUi } from './build-mbo-ui.js';
 
 const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
+
+export function gitBlobSha(content) {
+  const str = Buffer.isBuffer(content) ? content.toString('utf8') : String(content);
+  const normalizedBuf = Buffer.from(str.replace(/\r\n/g, '\n'), 'utf8');
+  const header = Buffer.from(`blob ${normalizedBuf.length}\0`, 'utf8');
+  const store = Buffer.concat([header, normalizedBuf]);
+  return crypto.createHash('sha1').update(store).digest('hex');
+}
 
 /**
  * Prepares production deployment artifacts in memory & dist folder.
@@ -15,8 +24,17 @@ export async function prepareDeploymentArtifacts(options = {}) {
   const targetOutfile = buildOptions.outfile || 'dist/mbo-employee-app.js';
   await buildMboUi(buildOptions);
 
-  const fullJs = fs.readFileSync(targetOutfile, 'utf8');
-  const cssContent = fs.readFileSync('dist/mbo-employee.css', 'utf8');
+  let fullJs = fs.readFileSync(targetOutfile, 'utf8');
+  if (fullJs.length === 0) {
+    await new Promise(r => setTimeout(r, 50));
+    fullJs = fs.readFileSync(targetOutfile, 'utf8');
+  }
+
+  let cssContent = fs.readFileSync('dist/mbo-employee.css', 'utf8');
+  if (cssContent.length === 0) {
+    await new Promise(r => setTimeout(r, 50));
+    cssContent = fs.readFileSync('dist/mbo-employee.css', 'utf8');
+  }
 
   // Validation Gate: Classic Bundle Parse & ES Module Residue Check
   try {
@@ -34,10 +52,15 @@ export async function prepareDeploymentArtifacts(options = {}) {
     throw new Error('ES_MODULE_EXPORT_COUNT > 0: Bundle contains export statements');
   }
 
+  const jsBlobSha = gitBlobSha(fullJs);
+  const cssBlobSha = gitBlobSha(cssContent);
+
   return {
     app: targetApp,
     fullJs,
-    cssContent
+    cssContent,
+    jsBlobSha,
+    cssBlobSha
   };
 }
 
@@ -103,7 +126,42 @@ export function validateTopologyAlignment(liveCustomize, previewCustomize) {
   return true;
 }
 
-export function validatePreflight({ liveCustomize, previewCustomize, targetFileName = 'mbo-employee-app.js' }) {
+export function validateReleaseManifest({ expectedJsBlobSha, expectedCssBlobSha, candidateJsBlobSha, candidateCssBlobSha }) {
+  const jsProvided = Boolean(candidateJsBlobSha || expectedJsBlobSha);
+  const cssProvided = Boolean(candidateCssBlobSha || expectedCssBlobSha);
+
+  if (!jsProvided && !cssProvided) {
+    return true;
+  }
+
+  const jsMatches = (expectedJsBlobSha && candidateJsBlobSha) ? (candidateJsBlobSha === expectedJsBlobSha) : true;
+  const cssMatches = (expectedCssBlobSha && candidateCssBlobSha) ? (candidateCssBlobSha === expectedCssBlobSha) : true;
+
+  if (!jsMatches && !cssMatches) {
+    throw new Error(`MANIFEST_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD: Both JS (${candidateJsBlobSha} !== ${expectedJsBlobSha}) and CSS (${candidateCssBlobSha} !== ${expectedCssBlobSha}) identities mismatched.`);
+  }
+
+  if (!jsMatches) {
+    throw new Error(`MIXED_RELEASE_BLOCKED_PRE_UPLOAD: JS identity mismatched (${candidateJsBlobSha} !== ${expectedJsBlobSha}). CSS matched.`);
+  }
+
+  if (!cssMatches) {
+    throw new Error(`MIXED_RELEASE_BLOCKED_PRE_UPLOAD: CSS identity mismatched (${candidateCssBlobSha} !== ${expectedCssBlobSha}). JS matched.`);
+  }
+
+  return true;
+}
+
+export function validatePreflight({
+  liveCustomize,
+  previewCustomize,
+  targetFileName = 'mbo-employee-app.js',
+  targetCssFileName = 'mbo-employee.css',
+  expectedJsBlobSha = null,
+  expectedCssBlobSha = null,
+  candidateJsBlobSha = null,
+  candidateCssBlobSha = null
+}) {
   // 1. Explicit containers & lists
   validateContainers(liveCustomize, 'Live');
   validateContainers(previewCustomize, 'Preview');
@@ -135,21 +193,36 @@ export function validatePreflight({ liveCustomize, previewCustomize, targetFileN
     throw new Error(`REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD: Preview customization revision ${numRev} is not a positive integer.`);
   }
 
-  // 4. Require exactly ONE target entry in preview.desktop.js
+  // 4. Require exactly ONE target JS entry in preview.desktop.js
   const previewDesktopJs = previewCustomize.desktop.js;
-  const targetEntries = previewDesktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
+  const targetJsEntries = previewDesktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
 
-  if (targetEntries.length === 0) {
+  if (targetJsEntries.length === 0) {
     throw new Error(`TARGET_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetFileName} in preview customization.`);
   }
-  if (targetEntries.length > 1) {
+  if (targetJsEntries.length > 1) {
     throw new Error(`TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetFileName} in preview customization.`);
   }
 
-  const exactTargetEntry = targetEntries[0];
+  const exactTargetJsEntry = targetJsEntries[0];
+
+  // 4b. Require exactly ONE target CSS entry in preview.desktop.css
+  const previewDesktopCss = previewCustomize.desktop.css;
+  const targetCssEntries = previewDesktopCss.filter(e => e && e.type === 'FILE' && e.file?.name === targetCssFileName);
+
+  if (targetCssEntries.length === 0) {
+    throw new Error(`TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetCssFileName} in preview customization.`);
+  }
+  if (targetCssEntries.length > 1) {
+    throw new Error(`TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetCssFileName} in preview customization.`);
+  }
+
+  const exactTargetCssEntry = targetCssEntries[0];
+
+  const targetEntriesList = [exactTargetJsEntry, exactTargetCssEntry];
 
   // 5. Entry structural & fileKey validation across all lists
-  const validateEntryList = (list, sectionName, isPreview = false, targetEntry = null) => {
+  const validateEntryList = (list, sectionName, isPreview = false) => {
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
       if (!e || typeof e !== 'object') {
@@ -167,11 +240,11 @@ export function validatePreflight({ liveCustomize, previewCustomize, targetFileN
           throw new Error(`MALFORMED_FILE_NAME_BLOCKED_PRE_UPLOAD: ${sectionName}[${i}] has missing or empty file.name.`);
         }
         if (isPreview) {
-          const isExactTarget = (e === targetEntry);
-          if (!isExactTarget) {
+          const isTarget = targetEntriesList.includes(e);
+          if (!isTarget) {
             if (!e.file.fileKey || typeof e.file.fileKey !== 'string' || e.file.fileKey.trim() === '') {
               let errCode = 'MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD';
-              if (e.file.name === targetFileName) {
+              if (e.file.name === targetFileName || e.file.name === targetCssFileName) {
                 if (sectionName.includes('desktop.css')) errCode = 'SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD';
                 else if (sectionName.includes('mobile.js')) errCode = 'SAME_FILENAME_MOBILE_JS_MISSING_KEY_BLOCKED_PRE_UPLOAD';
                 else if (sectionName.includes('mobile.css')) errCode = 'SAME_FILENAME_MOBILE_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD';
@@ -189,25 +262,28 @@ export function validatePreflight({ liveCustomize, previewCustomize, targetFileN
   validateEntryList(liveCustomize.mobile.js, 'live mobile.js');
   validateEntryList(liveCustomize.mobile.css, 'live mobile.css');
 
-  validateEntryList(previewCustomize.desktop.js, 'preview desktop.js', true, exactTargetEntry);
-  validateEntryList(previewCustomize.desktop.css, 'preview desktop.css', true, exactTargetEntry);
-  validateEntryList(previewCustomize.mobile.js, 'preview mobile.js', true, exactTargetEntry);
-  validateEntryList(previewCustomize.mobile.css, 'preview mobile.css', true, exactTargetEntry);
+  validateEntryList(previewCustomize.desktop.js, 'preview desktop.js', true);
+  validateEntryList(previewCustomize.desktop.css, 'preview desktop.css', true);
+  validateEntryList(previewCustomize.mobile.js, 'preview mobile.js', true);
+  validateEntryList(previewCustomize.mobile.css, 'preview mobile.css', true);
 
   // 6. Topology alignment
   validateTopologyAlignment(liveCustomize, previewCustomize);
 
+  // 7. Atomic release manifest validation (JS/CSS identity pair check)
+  validateReleaseManifest({ expectedJsBlobSha, expectedCssBlobSha, candidateJsBlobSha, candidateCssBlobSha });
+
   return true;
 }
 
-export function normalizeCustomizeEntries(entries = [], targetEntryRef = null, newJsFileKey = null) {
+export function normalizeCustomizeEntries(entries = [], targetEntryRef = null, newFileKey = null) {
   return entries.map(entry => {
     if (entry.type === 'URL') {
       return { type: 'URL', url: entry.url };
     }
     if (entry.type === 'FILE') {
       const isTarget = targetEntryRef && entry === targetEntryRef;
-      const fileKey = isTarget ? newJsFileKey : entry.file?.fileKey;
+      const fileKey = isTarget ? newFileKey : entry.file?.fileKey;
       if (!fileKey) {
         throw new Error(`MISSING_RETAINED_PREVIEW_FILEKEY_BLOCKED_PRE_UPLOAD: Missing fileKey for FILE entry ${entry.file?.name || 'unknown'}.`);
       }
@@ -217,7 +293,14 @@ export function normalizeCustomizeEntries(entries = [], targetEntryRef = null, n
   });
 }
 
-export function buildPreviewCustomizePayload({ app, previewCustomize, targetFileName = 'mbo-employee-app.js', newJsFileKey }) {
+export function buildPreviewCustomizePayload({
+  app,
+  previewCustomize,
+  targetFileName = 'mbo-employee-app.js',
+  targetCssFileName = 'mbo-employee.css',
+  newJsFileKey,
+  newCssFileKey
+}) {
   validateContainers(previewCustomize, 'Preview');
 
   if (!previewCustomize.scope || typeof previewCustomize.scope !== 'string' || !VALID_SCOPES.has(previewCustomize.scope)) {
@@ -233,19 +316,39 @@ export function buildPreviewCustomizePayload({ app, previewCustomize, targetFile
   }
 
   const desktopJs = previewCustomize.desktop.js;
-  const targetEntries = desktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
+  const targetJsEntries = desktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
 
-  if (targetEntries.length === 0) {
+  if (targetJsEntries.length === 0) {
     throw new Error(`TARGET_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetFileName} in preview customization.`);
   }
-  if (targetEntries.length > 1) {
+  if (targetJsEntries.length > 1) {
     throw new Error(`TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetFileName} in preview customization.`);
   }
 
-  const exactTargetEntry = targetEntries[0];
+  const exactTargetJsEntry = targetJsEntries[0];
 
-  const normalizedDesktopJs = normalizeCustomizeEntries(desktopJs, exactTargetEntry, newJsFileKey);
-  const normalizedDesktopCss = normalizeCustomizeEntries(previewCustomize.desktop.css, null, null);
+  const desktopCss = previewCustomize.desktop.css;
+  const targetCssEntries = desktopCss.filter(e => e && e.type === 'FILE' && e.file?.name === targetCssFileName);
+
+  if (targetCssEntries.length === 0) {
+    throw new Error(`TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD: Expected desktop FILE entry named ${targetCssFileName} in preview customization.`);
+  }
+  if (targetCssEntries.length > 1) {
+    throw new Error(`TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD: Found multiple desktop FILE entries named ${targetCssFileName} in preview customization.`);
+  }
+
+  const exactTargetCssEntry = targetCssEntries[0];
+
+  if (!newJsFileKey || typeof newJsFileKey !== 'string' || newJsFileKey.trim() === '') {
+    throw new Error('MISSING_NEW_JS_FILEKEY_BLOCKED_PRE_UPLOAD: newJsFileKey is required for preview customize payload.');
+  }
+
+  if (!newCssFileKey || typeof newCssFileKey !== 'string' || newCssFileKey.trim() === '') {
+    throw new Error('MISSING_NEW_CSS_FILEKEY_BLOCKED_PRE_UPLOAD: newCssFileKey is required for preview customize payload.');
+  }
+
+  const normalizedDesktopJs = normalizeCustomizeEntries(desktopJs, exactTargetJsEntry, newJsFileKey);
+  const normalizedDesktopCss = normalizeCustomizeEntries(desktopCss, exactTargetCssEntry, newCssFileKey);
   const normalizedMobileJs = normalizeCustomizeEntries(previewCustomize.mobile.js, null, null);
   const normalizedMobileCss = normalizeCustomizeEntries(previewCustomize.mobile.css, null, null);
 
@@ -320,10 +423,17 @@ export async function executeDeployCustomUi(options = {}) {
     if (options.appId !== undefined && options.appId !== 794) {
       throw new Error(`APP794 DEPLOY BLOCKED: Supplied options.appId (${options.appId}) must be exactly 794.`);
     }
-    const { fullJs } = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
+    const artifacts = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
     console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
     console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
-    return { app: 794, fullJs, buildOnly: true };
+    return {
+      app: 794,
+      fullJs: artifacts.fullJs,
+      cssContent: artifacts.cssContent,
+      jsBlobSha: artifacts.jsBlobSha,
+      cssBlobSha: artifacts.cssBlobSha,
+      buildOnly: true
+    };
   }
 
   // 1. Resolve registry target without silent fallback catch
@@ -343,10 +453,10 @@ export async function executeDeployCustomUi(options = {}) {
   // 4. Validate write target with literal ephemeral allow-list [794] and dryRunBypassDiscovery
   assertSandboxWriteTarget(794, sandboxRegistryModule, [794], { dryRunBypassDiscovery: true });
 
-  const { fullJs } = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
+  const artifacts = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
   console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
-  // 2. Upload Files to Kintone
+  // Upload Files to Kintone
   const { kintoneRequest, getKintoneConnection } = await import('../../src/core/kintone-client.js');
 
   async function uploadFile(filename, content, contentType) {
@@ -378,20 +488,32 @@ export async function executeDeployCustomUi(options = {}) {
   const previewCustomize = await kintoneRequest(`/k/v1/preview/app/customize.json?app=${app}`);
 
   // PREFLIGHT: FULL DETERMINISTIC VALIDATION BEFORE ANY UPLOAD!
-  validatePreflight({ liveCustomize, previewCustomize, targetFileName: 'mbo-employee-app.js' });
+  validatePreflight({
+    liveCustomize,
+    previewCustomize,
+    targetFileName: 'mbo-employee-app.js',
+    targetCssFileName: 'mbo-employee.css',
+    expectedJsBlobSha: options.expectedJsBlobSha,
+    expectedCssBlobSha: options.expectedCssBlobSha,
+    candidateJsBlobSha: artifacts.jsBlobSha,
+    candidateCssBlobSha: artifacts.cssBlobSha
+  });
 
-  // ONLY AFTER PREFLIGHT PASSES: Upload replacement JS target ONLY (do NOT upload CSS!)
-  const jsFileKey = await uploadFile('mbo-employee-app.js', fullJs, 'text/javascript');
+  // Upload candidate JS and candidate CSS
+  const jsFileKey = await uploadFile('mbo-employee-app.js', artifacts.fullJs, 'text/javascript');
+  const cssFileKey = await uploadFile('mbo-employee.css', artifacts.cssContent, 'text/css');
 
-  // Build Preview PUT payload from previewCustomize state using preview fileKeys
+  // Build Preview PUT payload replacing BOTH JS and CSS fileKeys
   const putPayload = buildPreviewCustomizePayload({
     app,
     previewCustomize,
     targetFileName: 'mbo-employee-app.js',
-    newJsFileKey: jsFileKey
+    targetCssFileName: 'mbo-employee.css',
+    newJsFileKey: jsFileKey,
+    newCssFileKey: cssFileKey
   });
 
-  // 3. Put Customization to Preview (preserving non-target preview entries)
+  // 3. Put Customization to Preview
   await kintoneRequest(
     '/k/v1/preview/app/customize.json',
     getApp794DeployRequestOptions('/k/v1/preview/app/customize.json', 'PUT', putPayload)
