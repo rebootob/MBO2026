@@ -14,9 +14,12 @@ Open only:
 4. the relevant Baseline file from the routing table below
 5. current Git HEAD + exact latest diff/evidence
 
-Read `00_MASTER_JOBLIST.md` only when detailed D1–D7 acceptance/no-drop criteria are needed.
+Optional human-readable checkpoint:
+- `project-docs/PROJECT_LATEST_SUMMARY.md`
 
-For a brand-new chat, `NEW_CHAT_BOOTSTRAP_PROMPT.md` is the canonical copy/paste handoff prompt. It still instructs the new chat to re-fetch repository truth; the prompt itself is not evidence that an execution occurred.
+Read `00_MASTER_JOBLIST.md` when detailed D1–D7 acceptance/no-drop criteria are needed.
+
+For a brand-new chat, `NEW_CHAT_BOOTSTRAP_PROMPT.md` is the canonical copy/paste handoff prompt. It still requires the new chat to re-fetch repository truth; the prompt itself is not execution evidence.
 
 ---
 
@@ -29,6 +32,8 @@ Auth Bridge = CANCELLED / SUPERSEDED
 ```
 
 Do not revive Auth Bridge from historical chat, commits, or `services/mbo-auth-bridge/`. Current truth is in `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`.
+
+Important: a completed D1 sub-scope such as WP2 UI does **not** automatically mean the whole D1 deliverable is closed. Use `00_MASTER_JOBLIST.md` for full D1 closure criteria and `AI_CONTROL_CENTER.md` for current accepted status.
 
 ---
 
@@ -47,16 +52,18 @@ Do not broad-scan the repo.
 
 | Task / Question | Open First | Open Only If Needed |
 |---|---|---|
-| New chat / handoff / resume project | `NEW_CHAT_BOOTSTRAP_PROMPT.md` | `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md` |
-| Current project status / what next | `AI_CONTROL_CENTER.md` | `00_MASTER_JOBLIST.md` |
+| New chat / handoff / resume project | `NEW_CHAT_BOOTSTRAP_PROMPT.md` | `PROJECT_LATEST_SUMMARY.md`, `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md` |
+| Current project status / what next | `AI_CONTROL_CENTER.md` | `PROJECT_LATEST_SUMMARY.md`, `00_MASTER_JOBLIST.md` |
+| D1-D7 completeness / whether a whole deliverable is actually closed | `00_MASTER_JOBLIST.md` | `AI_CONTROL_CENTER.md`, relevant Baseline/evidence |
 | Current executor instruction | `AI_ACTIVE_TASK.md` | none |
 | AI workflow / review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `CONFIRMED_BASELINE/DOCUMENT_CONTROL.md` |
 | Live deploy / rollback / recovery / emergency recovery | `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md` | `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`, exact deployment/recovery evidence |
 | Source architecture / modular JS / feature ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact affected source files/tests/build manifest |
+| App794 UI runtime styling missing / DOM exists but unstyled / Comment API / custom UI deploy lesson | `skills/mbo-kintone-ui-runtime-debugging/SKILL.md` | `CONFIRMED_BASELINE/UI_UX.md`, exact source/CSS/deploy evidence |
 | D1 login / password / App801 / shared Kintone account / App801 ACL | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`, exact live ACL evidence |
 | D1 session token / reload / logout / password-session rotation | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` |
 | D1 My MBO history / Completed / no-delete | `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` | exact UI/security source/test |
-| D1 Live timeline/comments truthfulness / attachment state/upload lifecycle | `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` | `CONFIRMED_BASELINE/UI_UX.md`, `src/ui/employee-part-a-ui.js` |
+| D1 Live timeline/comments truthfulness / attachment state/upload lifecycle | `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` | `CONFIRMED_BASELINE/UI_UX.md`, exact UI source |
 | Routing / App795 / GM precedence / Team | `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` |
 | App53 routing fields / Position / Team | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `FIELD_DICTIONARY.md` |
 | Evaluation/scoring class / App796 | `CONFIRMED_BASELINE/EVALUATION_CLASSES.md` | relevant source/test |
@@ -67,7 +74,7 @@ Do not broad-scan the repo.
 | D5 Copy Previous MBO | `AI_CONTROL_CENTER.md` | exact copy service/source |
 | D6 E2E/security/regression | relevant Baselines for impacted D1–D5 | exact test evidence |
 | D7 Admin Support Center | `AI_CONTROL_CENTER.md` | reopen only for new defect |
-| Reusable Kintone technique | `skills/kintone/README.md` | exact skill file |
+| General reusable Kintone technique | `skills/kintone/README.md` | exact skill file |
 
 ---
 
@@ -80,7 +87,7 @@ Always start with `project-docs/CONFIRMED_BASELINE/README.md`, then only the dom
 - `SOURCE_CODE_ARCHITECTURE.md`
 - `DOCUMENT_CONTROL.md`
 - `D1_AUTH_SECURITY.md` — current **KINTONE-ONLY** auth + App801 ACL/security model
-- `D1_SESSION_CONTINUITY.md` — Kintone-only 8-hour same-tab session continuity
+- `D1_SESSION_CONTINUITY.md` — Kintone-only session continuity
 - `D1_EMPLOYEE_SELF_MY_MBO.md`
 - `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md`
 - `ROUTING_WORKFLOW.md`
@@ -95,15 +102,23 @@ Do not open all files on every task.
 
 ## 6. CURRENT OPERATIONAL DOCUMENTS
 
-- `AI_START_HERE.md` — short entry point
-- `AI_DOCUMENT_INDEX.md` — routing map
-- `AI_CONTROL_CENTER.md` — current D1–D7 status, blockers, authorizations, next owner and handoff checkpoint
+- `AI_START_HERE.md` — short mandatory entry point
+- `AI_DOCUMENT_INDEX.md` — lean routing map
+- `AI_CONTROL_CENTER.md` — current accepted D1–D7 status, blockers, authorizations and gate
 - `AI_ACTIVE_TASK.md` — current executor/control task only
-- `NEW_CHAT_BOOTSTRAP_PROMPT.md` — canonical new-chat prompt with current handoff checkpoint
+- `PROJECT_LATEST_SUMMARY.md` — human-readable latest handoff/checkpoint summary
+- `NEW_CHAT_BOOTSTRAP_PROMPT.md` — canonical new-chat copy/paste prompt
 
 ---
 
-## 7. DEFAULT-IGNORE / HISTORICAL
+## 7. CURRENT REUSABLE SKILL ROUTING
+
+- `skills/mbo-kintone-ui-runtime-debugging/SKILL.md` — mandatory before future App794 UI runtime corrective/custom UI deployment involving DOM present but CSS absent, CSS parser/scope issues, Back UI, Kintone Comment GET/pagination, exact JS+CSS manifest, technical readback and User UAT gates.
+- `skills/kintone/README.md` — general Kintone reusable-skill index.
+
+---
+
+## 8. DEFAULT-IGNORE / HISTORICAL
 
 Do not read by default:
 - `AI_REVIEW_PACKAGE.md`
@@ -123,7 +138,7 @@ Historical files remain available only for audit/dispute.
 
 ---
 
-## 8. REVIEW MINIMUM READ SET
+## 9. REVIEW MINIMUM READ SET
 
 When user says `review`:
 
@@ -137,11 +152,12 @@ current HEAD
 
 For deploy/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory.
 For source/module refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory when feature ownership or dependency boundaries are involved.
+For App794 custom UI runtime/CSS/Comment problems, also read `skills/mbo-kintone-ui-runtime-debugging/SKILL.md`.
 
 Do not use historical Auth Bridge artifacts as current D1 authority.
 
 ---
 
-## 9. INDEX MAINTENANCE
+## 10. INDEX MAINTENANCE
 
-Update this index only when canonical routing changes, a new Baseline/Skill is created, or a document becomes superseded/default-ignore. Routine status changes belong in `AI_CONTROL_CENTER.md`.
+Update this index only when canonical routing changes, a new Baseline/Skill/operational handoff document is created, or a document becomes superseded/default-ignore. Routine status changes belong in `AI_CONTROL_CENTER.md`.
