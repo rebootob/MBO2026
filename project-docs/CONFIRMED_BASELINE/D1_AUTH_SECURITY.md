@@ -11,11 +11,11 @@
 D1 MUST be completed entirely inside Kintone.
 
 ```text
-EXTERNAL_SERVER      = FORBIDDEN
+EXTERNAL_SERVER       = FORBIDDEN
 EXTERNAL_AUTH_SERVICE = FORBIDDEN
-AUTH_BRIDGE           = CANCELLED / NOT AUTHORIZED
-EXTERNAL_DATABASE     = FORBIDDEN
-REVERSE_PROXY         = FORBIDDEN
+AUTH_BRIDGE            = CANCELLED / NOT AUTHORIZED
+EXTERNAL_DATABASE      = FORBIDDEN
+REVERSE_PROXY          = FORBIDDEN
 ```
 
 Canonical flow:
@@ -77,13 +77,38 @@ Rules:
 - password change increments positive-integer `Credential_Version`;
 - password change invalidates the old session generation.
 
+### HR / Technical Admin Password Reset
+
+A controlled MBO Password Reset function is mandatory for:
+
+```text
+HR-authorized users
+admin-form (Technical Admin / recovery)
+```
+
+Employee/shared principals must not receive this administrative reset function.
+
+Reset semantics for selected Employee_Code:
+- reset temporary password to the exact Employee_Code using the canonical PBKDF2-SHA256 / 100000 format;
+- set `Force_Password_Change = YES`;
+- set `Failed_Attempts = 0`;
+- clear temporary `Locked_Until`;
+- increment positive-integer `Credential_Version` by exactly 1;
+- clear all active App801 session fields so prior sessions are invalidated;
+- may update `Password_Changed_At` to the reset timestamp for auditability;
+- MUST NOT change `Account_Status` or silently re-enable a permanently `LOCKED` / `DISABLED` account;
+- MUST target exactly one existing App801 row and fail closed on missing/duplicate/malformed identity;
+- no credential record create/delete is part of password reset.
+
+The final production UI must provide this function to HR and `admin-form` through an authorized administrative surface inside Kintone, with explicit target Employee_Code confirmation before write and observable success/failure feedback.
+
 ---
 
 ## 4. Account State / Lockout
 
 Confirmed behavior:
 - `DISABLED` = deny;
-- `LOCKED` = deny;
+- permanent `LOCKED` = deny;
 - malformed credential/account state = fail closed;
 - wrong password increments `Failed_Attempts`;
 - 5 failed attempts trigger a 15-minute temporary lock via `Locked_Until`;
@@ -150,7 +175,7 @@ t2
 
 Future shared/access accounts should normally be enabled through this group rather than source-code changes.
 
-`admin-form` remains Technical Admin only and is not employee business authority.
+`admin-form` remains Technical Admin/recovery authority and is not employee business authority. HR reset authority is an administrative credential-recovery function only and does not make HR the employee identity.
 
 ---
 
@@ -183,19 +208,15 @@ Do NOT embed a Kintone API token or privileged credential in browser JavaScript 
 
 ---
 
-## 8. Accepted Live Evidence / Current ACL Gap
+## 8. Accepted Live Evidence / ACL Resolution
 
 User live verification on 2026-08-29 established:
-- Employee_Code `0113` credential is healthy: `Account_Status=ACTIVE`, `Failed_Attempts=0`, `Locked_Until` blank, `Force_Password_Change=NO`, `Credential_Version=1`;
-- current Kintone principal `s1` receives `403 / CB_NO02` reading/opening App801;
-- therefore current live App801 effective permission for `s1` does not satisfy the approved Kintone-only ACL target above;
-- this is the confirmed cause of the current MBO Login failure for `s1`.
-
-Corrective direction stays inside Kintone:
-1. READ-ONLY verify `s1` membership in `MBO_EMPLOYEE_ACCESS` and current App801 effective App Permissions;
-2. reconcile live App801 permissions to the exact target only after explicit write authorization;
-3. do not widen to Everyone, Add, Delete, Export, Import or App Admin;
-4. read back and UAT with `s1` after the exact ACL correction.
+- Employee_Code `0113` credential state before reset: `Account_Status=ACTIVE`, `Failed_Attempts=0`, `Locked_Until` blank, `Force_Password_Change=NO`, `Credential_Version=1`;
+- Kintone principal `s1` is a member of `MBO_EMPLOYEE_ACCESS`;
+- App801 App Permission row for `MBO_EMPLOYEE_ACCESS` is View=YES, Edit=YES, Add/Delete/Manage/Import/Export=NO;
+- App801 was initially in the `Private` App Group, where Kintone warned that configured app permissions are not applied;
+- user changed App801 App Group to `Public` while preserving the permission rows;
+- after apply, `s1` could open App801 and view the 128 credential records, resolving the prior `403 / CB_NO02` blocker.
 
 ---
 
@@ -227,6 +248,10 @@ Final UAT must prove at minimum:
 - initial App794 entry without valid MBO session shows Login;
 - valid employee credential works under approved shared/access Kintone principal;
 - Force Password Change works;
+- HR-authorized user and `admin-form` can reset one selected employee MBO password with the exact reset semantics above;
+- unauthorized employee/shared users do not receive the administrative reset capability;
+- a reset invalidates the employee's prior session and forces password change on next successful login;
+- reset does not change permanent `Account_Status`;
 - same-tab session continuity across List/Create/Detail/Edit and reload;
 - new independent tab without token requires Login;
 - expired/tampered/wrong-principal session fails closed;
@@ -251,6 +276,7 @@ Any future change to:
 - App801 credential format;
 - App801 ACL model;
 - `MBO_EMPLOYEE_ACCESS` group model;
+- HR / `admin-form` password-reset authority or reset semantics;
 - session architecture;
 - Employee-Self identity binding;
 - lockout/password rules;
