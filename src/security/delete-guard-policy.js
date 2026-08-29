@@ -1,7 +1,7 @@
 /**
  * Security Guard: Employee-Self Delete Protection Policy
- * Enforces strict fail-closed deletion prohibition for Employee-Self users and unauthenticated sessions.
- * Integrates directly with mboLoginGate.getEmployeeCode() without adding any new auth API surface.
+ * Prevents Employee-Self users from deleting MBO records on App794.
+ * Uses mboLoginGate.getEmployeeCode() directly.
  */
 
 export class DeleteGuardPolicy {
@@ -11,9 +11,12 @@ export class DeleteGuardPolicy {
 
   /**
    * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
-   * Blocks record deletion fail-closed for Employee-Self users and unauthenticated sessions.
+   * - If mboLoginGate.getEmployeeCode() has a value (Employee-Self active):
+   *     blocks delete submit, sets bilingual error, and returns false.
+   * - If mboLoginGate.getEmployeeCode() has no value (no Employee-Self principal):
+   *     returns event unchanged without blocking.
    * @param {Object} event Kintone deletion submit event
-   * @returns {boolean} Returns false to block deletion and sets event.error
+   * @returns {boolean|Object} Returns false if Employee-Self delete is blocked, or event unchanged if no Employee-Self principal
    */
   evaluateDeleteSubmit(event = {}) {
     const authEmpCode = (this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === 'function')
@@ -21,13 +24,11 @@ export class DeleteGuardPolicy {
       : null;
 
     if (!authEmpCode) {
-      if (typeof event === 'object' && event !== null) {
-        event.error = 'ไม่พบข้อมูลการเข้าสู่ระบบ / Authentication required to perform record operations.';
-      }
-      return false;
+      // No Employee-Self principal -> return event unchanged
+      return event;
     }
 
-    // Employee-Self user authenticated -> strictly prohibit deletion
+    // Employee-Self user authenticated -> block deletion with bilingual error
     if (typeof event === 'object' && event !== null) {
       event.error = 'การลบบันทึก MBO ไม่อนุญาตสำหรับพนักงาน / Deleting MBO records is strictly prohibited for Employee-Self.';
     }

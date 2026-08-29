@@ -271,10 +271,10 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
 
   const evt1 = { error: null };
   const res1 = policyAuth.evaluateDeleteSubmit(evt1);
-  assert.equal(res1, false, 'Deletion submit must be blocked (return false)');
+  assert.equal(res1, false, 'Employee 0113 delete submit must be blocked (return false)');
   assert.ok(evt1.error.includes('การลบบันทึก MBO ไม่อนุญาตสำหรับพนักงาน'), 'Event error must communicate employee prohibition');
 
-  // 6. DeleteGuardPolicy: Blocks unauthenticated deletion submit fail-closed
+  // 6. DeleteGuardPolicy: When no Employee-Self principal, returns event unchanged without blocking
   const mockGateUnauth = {
     getEmployeeCode: () => null
   };
@@ -282,6 +282,10 @@ test('Employee-Self Index UI & Delete Guard: Queries exact Employee_Code FY desc
 
   const evt2 = { error: null };
   const res2 = policyUnauth.evaluateDeleteSubmit(evt2);
-  assert.equal(res2, false, 'Unauthenticated deletion submit must be blocked (return false)');
-  assert.ok(evt2.error.includes('Authentication required'), 'Unauthenticated deletion must fail closed');
+  assert.equal(res2, evt2, 'No Employee-Self principal must return event unchanged');
+  assert.equal(evt2.error, null, 'No Employee-Self principal must not set error on event');
+
+  // 7. Verify NO getAuthenticatedEmployeeCode method exists on policy instance or gate
+  assert.equal(typeof policyAuth.getAuthenticatedEmployeeCode, 'undefined', 'Must NOT add/invent getAuthenticatedEmployeeCode method');
+  assert.equal(typeof mockGateAuth.getAuthenticatedEmployeeCode, 'undefined', 'Must NOT invent getAuthenticatedEmployeeCode on gate');
 });

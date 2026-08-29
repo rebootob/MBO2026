@@ -6579,17 +6579,17 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
     }
     /**
      * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
-     * Blocks record deletion fail-closed for Employee-Self users and unauthenticated sessions.
+     * - If mboLoginGate.getEmployeeCode() has a value (Employee-Self active):
+     *     blocks delete submit, sets bilingual error, and returns false.
+     * - If mboLoginGate.getEmployeeCode() has no value (no Employee-Self principal):
+     *     returns event unchanged without blocking.
      * @param {Object} event Kintone deletion submit event
-     * @returns {boolean} Returns false to block deletion and sets event.error
+     * @returns {boolean|Object} Returns false if Employee-Self delete is blocked, or event unchanged if no Employee-Self principal
      */
     evaluateDeleteSubmit(event = {}) {
       const authEmpCode = this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === "function" ? this.mboLoginGate.getEmployeeCode() : null;
       if (!authEmpCode) {
-        if (typeof event === "object" && event !== null) {
-          event.error = "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E01\u0E32\u0E23\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A / Authentication required to perform record operations.";
-        }
-        return false;
+        return event;
       }
       if (typeof event === "object" && event !== null) {
         event.error = "\u0E01\u0E32\u0E23\u0E25\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 MBO \u0E44\u0E21\u0E48\u0E2D\u0E19\u0E38\u0E0D\u0E32\u0E15\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19 / Deleting MBO records is strictly prohibited for Employee-Self.";
