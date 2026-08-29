@@ -1,78 +1,152 @@
-# AI ACTIVE TASK — D1 APP794 LONG-FILENAME UI USER LIVE UAT HOLD
+# AI ACTIVE TASK — D1 APP794 SAVED ATTACHMENT PREVIEW / DOWNLOAD CORRECTIVE
 
-Mode: **CONTROL PLANE HOLD — ANTIGRAVITY DO NOTHING / NO DEPLOY**
+Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 Live App794 customization revision: `50`
-Reviewed source candidate: `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`
-Deployment evidence commit: `66076b3a2d0e1b547cc84468cc7cd7a014a35960`
-Independent deployment verdict: **PASS**
-Authorization ID: `APP794-D1-LONG-FILENAME-UI-DEPLOY-20260829-01`
-Authorization status: **CONSUMED / CLOSED**
+Attachment persistence source/deployment: **PASS**
+Long-filename UI source/deployment: **PASS / REV50**
+All prior deploy authorizations: **CONSUMED / CLOSED**
 
-## Accepted State
+## User-Observed Defect
+
+Saved files render successfully in the custom Attach File cell, but the user cannot click the filename to preview/open the file and there is no download action.
+
+## Confirmed Source Cause
+
+`src/ui/employee-part-a-ui.js` currently:
+- retrieves saved attachment `{ name, fileKey, contentType, size }`;
+- renders saved filename as a plain non-clickable `<span class="mbo-attachment-filename">`;
+- renders only the editable remove `✕` action;
+- `_bindEvents()` has handlers for file selection and remove only;
+- there is no saved-file preview/download handler.
+
+Do not reopen attachment persistence architecture.
+
+## Kintone Retrieval Contract
+
+For **persisted record attachment fileKeys only**:
+- construct Download File API URL with `kintone.api.urlForGet('/k/v1/file.json', { fileKey }, true)` when available, or safe same-origin equivalent;
+- use browser `fetch()` / XHR, HTTP GET;
+- include `X-Requested-With: XMLHttpRequest`;
+- consume response as Blob;
+- **do not call `kintone.api()` for File Download API**;
+- no API token/secret/external proxy/external storage.
+
+Upload temporary keys must not be treated as persisted download keys.
+
+## Exact Required UX
+
+Implement saved-file retrieval without changing save/edit/remove semantics.
+
+1. Saved persisted filename with valid `fileKey` is clickable and visually identifiable as clickable.
+2. Filename click = Preview/Open:
+   - open a user-initiated blank tab/window synchronously before awaiting network when necessary to avoid popup blocking;
+   - fetch the saved file Blob through Kintone File Download API;
+   - for common browser-previewable MIME types at minimum `application/pdf` and `image/*`, navigate the opened tab to an object URL;
+   - browser-supported `text/*`, `audio/*`, `video/*` may also preview;
+   - unsupported types safely fall back to download using the original filename; do not use external online viewers.
+3. Add a separate compact Download button/control (`⬇` or equivalent):
+   - fetch exact saved file by persisted fileKey;
+   - create Blob object URL;
+   - create/click an anchor with `download = original filename`;
+   - clean up object URL safely.
+4. Read-only/historical saved attachment rows must also support Preview/Download.
+5. Editable row keeps separate `✕` remove button with existing dataset/click semantics.
+6. Preview/Download controls must be non-shrinking and must not reintroduce filename overflow.
+7. Filename remains ellipsized with full name in `title`.
+8. Objective / Mid-Year / Final(Self) use the same shared renderer behavior.
+9. Preview mock file with no persisted fileKey:
+   - must not call Kintone download endpoint;
+   - render non-clickable or clearly disabled retrieval actions.
+10. Missing/empty persisted fileKey fails safely; no network request with an empty key.
+11. Any GET/Blob/preview/download error:
+   - show user-visible non-destructive error near the attachment control or existing error mechanism;
+   - do not mutate record FILE values;
+   - do not mutate `desiredSavedFiles`, `dirtyAttachmentFields`, or `pendingAttachments` merely because retrieval failed.
+12. Preview and Download click must not trigger Remove; Remove must not trigger Preview/Download.
+
+## Implementation Boundary
+
+Allowed narrowly:
+- `src/ui/employee-part-a-ui.js` — saved attachment markup, preview/download event binding, error display only;
+- `src/services/mbo-attachment-service.js` — **additive isolated file-download helper only** if needed; existing upload/prepare/finalize code must remain semantically and textually unchanged except unavoidable import/export adjacency;
+- `src/styles/mbo-employee.css` — preview/download clickable/control styling and containment only;
+- `tests/timeline-truthfulness-and-attachment.test.js` — retrieval UX regression tests;
+- generated `dist/mbo-employee-app.js` and `dist/mbo-employee.css` through normal build;
+- existing D1 attachment evidence document for source/test evidence.
+
+Forbidden:
+- persistence refactor;
+- changes to `src/main-mbo-app.js` attachment orchestration;
+- schema/config changes;
+- Kintone record writes;
+- customization deploy;
+- ACL/process writes;
+- App801/App795/App796 changes;
+- routing/scoring/auth/reset changes;
+- D2-D7 execution;
+- external preview/storage service.
+
+If the only way proposed requires external document viewer or privileged token, STOP and report instead.
+
+## Required Tests
+
+Retain every current attachment/timeline regression. Add at minimum:
 
 ```text
-ATTACHMENT_PERSISTENCE_SOURCE      = PASS
-ATTACHMENT_PERSISTENCE_DEPLOYMENT  = PASS / REV49
-ATTACHMENT_PERSISTENCE_LIVE_REPORT = USER REPORTS WORKING
-LONG_FILENAME_UI_SOURCE_CORRECTIVE = PASS
-LONG_FILENAME_UI_DEPLOYMENT        = PASS / REV50
-LIVE_UI_FUNCTIONAL_STATUS          = PENDING USER UAT
+SAVED_ATTACHMENT_FILENAME_IS_CLICKABLE_WITH_PERSISTED_FILEKEY
+READONLY_SAVED_ATTACHMENT_REMAINS_PREVIEW_DOWNLOAD_CAPABLE
+ATTACHMENT_DOWNLOAD_USES_BROWSER_FETCH_X_REQUESTED_WITH
+ATTACHMENT_DOWNLOAD_DOES_NOT_USE_KINTONE_API
+ATTACHMENT_DOWNLOAD_PRESERVES_ORIGINAL_FILENAME
+ATTACHMENT_PREVIEW_USES_BLOB_URL_FOR_PDF_OR_IMAGE
+ATTACHMENT_UNSUPPORTED_PREVIEW_FALLS_BACK_TO_DOWNLOAD
+ATTACHMENT_PREVIEW_MOCK_WITHOUT_FILEKEY_DOES_NOT_NETWORK
+ATTACHMENT_MISSING_FILEKEY_DOES_NOT_NETWORK
+ATTACHMENT_DOWNLOAD_ERROR_VISIBLE_AND_NON_DESTRUCTIVE
+ATTACHMENT_PREVIEW_ERROR_VISIBLE_AND_NON_DESTRUCTIVE
+ATTACHMENT_DELETE_CONTROL_REMAINS_SEPARATE_AND_FUNCTIONAL
+OBJECTIVE_MIDYEAR_FINAL_RETRIEVAL_REGRESSION
 ```
 
-## Independent Deployment Review Findings
+Critical test rules:
+- assert request method GET;
+- assert URL contains exact encoded persisted fileKey;
+- assert `X-Requested-With: XMLHttpRequest`;
+- prove `kintone.api()` was not used for file download;
+- assert no change to saved attachment arrays / desired-state maps on retrieval success or failure;
+- verify read-only row still has preview/download controls but no delete control;
+- verify preview mock/missing fileKey makes zero network calls;
+- keep long-filename ellipsis + non-shrinking delete regression passing.
 
-Accepted because:
-- execution commit `66076b3a...` is the direct child of authorized HEAD `6e3e615c...`;
-- executor changed deployment evidence only;
-- source/dist/schema/tests were unchanged during deployment;
-- preflight PASS;
-- focused 45/45 and full 897/897 test runs reported PASS;
-- UI build and module-aware build-only reported PASS with 0 Kintone calls;
-- rollback snapshots existed before write;
-- Kintone deployment status SUCCESS;
-- App794 customization revision advanced 49 -> 50;
-- post-deploy JS identity equals reviewed candidate JS blob `43731e5c26dc441659e2f3687f58d1c7237279a5`;
-- post-deploy CSS identity equals reviewed candidate CSS blob `c407e30a0eb87c6e0c3f2f55cc4fc6163816695d`;
-- topology stayed Scope ALL / 1 Desktop JS / 1 Desktop CSS / 0 Mobile;
-- record/schema/layout/ACL/process/App801/App795/App796 writes = 0;
-- authorization is consumed and cannot be reused.
+## Verification Evidence
 
-## Current Gate
+Record at minimum:
 
 ```text
-CURRENT_GATE                  = USER LIVE UAT ON APP794 REV50
-NEXT_ACTION_OWNER             = USER
-ANTIGRAVITY EXECUTION         = NO
-SOURCE CHANGE                 = NO
-APP794 CUSTOMIZATION DEPLOY   = NO
-APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
-APP794 ACL/PROCESS            = NO
-APP801                        = NO
-APP795/796                    = NO
-ROUTING/SCORING/AUTH/RESET    = NO
-D2-D7 EXECUTION               = NO
-EXTERNAL SERVICE/STORAGE      = NO
+EXECUTION_START_HEAD
+CHANGED_FILES
+RETRIEVAL_DESIGN
+KINTONE_DOWNLOAD_TRANSPORT
+PREVIEW_MIME_POLICY
+DOWNLOAD_FILENAME_POLICY
+ERROR_NON_DESTRUCTIVE_PROOF
+PERSISTENCE_FUNCTIONS_CHANGED = NO
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED = NO
+FOCUSED_ATTACHMENT_TESTS
+FULL_NPM_TEST
+NPM_RUN_UI_BUILD
+MODULE_AWARE_BUILD_ONLY
+LIVE_KINTONE_WRITE = 0
+LIVE_DEPLOY_OCCURRED = NO
+FINAL_COMMIT_SHA
 ```
 
-Do not self-start further source work or deployment.
+## Stop Rule
 
-## Required User UAT
+Commit + push source/test/build evidence, then STOP for ChatGPT independent review.
 
-Use App794 normal Live UI on revision 50:
+Maximum executor status:
+`IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
-```text
-UAT_UI_01 long saved filename stays inside cell and ellipsizes
-UAT_UI_02 delete ✕ remains visible at right edge
-UAT_UI_03 multiple long files stack; every delete ✕ remains visible
-UAT_UI_04 pending/error long filename remains contained
-UAT_UI_05 saved remove still removes only selected file after Save
-UAT_UI_06 Objective / Mid-Year / Final(Self) visual regression
-UAT_UI_07 attachment persistence remains working
-```
-
-User may report results incrementally. If a case fails, capture the exact visible behavior/screenshot and STOP further corrective deployment until ChatGPT reviews it.
-
-## Closure Rule
-
-Do not mark the Live long-filename UI defect PASS until relevant user UAT succeeds. Deployment provenance PASS is not equivalent to Live functional PASS.
+No deployment authorization exists. Do not deploy or self-PASS.
