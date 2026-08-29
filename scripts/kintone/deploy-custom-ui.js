@@ -286,8 +286,35 @@ export function validateApp794DeployTargetBinding(options = {}, registry = null)
   return 794;
 }
 
+/**
+ * Pure helper to construct request options for App 794 customization deploy operations.
+ * Only exact authorized App 794 deploy operations (PUT preview/app/customize.json and POST preview/app/deploy.json)
+ * receive bypassDiscovery: true. Unrelated paths/methods receive bypassDiscovery: false and fail closed.
+ */
+export function getApp794DeployRequestOptions(path, method = 'GET', body = undefined) {
+  const normalizedPath = String(path || '').trim();
+  const normalizedMethod = String(method || '').toUpperCase();
+
+  const isPreviewPut = (normalizedPath === '/k/v1/preview/app/customize.json' && normalizedMethod === 'PUT');
+  const isDeployPost = (normalizedPath === '/k/v1/preview/app/deploy.json' && normalizedMethod === 'POST');
+
+  const isAuthorizedBypassWrite = isPreviewPut || isDeployPost;
+
+  const options = {
+    method: normalizedMethod,
+    bypassDiscovery: isAuthorizedBypassWrite
+  };
+
+  if (body !== undefined) {
+    options.body = body;
+  }
+
+  return options;
+}
+
 export async function executeDeployCustomUi(options = {}) {
   const isBuildOnly = options.isBuildOnly ?? process.argv.includes('--build-only');
+  const app = 794;
 
   if (isBuildOnly) {
     if (options.appId !== undefined && options.appId !== 794) {
@@ -365,20 +392,18 @@ export async function executeDeployCustomUi(options = {}) {
   });
 
   // 3. Put Customization to Preview (preserving non-target preview entries)
-  await kintoneRequest('/k/v1/preview/app/customize.json', {
-    method: 'PUT',
-    body: putPayload,
-    bypassDiscovery: true
-  });
+  await kintoneRequest(
+    '/k/v1/preview/app/customize.json',
+    getApp794DeployRequestOptions('/k/v1/preview/app/customize.json', 'PUT', putPayload)
+  );
 
   console.log('Customization preview updated.');
 
   // 4. Deploy Live Sandbox App 794
-  await kintoneRequest('/k/v1/preview/app/deploy.json', {
-    method: 'POST',
-    body: { apps: [{ app }] },
-    bypassDiscovery: true
-  });
+  await kintoneRequest(
+    '/k/v1/preview/app/deploy.json',
+    getApp794DeployRequestOptions('/k/v1/preview/app/deploy.json', 'POST', { apps: [{ app }] })
+  );
 
   console.log(`Live deployment requested for App ${app}. Polling status...`);
 

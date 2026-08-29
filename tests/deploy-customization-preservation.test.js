@@ -387,3 +387,39 @@ test('kintoneRequest bypassDiscovery option is required for write operations dur
     /DISCOVERY PHASE WRITE BLOCKED/
   );
 });
+
+test('getApp794DeployRequestOptions grants narrow bypassDiscovery ONLY to exact authorized App 794 Preview PUT and Deploy POST operations', async () => {
+  const { getApp794DeployRequestOptions } = await import('../scripts/kintone/deploy-custom-ui.js');
+
+  // 1. Exact authorized PUT preview/app/customize.json -> bypassDiscovery: true
+  const putOpts = getApp794DeployRequestOptions('/k/v1/preview/app/customize.json', 'PUT', { app: 794 });
+  assert.equal(putOpts.method, 'PUT');
+  assert.equal(putOpts.bypassDiscovery, true);
+  assert.deepEqual(putOpts.body, { app: 794 });
+
+  // 2. Exact authorized POST preview/app/deploy.json -> bypassDiscovery: true
+  const postOpts = getApp794DeployRequestOptions('/k/v1/preview/app/deploy.json', 'POST', { apps: [{ app: 794 }] });
+  assert.equal(postOpts.method, 'POST');
+  assert.equal(postOpts.bypassDiscovery, true);
+  assert.deepEqual(postOpts.body, { apps: [{ app: 794 }] });
+
+  // 3. Unrelated endpoints or wrong methods -> bypassDiscovery: false (fail-closed)
+  const forbiddenCases = [
+    { path: '/k/v1/preview/app/customize.json', method: 'POST' },
+    { path: '/k/v1/preview/app/customize.json', method: 'DELETE' },
+    { path: '/k/v1/preview/app/customize.json', method: 'GET' },
+    { path: '/k/v1/app/customize.json', method: 'PUT' },
+    { path: '/k/v1/app/customize.json', method: 'POST' },
+    { path: '/k/v1/preview/app/deploy.json', method: 'PUT' },
+    { path: '/k/v1/preview/app/deploy.json', method: 'GET' },
+    { path: '/k/v1/record.json', method: 'POST' },
+    { path: '/k/v1/preview/app/form/fields.json', method: 'PUT' },
+    { path: '/k/v1/app/acl.json', method: 'PUT' }
+  ];
+
+  for (const c of forbiddenCases) {
+    const opts = getApp794DeployRequestOptions(c.path, c.method);
+    assert.equal(opts.method, c.method);
+    assert.equal(opts.bypassDiscovery, false, `Expected bypassDiscovery: false for ${c.method} ${c.path}`);
+  }
+});
