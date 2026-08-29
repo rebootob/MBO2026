@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / DEPLOY GUARD PASS / APP794 ACL PASS / CORRECTIVE DEPLOY NOT EFFECTIVE LIVE / EXECUTION PROVENANCE RECOVERY NEXT / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / DEPLOY GUARD PASS / APP794 ACL PASS / DEPLOY PROVENANCE RECOVERED / DEPLOY TOOLING CORRECTIVE NEXT / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -48,10 +48,11 @@ APP794_DELETE_PERMISSION_READONLY_CHECK = PASS / RESOLVED BY APP-ACL CORRECTION
 APP794_ACL_CORRECTION                   = PASS / USER LIVE WRITE + READ-BACK / ACL REVISION 43 -> 44
 APP794_ACL_WRITE_AUTHORIZATION          = CONSUMED / CLOSED
 APP794_DEPLOY_AUTHORIZATION_ID          = APP794-CORRECTIVE-DEPLOY-20260829-01
-APP794_CORRECTIVE_DEPLOY_REVIEW         = FAIL / USER LIVE VERIFY SHOWS OLD CUSTOMIZATION STILL ACTIVE
+APP794_DEPLOY_PROVENANCE_RECOVERY       = PASS / ACCEPTED AT a7badd223568bc26dfc37171be779cf2df5846f7
+APP794_DEPLOY_AUTHORIZATION_STATE       = CONSUMED / FAILED AFTER FILE UPLOAD / BEFORE PREVIEW PUT
 APP794_DEPLOY_EFFECTIVE_LIVE            = NO
-APP794_DEPLOY_EXECUTION_PROVENANCE      = UNKNOWN / RECOVER READ-ONLY BEFORE ANY NEW AUTHORIZATION
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL DEPLOY PROVENANCE RECOVERY + NEW CONTROL DECISION + REMAINING UAT + ADMIN RESET UI UAT
+APP794_DEPLOY_TOOLING_CORRECTIVE        = NEXT / SOURCE+TEST ONLY
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL TOOLING CORRECTIVE PASS + NEW DEPLOY AUTHORIZATION + LIVE UAT + ADMIN RESET UI UAT
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
@@ -86,7 +87,6 @@ Conclusion:
 ```text
 APP794_DEPLOY_EFFECTIVE_LIVE = NO
 ```
-The accepted corrective source is not the effective Live customization yet.
 
 ## 5. HR / admin-form Password Reset Requirement
 
@@ -104,55 +104,76 @@ Accepted invariants:
 - protected Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain hard-blocked;
 - build-only exits before Kintone/network path.
 
-## 7. Independent Review — App794 Corrective Deploy
+## 7. Independent Review — App794 Deploy Provenance Recovery
 
-User authorization: `APP794-CORRECTIVE-DEPLOY-20260829-01`.
+Review result: **PASS / provenance resolved**.
 
-Repository evidence was missing after the authorized execution window, and subsequent user-side Live verification proves the corrective artifact is not effective on App794 Live.
+Accepted evidence commit:
+`a7badd223568bc26dfc37171be779cf2df5846f7`
 
-Do not infer whether the one-shot attempt was never started, stopped at preflight, uploaded a file only, updated Preview, or sent a deploy request. That execution provenance remains unknown until read-only evidence is recovered.
+Recovered execution facts for prior authorization `APP794-CORRECTIVE-DEPLOY-20260829-01`:
+```text
+SOURCE_HEAD_USED           = 00ed894fc098d96ec8d0e3c411b3c91a9ff9432b
+NPM_TEST                   = PASS
+BUILD_ONLY                 = PASS
+AUTH_GUARD_ENTERED         = YES
+UPLOAD_OCCURRED            = YES
+PREVIEW_PUT_OCCURRED       = NO
+DEPLOY_POST_OCCURRED       = NO
+DEPLOY_FINAL_STATUS        = BLOCKED_PRE_PREVIEW_PUT
+LIVE_REVISION              = 44
+PREVIEW_REVISION           = 44
+LIVE_PREVIEW_MATCH         = NO
+LIVE_WRITE_DURING_RECOVERY = 0
+```
 
-Critical rule:
-- NO deploy retry now;
-- NO source change;
-- NO new live authorization until read-only provenance recovery shows exactly how far the previous attempt progressed.
+The prior attempt uploaded one replacement `mbo-employee-app.js` file and then stopped before Preview customization mutation. The uploaded fileKey was never attached to Preview or Live customization. No Preview PUT and no deploy POST occurred. Live remains the old customization.
 
-## 8. Exact Next Action — READ-ONLY EXECUTION PROVENANCE RECOVERY
+The prior authorization is therefore **CONSUMED** and must not be reused. The unattached uploaded file does not authorize cleanup and no cleanup is required for D1 correctness.
 
-Antigravity may be used only for evidence recovery, with zero live writes.
+### Root cause
+`executeDeployCustomUi()` correctly passed the narrow App794 authorization and `assertSandboxWriteTarget()` checks. It then called generic `kintoneRequest()` for the authorized Preview PUT without setting `bypassDiscovery: true`.
 
-Recover and report:
-1. local terminal/history/log evidence from the prior authorized attempt, if present;
-2. exact source HEAD used by the attempted execution;
-3. whether `npm test` ran and result;
-4. whether build-only ran and result;
-5. whether authorization guard was entered/consumed in the process;
-6. whether `mbo-employee-app.js` upload occurred;
-7. current App794 LIVE customization GET state;
-8. current App794 PREVIEW customization GET state;
-9. current App794 deployment-status GET state, if API supports current status read;
-10. live/preview revision and target FILE names/fileKeys sufficient to determine whether Preview differs from Live;
-11. zero PUT/POST/upload/deploy/retry during recovery.
+`kintoneRequest(path, { method, body, bypassDiscovery = false })` calls `assertDiscoveryReadOnly()` unless that exact option is true. Therefore the authorized App794 Preview PUT was blocked by the global Discovery guard before network execution.
 
-Interpretation after recovery:
-- if no live write/upload/preview/deploy ever occurred, Control Plane may request a NEW explicit deploy authorization;
-- if an upload or Preview PUT occurred but no Live deploy, Control Plane must design the smallest safe recovery before any new write;
-- if a deploy request occurred but Live remained old, investigate exact failure/status before any retry.
+This is a deploy-tooling integration defect only. Do not reopen accepted Login/Create/Employee-Self business source.
+
+## 8. Exact Next Action — APP794 DEPLOY TOOLING CORRECTIVE / SOURCE+TEST ONLY
+
+Antigravity may perform a narrow source/test corrective only. No live Kintone write or deploy is authorized.
+
+Required design:
+1. keep the existing narrow App794 authorization and exact target-binding checks unchanged;
+2. only after those checks pass, allow the two exact intended customization write calls to bypass the generic Discovery read-only guard:
+   - `PUT /k/v1/preview/app/customize.json`;
+   - `POST /k/v1/preview/app/deploy.json`;
+3. do not globally disable Discovery mode;
+4. do not change `DISCOVERY_MODE = true`;
+5. do not change global `WRITE_ALLOWED_APPS = []`;
+6. do not widen `kintoneRequest()` default behavior;
+7. protected apps remain hard-blocked;
+8. GET/read-back calls remain ordinary read-only calls;
+9. add focused deterministic tests proving missing/wrong/replayed authorization still blocks before network and only the exact authorized App794 Preview PUT/Deploy POST receive the narrow bypass;
+10. build-only remains zero-network and requires no live authorization.
+
+No App794 deploy is authorized in this task. After source/test review PASS, Control Plane must request a **new explicit one-shot App794 deploy authorization** from the user.
 
 ```text
-NEXT_ACTION_OWNER              = ANTIGRAVITY / READ-ONLY EVIDENCE RECOVERY
-ANTIGRAVITY_REQUIRED           = YES / READ-ONLY ONLY
+NEXT_ACTION_OWNER              = ANTIGRAVITY / SOURCE+TEST ONLY
+ANTIGRAVITY_REQUIRED           = YES
 APP794_DEPLOY                  = NO
 APP794_UPLOAD                  = NO
 APP794_PREVIEW_WRITE           = NO
 APP794_ACL_WRITE               = NO
 APP794_RECORD_WRITE            = NO
 APP801_WRITE                   = NO
-SOURCE_CHANGE                  = NO
+SOURCE_CHANGE                  = YES / DEPLOY TOOLING ONLY
+BUSINESS_SOURCE_CHANGE         = NO
 EXTERNAL_SERVICE_WORK          = NO
 D2_D7_WRITE                    = NO
+MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 9. Handoff Checkpoint
 
-Start from `AI_DOCUMENT_INDEX.md`, this Control Center, relevant Confirmed Baselines, `AI_ACTIVE_TASK.md`, current HEAD, and exact evidence. Never revive Auth Bridge; D1 remains KINTONE-ONLY. Never retry the App794 corrective deploy until Control Plane has resolved prior execution provenance.
+Start from `AI_DOCUMENT_INDEX.md`, this Control Center, relevant Confirmed Baselines, `AI_ACTIVE_TASK.md`, current HEAD, and exact evidence. Never revive Auth Bridge; D1 remains KINTONE-ONLY. The prior App794 deploy authorization is consumed and cannot be reused.
