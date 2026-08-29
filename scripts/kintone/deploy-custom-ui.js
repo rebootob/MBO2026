@@ -11,9 +11,11 @@ const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
  */
 export async function prepareDeploymentArtifacts(options = {}) {
   const targetApp = options.appId || 794;
-  await buildMboUi(options.buildOptions || {});
+  const buildOptions = options.buildOptions || {};
+  const targetOutfile = buildOptions.outfile || 'dist/mbo-employee-app.js';
+  await buildMboUi(buildOptions);
 
-  const fullJs = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+  const fullJs = fs.readFileSync(targetOutfile, 'utf8');
   const cssContent = fs.readFileSync('dist/mbo-employee.css', 'utf8');
 
   // Validation Gate: Classic Bundle Parse & ES Module Residue Check
@@ -264,29 +266,39 @@ export function buildPreviewCustomizePayload({ app, previewCustomize, targetFile
 
 export async function executeDeployCustomUi(options = {}) {
   const isBuildOnly = options.isBuildOnly ?? process.argv.includes('--build-only');
-  let app = options.appId || 794;
+
+  // If options.appId is supplied and != 794, fail closed immediately
+  if (options.appId !== undefined && options.appId !== 794) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Supplied options.appId (${options.appId}) must be exactly 794.`);
+  }
 
   if (isBuildOnly) {
-    const { fullJs } = await prepareDeploymentArtifacts({ appId: app, buildOptions: options.buildOptions });
+    const { fullJs } = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
     console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
     console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
-    return { app, fullJs, buildOnly: true };
+    return { app: 794, fullJs, buildOnly: true };
   }
 
-  // 1. Require narrow App794 customization deploy authorization BEFORE any network/upload path
+  // 1. Resolve registry target without silent fallback catch
+  let sandboxRegistryModule;
+  try {
+    sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
+  } catch (err) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Cannot load sandbox-apps.json registry (${err.message}).`);
+  }
+
+  const registryAppId = sandboxRegistryModule?.mboV2AppId;
+  if (!Number.isInteger(registryAppId) || registryAppId !== 794) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Target App ID in sandbox-apps.json (${registryAppId}) must be exactly 794.`);
+  }
+
+  // 2. Require narrow App794 customization deploy authorization BEFORE any network/upload path
   assertApp794CustomizationDeployAuthorization(options.authConfig, options.requestConfig);
 
-  try {
-    const sandboxRegistryModule = (await import('../../config/sandbox-apps.json', { with: { type: 'json' } })).default;
-    app = sandboxRegistryModule.mboV2AppId || app;
-  } catch {
-    app = 794;
-  }
+  // 3. Validate write target with literal ephemeral allow-list [794] and dryRunBypassDiscovery
+  assertSandboxWriteTarget(794, sandboxRegistryModule, [794], { dryRunBypassDiscovery: true });
 
-  // 2. Validate write target with ephemeral allow-list and dryRunBypassDiscovery
-  assertSandboxWriteTarget(app, undefined, [app], { dryRunBypassDiscovery: true });
-
-  const { fullJs } = await prepareDeploymentArtifacts({ appId: app, buildOptions: options.buildOptions });
+  const { fullJs } = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
   console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
   // 2. Upload Files to Kintone

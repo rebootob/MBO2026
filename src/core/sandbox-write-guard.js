@@ -114,17 +114,16 @@ export function assertApp794CustomizationDeployAuthorization(authConfig, request
     throw new Error('APP794 DEPLOY BLOCKED (FAIL-CLOSED): Missing or corrupted authorization/request configuration.');
   }
 
-  const targetAppId = requestConfig.appId ?? requestConfig.targetAppId ?? authConfig.appId;
-  if (!Number.isInteger(targetAppId) || targetAppId <= 0) {
-    throw new Error('APP794 DEPLOY BLOCKED: Target application ID must be a positive integer.');
-  }
+  const reqAppId = requestConfig.appId ?? requestConfig.targetAppId;
+  const authAppId = authConfig.appId;
 
   // Absolute invariant: Permanent Protected apps are NEVER writable under any circumstances
-  if (PROTECTED_APP_IDS.includes(targetAppId) || (authConfig.appId && PROTECTED_APP_IDS.includes(authConfig.appId))) {
-    throw new Error(`WRITE BLOCKED: App ${targetAppId} is a permanent PROTECTED PRODUCTION APP and cannot be modified.`);
+  if (PROTECTED_APP_IDS.includes(reqAppId) || PROTECTED_APP_IDS.includes(authAppId)) {
+    const blockedApp = PROTECTED_APP_IDS.includes(reqAppId) ? reqAppId : authAppId;
+    throw new Error(`WRITE BLOCKED: App ${blockedApp} is a permanent PROTECTED PRODUCTION APP and cannot be modified.`);
   }
 
-  if (targetAppId !== APP794_MBO_V2_APP_ID || (authConfig.appId && authConfig.appId !== APP794_MBO_V2_APP_ID)) {
+  if (reqAppId !== APP794_MBO_V2_APP_ID || authAppId !== APP794_MBO_V2_APP_ID) {
     throw new Error(`APP794 DEPLOY BLOCKED: Target App ID must be exactly ${APP794_MBO_V2_APP_ID}.`);
   }
 

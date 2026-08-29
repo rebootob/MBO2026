@@ -62,6 +62,18 @@ test('DEPLOY_ENTRYPOINT_SCOPE_REGRESSION & DEPLOY_IMPORT_NETWORK_CALL_COUNT = 0'
   assert.equal(buildResult.app, 794);
   assert.equal(buildResult.buildOnly, true);
   assert.equal(typeof buildResult.fullJs, 'string');
+
+  // 3. executeDeployCustomUi in live mode without authorization blocks before network operations
+  await assert.rejects(
+    async () => executeDeployCustomUi({ isBuildOnly: false }),
+    /APP794 DEPLOY BLOCKED/
+  );
+
+  // 4. executeDeployCustomUi with supplied appId != 794 blocks immediately
+  await assert.rejects(
+    async () => executeDeployCustomUi({ isBuildOnly: false, appId: 795 }),
+    /APP794 DEPLOY BLOCKED/
+  );
 });
 
 test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values', () => {

@@ -352,4 +352,30 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use au
     ),
     /APP794 DEPLOY BLOCKED: One-time write window is CLOSED/
   );
+
+  // Legacy Protected production app (283) hard blocks even with valid authorization structure
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_PROTECTED_283', appId: 283 },
+      { ...validReq, appId: 283 }
+    ),
+    /WRITE BLOCKED: App 283 is a permanent PROTECTED PRODUCTION APP/
+  );
+
+  // Missing or malformed authConfig/requestConfig fail closed
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(null, validReq),
+    /APP794 DEPLOY BLOCKED \(FAIL-CLOSED\)/
+  );
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(validAuth, null),
+    /APP794 DEPLOY BLOCKED \(FAIL-CLOSED\)/
+  );
+
+  // Exact authorized App794 context passes both authorization and sandbox write target layer
+  const { assertSandboxWriteTarget } = await import('../src/core/sandbox-write-guard.js');
+  const authCtx = { ...validAuth, authorizationId: 'AUTH_EXACT_CONTEXT_794' };
+  const reqCtx = { ...validReq };
+  assert.equal(assertApp794CustomizationDeployAuthorization(authCtx, reqCtx), true);
+  assert.equal(assertSandboxWriteTarget(794, undefined, [794], { dryRunBypassDiscovery: true }), 794);
 });
