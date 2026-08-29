@@ -579,6 +579,7 @@ export class EmployeePartAUI {
     this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
     this.appId = options.appId || options.previewOptions?.appId || null;
     this.onNavigateHome = options.onNavigateHome || null;
+    this.kintoneApiWrapper = options.kintoneApiWrapper || null;
     this.currentErrors = [];
     this.preparedAttachmentPlan = null;
 
@@ -810,8 +811,8 @@ export class EmployeePartAUI {
       this.isEditable = origEditable;
     }
 
-    // Native Kintone Comment Thread Coexistence Placeholder
-    root.appendChild(this._renderNativeCommentPlaceholder());
+    // Native Kintone Comment Thread Mirror (Read-Only Mirror + Refresh)
+    root.appendChild(this._renderNativeCommentMirror());
 
     // Workflow Action Timeline Frame (Read-Only Lifecycle Audit Trail)
     root.appendChild(this._renderWorkflowActionTimeline());
@@ -1534,22 +1535,199 @@ export class EmployeePartAUI {
     return card;
   }
 
-  _renderNativeCommentPlaceholder() {
+  async _fetchRecordComments(appId, recordId) {
+    const limit = 10;
+    let offset = 0;
+    let allComments = [];
+    let hasMore = true;
+
+    while (hasMore) {
+      let resp = null;
+      if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === 'function') {
+        resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: 'asc' });
+      } else if (typeof kintone !== 'undefined' && typeof kintone.api === 'function') {
+        const url = kintone.api.url('/k/v1/record/comments.json', true);
+        resp = await kintone.api(url, 'GET', { app: appId, record: recordId, limit, offset, order: 'asc' });
+      } else {
+        break;
+      }
+
+      const comments = Array.isArray(resp?.comments) ? resp.comments : [];
+      allComments = allComments.concat(comments);
+
+      if (comments.length < limit || resp?.older === false) {
+        hasMore = false;
+      } else {
+        offset += limit;
+        if (offset >= 500) break;
+      }
+    }
+
+    return allComments;
+  }
+
+  async _loadAndRenderComments(bodyContainer) {
+    if (!bodyContainer) return;
+    bodyContainer.innerHTML = '';
+
+    const recordId = this.record?.$id?.value;
+    const appId = this._getAppId();
+
+    if (!recordId) {
+      const emptyNotice = document.createElement('div');
+      emptyNotice.className = 'mbo-comment-empty-notice';
+      if (typeof emptyNotice.setAttribute === 'function') {
+        emptyNotice.setAttribute('data-mbo-comment-empty', '');
+      }
+      emptyNotice.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.';
+      bodyContainer.appendChild(emptyNotice);
+      return;
+    }
+
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'mbo-comment-loading';
+    loadingEl.textContent = 'กำลังโหลดความคิดเห็น... / Loading comments...';
+    bodyContainer.appendChild(loadingEl);
+
+    try {
+      const comments = await this._fetchRecordComments(appId, recordId);
+      bodyContainer.innerHTML = '';
+
+      if (!comments || comments.length === 0) {
+        const emptyNotice = document.createElement('div');
+        emptyNotice.className = 'mbo-comment-empty-notice';
+        if (typeof emptyNotice.setAttribute === 'function') {
+          emptyNotice.setAttribute('data-mbo-comment-empty', '');
+        }
+        emptyNotice.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.\n(สามารถเพิ่มความคิดเห็นได้ที่แถบด้านขวา / Add comments via native right panel)';
+        bodyContainer.appendChild(emptyNotice);
+        return;
+      }
+
+      const threadList = document.createElement('div');
+      threadList.className = 'mbo-comment-thread-list';
+      if (typeof threadList.setAttribute === 'function') {
+        threadList.setAttribute('data-mbo-comment-thread', '');
+      }
+
+      comments.forEach(comment => {
+        const item = document.createElement('div');
+        item.className = 'mbo-comment-item';
+        if (typeof item.setAttribute === 'function') {
+          item.setAttribute('data-mbo-comment-item', '');
+        }
+
+        const metaRow = document.createElement('div');
+        metaRow.className = 'mbo-comment-meta';
+
+        const authorName = document.createElement('span');
+        authorName.className = 'mbo-comment-author';
+        if (typeof authorName.setAttribute === 'function') {
+          authorName.setAttribute('data-mbo-comment-author', '');
+        }
+        authorName.textContent = comment.creator?.name || comment.creator?.code || 'Unknown User';
+
+        const timeStamp = document.createElement('span');
+        timeStamp.className = 'mbo-comment-time';
+        if (typeof timeStamp.setAttribute === 'function') {
+          timeStamp.setAttribute('data-mbo-comment-time', '');
+        }
+        timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString('th-TH') : '';
+
+        metaRow.appendChild(authorName);
+        metaRow.appendChild(timeStamp);
+
+        const textBody = document.createElement('div');
+        textBody.className = 'mbo-comment-text';
+        if (typeof textBody.setAttribute === 'function') {
+          textBody.setAttribute('data-mbo-comment-text', '');
+        }
+        textBody.textContent = comment.text || '';
+
+        item.appendChild(metaRow);
+        item.appendChild(textBody);
+
+        threadList.appendChild(item);
+      });
+
+      bodyContainer.appendChild(threadList);
+    } catch (err) {
+      bodyContainer.innerHTML = '';
+      const errorNotice = document.createElement('div');
+      errorNotice.className = 'mbo-comment-error-notice';
+      if (typeof errorNotice.setAttribute === 'function') {
+        errorNotice.setAttribute('data-mbo-comment-error', '');
+      }
+      errorNotice.textContent = `ไม่สามารถโหลดความคิดเห็นได้ / Could not load comments: ${err.message}`;
+      bodyContainer.appendChild(errorNotice);
+    }
+  }
+
+  _renderNativeCommentMirror() {
     const card = document.createElement('div');
-    card.className = 'mbo-native-comment-placeholder';
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong style="color:#0f172a; font-size:13px;">💬 ความคิดเห็นใน Kintone / Kintone Comments (Native Platform)</strong>
-          <div style="font-size:11.5px; color:#475569; margin-top:2px;">
-            เมื่อมีการส่งกลับให้แก้ไข (Return / Reject) ผู้ประเมินและพนักงานสามารถสื่อสารผ่านช่องทางความคิดเห็นหลักของ Kintone ทางด้านขวามือของหน้าจอ
-          </div>
-        </div>
-        <span style="font-size:10.5px; font-weight:700; background:#e2e8f0; color:#334155; padding:4px 8px; border-radius:4px; white-space:nowrap;">
-          Native Platform Coexistence
-        </span>
-      </div>
-    `;
+    card.className = 'mbo-native-comment-mirror';
+    if (typeof card.setAttribute === 'function') {
+      card.setAttribute('data-mbo-comment-section', '');
+    }
+
+    const header = document.createElement('div');
+    header.className = 'mbo-comment-header';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'mbo-comment-title';
+
+    const titleText = document.createElement('span');
+    titleText.className = 'mbo-comment-title-text';
+    titleText.innerHTML = '💬 ความคิดเห็นใน Kintone / Kintone Comments (Native Mirror)';
+
+    const subtitleText = document.createElement('div');
+    subtitleText.className = 'mbo-comment-subtitle';
+    subtitleText.innerHTML = 'แสดงความคิดเห็นล่าสุดจากระบบ Kintone (อ่านอย่างเดียว / Read-only mirror)';
+
+    titleDiv.appendChild(titleText);
+    titleDiv.appendChild(subtitleText);
+
+    header.appendChild(titleDiv);
+
+    const bodyContainer = document.createElement('div');
+    bodyContainer.className = 'mbo-comment-body-container';
+    if (typeof bodyContainer.setAttribute === 'function') {
+      bodyContainer.setAttribute('data-mbo-comment-body', '');
+    }
+
+    if (!this.isCreate) {
+      const refreshBtn = document.createElement('button');
+      refreshBtn.type = 'button';
+      refreshBtn.className = 'mbo-btn-refresh-comments';
+      if (typeof refreshBtn.setAttribute === 'function') {
+        refreshBtn.setAttribute('data-mbo-refresh-comments', '');
+      }
+      refreshBtn.textContent = '🔄 รีเฟรชความคิดเห็น / Refresh Comments';
+
+      if (typeof refreshBtn.addEventListener === 'function') {
+        refreshBtn.addEventListener('click', async () => {
+          await this._loadAndRenderComments(bodyContainer);
+        });
+      }
+      header.appendChild(refreshBtn);
+    }
+
+    card.appendChild(header);
+    card.appendChild(bodyContainer);
+
+    if (this.isCreate) {
+      const createMsg = document.createElement('div');
+      createMsg.className = 'mbo-comment-empty-notice';
+      if (typeof createMsg.setAttribute === 'function') {
+        createMsg.setAttribute('data-mbo-comment-create-notice', '');
+      }
+      createMsg.textContent = 'ยังไม่มีความคิดเห็น (คำขอใหม่ที่ยังไม่ได้บันทึก) / No comments yet (unpersisted new record).';
+      bodyContainer.appendChild(createMsg);
+      return card;
+    }
+
+    this._loadAndRenderComments(bodyContainer);
+
     return card;
   }
 

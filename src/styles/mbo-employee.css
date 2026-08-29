@@ -2098,4 +2098,124 @@
   color: #1d4ed8;
 }
 
+/* Native Comment Mirror Section */
+.mbo-native-comment-mirror {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.mbo-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mbo-comment-title-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.mbo-comment-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.mbo-btn-refresh-comments {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mbo-btn-refresh-comments:hover {
+  background: #e2e8f0;
+  color: #1d4ed8;
+}
+
+.mbo-comment-thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.mbo-comment-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+
+.mbo-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mbo-comment-author {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mbo-comment-time {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.mbo-comment-text {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mbo-comment-empty-notice {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.mbo-comment-loading {
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.mbo-comment-error-notice {
+  padding: 14px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+
 

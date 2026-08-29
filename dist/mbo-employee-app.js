@@ -2971,6 +2971,7 @@ Requester_User is empty for action "${actionName}".`
       this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
       this.appId = options.appId || options.previewOptions?.appId || null;
       this.onNavigateHome = options.onNavigateHome || null;
+      this.kintoneApiWrapper = options.kintoneApiWrapper || null;
       this.currentErrors = [];
       this.preparedAttachmentPlan = null;
       this.isEmployeeVerified = !this.isCreate;
@@ -3153,7 +3154,7 @@ Requester_User is empty for action "${actionName}".`
         this.stage = origStage;
         this.isEditable = origEditable;
       }
-      root.appendChild(this._renderNativeCommentPlaceholder());
+      root.appendChild(this._renderNativeCommentMirror());
       root.appendChild(this._renderWorkflowActionTimeline());
       this.container.appendChild(root);
       this._updateTotalWeightDisplay();
@@ -3789,22 +3790,165 @@ Requester_User is empty for action "${actionName}".`
     `;
       return card;
     }
-    _renderNativeCommentPlaceholder() {
+    async _fetchRecordComments(appId, recordId) {
+      const limit = 10;
+      let offset = 0;
+      let allComments = [];
+      let hasMore = true;
+      while (hasMore) {
+        let resp = null;
+        if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === "function") {
+          resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: "asc" });
+        } else if (typeof kintone !== "undefined" && typeof kintone.api === "function") {
+          const url = kintone.api.url("/k/v1/record/comments.json", true);
+          resp = await kintone.api(url, "GET", { app: appId, record: recordId, limit, offset, order: "asc" });
+        } else {
+          break;
+        }
+        const comments = Array.isArray(resp?.comments) ? resp.comments : [];
+        allComments = allComments.concat(comments);
+        if (comments.length < limit || resp?.older === false) {
+          hasMore = false;
+        } else {
+          offset += limit;
+          if (offset >= 500) break;
+        }
+      }
+      return allComments;
+    }
+    async _loadAndRenderComments(bodyContainer) {
+      if (!bodyContainer) return;
+      bodyContainer.innerHTML = "";
+      const recordId = this.record?.$id?.value;
+      const appId = this._getAppId();
+      if (!recordId) {
+        const emptyNotice = document.createElement("div");
+        emptyNotice.className = "mbo-comment-empty-notice";
+        if (typeof emptyNotice.setAttribute === "function") {
+          emptyNotice.setAttribute("data-mbo-comment-empty", "");
+        }
+        emptyNotice.textContent = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E35\u0E49 / No comments for this record yet.";
+        bodyContainer.appendChild(emptyNotice);
+        return;
+      }
+      const loadingEl = document.createElement("div");
+      loadingEl.className = "mbo-comment-loading";
+      loadingEl.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19... / Loading comments...";
+      bodyContainer.appendChild(loadingEl);
+      try {
+        const comments = await this._fetchRecordComments(appId, recordId);
+        bodyContainer.innerHTML = "";
+        if (!comments || comments.length === 0) {
+          const emptyNotice = document.createElement("div");
+          emptyNotice.className = "mbo-comment-empty-notice";
+          if (typeof emptyNotice.setAttribute === "function") {
+            emptyNotice.setAttribute("data-mbo-comment-empty", "");
+          }
+          emptyNotice.textContent = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E35\u0E49 / No comments for this record yet.\n(\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49\u0E17\u0E35\u0E48\u0E41\u0E16\u0E1A\u0E14\u0E49\u0E32\u0E19\u0E02\u0E27\u0E32 / Add comments via native right panel)";
+          bodyContainer.appendChild(emptyNotice);
+          return;
+        }
+        const threadList = document.createElement("div");
+        threadList.className = "mbo-comment-thread-list";
+        if (typeof threadList.setAttribute === "function") {
+          threadList.setAttribute("data-mbo-comment-thread", "");
+        }
+        comments.forEach((comment) => {
+          const item = document.createElement("div");
+          item.className = "mbo-comment-item";
+          if (typeof item.setAttribute === "function") {
+            item.setAttribute("data-mbo-comment-item", "");
+          }
+          const metaRow = document.createElement("div");
+          metaRow.className = "mbo-comment-meta";
+          const authorName = document.createElement("span");
+          authorName.className = "mbo-comment-author";
+          if (typeof authorName.setAttribute === "function") {
+            authorName.setAttribute("data-mbo-comment-author", "");
+          }
+          authorName.textContent = comment.creator?.name || comment.creator?.code || "Unknown User";
+          const timeStamp = document.createElement("span");
+          timeStamp.className = "mbo-comment-time";
+          if (typeof timeStamp.setAttribute === "function") {
+            timeStamp.setAttribute("data-mbo-comment-time", "");
+          }
+          timeStamp.textContent = comment.createdAt ? new Date(comment.createdAt).toLocaleString("th-TH") : "";
+          metaRow.appendChild(authorName);
+          metaRow.appendChild(timeStamp);
+          const textBody = document.createElement("div");
+          textBody.className = "mbo-comment-text";
+          if (typeof textBody.setAttribute === "function") {
+            textBody.setAttribute("data-mbo-comment-text", "");
+          }
+          textBody.textContent = comment.text || "";
+          item.appendChild(metaRow);
+          item.appendChild(textBody);
+          threadList.appendChild(item);
+        });
+        bodyContainer.appendChild(threadList);
+      } catch (err) {
+        bodyContainer.innerHTML = "";
+        const errorNotice = document.createElement("div");
+        errorNotice.className = "mbo-comment-error-notice";
+        if (typeof errorNotice.setAttribute === "function") {
+          errorNotice.setAttribute("data-mbo-comment-error", "");
+        }
+        errorNotice.textContent = `\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E42\u0E2B\u0E25\u0E14\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49 / Could not load comments: ${err.message}`;
+        bodyContainer.appendChild(errorNotice);
+      }
+    }
+    _renderNativeCommentMirror() {
       const card = document.createElement("div");
-      card.className = "mbo-native-comment-placeholder";
-      card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong style="color:#0f172a; font-size:13px;">\u{1F4AC} \u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E43\u0E19 Kintone / Kintone Comments (Native Platform)</strong>
-          <div style="font-size:11.5px; color:#475569; margin-top:2px;">
-            \u0E40\u0E21\u0E37\u0E48\u0E2D\u0E21\u0E35\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E01\u0E25\u0E31\u0E1A\u0E43\u0E2B\u0E49\u0E41\u0E01\u0E49\u0E44\u0E02 (Return / Reject) \u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E41\u0E25\u0E30\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2A\u0E37\u0E48\u0E2D\u0E2A\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2B\u0E25\u0E31\u0E01\u0E02\u0E2D\u0E07 Kintone \u0E17\u0E32\u0E07\u0E14\u0E49\u0E32\u0E19\u0E02\u0E27\u0E32\u0E21\u0E37\u0E2D\u0E02\u0E2D\u0E07\u0E2B\u0E19\u0E49\u0E32\u0E08\u0E2D
-          </div>
-        </div>
-        <span style="font-size:10.5px; font-weight:700; background:#e2e8f0; color:#334155; padding:4px 8px; border-radius:4px; white-space:nowrap;">
-          Native Platform Coexistence
-        </span>
-      </div>
-    `;
+      card.className = "mbo-native-comment-mirror";
+      if (typeof card.setAttribute === "function") {
+        card.setAttribute("data-mbo-comment-section", "");
+      }
+      const header = document.createElement("div");
+      header.className = "mbo-comment-header";
+      const titleDiv = document.createElement("div");
+      titleDiv.className = "mbo-comment-title";
+      const titleText = document.createElement("span");
+      titleText.className = "mbo-comment-title-text";
+      titleText.innerHTML = "\u{1F4AC} \u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E43\u0E19 Kintone / Kintone Comments (Native Mirror)";
+      const subtitleText = document.createElement("div");
+      subtitleText.className = "mbo-comment-subtitle";
+      subtitleText.innerHTML = "\u0E41\u0E2A\u0E14\u0E07\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E25\u0E48\u0E32\u0E2A\u0E38\u0E14\u0E08\u0E32\u0E01\u0E23\u0E30\u0E1A\u0E1A Kintone (\u0E2D\u0E48\u0E32\u0E19\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27 / Read-only mirror)";
+      titleDiv.appendChild(titleText);
+      titleDiv.appendChild(subtitleText);
+      header.appendChild(titleDiv);
+      const bodyContainer = document.createElement("div");
+      bodyContainer.className = "mbo-comment-body-container";
+      if (typeof bodyContainer.setAttribute === "function") {
+        bodyContainer.setAttribute("data-mbo-comment-body", "");
+      }
+      if (!this.isCreate) {
+        const refreshBtn = document.createElement("button");
+        refreshBtn.type = "button";
+        refreshBtn.className = "mbo-btn-refresh-comments";
+        if (typeof refreshBtn.setAttribute === "function") {
+          refreshBtn.setAttribute("data-mbo-refresh-comments", "");
+        }
+        refreshBtn.textContent = "\u{1F504} \u0E23\u0E35\u0E40\u0E1F\u0E23\u0E0A\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 / Refresh Comments";
+        if (typeof refreshBtn.addEventListener === "function") {
+          refreshBtn.addEventListener("click", async () => {
+            await this._loadAndRenderComments(bodyContainer);
+          });
+        }
+        header.appendChild(refreshBtn);
+      }
+      card.appendChild(header);
+      card.appendChild(bodyContainer);
+      if (this.isCreate) {
+        const createMsg = document.createElement("div");
+        createMsg.className = "mbo-comment-empty-notice";
+        if (typeof createMsg.setAttribute === "function") {
+          createMsg.setAttribute("data-mbo-comment-create-notice", "");
+        }
+        createMsg.textContent = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 (\u0E04\u0E33\u0E02\u0E2D\u0E43\u0E2B\u0E21\u0E48\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01) / No comments yet (unpersisted new record).";
+        bodyContainer.appendChild(createMsg);
+        return card;
+      }
+      this._loadAndRenderComments(bodyContainer);
       return card;
     }
     _renderScreenObjectives() {
@@ -7389,8 +7533,9 @@ Record: ${record.Employee_Code.value}`
         isEditable: isCreate || isEdit,
         isCreate,
         loginUserCode,
-        // D1: bind authenticated Employee_Code so lookup UI is suppressed and context is locked
         authenticatedEmployeeCode,
+        kintoneApiWrapper,
+        appId: event.appId || getMboAppId(),
         isPreviewMode: false,
         onFieldChange: (code, val) => {
           if (record[code]) {

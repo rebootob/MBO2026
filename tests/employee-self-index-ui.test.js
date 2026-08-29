@@ -433,3 +433,393 @@ test('DETAIL_EXISTING_RECORD_BACK_TO_MY_MBO_VISIBLE & EDIT_EXISTING_RECORD_BACK_
   }
 });
 
+test('COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_PAGINATION_DOES_NOT_SILENTLY_TRUNCATE: Loads comments with pagination on existing Detail/Edit', async () => {
+  const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
+
+  let getCommentsCallCount = 0;
+  const queriedParams = [];
+  const mockApiWrapper = {
+    getComments: async (appId, recordId, options) => {
+      getCommentsCallCount++;
+      queriedParams.push({ appId, recordId, options });
+      if (options.offset === 0) {
+        return {
+          comments: Array.from({ length: 10 }, (_, i) => ({
+            id: String(i + 1),
+            text: `Comment ${i + 1} content <script>alert("xss")</script>`,
+            createdAt: '2026-08-29T10:00:00Z',
+            creator: { name: `User ${i + 1}`, code: `00${i + 1}` }
+          })),
+          older: true
+        };
+      } else {
+        return {
+          comments: [
+            { id: '11', text: 'Comment 11 page 2', createdAt: '2026-08-29T10:05:00Z', creator: { name: 'User 11', code: '0011' } }
+          ],
+          older: false
+        };
+      }
+    }
+  };
+
+  const createMockContainer = () => {
+    const children = [];
+    const attrMap = new Map();
+    const mockContainer = {
+      tagName: 'DIV',
+      children,
+      innerHTML: '',
+      appendChild: (c) => { children.push(c); return c; },
+      querySelector: (sel) => {
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+          }
+          for (const child of el.children || []) {
+            const res = find(child);
+            if (res) return res;
+          }
+          return null;
+        };
+        return find(mockContainer);
+      },
+      querySelectorAll: (sel) => {
+        const res = [];
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+          }
+          for (const child of el.children || []) {
+            find(child);
+          }
+        };
+        find(mockContainer);
+        return res;
+      },
+      setAttribute: (k, v) => attrMap.set(k, String(v)),
+      getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null
+    };
+    return mockContainer;
+  };
+
+  const origDocument = globalThis.document;
+  const origKintone = globalThis.kintone;
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: (tag) => {
+      const children = [];
+      const attrMap = new Map();
+      return {
+        tagName: tag.toUpperCase(),
+        children,
+        innerHTML: '',
+        textContent: '',
+        style: {},
+        appendChild: (c) => { children.push(c); return c; },
+        setAttribute: (k, v) => attrMap.set(k, String(v)),
+        getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
+        querySelector: (sel) => {
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) return el;
+            }
+            for (const c of el.children || []) {
+              const res = search(c);
+              if (res) return res;
+            }
+            return null;
+          };
+          for (const c of children || []) {
+            const res = search(c);
+            if (res) return res;
+          }
+          return null;
+        },
+        querySelectorAll: (sel) => {
+          const res = [];
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) res.push(el);
+            }
+            for (const c of el.children || []) {
+              search(c);
+            }
+          };
+          for (const c of children || []) {
+            search(c);
+          }
+          return res;
+        },
+        addEventListener: () => {}
+      };
+    }
+  };
+  globalThis.kintone = {
+    app: { getHeaderSpaceElement: () => null },
+    getLoginUser: () => ({ code: '0113' })
+  };
+
+  try {
+    const container = createMockContainer();
+    const ui = new EmployeePartAUI({
+      container,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        $id: { value: '501' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: mockApiWrapper
+    });
+
+    ui.render();
+    await new Promise(r => setTimeout(r, 50));
+
+    // 1. COMMENTS_GET_USES_CURRENT_APP_AND_RECORD_ID
+    assert.equal(getCommentsCallCount, 2, 'Must page until all comments returned (2 calls)');
+    assert.equal(queriedParams[0].appId, 794);
+    assert.equal(queriedParams[0].recordId, '501');
+    assert.equal(queriedParams[0].options.offset, 0);
+    assert.equal(queriedParams[1].options.offset, 10);
+
+    // 2. COMMENTS_RENDER_AUTHOR_BODY_TIMESTAMP & COMMENTS_TEXT_RENDERED_WITHOUT_HTML_INJECTION
+    const commentSection = container.querySelector('[data-mbo-comment-section]');
+    assert.ok(commentSection, 'Comment section container must be rendered');
+
+    const refreshBtn = container.querySelector('[data-mbo-refresh-comments]');
+    assert.ok(refreshBtn, 'Refresh Comments button must be rendered on existing record');
+    assert.equal(refreshBtn.textContent, '🔄 รีเฟรชความคิดเห็น / Refresh Comments');
+
+    const threadList = container.querySelector('[data-mbo-comment-thread]');
+    assert.ok(threadList, 'Comment thread list must be rendered');
+    assert.equal(threadList.children.length, 11, 'All 11 paged comments must be rendered without truncation');
+
+    const firstItem = threadList.children[0];
+    const authorEl = firstItem.children[0].children[0];
+    const textEl = firstItem.children[1];
+    assert.equal(authorEl.textContent, 'User 1');
+    assert.equal(textEl.textContent, 'Comment 1 content <script>alert("xss")</script>');
+    assert.equal(textEl.innerHTML, '', 'InnerHTML must remain empty when using safe textContent');
+
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.kintone = origKintone;
+  }
+});
+
+test('COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET & COMMENTS_EMPTY_STATE_BILINGUAL & COMMENTS_RETRIEVAL_FAILURE_NON_BLOCKING: Create screen performs 0 comment GET, empty state bilingual, failure non-blocking', async () => {
+  const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
+
+  let getCommentsCallCount = 0;
+  const mockApiWrapper = {
+    getComments: async () => {
+      getCommentsCallCount++;
+      return { comments: [] };
+    }
+  };
+
+  const createMockContainer = () => {
+    const children = [];
+    const attrMap = new Map();
+    const mockContainer = {
+      tagName: 'DIV',
+      children,
+      innerHTML: '',
+      appendChild: (c) => { children.push(c); return c; },
+      querySelector: (sel) => {
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+          }
+          for (const child of el.children || []) {
+            const res = find(child);
+            if (res) return res;
+          }
+          return null;
+        };
+        return find(mockContainer);
+      },
+      querySelectorAll: (sel) => {
+        const res = [];
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+          }
+          for (const child of el.children || []) {
+            find(child);
+          }
+        };
+        find(mockContainer);
+        return res;
+      },
+      setAttribute: (k, v) => attrMap.set(k, String(v)),
+      getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null
+    };
+    return mockContainer;
+  };
+
+  const origDocument = globalThis.document;
+  const origKintone = globalThis.kintone;
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: (tag) => {
+      const children = [];
+      const attrMap = new Map();
+      return {
+        tagName: tag.toUpperCase(),
+        children,
+        innerHTML: '',
+        textContent: '',
+        style: {},
+        appendChild: (c) => { children.push(c); return c; },
+        setAttribute: (k, v) => attrMap.set(k, String(v)),
+        getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
+        querySelector: (sel) => {
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) return el;
+            }
+            for (const c of el.children || []) {
+              const res = search(c);
+              if (res) return res;
+            }
+            return null;
+          };
+          for (const c of children || []) {
+            const res = search(c);
+            if (res) return res;
+          }
+          return null;
+        },
+        querySelectorAll: (sel) => {
+          const res = [];
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) res.push(el);
+            }
+            for (const c of el.children || []) {
+              search(c);
+            }
+          };
+          for (const c of children || []) {
+            search(c);
+          }
+          return res;
+        },
+        addEventListener: () => {}
+      };
+    }
+  };
+  globalThis.kintone = {
+    app: { getHeaderSpaceElement: () => null },
+    getLoginUser: () => ({ code: '0113' })
+  };
+
+  try {
+    // 1. COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET
+    const createContainer = createMockContainer();
+    const createUi = new EmployeePartAUI({
+      container: createContainer,
+      isCreate: true,
+      isEditable: true,
+      appId: 794,
+      record: {},
+      kintoneApiWrapper: mockApiWrapper
+    });
+    createUi.render();
+    await new Promise(r => setTimeout(r, 50));
+
+    assert.equal(getCommentsCallCount, 0, 'Create screen must perform exactly 0 comment GET calls');
+    const createNotice = createContainer.querySelector('[data-mbo-comment-create-notice]');
+    assert.ok(createNotice, 'Create screen must show unpersisted record comment notice');
+    assert.ok(createNotice.textContent.includes('ยังไม่มีความคิดเห็น (คำขอใหม่ที่ยังไม่ได้บันทึก)'));
+
+    // 2. COMMENTS_EMPTY_STATE_BILINGUAL on existing record with 0 comments
+    const emptyContainer = createMockContainer();
+    const emptyUi = new EmployeePartAUI({
+      container: emptyContainer,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        $id: { value: '502' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: mockApiWrapper
+    });
+    emptyUi.render();
+    await new Promise(r => setTimeout(r, 50));
+
+    assert.equal(getCommentsCallCount, 1, 'Existing record must fetch comments once');
+    const emptyNotice = emptyContainer.querySelector('[data-mbo-comment-empty]');
+    assert.ok(emptyNotice, 'Existing record with 0 comments must render empty notice');
+    assert.ok(emptyNotice.textContent.includes('ยังไม่มีความคิดเห็นสำหรับบันทึกนี้'));
+    assert.ok(emptyNotice.textContent.includes('No comments for this record yet.'));
+
+    // 3. COMMENTS_RETRIEVAL_FAILURE_NON_BLOCKING
+    const failingApiWrapper = {
+      getComments: async () => {
+        throw new Error('HTTP 403 Forbidden: Comment access denied');
+      }
+    };
+    const errorContainer = createMockContainer();
+    const errorUi = new EmployeePartAUI({
+      container: errorContainer,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        $id: { value: '503' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: failingApiWrapper
+    });
+    errorUi.render();
+    await new Promise(r => setTimeout(r, 50));
+
+    const errorNotice = errorContainer.querySelector('[data-mbo-comment-error]');
+    assert.ok(errorNotice, 'Comment retrieval failure must render non-blocking error notice in comment section');
+    assert.ok(errorNotice.textContent.includes('HTTP 403 Forbidden'));
+
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.kintone = origKintone;
+  }
+});
+
+

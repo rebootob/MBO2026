@@ -334,8 +334,9 @@ if (typeof kintone !== 'undefined') {
       isEditable: isCreate || isEdit,
       isCreate: isCreate,
       loginUserCode: loginUserCode,
-      // D1: bind authenticated Employee_Code so lookup UI is suppressed and context is locked
       authenticatedEmployeeCode: authenticatedEmployeeCode,
+      kintoneApiWrapper: kintoneApiWrapper,
+      appId: event.appId || getMboAppId(),
       isPreviewMode: false,
       onFieldChange: (code, val) => {
         if (record[code]) {
