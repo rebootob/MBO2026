@@ -1,8 +1,7 @@
-# AI ACTIVE TASK — APP794 CORRECTIVE DEPLOY AUTHORIZED
+# AI ACTIVE TASK — HOLD / APP794 DEPLOY EVIDENCE VERIFICATION
 
-Mode: **LIVE KINTONE CUSTOMIZATION DEPLOY — EXACT ONE-SHOT**
+Mode: **CONTROL PLANE + USER READ-ONLY VERIFICATION — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
-Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
 ## Mandatory architecture
 
@@ -12,107 +11,70 @@ External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
 ```
 
-## User authorization — 2026-08-29
+## Review state
 
-User explicitly approved: **App794 Corrective Deploy**.
-
-Authorization ID:
+User previously authorized one-shot App794 Corrective Deploy:
 `APP794-CORRECTIVE-DEPLOY-20260829-01`
 
-Exact target and guard contract:
-```text
-appId       = 794
-workPackage = MBO-P03-WP-002C
-stage       = STAGE_D1_APP794_CUSTOMIZATION_DEPLOY
-operation   = APP794_CUSTOMIZATION_DEPLOY
-explicitUserAuthorization = true
-activeWindow = true
-```
+Independent review found no executor/deployment evidence commit after the authorization commit. At review time the branch still pointed to:
+`00ed894fc098d96ec8d0e3c411b3c91a9ff9432b`
 
-## Deploy exactly the already-accepted App794 corrective artifact
-
-Included scope only:
-1. module-aware App794 bundle;
-2. accepted Create-handler corrective;
-3. accepted Employee-Self coherent shell / Logout / My MBO;
-4. accepted My MBO history + Completed display;
-5. accepted Employee-Self no-delete source guard;
-6. deploy via accepted `executeDeployCustomUi()` guard path.
-
-Do NOT implement anything new in this task.
-
-## Mandatory preflight
-
-1. Sync latest `ai/antigravity-wp002c` and confirm clean working tree.
-2. Read `AI_CONTROL_CENTER.md`, this file, and relevant D1 baselines.
-3. Confirm `config/sandbox-apps.json.mboV2AppId` is exact integer `794`.
-4. Confirm no source/business changes are needed.
-5. Run:
-```text
-npm test
-node scripts/kintone/deploy-custom-ui.js --build-only
-```
-6. If either fails: STOP. Do not deploy.
-
-## Live execution
-
-Use the accepted deploy function with in-process authorization/request objects. Do not edit source merely to inject authorization.
-
-Equivalent invocation shape:
-```js
-await executeDeployCustomUi({
-  appId: 794,
-  authConfig: {
-    appId: 794,
-    workPackageId: 'MBO-P03-WP-002C',
-    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
-    operation: 'APP794_CUSTOMIZATION_DEPLOY',
-    activeWindow: true,
-    explicitUserAuthorization: true,
-    authorizationId: 'APP794-CORRECTIVE-DEPLOY-20260829-01'
-  },
-  requestConfig: {
-    appId: 794,
-    workPackageId: 'MBO-P03-WP-002C',
-    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
-    operation: 'APP794_CUSTOMIZATION_DEPLOY'
-  }
-});
-```
-
-Use existing approved Kintone connection/environment only. Never print credentials or secrets.
-
-## Required evidence
-
-Return concise evidence:
-- source HEAD used;
-- clean-tree/preflight result;
-- `npm test` result;
+Required evidence was missing:
+- npm test result;
 - build-only result;
-- target registry = 794;
-- live/preview customization preflight/revision evidence;
-- uploaded replacement filename = `mbo-employee-app.js`;
-- deploy status final = `SUCCESS`;
-- live customization revision/read-back if available;
-- confirmation that no App801, App794 ACL, App794 record, workflow, or other-app write occurred.
+- customization preflight/revision;
+- uploaded replacement filename;
+- deploy final SUCCESS;
+- live customization read-back;
+- zero unrelated-write confirmation.
 
-Commit/push only documentation/evidence if the repository governance already requires it. Do not create new business/source changes as part of the deploy.
+Therefore:
+```text
+APP794_CORRECTIVE_DEPLOY_REVIEW = BLOCKED / EVIDENCE MISSING
+APP794_DEPLOY_EXECUTION_STATE   = UNKNOWN
+```
 
-## Single-use rule
+## Critical safety rule
 
-This authorization permits one guarded live App794 corrective deploy attempt only.
-- After successful guarded live deploy: authorization is CONSUMED; STOP.
-- If a failure occurs after any live write/upload/preview PUT/deploy request: DO NOT RETRY automatically; STOP and report exact evidence.
-- If preflight fails before any live write: STOP and report; do not widen scope.
+DO NOT RETRY DEPLOY.
+The original authorization is one-shot and cannot be assumed reusable because a live write/deploy may have occurred without repository evidence.
 
-## Forbidden
+## Next required action — READ-ONLY ONLY
 
-- NO App801 write/schema/ACL/data/credential change
-- NO further App794 App ACL write
-- NO App794 record write/delete
-- NO routing/scoring/workflow change
-- NO HR/admin Password Reset UI implementation
-- NO Auth Bridge / external service
-- NO D2-D7 work
+Control Plane + user verify live App794 behavior:
+1. Kintone principal `s1`;
+2. MBO Login as `0113` using the current password;
+3. confirm My MBO loads;
+4. click `+ Create New MBO`;
+5. capture whether `/k/794/edit` still shows `Employee Profile Resolution Failed` / `kintone.app.record.get() in handler`.
 
-After execution, STOP and wait for independent ChatGPT review.
+If executor evidence recovery is needed, Antigravity may only:
+- recover already-existing local deploy logs/output;
+- GET/read current App794 customization/deployment state;
+- report source HEAD and evidence;
+- push documentation/evidence only if needed.
+
+Antigravity MUST NOT:
+- PUT/POST/upload/deploy/retry;
+- change App794 customization;
+- change App794 ACL or records;
+- change App801;
+- change source/business logic;
+- work on Auth Bridge or D2-D7.
+
+## Authorization state
+
+```text
+APP794 DEPLOY       = NO / HOLD / DO NOT RETRY
+APP794 ACL WRITE    = NO
+APP794 RECORD WRITE = NO
+APP801 WRITE        = NO
+SOURCE CHANGE       = NO
+EXTERNAL SERVICE    = NO
+D2-D7 WRITE         = NO
+```
+
+## Antigravity
+
+HOLD by default.
+Only perform a newly issued READ-ONLY evidence-recovery instruction from Control Plane. No live write is authorized.
