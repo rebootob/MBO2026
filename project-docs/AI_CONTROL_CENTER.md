@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — EDIT ATTACHMENT ATOMIC PREFLIGHT SOURCE REVIEW PASS / DEPLOY NOT AUTHORIZED
+> Updated: 2026-08-29 — EDIT ATTACHMENT SOURCE PASS / ONE-SHOT APP794 DEPLOY AUTHORIZED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / App794 customization rev47 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / initial one-file + multiple-file attachment Save PASS / **Edit attachment preservation source+test corrective PASS including authoritative persisted GET, fail-closed behavior, and atomic multi-target preflight; Live deployment/UAT still pending explicit authorization** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / App794 customization rev47 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / initial one-file + multiple-file attachment Save PASS / **Edit attachment preservation source+test corrective PASS; one-shot customization deploy of reviewed candidate 0282a0c authorized, execution/review/UAT pending** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -34,7 +34,6 @@ MIDYEAR_ATTACHMENT_FIELDS          = FILE 10/10 — PASS
 FINAL_ATTACHMENT_FIELDS            = FILE 10/10 — PASS
 SCHEMA_CORRECTIVE_COMMIT           = afc11bf028b56605efba24ef0a1b70a421abce73
 SCHEMA_CORRECTIVE_AUTHORIZATION    = CONSUMED / CLOSED
-CUSTOMIZATION_DEPLOY_AUTHORIZATION = NONE
 SOURCE_MODULARITY_POLICY           = MANDATORY
 ```
 
@@ -45,42 +44,30 @@ Schema-gap root cause is closed. Do not remove/recreate Objective FILE fields.
 ```text
 INITIAL_SAVE_ONE_FILE               = PASS
 INITIAL_SAVE_MULTIPLE_FILES         = PASS
-EDIT_EXISTING_REQUEST_ADD_NEW_FILE  = FAIL
-EDIT_MULTI_FILE_PRESERVATION        = FAIL — multiple files may collapse to only first
+EDIT_EXISTING_REQUEST_ADD_NEW_FILE  = FAIL ON LIVE REV47
+EDIT_MULTI_FILE_PRESERVATION        = FAIL ON LIVE REV47
 ```
 
-These Live failures occurred on customization revision 47 before the current source corrective is deployed.
+These failures occurred before the reviewed source corrective is deployed.
 
-## 4. Independent Source Review — PASS
+## 4. Independently Accepted Source Candidate
 
 Reviewed candidate:
-
 `0282a0c00d54c846353f4d830874c514c6546468`
 
-Review scope from previous gate:
-- atomic multi-target attachment preflight;
-- all changed canonical attachment targets must validate before first upload;
-- later target missing/invalid must leave upload count exactly zero;
-- authoritative persisted GET remains mandatory for Edit attachment changes;
+Accepted properties:
+- authoritative persisted GET for Edit attachment changes;
+- fail closed on GET throw/null/missing required FILE field;
 - no fallback to `app.record.edit.submit` Attachment values;
 - zero attachment-change Edit remains saveable without attachment GET;
+- complete canonical target set resolved before upload;
+- atomic multi-target preflight before first upload;
+- later target missing/invalid => upload count exactly zero;
+- successful preflight then uploads/plans all changed targets;
 - Create flow unchanged;
-- no Live write/deploy.
+- Objective/Mid-Year/Final(Self) separation retained.
 
-Independent findings:
-- `prepareAttachmentPlan()` now uses two phases:
-  1. canonical target resolution + persisted-state preflight across the complete dirty target set;
-  2. upload + plan construction only after Phase 1 completes successfully.
-- `Self_Attachment_n -> Final_Attachment_n` is resolved before preflight when applicable.
-- persisted target validation occurs before any `uploadKintoneFile()` call.
-- target #2 missing and target #2 invalid tests both assert submit cancel, `uploadCount = 0`, and prepared plan remains null.
-- successful multi-target preflight proceeds to upload all changed targets.
-- prior GET throw/null/missing-field/no-fallback/no-change tests remain present.
-- Git diff is narrow and within allowed files.
-- no schema/config change occurred.
-- no Live Kintone write or customization deploy occurred.
-
-Executor evidence reports:
+Executor evidence previously reviewed:
 
 ```text
 FOCUSED_ATTACHMENT_TESTS = PASS 39/39
@@ -91,27 +78,44 @@ LIVE_KINTONE_WRITE       = 0
 LIVE_DEPLOY_OCCURRED     = NO
 ```
 
-GitHub has no CI status checks for this commit. Local executor test/build evidence was therefore reviewed as local evidence and corroborated by source/test diff inspection; no independent CI PASS is claimed.
+GitHub has no CI status checks; do not call the above independent CI PASS.
 
-Independent verdict:
+After candidate `0282a0c...`, subsequent commits before this authorization changed Control Plane documents only; production source/dist corrective did not drift.
+
+## 5. One-Shot Deployment Authorization
+
+User explicitly authorized:
+
+`อนุมัติ App794 deploy D1 Edit Attachment Preservation corrective candidate 0282a0c`
 
 ```text
-D1_EDIT_ATTACHMENT_SOURCE_CORRECTIVE = PASS
-ATOMIC_MULTI_TARGET_PREFLIGHT        = PASS
-DEPLOY_READY_SOURCE                  = YES
-LIVE_FUNCTIONAL_STATUS               = NOT YET PROVEN — REV47 STILL LIVE
+AUTHORIZATION_ID                    = APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01
+AUTHORIZATION_TYPE                  = ONE-SHOT
+AUTHORIZATION_STATUS                = AUTHORIZED / UNCONSUMED
+REVIEWED_CANDIDATE                  = 0282a0c00d54c846353f4d830874c514c6546468
+TARGET_APP                          = 794
+TARGET_CHANGE                       = CUSTOMIZATION JS/CSS ONLY
+SOURCE_CHANGE_DURING_DEPLOY         = FORBIDDEN
+FORM_SCHEMA_LAYOUT_WRITE            = FORBIDDEN
+BUSINESS_RECORD_WRITE               = FORBIDDEN
+ACL_PROCESS_WRITE                   = FORBIDDEN
+APP801_WRITE                        = FORBIDDEN
+APP795_796_WRITE                    = FORBIDDEN
+D2_D7_EXECUTION                     = FORBIDDEN
 ```
 
-## 5. Exact Current Gate
+Authorization is consumed by this exact deployment attempt only. It cannot be reused for a retry, another candidate, source fix, schema change, or unrelated deployment. If source/dist drift, target mismatch, preflight failure, backup failure, or unexpected Kintone state is found, STOP before deploy; new authorization is required after review.
+
+## 6. Exact Current Gate
 
 ```text
-CURRENT_GATE          = D1 APP794 EDIT ATTACHMENT CORRECTIVE — WAITING EXPLICIT DEPLOY AUTHORIZATION
-CURRENT_MODE          = CONTROL PLANE HOLD
-NEXT_ACTION_OWNER     = USER / CHATGPT
+CURRENT_GATE          = D1 APP794 EDIT ATTACHMENT CORRECTIVE — AUTHORIZED DEPLOY EXECUTION
+CURRENT_MODE          = ANTIGRAVITY ONE-SHOT DEPLOYMENT
+NEXT_ACTION_OWNER     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 REVIEWED_CANDIDATE    = 0282a0c00d54c846353f4d830874c514c6546468
 INDEPENDENT_VERDICT   = PASS
-SOURCE CHANGE         = NO — HOLD
-APP794 CUSTOMIZATION  = NO DEPLOY WITHOUT NEW EXACT AUTHORIZATION
+SOURCE CHANGE         = NO
+APP794 CUSTOMIZATION  = YES — EXACT ONE-SHOT AUTHORIZATION ONLY
 APP794 FORM/SCHEMA    = NO WRITE
 APP794 RECORD WRITE   = NO LIVE WRITE
 APP794 ACL/PROCESS    = NO
@@ -120,28 +124,25 @@ APP795/796 WRITE      = NO
 D2-D7 WRITE           = NO
 ```
 
-## 6. Deployment Boundary
+## 7. Required Deployment Proof
 
-No deployment authorization currently exists.
+Antigravity must:
+- re-fetch canonical HEAD and read current Control Center + Active Task;
+- verify no production source/dist drift after reviewed candidate except Control Plane docs;
+- run preflight, UI build, and module-aware build-only;
+- capture pre-deploy App794 customization revision/settings and JS/CSS identities;
+- capture rollback snapshot before any customization write;
+- deploy the reviewed candidate customization only;
+- wait for Kintone deployment SUCCESS;
+- read back post-deploy revision/settings and JS/CSS identities;
+- prove deployed JS/CSS matches the reviewed candidate bundle;
+- record zero business-record/schema/layout/ACL/process/App801/App795/App796 writes;
+- append deployment evidence, commit + push, then STOP.
 
-A new explicit one-shot authorization is required to deploy the reviewed candidate bundle to App794. Any future deploy task must:
-- re-fetch canonical HEAD;
-- verify production source has not changed after reviewed candidate except Control Plane docs;
-- run preflight/build/build-only;
-- capture current App794 customization revision and JS/CSS identity before deploy;
-- capture rollback snapshot;
-- deploy customization only;
-- read back revision and JS/CSS identity and prove candidate match;
-- perform zero App794 business-record writes;
-- perform zero schema/layout/ACL/process writes;
-- append evidence and STOP for independent deployment review.
-
-Maximum executor deployment status, if later authorized:
+Maximum executor status:
 `DEPLOYED_PENDING_INDEPENDENT_REVIEW`
 
-## 7. Live UAT After Authorized Deploy
-
-Only after deployment independent review PASS should the user re-test Edit attachments:
+## 8. Live UAT After Deployment Independent Review PASS
 
 ```text
 UAT_01 existing 1 file + add 1 -> both remain
@@ -154,4 +155,4 @@ UAT_07 no attachment change -> ordinary Edit Save unaffected
 UAT_08 Mid-Year / Final(Self) regression
 ```
 
-Do not mark Live functional attachment correction PASS before this UAT succeeds.
+Do not mark Live functional attachment correction PASS before deployment review and this UAT succeed.
