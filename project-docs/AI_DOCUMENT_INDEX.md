@@ -8,7 +8,6 @@
 ## 1. CORE STARTUP — ALL CHATGPT SESSIONS
 
 Open only:
-
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. `project-docs/CONFIRMED_BASELINE/README.md`
 3. `project-docs/AI_ACTIVE_TASK.md`
@@ -17,208 +16,122 @@ Open only:
 
 Read `00_MASTER_JOBLIST.md` only when detailed D1–D7 acceptance/no-drop criteria are needed.
 
-Do NOT browse `project-docs/` to discover documents unless this index has no route.
+---
+
+## 2. NON-NEGOTIABLE D1 ROUTING RULE
+
+```text
+D1 authentication = KINTONE-ONLY
+External server/service = FORBIDDEN
+Auth Bridge = CANCELLED / SUPERSEDED
+```
+
+Do not revive Auth Bridge from historical chat, commits, or `services/mbo-auth-bridge/`. Current truth is in `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`.
 
 ---
 
-## 2. ANTIGRAVITY STARTUP
+## 3. ANTIGRAVITY STARTUP
 
 Antigravity opens only:
-
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. `project-docs/AI_ACTIVE_TASK.md`
 3. exact source/config files named by `AI_ACTIVE_TASK.md`
 
-Antigravity does **not** need this whole index unless the Active Task explicitly says document routing is required.
+Do not broad-scan the repo.
 
 ---
 
-## 3. TASK → DOCUMENT ROUTING
+## 4. TASK → DOCUMENT ROUTING
 
 | Task / Question | Open First | Open Only If Needed |
 |---|---|---|
 | Current project status / what next | `AI_CONTROL_CENTER.md` | `00_MASTER_JOBLIST.md` |
 | Current executor instruction | `AI_ACTIVE_TASK.md` | none |
-| AI workflow / low-credit / review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `CONFIRMED_BASELINE/DOCUMENT_CONTROL.md` |
-| Source architecture / modular JavaScript / file separation / refactor plan | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`, exact affected source files |
-| Which document should I read? | `AI_DOCUMENT_INDEX.md` | search only if no route exists |
-| D1 login / password / App801 / Auth Bridge / shared Kintone account | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`, exact latest D1 evidence/diff |
+| AI workflow / review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `CONFIRMED_BASELINE/DOCUMENT_CONTROL.md` |
+| Source architecture / modular JS | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact affected source files |
+| D1 login / password / App801 / shared Kintone account / App801 ACL | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`, exact live ACL evidence |
 | D1 session token / reload / logout / password-session rotation | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` |
-| D1 My MBO history / Completed / Employee-Self no-delete | `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` | exact UI/security source/test |
-| D1 live App801 ACL/security evidence | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | exact current live readback evidence only |
+| D1 My MBO history / Completed / no-delete | `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` | exact UI/security source/test |
 | Routing / App795 / GM precedence / Team | `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` |
-| App53 routing fields / Position / Team semantics | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `FIELD_DICTIONARY.md` only for field-code detail |
-| Evaluation class / scoring weight | `CONFIRMED_BASELINE/EVALUATION_CLASSES.md` | relevant source/test only |
-| App794 UI / UX / stage layout | `CONFIRMED_BASELINE/UI_UX.md` | exact UI source/screenshots |
+| App53 routing fields / Position / Team | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `FIELD_DICTIONARY.md` |
+| Evaluation/scoring class | `CONFIRMED_BASELINE/EVALUATION_CLASSES.md` | relevant source/test |
+| App794 UI/UX | `CONFIRMED_BASELINE/UI_UX.md` | exact UI source/screenshots |
 | D2 Excel/PDF export | `AI_CONTROL_CENTER.md` | `EXCEL_EXPORT.md`, exact export source, legacy sample evidence |
-| D3 legacy migration | `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md` | `legacy-analysis/` only for exact source app being migrated |
-| D4 HR Control Center | `AI_CONTROL_CENTER.md` | exact App800/source files; search only if index/task does not name them |
-| D5 copy previous MBO | `AI_CONTROL_CENTER.md` | exact copy service/source + relevant current employee metadata rules |
-| D6 E2E/security/regression | relevant Baselines for impacted D1–D5 | exact test matrices/results only |
-| D7 Admin Support Center | `AI_CONTROL_CENTER.md` | only reopen evidence if a new defect is reported |
-| App ID / app purpose lookup | relevant Baseline first | `APP_REGISTRY.md` if absent from Baseline |
-| Field code/type lookup | relevant Baseline first | `FIELD_DICTIONARY.md` |
-| Security outside D1 | relevant Baseline first | `SECURITY_MODEL.md` only if Baseline lacks the rule |
-| Old architecture investigation | relevant current Baseline first | `architecture-redesign/` only for exact conflict/history |
-| Historical decision investigation | current Baseline + Git commit | `DECISIONS.md` only if commit/Baseline insufficient |
-| Historical project sequence | Git commits first | `CHANGELOG_AI.md` only if Git cannot answer |
-| Old handoff investigation | `AI_CONTROL_CENTER.md` | `HANDOFF.md` / `AI_HANDOFF_PROTOCOL.md` only for dispute/audit |
-| Defect-specific investigation | `AI_CONTROL_CENTER.md` | `DEFECT_REGISTER.md` only for named defect |
+| D3 legacy migration | `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md` | exact legacy source evidence only |
+| D4 HR Control Center | `AI_CONTROL_CENTER.md` | exact App800/source files |
+| D5 Copy Previous MBO | `AI_CONTROL_CENTER.md` | exact copy service/source |
+| D6 E2E/security/regression | relevant Baselines for impacted D1–D5 | exact test evidence |
+| D7 Admin Support Center | `AI_CONTROL_CENTER.md` | reopen only for new defect |
 | Reusable Kintone technique | `skills/kintone/README.md` | exact skill file |
 
 ---
 
-## 4. CONFIRMED BASELINE INDEX
+## 5. CONFIRMED BASELINE INDEX
 
-### Always read README first
-- `project-docs/CONFIRMED_BASELINE/README.md`
+Always start with `project-docs/CONFIRMED_BASELINE/README.md`, then only the domain needed:
 
-### Open by domain only
 - `AI_OPERATING_GOVERNANCE.md`
-  - AI roles, Control Plane/Execution Plane, review rules, low-credit rules, Baseline promotion, Skill extraction
-
 - `SOURCE_CODE_ARCHITECTURE.md`
-  - modular JavaScript architecture, feature/menu file separation, main-entry boundaries, incremental decomposition, generated-dist rules, Antigravity low-credit refactor pattern
-
 - `DOCUMENT_CONTROL.md`
-  - Core Read Set, default-ignore files, no-rediscovery rules
-
-- `D1_AUTH_SECURITY.md`
-  - current Auth Bridge architecture, App801 private credential boundary, PBKDF2/password/lockout rules, Bridge HTTP/security contract, employee identity binding and final D1 UAT
-
-- `D1_SESSION_CONTINUITY.md`
-  - 8-hour opaque same-tab session model routed through Auth Bridge, sessionStorage rules, Credential_Version binding, logout/password rotation and session UAT
-
+- `D1_AUTH_SECURITY.md` — current **KINTONE-ONLY** auth + App801 ACL/security model
+- `D1_SESSION_CONTINUITY.md` — Kintone-only 8-hour same-tab session continuity
 - `D1_EMPLOYEE_SELF_MY_MBO.md`
-  - My MBO ownership/history, Completed display and Employee-Self no-delete rules
-
 - `ROUTING_WORKFLOW.md`
-  - App795 route scenarios / workflow behavior
-
 - `EMPLOYEE_MASTER_ROUTING.md`
-  - App53 routing inputs / Position normalization / GM precedence / Team semantics
-
 - `EVALUATION_CLASSES.md`
-  - evaluation/scoring class definitions and weights
-
 - `LEGACY_PMS_APPS.md`
-  - legacy PMS app IDs / historical source authority
-
 - `UI_UX.md`
-  - frozen/mandatory App794 UI/UX rules
 
-Do not open all files above in every session.
-
----
-
-## 5. CURRENT OPERATIONAL DOCUMENTS
-
-These are active, not historical:
-
-- `AI_START_HERE.md`
-  - short entry point only
-
-- `AI_DOCUMENT_INDEX.md`
-  - this routing map
-
-- `AI_CONTROL_CENTER.md`
-  - current D1–D7 status, authorizations, blockers, next action owner
-
-- `AI_ACTIVE_TASK.md`
-  - current short executor job only
-
-- `NEW_CHAT_BOOTSTRAP_PROMPT.md`
-  - canonical prompt used by user to start a fresh ChatGPT session
+Do not open all files on every task.
 
 ---
 
-## 6. DEFAULT-IGNORE / DO NOT READ ON STARTUP
+## 6. CURRENT OPERATIONAL DOCUMENTS
 
-Do not open these by default:
+- `AI_START_HERE.md` — short entry point
+- `AI_DOCUMENT_INDEX.md` — routing map
+- `AI_CONTROL_CENTER.md` — current D1–D7 status, blockers, authorizations, next action and handoff checkpoint
+- `AI_ACTIVE_TASK.md` — current executor/control task only
+- `NEW_CHAT_BOOTSTRAP_PROMPT.md` — canonical new-chat prompt
 
+---
+
+## 7. DEFAULT-IGNORE / HISTORICAL
+
+Do not read by default:
 - `AI_REVIEW_PACKAGE.md`
 - `CHANGELOG_AI.md`
 - `AI_HANDOFF_PROTOCOL.md`
 - `CURRENT_STATE.md`
 - `HANDOFF.md`
 - `IMPLEMENTATION_STATUS.md`
-- `TODAY_MBO_CLOSEOUT_MISSION.md`
-- `TOMORROW_HALF_DAY_MISSION.md`
-- `TEST_STATUS.md`
-- `PROJECT_CONTEXT.md`
-- `D1-C4A_GATEWAY_RUNTIME_DEPLOYMENT.md`
-- `D1_KINTONE_ONLY_RECONCILIATION_PLAN.md`
-- `STAGE_A_LIVE_PRECHECK_EVIDENCE.md`
-- `D1_ACCESS_GROUP_SETUP_EVIDENCE.md` unless reviewing that exact cutover
-- old root `docs/` folder
+- old root `docs/`
 - `architecture-redesign/`
 - `implementation/`
 - `legacy-analysis/`
 - `phase-3/`
+- `services/mbo-auth-bridge/` — **abandoned experiment; not approved runtime architecture**
 
-All remain available for audit/on-demand use.
-
----
-
-## 7. SEARCH ESCALATION RULE
-
-Before using repository search:
-
-```text
-1. Check AI_DOCUMENT_INDEX
-2. Check AI_CONTROL_CENTER
-3. Check relevant CONFIRMED_BASELINE index
-4. Check AI_ACTIVE_TASK exact file list
-5. Only then search
-```
-
-When search is required:
-- search for an exact filename/function/field/app ID;
-- do not perform broad semantic archaeology;
-- stop once the exact needed file is found.
+Historical files remain available only for audit/dispute.
 
 ---
 
 ## 8. REVIEW MINIMUM READ SET
 
-When user says `review`, ChatGPT needs only:
+When user says `review`:
 
 ```text
 current HEAD
 + AI_CONTROL_CENTER
-+ AI_ACTIVE_TASK that authorized the work
-+ relevant Baseline file(s)
++ authorizing AI_ACTIVE_TASK
++ relevant Baseline(s)
 + exact changed files/diff/evidence
 ```
 
-Historical docs are opened only if the current evidence conflicts or is incomplete.
+Do not use historical Auth Bridge artifacts as current D1 authority.
 
 ---
 
-## 9. SKILL ROUTING
+## 9. INDEX MAINTENANCE
 
-For reusable Kintone knowledge, use:
-
-`skills/kintone/README.md`
-
-Skills are for cross-project reusable techniques, not MBO2026-specific current status.
-
-Examples:
-- safe Kintone live-change/read-back/rollback pattern
-- Kintone shared-account application auth limitations
-- Kintone app/group ACL patterns
-- fail-closed routing patterns
-- customization deploy/backup/read-back techniques
-- Kintone REST/browser API patterns
-
----
-
-## 10. INDEX MAINTENANCE
-
-ChatGPT Control Plane updates this index only when:
-- a new canonical Baseline file is added;
-- a new reusable Skill is added;
-- a document becomes superseded/default-ignore;
-- D1–D7 routing requires a new canonical document.
-
-Do not update this file for routine status changes; those belong in `AI_CONTROL_CENTER.md`.
+Update this index only when canonical routing changes, a new Baseline/Skill is created, or a document becomes superseded/default-ignore. Routine status changes belong in `AI_CONTROL_CENTER.md`.
