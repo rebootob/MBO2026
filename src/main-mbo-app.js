@@ -724,14 +724,31 @@ if (typeof kintone !== 'undefined') {
         await activeUiInstance.finalizeAttachmentPlan({ appId, recordId });
       } catch (err) {
         console.error('[MBO V2] Attachment post-save finalize error:', err);
+        const errorMsgTH = `บันทึกข้อมูลสำเร็จ แต่เกิดข้อผิดพลาดในการบันทึกไฟล์แนบ: ${err.message}`;
+        const errorMsgEN = `Record saved, but attachment binding failed: ${err.message}`;
+
         if (typeof activeUiInstance.showValidationErrors === 'function') {
           activeUiInstance.showValidationErrors([{
             field: 'Objective_Attachment_1',
-            messageTH: `บันทึกข้อมูลสำเร็จ แต่เกิดข้อผิดพลาดในการบันทึกไฟล์แนบ: ${err.message}`,
-            messageEN: `Record saved, but attachment binding failed: ${err.message}`,
-            message: `Record saved, but attachment binding failed: ${err.message}`
+            messageTH: errorMsgTH,
+            messageEN: errorMsgEN,
+            message: errorMsgEN
           }]);
         }
+
+        if (typeof globalThis.alert === 'function') {
+          try { globalThis.alert(`${errorMsgTH}\n${errorMsgEN}`); } catch (e) {}
+        } else if (globalThis.kintone?.showNotification) {
+          try { globalThis.kintone.showNotification({ text: `${errorMsgTH} / ${errorMsgEN}`, type: 'error' }); } catch (e) {}
+        }
+
+        if (typeof globalThis.location !== 'undefined' && globalThis.location?.href) {
+          event.url = globalThis.location.href;
+        } else {
+          event.url = null;
+        }
+
+        return event;
       }
     }
 

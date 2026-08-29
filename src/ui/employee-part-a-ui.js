@@ -1284,6 +1284,9 @@ export class EmployeePartAUI {
       if (typeof f === 'string') return f !== filename;
       return true;
     });
+
+    if (!this.dirtyAttachmentFields) this.dirtyAttachmentFields = new Set();
+    this.dirtyAttachmentFields.add(fieldCode);
   }
 
   _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
@@ -3207,7 +3210,8 @@ export class EmployeePartAUI {
   async preparePendingAttachments(options = {}) {
     const { prepareAttachmentPlan } = await import('../services/mbo-attachment-service.js');
     const targetRecord = options.record || this.record;
-    const plan = await prepareAttachmentPlan(targetRecord, this.pendingAttachments || {}, options);
+    const dirtyFields = Array.from(this.dirtyAttachmentFields || []);
+    const plan = await prepareAttachmentPlan(targetRecord, this.pendingAttachments || {}, { ...options, dirtyFields });
     this.preparedAttachmentPlan = (plan && Object.keys(plan).length > 0) ? plan : null;
     return this.preparedAttachmentPlan;
   }
@@ -3223,6 +3227,7 @@ export class EmployeePartAUI {
     const res = await finalizeAttachmentPlan(appId, recordId, plan, options);
     this.preparedAttachmentPlan = null;
     this.pendingAttachments = {};
+    if (this.dirtyAttachmentFields) this.dirtyAttachmentFields.clear();
     return res;
   }
 

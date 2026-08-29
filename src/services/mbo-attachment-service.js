@@ -60,6 +60,7 @@ export async function uploadKintoneFile(file, options = {}) {
 /**
  * Prepares the attachment binding plan during app.record.create.submit / edit.submit.
  * Uploads pending local files to Kintone Upload File API (POST /k/v1/file.json) and receives fileKeys.
+ * Tracks explicit removals and dirty fields so post-save REST update reflects exact desired state.
  *
  * CRITICAL KINTONE INVARIANT:
  * - Does NOT mutate event.record Attachment fields directly!
@@ -73,11 +74,14 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
   }
 
   const plan = {};
-  const fieldCodes = Object.keys(pendingAttachments);
+  const dirtyFieldsSet = new Set([
+    ...Object.keys(pendingAttachments || {}),
+    ...(options.dirtyFields || []),
+    ...(options.removedFields || [])
+  ]);
 
-  for (const fieldCode of fieldCodes) {
-    const pendingItems = pendingAttachments[fieldCode];
-    if (!Array.isArray(pendingItems)) continue;
+  for (const fieldCode of dirtyFieldsSet) {
+    const pendingItems = pendingAttachments[fieldCode] || [];
 
     let targetCode = fieldCode;
     if (!record[targetCode] && targetCode.startsWith('Self_Attachment_')) {
@@ -89,7 +93,7 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
 
     const currentVal = record[targetCode]?.value;
     const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
-    let modified = false;
+    let modified = options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode) || false;
 
     for (const item of pendingItems) {
       if (item.status === 'saved' && item.fileKey) {

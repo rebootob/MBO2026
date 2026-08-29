@@ -68,10 +68,13 @@
       throw new Error("prepareAttachmentPlan failed: invalid record object");
     }
     const plan = {};
-    const fieldCodes = Object.keys(pendingAttachments);
-    for (const fieldCode of fieldCodes) {
-      const pendingItems = pendingAttachments[fieldCode];
-      if (!Array.isArray(pendingItems)) continue;
+    const dirtyFieldsSet = /* @__PURE__ */ new Set([
+      ...Object.keys(pendingAttachments || {}),
+      ...options.dirtyFields || [],
+      ...options.removedFields || []
+    ]);
+    for (const fieldCode of dirtyFieldsSet) {
+      const pendingItems = pendingAttachments[fieldCode] || [];
       let targetCode = fieldCode;
       if (!record[targetCode] && targetCode.startsWith("Self_Attachment_")) {
         const altCode = "Final_Attachment_" + targetCode.slice("Self_Attachment_".length);
@@ -81,7 +84,7 @@
       }
       const currentVal = record[targetCode]?.value;
       const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
-      let modified = false;
+      let modified = options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode) || false;
       for (const item of pendingItems) {
         if (item.status === "saved" && item.fileKey) {
           if (!savedFiles.some((f) => f && f.fileKey === item.fileKey)) {
@@ -3507,6 +3510,8 @@ Requester_User is empty for action "${actionName}".`
         if (typeof f === "string") return f !== filename;
         return true;
       });
+      if (!this.dirtyAttachmentFields) this.dirtyAttachmentFields = /* @__PURE__ */ new Set();
+      this.dirtyAttachmentFields.add(fieldCode);
     }
     _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
       const isPreview = Boolean(this.isPreviewMode || this.previewOptions?.isPreviewMode);
@@ -5205,7 +5210,8 @@ Requester_User is empty for action "${actionName}".`
     async preparePendingAttachments(options = {}) {
       const { prepareAttachmentPlan: prepareAttachmentPlan2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
       const targetRecord = options.record || this.record;
-      const plan = await prepareAttachmentPlan2(targetRecord, this.pendingAttachments || {}, options);
+      const dirtyFields = Array.from(this.dirtyAttachmentFields || []);
+      const plan = await prepareAttachmentPlan2(targetRecord, this.pendingAttachments || {}, { ...options, dirtyFields });
       this.preparedAttachmentPlan = plan && Object.keys(plan).length > 0 ? plan : null;
       return this.preparedAttachmentPlan;
     }
@@ -5220,6 +5226,7 @@ Requester_User is empty for action "${actionName}".`
       const res = await finalizeAttachmentPlan2(appId, recordId, plan, options);
       this.preparedAttachmentPlan = null;
       this.pendingAttachments = {};
+      if (this.dirtyAttachmentFields) this.dirtyAttachmentFields.clear();
       return res;
     }
     async uploadPendingAttachments(options = {}) {
@@ -7542,14 +7549,34 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
           await activeUiInstance.finalizeAttachmentPlan({ appId, recordId });
         } catch (err) {
           console.error("[MBO V2] Attachment post-save finalize error:", err);
+          const errorMsgTH = `\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E41\u0E15\u0E48\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A: ${err.message}`;
+          const errorMsgEN = `Record saved, but attachment binding failed: ${err.message}`;
           if (typeof activeUiInstance.showValidationErrors === "function") {
             activeUiInstance.showValidationErrors([{
               field: "Objective_Attachment_1",
-              messageTH: `\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E41\u0E15\u0E48\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A: ${err.message}`,
-              messageEN: `Record saved, but attachment binding failed: ${err.message}`,
-              message: `Record saved, but attachment binding failed: ${err.message}`
+              messageTH: errorMsgTH,
+              messageEN: errorMsgEN,
+              message: errorMsgEN
             }]);
           }
+          if (typeof globalThis.alert === "function") {
+            try {
+              globalThis.alert(`${errorMsgTH}
+${errorMsgEN}`);
+            } catch (e) {
+            }
+          } else if (globalThis.kintone?.showNotification) {
+            try {
+              globalThis.kintone.showNotification({ text: `${errorMsgTH} / ${errorMsgEN}`, type: "error" });
+            } catch (e) {
+            }
+          }
+          if (typeof globalThis.location !== "undefined" && globalThis.location?.href) {
+            event.url = globalThis.location.href;
+          } else {
+            event.url = null;
+          }
+          return event;
         }
       }
       return event;
