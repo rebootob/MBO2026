@@ -1,17 +1,20 @@
-# AI ACTIVE TASK — WP1 ATOMIC APP794 DEPLOYMENT TOOLING HARDENING
+# AI ACTIVE TASK — WP1 ATOMIC DEPLOYMENT TOOLING RESIDUAL CORRECTIVE
 
-Mode: **ANTIGRAVITY SOURCE/TEST EXECUTION — NO LIVE WRITE / NO DEPLOY**
+Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 
-## Purpose
+## Start Point
 
-Fix the proven App794 customization deployment tooling defect that allowed **new JS + old CSS** partial releases.
+Latest reviewed WP1 candidate:
+`9c96461dcde9ef3ca626b415d35398ff5d41657f`
 
-This task is tooling/tests only. Do NOT modify Employee UI feature source in WP1.
+Independent verdict:
+`CORRECTIVE`
+
+Do NOT redo the accepted atomic JS+CSS implementation. Fix only the residual blockers below.
 
 ## Accepted Current Live / Rollback Manifest
 
-App794 current accepted Live runtime:
 ```text
 LIVE_REVISION          = 54
 ROLLBACK_SOURCE_COMMIT = ec6278524a2d5eb53050d0580c340d1b4e866b97
@@ -21,129 +24,131 @@ ROLLBACK_JS_IDENTITY   = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
 ROLLBACK_CSS_IDENTITY  = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 ```
 
-Do not write Live in this task.
+No Live write is authorized.
 
-## Proven Root Cause
+## Residual Blocker A — Manifest Must Be Mandatory and Complete
 
-Current `scripts/kintone/deploy-custom-ui.js`:
-- builds JS + CSS;
-- then uses only `fullJs` for deployment;
-- uploads only `mbo-employee-app.js`;
-- explicitly preserves existing preview CSS fileKey;
-- therefore can deploy changed JS without changed CSS.
+Current `validateReleaseManifest()` can return PASS when expected identities are omitted. This is forbidden.
 
-This must be eliminated.
+For **Live mode**, require an exact release manifest before any upload/write path.
 
-## Exact Files Allowed
-
-Read/change only unless a directly required test helper import proves necessary:
-1. `scripts/kintone/deploy-custom-ui.js`
-2. `tests/deploy-customization-preservation.test.js`
-3. `scripts/kintone/build-mbo-ui.js` — READ ONLY unless absolutely necessary; prefer no change
-4. `package.json` — READ ONLY
-5. exact supporting security helper only if needed to understand existing authorization gate; do not change unrelated authorization rules
-
-Forbidden UI feature source changes in WP1:
-- `src/main-mbo-app.js`
-- `src/ui/employee-self-index-ui.js`
-- `src/ui/employee-part-a-ui.js`
-- any auth/session/attachment/routing/scoring source
-- `src/styles/mbo-employee.css`
-
-## Required Implementation
-
-### A. Atomic JS + CSS target handling
-Deployment tooling must require and replace exactly:
-```text
-Desktop JS target  = mbo-employee-app.js
-Desktop CSS target = mbo-employee.css
-```
-
-Rules:
-- exactly one target JS FILE entry required;
-- exactly one target CSS FILE entry required;
-- missing or duplicate target JS/CSS => fail closed before upload;
-- upload candidate JS and candidate CSS only after all preflight checks pass;
-- build preview payload using both new fileKeys;
-- preserve scope, entry order/count and all Mobile customization exactly;
-- do not opportunistically alter unrelated URL/FILE entries.
-
-### B. Atomic release manifest validation
-Add a pure/testable manifest validation layer before any upload/write path.
-
-Manifest must cover at minimum:
+Manifest must bind at minimum:
 ```text
 APP_ID = 794
 SOURCE_COMMIT / candidate identifier
-JS_BLOB_OR_CONTENT_IDENTITY
-CSS_BLOB_OR_CONTENT_IDENTITY
-SCOPE
-TOPOLOGY / entry counts
+EXPECTED_JS_IDENTITY
+EXPECTED_CSS_IDENTITY
+EXPECTED_SCOPE
+EXPECTED_TOPOLOGY = Desktop JS count / Desktop CSS count / Mobile JS count / Mobile CSS count
 ```
 
-The built candidate artifact identities must be computed deterministically and compared to the expected manifest.
+Requirements:
+- missing manifest object => BLOCK;
+- missing/blank required field => BLOCK;
+- APP_ID != 794 => BLOCK;
+- missing or mismatched source commit/candidate identifier => BLOCK;
+- JS mismatch => BLOCK;
+- CSS mismatch => BLOCK;
+- expected scope mismatch => BLOCK;
+- expected topology mismatch => BLOCK;
+- exact manifest + exact built pair => PASS.
 
-Required behavior:
-- JS matches + CSS mismatch => BLOCK before upload;
-- CSS matches + JS mismatch => BLOCK before upload;
-- scope/topology mismatch => BLOCK before upload;
-- App ID != 794 => BLOCK;
-- missing manifest field => BLOCK;
-- exact pair => PASS manifest layer.
+The Live entrypoint must not silently fall back to optional `expectedJsBlobSha` / `expectedCssBlobSha` values.
 
-Prefer Git-blob SHA identity if practical because project release manifests use Git blob SHA. A deterministic content checksum may also be returned as supplemental evidence, but it must not replace the expected reviewed Git/content identity contract silently.
+Prefer one explicit `releaseManifest` object passed to Live execution.
 
-### C. Build-only remains zero network
-`executeDeployCustomUi({ isBuildOnly: true })` must:
-- build JS + CSS;
-- return both artifact contents/identities needed for review;
-- perform zero Kintone/fetch/network writes;
-- never require Live authorization merely to build/verify candidate artifacts.
+### Source identity
 
-### D. No automatic rollback
-Do not add automatic rollback or second deploy behavior.
-Any future Live failure must STOP for Control Plane review under `ROLLBACK_RECOVERY_SAFETY.md`.
+The candidate/source identity must reflect the actual source being deployed, not merely a caller-supplied string that can claim any commit.
 
-## Mandatory Tests
+Use a deterministic runtime source identity check appropriate to this repository, for example current Git HEAD, and fail closed if the working tree/build inputs are dirty or cannot be tied to the expected candidate. Keep this implementation narrow; do not add unrelated Git workflow machinery.
 
-Update/extend `tests/deploy-customization-preservation.test.js`.
+Build-only mode may run without Live authorization and may return computed source/artifact identity information for Control Plane review.
 
-At minimum prove:
-1. valid preview payload replaces both target JS and CSS fileKeys;
-2. old test assumption `CSS_UPLOAD_COUNT = 0` is removed/reversed — the atomic candidate requires CSS replacement when deploying candidate pair;
-3. target CSS missing => BLOCK before upload;
-4. target CSS ambiguous/duplicate => BLOCK before upload;
-5. target JS missing/ambiguous remains blocked;
-6. JS identity mismatch => BLOCK before upload;
-7. CSS identity mismatch => BLOCK before upload;
-8. scope mismatch => BLOCK;
-9. topology mismatch => BLOCK;
-10. Mobile lists remain unchanged;
-11. build-only returns JS + CSS candidate artifact data and has zero network calls;
-12. unauthorized Live entrypoint still blocks before network/write;
-13. existing App794 target binding and revision/concurrency protection remain PASS.
+## Residual Blocker B — Hash Exact Upload Bytes
 
-Add exact regression naming where practical, including:
+Current `gitBlobSha()` normalizes `CRLF -> LF` before hashing. Remove that normalization.
+
+Required contract:
+- Git-blob/content identity must be computed over the exact UTF-8 bytes/content that will be uploaded;
+- the same JS/CSS content used for hashing must be passed to `uploadFile()`;
+- no newline normalization between hash calculation and upload;
+- add a regression proving LF and CRLF content produce different identities when bytes differ.
+
+This prevents a Windows checkout from appearing to match a reviewed repository blob while uploading different bytes.
+
+## Accepted WP1 Behavior — Must Preserve
+
+Do not regress these accepted points from `9c96461...`:
+- exactly one target Desktop JS `mbo-employee-app.js`;
+- exactly one target Desktop CSS `mbo-employee.css`;
+- missing/duplicate JS or CSS blocks;
+- both new JS and CSS fileKeys replace preview targets;
+- scope/topology/Mobile preservation remains fail-closed;
+- build-only returns JS + CSS and performs zero network;
+- unauthorized Live entrypoint blocks;
+- no automatic rollback;
+- no UI source changes.
+
+## Exact Files Allowed
+
+Change only:
+1. `scripts/kintone/deploy-custom-ui.js`
+2. `tests/deploy-customization-preservation.test.js`
+3. `project-docs/WP1_ATOMIC_DEPLOYMENT_TOOLING_EVIDENCE.md` — update evidence or add a small residual evidence file
+
+Read-only unless absolutely necessary:
+- `scripts/kintone/build-mbo-ui.js`
+- `package.json`
+- exact security helper needed to understand authorization
+
+Forbidden:
+- `src/main-mbo-app.js`
+- `src/ui/employee-self-index-ui.js`
+- `src/ui/employee-part-a-ui.js`
+- `src/styles/mbo-employee.css`
+- auth/session/attachment/routing/scoring source
+
+## Mandatory Regression Tests
+
+Add/adjust tests proving at minimum:
 ```text
+MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD
+MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD
+MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD
+MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD
+MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD
+MANIFEST_TOPOLOGY_MISMATCH_BLOCKED_PRE_UPLOAD
+JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD
+CSS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD
+EXACT_RELEASE_MANIFEST_PASS
+GIT_BLOB_SHA_EXACT_BYTES_CRLF_DIFFERS_FROM_LF
 ATOMIC_JS_CSS_PAIR_REQUIRED
 CSS_CANDIDATE_REPLACED_NOT_PRESERVED
-MIXED_RELEASE_BLOCKED_PRE_UPLOAD
 BUILD_ONLY_ZERO_NETWORK
 ```
 
+Also preserve all previous target/revision/topology/authorization tests.
+
 ## Verification
 
-Run:
+Run and commit evidence for:
 - `node --test tests/deploy-customization-preservation.test.js`
-- relevant classic bundle/build safety test(s)
+- relevant classic bundle/build safety tests
 - `npm test`
 - `npm run ui:build`
-- module-aware build-only with **0 Kintone calls/writes**
+- module-aware build-only with 0 Kintone/network calls
 
-Record concise evidence including:
+Evidence must record:
 ```text
+EXECUTION_START_HEAD
+BASE_REJECTED_CANDIDATE = 9c96461dcde9ef3ca626b415d35398ff5d41657f
 SOURCE_FILES_CHANGED
 TEST_FILES_CHANGED
+MANIFEST_MANDATORY_PROOF
+MANIFEST_SOURCE_IDENTITY_PROOF
+CRLF_VS_LF_HASH_PROOF
+ATOMIC_JS_CSS_PROOF
 FOCUSED_TEST_RESULT
 FULL_TEST_RESULT
 UI_BUILD_RESULT
@@ -151,22 +156,24 @@ BUILD_ONLY_RESULT
 BUILD_ONLY_NETWORK_CALLS = 0
 LIVE_KINTONE_WRITE = 0
 LIVE_DEPLOY = NO
+FINAL_COMMIT_SHA
 ```
 
 ## Strictly Forbidden
 
 - NO Live Kintone customization PUT/POST deploy
-- NO App794 record write
-- NO schema/layout/ACL/process write
-- NO Comment write
+- NO upload test against Live
+- NO rollback/recovery
+- NO UI feature implementation/change
+- NO App794 record/schema/layout/ACL/process write
+- NO Kintone Comment write
 - NO App801/App795/App796 write
-- NO UI feature implementation/change in WP1
 - NO Copy Previous MBO
+- NO WP2 execution
 - NO D2-D7 work
-- NO automatic rollback
 - NO unrelated refactor
 
-Commit + push source/test/build evidence and STOP.
+Commit + push source/test/evidence and STOP.
 
 Maximum status:
-`ATOMIC_DEPLOY_TOOLING_IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
+`ATOMIC_DEPLOY_TOOLING_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
