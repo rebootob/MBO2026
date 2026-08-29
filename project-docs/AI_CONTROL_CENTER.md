@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — APP794 OBJECTIVE ATTACHMENT SCHEMA CORRECTIVE AUTHORIZED
+> Updated: 2026-08-29 — APP794 REV48 / CREATE ATTACHMENT PASS / EDIT ATTACHMENT PRESERVATION FAIL
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP794 LIVE REV47 / Timeline truthfulness PASS / Attachment source+test and customization deploy provenance PASS / Save without file PASS / **Objective attachment Live UAT FAIL because App794 has no Objective_Attachment_1..10 FILE fields — NARROW SCHEMA CORRECTIVE AUTHORIZED** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP794 customization rev47 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / **initial Objective attachment Save works for one and multiple files, but editing the same request then adding a new file fails and previously multiple files may collapse to only the first — EDIT ATTACHMENT PRESERVATION CORRECTIVE REQUIRED** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -21,172 +21,134 @@
 
 No AI may silently drop D1–D7.
 
-## 2. Accepted Boundaries
+## 2. Accepted State
 
 ```text
-D1_ARCHITECTURE                    = KINTONE-ONLY
-EXTERNAL_SERVER_SERVICE            = FORBIDDEN
-AUTH_BRIDGE                        = CANCELLED / DO NOT IMPLEMENT
-APP794_LIVE_CUSTOMIZATION_REVISION = 47
-PRIOR_CUSTOMIZATION_DEPLOY_AUTH    = CONSUMED / CLOSED
-SOURCE_MODULARITY_POLICY           = MANDATORY
+D1_ARCHITECTURE                     = KINTONE-ONLY
+EXTERNAL_SERVER_SERVICE             = FORBIDDEN
+AUTH_BRIDGE                         = CANCELLED / DO NOT IMPLEMENT
+APP794_LIVE_CUSTOMIZATION_REVISION  = 47
+APP794_LIVE_FORM_REVISION           = 48
+OBJECTIVE_ATTACHMENT_FIELDS         = FILE 10/10 — PASS
+MIDYEAR_ATTACHMENT_FIELDS           = FILE 10/10 — PASS
+FINAL_ATTACHMENT_FIELDS             = FILE 10/10 — PASS
+SCHEMA_CORRECTIVE_COMMIT             = afc11bf028b56605efba24ef0a1b70a421abce73
+SCHEMA_CORRECTIVE_AUTHORIZATION      = CONSUMED / CLOSED
+CUSTOMIZATION_DEPLOY_AUTHORIZATION   = CONSUMED / CLOSED
+SOURCE_MODULARITY_POLICY             = MANDATORY
 ```
 
-Live functional Objective attachment persistence is NOT PASS until schema correction + independent readback review + Live UAT pass.
+Schema-gap root cause is closed. Do not remove/recreate Objective FILE fields.
 
-## 3. Confirmed Root Cause
+## 3. New Live UAT Evidence — Edit Attachment Defect
 
-Independent review accepted schema-audit evidence from commit:
-`9c7bf0d8afdf0511b99a63c5ae88fefc597607b5`
-
-Accepted Live/Preview schema facts:
+User Live UAT after App794 form rev48:
 
 ```text
-LIVE_APP794_FORM_REVISION                 = 47
-PREVIEW_APP794_FORM_REVISION              = 47
-OBJECTIVE_ATTACHMENT_FIELDS_PRESENT       = 0/10
-OBJECTIVE_ATTACHMENT_FIELD_TYPES          = NONE / ABSENT
-MIDYEAR_ATTACHMENT_FIELDS_PRESENT         = 10/10
-MIDYEAR_ATTACHMENT_FIELD_TYPES            = FILE
-FINAL_ATTACHMENT_FIELDS_PRESENT           = 10/10
-FINAL_ATTACHMENT_FIELD_TYPES              = FILE
-LIVE_PREVIEW_SCHEMA_MATCH                 = YES
-REPO_SCHEMA_OBJECTIVE_ATTACHMENT_DEFINED  = NO
-ROOT_CAUSE_CLASSIFICATION                 = SCHEMA_GAP
+INITIAL_SAVE_ONE_FILE               = PASS
+INITIAL_SAVE_MULTIPLE_FILES         = PASS
+EDIT_EXISTING_REQUEST_ADD_NEW_FILE  = FAIL
+EDIT_MULTI_FILE_PRESERVATION        = FAIL — previously multiple files may reduce to only first file
 ```
 
-Independent verdict:
+This is now the active attachment defect.
+
+## 4. Independent Source / Platform Diagnosis
+
+Current source in `src/main-mbo-app.js` calls:
 
 ```text
-D1_OBJECTIVE_ATTACHMENT_SCHEMA_AUDIT = PASS
-PRIMARY_ROOT_CAUSE                   = UI-SCHEMA MISMATCH / OBJECTIVE FILE FIELDS ABSENT
+activeUiInstance.preparePendingAttachments({ record: event.record })
 ```
 
-The custom Objective UI renders controls for `Objective_Attachment_1..10`, but App794 Live and Preview currently contain none of those native Kintone FILE fields. Therefore a selected local file can appear as Pending while no native Objective FILE field exists as a persistence target.
+from the shared `app.record.create.submit` / `app.record.edit.submit` handler.
 
-The earlier executor hypothesis that browser page unload aborts `submit.success` remains NOT ACCEPTED as the primary root cause. Revisit lifecycle only if persistence still fails after the missing Objective FILE fields exist and are verified.
+Current `prepareAttachmentPlan()` in `src/services/mbo-attachment-service.js` uses `record[targetCode].value` as the retained saved-file base when there is a pending add and no explicit removal snapshot.
 
-## 4. User Authorization — ACTIVE ONE-SHOT
+Kintone documented behavior relevant to Edit:
+- values from Attachment fields cannot be retrieved from `app.record.edit.submit`;
+- Update Record for an Attachment field is full desired-state semantics: to add a new file while keeping existing files, the request must include the fileKeys of every existing file to retain; files omitted from the request are deleted.
 
-User explicitly authorized on 2026-08-29:
+Therefore `event.record` from `app.record.edit.submit` is not a valid authoritative source for existing attachment fileKeys.
 
-`อนุมัติ App794 เพิ่ม Objective_Attachment_1..10 เป็น FILE fields ตาม schema corrective plan`
-
-Authorization ID:
+Evidence-backed defect mechanism:
 
 ```text
-APP794-D1-OBJECTIVE-ATTACHMENT-SCHEMA-20260829-01
+EDIT SHOW / persisted record
+  -> existing files exist
+  -> user adds pending file
+  -> edit.submit event fires
+  -> source reads Attachment base from edit.submit event.record
+  -> Attachment values are unavailable/non-authoritative in this event
+  -> prepared plan may omit existing fileKeys
+  -> post-save PUT sends incomplete desired Attachment array
+  -> existing files may disappear/collapse and edit-add behavior becomes incorrect
 ```
 
-This authorization is ONE-SHOT and covers only:
-1. re-fetch canonical HEAD and verify authorization is still active;
-2. GET/read exact pre-change App794 Live + Preview form-field and layout state;
-3. capture exact pre-change schema/layout backup evidence before any write;
-4. update only `config/schema-spec.js` to define `Objective_Attachment_1..10` as optional FILE fields;
-5. add exactly these 10 optional FILE fields to App794 Preview;
-6. make only minimal layout placement required for these new fields, with no unrelated form redesign or movement;
-7. apply/deploy App794 form/schema settings to Live;
-8. GET/readback Preview and Live to verify all 10 Objective fields exist and are type FILE;
-9. verify MidYear/Final attachment families remain 10/10 FILE and unrelated schema/layout is preserved;
-10. append concise evidence, commit + push, then STOP for independent review.
+Existing tests missed this because tests such as `SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED` and remove/add handler fixtures populate saved FILE values inside the simulated `edit.submit` record object. That does not reproduce the documented Live limitation.
 
-Exact target fields:
+## 5. Required Corrective Architecture
 
-```text
-Objective_Attachment_1  = FILE / optional / label: Objective Attachment 1
-Objective_Attachment_2  = FILE / optional / label: Objective Attachment 2
-Objective_Attachment_3  = FILE / optional / label: Objective Attachment 3
-Objective_Attachment_4  = FILE / optional / label: Objective Attachment 4
-Objective_Attachment_5  = FILE / optional / label: Objective Attachment 5
-Objective_Attachment_6  = FILE / optional / label: Objective Attachment 6
-Objective_Attachment_7  = FILE / optional / label: Objective Attachment 7
-Objective_Attachment_8  = FILE / optional / label: Objective Attachment 8
-Objective_Attachment_9  = FILE / optional / label: Objective Attachment 9
-Objective_Attachment_10 = FILE / optional / label: Objective Attachment 10
-```
+For **Edit only**, when an attachment field has pending/dirty state:
+1. do not use `app.record.edit.submit` Attachment values as the retained-file source;
+2. obtain authoritative persisted attachment state for the current record before building the plan, preferably by Kintone GET Record using `event.appId + event.recordId` inside the async submit handler;
+3. use the persisted FILE arrays as the base for add-only operations;
+4. explicit UI removal desired-state remains authoritative for user-requested removal;
+5. upload pending files and append their temporary upload fileKeys;
+6. post-save Update Record must contain the exact full desired fileKey set for the target field only;
+7. unrelated attachment fields must be omitted;
+8. Create flow must remain unchanged.
 
-The authorization DOES NOT include:
-- customization JS/CSS deployment;
-- changes to attachment JS lifecycle/service/UI logic;
-- App794 record writes or migration;
-- ACL/process changes;
-- changes to MidYear/Final field codes or values;
-- App801/App795/App796 writes;
-- routing/scoring/auth/reset;
-- D2-D7 execution;
-- external service/storage.
-
-Authorization consumption rule:
-- Antigravity may enter this authorization once.
-- After the first schema execution attempt reaches a Live/Preview write, the authorization is CONSUMED whether successful or failed.
-- A retry requiring another schema write needs a new explicit user authorization unless rollback is required under the exact rollback boundary below.
-
-## 5. Safety Gates / Rollback
-
-Before any write, fail closed and STOP if any of these are true:
-- any `Objective_Attachment_1..10` field already exists unexpectedly;
-- any target code collides with a non-FILE field;
-- Live and Preview pre-change schema/layout no longer match the accepted starting state;
-- revision/concurrency state has drifted in a way that prevents safe guarded write;
-- exact pre-change field/layout snapshots cannot be captured.
-
-Data impact:
-- existing App794 records gain empty optional Objective FILE fields;
-- no existing business values require migration;
-- Mid-Year and Final attachment values must remain untouched.
-
-Rollback allowed under this authorization only if the schema add/apply/readback fails before any real Objective attachment has been persisted:
-- remove only newly added empty `Objective_Attachment_1..10` fields;
-- restore exact pre-change layout snapshot.
-
-Once any real Objective attachment has been persisted, do NOT auto-delete these fields; any destructive rollback then requires a separate explicit user decision.
+No schema change is required for this corrective.
 
 ## 6. Exact Current Gate
 
 ```text
-CURRENT_GATE         = D1 APP794 OBJECTIVE ATTACHMENT SCHEMA CORRECTIVE — AUTHORIZED
-CURRENT_MODE         = ANTIGRAVITY EXACT ONE-SHOT SCHEMA EXECUTION
-NEXT_ACTION_OWNER    = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-AUTHORIZATION_ID     = APP794-D1-OBJECTIVE-ATTACHMENT-SCHEMA-20260829-01
-AUTHORIZATION_STATUS = ACTIVE / UNUSED
-CONFIG_SCHEMA_CHANGE = YES — Objective_Attachment_1..10 only
-APP794 SCHEMA WRITE  = YES — exact 10 FILE fields only
-APP794 LAYOUT WRITE  = YES — minimal placement only
-APP794 SETTINGS APPLY= YES — exact schema corrective only
-APP794 CUSTOMIZATION = NO
-APP794 RECORD WRITE  = NO
-APP794 ACL/PROCESS   = NO
-APP801 WRITE         = NO
-APP795/796 WRITE     = NO
-D2-D7 WRITE          = NO
+CURRENT_GATE          = D1 APP794 EDIT ATTACHMENT PRESERVATION CORRECTIVE
+CURRENT_MODE          = ANTIGRAVITY SOURCE/TEST ONLY
+NEXT_ACTION_OWNER     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+SOURCE CHANGE         = YES — exact edit attachment persistence corrective only
+APP794 CUSTOMIZATION  = NO DEPLOY
+APP794 FORM/SCHEMA    = NO WRITE
+APP794 RECORD WRITE   = NO LIVE WRITE
+APP794 ACL/PROCESS    = NO
+APP801 WRITE          = NO
+APP795/796 WRITE      = NO
+D2-D7 WRITE           = NO
 ```
 
-## 7. Required Independent Review After Execution
+## 7. Required Source/Test Proof Before Any Deploy
 
-Executor maximum status:
+Must prove at minimum:
 
-`SCHEMA_APPLIED_PENDING_INDEPENDENT_REVIEW`
+```text
+EDIT_ADD_ONLY_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE_PRESERVES_ALL_EXISTING
+EDIT_MULTIPLE_EXISTING_FILES_DO_NOT_COLLAPSE
+EDIT_ADD_MULTIPLE_NEW_FILES_PRESERVES_ALL_EXISTING
+EDIT_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE
+EDIT_HANDLER_USES_AUTHORITATIVE_PERSISTED_RECORD_NOT_SUBMIT_ATTACHMENT_VALUE
+UNRELATED_ATTACHMENT_FIELDS_UNCHANGED
+CREATE_ONE_FILE_REGRESSION
+CREATE_MULTIPLE_FILE_REGRESSION
+MIDYEAR_FINAL_REGRESSION
+NO_LIVE_NETWORK_IN_TESTS
+FULL_NPM_TEST_PASS
+UI_BUILD_PASS
+BUILD_ONLY_PASS
+```
 
-ChatGPT must independently verify:
-- changed Git files are within authorization;
-- `config/schema-spec.js` contains exactly Objective Attachment 1..10 FILE definitions and no unrelated schema drift;
-- pre-change backup evidence exists;
-- Preview and Live readback both show Objective 10/10 FILE;
-- MidYear 10/10 FILE and Final 10/10 FILE remain unchanged;
-- no record/ACL/process/customization deploy occurred;
-- rollback status is truthful.
-
-Only after independent schema review PASS may the user perform Live functional Objective attachment UAT.
+The realistic edit-submit fixture must intentionally make Attachment values unavailable/empty and must not silently copy attachment values from the edit-show record.
 
 ## 8. Handoff
 
 ```text
-OBJECTIVE_FILE_FIELDS          = ABSENT 0/10 — CONFIRMED PRE-CORRECTIVE
-PRIMARY_ROOT_CAUSE             = SCHEMA_GAP / UI-SCHEMA MISMATCH
-SCHEMA_CORRECTIVE_PLAN         = READY
-SCHEMA_CORRECTIVE_AUTH         = ACTIVE ONE-SHOT
-NEXT STEP                      = BACKUP -> ADD 10 FILE FIELDS -> MINIMAL LAYOUT -> APPLY -> READBACK -> EVIDENCE
-NEXT OWNER                     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-CUSTOMIZATION DEPLOY           = NO
-RECORD WRITE                   = NO
+SCHEMA_GAP                    = CLOSED / PASS
+INITIAL_ATTACHMENT_CREATE     = PASS
+EDIT_ATTACHMENT_ADD           = FAIL
+EDIT_MULTI_FILE_PRESERVATION  = FAIL
+PRIMARY_SOURCE_DEFECT         = EDIT.SUBMIT ATTACHMENT VALUES USED AS RETAINED-FILE BASE
+NEXT STEP                     = SOURCE/TEST CORRECTIVE ONLY
+NEXT OWNER                    = ANTIGRAVITY
+DEPLOY                         = NO
+LIVE RECORD WRITE              = NO
 ```
