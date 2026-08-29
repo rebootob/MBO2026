@@ -1,14 +1,15 @@
 # CONFIRMED BASELINE — D1 SHORT-LIVED SESSION CONTINUITY
 
 > Status: **CONFIRMED / MANDATORY**  
-> Confirmed by user decision: 2026-08-28  
+> Initial confirmation: 2026-08-28  
+> Auth transport update: **2026-08-29 — D1 Auth Bridge approved**  
 > Scope: App794 MBO session continuity across normal same-tab Kintone page navigation
 
 ---
 
 ## 1. Objective
 
-After a successful MBO login, an employee must be able to continue normal App794 navigation without entering the MBO password again on every Kintone page load.
+After a successful MBO login, an employee must continue normal App794 navigation without entering the MBO password again on every Kintone page load.
 
 Covered continuity includes at minimum:
 
@@ -19,9 +20,9 @@ Create/Edit -> List
 same-tab reload within an active MBO session
 ```
 
-This supersedes the former D1 rule that authentication state was PAGE-MEMORY-ONLY and every reload/re-entry required a new MBO login.
+The former browser-direct App801 session validation path is superseded by the approved Auth Bridge architecture in `D1_AUTH_SECURITY.md`.
 
-The architecture remains KINTONE-ONLY. No external authentication/session server is introduced.
+The continuity semantics below remain mandatory; only the trusted component that reads/writes App801 changes from Browser to Auth Bridge.
 
 ---
 
@@ -30,11 +31,12 @@ The architecture remains KINTONE-ONLY. No external authentication/session server
 D1 uses a **short-lived opaque bearer session token**.
 
 Confirmed behavior:
-- a successful login creates a cryptographically random 256-bit token;
-- the raw token exists only in the browser `sessionStorage` for the current tab/session;
-- App801 stores only a SHA-256 hash of the token, never the raw token;
-- the browser does not store a trusted Employee_Code/authenticated flag as proof of identity;
-- every new App794 page must revalidate the token against App801 before restoring the in-page Employee Self principal;
+- Auth Bridge creates a cryptographically random 256-bit token after successful authentication;
+- raw token exists only in browser `sessionStorage` for the current tab/session;
+- App801 stores only SHA-256(token) + approved session metadata;
+- browser does not store a trusted Employee_Code/authenticated flag as identity proof;
+- every new App794 page revalidates the raw token through Auth Bridge before restoring Employee-Self principal;
+- Auth Bridge resolves/validates the App801 session server-side;
 - invalid/missing/expired/tampered session state fails closed to the blocking MBO Login gate.
 
 Browser storage key:
@@ -43,36 +45,31 @@ Browser storage key:
 ttmet.mbo794.session.v1
 ```
 
-Only the raw opaque token is stored under that key. Employee_Code is resolved from validated App801 session state, not trusted from browser storage.
+Only the raw opaque token is stored under that key.
 
 ---
 
 ## 3. Lifetime / Continuity Boundary
 
-Confirmed session lifetime:
-
 ```text
 ABSOLUTE_TTL = 8 hours
 SLIDING_REFRESH = NO
+ONE_ACTIVE_SESSION_PER_EMPLOYEE = YES
 ```
 
 Rules:
-- same-tab App794 navigation and reload may restore the validated session;
+- same-tab App794 navigation/reload may restore a valid session;
 - closing the tab/browser session removes browser-side sessionStorage and requires login again;
-- a new independent tab without the token requires login;
+- a new independent tab without token requires login;
 - expired token requires login;
-- session validation does not extend expiry;
-- login again issues a new session and invalidates the previous active session for that Employee_Code.
-
-The initial implementation supports **one active MBO session per Employee_Code**.
+- validation does not extend expiry;
+- a new successful login invalidates the previous active session for that Employee_Code.
 
 ---
 
 ## 4. App801 Session Metadata
 
-Session persistence belongs to the existing App801 credential record for the Employee_Code.
-
-Required new App801 fields:
+Session persistence remains on the existing App801 credential row:
 
 ```text
 Session_Token_Hash          SINGLE_LINE_TEXT
@@ -82,28 +79,19 @@ Session_Credential_Version  NUMBER
 Session_Kintone_User        SINGLE_LINE_TEXT
 ```
 
-Field rules:
-- all session fields may be blank when no active session exists;
-- do not store raw token;
-- do not store plaintext password;
-- do not reuse Password_Hash as a session field;
-- `Session_Token_Hash` is SHA-256 of the random token;
-- `Session_Credential_Version` must equal the credential version current when the session is issued;
-- `Session_Kintone_User` binds the session to the Kintone principal that issued it.
-
-Existing `Credential_Version` becomes an active security control:
-- it must be a positive integer;
-- password change increments it;
-- session validation requires `Session_Credential_Version == Credential_Version`;
-- a version mismatch invalidates the session.
-
-Adding these fields to live App801 is a separate Production Schema Write and requires explicit authorization. Architecture approval alone does not authorize the schema change.
+Rules:
+- raw token is never stored in App801;
+- `Session_Token_Hash` = SHA-256(raw token);
+- `Session_Credential_Version` must equal credential version current when issued;
+- password change increments `Credential_Version` and invalidates old session generation;
+- `Session_Kintone_User` retains exact current Kintone user context binding when applicable;
+- employee/shared browser principal does not directly read or write these fields after Auth Bridge cutover.
 
 ---
 
 ## 5. Session Validation Rules
 
-A restored session is valid only when all applicable checks pass:
+A restored session is valid only when Auth Bridge confirms:
 
 ```text
 raw browser token exists
@@ -113,13 +101,13 @@ Force_Password_Change = NO
 Session_Expires_At is valid and > current time
 Credential_Version is a positive integer
 Session_Credential_Version = Credential_Version
-Session_Kintone_User = current kintone.getLoginUser().code
+Session_Kintone_User matches current Kintone context when binding is applicable
 Employee_Code is valid and present
 ```
 
 Any missing/duplicate/malformed/mismatched state fails closed.
 
-Do not return or render Password_Hash, password salt, or raw session token during validation.
+Browser receives only safe validation result data required to restore Employee-Self context. It must not receive `Password_Hash`, password salt, session hash, or App801 secret values.
 
 ---
 
@@ -128,11 +116,12 @@ Do not return or render Password_Hash, password salt, or raw session token durin
 ### Normal login
 
 ```text
-Password verified
--> account state verified
--> issue new opaque token
--> write only token hash + session metadata to App801
--> store raw token in sessionStorage only after server-side session write succeeds
+Browser sends Employee_Code + password to Auth Bridge over HTTPS
+-> Bridge verifies App801 credential/account state
+-> Bridge generates opaque session token
+-> Bridge writes only token hash + session metadata to App801
+-> Bridge returns raw token once
+-> browser stores raw token in sessionStorage
 -> continue as authenticated Employee_Code
 ```
 
@@ -140,118 +129,104 @@ Password verified
 
 No usable session is issued while `Force_Password_Change = YES`.
 
-After the forced password change succeeds:
+Bridge returns a short-lived signed force-change ticket defined by `D1_AUTH_SECURITY.md`. After successful mandatory change:
 - increment `Credential_Version`;
-- clear any prior session fields;
-- issue a new session tied to the new credential version;
-- only then render Employee Self content.
+- clear prior session fields;
+- issue a normal session tied to new credential version;
+- only then render Employee-Self content.
 
 ### Normal Change Password
 
-After current password verification and successful change:
+After valid session + current password verification and successful change:
 - increment `Credential_Version`;
-- invalidate the previous server-side session;
-- issue a replacement session for the current tab so the user may continue working without another login.
+- invalidate prior server-side session;
+- issue a replacement session for current tab.
 
 ### Logout
 
 Logout must:
-- revoke/clear the server-side session fields for the current token when resolvable;
+- request Bridge revocation for current token;
 - clear browser sessionStorage token;
 - clear in-page principal;
-- return to the blocking MBO Login gate.
+- return to blocking MBO Login gate.
 
-If revocation fails, browser token must still be cleared and the UI must fail closed; do not silently report a successful server revocation that did not occur.
+If remote revocation fails, browser token still clears and UI fails closed; remote failure remains observable.
 
 ---
 
-## 7. JavaScript Responsibility Boundaries
+## 7. Responsibility Boundaries
 
-Session implementation must stay modular.
-
-Required responsibility split:
+Browser:
 
 ```text
-mbo-kintone-auth-adapter.js
-  = App801 credential/account/session-record access and validation
+mbo-auth-bridge-adapter.js
+  = Auth Bridge HTTPS client
 
 mbo-kintone-login-gate.js
-  = Login / Force Password Change / Change Password / Logout UI flow
+  = Login / Force Password Change / Change Password / Logout UI
 
 mbo-session-manager.js
-  = raw token generation, SHA-256 token hashing, sessionStorage lifecycle,
-    issue/restore/revoke orchestration
+  = sessionStorage lifecycle + Bridge session orchestration
 
 main-mbo-app.js
-  = dependency construction + top-level event orchestration only
+  = dependency construction + top-level Kintone event orchestration only
 ```
 
-Rules:
-- do not put token generation/storage/expiry implementation into `main-mbo-app.js`;
-- do not put session code into `employee-part-a-ui.js`;
-- do not duplicate credential/session validation rules across modules;
-- generated `dist/mbo-employee-app.js` may remain one deployment bundle, but source modules remain separate.
+Bridge:
+- App801 repository access;
+- password verification/hash creation;
+- lockout/account checks;
+- session issue/validate/revoke;
+- force-change ticket signing/verification.
+
+The former browser-direct `mbo-kintone-auth-adapter.js` must not remain on the production dependency path after cutover.
 
 ---
 
-## 8. Security Boundaries / Known Limitations
+## 8. Security Boundaries
 
-This design improves navigation continuity but does not remove the known Kintone-only shared-account limitation:
-
-```text
-DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
-```
-
-`sessionStorage` is origin-scoped browser storage and is readable by JavaScript executing in the same origin/tab. The token therefore remains a bearer secret and must:
+`sessionStorage` remains readable by JavaScript executing in the same origin/tab, so the raw session token remains a bearer secret and must:
 - never be logged;
 - never be committed;
 - never be placed in URL/query/hash;
 - never be rendered in DOM;
 - never be copied into localStorage/cookies;
-- have high entropy and short absolute lifetime.
+- retain high entropy and short absolute lifetime.
 
-Binding the session to `Session_Kintone_User` reduces cross-principal reuse but does not turn the custom gate into native Kintone employee-level isolation.
+Auth Bridge removes the prior requirement for shared employee Kintone principals to access App801 directly. Direct App801 access by those principals must remain denied.
+
+Because shared Kintone principals exist, Kintone user context binding does not create unique native employee identity; authenticated Employee_Code remains the Employee-Self identity.
 
 ---
 
 ## 9. Final D1 UAT Additions
 
-Final D1 UAT must now prove at minimum:
+Final D1 UAT must prove at minimum:
 - initial App794 entry without session shows Login;
-- successful login creates usable same-tab session continuity;
-- List -> Create does not ask for MBO password again;
-- List -> Detail/Edit does not ask for MBO password again;
-- same-tab reload during valid session restores the correct Employee_Code;
+- successful Bridge login creates usable same-tab session continuity;
+- List -> Create and List -> Detail/Edit do not ask for MBO password again;
+- same-tab reload restores correct Employee_Code;
 - new independent tab without token requires Login;
-- expired/tampered token fails closed to Login;
-- Logout revokes/clears session and re-blocks;
-- password change rotates/invalidate old session correctly;
-- disabled/locked account cannot restore session;
-- session cannot restore under a different Kintone principal;
-- no raw token/password/Password_Hash appears in normal UI/DOM/logs;
+- expired/tampered token fails closed;
+- Logout revokes/clears and re-blocks;
+- password change rotates old session correctly;
+- disabled/locked account cannot restore;
+- wrong Kintone context fails closed when binding applies;
+- browser has zero direct App801 credential/session API calls;
+- employee/shared Kintone principal direct App801 access remains `CB_NO02`;
+- no raw token/password/Password_Hash/App801 API token appears in normal UI/DOM/logs;
 - Employee A cannot use session state to become Employee B.
 
-D1 remains open until these and the other D1 UAT gates are independently reviewed.
+D1 remains open until these and other D1 gates are independently reviewed.
 
 ---
 
-## 10. Separate Open Create-Flow Defect
+## 10. Create-Flow Defect Status
 
-Live UAT also exposed a separate Create-flow defect:
-
-```text
-Employee Profile Resolution Failed
-You cannot call kintone.app.record.get() in handler or during processing a handler.
-```
-
-This is not the session-continuity defect and must not be hidden inside the session work package.
-
-It requires its own narrow corrective because the current create-show async path calls `syncRecordToKintone()`, which uses `kintone.app.record.get()/set()` while a Kintone event handler is still processing.
-
-Fix session continuity first as one cohesive work package, independently review it, then correct the Create form-state/event-handler defect as a separate work package.
+The previously observed Kintone event-handler form-state defect is separate from session continuity and has its own accepted source corrective. It remains part of final live UAT after combined deployment.
 
 ---
 
 ## 11. Change Rule
 
-Changes to token lifetime, browser storage type, session fields, one-session-per-employee rule, Kintone-principal binding, credential-version binding, or session invalidation behavior require explicit Control Plane/user decision and Baseline update.
+Changes to token lifetime, browser storage type, session fields, one-session-per-employee rule, Kintone-context binding, Credential_Version binding, force-change ticket model, or invalidation behavior require explicit Control Plane/user decision and Baseline update.
