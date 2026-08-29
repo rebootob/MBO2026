@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — LIVE UAT FAIL: ATTACHMENT PERSISTENCE LIFECYCLE
+> Updated: 2026-08-29 — INDEPENDENT REVIEW CORRECTIVE: ATTACHMENT PERSISTENCE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING+REMOVE PASS / APP794 DEPLOY REV46 PASS / **LIVE ATTACHMENT SAVE FAIL — CORRECTIVE REQUIRED** / HR+ADMIN RESET UI OPEN / REMAINING SECURITY UAT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE TRUTHFULNESS PASS / APP794 LIVE REV46 / ATTACHMENT POST-SAVE REST ARCHITECTURE CORE PASS / REMOVE-DESIRED-STATE + POST-SAVE-VISIBILITY CORRECTIVE REQUIRED / HR+ADMIN RESET UI OPEN / REMAINING SECURITY UAT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -21,7 +21,7 @@
 
 No AI may silently drop D1–D7.
 
-## 2. Non-Negotiable Architecture / Accepted State
+## 2. Accepted Architecture / Boundaries
 
 ```text
 D1_ARCHITECTURE                    = KINTONE-ONLY
@@ -34,81 +34,81 @@ SOURCE_MODULARITY_POLICY           = MANDATORY / NO CATCH-ALL SOURCE FILES
 
 Do not reopen accepted App795/App796 permissions, requester routing, login/session architecture, or unrelated D1 work unless new evidence directly requires it.
 
-## 3. Live UAT Evidence — Attachment Save Failure
+## 3. Independent Review — Commit d1e51d2
 
-User Live evidence on 2026-08-29 shows App794 Edit Save fails with Kintone banner:
+Reviewed executor commit:
+`d1e51d25862794f6dce7ecff8809df5622011e38`
 
-```text
-An error occurred while running the JavaScript for customization of the app.
-- event.record['Objective_Attachment_1'].type is invalid.
-```
+Authorized start HEAD:
+`63010a394c128b5565f2d9547129e3d9db60f725`
 
-The failure occurs after selecting a pending Objective attachment and pressing native Kintone Save.
+Changed files are limited to the authorized attachment corrective scope:
+- `src/services/mbo-attachment-service.js`
+- `src/ui/employee-part-a-ui.js`
+- `src/main-mbo-app.js`
+- `tests/timeline-truthfulness-and-attachment.test.js`
+- generated `dist/mbo-employee-app.js`
+- `project-docs/D1_ATTACHMENT_PERSISTENCE_CORRECTIVE_EVIDENCE.md`
 
-Independent source inspection identifies the immediate defect in:
-`src/services/mbo-attachment-service.js`
+No deploy or Live Kintone write was authorized or reported.
 
-Current code replaces the native Kintone field object:
+### 3.1 Core Kintone-supported persistence architecture — PASS
 
-```js
-record[targetCode] = { value: savedFiles };
-```
+Independent source inspection confirms:
+- submit handler validates first;
+- pre-save pending file upload produces fileKey plan;
+- submit path no longer overwrites Attachment fields in `event.record`;
+- `app.record.create.submit.success` and `app.record.edit.submit.success` use `event.appId` / `event.recordId` and finalize via Kintone Update Record REST API;
+- attachment persistence logic remains in the dedicated attachment service/UI modules; `main-mbo-app.js` is orchestration-only;
+- unrelated attachment fields are omitted from exact-field REST payloads.
 
-This destroys native field metadata such as `type: 'FILE'`, causing the observed `type is invalid` error.
-
-However, the correct fix is **not** merely to restore `type`.
-
-Kintone's supported JavaScript event-object rules do not allow Attachment field values to be overwritten through create/edit submit event objects. Kintone's supported file persistence flow is:
-
-```text
-Upload File API
--> receive temporary upload fileKey
--> save/create the record normally
--> bind attachment using Add/Update Record REST API
-```
-
-Current production submit handler instead uploads and attempts Attachment binding directly into `event.record` before returning `app.record.create.submit` / `app.record.edit.submit`, which is an unsupported persistence boundary.
-
-Therefore prior source/test acceptance for the attachment **submit binding mechanism** is superseded by Live evidence.
-
-## 4. Revised Attachment Persistence Architecture — Corrective Target
-
-Keep existing truthful UI states and pending-file model, but change persistence lifecycle only.
-
-Required supported flow:
+Therefore:
 
 ```text
-EDIT/CREATE UI
-  -> local pending file(s)
-
-app.record.create.submit / app.record.edit.submit
-  -> sync DOM
-  -> existing auth / duplicate / business validation
-  -> upload pending files to Kintone temporary file storage
-  -> receive fileKey(s)
-  -> DO NOT mutate Attachment field in event.record
-  -> keep a prepared attachment binding plan in module/UI memory
-  -> return event so native Kintone record save proceeds
-
-app.record.create.submit.success / app.record.edit.submit.success
-  -> use event.appId + event.recordId
-  -> read current saved attachment field state as required
-  -> bind prepared fileKey(s) using Kintone Update Record REST API
-  -> preserve unrelated attachment fields and retained existing files
-  -> fail visibly if post-save attachment binding fails
+D1_ATTACHMENT_POST_SAVE_REST_ARCHITECTURE_CORE = PASS
+D1_SUBMIT_EVENT_FILE_FIELD_NON_MUTATION         = PASS
 ```
 
-Important semantics:
-- pre-save upload failure may still cancel save fail-closed;
-- post-save REST binding failure cannot pretend the record save failed; it must report clearly that the record saved but attachment persistence failed;
-- no direct `event.record.Attachment = ...` or `event.record.Attachment.value = ...` binding in submit handler;
-- no external storage/service;
-- no broad refactor.
+Executor evidence reports focused 19/19, full npm test 871/871, build and build-only PASS, Live write 0, deploy NO. GitHub has no independent CI statuses for this commit, so these execution results are accepted as executor evidence, not independently rerun by ChatGPT.
 
-## 5. Exact Current Gate
+### 3.2 Blocker A — saved-file remove desired state is not persisted
+
+Current UI remove handler removes an existing saved file only from:
+`this.record[targetCode].value`.
+
+Current `prepareAttachmentPlan()` builds plans only from keys present in `pendingAttachments` and reads its retained-file set from the submit `event.record` passed to it.
+
+There is no explicit removed-file / dirty-field state carried from UI into the prepared post-save plan. Therefore a user can see a saved attachment disappear in the custom UI but the post-save REST plan may not contain that removal, so the actual Kintone FILE field can retain the file.
+
+The original required test `EXPLICIT_REMOVE_DESIRED_STATE` is also absent from the reported 19-test list.
+
+Therefore:
 
 ```text
-CURRENT_GATE       = D1 ATTACHMENT KINTONE-SUPPORTED PERSISTENCE CORRECTIVE
+D1_ATTACHMENT_REMOVE_DESIRED_STATE = FAIL / MUST FIX
+```
+
+### 3.3 Blocker B — post-save failure visibility is not proven for real redirect behavior
+
+Current submit-success catch calls `showValidationErrors(...)` and then returns the success event. Kintone Save Success events support Promises and redirect behavior. An inline error rendered into the current page is not sufficient proof that the user will actually see the failure before the normal post-save navigation occurs.
+
+Required behavior remains truthful:
+- record save already succeeded;
+- attachment REST binding failed;
+- user must receive a visible failure that cannot silently disappear during redirect.
+
+Acceptable implementation may retain the page on failure via supported success-event redirect handling, or use another clearly visible Kintone/browser notification mechanism. Do not pretend the record save rolled back.
+
+Therefore:
+
+```text
+D1_POST_SAVE_BIND_FAILURE_VISIBLE_RUNTIME = NOT PROVEN / MUST FIX
+```
+
+## 4. Exact Current Gate
+
+```text
+CURRENT_GATE       = D1 ATTACHMENT REMOVE-STATE + POST-SAVE-VISIBILITY CORRECTIVE
 CURRENT_MODE       = SOURCE/TEST ONLY
 NEXT_ACTION_OWNER  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 APP794 DEPLOY      = NO
@@ -118,66 +118,34 @@ APP795/796 WRITE   = NO
 D2-D7 WRITE        = NO
 ```
 
-Production deployment revision 46 remains the current Live state, but Live UAT for attachment persistence is **FAIL**.
+Do NOT reimplement the accepted post-save REST architecture.
 
-No new deployment is authorized. A new one-shot App794 deployment may be requested only after the corrective source/test gate passes independent review.
+## 5. Minimum remaining verification
 
-## 6. Corrective Scope
+Must prove:
+1. existing saved file + no removal + add new => old file preserved + new file bound;
+2. explicit removal of one saved file => prepared plan contains exact retained desired set and REST update removes only that file;
+3. remove + add in same field => exact retained + new fileKeys;
+4. unrelated attachment fields untouched;
+5. realistic `type: 'FILE'` submit event remains unchanged;
+6. post-save REST failure produces runtime-visible truthful notice that survives/prevents silent redirect;
+7. focused tests, full `npm test`, build, build-only PASS;
+8. Live write = 0 and deploy = NO.
 
-Smallest allowed implementation scope:
-- `src/services/mbo-attachment-service.js` (preferred persistence logic owner);
-- `src/ui/employee-part-a-ui.js` only where attachment pending/prepared state API must change;
-- `src/main-mbo-app.js` orchestration only: submit prepare + submit.success finalize;
-- focused attachment lifecycle tests;
-- generated `dist` only through normal build;
-- concise verification evidence.
+## 6. Development Governance
 
-Do not move unrelated logic into `main-mbo-app.js`. Keep feature/persistence behavior in the attachment service/UI module.
-
-## 7. Required Corrective Verification
-
-Tests must prove at minimum:
-1. pending upload in submit path produces fileKey plan but does **not** mutate Attachment field object/value in submit event;
-2. create submit success uses returned Record ID and Update Record API to bind exact Objective attachment;
-3. edit submit success binds exact target field;
-4. existing saved attachment files are preserved unless user explicitly removed them;
-5. unrelated attachment fields remain unchanged;
-6. remove/change desired-state semantics remain truthful;
-7. upload failure before save cancels submit fail-closed;
-8. post-save REST binding failure produces explicit visible/diagnostic failure and does not claim record save rollback;
-9. zero pending attachments causes no attachment REST update;
-10. no Live network calls in unit tests;
-11. existing timeline truthfulness regressions remain PASS;
-12. full required test suite + build/build-only PASS.
-
-## 8. Authorization State
-
-```text
-SOURCE CHANGE             = YES / EXACT CORRECTIVE TASK ONLY
-APP794 DEPLOY             = NO
-APP794 RECORD/ACL/SCHEMA  = NO LIVE WRITE
-APP801 WRITE              = NO
-APP795/796 WRITE          = NO
-ROUTING/SCORING/AUTH      = NO
-RESET PASSWORD            = NO
-D2-D7 EXECUTION           = NO
-EXTERNAL SERVICE          = NO
-```
-
-## 9. Development Governance Reminder
-
-- Antigravity performs only execution that genuinely requires the local/runtime environment.
-- ChatGPT owns diagnosis, architecture, planning, Git review, acceptance and Control Plane documentation.
-- Source must remain modular by feature/responsibility.
+- Antigravity performs only execution requiring local/runtime access.
+- ChatGPT owns diagnosis, planning, Git review, acceptance and Control Plane documentation.
+- Keep attachment behavior in the dedicated attachment service/UI modules.
 - `src/main-mbo-app.js` remains orchestration-only.
-- Do not solve this by adding unrelated code to one large file.
-- Do not broad-scan or broad-refactor.
+- No broad refactor; no unrelated source changes.
 
-## 10. Handoff State
+## 7. Handoff
 
 ```text
-CURRENT_GATE   = D1 ATTACHMENT PERSISTENCE CORRECTIVE
-REVIEW_RESULT  = LIVE UAT FAIL / ROOT CAUSE CONFIRMED
-NEXT OWNER     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-DEPLOY         = NOT AUTHORIZED
+REVIEW_RESULT  = CORRECTIVE
+CORE_ARCH       = PASS
+BLOCKERS        = REMOVE DESIRED STATE + POST-SAVE FAILURE VISIBILITY
+DEPLOY          = NOT AUTHORIZED
+NEXT OWNER      = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 ```
