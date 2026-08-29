@@ -1289,9 +1289,8 @@ test('COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET & COMMENTS_EMPTY_STATE_BILINGUAL
     await new Promise(r => setTimeout(r, 50));
 
     assert.equal(getCommentsCallCount, 0, 'Create screen must perform exactly 0 comment GET calls');
-    const createNotice = createContainer.querySelector('[data-mbo-comment-create-notice]');
-    assert.ok(createNotice, 'Create screen must show unpersisted record comment notice');
-    assert.ok(createNotice.textContent.includes('ยังไม่มีความคิดเห็น (คำขอใหม่ที่ยังไม่ได้บันทึก)'));
+    const createNotice = createContainer.querySelector('[data-mbo-comment-panel]');
+    assert.equal(createNotice, null, 'COMMENT_CREATE_MIRROR_ABSENT: Create screen must have 0 comment mirror panel');
 
     // 2. COMMENTS_EMPTY_STATE_BILINGUAL on existing record with 0 comments
     const emptyContainer = createMockContainer();

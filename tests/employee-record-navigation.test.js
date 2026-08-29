@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EmployeeRecordNavigation } from '../src/ui/employee-record-navigation.js';
 import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
+import { BUSINESS_STAGES } from '../src/config/constants.js';
 
 function createMockElement(tagName = 'div') {
   const children = [];
@@ -115,7 +116,7 @@ function setupMockDocument() {
   };
 }
 
-test('DETAIL_EXISTING_RUNTIME_BACK_VISIBLE: On Detail screen, Back to My MBO bar is rendered and visible', () => {
+test('DETAIL_VALID_RUNTIME_BACK_VISIBLE: On Detail screen, Back to My MBO bar is rendered and visible', () => {
   setupMockDocument();
   const nav = new EmployeeRecordNavigation({ appId: 794 });
   const bar = nav.renderBackToMyMboBar({ isCreate: false });
@@ -129,7 +130,7 @@ test('DETAIL_EXISTING_RUNTIME_BACK_VISIBLE: On Detail screen, Back to My MBO bar
   assert.equal(link.target, '', 'Back link must navigate in same tab');
 });
 
-test('EDIT_EXISTING_RUNTIME_BACK_VISIBLE: On Edit screen, Back to My MBO bar is rendered and visible', () => {
+test('EDIT_VALID_RUNTIME_BACK_VISIBLE: On Edit screen, Back to My MBO bar is rendered and visible', () => {
   setupMockDocument();
   const nav = new EmployeeRecordNavigation({ appId: 794 });
   const bar = nav.renderBackToMyMboBar({ isCreate: false });
@@ -147,6 +148,44 @@ test('CREATE_RUNTIME_BACK_ABSENT: On Create screen, Back to My MBO bar is strict
   const bar = nav.renderBackToMyMboBar({ isCreate: true });
 
   assert.equal(bar, null, 'Back bar must be strictly null on Create screen');
+});
+
+test('DETAIL_CONFIGURATION_ERROR_BACK_VISIBLE: Back bar survives CONFIGURATION_ERROR early return for existing record', () => {
+  setupMockDocument();
+  const container = createMockElement('div');
+  const ui = new EmployeePartAUI({
+    container,
+    isCreate: false,
+    stage: BUSINESS_STAGES.CONFIGURATION_ERROR,
+    record: { $id: { value: '123' }, Status: { value: '01 Draft Objective' } }
+  });
+
+  ui.render();
+
+  const root = ui.root;
+  assert.ok(root, 'Root container must be created');
+  const backBar = root.querySelector('[data-mbo-back-nav-bar]');
+  assert.ok(backBar, 'Back bar MUST survive CONFIGURATION_ERROR early return on existing Detail/Edit');
+  assert.equal(backBar.querySelector('a').href, '/k/794/');
+});
+
+test('DETAIL_INVALID_SNAPSHOT_BACK_VISIBLE: Back bar survives invalid competency/weight snapshot early returns for existing record', () => {
+  setupMockDocument();
+  const container = createMockElement('div');
+  // Record missing PartA_Weight and PartB_Weight (fails snapshot validation)
+  const ui = new EmployeePartAUI({
+    container,
+    isCreate: false,
+    record: { $id: { value: '456' }, Status: { value: '01 Draft Objective' }, Competency_Set_Code: { value: 'INVALID_CODE' } }
+  });
+
+  ui.render();
+
+  const root = ui.root;
+  assert.ok(root, 'Root container must be created');
+  const backBar = root.querySelector('[data-mbo-back-nav-bar]');
+  assert.ok(backBar, 'Back bar MUST survive invalid snapshot early return on existing Detail/Edit');
+  assert.equal(backBar.querySelector('a').href, '/k/794/');
 });
 
 test('BACK_TARGET_CURRENT_APP & BACK_SAME_TAB: Target is /k/{appId}/ and opens in same tab', () => {
@@ -174,26 +213,4 @@ test('AUTH_SESSION_MUTATION = 0 & RECORD_WRITE = 0: Back button click executes n
 
   assert.equal(navigated, true, 'Clicking Back link must invoke onNavigateHome callback');
   assert.equal(evt.defaultPrevented, true, 'Default link navigation must be prevented when callback handles it');
-});
-
-test('EmployeePartAUI runtime integration proof: _renderBackToMyMboBar delegates to EmployeeRecordNavigation', () => {
-  setupMockDocument();
-  const container = createMockElement('div');
-  const uiDetail = new EmployeePartAUI({
-    container,
-    isCreate: false,
-    record: { $id: { value: '123' }, Status: { value: '01 Draft Objective' } }
-  });
-
-  const detailBar = uiDetail._renderBackToMyMboBar();
-  assert.ok(detailBar, 'Detail screen must produce Back bar via delegation');
-  assert.equal(detailBar.querySelector('a').href, '/k/794/');
-
-  const uiCreate = new EmployeePartAUI({
-    container,
-    isCreate: true
-  });
-
-  const createBar = uiCreate._renderBackToMyMboBar();
-  assert.equal(createBar, null, 'Create screen must produce null Back bar via delegation');
 });

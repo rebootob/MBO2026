@@ -624,6 +624,15 @@ export class EmployeePartAUI {
     root.className = 'mbo-root';
     this.root = root;
 
+    // Top Navigation: Back to My MBO (Existing Records Only: Detail & Edit, NOT on Create)
+    // Mounted IMMEDIATELY after root creation so it survives all early-returns for existing records!
+    if (!this.isCreate) {
+      const backNav = this._renderBackToMyMboBar();
+      if (backNav) {
+        root.appendChild(backNav);
+      }
+    }
+
     if (this.stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
       root.appendChild(this._renderErrorBanner('ไม่สามารถระบุขั้นตอนการทำงานได้ กรุณาติดต่อ HR / Administrator (SYSTEM CONFIGURATION ERROR)<br/>Unable to identify workflow stage. Please contact HR / Administrator.'));
       this.container.appendChild(root);
@@ -678,11 +687,6 @@ export class EmployeePartAUI {
         this.container.appendChild(root);
         return;
       }
-    }
-
-    // Top Navigation: Back to My MBO (Existing Records Only: Detail & Edit, NOT on Create)
-    if (!this.isCreate) {
-      root.appendChild(this._renderBackToMyMboBar());
     }
 
     // Admin Support Center Panel (Technical Admin Only)
@@ -792,8 +796,10 @@ export class EmployeePartAUI {
       this.isEditable = origEditable;
     }
 
-    // Native Kintone Comment Thread Mirror (Read-Only Mirror + Refresh)
-    root.appendChild(this._renderNativeCommentMirror());
+    // Native Kintone Comment Thread Mirror (Read-Only Mirror + Refresh - Detail & Edit ONLY)
+    if (!this.isCreate) {
+      root.appendChild(this._renderNativeCommentMirror());
+    }
 
     // Workflow Action Timeline Frame (Read-Only Lifecycle Audit Trail)
     root.appendChild(this._renderWorkflowActionTimeline());

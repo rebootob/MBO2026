@@ -18,7 +18,10 @@ export async function buildMboUi(options = {}) {
     ...options
   });
 
-  fs.copyFileSync('src/styles/mbo-employee.css', 'dist/mbo-employee.css');
+  // Ensure canonical LF line endings for generated CSS bundle determinism
+  const cssRaw = fs.readFileSync('src/styles/mbo-employee.css', 'utf8');
+  const cssLf = cssRaw.replace(/\r\n/g, '\n');
+  fs.writeFileSync('dist/mbo-employee.css', cssLf, 'utf8');
 
   return result;
 }

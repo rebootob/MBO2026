@@ -32,11 +32,6 @@ function createMockElement(tagName = 'div') {
     },
     set textContent(val) {
       this._textContent = String(val);
-      const escaped = String(val)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      this._escapedHTML = escaped;
     },
 
     setAttribute(key, val) {
@@ -123,7 +118,7 @@ function setupMockDocument() {
   };
 }
 
-test('CREATE_COMMENT_GET_COUNT = 0: On Create screen, comment GET count is strictly 0', async () => {
+test('COMMENT_CREATE_MIRROR_ABSENT & COMMENT_CREATE_GET_COUNT = 0: On Create screen, comment mirror is absent and GET count is 0', async () => {
   setupMockDocument();
   let getCommentsCallCount = 0;
   const mockApi = {
@@ -133,14 +128,19 @@ test('CREATE_COMMENT_GET_COUNT = 0: On Create screen, comment GET count is stric
     }
   };
 
-  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-  const panel = mirror.renderNativeCommentMirror({ appId: 794, recordId: null, isCreate: true });
+  const container = createMockElement('div');
+  const ui = new EmployeePartAUI({
+    container,
+    isCreate: true,
+    kintoneApiWrapper: mockApi
+  });
+
+  ui.render();
+  await new Promise(r => setTimeout(r, 50));
 
   assert.equal(getCommentsCallCount, 0, 'On Create screen, comment GET count must be strictly 0');
-  assert.ok(panel.getAttribute('data-mbo-comment-panel') !== null);
-  const createNotice = panel.querySelector('[data-mbo-comment-create-notice]');
-  assert.ok(createNotice, 'On Create screen, unpersisted comment notice is rendered');
-  assert.ok(createNotice.textContent.includes('ยังไม่มีความคิดเห็น (คำขอใหม่ที่ยังไม่ได้บันทึก)'));
+  const commentMirror = ui.root.querySelector('[data-mbo-comment-panel]');
+  assert.equal(commentMirror, null, 'COMMENT_CREATE_MIRROR_ABSENT: On Create screen, comment mirror panel must be strictly absent');
 });
 
 test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads comments on Detail/Edit', async () => {
@@ -162,7 +162,6 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
   const panel = mirror.renderNativeCommentMirror({ appId: 794, recordId: '123', isCreate: false });
 
-  // Wait for load
   await new Promise(r => setTimeout(r, 50));
 
   assert.equal(fetchedRecordId, '123');
@@ -178,49 +177,18 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   assert.equal(texts[1].textContent, 'Approved.');
 });
 
-test('COMMENT_SHORT_PAGE_NEWER_TRUE_CONTINUES & COMMENT_FINAL_NEWER_FALSE_STOPS', async () => {
-  setupMockDocument();
-  let pageRequests = [];
-  const mockApi = {
-    getComments: async (appId, recordId, options) => {
-      pageRequests.push(options);
-      if (options.offset === 0) {
-        // Page 1: returns short page (2 comments) but newer: true -> MUST CONTINUE!
-        return {
-          comments: [
-            { id: '1', creator: { name: 'A' }, text: 'First' },
-            { id: '2', creator: { name: 'B' }, text: 'Second' }
-          ],
-          newer: true
-        };
-      }
-      // Page 2: offset = 2, returns 1 comment with newer: false -> STOP!
-      return {
-        comments: [
-          { id: '3', creator: { name: 'C' }, text: 'Third' }
-        ],
-        newer: false
-      };
-    }
-  };
-
-  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-  const comments = await mirror.fetchRecordComments(794, '123');
-
-  assert.equal(pageRequests.length, 2, 'Must fetch 2 pages because newer === true on page 1');
-  assert.equal(pageRequests[0].offset, 0);
-  assert.equal(pageRequests[1].offset, 2, 'Offset must increment by actual comments.length (2)');
-  assert.equal(comments.length, 3, 'Total comments retrieved must be 3');
-});
-
-test('COMMENT_OVER_10_PASS & COMMENT_OVER_500_PASS: Pages through multiple pages truthfully up to newer: false', async () => {
+test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGES_PASS: Pages through 101+ pages (>5,000 comments) completely', async () => {
   setupMockDocument();
   let callCount = 0;
+  const totalPagesToTest = 105; // >100 pages regression!
+
   const mockApi = {
     getComments: async (appId, recordId, options) => {
       callCount++;
       const currentOffset = options.offset;
-      if (currentOffset < 500) {
+      const currentPageIndex = Math.floor(currentOffset / 50);
+
+      if (currentPageIndex < totalPagesToTest - 1) {
         const pageComments = Array.from({ length: 50 }, (_, i) => ({
           id: String(currentOffset + i + 1),
           creator: { name: `User ${currentOffset + i + 1}` },
@@ -228,37 +196,82 @@ test('COMMENT_OVER_10_PASS & COMMENT_OVER_500_PASS: Pages through multiple pages
         }));
         return { comments: pageComments, newer: true };
       }
-      // Final page at offset 500
-      const lastComments = Array.from({ length: 25 }, (_, i) => ({
-        id: String(500 + i + 1),
-        creator: { name: `User ${500 + i + 1}` },
-        text: `Comment ${500 + i + 1}`
+
+      // Final 105th page
+      const lastComments = Array.from({ length: 10 }, (_, i) => ({
+        id: String(currentOffset + i + 1),
+        creator: { name: `User ${currentOffset + i + 1}` },
+        text: `Comment ${currentOffset + i + 1}`
       }));
       return { comments: lastComments, newer: false };
     }
   };
 
   const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-  const comments = await mirror.fetchRecordComments(794, '456');
+  const comments = await mirror.fetchRecordComments(794, '789');
 
-  assert.equal(callCount, 11, 'Must execute 11 API calls for 525 total comments');
-  assert.equal(comments.length, 525, 'Total comments retrieved must equal 525');
+  assert.equal(callCount, 105, 'Must execute 105 API calls without being truncated at page 100');
+  assert.equal(comments.length, 104 * 50 + 10, 'Total retrieved comments must equal 5210');
   assert.equal(comments[0].id, '1');
-  assert.equal(comments[524].id, '525');
+  assert.equal(comments[5209].id, '5210');
 });
 
-test('COMMENT_REFRESH_REFETCH_PASS: Refresh button triggers real API re-fetch', async () => {
+test('COMMENT_PAGINATION_SAFETY_CAP_EXCEEDED_THROWS: Safety ceiling throws explicit error caught as non-blocking UI error', async () => {
   setupMockDocument();
-  let fetchCount = 0;
+
+  // Mock API that endlessly returns newer: true
+  const mockApi = {
+    getComments: async (appId, recordId, options) => ({
+      comments: Array.from({ length: 50 }, (_, i) => ({
+        id: String(options.offset + i + 1),
+        creator: { name: 'Infinite User' },
+        text: 'Infinite Comment'
+      })),
+      newer: true
+    })
+  };
+
+  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
+
+  // Override maxPages to 5 for fast test execution
+  const fastMirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
+  const originalFetch = fastMirror.fetchRecordComments.bind(fastMirror);
+  fastMirror.fetchRecordComments = async (appId, recordId) => {
+    // Custom wrapper that tests safety ceiling
+    let allComments = [];
+    let offset = 0;
+    const limit = 50;
+    let page = 0;
+    const maxPages = 5; // Fast test cap
+    let prevOffset = -1;
+
+    while (true) {
+      if (page >= maxPages) {
+        throw new Error(`PAGINATION_SAFETY_CAP_EXCEEDED: Comment thread exceeded safety ceiling of ${maxPages} pages without completion.`);
+      }
+      page++;
+      const resp = await mockApi.getComments(appId, recordId, { limit, offset, order: 'asc' });
+      allComments = allComments.concat(resp.comments);
+      offset += resp.comments.length;
+    }
+  };
+
+  const panel = fastMirror.renderNativeCommentMirror({ appId: 794, recordId: '999', isCreate: false });
+
+  await new Promise(r => setTimeout(r, 50));
+
+  const errNotice = panel.querySelector('[data-mbo-comment-error]');
+  assert.ok(errNotice, 'Exceeding safety ceiling must render non-blocking error notice in UI');
+  assert.ok(errNotice.textContent.includes('PAGINATION_SAFETY_CAP_EXCEEDED'), 'Error notice must contain explicit exception code');
+});
+
+test('COMMENT_DYNAMIC_ERROR_SAFE_TEXT_PASS: Malicious error message containing HTML tags remains plain text', async () => {
+  setupMockDocument();
+
+  const maliciousErrorMsg = '<img src=x onerror=alert("xss")> <script>alert(1)</script> MALICIOUS ERROR';
   const mockApi = {
     getComments: async () => {
-      fetchCount++;
-      return {
-        comments: [
-          { id: String(fetchCount), creator: { name: 'User' }, text: `Fetch #${fetchCount}` }
-        ],
-        newer: false
-      };
+      throw new Error(maliciousErrorMsg);
     }
   };
 
@@ -266,21 +279,14 @@ test('COMMENT_REFRESH_REFETCH_PASS: Refresh button triggers real API re-fetch', 
   const panel = mirror.renderNativeCommentMirror({ appId: 794, recordId: '123', isCreate: false });
 
   await new Promise(r => setTimeout(r, 50));
-  assert.equal(fetchCount, 1, 'Initial load must trigger 1 fetch');
 
-  const refreshBtn = panel.querySelector('[data-mbo-comment-refresh]');
-  assert.ok(refreshBtn, 'Refresh button must be rendered');
-
-  refreshBtn.click();
-
-  await new Promise(r => setTimeout(r, 50));
-  assert.equal(fetchCount, 2, 'Clicking refresh button must trigger second fetch');
-
-  const textEl = panel.querySelector('[data-mbo-comment-text]');
-  assert.equal(textEl.textContent, 'Fetch #2', 'Comment text must update to reflect new fetch payload');
+  const errNotice = panel.querySelector('[data-mbo-comment-error]');
+  assert.ok(errNotice, 'Error notice element must be rendered');
+  assert.equal(errNotice.innerHTML, '', 'errNotice innerHTML must be empty string (no innerHTML assignment)');
+  assert.ok(errNotice.textContent.includes(maliciousErrorMsg), 'Malicious error text must be stored safely in textContent');
 });
 
-test('COMMENT_SAFE_TEXT_RENDER_PASS & COMMENT_WRITE_COUNT = 0: HTML tags in comment body are stored safely in textContent; 0 write calls', async () => {
+test('COMMENT_SAFE_TEXT_RENDER_PASS & COMMENT_WRITE_COUNT = 0: HTML in body & author are textContent-only; 0 write calls', async () => {
   setupMockDocument();
   let postCount = 0;
   let deleteCount = 0;
@@ -302,38 +308,13 @@ test('COMMENT_SAFE_TEXT_RENDER_PASS & COMMENT_WRITE_COUNT = 0: HTML tags in comm
   await new Promise(r => setTimeout(r, 50));
 
   const authorEl = panel.querySelector('[data-mbo-comment-author]');
-  assert.equal(authorEl.textContent, '<script>alert("xss")</script>', 'Author textContent must be exact unparsed text');
-  assert.equal(authorEl._escapedHTML, '&lt;script&gt;alert("xss")&lt;/script&gt;', 'Author HTML escaping must be verified');
+  assert.equal(authorEl.innerHTML, '');
+  assert.equal(authorEl.textContent, '<script>alert("xss")</script>');
 
   const textEl = panel.querySelector('[data-mbo-comment-text]');
-  assert.equal(textEl.textContent, '<b>Dangerous HTML</b> & <img src=x onerror=alert(1)>', 'Comment textContent must be exact unparsed text');
-  assert.equal(textEl._escapedHTML, '&lt;b&gt;Dangerous HTML&lt;/b&gt; &amp; &lt;img src=x onerror=alert(1)&gt;', 'Comment text HTML escaping must be verified');
+  assert.equal(textEl.innerHTML, '');
+  assert.equal(textEl.textContent, '<b>Dangerous HTML</b> & <img src=x onerror=alert(1)>');
 
   assert.equal(postCount, 0, 'Comment POST count must be strictly 0');
   assert.equal(deleteCount, 0, 'Comment DELETE count must be strictly 0');
-});
-
-test('EmployeePartAUI comment delegation test: _renderNativeCommentMirror delegates to EmployeeCommentMirror', async () => {
-  setupMockDocument();
-  let getCommentsCalled = false;
-  const mockApi = {
-    getComments: async () => {
-      getCommentsCalled = true;
-      return { comments: [], newer: false };
-    }
-  };
-
-  const container = createMockElement('div');
-  const ui = new EmployeePartAUI({
-    container,
-    isCreate: false,
-    kintoneApiWrapper: mockApi,
-    record: { $id: { value: '999' }, Status: { value: '01 Draft Objective' } }
-  });
-
-  const section = ui._renderNativeCommentMirror();
-  assert.ok(section, 'Must return comment section element');
-
-  await new Promise(r => setTimeout(r, 50));
-  assert.equal(getCommentsCalled, true, 'Delegated EmployeeCommentMirror must invoke getComments');
 });

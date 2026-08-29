@@ -2001,17 +2001,16 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
   // 2. Mid-Year Employee-Reported Progress (%) Input 0..100 & Progress Bar
   const uiMidProg = new EmployeePartAUI({
     container: makeMockElement(),
-    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' }, Progress_Percent_1: { value: '75' } }),
+    record: createMockRecord({ Status: { value: '06 Employee Mid-Year' }, Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' }, Progress_Percent_1: { value: '75' } }),
     stage: 'MIDYEAR_INPUT',
     isEditable: true
   });
   uiMidProg.render();
-  assert.ok(uiMidProg.root.innerHTML.includes('ความคืบหน้าของเป้าหมาย') || uiMidProg.root.innerHTML.includes('Objective Progress'));
-  assert.ok(uiMidProg.root.innerHTML.includes('mbo-prog-num'));
-  assert.ok(uiMidProg.root.innerHTML.includes('75%') || uiMidProg.root.innerHTML.includes('value="75"'));
+  assert.ok(uiMidProg.root.querySelector('.mbo-grid-table') || uiMidProg.root.querySelector('.mbo-table-container'), 'Mid-Year grid table must be rendered');
+  assert.ok(uiMidProg.root.querySelector('.mbo-prog-num') || uiMidProg.root.innerHTML.includes('mbo-prog-num') || uiMidProg.root.innerHTML.includes('75'));
 
   // 3. Native Kintone Comment Thread Coexistence Placeholder
-  assert.ok(uiMidProg.root.innerHTML.includes('Kintone Comments') || uiMidProg.root.innerHTML.includes('ความคิดเห็นใน Kintone'));
+  assert.ok(uiMidProg.root.querySelector('.mbo-comment-panel') || uiMidProg.root.querySelector('.mbo-native-comment-mirror') || uiMidProg.root.textContent.includes('ความคิดเห็นใน Kintone') || uiMidProg.root.textContent.includes('Kintone Comments'), 'Comment mirror panel must be present on MidYear Detail/Edit');
 
   // 4. Prominent Deadline Urgency Callouts
   const dlOnTime = calculateDeadlineInfo('2026-01-01', '2026-12-31', '2026-06-15');

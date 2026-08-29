@@ -16,8 +16,21 @@ export class EmployeeCommentMirror {
     let allComments = [];
     let offset = 0;
     const limit = 50;
+    let page = 0;
+    const maxPages = 10000;
+    let prevOffset = -1;
 
-    for (let page = 0; page < 100; page++) {
+    while (true) {
+      if (page >= maxPages) {
+        throw new Error(`PAGINATION_SAFETY_CAP_EXCEEDED: Comment thread exceeded safety ceiling of ${maxPages} pages without completion.`);
+      }
+      page++;
+
+      if (offset === prevOffset) {
+        throw new Error(`PAGINATION_STUCK: Offset did not advance beyond ${offset}`);
+      }
+      prevOffset = offset;
+
       let resp = null;
       if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === 'function') {
         resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: 'asc' });
@@ -67,6 +80,10 @@ export class EmployeeCommentMirror {
       panel.setAttribute('data-mbo-comment-section', '');
     }
 
+    if (isCreate || !recordId) {
+      return panel;
+    }
+
     const header = document.createElement('div');
     header.className = 'mbo-comment-header';
     if (typeof header.setAttribute === 'function') {
@@ -81,33 +98,25 @@ export class EmployeeCommentMirror {
     if (typeof titleEl.setAttribute === 'function') {
       titleEl.setAttribute('data-mbo-comment-title', '');
     }
-    const titleString = '💬 ความคิดเห็นใน Kintone / Kintone Comments (Native Mirror)';
-    titleEl.textContent = titleString;
-    titleEl.innerHTML = titleString;
+    titleEl.textContent = '💬 ความคิดเห็นใน Kintone / Kintone Comments (Native Mirror)';
 
     const noticeEl = document.createElement('div');
     noticeEl.className = 'mbo-comment-subtitle mbo-comment-subnotice';
-    const noticeString = 'แสดงความคิดเห็นล่าสุดจากระบบ Kintone (อ่านอย่างเดียว / Read-only mirror)';
-    noticeEl.textContent = noticeString;
-    noticeEl.innerHTML = noticeString;
+    noticeEl.textContent = 'แสดงความคิดเห็นล่าสุดจากระบบ Kintone (อ่านอย่างเดียว / Read-only mirror)';
 
     titleBox.appendChild(titleEl);
     titleBox.appendChild(noticeEl);
     header.appendChild(titleBox);
 
-    if (!isCreate) {
-      const refreshBtn = document.createElement('button');
-      refreshBtn.type = 'button';
-      refreshBtn.className = 'mbo-btn-refresh-comments mbo-comment-refresh-btn';
-      if (typeof refreshBtn.setAttribute === 'function') {
-        refreshBtn.setAttribute('data-mbo-refresh-comments', '');
-        refreshBtn.setAttribute('data-mbo-comment-refresh', '');
-      }
-      const refreshString = '🔄 รีเฟรชความคิดเห็น / Refresh Comments';
-      refreshBtn.textContent = refreshString;
-      refreshBtn.innerHTML = refreshString;
-      header.appendChild(refreshBtn);
+    const refreshBtn = document.createElement('button');
+    refreshBtn.type = 'button';
+    refreshBtn.className = 'mbo-btn-refresh-comments mbo-comment-refresh-btn';
+    if (typeof refreshBtn.setAttribute === 'function') {
+      refreshBtn.setAttribute('data-mbo-refresh-comments', '');
+      refreshBtn.setAttribute('data-mbo-comment-refresh', '');
     }
+    refreshBtn.textContent = '🔄 รีเฟรชความคิดเห็น / Refresh Comments';
+    header.appendChild(refreshBtn);
 
     panel.appendChild(header);
 
@@ -119,29 +128,13 @@ export class EmployeeCommentMirror {
 
     panel.appendChild(bodyContainer);
 
-    if (isCreate || !recordId) {
-      const createMsg = document.createElement('div');
-      createMsg.className = 'mbo-comment-empty-notice';
-      if (typeof createMsg.setAttribute === 'function') {
-        createMsg.setAttribute('data-mbo-comment-create-notice', '');
-        createMsg.setAttribute('data-mbo-comment-empty', '');
-      }
-      const createMsgString = 'ยังไม่มีความคิดเห็น (คำขอใหม่ที่ยังไม่ได้บันทึก) / No comments yet (unpersisted new record).';
-      createMsg.textContent = createMsgString;
-      createMsg.innerHTML = createMsgString;
-      bodyContainer.appendChild(createMsg);
-      return panel;
-    }
-
     const refreshBtnEl = header.querySelector('[data-mbo-refresh-comments]') || header.querySelector('[data-mbo-comment-refresh]');
 
     const loadComments = async () => {
       bodyContainer.innerHTML = '';
       const loadingEl = document.createElement('div');
       loadingEl.className = 'mbo-comment-loading';
-      const loadingString = 'กำลังโหลดความคิดเห็น... / Loading comments...';
-      loadingEl.textContent = loadingString;
-      loadingEl.innerHTML = loadingString;
+      loadingEl.textContent = 'กำลังโหลดความคิดเห็น... / Loading comments...';
       bodyContainer.appendChild(loadingEl);
 
       try {
@@ -154,9 +147,7 @@ export class EmployeeCommentMirror {
           if (typeof emptyNotice.setAttribute === 'function') {
             emptyNotice.setAttribute('data-mbo-comment-empty', '');
           }
-          const emptyString = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.\n(สามารถเพิ่มความคิดเห็นได้ที่แถบด้านขวา / Add comments via native right panel)';
-          emptyNotice.textContent = emptyString;
-          emptyNotice.innerHTML = emptyString;
+          emptyNotice.textContent = 'ยังไม่มีความคิดเห็นสำหรับบันทึกนี้ / No comments for this record yet.\n(สามารถเพิ่มความคิดเห็นได้ที่แถบด้านขวา / Add comments via native right panel)';
           bodyContainer.appendChild(emptyNotice);
           return;
         }
@@ -214,9 +205,7 @@ export class EmployeeCommentMirror {
         if (typeof errEl.setAttribute === 'function') {
           errEl.setAttribute('data-mbo-comment-error', '');
         }
-        const errString = `ไม่สามารถโหลดความคิดเห็นได้ / Failed to load comments: ${err.message}`;
-        errEl.textContent = errString;
-        errEl.innerHTML = errString;
+        errEl.textContent = `ไม่สามารถโหลดความคิดเห็นได้ / Failed to load comments: ${err.message}`;
         bodyContainer.appendChild(errEl);
       }
     };

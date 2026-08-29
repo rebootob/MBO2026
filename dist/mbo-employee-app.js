@@ -828,7 +828,18 @@ Requester_User is empty for action "${actionName}".`
       let allComments = [];
       let offset = 0;
       const limit = 50;
-      for (let page = 0; page < 100; page++) {
+      let page = 0;
+      const maxPages = 1e4;
+      let prevOffset = -1;
+      while (true) {
+        if (page >= maxPages) {
+          throw new Error(`PAGINATION_SAFETY_CAP_EXCEEDED: Comment thread exceeded safety ceiling of ${maxPages} pages without completion.`);
+        }
+        page++;
+        if (offset === prevOffset) {
+          throw new Error(`PAGINATION_STUCK: Offset did not advance beyond ${offset}`);
+        }
+        prevOffset = offset;
         let resp = null;
         if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === "function") {
           resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: "asc" });
@@ -866,6 +877,9 @@ Requester_User is empty for action "${actionName}".`
         panel.setAttribute("data-mbo-comment-panel", "");
         panel.setAttribute("data-mbo-comment-section", "");
       }
+      if (isCreate || !recordId) {
+        return panel;
+      }
       const header = document.createElement("div");
       header.className = "mbo-comment-header";
       if (typeof header.setAttribute === "function") {
@@ -878,30 +892,22 @@ Requester_User is empty for action "${actionName}".`
       if (typeof titleEl.setAttribute === "function") {
         titleEl.setAttribute("data-mbo-comment-title", "");
       }
-      const titleString = "\u{1F4AC} \u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E43\u0E19 Kintone / Kintone Comments (Native Mirror)";
-      titleEl.textContent = titleString;
-      titleEl.innerHTML = titleString;
+      titleEl.textContent = "\u{1F4AC} \u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E43\u0E19 Kintone / Kintone Comments (Native Mirror)";
       const noticeEl = document.createElement("div");
       noticeEl.className = "mbo-comment-subtitle mbo-comment-subnotice";
-      const noticeString = "\u0E41\u0E2A\u0E14\u0E07\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E25\u0E48\u0E32\u0E2A\u0E38\u0E14\u0E08\u0E32\u0E01\u0E23\u0E30\u0E1A\u0E1A Kintone (\u0E2D\u0E48\u0E32\u0E19\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27 / Read-only mirror)";
-      noticeEl.textContent = noticeString;
-      noticeEl.innerHTML = noticeString;
+      noticeEl.textContent = "\u0E41\u0E2A\u0E14\u0E07\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E25\u0E48\u0E32\u0E2A\u0E38\u0E14\u0E08\u0E32\u0E01\u0E23\u0E30\u0E1A\u0E1A Kintone (\u0E2D\u0E48\u0E32\u0E19\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27 / Read-only mirror)";
       titleBox.appendChild(titleEl);
       titleBox.appendChild(noticeEl);
       header.appendChild(titleBox);
-      if (!isCreate) {
-        const refreshBtn = document.createElement("button");
-        refreshBtn.type = "button";
-        refreshBtn.className = "mbo-btn-refresh-comments mbo-comment-refresh-btn";
-        if (typeof refreshBtn.setAttribute === "function") {
-          refreshBtn.setAttribute("data-mbo-refresh-comments", "");
-          refreshBtn.setAttribute("data-mbo-comment-refresh", "");
-        }
-        const refreshString = "\u{1F504} \u0E23\u0E35\u0E40\u0E1F\u0E23\u0E0A\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 / Refresh Comments";
-        refreshBtn.textContent = refreshString;
-        refreshBtn.innerHTML = refreshString;
-        header.appendChild(refreshBtn);
+      const refreshBtn = document.createElement("button");
+      refreshBtn.type = "button";
+      refreshBtn.className = "mbo-btn-refresh-comments mbo-comment-refresh-btn";
+      if (typeof refreshBtn.setAttribute === "function") {
+        refreshBtn.setAttribute("data-mbo-refresh-comments", "");
+        refreshBtn.setAttribute("data-mbo-comment-refresh", "");
       }
+      refreshBtn.textContent = "\u{1F504} \u0E23\u0E35\u0E40\u0E1F\u0E23\u0E0A\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 / Refresh Comments";
+      header.appendChild(refreshBtn);
       panel.appendChild(header);
       const bodyContainer = document.createElement("div");
       bodyContainer.className = "mbo-comment-body-container mbo-comment-body";
@@ -909,27 +915,12 @@ Requester_User is empty for action "${actionName}".`
         bodyContainer.setAttribute("data-mbo-comment-body", "");
       }
       panel.appendChild(bodyContainer);
-      if (isCreate || !recordId) {
-        const createMsg = document.createElement("div");
-        createMsg.className = "mbo-comment-empty-notice";
-        if (typeof createMsg.setAttribute === "function") {
-          createMsg.setAttribute("data-mbo-comment-create-notice", "");
-          createMsg.setAttribute("data-mbo-comment-empty", "");
-        }
-        const createMsgString = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19 (\u0E04\u0E33\u0E02\u0E2D\u0E43\u0E2B\u0E21\u0E48\u0E17\u0E35\u0E48\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01) / No comments yet (unpersisted new record).";
-        createMsg.textContent = createMsgString;
-        createMsg.innerHTML = createMsgString;
-        bodyContainer.appendChild(createMsg);
-        return panel;
-      }
       const refreshBtnEl = header.querySelector("[data-mbo-refresh-comments]") || header.querySelector("[data-mbo-comment-refresh]");
       const loadComments = async () => {
         bodyContainer.innerHTML = "";
         const loadingEl = document.createElement("div");
         loadingEl.className = "mbo-comment-loading";
-        const loadingString = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19... / Loading comments...";
-        loadingEl.textContent = loadingString;
-        loadingEl.innerHTML = loadingString;
+        loadingEl.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19... / Loading comments...";
         bodyContainer.appendChild(loadingEl);
         try {
           const comments = await this.fetchRecordComments(appId, recordId);
@@ -940,9 +931,7 @@ Requester_User is empty for action "${actionName}".`
             if (typeof emptyNotice.setAttribute === "function") {
               emptyNotice.setAttribute("data-mbo-comment-empty", "");
             }
-            const emptyString = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E35\u0E49 / No comments for this record yet.\n(\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49\u0E17\u0E35\u0E48\u0E41\u0E16\u0E1A\u0E14\u0E49\u0E32\u0E19\u0E02\u0E27\u0E32 / Add comments via native right panel)";
-            emptyNotice.textContent = emptyString;
-            emptyNotice.innerHTML = emptyString;
+            emptyNotice.textContent = "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E19\u0E35\u0E49 / No comments for this record yet.\n(\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49\u0E17\u0E35\u0E48\u0E41\u0E16\u0E1A\u0E14\u0E49\u0E32\u0E19\u0E02\u0E27\u0E32 / Add comments via native right panel)";
             bodyContainer.appendChild(emptyNotice);
             return;
           }
@@ -991,9 +980,7 @@ Requester_User is empty for action "${actionName}".`
           if (typeof errEl.setAttribute === "function") {
             errEl.setAttribute("data-mbo-comment-error", "");
           }
-          const errString = `\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E42\u0E2B\u0E25\u0E14\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49 / Failed to load comments: ${err.message}`;
-          errEl.textContent = errString;
-          errEl.innerHTML = errString;
+          errEl.textContent = `\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E42\u0E2B\u0E25\u0E14\u0E04\u0E27\u0E32\u0E21\u0E04\u0E34\u0E14\u0E40\u0E2B\u0E47\u0E19\u0E44\u0E14\u0E49 / Failed to load comments: ${err.message}`;
           bodyContainer.appendChild(errEl);
         }
       };
@@ -3233,6 +3220,12 @@ Requester_User is empty for action "${actionName}".`
       const root = document.createElement("div");
       root.className = "mbo-root";
       this.root = root;
+      if (!this.isCreate) {
+        const backNav = this._renderBackToMyMboBar();
+        if (backNav) {
+          root.appendChild(backNav);
+        }
+      }
       if (this.stage === BUSINESS_STAGES.CONFIGURATION_ERROR) {
         root.appendChild(this._renderErrorBanner("\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E23\u0E30\u0E1A\u0E38\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19\u0E44\u0E14\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator (SYSTEM CONFIGURATION ERROR)<br/>Unable to identify workflow stage. Please contact HR / Administrator."));
         this.container.appendChild(root);
@@ -3275,9 +3268,6 @@ Requester_User is empty for action "${actionName}".`
           this.container.appendChild(root);
           return;
         }
-      }
-      if (!this.isCreate) {
-        root.appendChild(this._renderBackToMyMboBar());
       }
       this._renderSupportCenterIfAdmin(root, status);
       root.appendChild(this._renderOverallProgressBar(status));
@@ -3362,7 +3352,9 @@ Requester_User is empty for action "${actionName}".`
         this.stage = origStage;
         this.isEditable = origEditable;
       }
-      root.appendChild(this._renderNativeCommentMirror());
+      if (!this.isCreate) {
+        root.appendChild(this._renderNativeCommentMirror());
+      }
       root.appendChild(this._renderWorkflowActionTimeline());
       this.container.appendChild(root);
       this._updateTotalWeightDisplay();
