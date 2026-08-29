@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — APP794 SAVED ATTACHMENT PREVIEW/DOWNLOAD SOURCE REVIEW PASS / DEPLOY AUTH REQUIRED
+> Updated: 2026-08-29 — APP794 SAVED ATTACHMENT PREVIEW/DOWNLOAD SOURCE PASS / ONE-SHOT DEPLOY AUTHORIZED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 KINTONE-ONLY / App794 customization rev50 / attachment persistence PASS / long-filename UI PASS / **saved attachment Preview/Download source corrective independently reviewed PASS; Live deploy not authorized yet** / HR+admin reset UI open / remaining security UAT open |
+| D1 | 🟠 KINTONE-ONLY / App794 customization rev50 / attachment persistence PASS / long-filename UI PASS / **saved attachment Preview/Download source corrective independently reviewed PASS; exact one-shot App794 customization deploy now authorized; execution/review/UAT pending** / HR+admin reset UI open / remaining security UAT open |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -30,10 +30,9 @@ ALL_PRIOR_DEPLOY_AUTHS              = CONSUMED / CLOSED
 ATTACHMENT_RETRIEVAL_UX_LIVE        = FAIL ON REV50
 ATTACHMENT_RETRIEVAL_CANDIDATE      = ec6278524a2d5eb53050d0580c340d1b4e866b97
 ATTACHMENT_RETRIEVAL_SOURCE_REVIEW  = PASS
-DEPLOY_AUTHORIZATION                = NONE
 ```
 
-Do not reopen Objective FILE schema, desired-state persistence, atomic Edit preflight, long-filename containment, or restored Remove semantics without new evidence.
+Do not reopen Objective FILE schema, desired-state persistence, atomic Edit preflight, long-filename containment, restored Remove semantics, MIME safety, or single-popup behavior without new evidence.
 
 ## 3. Independent Source Review — PASS
 
@@ -46,18 +45,18 @@ Parent/task HEAD:
 Independent findings:
 - exactly one executor commit from the task HEAD;
 - changed only `src/ui/employee-part-a-ui.js`, `tests/timeline-truthfulness-and-attachment.test.js`, generated `dist/mbo-employee-app.js`, and the existing attachment evidence document;
-- `src/services/mbo-attachment-service.js` unchanged in this residual round;
+- `src/services/mbo-attachment-service.js` unchanged in the residual round;
 - `src/main-mbo-app.js` unchanged;
-- safe preview now requires an explicit response MIME allowlist;
+- safe preview requires an explicit response MIME allowlist;
 - empty/unknown MIME is Download-only regardless of filename extension;
-- HTML/XHTML/SVG/XML/JavaScript/octet-stream and other non-allowlisted MIME remains Download-only;
-- only one synchronous `window.open('about:blank', '_blank')` attempt exists before awaited retrieval;
+- active-content/non-allowlisted MIME is Download-only;
+- exactly one synchronous `window.open('about:blank', '_blank')` attempt exists before awaited retrieval;
 - no second asynchronous popup attempt remains;
-- blocked/unavailable popup safely falls back to Download preserving original filename;
-- unsupported/denied MIME is decided before preview Object URL creation;
-- accepted pre-task `_getSavedAttachmentFiles()` and `_removeSavedAttachmentFile()` semantics remain restored;
+- blocked popup safely falls back to Download preserving original filename;
+- accepted Remove semantics remain restored;
+- retrieval remains non-destructive;
 - browser Fetch GET `/k/v1/file.json` with persisted fileKey and `X-Requested-With: XMLHttpRequest` remains the retrieval transport;
-- no Kintone record/schema/layout/ACL/process write and no customization deploy occurred.
+- no Live Kintone write and no customization deploy occurred during source work.
 
 Executor/local evidence:
 
@@ -70,39 +69,76 @@ LIVE_KINTONE_WRITE       = 0
 LIVE_DEPLOY_OCCURRED     = NO
 ```
 
-GitHub exposes no CI status checks for this candidate; the test/build results above are executor/local evidence, not independent CI.
+GitHub exposes no CI status checks for this candidate; these are executor/local results, not independent CI.
 
-## 4. Accepted Retrieval UX Contract
+After candidate `ec627852...`, subsequent commits before this authorization changed only `project-docs/AI_CONTROL_CENTER.md` and `project-docs/AI_ACTIVE_TASK.md`; production source/dist did not drift.
 
-For persisted saved attachments with a valid fileKey:
-- saved filename is clickable for Preview/Open;
-- separate compact Download control remains available;
-- read-only/historical saved attachments retain Preview/Download without Delete;
-- retrieval uses current Kintone session only, no API token/secret/external viewer/storage;
-- safe preview MIME allowlist includes PDF and selected raster/media/plain-text types only;
-- empty, unknown, active-content, XML-family and non-allowlisted MIME downloads instead of Blob-preview navigation;
-- popup attempt is user-gesture synchronous and occurs at most once;
-- retrieval failure is visible and non-destructive;
-- explicit Delete behavior remains the previously accepted behavior;
-- long filename ellipsis and non-shrinking controls remain preserved.
+## 4. Exact User Authorization
 
-## 5. Exact Current Gate
+User explicitly authorized:
+
+`อนุมัติ App794 deploy Saved Attachment Preview Download corrective candidate ec627852`
+
+Authorization record:
 
 ```text
-CURRENT_GATE                  = D1 APP794 SAVED ATTACHMENT PREVIEW/DOWNLOAD — SOURCE PASS / WAITING DEPLOY AUTHORIZATION
-CURRENT_MODE                  = CONTROL PLANE HOLD
-NEXT_ACTION_OWNER             = USER / EXPLICIT DEPLOY AUTHORIZATION
+AUTHORIZATION_ID                    = APP794-D1-ATTACHMENT-PREVIEW-DOWNLOAD-DEPLOY-20260829-01
+AUTHORIZATION_TYPE                  = ONE-SHOT
+AUTHORIZATION_STATUS                = AUTHORIZED / UNCONSUMED
+REVIEWED_CANDIDATE                  = ec6278524a2d5eb53050d0580c340d1b4e866b97
+TARGET_APP                          = 794
+TARGET_CHANGE                       = DESKTOP CUSTOMIZATION JS/CSS ONLY
+SOURCE_CHANGE_DURING_DEPLOY         = FORBIDDEN
+TEST_CHANGE_DURING_DEPLOY           = FORBIDDEN
+FORM_SCHEMA_LAYOUT_WRITE            = FORBIDDEN
+BUSINESS_RECORD_WRITE               = FORBIDDEN
+ACL_PROCESS_WRITE                   = FORBIDDEN
+APP801_WRITE                        = FORBIDDEN
+APP795_796_WRITE                    = FORBIDDEN
+ROUTING_SCORING_AUTH_RESET          = FORBIDDEN
+D2_D7_EXECUTION                     = FORBIDDEN
+EXTERNAL_SERVICE_STORAGE            = FORBIDDEN
+```
+
+This authorization is bound only to the reviewed candidate above. It does not authorize any source fix, schema/layout change, business-record write, ACL/process change, other app change, or unrelated deployment.
+
+One deployment attempt consumes the authorization whether the attempt succeeds or requires rollback. It cannot be reused for a retry, changed candidate, source patch, or second forward deploy.
+
+## 5. Authorized Deployment Gate
+
+```text
+CURRENT_GATE                  = D1 APP794 SAVED ATTACHMENT PREVIEW/DOWNLOAD — AUTHORIZED DEPLOY EXECUTION
+CURRENT_MODE                  = ANTIGRAVITY ONE-SHOT DEPLOYMENT
+NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 REVIEWED_CANDIDATE            = ec6278524a2d5eb53050d0580c340d1b4e866b97
 INDEPENDENT_VERDICT           = PASS
-SOURCE CHANGE                 = NO FURTHER CHANGE
-APP794 CUSTOMIZATION DEPLOY   = NO — EXPLICIT NEW ONE-SHOT AUTH REQUIRED
+SOURCE CHANGE                 = NO
+APP794 CUSTOMIZATION DEPLOY   = YES — EXACT ONE-SHOT AUTHORIZATION ONLY
 APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
 APP794 RECORD WRITE           = NO LIVE WRITE
 APP794 ACL/PROCESS            = NO
 APP801 / APP795 / APP796      = NO
 D2-D7 EXECUTION               = NO
 EXTERNAL SERVICE/STORAGE      = NO
-DEPLOY_AUTHORIZATION          = NONE
 ```
 
-No prior deployment authorization may be reused. Any future deployment must be a new one-shot authorization bound exactly to candidate `ec6278524a2d5eb53050d0580c340d1b4e866b97`, followed by independent deployment review before User Live UAT.
+Mandatory deployment proof:
+- re-fetch current canonical HEAD and read Control Center + Active Task;
+- verify reviewed candidate and production source/dist have not drifted;
+- run deterministic preflight;
+- run focused attachment tests if required by existing deployment tooling;
+- run `npm run ui:build`;
+- run module-aware build-only and prove 0 Kintone writes;
+- capture pre-deploy App794 customization revision/settings/topology and desktop JS/CSS identities;
+- capture exact rollback snapshot before any write;
+- deploy only the accepted App794 desktop customization JS/CSS bundle;
+- do not add/remove unrelated customization entries and do not modify mobile customization;
+- wait for Kintone deployment SUCCESS;
+- read back post-deploy revision/settings/topology and desktop JS/CSS identities;
+- prove Live bundle matches reviewed candidate exactly;
+- prove zero forbidden writes;
+- commit + push deployment evidence only, then STOP.
+
+Maximum executor status after a successful attempt is `DEPLOYED_PENDING_INDEPENDENT_REVIEW`. Antigravity may not self-PASS and may not perform User Live UAT.
+
+After independent deployment review PASS, gate moves to User Live UAT for Preview/Download behavior on real persisted files; Live functionality is not considered closed before that UAT.
