@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / 0113 PASSWORD RESET PASS / FORCE-CHANGE LOGIN UAT NEXT / HR+ADMIN RESET REQUIREMENT BASELINED / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / LIVE CREATE STILL ON OLD CUSTOMIZATION AND FAILS / DEPLOY GUARD INTEGRATION NEXT / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -31,7 +31,7 @@ SERVICES_MBO_AUTH_BRIDGE                = ABANDONED EXPERIMENT / NOT PRODUCTION 
 D1_SESSION_CONTINUITY_ARCHITECTURE      = PASS / KINTONE-ONLY 8H SAME-TAB SESSION
 APP801_SESSION_SCHEMA_WRITE             = PASS / ACCEPTED
 D1_BUNDLE_DEPENDENCY_CORRECTIVE         = PASS
-D1_CREATE_HANDLER_CORRECTIVE            = PASS
+D1_CREATE_HANDLER_CORRECTIVE            = PASS / SOURCE ACCEPTED PREVIOUSLY / NOT YET LIVE
 D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST      = PASS
 D1_EMPLOYEE_SELF_INDEX_VISUAL           = PASS
 D1_MY_MBO_HISTORY_LIST                  = PASS
@@ -41,22 +41,21 @@ MBO_EMPLOYEE_ACCESS_s1_MEMBERSHIP       = PASS / USER LIVE SCREENSHOT
 APP801_PERMISSION_ROW_TARGET            = PASS / VIEW+EDIT ONLY FOR MBO_EMPLOYEE_ACCESS
 APP801_PRIVATE_APP_GROUP_BLOCKER         = CONFIRMED ROOT CAUSE
 APP801_APP_GROUP_PUBLIC_CORRECTION       = USER APPLIED 2026-08-29
-APP801_SHARED_PRINCIPAL_s1_LIVE_ACCESS  = PASS / USER LIVE SCREENSHOT / 128 RECORDS VISIBLE
-D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = PASS / USER CONFIRMED + BASELINED
-D1_RESET_PASSWORD_0113_AUTHORIZATION    = CONSUMED / EXACT EMPLOYEE 0113 ONLY
-D1_RESET_PASSWORD_0113_EXECUTION        = PASS / USER CONSOLE READ-BACK
-D1_LOGIN_0113_FORCE_CHANGE_UAT          = NEXT
+APP801_SHARED_PRINCIPAL_s1_LIVE_ACCESS  = PASS / 128 RECORDS VISIBLE
+D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = PASS / BASELINED
+D1_RESET_PASSWORD_0113                  = PASS / AUTHORIZATION CONSUMED / CREDENTIAL VERSION 2
+D1_FORCE_PASSWORD_CHANGE_0113           = PASS / USER LIVE OBSERVATION
+D1_LOGIN_0113_TO_MY_MBO                 = PASS / USER LIVE OBSERVATION
+D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS / USER LIVE OBSERVATION
+D1_CREATE_LIVE_RUNTIME                  = FAIL / OLD LIVE CUSTOMIZATION CALLS kintone.app.record.get() DURING HANDLER
 APP794_DELETE_PERMISSION_READONLY_CHECK = PENDING
-APP794_DEPLOY_GUARD_INTEGRATION         = OPEN / BEFORE NEXT LIVE DEPLOY
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL REMAINING D1 UAT
+APP794_DEPLOY_GUARD_INTEGRATION         = NEXT / SOURCE+TEST ONLY
+APP794_CORRECTIVE_DEPLOY                = NOT AUTHORIZED YET
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL CORRECTIVE DEPLOY + REMAINING UAT
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
-No App794 deploy is currently authorized.
-No external server/service/hosting/secret work is authorized.
-No further App801 credential write is authorized by the consumed 0113 reset approval.
-
-## 3. User-Confirmed Non-Negotiable Constraint
+## 3. Non-Negotiable Constraint
 
 D1 authentication must finish entirely inside Kintone.
 
@@ -69,104 +68,107 @@ NO external session service
 NO Auth Bridge
 ```
 
-The prior Auth Bridge proposal and WP1 implementation attempt are cancelled. Do not continue, deploy, host or integrate `services/mbo-auth-bridge/`.
+Do not continue, deploy, host or integrate `services/mbo-auth-bridge/`.
 
 Canonical Baselines:
 - `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
 - `project-docs/CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`
+- `project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
 
-## 4. Accepted Live Evidence — App801 Access Blocker Resolved
+## 4. Accepted Live Evidence — 2026-08-29
 
-User live verification established:
-- Kintone principal `s1` is a member of `MBO_EMPLOYEE_ACCESS`;
-- App801 permission row for `MBO_EMPLOYEE_ACCESS` is View=YES, Edit=YES, Add/Delete/Manage/Import/Export=NO;
-- `Everyone` is denied;
-- App801 was in `Private`, which caused Kintone to ignore the permission rows and return `CB_NO02`;
-- user changed App801 App Group to `Public` while preserving the permission rows;
-- after apply, `s1` can open App801 and sees 128 records; therefore the previous `CB_NO02` blocker is resolved.
+### App801 / login boundary
+- `s1` is in `MBO_EMPLOYEE_ACCESS`.
+- App801 permission row grants `MBO_EMPLOYEE_ACCESS` View=YES, Edit=YES, Add/Delete/Manage/Import/Export=NO.
+- `Everyone` remains denied.
+- App801 was moved from `Private` to `Public`; after apply, `s1` can open App801 and see 128 records.
 
-## 5. Accepted Live Evidence — Reset Password 0113
+### Reset + forced password change
+Exact reset for Employee_Code `0113` succeeded with read-back:
+- Account_Status ACTIVE unchanged;
+- Force_Password_Change YES;
+- Failed_Attempts 0;
+- Locked_Until blank;
+- Credential_Version 2;
+- all session fields cleared;
+- `RESET_0113_OVERALL_PASS = true`.
 
-User explicitly authorized exactly one App801 reset for Employee_Code `0113` and executed the Control Plane script under Kintone `admin-form`.
+The one-time reset authorization is CONSUMED.
 
-Read-back evidence:
+Live App794 then proved:
+1. login with `0113 / 0113` reaches **Password Change Required**;
+2. Employee-Self content is blocked until password change completes;
+3. after setting a new password, App794 opens **My MBO Records (0113)**;
+4. clicking `+ Create New MBO` stays authenticated and reaches `/k/794/edit` without returning to Login.
+
+Therefore Reset / Force Change / Login / My MBO / List→Create session continuity are accepted as live PASS.
+
+### Remaining live defect
+On `/k/794/edit`, the live customization still shows:
 
 ```text
-Employee_Code                     = 0113
-Account_Status                    = ACTIVE (unchanged)
-Force_Password_Change             = YES
-Failed_Attempts                   = 0
-Locked_Until                      = blank
-Credential_Version                = 2
-Session_Token_Hash_Cleared        = true
-Session_Issued_At_Cleared         = true
-Session_Expires_At_Cleared        = true
-Session_Credential_Version_Cleared= true
-Session_Kintone_User_Cleared      = true
-RESET_0113_OVERALL_PASS           = true
+Employee Profile Resolution Failed
+Could not resolve Employee profile for 0113: You cannot call kintone.app.record.get() in handler or during processing a handler.
 ```
 
-Therefore:
-- reset authorization is consumed;
-- temporary password is `0113`;
-- next valid login must enter mandatory password-change flow before Employee-Self content;
-- do not repeat the reset unless separately authorized.
+This is consistent with the already-known older App794 deployed customization. The source-side Create-handler corrective was previously accepted, but that corrective bundle has not yet been deployed to live App794.
 
-## 6. Permanent HR/Admin Password Reset Requirement
+Do not reopen the already-accepted Create source fix unless the future corrective deploy still reproduces the error.
 
-HR-authorized users and `admin-form` must have an in-Kintone administrative MBO Password Reset function.
+## 5. HR / admin-form Password Reset Requirement
 
-Required semantics:
+Permanent D1 requirement remains:
+- HR-authorized users and `admin-form` need an in-Kintone Reset MBO Password function;
+- employee/shared users must not receive that administrative reset function;
 - temporary password = exact Employee_Code;
-- canonical PBKDF2-SHA256 / 100000 storage;
-- `Force_Password_Change=YES`;
-- `Failed_Attempts=0` and clear temporary `Locked_Until`;
-- increment valid positive `Credential_Version` exactly once;
-- clear all session fields;
-- never change `Account_Status` and never re-enable DISABLED/LOCKED accounts;
-- exact one-record target and fail closed on missing/duplicate/malformed identity;
-- employee/shared users must not receive this administrative reset capability.
+- Force_Password_Change=YES;
+- Failed_Attempts=0;
+- clear temporary Locked_Until and all session fields;
+- increment Credential_Version once;
+- do not change Account_Status or re-enable DISABLED/LOCKED accounts;
+- exact one-record target, fail closed on missing/duplicate/malformed identity.
 
-## 7. Kintone-Only Permission Target
+This administrative UI/function is still implementation work; the manual 0113 console reset only proved the reset semantics.
 
-```text
-GROUP: MBO_EMPLOYEE_ACCESS
-View records   = YES
-Edit records   = YES
-Add records    = NO
-Delete records = NO
-Import         = NO
-Export         = NO
-App Admin      = NO
-```
+## 6. Exact Next Action — DEPLOY GUARD INTEGRATION SOURCE/TEST ONLY
 
-Initial group principals include:
-`f1, f2, f3, tmh, e1, s1, g_request, t1, t2`.
+Before any new App794 live deployment, repair the deployment safety gate.
 
-`GROUP:everyone` remains denied.
-`admin-form` remains Technical Admin/recovery authority.
+Current blocker:
+- `src/core/sandbox-write-guard.js` keeps `DISCOVERY_MODE = true` and `WRITE_ALLOWED_APPS = []`;
+- `scripts/kintone/deploy-custom-ui.js` calls the generic write guard on live deployment;
+- therefore a legitimate, explicitly authorized App794 corrective deploy cannot currently pass the guard without weakening fail-closed defaults.
 
-Known security ceiling remains accepted/documented: under a shared Kintone principal, native REST hard isolation by Employee_Code is not guaranteed. Do not claim otherwise and do not embed privileged API tokens in browser JavaScript.
-
-## 8. Exact Next Action — FORCE PASSWORD CHANGE UAT
-
-Using Kintone principal `s1`:
-1. open App794;
-2. login once with Employee Code `0113`, temporary password `0113`;
-3. expected result = mandatory password-change UI, not My MBO directly;
-4. do not intentionally enter a wrong password;
-5. capture the result and STOP before any source/deploy work.
+Next package must be SOURCE/TEST ONLY:
+1. add a narrow explicit authorization context for exactly App794 customization deployment;
+2. default state remains deny-all;
+3. `DISCOVERY_MODE` remains fail-closed by default;
+4. `WRITE_ALLOWED_APPS` must not become permanently `[794]`;
+5. protected Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain absolute hard-blocks;
+6. wrong target app / missing auth / replayed auth must fail before any network write;
+7. build-only path remains zero-network and needs no live authorization;
+8. no App794 source behavior change, no auth/login change, no dist change, no live Kintone call, no deploy.
 
 ```text
-NEXT_ACTION_OWNER              = USER + CONTROL PLANE
-ANTIGRAVITY_REQUIRED           = NO / HOLD
-APP801_RESET_0113_WRITE        = CONSUMED / NO FURTHER WRITE
+NEXT_ACTION_OWNER              = Antigravity
+ANTIGRAVITY_REQUIRED           = YES / ONE DEPLOY-GUARD SOURCE PACKAGE
+KINTONE_LIVE_READ_WRITE        = NO
+APP801_WRITE                   = NO
 APP794_DEPLOY                  = NO
+APP794_SOURCE_BEHAVIOR_CHANGE  = NO
+DEPLOY_TOOLING_SOURCE_TEST     = YES
 EXTERNAL_SERVICE_WORK          = NO
 D2_D7_WRITE                    = NO
+MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-## 9. Handoff Checkpoint
+After Deploy Guard Integration PASS:
+1. perform pending App794 Delete-permission read-only check;
+2. request a new exact App794 corrective deploy authorization;
+3. deploy once with accepted module-aware bundle + Create handler fix + Employee-Self shell/history/Completed/no-delete changes;
+4. rerun Create live UAT and remaining D1 security/session UAT.
+
+## 7. Handoff Checkpoint
 
 A new ChatGPT/AI session must start from:
 
@@ -176,8 +178,9 @@ A new ChatGPT/AI session must start from:
 3. CONFIRMED_BASELINE/README.md
 4. CONFIRMED_BASELINE/D1_AUTH_SECURITY.md
 5. CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md
-6. AI_ACTIVE_TASK.md
-7. current branch HEAD + exact diff/evidence
+6. CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md
+7. AI_ACTIVE_TASK.md
+8. current branch HEAD + exact diff/evidence
 ```
 
-Do NOT revive Auth Bridge from chat history or abandoned service files. Current user constraint and Baseline are KINTONE-ONLY.
+Do NOT revive Auth Bridge from chat history or abandoned service files. Current architecture is KINTONE-ONLY.
