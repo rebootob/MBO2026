@@ -5,24 +5,23 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — COMBINED EMPLOYEE UI ONE-SHOT DEPLOY AUTHORIZED
+> Updated: 2026-08-29 — COMBINED EMPLOYEE UI DEPLOY CORRECTIVE / ROLLBACK REQUIRED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 KINTONE-ONLY / App794 customization rev51 before this authorized execution / attachment persistence PASS / long-filename UI PASS / saved attachment Preview+Download PASS incl. User Live UAT / **Back to My MBO + My MBO cards + Native Comment mirror source+verification PASS; one-shot deploy authorized** / HR+admin reset UI open / remaining security UAT open |
+| D1 | 🟠 KINTONE-ONLY / App794 Live rev52 currently contains a partial Combined Employee UI deployment / attachment persistence + long filename + Preview/Download remain previously accepted / **Combined Employee UI deployment CORRECTIVE: Live JS matches reviewed candidate but Live CSS does not; user also reports Back to My MBO absent and My MBO visual layout not as designed** / rollback to pre-deploy snapshot required before further corrective work / HR+admin reset UI open / remaining security UAT open |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🔴 Copy own previous MBO MUST FIX — scheduled after current UI deploy/UAT |
+| D5 | 🔴 Copy own previous MBO MUST FIX — scheduled after current UI corrective |
 | D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
 | D7 | ✅ Admin Support Center source functionality closed |
 
-## 2. Accepted State — Do Not Reopen Without New Evidence
+## 2. Previously Accepted State
 
 ```text
-APP794_LIVE_CUSTOMIZATION_REVISION       = 51 BEFORE AUTHORIZED EXECUTION; executor must re-read actual pre-deploy revision
 APP794_LIVE_FORM_REVISION                = 48
 EDIT_ATTACHMENT_SOURCE/DEPLOYMENT        = PASS / REV49
 LONG_FILENAME_UI_SOURCE/DEPLOYMENT       = PASS / REV50
@@ -31,27 +30,23 @@ ATTACHMENT_RETRIEVAL_USER_LIVE_UAT       = PASS
 ALL_ATTACHMENT_DEPLOY_AUTHS              = CONSUMED / CLOSED
 ```
 
-Protected accepted behavior includes attachment persistence, atomic edit preflight, long filename containment, Preview/Download MIME safety, single-popup behavior, read-only retrieval, and existing Remove semantics.
+## 3. Combined Employee UI Reviewed Candidate
 
-## 3. Combined Employee UI Release Candidate — INDEPENDENT PASS
-
-Reviewed release candidate commit:
+Reviewed release candidate:
 `ea5254370360321d18bd768f379986609c241850`
 
-Reviewed generated bundle identities:
+Reviewed generated identities:
 ```text
 DIST_JS_BLOB_SHA  = a4975fc219269268bf2a0caffd084d233fa3e29a
 DIST_CSS_BLOB_SHA = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
 ```
 
-The candidate contains all three user-requested UI features:
-1. Existing Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
-2. My MBO home: responsive record-card/list UI; exact `Employee_Code = "{code}" order by Fiscal_Year desc`; non-completed = Open MBO; completed = View History; unchanged record URLs; zero Delete UI.
-3. Existing Detail/Edit: Native Kintone Comment read-only mirror + Refresh using current record comments.
+Reviewed source/verification PASS covered all three requested features:
+1. Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
+2. My MBO home: responsive card/list UI with readable FY/status/action layout.
+3. Detail/Edit: Native Kintone Comment read-only mirror + Refresh with accepted pagination semantics.
 
-Independent verification evidence commit:
-`aee5d7bc33e8c24f0d60f5a0b6865ca1f7d64766`
-
+Verification evidence remains accepted:
 ```text
 FOCUSED_NAVIGATION_TESTS         = PASS 8/8
 FOCUSED_COMMENT_TESTS            = PASS 8/8
@@ -59,100 +54,78 @@ EMPLOYEE_PART_A_REGRESSION       = PASS 73/73
 FULL_NPM_TEST                    = PASS 931/931
 UI_BUILD                         = PASS
 MODULE_AWARE_BUILD_ONLY          = PASS / 0 Live Kintone network calls
-LIVE_KINTONE_WRITE               = 0
-LIVE_COMMENT_WRITE               = 0
-LIVE_DEPLOY_OCCURRED             = NO
 ```
 
-Post-candidate commits up to authorization pre-head `442d7f7e8961ebba4020ae2fc547b171cf6db13b` are control/evidence only; no accepted source/test/dist drift occurred.
+## 4. Deployment Review — CORRECTIVE
 
-## 4. User Deployment Authorization
-
-Authorization ID:
+Authorization:
 `APP794-D1-COMBINED-EMPLOYEE-UI-DEPLOY-20260829-01`
 
+Authorization status:
+`CONSUMED / CLOSED`
+
+Executor evidence commit:
+`48239a70ac4c3910b93b610c9648f5e4ca954319`
+
+Observed deployment:
 ```text
-AUTHORIZATION_TYPE       = ONE-SHOT
-AUTHORIZATION_STATUS     = AUTHORIZED / UNCONSUMED
-AUTHORIZED_BY            = USER
-AUTHORIZED_DATE          = 2026-08-29
-TARGET_APP               = App794
-TARGET_SCOPE             = DESKTOP CUSTOMIZATION JS/CSS ONLY
-REVIEWED_CANDIDATE       = ea5254370360321d18bd768f379986609c241850
-REVIEWED_JS_BLOB_SHA     = a4975fc219269268bf2a0caffd084d233fa3e29a
-REVIEWED_CSS_BLOB_SHA    = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
-FORWARD_DEPLOY_ATTEMPTS  = MAXIMUM 1
+PRE_DEPLOY_REVISION              = 51
+POST_DEPLOY_REVISION             = 52
+DEPLOY_ATTEMPT_COUNT             = 1
+DEPLOY_RESULT                    = SUCCESS
+POST_DEPLOY_JS_IDENTITY          = a4975fc219269268bf2a0caffd084d233fa3e29a
+POST_DEPLOY_CSS_IDENTITY         = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+REVIEWED_JS_IDENTITY             = a4975fc219269268bf2a0caffd084d233fa3e29a
+REVIEWED_CSS_IDENTITY            = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+EXACT_CANDIDATE_READBACK_MATCH   = NO
+AUTHORIZATION_CONSUMED           = YES
 ```
 
-This authorization permits exactly one forward App794 Desktop customization deployment attempt of the reviewed candidate. The authorization becomes **CONSUMED immediately when the first forward deployment attempt is made**, whether the attempt succeeds, fails, or is followed by rollback. It cannot be reused for a second forward attempt.
+Independent finding:
+- Live JS matches the reviewed candidate.
+- Live CSS remains the prior CSS identity `1710d...`, not reviewed candidate CSS `2a758a...`.
+- The candidate contains real CSS changes for Back navigation and My MBO cards, therefore CSS identity mismatch is material.
+- Executor deployment evidence incorrectly labeled the prior CSS as reviewed CSS and incorrectly claimed candidate match based on JS only.
+- User Live evidence confirms My MBO styling does not match the designed card/list presentation and the Back to My MBO button is not visible.
 
-### Authorized write
-- App794 Desktop customization JS/CSS update required to deploy the exact reviewed candidate.
+Verdict:
+`CORRECTIVE — PARTIAL / NON-EXACT DEPLOYMENT`.
 
-### Forbidden writes / changes
-- no source or test change during deploy execution;
-- no App794 form/schema/layout write;
-- no App794 business-record write;
-- no Kintone Comment POST/DELETE/reply;
-- no ACL/process write;
-- no mobile customization change;
-- no unrelated customization entry add/remove/reorder;
-- no Auth/Session behavior change;
-- no Attachment behavior change;
-- no Routing/Scoring/profile change;
-- no App801/App795/App796 write;
-- no Copy Previous MBO;
-- no D2-D7 execution;
-- no external service/storage.
+## 5. Rollback Rule
 
-## 5. Mandatory Deploy Safety Gates
+The consumed one-shot authorization cannot be reused for another forward deployment.
+The original authorization explicitly allowed one safe rollback to the captured exact pre-deploy snapshot if post-deploy candidate readback did not match.
 
-Before first Live write, Antigravity must:
-1. fetch latest canonical branch and read `AI_CONTROL_CENTER.md` + `AI_ACTIVE_TASK.md`;
-2. verify this exact authorization is present and UNCONSUMED;
-3. verify the source candidate remains exactly `ea5254370360321d18bd768f379986609c241850` with no production source/test/dist drift after it except control/evidence docs;
-4. run deterministic preflight;
-5. run focused tests only if the deploy tooling/preflight requires them; no source/test edits;
-6. run `npm run ui:build` and verify generated Desktop JS/CSS identities match the reviewed candidate exactly;
-7. run module-aware `--build-only` and prove 0 Live Kintone calls/writes;
-8. read actual current App794 customization revision/settings/topology and current JS/CSS identities;
-9. capture a rollback snapshot/reference of the exact pre-deploy customization before first write.
+Rollback target is the captured pre-deploy App794 customization snapshot from Rev51:
+```text
+PRE_DEPLOY_JS_IDENTITY  = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+PRE_DEPLOY_CSS_IDENTITY = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+SCOPE                    = ALL
+TOPOLOGY                 = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+SNAPSHOT                  = scratch/app794_live_predeploy_backup_combined_ui.json
+                           scratch/app794_preview_predeploy_backup_combined_ui.json
+```
 
-Expected prior known topology is Scope ALL / 1 Desktop JS / 1 Desktop CSS / 0 Mobile, but executor must trust the actual pre-deploy readback rather than assumption. Unexpected topology or candidate mismatch => STOP before deployment.
+No new forward candidate deployment is authorized during rollback.
 
-## 6. Post-Deploy Required Readback
-
-After the single deployment attempt, executor must record:
-- Kintone deployment result / SUCCESS or definitive failure;
-- post-deploy App794 customization revision;
-- post-deploy customization topology;
-- post-deploy JS/CSS identities;
-- exact candidate readback match;
-- mobile customization unchanged;
-- zero forbidden writes.
-
-If deployment succeeds but readback does not exactly match the reviewed candidate and an exact safe rollback to the captured snapshot is available, rollback only to that captured pre-deploy state and STOP. A rollback does **not** restore/reopen this authorization and no second forward deployment is allowed.
-
-## 7. Current Gate
+## 6. Current Gate
 
 ```text
-CURRENT_GATE                  = D1 COMBINED EMPLOYEE UI AUTHORIZED DEPLOY EXECUTION
-CURRENT_MODE                  = ANTIGRAVITY ONE-SHOT LIVE CUSTOMIZATION DEPLOY
+CURRENT_GATE                  = D1 COMBINED EMPLOYEE UI ROLLBACK TO PRE-DEPLOY SNAPSHOT
+CURRENT_MODE                  = ANTIGRAVITY ROLLBACK-ONLY EXECUTION
 NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 AUTHORIZATION_ID              = APP794-D1-COMBINED-EMPLOYEE-UI-DEPLOY-20260829-01
-AUTHORIZATION_STATUS          = AUTHORIZED / UNCONSUMED
-REVIEWED_RELEASE_CANDIDATE    = ea5254370360321d18bd768f379986609c241850
-SOURCE_REVIEW                 = PASS
-VERIFICATION_REVIEW           = PASS
-APP794 CUSTOMIZATION DEPLOY   = AUTHORIZED ONCE
-APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
-APP794 RECORD WRITE           = NO WRITE
+AUTHORIZATION_STATUS          = CONSUMED / CLOSED
+LIVE_APP794_CUSTOMIZATION     = REV52 PARTIAL / NON-EXACT
+DEPLOYMENT_REVIEW             = CORRECTIVE
+FORWARD_DEPLOY                = NO / FORBIDDEN
+ROLLBACK                      = ALLOWED ONLY TO CAPTURED PRE-DEPLOY SNAPSHOT
+SOURCE CHANGE                 = NO DURING ROLLBACK
+APP794 RECORD WRITE           = NO
+APP794 FORM/SCHEMA/LAYOUT     = NO
 KINTONE COMMENT WRITE         = NO
-APP801 / APP795 / APP796      = NO WRITE
+APP801 / APP795 / APP796      = NO
 COPY PREVIOUS MBO             = NOT YET
 ```
 
-Maximum executor status after an attempted deployment:
-`DEPLOYED_PENDING_INDEPENDENT_REVIEW`.
-
-Antigravity must not self-PASS and must not perform User Live UAT.
+After rollback is independently verified, Control Plane will diagnose the missing Back button/runtime path and the CSS deployment packaging issue before preparing any new candidate. Any later forward deployment requires a NEW explicit user authorization.
