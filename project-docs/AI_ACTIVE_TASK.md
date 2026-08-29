@@ -1,9 +1,9 @@
-# AI ACTIVE TASK — D1 LIVE TIMELINE TRUTHFULNESS + ATTACHMENT CORRECTIVE
+# AI ACTIVE TASK — D1 ATTACHMENT SUBMIT-LIFECYCLE INTEGRATION CORRECTIVE
 
-Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE**  
+Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE**
 Branch: `ai/antigravity-wp002c`
 
-> New-chat rule: this file authorizes source/test execution only. It is NOT evidence that Antigravity has executed it. A new chat must re-fetch HEAD and inspect commits/diff before deciding whether this task is still pending, implemented-pending-review, or superseded.
+> This task supersedes the broader Timeline + Attachment corrective. Independent review of commit `7247df478eab2a4320019040df1740457b0bfc69` accepted Timeline source truthfulness and attachment display/pending/remove source behavior, but found missing create/edit submit integration for actual upload+binding.
 
 ## Mandatory architecture
 
@@ -11,169 +11,115 @@ Branch: `ai/antigravity-wp002c`
 D1 = KINTONE-ONLY
 External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
+APP794 DEPLOY = NO
+LIVE KINTONE WRITE = NO
 ```
 
 Relevant durable baseline:
 `project-docs/CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md`
 
-General UI baseline:
-`project-docs/CONFIRMED_BASELINE/UI_UX.md`
-
-Source architecture baseline:
-`project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-
-## Accepted state that must NOT be reopened
+## Accepted source state — DO NOT REIMPLEMENT
 
 ```text
-APP794 LIVE customization revision = 45
-EMPLOYEE_SELF_UI / LOGOUT           = PASS
-CREATE-HANDLER corrective           = PASS
-APP795 route runtime read           = PASS
-APP796 scoring runtime read         = PASS
-D1 CREATE-SHOW INITIALIZATION       = PASS
-TMH is correct shared requester boundary for Employee 0113 / TMH2
+TIMELINE_LIVE_TRUTHFULNESS_SOURCE       = PASS
+TIMELINE_PREVIEW_FIXTURE_GATE           = PASS
+ATTACHMENT_ZERO/MULTIPLE_DISPLAY        = PASS
+ATTACHMENT_PENDING_DISPLAY              = PASS
+ATTACHMENT_INPUT_HANDLER                = PASS
+ATTACHMENT_REMOVE_HANDLER               = PASS
+ATTACHMENT_PREVIEW_LEAK_GUARD           = PASS
+MBO_ATTACHMENT_SERVICE                  = PASS / KINTONE-ONLY
 ```
 
-Do not rework App795/App796 permissions, create-handler logic, MBO login/session architecture, or routing/scoring merely because this task touches the same screen.
+Do not rewrite Timeline logic. Do not redesign attachment UI. Do not reopen routing/scoring/auth/App795/App796/Create-handler work.
 
-## Defect A — fabricated Live workflow/comment history
+## Exact defect to fix
 
-Current `src/ui/employee-part-a-ui.js::_renderWorkflowActionTimeline()` uses hard-coded sample events whenever `previewOptions.timelineEvents` is absent.
+`src/main-mbo-app.js` handles:
+- `app.record.create.submit`
+- `app.record.edit.submit`
 
-Those fixtures contain fictitious names/actions/times and `View Comments`, so a real Live record with no comments/history can appear to have workflow/comment activity.
+but currently does not invoke pending attachment upload/binding before returning the submit event.
 
-User Live evidence shows the native Kintone comment panel itself says `No comments available`.
+`EmployeePartAUI.uploadPendingAttachments()` and `src/services/mbo-attachment-service.js` exist, but service-only existence does not persist files unless the submit lifecycle invokes it against the exact current submit record.
 
-### Required source behavior
+## Required behavior
 
-- hard-coded timeline fixtures may be used ONLY when `isPreviewMode === true` or an equally explicit test/preview-only gate;
-- Live mode MUST NOT fabricate any workflow event, person, timestamp, result, returned/resubmitted state, or comment notice;
-- if Live has no authoritative timeline input, render a truthful empty state or omit the custom timeline;
-- `_renderNativeCommentPlaceholder()` may explain that Kintone Comments on the right is the native channel, but it must not claim comments exist;
-- do not synthesize a full historical audit trail from current Status/Updated_datetime/score state.
+For both create and edit submit:
 
-Focused tests required:
-1. Live + no timeline input => zero fixture names/actions/comment notices;
-2. Preview + no timeline input => fixtures allowed if needed for preview;
-3. Live + explicitly supplied authoritative timeline events => render only supplied events;
-4. employee visibility filtering remains correct if authoritative events are supplied.
+1. keep existing `syncFromDom()` and fail-closed employee/Record_Key/duplicate/business validation behavior;
+2. do **not** upload files until those local checks have passed;
+3. immediately before successful `return event`, if there are pending attachments:
+   - invoke Kintone-only pending upload/binding;
+   - bind fileKeys to the exact current `event.record` FILE fields;
+   - ensure Objective / Mid-Year / Self (`Final_` fallback where applicable) target only the requested field;
+4. on upload/bind error:
+   - mark/display not-saved/error state;
+   - cancel submit fail-closed;
+   - do not pretend the file was saved;
+5. no attachment remains optional; zero pending attachments must submit normally;
+6. unrelated attachment fields must remain unchanged.
 
-## Defect B — attachment custom UI incomplete / unclear
+### Record-object correctness
 
-Current `_renderAttachmentControl()` can read an existing FILE field but:
-- only surfaces the first file name;
-- custom `.mbo-attachment-file-input` has no handler in `_bindEvents()`;
-- `.mbo-attachment-remove-btn` has no handler;
-- therefore select/upload/bind/remove state is not reliably reflected in the custom UI.
+Do not assume the record object retained from `show` is the same object as `event.record` during submit.
 
-### Required UX
+Choose the smallest safe integration, for example by allowing `uploadPendingAttachments()` to accept the exact submit record or otherwise explicitly passing `event.record` to the attachment service.
 
-For each existing attachment field family already used by the UI (`Objective_Attachment_n`, `MidYear_Attachment_n`, `Self_Attachment_n` / approved legacy fallback):
+`src/main-mbo-app.js` must remain orchestration-only.
 
-```text
-NO FILE:
-  show `ไม่มีไฟล์แนบ / No attachment`
+## Focused tests — mandatory
 
-LOCAL SELECTED / PENDING:
-  immediately show selected filename(s)
-  show clear pending state such as `รอบันทึก / Pending save`
+Add/adjust tests that exercise the **real submit lifecycle**, not only the service in isolation:
 
-BOUND/SAVED:
-  show ALL actual filenames from the Kintone FILE field
-  not only the first
+1. create submit + zero pending files => no upload call; submit succeeds unchanged;
+2. edit submit + zero pending files => no upload call; submit succeeds unchanged;
+3. create submit + pending Objective file => upload called once; returned fileKey appears on exact `event.record.Objective_Attachment_n`;
+4. edit submit + pending Mid-Year/Self file => exact target field only;
+5. unrelated attachment field remains unchanged;
+6. upload failure => submit cancelled and visible not-saved/error state;
+7. no Live network calls in tests;
+8. existing 12 timeline/attachment focused tests remain PASS;
+9. Timeline Live/Preview regression remains PASS.
 
-EDITABLE:
-  allow remove/change using truthful UI state
-
-READ-ONLY DETAIL:
-  show all real attached filenames
-  never show preview/sample file names in Live
-```
-
-### Kintone-only upload boundary
-
-Use existing Kintone FILE fields only. No external storage.
-
-If custom upload is required:
-- use supported Kintone browser file upload: multipart `POST /k/v1/file.json` with `FormData`, Kintone request token and same-origin request headers/requirements;
-- capture returned upload `fileKey`;
-- bind the fileKey to the exact target FILE field through the existing create/edit lifecycle;
-- do not confuse upload-time fileKey with later record-read references;
-- no Live network calls in unit tests;
-- fail visibly on upload/bind error; never pretend a file is saved.
-
-Choose the smallest safe integration. If immediate selection-time upload risks orphan persistence, keep an explicit pending-file model and upload/bind at the appropriate submit boundary.
-
-Focused tests required:
-1. read-only zero files => No attachment;
-2. one real file => exact filename;
-3. multiple files => every filename rendered;
-4. Live => no preview fixture filenames;
-5. selected pending => filename + pending marker;
-6. remove pending => UI/model updated without unrelated field mutation;
-7. upload failure => visible not-saved state;
-8. exact field binding only;
-9. unrelated attachment rows unchanged;
-10. Objective/Mid-Year/Self fallback regression.
-
-## Modularity rule
-
-Prefer modifying the existing timeline/attachment responsibility in `src/ui/employee-part-a-ui.js` first.
-
-A new **single small module** is allowed only if it clearly separates Kintone file upload/pending-state handling and reduces the 158KB UI hotspot. Do not create multiple unnecessary files.
-
-`src/main-mbo-app.js` remains orchestration-only.
+If practical, improve the pending-remove focused test so it exercises the real remove handler rather than manually splicing the model.
 
 ## Mandatory checks
 
-- focused tests PASS;
+- new submit-lifecycle focused tests PASS;
+- existing `tests/timeline-truthfulness-and-attachment.test.js` PASS;
 - full `npm test` PASS;
-- module-aware browser build/build-only PASS;
+- module-aware build/build-only PASS;
 - no external dependency/service;
 - no Live App794/App801/App795/App796 write;
-- no deploy/upload/customization write during this task;
-- no routing/scoring/auth/reset-password logic change;
+- no deploy/customization write;
+- no routing/scoring/auth/reset-password change;
 - no D2-D7 change.
 
-## Forbidden
+## Preferred source scope
 
-```text
-APP794 DEPLOY                = NO
-APP794 RECORD/ACL WRITE      = NO
-APP801 WRITE                 = NO
-APP795/796 WRITE             = NO
-LIVE FILE UPLOAD DURING TASK = NO
-SOURCE SCOPE                 = timeline truthfulness + attachment UI/lifecycle only
-RESET PASSWORD UI            = NOT IN THIS TASK
-AUTH BRIDGE                  = FORBIDDEN
-D2-D7                        = NO
-```
+Expected files:
+- `src/main-mbo-app.js`
+- `src/ui/employee-part-a-ui.js` only if needed to pass the exact current submit record safely
+- `tests/timeline-truthfulness-and-attachment.test.js` and/or one tightly focused submit-lifecycle test file
 
-## Evidence required from Antigravity
+Do not modify `src/services/mbo-attachment-service.js` unless a real integration defect requires a minimal change.
+
+## Evidence required
 
 Report:
-- START_HEAD
-- changed files
-- exact Live-vs-Preview timeline behavior
-- exact attachment state model
-- how Kintone upload/binding is integrated without Live test writes
-- focused test names/results
-- full `npm test`
-- build-only result
-- confirmation `LIVE_KINTONE_WRITE = 0`
-- final commit SHA
+- START_HEAD fetched at execution start;
+- changed files;
+- exact create/edit submit integration behavior;
+- proof binding targets the exact submit `event.record`;
+- focused tests/results;
+- full `npm test` result;
+- build-only result;
+- `LIVE_KINTONE_WRITE = 0`;
+- final commit SHA.
 
-Commit + push source/tests/evidence.
+Commit + push to `ai/antigravity-wp002c`.
 STOP.
 Do not Deploy.
 Do not Self-PASS.
-
-## Handoff decision rule
-
-When user says `review` after Antigravity execution:
-- re-fetch HEAD;
-- compare against the START_HEAD/current task;
-- inspect exact diff/tests/evidence;
-- independently decide PASS / CORRECTIVE / BLOCKED;
-- if PASS, update Control Center/Baseline as needed and only then ask for a new explicit App794 deploy authorization;
-- do not reuse a consumed historical deploy authorization.
+Maximum status = `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
