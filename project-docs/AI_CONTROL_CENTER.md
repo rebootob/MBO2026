@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — APP794 WP2 CORRECTIVE R2 INDEPENDENT TECHNICAL REVIEW PASS / USER UAT PENDING
+> Updated: 2026-08-29 — REV56 USER UAT FAIL / WP2 R3 RUNTIME UI DIAGNOSTIC + CORRECTIVE OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟢 WP2 Corrective R2 candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` deployed once to App794 as Live Revision 56. Executor technical readback reports exact candidate JS/CSS pair. Independent Git review confirms post-candidate commits contain docs/evidence only and no source/tests/dist drift. User runtime UAT remains REQUIRED before WP2 can be accepted Live. |
+| D1 | 🔴 App794 Live Revision 56 technical transport/readback passed, but **USER UAT FAILED**. Comment data now loads successfully, proving the Kintone Comment GET contract fix works. Remaining failures: My MBO presentation is still visually flat/not table-like, Back-to-My-MBO is not accepted as visible/prominent in Live runtime, and Comment Mirror presentation does not match the accepted reference layout. WP2 R3 is open as runtime diagnostic + source/test/dist corrective only. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -19,7 +19,7 @@
 | D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
 | D7 | ✅ Admin Support Center source functionality closed |
 
-## 2. Live App794 Technical State
+## 2. Live App794 Truth
 
 ```text
 LIVE_REVISION             = 56
@@ -30,12 +30,28 @@ LIVE_JS_IDENTITY          = 79787f75a1edf0721d7d6ac71216a1366599f3e0
 LIVE_CSS_IDENTITY         = b6f77930256378cbe1e190932103dfecea174fbc
 EXECUTOR_TECH_READBACK    = PASS / EXACT PAIR
 INDEPENDENT_GIT_REVIEW    = PASS
-USER_RUNTIME_UAT          = PENDING
+USER_RUNTIME_UAT          = FAIL
 ```
 
-Independent review does not substitute for runtime UAT in Kintone.
+Rev56 is **not accepted known-good**. Do not describe WP2 as complete.
 
-## 3. Deployment Authorization Ledger
+## 3. User UAT Evidence — Rev56
+
+1. **My MBO Home — FAIL**
+   - Data/actions render, but layout remains visually flat and text-like.
+   - User expects a clearly structured table/card presentation, not loose text.
+   - Source contains `.mbo-record-card-*` class hooks and CSS rules, but screenshot strongly suggests those external CSS rules are not being applied as intended at runtime.
+
+2. **Back to My MBO — FAIL**
+   - User reports the Back button is not visibly present/accepted in Live Detail runtime.
+   - Source contains `EmployeeRecordNavigation` and mounts it before early returns, therefore runtime DOM/computed-style evidence is required before changing implementation again.
+
+3. **Comment Mirror — DATA PASS / PRESENTATION FAIL**
+   - Native comments now load successfully; the prior `Missing or invalid input` runtime failure is resolved.
+   - Current mirror presentation is plain stacked text.
+   - User requires a compact structured presentation aligned with the supplied reference: clean bilingual section header, read-only notice, compact Refresh action, structured comment rows/table/card, and seamless visual relationship to the Workflow Action Timeline below.
+
+## 4. Deployment Authorization Ledger
 
 ```text
 AUTHORIZATION_ID       = APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01
@@ -45,38 +61,50 @@ SECOND_DEPLOY          = NOT AUTHORIZED
 ROLLBACK               = NOT AUTHORIZED
 ```
 
-No deploy authorization remains active.
+No Live authorization remains active.
 
-## 4. Independent Review Evidence
+## 5. WP2 R3 Required Diagnostic Before More UI Guessing
 
+The next source corrective must distinguish runtime CSS/DOM causes first.
+
+Required My MBO browser evidence:
 ```text
-PRE_DEPLOY_REVISION            = 55
-PRE_DEPLOY_JS                  = eec05d4bb19130f3edc431164fc073f6b697dd8a
-PRE_DEPLOY_CSS                 = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
-POST_DEPLOY_REVISION           = 56
-POST_JS                        = 79787f75a1edf0721d7d6ac71216a1366599f3e0
-POST_CSS                       = b6f77930256378cbe1e190932103dfecea174fbc
-POST_ATOMIC_PAIR_MATCH         = YES / executor evidence
-DEPLOY_ATTEMPT_COUNT           = 1
-FORBIDDEN_WRITES               = 0 / executor evidence
-SOURCE_TEST_DIST_AFTER_CANDIDATE = NO CHANGES / independently verified in Git
+MY_MBO_CARD_LIST_EXISTS
+MY_MBO_CARD_EXISTS
+MY_MBO_CARD_LIST_COMPUTED_DISPLAY
+MY_MBO_CARD_COMPUTED_PADDING
+MY_MBO_CARD_COMPUTED_BORDER_TOP
+MY_MBO_FY_COMPUTED_BACKGROUND
+MY_MBO_ACTION_COMPUTED_BACKGROUND
 ```
 
-## 5. Required User UAT — WP2 Three UI Points
+Required Detail browser evidence:
+```text
+MBO_ROOT_EXISTS
+BACK_ELEMENT_EXISTS
+BACK_TEXT
+BACK_COMPUTED_DISPLAY
+BACK_COMPUTED_BACKGROUND
+COMMENT_MIRROR_EXISTS
+COMMENT_COMPUTED_PADDING
+COMMENT_COMPUTED_BORDER
+```
 
-User must verify on Live App794 Rev56:
-1. My MBO home: corrected card/list styling is visibly applied and usable.
-2. Existing Detail/Edit: prominent `← กลับหน้า My MBO / Back to My MBO` button/bar is visible and returns same-tab to current App794 index.
-3. Existing Detail/Edit Comment Mirror: native comments load without `Missing or invalid input`, displayed values match Kintone native comments, and Refresh refetches.
-
-Create view must continue to show no Back button and no Comment mirror/comment GET.
+Interpretation:
+- DOM exists + computed styles are default => runtime stylesheet application/load problem; do not keep tweaking CSS selectors blindly.
+- DOM/class missing => runtime rendering/wiring problem.
+- DOM + expected styles exist but user rejects UX => redesign presentation while preserving semantics.
 
 ## 6. Current Gate
 
 ```text
-CURRENT_GATE                  = REV56 TECHNICAL REVIEW PASS — USER UAT REQUIRED
-CURRENT_MODE                  = CONTROL PLANE HOLD / NO LIVE WRITE
-LIVE_APP794_REVISION          = 56
+CURRENT_GATE                  = WP2 R3 RUNTIME UI DIAGNOSTIC + CORRECTIVE
+CURRENT_MODE                  = NO LIVE WRITE / NO DEPLOY
+LIVE_APP794_REVISION          = 56 / USER UAT FAIL
+COMMENT_DATA_LOAD             = PASS
+MY_MBO_PRESENTATION           = FAIL
+BACK_RUNTIME_UAT              = FAIL
+COMMENT_PRESENTATION          = FAIL
 LIVE_DEPLOY_AUTHORIZED        = NO
 APP794_RECORD_WRITE           = NO
 APP794_FORM_SCHEMA_LAYOUT     = NO
@@ -87,5 +115,4 @@ COPY_PREVIOUS_MBO             = NO
 D2_D7_EXECUTION               = NO
 ```
 
-Maximum status until user runtime confirmation:
-`APP794_WP2_CORRECTIVE_R2_TECHNICAL_PASS_PENDING_USER_UAT`
+Do not create another Live candidate until runtime DOM/computed-style evidence is captured and the R3 corrective source is independently reviewed.
