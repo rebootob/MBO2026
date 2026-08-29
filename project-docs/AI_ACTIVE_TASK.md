@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — HOLD / APP796 ACCESS CORRECTION AUTHORIZATION REQUIRED
+# AI ACTIVE TASK — D1 CREATE-SHOW PASS / NEXT HR+ADMIN RESET UI PLANNING
 
-Mode: **CONTROL PLANE + USER AUTHORIZATION — ANTIGRAVITY HOLD**
+Mode: **CONTROL PLANE HOLD — NO LIVE WRITE / ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
 
 ## Mandatory architecture
@@ -19,100 +19,111 @@ EMPLOYEE_SELF_UI / LOGOUT           = PASS
 OLD CREATE-HANDLER DEFECT           = RESOLVED
 APP795 ACCESS CORRECTION            = PASS / AUTH CLOSED
 s1 + Employee 0113 / TMH2           = REQUESTER DENIED / EXPECTED
-TMH + Employee 0113 / TMH2          = REQUESTER AUTH PASS / FLOW ADVANCED
-APP796 SCORING LOOKUP                = BLOCKED / 403 FORBIDDEN
-APP796_APP_ACL_REVISION              = 5
-APP796_APP_GROUP                     = PRIVATE / USER SCREENSHOT CONFIRMED
-APP796_ACCESS_CORRECTION             = REQUIRED / NOT AUTHORIZED
+TMH + Employee 0113 / TMH2          = REQUESTER AUTH PASS
+APP796 RUNTIME SCORING READ          = PASS / LIVE FLOW ADVANCED
+D1 CREATE-SHOW INITIALIZATION        = PASS / USER LIVE SCREENSHOT
+HR + admin-form RESET UI             = STILL OPEN / MANDATORY
 ```
 
-Read-only discovery under `admin-form` established:
-- App796 CREATOR has full rights;
-- `Everyone` has all permissions NO;
-- no explicit `MBO_EMPLOYEE_ACCESS` row exists;
-- App796 is in the `Private` App Group;
-- Kintone UI warns app permission settings are not applied to apps in the Private group.
+## Latest Live UAT
 
-App796 is the authoritative published scoring/profile configuration source. Do NOT bypass or hard-code App796 in source.
+Under Kintone principal `tmh` and authenticated MBO Employee Code `0113`, App794 `/k/794/edit` now renders the NEW RECORD custom MBO UI successfully.
 
-## Proposed exact minimal correction — NOT YET AUTHORIZED
+Visible evidence confirms:
+- employee profile autoloaded;
+- Section `TMH2`;
+- Position `Section Manager`;
+- evaluation/approval route rendered;
+- App795 requester validation passed under the correct shared principal `tmh`;
+- prior App796 `403 Forbidden` is absent;
+- prior `Employee Profile Resolution Failed` is absent;
+- no business record Save was needed for this UAT.
 
-Target App796 settings only:
-
-### Stage 1 — ACL first while App796 remains Private
-Preserve CREATOR full rights exactly.
-
-Set exact App796 App ACL to:
-
+Classification:
 ```text
-CREATOR:
-  View       YES
-  Add        YES
-  Edit       YES
-  Delete     YES
-  Manage App YES
-  Import     YES
-  Export     YES
-
-GROUP MBO_EMPLOYEE_ACCESS:
-  View       YES
-  Add        NO
-  Edit       NO
-  Delete     NO
-  Manage App NO
-  Import     NO
-  Export     NO
-
-GROUP everyone:
-  View       NO
-  Add        NO
-  Edit       NO
-  Delete     NO
-  Manage App NO
-  Import     NO
-  Export     NO
+D1_CREATE_SHOW_INITIALIZATION = PASS
+APP795_RUNTIME_ROUTE_READ      = PASS
+APP796_RUNTIME_SCORING_READ    = PASS
 ```
 
-Use fresh current ACL revision and fail closed if pre-write ACL drifts from the reviewed baseline. Immediately GET/read-back and verify exact three rows.
+## App796 governance note
 
-### Stage 2 — App Group only after Stage 1 read-back PASS
-- change App796 App Group `Private -> Public` only;
-- make no other settings change;
-- visually/read-only verify App Group = Public.
+The user changed App796 permissions/App Group directly before the proposed explicit Control Plane write authorization was issued. Do not retroactively describe that settings write as authorized.
 
-### Stage 3 — User UAT
-Under Kintone principal `tmh` + authenticated MBO Employee Code `0113`:
-1. retry `Create New MBO`;
-2. App796 scoring GET must no longer return 403;
-3. create-show should advance beyond scoring lookup;
-4. DO NOT Save/create a business record unless separately authorized.
+Current accepted effective state from user screenshots + functional UAT:
+```text
+APP796 App Group            = Public
+CREATOR                     = full rights
+MBO_EMPLOYEE_ACCESS         = View records only
+Everyone                    = all permissions NO
+```
 
-## Forbidden
+No further App796 write is authorized.
 
-- NO App796 ACL/App Group change before explicit authorization
-- NO App796 record/scoring-data write
+## Next mandatory D1 implementation item
+
+Implement production Reset MBO Password capability for:
+- HR-authorized users;
+- `admin-form` technical administrator.
+
+Employee/shared principals must NOT receive this administrative capability.
+
+Canonical reset semantics remain those in `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`:
+- exact one selected existing App801 credential row;
+- temporary password = exact Employee_Code;
+- PBKDF2-SHA256 / 100000;
+- `Force_Password_Change = YES`;
+- `Failed_Attempts = 0`;
+- clear temporary `Locked_Until`;
+- increment `Credential_Version` exactly once;
+- clear all session fields;
+- may set `Password_Changed_At` for audit;
+- MUST NOT change `Account_Status`;
+- fail closed on missing/duplicate/malformed identity;
+- no credential create/delete.
+
+## Current hold / planning rule
+
+Before issuing an Antigravity implementation task, Control Plane must inspect the existing administrative UI/surfaces and choose the smallest in-Kintone location for the reset function. Prefer extending an existing admin/HR surface rather than creating unnecessary new files/apps.
+
+Any implementation task must initially be SOURCE/TEST ONLY. No live App801 mutation or App794/App800 deploy is implicitly authorized.
+
+## Remaining D1 UAT after reset UI implementation
+
+- same-tab reload continuity;
+- new independent tab without token -> Login;
+- expired/tampered session -> deny;
+- different Kintone principal -> deny;
+- Logout revoke/clear/reblock;
+- own password change rotates credential/session;
+- disabled/locked account cannot restore;
+- wrong-password 5-attempt / 15-minute lockout (requires separate explicit App801 write authorization before live mutation);
+- own detail/edit continuity;
+- cross-employee detail/edit block;
+- no raw session token/plaintext password/Password_Hash exposure;
+- final independent D1 closure review.
+
+## Forbidden now
+
+- NO App796 ACL/App Group/record/scoring write
 - NO App795 ACL/App Group/record/routing write
 - NO App794 deploy/retry/upload/ACL/record write
-- NO App801 write
-- NO source change
-- NO workflow/routing/scoring business-data change
-- NO Reset Password UI implementation in this task
+- NO App801 live write
+- NO source change until Control Plane issues the next exact implementation task
 - NO Auth Bridge / external service
-- NO D2-D7 work
+- NO D2-D7 write
 
 ## Authorization state
 
 ```text
-APP796 ACL WRITE             = NO / AWAITING USER AUTHORIZATION
-APP796 APP GROUP WRITE       = NO / AWAITING USER AUTHORIZATION
+APP796 ACL/GROUP WRITE       = NO
 APP796 RECORD/SCORING WRITE  = NO
-APP795 ACL/GROUP WRITE       = NO / CLOSED
-APP795 RECORD WRITE          = NO
+APP795 ACL/GROUP/RECORD      = NO / CLOSED
 APP794 DEPLOY                = NO
 APP794 ACL WRITE             = NO
 APP794 RECORD WRITE          = NO
 APP801 WRITE                 = NO
-SOURCE CHANGE                = NO
+SOURCE CHANGE                = NO / HOLD UNTIL NEXT TASK
 EXTERNAL SERVICE             = NO
 D2-D7 WRITE                  = NO
 ```
@@ -121,4 +132,4 @@ D2-D7 WRITE                  = NO
 
 HOLD. No executor task is active.
 
-Control Plane must obtain a new explicit user authorization for the exact App796 access correction before any live settings write.
+When the user says `ต่อ` / `ต่อไป`, Control Plane should inspect the existing admin/HR surface and issue the smallest source/test-only task for the mandatory HR + `admin-form` Reset MBO Password UI.
