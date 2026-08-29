@@ -2451,6 +2451,144 @@ test('ATTACHMENT_RETRIEVAL_SUCCESS_DOES_NOT_MUTATE_ATTACHMENT_STATE: preview and
   }
 });
 
+test('ATTACHMENT_EMPTY_MIME_PDF_DOWNLOAD_ONLY: report.pdf with empty MIME must fall back to download only', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['dummy'], { type: '' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'report.pdf', 'K_EMPTY_PDF');
+    assert.equal(downloadTriggered, true, 'Empty MIME + .pdf must fall back to download only');
+    assert.equal(downloadedFilename, 'report.pdf', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_EMPTY_MIME_IMAGE_DOWNLOAD_ONLY: photo.png with empty MIME must fall back to download only', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['dummy'], { type: '' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'photo.png', 'K_EMPTY_PNG');
+    assert.equal(downloadTriggered, true, 'Empty MIME + .png must fall back to download only');
+    assert.equal(downloadedFilename, 'photo.png', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_UNKNOWN_MIME_NEVER_EXTENSION_PREVIEWS: document.pdf with unknown MIME must not be promoted by filename extension', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['dummy'], { type: 'application/x-custom-unknown' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'document.pdf', 'K_UNKNOWN_MIME');
+    assert.equal(downloadTriggered, true, 'Unknown MIME must fall back to download');
+    assert.equal(downloadedFilename, 'document.pdf', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_POPUP_ATTEMPT_COUNT_EXACTLY_ONE: window.open is called at most once synchronously before await', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let openCount = 0;
+  const mockWin = { location: {}, closed: false };
+
+  const origOpen = globalThis.window ? globalThis.window.open : undefined;
+  if (!globalThis.window) globalThis.window = {};
+  globalThis.window.open = () => {
+    openCount++;
+    return mockWin;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'safe.pdf', 'K_POPUP_EXACT_ONE');
+    assert.equal(openCount, 1, 'window.open must be called exactly once');
+  } finally {
+    globalThis.fetch = origFetch;
+    if (origOpen) globalThis.window.open = origOpen;
+  }
+});
+
+test('ATTACHMENT_POPUP_BLOCKED_DOES_NOT_ASYNC_REOPEN: blocked popup executes zero post-await window.open calls and falls back safely to download', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let openCount = 0;
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origOpen = globalThis.window ? globalThis.window.open : undefined;
+  if (!globalThis.window) globalThis.window = {};
+  globalThis.window.open = () => {
+    openCount++;
+    return null; // Blocked popup
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'blocked.pdf', 'K_BLOCKED_NO_REOPEN');
+    assert.equal(openCount, 1, 'window.open must be called exactly once before await');
+    assert.equal(downloadTriggered, true, 'Blocked popup must fall back to download');
+    assert.equal(downloadedFilename, 'blocked.pdf', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+    if (origOpen) globalThis.window.open = origOpen;
+  }
+});
+
 test('NO_LIVE_NETWORK_IN_TESTS: all tests run strictly against local mock transports with 0 external network calls', () => {
   assert.equal(typeof globalThis.fetch, 'function', 'Mock fetch transport must be used in unit tests');
 });

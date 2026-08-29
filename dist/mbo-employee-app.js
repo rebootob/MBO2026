@@ -5306,10 +5306,10 @@ Requester_User is empty for action "${actionName}".`
         return;
       }
       let win = null;
-      if (typeof window !== "undefined" && window.open) {
+      if (typeof window !== "undefined" && typeof window.open === "function") {
         try {
           win = window.open("about:blank", "_blank");
-        } catch (err) {
+        } catch (_) {
           win = null;
         }
       }
@@ -5327,34 +5327,24 @@ Requester_User is empty for action "${actionName}".`
           this._triggerBlobDownload(blob, filename);
           return;
         }
-        const objectUrl = typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(blob) : null;
-        if (objectUrl && win && !win.closed) {
-          if (win.location && typeof win.location === "object") {
-            win.location.href = objectUrl;
-          } else {
-            win.location = objectUrl;
-          }
-        } else if (objectUrl && typeof window !== "undefined" && window.open) {
-          try {
-            const newWin = window.open(objectUrl, "_blank");
-            if (!newWin) {
-              URL.revokeObjectURL(objectUrl);
-              this._triggerBlobDownload(blob, filename);
+        if (win && !win.closed) {
+          const objectUrl = typeof URL !== "undefined" && typeof URL.createObjectURL === "function" ? URL.createObjectURL(blob) : null;
+          if (objectUrl) {
+            if (win.location && typeof win.location === "object") {
+              win.location.href = objectUrl;
+            } else {
+              win.location = objectUrl;
             }
-          } catch (_) {
-            if (objectUrl) URL.revokeObjectURL(objectUrl);
-            this._triggerBlobDownload(blob, filename);
+            return;
           }
-        } else {
-          if (win && !win.closed) {
-            try {
-              win.close();
-            } catch (_) {
-            }
-          }
-          if (objectUrl) URL.revokeObjectURL(objectUrl);
-          this._triggerBlobDownload(blob, filename);
         }
+        if (win && !win.closed) {
+          try {
+            win.close();
+          } catch (_) {
+          }
+        }
+        this._triggerBlobDownload(blob, filename);
       } catch (err) {
         if (win && !win.closed) {
           try {
@@ -5563,22 +5553,7 @@ Requester_User is empty for action "${actionName}".`
   };
   function isSafePreviewableMime(mimeType, filename) {
     const mime = String(mimeType || "").trim().toLowerCase();
-    const ext = String(filename || "").split(".").pop().toLowerCase();
-    const DENIED_MIMES = [
-      "text/html",
-      "application/xhtml+xml",
-      "image/svg+xml",
-      "application/xml",
-      "text/xml",
-      "application/javascript",
-      "text/javascript",
-      "application/x-javascript",
-      "application/octet-stream",
-      "application/x-download",
-      "application/x-msdownload"
-    ];
-    const DENIED_EXTS = ["html", "htm", "xhtml", "svg", "xml", "js", "mjs", "php", "sh", "bat", "cmd", "exe", "msi", "com"];
-    if (DENIED_MIMES.includes(mime) || DENIED_EXTS.includes(ext)) {
+    if (!mime) {
       return false;
     }
     const SAFE_ALLOWLIST_MIMES = [
@@ -5598,16 +5573,7 @@ Requester_User is empty for action "${actionName}".`
       "video/webm",
       "video/ogg"
     ];
-    if (SAFE_ALLOWLIST_MIMES.includes(mime)) {
-      return true;
-    }
-    if ((mime === "" || mime === "application/pdf") && ext === "pdf") {
-      return true;
-    }
-    if ((mime === "" || mime.startsWith("image/")) && ["png", "jpg", "jpeg", "gif", "webp", "bmp"].includes(ext)) {
-      return true;
-    }
-    return false;
+    return SAFE_ALLOWLIST_MIMES.includes(mime);
   }
 
   // src/core/fiscal-year-engine.js

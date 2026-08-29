@@ -340,3 +340,26 @@ LIVE_DEPLOY_OCCURRED                     = NO
 MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
+## 16. App794 Saved Attachment Preview / Download Residual Corrective Evidence
+
+```text
+EXECUTION_START_HEAD                      = 15e4e8ad5718f2a04ea8a912adf99d1327fb2968
+CHANGED_FILES                             = src/ui/employee-part-a-ui.js, tests/timeline-truthfulness-and-attachment.test.js, dist/mbo-employee-app.js
+EMPTY_MIME_DOWNLOAD_ONLY_PROOF            = isSafePreviewableMime returns false for empty/null/undefined MIME; report.pdf and photo.png with empty MIME fall back directly to download
+NO_EXTENSION_ONLY_PREVIEW_PROMOTION       = isSafePreviewableMime requires explicit allowlisted response MIME; never promotes empty or unknown MIME based on filename extension
+POPUP_ATTEMPT_COUNT                       = EXACTLY 1 (window.open('about:blank', '_blank') called synchronously before await; 0 calls after await)
+NO_ASYNC_SECOND_POPUP_PROOF               = _handleAttachmentPreview removes post-await window.open retry; if initial popup is blocked, falls back safely to _triggerBlobDownload(blob, filename)
+SAFE_FALLBACK_FILENAME_PROOF              = _triggerBlobDownload receives exact original filename parameter on fallback
+REMOVE_BASELINE_UNCHANGED                 = _getSavedAttachmentFiles() and _removeSavedAttachmentFile() retained exact parent 4e81527f implementation
+PERSISTENCE_FUNCTIONS_CHANGED             = NO (uploadKintoneFile, prepareAttachmentPlan, finalizeAttachmentPlan 100% UNTOUCHED)
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
+FOCUSED_ATTACHMENT_TESTS                  = PASS (73/73 attachment, timeline, retrieval & security tests passing)
+FULL_NPM_TEST                             = PASS (925/925 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css generated cleanly)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+LIVE_KINTONE_WRITE                       = 0
+LIVE_DEPLOY_OCCURRED                     = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+
