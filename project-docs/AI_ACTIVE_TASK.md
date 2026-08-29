@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — WP1 ATOMIC DEPLOYMENT TOOLING RESIDUAL CORRECTIVE
+# AI ACTIVE TASK — WP1 LIVE SOURCE IDENTITY FAIL-CLOSED CORRECTIVE
 
 Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
@@ -6,12 +6,12 @@ Branch: `ai/antigravity-wp002c`
 ## Start Point
 
 Latest reviewed WP1 candidate:
-`9c96461dcde9ef3ca626b415d35398ff5d41657f`
+`6e1dcce38c5e425ed5f2228ab6a49dce1a826156`
 
 Independent verdict:
 `CORRECTIVE`
 
-Do NOT redo the accepted atomic JS+CSS implementation. Fix only the residual blockers below.
+Do NOT redo accepted atomic JS+CSS, mandatory manifest, or byte-exact hashing behavior. Fix only actual-source identity binding below.
 
 ## Accepted Current Live / Rollback Manifest
 
@@ -26,81 +26,114 @@ ROLLBACK_CSS_IDENTITY  = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 
 No Live write is authorized.
 
-## Residual Blocker A — Manifest Must Be Mandatory and Complete
+## Accepted WP1 Behavior — Preserve Exactly
 
-Current `validateReleaseManifest()` can return PASS when expected identities are omitted. This is forbidden.
-
-For **Live mode**, require an exact release manifest before any upload/write path.
-
-Manifest must bind at minimum:
-```text
-APP_ID = 794
-SOURCE_COMMIT / candidate identifier
-EXPECTED_JS_IDENTITY
-EXPECTED_CSS_IDENTITY
-EXPECTED_SCOPE
-EXPECTED_TOPOLOGY = Desktop JS count / Desktop CSS count / Mobile JS count / Mobile CSS count
-```
-
-Requirements:
-- missing manifest object => BLOCK;
-- missing/blank required field => BLOCK;
-- APP_ID != 794 => BLOCK;
-- missing or mismatched source commit/candidate identifier => BLOCK;
-- JS mismatch => BLOCK;
-- CSS mismatch => BLOCK;
-- expected scope mismatch => BLOCK;
-- expected topology mismatch => BLOCK;
-- exact manifest + exact built pair => PASS.
-
-The Live entrypoint must not silently fall back to optional `expectedJsBlobSha` / `expectedCssBlobSha` values.
-
-Prefer one explicit `releaseManifest` object passed to Live execution.
-
-### Source identity
-
-The candidate/source identity must reflect the actual source being deployed, not merely a caller-supplied string that can claim any commit.
-
-Use a deterministic runtime source identity check appropriate to this repository, for example current Git HEAD, and fail closed if the working tree/build inputs are dirty or cannot be tied to the expected candidate. Keep this implementation narrow; do not add unrelated Git workflow machinery.
-
-Build-only mode may run without Live authorization and may return computed source/artifact identity information for Control Plane review.
-
-## Residual Blocker B — Hash Exact Upload Bytes
-
-Current `gitBlobSha()` normalizes `CRLF -> LF` before hashing. Remove that normalization.
-
-Required contract:
-- Git-blob/content identity must be computed over the exact UTF-8 bytes/content that will be uploaded;
-- the same JS/CSS content used for hashing must be passed to `uploadFile()`;
-- no newline normalization between hash calculation and upload;
-- add a regression proving LF and CRLF content produce different identities when bytes differ.
-
-This prevents a Windows checkout from appearing to match a reviewed repository blob while uploading different bytes.
-
-## Accepted WP1 Behavior — Must Preserve
-
-Do not regress these accepted points from `9c96461...`:
+Already accepted:
 - exactly one target Desktop JS `mbo-employee-app.js`;
 - exactly one target Desktop CSS `mbo-employee.css`;
-- missing/duplicate JS or CSS blocks;
-- both new JS and CSS fileKeys replace preview targets;
-- scope/topology/Mobile preservation remains fail-closed;
-- build-only returns JS + CSS and performs zero network;
+- both target fileKeys replaced together;
+- Live `releaseManifest` required;
+- manifest binds App794 + expected JS + expected CSS + scope + topology;
+- byte-exact Git blob SHA over uploaded bytes;
+- CRLF and LF produce different identities;
+- build-only returns JS+CSS with zero network;
 - unauthorized Live entrypoint blocks;
-- no automatic rollback;
-- no UI source changes.
+- no automatic rollback.
+
+Do not widen this task.
+
+## Residual Blocker A — Live Source Identity Must Be Internal, Not Caller-Supplied
+
+Current Live entrypoint permits:
+```text
+options.currentGitHead || getCurrentGitHead()
+```
+
+This is forbidden because a caller can spoof the actual source identity.
+
+Required:
+- Live `executeDeployCustomUi()` MUST derive current source identity internally from the repository checkout;
+- caller MUST NOT be able to override actual Git HEAD for Live execution;
+- pure helper/unit tests may inject an explicit currentHead directly into helper functions, but the production Live entrypoint must never trust a caller-supplied HEAD.
+
+Regression required:
+`CALLER_GIT_HEAD_OVERRIDE_NOT_ACCEPTED_IN_LIVE_PATH`
+
+## Residual Blocker B — Git HEAD Unresolvable Must Fail Closed
+
+Current `getCurrentGitHead()` returns `null` on error and validation can skip source comparison.
+
+Required:
+- if Live source HEAD cannot be resolved => BLOCK before build/network/upload;
+- do not silently return null and continue;
+- no fallback candidate string.
+
+Regression required:
+`UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE`
+
+## Residual Blocker C — Require Exact Full Commit SHA
+
+Current source comparison uses prefix matching.
+
+Required Live contract:
+```text
+manifest.sourceCommit = exact 40-character hexadecimal Git SHA
+actual repository HEAD = exact 40-character hexadecimal Git SHA
+manifest.sourceCommit === actual HEAD
+```
+
+Rules:
+- short SHA => BLOCK;
+- malformed SHA => BLOCK;
+- prefix-only match => BLOCK;
+- exact full SHA => PASS.
+
+Regressions required:
+```text
+SHORT_SOURCE_SHA_BLOCKED
+MALFORMED_SOURCE_SHA_BLOCKED
+PREFIX_SOURCE_SHA_BLOCKED
+EXACT_FULL_SOURCE_SHA_PASS
+```
+
+## Residual Blocker D — Dirty Working Tree / Build Inputs Must Fail Closed
+
+The source identity must represent the exact committed source being built.
+
+Before Live build/network/upload:
+- resolve actual Git HEAD;
+- check repository cleanliness with a deterministic Git status check;
+- if tracked or untracked build/source inputs are dirty => BLOCK;
+- do not auto-reset, checkout, clean, stash, commit, or modify files to make the check pass.
+
+Prefer fail-closed on any non-ignored working-tree change for Live deployment. This is safer and simpler than trying to maintain a permissive path allow-list.
+
+Important ordering:
+1. authorization/target binding may be checked first;
+2. actual Git HEAD + clean working tree MUST be proven BEFORE candidate build and before any Kintone/network/upload write path;
+3. then build exact candidate;
+4. then compare exact JS/CSS artifact identities to manifest;
+5. only a later separately authorized Live task may proceed to upload.
+
+Regressions required:
+```text
+DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD
+CLEAN_WORKTREE_SOURCE_IDENTITY_PASS
+```
+
+Test helpers may inject source-state results into pure functions, but Live execution must use internally resolved repository state.
 
 ## Exact Files Allowed
 
 Change only:
 1. `scripts/kintone/deploy-custom-ui.js`
 2. `tests/deploy-customization-preservation.test.js`
-3. `project-docs/WP1_ATOMIC_DEPLOYMENT_TOOLING_EVIDENCE.md` — update evidence or add a small residual evidence file
+3. existing WP1 evidence file or one small residual evidence file
 
-Read-only unless absolutely necessary:
+Read-only unless needed to understand build inputs:
 - `scripts/kintone/build-mbo-ui.js`
 - `package.json`
-- exact security helper needed to understand authorization
+- exact authorization/security helper
 
 Forbidden:
 - `src/main-mbo-app.js`
@@ -109,32 +142,11 @@ Forbidden:
 - `src/styles/mbo-employee.css`
 - auth/session/attachment/routing/scoring source
 
-## Mandatory Regression Tests
-
-Add/adjust tests proving at minimum:
-```text
-MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD
-MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD
-MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD
-MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD
-MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD
-MANIFEST_TOPOLOGY_MISMATCH_BLOCKED_PRE_UPLOAD
-JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD
-CSS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD
-EXACT_RELEASE_MANIFEST_PASS
-GIT_BLOB_SHA_EXACT_BYTES_CRLF_DIFFERS_FROM_LF
-ATOMIC_JS_CSS_PAIR_REQUIRED
-CSS_CANDIDATE_REPLACED_NOT_PRESERVED
-BUILD_ONLY_ZERO_NETWORK
-```
-
-Also preserve all previous target/revision/topology/authorization tests.
-
 ## Verification
 
 Run and commit evidence for:
 - `node --test tests/deploy-customization-preservation.test.js`
-- relevant classic bundle/build safety tests
+- relevant classic bundle/build safety test(s)
 - `npm test`
 - `npm run ui:build`
 - module-aware build-only with 0 Kintone/network calls
@@ -142,13 +154,17 @@ Run and commit evidence for:
 Evidence must record:
 ```text
 EXECUTION_START_HEAD
-BASE_REJECTED_CANDIDATE = 9c96461dcde9ef3ca626b415d35398ff5d41657f
+BASE_CORRECTIVE_CANDIDATE = 6e1dcce38c5e425ed5f2228ab6a49dce1a826156
 SOURCE_FILES_CHANGED
 TEST_FILES_CHANGED
-MANIFEST_MANDATORY_PROOF
-MANIFEST_SOURCE_IDENTITY_PROOF
-CRLF_VS_LF_HASH_PROOF
-ATOMIC_JS_CSS_PROOF
+CALLER_HEAD_OVERRIDE_BLOCK_PROOF
+UNRESOLVABLE_HEAD_BLOCK_PROOF
+EXACT_FULL_SHA_PROOF
+DIRTY_WORKTREE_BLOCK_PROOF
+CLEAN_SOURCE_IDENTITY_PROOF
+ATOMIC_JS_CSS_PRESERVED
+MANIFEST_BINDING_PRESERVED
+BYTE_EXACT_HASH_PRESERVED
 FOCUSED_TEST_RESULT
 FULL_TEST_RESULT
 UI_BUILD_RESULT
@@ -176,4 +192,4 @@ FINAL_COMMIT_SHA
 Commit + push source/test/evidence and STOP.
 
 Maximum status:
-`ATOMIC_DEPLOY_TOOLING_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
+`ATOMIC_DEPLOY_SOURCE_IDENTITY_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
