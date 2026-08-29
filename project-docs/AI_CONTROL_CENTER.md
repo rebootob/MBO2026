@@ -5,17 +5,17 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP1 PRE-BUILD SOURCE GATE / DETERMINISTIC TEST CORRECTIVE
+> Updated: 2026-08-29 — WP1 PASS / WP2 UI FUNCTIONAL PARTITION + RUNTIME PROOF
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 App794 Live Rev54 remains accepted known-good. WP1 candidate `2e8b05aa989b2e0ba9406b134824db7f2b5f509c` correctly closes caller HEAD spoofing, unresolved HEAD, full-SHA and dirty-tree gaps, but remains **CORRECTIVE** because manifest sourceCommit equality is still checked only after build + Kintone GET, and the dirty-worktree regression depends on the executor's real dirty checkout state rather than a deterministic pure test. No Live deployment authorized. WP2 not started. |
+| D1 | 🟠 App794 Live Rev54 remains accepted known-good. **WP1 Atomic App794 Deployment Tooling = INDEPENDENT PASS** at candidate `035b4d1fa077907f19bf8d2ef0a4177156d0319b`. WP2 now starts for Back to My MBO + My MBO card/list + Native Comment mirror/Refresh source partition and runtime integration proof. No Live deployment is authorized. HR/admin reset and remaining security UAT remain open. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🔴 Copy own previous MBO MUST FIX — resume after App794 UI corrective is stable |
+| D5 | 🔴 Copy own previous MBO MUST FIX — resume after current App794 UI corrective is stable |
 | D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
 | D7 | ✅ Admin Support Center source functionality closed |
 
@@ -33,135 +33,200 @@ USER_RUNTIME_SMOKE     = PASS
 CURRENT_LIVE_RUNTIME   = ACCEPTED KNOWN-GOOD
 ```
 
-No Live write occurred in WP1 candidate `2e8b05aa...`; Rev54 remains unchanged.
+Rev54 remains unchanged throughout WP1. No WP1 Live write occurred.
 
-## 3. Latest WP1 Candidate Review
+## 3. WP1 — Independent PASS
 
-Candidate:
-`2e8b05aa989b2e0ba9406b134824db7f2b5f509c`
+Accepted candidate:
+`035b4d1fa077907f19bf8d2ef0a4177156d0319b`
 
-Changed files are correctly limited to:
-- `scripts/kintone/deploy-custom-ui.js`
-- `tests/deploy-customization-preservation.test.js`
-- `project-docs/WP1_ATOMIC_DEPLOYMENT_TOOLING_EVIDENCE.md`
-
-Executor evidence reports:
+Independent review confirms:
 ```text
-FOCUSED_TEST_RESULT       = PASS 25/25
-FULL_TEST_RESULT          = PASS 938/938
-UI_BUILD_RESULT           = PASS
-BUILD_ONLY_RESULT         = PASS
-BUILD_ONLY_NETWORK_CALLS  = 0
-LIVE_KINTONE_WRITE        = 0
-LIVE_DEPLOY_OCCURRED      = NO
+CHANGED_SCOPE                        = deploy tooling + tests + evidence only
+PREBUILD_SOURCE_GATE                 = PASS
+MANIFEST_BEFORE_BUILD/NETWORK        = PASS
+EXACT_FULL_SOURCE_SHA                = PASS
+INTERNAL_GIT_HEAD                    = PASS
+DIRTY_WORKTREE_FAIL_CLOSED           = PASS
+PURE_DIRTY/CLEAN TESTS               = PASS
+ATOMIC_JS_CSS_PAIR                   = PASS
+MANDATORY_RELEASE_MANIFEST           = PASS
+BYTE_EXACT_JS_CSS_IDENTITY           = PASS
+BUILD_ONLY_ZERO_NETWORK              = PASS
+UI_FEATURE_SOURCE_DRIFT              = NO
+LIVE_KINTONE_WRITE                   = 0
+LIVE_DEPLOY                          = NO
 ```
 
-### Independently accepted improvements
+Executor evidence records:
+- focused deployment tests PASS 26/26;
+- full suite PASS 939/939;
+- UI build PASS;
+- build-only PASS / network calls 0;
+- post-commit clean focused test PASS 26/26.
 
-The candidate now correctly:
-- derives Live Git HEAD internally and ignores caller `currentGitHead`;
-- blocks unresolved/malformed actual HEAD;
-- requires exact full 40-character manifest/source SHA equality in the validator;
-- checks working-tree cleanliness before Live build;
-- preserves mandatory release manifest, atomic JS+CSS replacement and byte-exact hashing;
-- leaves UI feature source untouched.
+WP1 is CLOSED. Do not reopen unless later evidence demonstrates a regression.
 
-## 4. Remaining Blocker A — Manifest Source Binding Must Happen Before Build/Network
+## 4. Permanent Deployment Contract After WP1
 
-Current Live order is:
+Future App794 customization deployment must use the hardened tooling and comply with `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`.
+
+Before a future Live deploy:
 ```text
-resolve Git HEAD
-check clean worktree
-build candidate artifacts
-GET live customization
-GET preview customization
-validate releaseManifest.sourceCommit == Git HEAD
+KNOWN_GOOD_ROLLBACK_MANIFEST = Rev54 / ec627852... / e04aa... + 1710d...
+CANDIDATE_SOURCE_COMMIT       = exact full Git HEAD
+CANDIDATE_JS_IDENTITY         = exact reviewed artifact identity
+CANDIDATE_CSS_IDENTITY        = exact reviewed artifact identity
+CANDIDATE_SCOPE               = exact reviewed scope
+CANDIDATE_TOPOLOGY            = exact reviewed topology
+WORKTREE                      = clean
+JS + CSS                      = atomic pair
 ```
 
-This is not the required fail-closed source gate. A wrong/missing/malformed manifest sourceCommit can still cause a build and Kintone GETs before it is rejected.
+No automatic rollback. Any later Live write requires a new explicit user authorization.
 
-Required Live order:
-```text
-authorization/target binding
-resolve actual Git HEAD
-check clean worktree
-PRE-BUILD SOURCE MANIFEST GATE:
-  releaseManifest exists
-  appId = 794
-  sourceCommit exact full 40-char SHA
-  sourceCommit === actual Git HEAD
-ONLY THEN build
-ONLY THEN Kintone GET/read preflight
-ONLY THEN compare built JS/CSS + scope/topology
-```
+## 5. WP2 — UI Functional Partition + Runtime Integration Proof
 
-No Kintone network call may occur before the pre-build source manifest gate passes.
+User-required UI scope remains exactly:
+1. **Back to My MBO** on existing Detail/Edit only.
+2. **My MBO responsive card/list** preserving Employee-Self ownership/query/status semantics and zero Delete UI.
+3. **Native Kintone Comment read-only mirror + Refresh** on existing Detail/Edit only.
 
-## 5. Remaining Blocker B — Dirty-Worktree Test Is Environment-Dependent
-
-Current regression `DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD & CLEAN_WORKTREE_SOURCE_IDENTITY_PASS` calls the real repository `isWorktreeClean()` and expects a throw.
-
-That can pass while Antigravity has uncommitted task changes, then fail when the same committed candidate is checked out clean. This is not deterministic evidence.
-
-Required:
-- extract/use a pure source-state validation helper accepting explicit resolved values such as `{currentGitHead, worktreeClean, manifest}`;
-- Live entrypoint must still resolve HEAD/cleanliness internally and pass those values to the pure helper;
-- unit tests must inject `worktreeClean=false` and `true` rather than depending on the test runner's actual checkout dirtiness;
-- add a clean-checkout regression proving the focused test suite passes when repository is clean.
-
-## 6. Accepted WP1 Behavior — Do Not Reopen
+### Canonical feature ownership target
 
 ```text
-ATOMIC_JS_CSS_PAIR                 = PASS
-TARGET_JS_EXACTLY_ONE              = PASS
-TARGET_CSS_EXACTLY_ONE             = PASS
-BOTH_PREVIEW_FILEKEYS_REPLACED     = PASS
-MANIFEST_REQUIRED                  = PASS
-MANIFEST_APP_JS_CSS_SCOPE_TOPOLOGY = PASS
-BYTE_EXACT_HASHING                 = PASS
-CRLF_VS_LF_DIFFERENT               = PASS
-CALLER_HEAD_OVERRIDE_BLOCKED       = PASS
-UNRESOLVABLE_HEAD_BLOCKED          = PASS
-EXACT_FULL_SHA_VALIDATION          = PASS
-REAL_LIVE_DIRTY_CHECK_BEFORE_BUILD = PASS
-BUILD_ONLY_ZERO_NETWORK            = PASS
-NO_LIVE_WRITE                      = PASS
+My MBO card/list
+  OWNER = src/ui/employee-self-index-ui.js
+  ACTION = preserve owner; improve only if required by accepted visual design
+
+Back navigation
+  CURRENT = embedded in src/ui/employee-part-a-ui.js
+  TARGET OWNER = src/ui/employee-record-navigation.js
+  RULE = one canonical implementation; remove embedded duplicate from EmployeePartAUI
+
+Native Comment mirror
+  CURRENT = embedded in src/ui/employee-part-a-ui.js
+  TARGET OWNER = src/ui/employee-comment-mirror.js
+  RULE = one canonical implementation; remove embedded duplicate from EmployeePartAUI
+
+CSS
+  OWNER = src/styles/mbo-employee.css
+  RULE = keep one stylesheet for this corrective; use clearly separated feature sections; no broad CSS refactor
+
+Runtime orchestration
+  OWNER = src/main-mbo-app.js
+  RULE = orchestration/wiring only; no duplicate feature logic
 ```
 
-## 7. UI Feature Ownership — WP2 Still Blocked
+### Runtime proof required
 
+Back navigation must be proven through the actual Kintone record orchestration path, not renderer-only unit tests:
 ```text
-My MBO card/list owner        = src/ui/employee-self-index-ui.js
-Back navigation current      = src/ui/employee-part-a-ui.js
-Back navigation target owner = dedicated record-navigation module in WP2
-Comment mirror current       = src/ui/employee-part-a-ui.js
-Comment mirror target owner  = dedicated comment-mirror module in WP2
-CSS current owner            = src/styles/mbo-employee.css
+Detail existing record -> custom UI mounted -> Back visible
+Edit existing record   -> custom UI mounted -> Back visible
+Create record          -> Back absent
+Back href/action       -> /k/{currentAppId}/ same tab
+Auth/session mutation  -> none
+Record write           -> none
 ```
+
+Comment mirror must preserve:
+- Native right-side Comments remain source of truth and place to add/reply/delete;
+- custom mirror is read-only;
+- current App794 record only;
+- GET `/k/v1/record/comments.json` only;
+- author + timestamp + body;
+- safe text rendering;
+- truthful pagination with no silent truncation;
+- Refresh performs an actual re-fetch;
+- Create performs zero comment GET;
+- zero Comment POST/DELETE/reply.
+
+My MBO must preserve:
+- exact Employee_Code ownership filter;
+- `order by Fiscal_Year desc`;
+- prominent Fiscal Year + Status;
+- Record Key secondary;
+- non-completed Open MBO;
+- Completed / 16 Completed View History;
+- exact record URLs;
+- Create New visible;
+- exactly one auth bar;
+- zero Delete UI.
+
+## 6. WP2 Boundaries
+
+WP2 is source/test/build only.
+
+Allowed feature/source scope:
+- `src/ui/employee-self-index-ui.js` only if required for the accepted card/list visual corrective;
+- `src/ui/employee-part-a-ui.js` only to remove delegated Back/Comment ownership and wire dedicated modules;
+- new `src/ui/employee-record-navigation.js`;
+- new `src/ui/employee-comment-mirror.js`;
+- `src/main-mbo-app.js` only for minimal orchestration/wiring if integration proof requires it;
+- `src/styles/mbo-employee.css` only for Back/My MBO/Comment feature styles;
+- focused tests directly covering these features;
+- generated `dist/mbo-employee-app.js` and `dist/mbo-employee.css` from deterministic build;
+- one concise WP2 evidence file.
+
+Forbidden:
+- Auth/session behavior change;
+- Attachment behavior change;
+- Routing/Scoring/Profile change;
+- App801/App795/App796 writes;
+- App794 record/schema/layout/ACL/process write;
+- Kintone Comment write;
+- Copy Previous MBO;
+- D2-D7 implementation;
+- Live customization deploy;
+- rollback/recovery;
+- unrelated refactor.
+
+## 7. WP2 Release Evidence Required Before Any Deploy Authorization
+
+WP2 must finish with an exact candidate manifest:
+```text
+CANDIDATE_SOURCE_COMMIT
+CANDIDATE_JS_BLOB_SHA
+CANDIDATE_CSS_BLOB_SHA
+CANDIDATE_SCOPE = ALL
+CANDIDATE_TOPOLOGY = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+FEATURE_OWNER_MAP
+FOCUSED_TEST_RESULT
+RUNTIME_INTEGRATION_TEST_RESULT
+COMMENT_PAGINATION_REFRESH_RESULT
+FULL_TEST_RESULT
+UI_BUILD_RESULT
+BUILD_ONLY_RESULT
+BUILD_ONLY_NETWORK_CALLS = 0
+SOURCE_TO_DIST_TRACEABILITY
+LIVE_KINTONE_WRITE = 0
+LIVE_DEPLOY = NO
+```
+
+Rollback manifest remains exact accepted Rev54 until a newer Live release passes technical readback + User runtime smoke.
 
 ## 8. Current Gate
 
 ```text
-CURRENT_GATE                  = WP1 PRE-BUILD SOURCE GATE + DETERMINISTIC TEST CORRECTIVE
-CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE
+CURRENT_GATE                  = WP2 UI FUNCTIONAL PARTITION + RUNTIME INTEGRATION PROOF
+CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST/BUILD ONLY — NO LIVE WRITE
 NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-LATEST_WP1_CANDIDATE          = 2e8b05aa989b2e0ba9406b134824db7f2b5f509c
-WP1_VERDICT                   = CORRECTIVE
+WP1                           = PASS / CLOSED
+WP1_ACCEPTED_CANDIDATE        = 035b4d1fa077907f19bf8d2ef0a4177156d0319b
 LIVE_APP794_CUSTOMIZATION     = REV54 ACCEPTED KNOWN-GOOD
 ROLLBACK_MANIFEST             = LOCKED / ec627852 + e04aa... + 1710d...
-UI FEATURE SOURCE CHANGE      = NO
-DEPLOY TOOL SOURCE CHANGE     = YES / FINAL RESIDUAL ONLY
-TEST CHANGE                   = YES / FINAL RESIDUAL ONLY
+WP2_SOURCE_CHANGE             = YES / EXACT UI SCOPE ONLY
+WP2_TEST_CHANGE               = YES / EXACT UI SCOPE ONLY
 APP794 CUSTOMIZATION DEPLOY   = NO / NOT AUTHORIZED
 APP794 RECORD WRITE           = NO
 APP794 FORM/SCHEMA/LAYOUT     = NO
 APP794 ACL/PROCESS            = NO
 KINTONE COMMENT WRITE         = NO
-APP801 / APP795 / APP796      = NO
+APP801 / APP795 / APP796      = NO WRITE
 COPY PREVIOUS MBO             = NO
 D2-D7 EXECUTION               = NO
-WP2                           = BLOCKED UNTIL WP1 PASS
 ```
 
 Maximum executor status:
-`ATOMIC_DEPLOY_PREBUILD_SOURCE_GATE_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
+`WP2_UI_CANDIDATE_IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
