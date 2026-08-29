@@ -362,4 +362,46 @@ LIVE_DEPLOY_OCCURRED                     = NO
 MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
+## 17. One-Shot App794 Saved Attachment Preview / Download Deployment Evidence (Rev 51)
+
+```text
+AUTHORIZATION_ID                          = APP794-D1-ATTACHMENT-PREVIEW-DOWNLOAD-DEPLOY-20260829-01
+AUTHORIZATION_CONSUMED                    = YES
+EXECUTION_START_HEAD                      = f627ad129588f1370c06dd9c1ae9cfac826aef39
+REVIEWED_SOURCE_CANDIDATE_SHA            = ec6278524a2d5eb53050d0580c340d1b4e866b97
+SOURCE_CHANGED_DURING_DEPLOY             = NO (Zero source/dist drift)
+TEST_CHANGED_DURING_DEPLOY               = NO (Zero test drift)
+PRECHECK_RESULT                           = PASS (Deterministic validatePreflight 100% PASS)
+FOCUSED_TEST_RESULT_IF_RUN                = PASS (73/73 attachment, timeline, retrieval & security tests passing)
+UI_BUILD_RESULT                           = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css generated cleanly)
+BUILD_ONLY_RESULT                         = PASS (0 Kintone network calls)
+PRE_DEPLOY_APP794_CUSTOMIZATION_REVISION = 50
+PRE_DEPLOY_CUSTOMIZATION_TOPOLOGY        = Scope ALL, 1 Desktop JS, 1 Desktop CSS, 0 Mobile
+PRE_DEPLOY_JS_IDENTITY_HASH              = 43731e5c26dc441659e2f3687f58d1c7237279a5
+PRE_DEPLOY_CSS_IDENTITY_HASH             = c407e30a0eb87c6e0c3f2f55cc4fc6163816695d
+ROLLBACK_SNAPSHOT_REFERENCE              = scratch/app794_live_predeploy_backup_preview_download.json & scratch/app794_preview_predeploy_backup_preview_download.json
+DEPLOY_ATTEMPT_COUNT                      = 1
+DEPLOY_RESULT                            = SUCCESS (Kintone status SUCCESS)
+POST_DEPLOY_APP794_CUSTOMIZATION_REVISION= 51
+POST_DEPLOY_CUSTOMIZATION_TOPOLOGY       = Scope ALL, 1 Desktop JS, 1 Desktop CSS, 0 Mobile
+POST_DEPLOY_JS_IDENTITY_HASH             = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+POST_DEPLOY_JS_SHA256                    = 3ab52a01f7f107c1cea8b6f1cfab0a3a03f72976b6f65c8dab45ae6651160309
+POST_DEPLOY_CSS_IDENTITY_HASH            = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+POST_DEPLOY_CSS_SHA256                   = 928db49968b7d74283d2807ad63ff7d4b1b4fb5cba4dfea51aba4d1d580e90f3
+CANDIDATE_READBACK_MATCH                 = YES (Live deployed JS/CSS hashes match dist/ 100%)
+CUSTOMIZATION_TOPOLOGY_DRIFT             = NONE
+MOBILE_CUSTOMIZATION_CHANGED             = NO
+ROLLBACK_OCCURRED                        = NO
+ROLLBACK_REASON                          = N/A
+APP794_RECORD_WRITE                      = 0
+APP794_SCHEMA_LAYOUT_WRITE               = 0
+APP794_ACL_PROCESS_WRITE                  = 0
+APP801_WRITE                             = 0
+APP795_796_WRITE                         = 0
+D2_D7_WRITE                              = 0
+LIVE_DEPLOY_OCCURRED                     = YES
+MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+```
+
+
 
