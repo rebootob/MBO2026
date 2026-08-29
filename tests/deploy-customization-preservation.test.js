@@ -5,7 +5,8 @@ import {
   validateTopologyAlignment,
   buildPreviewCustomizePayload,
   prepareDeploymentArtifacts,
-  executeDeployCustomUi
+  executeDeployCustomUi,
+  validateApp794DeployTargetBinding
 } from '../scripts/kintone/deploy-custom-ui.js';
 
 // Standard valid live & preview fixtures
@@ -74,6 +75,38 @@ test('DEPLOY_ENTRYPOINT_SCOPE_REGRESSION & DEPLOY_IMPORT_NETWORK_CALL_COUNT = 0'
     async () => executeDeployCustomUi({ isBuildOnly: false, appId: 795 }),
     /APP794 DEPLOY BLOCKED/
   );
+});
+
+test('validateApp794DeployTargetBinding enforces strict App 794 binding across options and registry target drift', () => {
+  // 1. registry.mboV2AppId = 795 -> BLOCK
+  assert.throws(
+    () => validateApp794DeployTargetBinding({}, { mboV2AppId: 795 }),
+    /APP794 DEPLOY BLOCKED: Target App ID in sandbox-apps.json \(795\) must be exactly 794/
+  );
+
+  // 2. missing / malformed registry target -> BLOCK
+  assert.throws(
+    () => validateApp794DeployTargetBinding({}, {}),
+    /APP794 DEPLOY BLOCKED: Target App ID in sandbox-apps.json \(undefined\) must be exactly 794/
+  );
+  assert.throws(
+    () => validateApp794DeployTargetBinding({}, { mboV2AppId: '794' }),
+    /APP794 DEPLOY BLOCKED: Target App ID in sandbox-apps.json \(794\) must be exactly 794/
+  );
+  assert.throws(
+    () => validateApp794DeployTargetBinding({}, null),
+    /APP794 DEPLOY BLOCKED: Missing or invalid sandbox registry object/
+  );
+
+  // 3. options.appId != 794 -> BLOCK
+  assert.throws(
+    () => validateApp794DeployTargetBinding({ appId: 795 }, { mboV2AppId: 794 }),
+    /APP794 DEPLOY BLOCKED: Supplied options.appId \(795\) must be exactly 794/
+  );
+
+  // 4. exact registry.mboV2AppId = 794 -> PASS target-binding layer
+  assert.equal(validateApp794DeployTargetBinding({}, { mboV2AppId: 794 }), 794);
+  assert.equal(validateApp794DeployTargetBinding({ appId: 794 }, { mboV2AppId: 794 }), 794);
 });
 
 test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values', () => {

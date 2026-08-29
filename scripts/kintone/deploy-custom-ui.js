@@ -264,15 +264,35 @@ export function buildPreviewCustomizePayload({ app, previewCustomize, targetFile
   };
 }
 
-export async function executeDeployCustomUi(options = {}) {
-  const isBuildOnly = options.isBuildOnly ?? process.argv.includes('--build-only');
-
-  // If options.appId is supplied and != 794, fail closed immediately
+/**
+ * Validates target binding across supplied options and registry configuration.
+ * Both options.appId (if supplied) and registry.mboV2AppId must be exact integer 794.
+ * Fails closed on missing/malformed/drifted target values.
+ */
+export function validateApp794DeployTargetBinding(options = {}, registry = null) {
   if (options.appId !== undefined && options.appId !== 794) {
     throw new Error(`APP794 DEPLOY BLOCKED: Supplied options.appId (${options.appId}) must be exactly 794.`);
   }
 
+  if (!registry || typeof registry !== 'object') {
+    throw new Error('APP794 DEPLOY BLOCKED: Missing or invalid sandbox registry object.');
+  }
+
+  const registryAppId = registry.mboV2AppId;
+  if (!Number.isInteger(registryAppId) || registryAppId !== 794) {
+    throw new Error(`APP794 DEPLOY BLOCKED: Target App ID in sandbox-apps.json (${registryAppId}) must be exactly 794.`);
+  }
+
+  return 794;
+}
+
+export async function executeDeployCustomUi(options = {}) {
+  const isBuildOnly = options.isBuildOnly ?? process.argv.includes('--build-only');
+
   if (isBuildOnly) {
+    if (options.appId !== undefined && options.appId !== 794) {
+      throw new Error(`APP794 DEPLOY BLOCKED: Supplied options.appId (${options.appId}) must be exactly 794.`);
+    }
     const { fullJs } = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
     console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
     console.log('[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.');
@@ -287,15 +307,13 @@ export async function executeDeployCustomUi(options = {}) {
     throw new Error(`APP794 DEPLOY BLOCKED: Cannot load sandbox-apps.json registry (${err.message}).`);
   }
 
-  const registryAppId = sandboxRegistryModule?.mboV2AppId;
-  if (!Number.isInteger(registryAppId) || registryAppId !== 794) {
-    throw new Error(`APP794 DEPLOY BLOCKED: Target App ID in sandbox-apps.json (${registryAppId}) must be exactly 794.`);
-  }
+  // 2. Validate target binding strictly using pure helper
+  validateApp794DeployTargetBinding(options, sandboxRegistryModule);
 
-  // 2. Require narrow App794 customization deploy authorization BEFORE any network/upload path
+  // 3. Require narrow App794 customization deploy authorization BEFORE any network/upload path
   assertApp794CustomizationDeployAuthorization(options.authConfig, options.requestConfig);
 
-  // 3. Validate write target with literal ephemeral allow-list [794] and dryRunBypassDiscovery
+  // 4. Validate write target with literal ephemeral allow-list [794] and dryRunBypassDiscovery
   assertSandboxWriteTarget(794, sandboxRegistryModule, [794], { dryRunBypassDiscovery: true });
 
   const { fullJs } = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
