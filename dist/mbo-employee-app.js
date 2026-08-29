@@ -68,8 +68,10 @@
       throw new Error("prepareAttachmentPlan failed: invalid record object");
     }
     const plan = {};
+    const desiredSavedFilesMap = options.desiredSavedFiles || {};
     const dirtyFieldsSet = /* @__PURE__ */ new Set([
       ...Object.keys(pendingAttachments || {}),
+      ...Object.keys(desiredSavedFilesMap),
       ...options.dirtyFields || [],
       ...options.removedFields || []
     ]);
@@ -78,13 +80,23 @@
       let targetCode = fieldCode;
       if (!record[targetCode] && targetCode.startsWith("Self_Attachment_")) {
         const altCode = "Final_Attachment_" + targetCode.slice("Self_Attachment_".length);
-        if (record.hasOwnProperty(altCode)) {
+        if (record.hasOwnProperty(altCode) || desiredSavedFilesMap[altCode] !== void 0) {
           targetCode = altCode;
         }
       }
-      const currentVal = record[targetCode]?.value;
-      const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
-      let modified = options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode) || false;
+      let savedFiles;
+      let modified = false;
+      if (desiredSavedFilesMap[fieldCode] !== void 0) {
+        savedFiles = Array.isArray(desiredSavedFilesMap[fieldCode]) ? [...desiredSavedFilesMap[fieldCode]] : [];
+        modified = true;
+      } else if (desiredSavedFilesMap[targetCode] !== void 0) {
+        savedFiles = Array.isArray(desiredSavedFilesMap[targetCode]) ? [...desiredSavedFilesMap[targetCode]] : [];
+        modified = true;
+      } else {
+        const currentVal = record[targetCode]?.value;
+        savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+        modified = Boolean(options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode));
+      }
       for (const item of pendingItems) {
         if (item.status === "saved" && item.fileKey) {
           if (!savedFiles.some((f) => f && f.fileKey === item.fileKey)) {
@@ -3499,9 +3511,11 @@ Requester_User is empty for action "${actionName}".`
     }
     _removeSavedAttachmentFile(fieldCode, filename, fileKey) {
       let targetCode = fieldCode;
-      if ((!this.record[targetCode] || !this.record[targetCode].value) && targetCode.startsWith("Self_Attachment_")) {
+      if ((!this.record[targetCode] || !Array.isArray(this.record[targetCode].value) || this.record[targetCode].value.length === 0) && targetCode.startsWith("Self_Attachment_")) {
         const altCode = targetCode.replace("Self_Attachment_", "Final_Attachment_");
-        if (this.record[altCode]) targetCode = altCode;
+        if (this.record[altCode] && Array.isArray(this.record[altCode].value) && this.record[altCode].value.length > 0) {
+          targetCode = altCode;
+        }
       }
       if (!this.record[targetCode] || !Array.isArray(this.record[targetCode].value)) return;
       this.record[targetCode].value = this.record[targetCode].value.filter((f) => {
@@ -3510,8 +3524,11 @@ Requester_User is empty for action "${actionName}".`
         if (typeof f === "string") return f !== filename;
         return true;
       });
+      if (!this.desiredSavedFiles) this.desiredSavedFiles = {};
+      this.desiredSavedFiles[targetCode] = [...this.record[targetCode].value];
       if (!this.dirtyAttachmentFields) this.dirtyAttachmentFields = /* @__PURE__ */ new Set();
       this.dirtyAttachmentFields.add(fieldCode);
+      this.dirtyAttachmentFields.add(targetCode);
     }
     _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
       const isPreview = Boolean(this.isPreviewMode || this.previewOptions?.isPreviewMode);
@@ -5211,7 +5228,8 @@ Requester_User is empty for action "${actionName}".`
       const { prepareAttachmentPlan: prepareAttachmentPlan2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
       const targetRecord = options.record || this.record;
       const dirtyFields = Array.from(this.dirtyAttachmentFields || []);
-      const plan = await prepareAttachmentPlan2(targetRecord, this.pendingAttachments || {}, { ...options, dirtyFields });
+      const desiredSavedFiles = { ...this.desiredSavedFiles || {}, ...options.desiredSavedFiles || {} };
+      const plan = await prepareAttachmentPlan2(targetRecord, this.pendingAttachments || {}, { ...options, dirtyFields, desiredSavedFiles });
       this.preparedAttachmentPlan = plan && Object.keys(plan).length > 0 ? plan : null;
       return this.preparedAttachmentPlan;
     }
@@ -5226,6 +5244,7 @@ Requester_User is empty for action "${actionName}".`
       const res = await finalizeAttachmentPlan2(appId, recordId, plan, options);
       this.preparedAttachmentPlan = null;
       this.pendingAttachments = {};
+      this.desiredSavedFiles = {};
       if (this.dirtyAttachmentFields) this.dirtyAttachmentFields.clear();
       return res;
     }

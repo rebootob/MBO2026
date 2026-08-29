@@ -60,7 +60,7 @@ export async function uploadKintoneFile(file, options = {}) {
 /**
  * Prepares the attachment binding plan during app.record.create.submit / edit.submit.
  * Uploads pending local files to Kintone Upload File API (POST /k/v1/file.json) and receives fileKeys.
- * Tracks explicit removals and dirty fields so post-save REST update reflects exact desired state.
+ * Uses explicit desiredSavedFiles map when provided, so saved-file removals are independent of submit event.record.
  *
  * CRITICAL KINTONE INVARIANT:
  * - Does NOT mutate event.record Attachment fields directly!
@@ -74,8 +74,10 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
   }
 
   const plan = {};
+  const desiredSavedFilesMap = options.desiredSavedFiles || {};
   const dirtyFieldsSet = new Set([
     ...Object.keys(pendingAttachments || {}),
+    ...Object.keys(desiredSavedFilesMap),
     ...(options.dirtyFields || []),
     ...(options.removedFields || [])
   ]);
@@ -86,14 +88,25 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
     let targetCode = fieldCode;
     if (!record[targetCode] && targetCode.startsWith('Self_Attachment_')) {
       const altCode = 'Final_Attachment_' + targetCode.slice('Self_Attachment_'.length);
-      if (record.hasOwnProperty(altCode)) {
+      if (record.hasOwnProperty(altCode) || (desiredSavedFilesMap[altCode] !== undefined)) {
         targetCode = altCode;
       }
     }
 
-    const currentVal = record[targetCode]?.value;
-    const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
-    let modified = options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode) || false;
+    let savedFiles;
+    let modified = false;
+
+    if (desiredSavedFilesMap[fieldCode] !== undefined) {
+      savedFiles = Array.isArray(desiredSavedFilesMap[fieldCode]) ? [...desiredSavedFilesMap[fieldCode]] : [];
+      modified = true;
+    } else if (desiredSavedFilesMap[targetCode] !== undefined) {
+      savedFiles = Array.isArray(desiredSavedFilesMap[targetCode]) ? [...desiredSavedFilesMap[targetCode]] : [];
+      modified = true;
+    } else {
+      const currentVal = record[targetCode]?.value;
+      savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+      modified = Boolean(options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode));
+    }
 
     for (const item of pendingItems) {
       if (item.status === 'saved' && item.fileKey) {

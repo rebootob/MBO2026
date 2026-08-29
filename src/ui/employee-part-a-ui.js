@@ -1272,9 +1272,11 @@ export class EmployeePartAUI {
 
   _removeSavedAttachmentFile(fieldCode, filename, fileKey) {
     let targetCode = fieldCode;
-    if ((!this.record[targetCode] || !this.record[targetCode].value) && targetCode.startsWith('Self_Attachment_')) {
+    if ((!this.record[targetCode] || !Array.isArray(this.record[targetCode].value) || this.record[targetCode].value.length === 0) && targetCode.startsWith('Self_Attachment_')) {
       const altCode = targetCode.replace('Self_Attachment_', 'Final_Attachment_');
-      if (this.record[altCode]) targetCode = altCode;
+      if (this.record[altCode] && Array.isArray(this.record[altCode].value) && this.record[altCode].value.length > 0) {
+        targetCode = altCode;
+      }
     }
     if (!this.record[targetCode] || !Array.isArray(this.record[targetCode].value)) return;
 
@@ -1285,8 +1287,12 @@ export class EmployeePartAUI {
       return true;
     });
 
+    if (!this.desiredSavedFiles) this.desiredSavedFiles = {};
+    this.desiredSavedFiles[targetCode] = [...this.record[targetCode].value];
+
     if (!this.dirtyAttachmentFields) this.dirtyAttachmentFields = new Set();
     this.dirtyAttachmentFields.add(fieldCode);
+    this.dirtyAttachmentFields.add(targetCode);
   }
 
   _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
@@ -3211,7 +3217,8 @@ export class EmployeePartAUI {
     const { prepareAttachmentPlan } = await import('../services/mbo-attachment-service.js');
     const targetRecord = options.record || this.record;
     const dirtyFields = Array.from(this.dirtyAttachmentFields || []);
-    const plan = await prepareAttachmentPlan(targetRecord, this.pendingAttachments || {}, { ...options, dirtyFields });
+    const desiredSavedFiles = { ...(this.desiredSavedFiles || {}), ...(options.desiredSavedFiles || {}) };
+    const plan = await prepareAttachmentPlan(targetRecord, this.pendingAttachments || {}, { ...options, dirtyFields, desiredSavedFiles });
     this.preparedAttachmentPlan = (plan && Object.keys(plan).length > 0) ? plan : null;
     return this.preparedAttachmentPlan;
   }
@@ -3227,6 +3234,7 @@ export class EmployeePartAUI {
     const res = await finalizeAttachmentPlan(appId, recordId, plan, options);
     this.preparedAttachmentPlan = null;
     this.pendingAttachments = {};
+    this.desiredSavedFiles = {};
     if (this.dirtyAttachmentFields) this.dirtyAttachmentFields.clear();
     return res;
   }
