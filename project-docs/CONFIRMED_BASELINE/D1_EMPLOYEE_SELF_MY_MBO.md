@@ -42,10 +42,12 @@ This is a security requirement, not merely a visual preference.
 
 Required protection layers:
 1. My MBO custom UI contains no Delete action.
-2. Employee-Self delete attempts from App794 detail must fail closed through a supported Kintone delete-submit guard tied to the authenticated MBO principal.
-3. Cross-employee ownership checks remain unchanged.
-4. No REST/API delete path may be added for Employee-Self.
-5. Before final D1 closure, App794 Kintone permission/ACL must be checked READ-ONLY to confirm whether the shared/employee-facing Kintone principal can delete records. If Kintone Delete permission is currently allowed, changing that ACL requires separate explicit live authorization.
+2. When an authenticated MBO Employee-Self principal exists (`mboLoginGate.getEmployeeCode()`), supported Kintone delete-submit events must be cancelled fail-closed with a bilingual Employee-Self message.
+3. The Employee-Self delete guard is **not** an Admin/HR authorization engine. If no authenticated MBO Employee-Self principal exists, this guard must abstain and return the original event unchanged; existing Kintone permissions and separately governed Admin/HR policies remain authoritative.
+4. Missing/invalid Employee-Self sessions are already blocked from Employee-Self record rendering by the MBO Login Gate; the delete guard must not convert that condition into a global deny-all policy for every App794 user.
+5. Cross-employee ownership checks remain unchanged.
+6. No REST/API delete path may be added for Employee-Self.
+7. Before final D1 closure, App794 Kintone permission/ACL must be checked READ-ONLY to confirm whether the shared/employee-facing Kintone principal can delete records. If Kintone Delete permission is currently allowed, changing that ACL requires separate explicit live authorization.
 
 Technical-admin/HR deletion policy is outside this baseline unless separately authorized. Do not silently remove technical administration capabilities.
 
