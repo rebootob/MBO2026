@@ -1,121 +1,100 @@
-# AI ACTIVE TASK — D1 ATTACHMENT KINTONE-SUPPORTED PERSISTENCE CORRECTIVE
+# AI ACTIVE TASK — D1 ATTACHMENT REMOVE-STATE + POST-SAVE-VISIBILITY CORRECTIVE
 
 Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 
-## Live defect to correct
+## Accepted implementation — DO NOT REIMPLEMENT
 
-User Live UAT on App794 revision 46 fails on native Save with:
+Independent review accepted commit:
+`d1e51d25862794f6dce7ecff8809df5622011e38`
 
-```text
-An error occurred while running the JavaScript for customization of the app.
-- event.record['Objective_Attachment_1'].type is invalid.
-```
-
-Immediate source defect in `src/services/mbo-attachment-service.js`:
-
-```js
-record[targetCode] = { value: savedFiles };
-```
-
-This replaces the native Kintone FILE field object and destroys its metadata.
-
-More importantly, Kintone does not support overwriting Attachment field values through create/edit submit Event Object Actions. Therefore **do not fix only by adding `type: 'FILE'`**.
-
-## Mandatory supported architecture
-
-Implement the smallest Kintone-supported lifecycle:
+Accepted core architecture:
 
 ```text
-app.record.create.submit / app.record.edit.submit
-  -> existing validation first
-  -> upload pending local files to Kintone Upload File API
-  -> receive temporary fileKey(s)
-  -> DO NOT mutate event.record Attachment fields
-  -> store a prepared binding plan in attachment UI/service state
-  -> return event
-
-app.record.create.submit.success / app.record.edit.submit.success
-  -> use event.appId + event.recordId
-  -> finalize exact Attachment field(s) using Kintone Update Record REST API
-  -> preserve retained existing files
-  -> preserve unrelated attachment fields
+PRE-SAVE_UPLOAD_TO_FILEKEY                  = PASS
+SUBMIT_EVENT_ATTACHMENT_NON_MUTATION        = PASS
+CREATE/EDIT_SUBMIT_SUCCESS_HOOKS            = PASS
+POST_SAVE_UPDATE_RECORD_REST_ARCHITECTURE   = PASS
+SOURCE_OWNERSHIP_MODULAR                    = PASS
 ```
 
-Pre-save upload error may cancel submit fail-closed.
-Post-save binding error must be explicit/truthful: the record has already saved, so do not claim full save rollback.
+Do not revert to direct Attachment mutation in submit events.
+Do not broad-refactor the accepted lifecycle.
 
-## Required source ownership
+## Remaining blocker 1 — explicit saved-file removal is not carried into the plan
 
-Preferred changes:
-- `src/services/mbo-attachment-service.js` — attachment upload/prepared-plan/final REST binding logic;
-- `src/ui/employee-part-a-ui.js` — only attachment state adapter methods if needed;
-- `src/main-mbo-app.js` — orchestration only: call prepare in submit and finalize in submit.success;
-- focused tests;
-- generated dist only through normal build.
+Current UI saved-file remove path changes only the UI-side record value.
+Current `prepareAttachmentPlan()` builds from `pendingAttachments` and submit `event.record`; there is no explicit dirty/removed-file desired-state channel.
 
-Do NOT make `main-mbo-app.js` the implementation home for attachment persistence logic.
-Do NOT broad-refactor `employee-part-a-ui.js` during this defect correction.
+Required correction:
+- track exact attachment fields whose saved-file desired state changed;
+- prepare a plan for those dirty fields even when there is no new pending upload;
+- plan must contain the exact retained saved fileKeys plus any newly uploaded fileKeys;
+- remove one file must not remove another field or another retained file;
+- remove + add in the same field must produce the exact final desired fileKey set;
+- keep this feature logic in attachment service/UI state, not in `main-mbo-app.js`.
 
-## Exact behavior requirements
+Do not mutate Attachment values in submit event objects.
 
-1. Existing custom attachment selector/pending UI remains.
-2. Submit handler performs local validation before any upload.
-3. Zero pending attachment => no file upload and no attachment REST update.
-4. Pending file upload => fileKey is prepared without changing `event.record.Objective_Attachment_n` / MidYear / Self/Final attachment fields.
-5. Submit success finalizes only fields with a prepared desired state.
-6. For Edit, read/preserve currently persisted attachment fileKeys as needed before Update Record.
-7. If user removed a previously saved file in custom UI, finalize the intended retained + new fileKey set for that exact field only.
-8. Unrelated attachment fields must remain unchanged.
-9. Existing Self -> Final field fallback semantics must remain compatible where applicable.
-10. No external storage or service.
+## Remaining blocker 2 — post-save REST failure must remain visibly truthful
+
+Current submit-success catch renders an inline validation error and returns the event. That does not prove the user sees the failure before normal post-save navigation.
+
+Required correction:
+- when post-save attachment REST binding fails, user must unmistakably see:
+  `Record saved, but attachment binding failed` / equivalent Thai+English message;
+- do not claim the record save rolled back;
+- use supported Save Success behavior so the failure cannot silently disappear during redirect, e.g. retain the page on failure via supported redirect handling or another clearly visible notification/dialog;
+- success path should retain normal behavior.
+
+`main-mbo-app.js` may orchestrate this outcome only; persistence logic remains in attachment service/UI modules.
 
 ## Required tests
 
-Handler/service-level tests must prove:
+Add/adjust only focused tests needed to prove:
 
 ```text
-CREATE_SUBMIT_ZERO_PENDING_NO_ATTACHMENT_MUTATION = PASS
-EDIT_SUBMIT_ZERO_PENDING_NO_ATTACHMENT_MUTATION   = PASS
-CREATE_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN        = PASS
-EDIT_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN          = PASS
-SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED          = PASS
-CREATE_SUBMIT_SUCCESS_REST_BIND_EXACT_FIELD       = PASS
-EDIT_SUBMIT_SUCCESS_REST_BIND_EXACT_FIELD         = PASS
-EXISTING_SAVED_FILES_PRESERVED                    = PASS
-EXPLICIT_REMOVE_DESIRED_STATE                     = PASS
-UNRELATED_ATTACHMENT_FIELDS_UNCHANGED             = PASS
-UPLOAD_FAILURE_PRE_SAVE_FAILS_CLOSED              = PASS
-POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR      = PASS
-NO_LIVE_NETWORK_IN_TESTS                          = PASS
-TIMELINE_REGRESSION                               = PASS
+EXISTING_SAVED_FILES_PRESERVED = PASS
+EXPLICIT_REMOVE_DESIRED_STATE = PASS
+REMOVE_PLUS_ADD_EXACT_DESIRED_STATE = PASS
+UNRELATED_ATTACHMENT_FIELDS_UNCHANGED = PASS
+EDIT_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN = PASS
+SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED = PASS
+POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR = PASS
+POST_SAVE_BIND_FAILURE_NO_SILENT_REDIRECT = PASS
+SUCCESS_PATH_NORMAL_REDIRECT_BEHAVIOR = PASS
+NO_LIVE_NETWORK_IN_TESTS = PASS
+TIMELINE_ATTACHMENT_REGRESSION = PASS
 ```
 
-Use realistic Kintone FILE field fixtures including:
+Use realistic Kintone FILE fixtures with `type: 'FILE'` and existing fileKeys.
+Tests must execute real registered submit / submit.success handlers where handler behavior is being claimed.
 
-```js
-Objective_Attachment_1: {
-  type: 'FILE',
-  value: []
-}
-```
+## Evidence required
 
-The previous mocks omitted FILE `type`, which failed to catch the Live defect.
-
-## Test/build evidence required
-
-Record in one concise evidence document:
-- START_HEAD;
+Update the existing concise corrective evidence for the new final SHA with:
+- START_HEAD = current Control Plane HEAD;
 - changed files;
-- exact corrective design summary;
-- focused attachment tests + result;
-- timeline/attachment regression result;
+- exact two-blocker correction summary;
+- focused test names/results;
 - full `npm test` exact result;
 - `npm run ui:build` result;
 - module-aware `--build-only` result;
 - `LIVE_KINTONE_WRITE = 0`;
 - `LIVE_DEPLOY_OCCURRED = NO`;
 - final commit SHA.
+
+## Allowed source scope
+
+Preferred only:
+- `src/services/mbo-attachment-service.js`
+- `src/ui/employee-part-a-ui.js`
+- `src/main-mbo-app.js` orchestration only if required for visible failure/redirect handling
+- `tests/timeline-truthfulness-and-attachment.test.js`
+- generated `dist/mbo-employee-app.js` through normal build
+- existing corrective evidence doc
+
+Do not create a new module unless genuinely necessary for separation of concerns.
 
 ## Forbidden
 
@@ -132,9 +111,7 @@ EXTERNAL SERVICE             = NO
 BROAD REFACTOR               = NO
 ```
 
-Do not add a new module unless separation of concerns genuinely requires it; prefer the existing dedicated attachment service first.
-
-Commit + push one narrow corrective commit (or the minimum small sequence if build artifact/evidence needs a second commit).
+Commit + push the smallest corrective change.
 STOP.
 Do not Deploy.
 Do not Self-PASS.
