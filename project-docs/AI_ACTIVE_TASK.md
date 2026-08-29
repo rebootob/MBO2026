@@ -1,8 +1,7 @@
-# AI ACTIVE TASK — D1 APP794 DEPLOY GUARD TEST CLOSURE
+# AI ACTIVE TASK — HOLD / APP794 DELETE PERMISSION READ-ONLY VERIFICATION
 
-Mode: **SOURCE / TEST / LOCAL ONLY — ZERO LIVE KINTONE / ZERO DEPLOY**
+Mode: **CONTROL PLANE + USER READ-ONLY VERIFICATION — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
-Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
 ## Mandatory architecture
 
@@ -12,47 +11,49 @@ External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
 ```
 
-## Review anchor
+## Current accepted state
 
-Current implementation:
-`04e1563f824d4e801f46411b9282ce292f2a478f`
+`APP794_DEPLOY_GUARD_INTEGRATION = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b`
 
-Independent review accepts the production target-binding behavior. Only one mandatory proof is still missing.
+Accepted chain:
+- narrow one-time App794 deploy authorization gate;
+- exact target binding for authorization/request/options/registry/actual deploy target = integer 794;
+- registry drift/missing/malformed target fails closed;
+- ephemeral exact `[794]` sandbox allow-list only;
+- protected apps remain hard-blocked;
+- build-only remains zero live authorization / zero Kintone-network path.
 
-## Implement only this test-closure gap
+No executor implementation task is active.
 
-Add deterministic focused coverage proving that a registry/resolved target other than exact integer `794` fails closed before Kintone/network work.
+## Next required step
 
-Preferred minimal shape:
-- extract/reuse a tiny pure target-binding validator from `scripts/kintone/deploy-custom-ui.js` if needed for testability;
-- the real deploy entrypoint must use the same validator;
-- test `registry.mboV2AppId = 795` (and preferably missing/malformed) => BLOCK;
-- exact `registry.mboV2AppId = 794` => PASS through target-binding layer only;
-- do not change deploy semantics beyond testability.
+Verify App794 effective Delete permission in READ-ONLY mode only:
+- use an employee-facing/shared Kintone principal such as `s1`;
+- open an existing App794 **record detail** page;
+- run `kintone.app.record.getPermissions()`;
+- capture only current Kintone user, App ID, Record ID, `editRecord`, `deleteRecord`;
+- do not modify ACL;
+- do not modify records;
+- do not deploy customization;
+- do not expose business record contents.
 
-Preserve all already-accepted invariants:
-- authorization/request/options/registry/actual target = 794;
-- generic guard ephemeral allow-list = `[794]`;
-- `DISCOVERY_MODE = true`;
-- global `WRITE_ALLOWED_APPS = []`;
-- protected apps unchanged;
-- build-only zero-auth / zero Kintone-network path.
+Expected interpretation:
+- `deleteRecord = false` -> permission gate PASS for that representative principal/record;
+- `deleteRecord = true` -> ACL correction required, but NO ACL write is authorized; obtain separate explicit user authorization first.
 
-Run focused tests and then:
+## Authorization state
+
 ```text
-npm test
+APP794 DEPLOY      = NO
+APP794 ACL WRITE   = NO
+APP794 RECORD WRITE= NO
+APP801 WRITE       = NO
+SOURCE CHANGE      = NO
+EXTERNAL SERVICE   = NO
+D2-D7 WRITE        = NO
 ```
 
-## Forbidden
+## Antigravity
 
-- NO live Kintone read/write
-- NO App794 deploy
-- NO App801 write/ACL/app-group change
-- NO auth/login/session/Create business edits
-- NO `main-mbo-app.js` changes
-- NO generated `dist` commit
-- NO Auth Bridge / external service
-- NO D2-D7 work
-
-Commit + push one concise test-closure commit, then STOP.
-Do not Self-PASS.
+HOLD.
+Do not start deploy, ACL changes, source changes, App801 work, Auth Bridge work, or D2-D7 work until a new Active Task is issued by Control Plane.
