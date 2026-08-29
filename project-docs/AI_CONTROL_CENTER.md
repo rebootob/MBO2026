@@ -5,153 +5,120 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — REV54 ACCEPTED / UI OWNERSHIP MAPPED / ATOMIC DEPLOYMENT TOOLING WP1
+> Updated: 2026-08-29 — WP1 ATOMIC DEPLOY TOOLING CORRECTIVE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 App794 Live Rev54 is the accepted known-good runtime. The next UI corrective remains Back to My MBO + My MBO card/list + Native Comment mirror/Refresh. Before any new UI deployment, deployment tooling must be corrected to treat JS+CSS as one atomic release pair. WP1 is source/test/build-only; no Live deployment is authorized. HR/admin reset and remaining security UAT remain open. |
+| D1 | 🟠 App794 Live Rev54 remains accepted known-good. WP1 atomic deployment tooling candidate `9c96461dcde9ef3ca626b415d35398ff5d41657f` is **CORRECTIVE**: JS+CSS replacement is implemented, but strict release-manifest enforcement is incomplete and Git-blob identity hashing is not byte-exact. No Live deployment is authorized. UI WP2 has NOT started. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🔴 Copy own previous MBO MUST FIX — resume after current App794 UI corrective is stable |
+| D5 | 🔴 Copy own previous MBO MUST FIX — resume after App794 UI corrective is stable |
 | D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
 | D7 | ✅ Admin Support Center source functionality closed |
 
-## 2. Accepted Current Live App794 Runtime / Rollback Manifest
+## 2. Accepted Current Live / Rollback Manifest
 
 ```text
 LIVE_REVISION          = 54
-LIVE_SOURCE_COMMIT     = ec6278524a2d5eb53050d0580c340d1b4e866b97
-LIVE_SCOPE             = ALL
-LIVE_TOPOLOGY          = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-LIVE_JS_BLOB_SHA       = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
-LIVE_CSS_BLOB_SHA      = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+ROLLBACK_SOURCE_COMMIT = ec6278524a2d5eb53050d0580c340d1b4e866b97
+ROLLBACK_SCOPE         = ALL
+ROLLBACK_TOPOLOGY      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+ROLLBACK_JS_IDENTITY   = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+ROLLBACK_CSS_IDENTITY  = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 TECHNICAL_READBACK     = PASS
 USER_RUNTIME_SMOKE     = PASS
 CURRENT_LIVE_RUNTIME   = ACCEPTED KNOWN-GOOD
 ```
 
-This exact release is the mandatory rollback source for the next App794 customization candidate until a newer release is independently accepted.
+No Live write occurred in WP1 candidate `9c96461...`; Rev54 is unchanged.
 
-## 3. Control Plane Root-Cause Finding — Partial Deploy
+## 3. WP1 Candidate Review
 
-`npm run ui:build` correctly creates both deployment artifacts:
-- `dist/mbo-employee-app.js`
-- `dist/mbo-employee.css`
+Candidate:
+`9c96461dcde9ef3ca626b415d35398ff5d41657f`
 
-But current `scripts/kintone/deploy-custom-ui.js` does this in Live mode:
-- receives only `{ fullJs }` from `prepareDeploymentArtifacts()`;
-- uploads only `mbo-employee-app.js`;
-- explicitly comments `do NOT upload CSS`;
-- builds preview payload replacing only the JS fileKey;
-- preserves the prior preview CSS fileKey.
-
-Therefore a candidate whose CSS changed can become Live as **new JS + old CSS**. This is the proven technical cause of the Rev52 partial deployment and violates `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`.
-
-This tooling must be corrected before any further App794 UI deployment.
-
-## 4. UI Feature Ownership Map — Control Plane Accepted Plan
-
-### A. My MBO card/list
-```text
-FEATURE                  = My MBO index/card list
-CANONICAL_SOURCE_OWNER   = src/ui/employee-self-index-ui.js
-RUNTIME_BINDING          = app.record.index.show via renderEmployeeSelfIndex() in src/main-mbo-app.js
-CSS_OWNER_CURRENT        = src/styles/mbo-employee.css (My MBO card section)
-FOCUSED_TEST             = tests/employee-self-index-ui.test.js
-DIST_OUTPUT              = dist/mbo-employee-app.js + dist/mbo-employee.css
-```
-
-The current feature is already separated adequately. Do not duplicate it elsewhere.
-
-### B. Back to My MBO
-```text
-FEATURE                  = Existing-record Back to My MBO navigation
-CURRENT_IMPLEMENTATION   = EmployeePartAUI inside src/ui/employee-part-a-ui.js
-CURRENT_BINDING          = setupRecordUiWithAuth() -> new EmployeePartAUI({isCreate,...}) -> ui.render()
-CURRENT_UNIT_TEST        = tests/employee-self-index-ui.test.js direct EmployeePartAUI render test
-TARGET_CANONICAL_OWNER   = dedicated employee record-navigation module in WP2
-REQUIRED_NEW_PROOF       = integration test through real Kintone detail/edit event orchestration
-```
-
-Source and generated bundle both contain the Back button logic, but the previous Live observation did not show it. Existing test coverage proves renderer behavior directly, not the complete event/auth/host runtime path. WP2 must add integration-level proof and create one canonical navigation owner; do not keep duplicate implementations.
-
-### C. Native Kintone Comment mirror + Refresh
-```text
-FEATURE                  = Read-only Native Kintone Comment mirror
-CURRENT_IMPLEMENTATION   = methods inside src/ui/employee-part-a-ui.js
-DATA_SOURCE              = GET /k/v1/record/comments.json only
-CURRENT_TESTS            = tests/employee-self-index-ui.test.js comment pagination/refresh tests
-TARGET_CANONICAL_OWNER   = dedicated employee comment-mirror module in WP2
-CSS_OWNER_CURRENT        = src/styles/mbo-employee.css (comment mirror section)
-DIST_OUTPUT              = dist/mbo-employee-app.js + dist/mbo-employee.css
-```
-
-WP2 may perform the small feature extraction because it directly supports the active UI corrective and the new one-feature-one-owner architecture. No unrelated decomposition is authorized.
-
-## 5. CSS / Source-to-Dist Ownership
-
-Current build path is deterministic:
-```text
-src/main-mbo-app.js
-  -> esbuild bundle
-  -> dist/mbo-employee-app.js
-
-src/styles/mbo-employee.css
-  -> direct fs.copyFileSync
-  -> dist/mbo-employee.css
-```
-
-For the current corrective, CSS remains one canonical stylesheet with clearly separated feature sections. Do not introduce a broad CSS directory refactor while the UI corrective is active.
-
-The candidate JS/CSS pair must be reviewed and deployed atomically.
-
-## 6. Work Package Sequence
-
-### WP1 — Atomic App794 Customization Deployment Tooling
-Owner: Antigravity execution, then ChatGPT independent review.
-
-Allowed source scope:
+Changed files are correctly limited to:
 - `scripts/kintone/deploy-custom-ui.js`
 - `tests/deploy-customization-preservation.test.js`
-- generated build evidence only if needed
+- `project-docs/WP1_ATOMIC_DEPLOYMENT_TOOLING_EVIDENCE.md`
 
-WP1 objective:
-- deployment tooling must upload/replace **both** reviewed Desktop JS and Desktop CSS candidate files;
-- require exactly one expected target JS and one expected target CSS FILE entry;
-- candidate JS/CSS identities must be validated as an atomic release manifest before any upload/write path;
-- build-only must remain zero-network;
-- topology/scope/mobile preservation must remain fail-closed;
-- mixed candidate identities must be rejected before any Live write;
-- no actual Kintone deploy/write is authorized.
+Executor evidence reports:
+```text
+FOCUSED_TEST_RESULT       = PASS 20/20
+FULL_TEST_RESULT          = PASS 933/933
+NPM_RUN_UI_BUILD_RESULT   = PASS
+BUILD_ONLY_RESULT         = PASS
+BUILD_ONLY_NETWORK_CALLS  = 0
+LIVE_KINTONE_WRITE        = 0
+LIVE_DEPLOY_OCCURRED      = NO
+```
 
-### WP2 — UI Functional Partition + Runtime Integration Proof
-Starts only after WP1 independent PASS.
+### Accepted implementation direction
 
-Planned narrow scope:
-- keep `employee-self-index-ui.js` as My MBO owner;
-- create one canonical Back/navigation owner and remove duplicate Back implementation from `employee-part-a-ui.js`;
-- create one canonical Comment mirror owner and remove duplicate Comment implementation from `employee-part-a-ui.js`;
-- add Kintone detail/edit integration tests proving Back renders through the actual event/auth/host path;
-- preserve all current comment pagination/refresh/read-only tests;
-- build one new candidate and establish exact atomic JS/CSS release manifest.
+The candidate correctly:
+- requires target Desktop JS `mbo-employee-app.js` and target Desktop CSS `mbo-employee.css`;
+- replaces both preview target fileKeys;
+- uploads both candidate JS and CSS after preflight;
+- preserves scope/topology/Mobile through existing topology checks;
+- returns JS+CSS artifact data in build-only mode;
+- removes the previous `CSS_UPLOAD_COUNT = 0` assumption.
 
-No Live deployment occurs in WP2.
+### Blocker A — Release manifest is optional instead of mandatory
 
-## 7. Current Gate
+`validateReleaseManifest()` currently returns PASS when neither expected JS nor expected CSS identity is supplied. Live `executeDeployCustomUi()` passes `options.expectedJsBlobSha` and `options.expectedCssBlobSha`, so a caller with deploy authorization can omit both and bypass candidate identity binding.
+
+This violates the Active Task requirement:
+`missing manifest field => BLOCK`.
+
+The manifest is also incomplete versus the required contract. It must bind at minimum:
+```text
+APP_ID = 794
+SOURCE_COMMIT / candidate identifier
+JS identity
+CSS identity
+SCOPE
+TOPOLOGY / entry counts
+```
+
+App binding and topology validation existing elsewhere are useful, but the authorized candidate release manifest itself must be complete and mandatory for Live mode.
+
+### Blocker B — Git blob SHA must represent exact uploaded bytes
+
+Current `gitBlobSha()` converts CRLF to LF before hashing. That can report the repository LF Git blob identity while the actual built/uploaded artifact still contains CRLF bytes on a Windows checkout.
+
+For deployment identity, hash the exact bytes/content that will be uploaded. Do not normalize line endings before the Git-blob SHA calculation.
+
+The same exact content used to compute the identity must be the content sent to Kintone.
+
+## 4. UI Feature Ownership — Preserved / WP2 Not Started
 
 ```text
-CURRENT_GATE                  = WP1 ATOMIC APP794 DEPLOYMENT TOOLING HARDENING
-CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST EXECUTION — NO LIVE WRITE
+My MBO card/list owner        = src/ui/employee-self-index-ui.js
+Back navigation current      = src/ui/employee-part-a-ui.js
+Back navigation target owner = dedicated record-navigation module in WP2
+Comment mirror current       = src/ui/employee-part-a-ui.js
+Comment mirror target owner  = dedicated comment-mirror module in WP2
+CSS current owner            = src/styles/mbo-employee.css
+```
+
+WP2 remains blocked until WP1 independent PASS.
+
+## 5. Current Gate
+
+```text
+CURRENT_GATE                  = WP1 ATOMIC DEPLOY TOOLING RESIDUAL CORRECTIVE
+CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE
 NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+LATEST_WP1_CANDIDATE          = 9c96461dcde9ef3ca626b415d35398ff5d41657f
+WP1_VERDICT                   = CORRECTIVE
 LIVE_APP794_CUSTOMIZATION     = REV54 ACCEPTED KNOWN-GOOD
 ROLLBACK_MANIFEST             = LOCKED / ec627852 + e04aa... + 1710d...
-ANTIGRAVITY EXECUTION         = YES / WP1 ONLY
-UI FEATURE SOURCE CHANGE      = NO IN WP1
-DEPLOY TOOL SOURCE CHANGE     = YES / EXACT SCOPE
-TEST CHANGE                   = YES / EXACT SCOPE
+UI FEATURE SOURCE CHANGE      = NO
+DEPLOY TOOL SOURCE CHANGE     = YES / RESIDUAL ONLY
+TEST CHANGE                   = YES / RESIDUAL ONLY
 APP794 CUSTOMIZATION DEPLOY   = NO / NOT AUTHORIZED
 APP794 RECORD WRITE           = NO
 APP794 FORM/SCHEMA/LAYOUT     = NO
@@ -160,7 +127,8 @@ KINTONE COMMENT WRITE         = NO
 APP801 / APP795 / APP796      = NO
 COPY PREVIOUS MBO             = NO
 D2-D7 EXECUTION               = NO
+WP2                           = BLOCKED UNTIL WP1 PASS
 ```
 
-Maximum WP1 executor status:
-`ATOMIC_DEPLOY_TOOLING_IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
+Maximum executor status:
+`ATOMIC_DEPLOY_TOOLING_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
