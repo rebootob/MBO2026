@@ -1,69 +1,90 @@
-# AI ACTIVE TASK — D1 APP794 ATTACHMENT LIVE FUNCTIONAL UAT HOLD
+# AI ACTIVE TASK — D1 APP794 REV47 ATTACHMENT LIVE BIND DIAGNOSTIC HOLD
 
-Mode: **USER LIVE UAT / CONTROL PLANE REVIEW — ANTIGRAVITY DO NOTHING**
+Mode: **USER READ-ONLY BROWSER DIAGNOSTIC / CONTROL PLANE REVIEW — ANTIGRAVITY DO NOTHING**
 Branch: `ai/antigravity-wp002c`
 
 ## Accepted State
 
-Independent source/test review:
-`PASS`
-
-Reviewed source/test candidate:
-`2aed3578b710e0283c7a436e7fa7a225ec3e7afb`
-
-Deployment evidence commit:
-`072db7d3736efe55ae0a1705844c74a1c00e482f`
-
-Independent deployment review:
-
 ```text
-APP794_ATTACHMENT_CORRECTIVE_DEPLOYMENT = PASS
-APP794_LIVE_CUSTOMIZATION_REVISION      = 47
-CANDIDATE_JS_READBACK_MATCH             = PASS
-CSS_PRESERVED                           = PASS
-ROLLBACK_OCCURRED                       = NO
-PRIOR_DEPLOY_AUTHORIZATION              = CONSUMED / CLOSED
+APP794_LIVE_REVISION                  = 47
+SOURCE_TEST_REVIEW                    = PASS
+DEPLOYMENT_PROVENANCE_REVIEW          = PASS
+PRIOR_DEPLOY_AUTHORIZATION            = CONSUMED / CLOSED
+UAT_SAVE_WITH_NO_ATTACHMENT           = PASS
+UAT_ADD_ONE_OBJECTIVE_ATTACHMENT      = FAIL
+BASE_RECORD_SAVE_WITH_SELECTED_FILE   = PASS
+OLD_FILE_FIELD_TYPE_INVALID_ERROR     = NOT OBSERVED
+POST_SAVE_ATTACHMENT_PRESENT          = NO
 ```
 
-No Antigravity execution is currently required or authorized.
+The current failure is functional persistence only. Do not re-open unrelated D1 architecture or deployment provenance.
 
-## Current Gate
+## Current Failure
 
-The next gate is manual Live functional UAT in App794 revision 47.
+User selects one Objective attachment in edit mode. Custom UI visibly shows the file as selected/pending. Native Save succeeds and returns to detail mode, but the attachment field displays `ไม่มีไฟล์แนบ / No attachment`.
 
-User + ChatGPT should verify with an appropriate test record:
+No visible `event.record['...'].type is invalid` error occurred. No visible post-save attachment-binding alert was reported.
+
+## Required Diagnostic — User Browser Only
+
+Do NOT ask Antigravity to patch yet.
+
+Repeat only the one-file Objective attachment test with Chrome DevTools:
+
+1. Open **Network** and enable **Preserve log**.
+2. Open **Console** and enable **Preserve log**.
+3. Clear both logs.
+4. Enter Edit mode.
+5. Select exactly one Objective attachment.
+6. Confirm pending filename is visible.
+7. Click native Kintone Save.
+8. After returning to detail view, inspect preserved Network entries.
+
+Capture whether these occurred:
 
 ```text
-UAT_01_SAVE_WITH_NO_ATTACHMENT
-UAT_02_ADD_ONE_OBJECTIVE_ATTACHMENT_SAVE
-UAT_03_RELOAD_FILENAME_PERSISTS
-UAT_04_ADD_MULTIPLE_OBJECTIVE_ATTACHMENTS
-UAT_05_REMOVE_ONE_SAVED_ATTACHMENT_EXACT
-UAT_06_REMOVE_PLUS_ADD_SAME_FIELD_EXACT
-UAT_07_UNRELATED_ATTACHMENT_FIELD_UNCHANGED
-UAT_08_MIDYEAR_ATTACHMENT_PERSISTS
-UAT_09_SELF_EVALUATION_FINAL_ATTACHMENT_PERSISTS
-UAT_10_NO_FILE_FIELD_TYPE_INVALID_ERROR
-UAT_11_TIMELINE_LIVE_TRUTHFULNESS_REGRESSION
+POST /k/v1/file.json
+PUT  /k/v1/record.json
 ```
 
-For each failure, capture:
-- Live URL/mode where practical;
-- exact user action;
-- visible error text;
-- attachment field/stage involved;
-- whether the base record save succeeded;
-- whether filename persists after reload;
-- screenshot/console evidence where available.
+For each matching request capture:
+- request method + URL;
+- HTTP status;
+- response body/error if any;
+- for PUT, request payload field code and fileKey only; do not expose cookies, request tokens, passwords, session tokens, API tokens or credentials.
 
-Do not intentionally force a post-save REST failure in Live merely to prove the error path unless a separate safe test is explicitly authorized.
+Capture preserved Console errors, especially lines beginning with:
+
+```text
+[MBO V2] Attachment submit upload error:
+[MBO V2] Attachment post-save finalize error:
+```
+
+## Interpretation Matrix
+
+```text
+NO POST /file.json
+  => pending attachment state not reaching pre-save upload path
+
+POST /file.json SUCCESS + NO PUT /record.json
+  => prepared plan/state bridge or submit.success finalize branch defect
+
+POST /file.json FAIL
+  => upload path defect; native Save should normally have been cancelled, so inspect exact response/handler behavior
+
+POST /file.json SUCCESS + PUT /record.json FAIL
+  => post-save REST binding/API permission/payload defect
+
+POST /file.json SUCCESS + PUT /record.json SUCCESS + NO FILE AFTER RELOAD
+  => payload/field/fileKey persistence semantics defect; inspect exact PUT request/response and record readback
+```
 
 ## Strict Boundary
 
 ```text
 ANTIGRAVITY EXECUTION          = NO
-APP794 DEPLOY                  = NO
 SOURCE / REFACTOR CHANGE       = NO
+APP794 DEPLOY                  = NO
 AI APP794 RECORD WRITE         = NO
 APP794 ACL/SCHEMA/PROCESS      = NO
 APP801 WRITE                   = NO
@@ -73,12 +94,10 @@ D2-D7 EXECUTION                = NO
 EXTERNAL SERVICE               = NO
 ```
 
-The user may perform normal manual Live UAT actions in the Kintone UI. This task does not authorize AI/executor-driven Live record mutation.
+The user may perform normal manual Live UAT actions in Kintone. Browser inspection is observation only.
 
-## If Live UAT Passes
+## After Diagnostic Evidence
 
-Return evidence to ChatGPT for Independent Live UAT acceptance. ChatGPT may then update Control Center/Baseline and choose the next smallest D1 action.
+Return screenshots or exact status/results to ChatGPT. ChatGPT will identify the smallest source corrective and only then decide whether Antigravity execution is required.
 
-## If Live UAT Fails
-
-STOP. Do not patch or redeploy automatically. Return the exact failure evidence to ChatGPT for diagnosis and a new narrowly scoped corrective task/authorization if needed.
+Do not self-start a corrective. Do not redeploy.
