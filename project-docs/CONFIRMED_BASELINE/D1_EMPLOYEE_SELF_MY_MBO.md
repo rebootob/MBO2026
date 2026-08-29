@@ -47,9 +47,38 @@ Required protection layers:
 4. Missing/invalid Employee-Self sessions are already blocked from Employee-Self record rendering by the MBO Login Gate; the delete guard must not convert that condition into a global deny-all policy for every App794 user.
 5. Cross-employee ownership checks remain unchanged.
 6. No REST/API delete path may be added for Employee-Self.
-7. Before final D1 closure, App794 Kintone permission/ACL must be checked READ-ONLY to confirm whether the shared/employee-facing Kintone principal can delete records. If Kintone Delete permission is currently allowed, changing that ACL requires separate explicit live authorization.
+7. Kintone App-level permission must independently deny Delete to the employee-facing access group; source/UI guards are defense-in-depth and are not a substitute for native permission denial.
 
-Technical-admin/HR deletion policy is outside this baseline unless separately authorized. Do not silently remove technical administration capabilities.
+### Accepted live App794 ACL — 2026-08-29
+
+Initial read-only evidence under Kintone `admin-form` showed `everyone` had View/Add/Edit/Delete=true and there was no explicit `MBO_EMPLOYEE_ACCESS` row. User explicitly authorized a narrow App794 App-ACL correction.
+
+Live correction completed with read-back:
+
+```text
+ACL revision: 43 -> 44
+
+CREATOR
+  existing technical-admin full rights preserved
+
+MBO_EMPLOYEE_ACCESS
+  View   = YES
+  Add    = YES
+  Edit   = YES
+  Delete = NO
+  Manage = NO
+  Import = NO
+  Export = NO
+
+everyone
+  View/Edit/Add/Delete/Manage/Import/Export = NO
+
+APP794_ACL_CORRECTION_OVERALL_PASS = true
+```
+
+The App794 ACL-write authorization used for this correction is consumed/closed. Further ACL changes require a new explicit authorization.
+
+Technical-admin/HR deletion policy remains outside this baseline unless separately authorized. Do not silently remove technical administration capabilities.
 
 ## 5. UX
 
@@ -67,7 +96,7 @@ The primary record action should be a bilingual view/detail action such as `ด�
 
 This baseline does not authorize:
 - App794 deploy;
-- App794 ACL write;
+- any further App794 ACL write;
 - App801 write;
 - record deletion;
 - routing/scoring changes;
