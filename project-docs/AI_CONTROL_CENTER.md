@@ -1,25 +1,25 @@
 # MBO2026 — AI CONTROL CENTER
 
-> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.
+> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/` and reusable lessons live in `skills/`.
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — APP794 WP2 R3 REV57 INDEPENDENT TECHNICAL REVIEW PASS / USER UAT PENDING
+> Updated: 2026-08-29 — APP794 WP2 R3 REV57 USER UAT PASS / ACCEPTED KNOWN-GOOD
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟢 WP2 R3 candidate `9816cef195b6d3ffe039e5fb92c8dc8406c8967a` deployed once to App794. Git-side independent review confirms post-deploy branch changes are evidence/control docs only; source/tests/dist were not changed after the accepted candidate. Executor deployment evidence reports Rev56 -> Rev57, exact JS/CSS readback match, and zero forbidden writes. User runtime UAT is still required before WP2 is accepted complete. |
+| D1 | ✅ WP2 R3 Live Revision 57 accepted known-good. CSS runtime root cause fixed; My MBO table, Back to My MBO, and Native Comment Mirror table passed user runtime UAT. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🔴 Copy own previous MBO MUST FIX — resume only after WP2 Live UAT is accepted |
-| D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
+| D5 | 🟠 Copy own previous MBO READY TO RESUME on a future explicit task; do not start automatically. |
+| D6 | 🔴 Integrated E2E / Security / Regression remains pending after remaining D1/D5 work. |
 | D7 | ✅ Admin Support Center source functionality closed |
 
-## 2. Live App794 Technical State
+## 2. Accepted Live App794 Baseline
 
 ```text
 LIVE_REVISION               = 57
@@ -30,10 +30,14 @@ LIVE_JS_IDENTITY            = ac22a56cb9d78001384241fe12745f7a2da3da84
 LIVE_CSS_IDENTITY           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 EXECUTOR_TECH_READBACK      = PASS / EXACT PAIR
 INDEPENDENT_GIT_REVIEW      = PASS
-USER_RUNTIME_UAT            = PENDING
+USER_RUNTIME_UAT            = PASS
+CURRENT_LIVE_RUNTIME        = ACCEPTED KNOWN-GOOD
 ```
 
-Note: exact Live readback values above come from the committed Antigravity deployment evidence; the independent review here verifies Git scope/traceability and that no source/tests/dist drift occurred after the accepted candidate.
+User acceptance confirms the three WP2 target areas are corrected in Rev57:
+1. My MBO renders as a structured table.
+2. Back to My MBO is visibly styled and available on existing Detail/Edit.
+3. Native Comment Mirror loads data and renders as the intended structured read-only table.
 
 ## 3. Authorization Ledger
 
@@ -47,54 +51,39 @@ ROLLBACK               = NOT AUTHORIZED
 
 No Live authorization remains active.
 
-## 4. Independent Review Result
+## 4. Permanent Knowledge Captured
 
-Compared deployment-control HEAD `5094c31ed052229ea50f78daa024bbc5c45d242f` to executor evidence commit `b0fc2a4fcbb88af78d2a4627c19ca3c45d1f01f8`.
+Reusable incident/debugging knowledge is now recorded at:
 
-Only changed files:
-- `project-docs/AI_ACTIVE_TASK.md`
-- `project-docs/AI_CONTROL_CENTER.md`
-- `project-docs/APP794_WP2_R3_DEPLOYMENT_EVIDENCE.md`
+`skills/mbo-kintone-ui-runtime-debugging/SKILL.md`
 
-Therefore:
-```text
-POST_DEPLOY_SOURCE_DRIFT     = NO
-POST_DEPLOY_TEST_DRIFT       = NO
-POST_DEPLOY_DIST_DRIFT       = NO
-DEPLOY_EVIDENCE_ONLY_COMMIT  = PASS
-ONE_SHOT_AUTH_USAGE          = PASS / 1 ATTEMPT
-```
+This skill is required reading before future App794 UI runtime corrective work or Kintone custom UI deployment involving symptoms such as DOM present but styling absent.
 
-Executor evidence reports:
-```text
-PRE_DEPLOY_REVISION          = 56
-POST_DEPLOY_REVISION         = 57
-POST_JS_IDENTITY             = ac22a56cb9d78001384241fe12745f7a2da3da84
-POST_CSS_IDENTITY            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-TECHNICAL_READBACK_RESULT    = PASS / BYTE-LEVEL MATCH
-APP794_RECORD_WRITE          = 0
-SCHEMA_LAYOUT_ACL_PROCESS    = 0
-COMMENT_WRITE                = 0
-APP801_APP795_APP796_WRITE   = 0
-SECOND_DEPLOY                = NO
-AUTO_ROLLBACK                = NO
-```
+Key retained lessons include:
+- DOM exists + default computed style => diagnose CSS load/parser/scope/cascade before rewriting JS.
+- A stray unclosed CSS selector can invalidate all later feature styling.
+- Back navigation must mount before fail-closed early returns.
+- Kintone Comment GET must use `limit <= 10`; accepted App794 contract uses `limit=10`.
+- JS + CSS must be reviewed/deployed as one atomic candidate pair.
+- Candidate source commit and exact JS/CSS identities must be traceable to Git.
+- Technical readback PASS is not equivalent to User UAT PASS.
+- User UAT is mandatory before a Live revision becomes accepted known-good.
 
 ## 5. Current Gate
 
 ```text
-CURRENT_GATE                  = APP794 WP2 R3 REV57 — USER UAT
+CURRENT_GATE                  = WP2 R3 CLOSED / REV57 ACCEPTED KNOWN-GOOD
 CURRENT_MODE                  = CONTROL PLANE HOLD / NO LIVE WRITE
-INDEPENDENT_TECH_REVIEW       = PASS
-USER_RUNTIME_UAT              = PENDING
+WP2_R3_SOURCE_REVIEW          = PASS
+WP2_R3_TECH_READBACK          = PASS
+WP2_R3_USER_UAT               = PASS
 LIVE_DEPLOY_AUTHORIZED        = NO
 APP794_RECORD_WRITE           = NO
 APP794_FORM_SCHEMA_LAYOUT     = NO
 APP794_ACL_PROCESS            = NO
 KINTONE_COMMENT_WRITE         = NO
 APP801_APP795_APP796          = NO WRITE
-COPY_PREVIOUS_MBO             = NO
-D2_D7_EXECUTION               = NO
+NEXT_EXECUTION                = NONE UNTIL NEW CONTROL-PLANE TASK
 ```
 
-Do not describe WP2 as complete until user runtime UAT passes My MBO table, Back to My MBO, and Comment Mirror table on Rev57.
+Do not reopen WP2 unless a regression is proven. Future UI runtime/deploy work must read `skills/mbo-kintone-ui-runtime-debugging/SKILL.md` first.
