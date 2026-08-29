@@ -42,8 +42,10 @@ Antigravity does **not** need this whole index unless the Active Task explicitly
 | AI workflow / low-credit / review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `CONFIRMED_BASELINE/DOCUMENT_CONTROL.md` |
 | Source architecture / modular JavaScript / file separation / refactor plan | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`, exact affected source files |
 | Which document should I read? | `AI_DOCUMENT_INDEX.md` | search only if no route exists |
-| D1 login / password / App801 / shared Kintone account | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | exact latest D1 evidence/diff |
-| D1 live group / App801 ACL audit | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `D1_ACCESS_GROUP_SETUP_EVIDENCE.md` only for exact audit |
+| D1 login / password / App801 / Auth Bridge / shared Kintone account | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`, exact latest D1 evidence/diff |
+| D1 session token / reload / logout / password-session rotation | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` |
+| D1 My MBO history / Completed / Employee-Self no-delete | `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` | exact UI/security source/test |
+| D1 live App801 ACL/security evidence | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | exact current live readback evidence only |
 | Routing / App795 / GM precedence / Team | `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` |
 | App53 routing fields / Position / Team semantics | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `FIELD_DICTIONARY.md` only for field-code detail |
 | Evaluation class / scoring weight | `CONFIRMED_BASELINE/EVALUATION_CLASSES.md` | relevant source/test only |
@@ -82,7 +84,13 @@ Antigravity does **not** need this whole index unless the Active Task explicitly
   - Core Read Set, default-ignore files, no-rediscovery rules
 
 - `D1_AUTH_SECURITY.md`
-  - Kintone-only authentication, App801, PBKDF2, page-memory auth, lockout, Employee Self gate, MBO access group, App801 ACL target
+  - current Auth Bridge architecture, App801 private credential boundary, PBKDF2/password/lockout rules, Bridge HTTP/security contract, employee identity binding and final D1 UAT
+
+- `D1_SESSION_CONTINUITY.md`
+  - 8-hour opaque same-tab session model routed through Auth Bridge, sessionStorage rules, Credential_Version binding, logout/password rotation and session UAT
+
+- `D1_EMPLOYEE_SELF_MY_MBO.md`
+  - My MBO ownership/history, Completed display and Employee-Self no-delete rules
 
 - `ROUTING_WORKFLOW.md`
   - App795 route scenarios / workflow behavior
