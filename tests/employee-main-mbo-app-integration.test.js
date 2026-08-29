@@ -21,6 +21,7 @@ function createMockElement(tagName = 'div') {
     target: '',
     type: '',
     className: '',
+    dataset: {},
 
     get innerHTML() {
       return this._innerHTML;
@@ -134,17 +135,63 @@ globalThis.document = {
 globalThis.location = { href: 'http://localhost/k/794/' };
 
 const mockApiFn = async (url, method, params) => {
-  if (params?.query && params.query.includes('Employee_Code')) {
+  if (params?.app === 53 || (params?.query && params.query.includes('emp_text'))) {
     return {
       records: [{
         $id: { value: '501' },
         Employee_Code: { value: '0118' },
-        Title_EN: { value: 'Staff' },
-        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
-        PartA_Weight: { value: '70' },
-        PartB_Weight: { value: '30' }
+        emp_text: { value: '0118' },
+        Text: { value: 'Somchai' },
+        Text_0: { value: 'สมชาย' },
+        Drop_down: { value: 'Software Engineering' },
+        Drop_down_0: { value: 'IT' },
+        Text_2: { value: 'Clerk' },
+        Text_4: { value: 'somchai@example.com' },
+        Date: { value: '2020-01-01' },
+        Title_EN: { value: 'Staff' }
       }]
     };
+  }
+  if (params?.app === 795 || (params?.query && params.query.includes('Section'))) {
+    return {
+      records: [{
+        $id: { value: '701' },
+        Section: { value: 'Software Engineering' },
+        Requester_User: { value: [{ code: '0118' }] },
+        Manager_Level1_Approvers: { value: [{ code: '0119' }] },
+        Manager_Level1_Approval_Rule: { value: 'ANY' },
+        Manager_Level2_Approvers: { value: [] },
+        Manager_Level2_Approval_Rule: { value: 'ANY' },
+        GM_Level1_Approvers: { value: [{ code: '0120' }] },
+        GM_Level1_Approval_Rule: { value: 'ANY' },
+        GM_Level2_Approvers: { value: [] },
+        GM_Level2_Approval_Rule: { value: 'ANY' },
+        Has_Manager_Level2: { value: 'NO' },
+        Has_GM_Level2: { value: 'NO' },
+        Routing_Topology: { value: 'DIRECT' },
+        First_Manager_User: { value: [{ code: '0119' }] },
+        Manager_User: { value: [{ code: '0119' }] },
+        GM_User: { value: [{ code: '0120' }] }
+      }]
+    };
+  }
+  if (params?.app === 796 || (params?.query && params.query.includes('Profile_Code'))) {
+    return {
+      records: [{
+        $id: { value: '801' },
+        Profile_Code: { value: 'STAFF_OPERATIONAL' },
+        Config_Status: { value: 'PUBLISHED' },
+        Fiscal_Year: { value: 'FY2026' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' },
+        Part_A_Scoring_Mode: { value: 'WEIGHTED_SUM' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        Configuration_Hash: { value: 'abc123hash' }
+      }]
+    };
+  }
+  if (params?.app === 794 || (params?.query && params.query.includes('Fiscal_Year'))) {
+    return { records: [] };
   }
   return { records: [], comments: [] };
 };
@@ -241,12 +288,29 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const createHost = createMockElement('div');
   currentActiveHost = createHost;
 
+  const createRecordFields = [
+    'Status', 'Fiscal_Year', 'Employee_Code', 'Employee_Name', 'Employee_Name_TH',
+    'Employee_Section', 'Employee_Department', 'Employee_Position', 'Employee_Email',
+    'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
+    'Manager_Level1_Approvers', 'Manager_Level2_Approvers', 'GM_Level1_Approvers',
+    'GM_Level2_Approvers', 'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology',
+    'First_Manager_User', 'Manager_User', 'GM_User', 'Requester_User', 'Profile_Code',
+    'PartA_Weight', 'PartB_Weight', 'Part_A_Scoring_Mode', 'Competency_Set_Code',
+    'Configuration_Hash'
+  ];
+  const createRecord = {};
+  createRecordFields.forEach(f => { createRecord[f] = { value: '' }; });
+  createRecord.Status = { value: '01 Draft Objective' };
+  for (let i = 1; i <= 10; i++) {
+    createRecord[`Objective_Name_${i}`] = { value: '' };
+    createRecord[`Objective_Weight_${i}`] = { value: '' };
+    createRecord[`Action_Plan_${i}`] = { value: '' };
+  }
+
   const createEvent = {
     type: 'app.record.create.show',
     appId: 794,
-    record: {
-      Status: { value: '01 Draft Objective' }
-    }
+    record: createRecord
   };
 
   const createResult = await recordShowHandler(createEvent);
@@ -294,23 +358,44 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const mismatchEditBackBars = mismatchEditHost.querySelectorAll('[data-mbo-back-nav-bar]');
   assert.equal(mismatchEditBackBars.length, 1, 'R4_ERROR_STATE_EDIT_BACK_VISIBLE: Access Denied error screen on existing Edit must mount exactly 1 Back bar');
 
-  // 4c. Create Screen Error State MUST NOT show Back bar
-  const createErrorHost = createMockElement('div');
-  currentActiveHost = createErrorHost;
-  const createErrorEvent = {
+  // 4c. Create Screen Auth-Required / Gate-Null Error State MUST NOT show Back bar (before authentication)
+  const createUnauthErrorHost = createMockElement('div');
+  currentActiveHost = createUnauthErrorHost;
+  const createUnauthErrorEvent = {
     type: 'app.record.create.show',
     appId: 794,
     record: {
       Status: { value: '01 Draft Objective' }
     }
   };
-  // Simulate gate null or auth fail on create
   const origGate = mockGate;
   setMboLoginGate(null);
-  await recordShowHandler(createErrorEvent);
-  const createErrorBackBars = createErrorHost.querySelectorAll('[data-mbo-back-nav-bar]');
-  assert.equal(createErrorBackBars.length, 0, 'R4_ERROR_STATE_CREATE_BACK_ABSENT: Error screen on Create must NOT mount Back bar');
+  await recordShowHandler(createUnauthErrorEvent);
+  const createUnauthBackBars = createUnauthErrorHost.querySelectorAll('[data-mbo-back-nav-bar]');
+  assert.equal(createUnauthBackBars.length, 0, 'R4_R2_CREATE_UNAUTH_ERROR_BACK_ABSENT: Error screen before authentication on Create must NOT mount Back bar');
   setMboLoginGate(origGate);
+
+  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar (WP2 R4 R2)
+  const createAutoloadFailHost = createMockElement('div');
+  currentActiveHost = createAutoloadFailHost;
+  const createAutoloadFailEvent = {
+    type: 'app.record.create.show',
+    appId: 794,
+    record: {
+      Status: { value: '01 Draft Objective' }
+    }
+  };
+  const savedApi = globalThis.kintone.api;
+  const mockErrApi = async () => { throw new Error('Simulated duplicate or lookup failure'); };
+  mockErrApi.url = (path) => path;
+  globalThis.kintone.api = mockErrApi;
+  await recordShowHandler(createAutoloadFailEvent);
+  const createAutoloadBackBars = createAutoloadFailHost.querySelectorAll('[data-mbo-back-nav-bar]');
+  assert.equal(createAutoloadBackBars.length, 1, 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_VISIBLE: Authenticated Create fatal profile resolution error must mount exactly 1 Back bar');
+  const createAutoloadBackLink = createAutoloadBackBars[0].querySelector('a');
+  assert.equal(createAutoloadBackLink.href, '/k/794/', 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_TARGET: Target is /k/794/');
+  assert.ok(createAutoloadBackLink.textContent.includes('← กลับหน้า My MBO / Back to My MBO'), 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_LABEL: Uses exact bilingual label');
+  globalThis.kintone.api = savedApi;
 
   assert.equal(sessionMutations, 0, 'REAL_MAIN_AUTH_SESSION_MUTATION = 0');
   assert.equal(recordWrites, 0, 'REAL_MAIN_RECORD_WRITE = 0');

@@ -7678,9 +7678,9 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
     }, renderBlockedNotice = function(host, title, detail, options = {}) {
       if (!host) host = document.querySelector(".gaia-app-wrapper") || document.body;
       host.innerHTML = "";
-      const isCreate = options.isCreate ?? true;
+      const showBackToMyMbo = options.showBackToMyMbo ?? options.isCreate === false;
       const appId = options.appId || getMboAppId();
-      if (isCreate === false) {
+      if (showBackToMyMbo) {
         const nav = new EmployeeRecordNavigation({ appId });
         const backBar = nav.renderBackToMyMboBar({ isCreate: false });
         if (backBar) {
@@ -7933,7 +7933,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
               uiHost,
               "Employee Profile Resolution Failed",
               `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
-              { isCreate: true, appId: event.appId || getMboAppId() }
+              { isCreate: true, showBackToMyMbo: true, appId: event.appId || getMboAppId() }
             );
             hideAllNativeFields(record);
             return event;

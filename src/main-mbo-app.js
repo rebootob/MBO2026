@@ -205,16 +205,17 @@ if (typeof kintone !== 'undefined') {
 
   /**
    * B7: Render a visible, full-page blocking access-denied notice on host using textContent.
-   * On existing record error states (isCreate === false), mounts canonical EmployeeRecordNavigation.
+   * On existing record error states (isCreate === false) or explicit showBackToMyMbo: true,
+   * mounts canonical EmployeeRecordNavigation.
    */
   function renderBlockedNotice(host, title, detail, options = {}) {
     if (!host) host = document.querySelector('.gaia-app-wrapper') || document.body;
     host.innerHTML = '';
 
-    const isCreate = options.isCreate ?? true;
+    const showBackToMyMbo = options.showBackToMyMbo ?? (options.isCreate === false);
     const appId = options.appId || getMboAppId();
 
-    if (isCreate === false) {
+    if (showBackToMyMbo) {
       const nav = new EmployeeRecordNavigation({ appId });
       const backBar = nav.renderBackToMyMboBar({ isCreate: false });
       if (backBar) {
@@ -552,7 +553,7 @@ if (typeof kintone !== 'undefined') {
           renderBlockedNotice(uiHost,
             'Employee Profile Resolution Failed',
             `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
-            { isCreate: true, appId: event.appId || getMboAppId() }
+            { isCreate: true, showBackToMyMbo: true, appId: event.appId || getMboAppId() }
           );
           hideAllNativeFields(record);
           return event;
