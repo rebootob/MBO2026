@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY RECONFIRMED / PRIOR SOURCE+UI GATES PASS / LIVE LOGIN BLOCKED BY APP801 ACL GAP / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY RECONFIRMED / PRIOR SOURCE+UI GATES PASS / s1 GROUP MEMBERSHIP PASS / LIVE LOGIN BLOCKED BY APP801 APP-PERMISSION GAP CHECK / DEPLOY GUARD OPEN / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -38,7 +38,8 @@ D1_MY_MBO_HISTORY_LIST                  = PASS
 D1_MY_MBO_COMPLETED_STATUS_DISPLAY      = PASS
 D1_EMPLOYEE_SELF_DELETE_GUARD           = PASS
 APP801_SHARED_PRINCIPAL_s1_LIVE_ACCESS  = FAIL / 403 CB_NO02
-APP801_KINTONE_ONLY_ACL_RECONCILIATION  = NEXT / READ-ONLY FIRST
+MBO_EMPLOYEE_ACCESS_s1_MEMBERSHIP        = PASS / USER LIVE SCREENSHOT 2026-08-29
+APP801_APP_PERMISSION_READONLY_CHECK     = NEXT / VERIFY MBO_EMPLOYEE_ACCESS ROW
 APP794_DELETE_PERMISSION_READONLY_CHECK = PENDING
 APP794_DEPLOY_GUARD_INTEGRATION         = OPEN / BEFORE NEXT LIVE DEPLOY
 D1_LIVE_CUTOVER                         = BLOCKED
@@ -74,7 +75,8 @@ User live verification established:
 - Employee_Code `0113` credential is healthy: `Account_Status=ACTIVE`, `Failed_Attempts=0`, `Locked_Until` blank, `Force_Password_Change=NO`, `Credential_Version=1`;
 - current Kintone shared principal is `s1`;
 - `s1` receives HTTP 403 / `CB_NO02` when reading/opening App801;
-- therefore the current Login failure is an App801 effective-permission problem, not an employee lock/disable problem;
+- `s1` is visibly present in Kintone group `MBO_EMPLOYEE_ACCESS` together with the expected shared principals; therefore group membership is not the blocker;
+- remaining read-only question is whether App801 App Permissions grant the `MBO_EMPLOYEE_ACCESS` group the required View/Edit rights;
 - current Login UI generic denial text is misleading and must eventually map permission/technical failure separately.
 
 ## 5. Approved Kintone-Only ACL Target
@@ -102,17 +104,17 @@ Security ceiling remains explicitly accepted/documented: under a shared Kintone 
 
 ## 6. Exact Next Action — READ-ONLY ONLY
 
-Before any ACL write, reconcile live Kintone state:
-1. verify `s1` is currently a member of `MBO_EMPLOYEE_ACCESS`;
-2. read current App801 App Permissions;
-3. identify whether the gap is group membership, App801 app permission, or both;
-4. produce exact minimal ACL change plan;
-5. STOP and request explicit user authorization before Kintone write.
+Group membership is now verified PASS. Continue with only:
+1. open App801 App Settings -> Permissions for App;
+2. inspect the `MBO_EMPLOYEE_ACCESS` permission row;
+3. confirm whether View Records and Edit Records are enabled and all Add/Delete/Import/Export/App Admin permissions remain denied;
+4. identify the exact minimal App801 permission correction if the target is not met;
+5. STOP and request explicit user authorization before any ACL write.
 
 ```text
 NEXT_ACTION_OWNER              = CONTROL PLANE + USER
 ANTIGRAVITY_REQUIRED           = NO / HOLD
-KINTONE_READ                   = YES / PERMISSION METADATA ONLY
+KINTONE_READ                   = YES / APP801 PERMISSION METADATA ONLY
 KINTONE_WRITE                  = NO
 APP801_ACL_WRITE               = NO UNTIL EXPLICIT APPROVAL
 APP801_RECORD_WRITE            = NO
