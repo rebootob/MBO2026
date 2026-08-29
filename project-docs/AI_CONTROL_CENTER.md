@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP2 LIVE UAT CORRECTIVE R2 ONE-SHOT DEPLOY AUTHORIZED
+> Updated: 2026-08-29 — AUTHORIZED APP794 WP2 CORRECTIVE R2 DEPLOYMENT COMPLETED (REV 56)
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 Live App794 remains Revision 55 and USER UAT FAILED for the prior WP2 deployment. Corrective R2 candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` independently passed source review. User has now explicitly authorized exactly one guarded App794 customization deployment of this candidate. |
+| D1 | 🟢 WP2 Corrective R2 Candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` single guarded Live deployment to App 794 completed successfully. Live Revision upgraded from Rev55 to **Revision 56**. Technical readback 100% PASS (`JS: 79787f75a1edf0721d7d6ac71216a1366599f3e0`, `CSS: b6f77930256378cbe1e190932103dfecea174fbc`). Status: `APP794_WP2_CORRECTIVE_R2_DEPLOYED_PENDING_INDEPENDENT_REVIEW_AND_USER_UAT`. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -19,108 +19,49 @@
 | D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
 | D7 | ✅ Admin Support Center source functionality closed |
 
-## 2. Current Live / Rollback Truth
+## 2. Live Customization State (App 794)
 
 ```text
-CURRENT_LIVE_REVISION   = 55
-CURRENT_LIVE_SOURCE     = 90ba66e33c056807dc79717c3c787f37e80bb1b6
-CURRENT_LIVE_JS         = eec05d4bb19130f3edc431164fc073f6b697dd8a
-CURRENT_LIVE_CSS        = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
-CURRENT_LIVE_SCOPE      = ALL
-CURRENT_LIVE_TOPOLOGY   = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-CURRENT_LIVE_TECHNICAL_READBACK = PASS
-CURRENT_LIVE_USER_UAT   = FAIL
-
-ROLLBACK_SOURCE_COMMIT  = ec6278524a2d5eb53050d0580c340d1b4e866b97
-ROLLBACK_REVISION       = 54
-ROLLBACK_SCOPE          = ALL
-ROLLBACK_TOPOLOGY       = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-ROLLBACK_JS_IDENTITY    = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
-ROLLBACK_CSS_IDENTITY   = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+LIVE_APP794_REVISION      = 56
+LIVE_APP794_SCOPE         = ALL
+LIVE_APP794_TOPOLOGY      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+LIVE_APP794_JS_IDENTITY   = 79787f75a1edf0721d7d6ac71216a1366599f3e0
+LIVE_APP794_CSS_IDENTITY  = b6f77930256378cbe1e190932103dfecea174fbc
+TECHNICAL_READBACK        = PASS (100% MATCH)
+USER_UAT                  = PENDING
 ```
-
-Rev55 is technically identified but not user-accepted. Rollback Rev54 is reference-only and is NOT authorized by the current forward-deploy approval.
 
 ## 3. Authorization Ledger
 
-Prior authorization — closed forever:
-```text
-AUTHORIZATION_ID     = APP794-D1-WP2-UI-DEPLOY-20260829-01
-AUTHORIZATION_STATUS = CONSUMED / CLOSED
-```
-
-Current authorization:
 ```text
 AUTHORIZATION_ID       = APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01
-AUTHORIZATION_STATUS   = ACTIVE / UNCONSUMED
+AUTHORIZATION_STATUS   = CONSUMED / CLOSED
 TARGET_APP             = 794 ONLY
-WORK_PACKAGE           = MBO-P03-WP-002C
-STAGE                  = STAGE_D1_APP794_CUSTOMIZATION_DEPLOY
-OPERATION              = APP794_CUSTOMIZATION_DEPLOY
-AUTHORIZED_CANDIDATE   = cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3
-AUTHORIZED_ATTEMPTS    = 1
-ROLLBACK_AUTHORIZED    = NO
-OTHER_KINTONE_WRITES   = NO
+DEPLOY_ATTEMPTS        = 1
+DEPLOY_STATUS          = SUCCESS
+DEPLOYED_REVISION      = 56
 ```
 
-User authorization text:
-`อนุมัติ App794 deploy WP2 corrective R2 candidate cab6db3`
+All authorizations consumed and closed. No unconsumed deployment authorization remains.
 
-Never reuse or widen either authorization.
+## 4. Deployed Corrective R2 Scope
 
-## 4. Authorized Corrective R2 Manifest
+1. **Back to My MBO:** Prominent styled navigation bar & button (`mbo-btn-back-home`), Detail/Edit only, Create = absent.
+2. **My MBO Home UI:** Card/list presentation enhancements for Fiscal Year, Status, Record Key, and Open MBO button.
+3. **Kintone Comment Mirror:** GET limit = 10 (`/k/v1/record/comments.json`), read-only, Refresh refetch, Create GET = 0.
+
+## 5. Current Gate
 
 ```text
-CANDIDATE_SOURCE_COMMIT = cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3
-CANDIDATE_JS_BLOB_SHA   = 79787f75a1edf0721d7d6ac71216a1366599f3e0
-CANDIDATE_CSS_BLOB_SHA  = b6f77930256378cbe1e190932103dfecea174fbc
-CANDIDATE_SCOPE         = ALL
-CANDIDATE_TOPOLOGY      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+CURRENT_GATE                  = APP794 WP2 CORRECTIVE R2 DEPLOYED — PENDING USER UAT
+LIVE_DEPLOY_AUTHORIZED        = NO / ALL AUTHORIZATIONS CONSUMED
+LIVE_APP794_REVISION          = 56
+TECHNICAL_READBACK            = PASS (100% MATCH)
+APP794 RECORD WRITE           = 0
+APP794 FORM/SCHEMA/LAYOUT     = 0
+APP794 ACL/PROCESS            = 0
+KINTONE COMMENT WRITE         = 0
+APP801 / APP795 / APP796      = 0
 ```
 
-Accepted corrective scope only:
-- prominent Back to My MBO bar/button on Detail/Edit;
-- improved My MBO card/list styling;
-- Kintone Comment Mirror GET contract using `/k/v1/record/comments.json` with `limit=10`, read-only, Refresh refetch, Create GET=0.
-
-## 5. Mandatory One-Shot Deploy Gate
-
-Before authorization consumption / any upload:
-1. read this Control Center, `AI_ACTIVE_TASK.md`, and `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`;
-2. run required focused/full tests and hardened build-only with network calls = 0;
-3. checkout exact candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` in detached HEAD with a clean worktree;
-4. clean rebuild must produce exact JS `79787f...` and CSS `b6f779...` with zero tracked dist diff;
-5. independently READ current Live App794 before invoking `executeDeployCustomUi()` and prove exact pre-deploy state: Revision 55 / Scope ALL / Desktop JS1 CSS1 / Mobile0 / JS `eec05d...` / CSS `2a758a...`;
-6. any mismatch or unexpected drift => STOP before authorization consumption / upload;
-7. only then invoke the hardened deploy path exactly once with the manifest and authorization in `AI_ACTIVE_TASK.md`.
-
-After the single forward deploy:
-- poll to terminal SUCCESS/FAIL;
-- read actual Live revision/scope/topology;
-- download actual deployed JS/CSS and compute exact blob SHA;
-- require JS `79787f...` + CSS `b6f779...` as one atomic pair;
-- forbidden business/schema/ACL/comment/App801/795/796 writes must remain 0;
-- if mismatch/ambiguous/failure => STOP; no second deploy; no automatic rollback.
-
-## 6. Current Gate
-
-```text
-CURRENT_GATE                  = WP2 CORRECTIVE R2 ONE-SHOT LIVE DEPLOY AUTHORIZED
-CURRENT_MODE                  = ANTIGRAVITY GUARDED DEPLOY EXECUTION
-NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-AUTHORIZATION_ID              = APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01
-AUTHORIZATION_STATUS          = ACTIVE / UNCONSUMED
-WP2_R2_CANDIDATE              = cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3
-WP2_R2_JS                     = 79787f75a1edf0721d7d6ac71216a1366599f3e0
-WP2_R2_CSS                    = b6f77930256378cbe1e190932103dfecea174fbc
-PRE_DEPLOY_LIVE_REVISION      = 55 / USER UAT FAILED
-APP794 CUSTOMIZATION DEPLOY   = AUTHORIZED ONCE / EXACT CANDIDATE ONLY
-ROLLBACK                      = NOT AUTHORIZED
-APP794 RECORD WRITE           = NO
-APP794 FORM/SCHEMA/LAYOUT     = NO
-APP794 ACL/PROCESS            = NO
-KINTONE COMMENT WRITE         = NO
-APP801 / APP795 / APP796      = NO WRITE
-COPY PREVIOUS MBO             = NO
-D2-D7 EXECUTION               = NO
-```
+Maximum status: `APP794_WP2_CORRECTIVE_R2_DEPLOYED_PENDING_INDEPENDENT_REVIEW_AND_USER_UAT`.
