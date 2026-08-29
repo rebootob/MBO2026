@@ -1,80 +1,141 @@
-# AI ACTIVE TASK — NO EXECUTION / D1 LIVE UAT HOLD
+# AI ACTIVE TASK — D1 ATTACHMENT KINTONE-SUPPORTED PERSISTENCE CORRECTIVE
 
-Mode: **CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION AUTHORIZED**
+Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 
-## Current accepted state
+## Live defect to correct
 
-Independent review accepted the App794 D1 Timeline + Attachment deployment.
-
-Accepted deployment evidence commit:
-`ae63d677511cf9e39c69f985b3e1b5d616a59b2b`
-
-Accepted:
+User Live UAT on App794 revision 46 fails on native Save with:
 
 ```text
-TARGET_APP_ID                                  = 794
-TIMELINE_ATTACHMENT_SOURCE_TEST_GATE           = PASS
-SOURCE_PROVENANCE_DIFF                         = EMPTY
-PRE_DEPLOY_BUILD                               = PASS
-PRE_DEPLOY_BUILD_ONLY                          = PASS
-APP794_LIVE_CUSTOMIZATION_REVISION             = 46
-CANDIDATE_LIVE_JS_BLOB_MATCH                   = PASS
-CANDIDATE_CSS_PRESERVED                        = PASS
-ROLLBACK_PERFORMED                             = NO
-APP794_RECORD_WRITE                            = 0
-APP794_ACL_WRITE                               = 0
-APP801_WRITE                                   = 0
-APP795_796_WRITE                               = 0
-ONE_SHOT_APP794_DEPLOY_AUTHORIZATION           = CONSUMED / CLOSED
+An error occurred while running the JavaScript for customization of the app.
+- event.record['Objective_Attachment_1'].type is invalid.
 ```
 
-## Current gate
+Immediate source defect in `src/services/mbo-attachment-service.js`:
+
+```js
+record[targetCode] = { value: savedFiles };
+```
+
+This replaces the native Kintone FILE field object and destroys its metadata.
+
+More importantly, Kintone does not support overwriting Attachment field values through create/edit submit Event Object Actions. Therefore **do not fix only by adding `type: 'FILE'`**.
+
+## Mandatory supported architecture
+
+Implement the smallest Kintone-supported lifecycle:
 
 ```text
-CURRENT_GATE       = D1 TIMELINE + ATTACHMENT LIVE UAT
-NEXT_ACTION_OWNER  = USER + CHATGPT
-ANTIGRAVITY        = DO NOTHING
-APP794_DEPLOY      = NOT AUTHORIZED
-LIVE WRITE         = NOT AUTHORIZED
-SOURCE CHANGE      = NOT AUTHORIZED
+app.record.create.submit / app.record.edit.submit
+  -> existing validation first
+  -> upload pending local files to Kintone Upload File API
+  -> receive temporary fileKey(s)
+  -> DO NOT mutate event.record Attachment fields
+  -> store a prepared binding plan in attachment UI/service state
+  -> return event
+
+app.record.create.submit.success / app.record.edit.submit.success
+  -> use event.appId + event.recordId
+  -> finalize exact Attachment field(s) using Kintone Update Record REST API
+  -> preserve retained existing files
+  -> preserve unrelated attachment fields
 ```
 
-There is no active Antigravity execution task.
+Pre-save upload error may cancel submit fail-closed.
+Post-save binding error must be explicit/truthful: the record has already saved, so do not claim full save rollback.
 
-## Live UAT checklist
+## Required source ownership
 
-User + ChatGPT should verify in App794 Live:
-1. no fabricated workflow events, actors, timestamps, outcomes, or comment notices;
-2. native Kintone Comments remains visible/usable and is not replaced by synthetic UI;
-3. zero attachments shows truthful empty state;
-4. one saved file shows its real filename;
-5. multiple saved files show all real filenames;
-6. selecting a local file shows filename + pending-save state before persistence;
-7. after save, UI reflects the persisted file truthfully;
-8. remove/change affects only the intended attachment field;
-9. no preview/sample attachment filename leaks into Live.
+Preferred changes:
+- `src/services/mbo-attachment-service.js` — attachment upload/prepared-plan/final REST binding logic;
+- `src/ui/employee-part-a-ui.js` — only attachment state adapter methods if needed;
+- `src/main-mbo-app.js` — orchestration only: call prepare in submit and finalize in submit.success;
+- focused tests;
+- generated dist only through normal build.
 
-If Live UAT passes, ChatGPT may close this D1 Timeline + Attachment gate and proceed to the next D1 work item under the applicable authorization rules.
+Do NOT make `main-mbo-app.js` the implementation home for attachment persistence logic.
+Do NOT broad-refactor `employee-part-a-ui.js` during this defect correction.
 
-If Live UAT reveals a genuine defect, ChatGPT must independently diagnose it first and create the smallest exact corrective task. Do not send broad refactor or repo-scan work to Antigravity.
+## Exact behavior requirements
 
-## Permanent boundaries
+1. Existing custom attachment selector/pending UI remains.
+2. Submit handler performs local validation before any upload.
+3. Zero pending attachment => no file upload and no attachment REST update.
+4. Pending file upload => fileKey is prepared without changing `event.record.Objective_Attachment_n` / MidYear / Self/Final attachment fields.
+5. Submit success finalizes only fields with a prepared desired state.
+6. For Edit, read/preserve currently persisted attachment fileKeys as needed before Update Record.
+7. If user removed a previously saved file in custom UI, finalize the intended retained + new fileKey set for that exact field only.
+8. Unrelated attachment fields must remain unchanged.
+9. Existing Self -> Final field fallback semantics must remain compatible where applicable.
+10. No external storage or service.
+
+## Required tests
+
+Handler/service-level tests must prove:
 
 ```text
-EXTERNAL SERVICE               = NO
-AUTH BRIDGE                    = CANCELLED
-APP794 RECORD/ACL/SCHEMA WRITE = NO
-APP801 WRITE                   = NO
-APP795/796 WRITE               = NO
-ROUTING/SCORING/AUTH/RESET     = NO under this gate
-D2-D7 EXECUTION                = NO under this gate
+CREATE_SUBMIT_ZERO_PENDING_NO_ATTACHMENT_MUTATION = PASS
+EDIT_SUBMIT_ZERO_PENDING_NO_ATTACHMENT_MUTATION   = PASS
+CREATE_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN        = PASS
+EDIT_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN          = PASS
+SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED          = PASS
+CREATE_SUBMIT_SUCCESS_REST_BIND_EXACT_FIELD       = PASS
+EDIT_SUBMIT_SUCCESS_REST_BIND_EXACT_FIELD         = PASS
+EXISTING_SAVED_FILES_PRESERVED                    = PASS
+EXPLICIT_REMOVE_DESIRED_STATE                     = PASS
+UNRELATED_ATTACHMENT_FIELDS_UNCHANGED             = PASS
+UPLOAD_FAILURE_PRE_SAVE_FAILS_CLOSED              = PASS
+POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR      = PASS
+NO_LIVE_NETWORK_IN_TESTS                          = PASS
+TIMELINE_REGRESSION                               = PASS
 ```
 
-Development governance:
-- Antigravity performs only work that genuinely requires execution environment access.
-- ChatGPT performs analysis, planning, Git review, independent acceptance and documentation maintenance.
-- Maintain modular source architecture; do not accumulate unrelated implementation in catch-all files.
-- `src/main-mbo-app.js` remains orchestration-only.
+Use realistic Kintone FILE field fixtures including:
 
-STOP. No Antigravity execution is currently authorized.
+```js
+Objective_Attachment_1: {
+  type: 'FILE',
+  value: []
+}
+```
+
+The previous mocks omitted FILE `type`, which failed to catch the Live defect.
+
+## Test/build evidence required
+
+Record in one concise evidence document:
+- START_HEAD;
+- changed files;
+- exact corrective design summary;
+- focused attachment tests + result;
+- timeline/attachment regression result;
+- full `npm test` exact result;
+- `npm run ui:build` result;
+- module-aware `--build-only` result;
+- `LIVE_KINTONE_WRITE = 0`;
+- `LIVE_DEPLOY_OCCURRED = NO`;
+- final commit SHA.
+
+## Forbidden
+
+```text
+APP794 DEPLOY                = NO
+APP794 LIVE RECORD WRITE     = NO
+APP794 ACL/SCHEMA/PROCESS    = NO
+APP801 WRITE                 = NO
+APP795/796 WRITE             = NO
+ROUTING/SCORING CHANGE       = NO
+AUTH/SESSION/RESET CHANGE    = NO
+D2-D7                        = NO
+EXTERNAL SERVICE             = NO
+BROAD REFACTOR               = NO
+```
+
+Do not add a new module unless separation of concerns genuinely requires it; prefer the existing dedicated attachment service first.
+
+Commit + push one narrow corrective commit (or the minimum small sequence if build artifact/evidence needs a second commit).
+STOP.
+Do not Deploy.
+Do not Self-PASS.
+Maximum status = `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
