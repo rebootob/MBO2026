@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — APP794 ACL CORRECTION AUTHORIZED / USER EXECUTION
+# AI ACTIVE TASK — HOLD / APP794 CORRECTIVE DEPLOY AUTHORIZATION REQUIRED
 
 Mode: **CONTROL PLANE + USER — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
@@ -13,55 +13,53 @@ Auth Bridge = CANCELLED / DO NOT CONTINUE
 
 ## Current accepted state
 
-`APP794_DEPLOY_GUARD_INTEGRATION = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b`
+```text
+APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b
+APP794_DELETE_PERMISSION_READONLY_CHECK = PASS
+APP794_ACL_CORRECTION                   = PASS / LIVE READ-BACK REVISION 44
+APP794_ACL_WRITE_AUTHORIZATION          = CONSUMED / CLOSED
+```
 
-App794 ACL read-only evidence under Kintone login `admin-form`:
-- CREATOR has full rights;
-- GROUP `everyone` currently has View/Add/Edit/Delete = true;
-- `MBO_EMPLOYEE_ACCESS` row is absent;
-- therefore Employee-Self Kintone-level Delete permission is not safely denied.
+Live App794 ACL after correction:
+- CREATOR: current technical-admin full rights preserved;
+- `MBO_EMPLOYEE_ACCESS`: View=YES, Add=YES, Edit=YES, Delete=NO, Manage=NO, Import=NO, Export=NO;
+- `everyone`: all permissions NO;
+- evidence: `APP794_ACL_CORRECTION_OVERALL_PASS = true`.
 
-Current gate:
-`APP794_DELETE_PERMISSION_READONLY_CHECK = FAIL / ACL CORRECTION REQUIRED`
+No executor implementation task is active.
 
-## Exact user authorization — 2026-08-29
+## Next required user decision
 
-User explicitly approved: **App794 ACL Correction**.
+A **new exact App794 Corrective Deploy authorization** is required before any live customization deployment.
 
-Authorized write scope only:
-- App794 App Permission / App ACL;
-- preserve current CREATOR rights exactly;
-- add `MBO_EMPLOYEE_ACCESS` with View=YES, Add=YES, Edit=YES, Delete=NO, Manage=NO, Import=NO, Export=NO;
-- set `Everyone` to all permissions NO;
-- one correction execution plus read-back verification.
+Intended one-deploy scope only:
+1. accepted module-aware App794 bundle;
+2. accepted Create-handler corrective;
+3. accepted Employee-Self coherent shell / Logout / My MBO;
+4. accepted My MBO history + Completed display;
+5. accepted Employee-Self no-delete source guard;
+6. deploy through the accepted App794 narrow deploy guard.
 
-Forbidden in this authorization:
-- NO record ACL change;
-- NO workflow change;
+Forbidden unless separately authorized:
+- NO App801 write/schema/ACL/data change;
+- NO further App794 App ACL write;
 - NO App794 record write;
-- NO customization/source change or deploy;
-- NO App801 change;
-- NO other app change;
+- NO routing/scoring/workflow change;
+- NO HR/admin Password Reset UI implementation in this deploy;
 - NO Auth Bridge / external service;
-- NO D2-D7 work.
+- NO D2-D7 writes.
 
-## Execution / verification
+## Important open D1 requirement
 
-Control Plane provides a fail-closed Kintone Console script for `admin-form` that:
-1. GETs current App794 ACL;
-2. requires exactly the expected current CREATOR + everyone state before writing;
-3. preserves CREATOR rights exactly;
-4. PUTs only the exact three-row target ACL for App794;
-5. GETs App794 ACL again and verifies exact target state;
-6. does not print business record contents.
+HR-authorized users and `admin-form` still require a production in-Kintone **Reset MBO Password** administrative function before final D1 closure. The manual reset of `0113` proved semantics only.
 
-Authorization is consumed after the one successful ACL write attempt. If preconditions differ, fail closed and do not write.
+Track this requirement separately after the App794 corrective deploy. Preferred placement is a controlled administrative Kintone surface such as App800 HR Control Center / recovery surface; do not expose reset capability to employee/shared `MBO_EMPLOYEE_ACCESS` principals.
 
 ## Authorization state
 
 ```text
-APP794 ACL WRITE    = YES / EXACT ONE-EXECUTION AUTHORIZATION
-APP794 DEPLOY       = NO
+APP794 DEPLOY       = NO / EXPLICIT USER AUTHORIZATION REQUIRED
+APP794 ACL WRITE    = NO / PRIOR AUTHORIZATION CONSUMED
 APP794 RECORD WRITE = NO
 APP801 WRITE        = NO
 SOURCE CHANGE       = NO
@@ -72,4 +70,4 @@ D2-D7 WRITE         = NO
 ## Antigravity
 
 HOLD.
-Do not start ACL changes, deploy, source changes, App801 work, Auth Bridge work, or D2-D7 work. User/Control Plane owns this exact ACL correction and read-back.
+Do not deploy, change ACL, change source, change App801, start Auth Bridge, or work on D2-D7 until a new Active Task is issued after explicit user authorization.
