@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — APP794 RECOVERY USER RUNTIME SMOKE HOLD
+# AI ACTIVE TASK — APP794 REV54 USER RUNTIME SMOKE HOLD
 
 Mode: **CONTROL PLANE HOLD — ANTIGRAVITY DO NOTHING / NO LIVE WRITE**
 Branch: `ai/antigravity-wp002c`
@@ -14,7 +14,7 @@ Authorization state:
 Executor evidence commit:
 `5012b59f69e1c5fff498b319e65eda37e92579d3`
 
-Independent technical readback result:
+Current Live technical readback:
 ```text
 POST_RECOVERY_REVISION     = 54
 POST_RECOVERY_SCOPE        = ALL
@@ -22,15 +22,32 @@ POST_RECOVERY_TOPOLOGY     = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile
 POST_RECOVERY_JS_IDENTITY  = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
 POST_RECOVERY_CSS_IDENTITY = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 KNOWN_GOOD_PAIR_MATCH      = YES
-TECHNICAL_RECOVERY_REVIEW  = PASS
+CURRENT_LIVE_TECHNICAL_STATE = PASS
 ```
 
-Known-good source is immutable Git commit:
+Known-good source:
 `ec6278524a2d5eb53050d0580c340d1b4e866b97`.
 
-## Current Gate — User Runtime Smoke Only
+## Recovery Process Corrective — Recorded
 
-Per `project-docs/CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`, artifact readback PASS must be followed by user-visible runtime smoke before the recovery is promoted to accepted Live.
+Expected pre-recovery incident state:
+```text
+EXPECTED_REV53_JS  = dbd9899ade84318921e374ce687ac435da7cc40c
+EXPECTED_REV53_CSS = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+```
+
+Executor evidence recorded:
+```text
+ACTUAL_PRE_RECOVERY_JS  = dbd9899ade84318921e374ce687ac435da7cc40c
+ACTUAL_PRE_RECOVERY_CSS = 2599ff745475a5f01bd4224f76e5b098fa2bbf2e
+```
+
+This was unexpected customization drift. The authorized recovery task required STOP / NO WRITE on unexpected drift, but executor continued. Therefore:
+`RECOVERY_EXECUTION_PROCESS = CORRECTIVE / PRE-GATE FAIL-CLOSED VIOLATION`.
+
+Do not perform another Live write for this process issue. Retain it as incident evidence and apply the new rollback/recovery Baseline to future deployments.
+
+## Current Gate — User Runtime Smoke Only
 
 User should verify:
 1. `/k/794/` renders expected custom Employee-Self / My MBO UI, not raw native Kintone list.
@@ -39,9 +56,15 @@ User should verify:
 4. Existing Edit renders custom MBO UI.
 5. Login/session controls still render and there is no visible blank/native-only/runtime-start failure.
 
-If the user reports PASS, Control Plane may close Emergency Recovery as accepted.
+If User reports PASS:
+- Control Plane may accept Rev54 as current known-good Live runtime;
+- retain the recovery process corrective as incident history;
+- only then resume Combined Employee UI corrective/deployment planning.
 
-If any item fails, Control Plane must classify CORRECTIVE and diagnose before any further Live write.
+If any smoke item fails:
+- classify CORRECTIVE;
+- diagnose without Live write;
+- any later Live customization change requires a NEW explicit user authorization.
 
 ## Strict Hold
 
@@ -61,4 +84,4 @@ COPY PREVIOUS MBO             = NO
 D2-D7 EXECUTION               = NO
 ```
 
-The previously reviewed Combined Employee UI candidate remains NOT authorized for Live deployment. Any later Live customization deployment requires a NEW explicit user authorization and must comply with the rollback/release-manifest standard.
+The Combined Employee UI candidate remains NOT authorized for Live deployment. Any later Live customization deployment requires a NEW explicit user authorization and must comply with `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`.
