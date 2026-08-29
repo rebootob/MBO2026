@@ -1,17 +1,17 @@
-# AI ACTIVE TASK — WP1 PRE-BUILD SOURCE GATE + DETERMINISTIC TEST CORRECTIVE
+# AI ACTIVE TASK — WP2 UI FUNCTIONAL PARTITION + RUNTIME INTEGRATION PROOF
 
-Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
+Mode: **ANTIGRAVITY SOURCE / TEST / BUILD ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 
 ## Start Point
 
-Latest reviewed WP1 candidate:
-`2e8b05aa989b2e0ba9406b134824db7f2b5f509c`
+WP1 accepted candidate:
+`035b4d1fa077907f19bf8d2ef0a4177156d0319b`
 
-Independent verdict:
-`CORRECTIVE`
+WP1 verdict:
+`PASS / CLOSED`
 
-Do NOT redo accepted atomic JS+CSS, mandatory manifest, byte-exact hashing, internal HEAD resolution or real Live dirty-tree check. Fix only the final residuals below.
+Do not reopen deployment tooling unless this WP2 work exposes a direct regression.
 
 ## Accepted Current Live / Rollback Manifest
 
@@ -24,152 +24,222 @@ ROLLBACK_JS_IDENTITY   = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
 ROLLBACK_CSS_IDENTITY  = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 ```
 
-No Live write is authorized.
+No Live customization write is authorized in WP2.
 
-## Accepted WP1 Behavior — Preserve Exactly
+## Objective — Exactly Three UI Features
 
-Already accepted:
-- exactly one target Desktop JS `mbo-employee-app.js`;
-- exactly one target Desktop CSS `mbo-employee.css`;
-- both target fileKeys replaced together;
-- Live `releaseManifest` required;
-- manifest binds App794 + expected JS + expected CSS + scope + topology;
-- byte-exact Git blob SHA over uploaded bytes;
-- CRLF and LF produce different identities;
-- Live actual Git HEAD is derived internally, not caller override;
-- unresolved/malformed actual HEAD blocks;
-- exact full 40-char source SHA validation exists;
-- real Live working-tree cleanliness check happens before build;
-- build-only returns JS+CSS with zero network;
-- unauthorized Live entrypoint blocks;
-- no automatic rollback.
+1. Existing Detail/Edit: reliable **← กลับหน้า My MBO / Back to My MBO**.
+2. My MBO index: readable responsive card/list matching the accepted visual direction.
+3. Existing Detail/Edit: read-only **Native Kintone Comments mirror + Refresh**.
 
-Do not widen this task.
+Do NOT implement Copy Previous MBO.
 
-## Final Blocker A — Source Manifest Gate Must Run Before Build and Network
+## Functional Code Ownership — Mandatory
 
-Current Live flow checks actual HEAD + clean tree before build, but it does not validate `releaseManifest.sourceCommit` against actual HEAD until after candidate build and after Kintone GET live/preview.
+Follow `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`.
 
-Required Live ordering:
+### A. My MBO
+Canonical owner remains:
+`src/ui/employee-self-index-ui.js`
+
+Do not duplicate this feature elsewhere.
+
+Preserve exactly:
+- Employee_Code self filter;
+- `order by Fiscal_Year desc`;
+- Create New;
+- Fiscal Year prominent;
+- Status prominent;
+- Record Key secondary;
+- non-completed `เปิด MBO / Open MBO`;
+- Completed / `16 Completed` => `ดูย้อนหลัง / View History`;
+- exact `/k/{appId}/show#record={id}` URLs;
+- exactly one auth bar;
+- zero Delete UI.
+
+Only adjust source/CSS required to produce the accepted readable card/list design. Do not alter query/security/status semantics.
+
+### B. Back Navigation
+Create one canonical owner:
+`src/ui/employee-record-navigation.js`
+
+Move/extract the existing Back feature out of `EmployeePartAUI`.
+
+Contract:
+- existing Detail => visible;
+- existing Edit => visible;
+- Create => absent;
+- exact bilingual label: `← กลับหน้า My MBO / Back to My MBO`;
+- target `/k/{currentAppId}/`;
+- same tab;
+- no logout/session mutation;
+- no record/workflow write.
+
+`employee-part-a-ui.js` may delegate to this module but must not retain duplicate Back rendering logic.
+
+### C. Native Comment Mirror
+Create one canonical owner:
+`src/ui/employee-comment-mirror.js`
+
+Move/extract current comment mirror + pagination + Refresh behavior out of `EmployeePartAUI`.
+
+Contract:
+- existing Detail/Edit only;
+- current App794 record only;
+- Native right-side comment panel remains source of truth and write UI;
+- mirror is read-only;
+- GET `/k/v1/record/comments.json` using current Kintone session;
+- no DOM scraping;
+- no duplicate storage/fields;
+- author + timestamp + body;
+- safe text rendering (`textContent` or equivalent safe text node handling);
+- bilingual loading/empty/failure state;
+- non-blocking failure;
+- truthful complete pagination;
+- short page + `newer=true` must continue;
+- stop only on truthful end condition;
+- Refresh must perform real API re-fetch;
+- Create => zero comment GET;
+- zero comment POST/DELETE/reply.
+
+`employee-part-a-ui.js` may delegate to this module but must not retain duplicate Comment mirror implementation.
+
+## Runtime Integration Proof — Back Button Defect Must Be Closed
+
+Previous direct renderer tests were insufficient because Live did not show Back during the failed partial deployment.
+
+Add integration proof through the actual Kintone record UI orchestration path.
+
+At minimum prove:
 ```text
-1. authorization / App794 target binding
-2. resolve actual Git HEAD internally
-3. resolve real worktree cleanliness internally
-4. PRE-BUILD SOURCE MANIFEST GATE:
-   - releaseManifest exists
-   - manifest.appId === 794
-   - manifest.sourceCommit is exact 40-char hex SHA
-   - manifest.sourceCommit === actual Git HEAD exactly
-   - worktreeClean === true
-5. ONLY AFTER gate passes: build candidate JS/CSS
-6. ONLY AFTER build: Kintone GET live + preview customization
-7. validate built JS/CSS identities + expected scope/topology
-8. upload/write remains forbidden in this task
+DETAIL_EXISTING_RUNTIME_BACK_VISIBLE = PASS
+EDIT_EXISTING_RUNTIME_BACK_VISIBLE   = PASS
+CREATE_RUNTIME_BACK_ABSENT           = PASS
+BACK_TARGET_CURRENT_APP              = PASS
+BACK_SAME_TAB                        = PASS
+AUTH_SESSION_MUTATION                = 0
+RECORD_WRITE                         = 0
 ```
 
-A missing/wrong/malformed source manifest MUST fail before candidate build and before any Kintone/network call.
+The test must exercise the real event/auth/host setup path used by `src/main-mbo-app.js`, not only instantiate the navigation module directly.
 
-Recommended narrow implementation:
-- extract a pure helper such as `validateLiveSourceState({ manifest, currentGitHead, worktreeClean })`;
-- this helper performs only pre-build source binding checks;
-- Live `executeDeployCustomUi()` obtains `currentGitHead` and `worktreeClean` internally and calls the helper before `prepareDeploymentArtifacts()`;
-- later `validateReleaseManifest()` may continue validating artifact JS/CSS + scope/topology, but must not be the first place sourceCommit mismatch is detected.
+Minimal `src/main-mbo-app.js` changes are allowed only if required to wire canonical modules. Keep it orchestration-only.
 
-Required regressions:
+## Comment Tests
+
+Preserve and/or relocate all existing comment regression coverage.
+
+Required proof at minimum:
 ```text
-MISSING_RELEASE_MANIFEST_BLOCKED_BEFORE_BUILD_AND_NETWORK
-SOURCE_COMMIT_MISMATCH_BLOCKED_BEFORE_BUILD_AND_NETWORK
-SHORT_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK
-MALFORMED_SOURCE_SHA_BLOCKED_BEFORE_BUILD_AND_NETWORK
-DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK
-EXACT_CLEAN_SOURCE_STATE_PASS_PREBUILD_GATE
+DETAIL_COMMENT_MIRROR_LOAD_PASS
+EDIT_COMMENT_MIRROR_LOAD_PASS
+CREATE_COMMENT_GET_COUNT = 0
+COMMENT_REFRESH_REFETCH_PASS
+COMMENT_SHORT_PAGE_NEWER_TRUE_CONTINUES
+COMMENT_FINAL_NEWER_FALSE_STOPS
+COMMENT_OVER_10_PASS
+COMMENT_OVER_500_PASS
+COMMENT_SAFE_TEXT_RENDER_PASS
+COMMENT_WRITE_COUNT = 0
 ```
 
-## Final Blocker B — Dirty/Clean Unit Tests Must Be Deterministic
+## CSS
 
-Current dirty-worktree test depends on the real Git checkout being dirty while tests run. That is forbidden because the same committed test can fail in a clean checkout.
+Canonical owner remains:
+`src/styles/mbo-employee.css`
 
-Required:
-- test the pure source-state helper with explicit `worktreeClean: false` for dirty case;
-- test with explicit `worktreeClean: true` for clean case;
-- do NOT make unit-test PASS/FAIL depend on `git status` of the test runner;
-- keep a small separate integration/helper sanity check for `isWorktreeClean()` if useful, but it must not assert a fixed dirty result;
-- focused suite must pass both before commit and after a clean checkout/commit.
+For this corrective:
+- keep a single stylesheet;
+- clearly separate sections/comments for My MBO, Back navigation, Comment mirror;
+- do not create broad CSS architecture work;
+- ensure the card/list design does not fall back to the sparse/unstyled appearance seen in the failed partial deploy.
 
-Required regressions:
-```text
-PURE_DIRTY_STATE_FALSE_BLOCKS
-PURE_CLEAN_STATE_TRUE_PASSES
-FOCUSED_TESTS_CLEAN_CHECKOUT_SAFE
-```
+## Exact Allowed Scope
 
-## Exact Files Allowed
+May change:
+- `src/ui/employee-self-index-ui.js` — My MBO visual corrective only;
+- `src/ui/employee-part-a-ui.js` — remove/delegate Back + Comment logic only;
+- `src/ui/employee-record-navigation.js` — new canonical Back owner;
+- `src/ui/employee-comment-mirror.js` — new canonical Comment owner;
+- `src/main-mbo-app.js` — minimal wiring/orchestration only if required;
+- `src/styles/mbo-employee.css` — only three active UI feature sections;
+- focused tests for these exact features;
+- deterministic generated `dist/mbo-employee-app.js` + `dist/mbo-employee.css`;
+- one concise WP2 evidence file.
 
-Change only:
-1. `scripts/kintone/deploy-custom-ui.js`
-2. `tests/deploy-customization-preservation.test.js`
-3. existing WP1 evidence file or one small final residual evidence file
+Do not create helper/modules beyond these unless there is a direct separation-of-concerns necessity documented in evidence.
 
-Forbidden:
-- `src/main-mbo-app.js`
-- `src/ui/employee-self-index-ui.js`
-- `src/ui/employee-part-a-ui.js`
-- `src/styles/mbo-employee.css`
-- auth/session/attachment/routing/scoring source
-- any Live Kintone write
+## Forbidden
+
+- NO Live Kintone customization deploy/write
+- NO App794 record write
+- NO form/schema/layout write
+- NO ACL/process write
+- NO Comment write
+- NO Auth/session behavior change
+- NO Attachment behavior change
+- NO Routing/Scoring/Profile change
+- NO App801/App795/App796 write
+- NO Copy Previous MBO
+- NO D2-D7 work
+- NO automatic rollback/recovery
+- NO unrelated refactor
 
 ## Verification
 
-Run and commit evidence for:
-- `node --test tests/deploy-customization-preservation.test.js`
-- relevant classic bundle/build safety tests
-- `npm test`
-- `npm run ui:build`
-- module-aware build-only with 0 Kintone/network calls
+Run:
+- focused My MBO tests;
+- focused Back navigation tests;
+- runtime Kintone Detail/Edit/Create integration test(s);
+- focused Comment mirror pagination/Refresh/read-only tests;
+- relevant attachment/auth regression tests because EmployeePartAUI wiring is touched;
+- `npm test`;
+- `npm run ui:build`;
+- hardened module-aware build-only with 0 Kintone/network calls.
 
-After commit, re-run at least the focused deployment test from a clean committed worktree and record the result.
+After source/tests are final, commit first, then perform a clean-worktree candidate build/identity capture consistent with WP1 tooling rules.
 
-Evidence must record:
+## Required WP2 Evidence
+
+Record:
 ```text
 EXECUTION_START_HEAD
-BASE_CORRECTIVE_CANDIDATE = 2e8b05aa989b2e0ba9406b134824db7f2b5f509c
 SOURCE_FILES_CHANGED
-TEST_FILES_CHANGED
-PREBUILD_SOURCE_GATE_PROOF
-MISSING_MANIFEST_PREBUILD_BLOCK_PROOF
-SOURCE_MISMATCH_PREBUILD_BLOCK_PROOF
-DIRTY_PREBUILD_BLOCK_PROOF
-PURE_DIRTY_TEST_PROOF
-PURE_CLEAN_TEST_PROOF
-POST_COMMIT_CLEAN_FOCUSED_TEST_RESULT
-ATOMIC_JS_CSS_PRESERVED
-MANIFEST_BINDING_PRESERVED
-BYTE_EXACT_HASH_PRESERVED
+NEW_MODULES_CREATED
+FEATURE_OWNER_MAP
+BACK_OLD_IMPLEMENTATION_REMOVED
+COMMENT_OLD_IMPLEMENTATION_REMOVED
+MAIN_MBO_ORCHESTRATION_ONLY_PROOF
+MY_MBO_QUERY_SEMANTICS_UNCHANGED
+DETAIL_EXISTING_RUNTIME_BACK_VISIBLE
+EDIT_EXISTING_RUNTIME_BACK_VISIBLE
+CREATE_RUNTIME_BACK_ABSENT
+COMMENT_CREATE_GET_COUNT = 0
+COMMENT_REFRESH_REFETCH_RESULT
+COMMENT_PAGINATION_RESULT
+COMMENT_SAFE_RENDER_RESULT
+COMMENT_WRITE_COUNT = 0
 FOCUSED_TEST_RESULT
+RUNTIME_INTEGRATION_TEST_RESULT
+ATTACHMENT_AUTH_REGRESSION_RESULT
 FULL_TEST_RESULT
 UI_BUILD_RESULT
 BUILD_ONLY_RESULT
 BUILD_ONLY_NETWORK_CALLS = 0
+CANDIDATE_SOURCE_COMMIT
+CANDIDATE_JS_BLOB_SHA
+CANDIDATE_CSS_BLOB_SHA
+CANDIDATE_SCOPE = ALL
+CANDIDATE_TOPOLOGY = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+ROLLBACK_SOURCE_COMMIT = ec6278524a2d5eb53050d0580c340d1b4e866b97
+ROLLBACK_JS_IDENTITY = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+ROLLBACK_CSS_IDENTITY = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 LIVE_KINTONE_WRITE = 0
 LIVE_DEPLOY = NO
 FINAL_COMMIT_SHA
 ```
 
-## Strictly Forbidden
-
-- NO Live Kintone customization PUT/POST deploy
-- NO upload test against Live
-- NO rollback/recovery
-- NO UI feature implementation/change
-- NO App794 record/schema/layout/ACL/process write
-- NO Kintone Comment write
-- NO App801/App795/App796 write
-- NO Copy Previous MBO
-- NO WP2 execution
-- NO D2-D7 work
-- NO unrelated refactor
-
-Commit + push source/test/evidence and STOP.
+Commit + push source/test/dist/evidence and STOP.
 
 Maximum status:
-`ATOMIC_DEPLOY_PREBUILD_SOURCE_GATE_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
+`WP2_UI_CANDIDATE_IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
