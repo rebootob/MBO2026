@@ -1,7 +1,8 @@
-# AI ACTIVE TASK — HOLD / APP794 CORRECTIVE DEPLOY AUTHORIZATION REQUIRED
+# AI ACTIVE TASK — APP794 CORRECTIVE DEPLOY AUTHORIZED
 
-Mode: **CONTROL PLANE + USER — ANTIGRAVITY HOLD**
+Mode: **LIVE KINTONE CUSTOMIZATION DEPLOY — EXACT ONE-SHOT**
 Branch: `ai/antigravity-wp002c`
+Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
 ## Mandatory architecture
 
@@ -11,63 +12,107 @@ External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
 ```
 
-## Current accepted state
+## User authorization — 2026-08-29
 
+User explicitly approved: **App794 Corrective Deploy**.
+
+Authorization ID:
+`APP794-CORRECTIVE-DEPLOY-20260829-01`
+
+Exact target and guard contract:
 ```text
-APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b
-APP794_DELETE_PERMISSION_READONLY_CHECK = PASS
-APP794_ACL_CORRECTION                   = PASS / LIVE READ-BACK REVISION 44
-APP794_ACL_WRITE_AUTHORIZATION          = CONSUMED / CLOSED
+appId       = 794
+workPackage = MBO-P03-WP-002C
+stage       = STAGE_D1_APP794_CUSTOMIZATION_DEPLOY
+operation   = APP794_CUSTOMIZATION_DEPLOY
+explicitUserAuthorization = true
+activeWindow = true
 ```
 
-Live App794 ACL after correction:
-- CREATOR: current technical-admin full rights preserved;
-- `MBO_EMPLOYEE_ACCESS`: View=YES, Add=YES, Edit=YES, Delete=NO, Manage=NO, Import=NO, Export=NO;
-- `everyone`: all permissions NO;
-- evidence: `APP794_ACL_CORRECTION_OVERALL_PASS = true`.
+## Deploy exactly the already-accepted App794 corrective artifact
 
-No executor implementation task is active.
-
-## Next required user decision
-
-A **new exact App794 Corrective Deploy authorization** is required before any live customization deployment.
-
-Intended one-deploy scope only:
-1. accepted module-aware App794 bundle;
+Included scope only:
+1. module-aware App794 bundle;
 2. accepted Create-handler corrective;
 3. accepted Employee-Self coherent shell / Logout / My MBO;
 4. accepted My MBO history + Completed display;
 5. accepted Employee-Self no-delete source guard;
-6. deploy through the accepted App794 narrow deploy guard.
+6. deploy via accepted `executeDeployCustomUi()` guard path.
 
-Forbidden unless separately authorized:
-- NO App801 write/schema/ACL/data change;
-- NO further App794 App ACL write;
-- NO App794 record write;
-- NO routing/scoring/workflow change;
-- NO HR/admin Password Reset UI implementation in this deploy;
-- NO Auth Bridge / external service;
-- NO D2-D7 writes.
+Do NOT implement anything new in this task.
 
-## Important open D1 requirement
+## Mandatory preflight
 
-HR-authorized users and `admin-form` still require a production in-Kintone **Reset MBO Password** administrative function before final D1 closure. The manual reset of `0113` proved semantics only.
-
-Track this requirement separately after the App794 corrective deploy. Preferred placement is a controlled administrative Kintone surface such as App800 HR Control Center / recovery surface; do not expose reset capability to employee/shared `MBO_EMPLOYEE_ACCESS` principals.
-
-## Authorization state
-
+1. Sync latest `ai/antigravity-wp002c` and confirm clean working tree.
+2. Read `AI_CONTROL_CENTER.md`, this file, and relevant D1 baselines.
+3. Confirm `config/sandbox-apps.json.mboV2AppId` is exact integer `794`.
+4. Confirm no source/business changes are needed.
+5. Run:
 ```text
-APP794 DEPLOY       = NO / EXPLICIT USER AUTHORIZATION REQUIRED
-APP794 ACL WRITE    = NO / PRIOR AUTHORIZATION CONSUMED
-APP794 RECORD WRITE = NO
-APP801 WRITE        = NO
-SOURCE CHANGE       = NO
-EXTERNAL SERVICE    = NO
-D2-D7 WRITE         = NO
+npm test
+node scripts/kintone/deploy-custom-ui.js --build-only
+```
+6. If either fails: STOP. Do not deploy.
+
+## Live execution
+
+Use the accepted deploy function with in-process authorization/request objects. Do not edit source merely to inject authorization.
+
+Equivalent invocation shape:
+```js
+await executeDeployCustomUi({
+  appId: 794,
+  authConfig: {
+    appId: 794,
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    authorizationId: 'APP794-CORRECTIVE-DEPLOY-20260829-01'
+  },
+  requestConfig: {
+    appId: 794,
+    workPackageId: 'MBO-P03-WP-002C',
+    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY'
+  }
+});
 ```
 
-## Antigravity
+Use existing approved Kintone connection/environment only. Never print credentials or secrets.
 
-HOLD.
-Do not deploy, change ACL, change source, change App801, start Auth Bridge, or work on D2-D7 until a new Active Task is issued after explicit user authorization.
+## Required evidence
+
+Return concise evidence:
+- source HEAD used;
+- clean-tree/preflight result;
+- `npm test` result;
+- build-only result;
+- target registry = 794;
+- live/preview customization preflight/revision evidence;
+- uploaded replacement filename = `mbo-employee-app.js`;
+- deploy status final = `SUCCESS`;
+- live customization revision/read-back if available;
+- confirmation that no App801, App794 ACL, App794 record, workflow, or other-app write occurred.
+
+Commit/push only documentation/evidence if the repository governance already requires it. Do not create new business/source changes as part of the deploy.
+
+## Single-use rule
+
+This authorization permits one guarded live App794 corrective deploy attempt only.
+- After successful guarded live deploy: authorization is CONSUMED; STOP.
+- If a failure occurs after any live write/upload/preview PUT/deploy request: DO NOT RETRY automatically; STOP and report exact evidence.
+- If preflight fails before any live write: STOP and report; do not widen scope.
+
+## Forbidden
+
+- NO App801 write/schema/ACL/data/credential change
+- NO further App794 App ACL write
+- NO App794 record write/delete
+- NO routing/scoring/workflow change
+- NO HR/admin Password Reset UI implementation
+- NO Auth Bridge / external service
+- NO D2-D7 work
+
+After execution, STOP and wait for independent ChatGPT review.
