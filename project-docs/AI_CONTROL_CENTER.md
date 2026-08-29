@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — APP794 WP2 R4 COMMIT 4852915 REVIEW = CORRECTIVE; FATAL AUTHENTICATED CREATE ERROR MUST PROVIDE BACK TO MY MBO
+> Updated: 2026-08-30 — APP794 WP2 R4 CORRECTIVE R2 SOURCE REVIEW PASS / DEPLOY NOT AUTHORIZED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source remains independently ACCEPTED. App794 Rev57 prior WP2 R3 scope remains accepted. WP2 R4 error-state Back corrective is still open because R1 commit fixed Detail/Edit error states but did not fix the exact authenticated Create duplicate/profile-resolution error shown by the user. R4 Corrective R2 is assigned source-only. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source = independently accepted. App794 WP2 R4 fatal-error Back navigation corrective R2 source = independently accepted. Full D1 remains open until Master Joblist closure gates and Live UAT pass. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -33,7 +33,7 @@ INDEPENDENT_GIT_REVIEW      = PASS
 PRIOR_USER_RUNTIME_UAT      = PASS FOR WP2 R3 TARGET AREAS
 ```
 
-Rev57 remains the known Live baseline. No R4 source commit has been deployed.
+Rev57 remains the current accepted Live baseline. No R4 source commit has been deployed.
 
 ## 3. D1 Password Reset Core R1 — Accepted Source
 
@@ -45,45 +45,24 @@ R1_LIVE_APP801_WRITE        = NONE
 R1_STATUS                   = D1_PASSWORD_RESET_CORE_R1_SOURCE_ACCEPTED
 ```
 
-Do not reopen Password Reset R1 during the UI corrective.
+## 4. App794 WP2 R4 Error-State Back Navigation — Source Accepted
 
-## 4. WP2 R4 Independent Review — Commit 4852915
+Accepted source candidate:
 
-Reviewed commit:
+`98108e9e387d01b6d3c3a35cce5baf13324be50e`
 
-`4852915c13c4edf58306b1f751c99d25c0c88e69`
+Independent decision:
 
-Decision:
+`SOURCE REVIEW PASS`
 
-`CORRECTIVE`
-
-What is accepted from that commit:
-- narrow scope only (`src/main-mbo-app.js`, focused integration test, generated dist);
-- canonical `EmployeeRecordNavigation` is reused rather than copied;
-- existing Detail/Edit blocking states receive one Back navigation control;
-- render-exception recovery was improved for existing record pages;
-- no CSS, Password Reset, App800, D7, Auth Bridge or control-doc executor changes occurred;
-- no Live deploy/write evidence exists.
-
-Why it is not PASS:
-- the user's screenshot is an **authenticated Create flow** (`/k/794/edit`) whose automatic Employee profile resolution/duplicate check fails;
-- current source calls `renderBlockedNotice(..., { isCreate: true })` for that fatal catch;
-- the helper maps Create to no Back navigation;
-- the new integration test explicitly asserts that a Create error has zero Back bars;
-- therefore the exact user-visible defect remains unresolved.
-
-This mismatch originated from the prior Control Plane task wording that incorrectly generalized `Create = no Back` to every Create error state. The task has been corrected; this is not treated as executor noncompliance.
-
-## 5. Confirmed Recovery-Navigation Rule
-
-Current required behavior:
+Accepted recovery-navigation rule:
 
 ```text
-Normal successful Create                         = 0 Back controls
-Create auth/login-required before authentication = 0 Back controls
+Normal successful Create                            = 0 Back controls
+Create auth/login-required before authentication    = 0 Back controls
 Authenticated Create fatal/autoload/duplicate error = exactly 1 Back control
-Normal existing Detail/Edit                      = exactly 1 Back control
-Existing Detail/Edit fatal/blocking error         = exactly 1 Back control
+Normal existing Detail/Edit                         = exactly 1 Back control
+Existing Detail/Edit fatal/blocking error            = exactly 1 Back control
 ```
 
 Canonical label:
@@ -94,40 +73,57 @@ Target:
 
 `/k/794/` in the same tab.
 
-Back navigation is recovery/navigation only. It must not save, mutate Kintone records, change workflow, or alter auth/session state.
+Implementation remains narrow:
+- `EmployeeRecordNavigation` stays the canonical Back component;
+- `main-mbo-app.js` uses explicit recovery intent for fatal Create states;
+- the authenticated Create profile-resolution/duplicate failure catch enables Back;
+- normal Create and pre-auth Create remain without Back;
+- fail-closed behavior is preserved;
+- no CSS or unrelated domain source changed.
 
-## 6. Current Active Task
+## 5. Review / Verification Evidence
+
+Compare base:
+
+`cc93d2a9ffa3733d6618af3b62c066068820931d`
+
+Candidate:
+
+`98108e9e387d01b6d3c3a35cce5baf13324be50e`
+
+Changed files only:
+- `src/main-mbo-app.js`;
+- `tests/employee-main-mbo-app-integration.test.js`;
+- generated `dist/mbo-employee-app.js`.
+
+Committed integration tests explicitly distinguish:
+- normal successful Create;
+- pre-auth Create failure;
+- authenticated fatal Create failure;
+- Detail/Edit blocking states;
+- exact Back target/label;
+- zero record and auth/session mutation for Back behavior.
+
+GitHub currently reports no CI status and no workflow run for candidate `98108e9e...`. Therefore the source review is accepted, but pre-deploy verification must independently re-run the required tests/build and lock the exact release manifest before any Live authorization.
+
+## 6. Current Gate
 
 ```text
-ACTIVE_TASK   = APP794 WP2 R4 ERROR-STATE BACK NAV / CORRECTIVE R2 SOURCE-ONLY
-OWNER         = ANTIGRAVITY
-LIVE_WRITE    = FORBIDDEN
-DEPLOY        = FORBIDDEN
-PRIMARY_GAP   = AUTHENTICATED CREATE DUPLICATE/PROFILE-RESOLUTION FATAL SCREEN HAS NO BACK
-```
-
-Exact execution packet is in `project-docs/AI_ACTIVE_TASK.md`.
-
-Preferred implementation boundary is to make recovery navigation an explicit error-state option rather than deriving it solely from `isCreate`.
-
-## 7. Current Gate
-
-```text
-CURRENT_GATE                  = APP794 WP2 R4 R2 FATAL CREATE BACK SOURCE CORRECTIVE / PENDING EXECUTION THEN CHATGPT REVIEW
-CURRENT_MODE                  = SOURCE-ONLY / NO LIVE WRITE
-R4_R1_COMMIT                  = 4852915c13c4edf58306b1f751c99d25c0c88e69
-R4_R1_REVIEW                  = CORRECTIVE
+CURRENT_GATE                  = CONTROL PLANE HOLD / SOURCE ACCEPTED / PREDEPLOY VERIFICATION NOT YET OPENED
+CURRENT_MODE                  = NO ACTIVE EXECUTION / NO LIVE WRITE
 D1_PASSWORD_RESET_CORE_R1     = SOURCE PASS / ACCEPTED
-WP2_R3_PRIOR_SCOPE            = ACCEPTED / DO NOT BROADLY REOPEN
+WP2_R3_PRIOR_LIVE_SCOPE       = REV57 ACCEPTED KNOWN-GOOD
+WP2_R4_R2_SOURCE              = PASS / ACCEPTED
+WP2_R4_LIVE_DEPLOY            = NOT AUTHORIZED / NOT EXECUTED
 D1_OVERALL                    = IN PROGRESS
 LIVE_DEPLOY_AUTHORIZED        = NO
 ACTIVE_KINTONE_WRITE_AUTH     = NONE
 APP801_LIVE_WRITE             = NO
 ROLLBACK_AUTH                 = NONE
-NEXT_OWNER                    = ANTIGRAVITY FOR EXACT R4 R2 SOURCE PACKET
+NEXT_OWNER                    = USER -> CHATGPT CONTROL PLANE FOR NEXT EXPLICIT STEP
 ```
 
-## 8. Authorization Ledger
+## 7. Authorization Ledger
 
 ```text
 PRIOR_AUTHORIZATION_ID       = APP794-D1-WP2-R3-DEPLOY-20260829-01
@@ -138,4 +134,4 @@ ACTIVE_DEPLOY_AUTH           = NONE
 ROLLBACK_AUTH                = NONE
 ```
 
-No source acceptance, screenshot, or corrective packet authorizes a Live deploy.
+No source acceptance authorizes a Live deploy. Any pre-deploy verification/deploy packet and any Live write require a fresh Control Plane step and, for Live execution, explicit user authorization.
