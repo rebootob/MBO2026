@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP1 PASS / WP2 UI FUNCTIONAL PARTITION + RUNTIME PROOF
+> Updated: 2026-08-29 — WP2 UI CANDIDATE CORRECTIVE / NO LIVE WRITE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 App794 Live Rev54 remains accepted known-good. **WP1 Atomic App794 Deployment Tooling = INDEPENDENT PASS** at candidate `035b4d1fa077907f19bf8d2ef0a4177156d0319b`. WP2 now starts for Back to My MBO + My MBO card/list + Native Comment mirror/Refresh source partition and runtime integration proof. No Live deployment is authorized. HR/admin reset and remaining security UAT remain open. |
+| D1 | 🟠 App794 Live Rev54 remains accepted known-good. WP1 Atomic Deployment Tooling remains PASS/CLOSED. WP2 candidate source commit `890d92b5d5d8c43e54f203833a32fd759fbaed43` with evidence/dist commit `a18dd594fb9b522772b9e58427bdd4eeb4906754` is **CORRECTIVE**. Module extraction direction is accepted, but Back runtime reliability, Comment safety/pagination, Create-screen scope, and candidate artifact traceability must be corrected before any deployment authorization. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -33,191 +33,162 @@ USER_RUNTIME_SMOKE     = PASS
 CURRENT_LIVE_RUNTIME   = ACCEPTED KNOWN-GOOD
 ```
 
-Rev54 remains unchanged throughout WP1. No WP1 Live write occurred.
+No WP2 Live customization write occurred. Rev54 is unchanged.
 
-## 3. WP1 — Independent PASS
+## 3. WP1 — PASS / CLOSED
 
 Accepted candidate:
 `035b4d1fa077907f19bf8d2ef0a4177156d0319b`
 
-Independent review confirms:
-```text
-CHANGED_SCOPE                        = deploy tooling + tests + evidence only
-PREBUILD_SOURCE_GATE                 = PASS
-MANIFEST_BEFORE_BUILD/NETWORK        = PASS
-EXACT_FULL_SOURCE_SHA                = PASS
-INTERNAL_GIT_HEAD                    = PASS
-DIRTY_WORKTREE_FAIL_CLOSED           = PASS
-PURE_DIRTY/CLEAN TESTS               = PASS
-ATOMIC_JS_CSS_PAIR                   = PASS
-MANDATORY_RELEASE_MANIFEST           = PASS
-BYTE_EXACT_JS_CSS_IDENTITY           = PASS
-BUILD_ONLY_ZERO_NETWORK              = PASS
-UI_FEATURE_SOURCE_DRIFT              = NO
-LIVE_KINTONE_WRITE                   = 0
-LIVE_DEPLOY                          = NO
-```
+Do not reopen WP1 except for a directly demonstrated artifact-determinism regression. Atomic JS+CSS, mandatory release manifest, pre-build source binding, exact-byte hashing, and fail-closed source state remain mandatory.
 
-Executor evidence records:
-- focused deployment tests PASS 26/26;
-- full suite PASS 939/939;
-- UI build PASS;
-- build-only PASS / network calls 0;
-- post-commit clean focused test PASS 26/26.
+## 4. WP2 Candidate Reviewed
 
-WP1 is CLOSED. Do not reopen unless later evidence demonstrates a regression.
+Source/Test commit:
+`890d92b5d5d8c43e54f203833a32fd759fbaed43`
 
-## 4. Permanent Deployment Contract After WP1
+Evidence/dist commit:
+`a18dd594fb9b522772b9e58427bdd4eeb4906754`
 
-Future App794 customization deployment must use the hardened tooling and comply with `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`.
-
-Before a future Live deploy:
-```text
-KNOWN_GOOD_ROLLBACK_MANIFEST = Rev54 / ec627852... / e04aa... + 1710d...
-CANDIDATE_SOURCE_COMMIT       = exact full Git HEAD
-CANDIDATE_JS_IDENTITY         = exact reviewed artifact identity
-CANDIDATE_CSS_IDENTITY        = exact reviewed artifact identity
-CANDIDATE_SCOPE               = exact reviewed scope
-CANDIDATE_TOPOLOGY            = exact reviewed topology
-WORKTREE                      = clean
-JS + CSS                      = atomic pair
-```
-
-No automatic rollback. Any later Live write requires a new explicit user authorization.
-
-## 5. WP2 — UI Functional Partition + Runtime Integration Proof
-
-User-required UI scope remains exactly:
-1. **Back to My MBO** on existing Detail/Edit only.
-2. **My MBO responsive card/list** preserving Employee-Self ownership/query/status semantics and zero Delete UI.
-3. **Native Kintone Comment read-only mirror + Refresh** on existing Detail/Edit only.
-
-### Canonical feature ownership target
-
-```text
-My MBO card/list
-  OWNER = src/ui/employee-self-index-ui.js
-  ACTION = preserve owner; improve only if required by accepted visual design
-
-Back navigation
-  CURRENT = embedded in src/ui/employee-part-a-ui.js
-  TARGET OWNER = src/ui/employee-record-navigation.js
-  RULE = one canonical implementation; remove embedded duplicate from EmployeePartAUI
-
-Native Comment mirror
-  CURRENT = embedded in src/ui/employee-part-a-ui.js
-  TARGET OWNER = src/ui/employee-comment-mirror.js
-  RULE = one canonical implementation; remove embedded duplicate from EmployeePartAUI
-
-CSS
-  OWNER = src/styles/mbo-employee.css
-  RULE = keep one stylesheet for this corrective; use clearly separated feature sections; no broad CSS refactor
-
-Runtime orchestration
-  OWNER = src/main-mbo-app.js
-  RULE = orchestration/wiring only; no duplicate feature logic
-```
-
-### Runtime proof required
-
-Back navigation must be proven through the actual Kintone record orchestration path, not renderer-only unit tests:
-```text
-Detail existing record -> custom UI mounted -> Back visible
-Edit existing record   -> custom UI mounted -> Back visible
-Create record          -> Back absent
-Back href/action       -> /k/{currentAppId}/ same tab
-Auth/session mutation  -> none
-Record write           -> none
-```
-
-Comment mirror must preserve:
-- Native right-side Comments remain source of truth and place to add/reply/delete;
-- custom mirror is read-only;
-- current App794 record only;
-- GET `/k/v1/record/comments.json` only;
-- author + timestamp + body;
-- safe text rendering;
-- truthful pagination with no silent truncation;
-- Refresh performs an actual re-fetch;
-- Create performs zero comment GET;
-- zero Comment POST/DELETE/reply.
-
-My MBO must preserve:
-- exact Employee_Code ownership filter;
-- `order by Fiscal_Year desc`;
-- prominent Fiscal Year + Status;
-- Record Key secondary;
-- non-completed Open MBO;
-- Completed / 16 Completed View History;
-- exact record URLs;
-- Create New visible;
-- exactly one auth bar;
-- zero Delete UI.
-
-## 6. WP2 Boundaries
-
-WP2 is source/test/build only.
-
-Allowed feature/source scope:
-- `src/ui/employee-self-index-ui.js` only if required for the accepted card/list visual corrective;
-- `src/ui/employee-part-a-ui.js` only to remove delegated Back/Comment ownership and wire dedicated modules;
+Independent diff from WP2 start is limited to:
 - new `src/ui/employee-record-navigation.js`;
 - new `src/ui/employee-comment-mirror.js`;
-- `src/main-mbo-app.js` only for minimal orchestration/wiring if integration proof requires it;
-- `src/styles/mbo-employee.css` only for Back/My MBO/Comment feature styles;
-- focused tests directly covering these features;
-- generated `dist/mbo-employee-app.js` and `dist/mbo-employee.css` from deterministic build;
-- one concise WP2 evidence file.
+- delegated/removal changes in `src/ui/employee-part-a-ui.js`;
+- focused navigation/comment tests;
+- generated JS dist + WP2 evidence.
 
-Forbidden:
-- Auth/session behavior change;
-- Attachment behavior change;
-- Routing/Scoring/Profile change;
-- App801/App795/App796 writes;
-- App794 record/schema/layout/ACL/process write;
-- Kintone Comment write;
-- Copy Previous MBO;
-- D2-D7 implementation;
-- Live customization deploy;
-- rollback/recovery;
-- unrelated refactor.
+No auth/session/attachment/routing/scoring source changed. No Live write/deploy occurred.
 
-## 7. WP2 Release Evidence Required Before Any Deploy Authorization
+### Accepted direction
 
-WP2 must finish with an exact candidate manifest:
 ```text
-CANDIDATE_SOURCE_COMMIT
-CANDIDATE_JS_BLOB_SHA
-CANDIDATE_CSS_BLOB_SHA
-CANDIDATE_SCOPE = ALL
-CANDIDATE_TOPOLOGY = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-FEATURE_OWNER_MAP
-FOCUSED_TEST_RESULT
-RUNTIME_INTEGRATION_TEST_RESULT
-COMMENT_PAGINATION_REFRESH_RESULT
-FULL_TEST_RESULT
-UI_BUILD_RESULT
-BUILD_ONLY_RESULT
-BUILD_ONLY_NETWORK_CALLS = 0
-SOURCE_TO_DIST_TRACEABILITY
-LIVE_KINTONE_WRITE = 0
-LIVE_DEPLOY = NO
+My MBO owner              = src/ui/employee-self-index-ui.js (preserved)
+Back owner                = src/ui/employee-record-navigation.js
+Comment owner             = src/ui/employee-comment-mirror.js
+EmployeePartAUI           = delegates Back + Comment
+main-mbo-app.js            = unchanged / orchestration remains centralized
 ```
 
-Rollback manifest remains exact accepted Rev54 until a newer Live release passes technical readback + User runtime smoke.
+## 5. WP2 Independent Blockers
 
-## 8. Current Gate
+### Blocker A — Back runtime proof does not exercise the real Kintone orchestration path
+
+The new navigation tests instantiate `EmployeeRecordNavigation` directly or call `EmployeePartAUI._renderBackToMyMboBar()` directly. They do **not** execute the registered `app.record.detail.show` / `app.record.edit.show` / `app.record.create.show` path through:
 
 ```text
-CURRENT_GATE                  = WP2 UI FUNCTIONAL PARTITION + RUNTIME INTEGRATION PROOF
+main-mbo-app.js
+ -> getRecordUiHost
+ -> MBO login gate requireLogin
+ -> setupRecordUiWithAuth
+ -> new EmployeePartAUI(options)
+ -> ui.render()
+```
+
+This does not satisfy the WP2 runtime-integration requirement.
+
+### Blocker B — Real Back reliability defect remains in `EmployeePartAUI.render()`
+
+Back is currently appended only after several early-return gates, including:
+- `BUSINESS_STAGES.CONFIGURATION_ERROR`;
+- unknown workflow status;
+- missing/invalid competency snapshot;
+- invalid PartA/PartB weight snapshot.
+
+Therefore an existing Detail/Edit record can return before the Back bar is mounted. This is a concrete source-level reason Back can disappear even though `_renderBackToMyMboBar()` itself works.
+
+Required contract: every existing Detail/Edit custom screen, including fail-closed configuration/error views, must retain the safe navigation escape `← กลับหน้า My MBO / Back to My MBO`. Create remains absent.
+
+Move/mount Back immediately after root creation for `!isCreate`, before configuration/snapshot early returns, without weakening those fail-closed checks.
+
+### Blocker C — Comment mirror is still rendered on Create
+
+`EmployeePartAUI.render()` unconditionally appends `_renderNativeCommentMirror()`. The dedicated mirror returns a Create notice and zero GET, but WP2 scope says Comment mirror is **existing Detail/Edit only**.
+
+Required:
+```text
+Detail/Edit -> Comment mirror rendered
+Create      -> Comment mirror absent AND comment GET count = 0
+```
+
+### Blocker D — Comment safe-text contract is incomplete
+
+`employee-comment-mirror.js` assigns several strings with both `textContent` and non-empty `innerHTML`. Most are fixed strings, but the failure state builds:
+
+```text
+Failed to load comments: ${err.message}
+```
+
+then assigns it to `innerHTML`. Dynamic error text must never enter HTML parsing.
+
+Required: use `textContent`/text nodes only for all Comment mirror textual states and user/API-derived values. Empty `innerHTML = ''` used only to clear a container may remain, or use a safe clear helper. Add a malicious `err.message` regression.
+
+### Blocker E — Pagination has a silent 100-page ceiling
+
+`fetchRecordComments()` uses `for (let page = 0; page < 100; page++)` and returns accumulated comments after the loop. If Kintone still reports `newer=true` after page 100, this silently returns incomplete data.
+
+This violates truthful complete pagination / no silent truncation.
+
+Required: no silent completion on an arbitrary page ceiling. Either continue until truthful end (`newer=false` / zero / documented fallback) with a no-progress guard, or fail explicitly if a safety ceiling is reached so UI shows a non-blocking failure rather than partial data. Add a >5,000-comments or equivalent ceiling regression.
+
+### Blocker F — Candidate artifact manifest is not independently traceable/reproducible yet
+
+Evidence records:
+```text
+CANDIDATE_SOURCE_COMMIT = 890d92b5d5d8c43e54f203833a32fd759fbaed43
+CANDIDATE_JS_BLOB_SHA   = c46b03b823f7b5cfb79521a6908c5aa54388a4c2
+CANDIDATE_CSS_BLOB_SHA  = 2599ff745475a5f01bd4224f76e5b098fa2bbf2e
+```
+
+Independent Git inspection shows:
+```text
+890d... committed dist JS blob = a4975fc219269268bf2a0caffd084d233fa3e29a
+
+a18d... committed dist JS blob = c46b03b823f7b5cfb79521a6908c5aa54388a4c2
+
+a18d... committed dist CSS blob = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+```
+
+Thus the captured CSS exact-byte identity `2599ff...` is not the committed CSS blob identity `2a758...`, consistent with an EOL/filter-dependent build artifact. This is exactly the class of identity ambiguity the new rollback/deployment rules are intended to eliminate.
+
+Before deployment authorization, require one deterministic candidate process:
+1. source/test/dist final state committed together as the candidate commit;
+2. clean checkout of that exact candidate commit;
+3. clean rebuild produces **zero tracked dist diff**;
+4. exact bytes hashed by deployment tooling equal the committed JS/CSS blob identities;
+5. only then record final candidate manifest.
+
+If CSS EOL handling prevents this, make the narrow build-output correction needed to emit canonical deterministic CSS bytes. Do not change `gitBlobSha()` exact-byte behavior.
+
+## 6. WP2 Accepted Behavior — Preserve
+
+```text
+FEATURE_PARTITION_DIRECTION     = PASS
+MY_MBO_OWNER_PRESERVED          = PASS
+MY_MBO_QUERY/STATUS SEMANTICS   = PRESERVE
+BACK_LABEL/TARGET/SAME_TAB      = PASS at module level
+COMMENT_CREATE_GET              = 0 at module level
+COMMENT_REFRESH_REFETCH         = PASS at module level
+COMMENT_SHORT_PAGE_NEWER_TRUE   = PASS
+COMMENT_525_PAGINATION          = PASS
+COMMENT_BODY/AUTHOR_TEXTCONTENT = PASS
+COMMENT_WRITE                   = 0
+NO_LIVE_WRITE                   = PASS
+```
+
+Do not reopen accepted attachment/auth/routing/scoring behavior.
+
+## 7. Current Gate
+
+```text
+CURRENT_GATE                  = WP2 UI CORRECTIVE — REAL RUNTIME BACK + COMMENT SAFETY + DETERMINISTIC CANDIDATE
 CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST/BUILD ONLY — NO LIVE WRITE
 NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 WP1                           = PASS / CLOSED
-WP1_ACCEPTED_CANDIDATE        = 035b4d1fa077907f19bf8d2ef0a4177156d0319b
 LIVE_APP794_CUSTOMIZATION     = REV54 ACCEPTED KNOWN-GOOD
 ROLLBACK_MANIFEST             = LOCKED / ec627852 + e04aa... + 1710d...
-WP2_SOURCE_CHANGE             = YES / EXACT UI SCOPE ONLY
-WP2_TEST_CHANGE               = YES / EXACT UI SCOPE ONLY
+LATEST_WP2_SOURCE_COMMIT      = 890d92b5d5d8c43e54f203833a32fd759fbaed43
+LATEST_WP2_EVIDENCE_COMMIT    = a18dd594fb9b522772b9e58427bdd4eeb4906754
+WP2_VERDICT                   = CORRECTIVE
 APP794 CUSTOMIZATION DEPLOY   = NO / NOT AUTHORIZED
 APP794 RECORD WRITE           = NO
 APP794 FORM/SCHEMA/LAYOUT     = NO
@@ -229,4 +200,4 @@ D2-D7 EXECUTION               = NO
 ```
 
 Maximum executor status:
-`WP2_UI_CANDIDATE_IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
+`WP2_UI_CORRECTED_CANDIDATE_PENDING_INDEPENDENT_REVIEW`.
