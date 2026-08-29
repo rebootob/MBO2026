@@ -19,13 +19,9 @@ Hard rules:
 
 Native Kintone Comments remains the authoritative record-conversation channel for Return/Reject discussion. Custom UI must not hide, cover, replace, or fabricate that native channel.
 
-User Live evidence on 2026-08-29 showed the native Kintone panel saying `No comments available` while the then-current custom timeline displayed hard-coded sample history. That behavior is classified as a correctness defect and must not return.
-
 ---
 
 ## 2. Workflow Timeline Persistence Boundary
-
-The business requirement for a read-only `Workflow Action Timeline` remains valid, but production event persistence/source is not certified merely because a table exists in UI.
 
 Until an authoritative audit source is implemented/reviewed:
 
@@ -50,6 +46,16 @@ Per-objective evidence remains optional in these stages:
 
 No Save/Submit validation may fail solely because no attachment exists.
 
+Canonical App794 FILE families:
+
+```text
+Objective_Attachment_1..10 = FILE / optional
+MidYear_Attachment_1..10   = FILE / optional
+Final_Attachment_1..10     = FILE / optional
+```
+
+Self Evaluation uses canonical `Final_Attachment_n`; any UI `Self_Attachment_n` alias must resolve to those fields.
+
 Existing compatible Kintone FILE fields remain the persistence boundary. Do not add external storage/service.
 
 ---
@@ -72,7 +78,7 @@ The UI must not imply success before upload + record-field binding succeeds.
 Display ALL actual filenames present in the Kintone FILE field, not only the first file.
 
 ### Editable state
-Remove/change must update the exact attachment field state truthfully. A remove action must not silently mutate unrelated objective/stage attachment fields.
+Remove/change/add must preserve the exact desired attachment field state truthfully. A change must not silently mutate unrelated objective/stage attachment fields.
 
 ### Read-only/detail state
 Display all real filenames. Where safe and supported, an open/download action may be provided using the actual Kintone file reference.
@@ -84,33 +90,41 @@ Live must never display preview/sample fixture filenames. Preview may use clearl
 
 ## 5. Kintone-Only File Lifecycle
 
-If the custom UI owns file selection/upload, use Kintone-native file handling only.
-
-Canonical browser persistence flow confirmed after Live UAT defect correction:
+Canonical browser persistence flow:
 1. user selects local file(s);
 2. UI records local `PENDING` state and shows filename(s);
 3. create/edit submit performs existing local validation first;
 4. upload pending files through Kintone `POST /k/v1/file.json` and receive temporary upload `fileKey` values;
 5. **DO NOT mutate Kintone FILE fields in `app.record.create.submit` / `app.record.edit.submit` event records**;
 6. keep an in-memory prepared attachment plan;
-7. for saved-file removal/change, keep an explicit desired retained-file snapshot per canonical attachment field, independent of the later submit `event.record` object;
+7. for saved-file removal/change, keep explicit desired retained-file state independent of the later submit `event.record` object;
 8. allow the native Kintone record save to complete;
 9. in `app.record.create.submit.success` / `app.record.edit.submit.success`, use `event.appId` + `event.recordId` and Kintone Update Record REST API (`PUT /k/v1/record.json`) to bind the exact target FILE field(s);
 10. after persistence/read-back, render actual saved filenames from Kintone.
 
-Confirmed source/test invariants:
+Confirmed invariants:
 - pre-save upload failure may cancel submit fail-closed;
-- post-save binding failure must truthfully state that the record already saved but attachment binding failed, and must not disappear silently during normal redirect;
+- post-save binding failure must truthfully state that the record already saved but attachment binding failed;
 - zero pending/dirty attachment state causes no attachment REST update;
 - unrelated attachment fields must not be included in the REST update payload;
-- retained saved fileKeys remain unless the user explicitly removes them;
-- remove + add on the same field must produce the exact desired retained + new fileKey set;
-- Self Evaluation uses the canonical `Final_Attachment_n` FILE fields in the current App794 schema; UI alias/fallback behavior must resolve to those canonical fields;
+- retained saved files remain unless the user explicitly removes them;
+- remove + add on the same field must produce the exact desired retained + new file set;
 - use multipart `FormData`, same-origin Kintone context/request token as applicable;
-- do not confuse upload-time fileKey with later record-read references;
 - unit tests must not perform Live network writes.
 
-External file hosting/storage is forbidden for D1.
+### 5.1 Mandatory Edit Preservation Rule
+
+**Never use Attachment values from `app.record.edit.submit` as the authoritative existing-file base.** Kintone does not provide retrievable Attachment values in that event.
+
+For an Edit operation that changes an attachment field:
+- obtain authoritative persisted attachment state before building the desired-state plan, using Kintone GET Record with the current App ID + Record ID or an equivalently proven authoritative pre-submit snapshot;
+- add-only must preserve every existing saved fileKey and append all newly uploaded fileKeys;
+- explicit removal must exclude only the fileKeys the user removed;
+- remove + add must send the exact retained saved fileKeys plus all new upload fileKeys;
+- Update Record attachment payload is full desired-state semantics: any existing fileKey omitted from the target field payload is treated as removed;
+- therefore a partial list such as only the first existing file is a destructive defect.
+
+This rule applies to Objective, Mid-Year and Final attachment families.
 
 ---
 
@@ -130,14 +144,19 @@ Before accepting a corrective implementation, tests must cover at minimum:
 - multiple real files;
 - selected/pending file state;
 - pending remove/change;
-- real saved-file removal desired state through the registered submit handler using a separate submit-event record;
-- remove + add exact desired state;
+- initial one-file create/save;
+- initial multiple-file create/save;
+- edit add-only with submit-event Attachment value unavailable/empty preserves every persisted existing file;
+- edit multiple-existing-file state never collapses to first file;
+- edit add multiple new files preserves every existing file;
+- edit remove desired state using a separate submit-event record;
+- edit remove + add exact desired state when submit-event Attachment values are unavailable;
+- tests prove authoritative persisted GET/snapshot, not submit-event Attachment values, provides the existing-file base;
 - upload error visibly remains not-saved;
 - exact target-field binding;
 - unrelated attachment fields unchanged;
 - Objective/Mid-Year/Self(Final) attachment regression;
 - create/edit zero-pending non-mutation;
-- create/edit pending upload non-mutation;
 - submit.success exact REST binding;
 - post-save failure visible/no-silent-redirect behavior;
 - Live never shows preview fixture filename.
@@ -164,5 +183,6 @@ Any future proposal to:
 - hide filenames/state from users;
 - change optional attachment semantics;
 - return to direct FILE-field mutation inside create/edit submit event objects;
+- use `app.record.edit.submit` Attachment values as the retained-file source;
 
 requires explicit user decision and Baseline update.
