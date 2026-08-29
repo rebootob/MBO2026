@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — APP795 ACL READ-ONLY DISCOVERY
+# AI ACTIVE TASK — HOLD / APP795 ACCESS CORRECTION AUTHORIZATION REQUIRED
 
-Mode: **USER + CONTROL PLANE READ-ONLY — ANTIGRAVITY HOLD**
+Mode: **CONTROL PLANE + USER AUTHORIZATION — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
 
 ## Mandatory architecture
@@ -19,68 +19,70 @@ APP794 LIVE customization revision = 45
 EMPLOYEE_SELF_UI_LIVE_UAT = PASS
 LOGOUT_VISIBLE_LIVE = PASS
 LIST_TO_CREATE_SESSION_LIVE = PASS
-OLD kintone.app.record.get() HANDLER ERROR = RESOLVED
-OLD AdminDiagnosticModel ERROR = ABSENT IN LATEST USER CONSOLE EVIDENCE
+OLD CREATE-HANDLER DEFECT = RESOLVED
 CREATE_INITIALIZATION_E2E = BLOCKED / APP795 READ 403
+APP795_APP_ACL_REVISION = 8
+APP795_APP_GROUP = PRIVATE / USER SCREENSHOT CONFIRMED
+APP795_ACCESS_CORRECTION = REQUIRED / NOT AUTHORIZED
 ```
 
-User Live evidence shows Create reaches `/k/794/edit`, then runtime query to App795 fails:
-```text
-GET /k/v1/records.json?app=795&query=Routing_Key... -> 403 Forbidden
-Employee Profile Resolution Failed: ไม่มีสิทธิในการดำเนินการ
-```
+App795 is the authoritative routing master. Runtime App794 create-show must read App795 `Routing_Key` and fail closed if it cannot.
 
-`CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` establishes App795 as the authoritative routing master and `Routing_Key` as the runtime lookup key. `src/services/routing-service.js` performs this as read-only `getRecords` and must fail closed if routing cannot be read/resolved.
+Latest evidence establishes the cause of 403:
+- stored App795 app ACL says `everyone` has View/Add/Edit/Delete;
+- App795 is in the Kintone `Private` App Group;
+- Kintone UI warns permission settings are not applied to apps in the Private group.
 
-## Exact next action
+Do NOT bypass App795 in source.
 
-Under technical administrator `admin-form`, perform READ-ONLY inspection only:
-1. GET App795 App Permissions / ACL and revision;
-2. report all permission rows with entity type/code and View/Add/Edit/Delete/Manage/Import/Export flags;
-3. determine whether `MBO_EMPLOYEE_ACCESS` exists and has View permission;
-4. determine whether `Everyone` grants or denies View;
-5. inspect App795 App Group placement from Kintone UI if needed, because a Private App Group can override/ignore app-level permissions;
-6. do not modify any permission or App Group setting.
+## Proposed exact minimal correction — NOT YET AUTHORIZED
 
-## Important classification
+Target App795 only:
+1. change App Group `Private -> Public`;
+2. preserve App creator / Admin-Form full rights exactly;
+3. add `MBO_EMPLOYEE_ACCESS` with:
+   - View = YES
+   - Add = NO
+   - Edit = NO
+   - Delete = NO
+   - Manage App = NO
+   - Import = NO
+   - Export = NO
+4. set `Everyone`: all permissions NO;
+5. read back App795 permissions after change;
+6. user-side `s1` read/Create-show UAT afterward.
 
-This is not a routing-business-source defect. Do NOT modify `routing-service.js` to bypass App795 or hard-code route data.
-
-No App795 ACL correction is authorized yet. If read-only evidence proves an ACL/App Group defect, Control Plane must define the minimum correction and obtain a new explicit user authorization before any write.
+Reason for coupled change: switching only to Public would activate the current overly broad `everyone` Add/Edit/Delete rights.
 
 ## Forbidden
 
-- NO App794 deploy/retry/upload/Preview PUT
-- NO App794 ACL or business-record write
-- NO App795 ACL write
-- NO App795 record write
+- NO App795 App Group change before explicit authorization
+- NO App795 ACL write before explicit authorization
+- NO App795 record/routing data change
+- NO App794 deploy/retry/upload/ACL/record write
 - NO App801 write
 - NO source change
-- NO routing data change
-- NO Reset Password UI implementation yet
+- NO Reset Password UI implementation in this task
 - NO Auth Bridge / external service
 - NO D2-D7 work
 
 ## Authorization state
 
 ```text
-APP794 DEPLOY        = NO
-APP794 FILE UPLOAD   = NO
-APP794 PREVIEW WRITE = NO
-APP794 ACL WRITE     = NO
-APP795 ACL WRITE     = NO
-APP794 RECORD WRITE  = NO
-APP795 RECORD WRITE  = NO
-APP801 WRITE         = NO
-SOURCE CHANGE        = NO
-EXTERNAL SERVICE     = NO
-D2-D7 WRITE          = NO
+APP795 APP GROUP WRITE = NO / AWAITING USER AUTHORIZATION
+APP795 ACL WRITE       = NO / AWAITING USER AUTHORIZATION
+APP795 RECORD WRITE    = NO
+APP794 DEPLOY          = NO
+APP794 ACL WRITE       = NO
+APP794 RECORD WRITE    = NO
+APP801 WRITE           = NO
+SOURCE CHANGE          = NO
+EXTERNAL SERVICE       = NO
+D2-D7 WRITE            = NO
 ```
 
 ## Antigravity
 
-HOLD. No executor implementation or live write task is active.
+HOLD. No executor task is active.
 
-After App795 permission evidence is reviewed, Control Plane will either:
-- close the blocker if permissions are already correct and investigate the next read-only cause; or
-- propose an exact minimal App795 read-only access correction and request explicit authorization.
+Control Plane must obtain a new explicit user authorization for the exact App795 access correction before any live settings write.
