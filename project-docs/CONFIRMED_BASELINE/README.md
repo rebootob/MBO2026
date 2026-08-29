@@ -36,6 +36,7 @@ Do not infer otherwise from historical chat, commits, or abandoned `services/mbo
 - `D1_AUTH_SECURITY.md` — **current KINTONE-ONLY D1 authentication architecture**, App801 credential model, PBKDF2/lockout/password rules, Employee-Self identity binding, `MBO_EMPLOYEE_ACCESS` ACL target, shared-principal limitation and final D1 UAT requirements.
 - `D1_SESSION_CONTINUITY.md` — 8-hour same-tab opaque session model validated through App801 inside Kintone, Credential_Version/Kintone-principal binding, logout/password rotation and UAT requirements.
 - `D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO ownership/history/status/no-delete rules.
+- `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — Live must not fabricate workflow/comment history; native Kintone Comments authority; truthful zero/pending/saved/multiple attachment states and Kintone-only file lifecycle.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
 - `ROUTING_WORKFLOW.md` — confirmed App795 routing model and workflow rules.
