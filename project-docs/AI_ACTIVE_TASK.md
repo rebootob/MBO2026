@@ -1,83 +1,129 @@
-# AI ACTIVE TASK — D1 ATTACHMENT REMOVE-STATE + POST-SAVE-VISIBILITY CORRECTIVE
+# AI ACTIVE TASK — D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE CORRECTIVE
 
 Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 
 ## Accepted implementation — DO NOT REIMPLEMENT
 
-Independent review accepted commit:
-`d1e51d25862794f6dce7ecff8809df5622011e38`
-
-Accepted core architecture:
+Accepted core architecture from prior reviews:
 
 ```text
-PRE-SAVE_UPLOAD_TO_FILEKEY                  = PASS
+PRE_SAVE_UPLOAD_TO_FILEKEY                  = PASS
 SUBMIT_EVENT_ATTACHMENT_NON_MUTATION        = PASS
-CREATE/EDIT_SUBMIT_SUCCESS_HOOKS            = PASS
+CREATE_EDIT_SUBMIT_SUCCESS_HOOKS            = PASS
 POST_SAVE_UPDATE_RECORD_REST_ARCHITECTURE   = PASS
+POST_SAVE_FAILURE_VISIBLE_SOURCE            = PASS
 SOURCE_OWNERSHIP_MODULAR                    = PASS
 ```
 
 Do not revert to direct Attachment mutation in submit events.
 Do not broad-refactor the accepted lifecycle.
+Do not rewrite post-save visibility unless the new tests expose a real defect.
 
-## Remaining blocker 1 — explicit saved-file removal is not carried into the plan
+## Remaining blocker 1 — desired saved-file state must be independent of submit event.record
 
-Current UI saved-file remove path changes only the UI-side record value.
-Current `prepareAttachmentPlan()` builds from `pendingAttachments` and submit `event.record`; there is no explicit dirty/removed-file desired-state channel.
+Current commit `3df7654b43925e3061c19fc81cdcddba7dc3724b` tracks only `dirtyAttachmentFields`.
 
-Required correction:
-- track exact attachment fields whose saved-file desired state changed;
-- prepare a plan for those dirty fields even when there is no new pending upload;
-- plan must contain the exact retained saved fileKeys plus any newly uploaded fileKeys;
-- remove one file must not remove another field or another retained file;
-- remove + add in the same field must produce the exact final desired fileKey set;
-- keep this feature logic in attachment service/UI state, not in `main-mbo-app.js`.
-
-Do not mutate Attachment values in submit event objects.
-
-## Remaining blocker 2 — post-save REST failure must remain visibly truthful
-
-Current submit-success catch renders an inline validation error and returns the event. That does not prove the user sees the failure before normal post-save navigation.
-
-Required correction:
-- when post-save attachment REST binding fails, user must unmistakably see:
-  `Record saved, but attachment binding failed` / equivalent Thai+English message;
-- do not claim the record save rolled back;
-- use supported Save Success behavior so the failure cannot silently disappear during redirect, e.g. retain the page on failure via supported redirect handling or another clearly visible notification/dialog;
-- success path should retain normal behavior.
-
-`main-mbo-app.js` may orchestrate this outcome only; persistence logic remains in attachment service/UI modules.
-
-## Required tests
-
-Add/adjust only focused tests needed to prove:
+The UI remove path mutates the UI-side `this.record[targetCode].value`, but the real submit handler later calls:
 
 ```text
-EXISTING_SAVED_FILES_PRESERVED = PASS
-EXPLICIT_REMOVE_DESIRED_STATE = PASS
-REMOVE_PLUS_ADD_EXACT_DESIRED_STATE = PASS
-UNRELATED_ATTACHMENT_FIELDS_UNCHANGED = PASS
-EDIT_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN = PASS
-SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED = PASS
-POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR = PASS
-POST_SAVE_BIND_FAILURE_NO_SILENT_REDIRECT = PASS
-SUCCESS_PATH_NORMAL_REDIRECT_BEHAVIOR = PASS
-NO_LIVE_NETWORK_IN_TESTS = PASS
-TIMELINE_ATTACHMENT_REGRESSION = PASS
+preparePendingAttachments({ record: event.record })
 ```
 
-Use realistic Kintone FILE fixtures with `type: 'FILE'` and existing fileKeys.
-Tests must execute real registered submit / submit.success handlers where handler behavior is being claimed.
+and the service still derives retained files from that submit-event record.
+
+Do not assume show-time UI record and later submit-event record are the same object or carry the same attachment mutation.
+
+### Required correction
+
+Implement the smallest explicit desired-state channel in the existing attachment UI/service modules:
+- when a saved file is removed, record the canonical target attachment field and the exact desired retained saved `fileKey` set;
+- keep that desired state separately from Kintone `event.record`;
+- pass it into `prepareAttachmentPlan()` from `preparePendingAttachments()`;
+- for a dirty/explicit desired-state field, construct the prepared REST plan from the explicit desired retained fileKeys plus any newly uploaded pending fileKeys;
+- do not re-read removed files back from submit `event.record` for that dirty field;
+- remove + add in one field must produce exact desired retained + new set;
+- unrelated fields remain absent from the REST plan;
+- preserve Self -> Final canonical target fallback semantics.
+
+A simple map/set structure inside `EmployeePartAUI` is preferred. Do not create a new module unless genuinely necessary.
+
+## Mandatory real-handler tests
+
+The key removal tests MUST execute the registered `app.record.edit.submit` handler, not only call `ui.preparePendingAttachments()` directly.
+
+At minimum prove this exact runtime shape:
+
+```text
+SHOW_RECORD:
+Objective_Attachment_1 = [KEEP_KEY, REMOVE_KEY]
+
+User removes REMOVE_KEY in custom UI.
+
+SUBMIT_EVENT_RECORD:
+separate object / clone that still contains [KEEP_KEY, REMOVE_KEY]
+
+Run registered app.record.edit.submit handler.
+
+Expected prepared plan:
+Objective_Attachment_1 = [KEEP_KEY]
+```
+
+Also prove:
+
+```text
+REAL_HANDLER_REMOVE_DESIRED_STATE_SEPARATE_SUBMIT_RECORD = PASS
+REAL_HANDLER_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE         = PASS
+UNRELATED_ATTACHMENT_FIELDS_UNCHANGED                     = PASS
+SELF_FINAL_FALLBACK_DESIRED_STATE                         = PASS
+SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED                  = PASS
+```
+
+## Remaining blocker 2 — restore deleted durable regression coverage
+
+The previous focused suite had 19 tests and full evidence reported 871 tests.
+The latest corrective reduced the focused suite to 11 and full suite to 863 by removing prior tests.
+
+This is not acceptable closure because the durable Baseline requires broader Timeline + Attachment regressions.
+
+Restore/retain the previous regression coverage while keeping the new corrective tests. Do not make tests pass by deleting existing coverage.
+
+Required durable coverage includes at least:
+
+### Timeline
+- Live + no authoritative events => zero fake events/names/comments;
+- Preview + no authoritative events => preview fixtures allowed;
+- Live + authoritative events => only authoritative events rendered.
+
+### Attachments
+- read-only zero files;
+- one saved file;
+- multiple saved files;
+- Live no preview filename leak;
+- pending file state;
+- real remove-button click behavior;
+- upload failure state/visibility;
+- Self -> Final fallback;
+- create/edit zero-pending submit behavior;
+- create/edit pending upload non-mutation behavior;
+- create/edit submit.success exact REST binding;
+- unrelated field preservation;
+- new explicit removal desired-state handler tests;
+- post-save failure visibility/no-silent-redirect tests.
+
+If an old test is genuinely obsolete because architecture changed, replace it with an equivalent-or-stronger test and explain the one-to-one replacement in evidence. Do not silently reduce test count.
 
 ## Evidence required
 
-Update the existing concise corrective evidence for the new final SHA with:
+Update the existing corrective evidence document for the new final SHA with:
 - START_HEAD = current Control Plane HEAD;
 - changed files;
-- exact two-blocker correction summary;
-- focused test names/results;
-- full `npm test` exact result;
+- explicit desired-state design summary;
+- exact real-handler removal test names/results;
+- restored regression test names/results;
+- focused test exact total/result;
+- full `npm test` exact total/result;
+- explanation for any intentionally replaced test;
 - `npm run ui:build` result;
 - module-aware `--build-only` result;
 - `LIVE_KINTONE_WRITE = 0`;
@@ -89,12 +135,11 @@ Update the existing concise corrective evidence for the new final SHA with:
 Preferred only:
 - `src/services/mbo-attachment-service.js`
 - `src/ui/employee-part-a-ui.js`
-- `src/main-mbo-app.js` orchestration only if required for visible failure/redirect handling
 - `tests/timeline-truthfulness-and-attachment.test.js`
 - generated `dist/mbo-employee-app.js` through normal build
 - existing corrective evidence doc
 
-Do not create a new module unless genuinely necessary for separation of concerns.
+`src/main-mbo-app.js` is already accepted for this gate. Change it only if a real handler test proves an orchestration defect.
 
 ## Forbidden
 
