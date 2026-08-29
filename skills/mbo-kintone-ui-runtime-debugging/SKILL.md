@@ -49,15 +49,21 @@ Required regression pattern:
 - `.mbo-native-comment-mirror` top-level;
 - Comment table selector top-level.
 
-### 2.3 Back navigation must be mounted before fail-closed early returns
-A record Detail/Edit may fail later configuration/snapshot/status validation. If Back navigation is mounted only after those checks, an early return can make Back disappear.
+### 2.3 Recovery navigation must survive fail-closed paths — classify by state, not only page type
+A record Detail/Edit may fail later configuration/snapshot/status validation. A Create flow may also become terminal after authentication when autoload, duplicate detection, or another prerequisite fails. If recovery navigation is mounted only on the normal renderer path, or hidden solely because `isCreate=true`, users can become trapped on a fatal screen.
 
 Permanent rule:
-- For existing Detail/Edit, mount Back immediately after the feature root/container is created.
-- Create must not show Back.
+- For existing Detail/Edit, mount Back/recovery navigation before or alongside fail-closed blocking output.
+- Normal successful Create does not need the record-level Back bar unless the product requirement explicitly says otherwise.
+- Do **not** infer recovery-navigation visibility solely from `Create` vs `Detail/Edit`.
+- If an authenticated Create flow reaches a terminal/fatal state with no valid continuation, provide a safe recovery path when the product UX requires it.
+- Keep login/auth-required screens separate from authenticated fatal business/preparation errors; they need not share the same recovery control.
+- Prefer an explicit error-state option such as `showRecoveryBack` over overloading `isCreate` to decide navigation.
+- Reuse one canonical navigation component; do not copy raw link markup into fallback handlers.
 - Never weaken fail-closed validation just to keep navigation visible.
-- Same-tab target remains `/k/{currentAppId}/`.
-- Back must not mutate auth/session or record/workflow state.
+- Same-tab recovery target should remain the approved application home/list route.
+- Recovery navigation must not mutate auth/session, record, or workflow state.
+- Tests must distinguish at least: normal Create, unauthenticated/auth-required Create, authenticated fatal Create, normal existing record, and existing-record fatal state.
 
 ### 2.4 Kintone Comment GET contract must respect `limit <= 10`
 The Live `Missing or invalid input` comment failure was caused by requesting too large a page size. The accepted contract is:
@@ -171,8 +177,12 @@ USER UAT = PASS
 
 R3 accepted UI result:
 - My MBO = structured table (`Fiscal Year | Status | Record Key | Action`).
-- Back to My MBO = prominent visible blue navigation on Detail/Edit; absent on Create.
+- Back to My MBO = prominent visible blue navigation on Detail/Edit; normal Create omits it.
 - Native Comment Mirror = structured read-only table (`# | Author | Date & Time | Comment`), Refresh enabled, GET `limit=10`.
+
+Later regression lesson:
+- a fatal authenticated Create error can still require recovery navigation even though normal Create omits the Back bar;
+- therefore error-state recovery must be tested independently from normal page-type rules.
 
 ## 6. Do Not Repeat These Mistakes
 - Do not assume CSS is loaded because the file exists in source/dist.
@@ -185,6 +195,7 @@ R3 accepted UI result:
 - Do not silently truncate Comment pagination.
 - Do not put dynamic error/comment text into `innerHTML`.
 - Do not call a technical deploy PASS a user-facing PASS.
+- Do not let a coarse `isCreate`/`isEdit` flag stand in for explicit fatal-state recovery intent.
 
 ## 7. Required Reading Rule
 Before any future App794 UI runtime corrective, Kintone custom UI deployment, or "UI exists but looks wrong" investigation, read this skill together with:
