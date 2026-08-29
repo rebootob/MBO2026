@@ -1,229 +1,213 @@
 # 00 MASTER JOBLIST — MBO2026 CONTINUITY CONTROL
 
-> **ABSOLUTE FIRST FILE FOR EVERY AI / HUMAN IMPLEMENTER**
->
 > Repository: `rebootob/MBO2026`  
 > Working branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
-> Execution Plane: Antigravity  
-> Objective: **Close the seven mandatory MBO deliverables without losing scope across chats, AI handoffs, or long contexts.**
+> Execution Plane: Antigravity only when actual execution is required  
+> Purpose: **D1–D7 completeness / no-drop authority across chats and handoffs.**
+
+This file controls **job completeness**, not every technical detail. If a detailed business/security/technical rule conflicts with `project-docs/CONFIRMED_BASELINE/`, the applicable Confirmed Baseline wins and the conflict must be corrected before execution.
 
 ---
 
-# 0. NON-NEGOTIABLE CONTINUITY RULE
-
-Before reading `AI_START_HERE.md`, `AI_ACTIVE_TASK.md`, source code, old chat summaries, or implementing anything, read this file first.
-
-This file is the master job-level control plane. Tactical work packages may change, but none of the seven mandatory deliverables below may disappear, be silently deferred, renamed away, or declared complete without evidence.
-
-If another living document omits one of these seven jobs, **this file wins for job completeness**. If a detailed business rule conflicts with `project-docs/CONFIRMED_BASELINE/`, the Confirmed Baseline wins for business/technical semantics and the conflict must be reported before implementation.
+## 0. NON-NEGOTIABLE CONTINUITY RULES
 
 ```text
-RULE_01 = READ_00_MASTER_JOBLIST_FIRST
-RULE_02 = READ_CONFIRMED_BASELINE_BEFORE_TECHNICAL_JUDGMENT
-RULE_03 = NEVER_DROP_D1_TO_D7
+RULE_01 = NEVER_DROP_D1_TO_D7
+RULE_02 = REPOSITORY_AND_LIVE_EVIDENCE_BEAT_CHAT_MEMORY
+RULE_03 = CONFIRMED_BASELINE_CONTROLS_DURABLE_SEMANTICS
 RULE_04 = NO_FALSE_PASS
-RULE_05 = IMPLEMENTER_CANNOT_SELF_CERTIFY_REVIEW_GATE
-RULE_06 = UPDATE_JOB_STATUS_AFTER_EACH_EXECUTION_BLOCK
-RULE_07 = NEXT_CHAT_MUST_CONTINUE_FROM_REPOSITORY_EVIDENCE, NOT MEMORY
-RULE_08 = NO_LIVE_KINTONE_WRITE_OR_DEPLOY WITHOUT EXACT EXPLICIT AUTHORIZATION
-RULE_09 = LEGACY_SOURCE_APPS_REMAIN_READ_ONLY
-RULE_10 = SECURITY_AND_PRIVACY_ARE_RELEASE_BLOCKERS
+RULE_05 = EXECUTOR_CANNOT_SELF_CERTIFY_INDEPENDENT_REVIEW
+RULE_06 = NO_LIVE_KINTONE_WRITE_OR_DEPLOY WITHOUT EXACT AUTHORIZATION
+RULE_07 = PROTECTED_LEGACY_SOURCE_APPS_REMAIN_READ_ONLY
+RULE_08 = SECURITY_PRIVACY_AND_DATA_TRUTHFULNESS_ARE_RELEASE_BLOCKERS
+RULE_09 = D1_IS_KINTONE_ONLY
+RULE_10 = AUTH_BRIDGE_IS_CANCELLED_AND_MUST_NOT_RETURN
 ```
+
+Use `AI_DOCUMENT_INDEX.md` for the lean read set. Do not broad-read historical documents merely because this is a handoff.
 
 ---
 
-# 1. THE SEVEN MANDATORY DELIVERABLES — DO NOT DROP ANY
+# 1. THE SEVEN MANDATORY DELIVERABLES
 
-## D1 — MBO LOGIN + PASSWORD CHANGE + STRICT EMPLOYEE DATA ISOLATION
+## D1 — LOGIN + PASSWORD CHANGE + EMPLOYEE-SELF MBO GATE
 
-### User requirement
-- MBO has a secondary login layer after Kintone login.
-- Initial MBO username = `Employee_Code`.
-- Initial MBO password = `Employee_Code`.
-- First login/default-password use must force user to set a new password.
-- User can later change their own password.
-- Employee A must never see Employee B's MBO information unless explicitly authorized by a legitimate business role.
+### Mandatory user outcome
+- secondary MBO login inside Kintone;
+- username = `Employee_Code`;
+- initial/default password = `Employee_Code`;
+- first/default login forces password change;
+- employee can later change own password;
+- Employee-Self UI is bound to authenticated Employee_Code;
+- My MBO/history/create/detail/edit must not let an employee switch to another Employee_Code;
+- production HR-authorized users and `admin-form` must have controlled Reset MBO Password capability;
+- Live MBO UI must show truthful data only, including comments/history and attachments.
 
-### Required security model
+### Current architecture — supersedes older backend/Auth-Bridge wording
+
+```text
+D1 = KINTONE-ONLY
+External server/service = FORBIDDEN
+External auth service   = FORBIDDEN
+External database       = FORBIDDEN
+Reverse proxy           = FORBIDDEN
+Auth Bridge             = CANCELLED / SUPERSEDED
+```
+
+Canonical flow:
+
 ```text
 Kintone authenticated principal
-        ↓ verified binding
-Employee_Code (App53)
-        ↓
-Secondary MBO authentication/session
-        ↓
-Authorized record scope
+  -> App794 browser customization
+  -> MBO Employee_Code authentication/session
+  -> App801 credential/session metadata through Kintone REST/JS API
+  -> Employee-Self App794 scope
 ```
 
-### Hard security rules
-- `Employee_Code` alone is NOT proof of identity.
-- Password verification must not be implemented as browser-only secret comparison.
-- `Password_Hash` / password secrets must never be exposed to employee browser JavaScript.
-- App801 is credential/auth metadata store; employee browser direct access is prohibited.
-- Default password = Employee Code is bootstrap-only; successful first/default login must require change.
-- Account lockout / failed attempt / password-change state must fail closed.
-- Direct URL, REST query, export, attachment, copy-MBO and historical-record access must obey the same identity scope.
+`MBO_EMPLOYEE_ACCESS` is the approved Kintone group for employee-facing/shared principals. Under the KINTONE-ONLY model, the group requires the exact App801 access defined in `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`.
 
-### Release-blocker tests
+Do **not** reintroduce the old statement that all employee-browser App801 access is prohibited; that wording belonged to an abandoned architecture and conflicts with the confirmed Kintone-only model.
+
+### Accepted security ceiling
+
+Because multiple employees can share one Kintone principal, native Kintone ACL cannot provide hard Employee_Code-level REST isolation inside that same shared principal.
+
 ```text
-EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B = PASS
-EMPLOYEE_A_CANNOT_EXPORT_EMPLOYEE_B = PASS
-EMPLOYEE_A_CANNOT_COPY_EMPLOYEE_B = PASS
-EMPLOYEE_A_CANNOT_DIRECT_URL_EMPLOYEE_B = PASS
-EMPLOYEE_A_CANNOT_API_QUERY_EMPLOYEE_B = PASS
+DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
 ```
 
-### Completion classification
-- `IMPLEMENTED_PENDING_REVIEW`
-- `BLOCKED_BACKEND_SECURITY`
-- `PASS` only after independent security review and required runtime evidence.
+This limitation must remain explicit. Do not claim stronger native isolation than Kintone can provide and do not embed privileged API credentials in browser code as a workaround.
+
+### D1 release/closure gates
+
+At minimum:
+- login/default-password/forced-change = PASS;
+- same-tab session continuity and reload = PASS;
+- independent new tab without token -> login;
+- expired/tampered/wrong-Kintone-principal session -> deny;
+- logout revokes/clears/reblocks;
+- own password change rotates credential/session;
+- disabled/permanent-locked restore denied;
+- 5 failed passwords -> 15-minute temporary lockout;
+- My MBO own-only UI/history/detail/edit = PASS;
+- Employee-Self delete unavailable and Kintone ACL denies employee delete;
+- Create uses authenticated Employee_Code -> App53 -> App795 -> App796 -> duplicate -> snapshot path;
+- cross-employee detail/edit visibly blocked;
+- no plaintext password/raw token/hash exposure in normal UI/DOM/log;
+- HR + `admin-form` Reset MBO Password production function = PASS;
+- Live workflow/comment timeline never fabricates events;
+- Native Kintone Comments remains the authoritative conversation channel;
+- attachment UI truthfully shows no-file / pending / saved / multiple real filenames and uses Kintone-only storage;
+- final independent D1 review = PASS.
+
+D1 cannot be closed merely because unit tests or Create-show pass.
 
 ---
 
-## D2 — EXPORT EXCEL + PDF IN THE ORIGINAL/LEGACY FORMAT
+## D2 — EXCEL + PDF EXPORT IN ORIGINAL / LEGACY FORMAT
 
-### User requirement
-Restore/provide exports using the same business format previously used, not a newly invented replacement format.
+Mandatory outputs:
 
-### Required outputs
 ```text
 Excel Part A
 Excel Part B
-Combined / multi-sheet Excel where applicable
-PDF matching the approved/original PMS presentation format
+Combined/multi-sheet Excel where applicable
+PDF matching approved/original PMS presentation
 ```
 
-### Rules
-- Reuse actual legacy templates/assets/format evidence where available.
-- Do not claim “same format” without comparing to the real existing template/output.
-- Support the current objective capacity, including 5–10 objectives, without corrupting formulas/layout.
-- Export obeys authorization scope:
-  - Employee: own records only.
-  - Appraiser/Approver: only records legitimately assigned/authorized.
-  - HR: according to approved HR access.
-- Never leak confidential score/comment fields through exports.
+Rules:
+- compare against real legacy templates/output evidence;
+- support current objective capacity without broken formulas/layout;
+- employee exports own records only;
+- appraiser/approver exports only legitimate assigned scope;
+- HR follows approved authority;
+- confidential scores/comments must not leak.
 
-### Acceptance
+Acceptance:
+
 ```text
-PART_A_EXPORT = PASS
-PART_B_EXPORT = PASS
-COMBINED_EXPORT = PASS or NOT_APPLICABLE_WITH_REASON
-PDF_EXPORT = PASS
-FORMAT_PARITY = PASS
-EXPORT_SECURITY = PASS
+PART_A_EXPORT
+PART_B_EXPORT
+COMBINED_EXPORT or justified N/A
+PDF_EXPORT
+FORMAT_PARITY
+EXPORT_SECURITY
 ```
 
 ---
 
-## D3 — MIGRATE ALL HISTORICAL PMS DATA FROM 8 LEGACY APPS INTO APP794
+## D3 — MIGRATE 8 LEGACY PMS APPS INTO APP794
 
-### Authoritative legacy source apps
+Protected read-only source apps:
+
 ```text
-283 = PMS Staff & Chief
-310 = PMS Assistant Manager
-305 = PMS Sect.Mgr
-643 = PMS Senior Manager
-307 = PMS DGM
-640 = PMS GM
-715 = PMS VP
-716 = Japan Staff
+283 PMS Staff & Chief
+310 PMS Assistant Manager
+305 PMS Sect.Mgr
+643 PMS Senior Manager
+307 PMS DGM
+640 PMS GM
+715 PMS VP
+716 Japan Staff
 ```
 
-### Mandatory source policy
-All eight legacy apps are permanently **READ ONLY**.
+Mandatory sequence:
 
-### Target
-Historical records are consolidated into App794 as historical/migrated records while preserving traceability and isolation.
-
-### Migration rules
-- No source modification.
-- No historical score recalculation using new formulas.
-- Preserve source identity metadata.
-- Idempotent / duplicate-safe.
-- Handle promotion/history duplicates explicitly; never blindly select one source record.
-- `Record_Origin = LEGACY_MIGRATED` (or canonical equivalent).
-- Migrated historical records must never enter active workflow automatically.
-- Same privacy/isolation rules as native App794 records.
-
-### Required execution sequence
 ```text
 READ-ONLY DISCOVERY
-→ per-app FIELD MAPPING
-→ DRY RUN
-→ DUPLICATE/CONFLICT REPORT
-→ RECONCILIATION
-→ TARGET PRE-WRITE BACKUP
-→ EXACT MIGRATION MANIFEST
-→ EXPLICIT APP794 WRITE AUTHORIZATION
-→ BATCH WRITE
-→ READ-BACK VERIFY
-→ RECONCILIATION
-→ ROLLBACK BY EXACT BATCH MANIFEST IF FAILURE
+-> FIELD MAPPING
+-> DRY RUN
+-> DUPLICATE/CONFLICT REPORT
+-> RECONCILIATION
+-> TARGET BACKUP
+-> EXACT MIGRATION MANIFEST
+-> EXPLICIT APP794 WRITE AUTHORIZATION
+-> BATCH WRITE
+-> READ-BACK
+-> RECONCILIATION
+-> MANIFEST-BASED ROLLBACK IF NEEDED
 ```
 
-### Important governance conflict
-Older architecture marked migration `DEFERRED` until V2 stabilization/UAT. The user's newest direction requires migration in the current closeout mission. Before actual write, record the explicit superseding/deviation decision in governance docs. Do not silently ignore the older rule.
-
-### Acceptance
-```text
-8_OF_8_SOURCE_APPS_MAPPED = PASS
-DRY_RUN = PASS
-RECONCILIATION = PASS
-DUPLICATE_SAFETY = PASS
-SECURITY_CONTINUITY = PASS
-ACTUAL_WRITE = PASS only with explicit authorization + read-back evidence
-```
+Rules:
+- never modify legacy sources;
+- no historical score recalculation with new formulas;
+- preserve source traceability;
+- migration must be duplicate-safe/idempotent;
+- migrated records remain historical and must not enter active workflow automatically;
+- same Employee-Self/privacy rules apply.
 
 ---
 
-## D4 — HR CONTROL CENTER / DASHBOARD MUST MANAGE THE MBO CYCLE END-TO-END
+## D4 — APP800 HR CONTROL CENTER END-TO-END
 
-### Main app
-`App800 = MBO HR Control Center`
+HR should perform routine MBO administration without normal IT intervention.
 
-### Objective
-HR should perform at least 95% of routine MBO administration without IT intervention.
+Required operational coverage includes:
+- Fiscal Year / annual cycle;
+- five phase calendars;
+- employee progress/pipeline/overdue/completion monitor;
+- search/filter/exception handling;
+- routing health/management;
+- appraiser reassignment where authorized and audited;
+- App796 profile/scoring health;
+- Hoshin readiness/management linkage;
+- reopen/revision center;
+- login/account operational status and safe password-reset workflow;
+- legacy migration status/reconciliation;
+- Admin/System Health linkage;
+- authorized reports/exports.
 
-### Required operational modules
-```text
-1. Annual Cycle / Fiscal Year management
-2. Five phase calendars (start/end)
-3. Employee evaluation monitor
-4. Pipeline / stage / overdue / completion dashboard
-5. Search / filter / exception view
-6. Routing health and routing management
-7. Appraiser reassignment with reason/audit where authorized
-8. Evaluation Profile / App796 health visibility
-9. Hoshin readiness / management link or operation
-10. Reopen / revision center
-11. Login/account operational status (lock / must-change / reset workflow as safely designed)
-12. Legacy migration status/reconciliation view
-13. Admin/System Health linkage
-14. Export/reporting where HR is authorized
-```
-
-### HR must be able to answer quickly
-- Who has not started?
-- Who is overdue?
-- Who is waiting for which appraiser?
-- Whose routing/profile is invalid?
-- Which phase is open?
-- Which records are blocked?
-- Which records were migrated?
-- Which users are locked/must-change password?
-
-### Completion
-Dashboard charts alone are NOT enough. Required operational management flows must work or be truthfully classified as blocked/pending authorization.
+Dashboard charts alone are insufficient.
 
 ---
 
-## D5 — COPY / CARRY FORWARD EMPLOYEE'S OWN PREVIOUS MBO
+## D5 — COPY OWN PREVIOUS MBO
 
-### User requirement
-Employee can copy their own previous MBO planning content into a new fiscal year.
+Employee may carry forward only their own previous MBO planning content into a new FY.
 
-### Allowed whitelist
+Default whitelist:
+
 ```text
 Objective
 Action Plan
@@ -231,320 +215,154 @@ Additional Agreement
 Weight
 ```
 
-### Default behavior
-Difficulty is NOT carried forward unless a later explicit decision changes the rule.
+Difficulty is not carried forward unless explicitly changed later.
 
-### Must never copy
-```text
-Scores
-Self ratings
-Appraiser ratings
-Appraiser comments
-HR score/grade
-Workflow status
-Approval timestamps
-Old appraisers
-Old routing snapshot
-Old evaluation profile snapshot
-Old Hoshin snapshot
-Confidential result fields
-```
+Never copy scores, self/appraiser ratings, appraiser comments, HR results, workflow state, timestamps, old route/appraisers, old profile/Hoshin snapshot, or confidential result fields.
 
-### Target FY must resolve fresh
-```text
-Current App53 employee facts
-Current Evaluation Profile/App796
-Current Routing/App795
-Current Hoshin/App797
-Current FY phase configuration
-```
-
-### Security
-Only authenticated employee's own historical MBO may be used as carry-forward source.
-
-### Workflow boundary
-Allowed only for new/draft objective stage before workflow begins.
+Target FY must resolve fresh App53/App795/App796/Hoshin/phase configuration.
 
 ---
 
-## D6 — INTEGRATED E2E / REGRESSION / SECURITY CLOSURE
+## D6 — INTEGRATED E2E / SECURITY / REGRESSION
 
-This is not a separate feature; it proves D1–D5 + D7 work together.
+Proves D1–D5 + D7 work together.
 
-### Minimum end-to-end matrix
+Minimum path:
+
 ```text
-Employee login / forced password change
-→ own record only
-→ create/open current FY MBO
-→ optional copy from own previous FY
-→ objective workflow
-→ appraiser route
-→ mid-year
-→ self evaluation
-→ appraiser evaluation
-→ HR final
-→ HR Dashboard reflects state
-→ Excel/PDF export respects scope
-→ Admin Support Center can diagnose the same employee truthfully
-→ historical migrated records remain historical/read-only/no active workflow
+MBO login / forced change
+-> own MBO scope
+-> create/open current FY
+-> optional own-history carry-forward
+-> Objectives workflow
+-> Mid-Year
+-> Self Evaluation
+-> Appraiser Evaluation
+-> HR Final
+-> HR Control Center reflects truth
+-> Excel/PDF export respects scope
+-> Admin Support Center diagnosis is truthful
+-> migrated history remains historical/read-only
 ```
 
-### Regression requirements
-- targeted tests per subsystem
-- full `npm test`
-- normal build
-- source/dist parity
-- UI regression where affected
-- direct-URL/access isolation test
-- export isolation test
-- copy-source isolation test
-- no unauthorized Kintone writes
-
-### Final result
-No `PASS` merely because unit tests pass. E2E and security evidence are mandatory for go-live classification.
+Requires focused subsystem tests + full regression/build + Live evidence where relevant. No PASS from unit tests alone.
 
 ---
 
-## D7 — ADMIN SUPPORT CENTER MUST BE FINISHED
+## D7 — ADMIN SUPPORT CENTER
 
-### Technical user
-`admin-form`
+`admin-form` is **Technical Admin only**:
 
-### Role boundary
 ```text
-TECHNICAL ADMIN ONLY
-0 BUSINESS WORKFLOW AUTHORITY
-NO approve
+NO business approve
 NO return
 NO submit
 NO complete
 NO impersonation
 ```
 
-### Required capabilities
-Given an `Employee_Code` (+ Fiscal Year where required), Admin Support Center must truthfully inspect:
+Support Center must truthfully diagnose employee/profile/routing/appraiser/workflow/current-state evidence and never fabricate audit history. Controlled repair remains separately authorized.
 
-```text
-Employee identity/source evidence (App53)
-Evaluation Profile expected vs actual
-Part A / Part B weights expected vs actual
-Routing Key expected vs stored/available evidence
-Routing topology
-Expected appraiser count
-1st Appraiser expected vs actual
-2nd Appraiser expected vs actual
-3rd Appraiser expected vs actual
-4th Appraiser expected vs actual
-Current workflow status
-Expected workflow path
-Current active appraiser slot
-Workflow current-state consistency
-Real workflow audit history status
-Root cause classification
-Recommended repair class
-Safe Before/After repair preview
-Impact / risk / source-of-truth
-Sanitized diagnostic snapshot
-```
-
-### Evidence rules
-- App53 = employee master.
-- App795 = routing master.
-- App796 = published profile/scoring config.
-- App794 = current MBO record/snapshot/process state.
-- Reuse the same production profile resolver; no duplicate Admin-only mapping.
-- Full route PASS requires complete authoritative Appraiser 1..N identities.
-- Future M2/G2 topology cannot be called production-certified solely from Preview logic.
-- Actual workflow transition history stays `PENDING_AUDIT_DESIGN / NOT_AVAILABLE` until a genuine audited source exists.
-- Never fabricate employee, route, profile, status, timestamp, audit event or evidence.
-
-### Repair model
-Today/local closure may include:
-```text
-CHECK
-→ ROOT CAUSE
-→ PREPARE REPAIR
-→ EXACT DIFF / IMPACT / RISK
-```
-
-`CONFIRM REPAIR` remains disabled unless a separately authorized Controlled Repair package is approved.
+Current source functionality is accepted/closed unless a new defect is discovered.
 
 ---
 
-# 2. JOB STATUS BOARD — MUST BE MAINTAINED
+# 2. CURRENT D1–D7 STATUS POINTER
 
-Only evidence-based statuses are allowed:
+**Do not duplicate the live status board here.** Current evidence-backed status is maintained in:
+
+`project-docs/AI_CONTROL_CENTER.md`
+
+This Master Joblist only guarantees that D1–D7 and their acceptance outcomes cannot disappear.
+
+At the 2026-08-29 handoff checkpoint:
 
 ```text
-NOT_STARTED
-IN_PROGRESS
-IMPLEMENTED_PENDING_REVIEW
-PASS
-BLOCKED
-PASS_WITH_DOCUMENTED_EXCEPTION
+D1 = IN PROGRESS
+D2 = IN PROGRESS
+D3 = IN PROGRESS / LIVE WRITE NOT AUTHORIZED
+D4 = IN PROGRESS
+D5 = MUST FIX / IN PROGRESS
+D6 = BLOCKED UNTIL CONSTITUENT WORK IS READY
+D7 = SOURCE FUNCTIONALITY CLOSED / REOPEN ONLY ON NEW DEFECT
 ```
 
-Current control-board starting point:
-
-| ID | Deliverable | Status | Review/Blocker Note |
-|---|---|---|---|
-| D1 | Login + Privacy | IN_PROGRESS / SECURITY BLOCKER REVIEW REQUIRED | Trusted backend/session/identity binding must be secure |
-| D2 | Excel + PDF Original Format | IN_PROGRESS | Existing Excel architecture exists; exact template parity must be verified |
-| D3 | 8-App Legacy → App794 | IN_PROGRESS / WRITE NOT AUTHORIZED | Read-only discovery/dry-run first; actual write requires explicit authorization |
-| D4 | HR Control Center End-to-End | IN_PROGRESS | App800 foundation exists; operational completeness still to prove |
-| D5 | Copy Own Previous MBO | IN_PROGRESS | Carry-forward business rules already frozen; implementation/E2E required |
-| D6 | Integrated E2E / Regression | NOT_STARTED | Runs after constituent implementations reach reviewable state |
-| D7 | Admin Support Center | IMPLEMENTED_PENDING_REVIEW | Residual closure implementation exists; independent review required |
-
-**Do not downgrade or remove a row.** Update only Status and Review/Blocker Note with evidence.
+Always re-fetch Control Center because this checkpoint becomes stale as work proceeds.
 
 ---
 
-# 3. EXECUTION PRIORITY — FASTEST SAFE PATH
+# 3. CURRENT EXECUTION PRIORITY RULE
 
-```text
-P0. Read this file + Confirmed Baseline + latest Git state
-P1. Independently review/close current D7 Admin Support Center checkpoint
-P2. D1 Login/Identity/Privacy architecture + secure implementation boundary
-P3. D5 Copy Previous MBO + D2 Excel/PDF (parallelizable after identity contract is fixed)
-P4. D4 HR Control Center operational closure
-P5. D3 Legacy migration mapping/dry-run/reconciliation; actual write only after explicit authorization
-P6. D6 full integrated E2E/security/regression
-P7. Update this Job Status Board + review package + current state + handoff
-```
+Do not use an old static priority list.
 
-Do not waste time rebuilding subsystems already proven. Reuse existing modules and frozen business rules.
+Priority must come from:
+1. current `AI_CONTROL_CENTER.md` blocker/next action;
+2. current `AI_ACTIVE_TASK.md` if execution is active;
+3. relevant Baseline;
+4. smallest safe action that moves the current gate forward.
+
+Completed/accepted work must not be reimplemented.
 
 ---
 
-# 4. EVERY AI HANDOFF MUST ANSWER THESE 10 QUESTIONS
-
-Before doing work, and again before stopping, record:
+# 4. EVERY HANDOFF MUST ANSWER
 
 ```text
-1. What is current branch HEAD?
-2. Which D1–D7 job(s) are being worked on?
-3. What is their exact status before this work?
-4. What files/components are being changed?
-5. What authoritative baseline controls the change?
-6. Is any Kintone GET/WRITE/DEPLOY required?
-7. If write/deploy is required, is there exact explicit authorization?
-8. What tests/evidence prove completion?
-9. What remains blocked or unverified?
-10. What is the exact next action for the next AI/chat?
+1. Current branch HEAD?
+2. Current D1–D7 scoreboard?
+3. Exact current gate/blocker?
+4. Current Active Task, if any?
+5. What is already accepted and must not be reopened?
+6. What files/components may change next?
+7. Is Kintone write/deploy required?
+8. If yes, what exact authorization covers it?
+9. What evidence is still missing?
+10. Exact next owner/action: ChatGPT | User | Antigravity?
 ```
 
-If any question cannot be answered, stop and inspect repository evidence instead of guessing.
+If unclear, inspect repository/live evidence rather than guessing.
 
 ---
 
-# 5. NO-DROP CHECKLIST — RUN BEFORE EVERY STOP
+# 5. NO-DROP CHECKLIST
 
-Before an AI says “done”, verify all seven IDs are still present:
+Before stopping or moving chats:
 
 ```text
-[ ] D1 LOGIN + PRIVACY
+[ ] D1 LOGIN + PASSWORD + EMPLOYEE-SELF
 [ ] D2 EXCEL + PDF
 [ ] D3 8-APP MIGRATION
 [ ] D4 HR CONTROL CENTER
 [ ] D5 COPY OWN PREVIOUS MBO
-[ ] D6 INTEGRATED E2E
+[ ] D6 INTEGRATED E2E/SECURITY
 [ ] D7 ADMIN SUPPORT CENTER
 ```
 
-If one is missing from the handoff/report, the handoff is INVALID.
+---
+
+# 6. NEW CHAT
+
+Canonical new-chat instructions live only in:
+
+`project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`
+
+Do not maintain a second long bootstrap prompt in this Master Joblist. The new chat must still re-fetch HEAD, Control Center, Active Task and relevant Baselines before acting.
 
 ---
 
-# 6. NEW CHAT CONTINUATION PROMPT — COPY THIS INTO A BRAND-NEW CHAT
+# 7. PROJECT-CLOSE CONDITION
+
+The mission is not complete until all seven have evidence-backed outcomes and no hidden P0 security/data-truthfulness blocker remains.
 
 ```text
-We are continuing the MBO2026 project from repository evidence, not from chat memory.
-
-Repository: rebootob/MBO2026
-Branch: ai/antigravity-wp002c
-
-You are the Control Plane / Project Lead / Architect / Independent Reviewer.
-Antigravity is the Execution Plane.
-
-MANDATORY FIRST ACTION:
-1. Access the GitHub repository.
-2. Read project-docs/00_MASTER_JOBLIST.md FIRST.
-3. Then read project-docs/CONFIRMED_BASELINE/README.md and ALL files under project-docs/CONFIRMED_BASELINE/.
-4. Then read project-docs/AI_START_HERE.md.
-5. Read project-docs/AI_ACTIVE_TASK.md, TODAY_MBO_CLOSEOUT_MISSION.md, CURRENT_STATE.md, HANDOFF.md and AI_REVIEW_PACKAGE.md.
-6. Inspect the latest branch HEAD and recent diff/commits before giving me a status.
-
-The seven mandatory jobs must NEVER be dropped:
-D1 Login + password change + strict employee data isolation
-D2 Excel + PDF export in original legacy format
-D3 migrate all history from 8 legacy PMS apps (283,310,305,643,307,640,715,716) into App794
-D4 HR Control Center/App800 must manage the MBO cycle end-to-end
-D5 employee can copy ONLY their own previous MBO planning fields into a new FY
-D6 full integrated E2E/security/regression closure
-D7 Admin Support Center must be completed
-
-Critical login requirement:
-- initial MBO username = Employee_Code
-- initial MBO password = Employee_Code
-- force password change on initial/default login
-- user can change own password later
-- Employee A must never see/export/copy/query Employee B data unless explicitly authorized by a legitimate business role
-- do NOT implement insecure browser-only password verification or expose password hashes to browser
-
-Governance:
-- Confirmed Baseline wins over old docs/source when conflicts exist.
-- App53 and the 8 legacy apps are protected/read-only sources.
-- No Kintone write/deploy is authorized implicitly.
-- Any actual App794 migration write, schema/process change, or deploy requires an exact planned operation and explicit authorization.
-- admin-form = Technical Admin only, zero business workflow authority.
-- Do not claim PASS without evidence.
-- Implementer cannot self-certify the independent review gate.
-
-FIRST RESPONSE TO ME:
-A. Tell me current branch HEAD.
-B. Give the D1–D7 scoreboard from repository evidence.
-C. Tell me what was completed in the latest commit.
-D. Tell me the highest-priority next action.
-E. Continue from that action without asking me to repeat project history unless a real business decision is missing.
-
-When I type “review”, independently review the latest work against Confirmed Baseline and source evidence.
-When I type “ต่อไป”, execute the next logical Control Plane step, prepare/update the task for Antigravity, and keep D1–D7 intact.
-```
-
----
-
-# 7. RELATIONSHIP TO OTHER CONTROL DOCUMENTS
-
-```text
-00_MASTER_JOBLIST.md         = MASTER job completeness / continuity / no-drop control
-CONFIRMED_BASELINE/*         = authoritative confirmed business + technical facts
-AI_START_HERE.md             = reading/navigation protocol
-AI_ACTIVE_TASK.md            = current tactical execution package
-TODAY_MBO_CLOSEOUT_MISSION.md= current seven-deliverable closeout mission
-AI_REVIEW_PACKAGE.md         = latest implementation/review evidence
-CURRENT_STATE.md             = current system/repository operational state
-HANDOFF.md                   = exact operational next action
-```
-
-A tactical task may focus on only one or two jobs at a time. That does not remove the other jobs from the mission.
-
----
-
-# 8. DEFINITION OF PROJECT-CLOSE FOR THIS MISSION
-
-The closeout mission is not complete until all seven deliverables have evidence-backed outcomes and no hidden P0 security/data-loss blocker remains.
-
-```text
-D1_LOGIN_PRIVACY = PASS
-D2_EXPORT_EXCEL_PDF = PASS
-D3_LEGACY_MIGRATION = PASS
-D4_HR_CONTROL_CENTER = PASS
-D5_COPY_PREVIOUS_MBO = PASS
-D6_INTEGRATED_E2E = PASS
-D7_ADMIN_SUPPORT_CENTER = PASS
+D1 = PASS
+D2 = PASS
+D3 = PASS
+D4 = PASS
+D5 = PASS
+D6 = PASS
+D7 = PASS
 P0_DEFECTS_OPEN = 0
-SECURITY_ISOLATION_RELEASE_BLOCKER = PASS
 ```
 
-If a real external/security authorization prevents one item from reaching PASS, report `BLOCKED` with exact evidence and the smallest required user decision. Never hide the blocker to make the scoreboard look complete.
+If an external constraint prevents PASS, report `BLOCKED` with exact evidence and smallest required user decision. Never hide a blocker to make the board look complete.
