@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — APP794 EDIT ATTACHMENT CORRECTIVE DEPLOYMENT REVIEW PASS / USER LIVE UAT REQUIRED
+> Updated: 2026-08-29 — REV49 ATTACHMENT PERSISTENCE USER-REPORTED WORKING / LONG-FILENAME DELETE-CONTROL UI DEFECT
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / App794 customization rev49 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / initial one-file + multiple-file attachment Save PASS / **Edit attachment preservation source+test corrective PASS and authorized rev49 deployment independently reviewed PASS; Live functional UAT now required** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / App794 customization rev49 / form schema rev48 / Timeline truthfulness PASS / Objective FILE schema corrective PASS / attachment persistence corrective source+deploy PASS / **user reports attachment save/edit now works, but long filenames overflow the Attach File cell and can hide the delete control — narrow UI corrective open** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -32,113 +32,96 @@ APP794_LIVE_FORM_REVISION          = 48
 OBJECTIVE_ATTACHMENT_FIELDS        = FILE 10/10 — PASS
 MIDYEAR_ATTACHMENT_FIELDS          = FILE 10/10 — PASS
 FINAL_ATTACHMENT_FIELDS            = FILE 10/10 — PASS
-SCHEMA_CORRECTIVE_AUTHORIZATION    = CONSUMED / CLOSED
+EDIT_ATTACHMENT_SOURCE_CORRECTIVE  = PASS
+EDIT_ATTACHMENT_DEPLOYMENT         = PASS
 EDIT_ATTACHMENT_DEPLOY_AUTH        = CONSUMED / CLOSED
+SCHEMA_CORRECTIVE_AUTHORIZATION    = CONSUMED / CLOSED
 SOURCE_MODULARITY_POLICY           = MANDATORY
 ```
 
-Schema-gap root cause is closed. Do not remove/recreate Objective FILE fields.
+Do not reopen the Objective FILE schema or attachment persistence architecture without new evidence.
 
-## 3. Independently Accepted Source Candidate
+## 3. User Live UAT Update
 
-Reviewed candidate:
-`0282a0c00d54c846353f4d830874c514c6546468`
+User reports on App794 rev49 that attachment handling is now working and provided a Live screenshot showing multiple saved attachments. This is positive functional evidence for the persistence corrective, but the full prior UAT matrix has not been item-by-item closed, so do not overstate complete attachment UAT closure.
 
-Accepted properties:
-- authoritative persisted GET for Edit attachment changes;
-- fail closed on GET throw/null/missing required FILE field;
-- no fallback to `app.record.edit.submit` Attachment values;
-- zero attachment-change Edit remains saveable without attachment GET;
-- complete canonical target set resolved before upload;
-- atomic multi-target preflight before first upload;
-- later target missing/invalid => upload count exactly zero;
-- successful preflight then uploads/plans all changed targets;
-- Create flow unchanged;
-- Objective/Mid-Year/Final(Self) separation retained.
-
-Executor evidence previously reviewed:
+New visible defect:
 
 ```text
-FOCUSED_ATTACHMENT_TESTS = PASS 39/39
-FULL_NPM_TEST            = PASS 891/891
-NPM_RUN_UI_BUILD         = PASS
-MODULE_AWARE_BUILD_ONLY  = PASS / 0 Kintone network calls
+LONG_FILENAME_CELL_OVERFLOW       = FAIL
+DELETE_CONTROL_ALWAYS_VISIBLE     = FAIL
+ATTACHMENT_PERSISTENCE            = USER-REPORTED WORKING ON REV49
 ```
 
-GitHub has no CI status checks; do not call the above independent CI PASS.
+Observed behavior: when an attachment filename is long, the attachment badge exceeds the narrow fixed-layout Attach File table cell and the trailing `✕` delete button can move outside the visible cell area.
 
-## 4. Deployment Independent Review — PASS
+## 4. Source Review — Root Cause
 
-Authorization:
-`APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01`
+Current `src/ui/employee-part-a-ui.js` attachment renderer:
+- renders saved/pending/error attachment badges as `inline-flex`;
+- filename spans use a fixed `max-width` of roughly 120–140px with ellipsis;
+- the delete button is the last flex child;
+- the badge itself has no reliable `width/max-width: 100%` + `min-width: 0` cell-containment contract;
+- the attachment container is flex/wrap.
 
-Execution evidence commit:
-`340d61a40c739076a9ea6a9cd36b4f825c8420f7`
+Current `src/styles/mbo-employee.css` uses `table-layout: fixed` for the MBO grid and does not provide a sufficient attachment-badge overflow/delete-button flex contract.
 
-Independent findings:
-- execution started from authorized HEAD `2beb6ae03d14c808eabd54e52640d6d1429383fa`;
-- exactly one executor commit followed and it modified only `project-docs/D1_ATTACHMENT_PERSISTENCE_CORRECTIVE_EVIDENCE.md`;
-- no production source/dist changed during deployment;
-- between reviewed candidate `0282a0c...` and authorization HEAD, only Control Plane docs changed;
-- preflight PASS;
-- focused tests 39/39 PASS and full tests 891/891 PASS reported;
-- UI build PASS and build-only PASS with 0 Kintone calls reported;
-- rollback snapshot captured before write;
-- App794 customization deployment status SUCCESS;
-- App794 customization revision advanced 48 -> 49;
-- pre JS identity `97273c29e80c4f6cbfa6982360fdba03c8c43076`;
-- post JS identity `bbf3fe439e0891e17bbbba046a9b2afbaf19cd78`;
-- post JS SHA256 `a9e26244053acac11af66bbeb2be1fb4deb3f22a78a73a9f15f93bdc1a9e5678`;
-- CSS identity unchanged `1359dfae16d1224580210a5a6cd366fb20bcf6f8`;
-- candidate readback match reported YES;
-- topology unchanged: Scope ALL, 1 desktop JS, 1 desktop CSS, 0 mobile;
-- rollback not required;
-- App794 record/schema/layout/ACL/process writes = 0;
-- App801/App795/App796 writes = 0;
-- authorization consumed and cannot be reused.
+Therefore the narrow cell can be smaller than the badge's intrinsic flex width. The filename/status area wins horizontal space and the delete control is pushed/clipped outside the visible column.
 
-Independent verdict:
+This is a presentation/layout defect only. There is no evidence that attachment persistence service logic must change.
+
+## 5. Required UI Corrective
+
+For saved, pending and error attachment rows:
+1. each attachment item must remain inside the Attach File cell width;
+2. multiple attachments should stack cleanly as separate rows/items;
+3. filename area must be shrinkable (`min-width: 0`) and truncate with ellipsis;
+4. full filename must remain available via `title` tooltip;
+5. delete `✕` must be non-shrinking and always visible at the right edge when editable;
+6. pending/error state text must not push the delete button outside the cell;
+7. Add File/Add More control must remain usable;
+8. same renderer behavior must cover Objective, Mid-Year and Final(Self);
+9. attachment data/persistence/removal semantics must remain unchanged.
+
+Preferred narrow implementation: renderer classes/structure plus `src/styles/mbo-employee.css`; do not change service/orchestration persistence logic.
+
+## 6. Exact Current Gate
 
 ```text
-D1_EDIT_ATTACHMENT_SOURCE_CORRECTIVE = PASS
-D1_EDIT_ATTACHMENT_DEPLOYMENT        = PASS
-APP794_LIVE_CUSTOMIZATION_REVISION   = 49
-LIVE_FUNCTIONAL_STATUS               = PENDING USER UAT
+CURRENT_GATE                  = D1 APP794 ATTACHMENT LONG-FILENAME DELETE-CONTROL UI CORRECTIVE
+CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST ONLY
+NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+SOURCE CHANGE                 = YES — NARROW UI/CSS/TEST ONLY
+APP794 CUSTOMIZATION DEPLOY   = NO — NEW AUTHORIZATION REQUIRED LATER
+APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
+APP794 RECORD WRITE           = NO LIVE WRITE
+APP794 ACL/PROCESS            = NO
+APP801                        = NO
+APP795/796                    = NO
+ROUTING/SCORING/AUTH/RESET    = NO
+D2-D7 EXECUTION               = NO
+EXTERNAL SERVICE/STORAGE      = NO
 ```
 
-The deployment PASS proves provenance and scope, not business-function success. Do not close the Live defect until user UAT passes.
+Prior deployment authorization `APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01` is consumed/closed and cannot authorize this UI corrective deployment.
 
-## 5. Exact Current Gate
+## 7. Required Proof Before Deploy Can Be Considered
+
+At minimum retain all current attachment/timeline regression coverage and add proof for:
 
 ```text
-CURRENT_GATE          = D1 APP794 EDIT ATTACHMENT CORRECTIVE — USER LIVE UAT
-CURRENT_MODE          = CONTROL PLANE HOLD
-NEXT_ACTION_OWNER     = USER
-REVIEWED_CANDIDATE    = 0282a0c00d54c846353f4d830874c514c6546468
-DEPLOYMENT_REVIEW     = PASS
-SOURCE CHANGE         = NO
-APP794 CUSTOMIZATION  = NO FURTHER DEPLOY
-APP794 FORM/SCHEMA    = NO WRITE
-APP794 RECORD WRITE   = USER UAT ONLY THROUGH NORMAL UI
-APP794 ACL/PROCESS    = NO
-APP801 WRITE          = NO
-APP795/796 WRITE      = NO
-D2-D7 WRITE           = NO
+ATTACHMENT_LONG_SAVED_FILENAME_TRUNCATES_WITH_FULL_TITLE
+ATTACHMENT_LONG_SAVED_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE
+ATTACHMENT_MULTIPLE_LONG_FILENAMES_RENDER_ALL_DELETE_CONTROLS
+ATTACHMENT_PENDING_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE
+ATTACHMENT_ERROR_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE
+OBJECTIVE_MIDYEAR_FINAL_ATTACHMENT_RENDER_REGRESSION
+ATTACHMENT_PERSISTENCE_REGRESSION_UNCHANGED
+FULL_NPM_TEST_PASS
+UI_BUILD_PASS
+BUILD_ONLY_PASS
+LIVE_KINTONE_WRITE = 0
+LIVE_DEPLOY_OCCURRED = NO
 ```
 
-## 6. Required User Live UAT
-
-Run on App794 rev49 through the normal UI:
-
-```text
-UAT_01 existing 1 file + add 1 -> both remain
-UAT_02 existing multiple files + add 1 -> all old + new remain
-UAT_03 existing multiple files + add multiple -> all remain
-UAT_04 remove one saved file -> only selected file removed
-UAT_05 remove + add -> exact desired state
-UAT_06 multi-objective attachment edits in one Save -> all changed targets persist
-UAT_07 no attachment change -> ordinary Edit Save unaffected
-UAT_08 Mid-Year / Final(Self) regression
-```
-
-Do not mark Live functional attachment correction PASS until these relevant UAT cases succeed. If any case fails, record the exact observed before/after filenames and stop further destructive attachment editing on that record until review.
+Node tests cannot fully prove browser pixel layout; source/CSS contract must also be independently reviewed before any deployment. A new explicit one-shot App794 customization deployment authorization is required after source review PASS.
