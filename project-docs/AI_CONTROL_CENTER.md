@@ -5,57 +5,65 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP2 LIVE UAT CORRECTIVE CANDIDATE READY FOR REVIEW
+> Updated: 2026-08-29 — WP2 LIVE UAT CORRECTIVE / COMMENT API LIMIT BLOCKER
 
-## 1. D1–D7 Scoreboard
+## 1. Current D1 State
 
-| ID | Deliverable | Current Status |
-|---|---|---|
-| D1 | 🟠 Live UAT returned 3 UI issues. WP2 Live UAT corrective candidate implemented, built, and tested. Source, test suite (954/954 PASS), candidate dist (`JS: fb9c4bdaba3c95ab13963462e5019746ceef3be5`, `CSS: b6f77930256378cbe1e190932103dfecea174fbc`), and documentation updated. Status: `WP2_LIVE_UAT_CORRECTIVE_PENDING_INDEPENDENT_REVIEW`. |
-| D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
-| D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
-| D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🔴 Copy own previous MBO MUST FIX — resume only after WP2 Live is accepted |
-| D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
-| D7 | ✅ Admin Support Center source functionality closed |
+Live App794 remains Revision 55 from the previous authorized WP2 deploy. User UAT is NOT accepted.
 
-## 2. WP2 Live UAT Corrective Scope (3 Issues Only)
+Observed Live UAT issues:
+1. Back navigation was visually too weak.
+2. My MBO card/list presentation was visually weak.
+3. Comment mirror failed with `Missing or invalid input`.
 
-1. **BACK TO MY MBO:**
-   - Upgraded to prominent, styled back navigation bar/button (`mbo-btn-back-home`).
-   - Detail/Edit only; Create = strictly absent.
-   - Survives early return states; target `/k/794/` in same tab.
+Corrective candidate `c2676ad20e3aca37c34b5adf9b1d82946948b2ea` changed only source/test/dist/docs for those UI issues. No second Live deploy occurred.
 
-2. **MY MBO HOME UI:**
-   - Improved card/list presentation with structured Fiscal Year pill, Status badge, Record Key, and Open MBO button.
-   - Preserves Employee_Code filter, FY desc sort, Create New MBO, View History, zero Delete UI, exact auth behavior.
+## 2. Independent Review of Corrective Candidate
 
-3. **COMMENT MIRROR:**
-   - Fixed input parsing for Kintone REST API `/k/v1/record/comments.json` with explicit numeric `appId` and `recordId`.
-   - Resolves `CB_VA01: Missing or invalid input` error on Live.
-   - Create = 0 comment GET. Detail/Edit = read-only mirror + refresh.
+### Accepted direction
 
-## 3. Candidate Manifest (Source/Test/Dist Only — No Live Deploy)
+- Back now has explicit prominent class hooks `mbo-back-nav-container` / `mbo-btn-back-home` and stronger CSS.
+- My MBO card CSS was strengthened without changing Employee_Code filter, FY-desc ordering, Open/View History semantics, Create New, auth behavior, or Delete prohibition.
+- Comment mirror still remains Detail/Edit read-only and Create remains zero-comment-GET.
+
+### BLOCKER — Get Comments API limit is invalid
+
+The source still uses:
 
 ```text
-CANDIDATE_JS_BLOB_SHA   = fb9c4bdaba3c95ab13963462e5019746ceef3be5
-CANDIDATE_CSS_BLOB_SHA  = b6f77930256378cbe1e190932103dfecea174fbc
-CANDIDATE_SCOPE         = ALL
-CANDIDATE_TOPOLOGY      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-TEST_SUITE_RESULT       = PASS (954 / 954 PASS)
-DEPLOYMENT_STATUS       = NO DEPLOY (SOURCE/TEST/DIST CANDIDATE ONLY)
+limit = 50
+GET /k/v1/record/comments.json
 ```
 
-## 4. Current Gate & Status
+Official Kintone Get Comments API contract permits a maximum `limit` of **10** comments per request. `app` and `record` may already be Integer or String, so numeric coercion is not sufficient to explain/fix `CB_VA01 / Missing or invalid input`.
+
+Therefore the current corrective candidate is NOT deployment-ready.
+
+Required correction:
+- set Get Comments page limit to `10`;
+- preserve truthful pagination using `offset += comments.length` and `newer` semantics;
+- add a direct-Kintone-path regression that fails if `limit > 10` and verifies exact request body `{app, record, order:'asc', offset, limit:10}`;
+- preserve >100-page/no-silent-truncation coverage using 10-comment pages;
+- preserve Create GET=0, Refresh refetch, safe text, zero comment writes.
+
+## 3. Current Gate
 
 ```text
-CURRENT_GATE                  = WP2 LIVE UAT CORRECTIVE PENDING INDEPENDENT REVIEW
-LIVE_DEPLOY_AUTHORIZED        = NO
-APP794_RECORD_WRITE           = 0
-APP794_FORM_SCHEMA_LAYOUT     = 0
-APP794_ACL_PROCESS            = 0
-KINTONE_COMMENT_WRITE         = 0
-APP801_APP795_APP796          = 0
+CURRENT_GATE                  = WP2 LIVE UAT CORRECTIVE — COMMENT API LIMIT FIX REQUIRED
+CURRENT_MODE                  = SOURCE / TEST / DIST ONLY — NO LIVE DEPLOY
+LIVE_APP794_REVISION          = 55
+USER_UAT                      = FAIL / NOT ACCEPTED
+LATEST_CORRECTIVE_COMMIT      = c2676ad20e3aca37c34b5adf9b1d82946948b2ea
+CORRECTIVE_VERDICT            = CORRECTIVE
+SECOND_LIVE_DEPLOY            = NO / NOT AUTHORIZED
+ROLLBACK                      = NO / NOT AUTHORIZED
+APP794 RECORD WRITE           = 0
+APP794 FORM/SCHEMA/LAYOUT     = 0
+APP794 ACL/PROCESS            = 0
+KINTONE COMMENT WRITE         = 0
+APP801 / APP795 / APP796      = 0
+COPY PREVIOUS MBO             = NO
+D2-D7 EXECUTION               = NO
 ```
 
-Maximum status: `WP2_LIVE_UAT_CORRECTIVE_PENDING_INDEPENDENT_REVIEW`.
+Do not request or perform another Live deploy until the Comment API limit blocker is independently closed and a new exact JS/CSS candidate is reviewed.
