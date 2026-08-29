@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP2 LIVE UAT CORRECTIVE R2 INDEPENDENT PASS / AWAITING NEW DEPLOY AUTHORIZATION
+> Updated: 2026-08-29 — WP2 LIVE UAT CORRECTIVE R2 ONE-SHOT DEPLOY AUTHORIZED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 Live App794 remains Revision 55 and **USER UAT FAILED** for the prior deployed WP2 candidate. Corrective R2 source candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` has passed independent source review. It preserves the Back/My MBO corrective styling from `c2676ad...` and fixes the Kintone Get Comments request contract to `limit=10`. No second Live deploy has occurred. A new explicit user authorization is required before any App794 customization deploy. |
+| D1 | 🟠 Live App794 remains Revision 55 and USER UAT FAILED for the prior WP2 deployment. Corrective R2 candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` independently passed source review. User has now explicitly authorized exactly one guarded App794 customization deployment of this candidate. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -26,6 +26,8 @@ CURRENT_LIVE_REVISION   = 55
 CURRENT_LIVE_SOURCE     = 90ba66e33c056807dc79717c3c787f37e80bb1b6
 CURRENT_LIVE_JS         = eec05d4bb19130f3edc431164fc073f6b697dd8a
 CURRENT_LIVE_CSS        = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+CURRENT_LIVE_SCOPE      = ALL
+CURRENT_LIVE_TOPOLOGY   = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 CURRENT_LIVE_TECHNICAL_READBACK = PASS
 CURRENT_LIVE_USER_UAT   = FAIL
 
@@ -37,26 +39,36 @@ ROLLBACK_JS_IDENTITY    = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
 ROLLBACK_CSS_IDENTITY   = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 ```
 
-Do not describe Rev55 as accepted known-good. Technical transport/readback passed, but user runtime UAT failed.
+Rev55 is technically identified but not user-accepted. Rollback Rev54 is reference-only and is NOT authorized by the current forward-deploy approval.
 
-## 3. Prior Authorization — Closed Forever
+## 3. Authorization Ledger
 
+Prior authorization — closed forever:
 ```text
 AUTHORIZATION_ID     = APP794-D1-WP2-UI-DEPLOY-20260829-01
 AUTHORIZATION_STATUS = CONSUMED / CLOSED
-AUTHORIZED_ATTEMPTS  = 1 / USED
-SECOND_DEPLOY        = NOT AUTHORIZED
-ROLLBACK             = NOT AUTHORIZED
 ```
 
-Never reuse or widen this authorization.
+Current authorization:
+```text
+AUTHORIZATION_ID       = APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01
+AUTHORIZATION_STATUS   = ACTIVE / UNCONSUMED
+TARGET_APP             = 794 ONLY
+WORK_PACKAGE           = MBO-P03-WP-002C
+STAGE                  = STAGE_D1_APP794_CUSTOMIZATION_DEPLOY
+OPERATION              = APP794_CUSTOMIZATION_DEPLOY
+AUTHORIZED_CANDIDATE   = cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3
+AUTHORIZED_ATTEMPTS    = 1
+ROLLBACK_AUTHORIZED    = NO
+OTHER_KINTONE_WRITES   = NO
+```
 
-## 4. WP2 Live UAT Corrective R2 — Independent PASS
+User authorization text:
+`อนุมัติ App794 deploy WP2 corrective R2 candidate cab6db3`
 
-Accepted corrective candidate commit:
-`cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3`
+Never reuse or widen either authorization.
 
-Reviewed candidate manifest:
+## 4. Authorized Corrective R2 Manifest
 
 ```text
 CANDIDATE_SOURCE_COMMIT = cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3
@@ -66,48 +78,49 @@ CANDIDATE_SCOPE         = ALL
 CANDIDATE_TOPOLOGY      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 ```
 
-Independent Git inspection confirms the committed dist JS/CSS blob identities above.
+Accepted corrective scope only:
+- prominent Back to My MBO bar/button on Detail/Edit;
+- improved My MBO card/list styling;
+- Kintone Comment Mirror GET contract using `/k/v1/record/comments.json` with `limit=10`, read-only, Refresh refetch, Create GET=0.
 
-### Accepted corrections
+## 5. Mandatory One-Shot Deploy Gate
+
+Before authorization consumption / any upload:
+1. read this Control Center, `AI_ACTIVE_TASK.md`, and `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`;
+2. run required focused/full tests and hardened build-only with network calls = 0;
+3. checkout exact candidate `cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3` in detached HEAD with a clean worktree;
+4. clean rebuild must produce exact JS `79787f...` and CSS `b6f779...` with zero tracked dist diff;
+5. independently READ current Live App794 before invoking `executeDeployCustomUi()` and prove exact pre-deploy state: Revision 55 / Scope ALL / Desktop JS1 CSS1 / Mobile0 / JS `eec05d...` / CSS `2a758a...`;
+6. any mismatch or unexpected drift => STOP before authorization consumption / upload;
+7. only then invoke the hardened deploy path exactly once with the manifest and authorization in `AI_ACTIVE_TASK.md`.
+
+After the single forward deploy:
+- poll to terminal SUCCESS/FAIL;
+- read actual Live revision/scope/topology;
+- download actual deployed JS/CSS and compute exact blob SHA;
+- require JS `79787f...` + CSS `b6f779...` as one atomic pair;
+- forbidden business/schema/ACL/comment/App801/795/796 writes must remain 0;
+- if mismatch/ambiguous/failure => STOP; no second deploy; no automatic rollback.
+
+## 6. Current Gate
 
 ```text
-BACK_PROMINENT_STYLED_UI             = PASS / preserved from c2676ad
-MY_MBO_CARD_LIST_STYLING             = PASS / preserved from c2676ad
-COMMENT_GET_LIMIT                    = 10
-COMMENT_DIRECT_KINTONE_API_PATH_TEST = PASS
-COMMENT_REQUEST_APP                  = 794
-COMMENT_REQUEST_RECORD               = current record id
-COMMENT_REQUEST_ORDER                = asc
-COMMENT_REQUEST_OFFSET               = expected offset
-COMMENT_CREATE_GET                   = 0
-COMMENT_REFRESH_REFETCH              = PASS
-COMMENT_SAFE_TEXT                    = PASS
-COMMENT_WRITE                        = 0
-COMMENT_100_PLUS_PAGE_PAGINATION     = PASS USING LIMIT 10
-EXECUTOR_TEST_RESULT                 = PASS 957/957
-EXECUTOR_BUILD_ONLY                  = PASS / 0 network calls
-LIVE_DEPLOY                          = NO
-```
-
-The previous R1 claim that numeric appId/recordId conversion alone resolved `CB_VA01` was rejected. The critical API-contract fix is `limit=10` for `/k/v1/record/comments.json`.
-
-## 5. Current Gate
-
-```text
-CURRENT_GATE                  = WP2 LIVE UAT CORRECTIVE R2 PASS — AWAITING NEW EXPLICIT USER DEPLOY AUTHORIZATION
-CURRENT_MODE                  = CONTROL PLANE HOLD / NO LIVE WRITE
+CURRENT_GATE                  = WP2 CORRECTIVE R2 ONE-SHOT LIVE DEPLOY AUTHORIZED
+CURRENT_MODE                  = ANTIGRAVITY GUARDED DEPLOY EXECUTION
+NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+AUTHORIZATION_ID              = APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01
+AUTHORIZATION_STATUS          = ACTIVE / UNCONSUMED
 WP2_R2_CANDIDATE              = cab6db3c3f917138abc45c5218a3a5a0d3f7d0d3
 WP2_R2_JS                     = 79787f75a1edf0721d7d6ac71216a1366599f3e0
 WP2_R2_CSS                    = b6f77930256378cbe1e190932103dfecea174fbc
-LIVE_REVISION                 = 55 / USER UAT FAILED
-LIVE_DEPLOY_AUTHORIZED        = NO
-APP794_RECORD_WRITE           = NO
-APP794_FORM_SCHEMA_LAYOUT     = NO
-APP794_ACL_PROCESS            = NO
-KINTONE_COMMENT_WRITE         = NO
-APP801_APP795_APP796          = NO WRITE
-COPY_PREVIOUS_MBO             = NO
-D2_D7_EXECUTION               = NO
+PRE_DEPLOY_LIVE_REVISION      = 55 / USER UAT FAILED
+APP794 CUSTOMIZATION DEPLOY   = AUTHORIZED ONCE / EXACT CANDIDATE ONLY
+ROLLBACK                      = NOT AUTHORIZED
+APP794 RECORD WRITE           = NO
+APP794 FORM/SCHEMA/LAYOUT     = NO
+APP794 ACL/PROCESS            = NO
+KINTONE COMMENT WRITE         = NO
+APP801 / APP795 / APP796      = NO WRITE
+COPY PREVIOUS MBO             = NO
+D2-D7 EXECUTION               = NO
 ```
-
-Do not deploy until the user explicitly authorizes this exact corrective candidate.
