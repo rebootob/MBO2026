@@ -1872,6 +1872,351 @@ test('OBJECTIVE_MIDYEAR_FINAL_ATTACHMENT_RENDER_REGRESSION: Objective, Mid-Year 
   }
 });
 
+test('SAVED_ATTACHMENT_FILENAME_IS_CLICKABLE_WITH_PERSISTED_FILEKEY: saved file with fileKey renders as clickable link with download button', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '501' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_PERSISTED_501', name: 'evidence.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(html.includes('<a href="#" class="mbo-attachment-filename"'), 'Saved filename with fileKey must render as a clickable preview link');
+  assert.ok(html.includes('data-filekey="K_PERSISTED_501"'), 'Preview link must include target fileKey');
+  assert.ok(html.includes('class="mbo-attachment-download-btn"'), 'Must render compact download button');
+  assert.ok(html.includes('class="mbo-attachment-remove-btn"'), 'Editable row must also render delete button');
+});
+
+test('READONLY_SAVED_ATTACHMENT_REMAINS_PREVIEW_DOWNLOAD_CAPABLE: read-only row renders preview link and download button without delete button', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '502' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_READONLY_502', name: 'report.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', false);
+  assert.ok(html.includes('<a href="#" class="mbo-attachment-filename"'), 'Read-only saved filename must render as clickable preview link');
+  assert.ok(html.includes('class="mbo-attachment-download-btn"'), 'Read-only row must render download button');
+  assert.ok(!html.includes('class="mbo-attachment-remove-btn"'), 'Read-only row must NOT render delete button');
+});
+
+test('ATTACHMENT_DOWNLOAD_USES_BROWSER_FETCH_X_REQUESTED_WITH: downloadKintoneFileBlob helper executes GET /k/v1/file.json with X-Requested-With header', async () => {
+  const { downloadKintoneFileBlob } = await import('../src/services/mbo-attachment-service.js');
+
+  let capturedUrl = null;
+  let capturedOptions = null;
+  const mockFetch = async (url, opts) => {
+    capturedUrl = url;
+    capturedOptions = opts;
+    return {
+      ok: true,
+      blob: async () => new Blob(['test content'], { type: 'application/pdf' })
+    };
+  };
+
+  const blob = await downloadKintoneFileBlob('K_TEST_FETCH_100', { fetchFn: mockFetch });
+  assert.ok(blob, 'Must return blob instance');
+  assert.equal(capturedUrl, '/k/v1/file.json?fileKey=K_TEST_FETCH_100', 'Must request GET /k/v1/file.json with encoded fileKey');
+  assert.equal(capturedOptions.method, 'GET', 'Transport method must be GET');
+  assert.equal(capturedOptions.headers['X-Requested-With'], 'XMLHttpRequest', 'Header must contain X-Requested-With: XMLHttpRequest');
+});
+
+test('ATTACHMENT_DOWNLOAD_DOES_NOT_USE_KINTONE_API: download transport does not invoke kintone.api()', async () => {
+  const { downloadKintoneFileBlob } = await import('../src/services/mbo-attachment-service.js');
+
+  let kintoneApiCalled = false;
+  const origKintoneApi = globalThis.kintone?.api;
+  if (!globalThis.kintone) globalThis.kintone = {};
+  globalThis.kintone.api = () => { kintoneApiCalled = true; };
+
+  const mockFetch = async () => ({
+    ok: true,
+    blob: async () => new Blob(['content'], { type: 'image/png' })
+  });
+
+  try {
+    await downloadKintoneFileBlob('K_TEST_NO_KINTONE_API', { fetchFn: mockFetch });
+    assert.equal(kintoneApiCalled, false, 'downloadKintoneFileBlob MUST NOT call kintone.api()');
+  } finally {
+    if (origKintoneApi) globalThis.kintone.api = origKintoneApi;
+    else delete globalThis.kintone.api;
+  }
+});
+
+test('ATTACHMENT_DOWNLOAD_PRESERVES_ORIGINAL_FILENAME: download handler passes exact original filename to blob downloader', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '505' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_505', name: 'original_spec_document_v2.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  let downloadedName = null;
+  activeUi._triggerBlobDownload = (blob, filename) => { downloadedName = filename; };
+
+  const mockFetch = async () => ({
+    ok: true,
+    blob: async () => new Blob(['pdf bytes'], { type: 'application/pdf' })
+  });
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+  try {
+    await activeUi._handleAttachmentDownload('Objective_Attachment_1', 'original_spec_document_v2.pdf', 'K_505');
+    assert.equal(downloadedName, 'original_spec_document_v2.pdf', 'Download handler must preserve exact original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_PREVIEW_USES_BLOB_URL_FOR_PDF_OR_IMAGE: preview handler creates object URL and navigates opened window for PDF/image', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({ $id: { value: '506' } });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  let winNavigatedUrl = null;
+  const mockWin = { closed: false, location: { href: '' } };
+  const origOpen = globalThis.window?.open;
+  if (!globalThis.window) globalThis.window = {};
+  globalThis.window.open = () => mockWin;
+
+  const mockFetch = async () => ({
+    ok: true,
+    blob: async () => new Blob(['pdf data'], { type: 'application/pdf' })
+  });
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'doc.pdf', 'K_PREVIEW_PDF');
+    assert.ok(mockWin.location.href.startsWith('blob:') || mockWin.location.href.length > 0, 'PDF preview must navigate opened window to object URL');
+  } finally {
+    globalThis.fetch = origFetch;
+    if (origOpen) globalThis.window.open = origOpen;
+  }
+});
+
+test('ATTACHMENT_UNSUPPORTED_PREVIEW_FALLS_BACK_TO_DOWNLOAD: unsupported file type falls back to safe blob download', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({ $id: { value: '507' } });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  let winClosed = false;
+  let fallbackDownloadedName = null;
+  const mockWin = { closed: false, close: () => { winClosed = true; } };
+  if (!globalThis.window) globalThis.window = {};
+  globalThis.window.open = () => mockWin;
+
+  activeUi._triggerBlobDownload = (blob, filename) => { fallbackDownloadedName = filename; };
+
+  const mockFetch = async () => ({
+    ok: true,
+    blob: async () => new Blob(['zip data'], { type: 'application/zip' })
+  });
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'archive.zip', 'K_ZIP_507');
+    assert.equal(winClosed, true, 'Opened window must be closed when falling back to download');
+    assert.equal(fallbackDownloadedName, 'archive.zip', 'Must fall back to blob download preserving original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_PREVIEW_MOCK_WITHOUT_FILEKEY_DOES_NOT_NETWORK: preview mock file without fileKey makes 0 network calls', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({ $id: { value: '508' } });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(!html.includes('mbo-attachment-preview-link'), 'Preview mock without fileKey must not render preview link');
+  assert.ok(!html.includes('mbo-attachment-download-btn'), 'Preview mock without fileKey must not render download button');
+
+  let networkCalled = false;
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => { networkCalled = true; return { ok: true }; };
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'mock.pdf', null);
+    await activeUi._handleAttachmentDownload('Objective_Attachment_1', 'mock.pdf', null);
+    assert.equal(networkCalled, false, 'Handling null fileKey must make zero network requests');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_MISSING_FILEKEY_DOES_NOT_NETWORK: missing or empty fileKey throws immediately in downloadKintoneFileBlob without network call', async () => {
+  const { downloadKintoneFileBlob } = await import('../src/services/mbo-attachment-service.js');
+
+  let networkCalled = false;
+  const mockFetch = async () => { networkCalled = true; return { ok: true }; };
+
+  await assert.rejects(
+    async () => downloadKintoneFileBlob('', { fetchFn: mockFetch }),
+    /fileKey is required/
+  );
+  await assert.rejects(
+    async () => downloadKintoneFileBlob('   ', { fetchFn: mockFetch }),
+    /fileKey is required/
+  );
+  assert.equal(networkCalled, false, 'Empty fileKey must throw before any fetch call');
+});
+
+test('ATTACHMENT_DOWNLOAD_ERROR_VISIBLE_AND_NON_DESTRUCTIVE: download failure shows error and does not mutate record or desired state', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '510' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_FAIL_510', name: 'fail.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  let errorShown = null;
+  activeUi._showAttachmentError = (msg) => { errorShown = msg; };
+
+  const mockFetch = async () => ({
+    ok: false,
+    status: 404,
+    text: async () => 'File not found'
+  });
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    await activeUi._handleAttachmentDownload('Objective_Attachment_1', 'fail.pdf', 'K_FAIL_510');
+    assert.ok(errorShown && errorShown.includes('404'), 'Must show visible error message containing HTTP status');
+    assert.deepEqual(rec.Objective_Attachment_1.value, [{ fileKey: 'K_FAIL_510', name: 'fail.pdf' }], 'Record FILE field must remain completely unmutated on error');
+    assert.equal(activeUi.desiredSavedFiles?.Objective_Attachment_1, undefined, 'desiredSavedFiles must remain unmutated on retrieval error');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_PREVIEW_ERROR_VISIBLE_AND_NON_DESTRUCTIVE: preview failure shows error and does not mutate record or desired state', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '511' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_FAIL_511', name: 'fail_preview.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  let errorShown = null;
+  activeUi._showAttachmentError = (msg) => { errorShown = msg; };
+
+  const mockFetch = async () => ({
+    ok: false,
+    status: 500,
+    text: async () => 'Internal Error'
+  });
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'fail_preview.pdf', 'K_FAIL_511');
+    assert.ok(errorShown && errorShown.includes('500'), 'Must show visible error message containing HTTP status');
+    assert.deepEqual(rec.Objective_Attachment_1.value, [{ fileKey: 'K_FAIL_511', name: 'fail_preview.pdf' }], 'Record FILE field must remain unmutated on preview error');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_DELETE_CONTROL_REMAINS_SEPARATE_AND_FUNCTIONAL: delete button retains separate remove event handling without triggering preview or download', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '512' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_DEL_512', name: 'delete_me.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  let previewCalled = false;
+  let downloadCalled = false;
+  activeUi._handleAttachmentPreview = () => { previewCalled = true; };
+  activeUi._handleAttachmentDownload = () => { downloadCalled = true; };
+
+  activeUi._removeSavedAttachmentFile('Objective_Attachment_1', 'delete_me.pdf', 'K_DEL_512');
+
+  assert.ok(activeUi.desiredSavedFiles.Objective_Attachment_1, 'Desired saved files map must be updated on remove');
+  assert.equal(activeUi.desiredSavedFiles.Objective_Attachment_1.length, 0, 'File must be removed from desired saved files set');
+  assert.equal(previewCalled, false, 'Remove must not trigger preview');
+  assert.equal(downloadCalled, false, 'Remove must not trigger download');
+});
+
+test('OBJECTIVE_MIDYEAR_FINAL_RETRIEVAL_REGRESSION: Objective, Mid-Year and Final attachments all render preview link and download button for saved files', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '513' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'O_513', name: 'obj.pdf' }] },
+    MidYear_Attachment_1: { type: 'FILE', value: [{ fileKey: 'M_513', name: 'mid.pdf' }] },
+    Self_Attachment_1: { type: 'FILE', value: [{ fileKey: 'S_513', name: 'self.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const objHtml = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  const midHtml = activeUi._renderAttachmentControl('MidYear_Attachment_1', 'Mid-Year', true);
+  const selfHtml = activeUi._renderAttachmentControl('Self_Attachment_1', 'Self Evaluation', true);
+
+  for (const html of [objHtml, midHtml, selfHtml]) {
+    assert.ok(html.includes('<a href="#" class="mbo-attachment-filename"'), 'All stages must render clickable preview link for saved files');
+    assert.ok(html.includes('class="mbo-attachment-download-btn"'), 'All stages must render download button for saved files');
+  }
+});
+
 test('NO_LIVE_NETWORK_IN_TESTS: all tests run strictly against local mock transports with 0 external network calls', () => {
   assert.equal(typeof globalThis.fetch, 'function', 'Mock fetch transport must be used in unit tests');
 });

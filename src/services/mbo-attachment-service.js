@@ -242,3 +242,45 @@ export async function uploadAndBindPendingAttachments(record, pendingAttachments
   }
   return plan;
 }
+
+/**
+ * Downloads a persisted record attachment file as a Blob via GET /k/v1/file.json.
+ * Uses Kintone-only session transport with X-Requested-With header.
+ * DO NOT use kintone.api() for File Download API.
+ */
+export async function downloadKintoneFileBlob(fileKey, options = {}) {
+  if (!fileKey || typeof fileKey !== 'string' || fileKey.trim() === '' || fileKey === 'undefined' || fileKey === 'null') {
+    throw new Error('downloadKintoneFileBlob failed: valid fileKey is required');
+  }
+
+  const fetchFn = options.fetchFn || options.fetch || globalThis.fetch;
+  if (typeof fetchFn !== 'function') {
+    throw new Error('downloadKintoneFileBlob failed: fetch API unavailable');
+  }
+
+  let downloadUrl = `/k/v1/file.json?fileKey=${encodeURIComponent(fileKey)}`;
+  if (globalThis.kintone?.api?.urlForGet) {
+    try {
+      downloadUrl = globalThis.kintone.api.urlForGet('/k/v1/file.json', { fileKey }, true);
+    } catch (err) {
+      // Fallback to relative URL
+    }
+  }
+
+  const headers = {
+    'X-Requested-With': 'XMLHttpRequest'
+  };
+
+  const response = await fetchFn(downloadUrl, {
+    method: 'GET',
+    headers
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    throw new Error(`Kintone file download failed: HTTP ${response.status}${errText ? ` (${errText})` : ''}`);
+  }
+
+  return await response.blob();
+}
+

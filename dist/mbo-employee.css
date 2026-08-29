@@ -1472,6 +1472,36 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.mbo-attachment-preview-link {
+  color: #0284c7;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.mbo-attachment-preview-link:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+.mbo-attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+.mbo-attachment-download-btn {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #0284c7;
+  font-weight: 700;
+  padding: 0 2px;
+  line-height: 1;
+}
+.mbo-attachment-download-btn:hover {
+  color: #0369a1;
+}
 .mbo-attachment-pending-tag,
 .mbo-attachment-error-tag {
   flex: 0 1 auto;

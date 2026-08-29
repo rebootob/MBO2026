@@ -579,6 +579,9 @@ export class EmployeePartAUI {
     this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
     this.currentErrors = [];
     this.preparedAttachmentPlan = null;
+    this.desiredSavedFiles = null;
+    this.dirtyAttachmentFields = new Set();
+    this.pendingAttachments = null;
 
     this.isEmployeeVerified = !this.isCreate;
   }
@@ -1246,12 +1249,17 @@ export class EmployeePartAUI {
   }
 
   _getSavedAttachmentFiles(fieldCode) {
-    let recField = this.record[fieldCode];
-    if ((!recField || !recField.value || (Array.isArray(recField.value) && recField.value.length === 0)) && fieldCode.startsWith('Self_Attachment_')) {
-      const altCode = fieldCode.replace('Self_Attachment_', 'Final_Attachment_');
-      recField = this.record[altCode];
+    let targetCode = fieldCode;
+    if ((!this.record[targetCode] || !this.record[targetCode].value || (Array.isArray(this.record[targetCode].value) && this.record[targetCode].value.length === 0)) && targetCode.startsWith('Self_Attachment_')) {
+      const altCode = targetCode.replace('Self_Attachment_', 'Final_Attachment_');
+      if (this.record[altCode] && Array.isArray(this.record[altCode].value) && this.record[altCode].value.length > 0) {
+        targetCode = altCode;
+      }
     }
-    const rawVal = recField ? recField.value : null;
+    const rawVal = (this.desiredSavedFiles && this.desiredSavedFiles[targetCode] !== undefined)
+      ? this.desiredSavedFiles[targetCode]
+      : (this.record[targetCode] ? this.record[targetCode].value : null);
+
     if (!rawVal) return [];
 
     if (Array.isArray(rawVal)) {
@@ -1281,7 +1289,7 @@ export class EmployeePartAUI {
     }
     if (!this.record[targetCode] || !Array.isArray(this.record[targetCode].value)) return;
 
-    this.record[targetCode].value = this.record[targetCode].value.filter(f => {
+    const remainingFiles = this.record[targetCode].value.filter(f => {
       if (fileKey && f.fileKey) return f.fileKey !== fileKey;
       if (filename && f.name) return f.name !== filename;
       if (typeof f === 'string') return f !== filename;
@@ -1289,7 +1297,7 @@ export class EmployeePartAUI {
     });
 
     if (!this.desiredSavedFiles) this.desiredSavedFiles = {};
-    this.desiredSavedFiles[targetCode] = [...this.record[targetCode].value];
+    this.desiredSavedFiles[targetCode] = remainingFiles;
 
     if (!this.dirtyAttachmentFields) this.dirtyAttachmentFields = new Set();
     this.dirtyAttachmentFields.add(fieldCode);
@@ -1352,11 +1360,24 @@ export class EmployeePartAUI {
       }
 
       const isMock = Boolean(f.isPreviewMock);
+      const hasValidFileKey = !isMock && Boolean(f.fileKey && String(f.fileKey).trim() !== '' && f.fileKey !== 'undefined' && f.fileKey !== 'null');
+
+      const filenameHtml = hasValidFileKey
+        ? `<a href="#" class="mbo-attachment-filename" data-code="${escapeHtml(fieldCode)}" data-filename="${escapeHtml(f.name)}" data-filekey="${escapeHtml(f.fileKey)}" title="${escapeHtml(f.name)}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#0284c7; text-decoration:underline; cursor:pointer;">${escapeHtml(f.name)}</a>`
+        : `<span class="mbo-attachment-filename" title="${escapeHtml(f.name)}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</span>`;
+
+      const actionsHtml = `
+        <div class="mbo-attachment-actions" style="display:flex; align-items:center; gap:4px; flex:0 0 auto;">
+          ${hasValidFileKey ? `<button type="button" class="mbo-attachment-download-btn" data-code="${escapeHtml(fieldCode)}" data-filename="${escapeHtml(f.name)}" data-filekey="${escapeHtml(f.fileKey)}" title="Download ${escapeHtml(f.name)}" style="flex:0 0 auto; flex-shrink:0; border:none; background:none; cursor:pointer; color:#0284c7; font-weight:700; padding:0 2px; line-height:1;">⬇️</button>` : ''}
+          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" data-filename="${escapeHtml(f.name)}" data-filekey="${escapeHtml(f.fileKey || '')}" title="Remove file" style="flex:0 0 auto; flex-shrink:0; border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px; line-height:1; min-width:16px;">✕</button>` : ''}
+        </div>
+      `;
+
       return `
         <div class="mbo-attachment-badge saved-file" style="display:flex; align-items:center; justify-content:space-between; gap:6px; width:100%; max-width:100%; min-width:0; box-sizing:border-box; font-size:11px; color:#1e293b; background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px;">
           <span class="mbo-attachment-icon" style="flex:0 0 auto;">📎</span>
-          <span class="mbo-attachment-filename" title="${escapeHtml(f.name)}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</span>
-          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" data-filename="${escapeHtml(f.name)}" data-filekey="${escapeHtml(f.fileKey || '')}" style="flex:0 0 auto; flex-shrink:0; border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px; line-height:1; min-width:16px;">✕</button>` : ''}
+          ${filenameHtml}
+          ${actionsHtml}
         </div>
       `;
     }).join('');
@@ -3176,26 +3197,135 @@ export class EmployeePartAUI {
     // Attachment remove button click handler
     root.querySelectorAll('.mbo-attachment-remove-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const targetBtn = e.target.closest('.mbo-attachment-remove-btn');
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        const targetBtn = (e.target && typeof e.target.closest === 'function') ? e.target.closest('.mbo-attachment-remove-btn') : btn;
         if (!targetBtn) return;
-        const fieldCode = targetBtn.dataset.code;
+        const fieldCode = targetBtn.dataset?.code || targetBtn.getAttribute?.('data-code');
         if (!fieldCode) return;
 
-        const pendingIdxStr = targetBtn.dataset.pendingIdx;
-        if (pendingIdxStr !== undefined && pendingIdxStr !== '') {
+        const pendingIdxStr = targetBtn.dataset?.pendingIdx || targetBtn.getAttribute?.('data-pending-idx');
+        if (pendingIdxStr !== undefined && pendingIdxStr !== null && pendingIdxStr !== '') {
           const idx = parseInt(pendingIdxStr, 10);
           if (this.pendingAttachments && this.pendingAttachments[fieldCode]) {
             this.pendingAttachments[fieldCode].splice(idx, 1);
           }
         } else {
-          const filename = targetBtn.dataset.filename;
-          const fileKey = targetBtn.dataset.filekey;
+          const filename = targetBtn.dataset?.filename || targetBtn.getAttribute?.('data-filename');
+          const fileKey = targetBtn.dataset?.filekey || targetBtn.getAttribute?.('data-filekey');
           this._removeSavedAttachmentFile(fieldCode, filename, fileKey);
         }
 
         this._refreshAttachmentControlDisplay(fieldCode, root);
       });
     });
+
+    // Attachment preview link click handler
+    root.querySelectorAll('a.mbo-attachment-filename').forEach(link => {
+      link.addEventListener('click', (e) => {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        const targetLink = (e.target && typeof e.target.closest === 'function') ? e.target.closest('a.mbo-attachment-filename') : link;
+        if (!targetLink) return;
+        const fieldCode = targetLink.dataset?.code || targetLink.getAttribute?.('data-code');
+        const filename = targetLink.dataset?.filename || targetLink.getAttribute?.('data-filename');
+        const fileKey = targetLink.dataset?.filekey || targetLink.getAttribute?.('data-filekey');
+        this._handleAttachmentPreview(fieldCode, filename, fileKey);
+      });
+    });
+
+    // Attachment download button click handler
+    root.querySelectorAll('.mbo-attachment-download-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        const targetBtn = (e.target && typeof e.target.closest === 'function') ? e.target.closest('.mbo-attachment-download-btn') : btn;
+        if (!targetBtn) return;
+        const fieldCode = targetBtn.dataset?.code || targetBtn.getAttribute?.('data-code');
+        const filename = targetBtn.dataset?.filename || targetBtn.getAttribute?.('data-filename');
+        const fileKey = targetBtn.dataset?.filekey || targetBtn.getAttribute?.('data-filekey');
+        this._handleAttachmentDownload(fieldCode, filename, fileKey);
+      });
+    });
+  }
+
+  async _handleAttachmentPreview(fieldCode, filename, fileKey) {
+    if (!fileKey || typeof fileKey !== 'string' || fileKey.trim() === '' || fileKey === 'undefined' || fileKey === 'null') {
+      console.warn(`[MBO V2] Attachment preview skipped: missing fileKey for field ${fieldCode}`);
+      return;
+    }
+
+    const win = (typeof window !== 'undefined' && window.open) ? window.open('about:blank', '_blank') : null;
+
+    try {
+      const { downloadKintoneFileBlob } = await import('../services/mbo-attachment-service.js');
+      const blob = await downloadKintoneFileBlob(fileKey);
+
+      const mime = (blob && blob.type) ? blob.type.toLowerCase() : '';
+      const ext = (filename || '').split('.').pop().toLowerCase();
+      const isPreviewable = mime.startsWith('image/') ||
+                            mime === 'application/pdf' ||
+                            mime.startsWith('text/') ||
+                            mime.startsWith('audio/') ||
+                            mime.startsWith('video/') ||
+                            ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'html', 'mp4', 'mp3'].includes(ext);
+
+      const objectUrl = (typeof URL !== 'undefined' && URL.createObjectURL) ? URL.createObjectURL(blob) : null;
+
+      if (isPreviewable && objectUrl) {
+        if (win && !win.closed) {
+          win.location.href = objectUrl;
+        } else if (typeof window !== 'undefined' && window.open) {
+          window.open(objectUrl, '_blank');
+        }
+      } else {
+        if (win && !win.closed) win.close();
+        this._triggerBlobDownload(blob, filename);
+      }
+    } catch (err) {
+      if (win && !win.closed) win.close();
+      console.error(`[MBO V2] Attachment preview failed for field ${fieldCode} (${filename}):`, err.message);
+      this._showAttachmentError(`ไม่สามารถแสดงตัวอย่างไฟล์ "${filename}" ได้ (${err.message}) / Cannot preview file`);
+    }
+  }
+
+  async _handleAttachmentDownload(fieldCode, filename, fileKey) {
+    if (!fileKey || typeof fileKey !== 'string' || fileKey.trim() === '' || fileKey === 'undefined' || fileKey === 'null') {
+      console.warn(`[MBO V2] Attachment download skipped: missing fileKey for field ${fieldCode}`);
+      return;
+    }
+
+    try {
+      const { downloadKintoneFileBlob } = await import('../services/mbo-attachment-service.js');
+      const blob = await downloadKintoneFileBlob(fileKey);
+      this._triggerBlobDownload(blob, filename);
+    } catch (err) {
+      console.error(`[MBO V2] Attachment download failed for field ${fieldCode} (${filename}):`, err.message);
+      this._showAttachmentError(`ไม่สามารถดาวน์โหลดไฟล์ "${filename}" ได้ (${err.message}) / Download failed`);
+    }
+  }
+
+  _triggerBlobDownload(blob, filename) {
+    if (typeof URL === 'undefined' || typeof document === 'undefined') return;
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename || 'attachment';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    }, 1000);
+  }
+
+  _showAttachmentError(msg) {
+    if (typeof alert === 'function') {
+      alert(msg);
+    } else {
+      console.error(msg);
+    }
   }
 
   _refreshAttachmentControlDisplay(fieldCode, root) {

@@ -1,16 +1,18 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                                = 6e3e615c141bf0641413da40410592ed77b128a5
+START_HEAD                                = 4e81527f2c7029f748d1342d3000cbf9ee83866e
 CANONICAL_BRANCH                          = ai/antigravity-wp002c
-AUTHORIZATION_ID                          = APP794-D1-LONG-FILENAME-UI-DEPLOY-20260829-01
-AUTHORIZATION_CONSUMED                    = YES
-REVIEWED_CANDIDATE_SHA                    = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
-PRE_DEPLOY_REVISION                       = 49
-POST_DEPLOY_REVISION                      = 50
+RETRIEVAL_UX_DESIGN                       = CLICKABLE PREVIEW LINK + BLOB URL TAB + COMPACT DOWNLOAD + ISOLATED KINTONE DOWNLOAD API HELPER
+FOCUSED_TESTS                             = PASS (58/58 attachment & timeline & retrieval tests passing)
+FULL_NPM_TEST                              = PASS (910/910 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css generated cleanly)
+BUILD_ONLY                                = PASS (0 Kintone network calls)
+PERSISTENCE_FUNCTIONS_CHANGED             = NO (uploadKintoneFile, prepareAttachmentPlan, finalizeAttachmentPlan 100% UNTOUCHED)
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
 LIVE_KINTONE_WRITE                        = 0
-LIVE_DEPLOY_OCCURRED                      = YES
-MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+LIVE_DEPLOY_OCCURRED                      = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -29,25 +31,29 @@ MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
   - Restored all 3 Timeline regression tests (`TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`, `TIMELINE_PREVIEW_FIXTURES_ALLOWED`, `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`).
   - Restored all 9 Attachment UI display and control tests (`ATTACHMENT_READONLY_ZERO_FILES`, `ATTACHMENT_READONLY_SINGLE_FILE`, `ATTACHMENT_READONLY_MULTIPLE_FILES`, `ATTACHMENT_LIVE_MODE_NO_PREVIEW_MOCK_LEAK`, `ATTACHMENT_PENDING_FILE_STATE`, `ATTACHMENT_REAL_REMOVE_BUTTON_CLICK_EVENT`, etc.).
   - Added new real-handler tests using separate submit event record objects (`REAL_HANDLER_REMOVE_DESIRED_STATE_SEPARATE_SUBMIT_RECORD`, `REAL_HANDLER_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE`, `SELF_FINAL_FALLBACK_DESIRED_STATE`, etc.).
-  - Focused test suite increased to **45 / 45 PASS**. Full repository test suite increased to **897 / 897 PASS**. Zero test reduction.
+  - Focused test suite increased to **58 / 58 PASS**. Full repository test suite increased to **910 / 910 PASS**. Zero test reduction.
 
 ## 2. Source Code Ownership & Changes
 
+- [src/services/mbo-attachment-service.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/services/mbo-attachment-service.js):
+  - Added additive isolated helper `downloadKintoneFileBlob(fileKey, options)` at bottom of module.
+  - Executes `GET /k/v1/file.json?fileKey=...` via browser `fetch` with `X-Requested-With: XMLHttpRequest` header.
+  - Zero changes to existing `uploadKintoneFile`, `prepareAttachmentPlan`, or `finalizeAttachmentPlan` logic.
 - [src/ui/employee-part-a-ui.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/ui/employee-part-a-ui.js):
-  - Refactored `_renderAttachmentControl` markup structure.
-  - Attachment items/badges (`mbo-attachment-badge`) use `display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; min-width:0; box-sizing:border-box;`.
-  - Filename span (`mbo-attachment-filename`) uses `flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;` and preserves full filename in `title="${escapeHtml(f.name)}"`.
-  - Delete button (`mbo-attachment-remove-btn`) uses `flex:0 0 auto; flex-shrink:0; min-width:16px; text-align:center;` to ensure it NEVER shrinks or gets pushed offscreen.
-  - Container (`mbo-attachment-container`) uses `display:flex; flex-direction:column; align-items:stretch; width:100%; max-width:100%; min-width:0; gap:4px;` so multiple files stack cleanly as separate rows.
+  - Updated `_renderAttachmentControl` to render saved persisted filenames as clickable `<a href="#" class="mbo-attachment-filename" title="...">` preview links.
+  - Added compact download button `<button class="mbo-attachment-download-btn" title="Download...">⬇️</button>`.
+  - Added preview link and download button click event handlers in `_bindEvents` with `e.preventDefault()` and `e.stopPropagation()`.
+  - Implemented `_handleAttachmentPreview` (blob preview in new tab for PDF/Image/browser-previewable, safe download fallback for unsupported formats) and `_handleAttachmentDownload` (direct blob download preserving original filename).
+  - Implemented `_showAttachmentError` for non-destructive error handling without mutating attachment data structures.
 - [src/styles/mbo-employee.css](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/styles/mbo-employee.css):
-  - Defined CSS rules for `.mbo-attachment-container`, `.mbo-attachment-badge`, `.mbo-attachment-filename`, `.mbo-attachment-pending-tag`, `.mbo-attachment-error-tag`, `.mbo-attachment-remove-btn`, and `.mbo-attachment-btn-add` enforcing cell containment and non-shrinking delete control behavior.
+  - Defined CSS rules for `.mbo-attachment-actions` and `.mbo-attachment-download-btn` ensuring layout alignment and cell containment.
 - [tests/timeline-truthfulness-and-attachment.test.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/timeline-truthfulness-and-attachment.test.js):
-  - Added 6 new regression tests (`ATTACHMENT_LONG_SAVED_FILENAME_TRUNCATES_WITH_FULL_TITLE`, `ATTACHMENT_LONG_SAVED_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE`, `ATTACHMENT_MULTIPLE_LONG_FILENAMES_RENDER_ALL_DELETE_CONTROLS`, `ATTACHMENT_PENDING_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE`, `ATTACHMENT_ERROR_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE`, `OBJECTIVE_MIDYEAR_FINAL_ATTACHMENT_RENDER_REGRESSION`).
+  - Added 13 new retrieval UX regression tests (`SAVED_ATTACHMENT_FILENAME_IS_CLICKABLE_WITH_PERSISTED_FILEKEY`, `READONLY_SAVED_ATTACHMENT_REMAINS_PREVIEW_DOWNLOAD_CAPABLE`, `ATTACHMENT_DOWNLOAD_USES_BROWSER_FETCH_X_REQUESTED_WITH`, `ATTACHMENT_DOWNLOAD_DOES_NOT_USE_KINTONE_API`, `ATTACHMENT_DOWNLOAD_PRESERVES_ORIGINAL_FILENAME`, `ATTACHMENT_PREVIEW_USES_BLOB_URL_FOR_PDF_OR_IMAGE`, `ATTACHMENT_UNSUPPORTED_PREVIEW_FALLS_BACK_TO_DOWNLOAD`, `ATTACHMENT_PREVIEW_MOCK_WITHOUT_FILEKEY_DOES_NOT_NETWORK`, `ATTACHMENT_MISSING_FILEKEY_DOES_NOT_NETWORK`, `ATTACHMENT_DOWNLOAD_ERROR_VISIBLE_AND_NON_DESTRUCTIVE`, `ATTACHMENT_PREVIEW_ERROR_VISIBLE_AND_NON_DESTRUCTIVE`, `ATTACHMENT_DELETE_CONTROL_REMAINS_SEPARATE_AND_FUNCTIONAL`, `OBJECTIVE_MIDYEAR_FINAL_RETRIEVAL_REGRESSION`).
 
 ## 3. Test & Build Verification Results
 
-- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **45/45 PASS (100%)**
-- **Repository Full Test Suite (`npm test`):** **897/897 PASS (100%)**
+- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **58/58 PASS (100%)**
+- **Repository Full Test Suite (`npm test`):** **910/910 PASS (100%)**
 - **Candidate Bundle Build (`npm run ui:build`):** `PASS` (`dist/mbo-employee-app.js` & `dist/mbo-employee.css` generated cleanly)
 - **Module-Aware Build-Only Check (`node --env-file=.env.local scripts/kintone/deploy-custom-ui.js --build-only`):** `PASS` (0 Kintone network calls)
 
@@ -289,4 +295,25 @@ APP801_WRITE                             = 0
 APP795_796_WRITE                         = 0
 LIVE_DEPLOY_OCCURRED                     = YES
 MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 14. App794 Saved Attachment Preview / Download Corrective Evidence
+
+```text
+EXECUTION_START_HEAD                      = 4e81527f2c7029f748d1342d3000cbf9ee83866e
+CHANGED_FILES                             = src/services/mbo-attachment-service.js, src/ui/employee-part-a-ui.js, src/styles/mbo-employee.css, tests/timeline-truthfulness-and-attachment.test.js, dist/mbo-employee-app.js, dist/mbo-employee.css
+RETRIEVAL_DESIGN                          = Saved persisted filenames with valid fileKey render as clickable <a class="mbo-attachment-filename"> preview links. Clicking filename opens a blank tab synchronously and fetches file blob via GET /k/v1/file.json, creating a Blob Object URL for PDF/Images/browser-previewable content. Unsupported file types fall back to safe blob download. Added a separate compact download button ⬇️. Read-only rows also render preview links and download buttons (omitting remove button ✕).
+KINTONE_DOWNLOAD_TRANSPORT                = Isolated additive helper downloadKintoneFileBlob in src/services/mbo-attachment-service.js executing GET /k/v1/file.json?fileKey=... via browser fetch with X-Requested-With: XMLHttpRequest header.
+PREVIEW_MIME_POLICY                       = PDF, image/*, text/*, audio/*, video/* open in new tab via Object URL; unsupported MIME types fall back to blob download.
+DOWNLOAD_FILENAME_POLICY                  = Preserves exact original filename via anchor download attribute.
+ERROR_NON_DESTRUCTIVE_PROOF               = _showAttachmentError renders user-visible alert on download/preview failure without mutating record FILE values or desiredSavedFiles map.
+PERSISTENCE_FUNCTIONS_CHANGED             = NO (uploadKintoneFile, prepareAttachmentPlan, finalizeAttachmentPlan 100% UNTOUCHED)
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
+FOCUSED_ATTACHMENT_TESTS                  = PASS (58/58 attachment & timeline & retrieval tests passing)
+FULL_NPM_TEST                             = PASS (910/910 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css generated cleanly)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+LIVE_KINTONE_WRITE                       = 0
+LIVE_DEPLOY_OCCURRED                     = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
