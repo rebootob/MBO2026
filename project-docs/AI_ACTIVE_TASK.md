@@ -1,12 +1,12 @@
-# AI ACTIVE TASK — D1 APP794 ATTACHMENT LONG-FILENAME UI DEPLOY AUTH HOLD
+# AI ACTIVE TASK — D1 APP794 ATTACHMENT LONG-FILENAME UI ONE-SHOT DEPLOY
 
-Mode: **CONTROL PLANE HOLD — ANTIGRAVITY DO NOTHING / NO DEPLOY**
+Mode: **ANTIGRAVITY ONE-SHOT APP794 CUSTOMIZATION DEPLOY — EXACT AUTHORIZATION ONLY**
 Branch: `ai/antigravity-wp002c`
-Live App794 customization revision: `49`
+Live App794 customization revision before task: `49`
 Reviewed source candidate: `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`
 Independent source verdict: **PASS**
-Deployment authorization: **NONE**
-Prior deployment authorization `APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01`: **CONSUMED / CLOSED**
+Authorization ID: `APP794-D1-LONG-FILENAME-UI-DEPLOY-20260829-01`
+Authorization status at task creation: **AUTHORIZED / ONE-SHOT / UNCONSUMED**
 
 ## Accepted State
 
@@ -17,72 +17,129 @@ ATTACHMENT_PERSISTENCE_LIVE_REPORT = USER REPORTS WORKING
 LONG_FILENAME_DELETE_VISIBILITY    = LIVE FAIL ON REV49
 LONG_FILENAME_UI_SOURCE_CORRECTIVE = PASS
 REVIEWED_CANDIDATE                 = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
-DEPLOY_AUTHORIZATION               = NONE
 ```
 
-## Independent Review Findings
+Do not reopen schema or attachment persistence logic.
 
-The source candidate is accepted because:
-- it is exactly one executor commit after source-task HEAD `62a19bc05300a6ef4c76f62e7a5942ada939a61c`;
-- only allowed renderer/CSS/test/generated dist/evidence files changed;
-- attachment service and main attachment orchestration did not change;
-- each saved/pending/error attachment row is bounded to the cell width;
-- filename is a shrinkable ellipsis region with full-name `title` tooltip;
-- delete `✕` is a separate non-shrinking flex item;
-- multiple attachment rows stack vertically;
-- Add File remains available;
-- Objective/Mid-Year/shared Self→Final renderer path is preserved;
-- no Kintone write or deploy occurred.
+## Exact User Authorization
 
-Executor verification evidence:
+User authorized:
+
+`อนุมัติ App794 deploy Attachment Long-Filename UI corrective candidate 1abd434`
+
+This authorizes only one App794 customization deployment attempt of the already-reviewed candidate. It does not authorize source fixes, schema/layout changes, business-record writes, ACL/process changes, or work on other apps.
+
+## Mandatory Pre-Deploy Gate
+
+Before any Kintone customization write:
+
+1. Re-fetch canonical branch HEAD.
+2. Read `project-docs/AI_CONTROL_CENTER.md` and this Active Task.
+3. Verify reviewed candidate remains exactly `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`.
+4. Verify production source/generated candidate bundle have not drifted after candidate review; only Control Plane docs may differ.
+5. Run deterministic preflight.
+6. Run focused attachment/timeline tests required by current deploy safety gate; do not edit source/tests to make them pass.
+7. Run `npm run ui:build`.
+8. Run module-aware build-only deployment check and prove 0 Kintone calls.
+9. Verify built `dist/mbo-employee-app.js` and `dist/mbo-employee.css` correspond to the reviewed candidate. Unexpected content/hash drift => STOP.
+10. Read current App794 customization settings/revision and capture exact desktop JS/CSS identities/topology.
+11. Capture rollback snapshot of current Live/Preview App794 customization BEFORE write.
+
+If any gate fails, STOP. Do not patch, rebuild a different candidate, widen scope, or deploy under this authorization.
+
+## Authorized Deployment Scope
+
+Only after every pre-deploy gate passes:
 
 ```text
-FOCUSED_ATTACHMENT_TESTS = PASS 45/45
-FULL_NPM_TEST            = PASS 897/897
-NPM_RUN_UI_BUILD         = PASS
-MODULE_AWARE_BUILD_ONLY  = PASS / 0 Kintone network calls
-LIVE_KINTONE_WRITE       = 0
-LIVE_DEPLOY_OCCURRED     = NO
+TARGET_APP                    = 794
+WRITE_TYPE                    = KINTONE APP CUSTOMIZATION JS/CSS ONLY
+REVIEWED_CANDIDATE            = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
+SOURCE CHANGE                 = FORBIDDEN
+TEST CHANGE                   = FORBIDDEN DURING DEPLOY
+SCHEMA/LAYOUT WRITE           = FORBIDDEN
+BUSINESS RECORD WRITE         = FORBIDDEN
+ACL/PROCESS WRITE             = FORBIDDEN
+APP801 WRITE                  = FORBIDDEN
+APP795/796 WRITE              = FORBIDDEN
+ROUTING/SCORING/AUTH/RESET    = FORBIDDEN
+D2-D7 EXECUTION               = FORBIDDEN
+EXTERNAL SERVICE/STORAGE      = FORBIDDEN
+BROAD REFACTOR                = FORBIDDEN
 ```
 
-GitHub has no CI status checks for this candidate. The test/build results above are executor evidence, not independent CI.
+Deploy only the reviewed App794 desktop customization JS/CSS generated from the accepted candidate. Do not add/remove unrelated customization entries or mobile customization.
 
-Non-blocking note: the newly named Objective/Mid-Year/Final attachment render regression directly populates `Self_Attachment_1`, not `Final_Attachment_1`, but the existing Self→Final fallback remains unchanged and the accepted layout contract is field-agnostic.
+## Post-Deploy Readback
 
-## Current Gate
+After the one customization write attempt:
+
+1. Wait for Kintone deployment status `SUCCESS` or definitive failure.
+2. Read back App794 customization revision/settings.
+3. Read back desktop JS/CSS identities/topology.
+4. Prove deployed JS/CSS match the reviewed candidate bundle exactly.
+5. Verify no unexpected customization topology change.
+6. Verify no business-record/schema/layout/ACL/process/App801/App795/App796 write occurred.
+7. If readback does not match candidate, use the captured rollback snapshot only if existing safe tooling supports the exact rollback, record result, and STOP. No second forward attempt under this authorization.
+
+## Required Evidence
+
+Append deployment evidence to `project-docs/D1_ATTACHMENT_PERSISTENCE_CORRECTIVE_EVIDENCE.md` including at minimum:
 
 ```text
-CURRENT_GATE                  = USER DECISION ON APP794 UI DEPLOY
-NEXT_ACTION_OWNER             = USER
-ANTIGRAVITY EXECUTION         = NO
-SOURCE CHANGE                 = NO
-APP794 CUSTOMIZATION DEPLOY   = NO
-APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
-APP794 RECORD WRITE           = NO
-APP794 ACL/PROCESS            = NO
-APP801                        = NO
-APP795/796                    = NO
-ROUTING/SCORING/AUTH/RESET    = NO
-D2-D7 EXECUTION               = NO
-EXTERNAL SERVICE/STORAGE      = NO
+AUTHORIZATION_ID
+EXECUTION_START_HEAD
+REVIEWED_SOURCE_CANDIDATE_SHA
+SOURCE_CHANGED_DURING_DEPLOY
+DIST_CHANGED_FROM_REVIEWED_CANDIDATE
+PRECHECK_RESULT
+FOCUSED_ATTACHMENT_TESTS
+FULL_NPM_TEST_IF_RUN
+UI_BUILD_RESULT
+BUILD_ONLY_RESULT
+PRE_DEPLOY_APP794_CUSTOMIZATION_REVISION
+PRE_DEPLOY_JS_IDENTITY_HASH
+PRE_DEPLOY_CSS_IDENTITY_HASH
+PRE_DEPLOY_CUSTOMIZATION_TOPOLOGY
+ROLLBACK_SNAPSHOT_REFERENCE
+DEPLOY_RESULT
+POST_DEPLOY_APP794_CUSTOMIZATION_REVISION
+POST_DEPLOY_JS_IDENTITY_HASH
+POST_DEPLOY_CSS_IDENTITY_HASH
+POST_DEPLOY_CUSTOMIZATION_TOPOLOGY
+CANDIDATE_READBACK_MATCH
+CUSTOMIZATION_TOPOLOGY_DRIFT
+ROLLBACK_OCCURRED
+ROLLBACK_REASON
+APP794_RECORD_WRITE = 0
+APP794_SCHEMA_LAYOUT_WRITE = 0
+APP794_ACL_PROCESS_WRITE = 0
+APP801_WRITE = 0
+APP795_796_WRITE = 0
+AUTHORIZATION_CONSUMED = YES
+LIVE_DEPLOY_OCCURRED
+FINAL_COMMIT_SHA
 ```
 
-Do not self-start deployment. A new explicit one-shot authorization is required for candidate `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`.
+Commit + push deployment evidence only after execution. Do not modify production source as part of evidence recording.
 
-## If User Authorizes Deployment Later
+## Stop Rule
 
-Control Plane must first create a new exact one-shot deploy task bound to candidate `1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502`, requiring preflight, build/readback, rollback snapshot, App794 customization-only write, no source drift, and stop after one attempt for independent review.
+After exactly one deployment attempt, authorization is consumed whether the attempt succeeds, fails, or is rolled back. STOP for ChatGPT independent review.
 
-## Required User Live UAT After Authorized Deploy + Independent Deployment Review PASS
+Maximum executor status:
+`DEPLOYED_PENDING_INDEPENDENT_REVIEW`
+
+Do not self-PASS the deployment. Do not perform user Live UAT.
+
+## User UAT After Independent Deployment Review PASS
 
 ```text
 UAT_UI_01 long saved filename stays inside cell and ellipsizes
 UAT_UI_02 delete ✕ remains visible at right edge
 UAT_UI_03 multiple long files stack; every delete ✕ remains visible
 UAT_UI_04 pending/error long filename remains contained
-UAT_UI_05 saved file removal still removes only selected file after Save
+UAT_UI_05 saved remove still removes only selected file after Save
 UAT_UI_06 Objective / Mid-Year / Final(Self) visual regression
 UAT_UI_07 attachment persistence remains working
 ```
-
-Do not mark the Live defect PASS before deployment provenance review and user UAT.
