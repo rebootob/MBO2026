@@ -367,7 +367,8 @@ export async function executeDeployCustomUi(options = {}) {
   // 3. Put Customization to Preview (preserving non-target preview entries)
   await kintoneRequest('/k/v1/preview/app/customize.json', {
     method: 'PUT',
-    body: putPayload
+    body: putPayload,
+    bypassDiscovery: true
   });
 
   console.log('Customization preview updated.');
@@ -375,7 +376,8 @@ export async function executeDeployCustomUi(options = {}) {
   // 4. Deploy Live Sandbox App 794
   await kintoneRequest('/k/v1/preview/app/deploy.json', {
     method: 'POST',
-    body: { apps: [{ app }] }
+    body: { apps: [{ app }] },
+    bypassDiscovery: true
   });
 
   console.log(`Live deployment requested for App ${app}. Polling status...`);

@@ -360,3 +360,30 @@ test('SAME_FILENAME_MOBILE_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE n
 
   assert.equal(uploadCalls, 0);
 });
+
+test('DISCOVERY_MODE_TRUE & WRITE_ALLOWED_APPS_EMPTY & PROTECTED_APPS_HARD_BLOCKED', async () => {
+  const { DISCOVERY_MODE, WRITE_ALLOWED_APPS, PROTECTED_APP_IDS, assertSandboxWriteTarget } = await import('../src/core/sandbox-write-guard.js');
+  assert.equal(DISCOVERY_MODE, true);
+  assert.equal(WRITE_ALLOWED_APPS.length, 0);
+  assert.ok(PROTECTED_APP_IDS.includes(53));
+  assert.ok(PROTECTED_APP_IDS.includes(283));
+
+  // Protected 53 and 283 block
+  assert.throws(() => assertSandboxWriteTarget(53), /PROTECTED PRODUCTION APP/);
+  assert.throws(() => assertSandboxWriteTarget(283), /PROTECTED PRODUCTION APP/);
+});
+
+test('kintoneRequest bypassDiscovery option is required for write operations during Discovery Mode', async () => {
+  const { kintoneRequest } = await import('../src/core/kintone-client.js');
+
+  // Without bypassDiscovery: true, PUT/POST/DELETE fail with Discovery Phase Write Blocked
+  await assert.rejects(
+    async () => kintoneRequest('/k/v1/preview/app/customize.json', { method: 'PUT', body: {} }),
+    /DISCOVERY PHASE WRITE BLOCKED/
+  );
+
+  await assert.rejects(
+    async () => kintoneRequest('/k/v1/preview/app/deploy.json', { method: 'POST', body: {} }),
+    /DISCOVERY PHASE WRITE BLOCKED/
+  );
+});
