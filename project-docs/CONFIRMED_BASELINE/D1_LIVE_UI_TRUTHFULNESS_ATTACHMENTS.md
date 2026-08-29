@@ -119,6 +119,8 @@ Confirmed invariants:
 For an Edit operation that changes an attachment field:
 - obtain authoritative persisted attachment state before building the desired-state plan, using Kintone GET Record with the current App ID + Record ID or an equivalently proven authoritative pre-submit snapshot;
 - if authoritative persisted state cannot be obtained, is null, or cannot provide the required canonical FILE field state, cancel the attachment-changing submit **fail closed** before uploading any new file; never degrade to `edit.submit` Attachment values;
+- determine the **complete set of changed canonical attachment targets first** and validate every target that depends on persisted state before the first Upload File API call; validation must be atomic across multiple changed attachment fields;
+- a later invalid/missing target must never be discovered only after an earlier target has already uploaded a new temporary file;
 - add-only must preserve every existing saved fileKey and append all newly uploaded fileKeys;
 - explicit removal must exclude only the fileKeys the user removed;
 - remove + add must send the exact retained saved fileKeys plus all new upload fileKeys;
@@ -156,6 +158,8 @@ Before accepting a corrective implementation, tests must cover at minimum:
 - edit remove + add exact desired state when submit-event Attachment values are unavailable;
 - tests prove authoritative persisted GET/snapshot, not submit-event Attachment values, provides the existing-file base;
 - edit persisted GET throw/null/missing required target FILE field fails closed before upload and never falls back to submit-event Attachment values;
+- multi-target Edit preflight validates all required target FILE fields before any upload; second-target missing/invalid must leave upload count exactly zero;
+- multi-target successful preflight then uploads and preserves the exact desired state for all changed targets;
 - edit with no attachment change does not require persisted attachment GET and remains saveable;
 - upload error visibly remains not-saved;
 - exact target-field binding;
@@ -190,5 +194,6 @@ Any future proposal to:
 - return to direct FILE-field mutation inside create/edit submit event objects;
 - use `app.record.edit.submit` Attachment values as the retained-file source;
 - allow an attachment-changing Edit to continue after authoritative persisted attachment state could not be obtained;
+- allow any upload to begin before all required changed attachment targets pass authoritative persisted-state preflight;
 
 requires explicit user decision and Baseline update.
