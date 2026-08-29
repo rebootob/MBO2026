@@ -1,141 +1,103 @@
-# AI ACTIVE TASK — APP794 COMBINED EMPLOYEE UI ONE-SHOT DEPLOY
+# AI ACTIVE TASK — APP794 COMBINED EMPLOYEE UI ROLLBACK ONLY
 
-Mode: **ANTIGRAVITY ONE-SHOT APP794 CUSTOMIZATION DEPLOY — EXACT AUTHORIZATION ONLY**
+Mode: **ANTIGRAVITY ROLLBACK-ONLY — NO FORWARD DEPLOY**
 Branch: `ai/antigravity-wp002c`
-Live App794 customization revision before execution: expected prior known `51`, but executor MUST read actual current revision before any write.
 
-Authorization ID:
+Consumed authorization:
 `APP794-D1-COMBINED-EMPLOYEE-UI-DEPLOY-20260829-01`
 
 Authorization state:
-`AUTHORIZED / UNCONSUMED`
+`CONSUMED / CLOSED`
 
-Reviewed release candidate:
-`ea5254370360321d18bd768f379986609c241850`
+## Independent Review Result
 
-Reviewed bundle identities:
+The one-shot forward deployment was attempted once and App794 moved from customization rev51 to rev52.
+
+Reviewed candidate identities:
 ```text
-DIST_JS_BLOB_SHA  = a4975fc219269268bf2a0caffd084d233fa3e29a
-DIST_CSS_BLOB_SHA = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+REVIEWED_JS_BLOB_SHA  = a4975fc219269268bf2a0caffd084d233fa3e29a
+REVIEWED_CSS_BLOB_SHA = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
 ```
 
-## Authorized User Scope — Exactly All Three UI Features
-
-Deploy the already-reviewed App794 Desktop customization containing exactly:
-1. Existing Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
-2. My MBO home: responsive card/list UI; exact Employee_Code scope; Fiscal_Year desc; Open MBO for non-completed; View History for completed; unchanged record URLs; zero Delete UI.
-3. Existing Detail/Edit: Native Kintone Comment read-only mirror + Refresh with accepted ascending pagination semantics.
-
-This task does NOT authorize any new feature, redesign, source correction, test correction, Copy Previous MBO, or unrelated work.
-
-## Mandatory Pre-Deploy Gates — Complete Before First Live Write
-
-1. Fetch latest `ai/antigravity-wp002c`.
-2. Read ONLY initially:
-   - `project-docs/AI_CONTROL_CENTER.md`
-   - `project-docs/AI_ACTIVE_TASK.md`
-3. Verify authorization ID exactly matches and is `AUTHORIZED / UNCONSUMED`.
-4. Verify reviewed candidate exactly:
-   `ea5254370360321d18bd768f379986609c241850`.
-5. Verify no production source/test/dist drift after the reviewed candidate except control/evidence documentation.
-6. Run deterministic deploy preflight.
-7. Run focused tests only if required by existing deploy preflight/tooling. Do not change source/tests.
-8. Run `npm run ui:build`.
-9. Verify generated Desktop JS/CSS are exactly the reviewed candidate identities above. Any mismatch => STOP, NO DEPLOY.
-10. Run module-aware build-only and prove `0` Live Kintone network calls/writes.
-11. Read actual current App794 customization state:
-    - customization revision;
-    - scope/settings;
-    - Desktop JS entries/topology;
-    - Desktop CSS entries/topology;
-    - Mobile customization entries/topology;
-    - current JS/CSS identity hashes.
-12. Capture an exact rollback snapshot/reference of the full pre-deploy App794 customization BEFORE the first write.
-
-Prior known topology is Scope ALL / 1 Desktop JS / 1 Desktop CSS / 0 Mobile, but DO NOT assume it is still true. If actual topology is unexpected or unsafe, STOP before write.
-
-## Authorized Execution
-
-After ALL pre-deploy gates pass:
-- perform exactly ONE forward deployment attempt;
-- target App794 Desktop customization JS/CSS only;
-- deploy only the reviewed candidate `ea5254370360321d18bd768f379986609c241850`;
-- preserve customization scope/topology except replacing the authorized Desktop JS/CSS content as required;
-- do not change mobile customization;
-- do not add/remove/reorder unrelated customization entries;
-- wait for Kintone SUCCESS or definitive failure.
-
-**Authorization consumption rule:**
-`AUTHORIZATION_CONSUMED = YES` immediately when the first forward deployment attempt is made, regardless of success, failure, or rollback. No second forward deploy attempt is allowed under this authorization.
-
-## Strict Forbidden Actions
-
-- NO source change;
-- NO test change;
-- NO unrelated generated bundle change;
-- NO App794 form/schema/layout write;
-- NO App794 business-record write;
-- NO Kintone Comment POST/DELETE/reply;
-- NO ACL/process write;
-- NO Auth/Session behavior change;
-- NO Attachment behavior change;
-- NO Routing/Scoring/profile change;
-- NO App801/App795/App796 write;
-- NO Copy Previous MBO;
-- NO D2-D7 execution;
-- NO external service/storage;
-- NO User Live UAT.
-
-## Mandatory Post-Deploy Readback
-
-After the deployment attempt:
-1. read Kintone deployment result;
-2. read post-deploy App794 customization revision;
-3. read post-deploy customization scope/topology;
-4. read post-deploy JS/CSS identities;
-5. prove exact reviewed-candidate readback match;
-6. prove mobile customization unchanged;
-7. prove no unrelated customization topology drift;
-8. prove zero forbidden writes.
-
-If the forward deploy succeeds but exact candidate/topology readback fails, and the captured rollback snapshot can be restored safely and exactly, perform rollback ONLY to that pre-deploy snapshot and STOP. Do not make another forward deployment attempt.
-
-## Required Deployment Evidence
-
-Commit and push deployment evidence only. Record at minimum:
-
+Live post-deploy identities reported by executor:
 ```text
-AUTHORIZATION_ID
-EXECUTION_START_HEAD
-REVIEWED_SOURCE_CANDIDATE_SHA
-REVIEWED_JS_BLOB_SHA
-REVIEWED_CSS_BLOB_SHA
-SOURCE_CHANGED_DURING_DEPLOY = NO
-TEST_CHANGED_DURING_DEPLOY = NO
-PRECHECK_RESULT
-FOCUSED_TEST_RESULT_IF_RUN
-UI_BUILD_RESULT
-BUILD_ONLY_RESULT
-PRE_DEPLOY_APP794_CUSTOMIZATION_REVISION
-PRE_DEPLOY_CUSTOMIZATION_SCOPE
-PRE_DEPLOY_CUSTOMIZATION_TOPOLOGY
-PRE_DEPLOY_JS_IDENTITY_HASH
-PRE_DEPLOY_CSS_IDENTITY_HASH
-PRE_DEPLOY_MOBILE_CUSTOMIZATION_STATE
-ROLLBACK_SNAPSHOT_REFERENCE
-DEPLOY_ATTEMPT_COUNT
-DEPLOY_RESULT
-POST_DEPLOY_APP794_CUSTOMIZATION_REVISION
-POST_DEPLOY_CUSTOMIZATION_SCOPE
-POST_DEPLOY_CUSTOMIZATION_TOPOLOGY
-POST_DEPLOY_JS_IDENTITY_HASH
-POST_DEPLOY_CSS_IDENTITY_HASH
-POST_DEPLOY_MOBILE_CUSTOMIZATION_STATE
-CANDIDATE_READBACK_MATCH
-CUSTOMIZATION_TOPOLOGY_DRIFT
-MOBILE_CUSTOMIZATION_CHANGED
-ROLLBACK_OCCURRED
-ROLLBACK_REASON
+LIVE_REV52_JS_IDENTITY  = a4975fc219269268bf2a0caffd084d233fa3e29a
+LIVE_REV52_CSS_IDENTITY = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+```
+
+Therefore:
+`EXACT_CANDIDATE_READBACK_MATCH = NO`.
+
+The CSS mismatch is material because the reviewed Combined Employee UI candidate includes CSS changes for the Back navigation and My MBO card/list presentation.
+User Live evidence also reports:
+1. My MBO list still does not match the designed card/list presentation.
+2. Back to My MBO button is not visible.
+
+Deployment verdict:
+`CORRECTIVE — PARTIAL / NON-EXACT DEPLOYMENT`.
+
+## Authorized Action — Rollback Only
+
+The original one-shot authorization already permitted rollback ONLY to the captured exact pre-deploy snapshot if candidate readback mismatched.
+
+Restore exactly the captured pre-deploy App794 customization state:
+```text
+EXPECTED_PRE_DEPLOY_REVISION_STATE = rev51 customization content
+PRE_DEPLOY_SCOPE                   = ALL
+PRE_DEPLOY_TOPOLOGY                = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+PRE_DEPLOY_JS_IDENTITY             = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+PRE_DEPLOY_CSS_IDENTITY            = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+ROLLBACK_SNAPSHOT                  = scratch/app794_live_predeploy_backup_combined_ui.json
+                                     scratch/app794_preview_predeploy_backup_combined_ui.json
+```
+
+## Mandatory Rollback Gates
+
+1. Fetch latest canonical branch.
+2. Read `project-docs/AI_CONTROL_CENTER.md` and this file.
+3. Confirm authorization is CONSUMED / CLOSED.
+4. Confirm current Live App794 state before rollback:
+   - current customization revision;
+   - Scope;
+   - Desktop/Mobile topology;
+   - JS/CSS identities.
+5. Confirm current Live state is the reviewed partial rev52 state above. If unexpected drift exists, STOP without write and record it.
+6. Confirm rollback snapshot exists and exactly represents the pre-deploy state above.
+7. Do NOT rebuild source as rollback material.
+8. Do NOT substitute repository candidate files for snapshot content.
+
+## Rollback Execution
+
+If all rollback gates pass:
+- restore exactly the captured pre-deploy customization snapshot;
+- this is rollback, NOT a second forward deployment;
+- preserve Scope ALL and topology 1 Desktop JS / 1 Desktop CSS / 0 Mobile;
+- wait for Kintone deploy result;
+- no second rollback attempt if state is ambiguous; STOP for Control Plane review.
+
+## Mandatory Post-Rollback Readback
+
+Record:
+```text
+ROLLBACK_START_HEAD
+CURRENT_PRE_ROLLBACK_REVISION
+CURRENT_PRE_ROLLBACK_JS_IDENTITY
+CURRENT_PRE_ROLLBACK_CSS_IDENTITY
+SNAPSHOT_REFERENCE
+SNAPSHOT_JS_IDENTITY
+SNAPSHOT_CSS_IDENTITY
+ROLLBACK_ATTEMPT_COUNT
+ROLLBACK_RESULT
+POST_ROLLBACK_REVISION
+POST_ROLLBACK_SCOPE
+POST_ROLLBACK_TOPOLOGY
+POST_ROLLBACK_JS_IDENTITY
+POST_ROLLBACK_CSS_IDENTITY
+POST_ROLLBACK_MOBILE_STATE
+PRE_DEPLOY_SNAPSHOT_MATCH
+FORWARD_DEPLOY_ATTEMPT_DURING_ROLLBACK = 0
+SOURCE_CHANGED = NO
+TEST_CHANGED = NO
 APP794_RECORD_WRITE = 0
 APP794_SCHEMA_LAYOUT_WRITE = 0
 APP794_ACL_PROCESS_WRITE = 0
@@ -143,15 +105,27 @@ KINTONE_COMMENT_WRITE = 0
 APP801_WRITE = 0
 APP795_796_WRITE = 0
 D2_D7_WRITE = 0
-AUTHORIZATION_CONSUMED = YES if deploy attempted
-FINAL_COMMIT_SHA
 ```
 
-Evidence must clearly distinguish executor-local tests/builds from Live Kintone pre/post readback.
+Commit and push rollback evidence only, then STOP.
 
-Do not modify Control Plane verdicts yourself. Do not self-PASS.
+## Strictly Forbidden
+
+- NO second forward deploy of `ea525437...` under the consumed authorization;
+- NO attempt to upload only the missing CSS as a fix;
+- NO source correction during rollback;
+- NO UI redesign during rollback;
+- NO record/schema/layout/ACL/process/comment write;
+- NO App801/App795/App796 write;
+- NO Copy Previous MBO;
+- NO D2-D7 execution;
+- NO User Live UAT during rollback.
 
 Maximum executor status:
-`DEPLOYED_PENDING_INDEPENDENT_REVIEW`
+`ROLLED_BACK_PENDING_INDEPENDENT_REVIEW`
 
-Commit + push deployment evidence and STOP.
+After rollback is independently accepted, ChatGPT Control Plane will diagnose both:
+1. why the deploy tooling used the wrong CSS identity;
+2. why Back to My MBO did not appear in the user-observed Detail/Edit runtime.
+
+Any later forward deployment requires a NEW explicit user authorization.
