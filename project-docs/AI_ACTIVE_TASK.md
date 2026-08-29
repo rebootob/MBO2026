@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — HOLD / KINTONE-ONLY APP801 APPLY + LIVE VERIFY
+# AI ACTIVE TASK — HOLD / KINTONE-ONLY RESET 0113 + LOGIN UAT
 
-Mode: **CONTROL PLANE + USER LIVE VERIFICATION — ANTIGRAVITY HOLD**
+Mode: **CONTROL PLANE + USER LIVE EXECUTION — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
 
 ## Mandatory architecture
@@ -13,30 +13,48 @@ Auth Bridge = CANCELLED / DO NOT CONTINUE
 
 Do not implement, deploy, host, integrate or extend `services/mbo-auth-bridge/`.
 
-## Confirmed live evidence
+## Confirmed live state
 
-- Employee `0113` App801 credential is healthy: ACTIVE / failed 0 / no lock / Force Change NO / Credential_Version 1.
-- Kintone principal `s1` previously received HTTP 403 / `CB_NO02` reading/opening App801.
 - `s1` membership in `MBO_EMPLOYEE_ACCESS` = PASS.
-- App801 permission row for `MBO_EMPLOYEE_ACCESS` = View YES / Edit YES / all Add/Delete/Manage/Import/Export NO.
-- `Everyone` = denied.
-- Root cause confirmed: App801 was in `Private` App Group, and Kintone warned that app permission settings are not applied to apps in Private group.
-- User has changed App801 App Group to `Public` while preserving the permission rows above.
+- App801 permission row = View YES / Edit YES / Add/Delete/Manage/Import/Export NO.
+- App801 App Group changed from Private to Public by user.
+- `s1` can now open App801 and see 128 credential records = PASS.
+- Employee `0113` was ACTIVE / Credential_Version 1 before reset.
+- User forgot 0113 password and explicitly authorized **Reset Password 0113**.
+- HR + `admin-form` administrative MBO password-reset capability is now a confirmed D1 requirement.
 
-## Current task — APPLY + VERIFY ONLY
+## Current authorized action — EXACTLY ONE EMPLOYEE
 
-1. Ensure the App801 settings change is saved/applied in Kintone.
-2. Under Kintone principal `s1`, verify App801 record read no longer returns `CB_NO02`.
-3. Then perform one normal MBO Login test for Employee `0113` with the correct password.
-4. Capture the exact result.
-5. STOP. Do not make source changes yet.
+Target: `Employee_Code = 0113` only.
 
-Expected security state after apply:
+Reset semantics:
+- temporary password = `0113`, stored as canonical PBKDF2-SHA256 / 100000 hash;
+- `Force_Password_Change = YES`;
+- `Failed_Attempts = 0`;
+- clear temporary `Locked_Until`;
+- increment valid positive `Credential_Version` by exactly 1;
+- clear `Session_Token_Hash`, `Session_Issued_At`, `Session_Expires_At`, `Session_Credential_Version`, `Session_Kintone_User`;
+- do NOT change `Account_Status`;
+- fail closed unless exactly one existing App801 row for 0113 is found and required security metadata is valid;
+- read back after write without printing Password_Hash.
+
+Authorization scope:
 
 ```text
-MBO_EMPLOYEE_ACCESS  View=YES  Edit=YES  Add/Delete/Manage/Import/Export=NO
-Everyone             all NO
+APP801 RECORD WRITE 0113 = YES / ONE RESET
+OTHER APP801 RECORDS      = NO
+ACL / APP GROUP CHANGE    = NO
+APP794 DEPLOY             = NO
+SOURCE CHANGE             = NO
 ```
+
+After successful reset:
+1. switch/use Kintone principal `s1`;
+2. App794 login with Employee Code `0113`, temporary password `0113`;
+3. expected result = mandatory password-change UI;
+4. capture result and STOP.
+
+Do not test repeated wrong passwords yet.
 
 ## Antigravity
 
@@ -46,8 +64,7 @@ Forbidden until a new Active Task:
 - NO source changes
 - NO Auth Bridge work
 - NO external service/server
-- NO App801 ACL/group changes beyond the user-applied App Group correction
-- NO App801 manual credential mutation
+- NO App801 writes beyond exact authorized 0113 reset
 - NO App794 deploy
 - NO Deploy Guard work
 - NO D2-D7 work
