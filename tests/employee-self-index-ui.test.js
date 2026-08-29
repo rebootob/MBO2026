@@ -433,7 +433,7 @@ test('DETAIL_EXISTING_RECORD_BACK_TO_MY_MBO_VISIBLE & EDIT_EXISTING_RECORD_BACK_
   }
 });
 
-test('COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_PAGINATION_DOES_NOT_SILENTLY_TRUNCATE: Loads comments with pagination on existing Detail/Edit', async () => {
+test('COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES & COMMENTS_ASC_FINAL_PAGE_NEWER_FALSE_STOPS & COMMENTS_MORE_THAN_10_ALL_RENDERED & COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_EXISTING_EDIT_LOADS_NATIVE_THREAD', async () => {
   const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
 
   let getCommentsCallCount = 0;
@@ -450,16 +450,228 @@ test('COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_PAGINATION_DOES_NO
             createdAt: '2026-08-29T10:00:00Z',
             creator: { name: `User ${i + 1}`, code: `00${i + 1}` }
           })),
-          older: true
+          older: false,
+          newer: true
         };
       } else {
         return {
           comments: [
-            { id: '11', text: 'Comment 11 page 2', createdAt: '2026-08-29T10:05:00Z', creator: { name: 'User 11', code: '0011' } }
+            { id: '11', text: 'Comment 11 page 2', createdAt: '2026-08-29T10:05:00Z', creator: { name: 'User 11', code: '0011' } },
+            { id: '12', text: 'Comment 12 page 2', createdAt: '2026-08-29T10:06:00Z', creator: { name: 'User 12', code: '0012' } },
+            { id: '13', text: 'Comment 13 page 2', createdAt: '2026-08-29T10:07:00Z', creator: { name: 'User 13', code: '0013' } },
+            { id: '14', text: 'Comment 14 page 2', createdAt: '2026-08-29T10:08:00Z', creator: { name: 'User 14', code: '0014' } },
+            { id: '15', text: 'Comment 15 page 2', createdAt: '2026-08-29T10:09:00Z', creator: { name: 'User 15', code: '0015' } }
           ],
-          older: false
+          older: true,
+          newer: false
         };
       }
+    }
+  };
+
+  const createMockContainer = () => {
+    const children = [];
+    const attrMap = new Map();
+    const mockContainer = {
+      tagName: 'DIV',
+      children,
+      innerHTML: '',
+      appendChild: (c) => { children.push(c); return c; },
+      querySelector: (sel) => {
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+          }
+          for (const child of el.children || []) {
+            const res = find(child);
+            if (res) return res;
+          }
+          return null;
+        };
+        return find(mockContainer);
+      },
+      querySelectorAll: (sel) => {
+        const res = [];
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+          }
+          for (const child of el.children || []) {
+            find(child);
+          }
+        };
+        find(mockContainer);
+        return res;
+      },
+      setAttribute: (k, v) => attrMap.set(k, String(v)),
+      getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null
+    };
+    return mockContainer;
+  };
+
+  const origDocument = globalThis.document;
+  const origKintone = globalThis.kintone;
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: (tag) => {
+      const children = [];
+      const attrMap = new Map();
+      let clickListener = null;
+      return {
+        tagName: tag.toUpperCase(),
+        children,
+        innerHTML: '',
+        textContent: '',
+        style: {},
+        appendChild: (c) => { children.push(c); return c; },
+        setAttribute: (k, v) => attrMap.set(k, String(v)),
+        getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
+        querySelector: (sel) => {
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) return el;
+            }
+            for (const c of el.children || []) {
+              const res = search(c);
+              if (res) return res;
+            }
+            return null;
+          };
+          for (const c of children || []) {
+            const res = search(c);
+            if (res) return res;
+          }
+          return null;
+        },
+        querySelectorAll: (sel) => {
+          const res = [];
+          const search = (el) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (el.className === cls || (el.className && el.className.includes(cls))) res.push(el);
+            }
+            for (const c of el.children || []) {
+              search(c);
+            }
+          };
+          for (const c of children || []) {
+            search(c);
+          }
+          return res;
+        },
+        addEventListener: (evt, fn) => {
+          if (evt === 'click') clickListener = fn;
+        },
+        _click: async () => {
+          if (clickListener) await clickListener();
+        }
+      };
+    }
+  };
+  globalThis.kintone = {
+    app: { getHeaderSpaceElement: () => null },
+    getLoginUser: () => ({ code: '0113' })
+  };
+
+  try {
+    // 1. Existing Detail Record
+    const detailContainer = createMockContainer();
+    const detailUi = new EmployeePartAUI({
+      container: detailContainer,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        $id: { value: '501' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: mockApiWrapper
+    });
+
+    detailUi.render();
+    await new Promise(r => setTimeout(r, 50));
+
+    // COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES: Page 1 with older=false must NOT stop pagination
+    assert.equal(getCommentsCallCount, 2, 'Must page to page 2 when newer is true on page 1');
+    assert.equal(queriedParams[0].appId, 794);
+    assert.equal(queriedParams[0].recordId, '501');
+    assert.equal(queriedParams[0].options.offset, 0);
+    assert.equal(queriedParams[1].options.offset, 10);
+
+    // COMMENTS_MORE_THAN_10_ALL_RENDERED
+    const threadList = detailContainer.querySelector('[data-mbo-comment-thread]');
+    assert.ok(threadList, 'Comment thread list must be rendered');
+    assert.equal(threadList.children.length, 15, 'All 15 comments across pages 1 and 2 must be rendered');
+
+    // COMMENTS_TEXT_RENDERED_WITHOUT_HTML_INJECTION & COMMENTS_RENDER_AUTHOR_BODY_TIMESTAMP
+    const firstItem = threadList.children[0];
+    const authorEl = firstItem.children[0].children[0];
+    const textEl = firstItem.children[1];
+    assert.equal(authorEl.textContent, 'User 1');
+    assert.equal(textEl.textContent, 'Comment 1 content <script>alert("xss")</script>');
+    assert.equal(textEl.innerHTML, '', 'InnerHTML must remain empty when using safe textContent');
+
+    // 2. COMMENTS_EXISTING_EDIT_LOADS_NATIVE_THREAD
+    getCommentsCallCount = 0;
+    const editContainer = createMockContainer();
+    const editUi = new EmployeePartAUI({
+      container: editContainer,
+      isCreate: false,
+      isEditable: true,
+      appId: 794,
+      record: {
+        $id: { value: '501' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: mockApiWrapper
+    });
+
+    editUi.render();
+    await new Promise(r => setTimeout(r, 50));
+    assert.equal(getCommentsCallCount, 2, 'Edit mode existing record must also load native comment thread');
+
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.kintone = origKintone;
+  }
+});
+
+test('COMMENTS_MORE_THAN_500_NOT_SILENTLY_TRUNCATED: Pagination handles >500 comments without hard cap truncation', async () => {
+  const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
+
+  let getCommentsCallCount = 0;
+  const mockApiWrapper = {
+    getComments: async (appId, recordId, options) => {
+      getCommentsCallCount++;
+      const pageIndex = Math.floor(options.offset / 10);
+      const isLastPage = pageIndex === 51; // 52 pages total = 520 comments
+      return {
+        comments: Array.from({ length: 10 }, (_, i) => ({
+          id: String(pageIndex * 10 + i + 1),
+          text: `Comment ${pageIndex * 10 + i + 1}`,
+          createdAt: '2026-08-29T10:00:00Z',
+          creator: { name: `User ${pageIndex * 10 + i + 1}` }
+        })),
+        older: pageIndex > 0,
+        newer: !isLastPage
+      };
     }
   };
 
@@ -521,48 +733,8 @@ test('COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_PAGINATION_DOES_NO
         appendChild: (c) => { children.push(c); return c; },
         setAttribute: (k, v) => attrMap.set(k, String(v)),
         getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
-        querySelector: (sel) => {
-          const search = (el) => {
-            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
-              const attr = sel.slice(1, -1);
-              if (el.getAttribute && el.getAttribute(attr) !== null) return el;
-            }
-            if (sel.startsWith('.')) {
-              const cls = sel.slice(1);
-              if (el.className === cls || (el.className && el.className.includes(cls))) return el;
-            }
-            for (const c of el.children || []) {
-              const res = search(c);
-              if (res) return res;
-            }
-            return null;
-          };
-          for (const c of children || []) {
-            const res = search(c);
-            if (res) return res;
-          }
-          return null;
-        },
-        querySelectorAll: (sel) => {
-          const res = [];
-          const search = (el) => {
-            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
-              const attr = sel.slice(1, -1);
-              if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
-            }
-            if (sel.startsWith('.')) {
-              const cls = sel.slice(1);
-              if (el.className === cls || (el.className && el.className.includes(cls))) res.push(el);
-            }
-            for (const c of el.children || []) {
-              search(c);
-            }
-          };
-          for (const c of children || []) {
-            search(c);
-          }
-          return res;
-        },
+        querySelector: () => null,
+        querySelectorAll: () => [],
         addEventListener: () => {}
       };
     }
@@ -590,33 +762,204 @@ test('COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_PAGINATION_DOES_NO
     });
 
     ui.render();
+    await new Promise(r => setTimeout(r, 100));
+
+    assert.equal(getCommentsCallCount, 52, 'Must page through all 52 pages without silent 500 truncation');
+    const threadList = container.querySelector('[data-mbo-comment-thread]');
+    assert.ok(threadList, 'Comment thread list must render');
+    assert.equal(threadList.children.length, 520, 'All 520 comments must be rendered');
+  } finally {
+    globalThis.document = origDocument;
+    globalThis.kintone = origKintone;
+  }
+});
+
+test('COMMENTS_REFRESH_RELOADS_THREAD & COMMENTS_REFRESH_PERFORMS_ZERO_RECORD_WRITE: Refresh button actually reloads thread and performs 0 record writes', async () => {
+  const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
+
+  let getCommentsCallCount = 0;
+  let recordWriteCount = 0;
+  let currentCommentDataset = [
+    { id: '1', text: 'Initial comment 1', createdAt: '2026-08-29T10:00:00Z', creator: { name: 'User 1' } }
+  ];
+
+  const mockApiWrapper = {
+    getComments: async () => {
+      getCommentsCallCount++;
+      return {
+        comments: currentCommentDataset,
+        older: false,
+        newer: false
+      };
+    },
+    updateRecord: async () => { recordWriteCount++; },
+    addRecord: async () => { recordWriteCount++; }
+  };
+
+  const createMockContainer = () => {
+    const children = [];
+    const attrMap = new Map();
+    const mockContainer = {
+      tagName: 'DIV',
+      children,
+      innerHTML: '',
+      appendChild: (c) => { children.push(c); return c; },
+      querySelector: (sel) => {
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) return el;
+          }
+          for (const child of el.children || []) {
+            const res = find(child);
+            if (res) return res;
+          }
+          return null;
+        };
+        return find(mockContainer);
+      },
+      querySelectorAll: (sel) => {
+        const res = [];
+        const find = (el) => {
+          if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+            const attr = sel.slice(1, -1);
+            if (el.getAttribute && el.getAttribute(attr) !== null) res.push(el);
+          }
+          for (const child of el.children || []) {
+            find(child);
+          }
+        };
+        find(mockContainer);
+        return res;
+      },
+      setAttribute: (k, v) => attrMap.set(k, String(v)),
+      getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null
+    };
+    return mockContainer;
+  };
+
+  let refreshBtnElement = null;
+  const origDocument = globalThis.document;
+  const origKintone = globalThis.kintone;
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: (tag) => {
+      const children = [];
+      const attrMap = new Map();
+      let clickHandler = null;
+      const el = {
+        tagName: tag.toUpperCase(),
+        children,
+        _innerHTML: '',
+        get innerHTML() { return this._innerHTML; },
+        set innerHTML(val) {
+          this._innerHTML = val;
+          if (val === '') children.length = 0;
+        },
+        textContent: '',
+        style: {},
+        appendChild: (c) => { children.push(c); return c; },
+        setAttribute: (k, v) => {
+          attrMap.set(k, String(v));
+          if (k === 'data-mbo-refresh-comments') refreshBtnElement = el;
+        },
+        getAttribute: (k) => attrMap.has(k) ? attrMap.get(k) : null,
+        querySelector: (sel) => {
+          const search = (item) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (item.getAttribute && item.getAttribute(attr) !== null) return item;
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (item.className === cls || (item.className && item.className.includes(cls))) return item;
+            }
+            for (const c of item.children || []) {
+              const res = search(c);
+              if (res) return res;
+            }
+            return null;
+          };
+          for (const c of children || []) {
+            const res = search(c);
+            if (res) return res;
+          }
+          return null;
+        },
+        querySelectorAll: (sel) => {
+          const res = [];
+          const search = (item) => {
+            if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
+              const attr = sel.slice(1, -1);
+              if (item.getAttribute && item.getAttribute(attr) !== null) res.push(item);
+            }
+            if (sel.startsWith('.')) {
+              const cls = sel.slice(1);
+              if (item.className === cls || (item.className && item.className.includes(cls))) res.push(item);
+            }
+            for (const c of item.children || []) {
+              search(c);
+            }
+          };
+          for (const c of children || []) {
+            search(c);
+          }
+          return res;
+        },
+        addEventListener: (evt, fn) => {
+          if (evt === 'click') clickHandler = fn;
+        },
+        _click: async () => {
+          if (clickHandler) await clickHandler();
+        }
+      };
+      return el;
+    }
+  };
+  globalThis.kintone = {
+    app: { getHeaderSpaceElement: () => null },
+    getLoginUser: () => ({ code: '0113' })
+  };
+
+  try {
+    const container = createMockContainer();
+    const ui = new EmployeePartAUI({
+      container,
+      isCreate: false,
+      isEditable: false,
+      appId: 794,
+      record: {
+        $id: { value: '501' },
+        Status: { value: '01 Draft Objective' },
+        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+        PartA_Weight: { value: '70' },
+        PartB_Weight: { value: '30' }
+      },
+      kintoneApiWrapper: mockApiWrapper
+    });
+
+    ui.render();
     await new Promise(r => setTimeout(r, 50));
 
-    // 1. COMMENTS_GET_USES_CURRENT_APP_AND_RECORD_ID
-    assert.equal(getCommentsCallCount, 2, 'Must page until all comments returned (2 calls)');
-    assert.equal(queriedParams[0].appId, 794);
-    assert.equal(queriedParams[0].recordId, '501');
-    assert.equal(queriedParams[0].options.offset, 0);
-    assert.equal(queriedParams[1].options.offset, 10);
+    assert.equal(getCommentsCallCount, 1, 'Initial render performs 1 GET comments call');
+    const threadList1 = container.querySelector('[data-mbo-comment-thread]');
+    assert.equal(threadList1.children.length, 1);
+    assert.equal(threadList1.children[0].children[1].textContent, 'Initial comment 1');
 
-    // 2. COMMENTS_RENDER_AUTHOR_BODY_TIMESTAMP & COMMENTS_TEXT_RENDERED_WITHOUT_HTML_INJECTION
-    const commentSection = container.querySelector('[data-mbo-comment-section]');
-    assert.ok(commentSection, 'Comment section container must be rendered');
+    // Simulate new comment added natively in Kintone right panel
+    currentCommentDataset.push({
+      id: '2', text: 'New native comment 2', createdAt: '2026-08-29T10:10:00Z', creator: { name: 'User 2' }
+    });
 
-    const refreshBtn = container.querySelector('[data-mbo-refresh-comments]');
-    assert.ok(refreshBtn, 'Refresh Comments button must be rendered on existing record');
-    assert.equal(refreshBtn.textContent, '🔄 รีเฟรชความคิดเห็น / Refresh Comments');
+    assert.ok(refreshBtnElement, 'Refresh button element must be captured');
+    await refreshBtnElement._click();
 
-    const threadList = container.querySelector('[data-mbo-comment-thread]');
-    assert.ok(threadList, 'Comment thread list must be rendered');
-    assert.equal(threadList.children.length, 11, 'All 11 paged comments must be rendered without truncation');
+    assert.equal(getCommentsCallCount, 2, 'Clicking Refresh Comments must invoke a 2nd GET comments call');
+    assert.equal(recordWriteCount, 0, 'Refresh action must perform ZERO record writes');
 
-    const firstItem = threadList.children[0];
-    const authorEl = firstItem.children[0].children[0];
-    const textEl = firstItem.children[1];
-    assert.equal(authorEl.textContent, 'User 1');
-    assert.equal(textEl.textContent, 'Comment 1 content <script>alert("xss")</script>');
-    assert.equal(textEl.innerHTML, '', 'InnerHTML must remain empty when using safe textContent');
+    const threadList2 = container.querySelector('[data-mbo-comment-thread]');
+    assert.equal(threadList2.children.length, 2, 'Mirrored thread must update with newly fetched comments');
+    assert.equal(threadList2.children[1].children[1].textContent, 'New native comment 2');
 
   } finally {
     globalThis.document = origDocument;
@@ -624,15 +967,18 @@ test('COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD & COMMENTS_PAGINATION_DOES_NO
   }
 });
 
-test('COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET & COMMENTS_EMPTY_STATE_BILINGUAL & COMMENTS_RETRIEVAL_FAILURE_NON_BLOCKING: Create screen performs 0 comment GET, empty state bilingual, failure non-blocking', async () => {
+test('COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET & COMMENTS_EMPTY_STATE_BILINGUAL & COMMENTS_RETRIEVAL_FAILURE_NON_BLOCKING & COMMENTS_NO_POST_DELETE_REPLY_WRITE: Create performs 0 GET, empty state bilingual, failure non-blocking, 0 write calls', async () => {
   const { EmployeePartAUI } = await import('../src/ui/employee-part-a-ui.js');
 
   let getCommentsCallCount = 0;
+  let writeCallCount = 0;
   const mockApiWrapper = {
     getComments: async () => {
       getCommentsCallCount++;
-      return { comments: [] };
-    }
+      return { comments: [], older: false, newer: false };
+    },
+    postComment: async () => { writeCallCount++; },
+    deleteComment: async () => { writeCallCount++; }
   };
 
   const createMockContainer = () => {
@@ -815,6 +1161,9 @@ test('COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET & COMMENTS_EMPTY_STATE_BILINGUAL
     const errorNotice = errorContainer.querySelector('[data-mbo-comment-error]');
     assert.ok(errorNotice, 'Comment retrieval failure must render non-blocking error notice in comment section');
     assert.ok(errorNotice.textContent.includes('HTTP 403 Forbidden'));
+
+    // 4. COMMENTS_NO_POST_DELETE_REPLY_WRITE
+    assert.equal(writeCallCount, 0, 'Comment mirror must perform ZERO POST/DELETE/reply comment write calls');
 
   } finally {
     globalThis.document = origDocument;

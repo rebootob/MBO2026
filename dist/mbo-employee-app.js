@@ -3806,12 +3806,14 @@ Requester_User is empty for action "${actionName}".`
           break;
         }
         const comments = Array.isArray(resp?.comments) ? resp.comments : [];
+        if (comments.length === 0) {
+          break;
+        }
         allComments = allComments.concat(comments);
-        if (comments.length < limit || resp?.older === false) {
+        if (resp?.newer === false || comments.length < limit) {
           hasMore = false;
         } else {
-          offset += limit;
-          if (offset >= 500) break;
+          offset += comments.length;
         }
       }
       return allComments;

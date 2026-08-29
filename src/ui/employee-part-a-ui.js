@@ -1553,13 +1553,19 @@ export class EmployeePartAUI {
       }
 
       const comments = Array.isArray(resp?.comments) ? resp.comments : [];
+      if (comments.length === 0) {
+        break;
+      }
+
       allComments = allComments.concat(comments);
 
-      if (comments.length < limit || resp?.older === false) {
+      // Kintone Get Record Comments REST API semantics for order='asc':
+      // resp.newer === false indicates the end of the comment thread (newest comment reached).
+      // resp.older === false indicates the beginning of the comment thread (Page 1 for order='asc').
+      if (resp?.newer === false || comments.length < limit) {
         hasMore = false;
       } else {
-        offset += limit;
-        if (offset >= 500) break;
+        offset += comments.length;
       }
     }
 
