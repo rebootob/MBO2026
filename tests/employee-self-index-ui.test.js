@@ -792,7 +792,7 @@ test('COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES & COMMENTS_ASC_FINAL_P
     // COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES: Page 1 with older=false must NOT stop pagination
     assert.equal(getCommentsCallCount, 2, 'Must page to page 2 when newer is true on page 1');
     assert.equal(queriedParams[0].appId, 794);
-    assert.equal(queriedParams[0].recordId, '501');
+    assert.equal(String(queriedParams[0].recordId), '501');
     assert.equal(queriedParams[0].options.offset, 0);
     assert.equal(queriedParams[1].options.offset, 10);
 

@@ -1532,7 +1532,7 @@ export class EmployeePartAUI {
 
   async _loadAndRenderComments(bodyContainer) {
     if (!bodyContainer) return;
-    const recordId = this.record?.$id?.value;
+    const recordId = this.record?.$id?.value || (typeof kintone !== 'undefined' && kintone.app?.record?.getId ? kintone.app.record.getId() : null);
     const appId = this._getAppId();
 
     const mirror = new EmployeeCommentMirror({
@@ -1554,7 +1554,7 @@ export class EmployeePartAUI {
       kintoneApiWrapper: this.kintoneApiWrapper,
       getAppId: () => this._getAppId()
     });
-    const recordId = this.record?.$id?.value;
+    const recordId = this.record?.$id?.value || (typeof kintone !== 'undefined' && kintone.app?.record?.getId ? kintone.app.record.getId() : null);
     return mirror.renderNativeCommentMirror({
       appId: this._getAppId(),
       recordId,

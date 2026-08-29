@@ -794,14 +794,15 @@ Requester_User is empty for action "${actionName}".`
       }
       const appId = options.appId || this.appId || 794;
       const bar = document.createElement("div");
-      bar.className = "mbo-back-nav-bar";
+      bar.className = "mbo-back-nav-bar mbo-back-nav-container";
       if (typeof bar.setAttribute === "function") {
         bar.setAttribute("data-mbo-back-nav-bar", "");
       }
       const link = document.createElement("a");
-      link.className = "mbo-back-to-home-link";
+      link.className = "mbo-back-to-home-link mbo-btn-back-home";
       if (typeof link.setAttribute === "function") {
         link.setAttribute("data-mbo-back-link", "");
+        link.setAttribute("data-mbo-btn-back", "");
       }
       link.href = `/k/${appId}/`;
       link.textContent = "\u2190 \u0E01\u0E25\u0E31\u0E1A\u0E2B\u0E19\u0E49\u0E32 My MBO / Back to My MBO";
@@ -824,7 +825,11 @@ Requester_User is empty for action "${actionName}".`
       this.getAppId = options.getAppId || (() => 794);
     }
     async fetchRecordComments(appId, recordId) {
-      if (!appId || !recordId) return [];
+      const numericAppId = Number(appId || (typeof this.getAppId === "function" ? this.getAppId() : 794));
+      const numericRecordId = Number(recordId || (typeof kintone !== "undefined" && kintone.app?.record?.getId ? kintone.app.record.getId() : 0));
+      if (!numericAppId || isNaN(numericAppId) || !numericRecordId || isNaN(numericRecordId) || numericRecordId <= 0) {
+        return [];
+      }
       let allComments = [];
       let offset = 0;
       const limit = 50;
@@ -842,10 +847,10 @@ Requester_User is empty for action "${actionName}".`
         prevOffset = offset;
         let resp = null;
         if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === "function") {
-          resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: "asc" });
+          resp = await this.kintoneApiWrapper.getComments(numericAppId, numericRecordId, { limit, offset, order: "asc" });
         } else if (typeof kintone !== "undefined" && kintone.api && typeof kintone.api.url === "function") {
           const url = kintone.api.url("/k/v1/record/comments.json", true);
-          resp = await kintone.api(url, "GET", { app: appId, record: recordId, limit, offset, order: "asc" });
+          resp = await kintone.api(url, "GET", { app: numericAppId, record: numericRecordId, limit, offset, order: "asc" });
         } else {
           break;
         }
@@ -869,15 +874,16 @@ Requester_User is empty for action "${actionName}".`
     }
     renderNativeCommentMirror(options = {}) {
       const isCreate = options.isCreate ?? false;
-      const appId = options.appId || (typeof this.getAppId === "function" ? this.getAppId() : 794);
-      const recordId = options.recordId;
+      const appId = Number(options.appId || (typeof this.getAppId === "function" ? this.getAppId() : 794));
+      const rawRecordId = options.recordId || (typeof kintone !== "undefined" && kintone.app?.record?.getId ? kintone.app.record.getId() : null);
+      const recordId = Number(rawRecordId);
       const panel = document.createElement("div");
       panel.className = "mbo-native-comment-mirror mbo-comment-panel";
       if (typeof panel.setAttribute === "function") {
         panel.setAttribute("data-mbo-comment-panel", "");
         panel.setAttribute("data-mbo-comment-section", "");
       }
-      if (isCreate || !recordId) {
+      if (isCreate || !rawRecordId || isNaN(recordId) || recordId <= 0) {
         return panel;
       }
       const header = document.createElement("div");
@@ -3999,7 +4005,7 @@ Requester_User is empty for action "${actionName}".`
     }
     async _loadAndRenderComments(bodyContainer) {
       if (!bodyContainer) return;
-      const recordId = this.record?.$id?.value;
+      const recordId = this.record?.$id?.value || (typeof kintone !== "undefined" && kintone.app?.record?.getId ? kintone.app.record.getId() : null);
       const appId = this._getAppId();
       const mirror = new EmployeeCommentMirror({
         kintoneApiWrapper: this.kintoneApiWrapper,
@@ -4018,7 +4024,7 @@ Requester_User is empty for action "${actionName}".`
         kintoneApiWrapper: this.kintoneApiWrapper,
         getAppId: () => this._getAppId()
       });
-      const recordId = this.record?.$id?.value;
+      const recordId = this.record?.$id?.value || (typeof kintone !== "undefined" && kintone.app?.record?.getId ? kintone.app.record.getId() : null);
       return mirror.renderNativeCommentMirror({
         appId: this._getAppId(),
         recordId,

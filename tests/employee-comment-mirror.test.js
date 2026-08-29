@@ -143,11 +143,13 @@ test('COMMENT_CREATE_MIRROR_ABSENT & COMMENT_CREATE_GET_COUNT = 0: On Create scr
   assert.equal(commentMirror, null, 'COMMENT_CREATE_MIRROR_ABSENT: On Create screen, comment mirror panel must be strictly absent');
 });
 
-test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads comments on Detail/Edit', async () => {
+test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads comments on Detail/Edit with numeric input types', async () => {
   setupMockDocument();
+  let fetchedAppId = null;
   let fetchedRecordId = null;
   const mockApi = {
     getComments: async (appId, recordId) => {
+      fetchedAppId = appId;
       fetchedRecordId = recordId;
       return {
         comments: [
@@ -160,11 +162,13 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   };
 
   const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-  const panel = mirror.renderNativeCommentMirror({ appId: 794, recordId: '123', isCreate: false });
+  // Pass string inputs '794' and '123' to test input parsing
+  const panel = mirror.renderNativeCommentMirror({ appId: '794', recordId: '123', isCreate: false });
 
   await new Promise(r => setTimeout(r, 50));
 
-  assert.equal(fetchedRecordId, '123');
+  assert.equal(fetchedAppId, 794, 'appId must be parsed to numeric 794');
+  assert.equal(fetchedRecordId, 123, 'recordId must be parsed to numeric 123');
   const items = panel.querySelectorAll('[data-mbo-comment-item]');
   assert.equal(items.length, 2, 'Must render 2 comment items');
 
@@ -177,10 +181,31 @@ test('DETAIL_COMMENT_MIRROR_LOAD_PASS & EDIT_COMMENT_MIRROR_LOAD_PASS: Loads com
   assert.equal(texts[1].textContent, 'Approved.');
 });
 
+test('COMMENT_INVALID_INPUT_RETURNS_EMPTY_WITHOUT_NETWORK_CALL: Falsy or non-numeric recordId returns empty array without GET call', async () => {
+  setupMockDocument();
+  let callCount = 0;
+  const mockApi = {
+    getComments: async () => {
+      callCount++;
+      return { comments: [] };
+    }
+  };
+
+  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
+  const result1 = await mirror.fetchRecordComments(794, null);
+  const result2 = await mirror.fetchRecordComments(794, 'abc');
+  const result3 = await mirror.fetchRecordComments(794, undefined);
+
+  assert.equal(callCount, 0, 'Invalid input must execute 0 network GET calls');
+  assert.deepEqual(result1, []);
+  assert.deepEqual(result2, []);
+  assert.deepEqual(result3, []);
+});
+
 test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGES_PASS: Pages through 101+ pages (>5,000 comments) completely', async () => {
   setupMockDocument();
   let callCount = 0;
-  const totalPagesToTest = 105; // >100 pages regression!
+  const totalPagesToTest = 105;
 
   const mockApi = {
     getComments: async (appId, recordId, options) => {
@@ -197,7 +222,6 @@ test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGE
         return { comments: pageComments, newer: true };
       }
 
-      // Final 105th page
       const lastComments = Array.from({ length: 10 }, (_, i) => ({
         id: String(currentOffset + i + 1),
         creator: { name: `User ${currentOffset + i + 1}` },
@@ -219,7 +243,6 @@ test('COMMENT_PAGINATION_NO_SILENT_TRUNCATION & COMMENT_PAGINATION_OVER_100_PAGE
 test('COMMENT_PAGINATION_SAFETY_CAP_EXCEEDED_THROWS: Safety ceiling throws explicit error caught as non-blocking UI error', async () => {
   setupMockDocument();
 
-  // Mock API that endlessly returns newer: true
   const mockApi = {
     getComments: async (appId, recordId, options) => ({
       comments: Array.from({ length: 50 }, (_, i) => ({
@@ -231,18 +254,13 @@ test('COMMENT_PAGINATION_SAFETY_CAP_EXCEEDED_THROWS: Safety ceiling throws expli
     })
   };
 
-  const mirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-
-  // Override maxPages to 5 for fast test execution
   const fastMirror = new EmployeeCommentMirror({ kintoneApiWrapper: mockApi });
-  const originalFetch = fastMirror.fetchRecordComments.bind(fastMirror);
   fastMirror.fetchRecordComments = async (appId, recordId) => {
-    // Custom wrapper that tests safety ceiling
     let allComments = [];
     let offset = 0;
     const limit = 50;
     let page = 0;
-    const maxPages = 5; // Fast test cap
+    const maxPages = 5;
     let prevOffset = -1;
 
     while (true) {

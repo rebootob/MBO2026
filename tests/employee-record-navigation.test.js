@@ -116,21 +116,22 @@ function setupMockDocument() {
   };
 }
 
-test('DETAIL_VALID_RUNTIME_BACK_VISIBLE: On Detail screen, Back to My MBO bar is rendered and visible', () => {
+test('DETAIL_VALID_RUNTIME_BACK_VISIBLE: On Detail screen, Back to My MBO bar and button are rendered and styled', () => {
   setupMockDocument();
   const nav = new EmployeeRecordNavigation({ appId: 794 });
   const bar = nav.renderBackToMyMboBar({ isCreate: false });
 
   assert.ok(bar, 'Back bar must be rendered on Detail screen');
-  assert.equal(bar.className, 'mbo-back-nav-bar');
+  assert.ok(bar.className.includes('mbo-back-nav-bar'), 'Back bar must have mbo-back-nav-bar class');
   const link = bar.querySelector('a');
-  assert.ok(link, 'Back link must be present');
-  assert.equal(link.textContent, '← กลับหน้า My MBO / Back to My MBO');
+  assert.ok(link, 'Back button link must be present');
+  assert.ok(link.className.includes('mbo-btn-back-home'), 'Back link must have mbo-btn-back-home button class');
+  assert.ok(link.textContent.includes('กลับหน้า My MBO / Back to My MBO'), 'Back button text must be clear');
   assert.equal(link.href, '/k/794/');
   assert.equal(link.target, '', 'Back link must navigate in same tab');
 });
 
-test('EDIT_VALID_RUNTIME_BACK_VISIBLE: On Edit screen, Back to My MBO bar is rendered and visible', () => {
+test('EDIT_VALID_RUNTIME_BACK_VISIBLE: On Edit screen, Back to My MBO bar is rendered with button data attributes', () => {
   setupMockDocument();
   const nav = new EmployeeRecordNavigation({ appId: 794 });
   const bar = nav.renderBackToMyMboBar({ isCreate: false });
@@ -139,6 +140,7 @@ test('EDIT_VALID_RUNTIME_BACK_VISIBLE: On Edit screen, Back to My MBO bar is ren
   assert.equal(bar.getAttribute('data-mbo-back-nav-bar'), '');
   const link = bar.querySelector('[data-mbo-back-link]');
   assert.ok(link, 'Back link must have data-mbo-back-link attribute');
+  assert.ok(link.hasAttribute('data-mbo-btn-back'), 'Back link must have data-mbo-btn-back attribute');
   assert.equal(link.href, '/k/794/');
 });
 
@@ -172,7 +174,6 @@ test('DETAIL_CONFIGURATION_ERROR_BACK_VISIBLE: Back bar survives CONFIGURATION_E
 test('DETAIL_INVALID_SNAPSHOT_BACK_VISIBLE: Back bar survives invalid competency/weight snapshot early returns for existing record', () => {
   setupMockDocument();
   const container = createMockElement('div');
-  // Record missing PartA_Weight and PartB_Weight (fails snapshot validation)
   const ui = new EmployeePartAUI({
     container,
     isCreate: false,

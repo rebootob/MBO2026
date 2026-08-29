@@ -18,15 +18,16 @@ export class EmployeeRecordNavigation {
 
     const appId = options.appId || this.appId || 794;
     const bar = document.createElement('div');
-    bar.className = 'mbo-back-nav-bar';
+    bar.className = 'mbo-back-nav-bar mbo-back-nav-container';
     if (typeof bar.setAttribute === 'function') {
       bar.setAttribute('data-mbo-back-nav-bar', '');
     }
 
     const link = document.createElement('a');
-    link.className = 'mbo-back-to-home-link';
+    link.className = 'mbo-back-to-home-link mbo-btn-back-home';
     if (typeof link.setAttribute === 'function') {
       link.setAttribute('data-mbo-back-link', '');
+      link.setAttribute('data-mbo-btn-back', '');
     }
     link.href = `/k/${appId}/`;
     link.textContent = '← กลับหน้า My MBO / Back to My MBO';

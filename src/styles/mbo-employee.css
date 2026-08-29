@@ -1981,55 +1981,75 @@
 
 /* Top Navigation Bar: Back to My MBO */
 .mbo-back-nav-bar {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #1e3a8a;
+  border-radius: 8px;
+  padding: 10px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
 }
 
-.mbo-back-to-home-link {
+.mbo-back-to-home-link,
+.mbo-btn-back-home {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: #2563eb;
-  font-size: 14px;
-  font-weight: 600;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
   text-decoration: none;
-  padding: 8px 14px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  padding: 8px 16px;
+  background: #1e3a8a;
+  border: 1px solid #1d4ed8;
   border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   transition: all 0.15s ease-in-out;
+  cursor: pointer;
 }
 
-.mbo-back-to-home-link:hover {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border-color: #93c5fd;
+.mbo-back-to-home-link:hover,
+.mbo-btn-back-home:hover {
+  background: #1e40af;
+  color: #ffffff;
+  border-color: #2563eb;
   text-decoration: none;
+  box-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+  transform: translateY(-1px);
+}
+
+.mbo-back-icon {
+  font-size: 16px;
+  font-weight: 800;
 }
 
 /* Responsive My MBO Record Cards */
 .mbo-record-card-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  gap: 18px;
   margin-top: 16px;
 }
 
 .mbo-record-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
+  border-top: 3px solid #2563eb;
   border-radius: 8px;
-  padding: 16px;
+  padding: 18px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .mbo-record-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  border-color: #93c5fd;
+  box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.12);
+  transform: translateY(-2px);
 }
 
 .mbo-record-card-header {
@@ -2037,14 +2057,18 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .mbo-record-fy {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   color: #1e3a8a;
+  background: #dbeafe;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
 }
 
 .mbo-record-card-body {
@@ -2054,8 +2078,12 @@
 
 .mbo-record-key {
   font-size: 12px;
-  color: #64748b;
+  color: #475569;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #f8fafc;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
 }
 
 .mbo-record-card-footer {
@@ -2069,10 +2097,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
 }
@@ -2080,16 +2108,18 @@
 .mbo-card-action-btn.mbo-btn-open {
   background: #2563eb;
   color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .mbo-card-action-btn.mbo-btn-open:hover {
   background: #1d4ed8;
   color: #ffffff;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
 .mbo-card-action-btn.mbo-btn-history {
   background: #f1f5f9;
-  color: #2563eb;
+  color: #1e40af;
   border: 1px solid #cbd5e1;
 }
 

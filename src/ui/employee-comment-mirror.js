@@ -11,7 +11,12 @@ export class EmployeeCommentMirror {
   }
 
   async fetchRecordComments(appId, recordId) {
-    if (!appId || !recordId) return [];
+    const numericAppId = Number(appId || (typeof this.getAppId === 'function' ? this.getAppId() : 794));
+    const numericRecordId = Number(recordId || (typeof kintone !== 'undefined' && kintone.app?.record?.getId ? kintone.app.record.getId() : 0));
+
+    if (!numericAppId || isNaN(numericAppId) || !numericRecordId || isNaN(numericRecordId) || numericRecordId <= 0) {
+      return [];
+    }
 
     let allComments = [];
     let offset = 0;
@@ -33,10 +38,10 @@ export class EmployeeCommentMirror {
 
       let resp = null;
       if (this.kintoneApiWrapper && typeof this.kintoneApiWrapper.getComments === 'function') {
-        resp = await this.kintoneApiWrapper.getComments(appId, recordId, { limit, offset, order: 'asc' });
+        resp = await this.kintoneApiWrapper.getComments(numericAppId, numericRecordId, { limit, offset, order: 'asc' });
       } else if (typeof kintone !== 'undefined' && kintone.api && typeof kintone.api.url === 'function') {
         const url = kintone.api.url('/k/v1/record/comments.json', true);
-        resp = await kintone.api(url, 'GET', { app: appId, record: recordId, limit, offset, order: 'asc' });
+        resp = await kintone.api(url, 'GET', { app: numericAppId, record: numericRecordId, limit, offset, order: 'asc' });
       } else {
         break;
       }
@@ -48,11 +53,6 @@ export class EmployeeCommentMirror {
 
       allComments = allComments.concat(comments);
 
-      // Kintone Get Record Comments REST API semantics for order='asc':
-      // - comments.length === 0 => stop safely (handled above)
-      // - resp.newer === false => newest comment reached, stop complete
-      // - non-empty page + resp.newer === true => MUST continue, even if comments.length < limit
-      // - if resp.newer is omitted, fallback to comments.length < limit check
       if (typeof resp.newer === 'boolean') {
         if (!resp.newer) {
           break;
@@ -70,8 +70,9 @@ export class EmployeeCommentMirror {
 
   renderNativeCommentMirror(options = {}) {
     const isCreate = options.isCreate ?? false;
-    const appId = options.appId || (typeof this.getAppId === 'function' ? this.getAppId() : 794);
-    const recordId = options.recordId;
+    const appId = Number(options.appId || (typeof this.getAppId === 'function' ? this.getAppId() : 794));
+    const rawRecordId = options.recordId || (typeof kintone !== 'undefined' && kintone.app?.record?.getId ? kintone.app.record.getId() : null);
+    const recordId = Number(rawRecordId);
 
     const panel = document.createElement('div');
     panel.className = 'mbo-native-comment-mirror mbo-comment-panel';
@@ -80,7 +81,7 @@ export class EmployeeCommentMirror {
       panel.setAttribute('data-mbo-comment-section', '');
     }
 
-    if (isCreate || !recordId) {
+    if (isCreate || !rawRecordId || isNaN(recordId) || recordId <= 0) {
       return panel;
     }
 
