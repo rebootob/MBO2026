@@ -5,127 +5,122 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — COMBINED EMPLOYEE UI DEPLOY CORRECTIVE / ROLLBACK REQUIRED
+> Updated: 2026-08-29 — APP794 FAILED ROLLBACK / EMERGENCY RECOVERY AUTHORIZATION PENDING
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 KINTONE-ONLY / App794 Live rev52 currently contains a partial Combined Employee UI deployment / attachment persistence + long filename + Preview/Download remain previously accepted / **Combined Employee UI deployment CORRECTIVE: Live JS matches reviewed candidate but Live CSS does not; user also reports Back to My MBO absent and My MBO visual layout not as designed** / rollback to pre-deploy snapshot required before further corrective work / HR+admin reset UI open / remaining security UAT open |
+| D1 | 🔴 App794 Live rev53 is BROKEN after failed rollback; custom UI is not rendering and user sees native Kintone fields only. Previously accepted attachment behavior is not being reopened as source logic, but Live customization must first be recovered to the exact known-good rev51 bundle identities. Combined Employee UI remains SOURCE+VERIFICATION PASS but is NOT authorized for forward deployment. HR/admin reset and remaining security UAT remain open. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🔴 Copy own previous MBO MUST FIX — scheduled after current UI corrective |
+| D5 | 🔴 Copy own previous MBO MUST FIX — blocked behind App794 recovery/UI corrective |
 | D6 | 🔴 Integrated E2E / Security / Regression BLOCKED |
 | D7 | ✅ Admin Support Center source functionality closed |
 
-## 2. Previously Accepted State
+## 2. Known-Good App794 Rev51 — Recovery Source of Truth
+
+The accepted App794 attachment Preview/Download deployment evidence for rev51 records:
 
 ```text
-APP794_LIVE_FORM_REVISION                = 48
-EDIT_ATTACHMENT_SOURCE/DEPLOYMENT        = PASS / REV49
-LONG_FILENAME_UI_SOURCE/DEPLOYMENT       = PASS / REV50
-ATTACHMENT_RETRIEVAL_SOURCE/DEPLOYMENT   = PASS / REV51
-ATTACHMENT_RETRIEVAL_USER_LIVE_UAT       = PASS
-ALL_ATTACHMENT_DEPLOY_AUTHS              = CONSUMED / CLOSED
+KNOWN_GOOD_SOURCE_CANDIDATE = ec6278524a2d5eb53050d0580c340d1b4e866b97
+KNOWN_GOOD_LIVE_REVISION    = 51
+KNOWN_GOOD_SCOPE            = ALL
+KNOWN_GOOD_TOPOLOGY         = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+KNOWN_GOOD_JS_BLOB_SHA      = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+KNOWN_GOOD_CSS_BLOB_SHA     = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 ```
 
-## 3. Combined Employee UI Reviewed Candidate
+Repository readback confirms at candidate `ec627852...`:
+- `dist/mbo-employee-app.js` blob = `e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8`
+- `dist/mbo-employee.css` blob = `1710d770ae87fb5f910d669dd5a88ea0950e6991`
 
-Reviewed release candidate:
+This is now the only accepted recovery target.
+
+## 3. Combined Employee UI Candidate — Still Source/Verification PASS, Not Live
+
+Reviewed candidate:
 `ea5254370360321d18bd768f379986609c241850`
 
-Reviewed generated identities:
+Reviewed identities:
 ```text
-DIST_JS_BLOB_SHA  = a4975fc219269268bf2a0caffd084d233fa3e29a
-DIST_CSS_BLOB_SHA = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+COMBINED_UI_JS_BLOB_SHA  = a4975fc219269268bf2a0caffd084d233fa3e29a
+COMBINED_UI_CSS_BLOB_SHA = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
 ```
 
-Reviewed source/verification PASS covered all three requested features:
-1. Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
-2. My MBO home: responsive card/list UI with readable FY/status/action layout.
-3. Detail/Edit: Native Kintone Comment read-only mirror + Refresh with accepted pagination semantics.
+Features remain:
+1. Back to My MBO on existing Detail/Edit.
+2. Responsive My MBO card/list UI.
+3. Native Kintone Comment read-only mirror + Refresh.
 
-Verification evidence remains accepted:
-```text
-FOCUSED_NAVIGATION_TESTS         = PASS 8/8
-FOCUSED_COMMENT_TESTS            = PASS 8/8
-EMPLOYEE_PART_A_REGRESSION       = PASS 73/73
-FULL_NPM_TEST                    = PASS 931/931
-UI_BUILD                         = PASS
-MODULE_AWARE_BUILD_ONLY          = PASS / 0 Live Kintone network calls
-```
+This candidate is NOT currently authorized for any forward deployment.
 
-## 4. Deployment Review — CORRECTIVE
+## 4. Failed Partial Deploy and Failed Rollback
 
-Authorization:
+Consumed one-shot forward authorization:
 `APP794-D1-COMBINED-EMPLOYEE-UI-DEPLOY-20260829-01`
 
-Authorization status:
-`CONSUMED / CLOSED`
-
-Executor evidence commit:
-`48239a70ac4c3910b93b610c9648f5e4ca954319`
-
-Observed deployment:
+Partial rev52 evidence:
 ```text
-PRE_DEPLOY_REVISION              = 51
-POST_DEPLOY_REVISION             = 52
-DEPLOY_ATTEMPT_COUNT             = 1
-DEPLOY_RESULT                    = SUCCESS
-POST_DEPLOY_JS_IDENTITY          = a4975fc219269268bf2a0caffd084d233fa3e29a
-POST_DEPLOY_CSS_IDENTITY         = 1710d770ae87fb5f910d669dd5a88ea0950e6991
-REVIEWED_JS_IDENTITY             = a4975fc219269268bf2a0caffd084d233fa3e29a
-REVIEWED_CSS_IDENTITY            = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
-EXACT_CANDIDATE_READBACK_MATCH   = NO
-AUTHORIZATION_CONSUMED           = YES
+REV52_JS  = a4975fc219269268bf2a0caffd084d233fa3e29a
+REV52_CSS = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+EXACT_COMBINED_UI_MATCH = NO
 ```
 
-Independent finding:
-- Live JS matches the reviewed candidate.
-- Live CSS remains the prior CSS identity `1710d...`, not reviewed candidate CSS `2a758a...`.
-- The candidate contains real CSS changes for Back navigation and My MBO cards, therefore CSS identity mismatch is material.
-- Executor deployment evidence incorrectly labeled the prior CSS as reviewed CSS and incorrectly claimed candidate match based on JS only.
-- User Live evidence confirms My MBO styling does not match the designed card/list presentation and the Back to My MBO button is not visible.
+Rollback commit/evidence:
+`daaab7f596067124007bb35dd945eeec7b262d49`
 
-Verdict:
-`CORRECTIVE — PARTIAL / NON-EXACT DEPLOYMENT`.
-
-## 5. Rollback Rule
-
-The consumed one-shot authorization cannot be reused for another forward deployment.
-The original authorization explicitly allowed one safe rollback to the captured exact pre-deploy snapshot if post-deploy candidate readback did not match.
-
-Rollback target is the captured pre-deploy App794 customization snapshot from Rev51:
+Rollback restored:
 ```text
-PRE_DEPLOY_JS_IDENTITY  = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
-PRE_DEPLOY_CSS_IDENTITY = 1710d770ae87fb5f910d669dd5a88ea0950e6991
-SCOPE                    = ALL
-TOPOLOGY                 = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-SNAPSHOT                  = scratch/app794_live_predeploy_backup_combined_ui.json
-                           scratch/app794_preview_predeploy_backup_combined_ui.json
+REV53_JS  = dbd9899ade84318921e374ce687ac435da7cc40c
+REV53_CSS = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
 ```
 
-No new forward candidate deployment is authorized during rollback.
+This is NOT the known-good rev51 bundle pair above. Therefore the rollback evidence claim `PRE_DEPLOY_SNAPSHOT_MATCH = YES` is rejected by independent review.
+
+User Live observation after rev53:
+- custom MBO UI disappeared;
+- only native Kintone fields remain visible.
+
+Independent verdict:
+`CORRECTIVE — FAILED ROLLBACK / BROKEN LIVE CUSTOMIZATION`.
+
+## 5. Emergency Recovery Gate
+
+A NEW explicit user authorization is required before any further Live customization write.
+
+Recovery scope, if authorized, must be exactly:
+- App794 Desktop customization only;
+- restore repository-known-good rev51 bundle contents from commit `ec6278524a2d5eb53050d0580c340d1b4e866b97`;
+- exact JS identity `e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8`;
+- exact CSS identity `1710d770ae87fb5f910d669dd5a88ea0950e6991`;
+- Scope ALL;
+- Desktop JS 1 / Desktop CSS 1 / Mobile 0;
+- no source edits;
+- no business record/schema/layout/ACL/process/comment writes;
+- no App801/App795/App796 writes;
+- no Combined Employee UI forward deployment in the same recovery action.
+
+After recovery, Control Plane must independently verify Live readback before any new UI corrective/deploy work.
 
 ## 6. Current Gate
 
 ```text
-CURRENT_GATE                  = D1 COMBINED EMPLOYEE UI ROLLBACK TO PRE-DEPLOY SNAPSHOT
-CURRENT_MODE                  = ANTIGRAVITY ROLLBACK-ONLY EXECUTION
-NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-AUTHORIZATION_ID              = APP794-D1-COMBINED-EMPLOYEE-UI-DEPLOY-20260829-01
-AUTHORIZATION_STATUS          = CONSUMED / CLOSED
-LIVE_APP794_CUSTOMIZATION     = REV52 PARTIAL / NON-EXACT
-DEPLOYMENT_REVIEW             = CORRECTIVE
-FORWARD_DEPLOY                = NO / FORBIDDEN
-ROLLBACK                      = ALLOWED ONLY TO CAPTURED PRE-DEPLOY SNAPSHOT
-SOURCE CHANGE                 = NO DURING ROLLBACK
+CURRENT_GATE                  = APP794 EMERGENCY RECOVERY AUTHORIZATION
+CURRENT_MODE                  = CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION
+NEXT_ACTION_OWNER             = USER / EXPLICIT RECOVERY AUTHORIZATION
+LIVE_APP794_CUSTOMIZATION     = REV53 BROKEN
+ROLLBACK_REVIEW               = CORRECTIVE / FAILED
+KNOWN_GOOD_RECOVERY_COMMIT    = ec6278524a2d5eb53050d0580c340d1b4e866b97
+KNOWN_GOOD_JS                 = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
+KNOWN_GOOD_CSS                = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+RECOVERY_AUTHORIZATION        = NONE
+FORWARD_COMBINED_UI_DEPLOY    = NO
+SOURCE CHANGE                 = NO
 APP794 RECORD WRITE           = NO
 APP794 FORM/SCHEMA/LAYOUT     = NO
 KINTONE COMMENT WRITE         = NO
 APP801 / APP795 / APP796      = NO
-COPY PREVIOUS MBO             = NOT YET
+D2-D7 EXECUTION               = NO
 ```
-
-After rollback is independently verified, Control Plane will diagnose the missing Back button/runtime path and the CSS deployment packaging issue before preparing any new candidate. Any later forward deployment requires a NEW explicit user authorization.
