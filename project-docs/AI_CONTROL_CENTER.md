@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP2 UI CANDIDATE CORRECTIVE / NO LIVE WRITE
+> Updated: 2026-08-29 — WP2 UI CANDIDATE INDEPENDENT PASS / AWAITING EXPLICIT LIVE AUTHORIZATION
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 App794 Live Rev54 remains accepted known-good. WP1 Atomic Deployment Tooling remains PASS/CLOSED. WP2 candidate source commit `890d92b5d5d8c43e54f203833a32fd759fbaed43` with evidence/dist commit `a18dd594fb9b522772b9e58427bdd4eeb4906754` is **CORRECTIVE**. Module extraction direction is accepted, but Back runtime reliability, Comment safety/pagination, Create-screen scope, and candidate artifact traceability must be corrected before any deployment authorization. |
+| D1 | 🟠 App794 Live Rev54 remains accepted known-good. WP1 Atomic Deployment Tooling = PASS/CLOSED. **WP2 UI candidate = INDEPENDENT PASS** for Back to My MBO + My MBO card/list + Native Comment mirror/Refresh. No Live deployment has occurred. A new explicit user authorization is required before any App794 customization deploy. HR/admin reset and remaining security UAT remain open. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -33,162 +33,119 @@ USER_RUNTIME_SMOKE     = PASS
 CURRENT_LIVE_RUNTIME   = ACCEPTED KNOWN-GOOD
 ```
 
-No WP2 Live customization write occurred. Rev54 is unchanged.
+Rev54 remains unchanged. No WP2 Live customization write/deploy occurred.
 
 ## 3. WP1 — PASS / CLOSED
 
-Accepted candidate:
+Accepted tooling candidate:
 `035b4d1fa077907f19bf8d2ef0a4177156d0319b`
 
-Do not reopen WP1 except for a directly demonstrated artifact-determinism regression. Atomic JS+CSS, mandatory release manifest, pre-build source binding, exact-byte hashing, and fail-closed source state remain mandatory.
+Mandatory future behavior remains:
+- atomic Desktop JS + CSS pair;
+- mandatory release manifest;
+- exact-byte identity checking;
+- pre-build Git source binding;
+- clean worktree gate;
+- fail closed before Live write;
+- no automatic rollback.
 
-## 4. WP2 Candidate Reviewed
+## 4. WP2 — Independent PASS
 
-Source/Test commit:
-`890d92b5d5d8c43e54f203833a32fd759fbaed43`
+Implementation/Test/Dist candidate commit:
+`90ba66e33c056807dc79717c3c787f37e80bb1b6`
 
-Evidence/dist commit:
-`a18dd594fb9b522772b9e58427bdd4eeb4906754`
+Evidence commit:
+`5ac53c7013cae673d7dbb6c77da18226d44d4cfd`
 
-Independent diff from WP2 start is limited to:
-- new `src/ui/employee-record-navigation.js`;
-- new `src/ui/employee-comment-mirror.js`;
-- delegated/removal changes in `src/ui/employee-part-a-ui.js`;
-- focused navigation/comment tests;
-- generated JS dist + WP2 evidence.
-
-No auth/session/attachment/routing/scoring source changed. No Live write/deploy occurred.
-
-### Accepted direction
+### Final reviewed candidate manifest
 
 ```text
-My MBO owner              = src/ui/employee-self-index-ui.js (preserved)
-Back owner                = src/ui/employee-record-navigation.js
-Comment owner             = src/ui/employee-comment-mirror.js
-EmployeePartAUI           = delegates Back + Comment
-main-mbo-app.js            = unchanged / orchestration remains centralized
+CANDIDATE_IMPLEMENTATION_COMMIT = 90ba66e33c056807dc79717c3c787f37e80bb1b6
+CANDIDATE_JS_BLOB_SHA           = eec05d4bb19130f3edc431164fc073f6b697dd8a
+CANDIDATE_CSS_BLOB_SHA          = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+CANDIDATE_SCOPE                 = ALL
+CANDIDATE_TOPOLOGY              = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 ```
 
-## 5. WP2 Independent Blockers
+Independent Git inspection confirms the same JS/CSS blob identities at evidence HEAD `5ac53c...`; the docs-only evidence commit did not alter the reviewed dist pair.
 
-### Blocker A — Back runtime proof does not exercise the real Kintone orchestration path
-
-The new navigation tests instantiate `EmployeeRecordNavigation` directly or call `EmployeePartAUI._renderBackToMyMboBar()` directly. They do **not** execute the registered `app.record.detail.show` / `app.record.edit.show` / `app.record.create.show` path through:
+### Independent review — accepted
 
 ```text
-main-mbo-app.js
- -> getRecordUiHost
- -> MBO login gate requireLogin
- -> setupRecordUiWithAuth
- -> new EmployeePartAUI(options)
- -> ui.render()
+FEATURE_PARTITION                     = PASS
+MY_MBO_OWNER                          = src/ui/employee-self-index-ui.js
+BACK_OWNER                            = src/ui/employee-record-navigation.js
+COMMENT_OWNER                         = src/ui/employee-comment-mirror.js
+EMPLOYEE_PART_A_UI                    = DELEGATES / NO DUPLICATE FEATURE OWNER
+BACK_MOUNT_BEFORE_EARLY_RETURNS       = PASS
+DETAIL_CONFIGURATION_ERROR_BACK       = PASS
+DETAIL_INVALID_SNAPSHOT_BACK          = PASS
+REAL_MAIN_KINTONE_EVENT_PATH_TEST     = PASS
+REAL_MAIN_DETAIL_BACK_VISIBLE         = PASS
+REAL_MAIN_EDIT_BACK_VISIBLE           = PASS
+REAL_MAIN_CREATE_BACK_ABSENT          = PASS
+COMMENT_DETAIL_EDIT_ONLY              = PASS
+COMMENT_CREATE_MIRROR_ABSENT          = PASS
+COMMENT_CREATE_GET                    = 0
+COMMENT_DYNAMIC_ERROR_SAFE_TEXT       = PASS
+COMMENT_AUTHOR/BODY_SAFE_TEXT         = PASS
+COMMENT_101_PLUS_PAGE_REGRESSION      = PASS
+COMMENT_SILENT_TRUNCATION             = BLOCKED
+COMMENT_SAFETY_CAP                    = EXPLICIT ERROR / NON-SILENT
+COMMENT_WRITE                         = 0
+MY_MBO_EMPLOYEE_FILTER                = PRESERVED
+MY_MBO_FY_DESC_ORDER                  = PRESERVED
+MY_MBO_OPEN/HISTORY_ACTIONS           = PRESERVED
+MY_MBO_DELETE_UI                      = 0
+MY_MBO_RESPONSIVE_CARD_CSS            = PRESENT IN ATOMIC CSS
+DETERMINISTIC_CSS_LF_BUILD            = PASS
+CANDIDATE_JS_GIT_BLOB_MATCH           = PASS
+CANDIDATE_CSS_GIT_BLOB_MATCH          = PASS
+EXECUTOR_FULL_TEST                    = PASS 953/953
+EXECUTOR_FOCUSED_TEST                 = PASS 22/22
+EXECUTOR_CLEAN_REBUILD_DIST_DIFF      = 0
+LIVE_KINTONE_WRITE                    = 0
+LIVE_DEPLOY                           = NO
 ```
 
-This does not satisfy the WP2 runtime-integration requirement.
+### Pre-deploy re-check required
 
-### Blocker B — Real Back reliability defect remains in `EmployeePartAUI.render()`
+The final evidence summarizes full/focused/build results but does not restate every granular field requested by the prior Active Task. Therefore a future authorized deploy task must re-run, before any upload:
+- focused attachment/auth regression;
+- hardened build-only and prove Kintone/network calls = 0;
+- clean worktree + exact candidate JS/CSS identity readback against the manifest above.
 
-Back is currently appended only after several early-return gates, including:
-- `BUSINESS_STAGES.CONFIGURATION_ERROR`;
-- unknown workflow status;
-- missing/invalid competency snapshot;
-- invalid PartA/PartB weight snapshot.
+This is a pre-deploy verification requirement, not an open WP2 source defect.
 
-Therefore an existing Detail/Edit record can return before the Back bar is mounted. This is a concrete source-level reason Back can disappear even though `_renderBackToMyMboBar()` itself works.
+## 5. Exact Deployment Source Rule
 
-Required contract: every existing Detail/Edit custom screen, including fail-closed configuration/error views, must retain the safe navigation escape `← กลับหน้า My MBO / Back to My MBO`. Create remains absent.
+Because the current branch may contain later docs-only control commits, a future authorized executor MUST NOT substitute branch HEAD artifacts casually.
 
-Move/mount Back immediately after root creation for `!isCreate`, before configuration/snapshot early returns, without weakening those fail-closed checks.
+For the reviewed WP2 candidate deployment:
+1. read the then-current `AI_CONTROL_CENTER.md` + authorized `AI_ACTIVE_TASK.md` first;
+2. record the one-shot authorization ID;
+3. checkout the exact immutable candidate commit `90ba66e33c056807dc79717c3c787f37e80bb1b6` with a clean worktree;
+4. release manifest `sourceCommit` must equal that exact checked-out Git HEAD;
+5. exact JS/CSS identities must equal `eec05d...` + `2a758a...`;
+6. scope/topology must remain ALL / Desktop JS1 CSS1 / Mobile0;
+7. only then may the separately authorized Live deploy proceed.
 
-### Blocker C — Comment mirror is still rendered on Create
+Any mismatch => STOP before upload/write.
 
-`EmployeePartAUI.render()` unconditionally appends `_renderNativeCommentMirror()`. The dedicated mirror returns a Create notice and zero GET, but WP2 scope says Comment mirror is **existing Detail/Edit only**.
-
-Required:
-```text
-Detail/Edit -> Comment mirror rendered
-Create      -> Comment mirror absent AND comment GET count = 0
-```
-
-### Blocker D — Comment safe-text contract is incomplete
-
-`employee-comment-mirror.js` assigns several strings with both `textContent` and non-empty `innerHTML`. Most are fixed strings, but the failure state builds:
+## 6. Current Gate
 
 ```text
-Failed to load comments: ${err.message}
-```
-
-then assigns it to `innerHTML`. Dynamic error text must never enter HTML parsing.
-
-Required: use `textContent`/text nodes only for all Comment mirror textual states and user/API-derived values. Empty `innerHTML = ''` used only to clear a container may remain, or use a safe clear helper. Add a malicious `err.message` regression.
-
-### Blocker E — Pagination has a silent 100-page ceiling
-
-`fetchRecordComments()` uses `for (let page = 0; page < 100; page++)` and returns accumulated comments after the loop. If Kintone still reports `newer=true` after page 100, this silently returns incomplete data.
-
-This violates truthful complete pagination / no silent truncation.
-
-Required: no silent completion on an arbitrary page ceiling. Either continue until truthful end (`newer=false` / zero / documented fallback) with a no-progress guard, or fail explicitly if a safety ceiling is reached so UI shows a non-blocking failure rather than partial data. Add a >5,000-comments or equivalent ceiling regression.
-
-### Blocker F — Candidate artifact manifest is not independently traceable/reproducible yet
-
-Evidence records:
-```text
-CANDIDATE_SOURCE_COMMIT = 890d92b5d5d8c43e54f203833a32fd759fbaed43
-CANDIDATE_JS_BLOB_SHA   = c46b03b823f7b5cfb79521a6908c5aa54388a4c2
-CANDIDATE_CSS_BLOB_SHA  = 2599ff745475a5f01bd4224f76e5b098fa2bbf2e
-```
-
-Independent Git inspection shows:
-```text
-890d... committed dist JS blob = a4975fc219269268bf2a0caffd084d233fa3e29a
-
-a18d... committed dist JS blob = c46b03b823f7b5cfb79521a6908c5aa54388a4c2
-
-a18d... committed dist CSS blob = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
-```
-
-Thus the captured CSS exact-byte identity `2599ff...` is not the committed CSS blob identity `2a758...`, consistent with an EOL/filter-dependent build artifact. This is exactly the class of identity ambiguity the new rollback/deployment rules are intended to eliminate.
-
-Before deployment authorization, require one deterministic candidate process:
-1. source/test/dist final state committed together as the candidate commit;
-2. clean checkout of that exact candidate commit;
-3. clean rebuild produces **zero tracked dist diff**;
-4. exact bytes hashed by deployment tooling equal the committed JS/CSS blob identities;
-5. only then record final candidate manifest.
-
-If CSS EOL handling prevents this, make the narrow build-output correction needed to emit canonical deterministic CSS bytes. Do not change `gitBlobSha()` exact-byte behavior.
-
-## 6. WP2 Accepted Behavior — Preserve
-
-```text
-FEATURE_PARTITION_DIRECTION     = PASS
-MY_MBO_OWNER_PRESERVED          = PASS
-MY_MBO_QUERY/STATUS SEMANTICS   = PRESERVE
-BACK_LABEL/TARGET/SAME_TAB      = PASS at module level
-COMMENT_CREATE_GET              = 0 at module level
-COMMENT_REFRESH_REFETCH         = PASS at module level
-COMMENT_SHORT_PAGE_NEWER_TRUE   = PASS
-COMMENT_525_PAGINATION          = PASS
-COMMENT_BODY/AUTHOR_TEXTCONTENT = PASS
-COMMENT_WRITE                   = 0
-NO_LIVE_WRITE                   = PASS
-```
-
-Do not reopen accepted attachment/auth/routing/scoring behavior.
-
-## 7. Current Gate
-
-```text
-CURRENT_GATE                  = WP2 UI CORRECTIVE — REAL RUNTIME BACK + COMMENT SAFETY + DETERMINISTIC CANDIDATE
-CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST/BUILD ONLY — NO LIVE WRITE
-NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+CURRENT_GATE                  = WP2 UI CANDIDATE PASS — AWAITING EXPLICIT USER LIVE AUTHORIZATION
+CURRENT_MODE                  = CONTROL PLANE HOLD / NO EXECUTION
+NEXT_ACTION_OWNER             = USER AUTHORIZATION OR CHATGPT CONTROL PLANE
 WP1                           = PASS / CLOSED
+WP2                           = PASS / CANDIDATE LOCKED
+WP2_CANDIDATE_COMMIT          = 90ba66e33c056807dc79717c3c787f37e80bb1b6
+WP2_CANDIDATE_JS              = eec05d4bb19130f3edc431164fc073f6b697dd8a
+WP2_CANDIDATE_CSS             = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
 LIVE_APP794_CUSTOMIZATION     = REV54 ACCEPTED KNOWN-GOOD
 ROLLBACK_MANIFEST             = LOCKED / ec627852 + e04aa... + 1710d...
-LATEST_WP2_SOURCE_COMMIT      = 890d92b5d5d8c43e54f203833a32fd759fbaed43
-LATEST_WP2_EVIDENCE_COMMIT    = a18dd594fb9b522772b9e58427bdd4eeb4906754
-WP2_VERDICT                   = CORRECTIVE
+ANTIGRAVITY EXECUTION         = NO
 APP794 CUSTOMIZATION DEPLOY   = NO / NOT AUTHORIZED
 APP794 RECORD WRITE           = NO
 APP794 FORM/SCHEMA/LAYOUT     = NO
@@ -199,5 +156,4 @@ COPY PREVIOUS MBO             = NO
 D2-D7 EXECUTION               = NO
 ```
 
-Maximum executor status:
-`WP2_UI_CORRECTED_CANDIDATE_PENDING_INDEPENDENT_REVIEW`.
+Do not deploy until the user gives a new explicit App794 WP2 UI deployment authorization.
