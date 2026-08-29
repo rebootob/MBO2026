@@ -1,15 +1,15 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 93a8c84d67edce7c7d814d958161cc53f2c06265
+START_HEAD                   = 3b9fc3a7088ea529bb2acfce24734f3761e43e15
 CANONICAL_BRANCH             = ai/antigravity-wp002c
 CORRECTIVE_DESIGN            = EXPLICIT DESIRED SAVED-FILE SNAPSHOT MAP + REGRESSION SUITE RESTORATION
 FOCUSED_TESTS                = PASS (26/26 attachment & timeline tests passing)
 FULL_NPM_TEST                 = PASS (878/878 unit & integration tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE           = 0
-LIVE_DEPLOY_OCCURRED         = NO
-MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+LIVE_DEPLOY_OCCURRED         = YES
+MAXIMUM_STATUS               = DEPLOYED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -68,4 +68,31 @@ MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 - **Repository Full Test Suite (`npm test`):** **878/878 PASS (100%)**
 - **Candidate Bundle Build (`npm run ui:build`):** `PASS` (`dist/mbo-employee-app.js` & `dist/mbo-employee.css` generated cleanly)
 - **Module-Aware Build-Only Check (`node --env-file=.env.local scripts/kintone/deploy-custom-ui.js --build-only`):** `PASS` (0 Kintone network calls)
-- **Live Writes & Deployment:** Zero Live Kintone write performed (`LIVE_KINTONE_WRITE = 0`, `LIVE_DEPLOY_OCCURRED = NO`).
+
+## 4. One-Shot App794 Deployment Evidence
+
+```text
+EXECUTION_START_HEAD              = 3b9fc3a7088ea529bb2acfce24734f3761e43e15
+REVIEWED_SOURCE_CANDIDATE_SHA    = 2aed3578b710e0283c7a436e7fa7a225ec3e7afb
+SOURCE_CHANGED_DURING_DEPLOY     = NO
+PREFLIGHT_RESULT                 = PASS (Deterministic validatePreflight 100% PASS)
+BUILD_RESULT                     = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
+BUILD_ONLY_RESULT                = PASS (0 Kintone network calls)
+PRE_DEPLOY_APP794_REVISION       = 46
+PRE_DEPLOY_JS_IDENTITY_HASH      = 66424ab0949ca4767fbeb06118adfff593775014
+PRE_DEPLOY_CSS_IDENTITY_HASH     = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+ROLLBACK_SNAPSHOT_REFERENCE      = scratch/app794_live_predeploy_backup_d1.json & scratch/app794_preview_predeploy_backup_d1.json
+DEPLOY_RESULT                    = SUCCESS (Kintone status SUCCESS)
+POST_DEPLOY_APP794_REVISION      = 47
+POST_DEPLOY_JS_IDENTITY_HASH     = 97273c29e80c4f6cbfa6982360fdba03c8c43076
+POST_DEPLOY_CSS_IDENTITY_HASH    = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+CANDIDATE_READBACK_MATCH         = YES (Live deployed JS hash matches dist/mbo-employee-app.js 100%)
+ROLLBACK_OCCURRED                = NO
+ROLLBACK_REASON                  = N/A
+APP794_RECORD_WRITE              = 0
+APP794_ACL_SCHEMA_PROCESS_WRITE  = 0
+APP801_WRITE                     = 0
+APP795_796_WRITE                 = 0
+LIVE_DEPLOY_OCCURRED            = YES
+MAXIMUM_STATUS                   = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+```
