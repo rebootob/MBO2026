@@ -1,158 +1,90 @@
-# AI ACTIVE TASK — APP794 WP2 R4 ERROR-STATE BACK NAV / CORRECTIVE R2 SOURCE-ONLY
+# AI ACTIVE TASK — APP794 WP2 R4 CLOSED / SOURCE ACCEPTED
 
-Mode: **ANTIGRAVITY SOURCE EXECUTION ONLY — NO LIVE KINTONE WRITE / NO DEPLOY**  
+Mode: **CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION / NO LIVE KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Review Result / Why R2 Exists
+## 1. Independent Review Result
 
-ChatGPT independent review of commit `4852915c13c4edf58306b1f751c99d25c0c88e69` = **CORRECTIVE**.
+Reviewed corrective source commit:
 
-The commit correctly added canonical Back navigation to several existing Detail/Edit blocking states, but it did **not** satisfy the exact user screenshot/request.
+`98108e9e387d01b6d3c3a35cce5baf13324be50e`
 
-The screenshot is the App794 **Create flow** (`/k/794/edit`) after authenticated Employee-Self autoload fails because the employee already has an MBO for FY2026. The resulting `Employee Profile Resolution Failed` fatal screen has no usable business continuation and the user explicitly requires:
+Decision:
 
-`← กลับหน้า My MBO / Back to My MBO`
+`SOURCE REVIEW PASS`
 
-The prior R4 task incorrectly generalized `Create = 0 Back controls`. That Control Plane interpretation is superseded by this R2 packet.
+The prior R4 R1 commit `4852915c13c4edf58306b1f751c99d25c0c88e69` remains superseded by R2 for the fatal Create recovery requirement.
 
-## 2. Exact User-Facing Rule
+## 2. Accepted R4 Behavior
 
 For App794:
 
 ```text
-Normal successful Create screen                       = 0 Back controls
-Create Login/Auth-required state before authentication = 0 Back controls
-Authenticated Create fatal/autoload/duplicate error    = exactly 1 Back control
-Existing Detail/Edit normal state                      = exactly 1 Back control
-Existing Detail/Edit fatal/blocking state               = exactly 1 Back control
+Normal successful Create                            = 0 Back controls
+Create auth/login-required before authentication    = 0 Back controls
+Authenticated Create fatal/autoload/duplicate error = exactly 1 Back control
+Normal existing Detail/Edit                         = exactly 1 Back control
+Existing Detail/Edit fatal/blocking error            = exactly 1 Back control
 ```
 
-Back label:
+Canonical control:
 
 `← กลับหน้า My MBO / Back to My MBO`
 
-Same-tab target:
+Target:
 
-`/k/{currentAppId}/`
+`/k/{currentAppId}/` — App794 resolves to `/k/794/` in the same tab.
 
-For App794: `/k/794/`.
+Accepted implementation boundary:
+- canonical component remains `src/ui/employee-record-navigation.js`;
+- `src/main-mbo-app.js` uses explicit recovery intent (`showBackToMyMbo`) rather than deriving every case solely from `isCreate`;
+- authenticated Create `Employee Profile Resolution Failed` catch explicitly enables recovery Back navigation;
+- fail-closed error behavior remains intact;
+- no raw duplicate Back markup was introduced;
+- no CSS, Password Reset, App800, App795/App796, D7, schema/ACL/process or Live Kintone change occurred.
 
-The exact screenshot class that MUST be covered is:
-- authenticated `app.record.create.show`;
-- automatic Employee profile/autoload path runs;
-- duplicate MBO check or equivalent profile-resolution prerequisite fails;
-- `Employee Profile Resolution Failed` blocking screen is rendered;
-- the screen MUST retain/show exactly one Back to My MBO control.
+## 3. Review Evidence
 
-## 3. Review of R1 Commit — Retain What Is Correct
+Git compare from Control Plane base `cc93d2a9ffa3733d6618af3b62c066068820931d` to source candidate `98108e9e387d01b6d3c3a35cce5baf13324be50e` shows only:
+- `src/main-mbo-app.js`;
+- `tests/employee-main-mbo-app-integration.test.js`;
+- generated `dist/mbo-employee-app.js`.
 
-Commit `4852915c13c4edf58306b1f751c99d25c0c88e69` may be used as the corrective base.
+Committed focused tests cover:
+- normal Create Back absent;
+- pre-auth Create error Back absent;
+- authenticated Create fatal profile-resolution error Back visible exactly once;
+- exact `/k/794/` target and bilingual label;
+- Detail/Edit blocking states Back visible exactly once;
+- zero record writes and zero auth/session mutations in the integration path;
+- canonical navigation component tests remain present.
 
-Retain its correct behavior unless a focused test proves otherwise:
-- canonical `EmployeeRecordNavigation` reuse;
-- existing Detail/Edit mismatch/blocking state Back navigation;
-- render-exception recovery on existing Detail/Edit;
-- no raw duplicated `<a>` implementation;
-- no CSS change;
-- no Password Reset change;
-- no Control docs changed by Antigravity.
+## 4. Verification Caveat
 
-Do NOT revert working Detail/Edit R4 changes merely to fix Create fatal recovery.
+GitHub exposes no CI status or workflow run for source commit `98108e9e...`.
 
-## 4. Read Set — NO BROAD SCAN
+Therefore ChatGPT independently accepts the source/diff/test design, but does **not** claim that GitHub CI independently proved the local verification commands.
 
-Read only:
-1. `project-docs/AI_CONTROL_CENTER.md`
-2. this `project-docs/AI_ACTIVE_TASK.md`
-3. `project-docs/CONFIRMED_BASELINE/UI_UX.md`
-4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-5. `skills/mbo-kintone-ui-runtime-debugging/SKILL.md`
-6. `src/main-mbo-app.js`
-7. `src/ui/employee-record-navigation.js`
-8. `tests/employee-main-mbo-app-integration.test.js`
-9. `tests/employee-record-navigation.test.js`
-10. `scripts/kintone/build-mbo-ui.js` only for normal build
-11. `dist/mbo-employee-app.js` generated output only; never hand-edit
+Before any Live deploy authorization, the next candidate/pre-deploy gate must re-prove:
+- focused tests PASS;
+- build PASS;
+- classic bundle/CSS regression PASS;
+- clean source-to-dist reproduction;
+- exact candidate JS/CSS identities;
+- current Live Rev57 preflight matches the accepted baseline.
 
-Do not broad-scan the repository.
-
-## 5. Canonical Ownership / Preferred Correction
-
-```text
-CANONICAL_NAV_OWNER     = src/ui/employee-record-navigation.js
-ERROR_ORCHESTRATION     = src/main-mbo-app.js
-FOCUSED_TESTS           = tests/employee-main-mbo-app-integration.test.js
-GENERATED_DIST          = dist/mbo-employee-app.js
-LIVE_RESOURCE           = NONE
-```
-
-The current helper couples Back visibility to `isCreate`. That coupling caused the requirement miss.
-
-Preferred minimal design:
-- give `renderBlockedNotice(...)` an explicit recovery-navigation option such as `showBackToMyMbo: true|false` (name may vary clearly);
-- do **not** infer Back visibility solely from `isCreate`;
-- existing Detail/Edit fatal/blocking callers set recovery Back = true;
-- authenticated Create autoload/profile-resolution fatal catch sets recovery Back = true;
-- Create Login/Auth-required states keep recovery Back = false;
-- successful normal Create continues to use the normal renderer and shows zero Back controls.
-
-Reuse `EmployeeRecordNavigation`. Do not copy link markup/text/href into `main-mbo-app.js`.
-
-## 6. Required Focused Tests
-
-At minimum prove:
-1. normal successful Create = zero `[data-mbo-back-nav-bar]`;
-2. deterministic authenticated Create duplicate/profile-resolution fatal error = exactly one Back bar;
-3. that Create fatal Back href = `/k/794/` and exact bilingual label;
-4. Create authentication-required/login error before authenticated autoload = zero Back bars;
-5. existing Detail blocking state = exactly one Back bar;
-6. existing Edit blocking state = exactly one Back bar;
-7. no normal Detail/Edit duplicate Back bar;
-8. Back navigation causes zero record/auth/session/workflow writes;
-9. existing navigation tests continue to pass;
-10. the previous R1 test assertion that **all Create error states must have zero Back** must be removed/replaced because it contradicts the user-confirmed fatal Create recovery requirement.
-
-The deterministic Create fatal test should exercise the real `main-mbo-app.js` registered event path far enough to prove the screenshot class, not merely test `EmployeeRecordNavigation` in isolation.
-
-## 7. Verification
-
-Run:
-
-```text
-node --test tests/employee-record-navigation.test.js tests/employee-main-mbo-app-integration.test.js
-npm run ui:build
-node --test tests/classic-bundle.test.js tests/css-structure.test.js
-```
-
-If another directly affected focused test is required, run it and report it. Do not broaden into unrelated suites without cause.
-
-## 8. Explicitly Forbidden
+## 5. Current Hold
 
 Do NOT:
-- deploy to Live Kintone;
-- write App794/App800/App801 records;
-- change schema/layout/ACL/process;
-- change App795/App796;
-- change D1 Password Reset Core R1;
-- change My MBO table or Comment Mirror;
-- change CSS unless a proven direct need appears (STOP first if so);
-- duplicate Back markup/component;
-- revive Auth Bridge;
-- modify `AI_CONTROL_CENTER.md` or replace/close `AI_ACTIVE_TASK.md` during execution;
-- self-certify PASS.
+- deploy App794;
+- write any Live Kintone record/configuration;
+- reuse prior consumed authorization;
+- rollback automatically;
+- reopen WP2 R4 source absent a new regression;
+- start another D1-D7 execution packet automatically.
 
-## 9. Delivery Contract
+Maximum accepted status:
 
-Deliver one narrow corrective commit:
-- minimal `src/main-mbo-app.js` correction;
-- focused integration test correction/addition;
-- generated `dist/mbo-employee-app.js` from normal build;
-- commit + push to `ai/antigravity-wp002c`;
-- report SHA, changed files, test/build results;
-- STOP for ChatGPT independent review.
+`APP794_WP2_R4_SOURCE_ACCEPTED_PENDING_PREDEPLOY_VERIFICATION_AND_FRESH_AUTHORIZATION`
 
-Maximum executor status:
-
-`APP794_WP2_R4_R2_FATAL_CREATE_BACK_IMPLEMENTED_PENDING_CHATGPT_REVIEW`
-
-No Live action follows automatically.
+Next owner: **USER / CHATGPT CONTROL PLANE** for the next explicitly selected step.
