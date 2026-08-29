@@ -100,7 +100,15 @@ const fakeApi = async (url, method, params) => {
       const text = await res.text().catch(() => '');
       throw new Error(`Kintone API call failed: HTTP ${res.status}${text ? ` (${text})` : ''}`);
     }
-    return await res.json();
+    const data = await res.json();
+    if ((method === 'GET' || !method) && String(url).includes('/k/v1/record.json')) {
+      if (data && Object.prototype.hasOwnProperty.call(data, 'record')) {
+        return data;
+      }
+      const rec = getActiveUiInstance()?.record || getSampleRecord();
+      return { record: rec };
+    }
+    return data;
   }
   if ((method === 'GET' || !method) && String(url).includes('/k/v1/record.json')) {
     const rec = getActiveUiInstance()?.record || getSampleRecord();
@@ -904,7 +912,7 @@ test('POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR: displays truthful diagnosti
   const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
   const editSubmitSuccessHook = kintoneHandlers['app.record.edit.submit.success'];
 
-  const failingRestFetch = async (url) => {
+  const failingRestFetch = async (url, opts = {}) => {
     if (String(url).includes('/k/v1/records.json')) {
       return { ok: true, json: async () => ({ records: [] }) };
     }
@@ -912,7 +920,10 @@ test('POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR: displays truthful diagnosti
       return { ok: true, json: async () => ({ fileKey: 'FILEKEY_OK' }) };
     }
     if (url === '/k/v1/record.json') {
-      return { ok: false, status: 500, text: async () => 'Kintone REST Update Failed 500' };
+      if (opts.method === 'PUT') {
+        return { ok: false, status: 500, text: async () => 'Kintone REST Update Failed 500' };
+      }
+      return { ok: true, json: async () => ({ record: rec }) };
     }
     return { ok: true, json: async () => ({}) };
   };
@@ -963,7 +974,7 @@ test('POST_SAVE_BIND_FAILURE_NO_SILENT_REDIRECT: prevents silent redirect by set
   const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
   const editSubmitSuccessHook = kintoneHandlers['app.record.edit.submit.success'];
 
-  const failingRestFetch = async (url) => {
+  const failingRestFetch = async (url, opts = {}) => {
     if (String(url).includes('/k/v1/records.json')) {
       return { ok: true, json: async () => ({ records: [] }) };
     }
@@ -971,7 +982,10 @@ test('POST_SAVE_BIND_FAILURE_NO_SILENT_REDIRECT: prevents silent redirect by set
       return { ok: true, json: async () => ({ fileKey: 'FILEKEY_OK' }) };
     }
     if (url === '/k/v1/record.json') {
-      return { ok: false, status: 500, text: async () => 'Kintone REST Update Failed 500' };
+      if (opts.method === 'PUT') {
+        return { ok: false, status: 500, text: async () => 'Kintone REST Update Failed 500' };
+      }
+      return { ok: true, json: async () => ({ record: rec }) };
     }
     return { ok: true, json: async () => ({}) };
   };
@@ -1345,6 +1359,207 @@ test('EDIT_HANDLER_USES_AUTHORITATIVE_PERSISTED_RECORD_NOT_SUBMIT_ATTACHMENT_VAL
   } finally {
     globalThis.fetch = origFetch;
   }
+});
+
+test('EDIT_GET_RECORD_FAILURE_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED: edit submit cancels submit when GET record fails during attachment edit', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const rec = getSampleRecord({ $id: { value: '201' } });
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'fail_test.pdf', status: 'pending' }
+    ]
+  };
+
+  let uploadCalled = false;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: false, status: 500, text: async () => 'Internal Server Error' };
+    }
+    if (String(url).includes('/k/v1/file.json')) {
+      uploadCalled = true;
+      return { ok: true, json: async () => ({ fileKey: 'SHOULD_NOT_BE_CREATED' }) };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: rec, appId: 794, recordId: '201' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, false, 'Edit submit must return false / cancel submit when GET record fails');
+    assert.equal(uploadCalled, false, 'EDIT_FAILURE_PATH_DOES_NOT_UPLOAD_NEW_FILE: Upload must NOT be called when GET record fails');
+    assert.equal(activeUi.preparedAttachmentPlan, null, 'Prepared attachment plan must remain null on failure');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_GET_RECORD_NULL_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED: edit submit cancels submit when GET record returns null', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const rec = getSampleRecord({ $id: { value: '202' } });
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'null_test.pdf', status: 'pending' }
+    ]
+  };
+
+  let uploadCalled = false;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: null }) };
+    }
+    if (String(url).includes('/k/v1/file.json')) {
+      uploadCalled = true;
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: rec, appId: 794, recordId: '202' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, false, 'Must return false when GET record returns null');
+    assert.equal(uploadCalled, false, 'Upload must NOT occur when GET record returns null');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED: edit submit cancels submit when persisted record is missing target FILE field array', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersistedMissingField = getSampleRecord({ $id: { value: '203' } });
+  delete recPersistedMissingField.Objective_Attachment_1;
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersistedMissingField });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'missing_field.pdf', status: 'pending' }
+    ]
+  };
+
+  let uploadCalled = false;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersistedMissingField }) };
+    }
+    if (String(url).includes('/k/v1/file.json')) {
+      uploadCalled = true;
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: recPersistedMissingField, appId: 794, recordId: '203' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, false, 'Must return false when persisted record is missing target FILE field');
+    assert.equal(uploadCalled, false, 'Upload must NOT occur when target field array is missing');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET: normal edit save with zero attachment changes does not invoke GET record', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const rec = getSampleRecord({ $id: { value: '204' } });
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {};
+
+  let getRecordCalled = false;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      getRecordCalled = true;
+      return { ok: true, json: async () => ({ record: rec }) };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: rec, appId: 794, recordId: '204' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, submitEvent, 'Normal submit event must be returned unchanged when zero attachment changes');
+    assert.equal(getRecordCalled, false, 'EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET: GET record must NOT be called when zero attachment changes');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE: prepareAttachmentPlan throws error in Edit mode if persistedRecord is missing', async () => {
+  const recSubmit = getSampleRecord({
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'SUBMIT_KEY_FORBIDDEN', name: 'submit.pdf' }] }
+  });
+
+  const pending = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'new.pdf', status: 'pending' }
+    ]
+  };
+
+  await assert.rejects(
+    async () => {
+      await prepareAttachmentPlan(recSubmit, pending, { isEdit: true, persistedRecord: null });
+    },
+    (err) => {
+      assert.ok(String(err.message).includes('PERSISTED_RECORD_REQUIRED_FOR_EDIT'));
+      return true;
+    },
+    'prepareAttachmentPlan must throw and NEVER fall back to submit event attachment values in Edit mode'
+  );
 });
 
 test('NO_LIVE_NETWORK_IN_TESTS: all tests run strictly against local mock transports with 0 external network calls', () => {

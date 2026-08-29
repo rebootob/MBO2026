@@ -103,9 +103,20 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
       savedFiles = Array.isArray(desiredSavedFilesMap[targetCode]) ? [...desiredSavedFilesMap[targetCode]] : [];
       modified = true;
     } else {
-      const sourceRecord = options.persistedRecord || record;
-      const currentVal = sourceRecord[targetCode]?.value ?? record[targetCode]?.value;
-      savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+      if (options.isEdit) {
+        if (!options.persistedRecord || typeof options.persistedRecord !== 'object') {
+          throw new Error(`PERSISTED_RECORD_REQUIRED_FOR_EDIT: Missing or invalid persisted record for field ${targetCode}`);
+        }
+        const persistedField = options.persistedRecord[targetCode];
+        if (!persistedField || !Array.isArray(persistedField.value)) {
+          throw new Error(`PERSISTED_FIELD_MISSING_FOR_EDIT: Persisted record missing FILE field array for ${targetCode}`);
+        }
+        savedFiles = [...persistedField.value];
+      } else {
+        const sourceRecord = options.persistedRecord || record;
+        const currentVal = sourceRecord[targetCode]?.value;
+        savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+      }
       modified = Boolean(options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode));
     }
 

@@ -704,32 +704,46 @@ if (typeof kintone !== 'undefined') {
 
     // 6. Attachment Submit Lifecycle Integration (Pre-Save File Upload & Plan Preparation)
     if (activeUiInstance) {
-      try {
-        let persistedRecord = null;
-        if (!isCreate) {
-          const appId = event.appId || getMboAppId();
-          const recordId = event.recordId || record?.$id?.value;
-          if (appId && recordId && typeof kintoneApiWrapper.getRecord === 'function') {
-            try {
+      const hasAttachmentChanges = typeof activeUiInstance.hasPendingOrDirtyAttachments === 'function'
+        ? activeUiInstance.hasPendingOrDirtyAttachments()
+        : Boolean(activeUiInstance.pendingAttachments && Object.keys(activeUiInstance.pendingAttachments).some(k => Array.isArray(activeUiInstance.pendingAttachments[k]) && activeUiInstance.pendingAttachments[k].length > 0));
+
+      if (hasAttachmentChanges) {
+        try {
+          let persistedRecord = null;
+          if (!isCreate) {
+            const appId = event.appId || getMboAppId();
+            const recordId = event.recordId || record?.$id?.value;
+            if (!appId || !recordId) {
+              throw new Error('MISSING_RECORD_IDENTIFIER: appId or recordId is missing for edit attachment plan.');
+            }
+            if (typeof kintoneApiWrapper.getRecord === 'function') {
               persistedRecord = await kintoneApiWrapper.getRecord(appId, recordId);
-            } catch (fetchErr) {
-              console.warn('[MBO V2] Could not fetch persisted record for edit attachment plan:', fetchErr);
+            } else if (globalThis.kintone?.api) {
+              const url = globalThis.kintone.api.url('/k/v1/record.json', true);
+              const resp = await globalThis.kintone.api(url, 'GET', { app: appId, id: recordId });
+              persistedRecord = resp ? resp.record : null;
+            }
+
+            if (!persistedRecord || typeof persistedRecord !== 'object') {
+              throw new Error('PERSISTED_RECORD_GET_FAILED: Kintone GET record returned null or invalid object.');
             }
           }
+          await activeUiInstance.preparePendingAttachments({
+            record: event.record,
+            persistedRecord,
+            isEdit: !isCreate
+          });
+        } catch (err) {
+          console.error('[MBO V2] Attachment submit upload error:', err);
+          activeUiInstance.showValidationErrors([{
+            field: 'Objective_Attachment_1',
+            messageTH: `เกิดข้อผิดพลาดในการอัปโหลดไฟล์แนบ: ${err.message}`,
+            messageEN: `Attachment upload failed: ${err.message}`,
+            message: `Attachment upload failed: ${err.message}`
+          }]);
+          return false; // Fail closed: cancel submit before upload
         }
-        await activeUiInstance.preparePendingAttachments({
-          record: event.record,
-          persistedRecord
-        });
-      } catch (err) {
-        console.error('[MBO V2] Attachment submit upload error:', err);
-        activeUiInstance.showValidationErrors([{
-          field: 'Objective_Attachment_1',
-          messageTH: `เกิดข้อผิดพลาดในการอัปโหลดไฟล์แนบ: ${err.message}`,
-          messageEN: `Attachment upload failed: ${err.message}`,
-          message: `Attachment upload failed: ${err.message}`
-        }]);
-        return false; // Fail closed: cancel submit
       }
     }
 

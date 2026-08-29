@@ -578,6 +578,7 @@ export class EmployeePartAUI {
     // D1: authenticated Employee_Code bound from MBO Login Gate (page-memory only)
     this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
     this.currentErrors = [];
+    this.preparedAttachmentPlan = null;
 
     this.isEmployeeVerified = !this.isCreate;
   }
@@ -3211,6 +3212,13 @@ export class EmployeePartAUI {
     } else {
       this.render();
     }
+  }
+
+  hasPendingOrDirtyAttachments() {
+    const hasPending = Boolean(this.pendingAttachments && Object.keys(this.pendingAttachments).some(k => Array.isArray(this.pendingAttachments[k]) && this.pendingAttachments[k].length > 0));
+    const hasDesired = Boolean(this.desiredSavedFiles && Object.keys(this.desiredSavedFiles).length > 0);
+    const hasDirty = Boolean(this.dirtyAttachmentFields && this.dirtyAttachmentFields.size > 0);
+    return hasPending || hasDesired || hasDirty;
   }
 
   async preparePendingAttachments(options = {}) {

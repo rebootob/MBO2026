@@ -1,11 +1,11 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 94f4f8137e49e52557aa155c68f2e42add696182
+START_HEAD                   = 45cfe2a9e89c1272114a905bf1b1e09cece867b4
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-CORRECTIVE_DESIGN            = AUTHORITATIVE PERSISTED-RECORD EDIT ATTACHMENT PRESERVATION
-FOCUSED_TESTS                = PASS (31/31 attachment & timeline tests passing)
-FULL_NPM_TEST                 = PASS (883/883 unit & integration tests passing)
+CORRECTIVE_DESIGN            = STRICT FAIL-CLOSED EDIT ATTACHMENT PRESERVATION
+FOCUSED_TESTS                = PASS (36/36 attachment & timeline tests passing)
+FULL_NPM_TEST                 = PASS (888/888 unit & integration tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE           = 0
 LIVE_DEPLOY_OCCURRED         = NO
@@ -28,18 +28,26 @@ MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
   - Restored all 3 Timeline regression tests (`TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`, `TIMELINE_PREVIEW_FIXTURES_ALLOWED`, `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`).
   - Restored all 9 Attachment UI display and control tests (`ATTACHMENT_READONLY_ZERO_FILES`, `ATTACHMENT_READONLY_SINGLE_FILE`, `ATTACHMENT_READONLY_MULTIPLE_FILES`, `ATTACHMENT_LIVE_MODE_NO_PREVIEW_MOCK_LEAK`, `ATTACHMENT_PENDING_FILE_STATE`, `ATTACHMENT_REAL_REMOVE_BUTTON_CLICK_EVENT`, etc.).
   - Added new real-handler tests using separate submit event record objects (`REAL_HANDLER_REMOVE_DESIRED_STATE_SEPARATE_SUBMIT_RECORD`, `REAL_HANDLER_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE`, `SELF_FINAL_FALLBACK_DESIRED_STATE`, etc.).
-  - Focused test suite increased to **31 / 31 PASS**. Full repository test suite increased to **883 / 883 PASS**. Zero test reduction.
+  - Focused test suite increased to **36 / 36 PASS**. Full repository test suite increased to **888 / 888 PASS**. Zero test reduction.
 
 ## 2. Source Code Ownership & Changes
 
-- [src/main-mbo-app.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/main-mbo-app.js): Added `getRecord` to `kintoneApiWrapper` and fetched authoritative `persistedRecord` in Edit submit handler before `preparePendingAttachments`.
-- [src/services/mbo-attachment-service.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/services/mbo-attachment-service.js): Updated `prepareAttachmentPlan` to use `options.persistedRecord` as the authoritative base for existing saved files in Edit mode when no explicit UI removal snapshot exists.
-- [tests/timeline-truthfulness-and-attachment.test.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/timeline-truthfulness-and-attachment.test.js): Added 5 realistic Edit Attachment Preservation tests where submit event attachment value is empty/unavailable.
+- [src/main-mbo-app.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/main-mbo-app.js):
+  - In Edit mode (`!isCreate`), checks if attachment changes actually exist (`hasPendingOrDirtyAttachments()`).
+  - If zero attachment changes exist, Edit Save proceeds without requiring GET Record.
+  - If attachment changes exist, requires mandatory GET Record. Fails closed before file upload if GET Record throws, returns null, or fails.
+- [src/services/mbo-attachment-service.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/services/mbo-attachment-service.js):
+  - In Edit mode (`options.isEdit`), throws `PERSISTED_RECORD_REQUIRED_FOR_EDIT` / `PERSISTED_FIELD_MISSING_FOR_EDIT` if `persistedRecord` or target FILE field array is missing.
+  - Never falls back to `event.record` attachment values.
+- [src/ui/employee-part-a-ui.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/ui/employee-part-a-ui.js):
+  - Added `hasPendingOrDirtyAttachments()` helper to detect whether pending files, explicit removals, or dirty attachment fields exist.
+- [tests/timeline-truthfulness-and-attachment.test.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/timeline-truthfulness-and-attachment.test.js):
+  - Added 6 new fail-closed tests covering GET failure, GET null, missing target FILE field, 0 uploads on failure path, normal save with zero attachment changes, and no fallback to submit values.
 - [config/schema-spec.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/config/schema-spec.js): Defined `Objective_Attachment_1..10` optional `FILE` fields.
 
 ## 3. Test & Build Verification Results
 
-- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **31/31 PASS (100%)**
+- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **36/36 PASS (100%)**
   - `TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`: PASS
   - `TIMELINE_PREVIEW_FIXTURES_ALLOWED`: PASS
   - `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`: PASS
@@ -70,8 +78,13 @@ MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
   - `EDIT_ADD_MULTIPLE_NEW_FILES_PRESERVES_ALL_EXISTING`: PASS
   - `EDIT_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE`: PASS
   - `EDIT_HANDLER_USES_AUTHORITATIVE_PERSISTED_RECORD_NOT_SUBMIT_ATTACHMENT_VALUE`: PASS
+  - `EDIT_GET_RECORD_FAILURE_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED`: PASS
+  - `EDIT_GET_RECORD_NULL_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED`: PASS
+  - `EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED`: PASS
+  - `EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET`: PASS
+  - `EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE`: PASS
   - `NO_LIVE_NETWORK_IN_TESTS`: PASS
-- **Repository Full Test Suite (`npm test`):** **883/883 PASS (100%)**
+- **Repository Full Test Suite (`npm test`):** **888/888 PASS (100%)**
 - **Candidate Bundle Build (`npm run ui:build`):** `PASS` (`dist/mbo-employee-app.js` & `dist/mbo-employee.css` generated cleanly)
 - **Module-Aware Build-Only Check (`node --env-file=.env.local scripts/kintone/deploy-custom-ui.js --build-only`):** `PASS` (0 Kintone network calls)
 
@@ -185,6 +198,21 @@ CHANGED_FILES                             = src/main-mbo-app.js, src/services/mb
 DESIGN_SUMMARY                            = In Edit mode (!isCreate), preparePendingAttachments fetches the authoritative persisted record via Kintone GET Record API (kintoneApiWrapper.getRecord(appId, recordId)). prepareAttachmentPlan uses the persisted record's FILE values as the retained fileKeys base instead of reading event.record (which is empty/unavailable in Kintone edit submit events).
 FOCUSED_ATTACHMENT_TESTS                  = PASS (31/31 attachment & timeline tests passing)
 FULL_NPM_TEST                             = PASS (883/883 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+LIVE_KINTONE_WRITE                       = 0
+LIVE_DEPLOY_OCCURRED                     = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 9. App794 Edit Attachment Fail-Closed Corrective Evidence
+
+```text
+EXECUTION_START_HEAD                      = 45cfe2a9e89c1272114a905bf1b1e09cece867b4
+CHANGED_FILES                             = src/main-mbo-app.js, src/services/mbo-attachment-service.js, src/ui/employee-part-a-ui.js, tests/timeline-truthfulness-and-attachment.test.js, dist/mbo-employee-app.js
+REVIEW_BLOCKER_FIXED                      = Strict fail-closed behavior for Edit Attachment changes. If attachments change during Edit, GET Record is mandatory. If GET Record throws, returns null, or misses target FILE field, submit is cancelled before any file upload occurs. If zero attachment changes exist, Edit Save proceeds normally without invoking GET Record. Never falls back to edit.submit attachment values.
+FOCUSED_ATTACHMENT_TESTS                  = PASS (36/36 attachment & timeline tests passing)
+FULL_NPM_TEST                             = PASS (888/888 unit & integration tests passing)
 NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
 MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE                       = 0

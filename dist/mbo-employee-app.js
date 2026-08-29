@@ -93,9 +93,20 @@
         savedFiles = Array.isArray(desiredSavedFilesMap[targetCode]) ? [...desiredSavedFilesMap[targetCode]] : [];
         modified = true;
       } else {
-        const sourceRecord = options.persistedRecord || record;
-        const currentVal = sourceRecord[targetCode]?.value ?? record[targetCode]?.value;
-        savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+        if (options.isEdit) {
+          if (!options.persistedRecord || typeof options.persistedRecord !== "object") {
+            throw new Error(`PERSISTED_RECORD_REQUIRED_FOR_EDIT: Missing or invalid persisted record for field ${targetCode}`);
+          }
+          const persistedField = options.persistedRecord[targetCode];
+          if (!persistedField || !Array.isArray(persistedField.value)) {
+            throw new Error(`PERSISTED_FIELD_MISSING_FOR_EDIT: Persisted record missing FILE field array for ${targetCode}`);
+          }
+          savedFiles = [...persistedField.value];
+        } else {
+          const sourceRecord = options.persistedRecord || record;
+          const currentVal = sourceRecord[targetCode]?.value;
+          savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+        }
         modified = Boolean(options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode));
       }
       for (const item of pendingItems) {
@@ -2920,6 +2931,7 @@ Requester_User is empty for action "${actionName}".`
       });
       this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
       this.currentErrors = [];
+      this.preparedAttachmentPlan = null;
       this.isEmployeeVerified = !this.isCreate;
     }
     _getResolvedViewerRole() {
@@ -5224,6 +5236,12 @@ Requester_User is empty for action "${actionName}".`
       } else {
         this.render();
       }
+    }
+    hasPendingOrDirtyAttachments() {
+      const hasPending = Boolean(this.pendingAttachments && Object.keys(this.pendingAttachments).some((k) => Array.isArray(this.pendingAttachments[k]) && this.pendingAttachments[k].length > 0));
+      const hasDesired = Boolean(this.desiredSavedFiles && Object.keys(this.desiredSavedFiles).length > 0);
+      const hasDirty = Boolean(this.dirtyAttachmentFields && this.dirtyAttachmentFields.size > 0);
+      return hasPending || hasDesired || hasDirty;
     }
     async preparePendingAttachments(options = {}) {
       const { prepareAttachmentPlan: prepareAttachmentPlan2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
@@ -7553,32 +7571,42 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         activeUiInstance.clearValidationErrors();
       }
       if (activeUiInstance) {
-        try {
-          let persistedRecord = null;
-          if (!isCreate) {
-            const appId = event.appId || getMboAppId();
-            const recordId = event.recordId || record?.$id?.value;
-            if (appId && recordId && typeof kintoneApiWrapper.getRecord === "function") {
-              try {
+        const hasAttachmentChanges = typeof activeUiInstance.hasPendingOrDirtyAttachments === "function" ? activeUiInstance.hasPendingOrDirtyAttachments() : Boolean(activeUiInstance.pendingAttachments && Object.keys(activeUiInstance.pendingAttachments).some((k) => Array.isArray(activeUiInstance.pendingAttachments[k]) && activeUiInstance.pendingAttachments[k].length > 0));
+        if (hasAttachmentChanges) {
+          try {
+            let persistedRecord = null;
+            if (!isCreate) {
+              const appId = event.appId || getMboAppId();
+              const recordId = event.recordId || record?.$id?.value;
+              if (!appId || !recordId) {
+                throw new Error("MISSING_RECORD_IDENTIFIER: appId or recordId is missing for edit attachment plan.");
+              }
+              if (typeof kintoneApiWrapper.getRecord === "function") {
                 persistedRecord = await kintoneApiWrapper.getRecord(appId, recordId);
-              } catch (fetchErr) {
-                console.warn("[MBO V2] Could not fetch persisted record for edit attachment plan:", fetchErr);
+              } else if (globalThis.kintone?.api) {
+                const url = globalThis.kintone.api.url("/k/v1/record.json", true);
+                const resp = await globalThis.kintone.api(url, "GET", { app: appId, id: recordId });
+                persistedRecord = resp ? resp.record : null;
+              }
+              if (!persistedRecord || typeof persistedRecord !== "object") {
+                throw new Error("PERSISTED_RECORD_GET_FAILED: Kintone GET record returned null or invalid object.");
               }
             }
+            await activeUiInstance.preparePendingAttachments({
+              record: event.record,
+              persistedRecord,
+              isEdit: !isCreate
+            });
+          } catch (err) {
+            console.error("[MBO V2] Attachment submit upload error:", err);
+            activeUiInstance.showValidationErrors([{
+              field: "Objective_Attachment_1",
+              messageTH: `\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A: ${err.message}`,
+              messageEN: `Attachment upload failed: ${err.message}`,
+              message: `Attachment upload failed: ${err.message}`
+            }]);
+            return false;
           }
-          await activeUiInstance.preparePendingAttachments({
-            record: event.record,
-            persistedRecord
-          });
-        } catch (err) {
-          console.error("[MBO V2] Attachment submit upload error:", err);
-          activeUiInstance.showValidationErrors([{
-            field: "Objective_Attachment_1",
-            messageTH: `\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A: ${err.message}`,
-            messageEN: `Attachment upload failed: ${err.message}`,
-            message: `Attachment upload failed: ${err.message}`
-          }]);
-          return false;
         }
       }
       return event;
