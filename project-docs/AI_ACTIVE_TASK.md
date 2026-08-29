@@ -1,8 +1,8 @@
-# AI ACTIVE TASK — D1 APP794 EDIT ATTACHMENT FAIL-CLOSED CORRECTIVE
+# AI ACTIVE TASK — D1 APP794 EDIT ATTACHMENT ATOMIC PREFLIGHT CORRECTIVE
 
 Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
-Reviewed candidate: `5bde56db0aa741a1064817454db028184556fe1d`
+Reviewed candidate: `a5c758564f7a6ef77f2ee0865c32d1149c308107`
 Independent verdict: **CORRECTIVE**
 
 ## Accepted State
@@ -25,71 +25,80 @@ Do NOT reopen schema. Do NOT deploy.
 
 ## Accepted Candidate Progress
 
-Candidate `5bde56d...` correctly:
-- added authoritative GET Record support for Edit;
-- passes `persistedRecord` to attachment planning;
-- prefers persisted FILE values when the GET succeeds;
-- added realistic tests where edit-submit Attachment value is empty;
-- proves preservation of multiple existing files under successful GET.
+Candidate `a5c7585...` correctly:
+- requires authoritative persisted GET for Edit attachment changes;
+- fails closed on GET throw/null;
+- fails closed on a missing persisted target FILE field in the single-target case;
+- does not require GET for zero attachment changes;
+- never intentionally falls back to `edit.submit` attachment values in Edit planning;
+- preserves prior successful multi-file add/remove behavior when persisted state is valid.
 
 Keep these improvements.
 
 ## Blocking Review Finding
 
-Current source is unsafe when the persisted GET fails:
+Current `prepareAttachmentPlan()` validates and uploads inside the same per-target loop.
 
-```js
-try {
-  persistedRecord = await kintoneApiWrapper.getRecord(appId, recordId);
-} catch (fetchErr) {
-  console.warn(...);
-}
+That means a later invalid target can be discovered only after an earlier valid target has already uploaded a new temporary file.
+
+Example:
+
+```text
+pending/dirty targets = Objective_Attachment_1 + Objective_Attachment_2
+persisted target 1    = valid
+persisted target 2    = missing
+
+current behavior:
+validate target 1 -> upload target 1 -> validate target 2 -> throw/cancel
 ```
 
-Execution then continues with `persistedRecord = null`.
-
-The attachment service currently does:
-
-```js
-const sourceRecord = options.persistedRecord || record;
-```
-
-This falls back to `app.record.edit.submit event.record`, which is forbidden as an authoritative Attachment source.
-
-For Edit attachment changes, inability to obtain authoritative persisted attachment state must **fail closed**, not degrade to submit-event Attachment values.
+This violates the fail-closed requirement that authoritative persisted-state validation errors must cancel **before any file upload starts**.
 
 ## Exact Corrective Design
 
-For **Edit only**:
+For **Edit attachment changes only**:
 
-1. Detect whether any attachment field actually has pending/dirty/desired-state change.
-2. If there is no attachment change:
-   - do not require persisted Attachment GET;
-   - preserve normal non-attachment Edit Save behavior.
-3. If attachment state changed:
-   - require valid App ID and Record ID;
-   - require Kintone-native GET Record;
-   - GET must succeed before any pending file upload starts;
-   - require a persisted record object;
-   - for every target attachment field whose desired plan depends on existing state, require the persisted canonical FILE field to exist with an array value.
-4. If required persisted read/field validation fails:
-   - show truthful attachment validation error;
-   - return false / cancel submit;
-   - upload count must remain zero;
-   - prepared plan must remain null/empty;
-   - no post-save bind can occur.
-5. Never use `edit.submit event.record[Attachment].value` as retained-file fallback when persisted state is required.
-6. Add-only = every persisted existing fileKey + every new upload fileKey.
-7. Explicit saved-file removal snapshot remains authoritative.
-8. Remove+add = exact retained saved fileKeys + all new upload fileKeys.
-9. Unrelated attachment fields stay out of the PUT plan.
+1. GET the authoritative persisted App794 record once before uploads, as already implemented.
+2. Determine the full set of attachment targets that `prepareAttachmentPlan()` will process.
+3. Resolve canonical aliases before preflight, including `Self_Attachment_n -> Final_Attachment_n`.
+4. Perform a first pass that does **validation only**:
+   - validate persisted record object;
+   - for every target whose desired state depends on persisted saved files, validate canonical persisted target field exists and `.value` is an array;
+   - do not call Upload File API in this pass.
+5. If any target fails validation:
+   - throw;
+   - submit handler returns false;
+   - upload count = 0 across all targets;
+   - prepared plan remains null/empty;
+   - no post-save bind occurs.
+6. Only after the entire target set passes preflight may the second pass upload pending files and construct exact desired plans.
+7. Explicit saved-file removal snapshots remain authoritative and must not re-add removed keys.
+8. Never use `app.record.edit.submit` Attachment values as retained-file fallback.
+9. Unrelated attachment fields remain absent from PUT plan.
 10. Create flow remains unchanged.
 
-Minimal implementation preferred. `src/main-mbo-app.js` stays orchestration-only.
+Minimal implementation preferred. `src/main-mbo-app.js` remains orchestration-only; preflight logic should live in attachment service unless a tiny UI state helper is genuinely required.
 
 ## Required Tests
 
-Keep all current tests. Add exact fail-closed cases:
+Retain every current passing test. Add exact multi-target atomic-preflight cases:
+
+```text
+EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD
+EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD
+EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS
+```
+
+The first two tests MUST:
+- change at least two attachment fields in one Edit submit;
+- make the first target persisted field valid;
+- make the second target missing/invalid;
+- include pending local files for the first target so the test would expose premature upload;
+- assert submit returns false;
+- assert upload count is exactly 0;
+- assert prepared plan is null/empty.
+
+Also retain/pass:
 
 ```text
 EDIT_GET_RECORD_FAILURE_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED
@@ -98,11 +107,6 @@ EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED
 EDIT_FAILURE_PATH_DOES_NOT_UPLOAD_NEW_FILE
 EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET
 EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE
-```
-
-Also retain/pass:
-
-```text
 EDIT_ADD_ONLY_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE_PRESERVES_ALL_EXISTING
 EDIT_MULTIPLE_EXISTING_FILES_DO_NOT_COLLAPSE
 EDIT_ADD_MULTIPLE_NEW_FILES_PRESERVES_ALL_EXISTING
@@ -118,14 +122,14 @@ TIMELINE_REGRESSION
 NO_LIVE_NETWORK_IN_TESTS
 ```
 
-Critical test rule: simulate GET throw/null/missing target FILE field while `edit.submit` contains empty or misleading Attachment values. The test must prove Save is cancelled before upload and no fallback occurs.
+Do not remove or weaken tests to make the suite pass.
 
 ## Allowed Files
 
 Only as required by the narrow corrective:
-- `src/main-mbo-app.js`
 - `src/services/mbo-attachment-service.js`
-- `src/ui/employee-part-a-ui.js` only if a small attachment-dirty-state helper is needed
+- `src/main-mbo-app.js` only if minimal orchestration adjustment is required
+- `src/ui/employee-part-a-ui.js` only if a tiny attachment-state adapter is required
 - `tests/timeline-truthfulness-and-attachment.test.js`
 - generated `dist/mbo-employee-app.js` / CSS only through normal build
 - existing attachment corrective evidence document
@@ -139,7 +143,8 @@ Run and record:
 ```text
 START_HEAD
 CHANGED_FILES
-REVIEW_BLOCKER_FIXED
+ATOMIC_PREFLIGHT_DESIGN
+MULTI_TARGET_INVALID_SECOND_UPLOAD_COUNT = 0
 FOCUSED_ATTACHMENT_TESTS
 FULL_NPM_TEST
 NPM_RUN_UI_BUILD
@@ -152,7 +157,7 @@ FINAL_COMMIT_SHA
 ## Strict Boundary
 
 ```text
-SOURCE CHANGE                  = YES — narrow fail-closed Edit attachment corrective only
+SOURCE CHANGE                  = YES — narrow multi-target atomic preflight corrective only
 APP794 CUSTOMIZATION DEPLOY    = NO
 APP794 FORM/SCHEMA/LAYOUT      = NO WRITE
 APP794 RECORD WRITE            = NO LIVE WRITE
