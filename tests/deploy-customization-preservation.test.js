@@ -9,7 +9,8 @@ import {
   executeDeployCustomUi,
   validateApp794DeployTargetBinding,
   gitBlobSha,
-  getCurrentGitHead
+  getCurrentGitHead,
+  isWorktreeClean
 } from '../scripts/kintone/deploy-custom-ui.js';
 
 // Standard valid live & preview fixtures
@@ -32,19 +33,22 @@ const getValidPreviewFixture = () => ({
   mobile: { js: [], css: [] }
 });
 
-const getValidManifestFixture = () => ({
-  appId: 794,
-  sourceCommit: 'f0e29b45e1de02b059814fac8e319ee8f513c0f0',
-  expectedJsBlobSha: 'JS_BLOB_SHA_1111',
-  expectedCssBlobSha: 'CSS_BLOB_SHA_2222',
-  expectedScope: 'ALL',
-  expectedTopology: {
-    desktopJsCount: 1,
-    desktopCssCount: 1,
-    mobileJsCount: 0,
-    mobileCssCount: 0
-  }
-});
+const getValidManifestFixture = () => {
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  return {
+    appId: 794,
+    sourceCommit: currentHead,
+    expectedJsBlobSha: 'JS_BLOB_SHA_1111',
+    expectedCssBlobSha: 'CSS_BLOB_SHA_2222',
+    expectedScope: 'ALL',
+    expectedTopology: {
+      desktopJsCount: 1,
+      desktopCssCount: 1,
+      mobileJsCount: 0,
+      mobileCssCount: 0
+    }
+  };
+};
 
 test('GIT_BLOB_SHA_EXACT_BYTES_CRLF_DIFFERS_FROM_LF', () => {
   const lfContent = 'console.log("hello world");\n';
@@ -64,6 +68,7 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
   const manifest = getValidManifestFixture();
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   // 1. Preflight passes for atomic JS + CSS target pair with valid manifest
   assert.equal(validatePreflight({
@@ -74,7 +79,7 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
     releaseManifest: manifest,
     candidateJsBlobSha: 'JS_BLOB_SHA_1111',
     candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
-    currentGitHead: 'f0e29b45e1de02b059814fac8e319ee8f513c0f0'
+    currentGitHead: currentHead
   }), true);
 
   // 2. Payload replaces BOTH target JS fileKey AND target CSS fileKey
@@ -93,6 +98,109 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
   assert.equal(payload.revision, '42');
   assert.deepEqual(payload.mobile.js, []);
   assert.deepEqual(payload.mobile.css, []);
+});
+
+test('CALLER_GIT_HEAD_OVERRIDE_NOT_ACCEPTED_IN_LIVE_PATH & UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE', async () => {
+  const currentHead = getCurrentGitHead();
+  assert.ok(currentHead, 'Current repository HEAD must be resolvable for this test');
+
+  // 1. Live path blocks before network when authorization is missing, regardless of caller currentGitHead override
+  const fakeManifest = { ...getValidManifestFixture(), sourceCommit: 'ffffffffffffffffffffffffffffffffffffffff' };
+  await assert.rejects(
+    async () => executeDeployCustomUi({ isBuildOnly: false, releaseManifest: fakeManifest, currentGitHead: 'ffffffffffffffffffffffffffffffffffffffff' }),
+    /APP794 DEPLOY BLOCKED/
+  );
+
+  // 2. Unresolvable Git HEAD directly blocks preflight / validation
+  assert.throws(() => {
+    validateReleaseManifest({
+      manifest: getValidManifestFixture(),
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: null
+    });
+  }, /UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE/);
+
+  assert.throws(() => {
+    validateReleaseManifest({
+      manifest: getValidManifestFixture(),
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: 'invalid-head'
+    });
+  }, /UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE/);
+});
+
+test('SHORT_SOURCE_SHA_BLOCKED & MALFORMED_SOURCE_SHA_BLOCKED & PREFIX_SOURCE_SHA_BLOCKED & EXACT_FULL_SOURCE_SHA_PASS', () => {
+  const fullSha = '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+
+  // 1. Exact full 40-character SHA -> PASS
+  const validManifest = { ...getValidManifestFixture(), sourceCommit: fullSha };
+  assert.equal(validateReleaseManifest({
+    manifest: validManifest,
+    candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+    candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+    currentGitHead: fullSha
+  }), true);
+
+  // 2. Short SHA (e.g. 7-character prefix) -> SHORT_SOURCE_SHA_BLOCKED
+  const shortManifest = { ...getValidManifestFixture(), sourceCommit: fullSha.slice(0, 7) };
+  assert.throws(() => {
+    validateReleaseManifest({
+      manifest: shortManifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: fullSha
+    });
+  }, /SHORT_SOURCE_SHA_BLOCKED/);
+
+  // 3. Malformed SHA (non-hex chars) -> MALFORMED_SOURCE_SHA_BLOCKED
+  const malformedManifest = { ...getValidManifestFixture(), sourceCommit: '0b2a96bebb5278a3c400f3b5885c0e49fea77dZZ' };
+  assert.throws(() => {
+    validateReleaseManifest({
+      manifest: malformedManifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: fullSha
+    });
+  }, /MALFORMED_SOURCE_SHA_BLOCKED/);
+
+  // 4. Prefix matching when SHA length is 40 but differs -> PREFIX_SOURCE_SHA_BLOCKED
+  const differentFullSha = '0b2a96bebb5278a3c400f3b5885c0e49fea77d00';
+  const prefixManifest = { ...getValidManifestFixture(), sourceCommit: differentFullSha };
+  assert.throws(() => {
+    validateReleaseManifest({
+      manifest: prefixManifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: fullSha
+    });
+  }, /MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD/);
+});
+
+test('DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD & CLEAN_WORKTREE_SOURCE_IDENTITY_PASS', () => {
+  const fullSha = '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+  const manifest = { ...getValidManifestFixture(), sourceCommit: fullSha };
+
+  // 1. Without checkWorktreeClean flag, validation passes when HEAD matches
+  assert.equal(validateReleaseManifest({
+    manifest,
+    candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+    candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+    currentGitHead: fullSha,
+    checkWorktreeClean: false
+  }), true);
+
+  // 2. When worktree is modified (uncommitted changes), checkWorktreeClean throws DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD
+  assert.throws(() => {
+    validateReleaseManifest({
+      manifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: fullSha,
+      checkWorktreeClean: true
+    });
+  }, /DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD/);
 });
 
 test('MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD & MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD', () => {
@@ -141,10 +249,12 @@ test('MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD & MISSING_MANIFEST_FIELD_BLOCK
 });
 
 test('MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD', () => {
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
+
   // 1. Manifest App ID != 794 -> BLOCK
   const mBadApp = { ...getValidManifestFixture(), appId: 795 };
   assert.throws(() => {
-    validateReleaseManifest({ manifest: mBadApp, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' });
+    validateReleaseManifest({ manifest: mBadApp, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead });
   }, /MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD/);
 
   // 2. Manifest sourceCommit does not match repository HEAD -> BLOCK
@@ -154,7 +264,7 @@ test('MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_SOURCE_COMMIT_MISMA
       manifest: mBadCommit,
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
       candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
-      currentGitHead: 'f0e29b45e1de02b059814fac8e319ee8f513c0f0'
+      currentGitHead: currentHead
     });
   }, /MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD/);
 });
@@ -162,6 +272,7 @@ test('MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_SOURCE_COMMIT_MISMA
 test('MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_TOPOLOGY_MISMATCH_BLOCKED_PRE_UPLOAD', () => {
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   // 1. Manifest expectedScope does not match live/preview scope -> BLOCK
   const mBadScope = { ...getValidManifestFixture(), expectedScope: 'ADMIN' };
@@ -171,7 +282,8 @@ test('MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_TOPOLOGY_MISMATCH_BL
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
       candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
       liveCustomize: live,
-      previewCustomize: preview
+      previewCustomize: preview,
+      currentGitHead: currentHead
     });
   }, /MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD/);
 
@@ -186,13 +298,15 @@ test('MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD & MANIFEST_TOPOLOGY_MISMATCH_BL
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
       candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
       liveCustomize: live,
-      previewCustomize: preview
+      previewCustomize: preview,
+      currentGitHead: currentHead
     });
   }, /MANIFEST_TOPOLOGY_MISMATCH_BLOCKED_PRE_UPLOAD/);
 });
 
 test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & EXACT_RELEASE_MANIFEST_PASS', () => {
   const manifest = getValidManifestFixture();
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   // 1. Exact manifest and candidate pair -> PASS
   assert.equal(validateReleaseManifest({
@@ -201,7 +315,7 @@ test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PR
     candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
     liveCustomize: getValidLiveFixture(),
     previewCustomize: getValidPreviewFixture(),
-    currentGitHead: 'f0e29b45e1de02b059814fac8e319ee8f513c0f0'
+    currentGitHead: currentHead
   }), true);
 
   // 2. Candidate JS mismatch -> BLOCK
@@ -209,7 +323,8 @@ test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PR
     validateReleaseManifest({
       manifest,
       candidateJsBlobSha: 'BAD_JS_HASH',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
   }, /JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD/);
 
@@ -218,7 +333,8 @@ test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PR
     validateReleaseManifest({
       manifest,
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'BAD_CSS_HASH'
+      candidateCssBlobSha: 'BAD_CSS_HASH',
+      currentGitHead: currentHead
     });
   }, /CSS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD/);
 });
@@ -226,6 +342,7 @@ test('JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD & CSS_IDENTITY_MISMATCH_BLOCKED_PR
 test('TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD & TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   // Missing target CSS
   const liveMissingCss = getValidLiveFixture();
@@ -238,7 +355,8 @@ test('TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD & TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_U
       previewCustomize: previewMissingCss,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD/);
@@ -257,7 +375,8 @@ test('TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD & TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_U
       previewCustomize: previewAmbiguousCss,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD/);
@@ -328,6 +447,7 @@ test('validateApp794DeployTargetBinding enforces strict App 794 binding across o
 });
 
 test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values', () => {
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
   ['ALL', 'ADMIN', 'NONE'].forEach(validScope => {
     const live = { ...getValidLiveFixture(), scope: validScope };
     const preview = { ...getValidPreviewFixture(), scope: validScope };
@@ -338,7 +458,8 @@ test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values',
         previewCustomize: preview,
         releaseManifest: manifest,
         candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-        candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+        candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+        currentGitHead: currentHead
       });
     });
   });
@@ -347,6 +468,7 @@ test('VALID_SCOPES_ALL_ADMIN_NONE: validates ALL, ADMIN, and NONE scope values',
 test('MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
@@ -358,7 +480,8 @@ test('MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_
       previewCustomize: preview,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD/);
@@ -369,6 +492,7 @@ test('MISSING_DESKTOP_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_
 test('MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_PREFLIGHT', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = getValidLiveFixture();
   const preview = getValidPreviewFixture();
@@ -380,7 +504,8 @@ test('MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD & ZERO_REMOTE_WRITES_ON_INVALID_P
       previewCustomize: preview,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /MISSING_MOBILE_OBJECT_BLOCKED_PRE_UPLOAD/);
@@ -392,22 +517,23 @@ test('MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_DESKTOP_CSS_ARRAY_BL
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
   const m = getValidManifestFixture();
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   // desktop.js missing
   const p1 = getValidPreviewFixture(); delete p1.desktop.js;
-  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p1, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' }); mockUpload(); }, /MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD/);
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p1, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead }); mockUpload(); }, /MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD/);
 
   // desktop.css missing
   const p2 = getValidPreviewFixture(); delete p2.desktop.css;
-  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p2, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' }); mockUpload(); }, /MISSING_DESKTOP_CSS_ARRAY_BLOCKED_PRE_UPLOAD/);
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p2, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead }); mockUpload(); }, /MISSING_DESKTOP_CSS_ARRAY_BLOCKED_PRE_UPLOAD/);
 
   // mobile.js missing
   const p3 = getValidPreviewFixture(); delete p3.mobile.js;
-  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p3, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' }); mockUpload(); }, /MISSING_MOBILE_JS_ARRAY_BLOCKED_PRE_UPLOAD/);
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p3, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead }); mockUpload(); }, /MISSING_MOBILE_JS_ARRAY_BLOCKED_PRE_UPLOAD/);
 
   // mobile.css missing
   const p4 = getValidPreviewFixture(); delete p4.mobile.css;
-  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p4, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' }); mockUpload(); }, /MISSING_MOBILE_CSS_ARRAY_BLOCKED_PRE_UPLOAD/);
+  assert.throws(() => { validatePreflight({ liveCustomize: getValidLiveFixture(), previewCustomize: p4, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead }); mockUpload(); }, /MISSING_MOBILE_CSS_ARRAY_BLOCKED_PRE_UPLOAD/);
 
   assert.equal(uploadCalls, 0);
 });
@@ -415,6 +541,7 @@ test('MISSING_DESKTOP_JS_ARRAY_BLOCKED_PRE_UPLOAD & MISSING_DESKTOP_CSS_ARRAY_BL
 test('INVALID_SCOPE_BLOCKED_PRE_UPLOAD: rejects non-standard scope strings', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = getValidLiveFixture();
   const previewBadScope = { ...getValidPreviewFixture(), scope: 'SUPER_ADMIN' };
@@ -425,7 +552,8 @@ test('INVALID_SCOPE_BLOCKED_PRE_UPLOAD: rejects non-standard scope strings', () 
       previewCustomize: previewBadScope,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /INVALID_SCOPE_BLOCKED_PRE_UPLOAD/);
@@ -436,6 +564,7 @@ test('INVALID_SCOPE_BLOCKED_PRE_UPLOAD: rejects non-standard scope strings', () 
 test('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: rejects -1 revision', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = getValidLiveFixture();
   const previewRevMinusOne = { ...getValidPreviewFixture(), revision: -1 };
@@ -446,7 +575,8 @@ test('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: rejects -1 revision', () => {
       previewCustomize: previewRevMinusOne,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD/);
@@ -457,6 +587,7 @@ test('REVISION_MINUS_ONE_BLOCKED_PRE_UPLOAD: rejects -1 revision', () => {
 test('REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: rejects non-numeric revision strings', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = getValidLiveFixture();
   const previewRevString = { ...getValidPreviewFixture(), revision: 'invalid-rev' };
@@ -467,7 +598,8 @@ test('REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: rejects non-numeric revision stri
       previewCustomize: previewRevString,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD/);
@@ -478,6 +610,7 @@ test('REVISION_NON_NUMERIC_BLOCKED_PRE_UPLOAD: rejects non-numeric revision stri
 test('REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD: rejects 0 or negative revision values', () => {
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = getValidLiveFixture();
   const previewRevZero = { ...getValidPreviewFixture(), revision: 0 };
@@ -488,7 +621,8 @@ test('REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD: rejects 0 or negative revisi
       previewCustomize: previewRevZero,
       releaseManifest: getValidManifestFixture(),
       candidateJsBlobSha: 'JS_BLOB_SHA_1111',
-      candidateCssBlobSha: 'CSS_BLOB_SHA_2222'
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: currentHead
     });
     mockUpload();
   }, /REVISION_ZERO_OR_NEGATIVE_BLOCKED_PRE_UPLOAD/);
@@ -500,13 +634,14 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
   const m = getValidManifestFixture();
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   // Missing target JS
   const liveMissing = { scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css' } }] }, mobile: { js: [], css: [] } };
   const previewMissing = { revision: '1', scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js', fileKey: 'K' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K2' } }] }, mobile: { js: [], css: [] } };
 
   assert.throws(() => {
-    validatePreflight({ liveCustomize: liveMissing, previewCustomize: previewMissing, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' });
+    validatePreflight({ liveCustomize: liveMissing, previewCustomize: previewMissing, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead });
     mockUpload();
   }, /TARGET_MISSING_BLOCKED_PRE_UPLOAD/);
 
@@ -536,7 +671,7 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
   };
 
   assert.throws(() => {
-    validatePreflight({ liveCustomize: liveAmbiguous, previewCustomize: previewAmbiguous, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' });
+    validatePreflight({ liveCustomize: liveAmbiguous, previewCustomize: previewAmbiguous, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead });
     mockUpload();
   }, /TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD/);
 
@@ -547,6 +682,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
   let uploadCalls = 0;
   const mockUpload = () => { uploadCalls++; return 'KEY'; };
   const m = getValidManifestFixture();
+  const currentHead = getCurrentGitHead() || '0b2a96bebb5278a3c400f3b5885c0e49fea77d55';
 
   const live = {
     scope: 'ALL',
@@ -568,7 +704,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
   };
 
   assert.throws(() => {
-    validatePreflight({ liveCustomize: live, previewCustomize: preview, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222' });
+    validatePreflight({ liveCustomize: live, previewCustomize: preview, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead });
     mockUpload();
   }, /SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD/);
 

@@ -15,9 +15,44 @@ export function gitBlobSha(content) {
 
 export function getCurrentGitHead() {
   try {
-    return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    const head = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    if (/^[0-9a-f]{40}$/i.test(head)) {
+      return head;
+    }
+    return null;
   } catch {
     return null;
+  }
+}
+
+export function isWorktreeClean() {
+  try {
+    const rawStatus = execSync('git status --porcelain', { encoding: 'utf8' }).trim();
+    if (!rawStatus) return true;
+
+    const lines = rawStatus.split('\n').map(l => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const code = line.slice(0, 2);
+      const filePath = line.slice(3).trim().replace(/^"/, '').replace(/"$/, '');
+
+      if (!code.includes('?')) {
+        return false;
+      }
+
+      if (
+        filePath.startsWith('src/') ||
+        filePath.startsWith('scripts/') ||
+        filePath.startsWith('tests/') ||
+        filePath.startsWith('config/') ||
+        filePath === 'package.json' ||
+        filePath === 'package-lock.json'
+      ) {
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -140,8 +175,9 @@ export function validateReleaseManifest({
   candidateCssBlobSha,
   liveCustomize,
   previewCustomize,
-  currentGitHead = null,
-  isBuildOnly = false
+  currentGitHead = getCurrentGitHead(),
+  isBuildOnly = false,
+  checkWorktreeClean = false
 }) {
   if (isBuildOnly && !manifest) {
     return true;
@@ -168,12 +204,36 @@ export function validateReleaseManifest({
     throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest sourceCommit field is missing or empty.');
   }
 
-  if (currentGitHead && typeof currentGitHead === 'string') {
-    const trimmedHead = currentGitHead.trim();
-    const trimmedSourceCommit = sourceCommit.trim();
-    if (!trimmedHead.startsWith(trimmedSourceCommit) && !trimmedSourceCommit.startsWith(trimmedHead)) {
-      throw new Error(`MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD: Manifest sourceCommit (${sourceCommit}) does not match current repository HEAD (${currentGitHead}).`);
+  const trimmedSourceCommit = sourceCommit.trim();
+  if (trimmedSourceCommit.length < 40) {
+    throw new Error(`SHORT_SOURCE_SHA_BLOCKED: Manifest sourceCommit "${sourceCommit}" must be an exact 40-character hexadecimal Git SHA.`);
+  }
+
+  if (trimmedSourceCommit.length > 40 || !/^[0-9a-f]{40}$/i.test(trimmedSourceCommit)) {
+    throw new Error(`MALFORMED_SOURCE_SHA_BLOCKED: Manifest sourceCommit "${sourceCommit}" is not a valid 40-character hexadecimal Git SHA.`);
+  }
+
+  if (!currentGitHead || typeof currentGitHead !== 'string' || currentGitHead.trim() === '') {
+    throw new Error('UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE: Cannot resolve repository Git HEAD before Live execution.');
+  }
+
+  const trimmedHead = currentGitHead.trim();
+  if (trimmedHead.length !== 40 || !/^[0-9a-f]{40}$/i.test(trimmedHead)) {
+    throw new Error(`UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE: Current repository Git HEAD "${currentGitHead}" is not a valid 40-character SHA.`);
+  }
+
+  const lowerSourceSha = trimmedSourceCommit.toLowerCase();
+  const lowerHeadSha = trimmedHead.toLowerCase();
+
+  if (lowerSourceSha !== lowerHeadSha) {
+    if (lowerHeadSha.startsWith(lowerSourceSha) || lowerSourceSha.startsWith(lowerHeadSha)) {
+      throw new Error(`PREFIX_SOURCE_SHA_BLOCKED: Prefix or partial SHA matching is forbidden. Manifest sourceCommit (${sourceCommit}) must exactly equal full repository HEAD (${currentGitHead}).`);
     }
+    throw new Error(`MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD: Manifest sourceCommit (${sourceCommit}) does not match exact repository HEAD (${currentGitHead}).`);
+  }
+
+  if (checkWorktreeClean && !isWorktreeClean()) {
+    throw new Error('DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD: Working tree has uncommitted or untracked changes before Live execution.');
   }
 
   if (!expectedJsBlobSha || typeof expectedJsBlobSha !== 'string' || expectedJsBlobSha.trim() === '') {
@@ -247,8 +307,9 @@ export function validatePreflight({
   releaseManifest = null,
   candidateJsBlobSha = null,
   candidateCssBlobSha = null,
-  currentGitHead = null,
-  isBuildOnly = false
+  currentGitHead = getCurrentGitHead(),
+  isBuildOnly = false,
+  checkWorktreeClean = false
 }) {
   // 1. Explicit containers & lists
   validateContainers(liveCustomize, 'Live');
@@ -366,7 +427,8 @@ export function validatePreflight({
     liveCustomize,
     previewCustomize,
     currentGitHead,
-    isBuildOnly
+    isBuildOnly,
+    checkWorktreeClean
   });
 
   return true;
@@ -532,6 +594,7 @@ export async function executeDeployCustomUi(options = {}) {
     };
   }
 
+  // Live Mode:
   // 1. Resolve registry target without silent fallback catch
   let sandboxRegistryModule;
   try {
@@ -549,12 +612,42 @@ export async function executeDeployCustomUi(options = {}) {
   // 4. Validate write target with literal ephemeral allow-list [794] and dryRunBypassDiscovery
   assertSandboxWriteTarget(794, sandboxRegistryModule, [794], { dryRunBypassDiscovery: true });
 
+  // 5. Live Source Identity & Cleanliness check BEFORE BUILD / UPLOAD:
+  // DO NOT accept caller options.currentGitHead in Live mode! Derive strictly internally.
+  const gitHead = getCurrentGitHead();
+  if (!gitHead || typeof gitHead !== 'string' || gitHead.trim().length !== 40 || !/^[0-9a-f]{40}$/i.test(gitHead.trim())) {
+    throw new Error('UNRESOLVABLE_GIT_HEAD_BLOCKED_BEFORE_LIVE_WRITE: Cannot resolve repository Git HEAD before Live execution.');
+  }
+
+  if (!isWorktreeClean()) {
+    throw new Error('DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_OR_UPLOAD: Working tree has uncommitted or untracked changes before Live execution.');
+  }
+
+  // 6. Build exact candidate artifacts
   const artifacts = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
   console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
-  // Upload Files to Kintone
+  // Read live and preview customization
   const { kintoneRequest, getKintoneConnection } = await import('../../src/core/kintone-client.js');
 
+  const liveCustomize = await kintoneRequest(`/k/v1/app/customize.json?app=${app}`);
+  const previewCustomize = await kintoneRequest(`/k/v1/preview/app/customize.json?app=${app}`);
+
+  // PREFLIGHT: FULL DETERMINISTIC VALIDATION BEFORE ANY UPLOAD!
+  validatePreflight({
+    liveCustomize,
+    previewCustomize,
+    targetFileName: 'mbo-employee-app.js',
+    targetCssFileName: 'mbo-employee.css',
+    releaseManifest: options.releaseManifest,
+    candidateJsBlobSha: artifacts.jsBlobSha,
+    candidateCssBlobSha: artifacts.cssBlobSha,
+    currentGitHead: gitHead,
+    isBuildOnly: false,
+    checkWorktreeClean: true
+  });
+
+  // Upload candidate JS and candidate CSS
   async function uploadFile(filename, content, contentType) {
     const { baseUrl, headers } = getKintoneConnection();
     const formData = new FormData();
@@ -579,26 +672,6 @@ export async function executeDeployCustomUi(options = {}) {
     return data.fileKey;
   }
 
-  // Read live and preview customization
-  const liveCustomize = await kintoneRequest(`/k/v1/app/customize.json?app=${app}`);
-  const previewCustomize = await kintoneRequest(`/k/v1/preview/app/customize.json?app=${app}`);
-
-  const gitHead = options.currentGitHead || getCurrentGitHead();
-
-  // PREFLIGHT: FULL DETERMINISTIC VALIDATION BEFORE ANY UPLOAD!
-  validatePreflight({
-    liveCustomize,
-    previewCustomize,
-    targetFileName: 'mbo-employee-app.js',
-    targetCssFileName: 'mbo-employee.css',
-    releaseManifest: options.releaseManifest,
-    candidateJsBlobSha: artifacts.jsBlobSha,
-    candidateCssBlobSha: artifacts.cssBlobSha,
-    currentGitHead: gitHead,
-    isBuildOnly: false
-  });
-
-  // Upload candidate JS and candidate CSS
   const jsFileKey = await uploadFile('mbo-employee-app.js', artifacts.fullJs, 'text/javascript');
   const cssFileKey = await uploadFile('mbo-employee.css', artifacts.cssContent, 'text/css');
 
