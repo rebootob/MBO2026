@@ -160,6 +160,13 @@ if (typeof kintone !== 'undefined') {
         query: query
       });
       return resp;
+    },
+    getRecord: async (appId, id) => {
+      const resp = await kintone.api(kintone.api.url('/k/v1/record.json', true), 'GET', {
+        app: appId,
+        id: id
+      });
+      return resp ? resp.record : null;
     }
   };
 
@@ -698,7 +705,22 @@ if (typeof kintone !== 'undefined') {
     // 6. Attachment Submit Lifecycle Integration (Pre-Save File Upload & Plan Preparation)
     if (activeUiInstance) {
       try {
-        await activeUiInstance.preparePendingAttachments({ record: event.record });
+        let persistedRecord = null;
+        if (!isCreate) {
+          const appId = event.appId || getMboAppId();
+          const recordId = event.recordId || record?.$id?.value;
+          if (appId && recordId && typeof kintoneApiWrapper.getRecord === 'function') {
+            try {
+              persistedRecord = await kintoneApiWrapper.getRecord(appId, recordId);
+            } catch (fetchErr) {
+              console.warn('[MBO V2] Could not fetch persisted record for edit attachment plan:', fetchErr);
+            }
+          }
+        }
+        await activeUiInstance.preparePendingAttachments({
+          record: event.record,
+          persistedRecord
+        });
       } catch (err) {
         console.error('[MBO V2] Attachment submit upload error:', err);
         activeUiInstance.showValidationErrors([{

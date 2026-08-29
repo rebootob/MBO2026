@@ -102,6 +102,10 @@ const fakeApi = async (url, method, params) => {
     }
     return await res.json();
   }
+  if ((method === 'GET' || !method) && String(url).includes('/k/v1/record.json')) {
+    const rec = getActiveUiInstance()?.record || getSampleRecord();
+    return { record: rec };
+  }
   if (params && params.app === 796) {
     return {
       records: [{
@@ -1047,6 +1051,297 @@ test('SUCCESS_PATH_NORMAL_REDIRECT_BEHAVIOR: returns event unchanged on successf
     const successRes = await editSubmitSuccessHook(successEvent);
 
     assert.equal(successRes.url, undefined, 'event.url must remain unmodified on success path for normal Kintone redirect');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_ADD_ONLY_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE_PRESERVES_ALL_EXISTING: edit submit uses persisted GET record to preserve existing files when submit event attachment value is empty', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recShow = getSampleRecord({
+    $id: { value: '101' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'EXISTING_KEY_1', name: 'existing.pdf' }] }
+  });
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recShow });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'new.pdf', status: 'pending' }
+    ]
+  };
+
+  const submitEventRec = getSampleRecord({
+    $id: { value: '101' },
+    Objective_Attachment_1: { type: 'FILE', value: [] }
+  });
+
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recShow }) };
+    }
+    return { ok: true, json: async () => ({ fileKey: 'NEW_KEY_222' }) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: submitEventRec, appId: 794, recordId: '101' };
+    await editSubmitHook(submitEvent);
+
+    assert.ok(activeUi.preparedAttachmentPlan.Objective_Attachment_1);
+    const planValues = activeUi.preparedAttachmentPlan.Objective_Attachment_1.value;
+    assert.equal(planValues.length, 2, 'Must contain both existing file and new file');
+    assert.equal(planValues[0].fileKey, 'EXISTING_KEY_1', 'Existing fileKey must be preserved');
+    assert.equal(planValues[1].fileKey, 'NEW_KEY_222', 'New fileKey must be appended');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_MULTIPLE_EXISTING_FILES_DO_NOT_COLLAPSE: adding a file when 3 files exist preserves all 3 existing files and never collapses to first', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '102' },
+    Objective_Attachment_1: {
+      type: 'FILE',
+      value: [
+        { fileKey: 'K1', name: 'f1.pdf' },
+        { fileKey: 'K2', name: 'f2.pdf' },
+        { fileKey: 'K3', name: 'f3.pdf' }
+      ]
+    }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'f4.pdf', status: 'pending' }
+    ]
+  };
+
+  const submitEventRec = getSampleRecord({
+    $id: { value: '102' },
+    Objective_Attachment_1: { type: 'FILE', value: [] }
+  });
+
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    return { ok: true, json: async () => ({ fileKey: 'K4' }) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: submitEventRec, appId: 794, recordId: '102' };
+    await editSubmitHook(submitEvent);
+
+    assert.ok(activeUi.preparedAttachmentPlan.Objective_Attachment_1);
+    const planValues = activeUi.preparedAttachmentPlan.Objective_Attachment_1.value;
+    assert.equal(planValues.length, 4, 'Must preserve all 3 existing files and append 4th file');
+    assert.deepEqual(planValues.map(v => v.fileKey), ['K1', 'K2', 'K3', 'K4'], 'Must preserve all fileKeys in exact order');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_ADD_MULTIPLE_NEW_FILES_PRESERVES_ALL_EXISTING: adding 2 new files preserves 2 existing files', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '103' },
+    Objective_Attachment_1: {
+      type: 'FILE',
+      value: [
+        { fileKey: 'EX_1', name: 'ex1.pdf' },
+        { fileKey: 'EX_2', name: 'ex2.pdf' }
+      ]
+    }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'newA.pdf', status: 'pending' },
+      { file: createTestBlob(), name: 'newB.pdf', status: 'pending' }
+    ]
+  };
+
+  const submitEventRec = getSampleRecord({
+    $id: { value: '103' },
+    Objective_Attachment_1: { type: 'FILE', value: [] }
+  });
+
+  let uploadCount = 0;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    uploadCount++;
+    return { ok: true, json: async () => ({ fileKey: `NEW_KEY_${uploadCount}` }) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: submitEventRec, appId: 794, recordId: '103' };
+    await editSubmitHook(submitEvent);
+
+    assert.ok(activeUi.preparedAttachmentPlan.Objective_Attachment_1);
+    const planValues = activeUi.preparedAttachmentPlan.Objective_Attachment_1.value;
+    assert.equal(planValues.length, 4);
+    assert.deepEqual(planValues.map(v => v.fileKey), ['EX_1', 'EX_2', 'NEW_KEY_1', 'NEW_KEY_2']);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE: removing one existing file while adding new file uses explicit desired state and leaves submit event untouched', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '104' },
+    Objective_Attachment_1: {
+      type: 'FILE',
+      value: [
+        { fileKey: 'REMOVE_ME', name: 'rem.pdf' },
+        { fileKey: 'KEEP_ME', name: 'keep.pdf' }
+      ]
+    }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+
+  activeUi._removeSavedAttachmentFile('Objective_Attachment_1', 'rem.pdf', 'REMOVE_ME');
+
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'added.pdf', status: 'pending' }
+    ]
+  };
+
+  const submitEventRec = getSampleRecord({
+    $id: { value: '104' },
+    Objective_Attachment_1: { type: 'FILE', value: [] }
+  });
+
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    return { ok: true, json: async () => ({ fileKey: 'ADDED_KEY' }) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: submitEventRec, appId: 794, recordId: '104' };
+    await editSubmitHook(submitEvent);
+
+    assert.ok(activeUi.preparedAttachmentPlan.Objective_Attachment_1);
+    const planValues = activeUi.preparedAttachmentPlan.Objective_Attachment_1.value;
+    assert.equal(planValues.length, 2);
+    assert.deepEqual(planValues.map(v => v.fileKey), ['KEEP_ME', 'ADDED_KEY']);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_HANDLER_USES_AUTHORITATIVE_PERSISTED_RECORD_NOT_SUBMIT_ATTACHMENT_VALUE: proves implementation reads GET record rather than edit submit event', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '105' },
+    Objective_Attachment_1: {
+      type: 'FILE',
+      value: [{ fileKey: 'PERSISTED_KEY_AAA', name: 'persisted.pdf' }]
+    }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'new.pdf', status: 'pending' }
+    ]
+  };
+
+  const submitEventRec = getSampleRecord({
+    $id: { value: '105' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'WRONG_SUBMIT_KEY', name: 'wrong.pdf' }] }
+  });
+  submitEventRec.Objective_Attachment_1.value = [];
+
+  let getRecordCalled = false;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      getRecordCalled = true;
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    return { ok: true, json: async () => ({ fileKey: 'NEW_KEY_BBB' }) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: submitEventRec, appId: 794, recordId: '105' };
+    await editSubmitHook(submitEvent);
+
+    assert.equal(getRecordCalled, true, 'GET Record must be called to obtain persisted record on edit submit');
+    const planValues = activeUi.preparedAttachmentPlan.Objective_Attachment_1.value;
+    assert.equal(planValues[0].fileKey, 'PERSISTED_KEY_AAA', 'Must use persisted fileKey from GET record');
+    assert.equal(planValues[1].fileKey, 'NEW_KEY_BBB');
   } finally {
     globalThis.fetch = origFetch;
   }

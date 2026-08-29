@@ -103,7 +103,8 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
       savedFiles = Array.isArray(desiredSavedFilesMap[targetCode]) ? [...desiredSavedFilesMap[targetCode]] : [];
       modified = true;
     } else {
-      const currentVal = record[targetCode]?.value;
+      const sourceRecord = options.persistedRecord || record;
+      const currentVal = sourceRecord[targetCode]?.value ?? record[targetCode]?.value;
       savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
       modified = Boolean(options.dirtyFields?.includes(fieldCode) || options.removedFields?.includes(fieldCode));
     }
