@@ -419,4 +419,167 @@ describe('D1 MboKintoneAuthAdapter', () => {
     assert.equal(api.updates.length, 0, 'Zero updates must be executed when forceChange is not required');
   });
 
+  // ── resetMboPassword (R1 Password Reset Core) ───────────────────────────
+
+  it('R1-1. resetMboPassword updates ACTIVE credential with exact required fields and increments Credential_Version by 1', async () => {
+    const { hash } = await makeHashedCredential('oldsecret');
+    const api = makeApi({ hash, failedAttempts: 3, credentialVersion: 5 });
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+
+    const result = await adapter.resetMboPassword({ employeeCode: '0118' });
+
+    assert.equal(result.status, 'PASSWORD_RESET');
+    assert.equal(result.employeeCode, '0118');
+    assert.ok(!('Password_Hash' in result), 'Must not return Password_Hash');
+    assert.ok(!('hash' in result), 'Must not return hash');
+    assert.ok(!('token' in result), 'Must not return session token');
+    assert.ok(!('password' in result), 'Must not return plaintext password');
+
+    assert.equal(api.updates.length, 1, 'Exactly one update payload must be executed');
+    const update = api.updates[0];
+    const fields = update.fields;
+
+    // 1. Password_Hash must be new pbkdf2 hash for employeeCode '0118'
+    assert.match(fields.Password_Hash.value, /^pbkdf2\$100000\$/);
+    const isValidTempPw = await adapter.verifyPassword('0118', fields.Password_Hash.value);
+    assert.equal(isValidTempPw, true, 'Temporary password must be the exact Employee_Code');
+
+    // 2. Credential_Version must increment by 1 (5 -> 6)
+    assert.equal(fields.Credential_Version.value, 6);
+
+    // 3. Force_Password_Change=YES, Failed_Attempts=0, Locked_Until=null
+    assert.equal(fields.Force_Password_Change.value, 'YES');
+    assert.equal(fields.Failed_Attempts.value, 0);
+    assert.equal(fields.Locked_Until.value, null);
+    assert.equal(fields.Password_Changed_At.value, NOW.toISOString());
+
+    // 4. All Session_* fields cleared
+    assert.equal(fields.Session_Token_Hash.value, null);
+    assert.equal(fields.Session_Issued_At.value, null);
+    assert.equal(fields.Session_Expires_At.value, null);
+    assert.equal(fields.Session_Credential_Version.value, null);
+    assert.equal(fields.Session_Kintone_User.value, null);
+
+    // 5. Account_Status must NOT be present in update payload
+    assert.ok(!('Account_Status' in fields), 'Account_Status must be absent from update payload');
+  });
+
+  it('R1-2. resetMboPassword preserves permanent LOCKED and DISABLED Account_Status so login remains denied', async () => {
+    const { hash: lockHash } = await makeHashedCredential('old');
+    const lockApi = makeApi({ hash: lockHash, status: 'LOCKED', credentialVersion: 1 });
+    const lockAdapter = new MboKintoneAuthAdapter({ api: lockApi, cryptoImpl: globalThis.crypto, now: nowFn });
+
+    const lockResult = await lockAdapter.resetMboPassword({ employeeCode: '0118' });
+    assert.equal(lockResult.status, 'PASSWORD_RESET');
+    assert.ok(!('Account_Status' in lockApi.updates[0].fields), 'Account_Status absent from update');
+
+    // Login with reset temporary password must still be denied because Account_Status is LOCKED
+    const lockLogin = await lockAdapter.login({ username: '0118', password: '0118' });
+    assert.equal(lockLogin.status, 'CREDENTIAL_DENIED');
+    assert.equal(lockLogin.reason, 'Account is locked.');
+
+    const { hash: disHash } = await makeHashedCredential('old');
+    const disApi = makeApi({ hash: disHash, status: 'DISABLED', credentialVersion: 2 });
+    const disAdapter = new MboKintoneAuthAdapter({ api: disApi, cryptoImpl: globalThis.crypto, now: nowFn });
+
+    const disResult = await disAdapter.resetMboPassword({ employeeCode: '0118' });
+    assert.equal(disResult.status, 'PASSWORD_RESET');
+    assert.ok(!('Account_Status' in disApi.updates[0].fields), 'Account_Status absent from update');
+
+    const disLogin = await disAdapter.login({ username: '0118', password: '0118' });
+    assert.equal(disLogin.status, 'CREDENTIAL_DENIED');
+    assert.equal(disLogin.reason, 'Account is disabled.');
+  });
+
+  it('R1-3. resetMboPassword clears temporary Locked_Until on ACTIVE account', async () => {
+    const { hash } = await makeHashedCredential('old');
+    const futureLock = new Date(NOW.getTime() + 10 * 60 * 1000).toISOString();
+    const api = makeApi({ hash, status: 'ACTIVE', lockedUntil: futureLock, failedAttempts: 5 });
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+
+    const resetResult = await adapter.resetMboPassword({ employeeCode: '0118' });
+    assert.equal(resetResult.status, 'PASSWORD_RESET');
+    assert.equal(api.updates[0].fields.Locked_Until.value, null);
+    assert.equal(api.updates[0].fields.Failed_Attempts.value, 0);
+
+    // Subsequent login with temporary password should now return PASSWORD_CHANGE_REQUIRED (because Force_Password_Change=YES)
+    const loginResult = await adapter.login({ username: '0118', password: '0118' });
+    assert.equal(loginResult.status, 'PASSWORD_CHANGE_REQUIRED');
+  });
+
+  it('R1-4. resetMboPassword fails closed for missing credential (zero updates)', async () => {
+    const api = { getRecords: async () => ({ records: [] }), updateRecord: async () => {} };
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+    const result = await adapter.resetMboPassword({ employeeCode: '0118' });
+    assert.equal(result.status, 'CREDENTIAL_DENIED');
+    assert.equal(result.reason, 'CREDENTIAL_NOT_FOUND');
+  });
+
+  it('R1-5. resetMboPassword fails closed for duplicate credential (zero updates)', async () => {
+    const { hash } = await makeHashedCredential('pw');
+    const rec = {
+      $id: { value: '1' }, Employee_Code: { value: '0118' },
+      Password_Hash: { value: hash }, Account_Status: { value: 'ACTIVE' },
+      Force_Password_Change: { value: 'NO' }, Failed_Attempts: { value: 0 },
+      Locked_Until: { value: null }, Credential_Version: { value: 1 }
+    };
+    const updates = [];
+    const api = { getRecords: async () => ({ records: [rec, rec] }), updateRecord: async (a, b, c) => updates.push(c) };
+    const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+    const result = await adapter.resetMboPassword({ employeeCode: '0118' });
+    assert.equal(result.status, 'CREDENTIAL_DENIED');
+    assert.equal(result.reason, 'DUPLICATE_CREDENTIAL');
+    assert.equal(updates.length, 0, 'Zero updates for duplicate credential');
+  });
+
+  it('R1-6. resetMboPassword fails closed for malformed Credential_Version (null, blank, non-integer, <= 0)', async () => {
+    const invalidVersions = [null, undefined, '', 'abc', 0, -1, 1.5];
+    for (const badVer of invalidVersions) {
+      const { hash } = await makeHashedCredential('pw');
+      const updates = [];
+      const api = makeApi({ hash, credentialVersion: badVer });
+      api.updateRecord = async (a, b, c) => updates.push(c);
+      const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+
+      const result = await adapter.resetMboPassword({ employeeCode: '0118' });
+      assert.equal(result.status, 'CREDENTIAL_DENIED');
+      assert.equal(result.reason, 'MALFORMED_CREDENTIAL');
+      assert.equal(updates.length, 0, `Zero updates for bad Credential_Version=${badVer}`);
+    }
+  });
+
+  it('R1-7. resetMboPassword supports special canonical Employee_Code formats (50.03, 50.02, 0050_2)', async () => {
+    const specialCodes = ['50.03', '50.02', '0050_2'];
+    for (const code of specialCodes) {
+      const { hash } = await makeHashedCredential('old', code);
+      const api = makeApi({ employeeCode: code, hash, credentialVersion: 2 });
+      const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+
+      const result = await adapter.resetMboPassword({ employeeCode: code });
+      assert.equal(result.status, 'PASSWORD_RESET');
+      assert.equal(result.employeeCode, code);
+
+      const update = api.updates[0];
+      assert.equal(update.fields.Credential_Version.value, 3);
+      const isMatch = await adapter.verifyPassword(code, update.fields.Password_Hash.value);
+      assert.equal(isMatch, true, `Temporary password must equal exact code ${code}`);
+    }
+  });
+
+  it('R1-8. resetMboPassword rejects invalid Employee_Code format (spaces, injection chars) with zero Kintone calls', async () => {
+    const invalidCodes = [' 0118', '0118 ', '01 18', '0118" or "1"="1'];
+    for (const badCode of invalidCodes) {
+      const calls = [];
+      const api = {
+        getRecords: async () => { calls.push('get'); return { records: [] }; },
+        updateRecord: async () => { calls.push('update'); }
+      };
+      const adapter = new MboKintoneAuthAdapter({ api, cryptoImpl: globalThis.crypto, now: nowFn });
+      const result = await adapter.resetMboPassword({ employeeCode: badCode });
+      assert.equal(result.status, 'CREDENTIAL_DENIED');
+      assert.equal(calls.length, 0, `Zero API calls for bad code '${badCode}'`);
+    }
+  });
+
 });
+

@@ -7130,6 +7130,40 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
       });
       return { status: "PASSWORD_CHANGED", employeeCode: cred.code, newCredentialVersion: newCredVersion };
     }
+    // ---------------------------------------------------------------------------
+    // Public: resetMboPassword (administrative password reset)
+    // ---------------------------------------------------------------------------
+    /**
+     * Resets MBO password for employeeCode to a temporary password equal to Employee_Code.
+     * Sets Force_Password_Change=YES, Failed_Attempts=0, clears Locked_Until and session fields,
+     * increments Credential_Version by 1, and preserves Account_Status.
+     * Does NOT return or expose password, hash, salt, token, or session secret.
+     */
+    async resetMboPassword({ employeeCode } = {}) {
+      let cred;
+      try {
+        cred = await this._getCredential(employeeCode);
+      } catch (err) {
+        return { status: "CREDENTIAL_DENIED", reason: err.message };
+      }
+      const tempPassword = cred.code;
+      const newHash = await this.createPasswordHash(tempPassword);
+      const newCredVersion = cred.credentialVersion + 1;
+      await this.api.updateRecord(this.appId, cred.id, {
+        Password_Hash: { value: newHash },
+        Password_Changed_At: { value: this.now().toISOString() },
+        Force_Password_Change: { value: "YES" },
+        Failed_Attempts: { value: 0 },
+        Locked_Until: { value: null },
+        Credential_Version: { value: newCredVersion },
+        Session_Token_Hash: { value: null },
+        Session_Issued_At: { value: null },
+        Session_Expires_At: { value: null },
+        Session_Credential_Version: { value: null },
+        Session_Kintone_User: { value: null }
+      });
+      return { status: "PASSWORD_RESET", employeeCode: cred.code };
+    }
   };
 
   // src/ui/mbo-session-manager.js
