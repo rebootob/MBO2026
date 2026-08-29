@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — D1 AUTH BRIDGE WP1 CORE / CONTRACT
+# AI ACTIVE TASK — D1 AUTH BRIDGE WP1 CORE CORRECTIVE
 
-Mode: **SOURCE / TEST / LOCAL ONLY — ZERO KINTONE WRITE / ZERO LIVE DEPLOY**
+Mode: **SOURCE / TEST / LOCAL ONLY — ZERO LIVE KINTONE / ZERO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
@@ -9,136 +9,94 @@ Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 2. this file
 3. `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
 4. `project-docs/CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`
-5. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-6. `src/ui/mbo-kintone-auth-adapter.js` only for existing PBKDF2/App801 field compatibility
-7. `src/ui/mbo-session-manager.js` only for existing session contract compatibility
+5. `src/ui/mbo-kintone-auth-adapter.js` for exact legacy compatibility
+6. `services/mbo-auth-bridge/` only
 
-Do not scan repo.
+Do not scan repo. Do not touch App794 browser production source.
 
-## Goal
-Build the **server-side Auth Bridge core** only. Do not connect App794 production browser code yet.
+## Fix only WP1 core contract
 
-Create a provider-neutral **Node.js 20** service under:
+1. **PBKDF2 legacy compatibility**
+   - salt in serialized hash is hex text, but PBKDF2 input salt must be decoded bytes (`Buffer.from(saltHex, 'hex')`).
+   - require exactly `pbkdf2$100000$<valid hex salt>$<64 hex hash>`.
+   - add independent fixed vector:
+     - password `0113`
+     - saltHex `00112233445566778899aabbccddeeff`
+     - expected hash `51cbc01895f8689f4e6a7f8f227b2264c5675e992b3ce7d1db6010bb523be7c3`
 
-```text
-services/mbo-auth-bridge/
-```
+2. **Exact App801 fields + fail-closed parsing**
+   Use exact live field codes:
+   - `Session_Token_Hash`
+   - `Session_Issued_At`
+   - `Session_Expires_At`
+   - `Session_Credential_Version`
+   - `Session_Kintone_User`
+   Remove `Session_Kintone_User_Code`.
+   Missing/invalid Account_Status, Force_Password_Change, Failed_Attempts, Locked_Until, Credential_Version or session version state must fail closed; never default security state to ACTIVE/NO/version 1.
+   Employee_Code must use existing exact canonical validation `/^[A-Za-z0-9_.-]+$/` and reject leading/trailing whitespace.
 
-Use Node built-ins only for WP1 unless absolutely required. Keep service-local package/test setup separate from browser package.
+3. **Token resolves identity server-side**
+   - add repository lookup by exact `Session_Token_Hash` with `limit 2` and duplicate fail-closed.
+   - session validate request must require raw `sessionToken` + Kintone context only; do not trust browser Employee_Code.
+   - hash token -> resolve exactly one row -> derive Employee_Code -> validate ACTIVE, Force=NO, expiry, `Session_Credential_Version === Credential_Version`, exact `Session_Kintone_User` when applicable.
+   - create session writes issued-at, expiry, session credential version and Kintone user.
 
-## Required responsibilities
-Keep modules separated for:
-- environment/config validation;
-- App801 repository/Kintone HTTP access;
-- PBKDF2/password + lockout/auth service;
-- session issue/validate/revoke service;
-- force-change ticket signing/verification;
-- HTTP routing/response normalization.
+4. **Lifecycle identity/security**
+   - logout must revoke the session matching the presented raw token; no Employee_Code-only revoke endpoint.
+   - normal password change derives employee identity from validated session token; do not trust browser Employee_Code.
+   - force change derives employee from signed ticket, requires current ACTIVE + Force=YES + matching Credential_Version, and must never set a DISABLED/LOCKED account back to ACTIVE.
+   - after force/normal password change: increment Credential_Version, invalidate old session, then issue replacement session.
 
-Do not create one giant server file.
+5. **Lock semantics**
+   - permanent `Account_Status=LOCKED` always denies.
+   - 5 wrong passwords create a 15-minute temporary lock via `Locked_Until`; do not set permanent Account_Status=LOCKED for temporary lockout.
+   - successful login after temporary lock expiry clears Failed_Attempts/Locked_Until but does not rewrite permanent account status.
 
-## Required Auth Contract
-Implement local/testable handlers for:
-
-```text
-POST /v1/auth/login
-POST /v1/auth/session/validate
-POST /v1/auth/logout
-POST /v1/auth/password/change
-POST /v1/auth/password/force-change
-GET  /healthz
-```
-
-Required normalized statuses include:
-
-```text
-AUTHENTICATED
-PASSWORD_CHANGE_REQUIRED
-INVALID_CREDENTIALS
-ACCOUNT_LOCKED
-ACCOUNT_DISABLED
-INVALID_SESSION
-RATE_LIMITED
-AUTH_SERVICE_UNAVAILABLE
-```
-
-Do not return raw Kintone errors or credential records.
-
-## Security / compatibility rules
-- Preserve PBKDF2-SHA256, 100000 iterations, existing `pbkdf2$100000$<saltHex>$<hashHex>` format.
-- Preserve App801 field names and existing 5 failures -> 15-minute lockout.
-- Normal successful login resets failed state and updates Last_Login_At.
-- Normal login issues random 256-bit opaque token server-side.
-- App801 stores only SHA-256(token) + existing session metadata.
-- Session TTL = 8h absolute / no sliding / one active session per Employee_Code.
-- Preserve Credential_Version and exact Kintone-user-context binding semantics.
-- Force Change returns a signed memory-only ticket, not a session.
-- Force ticket TTL = 10 minutes; HMAC-SHA256; includes Employee_Code + Credential_Version + expiry + nonce; no password/hash/session token.
-- Successful force change increments Credential_Version and then issues normal session.
-- Normal password change validates session + current password, increments Credential_Version, invalidates old session and returns replacement session.
-- Logout is server-revocation aware.
-- App801 repository supports READ + UPDATE existing records only. NO create/delete path.
-- Bridge never logs password, raw session token, Password_Hash, force ticket, App801 API token or signing secret.
-- Auth responses use `Cache-Control: no-store`.
-- CORS uses configured allow-list. Treat CORS as transport hardening, not sole auth security.
-- Include a rate-limiter boundary/test double; no hosting-specific production assumption in WP1.
-
-## Environment names only
-Document placeholders only; never add real values:
-
-```text
-KINTONE_BASE_URL
-APP801_ID
-KINTONE_API_TOKEN
-FORCE_CHANGE_SIGNING_SECRET
-ALLOWED_ORIGINS
-PORT
-```
-
-No `.env` with secrets. `.env.example` may contain names/placeholders only.
+6. **Config/response fail-closed**
+   - no default signing secret.
+   - no default `*` CORS allow-list.
+   - validate mandatory config values/placeholders at runtime boundary.
+   - browser responses must never contain raw repository/Kintone `err.message`; return stable sanitized status/reason.
+   - remove invalid `start: node src/server.js` until a real server runtime is authorized/implemented; do not add live server/transport in this corrective.
 
 ## Tests — mandatory
-Use mocked/injected Kintone repository/network. **No live ttmet.cybozu.com calls.**
 
-Prove at minimum:
-1. existing PBKDF2 format verify + new hash compatibility;
-2. valid ACTIVE login -> raw session returned, only token hash persisted;
-3. wrong password increments attempts and 5th failure produces 15-minute lock;
-4. LOCKED / DISABLED denied with correct stable status;
-5. Force Change -> ticket only, no usable session;
-6. tampered/expired/version-mismatched force ticket denied;
-7. successful Force Change increments Credential_Version + issues session;
-8. session validation checks ACTIVE, Force=NO, expiry, Credential_Version, Kintone context;
-9. logout clears persisted session fields;
-10. normal password change rotates Credential_Version + session;
-11. duplicate/malformed credential/session rows fail closed;
-12. no response exposes Password_Hash / Session_Token_Hash / API token / signing secret;
-13. repository/router has no record create/delete capability;
-14. disallowed Origin rejected; allowed Origin receives no-store response;
-15. injected limiter can produce `RATE_LIMITED`.
+Keep existing useful tests and add non-skippable proofs for:
+- fixed legacy PBKDF2 vector above;
+- malformed PBKDF2 rejected;
+- exact App801 session field codes;
+- malformed/missing security fields fail closed;
+- Employee_Code whitespace/invalid characters rejected;
+- token-hash lookup resolves Employee_Code without client Employee_Code;
+- duplicate token hash fails closed;
+- Session_Credential_Version mismatch invalid;
+- Kintone context mismatch invalid;
+- logout requires/matches session token;
+- password change identity comes from session token;
+- force ticket expired/tampered/version mismatch denied;
+- disabled/locked account cannot be re-enabled by force change;
+- 5th failure sets temporary Locked_Until but leaves Account_Status ACTIVE;
+- permanent LOCKED remains denied after time passes;
+- internal repository error text/secret is not returned to browser;
+- no create/delete capability;
+- CORS/no-store/rate-limit remain.
 
-## Required run
-
+Run:
 ```text
 npm --prefix services/mbo-auth-bridge test
 npm test
 ```
 
-Do not run any live deploy script.
-
 ## Forbidden
-- NO Kintone write/read against live domain
-- NO App801 ACL change
-- NO App801 record write
-- NO production API token/secret creation
-- NO Auth Bridge live deploy
+- NO live Kintone read/write
+- NO App801 ACL or record write
+- NO production token/secret
+- NO Bridge deploy
 - NO App794 deploy
-- NO App794 browser integration in WP1
-- NO edits to `src/main-mbo-app.js`
-- NO edits to Login Gate / My MBO UI / routing / scoring / workflow
-- NO dist change
-- NO Deploy Guard fix
+- NO browser integration / `main-mbo-app.js` / Login Gate / Session Manager edits
+- NO dist
+- NO Deploy Guard
 - NO D2-D7
 
-Commit + push one concise WP1 commit, then STOP.
+Commit + push one concise corrective commit, then STOP.
 Do not Self-PASS.
