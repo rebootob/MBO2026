@@ -3585,37 +3585,40 @@ Requester_User is empty for action "${actionName}".`
         if (f.isPending) {
           if (f.status === "error") {
             return `
-            <div class="mbo-attachment-badge error-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#b91c1c; background:#fef2f2; border:1px solid #fca5a5; padding:3px 8px; border-radius:4px; margin:2px;">
-              \u26A0\uFE0F <span title="${escapeHtml2(f.name)}" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
-              <span class="mbo-attachment-error-tag" style="font-size:10px; font-weight:700; color:#dc2626;">(\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E25\u0E49\u0E21\u0E40\u0E2B\u0E25\u0E27 / Upload failed)</span>
-              ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
+            <div class="mbo-attachment-badge error-file" style="display:flex; align-items:center; justify-content:space-between; gap:6px; width:100%; max-width:100%; min-width:0; box-sizing:border-box; font-size:11px; color:#b91c1c; background:#fef2f2; border:1px solid #fca5a5; padding:3px 8px; border-radius:4px;">
+              <span class="mbo-attachment-icon" style="flex:0 0 auto;">\u26A0\uFE0F</span>
+              <span class="mbo-attachment-filename" title="${escapeHtml2(f.name)}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
+              <span class="mbo-attachment-error-tag" style="flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; font-weight:700; color:#dc2626;">(\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E25\u0E49\u0E21\u0E40\u0E2B\u0E25\u0E27 / Upload failed)</span>
+              ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="flex:0 0 auto; flex-shrink:0; border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px; line-height:1; min-width:16px;">\u2715</button>` : ""}
             </div>
           `;
           }
           return `
-          <div class="mbo-attachment-badge pending-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#0369a1; background:#f0f9ff; border:1px dashed #0284c7; padding:3px 8px; border-radius:4px; margin:2px;">
-            \u{1F4CE} <span title="${escapeHtml2(f.name)}" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
-            <span class="mbo-attachment-pending-tag" style="font-size:10px; font-weight:700; color:#0284c7;">(\u0E23\u0E2D\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 / Pending save)</span>
-            ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
+          <div class="mbo-attachment-badge pending-file" style="display:flex; align-items:center; justify-content:space-between; gap:6px; width:100%; max-width:100%; min-width:0; box-sizing:border-box; font-size:11px; color:#0369a1; background:#f0f9ff; border:1px dashed #0284c7; padding:3px 8px; border-radius:4px;">
+            <span class="mbo-attachment-icon" style="flex:0 0 auto;">\u{1F4CE}</span>
+            <span class="mbo-attachment-filename" title="${escapeHtml2(f.name)}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
+            <span class="mbo-attachment-pending-tag" style="flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; font-weight:700; color:#0284c7;">(\u0E23\u0E2D\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 / Pending save)</span>
+            ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="flex:0 0 auto; flex-shrink:0; border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px; line-height:1; min-width:16px;">\u2715</button>` : ""}
           </div>
         `;
         }
         const isMock = Boolean(f.isPreviewMock);
         return `
-        <div class="mbo-attachment-badge saved-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#1e293b; background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; margin:2px;">
-          \u{1F4CE} <span title="${escapeHtml2(f.name)}" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
-          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-filename="${escapeHtml2(f.name)}" data-filekey="${escapeHtml2(f.fileKey || "")}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
+        <div class="mbo-attachment-badge saved-file" style="display:flex; align-items:center; justify-content:space-between; gap:6px; width:100%; max-width:100%; min-width:0; box-sizing:border-box; font-size:11px; color:#1e293b; background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px;">
+          <span class="mbo-attachment-icon" style="flex:0 0 auto;">\u{1F4CE}</span>
+          <span class="mbo-attachment-filename" title="${escapeHtml2(f.name)}" style="flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
+          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-filename="${escapeHtml2(f.name)}" data-filekey="${escapeHtml2(f.fileKey || "")}" style="flex:0 0 auto; flex-shrink:0; border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px; line-height:1; min-width:16px;">\u2715</button>` : ""}
         </div>
       `;
       }).join("");
       const addMoreBtnHtml = isEditable ? `
-      <label class="mbo-attachment-btn-add" style="cursor:pointer; display:inline-flex; align-items:center; font-size:10.5px; font-weight:600; color:#0284c7; background:#ffffff; border:1px solid #bae6fd; padding:2px 6px; border-radius:4px; margin:2px;">
+      <label class="mbo-attachment-btn-add" style="cursor:pointer; display:inline-flex; align-items:center; font-size:10.5px; font-weight:600; color:#0284c7; background:#ffffff; border:1px solid #bae6fd; padding:2px 6px; border-radius:4px; margin-top:2px; max-width:100%; box-sizing:border-box;">
         + \u0E40\u0E1E\u0E34\u0E48\u0E21\u0E44\u0E1F\u0E25\u0E4C / Add file
         <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml2(fieldCode)}" multiple style="display:none;" />
       </label>
     ` : "";
       return `
-      <div class="mbo-attachment-container" data-attachment-container="${escapeHtml2(fieldCode)}" style="display:flex; flex-wrap:wrap; align-items:center; gap:2px;">
+      <div class="mbo-attachment-container" data-attachment-container="${escapeHtml2(fieldCode)}" style="display:flex; flex-direction:column; align-items:stretch; gap:4px; width:100%; max-width:100%; min-width:0; box-sizing:border-box;">
         ${badgesHtml}
         ${addMoreBtnHtml}
       </div>

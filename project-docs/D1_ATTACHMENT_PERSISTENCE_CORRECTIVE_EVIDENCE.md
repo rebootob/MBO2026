@@ -1,19 +1,17 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 2beb6ae03d14c808eabd54e52640d6d1429383fa
-CANONICAL_BRANCH             = ai/antigravity-wp002c
-AUTHORIZATION_ID             = APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01
-AUTHORIZATION_CONSUMED       = YES
-REVIEWED_CANDIDATE_SHA       = 0282a0c00d54c846353f4d830874c514c6546468
-FOCUSED_TESTS                = PASS (39/39 attachment & timeline tests passing)
-FULL_NPM_TEST                 = PASS (891/891 unit & integration tests passing)
-BUILD_ONLY                   = PASS (0 Kintone network calls)
-PRE_DEPLOY_REVISION          = 48
-POST_DEPLOY_REVISION         = 49
-LIVE_KINTONE_WRITE           = 0
-LIVE_DEPLOY_OCCURRED         = YES
-MAXIMUM_STATUS               = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+START_HEAD                                = 62a19bc05300a6ef4c76f62e7a5942ada939a61c
+CANONICAL_BRANCH                          = ai/antigravity-wp002c
+UI_CORRECTIVE_DESIGN                      = LONG FILENAME CELL CONTAINMENT + ELLIPSIS + FLEX NON-SHRINKING DELETE CONTROL
+FOCUSED_TESTS                             = PASS (45/45 attachment & timeline tests passing)
+FULL_NPM_TEST                              = PASS (897/897 unit & integration tests passing)
+BUILD_ONLY                                = PASS (0 Kintone network calls)
+ATTACHMENT_SERVICE_CHANGED                = NO (src/services/mbo-attachment-service.js 100% UNTOUCHED)
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
+LIVE_KINTONE_WRITE                        = 0
+LIVE_DEPLOY_OCCURRED                      = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -32,67 +30,25 @@ MAXIMUM_STATUS               = DEPLOYED_PENDING_INDEPENDENT_REVIEW
   - Restored all 3 Timeline regression tests (`TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`, `TIMELINE_PREVIEW_FIXTURES_ALLOWED`, `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`).
   - Restored all 9 Attachment UI display and control tests (`ATTACHMENT_READONLY_ZERO_FILES`, `ATTACHMENT_READONLY_SINGLE_FILE`, `ATTACHMENT_READONLY_MULTIPLE_FILES`, `ATTACHMENT_LIVE_MODE_NO_PREVIEW_MOCK_LEAK`, `ATTACHMENT_PENDING_FILE_STATE`, `ATTACHMENT_REAL_REMOVE_BUTTON_CLICK_EVENT`, etc.).
   - Added new real-handler tests using separate submit event record objects (`REAL_HANDLER_REMOVE_DESIRED_STATE_SEPARATE_SUBMIT_RECORD`, `REAL_HANDLER_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE`, `SELF_FINAL_FALLBACK_DESIRED_STATE`, etc.).
-  - Focused test suite increased to **39 / 39 PASS**. Full repository test suite increased to **891 / 891 PASS**. Zero test reduction.
+  - Focused test suite increased to **45 / 45 PASS**. Full repository test suite increased to **897 / 897 PASS**. Zero test reduction.
 
 ## 2. Source Code Ownership & Changes
 
-- [src/services/mbo-attachment-service.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/services/mbo-attachment-service.js):
-  - Refactored `prepareAttachmentPlan` into two distinct phases: Phase 1 (Canonical Resolution & Atomic Persisted-State Preflight Validation) and Phase 2 (File Upload & Plan Construction).
-  - Resolves `Self_Attachment_n -> Final_Attachment_n` before preflight.
-  - In Phase 1, validates all target fields across `dirtyFieldsSet`. If target 2 (or 3, etc.) is missing or invalid in `persistedRecord`, Phase 1 throws immediately before Phase 2 ever calls `uploadKintoneFile`.
-  - Ensures `uploadCount = 0` across all target fields on preflight failure.
-- [src/main-mbo-app.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/main-mbo-app.js):
-  - Orchestrates mandatory persisted GET Record for Edit mode when attachment changes exist (`hasPendingOrDirtyAttachments()`).
-  - Fails closed before upload if GET Record fails or returns null.
 - [src/ui/employee-part-a-ui.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/ui/employee-part-a-ui.js):
-  - Added `hasPendingOrDirtyAttachments()` helper to detect pending files, explicit removals, or dirty attachment fields.
+  - Refactored `_renderAttachmentControl` markup structure.
+  - Attachment items/badges (`mbo-attachment-badge`) use `display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; min-width:0; box-sizing:border-box;`.
+  - Filename span (`mbo-attachment-filename`) uses `flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;` and preserves full filename in `title="${escapeHtml(f.name)}"`.
+  - Delete button (`mbo-attachment-remove-btn`) uses `flex:0 0 auto; flex-shrink:0; min-width:16px; text-align:center;` to ensure it NEVER shrinks or gets pushed offscreen.
+  - Container (`mbo-attachment-container`) uses `display:flex; flex-direction:column; align-items:stretch; width:100%; max-width:100%; min-width:0; gap:4px;` so multiple files stack cleanly as separate rows.
+- [src/styles/mbo-employee.css](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/styles/mbo-employee.css):
+  - Defined CSS rules for `.mbo-attachment-container`, `.mbo-attachment-badge`, `.mbo-attachment-filename`, `.mbo-attachment-pending-tag`, `.mbo-attachment-error-tag`, `.mbo-attachment-remove-btn`, and `.mbo-attachment-btn-add` enforcing cell containment and non-shrinking delete control behavior.
 - [tests/timeline-truthfulness-and-attachment.test.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/timeline-truthfulness-and-attachment.test.js):
-  - Added 3 new multi-target atomic preflight tests (`EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD`, `EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD`, `EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS`).
-- [config/schema-spec.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/config/schema-spec.js): Defined `Objective_Attachment_1..10` optional `FILE` fields.
+  - Added 6 new regression tests (`ATTACHMENT_LONG_SAVED_FILENAME_TRUNCATES_WITH_FULL_TITLE`, `ATTACHMENT_LONG_SAVED_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE`, `ATTACHMENT_MULTIPLE_LONG_FILENAMES_RENDER_ALL_DELETE_CONTROLS`, `ATTACHMENT_PENDING_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE`, `ATTACHMENT_ERROR_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE`, `OBJECTIVE_MIDYEAR_FINAL_ATTACHMENT_RENDER_REGRESSION`).
 
 ## 3. Test & Build Verification Results
 
-- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **39/39 PASS (100%)**
-  - `TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`: PASS
-  - `TIMELINE_PREVIEW_FIXTURES_ALLOWED`: PASS
-  - `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`: PASS
-  - `ATTACHMENT_READONLY_ZERO_FILES`: PASS
-  - `ATTACHMENT_READONLY_SINGLE_FILE`: PASS
-  - `ATTACHMENT_READONLY_MULTIPLE_FILES`: PASS
-  - `ATTACHMENT_LIVE_MODE_NO_PREVIEW_MOCK_LEAK`: PASS
-  - `ATTACHMENT_PENDING_FILE_STATE`: PASS
-  - `ATTACHMENT_REAL_REMOVE_BUTTON_CLICK_EVENT`: PASS
-  - `EXISTING_SAVED_FILES_PRESERVED`: PASS
-  - `EXPLICIT_REMOVE_DESIRED_STATE`: PASS
-  - `REAL_HANDLER_REMOVE_DESIRED_STATE_SEPARATE_SUBMIT_RECORD`: PASS
-  - `REAL_HANDLER_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE`: PASS
-  - `UNRELATED_ATTACHMENT_FIELDS_UNCHANGED`: PASS
-  - `SELF_FINAL_FALLBACK_DESIRED_STATE`: PASS
-  - `EDIT_SUBMIT_PENDING_UPLOAD_PREPARES_PLAN`: PASS
-  - `SUBMIT_EVENT_ATTACHMENT_OBJECT_UNCHANGED`: PASS
-  - `CREATE_SUBMIT_ZERO_PENDING_NO_ATTACHMENT_MUTATION`: PASS
-  - `EDIT_SUBMIT_ZERO_PENDING_NO_ATTACHMENT_MUTATION`: PASS
-  - `CREATE_SUBMIT_SUCCESS_REST_BIND_EXACT_FIELD`: PASS
-  - `EDIT_SUBMIT_SUCCESS_REST_BIND_EXACT_FIELD`: PASS
-  - `UPLOAD_FAILURE_PRE_SAVE_FAILS_CLOSED`: PASS
-  - `POST_SAVE_BIND_FAILURE_VISIBLE_TRUTHFUL_ERROR`: PASS
-  - `POST_SAVE_BIND_FAILURE_NO_SILENT_REDIRECT`: PASS
-  - `SUCCESS_PATH_NORMAL_REDIRECT_BEHAVIOR`: PASS
-  - `EDIT_ADD_ONLY_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE_PRESERVES_ALL_EXISTING`: PASS
-  - `EDIT_MULTIPLE_EXISTING_FILES_DO_NOT_COLLAPSE`: PASS
-  - `EDIT_ADD_MULTIPLE_NEW_FILES_PRESERVES_ALL_EXISTING`: PASS
-  - `EDIT_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE_WITH_SUBMIT_ATTACHMENT_UNAVAILABLE`: PASS
-  - `EDIT_HANDLER_USES_AUTHORITATIVE_PERSISTED_RECORD_NOT_SUBMIT_ATTACHMENT_VALUE`: PASS
-  - `EDIT_GET_RECORD_FAILURE_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED`: PASS
-  - `EDIT_GET_RECORD_NULL_WITH_ATTACHMENT_CHANGE_FAILS_CLOSED`: PASS
-  - `EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED`: PASS
-  - `EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET`: PASS
-  - `EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE`: PASS
-  - `EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD`: PASS
-  - `EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD`: PASS
-  - `EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS`: PASS
-  - `NO_LIVE_NETWORK_IN_TESTS`: PASS
-- **Repository Full Test Suite (`npm test`):** **891/891 PASS (100%)**
+- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **45/45 PASS (100%)**
+- **Repository Full Test Suite (`npm test`):** **897/897 PASS (100%)**
 - **Candidate Bundle Build (`npm run ui:build`):** `PASS` (`dist/mbo-employee-app.js` & `dist/mbo-employee.css` generated cleanly)
 - **Module-Aware Build-Only Check (`node --env-file=.env.local scripts/kintone/deploy-custom-ui.js --build-only`):** `PASS` (0 Kintone network calls)
 
@@ -277,4 +233,24 @@ APP801_WRITE                             = 0
 APP795_796_WRITE                         = 0
 LIVE_DEPLOY_OCCURRED                     = YES
 MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 12. App794 Attachment Long-Filename Delete-Control UI Corrective Evidence
+
+```text
+EXECUTION_START_HEAD                      = 62a19bc05300a6ef4c76f62e7a5942ada939a61c
+CHANGED_FILES                             = src/ui/employee-part-a-ui.js, src/styles/mbo-employee.css, tests/timeline-truthfulness-and-attachment.test.js, dist/mbo-employee-app.js, dist/mbo-employee.css
+UI_LAYOUT_DESIGN                          = mbo-attachment-container uses display:flex; flex-direction:column; align-items:stretch; width:100%; max-width:100%; min-width:0. mbo-attachment-badge uses display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; min-width:0.
+LONG_FILENAME_TRUNCATION_CONTRACT         = mbo-attachment-filename uses flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; title attribute preserves full filename.
+DELETE_CONTROL_NON_SHRINK_CONTRACT        = mbo-attachment-remove-btn uses flex:0 0 auto; flex-shrink:0; min-width:16px; text-align:center; remains always visible at right edge.
+MULTIPLE_FILE_STACK_CONTRACT              = Multiple files stack cleanly as separate rows inside column container.
+FOCUSED_ATTACHMENT_TESTS                  = PASS (45/45 attachment & timeline tests passing)
+FULL_NPM_TEST                             = PASS (897/897 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+ATTACHMENT_SERVICE_CHANGED                = NO (src/services/mbo-attachment-service.js 100% UNTOUCHED)
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
+LIVE_KINTONE_WRITE                       = 0
+LIVE_DEPLOY_OCCURRED                     = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```

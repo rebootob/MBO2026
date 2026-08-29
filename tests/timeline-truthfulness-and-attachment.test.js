@@ -1730,6 +1730,148 @@ test('EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS: when all mul
   }
 });
 
+test('ATTACHMENT_LONG_SAVED_FILENAME_TRUNCATES_WITH_FULL_TITLE: long saved filename preserves full name in title attribute and uses mbo-attachment-filename styling for ellipsis', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const longName = 'very_long_filename_that_overflows_cell_boundary_and_must_be_truncated_with_ellipsis_in_ui.pdf';
+  const rec = getSampleRecord({
+    $id: { value: '401' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_LONG', name: longName }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(html.includes(`title="${longName}"`), 'Full original filename must remain in title tooltip attribute');
+  assert.ok(html.includes('class="mbo-attachment-filename"'), 'Filename element must use mbo-attachment-filename class');
+  assert.ok(html.includes('text-overflow:ellipsis'), 'Filename element must specify text-overflow:ellipsis');
+  assert.ok(html.includes('overflow:hidden'), 'Filename element must specify overflow:hidden');
+});
+
+test('ATTACHMENT_LONG_SAVED_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE: delete button stays as a separate non-shrinking flex control at the right edge', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const longName = 'long_evidence_document_spec_2026_final_report_version_3_signed.pdf';
+  const rec = getSampleRecord({
+    $id: { value: '402' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K_LONG2', name: longName }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(html.includes('class="mbo-attachment-remove-btn"'), 'Delete button must have mbo-attachment-remove-btn class');
+  assert.ok(html.includes('flex-shrink:0') || html.includes('flex:0 0 auto'), 'Delete button must specify non-shrinking flex properties');
+  assert.ok(html.includes('data-filekey="K_LONG2"'), 'Delete button must retain target fileKey dataset attribute');
+});
+
+test('ATTACHMENT_MULTIPLE_LONG_FILENAMES_RENDER_ALL_DELETE_CONTROLS: multiple long attachments stack as separate rows each with a visible delete button', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const files = [
+    { fileKey: 'K1', name: 'long_filename_objective_attachment_number_one_2026_spec.pdf' },
+    { fileKey: 'K2', name: 'long_filename_objective_attachment_number_two_2026_spec.pdf' },
+    { fileKey: 'K3', name: 'long_filename_objective_attachment_number_three_2026_spec.pdf' }
+  ];
+  const rec = getSampleRecord({
+    $id: { value: '403' },
+    Objective_Attachment_1: { type: 'FILE', value: files }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(html.includes('flex-direction:column'), 'Attachment container must stack files as clean separate rows');
+
+  const removeBtnMatches = html.match(/class="mbo-attachment-remove-btn"/g);
+  assert.equal(removeBtnMatches?.length, 3, 'Must render exactly 3 delete buttons for 3 saved files');
+});
+
+test('ATTACHMENT_PENDING_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE: pending file with long name retains title attribute and non-shrinking delete button', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({ $id: { value: '404' } });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const longPendingName = 'pending_uploaded_document_with_very_long_file_name_that_needs_truncation.pdf';
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: longPendingName, status: 'pending' }
+    ]
+  };
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(html.includes('class="mbo-attachment-badge pending-file"'), 'Badge must have pending-file class');
+  assert.ok(html.includes(`title="${longPendingName}"`), 'Pending filename must preserve full name in title tooltip');
+  assert.ok(html.includes('class="mbo-attachment-pending-tag"'), 'Must contain pending status tag');
+  assert.ok(html.includes('class="mbo-attachment-remove-btn"'), 'Must contain delete button for pending file');
+  assert.ok(html.includes('flex-shrink:0') || html.includes('flex:0 0 auto'), 'Pending delete button must be non-shrinking flex item');
+});
+
+test('ATTACHMENT_ERROR_LONG_FILENAME_DELETE_CONTROL_REMAINS_SEPARATE: failed upload with long name retains error tag and separate delete button', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({ $id: { value: '405' } });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const longErrorName = 'failed_upload_long_filename_that_caused_http_500_server_error_response.pdf';
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: longErrorName, status: 'error', error: 'Upload failed' }
+    ]
+  };
+
+  const html = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  assert.ok(html.includes('class="mbo-attachment-badge error-file"'), 'Badge must have error-file class');
+  assert.ok(html.includes(`title="${longErrorName}"`), 'Error filename must preserve full name in title tooltip');
+  assert.ok(html.includes('class="mbo-attachment-error-tag"'), 'Must contain error status tag');
+  assert.ok(html.includes('class="mbo-attachment-remove-btn"'), 'Must contain delete button for failed file');
+});
+
+test('OBJECTIVE_MIDYEAR_FINAL_ATTACHMENT_RENDER_REGRESSION: Objective, Mid-Year and Final stage attachments use exact same cell-containment flex layout', async () => {
+  const showHook = kintoneHandlers['app.record.detail.show'];
+  const rec = getSampleRecord({
+    $id: { value: '406' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'O1', name: 'objective_long_name.pdf' }] },
+    MidYear_Attachment_1: { type: 'FILE', value: [{ fileKey: 'M1', name: 'midyear_long_name.pdf' }] },
+    Self_Attachment_1: { type: 'FILE', value: [{ fileKey: 'S1', name: 'final_self_long_name.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.detail.show', record: rec });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+
+  const objHtml = activeUi._renderAttachmentControl('Objective_Attachment_1', 'Objectives', true);
+  const midHtml = activeUi._renderAttachmentControl('MidYear_Attachment_1', 'Mid-Year', true);
+  const selfHtml = activeUi._renderAttachmentControl('Self_Attachment_1', 'Self Evaluation', true);
+
+  for (const html of [objHtml, midHtml, selfHtml]) {
+    assert.ok(html.includes('class="mbo-attachment-container"'), 'All stage attachment controls must use mbo-attachment-container');
+    assert.ok(html.includes('class="mbo-attachment-filename"'), 'All stage attachment controls must use mbo-attachment-filename');
+    assert.ok(html.includes('class="mbo-attachment-remove-btn"'), 'All stage attachment controls must use mbo-attachment-remove-btn');
+    assert.ok(html.includes('flex-direction:column'), 'All stage attachment controls must stack as clean column rows');
+  }
+});
+
 test('NO_LIVE_NETWORK_IN_TESTS: all tests run strictly against local mock transports with 0 external network calls', () => {
   assert.equal(typeof globalThis.fetch, 'function', 'Mock fetch transport must be used in unit tests');
 });
