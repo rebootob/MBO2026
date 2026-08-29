@@ -258,6 +258,60 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const createCommentMirror = createHost.querySelector('[data-mbo-comment-panel]');
   assert.equal(createCommentMirror, null, 'COMMENT_CREATE_MIRROR_ABSENT: Create screen must NOT mount Comment mirror');
 
+  // 4. ERROR STATE Integration Proofs (WP2 R4)
+  // 4a. Employee Code Mismatch on Existing Detail Screen
+  const mismatchHost = createMockElement('div');
+  currentActiveHost = mismatchHost;
+  const mismatchEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: '103',
+    record: {
+      $id: { value: '103' },
+      Status: { value: '01 Draft Objective' },
+      Employee_Code: { value: 'DIFFERENT_EMP' }
+    }
+  };
+  await recordShowHandler(mismatchEvent);
+  const mismatchBackBars = mismatchHost.querySelectorAll('[data-mbo-back-nav-bar]');
+  assert.equal(mismatchBackBars.length, 1, 'R4_ERROR_STATE_DETAIL_BACK_VISIBLE: Access Denied error screen on existing Detail must mount exactly 1 Back bar');
+  assert.equal(mismatchBackBars[0].querySelector('a').href, '/k/794/');
+
+  // 4b. Employee Code Mismatch on Existing Edit Screen
+  const mismatchEditHost = createMockElement('div');
+  currentActiveHost = mismatchEditHost;
+  const mismatchEditEvent = {
+    type: 'app.record.edit.show',
+    appId: 794,
+    recordId: '104',
+    record: {
+      $id: { value: '104' },
+      Status: { value: '01 Draft Objective' },
+      Employee_Code: { value: 'DIFFERENT_EMP' }
+    }
+  };
+  await recordShowHandler(mismatchEditEvent);
+  const mismatchEditBackBars = mismatchEditHost.querySelectorAll('[data-mbo-back-nav-bar]');
+  assert.equal(mismatchEditBackBars.length, 1, 'R4_ERROR_STATE_EDIT_BACK_VISIBLE: Access Denied error screen on existing Edit must mount exactly 1 Back bar');
+
+  // 4c. Create Screen Error State MUST NOT show Back bar
+  const createErrorHost = createMockElement('div');
+  currentActiveHost = createErrorHost;
+  const createErrorEvent = {
+    type: 'app.record.create.show',
+    appId: 794,
+    record: {
+      Status: { value: '01 Draft Objective' }
+    }
+  };
+  // Simulate gate null or auth fail on create
+  const origGate = mockGate;
+  setMboLoginGate(null);
+  await recordShowHandler(createErrorEvent);
+  const createErrorBackBars = createErrorHost.querySelectorAll('[data-mbo-back-nav-bar]');
+  assert.equal(createErrorBackBars.length, 0, 'R4_ERROR_STATE_CREATE_BACK_ABSENT: Error screen on Create must NOT mount Back bar');
+  setMboLoginGate(origGate);
+
   assert.equal(sessionMutations, 0, 'REAL_MAIN_AUTH_SESSION_MUTATION = 0');
   assert.equal(recordWrites, 0, 'REAL_MAIN_RECORD_WRITE = 0');
 });

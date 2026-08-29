@@ -7675,9 +7675,18 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         } catch (e) {
         }
       });
-    }, renderBlockedNotice = function(host, title, detail) {
-      if (!host) host = document.body;
+    }, renderBlockedNotice = function(host, title, detail, options = {}) {
+      if (!host) host = document.querySelector(".gaia-app-wrapper") || document.body;
       host.innerHTML = "";
+      const isCreate = options.isCreate ?? true;
+      const appId = options.appId || getMboAppId();
+      if (isCreate === false) {
+        const nav = new EmployeeRecordNavigation({ appId });
+        const backBar = nav.renderBackToMyMboBar({ isCreate: false });
+        if (backBar) {
+          host.appendChild(backBar);
+        }
+      }
       const box = document.createElement("div");
       box.style.cssText = "padding:32px;border:2px solid #c00;border-radius:8px;background:#fff5f5;font-family:sans-serif;max-width:600px;margin:20px auto;";
       const h2 = document.createElement("h2");
@@ -7709,7 +7718,8 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
           "Access Denied",
           `This MBO record belongs to a different employee.
 Authenticated: ${authenticatedEmployeeCode}
-Record: ${record.Employee_Code.value}`
+Record: ${record.Employee_Code.value}`,
+          { isCreate, appId: event.appId || getMboAppId() }
         );
         hideAllNativeFields(record);
         return event;
@@ -7906,6 +7916,12 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         hideAllNativeFields(record);
       } catch (renderError) {
         console.error("[MBO V2] Error rendering custom UI:", renderError);
+        renderBlockedNotice(
+          uiHost,
+          "Custom UI Render Error",
+          `Failed to render MBO interface: ${renderError.message}`,
+          { isCreate, appId: event.appId || getMboAppId() }
+        );
       }
       if (isCreate && authenticatedEmployeeCode) {
         isAutoloadingInCreateHandler = true;
@@ -7916,7 +7932,8 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             renderBlockedNotice(
               uiHost,
               "Employee Profile Resolution Failed",
-              `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`
+              `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
+              { isCreate: true, appId: event.appId || getMboAppId() }
             );
             hideAllNativeFields(record);
             return event;
@@ -8021,13 +8038,15 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       const isCreate = event.type === "app.record.create.show";
       const isEdit = event.type === "app.record.edit.show";
       const isDetail = event.type === "app.record.detail.show";
+      const appId = event.appId || getMboAppId();
       let uiHost = getRecordUiHost("SPACE_HEADER");
       if (!uiHost) {
         uiHost = document.querySelector(".gaia-app-wrapper") || document.body;
         renderBlockedNotice(
           uiHost,
           "Custom UI Host Missing",
-          "Required UI header element (SPACE_HEADER) was not found. Access blocked. [FAIL_CLOSED_NO_HOST]"
+          "Required UI header element (SPACE_HEADER) was not found. Access blocked. [FAIL_CLOSED_NO_HOST]",
+          { isCreate, appId }
         );
         hideAllNativeFields(record);
         return event;
@@ -8036,7 +8055,8 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         renderBlockedNotice(
           uiHost,
           "MBO Login Gate Not Initialized",
-          "The MBO authentication system could not be started. Please contact your administrator. [FAIL_CLOSED_GATE_NULL]"
+          "The MBO authentication system could not be started. Please contact your administrator. [FAIL_CLOSED_GATE_NULL]",
+          { isCreate, appId }
         );
         hideAllNativeFields(record);
         return event;
@@ -8050,7 +8070,8 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             renderBlockedNotice(
               uiHost,
               "Authentication Required",
-              "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]"
+              "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]",
+              { isCreate, appId }
             );
             hideAllNativeFields(record);
             return event;
@@ -8061,7 +8082,8 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       renderBlockedNotice(
         uiHost,
         "Authentication Required",
-        "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]"
+        "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]",
+        { isCreate, appId }
       );
       hideAllNativeFields(record);
       return event;
