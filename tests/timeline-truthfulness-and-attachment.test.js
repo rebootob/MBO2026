@@ -1562,6 +1562,174 @@ test('EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE: prepareAttachmentPlan th
   );
 });
 
+test('EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD: when target 1 is valid but target 2 persisted field is missing, submit is cancelled with 0 uploads', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '301' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'EX_KEY_1', name: 'ex1.pdf' }] }
+  });
+  delete recPersisted.Objective_Attachment_2;
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'new1.pdf', status: 'pending' }
+    ],
+    Objective_Attachment_2: [
+      { file: createTestBlob(), name: 'new2.pdf', status: 'pending' }
+    ]
+  };
+
+  let uploadCount = 0;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    if (String(url).includes('/k/v1/file.json')) {
+      uploadCount++;
+      return { ok: true, json: async () => ({ fileKey: `UPLOAD_KEY_${uploadCount}` }) };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: recPersisted, appId: 794, recordId: '301' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, false, 'Edit submit must return false when target 2 persisted field is missing');
+    assert.equal(uploadCount, 0, 'MULTI_TARGET_INVALID_SECOND_UPLOAD_COUNT = 0: Upload count must be exactly 0 across ALL targets');
+    assert.equal(activeUi.preparedAttachmentPlan, null, 'Prepared attachment plan must remain null');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD: when target 1 is valid but target 2 persisted field is non-array invalid object, submit is cancelled with 0 uploads', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '302' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'EX_KEY_1', name: 'ex1.pdf' }] },
+    Objective_Attachment_2: { type: 'FILE', value: null }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'target1.pdf', status: 'pending' }
+    ],
+    Objective_Attachment_2: [
+      { file: createTestBlob(), name: 'target2.pdf', status: 'pending' }
+    ]
+  };
+
+  let uploadCount = 0;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    if (String(url).includes('/k/v1/file.json')) {
+      uploadCount++;
+      return { ok: true, json: async () => ({ fileKey: `UPLOAD_KEY_${uploadCount}` }) };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: recPersisted, appId: 794, recordId: '302' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, false, 'Edit submit must return false when target 2 persisted field is invalid');
+    assert.equal(uploadCount, 0, 'Upload count must be exactly 0 when target 2 preflight validation fails');
+    assert.equal(activeUi.preparedAttachmentPlan, null, 'Prepared attachment plan must remain null');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS: when all multi-target persisted fields pass atomic preflight, uploads and plan preparation succeed for all targets', async () => {
+  const showHook = kintoneHandlers['app.record.edit.show'];
+  const editSubmitHook = kintoneHandlers['app.record.edit.submit'];
+
+  const recPersisted = getSampleRecord({
+    $id: { value: '303' },
+    Objective_Attachment_1: { type: 'FILE', value: [{ fileKey: 'K1', name: 'f1.pdf' }] },
+    Objective_Attachment_2: { type: 'FILE', value: [{ fileKey: 'K2', name: 'f2.pdf' }] }
+  });
+
+  await invokeShowHook(showHook, { type: 'app.record.edit.show', record: recPersisted });
+  await new Promise(r => setTimeout(r, 20));
+
+  const activeUi = getActiveUiInstance();
+  assert.ok(activeUi);
+  activeUi.isEmployeeVerified = true;
+  activeUi.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: createTestBlob(), name: 'new1.pdf', status: 'pending' }
+    ],
+    Objective_Attachment_2: [
+      { file: createTestBlob(), name: 'new2.pdf', status: 'pending' }
+    ]
+  };
+
+  let uploadCount = 0;
+  const mockFetch = async (url) => {
+    if (String(url).includes('/k/v1/records.json')) {
+      return { ok: true, json: async () => ({ records: [] }) };
+    }
+    if (String(url).includes('/k/v1/record.json')) {
+      return { ok: true, json: async () => ({ record: recPersisted }) };
+    }
+    if (String(url).includes('/k/v1/file.json')) {
+      uploadCount++;
+      return { ok: true, json: async () => ({ fileKey: `NEW_UPLOAD_${uploadCount}` }) };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = mockFetch;
+
+  try {
+    const submitEvent = { type: 'app.record.edit.submit', record: recPersisted, appId: 794, recordId: '303' };
+    const res = await editSubmitHook(submitEvent);
+
+    assert.equal(res, submitEvent, 'Edit submit must succeed when all targets pass preflight');
+    assert.equal(uploadCount, 2, 'Must upload files for both targets after preflight passes');
+    assert.ok(activeUi.preparedAttachmentPlan.Objective_Attachment_1);
+    assert.ok(activeUi.preparedAttachmentPlan.Objective_Attachment_2);
+    assert.deepEqual(activeUi.preparedAttachmentPlan.Objective_Attachment_1.value.map(v => v.fileKey), ['K1', 'NEW_UPLOAD_1']);
+    assert.deepEqual(activeUi.preparedAttachmentPlan.Objective_Attachment_2.value.map(v => v.fileKey), ['K2', 'NEW_UPLOAD_2']);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
 test('NO_LIVE_NETWORK_IN_TESTS: all tests run strictly against local mock transports with 0 external network calls', () => {
   assert.equal(typeof globalThis.fetch, 'function', 'Mock fetch transport must be used in unit tests');
 });

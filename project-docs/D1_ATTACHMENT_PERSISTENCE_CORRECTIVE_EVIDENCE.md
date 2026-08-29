@@ -1,11 +1,11 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 45cfe2a9e89c1272114a905bf1b1e09cece867b4
+START_HEAD                   = 2661358372702846f039f4de33ef495eb64d787a
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-CORRECTIVE_DESIGN            = STRICT FAIL-CLOSED EDIT ATTACHMENT PRESERVATION
-FOCUSED_TESTS                = PASS (36/36 attachment & timeline tests passing)
-FULL_NPM_TEST                 = PASS (888/888 unit & integration tests passing)
+CORRECTIVE_DESIGN            = MULTI-TARGET ATOMIC ATTACHMENT PREFLIGHT
+FOCUSED_TESTS                = PASS (39/39 attachment & timeline tests passing)
+FULL_NPM_TEST                 = PASS (891/891 unit & integration tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE           = 0
 LIVE_DEPLOY_OCCURRED         = NO
@@ -28,26 +28,27 @@ MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
   - Restored all 3 Timeline regression tests (`TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`, `TIMELINE_PREVIEW_FIXTURES_ALLOWED`, `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`).
   - Restored all 9 Attachment UI display and control tests (`ATTACHMENT_READONLY_ZERO_FILES`, `ATTACHMENT_READONLY_SINGLE_FILE`, `ATTACHMENT_READONLY_MULTIPLE_FILES`, `ATTACHMENT_LIVE_MODE_NO_PREVIEW_MOCK_LEAK`, `ATTACHMENT_PENDING_FILE_STATE`, `ATTACHMENT_REAL_REMOVE_BUTTON_CLICK_EVENT`, etc.).
   - Added new real-handler tests using separate submit event record objects (`REAL_HANDLER_REMOVE_DESIRED_STATE_SEPARATE_SUBMIT_RECORD`, `REAL_HANDLER_REMOVE_PLUS_ADD_EXACT_DESIRED_STATE`, `SELF_FINAL_FALLBACK_DESIRED_STATE`, etc.).
-  - Focused test suite increased to **36 / 36 PASS**. Full repository test suite increased to **888 / 888 PASS**. Zero test reduction.
+  - Focused test suite increased to **39 / 39 PASS**. Full repository test suite increased to **891 / 891 PASS**. Zero test reduction.
 
 ## 2. Source Code Ownership & Changes
 
-- [src/main-mbo-app.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/main-mbo-app.js):
-  - In Edit mode (`!isCreate`), checks if attachment changes actually exist (`hasPendingOrDirtyAttachments()`).
-  - If zero attachment changes exist, Edit Save proceeds without requiring GET Record.
-  - If attachment changes exist, requires mandatory GET Record. Fails closed before file upload if GET Record throws, returns null, or fails.
 - [src/services/mbo-attachment-service.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/services/mbo-attachment-service.js):
-  - In Edit mode (`options.isEdit`), throws `PERSISTED_RECORD_REQUIRED_FOR_EDIT` / `PERSISTED_FIELD_MISSING_FOR_EDIT` if `persistedRecord` or target FILE field array is missing.
-  - Never falls back to `event.record` attachment values.
+  - Refactored `prepareAttachmentPlan` into two distinct phases: Phase 1 (Canonical Resolution & Atomic Persisted-State Preflight Validation) and Phase 2 (File Upload & Plan Construction).
+  - Resolves `Self_Attachment_n -> Final_Attachment_n` before preflight.
+  - In Phase 1, validates all target fields across `dirtyFieldsSet`. If target 2 (or 3, etc.) is missing or invalid in `persistedRecord`, Phase 1 throws immediately before Phase 2 ever calls `uploadKintoneFile`.
+  - Ensures `uploadCount = 0` across all target fields on preflight failure.
+- [src/main-mbo-app.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/main-mbo-app.js):
+  - Orchestrates mandatory persisted GET Record for Edit mode when attachment changes exist (`hasPendingOrDirtyAttachments()`).
+  - Fails closed before upload if GET Record fails or returns null.
 - [src/ui/employee-part-a-ui.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/src/ui/employee-part-a-ui.js):
-  - Added `hasPendingOrDirtyAttachments()` helper to detect whether pending files, explicit removals, or dirty attachment fields exist.
+  - Added `hasPendingOrDirtyAttachments()` helper to detect pending files, explicit removals, or dirty attachment fields.
 - [tests/timeline-truthfulness-and-attachment.test.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/tests/timeline-truthfulness-and-attachment.test.js):
-  - Added 6 new fail-closed tests covering GET failure, GET null, missing target FILE field, 0 uploads on failure path, normal save with zero attachment changes, and no fallback to submit values.
+  - Added 3 new multi-target atomic preflight tests (`EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD`, `EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD`, `EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS`).
 - [config/schema-spec.js](file:///c:/Users/allda/Desktop/Dev/git/MBO2026/config/schema-spec.js): Defined `Objective_Attachment_1..10` optional `FILE` fields.
 
 ## 3. Test & Build Verification Results
 
-- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **36/36 PASS (100%)**
+- **Focused Test Suite (`node tests/timeline-truthfulness-and-attachment.test.js`):** **39/39 PASS (100%)**
   - `TIMELINE_LIVE_NO_DATA_ZERO_FAKE_EVENTS`: PASS
   - `TIMELINE_PREVIEW_FIXTURES_ALLOWED`: PASS
   - `TIMELINE_LIVE_AUTHORITATIVE_EVENTS_ONLY`: PASS
@@ -83,8 +84,11 @@ MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
   - `EDIT_PERSISTED_TARGET_FILE_FIELD_MISSING_FAILS_CLOSED`: PASS
   - `EDIT_NO_ATTACHMENT_CHANGE_DOES_NOT_REQUIRE_PERSISTED_ATTACHMENT_GET`: PASS
   - `EDIT_NEVER_FALLS_BACK_TO_SUBMIT_ATTACHMENT_VALUE`: PASS
+  - `EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_MISSING_FAILS_BEFORE_ANY_UPLOAD`: PASS
+  - `EDIT_MULTI_TARGET_SECOND_PERSISTED_FIELD_INVALID_FAILS_BEFORE_ANY_UPLOAD`: PASS
+  - `EDIT_MULTI_TARGET_PREFLIGHT_SUCCESS_THEN_UPLOADS_ALL_TARGETS`: PASS
   - `NO_LIVE_NETWORK_IN_TESTS`: PASS
-- **Repository Full Test Suite (`npm test`):** **888/888 PASS (100%)**
+- **Repository Full Test Suite (`npm test`):** **891/891 PASS (100%)**
 - **Candidate Bundle Build (`npm run ui:build`):** `PASS` (`dist/mbo-employee-app.js` & `dist/mbo-employee.css` generated cleanly)
 - **Module-Aware Build-Only Check (`node --env-file=.env.local scripts/kintone/deploy-custom-ui.js --build-only`):** `PASS` (0 Kintone network calls)
 
@@ -213,6 +217,22 @@ CHANGED_FILES                             = src/main-mbo-app.js, src/services/mb
 REVIEW_BLOCKER_FIXED                      = Strict fail-closed behavior for Edit Attachment changes. If attachments change during Edit, GET Record is mandatory. If GET Record throws, returns null, or misses target FILE field, submit is cancelled before any file upload occurs. If zero attachment changes exist, Edit Save proceeds normally without invoking GET Record. Never falls back to edit.submit attachment values.
 FOCUSED_ATTACHMENT_TESTS                  = PASS (36/36 attachment & timeline tests passing)
 FULL_NPM_TEST                             = PASS (888/888 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+LIVE_KINTONE_WRITE                       = 0
+LIVE_DEPLOY_OCCURRED                     = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 10. App794 Edit Attachment Atomic Preflight Corrective Evidence
+
+```text
+EXECUTION_START_HEAD                      = 2661358372702846f039f4de33ef495eb64d787a
+CHANGED_FILES                             = src/services/mbo-attachment-service.js, tests/timeline-truthfulness-and-attachment.test.js, dist/mbo-employee-app.js
+ATOMIC_PREFLIGHT_DESIGN                   = Refactored prepareAttachmentPlan into Phase 1 (Canonical Resolution & Atomic Preflight Validation across all target fields) and Phase 2 (File Upload & Plan Construction). In Phase 1, validates all target fields before calling uploadKintoneFile. If target 2 (or 3, etc.) is missing or invalid in persistedRecord, Phase 1 throws immediately before Phase 2 ever calls uploadKintoneFile.
+MULTI_TARGET_INVALID_SECOND_UPLOAD_COUNT  = 0
+FOCUSED_ATTACHMENT_TESTS                  = PASS (39/39 attachment & timeline tests passing)
+FULL_NPM_TEST                             = PASS (891/891 unit & integration tests passing)
 NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
 MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE                       = 0

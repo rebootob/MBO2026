@@ -75,15 +75,31 @@
       ...options.dirtyFields || [],
       ...options.removedFields || []
     ]);
+    const targetMap = /* @__PURE__ */ new Map();
     for (const fieldCode of dirtyFieldsSet) {
-      const pendingItems = pendingAttachments[fieldCode] || [];
       let targetCode = fieldCode;
       if (!record[targetCode] && targetCode.startsWith("Self_Attachment_")) {
         const altCode = "Final_Attachment_" + targetCode.slice("Self_Attachment_".length);
-        if (record.hasOwnProperty(altCode) || desiredSavedFilesMap[altCode] !== void 0) {
+        if (record && Object.prototype.hasOwnProperty.call(record, altCode) || options.persistedRecord && Object.prototype.hasOwnProperty.call(options.persistedRecord, altCode) || desiredSavedFilesMap[altCode] !== void 0) {
           targetCode = altCode;
         }
       }
+      if (options.isEdit) {
+        if (!options.persistedRecord || typeof options.persistedRecord !== "object") {
+          throw new Error(`PERSISTED_RECORD_REQUIRED_FOR_EDIT: Missing or invalid persisted record for field ${targetCode}`);
+        }
+        if (desiredSavedFilesMap[fieldCode] === void 0 && desiredSavedFilesMap[targetCode] === void 0) {
+          const persistedField = options.persistedRecord[targetCode];
+          if (!persistedField || !Array.isArray(persistedField.value)) {
+            throw new Error(`PERSISTED_FIELD_MISSING_FOR_EDIT: Persisted record missing FILE field array for ${targetCode}`);
+          }
+        }
+      }
+      targetMap.set(fieldCode, targetCode);
+    }
+    for (const fieldCode of dirtyFieldsSet) {
+      const pendingItems = pendingAttachments[fieldCode] || [];
+      const targetCode = targetMap.get(fieldCode) || fieldCode;
       let savedFiles;
       let modified = false;
       if (desiredSavedFilesMap[fieldCode] !== void 0) {
@@ -94,13 +110,7 @@
         modified = true;
       } else {
         if (options.isEdit) {
-          if (!options.persistedRecord || typeof options.persistedRecord !== "object") {
-            throw new Error(`PERSISTED_RECORD_REQUIRED_FOR_EDIT: Missing or invalid persisted record for field ${targetCode}`);
-          }
           const persistedField = options.persistedRecord[targetCode];
-          if (!persistedField || !Array.isArray(persistedField.value)) {
-            throw new Error(`PERSISTED_FIELD_MISSING_FOR_EDIT: Persisted record missing FILE field array for ${targetCode}`);
-          }
           savedFiles = [...persistedField.value];
         } else {
           const sourceRecord = options.persistedRecord || record;

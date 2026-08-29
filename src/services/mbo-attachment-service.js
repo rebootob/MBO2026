@@ -82,16 +82,38 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
     ...(options.removedFields || [])
   ]);
 
-  for (const fieldCode of dirtyFieldsSet) {
-    const pendingItems = pendingAttachments[fieldCode] || [];
+  const targetMap = new Map();
 
+  // Phase 1: Canonical resolution & atomic persisted-state preflight validation (BEFORE any upload)
+  for (const fieldCode of dirtyFieldsSet) {
     let targetCode = fieldCode;
     if (!record[targetCode] && targetCode.startsWith('Self_Attachment_')) {
       const altCode = 'Final_Attachment_' + targetCode.slice('Self_Attachment_'.length);
-      if (record.hasOwnProperty(altCode) || (desiredSavedFilesMap[altCode] !== undefined)) {
+      if ((record && Object.prototype.hasOwnProperty.call(record, altCode)) ||
+          (options.persistedRecord && Object.prototype.hasOwnProperty.call(options.persistedRecord, altCode)) ||
+          (desiredSavedFilesMap[altCode] !== undefined)) {
         targetCode = altCode;
       }
     }
+
+    if (options.isEdit) {
+      if (!options.persistedRecord || typeof options.persistedRecord !== 'object') {
+        throw new Error(`PERSISTED_RECORD_REQUIRED_FOR_EDIT: Missing or invalid persisted record for field ${targetCode}`);
+      }
+      if (desiredSavedFilesMap[fieldCode] === undefined && desiredSavedFilesMap[targetCode] === undefined) {
+        const persistedField = options.persistedRecord[targetCode];
+        if (!persistedField || !Array.isArray(persistedField.value)) {
+          throw new Error(`PERSISTED_FIELD_MISSING_FOR_EDIT: Persisted record missing FILE field array for ${targetCode}`);
+        }
+      }
+    }
+    targetMap.set(fieldCode, targetCode);
+  }
+
+  // Phase 2: File uploads & plan construction (ONLY runs after Phase 1 preflight 100% passes)
+  for (const fieldCode of dirtyFieldsSet) {
+    const pendingItems = pendingAttachments[fieldCode] || [];
+    const targetCode = targetMap.get(fieldCode) || fieldCode;
 
     let savedFiles;
     let modified = false;
@@ -104,13 +126,7 @@ export async function prepareAttachmentPlan(record, pendingAttachments = {}, opt
       modified = true;
     } else {
       if (options.isEdit) {
-        if (!options.persistedRecord || typeof options.persistedRecord !== 'object') {
-          throw new Error(`PERSISTED_RECORD_REQUIRED_FOR_EDIT: Missing or invalid persisted record for field ${targetCode}`);
-        }
         const persistedField = options.persistedRecord[targetCode];
-        if (!persistedField || !Array.isArray(persistedField.value)) {
-          throw new Error(`PERSISTED_FIELD_MISSING_FOR_EDIT: Persisted record missing FILE field array for ${targetCode}`);
-        }
         savedFiles = [...persistedField.value];
       } else {
         const sourceRecord = options.persistedRecord || record;
