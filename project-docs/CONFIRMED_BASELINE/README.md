@@ -37,7 +37,9 @@ Temporary status, blockers, one-time commands, pending-review claims, transient 
 - `AI_OPERATING_GOVERNANCE.md` — confirmed Multi-AI role model, Antigravity low-credit policy, Control Center/Active Task model, mandatory baseline-promotion rule, reusable Kintone skill-extraction rule, and review/new-chat governance.
 - `SOURCE_CODE_ARCHITECTURE.md` — confirmed modular JavaScript architecture, feature/menu separation, main-entry responsibilities, controlled decomposition sequence, generated-dist rules, and low-credit Antigravity execution pattern for refactoring.
 - `DOCUMENT_CONTROL.md` — confirmed lean document policy: Core Read Set, task-triggered documents, and default-ignore historical/superseded files.
-- `D1_AUTH_SECURITY.md` — confirmed Kintone-only D1 authentication/security architecture, App801 credential model, page-memory auth, lockout/password rules, Employee Self gate, dedicated `MBO_EMPLOYEE_ACCESS` group model, App801 ACL target, and D1 UAT closure rule.
+- `D1_AUTH_SECURITY.md` — confirmed D1 Auth Bridge architecture, App801 private credential model, PBKDF2/lockout/password rules, Bridge HTTP/security contract, Employee-Self identity binding, shared Kintone account boundary, and final D1 UAT requirements.
+- `D1_SESSION_CONTINUITY.md` — confirmed 8-hour same-tab opaque session model, Bridge-based App801 session validation, Credential_Version binding, logout/password rotation, and session UAT requirements.
+- `D1_EMPLOYEE_SELF_MY_MBO.md` — confirmed My MBO ownership/history/status/no-delete rules.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights, and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
 - `ROUTING_WORKFLOW.md` — confirmed App795 routing model and workflow rules.
