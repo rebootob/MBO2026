@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — D1 PASSWORD RESET CORE R1 SOURCE ACCEPTED; NEW USER LIVE REGRESSION EVIDENCE OPENS APP794 WP2 R4 ERROR-STATE BACK NAV SOURCE CORRECTIVE
+> Updated: 2026-08-30 — APP794 WP2 R4 COMMIT 4852915 REVIEW = CORRECTIVE; FATAL AUTHENTICATED CREATE ERROR MUST PROVIDE BACK TO MY MBO
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source = independently ACCEPTED. App794 Rev57 remains accepted for prior WP2 R3 normal UI, but new user screenshot proves an uncovered fatal/error path where Back to My MBO is missing. WP2 R4 source-only corrective is now assigned. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source remains independently ACCEPTED. App794 Rev57 prior WP2 R3 scope remains accepted. WP2 R4 error-state Back corrective is still open because R1 commit fixed Detail/Edit error states but did not fix the exact authenticated Create duplicate/profile-resolution error shown by the user. R4 Corrective R2 is assigned source-only. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -33,11 +33,9 @@ INDEPENDENT_GIT_REVIEW      = PASS
 PRIOR_USER_RUNTIME_UAT      = PASS FOR WP2 R3 TARGET AREAS
 ```
 
-Important status refinement:
-- Rev57 remains the accepted known-good Live baseline for My MBO structured table, normal Detail/Edit Back navigation, Native Comment Mirror and the previously accepted R3 scope.
-- New screenshot evidence on 2026-08-30 proves an **additional uncovered fatal/error-state navigation defect**. This does not invalidate every prior R3 acceptance, but it opens a new narrow corrective R4.
+Rev57 remains the known Live baseline. No R4 source commit has been deployed.
 
-## 3. D1 Password Reset Core R1 — Accepted
+## 3. D1 Password Reset Core R1 — Accepted Source
 
 ```text
 R1_SOURCE_COMMIT            = e77c891407d5ccfa3d52401a28922f37a2b1b959
@@ -47,63 +45,89 @@ R1_LIVE_APP801_WRITE        = NONE
 R1_STATUS                   = D1_PASSWORD_RESET_CORE_R1_SOURCE_ACCEPTED
 ```
 
-Accepted reset primitive remains source-only and is not part of the current UI corrective.
+Do not reopen Password Reset R1 during the UI corrective.
 
-## 4. New User Regression Evidence — App794 Error Screen
+## 4. WP2 R4 Independent Review — Commit 4852915
 
-User screenshot on 2026-08-30 shows an existing App794 record page with:
-- authenticated UI state / Logout visible;
-- fatal bilingual system error message (preparation/render failure class);
-- **no visible `← กลับหน้า My MBO / Back to My MBO` navigation**.
+Reviewed commit:
 
-This conflicts with the established UI runtime rule that existing Detail/Edit Back navigation must survive fail-closed/early-return states.
+`4852915c13c4edf58306b1f751c99d25c0c88e69`
 
-Existing source evidence:
-- canonical Back component is `src/ui/employee-record-navigation.js`;
-- normal `EmployeePartAUI.render()` attempts to mount Back immediately after root creation for non-Create pages;
-- therefore the defect is treated as an uncovered error/fallback orchestration path or equivalent runtime path, not authorization to duplicate/rewrite the Back component.
+Decision:
 
-Required user-facing behavior:
+`CORRECTIVE`
+
+What is accepted from that commit:
+- narrow scope only (`src/main-mbo-app.js`, focused integration test, generated dist);
+- canonical `EmployeeRecordNavigation` is reused rather than copied;
+- existing Detail/Edit blocking states receive one Back navigation control;
+- render-exception recovery was improved for existing record pages;
+- no CSS, Password Reset, App800, D7, Auth Bridge or control-doc executor changes occurred;
+- no Live deploy/write evidence exists.
+
+Why it is not PASS:
+- the user's screenshot is an **authenticated Create flow** (`/k/794/edit`) whose automatic Employee profile resolution/duplicate check fails;
+- current source calls `renderBlockedNotice(..., { isCreate: true })` for that fatal catch;
+- the helper maps Create to no Back navigation;
+- the new integration test explicitly asserts that a Create error has zero Back bars;
+- therefore the exact user-visible defect remains unresolved.
+
+This mismatch originated from the prior Control Plane task wording that incorrectly generalized `Create = no Back` to every Create error state. The task has been corrected; this is not treated as executor noncompliance.
+
+## 5. Confirmed Recovery-Navigation Rule
+
+Current required behavior:
 
 ```text
-Existing Detail/Edit normal state = exactly 1 Back control
-Existing Detail/Edit fatal/error state = exactly 1 Back control
-Create = 0 Back controls
-Label = ← กลับหน้า My MBO / Back to My MBO
-Target = /k/794/ (same tab)
+Normal successful Create                         = 0 Back controls
+Create auth/login-required before authentication = 0 Back controls
+Authenticated Create fatal/autoload/duplicate error = exactly 1 Back control
+Normal existing Detail/Edit                      = exactly 1 Back control
+Existing Detail/Edit fatal/blocking error         = exactly 1 Back control
 ```
 
-The error itself must remain fail-closed and visible. Back navigation must perform no Kintone write and must not alter auth/session/workflow state.
+Canonical label:
 
-## 5. Current Active Task
+`← กลับหน้า My MBO / Back to My MBO`
+
+Target:
+
+`/k/794/` in the same tab.
+
+Back navigation is recovery/navigation only. It must not save, mutate Kintone records, change workflow, or alter auth/session state.
+
+## 6. Current Active Task
 
 ```text
-ACTIVE_TASK   = APP794 WP2 R4 ERROR-STATE BACK NAV / SOURCE-ONLY
+ACTIVE_TASK   = APP794 WP2 R4 ERROR-STATE BACK NAV / CORRECTIVE R2 SOURCE-ONLY
 OWNER         = ANTIGRAVITY
 LIVE_WRITE    = FORBIDDEN
 DEPLOY        = FORBIDDEN
-SOURCE_SCOPE  = exact UI navigation/fallback files + focused tests only
+PRIMARY_GAP   = AUTHENTICATED CREATE DUPLICATE/PROFILE-RESOLUTION FATAL SCREEN HAS NO BACK
 ```
 
-Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
+Exact execution packet is in `project-docs/AI_ACTIVE_TASK.md`.
 
-## 6. Current Gate
+Preferred implementation boundary is to make recovery navigation an explicit error-state option rather than deriving it solely from `isCreate`.
+
+## 7. Current Gate
 
 ```text
-CURRENT_GATE                  = APP794 WP2 R4 ERROR-STATE BACK NAV SOURCE IMPLEMENTATION / PENDING CHATGPT REVIEW
-CURRENT_MODE                  = SOURCE-ONLY EXECUTION / NO LIVE WRITE
+CURRENT_GATE                  = APP794 WP2 R4 R2 FATAL CREATE BACK SOURCE CORRECTIVE / PENDING EXECUTION THEN CHATGPT REVIEW
+CURRENT_MODE                  = SOURCE-ONLY / NO LIVE WRITE
+R4_R1_COMMIT                  = 4852915c13c4edf58306b1f751c99d25c0c88e69
+R4_R1_REVIEW                  = CORRECTIVE
 D1_PASSWORD_RESET_CORE_R1     = SOURCE PASS / ACCEPTED
 WP2_R3_PRIOR_SCOPE            = ACCEPTED / DO NOT BROADLY REOPEN
-WP2_R4_ERROR_NAV              = NEW REGRESSION CORRECTIVE
 D1_OVERALL                    = IN PROGRESS
 LIVE_DEPLOY_AUTHORIZED        = NO
 ACTIVE_KINTONE_WRITE_AUTH     = NONE
 APP801_LIVE_WRITE             = NO
 ROLLBACK_AUTH                 = NONE
-NEXT_OWNER                    = ANTIGRAVITY FOR EXACT R4 SOURCE PACKET
+NEXT_OWNER                    = ANTIGRAVITY FOR EXACT R4 R2 SOURCE PACKET
 ```
 
-## 7. Authorization Ledger
+## 8. Authorization Ledger
 
 ```text
 PRIOR_AUTHORIZATION_ID       = APP794-D1-WP2-R3-DEPLOY-20260829-01
@@ -114,4 +138,4 @@ ACTIVE_DEPLOY_AUTH           = NONE
 ROLLBACK_AUTH                = NONE
 ```
 
-No source acceptance or user screenshot authorizes a Live deploy.
+No source acceptance, screenshot, or corrective packet authorizes a Live deploy.
