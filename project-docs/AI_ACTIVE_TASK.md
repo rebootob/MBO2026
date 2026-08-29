@@ -1,52 +1,68 @@
-# AI ACTIVE TASK — D1 PASSWORD RESET CORE R1 / SOURCE-ONLY COMPLETED
+# AI ACTIVE TASK — D1 PASSWORD RESET CORE R1 ACCEPTED / HOLD
 
-Mode: **SOURCE EXECUTION COMPLETED — NO LIVE WRITE / PENDING CHATGPT REVIEW**  
-Branch: `ai/antigravity-wp002c`  
+Mode: **CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION / NO LIVE WRITE / NO DEPLOY**  
+Branch: `ai/antigravity-wp002c`
 
-## 1. Summary of Completed Implementation
-
-Implemented `resetMboPassword({ employeeCode })` primitive in `MboKintoneAuthAdapter` (`src/ui/mbo-kintone-auth-adapter.js`) and added 8 focused test suites (10 test assertions) in `tests/mbo-kintone-auth-adapter.test.js`:
-
-1. **Exact App801 update payload:**
-   - `Password_Hash`: `pbkdf2$100000$<saltHex>$<hashHex>` generated for exact `Employee_Code`
-   - `Force_Password_Change`: `YES`
-   - `Failed_Attempts`: `0`
-   - `Locked_Until`: `null`
-   - `Credential_Version`: `cred.credentialVersion + 1`
-   - `Session_Token_Hash`: `null`
-   - `Session_Issued_At`: `null`
-   - `Session_Expires_At`: `null`
-   - `Session_Credential_Version`: `null`
-   - `Session_Kintone_User`: `null`
-   - `Password_Changed_At`: `now().toISOString()`
-2. **Safety & Fail-Closed Rules:**
-   - `Account_Status` is absent from update payload (preserves `ACTIVE`, `LOCKED`, or `DISABLED`).
-   - Permanent `LOCKED` or `DISABLED` credential remains `LOCKED` or `DISABLED` after reset (subsequent login is denied).
-   - Temporary `Locked_Until` on `ACTIVE` account is cleared (`null`).
-   - Missing credential, duplicate credential, or malformed `Credential_Version` fails closed with `{ status: 'CREDENTIAL_DENIED', reason: ... }` and zero updates.
-   - Return object `{ status: 'PASSWORD_RESET', employeeCode }` contains zero password/hash/token/session secrets.
-   - Supported canonical `Employee_Code` formats (`50.03`, `50.02`, `0050_2`) work properly.
-   - Malformed/spaced `Employee_Code` rejects cleanly with 0 API calls.
-
-## 2. Verification Results
+## Accepted Source Result
 
 ```text
-node --test tests/mbo-kintone-auth-adapter.test.js                             = 40/40 PASS
-node --test tests/mbo-session-manager.test.js tests/mbo-kintone-login-gate.test.js = 39/39 PASS
-npm run ui:build                                                                = PASS
-node --test tests/classic-bundle.test.js tests/safety-guard.test.js            = 223/223 PASS
+R1_SOURCE_COMMIT        = e77c891407d5ccfa3d52401a28922f37a2b1b959
+FEATURE                 = D1 MBO Password Reset Core
+CANONICAL_SOURCE_OWNER  = src/ui/mbo-kintone-auth-adapter.js
+FOCUSED_TEST            = tests/mbo-kintone-auth-adapter.test.js
+GENERATED_DIST          = dist/mbo-employee-app.js
+INDEPENDENT_CHATGPT_REVIEW = PASS
+LIVE_WRITE              = NONE
+DEPLOY                  = NONE
 ```
 
-## 3. Current Status & Ceiling
+The accepted `resetMboPassword({ employeeCode })` source primitive:
+- resets the temporary password to exact canonical `Employee_Code` using PBKDF2-SHA256 / 100000;
+- sets `Force_Password_Change = YES`;
+- resets `Failed_Attempts = 0` and clears temporary `Locked_Until`;
+- increments positive-integer `Credential_Version` by exactly 1;
+- clears all active App801 `Session_*` fields;
+- preserves `Account_Status` by omitting it from the update payload;
+- fails closed for missing/duplicate/malformed credential state;
+- returns no password/hash/token/session secret.
 
-Status: **`D1_PASSWORD_RESET_CORE_R1_IMPLEMENTED_PENDING_CHATGPT_REVIEW`**
+## Review Notes
 
-## 4. Strictly Forbidden
+- Source implementation conforms to `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` for the R1 reset-core scope.
+- Focused committed tests cover the required R1 contracts.
+- Generated bundle contains the reviewed reset primitive matching the source implementation.
+- GitHub commit status checks are not present for this commit; do not represent CI as independently proven.
+- Antigravity modified Control Plane documents during execution even though the task did not authorize those document changes. ChatGPT normalized the documents during independent review. Future executors must not modify `AI_CONTROL_CENTER.md` or replace/close `AI_ACTIVE_TASK.md` unless explicitly instructed by the Control Plane.
 
-- NO Live Kintone POST/PUT/DELETE
-- NO deploy
-- NO ACL/schema/layout/process modifications
-- NO modification to `src/services/mbo-password-service.js`
-- NO modification to `services/mbo-auth-bridge/`
-- NO reopening of WP2 R3
-- NO self-certify PASS
+## Accepted Live Baseline — UNCHANGED
+
+```text
+DEPLOYED_SOURCE_COMMIT = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
+LIVE_REVISION          = 57
+LIVE_JS_IDENTITY       = ac22a56cb9d78001384241fe12745f7a2da3da84
+LIVE_CSS_IDENTITY      = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+CURRENT_LIVE_RUNTIME   = ACCEPTED KNOWN-GOOD
+```
+
+WP2 R3 remains CLOSED. No prior authorization may be reused.
+
+## Hold / Next Boundary
+
+R1 source PASS does **not** close D1 and does **not** authorize production password reset.
+
+The next D1 reset stage still requires a new Control Plane task for the authorized HR + `admin-form` reset surface, including exact authority evidence, explicit target Employee_Code confirmation, user-visible success/failure behavior, deployment gate, Live read-back/UAT and prior-session invalidation proof.
+
+Do NOT start that stage automatically.
+
+Do NOT:
+- perform Live Kintone writes;
+- deploy App794/App800 customization;
+- change App794/App800/App801 schema/layout/ACL/process;
+- change App801 records;
+- modify D7 Admin Support Center;
+- revive Auth Bridge;
+- reopen WP2 R3;
+- execute D2-D7 automatically.
+
+Maximum current status:
+`D1_PASSWORD_RESET_CORE_R1_SOURCE_ACCEPTED_HOLD`
