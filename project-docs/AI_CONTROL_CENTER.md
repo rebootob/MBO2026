@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — REV56 USER UAT FAIL / WP2 R3 RUNTIME UI DIAGNOSTIC + CORRECTIVE OPEN
+> Updated: 2026-08-29 — REV56 USER UAT FAIL / WP2 R3 CSS RUNTIME ROOT-CAUSE PROVEN / TABLE UI CORRECTIVE OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🔴 App794 Live Revision 56 technical transport/readback passed, but **USER UAT FAILED**. Comment data now loads successfully, proving the Kintone Comment GET contract fix works. Remaining failures: My MBO presentation is still visually flat/not table-like, Back-to-My-MBO is not accepted as visible/prominent in Live runtime, and Comment Mirror presentation does not match the accepted reference layout. WP2 R3 is open as runtime diagnostic + source/test/dist corrective only. |
+| D1 | 🔴 App794 Live Revision 56 technical transport/readback passed, but **USER UAT FAILED**. Comment data loading is now PASS. User runtime Console proves My MBO, Back, and Comment DOM elements exist, but the feature CSS rules are not being applied at runtime. WP2 R3 source/test/dist corrective is open. User also clarified the desired presentation: My MBO must be a structured table, and Comment Mirror must use a compact structured table matching the supplied reference style. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -29,82 +29,86 @@ LIVE_TOPOLOGY             = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile 
 LIVE_JS_IDENTITY          = 79787f75a1edf0721d7d6ac71216a1366599f3e0
 LIVE_CSS_IDENTITY         = b6f77930256378cbe1e190932103dfecea174fbc
 EXECUTOR_TECH_READBACK    = PASS / EXACT PAIR
-INDEPENDENT_GIT_REVIEW    = PASS
 USER_RUNTIME_UAT          = FAIL
 ```
 
-Rev56 is **not accepted known-good**. Do not describe WP2 as complete.
+Rev56 is not accepted known-good. No Live authorization is active.
 
-## 3. User UAT Evidence — Rev56
+## 3. Runtime Diagnostic — PROVEN BY USER CONSOLE
 
-1. **My MBO Home — FAIL**
-   - Data/actions render, but layout remains visually flat and text-like.
-   - User expects a clearly structured table/card presentation, not loose text.
-   - Source contains `.mbo-record-card-*` class hooks and CSS rules, but screenshot strongly suggests those external CSS rules are not being applied as intended at runtime.
-
-2. **Back to My MBO — FAIL**
-   - User reports the Back button is not visibly present/accepted in Live Detail runtime.
-   - Source contains `EmployeeRecordNavigation` and mounts it before early returns, therefore runtime DOM/computed-style evidence is required before changing implementation again.
-
-3. **Comment Mirror — DATA PASS / PRESENTATION FAIL**
-   - Native comments now load successfully; the prior `Missing or invalid input` runtime failure is resolved.
-   - Current mirror presentation is plain stacked text.
-   - User requires a compact structured presentation aligned with the supplied reference: clean bilingual section header, read-only notice, compact Refresh action, structured comment rows/table/card, and seamless visual relationship to the Workflow Action Timeline below.
-
-## 4. Deployment Authorization Ledger
-
+### My MBO index
 ```text
-AUTHORIZATION_ID       = APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01
-AUTHORIZATION_STATUS   = CONSUMED / CLOSED
-DEPLOY_ATTEMPTS        = 1 / USED
-SECOND_DEPLOY          = NOT AUTHORIZED
-ROLLBACK               = NOT AUTHORIZED
+CARD_LIST_EXISTS     = true
+CARD_EXISTS          = true
+CARD_LIST_DISPLAY    = block      # expected grid from source CSS
+CARD_PADDING         = 0px        # expected ~18px
+CARD_BORDER_TOP      = 0px none   # expected visible blue top border
 ```
 
-No Live authorization remains active.
+Meaning: JS DOM/class hooks exist. The new feature CSS is not active in browser computed style.
 
-## 5. WP2 R3 Required Diagnostic Before More UI Guessing
-
-The next source corrective must distinguish runtime CSS/DOM causes first.
-
-Required My MBO browser evidence:
+### Existing Detail
 ```text
-MY_MBO_CARD_LIST_EXISTS
-MY_MBO_CARD_EXISTS
-MY_MBO_CARD_LIST_COMPUTED_DISPLAY
-MY_MBO_CARD_COMPUTED_PADDING
-MY_MBO_CARD_COMPUTED_BORDER_TOP
-MY_MBO_FY_COMPUTED_BACKGROUND
-MY_MBO_ACTION_COMPUTED_BACKGROUND
+MBO_ROOT_EXISTS      = true
+BACK_EXISTS          = true
+BACK_TEXT            = ← กลับหน้า My MBO / Back to My MBO
+BACK_BACKGROUND      = transparent/default instead of navy button style
+COMMENT_EXISTS       = true
+COMMENT_PADDING      = 0px
+COMMENT_BORDER       = 0px / none
 ```
 
-Required Detail browser evidence:
-```text
-MBO_ROOT_EXISTS
-BACK_ELEMENT_EXISTS
-BACK_TEXT
-BACK_COMPUTED_DISPLAY
-BACK_COMPUTED_BACKGROUND
-COMMENT_MIRROR_EXISTS
-COMMENT_COMPUTED_PADDING
-COMMENT_COMPUTED_BORDER
-```
+Meaning: Back is not missing from JS. Comment container is not missing. Both are present but unstyled because their CSS rules are not being applied.
 
-Interpretation:
-- DOM exists + computed styles are default => runtime stylesheet application/load problem; do not keep tweaking CSS selectors blindly.
-- DOM/class missing => runtime rendering/wiring problem.
-- DOM + expected styles exist but user rejects UX => redesign presentation while preserving semantics.
+This changes the diagnosis:
+- DO NOT rewrite Back wiring unless a regression test proves it is broken.
+- DO NOT solve by copying all feature CSS into inline styles.
+- Fix the stylesheet parse/scope/cascade/runtime applicability problem at its source.
+
+## 4. User-Accepted Presentation Direction
+
+### My MBO
+User explicitly wants a **table**, not the current card/loose-text presentation.
+Required columns:
+1. Fiscal Year
+2. Status
+3. Record Key
+4. Action
+
+Preserve Create New MBO above the table, Employee_Code self filter, Fiscal_Year desc, exact record URLs, Completed -> View History, non-completed -> Open MBO, one auth bar, zero Delete.
+
+### Back to My MBO
+Existing DOM behavior is correct. After CSS is fixed, it must visibly render as a prominent blue Back button/bar at the top of Detail/Edit. Create remains absent.
+
+### Comment Mirror
+Comment DATA is PASS and must not regress. Presentation must become a compact read-only table aligned with the Workflow Action Timeline visual language.
+Required columns:
+1. #
+2. ผู้แสดงความคิดเห็น / Author
+3. วัน-เวลา / Date & Time
+4. ความคิดเห็น / Comment
+
+Header must keep bilingual title/read-only notice and compact Refresh action. Empty state must be a clean full-width table row. No write/reply/delete controls.
+
+## 5. Deployment Authorization Ledger
+
+```text
+APP794-D1-WP2-CORRECTIVE-R2-DEPLOY-20260829-01 = CONSUMED / CLOSED
+SECOND_DEPLOY                                  = NOT AUTHORIZED
+ROLLBACK                                       = NOT AUTHORIZED
+```
 
 ## 6. Current Gate
 
 ```text
-CURRENT_GATE                  = WP2 R3 RUNTIME UI DIAGNOSTIC + CORRECTIVE
-CURRENT_MODE                  = NO LIVE WRITE / NO DEPLOY
+CURRENT_GATE                  = WP2 R3 CSS RUNTIME FIX + TABLE UI CORRECTIVE
+CURRENT_MODE                  = SOURCE / TEST / DIST ONLY — NO LIVE WRITE
 LIVE_APP794_REVISION          = 56 / USER UAT FAIL
 COMMENT_DATA_LOAD             = PASS
-MY_MBO_PRESENTATION           = FAIL
-BACK_RUNTIME_UAT              = FAIL
-COMMENT_PRESENTATION          = FAIL
+CSS_FEATURE_RULE_APPLICATION  = FAIL / RUNTIME PROVEN
+MY_MBO_TABLE_UI               = REQUIRED
+BACK_DOM                      = PASS / STYLE FAIL
+COMMENT_TABLE_UI              = REQUIRED
 LIVE_DEPLOY_AUTHORIZED        = NO
 APP794_RECORD_WRITE           = NO
 APP794_FORM_SCHEMA_LAYOUT     = NO
@@ -115,4 +119,4 @@ COPY_PREVIOUS_MBO             = NO
 D2_D7_EXECUTION               = NO
 ```
 
-Do not create another Live candidate until runtime DOM/computed-style evidence is captured and the R3 corrective source is independently reviewed.
+Do not create another Live deploy task until the R3 candidate is independently reviewed and a fresh explicit user authorization is given.
