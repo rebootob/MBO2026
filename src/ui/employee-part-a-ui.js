@@ -1244,46 +1244,123 @@ export class EmployeePartAUI {
     return card;
   }
 
-  _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
+  _getSavedAttachmentFiles(fieldCode) {
     let recField = this.record[fieldCode];
     if ((!recField || !recField.value || (Array.isArray(recField.value) && recField.value.length === 0)) && fieldCode.startsWith('Self_Attachment_')) {
       const altCode = fieldCode.replace('Self_Attachment_', 'Final_Attachment_');
       recField = this.record[altCode];
     }
     const rawVal = recField ? recField.value : null;
-    let fileName = null;
-    if (Array.isArray(rawVal) && rawVal.length > 0 && rawVal[0] && rawVal[0].name) {
-      fileName = rawVal[0].name;
-    } else if (rawVal && typeof rawVal === 'object' && rawVal.name) {
-      fileName = rawVal.name;
+    if (!rawVal) return [];
+
+    if (Array.isArray(rawVal)) {
+      return rawVal.map(item => {
+        if (item && typeof item === 'object' && item.name) {
+          return { name: item.name, fileKey: item.fileKey || '', size: item.size || 0, contentType: item.contentType || '' };
+        } else if (typeof item === 'string' && item) {
+          return { name: item, fileKey: '', size: 0, contentType: '' };
+        }
+        return null;
+      }).filter(Boolean);
+    } else if (typeof rawVal === 'object' && rawVal.name) {
+      return [{ name: rawVal.name, fileKey: rawVal.fileKey || '', size: rawVal.size || 0, contentType: rawVal.contentType || '' }];
     } else if (typeof rawVal === 'string' && rawVal) {
-      fileName = rawVal;
+      return [{ name: rawVal, fileKey: '', size: 0, contentType: '' }];
+    }
+    return [];
+  }
+
+  _removeSavedAttachmentFile(fieldCode, filename, fileKey) {
+    let targetCode = fieldCode;
+    if ((!this.record[targetCode] || !this.record[targetCode].value) && targetCode.startsWith('Self_Attachment_')) {
+      const altCode = targetCode.replace('Self_Attachment_', 'Final_Attachment_');
+      if (this.record[altCode]) targetCode = altCode;
+    }
+    if (!this.record[targetCode] || !Array.isArray(this.record[targetCode].value)) return;
+
+    this.record[targetCode].value = this.record[targetCode].value.filter(f => {
+      if (fileKey && f.fileKey) return f.fileKey !== fileKey;
+      if (filename && f.name) return f.name !== filename;
+      if (typeof f === 'string') return f !== filename;
+      return true;
+    });
+  }
+
+  _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
+    const isPreview = Boolean(this.isPreviewMode || this.previewOptions?.isPreviewMode);
+
+    const savedFiles = this._getSavedAttachmentFiles(fieldCode);
+    const pendingFiles = (this.pendingAttachments && this.pendingAttachments[fieldCode]) || [];
+
+    let mockFiles = [];
+    if (isPreview && savedFiles.length === 0 && pendingFiles.length === 0 && this.previewOptions?.attachments?.[fieldCode]) {
+      const mock = this.previewOptions.attachments[fieldCode];
+      if (mock && mock.name) mockFiles = [{ name: mock.name, isPreviewMock: true }];
     }
 
-    const mockFile = this.previewOptions.attachments?.[fieldCode] || (fileName ? { name: fileName } : null);
+    const allFilesToDisplay = [
+      ...savedFiles.map(f => ({ ...f, isSaved: true })),
+      ...pendingFiles.map((f, idx) => ({ ...f, isPending: true, pendingIdx: idx })),
+      ...mockFiles
+    ];
 
-    if (mockFile && mockFile.name) {
+    if (allFilesToDisplay.length === 0) {
+      if (isEditable) {
+        return `
+          <div class="mbo-attachment-box" data-attachment-box="${escapeHtml(fieldCode)}">
+            <label class="mbo-attachment-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:#0284c7; background:#e0f2fe; border:1px solid #bae6fd; padding:4px 10px; border-radius:4px;">
+              📎 แนบไฟล์ (เลือกได้ / Optional)
+              <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml(fieldCode)}" multiple style="display:none;" />
+            </label>
+            <div style="font-size:9.5px; color:#64748b; margin-top:2px;">Optional evidence (${escapeHtml(stageLabel)})</div>
+          </div>
+        `;
+      }
+      return `<span class="mbo-no-attachment" style="font-size:11px; color:#94a3b8; font-style:italic;">ไม่มีไฟล์แนบ / No attachment</span>`;
+    }
+
+    const badgesHtml = allFilesToDisplay.map(f => {
+      if (f.isPending) {
+        if (f.status === 'error') {
+          return `
+            <div class="mbo-attachment-badge error-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#b91c1c; background:#fef2f2; border:1px solid #fca5a5; padding:3px 8px; border-radius:4px; margin:2px;">
+              ⚠️ <span title="${escapeHtml(f.name)}" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</span>
+              <span class="mbo-attachment-error-tag" style="font-size:10px; font-weight:700; color:#dc2626;">(อัปโหลดล้มเหลว / Upload failed)</span>
+              ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">✕</button>` : ''}
+            </div>
+          `;
+        }
+        return `
+          <div class="mbo-attachment-badge pending-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#0369a1; background:#f0f9ff; border:1px dashed #0284c7; padding:3px 8px; border-radius:4px; margin:2px;">
+            📎 <span title="${escapeHtml(f.name)}" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</span>
+            <span class="mbo-attachment-pending-tag" style="font-size:10px; font-weight:700; color:#0284c7;">(รอบันทึก / Pending save)</span>
+            ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">✕</button>` : ''}
+          </div>
+        `;
+      }
+
+      const isMock = Boolean(f.isPreviewMock);
       return `
-        <div class="mbo-attachment-badge">
-          📎 <span style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(mockFile.name)}</span>
-          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">✕</button>` : ''}
+        <div class="mbo-attachment-badge saved-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#1e293b; background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; margin:2px;">
+          📎 <span title="${escapeHtml(f.name)}" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name)}</span>
+          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml(fieldCode)}" data-filename="${escapeHtml(f.name)}" data-filekey="${escapeHtml(f.fileKey || '')}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">✕</button>` : ''}
         </div>
       `;
-    }
+    }).join('');
 
-    if (isEditable) {
-      return `
-        <div class="mbo-attachment-box">
-          <label class="mbo-attachment-btn">
-            📎 แนบไฟล์ (เลือกได้ / Optional)
-            <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml(fieldCode)}" style="display:none;" />
-          </label>
-          <div style="font-size:9.5px; color:#64748b; margin-top:2px;">Optional evidence (${escapeHtml(stageLabel)})</div>
-        </div>
-      `;
-    }
+    const addMoreBtnHtml = isEditable ? `
+      <label class="mbo-attachment-btn-add" style="cursor:pointer; display:inline-flex; align-items:center; font-size:10.5px; font-weight:600; color:#0284c7; background:#ffffff; border:1px solid #bae6fd; padding:2px 6px; border-radius:4px; margin:2px;">
+        + เพิ่มไฟล์ / Add file
+        <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml(fieldCode)}" multiple style="display:none;" />
+      </label>
+    ` : '';
 
-    return `<span style="font-size:11px; color:#94a3b8; font-style:italic;">ไม่มีไฟล์แนบ / No attachment</span>`;
+    return `
+      <div class="mbo-attachment-container" data-attachment-container="${escapeHtml(fieldCode)}" style="display:flex; flex-wrap:wrap; align-items:center; gap:2px;">
+        ${badgesHtml}
+        ${addMoreBtnHtml}
+      </div>
+    `;
   }
 
   _renderWorkflowActionTimeline() {
@@ -1291,19 +1368,46 @@ export class EmployeePartAUI {
     card.className = 'mbo-timeline-card';
 
     const resolvedRole = this._getResolvedViewerRole();
-    let events = this.previewOptions.timelineEvents || [
-      { stage: '1. Objectives', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Approved Objectives', time: '14 Feb 2026 • 09:42', outcome: 'approved', commentNotice: false },
-      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Returned for Revision', time: '15 Feb 2026 • 10:18', outcome: 'returned', commentNotice: true },
-      { stage: '1. Objectives', actor: 'Employee / Requester (พนักงาน)', name: 'Somchai Prasert (0118)', action: 'Resubmitted Objectives', time: '16 Feb 2026 • 08:30', outcome: 'resubmitted', commentNotice: false },
-      { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Approved Objectives', time: '16 Feb 2026 • 13:05', outcome: 'approved', commentNotice: false },
-      { stage: '4. Appraiser Evaluation', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Scoring Completed', time: '20 Nov 2026 • 14:22', outcome: 'approved', commentNotice: false }
-    ];
+    const isPreview = Boolean(this.isPreviewMode || this.previewOptions?.isPreviewMode);
 
-    if (resolvedRole === 'EMPLOYEE') {
+    let rawEvents = null;
+    if (Array.isArray(this.previewOptions?.timelineEvents)) {
+      rawEvents = this.previewOptions.timelineEvents;
+    } else if (isPreview) {
+      rawEvents = [
+        { stage: '1. Objectives', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Approved Objectives', time: '14 Feb 2026 • 09:42', outcome: 'approved', commentNotice: false },
+        { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Returned for Revision', time: '15 Feb 2026 • 10:18', outcome: 'returned', commentNotice: true },
+        { stage: '1. Objectives', actor: 'Employee / Requester (พนักงาน)', name: 'Somchai Prasert (0118)', action: 'Resubmitted Objectives', time: '16 Feb 2026 • 08:30', outcome: 'resubmitted', commentNotice: false },
+        { stage: '1. Objectives', actor: '2nd Appraiser (ผู้ประเมินลำดับที่ 2)', name: 'GM Vichai (g01)', action: 'Approved Objectives', time: '16 Feb 2026 • 13:05', outcome: 'approved', commentNotice: false },
+        { stage: '4. Appraiser Evaluation', actor: '1st Appraiser (ผู้ประเมินลำดับที่ 1)', name: 'Manager Sompong (m01)', action: 'Scoring Completed', time: '20 Nov 2026 • 14:22', outcome: 'approved', commentNotice: false }
+      ];
+    } else {
+      // Live mode without timelineEvents: zero fake events!
+      rawEvents = [];
+    }
+
+    let events = [...rawEvents];
+
+    if (resolvedRole === 'EMPLOYEE' && events.length > 0) {
       events = events.filter(e => {
         const stageStr = String(e.stage || '').toLowerCase();
         return !stageStr.includes('4.') && !stageStr.includes('5.') && !stageStr.includes('appraiser evaluation') && !stageStr.includes('hr final');
       });
+    }
+
+    if (events.length === 0) {
+      card.innerHTML = `
+        <details open style="cursor:pointer;">
+          <summary class="mbo-timeline-title">
+            <span>📜 ประวัติการดำเนินการ / Workflow Action Timeline (Read-Only Audit Trail)</span>
+            <span style="font-size:11px; font-weight:600; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px;">0 Events Recorded</span>
+          </summary>
+          <div class="mbo-timeline-empty" style="padding:15px; text-align:center; color:#64748b; font-size:12px; font-style:italic; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-top:10px;">
+            ยังไม่มีประวัติการดำเนินการ / No workflow history available
+          </div>
+        </details>
+      `;
+      return card;
     }
 
     const rowsHtml = events.map((e, idx) => {
@@ -3030,6 +3134,79 @@ export class EmployeePartAUI {
         }
       });
     }
+
+    // Attachment file input change handler
+    root.querySelectorAll('.mbo-attachment-file-input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const fieldCode = e.target.dataset.code;
+        if (!fieldCode) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        if (!this.pendingAttachments) this.pendingAttachments = {};
+        if (!this.pendingAttachments[fieldCode]) this.pendingAttachments[fieldCode] = [];
+
+        files.forEach(file => {
+          this.pendingAttachments[fieldCode].push({
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            status: 'pending'
+          });
+        });
+
+        this._refreshAttachmentControlDisplay(fieldCode, root);
+      });
+    });
+
+    // Attachment remove button click handler
+    root.querySelectorAll('.mbo-attachment-remove-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetBtn = e.target.closest('.mbo-attachment-remove-btn');
+        if (!targetBtn) return;
+        const fieldCode = targetBtn.dataset.code;
+        if (!fieldCode) return;
+
+        const pendingIdxStr = targetBtn.dataset.pendingIdx;
+        if (pendingIdxStr !== undefined && pendingIdxStr !== '') {
+          const idx = parseInt(pendingIdxStr, 10);
+          if (this.pendingAttachments && this.pendingAttachments[fieldCode]) {
+            this.pendingAttachments[fieldCode].splice(idx, 1);
+          }
+        } else {
+          const filename = targetBtn.dataset.filename;
+          const fileKey = targetBtn.dataset.filekey;
+          this._removeSavedAttachmentFile(fieldCode, filename, fileKey);
+        }
+
+        this._refreshAttachmentControlDisplay(fieldCode, root);
+      });
+    });
+  }
+
+  _refreshAttachmentControlDisplay(fieldCode, root) {
+    const activeRoot = this.root || root || document;
+    const stageLabel = fieldCode.startsWith('Objective_') ? 'Objectives' :
+                       (fieldCode.startsWith('MidYear_') ? 'Mid-Year' : 'Self Evaluation');
+    const container = activeRoot.querySelector(`[data-attachment-container="${fieldCode}"]`) ||
+                      activeRoot.querySelector(`[data-attachment-box="${fieldCode}"]`) ||
+                      activeRoot.querySelector(`input[data-code="${fieldCode}"]`)?.closest('td, div');
+
+    const isEditable = Boolean(!container || container.querySelector('.mbo-attachment-file-input') || container.querySelector('.mbo-attachment-remove-btn') || activeRoot.querySelector(`input[data-code="${fieldCode}"]`));
+
+    const parentCell = container ? (container.closest('td') || container.parentElement) : null;
+    if (parentCell) {
+      parentCell.innerHTML = this._renderAttachmentControl(fieldCode, stageLabel, true);
+      this._bindEvents(activeRoot);
+    } else {
+      this.render();
+    }
+  }
+
+  async uploadPendingAttachments(options = {}) {
+    const { uploadAndBindPendingAttachments } = await import('../services/mbo-attachment-service.js');
+    return await uploadAndBindPendingAttachments(this.record, this.pendingAttachments || {}, options);
   }
 
   async executeLookup(empCode) {

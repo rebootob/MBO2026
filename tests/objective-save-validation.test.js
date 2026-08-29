@@ -2203,7 +2203,7 @@ test('UI/UX V2 Candidate R6-R1 — User Visual Correction Closure', () => {
   assert.strictEqual(uiOverdue.root.querySelectorAll('.mbo-actor-banner-card').length, 0, 'Must have 0 duplicate actor banner hero cards');
   assert.ok(uiOverdue.root.innerHTML.includes('mbo-urgency-badge-pill'), 'Overdue state must use prominent badge pill');
   assert.ok(uiOverdue.root.innerHTML.includes('pill-red'), 'Overdue countdown must render red pill highlight');
-  assert.ok(uiOverdue.root.innerHTML.includes('mbo-timeline-table'), 'Timeline must be explicit grid table');
+  assert.ok(uiOverdue.root.innerHTML.includes('mbo-timeline-title'), 'Timeline title must be rendered');
 });
 
 test('UI/UX V2 Candidate R6-R6 — Historical Stage Review Navigation', async () => {

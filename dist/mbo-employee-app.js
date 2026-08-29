@@ -1,4 +1,113 @@
 (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __esm = (fn, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
+  };
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+
+  // src/services/mbo-attachment-service.js
+  var mbo_attachment_service_exports = {};
+  __export(mbo_attachment_service_exports, {
+    uploadAndBindPendingAttachments: () => uploadAndBindPendingAttachments,
+    uploadKintoneFile: () => uploadKintoneFile
+  });
+  async function uploadKintoneFile(file, options = {}) {
+    if (!file || typeof file !== "object") {
+      throw new Error("uploadKintoneFile failed: invalid file object");
+    }
+    const fetchFn = options.fetch || globalThis.fetch;
+    if (typeof fetchFn !== "function") {
+      throw new Error("uploadKintoneFile failed: fetch API unavailable");
+    }
+    const getRequestTokenFn = options.getRequestToken || (globalThis.kintone?.getRequestToken ? () => globalThis.kintone.getRequestToken() : null);
+    const formData = new FormData();
+    let blobToUpload = file;
+    if (typeof globalThis.Blob === "function" && !(file instanceof globalThis.Blob)) {
+      blobToUpload = new Blob([file.content || "mock_file_content"], { type: file.type || "application/octet-stream" });
+    }
+    formData.append("file", blobToUpload, file.name || "attachment");
+    const headers = {
+      "X-Requested-With": "XMLHttpRequest"
+    };
+    if (getRequestTokenFn) {
+      try {
+        const token = getRequestTokenFn();
+        if (token) headers["X-Cybozu-RequestToken"] = token;
+      } catch (err) {
+      }
+    }
+    const uploadUrl = options.uploadUrl || "/k/v1/file.json";
+    const response = await fetchFn(uploadUrl, {
+      method: "POST",
+      headers,
+      body: formData
+    });
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error(`Kintone file upload failed: HTTP ${response.status}${errText ? ` (${errText})` : ""}`);
+    }
+    const data = await response.json();
+    if (!data || !data.fileKey) {
+      throw new Error("Kintone file upload response missing fileKey");
+    }
+    return data.fileKey;
+  }
+  async function uploadAndBindPendingAttachments(record, pendingAttachments = {}, options = {}) {
+    if (!record || typeof record !== "object") {
+      throw new Error("uploadAndBindPendingAttachments failed: invalid record object");
+    }
+    const fieldCodes = Object.keys(pendingAttachments);
+    for (const fieldCode of fieldCodes) {
+      const pendingItems = pendingAttachments[fieldCode];
+      if (!Array.isArray(pendingItems) || pendingItems.length === 0) continue;
+      let targetCode = fieldCode;
+      if (!record[targetCode] && targetCode.startsWith("Self_Attachment_")) {
+        const altCode = "Final_Attachment_" + targetCode.slice("Self_Attachment_".length);
+        if (record.hasOwnProperty(altCode)) {
+          targetCode = altCode;
+        }
+      }
+      const currentVal = record[targetCode]?.value;
+      const savedFiles = Array.isArray(currentVal) ? [...currentVal] : [];
+      for (const item of pendingItems) {
+        if (item.status === "saved" && item.fileKey) {
+          if (!savedFiles.some((f) => f.fileKey === item.fileKey)) {
+            savedFiles.push({ fileKey: item.fileKey, name: item.name });
+          }
+          continue;
+        }
+        if (item.file) {
+          item.status = "uploading";
+          try {
+            const fileKey = await uploadKintoneFile(item.file, options);
+            item.fileKey = fileKey;
+            item.status = "saved";
+            savedFiles.push({ fileKey, name: item.name });
+          } catch (err) {
+            item.status = "error";
+            item.error = err.message;
+            throw new Error(`Attachment upload failed for field ${fieldCode} (${item.name}): ${err.message}`);
+          }
+        }
+      }
+      record[targetCode] = { value: savedFiles };
+    }
+    return record;
+  }
+  var init_mbo_attachment_service = __esm({
+    "src/services/mbo-attachment-service.js"() {
+    }
+  });
+
   // src/config/constants.js
   var BUSINESS_STAGES = {
     NEW_RECORD: "NEW_RECORD",
@@ -3296,59 +3405,151 @@ Requester_User is empty for action "${actionName}".`
     `;
       return card;
     }
-    _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
+    _getSavedAttachmentFiles(fieldCode) {
       let recField = this.record[fieldCode];
       if ((!recField || !recField.value || Array.isArray(recField.value) && recField.value.length === 0) && fieldCode.startsWith("Self_Attachment_")) {
         const altCode = fieldCode.replace("Self_Attachment_", "Final_Attachment_");
         recField = this.record[altCode];
       }
       const rawVal = recField ? recField.value : null;
-      let fileName = null;
-      if (Array.isArray(rawVal) && rawVal.length > 0 && rawVal[0] && rawVal[0].name) {
-        fileName = rawVal[0].name;
-      } else if (rawVal && typeof rawVal === "object" && rawVal.name) {
-        fileName = rawVal.name;
+      if (!rawVal) return [];
+      if (Array.isArray(rawVal)) {
+        return rawVal.map((item) => {
+          if (item && typeof item === "object" && item.name) {
+            return { name: item.name, fileKey: item.fileKey || "", size: item.size || 0, contentType: item.contentType || "" };
+          } else if (typeof item === "string" && item) {
+            return { name: item, fileKey: "", size: 0, contentType: "" };
+          }
+          return null;
+        }).filter(Boolean);
+      } else if (typeof rawVal === "object" && rawVal.name) {
+        return [{ name: rawVal.name, fileKey: rawVal.fileKey || "", size: rawVal.size || 0, contentType: rawVal.contentType || "" }];
       } else if (typeof rawVal === "string" && rawVal) {
-        fileName = rawVal;
+        return [{ name: rawVal, fileKey: "", size: 0, contentType: "" }];
       }
-      const mockFile = this.previewOptions.attachments?.[fieldCode] || (fileName ? { name: fileName } : null);
-      if (mockFile && mockFile.name) {
+      return [];
+    }
+    _removeSavedAttachmentFile(fieldCode, filename, fileKey) {
+      let targetCode = fieldCode;
+      if ((!this.record[targetCode] || !this.record[targetCode].value) && targetCode.startsWith("Self_Attachment_")) {
+        const altCode = targetCode.replace("Self_Attachment_", "Final_Attachment_");
+        if (this.record[altCode]) targetCode = altCode;
+      }
+      if (!this.record[targetCode] || !Array.isArray(this.record[targetCode].value)) return;
+      this.record[targetCode].value = this.record[targetCode].value.filter((f) => {
+        if (fileKey && f.fileKey) return f.fileKey !== fileKey;
+        if (filename && f.name) return f.name !== filename;
+        if (typeof f === "string") return f !== filename;
+        return true;
+      });
+    }
+    _renderAttachmentControl(fieldCode, stageLabel, isEditable) {
+      const isPreview = Boolean(this.isPreviewMode || this.previewOptions?.isPreviewMode);
+      const savedFiles = this._getSavedAttachmentFiles(fieldCode);
+      const pendingFiles = this.pendingAttachments && this.pendingAttachments[fieldCode] || [];
+      let mockFiles = [];
+      if (isPreview && savedFiles.length === 0 && pendingFiles.length === 0 && this.previewOptions?.attachments?.[fieldCode]) {
+        const mock = this.previewOptions.attachments[fieldCode];
+        if (mock && mock.name) mockFiles = [{ name: mock.name, isPreviewMock: true }];
+      }
+      const allFilesToDisplay = [
+        ...savedFiles.map((f) => ({ ...f, isSaved: true })),
+        ...pendingFiles.map((f, idx) => ({ ...f, isPending: true, pendingIdx: idx })),
+        ...mockFiles
+      ];
+      if (allFilesToDisplay.length === 0) {
+        if (isEditable) {
+          return `
+          <div class="mbo-attachment-box" data-attachment-box="${escapeHtml2(fieldCode)}">
+            <label class="mbo-attachment-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:#0284c7; background:#e0f2fe; border:1px solid #bae6fd; padding:4px 10px; border-radius:4px;">
+              \u{1F4CE} \u0E41\u0E19\u0E1A\u0E44\u0E1F\u0E25\u0E4C (\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E14\u0E49 / Optional)
+              <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml2(fieldCode)}" multiple style="display:none;" />
+            </label>
+            <div style="font-size:9.5px; color:#64748b; margin-top:2px;">Optional evidence (${escapeHtml2(stageLabel)})</div>
+          </div>
+        `;
+        }
+        return `<span class="mbo-no-attachment" style="font-size:11px; color:#94a3b8; font-style:italic;">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A / No attachment</span>`;
+      }
+      const badgesHtml = allFilesToDisplay.map((f) => {
+        if (f.isPending) {
+          if (f.status === "error") {
+            return `
+            <div class="mbo-attachment-badge error-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#b91c1c; background:#fef2f2; border:1px solid #fca5a5; padding:3px 8px; border-radius:4px; margin:2px;">
+              \u26A0\uFE0F <span title="${escapeHtml2(f.name)}" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
+              <span class="mbo-attachment-error-tag" style="font-size:10px; font-weight:700; color:#dc2626;">(\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E25\u0E49\u0E21\u0E40\u0E2B\u0E25\u0E27 / Upload failed)</span>
+              ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
+            </div>
+          `;
+          }
+          return `
+          <div class="mbo-attachment-badge pending-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#0369a1; background:#f0f9ff; border:1px dashed #0284c7; padding:3px 8px; border-radius:4px; margin:2px;">
+            \u{1F4CE} <span title="${escapeHtml2(f.name)}" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
+            <span class="mbo-attachment-pending-tag" style="font-size:10px; font-weight:700; color:#0284c7;">(\u0E23\u0E2D\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 / Pending save)</span>
+            ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-pending-idx="${f.pendingIdx}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
+          </div>
+        `;
+        }
+        const isMock = Boolean(f.isPreviewMock);
         return `
-        <div class="mbo-attachment-badge">
-          \u{1F4CE} <span style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(mockFile.name)}</span>
-          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
+        <div class="mbo-attachment-badge saved-file" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#1e293b; background:#f1f5f9; border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; margin:2px;">
+          \u{1F4CE} <span title="${escapeHtml2(f.name)}" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml2(f.name)}</span>
+          ${isEditable ? `<button type="button" class="mbo-attachment-remove-btn" data-code="${escapeHtml2(fieldCode)}" data-filename="${escapeHtml2(f.name)}" data-filekey="${escapeHtml2(f.fileKey || "")}" style="border:none; background:none; cursor:pointer; color:#dc2626; font-weight:700; padding:0 2px;">\u2715</button>` : ""}
         </div>
       `;
-      }
-      if (isEditable) {
-        return `
-        <div class="mbo-attachment-box">
-          <label class="mbo-attachment-btn">
-            \u{1F4CE} \u0E41\u0E19\u0E1A\u0E44\u0E1F\u0E25\u0E4C (\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E14\u0E49 / Optional)
-            <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml2(fieldCode)}" style="display:none;" />
-          </label>
-          <div style="font-size:9.5px; color:#64748b; margin-top:2px;">Optional evidence (${escapeHtml2(stageLabel)})</div>
-        </div>
-      `;
-      }
-      return `<span style="font-size:11px; color:#94a3b8; font-style:italic;">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A / No attachment</span>`;
+      }).join("");
+      const addMoreBtnHtml = isEditable ? `
+      <label class="mbo-attachment-btn-add" style="cursor:pointer; display:inline-flex; align-items:center; font-size:10.5px; font-weight:600; color:#0284c7; background:#ffffff; border:1px solid #bae6fd; padding:2px 6px; border-radius:4px; margin:2px;">
+        + \u0E40\u0E1E\u0E34\u0E48\u0E21\u0E44\u0E1F\u0E25\u0E4C / Add file
+        <input type="file" class="mbo-attachment-file-input" data-code="${escapeHtml2(fieldCode)}" multiple style="display:none;" />
+      </label>
+    ` : "";
+      return `
+      <div class="mbo-attachment-container" data-attachment-container="${escapeHtml2(fieldCode)}" style="display:flex; flex-wrap:wrap; align-items:center; gap:2px;">
+        ${badgesHtml}
+        ${addMoreBtnHtml}
+      </div>
+    `;
     }
     _renderWorkflowActionTimeline() {
       const card = document.createElement("div");
       card.className = "mbo-timeline-card";
       const resolvedRole = this._getResolvedViewerRole();
-      let events = this.previewOptions.timelineEvents || [
-        { stage: "1. Objectives", actor: "1st Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 1)", name: "Manager Sompong (m01)", action: "Approved Objectives", time: "14 Feb 2026 \u2022 09:42", outcome: "approved", commentNotice: false },
-        { stage: "1. Objectives", actor: "2nd Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 2)", name: "GM Vichai (g01)", action: "Returned for Revision", time: "15 Feb 2026 \u2022 10:18", outcome: "returned", commentNotice: true },
-        { stage: "1. Objectives", actor: "Employee / Requester (\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19)", name: "Somchai Prasert (0118)", action: "Resubmitted Objectives", time: "16 Feb 2026 \u2022 08:30", outcome: "resubmitted", commentNotice: false },
-        { stage: "1. Objectives", actor: "2nd Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 2)", name: "GM Vichai (g01)", action: "Approved Objectives", time: "16 Feb 2026 \u2022 13:05", outcome: "approved", commentNotice: false },
-        { stage: "4. Appraiser Evaluation", actor: "1st Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 1)", name: "Manager Sompong (m01)", action: "Scoring Completed", time: "20 Nov 2026 \u2022 14:22", outcome: "approved", commentNotice: false }
-      ];
-      if (resolvedRole === "EMPLOYEE") {
+      const isPreview = Boolean(this.isPreviewMode || this.previewOptions?.isPreviewMode);
+      let rawEvents = null;
+      if (Array.isArray(this.previewOptions?.timelineEvents)) {
+        rawEvents = this.previewOptions.timelineEvents;
+      } else if (isPreview) {
+        rawEvents = [
+          { stage: "1. Objectives", actor: "1st Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 1)", name: "Manager Sompong (m01)", action: "Approved Objectives", time: "14 Feb 2026 \u2022 09:42", outcome: "approved", commentNotice: false },
+          { stage: "1. Objectives", actor: "2nd Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 2)", name: "GM Vichai (g01)", action: "Returned for Revision", time: "15 Feb 2026 \u2022 10:18", outcome: "returned", commentNotice: true },
+          { stage: "1. Objectives", actor: "Employee / Requester (\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19)", name: "Somchai Prasert (0118)", action: "Resubmitted Objectives", time: "16 Feb 2026 \u2022 08:30", outcome: "resubmitted", commentNotice: false },
+          { stage: "1. Objectives", actor: "2nd Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 2)", name: "GM Vichai (g01)", action: "Approved Objectives", time: "16 Feb 2026 \u2022 13:05", outcome: "approved", commentNotice: false },
+          { stage: "4. Appraiser Evaluation", actor: "1st Appraiser (\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E17\u0E35\u0E48 1)", name: "Manager Sompong (m01)", action: "Scoring Completed", time: "20 Nov 2026 \u2022 14:22", outcome: "approved", commentNotice: false }
+        ];
+      } else {
+        rawEvents = [];
+      }
+      let events = [...rawEvents];
+      if (resolvedRole === "EMPLOYEE" && events.length > 0) {
         events = events.filter((e) => {
           const stageStr = String(e.stage || "").toLowerCase();
           return !stageStr.includes("4.") && !stageStr.includes("5.") && !stageStr.includes("appraiser evaluation") && !stageStr.includes("hr final");
         });
+      }
+      if (events.length === 0) {
+        card.innerHTML = `
+        <details open style="cursor:pointer;">
+          <summary class="mbo-timeline-title">
+            <span>\u{1F4DC} \u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23 / Workflow Action Timeline (Read-Only Audit Trail)</span>
+            <span style="font-size:11px; font-weight:600; color:#64748b; background:#e2e8f0; padding:2px 8px; border-radius:10px;">0 Events Recorded</span>
+          </summary>
+          <div class="mbo-timeline-empty" style="padding:15px; text-align:center; color:#64748b; font-size:12px; font-style:italic; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-top:10px;">
+            \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23 / No workflow history available
+          </div>
+        </details>
+      `;
+        return card;
       }
       const rowsHtml = events.map((e, idx) => {
         const outcomeClass = escapeHtml2(e.outcome || "approved");
@@ -4882,6 +5083,63 @@ Requester_User is empty for action "${actionName}".`
           }
         });
       }
+      root.querySelectorAll(".mbo-attachment-file-input").forEach((input) => {
+        input.addEventListener("change", (e) => {
+          const fieldCode = e.target.dataset.code;
+          if (!fieldCode) return;
+          const files = Array.from(e.target.files || []);
+          if (files.length === 0) return;
+          if (!this.pendingAttachments) this.pendingAttachments = {};
+          if (!this.pendingAttachments[fieldCode]) this.pendingAttachments[fieldCode] = [];
+          files.forEach((file) => {
+            this.pendingAttachments[fieldCode].push({
+              file,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              status: "pending"
+            });
+          });
+          this._refreshAttachmentControlDisplay(fieldCode, root);
+        });
+      });
+      root.querySelectorAll(".mbo-attachment-remove-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const targetBtn = e.target.closest(".mbo-attachment-remove-btn");
+          if (!targetBtn) return;
+          const fieldCode = targetBtn.dataset.code;
+          if (!fieldCode) return;
+          const pendingIdxStr = targetBtn.dataset.pendingIdx;
+          if (pendingIdxStr !== void 0 && pendingIdxStr !== "") {
+            const idx = parseInt(pendingIdxStr, 10);
+            if (this.pendingAttachments && this.pendingAttachments[fieldCode]) {
+              this.pendingAttachments[fieldCode].splice(idx, 1);
+            }
+          } else {
+            const filename = targetBtn.dataset.filename;
+            const fileKey = targetBtn.dataset.filekey;
+            this._removeSavedAttachmentFile(fieldCode, filename, fileKey);
+          }
+          this._refreshAttachmentControlDisplay(fieldCode, root);
+        });
+      });
+    }
+    _refreshAttachmentControlDisplay(fieldCode, root) {
+      const activeRoot = this.root || root || document;
+      const stageLabel = fieldCode.startsWith("Objective_") ? "Objectives" : fieldCode.startsWith("MidYear_") ? "Mid-Year" : "Self Evaluation";
+      const container = activeRoot.querySelector(`[data-attachment-container="${fieldCode}"]`) || activeRoot.querySelector(`[data-attachment-box="${fieldCode}"]`) || activeRoot.querySelector(`input[data-code="${fieldCode}"]`)?.closest("td, div");
+      const isEditable = Boolean(!container || container.querySelector(".mbo-attachment-file-input") || container.querySelector(".mbo-attachment-remove-btn") || activeRoot.querySelector(`input[data-code="${fieldCode}"]`));
+      const parentCell = container ? container.closest("td") || container.parentElement : null;
+      if (parentCell) {
+        parentCell.innerHTML = this._renderAttachmentControl(fieldCode, stageLabel, true);
+        this._bindEvents(activeRoot);
+      } else {
+        this.render();
+      }
+    }
+    async uploadPendingAttachments(options = {}) {
+      const { uploadAndBindPendingAttachments: uploadAndBindPendingAttachments2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
+      return await uploadAndBindPendingAttachments2(this.record, this.pendingAttachments || {}, options);
     }
     async executeLookup(empCode) {
       const code = String(empCode || "").trim();
