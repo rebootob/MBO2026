@@ -5139,7 +5139,16 @@ Requester_User is empty for action "${actionName}".`
     }
     async uploadPendingAttachments(options = {}) {
       const { uploadAndBindPendingAttachments: uploadAndBindPendingAttachments2 } = await Promise.resolve().then(() => (init_mbo_attachment_service(), mbo_attachment_service_exports));
-      return await uploadAndBindPendingAttachments2(this.record, this.pendingAttachments || {}, options);
+      const targetRecord = options.record || this.record;
+      const res = await uploadAndBindPendingAttachments2(targetRecord, this.pendingAttachments || {}, options);
+      if (targetRecord !== this.record && targetRecord && typeof targetRecord === "object") {
+        Object.keys(targetRecord).forEach((key) => {
+          if (key.includes("Attachment")) {
+            this.record[key] = targetRecord[key];
+          }
+        });
+      }
+      return res;
     }
     async executeLookup(empCode) {
       const code = String(empCode || "").trim();
@@ -7429,6 +7438,20 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       }
       if (activeUiInstance) {
         activeUiInstance.clearValidationErrors();
+      }
+      if (activeUiInstance) {
+        try {
+          await activeUiInstance.uploadPendingAttachments({ record: event.record });
+        } catch (err) {
+          console.error("[MBO V2] Attachment submit upload error:", err);
+          activeUiInstance.showValidationErrors([{
+            field: "Objective_Attachment_1",
+            messageTH: `\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A: ${err.message}`,
+            messageEN: `Attachment upload failed: ${err.message}`,
+            message: `Attachment upload failed: ${err.message}`
+          }]);
+          return false;
+        }
       }
       return event;
     });

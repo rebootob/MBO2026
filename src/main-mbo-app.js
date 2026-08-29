@@ -695,6 +695,22 @@ if (typeof kintone !== 'undefined') {
       activeUiInstance.clearValidationErrors();
     }
 
+    // 6. Attachment Submit Lifecycle Integration (Kintone-Only Upload & Field Binding)
+    if (activeUiInstance) {
+      try {
+        await activeUiInstance.uploadPendingAttachments({ record: event.record });
+      } catch (err) {
+        console.error('[MBO V2] Attachment submit upload error:', err);
+        activeUiInstance.showValidationErrors([{
+          field: 'Objective_Attachment_1',
+          messageTH: `เกิดข้อผิดพลาดในการอัปโหลดไฟล์แนบ: ${err.message}`,
+          messageEN: `Attachment upload failed: ${err.message}`,
+          message: `Attachment upload failed: ${err.message}`
+        }]);
+        return false; // Fail closed: cancel submit
+      }
+    }
+
     return event;
   });
 

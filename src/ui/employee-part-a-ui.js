@@ -3206,7 +3206,16 @@ export class EmployeePartAUI {
 
   async uploadPendingAttachments(options = {}) {
     const { uploadAndBindPendingAttachments } = await import('../services/mbo-attachment-service.js');
-    return await uploadAndBindPendingAttachments(this.record, this.pendingAttachments || {}, options);
+    const targetRecord = options.record || this.record;
+    const res = await uploadAndBindPendingAttachments(targetRecord, this.pendingAttachments || {}, options);
+    if (targetRecord !== this.record && targetRecord && typeof targetRecord === 'object') {
+      Object.keys(targetRecord).forEach(key => {
+        if (key.includes('Attachment')) {
+          this.record[key] = targetRecord[key];
+        }
+      });
+    }
+    return res;
   }
 
   async executeLookup(empCode) {

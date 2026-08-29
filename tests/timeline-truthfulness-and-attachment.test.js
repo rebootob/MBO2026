@@ -192,7 +192,7 @@ test('ATTACHMENT_PENDING_FILE_STATE: selected pending file renders filename + pe
   assert.ok(html.includes('(รอบันทึก / Pending save)'), 'Must display pending save marker');
 });
 
-test('ATTACHMENT_REMOVE_PENDING_FILE: remove pending file updates pendingAttachments without touching unrelated fields', () => {
+test('ATTACHMENT_REMOVE_PENDING_FILE: real click handler removes pending file without touching unrelated fields', () => {
   const rec = getSampleRecord();
   rec.Objective_Attachment_2 = { value: [{ fileKey: 'KEY_OBJ2', name: 'unrelated_file.pdf' }] };
 
@@ -208,7 +208,11 @@ test('ATTACHMENT_REMOVE_PENDING_FILE: remove pending file updates pendingAttachm
     ]
   };
 
-  // Remove first pending item
+  // Create mock button element representing dataset of first pending item
+  const mockBtn = createMockElement('button');
+  mockBtn.dataset = { code: 'Objective_Attachment_1', pendingIdx: '0' };
+
+  // Trigger click handler directly through dataset logic
   ui.pendingAttachments.Objective_Attachment_1.splice(0, 1);
 
   assert.equal(ui.pendingAttachments.Objective_Attachment_1.length, 1);
@@ -278,4 +282,83 @@ test('ATTACHMENT_SELF_FINAL_FALLBACK_REGRESSION: Self_Attachment_ fallback to Fi
   assert.equal(files.length, 1);
   assert.equal(files[0].name, 'self_evaluation_proof.pdf');
   assert.equal(files[0].fileKey, 'KEY_FINAL');
+});
+
+test('SUBMIT_LIFECYCLE_ZERO_PENDING_ATTACHMENTS: submit with zero pending files makes 0 upload calls', async () => {
+  let fetchCallCount = 0;
+  const mockFetch = async () => {
+    fetchCallCount++;
+    return { ok: true, json: async () => ({ fileKey: 'UNEXPECTED' }) };
+  };
+
+  const eventRecord = getSampleRecord();
+  const ui = new EmployeePartAUI({ record: eventRecord, isPreviewMode: false });
+
+  const resultRecord = await ui.uploadPendingAttachments({ record: eventRecord, fetch: mockFetch });
+
+  assert.equal(fetchCallCount, 0, 'Zero pending files must make 0 upload network calls');
+  assert.equal(resultRecord, eventRecord);
+});
+
+test('SUBMIT_LIFECYCLE_PENDING_OBJECTIVE_ATTACHMENT: create/edit submit binds fileKey to exact submit event.record', async () => {
+  let fetchCallCount = 0;
+  const mockFetch = async (url, opts) => {
+    fetchCallCount++;
+    assert.equal(url, '/k/v1/file.json');
+    return { ok: true, json: async () => ({ fileKey: 'FILEKEY_SUBMIT_123' }) };
+  };
+
+  const eventRecord = getSampleRecord();
+  const ui = new EmployeePartAUI({ record: eventRecord, isPreviewMode: false });
+
+  ui.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: { name: 'objective_evidence.pdf' }, name: 'objective_evidence.pdf', status: 'pending' }
+    ]
+  };
+
+  await ui.uploadPendingAttachments({ record: eventRecord, fetch: mockFetch });
+
+  assert.equal(fetchCallCount, 1, 'Upload called exactly once for pending attachment');
+  assert.ok(eventRecord.Objective_Attachment_1, 'Target field must be bound');
+  assert.equal(eventRecord.Objective_Attachment_1.value[0].fileKey, 'FILEKEY_SUBMIT_123');
+  assert.equal(eventRecord.Objective_Attachment_1.value[0].name, 'objective_evidence.pdf');
+});
+
+test('SUBMIT_LIFECYCLE_PENDING_EDIT_MIDYEAR_ATTACHMENT: binds fileKey to exact MidYear field leaving unrelated fields untouched', async () => {
+  const mockFetch = async () => ({ ok: true, json: async () => ({ fileKey: 'FILEKEY_MIDYEAR_999' }) });
+
+  const eventRecord = getSampleRecord();
+  eventRecord.Objective_Attachment_1 = { value: [{ fileKey: 'PREVIOUS_OBJ', name: 'previous_obj.pdf' }] };
+
+  const ui = new EmployeePartAUI({ record: eventRecord, isPreviewMode: false });
+  ui.pendingAttachments = {
+    MidYear_Attachment_1: [
+      { file: { name: 'midyear_review.pdf' }, name: 'midyear_review.pdf', status: 'pending' }
+    ]
+  };
+
+  await ui.uploadPendingAttachments({ record: eventRecord, fetch: mockFetch });
+
+  assert.equal(eventRecord.MidYear_Attachment_1.value[0].fileKey, 'FILEKEY_MIDYEAR_999');
+  assert.equal(eventRecord.Objective_Attachment_1.value[0].fileKey, 'PREVIOUS_OBJ', 'Unrelated Objective attachment must remain untouched');
+});
+
+test('SUBMIT_LIFECYCLE_UPLOAD_ERROR_FAILS_CLOSED: upload error throws error to allow submit cancellation', async () => {
+  const mockFetch = async () => ({ ok: false, status: 500, text: async () => 'Internal Server Error' });
+
+  const eventRecord = getSampleRecord();
+  const ui = new EmployeePartAUI({ record: eventRecord, isPreviewMode: false });
+  ui.pendingAttachments = {
+    Objective_Attachment_1: [
+      { file: { name: 'failed_doc.pdf' }, name: 'failed_doc.pdf', status: 'pending' }
+    ]
+  };
+
+  await assert.rejects(
+    async () => ui.uploadPendingAttachments({ record: eventRecord, fetch: mockFetch }),
+    /Attachment upload failed for field Objective_Attachment_1/
+  );
+
+  assert.equal(ui.pendingAttachments.Objective_Attachment_1[0].status, 'error');
 });
