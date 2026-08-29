@@ -1,234 +1,226 @@
-# AI ACTIVE TASK — WP2 UI FUNCTIONAL PARTITION + RUNTIME INTEGRATION PROOF
+# AI ACTIVE TASK — WP2 UI CORRECTIVE: REAL RUNTIME BACK + COMMENT SAFETY + DETERMINISTIC CANDIDATE
 
 Mode: **ANTIGRAVITY SOURCE / TEST / BUILD ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 
 ## Start Point
 
-WP1 accepted candidate:
-`035b4d1fa077907f19bf8d2ef0a4177156d0319b`
+Latest WP2 evidence commit:
+`a18dd594fb9b522772b9e58427bdd4eeb4906754`
 
-WP1 verdict:
-`PASS / CLOSED`
+Independent verdict:
+`CORRECTIVE`
 
-Do not reopen deployment tooling unless this WP2 work exposes a direct regression.
+Accepted current Live remains App794 Rev54 known-good. Do not write Live in this task.
 
-## Accepted Current Live / Rollback Manifest
+## Preserve Accepted WP2 Direction
 
 ```text
-LIVE_REVISION          = 54
-ROLLBACK_SOURCE_COMMIT = ec6278524a2d5eb53050d0580c340d1b4e866b97
-ROLLBACK_SCOPE         = ALL
-ROLLBACK_TOPOLOGY      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-ROLLBACK_JS_IDENTITY   = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
-ROLLBACK_CSS_IDENTITY  = 1710d770ae87fb5f910d669dd5a88ea0950e6991
+My MBO owner       = src/ui/employee-self-index-ui.js
+Back owner         = src/ui/employee-record-navigation.js
+Comment owner      = src/ui/employee-comment-mirror.js
+EmployeePartAUI    = delegates Back + Comment
+main-mbo-app.js     = orchestration only
 ```
 
-No Live customization write is authorized in WP2.
+Do not move these features back into one large file.
 
-## Objective — Exactly Three UI Features
+## Corrective A — Back Must Survive Existing-Record Early Returns
 
-1. Existing Detail/Edit: reliable **← กลับหน้า My MBO / Back to My MBO**.
-2. My MBO index: readable responsive card/list matching the accepted visual direction.
-3. Existing Detail/Edit: read-only **Native Kintone Comments mirror + Refresh**.
+Current `EmployeePartAUI.render()` mounts Back only after configuration/snapshot checks. Existing Detail/Edit can return before Back appears.
 
-Do NOT implement Copy Previous MBO.
-
-## Functional Code Ownership — Mandatory
-
-Follow `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`.
-
-### A. My MBO
-Canonical owner remains:
-`src/ui/employee-self-index-ui.js`
-
-Do not duplicate this feature elsewhere.
-
-Preserve exactly:
-- Employee_Code self filter;
-- `order by Fiscal_Year desc`;
-- Create New;
-- Fiscal Year prominent;
-- Status prominent;
-- Record Key secondary;
-- non-completed `เปิด MBO / Open MBO`;
-- Completed / `16 Completed` => `ดูย้อนหลัง / View History`;
-- exact `/k/{appId}/show#record={id}` URLs;
-- exactly one auth bar;
-- zero Delete UI.
-
-Only adjust source/CSS required to produce the accepted readable card/list design. Do not alter query/security/status semantics.
-
-### B. Back Navigation
-Create one canonical owner:
-`src/ui/employee-record-navigation.js`
-
-Move/extract the existing Back feature out of `EmployeePartAUI`.
-
-Contract:
-- existing Detail => visible;
-- existing Edit => visible;
-- Create => absent;
-- exact bilingual label: `← กลับหน้า My MBO / Back to My MBO`;
-- target `/k/{currentAppId}/`;
-- same tab;
-- no logout/session mutation;
+Required:
+- for every existing Detail/Edit render, mount Back immediately after root creation and before any configuration/status/snapshot early return;
+- Create must still have no Back;
+- do not weaken configuration fail-closed behavior;
+- label remains exact: `← กลับหน้า My MBO / Back to My MBO`;
+- target remains `/k/{currentAppId}/` same tab;
+- no auth/session mutation;
 - no record/workflow write.
 
-`employee-part-a-ui.js` may delegate to this module but must not retain duplicate Back rendering logic.
-
-### C. Native Comment Mirror
-Create one canonical owner:
-`src/ui/employee-comment-mirror.js`
-
-Move/extract current comment mirror + pagination + Refresh behavior out of `EmployeePartAUI`.
-
-Contract:
-- existing Detail/Edit only;
-- current App794 record only;
-- Native right-side comment panel remains source of truth and write UI;
-- mirror is read-only;
-- GET `/k/v1/record/comments.json` using current Kintone session;
-- no DOM scraping;
-- no duplicate storage/fields;
-- author + timestamp + body;
-- safe text rendering (`textContent` or equivalent safe text node handling);
-- bilingual loading/empty/failure state;
-- non-blocking failure;
-- truthful complete pagination;
-- short page + `newer=true` must continue;
-- stop only on truthful end condition;
-- Refresh must perform real API re-fetch;
-- Create => zero comment GET;
-- zero comment POST/DELETE/reply.
-
-`employee-part-a-ui.js` may delegate to this module but must not retain duplicate Comment mirror implementation.
-
-## Runtime Integration Proof — Back Button Defect Must Be Closed
-
-Previous direct renderer tests were insufficient because Live did not show Back during the failed partial deployment.
-
-Add integration proof through the actual Kintone record UI orchestration path.
-
-At minimum prove:
+Add regressions for at least:
 ```text
-DETAIL_EXISTING_RUNTIME_BACK_VISIBLE = PASS
-EDIT_EXISTING_RUNTIME_BACK_VISIBLE   = PASS
-CREATE_RUNTIME_BACK_ABSENT           = PASS
-BACK_TARGET_CURRENT_APP              = PASS
-BACK_SAME_TAB                        = PASS
-AUTH_SESSION_MUTATION                = 0
-RECORD_WRITE                         = 0
+DETAIL_VALID_RUNTIME_BACK_VISIBLE
+EDIT_VALID_RUNTIME_BACK_VISIBLE
+DETAIL_CONFIGURATION_ERROR_BACK_VISIBLE
+DETAIL_INVALID_SNAPSHOT_BACK_VISIBLE
+CREATE_RUNTIME_BACK_ABSENT
 ```
 
-The test must exercise the real event/auth/host setup path used by `src/main-mbo-app.js`, not only instantiate the navigation module directly.
+## Corrective B — Real main-mbo-app Runtime Integration Test
 
-Minimal `src/main-mbo-app.js` changes are allowed only if required to wire canonical modules. Keep it orchestration-only.
+The prior tests instantiate navigation/EmployeePartAUI directly and do not satisfy runtime proof.
 
-## Comment Tests
+Add an integration test that executes the real registered Kintone record-show orchestration path from `src/main-mbo-app.js`:
 
-Preserve and/or relocate all existing comment regression coverage.
-
-Required proof at minimum:
 ```text
-DETAIL_COMMENT_MIRROR_LOAD_PASS
-EDIT_COMMENT_MIRROR_LOAD_PASS
-CREATE_COMMENT_GET_COUNT = 0
-COMMENT_REFRESH_REFETCH_PASS
-COMMENT_SHORT_PAGE_NEWER_TRUE_CONTINUES
-COMMENT_FINAL_NEWER_FALSE_STOPS
-COMMENT_OVER_10_PASS
-COMMENT_OVER_500_PASS
-COMMENT_SAFE_TEXT_RENDER_PASS
+app.record.detail.show / app.record.edit.show / app.record.create.show
+ -> getRecordUiHost
+ -> login gate requireLogin
+ -> setupRecordUiWithAuth
+ -> EmployeePartAUI.render
+```
+
+A practical test may install a controlled fake `globalThis.kintone` before dynamic-importing `main-mbo-app.js`, capture the registered event handler, inject a mock login gate, and invoke the actual handler.
+
+The proof must not call `_renderBackToMyMboBar()` directly as its primary assertion path.
+
+Record:
+```text
+REAL_MAIN_DETAIL_BACK_VISIBLE
+REAL_MAIN_EDIT_BACK_VISIBLE
+REAL_MAIN_CREATE_BACK_ABSENT
+REAL_MAIN_BACK_CURRENT_APP_TARGET
+REAL_MAIN_AUTH_SESSION_MUTATION = 0
+REAL_MAIN_RECORD_WRITE = 0
+```
+
+## Corrective C — Comment Mirror Detail/Edit Only
+
+Current EmployeePartAUI appends Comment mirror unconditionally.
+
+Required:
+- Detail/Edit -> mirror present;
+- Create -> mirror absent;
+- Create comment GET = 0.
+
+Do not replace this with a Create placeholder panel.
+
+## Corrective D — Safe Text Only in Comment Module
+
+Within `src/ui/employee-comment-mirror.js`:
+- do not assign non-empty text to `innerHTML`;
+- fixed labels, loading/empty/failure strings, author, timestamp, comment body and API error text must use `textContent` or safe text nodes only;
+- clearing with `innerHTML = ''` may remain if needed, or use an equivalent safe clear operation;
+- dynamic `err.message` must never enter HTML parsing.
+
+Add malicious error regression, for example error text containing `<img onerror=...>` or `<script>` and prove it remains plain text.
+
+Required:
+```text
+COMMENT_DYNAMIC_ERROR_SAFE_TEXT_PASS
+COMMENT_BODY_SAFE_TEXT_PASS
+COMMENT_AUTHOR_SAFE_TEXT_PASS
 COMMENT_WRITE_COUNT = 0
 ```
 
-## CSS
+## Corrective E — No Silent Pagination Ceiling
 
-Canonical owner remains:
-`src/styles/mbo-employee.css`
+Current `for (page < 100)` silently returns partial comments if `newer=true` after page 100.
 
-For this corrective:
-- keep a single stylesheet;
-- clearly separate sections/comments for My MBO, Back navigation, Comment mirror;
-- do not create broad CSS architecture work;
-- ensure the card/list design does not fall back to the sparse/unstyled appearance seen in the failed partial deploy.
+Required:
+- no silent partial success due arbitrary page ceiling;
+- continue to truthful end, OR if a safety guard is required, throw an explicit pagination error that the UI catches and shows as non-blocking failure;
+- protect against no-progress loops;
+- preserve short-page + `newer=true` continuation and `newer=false` stop.
 
-## Exact Allowed Scope
+Add a regression that crosses the current ceiling (>5,000 comments or equivalent 101+ pages) and proves either complete retrieval to `newer=false` or explicit failure — never silent truncated success.
 
-May change:
-- `src/ui/employee-self-index-ui.js` — My MBO visual corrective only;
-- `src/ui/employee-part-a-ui.js` — remove/delegate Back + Comment logic only;
-- `src/ui/employee-record-navigation.js` — new canonical Back owner;
-- `src/ui/employee-comment-mirror.js` — new canonical Comment owner;
-- `src/main-mbo-app.js` — minimal wiring/orchestration only if required;
-- `src/styles/mbo-employee.css` — only three active UI feature sections;
-- focused tests for these exact features;
-- deterministic generated `dist/mbo-employee-app.js` + `dist/mbo-employee.css`;
-- one concise WP2 evidence file.
+## Corrective F — Deterministic Candidate Artifact / CSS EOL Identity
 
-Do not create helper/modules beyond these unless there is a direct separation-of-concerns necessity documented in evidence.
+Current evidence has an identity ambiguity:
+```text
+Evidence CSS exact-byte identity = 2599ff745475a5f01bd4224f76e5b098fa2bbf2e
+Committed dist CSS Git blob      = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+```
 
-## Forbidden
+Do not change `gitBlobSha()` exact-byte behavior.
 
-- NO Live Kintone customization deploy/write
-- NO App794 record write
-- NO form/schema/layout write
-- NO ACL/process write
-- NO Comment write
-- NO Auth/session behavior change
-- NO Attachment behavior change
-- NO Routing/Scoring/Profile change
-- NO App801/App795/App796 write
-- NO Copy Previous MBO
-- NO D2-D7 work
-- NO automatic rollback/recovery
-- NO unrelated refactor
+Create a deterministic build/release process so exact built bytes are reviewable and reproducible across the clean candidate checkout.
+
+Required final sequence:
+1. implement source/test/build-output correction;
+2. generate final `dist/mbo-employee-app.js` and `dist/mbo-employee.css`;
+3. commit **source + tests + final dist together** as the candidate commit;
+4. checkout/use that exact candidate commit with clean worktree;
+5. run `npm run ui:build` / hardened build-only again;
+6. post-build tracked `dist/` diff must be zero;
+7. deployment-tool exact-byte JS/CSS identities must equal the committed dist Git blob identities;
+8. only then create/update evidence in a later docs-only commit.
+
+If CSS checkout EOL is the cause, make only the narrow build-output correction needed to emit canonical deterministic CSS bytes (for example deterministic LF output in the CSS build step). Hash the exact output bytes after that normalization. Do not normalize inside `gitBlobSha()` itself.
+
+Required proof:
+```text
+CANDIDATE_CLEAN_REBUILD_DIST_DIFF = 0
+CANDIDATE_JS_EXACT_BYTE_IDENTITY = COMMITTED_JS_BLOB_SHA
+CANDIDATE_CSS_EXACT_BYTE_IDENTITY = COMMITTED_CSS_BLOB_SHA
+```
+
+## My MBO
+
+Do not redesign again unless a regression is found. Preserve existing accepted semantics:
+- Employee_Code self filter;
+- `order by Fiscal_Year desc`;
+- Create New;
+- FY/Status prominent;
+- Record Key secondary;
+- Open vs View History;
+- zero Delete UI;
+- exactly one auth bar.
+
+CSS for My MBO must remain included in the deterministic atomic CSS candidate.
+
+## Allowed Scope
+
+May change only what is directly required:
+- `src/ui/employee-part-a-ui.js`;
+- `src/ui/employee-record-navigation.js` only if necessary;
+- `src/ui/employee-comment-mirror.js`;
+- `src/main-mbo-app.js` only for minimal testable orchestration exposure/wiring if actually needed;
+- focused tests, including one real main event integration test;
+- `scripts/kintone/build-mbo-ui.js` only if deterministic CSS output correction is required;
+- generated `dist/mbo-employee-app.js` + `dist/mbo-employee.css`;
+- WP2 evidence.
+
+Do not change My MBO source semantics unless a direct regression is proven.
 
 ## Verification
 
 Run:
-- focused My MBO tests;
-- focused Back navigation tests;
-- runtime Kintone Detail/Edit/Create integration test(s);
-- focused Comment mirror pagination/Refresh/read-only tests;
-- relevant attachment/auth regression tests because EmployeePartAUI wiring is touched;
+- Back module tests;
+- real main-mbo-app record-show integration tests;
+- Comment mirror tests including malicious error and >100-page behavior;
+- My MBO regression tests;
+- relevant attachment/auth regression tests;
 - `npm test`;
 - `npm run ui:build`;
-- hardened module-aware build-only with 0 Kintone/network calls.
+- hardened build-only with 0 Kintone/network calls.
 
-After source/tests are final, commit first, then perform a clean-worktree candidate build/identity capture consistent with WP1 tooling rules.
+Then execute the final candidate commit + clean-rebuild procedure defined above.
 
-## Required WP2 Evidence
+## Final Evidence Required
 
-Record:
 ```text
 EXECUTION_START_HEAD
 SOURCE_FILES_CHANGED
-NEW_MODULES_CREATED
-FEATURE_OWNER_MAP
-BACK_OLD_IMPLEMENTATION_REMOVED
-COMMENT_OLD_IMPLEMENTATION_REMOVED
-MAIN_MBO_ORCHESTRATION_ONLY_PROOF
-MY_MBO_QUERY_SEMANTICS_UNCHANGED
-DETAIL_EXISTING_RUNTIME_BACK_VISIBLE
-EDIT_EXISTING_RUNTIME_BACK_VISIBLE
-CREATE_RUNTIME_BACK_ABSENT
+NEW_MODULES_PRESERVED
+BACK_EARLY_RETURN_FIX
+REAL_MAIN_DETAIL_BACK_VISIBLE
+REAL_MAIN_EDIT_BACK_VISIBLE
+REAL_MAIN_CREATE_BACK_ABSENT
+COMMENT_CREATE_MIRROR_ABSENT
 COMMENT_CREATE_GET_COUNT = 0
+COMMENT_DYNAMIC_ERROR_SAFE_TEXT_PASS
+COMMENT_PAGINATION_NO_SILENT_TRUNCATION
 COMMENT_REFRESH_REFETCH_RESULT
-COMMENT_PAGINATION_RESULT
-COMMENT_SAFE_RENDER_RESULT
 COMMENT_WRITE_COUNT = 0
+MY_MBO_QUERY_SEMANTICS_UNCHANGED
+ATTACHMENT_AUTH_REGRESSION_RESULT
 FOCUSED_TEST_RESULT
 RUNTIME_INTEGRATION_TEST_RESULT
-ATTACHMENT_AUTH_REGRESSION_RESULT
 FULL_TEST_RESULT
 UI_BUILD_RESULT
 BUILD_ONLY_RESULT
 BUILD_ONLY_NETWORK_CALLS = 0
 CANDIDATE_SOURCE_COMMIT
+CANDIDATE_CLEAN_REBUILD_DIST_DIFF = 0
 CANDIDATE_JS_BLOB_SHA
 CANDIDATE_CSS_BLOB_SHA
+COMMITTED_DIST_JS_BLOB_SHA
+COMMITTED_DIST_CSS_BLOB_SHA
+JS_IDENTITY_MATCH = YES
+CSS_IDENTITY_MATCH = YES
 CANDIDATE_SCOPE = ALL
 CANDIDATE_TOPOLOGY = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 ROLLBACK_SOURCE_COMMIT = ec6278524a2d5eb53050d0580c340d1b4e866b97
@@ -236,10 +228,25 @@ ROLLBACK_JS_IDENTITY = e04aa07852e8e5aa4e4234f6efce5c99f2b37ec8
 ROLLBACK_CSS_IDENTITY = 1710d770ae87fb5f910d669dd5a88ea0950e6991
 LIVE_KINTONE_WRITE = 0
 LIVE_DEPLOY = NO
-FINAL_COMMIT_SHA
+FINAL_EVIDENCE_COMMIT_SHA
 ```
 
-Commit + push source/test/dist/evidence and STOP.
+## Strictly Forbidden
+
+- NO Live Kintone customization deploy/write
+- NO App794 record write
+- NO schema/layout/ACL/process write
+- NO Comment write
+- NO auth/session behavior change
+- NO attachment behavior change
+- NO routing/scoring/profile change
+- NO App801/App795/App796 write
+- NO Copy Previous MBO
+- NO D2-D7 work
+- NO rollback/recovery
+- NO unrelated refactor
+
+Commit + push and STOP.
 
 Maximum status:
-`WP2_UI_CANDIDATE_IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
+`WP2_UI_CORRECTED_CANDIDATE_PENDING_INDEPENDENT_REVIEW`.
