@@ -1,54 +1,61 @@
 /**
  * Cryptographic Utilities for Auth Bridge
  * PBKDF2-SHA256 (100,000 iterations), Opaque Tokens (256-bit), SHA-256 Hashing, HMAC Ticket Signing.
+ * Decodes saltHex to bytes via Buffer.from(saltHex, 'hex') for exact legacy compatibility.
  */
 
 import crypto from 'node:crypto';
 
 const PBKDF2_ITERATIONS = 100000;
-const PBKDF2_KEYLEN = 32;
+const PBKDF2_KEYLEN = 32; // 256 bits = 32 bytes
 const PBKDF2_DIGEST = 'sha256';
 
 export class CryptoUtil {
   /**
    * Hashes a password using PBKDF2-SHA256 with 100,000 iterations.
-   * Format: pbkdf2$100000$<saltHex>$<hashHex>
+   * Serialized format: pbkdf2$100000$<32-hex-salt>$<64-hex-hash>
    */
   static async hashPassword(password) {
     if (typeof password !== 'string' || !password) {
       throw new Error('INVALID_PASSWORD: Password must be a non-empty string.');
     }
-    const salt = crypto.randomBytes(16).toString('hex');
+    const saltBytes = crypto.randomBytes(16);
+    const saltHex = saltBytes.toString('hex');
+
     const hashBuffer = await new Promise((resolve, reject) => {
-      crypto.pbkdf2(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST, (err, key) => {
+      crypto.pbkdf2(password, saltBytes, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST, (err, key) => {
         if (err) reject(err);
         else resolve(key);
       });
     });
-    return `pbkdf2$${PBKDF2_ITERATIONS}$${salt}$${hashBuffer.toString('hex')}`;
+
+    return `pbkdf2$${PBKDF2_ITERATIONS}$${saltHex}$${hashBuffer.toString('hex')}`;
   }
 
   /**
    * Verifies a raw password against a stored PBKDF2 hash.
+   * Enforces strict regex: ^pbkdf2\$100000\$[0-9a-fA-F]{32}\$[0-9a-fA-F]{64}$
    */
   static async verifyPassword(password, storedHash) {
-    if (!password || !storedHash || typeof storedHash !== 'string') {
+    if (typeof password !== 'string' || !password || typeof storedHash !== 'string' || !storedHash) {
       return false;
     }
-    const parts = storedHash.split('$');
-    if (parts.length !== 4 || parts[0] !== 'pbkdf2') {
-      return false;
-    }
-    const iterations = Number(parts[1]);
-    const salt = parts[2];
-    const expectedHashHex = parts[3];
 
-    if (!iterations || iterations <= 0 || !salt || !expectedHashHex) {
+    const regex = /^pbkdf2\$100000\$([0-9a-fA-F]{32})\$([0-9a-fA-F]{64})$/;
+    const match = storedHash.match(regex);
+    if (!match) {
+      return false;
+    }
+
+    const [, saltHex, expectedHashHex] = match;
+    const saltBytes = Buffer.from(saltHex, 'hex');
+
+    if (saltBytes.length !== 16) {
       return false;
     }
 
     const hashBuffer = await new Promise((resolve, reject) => {
-      crypto.pbkdf2(password, salt, iterations, PBKDF2_KEYLEN, PBKDF2_DIGEST, (err, key) => {
+      crypto.pbkdf2(password, saltBytes, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST, (err, key) => {
         if (err) reject(err);
         else resolve(key);
       });
@@ -78,9 +85,10 @@ export class CryptoUtil {
   }
 
   /**
-   * Signs a payload using HMAC-SHA256.
+   * Signs data string using HMAC-SHA256.
    */
   static signHmac(dataString, secretKey) {
+    if (!secretKey) throw new Error('MISSING_SECRET_KEY');
     return crypto.createHmac('sha256', secretKey).update(dataString).digest('hex');
   }
 
@@ -88,6 +96,7 @@ export class CryptoUtil {
    * Verifies an HMAC-SHA256 signature.
    */
   static verifyHmac(dataString, signature, secretKey) {
+    if (!secretKey || !signature || typeof signature !== 'string') return false;
     const computed = CryptoUtil.signHmac(dataString, secretKey);
     try {
       return crypto.timingSafeEqual(Buffer.from(computed, 'hex'), Buffer.from(signature, 'hex'));

@@ -8,7 +8,7 @@ export class AuthBridgeRouter {
     this.authService = options.authService;
     this.sessionService = options.sessionService;
     this.rateLimiter = options.rateLimiter || null;
-    this.allowedOrigins = options.allowedOrigins || ['*'];
+    this.allowedOrigins = options.allowedOrigins || [];
   }
 
   /**
@@ -58,57 +58,35 @@ export class AuthBridgeRouter {
       return { statusCode: 200, headers: responseHeaders, body: { status: 'OK', service: 'mbo-auth-bridge' } };
     }
 
-    // 4. Endpoint Routing
+    // 4. Endpoint Routing with Sanitized Error Handling
     try {
       if (method === 'POST' && url === '/v1/auth/login') {
-        const { employeeCode, password, kintoneUserCode } = body || {};
-        const result = await this.authService.login({ employeeCode, password, kintoneUserCode, now });
+        const { employeeCode, password, kintoneUser } = body || {};
+        const result = await this.authService.login({ employeeCode, password, kintoneUser, now });
         return this._formatResponse(result, responseHeaders);
       }
 
       if (method === 'POST' && url === '/v1/auth/session/validate') {
-        const { sessionToken, employeeCode, kintoneUserCode } = body || {};
-        const result = await this.sessionService.validateSession(sessionToken, employeeCode, kintoneUserCode, now);
-        if (result.valid) {
-          return {
-            statusCode: 200,
-            headers: responseHeaders,
-            body: {
-              status: 'AUTHENTICATED',
-              valid: true,
-              employeeCode: result.employeeCode,
-              credentialVersion: result.credentialVersion,
-              expiresAt: result.expiresAt
-            }
-          };
-        } else {
-          return {
-            statusCode: 200,
-            headers: responseHeaders,
-            body: {
-              status: 'INVALID_SESSION',
-              valid: false,
-              reason: result.reason
-            }
-          };
-        }
+        const { sessionToken, kintoneUser } = body || {};
+        const result = await this.sessionService.validateSession(sessionToken, kintoneUser, now);
+        return this._formatResponse(result, responseHeaders);
       }
 
       if (method === 'POST' && url === '/v1/auth/logout') {
-        const { employeeCode } = body || {};
-        const result = await this.authService.logout({ employeeCode });
+        const { sessionToken } = body || {};
+        const result = await this.authService.logout({ sessionToken });
         return { statusCode: 200, headers: responseHeaders, body: result };
       }
 
       if (method === 'POST' && url === '/v1/auth/password/force-change') {
-        const { forceTicket, employeeCode, newPassword, kintoneUserCode } = body || {};
-        const result = await this.authService.forcePasswordChange({ forceTicket, employeeCode, newPassword, kintoneUserCode, now });
+        const { forceTicket, newPassword, kintoneUser } = body || {};
+        const result = await this.authService.forcePasswordChange({ forceTicket, newPassword, kintoneUser, now });
         return this._formatResponse(result, responseHeaders);
       }
 
       if (method === 'POST' && url === '/v1/auth/password/change') {
-        const { sessionToken, employeeCode, currentPassword, newPassword, kintoneUserCode } = body || {};
-        const result = await this.authService.changePassword({ sessionToken, employeeCode, currentPassword, newPassword, kintoneUserCode, now });
+        const { sessionToken, currentPassword, newPassword, kintoneUser } = body || {};
+        const result = await this.authService.changePassword({ sessionToken, currentPassword, newPassword, kintoneUser, now });
         return this._formatResponse(result, responseHeaders);
       }
 
@@ -118,17 +96,17 @@ export class AuthBridgeRouter {
         body: { error: 'NOT_FOUND', reason: 'Endpoint not found.' }
       };
     } catch (err) {
+      // Sanitized error response — NEVER leak internal err.message or stack trace to client!
       return {
         statusCode: 500,
         headers: responseHeaders,
-        body: { status: 'AUTH_SERVICE_UNAVAILABLE', reason: err.message || 'Internal service error.' }
+        body: { status: 'AUTH_SERVICE_UNAVAILABLE', reason: 'An internal authentication service error occurred.' }
       };
     }
   }
 
   _checkCorsOrigin(origin) {
-    if (!origin) return true;
-    if (this.allowedOrigins.includes('*')) return true;
+    if (!origin) return true; // Direct non-browser requests allowed
     return this.allowedOrigins.includes(origin);
   }
 
@@ -140,15 +118,19 @@ export class AuthBridgeRouter {
       'ACCOUNT_LOCKED': 200,
       'ACCOUNT_DISABLED': 200,
       'INVALID_SESSION': 200,
+      'INVALID_TICKET': 200,
+      'INVALID_PARAMETERS': 200,
       'RATE_LIMITED': 429,
       'AUTH_SERVICE_UNAVAILABLE': 500
     };
     const statusCode = statusMap[serviceResult.status] || 400;
 
-    // Sanitize response body — NO secrets, NO Password_Hash, NO Session_Token_Hash, NO API tokens!
+    // Sanitize response body — NO secrets, NO Password_Hash, NO Session_Token_Hash, NO API tokens, NO internal stack!
     const sanitizedBody = {
       status: serviceResult.status,
+      valid: serviceResult.valid !== undefined ? serviceResult.valid : undefined,
       employeeCode: serviceResult.employeeCode || undefined,
+      credentialVersion: serviceResult.credentialVersion || undefined,
       sessionToken: serviceResult.sessionToken || undefined,
       expiresAt: serviceResult.expiresAt || undefined,
       forceTicket: serviceResult.forceTicket || undefined,

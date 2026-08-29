@@ -1,9 +1,10 @@
 /**
  * Authentication Domain Service (Auth Bridge)
- * Handles Password Verification, Lockout Enforcement (5 attempts -> 15 mins), Session Issuance, Password Changes.
+ * Handles Password Verification, Lockout Enforcement (5 attempts -> 15 mins via Locked_Until), Session Issuance & Rotation.
  */
 
 import { CryptoUtil } from './crypto-util.js';
+import { validateEmployeeCode } from './app801-repository.js';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -18,40 +19,44 @@ export class AuthService {
   /**
    * Authenticates an employee by code & password.
    */
-  async login({ employeeCode, password, kintoneUserCode = '', now = new Date() }) {
-    if (!employeeCode || typeof employeeCode !== 'string' || !password || typeof password !== 'string') {
+  async login({ employeeCode, password, kintoneUser = '', now = new Date() }) {
+    if (!employeeCode || !password || typeof password !== 'string') {
       return { status: 'INVALID_CREDENTIALS', reason: 'Missing credentials.' };
     }
 
-    const cleanCode = employeeCode.trim();
+    let cleanCode;
+    try {
+      cleanCode = validateEmployeeCode(employeeCode);
+    } catch {
+      return { status: 'INVALID_CREDENTIALS', reason: 'Invalid employee code format.' };
+    }
+
     let credential;
     try {
       credential = await this.repository.getCredential(cleanCode);
     } catch (err) {
-      if (err.message?.includes('DUPLICATE_IDENTITY_RECORD') || err.message?.includes('MALFORMED_CREDENTIAL_RECORD')) {
-        return { status: 'AUTH_SERVICE_UNAVAILABLE', reason: err.message };
-      }
-      return { status: 'INVALID_CREDENTIALS', reason: 'Invalid credentials.' };
+      return { status: 'AUTH_SERVICE_UNAVAILABLE', reason: 'Authentication database lookup failed.' };
     }
 
     if (!credential) {
       return { status: 'INVALID_CREDENTIALS', reason: 'Invalid credentials.' };
     }
 
-    // Check account status: DISABLED
+    // Check permanent account status: DISABLED
     if (credential.Account_Status === 'DISABLED') {
       return { status: 'ACCOUNT_DISABLED', reason: 'Account is disabled.' };
     }
 
-    // Check account status: LOCKED or Locked_Until active
-    if (credential.Account_Status === 'LOCKED' || credential.Locked_Until) {
-      if (credential.Locked_Until) {
-        const lockedTime = new Date(credential.Locked_Until).getTime();
-        if (!isNaN(lockedTime) && now.getTime() < lockedTime) {
-          return { status: 'ACCOUNT_LOCKED', reason: 'Account is locked due to multiple failed login attempts.' };
-        }
-      } else if (credential.Account_Status === 'LOCKED') {
-        return { status: 'ACCOUNT_LOCKED', reason: 'Account is locked.' };
+    // Check permanent account status: LOCKED
+    if (credential.Account_Status === 'LOCKED') {
+      return { status: 'ACCOUNT_LOCKED', reason: 'Account is permanently locked.' };
+    }
+
+    // Check temporary lockout via Locked_Until
+    if (credential.Locked_Until) {
+      const lockedTime = new Date(credential.Locked_Until).getTime();
+      if (!isNaN(lockedTime) && now.getTime() < lockedTime) {
+        return { status: 'ACCOUNT_LOCKED', reason: 'Account is temporarily locked due to multiple failed attempts.' };
       }
     }
 
@@ -63,7 +68,7 @@ export class AuthService {
       const patch = { Failed_Login_Count: newFailedCount };
 
       if (newFailedCount >= MAX_FAILED_ATTEMPTS) {
-        patch.Account_Status = 'LOCKED';
+        // Set temporary Locked_Until without overwriting permanent Account_Status!
         patch.Locked_Until = new Date(now.getTime() + LOCKOUT_DURATION_MS).toISOString();
         await this.repository.updateCredential(cleanCode, patch);
         return { status: 'ACCOUNT_LOCKED', reason: 'Account locked due to 5 consecutive failed login attempts.' };
@@ -73,11 +78,10 @@ export class AuthService {
       return { status: 'INVALID_CREDENTIALS', reason: 'Invalid credentials.' };
     }
 
-    // Password valid -> reset lockout counter & update Last_Login_At
+    // Password valid -> reset lockout counter & update Last_Login_At (keep Account_Status unchanged)
     const patch = {
       Failed_Login_Count: 0,
       Locked_Until: null,
-      Account_Status: 'ACTIVE',
       Last_Login_At: now.toISOString()
     };
     await this.repository.updateCredential(cleanCode, patch);
@@ -97,7 +101,12 @@ export class AuthService {
     }
 
     // Normal successful login -> issue session token
-    const sessionRes = await this.sessionService.createSession(cleanCode, kintoneUserCode, now);
+    const sessionRes = await this.sessionService.createSession(
+      cleanCode,
+      kintoneUser,
+      credential.Credential_Version,
+      now
+    );
     return {
       status: 'AUTHENTICATED',
       employeeCode: cleanCode,
@@ -109,44 +118,66 @@ export class AuthService {
   /**
    * Resolves a Force Password Change requirement using a valid force ticket.
    */
-  async forcePasswordChange({ forceTicket, employeeCode, newPassword, kintoneUserCode = '', now = new Date() }) {
-    if (!forceTicket || !employeeCode || !newPassword) {
-      return { status: 'INVALID_PARAMETERS', reason: 'forceTicket, employeeCode, and newPassword are required.' };
+  async forcePasswordChange({ forceTicket, newPassword, kintoneUser = '', now = new Date() }) {
+    if (!forceTicket || !newPassword || typeof newPassword !== 'string') {
+      return { status: 'INVALID_PARAMETERS', reason: 'forceTicket and newPassword are required.' };
     }
 
-    const cleanCode = employeeCode.trim();
-    const credential = await this.repository.getCredential(cleanCode);
+    // 1. Verify force ticket -> resolves employeeCode and credentialVersion
+    const ticketCheck = this.ticketService.verifyForceTicket(forceTicket, null, null, now);
+    if (!ticketCheck.valid) {
+      return { status: 'INVALID_TICKET', reason: ticketCheck.reason };
+    }
+
+    const cleanCode = ticketCheck.employeeCode;
+    let credential;
+    try {
+      credential = await this.repository.getCredential(cleanCode);
+    } catch {
+      return { status: 'AUTH_SERVICE_UNAVAILABLE', reason: 'Database error.' };
+    }
+
     if (!credential) {
       return { status: 'INVALID_CREDENTIALS', reason: 'Account not found.' };
     }
 
-    // Verify force ticket
-    const ticketCheck = this.ticketService.verifyForceTicket(
-      forceTicket,
-      cleanCode,
-      credential.Credential_Version,
-      now
-    );
-
-    if (!ticketCheck.valid) {
-      return { status: 'INVALID_SESSION', reason: ticketCheck.reason };
+    // Must NOT re-enable DISABLED or LOCKED accounts!
+    if (credential.Account_Status === 'DISABLED') {
+      return { status: 'ACCOUNT_DISABLED', reason: 'Cannot change password for disabled account.' };
+    }
+    if (credential.Account_Status === 'LOCKED') {
+      return { status: 'ACCOUNT_LOCKED', reason: 'Cannot change password for locked account.' };
+    }
+    if (credential.Locked_Until) {
+      const lockedTime = new Date(credential.Locked_Until).getTime();
+      if (!isNaN(lockedTime) && now.getTime() < lockedTime) {
+        return { status: 'ACCOUNT_LOCKED', reason: 'Cannot change password while account is locked.' };
+      }
     }
 
-    // Hash new password and increment Credential_Version
+    // Verify Credential_Version match
+    if (credential.Credential_Version !== ticketCheck.credentialVersion) {
+      return { status: 'INVALID_TICKET', reason: 'CREDENTIAL_VERSION_MISMATCH' };
+    }
+
+    if (!credential.Must_Change_Password) {
+      return { status: 'INVALID_TICKET', reason: 'PASSWORD_CHANGE_NOT_REQUIRED' };
+    }
+
+    // Hash new password & increment Credential_Version
     const newHash = await CryptoUtil.hashPassword(newPassword);
-    const newVersion = (credential.Credential_Version || 1) + 1;
+    const newVersion = credential.Credential_Version + 1;
 
     await this.repository.updateCredential(cleanCode, {
       Password_Hash: newHash,
       Must_Change_Password: false,
       Credential_Version: newVersion,
       Failed_Login_Count: 0,
-      Locked_Until: null,
-      Account_Status: 'ACTIVE'
+      Locked_Until: null
     });
 
-    // Issue new session
-    const sessionRes = await this.sessionService.createSession(cleanCode, kintoneUserCode, now);
+    // Revoke old session & issue replacement session
+    const sessionRes = await this.sessionService.createSession(cleanCode, kintoneUser, newVersion, now);
     return {
       status: 'AUTHENTICATED',
       employeeCode: cleanCode,
@@ -157,21 +188,27 @@ export class AuthService {
 
   /**
    * Performs a normal password change for an authenticated session.
+   * Derives employee identity from sessionToken server-side.
    */
-  async changePassword({ sessionToken, employeeCode, currentPassword, newPassword, kintoneUserCode = '', now = new Date() }) {
-    if (!sessionToken || !employeeCode || !currentPassword || !newPassword) {
-      return { status: 'INVALID_PARAMETERS', reason: 'Missing parameters for password change.' };
+  async changePassword({ sessionToken, currentPassword, newPassword, kintoneUser = '', now = new Date() }) {
+    if (!sessionToken || !currentPassword || !newPassword) {
+      return { status: 'INVALID_PARAMETERS', reason: 'sessionToken, currentPassword, and newPassword are required.' };
     }
 
-    const cleanCode = employeeCode.trim();
-
-    // Validate active session
-    const sessionCheck = await this.sessionService.validateSession(sessionToken, cleanCode, kintoneUserCode, now);
+    // Derive identity from session token server-side
+    const sessionCheck = await this.sessionService.validateSession(sessionToken, kintoneUser, now);
     if (!sessionCheck.valid) {
       return { status: 'INVALID_SESSION', reason: sessionCheck.reason };
     }
 
-    const credential = await this.repository.getCredential(cleanCode);
+    const cleanCode = sessionCheck.employeeCode;
+    let credential;
+    try {
+      credential = await this.repository.getCredential(cleanCode);
+    } catch {
+      return { status: 'AUTH_SERVICE_UNAVAILABLE', reason: 'Database error.' };
+    }
+
     if (!credential) {
       return { status: 'INVALID_CREDENTIALS', reason: 'Account not found.' };
     }
@@ -184,7 +221,10 @@ export class AuthService {
 
     // Hash new password & increment Credential_Version
     const newHash = await CryptoUtil.hashPassword(newPassword);
-    const newVersion = (credential.Credential_Version || 1) + 1;
+    const newVersion = credential.Credential_Version + 1;
+
+    // Revoke current session
+    await this.sessionService.revokeSession(sessionToken);
 
     await this.repository.updateCredential(cleanCode, {
       Password_Hash: newHash,
@@ -192,8 +232,8 @@ export class AuthService {
       Credential_Version: newVersion
     });
 
-    // Rotate session: issue new session token
-    const newSessionRes = await this.sessionService.createSession(cleanCode, kintoneUserCode, now);
+    // Issue replacement session token
+    const newSessionRes = await this.sessionService.createSession(cleanCode, kintoneUser, newVersion, now);
     return {
       status: 'AUTHENTICATED',
       employeeCode: cleanCode,
@@ -203,13 +243,13 @@ export class AuthService {
   }
 
   /**
-   * Logs out an employee session.
+   * Logs out an employee session matching the presented raw session token.
    */
-  async logout({ employeeCode }) {
-    if (!employeeCode) {
-      return { status: 'INVALID_PARAMETERS', reason: 'employeeCode is required.' };
+  async logout({ sessionToken }) {
+    if (!sessionToken) {
+      return { status: 'LOGGED_OUT' };
     }
-    await this.sessionService.revokeSession(employeeCode);
+    await this.sessionService.revokeSession(sessionToken);
     return { status: 'LOGGED_OUT' };
   }
 }

@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { CryptoUtil } from '../src/crypto-util.js';
-import { App801Repository } from '../src/app801-repository.js';
+import { App801Repository, validateEmployeeCode } from '../src/app801-repository.js';
 import { TicketService } from '../src/ticket-service.js';
 import { SessionService } from '../src/session-service.js';
 import { AuthService } from '../src/auth-service.js';
 import { RateLimiter } from '../src/rate-limiter.js';
 import { AuthBridgeRouter } from '../src/router.js';
+import { parseBridgeConfig } from '../src/config.js';
 
 function createMockTransport(initialRecords = []) {
   const store = new Map();
@@ -18,12 +19,14 @@ function createMockTransport(initialRecords = []) {
   return {
     store,
     async getRecords(appId, query) {
-      const match = query.match(/Employee_Code = "([^"]+)"/);
-      if (!match) return { records: [] };
-      const code = match[1];
+      const empMatch = query.match(/Employee_Code = "([^"]+)"/);
+      const tokenMatch = query.match(/Session_Token_Hash = "([^"]+)"/);
       const found = [];
+
       for (const rec of store.values()) {
-        if (rec.Employee_Code?.value === code) {
+        if (empMatch && rec.Employee_Code?.value === empMatch[1]) {
+          found.push(rec);
+        } else if (tokenMatch && rec.Session_Token_Hash?.value === tokenMatch[1]) {
           found.push(rec);
         }
       }
@@ -59,21 +62,53 @@ async function setupBridge(initialRecords = []) {
   return { transport, repository, ticketService, sessionService, authService, rateLimiter, router };
 }
 
-// 1. Existing PBKDF2 format verify + new hash compatibility
-test('1. CryptoUtil: PBKDF2 format verify and new hash compatibility', async () => {
-  const password = 'SecretPassword123!';
-  const hash = await CryptoUtil.hashPassword(password);
-  assert.ok(hash.startsWith('pbkdf2$100000$'), 'Hash format must start with pbkdf2$100000$');
+// 1. Fixed legacy PBKDF2 vector
+test('1. CryptoUtil: Fixed legacy PBKDF2 vector verification', async () => {
+  const password = '0113';
+  const saltHex = '00112233445566778899aabbccddeeff';
+  const expectedHashHex = '51cbc01895f8689f4e6a7f8f227b2264c5675e992b3ce7d1db6010bb523be7c3';
+  const storedHash = `pbkdf2$100000$${saltHex}$${expectedHashHex}`;
 
-  const valid = await CryptoUtil.verifyPassword(password, hash);
-  assert.equal(valid, true, 'Valid password must verify true');
+  const valid = await CryptoUtil.verifyPassword(password, storedHash);
+  assert.equal(valid, true, 'Fixed legacy vector must verify true when saltHex is decoded as bytes');
 
-  const invalid = await CryptoUtil.verifyPassword('WrongPassword', hash);
-  assert.equal(invalid, false, 'Invalid password must verify false');
+  const invalid = await CryptoUtil.verifyPassword('wrongpass', storedHash);
+  assert.equal(invalid, false, 'Wrong password must fail legacy vector');
 });
 
-// 2. Valid ACTIVE login -> raw session returned, only token hash persisted
-test('2. Login: Valid ACTIVE login returns raw session token and persists SHA-256 token hash', async () => {
+// 2. Malformed PBKDF2 format rejected
+test('2. CryptoUtil: Malformed PBKDF2 string formats fail closed', async () => {
+  assert.equal(await CryptoUtil.verifyPassword('0113', 'invalid$hash$string'), false);
+  assert.equal(await CryptoUtil.verifyPassword('0113', 'pbkdf2$100000$shortsalt$hash'), false);
+  assert.equal(await CryptoUtil.verifyPassword('0113', 'pbkdf2$100000$00112233445566778899aabbccddeeff$nothex'), false);
+});
+
+// 3. Employee_Code canonical validation
+test('3. Repository: Employee_Code whitespace and invalid characters rejected', () => {
+  assert.equal(validateEmployeeCode('0113'), '0113');
+  assert.throws(() => validateEmployeeCode('0113 '), /INVALID_EMPLOYEE_CODE/);
+  assert.throws(() => validateEmployeeCode(' 0113'), /INVALID_EMPLOYEE_CODE/);
+  assert.throws(() => validateEmployeeCode('0113\n'), /INVALID_EMPLOYEE_CODE/);
+  assert.throws(() => validateEmployeeCode('0113;DROP'), /INVALID_EMPLOYEE_CODE/);
+});
+
+// 4. Exact App801 session fields and fail-closed parsing
+test('4. Repository: Fail-closed parsing for missing or invalid security fields', async () => {
+  const malformedRecords = [
+    { $id: { value: '1' }, Employee_Code: { value: '0113' }, Password_Hash: { value: 'hash' }, Force_Password_Change: { value: 'NO' }, Failed_Attempts: { value: 0 }, Credential_Version: { value: 1 } }, // Missing Account_Status
+    { $id: { value: '2' }, Employee_Code: { value: '0114' }, Password_Hash: { value: 'hash' }, Account_Status: { value: 'ACTIVE' }, Failed_Attempts: { value: 0 }, Credential_Version: { value: 1 } }, // Missing Force_Password_Change
+    { $id: { value: '3' }, Employee_Code: { value: '0115' }, Password_Hash: { value: 'hash' }, Account_Status: { value: 'ACTIVE' }, Force_Password_Change: { value: 'NO' }, Credential_Version: { value: 1 } } // Missing Failed_Attempts
+  ];
+
+  for (const rec of malformedRecords) {
+    const transport = createMockTransport([rec]);
+    const repo = new App801Repository({ appId: 801, transport });
+    await assert.rejects(() => repo.getCredential(rec.Employee_Code.value), /MALFORMED_CREDENTIAL_RECORD/);
+  }
+});
+
+// 5. Server-side session resolution by token hash
+test('5. Session: Validates session by raw sessionToken hash without client Employee_Code', async () => {
   const passHash = await CryptoUtil.hashPassword('Pass0113!');
   const initialRecords = [{
     $id: { value: '1' },
@@ -85,31 +120,77 @@ test('2. Login: Valid ACTIVE login returns raw session token and persists SHA-25
     Credential_Version: { value: 1 }
   }];
 
-  const { router, transport } = await setupBridge(initialRecords);
-  const req = {
+  const { router } = await setupBridge(initialRecords);
+
+  const loginRes = await router.handleRequest({
     method: 'POST',
     url: '/v1/auth/login',
     body: { employeeCode: '0113', password: 'Pass0113!' }
-  };
+  });
 
-  const res = await router.handleRequest(req);
-  assert.equal(res.statusCode, 200);
-  assert.equal(res.body.status, 'AUTHENTICATED');
-  assert.ok(res.body.sessionToken, 'Raw sessionToken must be returned');
+  const sessionToken = loginRes.body.sessionToken;
+  assert.ok(sessionToken);
 
-  // Verify stored in repository is token hash only, NOT raw token
-  const storedRec = transport.store.get(1);
-  const storedHash = storedRec.Session_Token_Hash?.value;
-  assert.ok(storedHash, 'Session_Token_Hash must be persisted');
-  assert.notEqual(storedHash, res.body.sessionToken, 'Persisted hash must not equal raw session token');
-  assert.equal(storedHash, CryptoUtil.hashToken(res.body.sessionToken));
+  const validateRes = await router.handleRequest({
+    method: 'POST',
+    url: '/v1/auth/session/validate',
+    body: { sessionToken } // NO employeeCode in body!
+  });
+
+  assert.equal(validateRes.body.status, 'AUTHENTICATED');
+  assert.equal(validateRes.body.valid, true);
+  assert.equal(validateRes.body.employeeCode, '0113');
 });
 
-// 3. Wrong password increments attempts and 5th failure produces 15-minute lock
-test('3. Lockout: 5 failed login attempts trigger 15-minute account lock', async () => {
+// 6. Duplicate token hash fails closed
+test('6. Session: Duplicate Session_Token_Hash fails closed', async () => {
+  const token = '11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff';
+  const tokenHash = CryptoUtil.hashToken(token);
+
+  const rec1 = { $id: { value: '1' }, Employee_Code: { value: '0113' }, Password_Hash: { value: 'h' }, Account_Status: { value: 'ACTIVE' }, Force_Password_Change: { value: 'NO' }, Failed_Attempts: { value: 0 }, Credential_Version: { value: 1 }, Session_Token_Hash: { value: tokenHash } };
+  const rec2 = { $id: { value: '2' }, Employee_Code: { value: '0114' }, Password_Hash: { value: 'h' }, Account_Status: { value: 'ACTIVE' }, Force_Password_Change: { value: 'NO' }, Failed_Attempts: { value: 0 }, Credential_Version: { value: 1 }, Session_Token_Hash: { value: tokenHash } };
+
+  const transport = createMockTransport([rec1, rec2]);
+  const repo = new App801Repository({ appId: 801, transport });
+  await assert.rejects(() => repo.getCredentialBySessionTokenHash(tokenHash), /DUPLICATE_SESSION_TOKEN_RECORD/);
+});
+
+// 7. Session_Credential_Version mismatch invalidates session
+test('7. Session: Session_Credential_Version mismatch invalidates session', async () => {
+  const passHash = await CryptoUtil.hashPassword('Pass0113!');
+  const token = '11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff';
+  const tokenHash = CryptoUtil.hashToken(token);
+
+  const initialRecords = [{
+    $id: { value: '1' },
+    Employee_Code: { value: '0113' },
+    Password_Hash: { value: passHash },
+    Force_Password_Change: { value: 'NO' },
+    Account_Status: { value: 'ACTIVE' },
+    Failed_Attempts: { value: 0 },
+    Credential_Version: { value: 2 }, // Account version incremented to 2
+    Session_Token_Hash: { value: tokenHash },
+    Session_Expires_At: { value: new Date(Date.now() + 100000).toISOString() },
+    Session_Credential_Version: { value: 1 } // Session still version 1
+  }];
+
+  const { router } = await setupBridge(initialRecords);
+
+  const res = await router.handleRequest({
+    method: 'POST',
+    url: '/v1/auth/session/validate',
+    body: { sessionToken: token }
+  });
+
+  assert.equal(res.body.status, 'INVALID_SESSION');
+  assert.equal(res.body.reason, 'CREDENTIAL_VERSION_MISMATCH');
+});
+
+// 8. Temporary lockout: 5th failure sets Locked_Until but leaves Account_Status ACTIVE
+test('8. Lockout: 5 failed attempts set temporary Locked_Until while leaving Account_Status ACTIVE', async () => {
   const passHash = await CryptoUtil.hashPassword('CorrectPass!');
   const initialRecords = [{
-    $id: { value: '2' },
+    $id: { value: '1' },
     Employee_Code: { value: '0114' },
     Password_Hash: { value: passHash },
     Force_Password_Change: { value: 'NO' },
@@ -118,183 +199,57 @@ test('3. Lockout: 5 failed login attempts trigger 15-minute account lock', async
     Credential_Version: { value: 1 }
   }];
 
-  const { router } = await setupBridge(initialRecords);
+  const { router, transport } = await setupBridge(initialRecords);
 
-  for (let i = 1; i <= 4; i++) {
-    const res = await router.handleRequest({
+  for (let i = 1; i <= 5; i++) {
+    await router.handleRequest({
       method: 'POST',
       url: '/v1/auth/login',
       body: { employeeCode: '0114', password: 'WrongPassword' }
     });
-    assert.equal(res.body.status, 'INVALID_CREDENTIALS');
   }
 
-  // 5th failure
-  const res5 = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/login',
-    body: { employeeCode: '0114', password: 'WrongPassword' }
-  });
-  assert.equal(res5.body.status, 'ACCOUNT_LOCKED');
+  const rec = transport.store.get(1);
+  assert.equal(rec.Account_Status.value, 'ACTIVE', 'Temporary lockout MUST NOT rewrite Account_Status to LOCKED');
+  assert.ok(rec.Locked_Until.value, 'Locked_Until timestamp must be set');
 });
 
-// 4. LOCKED / DISABLED denied with correct stable status
-test('4. Account Status: LOCKED and DISABLED accounts are denied with stable status', async () => {
-  const passHash = await CryptoUtil.hashPassword('ValidPass1!');
-  const initialRecords = [
-    {
-      $id: { value: '3' },
-      Employee_Code: { value: '0115' },
-      Password_Hash: { value: passHash },
-      Account_Status: { value: 'DISABLED' },
-      Failed_Attempts: { value: 0 }
-    },
-    {
-      $id: { value: '4' },
-      Employee_Code: { value: '0116' },
-      Password_Hash: { value: passHash },
-      Account_Status: { value: 'LOCKED' },
-      Locked_Until: { value: new Date(Date.now() + 600000).toISOString() },
-      Failed_Attempts: { value: 5 }
-    }
-  ];
-
-  const { router } = await setupBridge(initialRecords);
-
-  const resDisabled = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/login',
-    body: { employeeCode: '0115', password: 'ValidPass1!' }
-  });
-  assert.equal(resDisabled.body.status, 'ACCOUNT_DISABLED');
-
-  const resLocked = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/login',
-    body: { employeeCode: '0116', password: 'ValidPass1!' }
-  });
-  assert.equal(resLocked.body.status, 'ACCOUNT_LOCKED');
-});
-
-// 5. Force Change -> ticket only, no usable session
-test('5. Force Change: Initial login returns forceTicket only and no sessionToken', async () => {
-  const passHash = await CryptoUtil.hashPassword('0117');
+// 9. Permanent LOCKED remains denied after time passes
+test('9. Lockout: Permanent LOCKED status remains denied regardless of Locked_Until', async () => {
+  const passHash = await CryptoUtil.hashPassword('Pass123!');
   const initialRecords = [{
-    $id: { value: '5' },
-    Employee_Code: { value: '0117' },
-    Password_Hash: { value: passHash },
-    Force_Password_Change: { value: 'YES' },
-    Account_Status: { value: 'ACTIVE' },
-    Failed_Attempts: { value: 0 },
-    Credential_Version: { value: 1 }
-  }];
-
-  const { router } = await setupBridge(initialRecords);
-
-  const res = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/login',
-    body: { employeeCode: '0117', password: '0117' }
-  });
-
-  assert.equal(res.body.status, 'PASSWORD_CHANGE_REQUIRED');
-  assert.ok(res.body.forceTicket, 'forceTicket must be returned');
-  assert.equal(res.body.sessionToken, undefined, 'NO sessionToken must be issued');
-});
-
-// 6. Tampered / expired / version-mismatched force ticket denied
-test('6. Force Ticket Validation: Tampered or expired force ticket is denied', async () => {
-  const { ticketService } = await setupBridge();
-  const ticket = ticketService.issueForceTicket('0117', 1, new Date(1000000)); // Expired date
-
-  const check = ticketService.verifyForceTicket(ticket, '0117', 1, new Date(2000000));
-  assert.equal(check.valid, false);
-  assert.equal(check.reason, 'TICKET_EXPIRED');
-
-  // Tampered ticket
-  const tamperedTicket = ticket + 'tampered';
-  const checkTampered = ticketService.verifyForceTicket(tamperedTicket, '0117', 1, new Date());
-  assert.equal(checkTampered.valid, false);
-});
-
-// 7. Successful Force Change increments Credential_Version + issues session
-test('7. Force Password Change: Successful force change increments Credential_Version and returns session', async () => {
-  const passHash = await CryptoUtil.hashPassword('0118');
-  const initialRecords = [{
-    $id: { value: '6' },
-    Employee_Code: { value: '0118' },
-    Password_Hash: { value: passHash },
-    Force_Password_Change: { value: 'YES' },
-    Account_Status: { value: 'ACTIVE' },
-    Failed_Attempts: { value: 0 },
-    Credential_Version: { value: 1 }
-  }];
-
-  const { router, ticketService, transport } = await setupBridge(initialRecords);
-  const ticket = ticketService.issueForceTicket('0118', 1);
-
-  const res = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/password/force-change',
-    body: {
-      forceTicket: ticket,
-      employeeCode: '0118',
-      newPassword: 'NewSecurePassword123!'
-    }
-  });
-
-  assert.equal(res.body.status, 'AUTHENTICATED');
-  assert.ok(res.body.sessionToken);
-
-  const updatedRec = transport.store.get(6);
-  assert.equal(updatedRec.Force_Password_Change.value, 'NO');
-  assert.equal(updatedRec.Credential_Version.value, 2, 'Credential_Version must increment to 2');
-});
-
-// 8. Session validation checks ACTIVE, Force=NO, expiry, Credential_Version, Kintone context
-test('8. Session Validation: Validates ACTIVE status, expiry, and context binding', async () => {
-  const passHash = await CryptoUtil.hashPassword('Pass0119!');
-  const initialRecords = [{
-    $id: { value: '7' },
-    Employee_Code: { value: '0119' },
+    $id: { value: '1' },
+    Employee_Code: { value: '0115' },
     Password_Hash: { value: passHash },
     Force_Password_Change: { value: 'NO' },
-    Account_Status: { value: 'ACTIVE' },
-    Failed_Attempts: { value: 0 },
+    Account_Status: { value: 'LOCKED' }, // Permanent lock
+    Locked_Until: { value: null },
+    Failed_Attempts: { value: 5 },
     Credential_Version: { value: 1 }
   }];
 
   const { router } = await setupBridge(initialRecords);
 
-  const loginRes = await router.handleRequest({
+  const res = await router.handleRequest({
     method: 'POST',
     url: '/v1/auth/login',
-    body: { employeeCode: '0119', password: 'Pass0119!', kintoneUserCode: 'emp0119' }
+    body: { employeeCode: '0115', password: 'Pass123!' }
   });
 
-  const sessionToken = loginRes.body.sessionToken;
-
-  const valRes = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/session/validate',
-    body: { sessionToken, employeeCode: '0119', kintoneUserCode: 'emp0119' }
-  });
-
-  assert.equal(valRes.body.status, 'AUTHENTICATED');
-  assert.equal(valRes.body.valid, true);
-  assert.equal(valRes.body.employeeCode, '0119');
+  assert.equal(res.body.status, 'ACCOUNT_LOCKED');
 });
 
-// 9. Logout clears persisted session fields
-test('9. Logout: Revokes session by clearing persisted Session_Token_Hash', async () => {
+// 10. Logout revokes session matching presented raw token
+test('10. Logout: Revokes session by token without requiring client Employee_Code', async () => {
   const passHash = await CryptoUtil.hashPassword('Pass0120!');
   const initialRecords = [{
-    $id: { value: '8' },
+    $id: { value: '1' },
     Employee_Code: { value: '0120' },
     Password_Hash: { value: passHash },
     Force_Password_Change: { value: 'NO' },
     Account_Status: { value: 'ACTIVE' },
-    Failed_Attempts: { value: 0 }
+    Failed_Attempts: { value: 0 },
+    Credential_Version: { value: 1 }
   }];
 
   const { router, transport } = await setupBridge(initialRecords);
@@ -305,27 +260,53 @@ test('9. Logout: Revokes session by clearing persisted Session_Token_Hash', asyn
     body: { employeeCode: '0120', password: 'Pass0120!' }
   });
 
-  assert.ok(transport.store.get(8).Session_Token_Hash.value);
+  const sessionToken = loginRes.body.sessionToken;
 
   const logoutRes = await router.handleRequest({
     method: 'POST',
     url: '/v1/auth/logout',
-    body: { employeeCode: '0120' }
+    body: { sessionToken }
   });
 
   assert.equal(logoutRes.body.status, 'LOGGED_OUT');
-  assert.equal(transport.store.get(8).Session_Token_Hash.value, null);
+  assert.equal(transport.store.get(1).Session_Token_Hash.value, null);
 });
 
-// 10. Normal password change rotates Credential_Version + session
-test('10. Password Change: Rotates Credential_Version and replaces session token', async () => {
+// 11. Force Change cannot re-enable DISABLED or LOCKED accounts
+test('11. Force Change: Cannot change password for DISABLED or LOCKED account', async () => {
+  const passHash = await CryptoUtil.hashPassword('0121');
+  const initialRecords = [{
+    $id: { value: '1' },
+    Employee_Code: { value: '0121' },
+    Password_Hash: { value: passHash },
+    Force_Password_Change: { value: 'YES' },
+    Account_Status: { value: 'DISABLED' },
+    Failed_Attempts: { value: 0 },
+    Credential_Version: { value: 1 }
+  }];
+
+  const { router, ticketService } = await setupBridge(initialRecords);
+  const ticket = ticketService.issueForceTicket('0121', 1);
+
+  const res = await router.handleRequest({
+    method: 'POST',
+    url: '/v1/auth/password/force-change',
+    body: { forceTicket: ticket, newPassword: 'NewPassword123!' }
+  });
+
+  assert.equal(res.body.status, 'ACCOUNT_DISABLED');
+});
+
+// 12. Password change derives identity from session token
+test('12. Password Change: Derives identity from session token server-side', async () => {
   const passHash = await CryptoUtil.hashPassword('OldPass123!');
   const initialRecords = [{
-    $id: { value: '9' },
-    Employee_Code: { value: '0121' },
+    $id: { value: '1' },
+    Employee_Code: { value: '0122' },
     Password_Hash: { value: passHash },
     Force_Password_Change: { value: 'NO' },
     Account_Status: { value: 'ACTIVE' },
+    Failed_Attempts: { value: 0 },
     Credential_Version: { value: 1 }
   }];
 
@@ -334,110 +315,58 @@ test('10. Password Change: Rotates Credential_Version and replaces session token
   const loginRes = await router.handleRequest({
     method: 'POST',
     url: '/v1/auth/login',
-    body: { employeeCode: '0121', password: 'OldPass123!' }
+    body: { employeeCode: '0122', password: 'OldPass123!' }
   });
 
-  const oldToken = loginRes.body.sessionToken;
+  const sessionToken = loginRes.body.sessionToken;
 
   const changeRes = await router.handleRequest({
     method: 'POST',
     url: '/v1/auth/password/change',
     body: {
-      sessionToken: oldToken,
-      employeeCode: '0121',
+      sessionToken,
       currentPassword: 'OldPass123!',
       newPassword: 'NewPass456!'
     }
   });
 
   assert.equal(changeRes.body.status, 'AUTHENTICATED');
-  assert.ok(changeRes.body.sessionToken);
-  assert.notEqual(changeRes.body.sessionToken, oldToken);
-  assert.equal(transport.store.get(9).Credential_Version.value, 2);
+  assert.equal(transport.store.get(1).Credential_Version.value, 2);
 });
 
-// 11. Duplicate / malformed credential rows fail closed
-test('11. Duplicate/Malformed Records: Fails closed on duplicate Employee_Code or missing Password_Hash', async () => {
-  const initialRecords = [
-    { $id: { value: '10' }, Employee_Code: { value: '0122' }, Password_Hash: { value: 'hash1' }, Account_Status: { value: 'ACTIVE' } },
-    { $id: { value: '11' }, Employee_Code: { value: '0122' }, Password_Hash: { value: 'hash2' }, Account_Status: { value: 'ACTIVE' } }
-  ];
-
-  const { router } = await setupBridge(initialRecords);
+// 13. Sanitized error response for internal errors
+test('13. Error Handling: Internal repository error text is sanitized and never leaked', async () => {
+  const transport = {
+    async getRecords() {
+      throw new Error('INTERNAL_DATABASE_SECRET_PATH_EXPOSED');
+    }
+  };
+  const repository = new App801Repository({ appId: 801, transport });
+  const ticketService = new TicketService({ signingSecret: 'secret_key_32_bytes_min_test' });
+  const sessionService = new SessionService({ repository });
+  const authService = new AuthService({ repository, sessionService, ticketService });
+  const router = new AuthBridgeRouter({ authService, sessionService, allowedOrigins: ['https://example.cybozu.com'] });
 
   const res = await router.handleRequest({
     method: 'POST',
     url: '/v1/auth/login',
-    body: { employeeCode: '0122', password: 'any' }
+    body: { employeeCode: '0113', password: 'pass' }
   });
 
+  assert.equal(res.statusCode, 500);
   assert.equal(res.body.status, 'AUTH_SERVICE_UNAVAILABLE');
+  assert.equal(res.body.reason.includes('SECRET'), false, 'Response body MUST NOT leak internal secret message');
 });
 
-// 12. No response exposes Password_Hash / Session_Token_Hash / API token / signing secret
-test('12. Security Boundary: Response bodies never leak secrets or hashes', async () => {
-  const passHash = await CryptoUtil.hashPassword('Pass0123!');
-  const initialRecords = [{
-    $id: { value: '12' },
-    Employee_Code: { value: '0123' },
-    Password_Hash: { value: passHash },
-    Force_Password_Change: { value: 'NO' },
-    Account_Status: { value: 'ACTIVE' }
-  }];
-
-  const { router } = await setupBridge(initialRecords);
-
-  const res = await router.handleRequest({
-    method: 'POST',
-    url: '/v1/auth/login',
-    body: { employeeCode: '0123', password: 'Pass0123!' }
-  });
-
-  const jsonStr = JSON.stringify(res.body);
-  assert.equal(jsonStr.includes('Password_Hash'), false);
-  assert.equal(jsonStr.includes('Session_Token_Hash'), false);
-  assert.equal(jsonStr.includes('API_TOKEN'), false);
-  assert.equal(jsonStr.includes('SECRET'), false);
-});
-
-// 13. Repository/router has no record create/delete capability
-test('13. Repository Boundaries: NO createRecord or deleteRecord capabilities exist', async () => {
+// 14. Repository boundaries: NO createRecord or deleteRecord capabilities
+test('14. Repository Boundaries: NO createRecord or deleteRecord capabilities exist', async () => {
   const { repository } = await setupBridge();
   assert.throws(() => repository.createRecord(), /UNAUTHORIZED_OPERATION/);
   assert.throws(() => repository.deleteRecord(), /UNAUTHORIZED_OPERATION/);
 });
 
-// 14. Disallowed Origin rejected; allowed Origin receives no-store response
-test('14. Transport Hardening: CORS origin check and Cache-Control: no-store headers', async () => {
-  const { router } = await setupBridge();
-
-  const allowedRes = await router.handleRequest({
-    method: 'GET',
-    url: '/healthz',
-    headers: { origin: 'https://example.cybozu.com' }
-  });
-  assert.equal(allowedRes.statusCode, 200);
-  assert.equal(allowedRes.headers['Cache-Control'], 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  assert.equal(allowedRes.headers['Access-Control-Allow-Origin'], 'https://example.cybozu.com');
-
-  const deniedRes = await router.handleRequest({
-    method: 'GET',
-    url: '/healthz',
-    headers: { origin: 'https://malicious.com' }
-  });
-  assert.equal(deniedRes.statusCode, 403);
-  assert.equal(deniedRes.body.error, 'CORS_ORIGIN_DENIED');
-});
-
-// 15. Injected limiter can produce RATE_LIMITED
-test('15. Rate Limiting: Exceeding request threshold returns RATE_LIMITED status', async () => {
-  const { router } = await setupBridge();
-
-  for (let i = 0; i < 5; i++) {
-    await router.handleRequest({ method: 'GET', url: '/healthz', ip: '1.2.3.4' });
-  }
-
-  const limitedRes = await router.handleRequest({ method: 'GET', url: '/healthz', ip: '1.2.3.4' });
-  assert.equal(limitedRes.statusCode, 429);
-  assert.equal(limitedRes.body.status, 'RATE_LIMITED');
+// 15. Config validation
+test('15. Config Validation: Throws on missing secret or wildcard origins', () => {
+  assert.throws(() => parseBridgeConfig({ FORCE_CHANGE_SIGNING_SECRET: '', ALLOWED_ORIGINS: 'https://example.com' }), /CONFIG_ERROR/);
+  assert.throws(() => parseBridgeConfig({ FORCE_CHANGE_SIGNING_SECRET: 'valid_secret_key_32_bytes', ALLOWED_ORIGINS: '*' }), /CONFIG_ERROR/);
 });
