@@ -1,16 +1,24 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { execSync } from 'node:child_process';
 import { assertSandboxWriteTarget, assertApp794CustomizationDeployAuthorization } from '../../src/core/sandbox-write-guard.js';
 import { buildMboUi } from './build-mbo-ui.js';
 
 const VALID_SCOPES = new Set(['ALL', 'ADMIN', 'NONE']);
 
 export function gitBlobSha(content) {
-  const str = Buffer.isBuffer(content) ? content.toString('utf8') : String(content);
-  const normalizedBuf = Buffer.from(str.replace(/\r\n/g, '\n'), 'utf8');
-  const header = Buffer.from(`blob ${normalizedBuf.length}\0`, 'utf8');
-  const store = Buffer.concat([header, normalizedBuf]);
+  const buf = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8');
+  const header = Buffer.from(`blob ${buf.length}\0`, 'utf8');
+  const store = Buffer.concat([header, buf]);
   return crypto.createHash('sha1').update(store).digest('hex');
+}
+
+export function getCurrentGitHead() {
+  try {
+    return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -126,27 +134,106 @@ export function validateTopologyAlignment(liveCustomize, previewCustomize) {
   return true;
 }
 
-export function validateReleaseManifest({ expectedJsBlobSha, expectedCssBlobSha, candidateJsBlobSha, candidateCssBlobSha }) {
-  const jsProvided = Boolean(candidateJsBlobSha || expectedJsBlobSha);
-  const cssProvided = Boolean(candidateCssBlobSha || expectedCssBlobSha);
-
-  if (!jsProvided && !cssProvided) {
+export function validateReleaseManifest({
+  manifest,
+  candidateJsBlobSha,
+  candidateCssBlobSha,
+  liveCustomize,
+  previewCustomize,
+  currentGitHead = null,
+  isBuildOnly = false
+}) {
+  if (isBuildOnly && !manifest) {
     return true;
   }
 
-  const jsMatches = (expectedJsBlobSha && candidateJsBlobSha) ? (candidateJsBlobSha === expectedJsBlobSha) : true;
-  const cssMatches = (expectedCssBlobSha && candidateCssBlobSha) ? (candidateCssBlobSha === expectedCssBlobSha) : true;
-
-  if (!jsMatches && !cssMatches) {
-    throw new Error(`MANIFEST_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD: Both JS (${candidateJsBlobSha} !== ${expectedJsBlobSha}) and CSS (${candidateCssBlobSha} !== ${expectedCssBlobSha}) identities mismatched.`);
+  if (!manifest || typeof manifest !== 'object') {
+    throw new Error('MISSING_RELEASE_MANIFEST_BLOCKED_PRE_UPLOAD: Release manifest object is required in Live mode.');
   }
 
-  if (!jsMatches) {
-    throw new Error(`MIXED_RELEASE_BLOCKED_PRE_UPLOAD: JS identity mismatched (${candidateJsBlobSha} !== ${expectedJsBlobSha}). CSS matched.`);
+  const {
+    appId,
+    sourceCommit,
+    expectedJsBlobSha,
+    expectedCssBlobSha,
+    expectedScope,
+    expectedTopology
+  } = manifest;
+
+  if (appId === undefined || appId === null || appId !== 794) {
+    throw new Error(`MANIFEST_APP_ID_MISMATCH_BLOCKED_PRE_UPLOAD: Manifest appId (${appId}) must be integer 794.`);
   }
 
-  if (!cssMatches) {
-    throw new Error(`MIXED_RELEASE_BLOCKED_PRE_UPLOAD: CSS identity mismatched (${candidateCssBlobSha} !== ${expectedCssBlobSha}). JS matched.`);
+  if (!sourceCommit || typeof sourceCommit !== 'string' || sourceCommit.trim() === '') {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest sourceCommit field is missing or empty.');
+  }
+
+  if (currentGitHead && typeof currentGitHead === 'string') {
+    const trimmedHead = currentGitHead.trim();
+    const trimmedSourceCommit = sourceCommit.trim();
+    if (!trimmedHead.startsWith(trimmedSourceCommit) && !trimmedSourceCommit.startsWith(trimmedHead)) {
+      throw new Error(`MANIFEST_SOURCE_COMMIT_MISMATCH_BLOCKED_PRE_UPLOAD: Manifest sourceCommit (${sourceCommit}) does not match current repository HEAD (${currentGitHead}).`);
+    }
+  }
+
+  if (!expectedJsBlobSha || typeof expectedJsBlobSha !== 'string' || expectedJsBlobSha.trim() === '') {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest expectedJsBlobSha field is missing or empty.');
+  }
+
+  if (!expectedCssBlobSha || typeof expectedCssBlobSha !== 'string' || expectedCssBlobSha.trim() === '') {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest expectedCssBlobSha field is missing or empty.');
+  }
+
+  if (!expectedScope || typeof expectedScope !== 'string' || expectedScope.trim() === '') {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest expectedScope field is missing or empty.');
+  }
+
+  if (!expectedTopology || typeof expectedTopology !== 'object') {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest expectedTopology object is missing.');
+  }
+
+  const { desktopJsCount, desktopCssCount, mobileJsCount, mobileCssCount } = expectedTopology;
+  if (
+    typeof desktopJsCount !== 'number' ||
+    typeof desktopCssCount !== 'number' ||
+    typeof mobileJsCount !== 'number' ||
+    typeof mobileCssCount !== 'number'
+  ) {
+    throw new Error('MISSING_MANIFEST_FIELD_BLOCKED_PRE_UPLOAD: Manifest expectedTopology counts must be numbers.');
+  }
+
+  // 1. Candidate JS/CSS blob identity check
+  if (candidateJsBlobSha && candidateJsBlobSha !== expectedJsBlobSha) {
+    throw new Error(`JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD: Candidate JS blob SHA (${candidateJsBlobSha}) does not match expected manifest JS blob SHA (${expectedJsBlobSha}).`);
+  }
+
+  if (candidateCssBlobSha && candidateCssBlobSha !== expectedCssBlobSha) {
+    throw new Error(`CSS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD: Candidate CSS blob SHA (${candidateCssBlobSha}) does not match expected manifest CSS blob SHA (${expectedCssBlobSha}).`);
+  }
+
+  // 2. Expected Scope check
+  if (liveCustomize && liveCustomize.scope !== expectedScope) {
+    throw new Error(`MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD: Live scope (${liveCustomize.scope}) does not match manifest expectedScope (${expectedScope}).`);
+  }
+  if (previewCustomize && previewCustomize.scope !== expectedScope) {
+    throw new Error(`MANIFEST_SCOPE_MISMATCH_BLOCKED_PRE_UPLOAD: Preview scope (${previewCustomize.scope}) does not match manifest expectedScope (${expectedScope}).`);
+  }
+
+  // 3. Expected Topology check
+  if (previewCustomize) {
+    const pDesktopJs = previewCustomize.desktop?.js?.length || 0;
+    const pDesktopCss = previewCustomize.desktop?.css?.length || 0;
+    const pMobileJs = previewCustomize.mobile?.js?.length || 0;
+    const pMobileCss = previewCustomize.mobile?.css?.length || 0;
+
+    if (
+      pDesktopJs !== desktopJsCount ||
+      pDesktopCss !== desktopCssCount ||
+      pMobileJs !== mobileJsCount ||
+      pMobileCss !== mobileCssCount
+    ) {
+      throw new Error(`MANIFEST_TOPOLOGY_MISMATCH_BLOCKED_PRE_UPLOAD: Preview topology (${pDesktopJs}/${pDesktopCss}/${pMobileJs}/${pMobileCss}) does not match manifest expectedTopology (${desktopJsCount}/${desktopCssCount}/${mobileJsCount}/${mobileCssCount}).`);
+    }
   }
 
   return true;
@@ -157,10 +244,11 @@ export function validatePreflight({
   previewCustomize,
   targetFileName = 'mbo-employee-app.js',
   targetCssFileName = 'mbo-employee.css',
-  expectedJsBlobSha = null,
-  expectedCssBlobSha = null,
+  releaseManifest = null,
   candidateJsBlobSha = null,
-  candidateCssBlobSha = null
+  candidateCssBlobSha = null,
+  currentGitHead = null,
+  isBuildOnly = false
 }) {
   // 1. Explicit containers & lists
   validateContainers(liveCustomize, 'Live');
@@ -270,8 +358,16 @@ export function validatePreflight({
   // 6. Topology alignment
   validateTopologyAlignment(liveCustomize, previewCustomize);
 
-  // 7. Atomic release manifest validation (JS/CSS identity pair check)
-  validateReleaseManifest({ expectedJsBlobSha, expectedCssBlobSha, candidateJsBlobSha, candidateCssBlobSha });
+  // 7. Mandatory release manifest validation in Live mode
+  validateReleaseManifest({
+    manifest: releaseManifest,
+    candidateJsBlobSha,
+    candidateCssBlobSha,
+    liveCustomize,
+    previewCustomize,
+    currentGitHead,
+    isBuildOnly
+  });
 
   return true;
 }
@@ -487,16 +583,19 @@ export async function executeDeployCustomUi(options = {}) {
   const liveCustomize = await kintoneRequest(`/k/v1/app/customize.json?app=${app}`);
   const previewCustomize = await kintoneRequest(`/k/v1/preview/app/customize.json?app=${app}`);
 
+  const gitHead = options.currentGitHead || getCurrentGitHead();
+
   // PREFLIGHT: FULL DETERMINISTIC VALIDATION BEFORE ANY UPLOAD!
   validatePreflight({
     liveCustomize,
     previewCustomize,
     targetFileName: 'mbo-employee-app.js',
     targetCssFileName: 'mbo-employee.css',
-    expectedJsBlobSha: options.expectedJsBlobSha,
-    expectedCssBlobSha: options.expectedCssBlobSha,
+    releaseManifest: options.releaseManifest,
     candidateJsBlobSha: artifacts.jsBlobSha,
-    candidateCssBlobSha: artifacts.cssBlobSha
+    candidateCssBlobSha: artifacts.cssBlobSha,
+    currentGitHead: gitHead,
+    isBuildOnly: false
   });
 
   // Upload candidate JS and candidate CSS
