@@ -1,174 +1,96 @@
-# AI ACTIVE TASK — D1 APP794 NATIVE COMMENT MIRROR PAGINATION CORRECTIVE
+# AI ACTIVE TASK — D1 COMBINED EMPLOYEE UI RESIDUAL CORRECTIVE
 
 Mode: **ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
 Live App794 customization revision: `51`
 Deployment authorization: **NONE**
-Rejected candidate: `b31839f0a899d886167d661cc9e82fb870b6f495`
+Latest rejected candidate: `0937097d1bccda9a0c9d42b8aa1a9e8872525930`
 Independent verdict: **CORRECTIVE**
 
-## Accepted / Preserve Exactly
+## Preserve All Three User-Requested UI Features
 
-The combined UI corrective still includes all three user-requested items, but items 1–2 must now be preserved without redesign:
+The next candidate MUST still contain and prove all three together:
 
-1. Existing Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`.
-2. My MBO home: responsive readable record-card/list UI.
-3. Existing Detail/Edit: Native Kintone Comment read-only mirror + Refresh.
+1. Existing Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
+2. My MBO home: responsive card/list layout; exact Employee_Code query; Fiscal_Year desc; Open MBO for non-completed; View History for completed; unchanged record URLs; zero Delete UI.
+3. Existing Detail/Edit: Native Kintone Comment read-only mirror with Refresh.
 
-Preserve the accepted direction already present in `b31839f0...`:
+Do NOT redesign or remove items 1–2. Do NOT start Copy Previous MBO yet.
 
-```text
-ATTACHMENT_PERSISTENCE / RETRIEVAL      = DO NOT CHANGE
-AUTH / SESSION                           = DO NOT CHANGE
-ROUTING / SCORING                        = DO NOT CHANGE
-BACK_TO_MY_MBO UI                        = PRESERVE
-MY_MBO CARD/LIST UI                      = PRESERVE
-MY_MBO QUERY                             = Employee_Code scoped / Fiscal_Year desc / UNCHANGED
-MY_MBO RECORD URLs                       = UNCHANGED
-MY_MBO ZERO DELETE UI                    = PRESERVE
-COMMENT MIRROR                           = READ-ONLY / CURRENT RECORD ONLY
-```
+## Residual Blocker A — Pagination Must Trust `newer`
 
-Do NOT start Copy Previous MBO yet.
-
-## Independent Review Blocker 1 — Real Kintone Pagination Semantics
-
-Current rejected source uses:
+Current rejected source still stops on:
 
 ```text
-order: asc
-stop when resp.older === false
+resp.newer === false || comments.length < limit
 ```
 
-This is incorrect for the official Kintone Get Comments response semantics.
+Correct behavior for `order:'asc'`:
+- `comments.length === 0` => stop safely;
+- non-empty page + `newer === true` => MUST continue, even if page length is less than 10;
+- non-empty page + `newer === false` => complete / stop;
+- increment offset by actual `comments.length`;
+- no silent 500 cap;
+- no infinite/non-progress loop.
 
-For Kintone Comments:
-- `older=false` means there are no older comments / the page reaches the first comment.
-- `newer=false` means there are no newer comments / the page reaches the last comment.
-- `limit` maximum = 10.
-- Comment `offset` has no documented maximum.
+Required source correction:
+- remove `comments.length < limit` as a completion condition when `newer=true`.
 
-With `order: asc`, page 1 begins at the oldest comments. Therefore `older` may be false on page 1 while newer comments still exist. The current implementation can silently return only the first 10 comments.
-
-### Required correction
-
-Keep chronological `order: 'asc'` and implement pagination that cannot silently truncate.
-
-Preferred implementation:
-- request `{ app, record, order:'asc', limit:10, offset }`;
-- append returned comments;
-- if `resp.newer === false`, stop COMPLETE;
-- otherwise increment offset by the number of comments returned (or by limit only if proven safe);
-- zero returned comments => stop safely;
-- protect against non-progress/infinite loops without claiming completeness falsely.
-
-Alternative implementation is allowed only if it is demonstrably equivalent against official Kintone semantics.
-
-## Independent Review Blocker 2 — Silent 500 Cutoff
-
-Current rejected source contains:
+Required regression:
 
 ```text
-if (offset >= 500) break;
+COMMENTS_SHORT_PAGE_NEWER_TRUE_CONTINUES
 ```
 
-This silently truncates a long comment thread and violates the accepted rule:
-`COMMENTS_PAGINATION_DOES_NOT_SILENTLY_TRUNCATE`.
+Model exactly:
+- page 1 returns fewer than 10 non-empty comments, `older=false`, `newer=true`;
+- next page MUST be requested using offset equal to actual first-page count;
+- final page returns `newer=false`;
+- all comments render in chronological order.
 
-Required:
-- remove the hard silent cutoff; OR
-- if a defensive ceiling is absolutely necessary, surface a truthful visible state such as `More comments exist / thread not fully loaded` with explicit load-more behavior.
+Preserve existing tests for:
+- first asc page `older=false,newer=true` continues;
+- final page `newer=false` stops;
+- >10 all rendered;
+- >500 not truncated;
+- Detail load;
+- Edit load;
+- Create zero GET;
+- safe textContent;
+- empty/failure states;
+- actual Refresh click => second GET + updated thread;
+- zero record/comment writes.
 
-For this corrective, prefer complete paging because Kintone Comment offset has no documented maximum.
+## Residual Blocker B — Commit Verification Evidence
 
-## Independent Review Blocker 3 — Tests Must Model Real API + Missing Required Coverage
+The previous candidate did not commit mandatory local verification evidence and GitHub has no CI/status/workflow run for it.
 
-The current pagination test mocks `older=true` on the first `order:'asc'` page. This does not model the real boundary condition.
-
-Add/repair tests so they prove at minimum:
-
-```text
-COMMENTS_ASC_PAGE1_OLDER_FALSE_NEWER_TRUE_CONTINUES
-COMMENTS_ASC_FINAL_PAGE_NEWER_FALSE_STOPS
-COMMENTS_MORE_THAN_10_ALL_RENDERED
-COMMENTS_MORE_THAN_500_NOT_SILENTLY_TRUNCATED
-COMMENTS_EXISTING_DETAIL_LOADS_NATIVE_THREAD
-COMMENTS_EXISTING_EDIT_LOADS_NATIVE_THREAD
-COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET
-COMMENTS_GET_USES_CURRENT_APP_AND_RECORD_ID
-COMMENTS_RENDER_AUTHOR_BODY_TIMESTAMP
-COMMENTS_TEXT_RENDERED_WITHOUT_HTML_INJECTION
-COMMENTS_EMPTY_STATE_BILINGUAL
-COMMENTS_REFRESH_RELOADS_THREAD
-COMMENTS_REFRESH_PERFORMS_ZERO_RECORD_WRITE
-COMMENTS_RETRIEVAL_FAILURE_NON_BLOCKING
-COMMENTS_NO_POST_DELETE_REPLY_WRITE
-COMMENTS_NO_DOM_SCRAPE
-```
-
-Refresh test must actually invoke the Refresh button and prove a second GET updates the mirrored thread. Button-presence-only is not sufficient.
-
-Do not weaken the existing Back/My MBO tests.
-
-## Allowed Files
-
-Primary:
-- `src/ui/employee-part-a-ui.js`
-- `tests/employee-self-index-ui.test.js`
-- generated `dist/mbo-employee-app.js`
-
-Only if strictly required for test compatibility or style regression:
-- `src/styles/mbo-employee.css`
-- generated `dist/mbo-employee.css`
-- `src/main-mbo-app.js` only if current minimal `kintoneApiWrapper` / `appId` wiring genuinely needs correction; otherwise do not touch it.
-- existing evidence document, or create one small existing-pattern evidence file only if no suitable evidence file exists.
-
-Do NOT change `src/ui/employee-self-index-ui.js` unless required to repair a regression introduced by this corrective. Items 1–2 are accepted direction and should not be redesigned.
-
-## Forbidden
-
-- Live deploy;
-- App794 business record write;
-- Comment POST/DELETE/reply;
-- schema/form/layout write;
-- ACL/process change;
-- auth/session behavior change;
-- attachment behavior change;
-- routing/scoring/profile change;
-- App801/App795/App796 write;
-- Copy Previous MBO implementation;
-- D2-D7 execution;
-- external service/storage;
-- DOM scraping of the native comment panel;
-- broad refactor.
-
-## Mandatory Verification + Evidence
-
-Run and RECORD exact results:
-
+Run and RECORD exact results for:
 1. focused Employee-Self/navigation tests;
 2. focused Native Comment mirror tests;
 3. relevant EmployeePartAUI regressions;
 4. full `npm test`;
 5. `npm run ui:build`;
-6. module-aware build-only proving `0` Live Kintone network calls/writes.
+6. module-aware build-only proving zero Live Kintone calls/writes.
 
-Evidence must record:
+Use an existing suitable evidence document if available; otherwise create ONE small evidence document only if necessary. Do not create files unnecessarily.
+
+Evidence must include:
 
 ```text
 EXECUTION_START_HEAD
-BASE_REJECTED_CANDIDATE = b31839f0a899d886167d661cc9e82fb870b6f495
+BASE_REJECTED_CANDIDATE = 0937097d1bccda9a0c9d42b8aa1a9e8872525930
 CHANGED_FILES
-BACK_TO_MY_MBO_CHANGED = NO (unless corrective necessity explained)
-MY_MBO_INDEX_CHANGED = NO (unless corrective necessity explained)
+BACK_TO_MY_MBO_CHANGED = NO
+MY_MBO_INDEX_CHANGED = NO
 INDEX_QUERY_CHANGED = NO
-MAIN_ORCHESTRATION_CHANGED
-MAIN_CHANGE_REASON_IF_ANY
+MAIN_ORCHESTRATION_CHANGED = NO
 AUTH_SESSION_CHANGED = NO
 ATTACHMENT_LOGIC_CHANGED = NO
 ROUTING_SCORING_CHANGED = NO
 COMMENT_ORDER = asc
-COMMENT_PAGINATION_TERMINATION_PROOF
+COMMENT_SHORT_PAGE_NEWER_TRUE_PROOF
+COMMENT_FINAL_NEWER_FALSE_PROOF
 COMMENT_MORE_THAN_10_PROOF
 COMMENT_MORE_THAN_500_PROOF
 COMMENT_REFRESH_ACTUAL_RELOAD_PROOF
@@ -184,13 +106,40 @@ LIVE_DEPLOY_OCCURRED = NO
 FINAL_COMMIT_SHA
 ```
 
-GitHub currently exposes no CI statuses/workflow runs for the rejected candidate, so executor/local results must be committed as reviewable evidence.
+## Allowed Changes
 
-Commit + push source/test/build evidence and STOP.
+Primary:
+- `src/ui/employee-part-a-ui.js`
+- `tests/employee-self-index-ui.test.js`
+- generated `dist/mbo-employee-app.js`
+- one existing/small evidence document if required
+
+Do NOT change unless a regression is independently proven:
+- `src/ui/employee-self-index-ui.js`
+- `src/styles/mbo-employee.css`
+- `src/main-mbo-app.js`
+
+## Forbidden
+
+- Live deploy;
+- App794 record write;
+- Comment POST/DELETE/reply;
+- schema/form/layout write;
+- ACL/process change;
+- auth/session change;
+- attachment behavior change;
+- routing/scoring/profile change;
+- App801/App795/App796 write;
+- Copy Previous MBO;
+- D2-D7 execution;
+- external service/storage;
+- native comment DOM scraping;
+- unrelated refactor.
+
+Commit + push source/test/generated bundle + verification evidence and STOP.
 
 Maximum executor status:
 `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
 Do not deploy.
 Do not self-PASS.
-Do not start Copy Previous MBO yet.
