@@ -1,15 +1,19 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                   = 2661358372702846f039f4de33ef495eb64d787a
+START_HEAD                   = 2beb6ae03d14c808eabd54e52640d6d1429383fa
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-CORRECTIVE_DESIGN            = MULTI-TARGET ATOMIC ATTACHMENT PREFLIGHT
+AUTHORIZATION_ID             = APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01
+AUTHORIZATION_CONSUMED       = YES
+REVIEWED_CANDIDATE_SHA       = 0282a0c00d54c846353f4d830874c514c6546468
 FOCUSED_TESTS                = PASS (39/39 attachment & timeline tests passing)
 FULL_NPM_TEST                 = PASS (891/891 unit & integration tests passing)
 BUILD_ONLY                   = PASS (0 Kintone network calls)
+PRE_DEPLOY_REVISION          = 48
+POST_DEPLOY_REVISION         = 49
 LIVE_KINTONE_WRITE           = 0
-LIVE_DEPLOY_OCCURRED         = NO
-MAXIMUM_STATUS               = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+LIVE_DEPLOY_OCCURRED         = YES
+MAXIMUM_STATUS               = DEPLOYED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -238,4 +242,39 @@ MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
 LIVE_KINTONE_WRITE                       = 0
 LIVE_DEPLOY_OCCURRED                     = NO
 MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 11. One-Shot App794 Edit Attachment Corrective Deployment Evidence (Rev 49)
+
+```text
+AUTHORIZATION_ID                          = APP794-D1-EDIT-ATTACHMENT-DEPLOY-20260829-01
+AUTHORIZATION_CONSUMED                    = YES
+EXECUTION_START_HEAD                      = 2beb6ae03d14c808eabd54e52640d6d1429383fa
+REVIEWED_SOURCE_CANDIDATE_SHA            = 0282a0c00d54c846353f4d830874c514c6546468
+SOURCE_CHANGED_DURING_DEPLOY             = NO (Zero source/dist drift)
+PREFLIGHT_RESULT                         = PASS (Deterministic validatePreflight 100% PASS)
+FOCUSED_ATTACHMENT_TESTS                  = PASS (39/39 attachment & timeline tests passing)
+FULL_NPM_TEST                             = PASS (891/891 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+PRE_DEPLOY_APP794_CUSTOMIZATION_REVISION = 48
+PRE_DEPLOY_JS_IDENTITY_HASH              = 97273c29e80c4f6cbfa6982360fdba03c8c43076
+PRE_DEPLOY_CSS_IDENTITY_HASH             = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+ROLLBACK_SNAPSHOT_REFERENCE              = scratch/app794_live_predeploy_backup_rev49.json & scratch/app794_preview_predeploy_backup_rev49.json
+DEPLOY_RESULT                            = SUCCESS (Kintone status SUCCESS)
+POST_DEPLOY_APP794_CUSTOMIZATION_REVISION= 49
+POST_DEPLOY_JS_IDENTITY_HASH             = bbf3fe439e0891e17bbbba046a9b2afbaf19cd78
+POST_DEPLOY_JS_SHA256                    = a9e26244053acac11af66bbeb2be1fb4deb3f22a78a73a9f15f93bdc1a9e5678
+POST_DEPLOY_CSS_IDENTITY_HASH            = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+CANDIDATE_READBACK_MATCH                 = YES (Live deployed JS hash matches dist/mbo-employee-app.js 100%)
+CUSTOMIZATION_TOPOLOGY_DRIFT             = NONE (Scope ALL, 1 Desktop JS, 1 Desktop CSS, 0 Mobile)
+ROLLBACK_OCCURRED                        = NO
+ROLLBACK_REASON                          = N/A
+APP794_RECORD_WRITE                      = 0
+APP794_SCHEMA_LAYOUT_WRITE               = 0
+APP794_ACL_PROCESS_WRITE                  = 0
+APP801_WRITE                             = 0
+APP795_796_WRITE                         = 0
+LIVE_DEPLOY_OCCURRED                     = YES
+MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
 ```
