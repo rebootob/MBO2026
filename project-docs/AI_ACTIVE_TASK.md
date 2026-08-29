@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — D1 APP794 DEPLOY GUARD INTEGRATION
+# AI ACTIVE TASK — D1 APP794 DEPLOY GUARD CORRECTIVE
 
 Mode: **SOURCE / TEST / LOCAL ONLY — ZERO LIVE KINTONE / ZERO DEPLOY**
 Branch: `ai/antigravity-wp002c`
@@ -12,6 +12,13 @@ External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
 ```
 
+## Review anchor
+
+Corrective base implementation:
+`8d8e88e13ff0ef6798329266c69f721ab15b3f79`
+
+Independent review found the authorization validator itself is directionally correct, but the final resolved deploy target is not strictly bound to the authorized App794 target and mandatory integration tests are incomplete.
+
 ## Read only
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. this file
@@ -19,75 +26,60 @@ Auth Bridge = CANCELLED / DO NOT CONTINUE
 4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
 5. `src/core/sandbox-write-guard.js`
 6. `scripts/kintone/deploy-custom-ui.js`
-7. existing tests that import either module; use only narrow symbol/file search if exact test path is unknown
+7. `tests/sandbox-write-guard.test.js`
+8. `tests/deploy-customization-preservation.test.js`
+9. `config/sandbox-apps.json`
 
-Do not scan the repo broadly.
+Do not scan broadly.
 
-## Current live evidence
+## Implement only this corrective
 
-- Reset / Force Password Change / Login / My MBO for Employee `0113` = PASS.
-- List -> Create preserves session = PASS.
-- Live `/k/794/edit` still fails with old deployed customization:
-  `You cannot call kintone.app.record.get() in handler or during processing a handler.`
-- The source Create-handler corrective was already accepted previously and must NOT be reworked in this task.
+1. Bind ALL deploy-target sources to exact App794:
+   - authorization target;
+   - request target;
+   - `options.appId` when supplied;
+   - `sandbox-apps.json.mboV2AppId`;
+   - actual target passed to deploy/network code.
+2. Any supplied/resolved target other than integer `794` must fail closed before Kintone/network work.
+3. Do not silently catch malformed/missing registry and continue with another runtime target.
+4. Generic `assertSandboxWriteTarget` call must use ephemeral exact `[794]`, never `[app]` from mutable/resolved runtime state.
+5. Keep:
+   - `DISCOVERY_MODE = true`;
+   - global `WRITE_ALLOWED_APPS = []`;
+   - permanent protected apps unchanged;
+   - no permanent App794 allow-list/bypass.
+6. Build-only remains zero-auth and returns before Kintone/network imports/calls.
 
-## Implement only deployment safety integration
+## Mandatory focused tests
 
-Goal: allow a future App794 customization deploy **only when a new explicit deploy authorization is supplied**, while keeping default deny-all.
+Prove all of these:
+- missing authorization at live entrypoint blocks before network/Kintone client path;
+- supplied `options.appId != 794` blocks;
+- registry/resolved `mboV2AppId != 794` blocks;
+- malformed auth blocks;
+- replay of same authorization ID blocks;
+- exact authorized App794 deployment context passes authorization + sandbox guard layer without real network I/O;
+- App53 spoof blocks;
+- App283 (or another listed legacy protected app in addition to 53) spoof blocks;
+- `DISCOVERY_MODE === true`;
+- global `WRITE_ALLOWED_APPS` remains empty;
+- build-only works without authorization and performs no Kintone/network path.
 
-Requirements:
-1. Add a narrow authorization validator for exactly App794 customization deployment.
-2. It must require all of:
-   - target app exactly `794`;
-   - explicit user authorization flag;
-   - active authorization window;
-   - non-empty unique/single-use authorization ID;
-   - exact operation/purpose = App794 customization deploy;
-   - fail closed on missing/malformed/wrong target/replayed authorization.
-3. Protected apps remain absolute hard-blocks: `53, 283, 305, 307, 310, 640, 643, 715, 716`.
-4. `DISCOVERY_MODE` remains `true` by default.
-5. `WRITE_ALLOWED_APPS` remains empty by default. Do NOT permanently add `794`.
-6. `deploy-custom-ui.js` must require the narrow authorization before any live network write path can begin.
-7. Build-only remains usable with zero authorization and must exit before any Kintone/network operation.
-8. Do not weaken generic guard behavior for unrelated scripts/apps.
-9. No permanent bypass flag that callers can casually set to skip authorization.
-10. No source behavior change to App794 business/auth/UI code and no generated `dist` commit.
-
-Preferred implementation shape:
-- narrow authorization check first;
-- only after it passes, invoke the existing sandbox target guard using an ephemeral exact `[794]` allow-list / explicit authorized context;
-- never mutate global allow-list state.
-
-## Mandatory tests
-
-Add/adjust focused tests proving:
-- build-only path performs zero network/Kintone imports/calls and does not require live authorization;
-- live path with missing authorization is blocked before network;
-- wrong App ID is blocked;
-- malformed authorization is blocked;
-- replay of same authorization ID is blocked;
-- exact authorized App794 deploy context passes the guard layer without performing real network I/O;
-- protected App53 and at least one legacy protected app remain blocked even if an authorization object is spoofed;
-- default `WRITE_ALLOWED_APPS` remains empty and `DISCOVERY_MODE` remains true;
-- no permanent App794 allow-list is introduced.
-
-Run the smallest focused tests plus root regression:
+Run focused tests and then:
 ```text
 npm test
 ```
-If a narrower existing test command exists for these modules, run it before `npm test`.
 
 ## Forbidden
 
 - NO live Kintone read/write
 - NO App794 deploy
 - NO App801 write/ACL/app-group change
-- NO auth/login/session/Create business source edits
+- NO auth/login/session/Create business edits
 - NO `main-mbo-app.js` changes
 - NO generated `dist` commit
-- NO Auth Bridge work
-- NO external server/service
+- NO Auth Bridge / external service
 - NO D2-D7 work
 
-Commit + push one concise source/test commit, then STOP.
+Commit + push one concise corrective commit, then STOP.
 Do not Self-PASS.
