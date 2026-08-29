@@ -1,60 +1,26 @@
-# AI ACTIVE TASK — D1 EMPLOYEE-SELF DELETE GUARD SCOPE CORRECTIVE
+# AI ACTIVE TASK — HOLD / APP794 DELETE PERMISSION READ-ONLY VERIFICATION
 
-Mode: **SOURCE / BUILD / TEST ONLY — ZERO KINTONE WRITE**
+Mode: **CONTROL PLANE + USER READ-ONLY VERIFICATION — ANTIGRAVITY HOLD**
 Branch: `ai/antigravity-wp002c`
-Max status: `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`
 
-Read only:
-1. `project-docs/AI_CONTROL_CENTER.md`
-2. this file
-3. `project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
-4. `src/security/delete-guard-policy.js`
-5. relevant delete registration in `src/main-mbo-app.js`
-6. focused tests only
+## Current status
 
-Do not scan repo.
+`D1_EMPLOYEE_SELF_DELETE_GUARD = PASS / ACCEPTED AT 1b2930eb...`
 
-## Fix only one issue
+No executor implementation task is active.
 
-Current policy is globally deny-all because it returns `false` even when there is no authenticated MBO Employee-Self principal.
+## Next required step
 
-Required:
-- use existing `mboLoginGate.getEmployeeCode()` only;
-- if it returns a non-empty authenticated Employee_Code: set bilingual Employee-Self delete-prohibited error and return `false`;
-- if there is no authenticated MBO Employee-Self principal: return the original `event` unchanged;
-- do not create Admin/HR authorization logic;
-- do not add/rename auth APIs;
-- keep both supported PC pre-delete events registered:
-  - `app.record.detail.delete.submit`
-  - `app.record.index.delete.submit`
-- preserve My MBO History and Completed display exactly as accepted;
-- no REST delete implementation.
+Verify App794 Kintone App Permissions / ACL in READ-ONLY mode only:
+- determine whether the shared/employee-facing Kintone principal(s) have Delete permission;
+- do not modify ACL;
+- do not modify records;
+- do not deploy customization;
+- do not expose business record contents.
 
-## Tests
-Must prove:
-- production-compatible gate `getEmployeeCode() -> '0113'` blocks delete;
-- `getEmployeeCode() -> null` returns original event unchanged, not `false`;
-- no dependency on `getAuthenticatedEmployeeCode()`;
-- both delete-submit event names remain registered;
-- `16 Completed -> Completed`, `Completed -> Completed`, `15 HR Final Check` unchanged;
-- history query / links / zero Delete UI unchanged.
+If Delete permission is allowed for the employee-facing/shared principal, any ACL correction requires separate explicit user authorization.
 
-Run:
-```text
-npm run ui:build
-npm test
-```
+## Antigravity
 
-## Forbidden
-- NO Kintone write/upload/deploy
-- NO App794 ACL write
-- NO App801 write
-- NO deploy-guard fix
-- NO auth/session redesign
-- NO workflow/routing/scoring change
-- NO UI redesign
-- NO broad refactor
-- NO D2-D7
-
-Commit + push one concise corrective commit, then STOP.
-Do not Self-PASS.
+HOLD.
+Do not start Deploy Guard, deploy, ACL change, source change, App801 work, or D2-D7 work until a new Active Task is issued by the Control Plane.
