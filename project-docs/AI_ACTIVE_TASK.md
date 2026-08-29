@@ -1,4 +1,4 @@
-# AI ACTIVE TASK — D1 APP794 DEPLOY GUARD CORRECTIVE
+# AI ACTIVE TASK — D1 APP794 DEPLOY GUARD TEST CLOSURE
 
 Mode: **SOURCE / TEST / LOCAL ONLY — ZERO LIVE KINTONE / ZERO DEPLOY**
 Branch: `ai/antigravity-wp002c`
@@ -14,56 +14,29 @@ Auth Bridge = CANCELLED / DO NOT CONTINUE
 
 ## Review anchor
 
-Corrective base implementation:
-`8d8e88e13ff0ef6798329266c69f721ab15b3f79`
+Current implementation:
+`04e1563f824d4e801f46411b9282ce292f2a478f`
 
-Independent review found the authorization validator itself is directionally correct, but the final resolved deploy target is not strictly bound to the authorized App794 target and mandatory integration tests are incomplete.
+Independent review accepts the production target-binding behavior. Only one mandatory proof is still missing.
 
-## Read only
-1. `project-docs/AI_CONTROL_CENTER.md`
-2. this file
-3. `project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`
-4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-5. `src/core/sandbox-write-guard.js`
-6. `scripts/kintone/deploy-custom-ui.js`
-7. `tests/sandbox-write-guard.test.js`
-8. `tests/deploy-customization-preservation.test.js`
-9. `config/sandbox-apps.json`
+## Implement only this test-closure gap
 
-Do not scan broadly.
+Add deterministic focused coverage proving that a registry/resolved target other than exact integer `794` fails closed before Kintone/network work.
 
-## Implement only this corrective
+Preferred minimal shape:
+- extract/reuse a tiny pure target-binding validator from `scripts/kintone/deploy-custom-ui.js` if needed for testability;
+- the real deploy entrypoint must use the same validator;
+- test `registry.mboV2AppId = 795` (and preferably missing/malformed) => BLOCK;
+- exact `registry.mboV2AppId = 794` => PASS through target-binding layer only;
+- do not change deploy semantics beyond testability.
 
-1. Bind ALL deploy-target sources to exact App794:
-   - authorization target;
-   - request target;
-   - `options.appId` when supplied;
-   - `sandbox-apps.json.mboV2AppId`;
-   - actual target passed to deploy/network code.
-2. Any supplied/resolved target other than integer `794` must fail closed before Kintone/network work.
-3. Do not silently catch malformed/missing registry and continue with another runtime target.
-4. Generic `assertSandboxWriteTarget` call must use ephemeral exact `[794]`, never `[app]` from mutable/resolved runtime state.
-5. Keep:
-   - `DISCOVERY_MODE = true`;
-   - global `WRITE_ALLOWED_APPS = []`;
-   - permanent protected apps unchanged;
-   - no permanent App794 allow-list/bypass.
-6. Build-only remains zero-auth and returns before Kintone/network imports/calls.
-
-## Mandatory focused tests
-
-Prove all of these:
-- missing authorization at live entrypoint blocks before network/Kintone client path;
-- supplied `options.appId != 794` blocks;
-- registry/resolved `mboV2AppId != 794` blocks;
-- malformed auth blocks;
-- replay of same authorization ID blocks;
-- exact authorized App794 deployment context passes authorization + sandbox guard layer without real network I/O;
-- App53 spoof blocks;
-- App283 (or another listed legacy protected app in addition to 53) spoof blocks;
-- `DISCOVERY_MODE === true`;
-- global `WRITE_ALLOWED_APPS` remains empty;
-- build-only works without authorization and performs no Kintone/network path.
+Preserve all already-accepted invariants:
+- authorization/request/options/registry/actual target = 794;
+- generic guard ephemeral allow-list = `[794]`;
+- `DISCOVERY_MODE = true`;
+- global `WRITE_ALLOWED_APPS = []`;
+- protected apps unchanged;
+- build-only zero-auth / zero Kintone-network path.
 
 Run focused tests and then:
 ```text
@@ -81,5 +54,5 @@ npm test
 - NO Auth Bridge / external service
 - NO D2-D7 work
 
-Commit + push one concise corrective commit, then STOP.
+Commit + push one concise test-closure commit, then STOP.
 Do not Self-PASS.
