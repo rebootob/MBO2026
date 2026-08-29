@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / DEPLOY GUARD PASS / APP794 ACL PASS / CORRECTIVE DEPLOY ROUND 2 PASS / EMPLOYEE-SELF UI LIVE PASS / CREATE-HANDLER ERROR FIX LIVE PASS / APP795 ACL STAGE1 PASS / APP795 APP GROUP STAGE2 NEXT / HR+ADMIN RESET UI STILL OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / DEPLOY GUARD PASS / APP794 ACL PASS / CORRECTIVE DEPLOY ROUND 2 PASS / EMPLOYEE-SELF UI LIVE PASS / CREATE-HANDLER ERROR FIX LIVE PASS / APP795 ACCESS CORRECTION PASS / CREATE-SHOW UAT NEXT / HR+ADMIN RESET UI STILL OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -31,7 +31,7 @@ SERVICES_MBO_AUTH_BRIDGE                = ABANDONED EXPERIMENT / NOT PRODUCTION 
 D1_SESSION_CONTINUITY_ARCHITECTURE      = PASS
 APP801_SESSION_SCHEMA_WRITE             = PASS / ACCEPTED
 D1_BUNDLE_DEPENDENCY_CORRECTIVE         = PASS
-D1_CREATE_HANDLER_CORRECTIVE            = PASS / SOURCE ACCEPTED / DEPLOYED / USER LIVE EVIDENCE CONFIRMS OLD handler error absent
+D1_CREATE_HANDLER_CORRECTIVE            = PASS / SOURCE ACCEPTED / DEPLOYED / USER LIVE EVIDENCE CONFIRMS old handler error absent
 D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST      = PASS
 D1_EMPLOYEE_SELF_INDEX_VISUAL           = PASS / LIVE CONFIRMED
 D1_MY_MBO_HISTORY_LIST                  = PASS
@@ -43,22 +43,19 @@ D1_RESET_PASSWORD_0113                  = PASS / AUTHORIZATION CONSUMED
 D1_FORCE_PASSWORD_CHANGE_0113           = PASS / USER LIVE OBSERVATION
 D1_LOGIN_0113_TO_MY_MBO                 = PASS / USER LIVE OBSERVATION
 D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS / USER LIVE OBSERVATION
-APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b
+APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED
 APP794_DELETE_PERMISSION_READONLY_CHECK = PASS / RESOLVED BY APP-ACL CORRECTION
 APP794_ACL_CORRECTION                   = PASS / USER LIVE WRITE + READ-BACK / ACL REVISION 43 -> 44
-APP794_ACL_WRITE_AUTHORIZATION          = CONSUMED / CLOSED
-APP794_DEPLOY_PROVENANCE_RECOVERY       = PASS / ACCEPTED AT a7badd223568bc26dfc37171be779cf2df5846f7
-APP794_DEPLOY_AUTHORIZATION_ID          = APP794-CORRECTIVE-DEPLOY-20260829-02
-APP794_DEPLOY_AUTHORIZATION_STATE       = CONSUMED / CLOSED AFTER SUCCESSFUL ONE-SHOT EXECUTION
 APP794_CORRECTIVE_DEPLOY_ROUND_2        = PASS / INDEPENDENT REVIEW ACCEPTED
 APP794_DEPLOY_EFFECTIVE_LIVE            = YES / API READ-BACK REVISION 45 / USER UI EVIDENCE CONFIRMED
-APP795_RUNTIME_READ_FOR_CREATE          = BLOCKED / 403 FORBIDDEN UNDER EMPLOYEE-FACING KINTONE PRINCIPAL
 APP795_APP_ACL_STAGE1                   = PASS / USER LIVE WRITE + READ-BACK / REVISION 8 -> 9
 APP795_APP_ACL_CURRENT                  = CREATOR FULL / MBO_EMPLOYEE_ACCESS VIEW-ONLY / EVERYONE ALL-NO
-APP795_APP_GROUP                        = PRIVATE / STAGE2 PRIVATE->PUBLIC NEXT
+APP795_APP_GROUP                        = PUBLIC / USER SCREENSHOT CONFIRMED
+APP795_ACCESS_CORRECTION                = PASS / USER LIVE EVIDENCE
 APP795_ACCESS_CORRECTION_AUTH_ID        = APP795-ACCESS-CORRECTION-20260829-01
-APP795_ACCESS_CORRECTION_AUTH_STATE     = ACL WRITE CONSUMED / STAGE2 APP-GROUP CONTINUATION STILL AUTHORIZED
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL APP795 APP GROUP PUBLIC + CREATE UAT + REMAINING D1 UAT + HR/ADMIN RESET UI
+APP795_ACCESS_CORRECTION_AUTH_STATE     = CONSUMED / CLOSED
+APP795_RUNTIME_READ_FOR_CREATE          = RETEST REQUIRED UNDER s1
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL CREATE-SHOW UAT + REMAINING D1 UAT + HR/ADMIN RESET UI
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
@@ -84,63 +81,63 @@ D1 must finish entirely inside Kintone. No external server, auth service, databa
 - Employee-Self UI / Logout = PASS.
 - old create-handler `record.get()` defect = resolved.
 
-## 5. User Live UAT — Current Blocker
+## 5. App795 Access Correction — PASS
 
-Create reaches `/k/794/edit` and fails only when authoritative routing lookup reads App795:
-```text
-GET /k/v1/records.json?app=795&query=Routing_Key... -> 403 Forbidden
-```
+Initial root cause:
+- App794 create-show under employee-facing principal `s1` reached App795 route lookup then returned 403;
+- stored App795 ACL revision 8 had broad `everyone` View/Add/Edit/Delete;
+- App795 App Group was `Private`, so stored app ACL did not provide the expected runtime access.
 
-`RoutingService` is correctly fail-closed and must not be bypassed.
+Exact authorized correction `APP795-ACCESS-CORRECTION-20260829-01` completed in secure order.
 
-## 6. App795 Access Correction — Stage 1 PASS
-
-Original read-only evidence:
-```text
-APP795_APP_ACL_REVISION = 8
-CREATOR                 = all permissions true
-GROUP everyone          = View/Add/Edit/Delete true; Manage/Import/Export false
-MBO_EMPLOYEE_ACCESS     = no explicit row
-APP795_APP_GROUP        = Private
-```
-
-User then executed the explicitly authorized Stage 1 ACL correction while App795 remained Private. User screenshot/read-back confirms:
+Stage 1 user read-back:
 ```text
 APP795_ACL_AFTER_REVISION = 9
-CREATOR                   = View/Add/Edit/Delete/Manage/Import/Export true
-MBO_EMPLOYEE_ACCESS       = View true; Add/Edit/Delete/Manage/Import/Export false
+CREATOR                   = full rights preserved
+MBO_EMPLOYEE_ACCESS       = View true; all other permissions false
 everyone                  = all permissions false
 APP795_ACL_CORRECTION_OVERALL_PASS = true
 ```
 
-Classification:
+Stage 2 user screenshot confirms:
 ```text
-APP795_APP_ACL_STAGE1 = PASS
-APP795 ACL write under APP795-ACCESS-CORRECTION-20260829-01 = CONSUMED
-NO FURTHER APP795 ACL WRITE AUTHORIZED
+APP795_APP_GROUP = Public
 ```
 
-Stage 2 from the same exact approved correction remains to complete the already-authorized settings sequence:
-- change App795 App Group `Private -> Public` only;
-- make no other settings change;
-- visually verify App Group = Public;
-- then user-side `s1` verifies App795 read/Create-show without saving a business record.
+Classification:
+```text
+APP795_ACCESS_CORRECTION      = PASS
+AUTHORIZATION ...-01          = CONSUMED / CLOSED
+APP795 ACL WRITE              = NO
+APP795 APP GROUP WRITE        = NO
+APP795 RECORD/ROUTING WRITE   = 0 / NOT AUTHORIZED
+```
+
+No source bypass or routing-data modification was used.
+
+## 6. Exact Next Action — User Create-Show UAT
+
+Under employee-facing Kintone principal `s1` and authenticated MBO Employee Code `0113`:
+1. open App794 My MBO;
+2. click `+ Create New MBO`;
+3. verify `/k/794/edit` opens without returning to MBO Login;
+4. verify App795 routing GET no longer returns 403;
+5. verify `Employee Profile Resolution Failed` is absent;
+6. verify create-show fields initialize normally;
+7. capture Console if any red error remains;
+8. DO NOT click Save / create a business record in this UAT.
 
 ## 7. HR / admin-form Password Reset Requirement
 
 Permanent D1 requirement remains: HR-authorized users and `admin-form` need an in-Kintone Reset MBO Password function; employee/shared users must not receive it. Production administrative UI/function remains mandatory before final D1 closure.
 
-## 8. Exact Next Action
-
-User performs only App795 App Group `Private -> Public` as Stage 2 of the already-authorized `APP795-ACCESS-CORRECTION-20260829-01`, then sends visual evidence. No further ACL write is permitted.
-
-After Stage 2 PASS, use `s1` + Employee Code `0113` to retry `Create New MBO` create-show only; do not save/create a business record unless separately authorized.
+## 8. Authorization State
 
 ```text
 NEXT_ACTION_OWNER              = USER / CONTROL PLANE
 ANTIGRAVITY_REQUIRED           = NO / HOLD
-APP795 APP ACL WRITE           = NO / CONSUMED
-APP795 APP GROUP WRITE         = YES / PRIVATE -> PUBLIC ONLY
+APP795 APP ACL WRITE           = NO / CLOSED
+APP795 APP GROUP WRITE         = NO / CLOSED
 APP795 RECORD WRITE            = NO
 APP794 DEPLOY                  = NO
 APP794 ACL/RECORD WRITE        = NO
