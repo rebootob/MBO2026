@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 AUTH BRIDGE ARCHITECTURE APPROVED / PRIOR SOURCE GATES PASS / BRIDGE WP1 ACTIVE / LIVE CUTOVER BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 AUTH BRIDGE ARCHITECTURE PASS / PRIOR SOURCE GATES PASS / WP1 CORE CORRECTIVE REQUIRED / WP2 PENDING / LIVE CUTOVER BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -24,123 +24,103 @@ No AI may silently drop D1–D7.
 ## 2. Gate Ledger
 
 ```text
-D1_AUTH_BRIDGE_ARCHITECTURE              = PASS / USER APPROVED + BASELINED 2026-08-29
+D1_AUTH_BRIDGE_ARCHITECTURE              = PASS / USER APPROVED + BASELINED
 D1_BROWSER_DIRECT_APP801_AUTH             = SUPERSEDED / BLOCKED BY DESIGN
 APP801_SHARED_PRINCIPAL_ACCESS            = DENIED / LIVE VERIFIED CB_NO02 FOR s1
 APP801_EMPLOYEE_FACING_PRIVACY            = KEEP PRIVATE / NO ACL WIDENING
 D1_SESSION_CONTINUITY_ARCHITECTURE        = PASS / UPDATED TO BRIDGE TRANSPORT
 APP801_SESSION_SCHEMA_WRITE               = PASS / ACCEPTED
-APP794_SESSION_CONTINUITY_DEPLOY           = EXECUTED / REVISION 43 / OLD BROWSER-DIRECT PATH
-D1_SESSION_LIST_TO_CREATE_CONTINUITY      = PASS / USER LIVE OBSERVATION
-D1_BUNDLE_DEPENDENCY_CORRECTIVE           = PASS
 D1_CREATE_HANDLER_CORRECTIVE              = PASS
 D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST        = PASS
 D1_EMPLOYEE_SELF_INDEX_VISUAL             = PASS
 D1_MY_MBO_HISTORY_LIST                    = PASS
 D1_MY_MBO_COMPLETED_STATUS_DISPLAY        = PASS
 D1_EMPLOYEE_SELF_DELETE_GUARD             = PASS
-D1_AUTH_BRIDGE_WP1_CORE                   = ACTIVE / SOURCE+TEST ONLY
-D1_AUTH_BRIDGE_WP2_BROWSER_INTEGRATION    = PENDING AFTER WP1 REVIEW
-APP794_DELETE_PERMISSION_READONLY_CHECK   = PENDING / AFTER AUTH PATH RESTORED OR ADMIN ACL READBACK
+D1_AUTH_BRIDGE_WP1_CORE                   = CORRECTIVE REQUIRED / SECURITY+COMPATIBILITY
+D1_AUTH_BRIDGE_WP2_BROWSER_INTEGRATION    = BLOCKED UNTIL WP1 PASS
+APP794_DELETE_PERMISSION_READONLY_CHECK   = PENDING
 APP794_DEPLOY_GUARD_INTEGRATION           = OPEN / AFTER BRIDGE SOURCE INTEGRATION
-D1_LIVE_CUTOVER                           = BLOCKED / NO LIVE AUTH BRIDGE YET
+D1_LIVE_CUTOVER                           = BLOCKED
 D2-D7 LIVE WRITES                         = NOT AUTHORIZED unless separately recorded
 ```
 
-No new App794 deploy is authorized.
-No App801 ACL widening is authorized.
-No Auth Bridge live deployment, secret creation, or production Kintone API token is authorized in WP1.
+No App794 deploy, App801 ACL widening, Auth Bridge live deployment, production secret creation, or live Kintone Bridge call is authorized.
 
-## 3. Accepted Live Security Evidence
+## 3. Independent Review — Auth Bridge WP1 Executor Commit
 
-2026-08-29 user-side verification established:
-- Employee_Code `0113`: `Account_Status=ACTIVE`, `Failed_Attempts=0`, `Locked_Until` blank, `Force_Password_Change=NO`, `Credential_Version=1`;
-- shared Kintone principal `s1` cannot open App801 and receives `CB_NO02`;
-- `s1` direct REST read of App801 also receives HTTP 403 / `CB_NO02`;
-- former browser-direct adapter therefore cannot operate without weakening App801 privacy;
-- Login UI currently mislabels generic credential-denied failures as locked/disabled.
+Task base:
+`4ff83744bdfe18341423fc06bc57438f8d7d77b4`
 
-Decision:
-- keep App801 private;
-- do not grant `s1`, `MBO_EMPLOYEE_ACCESS`, or Everyone App801 credential-store access;
-- privileged App801 access moves to Auth Bridge server side only.
+Executor:
+`c7dfd9a4b197be56ce676506b75674b7a0d93bd7`
 
-## 4. Approved Auth Bridge Architecture
+Exactly one executor commit is ahead.
 
-Canonical Baselines:
-- `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
-- `project-docs/CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`
+Accepted direction:
+- dedicated `services/mbo-auth-bridge/` Node.js 20 package;
+- modules separated by repository/auth/session/ticket/router/rate-limit/config responsibility;
+- no App794 browser integration or dist change;
+- no live Kintone URL/secret introduced;
+- root test command includes Bridge tests;
+- router implements required endpoint names, no-store headers, CORS boundary and rate-limit boundary;
+- repository has no effective record create/delete operation.
 
-Canonical flow:
+### Blocking findings
 
-```text
-App794 Browser
-  -> HTTPS Auth Bridge
-      -> App801 using server-side-only least-privilege credential/API token
-```
+1. **PBKDF2 compatibility is broken.**
+   Existing App801 format stores `saltHex` but PBKDF2 uses the decoded salt bytes. Bridge currently passes the hex text itself to `crypto.pbkdf2`, so existing App801 passwords will not verify. Current test only hashes and verifies with the same incorrect Bridge implementation and does not prove compatibility with the existing browser/App801 algorithm.
 
-Preserved behaviors:
-- PBKDF2-SHA256 / 100000;
-- initial password = Employee_Code + Force Change;
-- 5 failures -> 15-minute lock;
-- 8-hour absolute same-tab opaque session;
-- one active session per Employee_Code;
-- Credential_Version binding;
-- logout + normal password-change session rotation;
-- My MBO / Create / History / No-Delete behavior.
+2. **App801 session field contract is wrong/incomplete.**
+   Baseline fields are `Session_Token_Hash`, `Session_Issued_At`, `Session_Expires_At`, `Session_Credential_Version`, `Session_Kintone_User`. Bridge uses non-existent `Session_Kintone_User_Code`, omits issued-at and session credential version, and therefore cannot use the accepted live App801 schema correctly.
 
-New mandatory boundary:
-- production browser has zero direct App801 credential/session GET/PUT calls;
-- browser never receives Password_Hash, Session_Token_Hash, App801 API token or Bridge secret;
-- employee/shared principal continues to receive CB_NO02 for direct App801 access.
+3. **Session identity/validation violates the approved trust model.**
+   `/session/validate` currently requires client-supplied `employeeCode` and looks up by Employee_Code. Baseline requires Bridge to hash the raw token, resolve exactly one App801 row by `Session_Token_Hash`, derive Employee_Code server-side, then validate account/expiry/credential-version/Kintone context. Current implementation also does not check `Session_Credential_Version == Credential_Version`.
 
-## 5. Implementation Sequence
+4. **Logout/password lifecycle trusts client identity too much.**
+   Logout revokes by `employeeCode` without validating the presented session token, allowing arbitrary session revocation by known Employee_Code. Normal password change also takes Employee_Code from the browser instead of deriving identity from the validated session. Force-change must derive identity from the signed ticket and must not re-enable DISABLED/LOCKED accounts.
 
-### WP1 — Auth Bridge Core / Contract — ACTIVE
-Source/test/local only:
-- provider-neutral Node.js 20 service;
-- no production secrets;
-- no live Kintone calls;
-- mock/injected App801 repository in tests;
-- implement auth/password/lockout/session/force-change-ticket contract;
-- document environment names only;
-- browser production path remains untouched in WP1.
+5. **Credential parsing is not fail-closed.**
+   Repository defaults missing `Account_Status` to ACTIVE, missing Force Change to NO, and invalid/missing Credential_Version to 1. It also trims/accepts Employee_Code without the canonical `/^[A-Za-z0-9_.-]+$/` validation, creating query-injection/identity-normalization risk. Existing adapter requires exact non-trimmed valid code and malformed state must fail closed.
 
-### WP2 — Browser Integration — PENDING
-After independent WP1 PASS:
-- add `mbo-auth-bridge-adapter.js`;
-- route login/session/password/logout through Bridge;
-- remove browser-direct App801 adapter from production dependency path;
-- correct UI error mapping;
-- prove production bundle has zero direct App801 credential/session calls.
+6. **Temporary lockout semantics changed.**
+   5 failed attempts should set temporary `Locked_Until` while permanent `Account_Status=LOCKED` always denies. WP1 currently sets `Account_Status=LOCKED` on the 5th failure and later can auto-reactivate it after expiry, conflating permanent and temporary lock states.
 
-### WP3 — Deploy Safety / Live Cutover — PENDING
-After WP2 PASS:
-- select/approve hosting;
-- create server-side secret/API token under exact authorization;
-- close App794 Deploy Guard Integration;
-- deploy Bridge + one combined App794 corrective package;
-- final D1 UAT.
+7. **Runtime/config fail-closed gaps.**
+   TicketService contains a default signing secret; Router/config default CORS to `*`; config does not validate mandatory runtime values; router can return raw internal `err.message`; service package has `start: node src/server.js` but no `server.js` exists in WP1.
 
-## 6. Exact Next Action
+8. **Mandatory tests are incomplete.**
+   Current tests do not prove a legacy PBKDF2 vector, force-ticket version mismatch, token-hash session lookup, session credential-version mismatch, exact live field codes, permanent-vs-temporary lock behavior, logout token ownership, malformed credential fail-closed, or sanitized internal error handling.
+
+GitHub has no CI/status checks for this commit. Do not claim independent runtime test PASS from GitHub.
+
+## 4. Exact Next Action
 
 ```text
 NEXT_ACTION_OWNER              = Antigravity
-ANTIGRAVITY_REQUIRED           = YES — WP1 SOURCE/TEST ONLY
-KINTONE_WRITE                  = NO
+ANTIGRAVITY_REQUIRED           = YES — ONE WP1 CORE CORRECTIVE
+KINTONE_LIVE_READ_WRITE        = NO
 APP794_DEPLOY                  = NO
 APP801_ACL_WRITE               = NO
 APP801_RECORD_WRITE            = NO
 AUTH_BRIDGE_LIVE_DEPLOY        = NO
 PRODUCTION_SECRET_CREATION     = NO
-DEPLOY_GUARD_FIX               = NO IN WP1
+BROWSER_INTEGRATION            = NO
+DEPLOY_GUARD_FIX               = NO IN THIS PACKAGE
 D2_D7_WRITE                    = NO
 MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-## 7. Reusable Lessons
+After WP1 corrective PASS:
+1. WP2 Browser Integration;
+2. independent review;
+3. App794 Delete-permission readback + Deploy Guard Integration;
+4. exact live Bridge hosting/secret/deploy authorization;
+5. one combined App794 corrective deploy + final D1 UAT.
 
-- Shared Kintone principals must not be granted direct access to a credential store merely to make browser authentication work.
-- Privileged credential verification belongs behind a server-side trust boundary when browser principals are shared.
-- CORS is useful transport hardening but is not a secret/authentication mechanism by itself.
-- Error UI must distinguish credential, account-state, rate-limit and service failures without exposing credential internals.
+## 5. Reusable Lessons
+
+- PBKDF2 serialized salt text and PBKDF2 salt bytes are not interchangeable; compatibility tests must use an independent legacy vector.
+- Session bearer token validation must resolve identity server-side from token hash; browser-supplied Employee_Code is not identity proof.
+- Permanent account lock and temporary failed-attempt lockout are separate states.
+- Credential repositories must fail closed on malformed security fields; never default missing security state to permissive values.
+- Server-side auth errors returned to browsers must be normalized and sanitized.
