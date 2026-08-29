@@ -51,7 +51,8 @@ Do not broad-scan the repo.
 | Current project status / what next | `AI_CONTROL_CENTER.md` | `00_MASTER_JOBLIST.md` |
 | Current executor instruction | `AI_ACTIVE_TASK.md` | none |
 | AI workflow / review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `CONFIRMED_BASELINE/DOCUMENT_CONTROL.md` |
-| Source architecture / modular JS | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact affected source files |
+| Live deploy / rollback / recovery / emergency recovery | `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md` | `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`, exact deployment/recovery evidence |
+| Source architecture / modular JS / feature ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact affected source files/tests/build manifest |
 | D1 login / password / App801 / shared Kintone account / App801 ACL | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`, exact live ACL evidence |
 | D1 session token / reload / logout / password-session rotation | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` |
 | D1 My MBO history / Completed / no-delete | `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` | exact UI/security source/test |
@@ -75,6 +76,7 @@ Do not broad-scan the repo.
 Always start with `project-docs/CONFIRMED_BASELINE/README.md`, then only the domain needed:
 
 - `AI_OPERATING_GOVERNANCE.md`
+- `ROLLBACK_RECOVERY_SAFETY.md`
 - `SOURCE_CODE_ARCHITECTURE.md`
 - `DOCUMENT_CONTROL.md`
 - `D1_AUTH_SECURITY.md` — current **KINTONE-ONLY** auth + App801 ACL/security model
@@ -132,6 +134,9 @@ current HEAD
 + relevant Baseline(s)
 + exact changed files/diff/evidence
 ```
+
+For deploy/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory.
+For source/module refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory when feature ownership or dependency boundaries are involved.
 
 Do not use historical Auth Bridge artifacts as current D1 authority.
 
