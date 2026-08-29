@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — WP1 ATOMIC DEPLOY TOOLING CORRECTIVE
+> Updated: 2026-08-29 — WP1 ATOMIC DEPLOY TOOLING SOURCE-IDENTITY CORRECTIVE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 App794 Live Rev54 remains accepted known-good. WP1 atomic deployment tooling candidate `9c96461dcde9ef3ca626b415d35398ff5d41657f` is **CORRECTIVE**: JS+CSS replacement is implemented, but strict release-manifest enforcement is incomplete and Git-blob identity hashing is not byte-exact. No Live deployment is authorized. UI WP2 has NOT started. |
+| D1 | 🟠 App794 Live Rev54 remains accepted known-good. Residual WP1 candidate `6e1dcce38c5e425ed5f2228ab6a49dce1a826156` correctly fixes mandatory manifest binding and byte-exact JS/CSS hashing, but is still **CORRECTIVE** because Live source identity can be caller-spoofed, unresolved Git HEAD does not fail closed, source SHA matching is prefix-based, and dirty working-tree/build inputs are not blocked. No Live deployment is authorized. WP2 has NOT started. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -33,67 +33,95 @@ USER_RUNTIME_SMOKE     = PASS
 CURRENT_LIVE_RUNTIME   = ACCEPTED KNOWN-GOOD
 ```
 
-No Live write occurred in WP1 candidate `9c96461...`; Rev54 is unchanged.
+No Live write occurred in WP1 candidate `6e1dcce...`; Rev54 is unchanged.
 
-## 3. WP1 Candidate Review
+## 3. Residual WP1 Candidate Review
 
 Candidate:
-`9c96461dcde9ef3ca626b415d35398ff5d41657f`
+`6e1dcce38c5e425ed5f2228ab6a49dce1a826156`
 
 Changed files are correctly limited to:
 - `scripts/kintone/deploy-custom-ui.js`
 - `tests/deploy-customization-preservation.test.js`
-- `project-docs/WP1_ATOMIC_DEPLOYMENT_TOOLING_EVIDENCE.md`
+- `project-docs/WP1_ATOMIC_DEPLOYMENT_TOOLING_RESIDUAL_CORRECTIVE_EVIDENCE.md`
 
 Executor evidence reports:
 ```text
-FOCUSED_TEST_RESULT       = PASS 20/20
-FULL_TEST_RESULT          = PASS 933/933
-NPM_RUN_UI_BUILD_RESULT   = PASS
+FOCUSED_TEST_RESULT       = PASS 22/22
+FULL_TEST_RESULT          = PASS 935/935
+UI_BUILD_RESULT           = PASS
 BUILD_ONLY_RESULT         = PASS
 BUILD_ONLY_NETWORK_CALLS  = 0
 LIVE_KINTONE_WRITE        = 0
 LIVE_DEPLOY_OCCURRED      = NO
 ```
 
-### Accepted implementation direction
+### Independently accepted improvements
 
-The candidate correctly:
-- requires target Desktop JS `mbo-employee-app.js` and target Desktop CSS `mbo-employee.css`;
-- replaces both preview target fileKeys;
-- uploads both candidate JS and CSS after preflight;
-- preserves scope/topology/Mobile through existing topology checks;
-- returns JS+CSS artifact data in build-only mode;
-- removes the previous `CSS_UPLOAD_COUNT = 0` assumption.
+The candidate now correctly:
+- requires a Live `releaseManifest` object;
+- binds App794, JS identity, CSS identity, scope and topology;
+- rejects missing required manifest fields;
+- computes Git-blob SHA over exact bytes without CRLF-to-LF normalization;
+- preserves atomic JS+CSS target replacement;
+- keeps build-only zero-network;
+- leaves all UI feature source untouched.
 
-### Blocker A — Release manifest is optional instead of mandatory
+### Remaining Blocker A — Live Git HEAD can be caller-spoofed
 
-`validateReleaseManifest()` currently returns PASS when neither expected JS nor expected CSS identity is supplied. Live `executeDeployCustomUi()` passes `options.expectedJsBlobSha` and `options.expectedCssBlobSha`, so a caller with deploy authorization can omit both and bypass candidate identity binding.
-
-This violates the Active Task requirement:
-`missing manifest field => BLOCK`.
-
-The manifest is also incomplete versus the required contract. It must bind at minimum:
+Live `executeDeployCustomUi()` currently resolves:
 ```text
-APP_ID = 794
-SOURCE_COMMIT / candidate identifier
-JS identity
-CSS identity
-SCOPE
-TOPOLOGY / entry counts
+options.currentGitHead || getCurrentGitHead()
 ```
 
-App binding and topology validation existing elsewhere are useful, but the authorized candidate release manifest itself must be complete and mandatory for Live mode.
+Therefore a caller can supply a claimed Git HEAD rather than forcing the tooling to bind to the actual repository checkout. This violates the requirement that source identity must reflect the actual source being deployed.
 
-### Blocker B — Git blob SHA must represent exact uploaded bytes
+Live execution must derive source identity internally. A test-only pure validator may accept injected values, but the Live entrypoint must not accept a caller override for actual source identity.
 
-Current `gitBlobSha()` converts CRLF to LF before hashing. That can report the repository LF Git blob identity while the actual built/uploaded artifact still contains CRLF bytes on a Windows checkout.
+### Remaining Blocker B — unresolved Git HEAD does not fail closed
 
-For deployment identity, hash the exact bytes/content that will be uploaded. Do not normalize line endings before the Git-blob SHA calculation.
+`getCurrentGitHead()` returns `null` on failure. `validateReleaseManifest()` only compares source commit when `currentGitHead` is truthy, so an unresolved Git repository can skip source binding and continue.
 
-The same exact content used to compute the identity must be the content sent to Kintone.
+Live mode must BLOCK if HEAD cannot be resolved.
 
-## 4. UI Feature Ownership — Preserved / WP2 Not Started
+### Remaining Blocker C — source commit comparison is prefix-based
+
+Current comparison accepts either string when one `startsWith()` the other. An overly short caller value can therefore satisfy source matching.
+
+For Live release identity:
+- manifest `sourceCommit` must be an exact full 40-character hexadecimal SHA;
+- actual Git HEAD must be an exact full 40-character SHA;
+- comparison must be exact equality.
+
+### Remaining Blocker D — dirty working tree/build inputs are not blocked
+
+The Active Task required fail-closed behavior if the working tree/build inputs are dirty. Current tooling checks HEAD only and does not check repository cleanliness.
+
+Before Live build/network/upload:
+- resolve actual Git HEAD;
+- verify repository/build inputs are clean;
+- dirty tracked/untracked source/build inputs => BLOCK;
+- only then build candidate artifacts and compare their JS/CSS identities to the reviewed manifest.
+
+Do not implement automatic cleanup, reset, checkout, stash or rollback.
+
+## 4. Accepted WP1 Behavior — Do Not Reopen
+
+Preserve all of the following:
+```text
+ATOMIC_JS_CSS_PAIR            = PASS
+TARGET_JS_EXACTLY_ONE         = PASS
+TARGET_CSS_EXACTLY_ONE        = PASS
+BOTH_PREVIEW_FILEKEYS_REPLACED = PASS
+MANIFEST_REQUIRED             = PASS
+MANIFEST_APP_JS_CSS_SCOPE_TOPOLOGY = PASS
+BYTE_EXACT_HASHING            = PASS
+CRLF_VS_LF_DIFFERENT          = PASS
+BUILD_ONLY_ZERO_NETWORK       = PASS
+NO_LIVE_WRITE                 = PASS
+```
+
+## 5. UI Feature Ownership — WP2 Still Blocked
 
 ```text
 My MBO card/list owner        = src/ui/employee-self-index-ui.js
@@ -104,21 +132,19 @@ Comment mirror target owner  = dedicated comment-mirror module in WP2
 CSS current owner            = src/styles/mbo-employee.css
 ```
 
-WP2 remains blocked until WP1 independent PASS.
-
-## 5. Current Gate
+## 6. Current Gate
 
 ```text
-CURRENT_GATE                  = WP1 ATOMIC DEPLOY TOOLING RESIDUAL CORRECTIVE
+CURRENT_GATE                  = WP1 SOURCE IDENTITY FAIL-CLOSED CORRECTIVE
 CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST ONLY — NO LIVE WRITE
 NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-LATEST_WP1_CANDIDATE          = 9c96461dcde9ef3ca626b415d35398ff5d41657f
+LATEST_WP1_CANDIDATE          = 6e1dcce38c5e425ed5f2228ab6a49dce1a826156
 WP1_VERDICT                   = CORRECTIVE
 LIVE_APP794_CUSTOMIZATION     = REV54 ACCEPTED KNOWN-GOOD
 ROLLBACK_MANIFEST             = LOCKED / ec627852 + e04aa... + 1710d...
 UI FEATURE SOURCE CHANGE      = NO
-DEPLOY TOOL SOURCE CHANGE     = YES / RESIDUAL ONLY
-TEST CHANGE                   = YES / RESIDUAL ONLY
+DEPLOY TOOL SOURCE CHANGE     = YES / SOURCE-IDENTITY RESIDUAL ONLY
+TEST CHANGE                   = YES / SOURCE-IDENTITY RESIDUAL ONLY
 APP794 CUSTOMIZATION DEPLOY   = NO / NOT AUTHORIZED
 APP794 RECORD WRITE           = NO
 APP794 FORM/SCHEMA/LAYOUT     = NO
@@ -131,4 +157,4 @@ WP2                           = BLOCKED UNTIL WP1 PASS
 ```
 
 Maximum executor status:
-`ATOMIC_DEPLOY_TOOLING_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
+`ATOMIC_DEPLOY_SOURCE_IDENTITY_CORRECTED_PENDING_INDEPENDENT_REVIEW`.
