@@ -31,7 +31,8 @@ Do not infer otherwise from historical chat, commits, or abandoned `services/mbo
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules, Control Center/Active Task model, Baseline promotion and reusable-skill rules.
-- `SOURCE_CODE_ARCHITECTURE.md` — modular JavaScript architecture, feature/menu separation, main-entry responsibilities, controlled decomposition and generated-dist rules.
+- `ROLLBACK_RECOVERY_SAFETY.md` — mandatory Live rollback/recovery standard: immutable known-good manifest, atomic JS/CSS release pair, validated rollback material, explicit rollback authorization, one-attempt fail-closed execution and exact post-readback.
+- `SOURCE_CODE_ARCHITECTURE.md` — modular JavaScript architecture, one-feature/one-owner rule, feature/service/domain/adapter boundaries, change locality, no copy-paste implementations, feature-level tests, controlled decomposition and generated-dist traceability.
 - `DOCUMENT_CONTROL.md` — lean document policy, Core Read Set and default-ignore historical files.
 - `D1_AUTH_SECURITY.md` — **current KINTONE-ONLY D1 authentication architecture**, App801 credential model, PBKDF2/lockout/password rules, Employee-Self identity binding, `MBO_EMPLOYEE_ACCESS` ACL target, shared-principal limitation and final D1 UAT requirements.
 - `D1_SESSION_CONTINUITY.md` — 8-hour same-tab opaque session model validated through App801 inside Kintone, Credential_Version/Kintone-principal binding, logout/password rotation and UAT requirements.
@@ -53,5 +54,8 @@ For every future `review`, reviewer must:
 5. extract reusable Kintone knowledge into `skills/kintone/` when generalizable;
 6. treat conflicts as MUST FIX/BLOCKER according to impact;
 7. update Control Center / Active Task to match the promoted Baseline.
+
+For any Live deployment/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory reading.
+For any source implementation/refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory reading when functional ownership or module boundaries are affected.
 
 Temporary status, blockers, transient commit SHAs and raw test logs belong in `AI_CONTROL_CENTER.md` / evidence, not duplicated here.
