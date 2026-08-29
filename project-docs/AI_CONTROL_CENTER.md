@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — EMPLOYEE UI + NATIVE COMMENT MIRROR INDEPENDENT REVIEW CORRECTIVE
+> Updated: 2026-08-29 — COMBINED EMPLOYEE UI RC STILL CORRECTIVE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 KINTONE-ONLY / App794 customization rev51 / attachment persistence PASS / long-filename UI PASS / saved attachment Preview+Download PASS incl. User Live UAT / **Back to My MBO + My MBO readability source direction PASS; Native Comment mirror CORRECTIVE pending** / HR+admin reset UI open / remaining security UAT open |
+| D1 | 🟠 KINTONE-ONLY / App794 customization rev51 / attachment persistence PASS / long-filename UI PASS / saved attachment Preview+Download PASS incl. User Live UAT / **combined Back + My MBO cards + Native Comment mirror source exists but remains CORRECTIVE** / HR+admin reset UI open / remaining security UAT open |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -26,80 +26,78 @@ APP794_LIVE_CUSTOMIZATION_REVISION       = 51
 APP794_LIVE_FORM_REVISION                = 48
 EDIT_ATTACHMENT_SOURCE/DEPLOYMENT        = PASS / REV49
 LONG_FILENAME_UI_SOURCE/DEPLOYMENT       = PASS / REV50
-ATTACHMENT_RETRIEVAL_SOURCE              = PASS
-ATTACHMENT_RETRIEVAL_DEPLOYMENT          = PASS / REV51
+ATTACHMENT_RETRIEVAL_SOURCE/DEPLOYMENT   = PASS / REV51
 ATTACHMENT_RETRIEVAL_USER_LIVE_UAT       = PASS
-ATTACHMENT_RETRIEVAL_DEFECT              = CLOSED
 ALL_ATTACHMENT_DEPLOY_AUTHS              = CONSUMED / CLOSED
 ```
 
-Protected accepted behavior includes Objective/Mid-Year/Final attachment persistence, atomic edit preflight, long filename containment, Preview/Download MIME safety, single-popup behavior, read-only retrieval, and existing Remove semantics.
+Protected accepted behavior includes attachment persistence, atomic edit preflight, long filename containment, Preview/Download MIME safety, single-popup behavior, read-only retrieval, and existing Remove semantics.
 
-## 3. Current Combined UI Candidate
+## 3. Combined UI Release Candidate Under Review
 
-Candidate under independent review:
-`b31839f0a899d886167d661cc9e82fb870b6f495`
+Latest executor candidate:
+`0937097d1bccda9a0c9d42b8aa1a9e8872525930`
 
-It is a direct child of the current combined corrective task HEAD `cac008bbefb401e3f065bb177f5d20ffc321a460`.
+Direct parent / task HEAD:
+`2674d7060803502b5825f11c5fadc79a06582e21`
 
-Source direction accepted for items 1–2:
-- existing Detail/Edit renders `← กลับหน้า My MBO / Back to My MBO` before main progress content;
-- Create hides the Back action;
-- target remains `/k/{appId}/` in the same tab;
-- My MBO query remains `Employee_Code = "{code}" order by Fiscal_Year desc`;
-- My MBO uses responsive record cards with Fiscal Year, Status, Record Key, and one action;
-- non-completed action = `เปิด MBO / Open MBO`;
-- completed action = `ดูย้อนหลัง / View History`;
-- record URLs remain `/k/{appId}/show#record={id}`;
-- zero Delete UI preserved;
-- `src/main-mbo-app.js` change is minimal orchestration-only wiring of `kintoneApiWrapper` and `appId` into `EmployeePartAUI`.
+The combined UI still contains all three requested features:
+1. Existing Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
+2. My MBO: responsive record-card/list layout; Employee_Code query and Fiscal_Year descending order preserved; non-completed = Open MBO; completed = View History; zero Delete UI.
+3. Existing Detail/Edit: Native Kintone Comment read-only mirror with actual Refresh action.
 
-## 4. Independent Comment Mirror Review — CORRECTIVE
+The latest corrective also fixed major prior blockers:
+- `order:'asc'` now checks `resp.newer` rather than `resp.older`;
+- hard silent `offset >= 500` cutoff removed;
+- offset advances by actual returned comment count;
+- >500 comment regression added;
+- Edit comment-load regression added;
+- Refresh test now actually invokes the button, performs a second GET, and updates the rendered thread with zero record write.
 
-The lower custom Comment area correctly moved from a static placeholder toward a read-only Native Kintone mirror:
-- reads `/k/v1/record/comments.json` using current Kintone session;
-- uses current app + record ID;
-- no comment POST/DELETE/reply path added;
-- no record field copy or external storage;
-- comment body/author are rendered with `textContent`;
-- Create performs no comment GET;
-- retrieval failure is contained inside the Comment section;
-- Refresh control exists.
+## 4. Independent Review — RESIDUAL CORRECTIVE
 
-However the candidate is **NOT deployable** because pagination is incorrect for real Kintone response semantics.
+Candidate `0937097d...` is still NOT deployable for two residual reasons.
 
-Current source uses:
+### Blocker A — Short page may still silently truncate while `newer=true`
+
+Current source terminates when:
 
 ```text
-order = asc
-stop when resp.older === false
+resp.newer === false || comments.length < limit
 ```
 
-Kintone defines `older=false` as “no older comments exist / this is the first comment” and `newer=false` as “no newer comments exist / this is the last comment”. With ascending order, the first page begins at the oldest comments, so `older` can already be false while newer pages still exist. This can silently stop after the first 10 comments.
+For truthful pagination, `resp.newer === false` is the authoritative proof that the newest comment has been reached. A non-empty short page with `newer=true` still asserts that newer comments exist. Stopping because `comments.length < limit` can therefore silently omit later comments.
 
-The current pagination test mocks `older=true` on the first ascending page, so it does not represent the real API boundary condition.
+Required:
+- zero comments may stop safely;
+- non-empty page with `newer=true` MUST continue regardless of page length;
+- non-empty page with `newer=false` stops complete;
+- offset increments by actual returned comment count;
+- add explicit regression `COMMENTS_SHORT_PAGE_NEWER_TRUE_CONTINUES`.
 
-There is also an unconditional safety break at `offset >= 500`, which can silently truncate a longer Native Comment thread and conflicts with the task rule “do not silently omit older comments”. Kintone documents no maximum for Comment `offset`; each request is limited to 10 comments.
+### Blocker B — Mandatory committed verification evidence still absent
 
-Required correction:
-- for `order: asc`, page until `newer === false`, or use another termination method proven against official semantics;
-- remove the silent 500-comment cutoff, or replace it with an explicit truthful load-more/truncation state that cannot claim the thread is complete;
-- tests must model real `older/newer` behavior for ascending pages;
-- add/complete the Active Task tests for Edit load and actual Refresh reload behavior.
+Commit `0937097d...` changed only:
+- `src/ui/employee-part-a-ui.js`
+- `tests/employee-self-index-ui.test.js`
+- generated `dist/mbo-employee-app.js`
 
-Verification evidence is also incomplete: candidate commit contains source/generated/test changes but no recorded test/build evidence artifact, and GitHub exposes no CI statuses or workflow runs for the candidate. Therefore full npm/build claims are not independently established yet.
+No reviewable evidence artifact was committed for the mandatory focused tests, full `npm test`, `npm run ui:build`, or module-aware build-only. GitHub exposes no CI statuses/workflow runs for this commit. Source/test direction may be correct, but verification is not independently established.
+
+Required executor evidence must record exact focused/full/build/build-only results and `LIVE_KINTONE_WRITE=0`, `LIVE_COMMENT_WRITE=0`, `LIVE_DEPLOY_OCCURRED=NO`.
 
 Independent verdict: **CORRECTIVE**.
 
 ## 5. Current Gate
 
 ```text
-CURRENT_GATE                  = D1 APP794 NATIVE COMMENT MIRROR PAGINATION CORRECTIVE
+CURRENT_GATE                  = D1 COMBINED EMPLOYEE UI RESIDUAL CORRECTIVE
 CURRENT_MODE                  = ANTIGRAVITY SOURCE/TEST ONLY
 NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-REVIEWED_REJECTED_CANDIDATE   = b31839f0a899d886167d661cc9e82fb870b6f495
-SOURCE CHANGE                 = YES — COMMENT MIRROR ONLY + REQUIRED TESTS
-BACK/MY_MBO UI                = PRESERVE / NO REDESIGN
+LATEST_REJECTED_CANDIDATE     = 0937097d1bccda9a0c9d42b8aa1a9e8872525930
+BACK_TO_MY_MBO                = PRESERVE
+MY_MBO CARD/LIST              = PRESERVE
+COMMENT MIRROR                = PRESERVE EXCEPT PAGINATION TERMINATION
 APP794 CUSTOMIZATION DEPLOY   = NO
 DEPLOY_AUTHORIZATION          = NONE
 APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
@@ -109,8 +107,7 @@ AUTH/SESSION SEMANTICS        = NO CHANGE
 ATTACHMENT SEMANTICS          = NO CHANGE
 ROUTING/SCORING               = NO CHANGE
 APP801 / APP795 / APP796      = NO WRITE
-D2-D7 EXECUTION               = NO
-EXTERNAL SERVICE/STORAGE      = NO
+COPY PREVIOUS MBO             = NOT YET
 ```
 
-Antigravity is required only for this narrow source/test/build correction. ChatGPT retains independent review, deployment authorization, and control-document ownership.
+Antigravity is needed only to correct the residual pagination condition, run the required local verification, and commit evidence. ChatGPT retains review/deploy authorization/control-doc ownership.
