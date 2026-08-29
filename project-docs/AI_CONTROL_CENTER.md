@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-29 — COMBINED EMPLOYEE UI SOURCE PASS / VERIFICATION EVIDENCE PENDING
+> Updated: 2026-08-29 — COMBINED EMPLOYEE UI SOURCE + VERIFICATION PASS / DEPLOY AUTHORIZATION PENDING
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 KINTONE-ONLY / App794 customization rev51 / attachment persistence PASS / long-filename UI PASS / saved attachment Preview+Download PASS incl. User Live UAT / **Back to My MBO + My MBO cards + Native Comment mirror source PASS; verification evidence pending before deploy authorization** / HR+admin reset UI open / remaining security UAT open |
+| D1 | 🟠 KINTONE-ONLY / App794 customization rev51 / attachment persistence PASS / long-filename UI PASS / saved attachment Preview+Download PASS incl. User Live UAT / **Back to My MBO + My MBO cards + Native Comment mirror source+verification PASS; waiting explicit deploy authorization** / HR+admin reset UI open / remaining security UAT open |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -33,67 +33,75 @@ ALL_ATTACHMENT_DEPLOY_AUTHS              = CONSUMED / CLOSED
 
 Protected accepted behavior includes attachment persistence, atomic edit preflight, long filename containment, Preview/Download MIME safety, single-popup behavior, read-only retrieval, and existing Remove semantics.
 
-## 3. Combined Employee UI Release Candidate
+## 3. Combined Employee UI Release Candidate — INDEPENDENT PASS
 
-Accepted source candidate:
+Reviewed release candidate commit:
 `ea5254370360321d18bd768f379986609c241850`
 
-Direct parent / task HEAD:
-`10f03a1f62e5228da7c5b813cd18679a4223f60d`
+Reviewed generated bundle identities:
+```text
+DIST_JS_BLOB_SHA  = a4975fc219269268bf2a0caffd084d233fa3e29a
+DIST_CSS_BLOB_SHA = 2a758a0025c1ec1917b4da19ad09bd8cd2182f51
+```
 
-Independent source review PASS for all three requested UI features:
-1. Existing Detail/Edit preserves `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
-2. My MBO preserves responsive record-card/list UI, exact Employee_Code scope, Fiscal_Year descending order, Open MBO for non-completed, View History for completed, unchanged record URLs, and zero Delete UI.
-3. Existing Detail/Edit preserves Native Kintone Comment read-only mirror + Refresh.
+The candidate contains all three user-requested UI features:
+1. Existing Detail/Edit: `← กลับหน้า My MBO / Back to My MBO`; Create hides it.
+2. My MBO home: responsive record-card/list UI; exact `Employee_Code = "{code}" order by Fiscal_Year desc`; non-completed = Open MBO; completed = View History; unchanged record URLs; zero Delete UI.
+3. Existing Detail/Edit: Native Kintone Comment read-only mirror + Refresh using current record comments.
 
-Comment pagination source now satisfies the required semantics:
-- `comments.length === 0` stops safely;
-- non-empty + `newer === true` continues even when page size is less than 10;
-- non-empty + `newer === false` stops complete;
-- offset advances by actual returned comment count;
-- no silent 500-comment cap;
-- explicit `COMMENTS_SHORT_PAGE_NEWER_TRUE_CONTINUES` regression added.
+Comment pagination independent source review PASS:
+- zero comments => stop safely;
+- non-empty + `newer=true` => continue even on short page;
+- non-empty + `newer=false` => complete;
+- offset advances by actual returned count;
+- no silent 500 cap;
+- safe text rendering;
+- Refresh performs a new GET and updates the thread with zero record/comment write.
 
-Commit `ea525437...` changed only:
-- `src/ui/employee-part-a-ui.js`
-- `tests/employee-self-index-ui.test.js`
-- generated `dist/mbo-employee-app.js`
+## 4. Verification Evidence — PASS
 
-Therefore Back/My MBO source was not redesigned in this corrective.
+Executor verification evidence commit:
+`aee5d7bc33e8c24f0d60f5a0b6865ca1f7d64766`
 
-## 4. Remaining Blocker — Verification Evidence Only
+Independent provenance:
+- direct child of verification task HEAD `4fd08ce767c3287be88c881445cd5af6244e08d1`;
+- changed only `project-docs/D1_COMBINED_EMPLOYEE_UI_VERIFICATION_EVIDENCE.md`;
+- no source/test/dist changes during verification;
+- no GitHub CI/status/workflow contradicts the evidence.
 
-Source review is PASS, but deploy authorization is still blocked because the executor did not commit the mandatory local verification evidence and GitHub exposes no CI statuses/workflow runs for `ea525437...`.
-
-Required before deploy authorization:
-- focused Employee-Self/navigation tests;
-- focused Native Comment mirror tests;
-- relevant EmployeePartAUI regressions;
-- full `npm test`;
-- `npm run ui:build`;
-- module-aware build-only proving zero Live Kintone calls/writes;
-- evidence must prove no Live record/comment write and no deploy.
-
-No further source change is requested unless verification itself reveals a real regression.
+Recorded verification:
+```text
+FOCUSED_NAVIGATION_TESTS         = PASS 8/8
+FOCUSED_COMMENT_TESTS            = PASS 8/8
+EMPLOYEE_PART_A_REGRESSION       = PASS 73/73
+FULL_NPM_TEST                    = PASS 931/931
+UI_BUILD                         = PASS
+MODULE_AWARE_BUILD_ONLY          = PASS / 0 Live Kintone network calls
+LIVE_KINTONE_WRITE               = 0
+LIVE_COMMENT_WRITE               = 0
+LIVE_DEPLOY_OCCURRED             = NO
+```
 
 Independent verdict:
-`SOURCE PASS / VERIFICATION EVIDENCE PENDING`.
+`PASS — SOURCE + VERIFICATION`.
 
 ## 5. Current Gate
 
 ```text
-CURRENT_GATE                  = D1 COMBINED EMPLOYEE UI VERIFICATION EVIDENCE
-CURRENT_MODE                  = ANTIGRAVITY TEST/BUILD/EVIDENCE ONLY
-NEXT_ACTION_OWNER             = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-ACCEPTED_SOURCE_CANDIDATE     = ea5254370360321d18bd768f379986609c241850
-SOURCE CHANGE                 = NO UNLESS TEST FAILURE PROVES NECESSITY
-BACK_TO_MY_MBO                = SOURCE PASS
-MY_MBO CARD/LIST              = SOURCE PASS
-COMMENT MIRROR                = SOURCE PASS
-APP794 CUSTOMIZATION DEPLOY   = NO
+CURRENT_GATE                  = D1 COMBINED EMPLOYEE UI DEPLOY AUTHORIZATION
+CURRENT_MODE                  = CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION
+NEXT_ACTION_OWNER             = USER / EXPLICIT DEPLOY AUTHORIZATION ONLY
+REVIEWED_RELEASE_CANDIDATE    = ea5254370360321d18bd768f379986609c241850
+SOURCE_REVIEW                 = PASS
+VERIFICATION_REVIEW           = PASS
+BACK_TO_MY_MBO                = PASS / NOT LIVE YET
+MY_MBO CARD/LIST              = PASS / NOT LIVE YET
+COMMENT MIRROR                = PASS / NOT LIVE YET
+APP794 LIVE CUSTOMIZATION     = REV51 / OLD UI
+APP794 CUSTOMIZATION DEPLOY   = NOT AUTHORIZED
 DEPLOY_AUTHORIZATION          = NONE
 APP794 FORM/SCHEMA/LAYOUT     = NO WRITE
-APP794 RECORD WRITE           = NO LIVE WRITE
+APP794 RECORD WRITE           = NO WRITE
 KINTONE COMMENT WRITE         = NO
 AUTH/SESSION SEMANTICS        = NO CHANGE
 ATTACHMENT SEMANTICS          = NO CHANGE
@@ -102,4 +110,4 @@ APP801 / APP795 / APP796      = NO WRITE
 COPY PREVIOUS MBO             = NOT YET
 ```
 
-Antigravity is required only to execute local tests/builds and commit reviewable evidence. ChatGPT retains independent review, deployment authorization, and control-document ownership.
+If the user explicitly authorizes deployment, create a NEW one-shot authorization bound exactly to candidate `ea5254370360321d18bd768f379986609c241850`, App794 Desktop customization JS/CSS only. Do not reuse prior deployment authorizations.
