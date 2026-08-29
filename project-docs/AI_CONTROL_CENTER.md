@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / CREATE SOURCE FIX ACCEPTED BUT OLD LIVE CUSTOMIZATION / DEPLOY GUARD TEST CLOSURE REQUIRED / FINAL UAT BLOCKED |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO LIVE PASS / LIST→CREATE SESSION PASS / CREATE SOURCE FIX ACCEPTED BUT OLD LIVE CUSTOMIZATION / DEPLOY GUARD PASS / APP794 DELETE PERMISSION READ-ONLY CHECK NEXT / FINAL UAT BLOCKED |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -44,10 +44,10 @@ D1_FORCE_PASSWORD_CHANGE_0113           = PASS / USER LIVE OBSERVATION
 D1_LOGIN_0113_TO_MY_MBO                 = PASS / USER LIVE OBSERVATION
 D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS / USER LIVE OBSERVATION
 D1_CREATE_LIVE_RUNTIME                  = FAIL / OLD LIVE CUSTOMIZATION
-APP794_DELETE_PERMISSION_READONLY_CHECK = PENDING
-APP794_DEPLOY_GUARD_INTEGRATION         = CORRECTIVE TEST CLOSURE REQUIRED AT 04e1563f824d4e801f46411b9282ce292f2a478f
+APP794_DEPLOY_GUARD_INTEGRATION         = PASS / ACCEPTED AT 8fa69bec7683bd64dbbd65fd3adf38bd1535e29b
+APP794_DELETE_PERMISSION_READONLY_CHECK = NEXT / CONTROL PLANE + USER READ-ONLY VERIFICATION
 APP794_CORRECTIVE_DEPLOY                = NOT AUTHORIZED YET
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL DEPLOY-GUARD PASS + CORRECTIVE DEPLOY + REMAINING UAT
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL DELETE-PERMISSION CHECK + CORRECTIVE DEPLOY + REMAINING UAT
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
@@ -63,51 +63,60 @@ D1 must finish entirely inside Kintone. No external server, auth service, databa
 - Reset `0113` = PASS; Force Password Change = PASS; Login -> My MBO = PASS; List -> Create keeps session = PASS.
 - Live `/k/794/edit` still fails only because deployed App794 customization is older than the already-accepted Create-handler source corrective.
 
+Do not reopen the accepted Create source fix unless the future corrective deploy still reproduces the error.
+
 ## 5. HR / admin-form Password Reset Requirement
 
 Permanent D1 requirement remains: HR-authorized users and `admin-form` need an in-Kintone Reset MBO Password function; employee/shared users must not receive it. Reset semantics remain Employee_Code temporary password, Force Change YES, failed attempts 0, clear temporary lock/session, increment Credential_Version once, never change Account_Status, exact one-record fail-closed targeting.
 
-## 6. Independent Review — Deploy Guard corrective `04e1563f...`
+## 6. Independent Review — App794 Deploy Guard
 
-Review result: **CORRECTIVE REQUIRED — TEST CLOSURE ONLY**.
+Review result: **PASS / ACCEPTED**.
 
-Accepted source behavior:
-- `options.appId` if supplied must be exact integer 794;
-- registry load has no silent fallback;
-- `sandbox-apps.json.mboV2AppId` must be exact integer 794;
-- actual target and build target are literal 794;
-- generic sandbox guard uses literal ephemeral `[794]`;
-- authorization and request each require App794;
-- protected hard-block remains;
-- build-only returns before Kintone client/network path;
-- no App794 business/auth/Create/UI source or dist was changed.
+Accepted implementation chain:
+- `8d8e88e13ff0ef6798329266c69f721ab15b3f79` introduced the narrow App794 customization deploy authorization gate;
+- `04e1563f824d4e801f46411b9282ce292f2a478f` bound supplied target, registry target and actual deploy target to exact App794 and removed silent target fallback;
+- `8fa69bec7683bd64dbbd65fd3adf38bd1535e29b` closed the deterministic registry-drift test gap using `validateApp794DeployTargetBinding()` and the real deploy entrypoint uses the same helper.
 
-Remaining mandatory gap:
-- Active Task explicitly required a focused test proving `sandbox-apps.json.mboV2AppId != 794` / registry-resolved target drift fails closed. The corrective commit adds missing-auth, wrong `options.appId`, malformed auth, replay, App53/App283, exact guard-context and build-only coverage, but no registry-drift test is present.
-- No GitHub CI/status checks exist for `04e1563f...`; do not claim independent `npm test` PASS from repository evidence.
+Accepted invariants:
+- `options.appId`, registry `mboV2AppId`, authorization/request and actual live target must resolve to exact integer `794`;
+- registry missing/malformed/drifted target fails closed;
+- generic sandbox guard uses literal ephemeral `[794]`, never a mutable global allow-list;
+- `DISCOVERY_MODE` remains true and global `WRITE_ALLOWED_APPS` remains empty;
+- protected Apps 53, 283, 305, 307, 310, 640, 643, 715, 716 remain hard-blocked;
+- build-only requires no live authorization and exits before Kintone/network path;
+- no App794 business/auth/Create/UI source or generated dist was changed in the guard packages.
 
-## 7. Exact Next Action — ONE SMALL TEST-CLOSURE PACKAGE
+GitHub has no CI/status checks for the accepted commit. Therefore this review accepts the source/test design and repository diff; it does not claim an independent hosted CI `npm test` PASS.
 
-Antigravity must close only the missing registry-drift proof. Prefer a tiny pure helper/test seam used by the real deploy entrypoint, e.g. validate `options.appId` + `registry.mboV2AppId` against exact 794, then unit-test missing/malformed/795 registry values. Do not change deploy semantics beyond what is needed for deterministic testability.
+## 7. Exact Next Action — APP794 DELETE PERMISSION READ-ONLY CHECK
+
+Before requesting a new App794 corrective deploy authorization, verify the effective Delete permission for the employee-facing/shared Kintone principal(s) in READ-ONLY mode.
+
+Preferred evidence:
+- log in using an employee-facing/shared Kintone principal such as `s1`;
+- open an existing App794 **record detail** page;
+- run `kintone.app.record.getPermissions()` and capture only current user/app/record plus `deleteRecord`/`editRecord` booleans;
+- do not modify ACL, records, customization, or credentials.
+
+If effective `deleteRecord = false`, mark this gate PASS.
+If effective `deleteRecord = true`, do not change ACL yet; record `ACL CORRECTION REQUIRED` and obtain separate explicit user authorization before any permission write.
 
 ```text
-NEXT_ACTION_OWNER              = Antigravity
-ANTIGRAVITY_REQUIRED           = YES / ONE TEST-CLOSURE PACKAGE
-KINTONE_LIVE_READ_WRITE        = NO
+NEXT_ACTION_OWNER              = CONTROL PLANE + USER
+ANTIGRAVITY_REQUIRED           = NO / HOLD
+KINTONE_LIVE_WRITE             = NO
 APP801_WRITE                   = NO
 APP794_DEPLOY                  = NO
-APP794_BUSINESS_SOURCE_CHANGE  = NO
-DEPLOY_TOOLING_TEST            = YES
+APP794_ACL_WRITE               = NO
 EXTERNAL_SERVICE_WORK          = NO
 D2_D7_WRITE                    = NO
-MAX_EXECUTOR_STATUS            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-After Deploy Guard PASS:
-1. perform pending App794 Delete-permission read-only check;
-2. request a new exact App794 corrective deploy authorization;
-3. deploy once with accepted module-aware bundle + Create-handler fix + Employee-Self shell/history/Completed/no-delete changes;
-4. rerun Create live UAT and remaining D1 security/session UAT.
+After Delete Permission PASS:
+1. request a new exact App794 corrective deploy authorization;
+2. deploy once with accepted module-aware bundle + Create-handler fix + Employee-Self shell/history/Completed/no-delete changes;
+3. rerun Create live UAT and remaining D1 security/session UAT.
 
 ## 8. Handoff Checkpoint
 
