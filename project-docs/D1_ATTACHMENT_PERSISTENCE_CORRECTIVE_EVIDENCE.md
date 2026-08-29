@@ -1,17 +1,16 @@
 # D1 ATTACHMENT DESIRED-STATE SNAPSHOT + REGRESSION RESTORE EVIDENCE
 
 ```text
-START_HEAD                                = 62a19bc05300a6ef4c76f62e7a5942ada939a61c
+START_HEAD                                = 6e3e615c141bf0641413da40410592ed77b128a5
 CANONICAL_BRANCH                          = ai/antigravity-wp002c
-UI_CORRECTIVE_DESIGN                      = LONG FILENAME CELL CONTAINMENT + ELLIPSIS + FLEX NON-SHRINKING DELETE CONTROL
-FOCUSED_TESTS                             = PASS (45/45 attachment & timeline tests passing)
-FULL_NPM_TEST                              = PASS (897/897 unit & integration tests passing)
-BUILD_ONLY                                = PASS (0 Kintone network calls)
-ATTACHMENT_SERVICE_CHANGED                = NO (src/services/mbo-attachment-service.js 100% UNTOUCHED)
-MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
+AUTHORIZATION_ID                          = APP794-D1-LONG-FILENAME-UI-DEPLOY-20260829-01
+AUTHORIZATION_CONSUMED                    = YES
+REVIEWED_CANDIDATE_SHA                    = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
+PRE_DEPLOY_REVISION                       = 49
+POST_DEPLOY_REVISION                      = 50
 LIVE_KINTONE_WRITE                        = 0
-LIVE_DEPLOY_OCCURRED                      = NO
-MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+LIVE_DEPLOY_OCCURRED                      = YES
+MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
 ```
 
 ## 1. Blocker Corrections Summary
@@ -253,4 +252,41 @@ MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHE
 LIVE_KINTONE_WRITE                       = 0
 LIVE_DEPLOY_OCCURRED                     = NO
 MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+
+## 13. One-Shot App794 Long-Filename UI Corrective Deployment Evidence (Rev 50)
+
+```text
+AUTHORIZATION_ID                          = APP794-D1-LONG-FILENAME-UI-DEPLOY-20260829-01
+AUTHORIZATION_CONSUMED                    = YES
+EXECUTION_START_HEAD                      = 6e3e615c141bf0641413da40410592ed77b128a5
+REVIEWED_SOURCE_CANDIDATE_SHA            = 1abd434ab6c4ce04a6f1e5c2fdbaa9a94f75e502
+SOURCE_CHANGED_DURING_DEPLOY             = NO (Zero source/dist drift)
+DIST_CHANGED_FROM_REVIEWED_CANDIDATE     = NO (100% SHA match)
+PREFLIGHT_RESULT                         = PASS (Deterministic validatePreflight 100% PASS)
+FOCUSED_ATTACHMENT_TESTS                  = PASS (45/45 attachment & timeline tests passing)
+FULL_NPM_TEST                             = PASS (897/897 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+PRE_DEPLOY_APP794_CUSTOMIZATION_REVISION = 49
+PRE_DEPLOY_JS_IDENTITY_HASH              = bbf3fe439e0891e17bbbba046a9b2afbaf19cd78
+PRE_DEPLOY_CSS_IDENTITY_HASH             = 1359dfae16d1224580210a5a6cd366fb20bcf6f8
+ROLLBACK_SNAPSHOT_REFERENCE              = scratch/app794_live_predeploy_backup_rev50.json & scratch/app794_preview_predeploy_backup_rev50.json
+DEPLOY_RESULT                            = SUCCESS (Kintone status SUCCESS)
+POST_DEPLOY_APP794_CUSTOMIZATION_REVISION= 50
+POST_DEPLOY_JS_IDENTITY_HASH             = 43731e5c26dc441659e2f3687f58d1c7237279a5
+POST_DEPLOY_JS_SHA256                    = d4d80ba1307f560c7e6deaa29ba9e0e38636dbb92f3974e7ade20dd9ff08bd30
+POST_DEPLOY_CSS_IDENTITY_HASH            = c407e30a0eb87c6e0c3f2f55cc4fc6163816695d
+POST_DEPLOY_CSS_SHA256                   = 6bd36ca4b4ea702f9072321349071a6dd300594c88ef759e8c4846b52481b936
+CANDIDATE_READBACK_MATCH                 = YES (Live deployed JS/CSS hashes match dist/ 100%)
+CUSTOMIZATION_TOPOLOGY_DRIFT             = NONE (Scope ALL, 1 Desktop JS, 1 Desktop CSS, 0 Mobile)
+ROLLBACK_OCCURRED                        = NO
+ROLLBACK_REASON                          = N/A
+APP794_RECORD_WRITE                      = 0
+APP794_SCHEMA_LAYOUT_WRITE               = 0
+APP794_ACL_PROCESS_WRITE                  = 0
+APP801_WRITE                             = 0
+APP795_796_WRITE                         = 0
+LIVE_DEPLOY_OCCURRED                     = YES
+MAXIMUM_STATUS                            = DEPLOYED_PENDING_INDEPENDENT_REVIEW
 ```
