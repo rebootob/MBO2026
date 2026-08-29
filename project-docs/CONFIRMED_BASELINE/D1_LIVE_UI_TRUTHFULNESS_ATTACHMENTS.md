@@ -118,11 +118,14 @@ Confirmed invariants:
 
 For an Edit operation that changes an attachment field:
 - obtain authoritative persisted attachment state before building the desired-state plan, using Kintone GET Record with the current App ID + Record ID or an equivalently proven authoritative pre-submit snapshot;
+- if authoritative persisted state cannot be obtained, is null, or cannot provide the required canonical FILE field state, cancel the attachment-changing submit **fail closed** before uploading any new file; never degrade to `edit.submit` Attachment values;
 - add-only must preserve every existing saved fileKey and append all newly uploaded fileKeys;
 - explicit removal must exclude only the fileKeys the user removed;
 - remove + add must send the exact retained saved fileKeys plus all new upload fileKeys;
 - Update Record attachment payload is full desired-state semantics: any existing fileKey omitted from the target field payload is treated as removed;
 - therefore a partial list such as only the first existing file is a destructive defect.
+
+A normal Edit with **no attachment change** must not be blocked solely because an attachment persisted-state read is unavailable; persisted-state read is mandatory only when attachment desired state is being changed.
 
 This rule applies to Objective, Mid-Year and Final attachment families.
 
@@ -152,6 +155,8 @@ Before accepting a corrective implementation, tests must cover at minimum:
 - edit remove desired state using a separate submit-event record;
 - edit remove + add exact desired state when submit-event Attachment values are unavailable;
 - tests prove authoritative persisted GET/snapshot, not submit-event Attachment values, provides the existing-file base;
+- edit persisted GET throw/null/missing required target FILE field fails closed before upload and never falls back to submit-event Attachment values;
+- edit with no attachment change does not require persisted attachment GET and remains saveable;
 - upload error visibly remains not-saved;
 - exact target-field binding;
 - unrelated attachment fields unchanged;
@@ -184,5 +189,6 @@ Any future proposal to:
 - change optional attachment semantics;
 - return to direct FILE-field mutation inside create/edit submit event objects;
 - use `app.record.edit.submit` Attachment values as the retained-file source;
+- allow an attachment-changing Edit to continue after authoritative persisted attachment state could not be obtained;
 
 requires explicit user decision and Baseline update.
