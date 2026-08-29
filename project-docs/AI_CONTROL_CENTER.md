@@ -11,7 +11,7 @@
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / DEPLOY GUARD PASS / APP794 ACL PASS / CORRECTIVE DEPLOY ROUND 2 PASS / EMPLOYEE-SELF UI LIVE PASS / CREATE-HANDLER ERROR FIX LIVE PASS / APP795 ACCESS PASS / TMH2 REQUESTER BOUNDARY PASS UNDER `tmh` / APP796 READ 403 BLOCKER / HR+ADMIN RESET UI STILL OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / DEPLOY GUARD PASS / APP794 ACL PASS / CORRECTIVE DEPLOY ROUND 2 PASS / EMPLOYEE-SELF UI LIVE PASS / CREATE-HANDLER ERROR FIX LIVE PASS / APP795 ACCESS PASS / TMH2 REQUESTER BOUNDARY PASS UNDER `tmh` / APP796 PRIVATE APP GROUP ROOT CAUSE CONFIRMED / ACCESS CORRECTION AUTH REQUIRED / HR+ADMIN RESET UI STILL OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -30,13 +30,8 @@ AUTH_BRIDGE                             = CANCELLED / DO NOT IMPLEMENT
 SERVICES_MBO_AUTH_BRIDGE                = ABANDONED EXPERIMENT / NOT PRODUCTION PATH
 D1_SESSION_CONTINUITY_ARCHITECTURE      = PASS
 APP801_SESSION_SCHEMA_WRITE             = PASS / ACCEPTED
-D1_BUNDLE_DEPENDENCY_CORRECTIVE         = PASS
 D1_CREATE_HANDLER_CORRECTIVE            = PASS / SOURCE ACCEPTED / DEPLOYED / LIVE old handler error absent
-D1_EMPLOYEE_SELF_INDEX_SOURCE_TEST      = PASS
 D1_EMPLOYEE_SELF_INDEX_VISUAL           = PASS / LIVE CONFIRMED
-D1_MY_MBO_HISTORY_LIST                  = PASS
-D1_MY_MBO_COMPLETED_STATUS_DISPLAY      = PASS
-D1_EMPLOYEE_SELF_DELETE_GUARD           = PASS
 D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = PASS / BASELINED / PRODUCTION ADMIN UI STILL TO IMPLEMENT
 D1_RESET_PASSWORD_0113                  = PASS / AUTHORIZATION CONSUMED
 D1_FORCE_PASSWORD_CHANGE_0113           = PASS / USER LIVE OBSERVATION
@@ -49,8 +44,10 @@ APP795_ACCESS_CORRECTION_AUTH_STATE     = CONSUMED / CLOSED
 TMH2_REQUESTER_AUTH_UNDER_s1            = DENIED / EXPECTED BUSINESS BOUNDARY
 TMH2_REQUESTER_AUTH_UNDER_tmh           = PASS / LIVE FLOW ADVANCED PAST ROUTING VALIDATION
 APP796_RUNTIME_READ_FOR_CREATE          = BLOCKED / 403 FORBIDDEN UNDER `tmh`
-APP796_PERMISSION_DISCOVERY             = NEXT / READ-ONLY / NO WRITE AUTHORIZED
-D1_LIVE_CUTOVER                         = BLOCKED UNTIL APP796 READ RESOLVED + CREATE-SHOW UAT + REMAINING D1 UAT + HR/ADMIN RESET UI
+APP796_APP_ACL_READONLY_CHECK           = PASS / REVISION 5 / CREATOR FULL / EVERYONE ALL-NO
+APP796_APP_GROUP                         = PRIVATE / USER SCREENSHOT CONFIRMED / CURRENT ROOT CAUSE
+APP796_ACCESS_CORRECTION                 = REQUIRED / NOT AUTHORIZED YET
+D1_LIVE_CUTOVER                         = BLOCKED UNTIL APP796 ACCESS CORRECTION + CREATE-SHOW UAT + REMAINING D1 UAT + HR/ADMIN RESET UI
 D2-D7 LIVE WRITES                       = NOT AUTHORIZED unless separately recorded
 ```
 
@@ -65,78 +62,64 @@ D1 must finish entirely inside Kintone. No external server, auth service, databa
 - My MBO shell, Change Password, Logout are live.
 - Create reaches `/k/794/edit` without MBO re-login.
 - old `kintone.app.record.get() in handler` defect is resolved.
-- old `AdminDiagnosticModel is not defined` error is absent in latest evidence.
 
-### App795
-Authorized correction `APP795-ACCESS-CORRECTION-20260829-01` is complete and closed:
-```text
-ACL revision                = 8 -> 9
-CREATOR                     = full rights preserved
-MBO_EMPLOYEE_ACCESS         = View only
-Everyone                    = all permissions NO
-App Group                   = Public
-```
+### App795 / requester boundary
+- App795 ACL revision `8 -> 9`, App Group Public, `MBO_EMPLOYEE_ACCESS` View-only, Everyone all-NO.
+- `s1` is not an authorized requester for Employee 0113 / Section TMH2.
+- `tmh` is an authorized requester; Live flow advances past App795 routing validation.
+- Do not weaken `RoutingService.assertRequesterAuthorized()`.
 
-## 5. Requester Boundary UAT — `s1` vs `tmh`
+## 5. App796 Permission Discovery — Root Cause Confirmed
 
-With Kintone principal `s1` + MBO Employee Code `0113`, App795 route lookup succeeds but `RoutingService.assertRequesterAuthorized()` denies creation for Section `TMH2`:
-```text
-This account (s1) is not authorized to create an MBO for this target.
-```
-
-User then repeated the same Employee-Self flow using Kintone principal `tmh` + MBO Employee Code `0113`.
-
-Live evidence shows the flow advances beyond App795 routing/requester validation and reaches the next lookup stage. This is consistent with the confirmed routing baseline: `Requester_User` is the authoritative shared Kintone workflow/requester boundary and is separate from the authenticated MBO Employee_Code identity.
-
-Classification:
-```text
-s1 FOR 0113/TMH2 REQUESTER BOUNDARY   = NOT AUTHORIZED
-TMH FOR 0113/TMH2 REQUESTER BOUNDARY  = AUTHORIZED / LIVE FLOW ADVANCED
-SOURCE REQUESTER CHECK                = DO NOT BYPASS
-```
-
-Do not weaken `RoutingService.assertRequesterAuthorized()` merely to make `s1` work for TMH2.
-
-## 6. New Create-Show Blocker — App796 403
-
-After requester authorization passes under `tmh`, create initialization proceeds to Step 3: published scoring configuration lookup from App796.
-
-Latest user Console evidence:
+Live Create UAT under Kintone principal `tmh` + authenticated MBO Employee Code `0113` advances to Step 3 and fails on App796 scoring lookup:
 ```text
 GET /k/v1/records.json?app=796&query=Profile_Code... -> 403 Forbidden
 [MBO V2] Scoring resolution info: No privilege to proceed.
-Employee Profile Resolution Failed
 ```
 
-Current source behavior is correct/fail-closed: `src/main-mbo-app.js` resolves the employee profile, then performs a read-only App796 query for exactly one `PUBLISHED` scoring configuration for the resolved Profile_Code + Fiscal Year before snapshotting scoring fields.
+Read-only discovery under `admin-form` now confirms:
+```text
+APP796_APP_ACL_REVISION = 5
+CREATOR                 = View/Add/Edit/Delete/Manage/Import/Export true
+GROUP everyone          = all permissions false
+MBO_EMPLOYEE_ACCESS     = no explicit row
+APP796_APP_GROUP        = Private
+```
 
-Confirmed Evaluation Classes baseline requires App796 published scoring/profile configuration to remain authoritative. Do not hard-code or bypass App796.
+Kintone UI warns that configured app permissions are not applied to apps in the `Private` group. This explains why `tmh` cannot read App796 even though the intended runtime operation is read-only.
 
-## 7. Exact Next Action — App796 Permission Discovery READ-ONLY
+App796 remains the authoritative published scoring/profile configuration source. `src/main-mbo-app.js` performs a read-only query for exactly one `PUBLISHED` Profile_Code + Fiscal Year configuration and fails closed on missing/duplicate/error. Do not bypass or hard-code App796.
 
-Under technical administrator `admin-form`:
-1. GET App796 App Permissions / ACL + revision;
-2. report all rows and flags View/Add/Edit/Delete/Manage/Import/Export;
-3. inspect App796 App Group from Kintone UI (Private/Public);
-4. do not change ACL/App Group yet;
-5. no App796 record/scoring-data write.
+### Proposed exact minimal correction — requires explicit user authorization
 
-If evidence shows the same Private-group / missing group-read pattern seen on App795, Control Plane will define an exact minimal View-only correction and request explicit authorization before any write.
+Target App796 settings only:
+1. while App796 remains Private, preserve CREATOR full rights;
+2. add `MBO_EMPLOYEE_ACCESS` with View=YES only; Add/Edit/Delete/Manage/Import/Export=NO;
+3. keep `Everyone` all permissions NO;
+4. read back ACL and verify exact target;
+5. only after ACL read-back PASS, change App Group `Private -> Public`;
+6. verify App Group = Public;
+7. user UAT under `tmh` + Employee `0113` retries Create-show without Save.
 
-## 8. HR / admin-form Password Reset Requirement
+No App796 record/scoring-data write is required or authorized by this proposal.
+
+## 6. HR / admin-form Password Reset Requirement
 
 Permanent D1 requirement remains: HR-authorized users and `admin-form` need an in-Kintone Reset MBO Password function; employee/shared users must not receive it. Production administrative UI/function remains mandatory before final D1 closure.
 
-## 9. Authorization State
+## 7. Exact Next Action — USER AUTHORIZATION REQUIRED
+
+No App796 write is currently authorized.
+
+If user approves, execute only the exact App796 access correction above, with ACL read-back before App Group change.
 
 ```text
-NEXT_ACTION_OWNER              = USER / CONTROL PLANE READ-ONLY
-ANTIGRAVITY_REQUIRED           = NO / HOLD
-APP796 ACL WRITE               = NO
-APP796 APP GROUP WRITE         = NO
+NEXT_ACTION_OWNER              = USER / CONTROL PLANE
+ANTIGRAVITY_REQUIRED           = NO / HOLD UNTIL AUTHORIZED
+APP796 ACL WRITE               = NO / AWAITING AUTHORIZATION
+APP796 APP GROUP WRITE         = NO / AWAITING AUTHORIZATION
 APP796 RECORD/SCORING WRITE    = NO
-APP795 APP ACL/GROUP WRITE     = NO / CLOSED
-APP795 RECORD WRITE            = NO
+APP795 ACL/GROUP/RECORD WRITE  = NO / CLOSED
 APP794 DEPLOY                  = NO
 APP794 ACL/RECORD WRITE        = NO
 APP801 WRITE                   = NO
@@ -145,6 +128,6 @@ EXTERNAL SERVICE               = NO
 D2-D7 WRITE                    = NO
 ```
 
-## 10. Handoff Checkpoint
+## 8. Handoff Checkpoint
 
 Start from `AI_DOCUMENT_INDEX.md`, this Control Center, `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`, `CONFIRMED_BASELINE/EVALUATION_CLASSES.md`, `AI_ACTIVE_TASK.md`, current HEAD, and latest user Live screenshots. Never revive Auth Bridge; D1 remains KINTONE-ONLY.
