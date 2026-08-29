@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — LIVE UAT FAIL: REV47 ATTACHMENT DOES NOT PERSIST
+> Updated: 2026-08-29 — REV47 ATTACHMENT LIVE UAT FAIL / READ-ONLY EXECUTOR DIAGNOSTIC
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / prior accepted D1 states remain PASS / APP794 LIVE REV47 / TIMELINE TRUTHFULNESS PASS / ATTACHMENT SOURCE+TEST PASS / ATTACHMENT DEPLOYMENT PASS / **LIVE SAVE WITHOUT FILE PASS / ADD ONE OBJECTIVE FILE SAVE BASE RECORD PASS BUT FILE DOES NOT PERSIST — DIAGNOSTIC REQUIRED** / HR+admin reset UI open / remaining security UAT open |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP794 LIVE REV47 / Timeline truthfulness PASS / Attachment source+test PASS / deployment provenance PASS / Save without file PASS / **one Objective attachment selected + Save succeeds but file does not persist — READ-ONLY DIAGNOSTIC REQUIRED** / HR+admin reset UI open / remaining security UAT open |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -29,6 +29,7 @@ EXTERNAL_SERVER_SERVICE            = FORBIDDEN
 AUTH_BRIDGE                        = CANCELLED / DO NOT IMPLEMENT
 APP794_LIVE_CUSTOMIZATION_REVISION = 47
 SOURCE_MODULARITY_POLICY           = MANDATORY / NO CATCH-ALL SOURCE FILES
+PRIOR_DEPLOY_AUTHORIZATION         = CONSUMED / CLOSED
 ```
 
 Previously accepted and not disproved by this UAT:
@@ -43,13 +44,11 @@ SOURCE_OWNERSHIP_MODULAR                   = PASS
 APP794_REV47_DEPLOYMENT_PROVENANCE         = PASS
 ```
 
-The Live UAT failure means **functional attachment persistence is NOT PASS** despite source/test and deployment provenance PASS.
+Live functional attachment persistence is **NOT PASS**.
 
 ## 3. Live UAT Evidence — Rev47
 
-User manually tested an existing App794 Objective-stage record in edit mode.
-
-Observed:
+User manually tested an existing Objective-stage App794 record.
 
 ```text
 UAT_01_SAVE_WITH_NO_ATTACHMENT                 = PASS
@@ -57,103 +56,73 @@ UAT_02_ADD_ONE_OBJECTIVE_ATTACHMENT_SAVE       = FAIL
 BASE_RECORD_SAVE_WITH_SELECTED_FILE            = PASS
 OLD event.record['...'].type is invalid ERROR  = NOT OBSERVED
 VISIBLE_POST_SAVE_BIND_ERROR/ALERT              = NOT OBSERVED
-POST_SAVE_DETAIL_ATTACHMENT_DISPLAY             = NO ATTACHMENT
-UAT_03_FILENAME_PERSISTS_AFTER_SAVE/RELOAD      = FAIL / NOT PRESENT
+POST_SAVE_DETAIL_ATTACHMENT_DISPLAY            = NO ATTACHMENT
+UAT_03_FILENAME_PERSISTS_AFTER_SAVE/RELOAD      = FAIL
 ```
 
-Screenshot evidence shows:
-- edit page displays one selected Objective attachment in a pending/selected state before Save;
-- native Kintone Save completes and returns to the detail page;
-- the same Objective attachment cell then displays `ไม่มีไฟล์แนบ / No attachment`;
-- DevTools screenshot supplied after the operation does not show a visible customization error.
+Additional browser evidence:
+- Edit UI visibly shows the selected Objective file as `Pending` before Save.
+- User ran the diagnostic getter from Console before Save.
+- `getActiveUiInstance()` did not expose a usable UI instance to that console context: `PENDING`, `PREPARED`, and `FIELD` all evaluated as `undefined` through optional access.
+- This does **not** prove the selected file is absent, because the visible Pending chip proves the file-selection UI path executed.
+- It is a strong diagnostic clue that the module-level `activeUiInstance` relied on by submit/finalize may not correspond to the visible UI instance in the Live browser lifecycle, or that multiple customization execution contexts/bundles exist.
 
-Therefore:
+Do not patch from this hypothesis alone.
+
+## 4. Current Source Facts
+
+Rev47 source currently relies on one module-level variable:
 
 ```text
-APP794_REV47_ATTACHMENT_FUNCTIONAL_UAT = FAIL
+let activeUiInstance = null
+show handler -> activeUiInstance = new EmployeePartAUI(...)
+submit handler -> if (activeUiInstance) preparePendingAttachments(...)
+submit.success -> if (activeUiInstance && recordId) finalizeAttachmentPlan(...)
 ```
 
-Do not continue multi-file/remove/Mid-Year/Self attachment UAT until the one-file persistence path is diagnosed.
+If that variable is null or belongs to a different execution context, the exact observed symptom is possible:
+- native Save succeeds;
+- no upload/finalize branch is entered;
+- no post-save error alert appears;
+- attachment remains absent.
 
-## 4. Current Source Inspection / Diagnostic Hypothesis
-
-Live rev47 source currently does:
-
-```text
-app.record.edit.submit
-  -> activeUiInstance.preparePendingAttachments({ record: event.record })
-  -> upload pending file(s)
-  -> keep preparedAttachmentPlan in EmployeePartAUI instance
-  -> return event
-
-app.record.edit.submit.success
-  -> if activeUiInstance && recordId
-  -> activeUiInstance.finalizeAttachmentPlan({ appId, recordId })
-  -> PUT attachment plan using Kintone Update Record REST API
-```
-
-`syncFromDom()` does not clear attachment state; it only copies `.mbo-field` values into the record.
-
-Because Live Save succeeds, the prior FILE-field event-object mutation defect is resolved. Because the file is absent after Save and no visible post-save error was observed, the next diagnostic must distinguish:
-1. Upload File API never executes / does not succeed;
-2. upload succeeds but prepared plan is unexpectedly empty/lost;
-3. `submit.success` does not enter the finalize branch (for example missing expected in-memory state);
-4. Update Record REST call is absent;
-5. Update Record REST call occurs but returns an error that navigation/log clearing hid.
-
-Do NOT patch from hypothesis alone.
+Current tests prove the handler path only after a mocked `edit.show` establishes an active instance. They do not yet prove the actual Kintone Live customization execution topology/context.
 
 ## 5. Exact Current Gate
 
 ```text
-CURRENT_GATE       = D1 APP794 REV47 ATTACHMENT LIVE BIND DIAGNOSTIC
-CURRENT_MODE       = USER READ-ONLY BROWSER DIAGNOSTIC + CONTROL PLANE REVIEW
-NEXT_ACTION_OWNER  = USER + CHATGPT
-ANTIGRAVITY        = DO NOTHING
-APP794 DEPLOY      = NO — prior one-shot consumed
+CURRENT_GATE       = D1 APP794 REV47 ATTACHMENT EXECUTION-CONTEXT DIAGNOSTIC
+CURRENT_MODE       = ANTIGRAVITY READ-ONLY DIAGNOSTIC — NO SOURCE CHANGE / NO LIVE WRITE
+NEXT_ACTION_OWNER  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+APP794 DEPLOY      = NO
 SOURCE CHANGE      = NO
-AI LIVE WRITE      = NO
+APP794 RECORD WRITE= NO
+APP794 ACL/SCHEMA  = NO
 APP801 WRITE       = NO
 APP795/796 WRITE   = NO
 D2-D7 WRITE        = NO
 ```
 
-## 6. Required Next Evidence — Browser DevTools Only
+## 6. Required Diagnostic Outcome
 
-Repeat only the **one Objective attachment** test with DevTools open.
+Antigravity must determine, with READ-ONLY evidence only:
+1. current Live and Preview App794 customization topology and revision;
+2. exact desktop JS/CSS entry counts and identities;
+3. whether more than one MBO/custom bundle or duplicate executable JS entry exists;
+4. whether Live topology can explain a visible UI instance while the exported getter returns no active instance;
+5. whether local source contains any other declaration/reset/overwrite of `activeUiInstance` / `getActiveUiInstance`;
+6. whether existing tests miss an execution-context/lifecycle case that matches Live.
 
-Before repeating:
-- Network tab: enable **Preserve log**;
-- Console tab: enable **Preserve log**;
-- clear previous logs.
-
-Then select one file and Save.
-
-Capture whether these requests occur:
-
-```text
-POST /k/v1/file.json
-PUT  /k/v1/record.json
-```
-
-For each matching request capture:
-- HTTP status;
-- response body/error if any;
-- for PUT, request payload field code and fileKey may be shown but do not expose credentials/tokens.
-
-Also capture any console line beginning with:
-- `[MBO V2] Attachment submit upload error:`
-- `[MBO V2] Attachment post-save finalize error:`
-
-This diagnostic is read-only observation of the user's manual UAT and authorizes no AI/executor Live mutation.
+No source fix or deploy is authorized during this diagnostic.
 
 ## 7. Governance
 
-- Antigravity must not patch or redeploy until Control Plane identifies the smallest source corrective.
-- Prior one-shot deployment authorization is consumed/closed.
-- Deployment PASS remains provenance PASS only; Live functional persistence remains FAIL.
-- No broad refactor.
-- Keep `src/main-mbo-app.js` orchestration-only.
+- Live Kintone operations allowed in this gate: GET/READ ONLY.
+- No Kintone POST/PUT/DELETE/deploy.
+- No source/refactor change.
+- No record mutation.
+- Do not ask user for further DevTools inspection unless executor read-only evidence cannot resolve the branch.
+- Keep diagnosis narrow; no broad repo scan.
 
 ## 8. Handoff
 
@@ -161,8 +130,8 @@ This diagnostic is read-only observation of the user's manual UAT and authorizes
 DEPLOYMENT_PROVENANCE       = PASS
 LIVE_SAVE_NO_FILE           = PASS
 LIVE_ONE_FILE_PERSISTENCE   = FAIL
-OLD_TYPE_INVALID_ERROR      = RESOLVED / NOT OBSERVED
-NEXT STEP                   = PRESERVE-LOG NETWORK/CONSOLE DIAGNOSTIC
-NEXT OWNER                  = USER + CHATGPT
-ANTIGRAVITY                 = DO NOTHING
+VISIBLE_PENDING_SELECTION   = YES
+CONSOLE_ACTIVE_UI_ACCESS    = NOT USABLE / DIAGNOSTIC CLUE
+NEXT STEP                   = READ-ONLY LIVE CUSTOMIZATION + EXECUTION-CONTEXT DIAGNOSTIC
+NEXT OWNER                  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
 ```
