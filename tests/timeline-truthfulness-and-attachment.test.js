@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EmployeePartAUI } from '../src/ui/employee-part-a-ui.js';
+import { EmployeePartAUI, isSafePreviewableMime } from '../src/ui/employee-part-a-ui.js';
 import { uploadKintoneFile, prepareAttachmentPlan, finalizeAttachmentPlan, uploadAndBindPendingAttachments } from '../src/services/mbo-attachment-service.js';
 
 // Minimal mock DOM element helper
@@ -2214,6 +2214,240 @@ test('OBJECTIVE_MIDYEAR_FINAL_RETRIEVAL_REGRESSION: Objective, Mid-Year and Fina
   for (const html of [objHtml, midHtml, selfHtml]) {
     assert.ok(html.includes('<a href="#" class="mbo-attachment-filename"'), 'All stages must render clickable preview link for saved files');
     assert.ok(html.includes('class="mbo-attachment-download-btn"'), 'All stages must render download button for saved files');
+  }
+});
+
+test('ATTACHMENT_SAFE_MIME_HELPER_UNIT_TESTS: isSafePreviewableMime accurately filters safe vs denied types', () => {
+  assert.equal(isSafePreviewableMime('application/pdf', 'doc.pdf'), true, 'PDF must be safe');
+  assert.equal(isSafePreviewableMime('image/png', 'img.png'), true, 'PNG must be safe');
+  assert.equal(isSafePreviewableMime('image/jpeg', 'img.jpg'), true, 'JPEG must be safe');
+  assert.equal(isSafePreviewableMime('text/plain', 'notes.txt'), true, 'Plain text must be safe');
+
+  assert.equal(isSafePreviewableMime('text/html', 'page.html'), false, 'HTML MIME must be denied');
+  assert.equal(isSafePreviewableMime('image/svg+xml', 'icon.svg'), false, 'SVG MIME must be denied');
+  assert.equal(isSafePreviewableMime('application/xhtml+xml', 'doc.xhtml'), false, 'XHTML MIME must be denied');
+  assert.equal(isSafePreviewableMime('application/octet-stream', 'doc.pdf'), false, 'octet-stream must be denied even with .pdf extension');
+  assert.equal(isSafePreviewableMime('application/octet-stream', 'icon.svg'), false, 'octet-stream must be denied');
+  assert.equal(isSafePreviewableMime('', 'script.js'), false, 'js extension must be denied');
+});
+
+test('ATTACHMENT_HTML_MIME_NEVER_BLOB_PREVIEWS_AND_DOWNLOADS: HTML MIME never navigates preview Blob URL and falls back to download', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['<html></html>'], { type: 'text/html' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'malicious.html', 'K_HTML_100');
+    assert.equal(downloadTriggered, true, 'HTML file must fall back to download');
+    assert.equal(downloadedFilename, 'malicious.html', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_SVG_MIME_NEVER_BLOB_PREVIEWS_AND_DOWNLOADS: SVG MIME never navigates preview Blob URL and falls back to download', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['<svg></svg>'], { type: 'image/svg+xml' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'vector.svg', 'K_SVG_100');
+    assert.equal(downloadTriggered, true, 'SVG file must fall back to download');
+    assert.equal(downloadedFilename, 'vector.svg', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_OCTET_STREAM_NEVER_EXTENSION_PREVIEWS: octet-stream MIME does not promote to preview based only on filename extension', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  let downloadedFilename = null;
+  activeUi._triggerBlobDownload = (blob, fn) => {
+    downloadTriggered = true;
+    downloadedFilename = fn;
+  };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['binary'], { type: 'application/octet-stream' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'report.pdf', 'K_OCTET_100');
+    assert.equal(downloadTriggered, true, 'application/octet-stream must fall back to download');
+    assert.equal(downloadedFilename, 'report.pdf', 'Download fallback must preserve original filename');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_PDF_STILL_BLOB_PREVIEWS: valid PDF file executes preview Blob URL navigation', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  activeUi._triggerBlobDownload = () => { downloadTriggered = true; };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'safe.pdf', 'K_PDF_100');
+    assert.equal(downloadTriggered, false, 'Valid PDF must preview in new window without fallback download');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_RASTER_IMAGE_STILL_BLOB_PREVIEWS: valid PNG/JPEG file executes preview Blob URL navigation', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  activeUi._triggerBlobDownload = () => { downloadTriggered = true; };
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['PNG'], { type: 'image/png' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'photo.png', 'K_PNG_100');
+    assert.equal(downloadTriggered, false, 'Valid PNG must preview without fallback download');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('ATTACHMENT_POPUP_BLOCKED_SAFE_FALLBACK_OR_VISIBLE_ERROR: when popup is blocked, falls back safely to download or error notice', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let downloadTriggered = false;
+  activeUi._triggerBlobDownload = () => { downloadTriggered = true; };
+
+  const origOpen = globalThis.window ? globalThis.window.open : undefined;
+  if (!globalThis.window) globalThis.window = {};
+  globalThis.window.open = () => null;
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'blocked.pdf', 'K_BLOCKED_100');
+    assert.equal(downloadTriggered, true, 'Blocked popup must safely fall back to download');
+  } finally {
+    globalThis.fetch = origFetch;
+    if (origOpen) globalThis.window.open = origOpen;
+  }
+});
+
+test('ATTACHMENT_UNSUPPORTED_FALLBACK_CREATES_NO_UNUSED_OBJECT_URL: unsupported fallback does not leak preview object URL', async () => {
+  const activeUi = new EmployeePartAUI({ record: {} });
+  let createdUrls = [];
+  const origCreate = globalThis.URL ? globalThis.URL.createObjectURL : undefined;
+  if (!globalThis.URL) globalThis.URL = {};
+  globalThis.URL.createObjectURL = (blob) => {
+    const url = 'blob:mock/' + Math.random();
+    createdUrls.push(url);
+    return url;
+  };
+
+  activeUi._triggerBlobDownload = () => {};
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['<svg></svg>'], { type: 'image/svg+xml' })
+  });
+
+  try {
+    await activeUi._handleAttachmentPreview('Objective_Attachment_1', 'icon.svg', 'K_SVG_LEAK');
+    assert.equal(createdUrls.length, 0, 'Unsupported SVG fallback must NOT create a preview Blob URL');
+  } finally {
+    globalThis.fetch = origFetch;
+    if (origCreate) globalThis.URL.createObjectURL = origCreate;
+  }
+});
+
+test('ATTACHMENT_REMOVE_BASELINE_SEMANTICS_UNCHANGED: explicit remove filters record FILE field array in-place and updates desiredSavedFiles snapshot', async () => {
+  const rec = {
+    Objective_Attachment_1: {
+      type: 'FILE',
+      value: [
+        { fileKey: 'K_1', name: 'keep.pdf' },
+        { fileKey: 'K_2', name: 'remove.pdf' }
+      ]
+    }
+  };
+
+  const ui = new EmployeePartAUI({ record: rec });
+  ui._removeSavedAttachmentFile('Objective_Attachment_1', 'remove.pdf', 'K_2');
+
+  assert.equal(rec.Objective_Attachment_1.value.length, 1, 'Record FILE array must be filtered in place');
+  assert.equal(rec.Objective_Attachment_1.value[0].fileKey, 'K_1');
+  assert.ok(ui.desiredSavedFiles.Objective_Attachment_1, 'desiredSavedFiles snapshot must be populated');
+  assert.equal(ui.desiredSavedFiles.Objective_Attachment_1.length, 1);
+  assert.equal(ui.desiredSavedFiles.Objective_Attachment_1[0].fileKey, 'K_1');
+});
+
+test('ATTACHMENT_RETRIEVAL_SUCCESS_DOES_NOT_MUTATE_ATTACHMENT_STATE: preview and download success do not alter record FILE values or desiredSavedFiles', async () => {
+  const rec = {
+    Objective_Attachment_1: {
+      type: 'FILE',
+      value: [{ fileKey: 'K_SAFE', name: 'safe.pdf' }]
+    }
+  };
+
+  const ui = new EmployeePartAUI({ record: rec });
+  ui._triggerBlobDownload = () => {};
+
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(['%PDF'], { type: 'application/pdf' })
+  });
+
+  try {
+    await ui._handleAttachmentPreview('Objective_Attachment_1', 'safe.pdf', 'K_SAFE');
+    await ui._handleAttachmentDownload('Objective_Attachment_1', 'safe.pdf', 'K_SAFE');
+
+    assert.deepEqual(rec.Objective_Attachment_1.value, [{ fileKey: 'K_SAFE', name: 'safe.pdf' }], 'Record FILE field must remain unmutated');
+    assert.equal(ui.desiredSavedFiles, undefined, 'desiredSavedFiles must remain undefined');
+    assert.equal(ui.dirtyAttachmentFields?.size || 0, 0, 'dirtyAttachmentFields must remain empty');
+  } finally {
+    globalThis.fetch = origFetch;
   }
 });
 

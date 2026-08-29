@@ -317,3 +317,26 @@ LIVE_KINTONE_WRITE                       = 0
 LIVE_DEPLOY_OCCURRED                     = NO
 MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
+
+## 15. App794 Saved Attachment Preview / Download Security + Scope Corrective Evidence
+
+```text
+EXECUTION_START_HEAD                      = 3928f2f00e83bbd71bdd04d58f406ed2e03a106a
+CHANGED_FILES                             = src/ui/employee-part-a-ui.js, tests/timeline-truthfulness-and-attachment.test.js, dist/mbo-employee-app.js
+SAFE_PREVIEW_MIME_ALLOWLIST               = application/pdf, image/png, image/jpeg, image/pjpeg, image/gif, image/webp, image/bmp, text/plain, audio/*, video/*
+DENIED_ACTIVE_CONTENT_TYPES               = text/html, application/xhtml+xml, image/svg+xml, application/xml, text/xml, application/javascript, text/javascript, application/octet-stream, application/x-download, application/x-msdownload, scriptable markup / XML-family content
+HTML_SVG_DOWNLOAD_ONLY_PROOF              = isSafePreviewableMime returns false for text/html and image/svg+xml; preview handler closes blank window and falls back directly to download without creating Object URL
+NO_EXTENSION_ONLY_PREVIEW_PROMOTION       = isSafePreviewableMime checks DENIED_MIMES first; application/octet-stream with filename report.pdf is denied and falls back to download
+REMOVE_BASELINE_RESTORED                  = Restored parent 4e81527f implementation of _getSavedAttachmentFiles(), _removeSavedAttachmentFile(), and constructor attachment state
+RETRIEVAL_NON_DESTRUCTIVE_PROOF           = Preview/Download success or failure leaves record FILE values, desiredSavedFiles, dirtyAttachmentFields, and pendingAttachments unmodified
+PERSISTENCE_FUNCTIONS_CHANGED             = NO (uploadKintoneFile, prepareAttachmentPlan, finalizeAttachmentPlan 100% UNTOUCHED)
+MAIN_ATTACHMENT_ORCHESTRATION_CHANGED    = NO (src/main-mbo-app.js 100% UNTOUCHED)
+FOCUSED_ATTACHMENT_TESTS                  = PASS (68/68 attachment, timeline, retrieval & security tests passing)
+FULL_NPM_TEST                             = PASS (920/920 unit & integration tests passing)
+NPM_RUN_UI_BUILD                          = PASS (dist/mbo-employee-app.js & dist/mbo-employee.css generated cleanly)
+MODULE_AWARE_BUILD_ONLY                   = PASS (0 Kintone network calls)
+LIVE_KINTONE_WRITE                       = 0
+LIVE_DEPLOY_OCCURRED                     = NO
+MAXIMUM_STATUS                            = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+```
+

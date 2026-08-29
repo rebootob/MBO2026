@@ -579,9 +579,6 @@ export class EmployeePartAUI {
     this.authenticatedEmployeeCode = options.authenticatedEmployeeCode || null;
     this.currentErrors = [];
     this.preparedAttachmentPlan = null;
-    this.desiredSavedFiles = null;
-    this.dirtyAttachmentFields = new Set();
-    this.pendingAttachments = null;
 
     this.isEmployeeVerified = !this.isCreate;
   }
@@ -1249,17 +1246,12 @@ export class EmployeePartAUI {
   }
 
   _getSavedAttachmentFiles(fieldCode) {
-    let targetCode = fieldCode;
-    if ((!this.record[targetCode] || !this.record[targetCode].value || (Array.isArray(this.record[targetCode].value) && this.record[targetCode].value.length === 0)) && targetCode.startsWith('Self_Attachment_')) {
-      const altCode = targetCode.replace('Self_Attachment_', 'Final_Attachment_');
-      if (this.record[altCode] && Array.isArray(this.record[altCode].value) && this.record[altCode].value.length > 0) {
-        targetCode = altCode;
-      }
+    let recField = this.record[fieldCode];
+    if ((!recField || !recField.value || (Array.isArray(recField.value) && recField.value.length === 0)) && fieldCode.startsWith('Self_Attachment_')) {
+      const altCode = fieldCode.replace('Self_Attachment_', 'Final_Attachment_');
+      recField = this.record[altCode];
     }
-    const rawVal = (this.desiredSavedFiles && this.desiredSavedFiles[targetCode] !== undefined)
-      ? this.desiredSavedFiles[targetCode]
-      : (this.record[targetCode] ? this.record[targetCode].value : null);
-
+    const rawVal = recField ? recField.value : null;
     if (!rawVal) return [];
 
     if (Array.isArray(rawVal)) {
@@ -1289,7 +1281,7 @@ export class EmployeePartAUI {
     }
     if (!this.record[targetCode] || !Array.isArray(this.record[targetCode].value)) return;
 
-    const remainingFiles = this.record[targetCode].value.filter(f => {
+    this.record[targetCode].value = this.record[targetCode].value.filter(f => {
       if (fileKey && f.fileKey) return f.fileKey !== fileKey;
       if (filename && f.name) return f.name !== filename;
       if (typeof f === 'string') return f !== filename;
@@ -1297,7 +1289,7 @@ export class EmployeePartAUI {
     });
 
     if (!this.desiredSavedFiles) this.desiredSavedFiles = {};
-    this.desiredSavedFiles[targetCode] = remainingFiles;
+    this.desiredSavedFiles[targetCode] = [...this.record[targetCode].value];
 
     if (!this.dirtyAttachmentFields) this.dirtyAttachmentFields = new Set();
     this.dirtyAttachmentFields.add(fieldCode);
@@ -3255,35 +3247,59 @@ export class EmployeePartAUI {
       return;
     }
 
-    const win = (typeof window !== 'undefined' && window.open) ? window.open('about:blank', '_blank') : null;
+    let win = null;
+    if (typeof window !== 'undefined' && window.open) {
+      try {
+        win = window.open('about:blank', '_blank');
+      } catch (err) {
+        win = null;
+      }
+    }
 
     try {
       const { downloadKintoneFileBlob } = await import('../services/mbo-attachment-service.js');
       const blob = await downloadKintoneFileBlob(fileKey);
 
-      const mime = (blob && blob.type) ? blob.type.toLowerCase() : '';
-      const ext = (filename || '').split('.').pop().toLowerCase();
-      const isPreviewable = mime.startsWith('image/') ||
-                            mime === 'application/pdf' ||
-                            mime.startsWith('text/') ||
-                            mime.startsWith('audio/') ||
-                            mime.startsWith('video/') ||
-                            ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'txt', 'html', 'mp4', 'mp3'].includes(ext);
+      const isSafe = isSafePreviewableMime(blob?.type, filename);
+
+      if (!isSafe) {
+        if (win && !win.closed) {
+          try { win.close(); } catch (_) {}
+        }
+        this._triggerBlobDownload(blob, filename);
+        return;
+      }
 
       const objectUrl = (typeof URL !== 'undefined' && URL.createObjectURL) ? URL.createObjectURL(blob) : null;
 
-      if (isPreviewable && objectUrl) {
-        if (win && !win.closed) {
+      if (objectUrl && win && !win.closed) {
+        if (win.location && typeof win.location === 'object') {
           win.location.href = objectUrl;
-        } else if (typeof window !== 'undefined' && window.open) {
-          window.open(objectUrl, '_blank');
+        } else {
+          win.location = objectUrl;
+        }
+      } else if (objectUrl && typeof window !== 'undefined' && window.open) {
+        try {
+          const newWin = window.open(objectUrl, '_blank');
+          if (!newWin) {
+            URL.revokeObjectURL(objectUrl);
+            this._triggerBlobDownload(blob, filename);
+          }
+        } catch (_) {
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          this._triggerBlobDownload(blob, filename);
         }
       } else {
-        if (win && !win.closed) win.close();
+        if (win && !win.closed) {
+          try { win.close(); } catch (_) {}
+        }
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
         this._triggerBlobDownload(blob, filename);
       }
     } catch (err) {
-      if (win && !win.closed) win.close();
+      if (win && !win.closed) {
+        try { win.close(); } catch (_) {}
+      }
       console.error(`[MBO V2] Attachment preview failed for field ${fieldCode} (${filename}):`, err.message);
       this._showAttachmentError(`ไม่สามารถแสดงตัวอย่างไฟล์ "${filename}" ได้ (${err.message}) / Cannot preview file`);
     }
@@ -3512,4 +3528,60 @@ export class EmployeePartAUI {
       this.record[code].value = val;
     }
   }
+}
+
+export function isSafePreviewableMime(mimeType, filename) {
+  const mime = String(mimeType || '').trim().toLowerCase();
+  const ext = String(filename || '').split('.').pop().toLowerCase();
+
+  const DENIED_MIMES = [
+    'text/html',
+    'application/xhtml+xml',
+    'image/svg+xml',
+    'application/xml',
+    'text/xml',
+    'application/javascript',
+    'text/javascript',
+    'application/x-javascript',
+    'application/octet-stream',
+    'application/x-download',
+    'application/x-msdownload'
+  ];
+
+  const DENIED_EXTS = ['html', 'htm', 'xhtml', 'svg', 'xml', 'js', 'mjs', 'php', 'sh', 'bat', 'cmd', 'exe', 'msi', 'com'];
+
+  if (DENIED_MIMES.includes(mime) || DENIED_EXTS.includes(ext)) {
+    return false;
+  }
+
+  const SAFE_ALLOWLIST_MIMES = [
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/pjpeg',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'text/plain',
+    'audio/mpeg',
+    'audio/mp4',
+    'audio/ogg',
+    'audio/wav',
+    'video/mp4',
+    'video/webm',
+    'video/ogg'
+  ];
+
+  if (SAFE_ALLOWLIST_MIMES.includes(mime)) {
+    return true;
+  }
+
+  if ((mime === '' || mime === 'application/pdf') && ext === 'pdf') {
+    return true;
+  }
+  if ((mime === '' || mime.startsWith('image/')) && ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)) {
+    return true;
+  }
+
+  return false;
 }
