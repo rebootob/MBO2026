@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual execution is required
-> Updated: 2026-08-29 — ONE-SHOT APP794 D1 TIMELINE + ATTACHMENT DEPLOY AUTHORIZED
+> Updated: 2026-08-29 — INDEPENDENT PASS: APP794 D1 TIMELINE + ATTACHMENT DEPLOY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL+PRIOR DEPLOY PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER FIX PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING+REMOVE PASS / ATTACHMENT SUBMIT INTEGRATION SOURCE PASS / HANDLER-LEVEL TEST+EVIDENCE PASS / ONE-SHOT APP794 TIMELINE+ATTACHMENT DEPLOY AUTHORIZED / HR+ADMIN RESET UI STILL OPEN / REMAINING SECURITY UAT OPEN |
+| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 KINTONE-ONLY / APP801 ACCESS PASS / RESET+FORCE-CHANGE+MY MBO PASS / APP794 ACL PASS / EMPLOYEE-SELF UI PASS / CREATE-HANDLER PASS / APP795 ACCESS PASS / APP796 RUNTIME READ PASS / CREATE-SHOW INITIALIZATION PASS / TIMELINE TRUTHFULNESS PASS / ATTACHMENT DISPLAY+PENDING+REMOVE PASS / ATTACHMENT SUBMIT SOURCE+HANDLER TEST PASS / APP794 TIMELINE+ATTACHMENT DEPLOY PASS REV46 / LIVE UAT NEXT / HR+ADMIN RESET UI OPEN / REMAINING SECURITY UAT OPEN |
 | D2 | Excel + PDF legacy-format export | 🟠 IN PROGRESS |
 | D3 | 8 legacy PMS apps -> App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | App800 HR Control Center end-to-end | 🟠 IN PROGRESS |
@@ -30,20 +30,15 @@ AUTH_BRIDGE                             = CANCELLED / DO NOT IMPLEMENT
 SERVICES_MBO_AUTH_BRIDGE                = ABANDONED EXPERIMENT / NOT PRODUCTION PATH
 D1_SESSION_CONTINUITY_ARCHITECTURE      = PASS
 APP801_SESSION_SCHEMA_WRITE             = PASS / ACCEPTED
-D1_CREATE_HANDLER_CORRECTIVE            = PASS / DEPLOYED / LIVE old handler error absent
+D1_CREATE_HANDLER_CORRECTIVE            = PASS / DEPLOYED
 D1_EMPLOYEE_SELF_INDEX_VISUAL           = PASS / LIVE CONFIRMED
-D1_HR_ADMIN_PASSWORD_RESET_REQUIREMENT  = BASELINED / PRODUCTION ADMIN UI STILL OPEN
 D1_RESET_PASSWORD_0113                  = PASS / ONE-TIME MANUAL RESET AUTH CONSUMED
 D1_FORCE_PASSWORD_CHANGE_0113           = PASS
 D1_LOGIN_0113_TO_MY_MBO                 = PASS
 D1_LIST_TO_CREATE_SESSION_CONTINUITY    = PASS
-APP794_ACL_CORRECTION                   = PASS / REVISION 43 -> 44
-APP794_CORRECTIVE_DEPLOY_ROUND_2        = PASS / LIVE CUSTOMIZATION REVISION 45
-APP795_ACCESS_CORRECTION                = PASS / APP GROUP PUBLIC / MBO_EMPLOYEE_ACCESS VIEW-ONLY
-TMH2_REQUESTER_AUTH_UNDER_s1            = DENIED / EXPECTED BUSINESS BOUNDARY
-TMH2_REQUESTER_AUTH_UNDER_tmh           = PASS
-APP796_EFFECTIVE_ACCESS                 = PASS / APP GROUP PUBLIC / MBO_EMPLOYEE_ACCESS VIEW-ONLY
-APP796_RUNTIME_READ_FOR_CREATE          = PASS
+APP794_ACL_CORRECTION                   = PASS
+APP795_ACCESS_CORRECTION                = PASS
+APP796_EFFECTIVE_ACCESS                 = PASS
 D1_CREATE_SHOW_INITIALIZATION           = PASS
 DIRECT_URL_REST_HARD_ISOLATION          = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
 SOURCE_MODULARITY_POLICY                = MANDATORY / NO CATCH-ALL SOURCE FILES
@@ -51,9 +46,7 @@ SOURCE_MODULARITY_POLICY                = MANDATORY / NO CATCH-ALL SOURCE FILES
 
 Do not reopen accepted App795/App796 permissions, requester routing, Create handler, Login/session architecture, or deploy tooling unless new evidence directly requires it.
 
-## 3. Accepted Timeline / Attachment Gate
-
-Independent Review accepted:
+## 3. Accepted Timeline / Attachment Source + Test Gate
 
 ```text
 D1_LIVE_TIMELINE_TRUTHFULNESS_SOURCE       = PASS
@@ -65,97 +58,116 @@ D1_SUBMIT_LIFECYCLE_TEST_PROOF             = PASS
 D1_TIMELINE_ATTACHMENT_SOURCE_TEST_GATE    = PASS
 ```
 
-Accepted executor candidate:
+Accepted source/test candidate:
 `433f3106f4f7de0627098dab1f22fb7d032a542d`
 
-Evidence accepted:
+Accepted evidence:
 - focused tests 17/17 PASS;
 - full npm test 869/869 PASS;
 - module-aware build-only PASS;
-- no Live Kintone write during source/test gate;
-- no unauthorized production source change in verification commit.
+- no Live Kintone write during source/test gate.
 
-Commits after `433f310...` up to the authorization point were Control Plane documentation only.
+## 4. Independent Review — One-Shot App794 Deployment
 
-## 4. Current Authorization — Exact One-Shot Scope
+Authorization start HEAD:
+`601d98b078ffa24112f2118d84d3e2028603f13d`
 
-User explicitly authorized on 2026-08-29:
+Executor evidence commit:
+`ae63d677511cf9e39c69f985b3e1b5d616a59b2b`
 
-`App794 deploy D1 Timeline + Attachment corrective`
+Git compare from authorization HEAD to executor evidence commit changed only:
+- `project-docs/D1_APP794_TIMELINE_ATTACHMENT_DEPLOY_EVIDENCE.md`
 
-Control Plane interpretation is exact and narrow:
+No source/dist/test file was committed after authorization.
+
+Deployment evidence records:
 
 ```text
-APP794 CUSTOMIZATION BUILD/DEPLOY/READBACK = YES / ONE SHOT
-APP794 PRE-DEPLOY CUSTOMIZATION BACKUP      = YES
-APP794 EXACT ROLLBACK IF DEPLOY FAILS       = YES / ONLY TO PRE-DEPLOY SNAPSHOT
-APP794 RECORD WRITE                         = NO
-APP794 ACL WRITE                            = NO
-APP794 SCHEMA WRITE                         = NO
-APP794 PROCESS WRITE                        = NO
-APP801 WRITE                                = NO
-APP795/796 WRITE                            = NO
-ROUTING/SCORING CHANGE                      = NO
-AUTH/RESET CHANGE                           = NO
-SOURCE CHANGE/REFACTOR                      = NO
-D2-D7 EXECUTION                             = NO
-EXTERNAL SERVICE                            = NO
+TARGET_APP_ID          = 794
+SOURCE_PROVENANCE_DIFF = EMPTY
+PRE_DEPLOY_BUILD       = PASS
+PRE_DEPLOY_BUILD_ONLY  = PASS
+LIVE_REVISION_BEFORE   = 45
+LIVE_REVISION_AFTER    = 46
+FINAL_DEPLOY_STATUS    = SUCCESS
+ROLLBACK_PERFORMED     = NO
+APP794_RECORD_WRITE    = 0
+APP794_ACL_WRITE       = 0
+APP801_WRITE           = 0
+APP795_796_WRITE       = 0
 ```
 
-This authorization is single-use and must not be reused for another deployment.
+Independent Git cross-check confirms:
+- accepted candidate `dist/mbo-employee-app.js` Git blob SHA = `66424ab0949ca4767fbeb06118adfff593775014`;
+- deployment readback reports the same Live JS blob SHA after deploy;
+- accepted candidate `dist/mbo-employee.css` Git blob SHA = `1359dfae16d1224580210a5a6cd366fb20bcf6f8`;
+- deployment evidence reports that exact CSS asset preserved.
+
+Therefore:
+
+```text
+INDEPENDENT_REVIEW_APP794_TIMELINE_ATTACHMENT_DEPLOY = PASS
+APP794_TIMELINE_ATTACHMENT_DEPLOY                     = PASS
+APP794_LIVE_CUSTOMIZATION_REVISION                     = 46
+ONE_SHOT_DEPLOY_AUTHORIZATION                          = CONSUMED / CLOSED
+```
+
+Note: ChatGPT independently verified repository provenance and candidate hashes. The Live Kintone revision/status values are accepted from the deployment/readback evidence produced by the authorized runtime execution; ChatGPT did not issue a separate Kintone API read in this review.
 
 ## 5. Exact Current Gate
 
 ```text
-CURRENT_GATE       = APP794 D1 TIMELINE + ATTACHMENT CORRECTIVE DEPLOY
-CURRENT_MODE       = ONE-SHOT LIVE CUSTOMIZATION DEPLOY AUTHORIZED
-NEXT_ACTION_OWNER  = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
-APP794 DEPLOY      = YES / SINGLE USE
+CURRENT_GATE        = D1 TIMELINE + ATTACHMENT LIVE UAT
+CURRENT_MODE        = USER/CONTROL-PLANE GUIDED LIVE VERIFICATION
+NEXT_ACTION_OWNER   = USER + CHATGPT
+ANTIGRAVITY ACTION  = NONE
+APP794 DEPLOY       = NO / AUTHORIZATION CONSUMED
+LIVE WRITE          = NO NEW WRITE AUTHORIZATION
 ```
 
-Active Task:
-`project-docs/AI_ACTIVE_TASK.md`
+No further Antigravity execution is required unless Live UAT reveals a genuine defect that requires source/runtime work.
 
-Antigravity must perform only the minimum execution that requires its local/runtime environment:
-1. sync canonical branch;
-2. verify no `src/`, `dist/`, or `tests/` changes after accepted candidate `433f310...`;
-3. build + build-only preflight;
-4. fresh readback and local backup of current App794 customization;
-5. deploy only App794 customization;
-6. read back deployment completion and active customization assets;
-7. rollback only if deployment/readback fails;
-8. write one concise evidence document, commit/push, STOP.
+## 6. Required Live UAT
 
-No additional source/test/refactor work is authorized.
+Verify in App794 Live:
+1. no fabricated workflow events/people/timestamps/comments;
+2. native Kintone Comments remains usable and authoritative;
+3. zero attachment state is truthful;
+4. one real saved filename is shown;
+5. multiple real saved filenames are shown;
+6. selected local filename shows pending-before-save state;
+7. after save, persisted filename/state is truthful;
+8. remove/change affects only the exact target field;
+9. no preview/sample filename leaks into Live.
 
-## 6. Post-Deploy Sequence
+Do not use Antigravity for this UAT unless execution assistance is genuinely necessary.
 
-After Antigravity stops:
-1. ChatGPT independently reviews deployment evidence;
-2. if deployment evidence PASS, perform/guide Live UAT for:
-   - no fabricated workflow events/comments;
-   - native Kintone Comments remains authoritative;
-   - zero/one/multiple real filenames;
-   - selected pending filename before save;
-   - saved/persisted state after save;
-   - remove/change truthful behavior;
-   - no preview filename leak;
-3. then continue D1 HR/admin Reset MBO Password UI and remaining security UAT under separate authorization/work packages as required.
-
-## 7. Development Governance Reminder
-
-- Antigravity is used only for execution that genuinely requires the local/runtime environment.
-- ChatGPT owns analysis, architecture, Git review, acceptance, Control Center/Baseline/Active Task maintenance.
-- Maintain modular source by feature/responsibility; do not accumulate unrelated implementation in catch-all files.
-- `src/main-mbo-app.js` remains orchestration-only.
-- generated `dist` may be bundled; maintainable source must remain modular.
-- do not mix refactor with this deployment gate.
-
-## 8. Handoff State
+## 7. Authorization State
 
 ```text
-CURRENT_GATE   = APP794 D1 TIMELINE + ATTACHMENT CORRECTIVE DEPLOY
-CURRENT_MODE   = ONE-SHOT DEPLOY AUTHORIZED
-REVIEW_RESULT  = SOURCE/TEST PASS
-NEXT OWNER     = ANTIGRAVITY / EXACT ACTIVE TASK ONLY
+APP794 DEPLOY                  = NO / ONE-SHOT CONSUMED
+APP794 RECORD/ACL/SCHEMA WRITE = NO
+APP801 WRITE                   = NO
+APP795/796 WRITE               = NO
+SOURCE CHANGE                  = NO CURRENT SOURCE TASK
+EXTERNAL SERVICE               = NO
+D2-D7 WRITE                    = NO UNDER THIS GATE
+```
+
+## 8. Development Governance Reminder
+
+- Antigravity is used only for execution that genuinely requires the local/runtime environment.
+- ChatGPT owns analysis, planning, Git review, independent acceptance and Control Plane documentation.
+- Source must remain modular by feature/responsibility; do not grow catch-all files.
+- `src/main-mbo-app.js` remains orchestration-only.
+- generated `dist` may be bundled, but maintainable source must stay modular.
+
+## 9. Handoff State
+
+```text
+CURRENT_GATE   = D1 TIMELINE + ATTACHMENT LIVE UAT
+CURRENT_MODE   = USER/CHATGPT GUIDED VERIFICATION
+REVIEW_RESULT  = DEPLOY PASS
+NEXT OWNER     = USER + CHATGPT
+ANTIGRAVITY    = DO NOTHING
 ```
