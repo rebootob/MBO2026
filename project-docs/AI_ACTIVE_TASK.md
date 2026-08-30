@@ -1,48 +1,79 @@
-# AI ACTIVE TASK — D1 MY APPROVAL TASKS — CURRENT NATIVE ASSIGNEE SOURCE INVENTORY R1
+# AI ACTIVE TASK — D1 MY APPROVAL TASKS — NATIVE CURRENT-ASSIGNEE READ-ONLY RUNTIME PROOF R1
 
-Mode: **CHATGPT CONTROL PLANE / GIT READ-ONLY INVENTORY — NO ANTIGRAVITY / NO SOURCE EDIT / NO LIVE KINTONE**  
+Mode: **USER-ASSISTED APP794 READ-ONLY DIAGNOSTIC / CHATGPT REVIEW — NO ANTIGRAVITY / NO WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 0. Goal
+## 0. Why this proof is required
 
-Hybrid Employee-Self Runtime source is ACCEPTED.
+Repository inventory did NOT prove the exact native Kintone Process/Workflow current-assignee field code/query contract.
 
-Next prove, from repository source only, the smallest authoritative runtime seam for:
+Do not invent `$assignee`, `Assignee`, or another field name.
+
+Before implementing My Approval Tasks, prove the actual field shape from one App794 REST GET.
+
+## 1. User action — one read-only diagnostic only
+
+Prefer an App794 record currently in a review state with an active assignee, for example one of:
 ```text
-My Approval Tasks = App794 records whose CURRENT native Workflow assignee == current dedicated Kintone User
+03 Manager Objective Review
+04 GM Objective Review
+08 Manager Mid-Year Review
+09 GM Mid-Year Review
+13 Manager Final Evaluation
+14 GM Final Evaluation
+15 HR Final Check
 ```
 
-Do not implement yet. Do not ask Antigravity to scan. Do not access live Kintone.
+Open that record's Detail page in Kintone.
 
-## 1. Control Plane questions to answer
+Open browser Developer Tools -> Console and paste exactly:
 
-1. Which existing source module/event/API wrapper can read the current native Kintone Process/Workflow assignee for App794 records?
-2. Is `$assignee` or another native system field already used anywhere in source/tests? If yes, identify exact canonical usage; if no, do not invent one.
-3. Which existing record-list/detail seam can host “My Approval Tasks” without merging it into Employee-Self/My MBO authority?
-4. At list time, how can records be filtered to only current assignments for the current dedicated Kintone principal?
-5. At record-open/action time, where can current assignment be revalidated immediately before enabling/performing an approval action?
-6. Confirm App795 static route membership is routing configuration only and never actionable authority.
-7. Confirm SHARED principals do not obtain approver authority merely from their shared account/session.
-8. Identify smallest exact source/test file list for a later implementation WP.
+```javascript
+(async () => {
+  const app = kintone.app.getId();
+  const id = kintone.app.record.getId();
 
-## 2. Mandatory read-only inspection targets
+  if (Number(app) !== 794) {
+    throw new Error(`STOP_NOT_APP794: current app is ${app}`);
+  }
+  if (!id) {
+    throw new Error('STOP_NO_RECORD_ID: open an App794 record detail page first');
+  }
 
-Inspect only as needed:
-```text
-src/main-mbo-app.js
-src/services/** workflow/process/record-query related modules
-src/ui/** home/menu/list/detail related modules
-src/security/** authorization-related modules
-src/config/** process/workflow constants if relevant
-tests/** only files directly related to workflow/approval/current-assignee authorization
-project-docs/CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md
-project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md
-project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md
+  const url = kintone.api.url('/k/v1/record.json', true);
+  const res = await kintone.api(url, 'GET', { app, id });
+  const rec = res && res.record ? res.record : {};
+
+  const processKeys = Object.keys(rec).filter(k => /assignee|status/i.test(k));
+  const processFields = {};
+  processKeys.forEach(k => { processFields[k] = rec[k]; });
+
+  const output = {
+    app,
+    recordId: String(id),
+    processKeys,
+    processFields
+  };
+
+  console.log(JSON.stringify(output, null, 2));
+  return output;
+})();
 ```
 
-No broad repository scan unless a targeted symbol/reference cannot be resolved another way.
+This command performs exactly one:
+```text
+GET /k/v1/record.json
+```
 
-## 3. Hard rules
+It does NOT POST/PUT/DELETE, does not execute a Process action, and does not touch App53.
+
+## 2. User returns only the console output
+
+Send the JSON shown by the console to ChatGPT, or send a screenshot of that JSON.
+
+Do not send the whole App794 record. The diagnostic intentionally prints only field keys containing `status` or `assignee` plus their values.
+
+## 3. Hard stop
 
 ```text
 ANTIGRAVITY = DO NOT USE
@@ -50,51 +81,33 @@ SOURCE_EDIT = 0
 TEST_EDIT = 0
 TEST_RUN = 0
 BUILD = 0
-LIVE_GET = 0
+APP794_GET = 1 MAXIMUM FOR THIS PROOF
 LIVE_POST = 0
 LIVE_PUT = 0
 LIVE_DELETE = 0
-APP53_SCHEMA_WRITE = 0
-APP53_RECORD_WRITE = 0
-APP53_BULK_WRITE = 0
+PROCESS_ACTION = 0
+APP53_GET = 0
+APP53_WRITE = 0
 ACL_WRITE = 0
 GROUP_WRITE = 0
 DEPLOY = 0
 ```
 
-Do not infer approval authority from:
-- App795 membership alone;
-- Manager/GM snapshot fields alone;
-- caller-supplied role strings;
-- UI visibility;
-- Employee-Self identity.
+Do not run a second query until ChatGPT reviews the first output.
 
-Approval authority must remain:
+## 4. ChatGPT review after output
+
+ChatGPT must determine:
+- exact current-assignee field code;
+- field value shape/type;
+- exact status field code if present;
+- whether the returned assignee is a native Kintone user code;
+- whether one additional READ-ONLY list-query proof is required before source implementation.
+
+If the output does not prove a safe field contract:
 ```text
-current dedicated Kintone user
-AND
-current native Workflow assignment on that App794 record
+BLOCKED_NEEDS_READ_ONLY_RUNTIME_PROOF
 ```
+remains in force.
 
-## 4. Required output
-
-ChatGPT must produce one exact inventory conclusion with:
-- `CURRENT_ASSIGNEE_SOURCE_OWNER`
-- `LIST_QUERY_SEAM`
-- `OPEN_REVALIDATION_SEAM`
-- `HOME_MENU_SEAM`
-- `SHARED_APPROVER_AUTHORITY = DENIED`
-- exact later implementation file whitelist
-- exact focused-test file whitelist
-- explicit unknowns/blockers, if any
-
-If the repository does not prove a safe native-current-assignee seam, STOP with `BLOCKED_NEEDS_READ_ONLY_RUNTIME_PROOF`; do not invent an API/field and do not delegate implementation.
-
-## 5. Finish
-
-This is a ChatGPT-owned inventory. No executor commit is expected.
-
-After inventory:
-- update Control Center;
-- either open one small implementation WP or mark BLOCKED pending read-only proof;
-- keep App53 Production and all live Kintone operations untouched.
+If proven, ChatGPT may open the smallest possible implementation WP. Antigravity is still not used until that WP is exact.
