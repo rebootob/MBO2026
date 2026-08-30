@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — APP794 CUMULATIVE PRE-DEPLOY VERIFICATION OPENED / READ-ONLY / NO LIVE WRITE
+> Updated: 2026-08-30 — APP794 PRE-DEPLOY REVIEW = CORRECTIVE FOR EVIDENCE COMPLETENESS ONLY / NO LIVE WRITE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source = independently accepted. App794 WP2 R4 fatal-error Back navigation corrective R2 source = independently accepted. Cumulative App794 candidate is now in pre-deploy verification only; full D1 remains open until Master Joblist closure gates and Live UAT pass. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source independently accepted. App794 WP2 R4 fatal-error Back navigation source independently accepted. Cumulative App794 candidate passed source review; pre-deploy executor evidence is technically consistent but requires command-level audit completion before deploy readiness can be accepted. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -28,122 +28,99 @@ LIVE_SCOPE                  = ALL
 LIVE_TOPOLOGY               = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 LIVE_JS_IDENTITY            = ac22a56cb9d78001384241fe12745f7a2da3da84
 LIVE_CSS_IDENTITY           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-EXECUTOR_TECH_READBACK      = PASS / EXACT PAIR
-INDEPENDENT_GIT_REVIEW      = PASS
 PRIOR_USER_RUNTIME_UAT      = PASS FOR WP2 R3 TARGET AREAS
 ```
 
-Rev57 remains the current accepted Live baseline. No later source commit has been deployed.
+Rev57 remains current accepted Live. No later candidate has been deployed.
 
-## 3. Accepted Source Changes Included In Next Candidate
-
-### D1 Password Reset Core R1
+## 3. Cumulative Accepted Source Candidate
 
 ```text
-R1_SOURCE_COMMIT            = e77c891407d5ccfa3d52401a28922f37a2b1b959
-R1_INDEPENDENT_REVIEW       = PASS
-R1_LIVE_DEPLOY              = NONE
-R1_LIVE_APP801_WRITE        = NONE
-R1_STATUS                   = D1_PASSWORD_RESET_CORE_R1_SOURCE_ACCEPTED
+CANDIDATE_SOURCE_COMMIT     = 98108e9e387d01b6d3c3a35cce5baf13324be50e
+CLASSIFICATION              = CUMULATIVE ACCEPTED SOURCE
+INCLUDES                    = D1 Password Reset Core R1 + WP2 R4 Error-State Back Navigation
+SOURCE_REVIEW               = PASS
+LIVE_DEPLOY                 = NONE
 ```
 
-### App794 WP2 R4 Error-State Back Navigation
+Confirmed recovery-navigation behavior includes authenticated Create fatal/duplicate error -> exactly one `← กลับหน้า My MBO / Back to My MBO` control targeting `/k/794/`.
 
-Accepted source candidate:
+## 4. Pre-Deploy Evidence Review — Commit ff510cce
 
-`98108e9e387d01b6d3c3a35cce5baf13324be50e`
+Executor evidence commit:
 
-Independent decision:
+`ff510cce1c89b10e4fd0682da036beb704fa0f14`
 
-`SOURCE REVIEW PASS`
+Executor changed only:
+- `project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md`.
 
-Accepted recovery-navigation rule:
+Executor evidence reports:
+- focused navigation/integration/auth-adapter tests = 48/48 PASS;
+- deployment-preservation tests = 26/26 PASS;
+- classic bundle/CSS tests = 8/8 PASS;
+- total = 82/82 PASS;
+- build-only PASS;
+- candidate build identities match immutable candidate Git blobs;
+- Live GET-only readback reports Rev57 / ALL / 1/1/0/0 and accepted JS/CSS pair;
+- network writes = POST 0 / PUT 0 / DELETE 0;
+- immutable rollback source pair matches accepted Live pair.
+
+### Independent Git cross-check completed by ChatGPT
 
 ```text
-Normal successful Create                            = 0 Back controls
-Create auth/login-required before authentication    = 0 Back controls
-Authenticated Create fatal/autoload/duplicate error = exactly 1 Back control
-Normal existing Detail/Edit                         = exactly 1 Back control
-Existing Detail/Edit fatal/blocking error            = exactly 1 Back control
+CANDIDATE_JS_GIT_BLOB   = f097f67404fb75418cf85fee635e5d630ef5474d
+CANDIDATE_CSS_GIT_BLOB  = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+ROLLBACK_JS_GIT_BLOB    = ac22a56cb9d78001384241fe12745f7a2da3da84
+ROLLBACK_CSS_GIT_BLOB   = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 ```
 
-## 4. Release Candidate Classification — IMPORTANT
+These immutable Git identities match the executor evidence.
 
-The immutable release-source candidate under verification is:
+### Independent decision
 
-`98108e9e387d01b6d3c3a35cce5baf13324be50e`
+`CORRECTIVE — EVIDENCE COMPLETENESS ONLY`
 
-This candidate is **cumulative accepted source**, not an R4-only patch.
+Reason:
+- original Active Task required **every command executed and exit status**;
+- current evidence summarizes successful results but omits exact command/exit-status audit entries for several mandatory git/worktree/diff/blob/readback operations;
+- explicit command-level clean-worktree-before/after and `git diff --exit-code -- dist/...` proof is not recorded sufficiently.
 
-Git comparison from accepted Live source `9816cef...` to candidate `98108e9e...` shows cumulative runtime source changes including:
-- `src/main-mbo-app.js` — R4 recovery navigation;
-- `src/ui/mbo-kintone-auth-adapter.js` — accepted Password Reset Core R1;
-- generated `dist/mbo-employee-app.js`;
-- directly relevant focused tests.
+No source defect or Live drift is established by this review.
 
-Control/documentation commits after `98108e9e...` are not release-source identity and must not be used to build/deploy the candidate.
-
-Pre-deploy verification must run from a temporary detached worktree pinned exactly to `98108e9e...`.
-
-## 5. Current Active Task — Pre-Deploy Verification Only
+## 5. Current Active Task
 
 ```text
-ACTIVE_TASK                  = APP794 CUMULATIVE PRE-DEPLOY VERIFICATION / READ-ONLY
+ACTIVE_TASK                  = APP794 PRE-DEPLOY EVIDENCE COMPLETENESS CORRECTIVE R1 / READ-ONLY
 OWNER                        = ANTIGRAVITY
-CANDIDATE_SOURCE_COMMIT      = 98108e9e387d01b6d3c3a35cce5baf13324be50e
-LIVE_GET                     = ALLOWED ONLY FOR EXACT READBACK
+ONLY_REPO_FILE_ALLOWED       = project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md
+SOURCE_EDIT                  = FORBIDDEN
+LIVE_GET                     = ALLOWED ONLY IF SAFE RE-RUN IS NEEDED
 LIVE_POST_PUT_DELETE         = FORBIDDEN
 CUSTOMIZATION_UPLOAD         = FORBIDDEN
 DEPLOY                       = FORBIDDEN
 ROLLBACK                     = FORBIDDEN
-SOURCE_EDIT                  = FORBIDDEN
 ```
 
-Exact execution packet is in `project-docs/AI_ACTIVE_TASK.md`.
+Exact corrective packet is in `project-docs/AI_ACTIVE_TASK.md`.
 
-Required output is one evidence file only:
-
-`project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md`
-
-Executor evidence must remain `PENDING_CHATGPT_REVIEW`.
-
-## 6. Mandatory Pre-Deploy Gates
-
-Before any future Live authorization, evidence must independently prove:
-- exact detached candidate HEAD = `98108e9e...`;
-- focused R4 + Password Reset adapter tests PASS;
-- deployment preservation/manifest guard regression PASS;
-- build-only PASS with zero Kintone network calls;
-- classic bundle + CSS structure regression PASS;
-- clean source-to-dist reproduction with zero tracked dist diff;
-- exact candidate JS/CSS immutable identities locked;
-- current actual Live customization still equals accepted Rev57 revision/scope/topology/JS/CSS identities;
-- preview topology is read and recorded without write;
-- `POST_COUNT=0`, `PUT_COUNT=0`, `DELETE_COUNT=0` during this task;
-- immutable rollback source `9816cef...` dist JS/CSS identities exactly reproduce accepted Rev57 Live pair.
-
-Any mismatch = STOP / no deployment authorization.
-
-## 7. Current Gate
+## 6. Current Gate
 
 ```text
-CURRENT_GATE                  = APP794 CUMULATIVE PREDEPLOY VERIFICATION / PENDING EXECUTOR EVIDENCE THEN CHATGPT REVIEW
-CURRENT_MODE                  = VERIFICATION ONLY / READ-ONLY LIVE GET / NO LIVE WRITE
+CURRENT_GATE                  = PREDEPLOY EVIDENCE COMMAND-AUDIT COMPLETION / PENDING EXECUTOR THEN CHATGPT REVIEW
+CURRENT_MODE                  = READ-ONLY EVIDENCE CORRECTIVE / NO LIVE WRITE
 D1_PASSWORD_RESET_CORE_R1     = SOURCE PASS / ACCEPTED
-WP2_R3_PRIOR_LIVE_SCOPE       = REV57 ACCEPTED KNOWN-GOOD
 WP2_R4_R2_SOURCE              = PASS / ACCEPTED
 CUMULATIVE_CANDIDATE          = 98108e9e387d01b6d3c3a35cce5baf13324be50e
-PREDEPLOY_VERIFICATION        = OPEN / NOT YET REVIEWED
-WP2_R4_LIVE_DEPLOY            = NOT AUTHORIZED / NOT EXECUTED
-D1_OVERALL                    = IN PROGRESS
+PREDEPLOY_TECH_RESULTS        = REPORTED PASS / GIT IDENTITIES INDEPENDENTLY CROSS-CHECKED
+PREDEPLOY_REVIEW              = CORRECTIVE — EVIDENCE COMPLETENESS ONLY
 LIVE_DEPLOY_AUTHORIZED        = NO
 ACTIVE_KINTONE_WRITE_AUTH     = NONE
 APP801_LIVE_WRITE             = NO
 ROLLBACK_AUTH                 = NONE
-NEXT_OWNER                    = ANTIGRAVITY FOR EXACT PREDEPLOY VERIFICATION PACKET
+NEXT_OWNER                    = ANTIGRAVITY FOR EXACT EVIDENCE CORRECTIVE
 ```
 
-## 8. Authorization Ledger
+## 7. Authorization Ledger
 
 ```text
 PRIOR_AUTHORIZATION_ID       = APP794-D1-WP2-R3-DEPLOY-20260829-01
@@ -154,4 +131,4 @@ ACTIVE_DEPLOY_AUTH           = NONE
 ROLLBACK_AUTH                = NONE
 ```
 
-No source acceptance or pre-deploy verification authorizes a Live write. A later forward deployment requires a fresh exact one-shot user authorization after ChatGPT reviews the pre-deploy evidence.
+No current evidence, source acceptance or review authorizes a Live deploy. Forward deployment can only be considered after the corrective evidence is independently reviewed and a fresh exact one-shot user authorization is issued.
