@@ -203,6 +203,28 @@ if (typeof kintone !== 'undefined') {
     });
   }
 
+  function findNativeCancelButton() {
+    try {
+      if (typeof document !== 'undefined' && document.querySelector) {
+        const selectors = [
+          '.gaia-ui-actionmenu-cancel',
+          '.gaia-argui-app-menu-cancel',
+          'button.gaia-ui-actionmenu-cancel',
+          'button.gaia-argui-app-menu-cancel'
+        ];
+        for (const sel of selectors) {
+          const el = document.querySelector(sel);
+          if (el) {
+            return el;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore non-browser environment DOM errors
+    }
+    return null;
+  }
+
   function hideNativeSaveCancelControls() {
     try {
       if (typeof document !== 'undefined' && document.querySelectorAll) {
@@ -232,6 +254,8 @@ if (typeof kintone !== 'undefined') {
    * B7: Render a visible, full-page blocking access-denied notice on host using textContent.
    * On existing record error states (isCreate === false) or explicit showBackToMyMbo: true,
    * mounts canonical EmployeeRecordNavigation.
+   * On authenticated terminal fatal Create (options.isCreate === true && options.hideNativeSaveCancel === true),
+   * Back action invokes native Kintone Cancel semantics to discard dirty Create state without leave-confirmation.
    */
   function renderBlockedNotice(host, title, detail, options = {}) {
     if (!host) host = document.querySelector('.gaia-app-wrapper') || document.body;
@@ -241,8 +265,27 @@ if (typeof kintone !== 'undefined') {
     const appId = options.appId || getMboAppId();
 
     if (showBackToMyMbo) {
-      const nav = new EmployeeRecordNavigation({ appId });
-      const backBar = nav.renderBackToMyMboBar({ isCreate: false });
+      let onNavigateHome = options.onNavigateHome;
+
+      if (options.isCreate === true && options.hideNativeSaveCancel === true && !onNavigateHome) {
+        const nativeCancelBtn = findNativeCancelButton();
+        if (nativeCancelBtn && typeof nativeCancelBtn.click === 'function') {
+          onNavigateHome = () => {
+            try {
+              nativeCancelBtn.click();
+            } catch (err) {
+              console.error('[MBO V2] Native cancel invocation failed:', err);
+            }
+          };
+        } else {
+          onNavigateHome = () => {
+            console.error('[MBO V2] FAIL_CLOSED: Native cancel control missing on fatal Create');
+          };
+        }
+      }
+
+      const nav = new EmployeeRecordNavigation({ appId, onNavigateHome });
+      const backBar = nav.renderBackToMyMboBar({ isCreate: false, onNavigateHome });
       if (backBar) {
         host.appendChild(backBar);
       }

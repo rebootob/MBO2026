@@ -7675,6 +7675,25 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         } catch (e) {
         }
       });
+    }, findNativeCancelButton = function() {
+      try {
+        if (typeof document !== "undefined" && document.querySelector) {
+          const selectors = [
+            ".gaia-ui-actionmenu-cancel",
+            ".gaia-argui-app-menu-cancel",
+            "button.gaia-ui-actionmenu-cancel",
+            "button.gaia-argui-app-menu-cancel"
+          ];
+          for (const sel of selectors) {
+            const el = document.querySelector(sel);
+            if (el) {
+              return el;
+            }
+          }
+        }
+      } catch (e) {
+      }
+      return null;
     }, hideNativeSaveCancelControls = function() {
       try {
         if (typeof document !== "undefined" && document.querySelectorAll) {
@@ -7703,8 +7722,25 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       const showBackToMyMbo = options.showBackToMyMbo ?? options.isCreate === false;
       const appId = options.appId || getMboAppId();
       if (showBackToMyMbo) {
-        const nav = new EmployeeRecordNavigation({ appId });
-        const backBar = nav.renderBackToMyMboBar({ isCreate: false });
+        let onNavigateHome = options.onNavigateHome;
+        if (options.isCreate === true && options.hideNativeSaveCancel === true && !onNavigateHome) {
+          const nativeCancelBtn = findNativeCancelButton();
+          if (nativeCancelBtn && typeof nativeCancelBtn.click === "function") {
+            onNavigateHome = () => {
+              try {
+                nativeCancelBtn.click();
+              } catch (err) {
+                console.error("[MBO V2] Native cancel invocation failed:", err);
+              }
+            };
+          } else {
+            onNavigateHome = () => {
+              console.error("[MBO V2] FAIL_CLOSED: Native cancel control missing on fatal Create");
+            };
+          }
+        }
+        const nav = new EmployeeRecordNavigation({ appId, onNavigateHome });
+        const backBar = nav.renderBackToMyMboBar({ isCreate: false, onNavigateHome });
         if (backBar) {
           host.appendChild(backBar);
         }

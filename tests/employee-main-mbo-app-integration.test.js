@@ -291,6 +291,12 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const mockCancelBtn = createMockElement('button');
   mockCancelBtn.className = 'gaia-ui-actionmenu-cancel';
   mockCancelBtn.style.display = 'block';
+  globalThis.document.querySelector = (sel) => {
+    if (sel === '.gaia-app-wrapper' || sel === 'body') return createMockElement('body');
+    if (sel.includes('gaia-ui-actionmenu-cancel') || sel.includes('gaia-argui-app-menu-cancel')) return mockCancelBtn;
+    if (sel.includes('gaia-ui-actionmenu-save') || sel.includes('gaia-argui-app-menu-save')) return mockSaveBtn;
+    return null;
+  };
   globalThis.document.querySelectorAll = (sel) => {
     if (sel.includes('gaia-ui-actionmenu-save')) return [mockSaveBtn];
     if (sel.includes('gaia-ui-actionmenu-cancel')) return [mockCancelBtn];
@@ -404,7 +410,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(createUnauthErrorEvent.record.Fiscal_Year.value, '', 'R2_UNAUTH_FISCAL_YEAR_CLEAN: Fiscal_Year remains unmutated');
   setMboLoginGate(origGate);
 
-  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar, hide native Save/Cancel, and keep Fiscal_Year clean (Fatal Create Clean-Exit R2)
+  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar, hide native Save/Cancel, and invoke native Cancel on Back click (Fatal Create Clean-Exit R4)
   const createAutoloadFailHost = createMockElement('div');
   currentActiveHost = createAutoloadFailHost;
   const createAutoloadFailEvent = {
@@ -419,6 +425,9 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const origSet = globalThis.kintone.app.record.set;
   globalThis.kintone.app.record.set = () => { kintoneRecordSetCount++; };
 
+  let nativeCancelClickCount = 0;
+  mockCancelBtn.click = () => { nativeCancelClickCount++; };
+
   const savedApi = globalThis.kintone.api;
   let lastQuery = '';
   const mockErrApi = async (path, query) => {
@@ -430,18 +439,56 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
 
   await recordShowHandler(createAutoloadFailEvent);
   const createAutoloadBackBars = createAutoloadFailHost.querySelectorAll('[data-mbo-back-nav-bar]');
-  assert.equal(createAutoloadBackBars.length, 1, 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_VISIBLE: Authenticated Create fatal profile resolution error must mount exactly 1 Back bar');
+  assert.equal(createAutoloadBackBars.length, 1, 'R4_AUTH_CREATE_FATAL_ERROR_BACK_VISIBLE: Authenticated Create fatal profile resolution error must mount exactly 1 Back bar');
   const createAutoloadBackLink = createAutoloadBackBars[0].querySelector('a');
-  assert.equal(createAutoloadBackLink.href, '/k/794/', 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_TARGET: Target is /k/794/');
-  assert.ok(createAutoloadBackLink.textContent.includes('← กลับหน้า My MBO / Back to My MBO'), 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_LABEL: Uses exact bilingual label');
+  assert.equal(createAutoloadBackLink.href, '/k/794/', 'R4_AUTH_CREATE_FATAL_ERROR_BACK_TARGET: Target is /k/794/');
+  assert.ok(createAutoloadBackLink.textContent.includes('← กลับหน้า My MBO / Back to My MBO'), 'R4_AUTH_CREATE_FATAL_ERROR_BACK_LABEL: Uses exact bilingual label');
   assert.equal(mockSaveBtn.style.display, 'none', 'FATAL_CREATE_NATIVE_SAVE_HIDDEN: Native Save control must be hidden on terminal fatal Create state');
   assert.equal(mockCancelBtn.style.display, 'none', 'FATAL_CREATE_NATIVE_CANCEL_HIDDEN: Native Cancel control must be hidden on terminal fatal Create state');
-  assert.equal(createAutoloadFailEvent.record.Fiscal_Year.value, '', 'R2_FATAL_CREATE_FISCAL_YEAR_UNMUTATED: Fiscal_Year.value must remain blank on duplicate rejection');
+  assert.equal(createAutoloadFailEvent.record.Fiscal_Year.value, '', 'R4_FATAL_CREATE_FISCAL_YEAR_UNMUTATED: Fiscal_Year.value must remain blank on duplicate rejection');
   assert.equal(createAutoloadFailEvent.record.Employee_Code, undefined, 'FATAL_CREATE_FORM_STATE_CLEAN: Native record object must remain unmutated by failed autoload');
-  assert.equal(kintoneRecordSetCount, 0, 'R2_FATAL_CREATE_KINTONE_RECORD_SET_ZERO: kintone.app.record.set must NOT be called on fatal duplicate rejection');
+  assert.equal(kintoneRecordSetCount, 0, 'R4_FATAL_CREATE_KINTONE_RECORD_SET_ZERO: kintone.app.record.set must NOT be called on fatal duplicate rejection');
   globalThis.kintone.app.record.set = origSet;
 
-  // 4e. Authenticated Create Duplicate Check with Nonblank Fiscal_Year
+  // Test R4 Back Click: Must prevent plain navigation and invoke native Cancel exactly once
+  let defaultPrevented = false;
+  const mockClickEvent = {
+    type: 'click',
+    preventDefault: () => { defaultPrevented = true; }
+  };
+  createAutoloadBackLink.dispatchEvent(mockClickEvent);
+  assert.equal(defaultPrevented, true, 'R4_BACK_PREVENTS_PLAIN_NAVIGATION: Back link click must prevent default anchor navigation');
+  assert.equal(nativeCancelClickCount, 1, 'R4_BACK_INVOKES_NATIVE_CANCEL_EXACTLY_ONCE: Back link click must invoke native Cancel control exactly once');
+
+  // 4e. Missing Native Cancel Button on Fatal Create — Must fail closed without plain navigation or unload suppression
+  const createMissingCancelHost = createMockElement('div');
+  currentActiveHost = createMissingCancelHost;
+  const origQuerySelector = globalThis.document.querySelector;
+  globalThis.document.querySelector = (sel) => {
+    if (sel === '.gaia-app-wrapper' || sel === 'body') return createMockElement('body');
+    return null; // Native cancel missing
+  };
+  const createMissingCancelEvent = {
+    type: 'app.record.create.show',
+    appId: 794,
+    record: {
+      Status: { value: '01 Draft Objective' },
+      Fiscal_Year: { value: '' }
+    }
+  };
+  await recordShowHandler(createMissingCancelEvent);
+  const missingCancelBackBars = createMissingCancelHost.querySelectorAll('[data-mbo-back-nav-bar]');
+  assert.equal(missingCancelBackBars.length, 1, 'R4_MISSING_CANCEL_BACK_VISIBLE: Mounts exactly 1 Back bar');
+  const missingCancelBackLink = missingCancelBackBars[0].querySelector('a');
+  let missingCancelDefaultPrevented = false;
+  missingCancelBackLink.dispatchEvent({
+    type: 'click',
+    preventDefault: () => { missingCancelDefaultPrevented = true; }
+  });
+  assert.equal(missingCancelDefaultPrevented, true, 'R4_MISSING_CANCEL_FAIL_CLOSED_PREVENTS_NAV: Plain navigation prevented when native cancel is missing');
+  globalThis.document.querySelector = origQuerySelector;
+
+  // 4f. Authenticated Create Duplicate Check with Nonblank Fiscal_Year
   const createFailFYHost = createMockElement('div');
   currentActiveHost = createFailFYHost;
   const createFailFYEvent = {
@@ -453,15 +500,19 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
     }
   };
   await recordShowHandler(createFailFYEvent);
-  assert.equal(createFailFYEvent.record.Fiscal_Year.value, 'FY2025', 'R2_NONBLANK_FY_PRESERVED: Nonblank Fiscal_Year.value remains FY2025');
+  assert.equal(createFailFYEvent.record.Fiscal_Year.value, 'FY2025', 'R4_NONBLANK_FY_PRESERVED: Nonblank Fiscal_Year.value remains FY2025');
 
   globalThis.kintone.api = savedApi;
 
   assert.equal(sessionMutations, 0, 'REAL_MAIN_AUTH_SESSION_MUTATION = 0');
   assert.equal(recordWrites, 0, 'REAL_MAIN_RECORD_WRITE = 0');
 
-  // 4f. Static Code Inspection: Ensure ZERO onbeforeunload assignment/override in main-mbo-app.js
+  // 4f. Static Code Inspection: Ensure ZERO forbidden patterns in main-mbo-app.js and employee-record-navigation.js
   const fs = await import('fs');
   const mainSrc = fs.readFileSync('src/main-mbo-app.js', 'utf8');
-  assert.ok(!mainSrc.includes('onbeforeunload'), 'R2_NO_UNLOAD_BYPASS: main-mbo-app.js must NOT touch or suppress window.onbeforeunload');
+  const navSrc = fs.readFileSync('src/ui/employee-record-navigation.js', 'utf8');
+  assert.ok(!mainSrc.includes('onbeforeunload'), 'R4_NO_UNLOAD_BYPASS: main-mbo-app.js must NOT touch or suppress window.onbeforeunload');
+  assert.ok(!navSrc.includes('onbeforeunload'), 'R4_NO_UNLOAD_BYPASS_NAV: employee-record-navigation.js must NOT touch or suppress window.onbeforeunload');
+  assert.ok(!mainSrc.includes('location.assign') && !mainSrc.includes('location.replace') && !mainSrc.includes('history.back'), 'R4_NO_HISTORY_HACKS: main-mbo-app.js must NOT use location.assign/replace/history.back');
+  assert.ok(!navSrc.includes('location.assign') && !navSrc.includes('location.replace') && !navSrc.includes('history.back'), 'R4_NO_HISTORY_HACKS_NAV: employee-record-navigation.js must NOT use location.assign/replace/history.back');
 });
