@@ -1,213 +1,226 @@
-# AI ACTIVE TASK — D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE R2 — TEST/EVIDENCE ONLY
+# AI ACTIVE TASK — D1 HYBRID IDENTITY MAPPING & DUAL-ROLE READ-ONLY AUDIT R1
 
-Mode: **ANTIGRAVITY FOCUSED TEST / FULL TEST / EVIDENCE ONLY — NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET EXECUTION**  
+Mode: **CHATGPT CONTROL-PLANE READ-ONLY DISCOVERY / USER-ASSISTED KINTONE GET EVIDENCE — NO SOURCE CHANGE / NO LIVE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 0. Starting Point / Independent Review
+## 0. Starting Point
 
-Executor corrective source commit reviewed:
-
-`14b911d9cde8b59b6c15e6b05bc8fccfbb6727fd`
-
-Independent result:
+App800 Reset UI source and deployment-tool compatibility are now independently accepted.
 
 ```text
-FINDING_G_CREATOR_LOGIC        = IMPLEMENTED
-FINDING_H_EVERYONE_LOGIC       = IMPLEMENTED
-FINDING_I_EXACT_PRINCIPAL_SET  = IMPLEMENTED
-FINDING_J_CANONICAL_DELEGATION = IMPLEMENTED
-SOURCE_DEFECT_FOUND            = NO
-TEST_EVIDENCE_COMPLETE         = NO
-D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_REVIEW = CORRECTIVE_TEST_EVIDENCE_ONLY
-DEPLOY_READY = NO
+APP800_RESET_UI_SOURCE_COMMIT                = a7a9f02aff6b497f3f8e0009dd377437a3701416
+APP800_DEPLOY_TOOL_IMPLEMENTATION_COMMIT     = 14b911d9cde8b59b6c15e6b05bc8fccfbb6727fd
+APP800_DEPLOY_TOOL_TEST_EVIDENCE_COMMIT      = 9b0377dd56b1a7b74f60dc748babd7d00f8d5fdd
+APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1      = PASS
+APP800_LIVE_DEPLOYED                         = NO
+ACTIVE_DEPLOY_AUTH                           = NONE
 ```
 
-Do **not** redesign or modify deployment source unless an added required test actually exposes a real defect. The intended task is to close explicit security test/evidence gaps only.
-
-Hybrid Identity / Natta / Vassana and Reset UI source remain OUT OF SCOPE.
-
-## 1. Why This Small Corrective Exists
-
-The current implementation logic in `scripts/kintone/deploy-delivery-sprint02.js` already appears to enforce the intended G/H/I/J behavior:
-- exact 3-row App800 ACL set;
-- canonical CREATOR with all seven rights true;
-- exact `GROUP / HR_ADMIN_GROUP` with View-only rights;
-- explicit everyone row with all seven rights false;
-- strict boolean permission properties;
-- canonical dist-only bundle delegation;
-- no ACL write.
-
-However the executor evidence states broader test coverage than the reviewed test file actually contains. Security acceptance requires the explicit proof below.
-
-## 2. Required Explicit Test Cases
-
-Modify `tests/sprint02-delivery.test.js` only as needed to add these cases.
-
-### A. HR malformed rights -> FAIL CLOSED
-
-Add at least one explicit ACL sample where:
-- CREATOR is valid full;
-- everyone is valid denied;
-- HR_ADMIN_GROUP identity is valid;
-- one required HR right is missing, undefined, string-valued, null, or otherwise non-boolean.
-
-Expected:
-`assertApp800LeastPrivilegeAcl(...)` throws because every required HR right must be an explicit boolean.
-
-### B. everyone malformed rights -> FAIL CLOSED
-
-Add at least one explicit ACL sample where:
-- CREATOR is valid full;
-- HR_ADMIN_GROUP is valid View-only;
-- everyone identity is present;
-- one required everyone right is missing or non-boolean.
-
-Expected:
-`assertApp800LeastPrivilegeAcl(...)` throws.
-
-### C. Extra denied principal -> FAIL CLOSED
-
-Current test proves an extra privileged USER is rejected. Also prove an unexpected fourth principal is rejected even when **all its rights are false**.
-
-Example extra principal:
-- USER/GROUP/ORGANIZATION not part of the accepted App800 ACL;
-- all seven rights false.
-
-Expected:
-FAIL CLOSED because accepted principal set is exact, not merely privilege-based.
-
-### D. Actual accepted `everyone` representation -> PASS
-
-Prior App800 readback evidence showed the everyone principal may be represented as a group/code form rather than synthetic `entity.type = EVERYONE`.
-
-Add a valid exact ACL sample using:
+The confirmed next architecture is:
 
 ```text
-entity.type = GROUP
-entity.code = everyone
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+DUAL_ROLE_EMPLOYEE_APPROVER = CONFIRMED
 ```
 
-with all seven rights exactly false.
+Natta and Vassana are the confirmed example class: each person is both an MBO employee and an Approver.
 
-Expected:
-PASS.
+This task proves the real physical identity/routing data before implementation. It does not implement Hybrid Identity.
 
-This proves the validator supports the actual accepted Kintone representation without weakening the exact `code=everyone` identity rule.
-
-## 3. Canonical Bundle Regression
-
-Retain and rerun the existing Finding J test proving a fake caller-provided classic-looking bundle cannot replace canonical `dist/hr-control-center-bundle.js`.
-
-No source/bundle regeneration is required unless existing canonical artifact validation unexpectedly fails.
-
-## 4. Source Change Rule
-
-Expected source modifications:
+## 1. Ownership / Executor Rule
 
 ```text
-scripts/kintone/deploy-delivery-sprint02.js = 0
+PRIMARY_OWNER = CHATGPT CONTROL PLANE
+ANTIGRAVITY_SOURCE_EXECUTION = NOT AUTHORIZED
 ```
 
-If any new required test fails because the current validator has a real logic defect:
-1. STOP;
-2. report exact failing test and why;
-3. do not patch source automatically in this R2 task.
+If Antigravity reads this task without a new explicit narrow instruction, it must **STOP**. Do not edit source, schema, routing, ACL, Process, or customization.
 
-Control Plane will decide whether a source corrective is warranted.
+For live Kintone facts that Git cannot prove, preferred evidence path is a **user-run Browser Console GET-only verifier** prepared by ChatGPT, or user-provided App53/App795 exports. Antigravity GET-only runtime execution may be used only if Control Plane later opens a separate narrow evidence-collection instruction.
 
-## 5. Exact Allowed Files
+## 2. Business Architecture Being Audited
 
-Allowed to modify:
+Dedicated Kintone user:
 
 ```text
-tests/sprint02-delivery.test.js
-project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_R2_EVIDENCE.md
+native Kintone login
+-> exact authoritative Kintone User Code
+-> exactly one active App53 Employee_Code
+-> Employee-Self auto-bind
+-> no secondary MBO Employee_Code/password login
 ```
 
-Read-only:
+Shared Kintone principal:
 
 ```text
-scripts/kintone/deploy-delivery-sprint02.js
-scripts/kintone/build-hrcc-ui.js
-src/ui/hr-control-center.js
-src/ui/mbo-kintone-auth-adapter.js
-dist/hr-control-center-bundle.js
-dist/hr-control-center.css
+approved shared Kintone principal
+-> App794 MBO Login
+-> Employee_Code + App801 MBO password
+-> Employee-Self context
 ```
 
-Forbidden:
-- Control Center / Active Task / Confirmed Baselines / skills;
-- App794 source;
-- App53/App795 source/schema/data;
-- Reset UI source;
-- App801 credential core;
-- Hybrid Identity/My Approval Tasks;
-- unrelated D2/D3/D5/D7 work.
-
-## 6. Required Verification
-
-At minimum:
-
-1. existing valid exact ACL test = PASS;
-2. actual `GROUP / everyone` valid ACL = PASS;
-3. malformed HR boolean = FAIL CLOSED;
-4. malformed everyone boolean = FAIL CLOSED;
-5. extra denied principal = FAIL CLOSED;
-6. existing missing/reduced CREATOR tests remain PASS;
-7. existing extra privileged/duplicate principal tests remain PASS;
-8. canonical caller-bypass prevention test remains PASS;
-9. Sprint02/tooling suite = PASS;
-10. Reset UI focused suite = PASS;
-11. full `npm test` = PASS;
-12. `git diff --check` = PASS;
-13. Live operations all zero.
-
-## 7. Safety — Zero Live Operations
+Dual-role user:
 
 ```text
-LIVE_GET                      = 0
-LIVE_POST                     = 0
-LIVE_PUT                      = 0
-LIVE_DELETE                   = 0
-CUSTOMIZATION_UPLOAD          = 0
-DEPLOY                        = 0
-APP800_ACL_WRITE              = 0
-APP801_ACL_WRITE              = 0
-PASSWORD_RESET_EXECUTION_LIVE = 0
-ROLLBACK                      = 0
-HYBRID_IDENTITY_SOURCE_CHANGE = 0
+My MBO             = own bound Employee_Code
+My Approval Tasks  = current dedicated Kintone User as authoritative current Workflow assignee
 ```
 
-Do not call `executeDeploy()`.
+The same person must not receive two employee rows or two own-MBO records.
 
-## 8. Evidence
+Self approval must fail closed:
 
-Create:
+```text
+SELF_APPROVAL_ROUTE_CONFLICT
+```
 
-`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_R2_EVIDENCE.md`
+## 3. Exact Audit Targets
 
-Record:
-- starting HEAD;
-- exact files changed;
-- source file change count = 0;
-- explicit test names/results for A/B/C/D above;
-- Sprint02/tooling test result;
-- Reset UI focused result;
-- full `npm test` result;
-- `git diff --check` result;
-- exact Live operation counts all zero;
-- `STATUS = PENDING_CHATGPT_REVIEW`.
+Target people:
+- Natta
+- Vassana
 
-Commit + push one minimal test/evidence commit, then STOP.
+Do not infer exact spelling/login code from display name. The live/source evidence must prove the authoritative Kintone User Code.
 
-Maximum executor status:
+For each target prove:
 
-`D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_R2_READY_PENDING_CHATGPT_REVIEW`
+### App53 Employee Identity
+- exact active App53 record ID;
+- Employee_Code;
+- employee display/name fields available in source;
+- Position;
+- Department;
+- Section;
+- Team;
+- `Number_0` active status and require `Number_0 = 1` for dedicated auto-bind;
+- all existing Kintone-user/login/user-select-related field codes and values that could serve as authoritative mapping.
 
-## 9. Next Owner
+### Dedicated Kintone Principal
+- exact Kintone User Code from an authoritative Kintone source;
+- active/usable user status where the available read-only API exposes it;
+- no mapping by name similarity alone.
 
-After commit/push:
+### App795 Routing
+- all active route rows where the exact Kintone User appears as Manager/Approver destination;
+- exact Routing_Key;
+- Manager/GM slot membership and order;
+- Requester_User values;
+- own route resolved from the person's own App53 Position/Section/Team;
+- prove own route does not incorrectly reuse their Approver role.
 
-`NEXT_OWNER = CHATGPT INDEPENDENT REVIEW`
+### App794 / Native Workflow
+- current Process configuration relevant to assignee behavior;
+- how current record assignee is represented/read;
+- whether `My Approval Tasks` can be defined as current authoritative native assignee = current dedicated Kintone User;
+- current App794 App ACL, Record ACL and Field ACL readback relevant to dedicated approver access;
+- do not assume browser UI hiding is sufficient authorization.
 
-Do not deploy and do not begin Hybrid Identity audit automatically.
+## 4. Mapping Decision Contract
+
+For each dedicated user, classification must be exactly one of:
+
+```text
+EXACT_1_TO_1_MAPPING
+MAPPING_MISSING
+MAPPING_AMBIGUOUS
+SOURCE_FIELD_NOT_PRESENT
+```
+
+Rules:
+- exact mapping requires one active App53 employee row and one exact dedicated Kintone User Code;
+- do not infer from display name, email similarity, App795 approver membership, Position, Section, Team, or manual guess;
+- App795 membership proves approver identity only, not Employee_Code ownership;
+- missing or duplicate mapping fails closed;
+- `admin-form` is never auto-bound as Employee-Self;
+- do not invent `Kintone_User_Code` field if App53 has no suitable field.
+
+If App53 has no suitable field, record `SOURCE_FIELD_NOT_PRESENT` and STOP before any schema proposal/change. Any App53 schema change requires a separate explicit authorization.
+
+## 5. Required Security / Workflow Conclusions
+
+Audit evidence must allow Control Plane to answer:
+
+1. Can Natta login with her dedicated Kintone account and be mapped to exactly one Employee_Code?
+2. Can Vassana login with her dedicated Kintone account and be mapped to exactly one Employee_Code?
+3. What exact physical field/source provides each mapping?
+4. Which App794 record is each person's own MBO for a fiscal year?
+5. Which records are approval tasks because current native assignee equals the dedicated user?
+6. Can a dedicated user open only own MBO + currently assigned subordinate MBOs without gaining arbitrary employee access?
+7. Can a shared Kintone principal remain restricted to Employee_Code/App801 login and never gain approver mode?
+8. Can self-approval be detected and blocked reliably?
+9. Does current native ACL/Process configuration support this architecture, or is a later security change required?
+10. Is App53 schema change required, or can existing fields be reused?
+
+## 6. Required Future Test Matrix — Design Only in This Audit
+
+Do not implement yet. Record expected tests for later WP:
+
+- shared principal Employee A can access only Employee A after MBO login;
+- shared principal cannot enter Approver context;
+- dedicated Vassana enters own My MBO without secondary MBO password;
+- dedicated Natta enters own My MBO without secondary MBO password;
+- dedicated user can open a subordinate record only when authoritative current native assignee matches that user;
+- dedicated user cannot open arbitrary other employee records;
+- transition away from user removes record from My Approval Tasks;
+- returned/reassigned record follows current authoritative assignee;
+- own record cannot be approved by the same bound person;
+- missing/ambiguous dedicated mapping fails closed;
+- approval queue count equals records currently assigned, not number of employees represented by an App795 route.
+
+## 7. Allowed Actions
+
+READ-ONLY only:
+- GitHub/repository source and docs inspection;
+- Kintone GET endpoints;
+- App53 form-field/schema GET;
+- App53 target-record GET;
+- App795 target-route GET;
+- App794 process/settings/ACL/record GET needed for the audit;
+- Kintone user/directory GET if available and authorized;
+- user-provided exports/screenshots/Browser Console GET evidence.
+
+## 8. Forbidden Actions
+
+```text
+LIVE_POST                   = 0
+LIVE_PUT                    = 0
+LIVE_DELETE                 = 0
+APP53_RECORD_WRITE          = 0
+APP53_SCHEMA_WRITE          = 0
+APP795_ROUTE_WRITE          = 0
+APP794_RECORD_WRITE         = 0
+PROCESS_WRITE               = 0
+ACL_WRITE                   = 0
+CUSTOMIZATION_UPLOAD        = 0
+DEPLOY                      = 0
+PASSWORD_RESET_EXECUTION    = 0
+SOURCE_IMPLEMENTATION       = 0
+ROLLBACK                    = 0
+```
+
+No App800 deployment is authorized by this task.
+
+## 9. Evidence Deliverable
+
+After read-only collection, Control Plane will create/update:
+
+`project-docs/D1_HYBRID_IDENTITY_MAPPING_DUAL_ROLE_AUDIT_R1_EVIDENCE.md`
+
+Evidence must clearly separate:
+- Git/source-proven facts;
+- live Kintone GET-proven facts;
+- user-confirmed business rules;
+- unresolved facts.
+
+Maximum audit status before independent Control Plane conclusion:
+
+`D1_HYBRID_IDENTITY_MAPPING_DUAL_ROLE_AUDIT_R1_EVIDENCE_COLLECTED`
+
+No source implementation begins automatically.
+
+## 10. Next Owner
+
+```text
+NEXT_OWNER = CHATGPT CONTROL PLANE
+NEXT_STEP  = prepare the minimal read-only evidence collection for Natta + Vassana, beginning with App53 schema/mapping-source proof
+```
