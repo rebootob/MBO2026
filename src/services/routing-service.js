@@ -202,6 +202,142 @@ export class RoutingService {
   }
 
   /**
+   * Resolves effective requester user array based on access mode.
+   * DEDICATED mode: returns [{ code: kintoneUserCode }].
+   * SHARED mode: requires kintoneUserCode to match route's Requester_User list.
+   * @param {Object} params
+   * @param {string} params.mode - 'DEDICATED' | 'SHARED'
+   * @param {string} params.kintoneUserCode - Current Kintone user code
+   * @param {Array<Object|string>} params.routeRequesterUsers - Requester_User from App 795 route
+   * @returns {Array<Object>} Effective requester user array
+   */
+  static resolveEffectiveRequesterUser({ mode = 'SHARED', kintoneUserCode, routeRequesterUsers = [] }) {
+    const cleanUser = String(kintoneUserCode || '').trim();
+    if (!cleanUser) {
+      throw new Error('ไม่พบข้อมูลผู้ใช้งานที่เข้าสู่ระบบ\nLogged-in user code is missing.');
+    }
+
+    if (cleanUser === 'admin-form' || cleanUser === 'Administrator' || cleanUser === 'ADMIN') {
+      throw new Error(`บัญชีบริหารระบบ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO ในฐานะพนักงาน\nTechnical admin identity (${cleanUser}) cannot create MBO records.`);
+    }
+
+    if (mode === 'DEDICATED') {
+      return [{ code: cleanUser }];
+    }
+
+    // SHARED mode validation
+    const norm = (c) => String(c || '').trim().toLowerCase();
+    const isAuthorized = Array.isArray(routeRequesterUsers) && routeRequesterUsers.some(u => {
+      const uCode = typeof u === 'object' ? (u.code || u.value) : u;
+      return norm(uCode) === norm(cleanUser);
+    });
+
+    if (!isAuthorized) {
+      throw new Error(`บัญชีนี้ (${cleanUser}) ไม่มีสิทธิ์สร้าง MBO ในโหมด SHARED\nThis account (${cleanUser}) is not authorized to create an MBO for this target.`);
+    }
+
+    return routeRequesterUsers;
+  }
+
+  /**
+   * Applies own-MBO self-appraiser elision transformation.
+   * For own MBO only: removes self appraiser from effective route, shifts remaining appraisers left,
+   * and recalculates effective technical topology (e.g. M1_G1 -> M1_ONLY for Natta).
+   * Pure transformation: returns a new route object without mutating the input object.
+   * @param {Object} routeProfile - App 795 route profile
+   * @param {string} currentDedicatedUserCode - Current dedicated Kintone user code
+   * @param {boolean} isOwnMbo - Flag indicating whether this is the employee's own MBO
+   * @returns {Object} Effective route profile
+   */
+  static applyOwnMboSelfAppraiserElision(routeProfile, currentDedicatedUserCode, isOwnMbo = false) {
+    if (!routeProfile || typeof routeProfile !== 'object') {
+      throw new Error('Invalid route profile provided for self-appraiser elision.');
+    }
+
+    const cleanUser = String(currentDedicatedUserCode || '').trim();
+
+    // 1. If not own MBO or user code missing, return route profile clone unchanged
+    if (!isOwnMbo || !cleanUser) {
+      return { ...routeProfile };
+    }
+
+    const norm = (c) => String(c || '').trim().toLowerCase();
+    const cleanUserNorm = norm(cleanUser);
+
+    // Extract all appraiser arrays from route profile
+    const extractCodes = (arr) => {
+      if (!Array.isArray(arr)) return [];
+      return arr.map(u => {
+        if (!u) return null;
+        if (typeof u === 'object') return { code: String(u.code || u.value || '').trim() };
+        return { code: String(u).trim() };
+      }).filter(u => u && u.code);
+    };
+
+    const mgrL1 = extractCodes(routeProfile.Manager_Level1_Approvers || routeProfile.Manager_User);
+    const mgrL2 = extractCodes(routeProfile.Manager_Level2_Approvers || routeProfile.First_Manager_User);
+    const gmL1 = extractCodes(routeProfile.GM_Level1_Approvers || routeProfile.GM_User);
+    const gmL2 = extractCodes(routeProfile.GM_Level2_Approvers);
+
+    // Order of sequential appraisers: mgrL1 -> mgrL2 -> gmL1 -> gmL2
+    const allAppraisers = [...mgrL1, ...mgrL2, ...gmL1, ...gmL2];
+
+    const hasSelf = allAppraisers.some(u => norm(u.code) === cleanUserNorm);
+    if (!hasSelf) {
+      return { ...routeProfile, selfAppraiserElided: false };
+    }
+
+    // Filter out self appraiser
+    const remainingAppraisers = allAppraisers.filter(u => norm(u.code) !== cleanUserNorm);
+
+    if (remainingAppraisers.length === 0) {
+      throw new Error(`ไม่พบผู้อนุมัติอื่นนอกเหนือจากตนเองสำหรับ MBO ตนเอง (NO_REMAINING_NON_SELF_APPROVER)\nRouting configuration produces no valid non-self appraiser for own MBO (${cleanUser}).`);
+    }
+
+    // Reassign remaining appraisers to effective sequential slots
+    let effMgrL1 = [];
+    let effMgrL2 = [];
+    let effGmL1 = [];
+    let effGmL2 = [];
+    let effTopology = 'M1_ONLY';
+
+    if (remainingAppraisers.length === 1) {
+      effMgrL1 = [remainingAppraisers[0]];
+      effTopology = 'M1_ONLY';
+    } else if (remainingAppraisers.length === 2) {
+      effMgrL1 = [remainingAppraisers[0]];
+      effGmL1 = [remainingAppraisers[1]];
+      effTopology = 'M1_G1';
+    } else if (remainingAppraisers.length === 3) {
+      effMgrL1 = [remainingAppraisers[0]];
+      effMgrL2 = [remainingAppraisers[1]];
+      effGmL1 = [remainingAppraisers[2]];
+      effTopology = 'M1_M2_G1';
+    } else if (remainingAppraisers.length >= 4) {
+      effMgrL1 = [remainingAppraisers[0]];
+      effMgrL2 = [remainingAppraisers[1]];
+      effGmL1 = [remainingAppraisers[2]];
+      effGmL2 = [remainingAppraisers[3]];
+      effTopology = 'M1_M2_G1_G2';
+    }
+
+    return {
+      ...routeProfile,
+      Manager_Level1_Approvers: effMgrL1,
+      Manager_User: effMgrL1,
+      Manager_Level2_Approvers: effMgrL2,
+      First_Manager_User: effMgrL2,
+      GM_Level1_Approvers: effGmL1,
+      GM_User: effGmL1,
+      GM_Level2_Approvers: effGmL2,
+      Has_Manager_Level2: effMgrL2.length > 0 ? 'Yes' : 'No',
+      Has_GM_Level2: effGmL2.length > 0 ? 'Yes' : 'No',
+      Routing_Topology: effTopology,
+      selfAppraiserElided: true
+    };
+  }
+
+  /**
    * Validate current user access and resolve sequential routing topology from App 795
    * Composes `resolveRoutingProfile` + `assertRequesterAuthorized`.
    * @param {number} routingAppId
