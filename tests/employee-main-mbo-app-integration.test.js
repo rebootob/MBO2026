@@ -139,6 +139,9 @@ globalThis.document = {
 globalThis.location = { href: 'http://localhost/k/794/' };
 
 let currentMockUser = { code: 'f1', name: 'Shared F1 User' };
+let approvalQueryCount = 0;
+let app795QueryCount = 0;
+let triggerApprovalFetchError = false;
 
 const mockApiFn = async (url, methodOrParams, optionalParams) => {
   const params = (typeof methodOrParams === 'object' && methodOrParams !== null) ? methodOrParams : optionalParams;
@@ -198,6 +201,7 @@ const mockApiFn = async (url, methodOrParams, optionalParams) => {
     };
   }
   if (params?.app === 795 || (params?.query && params.query.includes('Section'))) {
+    app795QueryCount++;
     return {
       records: [{
         $id: { value: '701' },
@@ -235,7 +239,35 @@ const mockApiFn = async (url, methodOrParams, optionalParams) => {
       }]
     };
   }
-  if (params?.app === 794 || (params?.query && params.query.includes('Fiscal_Year'))) {
+  if (params?.app === 794 || (params?.query && (params.query.includes('Fiscal_Year') || params.query.includes('Assignee')))) {
+    if (params?.query && params.query.includes('Assignee in (LOGINUSER())')) {
+      approvalQueryCount++;
+      if (triggerApprovalFetchError) {
+        throw new Error('Kintone API network error during approval fetch');
+      }
+      return {
+        records: [
+          {
+            $id: { value: '901' },
+            Fiscal_Year: { value: 'FY2026' },
+            Employee_Code: { value: '0044' },
+            Employee_Name: { value: 'Vassana' },
+            Status: { value: '02 Waiting Appraiser 1' },
+            Record_Key: { value: 'FY2026-0044' },
+            Assignee: { type: 'STATUS_ASSIGNEE', value: [{ code: 'vassana', name: 'Vassana' }] }
+          },
+          {
+            $id: { value: '902' },
+            Fiscal_Year: { value: 'FY2026' },
+            Employee_Code: { value: '0118' },
+            Employee_Name: { value: 'Somchai' },
+            Status: { value: '02 Waiting Appraiser 1' },
+            Record_Key: { value: 'FY2026-0118' },
+            Assignee: { type: 'STATUS_ASSIGNEE', value: [{ code: 'other_user', name: 'Other User' }] }
+          }
+        ]
+      };
+    }
     return { records: [] };
   }
   return { records: [], comments: [] };
@@ -680,6 +712,71 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   };
   await recordShowHandler(dedicatedCreateRecEvent);
   assert.deepEqual(dedicatedCreateRecEvent.record.Requester_User.value, [{ code: 'vassana' }], 'Create through local DEDICATED context must snapshot Requester_User = [{ code: "vassana" }]');
+
+  // 4g-5. D1 My Approval Tasks Home Index Integration assertions
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  requireLoginCalled = false;
+  approvalQueryCount = 0;
+  app795QueryCount = 0;
+  triggerApprovalFetchError = false;
+
+  const dedicatedHomeHost = createMockElement('div');
+  dedicatedHomeHost.className = 'gaia-app-wrapper';
+  currentActiveHost = dedicatedHomeHost;
+
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
+  await new Promise(r => setTimeout(r, 0));
+
+  // 1 & 8. DEDICATED Index resolves bound Employee_Code and invokes 0 mboLoginGate calls
+  const homeCtx = getCurrentEmployeeSelfContext();
+  assert.ok(homeCtx && homeCtx.mode === 'DEDICATED' && homeCtx.employeeCode === '0044', 'Index must resolve dedicated context for vassana');
+  assert.equal(requireLoginCalled, false, 'Valid DEDICATED Index must introduce 0 mboLoginGate calls');
+
+  // 2. DEDICATED Index triggers App794 query with Assignee in (LOGINUSER())
+  assert.equal(approvalQueryCount, 1, 'DEDICATED Index must trigger exactly 1 approval task query with Assignee in (LOGINUSER())');
+
+  // 7. Approval Home path introduces 0 App795 queries
+  assert.equal(app795QueryCount, 0, 'Approval Home path must introduce 0 App795 queries');
+
+  // 3 & 4. Truthful count (1) rendered; exact vassana task (#901) rendered; mismatching task (#902) not rendered
+  const approvalSection = dedicatedHomeHost.querySelector('.mbo-approval-tasks-section');
+  assert.ok(approvalSection, 'DEDICATED Index must render .mbo-approval-tasks-section');
+  const h2El = approvalSection.querySelector('h2');
+  assert.ok(h2El && h2El.textContent.includes('My Approval Tasks (1)'), 'Must display truthful pending count (1)');
+  const links = approvalSection.querySelectorAll('a');
+  assert.equal(links.length, 1, 'Must render exactly 1 View Record link for authorized task #901');
+  assert.equal(links[0].href, '/k/794/show#record=901', 'Task #901 link must point to /k/794/show#record=901');
+
+  // 5. SHARED renders existing My MBO, performs 0 approval queries and has no approval section
+  currentMockUser = { code: 'f1', name: 'Shared F1 User' };
+  approvalQueryCount = 0;
+  const sharedHomeHost = createMockElement('div');
+  sharedHomeHost.className = 'gaia-app-wrapper';
+  currentActiveHost = sharedHomeHost;
+
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
+  await new Promise(r => setTimeout(r, 0));
+
+  const sharedSection = sharedHomeHost.querySelector('.mbo-approval-tasks-section');
+  assert.equal(sharedSection, null, 'SHARED mode must NOT render .mbo-approval-tasks-section');
+  assert.equal(approvalQueryCount, 0, 'SHARED mode must perform 0 approval task queries');
+
+  // 6. Dedicated approval fetch error preserves My MBO and exposes no actionable task
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  triggerApprovalFetchError = true;
+  const errorHomeHost = createMockElement('div');
+  errorHomeHost.className = 'gaia-app-wrapper';
+  currentActiveHost = errorHomeHost;
+
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
+  await new Promise(r => setTimeout(r, 0));
+
+  const errorSection = errorHomeHost.querySelector('.mbo-approval-tasks-error-state');
+  assert.ok(errorSection, 'Approval fetch failure must render error state .mbo-approval-tasks-error-state');
+  const errorDiv = errorSection.children.find(c => c.tagName === 'DIV');
+  assert.ok(errorDiv && errorDiv.textContent.includes('Unable to load approval tasks'), 'Error state must display error message');
+  assert.equal(errorSection.querySelector('table'), null, 'Error state must expose 0 actionable task rows');
+  triggerApprovalFetchError = false;
 
 
   // 4g-2. Finding R1-C: Registered delete event handler blocks for DEDICATED & SHARED context and abstains when null

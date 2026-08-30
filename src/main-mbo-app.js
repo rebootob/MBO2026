@@ -14,6 +14,8 @@ import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
 import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
 import { MboSessionManager } from './ui/mbo-session-manager.js';
 import { EmployeeSelfIndexUI } from './ui/employee-self-index-ui.js';
+import { ApproverTaskIndexUI } from './ui/approver-task-index-ui.js';
+import { MboApprovalTaskService } from './services/mbo-approval-task-service.js';
 import { EmployeeRecordNavigation } from './ui/employee-record-navigation.js';
 import { DeleteGuardPolicy } from './security/delete-guard-policy.js';
 
@@ -466,7 +468,25 @@ if (typeof kintone !== 'undefined') {
         mboLoginGate: gateForIndex,
         renderBlockedNotice
       });
-      return indexUi.render(event, host, res.context.employeeCode);
+      const indexRes = await indexUi.render(event, host, res.context.employeeCode);
+
+      if (res.context.mode === 'DEDICATED') {
+        const appId = getMboAppId();
+        const headerSpace = (typeof kintone !== 'undefined' && kintone.app && typeof kintone.app.getHeaderSpaceElement === 'function')
+          ? kintone.app.getHeaderSpaceElement()
+          : null;
+        const containerHost = headerSpace || host || document.body;
+
+        try {
+          const approvalTasks = await MboApprovalTaskService.fetchApprovalTasks(res.context, appId, kintoneApiWrapper);
+          ApproverTaskIndexUI.render(containerHost, approvalTasks);
+        } catch (err) {
+          console.error('[MBO V2] Dedicated approval tasks fetch failed:', err);
+          ApproverTaskIndexUI.renderError(containerHost, err);
+        }
+      }
+
+      return indexRes;
     })();
 
     return resPipeline;
