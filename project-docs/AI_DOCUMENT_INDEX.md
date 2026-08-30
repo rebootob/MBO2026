@@ -36,9 +36,10 @@ Do not revive Auth Bridge from historical chat, commits, or `services/mbo-auth-b
 
 Current D1 truth is distributed intentionally:
 - `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` = identity modes, Employee-Self/Approver authorization, App801 shared credential model, HR/admin reset;
+- `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` = approved physical mapping design, own-MBO self-appraiser exception, dedicated native App794 access/Record ACL design and implementation gates;
 - `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` = dedicated native-Kintone continuity vs shared App801 bearer session;
-- `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` = dedicated Kintone User <-> Employee_Code mapping contract/source audit;
-- `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` = effective requester identity, App795 approvers, dual-role and self-approval guard;
+- `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` = App53 employee/routing source semantics;
+- `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` = effective requester identity, App795 approvers and workflow topology;
 - `CONFIRMED_BASELINE/UI_UX.md` = My MBO + My Approval Tasks target UX.
 
 Important: a completed D1 sub-scope such as WP2 UI or Password Reset does **not** automatically mean the whole D1 deliverable is closed. Use `00_MASTER_JOBLIST.md` for full D1 closure criteria and `AI_CONTROL_CENTER.md` for current accepted status.
@@ -50,7 +51,7 @@ Important: a completed D1 sub-scope such as WP2 UI or Password Reset does **not*
 Antigravity opens only:
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. `project-docs/AI_ACTIVE_TASK.md`
-3. exact source/config files named by `AI_ACTIVE_TASK.md`
+3. exact Baseline/source/config files named by `AI_ACTIVE_TASK.md`
 
 Do not broad-scan the repo.
 
@@ -68,16 +69,16 @@ Do not broad-scan the repo.
 | Live deploy / rollback / recovery / emergency recovery | `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md` | `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`, exact deployment/recovery evidence |
 | Source architecture / modular JS / feature ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact affected source files/tests/build manifest |
 | App794 UI runtime styling missing / DOM exists but unstyled / Comment API / custom UI deploy lesson | `skills/mbo-kintone-ui-runtime-debugging/SKILL.md` | `CONFIRMED_BASELINE/UI_UX.md`, exact source/CSS/deploy evidence |
-| D1 hybrid login / dedicated vs shared identity / App801 / HR reset / shared Kintone account | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`, `EMPLOYEE_MASTER_ROUTING.md`, exact live ACL/mapping evidence |
-| D1 dedicated Kintone User <-> Employee_Code mapping / Natta-Vassana dual role | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `D1_AUTH_SECURITY.md`, `ROUTING_WORKFLOW.md`, App53 read-only evidence |
-| D1 dual-role Employee + Approver / My Approval Tasks / effective requester / self-approval | `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | `D1_AUTH_SECURITY.md`, `UI_UX.md`, exact App794/App795 Process evidence |
+| D1 hybrid login / dedicated vs shared identity / App801 / HR reset / shared Kintone account | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `D1_SESSION_CONTINUITY.md`, exact live ACL/mapping evidence |
+| D1 dedicated mapping / Natta-Vassana dual role / self-route exception / dedicated native ACL | `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` | `EMPLOYEE_MASTER_ROUTING.md`, `D1_AUTH_SECURITY.md`, `ROUTING_WORKFLOW.md`, exact App53/App794 evidence |
+| D1 App53 Position/Department/Section/Team/Employee_Code source semantics | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `FIELD_DICTIONARY.md` |
+| D1 dual-role Employee + Approver / My Approval Tasks / effective requester | `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` | `ROUTING_WORKFLOW.md`, `D1_AUTH_SECURITY.md`, `UI_UX.md`, exact App794 Process evidence |
 | D1 shared session token / reload / logout / password-session rotation | `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` |
 | D1 My MBO history / Completed / no-delete | `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` | `D1_AUTH_SECURITY.md`, exact UI/security source/test |
 | D1 Live timeline/comments truthfulness / attachment state/upload lifecycle | `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` | `CONFIRMED_BASELINE/UI_UX.md`, exact UI source |
-| Routing / App795 / GM precedence / Team | `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` |
-| App53 routing fields / Position / Team / dedicated user mapping | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` | `FIELD_DICTIONARY.md` |
+| Routing / App795 / executive precedence / Team | `CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`, `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` |
 | Evaluation/scoring class / App796 | `CONFIRMED_BASELINE/EVALUATION_CLASSES.md` | relevant source/test |
-| App794 general UI/UX / My MBO + My Approval Tasks | `CONFIRMED_BASELINE/UI_UX.md` | `D1_AUTH_SECURITY.md`, `ROUTING_WORKFLOW.md`, exact UI source/screenshots |
+| App794 general UI/UX / My MBO + My Approval Tasks | `CONFIRMED_BASELINE/UI_UX.md` | `D1_AUTH_SECURITY.md`, `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `ROUTING_WORKFLOW.md`, exact UI source/screenshots |
 | D2 Excel/PDF export | `AI_CONTROL_CENTER.md` | `EXCEL_EXPORT.md`, exact export source, legacy sample evidence |
 | D3 legacy migration | `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md` | exact legacy source evidence only |
 | D4 HR Control Center | `AI_CONTROL_CENTER.md` | exact App800/source files |
@@ -96,12 +97,13 @@ Always start with `project-docs/CONFIRMED_BASELINE/README.md`, then only the dom
 - `ROLLBACK_RECOVERY_SAFETY.md`
 - `SOURCE_CODE_ARCHITECTURE.md`
 - `DOCUMENT_CONTROL.md`
-- `D1_AUTH_SECURITY.md` — current **KINTONE-ONLY HYBRID IDENTITY** + App801 shared credential/ACL + dual-role security model
+- `D1_AUTH_SECURITY.md` — current KINTONE-ONLY HYBRID IDENTITY + App801 shared credential/ACL + dual-role security model
+- `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — approved App53 dedicated-user mapping field design + own self-appraiser elision + dedicated App794 native access/Record ACL target
 - `D1_SESSION_CONTINUITY.md` — dedicated native-Kintone continuity + shared App801 MBO session continuity
 - `D1_EMPLOYEE_SELF_MY_MBO.md`
 - `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md`
-- `ROUTING_WORKFLOW.md` — App795 + effective requester + dual-role Approver + self-approval guard
-- `EMPLOYEE_MASTER_ROUTING.md` — App53 + dedicated Kintone User mapping contract/audit
+- `ROUTING_WORKFLOW.md` — App795 + effective requester + workflow topology
+- `EMPLOYEE_MASTER_ROUTING.md` — App53 employee/routing-source semantics
 - `EVALUATION_CLASSES.md`
 - `LEGACY_PMS_APPS.md`
 - `UI_UX.md` — includes Hybrid Identity Home / My MBO + My Approval Tasks
@@ -163,7 +165,7 @@ current HEAD
 For deploy/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory.
 For source/module refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory when feature ownership or dependency boundaries are involved.
 For App794 custom UI runtime/CSS/Comment problems, also read `skills/mbo-kintone-ui-runtime-debugging/SKILL.md`.
-For Hybrid Identity/Dual-role work, read `D1_AUTH_SECURITY.md` + `D1_SESSION_CONTINUITY.md` + `EMPLOYEE_MASTER_ROUTING.md` + `ROUTING_WORKFLOW.md` and `UI_UX.md` when the Home/record UX is involved.
+For Hybrid Identity/Dual-role work, read `D1_AUTH_SECURITY.md` + `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` + `D1_SESSION_CONTINUITY.md` + `EMPLOYEE_MASTER_ROUTING.md` + `ROUTING_WORKFLOW.md` and `UI_UX.md` when Home/record UX is involved.
 
 Do not use historical Auth Bridge artifacts as current D1 authority.
 
