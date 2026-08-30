@@ -749,7 +749,7 @@ test('M10L-D-R6: app.record.detail.process.proceed handler returns exact event o
     action: { value: 'Submit Objective to Manager' }
   };
 
-  const res = proceedHook(proceedEvent);
+  const res = await proceedHook(proceedEvent);
   assert.equal(res, proceedEvent, 'process.proceed hook must return exact event object when valid');
 });
 
@@ -772,7 +772,7 @@ test('M10L-D-R6: app.record.detail.process.proceed handler returns false on inva
     status: 'SUBMITTED'
   };
 
-  const res = proceedHook(proceedEvent);
+  const res = await proceedHook(proceedEvent);
   assert.equal(res, false, 'process.proceed hook must return false when validation fails');
 });
 
@@ -863,7 +863,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: validRecordM1G1,
     action: { value: 'Submit Objective to Manager' }
   };
-  assert.equal(proceedHook(passEvent1), passEvent1, 'M1_G1 + direct Manager submit must pass');
+  assert.equal(await proceedHook(passEvent1), passEvent1, 'M1_G1 + direct Manager submit must pass');
 
   // 2. M1_G1 + First Manager Submit -> FAIL CLOSED
   const failEvent1 = {
@@ -871,7 +871,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: validRecordM1G1,
     action: { value: 'Submit Objective to First Manager' }
   };
-  assert.equal(proceedHook(failEvent1), false, 'M1_G1 + First Manager submit must fail closed');
+  assert.equal(await proceedHook(failEvent1), false, 'M1_G1 + First Manager submit must fail closed');
 
   // 3. M1_M2_G1 + First Manager Submit with populated First_Manager_User -> PASS
   const validRecordM2 = createMockRecord({
@@ -887,7 +887,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: validRecordM2,
     action: { value: 'Submit Objective to First Manager' }
   };
-  assert.equal(proceedHook(passEvent2), passEvent2, 'M1_M2_G1 + First Manager submit must pass when First_Manager_User populated');
+  assert.equal(await proceedHook(passEvent2), passEvent2, 'M1_M2_G1 + First Manager submit must pass when First_Manager_User populated');
 
   // 4. M1_M2_G1 + Direct Manager Submit -> FAIL CLOSED
   const failEvent2 = {
@@ -895,7 +895,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: validRecordM2,
     action: { value: 'Submit Objective to Manager' }
   };
-  assert.equal(proceedHook(failEvent2), false, 'M1_M2_G1 + direct Manager submit must fail closed');
+  assert.equal(await proceedHook(failEvent2), false, 'M1_M2_G1 + direct Manager submit must fail closed');
 
   // 5. M1_M2_G1 + First Manager Submit with EMPTY First_Manager_User -> FAIL CLOSED
   const invalidRecordM2EmptyFM = createMockRecord({
@@ -911,7 +911,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: invalidRecordM2EmptyFM,
     action: { value: 'Submit Objective to First Manager' }
   };
-  assert.equal(proceedHook(failEvent3), false, 'M1_M2_G1 with empty First_Manager_User must fail closed');
+  assert.equal(await proceedHook(failEvent3), false, 'M1_M2_G1 with empty First_Manager_User must fail closed');
 
   // 6. G2 Topology Entry -> FAIL CLOSED
   const invalidRecordG2 = createMockRecord({
@@ -926,7 +926,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: invalidRecordG2,
     action: { value: 'Submit Objective to Manager' }
   };
-  assert.equal(proceedHook(failEvent4), false, 'G2 topology entry must fail closed');
+  assert.equal(await proceedHook(failEvent4), false, 'G2 topology entry must fail closed');
 
   // 7. Valid M1_G1 Manager/GM Approve & Return actions remain PASS
   const approveRecordManager = createMockRecord({
@@ -941,7 +941,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: approveRecordManager,
     action: { value: 'Approve Objective' }
   };
-  assert.equal(proceedHook(passApproveManager), passApproveManager, 'Manager Approve Objective must pass on M1_G1');
+  assert.equal(await proceedHook(passApproveManager), passApproveManager, 'Manager Approve Objective must pass on M1_G1');
 
   const returnRecordManager = createMockRecord({
     Status: { value: '03 Manager Objective Review' },
@@ -955,7 +955,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: returnRecordManager,
     action: { value: 'Return Objective' }
   };
-  assert.equal(proceedHook(passReturnManager), passReturnManager, 'Manager Return Objective must pass on M1_G1');
+  assert.equal(await proceedHook(passReturnManager), passReturnManager, 'Manager Return Objective must pass on M1_G1');
 
   // 8. Unknown Status -> FAIL CLOSED
   const unknownStatusRecord = createMockRecord({
@@ -967,7 +967,7 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
     record: unknownStatusRecord,
     action: { value: 'Submit Objective to Manager' }
   };
-  assert.equal(proceedHook(failUnknownStatus), false, 'Unknown status must return false on process proceed');
+  assert.equal(await proceedHook(failUnknownStatus), false, 'Unknown status must return false on process proceed');
 });
 
 test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fail-closed guards', async () => {
@@ -986,7 +986,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: blankTopoRecord,
     action: { value: 'Submit Mid-Year to Manager' }
   };
-  assert.equal(proceedHook(failBlankTopo), false, 'Blank topology must fail closed');
+  assert.equal(await proceedHook(failBlankTopo), false, 'Blank topology must fail closed');
 
   // 2. Unknown Routing_Topology + Final direct submit -> FAIL CLOSED
   const unknownTopoRecord = createMockRecord({
@@ -1000,10 +1000,10 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: unknownTopoRecord,
     action: { value: 'Submit Final to Manager' }
   };
-  assert.equal(proceedHook(failUnknownTopo), false, 'Unknown topology must fail closed');
+  assert.equal(await proceedHook(failUnknownTopo), false, 'Unknown topology must fail closed');
 
   // 3. Both G2 exact variants (M1_G1_G2 and M1_M2_G1_G2) -> FAIL CLOSED
-  ['M1_G1_G2', 'M1_M2_G1_G2'].forEach(g2Topo => {
+  for (const g2Topo of ['M1_G1_G2', 'M1_M2_G1_G2']) {
     const g2Record = createMockRecord({
       Status: { value: '01 Draft Objective' },
       Routing_Topology: { value: g2Topo },
@@ -1017,8 +1017,8 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
       record: g2Record,
       action: { value: g2Topo.includes('M2') ? 'Submit Objective to First Manager' : 'Submit Objective to Manager' }
     };
-    assert.equal(proceedHook(failG2), false, `G2 variant ${g2Topo} must fail closed`);
-  });
+    assert.equal(await proceedHook(failG2), false, `G2 variant ${g2Topo} must fail closed`);
+  }
 
   // 4. Status 04 GM Objective Review + Approve Objective: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
   const status04EmptyRequester = createMockRecord({
@@ -1032,7 +1032,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status04EmptyRequester,
     action: { value: 'Approve Objective' }
   };
-  assert.equal(proceedHook(failStatus04), false, 'Status 04 Approve Objective with empty Requester_User must fail closed');
+  assert.equal(await proceedHook(failStatus04), false, 'Status 04 Approve Objective with empty Requester_User must fail closed');
 
   const status04PopulatedRequester = createMockRecord({
     Status: { value: '04 GM Objective Review' },
@@ -1045,7 +1045,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status04PopulatedRequester,
     action: { value: 'Approve Objective' }
   };
-  assert.equal(proceedHook(passStatus04), passStatus04, 'Status 04 Approve Objective with populated Requester_User must pass');
+  assert.equal(await proceedHook(passStatus04), passStatus04, 'Status 04 Approve Objective with populated Requester_User must pass');
 
   // 5. Status 05 Objective Approved + Start Mid-Year: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
   const status05EmptyRequester = createMockRecord({
@@ -1058,7 +1058,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status05EmptyRequester,
     action: { value: 'Start Mid-Year' }
   };
-  assert.equal(proceedHook(failStatus05), false, 'Status 05 Start Mid-Year with empty Requester_User must fail closed');
+  assert.equal(await proceedHook(failStatus05), false, 'Status 05 Start Mid-Year with empty Requester_User must fail closed');
 
   const status05PopulatedRequester = createMockRecord({
     Status: { value: '05 Objective Approved' },
@@ -1070,7 +1070,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status05PopulatedRequester,
     action: { value: 'Start Mid-Year' }
   };
-  assert.equal(proceedHook(passStatus05), passStatus05, 'Status 05 Start Mid-Year with populated Requester_User must pass');
+  assert.equal(await proceedHook(passStatus05), passStatus05, 'Status 05 Start Mid-Year with populated Requester_User must pass');
 
   // 6. Status 09 GM Mid-Year Review + Approve Mid-Year GM: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
   const status09EmptyRequester = createMockRecord({
@@ -1084,7 +1084,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status09EmptyRequester,
     action: { value: 'Approve Mid-Year GM' }
   };
-  assert.equal(proceedHook(failStatus09), false, 'Status 09 Approve Mid-Year GM with empty Requester_User must fail closed');
+  assert.equal(await proceedHook(failStatus09), false, 'Status 09 Approve Mid-Year GM with empty Requester_User must fail closed');
 
   const status09PopulatedRequester = createMockRecord({
     Status: { value: '09 GM Mid-Year Review' },
@@ -1097,7 +1097,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status09PopulatedRequester,
     action: { value: 'Approve Mid-Year GM' }
   };
-  assert.equal(proceedHook(passStatus09), passStatus09, 'Status 09 Approve Mid-Year GM with populated Requester_User must pass');
+  assert.equal(await proceedHook(passStatus09), passStatus09, 'Status 09 Approve Mid-Year GM with populated Requester_User must pass');
 
   // 7. Status 10 Mid-Year Completed + Start Self Evaluation: Empty Requester_User -> FAIL CLOSED; Populated -> PASS
   const status10EmptyRequester = createMockRecord({
@@ -1110,7 +1110,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status10EmptyRequester,
     action: { value: 'Start Self Evaluation' }
   };
-  assert.equal(proceedHook(failStatus10), false, 'Status 10 Start Self Evaluation with empty Requester_User must fail closed');
+  assert.equal(await proceedHook(failStatus10), false, 'Status 10 Start Self Evaluation with empty Requester_User must fail closed');
 
   const status10PopulatedRequester = createMockRecord({
     Status: { value: '10 Mid-Year Completed' },
@@ -1122,7 +1122,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: status10PopulatedRequester,
     action: { value: 'Start Self Evaluation' }
   };
-  assert.equal(proceedHook(passStatus10), passStatus10, 'Status 10 Start Self Evaluation with populated Requester_User must pass');
+  assert.equal(await proceedHook(passStatus10), passStatus10, 'Status 10 Start Self Evaluation with populated Requester_User must pass');
 
   // 8. Representative Return action with empty Requester_User -> FAIL CLOSED
   const returnEmptyRequester = createMockRecord({
@@ -1136,7 +1136,7 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
     record: returnEmptyRequester,
     action: { value: 'Return Mid-Year Manager' }
   };
-  assert.equal(proceedHook(failReturnEmptyRequester), false, 'Return Mid-Year Manager with empty Requester_User must fail closed');
+  assert.equal(await proceedHook(failReturnEmptyRequester), false, 'Return Mid-Year Manager with empty Requester_User must fail closed');
 });
 
 test('UI/UX V1 Candidate R2 — Topology Classifier, G2 Unsupported Warning, Guidance & Presentation Safety', async (t) => {
