@@ -732,6 +732,12 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.ok(homeCtx && homeCtx.mode === 'DEDICATED' && homeCtx.employeeCode === '0044', 'Index must resolve dedicated context for vassana');
   assert.equal(requireLoginCalled, false, 'Valid DEDICATED Index must introduce 0 mboLoginGate calls');
 
+  // Corrective A: DEDICATED normal Index renders My MBO container & title
+  const dedicatedMyMboContainer = dedicatedHomeHost.querySelector('[data-mbo-custom-index]');
+  assert.ok(dedicatedMyMboContainer, 'DEDICATED Index must render My MBO container [data-mbo-custom-index]');
+  const dedicatedMyMboTitle = dedicatedHomeHost.querySelector('[data-mbo-title]');
+  assert.ok(dedicatedMyMboTitle && dedicatedMyMboTitle.textContent.includes('MBO ของฉัน / My MBO'), 'DEDICATED Index must render My MBO title [data-mbo-title]');
+
   // 2. DEDICATED Index triggers App794 query with Assignee in (LOGINUSER())
   assert.equal(approvalQueryCount, 1, 'DEDICATED Index must trigger exactly 1 approval task query with Assignee in (LOGINUSER())');
 
@@ -757,6 +763,12 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
   await new Promise(r => setTimeout(r, 0));
 
+  // Corrective B: SHARED Index renders My MBO container & title
+  const sharedMyMboContainer = sharedHomeHost.querySelector('[data-mbo-custom-index]');
+  assert.ok(sharedMyMboContainer, 'SHARED Index must render My MBO container [data-mbo-custom-index]');
+  const sharedMyMboTitle = sharedHomeHost.querySelector('[data-mbo-title]');
+  assert.ok(sharedMyMboTitle && sharedMyMboTitle.textContent.includes('MBO ของฉัน / My MBO'), 'SHARED Index must render My MBO title [data-mbo-title]');
+
   const sharedSection = sharedHomeHost.querySelector('.mbo-approval-tasks-section');
   assert.equal(sharedSection, null, 'SHARED mode must NOT render .mbo-approval-tasks-section');
   assert.equal(approvalQueryCount, 0, 'SHARED mode must perform 0 approval task queries');
@@ -770,6 +782,12 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
 
   await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
   await new Promise(r => setTimeout(r, 0));
+
+  // Corrective C: DEDICATED approval-fetch error preserves My MBO container & title
+  const errorMyMboContainer = errorHomeHost.querySelector('[data-mbo-custom-index]');
+  assert.ok(errorMyMboContainer, 'DEDICATED approval-fetch error must preserve My MBO container [data-mbo-custom-index]');
+  const errorMyMboTitle = errorHomeHost.querySelector('[data-mbo-title]');
+  assert.ok(errorMyMboTitle && errorMyMboTitle.textContent.includes('MBO ของฉัน / My MBO'), 'DEDICATED approval-fetch error must preserve My MBO title [data-mbo-title]');
 
   const errorSection = errorHomeHost.querySelector('.mbo-approval-tasks-error-state');
   assert.ok(errorSection, 'Approval fetch failure must render error state .mbo-approval-tasks-error-state');
