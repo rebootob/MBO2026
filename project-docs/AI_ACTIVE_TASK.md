@@ -1,123 +1,78 @@
-# AI ACTIVE TASK — D1 MY APPROVAL TASKS — LEAN HOME INDEX INTEGRATION R1
+# AI ACTIVE TASK — D1 MY APPROVAL TASKS — GATE 1 TEST EVIDENCE CORRECTIVE R1
 
-Mode: **ANTIGRAVITY MINIMUM SOURCE INTEGRATION ONLY — HOME/INDEX ONLY / 3 FILES / ONE FOCUSED TEST / NO BUILD / NO FULL TEST / NO LIVE KINTONE**  
-Branch: `ai/antigravity-wp002c`  
-Updated: 2026-08-30 20:45 ICT
+Mode: **ANTIGRAVITY MINIMUM TEST CORRECTION ONLY — 1 FILE / NO SOURCE IMPLEMENTATION CHANGE / ONE FOCUSED TEST / NO BUILD / NO FULL TEST / NO LIVE KINTONE**
+Branch: `ai/antigravity-wp002c`
+Review target: `cb2fae671e610924e7143806944b3dcdf527f2f0`
+Updated: 2026-08-30
 
 ```text
-TASK_STATE = OPEN / READY_FOR_EXECUTION
-EXECUTOR_COMMIT = NONE AT DOCUMENT-SYNC CHECKPOINT
+TASK_STATE = CORRECTIVE / READY_FOR_EXECUTION
 NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
 ```
 
-**Fresh-fetch the branch before execution.** If an executor commit already exists after this document-sync checkpoint, STOP and hand it to ChatGPT for review instead of repeating the task.
+Fresh-fetch the branch before execution. If another executor correction already exists after this task was written, STOP and hand it to ChatGPT for review instead of repeating work.
 
 ## 0. Goal
 
-Integrate the accepted current-assignee authority service into the App794 Home/Index only, while keeping `My MBO` and `My Approval Tasks` visibly and logically separate.
+Close only the independent-review test-evidence gap for D1 Home/Index Gate 1.
 
-Accepted authority service:
+The implementation candidate in commit `cb2fae671e610924e7143806944b3dcdf527f2f0` is not being reopened by default. The corrective is required because the existing focused integration test does not directly assert that `My MBO` remains rendered in three required scenarios.
 
-```text
-src/services/mbo-approval-task-service.js
-commit 5ac5ede6e40a1462f0398ba8740330742041e3bf
-```
+Do not rediscover architecture. Do not refactor implementation. Do not proceed to Gate 2 or Gate 3.
 
-Do NOT rediscover architecture. Do NOT scan broadly. Do NOT implement cross-employee Detail or Process action authority in this WP.
+## 1. Exact allowed file
 
-## 1. Exact allowed files
-
-CREATE:
+MODIFY ONLY:
 
 ```text
-src/ui/approver-task-index-ui.js
-```
-
-MODIFY:
-
-```text
-src/main-mbo-app.js
 tests/employee-main-mbo-app-integration.test.js
 ```
 
 No other file may change.
 
-## 2. Required behavior
+## 2. Required corrective assertions
 
-### A. Preserve My MBO unchanged
+Keep all existing Gate 1 assertions. Add the minimum direct DOM assertions needed to prove:
 
-`EmployeeSelfIndexUI` remains the canonical My MBO owner.
-Do NOT modify `src/ui/employee-self-index-ui.js`.
-Do NOT change its Employee_Code ownership query, Create button, own-record list or shared-login behavior.
+### A. DEDICATED normal Index
 
-### B. Dedicated-only approval section
+After the existing `vassana` Dedicated Index render:
+- `[data-mbo-custom-index]` exists;
+- `[data-mbo-title]` exists and truthfully represents `MBO ของฉัน / My MBO`;
+- existing approval-task assertions remain unchanged.
 
-After `resolveRuntimeEmployeeSelfContext()` succeeds on `app.record.index.show`:
+### B. SHARED Index
+
+After the existing Shared Index render:
+- `[data-mbo-custom-index]` exists;
+- `[data-mbo-title]` exists and truthfully represents `MBO ของฉัน / My MBO`;
+- approval query count remains `0`;
+- `.mbo-approval-tasks-section` remains absent.
+
+### C. DEDICATED approval-fetch error
+
+After forcing the existing approval fetch error:
+- `[data-mbo-custom-index]` still exists;
+- `[data-mbo-title]` still exists and truthfully represents `MBO ของฉัน / My MBO`;
+- `.mbo-approval-tasks-error-state` exists;
+- no actionable approval task link/table from the failed fetch is exposed.
+
+Use the existing mock DOM capabilities if sufficient. Do not redesign the test harness unless a tiny change is strictly necessary for these assertions.
+
+## 3. Preserve the accepted Gate 1 implementation candidate
+
+Do NOT modify:
 
 ```text
-SHARED
--> render existing My MBO only
--> DO NOT call MboApprovalTaskService.fetchApprovalTasks()
--> DO NOT render My Approval Tasks
-
-DEDICATED
--> render existing My MBO
--> call MboApprovalTaskService.fetchApprovalTasks(
-     resolvedContext,
-     appId,
-     kintoneApiWrapper
-   )
--> render a separate My Approval Tasks section
+src/main-mbo-app.js
+src/ui/approver-task-index-ui.js
+src/services/mbo-approval-task-service.js
+src/ui/employee-self-index-ui.js
 ```
 
-Never infer Approver mode from Employee_Code, App795, `Manager_User`, `GM_User`, `First_Manager_User`, role strings or UI state.
+Do not weaken/remove existing assertions. If the new direct My MBO assertions expose an actual implementation defect, STOP and report it to ChatGPT instead of widening this corrective.
 
-### C. New ApproverTaskIndexUI is presentation only
-
-Create a small `ApproverTaskIndexUI` renderer. It must:
-- receive already-authorized task records from the service;
-- perform NO Kintone API calls itself;
-- perform NO App795 lookup;
-- perform NO authority calculation;
-- render separate bilingual heading `งานรอฉันอนุมัติ / My Approval Tasks`;
-- show truthful pending count;
-- render a simple deterministic list/table using safe DOM APIs / `textContent` for record-derived text;
-- support empty state;
-- support a safe load-error state supplied by main orchestration.
-
-Useful display fields may be limited to Fiscal Year, Employee_Code/Employee_Name, Status, Record_Key and record id.
-Do not add a role selector or employee selector.
-
-A record link may point to normal App794 detail URL, but this WP does **not** authorize cross-employee Detail access. Gate 2 must be accepted before this source can be considered deploy-ready.
-
-### D. Approval-query failure must not break My MBO
-
-If Dedicated approval-task fetch throws/fails:
-- fail closed for approval section;
-- show no actionable task from the failed fetch;
-- render bilingual error/empty-safe state;
-- preserve already-rendered My MBO.
-
-No App795/static fallback.
-
-### E. No duplicate authority logic
-
-Use accepted `MboApprovalTaskService.fetchApprovalTasks()` directly.
-Do not reimplement `Assignee in (LOGINUSER())` or `STATUS_ASSIGNEE` validation in main/UI.
-
-## 3. Focused integration test only
-
-Modify only `tests/employee-main-mbo-app-integration.test.js` and prove:
-1. DEDICATED `vassana` Index still resolves bound Employee_Code and renders My MBO;
-2. DEDICATED Index triggers App794 query with `Assignee in (LOGINUSER())` through accepted service;
-3. exact `Assignee.value[].code === 'vassana'` task appears with truthful count;
-4. mismatching Assignee is not rendered/actionable;
-5. SHARED renders existing My MBO, performs zero approval query and has no approval section;
-6. Dedicated approval fetch error preserves My MBO and exposes no actionable task;
-7. approval Home path introduces no App795 query;
-8. valid DEDICATED Index introduces no MBO login gate call.
-
-Run only:
+## 4. Run only
 
 ```text
 node --test tests/employee-main-mbo-app-integration.test.js
@@ -126,52 +81,38 @@ git diff --check
 
 Do NOT run any other test.
 
-## 4. Explicitly forbidden
+## 5. Explicitly forbidden
 
 ```text
-MODIFY src/services/mbo-approval-task-service.js = NO
-MODIFY tests/mbo-approval-task-service.test.js   = NO
-MODIFY src/ui/employee-self-index-ui.js          = NO
-MODIFY src/ui/employee-part-a-ui.js              = NO
-MODIFY src/ui/employee-visibility.js             = NO
-MODIFY routing/identity/auth/session services    = NO
-MODIFY project-docs/**                           = NO
-MODIFY dist/**                                   = NO
+SOURCE IMPLEMENTATION CHANGE                     = NO
+PROJECT-DOC CHANGE BY EXECUTOR                   = NO
+DIST CHANGE                                      = NO
 CROSS_EMPLOYEE_DETAIL_AUTHORITY                  = NO
 PROCESS_PROCEED_REVALIDATION                     = NO
 npm test                                         = NO
 npm run ui:build                                 = NO
-EVIDENCE DOC                                     = NO
 LIVE KINTONE GET                                 = NO
 LIVE KINTONE WRITE                               = NO
 APP53 ACCESS                                     = NO
 ACL/GROUP/DEPLOY                                 = NO
 ```
 
-Do not refactor adjacent code or change workflow/routing semantics. Do not claim deploy readiness after this WP.
-
-## 5. Stop conditions
-
-STOP without expanding scope if:
-- Home integration cannot fit the 3 allowed files;
-- My MBO would need redesign;
-- cross-employee Detail changes are required;
-- Process handler changes appear necessary;
-- an unrelated test/file needs modification.
+No Live Kintone authorization exists.
 
 ## 6. Finish
 
-If focused test + `git diff --check` pass:
-- commit + push one focused commit;
+If the focused test and `git diff --check` pass:
+- commit + push one focused correction;
 - STOP immediately.
 
 Final executor response only:
 
 ```text
 COMMIT_SHA = ...
-CHANGED_FILES = 3 exact files
+CHANGED_FILES = tests/employee-main-mbo-app-integration.test.js ONLY
 FOCUSED_TEST = PASS/FAIL + count
 GIT_DIFF_CHECK = PASS/FAIL
+SOURCE_IMPLEMENTATION_CHANGED = NO
 FULL_TEST_RUN = NO
 BUILD_RUN = NO
 LIVE_KINTONE_OPERATIONS = 0

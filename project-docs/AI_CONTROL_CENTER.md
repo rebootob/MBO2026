@@ -1,17 +1,17 @@
 # MBO2026 — AI CONTROL CENTER
 
-> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
-> Repository: `rebootob/MBO2026`  
-> Branch: `ai/antigravity-wp002c`  
-> Control Plane: ChatGPT  
-> Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-08-30 20:45 ICT — OPERATIONAL DOC SYNC / HOME INDEX INTEGRATION R1 OPEN
+> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.
+> Repository: `rebootob/MBO2026`
+> Branch: `ai/antigravity-wp002c`
+> Control Plane: ChatGPT
+> Execution Plane: Antigravity only for minimum necessary execution
+> Updated: 2026-08-30 — D1 HOME INDEX GATE 1 INDEPENDENT REVIEW = CORRECTIVE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS after build + 1024/1024 regression. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Current gate = Home Index integration only. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 executor candidate `cb2fae671e610924e7143806944b3dcdf527f2f0` reviewed CORRECTIVE for incomplete My MBO test evidence only; implementation candidate not rejected. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -26,7 +26,7 @@ CHATGPT = PLAN / ARCHITECT / REVIEW / CONTROL DOCS
 ANTIGRAVITY = MINIMUM NECESSARY SOURCE/RUNTIME/KINTONE EXECUTION ONLY
 ```
 
-No broad scans, broad reports, full tests, build, live reads/writes or deploy unless the exact current gate requires them.
+Do not spend Antigravity credit on review, repository archaeology, broad reports, document maintenance, or work ChatGPT can do directly. No broad tests/build/live operations unless the exact current gate requires them.
 
 ## 3. Accepted App794 Live baseline
 
@@ -56,7 +56,7 @@ LATEST_ACCEPTED_FULL_REGRESSION = 1024/1024 PASS
 LIVE_DEPLOY_READY = NO
 ```
 
-Dedicated = native Kintone principal -> exact active App53 mapping -> canonical Employee_Code -> Employee-Self, no second MBO login.  
+Dedicated = native Kintone principal -> exact active App53 mapping -> canonical Employee_Code -> Employee-Self, no second MBO login.
 Shared = Employee_Code + App801 MBO password/session.
 
 ## 5. App53 dedicated mapping state
@@ -83,19 +83,13 @@ For own MBO only, remove the self appraiser before workflow snapshot, preserve r
 
 Confirmed Natta example: `TMG1|Marketing natta -> uchida` becomes `uchida / M1_ONLY` for Natta's own MBO only.
 
-## 7. My Approval Tasks authority — PASS foundation
-
-Runtime READ-ONLY proof established:
+## 7. My Approval Tasks authority — accepted foundation
 
 ```text
 CURRENT_ASSIGNEE_FIELD = Assignee
 CURRENT_ASSIGNEE_TYPE  = STATUS_ASSIGNEE
 STATUS_FIELD           = Status
-```
 
-Canonical authority:
-
-```text
 LIST = DEDICATED + Assignee in (LOGINUSER()) + exact returned Assignee.value[].code
 OPEN/ACTION = fresh App794 GET + STATUS_ASSIGNEE + exact current dedicated user code
 SHARED_APPROVER_AUTHORITY = DENIED
@@ -103,36 +97,40 @@ SHARED_APPROVER_AUTHORITY = DENIED
 
 Never authorize from App795 static membership, `Manager_User`, `GM_User`, `First_Manager_User`, caller role strings, UI visibility or Employee-Self ownership.
 
-Accepted service corrective commit:
-`5ac5ede6e40a1462f0398ba8740330742041e3bf`.
-
-Service contract PASS:
-- direct `getRecord(appId,id) -> record` seam;
-- exactly one fresh GET per revalidation;
-- no `getRecords` fallback for revalidation;
-- every public authority path enforces Dedicated context;
-- exact/case-sensitive Assignee code.
+Accepted service corrective commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 
 ## 8. Integration split — mandatory
 
-Inventory proved current detail and process seams must remain separate:
-
 ```text
-GATE 1 = HOME INDEX INTEGRATION ONLY — OPEN
+GATE 1 = HOME INDEX INTEGRATION ONLY — CORRECTIVE
 GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PENDING
 GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
 ```
 
-Gate 1 alone is NOT deploy-ready.
+Gate 1 executor candidate:
+
+```text
+COMMIT = cb2fae671e610924e7143806944b3dcdf527f2f0
+SCOPE = 3 exact allowed files only
+SOURCE_REVIEW = broadly conformant to Gate 1 contract
+INDEPENDENT_DECISION = CORRECTIVE
+```
+
+Review finding: the focused integration test does not directly prove all required `My MBO` preservation/rendering assertions. Specifically, requirement 1 checks Dedicated context but not actual My MBO rendering; requirement 5 checks no approval section/query for Shared but not actual My MBO rendering; requirement 6 checks the approval error state but not that My MBO remains rendered. Therefore Gate 1 is not independently accepted yet.
+
+This is a test-evidence corrective only. Do not reopen or refactor the accepted implementation unless the corrected focused test exposes a real defect.
+
+Gate 1 alone is not deploy-ready even after acceptance; Gate 2 and Gate 3 remain separate pending gates.
 
 ## 9. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 MY APPROVAL TASKS — LEAN HOME INDEX INTEGRATION R1
-TASK_STATE  = OPEN / READY FOR ANTIGRAVITY EXECUTION
-EXECUTOR_COMMIT = NONE AT DOCUMENT-SYNC CHECKPOINT
+ACTIVE_TASK = D1 MY APPROVAL TASKS — GATE 1 TEST EVIDENCE CORRECTIVE R1
+TASK_STATE  = CORRECTIVE / READY FOR MINIMUM ANTIGRAVITY EXECUTION
+REVIEW_TARGET = cb2fae671e610924e7143806944b3dcdf527f2f0
 OWNER       = ANTIGRAVITY
-ALLOWED     = 3 exact files
+ALLOWED     = tests/employee-main-mbo-app-integration.test.js ONLY
+SOURCE_IMPLEMENTATION_CHANGE = NO
 FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
 BUILD       = NO
 FULL_TEST   = NO
@@ -140,7 +138,7 @@ LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact contract is in `AI_ACTIVE_TASK.md`. Always re-fetch HEAD before deciding whether it is still unexecuted.
+Exact corrective contract is in `AI_ACTIVE_TASK.md`.
 
 ## 10. App800 Reset MBO Password
 
@@ -164,11 +162,6 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-## 12. Handoff state
+## 12. Exact next action
 
-Operational documents are synchronized for new-chat continuation. New chats must use:
-- `CHAT_HANDOFF.md`
-- `NEW_CHAT_BOOTSTRAP_PROMPT.md`
-- current HEAD + this Control Center + Active Task.
-
-Exact next action if Active Task is still open/unexecuted: Antigravity performs Gate 1 only, focused test + `git diff --check`, one commit/push, STOP; ChatGPT then independently reviews.
+Antigravity performs only the one-file Gate 1 test-evidence corrective in `AI_ACTIVE_TASK.md`, runs only the focused test plus `git diff --check`, commits/pushes one focused correction, and stops. ChatGPT then independently reviews that correction.
