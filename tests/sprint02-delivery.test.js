@@ -21,7 +21,11 @@ import {
   applyHrccFilters,
   createHrccRuntime
 } from '../src/ui/hr-control-center.js';
-import { buildClassicHrccBundle } from '../scripts/kintone/deploy-delivery-sprint02.js';
+import {
+  buildClassicHrccBundle,
+  validateHrccBundleArtifacts,
+  assertApp800LeastPrivilegeAcl
+} from '../scripts/kintone/deploy-delivery-sprint02.js';
 import { getCanonicalBaselineMasterConfigs, PROFILE_CODES } from '../src/profiles/scoring-config-master.js';
 
 test('Sprint 02: getSandboxAppIds recognizes all 6 sandbox app IDs when present', () => {
@@ -111,12 +115,12 @@ test('Sprint 02R: HRCC query builder enforces strict whitelist security and fail
 
 
 
-test('Sprint 02R2: Classic HRCC bundle generator creates valid browser JS without import/export keywords', () => {
-  const source = fs.readFileSync('src/ui/hr-control-center.js', 'utf8');
-  const bundle = buildClassicHrccBundle(source, DEFAULT_APP_IDS);
-  assert.equal(/\bimport\b/.test(bundle), false, 'Bundle must not contain import keyword');
-  assert.equal(/\bexport\b/.test(bundle), false, 'Bundle must not contain export keyword');
-  assert.equal(bundle.includes('DEFAULT_APP_IDS = Object.freeze({"mboV2AppId":794'), true);
+test('Sprint 02R2: Classic HRCC bundle deploy validator consumes canonical dist artifacts without import/export statements', () => {
+  const { jsCode } = validateHrccBundleArtifacts();
+  assert.equal(/\bimport\b/.test(jsCode), false, 'Bundle must not contain import keyword');
+  assert.equal(/\bexport\b/.test(jsCode), false, 'Bundle must not contain export keyword');
+  assert.equal(jsCode.includes('MboKintoneAuthAdapter'), true, 'Bundle must include MboKintoneAuthAdapter');
+  assert.equal(jsCode.includes('resetMboPassword'), true, 'Bundle must include resetMboPassword');
 });
 
 test('Sprint 02R2: fetchAllApp794Records executes bounded GET pagination up to limit', async () => {
@@ -203,14 +207,11 @@ test('Sprint 02R2: renderHrControlCenterHtml handles denied health sources safel
   assert.equal(html.includes('App 795 (Routing Master) is unavailable'), true);
 });
 
-test('Sprint 02R3: Classic HRCC bundle generator creates exactly 1 DEFAULT_APP_IDS declaration and passes new Function syntax parse', () => {
-  const source = fs.readFileSync('src/ui/hr-control-center.js', 'utf8');
-  const bundle = buildClassicHrccBundle(source, DEFAULT_APP_IDS);
-  const matches = bundle.match(/const DEFAULT_APP_IDS/g);
-  assert.equal(matches !== null && matches.length === 1, true, 'Bundle must contain exactly 1 DEFAULT_APP_IDS declaration');
+test('Sprint 02R3: Classic HRCC bundle deploy validator passes new Function syntax parse check on canonical dist artifact', () => {
+  const { jsCode } = validateHrccBundleArtifacts();
   assert.doesNotThrow(() => {
-    new Function(bundle);
-  }, 'Bundle must pass real JavaScript syntax compilation/parse check');
+    new Function(jsCode);
+  }, 'Canonical generated bundle must pass real JavaScript syntax compilation/parse check');
 });
 
 test('Sprint 02R3: fetchHealthCount executes exact business status queries for 795, 796, 797, 798', async () => {
@@ -421,4 +422,89 @@ test('Sprint 03B-R2: executeRoutingSeed fails closed if live schema required=tru
   };
 
   await assert.rejects(async () => executeRoutingSeed({ overrideTransport: fakeTransport }), /Live schema requires Manager_User\/GM_User fields/);
+});
+
+test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl passes valid CREATOR + HR_ADMIN_GROUP View-only + everyone denied ACL', () => {
+  const validAcl = {
+    rights: [
+      {
+        entity: { type: 'CREATOR', code: 'admin-form' },
+        appEditable: true,
+        recordViewable: true,
+        recordAddable: true,
+        recordEditable: true,
+        recordDeletable: true
+      },
+      {
+        entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' },
+        appEditable: false,
+        recordViewable: true,
+        recordAddable: false,
+        recordEditable: false,
+        recordDeletable: false,
+        recordImportable: false,
+        recordExportable: false
+      },
+      {
+        entity: { type: 'EVERYONE', code: 'everyone' },
+        appEditable: false,
+        recordViewable: false,
+        recordAddable: false,
+        recordEditable: false,
+        recordDeletable: false
+      }
+    ]
+  };
+
+  assert.doesNotThrow(() => {
+    assertApp800LeastPrivilegeAcl(validAcl, 'TEST_VALID_ACL');
+  }, 'Valid App800 least-privilege ACL must pass');
+});
+
+test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl fails closed on HR group privilege elevation', () => {
+  const elevatedHrAcl = {
+    rights: [
+      { entity: { type: 'CREATOR', code: 'admin-form' } },
+      {
+        entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' },
+        recordViewable: true,
+        recordAddable: true // Privilege elevation!
+      },
+      { entity: { type: 'EVERYONE', code: 'everyone' } }
+    ]
+  };
+
+  assert.throws(() => {
+    assertApp800LeastPrivilegeAcl(elevatedHrAcl, 'TEST_ELEVATED_HR');
+  }, /privilege elevation detected/);
+});
+
+test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl fails closed when HR_ADMIN_GROUP is missing', () => {
+  const missingHrAcl = {
+    rights: [
+      { entity: { type: 'CREATOR', code: 'admin-form' } },
+      { entity: { type: 'EVERYONE', code: 'everyone' } }
+    ]
+  };
+
+  assert.throws(() => {
+    assertApp800LeastPrivilegeAcl(missingHrAcl, 'TEST_MISSING_HR');
+  }, /HR_ADMIN_GROUP permission entry missing/);
+});
+
+test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl fails closed when everyone group has view/edit privileges', () => {
+  const everyonePrivilegedAcl = {
+    rights: [
+      { entity: { type: 'CREATOR', code: 'admin-form' } },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, recordViewable: true },
+      {
+        entity: { type: 'EVERYONE', code: 'everyone' },
+        recordViewable: true // Security violation!
+      }
+    ]
+  };
+
+  assert.throws(() => {
+    assertApp800LeastPrivilegeAcl(everyonePrivilegedAcl, 'TEST_EVERYONE_PRIVILEGED');
+  }, /everyone group must have 0 application privileges/);
 });

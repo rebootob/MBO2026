@@ -2,57 +2,94 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// Helper to build Classic Kintone Browser Bundle from src/ui/hr-control-center.js
-export function buildClassicHrccBundle(sourceText, registry = {}) {
-  let code = sourceText;
+// Helper to validate canonical App800 generated dist artifacts
+export function validateHrccBundleArtifacts(opts = {}) {
+  const jsPath = opts.jsPath || path.resolve('dist/hr-control-center-bundle.js');
+  const cssPath = opts.cssPath || path.resolve('dist/hr-control-center.css');
 
-  const registryObjString = JSON.stringify({
-    mboV2AppId: registry.mboV2AppId || 794,
-    routingMasterAppId: registry.routingMasterAppId || 795,
-    scoringConfigMasterAppId: registry.scoringConfigMasterAppId || 796,
-    hoshinMasterAppId: registry.hoshinMasterAppId || 797,
-    revisionArchiveAppId: registry.revisionArchiveAppId || 798,
-    hrControlCenterAppId: registry.hrControlCenterAppId || 800
-  });
-
-  // Replace source's export const DEFAULT_APP_IDS declaration directly
-  const defaultAppIdsRegex = /export\s+const\s+DEFAULT_APP_IDS\s+=\s+Object\.freeze\([\s\S]*?\);/;
-  if (defaultAppIdsRegex.test(code)) {
-    code = code.replace(defaultAppIdsRegex, `const DEFAULT_APP_IDS = Object.freeze(${registryObjString});`);
-  } else {
-    code = `const DEFAULT_APP_IDS = Object.freeze(${registryObjString});\n` + code;
+  if (!fs.existsSync(jsPath)) {
+    throw new Error(`CANONICAL ARTIFACT MISSING: ${jsPath} does not exist. Run node scripts/kintone/build-hrcc-ui.js first.`);
+  }
+  if (!fs.existsSync(cssPath)) {
+    throw new Error(`CANONICAL ARTIFACT MISSING: ${cssPath} does not exist. Run node scripts/kintone/build-hrcc-ui.js first.`);
   }
 
-  // Remove remaining ES-module exports
-  code = code.replace(/export\s+const\s+/g, 'const ');
-  code = code.replace(/export\s+function\s+/g, 'function ');
-  code = code.replace(/export\s+async\s+function\s+/g, 'async function ');
+  const jsCode = fs.readFileSync(jsPath, 'utf8');
+  const cssContent = fs.readFileSync(cssPath);
 
-  // Wrap in IIFE
-  const bundle = `(function() {
-  'use strict';
-${code}
-})();`;
-
-  // Verify no import/export tokens remain
-  if (/\bimport\b/.test(bundle) || /\bexport\b/.test(bundle)) {
-    throw new Error('BUNDLE BUILD ERROR: Classic bundle contains forbidden import/export statements.');
+  if (!jsCode || jsCode.trim().length === 0) {
+    throw new Error(`CANONICAL ARTIFACT INVALID: ${jsPath} is empty.`);
+  }
+  if (!cssContent || cssContent.length === 0) {
+    throw new Error(`CANONICAL ARTIFACT INVALID: ${cssPath} is empty.`);
   }
 
-  // Verify exact declaration count of DEFAULT_APP_IDS is 1
-  const declCount = (bundle.match(/const DEFAULT_APP_IDS/g) || []).length;
-  if (declCount !== 1) {
-    throw new Error(`BUNDLE BUILD ERROR: Expected exactly 1 DEFAULT_APP_IDS declaration, found ${declCount}`);
+  if (/\bimport\b/.test(jsCode) || /\bexport\b/.test(jsCode)) {
+    throw new Error('CANONICAL ARTIFACT INVALID: Generated JS bundle contains forbidden import/export statements.');
   }
 
-  // Real JS syntax parse check before returning
+  if (!jsCode.includes('MboKintoneAuthAdapter')) {
+    throw new Error('CANONICAL ARTIFACT INVALID: Generated JS bundle is missing MboKintoneAuthAdapter implementation.');
+  }
+
+  if (!jsCode.includes('resetMboPassword')) {
+    throw new Error('CANONICAL ARTIFACT INVALID: Generated JS bundle is missing resetMboPassword implementation.');
+  }
+
   try {
-    new Function(bundle);
+    new Function(jsCode);
   } catch (err) {
-    throw new Error(`BUNDLE SYNTAX PARSE ERROR: ${err.message}`);
+    throw new Error(`CANONICAL ARTIFACT SYNTAX ERROR: ${err.message}`);
   }
 
-  return bundle;
+  return { jsCode, cssContent, jsPath, cssPath };
+}
+
+// Deprecated/Compatibility loader: Returns canonical valid bundle
+export function buildClassicHrccBundle(sourceText, registry = {}) {
+  if (typeof sourceText === 'string' && !/\bimport\b/.test(sourceText) && !/\bexport\b/.test(sourceText) && sourceText.includes('MboKintoneAuthAdapter')) {
+    new Function(sourceText);
+    return sourceText;
+  }
+  const { jsCode } = validateHrccBundleArtifacts();
+  return jsCode;
+}
+
+// Least-Privilege App800 ACL Validation Helper
+export function assertApp800LeastPrivilegeAcl(aclResponse, contextName = 'APP800_ACL_CHECK') {
+  if (!aclResponse || !Array.isArray(aclResponse.rights)) {
+    throw new Error(`${contextName} FAILED: Invalid ACL response payload.`);
+  }
+
+  const rights = aclResponse.rights;
+
+  // 1. Technical CREATOR / admin authority check
+  const creatorRight = rights.find(r => r.entity?.type === 'CREATOR' || r.entity?.code === 'admin-form');
+  if (!creatorRight) {
+    throw new Error(`${contextName} FAILED: Technical CREATOR permission entry missing.`);
+  }
+
+  // 2. HR_ADMIN_GROUP check
+  const hrRight = rights.find(r => r.entity?.code === 'HR_ADMIN_GROUP');
+  if (!hrRight) {
+    throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP permission entry missing from App800 ACL.`);
+  }
+
+  if (hrRight.recordViewable !== true) {
+    throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP must have View permission (recordViewable = true).`);
+  }
+
+  if (hrRight.appEditable || hrRight.recordAddable || hrRight.recordEditable || hrRight.recordDeletable || hrRight.recordImportable || hrRight.recordExportable) {
+    throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP permissions must be View-only (privilege elevation detected).`);
+  }
+
+  // 3. Everyone check -> all rights must be false
+  const everyoneRight = rights.find(r => r.entity?.type === 'EVERYONE' || r.entity?.code === 'everyone');
+  if (everyoneRight) {
+    if (everyoneRight.appEditable || everyoneRight.recordViewable || everyoneRight.recordAddable || everyoneRight.recordEditable || everyoneRight.recordDeletable || everyoneRight.recordImportable || everyoneRight.recordExportable) {
+      throw new Error(`${contextName} FAILED: everyone group must have 0 application privileges (denied).`);
+    }
+  }
 }
 
 export async function executeDeploy() {
@@ -118,9 +155,8 @@ export async function executeDeploy() {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  const rawSource = fs.readFileSync('src/ui/hr-control-center.js', 'utf8');
-  const classicBundle = buildClassicHrccBundle(rawSource, sandboxRegistry);
-  const cssContent = fs.readFileSync('src/styles/hr-control-center.css');
+  // Load canonical built artifacts directly (no raw-source regex bundle)
+  const { jsCode: classicBundle, cssContent } = validateHrccBundleArtifacts();
 
   // Validate exact app name
   const liveSettingsBefore = await appFetch(`/k/v1/app/settings.json?app=${hrccAppId}`);
@@ -168,13 +204,13 @@ export async function executeDeploy() {
   const liveAclAfter = await appFetch(`/k/v1/app/acl.json?app=${hrccAppId}`);
   const liveCustomizeAfter = await appFetch(`/k/v1/app/customize.json?app=${hrccAppId}`);
 
-  m.assertCreatorOnlyAcl(liveAclAfter, 'HRCC_LIVE_ACL_CHECK');
+  assertApp800LeastPrivilegeAcl(liveAclAfter, 'HRCC_LIVE_ACL_CHECK');
 
   if (!liveCustomizeAfter.desktop?.js?.some(j => j.type === 'FILE') || !liveCustomizeAfter.desktop?.css?.some(c => c.type === 'FILE')) {
     throw new Error('DEPLOYMENT VERIFICATION FAILED: Live customization metadata is missing JS/CSS FILE entries.');
   }
 
-  console.log(`SUCCESS: App ${hrccAppId} ("${liveSettingsAfter.name}") deployed live with Classic JS Bundle! ACL=CREATOR_ONLY.`);
+  console.log(`SUCCESS: App ${hrccAppId} ("${liveSettingsAfter.name}") deployed live with Classic JS Bundle! ACL=HR_ADMIN_VIEW_ONLY.`);
 }
 
 // Auto-run if executed directly as script CLI
