@@ -1,188 +1,157 @@
 # MBO2026 — AI CONTROL CENTER
 
-> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.
-> Repository: `rebootob/MBO2026`
-> Branch: `ai/antigravity-wp002c`
-> Control Plane: ChatGPT
-> Execution Plane: Antigravity only for minimum necessary source/runtime execution
-> Updated: 2026-08-30 — APPROVAL AUTHORITY SERVICE R1 PASS / HOME INDEX INTEGRATION R1 OPEN
+> Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
+> Repository: `rebootob/MBO2026`  
+> Branch: `ai/antigravity-wp002c`  
+> Control Plane: ChatGPT  
+> Execution Plane: Antigravity only for minimum necessary execution  
+> Updated: 2026-08-30 20:45 ICT — OPERATIONAL DOC SYNC / HOME INDEX INTEGRATION R1 OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source ACCEPTED after build + 1024/1024 regression. Native current-assignee proof PASS. Approval Authority Service R1 PASS. Next gate is one small Home Index integration only; cross-employee Detail and Process revalidation remain separate later gates. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS after build + 1024/1024 regression. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Current gate = Home Index integration only. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
-| D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling accepted; live remains prior MVP. |
-| D5 | 🟠 Copy own previous MBO IN PROGRESS |
-| D6 | 🔴 Integrated E2E / Security / Regression pending |
+| D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
+| D5 | 🟠 Copy Own Previous MBO IN PROGRESS |
+| D6 | 🔴 Integrated E2E / Security / Regression PENDING |
 | D7 | ✅ Admin Support Center source functionality CLOSED |
 
-## 2. Lean Antigravity Rule — MANDATORY
+## 2. Lean execution rule
 
 ```text
-ANTIGRAVITY = MINIMUM NECESSARY SOURCE/RUNTIME EXECUTION ONLY
-CHATGPT     = PLAN / REVIEW / CONTROL DOCS / EVIDENCE INTERPRETATION
+CHATGPT = PLAN / ARCHITECT / REVIEW / CONTROL DOCS
+ANTIGRAVITY = MINIMUM NECESSARY SOURCE/RUNTIME/KINTONE EXECUTION ONLY
 ```
 
-Ordinary corrective/foundation work = exact files -> smallest focused test -> diff check -> one commit/push -> STOP.
-No broad scan, full suite, build, evidence document, live Kintone, or deploy unless a later milestone explicitly requires it.
+No broad scans, broad reports, full tests, build, live reads/writes or deploy unless the exact current gate requires them.
 
-## 3. Hybrid Employee-Self Runtime Source — ACCEPTED
+## 3. Accepted App794 Live baseline
 
 ```text
-HYBRID_IDENTITY            = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-HYBRID_CORE_SOURCE         = PASS
+LIVE_REVISION          = 60
+PREVIEW_REVISION       = 60
+DEPLOYED_SOURCE_COMMIT = 1ed342ad137a4a364496a28d29bdffd24a99b511
+LIVE_SCOPE             = ALL
+DESKTOP_JS/CSS         = 1 / 1
+MOBILE_JS/CSS          = 0 / 0
+LIVE_JS_BLOB           = 115a08ace32bdf850cb5eebf25b953d1803114d0
+LIVE_CSS_BLOB          = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+TECHNICAL_READBACK     = PASS WITH AUDIT CAVEAT
+USER_RUNTIME_UAT       = PASS
+```
+
+Rev60 fatal-Create clean exit is accepted and must not be reopened without regression evidence.
+
+## 4. Hybrid Identity — accepted source state
+
+```text
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+HYBRID_CORE_SOURCE_R1 = PASS
 HYBRID_RUNTIME_ENTRY_LOGIC = PASS
-SOURCE_ACCEPTED            = YES
-LIVE_DEPLOY_READY          = NO
+LATEST_ACCEPTED_BUILD = PASS
+LATEST_ACCEPTED_FULL_REGRESSION = 1024/1024 PASS
+LIVE_DEPLOY_READY = NO
 ```
 
-Accepted milestone evidence:
+Dedicated = native Kintone principal -> exact active App53 mapping -> canonical Employee_Code -> Employee-Self, no second MBO login.  
+Shared = Employee_Code + App801 MBO password/session.
+
+## 5. App53 dedicated mapping state
+
 ```text
-npm run ui:build          = PASS
-npm test                  = PASS (1024/1024)
-git diff --check          = PASS
-FINAL_WORKTREE_CLEAN      = YES
-LIVE_KINTONE_OPERATIONS   = 0
-APP53_PRODUCTION_TOUCHED  = NO
+APP53_ENVIRONMENT = PRODUCTION
+APP53_DEFAULT_MODE = READ_ONLY
+APP53_MAPPING_AUDIT = COMPLETED
+MBO_Kintone_User_FIELD_DESIGN = CONFIRMED USER_SELECT
+MBO_Kintone_User_LIVE_FIELD_CREATED = NO
+VASSANA = vassana -> App53 #456 -> emp_text 0044 -> ACTIVE
+NATTA = natta -> App53 #578 -> emp_text BLANK -> canonical Employee_Code unresolved -> FAIL CLOSED
 ```
 
-## 4. My Approval Tasks — Native Current-Assignee Contract
+Do not create/populate the mapping field or correct Natta without separate exact production authorization.
 
-Runtime READ-ONLY proof on App794 established:
+## 6. Own-MBO self-appraiser rule
+
+```text
+OWN_MBO_SELF_APPROVER_ELISION = APPROVED
+```
+
+For own MBO only, remove the self appraiser before workflow snapshot, preserve remaining order/rules, recalculate topology, never autoapprove or fabricate history, never rewrite App795. If no non-self appraiser remains, fail closed.
+
+Confirmed Natta example: `TMG1|Marketing natta -> uchida` becomes `uchida / M1_ONLY` for Natta's own MBO only.
+
+## 7. My Approval Tasks authority — PASS foundation
+
+Runtime READ-ONLY proof established:
+
 ```text
 CURRENT_ASSIGNEE_FIELD = Assignee
 CURRENT_ASSIGNEE_TYPE  = STATUS_ASSIGNEE
 STATUS_FIELD           = Status
-STATUS_TYPE            = STATUS
 ```
 
 Canonical authority:
-```text
-LIST
-= DEDICATED native principal
-AND Assignee in (LOGINUSER())
-AND returned Assignee.value contains exact current Kintone user code
-
-OPEN / ACTION
-= fresh App794 GET
-AND Assignee.type == STATUS_ASSIGNEE
-AND Assignee.value contains exact current dedicated Kintone user code
-```
-
-Never use as authority:
-```text
-App795 static membership
-Manager_User / GM_User / First_Manager_User snapshots alone
-caller role strings
-UI visibility
-Employee-Self ownership
-```
 
 ```text
+LIST = DEDICATED + Assignee in (LOGINUSER()) + exact returned Assignee.value[].code
+OPEN/ACTION = fresh App794 GET + STATUS_ASSIGNEE + exact current dedicated user code
 SHARED_APPROVER_AUTHORITY = DENIED
 ```
 
-## 5. Approval Authority Service R1 — PASS
+Never authorize from App795 static membership, `Manager_User`, `GM_User`, `First_Manager_User`, caller role strings, UI visibility or Employee-Self ownership.
 
-Accepted executor corrective commit:
-```text
-5ac5ede6e40a1462f0398ba8740330742041e3bf
-```
+Accepted service corrective commit:
+`5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 
-Independent review:
-```text
-SCOPE                         = PASS (exactly service + focused test)
-GET_RECORD_CANONICAL_SEAM     = PASS (record object directly)
-GET_RECORD_CALL_COUNT         = exactly once per revalidation
-GET_RECORDS_REVALIDATE_FALLBACK = REMOVED
-PUBLIC_DEDICATED_GATE         = PASS
-ASSIGNEE_EXACT_CASE_SENSITIVE = PASS
-SHARED_APPROVER_AUTHORITY     = DENIED
-STATIC_SNAPSHOT_FALLBACK      = NONE
-```
+Service contract PASS:
+- direct `getRecord(appId,id) -> record` seam;
+- exactly one fresh GET per revalidation;
+- no `getRecords` fallback for revalidation;
+- every public authority path enforces Dedicated context;
+- exact/case-sensitive Assignee code.
 
-Files:
-```text
-src/services/mbo-approval-task-service.js
-tests/mbo-approval-task-service.test.js
-```
+## 8. Integration split — mandatory
 
-The test source was independently inspected and covers the corrective contract. Local executor console output is not persisted in Git, so no unobserved test count is claimed here.
-
-## 6. My Approval Tasks Integration Inventory — COMPLETE
-
-Current source seams:
-
-### Home / Index
-`src/main-mbo-app.js` resolves Hybrid context, then calls `EmployeeSelfIndexUI`.
-`src/ui/employee-self-index-ui.js` is the canonical `My MBO` owner and must stay My-MBO-only.
-
-Smallest Home seam:
-```text
-resolved context
--> render existing My MBO unchanged
--> if mode == DEDICATED:
-     MboApprovalTaskService.fetchApprovalTasks(...)
-     ApproverTaskIndexUI.render(...)
--> if mode == SHARED:
-     no approval query
-     no approval section
-```
-
-### Cross-employee Detail
-Current `setupRecordUiWithAuth()` blocks every existing record whose `Employee_Code` differs from the bound Employee-Self code. Therefore assigned Approver detail requires a separate later authority path. It must not be silently bypassed in the Home WP.
-
-### Process Action
-Current `app.record.detail.process.proceed` validates topology/business rules only. It does not fresh-revalidate native `Assignee`. This is a separate later gate and must become fail-closed before an Approver action is considered complete.
-
-### Visibility
-`employee-visibility.js` uses requester/static appraiser snapshot fields for UI visibility. This may help presentation but is NOT approval authority. Native `Assignee` remains the authority source.
-
-## 7. Implementation Split — MANDATORY
-
-To minimize Antigravity usage:
+Inventory proved current detail and process seams must remain separate:
 
 ```text
-GATE 1 = HOME INDEX INTEGRATION ONLY
-GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY
-GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION
+GATE 1 = HOME INDEX INTEGRATION ONLY — OPEN
+GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PENDING
+GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
 ```
 
-Do not combine these gates unless a later independent review proves it is smaller/safer.
-No source from Gate 1 is deploy-ready by itself.
-
-## 8. App53 Production Protection
-
-```text
-APP53_ENVIRONMENT       = PRODUCTION
-APP53_DEFAULT_MODE      = READ_ONLY
-APP53_SCHEMA_WRITE_AUTH = NONE
-APP53_RECORD_WRITE_AUTH = NONE
-APP53_BULK_WRITE_AUTH   = NONE
-```
-
-Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
-Current Home integration uses mocks/fixtures only and requires no App53 live access.
+Gate 1 alone is NOT deploy-ready.
 
 ## 9. Current Active Task
 
 ```text
 ACTIVE_TASK = D1 MY APPROVAL TASKS — LEAN HOME INDEX INTEGRATION R1
+TASK_STATE  = OPEN / READY FOR ANTIGRAVITY EXECUTION
+EXECUTOR_COMMIT = NONE AT DOCUMENT-SYNC CHECKPOINT
 OWNER       = ANTIGRAVITY
 ALLOWED     = 3 exact files
-FOCUSED_TEST= employee-main-mbo-app-integration.test.js only
+FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
 BUILD       = NO
 FULL_TEST   = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact contract is in `AI_ACTIVE_TASK.md`.
+Exact contract is in `AI_ACTIVE_TASK.md`. Always re-fetch HEAD before deciding whether it is still unexecuted.
 
-## 10. Authorization Ledger
+## 10. App800 Reset MBO Password
+
+- Core reset semantics accepted.
+- HR/admin native authority readiness accepted.
+- App800 Reset UI source/tooling accepted.
+- Live App800 remains prior read-only/MVP customization.
+- Reset MBO Password = App801-backed MBO credential only, never native Kintone password.
+- No active deploy or reset-execution authorization.
+
+## 11. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -195,6 +164,11 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-## 11. Next Gate
+## 12. Handoff state
 
-Antigravity implements only Home Index integration, runs one focused integration test + `git diff --check`, commits/pushes once, then STOP. ChatGPT independently reviews before any Detail/Process integration is opened.
+Operational documents are synchronized for new-chat continuation. New chats must use:
+- `CHAT_HANDOFF.md`
+- `NEW_CHAT_BOOTSTRAP_PROMPT.md`
+- current HEAD + this Control Center + Active Task.
+
+Exact next action if Active Task is still open/unexecuted: Antigravity performs Gate 1 only, focused test + `git diff --check`, one commit/push, STOP; ChatGPT then independently reviews.
