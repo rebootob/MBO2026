@@ -474,11 +474,15 @@ if (typeof kintone !== 'undefined') {
 
   function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, contextOrCode) {
     let isAutoloadingInCreateHandler = false;
-    const context = (typeof contextOrCode === 'object' && contextOrCode !== null)
-      ? contextOrCode
-      : { mode: 'SHARED', employeeCode: String(contextOrCode), kintoneUserCode: (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null };
+    if (typeof contextOrCode !== 'object' || contextOrCode === null) {
+      throw new Error('INVALID_EMPLOYEE_SELF_CONTEXT: Valid resolved Employee-Self context object is required.');
+    }
 
-    if (!context || !context.mode || (context.mode !== 'SHARED' && context.mode !== 'DEDICATED')) {
+    const context = contextOrCode;
+    const userCode = typeof context.kintoneUserCode === 'string' ? context.kintoneUserCode : '';
+
+    if (!context.mode || (context.mode !== 'SHARED' && context.mode !== 'DEDICATED') ||
+        !context.employeeCode || !userCode || userCode !== userCode.trim()) {
       throw new Error('INVALID_EMPLOYEE_SELF_CONTEXT: Valid resolved Employee-Self context is required.');
     }
 
@@ -566,7 +570,7 @@ if (typeof kintone !== 'undefined') {
         const empProfile = empLookupRes.employee || empLookupRes;
 
         // Step 2: Routing Profile Resolution & Hybrid Requester / Route Composition
-        const loginUserCode = context.kintoneUserCode || ((typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null);
+        const loginUserCode = context.kintoneUserCode;
         let routeProfile = await RoutingService.resolveRoutingProfile(
           ROUTING_APP_ID,
           empProfile.Employee_Section,

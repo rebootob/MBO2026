@@ -143,6 +143,24 @@ let currentMockUser = { code: 'f1', name: 'Shared F1 User' };
 const mockApiFn = async (url, methodOrParams, optionalParams) => {
   const params = (typeof methodOrParams === 'object' && methodOrParams !== null) ? methodOrParams : optionalParams;
   if (params?.app === 53 || (params?.query && (params.query.includes('emp_text') || params.query.includes('MBO_Kintone_User')))) {
+    if (params?.query && params.query.includes('ambiguous_user')) {
+      return {
+        records: [
+          { $id: { value: '456' }, emp_text: { value: '0044' }, Number_0: { value: '1' }, MBO_Kintone_User: [{ code: 'ambiguous_user' }] },
+          { $id: { value: '457' }, emp_text: { value: '0045' }, Number_0: { value: '1' }, MBO_Kintone_User: [{ code: 'ambiguous_user' }] }
+        ]
+      };
+    }
+    if (params?.query && params.query.includes('invalid_emp_text')) {
+      return {
+        records: [
+          { $id: { value: '458' }, emp_text: { value: 'INVALID_CODE!' }, Number_0: { value: '1' }, MBO_Kintone_User: [{ code: 'invalid_emp_text' }] }
+        ]
+      };
+    }
+    if (params?.query && params.query.includes('unknown_dedicated')) {
+      return { records: [] };
+    }
     if (params?.query && (params.query.includes('vassana') || params.query.includes('0044'))) {
       return {
         records: [{
@@ -562,23 +580,106 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(dedicatedCtx.kintoneUserCode, 'vassana', 'Kintone user code must be vassana');
   assert.equal(requireLoginCalled, false, 'DEDICATED mode must NEVER invoke mboLoginGate.requireLogin()');
 
-  // 4g-1. Finding R1-B & R1-E: DEDICATED missing mapping fails closed with 0 requireLogin calls and NO SHARED fallback
+  // 4g-0. Valid DEDICATED mapping succeeds when mboLoginGate is null
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  setMboLoginGate(null);
+  const dedicatedNullGateHost = createMockElement('div');
+  dedicatedNullGateHost.className = 'gaia-app-wrapper';
+  currentActiveHost = dedicatedNullGateHost;
+  const indexShowHandler = registeredHandlers.get('app.record.index.show');
+  assert.ok(indexShowHandler, 'Registered event handler for app.record.index.show must exist');
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
+  await new Promise(r => setTimeout(r, 0));
+  const nullGateCtx = getCurrentEmployeeSelfContext();
+  assert.ok(nullGateCtx, 'Valid DEDICATED mapping must succeed when mboLoginGate is null');
+  assert.equal(nullGateCtx.mode, 'DEDICATED');
+  assert.equal(nullGateCtx.employeeCode, '0044');
+  assert.equal(nullGateCtx.kintoneUserCode, 'vassana');
+
+  // Restore gate mock with call tracking
+  setMboLoginGate({
+    requireLogin: () => {
+      requireLoginCalled = true;
+      return 'UNEXPECTED_CALL';
+    }
+  });
+
+  // 4g-1. DEDICATED missing mapping fails closed with 0 requireLogin calls
   currentMockUser = { code: 'unknown_dedicated', name: 'Unknown User' };
   requireLoginCalled = false;
   const missingHost = createMockElement('div');
   missingHost.className = 'gaia-app-wrapper';
   currentActiveHost = missingHost;
-  const missingEvent = {
-    type: 'app.record.index.show',
-    appId: 794
-  };
-  const indexShowHandler = registeredHandlers.get('app.record.index.show');
-  assert.ok(indexShowHandler, 'Registered event handler for app.record.index.show must exist');
-  await indexShowHandler(missingEvent);
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
   await new Promise(r => setTimeout(r, 0));
   const missingCtx = getCurrentEmployeeSelfContext();
   assert.equal(missingCtx, null, 'Missing dedicated mapping must clear context (null)');
   assert.equal(requireLoginCalled, false, 'Missing dedicated mapping must NEVER invoke mboLoginGate.requireLogin()');
+
+  // 4g-2. DEDICATED ambiguous mapping (>1 records) fails closed with 0 requireLogin calls
+  currentMockUser = { code: 'ambiguous_user', name: 'Ambiguous User' };
+  requireLoginCalled = false;
+  const ambigHost = createMockElement('div');
+  ambigHost.className = 'gaia-app-wrapper';
+  currentActiveHost = ambigHost;
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
+  await new Promise(r => setTimeout(r, 0));
+  const ambigCtx = getCurrentEmployeeSelfContext();
+  assert.equal(ambigCtx, null, 'Ambiguous dedicated mapping must clear context (null)');
+  assert.equal(requireLoginCalled, false, 'Ambiguous dedicated mapping must NEVER invoke mboLoginGate.requireLogin()');
+
+  // 4g-3. DEDICATED invalid canonical emp_text fails closed with 0 requireLogin calls
+  currentMockUser = { code: 'invalid_emp_text', name: 'Invalid EmpText User' };
+  requireLoginCalled = false;
+  const invalidHost = createMockElement('div');
+  invalidHost.className = 'gaia-app-wrapper';
+  currentActiveHost = invalidHost;
+  await indexShowHandler({ type: 'app.record.index.show', appId: 794 });
+  await new Promise(r => setTimeout(r, 0));
+  const invalidCtx = getCurrentEmployeeSelfContext();
+  assert.equal(invalidCtx, null, 'Invalid canonical emp_text dedicated mapping must clear context (null)');
+  assert.equal(requireLoginCalled, false, 'Invalid canonical emp_text must NEVER invoke mboLoginGate.requireLogin()');
+
+  // 4g-4. Create uses local DEDICATED context and snapshots Requester_User = [{ code: "vassana" }]
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  const dedicatedCreateRecHost = createMockElement('div');
+  currentActiveHost = dedicatedCreateRecHost;
+  const dedicatedCreateRecEvent = {
+    type: 'app.record.create.show',
+    appId: 794,
+    record: {
+      Status: { value: '01 Draft Objective' },
+      Employee_Code: { value: '' },
+      Employee_Name: { value: '' },
+      Employee_Name_TH: { value: '' },
+      Employee_Department: { value: '' },
+      Employee_Section: { value: '' },
+      Employee_Position: { value: '' },
+      Employee_Email: { value: '' },
+      Employee_Start_Date: { value: '' },
+      Fiscal_Year: { value: '' },
+      Record_Key: { value: '' },
+      Requester_User: { value: [] },
+      Manager_Level1_Approvers: { value: [] },
+      Manager_Level1_Approval_Rule: { value: '' },
+      GM_Level1_Approvers: { value: [] },
+      GM_Level1_Approval_Rule: { value: '' },
+      Has_Manager_Level2: { value: '' },
+      Has_GM_Level2: { value: '' },
+      Routing_Topology: { value: '' },
+      First_Manager_User: { value: [] },
+      Manager_User: { value: [] },
+      GM_User: { value: [] },
+      Profile_Code: { value: '' },
+      PartA_Weight: { value: '' },
+      PartB_Weight: { value: '' },
+      Part_A_Scoring_Mode: { value: '' },
+      Competency_Set_Code: { value: '' },
+      Configuration_Hash: { value: '' }
+    }
+  };
+  await recordShowHandler(dedicatedCreateRecEvent);
+  assert.deepEqual(dedicatedCreateRecEvent.record.Requester_User.value, [{ code: 'vassana' }], 'Create through local DEDICATED context must snapshot Requester_User = [{ code: "vassana" }]');
 
 
   // 4g-2. Finding R1-C: Registered delete event handler blocks for DEDICATED & SHARED context and abstains when null
