@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 SOURCE GATES 1–3 PASS / PRE-DEPLOY VERIFICATION OPEN
+> Updated: 2026-08-30 — D1 PRE-DEPLOY FULL REGRESSION BLOCKED / 4 FAILURES REQUIRE TRIAGE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Process Proceed fresh-Assignee Gate 3 PASS. Pre-deploy full regression + local UI build verification OPEN. |
+| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Process Proceed fresh-Assignee Gate 3 PASS. Pre-deploy full regression BLOCKED: 1034 passed / 4 failed / 1038 total. UI build NOT RUN. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -63,44 +63,48 @@ SHARED approval authority = DENIED
 
 No App795/static Manager/GM/First_Manager/UI-role fallback is approval authority.
 
-## 4. Why verification is next
+## 4. Pre-deploy verification result
 
-Source gates 1–3 were accepted through focused evidence, but no full repository regression has been run after all three gates were integrated, and the generated UI bundle still needs to be rebuilt from the accepted source before any deployment candidate can exist.
+Executor verification followed the fail-fast contract correctly.
 
-Therefore the next safe non-Live step is:
-1. full automated regression on repository source;
-2. if PASS, local UI build;
-3. verify generated diff is limited to canonical dist outputs;
-4. no source/test edits, no Live Kintone operation.
-
-Canonical package commands:
+Observed result:
 ```text
-npm test
-npm run ui:build
+FULL_TEST = FAIL (1034 passed, 4 failed out of 1038 tests)
+UI_BUILD = NOT_RUN
+GIT_DIFF_CHECK = NOT_RUN
+CHANGED_FILES = NONE
+GENERATED_BUILD_COMMIT = NONE
+SOURCE_FILES_CHANGED = 0
+TEST_FILES_CHANGED = 0
+LIVE_KINTONE_OPERATIONS = 0
+APP53_PRODUCTION_TOUCHED = NO
+DEPLOY_RUN = NO
 ```
 
-Build script generates only:
+Independent decision:
 ```text
-dist/mbo-employee-app.js
-dist/mbo-employee.css
+PRE_DEPLOY_VERIFICATION = BLOCKED
+REASON = 4 FULL-REGRESSION FAILURES NOT YET IDENTIFIED
 ```
+
+The executor correctly did not build, modify source/tests, or commit anything after the test failure.
+
+Do NOT attempt a corrective until the exact four failing tests and their assertion/error locations are known.
 
 ## 5. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 PRE-DEPLOY FULL REGRESSION + LOCAL UI BUILD VERIFICATION R1
-TASK_STATE  = OPEN / READY FOR MINIMUM ANTIGRAVITY EXECUTION
+ACTIVE_TASK = D1 FULL REGRESSION FAILURE TRIAGE R1
+TASK_STATE  = OPEN / DIAGNOSTIC ONLY
 OWNER       = ANTIGRAVITY
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
-ALLOWED_GENERATED_FILES = dist/mbo-employee-app.js + dist/mbo-employee.css ONLY
-FULL_TEST   = REQUIRED FIRST
-BUILD       = REQUIRED ONLY AFTER FULL TEST PASS
+BUILD       = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact execution contract is in `AI_ACTIVE_TASK.md`.
+Exact diagnostic contract is in `AI_ACTIVE_TASK.md`.
 
 ## 6. Accepted App794 Live baseline
 
@@ -115,7 +119,7 @@ TECHNICAL_READBACK     = PASS WITH AUDIT CAVEAT
 USER_RUNTIME_UAT       = PASS
 ```
 
-This live baseline is not modified by the current verification task.
+This live baseline remains unchanged.
 
 ## 7. App53 / authorization protected state
 
@@ -140,13 +144,12 @@ ROLLBACK_AUTH             = NONE
 
 ## 8. Exact next action
 
-Antigravity performs only the verification task in `AI_ACTIVE_TASK.md`:
-- run full regression first;
-- STOP on failure without source/test edits;
-- only after PASS, run local UI build;
-- ensure only canonical generated dist outputs differ;
-- run `git diff --check`;
-- commit/push generated dist only if changed;
-- STOP and return to ChatGPT independent review.
+Antigravity performs diagnostic-only failure extraction from `AI_ACTIVE_TASK.md`.
 
-No Live Kintone, App53, ACL/group, deploy or UAT operation is authorized.
+Priority:
+1. reuse the immediately prior `npm test` output if still available;
+2. return the exact four failing test names plus file/line and first useful assertion/error for each;
+3. if the prior output is no longer available, rerun `npm test` exactly once only to recover those four failure blocks;
+4. do not build;
+5. do not modify or commit anything;
+6. STOP and return to ChatGPT for root-cause review.
