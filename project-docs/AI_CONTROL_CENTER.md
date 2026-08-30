@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary source/runtime execution
-> Updated: 2026-08-30 — HYBRID EMPLOYEE-SELF SOURCE ACCEPTED / MY APPROVAL TASKS BLOCKED PENDING READ-ONLY NATIVE-ASSIGNEE PROOF
+> Updated: 2026-08-30 — NATIVE CURRENT-ASSIGNEE PROOF PASS / LEAN APPROVAL AUTHORITY SERVICE R1 OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source ACCEPTED after build + 1024/1024 regression. My Approval Tasks source implementation is NOT opened yet because repository source does not prove the exact native current-assignee field/query contract. Next gate = user-assisted App794 READ-ONLY runtime proof only. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source ACCEPTED after build + 1024/1024 regression. My Approval Tasks native current-assignee field/query contract is now proven. Next gate is one small source-only approval-authority service foundation WP; Home/detail/process integration remains later. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling accepted; live remains prior MVP. |
@@ -26,7 +26,8 @@ ANTIGRAVITY = MINIMUM NECESSARY SOURCE/RUNTIME EXECUTION ONLY
 CHATGPT     = PLAN / REVIEW / CONTROL DOCS / EVIDENCE INTERPRETATION
 ```
 
-Do not use Antigravity for read-only discovery that ChatGPT/user can perform directly.
+Ordinary corrective/foundation work = exact files -> smallest focused test -> diff check -> one commit/push -> STOP.
+No broad scan, full suite, build, evidence document, live Kintone, or deploy unless a later milestone explicitly requires it.
 
 ## 3. Hybrid Employee-Self Runtime Source — ACCEPTED
 
@@ -40,7 +41,7 @@ SOURCE_ACCEPTED            = YES
 LIVE_DEPLOY_READY          = NO
 ```
 
-Final local milestone evidence supplied by user:
+Final accepted local milestone:
 ```text
 npm run ui:build          = PASS
 npm test                  = PASS (1024/1024)
@@ -52,68 +53,78 @@ LIVE_KINTONE_OPERATIONS   = 0
 APP53_PRODUCTION_TOUCHED  = NO
 ```
 
-## 4. My Approval Tasks Source Inventory R1 — BLOCKED
+## 4. My Approval Tasks — Native Current-Assignee Proof PASS
 
-Inventory result:
+User-assisted App794 READ-ONLY runtime diagnostic proved on Record #11:
 ```text
-CURRENT_ASSIGNEE_SOURCE_OWNER = NOT_PROVEN_IN_REPOSITORY
-SOURCE_IMPLEMENTATION_READY   = NO
-BLOCKER                       = BLOCKED_NEEDS_READ_ONLY_RUNTIME_PROOF
+Status.type   = STATUS
+Status.value  = 01 Draft Objective
+Assignee.type = STATUS_ASSIGNEE
+Assignee.value= []
 ```
 
-Repository facts independently confirmed:
-
-1. `src/main-mbo-app.js` already owns the top-level Kintone read adapter:
+Therefore the actual native current-assignee field code is:
 ```text
-kintoneApiWrapper.getRecords(appId, query)
-kintoneApiWrapper.getRecord(appId, id)
+CURRENT_ASSIGNEE_FIELD = Assignee
+CURRENT_ASSIGNEE_TYPE  = STATUS_ASSIGNEE
+STATUS_FIELD           = Status
+STATUS_TYPE            = STATUS
 ```
-These are suitable transport seams, but the repository does not prove the exact native Process-assignee field code/query syntax.
 
-2. Repository/code search found no canonical `$assignee`/assignee system-field usage. Therefore Control Plane must not invent `$assignee`, `Assignee`, or another field name.
+The empty Assignee array on Draft is valid and does not weaken the field-contract proof.
 
-3. `app.record.index.show` currently resolves Employee-Self context and renders `EmployeeSelfIndexUI` / My MBO only. The current My MBO query is exact Employee_Code ownership.
+Official Kintone contract independently confirms:
+- Assignee field type `STATUS_ASSIGNEE` returns an array of users shaped `{ code, name }` when assigned;
+- Assignee supports query operators `in` / `not in`;
+- Kintone's built-in `(Assigned to me)` view uses `Assignee in (LOGINUSER())`;
+- `app.record.detail.process.proceed` may return a Promise, so an immediate GET revalidation can run before allowing a Process action.
 
-4. `app.record.detail.show` / Edit/Create currently enters Employee-Self orchestration and blocks an existing record when `record.Employee_Code != authenticatedEmployeeCode`. This is correct for My MBO but means Approver record access requires a distinct authorization context/path rather than reusing Employee-Self ownership.
+Canonical authority rule is now implementable without guessing:
+```text
+APPROVAL_LIST_AUTHORITY
+= DEDICATED native principal
+AND server query Assignee in (LOGINUSER())
+AND returned Assignee.value contains exact current Kintone user code
 
-5. `app.record.detail.process.proceed` currently runs topology/action/business validation only. It does NOT independently revalidate that current dedicated Kintone user is the native current Workflow assignee.
+APPROVAL_OPEN_ACTION_AUTHORITY
+= fresh App794 GET
+AND Assignee.type == STATUS_ASSIGNEE
+AND Assignee.value contains exact current dedicated Kintone user code
+```
 
-6. App795 static route membership and App794 snapshot user fields remain routing/snapshot evidence only. They are not actionable approval authorization.
+Still forbidden as authority:
+```text
+App795 static membership
+Manager_User / GM_User / First_Manager_User snapshot alone
+caller-supplied role
+UI visibility
+Employee-Self ownership
+```
 
-7. Shared principals remain Employee-Self only:
 ```text
 SHARED_APPROVER_AUTHORITY = DENIED
 ```
 
-### Safe architecture after proof
+## 5. Architecture / Integration Inventory
 
-Do not merge My Approval Tasks implementation into `EmployeeSelfIndexUI`.
+Repository facts remain:
+- `src/main-mbo-app.js` owns top-level `getRecords()` and `getRecord()` transport seams.
+- current Index orchestration is Employee-Self/My MBO only.
+- current cross-employee Detail is blocked by Employee-Self ownership and must later receive a distinct Approver path.
+- current `app.record.detail.process.proceed` validates topology/business rules but has no native-current-assignee revalidation yet.
+- `src/ui/employee-self-index-ui.js` remains canonical My MBO owner and must not absorb My Approval Tasks implementation.
 
-Target responsibility map after native-assignee proof:
+Target responsibility map:
 ```text
-src/services/mbo-approval-task-service.js   = canonical current-assignment query + record-open/action revalidation
-src/ui/approver-task-index-ui.js            = My Approval Tasks renderer only
-src/main-mbo-app.js                          = context selection/event orchestration only
-src/ui/employee-self-index-ui.js             = remains My MBO owner UI
+src/services/mbo-approval-task-service.js = canonical assignment list/query + exact assignee validation + fresh record revalidation
+src/ui/approver-task-index-ui.js          = later My Approval Tasks renderer only
+src/main-mbo-app.js                        = later context/event orchestration only
+src/ui/employee-self-index-ui.js           = My MBO only
 ```
 
-Tentative later implementation whitelist, contingent on proof:
-```text
-NEW    src/services/mbo-approval-task-service.js
-NEW    src/ui/approver-task-index-ui.js
-MODIFY src/main-mbo-app.js
-```
+To minimize Antigravity usage, UI/event integration is NOT in the current WP.
 
-Tentative focused-test whitelist, contingent on proof:
-```text
-NEW    tests/mbo-approval-task-service.test.js
-NEW    tests/approver-task-index-ui.test.js
-MODIFY tests/employee-main-mbo-app-integration.test.js
-```
-
-Do not open this implementation WP until exact native field/query behavior is proven.
-
-## 5. App53 Production Protection
+## 6. App53 Production Protection
 
 ```text
 APP53_ENVIRONMENT       = PRODUCTION
@@ -123,24 +134,25 @@ APP53_RECORD_WRITE_AUTH = NONE
 APP53_BULK_WRITE_AUTH   = NONE
 ```
 
-No App53 change is part of the My Approval Tasks proof. Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
+Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`. No App53 access is required by the current approval-service foundation WP.
 
-## 6. Current Active Task
+## 7. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 MY APPROVAL TASKS — NATIVE CURRENT-ASSIGNEE READ-ONLY RUNTIME PROOF R1
-OWNER       = USER + CHATGPT CONTROL PLANE
-ANTIGRAVITY = DO NOT USE
-SOURCE_EDIT = NO
-TEST_RUN    = NO
-APP794_GET  = ONE USER-INITIATED READ-ONLY DIAGNOSTIC
-LIVE_WRITE  = NO
+ACTIVE_TASK = D1 MY APPROVAL TASKS — LEAN CURRENT-ASSIGNEE AUTHORITY SERVICE R1
+OWNER       = ANTIGRAVITY
+SOURCE_EDIT = ONE NEW SERVICE FILE ONLY
+TEST_EDIT   = ONE NEW TEST FILE ONLY
+FOCUSED_TEST= ONE FILE ONLY
+BUILD       = NO
+FULL_TEST   = NO
+LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact safe console command and output requirements are in `AI_ACTIVE_TASK.md`.
+Exact contract, whitelist, tests, and stop rules are in `AI_ACTIVE_TASK.md`.
 
-## 7. Authorization Ledger
+## 8. Authorization Ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -153,8 +165,6 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-No POST/PUT/DELETE/Process action is authorized by the read-only proof gate.
+## 9. Next Gate
 
-## 8. Next Gate
-
-User supplies one App794 read-only diagnostic result from a record with Process Management enabled. ChatGPT identifies the exact native assignee field shape and, only if safely proven, opens one small Antigravity source WP. If the field/query contract is still ambiguous, remain BLOCKED and do not implement.
+Antigravity implements only the approval-authority service foundation. ChatGPT independently reviews it. Only after PASS may a later small WP connect Dedicated Home -> My Approval Tasks -> cross-employee Detail -> pre-action revalidation. No live deployment/configuration is implied.
