@@ -5,6 +5,26 @@
  * for DEDICATED native Kintone users only.
  */
 
+/**
+ * Internal helper for exact Assignee field validation
+ * @param {Object} record
+ * @param {string} kintoneUserCode
+ * @returns {boolean}
+ */
+function checkAssigneeAuthority(record, kintoneUserCode) {
+  if (!record || typeof record !== 'object') return false;
+  if (!kintoneUserCode || typeof kintoneUserCode !== 'string') return false;
+  const cleanUserCode = kintoneUserCode.trim();
+  if (!cleanUserCode || kintoneUserCode !== cleanUserCode) return false;
+
+  const assigneeField = record.Assignee;
+  if (!assigneeField || typeof assigneeField !== 'object') return false;
+  if (assigneeField.type !== 'STATUS_ASSIGNEE') return false;
+  if (!Array.isArray(assigneeField.value)) return false;
+
+  return assigneeField.value.some(user => user && typeof user === 'object' && user.code === cleanUserCode);
+}
+
 export class MboApprovalTaskService {
   /**
    * Validate that context is a valid DEDICATED Kintone user context
@@ -25,23 +45,14 @@ export class MboApprovalTaskService {
   }
 
   /**
-   * Exact current-assignee verification on a record
+   * Public authority check for a record — requires Dedicated context
+   * @param {Object} context - { mode: 'DEDICATED', kintoneUserCode: '...' }
    * @param {Object} record
-   * @param {string} kintoneUserCode
    * @returns {boolean}
    */
-  static isAuthorizedAssignee(record, kintoneUserCode) {
-    if (!record || typeof record !== 'object') return false;
-    if (!kintoneUserCode || typeof kintoneUserCode !== 'string') return false;
-    const cleanUserCode = kintoneUserCode.trim();
-    if (!cleanUserCode || kintoneUserCode !== cleanUserCode) return false;
-
-    const assigneeField = record.Assignee;
-    if (!assigneeField || typeof assigneeField !== 'object') return false;
-    if (assigneeField.type !== 'STATUS_ASSIGNEE') return false;
-    if (!Array.isArray(assigneeField.value)) return false;
-
-    return assigneeField.value.some(user => user && typeof user === 'object' && user.code === cleanUserCode);
+  static isAuthorizedAssignee(context, record) {
+    this.validateDedicatedContext(context);
+    return checkAssigneeAuthority(record, context.kintoneUserCode);
   }
 
   /**
@@ -86,15 +97,17 @@ export class MboApprovalTaskService {
     }
 
     // Fail closed: filter out any returned record that fails exact Assignee.value check
-    return allRecords.filter(rec => this.isAuthorizedAssignee(rec, userCode));
+    return allRecords.filter(rec => checkAssigneeAuthority(rec, userCode));
   }
 
   /**
    * Perform single-record fresh revalidation of approval task authority
+   * R1-A: Matches canonical main-mbo-app seam getRecord(appId, id) -> returns record object directly.
+   * R1-A: No getRecords fallback.
    * @param {Object} context - { mode: 'DEDICATED', kintoneUserCode: '...' }
    * @param {number|string} mboAppId
    * @param {number|string} recordId
-   * @param {Object} kintoneApiWrapper - API wrapper supplying getRecord(appId, recordId) or getRecords
+   * @param {Object} kintoneApiWrapper - API wrapper supplying getRecord(appId, recordId)
    * @returns {Promise<{ authorized: boolean, record?: Object, reason?: string }>}
    */
   static async revalidateApprovalTask(context, mboAppId, recordId, kintoneApiWrapper) {
@@ -102,28 +115,17 @@ export class MboApprovalTaskService {
     if (!mboAppId || !recordId) {
       throw new Error('INVALID_REVALIDATE_PARAMS: mboAppId and recordId are required for revalidation.');
     }
-    if (!kintoneApiWrapper) {
-      throw new Error('INVALID_KINTONE_API_WRAPPER: kintoneApiWrapper is required.');
+    if (!kintoneApiWrapper || typeof kintoneApiWrapper.getRecord !== 'function') {
+      throw new Error('INVALID_KINTONE_API_WRAPPER: kintoneApiWrapper.getRecord function is required.');
     }
 
-    let record = null;
+    const record = await kintoneApiWrapper.getRecord(mboAppId, recordId);
 
-    if (typeof kintoneApiWrapper.getRecord === 'function') {
-      const res = await kintoneApiWrapper.getRecord(mboAppId, recordId);
-      record = res?.record || null;
-    } else if (typeof kintoneApiWrapper.getRecords === 'function') {
-      const query = `$id = "${recordId}" limit 1`;
-      const res = await kintoneApiWrapper.getRecords(mboAppId, query);
-      record = (res?.records && res.records.length > 0) ? res.records[0] : null;
-    } else {
-      throw new Error('INVALID_KINTONE_API_WRAPPER: kintoneApiWrapper must provide getRecord or getRecords.');
-    }
-
-    if (!record) {
+    if (!record || typeof record !== 'object') {
       return { authorized: false, reason: 'RECORD_NOT_FOUND' };
     }
 
-    const authorized = this.isAuthorizedAssignee(record, context.kintoneUserCode);
+    const authorized = checkAssigneeAuthority(record, context.kintoneUserCode);
     if (!authorized) {
       return { authorized: false, reason: 'ASSIGNEE_MISMATCH' };
     }
