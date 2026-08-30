@@ -1,146 +1,185 @@
-# AI ACTIVE TASK — D1 SANDBOX TOOLING GET-HEADER CORRECTIVE R1
+# AI ACTIVE TASK — D1 SANDBOX APP802 READ-ONLY RECOVERY INSPECTION S-C R1
 
-Mode: **ANTIGRAVITY SOURCE-ONLY CORRECTIVE / ONE SCRIPT ONLY / ZERO KINTONE NETWORK EXECUTION**
+Mode: **ANTIGRAVITY GET-ONLY KINTONE INSPECTION / APP802 ONLY / NO WRITE / NO SOURCE CHANGE**
 Branch: `ai/antigravity-wp002c`
-Failed sandbox execution app: `802`
-Reviewed tooling commit before failure: `491358480cf642b3f2175b3cf0e1fd7246a96234`
+Opened after accepted corrective commit: `2bec6e63b9faa6bebf67379a5f3df74093d9c1d1`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = OPEN / READY_FOR_NARROW_SOURCE_CORRECTIVE
+TASK_STATE = OPEN / READY_FOR_READ_ONLY_EXECUTION
 CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT SOURCE REVIEW
-KINTONE_NETWORK_EXECUTION = FORBIDDEN
-SECOND_SANDBOX_CREATE_AUTH = NONE
+NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
+TARGET_APP = 802 ONLY
+KINTONE_WRITE_AUTH = NONE
 SANDBOX_802_RESUME_WRITE_AUTH = NONE
+SECOND_SANDBOX_CREATE_AUTH = NONE
 PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 ```
 
 Fresh-fetch the branch first. If this Active Task has been replaced, STOP.
 
-## 0. Accepted failure evidence
+## 0. Goal
 
-Gate S-B R1 failed safely after creating sandbox App 802.
+Determine the exact current Kintone state of sandbox App802 after the prior fail-safe execution stopped during deploy-status polling.
+
+App802 was created by the approved sandbox rehearsal. The base-schema deploy POST was sent, but deploy status was not successfully read because the old GET helper returned HTTP 400 `CB_IL02`.
+
+No synthetic records were created.
+
+This task is READ ONLY. Do not resume or repair anything yet.
+
+## 1. Target identity
+
+Exact target only:
 
 ```text
-SANDBOX_APP_ID = 802
-BASE_SCHEMA_DEPLOY = FAIL at deploy-status polling GET
-HTTP = 400
-KINTONE_CODE = CB_IL02
-SYNTHETIC_RECORDS_CREATED = 0
-APP53_NETWORK_OPERATIONS = 0
-APP53_WRITES = 0
-PRODUCTION_B2_EXECUTED = NO
-POST_EXEC_GIT_STATUS = CLEAN
+APP_ID = 802
+EXPECTED_NAME = MBO2026 App53 Hybrid Identity Sandbox
 ```
 
-Do NOT access, delete, resume, repair, or otherwise modify App 802 in this source-only corrective.
+Do not access any other Kintone app.
 
-## 1. Root cause / exact correction
+## 2. Step A — repository precheck
 
-Modify only:
+Run:
 
 ```text
-scripts/kintone/rehearse-app53-hybrid-sandbox.js
+git status --short
 ```
 
-The helper currently forces `Content-Type: application/json` onto all requests, including GET requests with query-string parameters and no body.
+If any tracked source/script/test/config/dist file is dirty, STOP.
 
-Correct it so:
+Do not modify repository files.
+
+## 3. Step B — Live GET-only exporter
+
+Use the existing reviewed GET-only exporter:
 
 ```text
-GET with no body:
-- authentication headers only
-- NO Content-Type header
-
-POST/DELETE with JSON body:
-- Content-Type: application/json
+node --env-file-if-exists=.env.local scripts/kintone/get-app-info.js 802 --records=all --out=backups/d1-sandbox-802-recovery-inspection-r1
 ```
 
-Narrow acceptable pattern:
-- start request headers from the authentication headers;
-- add `Content-Type: application/json` only when a JSON request body is actually present.
+This script is GET-only and may write only ignored local backup/output files.
 
-Do not alter the deploy-status endpoint or its query syntax:
+Do not commit the output.
+
+Extract only:
+- app name if Live app identity is available;
+- Live revision if available;
+- Live field codes/types for `Number_0`, `emp_text`, `MBO_Kintone_User` only;
+- Live total record count;
+- endpoint errors relevant to Live settings/fields/records.
+
+Do not return unrelated metadata.
+
+## 4. Step C — Preview + deploy-status GET-only probe
+
+Run one GET-only inline Node probe. It must import `getKintoneConnection()` and use authentication headers only; do not set Content-Type on GET.
+
+Allowed GET endpoints only:
 
 ```text
-/k/v1/preview/app/deploy.json?apps[0]=<sandboxAppId>
+/k/v1/preview/app/settings.json?app=802
+/k/v1/preview/app/form/fields.json?app=802
+/k/v1/preview/app/deploy.json?apps[0]=802
 ```
 
-That query form is valid Kintone API syntax.
+The probe must:
+- make exactly these three GET requests;
+- parse JSON responses;
+- print concise status/result only;
+- make zero POST/PUT/DELETE requests.
 
-## 2. Preserve all accepted safety behavior
-
-Do NOT change:
-- exact execution flag requirement;
-- sandbox name;
-- forbidden app ID list;
-- process-local sandboxAppId binding;
-- endpoint families;
-- exact target USER_SELECT contract;
-- Preview/Live exact field verification;
-- deterministic record verification;
-- lifecycle order;
-- rollback behavior;
-- fail-closed behavior.
-
-Do NOT add a resume flag or any ability to target App 802.
-Do NOT add any externally supplied App ID.
-
-## 3. Explicitly forbidden
+Required evidence:
 
 ```text
-RUN SCRIPT WITH EXECUTION FLAG = NO
-ANY KINTONE NETWORK GET = NO
-ANY KINTONE NETWORK WRITE = NO
-ACCESS APP 802 = NO
-CREATE ANOTHER SANDBOX = NO
+PREVIEW_SETTINGS_HTTP = ...
+PREVIEW_APP_NAME = ... / UNAVAILABLE
+PREVIEW_REVISION = ... / UNAVAILABLE
+
+PREVIEW_FIELDS_HTTP = ...
+PREVIEW_Number_0_TYPE = ... / ABSENT / UNAVAILABLE
+PREVIEW_emp_text_TYPE = ... / ABSENT / UNAVAILABLE
+PREVIEW_MBO_Kintone_User = PRESENT / ABSENT / UNAVAILABLE
+
+DEPLOY_STATUS_HTTP = ...
+DEPLOY_STATUS_802 = SUCCESS / PROCESSING / FAIL / CANCEL / NOT_FOUND / UNAVAILABLE
+```
+
+If Preview name is available and is not exactly `MBO2026 App53 Hybrid Identity Sandbox`, STOP and report identity mismatch.
+
+## 5. Step D — final repository check
+
+Run:
+
+```text
+git status --short
+```
+
+Required: no tracked repository change.
+
+`backups/` output is local/ignored and must not be committed.
+
+## 6. Explicitly forbidden
+
+```text
+APP802 POST/PUT/DELETE = NO
+APP802 DEPLOY = NO
+APP802 RECORD CREATE/UPDATE/DELETE = NO
+APP802 FIELD ADD/UPDATE/DELETE = NO
+APP802 DELETE APP = NO
+CREATE SECOND SANDBOX = NO
 APP53 ACCESS = NO
 APP53 WRITE = NO
+APP794/795/796/797/798/800/801 ACCESS = NO
+GROUP/ACL ACCESS = NO
+MODIFY scripts/** = NO
 MODIFY src/** = NO
 MODIFY tests/** = NO
 MODIFY config/** = NO
 MODIFY dist/** = NO
-MODIFY other scripts/** = NO
 MODIFY project-docs/** BY EXECUTOR = NO
-MODIFY SAFETY GUARDS = NO
+GIT COMMIT = NO
 npm test = NO
 build = NO
+PRODUCTION B2 EXECUTION = NO
 ```
 
-## 4. Local verification only
+If any GET fails, report exact HTTP/Kintone code and continue only with the other allowed GETs when safe. Do not repair or broaden scope.
 
-Run exactly:
-
-```text
-node --check scripts/kintone/rehearse-app53-hybrid-sandbox.js
-git diff --check
-git status --short
-```
-
-If anything besides the one allowed script changed: STOP.
-
-If checks PASS:
-- commit + push exactly one focused corrective commit;
-- STOP.
-
-## 5. Required response only
+## 7. Required response only
 
 ```text
-GET_WITHOUT_CONTENT_TYPE = YES/NO
-JSON_BODY_REQUESTS_KEEP_CONTENT_TYPE = YES/NO
-DEPLOY_STATUS_QUERY_UNCHANGED = YES/NO
-APP_TARGET_GUARDS_UNCHANGED = YES/NO
-NODE_CHECK = PASS/FAIL
-GIT_DIFF_CHECK = PASS/FAIL
-CHANGED_FILES = exact list
-CORRECTIVE_COMMIT = <sha> / NONE
-KINTONE_NETWORK_OPERATIONS = 0
-APP802_ACCESS = 0
+READ_ONLY_INSPECTION = PASS/FAIL
+TARGET_APP_ID = 802
+TARGET_IDENTITY_MATCH = YES/NO/UNAVAILABLE
+
+LIVE_APP_NAME = ... / UNAVAILABLE
+LIVE_REVISION = ... / UNAVAILABLE
+LIVE_Number_0_TYPE = ... / ABSENT / UNAVAILABLE
+LIVE_emp_text_TYPE = ... / ABSENT / UNAVAILABLE
+LIVE_MBO_Kintone_User = PRESENT / ABSENT / UNAVAILABLE
+LIVE_RECORD_COUNT = <n> / UNAVAILABLE
+LIVE_RELEVANT_ERRORS = NONE / exact concise list
+
+PREVIEW_APP_NAME = ... / UNAVAILABLE
+PREVIEW_REVISION = ... / UNAVAILABLE
+PREVIEW_Number_0_TYPE = ... / ABSENT / UNAVAILABLE
+PREVIEW_emp_text_TYPE = ... / ABSENT / UNAVAILABLE
+PREVIEW_MBO_Kintone_User = PRESENT / ABSENT / UNAVAILABLE
+
+DEPLOY_STATUS_802 = SUCCESS / PROCESSING / FAIL / CANCEL / NOT_FOUND / UNAVAILABLE
+DEPLOY_STATUS_HTTP = ...
+
+KINTONE_GET_OPERATIONS = exact count
+KINTONE_WRITE_OPERATIONS = 0
 APP53_ACCESS = 0
-APP53_WRITES = 0
+OTHER_KINTONE_APP_ACCESS = 0
 SECOND_SANDBOX_CREATED = NO
-PRODUCTION_B2_EXECUTED = NO
+POST_INSPECTION_GIT_STATUS = CLEAN / exact tracked changes
+FILES_COMMITTED = NONE
 ```
 
-Next owner = ChatGPT independent source review.
+Then STOP.
+
+Next owner = ChatGPT independent review.
