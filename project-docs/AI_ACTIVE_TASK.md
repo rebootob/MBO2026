@@ -1,111 +1,133 @@
-# AI ACTIVE TASK — D1 PASSWORD RESET ADMIN AUTHORITY READINESS / APP801 + HR NATIVE ACCESS DISCOVERY
+# AI ACTIVE TASK — D1 APP801 AUTHORITY READINESS R1 CORRECTIVE / RECORD + FIELD ACL PROOF
 
-Mode: **ANTIGRAVITY READ-ONLY DISCOVERY ONLY — GET ONLY / NO SOURCE CHANGE / NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET**  
+Mode: **ANTIGRAVITY READ-ONLY CORRECTIVE ONLY — GET ONLY / NO SOURCE CHANGE / NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Why We Are Doing This
+## 1. Why This Corrective Exists
 
-App800 authority/binding discovery R1 is independently accepted.
+The previous App801 authority-readiness evidence used incorrect record-ACL URLs:
+- `/k/v1/app/record/acl.json?app=801`
+- `/k/v1/preview/app/record/acl.json?app=801`
 
-Confirmed:
-- App800 creator is `admin-form`;
-- App800 ACL gives CREATOR authority and denies GROUP:everyone;
-- `HR_ADMIN_GROUP` is not currently present in App800 ACL;
-- tenant existence of `HR_ADMIN_GROUP` remains UNKNOWN;
-- Password Reset engine already exists and its credential semantics are separately tested.
+Both returned 404, so the evidence cannot conclude that App801 has no record-level ACL restrictions.
 
-Before adding a write-capable Reset Password UI, prove the **native App801 authority path** because reset writes exactly one existing App801 credential row.
+Correct Kintone settings endpoints are:
+- Live record ACL: `/k/v1/record/acl.json`
+- Preview record ACL: `/k/v1/preview/record/acl.json`
 
-This task is discovery only. Do not implement the button yet.
+Because Password Reset writes App801 credential/session fields, also prove field-level permission state:
+- Live field ACL: `/k/v1/field/acl.json`
+- Preview field ACL: `/k/v1/preview/field/acl.json`
 
-## 2. Exact Read-Only Checks
+This task corrects evidence only. Do not change any permission or source.
 
-### A. App801 app identity and App ACL
+## 2. Accepted Findings — Do Not Re-do Broad Discovery
 
-GET-only read App801 metadata and App ACL.
-
-Record:
-- app revision where returned;
-- `creator.code` / `creator.name`;
-- all App ACL rows relevant to:
-  - `CREATOR`;
-  - `admin-form` if explicitly present;
-  - `HR_ADMIN_GROUP` if present;
-  - `MBO_EMPLOYEE_ACCESS`;
-  - `GROUP:everyone`;
-  - any other principal that appears to grant HR/admin credential-recovery access.
-
-For each relevant row record at least:
-- appEditable;
-- recordViewable;
-- recordAddable;
-- recordEditable;
-- recordDeletable;
-- recordImportable;
-- recordExportable.
-
-Do not infer `CREATOR = admin-form` unless App801 metadata proves the exact creator code.
-
-### B. App801 record-level ACL
-
-GET-only inspect App801 record-permission configuration using the appropriate Kintone record ACL/settings endpoint if supported by current safe tooling.
-
-Record:
-- whether record-level ACL rules exist;
-- relevant entities and permissions if present;
-- whether any rule would block or narrow an otherwise app-level HR/admin edit path.
-
-If the endpoint/tool cannot prove it, state `UNKNOWN`; do not invent.
-
-### C. HR native authority readiness
-
-Determine, from actual read-only evidence:
+Keep these unless fresh GET evidence shows drift:
 
 ```text
-ADMIN_FORM_CAN_VIEW_APP801 = YES / NO / UNKNOWN
-ADMIN_FORM_CAN_EDIT_APP801 = YES / NO / UNKNOWN
-HR_ADMIN_GROUP_IN_APP801_ACL = YES / NO
-HR_ADMIN_GROUP_CAN_VIEW_APP801 = YES / NO / UNKNOWN
-HR_ADMIN_GROUP_CAN_EDIT_APP801 = YES / NO / UNKNOWN
+APP801_CREATOR_CODE                = admin-form
+APP801_CREATOR_IS_ADMIN_FORM       = YES
+APP801_APP_ACL_CREATOR             = App-level full rights
+APP801_APP_ACL_MBO_EMPLOYEE_ACCESS = View YES / Edit YES / Add Delete Manage Import Export NO
+APP801_APP_ACL_everyone            = DENIED
+HR_ADMIN_GROUP_IN_APP801_ACL       = NO
+HR_ADMIN_GROUP_IN_APP800_ACL       = NO
+HR_ADMIN_GROUP_EXISTS_TENANT       = UNKNOWN
+APP800_DISCOVERY_R1                = PASS
+APP794_ACCEPTED_LIVE_REVISION      = 60
 ```
 
-Separately preserve:
+## 3. Exact Read-Only Corrective Checks
+
+### A. App801 record-level permissions
+
+GET only:
+- `/k/v1/record/acl.json` with `app=801`
+- `/k/v1/preview/record/acl.json` with `app=801`
+
+Record separately:
+- revision;
+- number of rights/rules;
+- each filter condition where present;
+- relevant entities and `viewable`, `editable`, `deletable`, `includeSubs` values;
+- whether Live and Preview align.
+
+Decision must be one of:
 
 ```text
-HR_ADMIN_GROUP_IN_APP800_ACL = YES / NO
-HR_ADMIN_GROUP_EXISTS_IN_TENANT = YES / NO / UNKNOWN
+APP801_RECORD_ACL = NONE_CONFIGURED / RESTRICTIVE / NON_BLOCKING / UNKNOWN
 ```
 
-For tenant existence, use a safe read-only User API path only if current authenticated tooling supports it. If unsupported/403/404/unavailable, keep `UNKNOWN`.
+Use `NONE_CONFIGURED` only if the valid canonical endpoint returns an empty rights list or equivalent explicit proof.
 
-Do not create groups or change memberships.
+### B. App801 field-level permissions
 
-### D. App800 no-drift recheck
+GET only:
+- `/k/v1/field/acl.json` with `app=801`
+- `/k/v1/preview/field/acl.json` with `app=801`
 
-GET-only re-read App800 App ACL only enough to confirm whether the accepted R1 authority condition has drifted:
-- CREATOR/admin-form route still present;
-- GROUP:everyone still denied;
-- `HR_ADMIN_GROUP` still absent or report if it now exists.
+Record separately:
+- revision;
+- all configured field ACL rules or an explicit empty state;
+- whether any rule could prevent `admin-form` or an intended HR authority from viewing/editing Reset Password target fields.
 
-Do not re-run broad customization/source discovery.
+Password Reset target fields include at least:
+- `Password_Hash`;
+- `Force_Password_Change`;
+- `Failed_Attempts`;
+- `Locked_Until`;
+- `Credential_Version`;
+- active Session fields used by D1 reset semantics;
+- `Password_Changed_At` if written.
 
-## 3. Decision Data Required
+If exact field code differs in source/schema evidence, report the actual code; do not invent.
 
-The evidence must state one of:
+Decision must be one of:
 
 ```text
-PASSWORD_RESET_NATIVE_AUTHORITY_READINESS = READY
-PASSWORD_RESET_NATIVE_AUTHORITY_READINESS = NOT_READY
-PASSWORD_RESET_NATIVE_AUTHORITY_READINESS = UNKNOWN
+APP801_FIELD_ACL = NONE_CONFIGURED / RESTRICTIVE / NON_BLOCKING / UNKNOWN
 ```
 
-`READY` only if both production authority paths are supportable by actual native permissions:
-- `admin-form` technical recovery path;
-- HR-authorized path to App800 and App801 edit.
+### C. Final native authority readiness
 
-If HR group is absent or cannot edit App801, use `NOT_READY` and identify the smallest missing native-permission change. Do not perform that change.
+Update the decision using App ACL + valid Record ACL + Field ACL evidence:
 
-## 4. Forbidden
+```text
+ADMIN_FORM_RESET_NATIVE_AUTHORITY = READY / NOT_READY / UNKNOWN
+HR_RESET_NATIVE_AUTHORITY         = READY / NOT_READY / UNKNOWN
+PASSWORD_RESET_NATIVE_AUTHORITY_READINESS = READY / NOT_READY / UNKNOWN
+```
+
+Rules:
+- `admin-form` READY only if App-level permission plus Record/Field ACL evidence does not block required App801 view/edit.
+- HR READY only if an actual HR native principal/group has App800 access and App801 required access and is not blocked by Record/Field ACL.
+- Overall READY requires both admin-form and HR paths.
+- Current App800/App801 App ACL lacks `HR_ADMIN_GROUP`; unless a different actual HR native authority is proven, HR remains NOT_READY.
+
+If NOT_READY, state the smallest missing native-permission change. Do not perform it.
+
+## 4. Evidence Update
+
+Update only:
+`project-docs/D1_PASSWORD_RESET_ADMIN_AUTHORITY_READINESS_EVIDENCE.md`
+
+Clearly mark the prior invalid record-ACL endpoint conclusion as superseded.
+
+Required evidence additions:
+- exact starting HEAD;
+- correct Live + Preview record ACL endpoint results;
+- correct Live + Preview field ACL endpoint results;
+- Record ACL decision;
+- Field ACL decision;
+- admin-form readiness;
+- HR readiness;
+- overall readiness;
+- smallest missing permission change if NOT_READY;
+- GET count if available;
+- POST/PUT/DELETE/ACL-write/group-write/upload/deploy/password-reset counts = 0.
+
+## 5. Forbidden
 
 ```text
 SOURCE_TEST_DIST_CHANGE         = 0
@@ -124,35 +146,18 @@ PUT                             = 0
 DELETE                          = 0
 ```
 
-Do not modify Control Center, Active Task, baseline, skills, source, tests, dist, scripts, config, or package files.
+Do not modify Control Center, Active Task, baselines, skills, source, tests, dist, scripts, config, package files.
+Do not create/change groups or memberships.
 Do not revive `services/mbo-auth-bridge/`.
 
-## 5. Evidence File
+## 6. Completion
 
-Create only:
-`project-docs/D1_PASSWORD_RESET_ADMIN_AUTHORITY_READINESS_EVIDENCE.md`
-
-Required contents:
-- `STATUS = PENDING_CHATGPT_REVIEW`;
-- timestamp;
-- exact starting branch HEAD;
-- App801 metadata/creator proof;
-- App801 App ACL relevant rows;
-- App801 record ACL finding or UNKNOWN;
-- admin-form App801 view/edit decision;
-- HR_ADMIN_GROUP App800/App801 finding;
-- HR_ADMIN_GROUP tenant existence finding or UNKNOWN;
-- final `PASSWORD_RESET_NATIVE_AUTHORITY_READINESS` decision;
-- smallest missing permission change if NOT_READY;
-- GET count if available;
-- POST/PUT/DELETE/ACL-write/group-write/upload/deploy/password-reset counts = 0.
-
-Commit + push only this evidence file, then STOP.
+Commit + push only the corrected evidence file, then STOP.
 
 Maximum executor status:
-`D1_PASSWORD_RESET_ADMIN_AUTHORITY_READINESS_CAPTURED_PENDING_CHATGPT_REVIEW`
+`D1_APP801_AUTHORITY_READINESS_R1_CORRECTED_PENDING_CHATGPT_REVIEW`
 
-## 6. Safety State
+## 7. Safety State
 
 ```text
 APP794_ACCEPTED_LIVE_REVISION = 60
