@@ -11,7 +11,74 @@ Status: CONFIRMED / FROZEN WHERE STATED
 - TMG1/TMG2 routing uses `Routing_Key = Section_Code + "|" + Team`.
 - TMG1/TMG2 exact team routing is mandatory; missing Team, missing exact route, or duplicate route must FAIL CLOSED.
 - TMG routing must never fall back to Section-only routing.
-- `Requester_User` is the authoritative Kintone shared workflow/requester boundary under the Kintone-only model. It is not individual employee authentication.
+- App795 stores evaluator/approver destinations as Kintone user identities.
+- `Requester_User` remains the configured shared-requester fallback/boundary for employees who use a shared Kintone account. It is not individual employee authentication.
+
+## Hybrid Requester Identity — Confirmed 2026-08-30
+
+User-confirmed architecture:
+
+```text
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+```
+
+The employee who owns an MBO is always identified by `Employee_Code`, but the Kintone Process requester actor may differ by identity mode.
+
+Canonical effective requester rule:
+
+```text
+IF employee has an exact authoritative dedicated Kintone User mapping
+  Effective_Requester_User = that employee's dedicated Kintone User
+ELSE IF employee uses an approved shared Kintone principal
+  Effective_Requester_User = App795.Requester_User
+ELSE
+  FAIL CLOSED
+```
+
+Implications:
+- dedicated users such as future confirmed mappings for Natta/Vassana can perform their own requester-owned native Process actions under their own Kintone account;
+- shared-account employees continue to use the reviewed App795 `Requester_User` boundary;
+- do not create one App795 route row per employee merely because a dedicated Kintone user exists;
+- do not overwrite App795 approver routing based on requester identity mode;
+- the exact physical employee <-> Kintone user mapping source must be proven by read-only audit before implementation;
+- missing/ambiguous identity mapping fails closed; do not guess from name/email/position.
+
+## Dual-Role Employee + Approver — Confirmed 2026-08-30
+
+A single person may be both:
+- Employee/Requester for their own MBO; and
+- Approver/Appraiser for other employees.
+
+Confirmed business examples: Natta and Vassana. Their exact Employee_Code mappings are still pending read-only verification.
+
+Canonical identity split:
+
+```text
+Own-MBO ownership      = Employee_Code
+Own requester actor    = Effective_Requester_User
+Approver identity      = current dedicated Kintone User
+Approval authorization = authoritative current native Workflow assignment
+```
+
+Do not duplicate the person or create a second own-MBO record for the approver role.
+
+For example, if 20 TMG2 Marketing employees reach Natta's review step at the same time:
+- App795 still contains one authoritative `TMG2|Marketing` route;
+- App794 contains 20 distinct employee MBO records;
+- Natta has 20 current approval tasks only while those 20 records are actually assigned to Natta at that step;
+- records still in Draft or already advanced to the next Appraiser are not counted as Natta's current pending tasks.
+
+Approver access must not be granted from App795 static membership alone. On record open/action, the current Workflow assignment must still identify the current Kintone user as the authorized actor.
+
+### Self-Approval Guard
+
+If an employee's own MBO resolves to the same Kintone user as an Appraiser/Approver, runtime must fail closed:
+
+```text
+SELF_APPROVAL_ROUTE_CONFLICT
+```
+
+Do not silently skip that appraiser, auto-approve, or reinterpret the route. A business exception requires a separate explicit rule and review.
 
 ## Confirmed Current Live Routing Coverage (R12A)
 
@@ -61,6 +128,8 @@ User-confirmed executive direct routing baseline (M10M-R2):
 
 TMG2 has no Admin route in the confirmed baseline.
 
+The presence of `natta` as an approver in these routes does not determine Natta's own Employee_Code or own-MBO route. Natta's own MBO must resolve from Natta's own App53 Position/Section/Team context plus the hybrid requester identity rule above.
+
 ## App794 Workflow Baseline — Current Live Process
 
 Canonical current count:
@@ -85,6 +154,8 @@ Final Evaluation:
 Current frozen workflow source assigns both boundary states to `Requester_User`:
 - `05 Objective Approved` -> assignee `Requester_User`; native Process action `Start Mid-Year` transitions `05 -> 06`.
 - `10 Mid-Year Completed` -> assignee `Requester_User`; native Process action `Start Self Evaluation` transitions `10 -> 11`.
+
+Under the hybrid identity model, the per-record requester snapshot must resolve the effective requester actor described above so a dedicated employee can perform requester-owned native actions with their own Kintone account, while shared-account employees retain the App795 shared requester fallback.
 
 User-facing rule confirmed on 2026-08-26:
 - HR controls the Start/End date windows for each macro phase from App800 HR Control Center / Dashboard.
@@ -120,6 +191,7 @@ User-confirmed business rule:
 - `admin-form` has **no business authority** to approve, return, complete, submit, or otherwise act on behalf of Requester, Manager, GM, or HR.
 - `admin-form` must never be represented as a workflow approver or as having delegated approval authority.
 - `admin-form` may inspect/debug workflow state but must not execute positive or negative business workflow UAT actions.
+- `admin-form` is excluded from dedicated Employee-Self auto-binding even if malformed mapping data would otherwise appear to match it.
 
 Canonical classification:
 
@@ -244,6 +316,8 @@ This freeze covers the current V1 M1_G1 functional Core only. It does not certif
 - normal annual Record_Key generation from the synthetic fixture;
 - production HR authorization mapping;
 - future M2/G2 routing activation;
+- hybrid dedicated-vs-shared identity behavior;
+- dual-role Employee + Approver UI/access behavior;
 - UI/UX polish, Dashboard finalization, Final UAT, or Go-Live readiness.
 
 ## Runtime Safety
@@ -252,16 +326,20 @@ This freeze covers the current V1 M1_G1 functional Core only. It does not certif
 - Duplicate routing -> FAIL CLOSED.
 - Missing scoring profile -> FAIL CLOSED.
 - Duplicate scoring profile -> FAIL CLOSED.
+- Missing/ambiguous dedicated employee mapping -> FAIL CLOSED.
 - Unknown/unmapped App794 Process status -> FAIL CLOSED as configuration error.
 - Workflow action inconsistent with `Routing_Topology` -> FAIL CLOSED.
+- Approver context without authoritative current native assignment -> FAIL CLOSED.
+- Self-approval route conflict -> FAIL CLOSED.
 - For current `M1_G1`, First-Manager submit actions must not proceed.
 - App794 Sandbox status15 currently uses the user-approved controlled Sandbox UAT account `hr`; Functional Workflow UAT is frozen as `PASS_WITH_DOCUMENTED_EXECUTION_EVIDENCE_EXCEPTION` for the current M1_G1 Core.
 - `admin-form` is technical-admin-only and has no business approval authority.
 - Single-account `hr` Sandbox UAT may certify functional workflow behavior only, not production role isolation.
 - Production HR entity mapping remains a separate pre-go-live configuration/parity gate.
 - Shared Kintone account identity must never be described as individual employee authentication.
+- Dedicated Kintone identity must never be inferred solely from App795 approver membership.
 - UI hiding alone is not an authorization boundary.
 
 ## Change Rule
 
-Any change to routing rows, requester identities, approvers, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, Sandbox UAT actor model, HR Final Check authorization boundary, or the frozen Core V1 functional behavior must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
+Any change to routing rows, requester identities, effective dedicated/shared requester resolution, approvers, dual-role behavior, self-approval rule, TMG team structure, retired/canonical section codes, App794 Process statuses/actions, workflow path, administrator authority, Sandbox UAT actor model, HR Final Check authorization boundary, or the frozen Core V1 functional behavior must update this canonical file in the same reviewed change. Old/obsolete routing must be removed after reference/data migration under the NO_ORPHAN_ARTIFACT_GATE.
