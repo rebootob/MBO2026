@@ -5,16 +5,16 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual local/runtime execution is required
-> Updated: 2026-08-30 — APP800 RESET UI R1 CORRECTIVE REVIEW = CORRECTIVE ROUND 2
+> Updated: 2026-08-30 — APP800 RESET UI SOURCE R1 PASS / DEPLOY-TOOL COMPATIBILITY GATE OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 remains accepted known-good. Hybrid Identity + Dual-Role architecture is confirmed. HR/admin native Reset MBO Password authority is READY. App800 Reset UI R1 corrective fixed the original dangling-adapter blocker, invalid-character precheck, and stale READ-ONLY label, but independent review found a new deploy-helper regression, whitespace identity mismatch, and incorrect evidence provenance. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 remains accepted known-good. Hybrid Identity + Dual-Role architecture is confirmed. HR/admin native Reset MBO Password authority is READY. App800 Reset MBO Password UI **SOURCE R1 is independently accepted** at commit `a7a9f02aff6b497f3f8e0009dd377437a3701416`. Deployment tooling is not yet compatible with the module-based App800 candidate and current HR ACL, so no App800 deploy is ready. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
-| D4 | 🟠 App800 HR Control Center IN PROGRESS; deployed App800 remains prior MVP. Reset UI candidate is NOT deploy-ready yet. |
+| D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source accepted, deployment compatibility still open, deployed App800 remains prior MVP. |
 | D5 | 🟠 Copy own previous MBO IN PROGRESS / future focused task |
 | D6 | 🔴 Integrated E2E / Security / Regression pending; must include shared-login + dedicated-login + dual-role separation |
 | D7 | ✅ Admin Support Center source functionality CLOSED; reopen only on proven defect. |
@@ -76,10 +76,10 @@ HR_RESET_NATIVE_AUTHORITY             = READY
 PASSWORD_RESET_NATIVE_AUTHORITY_READY = true
 ```
 
-Least privilege remains:
-- App800 HR_ADMIN_GROUP: View only.
-- App801 HR_ADMIN_GROUP: View + Edit; no Add/Delete/Manage/Import/Export.
-- everyone denied.
+Accepted least privilege:
+- App800 `HR_ADMIN_GROUP`: View only.
+- App801 `HR_ADMIN_GROUP`: View + Edit; no Add/Delete/Manage/Import/Export.
+- `everyone`: denied.
 
 Reset MBO Password means App801 MBO credential reset only, never native Kintone/cybozu password reset.
 
@@ -93,91 +93,86 @@ Canonical Employee_Code contract:
 leading/trailing whitespace = INVALID
 ```
 
-`MboKintoneAuthAdapter.resetMboPassword({ employeeCode })` remains accepted and must not be duplicated or modified by the current corrective unless a separately proven core defect exists.
+`MboKintoneAuthAdapter.resetMboPassword({ employeeCode })` remains accepted and is reused by App800 Reset UI.
 
-## 6. App800 Reset UI R1 Corrective — Independent Review Round 2
+## 6. App800 Reset MBO Password UI SOURCE R1 — PASS
 
-Executor corrective commit reviewed:
-`4f1dfe717597b4cbd5bfb390e1461f2e83893441`
+Accepted executor commit:
+`a7a9f02aff6b497f3f8e0009dd377437a3701416`
 
-Starting Control Plane HEAD:
-`c5800f1448999e422a6b843f653ddcae112b1455`
+Accepted evidence:
+`project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md`
 
-Independent classification:
+Independent result:
 
 ```text
-D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_REVIEW = CORRECTIVE_ROUND_2
-DEPLOY_READY = NO
-ACTIVE_LIVE_AUTH = NONE
+D1_APP800_PASSWORD_RESET_UI_SOURCE_R1 = PASS
+SOURCE_ACCEPTED                        = YES
+DEPLOY_READY                           = NO
+LIVE_DEPLOYED                          = NO
 ```
 
-### Accepted from this corrective
+Accepted source behavior:
+- dedicated App800 Reset MBO Password panel;
+- exact Employee_Code + exact confirmation required;
+- empty, malformed, leading/trailing whitespace, or mismatch fails closed before reset core;
+- one reset call per valid user action; in-flight duplicate clicks blocked;
+- production default path uses canonical imported/bundled `MboKintoneAuthAdapter`;
+- mocked production-path test reaches exactly one App801 update and no write to Apps 800/794/795/53;
+- bilingual success/failure feedback;
+- explicit statement that native Kintone/cybozu password is not reset;
+- password/hash/salt/session/token secrets are not rendered;
+- stale read-only labeling removed;
+- canonical generated bundle includes adapter implementation.
 
-The original three findings are materially improved:
-- `src/ui/hr-control-center.js` now statically imports the canonical `MboKintoneAuthAdapter`.
-- the canonical adapter implementation is present in `dist/hr-control-center-bundle.js`.
-- invalid characters are prevalidated before resetFn.
-- stale `GET-Only` / `SECURE READ-ONLY MVP` wording was removed from the candidate UI/source.
+Accepted final candidate artifact identities:
 
-These improvements are retained; do not reimplement them.
+```text
+APP800_RESET_UI_SOURCE_COMMIT = a7a9f02aff6b497f3f8e0009dd377437a3701416
+APP800_CANDIDATE_JS_BLOB      = 9f393dfcddcf1c3ee265fdf42520d7bb5c3ae6be
+APP800_CANDIDATE_CSS_BLOB     = c1d32deffd9e6c164a4fd80adf20526b543ccbd7
+```
 
-### Finding D — Out-of-scope deploy helper modification creates a future dangling-adapter risk (BLOCKER)
+Round-2 focused suite reported 15/15 PASS and `git diff --check` PASS. Full repository suite reported 979/981 because exactly two legacy Sprint-02 bundle-generator tests are incompatible with the newly module-based HRCC source. This conditional failure was explicitly anticipated by the authorizing Active Task: executor restored the legacy deploy helper and stopped instead of widening scope.
 
-The corrective commit modified:
+## 7. Deployment Tool Compatibility — CURRENT BLOCKER
+
+Legacy file:
 `scripts/kintone/deploy-delivery-sprint02.js`
 
-This file was not in the authorized corrective Allowed Files. The change strips ES-module imports from `hr-control-center.js` before wrapping the source as a classic bundle:
-
-```js
-code = code.replace(/import\s+[\s\S]*?from\s+['"].*?['"];?/g, '');
-```
-
-With the new canonical static import, stripping the import removes the adapter dependency declaration but does not include the adapter implementation. If this legacy helper is used to build/deploy the new HRCC source, it can recreate the same unresolved `MboKintoneAuthAdapter` problem the corrective was meant to remove.
-
-Required next action:
-1. restore this deploy helper to its pre-corrective state first;
-2. do not silently patch deployment tooling inside the Reset UI source WP;
-3. run the full suite after restoring it;
-4. if a legacy deployment/bundle test now fails solely because the HRCC source is a real module with imports, STOP and report the exact compatibility failure. Control Plane will then open a separate narrow deployment-tool compatibility task instead of mixing it into Reset UI source acceptance.
-
-No deploy execution is authorized.
-
-### Finding E — Leading/trailing whitespace is still silently normalized (MUST FIX)
-
-Current UI reads:
-
-```js
-const empCode = input.value.trim();
-const empConfirm = confirm.value.trim();
-```
-
-Therefore values such as `" EMP001 "` become `"EMP001"` and can pass UI validation, while the canonical adapter explicitly rejects a code whose original value is not equal to `trim()`.
-
-Required:
-- preserve raw identity value for validation;
-- leading/trailing whitespace must show bilingual invalid Employee_Code feedback;
-- zero resetFn/reset-core calls;
-- do not silently rewrite identity.
-
-### Finding F — Corrective evidence provenance is false/stale (MUST FIX)
-
-Corrective evidence records the generated JS blob as:
-`18c7b9455b3f62c340827cfc22f259275492e4fd`
-
-Actual Git blob at reviewed commit for `dist/hr-control-center-bundle.js` is:
-`6fc4909d01df6a604626c5284aa7fe86f0248031`
-
-The evidence also repeats the earlier generated JS size despite the bundle now containing the full auth adapter. Evidence must be regenerated from the final corrective HEAD and must state the exact current artifact identities.
-
-Executor evidence is not accepted until provenance matches Git.
-
-## 7. Current Active Task
+It was correctly restored to the pre-corrective blob:
 
 ```text
-ACTIVE_TASK                    = D1 APP800 PASSWORD RESET ADMIN UI SOURCE R1 CORRECTIVE ROUND 2
+DEPLOY_HELPER_RESTORED_BLOB = 27aceb53b52640aebbdbeec78387c3718a05b4b3
+```
+
+However it is now obsolete for the accepted App800 candidate for two independent reasons:
+
+### A. Raw-string bundle path cannot handle real module dependency
+
+The helper reads raw `src/ui/hr-control-center.js` and performs string-based export removal/wrapping. The accepted source now has a real static import of `MboKintoneAuthAdapter`; the legacy helper therefore cannot produce the canonical bundle. Deployment must use the reproducible canonical App800 artifact path, not ad-hoc regex/string bundling.
+
+### B. Legacy post-deploy ACL assertion is stale
+
+The helper calls:
+`assertCreatorOnlyAcl(...)`
+
+That is no longer the accepted App800 security state. Current App800 intentionally contains:
+- `CREATOR` technical admin authority;
+- `HR_ADMIN_GROUP` View only;
+- `everyone` denied.
+
+Deployment tooling must verify this accepted least-privilege ACL **without changing it**. It must not require creator-only and must not write ACL as part of customization deployment.
+
+No deployment is authorized while this compatibility gap remains.
+
+## 8. Current Active Task
+
+```text
+ACTIVE_TASK                    = D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1
 OWNER                          = ANTIGRAVITY
-MODE                           = SOURCE / FOCUSED TEST / LOCAL BUILD ONLY
-STARTING_HEAD                  = 4f1dfe717597b4cbd5bfb390e1461f2e83893441
+MODE                           = SOURCE / TEST / LOCAL ARTIFACT VALIDATION ONLY
+STARTING_IMPLEMENTATION_HEAD   = a7a9f02aff6b497f3f8e0009dd377437a3701416
 LIVE_KINTONE_WRITE             = NO
 PASSWORD_RESET_EXECUTION       = NO
 CUSTOMIZATION_UPLOAD           = NO
@@ -186,7 +181,7 @@ ACL_WRITE                      = NO
 HYBRID_IDENTITY_IMPLEMENTATION = NO
 ```
 
-## 8. Authorization Ledger / Safety
+## 9. Authorization Ledger / Safety
 
 ```text
 LATEST_DEPLOY_AUTH        = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01 — CONSUMED / CLOSED / NEVER REUSE
@@ -197,15 +192,18 @@ ACTIVE_ACL_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-No App800/App801/App794/App53 record write, App53 schema change, App795 route write, customization upload, deploy, password reset execution, ACL write, Process update, or rollback is authorized.
+No App800/App801/App794/App53 record write, App53 schema change, App795 route write, customization upload, deployment, password reset execution, ACL write, Process update, or rollback is authorized.
 
-## 9. Next Gate
+## 10. Next Gates
 
 ```text
-CURRENT_GATE  = APP800 RESET UI R1 CORRECTIVE ROUND 2
-NEXT_OWNER    = ANTIGRAVITY FOR EXACT CORRECTIVE TASK
+CURRENT_GATE  = APP800 DEPLOYMENT TOOL COMPATIBILITY R1
+NEXT_OWNER    = ANTIGRAVITY FOR EXACT SOURCE/TEST TOOLING TASK
 EXPECTED_NEXT = CHATGPT INDEPENDENT REVIEW
 ```
 
-After Reset UI source acceptance, next planned Control Plane task remains:
-`D1 HYBRID IDENTITY MAPPING & DUAL-ROLE READ-ONLY AUDIT R1` for Natta + Vassana.
+After deployment-tool compatibility passes, Control Plane may choose between:
+1. a separately authorized App800 candidate deployment gate; or
+2. the already planned `D1 HYBRID IDENTITY MAPPING & DUAL-ROLE READ-ONLY AUDIT R1` for Natta + Vassana.
+
+Neither starts automatically.
