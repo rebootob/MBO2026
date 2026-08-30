@@ -60,7 +60,7 @@ CANDIDATE_BUILD_CSS_IDENTITY  = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 IMMUTABLE_GIT_JS_IDENTITY     = f097f67404fb75418cf85fee635e5d630ef5474d
 IMMUTABLE_GIT_CSS_IDENTITY    = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 IDENTITIES_EXACT_MATCH        = YES
-CLEAN_SOURCE_REPRODUCTION     = PASS (Zero content diff)
+CLEAN_SOURCE_REPRODUCTION     = PASS (git diff --exit-code -- dist/... exit status 0 / zero content diff)
 ```
 
 ---
@@ -181,10 +181,10 @@ Every verification step, exact command invocation, sanitized output, and exit st
 - **Output:** `ℹ tests 8 / ℹ pass 8 / ℹ fail 0`
 - **Exit Status:** `0`
 
-### 9. Git Dist Content Diff Verification
-- **Command:** `git diff --ignore-space-at-eol -- dist/mbo-employee-app.js dist/mbo-employee.css` (cwd: `scratch/candidate-worktree`)
-- **Output:** `<empty> / CLEAN (0 content diff lines)`
-- **Exit Status:** `0`
+### 9. Git Dist Exit-Code Content Diff Verification
+- **Command:** `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` (cwd: `scratch/candidate-worktree`)
+- **Output:** `<empty>` (0 content diff lines; line-ending CRLF warning only)
+- **Exit Status:** `0` (PASS - Zero content diff)
 
 ### 10. Tracked Worktree Clean Status After Build
 - **Command:** `git status --porcelain` (cwd: `scratch/candidate-worktree`)
