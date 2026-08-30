@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual local/runtime execution is required
-> Updated: 2026-08-30 — D1 APP800 PASSWORD RESET AUTHORITY DISCOVERY REVIEW = CORRECTIVE
+> Updated: 2026-08-30 — D1 APP800 PASSWORD RESET AUTHORITY DISCOVERY R1 = PASS / APP801 AUTHORITY READINESS OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 remains accepted known-good. Password Reset core exists, but App800 administrative UI/authority binding is not closed. First App800 authority discovery was reviewed CORRECTIVE because source-binding and `admin-form` authority claims exceeded the evidence. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 remains accepted known-good. Password Reset core exists. App800 authority/binding discovery R1 is now independently accepted, but production HR reset cannot close until App801 write authority and HR native authority readiness are proven. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; current source remains read-only MVP and Password Reset is a shared D1/D4 gap. |
@@ -32,72 +32,82 @@ TOPOLOGY                      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mob
 REV60_USER_UAT                = PASS
 ```
 
-## 3. First App800 Discovery Review
+## 3. App800 Password Reset Authority Discovery R1 Review
 
-Executor evidence commit:
-`b60f8912e298253e3a66612187abe124aa15b325`
+Executor corrective evidence commit:
+`00e6afd329e0dc71bd2ca0ecb406d83791541e1a`
 
 Scope review:
-- PASS: exactly one new evidence file;
-- source/tests/dist/control docs unchanged by executor;
-- executor reported GET-only discovery with POST/PUT/DELETE/upload/deploy/password-reset = 0.
+- PASS: exactly one executor file changed, `project-docs/D1_APP800_PASSWORD_RESET_AUTHORITY_DISCOVERY_EVIDENCE.md`;
+- no source/tests/dist/scripts/config/package/control/baseline/skill edits by executor;
+- reported GET-only discovery, all mutation/deploy/password-reset counts = 0.
 
-Accepted useful findings from evidence, subject to the stated read-only evidence limitations:
-- App800 reported Live/Preview revision `7`, scope `ALL`;
-- App800 ACL captured rows for `CREATOR` with full rights and `GROUP:everyone` denied;
-- `HR_ADMIN_GROUP` is not present as an App800 ACL row;
-- tenant-wide existence/membership of `HR_ADMIN_GROUP` remains `UNKNOWN`;
-- repository `build-mbo-ui.js` is App794-oriented;
-- repository `deploy-custom-ui.js` has App794-only manifest/target assumptions and cannot be treated as an App800 deploy path.
+Independent Git cross-check:
+- `src/ui/hr-control-center.js` Git blob = `508f132bd4c5b8a6aef6dcccd1e5ea19e05efbba`;
+- `src/styles/hr-control-center.css` Git blob = `3d61fdc332698902c77d60d4d60ef60b06c58db1`;
+- these match the corrected evidence identities.
 
-### Corrective findings
+Accepted R1 findings:
 
-1. **CSS exact-source claim is false against canonical Git.**
-   - executor evidence claimed deployed Live CSS Git blob `8ace549b91c7b02a19de05c7584402eb49ad62d1` exactly matches `src/styles/hr-control-center.css`;
-   - independent Git fetch at the reviewed HEAD shows canonical source CSS blob `3d61fdc332698902c77d60d4d60ef60b06c58db1`;
-   - therefore deployed CSS -> current source exact correspondence is **NOT PROVEN / currently mismatched by blob identity**.
-
-2. **JS source correspondence is not proven.**
-   - deployed bundle identity was reported as `52f59008ec23259ab553afd01a600f3df2760afc`;
-   - canonical source is an unbundled module and there is no canonical App800 build entrypoint in the repository;
-   - saying the deployed bundle “corresponds” to current source without a reproducible exact build/provenance chain is too strong;
-   - status = `UNKNOWN` until proven.
-
-3. **`admin-form` = `CREATOR` is not proven.**
-   - App800 ACL contains a `CREATOR` row;
-   - the evidence did not establish the App800 `creator.code` identity;
-   - therefore the current path by which `admin-form` receives App800 authority remains `UNKNOWN`.
-
-4. **Preview capture is incomplete for a binding decision.**
-   - exact Preview JS/CSS counts/order/file keys/file identities were not fully recorded even though the task requested them where supported.
+```text
+APP800_LIVE_REVISION          = 7
+APP800_PREVIEW_REVISION       = 7
+APP800_LIVE_SCOPE             = ALL
+APP800_PREVIEW_SCOPE          = ALL
+APP800_DESKTOP_JS             = 1 x hr-control-center-bundle.js
+APP800_DESKTOP_CSS            = 1 x hr-control-center.css
+APP800_MOBILE_JS_CSS          = 0 / 0
+LIVE_PREVIEW_JS_FILE_IDENTITY = same reported downloadable file identity
+LIVE_PREVIEW_CSS_IDENTITY     = same reported downloadable file identity
+CSS_SOURCE_PROVENANCE         = EXACT_MATCH after CRLF -> LF normalization
+JS_SOURCE_PROVENANCE          = UNKNOWN / no reproducible canonical App800 build chain yet
+APP800_CREATOR_CODE           = admin-form
+APP800_CREATOR_IS_ADMIN_FORM  = YES
+HR_ADMIN_GROUP_IN_APP800_ACL  = NO
+HR_ADMIN_GROUP_EXISTS_TENANT  = UNKNOWN
+GROUP_everyone_APP800         = DENIED
+APP800_BUILD_ENTRYPOINT       = MISSING
+APP800_DEPLOY_PATH            = MISSING / existing deploy path is App794-only
+```
 
 Decision:
 
-`D1_APP800_PASSWORD_RESET_AUTHORITY_DISCOVERY_REVIEW = CORRECTIVE`
+`D1_APP800_PASSWORD_RESET_AUTHORITY_DISCOVERY_R1_REVIEW = PASS`
 
-Do not begin the write-capable Password Reset UI until the narrow discovery corrective below is reviewed.
+The first discovery overclaims are superseded by R1. Do not reuse them.
 
-## 4. Current Active Task
+## 4. Remaining Native Authority Gap Before Write-Capable Reset UI
+
+D1 baseline requires both:
+- `admin-form` technical recovery;
+- HR-authorized users.
+
+App800 now proves the `admin-form` route but does **not** currently contain an `HR_ADMIN_GROUP` App ACL row. Before a production reset UI can be safely wired, prove the actual App801 permission path because Reset Password writes exactly one App801 credential row.
+
+Required next read-only questions:
+1. App801 app metadata creator and App ACL;
+2. whether `admin-form` has native App801 view/edit through CREATOR or another explicit principal;
+3. whether any HR group/principal currently has App801 view/edit authority;
+4. actual App801 record-level ACL state, if configured;
+5. whether `HR_ADMIN_GROUP` can be proven to exist through a safe read-only path; otherwise keep UNKNOWN;
+6. re-confirm App800 HR group row remains absent/no drift.
+
+No source implementation or ACL change is authorized yet.
+
+## 5. Current Active Task
 
 ```text
-ACTIVE_TASK                   = D1 APP800 PASSWORD RESET AUTHORITY DISCOVERY R1 CORRECTIVE
+ACTIVE_TASK                   = D1 PASSWORD RESET ADMIN AUTHORITY READINESS — APP801 / HR NATIVE ACCESS DISCOVERY
 OWNER                         = ANTIGRAVITY
-MODE                          = READ-ONLY KINTONE GET + LOCAL GIT/BUILD PROVENANCE CHECK ONLY
+MODE                          = READ-ONLY GET + LOCAL INSPECTION ONLY
 SOURCE_CHANGE                 = NO
 KINTONE_WRITE                 = NO
+ACL_WRITE                     = NO
 DEPLOY                        = NO
 PASSWORD_RESET_EXECUTION      = NO
 ```
 
-Corrective must establish:
-- exact current Git blob identities for App800 JS source and CSS source;
-- exact Live and Preview topology including counts/order/names/file keys and downloadable-file identities where supported;
-- source-to-deployed relation as exact match only if reproducibly proven; otherwise explicitly `UNKNOWN` / `MISMATCH`;
-- App800 app metadata `creator.code` and whether it is exactly `admin-form`;
-- `HR_ADMIN_GROUP` tenant existence only if safely provable; otherwise keep `UNKNOWN`;
-- no mutation of any kind.
-
-## 5. Authorization Ledger / Safety
+## 6. Authorization Ledger / Safety
 
 ```text
 LATEST_DEPLOY_AUTH            = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01 — CONSUMED / CLOSED / NEVER REUSE
@@ -109,11 +119,11 @@ ROLLBACK_AUTH                 = NONE
 
 No App800/App801/App794 record write, customization update, deploy, ACL update, schema/layout/process update, password reset, or rollback is authorized.
 
-## 6. Current Gate
+## 7. Current Gate
 
 ```text
-CURRENT_GATE                  = D1 APP800 PASSWORD RESET AUTHORITY DISCOVERY R1 CORRECTIVE
+CURRENT_GATE                  = D1 PASSWORD RESET ADMIN AUTHORITY READINESS — APP801 / HR NATIVE ACCESS DISCOVERY
 CURRENT_MODE                  = READ-ONLY
 NEXT_OWNER                    = ANTIGRAVITY FOR EXACT ACTIVE TASK
-EXPECTED_NEXT                 = CHATGPT REVIEW -> ONLY THEN CONSIDER APP800 PASSWORD RESET SOURCE WP
+EXPECTED_NEXT                 = CHATGPT REVIEW -> AUTHORITY DECISION -> NARROW APP800 RESET UI SOURCE WP OR ACL PROVISIONING PLAN
 ```
