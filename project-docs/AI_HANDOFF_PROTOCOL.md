@@ -1,85 +1,116 @@
-# Multi-AI Handoff & Continuity Protocol (CORE GOVERNANCE)
+# MBO2026 — LEAN MULTI-AI HANDOFF PROTOCOL
 
-> **Document Status:** Complete (Provider-Neutral Governance Standard)  
-> **Applicability:** All AI Assistants (Antigravity, OpenAI Codex, Claude, etc.)  
-> **Core Principle:** AI Can Change, Project Truth Must Not Change  
-> **Last Updated:** 2026-08-24  
+> Provider-neutral continuity standard.  
+> Updated: 2026-08-30 20:45 ICT  
+> Core principle: **AI can change; project truth must not change.**
 
----
+## 1. Truth and roles
 
-## 1. The Multi-AI Operating Model
+Conversation memory is convenience only. Canonical truth is repository + accepted Kintone/Live evidence.
 
-This repository is designed to be fully **AI Provider-Independent**. Conversation memory of any individual AI is ephemeral and must never serve as the primary source of truth. The authoritative source of truth is strictly the **Git Repository, Living Documentation, Defect Register, and Test Evidence**.
-
-```mermaid
-graph LR
-    CURRENT_AI["Current Implementing AI <br/> (e.g. Antigravity)"] --> CHECKPOINT["Safe Repository Checkpoint <br/> (Test, Docs, Git Push)"]
-    CHECKPOINT --> PROTOCOL["Standard AI Handoff Protocol <br/> (HANDOFF.md + STATUS.md)"]
-    PROTOCOL --> RECEIVING_AI["Receiving AI <br/> (e.g. Codex / New Session)"]
-    RECEIVING_AI --> VERIFY["7-Step Handoff Verification <br/> (Verify Code, Tests, Kintone GET)"]
-    VERIFY --> RESUME["Resume Current Work Package"]
+```text
+ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
+Antigravity = Low-Credit Execution Plane only
+Canonical branch = ai/antigravity-wp002c
 ```
 
----
+Purpose-specific authority:
+- Confirmed Baseline = durable rules;
+- Master Joblist = D1–D7 completeness;
+- Control Center = current accepted state/gate/authorization;
+- Active Task = current execution packet, not proof of success;
+- Git/Kintone evidence = actual implementation/runtime truth;
+- CHAT_HANDOFF = concise cross-chat snapshot, always revalidated against HEAD.
 
-## 2. Mandatory Reading Order for Every AI Session
+## 2. Receiving AI startup — lean mandatory order
 
-Before proposing or making ANY changes, the incoming AI must read the following documents in exact order:
+1. Fresh-fetch branch HEAD.
+2. Read `project-docs/CHAT_HANDOFF.md`.
+3. Read `project-docs/AI_CONTROL_CENTER.md`.
+4. Read `project-docs/AI_DOCUMENT_INDEX.md`.
+5. Read `project-docs/AI_ACTIVE_TASK.md` if execution/review is involved.
+6. Read only the relevant Baseline(s) routed by Document Index.
+7. If reviewing execution, inspect exact diff/source/test/evidence.
 
-1. `project-docs/AI_START_HERE.md` (Project orientation & rules)
-2. `project-docs/AI_HANDOFF_PROTOCOL.md` (This handoff protocol)
-3. `project-docs/IMPLEMENTATION_STATUS.md` (Authoritative current phase & scope)
-4. `project-docs/CURRENT_STATE.md` (Live technical baseline)
-5. `project-docs/HANDOFF.md` (Operational handoff & exact next action)
-6. `project-docs/implementation/FINAL_IMPLEMENTATION_BLUEPRINT.md` (Target specification)
-7. Relevant Frozen Architecture Blueprints (`project-docs/architecture-redesign/`)
-8. `project-docs/BUSINESS_RULES.md` (Confirmed business logic)
-9. `project-docs/DECISIONS.md` (Immutable architectural decision log)
-10. `project-docs/OPEN_ISSUES.md` (Open items tracking)
-11. `project-docs/DEFECT_REGISTER.md` (Active bugs & resolutions)
-12. Relevant Test Matrix (`project-docs/architecture-redesign/*TEST_MATRIX.md`)
+Do **not** automatically:
+- read all historical docs;
+- run `npm test` or build;
+- perform Kintone GET/write/deploy;
+- ask the user to repeat project history.
 
----
+Those actions happen only when the current gate requires them.
 
-## 3. Work Package & Change Traceability Standard
+## 3. Control Plane handoff checkpoint
 
-Every code modification, schema change, test execution, defect fix, and commit must reference a structured **Work Package ID**:
-`MBO-P{PHASE}-WP-{NUMBER}`
-*Example:* `MBO-P05-WP-001` (Phase 5, Work Package 1: Twin-Status Engine Schema).
+Before moving chats, ChatGPT should ensure operational docs truthfully capture:
+- current branch and need to re-fetch HEAD;
+- D1–D7 scoreboard;
+- accepted Live baseline;
+- exact current gate/Active Task;
+- accepted work that must not be reopened;
+- exact next owner;
+- open evidence/configuration blockers;
+- current authorization ledger;
+- App53/legacy protection state;
+- special D1 dedicated/shared/dual-role semantics.
 
-Traceability Pipeline:
-`Decision / Requirement` -> `Work Package` -> `Code / Kintone Change` -> `Test Evidence` -> `Commit` -> `Handoff`
+No test run is required merely to update documentation. Never invent a test count that was not observed/persisted.
 
----
+## 4. Executor handoff checkpoint
 
-## 4. Defect Management Standard
-All defects are logged in `project-docs/DEFECT_REGISTER.md` using the standard format:
-`MBO-P{PHASE}-DEF-{NUMBER}`
-*Defect Lifecycle:* `OPEN` -> `IN_PROGRESS` -> `FIXED_PENDING_RETEST` -> `CLOSED`.  
-*Rule:* **No new features may be implemented while active defects block the current phase gate.**
+Antigravity must follow only the current Active Task:
+1. fresh-fetch current branch;
+2. open Control Center + Active Task + exact named files;
+3. modify only allowed files;
+4. run only explicitly required test/build/runtime commands;
+5. run `git diff --check` when required;
+6. commit/push once if task says so;
+7. STOP and report exact commit/files/tests/operations.
 
----
+Antigravity must not edit Control Plane documents unless explicitly authorized, and must not self-certify independent PASS.
 
-## 5. Standard Handoff Protocol (Current AI -> Repository)
+## 5. Independent review protocol
 
-Before ending a session or handing off work, the current AI must execute the **Handoff Checkpoint**:
-1. **Stop Development:** Freeze code changes for the current task.
-2. **Run Tests:** Execute unit/integration test suites (e.g. `npm test`) and capture real evidence.
-3. **Verify Kintone State:** Verify Kintone schema via read-only GET operations if applicable.
-4. **Update Registers:** Update `DEFECT_REGISTER.md` and `IMPLEMENTATION_STATUS.md`.
-5. **Update Handoff Docs:** Update `CURRENT_STATE.md`, `HANDOFF.md`, and `CHANGELOG_AI.md`.
-6. **Git Sync:** Perform `git status`, commit with descriptive message, and `git push origin develop`.
-7. **Report Safe Point:** Report the Last Safe Commit hash and exact next action.
+When user says `review`, ChatGPT:
+1. fresh-fetches HEAD;
+2. reads Control Center + authorizing Active Task + relevant Baseline;
+3. verifies parent/scope/diff/source/test evidence;
+4. separates executor-reported results from independently inspected/executed evidence;
+5. decides `PASS`, `CORRECTIVE`, or `BLOCKED`;
+6. updates Control Plane docs;
+7. opens only the smallest next gate.
 
----
+Accepted work is not reimplemented without proven regression.
 
-## 6. Receiving AI Verification Protocol (Repository -> Receiving AI)
+## 6. Live Kintone safety
 
-When an incoming AI begins a session, it must execute the **7-Step Verification**:
-1. **Step 1:** Read all mandatory documents in the prescribed order.
-2. **Step 2:** Inspect Git branch and verify the current commit matches `Last Safe Commit`.
-3. **Step 3:** Compare `HANDOFF.md` against `IMPLEMENTATION_STATUS.md`.
-4. **Step 4:** Verify that all affected project files exist locally.
-5. **Step 5:** Perform read-only GET verification against Kintone if phase requires.
-6. **Step 6:** Run smoke test suite (`npm test`) to confirm baseline health.
-7. **Step 7:** Output the **AI Handoff Verification Report** declaring `HANDOFF VERIFIED` or `HANDOFF BLOCKED`.
+No POST/PUT/DELETE/deploy/ACL/group/schema/record change without a fresh exact explicit authorization naming the target and scope.
+
+```text
+NO_AUTH = NO_WRITE
+ONE_SHOT = ONE_EXACT_OPERATION
+NO_WIDENING
+NO_REUSE
+NO_AUTOMATIC_ROLLBACK
+```
+
+App53 and legacy PMS Apps `283,310,305,643,307,640,715,716` remain protected/read-only by default.
+
+## 7. D1 continuity rules that must survive handoff
+
+```text
+D1 = KINTONE-ONLY
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+SHARED_APPROVER_AUTHORITY = DENIED
+OWN_MBO_SELF_APPROVER_ELISION = APPROVED
+```
+
+Dedicated identity requires exact active App53 mapping. The App53 audit is complete, but `MBO_Kintone_User` is design-only/not live and Natta's canonical Employee_Code remains unresolved.
+
+Approver authority is authoritative current App794 native `Assignee`, never static App795/snapshot fields/UI role strings.
+
+## 8. New-chat procedure
+
+Use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` as the first message in a new ChatGPT conversation. It instructs the new chat to re-fetch HEAD and read `CHAT_HANDOFF.md` before acting.
+
+No old `develop`-branch push instruction or broad 12-document read list is part of the current protocol.
