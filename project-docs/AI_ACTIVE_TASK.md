@@ -1,171 +1,117 @@
-# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT PREDEPLOY CLEAN-WORKTREE PROOF MICRO-CORRECTIVE R2
+# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT DEPLOYMENT AUTHORIZATION HOLD
 
-Mode: **ANTIGRAVITY LOCAL VERIFICATION EVIDENCE ONLY — NO SOURCE CHANGE / NO KINTONE NETWORK / NO LIVE WRITE / NO DEPLOY**  
+Mode: **CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION / NO KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Independent Review Result
+## 1. Current Status
 
-Latest executor evidence commit:
+Fatal Create Clean-Exit corrective source/test and predeploy verification are complete.
 
-`c2f66b6594bacd588b3ff51bc868fcb817df8aab`
+Independent ChatGPT decisions:
 
-ChatGPT decision:
+```text
+SOURCE_TEST_REVIEW        = PASS
+PREDEPLOY_VERIFICATION    = PASS
+DEPLOY_AUTHORIZATION      = NONE
+```
 
-`CORRECTIVE — ALL PREDEPLOY GAPS CLOSED EXCEPT FINAL CLEAN-WORKTREE PROOF`
+Do not execute Antigravity until the user gives a new explicit one-shot deployment authorization.
 
-Do not deploy. Do not change source/tests/config/scripts/package/dist.
-
-## 2. What Is Already Accepted From Evidence
-
-The following evidence is sufficient and does **not** need to be rerun unless the clean-worktree proof itself requires a fresh build:
+## 2. Locked Corrective Candidate
 
 ```text
 CANDIDATE_SOURCE_TEST_COMMIT = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-FOCUSED_TESTS                = 8/8 PASS
-UI_BUILD                     = EXIT 0
-CLASSIC_BUNDLE_CSS_TESTS     = 8/8 PASS
-DIST_DIFF_EXIT_CODE          = 0
-BUILD_ONLY_TOOLING           = PASS / ZERO NETWORK
-BUILD_ONLY_JS                = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
-BUILD_ONLY_CSS               = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-LIVE_REVISION                = 58
-LIVE_SCOPE                   = ALL
-LIVE_TOPOLOGY                = 1/1/0/0
-LIVE_JS                      = f097f67404fb75418cf85fee635e5d630ef5474d
-LIVE_CSS                     = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-PREVIEW_REVISION             = 58
-PREVIEW_SCOPE                = ALL
-PREVIEW_TOPOLOGY             = 1/1/0/0
-POST                         = 0
-PUT                          = 0
-DELETE                       = 0
-ROLLBACK_REV57_JS            = ac22a56cb9d78001384241fe12745f7a2da3da84
-ROLLBACK_REV57_CSS           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+CANDIDATE_JS_GIT_BLOB        = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
+CANDIDATE_CSS_GIT_BLOB       = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+CANDIDATE_SCOPE              = ALL
+CANDIDATE_TOPOLOGY           = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 ```
 
-## 3. Exact Remaining Defect In Evidence
+This is the only corrective deployment candidate currently accepted for authorization consideration.
 
-The latest evidence reports:
+## 3. Current Live Precondition
+
+Latest accepted GET-only predeploy readback:
 
 ```text
-POST_BUILD_STATUS = M dist/mbo-employee-app.js
-                    M dist/mbo-employee.css
+APP                        = 794
+LIVE_REVISION              = 58
+LIVE_SCOPE                 = ALL
+LIVE_TOPOLOGY              = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+LIVE_JS_IDENTITY           = f097f67404fb75418cf85fee635e5d630ef5474d
+LIVE_CSS_IDENTITY          = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+PREVIEW_REVISION           = 58
+PREVIEW_SCOPE              = ALL
+PREVIEW_TOPOLOGY           = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 ```
 
-with explanation `Line endings; 0 content diff`.
+Before any future deployment attempt, executor must re-read actual Live/Preview state and fail closed on any drift.
 
-That is **not acceptable** for this fail-closed gate because the authorizing predeploy packet required:
+## 4. Known-Good Rollback Manifest
 
 ```text
-final git status --porcelain output = EMPTY
+ROLLBACK_REVISION          = 57
+ROLLBACK_SOURCE_COMMIT     = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
+ROLLBACK_JS_IDENTITY       = ac22a56cb9d78001384241fe12745f7a2da3da84
+ROLLBACK_CSS_IDENTITY      = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+ROLLBACK_SCOPE             = ALL
+ROLLBACK_TOPOLOGY          = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+ROLLBACK_AUTHORIZED        = NO
 ```
 
-`git diff --exit-code = 0` does not override the separate clean-worktree requirement.
+Rollback is not included in any future forward-deploy authorization unless the user separately and explicitly authorizes it.
 
-## 4. Exact R2 Task
-
-Create a **fresh temporary detached worktree** pinned exactly to:
-
-`4472aa2f1c63bf08788b39b4ad54b7ea55808df1`
-
-Then execute and capture in order:
+## 5. Authorization State
 
 ```text
-git rev-parse HEAD
-git status --porcelain
-npm run ui:build
-git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css
-git update-index --refresh
-git rev-parse HEAD
-git status --porcelain
+PRIOR_AUTHORIZATION_ID      = APP794-D1-WP2-R3-DEPLOY-20260829-01
+PRIOR_AUTHORIZATION_STATUS  = CONSUMED / CLOSED / NEVER REUSE
+LATEST_AUTHORIZATION_ID     = APP794-CUMULATIVE-DEPLOY-20260830-01
+LATEST_AUTHORIZATION_STATUS = CONSUMED / CLOSED / NEVER REUSE
+ACTIVE_LIVE_AUTH            = NONE
+ACTIVE_KINTONE_WRITE_AUTH   = NONE
+ACTIVE_DEPLOY_AUTH          = NONE
+ROLLBACK_AUTH               = NONE
 ```
 
-Required result:
-- initial HEAD exact candidate;
-- initial status empty;
-- build exit 0;
-- dist diff exit 0 / output empty;
-- `git update-index --refresh` may be used only to refresh index/stat metadata; it must not change file content;
-- final HEAD exact candidate;
-- **final `git status --porcelain` output empty**.
+No previous authorization may be reused.
 
-### Important anti-masking rule
+## 6. What Is Waiting For User Approval
 
-Between `npm run ui:build` and the final status proof, do **NOT** use:
-- `git reset`;
-- `git checkout -- ...`;
-- `git restore ...`;
-- `git clean`;
-- `git add` / index replacement;
-- manual file edits;
-- source/dist rewrite outside the normal build;
-- any command whose purpose is to revert or hide build-produced modifications.
+Only if the user explicitly authorizes a new App794 corrective deployment may ChatGPT open a new exact one-shot deployment packet.
 
-`git update-index --refresh` is allowed because it refreshes index metadata only. If final status is still non-empty after refresh, STOP and report the mismatch. Do not repair it inside this task.
-
-## 5. Network / Live Boundary
-
-No Kintone network call is required for R2.
+The future authorization, if granted, must be limited to:
 
 ```text
-KINTONE_GET                 = 0 REQUIRED
-KINTONE_POST                = 0
-KINTONE_PUT                 = 0
-KINTONE_DELETE              = 0
-CUSTOMIZATION_UPLOAD        = 0
-DEPLOY                      = 0
-ROLLBACK                    = 0
+TARGET_APP                   = App794 only
+CANDIDATE                    = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
+OPERATION                    = APP794 customization deployment
+MAX_DEPLOY_ATTEMPTS          = 1
+APP794_RECORD_WRITE          = NO
+APP800_APP801_RECORD_WRITE   = NO
+SCHEMA_LAYOUT_ACL_PROCESS    = NO
+ROLLBACK                     = NOT INCLUDED
+AUTO_RETRY                   = NO
+AUTO_ROLLBACK                = NO
 ```
 
-Do not rerun Live/Preview readback unless ChatGPT later asks for it.
+No executor should infer authorization from this document.
 
-## 6. Repository Scope
+## 7. After A Future Corrective Deploy
 
-The **only** allowed canonical repository change is:
+If separately authorized and deployment succeeds technically:
+1. ChatGPT independently reviews exact post-deploy Live JS/CSS/scope/topology readback.
+2. User performs runtime UAT on actual Live App794.
+3. Mandatory first UAT target: authenticated duplicate same-year Create -> fatal error -> exactly one Back -> no native Save/Cancel -> clicking Back returns `/k/794/` in same tab with **no leave-confirm popup** and no save/create mutation.
+4. Rev57 remains accepted known-good until User Runtime UAT passes.
+5. Only after User UAT PASS may the new revision become accepted known-good.
 
-`project-docs/APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE.md`
-
-Do not edit:
-- source/tests/scripts/config/package/dist;
-- `AI_CONTROL_CENTER.md`;
-- `AI_ACTIVE_TASK.md`;
-- baselines/skills;
-- any other file.
-
-No new file.
-
-## 7. Evidence Update Required
-
-Update the existing evidence file with:
-- exact fresh temporary worktree path;
-- initial HEAD + exit status;
-- initial `git status --porcelain` exact output + exit status;
-- build command + exit status;
-- exact `git diff --exit-code ...` output + exit status;
-- `git update-index --refresh` output + exit status;
-- final HEAD + exit status;
-- final `git status --porcelain` exact output + exit status;
-- explicit statement that no reset/checkout/restore/clean/add/manual edit was used between build and final status;
-- Kintone network counts for this corrective = 0/0/0/0 if no network was used.
-
-Keep:
-
-`STATUS = PENDING_CHATGPT_REVIEW`
-
-Commit + push only the evidence file, then STOP.
-
-## 8. Safety State
+## 8. Current Owner
 
 ```text
-LIVE_APP794_REVISION         = 58
-LIVE_SOURCE_COMMIT           = 98108e9e387d01b6d3c3a35cce5baf13324be50e
-CANDIDATE_SOURCE_TEST_COMMIT = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-ACTIVE_LIVE_AUTH             = NONE
-ACTIVE_KINTONE_WRITE_AUTH    = NONE
-ACTIVE_DEPLOY_AUTH           = NONE
-ROLLBACK_AUTH                = NONE
+CURRENT_MODE   = HOLD
+NEXT_OWNER     = USER
+ANTIGRAVITY    = DO NOTHING
 ```
 
-Maximum executor status:
-
-`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_CLEAN_WORKTREE_PROOF_CAPTURED_PENDING_CHATGPT_REVIEW`
+Do not start unrelated D1-D7 implementation from this Active Task.
