@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 ASYNC TEST-CONTRACT CORRECTIVE PASS / LOCAL UI BUILD VERIFICATION NEXT
+> Updated: 2026-08-30 — D1 SOURCE/REGRESSION/LOCAL BUILD ACCEPTED / LIVE ACTIONS STILL UNAUTHORIZED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Employee-Self Runtime PASS. Approval Authority Service PASS. Gate 1 Home Index PASS. Gate 2 cross-employee Detail PASS. Gate 3 Process Proceed fresh-Assignee PASS. Async Process Proceed stale-test corrective PASS. Local UI build verification is next; deploy remains unauthorized. |
+| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Employee-Self Runtime PASS. Approval Authority Service PASS. Gate 1 Home Index PASS. Gate 2 cross-employee Detail PASS. Gate 3 Process Proceed fresh-Assignee PASS. Async Process Proceed test-contract corrective PASS. Full regression recovered after stale-test correction. Local App794 UI build verification PASS. Live prerequisites/deploy/UAT remain separate and unauthorized. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; deploy NOT authorized |
@@ -42,48 +42,69 @@ IMPLEMENTATION_COMMIT = 282dcaf35764ea1960a064cf48f3c8add34506b8
 SECURITY_CORRECTIVE_COMMIT = 8dc664e073a604fc40b88680cbdbc938f58728c6
 ```
 
-Gate 3 intentionally keeps `app.record.detail.process.proceed` async so Dedicated cross-employee approval actions can await fresh native-Assignee revalidation before transition.
-
-## 4. Full-regression stale-test corrective
-
-Prior full regression exposed four failures in `tests/objective-save-validation.test.js` because legacy assertions called the now-async Process Proceed handler synchronously.
-
-Root cause:
+Accepted authority model:
 ```text
-RUNTIME_REGRESSION = NO EVIDENCE
-ROOT_CAUSE = STALE TEST INVOCATION CONTRACT
+My MBO ownership = bound Employee_Code
+Approval list/open/action authority = DEDICATED current native Kintone Assignee
+SHARED approval authority = DENIED
 ```
 
-Accepted corrective commit:
+No App795/static Manager/GM/First_Manager/UI-role fallback is approval authority.
+
+## 4. Full-regression test-contract corrective
+
+Initial pre-deploy full regression:
+```text
+1034 PASS / 4 FAIL / 1038 TOTAL
+```
+
+All four failures were stale synchronous test invocation assumptions after Gate 3 intentionally made `app.record.detail.process.proceed` async.
+
+Accepted test-only corrective:
 ```text
 TEST_CONTRACT_CORRECTIVE_COMMIT = a206e8be47ac2e7a5ffe2e7eac5dddc25ea9d6fb
-INDEPENDENT_DIFF_REVIEW = PASS
 CHANGED_FILES = tests/objective-save-validation.test.js ONLY
+RUNTIME_SOURCE_CHANGED = NO
 ```
 
-Independent review confirms:
-- all direct `proceedHook(...)` calls in the four affected blocks now await the async handler;
-- the G2 synchronous `.forEach(...)` was replaced only as needed with a sequential async-safe loop;
-- expected `event` / `false` results are unchanged;
-- fixtures, statuses, action labels, topology and requester/appraiser semantics are unchanged;
-- no `src/**`, service, script, project-doc or dist file changed.
+Independent diff review confirmed:
+- all affected Process Proceed invocations await the async handler;
+- the one synchronous G2 `.forEach(...)` was converted to an async-safe sequential loop;
+- expected `event` / `false` business results, fixtures, topology, statuses and requester/appraiser semantics were unchanged;
+- no source/service/script/dist file changed.
 
-The executor packet allowed a commit only after the focused test, full `npm test`, and `git diff --check` passed. The corrective commit exists and matches the exact one-file contract. ChatGPT could not independently replay Node tests because its local runtime could not resolve `github.com`; no independent CI replay is claimed.
+The executor corrective packet permitted commit only after the focused test, full `npm test`, and `git diff --check` passed. The committed correction matches that exact one-file contract. No independent Node replay is claimed by ChatGPT because its local runtime could not clone/resolve `github.com`.
 
-## 5. Current Active Task
+## 5. Local UI build verification — PASS
 
+Accepted generated-build commit:
 ```text
-ACTIVE_TASK = D1 LOCAL UI BUILD VERIFICATION R2
-TASK_STATE = OPEN / GENERATED BUILD ONLY
-OWNER = ANTIGRAVITY
-SOURCE_CHANGE = FORBIDDEN
-TEST_CHANGE = FORBIDDEN
-ALLOWED_GENERATED_FILES = dist/mbo-employee-app.js + dist/mbo-employee.css ONLY
-LIVE_KINTONE = NO
-DEPLOY = NO
+GENERATED_BUILD_COMMIT = 09c306d837dfc21470d8c1e401972b1a8f3ffc70
+PARENT = a21a78a6a112ad4e06ec1cc3ddfddbe3af95f2fe
 ```
 
-Exact build contract is in `AI_ACTIVE_TASK.md`.
+Independent GitHub comparison confirmed exactly one generated file changed:
+```text
+dist/mbo-employee-app.js
+```
+
+`dist/mbo-employee.css` was byte-identical and therefore did not change, which is allowed by the build contract.
+
+No `src/**`, `tests/**`, `services/**`, `scripts/**`, `project-docs/**`, package file or other artifact changed in the executor build commit.
+
+Generated-bundle inspection confirms the accepted D1 runtime is present in the bundle, including:
+- `MboApprovalTaskService.revalidateApprovalTask()`;
+- Dedicated cross-employee fresh Assignee revalidation;
+- Process Proceed record id resolved only from `event.recordId || record.$id.value`;
+- fail-closed behavior when native record id is absent or fresh authorization is not exactly true.
+
+Independent decision:
+```text
+D1_LOCAL_UI_BUILD_VERIFICATION = PASS
+DEPLOY_READY_AUTHORIZATION = NO
+```
+
+Build acceptance does not authorize deployment or any Live Kintone/App53/ACL/group operation.
 
 ## 6. Accepted App794 Live baseline
 
@@ -94,9 +115,28 @@ DEPLOYED_SOURCE_COMMIT = 1ed342ad137a4a364496a28d29bdffd24a99b511
 USER_RUNTIME_UAT       = PASS
 ```
 
-Live baseline remains unchanged.
+This live baseline remains unchanged. The accepted local D1 bundle has NOT been deployed.
 
-## 7. Authorization ledger
+## 7. App53 / protected state
+
+```text
+APP53_ENVIRONMENT = PRODUCTION
+APP53_DEFAULT_MODE = READ_ONLY
+VASSANA = vassana -> App53 #456 -> emp_text 0044 -> ACTIVE
+NATTA = natta -> App53 #578 -> emp_text BLANK -> FAIL CLOSED
+```
+
+Known protected design dependency:
+```text
+MBO_Kintone_User
+Field Type = USER_SELECT
+Design = CONFIRMED
+Live field created = NO
+```
+
+No App53 write is authorized.
+
+## 8. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -109,8 +149,17 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-## 8. Exact next action
+## 9. Current Active Task
 
-Antigravity performs only the local UI build from accepted source, verifies changed-file scope is limited to the canonical generated dist outputs, runs `git diff --check`, commits/pushes generated dist only if changed, then STOPs for ChatGPT review.
+```text
+ACTIVE_TASK = NONE — D1 LOCAL BUILD ACCEPTED
+TASK_STATE = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_WORK_PACKAGE
+CURRENT_OWNER = CHATGPT
+ANTIGRAVITY_ACTION = NONE
+```
 
-No Live Kintone, App53, ACL/group, deploy or UAT operation is authorized.
+Antigravity must not continue automatically into Live Kintone reads/writes, App53 schema/mapping, ACL/group configuration, deployment or UAT.
+
+## 10. Exact next control action
+
+Wait for user continuation. On `ต่อ` / `ต่อไป`, ChatGPT fresh-fetches repository truth and chooses the smallest safe next work package. Any production-impacting operation must remain behind its exact authorization gate.
