@@ -1,272 +1,156 @@
-# AI ACTIVE TASK — APP794 CUMULATIVE PRE-DEPLOY VERIFICATION / READ-ONLY
+# AI ACTIVE TASK — APP794 PRE-DEPLOY EVIDENCE COMPLETENESS CORRECTIVE R1 / READ-ONLY
 
-Mode: **ANTIGRAVITY VERIFICATION EXECUTION ONLY — NO LIVE KINTONE WRITE / NO DEPLOY**  
+Mode: **ANTIGRAVITY EVIDENCE CORRECTIVE ONLY — NO SOURCE EDIT / NO LIVE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Objective
+## 1. Review Result
 
-Verify the next immutable App794 release candidate completely **before** any Live authorization.
+ChatGPT independent review of executor evidence commit:
 
-This is NOT a deployment task.
+`ff510cce1c89b10e4fd0682da036beb704fa0f14`
 
-```text
-LIVE_KINTONE_POST_PUT_DELETE = FORBIDDEN
-CUSTOMIZATION_UPLOAD         = FORBIDDEN
-PREVIEW_CUSTOMIZATION_PUT    = FORBIDDEN
-DEPLOY_POST                  = FORBIDDEN
-ROLLBACK                     = FORBIDDEN
-SOURCE_EDIT                  = FORBIDDEN
-```
+Decision:
 
-Allowed Kintone activity in this task = **GET only** for current App794 customization/readback evidence.
+`CORRECTIVE — EVIDENCE COMPLETENESS ONLY`
 
-## 2. Candidate Identity — DO NOT USE CURRENT DOCS HEAD AS RELEASE SOURCE
+The underlying source candidate remains accepted and no source defect was found.
 
-The immutable source candidate is exactly:
-
-`98108e9e387d01b6d3c3a35cce5baf13324be50e`
-
-Current canonical branch HEAD contains later Control Plane documentation commits and is **not** the release-source identity.
-
-Create a temporary detached Git worktree pinned exactly to the candidate. Do not reset/rewrite the canonical branch.
-
-Recommended pattern:
+Independent Git cross-check confirmed:
 
 ```text
-git worktree add --detach <temporary-path> 98108e9e387d01b6d3c3a35cce5baf13324be50e
+CANDIDATE_SOURCE_COMMIT = 98108e9e387d01b6d3c3a35cce5baf13324be50e
+CANDIDATE_JS_GIT_BLOB   = f097f67404fb75418cf85fee635e5d630ef5474d
+CANDIDATE_CSS_GIT_BLOB  = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+ROLLBACK_SOURCE_COMMIT  = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
+ROLLBACK_JS_GIT_BLOB    = ac22a56cb9d78001384241fe12745f7a2da3da84
+ROLLBACK_CSS_GIT_BLOB   = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 ```
 
-Perform candidate tests/build inside that detached worktree. Remove the temporary worktree after evidence is captured.
+The evidence file reports tests/build/Live GET-only/rollback checks as PASS and reports POST=0, PUT=0, DELETE=0. Those values are internally consistent with the immutable Git artifacts.
 
-Candidate worktree gates:
-- `git rev-parse HEAD` = exact candidate SHA above;
-- tracked worktree clean before verification;
-- tracked worktree clean after build verification;
-- no source/test/config changes are allowed.
+## 2. Exact Gap To Correct
 
-## 3. Important Release-Scope Classification
+The original Active Task required the evidence file to include **every command executed and exit status** and explicit proof that the detached candidate worktree was clean before and after build verification.
 
-This is a **cumulative accepted-source candidate**, not an R4-only candidate.
+Current evidence summarizes these results but does not record enough command-level audit detail for:
+- detached worktree creation / exact HEAD check;
+- tracked worktree clean status before verification;
+- exact runtime diff command;
+- exact build-only invocation;
+- `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` and its exit status;
+- tracked worktree clean status after build;
+- candidate immutable Git blob lookup commands;
+- exact GET-only readback command/invocation and its exit status;
+- rollback immutable Git blob lookup commands;
+- temporary worktree removal if performed.
 
-Compared with the accepted Live Rev57 source commit:
+This is an evidence/auditability gap only. Do not change source to solve it.
 
-`9816cef195b6d3ffe039e5fb92c8dc8406c8967a`
+## 3. Allowed Action
 
-runtime source delta includes accepted changes from both:
-
-1. **D1 Password Reset Core R1** — source accepted, currently no Live reset UI/write authorized;
-2. **App794 WP2 R4 Error-State Back Navigation** — source accepted.
-
-The cumulative release must not be represented as “Back button only”.
-
-Before verification, prove the runtime/source delta from Live source -> candidate and report all changed runtime source/dist/test files. Unexpected runtime files = STOP / report to ChatGPT.
-
-Expected directly relevant runtime source owners include:
-- `src/main-mbo-app.js`;
-- `src/ui/mbo-kintone-auth-adapter.js`;
-- generated `dist/mbo-employee-app.js`.
-
-No CSS business-source change is expected for these accepted changes.
-
-## 4. Required Reading — NO BROAD SCAN
-
-Read only:
-1. `project-docs/AI_CONTROL_CENTER.md`
-2. this `project-docs/AI_ACTIVE_TASK.md`
-3. `project-docs/CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md`
-4. `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
-5. `skills/mbo-kintone-ui-runtime-debugging/SKILL.md`
-6. `package.json`
-7. `scripts/kintone/build-mbo-ui.js`
-8. `scripts/kintone/deploy-custom-ui.js`
-9. `src/core/kintone-client.js` only for connection/header construction needed by the GET-only readback
-10. exact focused tests listed below
-
-Do not broad-scan repository history or unrelated D2-D7 files.
-
-## 5. Candidate Test / Build Verification — NO NETWORK
-
-Inside the detached candidate worktree, install existing dependencies only if required. Do not change package metadata or lock files.
-
-Run at minimum:
-
-```text
-node --test tests/employee-record-navigation.test.js tests/employee-main-mbo-app-integration.test.js tests/mbo-kintone-auth-adapter.test.js
-node --test tests/deploy-customization-preservation.test.js
-```
-
-Then run build-only through the existing deployment tooling. **Do not execute Live mode.**
-
-Use the exported build-only path or equivalent existing CLI behavior that guarantees zero Kintone API calls:
-
-```text
-executeDeployCustomUi({ isBuildOnly: true })
-```
-
-Capture:
-- candidate JS Git blob identity;
-- candidate CSS Git blob identity.
-
-Then run:
-
-```text
-node --test tests/classic-bundle.test.js tests/css-structure.test.js
-```
-
-Required clean-reproduction proof after build:
-- `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` = zero diff;
-- tracked worktree remains clean.
-
-Do not manually edit generated `dist`.
-
-## 6. Candidate Immutable Git Artifact Cross-Check
-
-Without rebuilding historical releases, obtain immutable Git blob identities directly from Git for:
-
-Candidate:
-
-```text
-98108e9e387d01b6d3c3a35cce5baf13324be50e:dist/mbo-employee-app.js
-98108e9e387d01b6d3c3a35cce5baf13324be50e:dist/mbo-employee.css
-```
-
-The candidate build-only identities must exactly equal the immutable candidate Git blob identities.
-
-Mismatch = STOP.
-
-## 7. Current Live Rev57 Read-Only Preflight — GET ONLY
-
-Accepted current Live baseline expected by Control Plane:
-
-```text
-APP                         = 794
-LIVE_REVISION               = 57
-LIVE_SCOPE                  = ALL
-LIVE_TOPOLOGY               = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-LIVE_JS_IDENTITY            = ac22a56cb9d78001384241fe12745f7a2da3da84
-LIVE_CSS_IDENTITY           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-LIVE_DEPLOYED_SOURCE_COMMIT = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
-```
-
-Perform a separate **GET-only** readback. Do NOT call `executeDeployCustomUi()` in Live mode.
-
-Allowed network methods/endpoints are limited to GET required to read:
-- `/k/v1/app/customize.json?app=794`;
-- `/k/v1/preview/app/customize.json?app=794`;
-- `/k/v1/file.json?fileKey=...` for the exact current customization FILE entries required to compute identities.
-
-Use existing connection settings only. Never print passwords/tokens/auth headers.
-
-Read and report:
-- Live revision;
-- Live scope;
-- Live desktop/mobile entry counts and order/type/name;
-- Live JS identity from actual downloaded bytes;
-- Live CSS identity from actual downloaded bytes;
-- Preview revision;
-- Preview scope/topology and target entry names;
-- network method count proving `POST=0`, `PUT=0`, `DELETE=0`.
-
-Any Live revision/scope/topology/identity drift from the expected Rev57 baseline = STOP. Do not repair or deploy.
-
-## 8. Rollback Manifest Proof — IMMUTABLE / NO REBUILD
-
-The exact rollback target remains the accepted Rev57 content from immutable source:
-
-`9816cef195b6d3ffe039e5fb92c8dc8406c8967a`
-
-Do NOT rebuild that historical commit for rollback proof.
-
-Use immutable Git objects directly, e.g. equivalent of:
-
-```text
-git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js
-git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css
-```
-
-Required rollback manifest evidence:
-
-```text
-ROLLBACK_SOURCE_COMMIT
-ROLLBACK_JS_PATH
-ROLLBACK_JS_IDENTITY
-ROLLBACK_CSS_PATH
-ROLLBACK_CSS_IDENTITY
-ROLLBACK_SCOPE = ALL
-ROLLBACK_TOPOLOGY = 1/1/0/0
-ROLLBACK_IDENTITIES_MATCH_CURRENT_ACCEPTED_LIVE = YES/NO
-```
-
-Expected rollback identities must equal the accepted Live Rev57 JS/CSS identities exactly.
-
-If immutable Git artifacts cannot reproduce the accepted Live pair exactly => STOP / BLOCKED. No deploy authorization can follow.
-
-## 9. Evidence File — ONLY ALLOWED REPOSITORY CHANGE
-
-After verification, create or update exactly one executor evidence file:
+Update exactly one file only:
 
 `project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md`
 
-This file is raw verification evidence only. It must say:
+Do not modify any other repository file.
 
-`STATUS = PENDING_CHATGPT_REVIEW`
+If exact terminal command/output records from the prior verification are still available, append the missing sanitized command log and exit statuses.
 
-It must include:
-- execution timestamp;
-- candidate source commit;
-- candidate cumulative runtime scope classification;
-- runtime diff file list from Live source -> candidate;
-- every command executed and exit status;
-- focused test pass/fail counts;
-- build-only result;
-- candidate JS/CSS identities from build;
-- candidate JS/CSS immutable Git identities;
-- clean-rebuild / zero tracked dist diff result;
-- Live GET-only revision/scope/topology/actual JS+CSS identities;
-- Preview GET-only revision/scope/topology;
-- GET endpoint list;
-- explicit `POST_COUNT=0`, `PUT_COUNT=0`, `DELETE_COUNT=0`;
-- rollback manifest and immutable Git identities;
-- any warning/gap.
+If exact command records are not available, re-run the same READ-ONLY verification from a detached worktree pinned exactly to:
 
-Do not place secrets, auth headers, passwords, tokens, `.env` values or file contents in evidence.
+`98108e9e387d01b6d3c3a35cce5baf13324be50e`
 
-Commit/push **only this evidence file** to `ai/antigravity-wp002c`.
+Re-run is permitted only under the same restrictions below.
 
-Do not modify:
-- `AI_CONTROL_CENTER.md`;
-- `AI_ACTIVE_TASK.md`;
-- Confirmed Baselines;
-- Skill files;
-- source/tests/scripts/config/package files;
-- generated dist on canonical branch.
+## 4. Required Evidence Addendum
 
-## 10. Stop Conditions
+Add a section named:
 
-STOP immediately and report without write/deploy if any of these occurs:
-- candidate detached worktree HEAD mismatch;
-- unexpected runtime delta;
-- focused test failure;
-- build/classic/CSS failure;
-- build produces tracked dist drift;
-- candidate built identities differ from immutable candidate Git identities;
-- Live Rev57 revision/scope/topology/JS/CSS identity drift;
-- rollback Git artifacts do not exactly reproduce accepted Rev57 identities;
-- GET-only verification cannot be completed safely;
-- any command would require POST/PUT/DELETE to continue.
+`Command / Exit-Status Audit Trail`
 
-Do not fix source in this task.
+Record the exact sanitized command or invocation and exit status for at least:
 
-## 11. Delivery Contract
+1. detached worktree creation;
+2. `git rev-parse HEAD`;
+3. `git status --porcelain` before verification;
+4. runtime/source delta command from Live source `9816cef...` to candidate `98108e9e...`;
+5. focused test command for navigation + main integration + auth adapter;
+6. deployment-preservation test command;
+7. exact build-only invocation proving Live mode was not used;
+8. classic bundle + CSS test command;
+9. `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css`;
+10. `git status --porcelain` after build verification;
+11. candidate immutable Git blob lookup for JS and CSS;
+12. exact GET-only readback invocation used to read App794 Live/Preview/file bytes;
+13. exit status/result of that GET-only readback invocation;
+14. rollback immutable Git blob lookup for JS and CSS;
+15. temporary worktree removal, if performed.
 
-Deliver:
-1. one evidence commit only;
-2. evidence commit SHA;
-3. concise summary of PASS/FAIL observations;
-4. STOP for ChatGPT Independent Review.
+For worktree clean checks, record the sanitized output explicitly. Empty `git status --porcelain` output may be written as `OUTPUT = <empty> / CLEAN`.
+
+For the GET-only readback invocation:
+- do not include credentials, auth headers, tokens, cookies, passwords, `.env` values or file content;
+- record endpoint paths/methods only;
+- retain explicit method counts;
+- `POST_COUNT=0`, `PUT_COUNT=0`, `DELETE_COUNT=0` must remain visible.
+
+## 5. Preserve Existing Verified Facts
+
+Do not change already-established identities merely to make evidence pass.
+
+Expected candidate immutable pair:
+
+```text
+JS  = f097f67404fb75418cf85fee635e5d630ef5474d
+CSS = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+```
+
+Expected current accepted Live/rollback pair:
+
+```text
+JS  = ac22a56cb9d78001384241fe12745f7a2da3da84
+CSS = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+REVISION = 57
+SCOPE = ALL
+TOPOLOGY = 1/1/0/0
+```
+
+Any newly observed mismatch or Live drift => STOP and report it truthfully. Do not rewrite the expected values.
+
+## 6. Strict Safety Boundary
+
+Forbidden:
+- source/test/script/config/package edits;
+- canonical dist edits;
+- Kintone POST/PUT/DELETE;
+- customization upload;
+- preview customization write;
+- deploy;
+- rollback;
+- App801 record write;
+- AI_CONTROL_CENTER.md edit by executor;
+- AI_ACTIVE_TASK.md edit by executor;
+- self-certifying deploy readiness.
+
+Allowed Live network activity, only if re-run is necessary:
+- GET `/k/v1/app/customize.json?app=794`;
+- GET `/k/v1/preview/app/customize.json?app=794`;
+- GET `/k/v1/file.json?fileKey=...` for the exact Live JS/CSS entries.
+
+## 7. Delivery Contract
+
+Commit and push only the updated:
+
+`project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md`
+
+Evidence status must remain:
+
+`PENDING_CHATGPT_REVIEW`
+
+Report commit SHA and STOP.
 
 Maximum executor status:
 
-`APP794_PREDEPLOY_VERIFICATION_EVIDENCE_CAPTURED_PENDING_CHATGPT_REVIEW`
+`APP794_PREDEPLOY_EVIDENCE_COMPLETENESS_CORRECTED_PENDING_CHATGPT_REVIEW`
 
-No Live authorization exists and no deployment follows automatically.
+No Live action follows automatically.
