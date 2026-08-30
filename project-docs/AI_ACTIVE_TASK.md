@@ -1,237 +1,212 @@
-# AI ACTIVE TASK — D1 APP800 PASSWORD RESET ADMIN UI SOURCE R1 CORRECTIVE
+# AI ACTIVE TASK — D1 APP800 PASSWORD RESET ADMIN UI SOURCE R1 CORRECTIVE ROUND 2
 
 Mode: **ANTIGRAVITY SOURCE / FOCUSED TEST / LOCAL BUILD ONLY — NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET EXECUTION**  
 Branch: `ai/antigravity-wp002c`
 
 ## 0. Review Status / Starting Point
 
-Independent ChatGPT review of executor commit:
+Independent ChatGPT review of corrective commit:
 
-`541b7e5cdb58ac533baeaec20325c00a73a295dd`
+`4f1dfe717597b4cbd5bfb390e1461f2e83893441`
 
 Result:
 
 ```text
-D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_REVIEW = CORRECTIVE
+D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_REVIEW = CORRECTIVE_ROUND_2
 DEPLOY_READY = NO
 ```
 
-Do not restart or redesign the feature. Fix only the exact findings below, run focused/full verification, commit + push, then STOP.
+Do not redesign the feature. Preserve the corrections that already work: static canonical adapter import/bundling, invalid-character precheck, truthful HRCC label, existing Reset UI, duplicate-click prevention, safe feedback and secret protection.
 
-Hybrid Identity / Natta / Vassana work remains OUT OF SCOPE.
+Hybrid Identity / Natta / Vassana remains OUT OF SCOPE.
 
-## 1. Finding A — Production Reset Adapter Dependency Missing (BLOCKER)
+## 1. Finding D — Restore Out-of-Scope Legacy Deploy Helper First
 
-Current `src/ui/hr-control-center.js` production default handler refers to:
+The previous corrective modified:
 
-`MboKintoneAuthAdapter`
+`scripts/kintone/deploy-delivery-sprint02.js`
 
-but does not import that module. Current dedicated build entrypoint bundles only `src/ui/hr-control-center.js`. The generated `dist/hr-control-center-bundle.js` contains the dangling reference but no `MboKintoneAuthAdapter` implementation.
+although it was not an allowed file.
 
-Therefore a real browser Reset action without injected test dependency would throw:
-
-`MboKintoneAuthAdapter is unavailable.`
-
-### Required correction
-
-Use the canonical existing reset adapter as a real module dependency.
-
-Preferred narrow implementation:
+The added behavior strips ES-module imports from `hr-control-center.js`:
 
 ```js
-import { MboKintoneAuthAdapter } from './mbo-kintone-auth-adapter.js';
+code = code.replace(/import\s+[\s\S]*?from\s+['"].*?['"];?/g, '');
 ```
 
-in `src/ui/hr-control-center.js`.
+This is unsafe for the new source because `MboKintoneAuthAdapter` is now a real module dependency. Stripping the import without bundling the dependency can recreate a dangling adapter reference in any bundle produced by that legacy helper.
 
-Let esbuild include the canonical adapter automatically in the App800 IIFE bundle.
+### Required action
 
-Rules:
-- do not copy/paste the adapter implementation;
-- do not create a second reset engine;
-- do not expose the adapter globally merely to satisfy the old `typeof` check;
-- remove the fragile global-availability dependency;
-- keep App801 ID explicit and clear; adding `credentialAppId: 801` to `DEFAULT_APP_IDS` is acceptable and preferred over an unexplained magic fallback;
-- do not alter PBKDF2/session/reset semantics.
+1. Restore `scripts/kintone/deploy-delivery-sprint02.js` **exactly to its content at commit `c5800f1448999e422a6b843f653ddcae112b1455`**.
+2. Do not run this deploy script.
+3. Do not add another ad-hoc regex/import stripping workaround.
+4. Run focused tests and full `npm test` after restoration.
+5. If full tests fail only because a legacy deploy/bundle test expects raw `hr-control-center.js` with no imports, **STOP and report the exact failing test/error without modifying deployment tooling again**. Control Plane will split a separate deployment-tool compatibility WP.
 
-## 2. Required Production-Path Test
+This task may restore the file only; no further deployment-tool redesign is authorized.
 
-Existing tests inject `onResetMboPassword`, so they do not exercise the default browser path.
+## 2. Finding E — Leading/Trailing Whitespace Must Fail Closed
 
-Add a focused test that:
-- creates `createHrccRuntime()` **without** `onResetMboPassword`;
-- uses a fake/mocked Kintone API only — no real network;
-- supplies the minimum App801 record/API behavior required for canonical reset adapter execution;
-- triggers a valid Reset action;
-- proves the canonical adapter path is reachable and does not throw `MboKintoneAuthAdapter is unavailable`;
-- proves exactly one App801 update request is produced by the mocked path;
-- proves no App800/App794/App53/App795 write path is called.
-
-If mocking full crypto is necessary, inject only deterministic local test dependencies through the smallest safe seam. Do not weaken production crypto.
-
-Also strengthen bundle verification so it proves dependency completeness. A syntax-only `new Function(bundle)` PASS is not sufficient. Verify the generated App800 bundle includes the canonical adapter implementation and no unresolved global dependency is required for Reset.
-
-## 3. Finding B — Invalid Employee_Code Must Be Blocked Before resetFn
-
-The authorizing R1 task required invalid/malformed Employee_Code to produce visible validation failure with **zero reset-core calls**.
-
-Canonical App801/MBO Employee_Code format is:
+Canonical Employee_Code identity contract:
 
 ```text
 ^[A-Za-z0-9_.-]+$
+leading whitespace  = INVALID
+trailing whitespace = INVALID
 ```
 
-Current R1 UI only checks:
-- empty input;
-- confirmation mismatch.
+Current code calls `.trim()` before validation, silently converting values such as:
 
-A matching malformed value can currently reach `resetFn`.
+```text
+" EMP001" -> "EMP001"
+"EMP001 " -> "EMP001"
+```
+
+This conflicts with the canonical adapter identity contract.
 
 ### Required correction
 
-Before setting in-flight state or invoking `resetFn`:
-- validate exact canonical format;
-- invalid format -> bilingual visible validation message;
-- resetFn call count = 0;
-- preserve exact code value semantics; do not uppercase/lowercase or silently rewrite Employee_Code;
-- leading/trailing whitespace remains invalid rather than silently changing identity where practical. If the UI continues trimming values, add a focused test and ensure the canonical adapter's identity contract is not weakened.
+- read the raw input values first;
+- reject when `rawEmployeeCode !== rawEmployeeCode.trim()`;
+- reject when confirmation has leading/trailing whitespace;
+- then validate canonical regex;
+- invalid whitespace -> bilingual visible validation error;
+- resetFn/reset-core call count = 0;
+- do not uppercase/lowercase/rewrite identity;
+- valid exact Employee_Code remains unchanged.
 
-Do not change the reset adapter core merely to satisfy this UI precheck unless absolutely necessary. Prefer a small pure UI validation helper.
+Add focused tests for at least:
+- leading whitespace;
+- trailing whitespace;
+- whitespace only;
+- valid exact code unchanged.
 
-## 4. Finding C — Remove Untruthful READ-ONLY Wording
+## 3. Finding F — Regenerate Truthful Corrective Evidence
 
-The candidate now contains an authorized write-capable Reset panel, so these statements are no longer truthful:
-- source header wording that says the browser runtime is `GET-Only`;
-- UI badge `SECURE READ-ONLY MVP`.
+The previous evidence is stale/incorrect.
 
-Replace with concise truthful language, for example:
+It states generated JS blob:
+`18c7b9455b3f62c340827cfc22f259275492e4fd`
 
-`SECURE HR CONTROL CENTER`
+but reviewed Git shows actual current blob at `4f1dfe7...`:
+`6fc4909d01df6a604626c5284aa7fe86f0248031`
 
-or
+### Required correction
 
-`Monitoring + Authorized Admin Actions`
+After all Round-2 changes and the final local build:
+- calculate/read the exact Git blob identity for final `dist/hr-control-center-bundle.js`;
+- calculate/read exact final CSS blob identity;
+- record actual file sizes from the final artifacts;
+- do not reuse values from the R1 evidence;
+- evidence must correspond to the exact final executor commit.
 
-Requirements:
-- monitoring/data-fetch behavior remains read-only except the explicitly authorized Reset action;
-- do not imply the Reset panel resets native Kintone/cybozu password;
-- do not broadly rebrand/refactor HRCC.
+Create a new evidence file:
 
-## 5. Preserve Accepted R1 Behavior
+`project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md`
 
-Keep all currently accepted candidate behavior unless required by this corrective:
-- Reset section inside App800 only;
-- exact Employee_Code + explicit confirmation;
-- one reset per user action;
-- in-flight duplicate-click prevention;
-- bilingual success/failure feedback;
-- explicit statement that Reset MBO Password does NOT reset native Kintone/cybozu password;
-- no secret rendering/logging;
-- no bulk reset;
-- no credential create/delete;
-- no Account_Status change;
-- existing HRCC filter/dashboard/health behavior remains intact;
-- generated dist remains reproducible classic browser bundle.
+Do not overwrite historical evidence files.
 
-## 6. Exact Allowed Files
+## 4. Preserve Previously Corrected Findings A/B/C
+
+Must remain true:
+
+1. `src/ui/hr-control-center.js` statically imports canonical `MboKintoneAuthAdapter`.
+2. `dist/hr-control-center-bundle.js` includes the actual adapter implementation and `resetMboPassword` method.
+3. Default non-injected Reset path works with mocked Kintone API.
+4. Invalid characters are blocked before resetFn.
+5. `SECURE READ-ONLY MVP` and `GET-Only browser runtime` stale wording remain absent.
+6. Native Kintone/cybozu password distinction remains explicit.
+7. No secrets rendered/logged.
+8. No bulk reset / create / delete / Account_Status alteration.
+
+## 5. Exact Allowed Files
 
 Allowed to modify:
 
 ```text
 src/ui/hr-control-center.js
-scripts/kintone/build-hrcc-ui.js           only if needed for dependency/bundle verification
-src/styles/hr-control-center.css           only if wording correction needs no style change, preferably untouched
 tests/hr-control-center-reset-ui.test.js
 dist/hr-control-center-bundle.js
-dist/hr-control-center.css                 only regenerated if build does so
-project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_EVIDENCE.md
+dist/hr-control-center.css                 only as regenerated by canonical build
+scripts/kintone/deploy-delivery-sprint02.js RESTORE ONLY to c5800f1 content
+project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md
 ```
 
-`src/ui/mbo-kintone-auth-adapter.js` is **READ/IMPORT ONLY** in this corrective unless a proven blocker makes modification unavoidable. If you believe it must change, STOP and report instead of widening automatically.
+Read only:
+- `src/ui/mbo-kintone-auth-adapter.js`
+- `scripts/kintone/build-hrcc-ui.js` unless a reproducibility defect is proven; if so STOP/report before changing.
 
-Forbidden source areas:
-- `src/main-mbo-app.js`
-- App794 Employee-Self UI/session/navigation source
-- App53-related source/schema
-- App795 routing source/data
+Forbidden:
+- App794 source
+- App53/App795 source/schema/data
 - Hybrid Identity/My Approval Tasks implementation
-- D2/D3/D5/D7 unrelated code
-- Control Center / Active Task / Confirmed Baselines / skills
+- ACL/Process/schema changes
+- Control Center / Active Task / Baselines / skills
+- unrelated D2/D3/D5/D7 code
 
-## 7. Required Focused Tests
+## 6. Required Verification
 
-At minimum prove:
+At minimum:
 
-1. Reset panel renders.
-2. Empty Employee_Code -> blocked / 0 reset calls.
-3. Invalid-format Employee_Code -> blocked / 0 reset calls.
-4. Confirmation mismatch -> blocked / 0 reset calls.
-5. Valid exact confirmation with injected reset function -> exactly 1 call.
-6. In-flight repeat -> no duplicate call.
-7. Default non-injected production reset path uses bundled canonical `MboKintoneAuthAdapter` with fake Kintone API and reaches exactly one mocked App801 update.
-8. Success/failure copy remains safe and bilingual.
-9. Native Kintone/cybozu password distinction remains explicit.
-10. No password hash/salt/session/token secret rendered.
-11. `GET-Only` / `SECURE READ-ONLY MVP` stale wording removed from the candidate.
-12. Existing HRCC monitoring/filter/dashboard tests remain PASS.
-13. App800 bundle parses as classic script and has zero runtime import/export residue.
-14. Bundle dependency check proves canonical adapter implementation is included and Reset does not rely on an unresolved global adapter.
-15. Full repository `npm test` PASS.
-16. `git diff --check` PASS.
+1. focused Reset UI suite PASS;
+2. leading whitespace -> blocked / 0 reset calls;
+3. trailing whitespace -> blocked / 0 reset calls;
+4. valid exact Employee_Code unchanged and reset called exactly once;
+5. default production path still uses canonical bundled adapter with mocked App801 update exactly once;
+6. generated bundle contains adapter implementation and no runtime import/export residue;
+7. `scripts/kintone/deploy-delivery-sprint02.js` exact content identity matches commit `c5800f1448999e422a6b843f653ddcae112b1455` after restore;
+8. full `npm test` PASS, OR if it fails solely due restored legacy helper incompatibility, STOP/report exact test without further source/deploy-tool widening;
+9. `git diff --check` PASS;
+10. zero Live Kintone operations.
 
-## 8. Safety — Zero Live Operations
+## 7. Safety — Zero Live Operations
 
 ```text
-APP800_RECORD_WRITE_RUNTIME       = 0
-APP801_REAL_RECORD_WRITE          = 0
-APP794_RECORD_WRITE_RUNTIME       = 0
-APP53_RECORD_WRITE                = 0
-APP795_ROUTING_WRITE              = 0
-PASSWORD_RESET_EXECUTION_LIVE     = 0
-APP800_APP_ACL_WRITE              = 0
-APP801_APP_ACL_WRITE              = 0
-GROUP_MEMBERSHIP_WRITE            = 0
-SCHEMA_LAYOUT_PROCESS_WRITE       = 0
-CUSTOMIZATION_UPLOAD              = 0
-DEPLOY                            = 0
-ROLLBACK                          = 0
-LIVE_POST                         = 0
-LIVE_PUT                          = 0
-LIVE_DELETE                       = 0
+LIVE_GET                         = 0
+LIVE_POST                        = 0
+LIVE_PUT                         = 0
+LIVE_DELETE                      = 0
+APP801_REAL_RECORD_WRITE         = 0
+PASSWORD_RESET_EXECUTION_LIVE    = 0
+CUSTOMIZATION_UPLOAD             = 0
+DEPLOY                           = 0
+ACL_WRITE                        = 0
+SCHEMA_LAYOUT_PROCESS_WRITE      = 0
+ROLLBACK                         = 0
+HYBRID_IDENTITY_SOURCE_CHANGE    = 0
 ```
 
-Mock/local test calls do not count as Live operations but must be clearly labeled as mocks.
+Mock/local calls are allowed and must be labeled as mocks.
 
-## 9. Evidence
+## 8. Evidence Required
 
-Create:
+`project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md`
 
-`project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_EVIDENCE.md`
-
-Record:
+Must include:
 - starting HEAD;
 - exact files changed;
-- exact correction for Findings A/B/C;
-- focused test names + pass count;
-- full suite pass count;
+- exact restore proof for legacy deploy helper;
+- whitespace validation tests/results;
+- preserved A/B/C regression tests;
+- focused/full test results;
 - build command/result;
-- generated JS/CSS blob identities;
-- proof canonical adapter is inside App800 bundle;
-- proof default production path was exercised with mocks;
+- actual final JS/CSS sizes and Git blob identities;
+- adapter inclusion proof;
 - `git diff --check`;
-- exact Live GET/POST/PUT/DELETE/upload/deploy/reset counts = 0;
+- exact Live operation counts all zero;
 - `STATUS = PENDING_CHATGPT_REVIEW`.
 
 Commit + push one focused corrective commit if practical, then STOP.
 
 Maximum executor status:
 
-`D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_READY_PENDING_CHATGPT_REVIEW`
+`D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_READY_PENDING_CHATGPT_REVIEW`
 
-## 10. Next Owner
+## 9. Next Owner
 
 After executor commit/push:
 
 `NEXT_OWNER = CHATGPT INDEPENDENT REVIEW`
 
-Do not proceed to deployment or Hybrid Identity audit automatically.
+Do not deploy and do not begin Hybrid Identity audit automatically.
