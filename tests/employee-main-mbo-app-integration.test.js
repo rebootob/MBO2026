@@ -375,7 +375,18 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(createUnauthBackBars.length, 0, 'R4_R2_CREATE_UNAUTH_ERROR_BACK_ABSENT: Error screen before authentication on Create must NOT mount Back bar');
   setMboLoginGate(origGate);
 
-  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar (WP2 R4 R2)
+  // Mock native Save & Cancel buttons in document for testing hideNativeSaveCancelControls
+  const mockSaveBtn = createMockElement('button');
+  mockSaveBtn.className = 'gaia-ui-actionmenu-save';
+  const mockCancelBtn = createMockElement('button');
+  mockCancelBtn.className = 'gaia-ui-actionmenu-cancel';
+  globalThis.document.querySelectorAll = (sel) => {
+    if (sel.includes('gaia-ui-actionmenu-save')) return [mockSaveBtn];
+    if (sel.includes('gaia-ui-actionmenu-cancel')) return [mockCancelBtn];
+    return [];
+  };
+
+  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar and hide native Save/Cancel (Fatal Create Clean-Exit R1)
   const createAutoloadFailHost = createMockElement('div');
   currentActiveHost = createAutoloadFailHost;
   const createAutoloadFailEvent = {
@@ -395,6 +406,9 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const createAutoloadBackLink = createAutoloadBackBars[0].querySelector('a');
   assert.equal(createAutoloadBackLink.href, '/k/794/', 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_TARGET: Target is /k/794/');
   assert.ok(createAutoloadBackLink.textContent.includes('← กลับหน้า My MBO / Back to My MBO'), 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_LABEL: Uses exact bilingual label');
+  assert.equal(mockSaveBtn.style.display, 'none', 'FATAL_CREATE_NATIVE_SAVE_HIDDEN: Native Save control must be hidden on terminal fatal Create state');
+  assert.equal(mockCancelBtn.style.display, 'none', 'FATAL_CREATE_NATIVE_CANCEL_HIDDEN: Native Cancel control must be hidden on terminal fatal Create state');
+  assert.equal(createAutoloadFailEvent.record.Employee_Code, undefined, 'FATAL_CREATE_FORM_STATE_CLEAN: Native record object must remain unmutated by failed autoload');
   globalThis.kintone.api = savedApi;
 
   assert.equal(sessionMutations, 0, 'REAL_MAIN_AUTH_SESSION_MUTATION = 0');

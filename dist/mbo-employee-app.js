@@ -7675,6 +7675,29 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         } catch (e) {
         }
       });
+    }, hideNativeSaveCancelControls = function() {
+      try {
+        if (typeof document !== "undefined" && document.querySelectorAll) {
+          const selectors = [
+            ".gaia-ui-actionmenu-save",
+            ".gaia-ui-actionmenu-cancel",
+            ".gaia-argui-app-menu-save",
+            ".gaia-argui-app-menu-cancel",
+            "button.gaiav2-app-statusbar-action",
+            "button.gaia-ui-actionmenu-save",
+            "button.gaia-ui-actionmenu-cancel"
+          ];
+          selectors.forEach((sel) => {
+            const els = document.querySelectorAll(sel);
+            els.forEach((el) => {
+              if (el && el.style) {
+                el.style.display = "none";
+              }
+            });
+          });
+        }
+      } catch (e) {
+      }
     }, renderBlockedNotice = function(host, title, detail, options = {}) {
       if (!host) host = document.querySelector(".gaia-app-wrapper") || document.body;
       host.innerHTML = "";
@@ -7698,6 +7721,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       box.appendChild(h2);
       box.appendChild(p);
       host.appendChild(box);
+      hideNativeSaveCancelControls();
     }, resolveBusinessStage = function(event) {
       if (event.type === "app.record.create.show" || event.type === "app.record.create.submit") {
         return BUSINESS_STAGES.NEW_RECORD;
@@ -7924,25 +7948,32 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         );
       }
       if (isCreate && authenticatedEmployeeCode) {
-        isAutoloadingInCreateHandler = true;
-        const lookupPromise = ui.executeLookup(authenticatedEmployeeCode);
-        if (lookupPromise && typeof lookupPromise.then === "function") {
-          return lookupPromise.then(() => event).catch((err) => {
-            console.error("[MBO V2] Employee profile resolution failed during create show autoload:", err);
-            renderBlockedNotice(
-              uiHost,
-              "Employee Profile Resolution Failed",
-              `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
-              { isCreate: true, showBackToMyMbo: true, appId: event.appId || getMboAppId() }
-            );
-            hideAllNativeFields(record);
-            return event;
-          }).finally(() => {
-            isAutoloadingInCreateHandler = false;
-          });
-        } else {
+        const currentAppId = event.appId || getMboAppId();
+        const fy = record.Fiscal_Year?.value || "FY2026";
+        const autoloadPipeline = (async () => {
+          await EmployeeService.checkDuplicateMBO(
+            currentAppId,
+            fy,
+            authenticatedEmployeeCode,
+            record.$id?.value,
+            kintoneApiWrapper
+          );
+          isAutoloadingInCreateHandler = true;
+          return ui.executeLookup(authenticatedEmployeeCode);
+        })();
+        return autoloadPipeline.then(() => event).catch((err) => {
+          console.error("[MBO V2] Employee profile resolution failed during create show autoload:", err);
+          renderBlockedNotice(
+            uiHost,
+            "Employee Profile Resolution Failed",
+            `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
+            { isCreate: true, showBackToMyMbo: true, appId: currentAppId }
+          );
+          hideAllNativeFields(record);
+          return event;
+        }).finally(() => {
           isAutoloadingInCreateHandler = false;
-        }
+        });
       }
       return event;
     };
