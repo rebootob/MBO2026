@@ -17,14 +17,24 @@ This folder contains business, technical, security, UI/UX, routing, data, and go
 
 ## Critical D1 Constraint
 
-D1 authentication is **KINTONE-ONLY**.
+D1 authentication/access is **KINTONE-ONLY HYBRID IDENTITY**.
 
 ```text
 External server/service = FORBIDDEN
 Auth Bridge              = CANCELLED / SUPERSEDED
 External database        = FORBIDDEN
 Reverse proxy            = FORBIDDEN
+
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 ```
+
+Canonical meaning:
+- dedicated Kintone employee/approvers may auto-bind to their exact active Employee_Code after authoritative 1:1 mapping is proven;
+- approved shared Kintone principals continue to use Employee_Code + App801 MBO password/session;
+- one person may be both Employee and Approver without duplicate employee/MBO records;
+- `My MBO` and `My Approval Tasks` are separate security contexts;
+- self-approval must fail closed;
+- physical dedicated-user mapping source is pending read-only App53 audit until proven.
 
 Do not infer otherwise from historical chat, commits, or abandoned `services/mbo-auth-bridge/` files.
 
@@ -34,15 +44,15 @@ Do not infer otherwise from historical chat, commits, or abandoned `services/mbo
 - `ROLLBACK_RECOVERY_SAFETY.md` — mandatory Live rollback/recovery standard: immutable known-good manifest, atomic JS/CSS release pair, validated rollback material, explicit rollback authorization, one-attempt fail-closed execution and exact post-readback.
 - `SOURCE_CODE_ARCHITECTURE.md` — modular JavaScript architecture, one-feature/one-owner rule, feature/service/domain/adapter boundaries, change locality, no copy-paste implementations, feature-level tests, controlled decomposition and generated-dist traceability.
 - `DOCUMENT_CONTROL.md` — lean document policy, Core Read Set and default-ignore historical files.
-- `D1_AUTH_SECURITY.md` — **current KINTONE-ONLY D1 authentication architecture**, App801 credential model, PBKDF2/lockout/password rules, Employee-Self identity binding, `MBO_EMPLOYEE_ACCESS` ACL target, shared-principal limitation and final D1 UAT requirements.
-- `D1_SESSION_CONTINUITY.md` — 8-hour same-tab opaque session model validated through App801 inside Kintone, Credential_Version/Kintone-principal binding, logout/password rotation and UAT requirements.
-- `D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO ownership/history/status/no-delete rules.
+- `D1_AUTH_SECURITY.md` — **current KINTONE-ONLY HYBRID IDENTITY architecture**, dedicated-vs-shared identity modes, Employee-Self/Approver separation, App801 shared credential model, PBKDF2/lockout/password rules, HR/admin reset authority, `MBO_EMPLOYEE_ACCESS` shared-principal ACL and final D1 UAT requirements.
+- `D1_SESSION_CONTINUITY.md` — dedicated native-Kintone continuity versus shared 8-hour App801-backed same-tab MBO session, Credential_Version/Kintone-principal binding, logout/password rotation and UAT requirements.
+- `D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO ownership/history/status/no-delete rules for both identity modes, with dual-role separation from Approval Tasks.
 - `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — Live must not fabricate workflow/comment history; native Kintone Comments authority; truthful zero/pending/saved/multiple attachment states and Kintone-only file lifecycle.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
-- `ROUTING_WORKFLOW.md` — confirmed App795 routing model and workflow rules.
-- `EMPLOYEE_MASTER_ROUTING.md` — confirmed App53 routing-input semantics, Position normalization, GM precedence, Team semantics and President-resolution safety.
-- `UI_UX.md` — confirmed App794 UI/UX, bilingual presentation, route display, HR phase-calendar ownership, deadlines, attachments and Preview approval rules.
+- `ROUTING_WORKFLOW.md` — confirmed App795 routing model, effective dedicated/shared requester identity, dual-role Approver authorization and self-approval guard.
+- `EMPLOYEE_MASTER_ROUTING.md` — confirmed App53 routing-input semantics plus dedicated Kintone User <-> Employee_Code mapping contract/read-only audit requirement, Position normalization, GM precedence, Team semantics and President-resolution safety.
+- `UI_UX.md` — confirmed App794 UI/UX, bilingual presentation, route display, HR phase-calendar ownership, deadlines, attachments, Preview approval rules, and Hybrid Identity Home (`My MBO` + `My Approval Tasks`).
 
 ## Review Rule
 
@@ -54,6 +64,14 @@ For every future `review`, reviewer must:
 5. extract reusable Kintone knowledge into `skills/kintone/` when generalizable;
 6. treat conflicts as MUST FIX/BLOCKER according to impact;
 7. update Control Center / Active Task to match the promoted Baseline.
+
+For any Hybrid Identity / dual-role review, the minimum relevant set is:
+- `D1_AUTH_SECURITY.md`
+- `D1_SESSION_CONTINUITY.md`
+- `D1_EMPLOYEE_SELF_MY_MBO.md`
+- `EMPLOYEE_MASTER_ROUTING.md`
+- `ROUTING_WORKFLOW.md`
+- `UI_UX.md` when Home/record UX is involved.
 
 For any Live deployment/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory reading.
 For any source implementation/refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory reading when functional ownership or module boundaries are affected.
