@@ -284,7 +284,20 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const editBackBar = editHost.querySelector('[data-mbo-back-nav-bar]');
   assert.ok(editBackBar, 'REAL_MAIN_EDIT_BACK_VISIBLE: Edit screen must mount Back to My MBO bar via main-mbo-app pipeline');
 
-  // 3. CREATE SHOW Integration Proof
+  // Mock native Save & Cancel buttons in document for testing hideNativeSaveCancelControls
+  const mockSaveBtn = createMockElement('button');
+  mockSaveBtn.className = 'gaia-ui-actionmenu-save';
+  mockSaveBtn.style.display = 'block';
+  const mockCancelBtn = createMockElement('button');
+  mockCancelBtn.className = 'gaia-ui-actionmenu-cancel';
+  mockCancelBtn.style.display = 'block';
+  globalThis.document.querySelectorAll = (sel) => {
+    if (sel.includes('gaia-ui-actionmenu-save')) return [mockSaveBtn];
+    if (sel.includes('gaia-ui-actionmenu-cancel')) return [mockCancelBtn];
+    return [];
+  };
+
+  // 3. CREATE SHOW Integration Proof (Normal successful Create after preflight PASS)
   const createHost = createMockElement('div');
   currentActiveHost = createHost;
 
@@ -322,7 +335,13 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const createCommentMirror = createHost.querySelector('[data-mbo-comment-panel]');
   assert.equal(createCommentMirror, null, 'COMMENT_CREATE_MIRROR_ABSENT: Create screen must NOT mount Comment mirror');
 
-  // 4. ERROR STATE Integration Proofs (WP2 R4)
+  // R3 Gap A Assertions: Normal Create continuation after preflight PASS
+  assert.equal(createEvent.record.Fiscal_Year.value, 'FY2026', 'R3_NORMAL_CREATE_FY_DEFAULTED: Blank Fiscal_Year must default to FY2026 after preflight PASS');
+  assert.equal(createEvent.record.Employee_Code.value, '0118', 'R3_NORMAL_CREATE_AUTOLOAD_CONTINUES: Normal profile autoload continues to populate Employee_Code');
+  assert.equal(mockSaveBtn.style.display, 'block', 'R3_NORMAL_CREATE_SAVE_NOT_HIDDEN: Normal successful Create must NOT hide native Save');
+  assert.equal(mockCancelBtn.style.display, 'block', 'R3_NORMAL_CREATE_CANCEL_NOT_HIDDEN: Normal successful Create must NOT hide native Cancel');
+
+  // 4. ERROR STATE Integration Proofs (WP2 R4 / R3)
   // 4a. Employee Code Mismatch on Existing Detail Screen
   const mismatchHost = createMockElement('div');
   currentActiveHost = mismatchHost;
@@ -340,6 +359,9 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const mismatchBackBars = mismatchHost.querySelectorAll('[data-mbo-back-nav-bar]');
   assert.equal(mismatchBackBars.length, 1, 'R4_ERROR_STATE_DETAIL_BACK_VISIBLE: Access Denied error screen on existing Detail must mount exactly 1 Back bar');
   assert.equal(mismatchBackBars[0].querySelector('a').href, '/k/794/');
+  // R3 Gap B Assertion: Detail blocked notice does not hide native actions
+  assert.equal(mockSaveBtn.style.display, 'block', 'R3_DETAIL_BLOCKED_SAVE_NOT_HIDDEN: Existing Detail blocked notice must NOT hide native Save');
+  assert.equal(mockCancelBtn.style.display, 'block', 'R3_DETAIL_BLOCKED_CANCEL_NOT_HIDDEN: Existing Detail blocked notice must NOT hide native Cancel');
 
   // 4b. Employee Code Mismatch on Existing Edit Screen
   const mismatchEditHost = createMockElement('div');
@@ -357,19 +379,9 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await recordShowHandler(mismatchEditEvent);
   const mismatchEditBackBars = mismatchEditHost.querySelectorAll('[data-mbo-back-nav-bar]');
   assert.equal(mismatchEditBackBars.length, 1, 'R4_ERROR_STATE_EDIT_BACK_VISIBLE: Access Denied error screen on existing Edit must mount exactly 1 Back bar');
-
-  // Mock native Save & Cancel buttons in document for testing hideNativeSaveCancelControls
-  const mockSaveBtn = createMockElement('button');
-  mockSaveBtn.className = 'gaia-ui-actionmenu-save';
-  mockSaveBtn.style.display = 'block';
-  const mockCancelBtn = createMockElement('button');
-  mockCancelBtn.className = 'gaia-ui-actionmenu-cancel';
-  mockCancelBtn.style.display = 'block';
-  globalThis.document.querySelectorAll = (sel) => {
-    if (sel.includes('gaia-ui-actionmenu-save')) return [mockSaveBtn];
-    if (sel.includes('gaia-ui-actionmenu-cancel')) return [mockCancelBtn];
-    return [];
-  };
+  // R3 Gap B Assertion: Edit blocked notice does not hide native actions
+  assert.equal(mockSaveBtn.style.display, 'block', 'R3_EDIT_BLOCKED_SAVE_NOT_HIDDEN: Existing Edit blocked notice must NOT hide native Save');
+  assert.equal(mockCancelBtn.style.display, 'block', 'R3_EDIT_BLOCKED_CANCEL_NOT_HIDDEN: Existing Edit blocked notice must NOT hide native Cancel');
 
   // 4c. Create Screen Auth-Required / Gate-Null Error State MUST NOT show Back bar and MUST NOT hide native Save/Cancel
   const createUnauthErrorHost = createMockElement('div');
