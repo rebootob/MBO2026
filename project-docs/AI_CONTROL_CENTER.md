@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 GATE 3 INDEPENDENT REVIEW = CORRECTIVE / EXACT RECORD-ID BOUNDARY
+> Updated: 2026-08-30 — D1 GATE 3 INDEPENDENT REVIEW = PASS
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Gate 3 implementation candidate reviewed CORRECTIVE for exact record-id authority boundary. |
+| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Process Proceed fresh-Assignee Gate 3 PASS. Go-live prerequisites remain separate and are not authorized. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -72,7 +72,7 @@ Accepted authority service commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 ```text
 GATE 1 = HOME INDEX INTEGRATION — ✅ PASS
 GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — ✅ PASS
-GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — 🟠 CORRECTIVE
+GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — ✅ PASS
 ```
 
 Gate 1 accepted source chain:
@@ -91,76 +91,50 @@ TEST_CORRECTIVE_COMMIT = 36d653e91412718acdbc1cf359b7560d3f64ef6d
 INDEPENDENT_DECISION  = PASS
 ```
 
-## 7. Gate 3 Independent Review
-
-Executor candidate:
+Gate 3 accepted source chain:
 
 ```text
-COMMIT = 282dcaf35764ea1960a064cf48f3c8add34506b8
-PARENT = f8380e66b7444272a20f03114ba25aa0beffd502
-CHANGED_FILES = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
-SOURCE_REVIEW = broadly conformant except exact record-id boundary
-INDEPENDENT_DECISION = CORRECTIVE
+IMPLEMENTATION_COMMIT = 282dcaf35764ea1960a064cf48f3c8add34506b8
+SECURITY_CORRECTIVE_COMMIT = 8dc664e073a604fc40b88680cbdbc938f58728c6
+INDEPENDENT_DECISION = PASS
 ```
 
-Accepted observations:
-- only cross-employee Employee-Self context receives Gate 3 authority handling;
-- SHARED cross-employee actions fail closed with zero approval revalidation;
-- DEDICATED cross-employee actions reuse accepted `MboApprovalTaskService.revalidateApprovalTask()` and do not duplicate Assignee validation;
-- own-MBO requester actions remain outside approval revalidation;
-- null Employee-Self context preserves pre-Gate-3 validation behavior;
-- existing workflow/topology and stage validations remain present;
-- no Gate 1/2, service, UI, routing, identity, App53, deploy or Live Kintone scope was changed;
-- exactly the two allowed files changed.
+Accepted Gate 3 behavior:
+- DEDICATED cross-employee Process Proceed performs exactly one fresh revalidation through accepted `MboApprovalTaskService.revalidateApprovalTask()` before a valid transition may proceed;
+- fresh authority requires native current `Assignee` with type `STATUS_ASSIGNEE` and exact dedicated Kintone user code;
+- mismatch, missing record, API failure and missing native record id fail closed;
+- Process revalidation record id is sourced only from `event.recordId` or `record.$id.value`; static/custom `Record_ID` is not trusted;
+- SHARED cross-employee Process authority is denied with zero approval revalidation GETs;
+- DEDICATED and SHARED own-MBO requester actions preserve existing behavior with zero approval revalidation GETs;
+- null Employee-Self context preserves pre-Gate-3/native-governed Process behavior;
+- authorized cross-employee Process action preserves bound Employee-Self identity (`employeeCode = 0044`, `kintoneUserCode = vassana` in focused evidence);
+- no App795/static Manager/GM/First_Manager field becomes approval authority;
+- Gate 1/2 behavior is not reused as Process action authorization.
 
-### Required corrective
-
-The Gate 3 contract requires the exact App794 record id to come only from:
-
-```text
-event.recordId
-OR
-record.$id.value
-```
-
-The implementation candidate additionally accepts:
-
-```text
-record.Record_ID?.value
-```
-
-That fallback is outside the approved authority contract and is not a trusted native record identifier for this security boundary. If the true Kintone record id is absent, Gate 3 must fail closed rather than revalidate another id supplied through a record field.
-
-Required correction:
-1. remove `record.Record_ID?.value` from the Process Proceed revalidation id resolution;
-2. strengthen the existing missing-id test by supplying a spoof/static `Record_ID` field and still prove `0` fresh GET + `false`;
-3. strengthen authorized cross-employee identity evidence to assert both `employeeCode === '0044'` and `kintoneUserCode === 'vassana'` after Process Proceed;
-4. do not otherwise reopen/refactor Gate 3 source.
+Independent review of corrective commit confirmed exactly two allowed files changed: `src/main-mbo-app.js` with the one-line record-id security correction, and `tests/employee-main-mbo-app-integration.test.js` with spoof-Record_ID + exact identity evidence. No source scope expansion was found.
 
 ### Independent test replay caveat
 
-ChatGPT attempted to clone the canonical branch and run the focused Node test independently, but the local runtime could not resolve `github.com`. Therefore no independent Node replay is claimed in this review. The corrective decision is based on fresh GitHub source/diff evidence.
+ChatGPT did not independently rerun the focused Node test in its local runtime because repository cloning from `github.com` was unavailable in the prior review environment. No independent Node replay is claimed. The PASS decision is based on fresh GitHub source/diff evidence and exact corrective conformance.
 
-Gate 3 is NOT accepted yet and is not deploy-ready.
+Gate 1–3 source acceptance does NOT authorize build, deploy, App53 writes, ACL/group changes, or Live Kintone operations. Go-live preparation remains a separate Control Plane decision.
 
-## 8. Current Active Task
+## 7. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 GATE 3 EXACT RECORD-ID BOUNDARY CORRECTIVE R1
-TASK_STATE  = CORRECTIVE / READY FOR MINIMUM ANTIGRAVITY EXECUTION
-REVIEW_TARGET = 282dcaf35764ea1960a064cf48f3c8add34506b8
-OWNER       = ANTIGRAVITY
-ALLOWED     = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
-FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
+ACTIVE_TASK = NONE — D1 GATE 3 ACCEPTED
+TASK_STATE  = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_WORK_PACKAGE
+OWNER       = CHATGPT
+ANTIGRAVITY_ACTION = NONE
 BUILD       = NO
 FULL_TEST   = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact corrective contract is in `AI_ACTIVE_TASK.md`.
+Do not let Antigravity continue automatically into build/regression, Kintone configuration, App53 mapping, ACL/group changes, deploy or UAT. A new exact Control Plane packet is required first.
 
-## 9. App800 Reset MBO Password
+## 8. App800 Reset MBO Password
 
 - Core reset semantics accepted.
 - HR/admin native authority readiness accepted.
@@ -168,7 +142,7 @@ Exact corrective contract is in `AI_ACTIVE_TASK.md`.
 - Live App800 remains prior read-only/MVP customization.
 - No active deploy or reset-execution authorization.
 
-## 10. Authorization ledger
+## 9. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -181,6 +155,6 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-## 11. Exact next action
+## 10. Exact next action
 
-Antigravity performs only the narrow Gate 3 exact-record-id corrective from `AI_ACTIVE_TASK.md`, runs only the focused integration test plus `git diff --check`, commits/pushes one focused corrective commit, and STOPs. ChatGPT then independently reviews before any build, full regression, deploy, Kintone configuration or UAT work.
+Wait for Control Plane continuation. On `ต่อ` / `ต่อไป`, ChatGPT fresh-fetches repository truth and chooses the smallest safe next work package. Do not spend Antigravity credit or perform any Live operation before that packet exists.
