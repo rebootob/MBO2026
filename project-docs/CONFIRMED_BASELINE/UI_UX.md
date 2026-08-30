@@ -585,3 +585,71 @@ Rules:
 - Back is navigation only and must not save, change record/workflow state, or mutate MBO auth/session state;
 - fail-closed validation and the original error message remain intact;
 - tests must separately cover normal Create, auth-required Create, authenticated fatal Create, normal Detail/Edit, and fatal Detail/Edit.
+
+## 33. Hybrid Identity Home — My MBO + My Approval Tasks
+
+User-confirmed on 2026-08-30.
+
+Canonical identity UX:
+
+```text
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+```
+
+### Dedicated Kintone user
+
+When the current dedicated Kintone user resolves through an exact authoritative 1:1 mapping to an active Employee_Code:
+- enter App794 Employee-Self without a second MBO Employee_Code/password login;
+- do not ask the user to choose or type another Employee_Code;
+- show the bound employee identity clearly but do not expose a role-escalation control;
+- do not show normal shared-path Change MBO Password / MBO Logout as if they controlled the native Kintone password/session;
+- native Kintone account/password/logout remains Kintone platform behavior.
+
+### Shared Kintone user
+
+Approved shared principals continue to see the existing secondary MBO Login and App801 session flow.
+
+### Dual-role home
+
+A person may be both an Employee and an Approver. The App794 home must keep these contexts visibly separate rather than mixing records into one ambiguous list.
+
+Target conceptual layout:
+
+```text
+MBO 2026
+
+[ My MBO / MBO ของฉัน ]
+- current FY own record
+- permitted own history
+
+[ My Approval Tasks / งานรอฉันอนุมัติ ]
+- current records whose authoritative native Workflow assignee is the current Kintone user
+- pending count
+```
+
+Rules:
+- `My MBO` ownership is always exact bound `Employee_Code`;
+- `My Approval Tasks` identity is the current dedicated Kintone User and authoritative current native Workflow assignment;
+- no second employee record is created for an Approver role;
+- no employee-selector/dropdown may switch `My MBO` to another person;
+- static App795 route membership alone is insufficient to show an actionable approval task;
+- opening an approval task must revalidate current assignment;
+- employee privacy rules for Step 4/5 remain applicable to Employee-Self context and must not be bypassed merely because the same person also has Approver context;
+- Approver context may show only data authorized for the current assigned role/stage;
+- unassigned records fail closed;
+- own-record approval by the same dual-role user fails closed with `SELF_APPROVAL_ROUTE_CONFLICT`;
+- `admin-form` does not receive Employee-Self or normal Approver business context.
+
+Example behavior for Natta/Vassana-style dual-role users:
+- own MBO remains exactly one record per FY;
+- if 20 other employee records are currently assigned to the user's Kintone account, `My Approval Tasks` may show `20` pending records;
+- App795 still contains the route definition, not 20 duplicated routing rows;
+- when a pending record moves to the next Appraiser, it disappears from the current user's pending list.
+
+### Identity failure UX
+
+Dedicated auto-binding must visibly fail closed when the Kintone User <-> Employee_Code mapping is missing or ambiguous. Do not silently show the shared login as an identity fallback unless the principal is authoritatively classified as an approved shared-account principal.
+
+### Implementation gate
+
+This section confirms target UX/behavior only. Before implementation, perform the required read-only App53 identity mapping audit and record the exact authoritative mapping source. No App53 schema write, App794 deploy, routing write, or ACL change is authorized by this baseline update.
