@@ -868,6 +868,8 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(singleRecordGetCount, 0, 'DEDICATED own Detail must perform 0 approval revalidation GETs');
 
   // 2 & 3. DEDICATED cross-employee Detail with fresh STATUS_ASSIGNEE containing exact vassana performs 1 fresh GET and preserves bound context
+  const { getActiveUiInstance } = await import('../src/main-mbo-app.js');
+  const prevUiInstance = getActiveUiInstance();
   singleRecordGetCount = 0;
   const authorizedCrossDetailHost = createMockElement('div');
   authorizedCrossDetailHost.className = 'gaia-app-wrapper';
@@ -886,6 +888,11 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const authorizedCrossRes = await detailShowHandler(authorizedCrossEvent);
   assert.equal(authorizedCrossRes, authorizedCrossEvent, 'Authorized Dedicated cross-employee Detail must return event unchanged');
   assert.equal(singleRecordGetCount, 1, 'Authorized Dedicated cross-employee Detail must perform exactly 1 fresh GET');
+
+  const activeCrossUiInstance = getActiveUiInstance();
+  assert.ok(activeCrossUiInstance, 'Authorized Dedicated cross-employee Detail must create/activate a UI instance');
+  assert.notStrictEqual(activeCrossUiInstance, prevUiInstance, 'Authorized Dedicated cross-employee Detail must create a new active UI instance');
+  assert.strictEqual(activeCrossUiInstance.record, authorizedCrossEvent.record, 'Active UI instance must be bound to exact target record object');
 
   const preservedCtx = getCurrentEmployeeSelfContext();
   assert.ok(preservedCtx && preservedCtx.mode === 'DEDICATED' && preservedCtx.employeeCode === '0044' && preservedCtx.kintoneUserCode === 'vassana',
@@ -914,6 +921,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(mismatchDetailRes, mismatchDetailEvent, 'Blocked Detail handler must return event after hiding native fields');
   assert.equal(singleRecordGetCount, 1, 'Mismatch revalidation must perform exactly 1 fresh GET');
   assert.ok(mismatchDetailHost.children.length > 0, 'Blocked notice must be rendered when Assignee mismatches');
+  assert.notStrictEqual(getActiveUiInstance()?.record, mismatchDetailEvent.record, 'Mismatch Detail must NOT enter UI instance bound to target record');
 
   // 6A. Fresh revalidation API error fails closed
   singleRecordGetCount = 0;
@@ -935,6 +943,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await detailShowHandler(apiErrorEvent);
   assert.equal(singleRecordGetCount, 1, 'API error path must attempt 1 fresh GET');
   assert.ok(apiErrorHost.children.length > 0, 'Blocked notice must be rendered on revalidation API error');
+  assert.notStrictEqual(getActiveUiInstance()?.record, apiErrorEvent.record, 'API error Detail must NOT enter UI instance bound to target record');
   triggerSingleRecordGetError = false;
 
   // 6B. Record not found (404) fails closed
@@ -956,6 +965,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await detailShowHandler(missingRecordEvent);
   assert.equal(singleRecordGetCount, 1, 'Missing record path must attempt 1 fresh GET');
   assert.ok(missingRecordHost.children.length > 0, 'Blocked notice must be rendered on missing record revalidation');
+  assert.notStrictEqual(getActiveUiInstance()?.record, missingRecordEvent.record, 'Missing record Detail must NOT enter UI instance bound to target record');
 
   // 7. SHARED cross-employee Detail remains blocked and performs 0 approval revalidation GETs
   currentMockUser = { code: 'f1', name: 'Shared F1 User' };
@@ -977,6 +987,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await detailShowHandler(sharedCrossDetailEvent);
   assert.equal(singleRecordGetCount, 0, 'SHARED cross-employee Detail must perform 0 approval revalidation GETs');
   assert.ok(sharedCrossDetailHost.children.length > 0, 'Blocked notice must be rendered for SHARED cross-employee Detail');
+  assert.notStrictEqual(getActiveUiInstance()?.record, sharedCrossDetailEvent.record, 'SHARED cross-employee Detail must NOT enter UI instance bound to target record');
 
   // 8. DEDICATED cross-employee Edit remains blocked and performs 0 approval revalidation GETs
   currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
@@ -1002,6 +1013,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await editShowHandler(dedicatedCrossEditEvent);
   assert.equal(singleRecordGetCount, 0, 'DEDICATED cross-employee Edit must perform 0 approval revalidation GETs');
   assert.ok(dedicatedCrossEditHost.children.length > 0, 'Blocked notice must be rendered for DEDICATED cross-employee Edit');
+  assert.notStrictEqual(getActiveUiInstance()?.record, dedicatedCrossEditEvent.record, 'DEDICATED cross-employee Edit must NOT enter UI instance bound to target record');
 
   // 9. Gate 2 path introduces 0 App795 queries and valid Dedicated path introduces 0 MBO login-gate calls
   assert.equal(app795QueryCount, 0, 'Gate 2 path must introduce 0 App795 queries');
