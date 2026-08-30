@@ -1,211 +1,229 @@
-# AI ACTIVE TASK — D1 APP800 PASSWORD RESET ADMIN UI SOURCE R1 CORRECTIVE ROUND 2
+# AI ACTIVE TASK — D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1
 
-Mode: **ANTIGRAVITY SOURCE / FOCUSED TEST / LOCAL BUILD ONLY — NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET EXECUTION**  
+Mode: **ANTIGRAVITY SOURCE / TEST / LOCAL ARTIFACT VALIDATION ONLY — NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET EXECUTION**  
 Branch: `ai/antigravity-wp002c`
 
-## 0. Review Status / Starting Point
+## 0. Starting Point
 
-Independent ChatGPT review of corrective commit:
+Accepted App800 Reset MBO Password UI source commit:
 
-`4f1dfe717597b4cbd5bfb390e1461f2e83893441`
+`a7a9f02aff6b497f3f8e0009dd377437a3701416`
 
-Result:
+Independent Control Plane result:
 
 ```text
-D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_REVIEW = CORRECTIVE_ROUND_2
-DEPLOY_READY = NO
+D1_APP800_PASSWORD_RESET_UI_SOURCE_R1 = PASS
+SOURCE_ACCEPTED                        = YES
+DEPLOY_READY                           = NO
 ```
 
-Do not redesign the feature. Preserve the corrections that already work: static canonical adapter import/bundling, invalid-character precheck, truthful HRCC label, existing Reset UI, duplicate-click prevention, safe feedback and secret protection.
+Do not modify the accepted Reset UI feature unless a tooling compatibility test proves a real source defect. Hybrid Identity / Natta / Vassana remains OUT OF SCOPE.
 
-Hybrid Identity / Natta / Vassana remains OUT OF SCOPE.
+## 1. Why This Task Exists
 
-## 1. Finding D — Restore Out-of-Scope Legacy Deploy Helper First
+The accepted App800 source is now a real ES module that statically imports the canonical:
 
-The previous corrective modified:
+`src/ui/mbo-kintone-auth-adapter.js`
 
+Canonical local build already produces:
+
+```text
+dist/hr-control-center-bundle.js
+dist/hr-control-center.css
+```
+
+using `scripts/kintone/build-hrcc-ui.js` / esbuild.
+
+Legacy deployment helper:
 `scripts/kintone/deploy-delivery-sprint02.js`
 
-although it was not an allowed file.
+is no longer compatible because it attempts to synthesize a classic bundle from raw source with string manipulation rather than using the reviewed generated artifact.
 
-The added behavior strips ES-module imports from `hr-control-center.js`:
+It also contains a stale `assertCreatorOnlyAcl(...)` post-deploy check, while the accepted App800 ACL intentionally includes `HR_ADMIN_GROUP` View-only authority.
 
-```js
-code = code.replace(/import\s+[\s\S]*?from\s+['"].*?['"];?/g, '');
-```
+This task fixes **deployment tooling compatibility only**. Do not deploy.
 
-This is unsafe for the new source because `MboKintoneAuthAdapter` is now a real module dependency. Stripping the import without bundling the dependency can recreate a dangling adapter reference in any bundle produced by that legacy helper.
+## 2. Canonical Artifact Rule
 
-### Required action
+Deployment tooling must stop rebuilding HRCC by regex/string manipulation.
 
-1. Restore `scripts/kintone/deploy-delivery-sprint02.js` **exactly to its content at commit `c5800f1448999e422a6b843f653ddcae112b1455`**.
-2. Do not run this deploy script.
-3. Do not add another ad-hoc regex/import stripping workaround.
-4. Run focused tests and full `npm test` after restoration.
-5. If full tests fail only because a legacy deploy/bundle test expects raw `hr-control-center.js` with no imports, **STOP and report the exact failing test/error without modifying deployment tooling again**. Control Plane will split a separate deployment-tool compatibility WP.
+Preferred design:
+- the canonical build remains `node scripts/kintone/build-hrcc-ui.js`;
+- deployment helper consumes the already-generated/reviewable:
+  - `dist/hr-control-center-bundle.js`
+  - `dist/hr-control-center.css`;
+- deployment helper validates the candidate before any future upload path can use it.
 
-This task may restore the file only; no further deployment-tool redesign is authorized.
+Required local validation before a candidate is considered usable:
+- JS file exists and is non-empty;
+- CSS file exists and is non-empty;
+- JS parses as classic browser script;
+- no runtime `import` / `export` statements remain;
+- bundle contains canonical `MboKintoneAuthAdapter` implementation;
+- bundle contains `resetMboPassword` implementation;
+- no fallback raw-source/string-bundling path is used.
 
-## 2. Finding E — Leading/Trailing Whitespace Must Fail Closed
+Do not duplicate the esbuild build logic in the deploy script.
 
-Canonical Employee_Code identity contract:
+## 3. Legacy `buildClassicHrccBundle` Compatibility
+
+Current legacy tests call `buildClassicHrccBundle(rawSource, ...)`, which is obsolete for module-based HRCC source.
+
+Replace/update this contract narrowly rather than teaching it to strip imports.
+
+Acceptable outcomes:
+- remove/deprecate raw-source bundling and replace tests with a pure validator/loader for the canonical dist artifact; or
+- retain a compatibility-named helper only if it consumes/validates the canonical generated bundle rather than manipulating raw source.
+
+Forbidden:
+- regex removal of import statements;
+- copy/paste of `MboKintoneAuthAdapter`;
+- secondary bundle engine;
+- manual concatenation of module source;
+- runtime global adapter workaround.
+
+## 4. App800 ACL Post-Readback Contract
+
+Current accepted native App800 ACL is **not creator-only**.
+
+Required accepted shape:
 
 ```text
-^[A-Za-z0-9_.-]+$
-leading whitespace  = INVALID
-trailing whitespace = INVALID
+CREATOR
+  technical admin rights preserved
+
+HR_ADMIN_GROUP
+  View   = YES
+  Add    = NO
+  Edit   = NO
+  Delete = NO
+  Manage = NO
+  Import = NO
+  Export = NO
+
+everyone
+  all application rights = NO
 ```
 
-Current code calls `.trim()` before validation, silently converting values such as:
+Update deployment-tool readback validation so it can verify this least-privilege state without writing or modifying ACL.
 
-```text
-" EMP001" -> "EMP001"
-"EMP001 " -> "EMP001"
-```
+Rules:
+- do not call ACL PUT/POST;
+- do not add/remove groups;
+- do not use `assertCreatorOnlyAcl` for App800 candidate deployment verification;
+- validation must fail closed if `HR_ADMIN_GROUP` is missing, over-privileged, or `everyone` gains rights;
+- preserve technical CREATOR authority;
+- do not touch App801 ACL in this task.
 
-This conflicts with the canonical adapter identity contract.
-
-### Required correction
-
-- read the raw input values first;
-- reject when `rawEmployeeCode !== rawEmployeeCode.trim()`;
-- reject when confirmation has leading/trailing whitespace;
-- then validate canonical regex;
-- invalid whitespace -> bilingual visible validation error;
-- resetFn/reset-core call count = 0;
-- do not uppercase/lowercase/rewrite identity;
-- valid exact Employee_Code remains unchanged.
-
-Add focused tests for at least:
-- leading whitespace;
-- trailing whitespace;
-- whitespace only;
-- valid exact code unchanged.
-
-## 3. Finding F — Regenerate Truthful Corrective Evidence
-
-The previous evidence is stale/incorrect.
-
-It states generated JS blob:
-`18c7b9455b3f62c340827cfc22f259275492e4fd`
-
-but reviewed Git shows actual current blob at `4f1dfe7...`:
-`6fc4909d01df6a604626c5284aa7fe86f0248031`
-
-### Required correction
-
-After all Round-2 changes and the final local build:
-- calculate/read the exact Git blob identity for final `dist/hr-control-center-bundle.js`;
-- calculate/read exact final CSS blob identity;
-- record actual file sizes from the final artifacts;
-- do not reuse values from the R1 evidence;
-- evidence must correspond to the exact final executor commit.
-
-Create a new evidence file:
-
-`project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md`
-
-Do not overwrite historical evidence files.
-
-## 4. Preserve Previously Corrected Findings A/B/C
-
-Must remain true:
-
-1. `src/ui/hr-control-center.js` statically imports canonical `MboKintoneAuthAdapter`.
-2. `dist/hr-control-center-bundle.js` includes the actual adapter implementation and `resetMboPassword` method.
-3. Default non-injected Reset path works with mocked Kintone API.
-4. Invalid characters are blocked before resetFn.
-5. `SECURE READ-ONLY MVP` and `GET-Only browser runtime` stale wording remain absent.
-6. Native Kintone/cybozu password distinction remains explicit.
-7. No secrets rendered/logged.
-8. No bulk reset / create / delete / Account_Status alteration.
+Implement the ACL check as a pure/testable validation helper where practical.
 
 ## 5. Exact Allowed Files
 
 Allowed to modify:
 
 ```text
+scripts/kintone/deploy-delivery-sprint02.js
+tests/sprint02-delivery.test.js
+```
+
+Allowed only if strictly necessary for a proven compatibility seam:
+
+```text
+scripts/kintone/build-hrcc-ui.js
+```
+
+Read-only/reference:
+
+```text
 src/ui/hr-control-center.js
-tests/hr-control-center-reset-ui.test.js
+src/ui/mbo-kintone-auth-adapter.js
 dist/hr-control-center-bundle.js
-dist/hr-control-center.css                 only as regenerated by canonical build
-scripts/kintone/deploy-delivery-sprint02.js RESTORE ONLY to c5800f1 content
+dist/hr-control-center.css
 project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md
 ```
 
-Read only:
-- `src/ui/mbo-kintone-auth-adapter.js`
-- `scripts/kintone/build-hrcc-ui.js` unless a reproducibility defect is proven; if so STOP/report before changing.
+Create one evidence file:
+
+`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_EVIDENCE.md`
 
 Forbidden:
 - App794 source
 - App53/App795 source/schema/data
+- Reset UI feature redesign
+- App801 credential core modification
 - Hybrid Identity/My Approval Tasks implementation
-- ACL/Process/schema changes
-- Control Center / Active Task / Baselines / skills
+- ACL/process/schema writes
+- Control Center / Active Task / Confirmed Baselines / skills
 - unrelated D2/D3/D5/D7 code
 
-## 6. Required Verification
+## 6. Required Tests
 
-At minimum:
+At minimum prove:
 
-1. focused Reset UI suite PASS;
-2. leading whitespace -> blocked / 0 reset calls;
-3. trailing whitespace -> blocked / 0 reset calls;
-4. valid exact Employee_Code unchanged and reset called exactly once;
-5. default production path still uses canonical bundled adapter with mocked App801 update exactly once;
-6. generated bundle contains adapter implementation and no runtime import/export residue;
-7. `scripts/kintone/deploy-delivery-sprint02.js` exact content identity matches commit `c5800f1448999e422a6b843f653ddcae112b1455` after restore;
-8. full `npm test` PASS, OR if it fails solely due restored legacy helper incompatibility, STOP/report exact test without further source/deploy-tool widening;
-9. `git diff --check` PASS;
-10. zero Live Kintone operations.
+1. canonical App800 dist JS/CSS can be loaded by the deploy-helper path;
+2. canonical JS passes classic-script syntax validation;
+3. canonical JS has no runtime import/export residue;
+4. canonical JS includes `MboKintoneAuthAdapter` and `resetMboPassword`;
+5. deploy-helper path does not read raw `src/ui/hr-control-center.js` to synthesize a replacement bundle;
+6. no import-stripping/string-concatenation workaround exists;
+7. accepted App800 ACL sample with CREATOR + `HR_ADMIN_GROUP` View only + everyone denied = PASS;
+8. HR Add/Edit/Delete/Manage/Import/Export elevation = FAIL CLOSED;
+9. missing HR group = FAIL CLOSED;
+10. everyone privilege = FAIL CLOSED;
+11. existing non-HRCC safety/write-guard tests remain intact;
+12. full `npm test` = PASS with no legacy Sprint02 bundle failures;
+13. `git diff --check` = PASS.
+
+No real Kintone call is necessary for this source/test task.
 
 ## 7. Safety — Zero Live Operations
 
 ```text
-LIVE_GET                         = 0
-LIVE_POST                        = 0
-LIVE_PUT                         = 0
-LIVE_DELETE                      = 0
-APP801_REAL_RECORD_WRITE         = 0
-PASSWORD_RESET_EXECUTION_LIVE    = 0
-CUSTOMIZATION_UPLOAD             = 0
-DEPLOY                           = 0
-ACL_WRITE                        = 0
-SCHEMA_LAYOUT_PROCESS_WRITE      = 0
-ROLLBACK                         = 0
-HYBRID_IDENTITY_SOURCE_CHANGE    = 0
+LIVE_GET                      = 0
+LIVE_POST                     = 0
+LIVE_PUT                      = 0
+LIVE_DELETE                   = 0
+CUSTOMIZATION_UPLOAD          = 0
+DEPLOY                        = 0
+APP800_ACL_WRITE              = 0
+APP801_ACL_WRITE              = 0
+PASSWORD_RESET_EXECUTION_LIVE = 0
+ROLLBACK                      = 0
+HYBRID_IDENTITY_SOURCE_CHANGE = 0
 ```
 
-Mock/local calls are allowed and must be labeled as mocks.
+Do not run `executeDeploy()`.
+Do not upload files.
+Do not call preview customization/deploy APIs.
 
-## 8. Evidence Required
+## 8. Evidence
 
-`project-docs/D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md`
+Create:
 
-Must include:
+`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_EVIDENCE.md`
+
+Record:
 - starting HEAD;
 - exact files changed;
-- exact restore proof for legacy deploy helper;
-- whitespace validation tests/results;
-- preserved A/B/C regression tests;
-- focused/full test results;
-- build command/result;
-- actual final JS/CSS sizes and Git blob identities;
-- adapter inclusion proof;
-- `git diff --check`;
-- exact Live operation counts all zero;
+- old incompatibility and exact replacement design;
+- proof canonical dist artifacts are consumed/validated;
+- proof raw-source string bundle path is removed/deprecated;
+- ACL validation contract + tests;
+- focused test results;
+- full `npm test` result;
+- `git diff --check` result;
+- Live operation counts all zero;
 - `STATUS = PENDING_CHATGPT_REVIEW`.
 
-Commit + push one focused corrective commit if practical, then STOP.
+Commit + push one focused implementation commit, then STOP.
 
 Maximum executor status:
 
-`D1_APP800_PASSWORD_RESET_UI_SOURCE_R1_CORRECTIVE_R2_READY_PENDING_CHATGPT_REVIEW`
+`D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_READY_PENDING_CHATGPT_REVIEW`
 
 ## 9. Next Owner
 
-After executor commit/push:
+After commit/push:
 
 `NEXT_OWNER = CHATGPT INDEPENDENT REVIEW`
 
