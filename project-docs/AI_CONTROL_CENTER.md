@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 GATE 2 INDEPENDENT REVIEW = CORRECTIVE / TEST EVIDENCE ONLY
+> Updated: 2026-08-30 — D1 GATE 2 INDEPENDENT REVIEW = PASS
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Gate 2 implementation candidate `19b81fa01b337835fbff8af2dc21622aba4eb9e6` reviewed CORRECTIVE for incomplete UI-pipeline test evidence only; source implementation not rejected. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Gate 3 remains pending. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -71,63 +71,63 @@ Accepted authority service commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 
 ```text
 GATE 1 = HOME INDEX INTEGRATION — ✅ PASS
-GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — 🟠 CORRECTIVE / TEST EVIDENCE ONLY
+GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — ✅ PASS
 GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
 ```
 
-Gate 2 executor candidate:
+Gate 1 accepted source chain:
 
 ```text
-COMMIT = 19b81fa01b337835fbff8af2dc21622aba4eb9e6
-PARENT = fa3c5ee3a8b0c9c8ae45cdf9d0caedcbaa8f1ab8
-CHANGED_FILES = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
-SOURCE_REVIEW = broadly conformant to Gate 2 authority contract
-INDEPENDENT_DECISION = CORRECTIVE
+IMPLEMENTATION_COMMIT = cb2fae671e610924e7143806944b3dcdf527f2f0
+TEST_CORRECTIVE_COMMIT = f276de19a5771d7ac0bd73f51509cb912aca24d5
+INDEPENDENT_DECISION  = PASS
 ```
 
-Accepted source-review observations:
-- own-record Detail/Edit path does not invoke approval revalidation;
-- only Dedicated cross-employee Detail attempts `MboApprovalTaskService.revalidateApprovalTask()`;
-- fresh revalidation is exactly the accepted service seam; no second Assignee validator was added;
-- authorized bypass is an internal explicit flag consumed by the existing ownership guard;
-- bound Employee-Self context is not reassigned to the target employee;
-- Shared cross-employee and Dedicated cross-employee Edit remain outside the bypass path;
-- Gate 3 Process Proceed logic was not changed;
-- exactly the two allowed files changed.
+Gate 2 accepted source chain:
 
-Independent review finding:
-- the focused test does not directly prove that an authorized cross-employee Detail actually enters the target `EmployeePartAUI` pipeline;
-- `assert.equal(handlerResult, event)` is not sufficient because blocked/config-error paths can also return the event;
-- denied/API-error/missing/shared/edit checks using only `host.children.length > 0` do not directly prove the target Detail UI was not entered;
-- the authorized test fixture is intentionally sparse and can trigger existing fail-closed UI configuration behavior, so handler-return evidence alone is ambiguous.
+```text
+IMPLEMENTATION_COMMIT = 19b81fa01b337835fbff8af2dc21622aba4eb9e6
+TEST_CORRECTIVE_COMMIT = 36d653e91412718acdbc1cf359b7560d3f64ef6d
+INDEPENDENT_DECISION  = PASS
+```
 
-Therefore Gate 2 is not independently accepted yet. This is a **test-evidence corrective only**. Do not reopen/refactor `src/main-mbo-app.js` unless the corrected direct pipeline assertions expose a real source defect.
+Accepted Gate 2 behavior:
+- own-record Detail/Edit remains on the existing Employee-Self path and performs zero approval revalidation GETs;
+- only Dedicated cross-employee Detail may attempt fresh approval-task revalidation;
+- authority is reused from accepted `MboApprovalTaskService.revalidateApprovalTask()` with no duplicate Assignee validator;
+- authorized Dedicated cross-employee Detail enters the target `EmployeePartAUI` pipeline only after fresh authorization;
+- bound Employee-Self identity remains the user's own Employee_Code and Kintone user code while viewing another employee's approval task;
+- Assignee mismatch fails closed even when static Manager/First_Manager/GM snapshot fields match the user;
+- API failure and record-not-found fail closed;
+- Shared cross-employee Detail remains denied with zero approval revalidation GETs;
+- Dedicated cross-employee Edit remains denied with zero approval revalidation GETs;
+- Gate 2 introduces zero App795 authority queries and valid Dedicated path introduces zero MBO login-gate calls;
+- Gate 3 Process Proceed/action authority was not changed.
+
+Independent review of corrective commit confirmed exactly one changed file (`tests/employee-main-mbo-app-integration.test.js`) with 12 additions / 0 deletions. Direct `getActiveUiInstance()` evidence proves the authorized target record enters the UI pipeline and denied/error/shared/edit target records do not become the active target UI. No additional Antigravity rerun is required solely for duplicate evidence.
 
 Gate 2 alone is NOT deploy-ready. Gate 3 and protected native ACL/group configuration remain pending separately.
 
 ## 7. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 MY APPROVAL TASKS — GATE 2 UI-PIPELINE TEST EVIDENCE CORRECTIVE R1
-TASK_STATE  = CORRECTIVE / READY FOR MINIMUM ANTIGRAVITY EXECUTION
-REVIEW_TARGET = 19b81fa01b337835fbff8af2dc21622aba4eb9e6
-OWNER       = ANTIGRAVITY
-ALLOWED     = tests/employee-main-mbo-app-integration.test.js ONLY
-SOURCE_IMPLEMENTATION_CHANGE = NO
-FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
+ACTIVE_TASK = NONE — GATE 2 ACCEPTED
+TASK_STATE  = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_GATE
+OWNER       = CHATGPT
+ANTIGRAVITY_ACTION = NONE
 BUILD       = NO
 FULL_TEST   = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact corrective contract is in `AI_ACTIVE_TASK.md`.
+Do not let Antigravity continue automatically into Gate 3. The Control Plane must first open a new exact Gate 3 packet when continuation is requested.
 
 ## 8. App800 Reset MBO Password
 
 - Core reset semantics accepted.
 - HR/admin native authority readiness accepted.
-- App800 Reset UI source/tooling accepted.
+- App800 Reset UI/source tooling accepted.
 - Live App800 remains prior read-only/MVP customization.
 - No active deploy or reset-execution authorization.
 
@@ -146,4 +146,4 @@ ROLLBACK_AUTH             = NONE
 
 ## 10. Exact next action
 
-Antigravity performs only the one-file Gate 2 test-evidence corrective in `AI_ACTIVE_TASK.md`, runs only the focused integration test plus `git diff --check`, commits/pushes one focused correction, and stops. ChatGPT then independently reviews that correction before any Gate 3 work.
+Wait for Control Plane continuation. On `ต่อ` / `ต่อไป`, ChatGPT fresh-fetches repository truth and opens only the smallest necessary Gate 3 Process Proceed fresh-assignee revalidation work package if still required. Do not spend Antigravity credit before that packet exists.
