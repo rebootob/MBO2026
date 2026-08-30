@@ -5,7 +5,7 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — APP802 RECOVERY INSPECTION PASS / RESUME WRITE AUTH REQUIRED
+> Updated: 2026-08-30 — APP802 RESUME AUTH RECEIVED / SOURCE-REVIEW GATE OPEN
 
 ## 1. D1 status
 
@@ -13,99 +13,100 @@ D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only pref
 
 Sandbox-first validation remains the current path.
 
-## 2. Accepted sandbox tooling chain
+## 2. Accepted sandbox tooling / evidence
 
 ```text
 INITIAL_TOOLING_COMMIT = b98aa18fb082cf5b52efa1c80cf4df0a7e115dc5
 CONTRACT_CORRECTIVE_COMMIT = 491358480cf642b3f2175b3cf0e1fd7246a96234
 GET_HEADER_CORRECTIVE_COMMIT = 2bec6e63b9faa6bebf67379a5f3df74093d9c1d1
-CURRENT_SCRIPT_BLOB = 4a0ba42d88fb629f07887e9f65d0a52d8c9dbed9
+CURRENT_CREATE_NEW_SCRIPT_BLOB = 4a0ba42d88fb629f07887e9f65d0a52d8c9dbed9
 ```
 
-GET-header corrective is accepted: GET requests no longer force JSON Content-Type; JSON body requests still do.
-
-## 3. Gate S-B R1 prior execution — fail-safe
-
-Sandbox App802 was created. The base-schema deploy POST was sent, then the old deploy-status GET returned HTTP 400 CB_IL02. No synthetic records were created. App53 was not accessed or written.
+Gate S-C App802 recovery inspection is PASS.
 
 ```text
-SANDBOX_APP_ID = 802
-SANDBOX_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
-SYNTHETIC_RECORDS_CREATED = 0
-APP53_NETWORK_OPERATIONS = 0
-APP53_WRITES = 0
-PRODUCTION_B2_EXECUTED = NO
-```
-
-## 4. Gate S-C App802 read-only recovery inspection — PASS
-
-Accepted user-provided executor evidence:
-
-```text
-READ_ONLY_INSPECTION = PASS
-TARGET_APP_ID = 802
-TARGET_IDENTITY_MATCH = YES
-
-LIVE_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
+APP_ID = 802
+APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
 LIVE_REVISION = 3
+PREVIEW_REVISION = 3
 LIVE_Number_0_TYPE = NUMBER
 LIVE_emp_text_TYPE = SINGLE_LINE_TEXT
 LIVE_MBO_Kintone_User = ABSENT
 LIVE_RECORD_COUNT = 0
-LIVE_RELEVANT_ERRORS = NONE
-
-PREVIEW_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
-PREVIEW_REVISION = 3
 PREVIEW_Number_0_TYPE = NUMBER
 PREVIEW_emp_text_TYPE = SINGLE_LINE_TEXT
 PREVIEW_MBO_Kintone_User = ABSENT
-
-DEPLOY_STATUS_802 = SUCCESS
-DEPLOY_STATUS_HTTP = 200
-
-KINTONE_GET_OPERATIONS = 17
-KINTONE_WRITE_OPERATIONS = 0
+DEPLOY_STATUS = SUCCESS
 APP53_ACCESS = 0
-OTHER_KINTONE_APP_ACCESS = 0
-SECOND_SANDBOX_CREATED = NO
-POST_INSPECTION_GIT_STATUS = CLEAN
-FILES_COMMITTED = NONE
+KINTONE_WRITES_DURING_INSPECTION = 0
 ```
 
 Decision:
 
 ```text
-GATE_S_C_R1 = PASS
-APP802_BASE_SCHEMA_DEPLOY = CONFIRMED SUCCESS
-APP802_LIVE_PREVIEW_DRIFT = NONE FOR TARGET FIELDS
-APP802_RECORD_COUNT = 0
-APP802_TARGET_FIELD = ABSENT
-APP802_STATE = CLEAN BASELINE / SAFE CANDIDATE FOR CONTROLLED RESUME
+APP802_STATE = CLEAN DEPLOYED BASELINE
+SECOND_SANDBOX_NEEDED = NO
 ```
 
-The user-provided Kintone UI screenshot is consistent with App802 existing as the separate sandbox app; API evidence above is authoritative for the reviewed state.
+## 3. User authorization received
 
-## 5. Safest next step
+The user explicitly authorized:
 
-Do NOT create a second sandbox.
-Do NOT rerun the create-new-app lifecycle script.
-Do NOT resume App802 writes without new exact authorization.
+```text
+APP802_FORWARD_ROLLBACK_TEST_AUTH = RECEIVED
+TARGET_APP = 802 ONLY
+DATA = SYNTHETIC ONLY
+```
 
-If the user explicitly authorizes App802 resume, the next work should continue only from the confirmed clean App802 baseline:
-1. create exactly two synthetic records;
-2. add `MBO_Kintone_User` only in App802 Preview;
-3. exact Preview readback;
-4. deploy App802 only;
-5. exact Live + synthetic-record verification;
-6. delete only `MBO_Kintone_User` from App802 Preview;
-7. exact Preview absence readback;
-8. deploy App802 rollback only;
-9. verify Live field absent and both synthetic records unchanged;
-10. STOP for ChatGPT review.
+Authorized lifecycle purpose only:
+1. continue on existing Sandbox App802 only;
+2. create exactly two synthetic records;
+3. add `MBO_Kintone_User` to App802 Preview;
+4. exact Preview verification;
+5. deploy App802 only;
+6. exact Live + synthetic-record verification;
+7. delete only `MBO_Kintone_User` from App802 Preview;
+8. exact Preview absence verification;
+9. deploy App802 rollback only;
+10. verify Live field absent and both synthetic records unchanged;
+11. STOP for ChatGPT review.
 
-A dedicated hard-coded App802 resume tool/source review is preferred over allowing an externally supplied app ID or weakening the create-new-app safety script.
+No second sandbox creation is authorized.
+No Production App53 operation is authorized.
 
-## 6. Production protection
+## 4. Maximum-safety split
+
+### Gate S-D1 — App802 resume tooling source review
+Open now.
+
+Antigravity may create exactly one dedicated App802-specific resume script, but MUST NOT execute any Kintone network operation in this gate.
+
+Expected new script:
+
+```text
+scripts/kintone/resume-app802-hybrid-sandbox.js
+```
+
+Required safety design:
+- hard-code `APP_ID = 802` and exact expected app name;
+- do not accept target app ID from CLI/env/input;
+- exact execution flag required before Kintone connection/network;
+- pre-write fresh GET preflight must require the accepted clean baseline;
+- fail closed if Live/Preview identity, fields, revisions, record count, or deploy status drift;
+- GET requests without body must not send JSON Content-Type;
+- JSON-body writes must send Content-Type;
+- every request must target App802 only;
+- use exactly two synthetic records and no real employee data;
+- preserve exact target USER_SELECT contract;
+- use revision-aware Preview schema write/deploy where supported;
+- rollback only the target field;
+- no automatic retry after uncertain write/deploy result;
+- no Production fallback.
+
+### Gate S-D2 — reviewed App802 execution
+Closed until ChatGPT independently reviews and accepts S-D1 source.
+
+## 5. Production protection
 
 ```text
 APP53_ACCESS = NO
@@ -116,28 +117,28 @@ PROTECTED_GUARD_BYPASS = NO
 PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 ```
 
-## 7. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 SANDBOX_802_CREATED = YES
 SANDBOX_802_READ_ONLY_INSPECTION = PASS
-SANDBOX_802_RESUME_WRITE_AUTH = NONE
+SANDBOX_802_RESUME_WRITE_AUTH = RECEIVED / HELD UNTIL S-D1 SOURCE PASS
 SECOND_SANDBOX_CREATE_AUTH = NONE
 SANDBOX_802_DELETE_AUTH = NONE
 APP53_SCHEMA_WRITE_AUTH = HELD / NOT EXECUTABLE
 APP53_RECORD_WRITE_AUTH = NONE
 APP53_BULK_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = APP802 ONLY AFTER S-D1 PASS
 ACTIVE_ACL_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-## 8. Current control state
+## 7. Current control state
 
 ```text
-ACTIVE_TASK = NONE — WAITING FOR EXPLICIT APP802 RESUME AUTHORIZATION
-CURRENT_OWNER = CHATGPT
-ANTIGRAVITY_ACTION = NONE
-KINTONE_WRITES = NOT AUTHORIZED
+ACTIVE_TASK = D1 APP802 RESUME TOOLING SOURCE GATE S-D1 R1
+CURRENT_OWNER = ANTIGRAVITY
+KINTONE_NETWORK_EXECUTION = FORBIDDEN IN S-D1
+NEXT_OWNER = CHATGPT INDEPENDENT SOURCE REVIEW
 ```
