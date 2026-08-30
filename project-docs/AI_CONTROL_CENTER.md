@@ -5,131 +5,116 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — APP794 REV58 USER UAT PARTIAL PASS / DUPLICATE-YEAR RECOVERY CONFIRMED
+> Updated: 2026-08-30 — REV58 UAT FOUND FATAL-CREATE EXIT UX DEFECT / SOURCE CORRECTIVE OPEN / NO LIVE WRITE
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** Password Reset Core R1 source accepted and included in deployed cumulative bundle. App794 WP2 R4 fatal-error Back navigation technically deployed. Rev58 technical readback PASS. User UAT item 1 (duplicate same-year fatal recovery shows exactly one Back control) = PASS. Remaining runtime UAT checks are still pending before Rev58 becomes accepted known-good and before D1 can close. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev58 technical deployment PASS. Duplicate same-year fatal-state Back visibility UAT PASS, but Back currently triggers Kintone/browser unsaved-change leave confirmation. User explicitly requires no leave-confirm popup on this terminal duplicate/fatal state. Source corrective opened; Live deploy not authorized. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
-| D5 | 🟠 Copy own previous MBO READY TO RESUME only on a future explicit task |
+| D5 | 🟠 Copy own previous MBO ready only on a future explicit task |
 | D6 | 🔴 Integrated E2E / Security / Regression pending |
 | D7 | ✅ Admin Support Center source functionality CLOSED |
 
-## 2. Actual Live App794 — Rev58 Technical State
-
-Executor deployment evidence commit:
-
-`72b353ac2adb0c4188b573cd0287e5eac06252db`
-
-Independent Control Plane decision:
-
-`TECHNICAL DEPLOYMENT REVIEW PASS`
+## 2. Actual Live App794
 
 ```text
-LIVE_REVISION               = 58
+LIVE_ACTUAL_REVISION        = 58
 DEPLOYED_SOURCE_COMMIT      = 98108e9e387d01b6d3c3a35cce5baf13324be50e
 LIVE_SCOPE                  = ALL
 LIVE_TOPOLOGY               = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 LIVE_JS_IDENTITY            = f097f67404fb75418cf85fee635e5d630ef5474d
 LIVE_CSS_IDENTITY           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-TECHNICAL_READBACK          = PASS / EXACT CANDIDATE PAIR
-USER_RUNTIME_UAT            = PARTIAL PASS / CONTINUES
+TECHNICAL_READBACK          = PASS
+USER_RUNTIME_UAT            = FAIL/PARTIAL — FATAL CREATE BACK TRIGGERS LEAVE-CONFIRM DIALOG
+ACCEPTED_KNOWN_GOOD_REVISION = 57 UNTIL CORRECTIVE + NEW UAT PASS
 ```
 
-Rev58 is technically deployed but is **not yet promoted to accepted known-good** until the remaining user runtime UAT checks pass.
+Rev58 remains actual Live but is not accepted known-good.
 
-## 3. Deployed Cumulative Candidate Classification
+## 3. Confirmed UAT Evidence / Requirement
+
+User-confirmed behavior on actual Live Rev58:
+
+- Authenticated duplicate same-year Create correctly reaches terminal `Employee Profile Resolution Failed` state.
+- Duplicate creation is blocked fail-closed.
+- Exactly one `← กลับหน้า My MBO / Back to My MBO` is visible.
+- Clicking Back begins navigation but Kintone/browser shows `ออกจากเว็บไซต์ไหม / changes may not be saved` confirmation.
+- User explicitly requires that this popup **must not appear** on the terminal duplicate/fatal state because there is nothing valid to save.
+- User also wants native Kintone `Save` and `Cancel` hidden on the terminal fatal state to avoid confusion.
+
+Target UX for this state:
 
 ```text
-CANDIDATE_SOURCE_COMMIT     = 98108e9e387d01b6d3c3a35cce5baf13324be50e
-CLASSIFICATION              = CUMULATIVE ACCEPTED SOURCE
-INCLUDES                    = D1 Password Reset Core R1 + WP2 R4 Error-State Back Navigation
-SOURCE_REVIEW               = PASS
-PREDEPLOY_VERIFICATION      = PASS
-LIVE_TECHNICAL_READBACK     = PASS
+Fatal duplicate Create terminal state
+  -> Error message remains
+  -> Exactly one Back to My MBO action
+  -> Native Save hidden
+  -> Native Cancel hidden
+  -> Click Back returns /k/794/ in same tab
+  -> No leave-confirm / unsaved-change popup
+  -> No record save/create
+  -> No workflow mutation
+  -> No auth/session mutation
 ```
 
-Important: Password Reset Core R1 is present in the deployed bundle as accepted adapter/core capability only. No Password Reset UI or App801 credential-reset Live write was authorized or executed by this deployment.
+This requirement is narrowly scoped to authenticated terminal Create fatal/duplicate recovery. Normal Create/Edit unsaved-change protection must remain intact.
 
-## 4. User Runtime UAT Progress — Rev58
+## 4. Root-Cause Direction
 
-User supplied an actual Live App794 Rev58 screenshot on 2026-08-30 showing an authenticated Create attempt for Employee_Code `0113` blocked because an MBO already exists for FY2026.
+Existing canonical Back component is `src/ui/employee-record-navigation.js` and currently renders a normal same-tab anchor to `/k/{appId}/`.
 
-Independent visual review result:
+The corrective must not globally suppress browser/Kintone unload protection. The preferred root-cause direction is:
+- determine what mutates/dirty-flags the Create form before duplicate detection (for example Fiscal Year defaulting, lookup/autoload, or `kintone.app.record.set` synchronization);
+- perform duplicate preflight before any native form mutation where feasible;
+- only after duplicate preflight passes may normal Create autoload/default/form synchronization proceed;
+- terminal duplicate/fatal state must be rendered from an unmodified/clean native Create form state;
+- hide native Save/Cancel only while that terminal fatal state is active.
+
+Forbidden workaround:
+- no global `window.onbeforeunload = null`;
+- no global unload/beforeunload monkey patch;
+- no disabling unsaved-change warning for normal Create/Edit;
+- no broad CSS that hides Save/Cancel outside fatal state.
+
+## 5. Current Active Task
 
 ```text
-UAT_1_DUPLICATE_SAME_YEAR_FATAL_STATE = PASS
+ACTIVE_TASK                   = APP794 FATAL CREATE CLEAN-EXIT CORRECTIVE R1 / SOURCE ONLY
+OWNER                         = ANTIGRAVITY
+FEATURE                       = Fatal duplicate Create recovery without unsaved-change dialog
+CANONICAL_SOURCE_OWNER        = src/main-mbo-app.js (fatal Create orchestration)
+SUPPORTING_MODULE             = src/ui/employee-record-navigation.js only if needed
+FOCUSED_TESTS                 = tests/employee-main-mbo-app-integration.test.js + tests/employee-record-navigation.test.js
+GENERATED_DIST_OUTPUT         = dist/mbo-employee-app.js through normal build only
+LIVE_RESOURCE                 = NONE — NO DEPLOY AUTHORIZATION
 ```
 
-Observed and accepted from the screenshot:
-- terminal `Employee Profile Resolution Failed` state is shown;
-- duplicate creation is blocked fail-closed;
-- exactly one `← กลับหน้า My MBO / Back to My MBO` control is visible;
-- Back styling is visible/prominent;
-- custom UI is loaded (not blank/native-only fallback).
+Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
 
-This screenshot confirms UAT item 1 and partially supports runtime viability/styling smoke, but it does **not** yet prove the Back target/navigation behavior because the control has not yet been shown after click.
-
-The native Kintone `Cancel` / `Save` controls visible on the fatal screen are noted as a possible future UX improvement only. **No corrective source task is opened for them now** because the current priority is to complete Rev58 UAT without introducing new scope.
-
-## 5. Remaining Required User Runtime UAT
-
-Pending checks:
-
-1. ✅ Authenticated duplicate same-year Create fatal state -> exactly one Back control.
-2. ⏳ Click the Back control -> must return to `/k/794/` in the same tab, with no save/workflow/auth/session mutation.
-3. ⏳ Normal successful Create -> record-level Back control absent.
-4. ⏳ Pre-auth/login-required Create -> record-level Back control absent.
-5. ⏳ Normal existing Detail/Edit -> exactly one Back control.
-6. ⏳ R3 regression smoke -> My MBO structured table + Back styling + Native Comment Mirror structured read-only table, no CSS/parser regression.
-7. ⏳ Runtime viability smoke -> login/session gate and App794 custom UI load normally, no blank screen or unexpected native-only fallback.
-
-No Password Reset action is required in this UAT.
-
-## 6. Rollback Baseline — Still Rev57 Until Full UAT Acceptance
+## 6. Safety / Authorization Ledger
 
 ```text
-ROLLBACK_SOURCE_COMMIT       = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
-ROLLBACK_JS_IDENTITY         = ac22a56cb9d78001384241fe12745f7a2da3da84
-ROLLBACK_CSS_IDENTITY        = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-ROLLBACK_SCOPE               = ALL
-ROLLBACK_TOPOLOGY            = 1/1/0/0
-ROLLBACK_AUTHORIZED          = NO
+LATEST_DEPLOY_AUTH_ID         = APP794-CUMULATIVE-DEPLOY-20260830-01
+LATEST_DEPLOY_AUTH_STATUS     = CONSUMED / CLOSED / NEVER REUSE
+ACTIVE_LIVE_AUTH              = NONE
+ACTIVE_KINTONE_WRITE_AUTH     = NONE
+ACTIVE_DEPLOY_AUTH            = NONE
+APP801_LIVE_WRITE             = NO
+ROLLBACK_AUTH                 = NONE
 ```
 
-Rollback is a separate Live write and still requires separate explicit user authorization if ever needed.
+No Live Kintone write, customization upload, deploy, retry, rollback, App801 write, schema/layout/ACL/process change is authorized.
 
 ## 7. Current Gate
 
 ```text
-CURRENT_GATE                  = REV58 USER RUNTIME UAT / ITEM 1 PASS / ITEM 2 NEXT
-CURRENT_MODE                  = CONTROL PLANE HOLD / NO ACTIVE EXECUTION / NO LIVE WRITE
-D1_PASSWORD_RESET_CORE_R1     = DEPLOYED CORE IN BUNDLE / NO RESET UI OR APP801 WRITE
-WP2_R4_R2                     = TECHNICALLY DEPLOYED REV58 / UAT PARTIAL PASS
-LIVE_ACTUAL_REVISION          = 58
-ACCEPTED_KNOWN_GOOD_REVISION  = 57 UNTIL FULL USER UAT PASS
-LIVE_DEPLOY_AUTHORIZED        = NO
-ACTIVE_KINTONE_WRITE_AUTH     = NONE
-APP801_LIVE_WRITE             = NO
-ROLLBACK_AUTH                 = NONE
-NEXT_OWNER                    = USER FOR UAT ITEM 2: CLICK BACK AND CONFIRM RETURN TO /k/794/
+CURRENT_GATE                  = FATAL CREATE CLEAN-EXIT SOURCE CORRECTIVE / PENDING ANTIGRAVITY THEN CHATGPT REVIEW
+CURRENT_MODE                  = SOURCE + TEST + LOCAL BUILD ONLY / NO KINTONE NETWORK
+REV58_ACTUAL_LIVE             = YES
+REV58_ACCEPTED_KNOWN_GOOD     = NO
+NEXT_OWNER                    = ANTIGRAVITY FOR EXACT ACTIVE TASK
 ```
-
-## 8. Authorization Ledger
-
-```text
-PRIOR_AUTHORIZATION_ID        = APP794-D1-WP2-R3-DEPLOY-20260829-01
-PRIOR_AUTHORIZATION_STATUS    = CONSUMED / CLOSED / NEVER REUSE
-LATEST_AUTHORIZATION_ID       = APP794-CUMULATIVE-DEPLOY-20260830-01
-LATEST_AUTHORIZATION_STATUS   = CONSUMED / CLOSED / NEVER REUSE
-ACTIVE_LIVE_AUTH              = NONE
-ACTIVE_KINTONE_WRITE_AUTH     = NONE
-ACTIVE_DEPLOY_AUTH            = NONE
-ROLLBACK_AUTH                 = NONE
-```
-
-No further deploy, retry, rollback, App801 write, schema/layout/ACL/process change, or other Live write is authorized.
