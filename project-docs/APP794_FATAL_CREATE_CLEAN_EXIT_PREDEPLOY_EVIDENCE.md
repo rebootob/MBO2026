@@ -1,10 +1,10 @@
 # APP794 FATAL CREATE CLEAN-EXIT PRE-DEPLOY VERIFICATION EVIDENCE
 
 > STATUS: `PENDING_CHATGPT_REVIEW`  
-> Execution Timestamp: 2026-08-30T08:52:53+07:00  
+> Execution Timestamp: 2026-08-30T08:58:58+07:00  
 > Target App: App 794 ONLY  
 > Work Package ID: MBO-P03-WP-002C  
-> Verification Mode: READ-ONLY PRE-DEPLOY VERIFICATION (TEST + BUILD + BUILD-ONLY TOOLING + GET-ONLY LIVE & PREVIEW READBACK)
+> Verification Mode: READ-ONLY PRE-DEPLOY VERIFICATION & CLEAN-WORKTREE PROOF R2
 
 ---
 
@@ -21,38 +21,39 @@ SOURCE_TEST_REVIEW           = PASS
 
 ---
 
-## 2. Candidate Worktree Execution & Command Audit Trail
+## 2. Candidate Worktree Execution & Clean-Worktree Audit Trail
 
-Verification was executed in a clean, temporary detached worktree at candidate commit `4472aa2f1c63bf08788b39b4ad54b7ea55808df1`.
+Verification was executed in a fresh, temporary detached worktree at candidate commit `4472aa2f1c63bf08788b39b4ad54b7ea55808df1`.
 
 ```text
 WORKTREE_PATH                = scratch/candidate-worktree
 INITIAL_WORKTREE_HEAD        = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
 INITIAL_WORKTREE_STATUS      = CLEAN (porcelain output empty)
 FINAL_WORKTREE_HEAD          = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-POST_BUILD_STATUS            = M dist/mbo-employee-app.js, M dist/mbo-employee.css (Line endings; 0 content diff)
+FINAL_WORKTREE_STATUS        = CLEAN (porcelain output empty)
+ANTI_MASKING_COMPLIANCE      = PASS (ZERO git reset / checkout / restore / clean / add / manual edits used post-build)
 WORKTREE_CLEANUP_STATUS      = PASS (temporary worktree removed)
 ```
 
 ### Complete Command Log & Exit Statuses
 
-| # | Command Executed | Exit Status | Output / Result Summary |
+| # | Command Executed | Exit Status | Exact Output / Result Summary |
 |---|---|---|---|
 | 1 | `git worktree add --detach scratch/candidate-worktree 4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | `0` | Detached worktree created at candidate HEAD |
-| 2 | `git rev-parse HEAD` (initial) | `0` | Returned `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
-| 3 | `git status --porcelain` (initial) | `0` | Returned clean (empty string) |
+| 2 | `git rev-parse HEAD` (initial) | `0` | `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
+| 3 | `git status --porcelain` (initial) | `0` | Empty (clean string) |
 | 4 | `node --test tests/employee-record-navigation.test.js tests/employee-main-mbo-app-integration.test.js` | `0` | 8 / 8 PASS |
 | 5 | `npm run ui:build` | `0` | `Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css` |
-| 6 | `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` | `0` | Zero content diff between build output & candidate dist |
-| 7 | `git rev-parse HEAD` (post-build) | `0` | Returned `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
-| 8 | `git status --porcelain` (post-build) | `0` | `M dist/mbo-employee-app.js`, `M dist/mbo-employee.css` (0 content diff) |
-| 9 | `node --test tests/classic-bundle.test.js tests/css-structure.test.js` | `0` | 8 / 8 PASS |
-| 10 | `node scripts/kintone/deploy-custom-ui.js --build-only` | `0` | `[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.` |
-| 11 | Build-only JS blob SHA computation | `0` | Computed SHA = `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
-| 12 | Build-only CSS blob SHA computation | `0` | Computed SHA = `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
-| 13 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee-app.js` | `0` | Returned `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
-| 14 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
-| 15 | `node scratch/read_live_predeploy_status.js` (GET-Only Readback) | `0` | Live Rev58 & Preview Rev58 readback; 0 POST, 0 PUT, 0 DELETE |
+| 6 | `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` | `0` | Empty (zero content diff) |
+| 7 | `git update-index --refresh` | `0` | Exit 0 (index stat metadata refreshed) |
+| 8 | `git rev-parse HEAD` (final) | `0` | `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
+| 9 | `git status --porcelain` (final) | `0` | Empty (clean string) |
+| 10 | `node --test tests/classic-bundle.test.js tests/css-structure.test.js` | `0` | 8 / 8 PASS |
+| 11 | `node scripts/kintone/deploy-custom-ui.js --build-only` | `0` | `[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.` |
+| 12 | Build-only JS blob SHA computation | `0` | Computed SHA = `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
+| 13 | Build-only CSS blob SHA computation | `0` | Computed SHA = `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
+| 14 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee-app.js` | `0` | Returned `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
+| 15 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
 | 16 | `git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js` | `0` | Returned `ac22a56cb9d78001384241fe12745f7a2da3da84` |
 | 17 | `git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
 
@@ -101,6 +102,7 @@ PREVIEW_DESKTOP_CSS          = [ "mbo-employee.css" ] (1 entry)
 PREVIEW_MOBILE_JS            = [] (0 entries)
 PREVIEW_MOBILE_CSS           = [] (0 entries)
 
+R2_TASK_KINTONE_GET_COUNT    = 0
 TOTAL_POST_COUNT             = 0
 TOTAL_PUT_COUNT              = 0
 TOTAL_DELETE_COUNT           = 0
@@ -130,7 +132,10 @@ ROLLBACK_AUTHORIZED          = NO
 | Check | Requirement | Result |
 |---|---|---|
 | Initial Candidate HEAD | Detached HEAD equals `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | PASS |
+| Initial Worktree Status | `git status --porcelain` is empty | PASS |
 | Post-Build Candidate HEAD | Post-build HEAD equals `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | PASS |
+| Post-Build Worktree Status | `git status --porcelain` is empty | PASS |
+| Anti-Masking Directives | Zero reset / checkout / restore / clean / add / manual edits used | PASS |
 | Focused Tests | `node --test` integration tests (8/8 pass) | PASS |
 | Bundle & CSS Tests | `node --test` classic bundle & CSS structure tests (8/8 pass) | PASS |
 | UI Build | `npm run ui:build` returns exit status 0 | PASS |
@@ -149,8 +154,9 @@ ROLLBACK_AUTHORIZED          = NO
 
 ### Executor Verification Status
 
-`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE_COMPLETED_PENDING_CHATGPT_REVIEW`
+`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_CLEAN_WORKTREE_PROOF_CAPTURED_PENDING_CHATGPT_REVIEW`
 
-- All predeploy evidence audit gaps closed.
+- Final `git status --porcelain` clean-worktree proof captured (empty output).
+- Zero anti-masking violations.
 - Zero Live writes occurred.
 - Stopped. Pending ChatGPT Independent Review before any deployment authorization.
