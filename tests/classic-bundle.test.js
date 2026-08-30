@@ -49,7 +49,8 @@ test('Classic Bundle: Dependency Graph Closure proves expected runtime modules i
     'src/ui/employee-part-a-ui.js',
     'src/ui/mbo-kintone-auth-adapter.js',
     'src/ui/mbo-session-manager.js',
-    'src/ui/mbo-kintone-login-gate.js'
+    'src/ui/mbo-kintone-login-gate.js',
+    'src/services/mbo-identity-service.js'
   ];
 
   for (const mod of REQUIRED_MODULES) {
@@ -58,6 +59,12 @@ test('Classic Bundle: Dependency Graph Closure proves expected runtime modules i
 
   // Forbidden modules that MUST NOT be in the browser bundle graph
   assert.equal(inputSet.has('src/profiles/scoring-config-master.js'), false, 'scoring-config-master.js MUST NOT be in browser bundle graph');
+
+  // Verify zero server or Auth Bridge modules enter the browser bundle
+  for (const inputPath of inputSet) {
+    assert.equal(inputPath.startsWith('src/server/'), false, `Browser bundle graph must NOT include server module ${inputPath}`);
+    assert.equal(inputPath.startsWith('services/mbo-auth-bridge/'), false, `Browser bundle graph must NOT include auth-bridge module ${inputPath}`);
+  }
 
   const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
   assert.equal(/node:crypto/.test(bundleCode), false, 'dist/mbo-employee-app.js MUST NOT import node:crypto');

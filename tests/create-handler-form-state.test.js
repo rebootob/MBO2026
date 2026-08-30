@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { MboKintoneLoginGate } from '../src/ui/mbo-kintone-login-gate.js';
 
 const RAW_TOKEN = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 const EXPECTED_HASH = crypto.createHash('sha256').update(RAW_TOKEN).digest('hex');
@@ -12,11 +13,13 @@ if (!globalThis.crypto) {
 
 const createMockElement = () => ({
   style: {},
+  value: '',
   setAttribute: () => {},
   appendChild: () => {},
   insertBefore: () => {},
   addEventListener: () => {},
   remove: () => {},
+  focus: () => {},
   firstChild: null,
   querySelector: () => createMockElement(),
   querySelectorAll: () => []
@@ -31,10 +34,8 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   const fakeHeaderSpace = createMockElement();
   globalThis.document = {
     getElementById: () => createMockElement(),
-    querySelector: (sel) => {
-      if (sel === '.gaia-app-wrapper') return createMockElement();
-      return null;
-    },
+    querySelector: () => createMockElement(),
+    querySelectorAll: () => [],
     body: createMockElement(),
     createElement: () => createMockElement()
   };
@@ -58,7 +59,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
         setFieldShown: () => {}
       }
     },
-    getLoginUser: () => ({ code: '0113', name: 'Somchai' }),
+    getLoginUser: () => ({ code: 's1', name: 'Somchai' }),
     api: Object.assign(
       async (url, method, params) => {
         const app = params?.app;
@@ -73,7 +74,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
               Session_Token_Hash: { value: EXPECTED_HASH },
               Session_Issued_At: { value: new Date().toISOString() },
               Session_Expires_At: { value: new Date(Date.now() + 3600000).toISOString() },
-              Session_Kintone_User: { value: '0113' }
+              Session_Kintone_User: { value: 's1' }
             }]
           };
         }
@@ -96,7 +97,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
           return {
             records: [{
               Section_Name: { value: 'General Admin Section 1' },
-              Requester_User: { value: [{ code: '0113' }] },
+              Requester_User: { value: [{ code: 's1' }] },
               Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
               Manager_Level1_Approval_Rule: { value: 'ANY' },
               GM_Level1_Approvers: { value: [{ code: 'g1' }] },
@@ -151,9 +152,14 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   globalThis.localStorage = storageObj;
   globalThis.sessionStorage = storageObj;
 
+  const gate1 = new MboKintoneLoginGate({ mboAppId: 794 });
+  gate1.authenticatedEmployeeCode = '0113';
+  globalThis.mboLoginGate = gate1;
+
   // Import compiled dist bundle to test real production bundle execution
   const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
   new Function(bundleCode)();
+  await new Promise(r => setTimeout(r, 50));
 
   assert.equal(typeof eventCallback, 'function', 'app.record.create.show event listener must be registered');
 
@@ -193,7 +199,9 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
     record: record
   };
 
-  // Execute create show handler
+  if (globalThis.mboLoginGate) {
+    globalThis.mboLoginGate.authenticatedEmployeeCode = '0113';
+  }
   const handlerResult = eventCallback(createEvent);
 
   // If handler returns a Promise, await it
@@ -216,7 +224,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   assert.equal(returnedEvent.record.Employee_Name.value, 'Somchai Jaidee');
   assert.equal(returnedEvent.record.Fiscal_Year.value, 'FY2026');
   assert.equal(returnedEvent.record.Record_Key.value, 'FY2026-0113');
-  assert.deepEqual(returnedEvent.record.Requester_User.value, [{ code: '0113' }]);
+  assert.deepEqual(returnedEvent.record.Requester_User.value, [{ code: 's1' }]);
   assert.equal(returnedEvent.record.Routing_Topology.value, 'M1_ONLY');
   assert.equal(returnedEvent.record.Profile_Code.value, 'PROF_GM');
   assert.equal(returnedEvent.record.PartA_Weight.value, 70);
@@ -268,7 +276,7 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
         setFieldShown: () => {}
       }
     },
-    getLoginUser: () => ({ code: '9999', name: 'Unknown' }),
+    getLoginUser: () => ({ code: 's1', name: 'Somchai' }),
     api: Object.assign(
       async (url, method, params) => {
         const app = params?.app;
@@ -320,14 +328,16 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
     removeItem: (k) => mockStorage.delete(k)
   };
   globalThis.localStorage = storageObj2;
-  globalThis.sessionStorage = storageObj2;
-
   const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
   new Function(bundleCode)();
+  await new Promise(r => setTimeout(r, 50));
 
   const record = { Employee_Code: { value: '' } };
   const createEvent = { type: 'app.record.create.show', record };
 
+  if (globalThis.mboLoginGate) {
+    globalThis.mboLoginGate.authenticatedEmployeeCode = '9999';
+  }
   const handlerResult = eventCallback(createEvent);
   const returnedEvent = (handlerResult && typeof handlerResult.then === 'function')
     ? await handlerResult

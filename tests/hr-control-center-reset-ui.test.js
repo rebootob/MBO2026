@@ -447,7 +447,7 @@ test('15. Hybrid Identity / App794 / App53 / routing files are completely untouc
   const gitStatus = execSync.execSync('git status --porcelain', { encoding: 'utf8' });
   const changedFiles = gitStatus.split('\n').filter(Boolean).map(line => line.slice(3).trim());
 
-  const forbiddenPrefixes = ['src/core/mbo-routing-engine.js', 'src/ui/employee-record-navigation.js', 'config/'];
+  const forbiddenPrefixes = ['src/main-mbo-app.js', 'src/core/mbo-routing-engine.js', 'src/ui/employee-record-navigation.js', 'config/'];
   for (const f of changedFiles) {
     for (const forbidden of forbiddenPrefixes) {
       assert.equal(f.startsWith(forbidden), false, `Forbidden file ${f} must not be modified in this WP`);

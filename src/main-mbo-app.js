@@ -139,24 +139,6 @@ function resolveRuntimeEmployeeSelfContext(uiHost) {
         };
       }
 
-      if (mboLoginGate) {
-        const authResult = mboLoginGate.requireLogin(uiHost);
-        if (typeof authResult === 'string') {
-          return {
-            status: 'SUCCESS',
-            context: { mode: 'SHARED', employeeCode: authResult, kintoneUserCode }
-          };
-        } else if (authResult && typeof authResult.then === 'function') {
-          const empCode = await authResult;
-          if (empCode) {
-            return {
-              status: 'SUCCESS',
-              context: { mode: 'SHARED', employeeCode: empCode, kintoneUserCode }
-            };
-          }
-        }
-      }
-
       return {
         status: 'DEDICATED_MAPPING_FAILED',
         reason: mappingRes.reason || 'Kintone user is not bound to an active Employee_Code in App 53'
@@ -496,6 +478,10 @@ if (typeof kintone !== 'undefined') {
       ? contextOrCode
       : { mode: 'SHARED', employeeCode: String(contextOrCode), kintoneUserCode: (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null };
 
+    if (!context || !context.mode || (context.mode !== 'SHARED' && context.mode !== 'DEDICATED')) {
+      throw new Error('INVALID_EMPLOYEE_SELF_CONTEXT: Valid resolved Employee-Self context is required.');
+    }
+
     const authenticatedEmployeeCode = context.employeeCode;
 
     // 4. D1: Render auth controls bar ONLY for SHARED mode
@@ -580,7 +566,7 @@ if (typeof kintone !== 'undefined') {
         const empProfile = empLookupRes.employee || empLookupRes;
 
         // Step 2: Routing Profile Resolution & Hybrid Requester / Route Composition
-        const loginUserCode = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null;
+        const loginUserCode = context.kintoneUserCode || ((typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null);
         let routeProfile = await RoutingService.resolveRoutingProfile(
           ROUTING_APP_ID,
           empProfile.Employee_Section,
@@ -589,12 +575,12 @@ if (typeof kintone !== 'undefined') {
           empProfile.Employee_Position
         );
 
-        if (currentEmployeeSelfContext?.mode === 'DEDICATED') {
+        if (context.mode === 'DEDICATED') {
           routeProfile = RoutingService.applyOwnMboSelfAppraiserElision(routeProfile, loginUserCode, true);
         }
 
         const effectiveRequesterUsers = RoutingService.resolveEffectiveRequesterUser({
-          mode: currentEmployeeSelfContext?.mode || 'SHARED',
+          mode: context.mode,
           kintoneUserCode: loginUserCode,
           routeRequesterUsers: routeProfile.Requester_User
         });
@@ -1047,7 +1033,10 @@ if (typeof kintone !== 'undefined') {
 
   // Hook 4: Record Deletion Submission Guard (Fail-Closed)
   kintone.events.on(['app.record.detail.delete.submit', 'app.record.index.delete.submit'], function (event) {
-    const policy = new DeleteGuardPolicy({ mboLoginGate });
+    const policy = new DeleteGuardPolicy({
+      mboLoginGate,
+      getEmployeeSelfContext: () => currentEmployeeSelfContext
+    });
     return policy.evaluateDeleteSubmit(event);
   });
 }

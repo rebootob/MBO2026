@@ -28,13 +28,7 @@ export class MboIdentityService {
       return 'TECHNICAL_ADMIN';
     }
 
-    if (
-      MboIdentityService.APPROVED_SHARED_PRINCIPALS.has(cleanUser) ||
-      /^\d+$/.test(cleanUser) ||
-      /^req/i.test(cleanUser) ||
-      /^test/i.test(cleanUser) ||
-      /^user/i.test(cleanUser)
-    ) {
+    if (MboIdentityService.APPROVED_SHARED_PRINCIPALS.has(cleanUser)) {
       return 'SHARED';
     }
 

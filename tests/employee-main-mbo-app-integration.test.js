@@ -23,6 +23,9 @@ function createMockElement(tagName = 'div') {
     className: '',
     dataset: {},
 
+    get children() {
+      return children;
+    },
     get innerHTML() {
       return this._innerHTML;
     },
@@ -71,6 +74,7 @@ function createMockElement(tagName = 'div') {
     querySelector(sel) {
       const search = (el) => {
         if (sel === 'a' && el.tagName === 'A') return el;
+        if (sel === 'h2' && el.tagName === 'H2') return el;
         if (sel.startsWith('[data-mbo-') && sel.endsWith(']')) {
           const attrName = sel.slice(1, -1);
           if (el.getAttribute && el.getAttribute(attrName) !== null) return el;
@@ -123,7 +127,7 @@ function createMockElement(tagName = 'div') {
 // Global Kintone setup before main-mbo-app.js is imported
 globalThis.document = {
   querySelector: (sel) => {
-    if (sel === '.gaia-app-wrapper' || sel === 'body') return createMockElement('body');
+    if (sel === '.gaia-app-wrapper' || sel === 'body') return currentActiveHost || globalThis.document.body;
     return null;
   },
   querySelectorAll: () => [],
@@ -557,6 +561,51 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(dedicatedCtx.employeeCode, '0044', 'Bound employee code must be 0044 for vassana');
   assert.equal(dedicatedCtx.kintoneUserCode, 'vassana', 'Kintone user code must be vassana');
   assert.equal(requireLoginCalled, false, 'DEDICATED mode must NEVER invoke mboLoginGate.requireLogin()');
+
+  // 4g-1. Finding R1-B & R1-E: DEDICATED missing mapping fails closed with 0 requireLogin calls and NO SHARED fallback
+  currentMockUser = { code: 'unknown_dedicated', name: 'Unknown User' };
+  requireLoginCalled = false;
+  const missingHost = createMockElement('div');
+  missingHost.className = 'gaia-app-wrapper';
+  currentActiveHost = missingHost;
+  const missingEvent = {
+    type: 'app.record.index.show',
+    appId: 794
+  };
+  const indexShowHandler = registeredHandlers.get('app.record.index.show');
+  assert.ok(indexShowHandler, 'Registered event handler for app.record.index.show must exist');
+  await indexShowHandler(missingEvent);
+  await new Promise(r => setTimeout(r, 0));
+  const missingCtx = getCurrentEmployeeSelfContext();
+  assert.equal(missingCtx, null, 'Missing dedicated mapping must clear context (null)');
+  assert.equal(requireLoginCalled, false, 'Missing dedicated mapping must NEVER invoke mboLoginGate.requireLogin()');
+
+
+  // 4g-2. Finding R1-C: Registered delete event handler blocks for DEDICATED & SHARED context and abstains when null
+  const deleteHandler = registeredHandlers.get('app.record.detail.delete.submit');
+  assert.ok(typeof deleteHandler === 'function', 'Delete handler must be registered');
+
+  // Active context (DEDICATED) -> Blocked (returns false)
+  const { setCurrentEmployeeSelfContext } = await import('../src/main-mbo-app.js');
+  setCurrentEmployeeSelfContext({ mode: 'DEDICATED', employeeCode: '0044', kintoneUserCode: 'vassana' });
+  const delEventDedicated = { type: 'app.record.detail.delete.submit', recordId: 10 };
+  const resDedicated = deleteHandler(delEventDedicated);
+  assert.equal(resDedicated, false, 'Delete submit must be blocked when DEDICATED Employee-Self context exists');
+
+  // Active context (SHARED) -> Blocked (returns false)
+  setCurrentEmployeeSelfContext({ mode: 'SHARED', employeeCode: '0118', kintoneUserCode: 'f1' });
+  const delEventShared = { type: 'app.record.detail.delete.submit', recordId: 10 };
+  const resShared = deleteHandler(delEventShared);
+  assert.equal(resShared, false, 'Delete submit must be blocked when SHARED Employee-Self context exists');
+
+  // Null context -> Abstains (returns event)
+  setCurrentEmployeeSelfContext(null);
+  const delEventNull = { type: 'app.record.detail.delete.submit', recordId: 10 };
+  const resNull = deleteHandler(delEventNull);
+  assert.equal(resNull, delEventNull, 'Delete submit must abstain (return event unchanged) when no Employee-Self context exists');
+
+  // Restore dedicated context for remaining tests
+  setCurrentEmployeeSelfContext(dedicatedCtx);
 
   globalThis.kintone.api = savedApi;
 

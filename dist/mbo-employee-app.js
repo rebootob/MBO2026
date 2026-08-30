@@ -1,6 +1,7 @@
 (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
   var __esm = (fn, res, err) => function __init() {
     if (err) throw err[0];
     try {
@@ -13,6 +14,7 @@
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
   };
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // src/services/mbo-attachment-service.js
   var mbo_attachment_service_exports = {};
@@ -6072,7 +6074,315 @@ Unable to verify record uniqueness. Please try again or contact HR / Administrat
 Employee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
       }
     }
+    /**
+     * Targeted App53 read-only GET query for dedicated identity mapping candidates.
+     * Constructs safe query: MBO_Kintone_User in ("<escapedCode>") and Number_0 = 1 limit 2
+     * @param {string} kintoneUserCode - Native Kintone user code
+     * @param {Object} kintoneApi - Kintone API client instance
+     * @returns {Promise<Array<Object>>} Raw App53 candidate records
+     */
+    static async lookupDedicatedIdentityMappingCandidates(kintoneUserCode, kintoneApi) {
+      if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode === "") {
+        throw new EmployeeLookupError(
+          "EMPLOYEE_CODE_INVALID",
+          "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38 Kintone User Code\nPlease enter Kintone User Code",
+          "Please enter Kintone User Code"
+        );
+      }
+      if (kintoneUserCode !== kintoneUserCode.trim()) {
+        throw new EmployeeLookupError(
+          "EMPLOYEE_CODE_INVALID",
+          "Kintone User Code \u0E2B\u0E49\u0E32\u0E21\u0E21\u0E35\u0E0A\u0E48\u0E2D\u0E07\u0E27\u0E48\u0E32\u0E07\nKintone User Code cannot contain whitespace",
+          "Kintone User Code cannot contain whitespace"
+        );
+      }
+      if (!kintoneApi || typeof kintoneApi.getRecords !== "function") {
+        throw new EmployeeLookupError(
+          "KINTONE_API_UNAVAILABLE",
+          "\u0E23\u0E30\u0E1A\u0E1A\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D Kintone API \u0E44\u0E14\u0E49\nKintone API service is unavailable",
+          "Kintone API service is unavailable"
+        );
+      }
+      const escapedCode = kintoneUserCode.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+      const query = `MBO_Kintone_User in ("${escapedCode}") and Number_0 = 1 limit 2`;
+      let resp;
+      try {
+        resp = await kintoneApi.getRecords(53, query);
+      } catch (err) {
+        throw new EmployeeLookupError(
+          "EMPLOYEE_LOOKUP_FAILED",
+          "\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E14\u0E36\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E08\u0E32\u0E01 App 53\nFailed to fetch Employee mapping candidates from App 53",
+          "Failed to fetch Employee mapping candidates from App 53",
+          err
+        );
+      }
+      if (!resp || typeof resp !== "object" || !Array.isArray(resp.records)) {
+        throw new EmployeeLookupError(
+          "EMPLOYEE_LOOKUP_FAILED",
+          "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E35\u0E48\u0E2A\u0E48\u0E07\u0E01\u0E25\u0E31\u0E1A\u0E21\u0E32\u0E08\u0E32\u0E01 App 53 \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07\nInvalid records payload received from App 53",
+          "Invalid records payload received from App 53"
+        );
+      }
+      return resp.records;
+    }
   };
+
+  // src/services/mbo-identity-service.js
+  var _MboIdentityService = class _MboIdentityService {
+    /**
+     * Resolves native Kintone user code to authoritative principal access mode.
+     * Modes: 'SHARED' | 'DEDICATED' | 'TECHNICAL_ADMIN'.
+     * Input must be an exact nonblank string; whitespace is rejected.
+     * @param {Object} params
+     * @param {string} params.kintoneUserCode - Native Kintone user code
+     * @returns {'SHARED'|'DEDICATED'|'TECHNICAL_ADMIN'} Principal access mode
+     */
+    static resolveKintonePrincipalMode({ kintoneUserCode }) {
+      if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode === "") {
+        throw new Error("LOGGED_IN_KINTONE_USER_REQUIRED: Logged-in Kintone user code is required.");
+      }
+      if (kintoneUserCode !== kintoneUserCode.trim()) {
+        throw new Error("KINTONE_USER_CODE_HAS_WHITESPACE: Kintone user code cannot contain whitespace.");
+      }
+      const cleanUser = kintoneUserCode;
+      if (cleanUser === "admin-form" || cleanUser === "Administrator" || cleanUser === "ADMIN") {
+        return "TECHNICAL_ADMIN";
+      }
+      if (_MboIdentityService.APPROVED_SHARED_PRINCIPALS.has(cleanUser)) {
+        return "SHARED";
+      }
+      return "DEDICATED";
+    }
+    /**
+     * Resolves authenticated dedicated Kintone user to an authoritative Employee_Code in App 53.
+     * Canonical field specs: MBO_Kintone_User (USER_SELECT), Number_0 = 1 (Active), emp_text (Canonical Code).
+     * Strict Production App53 Contract: zero fallback to Account_Status, Kintone_User_Code, Employee_Code, or guessed values.
+     * @param {Object} params
+     * @param {string} params.kintoneUserCode - Logged-in Kintone user code
+     * @param {Array<Object>} params.userMappings - App 53 employee records
+     * @returns {{ status: string, employeeCode?: string, kintoneUserCode?: string, reason?: string, recordId?: string|number }}
+     */
+    static resolveDedicatedKintoneUserMapping({ kintoneUserCode, userMappings }) {
+      if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode.trim() === "") {
+        return {
+          status: "IDENTITY_MAPPING_MISSING",
+          reason: "LOGGED_IN_KINTONE_USER_REQUIRED"
+        };
+      }
+      if (kintoneUserCode !== kintoneUserCode.trim()) {
+        return {
+          status: "IDENTITY_MAPPING_MISSING",
+          reason: "KINTONE_USER_CODE_HAS_WHITESPACE"
+        };
+      }
+      const cleanUserCode = kintoneUserCode;
+      if (cleanUserCode === "admin-form" || cleanUserCode === "Administrator" || cleanUserCode === "ADMIN") {
+        return {
+          status: "IDENTITY_MAPPING_MISSING",
+          reason: "TECHNICAL_ADMIN_CANNOT_BIND_EMPLOYEE_SELF"
+        };
+      }
+      if (!Array.isArray(userMappings)) {
+        return {
+          status: "IDENTITY_MAPPING_MISSING",
+          reason: "NO_EMPLOYEE_MAPPING_FOUND"
+        };
+      }
+      const matches = userMappings.filter((m) => {
+        if (!m || typeof m !== "object") return false;
+        if (m.Number_0 === void 0 || m.Number_0 === null) return false;
+        const num0Val = typeof m.Number_0 === "object" ? m.Number_0.value : m.Number_0;
+        if (String(num0Val) !== "1" && num0Val !== 1) return false;
+        if (m.MBO_Kintone_User === void 0 || m.MBO_Kintone_User === null) return false;
+        const userArr = typeof m.MBO_Kintone_User === "object" && !Array.isArray(m.MBO_Kintone_User) ? m.MBO_Kintone_User.value : m.MBO_Kintone_User;
+        if (!Array.isArray(userArr) || userArr.length !== 1) return false;
+        const userObj = userArr[0];
+        if (!userObj || typeof userObj !== "object" || typeof userObj.code !== "string" || userObj.code.trim() === "") {
+          return false;
+        }
+        return userObj.code === cleanUserCode;
+      });
+      if (matches.length === 0) {
+        return {
+          status: "IDENTITY_MAPPING_MISSING",
+          reason: "NO_ACTIVE_EMPLOYEE_MAPPING_FOUND"
+        };
+      }
+      if (matches.length > 1) {
+        return {
+          status: "IDENTITY_MAPPING_AMBIGUOUS",
+          reason: "MULTIPLE_ACTIVE_EMPLOYEE_MAPPINGS_FOUND"
+        };
+      }
+      const mapped = matches[0];
+      if (mapped.emp_text === void 0 || mapped.emp_text === null) {
+        return {
+          status: "IDENTITY_MAPPING_INVALID_CANONICAL_CODE",
+          reason: "MAPPED_RECORD_MISSING_CANONICAL_EMP_TEXT"
+        };
+      }
+      const rawEmpText = typeof mapped.emp_text === "object" ? mapped.emp_text.value : mapped.emp_text;
+      if (typeof rawEmpText !== "string" || rawEmpText.trim() === "" || !isValidEmployeeCode(rawEmpText.trim())) {
+        return {
+          status: "IDENTITY_MAPPING_INVALID_CANONICAL_CODE",
+          reason: "MAPPED_RECORD_MISSING_CANONICAL_EMP_TEXT"
+        };
+      }
+      const cleanEmpCode = rawEmpText.trim();
+      const recId = mapped.$id !== void 0 ? typeof mapped.$id === "object" ? mapped.$id.value : mapped.$id : mapped.Record_Id || null;
+      return {
+        status: "IDENTITY_BOUND",
+        employeeCode: cleanEmpCode,
+        kintoneUserCode: cleanUserCode,
+        recordId: recId
+      };
+    }
+    /**
+     * Resolves authenticated Kintone user to an authoritative Employee_Code.
+     * Backward compatibility helper for legacy test suite inputs.
+     * @param {Object} params
+     * @param {string} params.kintoneUserCode - Logged-in Kintone user code
+     * @param {Array<Object>} params.userMappings - Employee mapping records
+     * @returns {{ status: string, employeeCode?: string, reason?: string }}
+     */
+    static resolveEmployeeIdentity({ kintoneUserCode, userMappings }) {
+      const canonicalRes = _MboIdentityService.resolveDedicatedKintoneUserMapping({ kintoneUserCode, userMappings });
+      if (canonicalRes.status === "IDENTITY_BOUND") {
+        return canonicalRes;
+      }
+      if (canonicalRes.status === "IDENTITY_MAPPING_AMBIGUOUS") {
+        return { status: "IDENTITY_MAPPING_AMBIGUOUS", reason: "MULTIPLE_EMPLOYEE_MAPPINGS_FOUND" };
+      }
+      if (canonicalRes.status === "IDENTITY_MAPPING_INVALID_CANONICAL_CODE") {
+        return { status: "IDENTITY_MAPPING_MISSING", reason: "INVALID_MAPPED_EMPLOYEE_CODE" };
+      }
+      if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode.trim() === "") {
+        return { status: "IDENTITY_MAPPING_MISSING", reason: "LOGGED_IN_KINTONE_USER_REQUIRED" };
+      }
+      const cleanUser = kintoneUserCode.trim();
+      if (!Array.isArray(userMappings)) {
+        return { status: "IDENTITY_MAPPING_MISSING", reason: "NO_EMPLOYEE_MAPPING_FOUND" };
+      }
+      const legacyMatches = userMappings.filter((m) => m && m.Kintone_User_Code === cleanUser && m.Account_Status !== "DISABLED");
+      if (legacyMatches.length === 0) {
+        return { status: "IDENTITY_MAPPING_MISSING", reason: "NO_EMPLOYEE_MAPPING_FOUND" };
+      }
+      if (legacyMatches.length > 1) {
+        return { status: "IDENTITY_MAPPING_AMBIGUOUS", reason: "MULTIPLE_EMPLOYEE_MAPPINGS_FOUND" };
+      }
+      const legacyMapped = legacyMatches[0];
+      const legacyEmpCode = legacyMapped.Employee_Code;
+      if (!legacyEmpCode || typeof legacyEmpCode !== "string" || legacyEmpCode.trim() === "") {
+        return { status: "IDENTITY_MAPPING_MISSING", reason: "INVALID_MAPPED_EMPLOYEE_CODE" };
+      }
+      return {
+        status: "IDENTITY_BOUND",
+        employeeCode: legacyEmpCode.trim(),
+        kintoneUserCode: cleanUser
+      };
+    }
+    /**
+     * Validates MBO username equals the bound Employee_Code.
+     */
+    static validateMboUsername({ mboUsername, boundEmployeeCode }) {
+      if (!mboUsername || !boundEmployeeCode || mboUsername.trim() !== boundEmployeeCode.trim()) {
+        return {
+          status: "USERNAME_MISMATCH",
+          reason: "MBO_USERNAME_MUST_EQUAL_BOUND_EMPLOYEE_CODE"
+        };
+      }
+      return {
+        status: "USERNAME_VALIDATED",
+        employeeCode: boundEmployeeCode.trim()
+      };
+    }
+    /**
+     * Authorizes employee data access ensuring EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B.
+     * Technical Admin identity (admin-form / isTechnicalAdmin) CANNOT perform employee-self business ops.
+     * HR / APPROVER role access requires authoritativeRoleContext assertion.
+     */
+    static authorizeEmployeeRecordAccess({ authenticatedUser, targetEmployeeCode, userRole = "EMPLOYEE", authoritativeRoleContext = null }) {
+      if (!authenticatedUser || !authenticatedUser.employeeCode) {
+        return {
+          authorized: false,
+          code: "UNAUTHENTICATED",
+          reason: "Authenticated employee identity is required."
+        };
+      }
+      const isTechAdminUser = authenticatedUser.isTechnicalAdmin === true || authenticatedUser.kintoneUserCode === "Administrator" || authenticatedUser.kintoneUserCode === "admin-form" || authenticatedUser.employeeCode === "ADMIN";
+      if (isTechAdminUser) {
+        return {
+          authorized: false,
+          code: "TECHNICAL_ADMIN_CANNOT_PERFORM_BUSINESS_EMPLOYEE_SELF",
+          reason: "Technical admin identity cannot perform employee self business operations."
+        };
+      }
+      const cleanTarget = String(targetEmployeeCode || "").trim();
+      const cleanAuthEmp = String(authenticatedUser.employeeCode).trim();
+      if (userRole === "EMPLOYEE") {
+        if (cleanAuthEmp !== cleanTarget) {
+          return {
+            authorized: false,
+            code: "EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B",
+            reason: `Data isolation violation: Employee ${cleanAuthEmp} cannot access Employee ${cleanTarget} records.`
+          };
+        }
+        return {
+          authorized: true,
+          role: "EMPLOYEE",
+          employeeCode: cleanTarget
+        };
+      }
+      if (userRole === "HR" || userRole === "APPROVER") {
+        if (!authoritativeRoleContext || typeof authoritativeRoleContext !== "object") {
+          return {
+            authorized: false,
+            code: "UNVERIFIED_AUTHORITATIVE_ROLE_CLAIM",
+            reason: `Role ${userRole} requires authoritative role context.`
+          };
+        }
+        let isVerified = false;
+        if (typeof authoritativeRoleContext.hasVerifiedRole === "function") {
+          isVerified = authoritativeRoleContext.hasVerifiedRole(userRole, cleanTarget);
+        } else if (userRole === "HR" && authoritativeRoleContext.isAuthorizedHR === true) {
+          isVerified = true;
+        } else if (userRole === "APPROVER" && typeof authoritativeRoleContext.isAuthorizedApproverFor === "function") {
+          isVerified = authoritativeRoleContext.isAuthorizedApproverFor(cleanTarget);
+        } else if (Array.isArray(authoritativeRoleContext.verifiedRoles)) {
+          isVerified = authoritativeRoleContext.verifiedRoles.includes(userRole);
+        }
+        if (!isVerified) {
+          return {
+            authorized: false,
+            code: "UNVERIFIED_AUTHORITATIVE_ROLE_CLAIM",
+            reason: `Role claim ${userRole} is not verified by authoritative role context for target ${cleanTarget}.`
+          };
+        }
+        return {
+          authorized: true,
+          role: userRole,
+          employeeCode: cleanTarget
+        };
+      }
+      return {
+        authorized: false,
+        code: "UNAUTHORIZED_ROLE",
+        reason: `Role ${userRole} is not authorized.`
+      };
+    }
+  };
+  __publicField(_MboIdentityService, "APPROVED_SHARED_PRINCIPALS", /* @__PURE__ */ new Set([
+    "t1",
+    "t2",
+    "s1",
+    "f1",
+    "f2",
+    "f3",
+    "e1",
+    "tmh",
+    "g_request"
+  ]));
+  var MboIdentityService = _MboIdentityService;
 
   // src/services/routing-service.js
   var RoutingService = class _RoutingService {
@@ -6243,6 +6553,182 @@ Duplicate active routing records found for key ${primaryRoutingKey} in Routing M
         throw new Error(`\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E19\u0E35\u0E49 (${cleanUser}) \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E2A\u0E23\u0E49\u0E32\u0E07 MBO${sectionInfo}
 This account (${cleanUser}) is not authorized to create an MBO for this target.`);
       }
+    }
+    /**
+     * Resolves effective requester user array based on access mode.
+     * DEDICATED mode: returns [{ code: kintoneUserCode }].
+     * SHARED mode: requires kintoneUserCode to match route's Requester_User list.
+     * Accepts ONLY exact 'DEDICATED' or 'SHARED' mode; any unknown/malformed mode fails closed.
+     * @param {Object} params
+     * @param {string} params.mode - Exact 'DEDICATED' | 'SHARED'
+     * @param {string} params.kintoneUserCode - Current Kintone user code
+     * @param {Array<Object|string>} params.routeRequesterUsers - Requester_User from App 795 route
+     * @returns {Array<Object>} Effective requester user array
+     */
+    static resolveEffectiveRequesterUser({ mode, kintoneUserCode, routeRequesterUsers = [] }) {
+      if (mode !== "DEDICATED" && mode !== "SHARED") {
+        throw new Error(`INVALID_REQUESTER_MODE: Requester mode must be exact 'DEDICATED' or 'SHARED' (received '${mode}').`);
+      }
+      if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode === "") {
+        throw new Error("\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\nLogged-in user code is missing.");
+      }
+      if (kintoneUserCode === "admin-form" || kintoneUserCode === "Administrator" || kintoneUserCode === "ADMIN") {
+        throw new Error(`\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E1A\u0E23\u0E34\u0E2B\u0E32\u0E23\u0E23\u0E30\u0E1A\u0E1A (${kintoneUserCode}) \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E2A\u0E23\u0E49\u0E32\u0E07 MBO \u0E43\u0E19\u0E10\u0E32\u0E19\u0E30\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19
+Technical admin identity (${kintoneUserCode}) cannot create MBO records.`);
+      }
+      if (mode === "DEDICATED") {
+        if (kintoneUserCode !== kintoneUserCode.trim()) {
+          throw new Error("KINTONE_USER_CODE_HAS_WHITESPACE: Dedicated Kintone user code cannot contain whitespace.");
+        }
+        return [{ code: kintoneUserCode }];
+      }
+      const cleanUser = kintoneUserCode.trim();
+      const norm = (c) => String(c || "").trim().toLowerCase();
+      const isAuthorized = Array.isArray(routeRequesterUsers) && routeRequesterUsers.some((u) => {
+        const uCode = typeof u === "object" ? u.code || u.value : u;
+        return norm(uCode) === norm(cleanUser);
+      });
+      if (!isAuthorized) {
+        throw new Error(`\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E19\u0E35\u0E49 (${cleanUser}) \u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E2A\u0E23\u0E49\u0E32\u0E07 MBO \u0E43\u0E19\u0E42\u0E2B\u0E21\u0E14 SHARED
+This account (${cleanUser}) is not authorized to create an MBO for this target.`);
+      }
+      return routeRequesterUsers;
+    }
+    /**
+     * Applies own-MBO self-appraiser elision transformation by preserving approver slots.
+     * For own MBO only: removes self appraiser from each slot, keeps surviving slots,
+     * shifts surviving slots left into canonical topology positions carrying each slot's approval rule,
+     * and recalculates effective technical topology (e.g. M1_G1 -> M1_ONLY for Natta).
+     * Pure transformation: returns a new route object without mutating the input object.
+     * @param {Object} routeProfile - App 795 route profile
+     * @param {string} currentDedicatedUserCode - Current dedicated Kintone user code
+     * @param {boolean} isOwnMbo - Flag indicating whether this is the employee's own MBO
+     * @returns {Object} Effective route profile
+     */
+    static applyOwnMboSelfAppraiserElision(routeProfile, currentDedicatedUserCode, isOwnMbo = false) {
+      if (!routeProfile || typeof routeProfile !== "object") {
+        throw new Error("Invalid route profile provided for self-appraiser elision.");
+      }
+      if (!isOwnMbo) {
+        return { ...routeProfile };
+      }
+      if (!currentDedicatedUserCode || typeof currentDedicatedUserCode !== "string" || currentDedicatedUserCode === "") {
+        throw new Error("MISSING_DEDICATED_USER_CODE: Dedicated Kintone user code is required for own-MBO self-appraiser elision.");
+      }
+      if (currentDedicatedUserCode !== currentDedicatedUserCode.trim()) {
+        throw new Error("KINTONE_USER_CODE_HAS_WHITESPACE: Dedicated Kintone user code cannot contain whitespace.");
+      }
+      const cleanUser = currentDedicatedUserCode;
+      const parseSlotApprovers = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((u) => {
+          if (!u) return null;
+          if (typeof u === "object") return { ...u, code: String(u.code || u.value || "").trim() };
+          return { code: String(u).trim() };
+        }).filter((u) => u && u.code);
+      };
+      const slots = [
+        {
+          id: "M1",
+          approvers: parseSlotApprovers(routeProfile.Manager_Level1_Approvers || routeProfile.Manager_User),
+          rule: routeProfile.Manager_Level1_Approval_Rule || "ALL"
+        },
+        {
+          id: "M2",
+          approvers: parseSlotApprovers(routeProfile.Manager_Level2_Approvers || routeProfile.First_Manager_User),
+          rule: routeProfile.Manager_Level2_Approval_Rule || "ALL"
+        },
+        {
+          id: "G1",
+          approvers: parseSlotApprovers(routeProfile.GM_Level1_Approvers || routeProfile.GM_User),
+          rule: routeProfile.GM_Level1_Approval_Rule || "ALL"
+        },
+        {
+          id: "G2",
+          approvers: parseSlotApprovers(routeProfile.GM_Level2_Approvers),
+          rule: routeProfile.GM_Level2_Approval_Rule || "ALL"
+        }
+      ];
+      let selfRemoved = false;
+      const survivingSlots = [];
+      for (const slot of slots) {
+        const filtered = slot.approvers.filter((u) => {
+          if (u.code === cleanUser) {
+            selfRemoved = true;
+            return false;
+          }
+          return true;
+        });
+        if (filtered.length > 0) {
+          survivingSlots.push({
+            approvers: filtered,
+            rule: slot.rule
+          });
+        }
+      }
+      if (!selfRemoved) {
+        return { ...routeProfile, selfAppraiserElided: false };
+      }
+      if (survivingSlots.length === 0) {
+        throw new Error(`\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E2D\u0E37\u0E48\u0E19\u0E19\u0E2D\u0E01\u0E40\u0E2B\u0E19\u0E37\u0E2D\u0E08\u0E32\u0E01\u0E15\u0E19\u0E40\u0E2D\u0E07\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A MBO \u0E15\u0E19\u0E40\u0E2D\u0E07 (NO_REMAINING_NON_SELF_APPROVER)
+Routing configuration produces no valid non-self appraiser for own MBO (${cleanUser}).`);
+      }
+      let effMgrL1 = [];
+      let effMgrL1Rule = "ALL";
+      let effMgrL2 = [];
+      let effMgrL2Rule = "ALL";
+      let effGmL1 = [];
+      let effGmL1Rule = "ALL";
+      let effGmL2 = [];
+      let effGmL2Rule = "ALL";
+      let effTopology = "M1_ONLY";
+      if (survivingSlots.length === 1) {
+        effMgrL1 = survivingSlots[0].approvers;
+        effMgrL1Rule = survivingSlots[0].rule;
+        effTopology = "M1_ONLY";
+      } else if (survivingSlots.length === 2) {
+        effMgrL1 = survivingSlots[0].approvers;
+        effMgrL1Rule = survivingSlots[0].rule;
+        effGmL1 = survivingSlots[1].approvers;
+        effGmL1Rule = survivingSlots[1].rule;
+        effTopology = "M1_G1";
+      } else if (survivingSlots.length === 3) {
+        effMgrL1 = survivingSlots[0].approvers;
+        effMgrL1Rule = survivingSlots[0].rule;
+        effMgrL2 = survivingSlots[1].approvers;
+        effMgrL2Rule = survivingSlots[1].rule;
+        effGmL1 = survivingSlots[2].approvers;
+        effGmL1Rule = survivingSlots[2].rule;
+        effTopology = "M1_M2_G1";
+      } else if (survivingSlots.length >= 4) {
+        effMgrL1 = survivingSlots[0].approvers;
+        effMgrL1Rule = survivingSlots[0].rule;
+        effMgrL2 = survivingSlots[1].approvers;
+        effMgrL2Rule = survivingSlots[1].rule;
+        effGmL1 = survivingSlots[2].approvers;
+        effGmL1Rule = survivingSlots[2].rule;
+        effGmL2 = survivingSlots[3].approvers;
+        effGmL2Rule = survivingSlots[3].rule;
+        effTopology = "M1_M2_G1_G2";
+      }
+      return {
+        ...routeProfile,
+        Manager_Level1_Approvers: effMgrL1,
+        Manager_User: effMgrL1,
+        Manager_Level1_Approval_Rule: effMgrL1Rule,
+        Manager_Level2_Approvers: effMgrL2,
+        First_Manager_User: effMgrL2,
+        Manager_Level2_Approval_Rule: effMgrL2Rule,
+        GM_Level1_Approvers: effGmL1,
+        GM_User: effGmL1,
+        GM_Level1_Approval_Rule: effGmL1Rule,
+        GM_Level2_Approvers: effGmL2,
+        GM_Level2_Approval_Rule: effGmL2Rule,
+        Has_Manager_Level2: effMgrL2.length > 0 ? "Yes" : "No",
+        Has_GM_Level2: effGmL2.length > 0 ? "Yes" : "No",
+        Routing_Topology: effTopology,
+        selfAppraiserElided: true
+      };
     }
     /**
      * Validate current user access and resolve sequential routing topology from App 795
@@ -7545,18 +8031,28 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
   var DeleteGuardPolicy = class {
     constructor(options = {}) {
       this.mboLoginGate = options.mboLoginGate;
+      this.getEmployeeSelfContext = options.getEmployeeSelfContext;
     }
     /**
      * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
-     * - If mboLoginGate.getEmployeeCode() has a value (Employee-Self active):
+     * - If Employee-Self context or mboLoginGate has a bound employeeCode:
      *     blocks delete submit, sets bilingual error, and returns false.
-     * - If mboLoginGate.getEmployeeCode() has no value (no Employee-Self principal):
-     *     returns event unchanged without blocking.
+     * - If no Employee-Self context exists:
+     *     returns event unchanged without blocking (abstains).
      * @param {Object} event Kintone deletion submit event
      * @returns {boolean|Object} Returns false if Employee-Self delete is blocked, or event unchanged if no Employee-Self principal
      */
     evaluateDeleteSubmit(event = {}) {
-      const authEmpCode = this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === "function" ? this.mboLoginGate.getEmployeeCode() : null;
+      let authEmpCode = null;
+      if (typeof this.getEmployeeSelfContext === "function") {
+        const ctx = this.getEmployeeSelfContext();
+        if (ctx && typeof ctx === "object" && ctx.employeeCode) {
+          authEmpCode = ctx.employeeCode;
+        }
+      }
+      if (!authEmpCode && this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === "function") {
+        authEmpCode = this.mboLoginGate.getEmployeeCode();
+      }
       if (!authEmpCode) {
         return event;
       }
@@ -7569,15 +8065,105 @@ This account (${cleanUser}) is not authorized to create an MBO for this target.`
 
   // src/main-mbo-app.js
   var activeUiInstance = null;
+  var currentEmployeeSelfContext = null;
+  var kintoneApiWrapper = {
+    getRecords: async (appId, query) => {
+      if (typeof kintone === "undefined" || typeof kintone.api !== "function") {
+        throw new Error("Kintone API is unavailable");
+      }
+      const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/records.json", true) : "/k/v1/records.json";
+      const resp = await kintone.api(url, "GET", { app: appId, query });
+      return resp;
+    },
+    getRecord: async (appId, id) => {
+      if (typeof kintone === "undefined" || typeof kintone.api !== "function") {
+        throw new Error("Kintone API is unavailable");
+      }
+      const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/record.json", true) : "/k/v1/record.json";
+      const resp = await kintone.api(url, "GET", { app: appId, id });
+      return resp ? resp.record : null;
+    }
+  };
   var mboLoginGate = null;
   function setMboLoginGate(gate) {
     mboLoginGate = gate;
+  }
+  function getCurrentEmployeeSelfContext() {
+    return currentEmployeeSelfContext;
+  }
+  function setCurrentEmployeeSelfContext(context) {
+    currentEmployeeSelfContext = context;
   }
   function getActiveUiInstance() {
     return activeUiInstance;
   }
   if (typeof globalThis !== "undefined") {
     globalThis.getActiveUiInstance = getActiveUiInstance;
+    globalThis.getCurrentEmployeeSelfContext = getCurrentEmployeeSelfContext;
+  }
+  function resolveRuntimeEmployeeSelfContext(uiHost) {
+    const loginUser = typeof kintone !== "undefined" && kintone.getLoginUser ? kintone.getLoginUser() : null;
+    const kintoneUserCode = loginUser?.code || null;
+    if (!kintoneUserCode) {
+      return { status: "NO_KINTONE_USER", mode: null };
+    }
+    let principalMode;
+    try {
+      principalMode = MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode });
+    } catch (err) {
+      return { status: "MODE_RESOLUTION_ERROR", reason: err.message };
+    }
+    if (principalMode === "TECHNICAL_ADMIN") {
+      return { status: "TECHNICAL_ADMIN", mode: "TECHNICAL_ADMIN" };
+    }
+    if (principalMode === "SHARED") {
+      if (!mboLoginGate) {
+        return { status: "GATE_NULL", mode: "SHARED" };
+      }
+      const authResult = mboLoginGate.requireLogin(uiHost);
+      if (typeof authResult === "string") {
+        return {
+          status: "SUCCESS",
+          context: { mode: "SHARED", employeeCode: authResult, kintoneUserCode }
+        };
+      } else if (authResult && typeof authResult.then === "function") {
+        return authResult.then((empCode) => {
+          if (!empCode) {
+            return { status: "SHARED_AUTH_REQUIRED", mode: "SHARED" };
+          }
+          return {
+            status: "SUCCESS",
+            context: { mode: "SHARED", employeeCode: empCode, kintoneUserCode }
+          };
+        });
+      }
+      return { status: "SHARED_AUTH_REQUIRED", mode: "SHARED" };
+    }
+    if (principalMode === "DEDICATED") {
+      return (async () => {
+        let candidateRecords = [];
+        try {
+          candidateRecords = await EmployeeService.lookupDedicatedIdentityMappingCandidates(kintoneUserCode, kintoneApiWrapper);
+        } catch (lookupErr) {
+          candidateRecords = [];
+        }
+        const mappingRes = MboIdentityService.resolveDedicatedKintoneUserMapping({
+          kintoneUserCode,
+          userMappings: candidateRecords
+        });
+        if (mappingRes.status === "IDENTITY_BOUND" && mappingRes.employeeCode) {
+          return {
+            status: "SUCCESS",
+            context: { mode: "DEDICATED", employeeCode: mappingRes.employeeCode, kintoneUserCode }
+          };
+        }
+        return {
+          status: "DEDICATED_MAPPING_FAILED",
+          reason: mappingRes.reason || "Kintone user is not bound to an active Employee_Code in App 53"
+        };
+      })();
+    }
+    return { status: "UNSUPPORTED_MODE", mode: principalMode };
   }
   function isSemanticValueMatch(valA, valB, fieldType) {
     if (valA === valB) return true;
@@ -7768,9 +8354,14 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         return STATUS_TO_STAGE_MAP[status];
       }
       return BUSINESS_STAGES.CONFIGURATION_ERROR;
-    }, setupRecordUiWithAuth = function(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode) {
+    }, setupRecordUiWithAuth = function(event, record, isCreate, isEdit, isDetail, uiHost, contextOrCode) {
       let isAutoloadingInCreateHandler = false;
-      if (mboLoginGate && typeof mboLoginGate.renderAuthBar === "function") {
+      const context = typeof contextOrCode === "object" && contextOrCode !== null ? contextOrCode : { mode: "SHARED", employeeCode: String(contextOrCode), kintoneUserCode: typeof kintone !== "undefined" && kintone.getLoginUser ? kintone.getLoginUser()?.code : null };
+      if (!context || !context.mode || context.mode !== "SHARED" && context.mode !== "DEDICATED") {
+        throw new Error("INVALID_EMPLOYEE_SELF_CONTEXT: Valid resolved Employee-Self context is required.");
+      }
+      const authenticatedEmployeeCode = context.employeeCode;
+      if (context.mode === "SHARED" && mboLoginGate && typeof mboLoginGate.renderAuthBar === "function") {
         mboLoginGate.renderAuthBar(uiHost, authenticatedEmployeeCode);
       }
       if (!isCreate && record.Employee_Code?.value && record.Employee_Code.value !== authenticatedEmployeeCode) {
@@ -7857,15 +8448,26 @@ Record: ${record.Employee_Code.value}`,
         onLookupEmployee: async (empCode) => {
           const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
           const empProfile = empLookupRes.employee || empLookupRes;
-          const loginUser2 = kintone.getLoginUser();
-          const routing = await RoutingService.validateRequesterAccess(
+          const loginUserCode2 = context.kintoneUserCode || (typeof kintone !== "undefined" && kintone.getLoginUser ? kintone.getLoginUser()?.code : null);
+          let routeProfile = await RoutingService.resolveRoutingProfile(
             ROUTING_APP_ID,
             empProfile.Employee_Section,
             empProfile.Team,
-            loginUser2.code,
             kintoneApiWrapper,
             empProfile.Employee_Position
           );
+          if (context.mode === "DEDICATED") {
+            routeProfile = RoutingService.applyOwnMboSelfAppraiserElision(routeProfile, loginUserCode2, true);
+          }
+          const effectiveRequesterUsers = RoutingService.resolveEffectiveRequesterUser({
+            mode: context.mode,
+            kintoneUserCode: loginUserCode2,
+            routeRequesterUsers: routeProfile.Requester_User
+          });
+          const routing = {
+            ...routeProfile,
+            Requester_User: effectiveRequesterUsers
+          };
           const fy = record.Fiscal_Year?.value || "FY2026";
           let scoringConfig = null;
           try {
@@ -8017,22 +8619,6 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
     const ROUTING_APP_ID = 795;
     const EMPLOYEE_APP_ID = 53;
     const SCORING_APP_ID = 796;
-    const kintoneApiWrapper = {
-      getRecords: async (appId, query) => {
-        const resp = await kintone.api(kintone.api.url("/k/v1/records.json", true), "GET", {
-          app: appId,
-          query
-        });
-        return resp;
-      },
-      getRecord: async (appId, id) => {
-        const resp = await kintone.api(kintone.api.url("/k/v1/record.json", true), "GET", {
-          app: appId,
-          id
-        });
-        return resp ? resp.record : null;
-      }
-    };
     if (!mboLoginGate) {
       try {
         const app801Api = {
@@ -8064,42 +8650,32 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
     }
     kintone.events.on("app.record.index.show", function(event) {
       const host = document.querySelector(".gaia-app-wrapper") || document.body;
-      if (!mboLoginGate) {
-        renderBlockedNotice(
-          host,
-          "MBO Login Gate Not Initialized",
-          "The MBO authentication system could not be started. Access blocked. [FAIL_CLOSED_GATE_NULL]"
-        );
-        const recordList2 = document.querySelector(".recordlist-gaia") || document.querySelector(".gaia-argus-app-index-readonly");
-        if (recordList2) recordList2.style.display = "none";
-        return event;
-      }
-      const authResult = mboLoginGate.requireLogin(host);
-      if (typeof authResult === "string") {
-        return renderEmployeeSelfIndex(event, host, authResult);
-      } else if (authResult && typeof authResult.then === "function") {
-        return authResult.then((authenticatedEmployeeCode) => {
-          if (!authenticatedEmployeeCode) {
-            renderBlockedNotice(
-              host,
-              "Authentication Required",
-              "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]"
-            );
-            const recordList2 = document.querySelector(".recordlist-gaia") || document.querySelector(".gaia-argus-app-index-readonly");
-            if (recordList2) recordList2.style.display = "none";
-            return event;
-          }
-          return renderEmployeeSelfIndex(event, host, authenticatedEmployeeCode);
+      const resPipeline = (async () => {
+        const res = await resolveRuntimeEmployeeSelfContext(host);
+        if (res.status === "TECHNICAL_ADMIN") {
+          currentEmployeeSelfContext = null;
+          return event;
+        }
+        if (res.status !== "SUCCESS") {
+          currentEmployeeSelfContext = null;
+          const title = res.status === "DEDICATED_MAPPING_FAILED" ? "Employee Identity Mapping Failed" : "Authentication Required";
+          const detail = res.reason || "Access denied or authentication required for Employee-Self.";
+          renderBlockedNotice(host, title, detail);
+          const recordList = document.querySelector(".recordlist-gaia") || document.querySelector(".gaia-argus-app-index-readonly");
+          if (recordList) recordList.style.display = "none";
+          return event;
+        }
+        currentEmployeeSelfContext = res.context;
+        const gateForIndex = res.context.mode === "SHARED" ? mboLoginGate : null;
+        const indexUi = new EmployeeSelfIndexUI({
+          kintoneApiWrapper,
+          getMboAppId,
+          mboLoginGate: gateForIndex,
+          renderBlockedNotice
         });
-      }
-      renderBlockedNotice(
-        host,
-        "Authentication Required",
-        "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]"
-      );
-      const recordList = document.querySelector(".recordlist-gaia") || document.querySelector(".gaia-argus-app-index-readonly");
-      if (recordList) recordList.style.display = "none";
-      return event;
+        return indexUi.render(event, host, res.context.employeeCode);
+      })();
+      return resPipeline;
     });
     kintone.events.on(["app.record.detail.show", "app.record.edit.show", "app.record.create.show"], function(event) {
       const record = event.record;
@@ -8119,42 +8695,34 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
         hideAllNativeFields(record);
         return event;
       }
-      if (!mboLoginGate) {
-        renderBlockedNotice(
-          uiHost,
-          "MBO Login Gate Not Initialized",
-          "The MBO authentication system could not be started. Please contact your administrator. [FAIL_CLOSED_GATE_NULL]",
-          { isCreate, appId }
-        );
-        hideAllNativeFields(record);
-        return event;
+      const handleResolvedContext = (res2) => {
+        if (res2.status === "TECHNICAL_ADMIN") {
+          currentEmployeeSelfContext = null;
+          renderBlockedNotice(
+            uiHost,
+            "Technical Admin Identity Restriction",
+            "Technical admin identity cannot perform Employee-Self operations. [FAIL_CLOSED_TECH_ADMIN]",
+            { isCreate, appId }
+          );
+          hideAllNativeFields(record);
+          return event;
+        }
+        if (res2.status !== "SUCCESS") {
+          currentEmployeeSelfContext = null;
+          const title = res2.status === "DEDICATED_MAPPING_FAILED" ? "Employee Identity Mapping Failed" : "Authentication Required";
+          const detail = res2.reason || "You must be authenticated to access this page. [FAIL_CLOSED_NO_CODE]";
+          renderBlockedNotice(uiHost, title, detail, { isCreate, appId });
+          hideAllNativeFields(record);
+          return event;
+        }
+        currentEmployeeSelfContext = res2.context;
+        return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, res2.context);
+      };
+      const res = resolveRuntimeEmployeeSelfContext(uiHost);
+      if (res && typeof res.then === "function") {
+        return res.then(handleResolvedContext);
       }
-      const authResult = mboLoginGate.requireLogin(uiHost);
-      if (typeof authResult === "string") {
-        return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authResult);
-      } else if (authResult && typeof authResult.then === "function") {
-        return authResult.then((authenticatedEmployeeCode) => {
-          if (!authenticatedEmployeeCode) {
-            renderBlockedNotice(
-              uiHost,
-              "Authentication Required",
-              "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]",
-              { isCreate, appId }
-            );
-            hideAllNativeFields(record);
-            return event;
-          }
-          return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode);
-        });
-      }
-      renderBlockedNotice(
-        uiHost,
-        "Authentication Required",
-        "You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]",
-        { isCreate, appId }
-      );
-      hideAllNativeFields(record);
-      return event;
+      return handleResolvedContext(res);
     });
     kintone.events.on(["app.record.create.submit", "app.record.edit.submit"], async function(event) {
       const record = event.record;
@@ -8341,7 +8909,10 @@ ${errorMsgEN}`);
       return event;
     });
     kintone.events.on(["app.record.detail.delete.submit", "app.record.index.delete.submit"], function(event) {
-      const policy = new DeleteGuardPolicy({ mboLoginGate });
+      const policy = new DeleteGuardPolicy({
+        mboLoginGate,
+        getEmployeeSelfContext: () => currentEmployeeSelfContext
+      });
       return policy.evaluateDeleteSubmit(event);
     });
   }

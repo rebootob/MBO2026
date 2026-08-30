@@ -615,3 +615,24 @@ test('D1 Hybrid Identity: own-MBO with only self appraiser fails closed (NO_REMA
     RoutingService.applyOwnMboSelfAppraiserElision(selfOnlyRoute, 'natta', true);
   }, /NO_REMAINING_NON_SELF_APPROVER/);
 });
+
+test('Finding R1-A: resolveKintonePrincipalMode exact-principal classification without wildcards', () => {
+  const approved9 = ['t1', 't2', 's1', 'f1', 'f2', 'f3', 'e1', 'tmh', 'g_request'];
+  approved9.forEach(code => {
+    assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: code }), 'SHARED', `Approved ${code} must be SHARED`);
+  });
+
+  // Non-approved principals must NOT return SHARED
+  const nonShared = ['0118', '12345', 'req_demo', 'testuser', 'user123', 'F1', 'vassana', 'natta'];
+  nonShared.forEach(code => {
+    assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: code }), 'DEDICATED', `Non-shared code ${code} must resolve to DEDICATED`);
+  });
+
+  // Technical admins must return TECHNICAL_ADMIN
+  ['admin-form', 'Administrator', 'ADMIN'].forEach(admin => {
+    assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: admin }), 'TECHNICAL_ADMIN');
+  });
+
+  // Whitespace must throw error
+  assert.throws(() => MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: ' f1 ' }), /KINTONE_USER_CODE_HAS_WHITESPACE/);
+});
