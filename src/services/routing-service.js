@@ -233,9 +233,9 @@ export class RoutingService {
       return [{ code: kintoneUserCode }];
     }
 
-    // SHARED mode validation
+    // SHARED mode validation: case-insensitive comparison for shared principal compatibility
     const cleanUser = kintoneUserCode.trim();
-    const norm = (c) => String(c || '').trim();
+    const norm = (c) => String(c || '').trim().toLowerCase();
     const isAuthorized = Array.isArray(routeRequesterUsers) && routeRequesterUsers.some(u => {
       const uCode = typeof u === 'object' ? (u.code || u.value) : u;
       return norm(uCode) === norm(cleanUser);

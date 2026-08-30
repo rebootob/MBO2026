@@ -30,7 +30,7 @@ test('Finding A: Account_Status without Number_0 fails closed in canonical resol
   const userMappings = [
     {
       $id: { value: '456' },
-      Account_Status: 'ACTIVE', // Pseudo-field without Number_0!
+      Account_Status: 'ACTIVE',
       emp_text: { value: '0044' },
       MBO_Kintone_User: { value: [{ code: 'vassana' }] }
     }
@@ -66,7 +66,7 @@ test('Finding A: Kintone_User_Code without MBO_Kintone_User fails closed in cano
     {
       $id: { value: '456' },
       Number_0: { value: '1' },
-      Kintone_User_Code: 'vassana', // Superseded field!
+      Kintone_User_Code: 'vassana',
       emp_text: { value: '0044' }
     }
   ];
@@ -84,7 +84,7 @@ test('Finding A: Employee_Code without emp_text fails closed in canonical resolv
     {
       $id: { value: '456' },
       Number_0: { value: '1' },
-      Employee_Code: '0044', // Missing emp_text!
+      Employee_Code: '0044',
       MBO_Kintone_User: { value: [{ code: 'vassana' }] }
     }
   ];
@@ -103,7 +103,7 @@ test('Finding A: USER_SELECT item with only .value but no .code fails closed in 
       $id: { value: '456' },
       Number_0: { value: '1' },
       emp_text: { value: '0044' },
-      MBO_Kintone_User: { value: [{ value: 'vassana' }] } // Missing .code!
+      MBO_Kintone_User: { value: [{ value: 'vassana' }] }
     }
   ];
 
@@ -126,7 +126,7 @@ test('Finding A: Kintone user input with leading/trailing whitespace fails close
   ];
 
   const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
-    kintoneUserCode: ' vassana ', // Unclean input!
+    kintoneUserCode: ' vassana ',
     userMappings
   });
 
@@ -140,12 +140,12 @@ test('Finding A: Selected code comparison is case-sensitive and fails closed on 
       $id: { value: '456' },
       Number_0: { value: '1' },
       emp_text: { value: '0044' },
-      MBO_Kintone_User: { value: [{ code: 'Vassana' }] } // Capitalized V!
+      MBO_Kintone_User: { value: [{ code: 'Vassana' }] }
     }
   ];
 
   const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
-    kintoneUserCode: 'vassana', // Lowercase v!
+    kintoneUserCode: 'vassana',
     userMappings
   });
 
@@ -176,7 +176,7 @@ test('D1 Hybrid Identity: Natta dedicated mapping with blank emp_text fails clos
       $id: { value: '578' },
       Number: { value: 243 },
       Number_0: { value: '1' },
-      emp_text: { value: '' }, // Blank emp_text!
+      emp_text: { value: '' },
       Text_4: { value: 'natta@example.com' },
       Text_6: { value: 'VEND-243' },
       MBO_Kintone_User: { value: [{ code: 'natta', name: 'Ms.Natta Niphatthakosolsuk' }] }
@@ -189,7 +189,7 @@ test('D1 Hybrid Identity: Natta dedicated mapping with blank emp_text fails clos
   });
 
   assert.equal(res.status, 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE');
-  assert.equal(res.employeeCode, undefined, 'Must NEVER return guessed Employee_Code');
+  assert.equal(res.employeeCode, undefined);
 });
 
 test('D1 Hybrid Identity: admin-form technical admin identity is denied from binding Employee-Self', () => {
@@ -271,7 +271,7 @@ test('D1 Hybrid Identity: duplicate active mapping records for same user returns
   assert.equal(res.status, 'IDENTITY_MAPPING_AMBIGUOUS');
 });
 
-// --- FINDING B: EFFECTIVE REQUESTER RESOLUTION TESTS ---
+// --- FINDING B & D: EFFECTIVE REQUESTER RESOLUTION TESTS ---
 
 test('Finding B: resolveEffectiveRequesterUser rejects invalid or missing mode', () => {
   assert.throws(() => {
@@ -284,7 +284,7 @@ test('Finding B: resolveEffectiveRequesterUser rejects invalid or missing mode',
 
   assert.throws(() => {
     RoutingService.resolveEffectiveRequesterUser({
-      mode: 'dedicated', // Lowercase!
+      mode: 'dedicated',
       kintoneUserCode: 'vassana',
       routeRequesterUsers: [{ code: 'vassana' }]
     });
@@ -299,6 +299,25 @@ test('Finding B: resolveEffectiveRequesterUser rejects whitespace in DEDICATED u
       routeRequesterUsers: []
     });
   }, /KINTONE_USER_CODE_HAS_WHITESPACE/);
+});
+
+test('Finding D: SHARED requester comparison normalizes case for compatibility while unauthorized principal remains denied', () => {
+  // Case-insensitive SHARED match (F1 vs f1)
+  const sharedCaseInsensitive = RoutingService.resolveEffectiveRequesterUser({
+    mode: 'SHARED',
+    kintoneUserCode: 'F1', // Uppercase input!
+    routeRequesterUsers: [{ code: 'f1' }, { code: 'f2' }] // Lowercase in route
+  });
+  assert.deepEqual(sharedCaseInsensitive, [{ code: 'f1' }, { code: 'f2' }]);
+
+  // Unauthorized SHARED principal remains denied
+  assert.throws(() => {
+    RoutingService.resolveEffectiveRequesterUser({
+      mode: 'SHARED',
+      kintoneUserCode: 'unauthorized_user',
+      routeRequesterUsers: [{ code: 'f1' }]
+    });
+  }, /not authorized to create an MBO for this target/);
 });
 
 test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user in DEDICATED mode and validates SHARED mode', () => {
@@ -318,14 +337,6 @@ test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user i
 
   assert.throws(() => {
     RoutingService.resolveEffectiveRequesterUser({
-      mode: 'SHARED',
-      kintoneUserCode: 'unauthorized_user',
-      routeRequesterUsers: [{ code: 'f1' }]
-    });
-  }, /not authorized to create an MBO for this target/);
-
-  assert.throws(() => {
-    RoutingService.resolveEffectiveRequesterUser({
       mode: 'DEDICATED',
       kintoneUserCode: 'admin-form',
       routeRequesterUsers: []
@@ -333,7 +344,7 @@ test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user i
   }, /Technical admin identity \(admin-form\) cannot create MBO records/);
 });
 
-// --- FINDING C: OWN-MBO SELF-APPRAISER ELISION TESTS ---
+// --- FINDING C & E: OWN-MBO SELF-APPRAISER ELISION TESTS ---
 
 test('D1 Hybrid Identity Mandatory Natta Test: own-MBO self-appraiser elision transforms natta->uchida (M1_G1) to uchida (M1_ONLY)', () => {
   const masterRoute = {
@@ -374,6 +385,108 @@ test('D1 Hybrid Identity Mandatory Natta Test: own-MBO self-appraiser elision tr
   assert.equal(effSubordinateRoute.Routing_Topology, 'M1_G1');
 });
 
+test('Finding E: generic 3 surviving slots transformation (M1_M2_G1)', () => {
+  const master4SlotRoute = {
+    Routing_Key: 'GENERIC_4SLOT_3SURVIVE',
+    Manager_Level1_Approvers: [{ code: 'user1' }],
+    Manager_User: [{ code: 'user1' }],
+    Manager_Level1_Approval_Rule: 'ALL',
+    Manager_Level2_Approvers: [{ code: 'natta' }], // Self sole occupant of Slot 2!
+    First_Manager_User: [{ code: 'natta' }],
+    Manager_Level2_Approval_Rule: 'AT_LEAST_ONE',
+    GM_Level1_Approvers: [{ code: 'user3' }],
+    GM_User: [{ code: 'user3' }],
+    GM_Level1_Approval_Rule: 'ANY',
+    GM_Level2_Approvers: [{ code: 'user4' }],
+    GM_Level2_Approval_Rule: 'ALL',
+    Has_Manager_Level2: 'Yes',
+    Has_GM_Level2: 'Yes',
+    Routing_Topology: 'M1_M2_G1_G2'
+  };
+
+  const res = RoutingService.applyOwnMboSelfAppraiserElision(master4SlotRoute, 'natta', true);
+
+  assert.equal(res.selfAppraiserElided, true);
+  // Slot 1 (user1) -> Manager_Level1, rule ALL
+  assert.deepEqual(res.Manager_Level1_Approvers, [{ code: 'user1' }]);
+  assert.deepEqual(res.Manager_User, [{ code: 'user1' }]);
+  assert.equal(res.Manager_Level1_Approval_Rule, 'ALL');
+
+  // Slot 2 (natta) dropped. Original Slot 3 (user3) shifted to Manager_Level2, rule ANY
+  assert.deepEqual(res.Manager_Level2_Approvers, [{ code: 'user3' }]);
+  assert.deepEqual(res.First_Manager_User, [{ code: 'user3' }]);
+  assert.equal(res.Manager_Level2_Approval_Rule, 'ANY');
+
+  // Original Slot 4 (user4) shifted to GM_Level1, rule ALL
+  assert.deepEqual(res.GM_Level1_Approvers, [{ code: 'user4' }]);
+  assert.deepEqual(res.GM_User, [{ code: 'user4' }]);
+  assert.equal(res.GM_Level1_Approval_Rule, 'ALL');
+
+  // G2 position empty
+  assert.deepEqual(res.GM_Level2_Approvers, []);
+
+  // Topology flags
+  assert.equal(res.Routing_Topology, 'M1_M2_G1');
+  assert.equal(res.Has_Manager_Level2, 'Yes');
+  assert.equal(res.Has_GM_Level2, 'No');
+
+  // Input object MUST NOT be mutated!
+  assert.deepEqual(master4SlotRoute.Manager_Level2_Approvers, [{ code: 'natta' }]);
+  assert.equal(master4SlotRoute.Routing_Topology, 'M1_M2_G1_G2');
+});
+
+test('Finding E: generic 4 surviving slots transformation (M1_M2_G1_G2)', () => {
+  const master4SlotRoute = {
+    Routing_Key: 'GENERIC_4SLOT_4SURVIVE',
+    Manager_Level1_Approvers: [{ code: 'natta' }, { code: 'co_manager' }], // Self shares Slot 1!
+    Manager_User: [{ code: 'natta' }, { code: 'co_manager' }],
+    Manager_Level1_Approval_Rule: 'ANY',
+    Manager_Level2_Approvers: [{ code: 'mgr2' }],
+    First_Manager_User: [{ code: 'mgr2' }],
+    Manager_Level2_Approval_Rule: 'ALL',
+    GM_Level1_Approvers: [{ code: 'gm1' }],
+    GM_User: [{ code: 'gm1' }],
+    GM_Level1_Approval_Rule: 'AT_LEAST_ONE',
+    GM_Level2_Approvers: [{ code: 'gm2' }],
+    GM_Level2_Approval_Rule: 'ALL',
+    Has_Manager_Level2: 'Yes',
+    Has_GM_Level2: 'Yes',
+    Routing_Topology: 'M1_M2_G1_G2'
+  };
+
+  const res = RoutingService.applyOwnMboSelfAppraiserElision(master4SlotRoute, 'natta', true);
+
+  assert.equal(res.selfAppraiserElided, true);
+
+  // Slot 1 retains co_manager and carries rule ANY
+  assert.deepEqual(res.Manager_Level1_Approvers, [{ code: 'co_manager' }]);
+  assert.deepEqual(res.Manager_User, [{ code: 'co_manager' }]);
+  assert.equal(res.Manager_Level1_Approval_Rule, 'ANY');
+
+  // Slot 2 retains mgr2 and carries rule ALL
+  assert.deepEqual(res.Manager_Level2_Approvers, [{ code: 'mgr2' }]);
+  assert.deepEqual(res.First_Manager_User, [{ code: 'mgr2' }]);
+  assert.equal(res.Manager_Level2_Approval_Rule, 'ALL');
+
+  // Slot 3 retains gm1 and carries rule AT_LEAST_ONE
+  assert.deepEqual(res.GM_Level1_Approvers, [{ code: 'gm1' }]);
+  assert.deepEqual(res.GM_User, [{ code: 'gm1' }]);
+  assert.equal(res.GM_Level1_Approval_Rule, 'AT_LEAST_ONE');
+
+  // Slot 4 retains gm2 and carries rule ALL
+  assert.deepEqual(res.GM_Level2_Approvers, [{ code: 'gm2' }]);
+  assert.equal(res.GM_Level2_Approval_Rule, 'ALL');
+
+  // Topology flags
+  assert.equal(res.Routing_Topology, 'M1_M2_G1_G2');
+  assert.equal(res.Has_Manager_Level2, 'Yes');
+  assert.equal(res.Has_GM_Level2, 'Yes');
+
+  // Input object MUST NOT be mutated!
+  assert.deepEqual(master4SlotRoute.Manager_Level1_Approvers, [{ code: 'natta' }, { code: 'co_manager' }]);
+  assert.equal(master4SlotRoute.Routing_Topology, 'M1_M2_G1_G2');
+});
+
 test('Finding C: ownMbo=true with missing or whitespace dedicated user fails closed', () => {
   const route = {
     Routing_Key: 'TMF1',
@@ -394,12 +507,11 @@ test('Finding C: ownMbo=true with missing or whitespace dedicated user fails clo
 test('Finding C: self-appraiser elision uses exact case-sensitive user code comparison', () => {
   const route = {
     Routing_Key: 'TMF1',
-    Manager_User: [{ code: 'Natta' }], // Capital N
+    Manager_User: [{ code: 'Natta' }],
     GM_User: [{ code: 'uchida' }],
     Routing_Topology: 'M1_G1'
   };
 
-  // Lowercase 'natta' does NOT match 'Natta' case-sensitively
   const res = RoutingService.applyOwnMboSelfAppraiserElision(route, 'natta', true);
   assert.equal(res.selfAppraiserElided, false);
   assert.deepEqual(res.Manager_User, [{ code: 'Natta' }]);
@@ -420,10 +532,8 @@ test('Finding C: multi-user slot preserves surviving users in same slot without 
   const res = RoutingService.applyOwnMboSelfAppraiserElision(route, 'natta', true);
 
   assert.equal(res.selfAppraiserElided, true);
-  // Slot 1 retains somebody_else and carries its original rule 'ANY'
   assert.deepEqual(res.Manager_User, [{ code: 'somebody_else' }]);
   assert.equal(res.Manager_Level1_Approval_Rule, 'ANY');
-  // Slot 2 retains uchida and carries rule 'ALL'
   assert.deepEqual(res.GM_User, [{ code: 'uchida' }]);
   assert.equal(res.GM_Level1_Approval_Rule, 'ALL');
   assert.equal(res.Routing_Topology, 'M1_G1');
@@ -443,7 +553,6 @@ test('Finding C: surviving slot carries non-ALL approval rule when shifted', () 
   const res = RoutingService.applyOwnMboSelfAppraiserElision(route, 'natta', true);
 
   assert.equal(res.selfAppraiserElided, true);
-  // Surviving GM slot shifted to M1 position and carried its rule 'AT_LEAST_ONE'
   assert.deepEqual(res.Manager_User, [{ code: 'uchida' }, { code: 'vice_president' }]);
   assert.equal(res.Manager_Level1_Approval_Rule, 'AT_LEAST_ONE');
   assert.equal(res.Routing_Topology, 'M1_ONLY');
