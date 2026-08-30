@@ -58,7 +58,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
         setFieldShown: () => {}
       }
     },
-    getLoginUser: () => ({ code: '0113', name: 'Somchai' }),
+    getLoginUser: () => ({ code: 's1', name: 'Somchai' }),
     api: Object.assign(
       async (url, method, params) => {
         const app = params?.app;
@@ -73,7 +73,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
               Session_Token_Hash: { value: EXPECTED_HASH },
               Session_Issued_At: { value: new Date().toISOString() },
               Session_Expires_At: { value: new Date(Date.now() + 3600000).toISOString() },
-              Session_Kintone_User: { value: '0113' }
+              Session_Kintone_User: { value: 's1' }
             }]
           };
         }
@@ -96,7 +96,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
           return {
             records: [{
               Section_Name: { value: 'General Admin Section 1' },
-              Requester_User: { value: [{ code: '0113' }] },
+              Requester_User: { value: [{ code: 's1' }] },
               Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
               Manager_Level1_Approval_Rule: { value: 'ANY' },
               GM_Level1_Approvers: { value: [{ code: 'g1' }] },
@@ -216,7 +216,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   assert.equal(returnedEvent.record.Employee_Name.value, 'Somchai Jaidee');
   assert.equal(returnedEvent.record.Fiscal_Year.value, 'FY2026');
   assert.equal(returnedEvent.record.Record_Key.value, 'FY2026-0113');
-  assert.deepEqual(returnedEvent.record.Requester_User.value, [{ code: '0113' }]);
+  assert.deepEqual(returnedEvent.record.Requester_User.value, [{ code: 's1' }]);
   assert.equal(returnedEvent.record.Routing_Topology.value, 'M1_ONLY');
   assert.equal(returnedEvent.record.Profile_Code.value, 'PROF_GM');
   assert.equal(returnedEvent.record.PartA_Weight.value, 70);
@@ -268,7 +268,7 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
         setFieldShown: () => {}
       }
     },
-    getLoginUser: () => ({ code: '9999', name: 'Unknown' }),
+    getLoginUser: () => ({ code: 's1', name: 'Unknown' }),
     api: Object.assign(
       async (url, method, params) => {
         const app = params?.app;
@@ -286,7 +286,7 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
               Session_Token_Hash: { value: HASH_999 },
               Session_Issued_At: { value: new Date().toISOString() },
               Session_Expires_At: { value: new Date(Date.now() + 3600000).toISOString() },
-              Session_Kintone_User: { value: '9999' }
+              Session_Kintone_User: { value: 's1' }
             }]
           };
         }
