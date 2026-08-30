@@ -1,21 +1,49 @@
-# Open Issues & Governance Dependencies
+# MBO2026 — OPEN ISSUES & GATES
 
-| Issue / Dependency ID | Title | Category | Status | Impact / Boundary | Action Required |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **SEC-DEP-001** | Shared Kintone Account Security Conflict | Security Architecture (`DEC-039`) | **OPEN DEPENDENCY** | Employee Self-Service Record Isolation | Establish a deterministic secure binding mechanism (`Authenticated Identity -> Employee_Code -> Authorized Record`) before Employee Self-Service go-live. Native permissions cannot distinguish users sharing the same account login. |
-| **MIG-GOV-001** | Legacy 8-App PMS Data Migration Strategy | Migration Architecture (`DEC-040`) | **DEFERRED** | Legacy Historical Evidence | Migration of historical data from Apps 283, 305, 307, 310, 640, 643, 715, 716 is deferred until MBO V2 is stable, tested, verified, and UAT approved. Mandatory dry-run & reconciliation required. |
-| **ISSUE-002** | Excel Export Template Expansion (5-10 items) | Technical Design | PENDING | Excel Export Phase | Implement row expansion or overflow sheet for 5-10 objectives in Export phase. |
+> Updated: 2026-08-30 20:45 ICT.  
+> Current acceptance/status authority remains `AI_CONTROL_CENTER.md`.
 
-### SEC-DEP-001 Shared Kintone Account Security Conflict & Identity Binding
-- **Status**: `OPEN_UNDER_SHARED_ACCOUNT_CONSTRAINT` (Evaluated in M10C-AUTH-D Preflight)
-- **User Constraints**:
-  - No external auth server / proxy hosting deployment.
-  - No additional Kintone user licenses.
-  - Kintone-only environment.
-- **Technical & Security Realities Recorded**:
-  - Under shared Kintone login accounts, client-side UI gates provide operational entry deterrence, NOT cryptographic or database-level record isolation.
-  - Authoritative workflow security is enforced via **PATH_B: Section Requester Model** (`Requester_User` in App 795).
-  - App 801 ACL is preserved as Creator-Only (not weakened to `GROUP everyone`).
-  - Google Authenticator TOTP is REJECTED for Kintone-only mode (requires secret key in client JS, compromising TOTP security).
-- **Next Step**: User authorization for App 794 runtime JS adapter deployment.
+| ID | Item | Status | Required next condition |
+|---|---|---|---|
+| D1-HOME-001 | My Approval Tasks Home Index integration | OPEN / CURRENT GATE | Execute exact 3-file Active Task, focused integration test + diff check, then ChatGPT review |
+| D1-DETAIL-001 | Dedicated cross-employee assigned-record Detail authority | PENDING GATE 2 | Open only after Home Gate PASS; fresh `Assignee` revalidation required before allowing non-own record context |
+| D1-PROCESS-001 | Fresh current-Assignee check before Approve/Return/process action | PENDING GATE 3 | Open only after Detail gate; fail closed on stale/unassigned record |
+| D1-CONFIG-001 | App53 dedicated mapping field + mappings | PROTECTED / NOT AUTHORIZED | Separate exact production authorization for schema, mappings and any data correction |
+| D1-NATTA-001 | Natta canonical Employee_Code | UNRESOLVED / FAIL CLOSED | Real canonical `emp_text` value must be verified before any correction/binding |
+| D1-NATIVE-ACL-001 | Dedicated native App794 least-privilege ACL/Record ACL | DESIGN CONFIRMED / NOT AUTHORIZED | Exact payload + independent review + explicit ACL authorization |
+| D1-SHARED-CEILING | Shared-principal direct REST hard isolation | ACCEPTED PLATFORM LIMITATION | Keep explicit; do not make false hard-isolation claim |
+| D4-RESET-DEPLOY-001 | App800 Reset MBO Password UI deployment | SOURCE ACCEPTED / DEPLOY NOT AUTHORIZED | Fresh exact deploy authorization and candidate verification |
+| D2-EXPORT-001 | Excel/PDF legacy-format closure | OPEN | Prove Part A/Part B/PDF/format parity/security, including objective capacity |
+| D3-MIG-001 | 8 legacy PMS Apps -> App794 migration | OPEN / WRITE NOT AUTHORIZED | Read-only mapping/dry run/reconciliation/backup/exact manifest before target write approval |
+| D4-E2E-001 | App800 HR Control Center full operations | OPEN | Complete remaining HR operational functions and secure UAT |
+| D5-COPY-001 | Copy own previous MBO | OPEN | Implement approved planning whitelist with fresh target-year configuration |
+| D6-E2E-001 | Integrated E2E/security/regression | PENDING | After D1–D5 implementation/configuration are ready |
 
+## D1 authority reminders
+
+Approval authority must never come from App795 static membership, `Manager_User`, `GM_User`, `First_Manager_User`, a caller-provided role or UI visibility. Current native App794 `Assignee` is the authority for Dedicated approvers.
+
+SHARED approver authority remains denied.
+
+## App53 production boundary
+
+```text
+APP53_MAPPING_AUDIT = COMPLETE
+MBO_Kintone_User FIELD DESIGN = CONFIRMED USER_SELECT
+LIVE FIELD = NOT CREATED
+Vassana = 0044 proven
+Natta = emp_text blank / unresolved
+APP53 SCHEMA WRITE AUTH = NONE
+APP53 RECORD WRITE AUTH = NONE
+APP53 BULK WRITE AUTH = NONE
+```
+
+Adding the field, populating mappings and correcting Natta are distinct protected operations and must not be bundled silently.
+
+## Own-MBO route rule
+
+`OWN_MBO_SELF_APPROVER_ELISION = APPROVED`: self is removed from the employee's own effective route before snapshot; remaining approvers/order/rules are preserved; no autoapproval or fabricated history; fail closed if no non-self approver remains.
+
+## D7
+
+Admin Support Center source functionality is CLOSED. Reopen only if a new proven defect exists.
