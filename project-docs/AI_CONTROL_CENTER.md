@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 HOME INDEX GATE 1 INDEPENDENT REVIEW = PASS
+> Updated: 2026-08-30 — D1 GATE 2 DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 implementation `cb2fae671e610924e7143806944b3dcdf527f2f0` + test-evidence corrective `f276de19a5771d7ac0bd73f51509cb912aca24d5` independently reviewed PASS. Gate 2 remains pending. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Gate 2 Dedicated cross-employee Detail authority OPEN. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -59,7 +59,7 @@ LIVE_DEPLOY_READY = NO
 Dedicated = native Kintone principal -> exact active App53 mapping -> canonical Employee_Code -> Employee-Self, no second MBO login.
 Shared = Employee_Code + App801 MBO password/session.
 
-## 5. App53 dedicated mapping state
+## 5. App53 protected state
 
 ```text
 APP53_ENVIRONMENT = PRODUCTION
@@ -71,19 +71,9 @@ VASSANA = vassana -> App53 #456 -> emp_text 0044 -> ACTIVE
 NATTA = natta -> App53 #578 -> emp_text BLANK -> canonical Employee_Code unresolved -> FAIL CLOSED
 ```
 
-Do not create/populate the mapping field or correct Natta without separate exact production authorization.
+No App53 write is authorized.
 
-## 6. Own-MBO self-appraiser rule
-
-```text
-OWN_MBO_SELF_APPROVER_ELISION = APPROVED
-```
-
-For own MBO only, remove the self appraiser before workflow snapshot, preserve remaining order/rules, recalculate topology, never autoapprove or fabricate history, never rewrite App795. If no non-self appraiser remains, fail closed.
-
-Confirmed Natta example: `TMG1|Marketing natta -> uchida` becomes `uchida / M1_ONLY` for Natta's own MBO only.
-
-## 7. My Approval Tasks authority — accepted foundation
+## 6. My Approval Tasks authority — accepted foundation
 
 ```text
 CURRENT_ASSIGNEE_FIELD = Assignee
@@ -97,13 +87,13 @@ SHARED_APPROVER_AUTHORITY = DENIED
 
 Never authorize from App795 static membership, `Manager_User`, `GM_User`, `First_Manager_User`, caller role strings, UI visibility or Employee-Self ownership.
 
-Accepted service corrective commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
+Accepted service commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 
-## 8. Integration split — mandatory
+## 7. Gate status
 
 ```text
-GATE 1 = HOME INDEX INTEGRATION ONLY — ✅ PASS
-GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PENDING
+GATE 1 = HOME INDEX INTEGRATION — ✅ PASS
+GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — OPEN
 GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
 ```
 
@@ -115,43 +105,50 @@ TEST_CORRECTIVE_COMMIT = f276de19a5771d7ac0bd73f51509cb912aca24d5
 INDEPENDENT_DECISION  = PASS
 ```
 
-Accepted Gate 1 behavior:
-- DEDICATED Home preserves canonical `My MBO` and separately renders `งานรอฉันอนุมัติ / My Approval Tasks` from accepted current-assignee service;
-- SHARED Home preserves canonical `My MBO`, performs zero approval-task query, and renders no approval section;
-- exact returned Assignee code filtering remains authoritative for task list;
-- approval fetch failure fails closed for approval tasks while preserving already-rendered `My MBO`;
-- no App795/static authority fallback was introduced;
-- Gate 1 did not implement cross-employee Detail authority or Process action revalidation.
+### Gate 2 Control Plane inventory
 
-Independent review of corrective commit confirmed exactly one changed file (`tests/employee-main-mbo-app-integration.test.js`) with 18 additions / 0 deletions and direct DOM assertions for My MBO preservation in Dedicated, Shared, and approval-fetch-error scenarios. ChatGPT could not independently replay the Node test in its current runtime because external Git clone/network resolution was unavailable; therefore no false claim of an independent test rerun is made. The code/test diff itself is accepted as conformant, and no additional Antigravity rerun is required solely for duplicate evidence.
+Current `setupRecordUiWithAuth()` blocks any existing record whose `Employee_Code` differs from the bound Employee-Self code. That correctly protects My MBO, but it also prevents an authorized Dedicated current assignee from opening a task selected from Gate 1.
 
-Gate 1 alone is NOT deploy-ready. Gate 2 and Gate 3 remain separate pending gates.
+Gate 2 must reuse the accepted `MboApprovalTaskService.revalidateApprovalTask()` seam and add only a narrow cross-employee Detail exception after fresh current-assignee revalidation.
 
-## 9. Current Active Task
+Mandatory boundaries:
+- own MBO Detail/Edit path unchanged and no unnecessary approval revalidation;
+- only `app.record.detail.show` may receive the new cross-employee path;
+- Dedicated + different Employee_Code -> exactly one fresh revalidation GET before Detail is allowed;
+- bound Employee-Self identity remains the user's own Employee_Code and must never switch to the target record employee;
+- Shared cross-employee remains denied;
+- cross-employee Edit remains denied;
+- static App795/snapshot/role/UI fields are never authority fallback;
+- Gate 3 Process Proceed/action revalidation remains untouched.
+
+Gate 2 alone will still NOT be deploy-ready. Native App794 dedicated ACL/group configuration remains a separately protected future gate requiring exact user authorization.
+
+## 8. Current Active Task
 
 ```text
-ACTIVE_TASK = NONE — GATE 1 ACCEPTED
-TASK_STATE  = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_GATE
-OWNER       = CHATGPT
-ANTIGRAVITY_ACTION = NONE
+ACTIVE_TASK = D1 MY APPROVAL TASKS — GATE 2 DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY R1
+TASK_STATE  = OPEN / READY FOR MINIMUM ANTIGRAVITY EXECUTION
+OWNER       = ANTIGRAVITY
+ALLOWED     = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
+FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
 BUILD       = NO
 FULL_TEST   = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Do not let Antigravity continue automatically into Gate 2. The Control Plane must first open a new exact Gate 2 packet when continuation is requested.
+Exact execution contract is in `AI_ACTIVE_TASK.md`.
 
-## 10. App800 Reset MBO Password
+## 9. App800 Reset MBO Password
 
 - Core reset semantics accepted.
 - HR/admin native authority readiness accepted.
-- App800 Reset UI/tooling accepted.
+- App800 Reset UI source/tooling accepted.
 - Live App800 remains prior read-only/MVP customization.
 - Reset MBO Password = App801-backed MBO credential only, never native Kintone password.
 - No active deploy or reset-execution authorization.
 
-## 11. Authorization ledger
+## 10. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -164,6 +161,6 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-## 12. Exact next action
+## 11. Exact next action
 
-Wait for Control Plane continuation. On `ต่อ` / `ต่อไป`, ChatGPT fresh-fetches repository truth and opens only the smallest necessary Gate 2 work package if still required. Do not spend Antigravity credit before that packet exists.
+Antigravity performs only Gate 2 from `AI_ACTIVE_TASK.md`, modifies exactly the 2 allowed files, runs only the focused integration test plus `git diff --check`, commits/pushes one focused commit, and STOPs. ChatGPT then independently reviews before any Gate 3 work.
