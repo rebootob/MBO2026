@@ -1,125 +1,86 @@
-# AI ACTIVE TASK — APP794 REV58 USER RUNTIME UAT HOLD
+# AI ACTIVE TASK — APP794 REV58 USER RUNTIME UAT / ITEM 2 NEXT
 
-Mode: **CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION / NO LIVE KINTONE WRITE / NO DEPLOY**  
+Mode: **CONTROL PLANE UAT HOLD — NO ANTIGRAVITY EXECUTION / NO LIVE KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Independent Deployment Review
-
-Reviewed executor evidence commit:
-
-`72b353ac2adb0c4188b573cd0287e5eac06252db`
-
-Decision:
-
-`TECHNICAL DEPLOYMENT REVIEW PASS`
-
-Executor commit changed only:
-
-`project-docs/APP794_CUMULATIVE_DEPLOYMENT_EVIDENCE.md`
-
-No source/dist/control file was changed by the executor deployment evidence commit.
-
-## 2. Deployment Result
-
-```text
-AUTHORIZATION_ID             = APP794-CUMULATIVE-DEPLOY-20260830-01
-AUTHORIZATION_STATUS         = CONSUMED / CLOSED / NEVER REUSE
-ATTEMPTS_USED                = 1
-TARGET_APP                   = 794 ONLY
-DEPLOYED_SOURCE_COMMIT       = 98108e9e387d01b6d3c3a35cce5baf13324be50e
-POST_LIVE_REVISION           = 58
-POST_PREVIEW_REVISION        = 58
-POST_SCOPE                   = ALL
-POST_TOPOLOGY                = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-POST_JS_IDENTITY             = f097f67404fb75418cf85fee635e5d630ef5474d
-POST_CSS_IDENTITY            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-EXACT_CANDIDATE_MATCH        = YES
-SECOND_DEPLOY                = NO
-AUTO_ROLLBACK                = NO
-```
-
-Forbidden write evidence:
-
-```text
-APP794_RECORD_WRITE          = 0
-APP800_APP801_RECORD_WRITE   = 0
-SCHEMA_LAYOUT_ACL_PROCESS_WRITE = 0
-```
-
-## 3. Current Acceptance Boundary
-
-Rev58 is **technically deployed and byte-level verified**, but is not yet accepted known-good.
-
-The accepted known-good / rollback baseline remains Rev57 until user runtime UAT passes.
+## 1. Current Live State
 
 ```text
 ACTUAL_LIVE_REVISION         = 58
+DEPLOYED_SOURCE_COMMIT       = 98108e9e387d01b6d3c3a35cce5baf13324be50e
 TECHNICAL_READBACK           = PASS
-USER_RUNTIME_UAT             = PENDING
-ACCEPTED_KNOWN_GOOD_REVISION = 57
-ROLLBACK_AUTHORIZED          = NO
+ACCEPTED_KNOWN_GOOD_REVISION = 57 UNTIL FULL USER UAT PASS
+ACTIVE_DEPLOY_AUTH           = NONE
+ROLLBACK_AUTH                = NONE
 ```
 
-Do not perform any additional Live action while UAT is pending.
+No additional Live execution is authorized while UAT is in progress.
 
-## 4. User Runtime UAT Checklist
+## 2. UAT Item 1 — PASS
 
-User should test actual App794 Rev58 and report PASS/FAIL with screenshot(s) when useful.
+User supplied an actual Live App794 screenshot showing authenticated duplicate same-year Create for Employee_Code `0113` / FY2026.
 
-Required checks:
+ChatGPT independent UAT decision:
 
-1. **Authenticated duplicate same-year Create fatal state**
-   - attempt to create an MBO for an Employee_Code/Fiscal Year that already exists;
-   - terminal duplicate/profile-resolution error appears fail-closed;
-   - exactly one `← กลับหน้า My MBO / Back to My MBO` control is visible.
+`PASS`
 
-2. **Back target**
-   - click the control;
-   - it returns to `/k/794/` in the same tab;
-   - no save/workflow/auth/session mutation is caused by the Back action.
+Confirmed from screenshot:
+- duplicate creation is blocked fail-closed;
+- `Employee Profile Resolution Failed` terminal state is visible;
+- exactly one `← กลับหน้า My MBO / Back to My MBO` control is visible;
+- Back styling/custom UI renders correctly;
+- no blank screen or native-only fallback is visible.
 
-3. **Normal successful Create**
-   - record-level Back control is absent.
+The visible native Kintone `Cancel` / `Save` controls are noted only as possible future UX cleanup. Do not open a source correction for them during the current UAT unless the user explicitly requests that change later.
 
-4. **Pre-auth/login-required Create**
-   - record-level Back control is absent.
+## 3. Exact Next User UAT — Item 2
 
-5. **Normal existing Detail/Edit**
-   - exactly one Back control remains visible.
+Next owner: **USER**.
 
-6. **Previously accepted R3 UI regression smoke**
-   - My MBO renders as structured table;
-   - Back styling remains visible/prominent where expected;
-   - Native Comment Mirror renders structured read-only table;
-   - no obvious CSS/parser regression.
+On the same duplicate/fatal screen, click:
 
-7. **Runtime viability smoke**
-   - login/session gate loads normally;
-   - App794 custom UI loads normally;
-   - no blank screen or unexpected native-only fallback.
+`← กลับหน้า My MBO / Back to My MBO`
 
-No Password Reset action is required for this UAT. The deployed cumulative bundle includes accepted Password Reset Core R1 adapter logic, but no Password Reset UI or App801 credential write was authorized by this deployment.
+Expected result:
+- returns to `/k/794/`;
+- same browser tab;
+- My MBO page loads normally;
+- no record is saved or created by the Back action;
+- no workflow/auth/session mutation is caused by the Back action.
 
-## 5. Current Hold
+User should report PASS/FAIL; a screenshot after return is useful.
+
+## 4. Remaining UAT After Item 2
+
+If item 2 passes, continue sequentially:
+
+3. Normal successful Create -> record-level Back control absent.
+4. Pre-auth/login-required Create -> record-level Back control absent.
+5. Normal existing Detail/Edit -> exactly one Back control.
+6. R3 regression smoke -> My MBO structured table, Back styling, Native Comment Mirror structured read-only table, no CSS/parser regression.
+7. Runtime viability smoke -> login/session gate and App794 custom UI load normally, no blank screen or unexpected native-only fallback.
+
+No Password Reset action is required for this UAT.
+
+## 5. Strict Hold
 
 Do NOT:
+- ask Antigravity to change source;
 - redeploy Rev58;
-- run a second forward deployment;
-- upload customization files;
+- run a second forward deploy;
+- upload customization;
 - write App794/App800/App801 records;
 - change schema/layout/ACL/process;
 - rollback;
-- reuse `APP794-CUMULATIVE-DEPLOY-20260830-01`;
-- start unrelated D1-D7 executor work automatically.
+- reuse consumed deployment authorization;
+- start unrelated D1-D7 work automatically.
 
-## 6. Next Step
+## 6. Acceptance Rule
 
-Next owner: **USER** for Rev58 runtime UAT.
+Only after all required Rev58 runtime UAT checks pass may ChatGPT promote Rev58 to accepted known-good.
 
-After user supplies UAT result, ChatGPT will independently decide:
-- UAT PASS -> promote Rev58 to accepted known-good and update Control Plane/baseline as appropriate;
-- UAT FAIL -> classify defect, preserve Rev57 immutable rollback manifest, and prepare a corrective/rollback decision without performing any Live write automatically.
+If a UAT item fails, ChatGPT must classify the defect first and prepare the smallest corrective/rollback decision without performing a Live write automatically.
 
 Maximum current status:
 
-`APP794_REV58_TECHNICAL_PASS_PENDING_USER_RUNTIME_UAT`
+`APP794_REV58_UAT_ITEM1_PASS_ITEM2_PENDING`
