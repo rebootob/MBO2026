@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — APP794 FATAL CREATE CLEAN-EXIT DEPLOYMENT EXECUTED REV59 / TECHNICAL REVIEW CORRECTIVE EVIDENCE-ONLY
+> Updated: 2026-08-30 — APP794 REV59 TECHNICAL DEPLOYMENT READBACK PASS WITH AUDIT CAVEAT / USER UAT NEXT
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 corrective deployment executed once and actual Live is now Rev59. Live JS/CSS readback matches the locked corrective candidate, but the deployment evidence is incomplete against the exact authorization packet. Evidence-only corrective is open before technical deployment PASS and User UAT. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Fatal Create Clean-Exit corrective is Live at Rev59. Source/test review PASS, predeploy verification PASS, one-shot deployment technical readback PASS with documented audit caveat. User Runtime UAT is now required before Rev59 may become accepted known-good. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -21,8 +21,6 @@
 
 ## 2. Actual Live App794
 
-Latest executor deployment evidence reports:
-
 ```text
 LIVE_ACTUAL_REVISION          = 59
 LIVE_SCOPE                    = ALL
@@ -30,12 +28,14 @@ LIVE_TOPOLOGY                 = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mob
 LIVE_JS_IDENTITY              = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
 LIVE_CSS_IDENTITY             = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 PREVIEW_REVISION              = 59
-TECHNICAL_DEPLOYMENT_REVIEW   = CORRECTIVE / EVIDENCE INCOMPLETE
-USER_RUNTIME_UAT              = NOT STARTED ON REV59
+PREVIEW_SCOPE                 = ALL
+PREVIEW_TOPOLOGY              = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+TECHNICAL_DEPLOYMENT_REVIEW   = PASS WITH AUDIT CAVEAT
+USER_RUNTIME_UAT              = PENDING
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
 ```
 
-Rev59 is actual Live. Do not deploy again. Rev57 remains accepted known-good until technical review and User Runtime UAT both pass.
+Rev59 is actual Live. Do not deploy again under any consumed authorization. Rev57 remains accepted known-good until User Runtime UAT passes.
 
 ## 3. Locked Corrective Candidate
 
@@ -49,23 +49,19 @@ SOURCE_TEST_REVIEW            = PASS
 PREDEPLOY_VERIFICATION        = PASS
 ```
 
-Accepted corrective behavior in source/tests remains unchanged.
+## 4. Deployment Technical Review
 
-## 4. Deployment Execution Review
-
-Executor deployment evidence commit:
-
+Deployment evidence commit:
 `9e86b24fe60bd3f0cea2774b412d05103e2fb6f8`
 
-Repository scope from authorization base `b0609bd2d15a834727bf598e924bd82376b9159b`:
-- added only `project-docs/APP794_FATAL_CREATE_CLEAN_EXIT_DEPLOYMENT_EVIDENCE.md`;
-- no executor source/test/dist/control-doc changes.
+Evidence completeness corrective commit:
+`0590c70b17e15fa4536984eaf63418444f7e498b`
 
-Evidence reports:
+Accepted technical facts:
 
 ```text
 AUTHORIZATION_ID              = APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01
-AUTHORIZATION_STATUS          = CONSUMED / CLOSED
+AUTHORIZATION_STATUS          = CONSUMED / CLOSED / NEVER REUSE
 ATTEMPTS_USED                 = 1
 RETRY                         = NO
 SECOND_FORWARD_DEPLOY         = NO
@@ -80,37 +76,40 @@ POST_LIVE_SCOPE               = ALL
 POST_LIVE_TOPOLOGY            = 1/1/0/0
 POST_LIVE_JS                  = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
 POST_LIVE_CSS                 = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+POST_PREVIEW_REVISION         = 59
+POST_PREVIEW_SCOPE            = ALL
+POST_PREVIEW_TOPOLOGY         = 1/1/0/0
 EXACT_CANDIDATE_MATCH         = YES
 RECORD_WRITES                 = 0 across App794/App800/App801/App795/App796
 SCHEMA_LAYOUT_ACL_PROCESS     = 0
 ```
 
-### Independent decision
+Independent decision:
 
-`CORRECTIVE — DEPLOYMENT RESULT LOOKS TECHNICALLY CONSISTENT, BUT AUTHORIZED EVIDENCE CONTRACT IS INCOMPLETE`
+`PASS — TECHNICAL DEPLOYMENT READBACK / EXACT LIVE CANDIDATE PAIR`
 
-Missing evidence against the exact authorization packet:
-1. fresh deployment-time candidate worktree HEAD + clean status is not recorded;
-2. pre-deploy Preview state records revision only, not Preview scope/topology/entry names;
-3. post-deploy Preview state records revision only, not Preview scope/topology/entry names;
-4. fresh deployment-time rollback-manifest verification result is not recorded.
+### Audit caveat
 
-Do not infer or fabricate historical values. If original logs exist, use them. If a historical field was not captured, mark it `NOT_CAPTURED` and provide current immutable/GET-only compensating evidence for ChatGPT review.
+Two historical pre-write procedural facts were not captured in the original deployment log:
+- explicit deployment-time candidate worktree `HEAD + clean status`;
+- explicit deployment-time Rev57 rollback blob verification.
+
+The evidence corrective records these as `NOT_CAPTURED` rather than inventing history, then performs current compensating local immutable verification. Pre-deploy Preview scope/topology/entry names were also not captured historically; current Preview Rev59 detailed GET-only readback matches Live/candidate.
+
+This caveat does **not** change the verified technical end-state: actual Live/Preview Rev59 matches the locked candidate pair exactly. It must remain in the audit record and must not be rewritten as historical proof.
 
 ## 5. Current Active Task
 
 ```text
-ACTIVE_TASK                    = APP794 REV59 DEPLOYMENT EVIDENCE COMPLETENESS MICRO-CORRECTIVE R1
-OWNER                          = ANTIGRAVITY
-MODE                           = EVIDENCE + LOCAL IMMUTABLE GIT VERIFY + GET-ONLY APP794 CUSTOMIZATION READBACK
-LIVE_WRITE                     = NO
-DEPLOY                         = NO
-ROLLBACK                       = NO
+ACTIVE_TASK                    = APP794 REV59 USER RUNTIME UAT — FATAL CREATE CLEAN-EXIT
+OWNER                          = USER
+MODE                           = RUNTIME UAT ONLY / NO LIVE WRITE / NO DEPLOY
 ACTIVE_DEPLOY_AUTH             = NONE
 ACTIVE_KINTONE_WRITE_AUTH      = NONE
+ROLLBACK_AUTH                  = NONE
 ```
 
-Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
+Exact UAT steps are in `project-docs/AI_ACTIVE_TASK.md`.
 
 ## 6. Authorization Ledger
 
@@ -126,8 +125,6 @@ ACTIVE_KINTONE_WRITE_AUTH      = NONE
 ACTIVE_DEPLOY_AUTH             = NONE
 ROLLBACK_AUTH                  = NONE
 ```
-
-No deployment authorization may be reused.
 
 ## 7. Known-Good Rollback Baseline
 
@@ -146,11 +143,11 @@ Rollback requires separate explicit user authorization and is never automatic.
 ## 8. Current Gate
 
 ```text
-CURRENT_GATE                  = REV59 DEPLOYMENT EVIDENCE COMPLETENESS
-CURRENT_MODE                  = READ-ONLY / NO LIVE WRITE / NO DEPLOY
+CURRENT_GATE                  = REV59 USER RUNTIME UAT
+CURRENT_MODE                  = USER TEST / NO LIVE WRITE / NO DEPLOY
 LIVE_ACTUAL_REVISION          = 59
-REV59_TECHNICAL_REVIEW        = CORRECTIVE / EVIDENCE INCOMPLETE
-REV59_USER_UAT                = NOT STARTED
+REV59_TECHNICAL_REVIEW        = PASS WITH AUDIT CAVEAT
+REV59_USER_UAT                = PENDING
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
-NEXT_OWNER                    = ANTIGRAVITY FOR EXACT EVIDENCE-ONLY ACTIVE TASK
+NEXT_OWNER                    = USER
 ```
