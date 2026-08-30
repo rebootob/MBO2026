@@ -1,146 +1,61 @@
-# AI ACTIVE TASK — APP794 FATAL CREATE NATIVE-CANCEL CLEAN-EXIT CORRECTIVE R4 / SOURCE ONLY
+# AI ACTIVE TASK — APP794 FATAL CREATE NATIVE-CANCEL CLEAN-EXIT R4.1 / NARROW-DIFF + TEST-PROOF MICRO-CORRECTIVE
 
-Mode: **ANTIGRAVITY SOURCE IMPLEMENTATION + TEST + LOCAL BUILD ONLY — NO KINTONE NETWORK / NO LIVE WRITE / NO DEPLOY / NO ROLLBACK**  
+Mode: **ANTIGRAVITY SOURCE NORMALIZATION + TEST PROOF + LOCAL BUILD ONLY — NO KINTONE NETWORK / NO LIVE WRITE / NO DEPLOY / NO ROLLBACK**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Trigger / UAT Failure
+## 1. Independent Review Result
 
-Live App794 is Revision 59 and technical deployment readback passed, but User Runtime UAT failed.
+R4 executor commit:
 
-Observed Live fatal duplicate Create terminal state:
-- duplicate/fatal error visible;
-- exactly one canonical Back control visible;
-- native Save/Cancel hidden;
-- clicking Back still triggers Kintone/browser leave confirmation:
-  `ออกจากเว็บไซต์ไหม / ระบบอาจไม่ได้บันทึกการเปลี่ยนแปลงของคุณ`.
+`d9c6a126b51b768dc6277391ea8d36b2bf2c892e`
 
-Required user UX remains:
+ChatGPT decision:
 
-```text
-ERROR_MESSAGE                    = REMAINS VISIBLE
-BACK_TO_MY_MBO_COUNT             = EXACTLY 1
-BACK_TARGET                      = /k/794/
-BACK_TAB                         = SAME TAB
-NATIVE_SAVE                      = HIDDEN
-NATIVE_CANCEL                    = HIDDEN FROM USER
-LEAVE_CONFIRM_ON_BACK            = MUST NOT APPEAR
-RECORD_CREATE_OR_SAVE            = 0
-WORKFLOW_MUTATION                = 0
-AUTH_SESSION_MUTATION            = 0
-```
+`CORRECTIVE — R4 NATIVE-CANCEL BEHAVIOR DIRECTION IS ACCEPTABLE, BUT SOURCE DIFF IS POLLUTED BY WHOLE-FILE EOL CHURN AND STATIC FORBIDDEN-PATTERN TEST PROOF IS INCOMPLETE`
 
-Rev59 is **not** accepted known-good.
+Do not deploy. Do not access Kintone.
 
-## 2. Confirmed Root-Cause Facts
+## 2. Preserve These R4 Semantics
 
-Deployed source commit:
-`4472aa2f1c63bf08788b39b4ad54b7ea55808df1`
+Do **not** redesign the corrective unless a mandatory test proves a real defect.
 
-### Fact A — Back is still plain navigation
-
-`src/ui/employee-record-navigation.js` renders:
-
-```js
-link.href = `/k/${appId}/`;
-```
-
-and only intercepts the click if an `onNavigateHome` handler is injected.
-
-The authenticated fatal Create call path currently renders Back without an injected navigation handler, so the browser follows the plain anchor and Kintone's Create-page leave protection can intercept it.
-
-### Fact B — Custom UI setup still occurs before duplicate preflight
-
-In `src/main-mbo-app.js`, `EmployeePartAUI` is instantiated and `ui.render()` executes before the authenticated Create duplicate-preflight block.
-
-R2/R3 correctly moved Fiscal Year defaulting and `kintone.app.record.set()` after the duplicate preflight, but that does **not** prove the entire Create page has no Kintone/custom UI dirty or protected state before rejection.
-
-Therefore do not repeat the previous assumption that a plain anchor can be made reliable solely by avoiding `kintone.app.record.set()`.
-
-## 3. Corrective Design — Native Kintone Cancel Semantics
-
-For **authenticated terminal duplicate/fatal Create only**, the canonical custom Back action must exit the Kintone Create page through the page's **native Cancel semantic path**, while the native Cancel control itself remains hidden from the user.
-
-Preferred narrow design:
-1. resolve/capture the native Kintone Cancel control for the current Create page before hiding native actions;
-2. render the canonical `EmployeeRecordNavigation` Back control with an injected `onNavigateHome` handler;
-3. the handler prevents default plain-anchor navigation and invokes the captured native Cancel control exactly once;
-4. allow Kintone's own Cancel behavior to discard the invalid unsaved Create and return to App794 index;
-5. keep native Save/Cancel visually hidden on the terminal fatal screen.
-
-The custom Back must **not** directly use `window.location`, `location.assign`, `location.replace`, `history.back`, or equivalent browser navigation for this terminal fatal Create path.
-
-If native Cancel cannot be resolved, fail closed. Do not fall back to unload suppression or a second navigation trick.
-
-### Important governance clarification
-
-The earlier internal implementation restriction against programmatic Cancel is superseded **only for this exact terminal invalid duplicate Create recovery path**. The user's required outcome is to discard an invalid Create without a confusing leave-confirm popup, and Rev59 UAT proves ordinary navigation cannot satisfy it.
-
-This does **not** authorize automatic Save, Submit, workflow action, or use of native Cancel anywhere else.
-
-## 4. Allowed Repository Changes
-
-Allowed:
-- `src/main-mbo-app.js`
-- `src/ui/employee-record-navigation.js` only if needed to preserve/strengthen injected handler behavior
-- `tests/employee-main-mbo-app-integration.test.js`
-- `tests/employee-record-navigation.test.js`
-- `dist/mbo-employee-app.js` generated by normal build only
-
-Expected source owner:
-- `src/main-mbo-app.js` for fatal Create orchestration/native action resolution.
-
-Do **not** edit:
-- Control Center / Active Task / baselines / skills;
-- CSS unless a test proves an unavoidable selector/style defect; STOP and report before adding CSS scope;
-- auth/session modules;
-- Employee Service / Routing / App801 logic;
-- unrelated source/tests/config/scripts/package;
-- deployment evidence.
-
-No new file/module unless the current files cannot safely own the behavior; if so STOP and report before creating one.
-
-## 5. Mandatory Behavior / Tests
-
-### A. Fatal duplicate Create — native Cancel exit
-
-Mock a Kintone native Cancel control and assert:
-- fatal duplicate terminal state renders exactly one canonical Back;
+Keep the current intended behavior:
+- authenticated terminal fatal/duplicate Create shows exactly one canonical Back;
 - native Save/Cancel are visually hidden;
-- canonical Back click prevents its plain-anchor navigation;
-- Back click invokes **native Cancel exactly once**;
-- no direct `window.location` / `location.assign` / `location.replace` / `history.back` is used;
-- no `beforeunload` suppression is added;
-- no record save/create/write occurs;
-- no workflow/auth/session mutation occurs.
+- native Kintone Cancel is resolved with narrow known Cancel selectors only;
+- custom Back uses injected `onNavigateHome` so default anchor navigation is prevented;
+- Back invokes captured native Cancel exactly once;
+- no direct `window.location`, `location.assign`, `location.replace`, `history.back`, or equivalent browser-navigation fallback is used for fatal Create Back;
+- missing native Cancel fails closed and does not fall back to ordinary anchor navigation;
+- normal successful Create keeps Back absent and native Save/Cancel normal;
+- existing Detail/Edit Back behavior remains unchanged;
+- normal unsaved-change protection remains enabled;
+- no record/workflow/auth/session mutation is introduced.
 
-### B. Missing native Cancel — fail closed
+The current R4 source owner remains `src/main-mbo-app.js`.
 
-If the expected native Cancel control cannot be found:
-- do not use plain browser navigation as a hidden fallback for fatal Create;
-- do not disable unload protection;
-- expose/retain a deterministic fail-closed terminal state suitable for debugging/test assertion.
+## 3. Gap A — Remove Whole-File EOL / Line-Ending Churn
 
-Do not fabricate a successful navigation path.
+Git compare from R4 base:
 
-### C. Normal Create preservation
+`97c094133575221e5ee2cc6005e12923ce319318..d9c6a126b51b768dc6277391ea8d36b2bf2c892e`
 
-Normal successful Create must preserve existing behavior:
-- record-level Back absent;
-- native Save/Cancel normal/available;
-- Fiscal Year default/autoload behavior unchanged after duplicate preflight;
-- normal unsaved-change protection remains enabled.
+reports `src/main-mbo-app.js` as approximately `+934 / -891`, even though the semantic native-Cancel change is small. This is not an acceptable narrow production candidate diff.
 
-### D. Detail/Edit preservation
+Required correction:
+1. preserve the R4 semantic changes above;
+2. restore `src/main-mbo-app.js` to the canonical line-ending/content normalization used by R4 base `97c094133575221e5ee2cc6005e12923ce319318`;
+3. reapply only the R4 semantic changes needed for native Cancel clean-exit;
+4. do not alter unrelated formatting/imports/comments/business logic;
+5. final Git diff from base `97c094133575221e5ee2cc6005e12923ce319318` must show a narrow semantic source change, not a near-whole-file replacement.
 
-Existing Detail/Edit behavior must remain unchanged:
-- canonical Back exactly once where currently required;
-- do **not** invoke native Cancel semantics from normal Detail/Edit Back;
-- native Edit actions are not globally hidden;
-- normal unsaved-change protection is not globally changed.
+It is acceptable during this corrective to restore the source file from the exact R4 base and reapply the already-reviewed R4 semantic edits. This is source implementation cleanup, not evidence masking.
 
-### E. Static forbidden-pattern regression
+Do not hand-edit `dist/mbo-employee-app.js`; regenerate it only with the normal build.
 
-Assert no new source behavior using:
+## 4. Gap B — Complete Static Forbidden-Pattern Regression
+
+The R4 packet explicitly forbids:
 
 ```text
 window.onbeforeunload = ...
@@ -149,22 +64,45 @@ window.location = ... for fatal Create Back
 location.assign(...)
 location.replace(...)
 history.back(...)
-auto Save / submit / workflow action
 ```
 
-Do not globally monkey-patch browser navigation or Kintone unload handling.
+Current tests check several but not explicit `removeEventListener('beforeunload', ...)` coverage.
 
-## 6. Selector / Native-Control Safety
+Add robust static assertions in the existing focused test file(s) so both:
+- `src/main-mbo-app.js`
+- `src/ui/employee-record-navigation.js`
 
-Reuse the narrow existing Save/Cancel selectors only as needed. Do not reintroduce broad selectors such as:
+are proven not to add/remove a `beforeunload` listener through `removeEventListener`, allowing for quote/whitespace variants. Do not add a new test file.
 
-`button.gaiav2-app-statusbar-action`
+Also preserve the existing assertions for:
+- native Cancel exactly once;
+- fatal Back default prevented;
+- missing Cancel fail closed;
+- no `onbeforeunload`;
+- no `location.assign` / `location.replace` / `history.back`.
 
-If multiple possible Cancel selectors are supported, resolution must be deterministic and restricted to the native Cancel action. Do not click an arbitrary status-bar action.
+## 5. Required Source/Test Scope
 
-Capture the Cancel element before hiding it if that makes behavior clearer and less timing-sensitive.
+Allowed files:
+- `src/main-mbo-app.js`
+- `tests/employee-main-mbo-app-integration.test.js`
+- `tests/employee-record-navigation.test.js` only if needed
+- `dist/mbo-employee-app.js` generated by normal build only
 
-## 7. Required Commands
+`src/ui/employee-record-navigation.js` should remain unchanged unless a focused test proves an actual handler defect. If you believe it must change, STOP and report why before editing it.
+
+Do not edit:
+- Control Center / Active Task / baselines / skills;
+- CSS;
+- auth/session modules;
+- Employee Service / Routing / App801 logic;
+- config/scripts/package;
+- deployment/predeploy evidence;
+- unrelated source/tests.
+
+No new file/module.
+
+## 6. Mandatory Verification
 
 Run at minimum:
 
@@ -174,16 +112,25 @@ npm run ui:build
 node --test tests/classic-bundle.test.js tests/css-structure.test.js
 ```
 
-Then report:
-- exact changed files;
-- exact test PASS/FAIL count + exit status;
-- build result;
-- whether generated dist changed as expected;
-- source commit SHA.
+Then verify the candidate diff is narrow:
 
-No Kintone network call in this task.
+```text
+git diff --stat 97c094133575221e5ee2cc6005e12923ce319318..HEAD -- src/main-mbo-app.js tests/employee-main-mbo-app-integration.test.js tests/employee-record-navigation.test.js dist/mbo-employee-app.js
+git diff --check 97c094133575221e5ee2cc6005e12923ce319318..HEAD
+```
 
-## 8. Safety State
+Required:
+- no near-whole-file rewrite of `src/main-mbo-app.js`;
+- no whitespace/error output from `git diff --check`;
+- focused tests PASS;
+- build PASS;
+- classic bundle/CSS tests PASS;
+- generated dist corresponds to source;
+- no Kintone network activity.
+
+If normalization cannot be achieved without touching unrelated source, STOP rather than widening scope.
+
+## 7. Safety State
 
 ```text
 LIVE_APP794_REVISION          = 59
@@ -198,19 +145,28 @@ ROLLBACK_AUTH                 = NONE
 ```
 
 Forbidden:
-- all Kintone GET/POST/PUT/DELETE calls for this source task;
+- all Kintone GET/POST/PUT/DELETE;
 - customization upload;
 - deploy;
 - rollback;
-- App794/App800/App801/App795/App796 record writes;
-- schema/layout/ACL/process changes.
+- record/schema/layout/ACL/process changes;
+- source behavior expansion beyond this R4.1 cleanup/test-proof task.
 
-## 9. Delivery Contract
+## 8. Delivery Contract
 
-Deliver one narrow source commit and STOP for ChatGPT Independent Review.
+Deliver one narrow corrective commit and STOP for ChatGPT Independent Review.
+
+Report:
+- exact changed files;
+- exact test counts + exit status;
+- build result;
+- `git diff --stat` result proving narrow source diff;
+- `git diff --check` result;
+- source commit SHA;
+- Kintone network = 0.
 
 Executor must not edit Control Plane documents.
 
 Maximum executor status:
 
-`APP794_FATAL_CREATE_NATIVE_CANCEL_CLEAN_EXIT_R4_SOURCE_IMPLEMENTED_PENDING_CHATGPT_REVIEW`
+`APP794_FATAL_CREATE_NATIVE_CANCEL_CLEAN_EXIT_R4_1_NARROW_DIFF_TEST_PROOF_IMPLEMENTED_PENDING_CHATGPT_REVIEW`
