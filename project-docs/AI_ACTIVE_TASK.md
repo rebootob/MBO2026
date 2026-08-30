@@ -1,54 +1,107 @@
-# AI ACTIVE TASK — D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — SOURCE-ACCEPTANCE MILESTONE VERIFICATION
+# AI ACTIVE TASK — D1 HYBRID RUNTIME — LEGACY SHARED TEST FIXTURE COMPATIBILITY R1
 
-Mode: **ANTIGRAVITY ONE-TIME VERIFICATION ONLY — NO SOURCE EDIT / NO LIVE KINTONE / NO DEPLOY**  
+Mode: **ANTIGRAVITY TEST-FIXTURE ONLY — NO SOURCE EDIT / NO FULL TEST / NO BUILD / NO LIVE KINTONE**  
 Branch: `ai/antigravity-wp002c`
 
 ## 0. Goal
 
-The Hybrid Employee-Self Runtime source logic and cleanup have passed ChatGPT review.
+The Hybrid runtime source logic is already PASS.
 
-This task performs **one milestone verification only** before source acceptance.
+The source-acceptance milestone stopped because legacy tests still model numeric/prefix native Kintone principals as if they were SHARED. Correct only those test fixtures so they match the confirmed exact SHARED-principal contract.
 
-Do not fix code. Do not redesign. Do not create evidence markdown. Do not scan broadly.
+Do not inspect broadly. Do not change source. Do not run full `npm test`. Do not build.
 
-## 1. Allowed work only
+## 1. Exact allowed test files — only 3
 
-From a clean working tree, run exactly once:
+### A. `tests/timeline-truthfulness-and-attachment.test.js`
 
+This test is a Shared MBO-login fixture.
+
+Change only the mocked native Kintone principal:
+```text
+getLoginUser code: 0118 -> f1
+```
+
+Keep:
+```text
+MBO Employee_Code = 0118
+mboLoginGate.requireLogin() -> 0118
+```
+
+Do not alter attachment/timeline assertions or business behavior.
+
+### B. `tests/objective-save-validation.test.js`
+
+This is also a Shared MBO-login fixture. `req1` must not rely on the removed `req*` heuristic.
+
+Change the Shared principal fixture consistently:
+```text
+native getLoginUser: req1 -> s1
+App795 Requester_User fixture: req1 -> s1
+corresponding Requester_User assertion: req1 -> s1
+```
+
+Keep Employee_Code `0118` unchanged.
+
+No other assertion/business change.
+
+### C. `tests/create-handler-form-state.test.js`
+
+This file tests compiled-bundle Shared login behavior. Separate native Kintone principal from MBO Employee_Code.
+
+Success-path fixture:
+```text
+native getLoginUser: 0113 -> s1
+App801 Employee_Code: keep 0113
+App801 Session_Kintone_User: 0113 -> s1
+App795 Requester_User: 0113 -> s1
+final Requester_User assertion: 0113 -> s1
+```
+
+Failure-path fixture:
+```text
+native getLoginUser: 9999 -> s1
+App801 Employee_Code: keep 9999
+App801 Session_Kintone_User: 9999 -> s1
+```
+
+Keep the intended failure reason: Employee_Code `9999` lookup in App53 returns no employee. Do not turn this into a dedicated-mapping failure test.
+
+Keep all other logic/assertions unchanged.
+
+## 2. Everything else read-only
+
+Do not modify:
+```text
+src/**
+dist/**
+config/**
+project-docs/**
+all other tests
+```
+
+No evidence markdown.
+
+## 3. Verification — focused only
+
+Run only:
+```text
+node --test tests/timeline-truthfulness-and-attachment.test.js
+node --test tests/objective-save-validation.test.js
+git diff --check
+```
+
+Do NOT run `tests/create-handler-form-state.test.js` in this corrective because it reads the checked-in dist bundle; the final milestone will build first and then test that generated bundle.
+
+Do NOT run:
 ```text
 npm test
 npm run ui:build
 ```
 
-After build verification, restore generated dist back to the current branch HEAD so build output is not committed in this source-only gate.
+If either focused source-import test fails for a reason beyond the exact fixture substitutions above, STOP and report. Do not expand scope.
 
-Then run:
-
-```text
-git diff --check
-git status --short
-```
-
-Expected final working tree: clean.
-
-Do not rerun commands unless a command itself failed to start for a tooling reason. If a real test/build failure occurs, STOP and report the first failure; do not patch it.
-
-## 2. No source/test changes
-
-Do not modify any source or test file.
-
-Especially do not modify:
-```text
-src/**
-tests/**
-config/**
-project-docs/**
-```
-
-Do not create evidence files.
-Do not commit or push unless an unexpected tracked cleanup is required; normally this verification should produce **no commit**.
-
-## 3. App53 Production / Live hard stop
+## 4. App53 / Live hard stop
 
 ```text
 LIVE_GET = 0
@@ -58,33 +111,29 @@ LIVE_DELETE = 0
 APP53_SCHEMA_WRITE = 0
 APP53_RECORD_WRITE = 0
 APP53_BULK_WRITE = 0
-APP794_RECORD_WRITE = 0
 ACL_WRITE = 0
 GROUP_WRITE = 0
 DEPLOY = 0
 ```
 
-Mocks/fixtures/local build only. Do not open or probe App53 or any live Kintone app.
-
-## 4. Stop rule
-
-If `npm test` or `npm run ui:build` reports a real failure:
-- STOP at the first real failure;
-- do not edit source/tests;
-- report the failing command + first relevant error only.
-
-Do not expand scope.
+Mocks/fixtures only. No Kintone access.
 
 ## 5. Finish
 
+After the two focused tests and diff check pass:
+1. verify diff contains exactly the three allowed test files;
+2. commit one fixture-only commit;
+3. push;
+4. STOP.
+
 Final response only:
-- `npm test = PASS/FAIL` with passed/total count if available;
-- `npm run ui:build = PASS/FAIL`;
+- commit SHA;
+- changed files;
+- timeline focused result;
+- objective focused result;
 - `git diff --check = PASS/FAIL`;
-- `FINAL_WORKTREE_CLEAN = YES/NO`;
 - `SOURCE_CHANGES = 0`;
-- `TEST_CHANGES = 0`;
 - `LIVE_KINTONE_OPERATIONS = 0`;
 - `APP53_PRODUCTION_TOUCHED = NO`.
 
-Then STOP. Next owner = ChatGPT independent source-acceptance review.
+Next owner = ChatGPT independent review.
