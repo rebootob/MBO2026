@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — HYBRID RUNTIME INVENTORY COMPLETE / EMPLOYEE-SELF ENTRY R1 OPEN / APP53 PRODUCTION READ-ONLY
+> Updated: 2026-08-30 — HYBRID EMPLOYEE-SELF RUNTIME ENTRY R1 = CORRECTIVE / APP53 PRODUCTION READ-ONLY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. Natta/Vassana read-only audit completed. Hybrid Identity Core Source R1 is **PASS** at `c20e406b9b289984e57ebf2c52c9223094bc5f5a`. Runtime source inventory is complete. Current implementation gate = Hybrid Employee-Self Runtime Entry R1. My Approval Tasks/current-native-assignee integration is intentionally deferred to a later proof + source WP. Protected App53/group/ACL/deploy work remains unauthorized. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. Natta/Vassana read-only audit completed. Hybrid Identity Core Source R1 is **PASS** at `c20e406b9b289984e57ebf2c52c9223094bc5f5a`. Runtime source inventory is complete. Initial Hybrid Employee-Self Runtime Entry R1 candidate `6eccb3987372d9d50c06cc4249e264c86f11bb3d` is **CORRECTIVE**. Protected App53/group/ACL/deploy work remains unauthorized. My Approval Tasks remains deferred pending separate current-native-assignee proof. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source/tooling accepted; deployed App800 remains prior MVP until separately authorized deployment. |
@@ -30,6 +30,7 @@ APP794_ACCEPTED_CSS           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 REV60_USER_UAT                = PASS
 HYBRID_CORE_ACCEPTED_COMMIT   = c20e406b9b289984e57ebf2c52c9223094bc5f5a
 HYBRID_CORE_SOURCE            = PASS
+HYBRID_RUNTIME_ENTRY_SOURCE   = NOT YET ACCEPTED
 LIVE_DEPLOY_READY             = NO
 ```
 
@@ -41,8 +42,6 @@ Accepted Hybrid core rules:
 - own-MBO self-appraiser elision preserves approver slots, users, rules, order and topology;
 - Natta own example remains `natta -> uchida / M1_G1` -> effective `uchida / M1_ONLY` with no auto-approval;
 - generic 3-slot/4-slot transformations have committed regression proof.
-
-Executor evidence for the accepted core reports 27/27 focused tests, 1015/1015 full tests, diff check PASS, App53 untouched and zero live network operations. ChatGPT acceptance was based on independent source/test/evidence inspection.
 
 ## 3. Confirmed Hybrid Identity / Dual Role
 
@@ -68,10 +67,12 @@ approved shared Kintone principal
 -> Employee_Code + App801 MBO password/session
 ```
 
-Approved shared Kintone principals remain:
+Approved shared Kintone principals are **exactly**:
 ```text
 t1, t2, s1, f1, f2, f3, e1, tmh, g_request
 ```
+
+No wildcard, prefix, numeric-user heuristic, UI choice, App795 membership, or session presence may expand that set.
 
 Dual-role separation:
 ```text
@@ -105,83 +106,123 @@ Natta remains fail closed until the real canonical Employee_Code is proven/corre
 
 ## 5. Runtime Integration Source Inventory R1 — COMPLETE
 
-Inventory base: `b6ab428f2703e29cffada49ef0bfee7dbda37fd8`.
+Inventory established these safe seams:
+- identity mode + strict mapping semantics: `src/services/mbo-identity-service.js`;
+- targeted App53 read-only candidate data access: `src/services/employee-service.js`;
+- top-level event/mode orchestration: `src/main-mbo-app.js`;
+- Employee-Self delete defense-in-depth: `src/security/delete-guard-policy.js`;
+- shared login/session internals remain read-only;
+- routing transformation/effective-requester core remains accepted/read-only;
+- build is esbuild from `src/main-mbo-app.js`; no manual dist edits;
+- My Approval Tasks/current-native-assignee source contract is not yet proven and is a separate later gate.
 
-### 5.1 Current runtime is SHARED-only
+## 6. Hybrid Employee-Self Runtime Entry R1 — INDEPENDENT REVIEW
 
-`src/main-mbo-app.js` currently initializes `MboKintoneLoginGate` + `MboSessionManager` and calls `mboLoginGate.requireLogin()` for index/detail/edit/create before Employee-Self content. This forces the App801-backed shared path on every user and does not consume the accepted strict dedicated resolver.
-
-### 5.2 Existing Employee-Self seams are reusable
-
-- `EmployeePartAUI` already accepts a bound `authenticatedEmployeeCode`, hides free-form lookup on Create, and rejects a different Employee_Code.
-- `EmployeeSelfIndexUI` already queries exactly `Employee_Code = <bound code>` newest FY first.
-- detail/edit in `main-mbo-app.js` already blocks cross-employee records when fed the correct bound code.
-- therefore Dedicated and Shared can converge on one common page-memory Employee-Self context without changing My MBO ownership semantics.
-
-### 5.3 Dedicated mapping data-access seam
-
-`MboIdentityService.resolveDedicatedKintoneUserMapping()` is accepted strict mapping logic, but no runtime caller exists yet. `EmployeeService` is the current App53 read-only data-access owner and needs one narrow targeted mapping-candidate GET method; the strict identity decision must remain in `MboIdentityService`.
-
-### 5.4 Create / effective requester seam
-
-Current Create lookup uses `RoutingService.validateRequesterAccess(...)` and snapshots `routing.Requester_User`; that is the existing SHARED requester path. Hybrid Create must instead:
-1. resolve the pure App795 route;
-2. for DEDICATED own-MBO only, apply accepted self-appraiser elision before snapshot;
-3. call accepted `resolveEffectiveRequesterUser()` using authoritative identity mode/current Kintone user;
-4. snapshot the resulting effective `Requester_User` and effective route;
-5. preserve SHARED requester behavior unchanged.
-
-### 5.5 Shared session modules must remain untouched
-
-`mbo-kintone-login-gate.js`, `mbo-session-manager.js`, and `mbo-kintone-auth-adapter.js` already own the accepted shared credential/session lifecycle. Dedicated mode must bypass `requireLogin()` and must not render MBO Change Password / MBO Logout controls. A dedicated page must not fail merely because the App801 gate is unavailable.
-
-### 5.6 Delete guard seam
-
-`DeleteGuardPolicy` currently derives Employee-Self only from `mboLoginGate.getEmployeeCode()`. Hybrid integration must let it consume the common Employee-Self context so dedicated Employee-Self deletion remains blocked, while preserving abstain behavior when there is no Employee-Self context.
-
-### 5.7 Build seam
-
-`scripts/kintone/build-mbo-ui.js` uses esbuild from the single entry `src/main-mbo-app.js`; imported modules are bundled transitively. No manual dist edits are allowed. `tests/classic-bundle.test.js` is the dependency-graph/build proof seam.
-
-### 5.8 My Approval Tasks is NOT ready to combine with Entry R1
-
-No current canonical browser runtime module/service/UI owns `My Approval Tasks`, and source inspection found no current `$assignee`/current-native-assignee query/revalidation seam. The existing `app.record.detail.process.proceed` hook validates business/workflow rules but does not independently prove current native assignee authority.
-
-Therefore:
+Executor candidate:
 ```text
-MY_APPROVAL_TASKS_RUNTIME_OWNER = NOT YET IMPLEMENTED
-CURRENT_NATIVE_ASSIGNEE_SOURCE_CONTRACT = NOT YET PROVEN IN RUNTIME SOURCE
+CANDIDATE_COMMIT = 6eccb3987372d9d50c06cc4249e264c86f11bb3d
+BASE             = 7989b950247d269440f588da580cb9b56726b406
+COMMITS          = 1
+REVIEW_RESULT    = CORRECTIVE
+SOURCE_ACCEPTED  = NO
+DEPLOY_READY     = NO
 ```
 
-Do **not** invent a Kintone system field/API or authorize from App795 membership. After Employee-Self Entry R1 is accepted, open a separate READ-ONLY native-assignee contract proof before implementing Approval Tasks.
+Scope was mostly within the intended runtime seam and no App53 schema/record/config/deploy artifact was committed. However, independent review found blocking correctness/security defects:
 
-## 6. Current Active Task — Hybrid Employee-Self Runtime Entry R1
+### Finding R1-A — Unauthorized SHARED expansion
+
+`MboIdentityService.resolveKintonePrincipalMode()` correctly contains the approved 9-code set, but also classifies additional principals as SHARED using unauthorized heuristics:
+- all-digit user code;
+- `req*` prefix;
+- `test*` prefix;
+- `user*` prefix.
+
+This violates the exact shared-principal contract and can bypass required dedicated mapping. Remove every heuristic. Only exact membership in the approved 9-code set may return `SHARED`.
+
+### Finding R1-B — DEDICATED mapping failure falls back to SHARED login
+
+`resolveRuntimeEmployeeSelfContext()` invokes `mboLoginGate.requireLogin()` after dedicated mapping is missing/ambiguous/invalid. It can then return a `SHARED` Employee-Self context for a native principal already classified as DEDICATED.
+
+This directly violates:
+```text
+DEDICATED missing/ambiguous/invalid mapping -> FAIL CLOSED
+NEVER fallback to SHARED login
+```
+
+Dedicated source-access failure must also fail closed; it must never be converted into a shared-login opportunity.
+
+### Finding R1-C — DEDICATED delete guard not connected in real runtime
+
+`DeleteGuardPolicy` was extended to accept `getEmployeeSelfContext`, but the registered App794 delete handler still constructs:
+```text
+new DeleteGuardPolicy({ mboLoginGate })
+```
+
+Therefore a valid DEDICATED Employee-Self context is not supplied to the actual delete event path and dedicated delete can abstain instead of being blocked. Wire the current common Employee-Self context provider into the real registered handler and prove it through the registered event test.
+
+### Finding R1-D — Out-of-scope App800/HR test modification
+
+The candidate modified `tests/hr-control-center-reset-ui.test.js`, which was not an allowed file. The change removed `src/main-mbo-app.js` from that historical test's forbidden-prefix list.
+
+This file must be restored **exactly** to the pre-WP blob/content. Do not redesign the App800 test in this Hybrid WP. If its `git status` assertion complicates local full-suite execution while source is uncommitted, use a clean/provisional local commit workflow; do not alter the test semantics.
+
+### Finding R1-E — Required proof incomplete / evidence overclaims
+
+The Active Task required explicit real-runtime proof for:
+- approved SHARED path and authoritative requester snapshot;
+- valid DEDICATED entry with gate unavailable/null;
+- DEDICATED My MBO/detail/edit/create bound to mapped Employee_Code;
+- no dedicated MBO password/logout bar;
+- DEDICATED requester snapshot;
+- own-route self-appraiser elision before snapshot;
+- missing/ambiguous/invalid mapping with zero shared-login fallback;
+- cross-employee denial;
+- registered DEDICATED delete-event block and no-context abstain;
+- browser bundle graph containing `mbo-identity-service.js` and excluding server/Auth Bridge.
+
+The committed integration additions prove only a subset, and `tests/classic-bundle.test.js` was not modified even though the task required an explicit new dependency assertion. Evidence also omits the required starting HEAD, exact changed-file list, exact focused/build results, and explicit `LIVE_GET=0` statement.
+
+### Finding R1-F — Create must use resolved local context without silent SHARED default
+
+Create routing currently reads mutable module-global `currentEmployeeSelfContext?.mode || 'SHARED'` and separately re-reads the current login user. The authenticated `setupRecordUiWithAuth()` call already has the resolved context. Use that resolved local context (`context.mode`, `context.kintoneUserCode`) for route/requester composition and do not silently default a missing mode to SHARED. Missing/invalid context must fail closed.
+
+## 7. Safety Review for Candidate `6eccb398...`
+
+Repository diff contains no App53 schema/record/config/deploy change and no My Approval Tasks implementation. No live-write authorization exists.
+
+Executor evidence states zero live writes but says `GET only`, while the task required **all live operations including GET = 0** and fixture/mock-only execution. Therefore:
+```text
+APP53_PRODUCTION_WRITE_TOUCHED = NO EVIDENCE OF WRITE
+LIVE_GET_ZERO_PROVEN           = NO — EVIDENCE WORDING AMBIGUOUS / MUST BE CORRECTED
+```
+
+Corrective evidence must explicitly prove:
+```text
+LIVE_GET=0
+LIVE_POST=0
+LIVE_PUT=0
+LIVE_DELETE=0
+APP53_PRODUCTION_TOUCHED=NO
+```
+
+and state that any GET exercised in tests used injected mocks/fixtures only.
+
+## 8. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID IDENTITY EMPLOYEE-SELF RUNTIME ENTRY R1
+ACTIVE_TASK = D1 HYBRID IDENTITY EMPLOYEE-SELF RUNTIME ENTRY R1 CORRECTIVE R1
 OWNER       = ANTIGRAVITY
-MODE        = SOURCE / FIXTURE TEST / BUILD ONLY
+MODE        = SOURCE / FIXTURE TEST / BUILD / EVIDENCE ONLY
 APP53_MODE  = PRODUCTION READ_ONLY
 LIVE_ACCESS = NO
 LIVE_WRITE  = NO
 DEPLOY      = NO
 ```
 
-Scope:
-- authoritative no-UI-toggle mode selection using the approved shared-principal set;
-- SHARED continues through existing MBO Login/session unchanged;
-- non-shared principal becomes DEDICATED candidate and must strict-map via App53 mapping candidates + `resolveDedicatedKintoneUserMapping()`;
-- missing/ambiguous/invalid dedicated mapping fails closed and must never fall back to SHARED login;
-- `admin-form` must not become Employee-Self;
-- common in-page Employee-Self context feeds existing My MBO/detail/edit/create ownership;
-- DEDICATED bypasses App801 login/session/password controls;
-- Create uses accepted Hybrid effective-requester + own-route transformation;
-- Employee-Self delete guard works for both identity modes;
-- no My Approval Tasks implementation in this WP.
+Corrective must address Findings R1-A through R1-F only. Do not expand into My Approval Tasks, App53 configuration, ACL/group work, deployment, shared-auth internals, routing-core redesign, or unrelated cleanup.
 
-Exact file scope and tests are in `AI_ACTIVE_TASK.md`.
-
-## 7. App800 Reset UI / Tooling — Accepted, Not Deployed
+## 9. App800 Reset UI / Tooling — Accepted, Not Deployed
 
 ```text
 APP800_RESET_UI_SOURCE_COMMIT            = a7a9f02aff6b497f3f8e0009dd377437a3701416
@@ -195,7 +236,7 @@ ACTIVE_DEPLOY_AUTH                       = NONE
 
 Reset MBO Password means App801-backed MBO credential reset only, never native Kintone/cybozu password reset.
 
-## 8. Authorization Ledger / Safety
+## 10. Authorization Ledger / Safety
 
 ```text
 LATEST_DEPLOY_AUTH        = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01 — CONSUMED / CLOSED / NEVER REUSE
@@ -212,12 +253,12 @@ ROLLBACK_AUTH             = NONE
 
 No App800/App801/App794/App53 record write, App53 schema/bulk change, group creation/membership write, App795 route write, customization upload, deployment, password reset execution, ACL write, Process update, or rollback is authorized.
 
-## 9. Next Gate
+## 11. Next Gate
 
 ```text
-CURRENT_GATE  = D1 HYBRID IDENTITY EMPLOYEE-SELF RUNTIME ENTRY R1
+CURRENT_GATE  = D1 HYBRID IDENTITY EMPLOYEE-SELF RUNTIME ENTRY R1 CORRECTIVE R1
 CURRENT_OWNER = ANTIGRAVITY
 NEXT_REVIEWER = CHATGPT
 ```
 
-After source acceptance, protected Kintone configuration is **still not automatic**. Before My Approval Tasks implementation, Control Plane must separately prove the authoritative current-native-assignee runtime contract without guessing.
+After source acceptance, protected Kintone configuration is **still not automatic**. My Approval Tasks remains blocked until Control Plane separately proves the authoritative current-native-assignee runtime contract without guessing.
