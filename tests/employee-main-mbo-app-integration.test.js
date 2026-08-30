@@ -142,6 +142,8 @@ let currentMockUser = { code: 'f1', name: 'Shared F1 User' };
 let approvalQueryCount = 0;
 let app795QueryCount = 0;
 let triggerApprovalFetchError = false;
+let singleRecordGetCount = 0;
+let triggerSingleRecordGetError = false;
 
 const mockApiFn = async (url, methodOrParams, optionalParams) => {
   const params = (typeof methodOrParams === 'object' && methodOrParams !== null) ? methodOrParams : optionalParams;
@@ -237,6 +239,46 @@ const mockApiFn = async (url, methodOrParams, optionalParams) => {
         Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
         Configuration_Hash: { value: 'abc123hash' }
       }]
+    };
+  }
+  if (params?.app === 794 && params?.id !== undefined) {
+    singleRecordGetCount++;
+    if (triggerSingleRecordGetError) {
+      throw new Error('Kintone API network error during single record revalidation');
+    }
+    const reqIdStr = String(params.id);
+    if (reqIdStr === '9999') {
+      return { record: null };
+    }
+    if (reqIdStr === '902') {
+      return {
+        record: {
+          $id: { value: '902' },
+          Fiscal_Year: { value: 'FY2026' },
+          Employee_Code: { value: '0118' },
+          Employee_Name: { value: 'Somchai' },
+          Status: { value: '02 Waiting Appraiser 1' },
+          Record_Key: { value: 'FY2026-0118' },
+          Assignee: { type: 'STATUS_ASSIGNEE', value: [{ code: 'other_user', name: 'Other User' }] },
+          Manager_User: { value: [{ code: 'vassana' }] },
+          First_Manager_User: { value: [{ code: 'vassana' }] },
+          GM_User: { value: [{ code: 'vassana' }] }
+        }
+      };
+    }
+    return {
+      record: {
+        $id: { value: reqIdStr },
+        Fiscal_Year: { value: 'FY2026' },
+        Employee_Code: { value: '0118' },
+        Employee_Name: { value: 'Somchai' },
+        Status: { value: '02 Waiting Appraiser 1' },
+        Record_Key: { value: 'FY2026-0118' },
+        Assignee: { type: 'STATUS_ASSIGNEE', value: [{ code: 'vassana', name: 'Vassana' }] },
+        Manager_User: { value: [{ code: 'vassana' }] },
+        First_Manager_User: { value: [{ code: 'vassana' }] },
+        GM_User: { value: [{ code: 'vassana' }] }
+      }
     };
   }
   if (params?.app === 794 || (params?.query && (params.query.includes('Fiscal_Year') || params.query.includes('Assignee')))) {
@@ -795,6 +837,175 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.ok(errorDiv && errorDiv.textContent.includes('Unable to load approval tasks'), 'Error state must display error message');
   assert.equal(errorSection.querySelector('table'), null, 'Error state must expose 0 actionable task rows');
   triggerApprovalFetchError = false;
+
+  // 4g-6. D1 Gate 2 Dedicated Cross-Employee Detail Authority assertions
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  requireLoginCalled = false;
+  app795QueryCount = 0;
+  singleRecordGetCount = 0;
+  triggerSingleRecordGetError = false;
+
+  const detailShowHandler = registeredHandlers.get('app.record.detail.show');
+  assert.ok(typeof detailShowHandler === 'function', 'Record show handler must be registered');
+
+  // 1. DEDICATED own Detail still opens through existing path and performs 0 approval revalidation GETs
+  const ownDetailHost = createMockElement('div');
+  ownDetailHost.className = 'gaia-app-wrapper';
+  currentActiveHost = ownDetailHost;
+
+  const ownDetailEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: 456,
+    record: {
+      $id: { value: '456' },
+      Employee_Code: { value: '0044' },
+      Status: { value: '01 Draft Objective' }
+    }
+  };
+  const ownDetailRes = await detailShowHandler(ownDetailEvent);
+  assert.equal(ownDetailRes, ownDetailEvent, 'Own Detail must return event unchanged');
+  assert.equal(singleRecordGetCount, 0, 'DEDICATED own Detail must perform 0 approval revalidation GETs');
+
+  // 2 & 3. DEDICATED cross-employee Detail with fresh STATUS_ASSIGNEE containing exact vassana performs 1 fresh GET and preserves bound context
+  singleRecordGetCount = 0;
+  const authorizedCrossDetailHost = createMockElement('div');
+  authorizedCrossDetailHost.className = 'gaia-app-wrapper';
+  currentActiveHost = authorizedCrossDetailHost;
+
+  const authorizedCrossEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: 901,
+    record: {
+      $id: { value: '901' },
+      Employee_Code: { value: '0118' },
+      Status: { value: '02 Waiting Appraiser 1' }
+    }
+  };
+  const authorizedCrossRes = await detailShowHandler(authorizedCrossEvent);
+  assert.equal(authorizedCrossRes, authorizedCrossEvent, 'Authorized Dedicated cross-employee Detail must return event unchanged');
+  assert.equal(singleRecordGetCount, 1, 'Authorized Dedicated cross-employee Detail must perform exactly 1 fresh GET');
+
+  const preservedCtx = getCurrentEmployeeSelfContext();
+  assert.ok(preservedCtx && preservedCtx.mode === 'DEDICATED' && preservedCtx.employeeCode === '0044' && preservedCtx.kintoneUserCode === 'vassana',
+    'Bound Employee-Self context must remain employeeCode = 0044, kintoneUserCode = vassana');
+
+  // 4 & 5. DEDICATED cross-employee Detail with fresh Assignee mismatch is blocked even if static snapshot fields match vassana
+  singleRecordGetCount = 0;
+  const mismatchDetailHost = createMockElement('div');
+  mismatchDetailHost.className = 'gaia-app-wrapper';
+  currentActiveHost = mismatchDetailHost;
+
+  const mismatchDetailEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: 902,
+    record: {
+      $id: { value: '902' },
+      Employee_Code: { value: '0118' },
+      Status: { value: '02 Waiting Appraiser 1' },
+      Manager_User: { value: [{ code: 'vassana' }] },
+      First_Manager_User: { value: [{ code: 'vassana' }] },
+      GM_User: { value: [{ code: 'vassana' }] }
+    }
+  };
+  const mismatchDetailRes = await detailShowHandler(mismatchDetailEvent);
+  assert.equal(mismatchDetailRes, mismatchDetailEvent, 'Blocked Detail handler must return event after hiding native fields');
+  assert.equal(singleRecordGetCount, 1, 'Mismatch revalidation must perform exactly 1 fresh GET');
+  assert.ok(mismatchDetailHost.children.length > 0, 'Blocked notice must be rendered when Assignee mismatches');
+
+  // 6A. Fresh revalidation API error fails closed
+  singleRecordGetCount = 0;
+  triggerSingleRecordGetError = true;
+  const apiErrorHost = createMockElement('div');
+  apiErrorHost.className = 'gaia-app-wrapper';
+  currentActiveHost = apiErrorHost;
+
+  const apiErrorEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: 901,
+    record: {
+      $id: { value: '901' },
+      Employee_Code: { value: '0118' },
+      Status: { value: '02 Waiting Appraiser 1' }
+    }
+  };
+  await detailShowHandler(apiErrorEvent);
+  assert.equal(singleRecordGetCount, 1, 'API error path must attempt 1 fresh GET');
+  assert.ok(apiErrorHost.children.length > 0, 'Blocked notice must be rendered on revalidation API error');
+  triggerSingleRecordGetError = false;
+
+  // 6B. Record not found (404) fails closed
+  singleRecordGetCount = 0;
+  const missingRecordHost = createMockElement('div');
+  missingRecordHost.className = 'gaia-app-wrapper';
+  currentActiveHost = missingRecordHost;
+
+  const missingRecordEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: 9999,
+    record: {
+      $id: { value: '9999' },
+      Employee_Code: { value: '0118' },
+      Status: { value: '02 Waiting Appraiser 1' }
+    }
+  };
+  await detailShowHandler(missingRecordEvent);
+  assert.equal(singleRecordGetCount, 1, 'Missing record path must attempt 1 fresh GET');
+  assert.ok(missingRecordHost.children.length > 0, 'Blocked notice must be rendered on missing record revalidation');
+
+  // 7. SHARED cross-employee Detail remains blocked and performs 0 approval revalidation GETs
+  currentMockUser = { code: 'f1', name: 'Shared F1 User' };
+  singleRecordGetCount = 0;
+  const sharedCrossDetailHost = createMockElement('div');
+  sharedCrossDetailHost.className = 'gaia-app-wrapper';
+  currentActiveHost = sharedCrossDetailHost;
+
+  const sharedCrossDetailEvent = {
+    type: 'app.record.detail.show',
+    appId: 794,
+    recordId: 901,
+    record: {
+      $id: { value: '901' },
+      Employee_Code: { value: '0044' },
+      Status: { value: '02 Waiting Appraiser 1' }
+    }
+  };
+  await detailShowHandler(sharedCrossDetailEvent);
+  assert.equal(singleRecordGetCount, 0, 'SHARED cross-employee Detail must perform 0 approval revalidation GETs');
+  assert.ok(sharedCrossDetailHost.children.length > 0, 'Blocked notice must be rendered for SHARED cross-employee Detail');
+
+  // 8. DEDICATED cross-employee Edit remains blocked and performs 0 approval revalidation GETs
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  requireLoginCalled = false;
+  singleRecordGetCount = 0;
+  const dedicatedCrossEditHost = createMockElement('div');
+  dedicatedCrossEditHost.className = 'gaia-app-wrapper';
+  currentActiveHost = dedicatedCrossEditHost;
+
+  const editShowHandler = registeredHandlers.get('app.record.edit.show');
+  assert.ok(typeof editShowHandler === 'function', 'Record edit show handler must be registered');
+
+  const dedicatedCrossEditEvent = {
+    type: 'app.record.edit.show',
+    appId: 794,
+    recordId: 901,
+    record: {
+      $id: { value: '901' },
+      Employee_Code: { value: '0118' },
+      Status: { value: '02 Waiting Appraiser 1' }
+    }
+  };
+  await editShowHandler(dedicatedCrossEditEvent);
+  assert.equal(singleRecordGetCount, 0, 'DEDICATED cross-employee Edit must perform 0 approval revalidation GETs');
+  assert.ok(dedicatedCrossEditHost.children.length > 0, 'Blocked notice must be rendered for DEDICATED cross-employee Edit');
+
+  // 9. Gate 2 path introduces 0 App795 queries and valid Dedicated path introduces 0 MBO login-gate calls
+  assert.equal(app795QueryCount, 0, 'Gate 2 path must introduce 0 App795 queries');
+  assert.equal(requireLoginCalled, false, 'Valid Dedicated path must introduce 0 MBO login-gate calls');
 
 
   // 4g-2. Finding R1-C: Registered delete event handler blocks for DEDICATED & SHARED context and abstains when null

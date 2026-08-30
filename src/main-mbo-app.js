@@ -492,7 +492,7 @@ if (typeof kintone !== 'undefined') {
     return resPipeline;
   });
 
-  function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, contextOrCode) {
+  function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, contextOrCode, authOptions = {}) {
     let isAutoloadingInCreateHandler = false;
     if (typeof contextOrCode !== 'object' || contextOrCode === null) {
       throw new Error('INVALID_EMPLOYEE_SELF_CONTEXT: Valid resolved Employee-Self context object is required.');
@@ -513,16 +513,19 @@ if (typeof kintone !== 'undefined') {
       mboLoginGate.renderAuthBar(uiHost, authenticatedEmployeeCode);
     }
 
-    // 5. D1: Detail/Edit — block if record belongs to a different employee.
+    // 5. D1: Detail/Edit — block if record belongs to a different employee, UNLESS authorized cross-employee Detail.
     if (!isCreate && record.Employee_Code?.value &&
         record.Employee_Code.value !== authenticatedEmployeeCode) {
-      renderBlockedNotice(uiHost,
-        'Access Denied',
-        `This MBO record belongs to a different employee.\nAuthenticated: ${authenticatedEmployeeCode}\nRecord: ${record.Employee_Code.value}`,
-        { isCreate, appId: event.appId || getMboAppId() }
-      );
-      hideAllNativeFields(record);
-      return event;
+      const isAllowedCrossEmployee = isDetail && context.mode === 'DEDICATED' && authOptions?.isCrossEmployeeDetailAuthorized === true;
+      if (!isAllowedCrossEmployee) {
+        renderBlockedNotice(uiHost,
+          'Access Denied',
+          `This MBO record belongs to a different employee.\nAuthenticated: ${authenticatedEmployeeCode}\nRecord: ${record.Employee_Code.value}`,
+          { isCreate, appId: event.appId || getMboAppId() }
+        );
+        hideAllNativeFields(record);
+        return event;
+      }
     }
 
     const stage = resolveBusinessStage(event);
@@ -804,7 +807,7 @@ if (typeof kintone !== 'undefined') {
       return event;
     }
 
-    const handleResolvedContext = (res) => {
+    const handleResolvedContext = async (res) => {
       if (res.status === 'TECHNICAL_ADMIN') {
         currentEmployeeSelfContext = null;
         renderBlockedNotice(uiHost,
@@ -828,7 +831,36 @@ if (typeof kintone !== 'undefined') {
       }
 
       currentEmployeeSelfContext = res.context;
-      return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, res.context);
+
+      let isCrossEmployeeDetailAuthorized = false;
+      const isDifferentEmployee = !isCreate && record?.Employee_Code?.value && record.Employee_Code.value !== res.context.employeeCode;
+
+      if (isDifferentEmployee) {
+        if (isDetail && res.context.mode === 'DEDICATED') {
+          const recordId = event.recordId || record?.$id?.value || record?.Record_ID?.value;
+          if (!recordId) {
+            renderBlockedNotice(uiHost, 'Access Denied', 'Record ID missing for approval task revalidation.', { isCreate, appId });
+            hideAllNativeFields(record);
+            return event;
+          }
+          try {
+            const revalRes = await MboApprovalTaskService.revalidateApprovalTask(res.context, appId, recordId, kintoneApiWrapper);
+            if (revalRes && revalRes.authorized === true) {
+              isCrossEmployeeDetailAuthorized = true;
+            } else {
+              renderBlockedNotice(uiHost, 'Access Denied', 'Cross-employee approval task authority denied.', { isCreate, appId });
+              hideAllNativeFields(record);
+              return event;
+            }
+          } catch (err) {
+            renderBlockedNotice(uiHost, 'Access Denied', `Cross-employee approval task revalidation failed: ${err.message}`, { isCreate, appId });
+            hideAllNativeFields(record);
+            return event;
+          }
+        }
+      }
+
+      return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, res.context, { isCrossEmployeeDetailAuthorized });
     };
 
     const res = resolveRuntimeEmployeeSelfContext(uiHost);
