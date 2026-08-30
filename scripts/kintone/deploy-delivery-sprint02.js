@@ -23,8 +23,7 @@ export function buildClassicHrccBundle(sourceText, registry = {}) {
     code = `const DEFAULT_APP_IDS = Object.freeze(${registryObjString});\n` + code;
   }
 
-  // Remove ES-module imports and exports
-  code = code.replace(/import\s+[\s\S]*?from\s+['"].*?['"];?/g, '');
+  // Remove remaining ES-module exports
   code = code.replace(/export\s+const\s+/g, 'const ');
   code = code.replace(/export\s+function\s+/g, 'function ');
   code = code.replace(/export\s+async\s+function\s+/g, 'async function ');

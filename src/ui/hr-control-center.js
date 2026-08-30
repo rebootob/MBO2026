@@ -418,8 +418,8 @@ export function createHrccRuntime({
           resetBtn.addEventListener('click', async () => {
             if (isExecuting) return; // Prevent double-clicks / in-flight repeat
 
-            const empCode = empCodeInput ? empCodeInput.value.trim() : '';
-            const empConfirm = empConfirmInput ? empConfirmInput.value.trim() : '';
+            const rawEmpCode = empCodeInput ? empCodeInput.value : '';
+            const rawEmpConfirm = empConfirmInput ? empConfirmInput.value : '';
 
             if (feedbackDiv) {
               feedbackDiv.style.display = 'block';
@@ -427,39 +427,47 @@ export function createHrccRuntime({
             }
 
             // 1. Empty / Missing input check -> Zero reset calls
-            if (!empCode || !empConfirm) {
+            if (!rawEmpCode || !rawEmpConfirm) {
               if (feedbackDiv) {
                 feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ กรุณาระบุ Employee Code และยืนยัน Employee Code ให้ครบถ้วน / Please enter both Employee Code and confirmation.</div>`;
               }
               return;
             }
 
-            // 2. Format prevalidation check (canonical format: ^[A-Za-z0-9_.-]+$) -> Zero reset calls
-            if (!/^[A-Za-z0-9_.-]+$/.test(empCode)) {
+            // 2. Leading or trailing whitespace check -> Zero reset calls (Strict identity contract)
+            if (rawEmpCode !== rawEmpCode.trim() || rawEmpConfirm !== rawEmpConfirm.trim()) {
+              if (feedbackDiv) {
+                feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ Employee Code ห้ามมีช่องว่างนำหน้าหรือต่อท้าย / Employee Code must not contain leading or trailing whitespace.</div>`;
+              }
+              return;
+            }
+
+            // 3. Format prevalidation check (canonical format: ^[A-Za-z0-9_.-]+$) -> Zero reset calls
+            if (!/^[A-Za-z0-9_.-]+$/.test(rawEmpCode)) {
               if (feedbackDiv) {
                 feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ รูปแบบ Employee Code ไม่ถูกต้อง (อนุญาตเฉพาะ A-Z, a-z, 0-9, _, ., -) / Invalid Employee Code format (allowed characters: A-Z, a-z, 0-9, _, ., -).</div>`;
               }
               return;
             }
 
-            // 3. Confirmation mismatch check -> Zero reset calls
-            if (empCode !== empConfirm) {
+            // 4. Confirmation mismatch check -> Zero reset calls
+            if (rawEmpCode !== rawEmpConfirm) {
               if (feedbackDiv) {
                 feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ Employee Code และค่ายืนยันไม่ตรงกัน / Employee Code and confirmation code do not match.</div>`;
               }
               return;
             }
 
-            // 3. Set in-flight state & disable button
+            // 5. Set in-flight state & disable button
             isExecuting = true;
             resetBtn.disabled = true;
             resetBtn.textContent = 'Resetting...';
 
             try {
-              const res = await resetFn({ employeeCode: empCode });
+              const res = await resetFn({ employeeCode: rawEmpCode });
 
               if (res && res.status === 'PASSWORD_RESET') {
-                const safeCode = escapeHtml(res.employeeCode || empCode);
+                const safeCode = escapeHtml(res.employeeCode || rawEmpCode);
                 if (feedbackDiv) {
                   feedbackDiv.innerHTML = `<div style="background:#ecfdf5; border-left:4px solid #10b981; padding:0.75rem 1rem; border-radius:0.25rem; color:#065f46;">
                     ✅ <strong>รีเซ็ตรหัสผ่าน MBO สำเร็จ / Reset MBO Password Successful:</strong><br>

@@ -84,7 +84,44 @@ test('2. Empty Employee_Code -> blocked with validation error and 0 reset calls'
   assert.ok(feedback.innerHTML.includes('กรุณาระบุ Employee Code'), 'Must show validation error for empty input');
 });
 
-test('3. Invalid-format Employee_Code -> blocked before resetFn with 0 reset calls', async () => {
+test('3. Leading or trailing whitespace in Employee_Code -> blocked with 0 reset calls (Strict identity contract)', async () => {
+  let resetCallCount = 0;
+  const mockReset = async () => { resetCallCount++; return { status: 'PASSWORD_RESET' }; };
+  const mockHeader = createMockElement();
+
+  const runtime = createHrccRuntime({
+    kintoneApi: async () => ({ records: [], totalCount: 0 }),
+    onResetMboPassword: mockReset,
+    getAppId: () => 800,
+    getHeaderSpaceElement: () => mockHeader
+  });
+
+  await runtime({});
+
+  const btn = mockHeader.querySelector('#hrcc-reset-btn');
+  const codeInput = mockHeader.querySelector('#hrcc-reset-emp-code');
+  const confirmInput = mockHeader.querySelector('#hrcc-reset-emp-confirm');
+  const feedback = mockHeader.querySelector('#hrcc-reset-feedback');
+
+  const whitespaceCases = [
+    { code: ' EMP001', confirm: ' EMP001', label: 'leading whitespace' },
+    { code: 'EMP001 ', confirm: 'EMP001 ', label: 'trailing whitespace' },
+    { code: ' EMP001 ', confirm: ' EMP001 ', label: 'both leading & trailing whitespace' },
+    { code: '   ', confirm: '   ', label: 'whitespace only' }
+  ];
+
+  for (const tc of whitespaceCases) {
+    codeInput.value = tc.code;
+    confirmInput.value = tc.confirm;
+
+    await btn.trigger('click');
+
+    assert.equal(resetCallCount, 0, `Zero reset calls for ${tc.label}`);
+    assert.ok(feedback.innerHTML.includes('ช่องว่างนำหน้าหรือต่อท้าย'), `Must show whitespace validation error for ${tc.label}`);
+  }
+});
+
+test('4. Invalid-format Employee_Code -> blocked before resetFn with 0 reset calls', async () => {
   let resetCallCount = 0;
   const mockReset = async () => { resetCallCount++; return { status: 'PASSWORD_RESET' }; };
   const mockHeader = createMockElement();
@@ -117,7 +154,7 @@ test('3. Invalid-format Employee_Code -> blocked before resetFn with 0 reset cal
   }
 });
 
-test('4. Confirmation mismatch -> blocked with validation error and 0 reset calls', async () => {
+test('5. Confirmation mismatch -> blocked with validation error and 0 reset calls', async () => {
   let resetCallCount = 0;
   const mockReset = async () => { resetCallCount++; return { status: 'PASSWORD_RESET' }; };
   const mockHeader = createMockElement();
@@ -145,7 +182,7 @@ test('4. Confirmation mismatch -> blocked with validation error and 0 reset call
   assert.ok(feedback.innerHTML.includes('ไม่ตรงกัน'), 'Must show mismatch validation error');
 });
 
-test('5. Valid exact confirmation -> reset core called exactly once with exact Employee_Code', async () => {
+test('6. Valid exact confirmation -> reset core called exactly once with exact Employee_Code', async () => {
   let calledCode = null;
   let resetCallCount = 0;
 
@@ -180,7 +217,7 @@ test('5. Valid exact confirmation -> reset core called exactly once with exact E
   assert.ok(feedback.innerHTML.includes('รีเซ็ตรหัสผ่าน MBO สำเร็จ'), 'Must show success message');
 });
 
-test('6. In-flight repeat click -> prevented during active execution', async () => {
+test('7. In-flight repeat click -> prevented during active execution', async () => {
   let resetCallCount = 0;
   let resolvePromise;
 
@@ -222,7 +259,7 @@ test('6. In-flight repeat click -> prevented during active execution', async () 
   assert.equal(resetCallCount, 1, 'Total reset call count remains 1');
 });
 
-test('7. Default non-injected production path uses bundled MboKintoneAuthAdapter and reaches App801 record update', async () => {
+test('8. Default non-injected production path uses bundled MboKintoneAuthAdapter and reaches App801 record update', async () => {
   const kintoneCalls = [];
   const mockKintoneApi = async (path, method, params) => {
     kintoneCalls.push({ path, method, params });
@@ -283,7 +320,7 @@ test('7. Default non-injected production path uses bundled MboKintoneAuthAdapter
   assert.equal(forbiddenWrites.length, 0, 'Zero write requests to App 800, 794, 795, or 53');
 });
 
-test('8. Success copy explicitly distinguishes MBO password from native Kintone/cybozu password', () => {
+test('9. Success copy explicitly distinguishes MBO password from native Kintone/cybozu password', () => {
   const html = renderHrControlCenterHtml({
     evaluations: [],
     allEvaluations: [],
@@ -295,7 +332,7 @@ test('8. Success copy explicitly distinguishes MBO password from native Kintone/
   assert.ok(html.includes('ไม่กระทบและไม่ได้รีเซ็ตรหัสผ่านบัญชี Kintone/cybozu หลักของผู้ใช้'), 'Must explicitly warn that native Kintone/cybozu password is NOT reset');
 });
 
-test('9. CREDENTIAL_DENIED and technical failure -> visible fail-closed error', async () => {
+test('10. CREDENTIAL_DENIED and technical failure -> visible fail-closed error', async () => {
   const mockDeniedReset = async () => ({ status: 'CREDENTIAL_DENIED', reason: 'Employee Code not found in App801' });
   const mockHeader = createMockElement();
 
@@ -322,7 +359,7 @@ test('9. CREDENTIAL_DENIED and technical failure -> visible fail-closed error', 
   assert.ok(feedback.innerHTML.includes('Employee Code not found in App801'), 'Must include specific denial reason');
 });
 
-test('10. UI never renders password hash, salt, token, or session secrets', async () => {
+test('11. UI never renders password hash, salt, token, or session secrets', async () => {
   const mockResetWithSecrets = async ({ employeeCode }) => ({
     status: 'PASSWORD_RESET',
     employeeCode,
@@ -357,7 +394,7 @@ test('10. UI never renders password hash, salt, token, or session secrets', asyn
   assert.equal(renderedText.includes('secretTokenHash12345'), false, 'UI must never render session token hash');
 });
 
-test('11. Stale READ-ONLY wording removed from UI badge and source header', () => {
+test('12. Stale READ-ONLY wording removed from UI badge and source header', () => {
   const html = renderHrControlCenterHtml({
     evaluations: [],
     allEvaluations: [],
@@ -370,7 +407,7 @@ test('11. Stale READ-ONLY wording removed from UI badge and source header', () =
   assert.ok(html.includes('SECURE HR CONTROL CENTER'), 'Updated truthful badge SECURE HR CONTROL CENTER must be present');
 });
 
-test('12. Existing HRCC monitoring, filter, and dashboard behavior remains intact', () => {
+test('13. Existing HRCC monitoring, filter, and dashboard behavior remains intact', () => {
   const html = renderHrControlCenterHtml({
     evaluations: [
       { $id: { value: '1' }, Employee_Code: { value: 'EMP001' }, Status: { value: 'COMPLETED' } }
@@ -391,7 +428,7 @@ test('12. Existing HRCC monitoring, filter, and dashboard behavior remains intac
   assert.ok(html.includes('Pipeline Breakdown'), 'Pipeline breakdown intact');
 });
 
-test('13. Local App800 build succeeds, generated bundle includes MboKintoneAuthAdapter implementation, and has 0 import/export residue', async () => {
+test('14. Local App800 build succeeds, generated bundle includes MboKintoneAuthAdapter implementation, and has 0 import/export residue', async () => {
   await buildHrccUi();
 
   const bundleJs = fs.readFileSync('dist/hr-control-center-bundle.js', 'utf8');
@@ -406,7 +443,7 @@ test('13. Local App800 build succeeds, generated bundle includes MboKintoneAuthA
   }, 'Generated JS bundle must pass real JavaScript syntax parse');
 });
 
-test('14. Hybrid Identity / App794 / App53 / routing files are completely untouched', () => {
+test('15. Hybrid Identity / App794 / App53 / routing files are completely untouched', () => {
   const gitStatus = execSync.execSync('git status --porcelain', { encoding: 'utf8' });
   const changedFiles = gitStatus.split('\n').filter(Boolean).map(line => line.slice(3).trim());
 

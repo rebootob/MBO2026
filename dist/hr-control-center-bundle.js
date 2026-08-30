@@ -824,25 +824,31 @@
             let isExecuting = false;
             resetBtn.addEventListener("click", async () => {
               if (isExecuting) return;
-              const empCode = empCodeInput ? empCodeInput.value.trim() : "";
-              const empConfirm = empConfirmInput ? empConfirmInput.value.trim() : "";
+              const rawEmpCode = empCodeInput ? empCodeInput.value : "";
+              const rawEmpConfirm = empConfirmInput ? empConfirmInput.value : "";
               if (feedbackDiv) {
                 feedbackDiv.style.display = "block";
                 feedbackDiv.innerHTML = "";
               }
-              if (!empCode || !empConfirm) {
+              if (!rawEmpCode || !rawEmpConfirm) {
                 if (feedbackDiv) {
                   feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u26A0\uFE0F \u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38 Employee Code \u0E41\u0E25\u0E30\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19 Employee Code \u0E43\u0E2B\u0E49\u0E04\u0E23\u0E1A\u0E16\u0E49\u0E27\u0E19 / Please enter both Employee Code and confirmation.</div>`;
                 }
                 return;
               }
-              if (!/^[A-Za-z0-9_.-]+$/.test(empCode)) {
+              if (rawEmpCode !== rawEmpCode.trim() || rawEmpConfirm !== rawEmpConfirm.trim()) {
+                if (feedbackDiv) {
+                  feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u26A0\uFE0F Employee Code \u0E2B\u0E49\u0E32\u0E21\u0E21\u0E35\u0E0A\u0E48\u0E2D\u0E07\u0E27\u0E48\u0E32\u0E07\u0E19\u0E33\u0E2B\u0E19\u0E49\u0E32\u0E2B\u0E23\u0E37\u0E2D\u0E15\u0E48\u0E2D\u0E17\u0E49\u0E32\u0E22 / Employee Code must not contain leading or trailing whitespace.</div>`;
+                }
+                return;
+              }
+              if (!/^[A-Za-z0-9_.-]+$/.test(rawEmpCode)) {
                 if (feedbackDiv) {
                   feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u26A0\uFE0F \u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A Employee Code \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 (\u0E2D\u0E19\u0E38\u0E0D\u0E32\u0E15\u0E40\u0E09\u0E1E\u0E32\u0E30 A-Z, a-z, 0-9, _, ., -) / Invalid Employee Code format (allowed characters: A-Z, a-z, 0-9, _, ., -).</div>`;
                 }
                 return;
               }
-              if (empCode !== empConfirm) {
+              if (rawEmpCode !== rawEmpConfirm) {
                 if (feedbackDiv) {
                   feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u26A0\uFE0F Employee Code \u0E41\u0E25\u0E30\u0E04\u0E48\u0E32\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E19 / Employee Code and confirmation code do not match.</div>`;
                 }
@@ -852,9 +858,9 @@
               resetBtn.disabled = true;
               resetBtn.textContent = "Resetting...";
               try {
-                const res = await resetFn({ employeeCode: empCode });
+                const res = await resetFn({ employeeCode: rawEmpCode });
                 if (res && res.status === "PASSWORD_RESET") {
-                  const safeCode = escapeHtml(res.employeeCode || empCode);
+                  const safeCode = escapeHtml(res.employeeCode || rawEmpCode);
                   if (feedbackDiv) {
                     feedbackDiv.innerHTML = `<div style="background:#ecfdf5; border-left:4px solid #10b981; padding:0.75rem 1rem; border-radius:0.25rem; color:#065f46;">
                     \u2705 <strong>\u0E23\u0E35\u0E40\u0E0B\u0E47\u0E15\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19 MBO \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 / Reset MBO Password Successful:</strong><br>
