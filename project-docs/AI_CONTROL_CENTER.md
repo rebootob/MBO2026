@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary source/runtime execution
-> Updated: 2026-08-30 — HYBRID RUNTIME LOGIC PASS / MILESTONE BLOCKED BY LEGACY TEST FIXTURES
+> Updated: 2026-08-30 — LEGACY SHARED FIXTURE CORRECTIVE R1 PASS / FINAL SOURCE-ACCEPTANCE MILESTONE OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source logic and tree cleanup PASS. Source-acceptance milestone reached `npm test = FAIL` because legacy tests still model numeric/prefix native principals as SHARED. This is classified as TEST FIXTURE COMPATIBILITY, not a proven source defect. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry logic + cleanup PASS. Legacy Shared fixture compatibility R1 at `a78efcd12dcb670802f1b6df7803a27c0e784223` passes independent diff review. Final source-acceptance milestone verification remains. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling accepted; live remains prior MVP. |
@@ -26,21 +26,18 @@ ANTIGRAVITY = MINIMUM NECESSARY SOURCE/RUNTIME EXECUTION ONLY
 CHATGPT     = PLAN / REVIEW / CONTROL DOCS / EVIDENCE INTERPRETATION
 ```
 
-Ordinary corrective:
-```text
-exact edit -> smallest focused check -> commit/push -> STOP
-```
+Ordinary corrective = exact edit -> smallest focused check -> diff check -> commit/push -> STOP.
+Full suite/build is milestone-only.
 
-Do not use Antigravity for broad scans, repeated full suites, repeated builds, evidence docs, or Control Plane writing.
-
-## 3. Accepted Hybrid Runtime Logic
+## 3. Hybrid Runtime Status
 
 ```text
 HYBRID_IDENTITY            = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 HYBRID_CORE_SOURCE         = PASS
 HYBRID_RUNTIME_ENTRY_LOGIC = PASS
 TREE_CLEANUP_R3            = PASS
-SOURCE_ACCEPTED            = NOT YET — MILESTONE TEST FIXTURE CORRECTIVE OPEN
+LEGACY_SHARED_FIXTURE_R1   = PASS
+SOURCE_ACCEPTED            = NOT YET — FINAL MILESTONE OPEN
 LIVE_DEPLOY_READY          = NO
 ```
 
@@ -49,33 +46,40 @@ Approved SHARED native principals are exactly:
 t1, t2, s1, f1, f2, f3, e1, tmh, g_request
 ```
 
-Numeric Employee_Code, `req*`, `test*`, `user*`, or session presence does NOT make a native Kintone principal SHARED.
+Numeric Employee_Code, `req*`, `test*`, `user*`, or session presence does not make a native Kintone principal SHARED.
 
-## 4. Source-Acceptance Milestone Result
+## 4. Review — Fixture Corrective R1
 
-User supplied the local verification result:
+Executor commit:
 ```text
-npm test                  = FAIL
-first reported failure    = tests/timeline-truthfulness-and-attachment.test.js
-npm run ui:build          = PASS
-git diff --check          = PASS
-FINAL_WORKTREE_CLEAN      = YES
-SOURCE_CHANGES            = 0
-TEST_CHANGES              = 0
-LIVE_KINTONE_OPERATIONS   = 0
-APP53_PRODUCTION_TOUCHED  = NO
+a78efcd12dcb670802f1b6df7803a27c0e784223
 ```
 
-Independent source inspection classifies the failure as a legacy Shared-mode fixture incompatibility:
-- `tests/timeline-truthfulness-and-attachment.test.js` uses native Kintone principal `0118` while the mocked MBO Employee_Code is also `0118`; under the confirmed exact-principal contract, numeric `0118` is DEDICATED candidate, so fail-closed is correct. For this Shared-path test, native principal must be an approved shared code such as `f1`, while MBO Employee_Code remains `0118`.
-- `tests/objective-save-validation.test.js` uses native principal `req1` and App795 requester `req1`; `req*` is intentionally no longer a SHARED heuristic. For this Shared-path fixture, use approved shared `s1`, keeping Employee_Code `0118`.
-- `tests/create-handler-form-state.test.js` contains Shared-path fixtures using native/session/requester numeric codes (`0113`, and failure-path `9999`). These must separate native shared principal (`s1`) from MBO Employee_Code (`0113` / `9999`).
+Independent review result:
+```text
+FIXTURE_DIFF_REVIEW = PASS
+SOURCE_CHANGES      = 0
+OUT_OF_SCOPE_FILES  = 0
+```
 
-These fixture changes were seen in the earlier candidate and were previously restored as over-scope; the milestone failure now proves the compatibility correction is necessary.
+Exact changed files only:
+```text
+tests/timeline-truthfulness-and-attachment.test.js
+tests/objective-save-validation.test.js
+tests/create-handler-form-state.test.js
+```
 
-No Hybrid source logic is reopened by this failure.
+Confirmed substitutions:
+- timeline Shared native principal `0118 -> f1`; MBO Employee_Code remains `0118`.
+- objective Shared native principal/requester `req1 -> s1`; Employee_Code remains `0118`.
+- create-handler Shared success native/session/requester `0113 -> s1`; Employee_Code remains `0113`.
+- create-handler Shared failure native/session principal `9999 -> s1`; Employee_Code remains `9999`, so intended App53-not-found failure remains.
 
-## 5. App53 Production Protection — MANDATORY
+No business assertions, attachment/timeline behavior, Hybrid source, dist, config, docs, ACL/group/deploy code, or App53 data were changed by the executor commit.
+
+The prior milestone already proved `npm run ui:build = PASS`, but because `create-handler-form-state.test.js` reads generated dist, final verification must build first and then run the full suite once against that generated bundle.
+
+## 5. App53 Production Protection
 
 ```text
 APP53_ENVIRONMENT       = PRODUCTION
@@ -86,22 +90,23 @@ APP53_BULK_WRITE_AUTH   = NONE
 LIVE_KINTONE_OPERATIONS = 0
 ```
 
-No App53 access/change is authorized. Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
+Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
 
 ## 6. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID RUNTIME — LEGACY SHARED TEST FIXTURE COMPATIBILITY R1
+ACTIVE_TASK = D1 HYBRID RUNTIME — FINAL SOURCE-ACCEPTANCE MILESTONE R1
 OWNER       = ANTIGRAVITY
 SOURCE_EDIT = NONE
-TEST_EDIT   = EXACT 3 FILES ONLY
-FULL_TEST   = NO
-UI_BUILD    = NO
+TEST_EDIT   = NONE
+UI_BUILD    = ONE RUN FIRST
+FULL_TEST   = ONE RUN AFTER BUILD
+EVIDENCE_DOC= NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact minimal fixture substitutions and focused checks are in `AI_ACTIVE_TASK.md`.
+Exact commands and stop rules are in `AI_ACTIVE_TASK.md`.
 
 ## 7. Authorization Ledger
 
@@ -119,4 +124,4 @@ ROLLBACK_AUTH             = NONE
 
 ## 8. Next Gate
 
-After the exact three test-fixture corrections pass focused review, run one final milestone verification with **build first, then full test**, restore generated dist, and stop. No repeated full suite during the fixture corrective.
+If final milestone passes, mark Hybrid Employee-Self Runtime Entry source ACCEPTED. Protected App53 schema/mapping/data, ACL/group/deploy, and My Approval Tasks remain separate gates.
