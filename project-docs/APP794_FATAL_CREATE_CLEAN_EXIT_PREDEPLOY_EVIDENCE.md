@@ -1,10 +1,10 @@
 # APP794 FATAL CREATE CLEAN-EXIT PRE-DEPLOY VERIFICATION EVIDENCE
 
 > STATUS: `PENDING_CHATGPT_REVIEW`  
-> Execution Timestamp: 2026-08-30T08:49:00+07:00  
+> Execution Timestamp: 2026-08-30T08:52:53+07:00  
 > Target App: App 794 ONLY  
 > Work Package ID: MBO-P03-WP-002C  
-> Verification Mode: READ-ONLY PRE-DEPLOY VERIFICATION (TEST + BUILD + GET-ONLY LIVE READBACK)
+> Verification Mode: READ-ONLY PRE-DEPLOY VERIFICATION (TEST + BUILD + BUILD-ONLY TOOLING + GET-ONLY LIVE & PREVIEW READBACK)
 
 ---
 
@@ -21,73 +21,89 @@ SOURCE_TEST_REVIEW           = PASS
 
 ---
 
-## 2. Worktree Execution Audit Trail
+## 2. Candidate Worktree Execution & Command Audit Trail
 
-Verification was performed in a clean, temporary detached worktree at candidate commit `4472aa2f1c63bf08788b39b4ad54b7ea55808df1`.
+Verification was executed in a clean, temporary detached worktree at candidate commit `4472aa2f1c63bf08788b39b4ad54b7ea55808df1`.
 
 ```text
 WORKTREE_PATH                = scratch/candidate-worktree
 INITIAL_WORKTREE_HEAD        = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
 INITIAL_WORKTREE_STATUS      = CLEAN (porcelain output empty)
-FINAL_WORKTREE_STATUS        = CLEAN (temporary worktree removed)
+FINAL_WORKTREE_HEAD          = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
+POST_BUILD_STATUS            = M dist/mbo-employee-app.js, M dist/mbo-employee.css (Line endings; 0 content diff)
+WORKTREE_CLEANUP_STATUS      = PASS (temporary worktree removed)
 ```
 
-### Exact Command Log & Exit Statuses
+### Complete Command Log & Exit Statuses
 
-| # | Command Executed | Exit Status | Result Summary |
+| # | Command Executed | Exit Status | Output / Result Summary |
 |---|---|---|---|
-| 1 | `git worktree add --detach scratch/candidate-worktree 4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | `0` | Detached worktree created |
-| 2 | `git rev-parse HEAD` | `0` | Returned `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
-| 3 | `git status --porcelain` | `0` | Returned clean (empty) |
+| 1 | `git worktree add --detach scratch/candidate-worktree 4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | `0` | Detached worktree created at candidate HEAD |
+| 2 | `git rev-parse HEAD` (initial) | `0` | Returned `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
+| 3 | `git status --porcelain` (initial) | `0` | Returned clean (empty string) |
 | 4 | `node --test tests/employee-record-navigation.test.js tests/employee-main-mbo-app-integration.test.js` | `0` | 8 / 8 PASS |
-| 5 | `npm run ui:build` | `0` | Dist bundle generated successfully |
-| 6 | `node --test tests/classic-bundle.test.js tests/css-structure.test.js` | `0` | 8 / 8 PASS |
-| 7 | `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` | `0` | Zero content diff between build output & committed candidate dist |
-| 8 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee-app.js` | `0` | Returned `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
-| 9 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
-| 10 | `node scratch/read_live_predeploy_status.js` (GET-Only Readback) | `0` | Verified Rev58 Live state; 0 POST, 0 PUT, 0 DELETE |
-| 11 | `git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js` | `0` | Returned `ac22a56cb9d78001384241fe12745f7a2da3da84` |
-| 12 | `git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
+| 5 | `npm run ui:build` | `0` | `Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css` |
+| 6 | `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` | `0` | Zero content diff between build output & candidate dist |
+| 7 | `git rev-parse HEAD` (post-build) | `0` | Returned `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` |
+| 8 | `git status --porcelain` (post-build) | `0` | `M dist/mbo-employee-app.js`, `M dist/mbo-employee.css` (0 content diff) |
+| 9 | `node --test tests/classic-bundle.test.js tests/css-structure.test.js` | `0` | 8 / 8 PASS |
+| 10 | `node scripts/kintone/deploy-custom-ui.js --build-only` | `0` | `[BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.` |
+| 11 | Build-only JS blob SHA computation | `0` | Computed SHA = `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
+| 12 | Build-only CSS blob SHA computation | `0` | Computed SHA = `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
+| 13 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee-app.js` | `0` | Returned `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` |
+| 14 | `git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
+| 15 | `node scratch/read_live_predeploy_status.js` (GET-Only Readback) | `0` | Live Rev58 & Preview Rev58 readback; 0 POST, 0 PUT, 0 DELETE |
+| 16 | `git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js` | `0` | Returned `ac22a56cb9d78001384241fe12745f7a2da3da84` |
+| 17 | `git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css` | `0` | Returned `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` |
 
 ---
 
-## 3. Verified Corrective Invariants (Focused Test Summary)
+## 3. Zero-Network Build-Only Deployment Tooling Proof
 
-Focused integration tests verified the complete set of R1, R2, and R3 invariants:
-
-- **Preflight Duplicate Rejection:** Duplicate check runs BEFORE native record mutation or profile autoload; `Fiscal_Year` and `Employee_Code` remain unmutated on rejection.
-- **Form Cleanliness:** `kintone.app.record.set()` count = 0 on fatal duplicate rejection.
-- **Fatal-State Native Action Hiding:** Native Save and Cancel controls are hidden ONLY on authenticated terminal fatal Create state.
-- **Pre-Auth Error State Protection:** Pre-auth Create error screen does NOT hide native Save/Cancel controls.
-- **Normal Create Continuation:** Normal Create defaults `Fiscal_Year` to `FY2026` after preflight PASS, continues profile autoload, mounts 0 record-level Back bars, and leaves native Save/Cancel controls visible.
-- **Existing Detail/Edit Error State Protection:** Access Denied error screens on existing Detail/Edit records render exactly 1 Back bar and leave native Save/Cancel controls visible.
-- **Nonblank Fiscal Year Preservation:** Nonblank `Fiscal_Year` (e.g. `FY2025`) is preserved on rejection.
-- **No Global Unload Bypass:** Source static check proves 0 `onbeforeunload` overrides exist in `src/main-mbo-app.js`.
-
----
-
-## 4. Live App 794 GET-Only Preflight Verification
-
-Actual current Live state read via GET `/k/v1/app/customize.json?app=794` and downloaded file bytes:
+Deployment tooling was executed in build-only mode from candidate worktree `scratch/candidate-worktree`:
 
 ```text
-APP                          = 794
-LIVE_REVISION                = 58
-PREVIEW_REVISION             = 58
-LIVE_SCOPE                   = ALL
-LIVE_DESKTOP_JS              = [ "mbo-employee-app.js" ]
-LIVE_DESKTOP_CSS             = [ "mbo-employee.css" ]
-LIVE_MOBILE_JS               = []
-LIVE_MOBILE_CSS              = []
-LIVE_JS_IDENTITY             = f097f67404fb75418cf85fee635e5d630ef5474d
-LIVE_CSS_IDENTITY            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-LIVE_SOURCE_COMMIT           = 98108e9e387d01b6d3c3a35cce5baf13324be50e
+BUILD_ONLY_COMMAND           = node scripts/kintone/deploy-custom-ui.js --build-only
+BUILD_ONLY_EXIT_STATUS       = 0
+BUILD_ONLY_OUTPUT            = [BUILD-ONLY] Candidate bundles built cleanly. Exiting before Kintone upload/API calls.
+TOOLING_POST_COUNT           = 0
+TOOLING_PUT_COUNT            = 0
+TOOLING_DELETE_COUNT         = 0
+BUILD_ONLY_COMPUTED_JS_SHA   = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
+BUILD_ONLY_COMPUTED_CSS_SHA  = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+IMMUTABLE_GIT_BLOB_MATCH     = YES (Matches Candidate commit 4472aa2f1c63bf08788b39b4ad54b7ea55808df1 blobs exactly)
+```
+
+---
+
+## 4. Live & Preview App 794 GET-Only Readback Proof
+
+Actual Live & Preview state read via GET endpoints:
+
+```text
 GET_ENDPOINTS_USED           = GET /k/v1/app/customize.json?app=794
                                GET /k/v1/preview/app/customize.json?app=794
                                GET /k/v1/file.json?fileKey=...
-POST_COUNT                   = 0
-PUT_COUNT                    = 0
-DELETE_COUNT                 = 0
+
+LIVE_REVISION                = 58
+LIVE_SCOPE                   = ALL
+LIVE_DESKTOP_JS              = [ "mbo-employee-app.js" ] (1 entry)
+LIVE_DESKTOP_CSS             = [ "mbo-employee.css" ] (1 entry)
+LIVE_MOBILE_JS               = [] (0 entries)
+LIVE_MOBILE_CSS              = [] (0 entries)
+LIVE_JS_IDENTITY             = f097f67404fb75418cf85fee635e5d630ef5474d
+LIVE_CSS_IDENTITY            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+
+PREVIEW_REVISION             = 58
+PREVIEW_SCOPE                = ALL
+PREVIEW_DESKTOP_JS           = [ "mbo-employee-app.js" ] (1 entry)
+PREVIEW_DESKTOP_CSS          = [ "mbo-employee.css" ] (1 entry)
+PREVIEW_MOBILE_JS            = [] (0 entries)
+PREVIEW_MOBILE_CSS           = [] (0 entries)
+
+TOTAL_POST_COUNT             = 0
+TOTAL_PUT_COUNT              = 0
+TOTAL_DELETE_COUNT           = 0
 PREFLIGHT_STATUS             = PASS (Matches expected Revision 58 state)
 ```
 
@@ -109,19 +125,23 @@ ROLLBACK_AUTHORIZED          = NO
 
 ---
 
-## 6. Pre-Deploy Summary & Invariant Checklist
+## 6. Verification Summary Table
 
 | Check | Requirement | Result |
 |---|---|---|
-| Candidate HEAD | Detached HEAD equals `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | PASS |
-| Candidate Tests | Focused tests pass cleanly (8/8 pass) | PASS |
-| Candidate Build | `npm run ui:build` completes with exit status 0 | PASS |
+| Initial Candidate HEAD | Detached HEAD equals `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | PASS |
+| Post-Build Candidate HEAD | Post-build HEAD equals `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` | PASS |
+| Focused Tests | `node --test` integration tests (8/8 pass) | PASS |
+| Bundle & CSS Tests | `node --test` classic bundle & CSS structure tests (8/8 pass) | PASS |
+| UI Build | `npm run ui:build` returns exit status 0 | PASS |
 | Dist Determinism | `git diff --exit-code` returns 0 content diff | PASS |
-| Candidate JS SHA | Git blob SHA equals `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` | PASS |
-| Candidate CSS SHA | Git blob SHA equals `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` | PASS |
+| Build-Only Tooling | `deploy-custom-ui.js --build-only` returns exit status 0 | PASS |
+| Tooling Computed JS SHA | Computed SHA equals `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d` | PASS |
+| Tooling Computed CSS SHA | Computed SHA equals `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` | PASS |
 | Live Revision | Live Revision equals 58 | PASS |
 | Live JS SHA | Actual Live JS SHA equals `f097f67404fb75418cf85fee635e5d630ef5474d` | PASS |
 | Live CSS SHA | Actual Live CSS SHA equals `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` | PASS |
+| Preview Detailed State | Preview Revision=58, Scope=ALL, Desktop JS=1, Desktop CSS=1, Mobile=0/0 | PASS |
 | Network Safety | `POST = 0`, `PUT = 0`, `DELETE = 0` | PASS |
 | Rollback Manifest | Rev57 Git blob SHAs match `ac22a56...` / `0532c1c...` | PASS |
 
@@ -129,7 +149,8 @@ ROLLBACK_AUTHORIZED          = NO
 
 ### Executor Verification Status
 
-`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE_CAPTURED_PENDING_CHATGPT_REVIEW`
+`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE_COMPLETED_PENDING_CHATGPT_REVIEW`
 
-- Pre-deploy read-only verification complete.
-- Pending ChatGPT Independent Review before any deployment authorization.
+- All predeploy evidence audit gaps closed.
+- Zero Live writes occurred.
+- Stopped. Pending ChatGPT Independent Review before any deployment authorization.
