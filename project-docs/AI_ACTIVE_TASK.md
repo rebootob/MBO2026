@@ -1,210 +1,195 @@
-# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT ONE-SHOT DEPLOYMENT
+# AI ACTIVE TASK — APP794 REV59 DEPLOYMENT EVIDENCE COMPLETENESS MICRO-CORRECTIVE R1
 
-Mode: **ANTIGRAVITY EXACT DEPLOYMENT EXECUTION ONLY — ONE AUTHORIZED APP794 CUSTOMIZATION ATTEMPT / NO RETRY / NO ROLLBACK**  
+Mode: **ANTIGRAVITY EVIDENCE COMPLETION + LOCAL IMMUTABLE GIT VERIFY + GET-ONLY APP794 CUSTOMIZATION READBACK — NO LIVE WRITE / NO DEPLOY / NO ROLLBACK**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Authorization
+## 1. Independent Review Result
 
-The user explicitly authorized:
+Executor deployment evidence commit:
 
-`อนุมัติ App794 Fatal Create Clean-Exit corrective deployment candidate 4472aa2f one-shot 1 ครั้ง`
+`9e86b24fe60bd3f0cea2774b412d05103e2fb6f8`
 
-```text
-AUTHORIZATION_ID            = APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01
-AUTHORIZATION_STATUS        = ACTIVE / UNUSED
-TARGET_APP                  = 794 ONLY
-WORK_PACKAGE                = MBO-P03-WP-002C
-STAGE                       = STAGE_D1_APP794_FATAL_CREATE_CLEAN_EXIT_DEPLOY
-OPERATION                   = APP794_CUSTOMIZATION_DEPLOY
-MAX_DEPLOY_ATTEMPTS         = 1
-AUTO_RETRY                  = NO
-SECOND_FORWARD_DEPLOY       = NO
-ROLLBACK_INCLUDED           = NO
-AUTO_ROLLBACK               = NO
-```
+ChatGPT decision:
 
-This authorization is exact and may not be widened or reused.
+`CORRECTIVE — LIVE REV59 RESULT APPEARS TECHNICALLY CONSISTENT, BUT THE EXACT DEPLOYMENT EVIDENCE CONTRACT IS INCOMPLETE`
 
-## 2. Locked Candidate
+Do not deploy again. The one-shot authorization is consumed and closed.
 
-Deploy only this immutable candidate:
+## 2. Already Accepted From Deployment Evidence
 
 ```text
-CANDIDATE_SOURCE_TEST_COMMIT = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-CANDIDATE_JS_GIT_BLOB        = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
-CANDIDATE_CSS_GIT_BLOB       = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-CANDIDATE_SCOPE              = ALL
-CANDIDATE_TOPOLOGY           = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+AUTHORIZATION_ID              = APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01
+AUTHORIZATION_STATUS          = CONSUMED / CLOSED
+ATTEMPTS_USED                 = 1
+RETRY                         = NO
+SECOND_FORWARD_DEPLOY         = NO
+AUTO_ROLLBACK                 = NO
+PREFLIGHT_LIVE_REVISION       = 58
+PREFLIGHT_LIVE_SCOPE          = ALL
+PREFLIGHT_LIVE_TOPOLOGY       = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+PREFLIGHT_LIVE_JS             = f097f67404fb75418cf85fee635e5d630ef5474d
+PREFLIGHT_LIVE_CSS            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+POST_LIVE_REVISION            = 59
+POST_LIVE_SCOPE               = ALL
+POST_LIVE_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+POST_LIVE_JS                  = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
+POST_LIVE_CSS                 = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+EXACT_CANDIDATE_MATCH         = YES
+APP794_RECORD_WRITES          = 0
+APP800_RECORD_WRITES          = 0
+APP801_RECORD_WRITES          = 0
+APP795_APP796_RECORD_WRITES   = 0
+SCHEMA_LAYOUT_ACL_PROCESS     = 0
 ```
 
-Do not deploy branch HEAD as source identity. Use a detached worktree pinned exactly to candidate commit.
+## 3. Exact Evidence Gaps
 
-## 3. Required Live Preflight Before Any Write
+### Gap A — Deployment-time candidate worktree proof
 
-Latest accepted expected current state:
+The authorization packet required the executor to create a fresh detached worktree pinned to:
+
+`4472aa2f1c63bf08788b39b4ad54b7ea55808df1`
+
+and prove HEAD exact + worktree clean before write.
+
+The deployment evidence does not record those exact values.
+
+Required:
+- inspect original deployment logs/output if still available;
+- if original deployment-time HEAD/status was captured, add the exact command/result to evidence;
+- if not captured, state `DEPLOYMENT_TIME_WORKTREE_PROOF = NOT_CAPTURED` honestly;
+- in either case, perform a **new local read-only compensating verification** in a fresh detached worktree at exact candidate and record:
+  - `git rev-parse HEAD`;
+  - `git status --porcelain`;
+  - candidate JS/CSS immutable Git blobs.
+
+Do not claim a current verification proves a historical fact; label it `CURRENT_COMPENSATING_VERIFY`.
+
+### Gap B — Pre-deploy Preview detail
+
+The deployment evidence records only:
+
+`PREFLIGHT_PREVIEW_REVISION = 58`
+
+but the exact authorization packet required preflight Preview revision/scope/topology/entry names.
+
+Required:
+- use original deployment/preflight logs only for historical values;
+- if original values are present, copy them exactly into evidence;
+- if not originally captured, state each missing historical field `NOT_CAPTURED`;
+- do not infer historical Preview scope/topology from Live or from current state.
+
+### Gap C — Post-deploy Preview detail
+
+Current GET-only readback is allowed now.
+
+Read actual Preview App794 customization and record:
+- revision;
+- scope;
+- Desktop JS count/order/name;
+- Desktop CSS count/order/name;
+- Mobile JS count/order/name;
+- Mobile CSS count/order/name.
+
+Expected current state should be Rev59 / ALL / 1 JS / 1 CSS / Mobile 0/0. Any mismatch => STOP and report.
+
+### Gap D — Rollback manifest verification record
+
+The authorization packet required fresh immutable rollback-manifest verification before write, but deployment evidence only repeats the baseline.
+
+Required:
+- use original deployment logs if fresh verification was captured;
+- if not captured, state `DEPLOYMENT_TIME_ROLLBACK_VERIFY = NOT_CAPTURED`;
+- perform current immutable Git verification only:
 
 ```text
-APP                         = 794
-LIVE_REVISION               = 58
-LIVE_SCOPE                  = ALL
-LIVE_TOPOLOGY               = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-LIVE_JS_IDENTITY            = f097f67404fb75418cf85fee635e5d630ef5474d
-LIVE_CSS_IDENTITY           = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-PREVIEW_REVISION            = 58
-PREVIEW_SCOPE               = ALL
-PREVIEW_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js
+git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css
 ```
 
-Before any POST/PUT/deploy write:
-1. pull/re-fetch canonical branch;
-2. read `project-docs/AI_CONTROL_CENTER.md` and this exact Active Task;
-3. verify authorization still ACTIVE / UNUSED;
-4. create a fresh detached worktree pinned to candidate `4472aa2f...`;
-5. prove candidate worktree HEAD exact and clean;
-6. verify candidate JS/CSS Git blobs exactly match locked values;
-7. GET-read actual Live and Preview App794 customization;
-8. download/hash current Live JS/CSS bytes;
-9. require exact expected Rev58 scope/topology/identities above;
-10. verify immutable Rev57 rollback manifest below.
-
-If any mismatch/drift/ambiguity occurs before first write: STOP. Do not repair and do not deploy.
-
-## 4. Exact Authorized Write Scope
-
-Only the exact operations necessary to replace App794 customization with the locked candidate pair and apply/deploy it are authorized.
-
-Allowed write target:
+Expected:
 
 ```text
-APP794 DESKTOP JS = exact candidate dist/mbo-employee-app.js
-APP794 DESKTOP CSS = exact candidate dist/mbo-employee.css
-SCOPE = ALL
-MOBILE JS = NONE
-MOBILE CSS = NONE
+JS  = ac22a56cb9d78001384241fe12745f7a2da3da84
+CSS = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 ```
 
-The one attempt may include the repository's normal file upload + Preview customization update + deploy/apply operation required by Kintone for this exact pair.
+Label this `CURRENT_IMMUTABLE_ROLLBACK_VERIFY`, not historical deployment-time proof unless original logs support that claim.
 
-Authorization is consumed when the first deployment-write step begins.
+## 4. Allowed Network Activity
+
+GET-only App794 customization readback as needed:
+- `GET /k/v1/app/customize.json?app=794`;
+- `GET /k/v1/preview/app/customize.json?app=794`;
+- `GET /k/v1/file.json?fileKey=...` only if needed to re-hash current Live files.
+
+No other Kintone network is needed.
+
+Required method counts:
+
+```text
+POST = 0
+PUT = 0
+DELETE = 0
+DEPLOY = 0
+ROLLBACK = 0
+```
 
 ## 5. Strictly Forbidden
 
 Do NOT:
-- perform a second forward deployment;
-- retry a failed attempt;
-- rollback automatically;
-- deploy any source other than candidate `4472aa2f...`;
-- change candidate source/tests/dist;
-- write App794 records;
-- write App800/App801/App795/App796 records;
-- execute password reset or App801 credential mutation;
-- change schema/layout/ACL/process management;
-- change app permissions;
-- change process management;
-- edit unrelated files/features;
-- reuse previous consumed authorization IDs.
+- deploy again;
+- upload customization files;
+- update Preview customization;
+- call deploy/apply POST;
+- retry the consumed deployment;
+- rollback;
+- write any App794/App800/App801/App795/App796 record;
+- change schema/layout/ACL/process;
+- edit source/tests/dist/scripts/config/package;
+- fabricate missing historical evidence;
+- edit Control Center or Active Task as executor.
 
-```text
-APP794_RECORD_WRITE          = NO
-APP800_RECORD_WRITE          = NO
-APP801_RECORD_WRITE          = NO
-APP795_APP796_RECORD_WRITE   = NO
-SCHEMA_LAYOUT_ACL_PROCESS    = NO
-ROLLBACK                     = NOT AUTHORIZED
-```
+## 6. Repository Scope
 
-## 6. One-Attempt Rule
-
-Once the first authorized forward write begins:
-
-```text
-AUTHORIZATION_STATUS = CONSUMED
-ATTEMPTS_USED        = 1
-```
-
-Regardless of success or failure, there is no second attempt under this authorization.
-
-If deployment fails, status is ambiguous, Kintone reports an error, or post-deploy readback mismatches candidate:
-- STOP;
-- do not retry;
-- do not rollback;
-- capture evidence;
-- return to ChatGPT for independent review and a new user decision.
-
-## 7. Mandatory Post-Deploy Readback
-
-After the one allowed attempt, perform GET-only verification:
-- deployment status / apply result;
-- actual Live revision;
-- actual Preview revision;
-- actual scope;
-- exact desktop/mobile JS/CSS topology and ordering;
-- actual entry names;
-- download actual Live JS/CSS bytes;
-- compute Git blob identities;
-- require exact match:
-
-```text
-EXPECTED_LIVE_JS  = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
-EXPECTED_LIVE_CSS = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-EXPECTED_SCOPE    = ALL
-EXPECTED_TOPOLOGY = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-```
-
-Technical success requires exact candidate pair. Do not infer User UAT PASS.
-
-## 8. Known-Good Rollback Manifest — VERIFY ONLY, DO NOT EXECUTE
-
-```text
-ROLLBACK_REVISION          = 57
-ROLLBACK_SOURCE_COMMIT     = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
-ROLLBACK_JS_IDENTITY       = ac22a56cb9d78001384241fe12745f7a2da3da84
-ROLLBACK_CSS_IDENTITY      = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-ROLLBACK_SCOPE             = ALL
-ROLLBACK_TOPOLOGY          = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-ROLLBACK_AUTHORIZED        = NO
-```
-
-Rev57 remains the accepted known-good until corrective technical readback AND User Runtime UAT both pass.
-
-## 9. Evidence File
-
-The only executor-authored canonical repository change after deployment should be:
+Only allowed canonical repository change:
 
 `project-docs/APP794_FATAL_CREATE_CLEAN_EXIT_DEPLOYMENT_EVIDENCE.md`
 
-If the file does not exist, create it. Do not modify Control Center, Active Task, baselines, skills, source, tests, dist, config, or scripts.
+Update the existing evidence file only. No new file.
 
-Evidence must contain:
-- `STATUS = PENDING_CHATGPT_REVIEW`;
-- timestamp;
-- authorization ID;
-- authorization consumed/closed state;
-- attempts used = 1;
-- candidate source commit + JS/CSS identities;
-- preflight Live/Preview state + exact actual Live JS/CSS identities;
-- exact write operations/endpoints and HTTP/result summaries without credentials/secrets;
-- deployment/apply status;
-- post-deploy Live + Preview revision/scope/topology/entry names;
-- downloaded actual Live JS/CSS identities;
-- `EXACT_CANDIDATE_MATCH = YES/NO`;
-- record write counts = 0 for App794/App800/App801/App795/App796;
-- schema/layout/ACL/process writes = 0;
-- second deploy = NO;
-- retry = NO;
-- auto rollback = NO;
-- any warning or mismatch.
+Keep status:
 
-Commit + push only that evidence file, then STOP for ChatGPT Independent Review.
+`STATUS = PENDING_CHATGPT_REVIEW`
+
+Add a clearly labeled section:
+
+`EVIDENCE COMPLETENESS CORRECTIVE R1`
+
+containing:
+- original-log recovered facts, if any;
+- explicit `NOT_CAPTURED` for unrecoverable historical facts;
+- current compensating candidate worktree verification;
+- current Preview GET-only detailed state;
+- current immutable rollback Git verification;
+- POST/PUT/DELETE/deploy/rollback counts = 0 for this corrective.
+
+Then commit + push evidence only and STOP.
+
+## 7. Safety State
+
+```text
+LIVE_APP794_REVISION          = 59
+LIVE_JS                       = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
+LIVE_CSS                      = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+CANDIDATE_SOURCE_TEST_COMMIT  = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
+LATEST_DEPLOY_AUTH            = CONSUMED / CLOSED / NEVER REUSE
+ACTIVE_DEPLOY_AUTH            = NONE
+ACTIVE_KINTONE_WRITE_AUTH     = NONE
+ROLLBACK_AUTH                 = NONE
+ACCEPTED_KNOWN_GOOD_REVISION  = 57
+```
 
 Maximum executor status:
 
-`APP794_FATAL_CREATE_CLEAN_EXIT_DEPLOYMENT_COMPLETED_PENDING_CHATGPT_REVIEW`
-
-## 10. Current Owner
-
-```text
-CURRENT_MODE   = AUTHORIZED ONE-SHOT DEPLOY EXECUTION
-NEXT_OWNER     = ANTIGRAVITY
-USER_UAT       = AFTER CHATGPT TECHNICAL READBACK REVIEW
-```
+`APP794_REV59_DEPLOYMENT_EVIDENCE_COMPLETENESS_R1_CAPTURED_PENDING_CHATGPT_REVIEW`
