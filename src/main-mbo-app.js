@@ -1061,10 +1061,35 @@ if (typeof kintone !== 'undefined') {
   });
 
   // Hook 3: Process Action (Workflow Proceed)
-  kintone.events.on('app.record.detail.process.proceed', function (event) {
+  kintone.events.on('app.record.detail.process.proceed', async function (event) {
     const record = event.record;
     const actionName = event.action?.value || '';
     const stage = resolveBusinessStage(event);
+
+    const context = currentEmployeeSelfContext;
+    const recordEmpCode = record?.Employee_Code?.value;
+    const isCrossEmployee = Boolean(context && recordEmpCode && context.employeeCode && recordEmpCode !== context.employeeCode);
+
+    if (isCrossEmployee) {
+      if (context.mode !== 'DEDICATED') {
+        return false;
+      }
+
+      const appId = event.appId || getMboAppId();
+      const recordId = event.recordId || record?.$id?.value || record?.Record_ID?.value;
+      if (!recordId) {
+        return false;
+      }
+
+      try {
+        const revalRes = await MboApprovalTaskService.revalidateApprovalTask(context, appId, recordId, kintoneApiWrapper);
+        if (!revalRes || revalRes.authorized !== true) {
+          return false;
+        }
+      } catch (err) {
+        return false;
+      }
+    }
 
     // 1. Topology & Action Validation (Fail-Closed)
     const actionValidation = ValidationEngine.validateWorkflowAction(record, actionName, stage);

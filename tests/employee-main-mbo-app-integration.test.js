@@ -868,7 +868,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(singleRecordGetCount, 0, 'DEDICATED own Detail must perform 0 approval revalidation GETs');
 
   // 2 & 3. DEDICATED cross-employee Detail with fresh STATUS_ASSIGNEE containing exact vassana performs 1 fresh GET and preserves bound context
-  const { getActiveUiInstance } = await import('../src/main-mbo-app.js');
+  const { getActiveUiInstance, setCurrentEmployeeSelfContext } = await import('../src/main-mbo-app.js');
   const prevUiInstance = getActiveUiInstance();
   singleRecordGetCount = 0;
   const authorizedCrossDetailHost = createMockElement('div');
@@ -1020,12 +1020,173 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(requireLoginCalled, false, 'Valid Dedicated path must introduce 0 MBO login-gate calls');
 
 
+  // 4g-7. D1 Gate 3 Process.Proceed Fresh Assignee Revalidation assertions
+  const processProceedHandler = registeredHandlers.get('app.record.detail.process.proceed');
+  assert.ok(typeof processProceedHandler === 'function', 'Process proceed handler must be registered');
+
+  // 1. DEDICATED own requester action: 0 revalidation GETs, returns event
+  setCurrentEmployeeSelfContext({ mode: 'DEDICATED', employeeCode: '0044', kintoneUserCode: 'vassana' });
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  singleRecordGetCount = 0;
+
+  const dedicatedOwnProcRecord = {
+    $id: { value: '456' },
+    Employee_Code: { value: '0044' },
+    Employee_Name: { value: 'Vassana' },
+    Fiscal_Year: { value: 'FY2026' },
+    Status: { value: '05 Objective Approved' },
+    Routing_Topology: { value: 'M1_G1' },
+    Manager_User: { value: [{ code: 'vassana' }] },
+    GM_User: { value: [{ code: 'gm_user' }] },
+    Requester_User: { value: [{ code: 'vassana' }] }
+  };
+  const dedicatedOwnProcEvent = {
+    type: 'app.record.detail.process.proceed',
+    appId: 794,
+    recordId: 456,
+    record: dedicatedOwnProcRecord,
+    action: { value: 'Start Mid-Year' }
+  };
+  const dedicatedOwnProcRes = await processProceedHandler(dedicatedOwnProcEvent);
+  assert.equal(dedicatedOwnProcRes, dedicatedOwnProcEvent, 'DEDICATED own requester action must return event');
+  assert.equal(singleRecordGetCount, 0, 'DEDICATED own requester action must perform 0 approval revalidation GETs');
+
+  // 2. SHARED own requester action: 0 revalidation GETs, returns event
+  setCurrentEmployeeSelfContext({ mode: 'SHARED', employeeCode: '0044', kintoneUserCode: 'f1' });
+  currentMockUser = { code: 'f1', name: 'Shared F1 User' };
+  singleRecordGetCount = 0;
+
+  const sharedOwnProcRes = await processProceedHandler(dedicatedOwnProcEvent);
+  assert.equal(sharedOwnProcRes, dedicatedOwnProcEvent, 'SHARED own requester action must return event');
+  assert.equal(singleRecordGetCount, 0, 'SHARED own requester action must perform 0 approval revalidation GETs');
+
+  // 3. DEDICATED cross-employee valid current Assignee: 1 fresh GET, returns event, preserves context
+  setCurrentEmployeeSelfContext({ mode: 'DEDICATED', employeeCode: '0044', kintoneUserCode: 'vassana' });
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  singleRecordGetCount = 0;
+
+  const dedicatedCrossProcRecord = {
+    $id: { value: '901' },
+    Employee_Code: { value: '0118' },
+    Employee_Name: { value: 'Somchai' },
+    Fiscal_Year: { value: 'FY2026' },
+    Status: { value: '03 Manager Objective Review' },
+    Routing_Topology: { value: 'M1_G1' },
+    Manager_User: { value: [{ code: 'vassana' }] },
+    GM_User: { value: [{ code: 'gm_user' }] },
+    Requester_User: { value: [{ code: '0118' }] },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' }
+  };
+  const dedicatedCrossProcEvent = {
+    type: 'app.record.detail.process.proceed',
+    appId: 794,
+    recordId: 901,
+    record: dedicatedCrossProcRecord,
+    action: { value: 'Approve Objective' }
+  };
+  const dedicatedCrossProcRes = await processProceedHandler(dedicatedCrossProcEvent);
+  assert.equal(dedicatedCrossProcRes, dedicatedCrossProcEvent, 'Authorized Dedicated cross-employee process proceed must return event');
+  assert.equal(singleRecordGetCount, 1, 'Authorized Dedicated cross-employee process proceed must perform exactly 1 fresh GET');
+  assert.ok(getCurrentEmployeeSelfContext()?.employeeCode === '0044', 'Bound Employee-Self context must remain 0044 / vassana');
+
+  // 4. Fresh Assignee mismatch: 1 fresh GET, returns false
+  singleRecordGetCount = 0;
+  const mismatchProcRecord = {
+    $id: { value: '902' },
+    Employee_Code: { value: '0118' },
+    Status: { value: '02 Waiting Appraiser 1' },
+    Routing_Topology: { value: 'M1_G1' },
+    Manager_User: { value: [{ code: 'vassana' }] },
+    First_Manager_User: { value: [{ code: 'vassana' }] },
+    GM_User: { value: [{ code: 'vassana' }] },
+    Requester_User: { value: [{ code: '0118' }] },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' }
+  };
+  const mismatchProcEvent = {
+    type: 'app.record.detail.process.proceed',
+    appId: 794,
+    recordId: 902,
+    record: mismatchProcRecord,
+    action: { value: 'Approve Objective' }
+  };
+  const mismatchProcRes = await processProceedHandler(mismatchProcEvent);
+  assert.equal(mismatchProcRes, false, 'Fresh Assignee mismatch process proceed must fail closed (return false)');
+  assert.equal(singleRecordGetCount, 1, 'Fresh Assignee mismatch process proceed must perform exactly 1 fresh GET');
+
+  // 5. Fresh revalidation API failure: 1 attempted GET, returns false
+  singleRecordGetCount = 0;
+  triggerSingleRecordGetError = true;
+  const apiErrProcRes = await processProceedHandler(dedicatedCrossProcEvent);
+  assert.equal(apiErrProcRes, false, 'Process proceed on API failure must fail closed (return false)');
+  assert.equal(singleRecordGetCount, 1, 'API error path must attempt 1 fresh GET');
+  triggerSingleRecordGetError = false;
+
+  // 6. Record missing / malformed revalidation result: 1 fresh GET, returns false
+  singleRecordGetCount = 0;
+  const missingProcRecord = {
+    $id: { value: '9999' },
+    Employee_Code: { value: '0118' },
+    Status: { value: '02 Waiting Appraiser 1' },
+    Routing_Topology: { value: 'M1_G1' },
+    Manager_User: { value: [{ code: 'vassana' }] },
+    GM_User: { value: [{ code: 'gm_user' }] },
+    Requester_User: { value: [{ code: '0118' }] },
+    PartA_Weight: { value: '70' },
+    PartB_Weight: { value: '30' }
+  };
+  const missingProcEvent = {
+    type: 'app.record.detail.process.proceed',
+    appId: 794,
+    recordId: 9999,
+    record: missingProcRecord,
+    action: { value: 'Approve Objective' }
+  };
+  const missingProcRes = await processProceedHandler(missingProcEvent);
+  assert.equal(missingProcRes, false, 'Process proceed on missing record must fail closed (return false)');
+  assert.equal(singleRecordGetCount, 1, 'Missing record path must attempt 1 fresh GET');
+
+  // 7. Missing record id: 0 GETs, returns false
+  singleRecordGetCount = 0;
+  const noIdProcEvent = {
+    type: 'app.record.detail.process.proceed',
+    appId: 794,
+    record: {
+      Employee_Code: { value: '0118' },
+      Status: { value: '02 Waiting Appraiser 1' }
+    },
+    action: { value: 'Approve' }
+  };
+  const noIdProcRes = await processProceedHandler(noIdProcEvent);
+  assert.equal(noIdProcRes, false, 'Process proceed without recordId must fail closed (return false)');
+  assert.equal(singleRecordGetCount, 0, 'Missing recordId must perform 0 approval revalidation GETs');
+
+  // 8. SHARED cross-employee action: 0 GETs, returns false
+  setCurrentEmployeeSelfContext({ mode: 'SHARED', employeeCode: '0044', kintoneUserCode: 'f1' });
+  currentMockUser = { code: 'f1', name: 'Shared F1 User' };
+  singleRecordGetCount = 0;
+  const sharedCrossProcRes = await processProceedHandler(dedicatedCrossProcEvent);
+  assert.equal(sharedCrossProcRes, false, 'SHARED cross-employee process proceed must fail closed (return false)');
+  assert.equal(singleRecordGetCount, 0, 'SHARED cross-employee process proceed must perform 0 approval revalidation GETs');
+
+  // 9. No Employee-Self context regression: 0 GETs, returns event
+  setCurrentEmployeeSelfContext(null);
+  singleRecordGetCount = 0;
+  const noCtxProcRes = await processProceedHandler(dedicatedOwnProcEvent);
+  assert.equal(noCtxProcRes, dedicatedOwnProcEvent, 'Process proceed with null context must preserve pre-Gate-3 validation/return behavior');
+  assert.equal(singleRecordGetCount, 0, 'Null context must perform 0 approval revalidation GETs');
+
+  // 10. Gate 3 introduces 0 App795 queries and 0 login-gate calls
+  assert.equal(app795QueryCount, 0, 'Gate 3 path must introduce 0 App795 queries');
+  assert.equal(requireLoginCalled, false, 'Gate 3 path must introduce 0 MBO login-gate calls');
+
+
   // 4g-2. Finding R1-C: Registered delete event handler blocks for DEDICATED & SHARED context and abstains when null
   const deleteHandler = registeredHandlers.get('app.record.detail.delete.submit');
   assert.ok(typeof deleteHandler === 'function', 'Delete handler must be registered');
 
   // Active context (DEDICATED) -> Blocked (returns false)
-  const { setCurrentEmployeeSelfContext } = await import('../src/main-mbo-app.js');
   setCurrentEmployeeSelfContext({ mode: 'DEDICATED', employeeCode: '0044', kintoneUserCode: 'vassana' });
   const delEventDedicated = { type: 'app.record.detail.delete.submit', recordId: 10 };
   const resDedicated = deleteHandler(delEventDedicated);
