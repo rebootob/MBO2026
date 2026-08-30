@@ -1,92 +1,21 @@
-# AI ACTIVE TASK — D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — LEAN CLEANUP R2
+# AI ACTIVE TASK — D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — LEAN TREE CLEANUP R3
 
-Mode: **ANTIGRAVITY MINIMUM SOURCE + FOCUSED TEST ONLY**  
+Mode: **ANTIGRAVITY EXACT GIT RESTORE ONLY — NO SOURCE LOGIC CHANGE / NO TEST RUN / NO BUILD / NO LIVE KINTONE**  
 Branch: `ai/antigravity-wp002c`
 
 ## 0. Goal
 
-Correct only the remaining issues in candidate:
-
+Source logic at:
 ```text
-31d4bf55343f2dddea7a4dc016828083e6c4c699
+4a35988a3fc2206849456fbfbef90086d4efd002
 ```
+passes ChatGPT independent logic review.
 
-Do not broad-scan. Do not build. Do not run full npm test. Do not create evidence. Do not touch Live Kintone.
+This task is **cleanup only**. Do not edit source logic. Do not add tests. Do not run tests. Do not build.
 
-Already accepted in this candidate — **do not rework**:
-- exact 9-principal SHARED classification;
-- DEDICATED mapping failure has no SHARED login fallback;
-- registered DeleteGuard hybrid-context wiring;
-- restored App800 HR test blob `eb2a3cdfb6bee6a6d67f15cc3210f139a1635756`.
+## 1. Exact restore only
 
-## 1. Source correction — ONE source file only
-
-Modify only:
-
-```text
-src/main-mbo-app.js
-```
-
-### A. Remove silent SHARED context compatibility fallback
-
-`setupRecordUiWithAuth(...)` must require an already-resolved context object.
-
-Do not convert a string/Employee_Code into:
-```text
-{ mode: 'SHARED', ... }
-```
-
-Required context must contain valid nonblank:
-```text
-mode = exact 'SHARED' or 'DEDICATED'
-employeeCode
-kintoneUserCode
-```
-
-Leading/trailing whitespace in `kintoneUserCode` must fail closed.
-Missing/malformed context must throw/block with `INVALID_EMPLOYEE_SELF_CONTEXT` (or existing equivalent fail-closed error).
-
-### B. Create must use local resolved Kintone principal only
-
-Inside `onLookupEmployee`, use:
-```text
-context.mode
-context.kintoneUserCode
-```
-
-Remove fallback/re-read such as:
-```text
-context.kintoneUserCode || kintone.getLoginUser()?.code
-```
-
-Do not default to SHARED. Do not use mutable global context as Create authorization fallback.
-
-No redesign/refactor beyond these two corrections.
-
-## 2. Focused test completion — ONE test file only
-
-Modify only:
-
-```text
-tests/employee-main-mbo-app-integration.test.js
-```
-
-Add the smallest fixtures/assertions needed to prove:
-
-1. valid DEDICATED mapping succeeds when `mboLoginGate = null`;
-2. DEDICATED missing mapping -> blocked and shared gate call count = 0;
-3. DEDICATED ambiguous mapping -> blocked and shared gate call count = 0;
-4. DEDICATED invalid canonical `emp_text` -> blocked and shared gate call count = 0;
-5. Create uses the local DEDICATED context and snapshots:
-   `Requester_User = [{ code: <exact dedicated Kintone user> }]`;
-6. existing registered DeleteGuard focused assertions remain passing.
-
-Do not add broad regression tests.
-
-## 3. Cleanup over-scope files — exact restore only
-
-Restore these files exactly from Control Plane base:
-
+Restore these five files exactly from Control Plane base:
 ```text
 248174b67735a26318bbeadf8e341f8a3db31708
 ```
@@ -100,56 +29,70 @@ tests/objective-save-validation.test.js
 tests/timeline-truthfulness-and-attachment.test.js
 ```
 
-Use exact git restore/content restoration. Do not edit them manually.
+Use git restore/content restoration only. Do not manually redesign them.
 
-Delete the over-scope file created by candidate:
+Equivalent command:
 ```text
-project-docs/D1_HYBRID_IDENTITY_EMPLOYEE_SELF_RUNTIME_ENTRY_R1_CORRECTIVE_R1_EVIDENCE.md
+git restore --source=248174b67735a26318bbeadf8e341f8a3db31708 -- \
+  dist/mbo-employee-app.js \
+  tests/classic-bundle.test.js \
+  tests/create-handler-form-state.test.js \
+  tests/objective-save-validation.test.js \
+  tests/timeline-truthfulness-and-attachment.test.js
 ```
 
-Keep this file exactly as currently restored; do NOT touch it:
+## 2. Do NOT touch anything else
+
+Read-only / no change:
 ```text
+src/main-mbo-app.js
+src/services/mbo-identity-service.js
+src/services/employee-service.js
+src/security/delete-guard-policy.js
+tests/d1-hybrid-identity-core-source.test.js
+tests/employee-main-mbo-app-integration.test.js
 tests/hr-control-center-reset-ui.test.js
-expected blob = eb2a3cdfb6bee6a6d67f15cc3210f139a1635756
+project-docs/AI_CONTROL_CENTER.md
+project-docs/AI_ACTIVE_TASK.md
+all Baselines / Joblist / skills
 ```
 
-## 4. Everything else is READ-ONLY
+The prior over-scope evidence file is already deleted. Do not recreate it.
 
-Do not modify:
-- `src/services/mbo-identity-service.js`
-- `src/services/employee-service.js`
-- `src/security/delete-guard-policy.js`
-- `src/services/routing-service.js`
-- any shared auth/session source
-- any other test
-- `config/**`
-- Control Plane / Baselines / Joblist / skills
-- My Approval Tasks code
+Keep HR reset test at exact blob:
+```text
+eb2a3cdfb6bee6a6d67f15cc3210f139a1635756
+```
 
-## 5. Verification — ONLY TWO focused tests
+## 3. Verification — no tests
 
 Run only:
-
 ```text
-node --test tests/d1-hybrid-identity-core-source.test.js
-node --test tests/employee-main-mbo-app-integration.test.js
 git diff --check
 ```
 
-Do NOT run:
+Then verify the five restored paths have zero diff against base:
 ```text
-npm test
-npm run ui:build
-classic-bundle test
-other regression suites
+git diff --exit-code 248174b67735a26318bbeadf8e341f8a3db31708 -- \
+  dist/mbo-employee-app.js \
+  tests/classic-bundle.test.js \
+  tests/create-handler-form-state.test.js \
+  tests/objective-save-validation.test.js \
+  tests/timeline-truthfulness-and-attachment.test.js
 ```
 
-Do not create an evidence markdown file.
+Expected exit code = 0.
 
-## 6. App53 Production hard stop
+Do NOT run:
+```text
+node --test ...
+npm test
+npm run ui:build
+```
+
+## 4. App53 Production hard stop
 
 ```text
-APP53 = PRODUCTION
 LIVE_GET = 0
 LIVE_POST = 0
 LIVE_PUT = 0
@@ -162,21 +105,24 @@ GROUP_WRITE = 0
 DEPLOY = 0
 ```
 
-Mocks/fixtures only. Do not open/probe App53. Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
+No Kintone access of any kind.
 
-## 7. Finish
+## 5. Finish
 
-After the two focused tests + diff check pass:
-1. verify cumulative implementation diff no longer contains generated dist, corrective evidence, classic-bundle changes, or unrelated test changes;
-2. commit one focused cleanup/corrective commit;
-3. push;
-4. STOP.
+1. exact restore five files;
+2. `git diff --check`;
+3. verify five paths equal base;
+4. commit one cleanup commit;
+5. push;
+6. STOP.
 
-Final response must be only:
+Final response only:
 - commit SHA;
-- changed files;
-- two focused test results;
-- `git diff --check`;
+- restored 5 files;
+- `git diff --check = PASS`;
+- `RESTORED_PATHS_EQUAL_BASE = YES`;
+- `TESTS_RUN = 0`;
+- `BUILD_RUN = 0`;
 - `LIVE_KINTONE_OPERATIONS = 0`;
 - `APP53_PRODUCTION_TOUCHED = NO`.
 
