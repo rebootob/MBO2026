@@ -1,67 +1,104 @@
 # AI START HERE — MBO2026
 
-> Mandatory entry point for every AI working on MBO2026.
+> Mandatory lean entry point for every AI working on MBO2026.  
+> Updated: 2026-08-30 20:45 ICT
 
-## 1. Do Not Browse the Repository First
+## 1. Startup order
 
-Before planning, reviewing, coding, or changing Kintone:
+Before planning, reviewing, coding or changing Kintone:
 
-1. Fetch current HEAD of `ai/antigravity-wp002c`.
-2. Read `project-docs/AI_CONTROL_CENTER.md`.
-3. Read `project-docs/AI_DOCUMENT_INDEX.md`.
-4. Read `project-docs/CONFIRMED_BASELINE/README.md`.
-5. Use the Document Index to open **only** the Baseline/evidence files relevant to the current task.
-6. Read `project-docs/AI_ACTIVE_TASK.md` if execution is involved or if reviewing the execution it authorized.
+1. Fresh-fetch HEAD of `ai/antigravity-wp002c`.
+2. Read `project-docs/CHAT_HANDOFF.md`.
+3. Read `project-docs/AI_CONTROL_CENTER.md`.
+4. Read `project-docs/AI_DOCUMENT_INDEX.md`.
+5. Read `project-docs/AI_ACTIVE_TASK.md` when execution/review is involved.
+6. Read `project-docs/CONFIRMED_BASELINE/README.md` and only the Baseline(s) routed by the Document Index.
+7. Inspect exact latest diff/evidence if reviewing executor work.
 
-Do not read the whole `project-docs/` tree.
-Do not read all Confirmed Baseline files automatically.
-Do not ask the user to repeat history already available in Git/GitHub.
-Do not start a Live write/deploy during startup.
+Do not broad-read the repository or historical project docs. Do not ask the user to repeat history already in Git. Do not perform Live Kintone write/deploy during startup.
 
-Repository/live evidence beats chat memory.
+Repository/live evidence beats chat memory and any embedded handoff checkpoint.
 
-## 2. Authority Is By Purpose — Not One Flat Order
+## 2. Authority by purpose
 
-- `project-docs/CONFIRMED_BASELINE/` = durable confirmed business/technical/security truth.
-- `project-docs/00_MASTER_JOBLIST.md` = D1–D7 completeness and no-drop authority.
-- `project-docs/AI_CONTROL_CENTER.md` = current independently accepted state, blockers, authorization and next owner.
-- `project-docs/AI_ACTIVE_TASK.md` = exact current execution packet only; it is not evidence that execution succeeded.
+- `CONFIRMED_BASELINE/` = durable confirmed business/security/technical truth.
+- `00_MASTER_JOBLIST.md` = D1–D7 no-drop/completeness authority.
+- `AI_CONTROL_CENTER.md` = current independently accepted operational state, blockers, authorization and next owner.
+- `AI_ACTIVE_TASK.md` = exact current execution packet only; not proof of success.
 - Git/Kintone evidence = what actually exists/ran/live-read-back.
+- `CHAT_HANDOFF.md` = concise cross-chat continuation snapshot; always revalidate against current HEAD.
 
-If implementation evidence conflicts with Baseline, stop and reconcile before further execution.
-
-## 3. Permanent Roles
+## 3. Permanent roles
 
 **ChatGPT = Control Plane**
-- plan, design, inspect Git, review, decide PASS/CORRECTIVE/BLOCKED;
-- maintain Baseline, Control Center, Document Index, Active Task and new-chat handoff;
-- extract reusable Kintone Skills.
+- plan, architecture, Git inspection, independent review, PASS/CORRECTIVE/BLOCKED decision;
+- maintain operational/control/handoff documentation;
+- use Antigravity only when actual source/local-runtime/Kintone execution is necessary.
 
 **Antigravity = Low-Credit Execution Plane**
-- use only for actual implementation/live Kintone/local runtime work ChatGPT cannot perform;
-- read only Control Center + Active Task + explicitly listed files;
-- no broad planning/repository archaeology/self-review/long reports by default.
+- execute only exact Active Task scope;
+- no broad planning/scans/self-review/docs by default;
+- stop after required focused test/evidence/commit.
 
-Full governance:
-`project-docs/CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md`
-
-Document-read policy:
-`project-docs/CONFIRMED_BASELINE/DOCUMENT_CONTROL.md`
-
-## 4. Mandatory Knowledge Rules
-
-When a durable important project fact becomes confirmed:
-→ update `project-docs/CONFIRMED_BASELINE/` in the same control cycle.
-
-When a reusable Kintone technique/lesson is discovered:
-→ update `skills/kintone/` in the same review/control cycle when practical.
-
-Do not spend Antigravity credit on these documentation tasks unless exact execution is required.
-
-## 5. D1–D7 No-Drop
+## 4. D1 non-negotiable architecture
 
 ```text
-D1 Hybrid Identity + Password + Employee-Self + Approver Access
+D1 = KINTONE-ONLY
+External auth/server/database/proxy = FORBIDDEN
+Auth Bridge = CANCELLED / DO NOT CONTINUE
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+```
+
+Dedicated user:
+`native Kintone user -> exact active App53 mapping -> canonical emp_text Employee_Code -> Employee-Self auto-bind`, with no second MBO login.
+
+Shared user:
+`approved shared Kintone principal -> Employee_Code + App801 MBO password/session -> Employee-Self`.
+
+Dual-role Employee + Approver:
+- one employee identity / one own MBO per FY;
+- `My MBO` = bound Employee_Code;
+- `My Approval Tasks` = current dedicated Kintone User + authoritative native current `Assignee`;
+- App795/static snapshots are not approval authority;
+- SHARED approval authority is denied.
+
+Own-MBO route rule:
+`OWN_MBO_SELF_APPROVER_ELISION = APPROVED`; remove self only from own effective route before snapshot, preserve remaining order/rules, never autoapprove/fabricate history; fail closed if no non-self approver remains.
+
+## 5. App53 current truth
+
+```text
+APP53 = PRODUCTION / READ_ONLY BY DEFAULT
+READ_ONLY_MAPPING_AUDIT = COMPLETED
+MBO_Kintone_User DESIGN = CONFIRMED USER_SELECT
+LIVE FIELD CREATED = NO
+Vassana canonical Employee_Code = 0044 PROVEN
+Natta canonical Employee_Code = UNRESOLVED / emp_text BLANK / FAIL CLOSED
+```
+
+Do not create/populate/correct App53 without a fresh exact one-shot authorization and production-safety gates.
+
+## 6. Current D1 implementation chain
+
+Always confirm in Control Center, but current accepted sequence is:
+
+```text
+Hybrid Core Source R1 = PASS
+Hybrid Employee-Self Runtime Entry = PASS
+Latest accepted full regression = 1024/1024 PASS
+Approval Authority Service R1 = PASS
+Home Index Integration = CURRENT GATE
+Cross-employee Detail Authority = LATER GATE
+Process.proceed Fresh Assignee Revalidation = LATER GATE
+```
+
+Approval Authority Service accepted commit:
+`5ac5ede6e40a1462f0398ba8740330742041e3bf`.
+
+## 7. D1–D7 no-drop
+
+```text
+D1 Hybrid Identity + Password + Employee-Self + Approver
 D2 Excel + PDF Legacy Format Export
 D3 8 Legacy PMS Apps -> App794 Migration
 D4 App800 HR Control Center End-to-End
@@ -70,42 +107,16 @@ D6 Integrated E2E / Security / Regression
 D7 Admin Support Center
 ```
 
-Current status is in `AI_CONTROL_CENTER.md`; detailed acceptance/no-drop criteria are in `00_MASTER_JOBLIST.md`.
+Use `00_MASTER_JOBLIST.md` for closure criteria and `AI_CONTROL_CENTER.md` for current status.
 
-## 6. Critical D1 Constraint
+## 8. User shorthand
 
-```text
-D1 = KINTONE-ONLY
-External server/service = FORBIDDEN
-Auth Bridge = CANCELLED / DO NOT CONTINUE
+`review` -> fresh-fetch HEAD; read current Control Center + authorizing Active Task + relevant Baseline; inspect exact diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED; update Control Plane docs.
 
-HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-```
+`ต่อ` / `ต่อไป` -> fresh-fetch HEAD + Control Center + Active Task; check whether the current work is accepted, pending or already executed; choose the smallest safe next action; do not spend Antigravity if ChatGPT can do it.
 
-Do not revive `services/mbo-auth-bridge/` from historical files or chat memory.
+`อนุมัติ ...` -> treat as exact narrow authorization; never widen or reuse a consumed one-shot authorization.
 
-Do not revert D1 to the obsolete assumption that every employee must perform a secondary MBO login.
+## 9. New chat
 
-Canonical distinction:
-- dedicated Kintone employee/approver -> exact authoritative Kintone User <-> Employee_Code mapping -> Employee-Self auto-bind;
-- shared Kintone principal -> Employee_Code + App801 MBO password/session;
-- dual-role Employee + Approver keeps `My MBO` and `My Approval Tasks` as separate authorization contexts;
-- self-approval -> fail closed;
-- exact physical dedicated mapping source must be proven by read-only App53 audit before implementation.
-
-For any D1 Hybrid Identity/dual-role task, route through `AI_DOCUMENT_INDEX.md` and read the relevant Baselines before acting.
-
-## 7. User Shorthand
-
-`review` → ChatGPT re-fetches HEAD and independently reviews exact latest evidence against the authorizing Active Task + relevant Baseline.
-
-`ต่อ` / `ต่อไป` → ChatGPT re-fetches HEAD + Control Center, checks duplicate/pending work, chooses the smallest next action, and invokes Antigravity only if actual execution is needed.
-
-`อนุมัติ ...` → record the exact authorization boundary; do not widen it silently and do not reuse a consumed one-shot authorization.
-
-## 8. New Chat
-
-Use only:
-`project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`
-
-That file is the single canonical reusable new-chat prompt. It includes a current handoff checkpoint, but a new chat must still re-fetch HEAD / Control Center / Active Task and must not treat the embedded checkpoint as newer than repository evidence.
+Use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` as the copy/paste prompt. The new chat must then read `CHAT_HANDOFF.md` and re-fetch repository truth before acting.
