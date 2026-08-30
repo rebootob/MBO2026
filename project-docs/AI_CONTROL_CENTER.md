@@ -5,16 +5,16 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual local/runtime execution is required
-> Updated: 2026-08-30 — APP800 DEPLOYMENT TOOL COMPATIBILITY R1 REVIEW = CORRECTIVE
+> Updated: 2026-08-30 — APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE REVIEW = TEST/EVIDENCE CORRECTIVE ONLY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 remains accepted known-good. Hybrid Identity + Dual-Role architecture is confirmed. HR/admin native Reset MBO Password authority is READY. App800 Reset MBO Password UI SOURCE R1 remains accepted at `a7a9f02aff6b497f3f8e0009dd377437a3701416`. Deployment-tool compatibility candidate exists at `cf0ae9d7d812ce7f855714434a1d56ca2d3042fc`, but independent review found ACL fail-open gaps and a non-canonical compatibility fallback; corrective is active. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 remains accepted known-good. Hybrid Identity + Dual-Role architecture is confirmed. HR/admin native Reset MBO Password authority is READY. App800 Reset MBO Password UI SOURCE R1 remains accepted at `a7a9f02aff6b497f3f8e0009dd377437a3701416`. Deployment-tool corrective source at `14b911d9cde8b59b6c15e6b05bc8fccfbb6727fd` appears logic-conformant for Findings G–J, but independent review found explicit security-test/evidence coverage gaps. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
-| D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source accepted; deployment tooling not yet accepted; deployed App800 remains prior MVP. |
+| D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source accepted; deployment tooling acceptance pending test/evidence closure; deployed App800 remains prior MVP. |
 | D5 | 🟠 Copy own previous MBO IN PROGRESS / future focused task |
 | D6 | 🔴 Integrated E2E / Security / Regression pending; must include shared-login + dedicated-login + dual-role separation |
 | D7 | ✅ Admin Support Center source functionality CLOSED; reopen only on proven defect. |
@@ -53,10 +53,10 @@ PASSWORD_RESET_NATIVE_AUTHORITY_READY = true
 ```
 
 Accepted App800 ACL shape is exact least privilege:
-- `CREATOR`: technical admin authority preserved/full;
+- `CREATOR`: full technical admin authority;
 - `HR_ADMIN_GROUP`: View only; Add/Edit/Delete/Manage/Import/Export all NO;
-- `everyone`: all rights NO;
-- no unapproved extra ACL principal may silently gain access.
+- `everyone`: explicit row, all rights NO;
+- no unexpected ACL principal.
 
 Reset MBO Password means App801 MBO credential reset only, never native Kintone/cybozu password reset.
 
@@ -73,79 +73,68 @@ APP800_CANDIDATE_CSS_BLOB = c1d32deffd9e6c164a4fd80adf20526b543ccbd7
 
 Source acceptance remains valid. No deploy is authorized.
 
-## 6. App800 Deployment Tool Compatibility R1 — Independent Review
+## 6. App800 Deployment Tool Compatibility R1 — Corrective Review Round 2
 
-Executor commit reviewed:
-`cf0ae9d7d812ce7f855714434a1d56ca2d3042fc`
+Executor corrective commit reviewed:
+`14b911d9cde8b59b6c15e6b05bc8fccfbb6727fd`
 
 Evidence:
-`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_EVIDENCE.md`
+`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_EVIDENCE.md`
 
 Executor reported:
-- focused Sprint02/tooling suite 30/30 PASS;
-- Reset UI focused suite 15/15 PASS;
-- full repository suite 985/985 PASS;
+- Sprint02/tooling suite 31/31 PASS;
+- Reset UI suite 15/15 PASS;
+- full repository suite 986/986 PASS;
 - `git diff --check` PASS;
 - zero Live Kintone operations.
 
-Accepted improvements from this candidate:
-- `executeDeploy()` now consumes canonical `dist/hr-control-center-bundle.js` and `dist/hr-control-center.css` rather than synthesizing a bundle from raw source;
-- canonical artifact validator checks existence, non-empty JS/CSS, classic-script parse, no import/export residue, and adapter/reset implementation presence;
-- stale `assertCreatorOnlyAcl(...)` is replaced in the App800 path by a dedicated least-privilege ACL validator;
-- no ACL write is added.
-
-Independent classification:
+Independent source inspection result:
 
 ```text
-D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_REVIEW = CORRECTIVE
-DEPLOY_READY = NO
-ACTIVE_LIVE_AUTH = NONE
+FINDING_G_CREATOR_LOGIC        = IMPLEMENTED
+FINDING_H_EVERYONE_LOGIC       = IMPLEMENTED
+FINDING_I_EXACT_PRINCIPAL_SET  = IMPLEMENTED
+FINDING_J_CANONICAL_DELEGATION = IMPLEMENTED
+SOURCE_DEFECT_FOUND            = NO
+TEST_EVIDENCE_COMPLETE         = NO
+DEPLOY_READY                   = NO
 ```
 
-### Finding G — CREATOR authority validation is fail-open
+### What is accepted from the corrective source
 
-Current `assertApp800LeastPrivilegeAcl()` only verifies that a CREATOR/admin-form-like entry exists. A CREATOR row with missing or false technical rights would still pass, which does not prove the accepted technical recovery authority is preserved.
+`assertApp800LeastPrivilegeAcl()` now:
+- requires exactly 3 ACL rows;
+- requires canonical `entity.type === 'CREATOR'`;
+- requires all 7 CREATOR rights as explicit booleans and exactly `true`;
+- requires exact `GROUP / HR_ADMIN_GROUP` with explicit View-only rights;
+- requires explicit `everyone` identity and all 7 rights exactly `false`;
+- rejects extra/missing principal counts;
+- rejects malformed/non-boolean rights through the shared strict-boolean guard.
 
-Required corrective:
-- require the canonical CREATOR entry (`entity.type === 'CREATOR'`);
-- require explicit boolean values for all relevant App ACL rights;
-- require CREATOR full rights exactly: appEditable, recordViewable, recordAddable, recordEditable, recordDeletable, recordImportable, recordExportable = true;
-- malformed/missing booleans fail closed.
+`buildClassicHrccBundle()` now ignores caller source and always delegates to canonical `validateHrccBundleArtifacts()`.
 
-### Finding H — `everyone` missing can pass
+`executeDeploy()` continues to consume canonical dist JS/CSS directly and contains no ACL write path.
 
-Current validator checks `everyone` only if the row exists. The accepted ACL requires an explicit everyone-denied row.
+### Remaining review gap — explicit test/evidence proof only
 
-Required corrective:
-- require an `everyone` entry by exact accepted identity/code;
-- require all relevant rights explicitly `false`;
-- missing/malformed/undefined rights fail closed.
+The evidence claims malformed `everyone`/HR rights are tested and that unexpected principals are fully covered, but the reviewed test file does not contain explicit cases for all required security variants.
 
-### Finding I — Unexpected principals are ignored
+Missing explicit proof:
+1. malformed/non-boolean or missing HR_ADMIN_GROUP right -> FAIL CLOSED;
+2. malformed/non-boolean or missing `everyone` right -> FAIL CLOSED;
+3. extra **denied** principal -> FAIL CLOSED, not only an extra privileged principal;
+4. actual accepted Kintone-style `GROUP / code=everyone` representation -> PASS, so the flexible everyone type handling is proven without weakening exact code identity.
 
-Current validator validates CREATOR, HR_ADMIN_GROUP, and optionally everyone, but does not reject extra USER/GROUP/ORGANIZATION principals. An unexpected principal with privileges could therefore coexist and the validator would still PASS.
-
-Required corrective:
-- validate exact principal set for App800 candidate ACL: CREATOR + HR_ADMIN_GROUP + everyone only;
-- any unexpected ACL principal fails closed;
-- duplicate expected principals also fail closed.
-
-### Finding J — Compatibility helper can bypass canonical artifact rule
-
-`buildClassicHrccBundle(sourceText, ...)` is labeled deprecated but returns caller-supplied text directly when it appears already bundled. That allows a non-canonical/stale arbitrary bundle to bypass `validateHrccBundleArtifacts()`.
-
-Required corrective:
-- remove the helper if no longer needed, or make it a canonical-only compatibility loader that always delegates to `validateHrccBundleArtifacts()` and returns the canonical dist JS;
-- caller-supplied source/bundle text must never become a deploy candidate;
-- do not reintroduce regex/string bundling.
+Because the logic itself appears correct, the next corrective is **TEST/EVIDENCE ONLY**. Do not modify deployment source unless one of these tests exposes a real defect; if that occurs, STOP and report before widening.
 
 ## 7. Current Active Task
 
 ```text
-ACTIVE_TASK                    = D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE
+ACTIVE_TASK                    = D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE R2 — TEST/EVIDENCE ONLY
 OWNER                          = ANTIGRAVITY
-MODE                           = SOURCE / TEST / LOCAL ARTIFACT VALIDATION ONLY
-STARTING_IMPLEMENTATION_HEAD   = cf0ae9d7d812ce7f855714434a1d56ca2d3042fc
+MODE                           = FOCUSED TEST / FULL TEST / EVIDENCE ONLY
+STARTING_IMPLEMENTATION_HEAD   = 14b911d9cde8b59b6c15e6b05bc8fccfbb6727fd
+DEPLOY_SOURCE_CHANGE_EXPECTED  = NO
 LIVE_KINTONE_WRITE             = NO
 CUSTOMIZATION_UPLOAD           = NO
 DEPLOY                         = NO
@@ -170,9 +159,9 @@ No App800/App801/App794/App53 record write, App53 schema change, App795 route wr
 ## 9. Next Gate
 
 ```text
-CURRENT_GATE  = APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE
-NEXT_OWNER    = ANTIGRAVITY FOR EXACT CORRECTIVE TASK
+CURRENT_GATE  = APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE R2 — TEST/EVIDENCE ONLY
+NEXT_OWNER    = ANTIGRAVITY FOR MINIMAL TEST/EVIDENCE CLOSURE
 EXPECTED_NEXT = CHATGPT INDEPENDENT REVIEW
 ```
 
-After tooling acceptance, Control Plane will choose the next smallest safe action; deployment still requires a separate exact user authorization, and Hybrid Identity audit does not start automatically.
+After tooling acceptance, preferred next Control Plane work is the already-confirmed `D1 HYBRID IDENTITY MAPPING & DUAL-ROLE READ-ONLY AUDIT R1` for Natta + Vassana. App800 deployment remains a separate exact authorization gate and does not start automatically.
