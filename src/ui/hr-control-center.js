@@ -1,6 +1,6 @@
 /**
  * MBO 2026 — Secure HR Control Center MVP UI Component & Runtime
- * 
+ *
  * Bound strictly to HR Control Center App 800 (or injected hrControlCenterAppId) on app.record.index.show.
  * GET-Only browser runtime fetching non-confidential monitoring fields from Apps 794–798.
  * Whitelist-based field security, HTML escaping, bounded pagination, functional filtering,
@@ -199,11 +199,11 @@ export function renderHrControlCenterHtml({
   ${warningHtml}
 
   <div class="hrcc-health-panel">
-    <strong>System Health & Inventory:</strong> 
-    App ${appIds.mboV2AppId} Count: ${escapeHtml(normHealth.app794Count)} | 
-    App ${appIds.routingMasterAppId} Active Routings: ${routingText} | 
-    App ${appIds.scoringConfigMasterAppId} Published Configs: ${formatHealthText(normHealth.scoring)} | 
-    App ${appIds.hoshinMasterAppId} Ready Hoshins: ${formatHealthText(normHealth.hoshin)} | 
+    <strong>System Health & Inventory:</strong>
+    App ${appIds.mboV2AppId} Count: ${escapeHtml(normHealth.app794Count)} |
+    App ${appIds.routingMasterAppId} Active Routings: ${routingText} |
+    App ${appIds.scoringConfigMasterAppId} Published Configs: ${formatHealthText(normHealth.scoring)} |
+    App ${appIds.hoshinMasterAppId} Ready Hoshins: ${formatHealthText(normHealth.hoshin)} |
     App ${appIds.revisionArchiveAppId} Archive Snapshots: ${formatHealthText(normHealth.archive)}
   </div>
 
@@ -270,11 +270,36 @@ export function renderHrControlCenterHtml({
   <!-- Pipeline Breakdown -->
   <div class="hrcc-pipeline-bar" style="background:#eef2f5; padding:0.75rem; border-radius:6px; margin-bottom:1rem;">
     <strong>Pipeline Breakdown:</strong>
-    Draft: <strong>${pipeline.DRAFT}</strong> | 
-    Submitted: <strong>${pipeline.SUBMITTED}</strong> | 
-    In Review: <strong>${pipeline.IN_REVIEW}</strong> | 
-    Completed: <strong>${pipeline.COMPLETED}</strong> | 
+    Draft: <strong>${pipeline.DRAFT}</strong> |
+    Submitted: <strong>${pipeline.SUBMITTED}</strong> |
+    In Review: <strong>${pipeline.IN_REVIEW}</strong> |
+    Completed: <strong>${pipeline.COMPLETED}</strong> |
     Rejected: <strong>${pipeline.REJECTED}</strong>
+  </div>
+
+  <!-- Reset MBO Password Panel -->
+  <div class="hrcc-reset-panel" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:0.375rem; padding:1.25rem; margin-bottom:1.5rem;">
+    <h2 class="hrcc-reset-title" style="font-size:1.125rem; font-weight:700; margin-top:0; margin-bottom:0.75rem; color:#111827;">
+      🔑 รีเซ็ตรหัสผ่าน MBO / Reset MBO Password
+    </h2>
+    <p class="hrcc-reset-help" style="font-size:0.875rem; color:#4b5563; margin-bottom:1rem; line-height:1.5;">
+      สำหรับผู้ใช้ที่มีสิทธิ์ HR Admin หรือ Technical Recovery: ป้อน Employee Code เพื่อรีเซ็ตรหัสผ่าน <strong>MBO Credentials (App 801)</strong> เป็นรหัสผ่านเริ่มต้น (เท่ากับ Employee Code)<br>
+      <span style="color:#b91c1c; font-weight:600;">⚠️ หมายเหตุ: การดำเนินการนี้จะรีเซ็ตเฉพาะรหัสผ่าน MBO ในระบบ MBO เท่านั้น ไม่กระทบและไม่ได้รีเซ็ตรหัสผ่านบัญชี Kintone/cybozu หลักของผู้ใช้</span>
+    </p>
+    <div class="hrcc-reset-form" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+      <label style="display:flex; flex-direction:column; gap:0.25rem; font-size:0.875rem; font-weight:600;">
+        Employee Code:
+        <input type="text" id="hrcc-reset-emp-code" class="hrcc-input" placeholder="e.g. EMP001" style="padding:0.5rem; border:1px solid #d1d5db; border-radius:0.25rem; width:180px;">
+      </label>
+      <label style="display:flex; flex-direction:column; gap:0.25rem; font-size:0.875rem; font-weight:600;">
+        Confirm Employee Code:
+        <input type="text" id="hrcc-reset-emp-confirm" class="hrcc-input" placeholder="Re-enter Employee Code" style="padding:0.5rem; border:1px solid #d1d5db; border-radius:0.25rem; width:180px;">
+      </label>
+      <button type="button" id="hrcc-reset-btn" class="hrcc-btn-danger" style="padding:0.5rem 1.25rem; background-color:#dc2626; color:#ffffff; font-weight:600; border:none; border-radius:0.25rem; cursor:pointer;">
+        Reset MBO Password
+      </button>
+    </div>
+    <div id="hrcc-reset-feedback" style="margin-top:1rem; font-size:0.875rem; display:none;"></div>
   </div>
 
   <table class="hrcc-table">
@@ -299,6 +324,7 @@ export function renderHrControlCenterHtml({
 
 export function createHrccRuntime({
   kintoneApi,
+  onResetMboPassword,
   appIds = DEFAULT_APP_IDS,
   getAppId = () => typeof kintone !== 'undefined' ? kintone.app.getId() : null,
   getHeaderSpaceElement = () => typeof kintone !== 'undefined' ? kintone.app.getHeaderSpaceElement() : null
@@ -346,6 +372,20 @@ export function createHrccRuntime({
 
       let activeFilters = { fy: '', dept: '', sec: '', status: '' };
 
+      const defaultResetHandler = async ({ employeeCode }) => {
+        if (typeof MboKintoneAuthAdapter !== 'undefined') {
+          const apiWrapper = {
+            getRecords: async (appId, query) => kintoneApi('/k/v1/records.json', 'GET', { app: appId, query }),
+            updateRecord: async (appId, id, record) => kintoneApi('/k/v1/record.json', 'PUT', { app: appId, id, record })
+          };
+          const adapter = new MboKintoneAuthAdapter({ api: apiWrapper, appId: appIds.credentialAppId || 801 });
+          return await adapter.resetMboPassword({ employeeCode });
+        }
+        throw new Error('MboKintoneAuthAdapter is unavailable.');
+      };
+
+      const resetFn = onResetMboPassword || defaultResetHandler;
+
       const renderUI = () => {
         headerSpace.innerHTML = renderHrControlCenterHtml({
           evaluations,
@@ -366,6 +406,80 @@ export function createHrccRuntime({
         if (deptSelect) deptSelect.addEventListener('change', (e) => { activeFilters.dept = e.target.value; renderUI(); });
         if (secSelect) secSelect.addEventListener('change', (e) => { activeFilters.sec = e.target.value; renderUI(); });
         if (statusSelect) statusSelect.addEventListener('change', (e) => { activeFilters.status = e.target.value; renderUI(); });
+
+        // Attach Reset MBO Password event listener
+        const resetBtn = headerSpace.querySelector('#hrcc-reset-btn');
+        const empCodeInput = headerSpace.querySelector('#hrcc-reset-emp-code');
+        const empConfirmInput = headerSpace.querySelector('#hrcc-reset-emp-confirm');
+        const feedbackDiv = headerSpace.querySelector('#hrcc-reset-feedback');
+
+        if (resetBtn) {
+          let isExecuting = false;
+          resetBtn.addEventListener('click', async () => {
+            if (isExecuting) return; // Prevent double-clicks / in-flight repeat
+
+            const empCode = empCodeInput ? empCodeInput.value.trim() : '';
+            const empConfirm = empConfirmInput ? empConfirmInput.value.trim() : '';
+
+            if (feedbackDiv) {
+              feedbackDiv.style.display = 'block';
+              feedbackDiv.innerHTML = '';
+            }
+
+            // 1. Empty / Missing input check -> Zero reset calls
+            if (!empCode || !empConfirm) {
+              if (feedbackDiv) {
+                feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ กรุณาระบุ Employee Code และยืนยัน Employee Code ให้ครบถ้วน / Please enter both Employee Code and confirmation.</div>`;
+              }
+              return;
+            }
+
+            // 2. Confirmation mismatch check -> Zero reset calls
+            if (empCode !== empConfirm) {
+              if (feedbackDiv) {
+                feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ Employee Code และค่ายืนยันไม่ตรงกัน / Employee Code and confirmation code do not match.</div>`;
+              }
+              return;
+            }
+
+            // 3. Set in-flight state & disable button
+            isExecuting = true;
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Resetting...';
+
+            try {
+              const res = await resetFn({ employeeCode: empCode });
+
+              if (res && res.status === 'PASSWORD_RESET') {
+                const safeCode = escapeHtml(res.employeeCode || empCode);
+                if (feedbackDiv) {
+                  feedbackDiv.innerHTML = `<div style="background:#ecfdf5; border-left:4px solid #10b981; padding:0.75rem 1rem; border-radius:0.25rem; color:#065f46;">
+                    ✅ <strong>รีเซ็ตรหัสผ่าน MBO สำเร็จ / Reset MBO Password Successful:</strong><br>
+                    รหัสผ่าน MBO สำหรับ Employee Code <strong>[${safeCode}]</strong> ถูกรีเซ็ตเป็นรหัสผ่านเริ่มต้น (เท่ากับ Employee Code) แล้ว<br>
+                    ผู้ใช้ต้องเปลี่ยนรหัสผ่านในการเข้าสู่ระบบ MBO ครั้งถัดไปเมื่อเข้าใช้งานแบบ Shared Account<br>
+                    <small style="color:#047857; display:block; margin-top:0.25rem;">ℹ️ หมายเหตุ: การดำเนินการนี้ไม่ได้รีเซ็ตรหัสผ่านบัญชี Kintone/cybozu หลักของผู้ใช้ / Note: This action does not reset native Kintone/cybozu account password.</small>
+                  </div>`;
+                }
+                if (empCodeInput) empCodeInput.value = '';
+                if (empConfirmInput) empConfirmInput.value = '';
+              } else {
+                const reason = escapeHtml(res?.reason || res?.status || 'Unknown credential failure');
+                if (feedbackDiv) {
+                  feedbackDiv.innerHTML = `<div class="hrcc-warning-box">❌ ไม่สามารถรีเซ็ตรหัสผ่าน MBO ได้: ${reason}</div>`;
+                }
+              }
+            } catch (err) {
+              const errMsg = escapeHtml(err.message || 'Technical error occurred');
+              if (feedbackDiv) {
+                feedbackDiv.innerHTML = `<div class="hrcc-warning-box">❌ เกิดข้อผิดพลาดทางเทคนิค: ${errMsg}</div>`;
+              }
+            } finally {
+              isExecuting = false;
+              resetBtn.disabled = false;
+              resetBtn.textContent = 'Reset MBO Password';
+            }
+          });
+        }
       };
 
       renderUI();
