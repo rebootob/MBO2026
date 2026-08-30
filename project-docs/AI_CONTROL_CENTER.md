@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — HYBRID CORE SOURCE R1 = CORRECTIVE / APP53 PRODUCTION READ-ONLY GUARD STRENGTHENED
+> Updated: 2026-08-30 — HYBRID CORE SOURCE R1 CORRECTIVE R1 REVIEWED / R2 OPEN / APP53 PRODUCTION READ-ONLY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. App800 Reset UI source/tooling accepted. Natta/Vassana read-only audit completed. User-approved mapping/self-approval/native-access design is confirmed. Hybrid Identity Core Source R1 executor commit `20747ef...` is **CORRECTIVE** because canonical mapping resolver and self-appraiser transformation remain fail-open/semantically unsafe. App53 is Production and READ-ONLY by default. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. App800 Reset UI source/tooling accepted. Natta/Vassana read-only audit completed. User-approved mapping/self-approval/native-access design is confirmed. Hybrid Identity Core Source R1 Corrective R1 commit `5cc5ea6...` fixes the major strict-mapping / dedicated-mode / slot-preserving defects, but remains **CORRECTIVE R2** due one SHARED requester compatibility regression and missing mandatory generic 3/4-slot regression proof. App53 is Production and READ-ONLY by default. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source/tooling accepted; deployed App800 remains prior MVP until separately authorized deployment. |
@@ -229,63 +229,87 @@ MBO_DEDICATED_ACCESS
 
 Target native model remains status-aware App794 Record Permissions using current user fields (`Requester_User`, `First_Manager_User`, `Manager_User`, `GM_User`). Exact group/App ACL/Record ACL payload remains a later separately authorized gate.
 
-## 8. Hybrid Identity Core Source R1 Independent Review — CORRECTIVE
+## 8. Hybrid Identity Core Source R1 Review History
+
+### 8.1 Initial executor commit — CORRECTIVE
 
 Executor commit:
 `20747ef3781d5085e9718f511bd76cf667879399`
 
-Exact implementation diff from Control Plane base contained only:
-- `src/services/mbo-identity-service.js`;
-- `src/services/routing-service.js`;
-- new `tests/d1-hybrid-identity-core-source.test.js`;
-- new R1 evidence.
+Independent findings:
+- canonical mapping resolver had noncanonical fallbacks/default-active behavior;
+- requester mode/input was not strict enough;
+- self-appraiser elision flattened users instead of preserving approval slots/rules.
 
-No App53/live/schema/deploy/ACL/group/config/dist/UI/main-app file changed. Executor evidence reports focused 10/10 PASS, full suite 998/998 PASS, `git diff --check` PASS and zero live operations. Those test results do not override the independent source findings.
-
-### Finding A — mapping resolver fail-open
-
-Current canonical resolver incorrectly permits fallback/default behavior from `Account_Status`, missing `Number_0`, `Kintone_User_Code`, `Employee_Code`, and USER_SELECT `.value`. This violates the confirmed exact App53 mapping source and could bind a dedicated user from noncanonical/superseded data.
-
-### Finding B — effective requester mode/input exactness
-
-Current requester helper does not reject an unknown mode explicitly and silently trims dedicated native user input instead of enforcing exact identity.
-
-### Finding C — self-appraiser elision slot semantics
-
-Current transformation flattens individual users across route levels, reconstructs topology by user count, does not carry the surviving slot's approval rule when shifted, may truncate flattened users beyond four, compares identity case-insensitively, and does not fail closed when own-MBO context lacks the dedicated user code.
-
-Independent result:
-
+Result:
 ```text
 D1_HYBRID_IDENTITY_CORE_SOURCE_R1 = CORRECTIVE
+APP53_PRODUCTION_TOUCHED           = NO
+```
+
+### 8.2 Corrective R1 executor commit — CORRECTIVE R2
+
+Executor commit:
+`5cc5ea609a4a4c5d2d218866feb0867e573973c0`
+
+Scope from Control Plane base `63fb883...` is exactly:
+- `src/services/mbo-identity-service.js`;
+- `src/services/routing-service.js`;
+- `tests/d1-hybrid-identity-core-source.test.js`;
+- new Corrective R1 evidence.
+
+No App53 schema/record/config, UI, build, dist, ACL/group or deployment file changed. Evidence reports focused 24/24 PASS, full suite 1012/1012 PASS, `git diff --check` PASS, Live GET/POST/PUT/DELETE = 0 and `APP53_PRODUCTION_TOUCHED = NO`.
+
+Accepted improvements from source inspection:
+- strict canonical App53 resolver now requires `Number_0=1`, exact `MBO_Kintone_User[].code`, canonical `emp_text`, and no pseudo-field fallback;
+- DEDICATED requester mode is exact and rejects whitespace/unknown modes;
+- Natta blank `emp_text` remains fail closed;
+- self-appraiser transformation now preserves approval slots, multi-user slot membership and approval rules.
+
+Remaining Finding D — SHARED requester regression:
+- pre-corrective accepted SHARED requester comparison normalized case;
+- Corrective R1 changed SHARED comparison to trim-only/case-sensitive;
+- prior authorizing task required SHARED behavior to remain unchanged.
+
+Remaining Finding E — required proof gap:
+- authorizing task explicitly required generic 3-slot and 4-slot topology regression coverage;
+- committed focused test suite contains no explicit generic 3/4-slot transformation tests.
+
+Independent current result:
+
+```text
+D1_HYBRID_IDENTITY_CORE_SOURCE_R1 = CORRECTIVE R2
 SOURCE_ACCEPTED                    = NO
+MAJOR_FINDINGS_A_B_C               = CORRECTED
+REMAINING_SOURCE_DEFECT            = SHARED_REQUESTER_COMPATIBILITY
+REMAINING_TEST_GAP                 = GENERIC_3_4_SLOT_REGRESSION
 LIVE_DEPLOY_READY                  = NO
 APP53_PRODUCTION_TOUCHED           = NO
 ```
 
+The isolated legacy `resolveEmployeeIdentity()` compatibility fallback is not accepted as the future dedicated runtime binding API. Future Hybrid integration must use the strict canonical dedicated resolver unless a separately reviewed migration removes/reconciles that legacy helper.
+
 ## 9. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE
+ACTIVE_TASK = D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE R2
 OWNER       = ANTIGRAVITY
 MODE        = SOURCE / FOCUSED TEST ONLY
 APP53_MODE  = PRODUCTION READ_ONLY
-LIVE_WRITE  = NO
+LIVE_ACCESS = NO
 DEPLOY      = NO
 ```
 
-Corrective scope is restricted to:
-- canonical exact App53 mapping resolver;
-- exact requester mode/user fail-closed behavior;
-- slot-preserving self-appraiser elision with approval-rule preservation;
-- focused/regression tests;
-- new corrective evidence.
+Corrective R2 scope is intentionally narrow:
+- `src/services/routing-service.js` only for SHARED requester compatibility restoration;
+- `tests/d1-hybrid-identity-core-source.test.js` for SHARED regression + explicit generic 3/4-slot tests;
+- new Corrective R2 evidence.
 
-No live GET/write or protected Kintone configuration is authorized.
+`src/services/mbo-identity-service.js` is read-only in this R2.
 
 Maximum executor status:
 ```text
-D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_READY_PENDING_CHATGPT_REVIEW
+D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_R2_READY_PENDING_CHATGPT_REVIEW
 ```
 
 ## 10. Authorization Ledger / Safety
@@ -308,7 +332,7 @@ No App800/App801/App794/App53 record write, App53 schema/bulk change, group crea
 ## 11. Next Gate
 
 ```text
-CURRENT_GATE  = D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE
+CURRENT_GATE  = D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE R2
 CURRENT_OWNER = ANTIGRAVITY
 NEXT_REVIEWER = CHATGPT
 ```
