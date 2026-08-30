@@ -2,6 +2,7 @@
 
 > Status: **CONFIRMED BUSINESS DESIGN / LIVE KINTONE WRITES NOT YET AUTHORIZED**  
 > Confirmed by user: **2026-08-30 — “เอาตามที่แนะนำ”**  
+> Production protection reconfirmed by user: **2026-08-30 — App53 is Production; exercise special caution before any change**  
 > Scope: dedicated Kintone employee mapping, own-MBO self-approval exception, dedicated App794 least-privilege access design
 
 ---
@@ -68,6 +69,34 @@ Active = 1
 
 Therefore Natta cannot become `IDENTITY_BOUND` until the real canonical Employee_Code is provided/corrected in App53. Do not substitute `Number = 243`, Vendor Account Number, email, or a guessed padded value.
 
+### App53 Production Protection — Mandatory
+
+App53 Employee Namelist is a **Production / protected source-of-truth application**.
+
+```text
+APP53_ENVIRONMENT                 = PRODUCTION
+APP53_DEFAULT_MODE                = READ_ONLY
+APP53_SCHEMA_WRITE_AUTH           = NONE unless separately and exactly granted
+APP53_RECORD_WRITE_AUTH           = NONE unless separately and exactly granted
+APP53_BULK_WRITE_AUTH             = NONE unless separately and exactly granted
+```
+
+No source implementation, test result, Hybrid Identity design approval, App794 deployment approval, or general project authorization may be interpreted as permission to change App53.
+
+Before any future App53 schema or record write, all of the following are mandatory:
+1. a new explicit one-shot user authorization naming App53 and the exact intended change;
+2. fresh pre-write schema/record evidence for the exact target;
+3. a current backup/export or otherwise reviewed recovery material sufficient for the exact change;
+4. an exact write payload/change plan reviewed before execution;
+5. impact/risk and rollback plan stated before execution;
+6. no unrelated field/record/bulk changes in the same operation;
+7. immediate post-write readback proving only the authorized target changed;
+8. consumed authorization closes after that one exact operation and is never reused.
+
+If any prerequisite is missing or ambiguous, **STOP and keep App53 unchanged**.
+
+Adding `MBO_Kintone_User`, populating mapping values, or correcting Natta `emp_text` are three distinct protected concerns and must not be silently bundled together. Bulk population/import is forbidden unless separately and explicitly authorized with an exact reviewed target set.
+
 ### Write authorization boundary
 
 This Baseline confirms the design only. It does **not** authorize:
@@ -76,7 +105,7 @@ This Baseline confirms the design only. It does **not** authorize:
 - correcting Natta `emp_text`;
 - any App53 schema or record write.
 
-Those are protected changes requiring a separate exact user authorization.
+Those are protected Production changes requiring a separate exact user authorization and the mandatory Production Protection gates above.
 
 ---
 
@@ -268,7 +297,7 @@ No App53/App794/App795/App801 live write or deployment is authorized by Gate A.
 
 ### Gate B — Protected Kintone configuration
 
-Requires a separate exact user authorization before execution:
+Requires a separate exact user authorization before execution and must comply with the App53 Production Protection section above:
 - add App53 `MBO_Kintone_User` USER_SELECT field;
 - populate reviewed dedicated mappings;
 - correct Natta `emp_text` only after the real Employee_Code is provided/verified;
@@ -294,8 +323,11 @@ After source + configuration are independently accepted:
 
 ```text
 BUSINESS_DESIGN_CONFIRMED       = YES
+APP53_ENVIRONMENT               = PRODUCTION
+APP53_DEFAULT_MODE              = READ_ONLY
 APP53_SCHEMA_WRITE_AUTH         = NONE
 APP53_RECORD_WRITE_AUTH         = NONE
+APP53_BULK_WRITE_AUTH           = NONE
 APP794_APP_ACL_WRITE_AUTH       = NONE
 APP794_RECORD_ACL_WRITE_AUTH    = NONE
 GROUP_WRITE_AUTH                = NONE
@@ -310,6 +342,7 @@ No live write/deploy is authorized by this Baseline.
 ## 10. Change Rule
 
 Any change to:
+- App53 Production protection/read-only-default rule;
 - `MBO_Kintone_User` as the authoritative mapping design;
 - exact-one-user / active-row / canonical-emp_text mapping rules;
 - own-MBO self-appraiser elision semantics;
