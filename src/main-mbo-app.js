@@ -1076,7 +1076,7 @@ if (typeof kintone !== 'undefined') {
       }
 
       const appId = event.appId || getMboAppId();
-      const recordId = event.recordId || record?.$id?.value || record?.Record_ID?.value;
+      const recordId = event.recordId || record?.$id?.value;
       if (!recordId) {
         return false;
       }

@@ -1088,7 +1088,10 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const dedicatedCrossProcRes = await processProceedHandler(dedicatedCrossProcEvent);
   assert.equal(dedicatedCrossProcRes, dedicatedCrossProcEvent, 'Authorized Dedicated cross-employee process proceed must return event');
   assert.equal(singleRecordGetCount, 1, 'Authorized Dedicated cross-employee process proceed must perform exactly 1 fresh GET');
-  assert.ok(getCurrentEmployeeSelfContext()?.employeeCode === '0044', 'Bound Employee-Self context must remain 0044 / vassana');
+  const preservedProcCtx = getCurrentEmployeeSelfContext();
+  assert.ok(preservedProcCtx && preservedProcCtx.mode === 'DEDICATED', 'Bound Employee-Self mode must remain DEDICATED');
+  assert.equal(preservedProcCtx.employeeCode, '0044', 'Bound Employee-Self context employeeCode must remain 0044');
+  assert.equal(preservedProcCtx.kintoneUserCode, 'vassana', 'Bound Employee-Self context kintoneUserCode must remain vassana');
 
   // 4. Fresh Assignee mismatch: 1 fresh GET, returns false
   singleRecordGetCount = 0;
@@ -1147,20 +1150,21 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.equal(missingProcRes, false, 'Process proceed on missing record must fail closed (return false)');
   assert.equal(singleRecordGetCount, 1, 'Missing record path must attempt 1 fresh GET');
 
-  // 7. Missing record id: 0 GETs, returns false
+  // 7. Missing record id (spoof/static Record_ID must not be trusted): 0 GETs, returns false
   singleRecordGetCount = 0;
   const noIdProcEvent = {
     type: 'app.record.detail.process.proceed',
     appId: 794,
     record: {
       Employee_Code: { value: '0118' },
-      Status: { value: '02 Waiting Appraiser 1' }
+      Status: { value: '02 Waiting Appraiser 1' },
+      Record_ID: { value: '901' }
     },
     action: { value: 'Approve' }
   };
   const noIdProcRes = await processProceedHandler(noIdProcEvent);
-  assert.equal(noIdProcRes, false, 'Process proceed without recordId must fail closed (return false)');
-  assert.equal(singleRecordGetCount, 0, 'Missing recordId must perform 0 approval revalidation GETs');
+  assert.equal(noIdProcRes, false, 'Process proceed without native recordId must fail closed (return false) even if Record_ID field is present');
+  assert.equal(singleRecordGetCount, 0, 'Spoof Record_ID field must perform 0 approval revalidation GETs');
 
   // 8. SHARED cross-employee action: 0 GETs, returns false
   setCurrentEmployeeSelfContext({ mode: 'SHARED', employeeCode: '0044', kintoneUserCode: 'f1' });
