@@ -1,9 +1,8 @@
 # MBO2026 — PROJECT LATEST SUMMARY
 
-> Prepared: 2026-08-29 after App794 WP2 R3 Rev57 user UAT PASS.  
+> Prepared: 2026-08-30 after App794 Rev60 user UAT PASS, HR native reset authority verification, and user confirmation of Hybrid Identity / dual-role Employee + Approver architecture.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Snapshot source HEAD before this documentation-only cycle: `eaba1236ac9fd86724c14cca0334842bd0ddf685`  
 > IMPORTANT: this is a handoff summary, not a replacement for current Git/Live evidence. Always re-fetch HEAD and `AI_CONTROL_CENTER.md` before acting.
 
 ---
@@ -25,7 +24,7 @@ Rules that must never be lost:
 - executor cannot self-certify independent review;
 - no Live Kintone write/deploy without exact explicit authorization;
 - never widen or reuse a consumed one-shot authorization;
-- protected legacy source apps remain read-only;
+- protected legacy/source apps remain read-only unless exactly authorized;
 - security/privacy/data-truthfulness are release blockers;
 - completed/accepted work must not be reimplemented without a proven regression.
 
@@ -33,48 +32,41 @@ Rules that must never be lost:
 
 ## 2. Current Accepted Live App794 Baseline
 
-App794 WP2 R3 is accepted known-good at Live Revision 57.
+App794 Rev60 is accepted known-good.
 
 ```text
-LIVE_REVISION          = 57
-DEPLOYED_SOURCE_COMMIT = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
+LIVE_REVISION          = 60
+PREVIEW_REVISION       = 60
+DEPLOYED_SOURCE_COMMIT = 1ed342ad137a4a364496a28d29bdffd24a99b511
 LIVE_SCOPE             = ALL
 LIVE_TOPOLOGY          = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-LIVE_JS_IDENTITY       = ac22a56cb9d78001384241fe12745f7a2da3da84
+LIVE_JS_IDENTITY       = 115a08ace32bdf850cb5eebf25b953d1803114d0
 LIVE_CSS_IDENTITY      = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-TECHNICAL_READBACK     = PASS / exact pair
-INDEPENDENT_GIT_REVIEW = PASS
+TECHNICAL_READBACK     = PASS WITH AUDIT CAVEAT
 USER_RUNTIME_UAT       = PASS
 LIVE_RUNTIME_STATUS    = ACCEPTED KNOWN-GOOD
 ```
 
-User-accepted WP2 R3 results:
-- My MBO is a structured table: `Fiscal Year | Status | Record Key | Action`.
-- Existing Detail/Edit shows a visible styled `Back to My MBO` control.
-- Native Kintone Comment Mirror loads real comments and renders a structured read-only table.
-- Kintone Comment GET contract uses `limit=10`.
-- CSS runtime defect caused by a stray unclosed selector was fixed and covered by regression tests.
+The Rev60 fatal-Create clean-exit corrective is closed. The prior leave-site/unsaved-change popup no longer appears when using the canonical Back recovery action.
 
-Do not reopen WP2 unless a real regression is proven.
+Rev57 remains historical prior known-good evidence but is no longer the primary rollback baseline after Rev60 acceptance.
 
-Reusable knowledge is stored in:
+Reusable runtime knowledge is stored in:
 `skills/mbo-kintone-ui-runtime-debugging/SKILL.md`
 
 ---
 
 ## 3. D1-D7 Current Project Status
 
-Important distinction: **WP2 UI under D1 is closed, but D1 as a complete deliverable must still satisfy every closure gate in `00_MASTER_JOBLIST.md`. Do not infer full D1 completion from WP2 completion alone.**
-
 | ID | Deliverable | Latest Status | Notes |
 |---|---|---|---|
-| D1 | Login + Password Change + Employee-Self MBO Gate | 🟠 OVERALL IN PROGRESS / WP2 UI CLOSED | Rev57 WP2 UI known-good. Full D1 closure still requires all Master Joblist security/session/reset/ownership gates to be evidence-backed. |
+| D1 | Hybrid Identity + Password + Employee-Self + Approver access | 🟠 OVERALL IN PROGRESS | Rev60 accepted. Password Reset core exists. HR/admin native reset authority is READY. Hybrid dedicated-vs-shared identity and dual-role behavior are now canonical but still require identity-source audit + implementation/UAT. |
 | D2 | Excel + PDF Legacy Format Export | 🟠 IN PROGRESS | Must prove Part A, Part B, combined/N/A justification, PDF format parity and export security. |
-| D3 | 8 Legacy PMS Apps -> App794 Migration | 🟠 IN PROGRESS / LIVE WRITE NOT AUTHORIZED | Legacy sources are read-only. Must complete mapping, dry run, conflict reconciliation, backup, exact manifest, explicit App794 write authorization, batch write and read-back. |
-| D4 | App800 HR Control Center End-to-End | 🟠 IN PROGRESS | Must cover operational HR administration, not dashboard charts only. |
-| D5 | Copy Own Previous MBO | 🟠 READY TO RESUME ON EXPLICIT TASK | Do not start automatically. Copy only approved planning content; never carry scores/workflow/history/routing/security state. |
-| D6 | Integrated E2E / Security / Regression | 🔴 PENDING / BLOCKED BY CONSTITUENT WORK | Final integrated proof after relevant D1-D5 + D7 are ready. |
-| D7 | Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only on a new proven defect. `admin-form` remains technical admin only, no business approval authority. |
+| D3 | 8 Legacy PMS Apps -> App794 Migration | 🟠 IN PROGRESS / LIVE WRITE NOT AUTHORIZED | Legacy sources are read-only. Mapping/dry run/reconciliation/backup/exact manifest required before any target write. |
+| D4 | App800 HR Control Center End-to-End | 🟠 IN PROGRESS | HR native authority for Reset MBO Password is READY. Production Reset UI source/test/build candidate is the current executor task. |
+| D5 | Copy Own Previous MBO | 🟠 IN PROGRESS / future focused task | Carry only approved planning whitelist; fresh target-year routing/identity required. |
+| D6 | Integrated E2E / Security / Regression | 🔴 PENDING | Must cover both identity modes and dual-role access before final closure. |
+| D7 | Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only on a new proven defect. `admin-form` remains technical admin only. |
 
 Project close condition remains:
 
@@ -91,9 +83,9 @@ P0_DEFECTS_OPEN = 0
 
 ---
 
-## 4. D1 Durable Architecture / Remaining Closure Boundary
+## 4. D1 Durable Architecture — Hybrid Identity
 
-D1 is permanently Kintone-only:
+D1 remains permanently Kintone-only:
 
 ```text
 External server/service = FORBIDDEN
@@ -103,74 +95,139 @@ Reverse proxy           = FORBIDDEN
 Auth Bridge             = CANCELLED / SUPERSEDED
 ```
 
-Canonical path:
+Canonical identity model confirmed by the user on 2026-08-30:
 
 ```text
-Kintone authenticated principal
--> App794 browser customization
--> MBO Employee_Code authentication/session
--> App801 credential/session metadata through Kintone REST/JS API
--> Employee-Self App794 scope
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 ```
 
-Shared Kintone principal limitation must remain explicit:
+### Dedicated Kintone users
+
+Examples confirmed by the user as dual-role people: Natta and Vassana.
+
+Target flow:
+
+```text
+native Kintone login
+-> exact authoritative Kintone User Code <-> active Employee_Code mapping
+-> Employee-Self auto-bind
+-> My MBO without secondary MBO password
+```
+
+The same user may also have:
+
+```text
+My Approval Tasks
+-> current Kintone User
+-> authoritative current native Workflow assignment
+```
+
+One person remains one employee and one own-MBO record per FY. The Employee and Approver roles are contexts, not duplicate identities.
+
+Exact Natta/Vassana Employee_Code mappings and the physical App53 mapping field/source are **not yet proven** and must be established by READ-ONLY App53 audit before implementation. Missing/ambiguous mapping fails closed.
+
+### Shared Kintone users
+
+Existing model remains:
+
+```text
+approved shared Kintone principal
+-> Employee_Code + App801 MBO password
+-> 8-hour same-tab MBO session
+-> Employee-Self scope
+```
+
+Shared-principal limitation remains explicit:
+
 `DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT`.
 
-Full D1 closure must still be checked against `00_MASTER_JOBLIST.md`, including controlled HR/admin password reset, session/security UAT, own-only detail/edit/history/create, cross-employee denial, delete denial, no token/password/hash exposure, truthful comments/history/attachments and final independent review.
+### Self-approval
+
+A dual-role user's own record must not become approvable by that same user. Canonical failure:
+
+`SELF_APPROVAL_ROUTE_CONFLICT`.
+
+Do not silently skip an appraiser or auto-approve.
 
 ---
 
-## 5. Protected Data / Authorization State
+## 5. App795 / Dual-Role Interpretation
+
+App795 remains the route master; it is not one row per employee.
+
+Example:
+
+```text
+TMG2|Marketing -> natta -> uchida
+```
+
+If 20 TMG2 Marketing employees are currently at Natta's review step:
+- App795 still has one route row;
+- App794 has 20 distinct employee MBO records;
+- Natta's `My Approval Tasks` may show 20 pending records while they are actually assigned to Natta;
+- records not yet at Natta or already advanced are not pending for Natta.
+
+For a dedicated employee's own MBO, the effective requester actor is that person's dedicated Kintone user after exact mapping. For shared employees, App795 `Requester_User` remains the shared-requester fallback.
+
+---
+
+## 6. HR Password Reset Authority
+
+User created the dedicated static Kintone group:
+
+```text
+DISPLAY_NAME = MBO HR Administrators
+GROUP_CODE   = HR_ADMIN_GROUP
+```
+
+User runtime console readback confirmed:
+
+```text
+App800 HR_ADMIN_GROUP:
+View = YES
+Add/Edit/Delete/Manage/Import/Export = NO
+
+App801 HR_ADMIN_GROUP:
+View = YES
+Edit = YES
+Add/Delete/Manage/Import/Export = NO
+
+PASSWORD_RESET_NATIVE_AUTHORITY_READY = true
+```
+
+`admin-form` is also ready as Technical Admin/recovery.
+
+Reset MBO Password is an App801 MBO credential function. It must **not** be presented as a Kintone/cybozu account password reset.
+
+---
+
+## 7. Protected Data / Authorization State
 
 Protected/read-only by default:
 - App53 Employee Master/source data;
 - legacy PMS Apps `283, 310, 305, 643, 307, 640, 715, 716`.
 
-Current Live authorization state:
+No Hybrid Identity baseline update authorizes an App53 schema/record write, App794 deploy, routing write, or ACL change.
 
-```text
-ACTIVE_LIVE_DEPLOY_AUTHORIZATION = NONE
-ACTIVE_KINTONE_WRITE_AUTHORIZATION = NONE
-```
-
-The WP2 R3 authorization `APP794-D1-WP2-R3-DEPLOY-20260829-01` was consumed/closed and must never be reused.
-
-No automatic rollback is authorized.
+Current authorization is always taken from `AI_CONTROL_CENTER.md`; do not reuse historical one-shot authorizations.
 
 ---
 
-## 6. Accepted Work That Must Not Be Reopened Without Regression Evidence
+## 8. Accepted Work That Must Not Be Reopened Without Regression Evidence
 
-- WP2 R3 App794 Live Rev57 UI baseline.
-- CSS runtime root-cause correction and CSS structure regression guard.
-- My MBO table presentation accepted by user.
-- Back to My MBO accepted by user.
-- Native Comment Mirror table/data load accepted by user.
-- Comment API `limit=10` contract.
-- Atomic JS+CSS candidate/deployment governance.
-- D7 Admin Support Center source functionality.
-- D1 KINTONE-ONLY architecture; Auth Bridge remains cancelled.
-- Confirmed Baseline rules already promoted under `project-docs/CONFIRMED_BASELINE/`.
-
----
-
-## 7. Reusable Skill Added From Latest Incident
-
-Mandatory future UI/deploy reading:
-`skills/mbo-kintone-ui-runtime-debugging/SKILL.md`
-
-Key lessons:
-- DOM exists + default computed style => diagnose CSS load/parser/scope/cascade before rewriting JS.
-- An unclosed CSS selector can invalidate all later feature rules.
-- Critical selectors need automated scope/brace regression checks.
-- Back navigation must mount before fail-closed early returns.
-- Kintone Comment GET page limit must be valid; accepted App794 contract is `limit=10`.
-- JS+CSS must be treated as one atomic release pair.
-- Technical readback PASS is not User UAT PASS.
+- App794 Rev60 fatal-Create clean-exit known-good baseline.
+- My MBO accepted own-record presentation/history/no-delete behavior, subject to Hybrid Identity adaptation before D1 closure.
+- Native Comment Mirror truthfulness / Comment GET pagination contract.
+- CSS parser/scope corrective + runtime skill.
+- Atomic JS+CSS release governance.
+- D7 Admin Support Center accepted source functionality.
+- D1 KINTONE-ONLY architecture / Auth Bridge cancellation.
+- HR/admin native Reset MBO Password authority readiness.
+- Confirmed Hybrid Identity / dual-role architecture promoted to Baseline.
 
 ---
 
-## 8. Canonical Documents for Continuation
+## 9. Canonical Documents for Continuation
 
 Start with:
 1. `project-docs/AI_START_HERE.md`
@@ -178,30 +235,47 @@ Start with:
 3. `project-docs/AI_DOCUMENT_INDEX.md`
 4. `project-docs/CONFIRMED_BASELINE/README.md`
 5. `project-docs/AI_ACTIVE_TASK.md`
-6. `project-docs/00_MASTER_JOBLIST.md` when D1-D7 completeness/acceptance detail is needed
+6. `project-docs/00_MASTER_JOBLIST.md` when D1-D7 completeness detail is needed
 7. `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` for a new ChatGPT conversation
-8. this file `project-docs/PROJECT_LATEST_SUMMARY.md` for a human-readable checkpoint
+8. this file for a human-readable checkpoint
 
-Historical/default-ignore documents must not override the current Baseline/Control Center.
+For Hybrid Identity work, mandatory relevant Baselines are:
+- `D1_AUTH_SECURITY.md`
+- `D1_SESSION_CONTINUITY.md`
+- `D1_EMPLOYEE_SELF_MY_MBO.md`
+- `EMPLOYEE_MASTER_ROUTING.md`
+- `ROUTING_WORKFLOW.md`
+- `UI_UX.md`
 
 ---
 
-## 9. Current Gate / Next Owner
+## 10. Current Gate / Planned Sequence
+
+At this summary checkpoint:
 
 ```text
-CURRENT_GATE      = NO ACTIVE EXECUTION / USER MUST CHOOSE NEXT CONTROL-PLANE TASK
-CURRENT_LIVE      = APP794 REV57 ACCEPTED KNOWN-GOOD
-ACTIVE_TASK       = WP2 R3 CLOSED / HOLD
-LIVE_AUTHORIZATION = NONE
-NEXT_OWNER        = USER -> choose next task; then ChatGPT Control Plane plans/reviews before Antigravity execution
+CURRENT_EXECUTOR_TASK = D1 APP800 PASSWORD RESET ADMIN UI SOURCE R1
+MODE                  = SOURCE / TEST / LOCAL BUILD ONLY
+LIVE_WRITE            = NONE AUTHORIZED
+DEPLOY                 = NONE AUTHORIZED
 ```
 
-D5 is explicitly ready to resume, but must not be started automatically. D1 broader closure, D2, D3 and D4 also remain open according to their acceptance gates.
+The confirmed Hybrid Identity architecture is **not** permission for Antigravity to widen the current Password Reset UI task.
+
+After the current Reset UI source task is independently reviewed/closed, the next Hybrid Identity Control Plane gate should begin with:
+
+```text
+READ-ONLY APP53 IDENTITY MAPPING AUDIT
+Examples: Natta + Vassana
+Goal: prove exact Kintone User Code <-> active Employee_Code source and own routing context
+```
+
+Only after that evidence is reviewed should source implementation of Hybrid Identity / My Approval Tasks begin.
 
 ---
 
-## 10. User Shorthand
+## 11. User Shorthand
 
 - `review` -> re-fetch HEAD, independently review exact latest evidence against current Active Task + relevant Baseline; decide PASS/CORRECTIVE/BLOCKED.
-- `ต่อ` / `ต่อไป` -> re-fetch HEAD + Control Center, check duplicate/pending work, choose the smallest safe next action; use Antigravity only if actual execution is needed.
-- `อนุมัติ ...` -> record the exact authorization boundary; never silently widen or reuse a consumed authorization.
+- `ต่อ` / `ต่อไป` -> re-fetch HEAD + Control Center, check duplicate/pending work, choose smallest safe next action; use Antigravity only for necessary execution.
+- `อนุมัติ ...` -> record exact authorization boundary; never silently widen or reuse a consumed authorization.
