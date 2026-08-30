@@ -1,34 +1,46 @@
-# AI ACTIVE TASK — NONE / D1 GATE B2 PAUSED FOR SAFETY-PLAN CONFIRMATION
+# AI ACTIVE TASK — NONE / D1 B2 PRODUCTION HELD — SANDBOX-FIRST VALIDATION PENDING
 
-Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD / PRODUCTION WRITE NOT YET EXECUTABLE**
+Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD / APP53 PRODUCTION UNTOUCHED**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = PAUSED / SAFETY_PLAN_REVIEW
+TASK_STATE = WAITING_FOR_SANDBOX_AUTHORIZATION
 CURRENT_OWNER = CHATGPT
 ANTIGRAVITY_ACTION = NONE
-USER_B2_AUTHORIZATION = RECEIVED BUT NOT CONSUMED
+PRODUCTION_B2_AUTHORIZATION = RECEIVED BUT HELD / UNCONSUMED
 ```
 
-## 0. Accepted preflight truth
+## 0. Decision
+
+Do not execute Production App53 B2 yet.
+
+Repository safety guard hard-blocks App53 (ID 53) as a protected app. Do not modify or bypass that guard.
+
+The next safe step is a disposable sandbox rehearsal.
+
+## 1. Proposed sandbox
 
 ```text
-APP53_APP_ID = 53
-APP53_APP_NAME = Employee Namelist
-APP53_LIVE_REVISION = 199
-APP53_TOTAL_RECORDS = 281
-APP53_EXPORT_COMPLETE = YES
-BACKUP_PATH = backups/d1-gateb-app53-preflight-r1
-MBO_Kintone_User_EXISTS_LIVE = NO
-RECORD_456_emp_text = 0044
-RECORD_578_emp_text = BLANK
-APP53_WRITES_SO_FAR = 0
+Name = MBO2026 App53 Hybrid Identity Sandbox
+Purpose = rehearse App53 B2 field-add + deploy + readback + rollback mechanics
+Production employee data copied = NO
 ```
 
-## 1. Safest B2 execution design
+Use synthetic data only.
 
-Target field only:
+Minimal representative schema before target-field rehearsal:
+- `Number_0` with the same field type as App53 Production;
+- `emp_text` with the same field type as App53 Production.
+
+Synthetic records after base sandbox deploy:
+- active synthetic record with a fake Employee_Code;
+- active synthetic record with blank `emp_text`.
+
+## 2. Rehearsal target
+
+Add in sandbox only:
+
 ```text
 Field Code = MBO_Kintone_User
 Label      = MBO Kintone User
@@ -37,76 +49,33 @@ Required   = false
 Entities   = []
 ```
 
-Execution must be split into hard gates:
+Required rehearsal:
+1. create sandbox;
+2. configure/deploy minimal base schema;
+3. create two synthetic records;
+4. add target field to Preview;
+5. Preview readback exact-match;
+6. deploy sandbox;
+7. Live readback and prove synthetic data intact;
+8. delete target field from Preview;
+9. deploy sandbox rollback;
+10. Live readback proving field absent and synthetic data intact;
+11. STOP for ChatGPT review.
 
-### Gate P0 — fresh Live + Preview drift check (GET only)
-Before any write:
-1. GET Live App53 fields.
-2. GET Preview App53 fields.
-3. GET App53 deploy status.
-4. Confirm Live still has no `MBO_Kintone_User`.
-5. Confirm Preview is not in PROCESSING/FAIL/CANCEL state.
-6. Compare Live vs Preview and STOP if Preview contains any unrelated pending configuration drift.
-7. Confirm record count remains 281.
-
-If any drift/ambiguity exists: STOP. No write.
-
-### Gate P1 — add field to Preview only
-POST exactly one field to `/k/v1/preview/app/form/fields.json` using the exact payload above.
-Do NOT deploy yet.
-
-### Gate P2 — Preview readback before deploy
-Immediately GET Preview fields and prove:
-- exact field code exists;
-- type = USER_SELECT;
-- label = MBO Kintone User;
-- required = false;
-- no unexpected field/config change is observed.
-
-If readback is not exact: STOP. Do NOT deploy.
-
-### Gate P3 — deploy App53 only
-Only after Gate P2 exact PASS:
-POST `/k/v1/preview/app/deploy.json` with App53 only.
-Then poll GET deploy status until `SUCCESS` or fail/timeout.
-
-### Gate P4 — post-deploy Live readback
-After SUCCESS:
-1. GET Live fields and prove exact field code/type/label/required.
-2. Confirm total record count remains 281.
-3. Confirm zero record writes occurred.
-4. Confirm no mapping values were populated.
-5. STOP and return to ChatGPT independent review.
-
-## 2. Rollback policy
-
-Rollback is NOT automatic.
-If Preview is wrong before deploy, STOP and leave Live untouched.
-If Live readback after deploy is wrong, STOP and report; do not self-delete anything.
-
-A rollback would be a separate Production write:
-- delete only `MBO_Kintone_User` from Preview;
-- deploy App53 only;
-- read back Live again.
-
-`ROLLBACK_AUTH = NONE` until user explicitly authorizes that rollback.
-
-## 3. Explicitly forbidden
+## 3. Forbidden
 
 ```text
-APP53 RECORD POST/PUT/DELETE             = NO
-POPULATE VASSANA MAPPING                 = NO
-POPULATE ANY MBO_Kintone_User VALUE      = NO
-CORRECT NATTA emp_text                   = NO
-APP53 BULK UPDATE                        = NO
-APP794/795/796/800/801 ACCESS            = NO
-GROUP/ACL GET OR WRITE                   = NO
-APP794 CUSTOMIZATION DEPLOY              = NO
-SOURCE/TEST/DIST CHANGE                  = NO
-GIT COMMIT BY EXECUTOR                   = NO
+APP53 WRITE = NO
+APP53 RECORD COPY = NO
+REAL EMPLOYEE DATA = NO
+PROTECTED-GUARD CHANGE = NO
+APP794/795/796/800/801 WRITE = NO
+GROUP/ACL CHANGE = NO
+APP794 DEPLOY = NO
 ```
 
-## 4. Hold rule
+## 4. Authorization boundary
 
-Do not create an executable Antigravity packet from this file until the user confirms the safety plan after review.
-The previously granted B2 authorization remains unconsumed while this hold is active.
+Creating/deploying the new sandbox and inserting two synthetic records are Kintone writes to a new disposable app. They require the user's explicit sandbox authorization before Antigravity receives an executable packet.
+
+Production B2 authorization remains held and unconsumed.
