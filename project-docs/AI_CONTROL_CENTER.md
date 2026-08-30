@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 GATE 3 PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION OPEN
+> Updated: 2026-08-30 — D1 GATE 3 INDEPENDENT REVIEW = CORRECTIVE / EXACT RECORD-ID BOUNDARY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Gate 3 Process Proceed fresh-assignee revalidation OPEN. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Approval Authority Service R1 PASS. Home Index Gate 1 PASS. Dedicated cross-employee Detail Gate 2 PASS. Gate 3 implementation candidate reviewed CORRECTIVE for exact record-id authority boundary. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -72,7 +72,7 @@ Accepted authority service commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 ```text
 GATE 1 = HOME INDEX INTEGRATION — ✅ PASS
 GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — ✅ PASS
-GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — OPEN
+GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — 🟠 CORRECTIVE
 ```
 
 Gate 1 accepted source chain:
@@ -91,42 +91,64 @@ TEST_CORRECTIVE_COMMIT = 36d653e91412718acdbc1cf359b7560d3f64ef6d
 INDEPENDENT_DECISION  = PASS
 ```
 
-## 7. Gate 3 Control Plane inventory
+## 7. Gate 3 Independent Review
 
-Current `app.record.detail.process.proceed` performs only:
-1. `ValidationEngine.validateWorkflowAction(...)`;
-2. `ValidationEngine.validate(...)`;
-3. returns the event when valid.
-
-It does not fresh-revalidate current native `Assignee` before a Dedicated approver transition.
-
-Canonical identity split remains:
+Executor candidate:
 
 ```text
-Own-MBO ownership      = Employee_Code
-Own requester actor    = Effective_Requester_User
-Approver identity      = current dedicated Kintone User
-Approval authorization = authoritative current native Workflow assignment
+COMMIT = 282dcaf35764ea1960a064cf48f3c8add34506b8
+PARENT = f8380e66b7444272a20f03114ba25aa0beffd502
+CHANGED_FILES = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
+SOURCE_REVIEW = broadly conformant except exact record-id boundary
+INDEPENDENT_DECISION = CORRECTIVE
 ```
 
-Therefore Gate 3 must NOT add an Assignee GET to every Process action. Minimum safe scope:
-- DEDICATED Employee-Self + cross-employee Process action -> exactly one fresh `MboApprovalTaskService.revalidateApprovalTask(...)` before transition may proceed;
-- only `authorized === true` may continue through the existing validation/return path;
-- mismatch, missing record/id, malformed result, API failure -> fail closed (`false`);
-- SHARED Employee-Self + cross-employee Process action -> fail closed with zero approval revalidation GETs;
-- DEDICATED own-MBO requester actions -> existing behavior, zero approval revalidation GETs;
-- SHARED own-MBO requester actions -> existing behavior, zero approval revalidation GETs;
-- no Employee-Self context -> preserve existing/native-governed behavior; Gate 3 must not become a global HR/admin authorization engine;
-- do not use static App795/Manager/GM/First_Manager fields, action labels, UI role, or Employee_Code ownership as approver authority;
-- do not modify Gate 1 or Gate 2 behavior.
+Accepted observations:
+- only cross-employee Employee-Self context receives Gate 3 authority handling;
+- SHARED cross-employee actions fail closed with zero approval revalidation;
+- DEDICATED cross-employee actions reuse accepted `MboApprovalTaskService.revalidateApprovalTask()` and do not duplicate Assignee validation;
+- own-MBO requester actions remain outside approval revalidation;
+- null Employee-Self context preserves pre-Gate-3 validation behavior;
+- existing workflow/topology and stage validations remain present;
+- no Gate 1/2, service, UI, routing, identity, App53, deploy or Live Kintone scope was changed;
+- exactly the two allowed files changed.
 
-Gate 3 source work alone will still NOT be deploy-ready. Protected App53 mapping, dedicated group/ACL configuration, build/regression and controlled UAT remain separate future gates.
+### Required corrective
+
+The Gate 3 contract requires the exact App794 record id to come only from:
+
+```text
+event.recordId
+OR
+record.$id.value
+```
+
+The implementation candidate additionally accepts:
+
+```text
+record.Record_ID?.value
+```
+
+That fallback is outside the approved authority contract and is not a trusted native record identifier for this security boundary. If the true Kintone record id is absent, Gate 3 must fail closed rather than revalidate another id supplied through a record field.
+
+Required correction:
+1. remove `record.Record_ID?.value` from the Process Proceed revalidation id resolution;
+2. strengthen the existing missing-id test by supplying a spoof/static `Record_ID` field and still prove `0` fresh GET + `false`;
+3. strengthen authorized cross-employee identity evidence to assert both `employeeCode === '0044'` and `kintoneUserCode === 'vassana'` after Process Proceed;
+4. do not otherwise reopen/refactor Gate 3 source.
+
+### Independent test replay caveat
+
+ChatGPT attempted to clone the canonical branch and run the focused Node test independently, but the local runtime could not resolve `github.com`. Therefore no independent Node replay is claimed in this review. The corrective decision is based on fresh GitHub source/diff evidence.
+
+Gate 3 is NOT accepted yet and is not deploy-ready.
 
 ## 8. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 MY APPROVAL TASKS — GATE 3 PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION R1
-TASK_STATE  = OPEN / READY FOR MINIMUM ANTIGRAVITY EXECUTION
+ACTIVE_TASK = D1 GATE 3 EXACT RECORD-ID BOUNDARY CORRECTIVE R1
+TASK_STATE  = CORRECTIVE / READY FOR MINIMUM ANTIGRAVITY EXECUTION
+REVIEW_TARGET = 282dcaf35764ea1960a064cf48f3c8add34506b8
 OWNER       = ANTIGRAVITY
 ALLOWED     = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
 FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
@@ -136,7 +158,7 @@ LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact execution contract is in `AI_ACTIVE_TASK.md`.
+Exact corrective contract is in `AI_ACTIVE_TASK.md`.
 
 ## 9. App800 Reset MBO Password
 
@@ -161,4 +183,4 @@ ROLLBACK_AUTH             = NONE
 
 ## 11. Exact next action
 
-Antigravity performs only Gate 3 from `AI_ACTIVE_TASK.md`, changes exactly the 2 allowed files, runs only the focused integration test plus `git diff --check`, commits/pushes one focused commit, and STOPs. ChatGPT then independently reviews before any build, deploy, Kintone configuration or UAT work.
+Antigravity performs only the narrow Gate 3 exact-record-id corrective from `AI_ACTIVE_TASK.md`, runs only the focused integration test plus `git diff --check`, commits/pushes one focused corrective commit, and STOPs. ChatGPT then independently reviews before any build, full regression, deploy, Kintone configuration or UAT work.
