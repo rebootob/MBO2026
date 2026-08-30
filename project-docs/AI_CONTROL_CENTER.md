@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — REV59 USER UAT FAIL / LEAVE-CONFIRM STILL APPEARS / SOURCE CORRECTIVE OPEN
+> Updated: 2026-08-30 — R4 NATIVE-CANCEL LOGIC ACCEPTABLE / NARROW-DIFF + TEST-PROOF MICRO-CORRECTIVE OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 technical deployment readback PASS with audit caveat, but User Runtime UAT FAILED because clicking the canonical Back control on authenticated fatal duplicate Create still triggers Kintone/browser leave-confirmation. New source-only corrective is open. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and User Runtime UAT FAILED because fatal Create Back still triggered leave-confirmation. R4 native-Cancel source direction is acceptable, but independent review found whole-file line-ending churn in `src/main-mbo-app.js` plus incomplete static forbidden-pattern proof. R4.1 micro-corrective is open before source-review PASS. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -35,62 +35,75 @@ USER_RUNTIME_UAT              = FAIL — BACK STILL TRIGGERS LEAVE-CONFIRM DIALO
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
 ```
 
-Rev59 remains actual Live but is **not** accepted known-good. Do not deploy again and do not rollback without a new explicit user authorization.
+Rev59 remains actual Live but is not accepted known-good. No active deploy/write/rollback authorization exists.
 
-## 3. Rev59 User UAT Evidence
+## 3. R4 Executor Commit — Independent Review
 
-User-provided Live screenshot on 2026-08-30 shows authenticated duplicate same-year Create terminal state for Employee 0113 / FY2026:
-- URL remains `/k/794/edit`;
-- `Employee Profile Resolution Failed` is visible;
-- duplicate creation remains blocked;
-- exactly one canonical `← กลับหน้า My MBO / Back to My MBO` control is visible;
-- native Save/Cancel are not visibly exposed on the terminal screen;
-- after clicking Back, the browser/Kintone dialog appears: equivalent to `ออกจากเว็บไซต์ไหม / ระบบอาจไม่ได้บันทึกการเปลี่ยนแปลงของคุณ`.
+Executor source commit:
 
-Decision:
+`d9c6a126b51b768dc6277391ea8d36b2bf2c892e`
 
-`REV59 USER UAT = FAIL`
+Commit message:
+`fix(wp2): invoke native Cancel clean-exit on fatal Create Back navigation R4`
 
-The no-popup requirement is not satisfied. Rev59 must not be promoted to accepted known-good.
+Changed files from R4 base `97c094133575221e5ee2cc6005e12923ce319318`:
+- `src/main-mbo-app.js`
+- `tests/employee-main-mbo-app-integration.test.js`
+- generated `dist/mbo-employee-app.js`
 
-## 4. Independent Source Finding After UAT Failure
+No executor Control Plane edits and no Live/Kintone execution were evidenced.
 
-Deployed source candidate remains:
+### R4 logic accepted in direction
 
-`4472aa2f1c63bf08788b39b4ad54b7ea55808df1`
+The semantic R4 implementation:
+- adds a narrow `findNativeCancelButton()` using only known Cancel selectors;
+- captures native Cancel before native Save/Cancel controls are visually hidden;
+- injects `onNavigateHome` into canonical `EmployeeRecordNavigation` only when `isCreate === true && hideNativeSaveCancel === true`;
+- custom Back prevents plain anchor navigation through the existing navigation component handler and invokes the captured native Cancel `click()`;
+- missing native Cancel installs a fail-closed handler that does not fall back to plain navigation;
+- normal Create and Detail/Edit preservation tests remain present;
+- tests assert native Cancel is invoked exactly once on fatal Create Back;
+- no new `window.location`, `location.assign`, `location.replace`, `history.back`, or `onbeforeunload` behavior is visible in the reviewed semantic change.
 
-Two relevant source facts are confirmed:
+Independent classification of the **behavioral design**:
 
-1. `EmployeeRecordNavigation` still renders a plain anchor `href=/k/<appId>/`. The fatal Create call site does **not** provide `onNavigateHome`, so Back performs ordinary browser navigation and is still subject to Kintone's Create-page leave protection.
-2. In `setupRecordUiWithAuth(...)`, `EmployeePartAUI` is instantiated and `ui.render()` executes before the authenticated Create duplicate preflight. Therefore the prior assumption that duplicate rejection occurs before all custom Create-page state/setup is too strong even though the Fiscal Year default and `kintone.app.record.set()` were moved after duplicate preflight.
+`ACCEPTABLE DIRECTION / NOT YET FULL SOURCE-REVIEW PASS`
 
-The current corrective should solve the observed UAT defect without disabling normal Kintone unsaved-change protection.
+Actual no-popup behavior still requires future Live UAT after a separately authorized deployment; unit tests can prove native Cancel invocation, not Kintone browser behavior.
 
-## 5. New Corrective Design Direction
+## 4. Exact Review Defects Requiring R4.1
 
-For **authenticated terminal fatal duplicate Create only**:
-- preserve the visible fatal error;
-- preserve exactly one canonical Back control;
-- native Save/Cancel remain hidden from the user;
-- Back must invoke **native Kintone Cancel semantics** for the current Create page, not a plain browser navigation;
-- native Cancel should discard the invalid unsaved Create and return to App794 index in the same tab without the browser leave-confirm popup;
-- do not use `window.onbeforeunload`, `removeEventListener('beforeunload', ...)`, global unload monkey-patching, history hacks, or direct global suppression;
-- do not save/create/update a record;
-- do not mutate workflow/auth/session;
-- do not change normal Create/Edit unsaved-change protection.
+### A. Whole-file line-ending churn in canonical source
 
-This narrow terminal-fatal use of native Cancel semantics supersedes the earlier internal implementation restriction against programmatic cancel. It is permitted only because the invalid duplicate Create must be discarded and User UAT proves plain navigation cannot satisfy the required UX.
+Git compare reports `src/main-mbo-app.js` as approximately `+934 / -891` even though the semantic R4 change is small. The patch shows the whole source file being rewritten in addition to the native-Cancel semantic additions. This is consistent with line-ending/EOL churn and violates the narrow-diff review requirement.
 
-If the native Cancel control cannot be resolved safely at runtime, fail closed and do not fall back to global unload suppression or a second navigation trick.
+Required result:
+- preserve R4 behavior;
+- restore the canonical source file's prior line-ending/content normalization;
+- reapply only the narrow semantic R4 changes;
+- final source diff from R4 base must be reviewable as a small feature change, not a near-whole-file rewrite;
+- generated dist may change only through normal build.
 
-## 6. Current Active Task
+### B. Mandatory static forbidden-pattern proof is incomplete
+
+R4 tests currently assert absence of `onbeforeunload`, `location.assign`, `location.replace`, and `history.back`, but the R4 packet also explicitly required proof against:
+
+`removeEventListener('beforeunload', ...)`
+
+R4.1 must add a robust static assertion covering both quote styles/whitespace as appropriate for `main-mbo-app.js` and `employee-record-navigation.js`.
+
+### C. No CI/status evidence on executor commit
+
+GitHub commit status contains no CI checks. R4.1 must rerun the exact mandatory local tests/build and report results; absence of CI itself is not a source defect, but source-review PASS requires the mandated verification evidence.
+
+## 5. Current Active Task
 
 ```text
-ACTIVE_TASK                  = APP794 FATAL CREATE NATIVE-CANCEL CLEAN-EXIT CORRECTIVE R4 / SOURCE ONLY
+ACTIVE_TASK                  = APP794 FATAL CREATE NATIVE-CANCEL CLEAN-EXIT R4.1 / NARROW-DIFF + TEST-PROOF MICRO-CORRECTIVE
 OWNER                        = ANTIGRAVITY
-FEATURE                      = Fatal duplicate Create Back exits through native Kintone Cancel semantics
+FEATURE                      = Preserve R4 native-Cancel behavior while eliminating source EOL churn and completing forbidden-pattern proof
 CANONICAL_SOURCE_OWNER       = src/main-mbo-app.js
-SUPPORTING_MODULE            = src/ui/employee-record-navigation.js only if needed for injected navigation handler
+SUPPORTING_MODULE            = src/ui/employee-record-navigation.js only if a test proves it is needed
 FOCUSED_TESTS                = tests/employee-main-mbo-app-integration.test.js + tests/employee-record-navigation.test.js
 GENERATED_DIST_OUTPUT         = dist/mbo-employee-app.js through normal build only
 LIVE_RESOURCE                 = NONE — NO DEPLOY AUTHORIZATION
@@ -98,7 +111,7 @@ LIVE_RESOURCE                 = NONE — NO DEPLOY AUTHORIZATION
 
 Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
 
-## 7. Authorization Ledger
+## 6. Authorization Ledger
 
 ```text
 LATEST_DEPLOY_AUTH_ID         = APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01
@@ -109,7 +122,7 @@ ACTIVE_DEPLOY_AUTH            = NONE
 ROLLBACK_AUTH                 = NONE
 ```
 
-## 8. Known-Good Rollback Baseline
+## 7. Known-Good Rollback Baseline
 
 ```text
 ROLLBACK_KNOWN_GOOD_REVISION = 57
@@ -121,16 +134,16 @@ ROLLBACK_TOPOLOGY            = 1/1/0/0
 ROLLBACK_AUTHORIZED          = NO
 ```
 
-Rollback requires separate explicit authorization and is never automatic.
-
-## 9. Current Gate
+## 8. Current Gate
 
 ```text
-CURRENT_GATE                  = REV59 UAT FAIL / FATAL CREATE NATIVE-CANCEL SOURCE CORRECTIVE
+CURRENT_GATE                  = R4.1 NARROW-DIFF + TEST-PROOF SOURCE MICRO-CORRECTIVE
 CURRENT_MODE                  = SOURCE + TEST + LOCAL BUILD ONLY / NO KINTONE NETWORK / NO DEPLOY
 LIVE_ACTUAL_REVISION          = 59
 REV59_TECHNICAL_REVIEW        = PASS WITH AUDIT CAVEAT
 REV59_USER_UAT                = FAIL
+R4_BEHAVIOR_DIRECTION         = ACCEPTABLE
+R4_SOURCE_REVIEW              = CORRECTIVE / EOL CHURN + TEST-PROOF GAP
 REV59_ACCEPTED_KNOWN_GOOD     = NO
 NEXT_OWNER                    = ANTIGRAVITY FOR EXACT ACTIVE TASK
 ```
