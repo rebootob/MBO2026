@@ -127,6 +127,45 @@ Acceptance order:
 
 Never describe WP2/UI work as complete before user-facing UAT passes.
 
+### 2.8 Fatal Create clean-exit: recover before/through native semantics, never by global unload bypass
+Rev58 and Rev59 proved that avoiding `kintone.app.record.set()` before duplicate rejection is **not enough** to guarantee a clean browser exit from Kintone Create. The terminal screen still triggered the browser/Kintone leave-site / unsaved-change confirmation when the custom Back control used ordinary anchor navigation.
+
+Rev60 proved the accepted corrective pattern in Live UAT:
+- authenticated duplicate/fatal Create remains fail-closed;
+- resolve the native Kintone Cancel control with narrow known Cancel selectors;
+- capture that native Cancel semantic path before hiding native Save/Cancel;
+- inject a custom `onNavigateHome` handler into the canonical Back control so ordinary anchor navigation is prevented;
+- invoke captured native Cancel exactly once;
+- let Kintone discard the invalid unsaved Create and return to the App794 list/home in the same tab;
+- if native Cancel cannot be resolved, fail closed; do not fall back to a plain anchor or a second navigation trick;
+- keep native Save/Cancel visually hidden only on the terminal invalid Create state;
+- never disable Kintone/browser unsaved-change protection globally.
+
+Permanent forbidden shortcuts for this recovery class:
+- `window.onbeforeunload = ...`;
+- `removeEventListener('beforeunload', ...)` or equivalent unload suppression;
+- `location.assign(...)`;
+- `location.replace(...)`;
+- `history.back()`;
+- direct browser navigation as a hidden fallback after native Cancel resolution fails;
+- broad status-bar selectors that could click the wrong native action.
+
+Design lesson:
+- Prefer preventing terminal invalid Create state from becoming dirty/protected in the first place.
+- But once the Kintone Create page is in a protected/unsaved state, a plain `<a href>` is not a reliable clean-exit mechanism.
+- Use the application's own native Cancel semantic path for this exact invalid terminal Create recovery case.
+- This exception does **not** authorize programmatic Cancel for ordinary Create/Edit flows.
+- Automated tests can prove handler wiring and mutation counts, but **actual absence of the leave-confirm dialog is a mandatory Live User UAT gate**.
+
+Rev60 accepted reference:
+```text
+LIVE REVISION = 60
+SOURCE = 1ed342ad137a4a364496a28d29bdffd24a99b511
+JS     = 115a08ace32bdf850cb5eebf25b953d1803114d0
+CSS    = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+USER UAT = PASS / no leave-confirm popup on fatal Create Back
+```
+
 ## 3. Runtime Diagnosis Matrix
 
 | Runtime observation | Primary hypothesis | First action |
@@ -137,6 +176,7 @@ Never describe WP2/UI work as complete before user-facing UAT passes.
 | API returns `Missing or invalid input` | Request contract/parameter problem | Capture exact endpoint/body and verify documented limits/types |
 | Build/tests pass but Live differs | deployment pairing/cache/runtime issue | Verify Live resource identities and topology |
 | Technical hash readback passes but user reports failure | runtime/UX issue remains | User UAT + browser DOM/computed-style evidence |
+| Fatal Create Back triggers leave-confirm popup | Create page is still protected/unsaved; plain navigation is insufficient | Use narrow native Cancel semantic recovery; do not suppress unload globally |
 
 ## 4. Mandatory Troubleshooting Sequence
 
@@ -156,19 +196,19 @@ Never describe WP2/UI work as complete before user-facing UAT passes.
 14. Preflight current Live baseline.
 15. Execute exactly one guarded atomic deploy.
 16. Perform byte-level Live readback.
-17. Perform user runtime UAT.
+17. Perform user runtime UAT, including any browser-native behavior that unit tests cannot prove.
 18. Only after UAT PASS update accepted known-good baseline.
 
 ## 5. App794 WP2 Incident Reference
 
-Accepted corrective source candidate:
+Earlier accepted corrective source candidate:
 ```text
 SOURCE = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
 JS     = ac22a56cb9d78001384241fe12745f7a2da3da84
 CSS    = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 ```
 
-Deployment result:
+Earlier deployment result:
 ```text
 LIVE REVISION = 57
 TECHNICAL READBACK = PASS / exact JS+CSS pair
@@ -180,9 +220,19 @@ R3 accepted UI result:
 - Back to My MBO = prominent visible blue navigation on Detail/Edit; normal Create omits it.
 - Native Comment Mirror = structured read-only table (`# | Author | Date & Time | Comment`), Refresh enabled, GET `limit=10`.
 
-Later regression lesson:
-- a fatal authenticated Create error can still require recovery navigation even though normal Create omits the Back bar;
-- therefore error-state recovery must be tested independently from normal page-type rules.
+Later fatal-Create regression and closure:
+- a fatal authenticated Create error can require recovery navigation even though normal Create omits the Back bar;
+- Rev58/59 plain-anchor recovery still triggered leave-confirmation;
+- Rev60 native-Cancel semantic recovery passed Live UAT with no leave-confirm popup;
+- therefore error-state recovery must be tested independently from normal page-type rules and browser-native behavior must be UAT-verified.
+
+Current accepted App794 customization baseline after Rev60 UAT PASS:
+```text
+REVISION = 60
+SOURCE   = 1ed342ad137a4a364496a28d29bdffd24a99b511
+JS       = 115a08ace32bdf850cb5eebf25b953d1803114d0
+CSS      = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+```
 
 ## 6. Do Not Repeat These Mistakes
 - Do not assume CSS is loaded because the file exists in source/dist.
@@ -196,6 +246,8 @@ Later regression lesson:
 - Do not put dynamic error/comment text into `innerHTML`.
 - Do not call a technical deploy PASS a user-facing PASS.
 - Do not let a coarse `isCreate`/`isEdit` flag stand in for explicit fatal-state recovery intent.
+- Do not assume avoiding record mutation automatically eliminates Kintone Create leave protection.
+- Do not globally bypass `beforeunload` or use location/history hacks to force fatal Create exit.
 
 ## 7. Required Reading Rule
 Before any future App794 UI runtime corrective, Kintone custom UI deployment, or "UI exists but looks wrong" investigation, read this skill together with:
