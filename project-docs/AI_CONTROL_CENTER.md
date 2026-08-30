@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary source/runtime execution
-> Updated: 2026-08-30 — LEGACY SHARED FIXTURE CORRECTIVE R1 PASS / FINAL SOURCE-ACCEPTANCE MILESTONE OPEN
+> Updated: 2026-08-30 — HYBRID EMPLOYEE-SELF RUNTIME SOURCE ACCEPTED / MY APPROVAL TASKS READ-ONLY INVENTORY OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry logic + cleanup PASS. Legacy Shared fixture compatibility R1 at `a78efcd12dcb670802f1b6df7803a27c0e784223` passes independent diff review. Final source-acceptance milestone verification remains. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source is now ACCEPTED after final build + 1024/1024 full-test milestone. Protected App53/group/ACL/deploy remain unauthorized. My Approval Tasks remains separate and is now the next READ-ONLY Control Plane inventory gate. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling accepted; live remains prior MVP. |
@@ -29,7 +29,7 @@ CHATGPT     = PLAN / REVIEW / CONTROL DOCS / EVIDENCE INTERPRETATION
 Ordinary corrective = exact edit -> smallest focused check -> diff check -> commit/push -> STOP.
 Full suite/build is milestone-only.
 
-## 3. Hybrid Runtime Status
+## 3. Hybrid Runtime Source — ACCEPTED
 
 ```text
 HYBRID_IDENTITY            = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
@@ -37,7 +37,7 @@ HYBRID_CORE_SOURCE         = PASS
 HYBRID_RUNTIME_ENTRY_LOGIC = PASS
 TREE_CLEANUP_R3            = PASS
 LEGACY_SHARED_FIXTURE_R1   = PASS
-SOURCE_ACCEPTED            = NOT YET — FINAL MILESTONE OPEN
+SOURCE_ACCEPTED            = YES
 LIVE_DEPLOY_READY          = NO
 ```
 
@@ -48,36 +48,32 @@ t1, t2, s1, f1, f2, f3, e1, tmh, g_request
 
 Numeric Employee_Code, `req*`, `test*`, `user*`, or session presence does not make a native Kintone principal SHARED.
 
-## 4. Review — Fixture Corrective R1
+Accepted Hybrid Employee-Self runtime behavior:
+- SHARED uses existing App801-backed MBO login/session path;
+- DEDICATED uses exact native Kintone principal -> strict App53 mapping -> bound Employee_Code with no secondary MBO login;
+- missing/ambiguous/invalid dedicated mapping fails closed and never falls back to SHARED;
+- Create uses resolved `context.mode` + `context.kintoneUserCode` and snapshots the effective requester accordingly;
+- Employee-Self delete guard is wired through registered runtime handlers;
+- My MBO remains bound to Employee_Code;
+- My Approval Tasks is NOT part of this accepted source scope.
 
-Executor commit:
+## 4. Final Source-Acceptance Milestone — PASS
+
+User-supplied local executor result after fixture corrective:
 ```text
-a78efcd12dcb670802f1b6df7803a27c0e784223
+npm run ui:build           = PASS
+npm test                   = PASS (1024/1024)
+git diff --check           = PASS
+FINAL_WORKTREE_CLEAN       = YES
+SOURCE_CHANGES             = 0
+TEST_CHANGES               = 0
+LIVE_KINTONE_OPERATIONS    = 0
+APP53_PRODUCTION_TOUCHED   = NO
 ```
 
-Independent review result:
-```text
-FIXTURE_DIFF_REVIEW = PASS
-SOURCE_CHANGES      = 0
-OUT_OF_SCOPE_FILES  = 0
-```
+The milestone was run build-first so `tests/create-handler-form-state.test.js` exercised the freshly generated browser bundle. Generated `dist/` was restored to branch HEAD afterward; remote branch remained unchanged at the milestone base.
 
-Exact changed files only:
-```text
-tests/timeline-truthfulness-and-attachment.test.js
-tests/objective-save-validation.test.js
-tests/create-handler-form-state.test.js
-```
-
-Confirmed substitutions:
-- timeline Shared native principal `0118 -> f1`; MBO Employee_Code remains `0118`.
-- objective Shared native principal/requester `req1 -> s1`; Employee_Code remains `0118`.
-- create-handler Shared success native/session/requester `0113 -> s1`; Employee_Code remains `0113`.
-- create-handler Shared failure native/session principal `9999 -> s1`; Employee_Code remains `9999`, so intended App53-not-found failure remains.
-
-No business assertions, attachment/timeline behavior, Hybrid source, dist, config, docs, ACL/group/deploy code, or App53 data were changed by the executor commit.
-
-The prior milestone already proved `npm run ui:build = PASS`, but because `create-handler-form-state.test.js` reads generated dist, final verification must build first and then run the full suite once against that generated bundle.
+This result closes Hybrid Employee-Self Runtime source acceptance only. It does not authorize live deployment, App53 schema/data changes, ACL/group changes, or My Approval Tasks runtime implementation.
 
 ## 5. App53 Production Protection
 
@@ -90,23 +86,29 @@ APP53_BULK_WRITE_AUTH   = NONE
 LIVE_KINTONE_OPERATIONS = 0
 ```
 
-Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
+Current audited facts remain:
+```text
+Vassana: vassana -> App53 #456 -> emp_text 0044 -> Active 1
+Natta:   natta   -> App53 #578 -> emp_text BLANK -> Active 1
+MBO_Kintone_User live field = NOT YET CREATED
+```
+
+Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text` without separate exact one-shot authorization.
 
 ## 6. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID RUNTIME — FINAL SOURCE-ACCEPTANCE MILESTONE R1
-OWNER       = ANTIGRAVITY
-SOURCE_EDIT = NONE
-TEST_EDIT   = NONE
-UI_BUILD    = ONE RUN FIRST
-FULL_TEST   = ONE RUN AFTER BUILD
-EVIDENCE_DOC= NO
+ACTIVE_TASK = D1 MY APPROVAL TASKS — CURRENT NATIVE ASSIGNEE SOURCE INVENTORY R1
+OWNER       = CHATGPT CONTROL PLANE
+EXECUTOR    = NONE
+MODE        = GIT READ-ONLY INVENTORY
+SOURCE_EDIT = NO
+TEST_RUN    = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact commands and stop rules are in `AI_ACTIVE_TASK.md`.
+Goal: prove the smallest authoritative runtime seam for “current native Workflow assignee == current dedicated Kintone user” before any implementation is delegated.
 
 ## 7. Authorization Ledger
 
@@ -124,4 +126,4 @@ ROLLBACK_AUTH             = NONE
 
 ## 8. Next Gate
 
-If final milestone passes, mark Hybrid Employee-Self Runtime Entry source ACCEPTED. Protected App53 schema/mapping/data, ACL/group/deploy, and My Approval Tasks remain separate gates.
+ChatGPT performs READ-ONLY source inventory for My Approval Tasks. Do not send Antigravity yet. After the exact current-assignee seam is proven, ChatGPT may open one small source implementation WP. Protected App53 configuration, live deployment, ACL/group writes, and Natta data correction remain separate explicit-authorization gates.
