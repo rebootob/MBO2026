@@ -1,184 +1,105 @@
-# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT CORRECTIVE R2 / SOURCE ONLY
+# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT TEST-PROOF MICRO-CORRECTIVE R3
 
-Mode: **ANTIGRAVITY SOURCE IMPLEMENTATION + TEST + LOCAL BUILD ONLY — NO KINTONE NETWORK / NO LIVE WRITE / NO DEPLOY**  
+Mode: **ANTIGRAVITY TEST + LOCAL BUILD ONLY — NO KINTONE NETWORK / NO LIVE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. R1 Independent Review Result
+## 1. Independent R2 Review
 
-R1 executor source commit:
+R2 executor source commit:
 
-`ec79f02b3667d08e438c0b1997b0c521dfb86699`
+`dca394526a89db7909a4d280e1876f03d36a3d35`
 
-ChatGPT independent decision:
+ChatGPT decision:
 
-`CORRECTIVE / NOT ACCEPTED`
+`SOURCE LOGIC ACCEPTABLE / PACKET CORRECTIVE BECAUSE MANDATORY TEST PROOF IS INCOMPLETE`
 
-Do not deploy R1.
+Do not redesign the source in R3 unless a required new assertion fails and proves a real defect.
 
-R1 repository scope was narrow and allowed, but the implementation does not yet satisfy the required clean-exit behavior.
+R2 corrected both proven R1 source defects:
+- blank Fiscal Year is no longer mutated before duplicate preflight;
+- Save/Cancel hiding is explicit fatal-state-only and the broad statusbar selector was removed.
 
-## 2. Exact Defects To Correct
+## 2. Exact Remaining Proof Gaps
 
-### Defect A — Fiscal Year mutation still occurs before duplicate preflight
+### Gap A — Normal successful Create continuation is not explicitly asserted
 
-R1 still has this Create mutation before its new duplicate preflight:
+The R2 packet required proof that after duplicate preflight succeeds:
+- blank incoming `Fiscal_Year` becomes exactly `FY2026`;
+- normal profile/autoload continues;
+- record-level Back remains absent;
+- native Save remains visible/normal;
+- native Cancel remains visible/normal.
 
-```js
-if (isCreate && record.Fiscal_Year && !record.Fiscal_Year.value) {
-  record.Fiscal_Year.value = 'FY2026';
-}
-```
+The existing Create integration path executes, but those exact invariants are not all asserted.
 
-The R1 test did not catch this because its fatal Create mock omitted `Fiscal_Year` entirely.
+### Gap B — Existing Detail/Edit blocked states do not prove native actions remain untouched
 
-Required correction:
-- derive intended Fiscal Year locally, e.g. current nonblank value or approved default `FY2026`, without changing `event.record`;
-- duplicate-check must run before any Fiscal Year default assignment, `ui.executeLookup(...)`, snapshot mutation, `syncRecordToKintone(...)`, or other Create form mutation;
-- only after duplicate preflight passes may the normal Create initialization/default/autoload path mutate the form.
+The existing Access Denied Detail/Edit checks run before the mocked native Save/Cancel controls are installed. Therefore they do not prove that the fatal-create feature does not suppress native actions on existing-record blocked states.
 
-### Defect B — Native Save/Cancel hiding is not fatal-state scoped
+## 3. R3 Exact Scope
 
-R1 calls `hideNativeSaveCancelControls()` from generic `renderBlockedNotice()`.
-
-That is too broad and violates the contract that native action suppression is specific to authenticated terminal duplicate/fatal Create.
-
-R1 also uses broad selector:
-
-`button.gaiav2-app-statusbar-action`
-
-This selector is not proven to be Save/Cancel only and must not be used for the scoped fatal-state behavior.
-
-Required correction:
-- generic `renderBlockedNotice()` must not automatically hide native actions;
-- expose an explicit option such as `hideNativeSaveCancel: true` only on the authenticated terminal fatal Create call site, or equivalent narrow mechanism;
-- use specific selectors/elements proven to represent Save and Cancel only;
-- normal Create/Edit native controls remain untouched;
-- unrelated blocked notices remain untouched unless existing behavior already independently requires something else.
-
-## 3. Exact Required Behavior
-
-Authenticated duplicate same-year `app.record.create.show`:
-
-```text
-DUPLICATE_PREFLIGHT             = BEFORE ANY NATIVE RECORD MUTATION
-FISCAL_YEAR_PRECHECK_VALUE      = DERIVED LOCALLY
-INCOMING_FATAL_RECORD_STATE     = PRESERVED / UNMODIFIED
-KINTONE_RECORD_SET              = 0
-RECORD_CREATE_OR_SAVE           = 0
-WORKFLOW_MUTATION               = 0
-AUTH_SESSION_MUTATION           = 0
-ERROR_MESSAGE                   = VISIBLE
-BACK_TO_MY_MBO_COUNT            = EXACTLY 1
-BACK_TARGET                     = /k/794/
-BACK_TAB                        = SAME TAB
-NATIVE_SAVE                     = HIDDEN
-NATIVE_CANCEL                   = HIDDEN
-LEAVE_CONFIRM_ON_BACK           = MUST NOT APPEAR
-GLOBAL_UNLOAD_SUPPRESSION       = 0
-```
-
-Normal successful Create:
-
-```text
-DUPLICATE_PREFLIGHT             = PASS FIRST
-FISCAL_YEAR_DEFAULT             = EXISTING NORMAL BEHAVIOR PRESERVED AFTER PREFLIGHT
-AUTOLOAD/SNAPSHOT               = EXISTING NORMAL BEHAVIOR PRESERVED
-BACK_TO_MY_MBO                  = HIDDEN
-NATIVE_SAVE_CANCEL              = NORMAL KINTONE BEHAVIOR
-UNSAVED_CHANGE_PROTECTION       = PRESERVED
-```
-
-Normal Detail/Edit and other blocked states:
-
-```text
-EXISTING BACK BEHAVIOR          = PRESERVED
-NATIVE ACTION HIDING            = NOT INTRODUCED BY THIS FATAL-CREATE FEATURE
-GLOBAL UNSAVED PROTECTION       = PRESERVED
-```
-
-## 4. Forbidden Implementations
-
-Do NOT:
-- set `window.onbeforeunload = null`;
-- remove/override global `beforeunload` listeners;
-- monkey-patch browser/Kintone navigation globally;
-- disable normal Create/Edit unsaved-change protection;
-- auto-save or auto-cancel the record;
-- use broad status/action selectors to hide unrelated native buttons;
-- call fatal-state Save/Cancel hiding from generic `renderBlockedNotice()` without an explicit fatal-only option;
-- perform any Kintone GET/POST/PUT/DELETE;
-- deploy/upload customization;
-- edit Control Center, Active Task, baselines, or skills as executor;
-- broaden/refactor unrelated source.
-
-## 5. Allowed Files / Ownership
-
-Feature contract:
-
-```text
-FEATURE                    = Fatal duplicate Create clean-exit recovery R2
-CANONICAL_SOURCE_OWNER     = src/main-mbo-app.js
-SUPPORTING_MODULES         = src/ui/employee-record-navigation.js only if truly required
-FOCUSED_TESTS              = tests/employee-main-mbo-app-integration.test.js
-                             tests/employee-record-navigation.test.js if navigation module changes
-GENERATED_DIST_OUTPUT      = dist/mbo-employee-app.js via normal build only
-LIVE_RESOURCE_IF_ANY       = NONE
-```
+R3 is a **test-proof micro-corrective**.
 
 Allowed repository changes:
-- `src/main-mbo-app.js`;
-- `src/ui/employee-record-navigation.js` only if strictly required;
-- `tests/employee-main-mbo-app-integration.test.js`;
-- `tests/employee-record-navigation.test.js` only if required;
-- `dist/mbo-employee-app.js` only through normal build.
+- `tests/employee-main-mbo-app-integration.test.js` only;
+- `dist/mbo-employee-app.js` only if the normal build genuinely changes it because source differs from generated output; expected result is preferably no source/dist change from R2;
+- `src/main-mbo-app.js` only if one of the new mandatory assertions fails and exposes a real source defect. If source must change, keep it minimal and explain exactly which assertion exposed the defect.
 
-No new file/module.
+Do not edit:
+- `employee-record-navigation.js` unless a new test proves a real navigation defect;
+- Control Center / Active Task / baselines / skills;
+- CSS;
+- unrelated tests/source/config/scripts.
 
-## 6. Mandatory Tests / Proof
+No new files.
 
-Strengthen focused tests so they actually exercise the missed path.
+## 4. Mandatory Test Additions
 
-### A. Fatal duplicate with real Fiscal Year field
+### A. Normal successful Create after preflight PASS
 
-Fatal Create test input must include at minimum:
+Use the existing real main-app Create integration path with incoming:
 
 ```js
 Fiscal_Year: { value: '' }
 ```
 
-and capture the incoming value before handler execution.
+After `recordShowHandler(createEvent)` succeeds, assert at minimum:
 
-After duplicate rejection assert:
-- `Fiscal_Year.value` is still exactly the incoming value (`''` in this regression case);
-- Employee_Code/profile/snapshot fields are not populated;
-- `kintone.app.record.set(...)` count = 0;
-- record save/create API count = 0;
-- workflow/auth/session mutations = 0.
+```text
+createEvent.record.Fiscal_Year.value = FY2026
+Back count                         = 0
+native Save display                = unchanged / not hidden
+native Cancel display              = unchanged / not hidden
+normal employee/profile autoload   = continued (assert at least one representative populated field such as Employee_Code = authenticated employee)
+```
 
-Also test a nonblank incoming Fiscal Year and ensure duplicate query uses it without rewriting it before rejection.
+If native Save/Cancel mocks need to be initialized earlier in the test, do that without changing production source behavior.
 
-### B. Fatal-only native controls
+### B. Existing Detail/Edit blocked state native actions
 
-Prove:
-- terminal authenticated duplicate/fatal Create hides the real mocked Save and Cancel controls;
-- normal successful Create does not hide them;
-- pre-auth Create blocked notice does not receive this fatal-state native-control hiding;
-- existing Detail/Edit blocked notice does not receive this fatal-state native-control hiding;
-- no broad generic statusbar selector is required to make the test pass.
+With mocked native Save/Cancel controls visible, run at least one existing-record blocked state such as Employee_Code mismatch and assert:
 
-### C. Normal Create continuation
+```text
+Back count           = exactly 1
+native Save display  = unchanged / not hidden
+native Cancel display = unchanged / not hidden
+```
 
-When duplicate preflight passes:
-- Fiscal Year default becomes `FY2026` exactly as current behavior requires when incoming value is blank;
-- normal profile/autoload continues;
-- no record-level Back is shown;
-- native Save/Cancel remain normal.
+Prefer covering both Detail and Edit if it is trivial within the existing integration test, but do not broaden the task unnecessarily.
 
-### D. No unload bypass
+### C. Preserve existing R2 proofs
 
-Static/runtime regression must prove customization does not assign/clear global `onbeforeunload` and does not register a fatal-specific global bypass.
+Do not remove or weaken existing assertions proving:
+- fatal duplicate blank Fiscal Year remains unchanged;
+- fatal duplicate `kintone.app.record.set()` = 0;
+- fatal duplicate native Save/Cancel hidden;
+- pre-auth Create native actions not hidden;
+- nonblank Fiscal Year preserved on rejection;
+- no `onbeforeunload` override.
 
-Run at least:
+## 5. Required Commands
+
+Run exactly the relevant verification:
 
 ```text
 node --test tests/employee-record-navigation.test.js tests/employee-main-mbo-app-integration.test.js
@@ -186,36 +107,44 @@ npm run ui:build
 node --test tests/classic-bundle.test.js tests/css-structure.test.js
 ```
 
-If `employee-record-navigation.js` is unchanged, its test still must pass unchanged.
+Then verify generated output is consistent and report:
+- exact command;
+- PASS/FAIL count / exit status;
+- exact changed files;
+- whether `src/main-mbo-app.js` changed (expected NO unless a new assertion exposes a real defect);
+- whether generated dist changed after the build.
 
-Report exact command outputs/PASS counts and exact changed files.
+No GitHub CI exists for this commit, so local executor command results must be reported truthfully for ChatGPT review.
 
-## 7. Safety Boundary
+## 6. Safety Boundary
 
 ```text
 LIVE_APP794_REVISION          = 58
 LIVE_SOURCE_COMMIT            = 98108e9e387d01b6d3c3a35cce5baf13324be50e
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
-R1_SOURCE_COMMIT              = ec79f02b3667d08e438c0b1997b0c521dfb86699
-R1_SOURCE_REVIEW              = CORRECTIVE / NOT ACCEPTED
+R2_SOURCE_COMMIT              = dca394526a89db7909a4d280e1876f03d36a3d35
 ACTIVE_DEPLOY_AUTH            = NONE
 ACTIVE_KINTONE_WRITE_AUTH     = NONE
 ROLLBACK_AUTH                 = NONE
 ```
 
-Zero Kintone network activity and zero deploy activity are authorized.
+Forbidden:
+- all Kintone GET/POST/PUT/DELETE calls;
+- customization upload;
+- Preview update;
+- deploy;
+- rollback;
+- schema/layout/ACL/process changes;
+- App794/App800/App801/App795/App796 record writes.
 
-## 8. Delivery Contract
+## 7. Delivery Contract
 
-Deliver one narrow R2 implementation commit.
+Deliver one narrow commit. Prefer **tests only**.
 
-Report:
-- exact root cause corrected;
+Report concisely:
 - exact changed files;
-- how Fiscal Year is derived without mutation before duplicate preflight;
-- how normal defaulting resumes only after preflight success;
-- how Save/Cancel hiding is fatal-state-only;
-- focused test commands + PASS counts;
+- exact new assertions;
+- all required command results;
 - build result;
 - generated dist status;
 - commit SHA.
@@ -224,4 +153,4 @@ Then STOP for ChatGPT Independent Review.
 
 Maximum executor status:
 
-`APP794_FATAL_CREATE_CLEAN_EXIT_R2_SOURCE_IMPLEMENTED_PENDING_CHATGPT_REVIEW`
+`APP794_FATAL_CREATE_CLEAN_EXIT_R3_TEST_PROOF_CAPTURED_PENDING_CHATGPT_REVIEW`
