@@ -1,122 +1,66 @@
-# AI ACTIVE TASK — D1 MY APPROVAL TASKS — GATE 1 TEST EVIDENCE CORRECTIVE R1
+# AI ACTIVE TASK — NONE / D1 HOME INDEX GATE 1 ACCEPTED
 
-Mode: **ANTIGRAVITY MINIMUM TEST CORRECTION ONLY — 1 FILE / NO SOURCE IMPLEMENTATION CHANGE / ONE FOCUSED TEST / NO BUILD / NO FULL TEST / NO LIVE KINTONE**
+Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD**
 Branch: `ai/antigravity-wp002c`
-Review target: `cb2fae671e610924e7143806944b3dcdf527f2f0`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = CORRECTIVE / READY_FOR_EXECUTION
-NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
+TASK_STATE = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_GATE
+LAST_ACCEPTED_IMPLEMENTATION = cb2fae671e610924e7143806944b3dcdf527f2f0
+LAST_ACCEPTED_TEST_CORRECTIVE = f276de19a5771d7ac0bd73f51509cb912aca24d5
+CURRENT_OWNER = CHATGPT
+ANTIGRAVITY_ACTION = NONE
 ```
 
-Fresh-fetch the branch before execution. If another executor correction already exists after this task was written, STOP and hand it to ChatGPT for review instead of repeating work.
+## 0. Current truth
 
-## 0. Goal
+D1 `My Approval Tasks` Home/Index Gate 1 is independently accepted.
 
-Close only the independent-review test-evidence gap for D1 Home/Index Gate 1.
+Accepted scope:
+- canonical `My MBO` remains owned/rendered by `EmployeeSelfIndexUI`;
+- Dedicated users receive a separate `งานรอฉันอนุมัติ / My Approval Tasks` section through the accepted `MboApprovalTaskService`;
+- Shared users receive no approval-task query/section;
+- approval-task fetch failure fails closed while preserving `My MBO`;
+- no App795/static authority fallback;
+- no cross-employee Detail authority yet;
+- no Process Proceed fresh-assignee revalidation yet.
 
-The implementation candidate in commit `cb2fae671e610924e7143806944b3dcdf527f2f0` is not being reopened by default. The corrective is required because the existing focused integration test does not directly assert that `My MBO` remains rendered in three required scenarios.
-
-Do not rediscover architecture. Do not refactor implementation. Do not proceed to Gate 2 or Gate 3.
-
-## 1. Exact allowed file
-
-MODIFY ONLY:
+## 1. Gate status
 
 ```text
-tests/employee-main-mbo-app-integration.test.js
+GATE 1 = HOME INDEX INTEGRATION — PASS
+GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PENDING
+GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
 ```
 
-No other file may change.
+Gate 1 alone is not deploy-ready.
 
-## 2. Required corrective assertions
+## 2. Antigravity stop rule
 
-Keep all existing Gate 1 assertions. Add the minimum direct DOM assertions needed to prove:
+Antigravity must do nothing from this file.
 
-### A. DEDICATED normal Index
+Do NOT:
+- continue automatically to Gate 2 or Gate 3;
+- modify source/tests/docs;
+- run build/full tests;
+- access Live Kintone or App53;
+- deploy or change ACL/groups.
 
-After the existing `vassana` Dedicated Index render:
-- `[data-mbo-custom-index]` exists;
-- `[data-mbo-title]` exists and truthfully represents `MBO ของฉัน / My MBO`;
-- existing approval-task assertions remain unchanged.
+A new exact Active Task must be written by ChatGPT Control Plane before any further Antigravity execution.
 
-### B. SHARED Index
-
-After the existing Shared Index render:
-- `[data-mbo-custom-index]` exists;
-- `[data-mbo-title]` exists and truthfully represents `MBO ของฉัน / My MBO`;
-- approval query count remains `0`;
-- `.mbo-approval-tasks-section` remains absent.
-
-### C. DEDICATED approval-fetch error
-
-After forcing the existing approval fetch error:
-- `[data-mbo-custom-index]` still exists;
-- `[data-mbo-title]` still exists and truthfully represents `MBO ของฉัน / My MBO`;
-- `.mbo-approval-tasks-error-state` exists;
-- no actionable approval task link/table from the failed fetch is exposed.
-
-Use the existing mock DOM capabilities if sufficient. Do not redesign the test harness unless a tiny change is strictly necessary for these assertions.
-
-## 3. Preserve the accepted Gate 1 implementation candidate
-
-Do NOT modify:
+## 3. Authorization ledger
 
 ```text
-src/main-mbo-app.js
-src/ui/approver-task-index-ui.js
-src/services/mbo-approval-task-service.js
-src/ui/employee-self-index-ui.js
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH        = NONE
+ACTIVE_ACL_WRITE_AUTH     = NONE
+ACTIVE_GROUP_WRITE_AUTH   = NONE
+APP53_SCHEMA_WRITE_AUTH   = NONE
+APP53_RECORD_WRITE_AUTH   = NONE
+APP53_BULK_WRITE_AUTH     = NONE
+ROLLBACK_AUTH             = NONE
 ```
 
-Do not weaken/remove existing assertions. If the new direct My MBO assertions expose an actual implementation defect, STOP and report it to ChatGPT instead of widening this corrective.
+## 4. Next control action
 
-## 4. Run only
-
-```text
-node --test tests/employee-main-mbo-app-integration.test.js
-git diff --check
-```
-
-Do NOT run any other test.
-
-## 5. Explicitly forbidden
-
-```text
-SOURCE IMPLEMENTATION CHANGE                     = NO
-PROJECT-DOC CHANGE BY EXECUTOR                   = NO
-DIST CHANGE                                      = NO
-CROSS_EMPLOYEE_DETAIL_AUTHORITY                  = NO
-PROCESS_PROCEED_REVALIDATION                     = NO
-npm test                                         = NO
-npm run ui:build                                 = NO
-LIVE KINTONE GET                                 = NO
-LIVE KINTONE WRITE                               = NO
-APP53 ACCESS                                     = NO
-ACL/GROUP/DEPLOY                                 = NO
-```
-
-No Live Kintone authorization exists.
-
-## 6. Finish
-
-If the focused test and `git diff --check` pass:
-- commit + push one focused correction;
-- STOP immediately.
-
-Final executor response only:
-
-```text
-COMMIT_SHA = ...
-CHANGED_FILES = tests/employee-main-mbo-app-integration.test.js ONLY
-FOCUSED_TEST = PASS/FAIL + count
-GIT_DIFF_CHECK = PASS/FAIL
-SOURCE_IMPLEMENTATION_CHANGED = NO
-FULL_TEST_RUN = NO
-BUILD_RUN = NO
-LIVE_KINTONE_OPERATIONS = 0
-APP53_PRODUCTION_TOUCHED = NO
-```
-
-Next owner = ChatGPT independent review.
+When the user says `ต่อ` / `ต่อไป`, ChatGPT must fresh-fetch repository truth, inspect Gate 2 prerequisites, and open only the smallest necessary Gate 2 work package if still required.
