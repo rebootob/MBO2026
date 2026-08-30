@@ -65,6 +65,15 @@ async function kintoneFetch(baseUrl, headers, endpoint, options = {}) {
     throw new Error(`Kintone API error [${method} ${endpoint}]: HTTP ${response.status} (${errCode}) - ${errMsg}`);
   }
 
+  // Exception for POST /k/v1/preview/app/deploy.json which returns empty response body on HTTP 200 SUCCESS
+  if (endpoint.startsWith('/k/v1/preview/app/deploy.json') && method === 'POST') {
+    return payload || {};
+  }
+
+  if (payload === null) {
+    throw new Error(`Uncertain Kintone API response [${method} ${endpoint}]: HTTP ${response.status} returned empty or unparseable JSON response.`);
+  }
+
   return payload;
 }
 
@@ -102,14 +111,26 @@ function verifyMboKintoneUserField(fieldObj, contextLabel) {
 }
 
 // Helper: Deterministic Synthetic Record Verification (Forward & Rollback)
-function verifySyntheticRecords(records, contextLabel) {
+function verifySyntheticRecords(records, contextLabel, expectedIds = null) {
   if (!Array.isArray(records) || records.length !== 2) {
     throw new Error(`[FAIL CLOSED] ${contextLabel} synthetic record count mismatch (expected 2, got ${records?.length}).`);
   }
 
-  const sorted = [...records].sort((a, b) => Number(a.$id?.value || 0) - Number(b.$id?.value || 0));
-  const recA = sorted[0];
-  const recB = sorted[1];
+  let recA = null;
+  let recB = null;
+
+  if (expectedIds && Array.isArray(expectedIds) && expectedIds.length === 2) {
+    const recMap = new Map(records.map(r => [String(r.$id?.value || r.Record_ID?.value), r]));
+    recA = recMap.get(String(expectedIds[0]));
+    recB = recMap.get(String(expectedIds[1]));
+    if (!recA || !recB) {
+      throw new Error(`[FAIL CLOSED] ${contextLabel} returned record ID mismatch. Expected IDs ${expectedIds.join(', ')}.`);
+    }
+  } else {
+    const sorted = [...records].sort((a, b) => Number(a.$id?.value || 0) - Number(b.$id?.value || 0));
+    recA = sorted[0];
+    recB = sorted[1];
+  }
 
   if (
     !recA ||
@@ -179,6 +200,11 @@ async function runResumeLifecycle() {
     throw new Error(`[FAIL CLOSED] Preview field 'MBO_Kintone_User' already present at preflight.`);
   }
 
+  const initPreviewRev = Number(previewFields.revision);
+  if (!Number.isSafeInteger(initPreviewRev) || initPreviewRev !== EXPECTED_BASELINE_REVISION) {
+    throw new Error(`[FAIL CLOSED] Initial preview revision mismatch: expected ${EXPECTED_BASELINE_REVISION}, got ${previewFields.revision}.`);
+  }
+
   // 6. GET Live Record Count
   const queryAsc = encodeURIComponent('order by $id asc');
   const liveRecordsRes = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${APP_ID}&query=${queryAsc}`, { method: 'GET' });
@@ -207,46 +233,65 @@ async function runResumeLifecycle() {
       ]
     }
   });
-  console.log(`[S-D2.1] Created synthetic records IDs: ${createRecsRes.ids?.join(', ')}.`);
+
+  if (
+    !createRecsRes ||
+    !Array.isArray(createRecsRes.ids) ||
+    createRecsRes.ids.length !== 2 ||
+    !Array.isArray(createRecsRes.revisions) ||
+    createRecsRes.revisions.length !== 2
+  ) {
+    throw new Error(`[FAIL CLOSED] Add Records response missing or malformed ids/revisions.`);
+  }
+
+  const recAId = String(createRecsRes.ids[0]);
+  const recBId = String(createRecsRes.ids[1]);
+
+  if (!/^\d+$/.test(recAId) || !/^\d+$/.test(recBId)) {
+    throw new Error(`[FAIL CLOSED] Add Records returned non-numeric record IDs: ${recAId}, ${recBId}`);
+  }
+  const createdRecordIds = [recAId, recBId];
+
+  console.log(`[S-D2.1] Created synthetic records IDs: ${createdRecordIds.join(', ')}.`);
 
   // S-D2.2 — Forward Field Rehearsal
   console.log(`[S-D2.2] Adding MBO_Kintone_User field to Preview on App ${APP_ID}...`);
   assertTargetAppId(APP_ID);
-  const currentPreviewRev = Number(previewFields.revision || EXPECTED_BASELINE_REVISION);
-  const addFieldPayload = {
-    app: APP_ID,
-    properties: {
-      MBO_Kintone_User: {
-        type: 'USER_SELECT',
-        code: 'MBO_Kintone_User',
-        label: 'MBO Kintone User',
-        required: false,
-        entities: []
-      }
-    }
-  };
-  if (Number.isSafeInteger(currentPreviewRev)) {
-    addFieldPayload.revision = currentPreviewRev;
-  }
-
-  await kintoneFetch(baseUrl, headers, '/k/v1/preview/app/form/fields.json', {
+  const addFieldRes = await kintoneFetch(baseUrl, headers, '/k/v1/preview/app/form/fields.json', {
     method: 'POST',
-    body: addFieldPayload
+    body: {
+      app: APP_ID,
+      properties: {
+        MBO_Kintone_User: {
+          type: 'USER_SELECT',
+          code: 'MBO_Kintone_User',
+          label: 'MBO Kintone User',
+          required: false,
+          entities: []
+        }
+      },
+      revision: initPreviewRev
+    }
   });
+
+  if (!addFieldRes || !Number.isSafeInteger(Number(addFieldRes.revision))) {
+    throw new Error(`[FAIL CLOSED] Add Field response missing valid numeric revision.`);
+  }
+  const addFieldResponseRev = Number(addFieldRes.revision);
 
   console.log(`[S-D2.2] Verifying Preview field addition...`);
   assertTargetAppId(APP_ID);
   const previewFieldsS3 = await kintoneFetch(baseUrl, headers, `/k/v1/preview/app/form/fields.json?app=${APP_ID}`, { method: 'GET' });
+  if (Number(previewFieldsS3.revision) !== addFieldResponseRev) {
+    throw new Error(`[FAIL CLOSED] Preview GET revision (${previewFieldsS3.revision}) does not match Add Field response revision (${addFieldResponseRev}).`);
+  }
   const mboUserPrevS3 = previewFieldsS3.properties?.MBO_Kintone_User;
   verifyMboKintoneUserField(mboUserPrevS3, 'S-D2.2 Preview');
 
   // S-D2.3 — Forward Deploy & Verification
   console.log(`[S-D2.3] Deploying forward field change to App ${APP_ID}...`);
   assertTargetAppId(APP_ID);
-  const deployPayload = { apps: [{ app: APP_ID }] };
-  if (previewFieldsS3.revision) {
-    deployPayload.apps[0].revision = previewFieldsS3.revision;
-  }
+  const deployPayload = { apps: [{ app: APP_ID, revision: addFieldResponseRev }] };
 
   await kintoneFetch(baseUrl, headers, '/k/v1/preview/app/deploy.json', {
     method: 'POST',
@@ -262,38 +307,49 @@ async function runResumeLifecycle() {
   verifyMboKintoneUserField(mboUserLiveS3, 'S-D2.3 Live');
 
   const liveRecsS3 = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${APP_ID}&query=${queryAsc}`, { method: 'GET' });
-  verifySyntheticRecords(liveRecsS3.records, 'S-D2.3 Live');
+  verifySyntheticRecords(liveRecsS3.records, 'S-D2.3 Live', createdRecordIds);
   console.log(`[S-D2.3] Forward rehearsal PASS.`);
 
   // S-D2.4 — Rollback Rehearsal
-  console.log(`[S-D2.4] Deleting MBO_Kintone_User field from Preview on App ${APP_ID}...`);
+  console.log(`[S-D2.4] Fresh GET Preview fields before delete...`);
   assertTargetAppId(APP_ID);
-  const deletePayload = {
-    app: APP_ID,
-    fields: ['MBO_Kintone_User']
-  };
-  if (previewFieldsS3.revision) {
-    deletePayload.revision = previewFieldsS3.revision;
+  const previewBeforeDelete = await kintoneFetch(baseUrl, headers, `/k/v1/preview/app/form/fields.json?app=${APP_ID}`, { method: 'GET' });
+  const mboUserBeforeDelete = previewBeforeDelete.properties?.MBO_Kintone_User;
+  verifyMboKintoneUserField(mboUserBeforeDelete, 'S-D2.4 Pre-Delete Preview');
+  const freshPreviewRevBeforeDelete = Number(previewBeforeDelete.revision);
+  if (!Number.isSafeInteger(freshPreviewRevBeforeDelete)) {
+    throw new Error(`[FAIL CLOSED] Fresh Preview GET before delete missing valid numeric revision.`);
   }
 
-  await kintoneFetch(baseUrl, headers, '/k/v1/preview/app/form/fields.json', {
+  console.log(`[S-D2.4] Deleting MBO_Kintone_User field from Preview on App ${APP_ID}...`);
+  assertTargetAppId(APP_ID);
+  const deleteFieldRes = await kintoneFetch(baseUrl, headers, '/k/v1/preview/app/form/fields.json', {
     method: 'DELETE',
-    body: deletePayload
+    body: {
+      app: APP_ID,
+      fields: ['MBO_Kintone_User'],
+      revision: freshPreviewRevBeforeDelete
+    }
   });
+
+  if (!deleteFieldRes || !Number.isSafeInteger(Number(deleteFieldRes.revision))) {
+    throw new Error(`[FAIL CLOSED] Delete Field response missing valid numeric revision.`);
+  }
+  const deleteFieldResponseRev = Number(deleteFieldRes.revision);
 
   console.log(`[S-D2.4] Verifying Preview field removal before rollback deploy...`);
   assertTargetAppId(APP_ID);
   const previewFieldsS4 = await kintoneFetch(baseUrl, headers, `/k/v1/preview/app/form/fields.json?app=${APP_ID}`, { method: 'GET' });
+  if (Number(previewFieldsS4.revision) !== deleteFieldResponseRev) {
+    throw new Error(`[FAIL CLOSED] Preview GET revision (${previewFieldsS4.revision}) does not match Delete Field response revision (${deleteFieldResponseRev}).`);
+  }
   if (previewFieldsS4.properties?.MBO_Kintone_User) {
     throw new Error(`[FAIL CLOSED] MBO_Kintone_User still present in Preview before rollback deploy.`);
   }
 
   console.log(`[S-D2.4] Deploying rollback to App ${APP_ID}...`);
   assertTargetAppId(APP_ID);
-  const rollbackDeployPayload = { apps: [{ app: APP_ID }] };
-  if (previewFieldsS4.revision) {
-    rollbackDeployPayload.apps[0].revision = previewFieldsS4.revision;
-  }
+  const rollbackDeployPayload = { apps: [{ app: APP_ID, revision: deleteFieldResponseRev }] };
 
   await kintoneFetch(baseUrl, headers, '/k/v1/preview/app/deploy.json', {
     method: 'POST',
@@ -310,12 +366,12 @@ async function runResumeLifecycle() {
   }
 
   const liveRecsS4 = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${APP_ID}&query=${queryAsc}`, { method: 'GET' });
-  verifySyntheticRecords(liveRecsS4.records, 'S-D2.4 Live Rollback');
+  verifySyntheticRecords(liveRecsS4.records, 'S-D2.4 Live Rollback', createdRecordIds);
 
   console.log(`\n========================================================================`);
   console.log(`[REHEARSAL SUCCESS] App ${APP_ID} resume rehearsal complete.`);
   console.log(`- Preflight baseline verification: PASS (rev 3, 0 records)`);
-  console.log(`- Synthetic records creation: PASS (2 records)`);
+  console.log(`- Synthetic records creation: PASS (IDs: ${createdRecordIds.join(', ')})`);
   console.log(`- Forward field addition: PASS`);
   console.log(`- Rollback field deletion: PASS`);
   console.log(`- Synthetic records intact: 2/2 PASS`);
