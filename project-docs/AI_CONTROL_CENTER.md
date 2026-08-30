@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 SOURCE/REGRESSION/LOCAL BUILD ACCEPTED / LIVE ACTIONS STILL UNAUTHORIZED
+> Updated: 2026-08-30 — D1 GATE A ACCEPTED / GATE B1 APP53 READ-ONLY PREFLIGHT OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Employee-Self Runtime PASS. Approval Authority Service PASS. Gate 1 Home Index PASS. Gate 2 cross-employee Detail PASS. Gate 3 Process Proceed fresh-Assignee PASS. Async Process Proceed test-contract corrective PASS. Full regression recovered after stale-test correction. Local App794 UI build verification PASS. Live prerequisites/deploy/UAT remain separate and unauthorized. |
+| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Employee-Self Runtime PASS. Approval Authority Service PASS. Gate 1 Home Index PASS. Gate 2 cross-employee Detail PASS. Gate 3 Process Proceed fresh-Assignee PASS. Async Process Proceed test-contract corrective PASS. Full regression recovered after stale-test correction. Local App794 UI build verification PASS. Gate B1 App53 protected-schema read-only preflight OPEN. No Live write/deploy authorization. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; deploy NOT authorized |
@@ -26,21 +26,31 @@ CHATGPT = PLAN / ARCHITECT / REVIEW / CONTROL DOCS
 ANTIGRAVITY = MINIMUM NECESSARY EXECUTION ONLY
 ```
 
-Do not spend Antigravity credit on review, archaeology, broad reports, or work ChatGPT can do directly.
+Do not spend Antigravity credit on review, repository archaeology, broad reports, document maintenance, or work ChatGPT can do directly.
 
-## 3. Accepted D1 source gates
+## 3. Accepted D1 Gate A state
 
 ```text
 GATE 1 = HOME INDEX INTEGRATION — PASS
 GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PASS
 GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PASS
+ASYNC TEST-CONTRACT CORRECTIVE — PASS
+FULL REGRESSION AFTER CORRECTIVE — PASS BY EXECUTOR CONTRACT
+LOCAL UI BUILD VERIFICATION — PASS
 ```
 
-Gate 3 accepted chain:
+Accepted generated build:
 ```text
-IMPLEMENTATION_COMMIT = 282dcaf35764ea1960a064cf48f3c8add34506b8
-SECURITY_CORRECTIVE_COMMIT = 8dc664e073a604fc40b88680cbdbc938f58728c6
+GENERATED_BUILD_COMMIT = 09c306d837dfc21470d8c1e401972b1a8f3ffc70
+CHANGED = dist/mbo-employee-app.js ONLY
+dist/mbo-employee.css = BYTE-IDENTICAL
 ```
+
+Generated-bundle inspection confirms:
+- `MboApprovalTaskService.revalidateApprovalTask()` present;
+- Dedicated cross-employee fresh native-Assignee revalidation present;
+- Process Proceed record id boundary = `event.recordId || record.$id.value` only;
+- missing id / denied / malformed / error = fail closed.
 
 Accepted authority model:
 ```text
@@ -51,60 +61,54 @@ SHARED approval authority = DENIED
 
 No App795/static Manager/GM/First_Manager/UI-role fallback is approval authority.
 
-## 4. Full-regression test-contract corrective
+## 4. Gate B boundary — protected Kintone configuration
 
-Initial pre-deploy full regression:
+Confirmed baseline separates Gate B protected changes into distinct concerns. None are authorized yet.
+
+Known design dependency:
 ```text
-1034 PASS / 4 FAIL / 1038 TOTAL
+App53 Field Code = MBO_Kintone_User
+Label            = MBO Kintone User
+Type             = USER_SELECT
+Design           = CONFIRMED
+Live field       = NOT CREATED
 ```
 
-All four failures were stale synchronous test invocation assumptions after Gate 3 intentionally made `app.record.detail.process.proceed` async.
+App53 is Production / protected source of truth.
 
-Accepted test-only corrective:
+Before any App53 schema write, mandatory prerequisites include:
+1. exact one-shot user authorization naming App53 and the exact change;
+2. fresh pre-write schema evidence for the exact target;
+3. current backup/export or reviewed recovery material;
+4. exact payload/change plan reviewed before execution;
+5. impact/risk/rollback stated;
+6. no unrelated changes bundled;
+7. immediate post-write readback;
+8. authorization consumed after the exact operation.
+
+Adding `MBO_Kintone_User`, populating mappings, and correcting Natta `emp_text` are separate protected concerns and must not be bundled silently.
+
+## 5. Why Gate B1 read-only preflight is next
+
+Source/test/build work is accepted. The smallest safe next action is not a write; it is to obtain fresh App53 Production evidence and current local recovery material before asking the user for a one-shot App53 schema-write authorization.
+
+Use the already-existing repository tool:
 ```text
-TEST_CONTRACT_CORRECTIVE_COMMIT = a206e8be47ac2e7a5ffe2e7eac5dddc25ea9d6fb
-CHANGED_FILES = tests/objective-save-validation.test.js ONLY
-RUNTIME_SOURCE_CHANGED = NO
+scripts/kintone/get-app-info.js
 ```
 
-Independent diff review confirmed:
-- all affected Process Proceed invocations await the async handler;
-- the one synchronous G2 `.forEach(...)` was converted to an async-safe sequential loop;
-- expected `event` / `false` business results, fixtures, topology, statuses and requester/appraiser semantics were unchanged;
-- no source/service/script/dist file changed.
+That tool is explicitly GET-only and contains no POST/PUT/DELETE/deploy path.
 
-The executor corrective packet permitted commit only after the focused test, full `npm test`, and `git diff --check` passed. The committed correction matches that exact one-file contract. No independent Node replay is claimed by ChatGPT because its local runtime could not clone/resolve `github.com`.
+Gate B1 scope is App53 only:
+- export fresh App53 metadata/schema;
+- export all App53 records locally to ignored `backups/` recovery material;
+- confirm whether `MBO_Kintone_User` currently exists;
+- confirm current App53 revision/record count/export completeness;
+- re-check only known evidence records #456 and #578 for `Number_0` and `emp_text`;
+- no App53 write;
+- no App794 ACL/group/deploy work yet.
 
-## 5. Local UI build verification — PASS
-
-Accepted generated-build commit:
-```text
-GENERATED_BUILD_COMMIT = 09c306d837dfc21470d8c1e401972b1a8f3ffc70
-PARENT = a21a78a6a112ad4e06ec1cc3ddfddbe3af95f2fe
-```
-
-Independent GitHub comparison confirmed exactly one generated file changed:
-```text
-dist/mbo-employee-app.js
-```
-
-`dist/mbo-employee.css` was byte-identical and therefore did not change, which is allowed by the build contract.
-
-No `src/**`, `tests/**`, `services/**`, `scripts/**`, `project-docs/**`, package file or other artifact changed in the executor build commit.
-
-Generated-bundle inspection confirms the accepted D1 runtime is present in the bundle, including:
-- `MboApprovalTaskService.revalidateApprovalTask()`;
-- Dedicated cross-employee fresh Assignee revalidation;
-- Process Proceed record id resolved only from `event.recordId || record.$id.value`;
-- fail-closed behavior when native record id is absent or fresh authorization is not exactly true.
-
-Independent decision:
-```text
-D1_LOCAL_UI_BUILD_VERIFICATION = PASS
-DEPLOY_READY_AUTHORIZATION = NO
-```
-
-Build acceptance does not authorize deployment or any Live Kintone/App53/ACL/group operation.
+This read-only preflight does not authorize the subsequent schema change.
 
 ## 6. Accepted App794 Live baseline
 
@@ -115,9 +119,9 @@ DEPLOYED_SOURCE_COMMIT = 1ed342ad137a4a364496a28d29bdffd24a99b511
 USER_RUNTIME_UAT       = PASS
 ```
 
-This live baseline remains unchanged. The accepted local D1 bundle has NOT been deployed.
+The accepted local D1 bundle has NOT been deployed.
 
-## 7. App53 / protected state
+## 7. Current App53 known evidence before Gate B1 refresh
 
 ```text
 APP53_ENVIRONMENT = PRODUCTION
@@ -126,15 +130,9 @@ VASSANA = vassana -> App53 #456 -> emp_text 0044 -> ACTIVE
 NATTA = natta -> App53 #578 -> emp_text BLANK -> FAIL CLOSED
 ```
 
-Known protected design dependency:
-```text
-MBO_Kintone_User
-Field Type = USER_SELECT
-Design = CONFIRMED
-Live field created = NO
-```
+These values must be treated as prior evidence until Gate B1 refresh is reviewed.
 
-No App53 write is authorized.
+No guessed Employee_Code may be invented for Natta.
 
 ## 8. Authorization ledger
 
@@ -149,17 +147,25 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
+Read-only Gate B1 evidence collection does not change this ledger.
+
 ## 9. Current Active Task
 
 ```text
-ACTIVE_TASK = NONE — D1 LOCAL BUILD ACCEPTED
-TASK_STATE = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_WORK_PACKAGE
-CURRENT_OWNER = CHATGPT
-ANTIGRAVITY_ACTION = NONE
+ACTIVE_TASK = D1 GATE B1 APP53 MBO_Kintone_User SCHEMA READ-ONLY PREFLIGHT R1
+TASK_STATE = OPEN / READ_ONLY
+CURRENT_OWNER = ANTIGRAVITY
+APP53_GET = YES / READ ONLY
+APP53_WRITE = NO
+APP794_GET/WRITE = NO
+GROUP/ACL/DEPLOY = NO
+SOURCE/TEST/DIST CHANGE = NO
 ```
 
-Antigravity must not continue automatically into Live Kintone reads/writes, App53 schema/mapping, ACL/group configuration, deployment or UAT.
+Exact execution contract is in `AI_ACTIVE_TASK.md`.
 
 ## 10. Exact next control action
 
-Wait for user continuation. On `ต่อ` / `ต่อไป`, ChatGPT fresh-fetches repository truth and chooses the smallest safe next work package. Any production-impacting operation must remain behind its exact authorization gate.
+Antigravity performs only the App53 GET-only preflight and returns concise evidence to ChatGPT. It must not create a Git commit and must not perform any App53/App794/group/ACL/deploy write.
+
+After ChatGPT independently reviews the refreshed schema + backup evidence, ChatGPT will prepare the exact App53 field-addition payload, impact/risk/rollback plan, and then ask the user for a separate explicit one-shot authorization if the schema change is still required.
