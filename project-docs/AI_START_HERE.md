@@ -61,7 +61,7 @@ Do not spend Antigravity credit on these documentation tasks unless exact execut
 ## 5. D1–D7 No-Drop
 
 ```text
-D1 Login + Password Change + Employee-Self MBO Gate
+D1 Hybrid Identity + Password + Employee-Self + Approver Access
 D2 Excel + PDF Legacy Format Export
 D3 8 Legacy PMS Apps -> App794 Migration
 D4 App800 HR Control Center End-to-End
@@ -78,9 +78,22 @@ Current status is in `AI_CONTROL_CENTER.md`; detailed acceptance/no-drop criteri
 D1 = KINTONE-ONLY
 External server/service = FORBIDDEN
 Auth Bridge = CANCELLED / DO NOT CONTINUE
+
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 ```
 
 Do not revive `services/mbo-auth-bridge/` from historical files or chat memory.
+
+Do not revert D1 to the obsolete assumption that every employee must perform a secondary MBO login.
+
+Canonical distinction:
+- dedicated Kintone employee/approver -> exact authoritative Kintone User <-> Employee_Code mapping -> Employee-Self auto-bind;
+- shared Kintone principal -> Employee_Code + App801 MBO password/session;
+- dual-role Employee + Approver keeps `My MBO` and `My Approval Tasks` as separate authorization contexts;
+- self-approval -> fail closed;
+- exact physical dedicated mapping source must be proven by read-only App53 audit before implementation.
+
+For any D1 Hybrid Identity/dual-role task, route through `AI_DOCUMENT_INDEX.md` and read the relevant Baselines before acting.
 
 ## 7. User Shorthand
 
