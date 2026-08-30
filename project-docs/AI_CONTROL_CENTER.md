@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary source/runtime execution
-> Updated: 2026-08-30 — LEAN CORRECTIVE CANDIDATE REVIEWED / CLEANUP R2 OPEN / APP53 PRODUCTION READ-ONLY
+> Updated: 2026-08-30 — LEAN CLEANUP R2 LOGIC PASS / TREE CLEANUP R3 ONLY / APP53 PRODUCTION READ-ONLY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS at `c20e406b9b289984e57ebf2c52c9223094bc5f5a`. Runtime Entry candidate `31d4bf55343f2dddea7a4dc016828083e6c4c699` fixes the three major security findings, but is **CORRECTIVE R2** because it violated Lean scope, still has a local-context fallback, and lacks several mandatory focused runtime proofs. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS at `c20e406b9b289984e57ebf2c52c9223094bc5f5a`. Hybrid Employee-Self Runtime Entry source logic at `4a35988a3fc2206849456fbfbef90086d4efd002` passes independent logic review, but cumulative tree cleanup is still required before source acceptance milestone. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling accepted; live remains prior MVP. |
@@ -28,10 +28,10 @@ CHATGPT     = PLAN / REVIEW / CONTROL DOCS / EVIDENCE INTERPRETATION
 
 Ordinary corrective:
 ```text
-exact source edit -> smallest focused tests -> git diff --check -> commit/push -> STOP
+exact edit/restore -> smallest necessary check -> commit/push -> STOP
 ```
 
-Do NOT use Antigravity by default for broad scans, full npm test, UI build, long evidence docs, Control Plane docs, or unrelated regression repair. Full test/build is reserved for a source-acceptance or pre-deploy milestone.
+No broad scans, full npm test, UI build, evidence docs, or unrelated regression work unless Control Plane explicitly opens a milestone gate.
 
 ## 3. Accepted Hybrid Baseline
 
@@ -39,16 +39,16 @@ Do NOT use Antigravity by default for broad scans, full npm test, UI build, long
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 APP794_LIVE_REVISION = 60
 HYBRID_CORE_SOURCE = PASS
-HYBRID_RUNTIME_ENTRY_SOURCE = NOT YET ACCEPTED
+HYBRID_RUNTIME_ENTRY_SOURCE = PASS_PENDING_TREE_CLEANUP
 LIVE_DEPLOY_READY = NO
 ```
 
-Approved SHARED native principals are exactly:
+Approved SHARED principals are exactly:
 ```text
 t1, t2, s1, f1, f2, f3, e1, tmh, g_request
 ```
 
-Dedicated mapping remains:
+Dedicated mapping:
 ```text
 exact native Kintone user
 -> App53 MBO_Kintone_User exact match
@@ -57,7 +57,7 @@ exact native Kintone user
 -> Employee-Self
 ```
 
-No wildcard/prefix/numeric heuristic. Dedicated mapping failure never falls back to SHARED login.
+Dedicated mapping failure never falls back to SHARED login.
 
 ## 4. App53 Production Protection — MANDATORY
 
@@ -78,46 +78,28 @@ MBO_Kintone_User live field = NOT YET CREATED
 
 No App53 change is authorized. Natta Employee_Code must never be guessed.
 
-## 5. Review — Candidate `31d4bf55343f2dddea7a4dc016828083e6c4c699`
+## 5. Review — Lean Cleanup R2 `4a35988a3fc2206849456fbfbef90086d4efd002`
 
-Review result:
 ```text
-RESULT          = CORRECTIVE R2
-SOURCE_ACCEPTED = NO
-DEPLOY_READY    = NO
+LOGIC_REVIEW      = PASS
+TREE_CLEANUP      = INCOMPLETE
+SOURCE_ACCEPTED   = NOT YET — WAITING EXACT RESTORE ONLY
+DEPLOY_READY      = NO
 ```
 
-### Fixed correctly
+Confirmed corrected source behavior:
+1. exact 9-principal SHARED classification remains correct;
+2. DEDICATED mapping failure remains fail-closed with no shared-login fallback;
+3. registered DeleteGuard receives current Employee-Self context;
+4. `setupRecordUiWithAuth()` no longer converts a raw Employee_Code/string into SHARED context;
+5. Create uses resolved local `context.kintoneUserCode` without re-reading/fallback;
+6. focused integration test now contains explicit fixtures for dedicated gate-null, missing mapping, ambiguous mapping, invalid canonical `emp_text`, dedicated requester snapshot, and delete guard.
 
-1. **Exact SHARED set fixed.** `resolveKintonePrincipalMode()` now returns SHARED only for the exact approved 9; numeric/prefix heuristics are removed.
-2. **DEDICATED -> SHARED fallback removed.** Dedicated mapping failure now returns `DEDICATED_MAPPING_FAILED` without calling `mboLoginGate.requireLogin()`.
-3. **DeleteGuard runtime wiring fixed.** Registered delete handler now passes `getEmployeeSelfContext: () => currentEmployeeSelfContext` while preserving the shared gate fallback.
-4. **App800 HR reset test restored correctly.** Current blob is exact pre-WP `eb2a3cdfb6bee6a6d67f15cc3210f139a1635756`.
+Cleanup correctly completed in R2:
+- the unauthorized corrective evidence markdown was deleted.
 
-### Remaining blocker A — local context still has silent fallback
-
-`setupRecordUiWithAuth(...)` still accepts non-object `contextOrCode` and converts it into a SHARED context. That contradicts the required rule that missing/malformed resolved context must fail closed.
-
-Inside Create lookup, code still uses:
-```text
-context.kintoneUserCode || kintone.getLoginUser()?.code
-```
-
-The Create authorization seam must use the already-resolved local `context.kintoneUserCode` only. No fallback/re-read is allowed there.
-
-### Remaining blocker B — mandatory focused runtime proof incomplete
-
-Committed integration proof covers valid dedicated entry, missing mapping, and delete guard. It does NOT yet explicitly prove all Lean minimum cases:
-- valid DEDICATED with `mboLoginGate = null`;
-- ambiguous dedicated mapping -> blocked and gate calls 0;
-- invalid canonical `emp_text` -> blocked and gate calls 0;
-- Create through local DEDICATED context snapshots dedicated `Requester_User`.
-
-### Remaining blocker C — Lean scope violated
-
-The candidate ran `npm run ui:build`, created a new corrective evidence file, modified generated `dist/mbo-employee-app.js`, modified `tests/classic-bundle.test.js`, and changed unrelated tests to adapt their mock principals. The Lean task explicitly forbade these actions.
-
-Files that must be restored to Control Plane base `248174b67735a26318bbeadf8e341f8a3db31708`:
+Cleanup still NOT completed:
+The following old over-scope changes from candidate `31d4bf...` remain different from Control Plane base `248174b67735a26318bbeadf8e341f8a3db31708`:
 ```text
 dist/mbo-employee-app.js
 tests/classic-bundle.test.js
@@ -126,29 +108,30 @@ tests/objective-save-validation.test.js
 tests/timeline-truthfulness-and-attachment.test.js
 ```
 
-Delete the newly created:
-```text
-project-docs/D1_HYBRID_IDENTITY_EMPLOYEE_SELF_RUNTIME_ENTRY_R1_CORRECTIVE_R1_EVIDENCE.md
-```
+These are not new R2 edits; they are inherited residue that R2 was instructed to restore but did not.
 
-Do NOT revert the correctly restored `tests/hr-control-center-reset-ui.test.js`; keep its exact blob `eb2a3cdf...`.
+Keep `tests/hr-control-center-reset-ui.test.js` exactly at restored blob:
+```text
+eb2a3cdfb6bee6a6d67f15cc3210f139a1635756
+```
 
 ## 6. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — LEAN CLEANUP R2
+ACTIVE_TASK = D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — LEAN TREE CLEANUP R3
 OWNER       = ANTIGRAVITY
-SOURCE_EDIT = src/main-mbo-app.js ONLY
-TEST_EDIT   = tests/employee-main-mbo-app-integration.test.js ONLY
-PLUS        = exact cleanup/restoration of over-scope files listed in AI_ACTIVE_TASK.md
-FULL_TEST   = NO
+MODE        = EXACT GIT RESTORE ONLY
+SOURCE_EDIT = NONE
+TEST_EDIT   = NONE
+TEST_RUN    = NONE
 UI_BUILD    = NO
+FULL_TEST   = NO
 EVIDENCE    = NO
 APP53_LIVE  = NO
 DEPLOY      = NO
 ```
 
-`src/services/mbo-identity-service.js` is accepted for this corrective and is READ-ONLY unless ChatGPT reopens it.
+Exact commands/scope are in `AI_ACTIVE_TASK.md`.
 
 ## 7. Authorization Ledger
 
@@ -168,4 +151,4 @@ No App53/App794/App795/App801 live write, ACL/group change, customization upload
 
 ## 8. Next Gate
 
-If Lean Cleanup R2 passes independent review, ChatGPT may then authorize **one** source-acceptance milestone full test/build. Protected Kintone configuration and My Approval Tasks remain separate later gates.
+After exact tree cleanup R3 passes review, ChatGPT will open one source-acceptance milestone verification. That milestone may run one full test/build cycle. Protected Kintone configuration and My Approval Tasks remain separate later gates.
