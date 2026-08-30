@@ -1,15 +1,16 @@
-# AI ACTIVE TASK — D1 SANDBOX REHEARSAL TOOLING GATE S-A CORRECTIVE R1
+# AI ACTIVE TASK — D1 SANDBOX REHEARSAL EXECUTION GATE S-B R1
 
-Mode: **ANTIGRAVITY SOURCE-ONLY CORRECTIVE / ONE SCRIPT ONLY / ZERO KINTONE NETWORK EXECUTION**
+Mode: **ANTIGRAVITY SANDBOX-ONLY KINTONE EXECUTION / REVIEWED SCRIPT / NO PRODUCTION APP ACCESS / NO SOURCE CHANGE**
 Branch: `ai/antigravity-wp002c`
-Reviewed implementation commit: `b98aa18fb082cf5b52efa1c80cf4df0a7e115dc5`
+Reviewed tooling commit: `491358480cf642b3f2175b3cf0e1fd7246a96234`
+Reviewed script blob: `838d021073916d2c05f2ce84a9242545c5ebd848`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = OPEN / READY_FOR_NARROW_SOURCE_CORRECTIVE
+TASK_STATE = OPEN / READY_FOR_SANDBOX_EXECUTION
 CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT SOURCE REVIEW
-SANDBOX_AUTHORIZATION = RECEIVED BUT HELD UNTIL TOOLING PASS
+NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
+SANDBOX_AUTHORIZATION = ACTIVE / ONE DISPOSABLE SANDBOX LIFECYCLE
 PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 ```
 
@@ -17,148 +18,135 @@ Fresh-fetch the branch first. If this Active Task has been replaced, STOP.
 
 ## 0. Goal
 
-Correct only the reviewed sandbox rehearsal script so it exactly matches the approved field contract and deterministic synthetic-data verification.
+Execute only the already-reviewed sandbox rehearsal script to prove forward field addition and rollback mechanics on a new disposable Kintone app using synthetic data only.
 
-Modify only:
+Production App53 must not be accessed over the network and must not be written.
 
+## 1. Exact reviewed artifact
+
+Only executable script:
 ```text
 scripts/kintone/rehearse-app53-hybrid-sandbox.js
 ```
 
-Do NOT run the script.
-Do NOT make any Kintone network request.
-
-## 1. Correct exact USER_SELECT payload
-
-For `MBO_Kintone_User`, encode exactly:
-
+Before any network execution run:
 ```text
-Field Code = MBO_Kintone_User
-Label      = MBO Kintone User
-Type       = USER_SELECT
-Required   = false
-Entities   = []
+git hash-object scripts/kintone/rehearse-app53-hybrid-sandbox.js
 ```
 
-Required change:
-- remove `defaultValue: []` from the target field definition;
-- use `entities: []`.
-
-Do not change the field code/type/label/required semantics.
-
-## 2. Correct Preview + Live field verification
-
-Both the S3 Preview verification and S3 Live verification must fail closed unless the returned target field satisfies all of:
-
+Required exact output:
 ```text
-code === 'MBO_Kintone_User'
-type === 'USER_SELECT'
-label === 'MBO Kintone User'
-required === false
-entities is an array with length 0
+838d021073916d2c05f2ce84a9242545c5ebd848
 ```
 
-Do not weaken existing checks.
+If it differs: STOP. Do not execute.
 
-## 3. Correct synthetic record verification
-
-Current record readback assumes implicit order and checks only `emp_text`.
-
-Make verification deterministic and prove both baseline fields after forward deploy and after rollback deploy.
-
-Acceptable narrow pattern:
-- GET records using deterministic `$id asc` ordering; or
-- use another exact deterministic method tied to the two records created by this script.
-
-Required baseline:
-
+Also run:
 ```text
-Record A:
-Number_0 = '1'
-emp_text = 'SYNTH-001'
-
-Record B:
-Number_0 = '1'
-emp_text = ''
+git status --short
 ```
 
-At both S3 and S4 readback require:
-- exactly 2 records;
-- deterministic Record A matches both values;
-- deterministic Record B matches both values.
+If any tracked source/script/test/config/dist file is dirty: STOP.
 
-If any value mismatches, fail closed.
+## 2. Dry safety check
 
-## 4. Preserve accepted safety design
+Run without the execution flag:
+```text
+node --env-file-if-exists=.env.local scripts/kintone/rehearse-app53-hybrid-sandbox.js
+```
 
-Do NOT change:
-- execution flag requirement;
-- sandbox app name;
-- process-local sandbox ID binding;
-- forbidden app ID list;
-- endpoint families;
-- app creation count;
-- synthetic record count;
-- forward/rollback sequence;
-- deploy polling model;
-- final behavior that leaves the sandbox app present in rolled-back baseline state.
+Required behavior:
+- exits successfully;
+- reports dry-run/safety exit;
+- creates no sandbox;
+- makes zero Kintone network requests.
 
-## 5. Explicitly forbidden
+If not: STOP.
+
+## 3. Exact sandbox execution
+
+Only after Sections 1–2 PASS, run exactly:
+```text
+node --env-file-if-exists=.env.local scripts/kintone/rehearse-app53-hybrid-sandbox.js --execute-sandbox-lifecycle
+```
+
+The reviewed script must perform only:
+1. create exactly one new app named `MBO2026 App53 Hybrid Identity Sandbox`;
+2. create/deploy minimal synthetic `Number_0` + `emp_text` schema;
+3. create exactly two synthetic records;
+4. add `MBO_Kintone_User` as optional USER_SELECT with empty entities in Preview;
+5. exact Preview readback before deploy;
+6. sandbox-only deploy and Live readback;
+7. verify exactly two synthetic records and exact `Number_0` / `emp_text` values;
+8. delete only `MBO_Kintone_User` from sandbox Preview;
+9. verify Preview field absent before rollback deploy;
+10. sandbox-only rollback deploy;
+11. final Live readback proving target field absent and the same synthetic baseline values intact;
+12. leave sandbox app present in rolled-back baseline state;
+13. STOP.
+
+## 4. Explicitly forbidden
 
 ```text
-RUN NEW SCRIPT WITH EXECUTION FLAG = NO
-ANY KINTONE NETWORK GET = NO
-ANY KINTONE NETWORK WRITE = NO
-CREATE SANDBOX = NO
-APP53 ACCESS = NO
+APP53 NETWORK GET = NO
 APP53 WRITE = NO
+APP53 RECORD COPY = NO
+REAL EMPLOYEE DATA = NO
+EXISTING APP 794/795/796/797/798/800/801 ACCESS = NO
+GROUP/ACL ACCESS OR WRITE = NO
+APP794 DEPLOY = NO
+PROTECTED-GUARD CHANGE = NO
+MODIFY scripts/** = NO
 MODIFY src/** = NO
 MODIFY tests/** = NO
 MODIFY config/** = NO
 MODIFY dist/** = NO
-MODIFY other scripts/** = NO
 MODIFY project-docs/** BY EXECUTOR = NO
-MODIFY SAFETY GUARDS = NO
+GIT COMMIT = NO
 npm test = NO
 build = NO
+PRODUCTION B2 EXECUTION = NO
 ```
 
-## 6. Local verification only
+Do not retry by changing code if execution fails. STOP and report the exact stage/error.
 
-Run exactly:
+## 5. Post-execution repository check
 
+Run:
 ```text
-node --check scripts/kintone/rehearse-app53-hybrid-sandbox.js
-git diff --check
 git status --short
 ```
 
-If any check fails or any other tracked file changed:
-STOP. Do not expand scope.
+Required: no tracked repository change caused by execution.
+Do not commit anything.
 
-If all pass and only the allowed script changed:
-- commit + push exactly one focused corrective commit;
-- STOP.
-
-## 7. Required response only
+## 6. Required response only
 
 ```text
-TARGET_PAYLOAD_ENTITIES_EMPTY = YES/NO
-TARGET_DEFAULT_VALUE_REMOVED = YES/NO
-PREVIEW_EXACT_CONTRACT_CHECK = PASS/FAIL
-LIVE_EXACT_CONTRACT_CHECK = PASS/FAIL
-DETERMINISTIC_RECORD_ORDER = PASS/FAIL
-FORWARD_NUMBER_0_AND_EMP_TEXT_CHECK = PASS/FAIL
-ROLLBACK_NUMBER_0_AND_EMP_TEXT_CHECK = PASS/FAIL
-NODE_CHECK = PASS/FAIL
-GIT_DIFF_CHECK = PASS/FAIL
-CHANGED_FILES = exact list
-CORRECTIVE_COMMIT = <sha> / NONE
-KINTONE_NETWORK_OPERATIONS = 0
-APP53_ACCESS = 0
+SCRIPT_BLOB_MATCH = YES/NO
+PRE_EXEC_GIT_STATUS = CLEAN / exact tracked changes
+DRY_RUN_SAFETY_EXIT = PASS/FAIL
+DRY_RUN_KINTONE_NETWORK_OPERATIONS = 0 / unknown
+SANDBOX_EXECUTION = PASS/FAIL
+SANDBOX_APP_ID = <new id> / NONE
+SANDBOX_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox / NONE
+BASE_SCHEMA_DEPLOY = PASS/FAIL/NOT_RUN
+SYNTHETIC_RECORDS_CREATED = 2 / 0
+FORWARD_PREVIEW_EXACT_CHECK = PASS/FAIL/NOT_RUN
+FORWARD_DEPLOY = PASS/FAIL/NOT_RUN
+FORWARD_LIVE_EXACT_CHECK = PASS/FAIL/NOT_RUN
+FORWARD_SYNTHETIC_DATA_CHECK = PASS/FAIL/NOT_RUN
+ROLLBACK_PREVIEW_FIELD_ABSENT = PASS/FAIL/NOT_RUN
+ROLLBACK_DEPLOY = PASS/FAIL/NOT_RUN
+ROLLBACK_LIVE_FIELD_ABSENT = PASS/FAIL/NOT_RUN
+ROLLBACK_SYNTHETIC_DATA_CHECK = PASS/FAIL/NOT_RUN
+FINAL_SANDBOX_STATE = ROLLED_BACK_BASELINE / INCOMPLETE / NONE
+POST_EXEC_GIT_STATUS = CLEAN / exact tracked changes
+APP53_NETWORK_OPERATIONS = 0
 APP53_WRITES = 0
-SANDBOX_CREATED = NO
+REAL_EMPLOYEE_DATA_COPIED = NO
 PRODUCTION_B2_EXECUTED = NO
+FILES_COMMITTED = NONE
 ```
 
-Next owner = ChatGPT independent source review.
+Next owner = ChatGPT independent review.
