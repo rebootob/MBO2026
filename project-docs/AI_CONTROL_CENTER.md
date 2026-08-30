@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 FULL REGRESSION 4 FAILURES ROOT-CAUSED / TEST-ONLY ASYNC CORRECTIVE OPEN
+> Updated: 2026-08-30 — D1 ASYNC TEST-CONTRACT CORRECTIVE PASS / LOCAL UI BUILD VERIFICATION NEXT
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Employee-Self Runtime PASS. Approval Authority Service PASS. Gate 1 Home Index PASS. Gate 2 cross-employee Detail PASS. Gate 3 Process Proceed fresh-Assignee PASS. Pre-deploy full regression = 1034 PASS / 4 FAIL / 1038; root cause classified as stale synchronous test contract after Gate 3 made Process Proceed async. |
+| D1 | 🟠 IN PROGRESS. Hybrid Identity Core R1 PASS. Employee-Self Runtime PASS. Approval Authority Service PASS. Gate 1 Home Index PASS. Gate 2 cross-employee Detail PASS. Gate 3 Process Proceed fresh-Assignee PASS. Async Process Proceed stale-test corrective PASS. Local UI build verification is next; deploy remains unauthorized. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; deploy NOT authorized |
@@ -42,70 +42,48 @@ IMPLEMENTATION_COMMIT = 282dcaf35764ea1960a064cf48f3c8add34506b8
 SECURITY_CORRECTIVE_COMMIT = 8dc664e073a604fc40b88680cbdbc938f58728c6
 ```
 
-Gate 3 intentionally changed `app.record.detail.process.proceed` to an async handler because Dedicated cross-employee approval actions must await one fresh native-Assignee revalidation before transition may proceed.
+Gate 3 intentionally keeps `app.record.detail.process.proceed` async so Dedicated cross-employee approval actions can await fresh native-Assignee revalidation before transition.
 
-Do NOT revert the handler to synchronous behavior merely to satisfy stale tests.
+## 4. Full-regression stale-test corrective
 
-## 4. Pre-deploy verification evidence
+Prior full regression exposed four failures in `tests/objective-save-validation.test.js` because legacy assertions called the now-async Process Proceed handler synchronously.
 
-Executor followed fail-fast correctly:
-
-```text
-PRIOR_FULL_TEST = FAIL (1034 passed / 4 failed / 1038 total)
-TRIAGE_RERUN    = FAIL (1034 passed / 4 failed / 1038 total)
-UI_BUILD        = NOT_RUN
-FILES_CHANGED   = NONE
-LIVE_KINTONE_OPERATIONS = 0
-APP53_PRODUCTION_TOUCHED = NO
-DEPLOY_RUN = NO
-```
-
-Exact four failing test groups are all in:
-
-```text
-tests/objective-save-validation.test.js
-```
-
-Failures:
-1. `M10L-D-R6: app.record.detail.process.proceed handler returns exact event on valid validation`
-2. `M10L-D-R6: app.record.detail.process.proceed handler returns false on invalid validation`
-3. `M10L-D-R12B: Workflow action validation enforces fail-closed topology & assignee guards`
-4. `M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fail-closed guards`
-
-Observed failure shape for all four:
-- EXPECTED = existing `event` or `false` business result;
-- ACTUAL = `Promise { ... }` whose resolved value corresponds to the expected business result;
-- assertions invoke `proceedHook(...)` synchronously despite the containing tests already being `async`.
-
-Independent source review confirms the stale-test diagnosis:
-- Gate 3 handler is async by design;
-- the affected test blocks directly compare `proceedHook(event)` without `await`;
-- one affected block uses a synchronous `.forEach(...)` around multiple Process Proceed assertions, so that loop must be made async-safe rather than fixing only the first reported assertion.
-
-Independent decision:
-
+Root cause:
 ```text
 RUNTIME_REGRESSION = NO EVIDENCE
 ROOT_CAUSE = STALE TEST INVOCATION CONTRACT
-CORRECTIVE_SCOPE = TEST ONLY / ONE FILE
 ```
 
-Business fixtures, expected event/false results, topology rules, requester guards and Gate 3 runtime semantics must remain unchanged.
+Accepted corrective commit:
+```text
+TEST_CONTRACT_CORRECTIVE_COMMIT = a206e8be47ac2e7a5ffe2e7eac5dddc25ea9d6fb
+INDEPENDENT_DIFF_REVIEW = PASS
+CHANGED_FILES = tests/objective-save-validation.test.js ONLY
+```
+
+Independent review confirms:
+- all direct `proceedHook(...)` calls in the four affected blocks now await the async handler;
+- the G2 synchronous `.forEach(...)` was replaced only as needed with a sequential async-safe loop;
+- expected `event` / `false` results are unchanged;
+- fixtures, statuses, action labels, topology and requester/appraiser semantics are unchanged;
+- no `src/**`, service, script, project-doc or dist file changed.
+
+The executor packet allowed a commit only after the focused test, full `npm test`, and `git diff --check` passed. The corrective commit exists and matches the exact one-file contract. ChatGPT could not independently replay Node tests because its local runtime could not resolve `github.com`; no independent CI replay is claimed.
 
 ## 5. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 ASYNC PROCESS.PROCEED TEST-CONTRACT CORRECTIVE R1
-TASK_STATE  = OPEN / READY FOR MINIMUM ANTIGRAVITY EXECUTION
-OWNER       = ANTIGRAVITY
-ALLOWED_FILE = tests/objective-save-validation.test.js ONLY
+ACTIVE_TASK = D1 LOCAL UI BUILD VERIFICATION R2
+TASK_STATE = OPEN / GENERATED BUILD ONLY
+OWNER = ANTIGRAVITY
 SOURCE_CHANGE = FORBIDDEN
-BUILD = NO
+TEST_CHANGE = FORBIDDEN
+ALLOWED_GENERATED_FILES = dist/mbo-employee-app.js + dist/mbo-employee.css ONLY
 LIVE_KINTONE = NO
 DEPLOY = NO
 ```
 
-Exact corrective contract is in `AI_ACTIVE_TASK.md`.
+Exact build contract is in `AI_ACTIVE_TASK.md`.
 
 ## 6. Accepted App794 Live baseline
 
@@ -133,6 +111,6 @@ ROLLBACK_AUTH             = NONE
 
 ## 8. Exact next action
 
-Antigravity changes only the stale Process Proceed invocations inside the four failing test blocks in `tests/objective-save-validation.test.js` so they await the async handler. The G2 `.forEach(...)` inside the fourth failing block must be converted only as needed to support `await`.
+Antigravity performs only the local UI build from accepted source, verifies changed-file scope is limited to the canonical generated dist outputs, runs `git diff --check`, commits/pushes generated dist only if changed, then STOPs for ChatGPT review.
 
-Then run the focused file test and full `npm test`. Do not build. If both pass and only the allowed test file changed, commit/push one focused test-only corrective commit and STOP for ChatGPT independent review.
+No Live Kintone, App53, ACL/group, deploy or UAT operation is authorized.
