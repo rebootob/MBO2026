@@ -1,194 +1,203 @@
-# AI ACTIVE TASK — D1 HYBRID IDENTITY CORE SOURCE R1
+# AI ACTIVE TASK — D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE
 
-Mode: **ANTIGRAVITY SOURCE / FOCUSED TEST ONLY — NO LIVE KINTONE WRITE / NO DEPLOY**  
+Mode: **ANTIGRAVITY SOURCE / FOCUSED TEST ONLY — APP53 PRODUCTION READ-ONLY / NO LIVE KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 0. Starting Point
+## 0. Review Starting Point
 
-User approved the recommended Hybrid Identity blocker-resolution design on 2026-08-30.
+ChatGPT independently reviewed executor commit:
 
-Mandatory Baseline:
+```text
+EXECUTOR_COMMIT = 20747ef3781d5085e9718f511bd76cf667879399
+REVIEW_RESULT   = CORRECTIVE
+```
+
+Scope discipline was good: exactly two source files, one focused test file and one evidence file changed. No App53 schema/record, deploy, ACL, group, UI, main-app, build or dist file changed.
+
+User additionally reconfirmed that **App53 is Production** and requires special caution. The mandatory Baseline now states:
+
+```text
+APP53_ENVIRONMENT       = PRODUCTION
+APP53_DEFAULT_MODE      = READ_ONLY
+APP53_SCHEMA_WRITE_AUTH = NONE
+APP53_RECORD_WRITE_AUTH = NONE
+APP53_BULK_WRITE_AUTH   = NONE
+```
+
+This corrective is SOURCE/TEST only. It must not access or modify live App53.
+
+Mandatory Baselines:
 - `project-docs/CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`
 - `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
 - `project-docs/CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md`
-- `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` only for existing route/topology semantics
+- `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
 - `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
 
-Audit evidence already accepted:
-- `project-docs/D1_HYBRID_IDENTITY_MAPPING_DUAL_ROLE_AUDIT_R1_EVIDENCE.md`
+Do not edit Control Plane documents or Baselines.
 
-Current live/config facts:
-```text
-App53 MBO_Kintone_User field      = NOT YET CREATED
-App53 schema write auth           = NONE
-App53 record write auth           = NONE
-App794 ACL/group write auth       = NONE
-Deploy auth                       = NONE
-Natta App53 #578 emp_text         = BLANK
-Vassana App53 #456 emp_text       = 0044
-```
+## 1. Finding A — Canonical App53 Mapping Resolver Is Fail-Open
 
-This task implements **pure/core source behavior only** so it can be independently reviewed before any protected Kintone configuration write.
+Current `resolveDedicatedKintoneUserMapping()` incorrectly accepts superseded/noncanonical pseudo fields:
+- `Account_Status` fallback when `Number_0` is absent;
+- default Active when both are absent;
+- `Kintone_User_Code` fallback when `MBO_Kintone_User` is absent;
+- `Employee_Code` fallback when `emp_text` is absent;
+- USER_SELECT item `.value` fallback instead of requiring `.code`.
 
-## 1. Ownership / Low-Credit Rule
+This violates the exact Production App53 contract.
 
-```text
-OWNER = ANTIGRAVITY
-SCOPE = CORE SOURCE + FOCUSED TESTS ONLY
-```
+### Required correction
 
-Do not broad-scan the repository. Read the files listed below and only directly required existing tests/importers.
-
-Do not edit Control Plane documents:
-- `AI_CONTROL_CENTER.md`
-- `AI_ACTIVE_TASK.md`
-- `CONFIRMED_BASELINE/*`
-
-## 2. Required Core Behavior A — Dedicated App53 Mapping Resolver
-
-Canonical future App53 field:
+Canonical dedicated resolver must use **only** this App53 shape:
 
 ```text
-MBO_Kintone_User : USER_SELECT
-Number_0         : active status, require 1
-emp_text          : canonical Employee_Code
-```
-
-Implement/reconcile one canonical service owner for dedicated mapping.
-
-Required behavior:
-1. input current Kintone User Code must be exact nonblank string;
-2. `admin-form` must never bind Employee-Self;
-3. candidate source is App53 records only;
-4. matching candidate must have `Number_0 = 1`;
-5. `MBO_Kintone_User.value` must be an array containing exactly one selected Kintone user;
-6. selected user's `.code` must exactly equal current Kintone User Code;
-7. exactly one matching active row is required;
-8. matching row must contain valid nonblank canonical `emp_text` Employee_Code;
-9. zero match -> `IDENTITY_MAPPING_MISSING`;
-10. >1 match -> `IDENTITY_MAPPING_AMBIGUOUS`;
-11. matching row with blank/invalid `emp_text` -> fail closed; do not use `Number`, `Text_6`, email, name, or guessed value;
-12. return bound Employee_Code + exact Kintone User Code only after all gates pass.
-
-Do not keep the current latent `Kintone_User_Code` / `Account_Status` pseudo-source as the canonical path if it conflicts with this Baseline. Preserve backward compatibility only when clearly isolated and not used by the new canonical resolver.
-
-### Required target tests
-
-At minimum:
-- Vassana-like valid row: `vassana` + active + `emp_text=0044` -> bound 0044;
-- Natta-like row: `natta` + active + blank `emp_text` -> fail closed;
-- mapping field missing -> missing/fail closed;
-- selected user array empty -> missing/fail closed;
-- selected user array has 2 users -> fail closed;
-- inactive row -> missing/fail closed;
-- duplicate active mapping rows -> ambiguous;
-- wrong Kintone user -> missing;
-- `admin-form` -> denied, never bound;
-- name/email similarity alone -> never considered.
-
-## 3. Required Core Behavior B — Effective Requester Resolution
-
-Pure helper/service behavior must support:
-
-```text
-DEDICATED mode:
-Effective_Requester_User = exact dedicated Kintone User
-
-SHARED mode:
-Effective_Requester_User = authoritative App795 Requester_User
+Number_0         = 1
+MBO_Kintone_User = USER_SELECT value array with exactly one user object
+selected user    = exact .code match
+emp_text         = canonical Employee_Code
 ```
 
 Rules:
-- dedicated mode must not require App795 Requester_User membership solely to create own requester snapshot;
-- shared behavior must remain unchanged;
-- missing dedicated mapping must not silently fall back to shared identity;
-- `admin-form` remains no business requester authority.
+1. `Number_0` missing/malformed/not exactly active `1` -> not an active candidate / fail closed;
+2. never use `Account_Status` for canonical dedicated binding;
+3. `MBO_Kintone_User` missing/malformed/not an array/exactly-one condition not met -> no canonical mapping / fail closed;
+4. never use `Kintone_User_Code` as fallback in the canonical resolver;
+5. selected USER_SELECT item must be an object with a nonblank `.code`; do not use `.value` as identity fallback;
+6. current Kintone User Code must be an exact nonblank string: reject leading/trailing whitespace rather than silently normalizing it;
+7. selected `.code` comparison is exact/case-sensitive;
+8. `emp_text` is the only Employee_Code source; never fall back to `Employee_Code`, `Number`, name, email, Text_6 or guessed value;
+9. validate nonblank `emp_text` with the repository's canonical Employee_Code validator/contract before returning `IDENTITY_BOUND`;
+10. exactly one active canonical mapping row -> bound; zero -> missing; more than one -> ambiguous;
+11. Natta-like blank `emp_text` remains fail closed;
+12. `admin-form` remains denied.
 
-Do not integrate UI/session switching in this R1 unless required by an existing canonical owner and covered by focused tests. Main-App/Home integration belongs to a later reviewed WP.
+If legacy `resolveEmployeeIdentity()` compatibility tests depend on the superseded pseudo source, do **not** weaken the canonical resolver. Keep any truly required legacy compatibility clearly isolated from `resolveDedicatedKintoneUserMapping`; if a source consumer cannot be reconciled within the allowed files, STOP and report.
 
-## 4. Required Core Behavior C — Own-MBO Self-Appraiser Elision
+### Mandatory tests
 
-Implement one pure/canonical routing transformation owned by routing service or the existing canonical routing owner.
+Add explicit tests proving the canonical resolver does **not** bind from:
+- `Account_Status` without `Number_0`;
+- missing `Number_0` even if other fields look valid;
+- `Kintone_User_Code` without `MBO_Kintone_User`;
+- `Employee_Code` without `emp_text`;
+- USER_SELECT item with only `.value` but no `.code`;
+- Kintone user input with leading/trailing whitespace;
+- selected code differing only by case;
+- malformed/invalid canonical `emp_text`.
 
-Input:
-- authoritative resolved App795 route;
-- current dedicated Kintone User Code;
-- explicit context proving this is the employee's **own MBO**.
+Retain Vassana 0044 PASS, Natta blank FAIL, inactive, duplicate, multi-user, wrong-user and admin-form tests.
 
-Rules:
-1. if not own-MBO context, route must be returned unchanged;
-2. if own route contains no self appraiser, route unchanged;
-3. if own route contains self, remove only the self appraiser from the effective route before App794 workflow snapshot;
-4. preserve remaining approver order and existing applicable approval rules;
-5. recalculate effective technical topology using the repository's existing supported topology conventions;
-6. never auto-approve;
-7. never generate approval timestamp/comment/history event;
-8. do not modify App795 source record/data;
-9. do not alter subordinate/other-employee TMG1/TMG2 Marketing route behavior;
-10. if no non-self appraiser remains, fail closed with a clear deterministic error/status;
-11. transformation must be deterministic and side-effect free; do not mutate the original route object.
+## 2. Finding B — Effective Requester Mode Must Fail Closed
 
-### Mandatory Natta test
+Current helper treats any mode other than exact `DEDICATED` as SHARED and silently trims the dedicated Kintone User Code.
 
-Input master route equivalent to:
+### Required correction
+
+`resolveEffectiveRequesterUser()` must:
+- accept only exact `DEDICATED` or `SHARED` mode;
+- unknown/missing/malformed mode -> deterministic fail closed;
+- DEDICATED requires exact nonblank native Kintone User Code with no leading/trailing whitespace normalization;
+- DEDICATED returns only that exact code;
+- SHARED preserves the already accepted App795 `Requester_User` behavior; do not broaden it;
+- `admin-form` remains denied;
+- no missing dedicated mapping may silently fall back to SHARED.
+
+Add tests for unknown mode, dedicated whitespace input and current accepted dedicated/shared paths.
+
+## 3. Finding C — Own-MBO Elision Loses Slot Semantics
+
+Current implementation flattens all individual approver users across M1/M2/G1/G2, then rebuilds topology by **number of users**. This can:
+- turn multiple users in one approval slot into multiple workflow levels;
+- lose the approval rule associated with the original surviving slot when that slot shifts;
+- silently drop users when flattened count exceeds four;
+- use case-insensitive identity comparison despite exact Kintone user identity;
+- silently skip the self-approval guard when `isOwnMbo=true` but current dedicated user code is missing.
+
+### Required correction — preserve slots, not flattened users
+
+Treat the authoritative route as up to four ordered **slot objects**:
+
 ```text
-Routing_Key = TMG1|Marketing
-Manager L1  = natta
-GM L1       = uchida
-Topology    = M1_G1
-current dedicated user = natta
-ownMbo = true
+M1 = Manager_Level1_Approvers + Manager_Level1_Approval_Rule
+M2 = Manager_Level2_Approvers + Manager_Level2_Approval_Rule
+G1 = GM_Level1_Approvers      + GM_Level1_Approval_Rule
+G2 = GM_Level2_Approvers      + GM_Level2_Approval_Rule
 ```
 
-Expected effective route:
+For `isOwnMbo=true`:
+1. require exact nonblank `currentDedicatedUserCode`; missing/whitespace-normalized identity must fail closed;
+2. compare Kintone user codes exactly/case-sensitively;
+3. remove only the self user from each slot array;
+4. keep all other users in that slot and preserve their order;
+5. keep the approval rule belonging to each surviving slot;
+6. drop only slots that become empty;
+7. shift surviving **slots** left into supported canonical topology positions while carrying each surviving slot's rule with it;
+8. synchronize `Manager_User`, `First_Manager_User`, `GM_User`, Has flags and `Routing_Topology` with the effective slots;
+9. no user may be silently truncated/dropped;
+10. zero remaining non-self slots/users -> deterministic fail closed;
+11. if self is absent, business route semantics remain unchanged;
+12. never mutate the input route;
+13. never modify App795 data or fabricate approval event/timestamp/comment/history.
+
+Canonical supported effective shapes remain:
+
 ```text
-1st effective appraiser = uchida
-Manager_User             = uchida
-GM_User                  = empty
-Routing_Topology         = M1_ONLY
-self approval event      = none
+1 surviving slot -> M1_ONLY
+2 surviving slots -> M1_G1
+3 surviving slots -> M1_M2_G1
+4 surviving slots -> M1_M2_G1_G2
 ```
 
-The same route with `ownMbo=false` must remain:
-```text
-natta -> uchida
-M1_G1
-```
+### Mandatory tests
 
-Also test:
-- no-self route unchanged;
-- self-only route -> fail closed;
-- input object not mutated;
-- supported generic topology behavior remains internally consistent with existing topology tests.
+Retain the Natta canonical case:
+`natta -> uchida / M1_G1` -> own route `uchida / M1_ONLY` and subordinate route unchanged.
 
-## 5. Exact Allowed Source Scope
+Add at least:
+- ownMbo=true + missing/whitespace dedicated user -> fail closed;
+- exact case-sensitive self comparison;
+- a slot containing `[self, other]` keeps `other` in one slot rather than creating another workflow level;
+- a non-`ALL` approval rule on a surviving slot follows that slot when shifted;
+- multi-user surviving slot does not truncate users;
+- input object remains unmodified;
+- self-only still fails closed;
+- generic 3/4-slot topology regression remains consistent.
 
-Primary allowed source files:
+## 4. Allowed Files
+
+Allowed source:
 - `src/services/mbo-identity-service.js`
-- `src/services/employee-service.js` only if the canonical App53 mapping lookup belongs there
 - `src/services/routing-service.js`
 
-Existing directly related focused test files may be edited. If no suitable existing identity/self-route test owner exists, **one** new focused test file may be created with a clear domain name; do not proliferate test files.
+Allowed tests:
+- `tests/d1-hybrid-identity-core-source.test.js`
+- directly related pre-existing identity/routing test only if needed to reconcile a superseded assertion
 
-Read-only unless a proven compile/test dependency requires otherwise:
-- `src/main-mbo-app.js`
-- `src/services/annual-record-service.js`
-- current route/integration tests
-- `package.json`
+Allowed evidence:
+- create `project-docs/D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_EVIDENCE.md`
 
-### STOP rule for scope expansion
+Do not overwrite historical R1 evidence.
 
-If correct implementation requires editing `src/main-mbo-app.js`, UI files, build/deploy scripts, App794 field schema, ACL scripts, or more than the three primary source owners above, STOP and report the exact dependency. Do not widen this WP automatically.
+Read-only:
+- `src/services/employee-service.js` unless only importing/reusing its canonical validator can be done without editing it;
+- `src/main-mbo-app.js`;
+- UI/build/deploy/config files;
+- all Baselines/Control Plane docs.
 
-## 6. Forbidden Actions
+If more source scope is required, STOP and report.
+
+## 5. App53 Production Hard Stop
+
+Forbidden in this corrective:
 
 ```text
-LIVE_GET                    = 0 unless user/Control Plane separately requests evidence
+LIVE_GET                    = 0
 LIVE_POST                   = 0
 LIVE_PUT                    = 0
 LIVE_DELETE                 = 0
 APP53_SCHEMA_WRITE          = 0
 APP53_RECORD_WRITE          = 0
+APP53_IMPORT_OR_BULK_WRITE  = 0
 APP794_APP_ACL_WRITE        = 0
 APP794_RECORD_ACL_WRITE     = 0
 GROUP_CREATE_OR_MEMBERSHIP  = 0
@@ -201,50 +210,32 @@ PASSWORD_RESET_EXECUTION    = 0
 ROLLBACK                    = 0
 ```
 
-Do not create/populate `MBO_Kintone_User` in live Kintone.
-Do not create `MBO_DEDICATED_ACCESS` in live Kintone.
-Do not guess Natta Employee_Code.
+Do not open a live App53 write path for testing. Use fixtures only.
+Do not create `MBO_Kintone_User` in Production.
+Do not populate Vassana/Natta mapping in Production.
+Do not correct Natta `emp_text` in Production.
 
-## 7. Verification Minimum
+## 6. Verification Minimum
 
-Run focused tests for:
-- dedicated mapping resolver;
-- effective requester logic;
-- own-MBO self-appraiser elision;
-- existing App795 team/executive topology regression directly affected.
+Run:
+- corrected focused Hybrid Identity suite;
+- directly affected existing identity/routing regression tests;
+- full `npm test` if practical;
+- `git diff --check`.
 
-Then run full `npm test` if practical.
-Run `git diff --check`.
+Evidence must report exact changed files, exact test counts/results, zero live operations, and explicitly state:
 
-Evidence must report:
-- exact changed files;
-- focused test counts;
-- full suite result or exact unrelated/blocking failure;
-- zero live mutation/deploy counts;
-- explicit statement that Natta blank Employee_Code remains fail-closed and was not invented.
+```text
+APP53_PRODUCTION_TOUCHED = NO
+NATTA_EMPLOYEE_CODE_GUESSED = NO
+```
 
-Create one new evidence file:
-
-`project-docs/D1_HYBRID_IDENTITY_CORE_SOURCE_R1_EVIDENCE.md`
-
-Do not edit historical evidence.
-
-## 8. Acceptance Ceiling
+## 7. Acceptance Ceiling / Stop
 
 Maximum executor status:
 
 ```text
-D1_HYBRID_IDENTITY_CORE_SOURCE_R1_READY_PENDING_CHATGPT_REVIEW
+D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_READY_PENDING_CHATGPT_REVIEW
 ```
 
-This source result does NOT authorize App53 schema/data write, group/ACL write, App794 deployment, or live UAT.
-
-## 9. Commit / Stop
-
-If tests are acceptable:
-1. commit focused changes;
-2. push to `ai/antigravity-wp002c`;
-3. STOP;
-4. next owner = ChatGPT independent review.
-
-If scope expansion or a security ambiguity is discovered, STOP without improvising a larger architecture.
+Commit focused changes, push, then STOP. Next owner = ChatGPT independent review.
