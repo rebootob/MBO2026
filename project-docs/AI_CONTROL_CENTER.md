@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual local/runtime execution is required
-> Updated: 2026-08-30 — R4.1 SOURCE REVIEW PASS / PREDEPLOY VERIFICATION OPEN / NO DEPLOY AUTH
+> Updated: 2026-08-30 — R4.1 NATIVE-CANCEL PREDEPLOY VERIFICATION PASS / HOLD FOR USER DEPLOY AUTHORIZATION
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and User Runtime UAT previously FAILED because fatal Create Back still triggered leave-confirmation. R4/R4.1 native-Cancel corrective source is now independently accepted. Mandatory local/predeploy verification is open before any future deployment authorization. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and its User Runtime UAT failed because fatal Create Back still triggered leave-confirmation. R4/R4.1 native-Cancel corrective source review PASS and full predeploy verification PASS. Waiting for a NEW explicit one-shot deployment authorization before any forward deployment. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -35,7 +35,7 @@ REV59_USER_UAT                = FAIL — BACK TRIGGERED LEAVE-CONFIRM DIALOG
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
 ```
 
-Rev59 is actual Live but is not accepted known-good. Do not redeploy or rollback under any consumed authorization.
+Rev59 is actual Live but is not accepted known-good. No consumed authorization may be reused.
 
 ## 3. Locked R4.1 Corrective Candidate
 
@@ -46,46 +46,57 @@ CANDIDATE_CSS_GIT_BLOB        = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 CANDIDATE_SCOPE               = ALL
 CANDIDATE_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 R4_1_SOURCE_REVIEW            = PASS
-PREDEPLOY_VERIFICATION        = PENDING
+PREDEPLOY_VERIFICATION        = PASS
 ```
 
-Independent source findings accepted:
-- final cumulative diff from semantic base `97c094133575221e5ee2cc6005e12923ce319318` is narrow; `src/main-mbo-app.js` is approximately `+45/-2`, not a whole-file rewrite;
-- authenticated terminal fatal Create resolves native Kintone Cancel using narrow known Cancel selectors;
-- canonical custom Back receives injected `onNavigateHome`, preventing ordinary anchor navigation and invoking captured native Cancel exactly once;
-- missing native Cancel fails closed without ordinary anchor fallback;
-- native Save/Cancel remain visually hidden only for terminal fatal Create;
-- normal successful Create keeps record-level Back absent and native Save/Cancel normal;
-- Detail/Edit behavior is preserved;
-- static regression assertions prohibit `onbeforeunload`/`beforeunload` manipulation and `location.assign` / `location.replace` / `history.back` hacks;
-- actual no-popup behavior still requires a future separately authorized Live deployment and User UAT.
+Accepted R4/R4.1 behavior:
+- authenticated terminal fatal/duplicate Create resolves native Kintone Cancel using narrow known Cancel selectors;
+- canonical Back uses injected handler, prevents ordinary anchor navigation and invokes captured native Cancel exactly once;
+- missing native Cancel fails closed;
+- native Save/Cancel remain hidden only on terminal fatal Create;
+- normal successful Create and Detail/Edit behavior are preserved;
+- no `onbeforeunload`/`beforeunload` manipulation and no location/history navigation hacks;
+- actual no-popup behavior still requires a separately authorized Live deployment and User UAT.
 
-## 4. R4.1 Review Evidence
+## 4. Independent Predeploy Verification Result
 
-Executor commit:
-`1ed342ad137a4a364496a28d29bdffd24a99b511`
+Executor evidence commit:
+`30f9fcdfab843ca3f9cc10878786804c24de409c`
 
-Commit scope from Control Plane base `a255d1cd0d84488c05bf869c5d12f0feba5df334`:
-- `src/main-mbo-app.js` — EOL normalization of prior polluted R4 commit;
-- `tests/employee-main-mbo-app-integration.test.js` — static test-proof completion;
-- no executor Control Plane edits;
-- no new source module;
-- no UI navigation module change.
+Accepted evidence:
 
-Cumulative semantic compare from `97c094133575221e5ee2cc6005e12923ce319318` to candidate:
-- `src/main-mbo-app.js` +45/-2;
-- `tests/employee-main-mbo-app-integration.test.js` +63/-10;
-- generated `dist/mbo-employee-app.js` +38/-2;
-- Control Plane documents are ChatGPT changes only.
+```text
+CANDIDATE_HEAD                = 1ed342ad137a4a364496a28d29bdffd24a99b511
+INITIAL_WORKTREE              = CLEAN
+FINAL_WORKTREE                = CLEAN
+FOCUSED_TESTS                 = 8/8 PASS
+UI_BUILD                      = PASS
+CLASSIC_BUNDLE_CSS_TESTS      = 8/8 PASS
+GIT_DIFF_CHECK                = PASS / EMPTY
+NARROW_MAIN_DIFF              = +45 / -2 from semantic base 97c09413...
+DIST_DETERMINISM              = PASS
+BUILD_ONLY_TOOLING            = PASS / ZERO NETWORK
+BUILD_ONLY_JS                 = 115a08ace32bdf850cb5eebf25b953d1803114d0
+BUILD_ONLY_CSS                = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+LIVE_PRECONDITION             = Rev59 / ALL / 1 JS / 1 CSS / Mobile 0/0 / exact baseline pair
+PREVIEW_PRECONDITION          = Rev59 / ALL / 1 JS / 1 CSS / Mobile 0/0
+ROLLBACK_REV57_BLOBS          = VERIFIED
+POST_PUT_DELETE               = 0 / 0 / 0
+UPLOAD_DEPLOY_ROLLBACK        = 0 / 0 / 0
+```
 
-GitHub has no CI/status/workflow evidence for candidate `1ed342ad...`. Therefore ChatGPT does **not** claim the mandatory local Node tests/build/diff-check have run successfully yet. Those are the next gate.
+Independent decision:
+
+`PASS — R4.1 PREDEPLOY VERIFICATION COMPLETE`
+
+No source change and no Live write occurred in this verification task.
 
 ## 5. Current Active Task
 
 ```text
-ACTIVE_TASK                   = APP794 R4.1 NATIVE-CANCEL PREDEPLOY VERIFICATION / READ-ONLY
-OWNER                         = ANTIGRAVITY
-MODE                          = LOCAL TEST + CLEAN BUILD + GET-ONLY APP794 CUSTOMIZATION READBACK
+ACTIVE_TASK                   = HOLD — WAITING FOR USER ONE-SHOT DEPLOYMENT AUTHORIZATION
+OWNER                         = USER / CONTROL PLANE
+MODE                          = NO EXECUTION
 SOURCE_CHANGE                 = NO
 LIVE_WRITE                    = NO
 DEPLOY                        = NO
@@ -94,7 +105,7 @@ ACTIVE_DEPLOY_AUTH            = NONE
 ACTIVE_KINTONE_WRITE_AUTH     = NONE
 ```
 
-Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
+Antigravity must do nothing until a new exact authorization packet is opened.
 
 ## 6. Authorization Ledger
 
@@ -119,17 +130,18 @@ ROLLBACK_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobi
 ROLLBACK_AUTHORIZED          = NO
 ```
 
-Rollback requires separate explicit authorization.
+Rollback requires separate explicit authorization and is never automatic.
 
 ## 8. Current Gate
 
 ```text
-CURRENT_GATE                  = R4.1 PREDEPLOY VERIFICATION
-CURRENT_MODE                  = READ-ONLY / LOCAL TEST + BUILD + GET-ONLY LIVE BASELINE
+CURRENT_GATE                  = READY FOR USER DEPLOYMENT AUTHORIZATION
+CURRENT_MODE                  = HOLD / NO EXECUTION
 LIVE_ACTUAL_REVISION          = 59
 REV59_USER_UAT                = FAIL
 R4_1_SOURCE_REVIEW            = PASS
-PREDEPLOY_VERIFICATION        = PENDING
+PREDEPLOY_VERIFICATION        = PASS
+R4_1_READY_TO_DEPLOY          = YES — ONLY AFTER NEW USER ONE-SHOT AUTHORIZATION
 REV59_ACCEPTED_KNOWN_GOOD     = NO
-NEXT_OWNER                    = ANTIGRAVITY FOR EXACT ACTIVE TASK
+NEXT_OWNER                    = USER
 ```
