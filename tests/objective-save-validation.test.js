@@ -112,7 +112,7 @@ globalThis.kintone = {
       }
     }
   },
-  getLoginUser: () => ({ code: 's1' }),
+  getLoginUser: () => ({ code: 'req1' }),
   api: fakeApi,
   events: {
     on: (events, handler) => {
@@ -217,7 +217,7 @@ function setupMockKintoneApis() {
         return {
           records: [{
             Section_Code: { value: 'TMS1' },
-            Requester_User: { value: [{ code: 's1' }] },
+            Requester_User: { value: [{ code: 'req1' }] },
             Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
             Manager_Level1_Approval_Rule: { value: 'ALL' },
             Manager_Level2_Approvers: { value: [] },
@@ -508,7 +508,7 @@ test('M10L-D-R4: Employee 0118 Technical Service Chief lookup populates all 9 sn
   assert.equal(currentFormRecord.Competency_Set_Code.value, 'COMP_SET_OPERATIONAL_V1');
   assert.equal(currentFormRecord.Configuration_Hash.value, '24e18411485c875a6988de51b61f481206dc159b5e1b2768c6a0b09ff40a72da');
   assert.equal(currentFormRecord.Routing_Topology.value, 'M1_G1');
-  assert.deepEqual(currentFormRecord.Requester_User.value, [{ code: 's1' }]);
+  assert.deepEqual(currentFormRecord.Requester_User.value, [{ code: 'req1' }]);
   assert.ok(currentFormRecord.Record_Key.value);
 
   // Verify UI verification state

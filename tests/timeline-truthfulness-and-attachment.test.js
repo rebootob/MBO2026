@@ -141,7 +141,7 @@ if (!globalThis.kintone) {
         set: () => {}
       }
     },
-    getLoginUser: () => ({ code: 'f1' }),
+    getLoginUser: () => ({ code: '0118' }),
     api: fakeApi,
     events: {
       on: (events, handler) => {
