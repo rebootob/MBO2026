@@ -1,8 +1,8 @@
-# AI ACTIVE TASK — D1 ASYNC PROCESS.PROCEED TEST-CONTRACT CORRECTIVE R1
+# AI ACTIVE TASK — D1 LOCAL UI BUILD VERIFICATION R2
 
-Mode: **ANTIGRAVITY MINIMUM TEST-ONLY CORRECTIVE — ONE FILE / NO SOURCE CHANGE / NO BUILD / NO LIVE KINTONE**
+Mode: **ANTIGRAVITY GENERATED BUILD ONLY — NO SOURCE/TEST EDITS / NO LIVE KINTONE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`
-Opened after triage: `1034 PASS / 4 FAIL / 1038 total`
+Opened after accepted async test-contract corrective: `a206e8be47ac2e7a5ffe2e7eac5dddc25ea9d6fb`
 Updated: 2026-08-30
 
 ```text
@@ -11,148 +11,105 @@ CURRENT_OWNER = ANTIGRAVITY
 NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
 ```
 
-Fresh-fetch the branch first. If another executor commit already exists after this task was written, STOP and return control to ChatGPT.
+Fresh-fetch the branch first. If another executor commit already exists after this task was written, STOP and return control to ChatGPT instead of repeating work.
 
 ## 0. Goal
 
-Correct only stale synchronous test invocation assumptions after accepted Gate 3 made `app.record.detail.process.proceed` async.
+Build the local App794 employee UI bundle from the accepted D1 source and verify that only canonical generated dist outputs change.
 
-Do NOT change runtime/source behavior.
+This is not a source implementation task.
+This is not a test corrective task.
+This is not a deploy task.
 
-Root cause is already classified by ChatGPT:
+## 1. Absolute source/test freeze
 
-```text
-EXPECTED BUSINESS RESULT = event or false
-ACTUAL ASSERTION INPUT    = Promise resolving to that business result
-RUNTIME REGRESSION        = NO EVIDENCE
-CORRECTIVE                = TEST CONTRACT ONLY
-```
-
-## 1. Exact allowed file
-
-MODIFY ONLY:
+Do NOT modify:
 
 ```text
-tests/objective-save-validation.test.js
+src/**
+tests/**
+services/**
+scripts/**
+project-docs/**
+package.json
+package-lock.json
 ```
 
-No other file may change.
+No source or test corrective is authorized.
 
-## 2. Exact failing test blocks
+## 2. Run exactly
 
-Touch only Process Proceed invocation mechanics inside these four existing test blocks:
+### Step A — local UI build
 
-1. `M10L-D-R6: app.record.detail.process.proceed handler returns exact event on valid validation`
-2. `M10L-D-R6: app.record.detail.process.proceed handler returns false on invalid validation`
-3. `M10L-D-R12B: Workflow action validation enforces fail-closed topology & assignee guards`
-4. `M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fail-closed guards`
-
-These tests are already declared `async`.
-
-## 3. Required correction
-
-For every direct `proceedHook(event)` invocation inside the four named test blocks, resolve the async handler before asserting its business result.
-
-Preferred minimal pattern:
-
-```js
-assert.equal(await proceedHook(event), expected, message);
+```text
+npm run ui:build
 ```
 
-or equivalent when a local result variable already exists:
+Canonical build script may generate/change only:
 
-```js
-const res = await proceedHook(event);
+```text
+dist/mbo-employee-app.js
+dist/mbo-employee.css
 ```
 
-Do NOT change any expected value, fixture, action label, topology, status, requester/appraiser field, or assertion meaning.
+If build fails, STOP and report. Do not fix source, tests, scripts or dependencies.
 
-### Async-unsafe loop
+### Step B — generated scope check
 
-Inside `M10L-D-R12B-R1`, the G2 topology checks currently use synchronous `.forEach(...)` while calling `proceedHook(...)`.
+Run:
 
-Convert only that loop to an async-safe sequential loop, for example:
-
-```js
-for (const g2Topo of ['M1_G1_G2', 'M1_M2_G1_G2']) {
-  ...
-  assert.equal(await proceedHook(failG2), false, ...);
-}
+```text
+git status --short
+git diff --check
 ```
 
-Do not otherwise refactor the test.
+Required:
+- no changed file outside the two canonical dist outputs;
+- `git diff --check` PASS.
+
+If another file differs, STOP and report the exact scope leak. Do not clean it up by editing source/tests.
+
+If one of the dist files is byte-identical and not listed, that is acceptable.
+
+## 3. Commit rule
+
+If build PASS + diff check PASS + changed-file scope valid:
+- if generated dist changed, commit + push exactly one generated-build commit;
+- if generated dist is unchanged, do not create an empty commit;
+- STOP immediately.
+
+Do not continue into deploy, Live Kintone configuration or UAT.
 
 ## 4. Explicitly forbidden
 
 ```text
-MODIFY src/**                              = NO
-MODIFY services/**                         = NO
-MODIFY scripts/**                          = NO
-MODIFY project-docs/** BY EXECUTOR         = NO
-MODIFY dist/**                             = NO
-MODIFY any other test file                 = NO
-CHANGE ASSERTION EXPECTATIONS              = NO
-CHANGE BUSINESS FIXTURES                   = NO
-REVERT PROCESS.PROCEED TO SYNC             = NO
-CHANGE GATE 3 AUTHORITY BEHAVIOR            = NO
-npm run ui:build                           = NO
-LIVE KINTONE GET/WRITE                     = NO
-APP53 ACCESS/WRITE                         = NO
-ACL/GROUP/DEPLOY/UAT                       = NO
+SOURCE CHANGE                     = NO
+TEST CHANGE                       = NO
+SERVICE CHANGE                    = NO
+SCRIPT CHANGE                     = NO
+PROJECT-DOC CHANGE BY EXECUTOR    = NO
+npm test                          = NO
+npm install / npm ci              = NO
+LIVE KINTONE GET/WRITE            = NO
+APP53 ACCESS/WRITE                = NO
+ACL/GROUP CHANGE                  = NO
+DEPLOY                            = NO
+UAT                               = NO
+CONNECTION TEST                   = NO
+SANDBOX WRITE                     = NO
 ```
 
 No Live authorization exists.
 
-## 5. Verification order
-
-Run exactly in this order:
+## 5. Required response only
 
 ```text
-node --test tests/objective-save-validation.test.js
-npm test
-git diff --check
-git status --short
-```
-
-If focused test FAILS:
-- STOP;
-- do not fix outside the allowed invocation mechanics;
-- report exact failure.
-
-If focused test passes but full `npm test` fails:
-- STOP;
-- do not expand scope;
-- report exact full-suite failure count and names.
-
-Required changed-file scope:
-
-```text
-tests/objective-save-validation.test.js ONLY
-```
-
-## 6. Finish
-
-If:
-- focused file test PASS;
-- full `npm test` PASS;
-- `git diff --check` PASS;
-- only the one allowed test file changed;
-
-then commit + push exactly one focused test-only corrective commit and STOP.
-
-Do NOT build after the full test passes. Build remains a separate Control Plane step after ChatGPT review.
-
-Return only:
-
-```text
-FOCUSED_TEST = PASS/FAIL + exact count
-FULL_TEST = PASS/FAIL + exact count
-GIT_DIFF_CHECK = PASS/FAIL
+UI_BUILD = PASS/FAIL
+GIT_DIFF_CHECK = PASS/FAIL/NOT_RUN
 CHANGED_FILES = exact list
-CORRECTIVE_COMMIT = <sha> / NONE
+GENERATED_BUILD_COMMIT = <sha> / NONE
 SOURCE_FILES_CHANGED = 0
-OTHER_TEST_FILES_CHANGED = 0
-BUILD_RUN = NO
+TEST_FILES_CHANGED = 0
 LIVE_KINTONE_OPERATIONS = 0
 APP53_PRODUCTION_TOUCHED = NO
 DEPLOY_RUN = NO
