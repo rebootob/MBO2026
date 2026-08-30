@@ -1,150 +1,133 @@
-# AI ACTIVE TASK — D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE
+# AI ACTIVE TASK — D1 APP800 DEPLOYMENT TOOL COMPATIBILITY R1 CORRECTIVE R2 — TEST/EVIDENCE ONLY
 
-Mode: **ANTIGRAVITY SOURCE / TEST / LOCAL ARTIFACT VALIDATION ONLY — NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET EXECUTION**  
+Mode: **ANTIGRAVITY FOCUSED TEST / FULL TEST / EVIDENCE ONLY — NO LIVE WRITE / NO ACL WRITE / NO DEPLOY / NO PASSWORD RESET EXECUTION**  
 Branch: `ai/antigravity-wp002c`
 
-## 0. Starting Point / Review Result
+## 0. Starting Point / Independent Review
 
-Executor commit reviewed:
-`cf0ae9d7d812ce7f855714434a1d56ca2d3042fc`
+Executor corrective source commit reviewed:
+
+`14b911d9cde8b59b6c15e6b05bc8fccfbb6727fd`
 
 Independent result:
 
 ```text
-D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_REVIEW = CORRECTIVE
+FINDING_G_CREATOR_LOGIC        = IMPLEMENTED
+FINDING_H_EVERYONE_LOGIC       = IMPLEMENTED
+FINDING_I_EXACT_PRINCIPAL_SET  = IMPLEMENTED
+FINDING_J_CANONICAL_DELEGATION = IMPLEMENTED
+SOURCE_DEFECT_FOUND            = NO
+TEST_EVIDENCE_COMPLETE         = NO
+D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_REVIEW = CORRECTIVE_TEST_EVIDENCE_ONLY
 DEPLOY_READY = NO
 ```
 
-Do not redesign deployment. Preserve the good changes already present:
-- `executeDeploy()` consumes canonical `dist/hr-control-center-bundle.js` and CSS;
-- no raw-source regex/string bundle synthesis in the actual deploy path;
-- canonical artifact validation exists;
-- App800-specific ACL validator exists;
-- full suite is currently 985/985 PASS.
+Do **not** redesign or modify deployment source unless an added required test actually exposes a real defect. The intended task is to close explicit security test/evidence gaps only.
 
-Hybrid Identity / Natta / Vassana and Reset UI feature source remain OUT OF SCOPE.
+Hybrid Identity / Natta / Vassana and Reset UI source remain OUT OF SCOPE.
 
-## 1. Finding G — CREATOR Must Be Exact Full Technical Authority
+## 1. Why This Small Corrective Exists
 
-Current validator only checks that a CREATOR/admin-form-like row exists.
+The current implementation logic in `scripts/kintone/deploy-delivery-sprint02.js` already appears to enforce the intended G/H/I/J behavior:
+- exact 3-row App800 ACL set;
+- canonical CREATOR with all seven rights true;
+- exact `GROUP / HR_ADMIN_GROUP` with View-only rights;
+- explicit everyone row with all seven rights false;
+- strict boolean permission properties;
+- canonical dist-only bundle delegation;
+- no ACL write.
 
-Required exact contract:
-- require exactly one canonical `entity.type === 'CREATOR'` entry;
-- all relevant App ACL right fields must exist as booleans;
-- CREATOR must be exactly:
+However the executor evidence states broader test coverage than the reviewed test file actually contains. Security acceptance requires the explicit proof below.
 
-```text
-appEditable       = true
-recordViewable    = true
-recordAddable     = true
-recordEditable    = true
-recordDeletable   = true
-recordImportable  = true
-recordExportable  = true
-```
+## 2. Required Explicit Test Cases
 
-Any false/missing/undefined/non-boolean CREATOR right -> FAIL CLOSED.
-A plain USER row with code `admin-form` must not substitute for missing CREATOR.
+Modify `tests/sprint02-delivery.test.js` only as needed to add these cases.
 
-Add tests for:
-- valid full CREATOR -> PASS;
-- missing CREATOR -> FAIL;
-- CREATOR with one right false -> FAIL;
-- malformed/missing right field -> FAIL.
+### A. HR malformed rights -> FAIL CLOSED
 
-## 2. Finding H — `everyone` Must Be Present and Explicitly Denied
+Add at least one explicit ACL sample where:
+- CREATOR is valid full;
+- everyone is valid denied;
+- HR_ADMIN_GROUP identity is valid;
+- one required HR right is missing, undefined, string-valued, null, or otherwise non-boolean.
 
-Current validator allows `everyone` to be absent.
+Expected:
+`assertApp800LeastPrivilegeAcl(...)` throws because every required HR right must be an explicit boolean.
 
-Required:
-- require exactly one `everyone` entry (accepted code `everyone`; support the actual returned entity type without weakening code identity);
-- require all relevant right fields to exist as booleans and be exactly false:
+### B. everyone malformed rights -> FAIL CLOSED
 
-```text
-appEditable       = false
-recordViewable    = false
-recordAddable     = false
-recordEditable    = false
-recordDeletable   = false
-recordImportable  = false
-recordExportable  = false
-```
+Add at least one explicit ACL sample where:
+- CREATOR is valid full;
+- HR_ADMIN_GROUP is valid View-only;
+- everyone identity is present;
+- one required everyone right is missing or non-boolean.
 
-Missing everyone, any true right, or malformed/missing boolean -> FAIL CLOSED.
+Expected:
+`assertApp800LeastPrivilegeAcl(...)` throws.
 
-Add tests for:
-- valid everyone denied -> PASS;
-- missing everyone -> FAIL;
-- any everyone privilege -> FAIL;
-- missing/malformed right -> FAIL.
+### C. Extra denied principal -> FAIL CLOSED
 
-## 3. Finding I — Exact ACL Principal Set / No Silent Extras
+Current test proves an extra privileged USER is rejected. Also prove an unexpected fourth principal is rejected even when **all its rights are false**.
 
-Accepted App800 App ACL principal set is exactly:
+Example extra principal:
+- USER/GROUP/ORGANIZATION not part of the accepted App800 ACL;
+- all seven rights false.
+
+Expected:
+FAIL CLOSED because accepted principal set is exact, not merely privilege-based.
+
+### D. Actual accepted `everyone` representation -> PASS
+
+Prior App800 readback evidence showed the everyone principal may be represented as a group/code form rather than synthetic `entity.type = EVERYONE`.
+
+Add a valid exact ACL sample using:
 
 ```text
-CREATOR
-HR_ADMIN_GROUP
-everyone
+entity.type = GROUP
+entity.code = everyone
 ```
 
-Required:
-- exactly one of each expected principal;
-- `HR_ADMIN_GROUP` must be `entity.type === 'GROUP'` and exact code `HR_ADMIN_GROUP`;
-- HR rights must all be explicit booleans with exact View-only values:
-  - recordViewable = true
-  - appEditable/recordAddable/recordEditable/recordDeletable/recordImportable/recordExportable = false
-- any unexpected USER/GROUP/ORGANIZATION/other principal -> FAIL CLOSED;
-- duplicate expected principal -> FAIL CLOSED;
-- malformed expected entity -> FAIL CLOSED.
+with all seven rights exactly false.
 
-Add focused tests for extra privileged principal and extra denied principal; both must fail because the readback no longer matches the accepted exact ACL shape.
+Expected:
+PASS.
 
-Do not write ACL.
+This proves the validator supports the actual accepted Kintone representation without weakening the exact `code=everyone` identity rule.
 
-## 4. Finding J — Canonical Artifact Helper Must Not Accept Arbitrary Caller Bundle
+## 3. Canonical Bundle Regression
 
-Current deprecated `buildClassicHrccBundle(sourceText, ...)` can directly return caller-supplied text if it appears already bundled. That bypasses the canonical artifact rule.
+Retain and rerun the existing Finding J test proving a fake caller-provided classic-looking bundle cannot replace canonical `dist/hr-control-center-bundle.js`.
 
-Required narrow correction:
-- preferred: remove this obsolete helper and remove unused test import if no repository caller requires it; OR
-- retain the name only as a compatibility loader that ignores caller-provided source/bundle input and always delegates to `validateHrccBundleArtifacts()` and returns the canonical dist JS.
+No source/bundle regeneration is required unless existing canonical artifact validation unexpectedly fails.
 
-Must remain forbidden:
-- raw-source bundling;
-- regex import/export stripping;
-- manual module concatenation;
-- arbitrary caller-supplied JS as deploy candidate;
-- duplicate bundle engine.
+## 4. Source Change Rule
 
-Add a test proving a fake caller-provided classic-looking bundle cannot replace the canonical dist artifact.
+Expected source modifications:
 
-## 5. Preserve Accepted Tooling Behavior
+```text
+scripts/kintone/deploy-delivery-sprint02.js = 0
+```
 
-Must remain true:
-- canonical JS/CSS existence/non-empty checks;
-- classic JS parse check;
-- no runtime import/export residue;
-- bundle includes `MboKintoneAuthAdapter` and `resetMboPassword`;
-- `executeDeploy()` loads canonical dist artifacts directly;
-- no ACL writes;
-- no Live deploy run;
-- Reset UI accepted source/dist remain untouched;
-- App794/App53/App795/Hybrid Identity source untouched.
+If any new required test fails because the current validator has a real logic defect:
+1. STOP;
+2. report exact failing test and why;
+3. do not patch source automatically in this R2 task.
 
-## 6. Exact Allowed Files
+Control Plane will decide whether a source corrective is warranted.
+
+## 5. Exact Allowed Files
 
 Allowed to modify:
 
 ```text
-scripts/kintone/deploy-delivery-sprint02.js
 tests/sprint02-delivery.test.js
-project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_EVIDENCE.md
+project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_R2_EVIDENCE.md
 ```
 
 Read-only:
 
 ```text
+scripts/kintone/deploy-delivery-sprint02.js
 scripts/kintone/build-hrcc-ui.js
 src/ui/hr-control-center.js
 src/ui/mbo-kintone-auth-adapter.js
@@ -153,36 +136,33 @@ dist/hr-control-center.css
 ```
 
 Forbidden:
+- Control Center / Active Task / Confirmed Baselines / skills;
 - App794 source;
 - App53/App795 source/schema/data;
-- Reset UI source redesign;
+- Reset UI source;
 - App801 credential core;
 - Hybrid Identity/My Approval Tasks;
-- Control Center / Active Task / Confirmed Baseline / skills;
 - unrelated D2/D3/D5/D7 work.
 
-## 7. Required Verification
+## 6. Required Verification
 
-At minimum prove:
+At minimum:
 
-1. canonical dist loader/validator still PASS;
-2. arbitrary caller bundle cannot bypass canonical dist;
-3. exact valid ACL with full CREATOR + HR View-only + everyone denied = PASS;
-4. missing CREATOR = FAIL CLOSED;
-5. reduced/malformed CREATOR right = FAIL CLOSED;
-6. missing everyone = FAIL CLOSED;
-7. privileged/malformed everyone = FAIL CLOSED;
-8. missing HR group = FAIL CLOSED;
-9. HR privilege elevation or malformed HR rights = FAIL CLOSED;
-10. any unexpected ACL principal = FAIL CLOSED;
-11. duplicate expected principal = FAIL CLOSED;
-12. focused Sprint02/tooling tests PASS;
-13. Reset UI focused tests remain PASS;
-14. full `npm test` = PASS;
-15. `git diff --check` = PASS;
-16. Live operations all zero.
+1. existing valid exact ACL test = PASS;
+2. actual `GROUP / everyone` valid ACL = PASS;
+3. malformed HR boolean = FAIL CLOSED;
+4. malformed everyone boolean = FAIL CLOSED;
+5. extra denied principal = FAIL CLOSED;
+6. existing missing/reduced CREATOR tests remain PASS;
+7. existing extra privileged/duplicate principal tests remain PASS;
+8. canonical caller-bypass prevention test remains PASS;
+9. Sprint02/tooling suite = PASS;
+10. Reset UI focused suite = PASS;
+11. full `npm test` = PASS;
+12. `git diff --check` = PASS;
+13. Live operations all zero.
 
-## 8. Safety — Zero Live Operations
+## 7. Safety — Zero Live Operations
 
 ```text
 LIVE_GET                      = 0
@@ -200,33 +180,34 @@ HYBRID_IDENTITY_SOURCE_CHANGE = 0
 
 Do not call `executeDeploy()`.
 
-## 9. Evidence
+## 8. Evidence
 
 Create:
-`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_EVIDENCE.md`
+
+`project-docs/D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_R2_EVIDENCE.md`
 
 Record:
 - starting HEAD;
 - exact files changed;
-- exact corrections G/H/I/J;
-- ACL exact-shape tests;
-- canonical-artifact bypass prevention test;
-- focused test results;
+- source file change count = 0;
+- explicit test names/results for A/B/C/D above;
+- Sprint02/tooling test result;
 - Reset UI focused result;
 - full `npm test` result;
-- `git diff --check`;
+- `git diff --check` result;
 - exact Live operation counts all zero;
 - `STATUS = PENDING_CHATGPT_REVIEW`.
 
-Commit + push one focused corrective commit, then STOP.
+Commit + push one minimal test/evidence commit, then STOP.
 
 Maximum executor status:
 
-`D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_READY_PENDING_CHATGPT_REVIEW`
+`D1_APP800_DEPLOYMENT_TOOL_COMPATIBILITY_R1_CORRECTIVE_R2_READY_PENDING_CHATGPT_REVIEW`
 
-## 10. Next Owner
+## 9. Next Owner
 
-After executor commit/push:
+After commit/push:
+
 `NEXT_OWNER = CHATGPT INDEPENDENT REVIEW`
 
 Do not deploy and do not begin Hybrid Identity audit automatically.
