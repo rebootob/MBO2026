@@ -5,17 +5,102 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 SANDBOX TOOLING S-A PASS / SANDBOX EXECUTION S-B OPEN
+> Updated: 2026-08-30 — D1 SANDBOX S-B SAFE FAILURE / POLLING HEADER ROOT CAUSE IDENTIFIED
 
 ## 1. D1 status
 
-D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS. Production App53 B2 remains intentionally paused; the earlier Production authorization remains held/unconsumed.
+D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS. Production App53 B2 remains intentionally paused and its earlier authorization remains held/unconsumed.
 
-The user separately authorized creation of one disposable sandbox and rehearsal of the target field add + rollback using synthetic data only.
+Sandbox-first validation remains the current path.
 
-## 2. Production protection
+## 2. Gate S-A tooling
 
-App53 (ID 53) remains protected.
+Accepted reviewed tooling chain:
+
+```text
+INITIAL_TOOLING_COMMIT = b98aa18fb082cf5b52efa1c80cf4df0a7e115dc5
+CORRECTIVE_COMMIT = 491358480cf642b3f2175b3cf0e1fd7246a96234
+REVIEWED_SCRIPT_BLOB = 838d021073916d2c05f2ce84a9242545c5ebd848
+GATE_S_A = PASS
+```
+
+## 3. Gate S-B execution evidence — SAFE FAILURE
+
+User-provided executor evidence:
+
+```text
+SCRIPT_BLOB_MATCH = YES
+PRE_EXEC_GIT_STATUS = CLEAN
+DRY_RUN_SAFETY_EXIT = PASS
+DRY_RUN_KINTONE_NETWORK_OPERATIONS = 0
+SANDBOX_EXECUTION = FAIL
+SANDBOX_APP_ID = 802
+SANDBOX_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
+BASE_SCHEMA_DEPLOY = FAIL
+SYNTHETIC_RECORDS_CREATED = 0
+FORWARD_PREVIEW_EXACT_CHECK = NOT_RUN
+FORWARD_DEPLOY = NOT_RUN
+FORWARD_LIVE_EXACT_CHECK = NOT_RUN
+FORWARD_SYNTHETIC_DATA_CHECK = NOT_RUN
+ROLLBACK_PREVIEW_FIELD_ABSENT = NOT_RUN
+ROLLBACK_DEPLOY = NOT_RUN
+ROLLBACK_LIVE_FIELD_ABSENT = NOT_RUN
+ROLLBACK_SYNTHETIC_DATA_CHECK = NOT_RUN
+FINAL_SANDBOX_STATE = INCOMPLETE
+POST_EXEC_GIT_STATUS = CLEAN
+APP53_NETWORK_OPERATIONS = 0
+APP53_WRITES = 0
+REAL_EMPLOYEE_DATA_COPIED = NO
+PRODUCTION_B2_EXECUTED = NO
+FILES_COMMITTED = NONE
+```
+
+Failure point:
+
+```text
+GET /k/v1/preview/app/deploy.json?apps[0]=802
+HTTP 400
+Kintone code = CB_IL02 / Invalid request
+```
+
+Decision:
+
+```text
+GATE_S_B_R1 = FAIL-SAFE / NO PRODUCTION IMPACT
+SANDBOX_802 = CREATED / INCOMPLETE / DO NOT ASSUME FINAL DEPLOY STATE
+APP53_PRODUCTION_IMPACT = NONE
+```
+
+Do not delete, reuse, resume, or modify sandbox 802 until a separate exact control task authorizes it.
+
+## 4. Root cause analysis
+
+Official Kintone API contract confirms the deploy-status GET query form `?apps[0]=<appId>` is valid.
+
+The reviewed rehearsal script currently sets:
+
+```text
+Content-Type: application/json
+```
+
+on every request, including GET requests whose parameters are supplied in the URL and whose body is empty.
+
+Kintone's GET contract states Content-Type is not needed when parameters are supplied in the request URL. Historical/current Kintone guidance documents CB_IL02 Invalid Request when query-string GET requests incorrectly include JSON Content-Type with no JSON body.
+
+Therefore the narrow corrective is:
+
+```text
+For GET requests with no body:
+- preserve authentication headers
+- DO NOT send Content-Type
+
+For POST/DELETE requests with JSON body:
+- send Content-Type: application/json
+```
+
+Do not change endpoint paths, deploy query syntax, app-target safeguards, lifecycle order, target-field contract, or synthetic-record contract.
+
+## 5. Production protection
 
 ```text
 APP53_PRODUCTION_WRITE = NO
@@ -25,106 +110,23 @@ PROTECTED_GUARD_BYPASS = NO
 PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 ```
 
-## 3. Gate S-A tooling — PASS
+## 6. Sandbox authorization accounting
 
-Initial tooling commit:
-```text
-b98aa18fb082cf5b52efa1c80cf4df0a7e115dc5
-```
-
-Corrective commit:
-```text
-491358480cf642b3f2175b3cf0e1fd7246a96234
-```
-
-Reviewed script:
-```text
-scripts/kintone/rehearse-app53-hybrid-sandbox.js
-blob = 838d021073916d2c05f2ce84a9242545c5ebd848
-```
-
-Independent source decision:
-```text
-D1_SANDBOX_REHEARSAL_TOOLING_GATE_S_A = PASS
-```
-
-Accepted safety properties:
-- exact `--execute-sandbox-lifecycle` flag required before `getKintoneConnection()`;
-- no external target app ID accepted for lifecycle targeting;
-- sandbox ID comes only from this process's new-app creation response;
-- known protected/existing app IDs hard-denied, including App53 and Apps 794–801;
-- later operations use only process-local `sandboxAppId`;
-- target field exact contract = `MBO_Kintone_User` / `USER_SELECT` / `required=false` / `entities=[]`;
-- Preview and Live target-field checks validate exact code/type/label/required/entities;
-- record verification is deterministic and validates both `Number_0` and `emp_text`;
-- rollback removes only the target field and leaves the sandbox present for inspection.
-
-## 4. Gate S-B — reviewed-script sandbox execution
-
-Gate S-B is now open under the user's already-granted sandbox-only authorization.
-
-Exact target:
-```text
-NEW DISPOSABLE APP ONLY
-Name = MBO2026 App53 Hybrid Identity Sandbox
-Real employee data = NO
-```
-
-Pre-execution integrity gate:
-```text
-git hash-object scripts/kintone/rehearse-app53-hybrid-sandbox.js
-```
-must equal:
-```text
-838d021073916d2c05f2ce84a9242545c5ebd848
-```
-
-If not exact: STOP before Kintone network execution.
-
-Execution lifecycle:
-1. dry-run without execution flag; must exit safely;
-2. execute exact reviewed script with `--execute-sandbox-lifecycle`;
-3. create exactly one new sandbox;
-4. deploy minimal `Number_0` + `emp_text` schema;
-5. create exactly two synthetic records;
-6. add `MBO_Kintone_User` in Preview and exact-readback;
-7. deploy sandbox and verify Live + synthetic records;
-8. delete only `MBO_Kintone_User` in Preview;
-9. deploy sandbox rollback;
-10. verify Live target field absent + both synthetic records unchanged;
-11. leave sandbox in rolled-back baseline state;
-12. STOP for ChatGPT review.
-
-## 5. Explicit exclusions
+The previous sandbox authorization resulted in creation of sandbox App 802. It must not be interpreted as automatic authorization to create a second sandbox.
 
 ```text
-APP53 GET/WRITE = NO
-APP53 RECORD COPY = NO
-REAL EMPLOYEE DATA = NO
-APP794/795/796/797/798/800/801 ACCESS/WRITE = NO
-GROUP/ACL CHANGE = NO
-APP794 DEPLOY = NO
-SOURCE/TEST/CONFIG/DIST CHANGE = NO
-PRODUCTION B2 EXECUTION = NO
+SANDBOX_802_CREATED = YES
+SECOND_SANDBOX_CREATE_AUTH = NONE
+SANDBOX_802_RESUME_WRITE_AUTH = NONE
 ```
 
-## 6. Authorization ledger
-
-```text
-SANDBOX_CREATE_AND_REHEARSAL_AUTH = ACTIVE / ONE DISPOSABLE SANDBOX LIFECYCLE
-APP53_SCHEMA_WRITE_AUTH = HELD / NOT EXECUTABLE
-APP53_RECORD_WRITE_AUTH = NONE
-APP53_BULK_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = SANDBOX ONLY
-ACTIVE_ACL_WRITE_AUTH = NONE
-ACTIVE_GROUP_WRITE_AUTH = NONE
-PRODUCTION_ROLLBACK_AUTH = NONE
-```
+Source-only correction is allowed as project implementation work. Any new Kintone sandbox network execution after that correction requires a new exact Control Plane decision and, if it creates a second sandbox or resumes writes to 802, explicit user authorization as applicable.
 
 ## 7. Current control state
 
 ```text
-ACTIVE_TASK = D1 SANDBOX REHEARSAL EXECUTION GATE S-B R1
+ACTIVE_TASK = D1 SANDBOX TOOLING GET-HEADER CORRECTIVE R1
 CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER = CHATGPT INDEPENDENT REVIEW
+KINTONE_NETWORK_EXECUTION = FORBIDDEN
+NEXT_OWNER = CHATGPT INDEPENDENT SOURCE REVIEW
 ```
