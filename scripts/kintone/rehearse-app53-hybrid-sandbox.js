@@ -64,7 +64,11 @@ if (!empTextSpec || empTextSpec.type !== 'SINGLE_LINE_TEXT') {
 async function kintoneFetch(baseUrl, headers, endpoint, options = {}) {
   const method = options.method || 'GET';
   const body = options.body ? JSON.stringify(options.body) : undefined;
-  const reqHeaders = { ...headers, 'Content-Type': 'application/json' };
+  const reqHeaders = { ...headers };
+
+  if (options.body) {
+    reqHeaders['Content-Type'] = 'application/json';
+  }
 
   const url = `${baseUrl}${endpoint}`;
   const response = await fetch(url, { method, headers: reqHeaders, body });
