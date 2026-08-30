@@ -424,7 +424,7 @@ test('Sprint 03B-R2: executeRoutingSeed fails closed if live schema required=tru
   await assert.rejects(async () => executeRoutingSeed({ overrideTransport: fakeTransport }), /Live schema requires Manager_User\/GM_User fields/);
 });
 
-test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl passes valid CREATOR + HR_ADMIN_GROUP View-only + everyone denied ACL', () => {
+test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl passes exact CREATOR + HR_ADMIN_GROUP View-only + everyone denied ACL', () => {
   const validAcl = {
     rights: [
       {
@@ -433,7 +433,9 @@ test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl passes vali
         recordViewable: true,
         recordAddable: true,
         recordEditable: true,
-        recordDeletable: true
+        recordDeletable: true,
+        recordImportable: true,
+        recordExportable: true
       },
       {
         entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' },
@@ -451,7 +453,9 @@ test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl passes vali
         recordViewable: false,
         recordAddable: false,
         recordEditable: false,
-        recordDeletable: false
+        recordDeletable: false,
+        recordImportable: false,
+        recordExportable: false
       }
     ]
   };
@@ -461,50 +465,96 @@ test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl passes vali
   }, 'Valid App800 least-privilege ACL must pass');
 });
 
-test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl fails closed on HR group privilege elevation', () => {
-  const elevatedHrAcl = {
+test('Finding G: assertApp800LeastPrivilegeAcl fails closed if CREATOR is missing or has false/non-boolean rights', () => {
+  // 1. Missing CREATOR
+  const missingCreator = {
     rights: [
-      { entity: { type: 'CREATOR', code: 'admin-form' } },
       {
-        entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' },
-        recordViewable: true,
-        recordAddable: true // Privilege elevation!
+        entity: { type: 'USER', code: 'admin-form' }, // USER instead of CREATOR
+        appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true
       },
-      { entity: { type: 'EVERYONE', code: 'everyone' } }
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
     ]
   };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(missingCreator), /entity.type === 'CREATOR'/);
 
-  assert.throws(() => {
-    assertApp800LeastPrivilegeAcl(elevatedHrAcl, 'TEST_ELEVATED_HR');
-  }, /privilege elevation detected/);
-});
-
-test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl fails closed when HR_ADMIN_GROUP is missing', () => {
-  const missingHrAcl = {
+  // 2. CREATOR with false right
+  const reducedCreator = {
     rights: [
-      { entity: { type: 'CREATOR', code: 'admin-form' } },
-      { entity: { type: 'EVERYONE', code: 'everyone' } }
-    ]
-  };
-
-  assert.throws(() => {
-    assertApp800LeastPrivilegeAcl(missingHrAcl, 'TEST_MISSING_HR');
-  }, /HR_ADMIN_GROUP permission entry missing/);
-});
-
-test('App800 Deployment Compatibility: assertApp800LeastPrivilegeAcl fails closed when everyone group has view/edit privileges', () => {
-  const everyonePrivilegedAcl = {
-    rights: [
-      { entity: { type: 'CREATOR', code: 'admin-form' } },
-      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, recordViewable: true },
       {
-        entity: { type: 'EVERYONE', code: 'everyone' },
-        recordViewable: true // Security violation!
-      }
+        entity: { type: 'CREATOR' },
+        appEditable: true, recordViewable: true, recordAddable: true, recordEditable: false, recordDeletable: true, recordImportable: true, recordExportable: true
+      },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
     ]
   };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(reducedCreator), /CREATOR permission property "recordEditable" must be true/);
 
-  assert.throws(() => {
-    assertApp800LeastPrivilegeAcl(everyonePrivilegedAcl, 'TEST_EVERYONE_PRIVILEGED');
-  }, /everyone group must have 0 application privileges/);
+  // 3. CREATOR with missing boolean
+  const malformedCreator = {
+    rights: [
+      {
+        entity: { type: 'CREATOR' },
+        appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true
+        // recordExportable missing
+      },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(malformedCreator), /must be an explicit boolean/);
+});
+
+test('Finding H: assertApp800LeastPrivilegeAcl fails closed if everyone entry is missing or has any privilege / non-boolean right', () => {
+  // 1. Missing everyone entry
+  const missingEveryone = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(missingEveryone), /Expected exact App800 principal count 3/);
+
+  // 2. Everyone with true right
+  const privilegedEveryone = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(privilegedEveryone), /everyone permission property "recordViewable" must be false/);
+});
+
+test('Finding I: assertApp800LeastPrivilegeAcl fails closed on extra or duplicate ACL principals', () => {
+  // 1. Extra USER principal
+  const extraPrincipalAcl = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'USER', code: 'unauthorized_user' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(extraPrincipalAcl), /Expected exact App800 principal count 3/);
+
+  // 2. Duplicate HR_ADMIN_GROUP
+  const duplicatePrincipalAcl = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(duplicatePrincipalAcl), /Expected exact App800 principal count 3/);
+});
+
+test('Finding J: buildClassicHrccBundle always delegates to canonical dist loader and ignores caller-supplied source', () => {
+  const fakeCallerSource = 'console.log("Arbitrary caller bundle trying to bypass dist");';
+  const bundle = buildClassicHrccBundle(fakeCallerSource);
+  assert.ok(bundle.includes('MboKintoneAuthAdapter'), 'buildClassicHrccBundle must return canonical bundle containing MboKintoneAuthAdapter');
+  assert.equal(bundle.includes('Arbitrary caller bundle trying to bypass dist'), false, 'Caller-supplied source must be ignored');
 });

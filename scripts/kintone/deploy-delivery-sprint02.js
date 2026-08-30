@@ -45,12 +45,8 @@ export function validateHrccBundleArtifacts(opts = {}) {
   return { jsCode, cssContent, jsPath, cssPath };
 }
 
-// Deprecated/Compatibility loader: Returns canonical valid bundle
+// Canonical compatibility loader: Always delegates to validateHrccBundleArtifacts() and returns canonical dist JS
 export function buildClassicHrccBundle(sourceText, registry = {}) {
-  if (typeof sourceText === 'string' && !/\bimport\b/.test(sourceText) && !/\bexport\b/.test(sourceText) && sourceText.includes('MboKintoneAuthAdapter')) {
-    new Function(sourceText);
-    return sourceText;
-  }
   const { jsCode } = validateHrccBundleArtifacts();
   return jsCode;
 }
@@ -63,31 +59,78 @@ export function assertApp800LeastPrivilegeAcl(aclResponse, contextName = 'APP800
 
   const rights = aclResponse.rights;
 
-  // 1. Technical CREATOR / admin authority check
-  const creatorRight = rights.find(r => r.entity?.type === 'CREATOR' || r.entity?.code === 'admin-form');
-  if (!creatorRight) {
-    throw new Error(`${contextName} FAILED: Technical CREATOR permission entry missing.`);
+  // Finding I: Exact principal set validation -> exactly 3 entries required
+  if (rights.length !== 3) {
+    throw new Error(`${contextName} FAILED: Expected exact App800 principal count 3 (CREATOR, HR_ADMIN_GROUP, everyone), found ${rights.length}. Extra/missing principals prohibited.`);
   }
 
-  // 2. HR_ADMIN_GROUP check
-  const hrRight = rights.find(r => r.entity?.code === 'HR_ADMIN_GROUP');
-  if (!hrRight) {
-    throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP permission entry missing from App800 ACL.`);
+  const REQUIRED_RIGHT_KEYS = [
+    'appEditable',
+    'recordViewable',
+    'recordAddable',
+    'recordEditable',
+    'recordDeletable',
+    'recordImportable',
+    'recordExportable'
+  ];
+
+  // Helper to assert all 7 permission properties are strict booleans
+  const assertStrictBooleans = (entry, name) => {
+    for (const key of REQUIRED_RIGHT_KEYS) {
+      if (typeof entry[key] !== 'boolean') {
+        throw new Error(`${contextName} FAILED: Permission property "${key}" for ${name} must be an explicit boolean.`);
+      }
+    }
+  };
+
+  // Finding G: CREATOR must be entity.type === 'CREATOR' with all 7 rights strictly true
+  const creatorRight = rights.find(r => r.entity?.type === 'CREATOR');
+  if (!creatorRight) {
+    throw new Error(`${contextName} FAILED: Technical CREATOR permission entry (entity.type === 'CREATOR') missing.`);
   }
+
+  assertStrictBooleans(creatorRight, 'CREATOR');
+
+  for (const key of REQUIRED_RIGHT_KEYS) {
+    if (creatorRight[key] !== true) {
+      throw new Error(`${contextName} FAILED: CREATOR permission property "${key}" must be true (full technical authority required).`);
+    }
+  }
+
+  // Finding I: HR_ADMIN_GROUP check (type === 'GROUP', code === 'HR_ADMIN_GROUP')
+  const hrRight = rights.find(r => r.entity?.type === 'GROUP' && r.entity?.code === 'HR_ADMIN_GROUP');
+  if (!hrRight) {
+    throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP permission entry (GROUP HR_ADMIN_GROUP) missing from App800 ACL.`);
+  }
+
+  assertStrictBooleans(hrRight, 'HR_ADMIN_GROUP');
 
   if (hrRight.recordViewable !== true) {
     throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP must have View permission (recordViewable = true).`);
   }
 
-  if (hrRight.appEditable || hrRight.recordAddable || hrRight.recordEditable || hrRight.recordDeletable || hrRight.recordImportable || hrRight.recordExportable) {
+  if (
+    hrRight.appEditable !== false ||
+    hrRight.recordAddable !== false ||
+    hrRight.recordEditable !== false ||
+    hrRight.recordDeletable !== false ||
+    hrRight.recordImportable !== false ||
+    hrRight.recordExportable !== false
+  ) {
     throw new Error(`${contextName} FAILED: HR_ADMIN_GROUP permissions must be View-only (privilege elevation detected).`);
   }
 
-  // 3. Everyone check -> all rights must be false
+  // Finding H: everyone must be present and explicitly denied (type === 'EVERYONE' or code === 'everyone')
   const everyoneRight = rights.find(r => r.entity?.type === 'EVERYONE' || r.entity?.code === 'everyone');
-  if (everyoneRight) {
-    if (everyoneRight.appEditable || everyoneRight.recordViewable || everyoneRight.recordAddable || everyoneRight.recordEditable || everyoneRight.recordDeletable || everyoneRight.recordImportable || everyoneRight.recordExportable) {
-      throw new Error(`${contextName} FAILED: everyone group must have 0 application privileges (denied).`);
+  if (!everyoneRight) {
+    throw new Error(`${contextName} FAILED: everyone permission entry missing from App800 ACL.`);
+  }
+
+  assertStrictBooleans(everyoneRight, 'everyone');
+
+  for (const key of REQUIRED_RIGHT_KEYS) {
+    if (everyoneRight[key] !== false) {
+      throw new Error(`${contextName} FAILED: everyone permission property "${key}" must be false (0 privileges allowed).`);
     }
   }
 }
