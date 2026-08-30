@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — HYBRID EMPLOYEE-SELF RUNTIME ENTRY R1 = CORRECTIVE / APP53 PRODUCTION READ-ONLY
+> Updated: 2026-08-30 — HYBRID EMPLOYEE-SELF RUNTIME ENTRY R1 = LEAN CORRECTIVE / APP53 PRODUCTION READ-ONLY
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. Natta/Vassana read-only audit completed. Hybrid Identity Core Source R1 is **PASS** at `c20e406b9b289984e57ebf2c52c9223094bc5f5a`. Runtime source inventory is complete. Initial Hybrid Employee-Self Runtime Entry R1 candidate `6eccb3987372d9d50c06cc4249e264c86f11bb3d` is **CORRECTIVE**. Protected App53/group/ACL/deploy work remains unauthorized. My Approval Tasks remains deferred pending separate current-native-assignee proof. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. Natta/Vassana read-only audit completed. Hybrid Identity Core Source R1 is **PASS** at `c20e406b9b289984e57ebf2c52c9223094bc5f5a`. Runtime source inventory is complete. Initial Hybrid Employee-Self Runtime Entry R1 candidate `6eccb3987372d9d50c06cc4249e264c86f11bb3d` is **CORRECTIVE**. Current gate = narrow Lean Corrective only. Protected App53/group/ACL/deploy work remains unauthorized. My Approval Tasks remains deferred pending separate current-native-assignee proof. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source/tooling accepted; deployed App800 remains prior MVP until separately authorized deployment. |
@@ -19,7 +19,45 @@
 | D6 | 🔴 Integrated E2E / Security / Regression pending; must include shared-login + dedicated-login + dual-role separation |
 | D7 | ✅ Admin Support Center source functionality CLOSED; reopen only on proven defect. |
 
-## 2. Accepted App794 / Hybrid Core Baselines
+## 2. Lean Antigravity Execution Rule — MANDATORY
+
+Antigravity is an execution worker, not the Control Plane.
+
+Default rule:
+```text
+ANTIGRAVITY = MINIMUM NECESSARY SOURCE/RUNTIME EXECUTION ONLY
+CHATGPT     = PLANNING + INVENTORY + REVIEW + CONTROL DOCS + EVIDENCE INTERPRETATION
+```
+
+For ordinary corrective rounds, Antigravity should normally do only:
+```text
+1. edit the exact authorized source seam;
+2. run the smallest focused tests covering that change;
+3. run git diff --check;
+4. commit + push;
+5. STOP.
+```
+
+Do not spend Antigravity by default on:
+- broad repository scans;
+- planning or architecture work;
+- Control Center / Active Task / Baseline authoring;
+- long evidence/report documents;
+- full `npm test` on every corrective;
+- full UI build on every corrective;
+- unrelated regression suites;
+- repeated runtime discovery already possible through Git review.
+
+Full repository test/build is reserved for meaningful milestones, normally:
+```text
+SOURCE ACCEPTANCE MILESTONE
+PRE-DEPLOY FINAL VERIFICATION
+FINAL REGRESSION / RELEASE GATE
+```
+
+If a focused test reveals a defect outside the exact authorized seam, Antigravity must STOP and report rather than expand scope.
+
+## 3. Accepted App794 / Hybrid Core Baselines
 
 ```text
 APP794_LIVE_REVISION          = 60
@@ -43,7 +81,7 @@ Accepted Hybrid core rules:
 - Natta own example remains `natta -> uchida / M1_G1` -> effective `uchida / M1_ONLY` with no auto-approval;
 - generic 3-slot/4-slot transformations have committed regression proof.
 
-## 3. Confirmed Hybrid Identity / Dual Role
+## 4. Confirmed Hybrid Identity / Dual Role
 
 ```text
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
@@ -83,7 +121,7 @@ Approval Tasks    = authoritative CURRENT native Workflow assignee == current de
 
 Static App795 membership, stale route snapshots, UI visibility, or caller-supplied roles are not Approver authorization.
 
-## 4. App53 Production Protection — MANDATORY
+## 5. App53 Production Protection — MANDATORY
 
 ```text
 APP53_ENVIRONMENT                 = PRODUCTION
@@ -104,7 +142,7 @@ MBO_Kintone_User live field = NOT YET CREATED
 
 Natta remains fail closed until the real canonical Employee_Code is proven/corrected under separate protected authorization. Never infer from `Number=243`, Vendor Account Number, email, name, or padding.
 
-## 5. Runtime Integration Source Inventory R1 — COMPLETE
+## 6. Runtime Integration Source Inventory R1 — COMPLETE
 
 Inventory established these safe seams:
 - identity mode + strict mapping semantics: `src/services/mbo-identity-service.js`;
@@ -116,7 +154,7 @@ Inventory established these safe seams:
 - build is esbuild from `src/main-mbo-app.js`; no manual dist edits;
 - My Approval Tasks/current-native-assignee source contract is not yet proven and is a separate later gate.
 
-## 6. Hybrid Employee-Self Runtime Entry R1 — INDEPENDENT REVIEW
+## 7. Hybrid Employee-Self Runtime Entry R1 — INDEPENDENT REVIEW
 
 Executor candidate:
 ```text
@@ -128,99 +166,40 @@ SOURCE_ACCEPTED  = NO
 DEPLOY_READY     = NO
 ```
 
-Scope was mostly within the intended runtime seam and no App53 schema/record/config/deploy artifact was committed. However, independent review found blocking correctness/security defects:
+Blocking findings:
 
-### Finding R1-A — Unauthorized SHARED expansion
+### R1-A — Unauthorized SHARED expansion
+Candidate incorrectly classified numeric and `req*` / `test*` / `user*` principals as SHARED. Only the exact approved 9 may be SHARED.
 
-`MboIdentityService.resolveKintonePrincipalMode()` correctly contains the approved 9-code set, but also classifies additional principals as SHARED using unauthorized heuristics:
-- all-digit user code;
-- `req*` prefix;
-- `test*` prefix;
-- `user*` prefix.
+### R1-B — DEDICATED mapping failure falls back to SHARED login
+Candidate can call `mboLoginGate.requireLogin()` after DEDICATED mapping failure. This must be removed; DEDICATED failure is fail closed.
 
-This violates the exact shared-principal contract and can bypass required dedicated mapping. Remove every heuristic. Only exact membership in the approved 9-code set may return `SHARED`.
+### R1-C — DEDICATED delete guard not connected in real runtime
+`DeleteGuardPolicy` accepts hybrid context, but the registered App794 delete handler does not pass the current Employee-Self context provider.
 
-### Finding R1-B — DEDICATED mapping failure falls back to SHARED login
+### R1-D — Out-of-scope App800/HR test modification
+`tests/hr-control-center-reset-ui.test.js` was modified outside scope and must be restored exactly to pre-WP blob `eb2a3cdfb6bee6a6d67f15cc3210f139a1635756`.
 
-`resolveRuntimeEmployeeSelfContext()` invokes `mboLoginGate.requireLogin()` after dedicated mapping is missing/ambiguous/invalid. It can then return a `SHARED` Employee-Self context for a native principal already classified as DEDICATED.
+### R1-F — Create must use resolved local context
+Create requester/self-elision must use the already resolved `context.mode` and `context.kintoneUserCode`, not mutable global fallback or silent `'SHARED'` default.
 
-This directly violates:
-```text
-DEDICATED missing/ambiguous/invalid mapping -> FAIL CLOSED
-NEVER fallback to SHARED login
-```
-
-Dedicated source-access failure must also fail closed; it must never be converted into a shared-login opportunity.
-
-### Finding R1-C — DEDICATED delete guard not connected in real runtime
-
-`DeleteGuardPolicy` was extended to accept `getEmployeeSelfContext`, but the registered App794 delete handler still constructs:
-```text
-new DeleteGuardPolicy({ mboLoginGate })
-```
-
-Therefore a valid DEDICATED Employee-Self context is not supplied to the actual delete event path and dedicated delete can abstain instead of being blocked. Wire the current common Employee-Self context provider into the real registered handler and prove it through the registered event test.
-
-### Finding R1-D — Out-of-scope App800/HR test modification
-
-The candidate modified `tests/hr-control-center-reset-ui.test.js`, which was not an allowed file. The change removed `src/main-mbo-app.js` from that historical test's forbidden-prefix list.
-
-This file must be restored **exactly** to the pre-WP blob/content. Do not redesign the App800 test in this Hybrid WP. If its `git status` assertion complicates local full-suite execution while source is uncommitted, use a clean/provisional local commit workflow; do not alter the test semantics.
-
-### Finding R1-E — Required proof incomplete / evidence overclaims
-
-The Active Task required explicit real-runtime proof for:
-- approved SHARED path and authoritative requester snapshot;
-- valid DEDICATED entry with gate unavailable/null;
-- DEDICATED My MBO/detail/edit/create bound to mapped Employee_Code;
-- no dedicated MBO password/logout bar;
-- DEDICATED requester snapshot;
-- own-route self-appraiser elision before snapshot;
-- missing/ambiguous/invalid mapping with zero shared-login fallback;
-- cross-employee denial;
-- registered DEDICATED delete-event block and no-context abstain;
-- browser bundle graph containing `mbo-identity-service.js` and excluding server/Auth Bridge.
-
-The committed integration additions prove only a subset, and `tests/classic-bundle.test.js` was not modified even though the task required an explicit new dependency assertion. Evidence also omits the required starting HEAD, exact changed-file list, exact focused/build results, and explicit `LIVE_GET=0` statement.
-
-### Finding R1-F — Create must use resolved local context without silent SHARED default
-
-Create routing currently reads mutable module-global `currentEmployeeSelfContext?.mode || 'SHARED'` and separately re-reads the current login user. The authenticated `setupRecordUiWithAuth()` call already has the resolved context. Use that resolved local context (`context.mode`, `context.kintoneUserCode`) for route/requester composition and do not silently default a missing mode to SHARED. Missing/invalid context must fail closed.
-
-## 7. Safety Review for Candidate `6eccb398...`
-
-Repository diff contains no App53 schema/record/config/deploy change and no My Approval Tasks implementation. No live-write authorization exists.
-
-Executor evidence states zero live writes but says `GET only`, while the task required **all live operations including GET = 0** and fixture/mock-only execution. Therefore:
-```text
-APP53_PRODUCTION_WRITE_TOUCHED = NO EVIDENCE OF WRITE
-LIVE_GET_ZERO_PROVEN           = NO — EVIDENCE WORDING AMBIGUOUS / MUST BE CORRECTED
-```
-
-Corrective evidence must explicitly prove:
-```text
-LIVE_GET=0
-LIVE_POST=0
-LIVE_PUT=0
-LIVE_DELETE=0
-APP53_PRODUCTION_TOUCHED=NO
-```
-
-and state that any GET exercised in tests used injected mocks/fixtures only.
+The previously requested broad proof/build work is now deferred to the next milestone under the Lean Antigravity rule. Current corrective only fixes these proven source defects and runs focused tests.
 
 ## 8. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID IDENTITY EMPLOYEE-SELF RUNTIME ENTRY R1 CORRECTIVE R1
+ACTIVE_TASK = D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — LEAN CORRECTIVE
 OWNER       = ANTIGRAVITY
-MODE        = SOURCE / FIXTURE TEST / BUILD / EVIDENCE ONLY
+MODE        = MINIMUM SOURCE + FOCUSED TEST ONLY
 APP53_MODE  = PRODUCTION READ_ONLY
 LIVE_ACCESS = NO
 LIVE_WRITE  = NO
-DEPLOY      = NO
+FULL_NPM_TEST = DEFERRED
+UI_BUILD      = DEFERRED
+DEPLOY        = NO
 ```
 
-Corrective must address Findings R1-A through R1-F only. Do not expand into My Approval Tasks, App53 configuration, ACL/group work, deployment, shared-auth internals, routing-core redesign, or unrelated cleanup.
+Exact task scope is in `AI_ACTIVE_TASK.md`.
 
 ## 9. App800 Reset UI / Tooling — Accepted, Not Deployed
 
@@ -256,9 +235,9 @@ No App800/App801/App794/App53 record write, App53 schema/bulk change, group crea
 ## 11. Next Gate
 
 ```text
-CURRENT_GATE  = D1 HYBRID IDENTITY EMPLOYEE-SELF RUNTIME ENTRY R1 CORRECTIVE R1
+CURRENT_GATE  = D1 HYBRID EMPLOYEE-SELF RUNTIME R1 — LEAN CORRECTIVE
 CURRENT_OWNER = ANTIGRAVITY
 NEXT_REVIEWER = CHATGPT
 ```
 
-After source acceptance, protected Kintone configuration is **still not automatic**. My Approval Tasks remains blocked until Control Plane separately proves the authoritative current-native-assignee runtime contract without guessing.
+After this focused corrective passes review, ChatGPT will decide whether the source has reached the milestone where one full test/build verification is justified. Protected Kintone configuration remains a separate authorization gate. My Approval Tasks remains blocked until Control Plane separately proves the authoritative current-native-assignee runtime contract.
