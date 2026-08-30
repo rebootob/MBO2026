@@ -1,96 +1,104 @@
-# AI ACTIVE TASK — APP794 PRE-DEPLOY EVIDENCE MICRO-CORRECTIVE R2 / READ-ONLY
+# AI ACTIVE TASK — APP794 CUMULATIVE DEPLOYMENT HOLD / AWAITING USER AUTHORIZATION
 
-Mode: **ANTIGRAVITY EVIDENCE-ONLY EXECUTION — NO SOURCE EDIT / NO LIVE WRITE / NO DEPLOY**  
+Mode: **CONTROL PLANE HOLD — NO ANTIGRAVITY EXECUTION / NO LIVE KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Review Result
+## 1. Independent Review Result
 
-ChatGPT independent review of evidence commit:
+Latest pre-deploy evidence commit reviewed:
 
-`ddf5de0c0e02e4d8a7b8542a67067d6fe7230f28`
+`74974d310b2c43662362c57bd0b8f03f7689e1bd`
 
 Decision:
 
-`CORRECTIVE — ONE REMAINING EVIDENCE COMMAND ONLY`
+`PREDEPLOY VERIFICATION PASS`
 
-Source candidate remains accepted. No source defect or Live drift was found.
-
-## 2. Exact Remaining Gap
-
-The evidence now contains the requested command/exit-status audit trail, but the dist-reproduction proof still does not use the exact mandatory command.
-
-Evidence currently records:
-
-```text
-git diff --ignore-space-at-eol -- dist/mbo-employee-app.js dist/mbo-employee.css
-```
-
-The required gate is exactly:
+The final required fail-closed reproduction command was recorded exactly:
 
 ```text
 git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css
-```
-
-Why this matters: plain `git diff` can return exit code 0 even when differences exist. `--exit-code` is the required fail-closed proof.
-
-## 3. Allowed Action
-
-Update exactly one file only:
-
-`project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md`
-
-Create a temporary detached worktree pinned exactly to:
-
-`98108e9e387d01b6d3c3a35cce5baf13324be50e`
-
-If needed, run the already-approved build-only command first so the dist artifacts are reproduced from that candidate. Then run exactly:
-
-```text
-git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css
-```
-
-Record:
-- exact command;
-- output (`<empty>` if no diff);
-- exact exit status;
-- candidate worktree HEAD;
-- final `git status --porcelain` output.
-
-Expected PASS:
-
-```text
 OUTPUT = <empty>
 EXIT_STATUS = 0
 ```
 
-Any nonzero exit or any diff => STOP and report truthfully.
+Candidate detached worktree HEAD was exact and final tracked status was clean.
 
-## 4. Strict Safety Boundary
+## 2. Locked Release Candidate
+
+```text
+APP_ID                       = 794
+CANDIDATE_SOURCE_COMMIT      = 98108e9e387d01b6d3c3a35cce5baf13324be50e
+CANDIDATE_CLASSIFICATION     = CUMULATIVE ACCEPTED SOURCE
+CANDIDATE_INCLUDES           = D1 Password Reset Core R1 + WP2 R4 Error-State Back Navigation
+CANDIDATE_JS_IDENTITY        = f097f67404fb75418cf85fee635e5d630ef5474d
+CANDIDATE_CSS_IDENTITY       = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+EXPECTED_SCOPE               = ALL
+EXPECTED_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+```
+
+This candidate must not be described as a Back-button-only release.
+
+## 3. Current Live Baseline / Preflight Expectation
+
+Before any authorized forward deploy, actual Live must still match exactly:
+
+```text
+LIVE_REVISION                = 57
+LIVE_SOURCE_COMMIT           = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
+LIVE_SCOPE                   = ALL
+LIVE_TOPOLOGY                = 1/1/0/0
+LIVE_JS_IDENTITY             = ac22a56cb9d78001384241fe12745f7a2da3da84
+LIVE_CSS_IDENTITY            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+```
+
+Any drift at deployment time => STOP before write.
+
+## 4. Locked Rollback Manifest
+
+```text
+ROLLBACK_SOURCE_COMMIT       = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
+ROLLBACK_JS_PATH             = dist/mbo-employee-app.js
+ROLLBACK_JS_IDENTITY         = ac22a56cb9d78001384241fe12745f7a2da3da84
+ROLLBACK_CSS_PATH            = dist/mbo-employee.css
+ROLLBACK_CSS_IDENTITY        = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+ROLLBACK_SCOPE               = ALL
+ROLLBACK_TOPOLOGY            = 1/1/0/0
+```
+
+Rollback is never automatic and requires separate explicit user authorization if needed.
+
+## 5. Current Hold
+
+No executor task is active now.
 
 Do NOT:
-- edit source/tests/scripts/config/package/dist on canonical branch;
-- run Live-mode deploy tooling;
-- make any Kintone GET/POST/PUT/DELETE call in this micro-corrective;
-- upload customization;
-- deploy;
+- deploy App794;
+- upload customization files;
+- PUT preview customization;
+- POST deploy;
+- write App794/App800/App801 records;
+- change schema/layout/ACL/process;
 - rollback;
-- modify AI_CONTROL_CENTER.md or AI_ACTIVE_TASK.md as executor;
-- change previously recorded hashes/Live values.
+- reuse prior consumed authorization.
 
-No Live readback rerun is needed.
+## 6. Next Allowed Step
 
-## 5. Delivery Contract
+A forward deployment may be opened only after the user gives a fresh exact one-shot authorization for:
 
-Commit and push only the updated:
+```text
+TARGET_APP                   = 794
+OPERATION                    = App794 cumulative customization deployment
+CANDIDATE_SOURCE_COMMIT      = 98108e9e387d01b6d3c3a35cce5baf13324be50e
+CANDIDATE_JS_IDENTITY        = f097f67404fb75418cf85fee635e5d630ef5474d
+CANDIDATE_CSS_IDENTITY       = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+EXPECTED_SCOPE               = ALL
+EXPECTED_TOPOLOGY            = 1/1/0/0
+ATTEMPTS                     = ONE
+ROLLBACK                     = NOT INCLUDED
+```
 
-`project-docs/APP794_PREDEPLOY_VERIFICATION_EVIDENCE.md`
+After any authorized deployment, executor must STOP after technical readback. User runtime UAT remains required before the new Live revision can be promoted to accepted known-good.
 
-Evidence status remains:
+Maximum current status:
 
-`PENDING_CHATGPT_REVIEW`
-
-Report commit SHA and STOP.
-
-Maximum executor status:
-
-`APP794_PREDEPLOY_DIST_EXITCODE_PROOF_CAPTURED_PENDING_CHATGPT_REVIEW`
+`APP794_CUMULATIVE_CANDIDATE_PREDEPLOY_PASS_AWAITING_FRESH_USER_DEPLOY_AUTHORIZATION`
