@@ -6,23 +6,62 @@ Evidence basis:
 - User-provided Employee Namelist export from App53.
 - User confirmation on 2026-08-26 for TMG2 CAD routing semantics.
 - User-confirmed App53 active-status field semantics on 2026-08-28.
+- User-confirmed Hybrid Identity / dual-role Employee + Approver architecture on 2026-08-30.
 
 ## Source of Truth
 
-- App53 Employee Namelist is the employee-source master used to derive routing context for App794/App795.
-- Routing decisions must use real App53 values and must not invent Position, Section, Team, or employee identity values.
+- App53 Employee Namelist is the employee-source master used to derive routing context and Employee-Self ownership for App794/App795.
+- Routing/identity decisions must use real reviewed App53 values and must not invent Position, Section, Team, Employee_Code, or Kintone-user identity values.
 - App795 remains the routing master for evaluator/approver destination data.
+- Do not create a duplicate Employee Master merely to support Kintone-user mapping.
 
-## Confirmed Routing Context Dimensions
+## Confirmed Routing / Identity Context Dimensions
 
-App794 routing context must be able to derive at least:
-- Position
-- Department where applicable
-- Section
-- Team
-- Active/Inactive employee status where needed to identify the current valid person/master row
+App794 must be able to derive at least:
+- Employee_Code;
+- Position;
+- Department where applicable;
+- Section;
+- Team;
+- Active/Inactive employee status where needed to identify the current valid person/master row;
+- for dedicated Kintone users, an exact authoritative Kintone User Code <-> Employee_Code mapping.
 
 Do not add duplicate employee-master fields when App53 already provides the required source data.
+
+## Dedicated Kintone User Mapping — Confirmed Architecture / Physical Source Pending Audit
+
+User-confirmed architecture:
+
+```text
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+```
+
+For a dedicated Kintone user to skip the secondary MBO login, runtime must prove:
+
+```text
+current Kintone User Code
+  -> exactly one active App53 employee identity
+  -> exactly one Employee_Code
+```
+
+Required mapping behavior:
+- mapping is 1 Kintone User Code -> 1 active Employee_Code;
+- one active Employee_Code must not map ambiguously to multiple dedicated Kintone users unless a separately reviewed business rule explicitly allows it;
+- missing mapping -> fail closed;
+- duplicate/ambiguous mapping -> fail closed;
+- do not infer from display name, email similarity, route membership, Position, Section, or Team;
+- do not use App795 approver membership as proof that a Kintone user owns a particular Employee_Code;
+- `admin-form` is excluded from Employee-Self auto-binding;
+- Natta and Vassana are user-confirmed examples of people who are both MBO employees and Approvers, but their exact Employee_Code <-> Kintone User Code values must be read-only verified before implementation.
+
+Canonical current classification:
+
+```text
+DEDICATED_MAPPING_BUSINESS_RULE = CONFIRMED
+DEDICATED_MAPPING_PHYSICAL_SOURCE = PENDING_READ_ONLY APP53 AUDIT
+```
+
+Before adding any App53 field, first inventory the current App53 schema and records to determine whether a suitable Kintone-user/user-select/login-code field already exists. If none exists, adding a new mapping field is a protected App53 schema change and requires a separate explicit authorization; do not create it silently.
 
 ## Confirmed App53 Active / Inactive Semantics
 
@@ -42,6 +81,29 @@ Rules:
 - `Number_0 = 0` is not current/Active;
 - blank `Number_0` must fail closed where current employee status is required until the source row is corrected/confirmed;
 - the Kintone system field code `Status` is workflow/process status and is not the employee Active/Inactive source.
+
+Dedicated Kintone auto-binding must only bind to an Active/current employee row.
+
+## Dual-Role Employee + Approver Semantics
+
+The same physical person may have two simultaneous business contexts:
+
+```text
+Employee-Self ownership = Employee_Code from App53
+Approver identity        = dedicated Kintone User Code used by native Workflow/App795 route
+```
+
+This does not create two employee master rows and does not create two own-MBO records.
+
+For the person's own MBO:
+- use that person's own App53 Position/Department/Section/Team to resolve routing;
+- do not reuse the person's Approver role as their own route;
+- do not infer their own manager from the fact that they approve another team;
+- if own route resolves back to the same person as Approver, fail closed with `SELF_APPROVAL_ROUTE_CONFLICT`.
+
+For records of other employees:
+- the person's dedicated Kintone user may appear as an App795 approver destination;
+- actionable access still requires the record's authoritative current native Workflow assignment to that user.
 
 ## Position Normalization
 
@@ -125,23 +187,50 @@ Therefore:
 
 For the current M10M implementation scope:
 
-1. Normalize Position.
-2. If normalized Position is `GENERAL_MANAGER`, resolve the dedicated GM route from App795 and route to the configured President destination.
-3. Otherwise use existing exact Section/Team routing behavior.
-4. TMG routes remain strict exact-match routes with no Section-only fallback.
-5. Missing, duplicate, or incomplete routing data must fail closed.
+1. Resolve active employee identity from App53.
+2. For dedicated mode, resolve the exact Kintone User <-> Employee_Code mapping or fail closed.
+3. Normalize Position.
+4. If normalized Position is `GENERAL_MANAGER`, resolve the dedicated GM route from App795 and route to the configured President destination.
+5. Otherwise use existing exact Section/Team routing behavior.
+6. TMG routes remain strict exact-match routes with no Section-only fallback.
+7. Missing, duplicate, or incomplete routing/identity data must fail closed.
 
 ## Security / Authorization Preservation
 
-M10M does not authorize widening requester access.
+Hybrid identity does not authorize widening requester or approver access.
 
-`Requester_User` behavior must remain consistent with the confirmed routing/workflow baseline. An empty `Requester_User` list must not silently become an allow-all rule unless a separately confirmed business/security decision explicitly authorizes that behavior.
+- `Requester_User` remains the App795 shared-requester fallback for shared-account employees.
+- Dedicated users use their exact mapped Kintone principal as the effective requester actor for their own record, subject to reviewed implementation/readback.
+- An empty `Requester_User` list must not silently become an allow-all rule for shared employees.
+- Approver access requires authoritative current Workflow assignment; App795 route membership alone is not enough.
+
+## Required Read-Only Identity Audit Before Hybrid Implementation
+
+Before source implementation, produce evidence for at least the confirmed dual-role examples Natta and Vassana:
+
+```text
+App53 active employee row
+Employee_Code
+Employee display name
+Position
+Department
+Section
+Team
+existing Kintone-user-related field(s), if any
+exact Kintone User Code if the source supports it
+App795 routes where the Kintone user is an Approver
+own-MBO route resolved from the employee's own App53 context
+```
+
+The audit is READ-ONLY. App53 is protected. No schema/record write is implied by this baseline.
 
 ## Change Rule
 
 Any future change to:
 - App53 routing-source semantics;
+- dedicated Kintone User <-> Employee_Code mapping source/semantics;
 - App53 `Number_0` active/inactive semantics;
+- dual-role Employee + Approver identity separation;
 - General Manager position normalization;
 - TMG2 Team membership/route split;
 - TMG2 CAD same-route decision;
