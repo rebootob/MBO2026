@@ -1,8 +1,10 @@
+import { MboKintoneAuthAdapter } from './mbo-kintone-auth-adapter.js';
+
 /**
- * MBO 2026 — Secure HR Control Center MVP UI Component & Runtime
+ * MBO 2026 — Secure HR Control Center UI Component & Runtime
  *
  * Bound strictly to HR Control Center App 800 (or injected hrControlCenterAppId) on app.record.index.show.
- * GET-Only browser runtime fetching non-confidential monitoring fields from Apps 794–798.
+ * Browser runtime for monitoring and authorized administration.
  * Whitelist-based field security, HTML escaping, bounded pagination, functional filtering,
  * pipeline aggregation, real totalCount inventory parsing, and unavailable-source handling.
  */
@@ -13,7 +15,8 @@ export const DEFAULT_APP_IDS = Object.freeze({
   scoringConfigMasterAppId: 796,
   hoshinMasterAppId: 797,
   revisionArchiveAppId: 798,
-  hrControlCenterAppId: 800
+  hrControlCenterAppId: 800,
+  credentialAppId: 801
 });
 
 export const ALLOWED_MONITORING_FIELDS_794 = Object.freeze([
@@ -193,7 +196,7 @@ export function renderHrControlCenterHtml({
 <div class="hrcc-container">
   <div class="hrcc-header">
     <h1 class="hrcc-title">MBO 2026 — HR Control Center</h1>
-    <span class="hrcc-badge">SECURE READ-ONLY MVP</span>
+    <span class="hrcc-badge">SECURE HR CONTROL CENTER</span>
   </div>
 
   ${warningHtml}
@@ -373,15 +376,12 @@ export function createHrccRuntime({
       let activeFilters = { fy: '', dept: '', sec: '', status: '' };
 
       const defaultResetHandler = async ({ employeeCode }) => {
-        if (typeof MboKintoneAuthAdapter !== 'undefined') {
-          const apiWrapper = {
-            getRecords: async (appId, query) => kintoneApi('/k/v1/records.json', 'GET', { app: appId, query }),
-            updateRecord: async (appId, id, record) => kintoneApi('/k/v1/record.json', 'PUT', { app: appId, id, record })
-          };
-          const adapter = new MboKintoneAuthAdapter({ api: apiWrapper, appId: appIds.credentialAppId || 801 });
-          return await adapter.resetMboPassword({ employeeCode });
-        }
-        throw new Error('MboKintoneAuthAdapter is unavailable.');
+        const apiWrapper = {
+          getRecords: async (appId, query) => kintoneApi('/k/v1/records.json', 'GET', { app: appId, query }),
+          updateRecord: async (appId, id, record) => kintoneApi('/k/v1/record.json', 'PUT', { app: appId, id, record })
+        };
+        const adapter = new MboKintoneAuthAdapter({ api: apiWrapper, appId: appIds.credentialAppId || 801 });
+        return await adapter.resetMboPassword({ employeeCode });
       };
 
       const resetFn = onResetMboPassword || defaultResetHandler;
@@ -434,7 +434,15 @@ export function createHrccRuntime({
               return;
             }
 
-            // 2. Confirmation mismatch check -> Zero reset calls
+            // 2. Format prevalidation check (canonical format: ^[A-Za-z0-9_.-]+$) -> Zero reset calls
+            if (!/^[A-Za-z0-9_.-]+$/.test(empCode)) {
+              if (feedbackDiv) {
+                feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ รูปแบบ Employee Code ไม่ถูกต้อง (อนุญาตเฉพาะ A-Z, a-z, 0-9, _, ., -) / Invalid Employee Code format (allowed characters: A-Z, a-z, 0-9, _, ., -).</div>`;
+              }
+              return;
+            }
+
+            // 3. Confirmation mismatch check -> Zero reset calls
             if (empCode !== empConfirm) {
               if (feedbackDiv) {
                 feedbackDiv.innerHTML = `<div class="hrcc-warning-box">⚠️ Employee Code และค่ายืนยันไม่ตรงกัน / Employee Code and confirmation code do not match.</div>`;

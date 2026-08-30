@@ -84,7 +84,40 @@ test('2. Empty Employee_Code -> blocked with validation error and 0 reset calls'
   assert.ok(feedback.innerHTML.includes('กรุณาระบุ Employee Code'), 'Must show validation error for empty input');
 });
 
-test('3. Confirmation mismatch -> blocked with validation error and 0 reset calls', async () => {
+test('3. Invalid-format Employee_Code -> blocked before resetFn with 0 reset calls', async () => {
+  let resetCallCount = 0;
+  const mockReset = async () => { resetCallCount++; return { status: 'PASSWORD_RESET' }; };
+  const mockHeader = createMockElement();
+
+  const runtime = createHrccRuntime({
+    kintoneApi: async () => ({ records: [], totalCount: 0 }),
+    onResetMboPassword: mockReset,
+    getAppId: () => 800,
+    getHeaderSpaceElement: () => mockHeader
+  });
+
+  await runtime({});
+
+  const btn = mockHeader.querySelector('#hrcc-reset-btn');
+  const codeInput = mockHeader.querySelector('#hrcc-reset-emp-code');
+  const confirmInput = mockHeader.querySelector('#hrcc-reset-emp-confirm');
+  const feedback = mockHeader.querySelector('#hrcc-reset-feedback');
+
+  // Test invalid formats (spaces, special symbols, HTML injection)
+  const invalidCodes = ['EMP 001', 'EMP#001', 'EMP<script>', 'EMP/001'];
+
+  for (const invalidCode of invalidCodes) {
+    codeInput.value = invalidCode;
+    confirmInput.value = invalidCode; // Matching, but invalid format
+
+    await btn.trigger('click');
+
+    assert.equal(resetCallCount, 0, `Zero reset calls for invalid code "${invalidCode}"`);
+    assert.ok(feedback.innerHTML.includes('รูปแบบ Employee Code ไม่ถูกต้อง'), `Must show format validation error for "${invalidCode}"`);
+  }
+});
+
+test('4. Confirmation mismatch -> blocked with validation error and 0 reset calls', async () => {
   let resetCallCount = 0;
   const mockReset = async () => { resetCallCount++; return { status: 'PASSWORD_RESET' }; };
   const mockHeader = createMockElement();
@@ -112,7 +145,7 @@ test('3. Confirmation mismatch -> blocked with validation error and 0 reset call
   assert.ok(feedback.innerHTML.includes('ไม่ตรงกัน'), 'Must show mismatch validation error');
 });
 
-test('4. Valid exact confirmation -> reset core called exactly once with exact Employee_Code', async () => {
+test('5. Valid exact confirmation -> reset core called exactly once with exact Employee_Code', async () => {
   let calledCode = null;
   let resetCallCount = 0;
 
@@ -147,7 +180,7 @@ test('4. Valid exact confirmation -> reset core called exactly once with exact E
   assert.ok(feedback.innerHTML.includes('รีเซ็ตรหัสผ่าน MBO สำเร็จ'), 'Must show success message');
 });
 
-test('5. In-flight repeat click -> prevented during active execution', async () => {
+test('6. In-flight repeat click -> prevented during active execution', async () => {
   let resetCallCount = 0;
   let resolvePromise;
 
@@ -189,7 +222,68 @@ test('5. In-flight repeat click -> prevented during active execution', async () 
   assert.equal(resetCallCount, 1, 'Total reset call count remains 1');
 });
 
-test('6. Success copy explicitly distinguishes MBO password from native Kintone/cybozu password', () => {
+test('7. Default non-injected production path uses bundled MboKintoneAuthAdapter and reaches App801 record update', async () => {
+  const kintoneCalls = [];
+  const mockKintoneApi = async (path, method, params) => {
+    kintoneCalls.push({ path, method, params });
+    if (path === '/k/v1/records.json' && method === 'GET') {
+      // Return mock App801 record for EMP001
+      return {
+        records: [
+          {
+            $id: { value: '101' },
+            Employee_Code: { value: 'EMP001' },
+            Password_Hash: { value: 'pbkdf2$100000$a1b2c3d4$1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff' },
+            Force_Password_Change: { value: 'NO' },
+            Account_Status: { value: 'ACTIVE' },
+            Credential_Version: { value: 1 }
+          }
+        ]
+      };
+    }
+    if (path === '/k/v1/record.json' && method === 'PUT') {
+      return { revision: '2' };
+    }
+    return { records: [], totalCount: 0 };
+  };
+
+  const mockHeader = createMockElement();
+
+  // Create runtime WITHOUT onResetMboPassword -> exercises defaultResetHandler
+  const runtime = createHrccRuntime({
+    kintoneApi: mockKintoneApi,
+    getAppId: () => 800,
+    getHeaderSpaceElement: () => mockHeader
+  });
+
+  await runtime({});
+
+  const btn = mockHeader.querySelector('#hrcc-reset-btn');
+  const codeInput = mockHeader.querySelector('#hrcc-reset-emp-code');
+  const confirmInput = mockHeader.querySelector('#hrcc-reset-emp-confirm');
+  const feedback = mockHeader.querySelector('#hrcc-reset-feedback');
+
+  codeInput.value = 'EMP001';
+  confirmInput.value = 'EMP001';
+
+  await btn.trigger('click');
+
+  // Verify production default path succeeded cleanly without throwing MboKintoneAuthAdapter is unavailable
+  assert.ok(feedback.innerHTML.includes('รีเซ็ตรหัสผ่าน MBO สำเร็จ'), 'Default production path must succeed');
+
+  // Verify exact App801 update request was produced
+  const putCalls = kintoneCalls.filter(c => c.method === 'PUT' && c.path === '/k/v1/record.json');
+  assert.equal(putCalls.length, 1, 'Exactly 1 PUT request to /k/v1/record.json');
+  assert.equal(putCalls[0].params.app, 801, 'Target app for reset update must be App 801');
+  assert.equal(putCalls[0].params.id, '101', 'Target record ID must be 101');
+  assert.equal(putCalls[0].params.record.Force_Password_Change.value, 'YES', 'Must update Force_Password_Change to YES');
+
+  // Verify 0 write requests were made to App 800, 794, 795, 53
+  const forbiddenWrites = kintoneCalls.filter(c => (c.method === 'POST' || c.method === 'PUT' || c.method === 'DELETE') && c.params?.app !== 801);
+  assert.equal(forbiddenWrites.length, 0, 'Zero write requests to App 800, 794, 795, or 53');
+});
+
+test('8. Success copy explicitly distinguishes MBO password from native Kintone/cybozu password', () => {
   const html = renderHrControlCenterHtml({
     evaluations: [],
     allEvaluations: [],
@@ -201,7 +295,7 @@ test('6. Success copy explicitly distinguishes MBO password from native Kintone/
   assert.ok(html.includes('ไม่กระทบและไม่ได้รีเซ็ตรหัสผ่านบัญชี Kintone/cybozu หลักของผู้ใช้'), 'Must explicitly warn that native Kintone/cybozu password is NOT reset');
 });
 
-test('7. CREDENTIAL_DENIED and technical failure -> visible fail-closed error', async () => {
+test('9. CREDENTIAL_DENIED and technical failure -> visible fail-closed error', async () => {
   const mockDeniedReset = async () => ({ status: 'CREDENTIAL_DENIED', reason: 'Employee Code not found in App801' });
   const mockHeader = createMockElement();
 
@@ -228,11 +322,10 @@ test('7. CREDENTIAL_DENIED and technical failure -> visible fail-closed error', 
   assert.ok(feedback.innerHTML.includes('Employee Code not found in App801'), 'Must include specific denial reason');
 });
 
-test('8. UI never renders password hash, salt, token, or session secrets', async () => {
+test('10. UI never renders password hash, salt, token, or session secrets', async () => {
   const mockResetWithSecrets = async ({ employeeCode }) => ({
     status: 'PASSWORD_RESET',
     employeeCode,
-    // Secret values returned maliciously by broken adapter mock
     Password_Hash: 'pbkdf2$100000$secretSalt$secretHashValue',
     Session_Token_Hash: 'secretTokenHash12345'
   });
@@ -264,7 +357,20 @@ test('8. UI never renders password hash, salt, token, or session secrets', async
   assert.equal(renderedText.includes('secretTokenHash12345'), false, 'UI must never render session token hash');
 });
 
-test('9. Existing HRCC monitoring, filter, and dashboard behavior remains intact', () => {
+test('11. Stale READ-ONLY wording removed from UI badge and source header', () => {
+  const html = renderHrControlCenterHtml({
+    evaluations: [],
+    allEvaluations: [],
+    health: {},
+    warnings: [],
+    appIds: DEFAULT_APP_IDS
+  });
+
+  assert.equal(html.includes('SECURE READ-ONLY MVP'), false, 'Stale SECURE READ-ONLY MVP badge must be removed');
+  assert.ok(html.includes('SECURE HR CONTROL CENTER'), 'Updated truthful badge SECURE HR CONTROL CENTER must be present');
+});
+
+test('12. Existing HRCC monitoring, filter, and dashboard behavior remains intact', () => {
   const html = renderHrControlCenterHtml({
     evaluations: [
       { $id: { value: '1' }, Employee_Code: { value: 'EMP001' }, Status: { value: 'COMPLETED' } }
@@ -285,19 +391,22 @@ test('9. Existing HRCC monitoring, filter, and dashboard behavior remains intact
   assert.ok(html.includes('Pipeline Breakdown'), 'Pipeline breakdown intact');
 });
 
-test('10. Local App800 build succeeds and generated JS parses as classic script without import/export keywords', async () => {
+test('13. Local App800 build succeeds, generated bundle includes MboKintoneAuthAdapter implementation, and has 0 import/export residue', async () => {
   await buildHrccUi();
 
   const bundleJs = fs.readFileSync('dist/hr-control-center-bundle.js', 'utf8');
   assert.equal(/\bimport\b/.test(bundleJs), false, 'Generated JS must not contain import keyword');
   assert.equal(/\bexport\b/.test(bundleJs), false, 'Generated JS must not contain export keyword');
 
+  assert.ok(bundleJs.includes('MboKintoneAuthAdapter'), 'Bundle must include MboKintoneAuthAdapter class definition');
+  assert.ok(bundleJs.includes('resetMboPassword'), 'Bundle must include resetMboPassword implementation');
+
   assert.doesNotThrow(() => {
     new Function(bundleJs);
   }, 'Generated JS bundle must pass real JavaScript syntax parse');
 });
 
-test('11. Hybrid Identity / App794 / App53 / routing files are completely untouched', () => {
+test('14. Hybrid Identity / App794 / App53 / routing files are completely untouched', () => {
   const gitStatus = execSync.execSync('git status --porcelain', { encoding: 'utf8' });
   const changedFiles = gitStatus.split('\n').filter(Boolean).map(line => line.slice(3).trim());
 

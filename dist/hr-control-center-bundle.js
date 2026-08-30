@@ -1,4 +1,458 @@
 (() => {
+  // src/ui/mbo-kintone-auth-adapter.js
+  var PBKDF2_ITERATIONS = 1e5;
+  var PBKDF2_HASH = "SHA-256";
+  var PBKDF2_KEY_LEN_BITS = 256;
+  var LOCK_DURATION_MS = 15 * 60 * 1e3;
+  var MAX_FAILED_ATTEMPTS = 5;
+  var enc = new TextEncoder();
+  function hexEncode(buffer) {
+    return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  function hexDecode(hexStr) {
+    if (hexStr.length % 2 !== 0) return new Uint8Array(0);
+    const bytes = new Uint8Array(hexStr.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = parseInt(hexStr.slice(i * 2, i * 2 + 2), 16);
+    }
+    return bytes;
+  }
+  var MboKintoneAuthAdapter = class {
+    /**
+     * @param {object} options
+     * @param {{ getRecords(appId, query): Promise, updateRecord(appId, id, record): Promise }} options.api
+     * @param {number} [options.appId=801] - App801 ID
+     * @param {Crypto} [options.cryptoImpl=globalThis.crypto] - injectable for tests
+     * @param {() => Date} [options.now=() => new Date()] - injectable for tests
+     */
+    constructor({ api, appId = 801, cryptoImpl = globalThis.crypto, now = () => /* @__PURE__ */ new Date() } = {}) {
+      this.api = api;
+      this.appId = appId;
+      this.crypto = cryptoImpl;
+      this.now = now;
+    }
+    // ---------------------------------------------------------------------------
+    // Internal: Employee_Code canonical validation
+    // ---------------------------------------------------------------------------
+    _normalizeEmployeeCode(code) {
+      if (typeof code !== "string") throw new Error("INVALID_EMPLOYEE_CODE");
+      if (code !== code.trim()) throw new Error("INVALID_EMPLOYEE_CODE");
+      const trimmed = code.trim();
+      if (!trimmed || !/^[A-Za-z0-9_.-]+$/.test(trimmed)) throw new Error("INVALID_EMPLOYEE_CODE");
+      return trimmed;
+    }
+    // ---------------------------------------------------------------------------
+    // Internal: PBKDF2 crypto
+    // ---------------------------------------------------------------------------
+    async _deriveHash(password, saltBytes) {
+      const keyMaterial = await this.crypto.subtle.importKey(
+        "raw",
+        enc.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveBits"]
+      );
+      const bits = await this.crypto.subtle.deriveBits(
+        { name: "PBKDF2", hash: PBKDF2_HASH, salt: saltBytes, iterations: PBKDF2_ITERATIONS },
+        keyMaterial,
+        PBKDF2_KEY_LEN_BITS
+      );
+      return hexEncode(bits);
+    }
+    /**
+     * Verifies a plaintext password against a stored pbkdf2$... hash string.
+     * Returns false for any malformed or mismatched hash — never throws.
+     */
+    async verifyPassword(password, storedHash) {
+      try {
+        if (typeof storedHash !== "string") return false;
+        const parts = storedHash.split("$");
+        if (parts.length !== 4) return false;
+        if (parts[0] !== "pbkdf2") return false;
+        if (parts[1] !== String(PBKDF2_ITERATIONS)) return false;
+        if (!/^[0-9a-f]+$/i.test(parts[2]) || parts[2].length === 0) return false;
+        if (!/^[0-9a-f]{64}$/i.test(parts[3])) return false;
+        const saltBytes = hexDecode(parts[2]);
+        const computed = await this._deriveHash(password, saltBytes);
+        return computed === parts[3].toLowerCase();
+      } catch {
+        return false;
+      }
+    }
+    /**
+     * Creates a new pbkdf2$100000$<saltHex>$<hashHex> hash string using a
+     * cryptographically random 16-byte salt.
+     */
+    async createPasswordHash(password) {
+      if (typeof password !== "string" || password.length === 0) {
+        throw new Error("INVALID_PASSWORD");
+      }
+      const saltBytes = new Uint8Array(16);
+      this.crypto.getRandomValues(saltBytes);
+      const hashHex = await this._deriveHash(password, saltBytes);
+      return `pbkdf2$${PBKDF2_ITERATIONS}$${hexEncode(saltBytes)}$${hashHex}`;
+    }
+    // ---------------------------------------------------------------------------
+    // Internal: App801 credential fetch
+    // ---------------------------------------------------------------------------
+    async _getCredential(employeeCode) {
+      const code = this._normalizeEmployeeCode(employeeCode);
+      const result = await this.api.getRecords(this.appId, `Employee_Code = "${code}" limit 2`);
+      const records = result?.records || [];
+      if (records.length === 0) throw new Error("CREDENTIAL_NOT_FOUND");
+      if (records.length > 1) throw new Error("DUPLICATE_CREDENTIAL");
+      const r = records[0];
+      const get = (key) => r[key]?.value ?? null;
+      const storedCode = get("Employee_Code");
+      const hash = get("Password_Hash");
+      const status = get("Account_Status");
+      const force = get("Force_Password_Change");
+      const failedRaw = get("Failed_Attempts");
+      const lockedUntilRaw = get("Locked_Until");
+      const credVerRaw = get("Credential_Version");
+      const sessHash = get("Session_Token_Hash");
+      const sessIssued = get("Session_Issued_At");
+      const sessExpires = get("Session_Expires_At");
+      const sessCredVerRaw = get("Session_Credential_Version");
+      const sessKintoneUser = get("Session_Kintone_User");
+      if (storedCode !== code) throw new Error("MALFORMED_CREDENTIAL");
+      if (typeof hash !== "string" || !hash) throw new Error("MALFORMED_CREDENTIAL");
+      if (!["ACTIVE", "LOCKED", "DISABLED"].includes(status)) throw new Error("MALFORMED_CREDENTIAL");
+      if (!["YES", "NO"].includes(force)) throw new Error("MALFORMED_CREDENTIAL");
+      let failedAttempts = 0;
+      if (failedRaw !== null && failedRaw !== void 0 && failedRaw !== "") {
+        const parsedFailed = Number(failedRaw);
+        if (isNaN(parsedFailed) || parsedFailed < 0) throw new Error("MALFORMED_CREDENTIAL");
+        failedAttempts = parsedFailed;
+      }
+      if (lockedUntilRaw !== null && lockedUntilRaw !== void 0 && lockedUntilRaw !== "") {
+        if (isNaN(Date.parse(lockedUntilRaw))) throw new Error("MALFORMED_CREDENTIAL");
+      }
+      if (credVerRaw === null || credVerRaw === void 0 || credVerRaw === "") {
+        throw new Error("MALFORMED_CREDENTIAL");
+      }
+      const credentialVersion = Number(credVerRaw);
+      if (isNaN(credentialVersion) || !Number.isInteger(credentialVersion) || credentialVersion <= 0) {
+        throw new Error("MALFORMED_CREDENTIAL");
+      }
+      let sessionCredentialVersion = null;
+      if (sessCredVerRaw !== null && sessCredVerRaw !== void 0 && sessCredVerRaw !== "") {
+        const parsedSessVer = Number(sessCredVerRaw);
+        if (isNaN(parsedSessVer) || !Number.isInteger(parsedSessVer) || parsedSessVer <= 0) {
+          throw new Error("MALFORMED_CREDENTIAL");
+        }
+        sessionCredentialVersion = parsedSessVer;
+      }
+      return {
+        id: r.$id?.value,
+        code,
+        hash,
+        status,
+        forceChange: force === "YES",
+        lockedUntil: lockedUntilRaw || null,
+        failedAttempts,
+        credentialVersion,
+        sessionTokenHash: sessHash || null,
+        sessionIssuedAt: sessIssued || null,
+        sessionExpiresAt: sessExpires || null,
+        sessionCredentialVersion,
+        sessionKintoneUser: sessKintoneUser || null
+      };
+    }
+    // ---------------------------------------------------------------------------
+    // Public: login
+    // ---------------------------------------------------------------------------
+    /**
+     * Authenticates an employee against App801.
+     * Returns one of:
+     *   { status: 'AUTHENTICATED', employeeCode }
+     *   { status: 'PASSWORD_CHANGE_REQUIRED', employeeCode }
+     *   { status: 'INVALID_CREDENTIALS' }
+     *   { status: 'CREDENTIAL_DENIED', reason }
+     *
+     * Never returns Password_Hash.
+     */
+    async login({ username, password }) {
+      let cred;
+      try {
+        cred = await this._getCredential(username);
+      } catch (err) {
+        return { status: "CREDENTIAL_DENIED", reason: err.message };
+      }
+      if (cred.status === "DISABLED") {
+        return { status: "CREDENTIAL_DENIED", reason: "Account is disabled." };
+      }
+      if (cred.status === "LOCKED") {
+        return { status: "CREDENTIAL_DENIED", reason: "Account is locked." };
+      }
+      if (cred.lockedUntil && new Date(cred.lockedUntil) > this.now()) {
+        return { status: "CREDENTIAL_DENIED", reason: "Account is temporarily locked. Please try again later." };
+      }
+      const valid = await this.verifyPassword(password, cred.hash);
+      if (!valid) {
+        const newFailed = cred.failedAttempts + 1;
+        const lockedUntil = newFailed >= MAX_FAILED_ATTEMPTS ? new Date(this.now().getTime() + LOCK_DURATION_MS).toISOString() : null;
+        await this.api.updateRecord(this.appId, cred.id, {
+          Failed_Attempts: { value: newFailed },
+          Locked_Until: { value: lockedUntil }
+        });
+        return { status: "INVALID_CREDENTIALS" };
+      }
+      await this.api.updateRecord(this.appId, cred.id, {
+        Failed_Attempts: { value: 0 },
+        Locked_Until: { value: null },
+        Last_Login_At: { value: this.now().toISOString() }
+      });
+      return {
+        status: cred.forceChange ? "PASSWORD_CHANGE_REQUIRED" : "AUTHENTICATED",
+        employeeCode: cred.code
+      };
+    }
+    // ---------------------------------------------------------------------------
+    // Public: Session operations
+    // ---------------------------------------------------------------------------
+    /**
+     * Stores server-side session metadata in App801 for employeeCode.
+     * Corrective A: requires exact non-empty kintoneUserCode (no trim/lowercase mutation).
+     */
+    async storeSession({ employeeCode, tokenHash, issuedAt, expiresAt, kintoneUserCode }) {
+      if (typeof tokenHash !== "string" || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+        throw new Error("INVALID_TOKEN_HASH");
+      }
+      if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
+        throw new Error("MISSING_KINTONE_PRINCIPAL");
+      }
+      const cred = await this._getCredential(employeeCode);
+      if (cred.status !== "ACTIVE") {
+        throw new Error("CREDENTIAL_NOT_ACTIVE");
+      }
+      if (cred.forceChange) {
+        throw new Error("FORCE_PASSWORD_CHANGE_REQUIRED");
+      }
+      await this.api.updateRecord(this.appId, cred.id, {
+        Session_Token_Hash: { value: tokenHash.toLowerCase() },
+        Session_Issued_At: { value: issuedAt },
+        Session_Expires_At: { value: expiresAt },
+        Session_Credential_Version: { value: cred.credentialVersion },
+        Session_Kintone_User: { value: kintoneUserCode }
+      });
+      return { status: "SESSION_STORED", employeeCode: cred.code };
+    }
+    /**
+     * Validates a session token hash against App801.
+     * Returns { status: 'VALID_SESSION', employeeCode } or { status: 'INVALID_SESSION', reason }.
+     * Never throws for invalid/missing/expired session.
+     */
+    async validateSession({ tokenHash, currentKintoneUserCode }) {
+      try {
+        if (typeof tokenHash !== "string" || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+          return { status: "INVALID_SESSION", reason: "Invalid token hash format." };
+        }
+        if (!currentKintoneUserCode || typeof currentKintoneUserCode !== "string" || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
+          return { status: "INVALID_SESSION", reason: "Missing current Kintone user." };
+        }
+        const hashLower = tokenHash.toLowerCase();
+        const result = await this.api.getRecords(this.appId, `Session_Token_Hash = "${hashLower}" limit 2`);
+        const records = result?.records || [];
+        if (records.length === 0) {
+          return { status: "INVALID_SESSION", reason: "Session token not found." };
+        }
+        if (records.length > 1) {
+          return { status: "INVALID_SESSION", reason: "Duplicate session token hash." };
+        }
+        const r = records[0];
+        const get = (key) => r[key]?.value ?? null;
+        const code = get("Employee_Code");
+        const status = get("Account_Status");
+        const force = get("Force_Password_Change");
+        const expiresAtRaw = get("Session_Expires_At");
+        const credVerRaw = get("Credential_Version");
+        const sessCredVerRaw = get("Session_Credential_Version");
+        const sessKintoneUser = get("Session_Kintone_User");
+        const normalizedCode = this._normalizeEmployeeCode(code);
+        if (status !== "ACTIVE") {
+          return { status: "INVALID_SESSION", reason: "Account is not active." };
+        }
+        if (force !== "NO") {
+          return { status: "INVALID_SESSION", reason: "Password change is required." };
+        }
+        if (!expiresAtRaw || isNaN(Date.parse(expiresAtRaw))) {
+          return { status: "INVALID_SESSION", reason: "Invalid or missing expiry date." };
+        }
+        if (new Date(expiresAtRaw) <= this.now()) {
+          return { status: "INVALID_SESSION", reason: "Session has expired." };
+        }
+        if (credVerRaw === null || credVerRaw === void 0 || credVerRaw === "") {
+          return { status: "INVALID_SESSION", reason: "Missing credential version." };
+        }
+        const credVer = Number(credVerRaw);
+        if (isNaN(credVer) || !Number.isInteger(credVer) || credVer <= 0) {
+          return { status: "INVALID_SESSION", reason: "Malformed credential version." };
+        }
+        if (sessCredVerRaw === null || sessCredVerRaw === void 0 || sessCredVerRaw === "") {
+          return { status: "INVALID_SESSION", reason: "Missing session credential version." };
+        }
+        const sessCredVer = Number(sessCredVerRaw);
+        if (isNaN(sessCredVer) || !Number.isInteger(sessCredVer) || sessCredVer <= 0 || sessCredVer !== credVer) {
+          return { status: "INVALID_SESSION", reason: "Credential version mismatch." };
+        }
+        if (!sessKintoneUser || typeof sessKintoneUser !== "string" || sessKintoneUser !== sessKintoneUser.trim() || !sessKintoneUser.trim()) {
+          return { status: "INVALID_SESSION", reason: "Missing session Kintone user." };
+        }
+        if (sessKintoneUser !== currentKintoneUserCode) {
+          return { status: "INVALID_SESSION", reason: "Kintone user mismatch." };
+        }
+        return {
+          status: "VALID_SESSION",
+          employeeCode: normalizedCode
+        };
+      } catch (err) {
+        return { status: "INVALID_SESSION", reason: err.message };
+      }
+    }
+    /**
+     * Revokes session fields in App801 for tokenHash.
+     * Corrective B: Revoke failure throws stable error string (SESSION_NOT_FOUND, DUPLICATE_SESSION_TOKEN_HASH, SERVER_REVOKE_FAILED).
+     */
+    async revokeSession({ tokenHash }) {
+      if (typeof tokenHash !== "string" || !/^[0-9a-f]{64}$/i.test(tokenHash)) {
+        throw new Error("INVALID_TOKEN_HASH");
+      }
+      const hashLower = tokenHash.toLowerCase();
+      const result = await this.api.getRecords(this.appId, `Session_Token_Hash = "${hashLower}" limit 2`);
+      const records = result?.records || [];
+      if (records.length === 0) {
+        throw new Error("SESSION_NOT_FOUND");
+      }
+      if (records.length > 1) {
+        throw new Error("DUPLICATE_SESSION_TOKEN_HASH");
+      }
+      const recId = records[0].$id?.value;
+      try {
+        await this.api.updateRecord(this.appId, recId, {
+          Session_Token_Hash: { value: null },
+          Session_Issued_At: { value: null },
+          Session_Expires_At: { value: null },
+          Session_Credential_Version: { value: null },
+          Session_Kintone_User: { value: null }
+        });
+      } catch {
+        throw new Error("SERVER_REVOKE_FAILED");
+      }
+      return { status: "SESSION_REVOKED" };
+    }
+    // ---------------------------------------------------------------------------
+    // Public: changePassword (normal authenticated change — requires current password)
+    // ---------------------------------------------------------------------------
+    /**
+     * Changes password for an authenticated employee.
+     * Requires currentPassword verification before update.
+     * Increments Credential_Version and clears prior session fields.
+     */
+    async changePassword({ employeeCode, currentPassword, newPassword }) {
+      let cred;
+      try {
+        cred = await this._getCredential(employeeCode);
+      } catch (err) {
+        return { status: "CREDENTIAL_DENIED", reason: err.message };
+      }
+      const valid = await this.verifyPassword(currentPassword, cred.hash);
+      if (!valid) {
+        return { status: "INVALID_CREDENTIALS", reason: "Current password is incorrect." };
+      }
+      if (newPassword === cred.code) {
+        return { status: "INVALID_PASSWORD", reason: "New password cannot be the same as your Employee Code." };
+      }
+      const newHash = await this.createPasswordHash(newPassword);
+      const newCredVersion = cred.credentialVersion + 1;
+      await this.api.updateRecord(this.appId, cred.id, {
+        Password_Hash: { value: newHash },
+        Password_Changed_At: { value: this.now().toISOString() },
+        Force_Password_Change: { value: "NO" },
+        Failed_Attempts: { value: 0 },
+        Locked_Until: { value: null },
+        Credential_Version: { value: newCredVersion },
+        Session_Token_Hash: { value: null },
+        Session_Issued_At: { value: null },
+        Session_Expires_At: { value: null },
+        Session_Credential_Version: { value: null },
+        Session_Kintone_User: { value: null }
+      });
+      return { status: "PASSWORD_CHANGED", employeeCode: cred.code, newCredentialVersion: newCredVersion };
+    }
+    // ---------------------------------------------------------------------------
+    // Public: forceChangePassword (initial/forced change — no current password required)
+    // ---------------------------------------------------------------------------
+    /**
+     * Applies a forced password change without requiring current password verification.
+     * Increments Credential_Version and clears prior session fields.
+     */
+    async forceChangePassword({ employeeCode, newPassword }) {
+      let cred;
+      try {
+        cred = await this._getCredential(employeeCode);
+      } catch (err) {
+        return { status: "CREDENTIAL_DENIED", reason: err.message };
+      }
+      if (cred.forceChange !== true) {
+        return { status: "CREDENTIAL_DENIED", reason: "Force password change is not required for this account." };
+      }
+      if (newPassword === cred.code) {
+        return { status: "INVALID_PASSWORD", reason: "New password cannot be the same as your Employee Code." };
+      }
+      const newHash = await this.createPasswordHash(newPassword);
+      const newCredVersion = cred.credentialVersion + 1;
+      await this.api.updateRecord(this.appId, cred.id, {
+        Password_Hash: { value: newHash },
+        Password_Changed_At: { value: this.now().toISOString() },
+        Force_Password_Change: { value: "NO" },
+        Failed_Attempts: { value: 0 },
+        Locked_Until: { value: null },
+        Credential_Version: { value: newCredVersion },
+        Session_Token_Hash: { value: null },
+        Session_Issued_At: { value: null },
+        Session_Expires_At: { value: null },
+        Session_Credential_Version: { value: null },
+        Session_Kintone_User: { value: null }
+      });
+      return { status: "PASSWORD_CHANGED", employeeCode: cred.code, newCredentialVersion: newCredVersion };
+    }
+    // ---------------------------------------------------------------------------
+    // Public: resetMboPassword (administrative password reset)
+    // ---------------------------------------------------------------------------
+    /**
+     * Resets MBO password for employeeCode to a temporary password equal to Employee_Code.
+     * Sets Force_Password_Change=YES, Failed_Attempts=0, clears Locked_Until and session fields,
+     * increments Credential_Version by 1, and preserves Account_Status.
+     * Does NOT return or expose password, hash, salt, token, or session secret.
+     */
+    async resetMboPassword({ employeeCode } = {}) {
+      let cred;
+      try {
+        cred = await this._getCredential(employeeCode);
+      } catch (err) {
+        return { status: "CREDENTIAL_DENIED", reason: err.message };
+      }
+      const tempPassword = cred.code;
+      const newHash = await this.createPasswordHash(tempPassword);
+      const newCredVersion = cred.credentialVersion + 1;
+      await this.api.updateRecord(this.appId, cred.id, {
+        Password_Hash: { value: newHash },
+        Password_Changed_At: { value: this.now().toISOString() },
+        Force_Password_Change: { value: "YES" },
+        Failed_Attempts: { value: 0 },
+        Locked_Until: { value: null },
+        Credential_Version: { value: newCredVersion },
+        Session_Token_Hash: { value: null },
+        Session_Issued_At: { value: null },
+        Session_Expires_At: { value: null },
+        Session_Credential_Version: { value: null },
+        Session_Kintone_User: { value: null }
+      });
+      return { status: "PASSWORD_RESET", employeeCode: cred.code };
+    }
+  };
+
   // src/ui/hr-control-center.js
   var DEFAULT_APP_IDS = Object.freeze({
     mboV2AppId: 794,
@@ -6,7 +460,8 @@
     scoringConfigMasterAppId: 796,
     hoshinMasterAppId: 797,
     revisionArchiveAppId: 798,
-    hrControlCenterAppId: 800
+    hrControlCenterAppId: 800,
+    credentialAppId: 801
   });
   var ALLOWED_MONITORING_FIELDS_794 = Object.freeze([
     "$id",
@@ -158,7 +613,7 @@
 <div class="hrcc-container">
   <div class="hrcc-header">
     <h1 class="hrcc-title">MBO 2026 \u2014 HR Control Center</h1>
-    <span class="hrcc-badge">SECURE READ-ONLY MVP</span>
+    <span class="hrcc-badge">SECURE HR CONTROL CENTER</span>
   </div>
 
   ${warningHtml}
@@ -324,15 +779,12 @@
         };
         let activeFilters = { fy: "", dept: "", sec: "", status: "" };
         const defaultResetHandler = async ({ employeeCode }) => {
-          if (typeof MboKintoneAuthAdapter !== "undefined") {
-            const apiWrapper = {
-              getRecords: async (appId, query) => kintoneApi("/k/v1/records.json", "GET", { app: appId, query }),
-              updateRecord: async (appId, id, record) => kintoneApi("/k/v1/record.json", "PUT", { app: appId, id, record })
-            };
-            const adapter = new MboKintoneAuthAdapter({ api: apiWrapper, appId: appIds.credentialAppId || 801 });
-            return await adapter.resetMboPassword({ employeeCode });
-          }
-          throw new Error("MboKintoneAuthAdapter is unavailable.");
+          const apiWrapper = {
+            getRecords: async (appId, query) => kintoneApi("/k/v1/records.json", "GET", { app: appId, query }),
+            updateRecord: async (appId, id, record) => kintoneApi("/k/v1/record.json", "PUT", { app: appId, id, record })
+          };
+          const adapter = new MboKintoneAuthAdapter({ api: apiWrapper, appId: appIds.credentialAppId || 801 });
+          return await adapter.resetMboPassword({ employeeCode });
         };
         const resetFn = onResetMboPassword || defaultResetHandler;
         const renderUI = () => {
@@ -381,6 +833,12 @@
               if (!empCode || !empConfirm) {
                 if (feedbackDiv) {
                   feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u26A0\uFE0F \u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38 Employee Code \u0E41\u0E25\u0E30\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19 Employee Code \u0E43\u0E2B\u0E49\u0E04\u0E23\u0E1A\u0E16\u0E49\u0E27\u0E19 / Please enter both Employee Code and confirmation.</div>`;
+                }
+                return;
+              }
+              if (!/^[A-Za-z0-9_.-]+$/.test(empCode)) {
+                if (feedbackDiv) {
+                  feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u26A0\uFE0F \u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A Employee Code \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 (\u0E2D\u0E19\u0E38\u0E0D\u0E32\u0E15\u0E40\u0E09\u0E1E\u0E32\u0E30 A-Z, a-z, 0-9, _, ., -) / Invalid Employee Code format (allowed characters: A-Z, a-z, 0-9, _, ., -).</div>`;
                 }
                 return;
               }
