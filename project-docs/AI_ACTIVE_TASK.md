@@ -1,118 +1,73 @@
-# AI ACTIVE TASK — D1 LOCAL UI BUILD VERIFICATION R2
+# AI ACTIVE TASK — NONE / D1 LOCAL BUILD ACCEPTED
 
-Mode: **ANTIGRAVITY GENERATED BUILD ONLY — NO SOURCE/TEST EDITS / NO LIVE KINTONE / NO DEPLOY**
+Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD**
 Branch: `ai/antigravity-wp002c`
-Opened after accepted async test-contract corrective: `a206e8be47ac2e7a5ffe2e7eac5dddc25ea9d6fb`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = OPEN / READY_FOR_EXECUTION
-CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
+TASK_STATE = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_WORK_PACKAGE
+LAST_ACCEPTED_TEST_CONTRACT_CORRECTIVE = a206e8be47ac2e7a5ffe2e7eac5dddc25ea9d6fb
+LAST_ACCEPTED_GENERATED_BUILD = 09c306d837dfc21470d8c1e401972b1a8f3ffc70
+CURRENT_OWNER = CHATGPT
+ANTIGRAVITY_ACTION = NONE
 ```
 
-Fresh-fetch the branch first. If another executor commit already exists after this task was written, STOP and return control to ChatGPT instead of repeating work.
+## 0. Current truth
 
-## 0. Goal
+D1 source integration Gates 1–3 are accepted.
+The stale async Process Proceed test contract is corrected and accepted.
+The local App794 employee UI bundle has been rebuilt from accepted source and the generated-build commit is accepted.
 
-Build the local App794 employee UI bundle from the accepted D1 source and verify that only canonical generated dist outputs change.
-
-This is not a source implementation task.
-This is not a test corrective task.
-This is not a deploy task.
-
-## 1. Absolute source/test freeze
-
-Do NOT modify:
-
+Accepted generated build scope:
 ```text
-src/**
-tests/**
-services/**
-scripts/**
-project-docs/**
-package.json
-package-lock.json
+dist/mbo-employee-app.js changed
+dist/mbo-employee.css unchanged / byte-identical
+source files changed = 0
+test files changed = 0
 ```
 
-No source or test corrective is authorized.
+Generated bundle inspection confirms accepted Gate 3 fresh-Assignee revalidation and native record-id boundary are present.
 
-## 2. Run exactly
+This is still NOT permission to deploy or change Live Kintone/App53/ACL/groups.
 
-### Step A — local UI build
+## 1. Antigravity stop rule
 
+Antigravity must do nothing from this file.
+
+Do NOT:
+- modify source/tests/docs;
+- rebuild again;
+- access Live Kintone;
+- access or modify App53;
+- deploy App794;
+- change ACL/groups;
+- perform UAT;
+- continue into another D1/D2/D3/D4/D5/D6 work package.
+
+A new exact Active Task must be written by ChatGPT Control Plane before further execution.
+
+## 2. Protected production dependencies
+
+Known App53 design dependency:
 ```text
-npm run ui:build
+MBO_Kintone_User
+TYPE = USER_SELECT
+DESIGN = CONFIRMED
+LIVE FIELD CREATED = NO
 ```
 
-Canonical build script may generate/change only:
-
+Authorization ledger:
 ```text
-dist/mbo-employee-app.js
-dist/mbo-employee.css
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH        = NONE
+ACTIVE_ACL_WRITE_AUTH     = NONE
+ACTIVE_GROUP_WRITE_AUTH   = NONE
+APP53_SCHEMA_WRITE_AUTH   = NONE
+APP53_RECORD_WRITE_AUTH   = NONE
+APP53_BULK_WRITE_AUTH     = NONE
+ROLLBACK_AUTH             = NONE
 ```
 
-If build fails, STOP and report. Do not fix source, tests, scripts or dependencies.
+## 3. Next control action
 
-### Step B — generated scope check
-
-Run:
-
-```text
-git status --short
-git diff --check
-```
-
-Required:
-- no changed file outside the two canonical dist outputs;
-- `git diff --check` PASS.
-
-If another file differs, STOP and report the exact scope leak. Do not clean it up by editing source/tests.
-
-If one of the dist files is byte-identical and not listed, that is acceptable.
-
-## 3. Commit rule
-
-If build PASS + diff check PASS + changed-file scope valid:
-- if generated dist changed, commit + push exactly one generated-build commit;
-- if generated dist is unchanged, do not create an empty commit;
-- STOP immediately.
-
-Do not continue into deploy, Live Kintone configuration or UAT.
-
-## 4. Explicitly forbidden
-
-```text
-SOURCE CHANGE                     = NO
-TEST CHANGE                       = NO
-SERVICE CHANGE                    = NO
-SCRIPT CHANGE                     = NO
-PROJECT-DOC CHANGE BY EXECUTOR    = NO
-npm test                          = NO
-npm install / npm ci              = NO
-LIVE KINTONE GET/WRITE            = NO
-APP53 ACCESS/WRITE                = NO
-ACL/GROUP CHANGE                  = NO
-DEPLOY                            = NO
-UAT                               = NO
-CONNECTION TEST                   = NO
-SANDBOX WRITE                     = NO
-```
-
-No Live authorization exists.
-
-## 5. Required response only
-
-```text
-UI_BUILD = PASS/FAIL
-GIT_DIFF_CHECK = PASS/FAIL/NOT_RUN
-CHANGED_FILES = exact list
-GENERATED_BUILD_COMMIT = <sha> / NONE
-SOURCE_FILES_CHANGED = 0
-TEST_FILES_CHANGED = 0
-LIVE_KINTONE_OPERATIONS = 0
-APP53_PRODUCTION_TOUCHED = NO
-DEPLOY_RUN = NO
-```
-
-Next owner = ChatGPT independent review.
+When the user says `ต่อ` / `ต่อไป`, ChatGPT must fresh-fetch repository truth and choose the smallest safe next work package. If a next step would impact Production Kintone, App53, ACL/groups or deployment, exact authorization requirements must be checked before execution.
