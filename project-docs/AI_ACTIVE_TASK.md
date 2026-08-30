@@ -1,108 +1,100 @@
-# AI ACTIVE TASK — D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE R2
+# AI ACTIVE TASK — D1 HYBRID IDENTITY RUNTIME INTEGRATION SOURCE INVENTORY R1
 
-Mode: **ANTIGRAVITY SOURCE / FOCUSED TEST ONLY — APP53 PRODUCTION READ-ONLY / NO LIVE KINTONE ACCESS / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / GIT READ-ONLY DESIGN INVENTORY — APP53 PRODUCTION READ-ONLY / NO LIVE KINTONE ACCESS / NO SOURCE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 0. Review Starting Point
+## 0. Starting Point
 
-ChatGPT independently reviewed executor corrective commit:
+Hybrid Identity Core Source R1 is accepted at executor commit:
 
 ```text
-EXECUTOR_COMMIT = 5cc5ea609a4a4c5d2d218866feb0867e573973c0
-REVIEW_RESULT   = CORRECTIVE R2
+c20e406b9b289984e57ebf2c52c9223094bc5f5a
 ```
 
-Corrective R1 successfully fixed the major Production App53 resolver exactness, dedicated requester-mode fail-closed behavior, and slot-preserving self-appraiser logic. Scope remained clean and App53 Production was not touched.
-
-Two narrow items remain before source acceptance:
-1. SHARED requester compatibility regression;
-2. mandatory generic 3/4-slot regression proof missing.
+Accepted core contracts:
+- strict dedicated mapping resolver = `App53.MBO_Kintone_User + Number_0=1 + canonical emp_text` only;
+- DEDICATED effective requester = exact dedicated Kintone user;
+- SHARED requester behavior preserved;
+- own-MBO self-appraiser elision preserves slots/rules/topology;
+- Natta blank `emp_text` remains fail closed;
+- legacy `resolveEmployeeIdentity()` fallback is not the future dedicated runtime binding API.
 
 Mandatory Baselines:
 - `project-docs/CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`
 - `project-docs/CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`
+- `project-docs/CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md`
+- `project-docs/CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md`
 - `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md`
 - `project-docs/CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md`
 
-Do not edit Control Plane documents or Baselines.
-
-## 1. Finding D — SHARED Requester Behavior Regressed
-
-Before Corrective R1, `resolveEffectiveRequesterUser()` preserved the accepted shared-principal comparison behavior by normalizing shared Kintone user codes with trim + case-insensitive comparison.
-
-Corrective R1 changed SHARED comparison to trim-only / case-sensitive comparison:
+## 1. Ownership
 
 ```text
-R1 accepted/shared behavior: normalize case for SHARED comparison
-Corrective R1 current code: exact case-sensitive SHARED comparison
+OWNER = CHATGPT CONTROL PLANE
+EXECUTOR = NONE
 ```
 
-The previous Active Task explicitly required:
+This is an inventory/design step only. Do not ask Antigravity to broad-scan the repository. ChatGPT must inspect the relevant source seams first and then issue one smallest safe implementation WP.
 
-```text
-SHARED preserves the already accepted App795 Requester_User behavior; do not broaden/change it.
-```
+## 2. Required Inventory Questions
 
-### Required correction
+Identify exact current source owner/caller for each:
 
-In `resolveEffectiveRequesterUser()` only:
-- keep `mode` exact: only `DEDICATED` or `SHARED`;
-- keep DEDICATED Kintone user identity exact/case-sensitive and reject leading/trailing whitespace;
-- restore the previously accepted SHARED principal comparison behavior only;
-- SHARED comparison may trim and compare case-insensitively exactly as the pre-corrective implementation did;
-- do not change the returned authoritative `routeRequesterUsers` payload;
-- do not broaden SHARED to allow a principal absent from App795 `Requester_User`;
-- `admin-form` remains denied.
+1. **Identity Mode Selection**
+   - where current Kintone principal is classified as dedicated vs approved shared;
+   - how a dedicated missing/ambiguous mapping will fail closed without falling back to shared login;
+   - ensure mode is not user-selectable.
 
-Mandatory regression test:
-- a SHARED principal differing only by case from the authoritative App795 requester code must behave exactly as it did before Corrective R1;
-- an actually different/unauthorized shared principal remains denied;
-- DEDICATED case mismatch remains exact and is not relaxed by this fix.
+2. **Dedicated Mapping Runtime Consumer**
+   - which runtime function will call `resolveDedicatedKintoneUserMapping()`;
+   - identify any current runtime use of legacy `resolveEmployeeIdentity()`;
+   - future dedicated runtime must not use legacy pseudo-field fallback.
 
-## 2. Finding E — Mandatory Generic 3/4-Slot Tests Missing
+3. **Create / Effective Requester Seam**
+   - where App794 create payload snapshots `Requester_User`;
+   - where `resolveEffectiveRequesterUser()` must be called;
+   - where own-MBO route transformation must occur before workflow snapshot.
 
-Corrective R1 test file proves Natta, multi-user slot preservation and rule carryover, but the authorizing task also required generic 3/4-slot topology regression coverage. The committed focused suite contains no explicit 3-slot or 4-slot transformation test.
+4. **My MBO Seam**
+   - exact source owner for own Employee_Code query/list/detail/edit/create;
+   - dedicated and shared modes must converge on bound Employee_Code without employee selector.
 
-Add explicit fixture-only tests for both:
+5. **My Approval Tasks Seam**
+   - exact source/service owner for current native Workflow assignment query or revalidation;
+   - actionable approval must require current native assignee == current dedicated Kintone user;
+   - App795 route membership alone must not grant authority.
 
-### 3 surviving slots
-Example acceptable shape:
-- original four slots where the self user solely occupies one slot;
-- after self removal, exactly 3 ordered slots survive;
-- expected topology `M1_M2_G1`;
-- every surviving slot keeps all users and its own approval rule while shifting left;
-- no user dropped; input unchanged.
+6. **Home/Menu Separation**
+   - identify current Home/menu renderer/controller;
+   - determine smallest seam to show `My MBO` and `My Approval Tasks` without merging security contexts.
 
-### 4 surviving slots
-Example acceptable shape:
-- self shares one slot with another valid approver, so removing self leaves all four slots nonempty;
-- expected topology `M1_M2_G1_G2`;
-- all surviving users remain in the correct slots;
-- every approval rule remains attached to its surviving slot;
-- no truncation; input unchanged.
+7. **Session Compatibility**
+   - dedicated mode must not require App801 bearer session;
+   - shared mode App801 session continuity must remain unchanged;
+   - independent dedicated tab can auto-bind from native Kintone session.
 
-Do not change topology architecture merely to satisfy tests. If either test reveals a real source defect outside the narrow allowed source seam below, STOP and report.
+8. **Build / Dist Dependency**
+   - identify build source order/manifest or bundling path that must include any changed module exactly once;
+   - no manual dist edits.
 
-## 3. Allowed Files
+9. **Existing Tests**
+   - identify focused tests for shared login/session, My MBO, create handler, routing/workflow and current-assignee authorization;
+   - identify the smallest new/modified test files required for the next WP.
 
-Allowed source:
-- `src/services/routing-service.js`
+## 3. Output Required From Inventory
 
-Allowed test:
-- `tests/d1-hybrid-identity-core-source.test.js`
+Produce one exact implementation work package containing:
+- FEATURE;
+- CANONICAL_SOURCE_OWNER;
+- SUPPORTING_MODULES;
+- exact files allowed to change;
+- exact files read-only/forbidden;
+- exact behavior changes;
+- exact focused tests;
+- build/dist verification requirement;
+- STOP conditions for scope expansion.
 
-Allowed evidence:
-- create `project-docs/D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_R2_EVIDENCE.md`
-
-Read-only:
-- `src/services/mbo-identity-service.js`
-- `src/services/employee-service.js`
-- `src/main-mbo-app.js`
-- UI/build/deploy/config/dist files
-- all Baselines / Control Plane docs
-- prior R1 and Corrective R1 evidence
-
-Expected source change is very small and limited to SHARED comparison compatibility in `routing-service.js`. If more source scope is required, STOP and report.
+Do not implement source in this inventory step.
 
 ## 4. App53 Production Hard Stop
 
@@ -126,30 +118,13 @@ DEPLOY                       = 0
 ROLLBACK                     = 0
 ```
 
-Use fixtures only. Do not open App53 for testing. Do not create/populate `MBO_Kintone_User`. Do not correct Natta `emp_text`.
+Do not open App53 for testing. Do not create/populate `MBO_Kintone_User`. Do not correct Natta `emp_text`.
 
-## 5. Verification Minimum
+## 5. Acceptance / Next Owner
 
-Run:
-- focused Hybrid Identity suite;
-- directly affected existing requester/routing tests;
-- full `npm test` if practical;
-- `git diff --check`.
+Inventory is complete only when ChatGPT can name the smallest safe source implementation WP without guessing or broad scope expansion.
 
-Evidence must record exact changed files and exact results, plus:
-
-```text
-APP53_PRODUCTION_TOUCHED = NO
-LIVE_NETWORK_OPERATIONS  = 0
-NATTA_EMPLOYEE_CODE_GUESSED = NO
-```
-
-## 6. Acceptance Ceiling / Stop
-
-Maximum executor status:
-
-```text
-D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_R2_READY_PENDING_CHATGPT_REVIEW
-```
-
-Commit focused changes, push, then STOP. Next owner = ChatGPT independent review.
+After inventory:
+- ChatGPT updates `AI_CONTROL_CENTER.md` + `AI_ACTIVE_TASK.md`;
+- only then assign Antigravity exact source/test work;
+- protected Kintone configuration remains a separate future authorization gate.
