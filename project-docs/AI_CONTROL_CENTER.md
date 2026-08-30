@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 HOME INDEX GATE 1 INDEPENDENT REVIEW = CORRECTIVE
+> Updated: 2026-08-30 — D1 HOME INDEX GATE 1 INDEPENDENT REVIEW = PASS
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 executor candidate `cb2fae671e610924e7143806944b3dcdf527f2f0` reviewed CORRECTIVE for incomplete My MBO test evidence only; implementation candidate not rejected. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core R1 PASS. Hybrid Employee-Self Runtime Entry PASS. Native current-assignee contract PASS. Approval Authority Service R1 PASS. Home Index Gate 1 implementation `cb2fae671e610924e7143806944b3dcdf527f2f0` + test-evidence corrective `f276de19a5771d7ac0bd73f51509cb912aca24d5` independently reviewed PASS. Gate 2 remains pending. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling source accepted; live remains prior MVP; deploy NOT authorized. |
@@ -102,49 +102,51 @@ Accepted service corrective commit: `5ac5ede6e40a1462f0398ba8740330742041e3bf`.
 ## 8. Integration split — mandatory
 
 ```text
-GATE 1 = HOME INDEX INTEGRATION ONLY — CORRECTIVE
+GATE 1 = HOME INDEX INTEGRATION ONLY — ✅ PASS
 GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PENDING
 GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
 ```
 
-Gate 1 executor candidate:
+Gate 1 accepted source chain:
 
 ```text
-COMMIT = cb2fae671e610924e7143806944b3dcdf527f2f0
-SCOPE = 3 exact allowed files only
-SOURCE_REVIEW = broadly conformant to Gate 1 contract
-INDEPENDENT_DECISION = CORRECTIVE
+IMPLEMENTATION_COMMIT = cb2fae671e610924e7143806944b3dcdf527f2f0
+TEST_CORRECTIVE_COMMIT = f276de19a5771d7ac0bd73f51509cb912aca24d5
+INDEPENDENT_DECISION  = PASS
 ```
 
-Review finding: the focused integration test does not directly prove all required `My MBO` preservation/rendering assertions. Specifically, requirement 1 checks Dedicated context but not actual My MBO rendering; requirement 5 checks no approval section/query for Shared but not actual My MBO rendering; requirement 6 checks the approval error state but not that My MBO remains rendered. Therefore Gate 1 is not independently accepted yet.
+Accepted Gate 1 behavior:
+- DEDICATED Home preserves canonical `My MBO` and separately renders `งานรอฉันอนุมัติ / My Approval Tasks` from accepted current-assignee service;
+- SHARED Home preserves canonical `My MBO`, performs zero approval-task query, and renders no approval section;
+- exact returned Assignee code filtering remains authoritative for task list;
+- approval fetch failure fails closed for approval tasks while preserving already-rendered `My MBO`;
+- no App795/static authority fallback was introduced;
+- Gate 1 did not implement cross-employee Detail authority or Process action revalidation.
 
-This is a test-evidence corrective only. Do not reopen or refactor the accepted implementation unless the corrected focused test exposes a real defect.
+Independent review of corrective commit confirmed exactly one changed file (`tests/employee-main-mbo-app-integration.test.js`) with 18 additions / 0 deletions and direct DOM assertions for My MBO preservation in Dedicated, Shared, and approval-fetch-error scenarios. ChatGPT could not independently replay the Node test in its current runtime because external Git clone/network resolution was unavailable; therefore no false claim of an independent test rerun is made. The code/test diff itself is accepted as conformant, and no additional Antigravity rerun is required solely for duplicate evidence.
 
-Gate 1 alone is not deploy-ready even after acceptance; Gate 2 and Gate 3 remain separate pending gates.
+Gate 1 alone is NOT deploy-ready. Gate 2 and Gate 3 remain separate pending gates.
 
 ## 9. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 MY APPROVAL TASKS — GATE 1 TEST EVIDENCE CORRECTIVE R1
-TASK_STATE  = CORRECTIVE / READY FOR MINIMUM ANTIGRAVITY EXECUTION
-REVIEW_TARGET = cb2fae671e610924e7143806944b3dcdf527f2f0
-OWNER       = ANTIGRAVITY
-ALLOWED     = tests/employee-main-mbo-app-integration.test.js ONLY
-SOURCE_IMPLEMENTATION_CHANGE = NO
-FOCUSED_TEST= tests/employee-main-mbo-app-integration.test.js only
+ACTIVE_TASK = NONE — GATE 1 ACCEPTED
+TASK_STATE  = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_GATE
+OWNER       = CHATGPT
+ANTIGRAVITY_ACTION = NONE
 BUILD       = NO
 FULL_TEST   = NO
 LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact corrective contract is in `AI_ACTIVE_TASK.md`.
+Do not let Antigravity continue automatically into Gate 2. The Control Plane must first open a new exact Gate 2 packet when continuation is requested.
 
 ## 10. App800 Reset MBO Password
 
 - Core reset semantics accepted.
 - HR/admin native authority readiness accepted.
-- App800 Reset UI source/tooling accepted.
+- App800 Reset UI/tooling accepted.
 - Live App800 remains prior read-only/MVP customization.
 - Reset MBO Password = App801-backed MBO credential only, never native Kintone password.
 - No active deploy or reset-execution authorization.
@@ -164,4 +166,4 @@ ROLLBACK_AUTH             = NONE
 
 ## 12. Exact next action
 
-Antigravity performs only the one-file Gate 1 test-evidence corrective in `AI_ACTIVE_TASK.md`, runs only the focused test plus `git diff --check`, commits/pushes one focused correction, and stops. ChatGPT then independently reviews that correction.
+Wait for Control Plane continuation. On `ต่อ` / `ต่อไป`, ChatGPT fresh-fetches repository truth and opens only the smallest necessary Gate 2 work package if still required. Do not spend Antigravity credit before that packet exists.
