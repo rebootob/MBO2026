@@ -5,61 +5,97 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 B2 PRODUCTION AUTH HELD / SANDBOX-FIRST VALIDATION CHOSEN
+> Updated: 2026-08-30 — SANDBOX AUTH RECEIVED / PRODUCTION B2 HELD / TOOLING-REVIEW GATE OPEN
 
 ## 1. D1 status
 
-D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS. Production App53 B2 execution is intentionally paused.
+D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS. Production App53 B2 remains intentionally paused and its earlier authorization remains unconsumed.
 
-## 2. Critical safety discovery
+The user has now explicitly authorized creation of a disposable sandbox and rehearsal of the target field add + rollback using synthetic data only.
 
-Repository safety guard currently classifies App53 (ID 53) as a permanent protected app and hard-blocks writes through `assertSandboxWriteTarget()`.
+## 2. Critical Production protection
+
+App53 (ID 53) remains a permanent protected Production app.
 
 ```text
-PROTECTED_APP_IDS includes 53
-APP53_DIRECT_WRITE_VIA_SANDBOX_GUARD = HARD BLOCKED
+APP53_PRODUCTION_WRITE = NO
+PROTECTED_GUARD_CHANGE = NO
+PROTECTED_GUARD_BYPASS = NO
+PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 ```
 
-Do not weaken, bypass, or modify that guard merely to execute B2.
+Do not weaken `PROTECTED_APP_IDS` or any existing safety guard to enable sandbox work.
 
-## 3. Sandbox-first decision
+## 3. Sandbox authorization received
 
-Before any further Production App53 schema discussion, validate the exact schema lifecycle on a new disposable Kintone sandbox app.
-
-Recommended sandbox name:
+Authorized sandbox name:
 
 ```text
 MBO2026 App53 Hybrid Identity Sandbox
 ```
 
-No Production employee records are to be copied.
+Authorized purpose only:
+- create one new disposable Kintone app;
+- use synthetic data only;
+- reproduce only the minimal App53 identity fields needed for the rehearsal;
+- add `MBO_Kintone_User` in sandbox Preview;
+- verify Preview before deploy;
+- deploy sandbox and verify Live;
+- delete the target field in sandbox Preview;
+- deploy rollback and verify the field is absent while synthetic records remain intact.
 
-Use only synthetic fields/records necessary to reproduce the B2 mechanics:
-- `Number_0` using the same field type as Production App53;
-- `emp_text` using the same field type as Production App53;
-- two synthetic records only after the sandbox is live:
-  - one active record with synthetic Employee_Code;
-  - one active record with blank `emp_text`.
+No real employee record or PII may be copied.
 
-No names, emails, phones, addresses, attachments, or other employee data.
+## 4. Maximum-safety execution split
 
-## 4. Sandbox validation sequence
+Sandbox work is split into two control gates.
 
-### S0 — GET-only preparation
-- use existing App53 backup/schema evidence only to confirm the exact field types of `Number_0` and `emp_text`;
-- no App53 write.
+### Gate S-A — tooling source review FIRST
+Antigravity may create exactly one dedicated one-shot sandbox rehearsal script, but MUST NOT execute any Kintone network operation in this gate.
 
-### S1 — create disposable sandbox app
-- create one new preview app only;
-- no App53/App794/other app write.
+Purpose:
+- make all target IDs/endpoints/sequence visible in Git;
+- make accidental Production targeting impossible by construction;
+- allow ChatGPT independent source review before any sandbox write occurs.
 
-### S2 — configure minimal base schema
-- add only `Number_0` and `emp_text` equivalents;
-- deploy sandbox app;
-- seed only two synthetic test records.
+Expected script:
+```text
+scripts/kintone/rehearse-app53-hybrid-sandbox.js
+```
 
-### S3 — rehearse B2 field addition
-Add to sandbox Preview only:
+The script must:
+- have zero Kintone side effect unless an exact explicit execution flag is supplied;
+- accept no external app ID for write targets;
+- obtain the sandbox app ID only from its own one-time app-creation response;
+- bind every later write/read to that process-local created app ID;
+- hard-deny known Production/existing app IDs, including 53 and 794–801;
+- never call App53 or another existing app;
+- use exactly two synthetic records;
+- leave the sandbox in rolled-back baseline state after a successful future execution;
+- never delete/modify the Production safety guard.
+
+### Gate S-B — reviewed-script sandbox execution
+Only after ChatGPT reviews and accepts Gate S-A may Antigravity execute the reviewed script under the already-granted sandbox authorization.
+
+Gate S-B is not open yet.
+
+## 5. Sandbox lifecycle to be encoded
+
+1. Local-only preflight: read the existing ignored App53 B1 backup only to confirm the exact field types needed for `Number_0` and `emp_text`. If backup evidence is missing, STOP before network.
+2. Create exactly one app named `MBO2026 App53 Hybrid Identity Sandbox`.
+3. Add only minimal representative `Number_0` + `emp_text` fields.
+4. Deploy sandbox and wait for official deploy status `SUCCESS`.
+5. Create exactly two synthetic records only.
+6. Add `MBO_Kintone_User` as optional `USER_SELECT` in Preview.
+7. Read Preview and require exact-match before deploy.
+8. Deploy sandbox; wait for `SUCCESS`; verify Live field + both synthetic records.
+9. Delete only `MBO_Kintone_User` in Preview.
+10. Read Preview and require field absent before rollback deploy.
+11. Deploy sandbox rollback; wait for `SUCCESS`.
+12. Verify Live field absent and both synthetic records unchanged.
+13. STOP for ChatGPT review.
+
+## 6. Target field contract
 
 ```text
 Field Code = MBO_Kintone_User
@@ -69,48 +105,40 @@ Required   = false
 Entities   = []
 ```
 
-Read back Preview before deploy.
-Deploy sandbox only after exact-match readback.
-Read back Live sandbox and confirm synthetic record count/data remain intact.
+Synthetic data only. No names, emails, phones, addresses, attachments or Production Employee_Code values.
 
-### S4 — rehearse rollback
-- delete only `MBO_Kintone_User` from sandbox Preview;
-- deploy sandbox only;
-- verify field is gone and synthetic records remain intact.
-
-This proves both forward and rollback mechanics without touching App53 Production.
-
-## 5. Production B2 remains held
-
-The user's earlier Production B2 authorization is NOT consumed.
-
-```text
-APP53_SCHEMA_WRITE_AUTH = HELD / NOT EXECUTABLE
-APP53_RECORD_WRITE_AUTH = NONE
-APP53_BULK_WRITE_AUTH = NONE
-ROLLBACK_AUTH = NONE
-```
-
-After sandbox forward + rollback both PASS, ChatGPT will reassess whether Production B2 should proceed and whether a new/renewed explicit authorization is appropriate.
-
-## 6. Explicit exclusions during sandbox-first phase
+## 7. Explicit exclusions
 
 ```text
 APP53 WRITE = NO
+APP53 READ DURING TOOLING/EXECUTION = NO (use existing local B1 backup only)
 APP53 RECORD COPY = NO
-REAL EMPLOYEE DATA IN SANDBOX = NO
-APP794/795/796/800/801 WRITE = NO
-GROUP/ACL WRITE = NO
+REAL EMPLOYEE DATA = NO
+PROTECTED-GUARD CHANGE = NO
+APP794/795/796/797/798/800/801 WRITE = NO
+GROUP/ACL CHANGE = NO
 APP794 DEPLOY = NO
-PROTECTED-GUARD MODIFICATION = NO
+PRODUCTION B2 EXECUTION = NO
 ```
 
-## 7. Current control state
+## 8. Authorization ledger
 
 ```text
-ACTIVE_TASK = NONE — WAITING FOR SANDBOX CREATION AUTHORIZATION
-CURRENT_OWNER = CHATGPT
-ANTIGRAVITY_ACTION = NONE
+SANDBOX_CREATE_AND_REHEARSAL_AUTH = RECEIVED / ACTIVE FOR THIS SANDBOX ONLY
+APP53_SCHEMA_WRITE_AUTH = HELD / NOT EXECUTABLE
+APP53_RECORD_WRITE_AUTH = NONE
+APP53_BULK_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = SANDBOX ONLY AFTER GATE S-A REVIEW
+ACTIVE_ACL_WRITE_AUTH = NONE
+ACTIVE_GROUP_WRITE_AUTH = NONE
+PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-The next executor packet must target only creation and validation of the disposable sandbox app. Production App53 remains untouched.
+## 9. Current control state
+
+```text
+ACTIVE_TASK = D1 SANDBOX REHEARSAL TOOLING GATE S-A R1
+CURRENT_OWNER = ANTIGRAVITY
+NETWORK/KINTONE EXECUTION = FORBIDDEN IN S-A
+NEXT_OWNER = CHATGPT INDEPENDENT SOURCE REVIEW
+```
