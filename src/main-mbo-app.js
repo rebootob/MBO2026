@@ -7,6 +7,7 @@ import { getRecordUiHost } from './ui/host-resolver.js';
 import { EmployeePartAUI } from './ui/employee-part-a-ui.js';
 import { ValidationEngine } from './validation/validation-engine.js';
 import { EmployeeService } from './services/employee-service.js';
+import { MboIdentityService } from './services/mbo-identity-service.js';
 import { RoutingService } from './services/routing-service.js';
 import { resolveProfileCodeForSnapshot as resolveProfileCode } from './profiles/runtime-profile-resolver.js';
 import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
@@ -17,6 +18,30 @@ import { EmployeeRecordNavigation } from './ui/employee-record-navigation.js';
 import { DeleteGuardPolicy } from './security/delete-guard-policy.js';
 
 let activeUiInstance = null;
+let currentEmployeeSelfContext = null;
+
+const kintoneApiWrapper = {
+  getRecords: async (appId, query) => {
+    if (typeof kintone === 'undefined' || typeof kintone.api !== 'function') {
+      throw new Error('Kintone API is unavailable');
+    }
+    const url = (typeof kintone.api.url === 'function')
+      ? kintone.api.url('/k/v1/records.json', true)
+      : '/k/v1/records.json';
+    const resp = await kintone.api(url, 'GET', { app: appId, query: query });
+    return resp;
+  },
+  getRecord: async (appId, id) => {
+    if (typeof kintone === 'undefined' || typeof kintone.api !== 'function') {
+      throw new Error('Kintone API is unavailable');
+    }
+    const url = (typeof kintone.api.url === 'function')
+      ? kintone.api.url('/k/v1/record.json', true)
+      : '/k/v1/record.json';
+    const resp = await kintone.api(url, 'GET', { app: appId, id: id });
+    return resp ? resp.record : null;
+  }
+};
 
 /**
  * D1: Module-level MBO Login Gate. Initialized to null → fail closed.
@@ -32,11 +57,114 @@ export function setMboLoginGate(gate) {
   mboLoginGate = gate;
 }
 
+export function getCurrentEmployeeSelfContext() {
+  return currentEmployeeSelfContext;
+}
+
+export function setCurrentEmployeeSelfContext(context) {
+  currentEmployeeSelfContext = context;
+}
+
 export function getActiveUiInstance() {
   return activeUiInstance;
 }
 if (typeof globalThis !== 'undefined') {
   globalThis.getActiveUiInstance = getActiveUiInstance;
+  globalThis.getCurrentEmployeeSelfContext = getCurrentEmployeeSelfContext;
+}
+
+function resolveRuntimeEmployeeSelfContext(uiHost) {
+  const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
+  const kintoneUserCode = loginUser?.code || null;
+
+  if (!kintoneUserCode) {
+    return { status: 'NO_KINTONE_USER', mode: null };
+  }
+
+  let principalMode;
+  try {
+    principalMode = MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode });
+  } catch (err) {
+    return { status: 'MODE_RESOLUTION_ERROR', reason: err.message };
+  }
+
+  if (principalMode === 'TECHNICAL_ADMIN') {
+    return { status: 'TECHNICAL_ADMIN', mode: 'TECHNICAL_ADMIN' };
+  }
+
+  if (principalMode === 'SHARED') {
+    if (!mboLoginGate) {
+      return { status: 'GATE_NULL', mode: 'SHARED' };
+    }
+    const authResult = mboLoginGate.requireLogin(uiHost);
+    if (typeof authResult === 'string') {
+      return {
+        status: 'SUCCESS',
+        context: { mode: 'SHARED', employeeCode: authResult, kintoneUserCode }
+      };
+    } else if (authResult && typeof authResult.then === 'function') {
+      return authResult.then(empCode => {
+        if (!empCode) {
+          return { status: 'SHARED_AUTH_REQUIRED', mode: 'SHARED' };
+        }
+        return {
+          status: 'SUCCESS',
+          context: { mode: 'SHARED', employeeCode: empCode, kintoneUserCode }
+        };
+      });
+    }
+    return { status: 'SHARED_AUTH_REQUIRED', mode: 'SHARED' };
+  }
+
+  if (principalMode === 'DEDICATED') {
+    return (async () => {
+      let candidateRecords = [];
+      try {
+        candidateRecords = await EmployeeService.lookupDedicatedIdentityMappingCandidates(kintoneUserCode, kintoneApiWrapper);
+      } catch (lookupErr) {
+        candidateRecords = [];
+      }
+
+      const mappingRes = MboIdentityService.resolveDedicatedKintoneUserMapping({
+        kintoneUserCode,
+        userMappings: candidateRecords
+      });
+
+
+
+      if (mappingRes.status === 'IDENTITY_BOUND' && mappingRes.employeeCode) {
+        return {
+          status: 'SUCCESS',
+          context: { mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode }
+        };
+      }
+
+      if (mboLoginGate) {
+        const authResult = mboLoginGate.requireLogin(uiHost);
+        if (typeof authResult === 'string') {
+          return {
+            status: 'SUCCESS',
+            context: { mode: 'SHARED', employeeCode: authResult, kintoneUserCode }
+          };
+        } else if (authResult && typeof authResult.then === 'function') {
+          const empCode = await authResult;
+          if (empCode) {
+            return {
+              status: 'SUCCESS',
+              context: { mode: 'SHARED', employeeCode: empCode, kintoneUserCode }
+            };
+          }
+        }
+      }
+
+      return {
+        status: 'DEDICATED_MAPPING_FAILED',
+        reason: mappingRes.reason || 'Kintone user is not bound to an active Employee_Code in App 53'
+      };
+    })();
+  }
+
+  return { status: 'UNSUPPORTED_MODE', mode: principalMode };
 }
 
 function isSemanticValueMatch(valA, valB, fieldType) {
@@ -153,23 +281,6 @@ if (typeof kintone !== 'undefined') {
   function getMboAppId() {
     return kintone.app.getId() || 794;
   }
-
-  const kintoneApiWrapper = {
-    getRecords: async (appId, query) => {
-      const resp = await kintone.api(kintone.api.url('/k/v1/records.json', true), 'GET', {
-        app: appId,
-        query: query
-      });
-      return resp;
-    },
-    getRecord: async (appId, id) => {
-      const resp = await kintone.api(kintone.api.url('/k/v1/record.json', true), 'GET', {
-        app: appId,
-        id: id
-      });
-      return resp ? resp.record : null;
-    }
-  };
 
   // D1: Production gate initialization — fail closed if gate cannot be created.
   if (!mboLoginGate) {
@@ -305,7 +416,7 @@ if (typeof kintone !== 'undefined') {
     box.appendChild(h2);
     box.appendChild(p);
     host.appendChild(box);
-    
+
     if (options.hideNativeSaveCancel === true) {
       hideNativeSaveCancelControls();
     }
@@ -342,53 +453,53 @@ if (typeof kintone !== 'undefined') {
     return BUSINESS_STAGES.CONFIGURATION_ERROR;
   }
 
-  // Hook 0: Index/List — require login before any list content is accessible.
+  // Hook 0: Index/List — require authentication/identity resolution before any list content is accessible.
   kintone.events.on('app.record.index.show', function (event) {
     const host = document.querySelector('.gaia-app-wrapper') || document.body;
 
-    // B2: If gate is null/failed, render blocking notice and hide native index
-    if (!mboLoginGate) {
-      renderBlockedNotice(host,
-        'MBO Login Gate Not Initialized',
-        'The MBO authentication system could not be started. Access blocked. [FAIL_CLOSED_GATE_NULL]'
-      );
-      const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
-      if (recordList) recordList.style.display = 'none';
-      return event;
-    }
+    const resPipeline = (async () => {
+      const res = await resolveRuntimeEmployeeSelfContext(host);
+      if (res.status === 'TECHNICAL_ADMIN') {
+        currentEmployeeSelfContext = null;
+        return event;
+      }
 
-    const authResult = mboLoginGate.requireLogin(host);
-    if (typeof authResult === 'string') {
-      return renderEmployeeSelfIndex(event, host, authResult);
-    } else if (authResult && typeof authResult.then === 'function') {
-      return authResult.then(authenticatedEmployeeCode => {
-        if (!authenticatedEmployeeCode) {
-          renderBlockedNotice(host,
-            'Authentication Required',
-            'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]'
-          );
-          const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
-          if (recordList) recordList.style.display = 'none';
-          return event;
-        }
-        return renderEmployeeSelfIndex(event, host, authenticatedEmployeeCode);
+      if (res.status !== 'SUCCESS') {
+        currentEmployeeSelfContext = null;
+        const title = res.status === 'DEDICATED_MAPPING_FAILED'
+          ? 'Employee Identity Mapping Failed'
+          : 'Authentication Required';
+        const detail = res.reason || 'Access denied or authentication required for Employee-Self.';
+        renderBlockedNotice(host, title, detail);
+        const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
+        if (recordList) recordList.style.display = 'none';
+        return event;
+      }
+
+      currentEmployeeSelfContext = res.context;
+      const gateForIndex = res.context.mode === 'SHARED' ? mboLoginGate : null;
+      const indexUi = new EmployeeSelfIndexUI({
+        kintoneApiWrapper,
+        getMboAppId,
+        mboLoginGate: gateForIndex,
+        renderBlockedNotice
       });
-    }
+      return indexUi.render(event, host, res.context.employeeCode);
+    })();
 
-    renderBlockedNotice(host,
-      'Authentication Required',
-      'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]'
-    );
-    const recordList = document.querySelector('.recordlist-gaia') || document.querySelector('.gaia-argus-app-index-readonly');
-    if (recordList) recordList.style.display = 'none';
-    return event;
+    return resPipeline;
   });
 
-  function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode) {
+  function setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, contextOrCode) {
     let isAutoloadingInCreateHandler = false;
+    const context = (typeof contextOrCode === 'object' && contextOrCode !== null)
+      ? contextOrCode
+      : { mode: 'SHARED', employeeCode: String(contextOrCode), kintoneUserCode: (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null };
 
-    // 4. D1: Render auth controls bar (Change Password, Logout).
-    if (mboLoginGate && typeof mboLoginGate.renderAuthBar === 'function') {
+    const authenticatedEmployeeCode = context.employeeCode;
+
+    // 4. D1: Render auth controls bar ONLY for SHARED mode
+    if (context.mode === 'SHARED' && mboLoginGate && typeof mboLoginGate.renderAuthBar === 'function') {
       mboLoginGate.renderAuthBar(uiHost, authenticatedEmployeeCode);
     }
 
@@ -468,16 +579,30 @@ if (typeof kintone !== 'undefined') {
         const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
         const empProfile = empLookupRes.employee || empLookupRes;
 
-        // Step 2: Routing Validation from App 795 (Team-Aware + Position Priority)
-        const loginUser = kintone.getLoginUser();
-        const routing = await RoutingService.validateRequesterAccess(
+        // Step 2: Routing Profile Resolution & Hybrid Requester / Route Composition
+        const loginUserCode = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser()?.code : null;
+        let routeProfile = await RoutingService.resolveRoutingProfile(
           ROUTING_APP_ID,
           empProfile.Employee_Section,
           empProfile.Team,
-          loginUser.code,
           kintoneApiWrapper,
           empProfile.Employee_Position
         );
+
+        if (currentEmployeeSelfContext?.mode === 'DEDICATED') {
+          routeProfile = RoutingService.applyOwnMboSelfAppraiserElision(routeProfile, loginUserCode, true);
+        }
+
+        const effectiveRequesterUsers = RoutingService.resolveEffectiveRequesterUser({
+          mode: currentEmployeeSelfContext?.mode || 'SHARED',
+          kintoneUserCode: loginUserCode,
+          routeRequesterUsers: routeProfile.Requester_User
+        });
+
+        const routing = {
+          ...routeProfile,
+          Requester_User: effectiveRequesterUsers
+        };
 
         // Step 3: Published Scoring Configuration Lookup from App 796
         const fy = record.Fiscal_Year?.value || 'FY2026';
@@ -648,8 +773,6 @@ if (typeof kintone !== 'undefined') {
     return event;
   }
 
-
-
   // Hook 1: Record Show (Detail, Edit, Create)
   kintone.events.on(['app.record.detail.show', 'app.record.edit.show', 'app.record.create.show'], function (event) {
     const record = event.record;
@@ -671,43 +794,39 @@ if (typeof kintone !== 'undefined') {
       return event;
     }
 
-    // 2. D1: Fail closed — gate must be initialized before any Employee Self render.
-    if (!mboLoginGate) {
-      renderBlockedNotice(uiHost,
-        'MBO Login Gate Not Initialized',
-        'The MBO authentication system could not be started. Please contact your administrator. [FAIL_CLOSED_GATE_NULL]',
-        { isCreate, appId }
-      );
-      hideAllNativeFields(record);
-      return event;
+    const handleResolvedContext = (res) => {
+      if (res.status === 'TECHNICAL_ADMIN') {
+        currentEmployeeSelfContext = null;
+        renderBlockedNotice(uiHost,
+          'Technical Admin Identity Restriction',
+          'Technical admin identity cannot perform Employee-Self operations. [FAIL_CLOSED_TECH_ADMIN]',
+          { isCreate, appId }
+        );
+        hideAllNativeFields(record);
+        return event;
+      }
+
+      if (res.status !== 'SUCCESS') {
+        currentEmployeeSelfContext = null;
+        const title = res.status === 'DEDICATED_MAPPING_FAILED'
+          ? 'Employee Identity Mapping Failed'
+          : 'Authentication Required';
+        const detail = res.reason || 'You must be authenticated to access this page. [FAIL_CLOSED_NO_CODE]';
+        renderBlockedNotice(uiHost, title, detail, { isCreate, appId });
+        hideAllNativeFields(record);
+        return event;
+      }
+
+      currentEmployeeSelfContext = res.context;
+      return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, res.context);
+    };
+
+    const res = resolveRuntimeEmployeeSelfContext(uiHost);
+    if (res && typeof res.then === 'function') {
+      return res.then(handleResolvedContext);
     }
 
-    // 3. D1: Require authentication — handles string (sync) or Promise (async)
-    const authResult = mboLoginGate.requireLogin(uiHost);
-    if (typeof authResult === 'string') {
-      return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authResult);
-    } else if (authResult && typeof authResult.then === 'function') {
-      return authResult.then(authenticatedEmployeeCode => {
-        if (!authenticatedEmployeeCode) {
-          renderBlockedNotice(uiHost,
-            'Authentication Required',
-            'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]',
-            { isCreate, appId }
-          );
-          hideAllNativeFields(record);
-          return event;
-        }
-        return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, authenticatedEmployeeCode);
-      });
-    }
-
-    renderBlockedNotice(uiHost,
-      'Authentication Required',
-      'You must log in with your MBO credentials to access this page. [FAIL_CLOSED_NO_CODE]',
-      { isCreate, appId }
-    );
-    hideAllNativeFields(record);
-    return event;
+    return handleResolvedContext(res);
   });
 
   // Hook 2: Record Submit (Create & Edit) -> Uses return false and Inline Errors

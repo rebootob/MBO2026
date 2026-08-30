@@ -271,6 +271,36 @@ test('D1 Hybrid Identity: duplicate active mapping records for same user returns
   assert.equal(res.status, 'IDENTITY_MAPPING_AMBIGUOUS');
 });
 
+// --- MODE SELECTION TESTS ---
+
+test('MboIdentityService.resolveKintonePrincipalMode maps all approved shared principals to SHARED', () => {
+  const sharedCodes = ['t1', 't2', 's1', 'f1', 'f2', 'f3', 'e1', 'tmh', 'g_request'];
+  for (const code of sharedCodes) {
+    const mode = MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: code });
+    assert.equal(mode, 'SHARED', `Principal ${code} must resolve to SHARED mode`);
+  }
+});
+
+test('MboIdentityService.resolveKintonePrincipalMode maps non-shared users to DEDICATED', () => {
+  const dedicatedCodes = ['vassana', 'natta', 'somchai', 'uchida'];
+  for (const code of dedicatedCodes) {
+    const mode = MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: code });
+    assert.equal(mode, 'DEDICATED', `Principal ${code} must resolve to DEDICATED mode`);
+  }
+});
+
+test('MboIdentityService.resolveKintonePrincipalMode maps technical admin to TECHNICAL_ADMIN', () => {
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'admin-form' }), 'TECHNICAL_ADMIN');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'Administrator' }), 'TECHNICAL_ADMIN');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'ADMIN' }), 'TECHNICAL_ADMIN');
+});
+
+test('MboIdentityService.resolveKintonePrincipalMode rejects whitespace in Kintone user code', () => {
+  assert.throws(() => {
+    MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: ' vassana ' });
+  }, /KINTONE_USER_CODE_HAS_WHITESPACE/);
+});
+
 // --- FINDING B & D: EFFECTIVE REQUESTER RESOLUTION TESTS ---
 
 test('Finding B: resolveEffectiveRequesterUser rejects invalid or missing mode', () => {

@@ -197,4 +197,62 @@ export class EmployeeService {
       throw new Error(`พนักงานรหัส ${cleanCode} มี MBO สำหรับ ${cleanFY} อยู่แล้ว ไม่สามารถสร้างรายการซ้ำได้\nEmployee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate creation is blocked.`);
     }
   }
+
+  /**
+   * Targeted App53 read-only GET query for dedicated identity mapping candidates.
+   * Constructs safe query: MBO_Kintone_User in ("<escapedCode>") and Number_0 = 1 limit 2
+   * @param {string} kintoneUserCode - Native Kintone user code
+   * @param {Object} kintoneApi - Kintone API client instance
+   * @returns {Promise<Array<Object>>} Raw App53 candidate records
+   */
+  static async lookupDedicatedIdentityMappingCandidates(kintoneUserCode, kintoneApi) {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode === '') {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        'กรุณาระบุ Kintone User Code\nPlease enter Kintone User Code',
+        'Please enter Kintone User Code'
+      );
+    }
+
+    if (kintoneUserCode !== kintoneUserCode.trim()) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_CODE_INVALID',
+        'Kintone User Code ห้ามมีช่องว่าง\nKintone User Code cannot contain whitespace',
+        'Kintone User Code cannot contain whitespace'
+      );
+    }
+
+    if (!kintoneApi || typeof kintoneApi.getRecords !== 'function') {
+      throw new EmployeeLookupError(
+        'KINTONE_API_UNAVAILABLE',
+        'ระบบไม่สามารถเชื่อมต่อ Kintone API ได้\nKintone API service is unavailable',
+        'Kintone API service is unavailable'
+      );
+    }
+
+    const escapedCode = kintoneUserCode.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const query = `MBO_Kintone_User in ("${escapedCode}") and Number_0 = 1 limit 2`;
+
+    let resp;
+    try {
+      resp = await kintoneApi.getRecords(53, query);
+    } catch (err) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_LOOKUP_FAILED',
+        'เกิดข้อผิดพลาดในการดึงข้อมูลจาก App 53\nFailed to fetch Employee mapping candidates from App 53',
+        'Failed to fetch Employee mapping candidates from App 53',
+        err
+      );
+    }
+
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      throw new EmployeeLookupError(
+        'EMPLOYEE_LOOKUP_FAILED',
+        'ข้อมูลที่ส่งกลับมาจาก App 53 ไม่ถูกต้อง\nInvalid records payload received from App 53',
+        'Invalid records payload received from App 53'
+      );
+    }
+
+    return resp.records;
+  }
 }

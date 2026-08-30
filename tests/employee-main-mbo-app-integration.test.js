@@ -134,13 +134,36 @@ globalThis.document = {
 
 globalThis.location = { href: 'http://localhost/k/794/' };
 
-const mockApiFn = async (url, method, params) => {
-  if (params?.app === 53 || (params?.query && params.query.includes('emp_text'))) {
+let currentMockUser = { code: 'f1', name: 'Shared F1 User' };
+
+const mockApiFn = async (url, methodOrParams, optionalParams) => {
+  const params = (typeof methodOrParams === 'object' && methodOrParams !== null) ? methodOrParams : optionalParams;
+  if (params?.app === 53 || (params?.query && (params.query.includes('emp_text') || params.query.includes('MBO_Kintone_User')))) {
+    if (params?.query && (params.query.includes('vassana') || params.query.includes('0044'))) {
+      return {
+        records: [{
+          $id: { value: '456' },
+          Employee_Code: { value: '0044' },
+          emp_text: { value: '0044' },
+          Number_0: { value: '1' },
+          MBO_Kintone_User: { value: [{ code: 'vassana', name: 'Ms.Vassana Maenthong' }] },
+          Text: { value: 'Vassana' },
+          Text_0: { value: 'วาสนา' },
+          Drop_down: { value: 'Industrial Services' },
+          Drop_down_0: { value: 'TMF3' },
+          Text_2: { value: 'Deputy General Manager' },
+          Text_4: { value: 'vassana@example.com' },
+          Date: { value: '2015-01-01' }
+        }]
+      };
+    }
     return {
       records: [{
         $id: { value: '501' },
         Employee_Code: { value: '0118' },
         emp_text: { value: '0118' },
+        Number_0: { value: '1' },
+        MBO_Kintone_User: { value: [{ code: 'f1', name: 'Shared F1 User' }] },
         Text: { value: 'Somchai' },
         Text_0: { value: 'สมชาย' },
         Drop_down: { value: 'Software Engineering' },
@@ -157,7 +180,7 @@ const mockApiFn = async (url, method, params) => {
       records: [{
         $id: { value: '701' },
         Section: { value: 'Software Engineering' },
-        Requester_User: { value: [{ code: '0118' }] },
+        Requester_User: { value: [{ code: 'f1' }, { code: '0118' }] },
         Manager_Level1_Approvers: { value: [{ code: '0119' }] },
         Manager_Level1_Approval_Rule: { value: 'ANY' },
         Manager_Level2_Approvers: { value: [] },
@@ -215,7 +238,7 @@ globalThis.kintone = {
       set: () => {}
     }
   },
-  getLoginUser: () => ({ code: '0118', name: 'Somchai' }),
+  getLoginUser: () => currentMockUser,
   api: mockApiFn
 };
 
@@ -504,10 +527,43 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
 
   globalThis.kintone.api = savedApi;
 
+  // 4g. DEDICATED Principal Integration Test: Bypasses mboLoginGate.requireLogin and resolves bound Employee_Code
+  currentMockUser = { code: 'vassana', name: 'Ms.Vassana Maenthong' };
+  let requireLoginCalled = false;
+  setMboLoginGate({
+    requireLogin: () => {
+      requireLoginCalled = true;
+      return 'UNEXPECTED_CALL';
+    }
+  });
+
+  const dedicatedCreateHost = createMockElement('div');
+  currentActiveHost = dedicatedCreateHost;
+  const dedicatedCreateEvent = {
+    type: 'app.record.create.show',
+    appId: 794,
+    record: {
+      Status: { value: '01 Draft Objective' },
+      Fiscal_Year: { value: '' }
+    }
+  };
+
+  await recordShowHandler(dedicatedCreateEvent);
+
+  const { getCurrentEmployeeSelfContext } = await import('../src/main-mbo-app.js');
+  const dedicatedCtx = getCurrentEmployeeSelfContext();
+  assert.ok(dedicatedCtx, 'Dedicated Employee-Self context must be set');
+  assert.equal(dedicatedCtx.mode, 'DEDICATED', 'Context mode must be DEDICATED');
+  assert.equal(dedicatedCtx.employeeCode, '0044', 'Bound employee code must be 0044 for vassana');
+  assert.equal(dedicatedCtx.kintoneUserCode, 'vassana', 'Kintone user code must be vassana');
+  assert.equal(requireLoginCalled, false, 'DEDICATED mode must NEVER invoke mboLoginGate.requireLogin()');
+
+  globalThis.kintone.api = savedApi;
+
   assert.equal(sessionMutations, 0, 'REAL_MAIN_AUTH_SESSION_MUTATION = 0');
   assert.equal(recordWrites, 0, 'REAL_MAIN_RECORD_WRITE = 0');
 
-  // 4f. Static Code Inspection: Ensure ZERO forbidden patterns in main-mbo-app.js and employee-record-navigation.js
+  // 4h. Static Code Inspection: Ensure ZERO forbidden patterns in main-mbo-app.js and employee-record-navigation.js
   const fs = await import('fs');
   const mainSrc = fs.readFileSync('src/main-mbo-app.js', 'utf8');
   const navSrc = fs.readFileSync('src/ui/employee-record-navigation.js', 'utf8');

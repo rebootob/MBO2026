@@ -7,21 +7,31 @@
 export class DeleteGuardPolicy {
   constructor(options = {}) {
     this.mboLoginGate = options.mboLoginGate;
+    this.getEmployeeSelfContext = options.getEmployeeSelfContext;
   }
 
   /**
    * Evaluates app.record.detail.delete.submit and app.record.index.delete.submit events.
-   * - If mboLoginGate.getEmployeeCode() has a value (Employee-Self active):
+   * - If Employee-Self context or mboLoginGate has a bound employeeCode:
    *     blocks delete submit, sets bilingual error, and returns false.
-   * - If mboLoginGate.getEmployeeCode() has no value (no Employee-Self principal):
-   *     returns event unchanged without blocking.
+   * - If no Employee-Self context exists:
+   *     returns event unchanged without blocking (abstains).
    * @param {Object} event Kintone deletion submit event
    * @returns {boolean|Object} Returns false if Employee-Self delete is blocked, or event unchanged if no Employee-Self principal
    */
   evaluateDeleteSubmit(event = {}) {
-    const authEmpCode = (this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === 'function')
-      ? this.mboLoginGate.getEmployeeCode()
-      : null;
+    let authEmpCode = null;
+
+    if (typeof this.getEmployeeSelfContext === 'function') {
+      const ctx = this.getEmployeeSelfContext();
+      if (ctx && typeof ctx === 'object' && ctx.employeeCode) {
+        authEmpCode = ctx.employeeCode;
+      }
+    }
+
+    if (!authEmpCode && this.mboLoginGate && typeof this.mboLoginGate.getEmployeeCode === 'function') {
+      authEmpCode = this.mboLoginGate.getEmployeeCode();
+    }
 
     if (!authEmpCode) {
       // No Employee-Self principal -> return event unchanged

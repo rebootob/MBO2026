@@ -322,3 +322,48 @@ test('EMP-018: Malformed response { records: null } throws SOURCE_RESPONSE_INVAL
     }
   );
 });
+
+// --- DEDICATED IDENTITY MAPPING CANDIDATE LOOKUP TESTS ---
+
+test('DEDICATED_LOOKUP-001: Valid user code executes exact query MBO_Kintone_User in ("vassana") and Number_0 = 1 limit 2 against App 53', async () => {
+  const api = createMockKintoneApi([{ $id: { value: '456' }, emp_text: { value: '0044' }, Number_0: { value: '1' } }]);
+  const records = await EmployeeService.lookupDedicatedIdentityMappingCandidates('vassana', api);
+
+  assert.equal(records.length, 1);
+  const lastCall = api.getLastCall();
+  assert.equal(lastCall.appId, 53);
+  assert.equal(lastCall.query, 'MBO_Kintone_User in ("vassana") and Number_0 = 1 limit 2');
+});
+
+test('DEDICATED_LOOKUP-002: Safely escapes double-quotes and backslashes in query literal', async () => {
+  const api = createMockKintoneApi([]);
+  await EmployeeService.lookupDedicatedIdentityMappingCandidates('user"with\\quotes', api);
+
+  const lastCall = api.getLastCall();
+  assert.equal(lastCall.query, 'MBO_Kintone_User in ("user\\"with\\\\quotes") and Number_0 = 1 limit 2');
+});
+
+test('DEDICATED_LOOKUP-003: Rejects whitespace in Kintone User Code client-side without calling API', async () => {
+  const api = createMockKintoneApi([]);
+
+  await assert.rejects(
+    async () => await EmployeeService.lookupDedicatedIdentityMappingCandidates(' vassana ', api),
+    (err) => {
+      assert.equal(err.code, 'EMPLOYEE_CODE_INVALID');
+      assert.equal(api.getCallCount(), 0);
+      return true;
+    }
+  );
+});
+
+test('DEDICATED_LOOKUP-004: API error throws EMPLOYEE_LOOKUP_FAILED and fails closed', async () => {
+  const api = createMockKintoneApi([], true); // API throws error
+
+  await assert.rejects(
+    async () => await EmployeeService.lookupDedicatedIdentityMappingCandidates('vassana', api),
+    (err) => {
+      assert.equal(err.code, 'EMPLOYEE_LOOKUP_FAILED');
+      return true;
+    }
+  );
+});

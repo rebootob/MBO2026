@@ -1,6 +1,46 @@
 import { isValidEmployeeCode } from '../core/fiscal-year-engine.js';
 
 export class MboIdentityService {
+  static APPROVED_SHARED_PRINCIPALS = new Set([
+    't1', 't2', 's1', 'f1', 'f2', 'f3', 'e1', 'tmh', 'g_request'
+  ]);
+
+  /**
+   * Resolves native Kintone user code to authoritative principal access mode.
+   * Modes: 'SHARED' | 'DEDICATED' | 'TECHNICAL_ADMIN'.
+   * Input must be an exact nonblank string; whitespace is rejected.
+   * @param {Object} params
+   * @param {string} params.kintoneUserCode - Native Kintone user code
+   * @returns {'SHARED'|'DEDICATED'|'TECHNICAL_ADMIN'} Principal access mode
+   */
+  static resolveKintonePrincipalMode({ kintoneUserCode }) {
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode === '') {
+      throw new Error('LOGGED_IN_KINTONE_USER_REQUIRED: Logged-in Kintone user code is required.');
+    }
+
+    if (kintoneUserCode !== kintoneUserCode.trim()) {
+      throw new Error('KINTONE_USER_CODE_HAS_WHITESPACE: Kintone user code cannot contain whitespace.');
+    }
+
+    const cleanUser = kintoneUserCode;
+
+    if (cleanUser === 'admin-form' || cleanUser === 'Administrator' || cleanUser === 'ADMIN') {
+      return 'TECHNICAL_ADMIN';
+    }
+
+    if (
+      MboIdentityService.APPROVED_SHARED_PRINCIPALS.has(cleanUser) ||
+      /^\d+$/.test(cleanUser) ||
+      /^req/i.test(cleanUser) ||
+      /^test/i.test(cleanUser) ||
+      /^user/i.test(cleanUser)
+    ) {
+      return 'SHARED';
+    }
+
+    return 'DEDICATED';
+  }
+
   /**
    * Resolves authenticated dedicated Kintone user to an authoritative Employee_Code in App 53.
    * Canonical field specs: MBO_Kintone_User (USER_SELECT), Number_0 = 1 (Active), emp_text (Canonical Code).
