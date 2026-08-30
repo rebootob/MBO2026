@@ -1,115 +1,161 @@
-# AI ACTIVE TASK — D1 FULL REGRESSION FAILURE TRIAGE R1
+# AI ACTIVE TASK — D1 ASYNC PROCESS.PROCEED TEST-CONTRACT CORRECTIVE R1
 
-Mode: **ANTIGRAVITY DIAGNOSTIC ONLY — EXTRACT 4 FAILURES / NO SOURCE OR TEST EDITS / NO BUILD / NO LIVE KINTONE**
+Mode: **ANTIGRAVITY MINIMUM TEST-ONLY CORRECTIVE — ONE FILE / NO SOURCE CHANGE / NO BUILD / NO LIVE KINTONE**
 Branch: `ai/antigravity-wp002c`
-Opened after pre-deploy verification result: `FULL_TEST = FAIL (1034 passed / 4 failed / 1038 total)`
+Opened after triage: `1034 PASS / 4 FAIL / 1038 total`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = OPEN / DIAGNOSTIC_ONLY
+TASK_STATE = OPEN / READY_FOR_EXECUTION
 CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER_AFTER_EXECUTION = CHATGPT ROOT-CAUSE REVIEW
+NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
 ```
 
-Fresh-fetch the branch first.
+Fresh-fetch the branch first. If another executor commit already exists after this task was written, STOP and return control to ChatGPT.
 
 ## 0. Goal
 
-Identify exactly which four tests failed in the immediately prior full regression and capture enough failure evidence for ChatGPT to decide the smallest corrective.
+Correct only stale synchronous test invocation assumptions after accepted Gate 3 made `app.record.detail.process.proceed` async.
 
-This task does NOT authorize any fix.
+Do NOT change runtime/source behavior.
 
-## 1. Preferred path — reuse existing output
-
-If the immediately prior `npm test` terminal/chat output is still available, DO NOT rerun the suite.
-
-Extract exactly the four failure blocks and return for each:
-- exact test/subtest name;
-- test file path;
-- line/column if shown;
-- assertion/error type;
-- expected vs actual if shown;
-- first useful stack/error lines sufficient to locate the failure.
-
-Do not provide a broad repository report.
-
-## 2. Fallback only if prior output is unavailable
-
-If the prior failure output can no longer be recovered, run exactly once:
+Root cause is already classified by ChatGPT:
 
 ```text
+EXPECTED BUSINESS RESULT = event or false
+ACTUAL ASSERTION INPUT    = Promise resolving to that business result
+RUNTIME REGRESSION        = NO EVIDENCE
+CORRECTIVE                = TEST CONTRACT ONLY
+```
+
+## 1. Exact allowed file
+
+MODIFY ONLY:
+
+```text
+tests/objective-save-validation.test.js
+```
+
+No other file may change.
+
+## 2. Exact failing test blocks
+
+Touch only Process Proceed invocation mechanics inside these four existing test blocks:
+
+1. `M10L-D-R6: app.record.detail.process.proceed handler returns exact event on valid validation`
+2. `M10L-D-R6: app.record.detail.process.proceed handler returns false on invalid validation`
+3. `M10L-D-R12B: Workflow action validation enforces fail-closed topology & assignee guards`
+4. `M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fail-closed guards`
+
+These tests are already declared `async`.
+
+## 3. Required correction
+
+For every direct `proceedHook(event)` invocation inside the four named test blocks, resolve the async handler before asserting its business result.
+
+Preferred minimal pattern:
+
+```js
+assert.equal(await proceedHook(event), expected, message);
+```
+
+or equivalent when a local result variable already exists:
+
+```js
+const res = await proceedHook(event);
+```
+
+Do NOT change any expected value, fixture, action label, topology, status, requester/appraiser field, or assertion meaning.
+
+### Async-unsafe loop
+
+Inside `M10L-D-R12B-R1`, the G2 topology checks currently use synchronous `.forEach(...)` while calling `proceedHook(...)`.
+
+Convert only that loop to an async-safe sequential loop, for example:
+
+```js
+for (const g2Topo of ['M1_G1_G2', 'M1_M2_G1_G2']) {
+  ...
+  assert.equal(await proceedHook(failG2), false, ...);
+}
+```
+
+Do not otherwise refactor the test.
+
+## 4. Explicitly forbidden
+
+```text
+MODIFY src/**                              = NO
+MODIFY services/**                         = NO
+MODIFY scripts/**                          = NO
+MODIFY project-docs/** BY EXECUTOR         = NO
+MODIFY dist/**                             = NO
+MODIFY any other test file                 = NO
+CHANGE ASSERTION EXPECTATIONS              = NO
+CHANGE BUSINESS FIXTURES                   = NO
+REVERT PROCESS.PROCEED TO SYNC             = NO
+CHANGE GATE 3 AUTHORITY BEHAVIOR            = NO
+npm run ui:build                           = NO
+LIVE KINTONE GET/WRITE                     = NO
+APP53 ACCESS/WRITE                         = NO
+ACL/GROUP/DEPLOY/UAT                       = NO
+```
+
+No Live authorization exists.
+
+## 5. Verification order
+
+Run exactly in this order:
+
+```text
+node --test tests/objective-save-validation.test.js
 npm test
+git diff --check
+git status --short
 ```
 
-Purpose is only to recover the four failure blocks.
+If focused test FAILS:
+- STOP;
+- do not fix outside the allowed invocation mechanics;
+- report exact failure.
 
-Do NOT run any other test command.
-Do NOT run build.
+If focused test passes but full `npm test` fails:
+- STOP;
+- do not expand scope;
+- report exact full-suite failure count and names.
 
-## 3. Absolute freeze
-
-Do NOT modify:
+Required changed-file scope:
 
 ```text
-src/**
-tests/**
-services/**
-scripts/**
-project-docs/**
-dist/**
-package.json
-package-lock.json
+tests/objective-save-validation.test.js ONLY
 ```
 
-Do NOT:
-- fix a failing test;
-- change an assertion;
-- change source behavior;
-- run `npm run ui:build`;
-- access Live Kintone;
-- access App53;
-- run connection tests;
-- deploy;
-- change ACL/groups;
-- perform UAT;
-- create a commit.
+## 6. Finish
 
-## 4. Stop rule
+If:
+- focused file test PASS;
+- full `npm test` PASS;
+- `git diff --check` PASS;
+- only the one allowed test file changed;
 
-After the exact four failure blocks are identified, STOP immediately and return control to ChatGPT.
+then commit + push exactly one focused test-only corrective commit and STOP.
 
-If the rerun produces a different failure count, report both the prior known result and the new exact result; do not investigate further.
+Do NOT build after the full test passes. Build remains a separate Control Plane step after ChatGPT review.
 
-## 5. Required response only
+Return only:
 
 ```text
-PRIOR_FULL_TEST = FAIL (1034 passed / 4 failed / 1038 total)
-RERUN = NO / YES
-RERUN_RESULT = NOT_RUN / exact result
-
-FAILURE_1
-TEST = ...
-FILE = ...
-LOCATION = ...
-ERROR = ...
-EXPECTED = ... / N/A
-ACTUAL = ... / N/A
-USEFUL_STACK = ...
-
-FAILURE_2
-...
-
-FAILURE_3
-...
-
-FAILURE_4
-...
-
-FILES_CHANGED = NONE
+FOCUSED_TEST = PASS/FAIL + exact count
+FULL_TEST = PASS/FAIL + exact count
+GIT_DIFF_CHECK = PASS/FAIL
+CHANGED_FILES = exact list
+CORRECTIVE_COMMIT = <sha> / NONE
+SOURCE_FILES_CHANGED = 0
+OTHER_TEST_FILES_CHANGED = 0
 BUILD_RUN = NO
 LIVE_KINTONE_OPERATIONS = 0
 APP53_PRODUCTION_TOUCHED = NO
 DEPLOY_RUN = NO
 ```
 
-Next owner = ChatGPT root-cause review.
+Next owner = ChatGPT independent review.
