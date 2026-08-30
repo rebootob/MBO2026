@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual local/runtime execution is required
-> Updated: 2026-08-30 — R4.1 NATIVE-CANCEL PREDEPLOY VERIFICATION PASS / HOLD FOR USER DEPLOY AUTHORIZATION
+> Updated: 2026-08-30 — R4.1 NATIVE-CANCEL ONE-SHOT DEPLOYMENT AUTHORIZED / READY FOR EXECUTION
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and its User Runtime UAT failed because fatal Create Back still triggered leave-confirmation. R4/R4.1 native-Cancel corrective source review PASS and full predeploy verification PASS. Waiting for a NEW explicit one-shot deployment authorization before any forward deployment. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and its User Runtime UAT failed because fatal Create Back still triggered leave-confirmation. R4/R4.1 native-Cancel corrective source review PASS and full predeploy verification PASS. User has now granted a NEW exact one-shot authorization for deployment of the locked R4.1 candidate only. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -19,7 +19,7 @@
 | D6 | 🔴 Integrated E2E / Security / Regression pending |
 | D7 | ✅ Admin Support Center source functionality CLOSED |
 
-## 2. Actual Live App794
+## 2. Actual Live App794 Precondition
 
 ```text
 LIVE_ACTUAL_REVISION          = 59
@@ -35,7 +35,7 @@ REV59_USER_UAT                = FAIL — BACK TRIGGERED LEAVE-CONFIRM DIALOG
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
 ```
 
-Rev59 is actual Live but is not accepted known-good. No consumed authorization may be reused.
+Before any write, executor must GET-read Live + Preview and fail closed on any unexpected drift. Do not repair drift.
 
 ## 3. Locked R4.1 Corrective Candidate
 
@@ -56,7 +56,7 @@ Accepted R4/R4.1 behavior:
 - native Save/Cancel remain hidden only on terminal fatal Create;
 - normal successful Create and Detail/Edit behavior are preserved;
 - no `onbeforeunload`/`beforeunload` manipulation and no location/history navigation hacks;
-- actual no-popup behavior still requires a separately authorized Live deployment and User UAT.
+- actual no-popup behavior still requires post-deploy User UAT.
 
 ## 4. Independent Predeploy Verification Result
 
@@ -89,36 +89,67 @@ Independent decision:
 
 `PASS — R4.1 PREDEPLOY VERIFICATION COMPLETE`
 
-No source change and no Live write occurred in this verification task.
+## 5. Active One-Shot Deployment Authorization
 
-## 5. Current Active Task
+User authorization received on 2026-08-30:
+
+`อนุมัติ App794 R4.1 Native-Cancel corrective deployment candidate 1ed342ad one-shot 1 ครั้ง`
+
+Authorization ledger entry:
 
 ```text
-ACTIVE_TASK                   = HOLD — WAITING FOR USER ONE-SHOT DEPLOYMENT AUTHORIZATION
-OWNER                         = USER / CONTROL PLANE
-MODE                          = NO EXECUTION
-SOURCE_CHANGE                 = NO
-LIVE_WRITE                    = NO
-DEPLOY                        = NO
-ROLLBACK                      = NO
-ACTIVE_DEPLOY_AUTH            = NONE
-ACTIVE_KINTONE_WRITE_AUTH     = NONE
+AUTHORIZATION_ID              = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01
+AUTHORIZATION_STATUS          = ACTIVE / UNUSED / ONE-SHOT
+TARGET_APP                    = App794 customization only
+CANDIDATE                     = 1ed342ad137a4a364496a28d29bdffd24a99b511
+CANDIDATE_JS                  = 115a08ace32bdf850cb5eebf25b953d1803114d0
+CANDIDATE_CSS                 = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+SCOPE                         = ALL
+TOPOLOGY                      = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+MAX_DEPLOY_ATTEMPTS           = 1
+AUTO_RETRY                    = NO
+SECOND_FORWARD_DEPLOY         = NO
+AUTO_ROLLBACK                 = NO
+ROLLBACK_INCLUDED             = NO
+APP794_RECORD_WRITE           = NO
+APP800_APP801_APP795_APP796_RECORD_WRITE = NO
+SCHEMA_LAYOUT_ACL_PROCESS     = NO
 ```
 
-Antigravity must do nothing until a new exact authorization packet is opened.
+The authorization is consumed as soon as the executor begins the authorized forward deployment write attempt, whether that attempt succeeds or fails. It may never be reused.
 
-## 6. Authorization Ledger
+## 6. Current Active Task
 
 ```text
-LATEST_DEPLOY_AUTH_ID         = APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01
-LATEST_DEPLOY_AUTH_STATUS     = CONSUMED / CLOSED / NEVER REUSE
-ACTIVE_LIVE_AUTH              = NONE
-ACTIVE_KINTONE_WRITE_AUTH     = NONE
-ACTIVE_DEPLOY_AUTH            = NONE
+ACTIVE_TASK                   = APP794 R4.1 NATIVE-CANCEL ONE-SHOT DEPLOYMENT EXECUTION
+OWNER                         = ANTIGRAVITY
+MODE                          = EXACT AUTHORIZED APP794 CUSTOMIZATION DEPLOYMENT
+SOURCE_CHANGE                 = NO
+LIVE_WRITE                    = APP794 CUSTOMIZATION ONLY / ONE ATTEMPT
+DEPLOY                        = AUTHORIZED ONCE
+ROLLBACK                      = NOT AUTHORIZED
+ACTIVE_DEPLOY_AUTH            = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01
+ACTIVE_KINTONE_WRITE_AUTH     = APP794 CUSTOMIZATION DEPLOY ONLY
+```
+
+Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
+
+## 7. Authorization Ledger
+
+```text
+PRIOR_AUTHORIZATION_ID        = APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01
+PRIOR_AUTHORIZATION_STATUS    = CONSUMED / CLOSED / NEVER REUSE
+LATEST_AUTHORIZATION_ID       = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01
+LATEST_AUTHORIZATION_STATUS   = ACTIVE / UNUSED / ONE-SHOT
+ACTIVE_LIVE_AUTH              = APP794 CUSTOMIZATION DEPLOY ONLY
+ACTIVE_KINTONE_WRITE_AUTH     = APP794 CUSTOMIZATION DEPLOY ONLY
+ACTIVE_DEPLOY_AUTH            = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01
 ROLLBACK_AUTH                 = NONE
 ```
 
-## 7. Known-Good Rollback Baseline
+No prior authorization may be reused.
+
+## 8. Known-Good Rollback Baseline
 
 ```text
 ROLLBACK_KNOWN_GOOD_REVISION = 57
@@ -132,16 +163,18 @@ ROLLBACK_AUTHORIZED          = NO
 
 Rollback requires separate explicit authorization and is never automatic.
 
-## 8. Current Gate
+## 9. Current Gate
 
 ```text
-CURRENT_GATE                  = READY FOR USER DEPLOYMENT AUTHORIZATION
-CURRENT_MODE                  = HOLD / NO EXECUTION
-LIVE_ACTUAL_REVISION          = 59
+CURRENT_GATE                  = AUTHORIZED ONE-SHOT R4.1 DEPLOYMENT EXECUTION
+CURRENT_MODE                  = ANTIGRAVITY EXECUTION / EXACT APP794 CUSTOMIZATION DEPLOY ONLY
+LIVE_ACTUAL_REVISION          = 59 BEFORE ATTEMPT
 REV59_USER_UAT                = FAIL
 R4_1_SOURCE_REVIEW            = PASS
 PREDEPLOY_VERIFICATION        = PASS
-R4_1_READY_TO_DEPLOY          = YES — ONLY AFTER NEW USER ONE-SHOT AUTHORIZATION
+R4_1_READY_TO_DEPLOY          = YES
 REV59_ACCEPTED_KNOWN_GOOD     = NO
-NEXT_OWNER                    = USER
+NEXT_OWNER                    = ANTIGRAVITY
 ```
+
+After the one authorized attempt, executor must STOP and return evidence for ChatGPT Independent Review. User Runtime UAT is required before any new revision can replace Rev57 as accepted known-good.
