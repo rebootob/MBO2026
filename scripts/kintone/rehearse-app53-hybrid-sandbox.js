@@ -102,6 +102,43 @@ async function waitForDeploySuccess(baseUrl, headers, sandboxAppId, timeoutMs = 
   throw new Error(`Sandbox deployment timed out after ${timeoutMs}ms.`);
 }
 
+// Helper: Exact Schema Field Verification (Preview & Live)
+function verifyMboKintoneUserField(fieldObj, contextLabel) {
+  if (
+    !fieldObj ||
+    fieldObj.code !== 'MBO_Kintone_User' ||
+    fieldObj.type !== 'USER_SELECT' ||
+    fieldObj.label !== 'MBO Kintone User' ||
+    fieldObj.required !== false ||
+    !Array.isArray(fieldObj.entities) ||
+    fieldObj.entities.length !== 0
+  ) {
+    throw new Error(`[FAIL CLOSED] ${contextLabel} verification mismatch for MBO_Kintone_User field.`);
+  }
+}
+
+// Helper: Deterministic Synthetic Record Verification (Forward & Rollback)
+function verifySyntheticRecords(records, contextLabel) {
+  if (!Array.isArray(records) || records.length !== 2) {
+    throw new Error(`[FAIL CLOSED] ${contextLabel} synthetic record count mismatch (expected 2, got ${records?.length}).`);
+  }
+
+  const sorted = [...records].sort((a, b) => Number(a.$id?.value || 0) - Number(b.$id?.value || 0));
+  const recA = sorted[0];
+  const recB = sorted[1];
+
+  if (
+    !recA ||
+    !recB ||
+    recA.Number_0?.value !== '1' ||
+    recA.emp_text?.value !== 'SYNTH-001' ||
+    recB.Number_0?.value !== '1' ||
+    recB.emp_text?.value !== ''
+  ) {
+    throw new Error(`[FAIL CLOSED] ${contextLabel} synthetic record baseline value mismatch.`);
+  }
+}
+
 // Main Execution Lifecycle
 async function runSandboxLifecycle() {
   const { baseUrl, headers } = getKintoneConnection();
@@ -195,7 +232,7 @@ async function runSandboxLifecycle() {
           code: 'MBO_Kintone_User',
           label: 'MBO Kintone User',
           required: false,
-          defaultValue: []
+          entities: []
         }
       }
     }
@@ -205,9 +242,7 @@ async function runSandboxLifecycle() {
   assertSandboxAppId(sandboxAppId);
   const previewFieldsS3 = await kintoneFetch(baseUrl, headers, `/k/v1/preview/app/form/fields.json?app=${sandboxAppId}`, { method: 'GET' });
   const mboUserPrevS3 = previewFieldsS3.properties?.MBO_Kintone_User;
-  if (!mboUserPrevS3 || mboUserPrevS3.type !== 'USER_SELECT' || mboUserPrevS3.label !== 'MBO Kintone User') {
-    throw new Error(`[FAIL CLOSED] Preview verification mismatch for MBO_Kintone_User field addition.`);
-  }
+  verifyMboKintoneUserField(mboUserPrevS3, 'S3 Preview');
 
   console.log(`[S3] Deploying forward field change to sandbox ${sandboxAppId}...`);
   assertSandboxAppId(sandboxAppId);
@@ -222,17 +257,11 @@ async function runSandboxLifecycle() {
   assertSandboxAppId(sandboxAppId);
   const liveFieldsS3 = await kintoneFetch(baseUrl, headers, `/k/v1/app/form/fields.json?app=${sandboxAppId}`, { method: 'GET' });
   const mboUserLiveS3 = liveFieldsS3.properties?.MBO_Kintone_User;
-  if (!mboUserLiveS3 || mboUserLiveS3.type !== 'USER_SELECT' || mboUserLiveS3.label !== 'MBO Kintone User') {
-    throw new Error(`[FAIL CLOSED] Live verification mismatch for MBO_Kintone_User field addition.`);
-  }
+  verifyMboKintoneUserField(mboUserLiveS3, 'S3 Live');
 
-  const liveRecsS3 = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${sandboxAppId}`, { method: 'GET' });
-  if (!Array.isArray(liveRecsS3.records) || liveRecsS3.records.length !== 2) {
-    throw new Error(`[FAIL CLOSED] Live synthetic record count mismatch (expected 2, got ${liveRecsS3.records?.length}).`);
-  }
-  if (liveRecsS3.records[0].emp_text?.value !== 'SYNTH-001' || liveRecsS3.records[1].emp_text?.value !== '') {
-    throw new Error(`[FAIL CLOSED] Live synthetic record baseline value altered.`);
-  }
+  const queryAsc = encodeURIComponent('order by $id asc');
+  const liveRecsS3 = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${sandboxAppId}&query=${queryAsc}`, { method: 'GET' });
+  verifySyntheticRecords(liveRecsS3.records, 'S3 Live');
   console.log(`[S3] Forward rehearsal PASS.`);
 
   // S4 — Rollback Rehearsal
@@ -269,13 +298,8 @@ async function runSandboxLifecycle() {
     throw new Error(`[FAIL CLOSED] MBO_Kintone_User field still present in Live after rollback deploy.`);
   }
 
-  const liveRecsS4 = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${sandboxAppId}`, { method: 'GET' });
-  if (!Array.isArray(liveRecsS4.records) || liveRecsS4.records.length !== 2) {
-    throw new Error(`[FAIL CLOSED] Live synthetic record count mismatch after rollback (expected 2, got ${liveRecsS4.records?.length}).`);
-  }
-  if (liveRecsS4.records[0].emp_text?.value !== 'SYNTH-001' || liveRecsS4.records[1].emp_text?.value !== '') {
-    throw new Error(`[FAIL CLOSED] Live synthetic record baseline value altered after rollback.`);
-  }
+  const liveRecsS4 = await kintoneFetch(baseUrl, headers, `/k/v1/records.json?app=${sandboxAppId}&query=${queryAsc}`, { method: 'GET' });
+  verifySyntheticRecords(liveRecsS4.records, 'S4 Live Rollback');
 
   console.log(`\n========================================================================`);
   console.log(`[REHEARSAL SUCCESS] Sandbox app ID ${sandboxAppId} rehearsal complete.`);
