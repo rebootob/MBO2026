@@ -7683,7 +7683,6 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             ".gaia-ui-actionmenu-cancel",
             ".gaia-argui-app-menu-save",
             ".gaia-argui-app-menu-cancel",
-            "button.gaiav2-app-statusbar-action",
             "button.gaia-ui-actionmenu-save",
             "button.gaia-ui-actionmenu-cancel"
           ];
@@ -7721,7 +7720,9 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
       box.appendChild(h2);
       box.appendChild(p);
       host.appendChild(box);
-      hideNativeSaveCancelControls();
+      if (options.hideNativeSaveCancel === true) {
+        hideNativeSaveCancelControls();
+      }
     }, resolveBusinessStage = function(event) {
       if (event.type === "app.record.create.show" || event.type === "app.record.create.submit") {
         return BUSINESS_STAGES.NEW_RECORD;
@@ -7749,9 +7750,6 @@ Record: ${record.Employee_Code.value}`,
         return event;
       }
       const stage = resolveBusinessStage(event);
-      if (isCreate && record.Fiscal_Year && !record.Fiscal_Year.value) {
-        record.Fiscal_Year.value = "FY2026";
-      }
       const loginUser = typeof kintone !== "undefined" && kintone.getLoginUser ? kintone.getLoginUser() : null;
       const loginUserCode = loginUser?.code || null;
       const options = {
@@ -7958,6 +7956,9 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             record.$id?.value,
             kintoneApiWrapper
           );
+          if (record.Fiscal_Year && !record.Fiscal_Year.value) {
+            record.Fiscal_Year.value = "FY2026";
+          }
           isAutoloadingInCreateHandler = true;
           return ui.executeLookup(authenticatedEmployeeCode);
         })();
@@ -7967,7 +7968,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             uiHost,
             "Employee Profile Resolution Failed",
             `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
-            { isCreate: true, showBackToMyMbo: true, appId: currentAppId }
+            { isCreate: true, showBackToMyMbo: true, hideNativeSaveCancel: true, appId: currentAppId }
           );
           hideAllNativeFields(record);
           return event;

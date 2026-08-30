@@ -358,14 +358,28 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const mismatchEditBackBars = mismatchEditHost.querySelectorAll('[data-mbo-back-nav-bar]');
   assert.equal(mismatchEditBackBars.length, 1, 'R4_ERROR_STATE_EDIT_BACK_VISIBLE: Access Denied error screen on existing Edit must mount exactly 1 Back bar');
 
-  // 4c. Create Screen Auth-Required / Gate-Null Error State MUST NOT show Back bar (before authentication)
+  // Mock native Save & Cancel buttons in document for testing hideNativeSaveCancelControls
+  const mockSaveBtn = createMockElement('button');
+  mockSaveBtn.className = 'gaia-ui-actionmenu-save';
+  mockSaveBtn.style.display = 'block';
+  const mockCancelBtn = createMockElement('button');
+  mockCancelBtn.className = 'gaia-ui-actionmenu-cancel';
+  mockCancelBtn.style.display = 'block';
+  globalThis.document.querySelectorAll = (sel) => {
+    if (sel.includes('gaia-ui-actionmenu-save')) return [mockSaveBtn];
+    if (sel.includes('gaia-ui-actionmenu-cancel')) return [mockCancelBtn];
+    return [];
+  };
+
+  // 4c. Create Screen Auth-Required / Gate-Null Error State MUST NOT show Back bar and MUST NOT hide native Save/Cancel
   const createUnauthErrorHost = createMockElement('div');
   currentActiveHost = createUnauthErrorHost;
   const createUnauthErrorEvent = {
     type: 'app.record.create.show',
     appId: 794,
     record: {
-      Status: { value: '01 Draft Objective' }
+      Status: { value: '01 Draft Objective' },
+      Fiscal_Year: { value: '' }
     }
   };
   const origGate = mockGate;
@@ -373,33 +387,35 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   await recordShowHandler(createUnauthErrorEvent);
   const createUnauthBackBars = createUnauthErrorHost.querySelectorAll('[data-mbo-back-nav-bar]');
   assert.equal(createUnauthBackBars.length, 0, 'R4_R2_CREATE_UNAUTH_ERROR_BACK_ABSENT: Error screen before authentication on Create must NOT mount Back bar');
+  assert.equal(mockSaveBtn.style.display, 'block', 'R2_UNAUTH_CREATE_SAVE_NOT_HIDDEN: Pre-auth Create error notice must NOT hide native Save');
+  assert.equal(mockCancelBtn.style.display, 'block', 'R2_UNAUTH_CREATE_CANCEL_NOT_HIDDEN: Pre-auth Create error notice must NOT hide native Cancel');
+  assert.equal(createUnauthErrorEvent.record.Fiscal_Year.value, '', 'R2_UNAUTH_FISCAL_YEAR_CLEAN: Fiscal_Year remains unmutated');
   setMboLoginGate(origGate);
 
-  // Mock native Save & Cancel buttons in document for testing hideNativeSaveCancelControls
-  const mockSaveBtn = createMockElement('button');
-  mockSaveBtn.className = 'gaia-ui-actionmenu-save';
-  const mockCancelBtn = createMockElement('button');
-  mockCancelBtn.className = 'gaia-ui-actionmenu-cancel';
-  globalThis.document.querySelectorAll = (sel) => {
-    if (sel.includes('gaia-ui-actionmenu-save')) return [mockSaveBtn];
-    if (sel.includes('gaia-ui-actionmenu-cancel')) return [mockCancelBtn];
-    return [];
-  };
-
-  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar and hide native Save/Cancel (Fatal Create Clean-Exit R1)
+  // 4d. Authenticated Create Fatal Autoload / Duplicate Error State MUST show exactly 1 Back bar, hide native Save/Cancel, and keep Fiscal_Year clean (Fatal Create Clean-Exit R2)
   const createAutoloadFailHost = createMockElement('div');
   currentActiveHost = createAutoloadFailHost;
   const createAutoloadFailEvent = {
     type: 'app.record.create.show',
     appId: 794,
     record: {
-      Status: { value: '01 Draft Objective' }
+      Status: { value: '01 Draft Objective' },
+      Fiscal_Year: { value: '' }
     }
   };
+  let kintoneRecordSetCount = 0;
+  const origSet = globalThis.kintone.app.record.set;
+  globalThis.kintone.app.record.set = () => { kintoneRecordSetCount++; };
+
   const savedApi = globalThis.kintone.api;
-  const mockErrApi = async () => { throw new Error('Simulated duplicate or lookup failure'); };
+  let lastQuery = '';
+  const mockErrApi = async (path, query) => {
+    lastQuery = query || '';
+    throw new Error('Simulated duplicate MBO record already exists for Employee 0118 in FY2026');
+  };
   mockErrApi.url = (path) => path;
   globalThis.kintone.api = mockErrApi;
+
   await recordShowHandler(createAutoloadFailEvent);
   const createAutoloadBackBars = createAutoloadFailHost.querySelectorAll('[data-mbo-back-nav-bar]');
   assert.equal(createAutoloadBackBars.length, 1, 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_VISIBLE: Authenticated Create fatal profile resolution error must mount exactly 1 Back bar');
@@ -408,9 +424,32 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.ok(createAutoloadBackLink.textContent.includes('← กลับหน้า My MBO / Back to My MBO'), 'R4_R2_AUTH_CREATE_FATAL_ERROR_BACK_LABEL: Uses exact bilingual label');
   assert.equal(mockSaveBtn.style.display, 'none', 'FATAL_CREATE_NATIVE_SAVE_HIDDEN: Native Save control must be hidden on terminal fatal Create state');
   assert.equal(mockCancelBtn.style.display, 'none', 'FATAL_CREATE_NATIVE_CANCEL_HIDDEN: Native Cancel control must be hidden on terminal fatal Create state');
+  assert.equal(createAutoloadFailEvent.record.Fiscal_Year.value, '', 'R2_FATAL_CREATE_FISCAL_YEAR_UNMUTATED: Fiscal_Year.value must remain blank on duplicate rejection');
   assert.equal(createAutoloadFailEvent.record.Employee_Code, undefined, 'FATAL_CREATE_FORM_STATE_CLEAN: Native record object must remain unmutated by failed autoload');
+  assert.equal(kintoneRecordSetCount, 0, 'R2_FATAL_CREATE_KINTONE_RECORD_SET_ZERO: kintone.app.record.set must NOT be called on fatal duplicate rejection');
+  globalThis.kintone.app.record.set = origSet;
+
+  // 4e. Authenticated Create Duplicate Check with Nonblank Fiscal_Year
+  const createFailFYHost = createMockElement('div');
+  currentActiveHost = createFailFYHost;
+  const createFailFYEvent = {
+    type: 'app.record.create.show',
+    appId: 794,
+    record: {
+      Status: { value: '01 Draft Objective' },
+      Fiscal_Year: { value: 'FY2025' }
+    }
+  };
+  await recordShowHandler(createFailFYEvent);
+  assert.equal(createFailFYEvent.record.Fiscal_Year.value, 'FY2025', 'R2_NONBLANK_FY_PRESERVED: Nonblank Fiscal_Year.value remains FY2025');
+
   globalThis.kintone.api = savedApi;
 
   assert.equal(sessionMutations, 0, 'REAL_MAIN_AUTH_SESSION_MUTATION = 0');
   assert.equal(recordWrites, 0, 'REAL_MAIN_RECORD_WRITE = 0');
+
+  // 4f. Static Code Inspection: Ensure ZERO onbeforeunload assignment/override in main-mbo-app.js
+  const fs = await import('fs');
+  const mainSrc = fs.readFileSync('src/main-mbo-app.js', 'utf8');
+  assert.ok(!mainSrc.includes('onbeforeunload'), 'R2_NO_UNLOAD_BYPASS: main-mbo-app.js must NOT touch or suppress window.onbeforeunload');
 });

@@ -211,7 +211,6 @@ if (typeof kintone !== 'undefined') {
           '.gaia-ui-actionmenu-cancel',
           '.gaia-argui-app-menu-save',
           '.gaia-argui-app-menu-cancel',
-          'button.gaiav2-app-statusbar-action',
           'button.gaia-ui-actionmenu-save',
           'button.gaia-ui-actionmenu-cancel'
         ];
@@ -263,7 +262,10 @@ if (typeof kintone !== 'undefined') {
     box.appendChild(h2);
     box.appendChild(p);
     host.appendChild(box);
-    hideNativeSaveCancelControls();
+    
+    if (options.hideNativeSaveCancel === true) {
+      hideNativeSaveCancelControls();
+    }
   }
 
   /**
@@ -360,11 +362,6 @@ if (typeof kintone !== 'undefined') {
     }
 
     const stage = resolveBusinessStage(event);
-
-    // Default Fiscal Year on Create - safely mutating .value only
-    if (isCreate && record.Fiscal_Year && !record.Fiscal_Year.value) {
-      record.Fiscal_Year.value = 'FY2026';
-    }
 
     // 2. Instantiate and render Custom UI
     const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
@@ -584,6 +581,9 @@ if (typeof kintone !== 'undefined') {
           record.$id?.value,
           kintoneApiWrapper
         );
+        if (record.Fiscal_Year && !record.Fiscal_Year.value) {
+          record.Fiscal_Year.value = 'FY2026';
+        }
         isAutoloadingInCreateHandler = true;
         return ui.executeLookup(authenticatedEmployeeCode);
       })();
@@ -593,7 +593,7 @@ if (typeof kintone !== 'undefined') {
         renderBlockedNotice(uiHost,
           'Employee Profile Resolution Failed',
           `Could not resolve Employee profile for ${authenticatedEmployeeCode}: ${err.message}`,
-          { isCreate: true, showBackToMyMbo: true, appId: currentAppId }
+          { isCreate: true, showBackToMyMbo: true, hideNativeSaveCancel: true, appId: currentAppId }
         );
         hideAllNativeFields(record);
         return event;
