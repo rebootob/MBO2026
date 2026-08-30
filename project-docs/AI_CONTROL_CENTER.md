@@ -4,14 +4,14 @@
 > Repository: `rebootob/MBO2026`
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
-> Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — R4 NATIVE-CANCEL LOGIC ACCEPTABLE / NARROW-DIFF + TEST-PROOF MICRO-CORRECTIVE OPEN
+> Execution Plane: Antigravity only when actual local/runtime execution is required
+> Updated: 2026-08-30 — R4.1 SOURCE REVIEW PASS / PREDEPLOY VERIFICATION OPEN / NO DEPLOY AUTH
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and User Runtime UAT FAILED because fatal Create Back still triggered leave-confirmation. R4 native-Cancel source direction is acceptable, but independent review found whole-file line-ending churn in `src/main-mbo-app.js` plus incomplete static forbidden-pattern proof. R4.1 micro-corrective is open before source-review PASS. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev59 remains actual Live and User Runtime UAT previously FAILED because fatal Create Back still triggered leave-confirmation. R4/R4.1 native-Cancel corrective source is now independently accepted. Mandatory local/predeploy verification is open before any future deployment authorization. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS |
@@ -30,83 +30,68 @@ LIVE_CSS_IDENTITY             = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 PREVIEW_REVISION              = 59
 PREVIEW_SCOPE                 = ALL
 PREVIEW_TOPOLOGY              = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-TECHNICAL_DEPLOYMENT_REVIEW   = PASS WITH AUDIT CAVEAT
-USER_RUNTIME_UAT              = FAIL — BACK STILL TRIGGERS LEAVE-CONFIRM DIALOG
+REV59_TECHNICAL_REVIEW        = PASS WITH AUDIT CAVEAT
+REV59_USER_UAT                = FAIL — BACK TRIGGERED LEAVE-CONFIRM DIALOG
 ACCEPTED_KNOWN_GOOD_REVISION  = 57
 ```
 
-Rev59 remains actual Live but is not accepted known-good. No active deploy/write/rollback authorization exists.
+Rev59 is actual Live but is not accepted known-good. Do not redeploy or rollback under any consumed authorization.
 
-## 3. R4 Executor Commit — Independent Review
+## 3. Locked R4.1 Corrective Candidate
 
-Executor source commit:
+```text
+CANDIDATE_SOURCE_TEST_COMMIT  = 1ed342ad137a4a364496a28d29bdffd24a99b511
+CANDIDATE_JS_GIT_BLOB         = 115a08ace32bdf850cb5eebf25b953d1803114d0
+CANDIDATE_CSS_GIT_BLOB        = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+CANDIDATE_SCOPE               = ALL
+CANDIDATE_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
+R4_1_SOURCE_REVIEW            = PASS
+PREDEPLOY_VERIFICATION        = PENDING
+```
 
-`d9c6a126b51b768dc6277391ea8d36b2bf2c892e`
+Independent source findings accepted:
+- final cumulative diff from semantic base `97c094133575221e5ee2cc6005e12923ce319318` is narrow; `src/main-mbo-app.js` is approximately `+45/-2`, not a whole-file rewrite;
+- authenticated terminal fatal Create resolves native Kintone Cancel using narrow known Cancel selectors;
+- canonical custom Back receives injected `onNavigateHome`, preventing ordinary anchor navigation and invoking captured native Cancel exactly once;
+- missing native Cancel fails closed without ordinary anchor fallback;
+- native Save/Cancel remain visually hidden only for terminal fatal Create;
+- normal successful Create keeps record-level Back absent and native Save/Cancel normal;
+- Detail/Edit behavior is preserved;
+- static regression assertions prohibit `onbeforeunload`/`beforeunload` manipulation and `location.assign` / `location.replace` / `history.back` hacks;
+- actual no-popup behavior still requires a future separately authorized Live deployment and User UAT.
 
-Commit message:
-`fix(wp2): invoke native Cancel clean-exit on fatal Create Back navigation R4`
+## 4. R4.1 Review Evidence
 
-Changed files from R4 base `97c094133575221e5ee2cc6005e12923ce319318`:
-- `src/main-mbo-app.js`
-- `tests/employee-main-mbo-app-integration.test.js`
-- generated `dist/mbo-employee-app.js`
+Executor commit:
+`1ed342ad137a4a364496a28d29bdffd24a99b511`
 
-No executor Control Plane edits and no Live/Kintone execution were evidenced.
+Commit scope from Control Plane base `a255d1cd0d84488c05bf869c5d12f0feba5df334`:
+- `src/main-mbo-app.js` — EOL normalization of prior polluted R4 commit;
+- `tests/employee-main-mbo-app-integration.test.js` — static test-proof completion;
+- no executor Control Plane edits;
+- no new source module;
+- no UI navigation module change.
 
-### R4 logic accepted in direction
+Cumulative semantic compare from `97c094133575221e5ee2cc6005e12923ce319318` to candidate:
+- `src/main-mbo-app.js` +45/-2;
+- `tests/employee-main-mbo-app-integration.test.js` +63/-10;
+- generated `dist/mbo-employee-app.js` +38/-2;
+- Control Plane documents are ChatGPT changes only.
 
-The semantic R4 implementation:
-- adds a narrow `findNativeCancelButton()` using only known Cancel selectors;
-- captures native Cancel before native Save/Cancel controls are visually hidden;
-- injects `onNavigateHome` into canonical `EmployeeRecordNavigation` only when `isCreate === true && hideNativeSaveCancel === true`;
-- custom Back prevents plain anchor navigation through the existing navigation component handler and invokes the captured native Cancel `click()`;
-- missing native Cancel installs a fail-closed handler that does not fall back to plain navigation;
-- normal Create and Detail/Edit preservation tests remain present;
-- tests assert native Cancel is invoked exactly once on fatal Create Back;
-- no new `window.location`, `location.assign`, `location.replace`, `history.back`, or `onbeforeunload` behavior is visible in the reviewed semantic change.
-
-Independent classification of the **behavioral design**:
-
-`ACCEPTABLE DIRECTION / NOT YET FULL SOURCE-REVIEW PASS`
-
-Actual no-popup behavior still requires future Live UAT after a separately authorized deployment; unit tests can prove native Cancel invocation, not Kintone browser behavior.
-
-## 4. Exact Review Defects Requiring R4.1
-
-### A. Whole-file line-ending churn in canonical source
-
-Git compare reports `src/main-mbo-app.js` as approximately `+934 / -891` even though the semantic R4 change is small. The patch shows the whole source file being rewritten in addition to the native-Cancel semantic additions. This is consistent with line-ending/EOL churn and violates the narrow-diff review requirement.
-
-Required result:
-- preserve R4 behavior;
-- restore the canonical source file's prior line-ending/content normalization;
-- reapply only the narrow semantic R4 changes;
-- final source diff from R4 base must be reviewable as a small feature change, not a near-whole-file rewrite;
-- generated dist may change only through normal build.
-
-### B. Mandatory static forbidden-pattern proof is incomplete
-
-R4 tests currently assert absence of `onbeforeunload`, `location.assign`, `location.replace`, and `history.back`, but the R4 packet also explicitly required proof against:
-
-`removeEventListener('beforeunload', ...)`
-
-R4.1 must add a robust static assertion covering both quote styles/whitespace as appropriate for `main-mbo-app.js` and `employee-record-navigation.js`.
-
-### C. No CI/status evidence on executor commit
-
-GitHub commit status contains no CI checks. R4.1 must rerun the exact mandatory local tests/build and report results; absence of CI itself is not a source defect, but source-review PASS requires the mandated verification evidence.
+GitHub has no CI/status/workflow evidence for candidate `1ed342ad...`. Therefore ChatGPT does **not** claim the mandatory local Node tests/build/diff-check have run successfully yet. Those are the next gate.
 
 ## 5. Current Active Task
 
 ```text
-ACTIVE_TASK                  = APP794 FATAL CREATE NATIVE-CANCEL CLEAN-EXIT R4.1 / NARROW-DIFF + TEST-PROOF MICRO-CORRECTIVE
-OWNER                        = ANTIGRAVITY
-FEATURE                      = Preserve R4 native-Cancel behavior while eliminating source EOL churn and completing forbidden-pattern proof
-CANONICAL_SOURCE_OWNER       = src/main-mbo-app.js
-SUPPORTING_MODULE            = src/ui/employee-record-navigation.js only if a test proves it is needed
-FOCUSED_TESTS                = tests/employee-main-mbo-app-integration.test.js + tests/employee-record-navigation.test.js
-GENERATED_DIST_OUTPUT         = dist/mbo-employee-app.js through normal build only
-LIVE_RESOURCE                 = NONE — NO DEPLOY AUTHORIZATION
+ACTIVE_TASK                   = APP794 R4.1 NATIVE-CANCEL PREDEPLOY VERIFICATION / READ-ONLY
+OWNER                         = ANTIGRAVITY
+MODE                          = LOCAL TEST + CLEAN BUILD + GET-ONLY APP794 CUSTOMIZATION READBACK
+SOURCE_CHANGE                 = NO
+LIVE_WRITE                    = NO
+DEPLOY                        = NO
+ROLLBACK                      = NO
+ACTIVE_DEPLOY_AUTH            = NONE
+ACTIVE_KINTONE_WRITE_AUTH     = NONE
 ```
 
 Exact packet is in `project-docs/AI_ACTIVE_TASK.md`.
@@ -130,20 +115,21 @@ ROLLBACK_SOURCE_COMMIT       = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
 ROLLBACK_JS_IDENTITY         = ac22a56cb9d78001384241fe12745f7a2da3da84
 ROLLBACK_CSS_IDENTITY        = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 ROLLBACK_SCOPE               = ALL
-ROLLBACK_TOPOLOGY            = 1/1/0/0
+ROLLBACK_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 ROLLBACK_AUTHORIZED          = NO
 ```
+
+Rollback requires separate explicit authorization.
 
 ## 8. Current Gate
 
 ```text
-CURRENT_GATE                  = R4.1 NARROW-DIFF + TEST-PROOF SOURCE MICRO-CORRECTIVE
-CURRENT_MODE                  = SOURCE + TEST + LOCAL BUILD ONLY / NO KINTONE NETWORK / NO DEPLOY
+CURRENT_GATE                  = R4.1 PREDEPLOY VERIFICATION
+CURRENT_MODE                  = READ-ONLY / LOCAL TEST + BUILD + GET-ONLY LIVE BASELINE
 LIVE_ACTUAL_REVISION          = 59
-REV59_TECHNICAL_REVIEW        = PASS WITH AUDIT CAVEAT
 REV59_USER_UAT                = FAIL
-R4_BEHAVIOR_DIRECTION         = ACCEPTABLE
-R4_SOURCE_REVIEW              = CORRECTIVE / EOL CHURN + TEST-PROOF GAP
+R4_1_SOURCE_REVIEW            = PASS
+PREDEPLOY_VERIFICATION        = PENDING
 REV59_ACCEPTED_KNOWN_GOOD     = NO
 NEXT_OWNER                    = ANTIGRAVITY FOR EXACT ACTIVE TASK
 ```
