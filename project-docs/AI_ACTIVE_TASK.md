@@ -1,16 +1,17 @@
-# AI ACTIVE TASK — D1 APP802 RESUME TOOLING SOURCE GATE S-D1 R1
+# AI ACTIVE TASK — D1 APP802 RESUME TOOLING S-D1 CORRECTIVE R1
 
-Mode: **ANTIGRAVITY SOURCE-ONLY SAFETY TOOLING / ONE NEW APP802-SPECIFIC SCRIPT / ZERO KINTONE NETWORK EXECUTION**
+Mode: **ANTIGRAVITY SOURCE-ONLY CORRECTIVE / ONE SCRIPT ONLY / ZERO KINTONE NETWORK EXECUTION**
 Branch: `ai/antigravity-wp002c`
-Opened after accepted App802 recovery inspection.
+Reviewed implementation commit: `0f6f50dea1290a744f5ba95c9757332d2e6806f1`
+Target App for future execution: `802`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = OPEN / READY_FOR_SOURCE_ONLY_EXECUTION
+TASK_STATE = OPEN / READY_FOR_NARROW_SOURCE_CORRECTIVE
 CURRENT_OWNER = ANTIGRAVITY
 NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT SOURCE REVIEW
-TARGET_APP = 802 ONLY
-APP802_RESUME_WRITE_AUTH = RECEIVED BUT HELD UNTIL SOURCE PASS
+APP802_RESUME_WRITE_AUTH = RECEIVED BUT HELD
+KINTONE_NETWORK_EXECUTION = FORBIDDEN
 SECOND_SANDBOX_CREATE_AUTH = NONE
 PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 ```
@@ -19,209 +20,135 @@ Fresh-fetch the branch first. If this Active Task has been replaced, STOP.
 
 ## 0. Goal
 
-Create exactly one dedicated, reviewable App802 resume script for the already-authorized synthetic Forward + Rollback rehearsal.
+Correct only the reviewed App802 resume script so all write responses, revisions, and synthetic record identities are authoritative before Gate S-D2 may execute.
 
-DO NOT execute the App802 lifecycle in this gate.
-DO NOT make any Kintone network call in this gate.
-
-Create exactly:
+Modify only:
 
 ```text
 scripts/kintone/resume-app802-hybrid-sandbox.js
 ```
 
-No other source/script/test/config file may change.
+Do NOT run the script.
+Do NOT make any Kintone request.
 
-## 1. Fixed target / no external targeting
+## 1. Preserve accepted target and safety design
 
-Hard-code:
+Do NOT change:
+- `APP_ID = 802`;
+- expected App name;
+- expected baseline revision `3`;
+- exact execution flag;
+- no external target App ID;
+- no app creation;
+- pre-write identity/field/deploy/zero-record gate;
+- exact `MBO_Kintone_User` contract;
+- endpoint families;
+- GET header rule;
+- forward/rollback lifecycle;
+- no Production fallback.
+
+## 2. Correct Add Records response handling
+
+The Add Records POST must require a parseable authoritative response.
+
+Require exactly:
 
 ```text
-APP_ID = 802
-EXPECTED_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
-EXPECTED_BASELINE_REVISION = 3
+ids.length = 2
+revisions.length = 2
+ids[0], ids[1] = positive numeric strings
+revisions[0], revisions[1] = numeric strings
 ```
 
-The script MUST NOT accept a target App ID from CLI, ENV, config, stdin or other user input.
+Preserve returned order:
+- `ids[0]` = Record A (`SYNTH-001`)
+- `ids[1]` = Record B (blank emp_text)
 
-Exact future execution flag:
+Store these IDs and use them in BOTH forward and rollback verification.
 
-```text
---execute-app802-resume
-```
+Later verification must require:
+- exactly 2 total records;
+- exact returned ID set only;
+- Record A returned ID has `Number_0='1'` and `emp_text='SYNTH-001'`;
+- Record B returned ID has `Number_0='1'` and `emp_text=''`.
 
-Without this exact flag the script must exit before creating a Kintone connection or making any network request.
+Do not rely only on `$id asc` position.
 
-Do not create another app.
-Do not call `/k/v1/preview/app.json`.
+If response JSON/ids/revisions are missing or malformed after HTTP success:
+STOP as uncertain write result.
+Do not retry.
 
-## 2. Future pre-write baseline gate
+## 3. Correct Add Field revision chain
 
-Before any future write, the script must fresh-GET App802 only and fail closed unless all are true:
+Before Add Field, use the fresh Preview fields revision already obtained by the pre-write gate.
 
-```text
-Live app name = MBO2026 App53 Hybrid Identity Sandbox
-Preview app name = MBO2026 App53 Hybrid Identity Sandbox
-Live revision = 3
-Preview revision = 3
-Deploy status = SUCCESS
-Live Number_0 type = NUMBER
-Preview Number_0 type = NUMBER
-Live emp_text type = SINGLE_LINE_TEXT
-Preview emp_text type = SINGLE_LINE_TEXT
-Live MBO_Kintone_User = ABSENT
-Preview MBO_Kintone_User = ABSENT
-Live record count = 0
-```
+Require that revision to be a valid numeric revision and exactly match expected baseline `3` at this initial step.
+Do NOT fall back to `EXPECTED_BASELINE_REVISION` when the field-read revision is absent or malformed.
 
-If any baseline item differs:
-STOP before all writes.
-Do not repair drift automatically.
+For POST Add Form Fields:
+- require parseable JSON response;
+- require valid numeric `revision` response;
+- GET Preview fields immediately;
+- require exact target field contract;
+- require Preview GET `revision` equals Add Field response `revision`;
+- deploy exactly that verified revision.
 
-Allowed baseline GETs must target App802 only.
-GET requests with no body must preserve authentication headers and MUST NOT send `Content-Type: application/json`.
+If any mismatch: STOP before deploy.
 
-## 3. Future authorized lifecycle encoded in the script
+## 4. Correct Delete Field revision chain
 
-### S-D2.1 — synthetic records
-Create exactly two synthetic records in App802:
+After forward deploy + Live verification and before DELETE:
+- fresh GET App802 Preview fields;
+- require `MBO_Kintone_User` still exists with exact contract;
+- require a valid numeric current Preview revision.
 
-```text
-Record A:
-Number_0 = 1
-emp_text = SYNTH-001
+DELETE only `MBO_Kintone_User` using that fresh Preview revision.
 
-Record B:
-Number_0 = 1
-emp_text = blank
-```
+Require DELETE response:
+- parseable JSON;
+- valid numeric `revision`.
 
-No real Employee_Code, name, email, phone, address, attachment or other PII.
+Then GET Preview fields immediately and require:
+- target field absent;
+- Preview GET `revision` equals DELETE response `revision`.
 
-Capture returned record IDs/revisions when available and use deterministic exact verification.
+Rollback deploy exactly that verified post-delete revision.
 
-### S-D2.2 — forward field
-Add to App802 Preview only:
+Do not use a stale revision captured before the forward deploy.
 
-```text
-Field Code = MBO_Kintone_User
-Label      = MBO Kintone User
-Type       = USER_SELECT
-Required   = false
-Entities   = []
-```
+## 5. Mutation response uncertainty rule
 
-Use revision-aware schema mutation when supported.
-Immediately GET Preview fields and fail closed unless exact target-field contract matches.
-
-Do not deploy if Preview exact check fails.
-
-### S-D2.3 — forward deploy + Live verification
-Deploy App802 only and poll official deploy-status GET until `SUCCESS`.
-Fail on `FAIL`, `CANCEL`, timeout or uncertain response.
-
-After SUCCESS, GET Live fields + records and prove:
-- exact target field exists;
-- exactly the two synthetic records exist;
-- Record A and B retain exact `Number_0` / `emp_text` values.
-
-### S-D2.4 — target-field rollback
-Delete ONLY field code:
+For these endpoints, successful HTTP without the documented expected JSON response is NOT enough:
 
 ```text
-MBO_Kintone_User
-```
-
-from App802 Preview.
-Use revision-aware mutation when supported.
-
-Immediately GET Preview fields and require target field absent before rollback deploy.
-
-Deploy App802 rollback only and poll until `SUCCESS`.
-
-Final Live verification must prove:
-- `MBO_Kintone_User` absent;
-- exactly the two synthetic records remain;
-- both records retain exact baseline synthetic values.
-
-Leave App802 present with the two synthetic records after successful field rollback.
-STOP for ChatGPT independent review.
-
-## 4. Request/target safety requirements
-
-Every network request encoded by this script must be statically bound to App802 except endpoint path itself where the App ID is supplied in a fixed request body/query.
-
-The script must include an assertion function that rejects any target other than numeric `802`.
-
-No externally supplied App ID.
-No fallback to App53.
-No second sandbox creation.
-No other existing App access.
-
-JSON body requests:
-- `Content-Type: application/json` required.
-
-GET with no body:
-- authentication headers only;
-- no JSON Content-Type.
-
-## 5. Allowed Kintone endpoint families in FUTURE S-D2 execution only
-
-Only App802 operations using these endpoint families may be encoded:
-
-```text
-GET    /k/v1/app/settings.json
-GET    /k/v1/preview/app/settings.json
-GET    /k/v1/app/form/fields.json
-GET    /k/v1/preview/app/form/fields.json
-GET    /k/v1/preview/app/deploy.json
-GET    /k/v1/records.json
-POST   /k/v1/records.json
-POST   /k/v1/preview/app/form/fields.json
+POST /k/v1/records.json
+POST /k/v1/preview/app/form/fields.json
 DELETE /k/v1/preview/app/form/fields.json
-POST   /k/v1/preview/app/deploy.json
 ```
 
-No app-create endpoint.
-No ACL/group/customize/process/status mutation endpoint.
+Missing/unparseable/malformed response must STOP as uncertain.
 
-## 6. Fail-closed / uncertainty rule
-
-Future execution must STOP immediately on:
-- identity mismatch;
-- revision mismatch;
-- record count not zero at preflight;
-- target field already present;
-- unexpected base field type;
-- deploy state not SUCCESS before write;
-- any HTTP/Kintone error;
-- uncertain POST/DELETE/deploy result;
-- Preview/Live exact-contract mismatch;
-- synthetic record count/value mismatch;
-- any target App ID not exactly 802.
-
-Do NOT auto-retry uncertain writes/deploys.
-Do NOT broaden scope.
-
-## 7. Gate S-D1 explicit forbidden actions
+Exception:
 
 ```text
-RUN NEW SCRIPT WITH EXECUTION FLAG = NO
-ANY KINTONE NETWORK GET = NO
-ANY KINTONE NETWORK WRITE = NO
+POST /k/v1/preview/app/deploy.json
+```
+
+Kintone documents no response body for deploy. HTTP success may proceed only to official deploy-status polling. Transport/HTTP uncertainty still STOPs; do not auto-retry.
+
+## 6. Explicitly forbidden
+
+```text
+RUN --execute-app802-resume = NO
+ANY KINTONE GET = NO
+ANY KINTONE WRITE = NO
 APP802 ACCESS = NO
 APP802 WRITE = NO
 APP802 DEPLOY = NO
-APP802 DELETE APP = NO
-CREATE SECOND SANDBOX = NO
 APP53 ACCESS = NO
 APP53 WRITE = NO
-REAL EMPLOYEE DATA = NO
-MODIFY existing scripts/** = NO
-MODIFY src/** = NO
-MODIFY tests/** = NO
-MODIFY config/** = NO
-MODIFY dist/** = NO
+CREATE SECOND SANDBOX = NO
+MODIFY any file except resume-app802-hybrid-sandbox.js = NO
 MODIFY project-docs/** BY EXECUTOR = NO
 MODIFY SAFETY GUARDS = NO
 npm test = NO
@@ -229,7 +156,7 @@ build = NO
 PRODUCTION B2 EXECUTION = NO
 ```
 
-## 8. Local verification only
+## 7. Local verification only
 
 Run exactly:
 
@@ -239,34 +166,32 @@ git diff --check
 git status --short
 ```
 
-Do NOT run the script itself.
+If any other tracked file changed: STOP.
 
-If checks PASS and exactly the one allowed new script changed:
-- commit + push exactly one focused tooling commit;
+If all checks PASS and only the allowed script changed:
+- commit + push exactly one focused corrective commit;
 - STOP.
 
-If anything else is required, STOP and return to ChatGPT.
-
-## 9. Required response only
+## 8. Required response only
 
 ```text
-SCRIPT_CREATED = YES/NO
-TARGET_APP_HARDCODED_802 = YES/NO
-EXTERNAL_APP_ID_INPUT = NONE / exact issue
-EXECUTION_FLAG_GUARD = PASS/FAIL
-PREWRITE_IDENTITY_REVISION_FIELD_RECORD_GATE = PASS/FAIL
-NO_APP_CREATE_ENDPOINT = PASS/FAIL
-GET_WITHOUT_CONTENT_TYPE = PASS/FAIL
-JSON_BODY_CONTENT_TYPE = PASS/FAIL
-TARGET_FIELD_EXACT_CONTRACT = PASS/FAIL
-REVISION_AWARE_SCHEMA_MUTATION = PASS/FAIL
-DEPLOY_STATUS_POLLING = PASS/FAIL
-SYNTHETIC_EXACT_VERIFICATION = PASS/FAIL
-ROLLBACK_EXACT_VERIFICATION = PASS/FAIL
+ADD_RECORDS_RESPONSE_IDS_REVISIONS_REQUIRED = YES/NO
+RETURNED_RECORD_IDS_USED_FOR_FORWARD_VERIFY = YES/NO
+RETURNED_RECORD_IDS_USED_FOR_ROLLBACK_VERIFY = YES/NO
+INITIAL_PREVIEW_FIELD_REVISION_EXACT_3 = PASS/FAIL
+ADD_FIELD_RESPONSE_REVISION_REQUIRED = YES/NO
+ADD_FIELD_PREVIEW_REVISION_MATCH_REQUIRED = YES/NO
+FORWARD_DEPLOY_USES_VERIFIED_REVISION = YES/NO
+DELETE_USES_FRESH_PREVIEW_REVISION = YES/NO
+DELETE_RESPONSE_REVISION_REQUIRED = YES/NO
+DELETE_PREVIEW_REVISION_MATCH_REQUIRED = YES/NO
+ROLLBACK_DEPLOY_USES_VERIFIED_REVISION = YES/NO
+MUTATION_UNPARSEABLE_RESPONSE_FAILS_CLOSED = YES/NO
+DEPLOY_EMPTY_RESPONSE_ALLOWED_ONLY_WITH_STATUS_POLL = YES/NO
 NODE_CHECK = PASS/FAIL
 GIT_DIFF_CHECK = PASS/FAIL
 CHANGED_FILES = exact list
-TOOLING_COMMIT = <sha> / NONE
+CORRECTIVE_COMMIT = <sha> / NONE
 KINTONE_NETWORK_OPERATIONS = 0
 APP802_ACCESS = 0
 APP53_ACCESS = 0
