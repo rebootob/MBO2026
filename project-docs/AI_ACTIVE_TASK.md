@@ -1,227 +1,165 @@
-# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT PREDEPLOY VERIFICATION / READ-ONLY
+# AI ACTIVE TASK — APP794 FATAL CREATE CLEAN-EXIT PREDEPLOY EVIDENCE COMPLETENESS MICRO-CORRECTIVE R1
 
-Mode: **ANTIGRAVITY VERIFICATION EXECUTION ONLY — TEST + LOCAL BUILD + GET-ONLY LIVE READBACK / NO LIVE WRITE / NO DEPLOY**  
+Mode: **ANTIGRAVITY VERIFICATION EVIDENCE COMPLETION ONLY — NO SOURCE CHANGE / NO LIVE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`
 
-## 1. Purpose
+## 1. Independent Review Result
 
-The Fatal Create Clean-Exit corrective source/test design has passed ChatGPT independent review.
+Executor evidence commit:
 
-Immutable release-source candidate to verify:
+`b537740461c67ae830b214994bf840db2417628f`
 
-```text
-CANDIDATE_SOURCE_TEST_COMMIT = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-CANDIDATE_JS_GIT_BLOB        = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
-CANDIDATE_CSS_GIT_BLOB       = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-EXPECTED_SCOPE               = ALL
-EXPECTED_TOPOLOGY            = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-```
+ChatGPT independent decision:
 
-R3 itself is test-only. The runtime corrective source is contained in the candidate history, principally R1+R2.
+`CORRECTIVE — PREDEPLOY CORE RESULTS LOOK CONSISTENT, BUT AUDIT EVIDENCE IS INCOMPLETE`
 
-This task exists to independently execute the exact focused tests/build, prove immutable candidate artifacts, verify the actual current Live Rev58 precondition through GET-only readback, and capture an auditable evidence file before any future deployment authorization request.
+Do not deploy. Do not change source/tests/config/scripts/package/dist.
 
-## 2. Absolute Safety Boundary
+## 2. Accepted Parts of Existing Evidence
 
-Forbidden:
-- Kintone POST / PUT / DELETE;
-- customization upload;
-- Preview customization update;
-- deploy POST;
-- App794/App800/App801/App795/App796 record write;
-- schema/layout/ACL/process change;
-- rollback;
-- source/test/config/script/package edits;
-- hand-editing `dist`;
-- reusing any consumed authorization.
+The current evidence already reports:
+- candidate detached HEAD = `4472aa2f1c63bf08788b39b4ad54b7ea55808df1`;
+- focused tests = 8/8 PASS;
+- `npm run ui:build` = exit 0;
+- classic bundle + CSS structure = 8/8 PASS;
+- exact `git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css` = exit 0;
+- candidate immutable Git blobs = JS `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d`, CSS `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`;
+- Live App794 readback = Rev58 / ALL / Desktop JS1 CSS1 / Mobile0/0 / JS `f097f67404fb75418cf85fee635e5d630ef5474d` / CSS `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`;
+- network methods = POST 0 / PUT 0 / DELETE 0;
+- Rev57 rollback immutable Git blobs = JS `ac22a56cb9d78001384241fe12745f7a2da3da84`, CSS `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`.
 
-Allowed Kintone network activity is **GET only** for exact App794 customization readback.
+These results remain `PENDING_CHATGPT_REVIEW` until the exact evidence gaps below are closed.
 
-If any drift, ambiguity, failed test/build, unexpected generated diff, or artifact mismatch is found: STOP. Do not repair or deploy.
+## 3. Exact Evidence Gaps To Close
 
-## 3. Candidate Worktree
+### Gap A — Final candidate worktree proof is missing
 
-Do not reset/rewrite the canonical branch.
-
-Create a temporary detached worktree pinned exactly to:
-
-```text
-4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-```
-
-Example:
-
-```text
-git worktree add --detach <temporary-path> 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
-```
-
-Before execution capture:
-
-```text
-git rev-parse HEAD
-git status --porcelain
-```
-
-Required:
-- HEAD exact candidate;
-- tracked worktree clean before verification.
-
-## 4. Mandatory Focused Test + Build Execution
-
-Run exactly:
-
-```text
-node --test tests/employee-record-navigation.test.js tests/employee-main-mbo-app-integration.test.js
-npm run ui:build
-node --test tests/classic-bundle.test.js tests/css-structure.test.js
-```
-
-Capture exact command, output summary, PASS/FAIL count, and exit status for every command.
-
-The first test command must include and pass the R2/R3 invariants:
-- duplicate rejection occurs before Fiscal Year/native record mutation;
-- blank fatal duplicate Fiscal Year remains blank;
-- `kintone.app.record.set()` = 0 on fatal duplicate rejection;
-- fatal Create hides native Save/Cancel;
-- pre-auth Create does not hide them;
-- normal successful Create defaults FY2026 after preflight PASS, continues autoload, Back=0, native Save/Cancel normal;
-- existing blocked Detail/Edit retain native actions and exactly one Back;
-- nonblank Fiscal Year is preserved on rejection;
-- no `onbeforeunload` bypass.
-
-## 5. Clean Reproduction / Generated Dist Proof
-
-After build run exact:
+Original predeploy packet required after build:
 
 ```text
 git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css
 git status --porcelain
 ```
 
-Required:
-- `git diff --exit-code ...` exit status = 0;
-- output empty;
-- worktree clean after build;
-- no manual dist edit.
+and evidence must contain **initial/final worktree HEAD and clean status**.
 
-Then independently obtain immutable Git blob identities for candidate:
+Current evidence records the diff command but does not record an exact post-build `git status --porcelain` command + exit status/output, and states only `FINAL_WORKTREE_STATUS = CLEAN (temporary worktree removed)` rather than proving final state before removal.
 
-```text
-git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee-app.js
-git rev-parse 4472aa2f1c63bf08788b39b4ad54b7ea55808df1:dist/mbo-employee.css
-```
-
-Must equal:
+Required correction:
+- recreate a temporary detached worktree at the exact candidate if the prior worktree is already removed;
+- run and record:
 
 ```text
-JS  = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d
-CSS = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+git rev-parse HEAD
+git status --porcelain
+npm run ui:build
+git diff --exit-code -- dist/mbo-employee-app.js dist/mbo-employee.css
+git rev-parse HEAD
+git status --porcelain
 ```
 
-If existing deploy tooling supports zero-network build-only mode, run it only in build-only mode to compute the artifact identities and prove they equal the immutable Git blobs. **Do not run live mode.**
+- final HEAD must still equal exact candidate;
+- final status output must be empty;
+- exact exit status/output must be captured.
 
-## 6. Live App794 GET-Only Preflight
+You do not need to rerun unrelated tests unless required by the build-only tooling below.
 
-Expected actual Live state:
+### Gap B — Existing deployment tooling build-only proof is missing
 
-```text
-APP                 = 794
-LIVE_REVISION       = 58
-LIVE_SCOPE          = ALL
-LIVE_TOPOLOGY       = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-LIVE_JS_IDENTITY    = f097f67404fb75418cf85fee635e5d630ef5474d
-LIVE_CSS_IDENTITY   = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-LIVE_SOURCE_COMMIT  = 98108e9e387d01b6d3c3a35cce5baf13324be50e
-```
+The original packet required use of existing zero-network build-only deployment tooling when supported. This repository has that capability.
 
-Allowed endpoints only as needed:
+Run the existing App794 deployment tooling in **build-only / zero-network mode only** from the exact candidate worktree, using the repository-supported invocation (for example the existing `executeDeployCustomUi({ isBuildOnly: true })` path or equivalent supported CLI build-only mode).
+
+Required evidence:
+- exact command/invocation;
+- exit status;
+- explicit confirmation network write/read count = 0 for the build-only invocation;
+- computed candidate JS identity = `c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d`;
+- computed candidate CSS identity = `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`;
+- exact match to immutable Git blobs;
+- no tracked dist diff after invocation.
+
+Do **not** run deployment tooling in Live mode.
+
+### Gap C — Preview GET-only state is incomplete
+
+Current evidence states only `PREVIEW_REVISION = 58`.
+
+Original packet requested Preview revision/scope/topology/entry names where available.
+
+Perform GET-only Preview readback and record, where returned by Kintone:
+- Preview revision;
+- Preview scope;
+- Desktop JS entry count/order/name;
+- Desktop CSS entry count/order/name;
+- Mobile JS/CSS counts/order/names.
+
+If a field is not returned by the endpoint, state `NOT_RETURNED_BY_ENDPOINT` explicitly rather than guessing.
+
+Allowed endpoints remain only:
 - `GET /k/v1/app/customize.json?app=794`
 - `GET /k/v1/preview/app/customize.json?app=794`
-- `GET /k/v1/file.json?fileKey=...` for exact current customization FILE entries needed to hash bytes.
+- `GET /k/v1/file.json?fileKey=...` for exact customization FILE entries needed to hash.
 
-Capture:
-- actual Live revision;
-- scope;
-- desktop/mobile JS/CSS topology and ordering;
-- exact current Live JS/CSS identities from downloaded bytes;
-- Preview revision/scope/topology/entry names where available;
-- exact GET endpoints used;
-- network method counts: `POST=0`, `PUT=0`, `DELETE=0`.
-
-Never print credentials, passwords, API tokens, auth headers, session tokens, or secrets.
-
-Any mismatch from expected Rev58 baseline => STOP. No repair/deploy.
-
-## 7. Known-Good Rollback Manifest Proof
-
-Known-good rollback baseline remains Rev57:
+Network method counts for this corrective must again show:
 
 ```text
-ROLLBACK_REVISION        = 57
-ROLLBACK_SOURCE_COMMIT   = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
-ROLLBACK_JS_IDENTITY     = ac22a56cb9d78001384241fe12745f7a2da3da84
-ROLLBACK_CSS_IDENTITY    = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-ROLLBACK_SCOPE           = ALL
-ROLLBACK_TOPOLOGY        = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
-ROLLBACK_AUTHORIZED      = NO
+POST = 0
+PUT = 0
+DELETE = 0
 ```
 
-Do **not** rebuild historical Rev57 as a rollback target. Prove immutable Git object identities only:
+## 4. Repository Scope
 
-```text
-git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js
-git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css
-```
-
-They must equal the known-good identities above.
-
-Rollback remains a separate future authorization and must never execute automatically.
-
-## 8. Evidence File / Repository Scope
-
-The only allowed repository change by Antigravity for this task is:
+The only allowed repository change is:
 
 `project-docs/APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE.md`
 
-Evidence file must contain:
-- `STATUS = PENDING_CHATGPT_REVIEW`;
-- timestamp;
-- exact candidate commit;
-- exact runtime corrective scope summary;
-- every command executed + exact exit status;
-- focused test PASS/FAIL counts;
-- build result;
-- exact `git diff --exit-code` proof;
-- candidate built/immutable Git JS/CSS identities;
-- initial/final worktree HEAD and clean status;
-- Live GET-only revision/scope/topology/actual JS+CSS identities;
-- Preview GET-only state if read;
-- exact GET endpoints;
-- POST/PUT/DELETE counts = 0;
-- known-good Rev57 rollback manifest + immutable identities;
-- any warning/gap.
-
-No secrets.
-
-Commit + push only this evidence file on the canonical branch, then STOP for ChatGPT review.
-
 Do not edit:
+- source/tests/scripts/config/package/dist;
 - `AI_CONTROL_CENTER.md`;
 - `AI_ACTIVE_TASK.md`;
 - baselines/skills;
-- source/tests/scripts/config/package/dist.
+- any other file.
 
-## 9. Current Authorization State
+No new file.
+
+## 5. Safety Boundary
 
 ```text
-ACTIVE_LIVE_AUTH           = NONE
-ACTIVE_KINTONE_WRITE_AUTH  = NONE
-ACTIVE_DEPLOY_AUTH         = NONE
-ROLLBACK_AUTH              = NONE
+LIVE_APP794_REVISION          = 58
+LIVE_SOURCE_COMMIT            = 98108e9e387d01b6d3c3a35cce5baf13324be50e
+CANDIDATE_SOURCE_TEST_COMMIT  = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
+ACTIVE_LIVE_AUTH              = NONE
+ACTIVE_KINTONE_WRITE_AUTH     = NONE
+ACTIVE_DEPLOY_AUTH            = NONE
+ROLLBACK_AUTH                 = NONE
 ```
 
-No deploy authorization exists.
+Forbidden:
+- all Kintone POST/PUT/DELETE;
+- customization upload;
+- Preview write/update;
+- deploy;
+- rollback;
+- App794/App800/App801/App795/App796 record writes;
+- schema/layout/ACL/process changes;
+- source repair/refactor.
+
+If any unexpected drift/mismatch occurs, STOP and report it. Do not repair.
+
+## 6. Delivery Contract
+
+Update only:
+
+`project-docs/APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE.md`
+
+Keep:
+
+`STATUS = PENDING_CHATGPT_REVIEW`
+
+Add the exact missing command/invocation audit trail and results above. Commit + push evidence only, then STOP.
 
 Maximum executor status:
 
-`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE_CAPTURED_PENDING_CHATGPT_REVIEW`
+`APP794_FATAL_CREATE_CLEAN_EXIT_PREDEPLOY_EVIDENCE_COMPLETED_PENDING_CHATGPT_REVIEW`
