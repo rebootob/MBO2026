@@ -23,6 +23,8 @@ RULE_07 = PROTECTED_LEGACY_SOURCE_APPS_REMAIN_READ_ONLY
 RULE_08 = SECURITY_PRIVACY_AND_DATA_TRUTHFULNESS_ARE_RELEASE_BLOCKERS
 RULE_09 = D1_IS_KINTONE_ONLY
 RULE_10 = AUTH_BRIDGE_IS_CANCELLED_AND_MUST_NOT_RETURN
+RULE_11 = D1_HYBRID_IDENTITY_IS_CANONICAL
+RULE_12 = DUAL_ROLE_EMPLOYEE_APPROVER_MUST_NOT_COLLAPSE_SECURITY_CONTEXTS
 ```
 
 Use `AI_DOCUMENT_INDEX.md` for the lean read set. Do not broad-read historical documents merely because this is a handoff.
@@ -31,20 +33,48 @@ Use `AI_DOCUMENT_INDEX.md` for the lean read set. Do not broad-read historical d
 
 # 1. THE SEVEN MANDATORY DELIVERABLES
 
-## D1 — LOGIN + PASSWORD CHANGE + EMPLOYEE-SELF MBO GATE
+## D1 — HYBRID LOGIN + PASSWORD + EMPLOYEE-SELF + APPROVER ACCESS
 
 ### Mandatory user outcome
-- secondary MBO login inside Kintone;
+
+Canonical identity model:
+
+```text
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+```
+
+Dedicated Kintone employee/approver:
+- native Kintone login is the first authentication boundary;
+- an exact authoritative Kintone User Code <-> active Employee_Code mapping auto-binds Employee-Self identity;
+- no secondary MBO Employee_Code/password login is required after exact dedicated auto-binding;
+- missing/ambiguous mapping fails closed;
+- one person remains one employee and one own MBO per FY even when also an Approver.
+
+Shared Kintone employee:
+- secondary MBO login remains required;
 - username = `Employee_Code`;
-- initial/default password = `Employee_Code`;
-- first/default login forces password change;
-- employee can later change own password;
-- Employee-Self UI is bound to authenticated Employee_Code;
-- My MBO/history/create/detail/edit must not let an employee switch to another Employee_Code;
-- production HR-authorized users and `admin-form` must have controlled Reset MBO Password capability;
+- initial/default MBO password = `Employee_Code`;
+- first/default shared-path login forces MBO password change;
+- employee can later change own MBO password;
+- App801 short-lived session continuity remains mandatory.
+
+Common Employee-Self outcome:
+- My MBO/history/create/detail/edit is bound to exact Employee_Code;
+- users cannot choose/switch to another Employee_Code;
+- production HR-authorized users and `admin-form` must have controlled Reset MBO Password capability for App801-backed credentials;
+- Reset MBO Password must never be described as resetting a native Kintone/cybozu password;
 - Live MBO UI must show truthful data only, including comments/history and attachments.
 
-### Current architecture — supersedes older backend/Auth-Bridge wording
+Dual-role Approver outcome:
+- a dedicated Kintone user may be both Employee and Approver;
+- App794 Home separates `My MBO` from `My Approval Tasks`;
+- `My MBO` ownership = bound Employee_Code;
+- `My Approval Tasks` authorization = current dedicated Kintone User equals authoritative current native Workflow assignee;
+- App795 static route membership alone is not actionable authorization;
+- shared employee principals do not gain approval authority merely because the Kintone account is shared;
+- own-record approval by the same dual-role user must fail closed with `SELF_APPROVAL_ROUTE_CONFLICT`.
+
+### Current architecture — supersedes older all-secondary-login/backend wording
 
 ```text
 D1 = KINTONE-ONLY
@@ -58,16 +88,23 @@ Auth Bridge             = CANCELLED / SUPERSEDED
 Canonical flow:
 
 ```text
-Kintone authenticated principal
-  -> App794 browser customization
-  -> MBO Employee_Code authentication/session
-  -> App801 credential/session metadata through Kintone REST/JS API
-  -> Employee-Self App794 scope
+Kintone principal
+  -> identity mode resolution
+
+Dedicated user:
+  -> exact Kintone User <-> Employee_Code mapping
+  -> Employee-Self auto-bind
+  -> optional separate Approver context from native assignment
+
+Shared user:
+  -> App794 MBO Employee_Code authentication/session
+  -> App801 credential/session metadata
+  -> Employee-Self scope
 ```
 
-`MBO_EMPLOYEE_ACCESS` is the approved Kintone group for employee-facing/shared principals. Under the KINTONE-ONLY model, the group requires the exact App801 access defined in `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md`.
+`MBO_EMPLOYEE_ACCESS` is the approved Kintone group for shared MBO-login principals that require App801 access. Dedicated Kintone employee/approvers do not receive App801 View/Edit merely to support auto-binding.
 
-Do **not** reintroduce the old statement that all employee-browser App801 access is prohibited; that wording belonged to an abandoned architecture and conflicts with the confirmed Kintone-only model.
+Do **not** reintroduce the old statement that every user must perform a secondary MBO login. Do **not** treat a dedicated Approver's Kintone identity as proof of Employee_Code ownership without the exact mapping.
 
 ### Accepted security ceiling
 
@@ -82,18 +119,35 @@ This limitation must remain explicit. Do not claim stronger native isolation tha
 ### D1 release/closure gates
 
 At minimum:
+
+Dedicated path:
+- read-only audit proves exact authoritative mapping source;
+- confirmed dedicated user -> exactly one active Employee_Code = PASS;
+- missing mapping -> deny;
+- ambiguous mapping -> deny;
+- dedicated user opens App794/My MBO without secondary MBO login;
+- dedicated own create/open uses exact bound Employee_Code;
+- independent tab under same native Kintone session auto-binds correctly;
+- dual-role Home separates own MBO vs approval work;
+- only current native assignments appear/actionable in My Approval Tasks;
+- unassigned record -> deny;
+- self-approval conflict -> deny.
+
+Shared path:
 - login/default-password/forced-change = PASS;
 - same-tab session continuity and reload = PASS;
-- independent new tab without token -> login;
-- expired/tampered/wrong-Kintone-principal session -> deny;
+- independent new tab without token -> MBO login;
+- expired/tampered/wrong-Kintone-principal shared session -> deny;
 - logout revokes/clears/reblocks;
-- own password change rotates credential/session;
+- own MBO password change rotates credential/session;
 - disabled/permanent-locked restore denied;
-- 5 failed passwords -> 15-minute temporary lockout;
+- 5 failed MBO passwords -> 15-minute temporary lockout.
+
+Common:
 - My MBO own-only UI/history/detail/edit = PASS;
 - Employee-Self delete unavailable and Kintone ACL denies employee delete;
-- Create uses authenticated Employee_Code -> App53 -> App795 -> App796 -> duplicate -> snapshot path;
-- cross-employee detail/edit visibly blocked;
+- Create uses bound Employee_Code -> App53 -> App795 -> effective Requester_User -> App796 -> duplicate -> snapshot path;
+- cross-employee Employee-Self detail/edit visibly blocked;
 - no plaintext password/raw token/hash exposure in normal UI/DOM/log;
 - HR + `admin-form` Reset MBO Password production function = PASS;
 - Live workflow/comment timeline never fabricates events;
@@ -193,12 +247,14 @@ Required operational coverage includes:
 - App796 profile/scoring health;
 - Hoshin readiness/management linkage;
 - reopen/revision center;
-- login/account operational status and safe password-reset workflow;
+- login/account operational status and safe MBO password-reset workflow;
 - legacy migration status/reconciliation;
 - Admin/System Health linkage;
 - authorized reports/exports.
 
 Dashboard charts alone are insufficient.
+
+Dedicated Kintone Employee-Self auto-binding is not controlled by the HR Reset MBO Password function. HR password reset is for App801-backed MBO credentials and must not be presented as a Kintone account password reset.
 
 ---
 
@@ -219,7 +275,7 @@ Difficulty is not carried forward unless explicitly changed later.
 
 Never copy scores, self/appraiser ratings, appraiser comments, HR results, workflow state, timestamps, old route/appraisers, old profile/Hoshin snapshot, or confidential result fields.
 
-Target FY must resolve fresh App53/App795/App796/Hoshin/phase configuration.
+Target FY must resolve fresh App53/App795/App796/Hoshin/phase configuration and the current effective requester identity.
 
 ---
 
@@ -227,11 +283,12 @@ Target FY must resolve fresh App53/App795/App796/Hoshin/phase configuration.
 
 Proves D1–D5 + D7 work together.
 
-Minimum path:
+Minimum path must include both identity modes:
 
 ```text
-MBO login / forced change
--> own MBO scope
+Dedicated Kintone user -> auto-bind -> own MBO
+Shared Kintone user -> MBO login / forced change -> own MBO
+Dual-role dedicated user -> My MBO + My Approval Tasks separation
 -> create/open current FY
 -> optional own-history carry-forward
 -> Objectives workflow
@@ -259,6 +316,7 @@ NO return
 NO submit
 NO complete
 NO impersonation
+NO dedicated Employee-Self auto-bind
 ```
 
 Support Center must truthfully diagnose employee/profile/routing/appraiser/workflow/current-state evidence and never fabricate audit history. Controlled repair remains separately authorized.
@@ -275,19 +333,15 @@ Current source functionality is accepted/closed unless a new defect is discovere
 
 This Master Joblist only guarantees that D1–D7 and their acceptance outcomes cannot disappear.
 
-At the 2026-08-29 handoff checkpoint:
+Current durable D1 addition as of 2026-08-30:
 
 ```text
-D1 = IN PROGRESS
-D2 = IN PROGRESS
-D3 = IN PROGRESS / LIVE WRITE NOT AUTHORIZED
-D4 = IN PROGRESS
-D5 = MUST FIX / IN PROGRESS
-D6 = BLOCKED UNTIL CONSTITUENT WORK IS READY
-D7 = SOURCE FUNCTIONALITY CLOSED / REOPEN ONLY ON NEW DEFECT
+HYBRID_IDENTITY_CONFIRMED = YES
+DUAL_ROLE_EMPLOYEE_APPROVER_CONFIRMED = YES
+DEDICATED_MAPPING_PHYSICAL_SOURCE = PENDING READ-ONLY AUDIT
 ```
 
-Always re-fetch Control Center because this checkpoint becomes stale as work proceeds.
+Always re-fetch Control Center because operational status becomes stale as work proceeds.
 
 ---
 
@@ -318,6 +372,8 @@ Completed/accepted work must not be reimplemented.
 8. If yes, what exact authorization covers it?
 9. What evidence is still missing?
 10. Exact next owner/action: ChatGPT | User | Antigravity?
+11. For D1: which identity mode is under test — dedicated or shared?
+12. For dual-role users: is access Employee-Self or authoritative Approver context?
 ```
 
 If unclear, inspect repository/live evidence rather than guessing.
@@ -329,7 +385,7 @@ If unclear, inspect repository/live evidence rather than guessing.
 Before stopping or moving chats:
 
 ```text
-[ ] D1 LOGIN + PASSWORD + EMPLOYEE-SELF
+[ ] D1 HYBRID IDENTITY + PASSWORD + EMPLOYEE-SELF + APPROVER
 [ ] D2 EXCEL + PDF
 [ ] D3 8-APP MIGRATION
 [ ] D4 HR CONTROL CENTER
