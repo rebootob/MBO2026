@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — HYBRID BLOCKERS BUSINESS-DESIGN RESOLVED / CORE SOURCE R1 OPEN
+> Updated: 2026-08-30 — HYBRID CORE SOURCE R1 = CORRECTIVE / APP53 PRODUCTION READ-ONLY GUARD STRENGTHENED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. App800 Reset UI source/tooling accepted. Natta/Vassana read-only audit completed. User approved physical mapping design, own-MBO self-appraiser exception, and dedicated native-access design. Current gate = Hybrid Identity Core Source R1; protected Kintone writes remain unauthorized. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. App800 Reset UI source/tooling accepted. Natta/Vassana read-only audit completed. User-approved mapping/self-approval/native-access design is confirmed. Hybrid Identity Core Source R1 executor commit `20747ef...` is **CORRECTIVE** because canonical mapping resolver and self-appraiser transformation remain fail-open/semantically unsafe. App53 is Production and READ-ONLY by default. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source/tooling accepted; deployed App800 remains prior MVP until separately authorized deployment. |
@@ -163,30 +163,31 @@ POSITION_DGM -> tsuchihira
 
 Vassana remains Manager L1 for TMF1/TMF2/TMF3 on other employees' records.
 
-### 5.4 Current App794 native access
+## 6. App53 Production Protection — CONFIRMED / MANDATORY
 
-Current App794 App ACL remains:
+User reconfirmed that App53 Employee Namelist is **Production** and must be handled with special caution.
+
+Canonical detailed rule:
+`project-docs/CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`
+
 ```text
-CREATOR             = full
-MBO_EMPLOYEE_ACCESS = View/Add/Edit
-Everyone            = denied
-Record ACL           = empty
-Field ACL            = empty
+APP53_ENVIRONMENT                 = PRODUCTION
+APP53_DEFAULT_MODE                = READ_ONLY
+APP53_SCHEMA_WRITE_AUTH           = NONE
+APP53_RECORD_WRITE_AUTH           = NONE
+APP53_BULK_WRITE_AUTH             = NONE
 ```
 
-Current `MBO_EMPLOYEE_ACCESS` membership:
-```text
-t1,t2,s1,f1,f2,f3,e1,tmh,g_request
-```
+Any future App53 schema/record write requires a new exact one-shot authorization plus fresh pre-write evidence, reviewed recovery/backup material, exact payload, impact/rollback plan, and immediate post-write readback. Design/source/deploy approval for another resource never implies App53 write permission.
 
-`natta` and `vassana` are not members; therefore current native dedicated access is not yet granted.
+Adding `MBO_Kintone_User`, populating dedicated mappings, and correcting Natta `emp_text` are separate protected concerns; they must not be silently bundled.
 
-## 6. User-Approved Hybrid Blocker Resolution — CONFIRMED 2026-08-30
+## 7. User-Approved Hybrid Blocker Resolution — CONFIRMED
 
 Canonical detailed Baseline:
 `project-docs/CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`
 
-### 6.1 Physical mapping design
+### 7.1 Physical mapping design
 
 Approved future App53 field:
 ```text
@@ -200,27 +201,13 @@ Binding requires exact current Kintone user -> exactly one active App53 mapping 
 ```text
 DEDICATED_MAPPING_PHYSICAL_DESIGN = CONFIRMED
 APP53_FIELD_LIVE_CREATED           = NO
-APP53_SCHEMA_WRITE_AUTH            = NONE
-APP53_MAPPING_DATA_WRITE_AUTH      = NONE
 ```
 
-Natta remains fail-closed until a real canonical `emp_text` Employee_Code is verified and corrected under separate authorization.
+### 7.2 Own-MBO self-appraiser exception
 
-### 6.2 Own-MBO self-appraiser exception
-
-User approved:
 ```text
 OWN_MBO_SELF_APPROVER_ELISION = APPROVED
 ```
-
-For own MBO only, after authoritative route resolution and before workflow snapshot:
-- remove only self appraiser;
-- preserve remaining appraiser order;
-- shift/recalculate effective topology;
-- never auto-approve;
-- never fabricate event/history/timestamp/comment;
-- never modify App795 subordinate route;
-- no remaining non-self appraiser -> fail closed.
 
 Natta canonical example:
 ```text
@@ -229,73 +216,79 @@ Natta own effective route   = uchida / M1_ONLY
 Other TMG1/TMG2 Marketing   = natta -> uchida unchanged
 ```
 
-### 6.3 Dedicated native App794 access design
+No auto-approval, fabricated event, or App795 source rewrite is permitted.
 
-Dedicated principals stay separate from shared `MBO_EMPLOYEE_ACCESS`.
+### 7.3 Dedicated App794 native access design
 
-Approved dedicated group design:
+Dedicated principals remain separate from shared `MBO_EMPLOYEE_ACCESS`.
+
+Approved future group design:
 ```text
 MBO_DEDICATED_ACCESS
 ```
 
-Target App794 App ACL:
+Target native model remains status-aware App794 Record Permissions using current user fields (`Requester_User`, `First_Manager_User`, `Manager_User`, `GM_User`). Exact group/App ACL/Record ACL payload remains a later separately authorized gate.
+
+## 8. Hybrid Identity Core Source R1 Independent Review — CORRECTIVE
+
+Executor commit:
+`20747ef3781d5085e9718f511bd76cf667879399`
+
+Exact implementation diff from Control Plane base contained only:
+- `src/services/mbo-identity-service.js`;
+- `src/services/routing-service.js`;
+- new `tests/d1-hybrid-identity-core-source.test.js`;
+- new R1 evidence.
+
+No App53/live/schema/deploy/ACL/group/config/dist/UI/main-app file changed. Executor evidence reports focused 10/10 PASS, full suite 998/998 PASS, `git diff --check` PASS and zero live operations. Those test results do not override the independent source findings.
+
+### Finding A — mapping resolver fail-open
+
+Current canonical resolver incorrectly permits fallback/default behavior from `Account_Status`, missing `Number_0`, `Kintone_User_Code`, `Employee_Code`, and USER_SELECT `.value`. This violates the confirmed exact App53 mapping source and could bind a dedicated user from noncanonical/superseded data.
+
+### Finding B — effective requester mode/input exactness
+
+Current requester helper does not reject an unknown mode explicitly and silently trims dedicated native user input instead of enforcing exact identity.
+
+### Finding C — self-appraiser elision slot semantics
+
+Current transformation flattens individual users across route levels, reconstructs topology by user count, does not carry the surviving slot's approval rule when shifted, may truncate flattened users beyond four, compares identity case-insensitively, and does not fail closed when own-MBO context lacks the dedicated user code.
+
+Independent result:
+
 ```text
-View=YES / Add=YES / Edit=YES
-Delete=NO / Import=NO / Export=NO / AppAdmin=NO
+D1_HYBRID_IDENTITY_CORE_SOURCE_R1 = CORRECTIVE
+SOURCE_ACCEPTED                    = NO
+LIVE_DEPLOY_READY                  = NO
+APP53_PRODUCTION_TOUCHED           = NO
 ```
 
-App-level grant must be constrained by status-aware native Record Permissions using existing App794 user fields where appropriate:
-```text
-Requester_User
-First_Manager_User
-Manager_User
-GM_User
-```
-
-Target principle:
-- own dedicated requester sees own MBO throughout lifecycle and edits only employee-controlled statuses;
-- approver sees/edits only during the corresponding current review status;
-- transition/reassignment removes stale approver access;
-- static App795 membership is never sufficient;
-- HR final remains HR-native;
-- completed own MBO view-only;
-- dedicated users do not receive App801 View/Edit merely for auto-bind.
-
-Exact group/App ACL/Record ACL payload and any live write still require separate exact authorization.
-
-## 7. Current Active Task
+## 9. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 HYBRID IDENTITY CORE SOURCE R1
+ACTIVE_TASK = D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE
 OWNER       = ANTIGRAVITY
 MODE        = SOURCE / FOCUSED TEST ONLY
+APP53_MODE  = PRODUCTION READ_ONLY
 LIVE_WRITE  = NO
 DEPLOY      = NO
 ```
 
-Task opened at Control Plane commit:
-`889cdc33b23245b6aab7ea6e299e2d8f318cc247`
+Corrective scope is restricted to:
+- canonical exact App53 mapping resolver;
+- exact requester mode/user fail-closed behavior;
+- slot-preserving self-appraiser elision with approval-rule preservation;
+- focused/regression tests;
+- new corrective evidence.
 
-Primary source scope:
-- `src/services/mbo-identity-service.js`
-- `src/services/employee-service.js` only if canonical mapping lookup belongs there
-- `src/services/routing-service.js`
-- directly related focused tests; at most one new focused test file if needed
-- new evidence `project-docs/D1_HYBRID_IDENTITY_CORE_SOURCE_R1_EVIDENCE.md`
-
-Required R1 source behaviors:
-1. canonical App53 `MBO_Kintone_User` + `Number_0` + `emp_text` resolver;
-2. dedicated effective requester = exact dedicated Kintone User; shared requester behavior unchanged;
-3. pure own-MBO self-appraiser elision/topology recalculation;
-4. Natta blank `emp_text` remains fail-closed;
-5. no main/UI/build/deploy/ACL/schema widening in this WP.
+No live GET/write or protected Kintone configuration is authorized.
 
 Maximum executor status:
 ```text
-D1_HYBRID_IDENTITY_CORE_SOURCE_R1_READY_PENDING_CHATGPT_REVIEW
+D1_HYBRID_IDENTITY_CORE_SOURCE_R1_CORRECTIVE_READY_PENDING_CHATGPT_REVIEW
 ```
 
-## 8. Authorization Ledger / Safety
+## 10. Authorization Ledger / Safety
 
 ```text
 LATEST_DEPLOY_AUTH        = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01 — CONSUMED / CLOSED / NEVER REUSE
@@ -304,25 +297,20 @@ ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH        = NONE
 ACTIVE_ACL_WRITE_AUTH     = NONE
 ACTIVE_GROUP_WRITE_AUTH   = NONE
+APP53_SCHEMA_WRITE_AUTH   = NONE
+APP53_RECORD_WRITE_AUTH   = NONE
+APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-No App800/App801/App794/App53 record write, App53 schema change, group creation/membership write, App795 route write, customization upload, deployment, password reset execution, ACL write, Process update, or rollback is authorized.
+No App800/App801/App794/App53 record write, App53 schema/bulk change, group creation/membership write, App795 route write, customization upload, deployment, password reset execution, ACL write, Process update, or rollback is authorized.
 
-## 9. Next Gates
+## 11. Next Gate
 
 ```text
-CURRENT_GATE  = D1 HYBRID IDENTITY CORE SOURCE R1
+CURRENT_GATE  = D1 HYBRID IDENTITY CORE SOURCE R1 CORRECTIVE
 CURRENT_OWNER = ANTIGRAVITY
 NEXT_REVIEWER = CHATGPT
 ```
 
-If Core Source R1 passes independent review, protected Kintone configuration remains a **separate** future authorization gate:
-- App53 `MBO_Kintone_User` schema write;
-- reviewed mapping values;
-- Natta real Employee_Code correction only after authoritative value is known;
-- `MBO_DEDICATED_ACCESS` group/membership;
-- exact App794 App/Record ACL payload;
-- subsequent controlled deploy/UAT.
-
-Do not combine those writes with Source R1.
+Protected Kintone configuration is not the next automatic step. It remains a separate future authorization gate even after source acceptance.
