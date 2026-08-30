@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-31 — USER MANUAL APP53 FIELD ADD REPORTED / SANDBOX EXECUTION CANCELLED / GET-ONLY VERIFICATION OPEN
+> Updated: 2026-08-31 — USER MANUAL APP53 FIELD ADD REPORTED / ANTIGRAVITY GET-ONLY TASK CANCELLED / USER+CHATGPT MANUAL VERIFICATION
 
 ## 1. D1 status
 
 D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS.
 
-The user changed the execution plan and manually added the new App53 field through Kintone UI. Therefore the previously opened App802 S-D2 execution path is cancelled and must not be run.
+The user changed the execution plan and manually added the new App53 field through Kintone UI. The prior App802 S-D2 execution path is cancelled and must not be run.
 
 User-reported manual change:
 
@@ -23,47 +23,43 @@ TYPE = USER_SELECT
 REQUIRED = false
 DEFAULT/ENTITIES = intended empty
 USER_REPORT = DONE
-API_READBACK = NOT YET VERIFIED
+API_READBACK = NOT REQUIRED FOR CURRENT MANUAL REVIEW PATH
 ```
 
-Do not treat the manual change as confirmed until GET-only readback passes.
-
-## 2. Cancelled sandbox execution
+## 2. Cancelled executor work
 
 ```text
 APP802_S_D2_EXECUTION = CANCELLED BY PLAN CHANGE
 APP802_RESUME_WRITE_AUTH = REVOKED / NOT TO BE USED
 APP802_FORWARD_DEPLOY_AUTH = REVOKED
 APP802_ROLLBACK_DEPLOY_AUTH = REVOKED
+ANTIGRAVITY_APP53_GET_ONLY_VERIFICATION = CANCELLED AS UNNECESSARY
 SECOND_SANDBOX_CREATE_AUTH = NONE
 ```
 
 App802 may remain untouched. No cleanup/delete is authorized.
 
-## 3. Current safest next step — App53 GET-only verification
+## 3. Current verification path — User + ChatGPT only
 
-Verify only the manual App53 schema result and prove no record mapping was accidentally populated.
+No Antigravity is required for this verification.
 
-Required GET-only evidence:
+The user will provide Kintone UI screenshots and ChatGPT will review them directly.
+
+Required manual evidence:
 
 ```text
-APP53_APP_ID = 53
-APP53_APP_NAME = ...
-APP53_REVISION = ...
-MBO_Kintone_User_EXISTS = YES/NO
-MBO_Kintone_User_TYPE = USER_SELECT / actual
-MBO_Kintone_User_LABEL = MBO Kintone User / actual
-MBO_Kintone_User_REQUIRED = false / actual
-MBO_Kintone_User_ENTITIES_COUNT = 0 / actual / unavailable
-APP53_TOTAL_RECORDS = 281 / actual
-MBO_Kintone_User_NONEMPTY_RECORDS = 0 / actual
-RECORD_456_emp_text = 0044 / actual
-RECORD_456_MBO_Kintone_User = BLANK / actual
-RECORD_578_emp_text = BLANK / actual
-RECORD_578_MBO_Kintone_User = BLANK / actual
+1. App53 Form view showing field MBO_Kintone_User exists.
+2. Field settings showing:
+   - Field Code = MBO_Kintone_User
+   - Label = MBO Kintone User
+   - Type = USER_SELECT
+   - Required = false
+   - Default user / entities = empty
+3. App53 record list or app screen showing record count remains 281 if visible.
+4. Optional spot-check screenshots for record 456 and record 578 if needed by the next gate.
 ```
 
-No write, deploy, source edit, ACL/group operation, App794 access, mapping population, or Natta correction is authorized in this verification gate.
+Do not ask Antigravity to perform read-only work that the user and ChatGPT can verify manually.
 
 ## 4. Production protection
 
@@ -82,8 +78,8 @@ PRODUCTION_ROLLBACK_AUTH = NONE
 ## 5. Current control state
 
 ```text
-ACTIVE_TASK = D1 APP53 MANUAL FIELD GET-ONLY VERIFICATION R1
-CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER = CHATGPT INDEPENDENT REVIEW
-KINTONE_WRITES = FORBIDDEN
+ACTIVE_TASK = USER + CHATGPT MANUAL APP53 FIELD VERIFICATION
+CURRENT_OWNER = USER + CHATGPT
+ANTIGRAVITY_ACTION = NONE
+KINTONE_WRITES = FORBIDDEN UNTIL NEW EXPLICIT AUTHORIZATION
 ```
