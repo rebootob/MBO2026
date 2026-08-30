@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary source/runtime execution
-> Updated: 2026-08-30 — NATIVE CURRENT-ASSIGNEE PROOF PASS / LEAN APPROVAL AUTHORITY SERVICE R1 OPEN
+> Updated: 2026-08-30 — APPROVAL AUTHORITY SERVICE R1 CORRECTIVE OPEN / HYBRID EMPLOYEE-SELF SOURCE ACCEPTED
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source ACCEPTED after build + 1024/1024 regression. My Approval Tasks native current-assignee field/query contract is now proven. Next gate is one small source-only approval-authority service foundation WP; Home/detail/process integration remains later. |
+| D1 | 🟠 IN PROGRESS. App794 Rev60 accepted. Hybrid Identity Core Source R1 PASS. Hybrid Employee-Self Runtime Entry source ACCEPTED after build + 1024/1024 regression. My Approval Tasks native current-assignee field/query contract is proven. Approval-authority service candidate R1 is under one small corrective before acceptance; Home/detail/process integration remains later. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI/tooling accepted; live remains prior MVP. |
@@ -63,7 +63,7 @@ Assignee.type = STATUS_ASSIGNEE
 Assignee.value= []
 ```
 
-Therefore the actual native current-assignee field code is:
+Therefore:
 ```text
 CURRENT_ASSIGNEE_FIELD = Assignee
 CURRENT_ASSIGNEE_TYPE  = STATUS_ASSIGNEE
@@ -71,15 +71,7 @@ STATUS_FIELD           = Status
 STATUS_TYPE            = STATUS
 ```
 
-The empty Assignee array on Draft is valid and does not weaken the field-contract proof.
-
-Official Kintone contract independently confirms:
-- Assignee field type `STATUS_ASSIGNEE` returns an array of users shaped `{ code, name }` when assigned;
-- Assignee supports query operators `in` / `not in`;
-- Kintone's built-in `(Assigned to me)` view uses `Assignee in (LOGINUSER())`;
-- `app.record.detail.process.proceed` may return a Promise, so an immediate GET revalidation can run before allowing a Process action.
-
-Canonical authority rule is now implementable without guessing:
+Canonical authority rule:
 ```text
 APPROVAL_LIST_AUTHORITY
 = DEDICATED native principal
@@ -105,16 +97,59 @@ Employee-Self ownership
 SHARED_APPROVER_AUTHORITY = DENIED
 ```
 
-## 5. Architecture / Integration Inventory
+## 5. Approval Authority Service R1 — REVIEW = CORRECTIVE
 
-Repository facts remain:
-- `src/main-mbo-app.js` owns top-level `getRecords()` and `getRecord()` transport seams.
-- current Index orchestration is Employee-Self/My MBO only.
-- current cross-employee Detail is blocked by Employee-Self ownership and must later receive a distinct Approver path.
-- current `app.record.detail.process.proceed` validates topology/business rules but has no native-current-assignee revalidation yet.
-- `src/ui/employee-self-index-ui.js` remains canonical My MBO owner and must not absorb My Approval Tasks implementation.
+Executor candidate:
+```text
+COMMIT = 1c44f155fb35a6082b75d56c34d3218b22484ffb
+SCOPE  = PASS (exactly 2 new files)
+```
 
-Target responsibility map:
+Exact changed files:
+```text
+src/services/mbo-approval-task-service.js
+tests/mbo-approval-task-service.test.js
+```
+
+Independent source review found two blockers:
+
+### R1-A — Canonical getRecord response-shape mismatch
+`src/main-mbo-app.js` canonical wrapper is:
+```text
+getRecord(appId, id) -> record object directly
+```
+
+The candidate service instead interprets:
+```text
+getRecord(...) -> { record: ... }
+```
+which would make later real integration return `RECORD_NOT_FOUND` for a valid record.
+
+Corrective rule:
+```text
+revalidateApprovalTask()
+-> require injected getRecord(appId, recordId)
+-> call it exactly once
+-> treat the returned value as the record object directly
+-> no getRecords fallback
+```
+
+### R1-B — Public authority helper can bypass Dedicated-mode gate
+Candidate exposes:
+```text
+isAuthorizedAssignee(record, kintoneUserCode)
+```
+without requiring `mode === DEDICATED`.
+
+This conflicts with the required contract that every public authority method must enforce Dedicated mode.
+
+Corrective rule: make exact Assignee field validation an unexported/internal helper, or otherwise ensure every public authority entry point requires and validates Dedicated context before authorization is evaluated.
+
+No UI/main integration should be added in this corrective.
+
+## 6. Architecture / Integration Inventory
+
+Target responsibility map remains:
 ```text
 src/services/mbo-approval-task-service.js = canonical assignment list/query + exact assignee validation + fresh record revalidation
 src/ui/approver-task-index-ui.js          = later My Approval Tasks renderer only
@@ -122,9 +157,7 @@ src/main-mbo-app.js                        = later context/event orchestration o
 src/ui/employee-self-index-ui.js           = My MBO only
 ```
 
-To minimize Antigravity usage, UI/event integration is NOT in the current WP.
-
-## 6. App53 Production Protection
+## 7. App53 Production Protection
 
 ```text
 APP53_ENVIRONMENT       = PRODUCTION
@@ -134,15 +167,15 @@ APP53_RECORD_WRITE_AUTH = NONE
 APP53_BULK_WRITE_AUTH   = NONE
 ```
 
-Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`. No App53 access is required by the current approval-service foundation WP.
+No App53 access is required. Do not create `MBO_Kintone_User`. Do not modify Natta `emp_text`.
 
-## 7. Current Active Task
+## 8. Current Active Task
 
 ```text
-ACTIVE_TASK = D1 MY APPROVAL TASKS — LEAN CURRENT-ASSIGNEE AUTHORITY SERVICE R1
+ACTIVE_TASK = D1 MY APPROVAL TASKS — LEAN AUTHORITY SERVICE R1 CORRECTIVE R1
 OWNER       = ANTIGRAVITY
-SOURCE_EDIT = ONE NEW SERVICE FILE ONLY
-TEST_EDIT   = ONE NEW TEST FILE ONLY
+SOURCE_EDIT = ONE EXISTING SERVICE FILE ONLY
+TEST_EDIT   = ONE EXISTING TEST FILE ONLY
 FOCUSED_TEST= ONE FILE ONLY
 BUILD       = NO
 FULL_TEST   = NO
@@ -150,9 +183,9 @@ LIVE_KINTONE= NO
 DEPLOY      = NO
 ```
 
-Exact contract, whitelist, tests, and stop rules are in `AI_ACTIVE_TASK.md`.
+Exact corrective contract is in `AI_ACTIVE_TASK.md`.
 
-## 8. Authorization Ledger
+## 9. Authorization Ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -165,6 +198,6 @@ APP53_BULK_WRITE_AUTH     = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-## 9. Next Gate
+## 10. Next Gate
 
-Antigravity implements only the approval-authority service foundation. ChatGPT independently reviews it. Only after PASS may a later small WP connect Dedicated Home -> My Approval Tasks -> cross-employee Detail -> pre-action revalidation. No live deployment/configuration is implied.
+Antigravity performs only Corrective R1 in the same 2 files, runs the single focused test + diff check, commits/pushes once, then STOP. ChatGPT independently reviews. Home/Menu, cross-employee Detail, Process event integration, build/full regression, and live configuration remain later gates.
