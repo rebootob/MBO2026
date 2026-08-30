@@ -526,11 +526,36 @@ test('Finding H: assertApp800LeastPrivilegeAcl fails closed if everyone entry is
     ]
   };
   assert.throws(() => assertApp800LeastPrivilegeAcl(privilegedEveryone), /everyone permission property "recordViewable" must be false/);
+
+  // Case B: everyone malformed/non-boolean right -> FAIL CLOSED
+  const malformedEveryone = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: null, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(malformedEveryone), /must be an explicit boolean/);
 });
 
-test('Finding I: assertApp800LeastPrivilegeAcl fails closed on extra or duplicate ACL principals', () => {
-  // 1. Extra USER principal
-  const extraPrincipalAcl = {
+test('Case A: assertApp800LeastPrivilegeAcl fails closed if HR_ADMIN_GROUP has malformed/non-boolean or missing rights', () => {
+  const malformedHrRight = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      {
+        entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' },
+        appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false
+        // recordExportable missing/non-boolean
+      },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(malformedHrRight), /must be an explicit boolean/);
+});
+
+test('Finding I & Case C: assertApp800LeastPrivilegeAcl fails closed on extra ACL principals even when all rights are false', () => {
+  // 1. Extra privileged USER principal
+  const extraPrivilegedAcl = {
     rights: [
       { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
       { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
@@ -538,9 +563,20 @@ test('Finding I: assertApp800LeastPrivilegeAcl fails closed on extra or duplicat
       { entity: { type: 'USER', code: 'unauthorized_user' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
     ]
   };
-  assert.throws(() => assertApp800LeastPrivilegeAcl(extraPrincipalAcl), /Expected exact App800 principal count 3/);
+  assert.throws(() => assertApp800LeastPrivilegeAcl(extraPrivilegedAcl), /Expected exact App800 principal count 3/);
 
-  // 2. Duplicate HR_ADMIN_GROUP
+  // Case C: Extra DENIED USER principal (all 7 rights false) -> FAIL CLOSED
+  const extraDeniedAcl = {
+    rights: [
+      { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
+      { entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' }, appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'EVERYONE', code: 'everyone' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false },
+      { entity: { type: 'USER', code: 'unauthorized_denied_user' }, appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false }
+    ]
+  };
+  assert.throws(() => assertApp800LeastPrivilegeAcl(extraDeniedAcl), /Expected exact App800 principal count 3/);
+
+  // 3. Duplicate HR_ADMIN_GROUP
   const duplicatePrincipalAcl = {
     rights: [
       { entity: { type: 'CREATOR' }, appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true },
@@ -550,6 +586,29 @@ test('Finding I: assertApp800LeastPrivilegeAcl fails closed on extra or duplicat
     ]
   };
   assert.throws(() => assertApp800LeastPrivilegeAcl(duplicatePrincipalAcl), /Expected exact App800 principal count 3/);
+});
+
+test('Case D: assertApp800LeastPrivilegeAcl passes valid ACL with actual accepted GROUP / everyone representation', () => {
+  const groupEveryoneAcl = {
+    rights: [
+      {
+        entity: { type: 'CREATOR', code: 'admin-form' },
+        appEditable: true, recordViewable: true, recordAddable: true, recordEditable: true, recordDeletable: true, recordImportable: true, recordExportable: true
+      },
+      {
+        entity: { type: 'GROUP', code: 'HR_ADMIN_GROUP' },
+        appEditable: false, recordViewable: true, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false
+      },
+      {
+        entity: { type: 'GROUP', code: 'everyone' }, // Actual Kintone GROUP representation of everyone
+        appEditable: false, recordViewable: false, recordAddable: false, recordEditable: false, recordDeletable: false, recordImportable: false, recordExportable: false
+      }
+    ]
+  };
+
+  assert.doesNotThrow(() => {
+    assertApp800LeastPrivilegeAcl(groupEveryoneAcl, 'TEST_GROUP_EVERYONE');
+  }, 'Actual Kintone GROUP/everyone representation must pass');
 });
 
 test('Finding J: buildClassicHrccBundle always delegates to canonical dist loader and ignores caller-supplied source', () => {
