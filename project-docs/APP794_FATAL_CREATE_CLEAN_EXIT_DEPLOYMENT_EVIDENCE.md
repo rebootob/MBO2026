@@ -2,6 +2,7 @@
 
 > STATUS: `PENDING_CHATGPT_REVIEW`  
 > Execution Timestamp: 2026-08-30T09:04:45+07:00  
+> Corrective Timestamp: 2026-08-30T09:09:34+07:00  
 > Target App: App 794 ONLY  
 > Work Package ID: MBO-P03-WP-002C  
 > Operation: `APP794_CUSTOMIZATION_DEPLOY`
@@ -49,6 +50,8 @@ PREFLIGHT_LIVE_SCOPE          = ALL
 PREFLIGHT_LIVE_TOPOLOGY       = Desktop JS 1 / Desktop CSS 1 / Mobile JS 0 / Mobile CSS 0
 PREFLIGHT_LIVE_JS_SHA         = f097f67404fb75418cf85fee635e5d630ef5474d
 PREFLIGHT_LIVE_CSS_SHA        = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+PREFLIGHT_PREVIEW_SCOPE       = NOT_CAPTURED_IN_ORIGINAL_LOG
+PREFLIGHT_PREVIEW_TOPOLOGY    = NOT_CAPTURED_IN_ORIGINAL_LOG
 PREFLIGHT_STATUS              = PASS (Matched expected Revision 58 baseline pair)
 ```
 
@@ -163,11 +166,77 @@ ROLLBACK_AUTHORIZED          = NO
 
 ---
 
+## 9. EVIDENCE COMPLETENESS CORRECTIVE R1
+
+Timestamp: 2026-08-30T09:09:34+07:00
+
+### Gap A — Deployment-Time Candidate Worktree Proof
+
+```text
+DEPLOYMENT_TIME_WORKTREE_PROOF = NOT_CAPTURED (Original execution log changed directory to candidate worktree but did not log explicit git rev-parse / status before deployment engine call)
+
+CURRENT_COMPENSATING_VERIFY:
+- Command: git worktree add --detach scratch/candidate-worktree 4472aa2f1c63bf08788b39b4ad54b7ea55808df1
+- git rev-parse HEAD            = 4472aa2f1c63bf08788b39b4ad54b7ea55808df1 (Exit 0)
+- git status --porcelain        = EMPTY / CLEAN (Exit 0)
+- Candidate JS Git Blob SHA     = c6bbcec7a36ea4500bf543c6ef92f4dc98723b8d (Exit 0)
+- Candidate CSS Git Blob SHA    = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61 (Exit 0)
+- Status: PASS
+```
+
+### Gap B — Pre-Deploy Preview Detail
+
+```text
+PREFLIGHT_PREVIEW_REVISION      = 58 (Captured in original log)
+PREFLIGHT_PREVIEW_SCOPE         = NOT_CAPTURED_IN_ORIGINAL_LOG
+PREFLIGHT_PREVIEW_DESKTOP_JS    = NOT_CAPTURED_IN_ORIGINAL_LOG
+PREFLIGHT_PREVIEW_DESKTOP_CSS   = NOT_CAPTURED_IN_ORIGINAL_LOG
+PREFLIGHT_PREVIEW_MOBILE_JS     = NOT_CAPTURED_IN_ORIGINAL_LOG
+PREFLIGHT_PREVIEW_MOBILE_CSS    = NOT_CAPTURED_IN_ORIGINAL_LOG
+```
+
+### Gap C — Post-Deploy Preview Detailed Readback
+
+```text
+PREVIEW_GET_ONLY_READBACK_TIMESTAMP = 2026-08-30T09:09:34.014Z
+PREVIEW_REVISION                = 59
+PREVIEW_SCOPE                   = ALL
+PREVIEW_DESKTOP_JS              = [ "mbo-employee-app.js" ] (1 entry)
+PREVIEW_DESKTOP_CSS             = [ "mbo-employee.css" ] (1 entry)
+PREVIEW_MOBILE_JS               = [] (0 entries)
+PREVIEW_MOBILE_CSS              = [] (0 entries)
+Status: PASS (Preview state matches Live Revision 59 candidate pair)
+```
+
+### Gap D — Rollback Manifest Verification Record
+
+```text
+DEPLOYMENT_TIME_ROLLBACK_VERIFY = NOT_CAPTURED (Original execution script verified candidate blobs against manifest but did not log explicit Rev57 rollback blob rev-parse)
+
+CURRENT_IMMUTABLE_ROLLBACK_VERIFY:
+- git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee-app.js -> ac22a56cb9d78001384241fe12745f7a2da3da84 (Exit 0)
+- git rev-parse 9816cef195b6d3ffe039e5fb92c8dc8406c8967a:dist/mbo-employee.css    -> 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61 (Exit 0)
+Status: PASS (Known-good Rev57 rollback baseline immutable Git blobs confirmed)
+```
+
+### Corrective R1 Method & Safety Audit
+
+```text
+R1_POST_COUNT                   = 0
+R1_PUT_COUNT                    = 0
+R1_DELETE_COUNT                 = 0
+R1_DEPLOY_COUNT                 = 0
+R1_ROLLBACK_COUNT               = 0
+R1_SOURCE_MUTATIONS             = 0
+```
+
+---
+
 ### Executor Verification Status
 
-`APP794_FATAL_CREATE_CLEAN_EXIT_DEPLOYMENT_COMPLETED_PENDING_CHATGPT_REVIEW`
+`APP794_REV59_DEPLOYMENT_EVIDENCE_COMPLETENESS_R1_CAPTURED_PENDING_CHATGPT_REVIEW`
 
-- Customization deployed to Live App 794 Revision 59.
-- Verified by technical readback (Downloaded JS/CSS bytes match candidate commit `4472aa2f1c63bf08788b39b4ad54b7ea55808df1` blobs 100%).
-- Authorization `APP794-FATAL-CREATE-CLEAN-EXIT-DEPLOY-20260830-01` consumed and closed.
+- All evidence audit gaps addressed with honest historical status and current compensating/readback verification.
+- App 794 Customization remains Live at **Revision 59**.
+- Zero Live writes executed during this corrective task.
 - Stopped. Pending ChatGPT Independent Technical Readback Review before User Runtime UAT.
