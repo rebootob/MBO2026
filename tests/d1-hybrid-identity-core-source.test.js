@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { MboIdentityService } from '../src/services/mbo-identity-service.js';
 import { RoutingService } from '../src/services/routing-service.js';
 
+// --- FINDING A: CANONICAL APP53 MAPPING RESOLVER TESTS ---
+
 test('D1 Hybrid Identity: Vassana valid dedicated mapping resolves to canonical emp_text 0044', () => {
   const userMappings = [
     {
@@ -24,11 +26,155 @@ test('D1 Hybrid Identity: Vassana valid dedicated mapping resolves to canonical 
   assert.equal(res.recordId, '456');
 });
 
+test('Finding A: Account_Status without Number_0 fails closed in canonical resolver', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Account_Status: 'ACTIVE', // Pseudo-field without Number_0!
+      emp_text: { value: '0044' },
+      MBO_Kintone_User: { value: [{ code: 'vassana' }] }
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana',
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_MISSING');
+});
+
+test('Finding A: Missing Number_0 fails closed in canonical resolver', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      emp_text: { value: '0044' },
+      MBO_Kintone_User: { value: [{ code: 'vassana' }] }
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana',
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_MISSING');
+});
+
+test('Finding A: Kintone_User_Code without MBO_Kintone_User fails closed in canonical resolver', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Number_0: { value: '1' },
+      Kintone_User_Code: 'vassana', // Superseded field!
+      emp_text: { value: '0044' }
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana',
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_MISSING');
+});
+
+test('Finding A: Employee_Code without emp_text fails closed in canonical resolver', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Number_0: { value: '1' },
+      Employee_Code: '0044', // Missing emp_text!
+      MBO_Kintone_User: { value: [{ code: 'vassana' }] }
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana',
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE');
+});
+
+test('Finding A: USER_SELECT item with only .value but no .code fails closed in canonical resolver', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Number_0: { value: '1' },
+      emp_text: { value: '0044' },
+      MBO_Kintone_User: { value: [{ value: 'vassana' }] } // Missing .code!
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana',
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_MISSING');
+});
+
+test('Finding A: Kintone user input with leading/trailing whitespace fails closed in canonical resolver', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Number_0: { value: '1' },
+      emp_text: { value: '0044' },
+      MBO_Kintone_User: { value: [{ code: 'vassana' }] }
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: ' vassana ', // Unclean input!
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_MISSING');
+  assert.equal(res.reason, 'KINTONE_USER_CODE_HAS_WHITESPACE');
+});
+
+test('Finding A: Selected code comparison is case-sensitive and fails closed on case mismatch', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Number_0: { value: '1' },
+      emp_text: { value: '0044' },
+      MBO_Kintone_User: { value: [{ code: 'Vassana' }] } // Capitalized V!
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana', // Lowercase v!
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_MISSING');
+});
+
+test('Finding A: Malformed/invalid canonical emp_text fails closed', () => {
+  const userMappings = [
+    {
+      $id: { value: '456' },
+      Number_0: { value: '1' },
+      emp_text: { value: 'INVALID_EMP_CODE!@#' },
+      MBO_Kintone_User: { value: [{ code: 'vassana' }] }
+    }
+  ];
+
+  const res = MboIdentityService.resolveDedicatedKintoneUserMapping({
+    kintoneUserCode: 'vassana',
+    userMappings
+  });
+
+  assert.equal(res.status, 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE');
+});
+
 test('D1 Hybrid Identity: Natta dedicated mapping with blank emp_text fails closed without guessing Number=243', () => {
   const userMappings = [
     {
       $id: { value: '578' },
-      Number: { value: 243 }, // Record number is 243, but emp_text is blank!
+      Number: { value: 243 },
       Number_0: { value: '1' },
       emp_text: { value: '' }, // Blank emp_text!
       Text_4: { value: 'natta@example.com' },
@@ -43,7 +189,7 @@ test('D1 Hybrid Identity: Natta dedicated mapping with blank emp_text fails clos
   });
 
   assert.equal(res.status, 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE');
-  assert.equal(res.employeeCode, undefined, 'Must NEVER return guessed Employee_Code (e.g. 243 or padded string)');
+  assert.equal(res.employeeCode, undefined, 'Must NEVER return guessed Employee_Code');
 });
 
 test('D1 Hybrid Identity: admin-form technical admin identity is denied from binding Employee-Self', () => {
@@ -69,7 +215,7 @@ test('D1 Hybrid Identity: inactive mapping (Number_0 = 0) fails closed', () => {
   const userMappings = [
     {
       $id: { value: '456' },
-      Number_0: { value: '0' }, // Inactive!
+      Number_0: { value: '0' },
       emp_text: { value: '0044' },
       MBO_Kintone_User: { value: [{ code: 'vassana' }] }
     }
@@ -89,7 +235,7 @@ test('D1 Hybrid Identity: USER_SELECT array with >1 users fails closed', () => {
       $id: { value: '100' },
       Number_0: { value: '1' },
       emp_text: { value: '0044' },
-      MBO_Kintone_User: { value: [{ code: 'vassana' }, { code: 'other_user' }] } // 2 users in array!
+      MBO_Kintone_User: { value: [{ code: 'vassana' }, { code: 'other_user' }] }
     }
   ];
 
@@ -125,8 +271,37 @@ test('D1 Hybrid Identity: duplicate active mapping records for same user returns
   assert.equal(res.status, 'IDENTITY_MAPPING_AMBIGUOUS');
 });
 
+// --- FINDING B: EFFECTIVE REQUESTER RESOLUTION TESTS ---
+
+test('Finding B: resolveEffectiveRequesterUser rejects invalid or missing mode', () => {
+  assert.throws(() => {
+    RoutingService.resolveEffectiveRequesterUser({
+      mode: 'UNKNOWN_MODE',
+      kintoneUserCode: 'vassana',
+      routeRequesterUsers: [{ code: 'vassana' }]
+    });
+  }, /INVALID_REQUESTER_MODE/);
+
+  assert.throws(() => {
+    RoutingService.resolveEffectiveRequesterUser({
+      mode: 'dedicated', // Lowercase!
+      kintoneUserCode: 'vassana',
+      routeRequesterUsers: [{ code: 'vassana' }]
+    });
+  }, /INVALID_REQUESTER_MODE/);
+});
+
+test('Finding B: resolveEffectiveRequesterUser rejects whitespace in DEDICATED user code', () => {
+  assert.throws(() => {
+    RoutingService.resolveEffectiveRequesterUser({
+      mode: 'DEDICATED',
+      kintoneUserCode: ' vassana ',
+      routeRequesterUsers: []
+    });
+  }, /KINTONE_USER_CODE_HAS_WHITESPACE/);
+});
+
 test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user in DEDICATED mode and validates SHARED mode', () => {
-  // DEDICATED mode
   const dedicated = RoutingService.resolveEffectiveRequesterUser({
     mode: 'DEDICATED',
     kintoneUserCode: 'vassana',
@@ -134,7 +309,6 @@ test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user i
   });
   assert.deepEqual(dedicated, [{ code: 'vassana' }]);
 
-  // SHARED mode valid
   const sharedValid = RoutingService.resolveEffectiveRequesterUser({
     mode: 'SHARED',
     kintoneUserCode: 'f1',
@@ -142,7 +316,6 @@ test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user i
   });
   assert.deepEqual(sharedValid, [{ code: 'f1' }, { code: 'f2' }]);
 
-  // SHARED mode unauthorized
   assert.throws(() => {
     RoutingService.resolveEffectiveRequesterUser({
       mode: 'SHARED',
@@ -151,7 +324,6 @@ test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user i
     });
   }, /not authorized to create an MBO for this target/);
 
-  // admin-form denied in both modes
   assert.throws(() => {
     RoutingService.resolveEffectiveRequesterUser({
       mode: 'DEDICATED',
@@ -161,26 +333,30 @@ test('D1 Hybrid Identity: resolveEffectiveRequesterUser returns dedicated user i
   }, /Technical admin identity \(admin-form\) cannot create MBO records/);
 });
 
+// --- FINDING C: OWN-MBO SELF-APPRAISER ELISION TESTS ---
+
 test('D1 Hybrid Identity Mandatory Natta Test: own-MBO self-appraiser elision transforms natta->uchida (M1_G1) to uchida (M1_ONLY)', () => {
   const masterRoute = {
     Routing_Key: 'TMG1|Marketing',
     Manager_Level1_Approvers: [{ code: 'natta' }],
     Manager_User: [{ code: 'natta' }],
+    Manager_Level1_Approval_Rule: 'ALL',
     Manager_Level2_Approvers: [],
     First_Manager_User: [],
     GM_Level1_Approvers: [{ code: 'uchida' }],
     GM_User: [{ code: 'uchida' }],
+    GM_Level1_Approval_Rule: 'ALL',
     GM_Level2_Approvers: [],
     Has_Manager_Level2: 'No',
     Has_GM_Level2: 'No',
     Routing_Topology: 'M1_G1'
   };
 
-  // Natta's own MBO (isOwnMbo = true)
   const effOwnRoute = RoutingService.applyOwnMboSelfAppraiserElision(masterRoute, 'natta', true);
 
   assert.deepEqual(effOwnRoute.Manager_User, [{ code: 'uchida' }]);
   assert.deepEqual(effOwnRoute.Manager_Level1_Approvers, [{ code: 'uchida' }]);
+  assert.equal(effOwnRoute.Manager_Level1_Approval_Rule, 'ALL');
   assert.deepEqual(effOwnRoute.GM_User, []);
   assert.deepEqual(effOwnRoute.GM_Level1_Approvers, []);
   assert.equal(effOwnRoute.Routing_Topology, 'M1_ONLY');
@@ -191,11 +367,86 @@ test('D1 Hybrid Identity Mandatory Natta Test: own-MBO self-appraiser elision tr
   assert.deepEqual(masterRoute.GM_User, [{ code: 'uchida' }]);
   assert.equal(masterRoute.Routing_Topology, 'M1_G1');
 
-  // Subordinate / other employee MBO (isOwnMbo = false)
+  // Subordinate MBO (isOwnMbo = false)
   const effSubordinateRoute = RoutingService.applyOwnMboSelfAppraiserElision(masterRoute, 'natta', false);
   assert.deepEqual(effSubordinateRoute.Manager_User, [{ code: 'natta' }]);
   assert.deepEqual(effSubordinateRoute.GM_User, [{ code: 'uchida' }]);
   assert.equal(effSubordinateRoute.Routing_Topology, 'M1_G1');
+});
+
+test('Finding C: ownMbo=true with missing or whitespace dedicated user fails closed', () => {
+  const route = {
+    Routing_Key: 'TMF1',
+    Manager_User: [{ code: 'natta' }],
+    GM_User: [{ code: 'uchida' }],
+    Routing_Topology: 'M1_G1'
+  };
+
+  assert.throws(() => {
+    RoutingService.applyOwnMboSelfAppraiserElision(route, '', true);
+  }, /MISSING_DEDICATED_USER_CODE/);
+
+  assert.throws(() => {
+    RoutingService.applyOwnMboSelfAppraiserElision(route, ' natta ', true);
+  }, /KINTONE_USER_CODE_HAS_WHITESPACE/);
+});
+
+test('Finding C: self-appraiser elision uses exact case-sensitive user code comparison', () => {
+  const route = {
+    Routing_Key: 'TMF1',
+    Manager_User: [{ code: 'Natta' }], // Capital N
+    GM_User: [{ code: 'uchida' }],
+    Routing_Topology: 'M1_G1'
+  };
+
+  // Lowercase 'natta' does NOT match 'Natta' case-sensitively
+  const res = RoutingService.applyOwnMboSelfAppraiserElision(route, 'natta', true);
+  assert.equal(res.selfAppraiserElided, false);
+  assert.deepEqual(res.Manager_User, [{ code: 'Natta' }]);
+});
+
+test('Finding C: multi-user slot preserves surviving users in same slot without creating extra workflow level', () => {
+  const route = {
+    Routing_Key: 'TMG1|Marketing',
+    Manager_Level1_Approvers: [{ code: 'natta' }, { code: 'somebody_else' }],
+    Manager_User: [{ code: 'natta' }, { code: 'somebody_else' }],
+    Manager_Level1_Approval_Rule: 'ANY',
+    GM_Level1_Approvers: [{ code: 'uchida' }],
+    GM_User: [{ code: 'uchida' }],
+    GM_Level1_Approval_Rule: 'ALL',
+    Routing_Topology: 'M1_G1'
+  };
+
+  const res = RoutingService.applyOwnMboSelfAppraiserElision(route, 'natta', true);
+
+  assert.equal(res.selfAppraiserElided, true);
+  // Slot 1 retains somebody_else and carries its original rule 'ANY'
+  assert.deepEqual(res.Manager_User, [{ code: 'somebody_else' }]);
+  assert.equal(res.Manager_Level1_Approval_Rule, 'ANY');
+  // Slot 2 retains uchida and carries rule 'ALL'
+  assert.deepEqual(res.GM_User, [{ code: 'uchida' }]);
+  assert.equal(res.GM_Level1_Approval_Rule, 'ALL');
+  assert.equal(res.Routing_Topology, 'M1_G1');
+});
+
+test('Finding C: surviving slot carries non-ALL approval rule when shifted', () => {
+  const route = {
+    Routing_Key: 'EXEC_ROUTE',
+    Manager_Level1_Approvers: [{ code: 'natta' }],
+    Manager_Level1_Approval_Rule: 'ALL',
+    GM_Level1_Approvers: [{ code: 'uchida' }, { code: 'vice_president' }],
+    GM_User: [{ code: 'uchida' }, { code: 'vice_president' }],
+    GM_Level1_Approval_Rule: 'AT_LEAST_ONE',
+    Routing_Topology: 'M1_G1'
+  };
+
+  const res = RoutingService.applyOwnMboSelfAppraiserElision(route, 'natta', true);
+
+  assert.equal(res.selfAppraiserElided, true);
+  // Surviving GM slot shifted to M1 position and carried its rule 'AT_LEAST_ONE'
+  assert.deepEqual(res.Manager_User, [{ code: 'uchida' }, { code: 'vice_president' }]);
+  assert.equal(res.Manager_Level1_Approval_Rule, 'AT_LEAST_ONE');
+  assert.equal(res.Routing_Topology, 'M1_ONLY');
 });
 
 test('D1 Hybrid Identity: own-MBO with no self appraiser remains unchanged', () => {

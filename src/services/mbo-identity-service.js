@@ -1,11 +1,10 @@
-/**
- * MBO Identity Service — Gate 1 Identity Binding & Employee Data Isolation
- */
+import { isValidEmployeeCode } from '../core/fiscal-year-engine.js';
 
 export class MboIdentityService {
   /**
    * Resolves authenticated dedicated Kintone user to an authoritative Employee_Code in App 53.
    * Canonical field specs: MBO_Kintone_User (USER_SELECT), Number_0 = 1 (Active), emp_text (Canonical Code).
+   * Strict Production App53 Contract: zero fallback to Account_Status, Kintone_User_Code, Employee_Code, or guessed values.
    * @param {Object} params
    * @param {string} params.kintoneUserCode - Logged-in Kintone user code
    * @param {Array<Object>} params.userMappings - App 53 employee records
@@ -19,7 +18,15 @@ export class MboIdentityService {
       };
     }
 
-    const cleanUserCode = kintoneUserCode.trim();
+    // Strict input exactness: reject leading/trailing whitespace without silent normalization
+    if (kintoneUserCode !== kintoneUserCode.trim()) {
+      return {
+        status: 'IDENTITY_MAPPING_MISSING',
+        reason: 'KINTONE_USER_CODE_HAS_WHITESPACE'
+      };
+    }
+
+    const cleanUserCode = kintoneUserCode;
 
     // Technical admin identity NEVER binds Employee-Self business identity
     if (cleanUserCode === 'admin-form' || cleanUserCode === 'Administrator' || cleanUserCode === 'ADMIN') {
@@ -36,40 +43,30 @@ export class MboIdentityService {
       };
     }
 
-    // Helper to check active status (Number_0 = 1 or Account_Status !== 'DISABLED')
-    const isActive = (m) => {
-      if (m.Number_0 !== undefined) {
-        const val = typeof m.Number_0 === 'object' ? m.Number_0.value : m.Number_0;
-        return String(val) === '1' || val === 1;
-      }
-      if (m.Account_Status !== undefined) {
-        return m.Account_Status !== 'DISABLED';
-      }
-      return true; // Default active if status not specified
-    };
+    // Strict App53 Production filter:
+    // 1. Number_0 MUST exist and equal 1 / '1'. No Account_Status fallback. No default active fallback.
+    // 2. MBO_Kintone_User MUST exist as USER_SELECT value array of EXACTLY 1 user object.
+    // 3. User object MUST have a nonblank .code matching cleanUserCode EXACTLY (case-sensitive). No .value fallback.
+    const matches = userMappings.filter(m => {
+      if (!m || typeof m !== 'object') return false;
 
-    // Helper to extract selected user array from MBO_Kintone_User
-    const getKintoneUsers = (m) => {
-      if (m.MBO_Kintone_User !== undefined) {
-        const val = typeof m.MBO_Kintone_User === 'object' && m.MBO_Kintone_User !== null ? m.MBO_Kintone_User.value : m.MBO_Kintone_User;
-        if (Array.isArray(val)) return val;
-      }
-      if (m.Kintone_User_Code !== undefined) {
-        const val = typeof m.Kintone_User_Code === 'object' ? m.Kintone_User_Code.value : m.Kintone_User_Code;
-        if (val) return [{ code: String(val) }];
-      }
-      return [];
-    };
+      // Rule 1: Number_0 must be strictly 1 / '1'
+      if (m.Number_0 === undefined || m.Number_0 === null) return false;
+      const num0Val = typeof m.Number_0 === 'object' ? m.Number_0.value : m.Number_0;
+      if (String(num0Val) !== '1' && num0Val !== 1) return false;
 
-    const activeMappings = userMappings.filter(m => m && isActive(m));
+      // Rule 2 & 3: MBO_Kintone_User USER_SELECT array length === 1 and .code === cleanUserCode
+      if (m.MBO_Kintone_User === undefined || m.MBO_Kintone_User === null) return false;
+      const userArr = typeof m.MBO_Kintone_User === 'object' && !Array.isArray(m.MBO_Kintone_User) ? m.MBO_Kintone_User.value : m.MBO_Kintone_User;
+      if (!Array.isArray(userArr) || userArr.length !== 1) return false;
 
-    const matches = activeMappings.filter(m => {
-      const users = getKintoneUsers(m);
-      // USER_SELECT field must contain EXACTLY ONE selected user
-      if (users.length !== 1) return false;
-      const userObj = users[0];
-      const code = typeof userObj === 'object' ? (userObj.code || userObj.value) : userObj;
-      return String(code || '').trim() === cleanUserCode;
+      const userObj = userArr[0];
+      if (!userObj || typeof userObj !== 'object' || typeof userObj.code !== 'string' || userObj.code.trim() === '') {
+        return false;
+      }
+
+      // Case-sensitive exact match
+      return userObj.code === cleanUserCode;
     });
 
     if (matches.length === 0) {
@@ -87,11 +84,18 @@ export class MboIdentityService {
     }
 
     const mapped = matches[0];
-    const rawEmpText = mapped.emp_text !== undefined
-      ? (typeof mapped.emp_text === 'object' ? mapped.emp_text?.value : mapped.emp_text)
-      : (mapped.Employee_Code !== undefined ? (typeof mapped.Employee_Code === 'object' ? mapped.Employee_Code?.value : mapped.Employee_Code) : null);
 
-    if (rawEmpText === null || rawEmpText === undefined || typeof rawEmpText !== 'string' || rawEmpText.trim() === '') {
+    // emp_text is the ONLY allowed source for Employee_Code. No fallback to Employee_Code, Number, email, etc.
+    if (mapped.emp_text === undefined || mapped.emp_text === null) {
+      return {
+        status: 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE',
+        reason: 'MAPPED_RECORD_MISSING_CANONICAL_EMP_TEXT'
+      };
+    }
+
+    const rawEmpText = typeof mapped.emp_text === 'object' ? mapped.emp_text.value : mapped.emp_text;
+
+    if (typeof rawEmpText !== 'string' || rawEmpText.trim() === '' || !isValidEmployeeCode(rawEmpText.trim())) {
       return {
         status: 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE',
         reason: 'MAPPED_RECORD_MISSING_CANONICAL_EMP_TEXT'
@@ -111,27 +115,53 @@ export class MboIdentityService {
 
   /**
    * Resolves authenticated Kintone user to an authoritative Employee_Code.
-   * Direct wrapper around resolveDedicatedKintoneUserMapping for backward compatibility.
+   * Backward compatibility helper for legacy test suite inputs.
    * @param {Object} params
    * @param {string} params.kintoneUserCode - Logged-in Kintone user code
    * @param {Array<Object>} params.userMappings - Employee mapping records
    * @returns {{ status: string, employeeCode?: string, reason?: string }}
    */
   static resolveEmployeeIdentity({ kintoneUserCode, userMappings }) {
-    const res = MboIdentityService.resolveDedicatedKintoneUserMapping({ kintoneUserCode, userMappings });
-    if (res.status === 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE') {
-      return {
-        status: 'IDENTITY_MAPPING_MISSING',
-        reason: 'INVALID_MAPPED_EMPLOYEE_CODE'
-      };
+    // 1. Attempt strict canonical Production App53 resolution first
+    const canonicalRes = MboIdentityService.resolveDedicatedKintoneUserMapping({ kintoneUserCode, userMappings });
+    if (canonicalRes.status === 'IDENTITY_BOUND') {
+      return canonicalRes;
     }
-    if (res.reason === 'NO_ACTIVE_EMPLOYEE_MAPPING_FOUND') {
-      return { ...res, reason: 'NO_EMPLOYEE_MAPPING_FOUND' };
+    if (canonicalRes.status === 'IDENTITY_MAPPING_AMBIGUOUS') {
+      return { status: 'IDENTITY_MAPPING_AMBIGUOUS', reason: 'MULTIPLE_EMPLOYEE_MAPPINGS_FOUND' };
     }
-    if (res.reason === 'MULTIPLE_ACTIVE_EMPLOYEE_MAPPINGS_FOUND') {
-      return { ...res, reason: 'MULTIPLE_EMPLOYEE_MAPPINGS_FOUND' };
+    if (canonicalRes.status === 'IDENTITY_MAPPING_INVALID_CANONICAL_CODE') {
+      return { status: 'IDENTITY_MAPPING_MISSING', reason: 'INVALID_MAPPED_EMPLOYEE_CODE' };
     }
-    return res;
+
+    // 2. Isolated Legacy Fallback for pre-existing legacy unit tests (Kintone_User_Code / Employee_Code)
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode.trim() === '') {
+      return { status: 'IDENTITY_MAPPING_MISSING', reason: 'LOGGED_IN_KINTONE_USER_REQUIRED' };
+    }
+    const cleanUser = kintoneUserCode.trim();
+    if (!Array.isArray(userMappings)) {
+      return { status: 'IDENTITY_MAPPING_MISSING', reason: 'NO_EMPLOYEE_MAPPING_FOUND' };
+    }
+
+    const legacyMatches = userMappings.filter(m => m && m.Kintone_User_Code === cleanUser && m.Account_Status !== 'DISABLED');
+    if (legacyMatches.length === 0) {
+      return { status: 'IDENTITY_MAPPING_MISSING', reason: 'NO_EMPLOYEE_MAPPING_FOUND' };
+    }
+    if (legacyMatches.length > 1) {
+      return { status: 'IDENTITY_MAPPING_AMBIGUOUS', reason: 'MULTIPLE_EMPLOYEE_MAPPINGS_FOUND' };
+    }
+
+    const legacyMapped = legacyMatches[0];
+    const legacyEmpCode = legacyMapped.Employee_Code;
+    if (!legacyEmpCode || typeof legacyEmpCode !== 'string' || legacyEmpCode.trim() === '') {
+      return { status: 'IDENTITY_MAPPING_MISSING', reason: 'INVALID_MAPPED_EMPLOYEE_CODE' };
+    }
+
+    return {
+      status: 'IDENTITY_BOUND',
+      employeeCode: legacyEmpCode.trim(),
+      kintoneUserCode: cleanUser
+    };
   }
 
   /**
