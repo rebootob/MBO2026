@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only when actual source/runtime execution is required
-> Updated: 2026-08-30 — HYBRID IDENTITY READ-ONLY AUDIT COMPLETE WITH BLOCKERS
+> Updated: 2026-08-30 — HYBRID BLOCKERS BUSINESS-DESIGN RESOLVED / CORE SOURCE R1 OPEN
 
 ## 1. D1–D7 Scoreboard
 
 | ID | Deliverable | Current Status |
 |---|---|
-| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. App800 Reset UI source/tooling accepted. Hybrid Identity read-only audit is complete but source implementation is BLOCKED on physical mapping source, Natta self-approval rule, and dedicated App794 native-access design. |
+| D1 | 🟠 **OVERALL IN PROGRESS.** App794 Rev60 accepted. Hybrid Identity + Dual-Role architecture confirmed. App800 Reset UI source/tooling accepted. Natta/Vassana read-only audit completed. User approved physical mapping design, own-MBO self-appraiser exception, and dedicated native-access design. Current gate = Hybrid Identity Core Source R1; protected Kintone writes remain unauthorized. |
 | D2 | 🟠 Excel + PDF legacy-format export IN PROGRESS |
 | D3 | 🟠 8 legacy PMS -> App794 IN PROGRESS / WRITE NOT AUTHORIZED |
 | D4 | 🟠 App800 HR Control Center IN PROGRESS; Reset UI source/tooling accepted; deployed App800 remains prior MVP until separately authorized deployment. |
@@ -30,6 +30,8 @@ ACCEPTED_CSS_IDENTITY         = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 REV60_USER_UAT                = PASS
 ```
 
+No current App794 deployment/write authorization exists.
+
 ## 3. Confirmed Hybrid Identity / Dual Role
 
 ```text
@@ -40,7 +42,9 @@ DUAL_ROLE_EMPLOYEE_APPROVER = CONFIRMED
 Dedicated path target:
 ```text
 native Kintone login
--> exact authoritative Kintone User Code <-> active Employee_Code mapping
+-> exact App53 MBO_Kintone_User mapping
+-> exactly one active row / Number_0 = 1
+-> valid canonical emp_text Employee_Code
 -> Employee-Self auto-bind
 -> no secondary MBO Employee_Code/password login
 ```
@@ -54,13 +58,14 @@ approved shared principal
 -> Employee-Self scope
 ```
 
-Dual-role separation remains:
+Dual-role separation:
 ```text
 My MBO ownership  = bound Employee_Code
 Approver identity = current dedicated Kintone User
 Approval Tasks    = authoritative current native Workflow assignee == current dedicated Kintone User
-SELF_APPROVAL_ROUTE_CONFLICT -> FAIL CLOSED
 ```
+
+Static App795 membership, UI visibility, or caller-supplied role strings are not Approver authorization.
 
 ## 4. App800 Reset UI / Tooling — Accepted, Not Deployed
 
@@ -82,47 +87,39 @@ APP800_CANDIDATE_CSS_BLOB = c1d32deffd9e6c164a4fd80adf20526b543ccbd7
 
 Reset MBO Password means App801 MBO credential reset only, never native Kintone/cybozu password reset.
 
-## 5. Hybrid Identity Read-Only Audit — COMPLETE WITH BLOCKERS
+## 5. Hybrid Identity Read-Only Audit — COMPLETE
 
 Evidence:
 `project-docs/D1_HYBRID_IDENTITY_MAPPING_DUAL_ROLE_AUDIT_R1_EVIDENCE.md`
 
-Safety evidence:
+Safety:
 ```text
 R1 GET=10 / POST=0 / PUT=0 / DELETE=0
 R2 GET=8  / POST=0 / PUT=0 / DELETE=0
 ```
 
-### 5.1 App53 physical mapping source
+### 5.1 App53 schema facts
 
-R2 schema proves:
+R2 proved:
 ```text
 Drop_down   = Section
 Drop_down_0 = Departmant
 Drop_down_1 = Section Name
 Drop_down_2 = Team
-emp_text    = Employee ID
+emp_text    = Employee ID / canonical Employee_Code
 Number      = Code
-Number_0    = Status
+Number_0    = employee Active Status
 Text_2      = Position
 Text_4      = Email
 Text_6      = Vendor Account Number
 ```
 
-App53 has no USER_SELECT field and no reviewed field that establishes Kintone User Code/login mapping.
-
-```text
-DEDICATED_MAPPING_BUSINESS_RULE   = CONFIRMED
-DEDICATED_MAPPING_PHYSICAL_SOURCE = SOURCE_FIELD_NOT_PRESENT
-HYBRID_AUTO_BIND_IMPLEMENTATION   = BLOCKED
-```
-
-Do not use display name, email similarity, App795 membership, or Vendor Account Number as identity mapping.
+At audit time App53 had no USER_SELECT field and no authoritative Kintone login mapping field.
 
 ### 5.2 Natta
 
 ```text
-Kintone User Code = natta (valid)
+Kintone User Code = natta / valid
 App53 Record ID   = 578
 Name              = Ms.Natta Niphatthakosolsuk
 Position          = Manager
@@ -131,8 +128,8 @@ Section           = TMG1
 Section Name      = Die Casting
 Team              = Marketing
 Number_0          = 1 / Active
-Employee ID       = blank
-Code              = 243
+emp_text           = BLANK
+Number             = 243
 ```
 
 App795:
@@ -141,18 +138,12 @@ TMG1|Marketing -> natta -> uchida
 TMG2|Marketing -> natta -> uchida
 ```
 
-Natta is non-executive Manager, so her own current route derives from `TMG1|Marketing`; Manager L1 resolves to `natta` herself.
-
-```text
-NATTA_SELF_APPROVAL_ROUTE_CONFLICT = CONFIRMED
-```
-
-Do not silently skip or auto-approve. Separate business decision required.
+The real canonical Natta Employee_Code is still **NOT PROVEN**. Never substitute `Number=243`, Vendor Account Number, email, name, or guessed padding.
 
 ### 5.3 Vassana
 
 ```text
-Kintone User Code = vassana (valid)
+Kintone User Code = vassana / valid
 App53 Record ID   = 456
 Name              = Ms.Vassana Maenthong
 Position          = Deputy General Manager
@@ -161,25 +152,18 @@ Section           = TMF3
 Section Name      = Sales Engineering
 Team              = blank
 Number_0          = 1 / Active
-Employee ID       = 0044
-Code              = 44
+emp_text           = 0044
+Number             = 44
 ```
 
-Vassana is executive DGM; Position override applies before Section routing.
-
-Current App795:
+Current own route uses executive Position precedence:
 ```text
-POSITION_DGM -> Manager L1 = tsuchihira
-TMF1/TMF2/TMF3 -> Manager L1 = vassana -> GM L1 = kito
+POSITION_DGM -> tsuchihira
 ```
 
-```text
-VASSANA_SELF_APPROVAL_ROUTE_CONFLICT = NO_CURRENT_CONFLICT_FOUND
-```
+Vassana remains Manager L1 for TMF1/TMF2/TMF3 on other employees' records.
 
-App795 membership proves Approver role only, not Employee_Code ownership.
-
-### 5.4 App794 native access blocker
+### 5.4 Current App794 native access
 
 Current App794 App ACL remains:
 ```text
@@ -190,43 +174,128 @@ Record ACL           = empty
 Field ACL            = empty
 ```
 
-R2 group membership:
+Current `MBO_EMPLOYEE_ACCESS` membership:
 ```text
-MBO_EMPLOYEE_ACCESS = t1,t2,s1,f1,f2,f3,e1,tmh,g_request
+t1,t2,s1,f1,f2,f3,e1,tmh,g_request
 ```
 
-Neither `natta` nor `vassana` is a member.
+`natta` and `vassana` are not members; therefore current native dedicated access is not yet granted.
 
+## 6. User-Approved Hybrid Blocker Resolution — CONFIRMED 2026-08-30
+
+Canonical detailed Baseline:
+`project-docs/CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`
+
+### 6.1 Physical mapping design
+
+Approved future App53 field:
 ```text
-DEDICATED_NATTA_NATIVE_APP794_ACCESS   = NOT_GRANTED_BY_CURRENT_APP_ACL
-DEDICATED_VASSANA_NATIVE_APP794_ACCESS = NOT_GRANTED_BY_CURRENT_APP_ACL
+Field Code = MBO_Kintone_User
+Label      = MBO Kintone User
+Type       = USER_SELECT
 ```
 
-UI/JavaScript alone must not be used as the authorization boundary.
-
-### 5.5 App794 My Approval Tasks structural result
-
-App794 schema/process already has native `Assignee`, `Manager_User`, `GM_User`, `First_Manager_User`, and `Requester_User`; therefore the architectural definition `current native assignee == dedicated Kintone user` remains valid.
-
-R2 found only one current App794 record and no Natta/Vassana target record, so no live approval-task-count UAT claim is made yet.
-
-## 6. Current Active Task
+Binding requires exact current Kintone user -> exactly one active App53 mapping row -> valid canonical `emp_text`.
 
 ```text
-ACTIVE_TASK = D1 HYBRID IDENTITY BLOCKER RESOLUTION DESIGN R1
-OWNER       = CHATGPT CONTROL PLANE + USER BUSINESS DECISION
-MODE        = DESIGN / DECISION ONLY
-SOURCE_CHANGE = NO
-LIVE_WRITE    = NO
-DEPLOY        = NO
+DEDICATED_MAPPING_PHYSICAL_DESIGN = CONFIRMED
+APP53_FIELD_LIVE_CREATED           = NO
+APP53_SCHEMA_WRITE_AUTH            = NONE
+APP53_MAPPING_DATA_WRITE_AUTH      = NONE
 ```
 
-Three blockers must be resolved before source implementation:
-1. authoritative dedicated Kintone User <-> Employee_Code physical mapping source;
-2. Natta self-approval business exception/routing rule;
-3. least-privilege native App794 access model for dedicated employee/approver users.
+Natta remains fail-closed until a real canonical `emp_text` Employee_Code is verified and corrected under separate authorization.
 
-## 7. Authorization Ledger / Safety
+### 6.2 Own-MBO self-appraiser exception
+
+User approved:
+```text
+OWN_MBO_SELF_APPROVER_ELISION = APPROVED
+```
+
+For own MBO only, after authoritative route resolution and before workflow snapshot:
+- remove only self appraiser;
+- preserve remaining appraiser order;
+- shift/recalculate effective topology;
+- never auto-approve;
+- never fabricate event/history/timestamp/comment;
+- never modify App795 subordinate route;
+- no remaining non-self appraiser -> fail closed.
+
+Natta canonical example:
+```text
+Master TMG1|Marketing route = natta -> uchida / M1_G1
+Natta own effective route   = uchida / M1_ONLY
+Other TMG1/TMG2 Marketing   = natta -> uchida unchanged
+```
+
+### 6.3 Dedicated native App794 access design
+
+Dedicated principals stay separate from shared `MBO_EMPLOYEE_ACCESS`.
+
+Approved dedicated group design:
+```text
+MBO_DEDICATED_ACCESS
+```
+
+Target App794 App ACL:
+```text
+View=YES / Add=YES / Edit=YES
+Delete=NO / Import=NO / Export=NO / AppAdmin=NO
+```
+
+App-level grant must be constrained by status-aware native Record Permissions using existing App794 user fields where appropriate:
+```text
+Requester_User
+First_Manager_User
+Manager_User
+GM_User
+```
+
+Target principle:
+- own dedicated requester sees own MBO throughout lifecycle and edits only employee-controlled statuses;
+- approver sees/edits only during the corresponding current review status;
+- transition/reassignment removes stale approver access;
+- static App795 membership is never sufficient;
+- HR final remains HR-native;
+- completed own MBO view-only;
+- dedicated users do not receive App801 View/Edit merely for auto-bind.
+
+Exact group/App ACL/Record ACL payload and any live write still require separate exact authorization.
+
+## 7. Current Active Task
+
+```text
+ACTIVE_TASK = D1 HYBRID IDENTITY CORE SOURCE R1
+OWNER       = ANTIGRAVITY
+MODE        = SOURCE / FOCUSED TEST ONLY
+LIVE_WRITE  = NO
+DEPLOY      = NO
+```
+
+Task opened at Control Plane commit:
+`889cdc33b23245b6aab7ea6e299e2d8f318cc247`
+
+Primary source scope:
+- `src/services/mbo-identity-service.js`
+- `src/services/employee-service.js` only if canonical mapping lookup belongs there
+- `src/services/routing-service.js`
+- directly related focused tests; at most one new focused test file if needed
+- new evidence `project-docs/D1_HYBRID_IDENTITY_CORE_SOURCE_R1_EVIDENCE.md`
+
+Required R1 source behaviors:
+1. canonical App53 `MBO_Kintone_User` + `Number_0` + `emp_text` resolver;
+2. dedicated effective requester = exact dedicated Kintone User; shared requester behavior unchanged;
+3. pure own-MBO self-appraiser elision/topology recalculation;
+4. Natta blank `emp_text` remains fail-closed;
+5. no main/UI/build/deploy/ACL/schema widening in this WP.
+
+Maximum executor status:
+```text
+D1_HYBRID_IDENTITY_CORE_SOURCE_R1_READY_PENDING_CHATGPT_REVIEW
+```
+
+## 8. Authorization Ledger / Safety
 
 ```text
 LATEST_DEPLOY_AUTH        = APP794-R4-1-NATIVE-CANCEL-DEPLOY-20260830-01 — CONSUMED / CLOSED / NEVER REUSE
@@ -234,17 +303,26 @@ ACTIVE_LIVE_AUTH          = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH        = NONE
 ACTIVE_ACL_WRITE_AUTH     = NONE
+ACTIVE_GROUP_WRITE_AUTH   = NONE
 ROLLBACK_AUTH             = NONE
 ```
 
-No App800/App801/App794/App53 record write, App53 schema change, App795 route write, customization upload, deployment, password reset execution, ACL write, Process update, or rollback is authorized.
+No App800/App801/App794/App53 record write, App53 schema change, group creation/membership write, App795 route write, customization upload, deployment, password reset execution, ACL write, Process update, or rollback is authorized.
 
-## 8. Next Gate
+## 9. Next Gates
 
 ```text
-CURRENT_GATE  = HYBRID IDENTITY BLOCKER RESOLUTION DESIGN R1
-NEXT_OWNER    = CHATGPT + USER
-EXPECTED_NEXT = choose mapping source + Natta self-approval rule + dedicated App794 authorization design
+CURRENT_GATE  = D1 HYBRID IDENTITY CORE SOURCE R1
+CURRENT_OWNER = ANTIGRAVITY
+NEXT_REVIEWER = CHATGPT
 ```
 
-Only after those decisions are explicit and reviewed may Control Plane open a narrow Hybrid Identity source implementation WP.
+If Core Source R1 passes independent review, protected Kintone configuration remains a **separate** future authorization gate:
+- App53 `MBO_Kintone_User` schema write;
+- reviewed mapping values;
+- Natta real Employee_Code correction only after authoritative value is known;
+- `MBO_DEDICATED_ACCESS` group/membership;
+- exact App794 App/Record ACL payload;
+- subsequent controlled deploy/UAT.
+
+Do not combine those writes with Source R1.
