@@ -1,71 +1,154 @@
-# AI ACTIVE TASK — NONE / D1 GATE 3 ACCEPTED
+# AI ACTIVE TASK — D1 PRE-DEPLOY FULL REGRESSION + LOCAL UI BUILD VERIFICATION R1
 
-Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD**
+Mode: **ANTIGRAVITY VERIFICATION / GENERATED BUILD ONLY — NO SOURCE OR TEST EDITS / FULL TEST FIRST / LOCAL BUILD ONLY / NO LIVE KINTONE**
 Branch: `ai/antigravity-wp002c`
+Opened after accepted D1 Gate 3 control HEAD: `ed2078169ffdfb8105af1c522a2ef1a88e60ea56`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_WORK_PACKAGE
-LAST_ACCEPTED_GATE3_IMPLEMENTATION = 282dcaf35764ea1960a064cf48f3c8add34506b8
-LAST_ACCEPTED_GATE3_SECURITY_CORRECTIVE = 8dc664e073a604fc40b88680cbdbc938f58728c6
-CURRENT_OWNER = CHATGPT
-ANTIGRAVITY_ACTION = NONE
+TASK_STATE = OPEN / READY_FOR_EXECUTION
+CURRENT_OWNER = ANTIGRAVITY
+NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
 ```
 
-## 0. Current truth
+Fresh-fetch the branch before execution. If another executor commit already exists after this task was written, STOP and return control to ChatGPT instead of repeating work.
 
-D1 `My Approval Tasks` source integration Gates 1–3 are independently accepted.
+## 0. Goal
 
-Accepted Gate 3 scope:
-- DEDICATED cross-employee Process Proceed fresh-revalidates native current Assignee before transition;
-- accepted `MboApprovalTaskService.revalidateApprovalTask()` is reused directly;
-- only `event.recordId` or `record.$id.value` may identify the target record for authority revalidation;
-- static/custom `Record_ID` is not trusted;
-- mismatch, API failure, missing record/id fail closed;
-- SHARED cross-employee Process authority remains denied;
-- own-MBO requester actions remain outside approval revalidation;
-- null Employee-Self context preserves native/pre-Gate-3 behavior;
-- bound Employee-Self identity is not mutated to the target employee;
-- no App795/static Manager/GM/First_Manager fallback is approval authority.
+Verify the accepted D1 source integration (Gates 1–3) across the full repository regression suite, then build the local App794 UI bundle from accepted source.
 
-## 1. Gate status
+This is NOT a source implementation task.
+This is NOT a deploy task.
+This is NOT permission for Live Kintone, App53, ACL/group, or UAT operations.
+
+## 1. Source/test freeze
+
+Do NOT modify:
 
 ```text
-GATE 1 = HOME INDEX INTEGRATION — PASS
-GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PASS
-GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PASS
+src/**
+tests/**
+services/**
+scripts/**
+project-docs/**
+package.json
+package-lock.json
 ```
 
-Gate 1–3 source acceptance is still not permission to build, deploy or perform Live Kintone/App53/ACL/group work.
+No source corrective is authorized in this task.
 
-## 2. Antigravity stop rule
+If any test fails, STOP and report the failure to ChatGPT. Do not fix it.
 
-Antigravity must do nothing from this file.
+## 2. Execution order — fail fast
 
-Do NOT:
-- continue automatically into another D1 task;
-- run build/full regression;
-- modify source/tests/docs;
-- access Live Kintone or App53;
-- deploy;
-- change ACL/groups;
-- perform UAT.
+### Step A — Full regression first
 
-A new exact Active Task must be written by ChatGPT Control Plane before any further Antigravity execution.
-
-## 3. Authorization ledger
+Run exactly:
 
 ```text
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH        = NONE
-ACTIVE_ACL_WRITE_AUTH     = NONE
-ACTIVE_GROUP_WRITE_AUTH   = NONE
-APP53_SCHEMA_WRITE_AUTH   = NONE
-APP53_RECORD_WRITE_AUTH   = NONE
-APP53_BULK_WRITE_AUTH     = NONE
-ROLLBACK_AUTH             = NONE
+npm test
 ```
 
-## 4. Next control action
+Required:
+- exit code 0;
+- report exact pass/fail/test count from command output.
 
-When the user says `ต่อ` / `ต่อไป`, ChatGPT must fresh-fetch repository truth and choose the smallest safe next work package. If ChatGPT can do the next work itself, do not spend Antigravity credit.
+If `npm test` FAILS:
+- STOP immediately;
+- do NOT run build;
+- do NOT modify source/tests;
+- do NOT commit anything.
+
+### Step B — Local UI build only after Step A PASS
+
+Run exactly:
+
+```text
+npm run ui:build
+```
+
+Canonical build script produces:
+
+```text
+dist/mbo-employee-app.js
+dist/mbo-employee.css
+```
+
+Only these generated outputs may change.
+
+### Step C — Generated-scope verification
+
+Run:
+
+```text
+git status --short
+git diff --check
+```
+
+Required scope after build:
+- no changed file outside:
+  - `dist/mbo-employee-app.js`
+  - `dist/mbo-employee.css`
+
+If any other file differs:
+- STOP;
+- do not clean up by editing source/tests;
+- report scope leak to ChatGPT.
+
+If one of the two dist files is byte-identical and therefore not listed as changed, that is acceptable.
+
+## 3. Commit rule
+
+If:
+- `npm test` PASS;
+- `npm run ui:build` PASS;
+- `git diff --check` PASS;
+- changed-file scope is only the canonical dist outputs;
+
+then:
+- if generated dist changed, commit + push exactly one focused generated-build commit;
+- if generated dist is unchanged, do not create an empty commit;
+- STOP immediately and return control to ChatGPT.
+
+Do not continue to deploy or another work package.
+
+## 4. Explicitly forbidden
+
+```text
+SOURCE CHANGE                          = NO
+TEST CHANGE                            = NO
+SERVICE CHANGE                         = NO
+SCRIPT CHANGE                          = NO
+PROJECT-DOC CHANGE BY EXECUTOR         = NO
+npm install / npm ci                   = NO unless already-required dependency absence prevents execution; if so STOP and report instead
+LIVE KINTONE GET                       = NO
+LIVE KINTONE WRITE                     = NO
+APP53 ACCESS                           = NO
+APP53 WRITE                            = NO
+ACL/GROUP CHANGE                       = NO
+DEPLOY                                 = NO
+UAT                                    = NO
+SANDBOX WRITE                          = NO
+CONNECTION TEST                        = NO
+```
+
+No Live authorization exists.
+
+## 5. Finish response
+
+Return only:
+
+```text
+FULL_TEST = PASS/FAIL + exact count
+UI_BUILD = PASS/FAIL/NOT_RUN
+GIT_DIFF_CHECK = PASS/FAIL/NOT_RUN
+CHANGED_FILES = exact list
+GENERATED_BUILD_COMMIT = <sha> / NONE
+SOURCE_FILES_CHANGED = 0
+TEST_FILES_CHANGED = 0
+LIVE_KINTONE_OPERATIONS = 0
+APP53_PRODUCTION_TOUCHED = NO
+DEPLOY_RUN = NO
+```
+
+Next owner = ChatGPT independent review.
