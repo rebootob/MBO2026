@@ -1,47 +1,34 @@
-# AI ACTIVE TASK — NONE / D1 GATE B1 ACCEPTED — WAITING FOR USER AUTHORIZATION FOR GATE B2
+# AI ACTIVE TASK — NONE / D1 GATE B2 PAUSED FOR SAFETY-PLAN CONFIRMATION
 
-Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD / PRODUCTION WRITE NOT AUTHORIZED**
+Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD / PRODUCTION WRITE NOT YET EXECUTABLE**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = CLOSED / WAITING_FOR_EXACT_USER_AUTHORIZATION
+TASK_STATE = PAUSED / SAFETY_PLAN_REVIEW
 CURRENT_OWNER = CHATGPT
 ANTIGRAVITY_ACTION = NONE
+USER_B2_AUTHORIZATION = RECEIVED BUT NOT CONSUMED
 ```
 
-## 0. Accepted Gate B1 evidence
-
-The App53 GET-only Production preflight is accepted:
+## 0. Accepted preflight truth
 
 ```text
 APP53_APP_ID = 53
 APP53_APP_NAME = Employee Namelist
-APP53_REVISION = 199
+APP53_LIVE_REVISION = 199
 APP53_TOTAL_RECORDS = 281
-APP53_EXPORTED_RECORDS = 281
 APP53_EXPORT_COMPLETE = YES
-ENDPOINT_ERRORS = NONE
 BACKUP_PATH = backups/d1-gateb-app53-preflight-r1
-MBO_Kintone_User_EXISTS = NO
-RECORD_456_Number_0 = 1
+MBO_Kintone_User_EXISTS_LIVE = NO
 RECORD_456_emp_text = 0044
-RECORD_578_Number_0 = 1
 RECORD_578_emp_text = BLANK
-APP53_WRITES = 0
-OTHER_KINTONE_APP_ACCESS = 0
+APP53_WRITES_SO_FAR = 0
 ```
 
-No tracked file changed and no Production data export was committed.
+## 1. Safest B2 execution design
 
-## 1. Proposed Gate B2 — NOT AUTHORIZED YET
-
-Exact target:
-```text
-App53 Production — Employee Namelist
-```
-
-Exact schema addition:
+Target field only:
 ```text
 Field Code = MBO_Kintone_User
 Label      = MBO Kintone User
@@ -50,54 +37,76 @@ Required   = false
 Entities   = []
 ```
 
-Required execution sequence after explicit user authorization:
-1. fresh GET Live App53 schema immediately before write;
-2. fail closed if target field already exists or target state materially drifted;
-3. POST exact field only to `/k/v1/preview/app/form/fields.json`;
-4. POST deploy for App53 only to `/k/v1/preview/app/deploy.json`;
-5. immediate Live schema/readback after deployment;
-6. prove exact field code/type/label;
-7. prove App53 record count remains unchanged;
-8. zero App53 record writes;
-9. STOP and return to ChatGPT independent review.
+Execution must be split into hard gates:
 
-## 2. Forbidden even if B2 is authorized
+### Gate P0 — fresh Live + Preview drift check (GET only)
+Before any write:
+1. GET Live App53 fields.
+2. GET Preview App53 fields.
+3. GET App53 deploy status.
+4. Confirm Live still has no `MBO_Kintone_User`.
+5. Confirm Preview is not in PROCESSING/FAIL/CANCEL state.
+6. Compare Live vs Preview and STOP if Preview contains any unrelated pending configuration drift.
+7. Confirm record count remains 281.
+
+If any drift/ambiguity exists: STOP. No write.
+
+### Gate P1 — add field to Preview only
+POST exactly one field to `/k/v1/preview/app/form/fields.json` using the exact payload above.
+Do NOT deploy yet.
+
+### Gate P2 — Preview readback before deploy
+Immediately GET Preview fields and prove:
+- exact field code exists;
+- type = USER_SELECT;
+- label = MBO Kintone User;
+- required = false;
+- no unexpected field/config change is observed.
+
+If readback is not exact: STOP. Do NOT deploy.
+
+### Gate P3 — deploy App53 only
+Only after Gate P2 exact PASS:
+POST `/k/v1/preview/app/deploy.json` with App53 only.
+Then poll GET deploy status until `SUCCESS` or fail/timeout.
+
+### Gate P4 — post-deploy Live readback
+After SUCCESS:
+1. GET Live fields and prove exact field code/type/label/required.
+2. Confirm total record count remains 281.
+3. Confirm zero record writes occurred.
+4. Confirm no mapping values were populated.
+5. STOP and return to ChatGPT independent review.
+
+## 2. Rollback policy
+
+Rollback is NOT automatic.
+If Preview is wrong before deploy, STOP and leave Live untouched.
+If Live readback after deploy is wrong, STOP and report; do not self-delete anything.
+
+A rollback would be a separate Production write:
+- delete only `MBO_Kintone_User` from Preview;
+- deploy App53 only;
+- read back Live again.
+
+`ROLLBACK_AUTH = NONE` until user explicitly authorizes that rollback.
+
+## 3. Explicitly forbidden
 
 ```text
-POPULATE VASSANA MAPPING             = NO
-POPULATE ANY MBO_Kintone_User VALUE  = NO
-CORRECT NATTA emp_text               = NO
-APP53 BULK UPDATE                    = NO
-APP794 GET/WRITE                     = NO
-APP795/796/800/801 ACCESS            = NO
-GROUP GET/WRITE                      = NO
-ACL GET/WRITE                        = NO
-APP794 CUSTOMIZATION DEPLOY          = NO
-UAT                                  = NO
-SOURCE/TEST/DIST CHANGE              = NO
+APP53 RECORD POST/PUT/DELETE             = NO
+POPULATE VASSANA MAPPING                 = NO
+POPULATE ANY MBO_Kintone_User VALUE      = NO
+CORRECT NATTA emp_text                   = NO
+APP53 BULK UPDATE                        = NO
+APP794/795/796/800/801 ACCESS            = NO
+GROUP/ACL GET OR WRITE                   = NO
+APP794 CUSTOMIZATION DEPLOY              = NO
+SOURCE/TEST/DIST CHANGE                  = NO
+GIT COMMIT BY EXECUTOR                   = NO
 ```
 
-## 3. Authorization ledger
+## 4. Hold rule
 
-```text
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH        = NONE
-ACTIVE_ACL_WRITE_AUTH     = NONE
-ACTIVE_GROUP_WRITE_AUTH   = NONE
-APP53_SCHEMA_WRITE_AUTH   = NONE
-APP53_RECORD_WRITE_AUTH   = NONE
-APP53_BULK_WRITE_AUTH     = NONE
-ROLLBACK_AUTH             = NONE
-```
-
-No Antigravity command may be generated from this file until the user explicitly approves Gate B2.
-
-## 4. Exact approval wording required
-
-The next executable packet may open only if the user clearly authorizes the equivalent of:
-
-```text
-อนุมัติ D1 Gate B2: เพิ่ม field MBO_Kintone_User ชนิด USER_SELECT ใน App53 Production และ deploy App53 configuration ให้ field นี้ Live เท่านั้น พร้อม readback หลังทำ; ไม่อนุญาตให้แก้ record, populate mapping, แก้ Natta emp_text, ACL/group หรือ deploy App794
-```
-
-After that exact operation completes, the authorization is consumed and the next owner is ChatGPT independent review.
+Do not create an executable Antigravity packet from this file until the user confirms the safety plan after review.
+The previously granted B2 authorization remains unconsumed while this hold is active.
