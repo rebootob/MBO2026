@@ -511,8 +511,10 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   const fs = await import('fs');
   const mainSrc = fs.readFileSync('src/main-mbo-app.js', 'utf8');
   const navSrc = fs.readFileSync('src/ui/employee-record-navigation.js', 'utf8');
-  assert.ok(!mainSrc.includes('onbeforeunload'), 'R4_NO_UNLOAD_BYPASS: main-mbo-app.js must NOT touch or suppress window.onbeforeunload');
-  assert.ok(!navSrc.includes('onbeforeunload'), 'R4_NO_UNLOAD_BYPASS_NAV: employee-record-navigation.js must NOT touch or suppress window.onbeforeunload');
-  assert.ok(!mainSrc.includes('location.assign') && !mainSrc.includes('location.replace') && !mainSrc.includes('history.back'), 'R4_NO_HISTORY_HACKS: main-mbo-app.js must NOT use location.assign/replace/history.back');
-  assert.ok(!navSrc.includes('location.assign') && !navSrc.includes('location.replace') && !navSrc.includes('history.back'), 'R4_NO_HISTORY_HACKS_NAV: employee-record-navigation.js must NOT use location.assign/replace/history.back');
+  assert.ok(!mainSrc.includes('onbeforeunload'), 'R4_1_NO_ONBEFOREUNLOAD: main-mbo-app.js must NOT contain onbeforeunload');
+  assert.ok(!navSrc.includes('onbeforeunload'), 'R4_1_NO_ONBEFOREUNLOAD_NAV: employee-record-navigation.js must NOT contain onbeforeunload');
+  assert.ok(!mainSrc.includes('beforeunload'), 'R4_1_NO_REMOVE_BEFOREUNLOAD: main-mbo-app.js must NOT add or remove beforeunload listeners');
+  assert.ok(!navSrc.includes('beforeunload'), 'R4_1_NO_REMOVE_BEFOREUNLOAD_NAV: employee-record-navigation.js must NOT add or remove beforeunload listeners');
+  assert.ok(!mainSrc.includes('location.assign') && !mainSrc.includes('location.replace') && !mainSrc.includes('history.back'), 'R4_1_NO_HISTORY_HACKS: main-mbo-app.js must NOT use location.assign/replace/history.back');
+  assert.ok(!navSrc.includes('location.assign') && !navSrc.includes('location.replace') && !navSrc.includes('history.back'), 'R4_1_NO_HISTORY_HACKS_NAV: employee-record-navigation.js must NOT use location.assign/replace/history.back');
 });
