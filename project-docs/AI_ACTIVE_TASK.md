@@ -1,172 +1,71 @@
-# AI ACTIVE TASK — D1 GATE 3 EXACT RECORD-ID BOUNDARY CORRECTIVE R1
+# AI ACTIVE TASK — NONE / D1 GATE 3 ACCEPTED
 
-Mode: **ANTIGRAVITY MINIMUM CORRECTIVE ONLY — 2 FILES / ONE SOURCE-LINE SECURITY FIX + FOCUSED TEST EVIDENCE / NO BUILD / NO FULL TEST / NO LIVE KINTONE**
+Mode: **NO EXECUTOR TASK OPEN — CONTROL PLANE HOLD**
 Branch: `ai/antigravity-wp002c`
-Review target: `282dcaf35764ea1960a064cf48f3c8add34506b8`
 Updated: 2026-08-30
 
 ```text
-TASK_STATE = CORRECTIVE / READY_FOR_EXECUTION
-CURRENT_OWNER = ANTIGRAVITY
-NEXT_OWNER_AFTER_EXECUTION = CHATGPT INDEPENDENT REVIEW
+TASK_STATE = CLOSED / WAITING_FOR_CONTROL_PLANE_NEXT_WORK_PACKAGE
+LAST_ACCEPTED_GATE3_IMPLEMENTATION = 282dcaf35764ea1960a064cf48f3c8add34506b8
+LAST_ACCEPTED_GATE3_SECURITY_CORRECTIVE = 8dc664e073a604fc40b88680cbdbc938f58728c6
+CURRENT_OWNER = CHATGPT
+ANTIGRAVITY_ACTION = NONE
 ```
 
-Fresh-fetch the branch before execution. If another executor correction already exists after this task was written, STOP and hand it to ChatGPT for review instead of repeating work.
+## 0. Current truth
 
-## 0. Goal
+D1 `My Approval Tasks` source integration Gates 1–3 are independently accepted.
 
-Close only the Gate 3 exact record-id security-boundary defect found by independent review.
+Accepted Gate 3 scope:
+- DEDICATED cross-employee Process Proceed fresh-revalidates native current Assignee before transition;
+- accepted `MboApprovalTaskService.revalidateApprovalTask()` is reused directly;
+- only `event.recordId` or `record.$id.value` may identify the target record for authority revalidation;
+- static/custom `Record_ID` is not trusted;
+- mismatch, API failure, missing record/id fail closed;
+- SHARED cross-employee Process authority remains denied;
+- own-MBO requester actions remain outside approval revalidation;
+- null Employee-Self context preserves native/pre-Gate-3 behavior;
+- bound Employee-Self identity is not mutated to the target employee;
+- no App795/static Manager/GM/First_Manager fallback is approval authority.
 
-The Gate 3 implementation candidate is otherwise not reopened by default.
-
-Approved record-id sources for Process Proceed revalidation are exactly:
+## 1. Gate status
 
 ```text
-event.recordId
-record.$id.value
+GATE 1 = HOME INDEX INTEGRATION — PASS
+GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PASS
+GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PASS
 ```
 
-A custom/static record field is not an approved authority identifier.
+Gate 1–3 source acceptance is still not permission to build, deploy or perform Live Kintone/App53/ACL/group work.
 
-## 1. Exact allowed files
+## 2. Antigravity stop rule
 
-MODIFY ONLY:
+Antigravity must do nothing from this file.
+
+Do NOT:
+- continue automatically into another D1 task;
+- run build/full regression;
+- modify source/tests/docs;
+- access Live Kintone or App53;
+- deploy;
+- change ACL/groups;
+- perform UAT.
+
+A new exact Active Task must be written by ChatGPT Control Plane before any further Antigravity execution.
+
+## 3. Authorization ledger
 
 ```text
-src/main-mbo-app.js
-tests/employee-main-mbo-app-integration.test.js
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH        = NONE
+ACTIVE_ACL_WRITE_AUTH     = NONE
+ACTIVE_GROUP_WRITE_AUTH   = NONE
+APP53_SCHEMA_WRITE_AUTH   = NONE
+APP53_RECORD_WRITE_AUTH   = NONE
+APP53_BULK_WRITE_AUTH     = NONE
+ROLLBACK_AUTH             = NONE
 ```
 
-No new file. No other file may change.
+## 4. Next control action
 
-## 2. Required source correction
-
-In the Gate 3 `app.record.detail.process.proceed` handler, change only the record-id resolution needed to remove this fallback:
-
-```text
-record?.Record_ID?.value
-```
-
-Final authority id resolution must use only:
-
-```js
-const recordId = event.recordId || record?.$id?.value;
-```
-
-If neither native identifier exists, return `false` with zero approval revalidation GETs.
-
-Do not modify `MboApprovalTaskService`.
-Do not change Gate 1/2 behavior.
-Do not change requester/HR/admin semantics.
-Do not reorder/refactor unrelated Process logic.
-
-## 3. Required focused test correction
-
-Keep all existing Gate 1/2/3 assertions.
-
-### A. Spoof/static Record_ID must not be trusted
-
-Strengthen the existing Gate 3 missing-record-id test so the cross-employee Process event has:
-- no `event.recordId`;
-- no `record.$id`;
-- a populated static/custom field such as:
-
-```js
-Record_ID: { value: '901' }
-```
-
-Expected:
-
-```text
-handler result = false
-fresh approval revalidation GET count = 0
-```
-
-This directly proves `Record_ID` is not accepted as an authority identifier.
-
-### B. Preserve exact Employee-Self identity evidence
-
-After the existing authorized Dedicated cross-employee Process action, assert both:
-
-```text
-current context employeeCode = 0044
-current context kintoneUserCode = vassana
-```
-
-Do not mutate or rebind Employee-Self identity.
-
-## 4. Preserve accepted Gate 3 behavior
-
-Do not weaken/remove existing evidence for:
-- DEDICATED own requester action -> 0 revalidation GETs;
-- SHARED own requester action -> 0 revalidation GETs;
-- DEDICATED cross-employee authorized -> exactly 1 fresh GET + event returned;
-- Assignee mismatch -> false;
-- API failure -> false;
-- missing record -> false;
-- SHARED cross-employee -> false + 0 GETs;
-- null Employee-Self context -> existing behavior + 0 GETs;
-- 0 App795 authority queries;
-- 0 MBO login-gate calls.
-
-## 5. Run only
-
-```text
-node --test tests/employee-main-mbo-app-integration.test.js
-git diff --check
-```
-
-Do NOT run any other test.
-
-## 6. Explicitly forbidden
-
-```text
-MODIFY src/services/mbo-approval-task-service.js = NO
-MODIFY src/ui/**                                  = NO
-MODIFY routing/identity/auth/session services    = NO
-MODIFY project-docs/** BY EXECUTOR               = NO
-MODIFY dist/**                                   = NO
-HOME_INDEX_CHANGE                                = NO
-DETAIL_AUTHORITY_CHANGE                          = NO
-CROSS_EMPLOYEE_EDIT_AUTHORITY                    = NO
-STATIC APP795/ROUTE AUTHORITY FALLBACK           = NO
-GLOBAL HR/ADMIN AUTHORITY ENGINE                 = NO
-PROCESS REFACTOR                                 = NO
-npm test                                         = NO
-npm run ui:build                                 = NO
-LIVE KINTONE GET                                 = NO
-LIVE KINTONE WRITE                               = NO
-APP53 ACCESS                                     = NO
-ACL/GROUP/DEPLOY                                 = NO
-```
-
-No Live Kintone authorization exists.
-
-## 7. Stop conditions
-
-STOP without expanding scope if:
-- correcting the record-id boundary requires anything beyond the two allowed files;
-- accepted approval service would need modification;
-- existing Gate 3 focused tests reveal another source defect;
-- another source/test file is required.
-
-## 8. Finish
-
-If focused test + `git diff --check` pass:
-- commit + push one focused corrective commit;
-- STOP immediately.
-
-Final executor response only:
-
-```text
-COMMIT_SHA = ...
-CHANGED_FILES = src/main-mbo-app.js + tests/employee-main-mbo-app-integration.test.js ONLY
-FOCUSED_TEST = PASS/FAIL + count
-GIT_DIFF_CHECK = PASS/FAIL
-FULL_TEST_RUN = NO
-BUILD_RUN = NO
-LIVE_KINTONE_OPERATIONS = 0
-APP53_PRODUCTION_TOUCHED = NO
-```
-
-Next owner = ChatGPT independent review.
+When the user says `ต่อ` / `ต่อไป`, ChatGPT must fresh-fetch repository truth and choose the smallest safe next work package. If ChatGPT can do the next work itself, do not spend Antigravity credit.
