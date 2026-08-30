@@ -5,106 +5,81 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-30 — D1 SANDBOX S-B SAFE FAILURE / POLLING HEADER ROOT CAUSE IDENTIFIED
+> Updated: 2026-08-30 — SANDBOX GET-HEADER CORRECTIVE PASS / APP802 READ-ONLY RECOVERY INSPECTION OPEN
 
 ## 1. D1 status
 
-D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS. Production App53 B2 remains intentionally paused and its earlier authorization remains held/unconsumed.
+D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS. Production App53 B2 remains paused and its earlier authorization remains held/unconsumed.
 
 Sandbox-first validation remains the current path.
 
-## 2. Gate S-A tooling
-
-Accepted reviewed tooling chain:
+## 2. Accepted sandbox tooling chain
 
 ```text
 INITIAL_TOOLING_COMMIT = b98aa18fb082cf5b52efa1c80cf4df0a7e115dc5
-CORRECTIVE_COMMIT = 491358480cf642b3f2175b3cf0e1fd7246a96234
-REVIEWED_SCRIPT_BLOB = 838d021073916d2c05f2ce84a9242545c5ebd848
-GATE_S_A = PASS
+CONTRACT_CORRECTIVE_COMMIT = 491358480cf642b3f2175b3cf0e1fd7246a96234
+GET_HEADER_CORRECTIVE_COMMIT = 2bec6e63b9faa6bebf67379a5f3df74093d9c1d1
+CURRENT_SCRIPT_BLOB = 4a0ba42d88fb629f07887e9f65d0a52d8c9dbed9
 ```
 
-## 3. Gate S-B execution evidence — SAFE FAILURE
-
-User-provided executor evidence:
+Independent review of the GET-header corrective:
 
 ```text
-SCRIPT_BLOB_MATCH = YES
-PRE_EXEC_GIT_STATUS = CLEAN
-DRY_RUN_SAFETY_EXIT = PASS
-DRY_RUN_KINTONE_NETWORK_OPERATIONS = 0
-SANDBOX_EXECUTION = FAIL
+GET_WITHOUT_CONTENT_TYPE = PASS
+JSON_BODY_REQUESTS_KEEP_CONTENT_TYPE = PASS
+DEPLOY_STATUS_QUERY_UNCHANGED = PASS
+APP_TARGET_GUARDS_UNCHANGED = PASS
+CORRECTIVE_SCOPE = ONE SCRIPT / 5 ADDITIONS / 1 DELETION
+KINTONE_NETWORK_OPERATIONS_DURING_CORRECTIVE = 0
+```
+
+The corrected helper now preserves auth headers on GET and adds `Content-Type: application/json` only when a JSON body exists.
+
+## 3. Prior Gate S-B execution — FAIL-SAFE
+
+```text
 SANDBOX_APP_ID = 802
 SANDBOX_APP_NAME = MBO2026 App53 Hybrid Identity Sandbox
-BASE_SCHEMA_DEPLOY = FAIL
+BASE_SCHEMA_DEPLOY = RESULT UNCERTAIN AFTER DEPLOY POST
+FAILURE_POINT = deploy-status GET
+HTTP = 400
+KINTONE_CODE = CB_IL02
 SYNTHETIC_RECORDS_CREATED = 0
-FORWARD_PREVIEW_EXACT_CHECK = NOT_RUN
-FORWARD_DEPLOY = NOT_RUN
-FORWARD_LIVE_EXACT_CHECK = NOT_RUN
-FORWARD_SYNTHETIC_DATA_CHECK = NOT_RUN
-ROLLBACK_PREVIEW_FIELD_ABSENT = NOT_RUN
-ROLLBACK_DEPLOY = NOT_RUN
-ROLLBACK_LIVE_FIELD_ABSENT = NOT_RUN
-ROLLBACK_SYNTHETIC_DATA_CHECK = NOT_RUN
-FINAL_SANDBOX_STATE = INCOMPLETE
-POST_EXEC_GIT_STATUS = CLEAN
 APP53_NETWORK_OPERATIONS = 0
 APP53_WRITES = 0
 REAL_EMPLOYEE_DATA_COPIED = NO
 PRODUCTION_B2_EXECUTED = NO
-FILES_COMMITTED = NONE
+POST_EXEC_GIT_STATUS = CLEAN
 ```
 
-Failure point:
+Because the failure occurred after the base-schema deploy POST but before a successful deploy-status read, do NOT assume whether App802 base schema is Live, Preview-only, Processing, or failed.
 
+## 4. Gate S-C — App802 read-only recovery inspection
+
+The safest next step is GET-only inspection of App802 before any retry/resume/new-sandbox decision.
+
+Allowed target only:
 ```text
-GET /k/v1/preview/app/deploy.json?apps[0]=802
-HTTP 400
-Kintone code = CB_IL02 / Invalid request
+APP_ID = 802
+APP_NAME_EXPECTED = MBO2026 App53 Hybrid Identity Sandbox
 ```
 
-Decision:
+Required evidence:
+- Preview app identity/settings;
+- Preview fields;
+- official deploy status;
+- Live app identity/settings if available;
+- Live fields if available;
+- Live record count and records (expected 0 at this point).
 
-```text
-GATE_S_B_R1 = FAIL-SAFE / NO PRODUCTION IMPACT
-SANDBOX_802 = CREATED / INCOMPLETE / DO NOT ASSUME FINAL DEPLOY STATE
-APP53_PRODUCTION_IMPACT = NONE
-```
-
-Do not delete, reuse, resume, or modify sandbox 802 until a separate exact control task authorizes it.
-
-## 4. Root cause analysis
-
-Official Kintone API contract confirms the deploy-status GET query form `?apps[0]=<appId>` is valid.
-
-The reviewed rehearsal script currently sets:
-
-```text
-Content-Type: application/json
-```
-
-on every request, including GET requests whose parameters are supplied in the URL and whose body is empty.
-
-Kintone's GET contract states Content-Type is not needed when parameters are supplied in the request URL. Historical/current Kintone guidance documents CB_IL02 Invalid Request when query-string GET requests incorrectly include JSON Content-Type with no JSON body.
-
-Therefore the narrow corrective is:
-
-```text
-For GET requests with no body:
-- preserve authentication headers
-- DO NOT send Content-Type
-
-For POST/DELETE requests with JSON body:
-- send Content-Type: application/json
-```
-
-Do not change endpoint paths, deploy query syntax, app-target safeguards, lifecycle order, target-field contract, or synthetic-record contract.
+No Kintone write, deploy, record creation, field change, deletion, or app creation is authorized in Gate S-C.
 
 ## 5. Production protection
 
 ```text
-APP53_PRODUCTION_WRITE = NO
-APP53_PRODUCTION_NETWORK_ACCESS_DURING_SANDBOX_REHEARSAL = NO
+APP53_GET_DURING_S_C = NO
+APP53_WRITE = NO
+APP53_RECORD_COPY = NO
 PROTECTED_GUARD_CHANGE = NO
 PROTECTED_GUARD_BYPASS = NO
 PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
@@ -112,21 +87,21 @@ PRODUCTION_B2_AUTHORIZATION = HELD / UNCONSUMED
 
 ## 6. Sandbox authorization accounting
 
-The previous sandbox authorization resulted in creation of sandbox App 802. It must not be interpreted as automatic authorization to create a second sandbox.
-
 ```text
 SANDBOX_802_CREATED = YES
-SECOND_SANDBOX_CREATE_AUTH = NONE
+SANDBOX_802_READ_ONLY_INSPECTION = ALLOWED
 SANDBOX_802_RESUME_WRITE_AUTH = NONE
+SECOND_SANDBOX_CREATE_AUTH = NONE
+SANDBOX_802_DELETE_AUTH = NONE
 ```
 
-Source-only correction is allowed as project implementation work. Any new Kintone sandbox network execution after that correction requires a new exact Control Plane decision and, if it creates a second sandbox or resumes writes to 802, explicit user authorization as applicable.
+A future decision to resume writes on 802, delete it, or create another sandbox must be separately controlled after S-C evidence is reviewed.
 
 ## 7. Current control state
 
 ```text
-ACTIVE_TASK = D1 SANDBOX TOOLING GET-HEADER CORRECTIVE R1
+ACTIVE_TASK = D1 SANDBOX APP802 READ-ONLY RECOVERY INSPECTION S-C R1
 CURRENT_OWNER = ANTIGRAVITY
-KINTONE_NETWORK_EXECUTION = FORBIDDEN
-NEXT_OWNER = CHATGPT INDEPENDENT SOURCE REVIEW
+NEXT_OWNER = CHATGPT INDEPENDENT REVIEW
+KINTONE_WRITES = FORBIDDEN
 ```
