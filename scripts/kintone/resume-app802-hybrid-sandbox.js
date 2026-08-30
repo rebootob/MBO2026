@@ -244,12 +244,35 @@ async function runResumeLifecycle() {
     throw new Error(`[FAIL CLOSED] Add Records response missing or malformed ids/revisions.`);
   }
 
-  const recAId = String(createRecsRes.ids[0]);
-  const recBId = String(createRecsRes.ids[1]);
+  const revA = createRecsRes.revisions[0];
+  const revB = createRecsRes.revisions[1];
 
-  if (!/^\d+$/.test(recAId) || !/^\d+$/.test(recBId)) {
-    throw new Error(`[FAIL CLOSED] Add Records returned non-numeric record IDs: ${recAId}, ${recBId}`);
+  if (
+    typeof revA !== 'string' ||
+    typeof revB !== 'string' ||
+    !/^\d+$/.test(revA) ||
+    !/^\d+$/.test(revB)
+  ) {
+    throw new Error(`[FAIL CLOSED] Add Records returned invalid or non-numeric revision strings.`);
   }
+
+  const recAId = String(createRecsRes.ids[0] ?? '');
+  const recBId = String(createRecsRes.ids[1] ?? '');
+
+  const numA = Number(recAId);
+  const numB = Number(recBId);
+
+  if (
+    !/^\d+$/.test(recAId) ||
+    !/^\d+$/.test(recBId) ||
+    numA <= 0 ||
+    numB <= 0 ||
+    !Number.isSafeInteger(numA) ||
+    !Number.isSafeInteger(numB)
+  ) {
+    throw new Error(`[FAIL CLOSED] Add Records returned invalid, non-positive, or unsafe record IDs: ${recAId}, ${recBId}`);
+  }
+
   const createdRecordIds = [recAId, recBId];
 
   console.log(`[S-D2.1] Created synthetic records IDs: ${createdRecordIds.join(', ')}.`);
