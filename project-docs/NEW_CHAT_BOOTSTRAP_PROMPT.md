@@ -13,7 +13,7 @@ Canonical branch: ai/antigravity-wp002c
 ROLE
 - ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
 - Antigravity = LOW-CREDIT Execution Plane only when genuinely necessary
-- Prefer User + ChatGPT + Browser Console for narrow safe Kintone inspection/UAT when possible
+- Prefer User + ChatGPT + Browser Console for narrow safe Kintone inspection/UAT
 
 STARTUP — BEFORE STATUS OR WORK
 1. Fresh-fetch HEAD of ai/antigravity-wp002c.
@@ -23,20 +23,12 @@ STARTUP — BEFORE STATUS OR WORK
 5. Read project-docs/AI_DOCUMENT_INDEX.md.
 6. Read project-docs/00_MASTER_JOBLIST.md when whole-project completeness is needed.
 7. Read project-docs/CONFIRMED_BASELINE/README.md and only relevant Baselines routed by the Document Index.
-8. If any newer source/executor commit exists, inspect/review it before repeating work.
+8. If any newer source/executor commit exists, inspect it before repeating work.
 
 Do NOT broad-scan the repository.
 Do NOT ask me to repeat history already in Git.
 Do NOT run tests/build or access Live Kintone merely for startup.
-Do NOT reissue an Active Task until you verify whether it is already executed.
-
-TRUTH BY PURPOSE
-- CONFIRMED_BASELINE = durable confirmed business/security/technical truth
-- 00_MASTER_JOBLIST = D1-D7 completeness/no-drop authority
-- AI_CONTROL_CENTER = current accepted operational state/gate/authorization
-- AI_ACTIVE_TASK = exact current task packet only; not evidence of success
-- Git/Kintone evidence = actual implementation/runtime truth
-- CHAT_HANDOFF = concise current cross-chat checkpoint; revalidate against HEAD
+Do NOT reissue accepted work.
 
 GOVERNANCE
 - No false PASS.
@@ -46,124 +38,79 @@ GOVERNANCE
 - No automatic rollback.
 - App53 and legacy PMS Apps 283,310,305,643,307,640,715,716 are protected/read-only by default.
 - admin-form = Technical Admin/recovery only, not Employee-Self/Approver authority.
-- Do not reimplement accepted work without proven regression.
 
-D1 ARCHITECTURE — DO NOT REVERT
-D1 = KINTONE-ONLY
+D1 — CLOSED / DO NOT REOPEN WITHOUT EVIDENCE
+D1 = PASS / CLOSED
+FINAL_D1_SECURITY_REVIEW = PASS
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+
+D1 architecture:
+KINTONE-ONLY
 Auth Bridge = CANCELLED
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 
-Dedicated:
-native Kintone User -> exact active App53 MBO_Kintone_User mapping -> canonical emp_text Employee_Code -> Employee-Self auto-bind -> no second MBO login.
+Accepted D1 closure:
+- App53 total 281; exactly 24 verified dedicated MBO_Kintone_User mappings.
+- Dedicated Employee-Self/native workflow/record privacy PASS.
+- Current native App794 Assignee is Dedicated approval authority; stale/static App795/snapshot fallback denied.
+- Shared App801 MBO login/session runtime PASS including Force Password Change, same-tab restore, independent-tab Login gate and Logout cleanup.
+- Dedicated live dual-role separation PASS.
+- HR non-employee runtime PASS.
+- Comments/history/attachments truthfulness PASS.
+- Synthetic UAT Records #13 and #14 were deleted; no D1 synthetic record remains.
 
-Shared:
-approved shared Kintone principal -> Employee_Code + App801 MBO password/session -> Employee-Self.
+Canonical Record #12:
+Employee 0113 / papatchaya
+Status 03 Manager Objective Review
+Requester papatchaya
+Manager / Assignee pattama
+Topology M1_ONLY
 
-Approver authority:
-- My MBO = bound Employee_Code.
-- My Approval Tasks = current DEDICATED Kintone User + authoritative current App794 native Assignee.
-- App795/static Manager/GM/First_Manager fields/role strings/UI are NOT approval authority.
-- SHARED approver authority = DENIED.
+D1 KINTONE-ONLY SECURITY CEILINGS — RETAIN
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+Do not claim stronger hard guarantees or embed privileged browser API credentials as a workaround.
 
-OWN-MBO RULE
-OWN_MBO_SELF_APPROVER_ELISION = APPROVED.
-For own MBO only: remove self from effective appraiser route before workflow snapshot, preserve remaining approvers/order/rules, recalculate topology, never autoapprove/fabricate history, never rewrite App795, fail closed if no non-self approver remains.
+Pattama interactive login remains credential-limited/non-blocking. Do not reset another person's native Kintone password solely for UAT.
 
-APP53 CURRENT ACCEPTED TRUTH
-- App53 = Production / read-only by default.
-- MBO_Kintone_User USER_SELECT is live and optional.
-- Total records = 281.
-- Exactly 24 dedicated mappings verified.
-- MBO_Kintone_User nonempty records = 24.
-- Unexpected nonempty records = 0.
-- papatchaya -> App53 Record 426 -> Employee Code 0113.
-- Active short numeric emp_text codes were normalized to four digits; five explicit unused/non-standard rows 382,390,495,496,497 were excluded.
-- No additional App53 write authorization exists.
+CURRENT GATE
+PRE_D2_DOCUMENTATION_SYNC = COMPLETE
+D2 = READY / NOT STARTED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2_START = OWNER INSTRUCTION REQUIRED
+ANTIGRAVITY = NONE
 
-APP794 LIVE UAT CORRECTIONS ACCEPTED
-- Process two-button defect fixed for employee statuses 01 / 06 / 11 using mutually-exclusive Routing_Topology conditions.
-- First Manager path only: M1_M2_G1 / M1_M2_G1_G2.
-- Direct Manager path only: M1_G1 / M1_G1_G2 / M1_ONLY.
-- GM_User required = false.
-- MBO_DEDICATED_ACCESS App794 permissions: View/Add/Edit=true; Delete/Import/Export/App Admin=false.
+D2 PRE-START CONTRACT
+Read project-docs/EXCEL_EXPORT.md before D2 work.
+D2 must eventually prove:
+- Excel Part A original/legacy parity
+- Excel Part B original/legacy parity
+- combined multi-sheet workbook where applicable
+- PDF original/legacy visual/print parity
+- 5–10 objective capacity without silent truncation
+- export authorization/confidentiality
 
-CLEAN DEDICATED UAT ACCEPTED
-Legacy disposable Record #11 was deleted.
-New App794 Record #12 was created while logged in as papatchaya.
-Pre-transition exact snapshot:
-- Employee_Code = 0113
-- Requester_User = papatchaya
-- Manager_Level1_Approvers = pattama
-- Manager_Level2_Approvers = blank
-- GM_Level1_Approvers = blank
-- GM_Level2_Approvers = blank
-- First_Manager_User = blank
-- Manager_User = pattama
-- GM_User = blank
-- Has_Manager_Level2 = No
-- Has_GM_Level2 = No
-- Routing_Topology = M1_ONLY
-- D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
-
-Own-MBO proof:
-App795 TMH2 master papatchaya -> pattama becomes pattama only / M1_ONLY for Papatchaya own MBO.
-
-Native workflow proof after Papatchaya submitted:
-- Record = 12
-- Status = 03 Manager Objective Review
-- Assignee = pattama
-- Requester = papatchaya
-- Manager = pattama
-- GM = blank
-- Topology = M1_ONLY
-- PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
-
-Pattama interactive-login UAT is still pending because I do not have Pattama's password. Do not reset another person's native Kintone password merely for UAT.
-
-CURRENT ACTIVE TASK
-APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION.
-Owner = ChatGPT + User.
-Antigravity = NONE.
-No ACL write authorization exists.
-
-The ACL design must cover all 16 statuses before any write:
-01 Draft Objective
-02 First Manager Objective Review
-03 Manager Objective Review
-04 GM Objective Review
-05 Objective Approved
-06 Employee Mid-Year
-07 First Manager Mid-Year Review
-08 Manager Mid-Year Review
-09 GM Mid-Year Review
-10 Mid-Year Completed
-11 Employee Self Evaluation
-12 First Manager Final Evaluation
-13 Manager Final Evaluation
-14 GM Final Evaluation
-15 HR Final Check
-16 Completed
-
-Required ACL behavior:
-- requester views own MBO throughout lifecycle;
-- requester edits only employee-owned stages;
-- current First Manager / Manager / GM gets View/Edit only during authoritative current stage;
-- prior approver loses stale access after transition/reassignment unless another current role independently grants it;
-- HR/Admin preserve required access;
-- static App795 membership alone never grants access.
-Do not apply partial record ACL rules. First inspect current App794 record ACL GET-only and design the complete set.
+WHEN I START D2
+Do not implement immediately.
+First perform bounded read-only discovery:
+A. inventory current export source/services/tests
+B. locate approved legacy Excel/PDF sample files
+C. map App794 fields to legacy sections/cells
+D. identify current PDF mechanism
+E. inspect export security/confidentiality guards
+F. produce gap list + smallest D2 Work Package
+Use Antigravity only when implementation is genuinely necessary.
 
 D1-D7 NEVER DROP
-D1 Hybrid Identity + Password + Employee-Self + Approver Access — IN PROGRESS; dedicated core UAT PASS, record ACL privacy gate open.
-D2 Excel + PDF Original/Legacy Format — IN PROGRESS.
-D3 8 Legacy PMS Apps -> App794 — IN PROGRESS / WRITE NOT AUTHORIZED.
-D4 App800 HR Control Center E2E — IN PROGRESS.
-D5 Copy Own Previous MBO — IN PROGRESS.
-D6 Integrated E2E / Security / Regression — PENDING.
-D7 Admin Support Center — SOURCE FUNCTIONALITY CLOSED.
-
-APP802
-Old sandbox continuation path is cancelled/revoked. Do not resume/delete/repair App802 without separate exact authorization.
+D1 = PASS / CLOSED
+D2 = READY / NOT STARTED
+D3 = IN PROGRESS / WRITE NOT AUTHORIZED
+D4 = IN PROGRESS
+D5 = IN PROGRESS
+D6 = PENDING
+D7 = SOURCE FUNCTIONALITY CLOSED
 
 CURRENT AUTHORIZATION
 Kintone write = NONE
@@ -171,24 +118,24 @@ App794 deploy = NONE
 Record ACL write = NONE
 Group write = NONE
 App53 schema/record/bulk = NONE
+App801 write = NONE
+D2 source change = NONE
 Rollback = NONE
-Always trust newer AI_CONTROL_CENTER over this embedded checkpoint.
 
 USER SHORTHAND
-review -> fresh-fetch HEAD; read current Control Center + authorizing Active Task + relevant Baseline; inspect exact diff/evidence; decide PASS/CORRECTIVE/BLOCKED; update control docs.
-ต่อ / ต่อไป -> fresh-fetch HEAD + Control Center + Active Task; detect accepted/pending/already-executed work; choose smallest safe next action; do not spend Antigravity if User + ChatGPT can do it.
-อนุมัติ ... -> exact narrow one-shot authorization only; never widen/reuse.
+review -> fresh-fetch HEAD; read current Control Center + Active Task + relevant Baseline; inspect exact diff/evidence; decide PASS/CORRECTIVE/BLOCKED.
+ต่อ / ต่อไป -> fresh-fetch HEAD + Control Center + Active Task; choose smallest safe next action; do not spend Antigravity unnecessarily.
+อนุมัติ ... -> exact narrow authorization only; never widen/reuse.
 
 FIRST RESPONSE IN THIS NEW CHAT
-Answer me in Thai with:
+Answer in Thai with:
 1. current HEAD;
 2. D1-D7 scoreboard;
-3. accepted D1 dedicated UAT evidence;
+3. D1 final closure status and documented ceilings;
 4. current Active Task/gate;
 5. authorization ledger;
-6. what must not be reopened;
-7. exact next User+ChatGPT action.
-Do not execute Live writes in the first reply.
+6. D2 pre-start status;
+7. exact next action, without starting D2 unless I explicitly instruct it.
 ```
 
 Maintenance: update this file whenever the canonical handoff/current gate changes materially. It is a bootstrap convenience, not execution evidence.
