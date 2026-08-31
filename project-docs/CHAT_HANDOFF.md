@@ -28,7 +28,7 @@ User + Browser Console = preferred for narrow Kintone GET/UAT
 
 No Live Kintone write/deploy/ACL/group/schema/record/session/password operation without exact explicit authorization. Never reuse consumed authorization.
 
-## 3. D1 checkpoint
+## 3. D1 core checkpoint
 
 ```text
 D1 = KINTONE-ONLY HYBRID IDENTITY
@@ -57,75 +57,122 @@ Requester at manager stage View-only = PASS
 HR status03 native ACL = PASS
 HR non-employee runtime mode Rev67 = PASS
 Foreign Record Negative Runtime = PASS
-```
-
-Foreign UAT temporary Record #13 (`FY2026-0044 / vassana`) was inaccessible to `papatchaya` by direct GET, query, ACL and direct URL, then deleted. No synthetic test record remains.
-
-`admin-form` and `hr` are non-employee principals and intentionally have no Employee ID/App53 Employee-Self mapping.
-
-## 5. Residual approver/HR structural evidence — PASS
-
-Rev67 GET-only structural audit:
-
-```text
-15 HR Final Check = ONE + USER:hr
-15 -> 16 Complete exists
-15 -> 11 Return Final HR exists
-
-03/08/13: Manager_User View/Edit
-04/09/14: GM_User View/Edit; Manager_User no grant
-15: hr View/Edit; Requester View only
-```
-
-Source approval authority revalidates current native `Assignee` and denies stale static snapshot fields.
-
-```text
 STALE_PRIOR_APPROVER_STRUCTURAL = PASS
 HR_STATUS15_STRUCTURAL = PASS
 CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED / NON-BLOCKING
 ```
 
-Do not reset Pattama password solely for UAT.
+Foreign UAT temporary Record #13 (`FY2026-0044 / vassana`) was inaccessible to `papatchaya` by direct GET, query, ACL and direct URL, then deleted. No synthetic test record remains.
 
-## 6. D1 is NOT closed yet
+`admin-form` and `hr` are non-employee principals and intentionally have no Employee ID/App53 Employee-Self mapping. Do not reset Pattama password solely for UAT.
 
-Final closure review against `00_MASTER_JOBLIST.md` + `TEST_STATUS.md` found mandatory remaining evidence beyond the approver residuals:
+## 5. Shared Employee-Self / App801 Session — PASS
+
+Controlled real UAT:
 
 ```text
-SHARED_EMPLOYEE_SELF_APP801_SESSION_UAT = PENDING
-DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PENDING / review reusable evidence first
-COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PENDING / review reusable evidence first
-FINAL_D1_SECURITY_REVIEW = PENDING
+Shared Kintone principal = tmh
+Employee_Code = 0130
+App53 #414 = Active / MBO_Kintone_User=[]
+App801 #107
 ```
 
-Accepted shared-account platform limitation remains:
+One-shot MBO password reset:
+
+```text
+Credential_Version 4 -> 5
+Force_Password_Change = YES
+Failed_Attempts = 0
+Session_* cleared
+RESET_PASS = true
+```
+
+One-shot Shared First-Login UAT:
+
+```text
+Login tmh + temporary MBO credential = PASS
+Force Password Change = PASS
+Credential_Version 5 -> 6
+Force_Password_Change = NO
+Session issued = PASS
+Session_Credential_Version = 6
+Session_Kintone_User = tmh
+Employee-Self bound to 0130 = PASS
+same-tab reload restore = PASS
+independent new tab without token -> MBO Login = PASS
+Logout = PASS
+```
+
+Final logout readback:
+
+```text
+Session_Token_Hash = blank
+Session_Issued_At = blank
+Session_Expires_At = blank
+Session_Credential_Version = blank
+Session_Kintone_User = blank
+LOCAL_SESSION_TOKEN_PRESENT = false
+LOGIN_OVERLAY_VISIBLE = true
+Credential_Version = 6
+Force_Password_Change = NO
+Failed_Attempts = 0
+D1_SHARED_SESSION_RUNTIME = PASS
+```
+
+All 0130 reset / Shared First-Login UAT authorizations are consumed.
+
+Shared-account limitation remains accepted:
 
 ```text
 DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRINCIPAL
 ```
 
+## 6. Repository evidence already reusable
+
+Targeted review found:
+
+```text
+DUAL_ROLE_SOURCE_INTEGRATION = PASS
+- Dedicated index keeps My MBO and My Approval Tasks separate
+- approval task authority comes from current Assignee query/revalidation
+- mismatched Assignee task is filtered
+- approval-home authority does not query App795
+- SHARED mode exposes no approval task section/query
+
+COMMENTS_HISTORY_ATTACHMENTS_SOURCE = PASS
+- Live timeline has zero fake history when no authoritative events exist
+- Live timeline renders only supplied authoritative events
+- create screen has no comment mirror / 0 comment GET
+- detail/edit mirror uses native Kintone comments endpoint
+- Live attachment display uses real saved filenames and excludes preview mock data
+- attachment desired-state persistence/removal behavior is covered
+```
+
+## 7. D1 is still open — final evidence only
+
+```text
+COMMENTS_HISTORY_ATTACHMENTS_RUNTIME = PENDING / GET-ONLY preferred
+DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PARTIAL / SOURCE PASS, LIVE DISPOSITION PENDING
+FINAL_D1_SECURITY_REVIEW = PENDING
+```
+
 Do not false-pass D1.
 
-## 7. Exact current gate
+## 8. Exact current gate
 
 ```text
 ACTIVE_TASK = D1 FINAL CLOSURE EVIDENCE
-NEXT = SHARED EMPLOYEE-SELF / APP801 SESSION GET-ONLY PREFLIGHT
+NEXT = COMMENTS / HISTORY / ATTACHMENTS GET-ONLY RUNTIME REVIEW
+TARGET = existing App794 Record #12 where possible
 OWNER = ChatGPT + User
 ANTIGRAVITY = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 APP801_WRITE_AUTH = NONE
 ```
 
-Preflight must find one active employee who:
-- has a valid App801 credential row;
-- has no dedicated `MBO_Kintone_User` mapping;
-- resolves to an App795 route compatible with an approved shared principal;
-- can be inspected without exposing `Password_Hash`.
+Do not add comments, upload attachments, alter Record #12, transition workflow, or create a synthetic record without a new exact authorization.
 
-Do not execute shared login/session/password changes until a separate exact authorization is granted if the operation mutates App801.
-
-## 8. Authorization ledger
+## 9. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -138,9 +185,9 @@ APP801_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-All prior HR deploy and foreign-record CREATE/DELETE authorizations are consumed.
+All prior HR deploy, foreign-record CREATE/DELETE, 0130 reset, and Shared First-Login UAT authorizations are consumed.
 
-## 9. New-chat continuation
+## 10. New-chat continuation
 
 ```text
 Continue MBO2026 from repository truth.
@@ -156,8 +203,10 @@ Current D1 truth:
 - Stale prior approver structural protection PASS.
 - HR status15 structural authorization PASS.
 - Pattama interactive runtime is credential-limited/non-blocking.
-- D1 is still OPEN because Shared App801/session, integrated dual-role, comments/history/attachments and final D1 security closure evidence remain.
-- Exact next gate = Shared Employee-Self/App801 Session GET-only preflight.
+- Shared Employee-Self/App801 Session runtime PASS using tmh + Employee 0130; same-tab restore/new-tab isolation/logout cleanup PASS; App801 session fields are currently blank after logout.
+- Dual-role source/integration coverage PASS, Live disposition still pending.
+- Comments/history/attachments source/integration coverage PASS, Live GET-only runtime review next.
+- D1 remains OPEN for final evidence/security review only.
 - No active Kintone/App801 write authorization.
 Respond in Thai.
 ```
