@@ -6,14 +6,35 @@ export class MboIdentityService {
   ]);
 
   /**
+   * Verifies if group list contains an authoritative HR_ADMIN_GROUP entry.
+   * Checks for group code/name matching HR_ADMIN_GROUP, HR_ADMIN, HR Admin, HR.
+   * @param {Array<Object>} userGroups - Group records array from Kintone API
+   * @returns {boolean} True if verified member of HR_ADMIN_GROUP
+   */
+  static isHrAdminGroupMember(userGroups) {
+    if (!Array.isArray(userGroups) || userGroups.length === 0) {
+      return false;
+    }
+    const HR_CODES = new Set(['HR_ADMIN_GROUP', 'HR_ADMIN', 'HR_ADMINS', 'HR']);
+    const HR_NAMES = new Set(['HR ADMIN GROUP', 'HR ADMIN', 'HR_ADMIN_GROUP', 'HR_ADMIN']);
+    return userGroups.some(g => {
+      if (!g || typeof g !== 'object') return false;
+      const code = typeof g.code === 'string' ? g.code.trim().toUpperCase() : '';
+      const name = typeof g.name === 'string' ? g.name.trim().toUpperCase() : '';
+      return HR_CODES.has(code) || HR_NAMES.has(name);
+    });
+  }
+
+  /**
    * Resolves native Kintone user code to authoritative principal access mode.
-   * Modes: 'SHARED' | 'DEDICATED' | 'TECHNICAL_ADMIN'.
+   * Modes: 'SHARED' | 'DEDICATED' | 'TECHNICAL_ADMIN' | 'HR_ADMIN'.
    * Input must be an exact nonblank string; whitespace is rejected.
    * @param {Object} params
    * @param {string} params.kintoneUserCode - Native Kintone user code
-   * @returns {'SHARED'|'DEDICATED'|'TECHNICAL_ADMIN'} Principal access mode
+   * @param {Array<Object>} [params.userGroups] - Optional verified Kintone user groups
+   * @returns {'SHARED'|'DEDICATED'|'TECHNICAL_ADMIN'|'HR_ADMIN'} Principal access mode
    */
-  static resolveKintonePrincipalMode({ kintoneUserCode }) {
+  static resolveKintonePrincipalMode({ kintoneUserCode, userGroups = null }) {
     if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode === '') {
       throw new Error('LOGGED_IN_KINTONE_USER_REQUIRED: Logged-in Kintone user code is required.');
     }
@@ -30,6 +51,10 @@ export class MboIdentityService {
 
     if (MboIdentityService.APPROVED_SHARED_PRINCIPALS.has(cleanUser)) {
       return 'SHARED';
+    }
+
+    if (userGroups && MboIdentityService.isHrAdminGroupMember(userGroups)) {
+      return 'HR_ADMIN';
     }
 
     return 'DEDICATED';

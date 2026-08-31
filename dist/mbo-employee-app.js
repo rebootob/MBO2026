@@ -6130,14 +6130,34 @@ Employee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate cre
   // src/services/mbo-identity-service.js
   var _MboIdentityService = class _MboIdentityService {
     /**
+     * Verifies if group list contains an authoritative HR_ADMIN_GROUP entry.
+     * Checks for group code/name matching HR_ADMIN_GROUP, HR_ADMIN, HR Admin, HR.
+     * @param {Array<Object>} userGroups - Group records array from Kintone API
+     * @returns {boolean} True if verified member of HR_ADMIN_GROUP
+     */
+    static isHrAdminGroupMember(userGroups) {
+      if (!Array.isArray(userGroups) || userGroups.length === 0) {
+        return false;
+      }
+      const HR_CODES = /* @__PURE__ */ new Set(["HR_ADMIN_GROUP", "HR_ADMIN", "HR_ADMINS", "HR"]);
+      const HR_NAMES = /* @__PURE__ */ new Set(["HR ADMIN GROUP", "HR ADMIN", "HR_ADMIN_GROUP", "HR_ADMIN"]);
+      return userGroups.some((g) => {
+        if (!g || typeof g !== "object") return false;
+        const code = typeof g.code === "string" ? g.code.trim().toUpperCase() : "";
+        const name = typeof g.name === "string" ? g.name.trim().toUpperCase() : "";
+        return HR_CODES.has(code) || HR_NAMES.has(name);
+      });
+    }
+    /**
      * Resolves native Kintone user code to authoritative principal access mode.
-     * Modes: 'SHARED' | 'DEDICATED' | 'TECHNICAL_ADMIN'.
+     * Modes: 'SHARED' | 'DEDICATED' | 'TECHNICAL_ADMIN' | 'HR_ADMIN'.
      * Input must be an exact nonblank string; whitespace is rejected.
      * @param {Object} params
      * @param {string} params.kintoneUserCode - Native Kintone user code
-     * @returns {'SHARED'|'DEDICATED'|'TECHNICAL_ADMIN'} Principal access mode
+     * @param {Array<Object>} [params.userGroups] - Optional verified Kintone user groups
+     * @returns {'SHARED'|'DEDICATED'|'TECHNICAL_ADMIN'|'HR_ADMIN'} Principal access mode
      */
-    static resolveKintonePrincipalMode({ kintoneUserCode }) {
+    static resolveKintonePrincipalMode({ kintoneUserCode, userGroups = null }) {
       if (!kintoneUserCode || typeof kintoneUserCode !== "string" || kintoneUserCode === "") {
         throw new Error("LOGGED_IN_KINTONE_USER_REQUIRED: Logged-in Kintone user code is required.");
       }
@@ -6150,6 +6170,9 @@ Employee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate cre
       }
       if (_MboIdentityService.APPROVED_SHARED_PRINCIPALS.has(cleanUser)) {
         return "SHARED";
+      }
+      if (userGroups && _MboIdentityService.isHrAdminGroupMember(userGroups)) {
+        return "HR_ADMIN";
       }
       return "DEDICATED";
     }
@@ -8315,6 +8338,14 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/record.json", true) : "/k/v1/record.json";
       const resp = await kintone.api(url, "GET", { app: appId, id });
       return resp ? resp.record : null;
+    },
+    getUserGroups: async (userCode) => {
+      if (typeof kintone === "undefined" || typeof kintone.api !== "function") {
+        throw new Error("Kintone API is unavailable");
+      }
+      const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/user/groups.json", true) : "/k/v1/user/groups.json";
+      const resp = await kintone.api(url, "GET", { code: userCode });
+      return resp ? resp.groups : [];
     }
   };
   var mboLoginGate = null;
@@ -8334,7 +8365,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
     globalThis.getActiveUiInstance = getActiveUiInstance;
     globalThis.getCurrentEmployeeSelfContext = getCurrentEmployeeSelfContext;
   }
-  function resolveRuntimeEmployeeSelfContext(uiHost) {
+  function resolveRuntimeEmployeeSelfContext(uiHost, options = {}) {
     const loginUser = typeof kintone !== "undefined" && kintone.getLoginUser ? kintone.getLoginUser() : null;
     const kintoneUserCode = loginUser?.code || null;
     if (!kintoneUserCode) {
@@ -8388,6 +8419,27 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
           return {
             status: "SUCCESS",
             context: { mode: "DEDICATED", employeeCode: mappingRes.employeeCode, kintoneUserCode }
+          };
+        }
+        let userGroups = [];
+        try {
+          if (typeof options?.userGroupsFetcher === "function") {
+            userGroups = await options.userGroupsFetcher(kintoneUserCode);
+          } else if (kintoneApiWrapper && typeof kintoneApiWrapper.getUserGroups === "function") {
+            userGroups = await kintoneApiWrapper.getUserGroups(kintoneUserCode);
+          } else if (typeof kintone !== "undefined" && typeof kintone.api === "function") {
+            const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/user/groups.json", true) : "/k/v1/user/groups.json";
+            const resp = await kintone.api(url, "GET", { code: kintoneUserCode });
+            userGroups = resp?.groups || [];
+          }
+        } catch (groupErr) {
+          userGroups = [];
+        }
+        if (MboIdentityService.isHrAdminGroupMember(userGroups)) {
+          return {
+            status: "HR_ADMIN",
+            mode: "HR_ADMIN",
+            context: { mode: "HR_ADMIN", kintoneUserCode }
           };
         }
         return {
@@ -8896,6 +8948,10 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
           currentEmployeeSelfContext = null;
           return event;
         }
+        if (res.status === "HR_ADMIN") {
+          currentEmployeeSelfContext = res.context;
+          return event;
+        }
         if (res.status !== "SUCCESS") {
           currentEmployeeSelfContext = null;
           const title = res.status === "DEDICATED_MAPPING_FAILED" ? "Employee Identity Mapping Failed" : "Authentication Required";
@@ -8958,6 +9014,20 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             { isCreate, appId }
           );
           hideAllNativeFields(record);
+          return event;
+        }
+        if (res2.status === "HR_ADMIN") {
+          currentEmployeeSelfContext = res2.context;
+          if (isCreate) {
+            renderBlockedNotice(
+              uiHost,
+              "Create Restricted",
+              "HR Admin does not have creation authority in App 794.",
+              { isCreate, appId }
+            );
+            hideAllNativeFields(record);
+            return event;
+          }
           return event;
         }
         if (res2.status !== "SUCCESS") {

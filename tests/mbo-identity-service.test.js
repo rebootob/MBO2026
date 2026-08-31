@@ -155,3 +155,41 @@ test('EMPLOYEE_DATA_ISOLATION: HR/approver access PASSES with verified authorita
   assert.equal(resultVerified.role, 'HR');
   assert.equal(resultVerified.employeeCode, 'EMP002');
 });
+
+test('PRINCIPAL_MODE: admin-form -> TECHNICAL_ADMIN unchanged', () => {
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'admin-form' }), 'TECHNICAL_ADMIN');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'Administrator' }), 'TECHNICAL_ADMIN');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'ADMIN' }), 'TECHNICAL_ADMIN');
+});
+
+test('PRINCIPAL_MODE: approved shared principal -> SHARED unchanged', () => {
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 's1' }), 'SHARED');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 't1' }), 'SHARED');
+});
+
+test('PRINCIPAL_MODE: candidate dedicated without groups -> DEDICATED', () => {
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'somchai_k' }), 'DEDICATED');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr' }), 'DEDICATED');
+});
+
+test('HR_ADMIN_GROUP: isHrAdminGroupMember verifies valid HR group entry', () => {
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'HR_ADMIN_GROUP', name: 'HR Admin' }]), true);
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'HR_ADMIN', name: 'HR Administrators' }]), true);
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'OTHER_GROUP', name: 'HR Admin' }]), true);
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'ENGINEERING', name: 'Dev Team' }]), false);
+  assert.equal(MboIdentityService.isHrAdminGroupMember([]), false);
+  assert.equal(MboIdentityService.isHrAdminGroupMember(null), false);
+});
+
+test('PRINCIPAL_MODE: unmapped user + verified HR_ADMIN_GROUP -> HR_ADMIN mode', () => {
+  const hrGroups = [{ code: 'HR_ADMIN_GROUP', name: 'HR Admin' }];
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: hrGroups }), 'HR_ADMIN');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'somchai_hr', userGroups: hrGroups }), 'HR_ADMIN');
+});
+
+test('PRINCIPAL_MODE: username "hr" without verified HR_ADMIN_GROUP -> DEDICATED candidate (not HR_ADMIN)', () => {
+  const nonHrGroups = [{ code: 'ENGINEERING', name: 'Dev Team' }];
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: nonHrGroups }), 'DEDICATED');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: [] }), 'DEDICATED');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: null }), 'DEDICATED');
+});

@@ -1223,7 +1223,131 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
   assert.ok(!mainSrc.includes('onbeforeunload'), 'R4_1_NO_ONBEFOREUNLOAD: main-mbo-app.js must NOT contain onbeforeunload');
   assert.ok(!navSrc.includes('onbeforeunload'), 'R4_1_NO_ONBEFOREUNLOAD_NAV: employee-record-navigation.js must NOT contain onbeforeunload');
   assert.ok(!mainSrc.includes('beforeunload'), 'R4_1_NO_REMOVE_BEFOREUNLOAD: main-mbo-app.js must NOT add or remove beforeunload listeners');
-  assert.ok(!navSrc.includes('beforeunload'), 'R4_1_NO_REMOVE_BEFOREUNLOAD_NAV: employee-record-navigation.js must NOT add or remove beforeunload listeners');
+  assert.ok(!navSrc.includes('beforeunload'), 'R4_1_NO_REMOVE_BEFOREUNLOAD_NAV: employee-record-navigation.js must NOT contain onbeforeunload');
   assert.ok(!mainSrc.includes('location.assign') && !mainSrc.includes('location.replace') && !mainSrc.includes('history.back'), 'R4_1_NO_HISTORY_HACKS: main-mbo-app.js must NOT use location.assign/replace/history.back');
   assert.ok(!navSrc.includes('location.assign') && !navSrc.includes('location.replace') && !navSrc.includes('history.back'), 'R4_1_NO_HISTORY_HACKS_NAV: employee-record-navigation.js must NOT use location.assign/replace/history.back');
+});
+
+test('HR_ADMIN_RUNTIME_MODE: unmapped user with verified HR_ADMIN_GROUP grants HR_ADMIN without Employee ID or Employee-Self UI', async () => {
+  const { setCurrentEmployeeSelfContext, getCurrentEmployeeSelfContext, getActiveUiInstance } = await import('../src/main-mbo-app.js');
+  const indexHandler = registeredHandlers.get('app.record.index.show');
+  const detailHandler = registeredHandlers.get('app.record.detail.show');
+  const createHandler = registeredHandlers.get('app.record.create.show');
+
+  const savedGetLoginUser = globalThis.kintone.getLoginUser;
+  const savedApi = globalThis.kintone.api;
+
+  // Mock logged-in user = 'hr' (unmapped in App53)
+  globalThis.kintone.getLoginUser = () => ({ code: 'hr', name: 'HR Admin' });
+
+  // Mock kintone.api: App53 mapping empty, groups contains HR_ADMIN_GROUP
+  globalThis.kintone.api = async (url, method, params) => {
+    if (url.includes('/records.json')) {
+      return { records: [] }; // App53 mapping empty
+    }
+    if (url.includes('/user/groups.json')) {
+      return { groups: [{ code: 'HR_ADMIN_GROUP', name: 'HR Admin' }] };
+    }
+    return {};
+  };
+
+  setCurrentEmployeeSelfContext(null);
+  const indexEvent = { type: 'app.record.index.show' };
+
+  const preUiInstance = getActiveUiInstance();
+  const indexRes = await indexHandler(indexEvent);
+
+  assert.equal(indexRes, indexEvent, 'HR_ADMIN on index must return event unchanged');
+  const ctx = getCurrentEmployeeSelfContext();
+  assert.ok(ctx, 'HR_ADMIN context must be set');
+  assert.equal(ctx.mode, 'HR_ADMIN');
+  assert.equal(ctx.kintoneUserCode, 'hr');
+  assert.equal(ctx.employeeCode, undefined, 'HR_ADMIN must NOT have employeeCode');
+
+  // Verify Employee-Self UI was NOT activated for HR_ADMIN
+  const uiInstance = getActiveUiInstance();
+  assert.equal(uiInstance, preUiInstance, 'HR_ADMIN index must NOT activate Employee-Self UI');
+
+  // Test Detail View
+  const detailEvent = {
+    type: 'app.record.detail.show',
+    recordId: 12,
+    record: {
+      $id: { value: '12' },
+      Status: { value: '03 Manager Objective Review' },
+      Employee_Code: { value: '0113' }
+    }
+  };
+  const detailRes = await detailHandler(detailEvent);
+  assert.equal(detailRes, detailEvent, 'HR_ADMIN on detail must return event unchanged without blocking notice');
+
+  // Test Create View (HR_ADMIN is blocked from Create)
+  const createEvent = {
+    type: 'app.record.create.show',
+    record: {}
+  };
+  const createRes = await createHandler(createEvent);
+  assert.equal(createRes, createEvent);
+
+  // Restore mocks
+  globalThis.kintone.getLoginUser = savedGetLoginUser;
+  globalThis.kintone.api = savedApi;
+});
+
+test('HR_ADMIN_RUNTIME_MODE: username "hr" WITHOUT verified HR_ADMIN_GROUP fails closed to DEDICATED_MAPPING_FAILED', async () => {
+  const { setCurrentEmployeeSelfContext, getCurrentEmployeeSelfContext } = await import('../src/main-mbo-app.js');
+  const indexHandler = registeredHandlers.get('app.record.index.show');
+
+  const savedGetLoginUser = globalThis.kintone.getLoginUser;
+  const savedApi = globalThis.kintone.api;
+
+  globalThis.kintone.getLoginUser = () => ({ code: 'hr', name: 'Unverified HR Username' });
+
+  // Mock kintone.api: App53 mapping empty, groups NON-HR
+  globalThis.kintone.api = async (url, method, params) => {
+    if (url.includes('/records.json')) return { records: [] };
+    if (url.includes('/user/groups.json')) return { groups: [{ code: 'ENGINEERING', name: 'Engineering' }] };
+    return {};
+  };
+
+  setCurrentEmployeeSelfContext(null);
+  const indexEvent = { type: 'app.record.index.show' };
+
+  await indexHandler(indexEvent);
+
+  const ctx = getCurrentEmployeeSelfContext();
+  assert.equal(ctx, null, 'Unverified username "hr" must NOT receive HR_ADMIN context');
+
+  // Restore mocks
+  globalThis.kintone.getLoginUser = savedGetLoginUser;
+  globalThis.kintone.api = savedApi;
+});
+
+test('HR_ADMIN_RUNTIME_MODE: group lookup error fails closed to DEDICATED_MAPPING_FAILED', async () => {
+  const { setCurrentEmployeeSelfContext, getCurrentEmployeeSelfContext } = await import('../src/main-mbo-app.js');
+  const indexHandler = registeredHandlers.get('app.record.index.show');
+
+  const savedGetLoginUser = globalThis.kintone.getLoginUser;
+  const savedApi = globalThis.kintone.api;
+
+  globalThis.kintone.getLoginUser = () => ({ code: 'hr', name: 'HR User' });
+
+  // Mock kintone.api: App53 mapping empty, group API throws network error
+  globalThis.kintone.api = async (url, method, params) => {
+    if (url.includes('/records.json')) return { records: [] };
+    if (url.includes('/user/groups.json')) throw new Error('Kintone API HTTP 500 Network Failure');
+    return {};
+  };
+
+  setCurrentEmployeeSelfContext(null);
+  const indexEvent = { type: 'app.record.index.show' };
+
+  await indexHandler(indexEvent);
+
+  const ctx = getCurrentEmployeeSelfContext();
+  assert.equal(ctx, null, 'Group lookup error must FAIL CLOSED with null Employee-Self context');
+
+  // Restore mocks
+  globalThis.kintone.getLoginUser = savedGetLoginUser;
+  globalThis.kintone.api = savedApi;
 });

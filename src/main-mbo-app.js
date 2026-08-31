@@ -42,6 +42,16 @@ const kintoneApiWrapper = {
       : '/k/v1/record.json';
     const resp = await kintone.api(url, 'GET', { app: appId, id: id });
     return resp ? resp.record : null;
+  },
+  getUserGroups: async (userCode) => {
+    if (typeof kintone === 'undefined' || typeof kintone.api !== 'function') {
+      throw new Error('Kintone API is unavailable');
+    }
+    const url = (typeof kintone.api.url === 'function')
+      ? kintone.api.url('/k/v1/user/groups.json', true)
+      : '/k/v1/user/groups.json';
+    const resp = await kintone.api(url, 'GET', { code: userCode });
+    return resp ? resp.groups : [];
   }
 };
 
@@ -75,7 +85,7 @@ if (typeof globalThis !== 'undefined') {
   globalThis.getCurrentEmployeeSelfContext = getCurrentEmployeeSelfContext;
 }
 
-function resolveRuntimeEmployeeSelfContext(uiHost) {
+function resolveRuntimeEmployeeSelfContext(uiHost, options = {}) {
   const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
   const kintoneUserCode = loginUser?.code || null;
 
@@ -132,12 +142,38 @@ function resolveRuntimeEmployeeSelfContext(uiHost) {
         userMappings: candidateRecords
       });
 
-
-
       if (mappingRes.status === 'IDENTITY_BOUND' && mappingRes.employeeCode) {
         return {
           status: 'SUCCESS',
           context: { mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode }
+        };
+      }
+
+      // 5. If Employee mapping does NOT exist: check authoritative Kintone group membership.
+      let userGroups = [];
+      try {
+        if (typeof options?.userGroupsFetcher === 'function') {
+          userGroups = await options.userGroupsFetcher(kintoneUserCode);
+        } else if (kintoneApiWrapper && typeof kintoneApiWrapper.getUserGroups === 'function') {
+          userGroups = await kintoneApiWrapper.getUserGroups(kintoneUserCode);
+        } else if (typeof kintone !== 'undefined' && typeof kintone.api === 'function') {
+          const url = (typeof kintone.api.url === 'function')
+            ? kintone.api.url('/k/v1/user/groups.json', true)
+            : '/k/v1/user/groups.json';
+          const resp = await kintone.api(url, 'GET', { code: kintoneUserCode });
+          userGroups = resp?.groups || [];
+        }
+      } catch (groupErr) {
+        // 7. If HR group verification fails/errors: FAIL CLOSED. Preserve DEDICATED_MAPPING_FAILED.
+        userGroups = [];
+      }
+
+      // 6. Only if the authenticated principal is verified as a member of HR_ADMIN_GROUP may runtime resolve HR_ADMIN.
+      if (MboIdentityService.isHrAdminGroupMember(userGroups)) {
+        return {
+          status: 'HR_ADMIN',
+          mode: 'HR_ADMIN',
+          context: { mode: 'HR_ADMIN', kintoneUserCode }
         };
       }
 
@@ -445,6 +481,11 @@ if (typeof kintone !== 'undefined') {
       const res = await resolveRuntimeEmployeeSelfContext(host);
       if (res.status === 'TECHNICAL_ADMIN') {
         currentEmployeeSelfContext = null;
+        return event;
+      }
+
+      if (res.status === 'HR_ADMIN') {
+        currentEmployeeSelfContext = res.context;
         return event;
       }
 
@@ -816,6 +857,20 @@ if (typeof kintone !== 'undefined') {
           { isCreate, appId }
         );
         hideAllNativeFields(record);
+        return event;
+      }
+
+      if (res.status === 'HR_ADMIN') {
+        currentEmployeeSelfContext = res.context;
+        if (isCreate) {
+          renderBlockedNotice(uiHost,
+            'Create Restricted',
+            'HR Admin does not have creation authority in App 794.',
+            { isCreate, appId }
+          );
+          hideAllNativeFields(record);
+          return event;
+        }
         return event;
       }
 
