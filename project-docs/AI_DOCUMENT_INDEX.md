@@ -20,14 +20,15 @@ For a new chat, copy `NEW_CHAT_BOOTSTRAP_PROMPT.md` into the first message; it s
 ## 2. Non-negotiable D1 routing
 
 ```text
-D1 = KINTONE-ONLY
+D1 = KINTONE-ONLY / CLOSED PASS
 Auth Bridge = CANCELLED / SUPERSEDED
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+FINAL_D1_SECURITY_REVIEW = PASS
 ```
 
-Current D1 durable truth is intentionally distributed:
-- `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` — identity modes, App801 shared credentials, reset/security;
-- `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — App53 dedicated mapping design, own-MBO self-appraiser elision, dedicated native access target;
+Durable D1 truth:
+- `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` — identity modes, App801 shared credentials, reset/security, security ceilings;
+- `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — App53 dedicated mapping design, own-MBO self-appraiser elision, dedicated native access;
 - `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` — dedicated native continuity vs shared App801 bearer session;
 - `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO/history/no-delete;
 - `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` — App53 source semantics;
@@ -35,7 +36,7 @@ Current D1 durable truth is intentionally distributed:
 - `CONFIRMED_BASELINE/UI_UX.md` — Hybrid Home / My MBO + My Approval Tasks;
 - `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — comments/history/attachment truthfulness.
 
-Current operational facts such as the 24 live App53 mappings, App794 Process 31 actions, Rev67 HR runtime corrective, and foreign-record isolation PASS belong in `AI_CONTROL_CENTER.md` / `CHAT_HANDOFF.md`, not duplicated into Baselines.
+Current operational D1 closure evidence belongs in `AI_CONTROL_CENTER.md`, `TEST_STATUS.md` and `CHAT_HANDOFF.md`.
 
 ## 3. Antigravity startup
 
@@ -54,8 +55,7 @@ No broad scan. Use Antigravity only when User + ChatGPT cannot reasonably perfor
 | Current status / what next | `AI_CONTROL_CENTER.md` | `CHAT_HANDOFF.md`, `00_MASTER_JOBLIST.md` |
 | Whole D1–D7 completeness | `00_MASTER_JOBLIST.md` | Control Center + relevant Baseline/evidence |
 | Current executor/task instruction | `AI_ACTIVE_TASK.md` | exact named files only |
-| App794 Dedicated record ACL/privacy | `AI_ACTIVE_TASK.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `ROUTING_WORKFLOW.md`, current App794 ACL/runtime evidence |
-| D1 residual Manager/stale-approver/HR-status runtime closure | `AI_ACTIVE_TASK.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `ROUTING_WORKFLOW.md`, exact current App794 process/ACL evidence |
+| D1 closure/audit/reopen | `TEST_STATUS.md` | `D1_AUTH_SECURITY.md`, `D1_SESSION_CONTINUITY.md`, `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` |
 | AI workflow/review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `AI_HANDOFF_PROTOCOL.md`, `DOCUMENT_CONTROL.md` |
 | Deploy/rollback/recovery | `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md` | Control Center + exact deployment evidence |
 | Source architecture/build ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact source/tests/build scripts |
@@ -80,40 +80,40 @@ Canonical/current-use:
 - `AI_START_HERE.md` — lean startup;
 - `CHAT_HANDOFF.md` — concise current cross-chat handoff;
 - `AI_CONTROL_CENTER.md` — accepted current status/gate/authorization;
-- `AI_ACTIVE_TASK.md` — exact current task packet;
+- `AI_ACTIVE_TASK.md` — exact current task packet / wait state;
 - `00_MASTER_JOBLIST.md` — D1–D7 completeness;
-- `PROJECT_LATEST_SUMMARY.md` — human-readable current checkpoint;
+- `PROJECT_LATEST_SUMMARY.md` — human-readable checkpoint;
 - `NEW_CHAT_BOOTSTRAP_PROMPT.md` — canonical new-chat copy/paste prompt;
 - `OPEN_ISSUES.md` — open gates/dependencies;
-- `TEST_STATUS.md` — latest accepted test/UAT checkpoint.
+- `TEST_STATUS.md` — accepted test/UAT checkpoint.
 
-Compatibility snapshots:
-- `CURRENT_STATE.md`;
-- `IMPLEMENTATION_STATUS.md`;
-- `HANDOFF.md`.
-These are not independent authorities; use canonical docs above.
+Compatibility snapshots are not independent authorities.
 
 ## 6. Current operational checkpoint
 
 ```text
-D1 Dedicated core Employee-Self routing UAT = PASS
-App794 Record #12 = 03 Manager Objective Review
-Native Assignee = pattama
-App794 Rev67 HR runtime corrective = PASS
-Foreign Record Negative Runtime = PASS
-Synthetic Record #13 = deleted / cleanup PASS
-Current gate = D1 residual runtime evidence closure
-Current owner = ChatGPT + User
+D1 = PASS / CLOSED
+FINAL_D1_SECURITY_REVIEW = PASS
+APP794 Rev67
+Runtime source commit = c6864d09f59cfaf6e7c86da422452a816a5cf430
+Dedicated core + ACL/privacy = PASS
+Shared App801/session runtime = PASS
+Comments/history/attachments runtime truthfulness = PASS
+Dedicated live dual-role = PASS
+Synthetic Record #13 = deleted
+Synthetic Record #14 = deleted
+Current active work package = NONE
+Recommended next = D2 Excel + PDF Original/Legacy Format
+Owner decision required before starting next package
 Antigravity = NONE
 Kintone write authorization = NONE
 ```
 
-Residual evidence:
+D1 closure retains two explicit Kintone-only ceilings:
 
 ```text
-CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED
-STALE_PRIOR_APPROVER_RUNTIME = PENDING
-HR_STATUS15_RUNTIME = PENDING
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
 ## 7. Default-ignore / historical
@@ -140,7 +140,7 @@ current HEAD
 + exact changed files/diff/evidence
 ```
 
-For deploy/recovery add `ROLLBACK_RECOVERY_SAFETY.md`. For Hybrid Identity/dual-role/record ACL use the D1 identity/access/session/routing/UI Baselines above.
+For deploy/recovery add `ROLLBACK_RECOVERY_SAFETY.md`. For D1 reopen/security audit use the D1 identity/access/session/routing/UI Baselines above.
 
 ## 9. Index maintenance
 
