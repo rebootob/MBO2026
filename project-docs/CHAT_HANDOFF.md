@@ -40,9 +40,9 @@ Do not reopen D1 without proven regression.
 
 Canonical D2 document: `project-docs/EXCEL_EXPORT.md`.
 
-The current export layer is projection/data-model only. Real Excel/PDF rendering and legacy visual parity remain later D2 work after approved template evidence is available.
+The current export foundation now has accepted projection/security behavior, but real Excel/PDF binary rendering and legacy visual parity remain later D2 work.
 
-## 4. D2-WP001 implementation history
+## 4. D2-WP001 history and closure
 
 Original implementation:
 
@@ -50,9 +50,9 @@ Original implementation:
 4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
 ```
 
-Independent review found authorization fallback and Employee-Self nested Part B confidentiality defects, so WP001 was not closed.
+Independent review found authorization fallback and Employee-Self nested Part B confidentiality defects.
 
-Owner then approved corrective `D2-WP001-R1`.
+Owner approved corrective `D2-WP001-R1`.
 
 Corrective implementation:
 
@@ -60,67 +60,91 @@ Corrective implementation:
 1d48dc218fe7e2c542773bcf441332f8b06f88f9
 ```
 
-R1 compare from authorization baseline `365e61f22574361dacafedc7f98af1ea99228575` changed only:
+R1 changed only:
 - `src/services/mbo-export-service.js`
 - `tests/mbo-export-service.test.js`
 
-## 5. R1 independent source review — PASS
+ChatGPT independent source/scope review = PASS.
 
-ChatGPT reviewed the actual R1 source/diff and found the prior blocking source findings corrected:
-- permissive matching-Employee_Code fallback removed;
-- bare DEDICATED fallback removed;
-- HR_ADMIN/Technical Admin labels do not self-authorize;
-- only explicit Employee-Self / explicit Approver branches are supported;
-- Employee-Self exact Employee_Code check remains;
-- DEDICATED Approver still uses current native App794 Assignee rule via `MboApprovalTaskService`;
-- Employee-Self Part B competency payload is whitelisted instead of blindly copied;
-- negative tests cover malformed/role-less/HR contexts and nested manager/GM fields;
-- 4/5/10 objective tests and confirmed profile-weight checks remain.
-
-```text
-R1_SCOPE_REVIEW = PASS
-R1_SOURCE_REVIEW = PASS
-```
-
-## 6. Exact current gate — offline test evidence required
-
-R1 contract required actual execution of:
+Owner then supplied Antigravity verification evidence from the canonical checkout:
 
 ```text
 node --test tests/mbo-export-service.test.js
+PASS 10 / 10
+FAIL 0
+
 node --test tests/core-794-795-796-integration.test.js
+PASS 1 / 1
+FAIL 0
+
+git status --porcelain
+CLEAN / NO OUTPUT
 ```
 
-GitHub exposes no CI status/workflow run for R1 commit `1d48dc218...`.
-
-ChatGPT attempted an independent clone/test run, but its isolated runtime could not resolve `github.com`, so no independent automated-test PASS is claimed.
+Therefore:
 
 ```text
-D2-WP001 = SOURCE REVIEW PASS / TEST EVIDENCE PENDING / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = VERIFICATION ONLY / NO SOURCE CHANGE
-NEXT_REQUIRED_EVIDENCE = EXACT OFFLINE TEST RESULTS
+D2-WP001 = PASS / CLOSED
+D2-WP001-R1 = PASS / CLOSED
 ```
 
-Antigravity or Owner may run the two commands above from the current canonical checkout and report exact results. This is verification only; no new source authorization is needed and no source/docs change should be made by executor.
+Accepted WP001 foundation:
+- strict explicit trusted export-context shapes only;
+- exact Employee-Self Employee_Code scoping;
+- cross-employee denial;
+- SHARED Approver denied;
+- DEDICATED Approver requires native current App794 Assignee;
+- stale/static route authority denied;
+- HR/Technical caller labels do not self-authorize;
+- Employee-Self confidential Part A/Part B evaluator data omitted;
+- exact 4/5/10 objective projection covered;
+- profile weights preserved including Assistant Manager 60/40.
 
-If both tests PASS, ChatGPT may close D2-WP001. If either fails, stop and report the exact failure; any new source correction requires fresh Owner approval.
+## 5. Exact current gate — D2-WP002 approval
 
-## 7. Template evidence gate — later D2 work
+Proposed next Work Package:
 
-Binary Excel/PDF parity still requires approved legacy evidence at least:
-- `PMS_Staff & Chief_PART_A.xlsx`
-- `PMS_Staff & Chief_PART_B.xlsx`
+```text
+D2-WP002 = LEGACY TEMPLATE EVIDENCE + RENDERER DESIGN CONTRACT
+STATUS = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+```
+
+Purpose: inspect approved legacy Excel/PDF presentation evidence before implementing any binary renderer.
+
+Preferred evidence path:
+1. Owner provides legacy files directly to ChatGPT if available;
+2. otherwise, after explicit WP002 approval, Antigravity may inspect gitignored local template binaries READ-ONLY;
+3. do not commit original employee-bearing binary templates to Git.
+
+Minimum evidence:
+- `PMS_Staff & Chief_PART_A.xlsx`;
+- `PMS_Staff & Chief_PART_B.xlsx`;
 - approved PDF sample if exact PDF visual parity is required.
 
-Do not auto-start renderer/template work.
+WP002 must freeze at least:
+- sheet names/order;
+- merged cells and section grouping;
+- labels/bilingual wording;
+- Part A/Part B cell mapping;
+- row heights/column widths;
+- fonts/alignment/borders/number formats;
+- formulas/totals;
+- print area/orientation/page breaks;
+- signature/approval areas;
+- controlled 5–10 objective expansion strategy;
+- PDF pagination/layout strategy;
+- safe evidence handling so employee data is not committed.
 
-## 8. Authorization ledger
+No `.xlsx` writer, PDF generator, dependency, UI, build, Live Kintone or deployment work is authorized yet.
+
+## 6. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / SOURCE REVIEWED / DO NOT REUSE
+D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
@@ -134,11 +158,11 @@ ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-## 9. Whole-project status
+## 7. Whole-project status
 
 ```text
 D1 = PASS / CLOSED
-D2 = IN PROGRESS / WP001 OFFLINE TEST EVIDENCE PENDING
+D2 = IN PROGRESS / WP001 PASS-CLOSED / WP002 APPROVAL PENDING
 D3 = IN PROGRESS / WRITE NOT AUTHORIZED
 D4 = IN PROGRESS
 D5 = IN PROGRESS
@@ -147,3 +171,11 @@ D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
 MBO2026 is not project-complete.
+
+## 8. Exact next action
+
+```text
+NEXT_OWNER_DECISION = APPROVE / CORRECT / REJECT D2-WP002
+```
+
+Do not auto-start WP002.
