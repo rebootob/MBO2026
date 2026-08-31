@@ -31,163 +31,69 @@ No Live Kintone write/deploy/ACL/group/schema/record/session/password operation 
 ## 3. D1 FINAL STATUS
 
 ```text
-D1_HYBRID_IDENTITY_PASSWORD_EMPLOYEE_SELF_APPROVER_ACCESS = PASS
+D1 = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
 PASS_MODE = PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
 APP794_LIVE_REVISION = 67
 RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 ```
 
-Source/runtime freeze was rechecked: from runtime commit `c6864d09...` to the pre-closure docs HEAD, only `project-docs/` files changed; no runtime/source/test file changed.
+Accepted D1 closure includes Dedicated identity, Employee-Self privacy, native workflow, current-Assignee approval authority, Shared App801/session runtime, dual-role separation, HR non-employee mode, comments/history/attachments truthfulness and synthetic cleanup.
 
-## 4. D1 accepted evidence
-
-### Dedicated identity / Employee-Self / routing
+Canonical live Record #12 remains:
 
 ```text
-APP53_TOTAL_RECORDS = 281
-DEDICATED_MAPPINGS_VERIFIED = 24
-papatchaya -> Employee 0113
-Record #12 = FY2026-0113
+Employee = 0113 / papatchaya
 Status = 03 Manager Objective Review
 Requester = papatchaya
-Manager = pattama
-Assignee = pattama
+Manager / Assignee = pattama
 Topology = M1_ONLY
-OWN_MBO_SELF_APPRAISER_ELISION = PASS
-PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-### Dedicated ACL / privacy / HR
+No synthetic D1 test record remains. Temporary Records #13 and #14 were deleted after their bounded UATs.
+
+## 4. D1 security ceilings — retain permanently
 
 ```text
-REQUESTER_OWN_DRAFT_ACL = PASS
-REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
-HR_STATUS03_NATIVE_ACL = PASS
-HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
-FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
-STALE_PRIOR_APPROVER_STRUCTURAL = PASS
-HR_STATUS15_STRUCTURAL = PASS
-CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED / NON-BLOCKING
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-Temporary foreign Record #13 was denied to `papatchaya` by direct GET/query/ACL/direct URL and deleted. No Record #13 remains.
+These are accepted Kintone-only architecture ceilings, not hidden defects. Do not claim stronger guarantees and do not embed privileged browser API credentials as a workaround.
 
-`admin-form` and `hr` are non-employee principals by design. Never invent Employee IDs/App53 mappings for them. Do not reset Pattama's native Kintone password solely for UAT.
+Pattama interactive approver login remains credential-limited/non-blocking. Do not reset another person's native Kintone password solely for UAT.
 
-### Shared Employee-Self / App801 session
+## 5. Pre-D2 documentation sync
 
-Controlled UAT:
+Owner required all related documentation to be synchronized before D2 starts. That documentation sweep is complete.
+
+Canonical D2 pre-start document:
 
 ```text
-Kintone principal = tmh
-Employee_Code = 0130
-App53 #414 = Active / MBO_Kintone_User=[]
-App801 #107
+project-docs/EXCEL_EXPORT.md
 ```
 
-Accepted runtime:
+D2 status:
 
 ```text
-MBO Login = PASS
-Force Password Change = PASS
-Credential_Version 5 -> 6
-Force_Password_Change = NO
-8-hour session issue = PASS
-Session_Credential_Version = 6
-Session_Kintone_User = tmh
-same-tab reload restore = PASS
-independent new tab without token -> MBO Login = PASS
-MBO Logout = PASS
-server Session_* cleanup = PASS
-local session token cleanup = PASS
-D1_SHARED_SESSION_RUNTIME = PASS
+D2 = READY / NOT STARTED
+ACTIVE_D2_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-Negative session/security cases are covered by source/integration tests: expired/tampered token, disabled/locked/forced-change state, credential-version mismatch, principal mismatch, old-session invalidation after password change, raw-token storage boundary, and Employee-Code context switching fail closed.
+D2 must eventually prove Excel Part A, Excel Part B, combined workbook where applicable, PDF legacy/original parity, 5–10 objective capacity and export authorization/confidentiality.
 
-### Comments / history / attachments Live truthfulness
-
-Record #12 GET/UI runtime:
+## 6. Exact next gate
 
 ```text
-Native comments = 0
-UI comment items = 0
-Timeline = 0 Events Recorded + truthful no-history state
-Preview fixture leak = none
-FILE fields = 30
-Objective_Attachment_1 = 2.jpeg / real saved file
-UI filename 2.jpeg visible = true
-preview attachment leak = none
-COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PASS
-```
-
-### Dedicated dual-role Live UAT
-
-Synthetic Record #14 `FY2026-0007` was created under exact one-shot authorization from App795 TMH2 route:
-
-```text
-Employee = 0007
-Requester = tmh
-M1 / Manager = papatchaya
-G1 / GM = pattama
-Topology = M1_G1
-01 Draft Objective -> 03 Manager Objective Review
-Assignee = papatchaya
-```
-
-As `papatchaya`:
-
-```text
-My MBO = Record #12 / Employee 0113
-My Approval Tasks = Record #14 / Employee 0007
-native Assignee query contains #14
-UI contexts remain separate
-D1_LIVE_DUAL_ROLE = PASS
-```
-
-No Approve/Return action was performed. Approval action authority is accepted from source/integration evidence that fresh-revalidates exact current native `Assignee`, denies SHARED mode and mismatched/stale assignee, and never falls back to App795/static snapshot fields.
-
-Record #14 was then deleted under the same bounded authorization; post-delete `FY2026-0007` count = 0. No synthetic Record #14 remains.
-
-## 5. Final D1 security disposition
-
-```text
-DEDICATED_IDENTITY = PASS
-SHARED_IDENTITY_SESSION = PASS
-EMPLOYEE_SELF_PRIVACY = PASS
-APPROVER_AUTHORITY = PASS
-DUAL_ROLE_SEPARATION = PASS
-SELF_APPROVAL_GUARD = PASS
-HR_NON_EMPLOYEE_MODE = PASS
-COMMENTS_HISTORY_ATTACHMENTS_TRUTH = PASS
-SYNTHETIC_CLEANUP = PASS
-FINAL_D1_SECURITY_REVIEW = PASS
-```
-
-Two Kintone-only security ceilings remain deliberately documented and are NOT to be misrepresented as hard guarantees:
-
-```text
-1. SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
-   Employees sharing one native Kintone principal cannot receive true native Employee_Code-level REST isolation from browser JavaScript.
-
-2. DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
-   Normal UI auto-binds Employee_Code correctly, but browser customization is not a privileged server-side enforcement layer.
-```
-
-These are accepted architecture ceilings, not hidden defects. Do not weaken or remove them without an explicit user architecture decision.
-
-## 6. Current gate
-
-```text
-D1 = CLOSED / PASS
 ACTIVE_WORK_PACKAGE = NONE
-NEXT_WORK_PACKAGE = OWNER DECISION REQUIRED
-RECOMMENDED_NEXT = D2 Excel + PDF Original/Legacy Format
-ANTIGRAVITY = NONE
+NEXT_WORK_PACKAGE = D2
+D2_START = OWNER INSTRUCTION REQUIRED
+NEXT_D2_STEP_AFTER_START = READ-ONLY DISCOVERY / GAP ANALYSIS
+ANTIGRAVITY = NONE UNTIL IMPLEMENTATION IS PROVEN NECESSARY
 ```
 
-Do not auto-start D2–D6 from this handoff. Wait for owner instruction.
+When Owner starts D2, first inspect existing export source/tests and approved legacy samples. Do not immediately code or deploy.
 
 ## 7. Authorization ledger
 
@@ -199,16 +105,17 @@ ACTIVE_PROCESS_UAT_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
 APP53_WRITE_AUTH = NONE
 APP801_WRITE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-All prior foreign-record, HR deploy, 0130 reset/session, and dual-role synthetic Record #14 CREATE/transition/DELETE authorizations are consumed and must never be reused.
+All D1 one-shot authorizations are consumed and must never be reused.
 
-## 8. Whole-project status reminder
+## 8. Whole-project status
 
 ```text
-D1 = PASS
-D2 = IN PROGRESS
+D1 = PASS / CLOSED
+D2 = READY / NOT STARTED
 D3 = IN PROGRESS / WRITE NOT AUTHORIZED
 D4 = IN PROGRESS
 D5 = IN PROGRESS
@@ -216,4 +123,4 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-Project-wide MBO2026 is NOT complete merely because D1 is closed.
+MBO2026 is not project-complete merely because D1 is closed.
