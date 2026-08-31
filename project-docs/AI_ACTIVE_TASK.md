@@ -1,13 +1,13 @@
-# AI ACTIVE TASK — D1 RESIDUAL RUNTIME EVIDENCE CLOSURE
+# AI ACTIVE TASK — D1 FINAL CLOSURE EVIDENCE
 
-Mode: **CHATGPT CONTROL PLANE / USER + BROWSER CONSOLE PREFERRED / ANTIGRAVITY ONLY IF GENUINELY NECESSARY / NO UNAUTHORIZED KINTONE WRITE**
+Mode: **CHATGPT CONTROL PLANE / USER + BROWSER CONSOLE PREFERRED / ANTIGRAVITY ONLY IF A SOURCE DEFECT IS PROVEN / NO UNAUTHORIZED KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-08-31 ICT
 
 ```text
-TASK_STATE = OPEN / MAJOR D1 RUNTIME GATES PASS / RESIDUAL EVIDENCE ONLY
+TASK_STATE = OPEN / D1 MAJOR DEDICATED+HR PRIVACY GATES PASS / FINAL CLOSURE EVIDENCE REMAINS
 CURRENT_OWNER = CHATGPT + USER
-ANTIGRAVITY_ACTION = NONE UNLESS A SOURCE DEFECT IS PROVEN
+ANTIGRAVITY_ACTION = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 APP794_RECORD_ACL_WRITE_AUTH = NONE
 PROCESS_UAT_WRITE_AUTH = NONE
@@ -15,15 +15,14 @@ GROUP_WRITE_AUTH = NONE
 CUSTOMIZATION_DEPLOY_AUTH = NONE
 ```
 
-## 0. Accepted D1 prerequisites
+## 1. Accepted D1 runtime/config truth
 
 ```text
 APP53_DEDICATED_MAPPINGS = 24 / PASS
-PAPATCHAYA_EMPLOYEE_CODE = 0113
+papatchaya -> Employee 0113
 OWN_MBO_SELF_APPRAISER_ELISION = PASS
-RECORD_12_TOPOLOGY = M1_ONLY
-PROCESS_STATES = 16
-PROCESS_ACTIONS = 31
+APP794_PROCESS = 16 states / 31 actions
+APP794_LIVE_REVISION = 67
 ```
 
 Record #12:
@@ -33,148 +32,94 @@ STATUS = 03 Manager Objective Review
 REQUESTER = papatchaya
 MANAGER = pattama
 ASSIGNEE = pattama
-RECORD_REVISION = 11
+ROUTING_TOPOLOGY = M1_ONLY
 PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-## 1. App794 ACL/runtime evidence — PASS
+## 2. ACL / HR / privacy evidence — PASS
 
 ```text
-RECORD_ACL_CONFIG = PASS
 REQUESTER_OWN_DRAFT_ACL = PASS
 REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
 HR_STATUS03_NATIVE_ACL = PASS
-```
-
-Observed:
-
-```text
-papatchaya status01 -> view=true edit=true delete=false
-papatchaya status03 -> view=true edit=false delete=false
-hr status03         -> view=true edit=false delete=false
-```
-
-## 2. HR runtime access-mode corrective — PASS
-
-Accepted source/deploy chain:
-
-```text
-HR source corrective = cda4ed5e79736eaddcd96dd661d7a7294ae313f0
-Deploy-tool CSS fix  = c6864d09f59cfaf6e7c86da422452a816a5cf430
-App794 Live revision = 67
-Deploy status = SUCCESS
-```
-
-Runtime rule:
-
-```text
-Dedicated employee -> exact App53 mapping -> Employee-Self
-Shared employee    -> App801 session -> Employee-Self
-Technical admin    -> non-employee technical path
-HR admin           -> non-employee HR path verified by exact HR_ADMIN_GROUP membership
-```
-
-Post-deploy UAT as `hr`:
-
-```text
-NO_ACTIVE_EMPLOYEE_MAPPING_FOUND = not visible
-Employee Identity Mapping Failed = not visible
-Native status03 ACL preserved = view=true edit=false delete=false
 HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
-```
-
-Do not create Employee IDs or App53 Employee-Self mappings for `hr` or `admin-form`.
-
-## 3. Foreign record negative runtime — PASS
-
-Synthetic Record #13 was created solely for D1 privacy UAT under exact one-shot authorization:
-
-```text
-FY2026 / Employee 0044 / vassana
-Manager = tsuchihira
-Record_Key = FY2026-0044
-Status = 01 Draft Objective
-```
-
-As `papatchaya`:
-
-```text
-Direct GET #13 = DENIED / 403 / CB_NO02
-Query by Record_Key = 0
-ACL = view=false edit=false delete=false
-Direct URL #13 = DENIED / No privilege / CB_NO02
 FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
 ```
 
-Cleanup completed:
+Foreign-record UAT used temporary Record #13 only; direct GET/query/direct URL were denied for `papatchaya`, ACL was view=false/edit=false/delete=false, and Record #13 was deleted with post-delete match count 0. CREATE/DELETE authorizations are consumed.
+
+## 3. Residual approver / HR structural evidence — PASS
+
+Live Rev67 GET-only structural audit:
 
 ```text
-DELETE Record #13 = 1
-Post-delete match count = 0
-Synthetic record remaining = 0
+PROCESS = 16 states / 31 actions
+15 HR Final Check assignee = USER:hr / ONE
+15 -> 16 Complete exists
+15 -> 11 Return Final HR exists
 ```
 
-The CREATE and DELETE authorizations are consumed and may never be reused.
-
-## 4. Exact current residual gate
-
-Only these runtime-evidence items remain open in D1:
+Record ACL:
 
 ```text
-CURRENT_MANAGER_INTERACTIVE_RUNTIME = PENDING / CREDENTIAL-LIMITED
-STALE_PRIOR_APPROVER_RUNTIME = PENDING
-HR_STATUS15_RUNTIME = PENDING
+03/08/13 Manager stages:
+  Manager_User = View/Edit
+  Requester_User = View only
+
+04/09/14 GM stages:
+  GM_User = View/Edit
+  Requester_User = View only
+  Manager_User has no ACL grant
+
+15 HR Final Check:
+  USER:hr = View/Edit
+  Requester_User = View only
+  HR_ADMIN_GROUP = View only
 ```
 
-Known limitation:
+Source `MboApprovalTaskService` revalidates the exact current native `Assignee`; static Manager/GM/First_Manager/Requester snapshot fields do not grant approval authority. Unit tests explicitly deny `ASSIGNEE_MISMATCH` and static-snapshot fallback.
+
+Classification:
 
 ```text
-Pattama password is unavailable.
-Do not reset Pattama password solely for UAT.
+STALE_PRIOR_APPROVER_STRUCTURAL = PASS
+HR_STATUS15_STRUCTURAL = PASS
+CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED / NON-BLOCKING (Pattama password unavailable)
 ```
 
-### Required next action
+Do not reset Pattama password merely for UAT.
 
-ChatGPT must determine whether each remaining item can be closed by:
+## 4. Final D1 closure review finding
 
-1. existing accepted native ACL/process evidence;
-2. GET-only runtime evidence with currently available principals;
-3. a narrowly scoped disposable UAT record using an already controlled login;
-4. or must remain explicitly `CREDENTIAL-LIMITED` / `NOT PRACTICALLY TESTABLE`.
-
-Do not manufacture a test that weakens business routing merely to satisfy coverage.
-
-## 5. Closure criteria
-
-### Current Manager Interactive Runtime
-
-Target business proof:
+Master Joblist and TEST_STATUS require more than the residual approver checks. D1 MUST NOT be closed until the remaining mandatory evidence below is dispositioned:
 
 ```text
-At Manager-review status, current Manager/Assignee can view/edit only while currently assigned.
+SHARED_EMPLOYEE_SELF_APP801_SESSION_UAT = PENDING
+DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PENDING / may reuse accepted evidence where sufficient
+COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PENDING / must review existing accepted source+UAT evidence before new tests
+FINAL_D1_SECURITY_REVIEW = PENDING
 ```
 
-If no controlled Manager credential exists, record the limitation rather than resetting credentials or granting temporary authority.
-
-### Stale Prior Approver Runtime
-
-Target business proof:
+Known accepted platform ceiling remains:
 
 ```text
-After transition/reassignment, a prior approver who is not owner and has no other valid role must lose approver access.
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER A SHARED KINTONE PRINCIPAL
 ```
 
-Do not use the requester-owner as the stale approver test because requester retains own-record View by design.
+Do not claim stronger shared-account native isolation than Kintone can provide.
 
-### HR Status15 Runtime
+## 5. Exact next action — SHARED PATH GET-ONLY PREFLIGHT
 
-Target business proof:
+Before any shared MBO login or App801 session operation, identify a safe real/shared UAT candidate using GET-only evidence:
 
-```text
-At 15 HR Final Check, HR native authorization permits intended HR action while requester remains view-only according to the accepted ACL model.
-```
+1. App801 credential row exists and is not disabled/permanently locked;
+2. App53 employee is active and has valid Employee_Code;
+3. employee has NO dedicated `MBO_Kintone_User` mapping;
+4. App795 route authorizes one approved shared Kintone principal (`f1,f2,f3,tmh,e1,s1,g_request,t1,t2`) as requester boundary;
+5. inspect Force_Password_Change / active-session state without reading or exposing Password_Hash;
+6. no login/session/password write yet.
 
-Any status-transition chain needed to reach 15 requires a new exact authorization and must not be auto-executed.
+Any successful shared MBO login can write App801 session metadata. Therefore shared-login execution requires a new exact authorization after preflight if the chosen test would mutate App801.
 
 ## 6. Safety rules
 
@@ -182,11 +127,11 @@ Any status-transition chain needed to reach 15 requires a new exact authorizatio
 APP794_ACL_WRITE = NO
 APP794_PROCESS_CONFIG_WRITE = NO
 APP794_SCHEMA_WRITE = NO
-APP794_RECORD_CREATE/EDIT/DELETE = NO unless new exact one-shot authorization
-APP794_STATUS_TRANSITION = NO unless new exact one-shot authorization
+APP794_RECORD_WRITE = NO
+APP794_STATUS_TRANSITION = NO
 APP53_WRITE = NO
 APP795_WRITE = NO
-APP801_WRITE = NO
+APP801_WRITE = NO unless separately and exactly authorized
 GROUP_MEMBERSHIP_WRITE = NO
 KINTONE_CUSTOMIZATION_DEPLOY = NO
 ROLLBACK = NO
@@ -197,11 +142,13 @@ Never reuse consumed authorizations.
 ## 7. Current decision
 
 ```text
-D1_MAJOR_IDENTITY_RUNTIME = PASS
-HR_RUNTIME_CORRECTIVE = PASS
-FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
-D1_RECORD_PRIVACY_GATE = PASS FOR FOREIGN-RECORD ISOLATION
-D1_OVERALL = OPEN ONLY FOR RESIDUAL APPROVER/HR-STATUS EVIDENCE
-NEXT_OWNER = ChatGPT + User
+D1_DEDICATED_MAJOR_RUNTIME = PASS
+D1_HR_RUNTIME = PASS
+D1_FOREIGN_RECORD_ISOLATION = PASS
+STALE_PRIOR_APPROVER_STRUCTURAL = PASS
+HR_STATUS15_STRUCTURAL = PASS
+CURRENT_MANAGER_INTERACTIVE = CREDENTIAL-LIMITED / NON-BLOCKING
+D1_OVERALL = OPEN
+NEXT_GATE = SHARED EMPLOYEE-SELF / APP801 SESSION GET-ONLY PREFLIGHT
 ANTIGRAVITY = NONE
 ```
