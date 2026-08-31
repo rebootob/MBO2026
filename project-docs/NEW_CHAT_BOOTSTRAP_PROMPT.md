@@ -1,7 +1,7 @@
 # MBO2026 — CANONICAL NEW-CHAT BOOTSTRAP PROMPT
 
 > Copy only the text block below into a new ChatGPT conversation.  
-> Updated: 2026-08-30 20:45 ICT.  
+> Updated: 2026-08-31 ICT.  
 > Repository evidence always wins over this embedded checkpoint.
 
 ```text
@@ -12,160 +12,183 @@ Canonical branch: ai/antigravity-wp002c
 
 ROLE
 - ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
-- Antigravity = LOW-CREDIT Execution Plane only for minimum necessary source/local-runtime/Kintone execution
+- Antigravity = LOW-CREDIT Execution Plane only when genuinely necessary
+- Prefer User + ChatGPT + Browser Console for narrow safe Kintone inspection/UAT when possible
 
-STARTUP — DO THIS BEFORE ANSWERING STATUS OR DOING WORK
-1. Fresh-fetch HEAD of branch ai/antigravity-wp002c.
+STARTUP — BEFORE STATUS OR WORK
+1. Fresh-fetch HEAD of ai/antigravity-wp002c.
 2. Read project-docs/CHAT_HANDOFF.md first.
 3. Read project-docs/AI_CONTROL_CENTER.md.
 4. Read project-docs/AI_ACTIVE_TASK.md.
 5. Read project-docs/AI_DOCUMENT_INDEX.md.
-6. Read project-docs/CONFIRMED_BASELINE/README.md and only the relevant Baseline files routed by the Document Index.
-7. If an executor commit exists after the handoff checkpoint, inspect its exact diff/source/test evidence before deciding anything.
+6. Read project-docs/00_MASTER_JOBLIST.md when whole-project completeness is needed.
+7. Read project-docs/CONFIRMED_BASELINE/README.md and only relevant Baselines routed by the Document Index.
+8. If any newer source/executor commit exists, inspect/review it before repeating work.
 
 Do NOT broad-scan the repository.
-Do NOT ask me to repeat project history already in Git.
+Do NOT ask me to repeat history already in Git.
 Do NOT run tests/build or access Live Kintone merely for startup.
-Do NOT execute or reissue an Active Task until you verify whether it has already been executed.
+Do NOT reissue an Active Task until you verify whether it is already executed.
 
 TRUTH BY PURPOSE
 - CONFIRMED_BASELINE = durable confirmed business/security/technical truth
 - 00_MASTER_JOBLIST = D1-D7 completeness/no-drop authority
-- AI_CONTROL_CENTER = current independently accepted operational state/gate/authorization
-- AI_ACTIVE_TASK = exact current execution packet only; not evidence of success
+- AI_CONTROL_CENTER = current accepted operational state/gate/authorization
+- AI_ACTIVE_TASK = exact current task packet only; not evidence of success
 - Git/Kintone evidence = actual implementation/runtime truth
-- CHAT_HANDOFF = concise cross-chat checkpoint; always revalidate against current HEAD
+- CHAT_HANDOFF = concise current cross-chat checkpoint; revalidate against HEAD
 
-NON-NEGOTIABLE GOVERNANCE
+GOVERNANCE
 - No false PASS.
 - Executor cannot self-certify independent PASS.
 - No Live Kintone POST/PUT/DELETE/deploy/ACL/group/schema/record write without exact explicit user authorization.
-- Never widen or reuse a consumed one-shot authorization.
+- Never widen/reuse consumed one-shot authorization.
 - No automatic rollback.
 - App53 and legacy PMS Apps 283,310,305,643,307,640,715,716 are protected/read-only by default.
-- admin-form = Technical Admin/recovery only, not business Employee-Self/Approver authority.
-- Accepted work must not be reimplemented without proven regression.
+- admin-form = Technical Admin/recovery only, not Employee-Self/Approver authority.
+- Do not reimplement accepted work without proven regression.
 
 D1 ARCHITECTURE — DO NOT REVERT
 D1 = KINTONE-ONLY
-External auth/server/database/proxy = FORBIDDEN
 Auth Bridge = CANCELLED
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 
 Dedicated:
-native Kintone User -> exact authoritative active App53 mapping -> canonical emp_text Employee_Code -> Employee-Self auto-bind -> NO second MBO login.
+native Kintone User -> exact active App53 MBO_Kintone_User mapping -> canonical emp_text Employee_Code -> Employee-Self auto-bind -> no second MBO login.
 
 Shared:
 approved shared Kintone principal -> Employee_Code + App801 MBO password/session -> Employee-Self.
 
-Dual-role:
-- one person = one employee identity + one own MBO/FY;
-- My MBO = bound Employee_Code;
-- My Approval Tasks = current DEDICATED Kintone User + authoritative current App794 native Assignee;
-- App795/static Manager/GM fields/role strings/UI are NOT approval authority;
+Approver authority:
+- My MBO = bound Employee_Code.
+- My Approval Tasks = current DEDICATED Kintone User + authoritative current App794 native Assignee.
+- App795/static Manager/GM/First_Manager fields/role strings/UI are NOT approval authority.
 - SHARED approver authority = DENIED.
 
 OWN-MBO RULE
 OWN_MBO_SELF_APPROVER_ELISION = APPROVED.
-For own MBO only, remove self from effective appraiser route before workflow snapshot, preserve remaining approvers/order/rules, recalculate topology, never autoapprove or fabricate history, never rewrite App795; if no non-self approver remains, fail closed.
-Confirmed Natta example: TMG1|Marketing natta -> uchida becomes uchida / M1_ONLY for Natta own MBO only.
+For own MBO only: remove self from effective appraiser route before workflow snapshot, preserve remaining approvers/order/rules, recalculate topology, never autoapprove/fabricate history, never rewrite App795, fail closed if no non-self approver remains.
 
-APP53 CURRENT TRUTH
-- Production / read-only by default.
-- Read-only dedicated mapping audit is COMPLETE.
-- MBO_Kintone_User USER_SELECT field design is CONFIRMED but the live field has NOT been created.
-- Vassana: kintone user vassana -> App53 #456 -> active -> canonical emp_text 0044.
-- Natta: kintone user natta -> App53 #578 -> active -> emp_text BLANK; canonical Employee_Code unresolved; FAIL CLOSED. Never guess from Number=243/name/email/vendor.
-- Adding the mapping field, populating mappings, and correcting Natta are separate protected changes requiring separate exact authorization.
+APP53 CURRENT ACCEPTED TRUTH
+- App53 = Production / read-only by default.
+- MBO_Kintone_User USER_SELECT is live and optional.
+- Total records = 281.
+- Exactly 24 dedicated mappings verified.
+- MBO_Kintone_User nonempty records = 24.
+- Unexpected nonempty records = 0.
+- papatchaya -> App53 Record 426 -> Employee Code 0113.
+- Active short numeric emp_text codes were normalized to four digits; five explicit unused/non-standard rows 382,390,495,496,497 were excluded.
+- No additional App53 write authorization exists.
 
-ACCEPTED APP794 LIVE BASELINE
-- Live/Preview Revision 60 / 60
-- deployed source commit 1ed342ad137a4a364496a28d29bdffd24a99b511
-- JS blob 115a08ace32bdf850cb5eebf25b953d1803114d0
-- CSS blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-- user runtime UAT PASS
-- Rev60 fatal-Create clean exit accepted known-good
+APP794 LIVE UAT CORRECTIONS ACCEPTED
+- Process two-button defect fixed for employee statuses 01 / 06 / 11 using mutually-exclusive Routing_Topology conditions.
+- First Manager path only: M1_M2_G1 / M1_M2_G1_G2.
+- Direct Manager path only: M1_G1 / M1_G1_G2 / M1_ONLY.
+- GM_User required = false.
+- MBO_DEDICATED_ACCESS App794 permissions: View/Add/Edit=true; Delete/Import/Export/App Admin=false.
 
-ACCEPTED D1 SOURCE CHECKPOINT
-- Hybrid Identity Core Source R1 = PASS
-- Hybrid Employee-Self Runtime Entry = PASS
-- accepted build = PASS
-- accepted full regression = 1024/1024 PASS
-- Approval Authority Service R1 = PASS
-- accepted authority-service commit = 5ac5ede6e40a1462f0398ba8740330742041e3bf
+CLEAN DEDICATED UAT ACCEPTED
+Legacy disposable Record #11 was deleted.
+New App794 Record #12 was created while logged in as papatchaya.
+Pre-transition exact snapshot:
+- Employee_Code = 0113
+- Requester_User = papatchaya
+- Manager_Level1_Approvers = pattama
+- Manager_Level2_Approvers = blank
+- GM_Level1_Approvers = blank
+- GM_Level2_Approvers = blank
+- First_Manager_User = blank
+- Manager_User = pattama
+- GM_User = blank
+- Has_Manager_Level2 = No
+- Has_GM_Level2 = No
+- Routing_Topology = M1_ONLY
+- D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
 
-MY APPROVAL TASKS AUTHORITY
-LIST = DEDICATED + server query Assignee in (LOGINUSER()) + exact returned Assignee.value[].code match.
-OPEN/ACTION = fresh App794 GET + Assignee.type STATUS_ASSIGNEE + exact current dedicated Kintone user code.
-Never authorize from App795/static appraiser snapshots/Employee-Self ownership/UI role.
+Own-MBO proof:
+App795 TMH2 master papatchaya -> pattama becomes pattama only / M1_ONLY for Papatchaya own MBO.
 
-CURRENT INTEGRATION SPLIT
-Gate 1 = Home Index Integration only.
-Gate 2 = Dedicated cross-employee Detail authority.
-Gate 3 = process.proceed fresh Assignee revalidation.
-Do not combine gates by default.
+Native workflow proof after Papatchaya submitted:
+- Record = 12
+- Status = 03 Manager Objective Review
+- Assignee = pattama
+- Requester = papatchaya
+- Manager = pattama
+- GM = blank
+- Topology = M1_ONLY
+- PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 
-At the documentation-sync checkpoint the current Active Task is:
-D1 MY APPROVAL TASKS — LEAN HOME INDEX INTEGRATION R1
-Allowed only:
-- CREATE src/ui/approver-task-index-ui.js
-- MODIFY src/main-mbo-app.js
-- MODIFY tests/employee-main-mbo-app-integration.test.js
-Focused test only:
-node --test tests/employee-main-mbo-app-integration.test.js
-git diff --check
-No build, no npm test, no Live Kintone/App53, no deploy, no Detail/Process integration.
+Pattama interactive-login UAT is still pending because I do not have Pattama's password. Do not reset another person's native Kintone password merely for UAT.
 
-IMPORTANT: This checkpoint may be stale by the time this new chat starts. After fresh-fetching HEAD:
-- if Gate 1 executor commit already exists, REVIEW it; do not reissue/repeat the task;
-- if Active Task is still open with no executor commit, the next owner may be Antigravity for that exact task only;
-- if Control Center has moved to a later gate, follow the newer Control Center.
+CURRENT ACTIVE TASK
+APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION.
+Owner = ChatGPT + User.
+Antigravity = NONE.
+No ACL write authorization exists.
+
+The ACL design must cover all 16 statuses before any write:
+01 Draft Objective
+02 First Manager Objective Review
+03 Manager Objective Review
+04 GM Objective Review
+05 Objective Approved
+06 Employee Mid-Year
+07 First Manager Mid-Year Review
+08 Manager Mid-Year Review
+09 GM Mid-Year Review
+10 Mid-Year Completed
+11 Employee Self Evaluation
+12 First Manager Final Evaluation
+13 Manager Final Evaluation
+14 GM Final Evaluation
+15 HR Final Check
+16 Completed
+
+Required ACL behavior:
+- requester views own MBO throughout lifecycle;
+- requester edits only employee-owned stages;
+- current First Manager / Manager / GM gets View/Edit only during authoritative current stage;
+- prior approver loses stale access after transition/reassignment unless another current role independently grants it;
+- HR/Admin preserve required access;
+- static App795 membership alone never grants access.
+Do not apply partial record ACL rules. First inspect current App794 record ACL GET-only and design the complete set.
 
 D1-D7 NEVER DROP
-D1 Hybrid Identity + Password + Employee-Self + Approver Access
-D2 Excel + PDF Original/Legacy Format
-D3 8 Legacy PMS Apps -> App794 Migration
-D4 App800 HR Control Center E2E
-D5 Copy Own Previous MBO
-D6 Integrated E2E / Security / Regression
-D7 Admin Support Center
+D1 Hybrid Identity + Password + Employee-Self + Approver Access — IN PROGRESS; dedicated core UAT PASS, record ACL privacy gate open.
+D2 Excel + PDF Original/Legacy Format — IN PROGRESS.
+D3 8 Legacy PMS Apps -> App794 — IN PROGRESS / WRITE NOT AUTHORIZED.
+D4 App800 HR Control Center E2E — IN PROGRESS.
+D5 Copy Own Previous MBO — IN PROGRESS.
+D6 Integrated E2E / Security / Regression — PENDING.
+D7 Admin Support Center — SOURCE FUNCTIONALITY CLOSED.
 
-CURRENT AUTHORIZATION AT HANDOFF CHECKPOINT
+APP802
+Old sandbox continuation path is cancelled/revoked. Do not resume/delete/repair App802 without separate exact authorization.
+
+CURRENT AUTHORIZATION
 Kintone write = NONE
-Deploy = NONE
-ACL = NONE
-Group = NONE
+App794 deploy = NONE
+Record ACL write = NONE
+Group write = NONE
 App53 schema/record/bulk = NONE
 Rollback = NONE
-Always trust newer AI_CONTROL_CENTER over this checkpoint.
+Always trust newer AI_CONTROL_CENTER over this embedded checkpoint.
 
 USER SHORTHAND
-When I say review:
-- fresh-fetch HEAD;
-- inspect authorizing Active Task + relevant Baseline + exact diff/evidence;
-- independently decide PASS/CORRECTIVE/BLOCKED;
-- update Control Plane docs.
-
-When I say ต่อ / ต่อไป:
-- fresh-fetch HEAD + Control Center + Active Task;
-- detect accepted/pending/already-executed work;
-- choose smallest safe next action and owner;
-- do not spend Antigravity if ChatGPT can do it.
-
-When I say อนุมัติ ...:
-- treat as exact narrow one-shot authorization;
-- never widen/reuse it.
+review -> fresh-fetch HEAD; read current Control Center + authorizing Active Task + relevant Baseline; inspect exact diff/evidence; decide PASS/CORRECTIVE/BLOCKED; update control docs.
+ต่อ / ต่อไป -> fresh-fetch HEAD + Control Center + Active Task; detect accepted/pending/already-executed work; choose smallest safe next action; do not spend Antigravity if User + ChatGPT can do it.
+อนุมัติ ... -> exact narrow one-shot authorization only; never widen/reuse.
 
 FIRST RESPONSE IN THIS NEW CHAT
-After startup reads, answer me in Thai with:
+Answer me in Thai with:
 1. current HEAD;
 2. D1-D7 scoreboard;
-3. accepted Live App794 baseline;
-4. current gate + Active Task state;
-5. current authorization ledger;
-6. what is already accepted and must not be reopened;
-7. exact next owner/action.
-Do not execute Live changes in that first response.
+3. accepted D1 dedicated UAT evidence;
+4. current Active Task/gate;
+5. authorization ledger;
+6. what must not be reopened;
+7. exact next User+ChatGPT action.
+Do not execute Live writes in the first reply.
 ```
 
-Maintenance: update this file when the canonical handoff/gate changes materially. It is a bootstrap convenience, not execution evidence.
+Maintenance: update this file whenever the canonical handoff/current gate changes materially. It is a bootstrap convenience, not execution evidence.
