@@ -27,103 +27,77 @@ ANTIGRAVITY_MINIMUM_NECESSARY_ONLY = YES
 
 ## 1. D1 — Hybrid Identity + Password + Employee-Self + Approver Access
 
-Canonical architecture:
+### Final status
+
+```text
+D1 = PASS
+FINAL_D1_SECURITY_REVIEW = PASS
+PASS_MODE = PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+```
+
+Canonical architecture remains:
 
 ```text
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 ```
 
-### Dedicated Kintone users
-- Native Kintone authentication is the first boundary.
-- Exact active App53 `MBO_Kintone_User` mapping -> canonical `emp_text` Employee_Code -> Employee-Self auto-bind.
-- No secondary MBO Employee_Code/password login after exact binding.
-- Missing/ambiguous/invalid mapping fails closed.
-- `admin-form` is excluded from Employee-Self authority.
+### Dedicated Kintone users — PASS
+- exact active App53 `MBO_Kintone_User` mapping -> canonical `emp_text` Employee_Code -> Employee-Self auto-bind;
+- 24 dedicated mappings verified;
+- missing/ambiguous/invalid mapping fails closed in source/integration;
+- `admin-form` cannot bind Employee-Self;
+- canonical live Record #12 proves papatchaya Employee 0113, own route and native workflow;
+- own-MBO self-appraiser elision PASS;
+- Dedicated privacy/record ACL PASS including foreign-record negative runtime;
+- current approver authority is exact native `Assignee`, never static App795/snapshot membership.
 
-### Shared Kintone users
-- Existing Employee_Code + App801 MBO Password/session remains.
-- SHARED approver authority = DENIED.
-- Accepted platform limitation remains: direct REST hard isolation cannot be truthfully guaranteed when many employees share one native Kintone principal.
+### Shared Kintone users — PASS
+- App801 Employee_Code + MBO Password/session path retained;
+- real `tmh` + Employee 0130 UAT proved Login, Force Password Change, session issue, 8-hour binding, same-tab restore, new-tab isolation and Logout cleanup;
+- negative session cases are covered by source/integration tests;
+- SHARED approver authority remains denied.
 
-### Employee-Self + Approver authority
-- `My MBO` = exact bound Employee_Code.
-- `My Approval Tasks` = current Dedicated Kintone User + authoritative current App794 native `Assignee`.
-- Static App795 membership, legacy snapshot fields and UI visibility are never sufficient approval authority.
-
-### Own-MBO self-appraiser rule
-
-```text
-OWN_MBO_SELF_APPROVER_ELISION = APPROVED
-```
-
-For own MBO only: remove self from effective appraiser route before snapshot, preserve remaining appraisers/order/rules, shift/recalculate topology, never autoapprove/fabricate history, never rewrite App795, fail closed if no non-self approver remains.
-
-### App53 dedicated mapping — PASS
+### Dual-role — PASS
+One bounded synthetic App794 Record #14 (`FY2026-0007`) proved live under `papatchaya` that:
 
 ```text
-APP53 = Production / read-only by default
-TOTAL_RECORDS = 281
-MBO_Kintone_User = USER_SELECT / optional / live
-DEDICATED_MAPPINGS_VERIFIED = 24
-MBO_Kintone_User_NONEMPTY_RECORDS = 24
-UNEXPECTED_NONEMPTY_RECORDS = 0
-papatchaya -> App53 #426 -> Employee Code 0113
+My MBO = Record #12 / Employee 0113
+My Approval Tasks = Record #14 / Employee 0007
+current Assignee = papatchaya
+contexts remain separate
 ```
 
-Active short numeric Employee Codes were normalized to four digits by guarded user-run Browser Console. Explicit excluded unused/non-standard rows: 382,390,495,496,497.
+No Approve/Return was performed. Source/integration proves action authority fresh-revalidates current `Assignee` and denies stale/mismatched/SHARED actors. Record #14 was deleted; cleanup count = 0.
 
-No additional App53 mapping/schema/bulk write is authorized automatically.
+### Comments / history / attachments — PASS
+Record #12 live GET/UI evidence proved:
+- native comments 0 = UI comments 0;
+- truthful `0 Events Recorded` / no fabricated history fixture;
+- real saved attachment `2.jpeg` appears exactly in UI;
+- no preview/mock attachment leak.
 
-### App794 Dedicated UAT — PASS for core employee->manager path
+### HR/admin — PASS for D1 boundary
+- `hr` resolves as HR_ADMIN without Employee ID;
+- status03 native ACL PASS;
+- status15 native structural authority/process PASS;
+- `admin-form` technical-admin MBO reset path was exercised with exact one-shot runtime evidence on Employee 0130;
+- HR/admin remain non-employee principals and receive no fabricated Employee-Self mapping.
 
-User + ChatGPT corrected the App794 Process two-button defect for employee statuses 01/06/11 using mutually-exclusive `Routing_Topology` conditions. `GM_User` was corrected to optional. `MBO_DEDICATED_ACCESS` has App794 View/Add/Edit only; Delete/Import/Export/App Admin remain disabled.
-
-Clean UAT under native `papatchaya` created App794 Record #12:
+### Final D1 security ceilings — accepted and mandatory to retain
 
 ```text
-Employee_Code = 0113
-Requester_User = papatchaya
-Manager_Level1_Approvers = pattama
-Manager_Level2_Approvers = BLANK
-GM_Level1_Approvers = BLANK
-GM_Level2_Approvers = BLANK
-First_Manager_User = BLANK
-Manager_User = pattama
-GM_User = BLANK
-Has_Manager_Level2 = No
-Has_GM_Level2 = No
-Routing_Topology = M1_ONLY
-D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE ACCOUNT
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-Native workflow transition proof:
+These are Kintone-only architecture ceilings. D1 PASS does not mean hard per-Employee REST isolation exists for a shared native principal, and browser customization cannot provide a privileged server-side create-field enforcement boundary. Never hide these limits or embed privileged API credentials as a workaround.
 
-```text
-01 Draft Objective -> 03 Manager Objective Review
-Assignee = pattama
-Requester = papatchaya
-Manager = pattama
-GM = BLANK
-Topology = M1_ONLY
-PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
-```
+### Credential-limited item — non-blocking
+Pattama-specific interactive login was not run because the credential is unavailable. Do not reset another person's native Kintone password solely for UAT. Equivalent approval authority path is accepted from live papatchaya dual-role evidence plus source/fresh-revalidation tests.
 
-Interactive Pattama-login UAT is pending because the user does not have Pattama's password. Do not reset another person's native Kintone password solely for UAT.
-
-### Current D1 gate
-
-```text
-APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION = OPEN
-OWNER = ChatGPT + User
-ANTIGRAVITY = NONE
-ACL WRITE AUTH = NONE
-```
-
-Before rollout to 24 Dedicated users, design a complete status-aware App794 record ACL across all 16 statuses. Requester must view own MBO throughout lifecycle, edit only employee stages; current approver gets View/Edit only when current; stale approver access must disappear; HR/Admin access must remain. Do not apply partial ACL rules.
-
-D1 cannot close until both identity modes, dedicated privacy/ACL, approval-task visibility/detail/action authority, Shared behavior, dual-role behavior, comments/attachments, HR/admin operations and final E2E/security review are proven.
-
-Status: `IN PROGRESS — DEDICATED CORE UAT PASS / RECORD ACL PRIVACY GATE OPEN`.
+Status: `✅ PASS / CLOSED`. Reopen D1 only for a proven defect or explicit architecture change.
 
 ## 2. D2 — Excel + PDF Original/Legacy Format
 
@@ -177,6 +151,8 @@ Status: `IN PROGRESS`.
 ## 6. D6 — Integrated E2E / Security / Regression
 
 Must prove D1–D5 + D7 together, including Dedicated, Shared and dual-role flows through Objectives -> Mid-Year -> Self Evaluation -> Appraiser Evaluation -> HR Final, plus exports/migration/history/admin truthfulness.
+
+D1 closure is prerequisite evidence only; it does not close D6.
 
 Status: `PENDING`.
 
