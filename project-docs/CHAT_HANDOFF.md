@@ -1,7 +1,7 @@
 # MBO2026 — CHAT HANDOFF
 
 > Canonical concise cross-chat continuation document.  
-> Updated: 2026-08-31 ICT  
+> Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
@@ -16,7 +16,8 @@ Repository/Kintone accepted evidence wins over embedded checkpoints. Fresh-fetch
 5. Read `project-docs/AI_DOCUMENT_INDEX.md`.
 6. Read `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness is relevant.
 7. Read only relevant `CONFIRMED_BASELINE/` files.
-8. Do not repeat accepted work or broad-scan.
+8. For D2, read `project-docs/EXCEL_EXPORT.md` before source work.
+9. Do not repeat accepted work or broad-scan.
 
 ## 2. Operating model
 
@@ -83,55 +84,70 @@ current approval authority = native current Assignee
 mid-cycle change = HR-controlled explicit operation + audit
 ```
 
-Applies to resignation/inactive state, Department/Section/Team transfer, promotion/Position change, Kintone-principal change, and manager/appraiser departure/replacement.
+D4 owns lifecycle operational capability, D5 must resolve fresh current identity/route, and D6 owns lifecycle/security regression. No lifecycle write is authorized now.
 
-Important continuation rules:
-- historical MBO must not be deleted merely because an employee leaves;
-- transfer/promotion does not automatically rewrite an existing App794 route;
-- future/fresh MBO resolves current App53/App795 values;
-- changing App795 does not automatically reassign already-open App794 tasks;
-- open-task reassignment must be explicit, audited and use authoritative current Workflow assignment;
-- Dedicated principal change keeps the same Employee_Code and must not create duplicate Employee identity/MBO;
-- Shared resigned/inactive handling must eventually support App801 disable/session invalidation through D4;
-- D5 copy must not carry requester/route/workflow snapshots forward.
+## 6. D2 — STARTED / READ-ONLY DISCOVERY COMPLETE
 
-This policy does **not** reopen D1. D4 owns lifecycle operational capability and D6 owns lifecycle/security regression.
+Owner explicitly started D2 on 2026-09-01 ICT.
 
-No lifecycle write is authorized now.
-
-## 6. Pre-D2 documentation sync
-
-Owner required all related documentation to be synchronized before D2 starts. That documentation sweep is complete, including the lifecycle Baseline promotion above.
-
-Canonical D2 pre-start document:
+Canonical D2 document:
 
 ```text
 project-docs/EXCEL_EXPORT.md
 ```
 
-D2 status:
+`D2-DISCOVERY-001` is complete. Current accepted findings:
+- existing source: `src/services/mbo-export-service.js`;
+- existing tests: `tests/mbo-export-service.test.js`;
+- current export is projection/data-model only, not a real `.xlsx` or PDF binary renderer;
+- App794 objective normalization already supports slots 1..10;
+- export tests currently prove only a 4-objective projection case, not 5/10;
+- export projection lacks a trusted authorization/security context and can include confidential scoring/final fields;
+- Employee-Self security must reuse trusted Employee_Code scoping/confidential-field stripping;
+- Dedicated Approver export must reuse authoritative current native Assignee authority; SHARED approver remains denied;
+- current confirmed profile weighting is preserved, including Assistant Manager = 60/40;
+- legacy Staff/Chief Part A/B workbook binaries are intentionally gitignored local references and were not available in current ChatGPT-connected sources.
+
+## 7. Exact current gate — D2-WP001 APPROVAL
+
+Proposed Work Package:
 
 ```text
-D2 = READY / NOT STARTED
-ACTIVE_D2_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-```
-
-D2 must eventually prove Excel Part A, Excel Part B, combined workbook where applicable, PDF legacy/original parity, 5–10 objective capacity and export authorization/confidentiality.
-
-## 7. Exact next gate
-
-```text
+D2-WP001 = EXPORT AUTHORIZATION + PROJECTION FOUNDATION
+STATUS = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
 ACTIVE_WORK_PACKAGE = NONE
-NEXT_WORK_PACKAGE = D2
-D2_START = OWNER INSTRUCTION REQUIRED
-NEXT_D2_STEP_AFTER_START = READ-ONLY DISCOVERY / GAP ANALYSIS
-ANTIGRAVITY = NONE UNTIL IMPLEMENTATION IS PROVEN NECESSARY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = WAITING OWNER APPROVAL / NOT STARTED
 ```
 
-When Owner starts D2, first inspect existing export source/tests and approved legacy samples. Do not immediately code or deploy.
+WP001 is intentionally narrow. It may modify only:
+- `src/services/mbo-export-service.js`;
+- `tests/mbo-export-service.test.js`;
+- exact existing D1 security services/constants may be imported/reused when required.
 
-## 8. Authorization ledger
+WP001 must prove:
+- trusted export context fail-closed;
+- Employee-Self exact Employee_Code scope + confidential omission;
+- Dedicated current-Assignee approver authority; SHARED approver denied;
+- stale/static route membership cannot authorize export;
+- confirmed profile weights preserved;
+- 4, 5 and 10 objective projection behavior;
+- negative security/leakage tests.
+
+WP001 must **not** add Excel/PDF binary generation, package dependencies, UI download buttons, Live Kintone calls, writes or deployment.
+
+After exact Owner approval, Antigravity is the intended execution plane for this important implementation. It must perform the smallest patch and focused tests only, then stop at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`. ChatGPT independently reviews afterward.
+
+## 8. Template evidence gate — later D2 work
+
+Binary Excel/PDF parity work is deferred until approved legacy evidence is available, at least:
+- `PMS_Staff & Chief_PART_A.xlsx`;
+- `PMS_Staff & Chief_PART_B.xlsx`;
+- approved PDF example if exact PDF visual parity is required.
+
+The binary template evidence gap does not block D2-WP001.
+
+## 9. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -149,11 +165,11 @@ ROLLBACK_AUTH = NONE
 
 All D1 one-shot authorizations are consumed and must never be reused.
 
-## 9. Whole-project status
+## 10. Whole-project status
 
 ```text
 D1 = PASS / CLOSED
-D2 = READY / NOT STARTED
+D2 = IN PROGRESS / DISCOVERY COMPLETE / WP001 APPROVAL PENDING
 D3 = IN PROGRESS / WRITE NOT AUTHORIZED
 D4 = IN PROGRESS — lifecycle operations mandatory scope
 D5 = IN PROGRESS
@@ -161,4 +177,12 @@ D6 = PENDING — lifecycle regression required
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-MBO2026 is not project-complete merely because D1 is closed.
+MBO2026 is not project-complete.
+
+## 11. Exact next action
+
+```text
+NEXT_OWNER_DECISION = APPROVE / CORRECT / REJECT D2-WP001
+```
+
+Do not implement D2-WP001 until exact Owner approval is recorded.
