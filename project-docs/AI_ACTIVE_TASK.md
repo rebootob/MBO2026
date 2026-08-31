@@ -1,181 +1,94 @@
-# AI ACTIVE TASK — D2-WP001-R1 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP001-R1 REVIEW / TEST EVIDENCE REQUIRED
 
-Mode: **ANTIGRAVITY EXECUTION PLANE / NARROW CORRECTIVE SOURCE CHANGE / NO KINTONE WRITE / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / SOURCE REVIEW COMPLETE / NO ACTIVE SOURCE AUTH / NO KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = VERIFICATION_EVIDENCE_REQUIRED
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-DISCOVERY-001 = COMPLETE
 PARENT_WORK_PACKAGE = D2-WP001
-PARENT_IMPLEMENTATION_COMMIT = 4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
-PARENT_INDEPENDENT_REVIEW = CORRECTIVE REQUIRED
-ACTIVE_WORK_PACKAGE = D2-WP001-R1
-ACTIVE_WORK_PACKAGE_NAME = EXPORT AUTHORIZATION FAIL-CLOSED + NESTED CONFIDENTIALITY CORRECTIVE
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_ACTION = EXECUTE THIS TASK ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-R1-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+R1_WORK_PACKAGE = D2-WP001-R1
+R1_IMPLEMENTATION_COMMIT = 1d48dc218fe7e2c542773bcf441332f8b06f88f9
+R1_SOURCE_REVIEW = PASS
+R1_SCOPE_REVIEW = PASS
+R1_AUTOMATED_TEST_EVIDENCE = NOT INDEPENDENTLY VERIFIED
+D2-WP001_STATUS = NOT CLOSED / TEST EVIDENCE PENDING
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY_ACTION = VERIFICATION ONLY / NO SOURCE CHANGE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-## 1. Objective
+## 1. Independent review result
 
-Correct only the blocking findings from ChatGPT independent review of `D2-WP001`.
+ChatGPT fresh-fetched canonical branch and reviewed corrective commit:
 
-Do not redesign the export system and do not broaden into renderer/template work.
+`1d48dc218fe7e2c542773bcf441332f8b06f88f9`
 
-## 2. Read only these files first
+Compared from authorization baseline:
 
-Antigravity low-credit mode. Do not whole-repo scan.
+`365e61f22574361dacafedc7f98af1ea99228575`
 
-Read only:
-1. `project-docs/AI_CONTROL_CENTER.md`
-2. `project-docs/AI_ACTIVE_TASK.md`
-3. `project-docs/EXCEL_EXPORT.md`
-4. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
-5. `project-docs/SECURITY_MODEL.md`
-6. `src/services/mbo-export-service.js`
-7. `tests/mbo-export-service.test.js`
-8. `tests/core-794-795-796-integration.test.js`
-9. only the exact existing D1 security source already imported/reused by the export service if needed
-
-## 3. Authorized source scope
-
-Allowed to change only:
+R1 changed exactly:
 - `src/services/mbo-export-service.js`
 - `tests/mbo-export-service.test.js`
-- `tests/core-794-795-796-integration.test.js` only if the existing export call-site must remain compatible with the corrected trusted-context contract
 
-Do not modify unrelated D1 security services. Prefer no new file.
+No other source/test/build/package/deploy file changed in R1.
 
-## 4. Required corrections
+## 2. Source review — PASS
 
-### A. Strict supported trusted-context shapes only
+The corrective source closes the blocking findings from the prior review:
+- permissive matching-Employee_Code fallback removed;
+- bare `mode: DEDICATED` fallback removed;
+- caller-labeled `HR_ADMIN` / Technical Admin does not self-authorize;
+- only explicit `EMPLOYEE_SELF` and explicit `APPROVER` context branches are supported;
+- Employee-Self still requires exact bound Employee_Code match;
+- Approver still requires DEDICATED context and native current App794 `Assignee` rule through `MboApprovalTaskService`;
+- Employee-Self Part B `competencyItems` are projected through an explicit safe-key whitelist instead of copied through blindly;
+- manager/GM score/comment fields used in the negative test are omitted;
+- 4/5/10 objective tests and confirmed profile-weight tests remain present.
 
-`validateExportAuthorization()` must fail closed for malformed, role-less or unsupported contexts.
+No new source-level blocker was found within the authorized R1 contract.
 
-Remove permissive general fallbacks that currently allow authorization merely because:
-- caller supplied a matching `employeeCode`, or
-- caller supplied bare `mode: DEDICATED` with current Assignee.
+## 3. Verification evidence gate — still open
 
-Supported source-level shapes for this R1 are limited to:
+R1 contract required actual offline execution of at least:
 
-1. Employee-Self:
 ```text
-{ type: 'EMPLOYEE_SELF', employeeCode: '<trusted bound Employee_Code>' }
+node --test tests/mbo-export-service.test.js
+node --test tests/core-794-795-796-integration.test.js
 ```
-The exact trusted Employee_Code must match App794 `Employee_Code`.
 
-2. Approver:
-```text
-{ type: 'APPROVER', context: { mode: 'DEDICATED', kintoneUserCode: '<trusted dedicated principal>' } }
-```
-The principal must be authoritative current native App794 `Assignee` using the existing D1 rule.
+GitHub currently exposes no CI status and no workflow run for R1 commit `1d48dc218...`.
 
-Any other type/role/mode combination must fail closed in this WP.
+ChatGPT attempted an independent repository clone/test run, but the isolated runtime could not resolve `github.com`; therefore no independent automated-test PASS is claimed.
 
-### B. HR_ADMIN label must not self-authorize
+This is an evidence gap only. It is not a new source correction authorization.
 
-Do not grant full export merely because caller passes `mode`, `type`, or `role = HR_ADMIN`.
+## 4. Exact next action — verification only
 
-Until a separately reviewed trusted HR export authority contract is defined/reused, HR-labeled caller objects must be denied by this export service.
+Antigravity or the Owner may run the two offline commands above from the current canonical checkout and report exact output/results.
 
-Do not invent a new HR authentication system in R1.
+Rules:
+- NO source edits;
+- NO docs edits required by executor;
+- NO package changes;
+- NO Live Kintone access;
+- NO deploy;
+- NO next Work Package.
 
-### C. Preserve existing valid security rules
+If both required offline tests PASS on current HEAD/commit lineage, ChatGPT may close `D2-WP001` without another source implementation cycle.
 
-Must continue to prove:
-- explicit Employee-Self cross-employee denied;
-- SHARED Approver denied;
-- DEDICATED current Assignee allowed;
-- DEDICATED non-current-Assignee denied;
-- stale/static Manager/App795/requester/appraiser membership alone denied;
-- Technical Admin denied;
-- unknown profile fails closed;
-- confirmed profile weights unchanged.
+If either test fails, stop and report the exact failure; a new corrective source authorization will then require Owner approval.
 
-### D. Employee-Self nested Part B confidentiality
-
-For Employee-Self combined export, caller-supplied `competencyItems` must not be copied through blindly.
-
-Use a strict safe projection/whitelist for each competency item. Employee-Self output may include only non-confidential business-safe competency descriptors/self data that are explicitly needed by the existing projection contract.
-
-Manager/GM/appraiser ratings, comments, scores, weighted results, internal remarks or similarly privileged nested values must be omitted entirely.
-
-If a property cannot be confidently classified safe, omit it fail-closed.
-
-Approver projection may retain the existing full source-level competency payload only after explicit current-Assignee authorization.
-
-### E. Mandatory tests
-
-Add/retain focused tests proving at least:
-- missing context denied;
-- empty object denied;
-- role-less matching `employeeCode` denied;
-- bare `mode: DEDICATED` current Assignee denied;
-- forged/caller-labeled HR_ADMIN denied for mode/type/role variants;
-- explicit Employee-Self exact Employee_Code allowed;
-- Employee-Self cross-employee denied;
-- Employee-Self nested competency manager/GM/appraiser confidential properties absent;
-- explicit SHARED Approver denied;
-- explicit DEDICATED non-current-Assignee denied;
-- stale/static route member denied;
-- explicit DEDICATED current Assignee allowed;
-- 4, 5 and 10 objectives remain exact;
-- all confirmed profile weights remain exact.
-
-## 5. Verification
-
-Run actual offline tests and report exact commands/results:
-- focused `tests/mbo-export-service.test.js`;
-- `tests/core-794-795-796-integration.test.js` because its call-site was already touched by WP001;
-- broader offline unit suite only if needed/available and it requires no Live Kintone.
-
-No invented PASS.
-
-## 6. Explicitly forbidden
-
-Do NOT:
-- implement `.xlsx` generation;
-- implement PDF generation;
-- add SheetJS/ExcelJS/jsPDF/PDFKit or package dependencies;
-- modify `package.json` or lockfiles;
-- add UI download buttons;
-- modify build/runtime artifacts;
-- access/write/deploy Live Kintone;
-- change App53/App794/App795/App801 data/schema/ACL/Process Management;
-- create Live UAT records;
-- start D2-WP002 or D3/D4/D5/D6 implementation;
-- broaden scope to template parity;
-- rewrite D1 security architecture.
-
-## 7. Git / completion contract
-
-- Work on `ai/antigravity-wp002c`.
-- Smallest corrective patch only.
-- Prefer one implementation commit + push.
-- Do not merge elsewhere.
-- After push, STOP.
-- Final executor status must be exactly `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or a real blocker.
-- Antigravity must not mark D2-WP001/R1 PASS or CLOSED.
-- ChatGPT independently reviews actual diff/tests afterward.
-
-Final report <= 15 concise lines and include:
-- commit SHA;
-- changed files;
-- exact test commands/results;
-- confirmation no dependency/build/deploy/Kintone write occurred;
-- final status.
-
-## 8. Authorization ledger
+## 5. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-R1-SOURCE-20260901-01
-AUTHORIZED_SOURCE_SCOPE = mbo-export-service.js + mbo-export-service.test.js + exact dependent integration test only
+D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / SOURCE REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -188,4 +101,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-This authorization is one corrective Work Package only. It is consumed when the R1 implementation commit is pushed for independent review, or invalidated if scope/risk materially changes.
+Exact current gate: `D2-WP001 source review PASS / offline test evidence required / NOT CLOSED`.
