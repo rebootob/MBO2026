@@ -114,7 +114,31 @@ Fresh current-Assignee revalidation is required for approval record/action autho
 
 Self-approval is prohibited. Approved own-MBO self-appraiser elision removes self before the own-record workflow snapshot and never auto-approves.
 
-## 9. Direct URL/API adversarial tests
+## 9. Employee lifecycle security invariants
+
+Canonical policy: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+EMPLOYEE_CODE = STABLE PERSON ID
+APP53 = CURRENT EMPLOYEE / ORG / POSITION TRUTH
+APP795 = CURRENT ROUTING FOR FRESH RESOLUTION
+APP794 = HISTORICAL ANNUAL SNAPSHOT + CURRENT WORKFLOW TRUTH
+APP53_OR_APP795_CHANGE != AUTOMATIC RETROACTIVE APP794 REWRITE
+MID_CYCLE_CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
+```
+
+Security consequences:
+- inactive/resigned Dedicated Employee-Self auto-binding must fail closed when no active App53 identity row remains;
+- historical App794 evidence must remain retained rather than being deleted or silently rewritten;
+- changing App795 alone does not revoke or grant authority on an already-open App794 task; authoritative current native Assignee remains the boundary until an approved reassignment occurs;
+- controlled reassignment must prove stale prior authority is removed after the change unless another independently valid current role grants access;
+- Shared lifecycle handling must eventually support App801 disable/session invalidation under D4 authorization;
+- Dedicated principal changes keep the same Employee_Code, require protected App53 mapping change, stop old-principal auto-binding, permit new-principal binding only through exact active mapping, and must not duplicate the employee/MBO or rewrite historical actor evidence;
+- if lifecycle state is ambiguous or unreconciled, fail closed and route to HR rather than guessing.
+
+Lifecycle policy confirmation does not reopen D1 by itself. D4 owns operational implementation and D6 owns integrated lifecycle/security regression.
+
+## 10. Direct URL/API adversarial tests
 
 Security review should include, where the native architecture can enforce the property:
 - direct record URL tampering;
@@ -130,7 +154,7 @@ Accepted D1 Dedicated foreign-record UAT proved direct GET/query/direct URL deni
 
 For Shared principals, do **not** falsely mark native Employee_Code-level REST isolation PASS; record the Section 4 ceiling instead and test the application session/Employee-Self behavior that D1 actually controls.
 
-## 10. Confidentiality policy
+## 11. Confidentiality policy
 
 Confidential appraisal fields are confidential by default. Employee/Shared Employee-Self output/UI must not expose unauthorized fields, including applicable:
 
@@ -153,13 +177,13 @@ Security rules must cover all active competency indexes, not a hard-coded obsole
 
 D2 Excel/PDF export must inherit the same authorization/confidentiality boundary; export UI visibility alone is never authority.
 
-## 11. Historical migrated data — DEC-040
+## 12. Historical migrated data — DEC-040
 
 The same record/privacy rules apply to historical migrated data such as `Record_Origin = LEGACY_MIGRATED`.
 
 D3 migration must not weaken current authorization boundaries. Legacy source Apps `283, 310, 305, 643, 307, 640, 715, 716` remain read-only by default.
 
-## 12. App794 controlled test environment — DEC-041
+## 13. App794 controlled test environment — DEC-041
 
 App794 remains the approved MBO development/full-test environment for controlled work.
 
@@ -171,7 +195,7 @@ Any App794 POST/PUT/DELETE/schema/process/security write still requires an exact
 
 D1 closure does not create standing write/deploy permission.
 
-## 13. Current authorization state
+## 14. Current authorization state
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -179,11 +203,13 @@ ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
 APP53_WRITE_AUTH = NONE
+APP795_WRITE_AUTH = NONE
 APP801_WRITE_AUTH = NONE
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-## 14. Change rule
+## 15. Change rule
 
-Any proposal to remove the shared-principal REST ceiling, claim privileged browser enforcement, add external auth/server/database/proxy, broaden shared approver authority, weaken current-Assignee authorization, or expose confidential data requires explicit architecture/security review and Owner decision before implementation.
+Any proposal to remove the shared-principal REST ceiling, claim privileged browser enforcement, add external auth/server/database/proxy, broaden shared approver authority, weaken current-Assignee authorization, silently rewrite App794 because of a master/lifecycle change, or expose confidential data requires explicit architecture/security review and Owner decision before implementation.

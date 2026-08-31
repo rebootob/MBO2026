@@ -10,9 +10,10 @@
 | D2-EXPORT-001 | Excel/PDF original/legacy-format closure | READY / NOT STARTED | Owner starts D2; perform read-only export/source/sample discovery before implementation |
 | D3-MIG-001 | 8 legacy PMS Apps -> App794 migration | OPEN / WRITE NOT AUTHORIZED | Read-only mapping/dry-run/conflict/reconciliation/backup/exact manifest before target write approval |
 | D4-E2E-001 | App800 HR Control Center full operations | OPEN | Complete remaining HR operational functions and secure UAT |
+| D4-LIFECYCLE-001 | Employee lifecycle operations | OPEN / POLICY CONFIRMED / WRITE NOT AUTHORIZED | Implement controlled inactive/resigned impact handling, reassignment, principal/session handling, audit/readback/exception reporting under a separately approved Work Package |
 | D4-RESET-DEPLOY | App800 Reset MBO Password UI deployment | SOURCE SEMANTICS ACCEPTED / DEPLOY NOT AUTHORIZED | Fresh exact deploy authorization if/when deployment becomes current priority |
-| D5-COPY-001 | Copy Own Previous MBO | OPEN | Implement approved carry-forward whitelist with fresh target-year configuration |
-| D6-E2E-001 | Integrated E2E/security/regression | PENDING | After D1–D5 are sufficiently ready |
+| D5-COPY-001 | Copy Own Previous MBO | OPEN | Implement approved carry-forward whitelist with fresh target-year current identity/routing and no stale requester/route/workflow state |
+| D6-E2E-001 | Integrated E2E/security/regression | PENDING | After D1–D5 are sufficiently ready; must include lifecycle/security regression |
 
 ## 2. D1 — CLOSED
 
@@ -50,7 +51,18 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 
 These are accepted architecture ceilings. Keep them visible; do not reopen them as ordinary defects unless the Owner explicitly changes architecture.
 
-## 4. D2 pre-start gate
+## 4. Employee lifecycle open gate
+
+Canonical policy: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
+```
+
+Policy confirmation is not implementation completion. D4 still has to implement the controlled operational path and D6 still has to prove lifecycle/security regression. Existing App794 records must not be silently rewritten when App53/App795 changes.
+
+## 5. D2 pre-start gate
 
 Canonical D2 scope: `project-docs/EXCEL_EXPORT.md`.
 
@@ -71,7 +83,7 @@ ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_WORK_PACKAGE = NONE
 ```
 
-## 5. App53 production boundary
+## 6. App53 production boundary
 
 ```text
 APP53_TOTAL_RECORDS = 281
@@ -85,10 +97,10 @@ APP53 BULK WRITE AUTH = NONE
 
 App53 remains read-only by default.
 
-## 6. App802
+## 7. App802
 
 Prior sandbox continuation path is cancelled/revoked. Do not resume/delete/repair App802 without separate exact authorization.
 
-## 7. D7
+## 8. D7
 
 Admin Support Center source functionality is CLOSED. Reopen only if a new proven defect exists.

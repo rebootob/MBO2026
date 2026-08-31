@@ -45,7 +45,35 @@ ANTIGRAVITY_ACTION = NONE
 
 Do not resurrect old My Approval Tasks Gate-1/Gate-2/Gate-3 tasks; those paths are already covered by accepted source/runtime evidence.
 
-## 4. D2 implementation readiness
+## 4. Employee lifecycle implementation ownership
+
+Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
+APP53/APP795 CHANGE != AUTOMATIC EXISTING APP794 REWRITE
+CURRENT APPROVAL AUTHORITY = NATIVE CURRENT ASSIGNEE
+MID-CYCLE CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
+```
+
+No lifecycle implementation Work Package is active now.
+
+D4 must eventually implement at least:
+- detect inactive/resigned employees affecting active/open MBOs;
+- detect current tasks assigned to departing/changing appraisers;
+- controlled current-Assignee reassignment;
+- controlled future-route amendment only when approved;
+- Shared App801 disable/session invalidation where applicable;
+- Dedicated principal/mapping-change impact handling;
+- old/new/reason/effective-date/changed-by/changed-at audit evidence;
+- exact target confirmation, post-write readback and exception reporting;
+- no automatic history rewrite.
+
+D5 must resolve fresh current identity/routing for the target year and must not carry stale requester, route, workflow status, workflow actor or prior authority.
+
+D6 must include lifecycle/security regression. Do not execute lifecycle Live writes/UAT now.
+
+## 5. D2 implementation readiness
 
 ```text
 D2 = READY / NOT STARTED
@@ -65,7 +93,7 @@ When Owner starts D2, first perform read-only discovery of:
 
 Only after Control Plane review should an implementation Work Package be issued.
 
-## 5. App53 / App794 readiness
+## 6. App53 / App794 readiness
 
 ```text
 APP53 = PRODUCTION / READ_ONLY BY DEFAULT
@@ -76,26 +104,28 @@ APP794 LIVE REVISION = 67
 
 Source implementation does not imply protected configuration authorization.
 
-## 6. D1–D7 implementation board
+## 7. D1–D7 implementation board
 
 ```text
 D1 = PASS / CLOSED
 D2 = READY / NOT STARTED
 D3 = IN PROGRESS / TARGET WRITE NOT AUTHORIZED
-D4 = IN PROGRESS
-D5 = IN PROGRESS
-D6 = PENDING
+D4 = IN PROGRESS / LIFECYCLE OPERATIONS MANDATORY
+D5 = IN PROGRESS / FRESH CURRENT ROUTE + IDENTITY REQUIRED
+D6 = PENDING / LIFECYCLE REGRESSION REQUIRED
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-## 7. Safety
+## 8. Safety
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ACTIVE_ACL/GROUP_AUTH = NONE
 APP53_WRITE_AUTH = NONE
+APP795_WRITE_AUTH = NONE
 APP801_WRITE_AUTH = NONE
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```

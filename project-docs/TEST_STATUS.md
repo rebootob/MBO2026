@@ -151,7 +151,31 @@ SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRIN
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-## 9. D2 test state — READY / NOT STARTED
+## 9. Employee lifecycle test state — POLICY CONFIRMED / NOT EXECUTED
+
+Canonical policy: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+No lifecycle Live UAT or mutation is authorized or accepted in this documentation cycle.
+
+```text
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
+D4_LIFECYCLE_IMPLEMENTATION = NOT CLOSED
+D6_LIFECYCLE_REGRESSION = NOT TESTED
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
+```
+
+D6 must ultimately prove at least:
+- inactive employee cannot obtain normal Employee-Self access while historical MBO remains retained for authorized HR;
+- transfer/promotion does not silently rewrite existing App794;
+- fresh/new MBO resolves current App53/App795;
+- manager/appraiser departure can be reassigned under HR control;
+- stale prior approver loses current authority after reassignment;
+- App795 membership alone does not authorize an existing task;
+- Kintone-principal change does not duplicate Employee identity/MBO and does not rewrite historical actor evidence;
+- Shared App801 disabled account/session fails closed;
+- D5 does not carry stale requester/route/workflow state.
+
+## 10. D2 test state — READY / NOT STARTED
 
 Canonical contract: `project-docs/EXCEL_EXPORT.md`.
 
@@ -170,8 +194,8 @@ ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 
 After Owner starts D2, first perform read-only discovery of existing export source/tests and approved legacy samples. Do not report a D2 PASS from existing generic export unit tests alone.
 
-## 10. Remaining project tests
+## 11. Remaining project tests
 
-D1 is closed. D2 is ready but not started. D3–D5 completion-specific tests remain open. D6 integrated project-level security/regression remains pending. D7 source functionality remains closed.
+D1 is closed. Employee Lifecycle Policy is confirmed, while D4 lifecycle implementation and D6 lifecycle regression remain open. D2 is ready but not started. D3–D5 completion-specific tests remain open. D6 integrated project-level security/regression remains pending. D7 source functionality remains closed.
 
 No active Live Kintone write/deploy authorization exists.
