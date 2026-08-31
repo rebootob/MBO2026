@@ -35,7 +35,7 @@ Current D1 durable truth is intentionally distributed:
 - `CONFIRMED_BASELINE/UI_UX.md` — Hybrid Home / My MBO + My Approval Tasks;
 - `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — comments/history/attachment truthfulness.
 
-Current operational facts such as the 24 live App53 mappings, App794 two-button fix, Papatchaya→Pattama UAT PASS and the current record ACL gate belong in `AI_CONTROL_CENTER.md` / `CHAT_HANDOFF.md`, not duplicated into Baselines.
+Current operational facts such as the 24 live App53 mappings, App794 Process 31 actions, Rev67 HR runtime corrective, and foreign-record isolation PASS belong in `AI_CONTROL_CENTER.md` / `CHAT_HANDOFF.md`, not duplicated into Baselines.
 
 ## 3. Antigravity startup
 
@@ -54,7 +54,8 @@ No broad scan. Use Antigravity only when User + ChatGPT cannot reasonably perfor
 | Current status / what next | `AI_CONTROL_CENTER.md` | `CHAT_HANDOFF.md`, `00_MASTER_JOBLIST.md` |
 | Whole D1–D7 completeness | `00_MASTER_JOBLIST.md` | Control Center + relevant Baseline/evidence |
 | Current executor/task instruction | `AI_ACTIVE_TASK.md` | exact named files only |
-| App794 Dedicated record ACL/privacy | `AI_ACTIVE_TASK.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `ROUTING_WORKFLOW.md`, current App794 ACL GET evidence |
+| App794 Dedicated record ACL/privacy | `AI_ACTIVE_TASK.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `ROUTING_WORKFLOW.md`, current App794 ACL/runtime evidence |
+| D1 residual Manager/stale-approver/HR-status runtime closure | `AI_ACTIVE_TASK.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `ROUTING_WORKFLOW.md`, exact current App794 process/ACL evidence |
 | AI workflow/review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `AI_HANDOFF_PROTOCOL.md`, `DOCUMENT_CONTROL.md` |
 | Deploy/rollback/recovery | `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md` | Control Center + exact deployment evidence |
 | Source architecture/build ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact source/tests/build scripts |
@@ -96,12 +97,23 @@ These are not independent authorities; use canonical docs above.
 
 ```text
 D1 Dedicated core Employee-Self routing UAT = PASS
-App794 Record 12 = 03 Manager Objective Review
+App794 Record #12 = 03 Manager Objective Review
 Native Assignee = pattama
-Current gate = App794 Dedicated Record ACL Design + GET-only validation
+App794 Rev67 HR runtime corrective = PASS
+Foreign Record Negative Runtime = PASS
+Synthetic Record #13 = deleted / cleanup PASS
+Current gate = D1 residual runtime evidence closure
 Current owner = ChatGPT + User
 Antigravity = NONE
-ACL write authorization = NONE
+Kintone write authorization = NONE
+```
+
+Residual evidence:
+
+```text
+CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED
+STALE_PRIOR_APPROVER_RUNTIME = PENDING
+HR_STATUS15_RUNTIME = PENDING
 ```
 
 ## 7. Default-ignore / historical
