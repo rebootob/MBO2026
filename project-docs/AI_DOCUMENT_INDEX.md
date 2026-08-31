@@ -33,8 +33,11 @@ D1 remains frozen unless a proven regression or explicit architecture change reo
 
 ## 3. D1 durable routing
 
-- `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` — identity modes, App801 shared credentials, reset/security, security ceilings;
-- `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — App53 dedicated mapping design, own-MBO self-appraiser elision, dedicated native access;
+For D1 status/reopen questions, read `CONFIRMED_BASELINE/D1_CLOSURE.md` first. It is the durable final-status/supersession authority.
+
+Then only as directly relevant:
+- `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` — identity modes, App801 shared credentials, reset/security and security ceilings;
+- `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — App53 mapping contract, own-MBO self-appraiser elision and Dedicated native access;
 - `CONFIRMED_BASELINE/D1_SESSION_CONTINUITY.md` — dedicated native continuity vs shared App801 bearer session;
 - `CONFIRMED_BASELINE/D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO/history/no-delete;
 - `CONFIRMED_BASELINE/EMPLOYEE_MASTER_ROUTING.md` — App53 source semantics;
@@ -42,7 +45,7 @@ D1 remains frozen unless a proven regression or explicit architecture change reo
 - `CONFIRMED_BASELINE/UI_UX.md` — Hybrid Home / My MBO + My Approval Tasks;
 - `CONFIRMED_BASELINE/D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — comments/history/attachment truthfulness.
 
-Operational D1 closure evidence belongs in `AI_CONTROL_CENTER.md`, `TEST_STATUS.md` and `CHAT_HANDOFF.md`. Historical evidence files are not rewritten merely to remove older checkpoints.
+Operational D1 closure evidence belongs in `AI_CONTROL_CENTER.md`, `TEST_STATUS.md` and `CHAT_HANDOFF.md`. Historical evidence files are not rewritten merely to remove older checkpoints. Pre-live/pre-closure status sentences in older D1 Baselines are superseded by `D1_CLOSURE.md`, while their detailed behavior/security contracts remain in force.
 
 ## 4. D2 routing
 
@@ -67,12 +70,12 @@ D2 pre-start requirements are defined in `EXCEL_EXPORT.md`; D2 is not active unt
 | Current status / what next | `AI_CONTROL_CENTER.md` | `CHAT_HANDOFF.md`, `00_MASTER_JOBLIST.md` |
 | Whole D1–D7 completeness | `00_MASTER_JOBLIST.md` | Control Center + relevant Baseline/evidence |
 | Current executor/task instruction | `AI_ACTIVE_TASK.md` | exact named files only |
-| D1 closure/audit/reopen | `TEST_STATUS.md` | D1 Baselines + exact runtime evidence |
+| D1 closure/audit/reopen | `CONFIRMED_BASELINE/D1_CLOSURE.md` | `TEST_STATUS.md`, exact detailed D1 Baseline/runtime evidence |
 | AI workflow/review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `AI_HANDOFF_PROTOCOL.md`, `DOCUMENT_CONTROL.md` |
 | Deploy/rollback/recovery | `CONFIRMED_BASELINE/ROLLBACK_RECOVERY_SAFETY.md` | Control Center + exact deployment evidence |
 | Source architecture/build ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact source/tests/build scripts |
-| D1 dedicated/shared identity/App801 | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `D1_SESSION_CONTINUITY.md` |
-| My Approval Tasks / dual-role | `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` | `ROUTING_WORKFLOW.md`, `UI_UX.md` |
+| D1 dedicated/shared identity/App801 | `CONFIRMED_BASELINE/D1_AUTH_SECURITY.md` | `D1_CLOSURE.md`, `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `D1_SESSION_CONTINUITY.md` |
+| My Approval Tasks / dual-role | `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` | `D1_CLOSURE.md`, `ROUTING_WORKFLOW.md`, `UI_UX.md` |
 | D2 Excel/PDF | `EXCEL_EXPORT.md` | existing export source/tests, approved legacy samples, `SECURITY_MODEL.md` |
 | D3 migration | `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md` | exact legacy evidence |
 | D4 HR Control Center | `AI_CONTROL_CENTER.md` | exact App800 source/evidence |
