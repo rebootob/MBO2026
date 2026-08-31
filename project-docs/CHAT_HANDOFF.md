@@ -63,9 +63,45 @@ These are accepted Kintone-only architecture ceilings, not hidden defects. Do no
 
 Pattama interactive approver login remains credential-limited/non-blocking. Do not reset another person's native Kintone password solely for UAT.
 
-## 5. Pre-D2 documentation sync
+## 5. Employee Lifecycle Change Policy — confirmed
 
-Owner required all related documentation to be synchronized before D2 starts. That documentation sweep is complete.
+Canonical Baseline:
+
+```text
+project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md
+```
+
+Owner-confirmed policy:
+
+```text
+Employee_Code = stable person identity
+App53 = current employee/org/position truth
+App795 = current routing config for fresh route resolution
+App794 = annual historical snapshot + current workflow truth
+master change != automatic retroactive App794 rewrite
+current approval authority = native current Assignee
+mid-cycle change = HR-controlled explicit operation + audit
+```
+
+Applies to resignation/inactive state, Department/Section/Team transfer, promotion/Position change, Kintone-principal change, and manager/appraiser departure/replacement.
+
+Important continuation rules:
+- historical MBO must not be deleted merely because an employee leaves;
+- transfer/promotion does not automatically rewrite an existing App794 route;
+- future/fresh MBO resolves current App53/App795 values;
+- changing App795 does not automatically reassign already-open App794 tasks;
+- open-task reassignment must be explicit, audited and use authoritative current Workflow assignment;
+- Dedicated principal change keeps the same Employee_Code and must not create duplicate Employee identity/MBO;
+- Shared resigned/inactive handling must eventually support App801 disable/session invalidation through D4;
+- D5 copy must not carry requester/route/workflow snapshots forward.
+
+This policy does **not** reopen D1. D4 owns lifecycle operational capability and D6 owns lifecycle/security regression.
+
+No lifecycle write is authorized now.
+
+## 6. Pre-D2 documentation sync
+
+Owner required all related documentation to be synchronized before D2 starts. That documentation sweep is complete, including the lifecycle Baseline promotion above.
 
 Canonical D2 pre-start document:
 
@@ -83,7 +119,7 @@ ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 
 D2 must eventually prove Excel Part A, Excel Part B, combined workbook where applicable, PDF legacy/original parity, 5–10 objective capacity and export authorization/confidentiality.
 
-## 6. Exact next gate
+## 7. Exact next gate
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
@@ -95,7 +131,7 @@ ANTIGRAVITY = NONE UNTIL IMPLEMENTATION IS PROVEN NECESSARY
 
 When Owner starts D2, first inspect existing export source/tests and approved legacy samples. Do not immediately code or deploy.
 
-## 7. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -104,22 +140,24 @@ ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
 ACTIVE_PROCESS_UAT_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
 APP53_WRITE_AUTH = NONE
+APP795_WRITE_AUTH = NONE
 APP801_WRITE_AUTH = NONE
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
 All D1 one-shot authorizations are consumed and must never be reused.
 
-## 8. Whole-project status
+## 9. Whole-project status
 
 ```text
 D1 = PASS / CLOSED
 D2 = READY / NOT STARTED
 D3 = IN PROGRESS / WRITE NOT AUTHORIZED
-D4 = IN PROGRESS
+D4 = IN PROGRESS — lifecycle operations mandatory scope
 D5 = IN PROGRESS
-D6 = PENDING
+D6 = PENDING — lifecycle regression required
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
