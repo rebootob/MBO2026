@@ -4,7 +4,7 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-08-30 20:45 ICT
+> Updated: 2026-08-31 ICT
 
 This file guarantees D1–D7 completeness across chats. Durable business/security rules live in `CONFIRMED_BASELINE/`; current operational status lives in `AI_CONTROL_CENTER.md`.
 
@@ -22,6 +22,7 @@ D1_KINTONE_ONLY = YES
 AUTH_BRIDGE_CANCELLED = YES
 HYBRID_IDENTITY_CANONICAL = YES
 DUAL_ROLE_CONTEXTS_MUST_REMAIN_SEPARATE = YES
+ANTIGRAVITY_MINIMUM_NECESSARY_ONLY = YES
 ```
 
 ## 1. D1 — Hybrid Identity + Password + Employee-Self + Approver Access
@@ -34,89 +35,95 @@ HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 
 ### Dedicated Kintone users
 - Native Kintone authentication is the first boundary.
-- Exact authoritative Kintone User Code -> exactly one active App53 row -> canonical `emp_text` Employee_Code -> Employee-Self auto-bind.
+- Exact active App53 `MBO_Kintone_User` mapping -> canonical `emp_text` Employee_Code -> Employee-Self auto-bind.
 - No secondary MBO Employee_Code/password login after exact binding.
-- Missing, ambiguous or invalid canonical mapping fails closed.
-- `admin-form` is excluded from Employee-Self auto-bind.
-- Dedicated users do not require App801 bearer session or App801 View/Edit solely for identity.
+- Missing/ambiguous/invalid mapping fails closed.
+- `admin-form` is excluded from Employee-Self authority.
 
 ### Shared Kintone users
-- Existing Employee_Code + App801 MBO Password flow remains.
-- Initial MBO password = Employee_Code; first/default login forces change.
-- App801 same-tab bearer session remains 8-hour absolute TTL, non-sliding, one active session/employee.
-- New independent tab without token returns to MBO Login.
-- Shared principals never gain Approver authority merely because the Kintone account is shared.
-
-Accepted shared limitation:
-
-```text
-DIRECT_URL_REST_HARD_ISOLATION = NOT_GUARANTEED_UNDER_SHARED_KINTONE_ACCOUNT
-```
-
-### Employee-Self
-- `My MBO` ownership = exact bound Employee_Code.
-- No employee selector or role escalation control.
-- Create/open/history/edit must remain own-record scoped.
-- Employee-Self delete remains unavailable.
-
-### Dedicated Approver context
-- `My Approval Tasks` identity = current dedicated Kintone User.
-- Authority = authoritative current native App794 Workflow `Assignee`, not App795/static snapshots/role strings/UI hiding.
-- List authority requires server query `Assignee in (LOGINUSER())` plus exact returned `Assignee.value[].code` match.
-- Record open/action authority requires fresh App794 GET and exact `STATUS_ASSIGNEE` match.
+- Existing Employee_Code + App801 MBO Password/session remains.
 - SHARED approver authority = DENIED.
+- Accepted platform limitation remains: direct REST hard isolation cannot be truthfully guaranteed when many employees share one native Kintone principal.
+
+### Employee-Self + Approver authority
+- `My MBO` = exact bound Employee_Code.
+- `My Approval Tasks` = current Dedicated Kintone User + authoritative current App794 native `Assignee`.
+- Static App795 membership, legacy snapshot fields and UI visibility are never sufficient approval authority.
 
 ### Own-MBO self-appraiser rule
-
-Canonical user-approved rule:
 
 ```text
 OWN_MBO_SELF_APPROVER_ELISION = APPROVED
 ```
 
-For the employee's own MBO only:
-1. remove only the self appraiser from the effective route before workflow snapshot;
-2. preserve remaining appraisers, order and approval rules;
-3. shift/recalculate effective topology;
-4. never autoapprove or fabricate comment/history;
-5. never rewrite App795 subordinate routes;
-6. if no non-self appraiser remains, fail closed.
+For own MBO only: remove self from effective appraiser route before snapshot, preserve remaining appraisers/order/rules, shift/recalculate topology, never autoapprove/fabricate history, never rewrite App795, fail closed if no non-self approver remains.
 
-Confirmed example: `TMG1|Marketing = natta -> uchida`; Natta own effective route = `uchida / M1_ONLY`; other Marketing employees keep `natta -> uchida`.
-
-### App53 dedicated mapping state
+### App53 dedicated mapping — PASS
 
 ```text
-APP53_ENVIRONMENT = PRODUCTION
-APP53_DEFAULT_MODE = READ_ONLY
-APP53_MAPPING_AUDIT = COMPLETED
-MBO_Kintone_User_FIELD_DESIGN = CONFIRMED USER_SELECT
-MBO_Kintone_User_LIVE_FIELD_CREATED = NO
-VASSANA_CANONICAL_EMPLOYEE_CODE = 0044 PROVEN
-NATTA_CANONICAL_EMPLOYEE_CODE = UNRESOLVED / emp_text BLANK / FAIL CLOSED
+APP53 = Production / read-only by default
+TOTAL_RECORDS = 281
+MBO_Kintone_User = USER_SELECT / optional / live
+DEDICATED_MAPPINGS_VERIFIED = 24
+MBO_Kintone_User_NONEMPTY_RECORDS = 24
+UNEXPECTED_NONEMPTY_RECORDS = 0
+papatchaya -> App53 #426 -> Employee Code 0113
 ```
 
-Adding the mapping field, populating mappings and correcting Natta `emp_text` are three separate protected concerns requiring separate exact one-shot authorization and production-safety gates.
+Active short numeric Employee Codes were normalized to four digits by guarded user-run Browser Console. Explicit excluded unused/non-standard rows: 382,390,495,496,497.
 
-### Current D1 source checkpoint
+No additional App53 mapping/schema/bulk write is authorized automatically.
+
+### App794 Dedicated UAT — PASS for core employee->manager path
+
+User + ChatGPT corrected the App794 Process two-button defect for employee statuses 01/06/11 using mutually-exclusive `Routing_Topology` conditions. `GM_User` was corrected to optional. `MBO_DEDICATED_ACCESS` has App794 View/Add/Edit only; Delete/Import/Export/App Admin remain disabled.
+
+Clean UAT under native `papatchaya` created App794 Record #12:
 
 ```text
-HYBRID_IDENTITY_CORE_SOURCE_R1 = PASS
-HYBRID_EMPLOYEE_SELF_RUNTIME_ENTRY = PASS
-LATEST_ACCEPTED_FULL_REGRESSION = 1024/1024 PASS
-APPROVAL_AUTHORITY_SERVICE_R1 = PASS
-APPROVAL_AUTHORITY_SERVICE_COMMIT = 5ac5ede6e40a1462f0398ba8740330742041e3bf
+Employee_Code = 0113
+Requester_User = papatchaya
+Manager_Level1_Approvers = pattama
+Manager_Level2_Approvers = BLANK
+GM_Level1_Approvers = BLANK
+GM_Level2_Approvers = BLANK
+First_Manager_User = BLANK
+Manager_User = pattama
+GM_User = BLANK
+Has_Manager_Level2 = No
+Has_GM_Level2 = No
+Routing_Topology = M1_ONLY
+D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
 ```
 
-Current implementation sequence:
+Native workflow transition proof:
 
 ```text
-GATE 1 = HOME INDEX INTEGRATION ONLY — OPEN
-GATE 2 = DEDICATED CROSS-EMPLOYEE DETAIL AUTHORITY — PENDING
-GATE 3 = PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION — PENDING
+01 Draft Objective -> 03 Manager Objective Review
+Assignee = pattama
+Requester = papatchaya
+Manager = pattama
+GM = BLANK
+Topology = M1_ONLY
+PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-D1 cannot close until both identity modes, dual-role behavior, native permissions/configuration, HR/admin reset, privacy, workflow, comments/attachments and final E2E/security review are proven.
+Interactive Pattama-login UAT is pending because the user does not have Pattama's password. Do not reset another person's native Kintone password solely for UAT.
+
+### Current D1 gate
+
+```text
+APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION = OPEN
+OWNER = ChatGPT + User
+ANTIGRAVITY = NONE
+ACL WRITE AUTH = NONE
+```
+
+Before rollout to 24 Dedicated users, design a complete status-aware App794 record ACL across all 16 statuses. Requester must view own MBO throughout lifecycle, edit only employee stages; current approver gets View/Edit only when current; stale approver access must disappear; HR/Admin access must remain. Do not apply partial ACL rules.
+
+D1 cannot close until both identity modes, dedicated privacy/ACL, approval-task visibility/detail/action authority, Shared behavior, dual-role behavior, comments/attachments, HR/admin operations and final E2E/security review are proven.
+
+Status: `IN PROGRESS — DEDICATED CORE UAT PASS / RECORD ACL PRIVACY GATE OPEN`.
 
 ## 2. D2 — Excel + PDF Original/Legacy Format
 
@@ -145,8 +152,9 @@ Status: `IN PROGRESS / WRITE NOT AUTHORIZED`.
 Must cover annual cycle/phase calendar, progress/exception monitoring, routing health, authorized reassignment, scoring/Hoshin health, reopen/revision operations, MBO credential operations, migration status and secure exports.
 
 Accepted sub-scope:
-- App800 Reset MBO Password source/tooling accepted;
-- native HR reset authority ready;
+- App801-backed Reset MBO Password semantics accepted;
+- native HR reset authority readiness accepted;
+- App800 Reset UI source candidate accepted;
 - live App800 remains prior MVP; deployment is NOT authorized.
 
 Status: `IN PROGRESS`.
@@ -184,21 +192,33 @@ NO Employee-Self auto-bind
 
 Source functionality = `CLOSED`; reopen only for a proven defect.
 
-## 8. Current status pointer
+## 8. App802 cancelled path
 
-Do not duplicate the live board here. Always re-fetch:
+```text
+APP802_RESUME_WRITE_AUTH = REVOKED
+APP802_FORWARD/ROLLBACK = CANCELLED
+SECOND_SANDBOX_CREATE_AUTH = NONE
+```
+
+Do not resume/delete/repair App802 without separate exact authorization.
+
+## 9. Current status pointer
+
+Always re-fetch:
 - `project-docs/AI_CONTROL_CENTER.md`
 - `project-docs/AI_ACTIVE_TASK.md`
+- `project-docs/CHAT_HANDOFF.md`
 - current branch HEAD.
 
-## 9. New-chat continuity
+## 10. New-chat continuity
 
 For a new ChatGPT conversation:
-1. use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` as the copy/paste prompt;
-2. the incoming chat reads `project-docs/CHAT_HANDOFF.md` immediately after fresh-fetching HEAD;
-3. then read Control Center, Active Task, Document Index and only relevant Baselines.
+1. copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the first message;
+2. the new chat fresh-fetches branch HEAD;
+3. reads `CHAT_HANDOFF.md` first;
+4. then reads Control Center, Active Task, Document Index and only relevant Baselines.
 
-## 10. Project-close condition
+## 11. Project-close condition
 
 ```text
 D1 = PASS
