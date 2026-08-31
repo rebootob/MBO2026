@@ -14,12 +14,12 @@ import {
   isWorktreeClean
 } from '../scripts/kintone/deploy-custom-ui.js';
 
-// Standard valid live & preview fixtures
+// Standard valid live & preview fixtures matching real App794 topology
 const getValidLiveFixture = () => ({
   scope: 'ALL',
   desktop: {
     js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY_111' } }],
-    css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY_222' } }]
+    css: [{ type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'LIVE_CSS_KEY_222' } }]
   },
   mobile: { js: [], css: [] }
 });
@@ -29,7 +29,7 @@ const getValidPreviewFixture = () => ({
   scope: 'ALL',
   desktop: {
     js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY_333' } }],
-    css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY_444' } }]
+    css: [{ type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'PREVIEW_CSS_KEY_444' } }]
   },
   mobile: { js: [], css: [] }
 });
@@ -76,7 +76,7 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
     liveCustomize: live,
     previewCustomize: preview,
     targetFileName: 'mbo-employee-app.js',
-    targetCssFileName: 'mbo-employee.css',
+    targetCssFileName: 'mbo-employee .css',
     releaseManifest: manifest,
     candidateJsBlobSha: 'JS_BLOB_SHA_1111',
     candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
@@ -88,7 +88,7 @@ test('ATOMIC_JS_CSS_PAIR_REQUIRED & CSS_CANDIDATE_REPLACED_NOT_PRESERVED', () =>
     app: 794,
     previewCustomize: preview,
     targetFileName: 'mbo-employee-app.js',
-    targetCssFileName: 'mbo-employee.css',
+    targetCssFileName: 'mbo-employee .css',
     newJsFileKey: 'NEW_UPLOADED_JS_KEY_999',
     newCssFileKey: 'NEW_UPLOADED_CSS_KEY_888'
   });
@@ -424,8 +424,8 @@ test('TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD & TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_U
   const liveAmbiguousCss = getValidLiveFixture();
   const previewAmbiguousCss = getValidPreviewFixture();
   previewAmbiguousCss.desktop.css = [
-    { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K1' } },
-    { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K2' } }
+    { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'K1' } },
+    { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'K2' } }
   ];
 
   assert.throws(() => {
@@ -696,8 +696,8 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
   const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
 
   // Missing target JS
-  const liveMissing = { scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css' } }] }, mobile: { js: [], css: [] } };
-  const previewMissing = { revision: '1', scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js', fileKey: 'K' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K2' } }] }, mobile: { js: [], css: [] } };
+  const liveMissing = { scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee .css' } }] }, mobile: { js: [], css: [] } };
+  const previewMissing = { revision: '1', scope: 'ALL', desktop: { js: [{ type: 'FILE', file: { name: 'other.js', fileKey: 'K' } }], css: [{ type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'K2' } }] }, mobile: { js: [], css: [] } };
 
   assert.throws(() => {
     validatePreflight({ liveCustomize: liveMissing, previewCustomize: previewMissing, releaseManifest: m, candidateJsBlobSha: 'JS_BLOB_SHA_1111', candidateCssBlobSha: 'CSS_BLOB_SHA_2222', currentGitHead: currentHead });
@@ -712,7 +712,7 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
         { type: 'FILE', file: { name: 'mbo-employee-app.js' } },
         { type: 'FILE', file: { name: 'mbo-employee-app.js' } }
       ],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee.css' } }]
+      css: [{ type: 'FILE', file: { name: 'mbo-employee .css' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -724,7 +724,7 @@ test('TARGET_MISSING_BLOCKED_PRE_UPLOAD & TARGET_AMBIGUOUS_BLOCKED_PRE_UPLOAD', 
         { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'K1' } },
         { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'K2' } }
       ],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'K3' } }]
+      css: [{ type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'K3' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -747,7 +747,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
     scope: 'ALL',
     desktop: {
       js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_CSS_KEY' } }, { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS2' } }]
+      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_CSS_KEY' } }, { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'LIVE_CSS2' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -757,7 +757,7 @@ test('SAME_FILENAME_CSS_MISSING_KEY_BLOCKED_PRE_UPLOAD: non-target FILE named mb
     scope: 'ALL',
     desktop: {
       js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }, { type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS2' } }]
+      css: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }, { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'PREVIEW_CSS2' } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -831,4 +831,172 @@ test('getApp794DeployRequestOptions grants narrow bypassDiscovery ONLY to exact 
     assert.equal(opts.method, c.method);
     assert.equal(opts.bypassDiscovery, false, `Expected bypassDiscovery: false for ${c.method} ${c.path}`);
   }
+});
+
+test('REQUIREMENT_A_REAL_TOPOLOGY_PASS: JS = mbo-employee-app.js, CSS = "mbo-employee .css" -> PASS', () => {
+  const live = {
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'LIVE_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+  const preview = {
+    revision: '66',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'PREVIEW_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+  const manifest = getValidManifestFixture();
+  const head = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
+
+  assert.equal(validatePreflight({
+    liveCustomize: live,
+    previewCustomize: preview,
+    releaseManifest: manifest,
+    candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+    candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+    currentGitHead: head
+  }), true);
+});
+
+test('REQUIREMENT_B_CSS_WITHOUT_SPACE_FAIL_CLOSED: CSS = mbo-employee.css without space -> FAIL CLOSED', () => {
+  const live = {
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+  const preview = {
+    revision: '66',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+  const manifest = getValidManifestFixture();
+  const head = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
+
+  assert.throws(() => {
+    validatePreflight({
+      liveCustomize: live,
+      previewCustomize: preview,
+      releaseManifest: manifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: head
+    });
+  }, /TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD/);
+});
+
+test('REQUIREMENT_C_DUPLICATE_CSS_FAIL_CLOSED: multiple matching CSS entries -> FAIL CLOSED', () => {
+  const live = {
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+      css: [
+        { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'LIVE_CSS_KEY_1' } },
+        { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'LIVE_CSS_KEY_2' } }
+      ]
+    },
+    mobile: { js: [], css: [] }
+  };
+  const preview = {
+    revision: '66',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [
+        { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'PREVIEW_CSS_KEY_1' } },
+        { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'PREVIEW_CSS_KEY_2' } }
+      ]
+    },
+    mobile: { js: [], css: [] }
+  };
+  const manifest = getValidManifestFixture();
+  const head = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
+
+  assert.throws(() => {
+    validatePreflight({
+      liveCustomize: live,
+      previewCustomize: preview,
+      releaseManifest: manifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: head
+    });
+  }, /TARGET_CSS_AMBIGUOUS_BLOCKED_PRE_UPLOAD/);
+});
+
+test('REQUIREMENT_D_MISSING_CSS_FAIL_CLOSED: zero matching CSS entries -> FAIL CLOSED', () => {
+  const live = {
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+      css: []
+    },
+    mobile: { js: [], css: [] }
+  };
+  const preview = {
+    revision: '66',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: []
+    },
+    mobile: { js: [], css: [] }
+  };
+  const manifest = getValidManifestFixture();
+  const head = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
+
+  assert.throws(() => {
+    validatePreflight({
+      liveCustomize: live,
+      previewCustomize: preview,
+      releaseManifest: manifest,
+      candidateJsBlobSha: 'JS_BLOB_SHA_1111',
+      candidateCssBlobSha: 'CSS_BLOB_SHA_2222',
+      currentGitHead: head
+    });
+  }, /TARGET_CSS_MISSING_BLOCKED_PRE_UPLOAD/);
+});
+
+test('REQUIREMENT_E_PRESERVE_UNRELATED_ENTRIES: payload replaces JS/CSS target fileKeys while retaining unrelated entries and fileKeys', () => {
+  const preview = {
+    revision: '66',
+    scope: 'ALL',
+    desktop: {
+      js: [
+        { type: 'URL', url: 'https://example.com/vendor.js' },
+        { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'OLD_JS_KEY' } }
+      ],
+      css: [
+        { type: 'FILE', file: { name: 'mbo-employee .css', fileKey: 'OLD_CSS_KEY' } },
+        { type: 'FILE', file: { name: 'unrelated.css', fileKey: 'RETAINED_CSS_KEY' } }
+      ]
+    },
+    mobile: { js: [], css: [] }
+  };
+
+  const payload = buildPreviewCustomizePayload({
+    app: 794,
+    previewCustomize: preview,
+    newJsFileKey: 'NEW_JS_KEY_123',
+    newCssFileKey: 'NEW_CSS_KEY_456'
+  });
+
+  assert.equal(payload.desktop.js[0].type, 'URL');
+  assert.equal(payload.desktop.js[0].url, 'https://example.com/vendor.js');
+  assert.equal(payload.desktop.js[1].file.fileKey, 'NEW_JS_KEY_123');
+
+  assert.equal(payload.desktop.css[0].file.fileKey, 'NEW_CSS_KEY_456');
+  assert.equal(payload.desktop.css[1].file.fileKey, 'RETAINED_CSS_KEY');
 });

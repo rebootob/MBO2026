@@ -364,7 +364,7 @@ export function validatePreflight({
   liveCustomize,
   previewCustomize,
   targetFileName = 'mbo-employee-app.js',
-  targetCssFileName = 'mbo-employee.css',
+  targetCssFileName = 'mbo-employee .css',
   releaseManifest = null,
   candidateJsBlobSha = null,
   candidateCssBlobSha = null,
@@ -516,7 +516,7 @@ export function buildPreviewCustomizePayload({
   app,
   previewCustomize,
   targetFileName = 'mbo-employee-app.js',
-  targetCssFileName = 'mbo-employee.css',
+  targetCssFileName = 'mbo-employee .css',
   newJsFileKey,
   newCssFileKey
 }) {
@@ -699,7 +699,7 @@ export async function executeDeployCustomUi(options = {}) {
     liveCustomize,
     previewCustomize,
     targetFileName: 'mbo-employee-app.js',
-    targetCssFileName: 'mbo-employee.css',
+    targetCssFileName: 'mbo-employee .css',
     releaseManifest: options.releaseManifest,
     candidateJsBlobSha: artifacts.jsBlobSha,
     candidateCssBlobSha: artifacts.cssBlobSha,
@@ -734,14 +734,14 @@ export async function executeDeployCustomUi(options = {}) {
   }
 
   const jsFileKey = await uploadFile('mbo-employee-app.js', artifacts.fullJs, 'text/javascript');
-  const cssFileKey = await uploadFile('mbo-employee.css', artifacts.cssContent, 'text/css');
+  const cssFileKey = await uploadFile('mbo-employee .css', artifacts.cssContent, 'text/css');
 
   // Build Preview PUT payload replacing BOTH JS and CSS fileKeys
   const putPayload = buildPreviewCustomizePayload({
     app,
     previewCustomize,
     targetFileName: 'mbo-employee-app.js',
-    targetCssFileName: 'mbo-employee.css',
+    targetCssFileName: 'mbo-employee .css',
     newJsFileKey: jsFileKey,
     newCssFileKey: cssFileKey
   });
