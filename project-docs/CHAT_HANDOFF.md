@@ -35,7 +35,7 @@ No Live Kintone write/deploy/ACL/group/schema/record operation without exact exp
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS | App53 mapping/own-route/native workflow PASS; App794 Rev66 ACL CONFIG PASS; requester runtime PASS; HR native ACL PASS; HR App794 UI access-mode blocker OPEN |
 | D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Legacy-format parity/security not closed |
-| D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only mapping/reconciliation path only |
+| D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Full live E2E not closed |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Carry-forward whitelist remains Objective/Action Plan/Additional Agreement/Weight only |
 | D6 Integrated E2E / Security / Regression | 🔴 PENDING | After D1–D5 sufficiently ready |
@@ -58,6 +58,15 @@ GM_User = optional
 ```
 
 31 actions is current accepted truth after two-button fix at 01/06/11. Older 28-action wording is stale.
+
+Critical user-confirmed identity fact:
+
+```text
+admin-form = NON-EMPLOYEE TECHNICAL ADMIN / NO EMPLOYEE ID
+hr         = NON-EMPLOYEE HR ADMIN / NO EMPLOYEE ID
+```
+
+Do not create Employee IDs or App53 Employee-Self mappings for either account merely to satisfy runtime code.
 
 ## 5. Canonical Record #12 — accepted
 
@@ -145,7 +154,8 @@ Repository source review proves:
 - `src/services/mbo-identity-service.js` supports principal modes `SHARED`, `DEDICATED`, `TECHNICAL_ADMIN` only.
 - `hr` therefore falls into `DEDICATED`.
 - `src/main-mbo-app.js` runs Employee-Self identity resolution on App794 index/detail and requires exact App53 `MBO_Kintone_User` mapping for Dedicated principals.
-- HR intentionally has no Employee-Self mapping.
+- `hr` has no Employee ID by design and must not receive one.
+- `admin-form` also has no Employee ID by design and must remain technical-only.
 - Native App/Record ACL already authorizes HR correctly.
 
 Therefore:
@@ -154,7 +164,10 @@ Therefore:
 HR_NATIVE_RECORD_ACL = PASS
 HR_APP794_UI_RUNTIME_ACCESS = BLOCKED
 CAUSE = HR HAS NO SEPARATE VERIFIED RUNTIME MODE
-DO_NOT_ADD_FAKE_APP53_MAPPING_FOR_HR = TRUE
+ADMIN_FORM_HAS_EMPLOYEE_ID = FALSE
+HR_HAS_EMPLOYEE_ID = FALSE
+DO_NOT_CREATE_EMPLOYEE_ID_FOR_ADMIN_FORM_OR_HR = TRUE
+DO_NOT_ADD_FAKE_APP53_MAPPING_FOR_ADMIN_FORM_OR_HR = TRUE
 DO_NOT_BROADEN_ACL = TRUE
 ```
 
@@ -163,8 +176,8 @@ Required architecture:
 ```text
 DEDICATED EMPLOYEE -> exact App53 mapping -> Employee-Self
 SHARED EMPLOYEE    -> App801 login/session -> Employee-Self
-TECHNICAL_ADMIN    -> technical inspection only
-HR_ADMIN           -> authoritative HR lifecycle path without Employee-Self mapping
+TECHNICAL_ADMIN    -> non-employee technical inspection only; no Employee ID/App53 mapping
+HR_ADMIN           -> authoritative non-employee HR lifecycle path; no Employee ID/App53 mapping
 ```
 
 ## 9. Exact current Active Task
@@ -224,13 +237,15 @@ Fresh-fetch HEAD. Read CHAT_HANDOFF.md first, then AI_CONTROL_CENTER.md, AI_ACTI
 Do not repeat accepted work. Do not broad-scan. Use Antigravity only when genuinely necessary.
 
 Current D1 checkpoint:
-- App53 exactly 24 dedicated mappings verified.
+- App53 exactly 24 dedicated employee mappings verified.
+- admin-form and hr are NON-EMPLOYEE principals and intentionally have NO Employee ID.
 - App794 Process 16 states / 31 actions.
 - App794 Rev66 complete six-rule Record ACL CONFIG PASS.
 - Papatchaya requester ACL status01 View/Edit PASS.
 - Papatchaya after 01->03 View-only PASS; Assignee pattama.
 - HR native ACL at status03 View-only PASS.
 - HR UI is blocked by NO_ACTIVE_EMPLOYEE_MAPPING_FOUND because runtime has no HR_ADMIN principal mode and incorrectly sends hr through Dedicated Employee-Self mapping.
+- Never create fake Employee IDs/App53 mappings for admin-form or hr.
 
 Current task: freeze HR runtime access-mode corrective design. No Kintone deploy/write authorized.
 Respond in Thai.
