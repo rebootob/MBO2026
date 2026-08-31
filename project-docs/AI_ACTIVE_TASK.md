@@ -1,17 +1,18 @@
-# AI ACTIVE TASK — APP794 HR RUNTIME ACCESS-MODE CORRECTIVE + REV66 ACL UAT
+# AI ACTIVE TASK — D1 RESIDUAL RUNTIME EVIDENCE CLOSURE
 
-Mode: **CHATGPT CONTROL PLANE / ANTIGRAVITY ONLY FOR NECESSARY SOURCE CORRECTIVE / NO UNAUTHORIZED KINTONE WRITE**
+Mode: **CHATGPT CONTROL PLANE / USER + BROWSER CONSOLE PREFERRED / ANTIGRAVITY ONLY IF GENUINELY NECESSARY / NO UNAUTHORIZED KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-08-31 ICT
 
 ```text
-TASK_STATE = OPEN / ACL CONFIG PASS / REQUESTER ACL PASS / HR NATIVE ACL PASS / HR UI BLOCKER FOUND
-CURRENT_OWNER = CHATGPT
-ANTIGRAVITY_ACTION = PREPARE ONLY WHEN SOURCE FIX IS AUTHORIZED/REQUIRED
+TASK_STATE = OPEN / MAJOR D1 RUNTIME GATES PASS / RESIDUAL EVIDENCE ONLY
+CURRENT_OWNER = CHATGPT + USER
+ANTIGRAVITY_ACTION = NONE UNLESS A SOURCE DEFECT IS PROVEN
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-APP794_RECORD_ACL_WRITE_AUTH = CONSUMED / NONE
-PROCESS_UAT_WRITE_AUTH = CONSUMED / NONE
+APP794_RECORD_ACL_WRITE_AUTH = NONE
+PROCESS_UAT_WRITE_AUTH = NONE
 GROUP_WRITE_AUTH = NONE
+CUSTOMIZATION_DEPLOY_AUTH = NONE
 ```
 
 ## 0. Accepted D1 prerequisites
@@ -25,189 +26,164 @@ PROCESS_STATES = 16
 PROCESS_ACTIONS = 31
 ```
 
-Record #12 accepted native transition:
+Record #12:
 
 ```text
-FROM = 01 Draft Objective
-ACTION = Submit Objective to Manager
-TO = 03 Manager Objective Review
+STATUS = 03 Manager Objective Review
+REQUESTER = papatchaya
+MANAGER = pattama
 ASSIGNEE = pattama
 RECORD_REVISION = 11
 PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-## 1. App794 Rev66 ACL configuration — PASS
+## 1. App794 ACL/runtime evidence — PASS
 
 ```text
-APP794_REVISION = 66
-APP_ACL_HR_ADMIN_GROUP = View/Edit; no Add/Delete/Import/Export/App Admin
-RECORD_ACL_RULE_COUNT = 6
-LIVE_PREVIEW_MATCH = true
-PROCESS = unchanged 16 states / 31 actions
+RECORD_ACL_CONFIG = PASS
+REQUESTER_OWN_DRAFT_ACL = PASS
+REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
+HR_STATUS03_NATIVE_ACL = PASS
 ```
 
-Six-rule lifecycle model:
+Observed:
 
 ```text
-A  01 / 06 / 11  Requester_User View/Edit
-B  02 / 07 / 12  First_Manager_User View/Edit + Requester View
-C  03 / 08 / 13  Manager_User View/Edit + Requester View
-D  04 / 09 / 14  GM_User View/Edit + Requester View
-E  05 / 10 / 16  Requester View only
-F  15            USER:hr View/Edit + Requester View
-
-Every rule:
-- HR_ADMIN_GROUP View
-- USER:admin-form technical-admin access preserved
-- everyone denied
+papatchaya status01 -> view=true edit=true delete=false
+papatchaya status03 -> view=true edit=false delete=false
+hr status03         -> view=true edit=false delete=false
 ```
 
-## 2. Runtime ACL evidence accepted
+## 2. HR runtime access-mode corrective — PASS
 
-### Requester own Draft — PASS
+Accepted source/deploy chain:
 
 ```text
-LOGIN = papatchaya
-STATUS = 01 Draft Objective
-viewable = true
-editable = true
-deletable = false
-PAGE editRecord = true
-PAGE deleteRecord = false
-REV66_REQUESTER_OWN_DRAFT_ACL = PASS
+HR source corrective = cda4ed5e79736eaddcd96dd661d7a7294ae313f0
+Deploy-tool CSS fix  = c6864d09f59cfaf6e7c86da422452a816a5cf430
+App794 Live revision = 67
+Deploy status = SUCCESS
 ```
 
-### Requester at Manager stage — PASS
+Runtime rule:
 
 ```text
-LOGIN = papatchaya
-STATUS = 03 Manager Objective Review
-ASSIGNEE = pattama
-viewable = true
-editable = false
-deletable = false
-REV66_REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
+Dedicated employee -> exact App53 mapping -> Employee-Self
+Shared employee    -> App801 session -> Employee-Self
+Technical admin    -> non-employee technical path
+HR admin           -> non-employee HR path verified by exact HR_ADMIN_GROUP membership
 ```
 
-### HR native ACL at Manager stage — PASS
-
-Controlled user `hr`, Record #12 at status03:
+Post-deploy UAT as `hr`:
 
 ```text
-LOGIN = hr
-STATUS = 03 Manager Objective Review
-REQUESTER = papatchaya
-MANAGER = pattama
-ASSIGNEE = pattama
-ACL viewable = true
-ACL editable = false
-ACL deletable = false
-REV66_HR_STATUS03_NATIVE_ACL = PASS
+NO_ACTIVE_EMPLOYEE_MAPPING_FOUND = not visible
+Employee Identity Mapping Failed = not visible
+Native status03 ACL preserved = view=true edit=false delete=false
+HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
 ```
 
-`kintone.app.record.getPermissions()` could not execute because the App794 customization blocked the page before normal record-detail UI initialization. This is not an ACL failure.
+Do not create Employee IDs or App53 Employee-Self mappings for `hr` or `admin-form`.
 
-## 3. New blocker — HR UI runtime identity classification
+## 3. Foreign record negative runtime — PASS
 
-Observed while logged in as `hr`:
+Synthetic Record #13 was created solely for D1 privacy UAT under exact one-shot authorization:
 
 ```text
-Employee Identity Mapping Failed
-NO_ACTIVE_EMPLOYEE_MAPPING_FOUND
+FY2026 / Employee 0044 / vassana
+Manager = tsuchihira
+Record_Key = FY2026-0044
+Status = 01 Draft Objective
 ```
 
-User-confirmed principal fact:
+As `papatchaya`:
 
 ```text
-admin-form = NON-EMPLOYEE PRINCIPAL / NO EMPLOYEE ID BY DESIGN
-hr         = NON-EMPLOYEE PRINCIPAL / NO EMPLOYEE ID BY DESIGN
+Direct GET #13 = DENIED / 403 / CB_NO02
+Query by Record_Key = 0
+ACL = view=false edit=false delete=false
+Direct URL #13 = DENIED / No privilege / CB_NO02
+FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
 ```
 
-Therefore neither `admin-form` nor `hr` must ever be forced to obtain an Employee ID or an App53 Employee-Self mapping merely to use their administrative/runtime roles.
-
-Repository source review proves the cause:
-
-- `MboIdentityService.resolveKintonePrincipalMode()` recognizes only `SHARED`, `DEDICATED`, `TECHNICAL_ADMIN`.
-- only `admin-form` / Administrator aliases are classified as `TECHNICAL_ADMIN`.
-- `hr` is therefore classified as `DEDICATED`.
-- `resolveRuntimeEmployeeSelfContext()` then requires an exact App53 `MBO_Kintone_User` employee mapping for every `DEDICATED` principal.
-- `hr` intentionally has no Employee ID and no Employee-Self mapping, so App794 index/detail customization renders `Employee Identity Mapping Failed` and replaces/hides the normal UI.
-- `admin-form` intentionally has no Employee ID and must remain technical-only; it must not be converted into an employee principal.
-- Native App/Record ACL already authorizes HR correctly, so changing ACL or adding fake App53 employee mappings would be the wrong fix.
-
-Canonical classification:
+Cleanup completed:
 
 ```text
-HR_NATIVE_RECORD_ACL = PASS
-HR_APP794_UI_RUNTIME_ACCESS = BLOCKED
-BLOCKER = PRINCIPAL_MODE / EMPLOYEE_SELF_GATE DOES NOT HAVE HR ADMIN MODE
-ADMIN_FORM_HAS_EMPLOYEE_ID = FALSE
-HR_HAS_EMPLOYEE_ID = FALSE
-DO_NOT_CREATE_EMPLOYEE_ID_FOR_ADMIN_FORM_OR_HR = TRUE
-DO_NOT_ADD_FAKE_APP53_EMPLOYEE_MAPPING_FOR_ADMIN_FORM_OR_HR = TRUE
-DO_NOT_BROADEN_RECORD_ACL = TRUE
+DELETE Record #13 = 1
+Post-delete match count = 0
+Synthetic record remaining = 0
 ```
 
-## 4. Required corrective design
+The CREATE and DELETE authorizations are consumed and may never be reused.
 
-Add a separately verified HR/Admin runtime mode for App794 non-Employee-Self access. The correction must preserve fail-closed Employee-Self behavior.
+## 4. Exact current residual gate
 
-Required behavior:
-
-```text
-EMPLOYEE dedicated user -> exact App53 mapping -> Employee-Self context
-SHARED employee user    -> App801 MBO login/session -> Employee-Self context
-TECHNICAL_ADMIN         -> non-employee technical inspection path; NO Employee ID/App53 mapping
-HR_ADMIN                -> non-employee HR lifecycle/access path; NO Employee ID/App53 mapping
-```
-
-HR authorization must come from an authoritative source (approved HR group/role), not from caller-supplied role strings and not from static guessed usernames except the existing controlled Sandbox `hr` mapping where explicitly bounded.
-
-Source areas already identified as relevant:
+Only these runtime-evidence items remain open in D1:
 
 ```text
-src/services/mbo-identity-service.js
-src/main-mbo-app.js
-```
-
-Do not modify unrelated modules.
-
-## 5. Exact next step — SOURCE CORRECTIVE PLAN, NO LIVE DEPLOY
-
-This is now an important source/security change, so Antigravity is justified only for the minimum implementation work after ChatGPT freezes the corrective design.
-
-Before implementation/deploy, produce a narrow plan covering:
-
-1. exact authoritative HR-mode resolver;
-2. App794 index/detail behavior for HR_ADMIN;
-3. explicit proof that `hr` and `admin-form` require no Employee ID and no App53 Employee-Self mapping;
-4. proof that Employee-Self mapping remains mandatory for actual Dedicated employees;
-5. proof that `admin-form` remains technical-only and gains no business workflow authority;
-6. tests for HR status03 View-only and status15 View/Edit semantics;
-7. tests proving ordinary unmapped Dedicated employee principals still fail closed;
-8. build/dist files actually required for App794 customization;
-9. deploy/UAT/rollback plan.
-
-No Kintone customization deploy is authorized yet.
-
-## 6. Remaining privacy evidence after HR UI corrective
-
-```text
-FOREIGN_RECORD_NEGATIVE_RUNTIME = PENDING
-CURRENT_MANAGER_INTERACTIVE_RUNTIME = PENDING / PATTAMA PASSWORD UNAVAILABLE
-HR_STATUS15_RUNTIME = PENDING
+CURRENT_MANAGER_INTERACTIVE_RUNTIME = PENDING / CREDENTIAL-LIMITED
 STALE_PRIOR_APPROVER_RUNTIME = PENDING
+HR_STATUS15_RUNTIME = PENDING
 ```
 
-A single disposable foreign-record test may be used later only under a new exact one-shot record create/delete authorization.
+Known limitation:
 
-## 7. Safety rules
+```text
+Pattama password is unavailable.
+Do not reset Pattama password solely for UAT.
+```
+
+### Required next action
+
+ChatGPT must determine whether each remaining item can be closed by:
+
+1. existing accepted native ACL/process evidence;
+2. GET-only runtime evidence with currently available principals;
+3. a narrowly scoped disposable UAT record using an already controlled login;
+4. or must remain explicitly `CREDENTIAL-LIMITED` / `NOT PRACTICALLY TESTABLE`.
+
+Do not manufacture a test that weakens business routing merely to satisfy coverage.
+
+## 5. Closure criteria
+
+### Current Manager Interactive Runtime
+
+Target business proof:
+
+```text
+At Manager-review status, current Manager/Assignee can view/edit only while currently assigned.
+```
+
+If no controlled Manager credential exists, record the limitation rather than resetting credentials or granting temporary authority.
+
+### Stale Prior Approver Runtime
+
+Target business proof:
+
+```text
+After transition/reassignment, a prior approver who is not owner and has no other valid role must lose approver access.
+```
+
+Do not use the requester-owner as the stale approver test because requester retains own-record View by design.
+
+### HR Status15 Runtime
+
+Target business proof:
+
+```text
+At 15 HR Final Check, HR native authorization permits intended HR action while requester remains view-only according to the accepted ACL model.
+```
+
+Any status-transition chain needed to reach 15 requires a new exact authorization and must not be auto-executed.
+
+## 6. Safety rules
 
 ```text
 APP794_ACL_WRITE = NO
 APP794_PROCESS_CONFIG_WRITE = NO
 APP794_SCHEMA_WRITE = NO
-APP794_RECORD_CREATE/EDIT/DELETE = NO
+APP794_RECORD_CREATE/EDIT/DELETE = NO unless new exact one-shot authorization
+APP794_STATUS_TRANSITION = NO unless new exact one-shot authorization
 APP53_WRITE = NO
 APP795_WRITE = NO
 APP801_WRITE = NO
@@ -218,14 +194,14 @@ ROLLBACK = NO
 
 Never reuse consumed authorizations.
 
-## 8. Current decision
+## 7. Current decision
 
 ```text
-APP794_RECORD_ACL_CONFIG = PASS
-REQUESTER_RUNTIME_ACL = PASS
-HR_STATUS03_NATIVE_ACL = PASS
-D1_RECORD_PRIVACY_GATE = OPEN
-CURRENT_BLOCKER = HR APP794 UI ACCESS-MODE DEFECT
-NON_EMPLOYEE_PRINCIPALS = admin-form, hr
-NEXT_OWNER = ChatGPT -> freeze corrective design; Antigravity only for minimal necessary source implementation
+D1_MAJOR_IDENTITY_RUNTIME = PASS
+HR_RUNTIME_CORRECTIVE = PASS
+FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
+D1_RECORD_PRIVACY_GATE = PASS FOR FOREIGN-RECORD ISOLATION
+D1_OVERALL = OPEN ONLY FOR RESIDUAL APPROVER/HR-STATUS EVIDENCE
+NEXT_OWNER = ChatGPT + User
+ANTIGRAVITY = NONE
 ```
