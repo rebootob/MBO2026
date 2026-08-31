@@ -9,6 +9,7 @@
 ```text
 D1 = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 PRE_D2_DOCUMENTATION_SYNC = COMPLETE
 D2 = READY / NOT STARTED
 ACTIVE_WORK_PACKAGE = NONE
@@ -62,6 +63,21 @@ SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
+## Employee lifecycle policy
+
+Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+Employee_Code = stable person identity
+App53 = current employee/org/position truth
+App795 = current route config for fresh resolution
+App794 = historical annual snapshot + current workflow truth
+current approval authority = native current Assignee
+master change != automatic existing App794 rewrite
+```
+
+Resignation, transfer, promotion/Position change, principal change and manager/appraiser lifecycle changes require the confirmed semantics. D4 owns controlled operational lifecycle handling; D5 must not carry stale identity/route/workflow snapshots; D6 must include lifecycle regression. No lifecycle mutation is authorized now.
+
 ## App53 state
 
 ```text
@@ -89,9 +105,9 @@ NEXT_AFTER_OWNER_START = READ-ONLY EXPORT/SAMPLE DISCOVERY + GAP ANALYSIS
 D1 PASS / CLOSED
 D2 READY / NOT STARTED
 D3 IN PROGRESS / WRITE NOT AUTHORIZED
-D4 IN PROGRESS
-D5 IN PROGRESS
-D6 PENDING
+D4 IN PROGRESS — LIFECYCLE OPERATIONS MANDATORY SCOPE
+D5 IN PROGRESS — FRESH CURRENT ROUTE/IDENTITY REQUIRED
+D6 PENDING — LIFECYCLE REGRESSION REQUIRED
 D7 SOURCE FUNCTIONALITY CLOSED
 ```
 
@@ -103,7 +119,9 @@ DEPLOY = NONE
 ACL = NONE
 GROUP = NONE
 APP53 WRITE = NONE
+APP795 WRITE = NONE
 APP801 WRITE = NONE
+LIFECYCLE WRITE = NONE
 D2 SOURCE CHANGE = NONE
 ROLLBACK = NONE
 ```

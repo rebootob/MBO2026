@@ -74,8 +74,25 @@ Do not claim stronger hard guarantees or embed privileged browser API credential
 
 Pattama interactive login remains credential-limited/non-blocking. Do not reset another person's native Kintone password solely for UAT.
 
+EMPLOYEE LIFECYCLE POLICY — CONFIRMED
+Read project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md for resignation/inactive, transfer, Department/Section/Team change, promotion/Position change, Kintone-principal change, or manager/appraiser lifecycle work.
+
+Employee_Code = stable person identity
+App53 = current employee/org/position truth
+App795 = current routing configuration for fresh route resolution
+App794 = annual historical snapshot + current workflow truth
+CURRENT_APPROVAL_AUTHORITY = native current Assignee
+App53/App795 change != automatic retroactive rewrite of existing App794
+MID_CYCLE_CHANGE = explicit HR-controlled lifecycle amendment + audit
+
+D4 owns lifecycle operational implementation including controlled reassignment, Shared App801 disable/session invalidation where applicable, Dedicated principal/mapping-change handling, audit/readback/exception reporting.
+D5 must resolve fresh current target-year identity/routing and must not copy stale requester/route/workflow snapshots.
+D6 must include lifecycle/security regression, including stale prior authority denial after reassignment.
+Lifecycle policy does not reopen D1 by itself.
+
 CURRENT GATE
 PRE_D2_DOCUMENTATION_SYNC = COMPLETE
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 D2 = READY / NOT STARTED
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -107,9 +124,9 @@ D1-D7 NEVER DROP
 D1 = PASS / CLOSED
 D2 = READY / NOT STARTED
 D3 = IN PROGRESS / WRITE NOT AUTHORIZED
-D4 = IN PROGRESS
-D5 = IN PROGRESS
-D6 = PENDING
+D4 = IN PROGRESS / LIFECYCLE OPERATIONS MANDATORY
+D5 = IN PROGRESS / FRESH CURRENT ROUTE + IDENTITY REQUIRED
+D6 = PENDING / LIFECYCLE REGRESSION REQUIRED
 D7 = SOURCE FUNCTIONALITY CLOSED
 
 CURRENT AUTHORIZATION
@@ -118,7 +135,9 @@ App794 deploy = NONE
 Record ACL write = NONE
 Group write = NONE
 App53 schema/record/bulk = NONE
+App795 write = NONE
 App801 write = NONE
+Lifecycle write = NONE
 D2 source change = NONE
 Rollback = NONE
 
@@ -132,10 +151,11 @@ Answer in Thai with:
 1. current HEAD;
 2. D1-D7 scoreboard;
 3. D1 final closure status and documented ceilings;
-4. current Active Task/gate;
-5. authorization ledger;
-6. D2 pre-start status;
-7. exact next action, without starting D2 unless I explicitly instruct it.
+4. Employee Lifecycle Policy status;
+5. current Active Task/gate;
+6. authorization ledger;
+7. D2 pre-start status;
+8. exact next action, without starting D2 unless I explicitly instruct it.
 ```
 
 Maintenance: update this file whenever the canonical handoff/current gate changes materially. It is a bootstrap convenience, not execution evidence.

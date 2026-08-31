@@ -67,9 +67,29 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 
 Do not claim stronger hard guarantees or embed privileged browser credentials/API tokens to bypass these platform boundaries.
 
-## 4. D2 — READY / NOT STARTED
+## 4. Employee Lifecycle Change Policy — CONFIRMED
 
-Owner required all related documentation to be synchronized before D2 begins. The pre-D2 document sweep is the current control-plane activity; no D2 implementation has started.
+Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+Employee_Code = stable person identity
+App53 = current employee/org/position truth
+App795 = current route configuration for fresh resolution
+App794 = annual historical snapshot + current workflow truth
+current approval authority = native current Assignee
+App53/App795 change != automatic retroactive App794 rewrite
+mid-cycle change = explicit HR-controlled lifecycle amendment + audit
+```
+
+This covers resignation/inactive state, Department/Section/Team transfer, promotion/Position change, Dedicated Kintone-principal change, and manager/appraiser transfer/promotion/replacement/resignation.
+
+D4 owns lifecycle operations, D5 must resolve fresh current identity/route without copying stale requester/route/workflow state, and D6 must prove lifecycle/security regression. The lifecycle policy does not reopen D1 by itself.
+
+No lifecycle write is currently authorized.
+
+## 5. D2 — READY / NOT STARTED
+
+The pre-D2 documentation sweep is complete. No D2 implementation has started.
 
 Canonical D2 pre-start contract:
 `project-docs/EXCEL_EXPORT.md`.
@@ -87,19 +107,19 @@ export authorization/confidentiality
 
 First D2 action after Owner starts it is read-only discovery/gap analysis of existing export source/tests and approved legacy sample files. Do not immediately code.
 
-## 5. D1–D7 scoreboard
+## 6. D1–D7 scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity/Password/Employee-Self/Approver | ✅ PASS / CLOSED | Final D1 security review PASS with documented ceilings |
 | D2 Excel + PDF legacy/original format | ⏸ READY / NOT STARTED | Pre-start contract ready; Owner start instruction required |
 | D3 8-app legacy migration | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
-| D4 App800 HR Control Center | 🟠 IN PROGRESS | Full live E2E not closed |
-| D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Narrow carry-forward whitelist |
-| D6 Integrated E2E/Security/Regression | 🔴 PENDING | After D1–D5 sufficiently ready |
+| D4 App800 HR Control Center | 🟠 IN PROGRESS | Lifecycle operations are mandatory scope; no lifecycle write authorized |
+| D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Narrow carry-forward whitelist; fresh current route/identity required |
+| D6 Integrated E2E/Security/Regression | 🔴 PENDING | Must include lifecycle/security regression |
 | D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
 
-## 6. Current authorization
+## 7. Current authorization
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
@@ -108,12 +128,14 @@ APP794 DEPLOY = NONE
 RECORD ACL WRITE = NONE
 GROUP WRITE = NONE
 APP53 SCHEMA/RECORD/BULK = NONE
+APP795 WRITE = NONE
 APP801 WRITE = NONE
+LIFECYCLE WRITE = NONE
 D2 SOURCE CHANGE = NONE
 ROLLBACK = NONE
 ```
 
-## 7. Continuation
+## 8. Continuation
 
 New session starts with:
 1. fresh current HEAD;
@@ -121,6 +143,6 @@ New session starts with:
 3. `AI_CONTROL_CENTER.md`;
 4. `AI_ACTIVE_TASK.md`;
 5. `AI_DOCUMENT_INDEX.md`;
-6. only relevant Confirmed Baselines.
+6. only relevant Confirmed Baselines, including `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` for lifecycle work.
 
 Use `NEW_CHAT_BOOTSTRAP_PROMPT.md` for a new conversation.

@@ -87,10 +87,27 @@ Topology = M1_ONLY
 
 No D1 synthetic test record remains.
 
-## 6. Current gate — PRE-D2 WAIT
+## 6. Employee lifecycle policy — confirmed
+
+Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+EMPLOYEE_CODE = STABLE PERSON ID
+APP53 = CURRENT EMPLOYEE / ORG / POSITION TRUTH
+APP795 = CURRENT ROUTING FOR FRESH RESOLUTION
+APP794 = HISTORICAL ANNUAL SNAPSHOT + CURRENT WORKFLOW TRUTH
+CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT ASSIGNEE
+MASTER CHANGE != AUTOMATIC EXISTING APP794 REWRITE
+MID_CYCLE CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
+```
+
+For lifecycle work, read that Baseline before planning. D4 owns lifecycle operations, D5 must resolve fresh current route/identity without stale snapshots, and D6 must prove lifecycle/security regression. No lifecycle write is authorized now.
+
+## 7. Current gate — PRE-D2 WAIT
 
 ```text
 PRE_D2_DOCUMENTATION_SYNC = COMPLETE
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 D2 = READY / NOT STARTED
 ACTIVE_WORK_PACKAGE = NONE
 D2_START = OWNER INSTRUCTION REQUIRED
@@ -110,19 +127,19 @@ When Owner starts D2, do read-only discovery first:
 
 Do not immediately implement or deploy.
 
-## 7. D1–D7 no-drop
+## 8. D1–D7 no-drop
 
 ```text
 D1 Hybrid Identity + Password + Employee-Self + Approver — PASS / CLOSED
 D2 Excel + PDF Original/Legacy Format — READY / NOT STARTED
 D3 8 Legacy PMS Apps -> App794 Migration — IN PROGRESS / WRITE NOT AUTHORIZED
-D4 App800 HR Control Center End-to-End — IN PROGRESS
-D5 Copy Own Previous MBO — IN PROGRESS
-D6 Integrated E2E / Security / Regression — PENDING
+D4 App800 HR Control Center End-to-End — IN PROGRESS / LIFECYCLE OPERATIONS MANDATORY
+D5 Copy Own Previous MBO — IN PROGRESS / FRESH CURRENT ROUTE + IDENTITY REQUIRED
+D6 Integrated E2E / Security / Regression — PENDING / LIFECYCLE REGRESSION REQUIRED
 D7 Admin Support Center — SOURCE FUNCTIONALITY CLOSED
 ```
 
-## 8. Current authorization
+## 9. Current authorization
 
 ```text
 KINTONE WRITE = NONE
@@ -130,12 +147,14 @@ APP794 DEPLOY = NONE
 RECORD ACL WRITE = NONE
 GROUP WRITE = NONE
 APP53 SCHEMA/RECORD/BULK = NONE
+APP795 WRITE = NONE
 APP801 WRITE = NONE
+LIFECYCLE WRITE = NONE
 D2 SOURCE CHANGE = NONE
 ROLLBACK = NONE
 ```
 
-## 9. User shorthand
+## 10. User shorthand
 
 `review` -> fresh-fetch HEAD; read current Control Center + Active Task + relevant Baseline; inspect exact diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
 
@@ -143,6 +162,6 @@ ROLLBACK = NONE
 
 `อนุมัติ ...` -> exact narrow authorization only; never widen or reuse consumed authorization.
 
-## 10. New chat
+## 11. New chat
 
 Copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the new conversation. The new chat must fresh-fetch HEAD and read `CHAT_HANDOFF.md` first.
