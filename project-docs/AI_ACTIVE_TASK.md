@@ -116,14 +116,24 @@ Employee Identity Mapping Failed
 NO_ACTIVE_EMPLOYEE_MAPPING_FOUND
 ```
 
+User-confirmed principal fact:
+
+```text
+admin-form = NON-EMPLOYEE PRINCIPAL / NO EMPLOYEE ID BY DESIGN
+hr         = NON-EMPLOYEE PRINCIPAL / NO EMPLOYEE ID BY DESIGN
+```
+
+Therefore neither `admin-form` nor `hr` must ever be forced to obtain an Employee ID or an App53 Employee-Self mapping merely to use their administrative/runtime roles.
+
 Repository source review proves the cause:
 
 - `MboIdentityService.resolveKintonePrincipalMode()` recognizes only `SHARED`, `DEDICATED`, `TECHNICAL_ADMIN`.
 - only `admin-form` / Administrator aliases are classified as `TECHNICAL_ADMIN`.
 - `hr` is therefore classified as `DEDICATED`.
 - `resolveRuntimeEmployeeSelfContext()` then requires an exact App53 `MBO_Kintone_User` employee mapping for every `DEDICATED` principal.
-- `hr` intentionally has no Employee-Self mapping, so App794 index/detail customization renders `Employee Identity Mapping Failed` and replaces/hides the normal UI.
-- Native App/Record ACL already authorizes HR correctly, so changing ACL or adding fake App53 employee mapping for `hr` would be the wrong fix.
+- `hr` intentionally has no Employee ID and no Employee-Self mapping, so App794 index/detail customization renders `Employee Identity Mapping Failed` and replaces/hides the normal UI.
+- `admin-form` intentionally has no Employee ID and must remain technical-only; it must not be converted into an employee principal.
+- Native App/Record ACL already authorizes HR correctly, so changing ACL or adding fake App53 employee mappings would be the wrong fix.
 
 Canonical classification:
 
@@ -131,7 +141,10 @@ Canonical classification:
 HR_NATIVE_RECORD_ACL = PASS
 HR_APP794_UI_RUNTIME_ACCESS = BLOCKED
 BLOCKER = PRINCIPAL_MODE / EMPLOYEE_SELF_GATE DOES NOT HAVE HR ADMIN MODE
-DO_NOT_ADD_FAKE_APP53_EMPLOYEE_MAPPING_FOR_HR = TRUE
+ADMIN_FORM_HAS_EMPLOYEE_ID = FALSE
+HR_HAS_EMPLOYEE_ID = FALSE
+DO_NOT_CREATE_EMPLOYEE_ID_FOR_ADMIN_FORM_OR_HR = TRUE
+DO_NOT_ADD_FAKE_APP53_EMPLOYEE_MAPPING_FOR_ADMIN_FORM_OR_HR = TRUE
 DO_NOT_BROADEN_RECORD_ACL = TRUE
 ```
 
@@ -144,8 +157,8 @@ Required behavior:
 ```text
 EMPLOYEE dedicated user -> exact App53 mapping -> Employee-Self context
 SHARED employee user    -> App801 MBO login/session -> Employee-Self context
-TECHNICAL_ADMIN         -> technical inspection path only
-HR_ADMIN                -> HR lifecycle/access path; MUST NOT require Employee-Self App53 mapping
+TECHNICAL_ADMIN         -> non-employee technical inspection path; NO Employee ID/App53 mapping
+HR_ADMIN                -> non-employee HR lifecycle/access path; NO Employee ID/App53 mapping
 ```
 
 HR authorization must come from an authoritative source (approved HR group/role), not from caller-supplied role strings and not from static guessed usernames except the existing controlled Sandbox `hr` mapping where explicitly bounded.
@@ -167,12 +180,13 @@ Before implementation/deploy, produce a narrow plan covering:
 
 1. exact authoritative HR-mode resolver;
 2. App794 index/detail behavior for HR_ADMIN;
-3. proof that Employee-Self mapping remains mandatory for Dedicated employees;
-4. proof that `admin-form` remains technical-only and gains no business workflow authority;
-5. tests for HR status03 View-only and status15 View/Edit semantics;
-6. tests proving ordinary unmapped Dedicated users still fail closed;
-7. build/dist files actually required for App794 customization;
-8. deploy/UAT/rollback plan.
+3. explicit proof that `hr` and `admin-form` require no Employee ID and no App53 Employee-Self mapping;
+4. proof that Employee-Self mapping remains mandatory for actual Dedicated employees;
+5. proof that `admin-form` remains technical-only and gains no business workflow authority;
+6. tests for HR status03 View-only and status15 View/Edit semantics;
+7. tests proving ordinary unmapped Dedicated employee principals still fail closed;
+8. build/dist files actually required for App794 customization;
+9. deploy/UAT/rollback plan.
 
 No Kintone customization deploy is authorized yet.
 
@@ -212,5 +226,6 @@ REQUESTER_RUNTIME_ACL = PASS
 HR_STATUS03_NATIVE_ACL = PASS
 D1_RECORD_PRIVACY_GATE = OPEN
 CURRENT_BLOCKER = HR APP794 UI ACCESS-MODE DEFECT
+NON_EMPLOYEE_PRINCIPALS = admin-form, hr
 NEXT_OWNER = ChatGPT -> freeze corrective design; Antigravity only for minimal necessary source implementation
 ```
