@@ -68,18 +68,29 @@ test('EXPORT_OBJECTIVE_CAPACITY: projects exact 4, 5, and 10 objectives without 
   assert.equal(proj10.totalWeight, 100);
 });
 
-test('EXPORT_SECURITY_MISSING_CONTEXT_FAIL_CLOSED: missing trusted exportContext fails closed', () => {
-  const mboRec = { Employee_Code: { value: 'EMP001' }, Profile_Code: { value: 'PROF_STAFF_CHIEF' } };
+test('EXPORT_SECURITY_INVALID_OR_MALFORMED_CONTEXT_FAIL_CLOSED: empty object, role-less context, bare mode, or HR_ADMIN fails closed', () => {
+  const mboRec = {
+    Employee_Code: { value: 'EMP001' },
+    Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+    Assignee: { type: 'STATUS_ASSIGNEE', value: [{ code: 'pattama' }] }
+  };
 
-  assert.throws(
-    () => MboExportService.projectPartAExport({ mboRecord: mboRec }),
-    /EXPORT_AUTHORIZATION_DENIED: Trusted exportContext object is required/
-  );
+  // 1. Missing or empty object
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec }), /EXPORT_AUTHORIZATION_DENIED/);
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: null }), /EXPORT_AUTHORIZATION_DENIED/);
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: {} }), /EXPORT_AUTHORIZATION_DENIED/);
 
-  assert.throws(
-    () => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: null }),
-    /EXPORT_AUTHORIZATION_DENIED: Trusted exportContext object is required/
-  );
+  // 2. Role-less matching employeeCode
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: { employeeCode: 'EMP001' } }), /EXPORT_AUTHORIZATION_DENIED/);
+
+  // 3. Bare mode DEDICATED current Assignee without type: APPROVER
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: { mode: 'DEDICATED', kintoneUserCode: 'pattama' } }), /EXPORT_AUTHORIZATION_DENIED/);
+
+  // 4. Forged/labeled HR_ADMIN or TECHNICAL_ADMIN
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: { type: 'HR_ADMIN' } }), /EXPORT_AUTHORIZATION_DENIED/);
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: { mode: 'HR_ADMIN' } }), /EXPORT_AUTHORIZATION_DENIED/);
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: { role: 'HR_ADMIN' } }), /EXPORT_AUTHORIZATION_DENIED/);
+  assert.throws(() => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: { mode: 'TECHNICAL_ADMIN', kintoneUserCode: 'admin-form' } }), /EXPORT_AUTHORIZATION_DENIED/);
 });
 
 test('EXPORT_SECURITY_EMPLOYEE_SELF_CROSS_EMPLOYEE_DENIED: cross-employee export fails closed', () => {
@@ -92,7 +103,7 @@ test('EXPORT_SECURITY_EMPLOYEE_SELF_CROSS_EMPLOYEE_DENIED: cross-employee export
   );
 });
 
-test('EXPORT_SECURITY_EMPLOYEE_SELF_CONFIDENTIAL_FIELDS_OMITTED: Employee-Self projection omits confidential scores, comments, summary & final result', () => {
+test('EXPORT_SECURITY_EMPLOYEE_SELF_CONFIDENTIAL_FIELDS_OMITTED: Employee-Self projection omits confidential scores, comments, summary, final result & nested Part B evaluator fields', () => {
   const mboRec = {
     Employee_Code: { value: 'EMP001' },
     Profile_Code: { value: 'PROF_STAFF_CHIEF' },
@@ -113,6 +124,20 @@ test('EXPORT_SECURITY_EMPLOYEE_SELF_CONFIDENTIAL_FIELDS_OMITTED: Employee-Self p
     Final_Grade: { value: 'A' }
   };
 
+  const competencyItems = [{
+    id: 'COMP1',
+    name: 'Integrity',
+    description: 'Acts ethically',
+    weight: 10,
+    selfRating: '4',
+    selfComment: 'My comment',
+    managerRating: '5',
+    managerComment: 'Secret Manager Remark',
+    gmRating: '5',
+    gmComment: 'Secret GM Remark',
+    score: 95
+  }];
+
   const selfContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
 
   const projPartA = MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: selfContext });
@@ -124,10 +149,22 @@ test('EXPORT_SECURITY_EMPLOYEE_SELF_CONFIDENTIAL_FIELDS_OMITTED: Employee-Self p
   assert.equal(projPartA.objectives[0].gmScore, undefined);
   assert.equal(projPartA.objectives[0].gmComment, undefined);
 
-  const projCombined = MboExportService.projectCombinedExport({ mboRecord: mboRec, exportContext: selfContext });
+  const projCombined = MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems, exportContext: selfContext });
   assert.equal(projCombined.partB.rawPartBScore, undefined);
   assert.equal(projCombined.partB.weightedPartBScore, undefined);
   assert.equal(projCombined.finalResult, undefined);
+
+  // Assert nested competency items filtering for Employee-Self
+  const compItem = projCombined.partB.competencyItems[0];
+  assert.equal(compItem.id, 'COMP1');
+  assert.equal(compItem.name, 'Integrity');
+  assert.equal(compItem.selfRating, '4');
+  assert.equal(compItem.selfComment, 'My comment');
+  assert.equal(compItem.managerRating, undefined, 'managerRating must be omitted for Employee-Self');
+  assert.equal(compItem.managerComment, undefined, 'managerComment must be omitted for Employee-Self');
+  assert.equal(compItem.gmRating, undefined, 'gmRating must be omitted for Employee-Self');
+  assert.equal(compItem.gmComment, undefined, 'gmComment must be omitted for Employee-Self');
+  assert.equal(compItem.score, undefined, 'score must be omitted for Employee-Self');
 });
 
 test('EXPORT_SECURITY_SHARED_APPROVER_DENIED: SHARED mode principal as Approver fails closed', () => {
@@ -214,6 +251,6 @@ test('EXPORT_SECURITY_TECHNICAL_ADMIN_DENIED: admin-form fails closed for export
 
   assert.throws(
     () => MboExportService.projectPartAExport({ mboRecord: mboRec, exportContext: adminContext }),
-    /EXPORT_AUTHORIZATION_DENIED: Technical Admin identity is denied business export operations/
+    /EXPORT_AUTHORIZATION_DENIED/
   );
 });

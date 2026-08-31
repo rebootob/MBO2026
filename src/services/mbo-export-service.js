@@ -46,6 +46,10 @@ export class MboExportService {
   /**
    * Validates trusted export authorization context against MBO record.
    * Fails closed if exportContext is missing, malformed, cross-employee, or unauthorized.
+   * Strictly supports ONLY:
+   * 1. { type: 'EMPLOYEE_SELF', employeeCode: '<trusted bound Employee_Code>' }
+   * 2. { type: 'APPROVER', context: { mode: 'DEDICATED', kintoneUserCode: '<trusted dedicated principal>' } }
+   * All other roles, bare modes, role-less objects, or unauthenticated contexts fail closed.
    * @param {Object} params
    * @param {Object} params.mboRecord - App794 MBO record object
    * @param {Object} params.exportContext - Trusted export authorization context
@@ -55,30 +59,28 @@ export class MboExportService {
     if (!mboRecord || typeof mboRecord !== 'object') {
       throw new Error('EXPORT_AUTHORIZATION_DENIED: mboRecord is required.');
     }
-    if (!exportContext || typeof exportContext !== 'object') {
+    if (!exportContext || typeof exportContext !== 'object' || Object.keys(exportContext).length === 0) {
       throw new Error('EXPORT_AUTHORIZATION_DENIED: Trusted exportContext object is required.');
     }
 
     const recordEmpCode = readString(mboRecord, 'Employee_Code');
-    const mode = exportContext.mode || exportContext.type || exportContext.role;
 
-    // Technical Admin identity is denied business export operations
-    if (mode === 'TECHNICAL_ADMIN' || exportContext.kintoneUserCode === 'admin-form') {
-      throw new Error('EXPORT_AUTHORIZATION_DENIED: Technical Admin identity is denied business export operations.');
-    }
-
-    const authEmpCode = exportContext.employeeCode || exportContext.context?.employeeCode;
-
-    if (exportContext.type === 'EMPLOYEE_SELF' || exportContext.role === 'EMPLOYEE_SELF') {
-      if (!authEmpCode || authEmpCode !== recordEmpCode) {
+    // Shape 1: Exact Supported Employee-Self Context
+    if (exportContext.type === 'EMPLOYEE_SELF') {
+      const authEmpCode = exportContext.employeeCode;
+      if (!authEmpCode || typeof authEmpCode !== 'string' || authEmpCode.trim() === '') {
+        throw new Error('EXPORT_AUTHORIZATION_DENIED: Employee-Self trusted employeeCode is required.');
+      }
+      if (authEmpCode !== recordEmpCode) {
         throw new Error('EXPORT_CROSS_EMPLOYEE_DENIED: Employee-Self cross-employee export operation is denied.');
       }
       return { isEmployeeSelf: true, isAuthorized: true };
     }
 
-    if (exportContext.type === 'APPROVER' || exportContext.role === 'APPROVER') {
-      const dedicatedCtx = exportContext.context || exportContext;
-      if (!dedicatedCtx || dedicatedCtx.mode !== 'DEDICATED') {
+    // Shape 2: Exact Supported Approver Context
+    if (exportContext.type === 'APPROVER') {
+      const dedicatedCtx = exportContext.context;
+      if (!dedicatedCtx || typeof dedicatedCtx !== 'object' || dedicatedCtx.mode !== 'DEDICATED') {
         throw new Error('EXPORT_AUTHORIZATION_DENIED: SHARED mode principals are denied approver export authority.');
       }
       if (!MboApprovalTaskService.isAuthorizedAssignee(dedicatedCtx, mboRecord)) {
@@ -87,20 +89,8 @@ export class MboExportService {
       return { isEmployeeSelf: false, isAuthorized: true };
     }
 
-    if (mode === 'HR_ADMIN' || exportContext.role === 'HR_ADMIN' || exportContext.type === 'HR_ADMIN') {
-      return { isEmployeeSelf: false, isAuthorized: true };
-    }
-
-    // General context fallback checks
-    if (authEmpCode && authEmpCode === recordEmpCode) {
-      return { isEmployeeSelf: true, isAuthorized: true };
-    }
-
-    if (exportContext.mode === 'DEDICATED' && MboApprovalTaskService.isAuthorizedAssignee(exportContext, mboRecord)) {
-      return { isEmployeeSelf: false, isAuthorized: true };
-    }
-
-    throw new Error('EXPORT_AUTHORIZATION_DENIED: Unauthorized export context.');
+    // All other context shapes/roles (including HR_ADMIN, TECHNICAL_ADMIN, bare mode, role-less objects, etc.) fail closed
+    throw new Error('EXPORT_AUTHORIZATION_DENIED: Unsupported exportContext shape or role.');
   }
 
   /**
@@ -190,12 +180,33 @@ export class MboExportService {
     const targetProfileCode = profileCode || readString(mboRecord, 'Profile_Code');
     const weighting = this.resolveProfileWeighting(targetProfileCode);
 
+    const projectedCompetencyItems = (Array.isArray(competencyItems) ? competencyItems : []).map(item => {
+      if (!item || typeof item !== 'object') return item;
+
+      if (isEmployeeSelf) {
+        const safeItem = {};
+        const safeKeys = [
+          'id', 'competencyId', 'code', 'name', 'title', 'competencyName',
+          'description', 'weight', 'weightPercent', 'category', 'group',
+          'selfRating', 'selfScore', 'selfComment', 'selfEvaluation', 'selfAchievement'
+        ];
+        for (const k of safeKeys) {
+          if (k in item) {
+            safeItem[k] = item[k];
+          }
+        }
+        return safeItem;
+      }
+
+      return { ...item };
+    });
+
     const projection = {
       exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
       partA,
       partB: {
         partBWeightPercent: weighting.partBWeight,
-        competencyItems
+        competencyItems: projectedCompetencyItems
       }
     };
 
