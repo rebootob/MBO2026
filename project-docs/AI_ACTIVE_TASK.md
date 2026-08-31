@@ -1,103 +1,181 @@
-# AI ACTIVE TASK — D2-WP001 INDEPENDENT REVIEW / CORRECTIVE REQUIRED
+# AI ACTIVE TASK — D2-WP001-R1 EXECUTION AUTHORIZED
 
-Mode: **CHATGPT CONTROL PLANE / INDEPENDENT REVIEW / NO ACTIVE SOURCE AUTH / NO KINTONE WRITE / NO DEPLOY**  
+Mode: **ANTIGRAVITY EXECUTION PLANE / NARROW CORRECTIVE SOURCE CHANGE / NO KINTONE WRITE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = WAITING_OWNER
+TASK_STATE = AUTHORIZED_FOR_EXECUTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-DISCOVERY-001 = COMPLETE
-REVIEWED_WORK_PACKAGE = D2-WP001
-IMPLEMENTATION_COMMIT = 4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
-INDEPENDENT_REVIEW = CORRECTIVE REQUIRED
-D2-WP001_STATUS = NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_CORRECTIVE = D2-WP001-R1
-EXECUTOR = NONE UNTIL OWNER APPROVAL
-ANTIGRAVITY_ACTION = STOP / WAIT OWNER
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+PARENT_WORK_PACKAGE = D2-WP001
+PARENT_IMPLEMENTATION_COMMIT = 4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
+PARENT_INDEPENDENT_REVIEW = CORRECTIVE REQUIRED
+ACTIVE_WORK_PACKAGE = D2-WP001-R1
+ACTIVE_WORK_PACKAGE_NAME = EXPORT AUTHORIZATION FAIL-CLOSED + NESTED CONFIDENTIALITY CORRECTIVE
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_ACTION = EXECUTE THIS TASK ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-R1-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-## 1. Independent review evidence
+## 1. Objective
 
-ChatGPT fresh-fetched canonical branch and reviewed implementation commit `4f4084b630642b2d1d6dcb0ab8093227bab8cc6c` against authorization `D2-WP001-SOURCE-20260901-01`.
+Correct only the blocking findings from ChatGPT independent review of `D2-WP001`.
 
-Changed files in the implementation commit:
+Do not redesign the export system and do not broaden into renderer/template work.
+
+## 2. Read only these files first
+
+Antigravity low-credit mode. Do not whole-repo scan.
+
+Read only:
+1. `project-docs/AI_CONTROL_CENTER.md`
+2. `project-docs/AI_ACTIVE_TASK.md`
+3. `project-docs/EXCEL_EXPORT.md`
+4. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
+5. `project-docs/SECURITY_MODEL.md`
+6. `src/services/mbo-export-service.js`
+7. `tests/mbo-export-service.test.js`
+8. `tests/core-794-795-796-integration.test.js`
+9. only the exact existing D1 security source already imported/reused by the export service if needed
+
+## 3. Authorized source scope
+
+Allowed to change only:
 - `src/services/mbo-export-service.js`
 - `tests/mbo-export-service.test.js`
-- `tests/core-794-795-796-integration.test.js`
+- `tests/core-794-795-796-integration.test.js` only if the existing export call-site must remain compatible with the corrected trusted-context contract
 
-The third file was outside the exact authorization ledger (`mbo-export-service.js + mbo-export-service.test.js + necessary imports only`). It is a minimal dependent-test compatibility change, but it is still a scope deviation and must not be silently treated as authorized.
+Do not modify unrelated D1 security services. Prefer no new file.
 
-GitHub has no CI status/workflow run for this commit. ChatGPT could not independently execute the private-repository test command in the current isolated runtime, so no independent test PASS is claimed.
+## 4. Required corrections
 
-## 2. What is correct in the implementation
+### A. Strict supported trusted-context shapes only
 
-The implementation does correctly add several required foundations:
-- missing `exportContext` is denied;
-- Employee-Self cross-employee access is denied for explicit `EMPLOYEE_SELF` context;
-- Employee-Self Part A manager/GM objective details and score summary are omitted;
-- SHARED Approver is denied;
-- DEDICATED Approver is checked against native current App794 `Assignee` through `MboApprovalTaskService`;
-- stale static `Manager_User` membership without current Assignee is denied in the explicit Approver path;
-- profile weights remain aligned to Confirmed Baseline, including Assistant Manager 60/40;
-- focused tests now cover exact 4, 5 and 10 objective counts.
+`validateExportAuthorization()` must fail closed for malformed, role-less or unsupported contexts.
 
-These are partial successes only; they do not close WP001 because the fail-closed/confidentiality contract is not yet complete.
+Remove permissive general fallbacks that currently allow authorization merely because:
+- caller supplied a matching `employeeCode`, or
+- caller supplied bare `mode: DEDICATED` with current Assignee.
 
-## 3. Blocking finding A — malformed/unsupported context can still authorize
+Supported source-level shapes for this R1 are limited to:
 
-`validateExportAuthorization()` contains permissive fallback authorization after the explicit role branches:
-- any context carrying `employeeCode` equal to the record Employee_Code can become Employee-Self even when it is not explicitly typed/supported;
-- a bare `mode: DEDICATED` context can become Approver if it matches current Assignee;
-- `mode/type/role: HR_ADMIN` is accepted directly without this service proving the D1 HR authority resolution that produced the context.
+1. Employee-Self:
+```text
+{ type: 'EMPLOYEE_SELF', employeeCode: '<trusted bound Employee_Code>' }
+```
+The exact trusted Employee_Code must match App794 `Employee_Code`.
 
-This contradicts the authorized WP001 requirement that missing, malformed or unsupported trusted export context must fail closed and that D1 identity/authority semantics must be reused rather than inferred from caller labels.
+2. Approver:
+```text
+{ type: 'APPROVER', context: { mode: 'DEDICATED', kintoneUserCode: '<trusted dedicated principal>' } }
+```
+The principal must be authoritative current native App794 `Assignee` using the existing D1 rule.
 
-## 4. Blocking finding B — Employee-Self Part B competency payload is not sanitized
+Any other type/role/mode combination must fail closed in this WP.
 
-`projectCombinedExport()` always copies caller-supplied `competencyItems` into `projection.partB.competencyItems`, including for Employee-Self.
+### B. HR_ADMIN label must not self-authorize
 
-Therefore a caller can supply competency objects containing manager/GM/appraiser rating/comment fields and those values remain in the Employee-Self projection. Existing tests check raw/weighted Part B score and final result omission, but do not prove nested `competencyItems` confidentiality.
+Do not grant full export merely because caller passes `mode`, `type`, or `role = HR_ADMIN`.
 
-This violates the WP001 rule that confidential manager/GM/appraiser scores, ratings and internal comments must be omitted entirely from Employee-Self export output.
+Until a separately reviewed trusted HR export authority contract is defined/reused, HR-labeled caller objects must be denied by this export service.
 
-## 5. Proposed D2-WP001-R1 — OWNER APPROVAL REQUIRED
+Do not invent a new HR authentication system in R1.
 
-Smallest corrective scope:
-- `src/services/mbo-export-service.js`
-- `tests/mbo-export-service.test.js`
-- `tests/core-794-795-796-integration.test.js` only as the exact already-required dependent integration call-site compatibility test
+### C. Preserve existing valid security rules
 
-Required corrections:
-1. remove permissive general authorization fallbacks; accept only explicitly supported trusted export context shapes;
-2. do not grant full export from a caller-supplied `HR_ADMIN` label alone; HR export authority must remain denied until an explicitly reviewed trusted HR authority contract is defined/reused;
-3. preserve explicit Employee-Self exact Employee_Code check;
-4. preserve explicit DEDICATED current-Assignee Approver check;
-5. sanitize/whitelist Employee-Self `competencyItems` so manager/GM/appraiser ratings/comments/scores cannot survive in nested objects; if safe structure cannot be proven, omit the unsafe properties/items fail-closed;
-6. add negative tests for malformed/unsupported context, forged HR_ADMIN label, bare role-less context, and confidential nested competency leakage;
-7. keep 4/5/10 objective and existing approver/security tests;
-8. run focused export tests and the exact touched integration test; broader offline unit suite may run if available.
+Must continue to prove:
+- explicit Employee-Self cross-employee denied;
+- SHARED Approver denied;
+- DEDICATED current Assignee allowed;
+- DEDICATED non-current-Assignee denied;
+- stale/static Manager/App795/requester/appraiser membership alone denied;
+- Technical Admin denied;
+- unknown profile fails closed;
+- confirmed profile weights unchanged.
+
+### D. Employee-Self nested Part B confidentiality
+
+For Employee-Self combined export, caller-supplied `competencyItems` must not be copied through blindly.
+
+Use a strict safe projection/whitelist for each competency item. Employee-Self output may include only non-confidential business-safe competency descriptors/self data that are explicitly needed by the existing projection contract.
+
+Manager/GM/appraiser ratings, comments, scores, weighted results, internal remarks or similarly privileged nested values must be omitted entirely.
+
+If a property cannot be confidently classified safe, omit it fail-closed.
+
+Approver projection may retain the existing full source-level competency payload only after explicit current-Assignee authorization.
+
+### E. Mandatory tests
+
+Add/retain focused tests proving at least:
+- missing context denied;
+- empty object denied;
+- role-less matching `employeeCode` denied;
+- bare `mode: DEDICATED` current Assignee denied;
+- forged/caller-labeled HR_ADMIN denied for mode/type/role variants;
+- explicit Employee-Self exact Employee_Code allowed;
+- Employee-Self cross-employee denied;
+- Employee-Self nested competency manager/GM/appraiser confidential properties absent;
+- explicit SHARED Approver denied;
+- explicit DEDICATED non-current-Assignee denied;
+- stale/static route member denied;
+- explicit DEDICATED current Assignee allowed;
+- 4, 5 and 10 objectives remain exact;
+- all confirmed profile weights remain exact.
+
+## 5. Verification
+
+Run actual offline tests and report exact commands/results:
+- focused `tests/mbo-export-service.test.js`;
+- `tests/core-794-795-796-integration.test.js` because its call-site was already touched by WP001;
+- broader offline unit suite only if needed/available and it requires no Live Kintone.
+
+No invented PASS.
 
 ## 6. Explicitly forbidden
 
 Do NOT:
 - implement `.xlsx` generation;
 - implement PDF generation;
-- add package dependencies;
+- add SheetJS/ExcelJS/jsPDF/PDFKit or package dependencies;
+- modify `package.json` or lockfiles;
 - add UI download buttons;
 - modify build/runtime artifacts;
 - access/write/deploy Live Kintone;
-- change App53/App794/App795/App801 records/schema/ACL/Process Management;
-- start D2-WP002 or D3/D4/D5/D6 implementation.
+- change App53/App794/App795/App801 data/schema/ACL/Process Management;
+- create Live UAT records;
+- start D2-WP002 or D3/D4/D5/D6 implementation;
+- broaden scope to template parity;
+- rewrite D1 security architecture.
 
-## 7. Authorization ledger
+## 7. Git / completion contract
+
+- Work on `ai/antigravity-wp002c`.
+- Smallest corrective patch only.
+- Prefer one implementation commit + push.
+- Do not merge elsewhere.
+- After push, STOP.
+- Final executor status must be exactly `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or a real blocker.
+- Antigravity must not mark D2-WP001/R1 PASS or CLOSED.
+- ChatGPT independently reviews actual diff/tests afterward.
+
+Final report <= 15 concise lines and include:
+- commit SHA;
+- changed files;
+- exact test commands/results;
+- confirmation no dependency/build/deploy/Kintone write occurred;
+- final status.
+
+## 8. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-R1-SOURCE-20260901-01
+AUTHORIZED_SOURCE_SCOPE = mbo-export-service.js + mbo-export-service.test.js + exact dependent integration test only
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -110,4 +188,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Exact next gate: Owner approval/correction/rejection of `D2-WP001-R1`. Antigravity must not perform further source changes until a new exact authorization is recorded.
+This authorization is one corrective Work Package only. It is consumed when the R1 implementation commit is pushed for independent review, or invalidated if scope/risk materially changes.
