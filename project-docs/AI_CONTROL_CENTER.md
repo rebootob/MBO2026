@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-31 — D1 FINAL CLOSURE REVIEW / SHARED PATH NEXT
+> Updated: 2026-08-31 — D1 SHARED SESSION RUNTIME PASS / FINAL EVIDENCE ONLY
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
-| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS / LATE CLOSURE | Dedicated identity/workflow/ACL/foreign isolation PASS; HR Rev67 PASS; stale-approver + HR15 structural PASS; Shared App801/session and remaining final D1 closure evidence still open |
+| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS / FINAL EVIDENCE ONLY | Dedicated identity/workflow/ACL/foreign isolation PASS; HR Rev67 PASS; Shared App801/session runtime PASS; residual comments/history/attachments Live review + dual-role Live disposition + final security review remain |
 | D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Legacy-format parity/security not closed |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Full live E2E not closed |
@@ -37,7 +37,7 @@ admin-form = TECHNICAL_ADMIN / NO EMPLOYEE ID
 hr         = HR_ADMIN / NO EMPLOYEE ID
 ```
 
-Never create fake Employee IDs/App53 mappings for those non-employee principals.
+Never create fake Employee IDs/App53 mappings for non-employee principals.
 
 ## 3. Accepted D1 core truth
 
@@ -78,69 +78,132 @@ Foreign Record #13 as papatchaya:
   Cleanup = PASS / no synthetic record remains
 ```
 
-## 5. HR Rev67 runtime corrective — PASS
+## 5. HR + approver structural review — PASS
 
 ```text
 HR source corrective = cda4ed5e79736eaddcd96dd661d7a7294ae313f0
 Deploy CSS-target fix = c6864d09f59cfaf6e7c86da422452a816a5cf430
 Live revision = 67
 Deploy = SUCCESS
+HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
 ```
 
-`hr` resolves as authoritative `HR_ADMIN` from exact `HR_ADMIN_GROUP` membership and is no longer forced through Employee-Self mapping. `NO_ACTIVE_EMPLOYEE_MAPPING_FOUND` is gone.
-
-## 6. Residual approver/HR structural review — PASS
-
-Live Rev67 GET-only audit proves:
+Live structural evidence:
 
 ```text
-15 HR Final Check assignee = USER:hr / ONE
+15 HR Final Check = USER:hr / ONE
 15 -> 16 Complete exists
 15 -> 11 Return Final HR exists
-
-03/08/13: Manager_User View/Edit; Requester View only
-04/09/14: GM_User View/Edit; Requester View only; Manager_User has no grant
-15: USER:hr View/Edit; Requester View only; HR_ADMIN_GROUP View only
-```
-
-Source current-assignee service performs fresh exact `Assignee` revalidation and tests deny stale static-snapshot fallback.
-
-```text
+03/08/13 Manager_User View/Edit; Requester View only
+04/09/14 GM_User View/Edit; Requester View only; stale Manager no grant
+15 hr View/Edit; Requester View only
 STALE_PRIOR_APPROVER_STRUCTURAL = PASS
 HR_STATUS15_STRUCTURAL = PASS
 CURRENT_MANAGER_INTERACTIVE = CREDENTIAL-LIMITED / NON-BLOCKING
 ```
 
-## 7. Final D1 closure finding
+## 6. Shared Employee-Self / App801 Session Runtime — PASS
 
-Master Joblist + TEST_STATUS are authoritative for completeness. D1 still requires disposition of:
+Controlled UAT candidate:
 
 ```text
-SHARED_EMPLOYEE_SELF_APP801_SESSION_UAT = PENDING
-DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PENDING / review reusable accepted evidence first
-COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PENDING / review existing evidence first
-FINAL_D1_SECURITY_REVIEW = PENDING
+Kintone principal = tmh
+Employee_Code = 0130
+App53 #414 = Active / no dedicated mapping
+App801 #107
 ```
 
-Shared-account security ceiling remains accepted:
+One-shot MBO password reset completed under exact authorization:
+
+```text
+Credential_Version 4 -> 5
+Force_Password_Change = YES
+Failed_Attempts = 0
+Session_* cleared
+```
+
+One-shot Shared First-Login UAT completed under exact authorization:
+
+```text
+Login = PASS
+Force Password Change = PASS
+Credential_Version 5 -> 6
+Force_Password_Change = NO
+Session issued = PASS
+Session_Credential_Version = 6
+Session_Kintone_User = tmh
+Local sessionStorage token = present
+Employee-Self = 0130
+Same-tab reload restore = PASS
+Independent new tab = MBO Login / PASS
+Logout = PASS
+```
+
+Final logout readback:
+
+```text
+Session_Token_Hash = blank
+Session_Issued_At = blank
+Session_Expires_At = blank
+Session_Credential_Version = blank
+Session_Kintone_User = blank
+LOCAL_SESSION_TOKEN_PRESENT = false
+LOGIN_OVERLAY_VISIBLE = true
+Credential_Version = 6
+Force_Password_Change = NO
+Failed_Attempts = 0
+D1_SHARED_SESSION_RUNTIME = PASS
+```
+
+All password-reset / Shared First-Login UAT authorizations are consumed.
+
+Accepted shared-account ceiling remains:
 
 ```text
 DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE ACCOUNT
 ```
 
-Do not false-pass D1 or claim stronger native isolation.
+## 7. Remaining D1 final evidence
+
+Targeted repository review confirms existing source/integration coverage:
+
+```text
+DUAL_ROLE_SOURCE_INTEGRATION = PASS
+- Dedicated My MBO remains separate from My Approval Tasks
+- current Assignee query is authoritative
+- mismatched Assignee task is filtered
+- App795 is not queried for approval authority
+- SHARED mode exposes no approval-task section/query
+
+COMMENTS_HISTORY_ATTACHMENTS_SOURCE = PASS
+- no fake Live timeline events
+- authoritative events only
+- native comment GET path on detail/edit; none on create
+- Live attachments use real saved filenames, not preview fixtures
+- attachment desired-state preservation/removal tests exist
+```
+
+Still open:
+
+```text
+COMMENTS_HISTORY_ATTACHMENTS_RUNTIME = PENDING / GET-ONLY preferred
+DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PARTIAL / SOURCE PASS, LIVE DISPOSITION PENDING
+FINAL_D1_SECURITY_REVIEW = PENDING
+```
 
 ## 8. Exact current gate
 
 ```text
 ACTIVE_TASK = D1 FINAL CLOSURE EVIDENCE
-NEXT_GATE = SHARED EMPLOYEE-SELF / APP801 SESSION GET-ONLY PREFLIGHT
+NEXT_GATE = COMMENTS / HISTORY / ATTACHMENTS GET-ONLY RUNTIME REVIEW
+TARGET = existing App794 Record #12 where possible
 CURRENT_OWNER = ChatGPT + User
 ANTIGRAVITY = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
+APP801_WRITE_AUTH = NONE
 ```
 
-Preflight must choose a real active employee with a valid App801 row, no dedicated mapping, and a route compatible with an approved shared Kintone principal. Do not expose `Password_Hash`. Any login/session operation that writes App801 requires a new exact authorization.
+Do not add comments, upload files, change App794 records, transition workflow, or create synthetic evidence without a new exact authorization.
 
 ## 9. Other project tracks
 
@@ -161,4 +224,4 @@ APP801_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-All prior HR deploy, ACL/process UAT, and foreign synthetic CREATE/DELETE authorizations are consumed.
+All prior HR deploy, foreign-record synthetic, 0130 reset, and Shared First-Login UAT authorizations are consumed and must never be reused.
