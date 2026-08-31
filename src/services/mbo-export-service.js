@@ -1,10 +1,7 @@
-/**
- * MBO Export Projection Service (Gate 2 Excel + PDF Export)
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { readString, readNumber, projectApp794Objectives } from '../core/kintone-normalizer.js';
+import { MboApprovalTaskService } from './mbo-approval-task-service.js';
 
 export const PROFILE_WEIGHT_MAP = {
   PROF_STAFF_CHIEF: { profileFamily: 'STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
@@ -47,18 +44,109 @@ export class MboExportService {
   }
 
   /**
+   * Validates trusted export authorization context against MBO record.
+   * Fails closed if exportContext is missing, malformed, cross-employee, or unauthorized.
+   * @param {Object} params
+   * @param {Object} params.mboRecord - App794 MBO record object
+   * @param {Object} params.exportContext - Trusted export authorization context
+   * @returns {{ isEmployeeSelf: boolean, isAuthorized: boolean }}
+   */
+  static validateExportAuthorization({ mboRecord, exportContext }) {
+    if (!mboRecord || typeof mboRecord !== 'object') {
+      throw new Error('EXPORT_AUTHORIZATION_DENIED: mboRecord is required.');
+    }
+    if (!exportContext || typeof exportContext !== 'object') {
+      throw new Error('EXPORT_AUTHORIZATION_DENIED: Trusted exportContext object is required.');
+    }
+
+    const recordEmpCode = readString(mboRecord, 'Employee_Code');
+    const mode = exportContext.mode || exportContext.type || exportContext.role;
+
+    // Technical Admin identity is denied business export operations
+    if (mode === 'TECHNICAL_ADMIN' || exportContext.kintoneUserCode === 'admin-form') {
+      throw new Error('EXPORT_AUTHORIZATION_DENIED: Technical Admin identity is denied business export operations.');
+    }
+
+    const authEmpCode = exportContext.employeeCode || exportContext.context?.employeeCode;
+
+    if (exportContext.type === 'EMPLOYEE_SELF' || exportContext.role === 'EMPLOYEE_SELF') {
+      if (!authEmpCode || authEmpCode !== recordEmpCode) {
+        throw new Error('EXPORT_CROSS_EMPLOYEE_DENIED: Employee-Self cross-employee export operation is denied.');
+      }
+      return { isEmployeeSelf: true, isAuthorized: true };
+    }
+
+    if (exportContext.type === 'APPROVER' || exportContext.role === 'APPROVER') {
+      const dedicatedCtx = exportContext.context || exportContext;
+      if (!dedicatedCtx || dedicatedCtx.mode !== 'DEDICATED') {
+        throw new Error('EXPORT_AUTHORIZATION_DENIED: SHARED mode principals are denied approver export authority.');
+      }
+      if (!MboApprovalTaskService.isAuthorizedAssignee(dedicatedCtx, mboRecord)) {
+        throw new Error('EXPORT_AUTHORIZATION_DENIED: Principal is not current authorized Assignee for this record.');
+      }
+      return { isEmployeeSelf: false, isAuthorized: true };
+    }
+
+    if (mode === 'HR_ADMIN' || exportContext.role === 'HR_ADMIN' || exportContext.type === 'HR_ADMIN') {
+      return { isEmployeeSelf: false, isAuthorized: true };
+    }
+
+    // General context fallback checks
+    if (authEmpCode && authEmpCode === recordEmpCode) {
+      return { isEmployeeSelf: true, isAuthorized: true };
+    }
+
+    if (exportContext.mode === 'DEDICATED' && MboApprovalTaskService.isAuthorizedAssignee(exportContext, mboRecord)) {
+      return { isEmployeeSelf: false, isAuthorized: true };
+    }
+
+    throw new Error('EXPORT_AUTHORIZATION_DENIED: Unauthorized export context.');
+  }
+
+  /**
    * Project MBO Record into Part A Export Projection (exact 4-10 objectives).
    */
-  static projectPartAExport({ mboRecord, profileCode }) {
+  static projectPartAExport({ mboRecord, profileCode, exportContext }) {
     if (!mboRecord) throw new Error('mboRecord is required.');
+
+    const authResult = this.validateExportAuthorization({ mboRecord, exportContext });
+    const isEmployeeSelf = authResult.isEmployeeSelf;
 
     const targetProfileCode = profileCode || readString(mboRecord, 'Profile_Code');
     const weighting = this.resolveProfileWeighting(targetProfileCode);
 
-    const objectives = projectApp794Objectives(mboRecord);
-    const totalWeight = objectives.reduce((acc, curr) => acc + curr.weight, 0);
+    const rawObjectives = projectApp794Objectives(mboRecord);
+    const totalWeight = rawObjectives.reduce((acc, curr) => acc + curr.weight, 0);
 
-    return {
+    const objectives = rawObjectives.map(obj => {
+      const item = {
+        slotIndex: obj.slotIndex,
+        title: obj.title,
+        description: obj.description,
+        kpi: obj.kpi,
+        target: obj.target,
+        measurement: obj.measurement,
+        weight: obj.weight,
+        progressPercent: obj.progressPercent,
+        actualResult: obj.actualResult,
+        selfAchievement: obj.selfAchievement,
+        selfComment: obj.selfComment
+      };
+
+      if (!isEmployeeSelf) {
+        item.managerAchievement = obj.managerAchievement;
+        item.managerScore = obj.managerScore;
+        item.managerComment = obj.managerComment;
+        item.gmAchievement = obj.gmAchievement;
+        item.gmScore = obj.gmScore;
+        item.gmComment = obj.gmComment;
+        item.averageScore = obj.averageScore;
+      }
+
+      return item;
+    });
+
+    const projection = {
       exportType: 'PART_A_WORKBOOK',
       header: {
         employeeCode: readString(mboRecord, 'Employee_Code'),
@@ -78,35 +166,48 @@ export class MboExportService {
       },
       objectivesCount: objectives.length,
       totalWeight,
-      objectives,
-      summary: {
+      objectives
+    };
+
+    if (!isEmployeeSelf) {
+      projection.summary = {
         rawPartAScore: readNumber(mboRecord, 'PartA_Raw_Score', 0),
         weightedPartAScore: readNumber(mboRecord, 'PartA_Weighted_Score', 0)
-      }
-    };
+      };
+    }
+
+    return projection;
   }
 
   /**
    * Project MBO Record into Combined Part A + Part B Export Projection & PDF Layout.
    */
-  static projectCombinedExport({ mboRecord, profileCode, competencyItems = [] }) {
-    const partA = this.projectPartAExport({ mboRecord, profileCode });
+  static projectCombinedExport({ mboRecord, profileCode, competencyItems = [], exportContext }) {
+    const partA = this.projectPartAExport({ mboRecord, profileCode, exportContext });
+    const authResult = this.validateExportAuthorization({ mboRecord, exportContext });
+    const isEmployeeSelf = authResult.isEmployeeSelf;
+
     const targetProfileCode = profileCode || readString(mboRecord, 'Profile_Code');
     const weighting = this.resolveProfileWeighting(targetProfileCode);
 
-    return {
+    const projection = {
       exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
       partA,
       partB: {
         partBWeightPercent: weighting.partBWeight,
-        competencyItems,
-        rawPartBScore: readNumber(mboRecord, 'PartB_Raw_Score', 0),
-        weightedPartBScore: readNumber(mboRecord, 'PartB_Weighted_Score', 0)
-      },
-      finalResult: {
-        finalWeightedScore: readNumber(mboRecord, 'Final_Score', 0),
-        grade: readString(mboRecord, 'Final_Grade')
+        competencyItems
       }
     };
+
+    if (!isEmployeeSelf) {
+      projection.partB.rawPartBScore = readNumber(mboRecord, 'PartB_Raw_Score', 0);
+      projection.partB.weightedPartBScore = readNumber(mboRecord, 'PartB_Weighted_Score', 0);
+      projection.finalResult = {
+        finalWeightedScore: readNumber(mboRecord, 'Final_Score', 0),
+        grade: readString(mboRecord, 'Final_Grade')
+      };
+    }
+
+    return projection;
   }
 }

@@ -173,7 +173,8 @@ test('CORE_REAL_RESOLVER_INTEGRATION: complete real-resolver annual lifecycle pa
 
   // 10. Export Projection from real flattened record
   const exportProj = MboExportService.projectPartAExport({
-    mboRecord: { ...flattenedRecord, Profile_Code: { value: 'PROF_SECTION_MGR' } }
+    mboRecord: { ...flattenedRecord, Profile_Code: { value: 'PROF_SECTION_MGR' } },
+    exportContext: { type: 'EMPLOYEE_SELF', employeeCode: 'EMP100' }
   });
   assert.equal(exportProj.exportType, 'PART_A_WORKBOOK');
   assert.equal(exportProj.header.partAWeightPercent, 50);
