@@ -47,6 +47,23 @@ SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
+## Employee lifecycle changes — durable policy
+
+`EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` is the canonical policy for resignation, transfer, promotion/position change, Department/Section/Team change, Kintone-principal change, and manager/appraiser lifecycle changes.
+
+Core rule:
+
+```text
+Employee_Code = stable person identity
+App53 = current employee/org/position truth
+App795 = current routing config for fresh resolution
+App794 = annual historical snapshot + current workflow truth
+master-data change != automatic retroactive App794 rewrite
+mid-cycle operational change = HR-controlled explicit amendment + audit
+```
+
+This lifecycle policy does not reopen D1 by itself. D4 owns HR operational implementation and D6 owns integrated lifecycle/security regression.
+
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules, Control Center/Active Task model, Baseline promotion and reusable-skill rules.
@@ -59,6 +76,7 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 - `D1_SESSION_CONTINUITY.md` — dedicated native-Kintone continuity versus shared 8-hour App801-backed same-tab MBO session, binding/logout/password rules.
 - `D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO ownership/history/status/no-delete rules for both identity modes, with dual-role separation.
 - `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — Live history/comments/attachments truthfulness and Kintone-only file lifecycle.
+- `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` — stable Employee_Code, current-master vs historical-snapshot rules, resignation/transfer/promotion/principal-change handling, HR-controlled mid-cycle reassignment and D4/D6 ownership.
 - `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights and lifecycle appraiser model.
 - `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
 - `ROUTING_WORKFLOW.md` — confirmed App795 routing model, effective requester identity and workflow rules.
@@ -77,6 +95,7 @@ For every future `review`, reviewer must:
 7. update Control Center / Active Task to match the promoted Baseline.
 
 For any D1 reopen/security audit, read `D1_CLOSURE.md` first, then only the detailed D1 Baselines directly relevant to the suspected regression.
+For employee resignation/transfer/promotion/principal/approver lifecycle work, `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` is mandatory reading before planning or implementation.
 
 For any Live deployment/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory reading.
 For any source implementation/refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory reading when functional ownership or module boundaries are affected.
