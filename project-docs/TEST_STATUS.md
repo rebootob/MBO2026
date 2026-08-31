@@ -16,12 +16,12 @@ LIVE_KINTONE_OPERATIONS = 0
 APP53_PRODUCTION_TOUCHED = NO
 ```
 
-This remains the latest accepted broad regression count. Later D1 closure used targeted source/integration review plus controlled Live UAT. Repository compare confirms no runtime/source/test change after runtime source commit `c6864d09f59cfaf6e7c86da422452a816a5cf430`; subsequent changes before D1 closure were docs-only.
+This remains the latest accepted broad regression count. Later D1 closure used targeted source/integration review plus controlled Live UAT. No D1 runtime/source/test change occurred after runtime source commit `c6864d09f59cfaf6e7c86da422452a816a5cf430`; closure and pre-D2 synchronization are documentation-only.
 
 ## 2. D1 final result
 
 ```text
-D1_OVERALL = PASS
+D1_OVERALL = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
 PASS_MODE = PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
 APP794_LIVE_REVISION = 67
@@ -63,25 +63,14 @@ hr status03 = view=true edit=false delete=false
 HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
 STALE_PRIOR_APPROVER_STRUCTURAL = PASS
 HR_STATUS15_STRUCTURAL = PASS
-```
-
-Foreign-record negative UAT temporary Record #13:
-
-```text
-Direct GET as papatchaya = DENIED / 403 / CB_NO02
-Record_Key query = 0
-ACL = view=false edit=false delete=false
-Direct URL = DENIED / CB_NO02
-Cleanup delete = PASS
-Post-delete match count = 0
 FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
 ```
 
-No synthetic Record #13 remains.
+Temporary foreign Record #13 was denied to `papatchaya` by direct GET/query/ACL/direct URL and deleted. Post-delete match count = 0.
 
-## 5. Approval authority — PASS
+## 5. Approval authority / dual-role — PASS
 
-Accepted source/integration contract:
+Accepted contract:
 
 ```text
 Dedicated-only public approver authority
@@ -93,7 +82,7 @@ SHARED mode = denied before authority API call
 no App795/static Manager/GM/First_Manager/Requester fallback
 ```
 
-Live dual-role proof additionally showed a real current-assignee task in the Dedicated UI/query without performing an unnecessary Approve/Return mutation.
+Live dual-role synthetic Record #14 proved `papatchaya` could simultaneously retain own `My MBO` #12 and see assigned other-employee Approval Task #14 without context mixing. No Approve/Return was performed. Record #14 was deleted; post-delete `FY2026-0007` count = 0.
 
 ## 6. Shared Employee-Self / App801 Session Runtime — PASS
 
@@ -106,50 +95,24 @@ App53 #414 = Active / no dedicated MBO_Kintone_User mapping
 App801 #107
 ```
 
-One-shot reset + first login:
+Accepted runtime:
 
 ```text
-Credential_Version 4 -> 5 reset
-Force_Password_Change = YES
-Session_* cleared
 Login = PASS
 Force Password Change = PASS
-Credential_Version 5 -> 6
-Force_Password_Change = NO
+Credential_Version = 6
 Session issue = PASS
-Session_Credential_Version = 6
-Session_Kintone_User = tmh
 same-tab reload restore = PASS
 independent new tab without token -> MBO Login = PASS
 Logout = PASS
-```
-
-Final logout:
-
-```text
-Session_Token_Hash = blank
-Session_Issued_At = blank
-Session_Expires_At = blank
-Session_Credential_Version = blank
-Session_Kintone_User = blank
-LOCAL_SESSION_TOKEN_PRESENT = false
-LOGIN_OVERLAY_VISIBLE = true
-Credential_Version = 6
-Force_Password_Change = NO
-Failed_Attempts = 0
+server Session_* cleanup = PASS
+local token cleanup = PASS
 D1_SHARED_SESSION_RUNTIME = PASS
 ```
 
-Source/integration negative coverage additionally passes for:
-- expired/tampered token;
-- disabled/locked/Force Password Change account state;
-- credential-version mismatch;
-- Kintone-principal mismatch;
-- password-change/new-login old-session invalidation;
-- raw token storage boundary;
-- Employee A -> Employee B context-switch denial.
+Source/integration negative coverage passes for expired/tampered token, disabled/locked/forced-change state, credential-version mismatch, Kintone-principal mismatch, old-session invalidation and Employee-Code context-switch denial.
 
-## 7. Comments / history / attachments runtime — PASS
+## 7. Comments / history / attachments — PASS
 
 Record #12 GET/UI truthfulness:
 
@@ -158,7 +121,7 @@ Native comments count = 0
 UI comment items = 0
 Timeline = 0 Events Recorded
 No-history truthful message = visible
-Preview fixture history leak = none
+Preview history leak = none
 FILE field count = 30
 Objective_Attachment_1 = 2.jpeg / 2,926,466 bytes
 UI exact filename 2.jpeg = visible / 1 matching link
@@ -166,51 +129,7 @@ Preview attachment leak = none
 COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PASS
 ```
 
-This matches the source regression contract: no fabricated Live history/comments and real saved attachment filenames only.
-
-## 8. Dedicated dual-role Live UAT — PASS
-
-Natural inventory initially found no person who simultaneously had an own MBO and current assigned other-employee task, so one exact synthetic record was authorized.
-
-Synthetic Record #14:
-
-```text
-RECORD_KEY = FY2026-0007
-Employee = 0007 / Mr.Prajak Malasri
-Requester = tmh
-Manager / M1 = papatchaya
-GM / G1 = pattama
-Topology = M1_G1
-01 Draft Objective -> 03 Manager Objective Review
-Assignee = papatchaya
-```
-
-As `papatchaya`:
-
-```text
-My MBO = Record #12 / Employee 0113
-My Approval Tasks = Record #14 / Employee 0007
-Native Assignee query contains #14
-UI My MBO visible = true
-UI My Approval Tasks visible = true
-Record #14 link visible = true
-Employee-Self and Approver contexts separate = true
-D1_LIVE_DUAL_ROLE = PASS
-```
-
-No Approve/Return was performed. Record #14 was deleted under the bounded authorization:
-
-```text
-pre-delete revision = 3
-post-delete Record_Key FY2026-0007 count = 0
-cleanup = PASS
-```
-
-No synthetic Record #14 remains.
-
-## 9. Final security review — PASS with explicit limitations
-
-Accepted security disposition:
+## 8. Final D1 security review — PASS with explicit limitations
 
 ```text
 DEDICATED_IDENTITY = PASS
@@ -225,17 +144,34 @@ SYNTHETIC_CLEANUP = PASS
 FINAL_D1_SECURITY_REVIEW = PASS
 ```
 
-Known architecture ceilings remain:
+Known architecture ceilings:
 
 ```text
 SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRINCIPAL
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-These must remain documented; D1 PASS does not convert them into hard guarantees.
+## 9. D2 test state — READY / NOT STARTED
+
+Canonical contract: `project-docs/EXCEL_EXPORT.md`.
+
+No D2 completion evidence is accepted yet.
+
+```text
+D2_STATUS = READY / NOT STARTED
+D2_PART_A_PARITY = NOT TESTED
+D2_PART_B_PARITY = NOT TESTED
+D2_COMBINED_WORKBOOK = NOT TESTED
+D2_PDF_PARITY = NOT TESTED
+D2_5_TO_10_OBJECTIVES = NOT TESTED
+D2_EXPORT_SECURITY = NOT TESTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+```
+
+After Owner starts D2, first perform read-only discovery of existing export source/tests and approved legacy samples. Do not report a D2 PASS from existing generic export unit tests alone.
 
 ## 10. Remaining project tests
 
-D1 is closed. D2–D5 completion-specific tests remain open. D6 integrated project-level security/regression remains pending. D7 source functionality remains closed.
+D1 is closed. D2 is ready but not started. D3–D5 completion-specific tests remain open. D6 integrated project-level security/regression remains pending. D7 source functionality remains closed.
 
-No active Live Kintone write authorization exists.
+No active Live Kintone write/deploy authorization exists.
