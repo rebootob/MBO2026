@@ -1,140 +1,101 @@
-# AI ACTIVE TASK — D1 CLOSED / WAITING OWNER NEXT
+# AI ACTIVE TASK — PRE-D2 WAIT STATE
 
-Mode: **CHATGPT CONTROL PLANE / NO ACTIVE EXECUTION / NO UNAUTHORIZED KINTONE WRITE**
-Branch: `ai/antigravity-wp002c`
+Mode: **CHATGPT CONTROL PLANE / NO ACTIVE EXECUTION / NO UNAUTHORIZED KINTONE WRITE**  
+Branch: `ai/antigravity-wp002c`  
 Updated: 2026-08-31 ICT
 
 ```text
-TASK_STATE = CLOSED
-D1_OVERALL = PASS
+TASK_STATE = WAITING_OWNER
+D1_OVERALL = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
-PASS_MODE = PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
+PRE_D2_DOCUMENTATION_SYNC = COMPLETE
 CURRENT_OWNER = USER + CHATGPT
 ANTIGRAVITY_ACTION = NONE
 ACTIVE_WORK_PACKAGE = NONE
+NEXT_WORK_PACKAGE = D2
+D2_STATUS = READY / NOT STARTED
 ```
 
-## 1. D1 closure evidence
+## 1. D1 closure is frozen
 
 ```text
 APP53_DEDICATED_MAPPINGS = 24 / PASS
 APP794_LIVE_REVISION = 67
-papatchaya Employee-Self / Record #12 = PASS
-OWN_MBO_SELF_APPRAISER_ELISION = PASS
-DEDICATED_NATIVE_WORKFLOW = PASS
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+DEDICATED_IDENTITY = PASS
 DEDICATED_RECORD_ACL_PRIVACY = PASS
-FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
-HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
-STALE_PRIOR_APPROVER_STRUCTURAL = PASS
-HR_STATUS15_STRUCTURAL = PASS
-D1_SHARED_SESSION_RUNTIME = PASS
-COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PASS
-D1_LIVE_DUAL_ROLE = PASS
+APPROVER_AUTHORITY = PASS
+SHARED_IDENTITY_SESSION = PASS
+DUAL_ROLE_SEPARATION = PASS
+SELF_APPROVAL_GUARD = PASS
+HR_NON_EMPLOYEE_MODE = PASS
+COMMENTS_HISTORY_ATTACHMENTS_TRUTH = PASS
 FINAL_D1_SECURITY_REVIEW = PASS
 ```
 
-## 2. Dual-role final runtime proof
+Synthetic Records #13 and #14 were deleted after their bounded UATs. No D1 synthetic record remains.
 
-Bounded synthetic Record #14:
-
-```text
-Record_Key = FY2026-0007
-Employee = 0007
-Requester = tmh
-Manager / M1 = papatchaya
-GM / G1 = pattama
-Topology = M1_G1
-03 Manager Objective Review
-Assignee = papatchaya
-```
-
-As `papatchaya`:
-
-```text
-My MBO = Record #12 / Employee 0113
-My Approval Tasks = Record #14 / Employee 0007
-native Assignee query contains #14
-contexts separate = PASS
-```
-
-No Approve/Return occurred. Record #14 was deleted and post-delete count = 0. CREATE/transition/DELETE authorization is consumed.
-
-## 3. Comments / history / attachments final runtime proof
-
-Existing Record #12:
-
-```text
-native comments = 0
-UI comments = 0
-timeline = 0 Events Recorded
-truthful no-history state = visible
-preview history leak = none
-real saved file = Objective_Attachment_1 / 2.jpeg
-UI filename 2.jpeg = visible
-preview attachment leak = none
-```
-
-## 4. Shared security negative coverage accepted from source/integration
-
-Source tests cover:
-- expired/tampered token fail closed;
-- disabled/locked/forced-change account state blocked;
-- Credential_Version mismatch blocked;
-- exact Kintone principal mismatch blocked;
-- old server session invalidated by password change/new login;
-- raw token confined to approved sessionStorage boundary;
-- Employee-Code context cannot switch from authenticated Employee A to Employee B.
-
-## 5. Approval authority accepted evidence
-
-Source/integration requires:
-
-```text
-Dedicated context only
-current Assignee in (LOGINUSER()) for list
-fresh getRecord revalidation for detail/action
-exact case-sensitive STATUS_ASSIGNEE match
-mismatched/stale assignee -> denied
-SHARED -> denied before API authority call
-App795/static Manager/GM/First_Manager/Requester fields -> never fallback authority
-```
-
-This plus the Live dual-role current-assignee task proof closes approval-task visibility/detail/authority without executing an unnecessary approval mutation.
-
-## 6. Accepted Kintone-only ceilings
+## 2. D1 architecture ceilings remain visible
 
 ```text
 SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-Do not remove or soften these limitations. They are explicit architecture boundaries, not implementation promises.
+Do not reopen D1 or attempt to remove these Kintone-only ceilings without a proven defect or explicit architecture decision.
 
-## 7. Current action
+## 3. D2 pre-start contract
+
+Read first when Owner starts D2:
+
+1. `project-docs/EXCEL_EXPORT.md`
+2. `project-docs/AI_CONTROL_CENTER.md`
+3. exact existing export source/tests
+4. approved legacy Excel/PDF samples available to the project
+5. only other documents directly needed for export field/security mapping
+
+D2 expected closure scope:
 
 ```text
-NEXT_ACTION = WAIT FOR OWNER
-RECOMMENDED_NEXT_WORK_PACKAGE = D2 Excel + PDF Original/Legacy Format
-AUTO_START_D2 = NO
+Excel Part A
+Excel Part B
+Combined workbook where applicable
+PDF original/legacy parity
+5–10 objective capacity
+export authorization/confidentiality
 ```
 
-No further D1 mutation/UAT is required unless a new proven defect reopens D1.
+## 4. Exact next action after Owner starts D2
 
-## 8. Safety / authorization state
+Do **not** implement immediately.
+
+First perform a bounded read-only D2 discovery:
+
+```text
+A. inventory current export implementation/source/tests
+B. locate approved legacy Excel/PDF sample files
+C. map App794 fields to legacy output sections
+D. identify current PDF mechanism
+E. identify export security guards
+F. produce gap list + smallest D2 Work Package
+```
+
+Only after Control Plane review should a source-change task be assigned. Use Antigravity only if actual implementation is needed.
+
+## 5. Current safety / authorization
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-APP794_ACL_WRITE = NO
-APP794_PROCESS_CONFIG_WRITE = NO
-APP794_SCHEMA_WRITE = NO
+ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP794_RECORD_WRITE = NO
 APP794_STATUS_TRANSITION = NO
 APP53_WRITE = NO
 APP795_WRITE = NO
 APP801_WRITE = NO
 GROUP_MEMBERSHIP_WRITE = NO
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 KINTONE_CUSTOMIZATION_DEPLOY = NO
 ROLLBACK = NO
 ```
 
-Never reuse consumed authorizations.
+Never reuse consumed D1 authorizations.
