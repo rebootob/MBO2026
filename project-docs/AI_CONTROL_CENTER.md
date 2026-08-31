@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001 R1 SOURCE REVIEW PASS / TEST EVIDENCE PENDING
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001 PASS-CLOSED / WP002 PROPOSED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Final security review PASS with documented Kintone-only ceilings |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / WP001 TEST EVIDENCE PENDING | R1 source/scope review PASS at `1d48dc218...`; offline test execution evidence still required before WP001 closure |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / WP001 CLOSED | Projection/security foundation PASS; next proposed gate is legacy template evidence + renderer design contract |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Employee lifecycle operations are mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -44,13 +44,13 @@ Do not reopen D1 without proven regression.
 Canonical D2 document: `project-docs/EXCEL_EXPORT.md`.
 
 Accepted discovery remains:
-- export layer is projection/data-model only;
-- no real `.xlsx`/PDF renderer yet;
+- export layer began as projection/data-model only;
 - App794 objective normalization supports slots 1..10;
 - confirmed profile weights include Assistant Manager 60/40;
-- legacy workbook binaries are intentionally gitignored local references.
+- legacy workbook binaries are intentionally gitignored local references;
+- real `.xlsx`/PDF rendering is still not implemented.
 
-## 4. D2-WP001 / R1 review state
+## 4. D2-WP001 — PASS / CLOSED
 
 Original implementation:
 
@@ -65,68 +65,86 @@ Corrective implementation:
 D2-WP001-R1_COMMIT = 1d48dc218fe7e2c542773bcf441332f8b06f88f9
 R1_SCOPE_REVIEW = PASS
 R1_SOURCE_REVIEW = PASS
-R1_AUTOMATED_TEST_EVIDENCE = NOT INDEPENDENTLY VERIFIED
-D2-WP001 = NOT CLOSED / TEST EVIDENCE PENDING
 ```
 
-R1 compare from authorization baseline `365e61f22574361dacafedc7f98af1ea99228575` changed only:
-- `src/services/mbo-export-service.js`
-- `tests/mbo-export-service.test.js`
-
-The prior blocking source findings are closed in R1:
-- permissive role-less/fallback authorization removed;
-- HR/Technical labels do not self-authorize;
-- explicit Employee-Self exact Employee_Code preserved;
-- explicit DEDICATED current-Assignee Approver preserved;
-- Employee-Self Part B competency payload uses safe-key projection rather than blind copy-through;
-- required negative tests for malformed/role-less/HR contexts and nested evaluator-field leakage are present;
-- 4/5/10 objective and profile-weight coverage remains present.
-
-## 5. Test evidence gate
-
-R1 contract requires actual offline execution of:
+Owner then supplied Antigravity offline verification evidence from the canonical checkout:
 
 ```text
 node --test tests/mbo-export-service.test.js
+PASS = 10 / 10
+FAIL = 0
+
 node --test tests/core-794-795-796-integration.test.js
+PASS = 1 / 1
+FAIL = 0
+
+git status --porcelain
+CLEAN = YES
 ```
 
-GitHub exposes no CI status/workflow run for R1 commit `1d48dc218...`.
+Therefore:
 
-ChatGPT attempted to clone/run the repository in its isolated runtime, but that runtime could not resolve `github.com`. Therefore no independent automated-test PASS is claimed.
+```text
+D2-WP001 = PASS / CLOSED
+D2-WP001-R1 = PASS / CLOSED
+```
 
-Exact next action is verification only. No source change authorization is active.
+Accepted foundation:
+- explicit supported trusted export contexts only;
+- Employee-Self exact Employee_Code scoping;
+- cross-employee denial;
+- SHARED approver denial;
+- current native Assignee authority for DEDICATED approver export;
+- stale/static route authority denied;
+- HR/Technical caller labels do not self-authorize;
+- Employee-Self Part A/Part B confidentiality projection enforced;
+- exact 4/5/10 objective capacity covered;
+- confirmed profile weights preserved.
 
-If both required tests PASS on the current canonical checkout, ChatGPT may close D2-WP001 without another implementation package. If a test fails, report the exact failure and stop; any corrective source change requires fresh Owner approval.
+D2 itself remains open because binary workbook/PDF parity is not implemented or accepted yet.
 
-## 6. Template evidence gate — later D2 work
+## 5. Proposed D2-WP002 — approval pending
 
-Binary Excel/PDF parity still requires approved legacy evidence at least:
-- `PMS_Staff & Chief_PART_A.xlsx`
-- `PMS_Staff & Chief_PART_B.xlsx`
-- approved PDF sample if exact visual parity is required.
+```text
+D2-WP002 = LEGACY TEMPLATE EVIDENCE + RENDERER DESIGN CONTRACT
+STATUS = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_WORK_PACKAGE = NONE
+CURRENT_EXECUTOR = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+```
 
-Do not start renderer/template work from the WP001 verification gate.
+Preferred evidence path:
+1. Owner provides the approved legacy Excel/PDF files directly to ChatGPT if available;
+2. otherwise Antigravity may inspect gitignored local templates READ-ONLY after explicit WP002 approval;
+3. original employee-bearing binaries must not be committed to Git.
 
-## 7. Current gate
+Required template evidence at minimum:
+- `PMS_Staff & Chief_PART_A.xlsx`;
+- `PMS_Staff & Chief_PART_B.xlsx`;
+- approved PDF sample if exact PDF parity is required.
+
+WP002 must freeze the renderer contract before implementation: sheets, merged cells, labels, cell mappings, formatting, formulas, print settings, signatures, 5–10 objective expansion, PDF pagination/layout, and safe evidence handling.
+
+## 6. Current gate
 
 ```text
 D1 = CLOSED / PASS
-D2 = IN PROGRESS
-D2-WP001 = SOURCE REVIEW PASS / TEST EVIDENCE PENDING / NOT CLOSED
+D2 = IN PROGRESS / WP001 PASS-CLOSED
 ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP002
+NEXT_REQUIRED_OWNER_DECISION = APPROVE / CORRECT / REJECT D2-WP002
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = VERIFICATION ONLY / NO SOURCE CHANGE
-NEXT_CONTROL_GATE = OFFLINE TEST RESULTS
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
 No other Work Package may auto-start.
 
-## 8. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / SOURCE REVIEWED / DO NOT REUSE
+D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
