@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-31 — D1 SHARED SESSION RUNTIME PASS / FINAL EVIDENCE ONLY
+> Updated: 2026-08-31 — D1 CLOSED / PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
-| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS / FINAL EVIDENCE ONLY | Dedicated identity/workflow/ACL/foreign isolation PASS; HR Rev67 PASS; Shared App801/session runtime PASS; residual comments/history/attachments Live review + dual-role Live disposition + final security review remain |
+| D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS | Final security review PASS; Dedicated + Shared + dual-role + privacy + comments/history/attachments closed with documented Kintone-only ceilings |
 | D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Legacy-format parity/security not closed |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Full live E2E not closed |
@@ -19,18 +19,18 @@
 | D6 Integrated E2E / Security / Regression | 🔴 PENDING | Starts after D1–D5 sufficiently ready |
 | D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
 
-## 2. D1 architecture — do not revert
+## 2. D1 architecture — frozen
 
 ```text
 D1 = KINTONE-ONLY
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 AUTH_BRIDGE = CANCELLED
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+FINAL_D1_SECURITY_REVIEW = PASS
 ```
 
-Dedicated employee: native Kintone user -> exact active App53 `MBO_Kintone_User` -> `emp_text` Employee_Code.
-Shared employee: approved shared Kintone principal -> App801 MBO login/session -> Employee_Code.
-Dedicated approval authority = authoritative current native App794 `Assignee`; static App795/snapshot membership is insufficient.
-SHARED approver authority = denied.
+Dedicated approval authority = authoritative current native App794 `Assignee`; static App795/snapshot membership is insufficient. SHARED approver authority = denied.
 
 ```text
 admin-form = TECHNICAL_ADMIN / NO EMPLOYEE ID
@@ -39,177 +39,133 @@ hr         = HR_ADMIN / NO EMPLOYEE ID
 
 Never create fake Employee IDs/App53 mappings for non-employee principals.
 
-## 3. Accepted D1 core truth
+## 3. D1 accepted Live/runtime evidence
+
+### Dedicated
 
 ```text
 APP53_TOTAL_RECORDS = 281
 DEDICATED_MAPPINGS_VERIFIED = 24
 papatchaya -> Employee 0113
-APP794_PROCESS_STATES = 16
-APP794_PROCESS_ACTIONS = 31
-APP794_LIVE_REVISION = 67
-```
-
-Record #12:
-
-```text
-STATUS = 03 Manager Objective Review
-REQUESTER = papatchaya
-MANAGER = pattama
-ASSIGNEE = pattama
-ROUTING_TOPOLOGY = M1_ONLY
+Record #12 = FY2026-0113
+Status = 03 Manager Objective Review
+Requester = papatchaya
+Manager / Assignee = pattama
+Topology = M1_ONLY
 OWN_MBO_SELF_APPRAISER_ELISION = PASS
 PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-Pattama interactive credential is unavailable; do not reset the password solely for UAT.
-
-## 4. Dedicated ACL/privacy — PASS
+### ACL / privacy / HR
 
 ```text
-Requester status01: View/Edit, no Delete = PASS
-Requester status03: View-only, no Edit/Delete = PASS
-HR status03: View-only, no Edit/Delete = PASS
-Foreign Record #13 as papatchaya:
-  Direct GET = DENIED / CB_NO02
-  Query = 0
-  ACL = view=false edit=false delete=false
-  Direct URL = DENIED / CB_NO02
-  Cleanup = PASS / no synthetic record remains
-```
-
-## 5. HR + approver structural review — PASS
-
-```text
-HR source corrective = cda4ed5e79736eaddcd96dd661d7a7294ae313f0
-Deploy CSS-target fix = c6864d09f59cfaf6e7c86da422452a816a5cf430
-Live revision = 67
-Deploy = SUCCESS
+REQUESTER_OWN_DRAFT_ACL = PASS
+REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
+HR_STATUS03_NATIVE_ACL = PASS
 HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
-```
-
-Live structural evidence:
-
-```text
-15 HR Final Check = USER:hr / ONE
-15 -> 16 Complete exists
-15 -> 11 Return Final HR exists
-03/08/13 Manager_User View/Edit; Requester View only
-04/09/14 GM_User View/Edit; Requester View only; stale Manager no grant
-15 hr View/Edit; Requester View only
+FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
 STALE_PRIOR_APPROVER_STRUCTURAL = PASS
 HR_STATUS15_STRUCTURAL = PASS
-CURRENT_MANAGER_INTERACTIVE = CREDENTIAL-LIMITED / NON-BLOCKING
+CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED / NON-BLOCKING
 ```
 
-## 6. Shared Employee-Self / App801 Session Runtime — PASS
+Foreign synthetic Record #13 was denied to `papatchaya` by direct GET/query/ACL/direct URL and deleted.
 
-Controlled UAT candidate:
+### Shared session
 
 ```text
 Kintone principal = tmh
-Employee_Code = 0130
-App53 #414 = Active / no dedicated mapping
+Employee = 0130
 App801 #107
-```
-
-One-shot MBO password reset completed under exact authorization:
-
-```text
-Credential_Version 4 -> 5
-Force_Password_Change = YES
-Failed_Attempts = 0
-Session_* cleared
-```
-
-One-shot Shared First-Login UAT completed under exact authorization:
-
-```text
 Login = PASS
 Force Password Change = PASS
-Credential_Version 5 -> 6
-Force_Password_Change = NO
-Session issued = PASS
-Session_Credential_Version = 6
-Session_Kintone_User = tmh
-Local sessionStorage token = present
-Employee-Self = 0130
-Same-tab reload restore = PASS
-Independent new tab = MBO Login / PASS
-Logout = PASS
-```
-
-Final logout readback:
-
-```text
-Session_Token_Hash = blank
-Session_Issued_At = blank
-Session_Expires_At = blank
-Session_Credential_Version = blank
-Session_Kintone_User = blank
-LOCAL_SESSION_TOKEN_PRESENT = false
-LOGIN_OVERLAY_VISIBLE = true
 Credential_Version = 6
-Force_Password_Change = NO
-Failed_Attempts = 0
+8-hour session issue = PASS
+same-tab restore = PASS
+independent new-tab isolation = PASS
+Logout local + server cleanup = PASS
 D1_SHARED_SESSION_RUNTIME = PASS
 ```
 
-All password-reset / Shared First-Login UAT authorizations are consumed.
+Source/integration additionally proves fail-closed behavior for expired/tampered token, disabled/locked/forced-change state, credential-version mismatch, Kintone-principal mismatch, old-session invalidation after password change, raw-token storage boundary and Employee-Code switching.
 
-Accepted shared-account ceiling remains:
+### Comments / history / attachments
 
 ```text
-DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE ACCOUNT
+Record #12 native comments = 0 / UI = 0
+Timeline = truthful 0 Events Recorded / no fake fixture leak
+Real saved attachment = Objective_Attachment_1 / 2.jpeg
+UI exact filename = visible
+Preview attachment leak = none
+COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PASS
 ```
 
-## 7. Remaining D1 final evidence
+### Dual-role
 
-Targeted repository review confirms existing source/integration coverage:
+Synthetic Record #14 `FY2026-0007` was created under exact bounded authorization, transitioned once to `03 Manager Objective Review`, current `Assignee=papatchaya`, then used read-only as live dual-role evidence:
 
 ```text
-DUAL_ROLE_SOURCE_INTEGRATION = PASS
-- Dedicated My MBO remains separate from My Approval Tasks
-- current Assignee query is authoritative
-- mismatched Assignee task is filtered
-- App795 is not queried for approval authority
-- SHARED mode exposes no approval-task section/query
-
-COMMENTS_HISTORY_ATTACHMENTS_SOURCE = PASS
-- no fake Live timeline events
-- authoritative events only
-- native comment GET path on detail/edit; none on create
-- Live attachments use real saved filenames, not preview fixtures
-- attachment desired-state preservation/removal tests exist
+papatchaya My MBO = #12 / Employee 0113
+papatchaya My Approval Tasks = #14 / Employee 0007
+native Assignee query includes #14
+UI contexts separate = PASS
+D1_LIVE_DUAL_ROLE = PASS
 ```
 
-Still open:
+No Approve/Return was performed. Source/integration proves fresh current-Assignee action revalidation, stale/mismatched assignee denial, SHARED denial and no App795/static fallback. Record #14 was deleted; post-delete `FY2026-0007` count = 0.
+
+## 4. Final D1 security disposition
 
 ```text
-COMMENTS_HISTORY_ATTACHMENTS_RUNTIME = PENDING / GET-ONLY preferred
-DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PARTIAL / SOURCE PASS, LIVE DISPOSITION PENDING
-FINAL_D1_SECURITY_REVIEW = PENDING
+DEDICATED_IDENTITY = PASS
+SHARED_IDENTITY_SESSION = PASS
+EMPLOYEE_SELF_PRIVACY = PASS
+APPROVER_AUTHORITY = PASS
+DUAL_ROLE_SEPARATION = PASS
+SELF_APPROVAL_GUARD = PASS
+HR_NON_EMPLOYEE_MODE = PASS
+COMMENTS_HISTORY_ATTACHMENTS_TRUTH = PASS
+FINAL_D1_SECURITY_REVIEW = PASS
+D1_OVERALL = PASS
 ```
 
-## 8. Exact current gate
+### Accepted Kintone-only ceilings — must remain visible
 
 ```text
-ACTIVE_TASK = D1 FINAL CLOSURE EVIDENCE
-NEXT_GATE = COMMENTS / HISTORY / ATTACHMENTS GET-ONLY RUNTIME REVIEW
-TARGET = existing App794 Record #12 where possible
-CURRENT_OWNER = ChatGPT + User
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+```
+
+These limitations are explicitly accepted architecture ceilings. Browser customization cannot create a privileged server-side boundary that Kintone itself does not provide. Do not claim stronger guarantees and do not embed privileged API tokens as a workaround.
+
+## 5. Source freeze
+
+Repository compare from runtime source commit `c6864d09...` to the pre-closure docs HEAD showed only these files changed:
+
+```text
+project-docs/AI_ACTIVE_TASK.md
+project-docs/AI_CONTROL_CENTER.md
+project-docs/AI_DOCUMENT_INDEX.md
+project-docs/CHAT_HANDOFF.md
+project-docs/TEST_STATUS.md
+```
+
+No runtime/source/test change occurred after the Rev67 runtime source commit.
+
+## 6. Current gate
+
+```text
+D1 = CLOSED / PASS
+ACTIVE_WORK_PACKAGE = NONE
+NEXT_WORK_PACKAGE = OWNER DECISION REQUIRED
+RECOMMENDED_NEXT = D2 Excel + PDF Original/Legacy Format
+CURRENT_OWNER = User + ChatGPT
 ANTIGRAVITY = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-APP801_WRITE_AUTH = NONE
 ```
 
-Do not add comments, upload files, change App794 records, transition workflow, or create synthetic evidence without a new exact authorization.
+Do not auto-start D2–D6 without owner instruction.
 
-## 9. Other project tracks
-
-D2–D5 remain open as previously recorded. D6 remains pending. D7 remains source-closed.
-
-## 10. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -224,4 +180,4 @@ APP801_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-All prior HR deploy, foreign-record synthetic, 0130 reset, and Shared First-Login UAT authorizations are consumed and must never be reused.
+All prior HR deploy, foreign-record synthetic, 0130 reset/session, and dual-role Record #14 CREATE/transition/DELETE authorizations are consumed and must never be reused.
