@@ -28,151 +28,168 @@ User + Browser Console = preferred for narrow Kintone GET/UAT
 
 No Live Kintone write/deploy/ACL/group/schema/record/session/password operation without exact explicit authorization. Never reuse consumed authorization.
 
-## 3. D1 core checkpoint
+## 3. D1 FINAL STATUS
 
 ```text
-D1 = KINTONE-ONLY HYBRID IDENTITY
-APP53 dedicated mappings = 24 / PASS
-App794 Process = 16 states / 31 actions
-App794 Live revision = 67
+D1_HYBRID_IDENTITY_PASSWORD_EMPLOYEE_SELF_APPROVER_ACCESS = PASS
+FINAL_D1_SECURITY_REVIEW = PASS
+PASS_MODE = PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 ```
 
-Canonical Record #12:
+Source/runtime freeze was rechecked: from runtime commit `c6864d09...` to the pre-closure docs HEAD, only `project-docs/` files changed; no runtime/source/test file changed.
+
+## 4. D1 accepted evidence
+
+### Dedicated identity / Employee-Self / routing
 
 ```text
-Employee = 0113 / papatchaya
+APP53_TOTAL_RECORDS = 281
+DEDICATED_MAPPINGS_VERIFIED = 24
+papatchaya -> Employee 0113
+Record #12 = FY2026-0113
 Status = 03 Manager Objective Review
+Requester = papatchaya
 Manager = pattama
 Assignee = pattama
 Topology = M1_ONLY
-Own-MBO self-appraiser elision = PASS
-Native 01 -> 03 transition = PASS
+OWN_MBO_SELF_APPRAISER_ELISION = PASS
+PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-## 4. Dedicated/HR/privacy gates — PASS
+### Dedicated ACL / privacy / HR
 
 ```text
-Requester own Draft ACL = PASS
-Requester at manager stage View-only = PASS
-HR status03 native ACL = PASS
-HR non-employee runtime mode Rev67 = PASS
-Foreign Record Negative Runtime = PASS
+REQUESTER_OWN_DRAFT_ACL = PASS
+REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
+HR_STATUS03_NATIVE_ACL = PASS
+HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
+FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
 STALE_PRIOR_APPROVER_STRUCTURAL = PASS
 HR_STATUS15_STRUCTURAL = PASS
 CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED / NON-BLOCKING
 ```
 
-Foreign UAT temporary Record #13 (`FY2026-0044 / vassana`) was inaccessible to `papatchaya` by direct GET, query, ACL and direct URL, then deleted. No synthetic test record remains.
+Temporary foreign Record #13 was denied to `papatchaya` by direct GET/query/ACL/direct URL and deleted. No Record #13 remains.
 
-`admin-form` and `hr` are non-employee principals and intentionally have no Employee ID/App53 Employee-Self mapping. Do not reset Pattama password solely for UAT.
+`admin-form` and `hr` are non-employee principals by design. Never invent Employee IDs/App53 mappings for them. Do not reset Pattama's native Kintone password solely for UAT.
 
-## 5. Shared Employee-Self / App801 Session — PASS
+### Shared Employee-Self / App801 session
 
-Controlled real UAT:
+Controlled UAT:
 
 ```text
-Shared Kintone principal = tmh
+Kintone principal = tmh
 Employee_Code = 0130
 App53 #414 = Active / MBO_Kintone_User=[]
 App801 #107
 ```
 
-One-shot MBO password reset:
+Accepted runtime:
 
 ```text
-Credential_Version 4 -> 5
-Force_Password_Change = YES
-Failed_Attempts = 0
-Session_* cleared
-RESET_PASS = true
-```
-
-One-shot Shared First-Login UAT:
-
-```text
-Login tmh + temporary MBO credential = PASS
+MBO Login = PASS
 Force Password Change = PASS
 Credential_Version 5 -> 6
 Force_Password_Change = NO
-Session issued = PASS
+8-hour session issue = PASS
 Session_Credential_Version = 6
 Session_Kintone_User = tmh
-Employee-Self bound to 0130 = PASS
 same-tab reload restore = PASS
 independent new tab without token -> MBO Login = PASS
-Logout = PASS
-```
-
-Final logout readback:
-
-```text
-Session_Token_Hash = blank
-Session_Issued_At = blank
-Session_Expires_At = blank
-Session_Credential_Version = blank
-Session_Kintone_User = blank
-LOCAL_SESSION_TOKEN_PRESENT = false
-LOGIN_OVERLAY_VISIBLE = true
-Credential_Version = 6
-Force_Password_Change = NO
-Failed_Attempts = 0
+MBO Logout = PASS
+server Session_* cleanup = PASS
+local session token cleanup = PASS
 D1_SHARED_SESSION_RUNTIME = PASS
 ```
 
-All 0130 reset / Shared First-Login UAT authorizations are consumed.
+Negative session/security cases are covered by source/integration tests: expired/tampered token, disabled/locked/forced-change state, credential-version mismatch, principal mismatch, old-session invalidation after password change, raw-token storage boundary, and Employee-Code context switching fail closed.
 
-Shared-account limitation remains accepted:
+### Comments / history / attachments Live truthfulness
+
+Record #12 GET/UI runtime:
 
 ```text
-DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRINCIPAL
+Native comments = 0
+UI comment items = 0
+Timeline = 0 Events Recorded + truthful no-history state
+Preview fixture leak = none
+FILE fields = 30
+Objective_Attachment_1 = 2.jpeg / real saved file
+UI filename 2.jpeg visible = true
+preview attachment leak = none
+COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PASS
 ```
 
-## 6. Repository evidence already reusable
+### Dedicated dual-role Live UAT
 
-Targeted review found:
+Synthetic Record #14 `FY2026-0007` was created under exact one-shot authorization from App795 TMH2 route:
 
 ```text
-DUAL_ROLE_SOURCE_INTEGRATION = PASS
-- Dedicated index keeps My MBO and My Approval Tasks separate
-- approval task authority comes from current Assignee query/revalidation
-- mismatched Assignee task is filtered
-- approval-home authority does not query App795
-- SHARED mode exposes no approval task section/query
-
-COMMENTS_HISTORY_ATTACHMENTS_SOURCE = PASS
-- Live timeline has zero fake history when no authoritative events exist
-- Live timeline renders only supplied authoritative events
-- create screen has no comment mirror / 0 comment GET
-- detail/edit mirror uses native Kintone comments endpoint
-- Live attachment display uses real saved filenames and excludes preview mock data
-- attachment desired-state persistence/removal behavior is covered
+Employee = 0007
+Requester = tmh
+M1 / Manager = papatchaya
+G1 / GM = pattama
+Topology = M1_G1
+01 Draft Objective -> 03 Manager Objective Review
+Assignee = papatchaya
 ```
 
-## 7. D1 is still open — final evidence only
+As `papatchaya`:
 
 ```text
-COMMENTS_HISTORY_ATTACHMENTS_RUNTIME = PENDING / GET-ONLY preferred
-DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PARTIAL / SOURCE PASS, LIVE DISPOSITION PENDING
-FINAL_D1_SECURITY_REVIEW = PENDING
+My MBO = Record #12 / Employee 0113
+My Approval Tasks = Record #14 / Employee 0007
+native Assignee query contains #14
+UI contexts remain separate
+D1_LIVE_DUAL_ROLE = PASS
 ```
 
-Do not false-pass D1.
+No Approve/Return action was performed. Approval action authority is accepted from source/integration evidence that fresh-revalidates exact current native `Assignee`, denies SHARED mode and mismatched/stale assignee, and never falls back to App795/static snapshot fields.
 
-## 8. Exact current gate
+Record #14 was then deleted under the same bounded authorization; post-delete `FY2026-0007` count = 0. No synthetic Record #14 remains.
+
+## 5. Final D1 security disposition
 
 ```text
-ACTIVE_TASK = D1 FINAL CLOSURE EVIDENCE
-NEXT = COMMENTS / HISTORY / ATTACHMENTS GET-ONLY RUNTIME REVIEW
-TARGET = existing App794 Record #12 where possible
-OWNER = ChatGPT + User
+DEDICATED_IDENTITY = PASS
+SHARED_IDENTITY_SESSION = PASS
+EMPLOYEE_SELF_PRIVACY = PASS
+APPROVER_AUTHORITY = PASS
+DUAL_ROLE_SEPARATION = PASS
+SELF_APPROVAL_GUARD = PASS
+HR_NON_EMPLOYEE_MODE = PASS
+COMMENTS_HISTORY_ATTACHMENTS_TRUTH = PASS
+SYNTHETIC_CLEANUP = PASS
+FINAL_D1_SECURITY_REVIEW = PASS
+```
+
+Two Kintone-only security ceilings remain deliberately documented and are NOT to be misrepresented as hard guarantees:
+
+```text
+1. SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+   Employees sharing one native Kintone principal cannot receive true native Employee_Code-level REST isolation from browser JavaScript.
+
+2. DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+   Normal UI auto-binds Employee_Code correctly, but browser customization is not a privileged server-side enforcement layer.
+```
+
+These are accepted architecture ceilings, not hidden defects. Do not weaken or remove them without an explicit user architecture decision.
+
+## 6. Current gate
+
+```text
+D1 = CLOSED / PASS
+ACTIVE_WORK_PACKAGE = NONE
+NEXT_WORK_PACKAGE = OWNER DECISION REQUIRED
+RECOMMENDED_NEXT = D2 Excel + PDF Original/Legacy Format
 ANTIGRAVITY = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-APP801_WRITE_AUTH = NONE
 ```
 
-Do not add comments, upload attachments, alter Record #12, transition workflow, or create a synthetic record without a new exact authorization.
+Do not auto-start D2–D6 from this handoff. Wait for owner instruction.
 
-## 9. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -185,28 +202,18 @@ APP801_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-All prior HR deploy, foreign-record CREATE/DELETE, 0130 reset, and Shared First-Login UAT authorizations are consumed.
+All prior foreign-record, HR deploy, 0130 reset/session, and dual-role synthetic Record #14 CREATE/transition/DELETE authorizations are consumed and must never be reused.
 
-## 10. New-chat continuation
+## 8. Whole-project status reminder
 
 ```text
-Continue MBO2026 from repository truth.
-Repository: rebootob/MBO2026
-Canonical branch: ai/antigravity-wp002c
-Fresh-fetch HEAD first. Read CHAT_HANDOFF.md, AI_CONTROL_CENTER.md, AI_ACTIVE_TASK.md, AI_DOCUMENT_INDEX.md and only relevant baselines.
-Do not repeat accepted work. Do not broad-scan. Use Antigravity only when genuinely necessary.
-
-Current D1 truth:
-- Dedicated/HR/privacy major gates PASS.
-- App794 Rev67; Process 16/31.
-- Foreign record isolation PASS and synthetic cleanup PASS.
-- Stale prior approver structural protection PASS.
-- HR status15 structural authorization PASS.
-- Pattama interactive runtime is credential-limited/non-blocking.
-- Shared Employee-Self/App801 Session runtime PASS using tmh + Employee 0130; same-tab restore/new-tab isolation/logout cleanup PASS; App801 session fields are currently blank after logout.
-- Dual-role source/integration coverage PASS, Live disposition still pending.
-- Comments/history/attachments source/integration coverage PASS, Live GET-only runtime review next.
-- D1 remains OPEN for final evidence/security review only.
-- No active Kintone/App801 write authorization.
-Respond in Thai.
+D1 = PASS
+D2 = IN PROGRESS
+D3 = IN PROGRESS / WRITE NOT AUTHORIZED
+D4 = IN PROGRESS
+D5 = IN PROGRESS
+D6 = PENDING
+D7 = SOURCE FUNCTIONALITY CLOSED
 ```
+
+Project-wide MBO2026 is NOT complete merely because D1 is closed.
