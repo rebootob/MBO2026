@@ -1,108 +1,121 @@
-# AI ACTIVE TASK — D2 READ-ONLY DISCOVERY
+# AI ACTIVE TASK — D2 WP001 APPROVAL GATE
 
-Mode: **CHATGPT CONTROL PLANE / READ-ONLY DISCOVERY / NO SOURCE CHANGE / NO UNAUTHORIZED KINTONE WRITE**  
+Mode: **CHATGPT CONTROL PLANE / DISCOVERY COMPLETE / NO SOURCE CHANGE / NO UNAUTHORIZED KINTONE WRITE**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = ACTIVE
+TASK_STATE = WAITING_OWNER
 D1_OVERALL = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
 EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 PRE_D2_DOCUMENTATION_SYNC = COMPLETE
 CURRENT_OWNER = USER + CHATGPT
-ACTIVE_WORK_PACKAGE = D2-DISCOVERY-001
-D2_STATUS = STARTED / READ-ONLY DISCOVERY
-ANTIGRAVITY_ACTION = NONE DURING DISCOVERY
+D2_STATUS = IN PROGRESS / DISCOVERY COMPLETE
+D2-DISCOVERY-001 = COMPLETE
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP001
+PROPOSED_WORK_PACKAGE_NAME = EXPORT AUTHORIZATION + PROJECTION FOUNDATION
+ANTIGRAVITY_ACTION = WAITING OWNER APPROVAL
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-## 1. Owner authorization received
+## 1. D2 discovery disposition
 
-Owner explicitly instructed ChatGPT to start D2 on 2026-09-01 ICT.
+Owner started D2 on 2026-09-01 ICT. ChatGPT completed the bounded read-only discovery required by `project-docs/EXCEL_EXPORT.md`.
 
-This starts **D2 discovery only**. It does not authorize source/test changes, build/deploy, Live Kintone writes, or an Antigravity implementation task.
+Accepted discovery findings:
+- current export implementation exists at `src/services/mbo-export-service.js`;
+- current export tests exist at `tests/mbo-export-service.test.js`;
+- current export service is projection/data-model only, not an `.xlsx` or PDF binary generator;
+- current package dependencies contain no workbook/PDF generation library;
+- App794 normalizer already supports objective slots 1..10;
+- current export test asserts only a 4-objective case and does not prove 5/10 behavior;
+- current export projection has no explicit export-authorization/security context and can project confidential scoring/final fields;
+- D1 Employee-Self security foundation exists in `MboEmployeeSelfGateway`;
+- D1 current-Assignee authority foundation exists in `MboApprovalTaskService`;
+- static route/appraiser snapshots must not be used as current approver-export authority;
+- current profile weighting matches `CONFIRMED_BASELINE/EVALUATION_CLASSES.md`, including `PROF_ASST_MGR = 60/40`;
+- legacy binary Excel templates are intentionally ignored by Git and were not located in current ChatGPT Library or connected Google Drive searches.
 
-## 2. D2 discovery scope
+Canonical full findings and D2 acceptance boundary: `project-docs/EXCEL_EXPORT.md`.
 
-Canonical contract: `project-docs/EXCEL_EXPORT.md`.
-
-Control Plane must perform only the bounded read-only discovery below:
+## 2. Proposed D2-WP001 — not authorized yet
 
 ```text
-A. inventory current export implementation/source/tests
-B. locate approved legacy Excel/PDF sample files available to the project
-C. map App794 fields to legacy Part A / Part B output
-D. identify current PDF generation mechanism
-E. identify export authorization/confidentiality guards
-F. produce gap list + smallest safe D2 implementation Work Package
+D2-WP001 = EXPORT AUTHORIZATION + PROJECTION FOUNDATION
+STATUS = PROPOSED / OWNER APPROVAL REQUIRED
+EXECUTOR = ANTIGRAVITY AFTER APPROVAL
 ```
 
-Directly relevant repository material may include:
+Exact proposed source scope:
 - `src/services/mbo-export-service.js`;
 - `tests/mbo-export-service.test.js`;
-- exact export callers/integration points only as needed;
-- `skills/mbo-excel-export/SKILL.md`;
-- approved legacy sample files if available;
-- directly relevant legacy mapping/formula documents when needed to interpret those samples.
+- existing D1 security services/constants may be imported/reused only as required;
+- no new runtime file unless separation is demonstrably necessary.
 
-Do not broad-scan historical project trees.
+Required implementation outcomes:
+1. fail closed without trusted export context;
+2. Employee-Self requires exact bound Employee_Code and excludes confidential manager/GM/final data;
+3. Dedicated Approver requires authoritative current native Assignee; SHARED Approver denied;
+4. stale/static route snapshot does not authorize export;
+5. preserve Confirmed Baseline profile weights;
+6. exact 4, 5 and 10 objective projection tests;
+7. negative tests for cross-employee, SHARED approver, stale assignee and confidential leakage;
+8. no binary Excel/PDF renderer, UI integration, dependency addition, Kintone write or deployment in WP001.
 
-## 3. D2 acceptance target
+## 3. Antigravity low-credit execution rule
 
-D2 must ultimately prove:
+Antigravity must **not** start before Owner approval.
 
-```text
-Excel Part A original/legacy parity
-Excel Part B original/legacy parity
-Combined workbook where applicable
-PDF original/legacy visual/print parity
-5–10 objective capacity without silent truncation
-Export authorization/confidentiality parity for Excel and PDF
-```
+After exact approval of `D2-WP001`, Antigravity must read only:
+1. `project-docs/AI_CONTROL_CENTER.md`;
+2. `project-docs/AI_ACTIVE_TASK.md`;
+3. `project-docs/EXCEL_EXPORT.md`;
+4. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`;
+5. `project-docs/SECURITY_MODEL.md`;
+6. `src/services/mbo-export-service.js`;
+7. `tests/mbo-export-service.test.js`;
+8. only exact existing D1 security source imported by the implementation.
 
-Legacy-format parity includes workbook/sheet/page structure, labels, merged cells, formulas/totals, formatting, print setup, objective ordering and PDF pagination/layout where present in the approved sample.
+Execution rules:
+- no whole-repo scan;
+- no planning expansion;
+- smallest patch only;
+- focused tests only;
+- one implementation commit preferred;
+- no deploy;
+- no Live Kintone access/write;
+- final executor status may be only `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`;
+- ChatGPT must independently review before PASS.
 
-## 4. Security boundary
+## 4. Legacy template evidence gate
 
-D1 remains frozen and D2 inherits its authorization/privacy rules.
+The approved legacy binary templates are deliberately not committed because `.gitignore` excludes them as potentially employee-data-bearing local references.
 
-```text
-Employee-Self export = bound Employee_Code only
-Dedicated Approver export = current authorized business scope only
-SHARED Approver authority = DENIED
-HR/Admin export = approved role/business scope only
-UI/button visibility != authorization
-Excel security rules = PDF security rules
-```
+Before template renderer/parity work begins, ChatGPT must receive or otherwise obtain approved sanitized/local evidence for at least:
+- `PMS_Staff & Chief_PART_A.xlsx`;
+- `PMS_Staff & Chief_PART_B.xlsx`;
+- approved PDF example if PDF visual parity is required against a specific output.
 
-Employee/Shared Employee-Self export must omit unauthorized manager/GM/final confidential data entirely, including hidden sheets/columns.
+This evidence gate does not block WP001 because WP001 deliberately excludes binary rendering.
 
-## 5. Execution-plane rule
-
-```text
-ANTIGRAVITY = IMPORTANT_AND_NECESSARY_IMPLEMENTATION_ONLY
-```
-
-During `D2-DISCOVERY-001`, ChatGPT performs repository/sample analysis directly. Do not spend Antigravity credit on discovery that ChatGPT can safely perform.
-
-If discovery proves source implementation is required, ChatGPT must first propose the smallest safe D2 Work Package. Antigravity may execute that implementation only after explicit Owner approval of that Work Package.
-
-## 6. Forbidden during this task
+## 5. Forbidden until Owner approves WP001
 
 Do not:
 - modify `src/`;
 - modify `tests/`;
-- modify build/runtime assets;
-- run deployment;
+- add package dependencies;
+- change build/runtime assets;
+- deploy;
 - write App53/App794/App795/App801;
 - change ACL/Process Management;
 - create Live UAT records;
 - export confidential Live data;
 - start D3/D4/D5/D6 implementation;
-- assign Antigravity implementation before Owner approves the proposed D2 Work Package.
+- ask Antigravity to implement D2-WP001.
 
-## 7. Current safety / authorization
+## 6. Current safety / authorization
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -119,4 +132,4 @@ KINTONE_CUSTOMIZATION_DEPLOY = NO
 ROLLBACK = NO
 ```
 
-D1 remains `PASS / CLOSED` unless a proven D1 identity/security regression exists.
+Exact next gate: Owner approval or rejection/correction of `D2-WP001`.
