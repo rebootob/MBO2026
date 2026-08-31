@@ -30,7 +30,7 @@ ANTIGRAVITY_MINIMUM_NECESSARY_ONLY = YES
 ### Final status
 
 ```text
-D1 = PASS
+D1 = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
 PASS_MODE = PASS WITH DOCUMENTED KINTONE-ONLY CEILINGS
 APP794_LIVE_REVISION = 67
@@ -43,73 +43,53 @@ Canonical architecture remains:
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 ```
 
-### Dedicated Kintone users — PASS
-- exact active App53 `MBO_Kintone_User` mapping -> canonical `emp_text` Employee_Code -> Employee-Self auto-bind;
-- 24 dedicated mappings verified;
-- missing/ambiguous/invalid mapping fails closed in source/integration;
-- `admin-form` cannot bind Employee-Self;
-- canonical live Record #12 proves papatchaya Employee 0113, own route and native workflow;
-- own-MBO self-appraiser elision PASS;
-- Dedicated privacy/record ACL PASS including foreign-record negative runtime;
-- current approver authority is exact native `Assignee`, never static App795/snapshot membership.
+Accepted closure includes:
+- 24 verified dedicated App53 mappings;
+- Dedicated Employee-Self/native workflow/record privacy;
+- current native `Assignee` approval authority with stale/static fallback denied;
+- Shared App801 login, forced password change, session continuity/isolation/logout;
+- live Dedicated dual-role separation;
+- HR non-employee mode;
+- truthful comments/history/attachments;
+- bounded synthetic UAT cleanup.
 
-### Shared Kintone users — PASS
-- App801 Employee_Code + MBO Password/session path retained;
-- real `tmh` + Employee 0130 UAT proved Login, Force Password Change, session issue, 8-hour binding, same-tab restore, new-tab isolation and Logout cleanup;
-- negative session cases are covered by source/integration tests;
-- SHARED approver authority remains denied.
-
-### Dual-role — PASS
-One bounded synthetic App794 Record #14 (`FY2026-0007`) proved live under `papatchaya` that:
-
-```text
-My MBO = Record #12 / Employee 0113
-My Approval Tasks = Record #14 / Employee 0007
-current Assignee = papatchaya
-contexts remain separate
-```
-
-No Approve/Return was performed. Source/integration proves action authority fresh-revalidates current `Assignee` and denies stale/mismatched/SHARED actors. Record #14 was deleted; cleanup count = 0.
-
-### Comments / history / attachments — PASS
-Record #12 live GET/UI evidence proved:
-- native comments 0 = UI comments 0;
-- truthful `0 Events Recorded` / no fabricated history fixture;
-- real saved attachment `2.jpeg` appears exactly in UI;
-- no preview/mock attachment leak.
-
-### HR/admin — PASS for D1 boundary
-- `hr` resolves as HR_ADMIN without Employee ID;
-- status03 native ACL PASS;
-- status15 native structural authority/process PASS;
-- `admin-form` technical-admin MBO reset path was exercised with exact one-shot runtime evidence on Employee 0130;
-- HR/admin remain non-employee principals and receive no fabricated Employee-Self mapping.
-
-### Final D1 security ceilings — accepted and mandatory to retain
+Accepted Kintone-only ceilings remain mandatory:
 
 ```text
 SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE ACCOUNT
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-These are Kintone-only architecture ceilings. D1 PASS does not mean hard per-Employee REST isolation exists for a shared native principal, and browser customization cannot provide a privileged server-side create-field enforcement boundary. Never hide these limits or embed privileged API credentials as a workaround.
+Pattama-specific interactive login remains credential-limited/non-blocking. Do not reset another person's native Kintone password solely for UAT.
 
-### Credential-limited item — non-blocking
-Pattama-specific interactive login was not run because the credential is unavailable. Do not reset another person's native Kintone password solely for UAT. Equivalent approval authority path is accepted from live papatchaya dual-role evidence plus source/fresh-revalidation tests.
-
-Status: `✅ PASS / CLOSED`. Reopen D1 only for a proven defect or explicit architecture change.
+Status: `✅ PASS / CLOSED`. Reopen only for proven regression or explicit architecture change.
 
 ## 2. D2 — Excel + PDF Original/Legacy Format
 
-Must prove:
+### Pre-start status
+
+```text
+D2 = READY / NOT STARTED
+PRE_D2_DOCUMENTATION_SYNC = COMPLETE
+ACTIVE_D2_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+```
+
+Canonical pre-start contract: `project-docs/EXCEL_EXPORT.md`.
+
+D2 must prove:
 - Excel Part A;
 - Excel Part B;
-- combined/multi-sheet output where applicable;
-- PDF matching approved legacy presentation;
-- 5–10 objective capacity;
-- own/assigned/HR export security and confidential-data isolation.
+- combined/multi-sheet workbook where applicable;
+- PDF matching approved legacy/original presentation;
+- 5–10 objective capacity without silent truncation;
+- own/assigned/HR export security and confidential-data isolation;
+- equivalent authorization rules for Excel and PDF.
 
-Status: `IN PROGRESS`.
+Before implementation:
+`read-only source/test inventory -> locate approved legacy samples -> field mapping -> PDF mechanism review -> security guard review -> gap list -> smallest D2 Work Package`.
+
+Owner instruction is required to start D2. Documentation readiness is not source-change authorization.
 
 ## 3. D3 — Migrate 8 Legacy PMS Apps -> App794
 
@@ -190,9 +170,9 @@ Always re-fetch:
 
 For a new ChatGPT conversation:
 1. copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the first message;
-2. the new chat fresh-fetches branch HEAD;
-3. reads `CHAT_HANDOFF.md` first;
-4. then reads Control Center, Active Task, Document Index and only relevant Baselines.
+2. fresh-fetch branch HEAD;
+3. read `CHAT_HANDOFF.md` first;
+4. then Control Center, Active Task, Document Index and only relevant Baselines.
 
 ## 11. Project-close condition
 
@@ -207,4 +187,4 @@ D7 = PASS
 P0_DEFECTS_OPEN = 0
 ```
 
-Anything less remains IN PROGRESS or BLOCKED with exact evidence.
+Anything less remains NOT STARTED, IN PROGRESS or BLOCKED with exact evidence.
