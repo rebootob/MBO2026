@@ -5,38 +5,56 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-31 — D1 DEDICATED ROUTING UAT PASS / NEXT RECORD ACL PRIVACY GATE
+> Updated: 2026-08-31 — D1 DEDICATED CORE UAT PASS / RECORD ACL PRIVACY GATE OPEN
 
-## 1. D1 status
+## 1. Whole-project scoreboard
 
-D1 Gate A source/test/build is accepted. App53 Production identity preparation and dedicated-user mapping are complete through user-operated Kintone UI/Browser Console with ChatGPT review.
+| ID | Status | Current checkpoint |
+|---|---|---|
+| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS | Dedicated identity/own-route/native employee→manager workflow PASS; App794 record ACL privacy gate OPEN |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Legacy format parity/security not closed |
+| D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only mapping/reconciliation path only |
+| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Reset semantics/source accepted; full live E2E not closed |
+| D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Narrow carry-forward whitelist remains current design |
+| D6 Integrated E2E / Security / Regression | 🔴 PENDING | Starts after D1–D5 sufficiently ready |
+| D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
 
-Dedicated Employee-Self runtime has now been validated end-to-end on App794 using Kintone user `papatchaya` / Employee Code `0113`.
+## 2. D1 architecture and accepted source foundation
 
-The prior App802 sandbox execution path remains cancelled and must not be run.
+```text
+D1 = KINTONE-ONLY
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+AUTH_BRIDGE = CANCELLED
+```
 
-## 2. App53 field baseline — PASS
+Accepted source milestones remain:
 
-Browser-console Kintone API readback verified:
+```text
+HYBRID_IDENTITY_CORE_SOURCE_R1 = PASS
+HYBRID_EMPLOYEE_SELF_RUNTIME_ENTRY = PASS
+LATEST_ACCEPTED_FULL_REGRESSION = 1024/1024 PASS
+APPROVAL_AUTHORITY_SERVICE_R1 = PASS
+APPROVAL_AUTHORITY_SERVICE_COMMIT = 5ac5ede6e40a1462f0398ba8740330742041e3bf
+```
+
+Dedicated approval authority = authoritative current App794 native `Assignee`; static App795 membership and legacy snapshot fields are not sufficient authority. SHARED approver authority remains denied.
+
+## 3. App53 identity preparation — PASS
+
+Browser-console and user-operated Kintone evidence:
 
 ```text
 APP_ID = 53
 APP_NAME = Employee Namelist
-FIELD_CODE = MBO_Kintone_User
-LABEL = MBO Kintone User
-TYPE = USER_SELECT
-REQUIRED = false
-ENTITIES_COUNT = 0
 TOTAL_RECORDS = 281
+MBO_Kintone_User = USER_SELECT / optional / live
+DEDICATED_TARGET_RECORDS_VERIFIED = 24
+MBO_Kintone_User_NONEMPTY_RECORDS = 24
+UNEXPECTED_NONEMPTY_RECORDS = 0
+papatchaya -> App53 Record 426 -> Employee Code 0113
 ```
 
-Field creation is accepted.
-
-## 3. Employee Code normalization
-
-The user manually normalized active short numeric `emp_text` Employee Codes to four digits through a guarded Browser Console script.
-
-Five explicitly unused/non-standard records were excluded from that normalization operation:
+Active short numeric `emp_text` Employee Codes were normalized to four digits via guarded Browser Console. Five explicitly unused/non-standard records were excluded:
 
 ```text
 382 = 9000
@@ -46,48 +64,14 @@ Five explicitly unused/non-standard records were excluded from that normalizatio
 497 = 50.03
 ```
 
-The later 24-user mapping precheck independently confirmed the required normalized Employee Codes for all 24 target records.
+No additional App53 write is authorized automatically.
 
-## 4. Dedicated Kintone user discovery and mapping
+## 4. App794 Live configuration corrections completed during UAT
 
-Kintone user discovery found:
-
-```text
-TOTAL_KINTONE_USERS = 49
-ACTIVE_KINTONE_USERS = 38
-PERSONAL_KINTONE_USERS_SELECTED = 24
-```
-
-Twenty-three users resolved directly through exact identity evidence. `papatchaya` initially matched two App53 records because records 426 and 479 shared the same email. Manual GET-only inspection resolved the ambiguity:
+User-operated Kintone UI corrections reviewed by ChatGPT:
 
 ```text
-Record 426 = Employee Code 0113 = Ms.Papatchaya/TMH2
-Record 479 = Employee Code 0007 = Mr.Prajak/TMH2
-papatchaya -> Record 426
-```
-
-## 5. App53 MBO_Kintone_User population — PASS
-
-The user explicitly authorized updating exactly the 24 reviewed mappings and executed a revision-aware Browser Console update with immediate authoritative readback.
-
-Final evidence:
-
-```text
-APP53_MBO_Kintone_User_UPDATE = PASS
-TOTAL_RECORDS = 281
-TARGET_RECORDS_VERIFIED = 24
-MBO_Kintone_User_NONEMPTY_RECORDS = 24
-UNEXPECTED_NONEMPTY_RECORDS = 0
-```
-
-No additional App53 mapping write is authorized automatically.
-
-## 6. App794 manual corrections completed during UAT
-
-User-operated Kintone UI corrections, reviewed by ChatGPT:
-
-```text
-APP794_PROCESS_TWO_BUTTON_FIX = APPLIED
+APP794_PROCESS_TWO_BUTTON_FIX = PASS
 01 Draft Objective:
   First Manager action -> M1_M2_G1 / M1_M2_G1_G2 only
   Manager action       -> M1_G1 / M1_G1_G2 / M1_ONLY only
@@ -97,6 +81,7 @@ APP794_PROCESS_TWO_BUTTON_FIX = APPLIED
   same mutually-exclusive topology rule
 
 GM_User_REQUIRED = false
+
 MBO_DEDICATED_ACCESS_APP_PERMISSION:
   VIEW = true
   ADD = true
@@ -107,15 +92,17 @@ MBO_DEDICATED_ACCESS_APP_PERMISSION:
   APP_ADMIN = false
 ```
 
-App53 App Permission was also adjusted so the dedicated group can perform the required read-only employee lookup. App53 record-permission page currently contains no record-level rules.
+Do not delete First-Manager statuses/actions; they remain needed for future M2 routes.
 
-## 7. Clean Dedicated UAT — PASS
+App53 App Permission permits the required read-only dedicated lookup. App53 record-permission page currently has no record-level rules.
 
-Legacy test Record #11 was deleted by the user because it was disposable test data.
+## 5. Clean Dedicated UAT — PASS
 
-A new clean App794 UAT record was created while logged in as native Kintone user `papatchaya`.
+Disposable legacy test Record #11 was deleted.
 
-Pre-transition snapshot readback:
+A new clean App794 record was created while logged in as native Kintone user `papatchaya`.
+
+Pre-transition exact readback:
 
 ```text
 RECORD_ID = 12
@@ -134,9 +121,14 @@ ROUTING_TOPOLOGY = M1_ONLY
 D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
 ```
 
-This proves Own-MBO self-appraiser elision for `papatchaya` works: the App795 TMH2 route `papatchaya -> pattama` becomes effective own-MBO route `pattama` only.
+This proves own-MBO self-appraiser elision for the tested route:
 
-The user then executed native workflow action `Submit Objective to Manager`.
+```text
+App795 TMH2 master = papatchaya -> pattama / M1_G1
+Papatchaya own MBO = pattama only / M1_ONLY
+```
+
+Papatchaya executed `Submit Objective to Manager`.
 
 Fresh GET-only readback:
 
@@ -162,26 +154,23 @@ EMPLOYEE_TO_MANAGER_NATIVE_WORKFLOW = PASS
 NATIVE_ASSIGNEE = pattama
 ```
 
-Pattama interactive-login UAT remains pending because the user does not have Pattama's password. Do not reset another user's password merely for UAT.
+Pattama interactive-login UAT remains pending because the user does not have Pattama's password. Do not reset another user's native Kintone password merely for UAT.
 
-## 8. Cancelled executor work
+## 6. Current D1 gate — App794 record-level privacy / status-aware ACL
+
+App-level access alone is insufficient for rollout to 24 Dedicated users.
+
+Current task:
 
 ```text
-APP802_S_D2_EXECUTION = CANCELLED BY PLAN CHANGE
-APP802_RESUME_WRITE_AUTH = REVOKED / NOT TO BE USED
-APP802_FORWARD_DEPLOY_AUTH = REVOKED
-APP802_ROLLBACK_DEPLOY_AUTH = REVOKED
-ANTIGRAVITY_APP53_GET_ONLY_VERIFICATION = CANCELLED AS UNNECESSARY
-SECOND_SANDBOX_CREATE_AUTH = NONE
+APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION
+CURRENT_OWNER = ChatGPT + User
+ANTIGRAVITY_ACTION = NONE
+KINTONE_WRITE_AUTH = NONE
+APP794_RECORD_ACL_WRITE_AUTH = NONE
 ```
 
-App802 may remain untouched. No cleanup/delete is authorized.
-
-## 9. Next D1 gate — App794 record-level privacy / current-approver ACL
-
-App-level access alone is insufficient for dedicated-user privacy. Before rollout to the 24 dedicated users, App794 requires record-level ACL design and UAT so employees cannot read other employees' MBO records merely because they share `MBO_DEDICATED_ACCESS` app access.
-
-Canonical ACL fields remain:
+Canonical fields available for record-security design:
 
 ```text
 Requester_User
@@ -190,46 +179,87 @@ Manager_User
 GM_User
 ```
 
-Required behavior:
+Required lifecycle behavior:
 
 ```text
-Requester / employee:
-  may view own MBO throughout lifecycle
-  may edit only employee-owned stages
+REQUESTER / EMPLOYEE
+- View own record throughout lifecycle.
+- Edit only employee-owned stages.
 
-Current approver:
-  may view/edit only while their native workflow role is current
+CURRENT FIRST MANAGER
+- View/Edit only First Manager review stages when authoritative/current.
 
-Prior approver:
-  access must disappear after transition/reassignment unless another valid current role applies
+CURRENT MANAGER
+- View/Edit only Manager review stages when authoritative/current.
 
-HR/Admin:
-  preserve required administrative access
+CURRENT GM
+- View/Edit only GM review stages when authoritative/current.
 
-Static App795 membership alone is never approval authority.
+PRIOR APPROVER
+- Must not retain stale access after transition/reassignment unless another valid current role independently grants it.
+
+HR / ADMIN
+- Preserve required administrative access.
 ```
 
-Do not enable partial record ACL rules that could lock out later statuses. Design and review the complete status-aware rule set first, then request exact user authorization before any ACL write.
+Complete design must cover all current statuses 01–16 before any ACL write. Static App795 membership alone never grants access.
 
-## 10. Production protection / authorization ledger
+### Exact next step
+
+User + ChatGPT perform GET-only/current-screen inspection of **App794 → App Settings → Permissions for records** and identify existing rules (if any) plus exact HR/Admin entities. Then ChatGPT designs the complete status-aware ACL matrix and requests separate exact authorization only after the design is complete.
+
+Do not apply a partial ACL rule set.
+
+## 7. Other project tracks
+
+### D2
+Excel/PDF legacy-format closure still requires Part A, Part B, combined/multi-sheet where applicable, PDF visual parity, 5–10 objective capacity and export security/confidentiality proof.
+
+### D3
+Legacy source Apps `283,310,305,643,307,640,715,716` remain read-only by default. No App794 migration write authorization exists.
+
+### D4
+App800 Reset MBO Password semantics/source authority are accepted; live Reset UI deployment and full HR Control Center E2E remain open/not authorized.
+
+### D5
+Copy Own Previous MBO remains limited to Objective, Action Plan, Additional Agreement and Weight; no score/rating/result/workflow/route/profile snapshot copying.
+
+### D6
+Integrated E2E/security/regression remains pending.
+
+### D7
+Admin Support Center source functionality remains closed.
+
+## 8. Cancelled App802 path
 
 ```text
-APP53_SCHEMA_WRITE_AUTH = NONE
-APP53_RECORD_WRITE_AUTH = NONE
-APP53_BULK_WRITE_AUTH = NONE
-APP53_MAPPING_POPULATION_AUTH = NONE
+APP802_RESUME_WRITE_AUTH = REVOKED
+APP802_FORWARD/ROLLBACK = CANCELLED
+SECOND_SANDBOX_CREATE_AUTH = NONE
+```
+
+App802 may remain untouched. No cleanup/delete is authorized.
+
+## 9. Production protection / authorization ledger
+
+```text
+ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
+APP53_SCHEMA_WRITE_AUTH = NONE
+APP53_RECORD_WRITE_AUTH = NONE
+APP53_BULK_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-## 11. Current control state
+## 10. Current control state
 
 ```text
-ACTIVE_TASK = CHATGPT APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION
+ACTIVE_TASK = APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION
 CURRENT_OWNER = CHATGPT + USER
 ANTIGRAVITY_ACTION = NONE
-KINTONE_WRITE_AUTH = NONE
-NEXT_DECISION = COMPLETE STATUS-AWARE RECORD ACL DESIGN BEFORE ANY ACL WRITE
+NEXT_DECISION = COMPLETE FULL 16-STATUS ACL DESIGN BEFORE ANY ACL WRITE
+NEW_CHAT_BOOTSTRAP = project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md
+HANDOFF = project-docs/CHAT_HANDOFF.md
 ```
