@@ -1,105 +1,189 @@
-# MBO V2 Enterprise Security & Privacy Model
+# MBO2026 — ENTERPRISE SECURITY & PRIVACY MODEL
 
-> **Governance Authority:** `DEC-039 (STRICT EMPLOYEE RECORD DATA ISOLATION)`  
-> **Status:** `FROZEN / SECURITY CRITICAL`  
-> **Last Updated:** 2026-08-24T18:40:00+07:00  
+> Governance Authority: `DEC-039 (STRICT EMPLOYEE RECORD DATA ISOLATION)`  
+> Status: **FROZEN SECURITY MODEL / D1 CLOSED WITH DOCUMENTED KINTONE-ONLY CEILINGS**  
+> Updated: 2026-08-31 ICT
 
----
+## 1. Core security principle — DEC-039
 
-## 1. Core Security Principle & Record Data Isolation (`DEC-039`)
+Within the authorization boundary the system can enforce, each employee must access only their own MBO/evaluation data unless an explicit current business role authorizes access to another record.
 
-Each employee must ONLY be able to access their own MBO and evaluation records (e.g. Employee Code `0149` may access only `0149` records).
+Employee A must not be granted Employee-Self access to Employee B objectives, action plans, ratings, comments, scores, history, attachments or routing information merely by knowing an Employee_Code, record ID or URL.
 
-Employee A must **NEVER** be able to view, read, edit, or export:
-- Employee B objectives & action plans
-- Employee B ratings & achievement scores
-- Employee B manager/GM comments
-- Employee B final scores & grades
-- Employee B evaluation history & audit logs
-- Employee B attached files & documents
-- Employee B routing & approver details
+Explicit business roles may include current assigned Appraiser/Approver and authorized HR/Admin operations, each constrained by its own approved authority.
 
-unless the authenticated user possesses an explicit authorized business role (such as assigned appraiser, assigned approver, or HR).
+## 2. Authenticated identity binding
 
----
+`Employee_Code` alone is not authentication.
 
-## 2. Authenticated Identity Binding (`DEC-039`)
+```text
+Authenticated identity
+  -> verified Dedicated mapping OR valid Shared MBO session
+  -> bound Employee_Code
+  -> authorized Employee-Self record scope
+```
 
-* `Employee_Code` alone MUST NOT be treated as authentication.
-* System MUST NOT trust an input or URL `Employee_Code` without verifying authenticated identity.
-* Security access control MUST be strictly bound to verified **Authenticated Identity**:
-  $$\text{Authenticated Identity} \xrightarrow{\text{Verified Binding}} \text{Employee\_Code} \xrightarrow{\text{Access Control}} \text{Authorized Record(s)}$$
+Dedicated Employee-Self identity derives from native Kintone authentication plus exact active App53 `MBO_Kintone_User` mapping.
 
----
+Shared Employee-Self identity derives from an approved shared Kintone principal plus App801-backed MBO authentication/session.
 
-## 3. Shared Kintone Account Security Conflict (`SECURITY_ARCHITECTURE_DEPENDENCY`)
+No user-selectable identity switch may widen Employee-Self scope.
 
-* **Architectural Vulnerability:** If multiple employees log into Kintone using a shared/common Kintone account, native Kintone permissions view those employees as the **SAME** authenticated user.
-* **Security Limitation:** Native Kintone record permissions cannot distinguish individual employees behind a shared login.
-* **Mandatory Dependency Gate:** Prior to Employee Self-Service go-live, a deterministic, secure binding mechanism must be established and verified to resolve `SECURITY_ARCHITECTURE_DEPENDENCY`.
+## 3. D1 final security disposition
 
----
+```text
+D1_OVERALL = PASS / CLOSED
+FINAL_D1_SECURITY_REVIEW = PASS
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+```
 
-## 4. Security Boundary Rule (Native Permission vs UX)
+Accepted evidence covers Dedicated identity, record ACL/privacy, foreign-record denial, current-Assignee approval authority, Shared session runtime, dual-role separation, HR non-employee mode and truthful comments/history/attachments.
 
-* **Native Kintone App & Field Permissions** or approved server-side access control mechanisms constitute the system security boundary.
-* **Client-Side UX Customization:** JavaScript and CSS (hiding fields, hiding buttons, hiding records, view redirects, JavaScript table filters) are **UX ENHANCEMENTS ONLY**.
-* **Rule:** Client-side JavaScript/CSS MUST NOT be relied upon as a security boundary to prevent unauthorized data access.
+D1 PASS is expressly qualified by the platform ceilings in Sections 4 and 5.
 
----
+## 4. Shared Kintone principal — accepted platform ceiling
 
-## 5. Least-Privilege Role Access Matrix
+Multiple employees may use the same approved native Kintone principal. Native Kintone permissions therefore see those employees as the same principal.
 
-| Role / User Category | Access Scope | Confidential Field Rights |
-| :--- | :--- | :--- |
-| **Employee (Self)** | Own active & historical MBO records only | Read own objectives; BLOCKED from confidential rating fields |
-| **Authorized Appraiser** | Records explicitly assigned for evaluation | Read/Write assigned evaluation fields during evaluation stage |
-| **Authorized Approver** | Records explicitly routed to approver in active workflow | Read/Approve routed records during active approval stage |
-| **HR Specialist / Operations** | Enterprise evaluation records according to HR policy | Full business evaluation read/write access |
-| **HR Manager / System Admin** | Administrative access according to approved security policy | Full administrative & audit log access |
+Canonical limitation:
 
----
+```text
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRINCIPAL
+```
 
-## 6. Direct URL / API Security & Release Blocker Test
+Consequences:
+- App794 custom MBO Login/session must bind normal Employee-Self UI behavior to the authenticated Employee_Code;
+- Shared session state must fail closed on missing/tampered/expired/principal-mismatched credentials;
+- SHARED approver authority remains denied;
+- browser JavaScript cannot truthfully claim native per-Employee hard REST isolation behind one shared Kintone principal;
+- do not embed privileged API tokens/credentials in browser code to pretend to create a hidden server-side boundary.
 
-Access control security testing MUST include adversarial attempts to access cross-employee data via:
-- Direct Record URL tampering (`/k/794/show#record=XYZ`)
-- Record ID sequential manipulation
-- Kintone REST API direct queries (`/k/v1/records.json`)
-- Custom list views and saved queries
-- Kintone search engine queries
-- File export (CSV/Excel)
-- Attachment direct file download links
-- Mobile view URLs
+This is an accepted Kintone-only architecture ceiling, not an unresolved D1 blocker. Any future requirement for true native per-person REST isolation under shared access requires a new architecture decision.
 
-> **MANDATORY RELEASE BLOCKER TEST:**  
-> The automated & manual security test **`EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B`** must pass 100% prior to production release.
+## 5. Dedicated create-path — accepted platform ceiling
 
----
+Dedicated users require native App794 Add permission for the approved Kintone-only create flow. The normal UI derives Employee_Code from the authoritative App53 mapping and does not expose an Employee selector.
 
-## 7. Security Continuity for Historical Migrated Data (`DEC-040`)
+Canonical limitation:
 
-* `DEC-039` strict record data isolation applies equally to historical migrated records (`Record_Origin = LEGACY_MIGRATED`).
-* Migration of historical data from the 8 legacy PMS apps MUST NOT weaken or bypass record-level data isolation.
+```text
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+```
 
----
+Client-side customization is not a privileged server-side enforcement layer. Do not claim stronger direct-REST create-field integrity than native Kintone permissions provide.
 
-## 8. Hardened Confidentiality Field Policy
+## 6. Security boundary rule — native permission vs UX
 
-All appraisal competency rating fields belonging to the resolved competency set are **CONFIDENTIAL BY DEFAULT**.
+Kintone App/Record/Field/Process permissions are the native security boundary where applicable.
 
-Security access control MUST NOT rely on a fixed 1..6 list, but dynamically enforce privacy over all active competency rating indexes (including 1..8 for Management sets).
+JavaScript/CSS controls, hidden fields/buttons, list filters and redirects are UX/runtime controls and must not be described as stronger than the native principal permissions beneath them.
 
-Specifically, Employees / Shared accounts MUST NEVER view:
-- `Manager_Achievement_1..10`, `GM_Achievement_1..10`
-- `Manager_Comment_1..10`, `GM_Comment_1..10`
-- `PartA_Raw_Score`, `PartA_Weighted_Score`
-- `Manager_Competency_Rating_1..8`, `GM_Competency_Rating_1..8` (All active competency items 1..8)
-- `PartB_Raw_Score`, `PartB_Weighted_Score`
-- `Final_Confidential_Score`, `Final_Grade`
-## 9. App 794 Full Test Sandbox Environment Governance (`DEC-041`)
+For Dedicated access, native record/process permissions plus current workflow assignment provide the hard authorization boundary for tested record access.
 
-* **Sandbox Designation:** App 794 (`MBO V2 Sandbox App`) is designated as `APP_794_ENVIRONMENT = SANDBOX` and `APP_794_PRODUCTION = FALSE`. Its explicit purpose is `APP_794_PURPOSE = MBO_V2_DEVELOPMENT_AND_FULL_TESTING`. It is NOT a production application and MUST NOT be treated as permanently read-only.
-* **Controlled Write Permission:** App 794 controlled write operations (POST, PUT, DELETE, schema modifications, Process Management, security testing) are permitted ONLY when explicitly planned and authorized by an approved Work Package (`WRITE_ALLOWED_APPS = [794]`).
-* **Default-Deny Security Guard:** The default safety harness remains `WRITE_ALLOWED_APPS = []`. Protected apps (Apps 53, 283, 305, 307, 310, 640, 643, 715, 716) remain permanently READ ONLY.
-* **Primary Security Sandbox:** App 794 is the primary sandbox for proving `DEC-039` security isolation requirements and executing adversarial `EMPLOYEE_A_CANNOT_ACCESS_EMPLOYEE_B` release blocker tests prior to production cutover.
+For Shared Employee-Self, the custom MBO session is the approved application identity layer, subject to the explicit native REST ceiling in Section 4.
+
+## 7. Least-privilege role access matrix
+
+| Role / User Category | Authorized scope | Confidential field rule |
+|---|---|---|
+| Employee (Self) | Own MBO records only through bound Employee_Code | No unauthorized manager/GM/final confidential data |
+| Dedicated current Appraiser/Approver | Records currently assigned by native workflow | Only business fields/actions required for current stage |
+| Shared employee | Own Employee-Self context through valid App801 session | No Approver authority |
+| HR | Enterprise records according to approved HR role/process | HR business scope only |
+| Technical Admin (`admin-form`) | Diagnosis/recovery/approved admin operations | Not Employee-Self or business Approver by implication |
+
+## 8. Approval authority
+
+Dedicated Approver authority is:
+
+```text
+current authenticated dedicated Kintone User
+AND
+exact authoritative current native App794 Assignee
+```
+
+The following are insufficient by themselves:
+- App795 route membership;
+- `Manager_User` / `GM_User` / `First_Manager_User` snapshots;
+- caller-supplied role names;
+- UI visibility;
+- knowledge of a record ID.
+
+Fresh current-Assignee revalidation is required for approval record/action authority. SHARED mode is denied.
+
+Self-approval is prohibited. Approved own-MBO self-appraiser elision removes self before the own-record workflow snapshot and never auto-approves.
+
+## 9. Direct URL/API adversarial tests
+
+Security review should include, where the native architecture can enforce the property:
+- direct record URL tampering;
+- sequential record ID attempts;
+- REST record queries;
+- list/search access;
+- export access;
+- attachment access;
+- stale-prior-approver access;
+- unauthorized process action attempts.
+
+Accepted D1 Dedicated foreign-record UAT proved direct GET/query/direct URL denial for an unauthorized employee record.
+
+For Shared principals, do **not** falsely mark native Employee_Code-level REST isolation PASS; record the Section 4 ceiling instead and test the application session/Employee-Self behavior that D1 actually controls.
+
+## 10. Confidentiality policy
+
+Confidential appraisal fields are confidential by default. Employee/Shared Employee-Self output/UI must not expose unauthorized fields, including applicable:
+
+```text
+Manager_Achievement_1..10
+GM_Achievement_1..10
+Manager_Comment_1..10
+GM_Comment_1..10
+PartA_Raw_Score
+PartA_Weighted_Score
+Manager_Competency_Rating_1..8
+GM_Competency_Rating_1..8
+PartB_Raw_Score
+PartB_Weighted_Score
+Final_Confidential_Score
+Final_Grade
+```
+
+Security rules must cover all active competency indexes, not a hard-coded obsolete subset.
+
+D2 Excel/PDF export must inherit the same authorization/confidentiality boundary; export UI visibility alone is never authority.
+
+## 11. Historical migrated data — DEC-040
+
+The same record/privacy rules apply to historical migrated data such as `Record_Origin = LEGACY_MIGRATED`.
+
+D3 migration must not weaken current authorization boundaries. Legacy source Apps `283, 310, 305, 643, 307, 640, 715, 716` remain read-only by default.
+
+## 12. App794 controlled test environment — DEC-041
+
+App794 remains the approved MBO development/full-test environment for controlled work.
+
+```text
+DEFAULT WRITE_ALLOWED_APPS = []
+```
+
+Any App794 POST/PUT/DELETE/schema/process/security write still requires an exact authorized Work Package. Protected App53 and legacy source apps remain read-only unless separately and explicitly authorized where policy permits.
+
+D1 closure does not create standing write/deploy permission.
+
+## 13. Current authorization state
+
+```text
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_APP794_DEPLOY_AUTH = NONE
+ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
+ACTIVE_GROUP_WRITE_AUTH = NONE
+APP53_WRITE_AUTH = NONE
+APP801_WRITE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ROLLBACK_AUTH = NONE
+```
+
+## 14. Change rule
+
+Any proposal to remove the shared-principal REST ceiling, claim privileged browser enforcement, add external auth/server/database/proxy, broaden shared approver authority, weaken current-Assignee authorization, or expose confidential data requires explicit architecture/security review and Owner decision before implementation.
