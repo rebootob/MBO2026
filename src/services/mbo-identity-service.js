@@ -7,7 +7,8 @@ export class MboIdentityService {
 
   /**
    * Verifies if group list contains an authoritative HR_ADMIN_GROUP entry.
-   * Checks for group code/name matching HR_ADMIN_GROUP, HR_ADMIN, HR Admin, HR.
+   * ONLY exact group code 'HR_ADMIN_GROUP' authorizes HR_ADMIN.
+   * Group name is informational only and MUST NOT grant authority.
    * @param {Array<Object>} userGroups - Group records array from Kintone API
    * @returns {boolean} True if verified member of HR_ADMIN_GROUP
    */
@@ -15,14 +16,7 @@ export class MboIdentityService {
     if (!Array.isArray(userGroups) || userGroups.length === 0) {
       return false;
     }
-    const HR_CODES = new Set(['HR_ADMIN_GROUP', 'HR_ADMIN', 'HR_ADMINS', 'HR']);
-    const HR_NAMES = new Set(['HR ADMIN GROUP', 'HR ADMIN', 'HR_ADMIN_GROUP', 'HR_ADMIN']);
-    return userGroups.some(g => {
-      if (!g || typeof g !== 'object') return false;
-      const code = typeof g.code === 'string' ? g.code.trim().toUpperCase() : '';
-      const name = typeof g.name === 'string' ? g.name.trim().toUpperCase() : '';
-      return HR_CODES.has(code) || HR_NAMES.has(name);
-    });
+    return userGroups.some(g => Boolean(g && typeof g === 'object' && g.code === 'HR_ADMIN_GROUP'));
   }
 
   /**

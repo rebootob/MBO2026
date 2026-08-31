@@ -172,10 +172,11 @@ test('PRINCIPAL_MODE: candidate dedicated without groups -> DEDICATED', () => {
   assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr' }), 'DEDICATED');
 });
 
-test('HR_ADMIN_GROUP: isHrAdminGroupMember verifies valid HR group entry', () => {
+test('HR_ADMIN_GROUP: isHrAdminGroupMember verifies ONLY exact group code HR_ADMIN_GROUP', () => {
   assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'HR_ADMIN_GROUP', name: 'HR Admin' }]), true);
-  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'HR_ADMIN', name: 'HR Administrators' }]), true);
-  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'OTHER_GROUP', name: 'HR Admin' }]), true);
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'OTHER_GROUP', name: 'HR Admin' }]), false, 'code=OTHER_GROUP, name="HR Admin" must be false');
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'HR', name: 'HR' }]), false, 'code=HR, name="HR" must be false');
+  assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'HR_ADMIN', name: 'HR Admin' }]), false, 'code=HR_ADMIN must be false');
   assert.equal(MboIdentityService.isHrAdminGroupMember([{ code: 'ENGINEERING', name: 'Dev Team' }]), false);
   assert.equal(MboIdentityService.isHrAdminGroupMember([]), false);
   assert.equal(MboIdentityService.isHrAdminGroupMember(null), false);
@@ -189,7 +190,9 @@ test('PRINCIPAL_MODE: unmapped user + verified HR_ADMIN_GROUP -> HR_ADMIN mode',
 
 test('PRINCIPAL_MODE: username "hr" without verified HR_ADMIN_GROUP -> DEDICATED candidate (not HR_ADMIN)', () => {
   const nonHrGroups = [{ code: 'ENGINEERING', name: 'Dev Team' }];
+  const wrongCodeGroups = [{ code: 'HR_ADMIN', name: 'HR Admin' }];
   assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: nonHrGroups }), 'DEDICATED');
+  assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: wrongCodeGroups }), 'DEDICATED');
   assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: [] }), 'DEDICATED');
   assert.equal(MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode: 'hr', userGroups: null }), 'DEDICATED');
 });

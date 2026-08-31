@@ -6131,7 +6131,8 @@ Employee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate cre
   var _MboIdentityService = class _MboIdentityService {
     /**
      * Verifies if group list contains an authoritative HR_ADMIN_GROUP entry.
-     * Checks for group code/name matching HR_ADMIN_GROUP, HR_ADMIN, HR Admin, HR.
+     * ONLY exact group code 'HR_ADMIN_GROUP' authorizes HR_ADMIN.
+     * Group name is informational only and MUST NOT grant authority.
      * @param {Array<Object>} userGroups - Group records array from Kintone API
      * @returns {boolean} True if verified member of HR_ADMIN_GROUP
      */
@@ -6139,14 +6140,7 @@ Employee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate cre
       if (!Array.isArray(userGroups) || userGroups.length === 0) {
         return false;
       }
-      const HR_CODES = /* @__PURE__ */ new Set(["HR_ADMIN_GROUP", "HR_ADMIN", "HR_ADMINS", "HR"]);
-      const HR_NAMES = /* @__PURE__ */ new Set(["HR ADMIN GROUP", "HR ADMIN", "HR_ADMIN_GROUP", "HR_ADMIN"]);
-      return userGroups.some((g) => {
-        if (!g || typeof g !== "object") return false;
-        const code = typeof g.code === "string" ? g.code.trim().toUpperCase() : "";
-        const name = typeof g.name === "string" ? g.name.trim().toUpperCase() : "";
-        return HR_CODES.has(code) || HR_NAMES.has(name);
-      });
+      return userGroups.some((g) => Boolean(g && typeof g === "object" && g.code === "HR_ADMIN_GROUP"));
     }
     /**
      * Resolves native Kintone user code to authoritative principal access mode.
@@ -8343,7 +8337,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       if (typeof kintone === "undefined" || typeof kintone.api !== "function") {
         throw new Error("Kintone API is unavailable");
       }
-      const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/user/groups.json", true) : "/k/v1/user/groups.json";
+      const url = typeof kintone.api.url === "function" ? kintone.api.url("/v1/user/groups.json", true) : "/v1/user/groups.json";
       const resp = await kintone.api(url, "GET", { code: userCode });
       return resp ? resp.groups : [];
     }
@@ -8428,7 +8422,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
           } else if (kintoneApiWrapper && typeof kintoneApiWrapper.getUserGroups === "function") {
             userGroups = await kintoneApiWrapper.getUserGroups(kintoneUserCode);
           } else if (typeof kintone !== "undefined" && typeof kintone.api === "function") {
-            const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/user/groups.json", true) : "/k/v1/user/groups.json";
+            const url = typeof kintone.api.url === "function" ? kintone.api.url("/v1/user/groups.json", true) : "/v1/user/groups.json";
             const resp = await kintone.api(url, "GET", { code: kintoneUserCode });
             userGroups = resp?.groups || [];
           }

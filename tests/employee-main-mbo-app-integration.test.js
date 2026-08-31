@@ -1240,13 +1240,18 @@ test('HR_ADMIN_RUNTIME_MODE: unmapped user with verified HR_ADMIN_GROUP grants H
   // Mock logged-in user = 'hr' (unmapped in App53)
   globalThis.kintone.getLoginUser = () => ({ code: 'hr', name: 'HR Admin' });
 
-  // Mock kintone.api: App53 mapping empty, groups contains HR_ADMIN_GROUP
+  let requestedGroupsUrl = null;
+  globalThis.kintone.api.url = (path) => path;
   globalThis.kintone.api = async (url, method, params) => {
     if (url.includes('/records.json')) {
       return { records: [] }; // App53 mapping empty
     }
-    if (url.includes('/user/groups.json')) {
+    if (url === '/v1/user/groups.json') {
+      requestedGroupsUrl = url;
       return { groups: [{ code: 'HR_ADMIN_GROUP', name: 'HR Admin' }] };
+    }
+    if (url.includes('/user/groups.json')) {
+      throw new Error(`EXACT_ENDPOINT_VIOLATION: Expected '/v1/user/groups.json', got '${url}'`);
     }
     return {};
   };
@@ -1257,6 +1262,7 @@ test('HR_ADMIN_RUNTIME_MODE: unmapped user with verified HR_ADMIN_GROUP grants H
   const preUiInstance = getActiveUiInstance();
   const indexRes = await indexHandler(indexEvent);
 
+  assert.equal(requestedGroupsUrl, '/v1/user/groups.json', 'HR_ADMIN verification must invoke exact endpoint /v1/user/groups.json');
   assert.equal(indexRes, indexEvent, 'HR_ADMIN on index must return event unchanged');
   const ctx = getCurrentEmployeeSelfContext();
   assert.ok(ctx, 'HR_ADMIN context must be set');
@@ -1304,9 +1310,13 @@ test('HR_ADMIN_RUNTIME_MODE: username "hr" WITHOUT verified HR_ADMIN_GROUP fails
   globalThis.kintone.getLoginUser = () => ({ code: 'hr', name: 'Unverified HR Username' });
 
   // Mock kintone.api: App53 mapping empty, groups NON-HR
+  globalThis.kintone.api.url = (path) => path;
   globalThis.kintone.api = async (url, method, params) => {
     if (url.includes('/records.json')) return { records: [] };
-    if (url.includes('/user/groups.json')) return { groups: [{ code: 'ENGINEERING', name: 'Engineering' }] };
+    if (url === '/v1/user/groups.json') return { groups: [{ code: 'ENGINEERING', name: 'Engineering' }] };
+    if (url.includes('/user/groups.json')) {
+      throw new Error(`EXACT_ENDPOINT_VIOLATION: Expected '/v1/user/groups.json', got '${url}'`);
+    }
     return {};
   };
 
@@ -1333,9 +1343,13 @@ test('HR_ADMIN_RUNTIME_MODE: group lookup error fails closed to DEDICATED_MAPPIN
   globalThis.kintone.getLoginUser = () => ({ code: 'hr', name: 'HR User' });
 
   // Mock kintone.api: App53 mapping empty, group API throws network error
+  globalThis.kintone.api.url = (path) => path;
   globalThis.kintone.api = async (url, method, params) => {
     if (url.includes('/records.json')) return { records: [] };
-    if (url.includes('/user/groups.json')) throw new Error('Kintone API HTTP 500 Network Failure');
+    if (url === '/v1/user/groups.json') throw new Error('Kintone API HTTP 500 Network Failure');
+    if (url.includes('/user/groups.json')) {
+      throw new Error(`EXACT_ENDPOINT_VIOLATION: Expected '/v1/user/groups.json', got '${url}'`);
+    }
     return {};
   };
 

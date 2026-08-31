@@ -48,8 +48,8 @@ const kintoneApiWrapper = {
       throw new Error('Kintone API is unavailable');
     }
     const url = (typeof kintone.api.url === 'function')
-      ? kintone.api.url('/k/v1/user/groups.json', true)
-      : '/k/v1/user/groups.json';
+      ? kintone.api.url('/v1/user/groups.json', true)
+      : '/v1/user/groups.json';
     const resp = await kintone.api(url, 'GET', { code: userCode });
     return resp ? resp.groups : [];
   }
@@ -158,8 +158,8 @@ function resolveRuntimeEmployeeSelfContext(uiHost, options = {}) {
           userGroups = await kintoneApiWrapper.getUserGroups(kintoneUserCode);
         } else if (typeof kintone !== 'undefined' && typeof kintone.api === 'function') {
           const url = (typeof kintone.api.url === 'function')
-            ? kintone.api.url('/k/v1/user/groups.json', true)
-            : '/k/v1/user/groups.json';
+            ? kintone.api.url('/v1/user/groups.json', true)
+            : '/v1/user/groups.json';
           const resp = await kintone.api(url, 'GET', { code: kintoneUserCode });
           userGroups = resp?.groups || [];
         }
