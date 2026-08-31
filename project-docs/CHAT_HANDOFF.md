@@ -22,7 +22,7 @@ Repository/Kintone accepted evidence wins over embedded checkpoints. Fresh-fetch
 ## 2. Operating model
 
 ```text
-ChatGPT = Control Plane / Architect / Independent Reviewer
+ChatGPT = Control Plane / Architect / Reviewer
 Antigravity = execution plane only when genuinely necessary
 User + Browser Console = preferred for narrow Kintone GET/UAT
 ```
@@ -39,38 +39,19 @@ APP794_LIVE_REVISION = 67
 RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 ```
 
-Accepted D1 closure includes Dedicated identity, Employee-Self privacy, native workflow, current-Assignee approval authority, Shared App801/session runtime, dual-role separation, HR non-employee mode, comments/history/attachments truthfulness and synthetic cleanup.
-
-Canonical live Record #12 remains:
-
-```text
-Employee = 0113 / papatchaya
-Status = 03 Manager Objective Review
-Requester = papatchaya
-Manager / Assignee = pattama
-Topology = M1_ONLY
-```
-
-No synthetic D1 test record remains. Temporary Records #13 and #14 were deleted after their bounded UATs.
-
-## 4. D1 security ceilings — retain permanently
+Accepted D1 security ceilings remain:
 
 ```text
 SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-These are accepted Kintone-only architecture ceilings, not hidden defects. Do not claim stronger guarantees and do not embed privileged browser API credentials as a workaround.
+Do not reopen D1 without a proven regression.
 
-## 5. Employee Lifecycle Change Policy — confirmed
+## 4. Employee Lifecycle Change Policy — confirmed
 
 Canonical Baseline:
-
-```text
-project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md
-```
-
-Owner-confirmed policy:
+`project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`
 
 ```text
 Employee_Code = stable person identity
@@ -82,84 +63,86 @@ current approval authority = native current Assignee
 mid-cycle change = HR-controlled explicit operation + audit
 ```
 
-D4 owns lifecycle operational capability, D5 must resolve fresh current identity/route, and D6 owns lifecycle/security regression. No lifecycle write is authorized now.
+D4 owns lifecycle operations, D5 fresh route/identity, D6 lifecycle/security regression. No lifecycle write is authorized now.
 
-## 6. D2 — STARTED / DISCOVERY COMPLETE
-
-Owner explicitly started D2 on 2026-09-01 ICT. `D2-DISCOVERY-001` is complete.
+## 5. D2 — STARTED / DISCOVERY COMPLETE
 
 Canonical D2 document:
+`project-docs/EXCEL_EXPORT.md`
+
+`D2-DISCOVERY-001` is complete. Export layer is currently projection/data-model only; real Excel/PDF parity comes later after approved template evidence is available.
+
+## 6. D2-WP001 implementation review
+
+Owner authorized `D2-WP001-SOURCE-20260901-01`. Antigravity pushed:
 
 ```text
-project-docs/EXCEL_EXPORT.md
+IMPLEMENTATION_COMMIT = 4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
 ```
 
-Accepted findings:
-- existing source: `src/services/mbo-export-service.js`;
-- existing tests: `tests/mbo-export-service.test.js`;
-- current export is projection/data-model only, not real `.xlsx` or PDF binary rendering;
-- App794 objective normalization already supports slots 1..10;
-- current export tests prove only a 4-objective projection case;
-- export projection lacks trusted authorization/security context and can include confidential scoring/final fields;
-- Employee-Self security must reuse trusted Employee_Code scoping/confidential stripping;
-- Dedicated Approver export must use authoritative current native Assignee; SHARED approver denied;
-- current profile weights remain confirmed, including Assistant Manager = 60/40;
-- legacy Staff/Chief Part A/B workbooks are intentionally gitignored local references.
-
-## 7. Exact current gate — D2-WP001 AUTHORIZED
-
-Owner explicitly approved `D2-WP001` on 2026-09-01 ICT.
+ChatGPT independently reviewed the actual commit and found:
 
 ```text
-D2-WP001 = EXPORT AUTHORIZATION + PROJECTION FOUNDATION
-STATUS = AUTHORIZED FOR EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP001
-EXECUTOR = ANTIGRAVITY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+D2-WP001 = CORRECTIVE REQUIRED
+PASS = NO
+CLOSED = NO
 ```
 
-Antigravity must read `AI_ACTIVE_TASK.md` for the exact contract and low-credit file list.
+What the commit got right:
+- explicit Employee-Self cross-employee denial;
+- explicit SHARED Approver denial;
+- DEDICATED Approver current native Assignee check;
+- stale static manager does not authorize explicit Approver path;
+- Employee-Self Part A manager/GM objective fields and summary omitted;
+- exact 4/5/10 objective tests;
+- confirmed profile weights preserved.
 
-Authorized primary source scope:
-- `src/services/mbo-export-service.js`;
-- `tests/mbo-export-service.test.js`;
-- exact necessary imports/reuse from existing D1 security source only.
+Blocking findings:
+1. export authorization still has permissive fallbacks; malformed/unsupported context can authorize, and caller-labeled `HR_ADMIN` can receive full projection without this layer proving trusted HR authority provenance;
+2. Employee-Self combined projection copies caller-supplied `competencyItems` without nested confidentiality sanitization, so manager/GM/appraiser rating/comment/score data can survive;
+3. `tests/core-794-795-796-integration.test.js` was changed outside the exact original source authorization ledger; it is a small dependency compatibility change but must remain recorded as a scope deviation;
+4. GitHub has no CI/workflow result for the implementation commit, so no independent automated-test PASS is claimed.
 
-Required outcomes:
-- trusted export context fail-closed;
-- Employee-Self exact Employee_Code scope + confidential omission;
-- Dedicated current-Assignee approver authority; SHARED approver denied;
-- stale/static route membership cannot authorize export;
-- confirmed profile weights preserved;
-- exact 4, 5 and 10 objective projection behavior;
-- negative security/leakage tests.
+## 7. Exact current gate — D2-WP001-R1 APPROVAL
 
-Forbidden in WP001:
-- Excel/PDF binary generation;
-- package/dependency changes;
-- UI download buttons;
-- build/runtime output changes;
-- Live Kintone read/write/UAT/deployment;
-- App53/App794/App795/App801 mutation;
-- scope expansion into D2-WP002 or D3–D6.
+Proposed corrective Work Package:
 
-After Antigravity pushes implementation, it must STOP at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`. ChatGPT then fresh-fetches, reviews exact diff/tests/security behavior and independently decides PASS / CORRECTIVE / BLOCKED.
+```text
+D2-WP001-R1 = EXPORT AUTHORIZATION FAIL-CLOSED + NESTED CONFIDENTIALITY CORRECTIVE
+STATUS = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+```
+
+Exact proposed source scope:
+- `src/services/mbo-export-service.js`
+- `tests/mbo-export-service.test.js`
+- `tests/core-794-795-796-integration.test.js` only for the exact dependent export call-site compatibility test
+
+R1 must:
+- accept only explicit supported trusted export context shapes;
+- remove permissive role-less fallbacks;
+- deny forged/caller-labeled HR_ADMIN full export until a reviewed trusted HR authority contract exists;
+- preserve Employee-Self exact Employee_Code and DEDICATED current-Assignee Approver rules;
+- sanitize/whitelist Employee-Self nested competency payload so confidential appraiser data cannot leak;
+- add negative tests for malformed context, role-less context, forged HR label and nested competency leakage;
+- retain 4/5/10 and existing security tests.
+
+R1 must not add Excel/PDF generation, dependencies, UI, deploy, Live Kintone access/write or another D2/D3-D6 work package.
 
 ## 8. Template evidence gate — later D2 work
 
-Binary Excel/PDF parity work remains deferred until approved legacy evidence is available, at least:
-- `PMS_Staff & Chief_PART_A.xlsx`;
-- `PMS_Staff & Chief_PART_B.xlsx`;
-- approved PDF example if exact PDF visual parity is required.
-
-This does not block D2-WP001.
+Binary Excel/PDF parity still requires approved legacy evidence at least:
+- `PMS_Staff & Chief_PART_A.xlsx`
+- `PMS_Staff & Chief_PART_B.xlsx`
+- approved PDF sample if exact PDF visual parity is required.
 
 ## 9. Authorization ledger
 
 ```text
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-SOURCE-20260901-01
-D2_SOURCE_SCOPE = mbo-export-service.js + mbo-export-service.test.js + necessary imports only
+D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
@@ -172,13 +155,11 @@ ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-All D1 one-shot authorizations are consumed and must never be reused. D2-WP001 authorization is single-work-package only.
-
 ## 10. Whole-project status
 
 ```text
 D1 = PASS / CLOSED
-D2 = IN PROGRESS / D2-WP001 AUTHORIZED
+D2 = IN PROGRESS / WP001 CORRECTIVE REQUIRED / R1 APPROVAL PENDING
 D3 = IN PROGRESS / WRITE NOT AUTHORIZED
 D4 = IN PROGRESS — lifecycle operations mandatory scope
 D5 = IN PROGRESS
@@ -191,7 +172,7 @@ MBO2026 is not project-complete.
 ## 11. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE D2-WP001 FROM AI_ACTIVE_TASK.md ONLY
-THEN = CHATGPT INDEPENDENT REVIEW
+NEXT_OWNER_DECISION = APPROVE / CORRECT / REJECT D2-WP001-R1
 ```
+
+Do not execute corrective source work until exact Owner approval is recorded.
