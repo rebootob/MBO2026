@@ -5,13 +5,13 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-31 — D1 REV66 ACL PASS / HR UI ACCESS-MODE BLOCKER
+> Updated: 2026-08-31 — D1 REV67 HR RUNTIME PASS / FOREIGN RECORD NEGATIVE PASS
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
-| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS | App53 mapping + own-route/native workflow PASS; App794 Rev66 ACL CONFIG PASS; requester runtime PASS; HR native ACL PASS; HR App794 UI access-mode defect OPEN |
+| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS / MAJOR RUNTIME GATES PASS | App53 mapping + own-route/native workflow PASS; App794 Rev67 HR runtime PASS; foreign-record isolation PASS; residual approver/HR-status runtime evidence remains |
 | D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Legacy format parity/security not closed |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only mapping/reconciliation path only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Reset semantics/source accepted; full live E2E not closed |
@@ -33,14 +33,14 @@ Shared employee self: approved shared principal -> App801 MBO login/session -> E
 
 Dedicated approver authority = authoritative current App794 native `Assignee`; static App795 membership is insufficient. SHARED approver authority remains denied.
 
-Non-employee principals are explicitly separate from Employee-Self identity:
+Non-employee principals:
 
 ```text
 admin-form = TECHNICAL_ADMIN / NO EMPLOYEE ID BY DESIGN
 hr         = HR_ADMIN / NO EMPLOYEE ID BY DESIGN
 ```
 
-Neither account may be assigned a fake Employee ID or App53 Employee-Self mapping just to satisfy runtime routing. `admin-form` remains technical-only; `hr` must use a separately verified HR runtime path.
+Neither account may receive a fake Employee ID or App53 Employee-Self mapping merely to satisfy runtime code.
 
 ## 3. Accepted App53 / Process truth
 
@@ -53,8 +53,6 @@ papatchaya -> Employee 0113
 APP794_PROCESS_STATES = 16
 APP794_PROCESS_ACTIONS = 31
 ```
-
-31 actions is current accepted truth after the user-approved two-button correction at statuses 01 / 06 / 11. Older 28-action wording is stale.
 
 `GM_User` remains optional. First-Manager statuses/actions remain for future M2 routes.
 
@@ -70,145 +68,123 @@ MANAGER_USER = pattama
 GM_USER = BLANK
 ROUTING_TOPOLOGY = M1_ONLY
 OWN_MBO_SELF_APPRAISER_ELISION = PASS
+STATUS = 03 Manager Objective Review
+ASSIGNEE = pattama
+RECORD_REVISION = 11
 ```
 
 Accepted native transition:
 
 ```text
-FROM = 01 Draft Objective
-ACTION = Submit Objective to Manager
-TO = 03 Manager Objective Review
-ASSIGNEE = pattama
-RECORD_REVISION = 11
+01 Draft Objective
+  -- Submit Objective to Manager -->
+03 Manager Objective Review
 PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
 Pattama interactive login remains unavailable; do not reset Pattama password solely for UAT.
 
-## 5. App794 Rev66 ACL — CONFIG PASS
+## 5. App794 Record ACL — CONFIG PASS
 
-```text
-APP794_REVISION = 66
-HR_ADMIN_GROUP_APP_ACCESS = View/Edit; no Add/Delete/Import/Export/App Admin
-RECORD_ACL_RULE_COUNT = 6
-LIVE_PREVIEW_MATCH = true
-PROCESS_CHANGED_BY_ACL = false
-```
-
-Six-rule lifecycle model:
+Six-rule lifecycle model remains accepted:
 
 ```text
 A  01 / 06 / 11  Requester_User View/Edit
-B  02 / 07 / 12  First_Manager_User View/Edit + Requester View
-C  03 / 08 / 13  Manager_User View/Edit + Requester View
-D  04 / 09 / 14  GM_User View/Edit + Requester View
+B  02 / 07 / 12  First Manager View/Edit + Requester View
+C  03 / 08 / 13  Manager View/Edit + Requester View
+D  04 / 09 / 14  GM View/Edit + Requester View
 E  05 / 10 / 16  Requester View only
-F  15            USER:hr View/Edit + Requester View
-
-All rules:
-- HR_ADMIN_GROUP View
-- USER:admin-form technical-admin access preserved
-- everyone denied
+F  15            HR native View/Edit + Requester View
 ```
 
-## 6. Rev66 runtime evidence — PASS where tested
+All rules preserve HR group visibility, technical-admin access, and deny everyone else.
 
-Requester `papatchaya` at status01:
+Accepted runtime evidence:
 
 ```text
-viewable = true
-editable = true
-deletable = false
-REV66_REQUESTER_OWN_DRAFT_ACL = PASS
+papatchaya status01: view=true edit=true delete=false = PASS
+papatchaya status03: view=true edit=false delete=false = PASS
+hr status03: view=true edit=false delete=false = PASS
 ```
 
-Requester `papatchaya` after 01 -> 03:
+## 6. App794 Rev67 HR runtime corrective — PASS
+
+Accepted source/deploy chain:
 
 ```text
-STATUS = 03 Manager Objective Review
-ASSIGNEE = pattama
-viewable = true
-editable = false
-deletable = false
-REV66_REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
+HR source corrective commit = cda4ed5e79736eaddcd96dd661d7a7294ae313f0
+Deploy CSS-target fix commit = c6864d09f59cfaf6e7c86da422452a816a5cf430
+App794 Live revision = 67
+Deploy status = SUCCESS
 ```
 
-Controlled `hr` at status03:
+Correct runtime classification:
 
 ```text
-Native ACL evaluate:
-viewable = true
-editable = false
-deletable = false
-REV66_HR_STATUS03_NATIVE_ACL = PASS
-```
-
-## 7. Current D1 blocker — HR App794 UI access mode
-
-While logged in as `hr`, App794 customization renders:
-
-```text
-Employee Identity Mapping Failed
-NO_ACTIVE_EMPLOYEE_MAPPING_FOUND
-```
-
-Source review establishes:
-
-- `src/services/mbo-identity-service.js` principal mode resolver supports `SHARED`, `DEDICATED`, `TECHNICAL_ADMIN` only.
-- `hr` is therefore classified as `DEDICATED`.
-- `src/main-mbo-app.js` applies `resolveRuntimeEmployeeSelfContext()` to App794 index/detail and requires every Dedicated principal to have exact App53 Employee-Self mapping.
-- user confirms `hr` has no Employee ID by design, so this mapping must not exist.
-- user confirms `admin-form` also has no Employee ID by design and must remain non-employee technical admin.
-- Native App/Record ACL already allows HR correctly, so this is not an ACL defect.
-
-Canonical decision:
-
-```text
-HR_NATIVE_RECORD_ACL = PASS
-HR_APP794_UI_RUNTIME_ACCESS = BLOCKED
-CAUSE = HR HAS NO SEPARATE AUTHORITATIVE RUNTIME MODE; FALLS INTO DEDICATED EMPLOYEE-SELF MAPPING GATE
-ADMIN_FORM_HAS_EMPLOYEE_ID = FALSE
-HR_HAS_EMPLOYEE_ID = FALSE
-DO_NOT_CREATE_EMPLOYEE_ID_FOR_ADMIN_FORM_OR_HR = TRUE
-DO_NOT_ADD_FAKE_APP53_MAPPING_FOR_ADMIN_FORM_OR_HR = TRUE
-DO_NOT_BROADEN_ACL = TRUE
-```
-
-Required architecture:
-
-```text
-EMPLOYEE DEDICATED -> App53 mapping required
+EMPLOYEE DEDICATED -> exact App53 mapping required
 SHARED EMPLOYEE    -> App801 login/session required
-TECHNICAL_ADMIN    -> non-employee technical inspection only; no Employee ID/App53 mapping
-HR_ADMIN           -> verified non-employee HR lifecycle path; no Employee ID/App53 mapping
+TECHNICAL_ADMIN    -> non-employee technical path
+HR_ADMIN           -> non-employee HR path
+HR authorization   -> exact Kintone group code HR_ADMIN_GROUP
 ```
 
-HR_ADMIN must be verified from an authoritative role/group source; caller-provided role strings must not grant access.
-
-## 8. Exact current gate
+Post-deploy UAT as `hr`:
 
 ```text
-ACTIVE_TASK = APP794 HR RUNTIME ACCESS-MODE CORRECTIVE + REV66 ACL UAT
-CURRENT_OWNER = CHATGPT
-ANTIGRAVITY = JUSTIFIED ONLY FOR MINIMUM NECESSARY SOURCE IMPLEMENTATION AFTER DESIGN IS FROZEN
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-KINTONE_CUSTOMIZATION_DEPLOY_AUTH = NONE
+NO_ACTIVE_EMPLOYEE_MAPPING_FOUND = not visible
+Employee Identity Mapping Failed = not visible
+Record #12 native ACL = view=true edit=false delete=false
+HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
 ```
 
-Exact next action: freeze a narrow source corrective plan for `src/services/mbo-identity-service.js` + `src/main-mbo-app.js`, tests, required build/dist artifacts, and deploy/UAT/rollback plan. No Live deploy yet.
+HR intentionally receives native Kintone UI/ACL rather than Employee-Self custom UI.
 
-## 9. Remaining D1 runtime evidence
+## 7. D1 foreign-record negative runtime — PASS
+
+Disposable synthetic record #13 was created under exact one-shot authorization with:
 
 ```text
-FOREIGN_RECORD_NEGATIVE_RUNTIME = PENDING
+Fiscal_Year = FY2026
+Employee_Code = 0044
+Requester_User = vassana
+Manager_User = tsuchihira
+Record_Key = FY2026-0044
+Status = 01 Draft Objective
+```
+
+As `papatchaya`:
+
+```text
+Direct GET #13 = 403 CB_NO02 DENIED
+Query Record_Key FY2026-0044 = 0
+ACL evaluate = view=false edit=false delete=false
+Direct URL #13 = No privilege / CB_NO02
+FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
+```
+
+Cleanup:
+
+```text
+DELETE Record #13 = 1
+Post-delete Record_Key match count = 0
+Synthetic records remaining = 0
+```
+
+Both CREATE and DELETE authorizations are consumed.
+
+## 8. Current residual D1 gate
+
+```text
 CURRENT_MANAGER_INTERACTIVE_RUNTIME = PENDING / CREDENTIAL-LIMITED
-HR_STATUS15_RUNTIME = PENDING
 STALE_PRIOR_APPROVER_RUNTIME = PENDING
+HR_STATUS15_RUNTIME = PENDING
 ```
 
-Any synthetic record create/delete/transition requires a new exact one-shot authorization.
+Current owner = ChatGPT + User.
 
-## 10. Other project tracks
+Preferred next action: determine the smallest valid evidence path for these residual items using existing accounts and GET-only checks where possible. Do not reset credentials merely for UAT. Any record create/delete/status transition requires a new exact one-shot authorization.
+
+## 9. Other project tracks
 
 D2 Excel/PDF legacy-format parity/security remains open.
 
@@ -222,15 +198,7 @@ D6 Integrated E2E/security/regression remains pending.
 
 D7 Admin Support Center source functionality remains closed.
 
-## 11. Cancelled App802 path
-
-```text
-APP802_RESUME_WRITE_AUTH = REVOKED
-APP802_FORWARD/ROLLBACK = CANCELLED
-SECOND_SANDBOX_CREATE_AUTH = NONE
-```
-
-## 12. Authorization ledger
+## 10. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -244,4 +212,4 @@ APP53_BULK_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-Consumed authorizations must never be reused.
+All previous HR deploy, ACL/process UAT, and foreign synthetic CREATE/DELETE authorizations are consumed and must never be reused.
