@@ -5,32 +5,30 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001-R1 AUTHORIZED
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001 R1 SOURCE REVIEW PASS / TEST EVIDENCE PENDING
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Final security review PASS with documented Kintone-only ceilings |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R1 AUTHORIZED | `D2-WP001` review found corrective items; `D2-WP001-R1` now authorized for Antigravity |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / WP001 TEST EVIDENCE PENDING | R1 source/scope review PASS at `1d48dc218...`; offline test execution evidence still required before WP001 closure |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
-| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Employee lifecycle operations are mandatory scope alongside existing HR operations |
-| D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Narrow carry-forward whitelist; fresh target-year routing/identity required |
-| D6 Integrated E2E / Security / Regression | 🔴 PENDING | Must include lifecycle-change regression in addition to D1–D5 functional/security coverage |
+| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Employee lifecycle operations are mandatory scope |
+| D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
+| D6 Integrated E2E / Security / Regression | 🔴 PENDING | Lifecycle/security regression required |
 | D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
 
 ## 2. D1 architecture — frozen
 
 ```text
 D1 = KINTONE-ONLY / CLOSED PASS
-HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-AUTH_BRIDGE = CANCELLED
 APP794_LIVE_REVISION = 67
 RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 FINAL_D1_SECURITY_REVIEW = PASS
+CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT ASSIGNEE
+SHARED_APPROVER_AUTHORITY = DENIED
 ```
-
-Dedicated approval authority = authoritative current native App794 `Assignee`; static App795/snapshot membership is insufficient. SHARED approver authority = denied.
 
 Accepted Kintone-only ceilings remain:
 
@@ -41,135 +39,95 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 
 Do not reopen D1 without proven regression.
 
-## 3. Employee Lifecycle Change Policy — confirmed
-
-Canonical durable policy:
-`project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`
-
-```text
-EMPLOYEE_CODE = STABLE PERSON ID
-APP53 = CURRENT EMPLOYEE / ORGANIZATION / POSITION TRUTH
-APP795 = CURRENT ROUTING CONFIGURATION FOR FRESH RESOLUTION
-APP794 = ANNUAL HISTORICAL SNAPSHOT + CURRENT WORKFLOW TRUTH
-CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT ASSIGNEE
-MASTER CHANGE != AUTOMATIC RETROACTIVE APP794 REWRITE
-MID_CYCLE_CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
-```
-
-D4 owns lifecycle operations; D5 resolves fresh identity/route; D6 owns lifecycle/security regression. No lifecycle mutation is authorized now.
-
-## 4. D2 discovery — complete
+## 3. D2 discovery — complete
 
 Canonical D2 document: `project-docs/EXCEL_EXPORT.md`.
 
 Accepted discovery remains:
-- current export layer is projection/data-model only;
-- no real `.xlsx` or PDF renderer yet;
-- App794 normalizer supports objective slots 1..10;
+- export layer is projection/data-model only;
+- no real `.xlsx`/PDF renderer yet;
+- App794 objective normalization supports slots 1..10;
 - confirmed profile weights include Assistant Manager 60/40;
 - legacy workbook binaries are intentionally gitignored local references.
 
-## 5. D2-WP001 review result
+## 4. D2-WP001 / R1 review state
 
-Antigravity implementation commit:
-
-```text
-4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
-```
-
-ChatGPT independent review result:
+Original implementation:
 
 ```text
-D2-WP001 = CORRECTIVE REQUIRED
-PASS = NO
-CLOSED = NO
+D2-WP001_COMMIT = 4f4084b630642b2d1d6dcb0ab8093227bab8cc6c
+ORIGINAL_REVIEW = CORRECTIVE REQUIRED
 ```
 
-Blocking findings preserved:
-1. permissive/role-less authorization fallbacks and caller-labeled HR_ADMIN could authorize without reviewed trusted provenance;
-2. Employee-Self combined export copied `competencyItems` without nested confidentiality sanitization;
-3. one dependent integration test file was modified outside the original exact ledger; this deviation is recorded;
-4. no GitHub CI/workflow result exists for the implementation commit, so no independent automated-test PASS was claimed.
-
-Original authorization is consumed:
+Corrective implementation:
 
 ```text
-D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+D2-WP001-R1_COMMIT = 1d48dc218fe7e2c542773bcf441332f8b06f88f9
+R1_SCOPE_REVIEW = PASS
+R1_SOURCE_REVIEW = PASS
+R1_AUTOMATED_TEST_EVIDENCE = NOT INDEPENDENTLY VERIFIED
+D2-WP001 = NOT CLOSED / TEST EVIDENCE PENDING
 ```
 
-## 6. D2-WP001-R1 — authorized corrective
+R1 compare from authorization baseline `365e61f22574361dacafedc7f98af1ea99228575` changed only:
+- `src/services/mbo-export-service.js`
+- `tests/mbo-export-service.test.js`
 
-Owner explicitly approved `D2-WP001-R1` on 2026-09-01 ICT.
+The prior blocking source findings are closed in R1:
+- permissive role-less/fallback authorization removed;
+- HR/Technical labels do not self-authorize;
+- explicit Employee-Self exact Employee_Code preserved;
+- explicit DEDICATED current-Assignee Approver preserved;
+- Employee-Self Part B competency payload uses safe-key projection rather than blind copy-through;
+- required negative tests for malformed/role-less/HR contexts and nested evaluator-field leakage are present;
+- 4/5/10 objective and profile-weight coverage remains present.
+
+## 5. Test evidence gate
+
+R1 contract requires actual offline execution of:
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP001-R1
-D2-WP001-R1 = EXPORT AUTHORIZATION FAIL-CLOSED + NESTED CONFIDENTIALITY CORRECTIVE
-D2-WP001-R1_STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-R1-SOURCE-20260901-01
-EXECUTOR = ANTIGRAVITY
-NEXT_CONTROL_GATE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+node --test tests/mbo-export-service.test.js
+node --test tests/core-794-795-796-integration.test.js
 ```
 
-Authorized files only:
-- `src/services/mbo-export-service.js`;
-- `tests/mbo-export-service.test.js`;
-- `tests/core-794-795-796-integration.test.js` only for exact dependent export call-site compatibility.
+GitHub exposes no CI status/workflow run for R1 commit `1d48dc218...`.
 
-Required corrective outcomes:
-- explicit supported trusted context shapes only;
-- malformed, empty, role-less and unsupported context fail closed;
-- bare matching `employeeCode` cannot self-authorize;
-- bare `mode: DEDICATED` cannot self-authorize;
-- caller-labeled HR_ADMIN cannot self-authorize full export;
-- explicit Employee-Self exact Employee_Code semantics preserved;
-- explicit DEDICATED current-Assignee Approver semantics preserved;
-- SHARED/non-current/stale route authority denied;
-- Employee-Self nested Part B competency payload strictly whitelisted/sanitized;
-- manager/GM/appraiser nested ratings/comments/scores omitted entirely for Employee-Self;
-- 4/5/10 objective capacity and confirmed profile weights remain proven.
+ChatGPT attempted to clone/run the repository in its isolated runtime, but that runtime could not resolve `github.com`. Therefore no independent automated-test PASS is claimed.
 
-Antigravity must run focused export tests plus the exact dependent integration test, push the smallest corrective commit, and stop at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`.
+Exact next action is verification only. No source change authorization is active.
 
-## 7. R1 exclusions
+If both required tests PASS on the current canonical checkout, ChatGPT may close D2-WP001 without another implementation package. If a test fails, report the exact failure and stop; any corrective source change requires fresh Owner approval.
 
-R1 must not:
-- add `.xlsx` or PDF rendering;
-- add package dependencies or touch package/lock files;
-- add UI download buttons;
-- modify build/runtime artifacts;
-- perform Live Kintone reads/writes/UAT/deploy;
-- mutate App53/App794/App795/App801/ACL/Process Management;
-- start D2-WP002 or D3–D6 implementation;
-- redesign D1 security architecture.
-
-## 8. Template evidence gate — later D2 work
+## 6. Template evidence gate — later D2 work
 
 Binary Excel/PDF parity still requires approved legacy evidence at least:
 - `PMS_Staff & Chief_PART_A.xlsx`
 - `PMS_Staff & Chief_PART_B.xlsx`
 - approved PDF sample if exact visual parity is required.
 
-This does not block R1.
+Do not start renderer/template work from the WP001 verification gate.
 
-## 9. Current gate
+## 7. Current gate
 
 ```text
 D1 = CLOSED / PASS
-D2 = IN PROGRESS / D2-WP001-R1 AUTHORIZED
-ACTIVE_WORK_PACKAGE = D2-WP001-R1
-CURRENT_EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY = AUTHORIZED FOR R1 ONLY
-NEXT_CONTROL_GATE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+D2 = IN PROGRESS
+D2-WP001 = SOURCE REVIEW PASS / TEST EVIDENCE PENDING / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = VERIFICATION ONLY / NO SOURCE CHANGE
+NEXT_CONTROL_GATE = OFFLINE TEST RESULTS
 ```
 
 No other Work Package may auto-start.
 
-## 10. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-R1-SOURCE-20260901-01
-D2_R1_SOURCE_SCOPE = mbo-export-service.js + mbo-export-service.test.js + exact dependent integration test only
+D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / SOURCE REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
@@ -183,5 +141,3 @@ APP801_WRITE_AUTH = NONE
 ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
-
-R1 authorization is consumed after its implementation commit is pushed for independent review, or invalidated if scope/risk materially changes.
