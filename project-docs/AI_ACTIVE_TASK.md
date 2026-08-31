@@ -8,6 +8,7 @@ Updated: 2026-08-31 ICT
 TASK_STATE = WAITING_OWNER
 D1_OVERALL = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 PRE_D2_DOCUMENTATION_SYNC = COMPLETE
 CURRENT_OWNER = USER + CHATGPT
 ANTIGRAVITY_ACTION = NONE
@@ -44,7 +45,28 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 
 Do not reopen D1 or attempt to remove these Kintone-only ceilings without a proven defect or explicit architecture decision.
 
-## 3. D2 pre-start contract
+## 3. Employee lifecycle policy is confirmed — implementation not active
+
+Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+EMPLOYEE_CODE = STABLE PERSON ID
+APP53 = CURRENT EMPLOYEE / ORG / POSITION TRUTH
+APP795 = CURRENT ROUTING FOR FRESH RESOLUTION
+APP794 = HISTORICAL ANNUAL SNAPSHOT + CURRENT WORKFLOW TRUTH
+CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT ASSIGNEE
+MASTER CHANGE != AUTOMATIC EXISTING APP794 REWRITE
+MID_CYCLE_CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
+```
+
+Operational ownership remains:
+- D4 must implement controlled lifecycle operations including inactive/resigned impact detection, current-Assignee reassignment, Shared App801 disable/session invalidation where applicable, Dedicated principal/mapping-change handling, audit evidence, readback and exception reporting;
+- D5 must resolve current target-year identity/routing and never carry stale requester/route/workflow state;
+- D6 must prove lifecycle/security regression including stale-authority denial after reassignment.
+
+Do **not** implement or UAT lifecycle mutations now.
+
+## 4. D2 pre-start contract
 
 Read first when Owner starts D2:
 
@@ -65,7 +87,7 @@ PDF original/legacy parity
 export authorization/confidentiality
 ```
 
-## 4. Exact next action after Owner starts D2
+## 5. Exact next action after Owner starts D2
 
 Do **not** implement immediately.
 
@@ -82,7 +104,7 @@ F. produce gap list + smallest D2 Work Package
 
 Only after Control Plane review should a source-change task be assigned. Use Antigravity only if actual implementation is needed.
 
-## 5. Current safety / authorization
+## 6. Current safety / authorization
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -93,6 +115,7 @@ APP53_WRITE = NO
 APP795_WRITE = NO
 APP801_WRITE = NO
 GROUP_MEMBERSHIP_WRITE = NO
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 KINTONE_CUSTOMIZATION_DEPLOY = NO
 ROLLBACK = NO

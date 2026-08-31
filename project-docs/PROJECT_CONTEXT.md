@@ -57,6 +57,35 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 
 These limits remain part of the confirmed project context after D1 closure.
 
+## Employee lifecycle architecture — confirmed
+
+Canonical durable policy: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+EMPLOYEE_CODE = STABLE PERSON ID
+APP53 = CURRENT EMPLOYEE / ORGANIZATION / POSITION TRUTH
+APP795 = CURRENT ROUTING CONFIGURATION FOR FRESH ROUTE RESOLUTION
+APP794 = ANNUAL HISTORICAL SNAPSHOT + CURRENT WORKFLOW TRUTH
+CURRENT_APPROVAL_AUTHORITY = AUTHORITATIVE NATIVE CURRENT ASSIGNEE
+APP53_OR_APP795_CHANGE != AUTOMATIC RETROACTIVE APP794 REWRITE
+MID_CYCLE_CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
+```
+
+This policy covers resignation/inactive state, Department/Section/Team transfer, promotion/Position change, Dedicated Kintone-principal change, and manager/appraiser transfer, promotion, replacement or resignation.
+
+For existing App794 records, current routing/history/snapshots must not silently change when App53/App795 changes. If an open record must move to a new appraiser, HR must use an explicit controlled reassignment with old/new authority, reason, effective date, actor, timestamp and readback evidence. Historical MBO remains retained when an employee leaves.
+
+Lifecycle ownership:
+
+```text
+D1 = remains CLOSED unless identity/security regression is proven
+D4 = HR lifecycle operational implementation
+D5 = fresh current identity/route resolution; never carry stale requester/route/workflow snapshots
+D6 = integrated lifecycle/security regression
+```
+
+No lifecycle write is authorized merely because this architecture is confirmed.
+
 ## Seven mandatory deliverables
 
 ```text
@@ -73,6 +102,7 @@ Current checkpoint:
 
 ```text
 D1 = PASS / CLOSED
+EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 D2 = READY / NOT STARTED
 PRE_D2_DOCUMENTATION_SYNC = COMPLETE
 ACTIVE_WORK_PACKAGE = NONE
