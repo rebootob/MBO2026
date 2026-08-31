@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / EMPLOYEE LIFECYCLE POLICY CONFIRMED / D2 DISCOVERY COMPLETE / WP001 APPROVAL PENDING
+> Updated: 2026-09-01 — D1 CLOSED / EMPLOYEE LIFECYCLE POLICY CONFIRMED / D2-WP001 AUTHORIZED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Final security review PASS with documented Kintone-only ceilings |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / DISCOVERY COMPLETE | `D2-WP001` proposed; Owner approval required before source changes |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / WP001 AUTHORIZED | Export authorization + projection foundation assigned to Antigravity; independent review required after implementation |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Employee lifecycle operations are mandatory scope alongside existing HR operations |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Narrow carry-forward whitelist; fresh target-year routing/identity required |
@@ -107,16 +107,16 @@ RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 APP794_LIVE_REVISION = 67
 ```
 
-D2 source work is a separate controlled stream. No D2 source change has yet been authorized or committed during the current D2 start cycle.
+D2 source work is a separate controlled stream. Only the exact D2-WP001 source scope below is currently authorized.
 
-## 7. D2 current state — discovery complete
+## 7. D2 current state
 
 Canonical D2 document:
 `project-docs/EXCEL_EXPORT.md`
 
-Owner explicitly started D2 on 2026-09-01 ICT. ChatGPT completed the required bounded read-only discovery and gap analysis.
+Owner explicitly started D2 on 2026-09-01 ICT. ChatGPT completed `D2-DISCOVERY-001`, then Owner explicitly approved `D2-WP001`.
 
-Accepted discovery findings:
+Accepted discovery findings remain:
 - existing export source = `src/services/mbo-export-service.js`;
 - existing export tests = `tests/mbo-export-service.test.js`;
 - current export implementation is projection/data-model only, not an `.xlsx`/PDF binary renderer;
@@ -130,24 +130,22 @@ Accepted discovery findings:
 - original Staff/Chief Part A/B `.xlsx` files are intentionally gitignored local references and were not found in current ChatGPT Library or connected Google Drive search.
 
 ```text
-D2_STATUS = IN PROGRESS / DISCOVERY COMPLETE
+D2_STATUS = IN PROGRESS
 D2-DISCOVERY-001 = COMPLETE
-ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_D2_WORK_PACKAGE = D2-WP001
+ACTIVE_D2_WORK_PACKAGE = D2-WP001
 D2-WP001 = EXPORT AUTHORIZATION + PROJECTION FOUNDATION
-D2-WP001_STATUS = PROPOSED / OWNER APPROVAL REQUIRED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP001_STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-SOURCE-20260901-01
+INDEPENDENT_REVIEW = REQUIRED AFTER IMPLEMENTATION
 ```
 
-## 8. Proposed D2-WP001 boundary
+## 8. D2-WP001 execution boundary
 
-`D2-WP001` intentionally closes source-level security/projection gaps before binary template rendering.
-
-Proposed exact implementation scope:
+Authorized primary files:
 - `src/services/mbo-export-service.js`;
-- `tests/mbo-export-service.test.js`;
-- reuse exact existing D1 security services/constants only when required;
-- no new runtime file unless separation is demonstrably necessary.
+- `tests/mbo-export-service.test.js`.
+
+Exact existing D1 security services/constants may be imported/reused only when required. No unrelated D1 refactor is authorized.
 
 Required outcomes:
 - trusted export context required / fail closed otherwise;
@@ -156,10 +154,19 @@ Required outcomes:
 - stale/static route membership is not export authority;
 - preserve confirmed profile weights;
 - exact 4, 5 and 10 objective projection tests;
-- cross-employee / SHARED / stale-assignee / confidential-leakage negative tests;
-- no `.xlsx`/PDF writer, UI button, package dependency, Live Kintone write or deployment in WP001.
+- cross-employee / SHARED / stale-assignee / confidential-leakage negative tests.
 
-Antigravity is the intended executor **only after Owner explicitly approves D2-WP001**. ChatGPT performs the independent review afterward.
+Explicitly excluded:
+- `.xlsx` writer;
+- PDF writer;
+- package/dependency changes;
+- UI download buttons;
+- build/runtime output changes;
+- Live Kintone reads/writes/UAT/deployment;
+- App53/App794/App795/App801 mutation;
+- D2-WP002 or other D3–D6 implementation.
+
+Antigravity maximum status = `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`. ChatGPT must review actual diff/tests before PASS/CLOSED.
 
 ## 9. Legacy template evidence gate
 
@@ -175,19 +182,21 @@ This evidence gap does not block D2-WP001 because WP001 deliberately excludes bi
 ```text
 D1 = CLOSED / PASS
 EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED / DOCUMENTED
-D2 = IN PROGRESS / DISCOVERY COMPLETE
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP001
-NEXT_REQUIRED_OWNER_DECISION = APPROVE / CORRECT / REJECT D2-WP001
-CURRENT_OWNER = User + ChatGPT
-ANTIGRAVITY = WAITING OWNER APPROVAL / NOT STARTED
+D2 = IN PROGRESS / WP001 AUTHORIZED
+ACTIVE_WORK_PACKAGE = D2-WP001
+CURRENT_EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY = AUTHORIZED FOR D2-WP001 ONLY
+NEXT_CONTROL_GATE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+CURRENT_OWNER = Antigravity execution -> ChatGPT independent review
 ```
 
-Do not auto-start WP001 or D3–D6 from this documentation update alone.
+No other Work Package may auto-start.
 
 ## 11. Authorization ledger
 
 ```text
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP001-SOURCE-20260901-01
+D2_SOURCE_SCOPE = mbo-export-service.js + mbo-export-service.test.js + necessary imports only
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
@@ -199,8 +208,7 @@ APP53_BULK_WRITE_AUTH = NONE
 APP795_WRITE_AUTH = NONE
 APP801_WRITE_AUTH = NONE
 ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-All prior D1 one-shot authorizations are consumed and must never be reused.
+All prior D1 one-shot authorizations are consumed and must never be reused. D2-WP001 authorization is consumed after its implementation commit is pushed for independent review, or invalidated if scope/risk materially changes.
