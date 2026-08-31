@@ -33,7 +33,14 @@ Shared employee self: approved shared principal -> App801 MBO login/session -> E
 
 Dedicated approver authority = authoritative current App794 native `Assignee`; static App795 membership is insufficient. SHARED approver authority remains denied.
 
-`admin-form` = technical administrator only; no business workflow authority.
+Non-employee principals are explicitly separate from Employee-Self identity:
+
+```text
+admin-form = TECHNICAL_ADMIN / NO EMPLOYEE ID BY DESIGN
+hr         = HR_ADMIN / NO EMPLOYEE ID BY DESIGN
+```
+
+Neither account may be assigned a fake Employee ID or App53 Employee-Self mapping just to satisfy runtime routing. `admin-form` remains technical-only; `hr` must use a separately verified HR runtime path.
 
 ## 3. Accepted App53 / Process truth
 
@@ -150,6 +157,8 @@ Source review establishes:
 - `src/services/mbo-identity-service.js` principal mode resolver supports `SHARED`, `DEDICATED`, `TECHNICAL_ADMIN` only.
 - `hr` is therefore classified as `DEDICATED`.
 - `src/main-mbo-app.js` applies `resolveRuntimeEmployeeSelfContext()` to App794 index/detail and requires every Dedicated principal to have exact App53 Employee-Self mapping.
+- user confirms `hr` has no Employee ID by design, so this mapping must not exist.
+- user confirms `admin-form` also has no Employee ID by design and must remain non-employee technical admin.
 - Native App/Record ACL already allows HR correctly, so this is not an ACL defect.
 
 Canonical decision:
@@ -158,7 +167,10 @@ Canonical decision:
 HR_NATIVE_RECORD_ACL = PASS
 HR_APP794_UI_RUNTIME_ACCESS = BLOCKED
 CAUSE = HR HAS NO SEPARATE AUTHORITATIVE RUNTIME MODE; FALLS INTO DEDICATED EMPLOYEE-SELF MAPPING GATE
-DO_NOT_ADD_FAKE_APP53_MAPPING_FOR_HR = TRUE
+ADMIN_FORM_HAS_EMPLOYEE_ID = FALSE
+HR_HAS_EMPLOYEE_ID = FALSE
+DO_NOT_CREATE_EMPLOYEE_ID_FOR_ADMIN_FORM_OR_HR = TRUE
+DO_NOT_ADD_FAKE_APP53_MAPPING_FOR_ADMIN_FORM_OR_HR = TRUE
 DO_NOT_BROADEN_ACL = TRUE
 ```
 
@@ -167,8 +179,8 @@ Required architecture:
 ```text
 EMPLOYEE DEDICATED -> App53 mapping required
 SHARED EMPLOYEE    -> App801 login/session required
-TECHNICAL_ADMIN    -> technical inspection only
-HR_ADMIN           -> verified HR lifecycle path; no Employee-Self mapping requirement
+TECHNICAL_ADMIN    -> non-employee technical inspection only; no Employee ID/App53 mapping
+HR_ADMIN           -> verified non-employee HR lifecycle path; no Employee ID/App53 mapping
 ```
 
 HR_ADMIN must be verified from an authoritative role/group source; caller-provided role strings must not grant access.
