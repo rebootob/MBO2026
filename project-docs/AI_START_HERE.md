@@ -14,132 +14,107 @@ Before planning, reviewing, coding or changing Kintone:
 5. Read `project-docs/AI_DOCUMENT_INDEX.md`.
 6. Read `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness is needed.
 7. Read `project-docs/CONFIRMED_BASELINE/README.md` and only relevant Baseline(s).
-8. Inspect exact latest diff/evidence if reviewing newer source/executor work.
+8. Inspect exact latest diff/evidence if reviewing newer work.
 
 Do not broad-read historical docs. Do not ask the user to repeat project history already in Git. Do not perform Live Kintone write/deploy during startup.
 
 Repository/live evidence beats chat memory and embedded handoff checkpoints.
 
-## 2. Authority by purpose
-
-- `CONFIRMED_BASELINE/` = durable confirmed business/security/technical truth.
-- `00_MASTER_JOBLIST.md` = D1–D7 no-drop/completeness authority.
-- `AI_CONTROL_CENTER.md` = current independently accepted operational state, blockers, authorization and next owner.
-- `AI_ACTIVE_TASK.md` = exact current task packet only; not proof of success.
-- Git/Kintone evidence = what actually exists/ran/live-read-back.
-- `CHAT_HANDOFF.md` = concise cross-chat continuation snapshot; always revalidate against current HEAD.
-- `NEW_CHAT_BOOTSTRAP_PROMPT.md` = canonical copy/paste prompt for a new conversation.
-
-## 3. Permanent roles
+## 2. Permanent roles
 
 **ChatGPT = Control Plane**
 - plan, architecture, Git inspection, independent review, PASS/CORRECTIVE/BLOCKED decision;
 - maintain operational/control/handoff documentation;
-- use Antigravity only when actual source/local-runtime/Kintone execution cannot reasonably be done by User + ChatGPT.
+- use Antigravity only when actual implementation cannot reasonably be done by User + ChatGPT.
 
 **Antigravity = Low-Credit Execution Plane**
 - execute only exact Active Task scope;
 - no broad planning/scans/self-review/docs by default;
 - stop after required focused test/evidence/commit.
 
-## 4. D1 non-negotiable architecture
+## 3. D1 — frozen closed architecture
 
 ```text
+D1 = PASS / CLOSED
 D1 = KINTONE-ONLY
-External auth/server/database/proxy = FORBIDDEN
-Auth Bridge = CANCELLED / DO NOT CONTINUE
+AUTH_BRIDGE = CANCELLED
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+FINAL_D1_SECURITY_REVIEW = PASS
 ```
 
 Dedicated user:
-`native Kintone user -> exact active App53 MBO_Kintone_User mapping -> canonical emp_text Employee_Code -> Employee-Self auto-bind`, with no second MBO login.
+`native Kintone user -> exact active App53 MBO_Kintone_User -> canonical emp_text Employee_Code -> Employee-Self auto-bind`.
 
 Shared user:
-`approved shared Kintone principal -> Employee_Code + App801 MBO password/session -> Employee-Self`.
+`approved shared principal -> Employee_Code + App801 MBO password/session -> Employee-Self`.
 
-Dedicated Approver:
-- `My Approval Tasks` authority = current native App794 `Assignee`;
-- static App795 membership / legacy snapshot fields / role strings / UI visibility are not authority;
-- SHARED approver authority = denied.
+Dedicated approval authority:
+`current native App794 Assignee`, with fresh revalidation; static App795/snapshot membership is not authority. SHARED approver authority is denied.
 
-Own-MBO route rule:
-`OWN_MBO_SELF_APPROVER_ELISION = APPROVED`; remove self only from own effective route before snapshot, preserve remaining order/rules, recalculate topology, never autoapprove/fabricate history, fail closed if no non-self approver remains.
+Own-MBO self-appraiser elision remains approved and self-approval remains prohibited.
 
-## 5. Current accepted App53 truth
+Do not reopen D1 without proven regression or explicit architecture change.
+
+## 4. D1 accepted security ceilings
 
 ```text
-APP53 = PRODUCTION / READ_ONLY BY DEFAULT
-TOTAL_RECORDS = 281
-MBO_Kintone_User = USER_SELECT / optional / live
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+```
+
+These are accepted Kintone-only boundaries. Client-side JavaScript is not a privileged server-side security layer.
+
+## 5. Current App53/App794 truth
+
+```text
+APP53_TOTAL_RECORDS = 281
+MBO_Kintone_User = USER_SELECT / optional / LIVE
 DEDICATED_MAPPINGS_VERIFIED = 24
-MBO_Kintone_User_NONEMPTY_RECORDS = 24
 UNEXPECTED_NONEMPTY_RECORDS = 0
-papatchaya -> App53 #426 -> Employee Code 0113
+papatchaya -> Employee 0113
 ```
 
-Active short numeric employee codes were normalized to four digits by guarded user-run Browser Console; rows 382,390,495,496,497 were explicitly excluded as unused/non-standard.
-
-No additional App53 write authorization exists automatically.
-
-## 6. Current accepted App794 Dedicated UAT
-
-```text
-APP794_TWO_BUTTON_FIX_01_06_11 = PASS
-GM_User_REQUIRED_FALSE = PASS
-MBO_DEDICATED_ACCESS_APP_PERMISSION = PASS
-```
-
-Clean native Kintone UAT under `papatchaya` created Record #12 with:
-
-```text
-Employee_Code = 0113
-Requester_User = papatchaya
-Manager_User = pattama
-First_Manager_User = BLANK
-GM_User = BLANK
-Routing_Topology = M1_ONLY
-D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
-```
-
-Papatchaya then submitted Objective and fresh readback proved:
+Canonical App794 Record #12:
 
 ```text
 Status = 03 Manager Objective Review
-Assignee = pattama
 Requester = papatchaya
-Manager = pattama
-GM = BLANK
+Manager / Assignee = pattama
 Topology = M1_ONLY
-PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-Do not reopen this tested path without regression evidence.
+No D1 synthetic test record remains.
 
-## 7. Current gate
+## 6. Current gate — PRE-D2 WAIT
 
 ```text
-ACTIVE TASK = APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION
-OWNER = ChatGPT + User
+PRE_D2_DOCUMENTATION_SYNC = COMPLETE
+D2 = READY / NOT STARTED
+ACTIVE_WORK_PACKAGE = NONE
+D2_START = OWNER INSTRUCTION REQUIRED
 ANTIGRAVITY = NONE
-KINTONE WRITE AUTH = NONE
-RECORD ACL WRITE AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-Before 24-user rollout, design complete status-aware App794 record privacy across all 16 statuses. Do not apply partial ACL rules.
+Canonical D2 pre-start document: `project-docs/EXCEL_EXPORT.md`.
 
-Required behavior:
-- requester views own MBO throughout lifecycle;
-- requester edits only employee-owned stages;
-- current First Manager / Manager / GM gets View/Edit only while current;
-- stale prior approver loses access after transition/reassignment unless another valid current role applies;
-- HR/Admin retain required access;
-- App795 static membership alone grants no access.
+When Owner starts D2, do read-only discovery first:
+- current export source/tests;
+- approved legacy Excel/PDF samples;
+- App794-to-output field mapping;
+- current PDF mechanism;
+- export authorization/confidentiality guards;
+- exact gap list and smallest Work Package.
 
-## 8. D1–D7 no-drop
+Do not immediately implement or deploy.
+
+## 7. D1–D7 no-drop
 
 ```text
-D1 Hybrid Identity + Password + Employee-Self + Approver — IN PROGRESS; Dedicated core UAT PASS, record ACL gate open
-D2 Excel + PDF Legacy Format Export — IN PROGRESS
+D1 Hybrid Identity + Password + Employee-Self + Approver — PASS / CLOSED
+D2 Excel + PDF Original/Legacy Format — READY / NOT STARTED
 D3 8 Legacy PMS Apps -> App794 Migration — IN PROGRESS / WRITE NOT AUTHORIZED
 D4 App800 HR Control Center End-to-End — IN PROGRESS
 D5 Copy Own Previous MBO — IN PROGRESS
@@ -147,14 +122,27 @@ D6 Integrated E2E / Security / Regression — PENDING
 D7 Admin Support Center — SOURCE FUNCTIONALITY CLOSED
 ```
 
+## 8. Current authorization
+
+```text
+KINTONE WRITE = NONE
+APP794 DEPLOY = NONE
+RECORD ACL WRITE = NONE
+GROUP WRITE = NONE
+APP53 SCHEMA/RECORD/BULK = NONE
+APP801 WRITE = NONE
+D2 SOURCE CHANGE = NONE
+ROLLBACK = NONE
+```
+
 ## 9. User shorthand
 
-`review` -> fresh-fetch HEAD; read current Control Center + authorizing Active Task + relevant Baseline; inspect exact diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED; update Control Plane docs.
+`review` -> fresh-fetch HEAD; read current Control Center + Active Task + relevant Baseline; inspect exact diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
 
-`ต่อ` / `ต่อไป` -> fresh-fetch HEAD + Control Center + Active Task; detect accepted/pending/already-executed work; choose smallest safe next action; do not spend Antigravity if User + ChatGPT can do it.
+`ต่อ` / `ต่อไป` -> fresh-fetch HEAD + Control Center + Active Task; choose the smallest safe next action; do not spend Antigravity unnecessarily.
 
-`อนุมัติ ...` -> exact narrow authorization only; never widen or reuse consumed one-shot authorization.
+`อนุมัติ ...` -> exact narrow authorization only; never widen or reuse consumed authorization.
 
 ## 10. New chat
 
-Copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the new conversation. The new chat must fresh-fetch HEAD and read `CHAT_HANDOFF.md` before acting.
+Copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the new conversation. The new chat must fresh-fetch HEAD and read `CHAT_HANDOFF.md` first.
