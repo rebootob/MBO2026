@@ -1,200 +1,201 @@
-# AI ACTIVE TASK — APP794 DEDICATED RECORD ACL DESIGN + READ-ONLY VALIDATION
+# AI ACTIVE TASK — APP794 REV66 RECORD ACL RUNTIME / NEGATIVE ISOLATION UAT
 
-Mode: **CHATGPT + USER CONTROL-PLANE DESIGN / NO ANTIGRAVITY / ZERO KINTONE WRITE**
+Mode: **CHATGPT + USER / NO ANTIGRAVITY UNLESS NEEDED / NO UNAUTHORIZED KINTONE WRITE**
 Branch: `ai/antigravity-wp002c`
-Updated: 2026-08-31
+Updated: 2026-08-31 ICT
 
 ```text
-TASK_STATE = OPEN / DESIGN + READ-ONLY VALIDATION
+TASK_STATE = OPEN / CONFIG PASS / RUNTIME UAT IN PROGRESS
 CURRENT_OWNER = CHATGPT + USER
 ANTIGRAVITY_ACTION = NONE
-KINTONE_WRITE_AUTH = NONE
-APP53_WRITE_AUTH = NONE
-APP794_RECORD_ACL_WRITE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+APP794_RECORD_ACL_WRITE_AUTH = CONSUMED / NONE
+PROCESS_UAT_WRITE_AUTH = CONSUMED / NONE
 GROUP_WRITE_AUTH = NONE
 ```
 
-## 0. Accepted prerequisite
+## 0. Accepted prerequisite — Dedicated identity / route / native workflow
 
 Dedicated Kintone Employee-Self UAT is accepted for `papatchaya` / Employee Code `0113`.
 
-Clean App794 Record #12 pre-transition snapshot:
+Canonical Record #12 route snapshot:
 
 ```text
 EMPLOYEE_CODE = 0113
 REQUESTER_USER = papatchaya
-MANAGER_LEVEL1_APPROVERS = pattama
-MANAGER_LEVEL2_APPROVERS = BLANK
-GM_LEVEL1_APPROVERS = BLANK
-GM_LEVEL2_APPROVERS = BLANK
 FIRST_MANAGER_USER = BLANK
 MANAGER_USER = pattama
 GM_USER = BLANK
-HAS_MANAGER_LEVEL2 = No
-HAS_GM_LEVEL2 = No
 ROUTING_TOPOLOGY = M1_ONLY
-D1_CLEAN_DEDICATED_ROUTING_SNAPSHOT = PASS
+OWN_MBO_SELF_APPRAISER_ELISION = PASS
 ```
 
-Native workflow transition evidence after Papatchaya executed `Submit Objective to Manager`:
+Current accepted App794 Process truth after the user-approved two-button fix:
 
 ```text
-RECORD_ID = 12
-STATUS = 03 Manager Objective Review
-ASSIGNEE = pattama
-REQUESTER = papatchaya
-MANAGER = pattama
-GM = BLANK
-TOPOLOGY = M1_ONLY
+PROCESS_STATES = 16
+PROCESS_ACTIONS = 31
+01 / 06 / 11 each have mutually-exclusive First-Manager vs Manager submit actions.
+28-action documentation is stale pre-two-button-fix count.
+```
+
+Record #12 native Process UAT:
+
+```text
+FROM = 01 Draft Objective
+ACTION = Submit Objective to Manager
+TO = 03 Manager Objective Review
+NEXT_ASSIGNEE = pattama
+RECORD_REVISION_AFTER = 11
 PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
 ```
 
-The App794 employee-stage two-button defect was corrected for 01 / 06 / 11 using mutually-exclusive `Routing_Topology` conditions. `GM_User` is optional. `MBO_DEDICATED_ACCESS` has App794 View/Add/Edit and no Delete/Import/Export/App Admin.
+## 1. App794 ACL Live configuration — CONFIG PASS
 
-## 1. Goal
-
-Design the complete App794 record-level privacy and current-approver ACL model before applying any ACL write.
-
-The design must protect all 24 Dedicated users, not only Employee 0113.
-
-## 2. Security requirement
-
-App-level group access is not sufficient isolation.
-
-`MBO_DEDICATED_ACCESS` currently has App794:
+User-authorized Browser Console changes and readback established:
 
 ```text
-VIEW = true
-ADD = true
-EDIT = true
-DELETE = false
-IMPORT = false
-EXPORT = false
-APP_ADMIN = false
+APP794_REVISION = 66
+
+APP ACL:
+- MBO_DEDICATED_ACCESS = View/Add/Edit; no Delete/Import/Export/App Admin
+- MBO_EMPLOYEE_ACCESS = preserved
+- HR_ADMIN_GROUP = View/Edit; no Add/Delete/Import/Export/App Admin
+- everyone = denied
+
+RECORD ACL:
+- COMPLETE RULE COUNT = 6
+- LIVE/PREVIEW MATCH = true
+- EXACT REVIEWED DESIGN = true
+
+PROCESS:
+- 16 states
+- 31 actions
+- unchanged by ACL write
 ```
 
-Therefore record-level ACL must ensure that a Dedicated employee cannot access another employee's MBO unless the user is the authoritative current native approver for that record or another explicitly authorized administrative role applies.
-
-## 3. Canonical field entities
-
-Use only App794 record/runtime fields that correspond to the record's current routing snapshot:
+Complete six-rule lifecycle model:
 
 ```text
-Requester_User
-First_Manager_User
-Manager_User
-GM_User
+A  01 / 06 / 11  Requester_User View/Edit
+B  02 / 07 / 12  First_Manager_User View/Edit + Requester View
+C  03 / 08 / 13  Manager_User View/Edit + Requester View
+D  04 / 09 / 14  GM_User View/Edit + Requester View
+E  05 / 10 / 16  Requester View only
+F  15            USER:hr View/Edit + Requester View
+
+All rules:
+- HR_ADMIN_GROUP View
+- USER:admin-form technical-admin access preserved
+- everyone denied
 ```
 
-Static App795 routing membership must not by itself grant record access.
+Static App795 membership alone grants no record access.
 
-Native workflow `Assignee` remains the authoritative current approval identity for action authorization; ACL design must not create a contradictory stale-access path.
+## 2. Runtime evidence accepted
 
-## 4. Required lifecycle behavior
+### 2.1 Requester own Draft — PASS
+
+Logged in as `papatchaya`, Record #12 at `01 Draft Objective`:
 
 ```text
-REQUESTER / EMPLOYEE
-- View own record throughout lifecycle.
-- Edit only employee-owned stages.
+ACL_EVALUATION:
+viewable = true
+editable = true
+deletable = false
 
-CURRENT FIRST MANAGER
-- View/Edit only First Manager review stages when authoritative for that record.
+PAGE_PERMISSION:
+editRecord = true
+deleteRecord = false
 
-CURRENT MANAGER
-- View/Edit only Manager review stages when authoritative for that record.
-
-CURRENT GM
-- View/Edit only GM review stages when authoritative for that record.
-
-PRIOR APPROVER
-- Must not retain record access after workflow moves beyond their current role unless another valid current role independently grants access.
-
-HR / ADMIN
-- Preserve required administrative access.
+REV66_REQUESTER_OWN_DRAFT_ACL = PASS
 ```
 
-## 5. Statuses to cover
+### 2.2 Requester downgrade at Manager stage — PASS
 
-Complete design must explicitly cover all current App794 process statuses:
+After the authorized native Process transition to status 03:
 
 ```text
-01 Draft Objective
-02 First Manager Objective Review
-03 Manager Objective Review
-04 GM Objective Review
-05 Objective Approved
-06 Employee Mid-Year
-07 First Manager Mid-Year Review
-08 Manager Mid-Year Review
-09 GM Mid-Year Review
-10 Mid-Year Completed
-11 Employee Self Evaluation
-12 First Manager Final Evaluation
-13 Manager Final Evaluation
-14 GM Final Evaluation
-15 HR Final Check
-16 Completed
+LOGIN = papatchaya
+RECORD = 12
+STATUS = 03 Manager Objective Review
+REQUESTER = papatchaya
+MANAGER = pattama
+ASSIGNEE = pattama
+ROUTING_TOPOLOGY = M1_ONLY
+
+ACL_EVALUATION:
+viewable = true
+editable = false
+deletable = false
+
+REV66_REQUESTER_APPROVER_STAGE_DOWNGRADE = PASS
 ```
 
-Do not apply a partial rule set that leaves later statuses undefined or accidentally locks records.
+This proves requester edit rights are removed when authority passes to the Manager stage while requester view is retained.
 
-## 6. Current read-only review questions
+## 3. Remaining privacy / runtime evidence
 
-ChatGPT + User must determine:
+Still not independently runtime-proven:
 
-1. Exact current App794 Record Permission configuration.
-2. Exact HR/Admin entities that must retain lifecycle access.
-3. For each of the 16 statuses, which field entity is allowed View and which is allowed Edit.
-4. Whether requester retains View during all approver stages while Edit is removed.
-5. Exact requester behavior in waiting/completed statuses 05 / 10 / 16.
-6. Exact HR-only/admin behavior in status 15 HR Final Check.
-7. How Return actions restore requester or prior current-role editing without preserving stale approver access.
-8. Whether any rule order/priority interaction in Kintone could broaden access unexpectedly.
+1. **Foreign-record denial** — a Dedicated user must not View another employee's record when they are not a current approver/admin.
+2. **Current Manager runtime View/Edit** — structurally configured for `Manager_User`, but Pattama interactive login is unavailable; do not reset Pattama password merely for UAT.
+3. **HR lifecycle behavior** — HR group View outside status 15 and `USER:hr` View/Edit at status 15 are structurally configured; runtime coverage may be added using the controlled `hr` account where safe.
+4. **Stale-prior-approver denial after transition/return** — structurally status-aware; runtime proof requires a controlled route/account scenario.
 
-## 7. Exact next step — GET/SCREEN ONLY
+App794 currently had only Record #12 when admin-form enumerated visible records, so no existing foreign record was available for a negative isolation test.
 
-User opens:
+## 4. Exact next step — ZERO WRITE FIRST
+
+Use the existing Record #12 at `03 Manager Objective Review` for additional zero-write ACL checks before creating any synthetic data.
+
+Preferred next evidence:
 
 ```text
-App794 -> App Settings -> Permissions for records
+A. login as controlled hr account
+B. GET/evaluate Record #12 permissions only
+C. Expected at status 03:
+   viewable = true
+   editable = false
+   deletable = false
 ```
 
-Then either:
-- send a full screenshot of the existing Record Permission page; or
-- run a GET-only Browser Console ACL read if needed.
+This validates HR lifecycle read-only behavior without moving workflow or changing data.
 
-Do not change any rule yet.
+After that, Control Plane decides whether a **single disposable foreign-record negative UAT** is necessary. Any create/delete/transition needed for that test requires a new exact one-shot user authorization. Do not create synthetic records automatically.
 
-ChatGPT then builds a complete 16-status ACL matrix and reviews rule ordering/HR/Admin preservation before requesting any authorization.
-
-## 8. Safety rules
+## 5. Safety rules
 
 ```text
-ANTIGRAVITY_EXECUTION = NO
-APP794_RECORD_ACL_WRITE = NO
+ANTIGRAVITY = NOT NEEDED FOR CURRENT GET-ONLY CHECK
+APP794_ACL_WRITE = NO
 APP794_PROCESS_WRITE = NO
 APP794_SCHEMA_WRITE = NO
+APP794_RECORD_CREATE/EDIT/DELETE = NO
 APP53_WRITE = NO
 APP795_WRITE = NO
+APP801_WRITE = NO
 GROUP_MEMBERSHIP_WRITE = NO
-SOURCE_MODIFICATION = NO
-DIST_MODIFICATION = NO
+ROLLBACK = NO
 ```
 
-All Kintone checks during this task are GET-only / screen inspection until the user separately authorizes an exact complete ACL change.
+Consumed authorizations must never be reused.
 
-## 9. Decision output
+## 6. D1 decision gate
 
-End design with exactly one of:
+Do not close the Dedicated record-privacy gate solely from configuration readback.
+
+Current classification:
 
 ```text
-A. ACL DESIGN READY — request exact user authorization for complete App794 record ACL write
-B. MORE GET-ONLY EVIDENCE REQUIRED — specify exact Browser Console/screen inspection
-C. BLOCKED — state exact unresolved access requirement
+APP794_RECORD_ACL_CONFIG = PASS
+REQUESTER_OWN_DRAFT_RUNTIME = PASS
+REQUESTER_MANAGER_STAGE_DOWNGRADE = PASS
+FOREIGN_RECORD_NEGATIVE_RUNTIME = PENDING
+CURRENT_MANAGER_INTERACTIVE_RUNTIME = PENDING / CREDENTIAL-LIMITED
+D1_RECORD_PRIVACY_GATE = OPEN
 ```
 
-Prefer User + ChatGPT execution. Antigravity is not needed for this gate.
+## 7. Handoff pointer
 
-## 10. Handoff pointer
-
-For a new conversation, use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`. The new chat must fresh-fetch HEAD, read `CHAT_HANDOFF.md` first, then this Active Task, and continue from Section 7 without repeating accepted D1 UAT.
+For a new conversation, fresh-fetch HEAD and read `project-docs/CHAT_HANDOFF.md` first, then `AI_CONTROL_CENTER.md`, this file, and relevant Confirmed Baselines. Do not repeat the accepted Rev66 configuration writes or Record #12 01->03 transition.
