@@ -1,72 +1,93 @@
 # MBO2026 — CURRENT STATE SNAPSHOT
 
 > Compatibility/current-state snapshot only. `AI_CONTROL_CENTER.md` is the authoritative operational board.  
-> Updated: 2026-08-30 20:45 ICT  
+> Updated: 2026-08-31 ICT  
 > Branch: `ai/antigravity-wp002c`
 
 ## Current gate
 
 ```text
-D1 = IN PROGRESS
-CURRENT_GATE = D1 MY APPROVAL TASKS — LEAN HOME INDEX INTEGRATION R1
-TASK_STATE = OPEN / READY FOR ANTIGRAVITY EXECUTION
+D1 = PASS / CLOSED
+FINAL_D1_SECURITY_REVIEW = PASS
+PRE_D2_DOCUMENTATION_SYNC = COMPLETE
+D2 = READY / NOT STARTED
+ACTIVE_WORK_PACKAGE = NONE
+D2_START = OWNER INSTRUCTION REQUIRED
 LIVE_WRITE = NONE AUTHORIZED
 DEPLOY = NONE AUTHORIZED
 ```
 
-Fresh-fetch HEAD before acting because documentation-sync commits and later executor work may advance the branch.
+Fresh-fetch HEAD before acting.
 
-## Accepted Live App794
+## Accepted Live/runtime freeze
 
 ```text
-LIVE/PREVIEW REVISION = 60 / 60
-DEPLOYED SOURCE COMMIT = 1ed342ad137a4a364496a28d29bdffd24a99b511
-JS BLOB = 115a08ace32bdf850cb5eebf25b953d1803114d0
-CSS BLOB = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-USER UAT = PASS
+APP794 LIVE REVISION = 67
+RUNTIME SOURCE COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+D1 SECURITY REVIEW = PASS
 ```
 
-Rev60 fatal-Create clean exit is accepted known-good.
+No runtime/source/test change is implied by the D1 closure and pre-D2 documentation sync.
 
-## Accepted D1 source milestones
+## Accepted D1 summary
 
 ```text
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-HYBRID_CORE_SOURCE_R1 = PASS
-HYBRID_EMPLOYEE_SELF_RUNTIME_ENTRY = PASS
-LATEST ACCEPTED BUILD = PASS
-LATEST ACCEPTED FULL REGRESSION = 1024/1024 PASS
-APPROVAL AUTHORITY SERVICE R1 = PASS
-APPROVAL SERVICE COMMIT = 5ac5ede6e40a1462f0398ba8740330742041e3bf
+APP53 TOTAL = 281
+DEDICATED MAPPINGS = 24 / PASS
+DEDICATED RECORD PRIVACY = PASS
+CURRENT-ASSIGNEE APPROVAL AUTHORITY = PASS
+SHARED APP801 SESSION RUNTIME = PASS
+DEDICATED LIVE DUAL-ROLE = PASS
+COMMENTS/HISTORY/ATTACHMENTS TRUTH = PASS
+HR NON-EMPLOYEE MODE = PASS
 ```
 
-## Approval integration gates
+Canonical Record #12:
 
 ```text
-GATE 1 HOME INDEX = OPEN
-GATE 2 CROSS-EMPLOYEE DETAIL = PENDING
-GATE 3 PROCESS.PROCEED FRESH ASSIGNEE REVALIDATION = PENDING
+Employee = 0113 / papatchaya
+Status = 03 Manager Objective Review
+Requester = papatchaya
+Manager / Assignee = pattama
+Topology = M1_ONLY
 ```
 
-Approval authority is current native App794 `Assignee` for DEDICATED users only. Shared approver authority is denied.
+Synthetic Records #13 and #14 were deleted after bounded UAT.
+
+## Accepted D1 security ceilings
+
+```text
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+```
 
 ## App53 state
 
 ```text
 PRODUCTION / READ_ONLY BY DEFAULT
-READ_ONLY MAPPING AUDIT = COMPLETE
-MBO_Kintone_User USER_SELECT = CONFIRMED DESIGN / NOT LIVE
-Vassana = canonical Employee_Code 0044 proven
-Natta = emp_text blank / canonical Employee_Code unresolved / fail closed
+MBO_Kintone_User = USER_SELECT / optional / LIVE
+DEDICATED_MAPPINGS_VERIFIED = 24
+UNEXPECTED_NONEMPTY = 0
 ```
 
-`OWN_MBO_SELF_APPROVER_ELISION = APPROVED`; own self-appraiser is removed before effective workflow snapshot while remaining route/order/rules are preserved; never autoapprove.
+No App53 write authorization exists automatically.
+
+## D2 pre-start
+
+Canonical contract: `project-docs/EXCEL_EXPORT.md`.
+
+```text
+D2_STATUS = READY / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+NEXT_AFTER_OWNER_START = READ-ONLY EXPORT/SAMPLE DISCOVERY + GAP ANALYSIS
+```
 
 ## D1–D7
 
 ```text
-D1 IN PROGRESS
-D2 IN PROGRESS
+D1 PASS / CLOSED
+D2 READY / NOT STARTED
 D3 IN PROGRESS / WRITE NOT AUTHORIZED
 D4 IN PROGRESS
 D5 IN PROGRESS
@@ -81,10 +102,12 @@ KINTONE WRITE = NONE
 DEPLOY = NONE
 ACL = NONE
 GROUP = NONE
-APP53 SCHEMA/RECORD/BULK WRITE = NONE
+APP53 WRITE = NONE
+APP801 WRITE = NONE
+D2 SOURCE CHANGE = NONE
 ROLLBACK = NONE
 ```
 
 ## Canonical continuation docs
 
-Read `CHAT_HANDOFF.md`, `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`, `AI_DOCUMENT_INDEX.md` and only relevant Confirmed Baselines. Do not use older Phase-3/D7 text from Git history as current status.
+Read `CHAT_HANDOFF.md`, `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`, `AI_DOCUMENT_INDEX.md` and only relevant Confirmed Baselines. This compatibility file must never override them.
