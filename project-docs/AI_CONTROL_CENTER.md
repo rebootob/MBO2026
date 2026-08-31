@@ -5,28 +5,94 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-08-31 — USER MANUAL APP53 FIELD ADD REPORTED / ANTIGRAVITY GET-ONLY TASK CANCELLED / USER+CHATGPT MANUAL VERIFICATION
+> Updated: 2026-08-31 — APP53 HYBRID IDENTITY MAPPING PASS / NEXT APP794 READINESS REVIEW
 
 ## 1. D1 status
 
-D1 Gate A source/test/build is accepted. Gate B1 App53 Production read-only preflight is PASS.
+D1 Gate A source/test/build is accepted. App53 Production identity preparation and dedicated-user mapping are now complete through user-operated Kintone UI/Browser Console with ChatGPT review.
 
-The user changed the execution plan and manually added the new App53 field through Kintone UI. The prior App802 S-D2 execution path is cancelled and must not be run.
+The prior App802 sandbox execution path remains cancelled and must not be run.
 
-User-reported manual change:
+## 2. App53 field baseline — PASS
+
+Browser-console Kintone API readback verified:
 
 ```text
 APP_ID = 53
+APP_NAME = Employee Namelist
+APP_REVISION_AT_FIELD_VERIFICATION = 202
 FIELD_CODE = MBO_Kintone_User
 LABEL = MBO Kintone User
 TYPE = USER_SELECT
 REQUIRED = false
-DEFAULT/ENTITIES = intended empty
-USER_REPORT = DONE
-API_READBACK = NOT REQUIRED FOR CURRENT MANUAL REVIEW PATH
+ENTITIES_COUNT = 0
+TOTAL_RECORDS = 281
+MBO_Kintone_User_NONEMPTY_BEFORE_MAPPING = 0
+RECORD_456_emp_text = 0044
+RECORD_578_emp_text = BLANK at the earlier field-verification checkpoint
 ```
 
-## 2. Cancelled executor work
+Field creation is accepted.
+
+## 3. Employee Code normalization
+
+The user manually normalized active short numeric `emp_text` Employee Codes to four digits through a guarded Browser Console script.
+
+Five explicitly unused/non-standard records were excluded from that normalization operation:
+
+```text
+382 = 9000
+390 = 9000
+495 = 0050.2
+496 = 50.02
+497 = 50.03
+```
+
+User reports normalization completed. The later 24-user mapping precheck independently confirmed the required normalized Employee Codes for all 24 target records.
+
+## 4. Dedicated Kintone user discovery and mapping
+
+Kintone user discovery found:
+
+```text
+TOTAL_KINTONE_USERS = 49
+ACTIVE_KINTONE_USERS = 38
+PERSONAL_KINTONE_USERS_SELECTED = 24
+```
+
+Twenty-three users resolved directly through exact identity evidence. `papatchaya` initially matched two App53 records because records 426 and 479 shared the same email. Manual GET-only inspection resolved the ambiguity:
+
+```text
+Record 426 = Employee Code 0113 = Ms.Papatchaya/TMH2
+Record 479 = Employee Code 0007 = Mr.Prajak/TMH2
+papatchaya -> Record 426
+```
+
+## 5. App53 MBO_Kintone_User population — PASS
+
+The user explicitly authorized updating exactly the 24 reviewed mappings and executed a revision-aware Browser Console update with immediate authoritative readback.
+
+Final evidence:
+
+```text
+APP53_MBO_Kintone_User_UPDATE = PASS
+TOTAL_RECORDS = 281
+TARGET_RECORDS_VERIFIED = 24
+MBO_Kintone_User_NONEMPTY_RECORDS = 24
+UNEXPECTED_NONEMPTY_RECORDS = 0
+```
+
+Therefore:
+
+```text
+D1_APP53_FIELD = PASS
+D1_APP53_24_DEDICATED_USER_MAPPING = PASS
+APP53_UNEXPECTED_MAPPING = NONE OBSERVED
+```
+
+No additional App53 mapping write is authorized automatically.
+
+## 6. Cancelled executor work
 
 ```text
 APP802_S_D2_EXECUTION = CANCELLED BY PLAN CHANGE
@@ -39,47 +105,41 @@ SECOND_SANDBOX_CREATE_AUTH = NONE
 
 App802 may remain untouched. No cleanup/delete is authorized.
 
-## 3. Current verification path — User + ChatGPT only
+## 7. Next D1 step
 
-No Antigravity is required for this verification.
+Before any App794 Production deployment, ChatGPT must independently review the existing D1 source/build/deployment readiness and determine the smallest required action for enabling dedicated-user Employee-Self binding against the now-populated App53 mapping.
 
-The user will provide Kintone UI screenshots and ChatGPT will review them directly.
+Do not spend Antigravity credits on read-only review, control documentation, or browser-console checks that User + ChatGPT can perform directly.
 
-Required manual evidence:
+Known prior App794 baseline remains:
 
 ```text
-1. App53 Form view showing field MBO_Kintone_User exists.
-2. Field settings showing:
-   - Field Code = MBO_Kintone_User
-   - Label = MBO Kintone User
-   - Type = USER_SELECT
-   - Required = false
-   - Default user / entities = empty
-3. App53 record list or app screen showing record count remains 281 if visible.
-4. Optional spot-check screenshots for record 456 and record 578 if needed by the next gate.
+LIVE_REVISION = 60
+PREVIEW_REVISION = 60
+DEPLOYED_SOURCE_COMMIT = 1ed342ad137a4a364496a28d29bdffd24a99b511
+D1_LOCAL_UI_BUILD_COMMIT = 09c306d837dfc21470d8c1e401972b1a8f3ffc70
+D1_LOCAL_UI_BUILD_DEPLOYED = NO / NOT YET CONFIRMED AS DEPLOYED
 ```
 
-Do not ask Antigravity to perform read-only work that the user and ChatGPT can verify manually.
-
-## 4. Production protection
+## 8. Production protection
 
 ```text
 APP53_SCHEMA_WRITE_AUTH = NONE
 APP53_RECORD_WRITE_AUTH = NONE
 APP53_BULK_WRITE_AUTH = NONE
 APP53_MAPPING_POPULATION_AUTH = NONE
-NATTA_emp_text_CORRECTION_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
+ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_ACL_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
 PRODUCTION_ROLLBACK_AUTH = NONE
 ```
 
-## 5. Current control state
+## 9. Current control state
 
 ```text
-ACTIVE_TASK = USER + CHATGPT MANUAL APP53 FIELD VERIFICATION
-CURRENT_OWNER = USER + CHATGPT
+ACTIVE_TASK = CHATGPT APP794 D1 DEPLOYMENT READINESS REVIEW
+CURRENT_OWNER = CHATGPT
 ANTIGRAVITY_ACTION = NONE
-KINTONE_WRITES = FORBIDDEN UNTIL NEW EXPLICIT AUTHORIZATION
+KINTONE_WRITE_AUTH = NONE
+NEXT_DECISION = DETERMINE MINIMUM REQUIRED APP794 STEP
 ```
