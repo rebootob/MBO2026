@@ -14,181 +14,118 @@ Repository/Kintone accepted evidence wins over embedded checkpoints. Fresh-fetch
 3. Read `project-docs/AI_CONTROL_CENTER.md`.
 4. Read `project-docs/AI_ACTIVE_TASK.md`.
 5. Read `project-docs/AI_DOCUMENT_INDEX.md`.
-6. Read `00_MASTER_JOBLIST.md` only when whole-project completeness is needed.
+6. Read `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness is relevant.
 7. Read only relevant `CONFIRMED_BASELINE/` files.
-8. Do not broad-scan or repeat accepted work.
+8. Do not repeat accepted work or broad-scan.
 
 ## 2. Operating model
 
 ```text
 ChatGPT = Control Plane / Architect / Reviewer
-Antigravity = low-credit execution plane only when genuinely necessary
+Antigravity = execution plane only when genuinely necessary
 User + Browser Console = preferred for narrow Kintone GET/UAT
-Repository + accepted Live evidence = operational truth
 ```
 
-No Live Kintone write/deploy/ACL/group/schema/record operation without exact explicit authorization. Never reuse consumed authorization. No automatic rollback.
+No Live Kintone write/deploy/ACL/group/schema/record/session/password operation without exact explicit authorization. Never reuse consumed authorization.
 
-## 3. D1–D7 scoreboard
-
-| ID | Status | Current note |
-|---|---|---|
-| D1 Hybrid Identity + Password + Employee-Self + Approver Access | 🟠 IN PROGRESS / MAJOR RUNTIME GATES PASS | App53 24 mappings PASS; App794 Rev67 HR runtime corrective PASS; requester ACL PASS; foreign-record isolation PASS; residual approver/HR-status runtime evidence remains |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Legacy-format parity/security not closed |
-| D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
-| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Full live E2E not closed |
-| D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Carry-forward whitelist remains Objective/Action Plan/Additional Agreement/Weight only |
-| D6 Integrated E2E / Security / Regression | 🔴 PENDING | After D1–D5 sufficiently ready |
-| D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
-
-## 4. Accepted D1 identity/process truth
+## 3. D1 checkpoint
 
 ```text
-D1 = KINTONE-ONLY
-HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-AUTH_BRIDGE = CANCELLED
-
-APP53_TOTAL = 281
-DEDICATED_MAPPINGS_VERIFIED = 24
-papatchaya -> Employee 0113
-
-APP794_PROCESS_STATES = 16
-APP794_PROCESS_ACTIONS = 31
-GM_User = optional
+D1 = KINTONE-ONLY HYBRID IDENTITY
+APP53 dedicated mappings = 24 / PASS
+App794 Process = 16 states / 31 actions
+App794 Live revision = 67
 ```
 
-Critical non-employee principals:
+Canonical Record #12:
 
 ```text
-admin-form = TECHNICAL_ADMIN / NO EMPLOYEE ID BY DESIGN
-hr         = HR_ADMIN / NO EMPLOYEE ID BY DESIGN
+Employee = 0113 / papatchaya
+Status = 03 Manager Objective Review
+Manager = pattama
+Assignee = pattama
+Topology = M1_ONLY
+Own-MBO self-appraiser elision = PASS
+Native 01 -> 03 transition = PASS
 ```
 
-Never create fake Employee IDs or App53 Employee-Self mappings for either account.
-
-## 5. Canonical Record #12 — accepted
+## 4. Dedicated/HR/privacy gates — PASS
 
 ```text
-EMPLOYEE_CODE = 0113
-REQUESTER_USER = papatchaya
-FIRST_MANAGER_USER = BLANK
-MANAGER_USER = pattama
-GM_USER = BLANK
-ROUTING_TOPOLOGY = M1_ONLY
-OWN_MBO_SELF_APPRAISER_ELISION = PASS
-STATUS = 03 Manager Objective Review
-ASSIGNEE = pattama
-RECORD_REVISION = 11
+Requester own Draft ACL = PASS
+Requester at manager stage View-only = PASS
+HR status03 native ACL = PASS
+HR non-employee runtime mode Rev67 = PASS
+Foreign Record Negative Runtime = PASS
 ```
 
-Accepted native transition:
+Foreign UAT temporary Record #13 (`FY2026-0044 / vassana`) was inaccessible to `papatchaya` by direct GET, query, ACL and direct URL, then deleted. No synthetic test record remains.
+
+`admin-form` and `hr` are non-employee principals and intentionally have no Employee ID/App53 Employee-Self mapping.
+
+## 5. Residual approver/HR structural evidence — PASS
+
+Rev67 GET-only structural audit:
 
 ```text
-01 Draft Objective
-  -- Submit Objective to Manager -->
-03 Manager Objective Review
-PAPATCHAYA_TO_PATTAMA_NATIVE_WORKFLOW = PASS
+15 HR Final Check = ONE + USER:hr
+15 -> 16 Complete exists
+15 -> 11 Return Final HR exists
+
+03/08/13: Manager_User View/Edit
+04/09/14: GM_User View/Edit; Manager_User no grant
+15: hr View/Edit; Requester View only
+```
+
+Source approval authority revalidates current native `Assignee` and denies stale static snapshot fields.
+
+```text
+STALE_PRIOR_APPROVER_STRUCTURAL = PASS
+HR_STATUS15_STRUCTURAL = PASS
+CURRENT_MANAGER_INTERACTIVE_RUNTIME = CREDENTIAL-LIMITED / NON-BLOCKING
 ```
 
 Do not reset Pattama password solely for UAT.
 
-## 6. App794 ACL/runtime truth
+## 6. D1 is NOT closed yet
 
-Record ACL configuration was accepted at Rev66 and remains the active six-rule model after the Rev67 customization deployment.
-
-```text
-RECORD_ACL_RULE_COUNT = 6
-APP ACL HR_ADMIN_GROUP = View/Edit; no Add/Delete/Import/Export/App Admin
-PROCESS = unchanged 16 states / 31 actions
-```
-
-Runtime evidence:
+Final closure review against `00_MASTER_JOBLIST.md` + `TEST_STATUS.md` found mandatory remaining evidence beyond the approver residuals:
 
 ```text
-papatchaya status01: view=true edit=true delete=false = PASS
-papatchaya status03: view=true edit=false delete=false = PASS
-hr status03 native ACL: view=true edit=false delete=false = PASS
+SHARED_EMPLOYEE_SELF_APP801_SESSION_UAT = PENDING
+DEDICATED_SHARED_DUAL_ROLE_INTEGRATED_UAT = PENDING / review reusable evidence first
+COMMENTS_HISTORY_ATTACHMENTS_TRUTHFULNESS = PENDING / review reusable evidence first
+FINAL_D1_SECURITY_REVIEW = PENDING
 ```
 
-## 7. App794 Rev67 HR runtime corrective — PASS
-
-Accepted source/deploy chain:
+Accepted shared-account platform limitation remains:
 
 ```text
-HR source corrective commit = cda4ed5e79736eaddcd96dd661d7a7294ae313f0
-Deploy-tool CSS target fix  = c6864d09f59cfaf6e7c86da422452a816a5cf430
-App794 Live revision        = 67
-Deploy status               = SUCCESS
+DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRINCIPAL
 ```
 
-Authoritative HR runtime rule:
+Do not false-pass D1.
+
+## 7. Exact current gate
 
 ```text
-DEDICATED employee -> exact App53 mapping -> Employee-Self
-SHARED employee    -> App801 session -> Employee-Self
-TECHNICAL_ADMIN    -> non-employee technical path
-HR_ADMIN           -> non-employee HR path
-HR authorization   -> exact Kintone group code HR_ADMIN_GROUP
+ACTIVE_TASK = D1 FINAL CLOSURE EVIDENCE
+NEXT = SHARED EMPLOYEE-SELF / APP801 SESSION GET-ONLY PREFLIGHT
+OWNER = ChatGPT + User
+ANTIGRAVITY = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+APP801_WRITE_AUTH = NONE
 ```
 
-Post-deploy UAT as `hr`:
+Preflight must find one active employee who:
+- has a valid App801 credential row;
+- has no dedicated `MBO_Kintone_User` mapping;
+- resolves to an App795 route compatible with an approved shared principal;
+- can be inspected without exposing `Password_Hash`.
 
-```text
-NO_ACTIVE_EMPLOYEE_MAPPING_FOUND = GONE
-Employee Identity Mapping Failed = GONE
-Record #12 status03 native ACL remains view=true edit=false delete=false
-HR_NON_EMPLOYEE_RUNTIME_MODE = PASS
-```
+Do not execute shared login/session/password changes until a separate exact authorization is granted if the operation mutates App801.
 
-HR uses native Kintone UI/ACL by design; it is not forced into Employee-Self UI.
-
-## 8. D1 foreign-record negative runtime — PASS
-
-Disposable synthetic record used under exact one-shot authorization:
-
-```text
-Record #13
-Fiscal_Year = FY2026
-Employee_Code = 0044
-Requester_User = vassana
-Manager_User = tsuchihira
-Record_Key = FY2026-0044
-Status = 01 Draft Objective
-```
-
-As `papatchaya`:
-
-```text
-Direct GET #13 = 403 / CB_NO02 / DENIED
-Query Record_Key FY2026-0044 = 0 records
-ACL evaluate = view=false edit=false delete=false
-Direct URL #13 = Failed to load record details / No privilege / CB_NO02
-FOREIGN_RECORD_NEGATIVE_RUNTIME = PASS
-```
-
-Cleanup:
-
-```text
-DELETE Record #13 = 1
-Post-delete Record_Key match count = 0
-Synthetic record remaining = 0
-```
-
-CREATE and DELETE authorizations are consumed and must never be reused.
-
-## 9. Current residual D1 gate
-
-```text
-CURRENT_MANAGER_INTERACTIVE_RUNTIME = PENDING / CREDENTIAL-LIMITED (Pattama password unavailable)
-STALE_PRIOR_APPROVER_RUNTIME = PENDING
-HR_STATUS15_RUNTIME = PENDING
-```
-
-The current task is to close or disposition these residual runtime-evidence items without weakening security or resetting credentials merely for UAT.
-
-Preferred next action: determine which residual checks can be proved with existing accounts and GET-only evidence. Any synthetic record create/delete/transition requires a new exact one-shot authorization.
-
-## 10. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -196,37 +133,31 @@ ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
 ACTIVE_PROCESS_UAT_WRITE_AUTH = NONE
 ACTIVE_GROUP_WRITE_AUTH = NONE
-APP53_SCHEMA_WRITE_AUTH = NONE
-APP53_RECORD_WRITE_AUTH = NONE
-APP53_BULK_WRITE_AUTH = NONE
+APP53_WRITE_AUTH = NONE
+APP801_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-All prior HR deploy and foreign-record synthetic CREATE/DELETE authorizations are consumed.
+All prior HR deploy and foreign-record CREATE/DELETE authorizations are consumed.
 
-## 11. New-chat continuation
+## 9. New-chat continuation
 
 ```text
 Continue MBO2026 from repository truth.
 Repository: rebootob/MBO2026
 Canonical branch: ai/antigravity-wp002c
-Fresh-fetch HEAD. Read CHAT_HANDOFF.md first, then AI_CONTROL_CENTER.md, AI_ACTIVE_TASK.md, AI_DOCUMENT_INDEX.md and only relevant Confirmed Baselines.
+Fresh-fetch HEAD first. Read CHAT_HANDOFF.md, AI_CONTROL_CENTER.md, AI_ACTIVE_TASK.md, AI_DOCUMENT_INDEX.md and only relevant baselines.
 Do not repeat accepted work. Do not broad-scan. Use Antigravity only when genuinely necessary.
 
-Current D1 checkpoint:
-- App53 exactly 24 dedicated employee mappings verified.
-- admin-form and hr are non-employee principals and intentionally have no Employee ID.
-- App794 Process = 16 states / 31 actions.
-- Record ACL six-rule model accepted.
-- Papatchaya own Draft ACL PASS; after 01->03 requester becomes View-only PASS.
-- App794 Rev67 HR runtime corrective deployed SUCCESS; HR non-employee runtime mode PASS.
-- Foreign Record Negative Runtime PASS using temporary Record #13; direct GET/query/ACL/direct URL all denied for papatchaya; Record #13 deleted and cleanup verified.
-- No active Kintone write authorization.
-
-Current residual D1 gate:
-CURRENT_MANAGER_INTERACTIVE_RUNTIME = credential-limited;
-STALE_PRIOR_APPROVER_RUNTIME = pending;
-HR_STATUS15_RUNTIME = pending.
-Do not reset Pattama password solely for UAT.
+Current D1 truth:
+- Dedicated/HR/privacy major gates PASS.
+- App794 Rev67; Process 16/31.
+- Foreign record isolation PASS and synthetic cleanup PASS.
+- Stale prior approver structural protection PASS.
+- HR status15 structural authorization PASS.
+- Pattama interactive runtime is credential-limited/non-blocking.
+- D1 is still OPEN because Shared App801/session, integrated dual-role, comments/history/attachments and final D1 security closure evidence remain.
+- Exact next gate = Shared Employee-Self/App801 Session GET-only preflight.
+- No active Kintone/App801 write authorization.
 Respond in Thai.
 ```
