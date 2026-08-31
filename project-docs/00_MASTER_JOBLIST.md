@@ -22,6 +22,9 @@ D1_KINTONE_ONLY = YES
 AUTH_BRIDGE_CANCELLED = YES
 HYBRID_IDENTITY_CANONICAL = YES
 DUAL_ROLE_CONTEXTS_MUST_REMAIN_SEPARATE = YES
+EMPLOYEE_CODE_STABLE_PERSON_ID = YES
+NO_AUTOMATIC_EXISTING_MBO_REROUTE_ON_MASTER_CHANGE = YES
+EMPLOYEE_LIFECYCLE_CHANGE_REQUIRES_CONTROLLED_AUDIT = YES
 ANTIGRAVITY_MINIMUM_NECESSARY_ONLY = YES
 ```
 
@@ -103,7 +106,21 @@ Status: `IN PROGRESS / WRITE NOT AUTHORIZED`.
 
 ## 4. D4 — App800 HR Control Center End-to-End
 
-Must cover annual cycle/phase calendar, progress/exception monitoring, routing health, authorized reassignment, scoring/Hoshin health, reopen/revision operations, MBO credential operations, migration status and secure exports.
+Must cover annual cycle/phase calendar, progress/exception monitoring, routing health, authorized reassignment, scoring/Hoshin health, reopen/revision operations, MBO credential operations, migration status, secure exports, and Employee Lifecycle Change operations.
+
+Canonical lifecycle policy: `CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+D4 lifecycle capability must ultimately support:
+- detect inactive/resigned employees with active/open MBO impact;
+- detect current tasks assigned to an appraiser/manager who is leaving or changing role;
+- controlled reassignment of the authoritative current Workflow assignee;
+- controlled amendment of remaining future route only when business-approved;
+- preserve old/new actor/route, reason, effective date, changed-by and changed-at audit evidence;
+- support Shared App801 disable/session invalidation when applicable;
+- support Dedicated Kintone-principal/mapping change impact handling without creating duplicate Employee identity;
+- no automatic retroactive rewrite of existing App794 records when App53/App795 changes;
+- no automatic MBO delete/complete/approve on resignation;
+- exact target/readback/exception reporting for lifecycle mutations.
 
 Accepted sub-scope:
 - App801-backed Reset MBO Password semantics accepted;
@@ -124,13 +141,26 @@ Additional Agreement
 Weight
 ```
 
-Do not copy Difficulty, scores, ratings, comments, results, workflow/timestamps, route/appraisers, profile/Hoshin snapshots or confidential data. Target FY must resolve fresh current configuration.
+Do not copy Difficulty, scores, ratings, comments, results, workflow/timestamps, route/appraisers, requester identity, profile/Hoshin snapshots or confidential data. Target FY must resolve fresh current App53/App795 configuration under the lifecycle policy.
 
 Status: `IN PROGRESS`.
 
 ## 6. D6 — Integrated E2E / Security / Regression
 
 Must prove D1–D5 + D7 together, including Dedicated, Shared and dual-role flows through Objectives -> Mid-Year -> Self Evaluation -> Appraiser Evaluation -> HR Final, plus exports/migration/history/admin truthfulness.
+
+Lifecycle regression is mandatory and must cover at least:
+- employee resignation/inactive state;
+- transfer / Department / Section / Team change;
+- promotion / Position change including route-class changes;
+- manager/appraiser departure or replacement;
+- Dedicated Kintone-principal change;
+- Shared App801 disable/session invalidation;
+- existing App794 snapshot not silently rewritten by master changes;
+- future/fresh MBO uses current App53/App795 configuration;
+- stale prior approver loses authority after controlled reassignment;
+- historical actor evidence remains truthful;
+- no duplicate employee/own-MBO identity is introduced.
 
 D1 closure is prerequisite evidence only; it does not close D6.
 
