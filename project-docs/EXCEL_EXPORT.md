@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R3-R17 PASS-CLOSED / R3-R18 REVIEWED-NOT-PASS / R3-R19 REVIEWED-NOT-PASS / R3-R20 REVIEWED-NOT-PASS / R3-R21 PROPOSED**  
+> Status: **IN PROGRESS / R3-R21 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -43,18 +43,12 @@ HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 4. R3-R20 independent review
+## 4. R3-R20 independent review / accepted partial workbook parity
 
 Implementation:
 
 ```text
 ddcee22200c22a5474374562a6630e835365db02
-```
-
-Execution baseline:
-
-```text
-aab36a7f216db4a1ecb10f14360faed5fa16ced9
 ```
 
 Verdict:
@@ -66,87 +60,117 @@ D2-WP003-R3-R20_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R20 changes:
-- `getWorkbookFingerprint()` records only actual OOXML `<dimension>` tag/absence and no longer synthesizes dimensions from rows/cells;
-- accepted R3-R19 `localSheetId` print-area binding remains;
-- Part B `Sheet1.colsHash` negative proof is restored;
-- actual observed `<dimension>` removal negative proof exists;
-- earlier header/privacy/typed metadata proofs remain.
+Accepted behavior preserved into R3-R21:
+- `_xlnm.Print_Area` maps by exact `localSheetId` and actual zero-based worksheet order;
+- no cross-sheet fallback;
+- Part B main sheet retains exact print area and second `Sheet1` has no print area;
+- `getWorkbookFingerprint()` records actual OOXML `<dimension>` tag/absence only and does not synthesize from rows/cells;
+- validator dimension equality is unconditional;
+- wrong `Sheet1.printArea`, blank dimension, `Sheet1.colsHash`, and actual dimension-tag removal negative proofs remain.
 
 Remaining blockers:
 
-### A. No-op evidence must remain raw observed truth
-`getNoOpParityBuffers()` currently loads raw xlsx-populate output, then opens source and output ZIPs and reinserts the exact source `<dimension>` tag into output worksheets when the roundtrip output lacks one. That repairs missing observed evidence before parity validation and therefore masks a material no-op roundtrip defect.
+### A. Pure no-op observed evidence
+`getNoOpParityBuffers()` currently repairs raw xlsx-populate output by copying exact source `<dimension>` tags back into output worksheets when missing. This hides whether raw no-op roundtrip actually preserves material workbook structure.
 
-Required next direction:
-- raw xlsx-populate no-op output must be returned and fingerprinted without source structural repair;
-- no copying/reinserting/repairing `<dimension>` or other OOXML evidence inside the no-op helper;
-- if raw no-op output drops material evidence, the proof must expose `BLOCKER_WORKBOOK_PARITY_UNRESOLVED` instead of turning the output into a passing artifact.
+R3-R21 requirement:
+- return direct raw `outputAsync()` results;
+- no source-to-output copying/reinsertion/repair/normalization of `<dimension>` or other structural evidence;
+- if raw roundtrip loses material evidence, expose `BLOCKER_WORKBOOK_PARITY_UNRESOLVED` and STOP; do not build a workaround in this WP.
 
-### B. Deterministic blocker normalization must be restored
-`validateWorkbookParity()` currently ends with raw `throw err`. Preserve `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`, but all other workbook parity path failures/errors must deterministically normalize to:
+### B. Deterministic blocker normalization
+`validateWorkbookParity()` currently rethrows raw errors. It must preserve only:
+
+```text
+BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
+```
+
+and normalize every other workbook-parity path error/failure to:
 
 ```text
 BLOCKER_WORKBOOK_PARITY_UNRESOLVED
 ```
 
-Do not rely on incidental parser/runtime/TypeError messages.
+No incidental parser/runtime/TypeError message may escape as the parity result.
 
-## 5. Next proposed corrective — NOT AUTHORIZED
+## 5. D2-WP003-R3-R21 — AUTHORIZED
+
+Purpose: **pure no-op observed evidence + deterministic blocker normalization only**.
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R21
-PROPOSED_WORK_PACKAGE_NAME = PURE NO-OP OBSERVED EVIDENCE + DETERMINISTIC BLOCKER NORMALIZATION
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+CONTROL_PLANE_PRE_AUTH_CHECKPOINT = 26645b31ae6f9fabc42af8b595dd25aea39ee5d1
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R21-SOURCE-20260901-01
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_RAW_NOOP_PROOF_PENDING_INDEPENDENT_REVIEW
+PRIVACY_PURGE_REQUIRED = NO
 ```
 
-R3-R21 should be minimal feasibility source/test correction only:
-- preserve R3-R19 print-area binding;
-- preserve R3-R20 actual-dimension fingerprinting and restored `Sheet1.colsHash` proof;
-- remove all source-to-roundtrip dimension reinsertion from `getNoOpParityBuffers()`;
-- restore deterministic validator normalization;
-- add the smallest source-backed/malformed-evidence regression tests required;
-- if raw no-op output truly cannot preserve required structural evidence, stop at the workbook parity blocker and do not hide it.
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-## 6. D2 remaining closure path
+Antigravity must fresh-fetch current authorized canonical HEAD and use that as `EXECUTION_BASELINE`; the pre-authorization checkpoint is not an executor reset target.
 
-After workbook-wide parity is independently accepted, continue bounded steps:
-1. reference-image inventory/removal/preservation closure;
-2. Part A objective insertion structural matrix closure;
-3. Part B competency insertion structural matrix closure;
-4. formula/no-formula authority closure;
-5. production sanitizer + XLSX renderer using secured export projection;
-6. combined Part A + Part B Excel output parity;
-7. PDF generation/parity for Part A A3 landscape and Part B A4 portrait;
-8. export authorization/security/privacy regression;
-9. final D2 independent closure review.
+No package/dependency change and no binary publication.
+
+## 6. Mandatory R3-R21 proof
+
+Preserve all accepted R3-R19/R3-R20 and earlier tests.
+
+Raw no-op evidence:
+- build source fingerprints independently from exact SHA owner templates;
+- return raw xlsx-populate no-op outputs without repair;
+- evaluate raw Part A and Part B through the real workbook validator;
+- explicitly record safe presence/absence of actual dimension evidence for Part A main, Part B main, and Part B `Sheet1`;
+- if raw parity is clean, prove `true`;
+- if raw parity is materially degraded, prove exact workbook blocker and do not mask it.
+
+Deterministic normalization:
+- add the smallest malformed observed fingerprint test that induces an incidental runtime comparison/serialization error;
+- real `validateWorkbookParity()` must return/reject with exactly `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- preserve `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` separately.
+
+## 7. D2 remaining closure path
+
+After workbook-wide parity truth is independently accepted/resolved, continue bounded steps:
+1. if raw no-op degradation is proven, authorize a separate minimal preservation strategy work package first;
+2. reference-image inventory/removal/preservation closure;
+3. Part A objective insertion structural matrix closure;
+4. Part B competency insertion structural matrix closure;
+5. formula/no-formula authority closure;
+6. production sanitizer + XLSX renderer using secured export projection;
+7. combined Part A + Part B Excel output parity;
+8. PDF generation/parity for Part A A3 landscape and Part B A4 portrait;
+9. export authorization/security/privacy regression;
+10. final D2 independent closure review.
 
 Do not auto-start the next step.
 
-## 7. Current gate
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R20 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R21 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R21
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R21-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R21 ONLY / LOW-CREDIT / BOUNDED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-## 8. Authorization ledger
+## 9. Authorization ledger
 
 ```text
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R21-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R21-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
