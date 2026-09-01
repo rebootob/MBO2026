@@ -92,11 +92,165 @@ export const PART_B_SENSITIVE_RANGES = [
 export const SENSITIVE_RANGES_A = [...new Set(PART_A_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
 export const SENSITIVE_RANGES_B = [...new Set(PART_B_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
 
-export function getPartBPrivacyClassification() {
+export async function getPartBPrivacyClassificationSourceBacked() {
+  const found = findLocalSourceTemplates();
+  if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+
+  const bufB = fs.readFileSync(found.partB);
+  const wb = await XlsxPopulate.fromDataAsync(bufB);
+  const sheet = wb.sheet(0);
+
+  const sheetXml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const merges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+
+  function getMergeRef(addr) {
+    for (const ref of merges) {
+      if (ref.includes(':')) {
+        const addrs = expandRangeToAddresses(ref);
+        if (addrs.includes(addr)) return ref;
+      } else if (ref === addr) {
+        return ref;
+      }
+    }
+    return null;
+  }
+
+  function getStyleId(addr) {
+    const m = sheetXml.match(new RegExp(`<c r="${addr}"[^>]*s="(\\d+)"`));
+    return m ? m[1] : '0';
+  }
+
   const map = {};
   const sensitiveSet = new Set(SENSITIVE_RANGES_B);
 
-  // Classify mapped sensitive addresses
+  // Classify mapped sensitive addresses with source evidence
+  for (const addr of SENSITIVE_RANGES_B) {
+    const val = sheet.cell(addr).value();
+    let normalizedType = 'blank';
+    let nonblank = false;
+    let valHash = null;
+
+    if (val === null || val === undefined) {
+      normalizedType = 'blank';
+    } else if (typeof val === 'number') {
+      normalizedType = 'number';
+      nonblank = true;
+    } else if (typeof val === 'boolean') {
+      normalizedType = 'boolean';
+      nonblank = true;
+    } else if (val instanceof Date) {
+      normalizedType = 'date';
+      nonblank = true;
+    } else {
+      const strVal = String(val).trim();
+      if (strVal === '') {
+        normalizedType = 'blank';
+      } else {
+        normalizedType = 'string';
+        nonblank = true;
+        valHash = crypto.createHash('sha256').update(strVal).digest('hex');
+      }
+    }
+
+    const row = parseInt(addr.match(/\d+/)[0], 10);
+    let classification = 'DYNAMIC_SAMPLE_VALUE';
+    let roleJustification = 'Dynamic sample data field';
+    if (['G2', 'G3', 'H2', 'H3', 'J3', 'K3', 'L3', 'M3', 'N3', 'O3', 'P3', 'Q3', 'R3', 'S3', 'T3', 'U3', 'V3', 'W3'].includes(addr)) {
+      classification = 'HEADER_VALUE';
+      roleJustification = 'Dynamic runtime header input field';
+    } else if (row >= 7 && row <= 29) {
+      classification = 'COMPETENCY_RATING_VALUE';
+      roleJustification = 'Dynamic competency evaluation and rating input field';
+    } else if (row >= 31 && row <= 34) {
+      classification = 'SUMMARY_SIGNATURE_VALUE';
+      roleJustification = 'Dynamic summary evaluation and signature input field';
+    }
+
+    map[addr] = {
+      address: addr,
+      mergeRef: getMergeRef(addr),
+      styleId: getStyleId(addr),
+      normalizedType,
+      nonblank,
+      valHash,
+      classification,
+      roleJustification,
+      isDynamic: true
+    };
+  }
+
+  // Build complete protected static set from actual Part B template structure in rows 2:34
+  const protectedStatic = [
+    'B2', 'C2', 'D2', 'E2', 'F2', 'B3', 'C3', 'D3', 'E3', 'F3',
+    'J2', 'K2', 'L2', 'M2', 'N2', 'O2', 'P2', 'Q2', 'R2', 'S2', 'T2', 'U2', 'V2', 'W2'
+  ];
+  for (let r = 7; r <= 29; r++) {
+    for (const c of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+      protectedStatic.push(`${c}${r}`);
+    }
+  }
+
+  for (const addr of protectedStatic) {
+    if (!sensitiveSet.has(addr)) {
+      const val = sheet.cell(addr).value();
+      let normalizedType = 'blank';
+      let nonblank = false;
+      let valHash = null;
+
+      if (val === null || val === undefined) {
+        normalizedType = 'blank';
+      } else if (typeof val === 'number') {
+        normalizedType = 'number';
+        nonblank = true;
+      } else if (typeof val === 'boolean') {
+        normalizedType = 'boolean';
+        nonblank = true;
+      } else if (val instanceof Date) {
+        normalizedType = 'date';
+        nonblank = true;
+      } else {
+        const strVal = String(val).trim();
+        if (strVal === '') {
+          normalizedType = 'blank';
+        } else {
+          normalizedType = 'string';
+          nonblank = true;
+          valHash = crypto.createHash('sha256').update(strVal).digest('hex');
+        }
+      }
+
+      let classification = 'PROTECTED_STATIC_TEMPLATE_TEXT';
+      let roleJustification = 'Static template text/label';
+      const row = parseInt(addr.match(/\d+/)[0], 10);
+      if (row <= 3) {
+        classification = addr.startsWith('B') ? 'PROTECTED_STATIC_TITLE' : 'PROTECTED_STATIC_HEADER_LABEL';
+        roleJustification = 'Static sheet title or header label';
+      } else if (row >= 7 && row <= 29) {
+        classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
+        roleJustification = 'Static competency name or rating guidance description text';
+      }
+
+      map[addr] = {
+        address: addr,
+        mergeRef: getMergeRef(addr),
+        styleId: getStyleId(addr),
+        normalizedType,
+        nonblank,
+        valHash,
+        classification,
+        roleJustification,
+        isDynamic: false
+      };
+    }
+  }
+
+  return map;
+}
+
+export function getPartBPrivacyClassification() {
+  const sensitiveSet = new Set(SENSITIVE_RANGES_B);
+  const map = {};
+
   for (const addr of SENSITIVE_RANGES_B) {
     const row = parseInt(addr.match(/\d+/)[0], 10);
     let classification = 'DYNAMIC_SAMPLE_VALUE';
@@ -110,7 +264,6 @@ export function getPartBPrivacyClassification() {
     map[addr] = { classification, isDynamic: true };
   }
 
-  // Explicit static protected addresses
   const protectedStatic = [
     'B2', 'C2', 'D2', 'E2', 'F2', 'B3', 'C3', 'D3', 'E3', 'F3',
     'J2', 'K2', 'L2', 'M2', 'N2', 'O2', 'P2', 'Q2', 'R2', 'S2', 'T2', 'U2', 'V2', 'W2'

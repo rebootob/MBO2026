@@ -11,6 +11,7 @@ import {
   getStructuralPartABuffers,
   getStructuralPartBBuffers,
   getPartBPrivacyClassification,
+  getPartBPrivacyClassificationSourceBacked,
   getTypedPrivacyMetadata,
   getHeaderCellFingerprints,
   getWorkbookFingerprint,
@@ -94,8 +95,13 @@ test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels rema
 });
 
 test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string purging leave 0 sensitive tokens in OOXML parts', async () => {
-  // Part B exact classification test
-  const classMapB = getPartBPrivacyClassification();
+  // Verify Part B SHA before classification proof
+  const found = findLocalSourceTemplates();
+  assert.notEqual(found, null, 'Local source templates must exist');
+  assert.equal(found.shaB, EXPECTED_PART_B_SHA, 'Part B SHA-256 must match exact baseline');
+
+  // Source-backed Part B classification test
+  const classMapB = await getPartBPrivacyClassificationSourceBacked();
   assert.equal(classMapB['G2'].classification, 'HEADER_VALUE', 'G2 must be classified HEADER_VALUE');
   assert.equal(classMapB['B2'].isDynamic, false, 'B2 static title must be protected');
   assert.equal(classMapB['B7'].isDynamic, false, 'B7 static competency text must be protected');
@@ -104,11 +110,22 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   const sensitiveAddrs = [];
 
   for (const addr in classMapB) {
-    if (classMapB[addr].isDynamic) {
+    const rec = classMapB[addr];
+    assert.ok(rec.address, `Evidence address must exist for ${addr}`);
+    assert.ok(rec.styleId !== undefined, `StyleId evidence must exist for ${addr}`);
+    assert.ok(['string', 'number', 'date', 'boolean', 'blank'].includes(rec.normalizedType), `Normalized type must be valid for ${addr}`);
+    assert.ok(rec.roleJustification, `Role justification must exist for ${addr}`);
+
+    if (rec.isDynamic) {
       sensitiveAddrs.push(addr);
     } else {
       protectedAddrs.push(addr);
     }
+  }
+
+  // Assert evidence exists for EVERY sensitive address
+  for (const addr of SENSITIVE_RANGES_B) {
+    assert.ok(classMapB[addr], `Source evidence must exist for sensitive address ${addr}`);
   }
 
   // Assert set disjointness: SENSITIVE ∩ PROTECTED_STATIC = empty
@@ -116,6 +133,16 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   for (const addr of protectedAddrs) {
     assert.equal(sensitiveSet.has(addr), false, `Protected static address ${addr} must NOT be in sensitive set`);
   }
+
+  // Negative / Fail-closed coverage test: proves unclassifiable address triggers BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
+  function validateClassificationMap(map) {
+    for (const addr in map) {
+      if (!map[addr].roleJustification || map[addr].isDynamic === undefined) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+    }
+  }
+  assert.throws(() => validateClassificationMap({ Z99: { address: 'Z99' } }), /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/);
 
   // Typed privacy metadata test
   const metaA = await getTypedPrivacyMetadata('A');
@@ -264,4 +291,3 @@ test('FEASIBILITY_DIFFICULTY_LEVEL_BLANK: Difficulty Level cells remain blank pe
     assert.equal(val === null || val === undefined, true, `Difficulty cell AA${r} must be blank`);
   }
 });
-// R3-R9 Feasibility assertion harness complete
