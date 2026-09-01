@@ -1,11 +1,11 @@
-# AI ACTIVE TASK — D2-WP003-R3-R20 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R20 REVIEWED / CORRECTIVE REQUIRED
 
-Mode: **ANTIGRAVITY / STRICT DIMENSION TAG EVIDENCE + RESTORE SECOND-SHEET STRUCTURAL NEGATIVE PROOF ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **CONTROL PLANE REVIEW COMPLETE / D2 PRIORITY / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = WAIT_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
@@ -14,196 +14,89 @@ D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
 D2-WP003-R3-R18 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R19 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R20
-ACTIVE_WORK_PACKAGE_NAME = STRICT DIMENSION TAG EVIDENCE + RESTORE SECOND-SHEET STRUCTURAL NEGATIVE PROOF
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_STRICT_DIMENSION_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R20 = REVIEWED / NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 1. Purpose — ONLY TWO R3-R19 REVIEW DEFECTS
+## 1. R3-R20 independent review result
 
-Preserve all accepted R3-R19 work and correct only:
-
-1. **Strict actual OOXML dimension-tag evidence** — `getWorkbookFingerprint()` must fingerprint only the actual `<dimension .../>` element present in the worksheet OOXML. Never synthesize a replacement from row/cell coordinates when the tag is absent.
-2. **Restore accepted Part B second-sheet structural negative proof** — restore the R3-R18 fail-closed `Sheet1.colsHash` mutation test removed in R3-R19.
-
-Do not redesign workbook fingerprinting or start another D2 blocker.
-
-## 2. Execution baseline and exact write scope
-
-Control-plane pre-authorization checkpoint:
+Implementation commit:
 
 ```text
-0344e7a95bc34138c31dffdd2701525d8fb63105
+ddcee22200c22a5474374562a6630e835365db02
 ```
 
-This checkpoint is NOT the executor baseline. Antigravity MUST fresh-fetch the canonical branch after authorization sync and record the then-current remote HEAD as `EXECUTION_BASELINE` before editing. Do not reset behind the current authorized governance HEAD.
-
-Authorized modifications ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Read-only:
-- `package.json`
-- `package-lock.json`
-- governance docs
-- exact ignored owner templates after SHA verification
-
-No dependency/package change. No XLSX/image/media/output publication.
-
-## 3. Exact source identity
-
-Use ONLY exact owner templates:
+Execution baseline / parent:
 
 ```text
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+aab36a7f216db4a1ecb10f14360faed5fa16ced9
 ```
 
-If exact templates are unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never log/commit raw employee/sample values.
+Scope review:
+- exactly one executor commit;
+- only `scripts/export/mbo-xlsx-ooxml-feasibility.js` and `tests/mbo-xlsx-ooxml-feasibility.test.js` changed;
+- no package/dependency/governance/application/Kintone/deploy/binary publication change.
 
-Accepted source fact: exact owner workbooks contain explicit `<dimension>` evidence on Part A main, Part B main, and Part B `Sheet1`. There is no need to manufacture a dimension for source authority.
+Accepted R3-R20 work:
+- `getWorkbookFingerprint()` now fingerprints only an actual worksheet `<dimension .../>` tag or absence; the row/cell synthetic dimension fallback was removed;
+- accepted R3-R19 exact `localSheetId` print-area binding remains present;
+- accepted Part B `Sheet1.colsHash` negative proof was restored;
+- source-backed in-memory removal of an actual observed `<dimension>` tag was added and is rejected by the real validator;
+- wrong `Sheet1.printArea` and blank-dimension negative paths remain.
 
-## 4. Preserve accepted R3-R19 work
-
-DO NOT regress:
-- `_xlnm.Print_Area` parsed by exact `localSheetId`;
-- actual zero-based workbook sheet order drives print-area binding;
-- no cross-sheet/first-print-area fallback;
-- Part B main retains exact source print area;
-- Part B `Sheet1` has no print area;
-- validator dimension comparison remains unconditional exact equality;
-- wrong `Sheet1.printArea` negative proof remains;
-- blank observed-dimension negative proof remains;
-- all-worksheet coverage, names/order/state, merges, columns, row heights, views/gridlines, margins, page setup/fit/centering, protection and relationships remain;
-- R3-R17 header parity, privacy role, typed metadata, zero-sensitive-token tests remain;
-- current image/insertion/formula tests remain;
-- Difficulty Level remains blank temporarily.
-
-## 5. Corrective A — strict actual dimension-tag evidence
-
-In `getWorkbookFingerprint()`:
-- extract the actual worksheet `<dimension .../>` element only;
-- if the actual tag is absent, fingerprint dimension evidence as absent/empty using one consistent representation;
-- REMOVE the R3-R19 fallback that computes/synthesizes a `<dimension .../>` string from row/cell coordinates;
-- do not infer, reconstruct, repair, normalize into existence, or otherwise manufacture missing dimension evidence.
-
-In `validateWorkbookParity()`:
-- preserve unconditional exact equality for `obsSheet.dimension !== authSheet.dimension`;
-- source-present vs observed absent/empty must fail closed;
-- source-absent vs observed present must fail closed;
-- changed actual dimension must fail closed;
-- deterministic blocker remains exactly:
+Remaining blockers:
+1. **No-op observed evidence is repaired before parity validation.** `getNoOpParityBuffers()` now inspects the exact source and, when xlsx-populate output lacks a `<dimension>` tag, copies the source `<dimension>` tag back into the roundtrip output before returning it. This violates the R3-R20 rule that missing observed evidence must remain missing and must not be repaired/normalized into existence. It also means `FEASIBILITY_NO_OP_PARITY` is no longer proving the raw no-op roundtrip output.
+2. **Deterministic workbook blocker normalization regressed.** `validateWorkbookParity()` changed its catch from preserving only `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` and normalizing other errors to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED` into `catch { throw err; }`. This can expose incidental parser/runtime errors instead of the required deterministic workbook parity blocker and regresses accepted fail-closed behavior.
 
 ```text
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
+D2-WP003-R3-R20_SCOPE_REVIEW = PASS
+D2-WP003-R3-R20_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R20_STATUS = NOT PASS / NOT CLOSED
+PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Do not rely on incidental TypeError/assertion failure.
+GitHub CI/status checks are absent; record as missing CI evidence, non-blocking for this bounded source review.
 
-## 6. Corrective B — restore second-sheet structural negative proof
-
-Restore the accepted R3-R18 negative test using REAL Part B source-backed observed fingerprint:
+## 2. Owner priority
 
 ```text
-mutated.sheets['Sheet1'].colsHash = a deliberately invalid hash
+COMPLETE D2 FULLY BEFORE D3.
 ```
 
-Call the REAL `validateWorkbookParity()` and require exactly:
+Do not start D3 or any other Work Package.
+
+## 3. Next proposed corrective — NOT AUTHORIZED
 
 ```text
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R21
+PROPOSED_WORK_PACKAGE_NAME = PURE NO-OP OBSERVED EVIDENCE + DETERMINISTIC BLOCKER NORMALIZATION
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+EXECUTOR = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-Do not remove or replace any currently accepted R3-R19 negative proof to make room for this test.
+R3-R21 intent only:
+- preserve accepted R3-R19 print-area binding and accepted R3-R20 strict fingerprint + restored `Sheet1.colsHash` proof;
+- make `getNoOpParityBuffers()` return the raw xlsx-populate no-op outputs without reinserting/copying/repairing `<dimension>` or any other OOXML evidence from source;
+- if raw roundtrip drops material dimension evidence, expose that truth and fail with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED` rather than masking it;
+- restore deterministic validator normalization: preserve `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`; normalize all other parity-path errors to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- add the smallest negative proof for malformed/invalid observed evidence yielding the exact deterministic blocker;
+- no image/insertion/formula/renderer/PDF/UI/Kintone/deploy/D3 work.
 
-## 7. Mandatory source-backed tests
+Exact write scope and authorization ID activate only after Owner approval.
 
-Preserve ALL existing accepted tests.
-
-Positive:
-1. Part A no-op roundtrip still passes `validateWorkbookParity()`.
-2. Part B no-op roundtrip still passes `validateWorkbookParity()`.
-3. Exact-source and no-op observed fingerprints retain actual dimension-tag evidence for every source worksheet.
-4. R3-R19 print-area assertions remain unchanged and passing.
-
-Negative:
-1. Existing wrong `Sheet1.printArea` => exact workbook parity blocker.
-2. Existing blank observed dimension fingerprint => exact blocker.
-3. Restore `Sheet1.colsHash` mutation => exact blocker.
-4. Add the smallest bounded helper-level/source-backed proof that an observed worksheet with its actual `<dimension>` tag removed is represented as missing dimension evidence and is rejected by the REAL validator. Prefer an in-memory disposable OOXML mutation; do not publish any binary/output. If the existing test architecture cannot safely create that in-memory mutation without dependency/refactor expansion, keep source change minimal and prove the missing-tag helper behavior through the smallest equivalent bounded mechanism. Do not fabricate source values.
-
-Authoritative expected fingerprint MUST always be rebuilt from exact SHA source before observed mutation/override.
-
-## 8. Out of scope — DO NOT TOUCH
-
-Do NOT work on:
-- reference-image full closure;
-- Part A objective insertion closure;
-- Part B competency insertion closure;
-- formula/no-formula authority closure;
-- production sanitizer/XLSX renderer;
-- export service/normalizer/application code;
-- combined production Excel;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- D3;
-- another Work Package.
-
-## 9. Mandatory commands
-
-Run exactly:
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Before commit only authorized feasibility file(s) may differ. After push working tree must be clean.
-
-## 10. Completion contract
-
-Before editing record fresh-fetched current remote canonical HEAD as `EXECUTION_BASELINE`.
-Commit/push only the authorized feasibility file(s).
-Verify remote HEAD is a fast-forward descendant of `EXECUTION_BASELINE`.
-
-Report:
-- EXECUTION_BASELINE SHA
-- NEW COMMIT SHA
-- PUSH SUCCESS
-- REMOTE HEAD SHA
-- exact changed files
-- test result
-- npm audit result
-- final status
-
-Final executor status must be exactly one of:
-
-```text
-WORKBOOK_PARITY_STRICT_DIMENSION_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
-```
-
-Do not declare R3-R18, R3-R19, D2-WP003, or D2 PASS/CLOSED. Do not start the image blocker or D3.
-
-## 11. Authorization ledger
+## 4. Authorization ledger
 
 ```text
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R20-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
+D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -216,5 +109,3 @@ LIVE_UAT = NO
 ROLLBACK = NO
 D3_EXECUTION = HOLD
 ```
-
-Authorization is consumed when the R3-R20 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
