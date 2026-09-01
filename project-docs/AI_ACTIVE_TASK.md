@@ -35,13 +35,15 @@ Close only **header fingerprint / sanitized export parity** for the exact SHA-ve
 
 Do not reopen accepted privacy-role classification or typed-metadata work. Do not expand into workbook-wide parity, image inventory, insertion/formula work, production renderer, PDF/UI, Kintone or deploy.
 
-## 2. Authorization baseline and exact write scope
+## 2. Execution baseline and exact write scope
 
-Authorization baseline:
+Control-plane pre-authorization checkpoint was:
 
 ```text
 528e1ed31985296c99ab8c40ce5f05f4146d549d
 ```
+
+This is NOT the executor baseline. Antigravity MUST fresh-fetch the canonical branch after authorization sync and record the then-current remote HEAD as `EXECUTION_BASELINE` before editing. Do not reset behind the current authorized governance HEAD.
 
 Authorized modifications ONLY:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
@@ -240,13 +242,10 @@ Commit/push only authorized feasibility file(s), maximum these two:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Verify remote HEAD changed from authorization baseline:
-
-```text
-528e1ed31985296c99ab8c40ce5f05f4146d549d
-```
+Before editing, record the fresh-fetched current remote canonical HEAD as `EXECUTION_BASELINE`. After push, verify remote HEAD differs from `EXECUTION_BASELINE` and is a fast-forward descendant of it.
 
 Report:
+- EXECUTION_BASELINE SHA
 - NEW COMMIT SHA
 - PUSH SUCCESS
 - REMOTE HEAD SHA
