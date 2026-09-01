@@ -38,6 +38,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
 
   assert.deepEqual(fpOutA.sheetNames, fpOrigA.sheetNames, 'Part A sheet names must match source exactly');
   assert.equal(fpOutA.rawMergeCount, 193, 'Part A raw merge count must equal 193');
+  assert.equal(fpOutA.mergeCountAttr, String(fpOutA.rawMergeCount), 'Declared merge count must equal actual merge set size');
   assert.deepEqual(fpOutA.rawMerges, fpOrigA.rawMerges, 'Part A raw merge refs must match source exactly');
   assert.equal(fpOutA.colsHash, fpOrigA.colsHash, 'Part A <cols> structure hash must match source exactly');
   assert.equal(fpOutA.rowHeightsHash, fpOrigA.rowHeightsHash, 'Part A row heights hash must match source exactly');
@@ -45,7 +46,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(fpOutA.orientation, 'landscape', 'Part A orientation must be landscape');
   assert.equal(fpOutA.scale, '58', 'Part A scale must be 58%');
   assert.equal(fpOutA.printArea, "'MBO Staff & Chief'!$A$1:$BJ$52", 'Part A print area must be A1:BJ52');
-  assert.equal(fpOutA.drawingRelsHash, fpOrigA.drawingRelsHash, 'Part A drawing relationships hash must match source exactly');
+  assert.deepEqual(fpOutA.relTuples, fpOrigA.relTuples, 'Part A relationship inventory tuples must match source exactly');
   assert.deepEqual(fpOutA.mediaFiles, fpOrigA.mediaFiles, 'Part A media inventory must match source exactly');
 
   // Part B Direct Source vs Round-Trip Fingerprint Equality
@@ -54,6 +55,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
 
   assert.deepEqual(fpOutB.sheetNames, ['(Part B) Competency', 'Sheet1'], 'Part B sheet names must match source exactly');
   assert.equal(fpOutB.rawMergeCount, 79, 'Part B raw merge count must equal 79');
+  assert.equal(fpOutB.mergeCountAttr, String(fpOutB.rawMergeCount), 'Declared merge count must equal actual merge set size');
   assert.deepEqual(fpOutB.rawMerges, fpOrigB.rawMerges, 'Part B raw merge refs must match source exactly');
   assert.equal(fpOutB.colsHash, fpOrigB.colsHash, 'Part B <cols> structure hash must match source exactly');
   assert.equal(fpOutB.rowHeightsHash, fpOrigB.rowHeightsHash, 'Part B row heights hash must match source exactly');
@@ -63,12 +65,12 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(fpOutB.horizontalCentered, true, 'Part B horizontalCentered must be true');
   assert.equal(fpOutB.sheetProtection, true, 'Part B sheetProtection must be present');
   assert.equal(fpOutB.printArea, "'(Part B) Competency'!$A$1:$X$35", 'Part B print area must be A1:X35');
-  assert.equal(fpOutB.drawingRelsHash, fpOrigB.drawingRelsHash, 'Part B drawing relationships hash must match source exactly');
+  assert.deepEqual(fpOutB.relTuples, fpOrigB.relTuples, 'Part B relationship inventory tuples must match source exactly');
   assert.deepEqual(fpOutB.mediaFiles, fpOrigB.mediaFiles, 'Part B media inventory must match source exactly');
 });
 
 test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels remain intact while value cells clear/update', async () => {
-  const { origBufA, outBufA, origBufB, outBufB } = await getNoOpParityBuffers();
+  const { origBufA, origBufB } = await getNoOpParityBuffers();
 
   const fpOrigHeaderA = await getHeaderCellFingerprints(origBufA, 'A');
   const { outBufA: mutBufA, outBufB: mutBufB } = await getMutatedHeaderValueBuffers();
@@ -77,12 +79,14 @@ test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels rema
   // Assert Part A static title/label fingerprints & unrelated header cell fingerprints are unchanged
   assert.deepEqual(fpMutHeaderA.titleFingerprints, fpOrigHeaderA.titleFingerprints, 'Part A title/label fingerprints must match source exactly');
   assert.deepEqual(fpMutHeaderA.unrelatedFingerprints, fpOrigHeaderA.unrelatedFingerprints, 'Part A unrelated header cell fingerprints must match source exactly');
+  assert.deepEqual(fpMutHeaderA.merges, fpOrigHeaderA.merges, 'Part A header merge refs must match source exactly');
 
   const fpOrigHeaderB = await getHeaderCellFingerprints(origBufB, 'B');
   const fpMutHeaderB = await getHeaderCellFingerprints(mutBufB, 'B');
 
   assert.deepEqual(fpMutHeaderB.titleFingerprints, fpOrigHeaderB.titleFingerprints, 'Part B title/label fingerprints must match source exactly');
   assert.deepEqual(fpMutHeaderB.unrelatedFingerprints, fpOrigHeaderB.unrelatedFingerprints, 'Part B unrelated header cell fingerprints must match source exactly');
+  assert.deepEqual(fpMutHeaderB.merges, fpOrigHeaderB.merges, 'Part B header merge refs must match source exactly');
 
   // Directly inspect mutated value cell R3
   const wbB = await XlsxPopulate.fromDataAsync(mutBufB);
@@ -127,10 +131,15 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   const wbA = await XlsxPopulate.fromDataAsync(bufA);
   const sheetA = wbA.sheet(0);
 
-  // Directly inspect every mapped cell in Part A to confirm it is empty
-  for (const addr of SENSITIVE_RANGES_A) {
-    const val = sheetA.cell(addr).value();
-    assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
+  // Directly inspect EVERY metadata record in Part A to confirm it is blank after sanitization
+  for (const rec of metaA.metadata) {
+    const val = sheetA.cell(rec.address).value();
+    assert.equal(val === null || val === undefined, true, `Cell ${rec.address} must be blank after sanitization`);
+  }
+
+  // Iterate typed metadata subsets (number, date, boolean) directly
+  for (const rec of metaA.metadata.filter(r => r.normalizedType === 'number')) {
+    assert.equal(sheetA.cell(rec.address).value() == null, true, `Number cell ${rec.address} must be blank`);
   }
 
   // Formula node test using getWorksheetFormulaSet()
@@ -152,9 +161,9 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   const wbB = await XlsxPopulate.fromDataAsync(bufB);
   const sheetB = wbB.sheet(0);
 
-  for (const addr of SENSITIVE_RANGES_B) {
-    const val = sheetB.cell(addr).value();
-    assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
+  for (const rec of metaB.metadata) {
+    const val = sheetB.cell(rec.address).value();
+    assert.equal(val === null || val === undefined, true, `Cell ${rec.address} must be blank after sanitization`);
   }
 
   const sourceFormulasB = await getWorksheetFormulaSet(bufB);
@@ -195,16 +204,29 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
   // 4 Objectives
   const inspA4 = await inspectRawWorksheetOOXML(bufA4);
   assert.equal(inspA4.rawMerges.length, 193, 'Part A 4 objectives merge count must equal 193');
+  assert.equal(inspA4.mergeCountAttr, '193', 'Declared merge count must equal 193');
   assert.equal(inspA4.printArea.includes('BJ$52'), true, 'Part A 4 objectives print area must end at BJ52');
+  assert.equal(inspA4.pageSetup.paperSize, '8', 'Part A paperSize must be 8');
+  assert.equal(inspA4.pageSetup.orientation, 'landscape', 'Part A orientation must be landscape');
+  assert.equal(inspA4.pageSetup.scale, '58', 'Part A scale must be 58');
+
+  // Assert rowRefs strictly increasing
+  for (let i = 1; i < inspA4.rowRefs.length; i++) {
+    assert.equal(inspA4.rowRefs[i] > inspA4.rowRefs[i - 1], true, 'Row refs must be strictly increasing');
+  }
 
   // 5 Objectives (raw OOXML +1 insertion & merge cloning)
   const inspA5 = await inspectRawWorksheetOOXML(bufA5);
   assert.equal(inspA5.rawMerges.length, 207, 'Part A 5 objectives raw merge count must equal 207 (193 + 14 cloned)');
+  assert.equal(inspA5.mergeCountAttr, '207', 'Declared merge count must equal 207');
   assert.equal(inspA5.printArea.includes('BJ$53'), true, 'Part A 5 objectives print area must end at BJ53');
+  assert.deepEqual(inspA5.stylePattern[29], inspA5.stylePattern[28], 'Inserted row 29 style pattern must match source row 28');
+  assert.deepEqual(inspA5.rowHeights[29], inspA5.rowHeights[28], 'Inserted row 29 height must match source row 28');
 
   // 10 Objectives (raw OOXML +6 insertion & merge cloning)
   const inspA10 = await inspectRawWorksheetOOXML(bufA10);
   assert.equal(inspA10.rawMerges.length, 277, 'Part A 10 objectives raw merge count must equal 277 (193 + 84 cloned)');
+  assert.equal(inspA10.mergeCountAttr, '277', 'Declared merge count must equal 277');
   assert.equal(inspA10.printArea.includes('BJ$58'), true, 'Part A 10 objectives print area must end at BJ58');
 });
 
@@ -214,12 +236,21 @@ test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block 
   // 6 Competencies
   const inspB6 = await inspectRawWorksheetOOXML(bufB6);
   assert.equal(inspB6.rawMerges.length, 79, 'Part B 6 competencies merge count must equal 79');
+  assert.equal(inspB6.mergeCountAttr, '79', 'Declared merge count must equal 79');
   assert.equal(inspB6.printArea.includes('X$35'), true, 'Part B 6 competencies print area must end at X35');
+  assert.equal(inspB6.pageSetup.paperSize, '9', 'Part B paperSize must be 9');
+  assert.equal(inspB6.pageSetup.orientation, 'portrait', 'Part B orientation must be portrait');
+  assert.equal(inspB6.pageSetup.scale, '75', 'Part B scale must be 75');
+  assert.equal(inspB6.horizontalCentered, true, 'Part B horizontalCentered must be true');
+  assert.equal(inspB6.sheetProtection, true, 'Part B sheetProtection must be true');
 
   // 8 Competencies (raw OOXML +8 block insertion & merge cloning)
   const inspB8 = await inspectRawWorksheetOOXML(bufB8);
   assert.equal(inspB8.rawMerges.length, 91, 'Part B 8 competencies raw merge count must equal 91 (79 + 12 cloned)');
+  assert.equal(inspB8.mergeCountAttr, '91', 'Declared merge count must equal 91');
   assert.equal(inspB8.printArea.includes('X$43'), true, 'Part B 8 competencies print area must end at X43');
+  assert.equal(inspB8.horizontalCentered, true, 'Part B 8 competencies horizontalCentered must be true');
+  assert.equal(inspB8.sheetProtection, true, 'Part B 8 competencies sheetProtection must be true');
 });
 
 test('FEASIBILITY_DIFFICULTY_LEVEL_BLANK: Difficulty Level cells remain blank per R3 Owner Decision', async () => {

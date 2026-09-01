@@ -212,6 +212,11 @@ export async function getHeaderCellFingerprints(buf, partKey) {
     return null;
   }
 
+  function getStyleId(addr) {
+    const m = sheetXml.match(new RegExp(`<c r="${addr}"[^>]*s="(\\d+)"`));
+    return m ? m[1] : '0';
+  }
+
   const titleAddrsA = expandRangeToAddresses('B6:M7').concat(expandRangeToAddresses('Z6:AF6'), expandRangeToAddresses('AG6:AL6'), expandRangeToAddresses('AM6:AP6'), expandRangeToAddresses('AQ6:AS6'), expandRangeToAddresses('AT6:BC6'), expandRangeToAddresses('BD6:BI6'));
   const valueAddrsA = expandRangeToAddresses('N6:Q7').concat(expandRangeToAddresses('Z7:AF7'), expandRangeToAddresses('AG7:AL7'), expandRangeToAddresses('AM7:AP7'), expandRangeToAddresses('AQ7:AS7'), expandRangeToAddresses('AT7:BC7'), expandRangeToAddresses('BD7:BI7'));
 
@@ -229,7 +234,8 @@ export async function getHeaderCellFingerprints(buf, partKey) {
     const strVal = String(val || '');
     const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
     const mergeRef = getMergeRef(addr);
-    titleFingerprints[addr] = { address: addr, type: typeof val, valHash, mergeRef };
+    const styleId = getStyleId(addr);
+    titleFingerprints[addr] = { address: addr, normalizedType: typeof val === 'object' && val === null ? 'blank' : typeof val, valHash, styleId, mergeRef };
   }
 
   const valueFingerprints = {};
@@ -238,7 +244,8 @@ export async function getHeaderCellFingerprints(buf, partKey) {
     const strVal = String(val || '');
     const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
     const mergeRef = getMergeRef(addr);
-    valueFingerprints[addr] = { address: addr, type: typeof val, valHash, mergeRef };
+    const styleId = getStyleId(addr);
+    valueFingerprints[addr] = { address: addr, normalizedType: typeof val === 'object' && val === null ? 'blank' : typeof val, valHash, styleId, mergeRef };
   }
 
   const valueSet = new Set(targetValueAddrs);
@@ -253,12 +260,13 @@ export async function getHeaderCellFingerprints(buf, partKey) {
         const strVal = String(val || '');
         const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
         const mergeRef = getMergeRef(addr);
-        unrelatedFingerprints[addr] = { address: addr, type: typeof val, valHash, mergeRef };
+        const styleId = getStyleId(addr);
+        unrelatedFingerprints[addr] = { address: addr, normalizedType: typeof val === 'object' && val === null ? 'blank' : typeof val, valHash, styleId, mergeRef };
       }
     }
   }
 
-  return { titleFingerprints, valueFingerprints, unrelatedFingerprints };
+  return { titleFingerprints, valueFingerprints, unrelatedFingerprints, merges };
 }
 
 export async function getWorkbookFingerprint(buf) {
@@ -286,8 +294,17 @@ export async function getWorkbookFingerprint(buf) {
   const horizontalCentered = sheet1Xml.includes('horizontalCentered="1"');
   const sheetProtection = sheet1Xml.includes('<sheetProtection') || sheet1Xml.includes('sheetProtection');
 
-  const drawingRels = wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'] ? await wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string') : '';
-  const drawingRelsHash = crypto.createHash('sha256').update(drawingRels).digest('hex');
+  const relTuples = [];
+  for (const fileName in wb._zip.files) {
+    if (fileName.endsWith('.rels')) {
+      const relXml = await wb._zip.files[fileName].async('string');
+      const matches = [...relXml.matchAll(/<Relationship Id="([^"]+)" Type="[^"]*" Target="([^"]+)"/g)];
+      for (const m of matches) {
+        relTuples.push(`${fileName}:${m[1]}->${m[2]}`);
+      }
+    }
+  }
+  relTuples.sort();
 
   const mediaFiles = [];
   for (const fileName in wb._zip.files) {
@@ -313,7 +330,7 @@ export async function getWorkbookFingerprint(buf) {
     scale,
     horizontalCentered,
     sheetProtection,
-    drawingRelsHash,
+    relTuples,
     mediaFiles
   };
 }
