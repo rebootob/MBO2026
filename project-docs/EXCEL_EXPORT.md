@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R5 REVIEWED-NOT-PASS / R3-R6 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R6 REVIEWED-NOT-PASS / R3-R7 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -95,119 +95,60 @@ TARGET_MEDIA = xl/media/image3.png
 
 Preserve every non-target drawing/media relationship.
 
-## 6. R3-R5 review result
+## 6. R3-R6 review result
 
-Scope review = PASS. No Privacy Purge required.
+Scope review = PASS. Implementation `3f5ec2db5209db97702c8f4780d00b191b97989a` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
 
 Accepted progress:
-- de-duplicated sensitive address sets;
-- per-address typed metadata helper;
-- improved `<f(?:\s|>)` formula detection;
-- explicit Part B classification object.
+- reusable header value-hash enumeration;
+- reusable workbook fingerprint helper;
+- several direct no-op source-vs-roundtrip comparisons;
+- worksheet-only `<f(?:\s|>)` formula-node count helper;
+- iteration across all currently mapped Part B sensitive addresses.
 
-Feasibility acceptance remained FAIL because the test harness still did not objectively measure the complete contract: Part B classification was self-declared, typed metadata was not reconciled address-by-address, header fingerprints remained partial, full source-vs-roundtrip structural fingerprints were absent, target-normalized non-target image inventory equality was absent, structural tests remained sentinel/count heavy, and formula-node sets were not compared source vs every output.
+Feasibility acceptance = FAIL / corrective required because:
+1. Part B classification is still hard-coded/self-declared instead of being backed by exact owner-template source structure.
+2. typed metadata is not reconciled address-by-address/type-by-type against sanitized output.
+3. header fingerprints omit normalized type/style/merge membership and tests do not prove every runtime value changed/cleared or exact header merge preservation.
+4. workbook source-vs-roundtrip equality remains incomplete for dimension, declared merge count, full page/protection structure and complete relationship inventory.
+5. reference-image proof still lacks complete target-normalized before/after anchor/relationship/media equality.
+6. Part A 4/5/10 and Part B 6/8 structural tests remain sentinel/count/Print_Area heavy rather than exact row/cell/style/height/merge/dimension/page/protection measurements.
+7. formula proof is count-only, does not extract address/node sets, and does not cover source plus every structural output.
+8. GitHub has no CI/status evidence.
 
-## 7. D2-WP003-R3-R6 — AUTHORIZED
+## 7. Proposed D2-WP003-R3-R7
 
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R6
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R6-SOURCE-20260901-01
-PRIVACY_PURGE_REQUIRED = NO
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
-```
+R3-R7 must preserve all accepted raw OOXML mutation logic and accepted R3-R6 helper progress, and finish only the remaining assertions.
 
-R3-R6 preserves all accepted raw OOXML mutation logic and may modify only:
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No package/dependency changes and no binary publication.
+Mandatory corrective direction:
+- derive/verify Part B sensitive/static classification from exact owner-template source structure or fail closed;
+- reconcile the complete typed metadata address set directly to sanitized output, including numeric/date/boolean addresses;
+- extend header fingerprints to value/type/style/merge and assert static/runtime/unrelated/merge invariants;
+- assert direct source-vs-roundtrip equality for every workbook fingerprint field, including dimension, declared merge count, page/protection and complete relationship inventory;
+- implement target-normalized complete image inventory equality;
+- implement reusable raw structural inspector and exact Part A 4/5/10 + Part B 6/8 row/cell/style/height/merge/dimension/page/protection assertions;
+- extract worksheet formula address/node sets and compare source, sanitized and every structural output;
+- Difficulty remains blank and no application Difficulty field is added/read.
 
-## 8. Mandatory R3-R6 test-harness completion
+Do not substitute hard-coded counts, sentinels, booleans or self-declared classification for source-vs-output/source-structure proof.
 
-### 8.1 Source-backed Part B privacy classification
-
-Inspect exact SHA-verified owner-template structure in rows2:34. Every sensitive address must have source-backed structural evidence and every protected title/header-label/competency-description/rating-guidance address must be excluded. Tests must iterate the complete sensitive and protected sets. Any ambiguous cell must STOP `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` rather than be assumed dynamic.
-
-### 8.2 Exact typed reconciliation
-
-Every mapped Part A/Part B address must have exactly one safe metadata record (`address`, normalized `string|number|date|boolean|blank`, blank state, optional text hash). Tests must prove metadata set equality with mapped addresses and reconcile every metadata address to a blank sanitized-output address after reparse. Numeric/date/boolean source addresses present must be directly checked by address.
-
-### 8.3 Complete header fingerprints
-
-Fingerprint every cell in all frozen title/static-label/runtime-value regions and unrelated bounded header rows using safe value/type/style/merge metadata. After header mutation prove static/unrelated fingerprints unchanged, every runtime-value address changed/cleared as intended, and header merge set unchanged exactly.
-
-### 8.4 Reusable full source-vs-roundtrip fingerprint
-
-Compare SOURCE vs ROUND-TRIP directly for:
-- exact sheet order/names;
-- exact merge-ref set and declared merge count;
-- worksheet dimension;
-- `<cols>` structure/hash;
-- row-height map;
-- Print_Area and page setup;
-- Part B centerHorizontal and protection fingerprint;
-- drawing relationship inventory;
-- media filename/hash inventory;
-- successful reparse.
-
-Hard-coded constants may supplement only; they may not replace source-vs-output equality.
-
-### 8.5 Exact reference-image inventory equality
-
-Snapshot complete anchors, relationships and media before removal. Remove only rId3 anchor/relation and orphaned image3. Normalize only those target items out of BEFORE, then require exact equality with AFTER for every remaining anchor/relation/media item.
-
-### 8.6 Exact structural insertion measurements
-
-Part A 4/5/10 and Part B 6/8 must directly inspect raw OOXML and prove:
-- unique/strictly sorted row refs;
-- valid unique/sorted cell refs;
-- source-vs-inserted style-id patterns;
-- row heights/customHeight;
-- exact translated merge patterns;
-- declared merge count equals actual merge set;
-- exact dimensions;
-- exact Print_Area;
-- required paper/orientation/scale;
-- Part B centerHorizontal and protection.
-
-Part A 5: old row29 ->30, clone row28 to29, Print `A1:BJ53`.  
-Part A 10: rows29:34 inserted, old row29 ->35, row34 objective10, Print `A1:BJ58`.  
-Part B 8: clone rows27:30 twice to31:38, old row31 ->39, Print `A1:X43`.
-
-Sentinel movement and total-count-only proof are insufficient.
-
-### 8.7 Worksheet formula-node comparison
-
-Inspect only `xl/worksheets/*.xml`, detect `<f(?:\s|>)`, associate formula nodes to cell addresses where possible, and compare sorted source formula sets against sanitized outputs and every Part A/Part B structural output. Accepted source set is zero; prove zero output additions.
-
-### 8.8 Difficulty
-
-Difficulty remains blank temporarily. No application `Difficulty_*` field may be added/read. Sanitized Part A must directly prove mapped legacy Difficulty sample cells blank.
-
-## 9. Explicit exclusions
-
-No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
-
-Mandatory commands:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-## 10. Current gate
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R5 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R6 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R6-SOURCE-20260901-01
+D2-WP003-R3-R6 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R7 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R3-R6 ONLY / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
