@@ -1,108 +1,90 @@
-# AI ACTIVE TASK — D2-WP003-R3-R11 REVIEW / R3-R12 PROPOSED
+# AI ACTIVE TASK — D2-WP003-R3-R12 EXECUTION AUTHORIZED
 
-Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **ANTIGRAVITY / BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
+TASK_STATE = AUTHORIZED_FOR_EXECUTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R11_SCOPE_REVIEW = PASS
-D2-WP003-R3-R11_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-D2-WP003-R3-R11_STATUS = NOT PASS / NOT CLOSED
+D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R12
+ACTIVE_WORK_PACKAGE_NAME = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R12
-PROPOSED_WORK_PACKAGE_NAME = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY_ACTION = STOP / WAIT OWNER
-D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. R3-R11 scope review — PASS
+## 1. Purpose — ONE REMAINING CLASSIFICATION BLOCKER ONLY
 
-Implementation commit `e43669961b67d806994fec67fb2bf83fbd02cd01` is exactly one commit above authorization baseline `498ed142743ab1b0b51ead36136918820f19d1dd` and changed only:
+Resolve only the R3-R11 remaining blocker:
+
+**validate Part B competency/body and summary/signature roles against role-specific authoritative source evidence.**
+
+Do NOT reopen accepted R3-R11 architecture and do NOT attempt typed metadata, header parity, workbook parity, image inventory, structural insertion matrix, formula matrix, production renderer/sanitizer, PDF/UI, Kintone or deploy.
+
+## 2. Exact write scope
+
+Authorized modifications ONLY:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
+Read-only:
+- `package.json`
+- `package-lock.json`
+- governance docs
+- exact ignored owner templates after SHA verification
 
-## 2. Accepted R3-R11 progress
+No dependency/package change. No XLSX/image/media/output publication.
 
-R3-R11 closes several prior classification defects:
-- exact SHA-verified Part B source is loaded;
-- a complete safe `B:X / rows 2:34` source evidence inventory is built BEFORE role assignment;
-- `SENSITIVE_RANGES_B` is no longer used as classification input and is compared only after independent role resolution;
-- real resolver returns independently resolved dynamic/protected sets and enforces disjointness;
-- real fail-closed path throws `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`;
-- tests exercise the REAL resolver by removing real dynamic evidence (`G2`), removing real protected-static evidence (`B2`), and conflicting real merge evidence (`G2`).
+## 3. Source identity
 
-These are accepted progress and must be preserved.
+Use only exact Part B owner template:
 
-## 3. Remaining root blocker — body/summary roles are not source-validated enough
+```text
+PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+```
 
-Header roles now use role-specific merge checks, but body and summary roles are still selected almost entirely from broad row/column rectangles:
-- rows `7:29`: `B:J` => protected-static, `K:X` => dynamic;
-- rows `31:34`: all `B:X` => dynamic summary/signature roles.
+Bounded lookup only in repository root, `app info/data/`, and `exp/`.
+If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
+Never print/log/commit raw employee/sample values.
 
-For those regions, the resolver checks only that evidence exists and has a valid generic normalized type. It does NOT validate the role against role-specific source structure such as the authoritative source merge/style/type/blankness/hash fingerprint.
+## 4. Accepted R3-R11 architecture — PRESERVE
 
-Therefore a body/summary address can retain the same role even if its source evidence changes in a way that should be treated as a structural/role conflict, provided the record still has an address/style field and a valid normalized type.
+Preserve without redesign unless a minimal correction is strictly required:
+- `buildPartBSourceEvidenceInventory()` inventory-first architecture;
+- exact SHA verification;
+- source evidence fields already collected;
+- header role-specific structural validation;
+- `SENSITIVE_RANGES_B` used only AFTER independent role resolution;
+- real resolver dynamic/protected disjointness;
+- real fail-closed path using `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`;
+- real-address fail-closed tests.
 
-This does not fully satisfy the R3-R11 contract that frozen role geometry must be validated by actual source evidence and that missing/conflicting/ambiguous evidence must fail closed.
+Do not spend credit rebuilding accepted header/inventory/fail-closed work.
 
-## 4. Test coverage gap
+## 5. Frozen R3-R11 rejection
 
-The new fail-closed tests are real and accepted, but all three conflict/removal cases are in the header area (`G2`, `B2`).
+The following is NOT sufficient acceptance for body/summary:
 
-There is no fail-closed test proving the real resolver rejects role-specific evidence conflict for:
-- a protected-static competency/body address;
-- a dynamic competency rating/body address;
-- a summary/signature address.
+```text
+Rows 7:29  + column rectangle => role accepted
+Rows 31:34 + column rectangle => role accepted
+```
 
-## 5. CI evidence
+Geometry may nominate a candidate role, but generic evidence existence + valid normalized type is not enough.
 
-GitHub combined status/check list for implementation commit `e43669961b67d806994fec67fb2bf83fbd02cd01` is empty.
-
-## 6. Proposed R3-R12 — ONE blocker only
-
-Purpose: **add role-specific source validation for Part B body + summary regions without reopening accepted header/source-inventory/fail-closed architecture.**
-
-Expected writes only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Do NOT work on typed metadata, header parity, workbook parity, image inventory, structural insertion matrix, formula matrix, production renderer, PDF/UI, Kintone or deploy.
-
-### Mandatory R3-R12 direction
-
-1. Preserve `buildPartBSourceEvidenceInventory()` and the accepted post-resolution `SENSITIVE_RANGES_B` cross-check.
-2. Build authoritative safe role-validation evidence from the exact SHA-verified source BEFORE applying any test override.
-3. For body/summary roles, validate the frozen geometry against role-specific source evidence. Use only safe fields such as:
-   - exact merge membership / merge pattern where applicable;
-   - style id / style-pattern identity;
-   - normalized type;
-   - blank/nonblank state;
-   - safe value hash only for proven static template text where needed.
-4. Broad row/column membership may identify the frozen role candidate, but it must NOT be sufficient to accept the role. Role-specific authoritative source evidence must confirm it.
-5. The real resolver must throw exactly `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` if body/summary evidence is missing, structurally changed, conflicts with the authoritative role spec, or becomes ambiguous.
-6. Tests must exercise the REAL resolver with real addresses and at minimum prove fail-closed for:
-   - one protected-static competency/body address (for example a real `B:J` body address);
-   - one dynamic competency/body address (real `K:X` body address);
-   - one summary/signature address (`B:X` rows `31:34`).
-7. Tests must mutate a role-relevant evidence field, not merely delete a generic address record.
-8. Preserve the final post-resolution equality `SORT(dynamicAddresses) == SORT(SENSITIVE_RANGES_B)` and dynamic/static disjointness.
-9. No raw source value may be logged or committed.
-
-Critical acceptance rule:
+Critical rule:
 
 ```text
 BODY/SUMMARY GEOMETRY MAY NOMINATE A ROLE.
@@ -110,12 +92,144 @@ ACTUAL SHA-VERIFIED SOURCE EVIDENCE MUST CONFIRM THAT ROLE.
 A BROAD RECTANGLE BY ITSELF IS NOT ACCEPTANCE PROOF.
 ```
 
-## 7. Authorization ledger
+## 6. Authoritative source role-validation baseline
+
+Before applying any test override, derive the authoritative safe body/summary role-validation baseline from the exact SHA-verified source inventory.
+
+For each role family, use the smallest reliable safe fingerprint necessary to distinguish expected source structure from conflicting/ambiguous structure. Allowed evidence includes:
+- exact merge membership / merge-pattern identity where applicable;
+- style id or style-pattern identity;
+- normalized type;
+- blank/nonblank state;
+- safe SHA-256 hash ONLY for proven static template text where required;
+- other already-available safe structural attributes if necessary.
+
+Do not store/log raw source values.
+
+Role validation must cover at minimum:
+1. protected-static competency/body region (`B:J`, rows `7:29`);
+2. dynamic competency/body region (`K:X`, rows `7:29`);
+3. summary/signature region (`B:X`, rows `31:34`).
+
+Do not assume one fingerprint fits all cells if the source contains multiple legitimate style/merge patterns. Derive/validate the actual legitimate pattern set from source.
+
+## 7. Real resolver behavior
+
+For every body/summary candidate role:
+1. geometry nominates the candidate role;
+2. authoritative source-role evidence confirms the actual evidence record;
+3. only then may the role be accepted.
+
+The REAL resolver must throw exactly:
+
+```text
+BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
+```
+
+when body/summary role evidence is:
+- missing;
+- structurally changed;
+- inconsistent with authoritative source-role evidence;
+- conflicting with candidate role;
+- ambiguous.
+
+Do not silently accept the role from row/column geometry.
+
+## 8. Mandatory tests — REAL role-relevant mutations
+
+Tests must use the real resolver and actual source-backed evidence.
+
+Preserve prior accepted header fail-closed tests and ADD at minimum:
+
+1. **Protected competency/body**
+   - choose a real address in `B:J`, rows `7:29`;
+   - mutate a ROLE-RELEVANT evidence field such as actual style/merge/static-hash evidence;
+   - prove real resolver throws `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+
+2. **Dynamic competency/body**
+   - choose a real address in `K:X`, rows `7:29`;
+   - mutate a ROLE-RELEVANT source evidence field;
+   - prove real resolver throws the same blocker.
+
+3. **Summary/signature**
+   - choose a real address in `B:X`, rows `31:34`;
+   - mutate a ROLE-RELEVANT source evidence field;
+   - prove real resolver throws the same blocker.
+
+Deleting a generic record alone does NOT satisfy these three new tests. Each must demonstrate role-specific source conflict detection.
+
+Tests must also preserve proof that:
+
+```text
+SORT(dynamicAddresses) == SORT(SENSITIVE_RANGES_B)
+DYNAMIC ∩ PROTECTED_STATIC = empty
+```
+
+Only compare to `SENSITIVE_RANGES_B` after role resolution.
+
+## 9. No circular/self-fulfilling proof
+
+Do not derive a role fingerprint from the mutated override itself.
+
+Authoritative expected body/summary evidence MUST come from the exact SHA source before override/mutation is applied.
+
+Test overrides may mutate the observed evidence supplied to the resolver, but must not mutate/recompute the authoritative expected baseline used to validate the role.
+
+If the architecture cannot separate authoritative expected evidence from observed override evidence safely, STOP:
+
+```text
+BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
+```
+
+## 10. Out of scope — DO NOT TOUCH
+
+Do NOT use R3-R12 to close or redesign:
+- header role validation already accepted;
+- source inventory architecture already accepted;
+- typed metadata proof;
+- header fingerprint/export parity;
+- workbook source-vs-roundtrip parity;
+- reference-image inventory;
+- Part A/B insertion structural matrix;
+- formula matrix;
+- production sanitizer/renderer;
+- export service/normalizer/application code;
+- PDF/UI;
+- Live Kintone;
+- deploy;
+- next Work Package.
+
+## 11. Mandatory commands
+
+Run exactly:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+Before commit only the two authorized feasibility files may differ. After commit/push working tree must be clean.
+
+## 12. Completion contract
+
+Push only the two authorized feasibility files.
+
+Final executor status must be exactly one of:
+```text
+BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
+BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
+BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
+```
+
+Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
+
+## 13. Authorization ledger
 
 ```text
 D2-WP003-R3-R10-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R12-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -128,11 +242,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-## 8. Exact next gate
-
-```text
-D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R12 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-PRIVACY_PURGE_REQUIRED = NO
-ANTIGRAVITY = STOP / WAIT OWNER
-```
+Authorization is consumed when the R3-R12 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
