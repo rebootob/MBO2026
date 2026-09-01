@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R11 REVIEWED-NOT-PASS / R3-R12 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R12 REVIEWED-NOT-PASS / R3-R13 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -32,77 +32,56 @@ PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. Frozen Part B privacy authority
 
-The exact owner template remains the source structure authority. Privacy classification may use frozen business/template-role geometry to nominate roles, but actual SHA-verified role-specific source evidence must confirm the role before acceptance.
+The exact owner template remains the source structure authority. Privacy role geometry may nominate a role, but authoritative SHA-verified role-relevant evidence must confirm it.
 
-`SENSITIVE_RANGES_B` remains a sanitizer compatibility map only. It must not drive role selection and may be compared only after independent resolution.
+`SENSITIVE_RANGES_B` remains a sanitizer compatibility map only and is compared only after independent resolution.
 
-## 4. R3-R11 review result
+## 4. R3-R12 review result
 
-Scope review = PASS. Implementation `e43669961b67d806994fec67fb2bf83fbd02cd01` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
+Scope review = PASS. Implementation `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
 
 Accepted progress:
-- complete safe source inventory for Part B rows2:34 is built first;
-- exact SHA is enforced;
-- independent role resolution occurs before `SENSITIVE_RANGES_B` compatibility comparison;
-- real resolver enforces dynamic/protected disjointness;
-- real fail-closed tests use actual Part B evidence and real resolver paths.
+- authoritative source inventory is loaded before observed override evidence;
+- body/summary observed evidence is validated against authoritative `styleId` and `mergeRef`;
+- real fail-closed tests cover protected body `B7`, dynamic body `K7`, and summary `B31` style conflicts.
 
-Source acceptance = FAIL only because body/summary roles are accepted from broad row/column geometry without role-specific source validation equivalent to the accepted header structural validation.
+Source acceptance = FAIL because style/merge parity alone is not sufficient. The resolver does not yet compare role-relevant authoritative `normalizedType`, `nonblank`, or protected-static safe hash identity where needed. Same-style/same-merge semantic evidence changes can therefore still pass.
 
-## 5. D2-WP003-R3-R12 — AUTHORIZED
+GitHub combined statuses/checks for the implementation commit are empty.
 
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R12
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
-PRIVACY_PURGE_REQUIRED = NO
-MAX_EXECUTOR_STATUS = BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
-```
+## 5. Proposed D2-WP003-R3-R13
 
-R3-R12 is intentionally narrow and may modify only:
+R3-R13 is intentionally narrow: **body + summary authoritative evidence parity only**.
+
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No package/dependency changes and no binary publication.
+Mandatory direction:
+- preserve authoritative-source-first / observed-override separation;
+- preserve current style/merge validation and real fail-closed architecture;
+- compare authoritative vs observed role-relevant `normalizedType` and `nonblank` for body/summary roles;
+- for proven protected-static template text, require safe `valHash` parity where necessary to reject silent content substitution;
+- do NOT compare source sample `valHash` for legitimate dynamic employee/sample fields;
+- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on required evidence mismatch;
+- tests must mutate non-style evidence for one protected body, one dynamic body and one summary/signature real address;
+- preserve post-resolution sanitizer-set equality and dynamic/static disjointness.
 
-## 6. Mandatory R3-R12 proof
+No typed/header/workbook/image/insertion-structural/formula closure is in R3-R13 scope.
 
-Use the exact SHA-verified Part B owner template and solve only body + summary role-specific source validation:
-- preserve accepted source inventory, header validation, real fail-closed path and post-resolution sanitizer cross-check;
-- derive authoritative safe body/summary role evidence from exact source BEFORE any test override;
-- frozen body/summary geometry may nominate a role but cannot by itself accept it;
-- confirm role with applicable merge/style/type/blankness evidence and safe static value hashes where needed;
-- legitimate multiple source patterns must be derived from actual source rather than flattened to one invented fingerprint;
-- authoritative expected evidence must not be recomputed from mutated override evidence;
-- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on role-specific body/summary evidence conflict;
-- tests must mutate role-relevant evidence for at least one protected competency/body address, one dynamic competency/body address and one summary/signature address;
-- preserve independent dynamic-set equality to sanitizer map only after resolution and preserve dynamic/static disjointness.
-
-No typed/header/workbook/image/insertion-structural/formula closure is in R3-R12 scope.
-
-## 7. Explicit exclusions
-
-No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
-
-Mandatory commands:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-## 8. Current gate
+## 6. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R12 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
+D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R13 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R3-R12 ONLY / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
