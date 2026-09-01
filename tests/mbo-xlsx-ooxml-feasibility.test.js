@@ -19,6 +19,7 @@ import {
   getHeaderCellFingerprints,
   validateHeaderFingerprintParity,
   getWorkbookFingerprint,
+  validateWorkbookParity,
   inspectRawWorksheetOOXML,
   getWorksheetFormulaSet,
   SENSITIVE_RANGES_A,
@@ -72,6 +73,65 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(fpOutB.printArea, "'(Part B) Competency'!$A$1:$X$35", 'Part B print area must be A1:X35');
   assert.deepEqual(fpOutB.relTuples, fpOrigB.relTuples, 'Part B relationship inventory tuples must match source exactly');
   assert.deepEqual(fpOutB.mediaFiles, fpOrigB.mediaFiles, 'Part B media inventory must match source exactly');
+
+  // --- R3-R18 WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY VALIDATION ---
+  // 1. Positive validation for Part A & Part B roundtrip buffers
+  assert.equal(await validateWorkbookParity(outBufA, 'A'), true, 'Part A no-op roundtrip must satisfy workbook-wide parity');
+  assert.equal(await validateWorkbookParity(outBufB, 'B'), true, 'Part B no-op roundtrip must satisfy workbook-wide parity');
+
+  // 2. Explicit per-worksheet assertions covering every worksheet
+  assert.ok(fpOutA.sheets['MBO Staff & Chief'], 'Part A main sheet entry must exist in workbook fingerprint');
+  assert.equal(fpOutA.sheets['MBO Staff & Chief'].rawMergeCount, 193, 'Part A main sheet merge count must equal 193');
+
+  assert.ok(fpOutB.sheets['(Part B) Competency'], 'Part B main sheet entry must exist in workbook fingerprint');
+  assert.ok(fpOutB.sheets['Sheet1'], 'Part B second sheet (Sheet1) entry must exist in workbook fingerprint');
+  assert.equal(fpOutB.sheets['(Part B) Competency'].rawMergeCount, 79, 'Part B main sheet merge count must equal 79');
+  assert.equal(fpOutB.sheets['Sheet1'].sheetName, 'Sheet1', 'Part B second sheet name must be Sheet1');
+
+  // 3. Mandatory Fail-Closed Negative Tests using real validator
+  // Negative Test 1: Mutate/remove worksheet identity or order
+  const fpMutSheetOrder = JSON.parse(JSON.stringify(fpOutB));
+  fpMutSheetOrder.sheetNames = ['Sheet1', '(Part B) Competency'];
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B', fpMutSheetOrder),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Reordering worksheets must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  // Negative Test 2: Mutate real merge ref in main sheet
+  const fpMutMerge = JSON.parse(JSON.stringify(fpOutB));
+  fpMutMerge.sheets['(Part B) Competency'].rawMergeCount = 78;
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B', fpMutMerge),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Mutating merge count must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  // Negative Test 3: Mutate page setup / orientation
+  const fpMutSetup = JSON.parse(JSON.stringify(fpOutB));
+  fpMutSetup.sheets['(Part B) Competency'].orientation = 'landscape';
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B', fpMutSetup),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Mutating page orientation must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  // Negative Test 4: Mutate Part B protection OR second Sheet1 structural evidence
+  const fpMutProtection = JSON.parse(JSON.stringify(fpOutB));
+  fpMutProtection.sheets['(Part B) Competency'].sheetProtection = 'none';
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B', fpMutProtection),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Mutating Part B sheet protection must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  const fpMutSheet1Cols = JSON.parse(JSON.stringify(fpOutB));
+  fpMutSheet1Cols.sheets['Sheet1'].colsHash = 'bad_cols_hash_999';
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B', fpMutSheet1Cols),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Mutating Sheet1 column structure hash must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
 });
 
 test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels remain intact while value cells clear/update', async () => {

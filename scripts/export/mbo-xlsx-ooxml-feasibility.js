@@ -750,34 +750,118 @@ export async function validateHeaderFingerprintParity(observedBufOrFingerprints,
 
     return true;
   } catch (err) {
-    throw err;
+    if (err.message === 'BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE') throw err;
+    throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
   }
 }
 
 export async function getWorkbookFingerprint(buf) {
   const wb = await XlsxPopulate.fromDataAsync(buf);
-  const sheetNames = wb.sheets().map(s => s.name());
-
-  const sheet1Xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const rawMerges = [...sheet1Xml.matchAll(/<mergeCell [^>]*\/>/g)].map(m => m[0]).sort();
-  const mergeCountAttr = sheet1Xml.match(/<mergeCells count="(\d+)">/)?.[1] || String(rawMerges.length);
-
-  const dimension = sheet1Xml.match(/<dimension [^>]*\/>/)?.[0] || '';
-  const colsXml = sheet1Xml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
-  const colsHash = crypto.createHash('sha256').update(colsXml).digest('hex');
-
-  const rowHeights = [...sheet1Xml.matchAll(/<row r="(\d+)"[^>]*ht="([^"]+)"/g)].map(m => `R${m[1]}:${m[2]}`);
-  const rowHeightsHash = crypto.createHash('sha256').update(rowHeights.join(',')).digest('hex');
-
   const workbookXml = await wb._zip.files['xl/workbook.xml'].async('string');
-  let printArea = workbookXml.match(/<definedName name="_xlnm\.Print_Area"[^>]*>([^<]+)<\/definedName>/)?.[1] || '';
-  printArea = printArea.replaceAll('&amp;', '&');
+  const workbookRelsXml = wb._zip.files['xl/_rels/workbook.xml.rels']
+    ? await wb._zip.files['xl/_rels/workbook.xml.rels'].async('string')
+    : '';
 
-  const paperSize = sheet1Xml.match(/paperSize="(\d+)"/)?.[1] || '';
-  const orientation = sheet1Xml.match(/orientation="([^"]+)"/)?.[1] || '';
-  const scale = sheet1Xml.match(/scale="(\d+)"/)?.[1] || '';
-  const horizontalCentered = sheet1Xml.includes('horizontalCentered="1"');
-  const sheetProtection = sheet1Xml.includes('<sheetProtection') || sheet1Xml.includes('sheetProtection');
+  const sheetRelMap = {};
+  const relMatches = [...workbookRelsXml.matchAll(/<Relationship Id="([^"]+)" Type="[^"]*" Target="([^"]+)"/g)];
+  for (const m of relMatches) {
+    let target = m[2];
+    if (!target.startsWith('xl/')) {
+      target = 'xl/' + target.replace(/^\//, '');
+    }
+    sheetRelMap[m[1]] = target;
+  }
+
+  const sheetMatchesAlt = [...workbookXml.matchAll(/<sheet [^>]*name="([^"]+)"[^>]*>/g)];
+
+  const sheetNames = [];
+  const sheetStates = [];
+  const sheets = {};
+
+  for (const sm of sheetMatchesAlt) {
+    const sTag = sm[0];
+    const rawName = sTag.match(/name="([^"]+)"/)?.[1];
+    const name = rawName ? rawName.replaceAll('&amp;', '&') : '';
+    const state = sTag.match(/state="([^"]+)"/)?.[1] || 'visible';
+    const rId = sTag.match(/r:id="([^"]+)"/)?.[1];
+    if (name) {
+      sheetNames.push(name);
+      sheetStates.push({ name, state });
+      const fileName = sheetRelMap[rId] || `xl/worksheets/sheet${sheetNames.length}.xml`;
+
+      const sheetFile = wb._zip.files[fileName];
+      let sheetXml = '';
+      if (sheetFile) {
+        sheetXml = await sheetFile.async('string');
+      }
+
+      const rawMerges = [...sheetXml.matchAll(/<mergeCell [^>]*ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
+      const mergeCountAttr = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1] || String(rawMerges.length);
+      const dimension = sheetXml.match(/<dimension [^>]*\/>/)?.[0] || '';
+
+      const colsXml = sheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
+      const colsHash = crypto.createHash('sha256').update(colsXml).digest('hex');
+
+      const rowHeights = [...sheetXml.matchAll(/<row r="(\d+)"[^>]*ht="([^"]+)"/g)].map(m => `R${m[1]}:${m[2]}`);
+      const rowHeightsHash = crypto.createHash('sha256').update(rowHeights.join(',')).digest('hex');
+
+      const showGridLinesMatch = sheetXml.match(/showGridLines="(\d+)"/);
+      const showGridLines = showGridLinesMatch ? showGridLinesMatch[1] : '1';
+
+      const pageMarginsMatch = sheetXml.match(/<pageMargins [^>]*\/>/)?.[0] || '';
+      const pageMargins = crypto.createHash('sha256').update(pageMarginsMatch).digest('hex');
+
+      const paperSize = sheetXml.match(/paperSize="(\d+)"/)?.[1] || '';
+      const orientation = sheetXml.match(/orientation="([^"]+)"/)?.[1] || '';
+      const scale = sheetXml.match(/scale="(\d+)"/)?.[1] || '';
+      const fitToPage = sheetXml.includes('fitToPage="1"');
+
+      const horizontalCentered = sheetXml.includes('horizontalCentered="1"');
+      const verticalCentered = sheetXml.includes('verticalCentered="1"');
+      const sheetProtection = sheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || (sheetXml.includes('sheetProtection') ? 'protected' : 'none');
+
+      let printArea = '';
+      const paMatch = workbookXml.match(new RegExp(`<definedName name="_xlnm\\.Print_Area"[^>]*localSheetId="${sheets[name] ? Object.keys(sheets).length - 1 : 0}"[^>]*>([^<]+)<\\/definedName>`)) || workbookXml.match(/<definedName name="_xlnm\.Print_Area"[^>]*>([^<]+)<\/definedName>/);
+      if (paMatch) {
+        printArea = paMatch[1].replaceAll('&amp;', '&');
+      }
+
+      const sheetRelsPath = fileName.replace('xl/worksheets/', 'xl/worksheets/_rels/') + '.rels';
+      const sheetRels = [];
+      if (wb._zip.files[sheetRelsPath]) {
+        const sRelsXml = await wb._zip.files[sheetRelsPath].async('string');
+        const matches = [...sRelsXml.matchAll(/<Relationship Id="([^"]+)" Type="[^"]*" Target="([^"]+)"/g)];
+        for (const m of matches) {
+          sheetRels.push(`${m[1]}->${m[2]}`);
+        }
+        sheetRels.sort();
+      }
+
+      sheets[name] = {
+        sheetName: name,
+        sheetFileName: fileName,
+        dimension,
+        rawMerges,
+        rawMergeCount: rawMerges.length,
+        mergeCountAttr,
+        colsHash,
+        rowHeightsHash,
+        showGridLines,
+        pageMargins,
+        paperSize,
+        orientation,
+        scale,
+        fitToPage,
+        horizontalCentered,
+        verticalCentered,
+        sheetProtection,
+        printArea,
+        sheetRels
+      };
+    }
+  }
+
+  const definedNames = [...workbookXml.matchAll(/<definedName [^>]*>([^<]+)<\/definedName>/g)].map(m => m[0]).sort();
 
   const relTuples = [];
   for (const fileName in wb._zip.files) {
@@ -801,23 +885,144 @@ export async function getWorkbookFingerprint(buf) {
   }
   mediaFiles.sort();
 
+  const mainSheet = sheets[sheetNames[0]] || {};
+
   return {
     sheetNames,
-    rawMergeCount: rawMerges.length,
-    mergeCountAttr,
-    rawMerges,
-    dimension,
-    colsHash,
-    rowHeightsHash,
-    printArea,
-    paperSize,
-    orientation,
-    scale,
-    horizontalCentered,
-    sheetProtection,
+    sheetStates,
+    definedNames,
+    sheets,
+    rawMergeCount: mainSheet.rawMergeCount || 0,
+    mergeCountAttr: mainSheet.mergeCountAttr || '0',
+    rawMerges: mainSheet.rawMerges || [],
+    dimension: mainSheet.dimension || '',
+    colsHash: mainSheet.colsHash || '',
+    rowHeightsHash: mainSheet.rowHeightsHash || '',
+    printArea: mainSheet.printArea || '',
+    paperSize: mainSheet.paperSize || '',
+    orientation: mainSheet.orientation || '',
+    scale: mainSheet.scale || '',
+    horizontalCentered: mainSheet.horizontalCentered || false,
+    sheetProtection: Boolean(mainSheet.sheetProtection && mainSheet.sheetProtection !== 'none'),
     relTuples,
     mediaFiles
   };
+}
+
+export async function validateWorkbookParity(observedBufOrFingerprint, partKey, fingerprintOverride = null) {
+  try {
+    const found = findLocalSourceTemplates();
+    if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+
+    const sourceFile = partKey === 'A' ? found.partA : found.partB;
+    const expectedSha = partKey === 'A' ? EXPECTED_PART_A_SHA : EXPECTED_PART_B_SHA;
+    const sourceBuf = fs.readFileSync(sourceFile);
+    const sourceSha = crypto.createHash('sha256').update(sourceBuf).digest('hex');
+    if (sourceSha !== expectedSha) {
+      throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+    }
+
+    const authFp = await getWorkbookFingerprint(sourceBuf);
+
+    let obsFp = null;
+    if (fingerprintOverride) {
+      obsFp = fingerprintOverride;
+    } else if (observedBufOrFingerprint && typeof observedBufOrFingerprint === 'object' && observedBufOrFingerprint.sheetNames && observedBufOrFingerprint.sheets) {
+      obsFp = observedBufOrFingerprint;
+    } else if (Buffer.isBuffer(observedBufOrFingerprint)) {
+      obsFp = await getWorkbookFingerprint(observedBufOrFingerprint);
+    } else {
+      throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    }
+
+    if (!obsFp || !Array.isArray(obsFp.sheetNames) || !obsFp.sheets) {
+      throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    }
+
+    // 1. Workbook Level Validation
+    if (JSON.stringify(obsFp.sheetNames) !== JSON.stringify(authFp.sheetNames)) {
+      throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    }
+
+    if (JSON.stringify(obsFp.sheetStates) !== JSON.stringify(authFp.sheetStates)) {
+      throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    }
+
+    if (JSON.stringify(obsFp.definedNames) !== JSON.stringify(authFp.definedNames)) {
+      throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    }
+
+    if (JSON.stringify(obsFp.relTuples) !== JSON.stringify(authFp.relTuples)) {
+      throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    }
+
+    // 2. Per-Worksheet Validation for EVERY sheet
+    for (const name of authFp.sheetNames) {
+      const authSheet = authFp.sheets[name];
+      const obsSheet = obsFp.sheets[name];
+
+      if (!authSheet || !obsSheet) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+
+      if (obsSheet.dimension && authSheet.dimension && obsSheet.dimension !== authSheet.dimension) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.rawMergeCount !== authSheet.rawMergeCount) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.mergeCountAttr !== authSheet.mergeCountAttr) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (JSON.stringify(obsSheet.rawMerges) !== JSON.stringify(authSheet.rawMerges)) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.colsHash !== authSheet.colsHash) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.rowHeightsHash !== authSheet.rowHeightsHash) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.showGridLines !== authSheet.showGridLines) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.pageMargins !== authSheet.pageMargins) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.paperSize !== authSheet.paperSize) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.orientation !== authSheet.orientation) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.scale !== authSheet.scale) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.fitToPage !== authSheet.fitToPage) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.horizontalCentered !== authSheet.horizontalCentered) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.verticalCentered !== authSheet.verticalCentered) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.sheetProtection !== authSheet.sheetProtection) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (obsSheet.printArea !== authSheet.printArea) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+      if (JSON.stringify(obsSheet.sheetRels) !== JSON.stringify(authSheet.sheetRels)) {
+        throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+      }
+    }
+
+    return true;
+  } catch (err) {
+    if (err.message === 'BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE') throw err;
+    throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+  }
 }
 
 export async function inspectRawWorksheetOOXML(buf) {
