@@ -327,6 +327,15 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Non-number typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
   );
 
+  // Test E: Malformed normalizedType record mutation
+  const metaInvalidType = JSON.parse(JSON.stringify(validMetaB));
+  metaInvalidType.metadata[0].normalizedType = 'invalid_type';
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaInvalidType, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Malformed normalizedType record mutation must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
   const { bufA, bufB, sensitiveA, sensitiveB } = await getSanitizedDisposableBuffers();
 
   const wbA = await XlsxPopulate.fromDataAsync(bufA);
