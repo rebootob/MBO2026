@@ -1127,6 +1127,133 @@ export async function getNoOpParityBuffers() {
   return { origBufA, outBufA, origBufB, outBufB };
 }
 
+export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, sourceBufOverride = null) {
+  try {
+    let sourceBuf = sourceBufOverride;
+    if (!sourceBuf) {
+      const found = findLocalSourceTemplates();
+      if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+
+      const sourceFile = partKey === 'A' ? found.partA : found.partB;
+      const expectedSha = partKey === 'A' ? EXPECTED_PART_A_SHA : EXPECTED_PART_B_SHA;
+      sourceBuf = fs.readFileSync(sourceFile);
+      const sourceSha = crypto.createHash('sha256').update(sourceBuf).digest('hex');
+      if (sourceSha !== expectedSha) {
+        throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+      }
+    }
+
+    if (!Buffer.isBuffer(rawObservedBuf) || !Buffer.isBuffer(sourceBuf)) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const wbSource = await XlsxPopulate.fromDataAsync(sourceBuf);
+    const wbObserved = await XlsxPopulate.fromDataAsync(rawObservedBuf);
+
+    if (!wbSource._zip.files['xl/workbook.xml'] || !wbObserved._zip.files['xl/workbook.xml']) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const srcWbXml = await wbSource._zip.files['xl/workbook.xml'].async('string');
+    const srcRelsXmlFile = wbSource._zip.files['xl/_rels/workbook.xml.rels'];
+    const srcRelsXml = srcRelsXmlFile ? await srcRelsXmlFile.async('string') : '';
+
+    const obsWbXml = await wbObserved._zip.files['xl/workbook.xml'].async('string');
+    const obsRelsXmlFile = wbObserved._zip.files['xl/_rels/workbook.xml.rels'];
+    const obsRelsXml = obsRelsXmlFile ? await obsRelsXmlFile.async('string') : '';
+
+    function parseRelMap(relsXml) {
+      const map = {};
+      const matches = [...relsXml.matchAll(/<Relationship Id="([^"]+)" Type="[^"]*" Target="([^"]+)"/g)];
+      for (const m of matches) {
+        let target = m[2];
+        if (!target.startsWith('xl/')) {
+          target = 'xl/' + target.replace(/^\//, '');
+        }
+        map[m[1]] = target;
+      }
+      return map;
+    }
+
+    const srcRelMap = parseRelMap(srcRelsXml);
+    const obsRelMap = parseRelMap(obsRelsXml);
+
+    function parseSheets(wbXml) {
+      const sheets = [];
+      const matches = [...wbXml.matchAll(/<sheet [^>]*name="([^"]+)"[^>]*r:id="([^"]+)"[^>]*>/g)];
+      for (const m of matches) {
+        sheets.push({ name: m[1].replaceAll('&amp;', '&'), rId: m[2] });
+      }
+      return sheets;
+    }
+
+    const srcSheets = parseSheets(srcWbXml);
+    const obsSheets = parseSheets(obsWbXml);
+
+    if (srcSheets.length === 0 || srcSheets.length !== obsSheets.length) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    for (let i = 0; i < srcSheets.length; i++) {
+      if (srcSheets[i].name !== obsSheets[i].name) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+    }
+
+    const wbPreserved = await XlsxPopulate.fromDataAsync(rawObservedBuf);
+
+    for (let i = 0; i < srcSheets.length; i++) {
+      const srcSheet = srcSheets[i];
+      const obsSheet = obsSheets[i];
+
+      const srcFileName = srcRelMap[srcSheet.rId];
+      const obsFileName = obsRelMap[obsSheet.rId];
+
+      if (!srcFileName || !obsFileName) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+
+      const srcFile = wbSource._zip.files[srcFileName];
+      const obsFile = wbPreserved._zip.files[obsFileName];
+
+      if (!srcFile || !obsFile) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+
+      const srcXml = await srcFile.async('string');
+      let obsXml = await obsFile.async('string');
+
+      const srcDimMatches = [...srcXml.matchAll(/<dimension [^>]*\/>/g)];
+      if (srcDimMatches.length !== 1) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+      const srcDimTag = srcDimMatches[0][0];
+
+      const obsDimMatches = [...obsXml.matchAll(/<dimension [^>]*\/>/g)];
+      if (obsDimMatches.length > 1) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+
+      if (obsDimMatches.length === 1) {
+        if (obsDimMatches[0][0] !== srcDimTag) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+      } else {
+        if (!obsXml.includes('<worksheet')) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+        obsXml = obsXml.replace(/(<worksheet[^>]*>)/, `$1\n  ${srcDimTag}`);
+        wbPreserved._zip.file(obsFileName, obsXml);
+      }
+    }
+
+    return await wbPreserved._zip.generateAsync({ type: 'nodebuffer' });
+  } catch (err) {
+    if (err.message === 'BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE') throw err;
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+}
+
 export async function getMutatedHeaderValueBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');

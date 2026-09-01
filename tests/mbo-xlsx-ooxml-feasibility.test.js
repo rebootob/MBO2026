@@ -5,6 +5,7 @@ import XlsxPopulate from 'xlsx-populate';
 import {
   findLocalSourceTemplates,
   getNoOpParityBuffers,
+  preserveExactWorkbookDimensions,
   getMutatedHeaderValueBuffers,
   getSanitizedDisposableBuffers,
   getReferenceImageBuffers,
@@ -37,6 +38,12 @@ test('FEASIBILITY_TEMPLATE_SHA_VERIFICATION: local owner template SHA-256 hashes
 
 test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates without material degradation', async () => {
   const { origBufA, outBufA, origBufB, outBufB } = await getNoOpParityBuffers();
+
+  // Pre-preservation SHA snapshots to prove immutability of raw and source buffers
+  const shaOrigABefore = crypto.createHash('sha256').update(origBufA).digest('hex');
+  const shaOutABefore = crypto.createHash('sha256').update(outBufA).digest('hex');
+  const shaOrigBBefore = crypto.createHash('sha256').update(origBufB).digest('hex');
+  const shaOutBBefore = crypto.createHash('sha256').update(outBufB).digest('hex');
 
   // Part A Direct Source vs Round-Trip Fingerprint Evaluation
   const fpOrigA = await getWorkbookFingerprint(origBufA);
@@ -74,7 +81,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.deepEqual(fpOutB.relTuples, fpOrigB.relTuples, 'Part B relationship inventory tuples must match source exactly');
   assert.deepEqual(fpOutB.mediaFiles, fpOrigB.mediaFiles, 'Part B media inventory must match source exactly');
 
-  // --- R3-R22 CORRECTIVE A: PROVE EXACT-SOURCE BASELINES VALID THROUGH REAL VALIDATOR ---
+  // --- PROVE EXACT-SOURCE BASELINES VALID THROUGH REAL VALIDATOR ---
   assert.equal(await validateWorkbookParity(origBufA, 'A'), true, 'Exact source Part A must satisfy workbook-wide parity');
   assert.equal(await validateWorkbookParity(origBufB, 'B'), true, 'Exact source Part B must satisfy workbook-wide parity');
 
@@ -89,42 +96,143 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(fpOutB.sheets['(Part B) Competency'].printArea, "'(Part B) Competency'!$A$1:$X$35", 'Part B main sheet print area must equal exact source binding');
   assert.equal(fpOutB.sheets['Sheet1'].printArea, '', 'Part B Sheet1 print area must be empty string exactly as source');
 
-  // --- R3-R22 CORRECTIVE C: RAW NO-OP RESULT PINNING & DIMENSION PRESENCE MATRIX ---
-  const partASourceHasDimension = fpOrigA.sheets['MBO Staff & Chief'].dimension !== '';
-  const partARawHasDimension = fpOutA.sheets['MBO Staff & Chief'].dimension !== '';
+  // --- RAW NO-OP UNREPAIRED PROOF ---
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufA, 'A'),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Raw Part A output missing <dimension> tag must be rejected by real validator with BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B'),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Raw Part B output missing <dimension> tag must be rejected by real validator with BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
 
-  const partBSourceMainHasDimension = fpOrigB.sheets['(Part B) Competency'].dimension !== '';
-  const partBRawMainHasDimension = fpOutB.sheets['(Part B) Competency'].dimension !== '';
+  // --- R3-R23 POSITIVE PROOF: SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH ---
+  const preservedBufA = await preserveExactWorkbookDimensions(outBufA, 'A');
+  const preservedBufB = await preserveExactWorkbookDimensions(outBufB, 'B');
 
-  const partBSourceSheet1HasDimension = fpOrigB.sheets['Sheet1'].dimension !== '';
-  const partBRawSheet1HasDimension = fpOutB.sheets['Sheet1'].dimension !== '';
+  // 1. Preserved buffers pass the real validator
+  assert.equal(await validateWorkbookParity(preservedBufA, 'A'), true, 'Preserved Part A buffer must satisfy real workbook parity validator');
+  assert.equal(await validateWorkbookParity(preservedBufB, 'B'), true, 'Preserved Part B buffer must satisfy real workbook parity validator');
 
-  assert.equal(partASourceHasDimension, true, 'Part A source main sheet must contain actual <dimension> tag');
-  assert.equal(partBSourceMainHasDimension, true, 'Part B source main sheet must contain actual <dimension> tag');
-  assert.equal(partBSourceSheet1HasDimension, true, 'Part B source Sheet1 must contain actual <dimension> tag');
+  // 2. Dimension verification after preservation
+  const fpPreservedA = await getWorkbookFingerprint(preservedBufA);
+  const fpPreservedB = await getWorkbookFingerprint(preservedBufB);
 
-  // Evaluate raw un-repaired outputAsync() buffers through real validator
-  if (partARawHasDimension) {
-    assert.equal(await validateWorkbookParity(outBufA, 'A'), true, 'Part A raw no-op output satisfies workbook parity');
-  } else {
-    await assert.rejects(
-      async () => validateWorkbookParity(outBufA, 'A'),
-      /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
-      'Part A raw output missing actual <dimension> tag must be rejected with BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
-    );
+  assert.equal(fpPreservedA.sheets['MBO Staff & Chief'].dimension, fpOrigA.sheets['MBO Staff & Chief'].dimension, 'Preserved Part A dimension must match source tag exactly');
+  assert.equal(fpPreservedB.sheets['(Part B) Competency'].dimension, fpOrigB.sheets['(Part B) Competency'].dimension, 'Preserved Part B main dimension must match source tag exactly');
+  assert.equal(fpPreservedB.sheets['Sheet1'].dimension, fpOrigB.sheets['Sheet1'].dimension, 'Preserved Part B Sheet1 dimension must match source tag exactly');
+
+  // 3. Complete fingerprint comparison: change is strictly limited to authorized dimension fields
+  for (const sheetName of fpPreservedA.sheetNames) {
+    const pSheet = fpPreservedA.sheets[sheetName];
+    const rSheet = fpOutA.sheets[sheetName];
+    assert.equal(pSheet.rawMergeCount, rSheet.rawMergeCount, `Preserved Part A ${sheetName} merge count must equal raw`);
+    assert.deepEqual(pSheet.rawMerges, rSheet.rawMerges, `Preserved Part A ${sheetName} merges must equal raw`);
+    assert.equal(pSheet.colsHash, rSheet.colsHash, `Preserved Part A ${sheetName} colsHash must equal raw`);
+    assert.equal(pSheet.rowHeightsHash, rSheet.rowHeightsHash, `Preserved Part A ${sheetName} rowHeightsHash must equal raw`);
+    assert.equal(pSheet.printArea, rSheet.printArea, `Preserved Part A ${sheetName} printArea must equal raw`);
+    assert.equal(pSheet.paperSize, rSheet.paperSize, `Preserved Part A ${sheetName} paperSize must equal raw`);
   }
 
-  if (partBRawMainHasDimension && partBRawSheet1HasDimension) {
-    assert.equal(await validateWorkbookParity(outBufB, 'B'), true, 'Part B raw no-op output satisfies workbook parity');
-  } else {
-    await assert.rejects(
-      async () => validateWorkbookParity(outBufB, 'B'),
-      /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
-      'Part B raw output missing actual <dimension> tag must be rejected with BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
-    );
+  for (const sheetName of fpPreservedB.sheetNames) {
+    const pSheet = fpPreservedB.sheets[sheetName];
+    const rSheet = fpOutB.sheets[sheetName];
+    assert.equal(pSheet.rawMergeCount, rSheet.rawMergeCount, `Preserved Part B ${sheetName} merge count must equal raw`);
+    assert.deepEqual(pSheet.rawMerges, rSheet.rawMerges, `Preserved Part B ${sheetName} merges must equal raw`);
+    assert.equal(pSheet.colsHash, rSheet.colsHash, `Preserved Part B ${sheetName} colsHash must equal raw`);
+    assert.equal(pSheet.rowHeightsHash, rSheet.rowHeightsHash, `Preserved Part B ${sheetName} rowHeightsHash must equal raw`);
+    assert.equal(pSheet.printArea, rSheet.printArea, `Preserved Part B ${sheetName} printArea must equal raw`);
+    assert.equal(pSheet.paperSize, rSheet.paperSize, `Preserved Part B ${sheetName} paperSize must equal raw`);
   }
 
-  // --- R3-R22 CORRECTIVE A: MUTATION-SPECIFIC NEGATIVES FROM KNOWN-VALID SOURCE BASELINE (fpOrigB / origBufB) ---
+  // 4. Source and raw buffers remain byte-identical before and after preservation
+  assert.equal(crypto.createHash('sha256').update(origBufA).digest('hex'), shaOrigABefore, 'Source Part A buffer must remain byte-identical');
+  assert.equal(crypto.createHash('sha256').update(outBufA).digest('hex'), shaOutABefore, 'Raw Part A buffer must remain byte-identical');
+  assert.equal(crypto.createHash('sha256').update(origBufB).digest('hex'), shaOrigBBefore, 'Source Part B buffer must remain byte-identical');
+  assert.equal(crypto.createHash('sha256').update(outBufB).digest('hex'), shaOutBBefore, 'Raw Part B buffer must remain byte-identical');
+
+  // --- R3-R23 NEGATIVE PROOF FOR PRESERVATION PATH ---
+
+  // Preservation Negative 1: Missing source dimension tag
+  const wbNoSrcDim = await XlsxPopulate.fromDataAsync(origBufB);
+  let srcXmlNoDim = await wbNoSrcDim._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  srcXmlNoDim = srcXmlNoDim.replace(/<dimension [^>]*\/>/, '');
+  wbNoSrcDim._zip.file('xl/worksheets/sheet1.xml', srcXmlNoDim);
+  const bufNoSrcDim = await wbNoSrcDim._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufNoSrcDim),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Missing source dimension tag must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Preservation Negative 2: Multiple source dimension tags
+  const wbMultiSrcDim = await XlsxPopulate.fromDataAsync(origBufB);
+  let srcXmlMultiDim = await wbMultiSrcDim._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  srcXmlMultiDim = srcXmlMultiDim.replace(/(<dimension [^>]*\/>)/, '$1\n  $1');
+  wbMultiSrcDim._zip.file('xl/worksheets/sheet1.xml', srcXmlMultiDim);
+  const bufMultiSrcDim = await wbMultiSrcDim._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufMultiSrcDim),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Multiple source dimension tags must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Preservation Negative 3: Conflicting raw dimension tag
+  const wbConflictRawDim = await XlsxPopulate.fromDataAsync(outBufB);
+  let rawXmlConflict = await wbConflictRawDim._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  rawXmlConflict = rawXmlConflict.replace(/(<worksheet[^>]*>)/, '$1\n  <dimension ref="A1:Z99"/>');
+  wbConflictRawDim._zip.file('xl/worksheets/sheet1.xml', rawXmlConflict);
+  const bufConflictRawDim = await wbConflictRawDim._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufConflictRawDim, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Conflicting raw dimension tag must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Preservation Negative 4: Multiple raw dimension tags
+  const wbMultiRawDim = await XlsxPopulate.fromDataAsync(outBufB);
+  let rawXmlMulti = await wbMultiRawDim._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  rawXmlMulti = rawXmlMulti.replace(/(<worksheet[^>]*>)/, '$1\n  <dimension ref="A1:X35"/>\n  <dimension ref="A1:X35"/>');
+  wbMultiRawDim._zip.file('xl/worksheets/sheet1.xml', rawXmlMulti);
+  const bufMultiRawDim = await wbMultiRawDim._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufMultiRawDim, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Multiple raw dimension tags must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Preservation Negative 5: Missing / ambiguous worksheet relationship mapping
+  const wbNoRels = await XlsxPopulate.fromDataAsync(outBufB);
+  wbNoRels._zip.file('xl/_rels/workbook.xml.rels', '<Relationships></Relationships>');
+  const bufNoRels = await wbNoRels._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufNoRels, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Missing relationship mapping must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Preservation Negative 6: Wrong worksheet target / sheet order mismatch
+  const wbWrongOrder = await XlsxPopulate.fromDataAsync(outBufB);
+  let wbXmlWrongOrder = await wbWrongOrder._zip.files['xl/workbook.xml'].async('string');
+  wbXmlWrongOrder = wbXmlWrongOrder.replace(/name="\(Part B\) Competency"/, 'name="TEMP_NAME"').replace(/name="Sheet1"/, 'name="(Part B) Competency"').replace(/name="TEMP_NAME"/, 'name="Sheet1"');
+  wbWrongOrder._zip.file('xl/workbook.xml', wbXmlWrongOrder);
+  const bufWrongOrder = await wbWrongOrder._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufWrongOrder, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Sheet order mismatch must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Preservation Negative 7: Malformed buffer
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(Buffer.from('not_a_valid_zip'), 'B'),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Malformed buffer must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // --- R3-R22 REGRESSION MUTATION NEGATIVE TESTS (FROM KNOWN-VALID SOURCE BASELINE) ---
 
   // Negative Test 1: Wrong printArea binding assigned to Sheet1
   const fpMutSheet1PrintArea = JSON.parse(JSON.stringify(fpOrigB));
@@ -198,7 +306,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
     'Mutating Part B sheet protection must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // --- R3-R22 CORRECTIVE B: ACTUAL <dimension> TAG REMOVAL FROM KNOWN-VALID SOURCE ---
+  // --- ACTUAL <dimension> TAG REMOVAL FROM KNOWN-VALID SOURCE ---
   const wbOrigBZip = await XlsxPopulate.fromDataAsync(origBufB);
   let sheet1XmlSource = await wbOrigBZip._zip.files['xl/worksheets/sheet1.xml'].async('string');
   assert.equal(sheet1XmlSource.includes('<dimension'), true, 'Exact source Part B sheet1.xml must contain actual <dimension> tag before mutation');
