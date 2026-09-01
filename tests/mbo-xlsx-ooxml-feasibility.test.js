@@ -212,7 +212,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Mutating normalizedType for summary cell B31 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // --- R3-R14 TYPED PRIVACY METADATA COMPLETENESS PROOF ---
+  // --- R3-R14 & R3-R15 TYPED PRIVACY METADATA COMPLETENESS & VALIDATOR SHAPE PROOF ---
   for (const partKey of ['A', 'B']) {
     const expectedAddrs = partKey === 'A' ? SENSITIVE_RANGES_A : SENSITIVE_RANGES_B;
     const metaResult = await getTypedPrivacyMetadata(partKey);
@@ -264,14 +264,67 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(typeCounts.boolean, 0, `Part ${partKey} boolean count in template must be 0`);
   }
 
-  // 5. Fail-closed test for malformed metadata validation
-  const badMeta = await getTypedPrivacyMetadata('B');
-  const mutatedBadMeta = JSON.parse(JSON.stringify(badMeta));
-  mutatedBadMeta.metadata[0].normalizedType = 'invalid_type';
+  // --- MANDATORY R3-R15 VALIDATOR NEGATIVE SHAPE TESTS ---
+  const validMetaB = await getTypedPrivacyMetadata('B');
+
+  // Test A: Extra unexpected typeCounts key
+  const metaExtraKey = JSON.parse(JSON.stringify(validMetaB));
+  metaExtraKey.typeCounts.unexpected = 1;
   assert.throws(
-    () => validateTypedPrivacyMetadata(mutatedBadMeta, SENSITIVE_RANGES_B),
+    () => validateTypedPrivacyMetadata(metaExtraKey, SENSITIVE_RANGES_B),
     /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
-    'Validation of malformed metadata must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+    'Extra typeCounts key must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  // Test B: Missing typeCounts
+  const metaMissingTypeCounts = JSON.parse(JSON.stringify(validMetaB));
+  delete metaMissingTypeCounts.typeCounts;
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaMissingTypeCounts, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Missing typeCounts must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  // Test C: Malformed typeCounts (null or array)
+  const metaNullCounts = JSON.parse(JSON.stringify(validMetaB));
+  metaNullCounts.typeCounts = null;
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaNullCounts, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Null typeCounts must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  const metaArrayCounts = JSON.parse(JSON.stringify(validMetaB));
+  metaArrayCounts.typeCounts = [1, 2, 3];
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaArrayCounts, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Array typeCounts must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  // Test D: Invalid count values (negative, fractional, non-number)
+  const metaNegativeCount = JSON.parse(JSON.stringify(validMetaB));
+  metaNegativeCount.typeCounts.string = -1;
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaNegativeCount, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Negative typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  const metaFractionalCount = JSON.parse(JSON.stringify(validMetaB));
+  metaFractionalCount.typeCounts.string = 1.5;
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaFractionalCount, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Fractional typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  const metaNonNumberCount = JSON.parse(JSON.stringify(validMetaB));
+  metaNonNumberCount.typeCounts.string = 'five';
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaNonNumberCount, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Non-number typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
   );
 
   const { bufA, bufB, sensitiveA, sensitiveB } = await getSanitizedDisposableBuffers();

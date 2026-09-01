@@ -472,14 +472,40 @@ export async function getTypedPrivacyMetadata(partKey) {
 }
 
 export function validateTypedPrivacyMetadata(metaResult, expectedAddresses) {
-  if (!metaResult || !Array.isArray(metaResult.metadata)) {
+  if (!metaResult || typeof metaResult !== 'object' || Array.isArray(metaResult)) {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  if (!Array.isArray(metaResult.metadata)) {
     throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
   }
 
   const { metadata, uniqueCount, typeCounts, totalReconciled } = metaResult;
 
+  if (typeof uniqueCount !== 'number' || typeof totalReconciled !== 'number') {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
   if (metadata.length !== uniqueCount || totalReconciled !== uniqueCount) {
     throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  if (!typeCounts || typeof typeCounts !== 'object' || Array.isArray(typeCounts)) {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  const expectedKeys = ['blank', 'boolean', 'date', 'number', 'string'];
+  const actualKeys = Object.keys(typeCounts).sort();
+
+  if (actualKeys.length !== expectedKeys.length || JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys)) {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  for (const key of expectedKeys) {
+    const countVal = typeCounts[key];
+    if (typeof countVal !== 'number' || !Number.isInteger(countVal) || countVal < 0) {
+      throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+    }
   }
 
   const sortedMetaAddrs = metadata.map(m => m.address).sort();
@@ -493,6 +519,9 @@ export function validateTypedPrivacyMetadata(metaResult, expectedAddresses) {
   const seen = new Set();
 
   for (const rec of metadata) {
+    if (!rec || typeof rec !== 'object') {
+      throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+    }
     if (seen.has(rec.address)) {
       throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
     }
@@ -528,7 +557,7 @@ export function validateTypedPrivacyMetadata(metaResult, expectedAddresses) {
     derivedCounts[rec.normalizedType]++;
   }
 
-  for (const type of ['string', 'number', 'date', 'boolean', 'blank']) {
+  for (const type of expectedKeys) {
     if (derivedCounts[type] !== typeCounts[type]) {
       throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
     }
