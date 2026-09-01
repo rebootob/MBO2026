@@ -30,87 +30,66 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R11 independent review
+## 3. R3-R12 independent review
 
-R3-R11 implementation `e43669961b67d806994fec67fb2bf83fbd02cd01` changed only the two authorized feasibility files. Scope = PASS; no Privacy Purge required.
+R3-R12 implementation `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` is exactly one commit above its authorization baseline and changed only the two authorized feasibility files. Scope = PASS. No Privacy Purge required.
 
 Accepted progress:
-- source inventory is complete before role assignment;
-- exact Part B SHA is enforced;
-- `SENSITIVE_RANGES_B` is only a post-resolution compatibility check;
-- real resolver enforces independent sets/disjointness;
-- real fail-closed tests use actual Part B evidence and real resolver paths.
+- authoritative SHA source inventory is loaded before any observed override;
+- observed and authoritative evidence are separated;
+- body/summary validation now checks `styleId` and `mergeRef` against authoritative source;
+- real fail-closed tests mutate role-relevant style evidence for real protected body `B7`, dynamic body `K7`, and summary `B31` addresses.
 
-R3-R11 source acceptance = FAIL only because competency/body and summary/signature roles still rely on broad row/column geometry with insufficient role-specific source fingerprint confirmation.
+R3-R12 source acceptance = FAIL because authoritative evidence parity is still incomplete. `normalizedType`, `nonblank`, and safe static identity where required are not compared, so same-style/same-merge semantic evidence conflicts can still pass.
 
-## 4. Exact current gate — R3-R12 AUTHORIZED
+## 4. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R12 = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R12
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R12 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R13
+PROPOSED_WORK_PACKAGE_NAME = BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for exact contract.
+## 5. Why R3-R13 remains narrow
 
-## 5. Exact authorized writes
+Do not return to broad multi-blocker closure. R3-R13 addresses only the final body/summary authoritative evidence parity gap.
 
-Only:
+If approved, Antigravity must:
+- preserve authoritative-source-first vs observed-override separation;
+- preserve current style/merge checks;
+- compare role-relevant `normalizedType` and `nonblank` against authoritative source for body/summary candidates;
+- require safe `valHash` identity only for proven protected-static template text where necessary;
+- never require dynamic employee/sample values to equal the source sample hash;
+- fail closed through the real resolver on these evidence conflicts;
+- add real-address non-style mutation tests for protected body, dynamic body and summary/signature.
+
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only: package files, governance docs and exact ignored owner template after SHA verification.
+No package change, binary publication, production sanitizer/renderer, PDF/UI, Live Kintone, deploy or next Work Package.
 
-No XLSX/image/media/disposable-output commit.
-
-## 6. R3-R12 critical rules
-
-R3-R12 addresses ONE blocker only:
-- preserve accepted inventory/header/fail-closed/post-resolution architecture;
-- derive authoritative source role-validation evidence BEFORE any test override;
-- body/summary geometry may nominate a role but cannot accept it alone;
-- role-specific merge/style/type/blankness/static-hash evidence must confirm body/summary roles;
-- authoritative expected evidence must come from exact source, not mutated override input;
-- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on body/summary role-specific conflicts;
-- tests must mutate role-relevant evidence for one protected competency/body, one dynamic competency/body and one summary/signature real address;
-- preserve post-resolution `SENSITIVE_RANGES_B` equality and dynamic/static disjointness.
-
-Do not attempt typed/header/workbook/image/insertion-structural/formula blocker closure in R3-R12.
-
-Still forbidden: production sanitizer/renderer, package changes, binary publication, PDF/UI, Live Kintone, deploy or next Work Package.
-
-## 7. Required commands
+## 6. Authorization ledger
 
 ```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at `BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
-
-## 8. Authorization ledger
-
-```text
-D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R12-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
+D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R12 BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R13
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
 ```
