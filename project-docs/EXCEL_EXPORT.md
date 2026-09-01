@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / D2-WP003-R2 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / D2-WP003-R3 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -9,8 +9,7 @@
 
 Deliver Excel/PDF outputs preserving approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries.
 
-Required final deliverables:
-```text
+Required final deliverables remain:
 1. Excel Part A — MBO / Objectives
 2. Excel Part B — Competency / Evaluation
 3. Combined workbook where applicable
@@ -18,7 +17,6 @@ Required final deliverables:
 5. 5–10 objective handling without silent truncation
 6. 6/8 competency handling without layout collision
 7. authorization/privacy-safe export behavior
-```
 
 ## 2. Authority split
 
@@ -28,17 +26,12 @@ CONFIRMED BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
 SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
 ```
 
-Never copy stale employee/sample values, dates, titles, weights or objective limits simply because they exist in the legacy workbook.
-
 ## 3. Closed foundations
 
 ```text
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 ```
-
-WP001 closed strict export authorization/privacy projection.
-WP002 closed owner-provided Part A/Part B template evidence and froze the renderer contract.
 
 Accepted source fingerprints:
 ```text
@@ -48,67 +41,41 @@ PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 Original owner binaries remain outside Git.
 
-## 4. Part A frozen geometry
+## 4. Frozen geometry
 
+Part A:
 ```text
 MAIN_SHEET = MBO Staff & Chief
-USED_RANGE = A1:BL52
 PRINT_AREA = A1:BJ52
 PAPER_SIZE = A3
 ORIENTATION = LANDSCAPE
 SCALE = 58%
-GRIDLINES = HIDDEN
-SHEET_PROTECTION = NO
 MERGED_RANGES = 193
-WORKSHEET_FORMULAS = 0
 LEGACY_OBJECTIVE_ROWS = 25:28
 LOWER_SECTION_START = ROW 29
-LEGACY_OBJECTIVE_ROW_HEIGHT ≈ 140.1 pt
+HEADER_LABEL_ROW = 6
+HEADER_VALUE_ROW = 7
 ```
 
-Core objective columns:
-```text
-B:I   Objective / result / target
-J:S   Action Plan
-T:W   Additional agreement / Comment
-Y:Z   Weight
-AA:AB Difficulty Level
-AD:AG Periodical Review
-AI:AJ Self Achievement
-AK:AR Actual Result & Achievement
-AS:AU 1st Appraiser Achievement
-AV:AW 1st Appraiser Score
-AX:AZ 2nd Appraiser Achievement
-BA:BB 2nd Appraiser Score
-BC:BE Average Score
-BF:BI MBO Point
-```
-
-Header labels and values use separate rows. Part A labels remain on row 6; runtime values belong in the corresponding row-7 value areas.
-
-## 5. Part B frozen geometry
-
+Part B:
 ```text
 MAIN_SHEET = (Part B) Competency
-USED_RANGE = A1:X35
 PRINT_AREA = A1:X35
 PAPER_SIZE = A4
 ORIENTATION = PORTRAIT
 SCALE = 75%
 HORIZONTAL_CENTERED = YES
-GRIDLINES = HIDDEN
 SHEET_PROTECTION = YES
 MERGED_RANGES = 79
-WORKSHEET_FORMULAS = 0
 LEGACY_COMPETENCY_BLOCKS = 6
 TOTALS_SIGNATURE_START = ROW 31
+HEADER_LABEL_ROW = 2
+HEADER_VALUE_ROW = 3
 ```
 
-Part B labels remain on row 2; runtime employee/org/position/name values belong in row-3 value areas.
+## 5. Business rules retained
 
-## 6. Business-rule conflicts from legacy samples
-
-Confirmed current weighting:
+Current weighting remains:
 ```text
 PROF_STAFF_CHIEF = 70 / 30
 PROF_JAPANESE_STAFF = 70 / 30
@@ -120,129 +87,129 @@ PROF_GM = 50 / 50
 PROF_VP = 50 / 50
 ```
 
-Do not reproduce stale `2 till 4 objectives` or static `Part B 30%` as current rules.
-
-## 7. Security/privacy contract
-
-Excel and future PDF consume the secured projection from WP001.
-
-Renderer must not:
-- make Kintone calls;
-- read unrestricted raw App794;
-- resolve roles/authority itself;
-- reintroduce manager/GM/appraiser confidential data into Employee-Self output;
-- treat UI visibility as authorization.
-
-Sanitized templates must contain no reusable employee/sample confidential content.
-
-## 8. Corrective history and second privacy purge
-
-Two prior XLSX implementation attempts did not pass independent acceptance. Blocking classes included incomplete sanitization, label/value anchor errors, no true structural insertion, insufficient tests and an unproven Difficulty field guess.
-
-Owner approved `D2-WP003-R2` with a second Privacy Purge and decided:
+Owner decision:
 ```text
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-ChatGPT force-reset canonical branch to clean pre-R1-implementation baseline:
+No `Difficulty_*` field may be invented or read until separately approved against canonical schema evidence.
+
+## 6. Corrective history / privacy purge
+
+R2 did not pass independent source acceptance because it still lacked true structural insertion, correct header/value mapping, and contract-complete privacy proof.
+
+Owner approved `D2-WP003-R3` with Privacy Purge. ChatGPT force-reset the canonical branch to the clean pre-R2 implementation baseline:
 ```text
-R2_SAFE_BASELINE = a3953ff701a01c8af9dcf6bf2525a58e4888973e
-SECOND_CANONICAL_BRANCH_PURGE = COMPLETE
+R3_SAFE_BASELINE = 22d8215287f0280fbbea668a275fee77b3801776
+THIRD_CANONICAL_BRANCH_PURGE = COMPLETE
 ```
 
-Do not create refs/tags/backups to purged lineages and do not reuse prior generated sanitized binaries.
+Do not create refs/tags/backups to purged lineages or reuse prior generated sanitized binaries.
 
-## 9. R2 privacy sanitizer contract
+## 7. R3 strategy — feasibility first, no binary publication
 
-Privacy acceptance is **range-driven + OOXML-wide**, not shared-string heuristic only.
+R3 is intentionally **not** a production sanitizer/renderer package.
 
-Required:
-1. verify exact source SHA-256;
-2. derive actual sensitive value ranges while preserving label cells;
-3. collect runtime sensitive values from those ranges, including text/numeric/date types, without logging them;
-4. clear all identity/org/date/Hoshin/objective/action/result/self/appraiser/signature/score/sample business value ranges;
-5. clear any legacy sample Difficulty values;
-6. remove the non-user-facing historical/reference drawing/image and related relationship/media entry while retaining approved branding;
-7. reopen sanitized workbook and assert all designated sensitive ranges empty;
-8. inspect all XML/text OOXML parts and prove extracted sensitive text absent;
-9. verify drawing/image relationships prove reference image absent and approved branding retained;
-10. introduce no scoring formulas;
-11. commit sanitized binaries only after all checks pass.
+R3 may commit only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+- `package.json` / `package-lock.json` for `xlsx-populate@1.21.0`
 
-No real sample values may be hardcoded in tests/docs/logs.
+R3 must not commit:
+- any `.xlsx`/`.xls`/`.xlsm` file;
+- extracted images/media;
+- `assets/export-templates/**`;
+- production sanitizer/renderer source;
+- application export/normalizer changes.
 
-## 10. Difficulty decision — blank by Owner approval
+Local proof outputs must be disposable and outside tracked repository paths.
 
-R2 must not invent or read any `Difficulty_*` field.
+## 8. R3 no-op parity proof
 
-```text
-DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
-NORMALIZER_CHANGE = FORBIDDEN
-EXPORT_PROJECTION_CHANGE = FORBIDDEN
-```
+Before mutation, exact owner workbooks must round-trip through `xlsx-populate@1.21.0` without material drift in:
+- sheet names/order;
+- print areas;
+- page size/orientation/scale;
+- merge counts;
+- representative dimensions;
+- Part B protection;
+- drawing/image relationship counts needed by the user-facing form;
+- reparse validity.
 
-Sanitized template clears sample Difficulty data and renderer leaves `AA:AB` blank.
+Failure => `BLOCKER_XLSX_LIBRARY_PARITY`.
 
-## 11. True Part A structural insertion
+## 9. R3 header/value-map proof
 
-For 4 objectives:
-- preserve rows 25–28 and lower sections at legacy positions.
+R3 must prove addresses without logging source values.
 
-For 5–10 objectives:
-- shift the existing rows 29+ downward by `objectiveCount - 4` **before** writing extra objectives;
-- insert new objective rows after row 28;
-- clone full row-28 style/merge/border/alignment/height structure;
-- update affected OOXML row/cell/merge/dimension/print references;
-- lower sections move exactly +1 for 5 and +6 for 10;
-- print area becomes `A1:BJ53` for 5 and `A1:BJ58` for 10;
-- retain A3 landscape and horizontal geometry;
-- never overwrite original lower-section structures.
+- Part A labels stay on row 6; only corresponding row-7 value ranges may be cleared/replaced.
+- Part B labels stay on row 2; only corresponding row-3 value ranges may be cleared/replaced.
 
-Copying style/data into already occupied rows is not structural insertion.
+If exact value ranges cannot be proven structurally => `BLOCKER_HEADER_VALUE_MAP_UNRESOLVED`.
 
-If `xlsx-populate` high-level API lacks a true insert primitive, bounded OOXML-level row/reference surgery inside the existing XLSX package is allowed. No second dependency is authorized.
+## 10. R3 privacy-map proof
 
-## 12. True Part B structural insertion
+On disposable copies only, prove a bounded sensitive-range map for identity, org, dates, Hoshin, objective/action/target/result, self/appraiser data, signatures/evaluator names, scores/grades and legacy Difficulty sample values.
 
-For 6 competencies:
-- preserve six legacy blocks and totals/signatures beginning row 31.
+Required proof:
+- collect designated source values in memory for text/numeric/date cell types without logging them;
+- clear complete sensitive ranges while preserving labels/styles/merges;
+- reparse and assert designated ranges empty;
+- inspect all OOXML XML/text parts and prove collected sensitive text absent;
+- introduce zero worksheet scoring formulas.
 
-For 8 competencies:
-- shift existing totals/signatures beginning row 31 downward by 8 rows;
-- insert two complete four-row competency blocks before totals;
-- clone style/merge/border/height structure;
-- update affected OOXML row/cell/merge/dimension/print references;
-- totals/signatures begin row 39;
-- print area becomes `A1:X43`;
-- retain A4 portrait, centering and protection;
-- use current projection weight; stale 30% must not survive.
+Failure/ambiguity => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
 
-## 13. Structural acceptance proof
+## 11. R3 reference-image proof
 
-Tests must use structural sentinels/metadata, not only data text.
+Using only non-sensitive drawing metadata, identify the historical/reference screenshot and prove on a disposable copy that its drawing relationship/media target can be removed while approved branding remains and workbook reparses.
+
+If target cannot be safely distinguished from branding => `BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED`.
+
+No image bytes may be committed.
+
+## 12. R3 TRUE Part A structural proof
+
+Using bounded OOXML mutation, not style-copying into occupied rows, prove:
+- 4 objectives: lower-section row 29 stays row 29;
+- 5 objectives: rows 29+ shift +1, new objective row 29, old row29 sentinel => row30, print area => `A1:BJ53`;
+- 10 objectives: rows 29+ shift +6, objective 10 row34, old row29 sentinel => row35, print area => `A1:BJ58`;
+- inserted rows preserve representative row28 style/merge/border/alignment/height metadata;
+- affected row/cell/merge/dimension/print references remain valid;
+- A3 layout survives reparse.
+
+Failure => `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
+
+## 13. R3 TRUE Part B structural proof
+
+Using disposable copies prove:
+- 6 competencies: totals/signatures remain row31;
+- 8 competencies: rows31+ shift exactly +8;
+- two complete four-row competency blocks inserted before totals;
+- old row31 sentinel => row39;
+- print area => `A1:X43`;
+- inserted blocks preserve representative style/merge/border/height metadata;
+- A4 portrait, centering and protection survive reparse.
+
+Failure => `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
+
+## 14. R3 verification
 
 At minimum:
-- Part A 4: old lower-section row 29 remains row 29;
-- Part A 5: old row-29 structure/content sentinel moves to row 30; new objective is row 29; print bottom 53;
-- Part A 10: old row-29 moves to row 35; objective 10 at row 34; print bottom 58;
-- inserted Part A rows preserve representative row-28 style/merge/height;
-- Part B 6: totals begin row 31;
-- Part B 8 test input contains exactly 8 items; old totals row 31 moves to row 39; items 7/8 occupy inserted blocks; print bottom 43;
-- inserted Part B blocks preserve representative style/merge/height;
-- header labels remain unchanged while values appear only in row 7 / row 3;
-- Difficulty cells remain blank;
-- A3/A4 geometry and Part B protection remain valid;
-- zero scoring formulas;
-- Employee-Self confidentiality remains intact.
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
 
-If true structural insertion cannot be proven without material drift:
-`BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
+No generated workbook/image/output may appear in Git diff.
 
-## 14. XLSX library gate
+R3 maximum executor state:
+```text
+FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+```
 
-Only `xlsx-populate@1.21.0` is authorized, conditional on no-op parity preserving material sheet/print/merge/dimension/protection/branding structure.
-
-`npm audit --omit=dev` HIGH/CRITICAL attributable to the dependency is a blocker. No second spreadsheet/XML library is authorized.
+Only after independent R3 acceptance may a later package authorize production sanitizer/renderer implementation and sanitized binary publication.
 
 ## 15. Current gate
 
@@ -251,28 +218,19 @@ D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R2 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R2-SOURCE-20260901-01
+D2-WP003-R3 = AUTHORIZED / FEASIBILITY EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R2 ONLY / LOW-CREDIT
+ANTIGRAVITY = EXECUTE R3 PROOF ONLY / LOW-CREDIT
 ```
 
-PDF generation, export UI, Live Kintone access, deployment and D2-WP004 remain outside R2.
+PDF generation, export UI, Live Kintone, deployment and production XLSX binary publication remain outside R3.
 
 ## 16. D2 closure condition
 
-D2 may close only when:
-- Part A XLSX parity independently accepted;
-- Part B XLSX parity independently accepted;
-- combined workbook behavior accepted where required;
-- PDF output/parity independently accepted;
-- 5–10 objective binary handling proven;
-- 6/8 competency handling proven;
-- authorization/confidentiality enforced in all export paths;
-- no material legacy-format gap remains undocumented.
+D2 remains open until production Part A/Part B/combined/PDF parity and export security are independently accepted.
 
-Until then:
 ```text
 D2 = NOT PASS / IN PROGRESS
 PROJECT MBO2026 = NOT COMPLETE
