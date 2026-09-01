@@ -264,3 +264,4 @@ test('FEASIBILITY_DIFFICULTY_LEVEL_BLANK: Difficulty Level cells remain blank pe
     assert.equal(val === null || val === undefined, true, `Difficulty cell AA${r} must be blank`);
   }
 });
+// R3-R9 Feasibility assertion harness complete

@@ -403,7 +403,10 @@ export async function getWorksheetFormulaSet(buf) {
       const xml = await wb._zip.files[fileName].async('string');
       const matches = [...xml.matchAll(/<c r="([A-Z0-9]+)"[^>]*>[\s\S]*?<f(?:\s|>)([^<]*)/g)];
       for (const m of matches) {
-        formulaSet.add(`${fileName}:${m[1]}`);
+        const cellAddr = m[1];
+        const fNode = m[2];
+        const nodeHash = crypto.createHash('sha256').update(fNode).digest('hex');
+        formulaSet.add(`${fileName}:${cellAddr}:${nodeHash}`);
       }
     }
   }
