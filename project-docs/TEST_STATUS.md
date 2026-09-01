@@ -87,15 +87,14 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 6. Latest D2 review — R3-R22
+## 6. Latest D2 review — R3-R23
 
 ```text
-TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
-EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
-R3-R22_SCOPE_REVIEW = PASS
-R3-R22_SOURCE_REVIEW = PASS
-R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
-R3-R22_STATUS = PASS / CLOSED
+IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+R3-R23_SCOPE_REVIEW = PASS
+R3-R23_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+R3-R23_PROOF_REVIEW = FAIL / INCOMPLETE
+R3-R23_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
@@ -124,22 +123,18 @@ RAW_PART_B_SHEET1_DIMENSION = MISSING / COVERED BY PART_B BLOCKER
 
 Therefore R3-R22 proof isolation is closed, while D2-WP003 remains open for preservation.
 
-## 8. Active R3-R23 preservation state — OWNER AUTHORIZED
+## 8. Proposed R3-R24 corrective state — NOT AUTHORIZED
 
 ```text
-D2-WP003-R3-R23 = ACTIVE / OWNER AUTHORIZED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
-AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
+D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R24 = PROPOSED / NOT AUTHORIZED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
 ```
 
-Required proof direction if authorized:
-1. keep raw no-op evidence frozen and unrepaired;
-2. add a separate fail-closed exact-dimension preservation path;
-3. map every worksheet by exact name/order/relationship target;
-4. copy only exact missing source dimension tags;
-5. prove preserved Part A/Part B pass real parity and no non-dimension fingerprint changes;
-6. fail closed on missing/multiple/conflicting tags or ambiguous/cross-sheet mapping.
+Required R3-R24 proof direction if authorized: exact source identity/part key, unique exact relationship binding, schema-valid dimension order and real swapped/cross-sheet/duplicate/malformed negatives while raw buffers remain frozen.
 
 ## 9. D2 completion test matrix — still open
 
@@ -167,5 +162,5 @@ D1 is closed. D2 is active and must be completed before D3. D3 is HOLD/write not
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-NEXT_CONTROL_STEP = ANTIGRAVITY EXECUTES R3-R23 ONCE AND PUSHES ONE BOUNDED COMMIT
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R24
 ```

@@ -5,16 +5,25 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-01 ICT — D2 IN PROGRESS / R3-R22 PASS-CLOSED / R3-R23 AUTHORIZED
+> Updated: 2026-09-01 ICT — D2 IN PROGRESS / R3-R23 CORRECTIVE / R3-R24 PROPOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
+
+```text
+CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+CONTROL_PLANE_STOP = D2 PASS/CLOSED OR ROUND 20
+ANTIGRAVITY_AUTO_AUTH = NO
+```
+
+ChatGPT may independently review, draft the next bounded corrective and synchronize Control Plane documents under this standing authority. Antigravity implementation still requires a separate exact bounded authorization each round.
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee; documented Kintone-only ceilings retained |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R22 PASS/CLOSED; R3-R23 bounded source/test authorized |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R23 reviewed CORRECTIVE; R3-R24 strict preservation corrective proposed |
 | D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Owner requires D2 complete first |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -63,26 +72,18 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 4. Latest D2 review — R3-R22
+## 4. Latest D2 review — R3-R23
 
 ```text
-TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
-EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
+IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = PASS
-RUNTIME_EVIDENCE_REVIEW = PASS
-STATUS = PASS / CLOSED
+SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+PROOF_REVIEW = FAIL / INCOMPLETE
+STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted proof:
-- exact Part A/Part B template SHA identity matched; tests passed `8/8`; dependency audit found `0` vulnerabilities;
-- mutation-specific negatives use valid exact-source baselines and actual dimension removal starts from a proven source tag;
-- raw direct output loses dimension evidence for Part A main, Part B main and Part B `Sheet1`;
-- exact-source validators pass while raw Part A/Part B fail closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- raw evidence remains unrepaired and evidence publication is privacy-safe.
-
-R3-R22 closes proof isolation only. D2-WP003 remains open because the raw dimension defect now requires a separate preservation path.
+Independent findings: real relationship-target swaps are accepted; dimension is inserted before existing `sheetPr`; source override bypasses exact SHA; mandatory ambiguous/duplicate/actual wrong-target and malformed-source proof is incomplete. Scope, syntax and dependency audit pass, but R3-R23 cannot close.
 
 ## 5. Current gate
 
@@ -90,34 +91,34 @@ R3-R22 closes proof isolation only. D2-WP003 remains open because the raw dimens
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-## 6. Active D2 corrective — R3-R23 / OWNER AUTHORIZED
+## 6. Next proposed D2 corrective — R3-R24 / NOT AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-AUTHORIZATION_ID = D2-WP003-R3-R23-SOURCE-20260901-01
-AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
-AUTHORIZED_STATUS = READY FOR ANTIGRAVITY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
+PROPOSED_WORK_PACKAGE_NAME = STRICT RELATIONSHIP-TARGET + SCHEMA-ORDER + SOURCE-IDENTITY CORRECTIVE
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-R3-R23 direction:
-- raw `getNoOpParityBuffers()` remains frozen and unrepaired;
-- add a separate preservation path in the existing feasibility source;
-- map every worksheet by exact name/order/relationship target with no fallback;
-- insert only exact missing source dimension tags and fail closed on ambiguity/conflict;
-- prove preserved Part A/Part B pass the real validator and no non-dimension fingerprint changes;
+R3-R24 direction:
+- exact SHA gate on every source path and exact `A`/`B` part key;
+- unique exact source/observed worksheet relationship type/ID/target binding;
+- schema-valid dimension position after optional `sheetPr`;
+- real swapped/cross-sheet/duplicate relationship and wrong-source negatives;
+- raw `getNoOpParityBuffers()` remains frozen;
 - no image/insertion/formula/renderer/PDF/UI/Kintone/deploy/D3 work.
 
 ## 7. D2 remaining closure path
@@ -151,8 +152,10 @@ D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R22-EVIDENCE-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP003-R3-R23-SOURCE-20260901-01 = ACTIVE / ONE-SHOT / DO NOT WIDEN
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+D2-WP003-R3-R23-SOURCE-20260901-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 1 OF 20
+ANTIGRAVITY_AUTO_AUTH = NO
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE

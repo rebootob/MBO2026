@@ -56,10 +56,13 @@ D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
-ACTIVE_D2_WORK_PACKAGE = D2-WP003-R3-R23
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+ACTIVE_D2_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
 Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
@@ -74,7 +77,7 @@ Accepted R3-R22 closure:
 - source-backed negative proof isolation and privacy-safe runtime evidence PASS;
 - exact source passes validation while raw Part A/Part B lose dimensions and fail closed.
 
-Remaining blocker: raw round-trip dimension loss is proven. R3-R23 is authorized to add a separate minimal fail-closed preservation path while keeping raw evidence frozen.
+Remaining blocker: R3-R23 preservation fails exact relationship-target, schema-order and source-identity gates. R3-R24 is proposed as the smallest strict correction while keeping raw evidence frozen.
 
 D2 must ultimately close:
 - reference-image handling;
@@ -164,9 +167,9 @@ For a new ChatGPT conversation:
 ## 11. Current exact next action
 
 ```text
-NEXT_CONTROL_STEP = ANTIGRAVITY EXECUTES R3-R23 ONCE AND PUSHES ONE BOUNDED COMMIT
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R24
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD
 ```
 

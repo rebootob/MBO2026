@@ -71,14 +71,16 @@ D4 owns lifecycle operations. D5 resolves fresh target-year route/identity. D6 i
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003-R3-R22 = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
-ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
@@ -107,38 +109,32 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 7. Latest reviewed work — R3-R22
+## 7. Latest reviewed work — R3-R23
 
 ```text
-TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
-EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
+IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = PASS
-RUNTIME_EVIDENCE_REVIEW = PASS
-STATUS = PASS / CLOSED
+SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+PROOF_REVIEW = FAIL / INCOMPLETE
+STATUS = NOT PASS / NOT CLOSED
 ```
 
-Accepted proof:
-- exact template identities matched and tests passed `8/8`;
-- source-backed negative proof isolation passed;
-- raw Part A and Part B lose exact dimension evidence and fail closed;
-- raw evidence remains unrepaired and privacy-safe.
+Review result: scope passes, but actual relationship-target swaps are accepted, dimension insertion precedes `sheetPr`, source override bypasses exact SHA and mandatory negatives are incomplete.
 
-## 8. Active R3-R23 — OWNER AUTHORIZED
+## 8. Proposed R3-R24 — NOT AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-AUTHORIZATION_ID = D2-WP003-R3-R23-SOURCE-20260901-01
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
+PROPOSED_WORK_PACKAGE_NAME = STRICT RELATIONSHIP-TARGET + SCHEMA-ORDER + SOURCE-IDENTITY CORRECTIVE
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
 ```
 
 Expected direction:
-- keep raw no-op evidence frozen and unrepaired;
-- add a separate fail-closed preservation path in the existing feasibility source;
-- bind every worksheet by exact name/order/relationship target;
-- copy only exact missing dimension tags and fail closed on ambiguity/conflict;
-- prove preserved buffers pass parity with no non-dimension changes;
+- enforce exact source identity and part key;
+- require unique exact source/observed relationship target binding;
+- insert dimensions after optional `sheetPr` at a schema-valid position;
+- add real swapped/cross-sheet/duplicate mapping and wrong-source negatives;
 - no image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
 
 ## 9. D1–D7 no-drop

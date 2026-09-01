@@ -27,6 +27,18 @@ Rules:
 - D3 must remain HOLD until D2 is fully PASS/CLOSED;
 - do not reopen accepted D1/D2 foundations without proven regression.
 
+Standing Control Plane authority:
+
+```text
+CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE
+MAX_ROUNDS = 20
+ROUNDS_USED = 1
+STOP = D2 PASS/CLOSED OR ROUND 20
+ANTIGRAVITY_AUTO_AUTH = NO
+```
+
+This authority covers ChatGPT independent review, bounded corrective drafting and Control Plane Git synchronization. It does not authorize Antigravity implementation, evidence publication, Live Kintone/deploy, D3 or scope expansion. Antigravity still requires an exact bounded authorization for each necessary implementation round.
+
 Owner priority:
 
 ```text
@@ -102,7 +114,7 @@ D4 owns lifecycle operations. D5 must resolve fresh target-year identity/routing
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | R3-R22 PASS/CLOSED; R3-R23 preservation source/test authorized |
+| D2 | 🟠 IN PROGRESS | R3-R23 reviewed CORRECTIVE; R3-R24 strict preservation corrective proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route + identity required |
@@ -149,68 +161,60 @@ Renderer authority already frozen:
 - 0 legacy formulas; application scoring/projection is calculation authority;
 - PDF target: Part A A3 landscape, Part B A4 portrait/protected.
 
-## 8. Latest reviewed D2 work — R3-R22
+## 8. Latest reviewed D2 work — R3-R23
 
 ```text
-TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
-EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
-D2-WP003-R3-R22_SCOPE_REVIEW = PASS
-D2-WP003-R3-R22_SOURCE_REVIEW = PASS
-D2-WP003-R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
-D2-WP003-R3-R22_STATUS = PASS / CLOSED
+IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+D2-WP003-R3-R23_SCOPE_REVIEW = PASS
+D2-WP003-R3-R23_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R23_PROOF_REVIEW = FAIL / INCOMPLETE
+D2-WP003-R3-R23_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R22 proof:
-- exact owner-template SHA identity matched for Part A and Part B;
-- mandatory feasibility tests passed `8/8`; `npm audit --omit=dev` reported `0` vulnerabilities;
-- mutation-specific negatives use independently valid exact-source `fpOrigB/origBufB` baselines;
-- exact-source Part A and Part B pass the real validator;
-- raw direct `xlsx-populate.outputAsync()` removes `<dimension>` from Part A main, Part B main and Part B `Sheet1`;
-- raw Part A and Part B fail closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- raw evidence remains unrepaired and privacy-safe evidence contains no owner binary/raw value.
+Independent R3-R23 findings:
+- scope is exactly the authorized feasibility source/test pair and raw `getNoOpParityBuffers()` remains unchanged;
+- actual source/observed worksheet-target swaps are accepted instead of fail-closed;
+- inserted `<dimension>` precedes existing `<sheetPr>` and is not at the required schema-valid slot;
+- `sourceBufOverride` bypasses exact template SHA verification;
+- ambiguous/duplicate/actual wrong-target and malformed-source proof is incomplete.
 
-R3-R22 closes proof isolation only. The proven raw dimension loss requires a separate minimal preservation strategy before later renderer work.
-
-GitHub CI/status checks are absent; record as missing CI evidence, non-blocking for this bounded source/proof review.
+Targeted privacy-safe synthetic proof reproduced all three source defects. Local exact-template rerun was unavailable because ignored owner templates are absent; GitHub CI/status checks are also absent. R3-R23 therefore requires correction before runtime evidence or later D2 work.
 
 ## 9. Exact current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
-ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 10. Active WP — R3-R23 / OWNER AUTHORIZED
+## 10. Proposed next WP — R3-R24 / NOT AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-AUTHORIZATION_ID = D2-WP003-R3-R23-SOURCE-20260901-01
-AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
-AUTHORIZED_STATUS = READY FOR ANTIGRAVITY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
+PROPOSED_WORK_PACKAGE_NAME = STRICT RELATIONSHIP-TARGET + SCHEMA-ORDER + SOURCE-IDENTITY CORRECTIVE
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-Authorized execution contract:
-- fresh-fetch current HEAD first;
-- expected write scope is only the existing feasibility source and test files;
-- keep `getNoOpParityBuffers()` frozen as raw direct evidence with no repair;
-- add a separate fail-closed preservation path that maps every worksheet by exact name/order/relationship target;
-- insert only the exact missing source dimension tag at a schema-valid position;
-- prove raw buffers remain unchanged and preserved buffers pass the real validator;
-- prove no fingerprint evidence changes except exact worksheet dimensions;
-- fail closed on missing/multiple/conflicting dimension tags or ambiguous/cross-sheet mapping;
-- do not start image/insertion/formula/renderer/PDF/Kintone/deploy/D3 or R3-R24.
+Proposed R3-R24 direction:
+- preserve only exact SHA-verified Part A/Part B source paths, including any override;
+- require unique, exact source/observed worksheet relationship ID/type/target binding;
+- reject duplicate, ambiguous, swapped, cross-sheet, external or non-worksheet targets;
+- insert the exact dimension after optional `sheetPr` and before later worksheet children;
+- add real target-swap, duplicate mapping, schema-order, wrong-SHA, invalid-partKey and malformed-source/observed negatives;
+- keep raw buffers frozen and do not start evidence/image/insertion/formula/renderer/PDF/Kintone/deploy/D3 or R3-R25.
 
 ## 11. D2 remaining closure path after R3-R22 proof isolation
 
@@ -236,8 +240,10 @@ D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R22-EVIDENCE-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP003-R3-R23-SOURCE-20260901-01 = ACTIVE / ONE-SHOT / DO NOT WIDEN
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+D2-WP003-R3-R23-SOURCE-20260901-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 1 OF 20
+ANTIGRAVITY_AUTO_AUTH = NO
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
@@ -263,8 +269,8 @@ D3_EXECUTION = HOLD
 ## 14. Exact next action
 
 ```text
-NEXT_CONTROL_STEP = ANTIGRAVITY EXECUTES R3-R23 ONCE AND PUSHES ONE BOUNDED COMMIT
-NEXT_EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R24
+NEXT_EXECUTOR = NONE
+ANTIGRAVITY = STOP
 D3 = HOLD
 ```

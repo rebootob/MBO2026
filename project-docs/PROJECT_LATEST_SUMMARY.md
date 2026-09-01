@@ -75,48 +75,37 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Latest reviewed proof:
+Latest reviewed implementation:
 
 ```text
-R3-R22_TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
-R3-R22_EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
-R3-R22_SCOPE_REVIEW = PASS
-R3-R22_SOURCE_REVIEW = PASS
-R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
-R3-R22_STATUS = PASS / CLOSED
+R3-R23_IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+R3-R23_SCOPE_REVIEW = PASS
+R3-R23_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+R3-R23_PROOF_REVIEW = FAIL / INCOMPLETE
+R3-R23_STATUS = NOT PASS / NOT CLOSED
 ```
 
-Accepted R3-R22 proof:
-- exact template identity and source-backed negative proof isolation passed;
-- tests passed `8/8`; dependency audit found `0` vulnerabilities;
-- exact source passes validation;
-- raw Part A/Part B lose dimension tags and fail closed with the workbook parity blocker;
-- raw evidence remains unrepaired and privacy-safe.
+R3-R23 scope passes, but exact relationship-target equality, schema-valid dimension order, source SHA enforcement and mandatory negative proof fail review.
 
-## 5. Active R3-R23 — PRESERVATION / OWNER AUTHORIZED
+## 5. Proposed R3-R24 — CORRECTIVE / NOT AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
-ACTIVE_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-AUTHORIZATION_ID = D2-WP003-R3-R23-SOURCE-20260901-01
-AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
+PROPOSED_WORK_PACKAGE_NAME = STRICT RELATIONSHIP-TARGET + SCHEMA-ORDER + SOURCE-IDENTITY CORRECTIVE
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-Expected direction:
-- keep raw no-op evidence unchanged;
-- add a separate exact-dimension preservation path;
-- bind worksheets by exact name/order/relationship target without fallback;
-- copy only missing exact source dimension tags and fail closed on ambiguity/conflict;
-- prove preserved buffers pass parity with no non-dimension fingerprint changes.
+Expected direction: strict source identity, exact unique relationship target equality, schema-valid dimension position and real fail-closed negative proof while raw evidence remains unchanged.
 
 ## 6. D1–D7 scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen with documented ceilings |
-| D2 | 🟠 IN PROGRESS | R3-R22 PASS/CLOSED; R3-R23 preservation authorized |
+| D2 | 🟠 IN PROGRESS | R3-R23 CORRECTIVE; R3-R24 proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route/identity required |
@@ -126,7 +115,8 @@ Expected direction:
 ## 7. Current authorization
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
+ACTIVE_WORK_PACKAGE = NONE
 KINTONE WRITE = NONE
 APP794 DEPLOY = NONE
 RECORD ACL WRITE = NONE
@@ -168,7 +158,7 @@ New session:
 Use `NEW_CHAT_BOOTSTRAP_PROMPT.md` for the first message.
 
 ```text
-NEXT_CONTROL_STEP = ANTIGRAVITY EXECUTES R3-R23 ONCE AND PUSHES ONE BOUNDED COMMIT
-ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R24
+ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD
 ```
