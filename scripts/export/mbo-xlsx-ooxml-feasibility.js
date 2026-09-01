@@ -200,6 +200,12 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
         if (ev.styleId !== authEv.styleId || ev.mergeRef !== authEv.mergeRef) {
           throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
         }
+        if (ev.normalizedType !== authEv.normalizedType) {
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        }
+        if (ev.nonblank !== authEv.nonblank) {
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        }
       }
 
       let isDynamic = false;
@@ -320,8 +326,14 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
       }
 
       if (!classification || !roleJustification) {
-        // Skip unmapped row gaps like r=4..6 or 30
         continue;
+      }
+
+      // Safe valHash parity check ONLY for protected-static template text when nonblank
+      if (!isDynamic && authEv && authEv.valHash) {
+        if (ev.valHash !== authEv.valHash) {
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        }
       }
 
       classificationMap[addr] = {

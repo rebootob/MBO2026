@@ -164,32 +164,57 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Structural mergeRef mismatch for G2 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // MANDATORY R3-R12 FAIL-CLOSED TESTS:
-  // 1. Protected competency/body address B7 role-relevant styleId mutation
-  const invMutBodyProtected = JSON.parse(JSON.stringify(realInventory));
-  invMutBodyProtected['B7'].styleId = '99999';
+  // Style mutation tests
+  const invMutBodyProtectedStyle = JSON.parse(JSON.stringify(realInventory));
+  invMutBodyProtectedStyle['B7'].styleId = '99999';
   await assert.rejects(
-    async () => resolvePartBPrivacyRoles(invMutBodyProtected),
+    async () => resolvePartBPrivacyRoles(invMutBodyProtectedStyle),
     /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
     'Mutating styleId for protected body cell B7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // 2. Dynamic competency/body address K7 role-relevant styleId mutation
-  const invMutBodyDynamic = JSON.parse(JSON.stringify(realInventory));
-  invMutBodyDynamic['K7'].styleId = '99999';
+  const invMutBodyDynamicStyle = JSON.parse(JSON.stringify(realInventory));
+  invMutBodyDynamicStyle['K7'].styleId = '99999';
   await assert.rejects(
-    async () => resolvePartBPrivacyRoles(invMutBodyDynamic),
+    async () => resolvePartBPrivacyRoles(invMutBodyDynamicStyle),
     /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
     'Mutating styleId for dynamic body cell K7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // 3. Summary/signature address B31 role-relevant styleId mutation
-  const invMutSummary = JSON.parse(JSON.stringify(realInventory));
-  invMutSummary['B31'].styleId = '99999';
+  const invMutSummaryStyle = JSON.parse(JSON.stringify(realInventory));
+  invMutSummaryStyle['B31'].styleId = '99999';
   await assert.rejects(
-    async () => resolvePartBPrivacyRoles(invMutSummary),
+    async () => resolvePartBPrivacyRoles(invMutSummaryStyle),
     /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
     'Mutating styleId for summary cell B31 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // MANDATORY R3-R13 NON-STYLE FAIL-CLOSED TESTS:
+  // 1. Protected-static body address B7 valHash mutation (keeping style/merge unchanged)
+  const invMutProtectedHash = JSON.parse(JSON.stringify(realInventory));
+  invMutProtectedHash['B7'].valHash = 'bad_hash_value_1234567890abcdef';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutProtectedHash),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating valHash for protected body cell B7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // 2. Dynamic body address K7 normalizedType mutation (keeping style/merge unchanged)
+  const invMutDynamicType = JSON.parse(JSON.stringify(realInventory));
+  invMutDynamicType['K7'].normalizedType = 'boolean';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutDynamicType),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating normalizedType for dynamic body cell K7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // 3. Summary/signature address B31 normalizedType mutation (keeping style/merge unchanged)
+  const invMutSummaryType = JSON.parse(JSON.stringify(realInventory));
+  invMutSummaryType['B31'].normalizedType = 'number';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutSummaryType),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating normalizedType for summary cell B31 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
   // Typed privacy metadata test
