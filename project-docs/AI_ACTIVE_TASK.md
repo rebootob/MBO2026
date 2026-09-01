@@ -1,190 +1,111 @@
-# AI ACTIVE TASK — D2-WP003-R3-R13 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R13 REVIEW PASS / R3-R14 PROPOSED
 
-Mode: **ANTIGRAVITY / BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R13
-ACTIVE_WORK_PACKAGE_NAME = BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+D2-WP003-R3-R13_SCOPE_REVIEW = PASS
+D2-WP003-R3-R13_SOURCE_REVIEW = PASS
+D2-WP003-R3-R13_STATUS = PASS / CLOSED
+PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = EVIDENCE_PARITY_PENDING_INDEPENDENT_REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R14
+PROPOSED_WORK_PACKAGE_NAME = TYPED PRIVACY METADATA COMPLETENESS
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY_ACTION = STOP / WAIT OWNER
+D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. Purpose — ONE REMAINING BODY/SUMMARY PARITY GAP ONLY
+## 1. R3-R13 independent review — PASS
 
-Resolve only the remaining R3-R12 blocker:
-
-**complete authoritative-vs-observed evidence parity for Part B body + summary role validation.**
-
-Preserve accepted R3-R11/R3-R12 architecture. Do NOT attempt typed metadata, header parity, workbook parity, image inventory, insertion matrix, formula matrix, production renderer/sanitizer, PDF/UI, Kintone or deploy.
-
-## 2. Exact write scope
-
-Authorized modifications ONLY:
+Implementation commit `14ec0c4fcc404e580ced61759dd0338a68f2c856` is exactly one commit above authorization baseline `4b52ee0a7c860a41668e0c6e8b435f756df3d4a1` and changed only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `package.json`
-- `package-lock.json`
-- governance docs
-- exact ignored owner templates after SHA verification
+No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
 
-No dependency/package change. No XLSX/image/media/output publication.
+Accepted source behavior:
+- authoritative SHA-verified source inventory remains separate from observed override evidence;
+- existing `styleId` + `mergeRef` parity remains;
+- authoritative-vs-observed `normalizedType` parity is enforced;
+- authoritative-vs-observed `nonblank` parity is enforced;
+- safe `valHash` parity is enforced only after role resolution for protected-static records with authoritative static string hash evidence;
+- dynamic records do not require source sample `valHash` equality;
+- real resolver still fails closed with `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`;
+- real-address non-style mutation tests cover protected body `B7`, dynamic body `K7`, and summary `B31`.
 
-## 3. Source identity
+GitHub combined status/check list for implementation commit is empty. This is recorded as missing CI evidence, not a source-review defect for this bounded feasibility proof.
 
-Use only exact Part B owner template:
+## 2. Classification blocker closure
 
-```text
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
+The Part B privacy classification/evidence-parity blocker accumulated through R3-R10..R3-R13 is now independently accepted and CLOSED.
 
-Bounded lookup only in repository root, `app info/data/`, and `exp/`.
-If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never print/log/commit raw employee/sample values.
+Do not reopen it unless a proven regression appears.
 
-## 4. Accepted R3-R12 architecture — PRESERVE
+This does NOT close D2-WP003. Deferred feasibility blockers still remain before production renderer/PDF/UI work.
 
-Preserve without redesign unless a minimal correction is strictly required:
-- authoritative SHA-verified source inventory loaded before any observed override;
-- authoritative expected evidence and observed override evidence remain separate;
-- existing `styleId` + `mergeRef` parity checks;
-- existing inventory-first architecture;
-- existing header validation;
-- existing real fail-closed path;
-- `SENSITIVE_RANGES_B` remains post-resolution compatibility only;
-- independent dynamic/protected sets and disjointness;
-- existing real-address style-conflict tests.
+## 3. Proposed R3-R14 — ONE blocker only
 
-Do not spend credit rebuilding accepted work.
+Purpose: **complete typed privacy metadata proof for existing sensitive-address metadata without reopening the accepted Part B role-classification architecture.**
 
-## 5. Frozen R3-R12 rejection
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-The following is NOT sufficient:
+Current source truth:
+- `getTypedPrivacyMetadata()` emits `{address, normalizedType, nonblank, hash}` and aggregate type counts;
+- current tests check only unique count and aggregate reconciliation for Parts A/B;
+- current tests do not independently prove exact address-set equality, duplicate absence, exact normalized-type enum for every record, nonblank consistency, or per-record hash contract.
 
-```text
-styleId matches
-mergeRef matches
-=> role accepted
-```
+### Mandatory R3-R14 direction if approved
+
+1. Preserve all accepted R3-R13 classification/evidence-parity code unchanged unless a minimal shared helper is strictly necessary.
+2. Prove typed metadata covers the exact expected unique sensitive address set for Part A and Part B — no missing and no extra addresses.
+3. Prove metadata contains no duplicate addresses.
+4. For EVERY metadata record, prove `normalizedType` is exactly one of:
+   - `string`
+   - `number`
+   - `date`
+   - `boolean`
+   - `blank`
+5. Prove `nonblank` is boolean and consistent with normalized type:
+   - `blank` => `nonblank === false`
+   - non-blank types => `nonblank === true`
+6. Prove safe hash contract:
+   - nonblank string may carry SHA-256 identity;
+   - blank/non-string records must not manufacture raw-value hashes;
+   - no raw source values may be logged or committed.
+7. Explicitly test number/date/boolean/blank/string branches if present in source; if a type does not occur in the exact owner templates, report/record zero occurrence rather than fabricate data.
+8. Preserve aggregate type-count reconciliation as an additional check, not the only proof.
+9. Fail closed on malformed metadata proof; do not convert this task into header/workbook/image/structural/formula closure.
 
 Critical rule:
 
 ```text
-STYLE + MERGE PARITY IS NECESSARY BUT NOT SUFFICIENT.
-ROLE-RELEVANT TYPE / BLANKNESS / STATIC-ID EVIDENCE MUST ALSO MATCH AUTHORITATIVE SOURCE.
+AGGREGATE COUNTS ARE NOT SUFFICIENT.
+EVERY TYPED METADATA RECORD MUST BE EXACT, UNIQUE, ENUM-VALID, AND INTERNALLY CONSISTENT.
 ```
 
-## 6. Mandatory authoritative evidence parity
+## 4. Out of scope for R3-R14
 
-For Part B body/summary candidate roles, compare authoritative source evidence against observed evidence using the smallest role-relevant safe contract.
-
-### 6.1 All body/summary candidates
-Where role-relevant, validate:
-- `styleId` parity — preserve existing;
-- `mergeRef` parity — preserve existing;
-- `normalizedType` parity;
-- `nonblank` parity.
-
-A mismatch in any required field must fail closed.
-
-### 6.2 Proven protected-static competency/template text
-For addresses proven to be protected-static template text:
-- retain structural parity checks;
-- require safe `valHash` parity when the authoritative source record is nonblank string/static text and hash identity is needed to prevent same-style/same-merge content substitution.
-
-Do not log/store raw text.
-
-### 6.3 Dynamic employee/sample values
-Do NOT require source-sample `valHash` equality for legitimate dynamic fields.
-Dynamic values are expected to change at runtime.
-Validate their role structure/type/blankness contract only.
-
-If role-relevant parity cannot be resolved safely, STOP:
-
-```text
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-## 7. Real resolver behavior
-
-The REAL resolver must throw exactly:
-
-```text
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-when required authoritative evidence parity fails, including:
-- body dynamic `normalizedType` conflict;
-- body/summary `nonblank` conflict where role-relevant;
-- protected-static safe hash identity conflict where required;
-- missing/ambiguous evidence.
-
-Do not silently accept from geometry, style, or merge alone.
-
-## 8. Mandatory tests — NON-STYLE evidence mutations
-
-Tests must use the real resolver and actual source-backed evidence.
-
-Preserve R3-R12 style-conflict tests and ADD at minimum:
-
-1. **Protected-static body**
-   - choose a proven real protected-static competency/body text address;
-   - mutate `valHash` OR role-relevant `nonblank` while keeping style/merge unchanged;
-   - prove real resolver throws `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
-
-2. **Dynamic body**
-   - choose a real `K:X / rows 7:29` address;
-   - mutate `normalizedType` OR role-relevant `nonblank` while keeping style/merge unchanged;
-   - prove real resolver throws the same blocker.
-
-3. **Summary/signature**
-   - choose a real `B:X / rows 31:34` address;
-   - mutate `normalizedType` OR role-relevant `nonblank` while keeping style/merge unchanged;
-   - prove real resolver throws the same blocker.
-
-Also preserve:
-
-```text
-SORT(dynamicAddresses) == SORT(SENSITIVE_RANGES_B)
-DYNAMIC ∩ PROTECTED_STATIC = empty
-```
-
-Only compare `SENSITIVE_RANGES_B` after independent role resolution.
-
-## 9. No circular proof
-
-Authoritative expected evidence must continue to come from the exact SHA source BEFORE override/mutation.
-Never recompute expected parity from mutated observed evidence.
-
-Do not add hard-coded pass tables that simply mirror test mutations.
-
-## 10. Out of scope — DO NOT TOUCH
-
-Do NOT use R3-R13 to close or redesign:
-- source inventory architecture;
-- header role validation;
-- typed metadata proof;
-- header/export parity;
-- workbook roundtrip parity;
-- reference-image inventory;
-- insertion structural matrix;
+Do NOT work on:
+- Part B privacy role classification/evidence parity already closed;
+- header fingerprint/export parity;
+- workbook source-vs-roundtrip parity;
+- reference-image full inventory proof;
+- Part A/B insertion structural matrix;
 - formula matrix;
 - production sanitizer/renderer;
 - export service/normalizer/application code;
@@ -193,37 +114,13 @@ Do NOT use R3-R13 to close or redesign:
 - deploy;
 - next Work Package.
 
-## 11. Mandatory commands
-
-Run exactly:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Before commit only the two authorized feasibility files may differ. After commit/push working tree must be clean.
-
-## 12. Completion contract
-
-Push only the two authorized feasibility files.
-
-Final executor status must be exactly one of:
-```text
-EVIDENCE_PARITY_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
-
-## 13. Authorization ledger
+## 5. Authorization ledger
 
 ```text
 D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R13-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
+D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -236,4 +133,11 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Authorization is consumed when the R3-R13 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
+## 6. Exact next gate
+
+```text
+D2-WP003-R3-R13 = PASS / CLOSED
+D2-WP003-R3-R14 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = STOP / WAIT OWNER
+```
