@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R16 PASS-CLOSED / R3-R17 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R16 PASS-CLOSED / R3-R17 PASS-CLOSED / R3-R18 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -8,6 +8,12 @@
 ## 1. D2 objective
 
 Deliver Excel/PDF outputs preserving approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries.
+
+Owner priority:
+
+```text
+COMPLETE D2 FULLY BEFORE D3.
+```
 
 ## 2. Authority split
 
@@ -17,19 +23,6 @@ CONFIRMED_BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
 SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
 ```
 
-Accepted foundations:
-
-```text
-D2-WP001 = PASS / CLOSED
-D2-WP002 = PASS / CLOSED
-D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R16 = PASS / CLOSED
-PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
-TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
-TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
-DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
-```
-
 Accepted source fingerprints:
 
 ```text
@@ -37,163 +30,107 @@ PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. Frozen privacy authority
-
-The Part B privacy classification/evidence-parity chain and typed privacy metadata corrective chain are accepted and closed for the bounded feasibility layer. Do not reopen without proven regression.
-
-This does NOT close D2-WP003; deferred structural/export feasibility blockers remain.
-
-## 4. D2-WP003-R3-R17 — AUTHORIZED
-
-Purpose: **header fingerprint / sanitized export parity only**.
+## 3. Accepted feasibility foundations
 
 ```text
-AUTHORIZATION_BASELINE = 528e1ed31985296c99ab8c40ce5f05f4146d549d
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R17-SOURCE-20260901-01
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-MAX_EXECUTOR_STATUS = HEADER_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP001 = PASS / CLOSED
+D2-WP002 = PASS / CLOSED
+D2-WP003-R3-R13 = PASS / CLOSED
+D2-WP003-R3-R16 = PASS / CLOSED
+D2-WP003-R3-R17 = PASS / CLOSED
+PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
+TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
+TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
+HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
+```
+
+Accepted privacy/typed-metadata/header work must not reopen without proven regression.
+
+## 4. R3-R17 review closure
+
+Implementation:
+
+```text
+6910d54d731c771c358382328a01f1fbfd5f9b9c
+```
+
+Parent/execution baseline:
+
+```text
+97051401a71ec8a35c104e673dc7bc31affc5ca9
+```
+
+Independent verdict:
+
+```text
+D2-WP003-R3-R17_SCOPE_REVIEW = PASS
+D2-WP003-R3-R17_SOURCE_REVIEW = PASS
+D2-WP003-R3-R17_STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Authorized writes ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
+Accepted header contract now proven in bounded feasibility layer:
+- source expected evidence comes from exact SHA templates before mutation/override;
+- static titles/labels preserve exact address/style/merge/type and safe hash identity;
+- dynamic headers preserve exact address/style/merge but sanitized values are blank and are not locked to source sample-value hashes;
+- unrelated bounded header cells remain source-consistent;
+- role/address sets are exact;
+- real validator fails closed with `BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED`;
+- positive parity exists for both Part A and Part B;
+- required negative mismatch paths are exercised;
+- prior typed privacy metadata proof remains present.
 
-No package/dependency changes and no binary publication.
+GitHub CI/status checks are absent; this is recorded as non-blocking missing CI evidence for this bounded source review.
 
-## 5. Header authority and parity rule
+## 5. D2 remaining closure path
 
-Critical rule:
+D2 is NOT closed yet. Remaining work must stay bounded and proceed in this order unless later repository evidence proves a step already fully satisfied:
 
-```text
-HEADER PARITY = STRUCTURE + ROLE-SAFE FINGERPRINT PARITY.
-DYNAMIC SAMPLE VALUES MUST BE SANITIZED, NOT PRESERVED.
-```
+1. workbook-wide source-vs-roundtrip parity completeness;
+2. reference-image inventory/removal/preservation closure;
+3. Part A objective insertion structural matrix closure;
+4. Part B competency insertion structural matrix closure;
+5. formula/no-formula authority closure;
+6. production sanitizer + XLSX renderer using secured export projection;
+7. combined Part A + Part B Excel output parity;
+8. PDF generation/parity for Part A A3 landscape and Part B A4 portrait;
+9. export authorization/security/privacy regression;
+10. final D2 independent closure review.
 
-### Part A
+Do not auto-start any step without the required bounded authorization.
 
-Protected static title/labels:
-- `B6:M7`;
-- `Z6:AF6`;
-- `AG6:AL6`;
-- `AM6:AP6`;
-- `AQ6:AS6`;
-- `AT6:BC6`;
-- `BD6:BI6`.
-
-Dynamic header/value regions:
-- `N6:Q7`;
-- `Z7:AF7`;
-- `AG7:AL7`;
-- `AM7:AP7`;
-- `AQ7:AS7`;
-- `AT7:BC7`;
-- `BD7:BI7`.
-
-### Part B
-
-Protected static title/labels:
-- `B2:F3`;
-- `J2:L2`;
-- `M2:O2`;
-- `P2:Q2`;
-- `R2` non-merged;
-- `S2:W2`.
-
-Dynamic header/value regions:
-- `G2:H3`;
-- `J3:L3`;
-- `M3:O3`;
-- `P3:Q3`;
-- `R3` non-merged;
-- `S3:W3`.
-
-Unrelated bounded header cells such as Part B `X2/X3` remain template structure and must not silently become dynamic.
-
-## 6. Mandatory proof
-
-Use exact SHA source as authority and derive expected fingerprints BEFORE sanitization/override.
-
-For protected-static header/title cells:
-- exact address membership;
-- exact `styleId`;
-- exact `mergeRef` including non-merged exceptions;
-- role-relevant type/blankness consistency;
-- safe SHA-256 static text `valHash` parity where text exists;
-- never expose raw values.
-
-For dynamic header/value cells after sanitization:
-- exact address membership;
-- exact source `styleId` and `mergeRef`;
-- output value must be blank/null/undefined;
-- output dynamic value hash must be null/absent if emitted;
-- never require source sample-value equality.
-
-For unrelated bounded header cells:
-- preserve source structural identity and safe static fingerprint where applicable.
-
-Exact role/address sets must contain no missing, extra, duplicate or ambiguous entries.
-
-A real validator/resolver must deterministically throw:
+## 6. Next proposed work package — NOT AUTHORIZED
 
 ```text
-BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R18
+PROPOSED_WORK_PACKAGE_NAME = WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY COMPLETENESS
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-for missing/extra/ambiguous evidence, structural mismatch, static safe-fingerprint mismatch, nonblank sanitized dynamic value, or role/address conflict.
+R3-R18 should reuse existing `getWorkbookFingerprint()` and `FEASIBILITY_NO_OP_PARITY` proof before adding anything. Minimum goal is whole-workbook structural fidelity for exact Part A/B, including all material layout/print/workbook relationship evidence needed before production rendering work. No unrelated redesign.
 
-## 7. Mandatory tests
-
-Preserve all existing accepted tests.
-
-Positive proof for BOTH Parts A/B:
-- exact source-vs-sanitized header parity;
-- all dynamic header values blank after sanitization;
-- source style/merge geometry retained;
-- static labels retain safe source identity;
-- unrelated header structure retained.
-
-Negative proof through the real validator/resolver:
-- one real dynamic style/merge mutation;
-- one real sanitized dynamic nonblank mutation;
-- one real protected-static safe fingerprint mutation;
-- one missing required header address or one unexpected role address.
-
-Observed-fingerprint overrides are allowed only when authoritative expected fingerprints are independently rebuilt from exact source first. No synthetic test-only validator.
-
-## 8. Explicit exclusions
-
-No workbook-wide parity closure, image inventory closure, insertion matrix, formula matrix, production sanitizer/renderer, export service/normalizer/application change, PDF/UI, Live Kintone, deploy, or next Work Package.
-
-Mandatory commands:
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Final executor status exactly one of:
-
-```text
-HEADER_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED
-```
-
-## 9. Current gate
+## 7. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R16 = PASS / CLOSED
-D2-WP003-R3-R17 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R17-SOURCE-20260901-01
+D2-WP003-R3-R17 = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R3-R17 ONLY / LOW-CREDIT / BOUNDED
-PRIVACY_PURGE_REQUIRED = NO
+D3 = HOLD UNTIL D2 PASS / CLOSED
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-D2 remains open until deferred feasibility blockers and then production Excel/combined/PDF parity and export security are independently accepted.
+## 8. Authorization ledger
+
+```text
+D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+```
