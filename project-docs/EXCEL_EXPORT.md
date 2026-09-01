@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R3-R17 PASS-CLOSED / R3-R18 REVIEWED-NOT-PASS / R3-R19 REVIEWED-NOT-PASS / R3-R20 PROPOSED**  
+> Status: **IN PROGRESS / R3-R17 PASS-CLOSED / R3-R18 REVIEWED-NOT-PASS / R3-R19 REVIEWED-NOT-PASS / R3-R20 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -45,18 +45,12 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 
 Accepted privacy/typed-metadata/header work must not reopen without proven regression.
 
-## 4. R3-R19 independent review
+## 4. R3-R19 reviewed result / accepted partial workbook parity
 
 Implementation:
 
 ```text
 4a3092b3e69a68d3a5e864173f8c2e5c182eee54
-```
-
-Execution baseline:
-
-```text
-d2f43ade77da4895a371749b997c5337f5cbbf42
 ```
 
 Verdict:
@@ -68,40 +62,68 @@ D2-WP003-R3-R19_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R19 changes:
-- `_xlnm.Print_Area` now maps by exact `localSheetId` and actual zero-based worksheet order;
+Accepted R3-R19 behavior:
+- `_xlnm.Print_Area` maps by exact `localSheetId` and zero-based worksheet order;
 - no cross-sheet fallback;
-- Part B main sheet keeps its exact print area;
-- Part B second `Sheet1` is proven to have no print area;
-- validator compares dimension exactly without truthiness gating;
-- real negative tests cover wrong `Sheet1.printArea` and blank observed dimension.
+- Part B main sheet retains exact print area;
+- Part B `Sheet1` exposes no print area;
+- validator compares dimension by unconditional exact equality;
+- wrong `Sheet1.printArea` and blank observed-dimension negative paths exist.
 
-Remaining blockers:
+Remaining R3-R20 blockers:
 
-### A. Actual dimension-tag evidence must remain fail-closed
-Current helper synthesizes a `<dimension .../>` string from row/cell coordinates if the workbook XML lacks a real `<dimension>` tag. That can hide missing observed evidence. Exact owner-template source files already contain explicit dimension tags on all relevant worksheets, so the proof must fingerprint the actual tag/absence condition instead of manufacturing a replacement.
+### A. Strict actual dimension-tag evidence
+Current helper synthesizes a dimension string from row/cell coordinates if the actual worksheet `<dimension>` element is missing. This can hide missing evidence. The exact owner templates already contain explicit dimension tags for Part A main, Part B main and Part B `Sheet1`, so the fingerprint must expose only the actual OOXML tag/absence condition.
 
-### B. Preserve accepted second-sheet structural negative proof
-R3-R18 included a fail-closed mutation of Part B `Sheet1.colsHash`. R3-R19 removed that test even though the corrective contract required all accepted R3-R18 tests/proofs to remain. Restore it without redesigning the validator.
+Required:
+- remove synthetic dimension reconstruction;
+- actual `<dimension .../>` tag is the evidence;
+- absent actual tag remains absent;
+- unconditional exact validator comparison remains;
+- source-present vs observed-missing actual tag fails closed.
 
-## 5. Next proposed corrective — NOT AUTHORIZED
+### B. Restore accepted Part B second-sheet structural proof
+Restore the R3-R18 real-validator negative test where Part B `Sheet1.colsHash` is mutated and must throw `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`. Do not remove any R3-R19 proof.
+
+## 5. D2-WP003-R3-R20 — AUTHORIZED
+
+Purpose: **strict dimension-tag evidence + restore second-sheet structural negative proof only**.
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R20
-PROPOSED_WORK_PACKAGE_NAME = STRICT DIMENSION TAG EVIDENCE + RESTORE SECOND-SHEET STRUCTURAL NEGATIVE PROOF
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+CONTROL_PLANE_PRE_AUTH_CHECKPOINT = 0344e7a95bc34138c31dffdd2701525d8fb63105
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_STRICT_DIMENSION_PROOF_PENDING_INDEPENDENT_REVIEW
+PRIVACY_PURGE_REQUIRED = NO
 ```
 
-R3-R20 should be a minimal feasibility source/test correction only:
-- preserve R3-R19 print-area binding and unconditional dimension equality;
-- remove synthetic dimension reconstruction and expose actual OOXML dimension evidence only;
-- prove missing actual dimension evidence fails with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- restore the Part B `Sheet1.colsHash` negative test;
-- no unrelated refactor.
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-## 6. D2 remaining closure path
+Antigravity must fresh-fetch current authorized canonical HEAD and use that as `EXECUTION_BASELINE`; the pre-authorization checkpoint is not an executor reset target.
+
+No package/dependency change and no binary publication.
+
+## 6. Mandatory R3-R20 proof
+
+Preserve all accepted R3-R19 and earlier tests.
+
+Positive:
+- Part A and Part B no-op roundtrip still pass the real workbook validator;
+- R3-R19 per-sheet print-area assertions remain passing;
+- actual source/no-op dimension-tag fingerprints stay equal for every worksheet.
+
+Negative through the real validator/source-backed expected evidence:
+- wrong `Sheet1.printArea` remains blocked;
+- blank observed dimension fingerprint remains blocked;
+- restored `Sheet1.colsHash` mutation is blocked;
+- smallest safe in-memory/helper-level proof shows removal of an actual observed `<dimension>` tag remains missing rather than being synthesized and is rejected. Do not publish the mutated workbook or fabricate source values.
+
+Expected evidence must always be rebuilt independently from exact SHA source before mutation/override.
+
+## 7. D2 remaining closure path
 
 After workbook-wide parity is independently accepted, continue bounded steps:
 1. reference-image inventory/removal/preservation closure;
@@ -116,27 +138,29 @@ After workbook-wide parity is independently accepted, continue bounded steps:
 
 Do not auto-start the next step.
 
-## 7. Current gate
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R19 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R20 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R20
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R20 ONLY / LOW-CREDIT / BOUNDED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-## 8. Authorization ledger
+## 9. Authorization ledger
 
 ```text
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R20-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
