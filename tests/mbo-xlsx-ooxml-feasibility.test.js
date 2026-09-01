@@ -9,6 +9,8 @@ import {
   getReferenceImageBuffers,
   getStructuralPartABuffers,
   getStructuralPartBBuffers,
+  SENSITIVE_RANGES_A,
+  SENSITIVE_RANGES_B,
   EXPECTED_PART_A_SHA,
   EXPECTED_PART_B_SHA
 } from '../scripts/export/mbo-xlsx-ooxml-feasibility.js';
@@ -87,20 +89,12 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   const sheetA = wbA.sheet(0);
 
   // Directly inspect designated sensitive cells in Part A to confirm they are empty
-  const clearCellsA = ['N6', 'Z6', 'AG6', 'AM6', 'AQ6', 'AT6', 'BD6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7', 'G8', 'G16', 'AM16'];
-  for (const addr of clearCellsA) {
+  for (const addr of SENSITIVE_RANGES_A) {
     const val = sheetA.cell(addr).value();
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
-  for (let r = 25; r <= 28; r++) {
-    for (const col of ['B', 'J', 'T', 'Y', 'AA', 'AD', 'AI', 'AK', 'AS', 'AV', 'AX', 'BA', 'BC', 'BF']) {
-      const val = sheetA.cell(`${col}${r}`).value();
-      assert.equal(val === null || val === undefined, true, `Cell ${col}${r} must be empty after sanitization`);
-    }
-  }
-
-  // Directly scan OOXML parts for sensitive tokens extracted from original binary
+  // Directly scan OOXML parts for sensitive tokens collected from mapped ranges
   for (const fileName in wbA._zip.files) {
     if (fileName.endsWith('.xml') || fileName.endsWith('.rels')) {
       const xmlText = await wbA._zip.files[fileName].async('string');
@@ -113,6 +107,13 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   }
 
   const wbB = await XlsxPopulate.fromDataAsync(bufB);
+  const sheetB = wbB.sheet(0);
+
+  for (const addr of SENSITIVE_RANGES_B) {
+    const val = sheetB.cell(addr).value();
+    assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
+  }
+
   for (const fileName in wbB._zip.files) {
     if (fileName.endsWith('.xml') || fileName.endsWith('.rels')) {
       const xmlText = await wbB._zip.files[fileName].async('string');
@@ -142,7 +143,7 @@ test('FEASIBILITY_REFERENCE_IMAGE_REMOVAL: identifies drawings and proves refere
   assert.equal(drawingRels.includes('rId2'), true, 'Branding rId2 must be preserved');
 });
 
-test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting and print area extension for 4, 5, and 10 objectives', async () => {
+test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting, merge cloning & print area extension for 4, 5, 10 objectives', async () => {
   const { bufA4, bufA5, bufA10 } = await getStructuralPartABuffers();
 
   // 4 Objectives
@@ -152,24 +153,32 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
   const wbXml4 = await wbA4._zip.files['xl/workbook.xml'].async('string');
   assert.equal(wbXml4.includes('BJ$52'), true, 'Part A 4 objectives print area must end at BJ52');
 
-  // 5 Objectives (raw OOXML +1 insertion)
+  // 5 Objectives (raw OOXML +1 insertion & merge cloning)
   const wbA5 = await XlsxPopulate.fromDataAsync(bufA5);
   const sheetA5 = wbA5.sheet(0);
   assert.equal(sheetA5.cell('B30').value(), 'SENTINEL_ROW_29', 'Sentinel at row 29 must move to row 30 for 5 objectives (+1 raw insertion)');
 
+  const sheet1Xml5 = await wbA5._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const rawMerges5 = [...sheet1Xml5.matchAll(/<mergeCell [^>]*\/>/g)];
+  assert.equal(rawMerges5.length, 207, 'Part A 5 objectives raw merge count must equal 207 (193 + 14 cloned)');
+
   const wbXml5 = await wbA5._zip.files['xl/workbook.xml'].async('string');
   assert.equal(wbXml5.includes('BJ$53'), true, 'Part A 5 objectives print area must end at BJ53');
 
-  // 10 Objectives (raw OOXML +6 insertion)
+  // 10 Objectives (raw OOXML +6 insertion & merge cloning)
   const wbA10 = await XlsxPopulate.fromDataAsync(bufA10);
   const sheetA10 = wbA10.sheet(0);
   assert.equal(sheetA10.cell('B35').value(), 'SENTINEL_ROW_29', 'Sentinel at row 29 must move to row 35 for 10 objectives (+6 raw insertion)');
+
+  const sheet1Xml10 = await wbA10._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const rawMerges10 = [...sheet1Xml10.matchAll(/<mergeCell [^>]*\/>/g)];
+  assert.equal(rawMerges10.length, 277, 'Part A 10 objectives raw merge count must equal 277 (193 + 84 cloned)');
 
   const wbXml10 = await wbA10._zip.files['xl/workbook.xml'].async('string');
   assert.equal(wbXml10.includes('BJ$58'), true, 'Part A 10 objectives print area must end at BJ58');
 });
 
-test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block insertion and totals shifting for 6 and 8 competencies', async () => {
+test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block insertion, merge cloning & totals shifting for 6 and 8 competencies', async () => {
   const { bufB6, bufB8 } = await getStructuralPartBBuffers();
 
   // 6 Competencies
@@ -179,10 +188,14 @@ test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block 
   const wbXml6 = await wbB6._zip.files['xl/workbook.xml'].async('string');
   assert.equal(wbXml6.includes('X$35'), true, 'Part B 6 competencies print area must end at X35');
 
-  // 8 Competencies (raw OOXML +8 block insertion)
+  // 8 Competencies (raw OOXML +8 block insertion & merge cloning)
   const wbB8 = await XlsxPopulate.fromDataAsync(bufB8);
   const sheetB8 = wbB8.sheet(0);
   assert.equal(sheetB8.cell('B39').value(), 'SENTINEL_ROW_31', 'Totals sentinel must move to row 39 for 8 competencies (+8 raw block insertion)');
+
+  const sheet1Xml8 = await wbB8._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const rawMerges8 = [...sheet1Xml8.matchAll(/<mergeCell [^>]*\/>/g)];
+  assert.equal(rawMerges8.length, 91, 'Part B 8 competencies raw merge count must equal 91 (79 + 12 cloned)');
 
   const wbXml8 = await wbB8._zip.files['xl/workbook.xml'].async('string');
   assert.equal(wbXml8.includes('X$43'), true, 'Part B 8 competencies print area must end at X43');

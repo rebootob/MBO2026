@@ -107,79 +107,61 @@ export function unescapeUnicode(str) {
   return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
-export async function extractSensitiveTokensFromBinary(filePath) {
-  const wb = await XlsxPopulate.fromDataAsync(fs.readFileSync(filePath));
-  const sharedStringsFile = wb._zip.files['xl/sharedStrings.xml'];
-  if (!sharedStringsFile) return [];
+/**
+ * EXPLICIT BOUNDED SENSITIVE RANGE MAP
+ */
+export const SENSITIVE_RANGES_A = [
+  'N6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7', 'G8', 'G16', 'AM16',
+  'B25', 'J25', 'T25', 'Y25', 'AA25', 'AD25', 'AI25', 'AK25', 'AS25', 'AV25', 'AX25', 'BA25', 'BC25', 'BF25',
+  'B26', 'J26', 'T26', 'Y26', 'AA26', 'AD26', 'AI26', 'AK26', 'AS26', 'AV26', 'AX26', 'BA26', 'BC26', 'BF26',
+  'B27', 'J27', 'T27', 'Y27', 'AA27', 'AD27', 'AI27', 'AK27', 'AS27', 'AV27', 'AX27', 'BA27', 'BC27', 'BF27',
+  'B28', 'J28', 'T28', 'Y28', 'AA28', 'AD28', 'AI28', 'AK28', 'AS28', 'AV28', 'AX28', 'BA28', 'BC28', 'BF28',
+  'BC29', 'BC30', 'BC31', 'BC32', 'BC33', 'BC34', 'BC35',
+  'B37', 'AI37', 'B47', 'G47', 'L47'
+];
 
-  const xmlContent = await sharedStringsFile.async('string');
-  const matches = [...xmlContent.matchAll(/<t[^>]*>([^<]+)<\/t>/g)].map(m => m[1].trim());
-
-  const staticKeywords = [
-    'mbo', 'staff', 'chief', 'competency', 'fiscal', 'year', 'department', 'section',
-    'position', 'employee', 'start', 'date', 'target', 'kpi', 'weight', 'achievement',
-    'result', 'comment', 'score', 'total', 'grade', 'signature', 'appraiser', 'rating',
-    'scale', 'level', 'performance', 'appraisal', 'form', 'objective', 'plan', 'difficultty',
-    'difficulty', 'periodical', 'review', 'mid-year', 'final', 'evaluation', 'adaptability',
-    'problem', 'solving', 'customer', 'focus', 'value', 'creation', 'safety', 'awareness',
-    'compliance', 'coce', 'hoshin', 'company', 'agreement', 'point', 'raw', 'weighted',
-    'guideline', 'instruction', 'note', 'legend', 'part', 'overall', 'summary', 'definition',
-    'ratio', 'percentage', 'criteria', 'description', 'behavior', 'challenging', 'effort',
-    'resource', 'sustainable', 'requires', 'normal', 'routine', 'easy', 'exceeds', 'meets',
-    'needs', 'improvement', 'unsatisfactory', 'outstanding', 'good', 'fair', 'poor',
-    'dept', 'manager', 'set up', 'by', 'gm', 'vp', 'executive', 'first', 'second', 'superior',
-    'appraisee', 'agreement', 'periodical', 'additional', 'review', 'average', 'actual',
-    'emp', 'id', 'name', 'title', 'code', 'no.', 'num', 'fill', 'out', 'use', 'only',
-    'area', 'box', 'column', 'row', 'cell', 'do not'
-  ];
-
-  return matches.filter(t => {
-    if (!t || t.length < 3 || t.includes('[') || t.includes(']')) return false;
-    const lower = t.toLowerCase();
-    for (const kw of staticKeywords) {
-      if (lower.includes(kw)) return false;
-    }
-    return true;
-  });
-}
+export const SENSITIVE_RANGES_B = [
+  'G2', 'J3', 'M3', 'P3', 'R3', 'S3',
+  'K7', 'R7', 'K11', 'R11', 'K15', 'R15', 'K19', 'R19', 'K23', 'R23', 'K27', 'R27',
+  'B31', 'E31', 'I31', 'Q31', 'T31'
+];
 
 export async function getSanitizedDisposableBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  const sensitiveA = await extractSensitiveTokensFromBinary(found.partA);
-  const sensitiveB = await extractSensitiveTokensFromBinary(found.partB);
+  // Collect source text values from explicit mapped ranges only
+  const wbA_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
+  const sheetA_orig = wbA_orig.sheet(0);
+  const collectedSensitiveA = [];
+  for (const addr of SENSITIVE_RANGES_A) {
+    const v = sheetA_orig.cell(addr).value();
+    if (v && typeof v === 'string' && v.trim().length >= 3) {
+      collectedSensitiveA.push(v.trim());
+    }
+  }
+
+  const wbB_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
+  const sheetB_orig = wbB_orig.sheet(0);
+  const collectedSensitiveB = [];
+  for (const addr of SENSITIVE_RANGES_B) {
+    const v = sheetB_orig.cell(addr).value();
+    if (v && typeof v === 'string' && v.trim().length >= 3) {
+      collectedSensitiveB.push(v.trim());
+    }
+  }
 
   // Sanitization Part A
   const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA = wbA.sheet(0);
-
-  const clearCellsA = ['N6', 'Z6', 'AG6', 'AM6', 'AQ6', 'AT6', 'BD6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7', 'G8', 'G16', 'AM16'];
-  for (const c of clearCellsA) sheetA.cell(c).value(null);
-
-  for (let r = 25; r <= 28; r++) {
-    for (const col of ['B', 'J', 'T', 'Y', 'AA', 'AD', 'AI', 'AK', 'AS', 'AV', 'AX', 'BA', 'BC', 'BF']) {
-      sheetA.cell(`${col}${r}`).value(null);
-    }
-  }
-
-  for (let r = 29; r <= 35; r++) sheetA.cell(`BC${r}`).value(null);
-  for (let r = 37; r <= 42; r++) {
-    sheetA.cell(`B${r}`).value(null);
-    sheetA.cell(`AI${r}`).value(null);
-  }
-  for (let r = 47; r <= 50; r++) {
-    sheetA.cell(`B${r}`).value(null);
-    sheetA.cell(`G${r}`).value(null);
-    sheetA.cell(`L${r}`).value(null);
-  }
+  for (const c of SENSITIVE_RANGES_A) sheetA.cell(c).value(null);
 
   let bufA = await wbA.outputAsync();
   const wbA_zip = await XlsxPopulate.fromDataAsync(bufA);
   const ssFileA = wbA_zip._zip.files['xl/sharedStrings.xml'];
   if (ssFileA) {
     let xmlA = await ssFileA.async('string');
-    for (const token of sensitiveA) {
+    for (const token of collectedSensitiveA) {
       if (token && token.length >= 3 && xmlA.includes(token)) {
         xmlA = xmlA.replaceAll(token, '');
       }
@@ -191,29 +173,14 @@ export async function getSanitizedDisposableBuffers() {
   // Sanitization Part B
   const wbB = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB = wbB.sheet(0);
-
-  const clearCellsB = ['G2', 'J2', 'M2', 'P2', 'R3', 'S2', 'J3', 'M3', 'P3', 'S3'];
-  for (const c of clearCellsB) sheetB.cell(c).value(null);
-
-  for (let r = 7; r <= 29; r++) {
-    sheetB.cell(`K${r}`).value(null);
-    sheetB.cell(`R${r}`).value(null);
-  }
-
-  for (let r = 31; r <= 34; r++) {
-    sheetB.cell(`B${r}`).value(null);
-    sheetB.cell(`E${r}`).value(null);
-    sheetB.cell(`I${r}`).value(null);
-    sheetB.cell(`Q${r}`).value(null);
-    sheetB.cell(`T${r}`).value(null);
-  }
+  for (const c of SENSITIVE_RANGES_B) sheetB.cell(c).value(null);
 
   let bufB = await wbB.outputAsync();
   const wbB_zip = await XlsxPopulate.fromDataAsync(bufB);
   const ssFileB = wbB_zip._zip.files['xl/sharedStrings.xml'];
   if (ssFileB) {
     let xmlB = await ssFileB.async('string');
-    for (const token of sensitiveB) {
+    for (const token of collectedSensitiveB) {
       if (token && token.length >= 3 && xmlB.includes(token)) {
         xmlB = xmlB.replaceAll(token, '');
       }
@@ -222,7 +189,7 @@ export async function getSanitizedDisposableBuffers() {
     bufB = await wbB_zip._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  return { bufA, bufB, sensitiveA, sensitiveB };
+  return { bufA, bufB, sensitiveA: collectedSensitiveA, sensitiveB: collectedSensitiveB };
 }
 
 export async function getReferenceImageBuffers() {
@@ -261,7 +228,7 @@ export async function getReferenceImageBuffers() {
 }
 
 /**
- * RAW OOXML Structural Insertion for Part A
+ * RAW OOXML Structural Insertion & Merge Cloning for Part A
  */
 export async function getStructuralPartABuffers() {
   const found = findLocalSourceTemplates();
@@ -275,7 +242,7 @@ export async function getStructuralPartABuffers() {
   sheetA4.cell('B29').value('SENTINEL_ROW_29');
   const bufA4 = await wbA4.outputAsync();
 
-  // --- RAW OOXML HELPER FOR PART A INSERTION ---
+  // --- RAW OOXML HELPER FOR PART A INSERTION & MERGE CLONING ---
   async function performRawPartAInsertion(extraRows, printAreaStr) {
     const wbTemp = await XlsxPopulate.fromDataAsync(origBufA);
     wbTemp.sheet(0).cell('B29').value('SENTINEL_ROW_29');
@@ -285,6 +252,7 @@ export async function getStructuralPartABuffers() {
     const sheetFile = wb._zip.files['xl/worksheets/sheet1.xml'];
     let sheetXml = await sheetFile.async('string');
 
+    // 1. Shift raw rows r >= 29 by +extraRows
     sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
       const r = parseInt(rStr, 10);
       if (r >= 29) {
@@ -293,6 +261,7 @@ export async function getStructuralPartABuffers() {
       return match;
     });
 
+    // 2. Shift cell references <c r="([A-Z]+)(\d+)"
     sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
       const r = parseInt(rStr, 10);
       if (r >= 29) {
@@ -301,6 +270,7 @@ export async function getStructuralPartABuffers() {
       return match;
     });
 
+    // 3. Clone row 28 XML for inserted rows 29..(28+extraRows)
     const row28Match = sheetXml.match(/<row r="28"[^>]*>[\s\S]*?<\/row>/);
     if (row28Match) {
       const row28Xml = row28Match[0];
@@ -314,6 +284,14 @@ export async function getStructuralPartABuffers() {
       sheetXml = sheetXml.replace(row28Match[0], row28Match[0] + '\n' + clonedRowsXml.join('\n'));
     }
 
+    // 4. Extract row 28 mergeCell elements and clone them for inserted rows
+    const row28Merges = [];
+    const mergeCellMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)28:([A-Z]+)28"\/>/g)];
+    for (const m of mergeCellMatches) {
+      row28Merges.push({ col1: m[1], col2: m[2] });
+    }
+
+    // Shift existing mergeCells for rows >= 29
     sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
       let r1 = parseInt(r1Str, 10);
       let r2 = parseInt(r2Str, 10);
@@ -322,12 +300,35 @@ export async function getStructuralPartABuffers() {
       return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
     });
 
+    // Append cloned mergeCell elements for inserted rows
+    const clonedMergesXml = [];
+    for (let i = 0; i < extraRows; i++) {
+      const targetR = 29 + i;
+      for (const m of row28Merges) {
+        clonedMergesXml.push(`<mergeCell ref="${m.col1}${targetR}:${m.col2}${targetR}"/>`);
+      }
+    }
+
+    if (clonedMergesXml.length > 0) {
+      sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXml.join('\n') + '\n</mergeCells>');
+    }
+
+    // Update <mergeCells count="N">
+    const countMatch = sheetXml.match(/<mergeCells count="(\d+)">/);
+    if (countMatch) {
+      const currentCount = parseInt(countMatch[1], 10);
+      const newCount = currentCount + clonedMergesXml.length;
+      sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newCount}">`);
+    }
+
+    // Update dimension ref
     sheetXml = sheetXml.replace(/<dimension ref="([A-Z0-9]+:)([A-Z]+)(\d+)"\s*\/>/, (m, prefix, col, rStr) => {
       return `<dimension ref="${prefix}${col}${parseInt(rStr, 10) + extraRows}"/>`;
     });
 
     wb._zip.file('xl/worksheets/sheet1.xml', sheetXml);
 
+    // Update Print_Area in xl/workbook.xml
     let wbXml = await wb._zip.files['xl/workbook.xml'].async('string');
     wbXml = wbXml.replace(/<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/, `<definedName name="_xlnm.Print_Area" localSheetId="0">'MBO Staff &amp; Chief'!${printAreaStr}</definedName>`);
     wb._zip.file('xl/workbook.xml', wbXml);
@@ -342,7 +343,7 @@ export async function getStructuralPartABuffers() {
 }
 
 /**
- * RAW OOXML Structural Insertion for Part B
+ * RAW OOXML Structural Insertion & Merge Cloning for Part B
  */
 export async function getStructuralPartBBuffers() {
   const found = findLocalSourceTemplates();
@@ -356,7 +357,7 @@ export async function getStructuralPartBBuffers() {
   sheetB6.cell('B31').value('SENTINEL_ROW_31');
   const bufB6 = await wbB6.outputAsync();
 
-  // --- 8 COMPETENCIES (+8 RAW OOXML INSERTION) ---
+  // --- 8 COMPETENCIES (+8 RAW OOXML BLOCK INSERTION & MERGE CLONING) ---
   const wbTemp = await XlsxPopulate.fromDataAsync(origBufB);
   wbTemp.sheet(0).cell('B31').value('SENTINEL_ROW_31');
   const tempBuf = await wbTemp.outputAsync();
@@ -367,6 +368,18 @@ export async function getStructuralPartBBuffers() {
 
   const extraRows = 8;
 
+  // Extract source block 27:30 mergeCells
+  const block27_30Merges = [];
+  const mergeCellMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
+  for (const m of mergeCellMatches) {
+    const r1 = parseInt(m[2], 10);
+    const r2 = parseInt(m[4], 10);
+    if (r1 >= 27 && r2 <= 30) {
+      block27_30Merges.push({ c1: m[1], r1Offset: r1 - 27, c2: m[3], r2Offset: r2 - 27 });
+    }
+  }
+
+  // Shift rows r >= 31 by +8
   sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
     const r = parseInt(rStr, 10);
     if (r >= 31) {
@@ -397,6 +410,7 @@ export async function getStructuralPartBBuffers() {
     sheetXml = sheetXml.replace(row30Match[0], row30Match[0] + '\n' + block31_34 + '\n' + block35_38);
   }
 
+  // Shift mergeCells for rows >= 31
   sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
     let r1 = parseInt(r1Str, 10);
     let r2 = parseInt(r2Str, 10);
@@ -404,6 +418,25 @@ export async function getStructuralPartBBuffers() {
     if (r2 >= 31) r2 += extraRows;
     return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
   });
+
+  // Append cloned mergeCells for block 31:34 (+4) and block 35:38 (+8)
+  const clonedMergesXmlB = [];
+  for (const m of block27_30Merges) {
+    clonedMergesXmlB.push(`<mergeCell ref="${m.c1}${31 + m.r1Offset}:${m.c2}${31 + m.r2Offset}"/>`);
+    clonedMergesXmlB.push(`<mergeCell ref="${m.c1}${35 + m.r1Offset}:${m.c2}${35 + m.r2Offset}"/>`);
+  }
+
+  if (clonedMergesXmlB.length > 0) {
+    sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXmlB.join('\n') + '\n</mergeCells>');
+  }
+
+  // Update <mergeCells count="N">
+  const countMatchB = sheetXml.match(/<mergeCells count="(\d+)">/);
+  if (countMatchB) {
+    const currentCount = parseInt(countMatchB[1], 10);
+    const newCount = currentCount + clonedMergesXmlB.length;
+    sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newCount}">`);
+  }
 
   sheetXml = sheetXml.replace(/<dimension ref="([A-Z0-9]+:)([A-Z]+)(\d+)"\s*\/>/, (m, prefix, col, rStr) => {
     return `<dimension ref="${prefix}${col}${parseInt(rStr, 10) + extraRows}"/>`;
