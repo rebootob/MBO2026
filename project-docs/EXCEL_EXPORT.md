@@ -1,15 +1,13 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R16 PASS-CLOSED / R3-R17 PASS-CLOSED / R3-R18 AUTHORIZED**  
+> Status: **IN PROGRESS / R3-R17 PASS-CLOSED / R3-R18 REVIEWED-NOT-PASS / R3-R19 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
-## 1. D2 objective
+## 1. D2 objective and priority
 
 Deliver Excel/PDF outputs preserving approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries.
-
-Owner priority:
 
 ```text
 COMPLETE D2 FULLY BEFORE D3.
@@ -47,165 +45,76 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 
 Accepted privacy/typed-metadata/header work must not reopen without proven regression.
 
-## 4. D2-WP003-R3-R18 — AUTHORIZED
+## 4. R3-R18 independent review
 
-Purpose: **workbook-wide source-vs-roundtrip semantic structural parity completeness only**.
+Implementation:
 
 ```text
-CONTROL_PLANE_PRE_AUTH_CHECKPOINT = 4666db780a32179061c5f15f96bc0bda10ad4010
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
+e5d082059d05da4ac686568b55600fb12873e30d
+```
+
+Execution baseline:
+
+```text
+7d8fa41c93e950011b59d8a6951830fa6d289301
+```
+
+Verdict:
+
+```text
+D2-WP003-R3-R18_SCOPE_REVIEW = PASS
+D2-WP003-R3-R18_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R18_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Authorized writes ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
+Accepted R3-R18 work:
+- `getWorkbookFingerprint()` now builds evidence for every worksheet;
+- workbook sheet names/order/state are compared;
+- Part B `Sheet1` is explicitly included;
+- per-sheet merges, columns, explicit row heights, gridline/view flag, margins, page setup, fit/centering, protection and relationships are represented and compared;
+- expected evidence is rebuilt from exact SHA source before observed override;
+- positive Part A/B no-op validation and structural negative tests exist;
+- previously accepted tests remain.
 
-No package/dependency changes and no binary publication.
+Remaining blockers:
 
-Antigravity must fresh-fetch current authorized canonical HEAD and use that as `EXECUTION_BASELINE`; the pre-authorization checkpoint is not an executor reset target.
+### A. Per-sheet print-area binding
+Current `getWorkbookFingerprint()` computes the requested `localSheetId` before the current `sheets[name]` entry is assigned. The expression therefore resolves to `0` for every worksheet and falls back to the first print-area defined name. This can incorrectly give Part B second `Sheet1` the main `'(Part B) Competency'!$A$1:$X$35` print area, even though the source second sheet has no user-facing print area.
 
-## 5. Workbook-wide parity authority
+Required authority:
+- resolve `localSheetId` from actual worksheet index/order;
+- bind each defined print area to its exact source sheet;
+- no fallback that silently applies another sheet's print area;
+- if a source sheet has no print area, observed must also have no print area.
 
-Critical rule:
+### B. Missing dimension evidence
+Current validator checks dimension only when both `obsSheet.dimension` and `authSheet.dimension` are truthy. An observed empty/missing dimension can bypass the comparison.
 
-```text
-EXACT SHA SOURCE = STRUCTURAL AUTHORITY.
-SEMANTIC PARITY IS REQUIRED; ZIP BYTE EQUALITY IS NOT.
-EVERY WORKSHEET MUST BE INCLUDED.
-```
+Required authority:
+- exact dimension evidence equality for each source sheet;
+- present-vs-missing must fail closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`.
 
-Reuse current `getWorkbookFingerprint()` and `FEASIBILITY_NO_OP_PARITY` before adding anything.
+### C. Missing negative proof
+Add real source-backed negative tests for:
+- wrong/non-empty print-area binding on Part B `Sheet1`;
+- missing observed dimension on a sheet that has source dimension evidence.
 
-Expected source fingerprints must be derived BEFORE mutation/override.
-
-Required workbook-level parity:
-- exact sheet names/order;
-- sheet visibility/state where present;
-- defined-name/print-area inventory;
-- relevant workbook relationship inventory;
-- no missing/extra worksheets.
-
-Required per-sheet parity for every worksheet:
-- used-range/dimension;
-- exact merge refs and declared merge count;
-- column structure;
-- explicit row-height structure;
-- material sheet-view/gridline flags;
-- page margins;
-- page setup: paper/orientation/scale/fit semantics where present;
-- print options / centering where present;
-- protection semantics where present;
-- sheet print-area binding;
-- relevant worksheet relationships where present.
-
-Part B second visible `Sheet1` must be covered even though it is not the user-facing printed sheet.
-
-Do not compare or log raw employee/sample values.
-
-Existing relationship/media assertions may stay, but full image identity/removal/preservation closure remains the next separate blocker.
-
-## 6. Accepted exact-source sanity facts
-
-These are baseline sanity facts, not substitutes for source-derived equality.
-
-### Part A
-- main sheet `MBO Staff & Chief`;
-- 193 merges;
-- print area A1:BJ52;
-- A3 landscape;
-- scale 58%;
-- hidden gridlines;
-- source margins and fit-to-page semantics preserved;
-- explicit row heights and column structure preserved.
-
-### Part B
-- sheet order `[(Part B) Competency, Sheet1]`;
-- main sheet 79 merges;
-- main print area A1:X35;
-- A4 portrait;
-- scale 75%;
-- horizontally centered;
-- hidden gridlines;
-- source margins preserved;
-- main sheet protection semantics preserved;
-- second `Sheet1` remains present/visible/structurally source-consistent.
-
-## 7. Fail-closed proof
-
-A real source-backed workbook parity validator must deterministically throw:
+## 5. Next proposed corrective — NOT AUTHORIZED
 
 ```text
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R19
+PROPOSED_WORK_PACKAGE_NAME = PER-SHEET PRINT-AREA BINDING + MISSING EVIDENCE FAIL-CLOSED
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-for material mismatch such as:
-- missing/extra/reordered/renamed worksheet;
-- state mismatch;
-- dimension or merge mismatch;
-- column/row-height mismatch;
-- sheet-view/gridline mismatch;
-- page margin/setup/fit/centering mismatch;
-- protection mismatch;
-- print-area mismatch;
-- relevant relationship mismatch;
-- missing/extra per-sheet evidence.
+R3-R19 is expected to be a minimal feasibility source/test correction only. Preserve all other accepted R3-R18 behavior.
 
-No incidental TypeError as the blocker contract.
+## 6. D2 remaining closure path
 
-## 8. Mandatory tests
-
-Preserve ALL accepted existing tests.
-
-Positive source-backed proof:
-- Part A exact source -> no-op roundtrip passes workbook-wide validator;
-- Part B exact source -> no-op roundtrip passes workbook-wide validator;
-- every worksheet is explicitly represented, including Part B `Sheet1`.
-
-Mandatory negative cases through the real validator with expected evidence rebuilt independently from exact source before mutation:
-- worksheet identity/order/state mutation;
-- one real merge/dimension/column-or-row mutation;
-- one real margin/page setup/print-area/view mutation;
-- one real Part B protection or second-sheet structural mutation.
-
-## 9. Explicit exclusions
-
-R3-R18 does NOT close or modify:
-- reference-image full inventory/removal/preservation semantics;
-- Part A objective insertion structural matrix;
-- Part B competency insertion structural matrix;
-- formula/no-formula authority;
-- production sanitizer/XLSX renderer;
-- export service/normalizer/application;
-- combined production Excel;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- D3.
-
-Mandatory commands:
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Final executor status exactly one of:
-
-```text
-WORKBOOK_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
-```
-
-## 10. D2 remaining closure path
-
-After R3-R18 is independently accepted, remaining work stays bounded and proceeds unless later evidence proves a step already satisfied:
-
+After workbook-wide parity is independently accepted, continue bounded steps:
 1. reference-image inventory/removal/preservation closure;
 2. Part A objective insertion structural matrix closure;
 3. Part B competency insertion structural matrix closure;
@@ -216,30 +125,30 @@ After R3-R18 is independently accepted, remaining work stays bounded and proceed
 8. export authorization/security/privacy regression;
 9. final D2 independent closure review.
 
-Do not auto-start any next step without bounded authorization.
+Do not auto-start the next step.
 
-## 11. Current gate
+## 7. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
-D2-WP003-R3-R18 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R18
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
+D2-WP003-R3-R18 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = EXECUTE R3-R18 ONLY / LOW-CREDIT / BOUNDED
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-## 12. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
-D2-WP003-R3-R18-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
+D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
