@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — D2-WP003-R1 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R2 EXECUTION AUTHORIZED
 
-Mode: **ANTIGRAVITY EXECUTION PLANE / PRIVACY-FIRST XLSX CORRECTIVE / NO PDF / NO UI / NO KINTONE / NO DEPLOY**  
+Mode: **ANTIGRAVITY EXECUTION PLANE / PRIVACY-FIRST TRUE XLSX STRUCTURAL INSERTION / NO PDF / NO UI / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
@@ -11,14 +11,15 @@ D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R1
-ACTIVE_WORK_PACKAGE_NAME = PRIVACY PURGE + SANITIZER + STRUCTURAL XLSX RENDERER CORRECTIVE
+ACTIVE_WORK_PACKAGE = D2-WP003-R2
+ACTIVE_WORK_PACKAGE_NAME = SECOND PRIVACY PURGE + TRUE XLSX STRUCTURAL INSERTION CORRECTIVE
 OWNER_APPROVAL = GRANTED 2026-09-01 ICT
-PRIVACY_PURGE = CANONICAL BRANCH FORCE-RESET TO SAFE PRE-IMPLEMENTATION BASELINE COMPLETE
-SAFE_BASELINE = 731ba80a976847e579d80fc30012df54fd36badf
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
+SECOND_PRIVACY_PURGE = CANONICAL BRANCH FORCE-RESET COMPLETE
+R2_SAFE_BASELINE = a3953ff701a01c8af9dcf6bf2525a58e4888973e
 EXECUTOR = ANTIGRAVITY
 ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R2-SOURCE-20260901-01
 MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
@@ -26,17 +27,16 @@ ACTIVE_DEPLOY_AUTH = NONE
 
 ## 1. Privacy containment already completed by ChatGPT
 
-The Owner explicitly approved `D2-WP003-R1` with Privacy Purge.
+The Owner explicitly approved `D2-WP003-R2` with a second Privacy Purge.
 
-ChatGPT force-reset the canonical branch back to the safe pre-implementation authorization baseline before opening R1. The unsafe WP003 implementation and its binary assets are therefore no longer in the canonical branch tree/history lineage.
+ChatGPT force-reset the canonical branch to the clean R1 authorization baseline before opening R2. The reviewed R1 implementation and its generated binaries are no longer in the canonical branch tree/history lineage.
 
 Rules:
-- do not recreate a backup ref/branch/tag to the purged lineage;
-- do not fetch, cite, publish or record the purged commit/blob identifiers in Git docs;
-- do not reuse any prior generated `*_SANITIZED.xlsx` file;
-- rebuild sanitized assets only from the exact accepted local owner-template inputs below.
-
-Git hosting may retain unreachable objects/caches until provider garbage collection. R1 must not create new refs to them.
+- do not create a backup branch/tag/ref to any purged lineage;
+- do not fetch/reuse any previously generated `*_SANITIZED.xlsx` binary;
+- do not record purged commit/blob identifiers in repository docs;
+- rebuild only from exact accepted owner-template inputs;
+- Git hosting may retain unreachable objects/caches until provider garbage collection; do not create new refs to them.
 
 ## 2. Accepted owner-template identity — fail closed
 
@@ -47,173 +47,188 @@ PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Bounded lookup only in:
-- repository root;
-- `app info/data/`;
-- `exp/`.
+Bounded lookup only in repository root, `app info/data/`, and `exp/`.
 
 Expected source names:
 - `PMS_Staff & Chief_PART_A.xlsx`
 - `PMS_Staff & Chief_PART_B.xlsx`
 
-If exact matching originals are unavailable, STOP with `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-
-Original employee-bearing workbooks remain gitignored input evidence and must never be committed.
+If exact inputs are unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
+Original employee-bearing workbooks are evidence only and must never be committed.
 
 ## 3. Read order — low credit
 
-Fresh-fetch HEAD, then read only:
+Fresh-fetch/reset local branch first, then read only:
 1. `project-docs/AI_CONTROL_CENTER.md`
 2. `project-docs/AI_ACTIVE_TASK.md`
 3. `project-docs/EXCEL_EXPORT.md`
 4. `project-docs/CONFIRMED_BASELINE/EVALUATION_CLASSES.md`
-5. `project-docs/FIELD_DICTIONARY.md`
-6. `src/services/mbo-export-service.js`
-7. `src/core/kintone-normalizer.js`
-8. `package.json`
-9. `package-lock.json`
-10. exact local source templates after SHA verification
-11. only directly imported helpers required by a failing focused test
+5. `src/services/mbo-export-service.js` — READ ONLY
+6. `package.json`
+7. `package-lock.json`
+8. exact local source templates after SHA verification
+9. only directly required imported helpers when a focused test fails
 
 No whole-repo scan.
 
-## 4. Exact authorized R1 file scope
+## 4. Exact authorized R2 file scope
 
 Allowed implementation paths only:
 - `scripts/export/sanitize-mbo-xlsx-templates.js` — NEW
 - `src/services/mbo-xlsx-renderer.js` — NEW
 - `tests/mbo-xlsx-renderer.test.js` — NEW
-- `assets/export-templates/PMS_PART_A_SANITIZED.xlsx` — NEW, only after privacy proof passes
-- `assets/export-templates/PMS_PART_B_SANITIZED.xlsx` — NEW, only after privacy proof passes
+- `assets/export-templates/PMS_PART_A_SANITIZED.xlsx` — NEW only after privacy proof passes
+- `assets/export-templates/PMS_PART_B_SANITIZED.xlsx` — NEW only after privacy proof passes
 - `package.json` — only `xlsx-populate@1.21.0`
 - `package-lock.json` — dependency consequence only
-- `src/core/kintone-normalizer.js` — only if a canonical App794 Difficulty field is proven and exact projection support is required
-- `src/services/mbo-export-service.js` — only for the same narrowly proven Difficulty projection support
-- `tests/mbo-export-service.test.js` — only for that Difficulty projection/security regression
+
+Explicitly NOT authorized in R2:
+- `src/core/kintone-normalizer.js`
+- `src/services/mbo-export-service.js`
+- `tests/mbo-export-service.test.js`
+- any Difficulty field/projection change
+- any second spreadsheet/XML package
 
 No other source/test/assets are authorized.
 
-## 5. Dependency gate — no-op parity first
+## 5. Owner decision — Difficulty Level blank in WP003
 
-Exactly one new runtime dependency remains authorized:
+The legacy Part A form contains Difficulty Level (`AA:AB`) but no canonical current source field is proven.
 
+Owner decision for R2:
+```text
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
+```
+
+Therefore:
+- do not invent/read `Difficulty_*` or any guessed App794 field;
+- do not modify normalizer/export projection;
+- sanitized template must clear any legacy sample Difficulty value;
+- renderer must leave Difficulty output cells blank;
+- tests must assert Difficulty cells remain blank for generated Part A output.
+
+A future field implementation requires a separately approved Work Package after canonical schema evidence exists.
+
+## 6. Dependency / no-op parity gate
+
+Exactly one runtime dependency is authorized:
 ```text
 xlsx-populate = 1.21.0
 ```
 
-Before sanitizer/renderer mappings, install it and perform a no-op load/write round-trip on both exact source workbooks.
+Install it only after fresh reset. Before mappings, run a no-op load/write proof on both exact source workbooks.
 
-Proof must validate at minimum:
-- user-facing sheet names/order;
-- Part A print area `A1:BJ52`, A3 landscape, scale 58%;
-- Part B print area `A1:X35`, A4 portrait, scale 75%, horizontal centering;
+Must preserve materially:
+- sheet names/order;
+- Part A `A1:BJ52`, A3 landscape, scale 58%;
+- Part B `A1:X35`, A4 portrait, scale 75%, horizontal centering;
 - main-sheet merge counts Part A 193 / Part B 79;
-- key row heights and column widths used by the frozen contract;
+- key row heights/column widths;
 - Part B protection state;
-- approved branding/image relationships needed by the user-facing form;
+- required user-facing branding/image relationships;
 - workbook reparses successfully.
 
-If material drift occurs, revert dependency experiment and STOP with `BLOCKER_XLSX_LIBRARY_PARITY`. Do not switch libraries.
+If material drift occurs: STOP `BLOCKER_XLSX_LIBRARY_PARITY`. Do not switch libraries.
 
-Run `npm audit --omit=dev`. HIGH/CRITICAL findings attributable to the new runtime dependency are a blocker.
+Run `npm audit --omit=dev`; HIGH/CRITICAL attributable to the new dependency is a blocker.
 
-## 6. Privacy-first sanitizer contract
+## 7. Privacy-first sanitizer contract — no heuristic-only proof
 
-Do not sanitize by guessing isolated anchor cells.
+The prior approach based mainly on `sharedStrings.xml` heuristics is forbidden as the sole proof.
 
-Required approach:
-1. derive actual value cells/ranges from the accepted template structure, preserving label cells;
-2. clear all sample employee identity/org/date/Hoshin/objective/result/evaluator/signature/score values across the complete applicable merged ranges;
-3. remove the non-user-facing historical/reference screenshot/drawing while retaining approved user-facing branding;
-4. extract non-empty sensitive/sample text values from the ignored originals at runtime without committing those values;
-5. unzip/inspect **all XML/text parts** of each generated sanitized OOXML package and assert those extracted sensitive values are absent;
-6. assert generated sanitized assets contain no worksheet formulas introduced by sanitization;
-7. only after these checks pass may the sanitized binaries be committed.
+Required privacy proof is range-driven + OOXML-wide:
+1. derive the actual sensitive value cells/ranges from the accepted source structure; preserve label cells;
+2. collect source values from those sensitive ranges at runtime, including text, numeric and date values, without logging/committing them;
+3. clear the complete sensitive ranges for employee identity/org/start date/Hoshin/objective/action/result/self evaluation/appraiser evaluation/signature/score/sample business data;
+4. clear all legacy sample Difficulty values;
+5. remove the identified non-user-facing historical/reference drawing/image and its relationships/media target while preserving approved user-facing branding;
+6. re-open the generated workbook and prove all designated sensitive ranges are empty regardless of cell value type;
+7. inspect all XML/text OOXML parts and prove extracted sensitive text values do not survive;
+8. verify expected drawing/image relationships after removal so the reference screenshot is absent and approved branding remains;
+9. assert no worksheet scoring formulas are introduced;
+10. only after all privacy checks pass may sanitized binaries be committed.
 
-Tests/docs must never hardcode real employee names, IDs, dates, evaluator names/comments or other source sample values.
+Do not print real source-sensitive values in logs, tests, docs or commit messages.
 
-## 7. Correct header/value anchors
+## 8. Header/value mapping — labels must survive
 
-Preserve labels and write current values into the value row/ranges.
+Frozen evidence:
+- Part A header labels are on row 6; dynamic employee/org/start-date values belong in corresponding row-7 value ranges.
+- Part B header labels are on row 2; dynamic employee/org/position/name values belong in corresponding row-3 value ranges.
 
-At minimum verify from the owner templates before coding:
-- Part A labels are in row 6 while employee/org/start-date values are in the corresponding row-7 value ranges;
-- Part B labels are in row 2 while employee/org/position/name values are in the corresponding row-3 value ranges.
+Tests must snapshot/assert representative label text before rendering and prove it remains unchanged afterward while dynamic values appear in the value row.
 
-Tests must prove label text survives and current values replace sample values in the correct value cells.
+Do not write business values to row-6 Part A label anchors or row-2 Part B label anchors.
 
-## 8. Part A structural renderer — real 4/5/10 behavior
+## 9. True Part A structural insertion — 4 / 5 / 10
 
-Renderer input/output contract:
-
+Renderer contract:
 ```text
 INPUT = sanitized template Buffer/ArrayBuffer + already-authorized secured projection
 OUTPUT = XLSX Buffer/Uint8Array/ArrayBuffer
 NO Kintone API
-NO unrestricted raw App794 read
+NO raw unrestricted App794 read
 NO filesystem dependency inside renderer service
 NO authorization widening
 ```
 
 For 4 objectives:
-- preserve legacy objective rows 25–28;
-- keep lower sections at their legacy positions;
-- map values only into designated value ranges.
+- preserve rows 25–28 and lower section original positions.
 
 For 5–10 objectives:
-- insert actual rows immediately after row 28;
-- clone the complete row-28 objective block structure: merges, styles, borders, alignments, row height and relevant dimensions;
-- shift review/comment/summary/signature/overall sections downward by the inserted row count;
-- move score/summary anchors with the shifted sections; no hardcoded collision at legacy row 29;
-- extend print-area bottom by inserted rows;
-- keep A3 landscape and legacy horizontal geometry/scale behavior;
-- render all objectives with no truncation.
+- **actually shift existing rows 29+ downward** by `extra = objectiveCount - 4` before writing new objective rows;
+- create new objective rows immediately after row 28;
+- clone full row-28 objective structure: style IDs, borders, alignment, merged ranges, row height, relevant data validation/format metadata if present;
+- update every affected cell/range reference, merged-range reference, row number, dimension and print-area reference required for a valid workbook;
+- lower review/summary/signature/overall sections must move by exactly +1 for 5 objectives and +6 for 10;
+- summary/score anchors must move with those sections;
+- extend print area bottom from 52 by the same inserted-row count;
+- keep A3 landscape and existing horizontal geometry;
+- never overwrite original lower-section rows and never truncate objectives.
 
-Tests must prove positions before/after insertion, not merely that text appears in later cells.
+Important implementation rule:
+- `xlsx-populate` high-level style copying into an existing row is **not row insertion** and is forbidden.
+- If high-level API has no true insert-row primitive, perform bounded OOXML-level row/reference surgery inside the XLSX package using the already authorized workbook package access; no second library is authorized.
+- If true insertion cannot be proven without material drift: STOP `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
 
-## 9. Part B structural renderer — real 6/8 behavior
+## 10. True Part B structural insertion — 6 / 8
 
 For 6 competencies:
-- preserve the six legacy repeated blocks and totals/signatures at legacy positions.
+- preserve the six legacy blocks and totals/signatures at legacy positions.
 
-For 8 competencies:
-- insert two complete repeated competency blocks before totals/signatures;
-- clone block merges/styles/borders/row heights/layout;
-- shift totals/signatures downward;
-- extend print-area bottom;
+For exactly 8 competencies:
+- **actually shift totals/signatures beginning row 31 downward by 8 rows** before writing items 7 and 8;
+- insert two complete 4-row repeated competency blocks before totals/signatures;
+- clone block styles, borders, merged ranges, row heights and required metadata;
+- update all affected OOXML row/cell/merge/dimension/print-area references;
+- extend print area from row 35 to row 43;
 - preserve A4 portrait, horizontal centering and protection behavior;
-- render dynamic current profile title and Part B weighting from secured projection/configuration, not stale static sample text.
+- dynamic current Part B weight must come from secured projection; stale static 30% must not survive.
 
-The 8-item test must supply exactly eight items and prove both added blocks and shifted totals.
+If true block insertion cannot be proven safely: STOP `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
 
-## 10. Difficulty Level projection gap — fail closed
+## 11. Mandatory tests / evidence
 
-The frozen Part A layout includes Difficulty Level (`AA:AB`), but current repository search/FIELD_DICTIONARY does not prove a canonical Difficulty field.
-
-Rules:
-- do not invent a Kintone field code;
-- do not let renderer read raw App794 directly;
-- inspect only the directly relevant App794 field/config evidence available in the bounded workspace;
-- if a canonical current field is proven, add only the narrow normalizer/export projection field plus security regression tests;
-- if no canonical field can be proven, STOP and report `BLOCKER_DIFFICULTY_SOURCE_UNRESOLVED` rather than guessing.
-
-## 11. Mandatory tests/evidence
-
-`tests/mbo-xlsx-renderer.test.js` must cover at least:
-- sanitized template sheet names and baseline print geometry;
-- extraction-based proof that source sensitive/sample text does not survive any sanitized OOXML XML/text part;
-- user-facing branding retained and non-user-facing reference screenshot removed;
-- Part A 4 objective structural parity;
-- Part A 5 objective: one inserted/cloned row block, lower sections shifted by 1, print area extended, summary shifted;
-- Part A 10 objective: six inserted/cloned row blocks, lower sections shifted by 6, print area extended, all 10 rendered;
-- Part B 6 competency structural parity;
-- Part B 8 competency: exactly two inserted blocks, totals/signatures shifted, print area extended;
-- correct current Assistant Manager weighting 60/40 and no stale 30% business rule;
-- A3 landscape / A4 portrait preserved;
-- key merges/styles/row heights preserved after insertions;
-- Part B protection preserved as required;
+`tests/mbo-xlsx-renderer.test.js` must prove at least:
+- exact source SHA checks pass;
+- no-op parity gate passes;
+- sanitized template sheet names and print geometry;
+- designated sensitive source ranges are empty after sanitization for text/numeric/date cell types;
+- extracted sensitive text absent from all XML/text parts;
+- non-user-facing reference image removed; approved branding retained;
+- header labels preserved; dynamic header values written to value rows;
+- Difficulty cells blank;
+- Part A 4: lower section stays at row 29;
+- Part A 5: old row-29 lower-section sentinel/content/structure moves to row 30, new objective occupies row 29, print area ends row 53;
+- Part A 10: old row-29 lower section moves to row 35, objective 10 occupies row 34, print area ends row 58;
+- Part A inserted rows retain representative row-28 style/merge/height properties;
+- Part B 6: totals begin row 31;
+- Part B 8: test input contains **exactly eight items**, old totals row 31 moves to row 39, items 7/8 occupy inserted blocks, print area ends row 43;
+- Part B inserted blocks retain representative style/merge/height properties;
+- Assistant Manager current weighting remains 60/40 and stale 30% is absent;
+- A3 landscape / A4 portrait / Part B protection remain valid;
 - zero worksheet scoring formulas introduced;
-- Employee-Self-safe projection cannot gain manager/GM/appraiser confidential data through renderer;
+- Employee-Self output cannot gain manager/GM/appraiser confidential data;
 - malformed template/projection fails closed.
 
 Run at minimum:
@@ -222,44 +237,46 @@ node --test tests/mbo-export-service.test.js
 node --test tests/mbo-xlsx-renderer.test.js
 node --test tests/core-794-795-796-integration.test.js
 npm audit --omit=dev
+git status --porcelain
 ```
-
-Also report `git status --porcelain` and exact changed filenames.
 
 ## 12. Explicitly forbidden
 
 Do NOT:
 - create refs/tags/backups to purged history;
+- reuse prior generated sanitized binaries;
 - commit original owner workbooks or extracted real sample values;
-- reuse old generated sanitized binaries;
+- change Difficulty/normalizer/export-service;
 - implement PDF;
-- add UI/download button;
+- add UI/download buttons;
 - modify `src/main-mbo-app.js`;
 - access/read/write/export Live Kintone;
 - deploy;
-- add a second spreadsheet library;
-- start D2-WP004 or D3–D6 work.
+- add a second spreadsheet/XML dependency;
+- start D2-WP004 or D3–D6.
 
 ## 13. Git / completion contract
 
-- Work only on `ai/antigravity-wp002c` after fresh fetch of the rewritten branch.
-- **Because history was force-rewritten, do not push from a stale local checkout.** Re-fetch/reset local branch to origin before making R1 changes.
-- Smallest implementation possible.
-- Push only after privacy tests pass.
-- STOP at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or a real blocker.
-- Antigravity must not mark PASS/CLOSED.
+Because remote history was rewritten again:
+1. first run `git status --porcelain`;
+2. if not clean, STOP and report — do not stash/preserve old WP003 files;
+3. if clean: `git fetch --prune origin` then hard-reset local canonical branch to origin;
+4. confirm local HEAD equals remote HEAD before work.
 
-Final executor report <= 18 lines and include:
+Smallest implementation possible. Push only after privacy + structural tests pass.
+Final executor status must be `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or a real blocker. Antigravity must not declare PASS/CLOSED.
+
+Final executor report <=18 concise lines and include:
 - implementation commit SHA(s);
-- exact changed files;
-- source template SHA verification PASS;
-- no-op parity result;
-- privacy extraction/OOXML scan result without printing source values;
-- exact 4/5/10 and 6/8 structural test results;
-- Difficulty field result or blocker;
+- exact changed filenames;
+- source SHA verification;
+- no-op parity;
+- privacy proof summary without sensitive values;
+- true 4/5/10 and true 6/8 structural test results;
+- Difficulty blank confirmation;
 - `npm audit --omit=dev` result;
-- confirmation original binaries/purged history were not re-referenced;
-- confirmation no PDF/UI/Kintone/deploy;
+- original/purged binaries not reused/referenced;
+- no PDF/UI/Kintone/deploy;
 - final status.
 
 ## 14. Authorization ledger
@@ -268,9 +285,10 @@ Final executor report <= 18 lines and include:
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP002 = APPROVED / READ-ONLY / CLOSED
-D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED BY REVIEW / DO NOT REUSE
-D2-WP003-R1-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
+D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / DO NOT REUSE
+D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
+D2-WP003-R2-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R2-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -283,4 +301,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Authorization is consumed when R1 implementation is pushed for independent review or invalidated by material scope/dependency change.
+Authorization is consumed when R2 implementation is pushed for independent review or invalidated by any material scope/dependency change.
