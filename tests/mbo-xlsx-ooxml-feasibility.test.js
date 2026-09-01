@@ -17,6 +17,7 @@ import {
   getTypedPrivacyMetadata,
   validateTypedPrivacyMetadata,
   getHeaderCellFingerprints,
+  validateHeaderFingerprintParity,
   getWorkbookFingerprint,
   inspectRawWorksheetOOXML,
   getWorksheetFormulaSet,
@@ -95,6 +96,53 @@ test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels rema
   // Directly inspect mutated value cell R3
   const wbB = await XlsxPopulate.fromDataAsync(mutBufB);
   assert.equal(wbB.sheet(0).cell('R3').value(), 'MUTATED_VAL', 'Value cell R3 must be updated');
+
+  // --- R3-R17 HEADER FINGERPRINT / SANITIZED EXPORT PARITY PROOFS ---
+  const { bufA: sanBufA, bufB: sanBufB } = await getSanitizedDisposableBuffers();
+
+  // 1. Positive source-vs-sanitized header parity using exact SHA source as authority
+  assert.equal(await validateHeaderFingerprintParity(sanBufA, 'A'), true, 'Part A sanitized export must satisfy header fingerprint parity');
+  assert.equal(await validateHeaderFingerprintParity(sanBufB, 'B'), true, 'Part B sanitized export must satisfy header fingerprint parity');
+
+  // 2. Mandatory Negative Tests using real validator
+  const fpSanB = await getHeaderCellFingerprints(sanBufB, 'B');
+
+  // Negative Case 1: Mutate dynamic header styleId
+  const fpMutStyle = JSON.parse(JSON.stringify(fpSanB));
+  fpMutStyle.valueFingerprints['G2'].styleId = '99999';
+  await assert.rejects(
+    async () => validateHeaderFingerprintParity(sanBufB, 'B', fpMutStyle),
+    /BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED/,
+    'Mutating dynamic header styleId must throw BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED'
+  );
+
+  // Negative Case 2: Make dynamic header appear nonblank after sanitization
+  const fpMutNonblank = JSON.parse(JSON.stringify(fpSanB));
+  fpMutNonblank.valueFingerprints['G2'].normalizedType = 'string';
+  fpMutNonblank.valueFingerprints['G2'].valHash = 'some_hash_12345';
+  await assert.rejects(
+    async () => validateHeaderFingerprintParity(sanBufB, 'B', fpMutNonblank),
+    /BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED/,
+    'Nonblank dynamic header after sanitization must throw BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED'
+  );
+
+  // Negative Case 3: Mutate protected-static title/label safe hash
+  const fpMutTitleHash = JSON.parse(JSON.stringify(fpSanB));
+  fpMutTitleHash.titleFingerprints['B2'].valHash = 'bad_hash_val_999';
+  await assert.rejects(
+    async () => validateHeaderFingerprintParity(sanBufB, 'B', fpMutTitleHash),
+    /BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED/,
+    'Mutating static title valHash must throw BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED'
+  );
+
+  // Negative Case 4: Remove required header address
+  const fpMutMissingAddr = JSON.parse(JSON.stringify(fpSanB));
+  delete fpMutMissingAddr.titleFingerprints['B2'];
+  await assert.rejects(
+    async () => validateHeaderFingerprintParity(sanBufB, 'B', fpMutMissingAddr),
+    /BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED/,
+    'Removing required title address must throw BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED'
+  );
 });
 
 test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string purging leave 0 sensitive tokens in OOXML parts', async () => {

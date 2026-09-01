@@ -601,24 +601,43 @@ export async function getHeaderCellFingerprints(buf, partKey) {
   const boundedRows = partKey === 'A' ? [6, 7] : [2, 3];
   const maxCol = partKey === 'A' ? 61 : 24;
 
+  function getCellTypeAndHash(val) {
+    if (val === null || val === undefined) {
+      return { normalizedType: 'blank', valHash: null };
+    } else if (typeof val === 'number') {
+      return { normalizedType: 'number', valHash: null };
+    } else if (typeof val === 'boolean') {
+      return { normalizedType: 'boolean', valHash: null };
+    } else if (val instanceof Date) {
+      return { normalizedType: 'date', valHash: null };
+    } else {
+      const strVal = String(val || '').replaceAll('\r\n', '\n');
+      if (strVal === '') {
+        return { normalizedType: 'blank', valHash: null };
+      }
+      return {
+        normalizedType: 'string',
+        valHash: crypto.createHash('sha256').update(strVal).digest('hex')
+      };
+    }
+  }
+
   const titleFingerprints = {};
   for (const addr of targetTitleAddrs) {
     const val = sheet.cell(addr).value();
-    const strVal = String(val || '');
-    const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
+    const { normalizedType, valHash } = getCellTypeAndHash(val);
     const mergeRef = getMergeRef(addr);
     const styleId = getStyleId(addr);
-    titleFingerprints[addr] = { address: addr, normalizedType: typeof val === 'object' && val === null ? 'blank' : typeof val, valHash, styleId, mergeRef };
+    titleFingerprints[addr] = { address: addr, normalizedType, valHash, styleId, mergeRef };
   }
 
   const valueFingerprints = {};
   for (const addr of targetValueAddrs) {
     const val = sheet.cell(addr).value();
-    const strVal = String(val || '');
-    const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
+    const { normalizedType, valHash } = getCellTypeAndHash(val);
     const mergeRef = getMergeRef(addr);
     const styleId = getStyleId(addr);
-    valueFingerprints[addr] = { address: addr, normalizedType: typeof val === 'object' && val === null ? 'blank' : typeof val, valHash, styleId, mergeRef };
+    valueFingerprints[addr] = { address: addr, normalizedType, valHash, styleId, mergeRef };
   }
 
   const valueSet = new Set(targetValueAddrs);
@@ -630,16 +649,109 @@ export async function getHeaderCellFingerprints(buf, partKey) {
       const addr = `${idxToCol(c)}${r}`;
       if (!valueSet.has(addr) && !titleSet.has(addr)) {
         const val = sheet.cell(addr).value();
-        const strVal = String(val || '');
-        const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
+        const { normalizedType, valHash } = getCellTypeAndHash(val);
         const mergeRef = getMergeRef(addr);
         const styleId = getStyleId(addr);
-        unrelatedFingerprints[addr] = { address: addr, normalizedType: typeof val === 'object' && val === null ? 'blank' : typeof val, valHash, styleId, mergeRef };
+        unrelatedFingerprints[addr] = { address: addr, normalizedType, valHash, styleId, mergeRef };
       }
     }
   }
 
   return { titleFingerprints, valueFingerprints, unrelatedFingerprints, merges };
+}
+
+export async function validateHeaderFingerprintParity(observedBufOrFingerprints, partKey, fingerprintsOverride = null) {
+  try {
+    const found = findLocalSourceTemplates();
+    if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+
+    const sourceFile = partKey === 'A' ? found.partA : found.partB;
+    const expectedSha = partKey === 'A' ? EXPECTED_PART_A_SHA : EXPECTED_PART_B_SHA;
+    const sourceBuf = fs.readFileSync(sourceFile);
+    const sourceSha = crypto.createHash('sha256').update(sourceBuf).digest('hex');
+    if (sourceSha !== expectedSha) {
+      throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+    }
+
+    const authFingerprints = await getHeaderCellFingerprints(sourceBuf, partKey);
+
+    let obsFingerprints = null;
+    if (fingerprintsOverride) {
+      obsFingerprints = fingerprintsOverride;
+    } else if (observedBufOrFingerprints && typeof observedBufOrFingerprints === 'object' && observedBufOrFingerprints.titleFingerprints) {
+      obsFingerprints = observedBufOrFingerprints;
+    } else if (Buffer.isBuffer(observedBufOrFingerprints)) {
+      obsFingerprints = await getHeaderCellFingerprints(observedBufOrFingerprints, partKey);
+    } else {
+      throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+    }
+
+    if (!obsFingerprints || !obsFingerprints.titleFingerprints || !obsFingerprints.valueFingerprints || !obsFingerprints.unrelatedFingerprints) {
+      throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+    }
+
+    // 1. Validate exact address-set keys
+    const authTitleAddrs = Object.keys(authFingerprints.titleFingerprints).sort();
+    const obsTitleAddrs = Object.keys(obsFingerprints.titleFingerprints).sort();
+    if (JSON.stringify(authTitleAddrs) !== JSON.stringify(obsTitleAddrs)) {
+      throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+    }
+
+    const authValueAddrs = Object.keys(authFingerprints.valueFingerprints).sort();
+    const obsValueAddrs = Object.keys(obsFingerprints.valueFingerprints).sort();
+    if (JSON.stringify(authValueAddrs) !== JSON.stringify(obsValueAddrs)) {
+      throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+    }
+
+    const authUnrelatedAddrs = Object.keys(authFingerprints.unrelatedFingerprints).sort();
+    const obsUnrelatedAddrs = Object.keys(obsFingerprints.unrelatedFingerprints).sort();
+    if (JSON.stringify(authUnrelatedAddrs) !== JSON.stringify(obsUnrelatedAddrs)) {
+      throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+    }
+
+    // 2. Validate Protected Static Title / Label Fingerprints
+    for (const addr of authTitleAddrs) {
+      const authRec = authFingerprints.titleFingerprints[addr];
+      const obsRec = obsFingerprints.titleFingerprints[addr];
+
+      if (!obsRec || obsRec.styleId !== authRec.styleId || obsRec.mergeRef !== authRec.mergeRef) {
+        throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+      }
+      if (obsRec.normalizedType !== authRec.normalizedType || obsRec.valHash !== authRec.valHash) {
+        throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+      }
+    }
+
+    // 3. Validate Dynamic Value Fingerprints (must be blank after sanitization, no sample valHash preserved)
+    for (const addr of authValueAddrs) {
+      const authRec = authFingerprints.valueFingerprints[addr];
+      const obsRec = obsFingerprints.valueFingerprints[addr];
+
+      if (!obsRec || obsRec.styleId !== authRec.styleId || obsRec.mergeRef !== authRec.mergeRef) {
+        throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+      }
+      if (obsRec.normalizedType !== 'blank' || obsRec.valHash !== null) {
+        throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+      }
+    }
+
+    // 4. Validate Unrelated Header Cell Fingerprints
+    for (const addr of authUnrelatedAddrs) {
+      const authRec = authFingerprints.unrelatedFingerprints[addr];
+      const obsRec = obsFingerprints.unrelatedFingerprints[addr];
+
+      if (!obsRec || obsRec.styleId !== authRec.styleId || obsRec.mergeRef !== authRec.mergeRef) {
+        throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+      }
+      if (obsRec.normalizedType !== authRec.normalizedType || obsRec.valHash !== authRec.valHash) {
+        throw new Error('BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED');
+      }
+    }
+
+    return true;
+  } catch (err) {
+    throw err;
+  }
 }
 
 export async function getWorkbookFingerprint(buf) {
@@ -854,20 +966,40 @@ export async function getSanitizedDisposableBuffers() {
   // Typed value collection in memory without logging source strings
   const wbA_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA_orig = wbA_orig.sheet(0);
+  const titleAddrsA = expandRangeToAddresses('B6:M7').concat(expandRangeToAddresses('Z6:AF6'), expandRangeToAddresses('AG6:AL6'), expandRangeToAddresses('AM6:AP6'), expandRangeToAddresses('AQ6:AS6'), expandRangeToAddresses('AT6:BC6'), expandRangeToAddresses('BD6:BI6'));
+  const protectedHeaderTextsA = new Set();
+  for (const a of titleAddrsA) {
+    const txt = String(sheetA_orig.cell(a).value() || '').trim();
+    if (txt) {
+      txt.split(/\s+/).forEach(word => { if (word.length >= 2) protectedHeaderTextsA.add(word); });
+      protectedHeaderTextsA.add(txt);
+    }
+  }
+
   const collectedSensitiveA = [];
   for (const addr of SENSITIVE_RANGES_A) {
     const v = sheetA_orig.cell(addr).value();
-    if (v && typeof v === 'string' && v.trim().length >= 3) {
+    if (v && typeof v === 'string' && v.trim().length >= 3 && !protectedHeaderTextsA.has(v.trim())) {
       collectedSensitiveA.push(v.trim());
     }
   }
 
   const wbB_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB_orig = wbB_orig.sheet(0);
+  const titleAddrsB = expandRangeToAddresses('B2:F3').concat(expandRangeToAddresses('J2:L2'), expandRangeToAddresses('M2:O2'), expandRangeToAddresses('P2:Q2'), ['R2'], expandRangeToAddresses('S2:W2'));
+  const protectedHeaderTextsB = new Set();
+  for (const a of titleAddrsB) {
+    const txt = String(sheetB_orig.cell(a).value() || '').trim();
+    if (txt) {
+      txt.split(/\s+/).forEach(word => { if (word.length >= 2) protectedHeaderTextsB.add(word); });
+      protectedHeaderTextsB.add(txt);
+    }
+  }
+
   const collectedSensitiveB = [];
   for (const addr of SENSITIVE_RANGES_B) {
     const v = sheetB_orig.cell(addr).value();
-    if (v && typeof v === 'string' && v.trim().length >= 3) {
+    if (v && typeof v === 'string' && v.trim().length >= 3 && !protectedHeaderTextsB.has(v.trim())) {
       collectedSensitiveB.push(v.trim());
     }
   }
