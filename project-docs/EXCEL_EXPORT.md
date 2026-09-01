@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R10 REVIEWED-NOT-PASS / R3-R11 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R11 REVIEWED-NOT-PASS / R3-R12 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -32,75 +32,57 @@ PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. Frozen Part B privacy authority
 
-The exact owner template remains the source structure authority. Privacy classification may use frozen business/template-role geometry, but acceptance requires actual SHA-verified source evidence to independently resolve or validate every classified address.
+The exact owner template remains the source structure authority. Privacy classification may use frozen business/template-role geometry, but actual SHA-verified source evidence must confirm the role before acceptance.
 
-`SENSITIVE_RANGES_B` remains a sanitizer compatibility map only. It must not be the root input that decides which addresses are dynamic for acceptance proof. It may be compared only after independent resolution.
+`SENSITIVE_RANGES_B` remains a sanitizer compatibility map only. It must not drive role selection and may be compared only after independent resolution.
 
-## 4. R3-R10 review result
+## 4. R3-R11 review result
 
-Scope review = PASS. Implementation `533599f9a1f7390c11c15dd7f3b28c911c3926e2` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
+Scope review = PASS. Implementation `e43669961b67d806994fec67fb2bf83fbd02cd01` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
 
 Accepted progress:
-- exact SHA-verified Part B source is loaded;
-- real source merge/style/type/blankness/hash evidence is attached to classification records;
-- tests verify source SHA and inspect evidence fields.
+- complete safe source inventory for Part B rows2:34 is built first;
+- exact SHA is enforced;
+- independent role resolution occurs before `SENSITIVE_RANGES_B` compatibility comparison;
+- real resolver enforces dynamic/protected disjointness;
+- real fail-closed tests now use actual Part B evidence records and the real resolver.
 
-Source acceptance = FAIL because dynamic/static role decisions remain preselected from `SENSITIVE_RANGES_B`, hard-coded header lists, row rules and manually built protected-static addresses. The fail-closed test also does not exercise the real classifier.
+Source acceptance = FAIL because body/summary roles remain accepted from broad row/column rectangles without role-specific source validation. Header roles have structural merge validation, but competency/body and summary/signature roles are not yet confirmed against authoritative merge/style/type/blankness/hash evidence.
 
-## 5. D2-WP003-R3-R11 — AUTHORIZED
+GitHub combined statuses/checks for the implementation commit are empty.
 
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R11
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
-PRIVACY_PURGE_REQUIRED = NO
-MAX_EXECUTOR_STATUS = ROLE_RESOLUTION_PROOF_PENDING_INDEPENDENT_REVIEW
-```
+## 5. Proposed D2-WP003-R3-R12
 
-R3-R11 is intentionally narrow and may modify only:
+R3-R12 is intentionally narrow: **body + summary role-specific source validation only**.
+
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No package/dependency changes and no binary publication.
+Mandatory direction:
+- preserve the accepted inventory-first architecture, header validation, real fail-closed path and post-resolution `SENSITIVE_RANGES_B` cross-check;
+- build authoritative safe source-role evidence from the exact SHA template before any test override;
+- frozen body/summary geometry may nominate a role but must not by itself accept it;
+- confirm each role with applicable source merge/style/type/blankness evidence and safe static value hashes where necessary;
+- real resolver must fail closed with `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on role-specific body/summary evidence conflicts;
+- tests must mutate role-relevant evidence for at least one protected competency/body address, one dynamic competency/body address and one summary/signature address;
+- preserve independent dynamic-set equality to sanitizer map only after resolution and preserve dynamic/static disjointness.
 
-## 6. Mandatory R3-R11 proof
+No typed/header/workbook/image/structural/formula closure is in R3-R12 scope.
 
-Use the exact SHA-verified Part B owner template and solve only independent role resolution / real fail-closed validation:
-- build a complete safe evidence inventory for rows 2:34 before assigning roles;
-- resolve/validate roles from frozen structural role geometry + actual source evidence;
-- do NOT use `SENSITIVE_RANGES_B` as classification input;
-- compare the independently resolved dynamic set to `SENSITIVE_RANGES_B` only after resolution as a compatibility check;
-- broad row-rule-only or manually pre-expanded role tables are not independent proof;
-- real classifier/validator must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` for missing, conflicting or ambiguous evidence;
-- tests must alter/remove evidence for real Part B addresses and prove the real path fails closed;
-- independently resolved protected-static set must be disjoint from dynamic set;
-- no raw source value may be logged or committed.
-
-No typed/header/workbook/image/structural/formula closure is in R3-R11 scope. Those blockers remain deferred until this classification gate is independently accepted.
-
-## 7. Explicit exclusions
-
-No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
-
-Mandatory commands:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-## 8. Current gate
+## 6. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R10 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R11 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
+D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R12 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R3-R11 ONLY / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
