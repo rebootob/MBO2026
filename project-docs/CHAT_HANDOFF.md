@@ -1,6 +1,5 @@
 # MBO2026 — CHAT HANDOFF
 
-> Canonical concise cross-chat continuation document.  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -22,45 +21,55 @@ No Live Kintone write/deploy/ACL/group/schema/record/session/password operation 
 D1 = PASS / CLOSED
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-Accepted owner-template SHA-256:
+Accepted template SHA-256:
 ```text
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Difficulty export remains blank temporarily by Owner decision.
+## 3. R3-R2 independent review
 
-## 3. R3-R1 review result
+R3-R2 scope = PASS. Only the two authorized feasibility files changed and no workbook/image/binary/output/package/application/Kintone/deploy path changed. Therefore no Privacy Purge is required.
 
-R3-R1 scope = PASS. Only the two authorized feasibility files changed and no workbook/image/binary/output was committed.
+R3-R2 source acceptance = FAIL / corrective required.
 
-Therefore:
-```text
-PRIVACY_PURGE_REQUIRED = NO
-```
+Accepted progress:
+- raw worksheet row/cell shifting is now used for Part A/Part B;
+- dimension and Print_Area are rewritten;
+- `rId3 -> image3.png` is actually removed in disposable Part A;
+- raw merge-count fallback was removed.
 
-R3-R1 source acceptance = FAIL / corrective required because the proof still used high-level value copying instead of raw OOXML structural insertion, heuristic shared-string privacy classification, no real image removal, and incomplete material parity/header assertions.
+Remaining blockers:
+- new Part A objective rows clone row XML but not row-28 merge refs;
+- new Part B blocks clone rows27:30 XML but not source-block merge refs;
+- structural tests do not independently prove styles/merges/heights/dimension/page/protection geometry;
+- privacy still uses `sharedStrings.xml` keyword heuristics as authority, lacks explicit mapped text/numeric/date collection, clears static header labels, and may expose sensitive tokens in failing assertions;
+- header proof remains incomplete;
+- image3 orphaning and complete non-target drawing/media preservation are not proved;
+- no-op parity lacks complete original-vs-roundtrip geometry/drawing comparison, `Sheet1` identity and horizontal centering assertion;
+- GitHub has no CI/status evidence.
 
-## 4. Accepted template evidence
+## 4. Frozen source evidence
 
-Part A:
-- Fiscal Year merged value = `N6:Q7`.
-- Department = `Z6:AF6` label / `Z7:AF7` value.
-- Section = `AG6:AL6` / `AG7:AL7`.
-- Start Date = `AM6:AP6` / `AM7:AP7`.
-- Employee ID = `AQ6:AS6` / `AQ7:AS7`.
-- Employee Name = `AT6:BC6` / `AT7:BC7`.
-- Position = `BD6:BI6` / `BD7:BI7`.
+Part A header/value geometry:
+- Fiscal Year merged value `N6:Q7`;
+- Department `Z6:AF6` label / `Z7:AF7` value;
+- Section `AG6:AL6` / `AG7:AL7`;
+- Start Date `AM6:AP6` / `AM7:AP7`;
+- Employee ID `AQ6:AS6` / `AQ7:AS7`;
+- Employee Name `AT6:BC6` / `AT7:BC7`;
+- Position `BD6:BI6` / `BD7:BI7`.
 
 Part B:
-- Fiscal Year merged value = `G2:H3`.
-- Department = `J2:L2` / `J3:L3`.
-- Section = `M2:O2` / `M3:O3`.
-- Position = `P2:Q2` / `P3:Q3`.
-- Employee ID = `R2` / `R3`.
-- Employee Name = `S2:W2` / `S3:W3`.
+- Fiscal Year merged value `G2:H3`;
+- Department `J2:L2` / `J3:L3`;
+- Section `M2:O2` / `M3:O3`;
+- Position `P2:Q2` / `P3:Q3`;
+- Employee ID `R2` / `R3`;
+- Employee Name `S2:W2` / `S3:W3`.
 
 Reference screenshot target:
 ```text
@@ -68,91 +77,54 @@ xl/drawings/drawing1.xml
 xl/drawings/_rels/drawing1.xml.rels
 rId3 -> ../media/image3.png
 ```
+Preserve all non-target drawing/media relationships.
 
-Must preserve `rId1 -> image1.jpeg`, `rId2 -> image2.jpeg`, and every other non-target drawing/media relationship present in the source.
-
-## 5. Exact current gate — R3-R2 AUTHORIZED
+## 5. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R1 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R2 = RAW OOXML STRUCTURE + PRIVACY FEASIBILITY PROOF
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R2
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R2 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R2 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R3
+PROPOSED_WORK_PACKAGE_NAME = RAW OOXML MERGE + PRIVACY PROOF COMPLETION
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact contract.
+## 6. R3-R3 direction if approved
 
-## 6. Exact authorized writes
+Keep current raw OOXML row/cell/dimension/Print_Area architecture. Fix only remaining proof gaps:
+- clone Part A row-28 merge structure to every inserted row;
+- clone Part B rows27:30 merge structure into both inserted blocks;
+- test raw style/merge/height/dimension/page/protection geometry;
+- explicit privacy address/range map with mapped values collected by actual type and no sensitive logging;
+- preserve static labels;
+- prove image3 orphaning and full non-target drawing preservation;
+- complete original-vs-roundtrip parity.
 
-Only:
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `package.json` / `package-lock.json`.
+No binary publication, package change, production sanitizer/renderer, PDF/UI/Live Kintone/deploy or next Work Package.
 
-No XLSX/image/media/disposable-output commit.
-
-## 7. R3-R2 critical rules
-
-- use `xlsx-populate` only for load/reparse/ZIP access needed by proof;
-- structural insertion must mutate raw OOXML directly, not use row/cell copy loops;
-- Part A raw insertion: +1 / +6 after row28, clone row28 structure, shift raw row/cell/merge/dimension/Print_Area refs;
-- Part B raw insertion: shift rows31+ by +8 and clone rows27:30 twice into rows31:38;
-- privacy source of truth = explicit sensitive range map across text/numeric/date cells, never shared-string keyword heuristics;
-- image proof must actually remove `rId3 -> image3.png` while preserving all non-target graphics;
-- full no-op parity must include page size/orientation/scale, merges, dimensions, Part B centering/protection and drawing inventory;
-- tests must inspect raw resulting OOXML directly;
-- unresolved structure must fail closed.
-
-Still forbidden: production sanitizer/renderer, binary publication, package changes, Difficulty implementation, PDF/UI/Live Kintone/deploy, or next Work Package.
-
-## 8. Required commands
+## 7. Authorization ledger
 
 ```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push, STOP at `FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
-
-## 9. Authorization ledger
-
-```text
-D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
-D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
-D2-WP002 = APPROVED / READ-ONLY / CLOSED
-D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
-D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
-D2-WP003-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / PURGED / DO NOT REUSE
-D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R1-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R2-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
+D2-WP003-R3-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_APP794_DEPLOY_AUTH = NONE
-APP53_WRITE_AUTH = NONE
-APP794_WRITE_AUTH = NONE
-APP795_WRITE_AUTH = NONE
-APP801_WRITE_AUTH = NONE
-ACL_PROCESS_WRITE_AUTH = NONE
-KINTONE_CUSTOMIZATION_DEPLOY = NONE
-LIVE_UAT = NONE
-ROLLBACK_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 10. Exact next action
+## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CURRENT CANONICAL BRANCH, EXECUTE R3-R2 RAW OOXML PROOF IN TWO AUTHORIZED FILES ONLY, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R3
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot corrective authorization
 ```
