@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R12 REVIEWED NOT PASS
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R13 AUTHORIZED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R13 PROPOSED | Body + summary authoritative evidence parity remains |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R13 AUTHORIZED | Body + summary authoritative evidence parity only |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -39,16 +39,51 @@ PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 Implementation `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` changed only the two authorized feasibility files. Scope = PASS; no Privacy Purge required.
 
 Accepted progress:
-- authoritative SHA source inventory is loaded before override evidence;
-- observed override evidence is separated from authoritative expected evidence;
-- body/summary validation now compares `styleId` and `mergeRef` against authoritative source;
+- authoritative SHA source inventory is loaded before observed override evidence;
+- authoritative expected and observed evidence are separated;
+- body/summary validation checks authoritative `styleId` and `mergeRef`;
 - real fail-closed tests mutate style evidence for protected body `B7`, dynamic body `K7`, and summary `B31`.
 
-Source acceptance = FAIL because role-relevant authoritative parity remains incomplete: `normalizedType`, `nonblank`, and protected-static safe hash identity where needed are not compared. Same-style/same-merge semantic evidence changes can therefore still pass.
+Source acceptance = FAIL because role-relevant parity is still incomplete: `normalizedType`, `nonblank`, and protected-static safe hash identity where needed are not compared.
 
-GitHub combined statuses/checks for the implementation commit are empty.
+## 4. D2-WP003-R3-R13 — AUTHORIZED
 
-## 4. Current gate
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R13
+WORK_PACKAGE_NAME = BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+PRIVACY_PURGE_REQUIRED = NO
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = EVIDENCE_PARITY_PENDING_INDEPENDENT_REVIEW
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+```
+
+Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
+
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Package files, governance docs and owner templates are read-only for Antigravity.
+
+## 5. R3-R13 acceptance direction
+
+R3-R13 solves one blocker only:
+- preserve authoritative-source-first / observed-override separation;
+- preserve current style/merge checks;
+- compare role-relevant authoritative vs observed `normalizedType` and `nonblank` for body/summary candidates;
+- require safe `valHash` parity only for proven protected-static template text where needed;
+- never require dynamic employee/sample values to equal source sample hash;
+- real resolver must fail closed with `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on required parity conflict;
+- tests must mutate non-style evidence for one protected body, one dynamic body and one summary/signature real address;
+- preserve post-resolution `SENSITIVE_RANGES_B` equality and dynamic/static disjointness.
+
+Do not work on typed metadata, header parity, workbook parity, image inventory, insertion matrix, formula matrix, production renderer, PDF/UI, Kintone or deploy.
+
+## 6. Current gate
 
 ```text
 D1 = PASS / CLOSED
@@ -57,40 +92,23 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R13
-PROPOSED_WORK_PACKAGE_NAME = BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R13 = AUTHORIZED / EXECUTION ACTIVE
+CURRENT_EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY = EXECUTE R3-R13 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-No Work Package may auto-start.
+No other Work Package may auto-start.
 
-## 5. R3-R13 direction if approved
-
-R3-R13 remains single-blocker only:
-- preserve authoritative-source-first architecture and current style/merge validation;
-- compare authoritative vs observed role-relevant `normalizedType` and `nonblank` for body/summary roles;
-- require safe `valHash` parity only for proven protected-static template text where needed;
-- do not require value-hash equality for legitimate dynamic employee/sample values;
-- real resolver must fail closed on these non-style evidence conflicts;
-- tests must mutate real protected-body, dynamic-body and summary/signature non-style evidence.
-
-Expected writes only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-No package/dependency change or binary publication.
-
-## 6. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R13-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
