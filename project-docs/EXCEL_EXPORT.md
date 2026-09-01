@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R12 REVIEWED-NOT-PASS / R3-R13 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R12 REVIEWED-NOT-PASS / R3-R13 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -42,34 +42,53 @@ Scope review = PASS. Implementation `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` c
 
 Accepted progress:
 - authoritative source inventory is loaded before observed override evidence;
+- authoritative and observed evidence are separated;
 - body/summary observed evidence is validated against authoritative `styleId` and `mergeRef`;
 - real fail-closed tests cover protected body `B7`, dynamic body `K7`, and summary `B31` style conflicts.
 
-Source acceptance = FAIL because style/merge parity alone is not sufficient. The resolver does not yet compare role-relevant authoritative `normalizedType`, `nonblank`, or protected-static safe hash identity where needed. Same-style/same-merge semantic evidence changes can therefore still pass.
+Source acceptance = FAIL because style/merge parity alone is not sufficient. Role-relevant authoritative `normalizedType`, `nonblank`, and protected-static safe hash identity where needed are not yet compared.
 
-GitHub combined statuses/checks for the implementation commit are empty.
+## 5. D2-WP003-R3-R13 — AUTHORIZED
 
-## 5. Proposed D2-WP003-R3-R13
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R13
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
+PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = EVIDENCE_PARITY_PENDING_INDEPENDENT_REVIEW
+```
 
-R3-R13 is intentionally narrow: **body + summary authoritative evidence parity only**.
-
-Expected writes only:
+R3-R13 is intentionally narrow and may modify only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-Mandatory direction:
+No package/dependency changes and no binary publication.
+
+## 6. Mandatory R3-R13 proof
+
+Use the exact SHA-verified Part B owner template and solve only body + summary authoritative evidence parity:
 - preserve authoritative-source-first / observed-override separation;
-- preserve current style/merge validation and real fail-closed architecture;
-- compare authoritative vs observed role-relevant `normalizedType` and `nonblank` for body/summary roles;
-- for proven protected-static template text, require safe `valHash` parity where necessary to reject silent content substitution;
+- preserve current style/merge validation and real fail-closed path;
+- compare authoritative vs observed role-relevant `normalizedType` and `nonblank` for body/summary candidates;
+- for proven protected-static template text, require safe `valHash` parity where necessary to reject silent same-style/same-merge substitution;
 - do NOT compare source sample `valHash` for legitimate dynamic employee/sample fields;
-- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on required evidence mismatch;
-- tests must mutate non-style evidence for one protected body, one dynamic body and one summary/signature real address;
+- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on any required evidence mismatch;
+- tests must mutate non-style evidence for at least one protected body, one dynamic body and one summary/signature real address;
 - preserve post-resolution sanitizer-set equality and dynamic/static disjointness.
 
-No typed/header/workbook/image/insertion-structural/formula closure is in R3-R13 scope.
+No typed/header/workbook/image/insertion/formula closure is in R3-R13 scope.
 
-## 6. Current gate
+## 7. Explicit exclusions
+
+No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
+
+Mandatory commands:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -77,11 +96,11 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R13 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R13 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R13 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
