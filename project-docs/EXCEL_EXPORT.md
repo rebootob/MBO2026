@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R1 REVIEWED-NOT-PASS / R3-R2 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R2 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -41,7 +41,7 @@ PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 Original owner binaries remain outside Git.
 
-Owner decision remains:
+Owner decision:
 ```text
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
@@ -63,6 +63,7 @@ LOWER_SECTION_START = ROW 29
 Part B:
 ```text
 MAIN_SHEET = (Part B) Competency
+SECOND_SHEET = Sheet1
 PRINT_AREA = A1:X35
 PAPER_SIZE = A4 / Excel paperSize 9
 ORIENTATION = PORTRAIT
@@ -75,9 +76,9 @@ FINAL_LEGACY_BLOCK = ROWS 27:30
 TOTALS_SIGNATURE_START = ROW 31
 ```
 
-## 5. Exact header geometry — corrected from raw owner OOXML
+## 5. Exact header/value geometry
 
-The generic “label row / value row” rule has Fiscal-Year merged-value exceptions.
+The generic label-row/value-row rule has Fiscal-Year merged-value exceptions.
 
 Part A:
 ```text
@@ -113,11 +114,11 @@ EMP_NAME_LABEL = S2:W2
 EMP_NAME_VALUE = S3:W3
 ```
 
-Do not treat `N6` / `G2` as static label cells; they are the anchors of merged Fiscal-Year value regions.
+Do not treat `N6` / `G2` as ordinary static label cells.
 
 ## 6. Reference-image structural evidence
 
-For the Part A owner workbook:
+For Part A:
 ```text
 DRAWING_XML = xl/drawings/drawing1.xml
 DRAWING_RELS = xl/drawings/_rels/drawing1.xml.rels
@@ -125,114 +126,133 @@ REFERENCE_SCREENSHOT_REL = rId3
 REFERENCE_SCREENSHOT_MEDIA = xl/media/image3.png
 ```
 
-Approved branding that must remain in the R3-R2 proof:
+Must preserve:
 ```text
 rId1 -> ../media/image1.jpeg
 rId2 -> ../media/image2.jpeg
+ALL OTHER NON-TARGET DRAWING/MEDIA RELATIONSHIPS = PRESERVE
 ```
 
-The R3/R3-R1 proof target is the historical screenshot represented by `rId3 -> image3.png`. Production handling of other historical/reference graphics remains subject to the later production sanitizer package.
+The R3-R2 target is only the historical/reference screenshot represented by `rId3 -> image3.png`.
 
 ## 7. R3-R1 review result
 
-R3-R1 scope discipline passed and no binary output was published; no Privacy Purge is required.
+R3-R1 scope passed and no binary output was published, so no Privacy Purge is required.
 
-R3-R1 source acceptance failed:
-- no-op parity is still incomplete and includes merge-count fallback behavior that can mask missing metadata;
-- header proof is partially corrected but does not independently verify every intended value range after reparse;
-- privacy still derives sensitive text primarily from `sharedStrings.xml` keyword heuristics and does not establish explicit text/numeric/date range collection;
-- failing privacy assertions can expose the sensitive token in the assertion message;
-- reference-image helper performs no removal;
-- Part A/Part B still use high-level value/row-height copying instead of raw OOXML insertion;
-- structural tests prove only sentinel movement, not row/cell/merge/style/dimension/print/protection correctness.
+R3-R1 did not pass source acceptance because:
+- no-op parity remained incomplete;
+- header proof was only partial;
+- privacy still used shared-string keyword heuristics;
+- reference-image helper removed nothing;
+- Part A/Part B still used high-level value/row-height copying instead of raw OOXML insertion;
+- tests still proved mostly sentinel/value movement instead of raw structure.
 
-GitHub has no CI/status evidence for the R3-R1 proof commit.
+## 8. R3-R2 authorization
 
-## 8. Proposed R3-R2 — raw OOXML feasibility only
+```text
+D2-WP003-R3-R2 = AUTHORIZED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
+PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+```
 
-R3-R2 is not a production renderer/sanitizer package and must not publish XLSX/image/binary outputs.
+R3-R2 is feasibility-only and must not publish workbook/image/binary outputs.
 
-Expected write scope only:
+Authorized writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No dependency changes.
+No package/dependency changes.
 
-### 8.1 Mandatory OOXML architecture
+## 9. Mandatory raw OOXML architecture
 
-`xlsx-populate@1.21.0` may be used for loading/reparsing and access to the workbook ZIP package. It must NOT be used to simulate structural insertion through high-level row/cell copy loops.
+`xlsx-populate@1.21.0` may be used for load/reparse and ZIP package access. Structural insertion must directly mutate raw OOXML; high-level row/cell copy loops are not acceptance.
 
-Part A structural proof must mutate raw package structures:
-- `xl/worksheets/sheet1.xml` rows/cells/merge refs/dimension;
-- workbook Print_Area defined name where required;
-- clone raw objective-row structure from row 28;
-- shift rows 29+ by +1 or +6.
+### 9.1 Material no-op parity
 
-Part B structural proof must:
-- mutate raw `xl/worksheets/sheet1.xml`;
-- shift rows 31+ by +8;
-- clone the proven final legacy competency block rows 27:30 twice into rows 31:34 and 35:38;
-- update merge refs/dimension/Print_Area and preserve page/protection geometry.
+Must compare original vs round-trip structural metadata and prove:
+- Part A: one sheet, correct name, `A1:BJ52`, paperSize8/A3, landscape, scale58, 193 raw merge refs, representative row/column geometry, drawing inventory;
+- Part B: two sheets in same order including `Sheet1`, `A1:X35`, paperSize9/A4, portrait, scale75, horizontal centering, sheet protection, 79 raw merge refs, representative row/column geometry, drawing inventory;
+- successful reparse.
 
-### 8.2 Part A acceptance
+No fallback assertion may substitute an expected value when metadata is unavailable.
+
+### 9.2 Header/value proof
+
+Use the exact ranges in section 5. Fingerprint all title/label regions without exposing source values, mutate/clear every runtime value region only, reparse, prove all static fingerprints unchanged, all intended value regions changed/cleared, and no unrelated header cell changed.
+
+### 9.3 Privacy proof
+
+Sensitive source of truth = explicit bounded address/range map, not shared-string keyword heuristics.
+
+The map must cover identity/org/date/Fiscal-Year/Hoshin/objective/action/target/result/self/appraiser/signature/score/grade/Difficulty sample areas.
+
+Collect designated values by type in memory without logging values; clear only mapped sensitive ranges; reparse and assert ranges empty; scan OOXML for collected sensitive text without printing values; any shared-string cleanup must be driven by the explicit map; introduce zero scoring formulas.
+
+### 9.4 Reference image proof
+
+On disposable Part A package:
+- remove the drawing anchor/object embedding `rId3`;
+- remove `rId3` from `drawing1.xml.rels`;
+- remove `xl/media/image3.png` if orphaned;
+- preserve rId1/rId2 and all other non-target graphics;
+- update package metadata only as required;
+- reparse and inspect raw XML/rels/ZIP membership.
+
+### 9.5 Part A raw insertion
 
 4 objectives:
-- no insertion;
-- row29 remains row29;
+- row29 unchanged;
 - print area `A1:BJ52`.
 
 5 objectives:
-- raw structural +1 insertion after row28;
+- structurally clone raw row28 as new row29;
+- shift raw rows29+ by +1;
+- rewrite row/cell/merge/range refs and worksheet dimension;
 - old row29 -> row30;
-- new objective row29 structurally matches row28 where applicable;
 - print area `A1:BJ53`.
 
 10 objectives:
-- raw structural +6 insertion;
+- clone row28 into rows29:34;
+- shift raw rows29+ by +6;
+- rewrite refs/dimension;
 - old row29 -> row35;
 - objective slot10 = row34;
 - print area `A1:BJ58`.
 
-Tests must inspect raw row `r`, cell `r`, style ids, merge refs, row height, dimension, page setup and defined Print_Area after reparse.
+Inserted rows must preserve representative row28 height/style/merge/border/alignment structure. Preserve paperSize8/A3, landscape, scale58.
 
-### 8.3 Part B acceptance
+### 9.6 Part B raw insertion
 
 6 competencies:
-- no insertion;
-- totals row31;
+- totals remain row31;
 - print area `A1:X35`.
 
 8 competencies:
-- raw rows31+ shift +8;
-- clone raw rows27:30 twice;
-- totals row31 -> row39;
-- print area `A1:X43`;
-- preserve A4/paperSize9, portrait, scale75, horizontal centering and sheet protection.
+- shift raw rows31+ by +8;
+- clone raw source block rows27:30 twice into rows31:34 and 35:38;
+- rewrite row/cell/merge/range refs and dimension;
+- old row31 -> row39;
+- print area `A1:X43`.
 
-Tests must inspect raw OOXML structure, not sentinel-only movement.
+Inserted blocks must preserve representative source-block height/style/merge/border/alignment structure. Preserve paperSize9/A4, portrait, scale75, horizontal centering and protection.
 
-### 8.4 Privacy acceptance
+## 10. Test design
 
-Sensitive source of truth must be an explicit bounded address/range map covering identity/org/date/Hoshin/objective/action/target/result/self/appraiser/signature/score/grade/Difficulty sample areas.
+Tests must inspect raw OOXML after mutation. Helper success flags and sentinel-only proof are insufficient.
 
-Collect designated values by cell type in memory, clear designated ranges, reparse, directly assert ranges empty, scan OOXML for collected text without printing source values, and introduce zero scoring formulas.
+If bounded raw surgery cannot be made safe, stop with the relevant blocker rather than emulate insertion through value copying.
 
-`sharedStrings.xml` keyword filtering may not be the authority for deciding what is sensitive.
+Mandatory commands:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
 
-### 8.5 Reference-image acceptance
+## 11. Explicit exclusions
 
-On disposable Part A package:
-- find anchor/object whose `a:blip` embeds `rId3`;
-- remove that drawing anchor/object;
-- remove `rId3` relationship;
-- remove `xl/media/image3.png` if orphaned;
-- preserve rId1/rId2 and their media;
-- reparse successfully;
-- test raw drawing XML/rels/package members directly.
-
-## 9. Explicit exclusions
-
-Still no:
+No:
 - XLSX/image/media/output commit;
 - package/dependency changes;
 - production sanitizer/renderer;
@@ -241,7 +261,7 @@ Still no:
 - PDF/UI/Live Kintone/deploy;
 - next Work Package.
 
-## 10. Current gate
+## 12. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -249,15 +269,14 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R1 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R2 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R2 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = EXECUTE R3-R2 ONLY / LOW-CREDIT
 ```
 
-## 11. D2 closure condition
+## 13. D2 closure condition
 
 D2 remains open until production Part A/Part B/combined/PDF parity and export security are independently accepted.
 
