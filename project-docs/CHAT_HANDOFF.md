@@ -21,6 +21,8 @@ No Live Kintone write/deploy/ACL/group/schema/record/session/password operation 
 D1 = PASS / CLOSED
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
+D2-WP003-R3-R13 = PASS / CLOSED
+PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
@@ -30,86 +32,70 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R12 independent review
+## 3. R3-R13 independent review — PASS
 
-R3-R12 implementation `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` changed only the two authorized feasibility files. Scope = PASS. No Privacy Purge required.
+Implementation `14ec0c4fcc404e580ced61759dd0338a68f2c856` is exactly one commit above authorization baseline `4b52ee0a7c860a41668e0c6e8b435f756df3d4a1` and changed only the two authorized feasibility files.
 
-Accepted progress:
-- authoritative SHA source inventory is loaded before any observed override;
-- observed and authoritative evidence are separated;
-- body/summary validation checks `styleId` and `mergeRef` against authoritative source;
-- real fail-closed tests mutate role-relevant style evidence for real protected body `B7`, dynamic body `K7`, and summary `B31`.
+Accepted behavior:
+- authoritative-vs-observed evidence separation preserved;
+- style/merge parity preserved;
+- `normalizedType` + `nonblank` parity added;
+- protected-static hashed text requires safe hash parity;
+- dynamic values do not require source-sample hash equality;
+- real resolver fail-closed tests cover protected body `B7`, dynamic body `K7`, summary `B31`.
 
-R3-R12 source acceptance = FAIL only because authoritative evidence parity is incomplete: `normalizedType`, `nonblank`, and safe static identity where required are not compared.
+Scope review = PASS. Source review = PASS. No Privacy Purge required. GitHub combined status/check list is empty.
 
-## 4. Exact current gate — R3-R13 AUTHORIZED
+Do not reopen this Part B classification/evidence-parity blocker without proven regression.
+
+## 4. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R13 = BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R13
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R13 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = EVIDENCE_PARITY_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R13 = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R14
+PROPOSED_WORK_PACKAGE_NAME = TYPED PRIVACY METADATA COMPLETENESS
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for exact contract.
+## 5. Why R3-R14 is next
 
-## 5. Exact authorized writes
+Current typed metadata helper already emits address/type/nonblank/hash metadata, but current tests only prove aggregate count/reconciliation.
 
-Only:
+If approved, R3-R14 must prove per-record completeness and consistency:
+- exact expected address sets for Parts A/B;
+- no duplicates;
+- normalized type enum exactly `string|number|date|boolean|blank`;
+- `nonblank` boolean consistent with type;
+- safe hash contract without raw values;
+- aggregate type counts still reconcile.
+
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only: package files, governance docs and exact ignored owner template after SHA verification.
+Do not touch header/workbook/image/insertion/formula blockers, production renderer, PDF/UI, Kintone, deploy or another Work Package.
 
-No XLSX/image/media/disposable-output commit.
-
-## 6. R3-R13 critical rules
-
-R3-R13 addresses ONE blocker only:
-- preserve authoritative-source-first / observed-override separation;
-- preserve accepted style/merge validation and real fail-closed architecture;
-- compare role-relevant `normalizedType` and `nonblank` against authoritative source for body/summary candidates;
-- require safe `valHash` identity only for proven protected-static template text where necessary;
-- never require dynamic employee/sample values to equal source sample hash;
-- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on required non-style parity conflict;
-- tests must mutate non-style evidence for one protected body, one dynamic body and one summary/signature real address;
-- preserve post-resolution `SENSITIVE_RANGES_B` equality and dynamic/static disjointness.
-
-Do not attempt typed/header/workbook/image/insertion/formula blocker closure in R3-R13.
-
-Still forbidden: production sanitizer/renderer, package changes, binary publication, PDF/UI, Live Kintone, deploy or next Work Package.
-
-## 7. Required commands
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at `EVIDENCE_PARITY_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
-
-## 8. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R13-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R13-SOURCE-20260901-01
+D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R13 AUTHORITATIVE EVIDENCE PARITY, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R14
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
 ```
