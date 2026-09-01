@@ -1,183 +1,108 @@
-# AI ACTIVE TASK — D2-WP003-R3-R22 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R22 RUNTIME EVIDENCE AUTHORIZED
 
-Mode: **ANTIGRAVITY / TEST-PROOF ISOLATION ONLY / SOURCE READ-ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**
+Mode: **ANTIGRAVITY / READ-ONLY TEST EXECUTION + ONE SAFE EVIDENCE FILE / NO SOURCE CHANGE / NO KINTONE / NO DEPLOY**
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = AUTHORIZED_FOR_EVIDENCE_CAPTURE
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
-D2-WP001 = PASS / CLOSED
-D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R17 = PASS / CLOSED
-D2-WP003-R3-R18 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R19 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R20 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R22
-ACTIVE_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
+D2-WP003-R3-R22_TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+D2-WP003-R3-R22_SCOPE_REVIEW = PASS
+D2-WP003-R3-R22_SOURCE_REVIEW = PASS
+D2-WP003-R3-R22_RUNTIME_EVIDENCE = REQUIRED / NOT YET ACCEPTED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R22-E1
+ACTIVE_WORK_PACKAGE_NAME = PRIVACY-SAFE RUNTIME EVIDENCE CAPTURE
 OWNER_APPROVAL = GRANTED 2026-09-01 ICT
 EXECUTOR = ANTIGRAVITY
 ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R22-TEST-20260901-01
-MAX_EXECUTOR_STATUS = TEST_PROOF_ISOLATION_PENDING_INDEPENDENT_REVIEW
-PRIVACY_PURGE_REQUIRED = NO
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP003-R3-R22-EVIDENCE-20260901-01
+MAX_EXECUTOR_STATUS = R3_R22_EVIDENCE_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 1. Purpose — ISOLATE TEST PROOF ONLY
+## 1. Purpose — COMPLETE R3-R22 EVIDENCE ONLY
 
-Preserve the accepted R3-R21 source implementation. Correct only the remaining test-proof defect:
+The R3-R22 test source at commit `9cb94250fc0fa3bfe458f406c09d0df709aa5b96` has already passed independent scope/source review.
 
-1. mutation-specific negative tests must not use raw Part B `fpOutB/outBufB` as their validity baseline because raw Part B may already be parity-invalid;
-2. each mutation-specific negative must start from an independently valid exact-source/source-backed fingerprint and buffer proven through the real `validateWorkbookParity()`;
-3. actual `<dimension>` removal must start from an exact source buffer whose target worksheet is first proven to contain the actual tag;
-4. raw Part A / Part B main / Part B `Sheet1` no-op dimension evidence and real-validator outcome must be pinned separately from mutation-specific negative proof;
-5. deterministic blocker-normalization proof must also use a valid source-backed baseline.
+The remaining gap is that the independent reviewer cannot access the exact SHA-verified owner templates and GitHub has no CI/status evidence. Antigravity must run the already-authorized tests against the exact local owner templates and commit one privacy-safe evidence document for independent review.
 
-This is TEST-ONLY. Do not change implementation behavior in this work package.
+No implementation or test correction is authorized.
 
 ## 2. Execution baseline and exact write scope
 
 Control-plane pre-authorization checkpoint:
 
 ```text
-d02b46bc6a600225077780799efd6580440fc005
+9cb94250fc0fa3bfe458f406c09d0df709aa5b96
 ```
 
-This checkpoint is NOT the executor baseline. Antigravity MUST fresh-fetch the canonical branch after this authorization is committed/pushed and record the then-current remote HEAD as `EXECUTION_BASELINE` before editing. Never reset behind the current authorized governance HEAD.
+This checkpoint is NOT the executor baseline. Antigravity MUST fresh-fetch after this authorization is committed/pushed and record the then-current remote HEAD as `EXECUTION_BASELINE` before running commands.
 
-Authorized modification ONLY:
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Authorized creation ONLY:
+
+```text
+project-docs/D2_WP003_R3_R22_RUNTIME_EVIDENCE.md
+```
 
 Mandatory READ-ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `package.json`
-- `package-lock.json`
-- all governance documents
-- exact ignored owner templates after SHA verification
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`;
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `package.json` and `package-lock.json`;
+- all existing governance/baseline/evidence documents;
+- exact ignored owner templates.
 
-No new file. No dependency/package change. No XLSX/image/media/output publication.
+No other tracked file may change. No dependency or lockfile change. No generated XLSX/PDF/image/media/output may be committed.
 
-If any implementation/source change outside the single authorized test file appears necessary, STOP and report an authorization-invalidating blocker. Do not widen scope.
+If any source/test change appears necessary, STOP `BLOCKER_AUTHORIZATION_SCOPE_INVALIDATED` and still record only the safe blocker evidence in the authorized evidence file.
 
-## 3. Exact source identity and privacy boundary
+## 3. Exact template identity and privacy boundary
 
-Use ONLY exact owner templates:
+Use ONLY templates whose SHA-256 values equal:
 
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-If exact templates are unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never log, snapshot, commit or publish raw employee/sample/confidential cell values or owner binaries.
+If either exact template is unavailable or mismatched:
+- do not run it as canonical evidence;
+- record only observed SHA or `NOT_AVAILABLE` and the blocker;
+- STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
 
-## 4. Preserve accepted R3-R21 implementation and proof
+Never write to Git:
+- owner template binaries;
+- raw workbook/output buffers;
+- raw employee/sample/confidential values;
+- cell values, names, employee codes or sensitive tokens;
+- screenshots or extracted workbook XML containing values.
 
-DO NOT regress or reopen:
-- direct raw `xlsx-populate.outputAsync()` buffers from `getNoOpParityBuffers()` with no source repair;
-- `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` preservation and normalization of every other parity-path failure to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- strict actual `<dimension .../>` evidence only, with no row/cell synthesis;
-- exact print-area binding by `localSheetId` and actual zero-based worksheet index;
-- workbook-wide all-sheet coverage, including Part B `Sheet1`;
-- Part B `Sheet1.colsHash` negative coverage;
-- R3-R17 header, privacy-role, typed-metadata and zero-sensitive-token proofs;
-- existing image/insertion/formula feasibility tests;
-- Difficulty Level remains blank temporarily.
+Allowed safe evidence:
+- SHA-256 values;
+- boolean presence/absence;
+- test names/counts/status/duration;
+- blocker identifiers;
+- validator status;
+- dependency audit summary;
+- commit/file/status metadata.
 
-The implementation file is read-only even if a test exposes raw no-op degradation.
+## 4. Mandatory read-only execution
 
-## 5. Corrective A — INDEPENDENTLY VALID SOURCE-BACKED BASELINE
-
-Inside the existing no-op parity test, build exact-source fingerprints independently from `origBufA/origBufB`.
-
-Before any mutation-specific proof, require the real validator to prove the exact source baselines valid:
+Fresh-fetch canonical HEAD and verify:
 
 ```text
-validateWorkbookParity(origBufA, 'A') === true
-validateWorkbookParity(origBufB, 'B') === true
+git merge-base --is-ancestor 9cb94250fc0fa3bfe458f406c09d0df709aa5b96 HEAD
 ```
 
-For every mutation-specific negative currently based on `fpOutB/outBufB`:
-- clone the exact-source `fpOrigB` or another independently real-validator-proven source-backed fingerprint;
-- pass the exact-source `origBufB` as the associated buffer when a fingerprint override is used;
-- change only the one intended field for that negative proof;
-- require exactly `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- ensure a rejection cannot be caused by a pre-existing raw output defect.
-
-This includes at minimum:
-- wrong Part B `Sheet1.printArea`;
-- blank/changed worksheet dimension fingerprint;
-- Part B `Sheet1.colsHash` mutation;
-- non-serializable/malformed fingerprint normalization;
-- worksheet order mutation;
-- merge mutation;
-- page setup/orientation mutation;
-- sheet-protection mutation.
-
-Do not weaken or delete negative coverage merely to make tests pass.
-
-## 6. Corrective B — ACTUAL DIMENSION-TAG REMOVAL FROM KNOWN-VALID SOURCE
-
-The dimension-removal proof must start from exact-source `origBufB`, not raw `outBufB`.
-
-Required preconditions and proof:
-1. open the exact source buffer in memory only;
-2. resolve the intended worksheet OOXML deterministically;
-3. assert the source worksheet XML actually contains the exact `<dimension .../>` tag before mutation;
-4. remove exactly that tag from the disposable in-memory source copy;
-5. assert the mutation really changed the XML/tag presence;
-6. validate the mutated buffer through the real `validateWorkbookParity()`;
-7. require exactly `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`.
-
-If the exact source target has no dimension tag, STOP and report the evidence mismatch. Do not silently run a no-op replacement and claim negative proof.
-
-## 7. Corrective C — RAW NO-OP RESULT PINNING, SEPARATE FROM NEGATIVE PROOF
-
-Keep raw observed buffers unmodified and unrepaired.
-
-Separately capture safe structural evidence for:
-- Part A source main-sheet dimension presence/absence;
-- Part A raw no-op main-sheet dimension presence/absence;
-- Part B source main-sheet dimension presence/absence;
-- Part B raw no-op main-sheet dimension presence/absence;
-- Part B source `Sheet1` dimension presence/absence;
-- Part B raw no-op `Sheet1` dimension presence/absence.
-
-Evaluate raw `outBufA/outBufB` only through the real validator:
-- if raw output has exact workbook parity, require `true`;
-- if raw output degrades material evidence, require exactly `BLOCKER_WORKBOOK_PARITY_UNRESOLVED` and report which safe dimension-presence comparison differs;
-- never repair/reinsert/copy a source tag into raw output;
-- never reuse a parity-invalid raw fingerprint as the starting point of another negative test.
-
-The raw no-op outcome is evidence. It does not authorize a preservation strategy or implementation fix.
-
-## 8. Out of scope — DO NOT TOUCH
-
-Do NOT work on:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js` or any implementation source;
-- preservation strategy/renderer for a proven raw no-op defect;
-- reference-image full closure;
-- Part A objective insertion closure;
-- Part B competency insertion closure;
-- formula/no-formula authority closure;
-- production sanitizer/XLSX renderer;
-- export service/normalizer/application code;
-- combined production Excel;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- D3;
-- R3-R23 or another Work Package.
-
-## 9. Mandatory commands
+Before tests confirm tracked source/test files match remote HEAD and working tree has no tracked change.
 
 Run exactly:
 
@@ -187,48 +112,114 @@ npm audit --omit=dev
 git status --porcelain
 ```
 
-Before commit only `tests/mbo-xlsx-ooxml-feasibility.test.js` may differ. After push working tree must be clean.
+Do not alter tests to make them pass. Do not repair raw no-op buffers.
 
-## 10. Completion contract
+## 5. Required evidence document
 
-Before editing, record fresh-fetched current remote canonical HEAD as `EXECUTION_BASELINE`.
-Commit/push only the authorized test file.
-Verify remote HEAD is a fast-forward descendant of `EXECUTION_BASELINE`.
+Create `project-docs/D2_WP003_R3_R22_RUNTIME_EVIDENCE.md` containing all sections below.
 
-Report:
+### A. Provenance
 - `EXECUTION_BASELINE` SHA;
-- new implementation/test commit SHA;
-- push result and remote HEAD SHA;
-- exact changed files;
-- test totals and result;
-- `npm audit --omit=dev` result;
-- exact-source Part A and Part B validator result;
-- safe source-vs-raw dimension-presence matrix for Part A main, Part B main and Part B `Sheet1`;
-- raw Part A and raw Part B real-validator result;
-- confirmation that every mutation-specific negative used a real-validator-proven source-backed baseline;
-- confirmation that dimension removal started from a source XML tag proven present;
-- final executor status.
+- `TEST_SOURCE_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96`;
+- current branch and remote HEAD;
+- Node and npm versions;
+- exact changed-file scope before evidence commit.
 
-Final executor status must be exactly one of:
+### B. Template verification
+- expected Part A/Part B SHA;
+- observed Part A/Part B SHA;
+- exact match `YES/NO` for each;
+- no filenames outside the approved canonical names and no cell values.
+
+### C. Mandatory command results
+- exact command names;
+- exit codes;
+- test total/pass/fail/skipped/cancelled/duration;
+- names of failed tests and safe blocker identifiers only if failure occurs;
+- `npm audit --omit=dev` vulnerability total;
+- clean tracked status confirmation before creating the evidence file.
+
+### D. R3-R22 proof matrix
+
+Record only safe booleans/statuses:
+
+| Evidence | Source | Raw no-op | Real validator result |
+|---|---|---|---|
+| Part A main `<dimension>` present | YES/NO | YES/NO | TRUE/BLOCKER |
+| Part B main `<dimension>` present | YES/NO | YES/NO | TRUE/BLOCKER |
+| Part B `Sheet1` `<dimension>` present | YES/NO | YES/NO | covered by Part B result |
+
+Also state:
+- exact-source Part A validator result;
+- exact-source Part B validator result;
+- raw Part A validator result;
+- raw Part B validator result;
+- all mutation negatives used `fpOrigB/origBufB`: `YES/NO`;
+- dimension removal started from exact-source XML with tag proven present: `YES/NO`;
+- no source-to-output repair: `YES/NO`.
+
+### E. Privacy and scope attestation
+- no raw values or binaries committed;
+- source/test/dependency files unchanged;
+- only the authorized evidence file differs before commit;
+- no Kintone, deploy, Live UAT or D3 action.
+
+### F. Executor conclusion
+
+Use exactly one:
 
 ```text
-TEST_PROOF_ISOLATION_PENDING_INDEPENDENT_REVIEW
+R3_R22_EVIDENCE_PENDING_INDEPENDENT_REVIEW
 BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
 BLOCKER_WORKBOOK_PARITY_UNRESOLVED
 BLOCKER_AUTHORIZATION_SCOPE_INVALIDATED
 ```
 
-Do not declare workbook parity, D2-WP003 or D2 PASS/CLOSED. Do not start preservation strategy, image closure, R3-R23 or D3.
+Antigravity must not declare R3-R22, D2-WP003 or D2 PASS/CLOSED.
 
-## 11. Authorization ledger
+## 6. Commit and push contract
+
+Before commit:
 
 ```text
-D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R22-TEST-20260901-01 = ACTIVE / ONE TEST-ONLY CORRECTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R22-TEST-20260901-01
+git diff --name-only
+```
+
+The output must contain only:
+
+```text
+project-docs/D2_WP003_R3_R22_RUNTIME_EVIDENCE.md
+```
+
+Commit message:
+
+```text
+docs(d2): record R3-R22 privacy-safe runtime evidence
+```
+
+Push only to `ai/antigravity-wp002c`.
+Verify remote HEAD is a fast-forward descendant of `EXECUTION_BASELINE` and working tree is clean after push.
+
+Report the evidence commit SHA and STOP for independent review.
+
+## 7. Out of scope — DO NOT TOUCH
+
+Do not:
+- edit source or tests;
+- edit existing governance/baseline/evidence files;
+- add helpers, fixtures, dependencies or scripts;
+- commit templates or generated artifacts;
+- start preservation strategy, image closure, insertion closure, formula authority, renderer or PDF;
+- access/write/deploy Kintone;
+- start R3-R23, D3 or another work package.
+
+## 8. Authorization ledger
+
+```text
+D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / IMPLEMENTED / SOURCE REVIEW PASS / DO NOT REUSE
+D2-WP003-R3-R22-EVIDENCE-20260901-01 = ACTIVE / ONE EVIDENCE FILE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP003-R3-R22-EVIDENCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -242,4 +233,4 @@ ROLLBACK = NO
 D3_EXECUTION = HOLD
 ```
 
-Authorization is consumed when the R3-R22 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
+Authorization is consumed when the evidence/blocker commit is pushed or invalidated by any scope change.
