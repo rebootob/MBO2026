@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 REVIEWED-NOT-PASS / R3-R15 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 REVIEWED-NOT-PASS / R3-R15 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -47,40 +47,59 @@ R3-R14_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted typed-metadata progress:
-- exact expected Part A/B address-set proof;
+Accepted typed-metadata proof:
+- exact expected Part A/B address sets;
 - duplicate rejection;
 - exact type enum per record;
 - `nonblank` consistency;
-- safe hash shape/absence proof;
-- source-backed per-type derived/reported count comparison in tests;
-- exact source zero date/boolean assertions without fabricated values;
+- safe hash shape/absence contract;
+- source-backed derived/reported count comparison;
+- exact source-zero date/boolean assertions without fabricated values;
 - malformed normalized type fail-closed test.
 
-Remaining blocker is limited to validator count-shape exactness. `validateTypedPrivacyMetadata()` checks the five recognized `typeCounts` fields but does not reject extra keys; therefore an otherwise valid count object with an unexpected additional key can still pass. Missing/malformed `typeCounts` also lacks deterministic explicit blocker validation.
+Remaining blocker is only validator top-level/count-shape exactness. Extra `typeCounts` keys can currently be ignored, and missing/malformed count objects do not deterministically map to the documented blocker.
 
-GitHub combined statuses/checks for the implementation commit are empty.
+## 5. D2-WP003-R3-R15 — AUTHORIZED
 
-## 5. Proposed D2-WP003-R3-R15
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R15
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
+PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = VALIDATOR_SHAPE_PROOF_PENDING_INDEPENDENT_REVIEW
+```
 
-R3-R15 is intentionally narrow: **typed metadata validator fail-closed shape completeness only**.
-
-Expected writes only:
+R3-R15 is intentionally narrow and may modify only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-Mandatory direction if approved:
-- preserve accepted R3-R14 per-record/source-backed proof;
-- require `typeCounts` to have exactly `string|number|date|boolean|blank` keys, no missing/extra;
-- require each count to be a non-negative integer;
-- require derived and reported count objects to be exactly equal including key set;
-- missing/malformed count shape must throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED` deterministically;
-- negative tests must include extra unexpected count key and missing/malformed `typeCounts`;
-- preserve source-zero type assertions and do not fabricate values.
+No package/dependency changes and no binary publication.
+
+## 6. Mandatory R3-R15 proof
+
+Preserve accepted R3-R14 per-record proof and solve only validator count-shape fail-closed completeness:
+- `typeCounts` must exist as a non-null non-array object;
+- exact keys only: `string|number|date|boolean|blank`;
+- no extra or missing keys;
+- every count is a non-negative integer;
+- derived and reported count objects must exactly equal including key set;
+- missing/malformed input must throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED` deterministically;
+- negative tests must cover extra unexpected key, missing/malformed object and invalid count value;
+- preserve exact source-zero type assertions and do not fabricate source values.
 
 No Part B classification redesign and no header/workbook/image/insertion/formula closure in R3-R15.
 
-## 6. Current gate
+## 7. Explicit exclusions
+
+No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
+
+Mandatory commands:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -89,11 +108,11 @@ D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R15 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R15 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R15 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
