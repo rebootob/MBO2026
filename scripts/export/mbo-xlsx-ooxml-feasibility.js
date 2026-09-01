@@ -1179,13 +1179,32 @@ function parseTopLevelChildren(xml) {
   if (endIdx === -1 || endIdx <= startIdx) return null;
 
   const inner = xml.slice(startIdx, endIdx);
-  const matches = [...inner.matchAll(/<([a-zA-Z0-9]+)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/g)];
-  return matches.map(m => ({
-    name: m[1],
-    fullTag: m[0],
-    startIndex: startIdx + m.index,
-    endIndex: startIdx + m.index + m[0].length
-  }));
+  const matches = [...inner.matchAll(/<([a-zA-Z0-9_-]+:)?([a-zA-Z0-9]+)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/(?:\1)?\2>)/g)];
+
+  const children = [];
+  for (const m of matches) {
+    const prefix = m[1];
+    const tagName = m[2];
+
+    // Fail closed on namespace-prefixed top-level element
+    if (prefix) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    // Fail closed on unknown top-level element not in ECMA-376 schema order map
+    if (!OPENXML_WORKSHEET_CHILD_ORDER.includes(tagName)) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    children.push({
+      name: tagName,
+      fullTag: m[0],
+      startIndex: startIdx + m.index,
+      endIndex: startIdx + m.index + m[0].length
+    });
+  }
+
+  return children;
 }
 
 function validateSchemaOrder(children) {
@@ -1193,7 +1212,7 @@ function validateSchemaOrder(children) {
   for (const c of children) {
     const orderIdx = OPENXML_WORKSHEET_CHILD_ORDER.indexOf(c.name);
     if (orderIdx === -1 || orderIdx < lastOrderIdx) {
-      return false; // Out of schema order or invalid element
+      return false; // Out of schema order
     }
     lastOrderIdx = orderIdx;
   }
@@ -1250,7 +1269,8 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
 
     function parseGlobalRels(relsXml) {
       const relsMap = {};
-      const relMatches = [...relsXml.matchAll(/<Relationship\s+[^>]*\/?>/g)];
+      // Parse ALL Relationship elements including namespace-prefixed forms like <r:Relationship ...>
+      const relMatches = [...relsXml.matchAll(/<(?:[a-zA-Z0-9_-]+:)?Relationship\b[^>]*\/?>/gi)];
 
       for (const m of relMatches) {
         const tag = m[0];
@@ -1265,27 +1285,37 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
 
         const rId = idMatch[1];
         const type = typeMatch[1];
-        let target = targetMatch[1];
+        const rawTarget = targetMatch[1];
 
-        // Global duplicate relationship ID rejection across ALL relationship types
+        // Global duplicate relationship ID rejection across ALL relationship types (prefixed or unprefixed)
         if (relsMap[rId]) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
-        // Path traversal check
-        if (target.includes('..') || target.includes('//') || target.includes('\\')) {
+        // Strict raw Target lexical validation:
+        // Reject leading slash, xl/ prefix, ./, /./, .., repeated slashes, backslashes, percent-encoding, URI schemes, queries, fragments
+        if (
+          rawTarget.startsWith('/') ||
+          rawTarget.startsWith('xl/') ||
+          rawTarget.includes('./') ||
+          rawTarget.includes('..') ||
+          rawTarget.includes('//') ||
+          rawTarget.includes('\\') ||
+          rawTarget.includes('%') ||
+          rawTarget.includes(':') ||
+          rawTarget.includes('?') ||
+          rawTarget.includes('#')
+        ) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
-        let normalizedTarget = target.replace(/^\//, '');
-        if (!normalizedTarget.startsWith('xl/')) {
-          normalizedTarget = 'xl/' + normalizedTarget;
-        }
+        const zipPath = 'xl/' + rawTarget;
 
         relsMap[rId] = {
           rId,
           type,
-          target: normalizedTarget,
+          rawTarget,
+          zipPath,
           isExternal
         };
       }
@@ -1298,7 +1328,7 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
 
     function parseSheets(wbXml, relMap) {
       const sheets = [];
-      const seenTargets = new Set();
+      const seenZipPaths = new Set();
       const sheetMatches = [...wbXml.matchAll(/<sheet\s+[^>]*\/?>/g)];
 
       for (const m of sheetMatches) {
@@ -1323,10 +1353,10 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
-        if (seenTargets.has(rel.target)) {
+        if (seenZipPaths.has(rel.zipPath)) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
-        seenTargets.add(rel.target);
+        seenZipPaths.add(rel.zipPath);
 
         sheets.push({ name, rId, rel });
       }
@@ -1344,13 +1374,14 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       const s = srcSheets[i];
       const o = obsSheets[i];
 
-      // Exact relationship tuple comparison including exact Type, Target, rId & TargetMode
+      // Exact relationship tuple comparison including exact Type, rawTarget, zipPath, rId & TargetMode
       if (
         s.name !== o.name ||
         s.rId !== o.rId ||
         s.rel.rId !== o.rel.rId ||
         s.rel.type !== o.rel.type ||
-        s.rel.target !== o.rel.target ||
+        s.rel.rawTarget !== o.rel.rawTarget ||
+        s.rel.zipPath !== o.rel.zipPath ||
         s.rel.isExternal !== o.rel.isExternal
       ) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
@@ -1363,8 +1394,8 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       const srcSheet = srcSheets[i];
       const obsSheet = obsSheets[i];
 
-      const srcFile = wbSource._zip.files[srcSheet.rel.target];
-      const obsFile = wbPreserved._zip.files[obsSheet.rel.target];
+      const srcFile = wbSource._zip.files[srcSheet.rel.zipPath];
+      const obsFile = wbPreserved._zip.files[obsSheet.rel.zipPath];
 
       if (!srcFile || !obsFile) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
@@ -1399,43 +1430,51 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
         if (obsDimChildren[0].fullTag !== srcDimTag) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
-      } else {
-        // Verification that observed top-level child sequence matches source top-level child sequence
-        const expectedObsNames = srcChildren.filter(c => c.name !== 'dimension').map(c => c.name);
-        let actualObsNames = obsChildren.map(c => c.name);
-
-        // Account for optional sheetPr injected by xlsx-populate if absent in source
-        if (actualObsNames[0] === 'sheetPr' && expectedObsNames[0] !== 'sheetPr') {
-          actualObsNames = actualObsNames.slice(1);
+        // Verify exact top-level child sequence match
+        if (srcChildren.map(c => c.name).join(',') !== obsChildren.map(c => c.name).join(',')) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
+      } else {
+        // Verification that observed top-level children match source EXACTLY with only dimension omitted
+        // No unauthorized observed-only sheetPr exception
+        const expectedObsNames = srcChildren.filter(c => c.name !== 'dimension').map(c => c.name);
+        const actualObsNames = obsChildren.map(c => c.name);
 
         if (expectedObsNames.join(',') !== actualObsNames.join(',')) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
-        // Schema-order placement: after optional <sheetPr> and before later worksheet children
-        const sheetPrChild = obsChildren.find(c => c.name === 'sheetPr');
+        const srcDimIndex = srcChildren.findIndex(c => c.name === 'dimension');
+        const predecessorName = srcDimIndex > 0 ? srcChildren[srcDimIndex - 1].name : null;
+        const successorName = srcDimIndex < srcChildren.length - 1 ? srcChildren[srcDimIndex + 1].name : null;
+
         let insertionIndex = -1;
 
-        if (sheetPrChild) {
-          insertionIndex = sheetPrChild.endIndex;
-        } else {
-          const wsMatch = obsXml.match(/<worksheet[^>]*>/);
-          if (!wsMatch) {
+        if (predecessorName !== null) {
+          const predChild = obsChildren.find(c => c.name === predecessorName);
+          if (!predChild) {
             throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
           }
-          insertionIndex = wsMatch.index + wsMatch[0].length;
+          insertionIndex = predChild.endIndex;
+        } else if (successorName !== null) {
+          const succChild = obsChildren.find(c => c.name === successorName);
+          if (!succChild) {
+            throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+          }
+          insertionIndex = succChild.startIndex;
+        } else {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
         obsXml = obsXml.slice(0, insertionIndex) + '\n  ' + srcDimTag + obsXml.slice(insertionIndex);
 
-        // Verify that resulting obsXml has valid schema order
+        // Verify that resulting obsXml has exact top-level child sequence match with srcXml
         const checkChildren = parseTopLevelChildren(obsXml);
-        if (!checkChildren || !validateSchemaOrder(checkChildren)) {
+        if (!checkChildren || checkChildren.map(c => c.name).join(',') !== srcChildren.map(c => c.name).join(',')) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
-        wbPreserved._zip.file(obsSheet.rel.target, obsXml);
+        wbPreserved._zip.file(obsSheet.rel.zipPath, obsXml);
       }
     }
 
