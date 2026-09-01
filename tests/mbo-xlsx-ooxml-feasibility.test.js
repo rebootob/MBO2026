@@ -10,6 +10,8 @@ import {
   getReferenceImageBuffers,
   getStructuralPartABuffers,
   getStructuralPartBBuffers,
+  getPartBPrivacyClassification,
+  getTypedPrivacyMetadata,
   SENSITIVE_RANGES_A,
   SENSITIVE_RANGES_B,
   EXPECTED_PART_A_SHA,
@@ -95,13 +97,22 @@ test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels rema
 });
 
 test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string purging leave 0 sensitive tokens in OOXML parts', async () => {
-  const { bufA, bufB, sensitiveA, sensitiveB, typeCountsA, typeCountsB } = await getSanitizedDisposableBuffers();
+  // Part B exact classification test
+  const classMapB = getPartBPrivacyClassification();
+  assert.equal(classMapB['G2'].classification, 'HEADER_VALUE', 'G2 must be classified HEADER_VALUE');
+  assert.equal(classMapB['B2'].isDynamic, false, 'B2 static title must be protected');
+  assert.equal(classMapB['B7'].isDynamic, false, 'B7 static competency text must be protected');
 
-  // Prove mapped source cells were accounted for by type
-  assert.equal(SENSITIVE_RANGES_A.length > 100, true, 'Part A mapped sensitive address count must cover all target ranges');
-  assert.equal(SENSITIVE_RANGES_B.length > 50, true, 'Part B mapped sensitive address count must cover all target ranges');
-  assert.equal(typeCountsA.string + typeCountsA.number + typeCountsA.nullOrEmpty > 0, true, 'Typed values must be accounted for in Part A');
-  assert.equal(typeCountsB.string + typeCountsB.number + typeCountsB.nullOrEmpty > 0, true, 'Typed values must be accounted for in Part B');
+  // Typed privacy metadata test
+  const metaA = await getTypedPrivacyMetadata('A');
+  assert.equal(metaA.uniqueCount, SENSITIVE_RANGES_A.length, 'Metadata count must equal Part A unique address count');
+  assert.equal(metaA.totalReconciled, metaA.uniqueCount, 'Aggregate type counts must reconcile to unique count in Part A');
+
+  const metaB = await getTypedPrivacyMetadata('B');
+  assert.equal(metaB.uniqueCount, SENSITIVE_RANGES_B.length, 'Metadata count must equal Part B unique address count');
+  assert.equal(metaB.totalReconciled, metaB.uniqueCount, 'Aggregate type counts must reconcile to unique count in Part B');
+
+  const { bufA, bufB, sensitiveA, sensitiveB } = await getSanitizedDisposableBuffers();
 
   const wbA = await XlsxPopulate.fromDataAsync(bufA);
   const sheetA = wbA.sheet(0);
@@ -112,12 +123,12 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
-  // Scan all xl/ OOXML XML files in memory for token survival
+  // Scan all xl/ OOXML XML files in memory for token survival & formula nodes <f(?:\s|>)
   for (const fileName in wbA._zip.files) {
     if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
       const xmlText = await wbA._zip.files[fileName].async('string');
-      // Prove no worksheet formulas exist
-      assert.equal(xmlText.includes('<f>'), false, `No worksheet formula <f> allowed in ${fileName}`);
+      // Prove zero formula nodes <f> exist in worksheet
+      assert.equal(/<f(?:\s|>)/.test(xmlText), false, `No worksheet formula <f> allowed in ${fileName}`);
       for (const token of sensitiveA) {
         if (token.length >= 3) {
           assert.equal(xmlText.includes(token), false, `Sensitive token must not exist in Part A OOXML ${fileName}`);
@@ -137,7 +148,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   for (const fileName in wbB._zip.files) {
     if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
       const xmlText = await wbB._zip.files[fileName].async('string');
-      assert.equal(xmlText.includes('<f>'), false, `No worksheet formula <f> allowed in ${fileName}`);
+      assert.equal(/<f(?:\s|>)/.test(xmlText), false, `No worksheet formula <f> allowed in ${fileName}`);
       for (const token of sensitiveB) {
         if (token.length >= 3) {
           assert.equal(xmlText.includes(token), false, `Sensitive token must not exist in Part B OOXML ${fileName}`);

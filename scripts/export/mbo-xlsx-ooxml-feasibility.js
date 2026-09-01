@@ -89,8 +89,108 @@ export const PART_B_SENSITIVE_RANGES = [
   'B31:D34', 'E31:H34', 'I31:P34', 'Q31:S34', 'T31:X34'
 ];
 
-export const SENSITIVE_RANGES_A = PART_A_SENSITIVE_RANGES.flatMap(expandRangeToAddresses);
-export const SENSITIVE_RANGES_B = PART_B_SENSITIVE_RANGES.flatMap(expandRangeToAddresses);
+export const SENSITIVE_RANGES_A = [...new Set(PART_A_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
+export const SENSITIVE_RANGES_B = [...new Set(PART_B_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
+
+export function getPartBPrivacyClassification() {
+  const map = {};
+  const sensitiveSet = new Set(SENSITIVE_RANGES_B);
+
+  // Classify mapped sensitive addresses
+  for (const addr of SENSITIVE_RANGES_B) {
+    const row = parseInt(addr.match(/\d+/)[0], 10);
+    let classification = 'DYNAMIC_SAMPLE_VALUE';
+    if (['G2', 'G3', 'H2', 'H3', 'J3', 'K3', 'L3', 'M3', 'N3', 'O3', 'P3', 'Q3', 'R3', 'S3', 'T3', 'U3', 'V3', 'W3'].includes(addr)) {
+      classification = 'HEADER_VALUE';
+    } else if (row >= 7 && row <= 29) {
+      classification = 'COMPETENCY_RATING_VALUE';
+    } else if (row >= 31 && row <= 34) {
+      classification = 'SUMMARY_SIGNATURE_VALUE';
+    }
+    map[addr] = { classification, isDynamic: true };
+  }
+
+  // Explicit static protected addresses
+  const protectedStatic = [
+    'B2', 'C2', 'D2', 'E2', 'F2', 'B3', 'C3', 'D3', 'E3', 'F3',
+    'J2', 'K2', 'L2', 'M2', 'N2', 'O2', 'P2', 'Q2', 'R2', 'S2', 'T2', 'U2', 'V2', 'W2'
+  ];
+  for (let r = 7; r <= 29; r++) {
+    for (const c of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+      protectedStatic.push(`${c}${r}`);
+    }
+  }
+
+  for (const addr of protectedStatic) {
+    if (!sensitiveSet.has(addr)) {
+      map[addr] = { classification: 'PROTECTED_STATIC_TEMPLATE_TEXT', isDynamic: false };
+    }
+  }
+
+  return map;
+}
+
+export async function getTypedPrivacyMetadata(partKey) {
+  const found = findLocalSourceTemplates();
+  if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+
+  const file = partKey === 'A' ? found.partA : found.partB;
+  const targetAddrs = partKey === 'A' ? SENSITIVE_RANGES_A : SENSITIVE_RANGES_B;
+
+  const wb = await XlsxPopulate.fromDataAsync(fs.readFileSync(file));
+  const sheet = wb.sheet(0);
+
+  const metadata = [];
+  const typeCounts = { string: 0, number: 0, date: 0, boolean: 0, blank: 0 };
+  const seenAddresses = new Set();
+
+  for (const addr of targetAddrs) {
+    if (seenAddresses.has(addr)) continue;
+    seenAddresses.add(addr);
+
+    const val = sheet.cell(addr).value();
+    let normalizedType = 'blank';
+    let nonblank = false;
+    let valHash = null;
+
+    if (val === null || val === undefined) {
+      normalizedType = 'blank';
+      typeCounts.blank++;
+    } else if (typeof val === 'number') {
+      normalizedType = 'number';
+      nonblank = true;
+      typeCounts.number++;
+    } else if (typeof val === 'boolean') {
+      normalizedType = 'boolean';
+      nonblank = true;
+      typeCounts.boolean++;
+    } else if (val instanceof Date) {
+      normalizedType = 'date';
+      nonblank = true;
+      typeCounts.date++;
+    } else {
+      const strVal = String(val).trim();
+      if (strVal === '') {
+        normalizedType = 'blank';
+        typeCounts.blank++;
+      } else {
+        normalizedType = 'string';
+        nonblank = true;
+        typeCounts.string++;
+        valHash = crypto.createHash('sha256').update(strVal).digest('hex');
+      }
+    }
+
+    metadata.push({ address: addr, normalizedType, nonblank, hash: valHash });
+  }
+
+  return {
+    metadata,
+    uniqueCount: seenAddresses.size,
+    typeCounts,
+    totalReconciled: typeCounts.string + typeCounts.number + typeCounts.date + typeCounts.boolean + typeCounts.blank
+  };
+}
 
 export async function getNoOpParityBuffers() {
   const found = findLocalSourceTemplates();
@@ -153,10 +253,6 @@ export async function getMutatedHeaderValueBuffers() {
   return { outBufA, labelSnapshotA, outBufB, labelSnapshotB };
 }
 
-export function unescapeUnicode(str) {
-  return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-}
-
 export async function getSanitizedDisposableBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
@@ -165,46 +261,20 @@ export async function getSanitizedDisposableBuffers() {
   const wbA_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA_orig = wbA_orig.sheet(0);
   const collectedSensitiveA = [];
-  const typeCountsA = { string: 0, number: 0, date: 0, boolean: 0, nullOrEmpty: 0 };
-
   for (const addr of SENSITIVE_RANGES_A) {
     const v = sheetA_orig.cell(addr).value();
-    if (v === null || v === undefined) {
-      typeCountsA.nullOrEmpty++;
-    } else if (typeof v === 'number') {
-      typeCountsA.number++;
-    } else if (typeof v === 'boolean') {
-      typeCountsA.boolean++;
-    } else if (v instanceof Date) {
-      typeCountsA.date++;
-    } else if (typeof v === 'string') {
-      typeCountsA.string++;
-      if (v.trim().length >= 3) {
-        collectedSensitiveA.push(v.trim());
-      }
+    if (v && typeof v === 'string' && v.trim().length >= 3) {
+      collectedSensitiveA.push(v.trim());
     }
   }
 
   const wbB_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB_orig = wbB_orig.sheet(0);
   const collectedSensitiveB = [];
-  const typeCountsB = { string: 0, number: 0, date: 0, boolean: 0, nullOrEmpty: 0 };
-
   for (const addr of SENSITIVE_RANGES_B) {
     const v = sheetB_orig.cell(addr).value();
-    if (v === null || v === undefined) {
-      typeCountsB.nullOrEmpty++;
-    } else if (typeof v === 'number') {
-      typeCountsB.number++;
-    } else if (typeof v === 'boolean') {
-      typeCountsB.boolean++;
-    } else if (v instanceof Date) {
-      typeCountsB.date++;
-    } else if (typeof v === 'string') {
-      typeCountsB.string++;
-      if (v.trim().length >= 3) {
-        collectedSensitiveB.push(v.trim());
-      }
+    if (v && typeof v === 'string' && v.trim().length >= 3) {
+      collectedSensitiveB.push(v.trim());
     }
   }
 
@@ -246,7 +316,7 @@ export async function getSanitizedDisposableBuffers() {
     bufB = await wbB_zip._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  return { bufA, bufB, sensitiveA: collectedSensitiveA, sensitiveB: collectedSensitiveB, typeCountsA, typeCountsB };
+  return { bufA, bufB, sensitiveA: collectedSensitiveA, sensitiveB: collectedSensitiveB };
 }
 
 export async function getReferenceImageBuffers() {
