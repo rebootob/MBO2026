@@ -5,21 +5,21 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / D2-WP003 AUTHORIZED
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / D2-WP003-R1 AUTHORIZED AFTER PRIVACY PURGE
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Final security review PASS; current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / WP003 AUTHORIZED | Projection/security + template design closed; sanitized XLSX renderer foundation now authorized |
-| D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation path only |
-| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Employee lifecycle operations mandatory scope |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / WP003-R1 AUTHORIZED | Canonical branch privacy purge complete; sanitizer + structural XLSX corrective authorized |
+| D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
+| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
 | D6 Integrated E2E / Security / Regression | 🔴 PENDING | Lifecycle/security regression required |
 | D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
 
-## 2. Frozen completed foundations
+## 2. Closed foundations
 
 ```text
 D1 = PASS / CLOSED
@@ -27,78 +27,71 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 ```
 
-D2-WP001 accepted:
-- explicit trusted export contexts only;
-- Employee-Self exact Employee_Code;
-- SHARED denied;
-- DEDICATED Approver requires current native App794 Assignee;
-- stale/static route authority denied;
-- Employee-Self confidential Part A/Part B values omitted;
-- exact 4/5/10 objective projection covered;
-- profile weights preserved.
+WP001 = secured export projection/auth/privacy foundation.
+WP002 = owner-provided legacy Excel evidence + frozen template-preserving renderer contract.
 
-D2-WP002 accepted owner-provided binary evidence and froze the template-preserving renderer contract. Original employee-bearing binaries remain outside Git.
-
-Evidence hashes:
+Accepted source-template hashes remain:
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. Frozen renderer rules
+## 3. WP003 independent review result
 
-Canonical detail: `project-docs/EXCEL_EXPORT.md`.
+The first WP003 implementation changed only authorized paths, so scope review passed, but source acceptance failed.
 
+Blocking classes:
+- committed sanitized assets were not proven private and sanitizer targeted several label anchors instead of actual sample-value ranges;
+- Part A 5–10 objectives did not insert/clone/shift structure and collided with lower sections;
+- Part B 8 competencies did not insert/clone/shift structure and collided with totals/signatures;
+- header data was mapped into label rows instead of value rows;
+- tests did not prove true 4/5/10, true 6/8, privacy OOXML scanning, structural parity or no-op round-trip;
+- Difficulty Level has no proven canonical current source field in repository evidence and must not be guessed.
+
+Therefore:
 ```text
-LEGACY TEMPLATE = VISUAL / LAYOUT AUTHORITY
-CURRENT BASELINE + CONFIG = BUSINESS RULE AUTHORITY
-SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Part A = A3 landscape; legacy objective blocks rows 25–28; extend vertically for 5–10 objectives without horizontal compression.
+## 4. Privacy purge state
 
-Part B = A4 portrait; six legacy competency blocks; extend to eight for management sets; dynamic profile/weight text must use current configuration.
+Owner explicitly approved `D2-WP003-R1` with Privacy Purge.
 
-Legacy workbooks contain zero worksheet formulas. Initial renderer writes authoritative calculated values; it does not create a second scoring engine.
+ChatGPT force-reset the canonical branch to the safe pre-implementation authorization baseline:
+```text
+SAFE_BASELINE = 731ba80a976847e579d80fc30012df54fd36badf
+CANONICAL_BRANCH_PURGE = COMPLETE
+```
 
-PDF exact visual parity remains pending; no approved PDF sample has been supplied.
+The unsafe implementation/binaries are no longer in the canonical branch tree/history lineage.
 
-## 4. D2-WP003 — AUTHORIZED
+Do not create a backup ref/tag/branch to the purged lineage and do not publish its identifiers in repository docs. Git hosting may retain unreachable objects until garbage collection; no new refs may make them reachable again.
+
+## 5. D2-WP003-R1 — AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003
-WORK_PACKAGE_NAME = SANITIZED TEMPLATE ASSETS + XLSX RENDERER FOUNDATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R1
+WORK_PACKAGE_NAME = PRIVACY PURGE + SANITIZER + STRUCTURAL XLSX RENDERER CORRECTIVE
 OWNER_APPROVAL = GRANTED
 EXECUTOR = ANTIGRAVITY
 ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-SOURCE-20260901-01
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
 MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-Exact authorized implementation scope is defined in `AI_ACTIVE_TASK.md`.
+Canonical execution contract: `project-docs/AI_ACTIVE_TASK.md`.
 
-Authorized outcomes only:
-- SHA-verified local legacy source templates;
-- sanitized runtime Part A/Part B assets;
-- template-preserving `mbo-xlsx-renderer` consuming secured projection only;
-- Part A 4/5/10 rendering;
-- Part B 6/8 rendering;
-- structural/privacy/fail-closed tests;
-- exactly one dependency `xlsx-populate@1.21.0`, conditional on no-op round-trip parity and runtime audit.
-
-If no exact-hash source template is locally available, or if library no-op roundtrip changes material workbook structure, Antigravity must STOP with a blocker rather than substituting/rebuilding.
-
-## 5. Explicit exclusions
-
-WP003 does not authorize:
-- PDF generator;
-- download/export UI;
-- `src/main-mbo-app.js` changes;
-- Live Kintone reads/writes/export;
-- deployment;
-- original legacy binary commit;
-- another XLSX/PDF library;
-- D2-WP004 or D3–D6 implementation.
+Required order:
+1. fresh-fetch/reset local checkout because remote history was rewritten;
+2. verify exact owner-template SHA-256 inputs;
+3. install only `xlsx-populate@1.21.0` and prove no-op parity before mapping;
+4. rebuild sanitizer with extraction-based privacy proof across all OOXML XML/text parts;
+5. retain branding, remove non-user-facing reference screenshot;
+6. implement real Part A row insertion/clone/shift/print extension for 5–10 objectives;
+7. implement real Part B block insertion/clone/shift/print extension for 8 competencies;
+8. preserve labels and map values into actual value rows;
+9. never bypass secured projection; Difficulty source must be proven or reported as blocker;
+10. run focused tests + `npm audit --omit=dev` and stop for independent review.
 
 ## 6. Current gate
 
@@ -107,9 +100,10 @@ D1 = CLOSED / PASS
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
-D2-WP003 = AUTHORIZED / EXECUTION ACTIVE
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
+D2-WP003-R1 = AUTHORIZED / EXECUTION ACTIVE
 CURRENT_EXECUTOR = ANTIGRAVITY
-NEXT_CONTROL_GATE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
+NEXT_CONTROL_GATE = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW OR REAL BLOCKER
 ```
 
 No other Work Package may auto-start.
@@ -120,8 +114,9 @@ No other Work Package may auto-start.
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP002 = APPROVED / READ-ONLY / CLOSED
-D2-WP003-SOURCE-20260901-01 = ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-SOURCE-20260901-01
+D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / DO NOT REUSE
+D2-WP003-R1-SOURCE-20260901-01 = ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
