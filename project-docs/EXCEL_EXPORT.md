@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R2 REVIEWED-NOT-PASS / R3-R3 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R3 REVIEWED-NOT-PASS / R3-R4 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -96,150 +96,64 @@ TARGET_MEDIA = xl/media/image3.png
 
 Preserve rId1/image1.jpeg, rId2/image2.jpeg and every other non-target drawing/media relationship.
 
-## 6. R3-R2 review result
+## 6. R3-R3 review result
 
-Scope = PASS; no binary/package/application/Kintone/deploy changes and no Privacy Purge required.
+Scope = PASS. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
 
 Accepted progress:
-- structural row/cell shifts now edit raw worksheet OOXML;
-- dimension and Print_Area are rewritten;
-- rId3/image3.png is actually removed on disposable Part A;
-- raw merge-count fallback was removed.
+- Part A row-28 merge pattern is now cloned into inserted objective rows and merge count is updated;
+- Part B rows27:30 merge pattern is now cloned into both inserted blocks and merge count is updated;
+- shared-string keyword classification was removed as the privacy authority.
 
-R3-R2 did not pass because inserted merge patterns were not cloned, structural tests were incomplete, privacy remained shared-string heuristic based and cleared static labels, header proof was incomplete, media orphaning/non-target inventory was not proved, and original-vs-roundtrip parity remained incomplete.
+Feasibility acceptance = FAIL / corrective required because:
+1. Part A privacy map lists selected anchor cells rather than fully covering required ranges such as `G16:AF19`, `AM16:BI19`, `B25:BI28`, `BC29:BI35`, `B37:S42`, `AI37:AY42`, and `B47:N50`.
+2. Part B privacy map similarly samples selected cells instead of proving every dynamic/sample cell while excluding static descriptions.
+3. mapped collection accepts only string values and therefore does not prove numeric/date/boolean privacy.
+4. privacy assertion messages still interpolate source-sensitive token values.
+5. header proof still fingerprints only selected anchors and verifies only a subset of runtime value regions.
+6. image3 deletion is not preceded by package-wide orphan proof and complete non-target drawing/media inventory is not compared before/after.
+7. no-op parity still lacks full original-vs-roundtrip `Sheet1`, centerHorizontal, merge-set, dimension, row-height, column, protection and drawing/media comparison.
+8. structural tests check sentinel movement, total merge count and Print_Area but not exact merge patterns, style ids, row heights, dimension, mergeCells count attribute and post-insertion page/protection geometry.
+9. zero worksheet scoring-formula introduction is not explicitly proved.
+10. GitHub has no CI/status evidence for the proof commit.
 
-## 7. R3-R3 authorization
+## 7. Proposed R3-R4 corrective
 
-```text
-D2-WP003-R3-R3 = AUTHORIZED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R3-SOURCE-20260901-01
-PRIVACY_PURGE_REQUIRED = NO
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
-```
+R3-R4 must preserve the current raw OOXML architecture and only complete missing proof coverage.
 
-R3-R3 is feasibility-only and must not publish workbook/image/binary outputs.
-
-Authorized writes only:
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No package/dependency changes.
+No package/dependency changes and no binary publication.
 
-## 8. Mandatory R3-R3 completion proof
+Mandatory corrections:
+- expand explicit Part A privacy mapping to all required sensitive cells/ranges;
+- build an exact Part B dynamic/sample map or fail closed if static/dynamic content cannot be safely distinguished;
+- collect mapped values by actual type including numeric/date/boolean without logging source values;
+- remove sensitive-value interpolation from all errors/assertions;
+- fingerprint every frozen title/static-label region and every runtime value region;
+- prove no unrelated header XML changed;
+- perform package-wide orphan proof before deleting image3 and compare complete non-target drawing/media inventory;
+- compare original vs round-trip exact sheet order/name, merge sets/counts, dimensions, `<cols>`, row-height map, page setup, centerHorizontal, protection and drawing/media inventory;
+- Part A 4/5/10 tests must inspect unique raw row/cell refs, source-vs-inserted styles/heights, exact cloned merge refs/count attribute, dimension, Print_Area and A3/landscape/58 setup;
+- Part B 6/8 tests must inspect equivalent exact structure plus A4/portrait/75/centerHorizontal/protection;
+- prove zero worksheet scoring formulas introduced;
+- Difficulty remains blank and no application Difficulty field is added/read.
 
-### 8.1 Material no-op parity
-
-Compare original vs round-trip directly:
-- exact sheet order/name including Part B `Sheet1`;
-- print areas;
-- paper size/orientation/scale;
-- Part B `centerHorizontal` and protection;
-- exact raw merge-ref sets/counts;
-- worksheet dimension;
-- `<cols>` structural fingerprint;
-- explicit row-height map/fingerprint;
-- drawing relationship/media-member inventory;
-- successful reparse.
-
-No fallback assertions.
-
-### 8.2 Header/value separation
-
-Fingerprint every frozen title/static-label region in section 4. Mutate/clear every runtime value region only, reparse, prove static fingerprints unchanged, all value regions changed/cleared and no unrelated header cell XML changed.
-
-Fiscal Year anchors N6/G2 are value regions, not labels.
-
-### 8.3 Explicit privacy map
-
-The privacy source of truth must be an inspectable exact address/range map, never keyword classification of `sharedStrings.xml`.
-
-Part A minimum mapped areas:
-- all runtime header values;
-- `G16:AF19` Department Hoshin;
-- `AM16:BI19` Section Hoshin;
-- `B25:BI28` objective/evaluation sample rows;
-- `BC29:BI35` score/summary;
-- `B37:S42` approval/signature;
-- `AI37:AY42` evaluator/name/date cells where present;
-- `B47:N50` overall scores;
-- legacy Difficulty sample cells inside objective rows.
-
-Part B must explicitly enumerate dynamic/sample cells/ranges inside rows2:34 while excluding frozen title/labels and static competency/rating description text. If exact dynamic cells cannot be distinguished, fail closed.
-
-Collect mapped values by actual type in memory, never log them, clear mapped cells only, reparse and directly assert empty. Shared-string cleanup may use only mapped collected values/references. Error/assertion text may contain only safe addresses/counts/hashes.
-
-### 8.4 Reference image
-
-Snapshot full drawing-anchor/relationship/media inventory, remove only rId3 anchor and relationship, search all remaining relationships for image3 target, delete image3 only if orphaned, preserve all non-target inventory exactly and reparse.
-
-### 8.5 Part A merge-complete insertion
-
-4 objectives: no insertion; row29 and `A1:BJ52` unchanged.
-
-5 objectives:
-- clone raw row28 as row29;
-- clone row28 merge pattern to row29;
-- shift original rows29+ and affected existing merge refs +1;
-- maintain `<mergeCells count>`;
-- update dimension and `A1:BJ53`;
-- old row29 -> row30.
-
-10 objectives:
-- clone row28 to rows29:34;
-- clone row28 merge pattern to every inserted row;
-- shift original rows29+ and affected existing merge refs +6;
-- maintain merge count;
-- update dimension and `A1:BJ58`;
-- old row29 -> row35; objective slot10 = row34.
-
-Tests must inspect raw row/cell refs, style ids, heights, merge patterns/count, dimension, print area, paperSize8/landscape/scale58.
-
-### 8.6 Part B merge-complete insertion
-
-6 competencies: totals row31 and `A1:X35` unchanged.
-
-8 competencies:
-- shift original rows31+ +8;
-- clone rows27:30 into rows31:34 and 35:38;
-- clone source-block merge pattern into both blocks;
-- shift affected existing merge refs;
-- maintain `<mergeCells count>`;
-- update dimension and `A1:X43`;
-- old row31 -> row39.
-
-Tests must inspect raw row/cell refs, source-vs-inserted style ids/heights, exact merge patterns/count, dimension, print area, paperSize9/portrait/scale75/centerHorizontal/protection.
-
-## 9. Explicit exclusions
-
-No:
-- XLSX/image/media/output commit;
-- package/dependency changes;
-- production sanitizer/renderer;
-- normalizer/export-service changes;
-- Difficulty field implementation;
-- PDF/UI/Live Kintone/deploy;
-- next Work Package.
-
-Mandatory commands:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-## 10. Current gate
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R2 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R3 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R3-SOURCE-20260901-01
+D2-WP003-R3-R3 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R4 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R3-R3 ONLY / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
