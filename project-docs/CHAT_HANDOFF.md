@@ -55,63 +55,108 @@ D2-WP003-R3-R19_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted:
-- print areas are parsed by exact `localSheetId` and bound using actual workbook sheet index;
-- no first/global print-area fallback remains;
-- Part B main print area and empty second `Sheet1` print area are explicitly proven;
+Accepted R3-R19 work remains:
+- print areas parsed by exact `localSheetId` and actual workbook sheet index;
+- no cross-sheet/first-print-area fallback;
+- Part B main print area and empty `Sheet1` print area proof;
 - validator dimension equality is unconditional;
-- required wrong-print-area and blank-dimension negative tests exist.
+- wrong-print-area and blank-dimension negative paths exist.
 
-Remaining defects:
-1. `getWorkbookFingerprint()` reconstructs a dimension string from row/cell coordinates when the actual OOXML `<dimension>` tag is missing. This can turn missing evidence into synthetic evidence and violates R3-R19 fail-closed intent.
-2. The accepted R3-R18 Part B `Sheet1.colsHash` structural negative test was deleted even though R3-R19 required all accepted tests/proofs to remain.
+Only remaining defects for R3-R20:
+1. actual missing OOXML `<dimension>` evidence is hidden by synthetic reconstruction from row/cell coordinates;
+2. accepted Part B `Sheet1.colsHash` structural negative proof from R3-R18 was deleted.
 
-GitHub CI/status checks are absent; non-blocking missing CI evidence for this bounded source review.
-
-## 4. Exact current gate
+## 4. Exact current gate — R3-R20 AUTHORIZED
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R19 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R20 = STRICT DIMENSION TAG EVIDENCE + RESTORE SECOND-SHEET STRUCTURAL NEGATIVE PROOF
+STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+CONTROL_PLANE_PRE_AUTH_CHECKPOINT = 0344e7a95bc34138c31dffdd2701525d8fb63105
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R20
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE R3-R20 ONLY / LOW-CREDIT / BOUNDED
+MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_STRICT_DIMENSION_PROOF_PENDING_INDEPENDENT_REVIEW
+PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 5. Next proposed bounded corrective — NOT AUTHORIZED
+Read `project-docs/AI_ACTIVE_TASK.md` for the exact execution contract.
+
+Antigravity must fresh-fetch current authorized canonical HEAD and record it as `EXECUTION_BASELINE`; do not reset to the pre-authorization checkpoint.
+
+## 5. Exact authorized writes
+
+ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Read-only:
+- package files;
+- governance docs;
+- exact owner templates after SHA verification.
+
+No XLSX/image/media/output commit.
+
+## 6. R3-R20 critical contract
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R20
-PROPOSED_WORK_PACKAGE_NAME = STRICT DIMENSION TAG EVIDENCE + RESTORE SECOND-SHEET STRUCTURAL NEGATIVE PROOF
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTUAL OOXML DIMENSION TAG = EVIDENCE.
+MISSING EVIDENCE MUST REMAIN MISSING AND FAIL CLOSED.
+PRESERVE ACCEPTED R3-R19 PRINT-AREA FIX.
 ```
 
-R3-R20 intent:
-- preserve accepted R3-R19 print-area logic and exact validator comparison;
-- fingerprint actual OOXML `<dimension>` only; never synthesize missing evidence;
-- source-present vs observed missing dimension tag must fail closed;
-- restore the R3-R18 `Sheet1.colsHash` negative proof;
-- no image/insertion/formula/production renderer/PDF/UI/Kintone/deploy/D3 work.
+Required:
+- remove dimension reconstruction from rows/cells;
+- fingerprint only the actual `<dimension .../>` tag or a consistent absent value;
+- preserve unconditional source-vs-observed dimension equality;
+- source-present vs observed missing actual tag must throw `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- restore the accepted Part B `Sheet1.colsHash` mutation negative proof;
+- preserve current wrong `Sheet1.printArea`, blank-dimension and all earlier accepted tests;
+- use exact SHA source as authoritative expected evidence before observed mutation.
 
-## 6. Authorization ledger
+The exact owner templates already contain explicit dimension tags for all relevant worksheets.
+
+## 7. Out of scope
+
+Do not touch image closure, insertion closure, formula authority, production renderer, combined Excel, PDF/UI, Kintone, deploy, D3 or another Work Package.
+
+## 8. Required commands
+
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+After push STOP at one of:
+
+```text
+WORKBOOK_PARITY_STRICT_DIMENSION_PROOF_PENDING_INDEPENDENT_REVIEW
+BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
+BLOCKER_WORKBOOK_PARITY_UNRESOLVED
+```
+
+## 9. Authorization ledger
 
 ```text
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R20-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R20-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 7. Exact next action
+## 10. Exact next action
 
 ```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R20
-NEXT_EXECUTOR = NONE
-ANTIGRAVITY = STOP
+NEXT_EXECUTOR = ANTIGRAVITY
+ACTION = FRESH-FETCH CURRENT CANONICAL, RECORD EXECUTION_BASELINE, EXECUTE ONLY R3-R20, TEST/AUDIT, PUSH, STOP
+NEXT_CONTROL_STEP = ChatGPT independent review
 D3 = HOLD
 ```
