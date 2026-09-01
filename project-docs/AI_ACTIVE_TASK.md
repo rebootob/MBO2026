@@ -1,13 +1,13 @@
-# AI ACTIVE TASK — D2 CONTINUITY / R3-R25 PROPOSED
+# AI ACTIVE TASK — D2-WP003-R3-R25 AUTHORIZED
 
-Mode: **CONTROL PLANE / R3-R24 INDEPENDENT REVIEW COMPLETE / NO KINTONE / NO DEPLOY**  
+Mode: **BOUNDED ANTIGRAVITY EXECUTION / LOW-CREDIT / SOURCE+TEST ONLY / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
 ```text
-TASK_STATE = WAIT_OWNER_CORRECTIVE_APPROVAL
+TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
@@ -25,123 +25,161 @@ CONTROL_PLANE_REVIEW_CORRECTIVE_MAX_ROUNDS = 20
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 2
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 18
 ANTIGRAVITY_AUTO_AUTH = NO
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R25
-PROPOSED_WORK_PACKAGE_NAME = EXACT RELATIONSHIP-TYPE + SCHEMA-SLOT FAIL-CLOSED CORRECTIVE
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R25
+WORK_PACKAGE_NAME = EXACT RELATIONSHIP-TYPE + SCHEMA-SLOT FAIL-CLOSED CORRECTIVE
+AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_SOURCE_BASELINE_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
+AUTHORIZATION_BASELINE_HEAD = 260e5aee21a6c6580194a4ad66ed4178dba61ed4
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R25-SOURCE-20260902-01
+AUTHORIZATION_MODE = ONE-SHOT / BOUNDED / DO NOT WIDEN / DO NOT REUSE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED FOR THIS WP ONLY
 ```
 
-## 1. Independent R3-R24 review
+## 1. Owner authorization
 
-Authorization consumed:
+Owner explicitly authorized on 2026-09-02 ICT:
 
 ```text
-D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+อนุมัติ D2-WP003-R3-R25 ตามขอบเขตที่เสนอ
 ```
 
-Scope result = PASS:
-- implementation `cb5276d48c0386e2d890604b57697e6bf49ed85b` is exactly one commit ahead of authorization commit `0fc293f587f6c1b80e46d47bb31ea7015bf031fe`;
-- only `scripts/export/mbo-xlsx-ooxml-feasibility.js` and `tests/mbo-xlsx-ooxml-feasibility.test.js` changed;
-- `getNoOpParityBuffers()` remains outside the changed hunk and raw no-op behavior is not repaired;
-- no evidence document, dependency, Kintone, deploy, PDF, renderer or D3 change is present.
-
-Source review = FAIL / CORRECTIVE REQUIRED:
-1. worksheet relationship type is accepted with `type.endsWith('/worksheet')`, not exact canonical worksheet relationship-type equality. A counterfeit URI ending in `/worksheet` can enter the accepted map.
-2. duplicate relationship IDs are checked only after filtering to accepted worksheet relationships. A duplicate ID split across worksheet and non-worksheet relationship types is not proven fail-closed.
-3. relationship source/observed equality compares name, `r:id` and normalized target but does not bind the exact relationship type/TargetMode tuple.
-4. dimension insertion searches for any `<sheetPr>` anywhere in worksheet XML and inserts after it. It does not prove that `<sheetPr>` is the optional first worksheet child, that the insertion is before later children, or that the observed insertion boundary is exactly source-equivalent.
-5. therefore malformed but parseable schema order such as later worksheet children preceding `<sheetPr>` can still produce a preserved buffer instead of deterministic rejection.
-
-Proof review = FAIL / INCOMPLETE:
-- positive schema proof asserts only `dimension index > sheetPr index`; it does not prove dimension is before the next worksheet child;
-- no negative uses a worksheet-like but non-exact relationship Type URI;
-- no negative proves duplicate `r:id` across worksheet/non-worksheet relationship types;
-- the authorized missing/ambiguous/schema-invalid insertion-point negative is absent;
-- source-structure mutations passed through `sourceBufOverride` are rejected first by exact SHA, so those labels do not independently exercise the later source-XML structural branches;
-- GitHub combined status has no CI/status checks for the implementation commit.
-
-These are preservation-path defects/proof gaps. No privacy purge is required.
-
-## 2. Standing Control Plane authority
-
-R3-R24 review plus the R3-R25 corrective draft consumes Control Plane round `2/20`.
-
-This standing authority allows ChatGPT independent review, bounded corrective drafting and Control Plane document synchronization only. It does NOT authorize Antigravity implementation, evidence publication, Kintone access/write, deploy, Live UAT, rollback, D3, or scope expansion.
-
-## 3. Proposed R3-R25 — NOT AUTHORIZED
+This creates exactly one bounded source/test authorization:
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R25
-PROPOSED_WORK_PACKAGE_NAME = EXACT RELATIONSHIP-TYPE + SCHEMA-SLOT FAIL-CLOSED CORRECTIVE
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-EXECUTOR = NONE
+D2-WP003-R3-R25-SOURCE-20260902-01 = ACTIVE / ONE-SHOT
 ```
 
-R3-R25 is the smallest corrective for the remaining R3-R24 defects. Do not redesign workbook preservation.
+It authorizes only the implementation and tests defined below. It does not authorize evidence publication, Kintone access/write, deploy, Live UAT, rollback, D3, later D2 work packages or scope expansion.
 
-## 4. Proposed exact write scope if authorized
+## 2. Why R3-R25 is required
 
-Expected modifications ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
+Independent R3-R24 review proved the strict preservation path still cannot pass because:
+
+1. worksheet relationship type is accepted by suffix matching rather than exact canonical relationship-type equality;
+2. duplicate relationship IDs are checked only after worksheet filtering, not globally across all relationships;
+3. source/observed relationship equality does not bind the complete Type/TargetMode semantics;
+4. dimension insertion searches for `<sheetPr>` anywhere instead of proving the exact source-equivalent top-level child slot;
+5. mandatory counterfeit-type, cross-type duplicate-ID and schema-invalid insertion-point negatives are absent.
+
+R3-R25 is the smallest bounded correction for these remaining preservation-path defects. Do not redesign workbook preservation.
+
+## 3. Exact write scope
+
+Antigravity may modify ONLY:
+
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
 Read-only as needed:
-- `package.json`, `package-lock.json`;
-- current governance/baseline documents;
-- exact ignored owner templates after SHA verification.
+
+- `package.json`
+- `package-lock.json`
+- current governance/baseline documents
+- exact ignored owner templates only after SHA verification
 
 No new file, dependency, generated workbook, PDF, image/media or evidence document.
 
-## 5. Proposed mandatory source correction
+If any additional tracked file appears necessary, STOP without changing it and report the blocker to ChatGPT/Owner.
 
-If authorized, R3-R25 must:
-1. preserve the R3-R24 exact `A`/`B` part-key and exact source-SHA gates;
-2. parse all workbook relationships attribute-order-independently before filtering and reject duplicate relationship IDs globally;
-3. for every sheet `r:id`, require exactly one relationship whose Type equals the exact canonical worksheet relationship Type used by the verified owner source, not suffix matching;
-4. require non-external/internal source semantics and exact source/observed relationship tuple equality for ID, Type, normalized target and external-mode state;
-5. reject path traversal, alias/ambiguous target normalization, cross-sheet, duplicate target, counterfeit worksheet type, external target and missing target fail-closed;
-6. derive the dimension slot from the exact source worksheet top-level child order;
-7. require observed top-level child order to equal source order with only the source `<dimension>` omitted when restoration is needed;
-8. insert the exact source dimension only at that exact predecessor/successor boundary;
-9. reject missing, duplicate, reordered or ambiguous `sheetPr`/neighbor boundaries and any case where dimension would be after a later schema child;
-10. keep `getNoOpParityBuffers()` frozen and return no partially preserved buffer on any negative.
+## 4. Mandatory implementation requirements
 
-## 6. Proposed mandatory proof
+R3-R25 MUST:
 
-Positive:
-- exact Part A/Part B source SHA verification;
-- raw buffers remain frozen and still fail real parity as already accepted;
-- preserved Part A/Part B pass real parity;
-- Part A main, Part B main and Part B `Sheet1` dimensions equal source exactly;
-- restored dimension occupies the exact source-equivalent top-level child slot, including predecessor and successor checks;
-- no non-dimension fingerprint change; source/raw hashes unchanged.
+1. preserve the accepted R3-R24 exact `partKey` values `A`/`B` and exact expected source SHA-256 gates on every source-buffer path;
+2. parse all workbook relationships attribute-order-independently before filtering and reject duplicate relationship IDs globally across all relationship types;
+3. for every workbook sheet `r:id`, require exactly one relationship whose Type equals the exact canonical worksheet relationship Type used by the verified owner source; suffix matching such as `endsWith('/worksheet')` is forbidden;
+4. require internal/non-external worksheet relationship semantics and exact source/observed tuple equality for relationship ID, exact Type, normalized target and external-mode state;
+5. normalize worksheet targets strictly and reject path traversal, alias/ambiguous normalization, duplicate normalized targets, cross-sheet mappings, counterfeit worksheet types, external targets and missing targets fail-closed;
+6. derive the source dimension slot from the exact source worksheet top-level child order, not from an unconstrained search for `<sheetPr>`;
+7. require the observed worksheet top-level child order to equal the source top-level child order with only the exact source `<dimension>` omitted when restoration is needed;
+8. insert the exact source `<dimension .../>` only at the exact source-equivalent predecessor/successor boundary;
+9. reject missing, duplicate, reordered or ambiguous `sheetPr`/neighbor boundaries and reject any case where the restored dimension would occur after a later schema child;
+10. preserve raw/source buffer immutability and introduce no workbook fingerprint change other than exact dimension restoration;
+11. keep `getNoOpParityBuffers()` completely frozen as direct raw `xlsx-populate.outputAsync()` output with NO source-to-output repair;
+12. retain deterministic `BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED` for preservation-path failures and return no partially preserved buffer;
+13. do not disguise exact template source-identity failures as successful preservation.
 
-Negative additions required beyond preserved R3-R24/R3-R22 tests:
-- worksheet-like counterfeit Type URI ending `/worksheet`;
+Accepted owner-template SHA-256 remains:
+
+```text
+PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+```
+
+## 5. Mandatory tests / proof in the authorized test file
+
+### Positive
+
+Prove, when exact owner templates are available:
+- exact SHA-verified Part A and Part B sources only;
+- exact source Part A/Part B still validate TRUE;
+- raw Part A/Part B remain unchanged and fail the real parity validator as already accepted;
+- preserved Part A/Part B pass the real parity validator;
+- exact dimensions are restored for Part A main, Part B main and Part B `Sheet1`;
+- every restored dimension occupies the exact source-equivalent top-level child slot, including predecessor and successor checks;
+- complete fingerprint parity except exact dimensions;
+- source/raw byte hashes are unchanged.
+
+### Mandatory negative additions
+
+Preserve the valid R3-R24/R3-R22 negatives and add explicit proof that each of these fails deterministically before returning a preserved buffer:
+- worksheet-like counterfeit relationship Type URI that still ends with `/worksheet`;
 - duplicate relationship ID where one duplicate is worksheet and one is non-worksheet;
-- different source/observed relationship Type with same ID/target;
+- source/observed relationship Type mismatch with the same ID and target;
 - external/TargetMode mismatch;
-- target alias/path traversal normalization ambiguity;
-- observed `<sheetPr>` moved after `sheetData` or another later child;
+- target alias/path traversal/ambiguous normalization;
+- observed `<sheetPr>` moved after `sheetData` or another later top-level child;
 - missing expected source-equivalent predecessor/successor boundary;
 - duplicate/ambiguous top-level `sheetPr` or schema-slot boundary.
 
-Every negative must reject deterministically before returning a preserved buffer.
+### Regression preservation
 
-## 7. Frozen / out of scope
+Do not regress accepted R3-R22/R3-R24 foundations:
+- exact `A`/`B` partKey and source-SHA enforcement;
+- source-backed mutation negatives use exact source baselines;
+- exact per-sheet print-area binding by `localSheetId` + actual zero-based worksheet index;
+- Part B `Sheet1.colsHash` negative proof;
+- raw result pinning and raw no-op unrepaired behavior;
+- R3-R17 header/privacy/typed-metadata and zero-sensitive-token tests;
+- existing image/insertion/formula feasibility tests;
+- Difficulty Level remains blank temporarily.
 
-Do not start evidence publication, image closure, Part A/Part B insertion closure, formula authority, production sanitizer/renderer, combined Excel, PDF/UI, Kintone, deploy, Live UAT, rollback, D3, R3-R26 or another WP.
+## 6. Explicitly frozen / out of scope
 
-## 8. Expected commands if authorized
+DO NOT:
+- repair or modify `getNoOpParityBuffers()`;
+- publish evidence documents/artifacts;
+- begin reference-image closure;
+- begin Part A objective insertion closure;
+- begin Part B competency insertion closure;
+- begin formula/no-formula authority closure;
+- begin production sanitizer/XLSX renderer integration;
+- generate combined production Excel or PDF;
+- change UI;
+- access/write/deploy Kintone;
+- change App53/App794/App795/App801 records/schema/ACL/process/groups/password/session;
+- perform Live UAT;
+- rollback automatically;
+- start D3;
+- start R3-R26 or another work package;
+- declare R3-R25, D2-WP003 or D2 PASS/CLOSED.
+
+## 7. Required execution sequence
+
+Antigravity must:
+
+1. fresh-fetch `ai/antigravity-wp002c` and confirm it starts from the current authorization HEAD or a direct descendant containing this authorization;
+2. read `project-docs/CHAT_HANDOFF.md`;
+3. read `project-docs/AI_CONTROL_CENTER.md`;
+4. read this `project-docs/AI_ACTIVE_TASK.md`;
+5. inspect only the two authorized source/test files and directly required package metadata;
+6. implement the smallest correction satisfying this contract;
+7. run:
 
 ```text
 node --check scripts/export/mbo-xlsx-ooxml-feasibility.js
@@ -151,7 +189,24 @@ npm audit --omit=dev
 git status --porcelain
 ```
 
-Antigravity must make at most one bounded implementation/blocker commit, push, STOP, and report for independent review. Antigravity must not self-declare PASS/CLOSED.
+8. if ignored exact owner templates are unavailable, do not invent/template-rebuild them; run all privacy-safe synthetic/unit proof available and report the exact-template limitation honestly;
+9. commit exactly one bounded implementation/blocker commit;
+10. push it to `ai/antigravity-wp002c`;
+11. STOP and report commit SHA, exact changed files, test results, dependency audit result and any blocker.
+
+Antigravity self-report is NOT independent PASS evidence. ChatGPT performs the independent review after the commit reaches Git.
+
+## 8. Stop conditions
+
+STOP immediately if:
+- another tracked file must change;
+- a new dependency appears necessary;
+- owner-template identity cannot be verified where required;
+- satisfying the correction would require redesign beyond this preservation path;
+- Kintone/Live/deploy/evidence/PDF/renderer/D3 work appears necessary;
+- authorization baseline/gate conflicts with newer repository truth.
+
+No automatic rollback.
 
 ## 9. Authorization ledger
 
@@ -161,8 +216,9 @@ D2-WP003-R3-R22-EVIDENCE-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R23-SOURCE-20260901-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 2 OF 20
+D2-WP003-R3-R25-SOURCE-20260902-01 = ACTIVE / ONE-SHOT
 ANTIGRAVITY_AUTO_AUTH = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R25-SOURCE-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
@@ -180,8 +236,8 @@ D3_EXECUTION = HOLD
 ## 10. Exact next action
 
 ```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R25
-NEXT_EXECUTOR = NONE
-ANTIGRAVITY = STOP
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = IMPLEMENT D2-WP003-R3-R25 EXACTLY WITHIN THIS ONE-SHOT SOURCE+TEST AUTHORIZATION
+AFTER_COMMIT = STOP / CHATGPT INDEPENDENT REVIEW
 D3 = HOLD
 ```
