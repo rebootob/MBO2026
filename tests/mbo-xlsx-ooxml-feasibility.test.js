@@ -74,6 +74,10 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.deepEqual(fpOutB.relTuples, fpOrigB.relTuples, 'Part B relationship inventory tuples must match source exactly');
   assert.deepEqual(fpOutB.mediaFiles, fpOrigB.mediaFiles, 'Part B media inventory must match source exactly');
 
+  // --- R3-R22 CORRECTIVE A: PROVE EXACT-SOURCE BASELINES VALID THROUGH REAL VALIDATOR ---
+  assert.equal(await validateWorkbookParity(origBufA, 'A'), true, 'Exact source Part A must satisfy workbook-wide parity');
+  assert.equal(await validateWorkbookParity(origBufB, 'B'), true, 'Exact source Part B must satisfy workbook-wide parity');
+
   // Explicit per-worksheet assertions covering every worksheet & exact print-area bindings
   assert.ok(fpOutA.sheets['MBO Staff & Chief'], 'Part A main sheet entry must exist in workbook fingerprint');
   assert.equal(fpOutA.sheets['MBO Staff & Chief'].rawMergeCount, 193, 'Part A main sheet merge count must equal 193');
@@ -85,14 +89,23 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(fpOutB.sheets['(Part B) Competency'].printArea, "'(Part B) Competency'!$A$1:$X$35", 'Part B main sheet print area must equal exact source binding');
   assert.equal(fpOutB.sheets['Sheet1'].printArea, '', 'Part B Sheet1 print area must be empty string exactly as source');
 
-  // --- R3-R21 RAW NO-OP OBSERVED EVIDENCE EVALUATION ---
-  // Inspect actual dimension presence in source vs raw observed output
-  const partAHasRawDimension = fpOutA.sheets['MBO Staff & Chief'].dimension !== '';
-  const partBMainHasRawDimension = fpOutB.sheets['(Part B) Competency'].dimension !== '';
-  const partBSheet1HasRawDimension = fpOutB.sheets['Sheet1'].dimension !== '';
+  // --- R3-R22 CORRECTIVE C: RAW NO-OP RESULT PINNING & DIMENSION PRESENCE MATRIX ---
+  const partASourceHasDimension = fpOrigA.sheets['MBO Staff & Chief'].dimension !== '';
+  const partARawHasDimension = fpOutA.sheets['MBO Staff & Chief'].dimension !== '';
 
-  if (partAHasRawDimension) {
-    assert.equal(await validateWorkbookParity(outBufA, 'A'), true, 'Part A raw no-op roundtrip satisfies workbook-wide parity');
+  const partBSourceMainHasDimension = fpOrigB.sheets['(Part B) Competency'].dimension !== '';
+  const partBRawMainHasDimension = fpOutB.sheets['(Part B) Competency'].dimension !== '';
+
+  const partBSourceSheet1HasDimension = fpOrigB.sheets['Sheet1'].dimension !== '';
+  const partBRawSheet1HasDimension = fpOutB.sheets['Sheet1'].dimension !== '';
+
+  assert.equal(partASourceHasDimension, true, 'Part A source main sheet must contain actual <dimension> tag');
+  assert.equal(partBSourceMainHasDimension, true, 'Part B source main sheet must contain actual <dimension> tag');
+  assert.equal(partBSourceSheet1HasDimension, true, 'Part B source Sheet1 must contain actual <dimension> tag');
+
+  // Evaluate raw un-repaired outputAsync() buffers through real validator
+  if (partARawHasDimension) {
+    assert.equal(await validateWorkbookParity(outBufA, 'A'), true, 'Part A raw no-op output satisfies workbook parity');
   } else {
     await assert.rejects(
       async () => validateWorkbookParity(outBufA, 'A'),
@@ -101,8 +114,8 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
     );
   }
 
-  if (partBMainHasRawDimension && partBSheet1HasRawDimension) {
-    assert.equal(await validateWorkbookParity(outBufB, 'B'), true, 'Part B raw no-op roundtrip satisfies workbook-wide parity');
+  if (partBRawMainHasDimension && partBRawSheet1HasDimension) {
+    assert.equal(await validateWorkbookParity(outBufB, 'B'), true, 'Part B raw no-op output satisfies workbook parity');
   } else {
     await assert.rejects(
       async () => validateWorkbookParity(outBufB, 'B'),
@@ -111,92 +124,95 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
     );
   }
 
-  // --- MANDATORY FAIL-CLOSED & DETERMINISTIC NORMALIZATION NEGATIVE TESTS ---
+  // --- R3-R22 CORRECTIVE A: MUTATION-SPECIFIC NEGATIVES FROM KNOWN-VALID SOURCE BASELINE (fpOrigB / origBufB) ---
+
   // Negative Test 1: Wrong printArea binding assigned to Sheet1
-  const fpMutSheet1PrintArea = JSON.parse(JSON.stringify(fpOutB));
+  const fpMutSheet1PrintArea = JSON.parse(JSON.stringify(fpOrigB));
   fpMutSheet1PrintArea.sheets['Sheet1'].printArea = "'(Part B) Competency'!$A$1:$X$35";
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutSheet1PrintArea),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutSheet1PrintArea),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Assigning non-empty printArea to Sheet1 must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Negative Test 2: Blanking/removing one worksheet dimension evidence
-  const fpMutBlankDimension = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 2: Blanking/removing one worksheet dimension evidence from valid source baseline
+  const fpMutBlankDimension = JSON.parse(JSON.stringify(fpOrigB));
   fpMutBlankDimension.sheets['(Part B) Competency'].dimension = '';
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutBlankDimension),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutBlankDimension),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Blanking worksheet dimension evidence must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Negative Test 3: Restored Part B second-sheet colsHash mutation
-  const fpMutSheet1Cols = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 3: Part B second-sheet colsHash mutation from valid source baseline
+  const fpMutSheet1Cols = JSON.parse(JSON.stringify(fpOrigB));
   fpMutSheet1Cols.sheets['Sheet1'].colsHash = 'bad_cols_hash_999';
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutSheet1Cols),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutSheet1Cols),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Mutating Sheet1 column structure hash must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Negative Test 4: Removing actual <dimension> tag from in-memory disposable OOXML
-  const wbBZip = await XlsxPopulate.fromDataAsync(outBufB);
-  let sheet1XmlNoDim = await wbBZip._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  sheet1XmlNoDim = sheet1XmlNoDim.replace(/<dimension [^>]*\/>/, '');
-  wbBZip._zip.file('xl/worksheets/sheet1.xml', sheet1XmlNoDim);
-  const bufBNoDim = await wbBZip._zip.generateAsync({ type: 'nodebuffer' });
-
-  await assert.rejects(
-    async () => validateWorkbookParity(bufBNoDim, 'B'),
-    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
-    'Removing actual <dimension> tag from observed buffer must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
-  );
-
-  // Negative Test 5: Deterministic Blocker Normalization (Corrective B)
-  // Mutate workbook-level field into non-serializable BigInt value that triggers runtime TypeError
-  const fpMutNonSerializable = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 4: Deterministic Blocker Normalization (BigInt value in fingerprint from valid source baseline)
+  const fpMutNonSerializable = JSON.parse(JSON.stringify(fpOrigB));
   fpMutNonSerializable.sheetNames = [BigInt(12345)];
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutNonSerializable),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutNonSerializable),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Non-serializable field in observed fingerprint must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Additional Fail-Closed Negative Tests
-  // Reorder sheets
-  const fpMutSheetOrder = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 5: Reorder sheets from valid source baseline
+  const fpMutSheetOrder = JSON.parse(JSON.stringify(fpOrigB));
   fpMutSheetOrder.sheetNames = ['Sheet1', '(Part B) Competency'];
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutSheetOrder),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutSheetOrder),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Reordering worksheets must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Mutate merge count
-  const fpMutMerge = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 6: Mutate merge count from valid source baseline
+  const fpMutMerge = JSON.parse(JSON.stringify(fpOrigB));
   fpMutMerge.sheets['(Part B) Competency'].rawMergeCount = 78;
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutMerge),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutMerge),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Mutating merge count must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Mutate page setup / orientation
-  const fpMutSetup = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 7: Mutate page setup / orientation from valid source baseline
+  const fpMutSetup = JSON.parse(JSON.stringify(fpOrigB));
   fpMutSetup.sheets['(Part B) Competency'].orientation = 'landscape';
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutSetup),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutSetup),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Mutating page orientation must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Mutate sheet protection
-  const fpMutProtection = JSON.parse(JSON.stringify(fpOutB));
+  // Negative Test 8: Mutate sheet protection from valid source baseline
+  const fpMutProtection = JSON.parse(JSON.stringify(fpOrigB));
   fpMutProtection.sheets['(Part B) Competency'].sheetProtection = 'none';
   await assert.rejects(
-    async () => validateWorkbookParity(outBufB, 'B', fpMutProtection),
+    async () => validateWorkbookParity(origBufB, 'B', fpMutProtection),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Mutating Part B sheet protection must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  // --- R3-R22 CORRECTIVE B: ACTUAL <dimension> TAG REMOVAL FROM KNOWN-VALID SOURCE ---
+  const wbOrigBZip = await XlsxPopulate.fromDataAsync(origBufB);
+  let sheet1XmlSource = await wbOrigBZip._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  assert.equal(sheet1XmlSource.includes('<dimension'), true, 'Exact source Part B sheet1.xml must contain actual <dimension> tag before mutation');
+
+  const sheet1XmlNoDim = sheet1XmlSource.replace(/<dimension [^>]*\/>/, '');
+  assert.equal(sheet1XmlNoDim.includes('<dimension'), false, 'Mutation must remove <dimension> tag from XML');
+
+  wbOrigBZip._zip.file('xl/worksheets/sheet1.xml', sheet1XmlNoDim);
+  const bufBNoDim = await wbOrigBZip._zip.generateAsync({ type: 'nodebuffer' });
+
+  await assert.rejects(
+    async () => validateWorkbookParity(bufBNoDim, 'B'),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Removing actual <dimension> tag from known-valid source buffer must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 });
 
