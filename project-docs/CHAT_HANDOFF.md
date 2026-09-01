@@ -16,151 +16,107 @@ Antigravity = execution plane only when genuinely necessary
 
 No Live Kintone write/deploy/ACL/group/schema/record/session/password operation without exact explicit authorization. Never reuse consumed authorization.
 
-## 2. D1 final status
+## 2. Closed foundations
 
 ```text
 D1 = PASS / CLOSED
-FINAL_D1_SECURITY_REVIEW = PASS
-APP794_LIVE_REVISION = 67
-RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+D2-WP001 = PASS / CLOSED
+D2-WP002 = PASS / CLOSED
 ```
 
-Do not reopen D1 without a proven regression.
+WP001 closed secured export projection and 4/5/10 projection coverage.
 
-## 3. D2-WP001 — PASS / CLOSED
+WP002 closed legacy template evidence/design using Owner-provided Excel binaries. Original employee-bearing files were not committed.
 
-Security/projection foundation is accepted.
-
-Corrective implementation:
-`1d48dc218fe7e2c542773bcf441332f8b06f88f9`.
-
-Accepted verification:
-- `tests/mbo-export-service.test.js` = 10/10 PASS;
-- `tests/core-794-795-796-integration.test.js` = 1/1 PASS;
-- working tree clean.
-
-Current export authorization rules remain strict Employee-Self exact Employee_Code and DEDICATED current native Assignee for Approver; SHARED/stale/caller-label authority is denied.
-
-## 4. D2-WP002 — PASS / CLOSED
-
-Owner explicitly approved WP002 and supplied both legacy Excel binaries directly to ChatGPT. ChatGPT inspected them read-only; Antigravity was not used.
-
-Evidence hashes:
-
+Accepted template hashes:
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Original employee-bearing binaries were not committed to Git.
+Frozen high-level geometry:
+- Part A: `MBO Staff & Chief`, A3 landscape, print area A1:BJ52, legacy objective rows 25–28;
+- Part B: `(Part B) Competency`, A4 portrait, print area A1:X35, six legacy competency blocks;
+- no worksheet formulas in supplied main sheets;
+- legacy visual/layout wins for presentation, current baseline/config/projection wins for business data.
 
-### Frozen Part A structure
-```text
-Sheet = MBO Staff & Chief
-Print area = A1:BJ52
-Paper = A3 landscape
-Scale = 58%
-Legacy objective rows = 25:28
-Objective row height = 140.1 pt
-Merged ranges = 193
-Cell styles = 429
-Worksheet formulas = 0
-```
-
-Objective grid mapping:
-```text
-B:I objective
-J:S action plan
-T:W additional agreement/comment
-Y:Z weight
-AA:AB difficulty
-AD:AG periodical review
-AI:AJ self achievement
-AK:AR actual result
-AS:AU 1st appraiser achievement
-AV:AW 1st appraiser score
-AX:AZ 2nd appraiser achievement
-BA:BB 2nd appraiser score
-BC:BE average score
-BF:BI MBO point
-```
-
-### Frozen Part B structure
-```text
-Sheet = (Part B) Competency
-Print area = A1:X35
-Paper = A4 portrait
-Scale = 75%
-Horizontal centered = yes
-Sheet protected = yes
-Sample competency blocks = 6
-Merged ranges = 79
-Cell styles = 142
-Worksheet formulas = 0
-```
-
-The extra visible `Sheet1` contains only two orphan/helper labels and is excluded from the user-facing renderer contract unless future evidence proves it is required.
-
-## 5. Critical renderer rules
-
-Canonical detailed contract: `project-docs/EXCEL_EXPORT.md`.
-
-```text
-LEGACY_TEMPLATE = VISUAL/LAYOUT AUTHORITY
-CONFIRMED_BASELINE + SECURED APP794 PROJECTION = BUSINESS/DATA AUTHORITY
-```
-
-Do not copy stale sample business rules:
-- Part A `2 till 4 objectives` wording is stale; renderer must support through 10;
-- sample fiscal/appraisal dates are not current truth;
-- Part B title/context/static 30% weight is internally inconsistent; current Profile_Code weighting must win.
-
-Assistant Manager remains 60/40 and Staff/Chief remains 70/30 per Confirmed Baseline.
-
-Renderer must be template-preserving, not workbook-from-scratch.
-
-Runtime templates must be sanitized: no employee names/IDs/objectives/evaluator comments/scores/sample dates and no non-user-facing historical screenshots. Preserve approved branding, styles, merges, geometry and print settings.
-
-Dynamic rules:
-- Part A 5–10 objectives = insert/clone objective blocks after row 28, shift lower sections, extend print area, keep A3 landscape horizontal geometry;
-- Part B 6/8 competencies = insert blocks before totals, shift lower sections, extend print area, keep A4 portrait;
-- supplied binaries contain no worksheet formulas; current scoring/projection values are authoritative.
-
-PDF geometry is frozen as Part A A3 landscape / Part B A4 portrait, but no approved legacy PDF sample has been supplied, so exact PDF visual parity remains pending.
-
-## 6. Exact current gate — D2-WP003 approval
-
-Proposed next Work Package:
+## 3. Exact current gate — D2-WP003 AUTHORIZED
 
 ```text
 D2-WP003 = SANITIZED TEMPLATE ASSETS + XLSX RENDERER FOUNDATION
-STATUS = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+ACTIVE_WORK_PACKAGE = D2-WP003
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE WP003 ONLY / LOW-CREDIT
+MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-Proposed WP003 scope/outcome:
-- create sanitized runtime Part A and Part B template assets from the accepted visual structures;
-- implement the smallest template-preserving XLSX renderer against secured `MboExportService` projection;
-- prove Part A 4/5/10 objective rendering;
-- prove Part B 6/8 competency rendering;
-- structural parity tests for sheet names, merges, print geometry and absence of confidential sample data.
+Read `project-docs/AI_ACTIVE_TASK.md` for exact source scope and acceptance tests.
 
-Not in WP003 unless separately approved:
+Critical rules:
+- use only local originals matching the two accepted SHA-256 values;
+- bounded lookup only in repo root, `app info/data/`, `exp/`;
+- if matching originals are absent: STOP, do not recreate from screenshots;
+- original owner binaries must never be committed;
+- sanitized runtime binaries may be committed only after privacy sanitization proof;
+- renderer consumes sanitized template buffer + secured export projection only;
+- renderer makes no Kintone calls and performs no authorization widening;
+- Part A must render 4/5/10 objectives template-preservingly;
+- Part B must render 6/8 competencies template-preservingly;
+- current profile weighting replaces stale legacy static weight/title content.
+
+Exactly one new dependency is authorized: `xlsx-populate@1.21.0`.
+
+Before implementation, Antigravity must prove a no-op load/write roundtrip on both exact source templates preserves material sheet/merge/print/protection/branding structure. If it does not, revert experiment and STOP with `BLOCKER_XLSX_LIBRARY_PARITY`; do not switch libraries.
+
+## 4. Exact authorized files
+
+Only:
+- `src/services/mbo-xlsx-renderer.js` NEW
+- `scripts/export/sanitize-mbo-xlsx-templates.js` NEW
+- `tests/mbo-xlsx-renderer.test.js` NEW
+- `assets/export-templates/PMS_PART_A_SANITIZED.xlsx` NEW
+- `assets/export-templates/PMS_PART_B_SANITIZED.xlsx` NEW
+- `package.json` for `xlsx-populate@1.21.0` only
+- `package-lock.json` lockfile consequence only
+
+`src/services/mbo-export-service.js` is NOT authorized to change in WP003.
+
+## 5. Forbidden in WP003
+
+No:
 - PDF generator;
-- UI download button;
-- Live Kintone access/write/export;
-- deploy;
-- D2-WP004 or D3–D6 work.
+- UI/download buttons;
+- `src/main-mbo-app.js` changes;
+- Live Kintone read/write/export/UAT;
+- deployment;
+- other dependency/library;
+- original binary commit;
+- generated output fixture commit;
+- D2-WP004 or D3–D6 implementation.
+
+## 6. Verification minimum
+
+Antigravity must run:
+```text
+node --test tests/mbo-export-service.test.js
+node --test tests/mbo-xlsx-renderer.test.js
+node --test tests/core-794-795-796-integration.test.js
+npm audit --omit=dev
+```
+
+Source template hashes, no-op parity, sanitization evidence and working-tree scope must also be reported.
+
+After push, Antigravity must STOP at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`. ChatGPT reviews the actual commit before PASS/CLOSED.
 
 ## 7. Authorization ledger
 
 ```text
-D2-WP001-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP002 = APPROVED / READ-ONLY / CLOSED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
@@ -173,24 +129,10 @@ ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-## 8. Whole-project status
+## 8. Exact next action
 
 ```text
-D1 = PASS / CLOSED
-D2 = IN PROGRESS / WP001 PASS-CLOSED / WP002 PASS-CLOSED / WP003 APPROVAL PENDING
-D3 = IN PROGRESS / WRITE NOT AUTHORIZED
-D4 = IN PROGRESS
-D5 = IN PROGRESS
-D6 = PENDING
-D7 = SOURCE FUNCTIONALITY CLOSED
+NEXT_EXECUTOR = ANTIGRAVITY
+ACTION = EXECUTE D2-WP003 EXACTLY AS AI_ACTIVE_TASK DEFINES, PUSH, THEN STOP
+NEXT_CONTROL STEP = ChatGPT independent review
 ```
-
-MBO2026 is not project-complete.
-
-## 9. Exact next action
-
-```text
-NEXT_OWNER_DECISION = APPROVE / CORRECT / REJECT D2-WP003
-```
-
-Do not auto-start WP003.
