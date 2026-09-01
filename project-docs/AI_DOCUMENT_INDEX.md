@@ -24,11 +24,12 @@ D2 = IN PROGRESS
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 2 OF 20
+D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 3 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R25
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R26
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
+CORRECTIVE_BASELINE_COMMIT = 60b24f39b78013d37fe210192bb97876e0184638
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -60,10 +61,12 @@ Read in this order:
 Current D2 checkpoint:
 - R3-R22 proof isolation is PASS/CLOSED;
 - raw no-op buffers remain unrepaired and fail real parity because dimension tags are lost;
-- R3-R24 improved exact partKey/source SHA/target equality but remains CORRECTIVE;
-- remaining blockers are exact worksheet relationship-Type semantics, global duplicate-ID fail-closed behavior, exact relationship tuple binding, and exact source-equivalent schema-slot insertion/proof;
-- R3-R25 is proposed and not authorized;
-- ChatGPT standing review/corrective authority is round `2/20`; Antigravity is not auto-authorized;
+- R3-R25 improved exact relationship Type/global ID/tuple/schema-neighbor checks but remains CORRECTIVE;
+- target lexical normalization still accepts alias forms that can collapse to the verified source ZIP path;
+- Relationship and top-level worksheet scanners do not prove complete namespace-prefixed element inventory;
+- R3-R25 removed valid R3-R24 preservation negatives despite mandatory regression preservation;
+- R3-R26 strict target lexical identity + proof-regression restoration is proposed and not authorized;
+- ChatGPT standing review/corrective authority is round `3/20`; Antigravity is not auto-authorized;
 - do not start image/insertion/formula/renderer/PDF work until preservation is accepted;
 - D3 remains HOLD.
 
