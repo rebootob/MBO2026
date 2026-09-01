@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R8 REVIEWED-NOT-PASS / R3-R9 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R8 REVIEWED-NOT-PASS / R3-R9 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -100,42 +100,83 @@ Preserve every non-target drawing/media relationship.
 Scope review = PASS. Implementation `e7690e6066839ac8abd53b1d1ac524120ab06e17` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
 
 Accepted progress:
-- header style id was added;
-- complete package `.rels` tuple inventory was added to workbook fingerprinting;
-- metadata addresses are checked against sanitized blank output;
-- several additional raw inspector assertions were added.
+- header style id added;
+- package `.rels` tuple inventory added;
+- metadata-address blank checking added;
+- selected structural assertions added.
 
-Feasibility acceptance = FAIL because mandatory proof coverage remains incomplete:
-1. Part B classification remains hard-coded/self-declared rather than source-structure-backed.
-2. typed metadata exact address-set/duplicate/type/nonblank and date/boolean reconciliation is incomplete.
-3. header normalized type does not strictly implement `string|number|date|boolean|blank`; complete runtime-value fingerprint proof is absent.
-4. workbook parity remains incomplete for source-vs-output dimension, mergeCountAttr, explicit row-height/customHeight map, full page/protection structure and reparse.
-5. reference-image proof still lacks complete target-normalized before/after anchor/relationship/media equality.
-6. structural tests still omit required exact row/cell/style/height/merge translation/dimension/page/protection assertions across Part A 4/5/10 and Part B 6/8.
-7. formula proof lacks safe node fingerprints and complete source/sanitized/structural-output coverage.
+Feasibility acceptance = FAIL because final proof coverage remains incomplete:
+1. Part B classification still hard-coded/self-declared rather than source-backed.
+2. typed metadata exact set/duplicate/type/nonblank/date/boolean reconciliation incomplete.
+3. header normalized type not strict to `string|number|date|boolean|blank`; runtime-value fingerprint proof incomplete.
+4. workbook parity incomplete for source-vs-output dimension, mergeCountAttr, explicit row-height/customHeight, full page/protection and reparse.
+5. reference-image proof lacks complete target-normalized inventory equality.
+6. structural matrix still omits required exact row/cell/style/height/merge translation/dimension/page/protection assertions.
+7. formula proof lacks safe node fingerprints and complete original/sanitized/structural coverage.
 8. GitHub has no CI/status evidence.
 
-## 7. Proposed D2-WP003-R3-R9
+## 7. D2-WP003-R3-R9 — AUTHORIZED
 
-R3-R9 must preserve all accepted raw OOXML mutation logic and finish only the remaining assertion coverage.
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R9
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R9-SOURCE-20260901-01
+PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+```
 
-Expected writes only:
+R3-R9 preserves all accepted raw OOXML mutation logic and may modify only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-Mandatory corrective direction:
-- actual SHA-verified source-backed Part B classification or fail closed;
-- exact typed metadata set/duplicate/type/nonblank + number/date/boolean output reconciliation;
-- strict header normalized-type enum + complete runtime-value/merge-state proof;
-- direct source-vs-roundtrip equality for every workbook invariant;
-- complete target-normalized reference-image inventory equality;
-- complete exact raw structural assertions for Part A 4/5/10 and Part B 6/8;
-- formula worksheet/cell/node-hash set proof for originals, sanitized outputs and every structural output;
-- Difficulty remains blank and no application `Difficulty_*` field is added/read.
+No package/dependency changes and no binary publication.
+
+## 8. Mandatory R3-R9 final assertion closure
+
+### 8.1 Source-backed Part B classification
+Use exact SHA-verified Part B owner template. For every sensitive/protected address collect safe source evidence: merge membership, style id, normalized type, blank/nonblank state and safe hash where useful. Build complete protected-static set from actual template roles. Tests must iterate all sensitive/protected addresses and prove exact disjointness. Ambiguity => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+
+### 8.2 Exact typed reconciliation
+Prove metadata length, exact address-set equality, no duplicates, accepted type enum, aggregate counts and exact nonblank reconciliation. Reconcile every metadata address to sanitized blank output and separately iterate number/date/boolean subsets.
+
+### 8.3 Complete header proof
+Use exact normalized type enum plus safe hash, style id and merge membership. Assert every static/unrelated fingerprint unchanged, every runtime value changed/cleared exactly as intended and complete merge set preserved.
+
+### 8.4 Complete workbook parity
+Directly compare SOURCE vs ROUND-TRIP for sheet order, merge set, mergeCountAttr, dimension, cols, explicit row-height/customHeight map, Print_Area, full pageSetup structural fingerprint, Part B centering/protection structural fingerprint, complete relationship inventory, media hashes and successful reparse.
+
+### 8.5 Complete reference-image inventory equality
+Snapshot full drawing anchors/relationships/media before removal. Normalize only rId3/image3 target items from BEFORE and require exact equality with AFTER for every non-target item.
+
+### 8.6 Complete raw structural matrix
+Directly assert all required row/cell/style/height/merge/dimension/page/protection properties for:
+- Part A 4: unchanged geometry, `A1:BJ52`;
+- Part A 5: row29 clone from source28, old29->30, exact merge shifts, `A1:BJ53`;
+- Part A 10: rows29:34 clones, old29->35, objective10 row34, exact merge shifts, `A1:BJ58`;
+- Part B 6: unchanged totals/signatures row31, `A1:X35`, centering/protection preserved;
+- Part B 8: source27:30 cloned to31:34 and35:38, old31->39, exact shifts, `A1:X43`, centering/protection preserved.
+
+Counts/sentinels/Print_Area-only are supplemental only.
+
+### 8.7 Formula cell/node-hash sets
+Inspect worksheet XML only. Return safe worksheet/cell/node-hash fingerprints and directly test original A/B, sanitized A/B, Part A 4/5/10 and Part B 6/8. Accepted source and every output set must be exactly empty with zero additions.
+
+### 8.8 Difficulty
+Difficulty remains blank temporarily. No application `Difficulty_*` field may be added/read. Sanitized Part A must directly prove legacy Difficulty sample cells blank.
 
 Critical rule: no new helper/field counts as proof unless its required output is directly asserted against actual source/output in the same corrective commit.
 
-## 8. Current gate
+## 9. Explicit exclusions
+
+No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
+
+Mandatory commands:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+## 10. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -143,11 +184,11 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R8 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R9 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R9 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R9-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R9 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
