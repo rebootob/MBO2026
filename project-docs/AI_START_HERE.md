@@ -1,38 +1,33 @@
 # AI START HERE — MBO2026
 
 > Mandatory lean entry point for every AI working on MBO2026.  
-> Updated: 2026-08-31 ICT
+> Updated: 2026-09-01 ICT
 
 ## 1. Startup order
 
 Before planning, reviewing, coding or changing Kintone:
+1. fresh-fetch current HEAD of `ai/antigravity-wp002c`;
+2. read `project-docs/CHAT_HANDOFF.md` first;
+3. read `project-docs/AI_CONTROL_CENTER.md`;
+4. read `project-docs/AI_ACTIVE_TASK.md`;
+5. read `project-docs/AI_DOCUMENT_INDEX.md`;
+6. read `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness matters;
+7. read `project-docs/EXCEL_EXPORT.md` for current D2 work;
+8. read `project-docs/CONFIRMED_BASELINE/README.md` and only relevant Baseline(s);
+9. inspect exact current diff/evidence only when required.
 
-1. Fresh-fetch HEAD of `ai/antigravity-wp002c`.
-2. Read `project-docs/CHAT_HANDOFF.md` first.
-3. Read `project-docs/AI_CONTROL_CENTER.md`.
-4. Read `project-docs/AI_ACTIVE_TASK.md`.
-5. Read `project-docs/AI_DOCUMENT_INDEX.md`.
-6. Read `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness is needed.
-7. Read `project-docs/CONFIRMED_BASELINE/README.md` and only relevant Baseline(s).
-8. Inspect exact latest diff/evidence if reviewing newer work.
-
-Do not broad-read historical docs. Do not ask the user to repeat project history already in Git. Do not perform Live Kintone write/deploy during startup.
-
-Repository/live evidence beats chat memory and embedded handoff checkpoints.
+Repository/live evidence beats chat memory and embedded checkpoints. Do not broad-read historical docs. Do not ask the Owner to repeat history already in Git.
 
 ## 2. Permanent roles
 
-**ChatGPT = Control Plane**
-- plan, architecture, Git inspection, independent review, PASS/CORRECTIVE/BLOCKED decision;
-- maintain operational/control/handoff documentation;
-- use Antigravity only when actual implementation cannot reasonably be done by User + ChatGPT.
+```text
+ChatGPT = Control Plane / Architect / Independent Reviewer
+Antigravity = LOW-CREDIT / BOUNDED Execution Plane only when genuinely necessary
+```
 
-**Antigravity = Low-Credit Execution Plane**
-- execute only exact Active Task scope;
-- no broad planning/scans/self-review/docs by default;
-- stop after required focused test/evidence/commit.
+No false PASS. Executor cannot self-certify independent PASS. No Live Kintone write/deploy without exact explicit authorization. Never widen/reuse consumed authorization.
 
-## 3. D1 — frozen closed architecture
+## 3. D1 frozen closure
 
 ```text
 D1 = PASS / CLOSED
@@ -42,52 +37,19 @@ HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 APP794_LIVE_REVISION = 67
 RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 FINAL_D1_SECURITY_REVIEW = PASS
+CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT APP794 ASSIGNEE
 ```
 
-Dedicated user:
-`native Kintone user -> exact active App53 MBO_Kintone_User -> canonical emp_text Employee_Code -> Employee-Self auto-bind`.
-
-Shared user:
-`approved shared principal -> Employee_Code + App801 MBO password/session -> Employee-Self`.
-
-Dedicated approval authority:
-`current native App794 Assignee`, with fresh revalidation; static App795/snapshot membership is not authority. SHARED approver authority is denied.
-
-Own-MBO self-appraiser elision remains approved and self-approval remains prohibited.
-
-Do not reopen D1 without proven regression or explicit architecture change.
-
-## 4. D1 accepted security ceilings
+Accepted ceilings:
 
 ```text
 SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-These are accepted Kintone-only boundaries. Client-side JavaScript is not a privileged server-side security layer.
+Do not reopen D1 without proven regression or explicit architecture change.
 
-## 5. Current App53/App794 truth
-
-```text
-APP53_TOTAL_RECORDS = 281
-MBO_Kintone_User = USER_SELECT / optional / LIVE
-DEDICATED_MAPPINGS_VERIFIED = 24
-UNEXPECTED_NONEMPTY_RECORDS = 0
-papatchaya -> Employee 0113
-```
-
-Canonical App794 Record #12:
-
-```text
-Status = 03 Manager Objective Review
-Requester = papatchaya
-Manager / Assignee = pattama
-Topology = M1_ONLY
-```
-
-No D1 synthetic test record remains.
-
-## 6. Employee lifecycle policy — confirmed
+## 4. Employee lifecycle policy — confirmed
 
 Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
 
@@ -101,45 +63,94 @@ MASTER CHANGE != AUTOMATIC EXISTING APP794 REWRITE
 MID_CYCLE CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
 ```
 
-For lifecycle work, read that Baseline before planning. D4 owns lifecycle operations, D5 must resolve fresh current route/identity without stale snapshots, and D6 must prove lifecycle/security regression. No lifecycle write is authorized now.
+D4 owns lifecycle operations. D5 resolves fresh target-year route/identity. D6 includes lifecycle/security regression.
 
-## 7. Current gate — PRE-D2 WAIT
+## 5. Current gate — D2 ACTIVE PRIORITY
 
 ```text
-PRE_D2_DOCUMENTATION_SYNC = COMPLETE
-EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
-D2 = READY / NOT STARTED
+D1 = PASS / CLOSED
+D2 = IN PROGRESS
+D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
 ACTIVE_WORK_PACKAGE = NONE
-D2_START = OWNER INSTRUCTION REQUIRED
-ANTIGRAVITY = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
+PROPOSED_SCOPE = TEST-ONLY
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = STOP / WAIT OWNER
+D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-Canonical D2 pre-start document: `project-docs/EXCEL_EXPORT.md`.
+Owner priority: `COMPLETE D2 FULLY BEFORE D3.`
 
-When Owner starts D2, do read-only discovery first:
-- current export source/tests;
-- approved legacy Excel/PDF samples;
-- App794-to-output field mapping;
-- current PDF mechanism;
-- export authorization/confidentiality guards;
-- exact gap list and smallest Work Package.
-
-Do not immediately implement or deploy.
-
-## 8. D1–D7 no-drop
+## 6. D2 accepted foundations
 
 ```text
-D1 Hybrid Identity + Password + Employee-Self + Approver — PASS / CLOSED
-D2 Excel + PDF Original/Legacy Format — READY / NOT STARTED
-D3 8 Legacy PMS Apps -> App794 Migration — IN PROGRESS / WRITE NOT AUTHORIZED
-D4 App800 HR Control Center End-to-End — IN PROGRESS / LIFECYCLE OPERATIONS MANDATORY
-D5 Copy Own Previous MBO — IN PROGRESS / FRESH CURRENT ROUTE + IDENTITY REQUIRED
-D6 Integrated E2E / Security / Regression — PENDING / LIFECYCLE REGRESSION REQUIRED
-D7 Admin Support Center — SOURCE FUNCTIONALITY CLOSED
+D2-WP001 = PASS / CLOSED
+D2-WP002 = PASS / CLOSED
+D2-WP003-R3-R13 = PASS / CLOSED
+D2-WP003-R3-R16 = PASS / CLOSED
+D2-WP003-R3-R17 = PASS / CLOSED
+PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
+TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
+TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
+HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 9. Current authorization
+Exact template SHA-256:
+
+```text
+PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+```
+
+## 7. Latest reviewed work — R3-R21
+
+```text
+IMPLEMENTATION = 1587b20b3920618b79b335c66bbdde1778570626
+EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
+SCOPE_REVIEW = PASS
+SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+```
+
+Accepted source implementation:
+- raw direct `outputAsync()` no-op buffers; no source repair;
+- deterministic parity blocker normalization restored;
+- actual dimension-tag/absence fingerprint only;
+- exact per-sheet print-area binding preserved.
+
+Remaining blocker: mutation-specific negative tests use raw Part B baseline that may already be parity-invalid, so proof is not isolated.
+
+## 8. Proposed R3-R22 — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
+PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
+PROPOSED_SCOPE = TEST-ONLY
+```
+
+Expected direction:
+- source implementation read-only;
+- mutation negatives start from valid exact-source/source-backed baseline;
+- actual dimension removal starts from source buffer known to contain tag;
+- raw no-op Part A / Part B main / Part B Sheet1 result pinned separately;
+- no preservation strategy/image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
+
+## 9. D1–D7 no-drop
+
+```text
+D1 = PASS / CLOSED
+D2 = IN PROGRESS
+D3 = HOLD / WRITE NOT AUTHORIZED UNTIL D2 PASS/CLOSED
+D4 = IN PROGRESS / NOT ACTIVE / LIFECYCLE OPERATIONS MANDATORY
+D5 = IN PROGRESS / NOT ACTIVE / FRESH CURRENT ROUTE + IDENTITY REQUIRED
+D6 = PENDING / LIFECYCLE REGRESSION REQUIRED
+D7 = SOURCE FUNCTIONALITY CLOSED
+```
+
+## 10. Current authorization
 
 ```text
 KINTONE WRITE = NONE
@@ -154,14 +165,14 @@ D2 SOURCE CHANGE = NONE
 ROLLBACK = NONE
 ```
 
-## 10. User shorthand
+## 11. User shorthand
 
-`review` -> fresh-fetch HEAD; read current Control Center + Active Task + relevant Baseline; inspect exact diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
+`review` → fresh-fetch HEAD; read Handoff + Control Center + authorizing Active Task; inspect exact baseline → implementation diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
 
-`ต่อ` / `ต่อไป` -> fresh-fetch HEAD + Control Center + Active Task; choose the smallest safe next action; do not spend Antigravity unnecessarily.
+`ต่อ` / `ต่อไป` → fresh-fetch HEAD + current gate; choose smallest safe next action.
 
-`อนุมัติ ...` -> exact narrow authorization only; never widen or reuse consumed authorization.
+`อนุมัติ ...` → exact narrow one-shot authorization only; never widen/reuse.
 
-## 11. New chat
+## 12. New chat
 
 Copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the new conversation. The new chat must fresh-fetch HEAD and read `CHAT_HANDOFF.md` first.
