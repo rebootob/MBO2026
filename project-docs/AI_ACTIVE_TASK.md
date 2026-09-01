@@ -1,95 +1,89 @@
-# AI ACTIVE TASK — D2-WP003-R3-R13 REVIEW PASS / R3-R14 PROPOSED
+# AI ACTIVE TASK — D2-WP003-R3-R14 EXECUTION AUTHORIZED
 
-Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **ANTIGRAVITY / TYPED PRIVACY METADATA COMPLETENESS ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
+TASK_STATE = AUTHORIZED_FOR_EXECUTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R13_SCOPE_REVIEW = PASS
-D2-WP003-R3-R13_SOURCE_REVIEW = PASS
-D2-WP003-R3-R13_STATUS = PASS / CLOSED
+D2-WP003-R3-R13 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R14
+ACTIVE_WORK_PACKAGE_NAME = TYPED PRIVACY METADATA COMPLETENESS
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R14
-PROPOSED_WORK_PACKAGE_NAME = TYPED PRIVACY METADATA COMPLETENESS
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY_ACTION = STOP / WAIT OWNER
-D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. R3-R13 independent review — PASS
+## 1. Purpose — ONE DEFERRED FEASIBILITY BLOCKER ONLY
 
-Implementation commit `14ec0c4fcc404e580ced61759dd0338a68f2c856` is exactly one commit above authorization baseline `4b52ee0a7c860a41668e0c6e8b435f756df3d4a1` and changed only:
+Complete **typed privacy metadata completeness proof** for existing Part A/B sensitive-address metadata.
+
+Do NOT reopen the accepted Part B privacy classification/evidence-parity chain. Do NOT attempt header parity, workbook parity, image inventory, insertion matrix, formula matrix, production renderer/sanitizer, PDF/UI, Kintone or deploy.
+
+## 2. Exact write scope
+
+Authorized modifications ONLY:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
+Read-only:
+- `package.json`
+- `package-lock.json`
+- governance docs
+- exact ignored owner templates after SHA verification
 
-Accepted source behavior:
-- authoritative SHA-verified source inventory remains separate from observed override evidence;
-- existing `styleId` + `mergeRef` parity remains;
-- authoritative-vs-observed `normalizedType` parity is enforced;
-- authoritative-vs-observed `nonblank` parity is enforced;
-- safe `valHash` parity is enforced only after role resolution for protected-static records with authoritative static string hash evidence;
-- dynamic records do not require source sample `valHash` equality;
-- real resolver still fails closed with `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`;
-- real-address non-style mutation tests cover protected body `B7`, dynamic body `K7`, and summary `B31`.
+No dependency/package change. No XLSX/image/media/output publication.
 
-GitHub combined status/check list for implementation commit is empty. This is recorded as missing CI evidence, not a source-review defect for this bounded feasibility proof.
+## 3. Source identity
 
-## 2. Classification blocker closure
+Use only exact owner templates:
 
-The Part B privacy classification/evidence-parity blocker accumulated through R3-R10..R3-R13 is now independently accepted and CLOSED.
+```text
+PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+```
 
-Do not reopen it unless a proven regression appears.
+Bounded lookup only in repository root, `app info/data/`, and `exp/`.
+If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
+Never print/log/commit raw employee/sample values.
 
-This does NOT close D2-WP003. Deferred feasibility blockers still remain before production renderer/PDF/UI work.
+## 4. Accepted R3-R13 work — PRESERVE
 
-## 3. Proposed R3-R14 — ONE blocker only
+Preserve without redesign:
+- Part B source evidence inventory / exact SHA verification;
+- independent role resolution;
+- authoritative-vs-observed style/merge/type/blankness parity;
+- protected-static safe hash parity where applicable;
+- no source-sample hash equality for dynamic values;
+- real fail-closed classification path;
+- post-resolution `SENSITIVE_RANGES_B` compatibility check;
+- dynamic/protected disjointness.
 
-Purpose: **complete typed privacy metadata proof for existing sensitive-address metadata without reopening the accepted Part B role-classification architecture.**
+Do not spend credit reopening these accepted areas.
 
-Expected writes only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+## 5. Current typed metadata truth
 
-Current source truth:
-- `getTypedPrivacyMetadata()` emits `{address, normalizedType, nonblank, hash}` and aggregate type counts;
-- current tests check only unique count and aggregate reconciliation for Parts A/B;
-- current tests do not independently prove exact address-set equality, duplicate absence, exact normalized-type enum for every record, nonblank consistency, or per-record hash contract.
+`getTypedPrivacyMetadata(partKey)` currently emits per-record metadata:
 
-### Mandatory R3-R14 direction if approved
+```text
+{ address, normalizedType, nonblank, hash }
+```
 
-1. Preserve all accepted R3-R13 classification/evidence-parity code unchanged unless a minimal shared helper is strictly necessary.
-2. Prove typed metadata covers the exact expected unique sensitive address set for Part A and Part B — no missing and no extra addresses.
-3. Prove metadata contains no duplicate addresses.
-4. For EVERY metadata record, prove `normalizedType` is exactly one of:
-   - `string`
-   - `number`
-   - `date`
-   - `boolean`
-   - `blank`
-5. Prove `nonblank` is boolean and consistent with normalized type:
-   - `blank` => `nonblank === false`
-   - non-blank types => `nonblank === true`
-6. Prove safe hash contract:
-   - nonblank string may carry SHA-256 identity;
-   - blank/non-string records must not manufacture raw-value hashes;
-   - no raw source values may be logged or committed.
-7. Explicitly test number/date/boolean/blank/string branches if present in source; if a type does not occur in the exact owner templates, report/record zero occurrence rather than fabricate data.
-8. Preserve aggregate type-count reconciliation as an additional check, not the only proof.
-9. Fail closed on malformed metadata proof; do not convert this task into header/workbook/image/structural/formula closure.
+and aggregate `typeCounts`, `uniqueCount`, `totalReconciled`.
+
+Current tests prove aggregate count/reconciliation but do not independently prove every record is exact, unique, enum-valid and internally consistent.
 
 Critical rule:
 
@@ -98,7 +92,60 @@ AGGREGATE COUNTS ARE NOT SUFFICIENT.
 EVERY TYPED METADATA RECORD MUST BE EXACT, UNIQUE, ENUM-VALID, AND INTERNALLY CONSISTENT.
 ```
 
-## 4. Out of scope for R3-R14
+## 6. Mandatory R3-R14 proof
+
+For BOTH Part A and Part B:
+
+1. Prove exact metadata address-set equality to the expected sensitive address set:
+   - no missing addresses;
+   - no extra addresses.
+2. Prove no duplicate metadata addresses.
+3. For EVERY metadata record, prove `normalizedType` is exactly one of:
+   - `string`
+   - `number`
+   - `date`
+   - `boolean`
+   - `blank`
+4. Prove `nonblank` is a boolean and internally consistent:
+   - `blank` => `nonblank === false`
+   - non-blank type => `nonblank === true`
+5. Prove safe hash contract:
+   - nonblank `string` records may carry a lowercase SHA-256 hex identity;
+   - if a nonblank string hash is emitted, it must be exactly 64 lowercase hex chars;
+   - `blank`, `number`, `date`, and `boolean` records must not manufacture a value hash;
+   - no raw source value may be logged or committed.
+6. Preserve aggregate type-count reconciliation as a secondary invariant.
+7. For each normalized type actually present in the exact owner source, prove its records satisfy the per-record contract.
+8. If a normalized type has zero source occurrences, record/assert zero occurrence; DO NOT fabricate synthetic source values merely to force branch coverage.
+9. If malformed metadata can reach the proof/validator path, fail closed using the smallest bounded validation mechanism. Do not broaden into another blocker.
+
+## 7. Source/helper change policy
+
+Prefer tests-only proof if the existing helper already provides enough information.
+
+Modify feasibility source only if a small helper/validator is strictly necessary to make the proof deterministic and fail-closed.
+
+Do NOT refactor unrelated classification/renderer code.
+
+## 8. Mandatory tests
+
+Tests must independently verify at minimum:
+
+- Part A exact sorted metadata address set equals sorted `SENSITIVE_RANGES_A`;
+- Part B exact sorted metadata address set equals sorted `SENSITIVE_RANGES_B`;
+- metadata array length equals unique address count for A and B;
+- every record address is unique;
+- every `normalizedType` is in exact allowed enum;
+- every `nonblank` is boolean and consistent with type;
+- every nonblank string hash, when present, matches `/^[0-9a-f]{64}$/`;
+- every blank/non-string record has no manufactured hash (`null`/documented absence only);
+- per-type occurrence counts derived from metadata exactly equal reported `typeCounts`;
+- `totalReconciled === uniqueCount` remains true;
+- absent source types remain zero and are not fabricated.
+
+Do not use raw source values in assertions/messages.
+
+## 9. Out of scope — DO NOT TOUCH
 
 Do NOT work on:
 - Part B privacy role classification/evidence parity already closed;
@@ -114,13 +161,39 @@ Do NOT work on:
 - deploy;
 - next Work Package.
 
-## 5. Authorization ledger
+## 10. Mandatory commands
+
+Run exactly:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+Before commit only the two authorized feasibility files may differ. After commit/push working tree must be clean.
+
+## 11. Completion contract
+
+Push only the authorized feasibility file(s), maximum these two:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Final executor status must be exactly one of:
+```text
+TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
+BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
+BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED
+```
+
+Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
+
+## 12. Authorization ledger
 
 ```text
-D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R14-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -133,11 +206,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-## 6. Exact next gate
-
-```text
-D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R14 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-PRIVACY_PURGE_REQUIRED = NO
-ANTIGRAVITY = STOP / WAIT OWNER
-```
+Authorization is consumed when the R3-R14 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
