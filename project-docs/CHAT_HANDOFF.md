@@ -15,6 +15,12 @@ Antigravity = execution plane only when genuinely necessary
 
 No Live Kintone write/deploy/ACL/group/schema/record/session/password operation without exact explicit authorization. Never reuse consumed authorization.
 
+Owner priority:
+
+```text
+COMPLETE D2 FULLY BEFORE D3.
+```
+
 ## 2. Accepted foundations
 
 ```text
@@ -23,9 +29,11 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
+D2-WP003-R3-R17 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
+HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
@@ -36,107 +44,74 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. Exact current gate — R3-R17 AUTHORIZED
+## 3. R3-R17 reviewed result
 
 ```text
-D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R16 = PASS / CLOSED
-D2-WP003-R3-R17 = HEADER FINGERPRINT / SANITIZED EXPORT PARITY
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-AUTHORIZATION_BASELINE = 528e1ed31985296c99ab8c40ce5f05f4146d549d
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R17
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R17-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R17 ONLY / LOW-CREDIT / BOUNDED
-MAX_EXECUTOR_STATUS = HEADER_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
+IMPLEMENTATION_COMMIT = 6910d54d731c771c358382328a01f1fbfd5f9b9c
+EXECUTION_BASELINE = 97051401a71ec8a35c104e673dc7bc31affc5ca9
+D2-WP003-R3-R17_SCOPE_REVIEW = PASS
+D2-WP003-R3-R17_SOURCE_REVIEW = PASS
+D2-WP003-R3-R17_STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
+```
+
+R3-R17 accepted:
+- exact SHA source is authoritative;
+- expected header fingerprints are derived before observed override;
+- static title/labels preserve address/style/merge/type/safe hash;
+- dynamic headers preserve address/style/merge and sanitize to blank without source sample hash lock;
+- unrelated bounded header structure remains source-consistent;
+- exact address-role sets are checked;
+- real validator fails closed with `BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED`;
+- positive Part A/B proof and bounded negative proof exist;
+- prior typed-metadata negative proof remains preserved.
+
+GitHub CI/status checks are absent; recorded as non-blocking missing CI evidence for this bounded source review.
+
+## 4. Exact current gate
+
+```text
+D2 = IN PROGRESS
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact execution contract.
-
-## 4. Exact authorized writes
-
-ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Read-only:
-- package files;
-- governance docs;
-- exact owner templates after SHA verification.
-
-No XLSX/image/media/output commit.
-
-## 5. R3-R17 critical contract
+## 5. Next proposed bounded D2 work — NOT AUTHORIZED
 
 ```text
-HEADER PARITY = STRUCTURE + ROLE-SAFE FINGERPRINT PARITY.
-DYNAMIC SAMPLE VALUES MUST BE SANITIZED, NOT PRESERVED.
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R18
+PROPOSED_WORK_PACKAGE_NAME = WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY COMPLETENESS
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-Required proof:
-- derive authoritative Part A/B header fingerprints from exact SHA source before any mutation/override;
-- preserve exact static title/label address, style and merge geometry;
-- preserve safe static-label hash/type identity without logging raw values;
-- preserve dynamic header address/style/merge geometry but require dynamic output value to be blank after sanitization;
-- never compare dynamic sample-value identity to source;
-- preserve unrelated bounded header structure;
-- exact address/role sets, no missing/extra/duplicates/ambiguity;
-- real validator/resolver path must fail closed with `BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED`.
+R3-R18 intent:
+- reuse existing `getWorkbookFingerprint()` and no-op parity tests;
+- close whole-workbook structural source-vs-roundtrip fidelity for exact Part A/B;
+- avoid redesign if existing proof is sufficient;
+- no production renderer/PDF/UI/Kintone/deploy/D3 work.
 
-Mandatory negative cases:
-- dynamic style/merge mismatch;
-- sanitized dynamic value becomes nonblank;
-- protected-static safe fingerprint mismatch;
-- missing required or unexpected role address.
+Exact acceptance and write scope activate only after explicit Owner authorization.
 
-Preserve all accepted privacy/typed-metadata tests and existing header geometry proof.
-
-## 6. Out of scope
-
-Do not touch:
-- workbook-wide source-vs-roundtrip parity closure;
-- reference-image full inventory closure;
-- Part A/B insertion matrix;
-- formula matrix;
-- production sanitizer/renderer;
-- export service/normalizer/application code;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- another Work Package.
-
-## 7. Required commands
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at one of:
-
-```text
-HEADER_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED
-```
-
-## 8. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 D2-WP003-R3-R16-TEST-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R17-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R17-SOURCE-20260901-01
+D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CANONICAL, EXECUTE ONLY R3-R17 HEADER PARITY, TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R18
+NEXT_EXECUTOR = NONE
+ANTIGRAVITY = STOP
+D3 = HOLD
 ```
