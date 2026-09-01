@@ -1,15 +1,15 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / D2-WP003-R1 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / D2-WP003-R2 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
 ## 1. D2 objective
 
-Deliver Excel/PDF outputs that preserve the approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries.
+Deliver Excel/PDF outputs preserving approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries.
 
-Required final deliverables remain:
+Required final deliverables:
 ```text
 1. Excel Part A — MBO / Objectives
 2. Excel Part B — Competency / Evaluation
@@ -28,7 +28,7 @@ CONFIRMED BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
 SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
 ```
 
-Never copy stale sample employee values, dates, titles, weights or old objective limits merely because they exist in the legacy workbook.
+Never copy stale employee/sample values, dates, titles, weights or objective limits simply because they exist in the legacy workbook.
 
 ## 3. Closed foundations
 
@@ -40,7 +40,7 @@ D2-WP002 = PASS / CLOSED
 WP001 closed strict export authorization/privacy projection.
 WP002 closed owner-provided Part A/Part B template evidence and froze the renderer contract.
 
-Accepted source-template fingerprints:
+Accepted source fingerprints:
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
@@ -57,17 +57,14 @@ PRINT_AREA = A1:BJ52
 PAPER_SIZE = A3
 ORIENTATION = LANDSCAPE
 SCALE = 58%
-FIT_TO_PAGE = YES
 GRIDLINES = HIDDEN
 SHEET_PROTECTION = NO
 MERGED_RANGES = 193
-CELL_XF_STYLE_RECORDS = 429
 WORKSHEET_FORMULAS = 0
 LEGACY_OBJECTIVE_ROWS = 25:28
+LOWER_SECTION_START = ROW 29
 LEGACY_OBJECTIVE_ROW_HEIGHT ≈ 140.1 pt
 ```
-
-Stable lower sections begin at row 29. Therefore objectives 5–10 must **insert rows after row 28** and shift review/summary/signature/overall sections downward. Writing objective data directly into rows 29+ without insertion is invalid.
 
 Core objective columns:
 ```text
@@ -87,7 +84,7 @@ BC:BE Average Score
 BF:BI MBO Point
 ```
 
-Header labels and values occupy separate rows. R1 must preserve label text and write dynamic values into the actual value row/ranges, not overwrite label anchors.
+Header labels and values use separate rows. Part A labels remain on row 6; runtime values belong in the corresponding row-7 value areas.
 
 ## 5. Part B frozen geometry
 
@@ -102,21 +99,16 @@ HORIZONTAL_CENTERED = YES
 GRIDLINES = HIDDEN
 SHEET_PROTECTION = YES
 MERGED_RANGES = 79
-CELL_XF_STYLE_RECORDS = 142
 WORKSHEET_FORMULAS = 0
 LEGACY_COMPETENCY_BLOCKS = 6
 TOTALS_SIGNATURE_START = ROW 31
 ```
 
-For an 8-item management set, two complete competency blocks must be inserted before totals/signatures. Writing item 7/8 into rows 31+ without insertion is invalid.
-
-Header labels are in row 2 while dynamic employee/org values are in the corresponding row-3 value ranges. R1 must preserve labels.
+Part B labels remain on row 2; runtime employee/org/position/name values belong in row-3 value areas.
 
 ## 6. Business-rule conflicts from legacy samples
 
-Legacy workbook content is not current business truth.
-
-Confirmed current weighting remains:
+Confirmed current weighting:
 ```text
 PROF_STAFF_CHIEF = 70 / 30
 PROF_JAPANESE_STAFF = 70 / 30
@@ -132,110 +124,125 @@ Do not reproduce stale `2 till 4 objectives` or static `Part B 30%` as current r
 
 ## 7. Security/privacy contract
 
-Excel and future PDF must consume the secured projection from WP001.
+Excel and future PDF consume the secured projection from WP001.
 
 Renderer must not:
 - make Kintone calls;
-- read unrestricted raw App794 for Employee-Self output;
+- read unrestricted raw App794;
 - resolve roles/authority itself;
 - reintroduce manager/GM/appraiser confidential data into Employee-Self output;
 - treat UI visibility as authorization.
 
 Sanitized templates must contain no reusable employee/sample confidential content.
 
-## 8. WP003 review result and privacy purge
+## 8. Corrective history and second privacy purge
 
-The first WP003 implementation did not pass independent source review. Failures included:
-- unsafe/incomplete sanitization;
-- no true Part A row insertion/clone/shift for 5–10 objectives;
-- no true Part B block insertion/clone/shift for 8 competencies;
-- header value data written into label rows;
-- tests that checked text presence instead of structural parity/privacy guarantees.
+Two prior XLSX implementation attempts did not pass independent acceptance. Blocking classes included incomplete sanitization, label/value anchor errors, no true structural insertion, insufficient tests and an unproven Difficulty field guess.
 
-Owner approved `D2-WP003-R1` with Privacy Purge.
-
-ChatGPT force-reset the canonical branch to safe pre-implementation baseline:
+Owner approved `D2-WP003-R2` with a second Privacy Purge and decided:
 ```text
-SAFE_BASELINE = 731ba80a976847e579d80fc30012df54fd36badf
-CANONICAL_BRANCH_PURGE = COMPLETE
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-Do not create new refs/tags/backups to the purged lineage. Do not record purged commit/blob identifiers in public repository docs.
+ChatGPT force-reset canonical branch to clean pre-R1-implementation baseline:
+```text
+R2_SAFE_BASELINE = a3953ff701a01c8af9dcf6bf2525a58e4888973e
+SECOND_CANONICAL_BRANCH_PURGE = COMPLETE
+```
 
-## 9. R1 privacy-first sanitizer contract
+Do not create refs/tags/backups to purged lineages and do not reuse prior generated sanitized binaries.
 
-Sanitization must be evidence-driven, not guessed from isolated anchors.
+## 9. R2 privacy sanitizer contract
+
+Privacy acceptance is **range-driven + OOXML-wide**, not shared-string heuristic only.
 
 Required:
-1. verify exact owner-template SHA-256 inputs;
-2. preserve labels/branding/merges/styles/geometry/print settings;
-3. clear actual sample value ranges for identity, org, dates, Hoshin, objectives, results, evaluator data, signatures and scores;
-4. remove non-user-facing historical/reference screenshot/drawing while retaining approved user-facing branding;
-5. extract source-sensitive non-empty text at runtime without committing it;
-6. inspect **all XML/text parts** of the sanitized OOXML package and prove extracted sensitive values are absent;
-7. commit sanitized binaries only after privacy proof passes.
+1. verify exact source SHA-256;
+2. derive actual sensitive value ranges while preserving label cells;
+3. collect runtime sensitive values from those ranges, including text/numeric/date types, without logging them;
+4. clear all identity/org/date/Hoshin/objective/action/result/self/appraiser/signature/score/sample business value ranges;
+5. clear any legacy sample Difficulty values;
+6. remove the non-user-facing historical/reference drawing/image and related relationship/media entry while retaining approved branding;
+7. reopen sanitized workbook and assert all designated sensitive ranges empty;
+8. inspect all XML/text OOXML parts and prove extracted sensitive text absent;
+9. verify drawing/image relationships prove reference image absent and approved branding retained;
+10. introduce no scoring formulas;
+11. commit sanitized binaries only after all checks pass.
 
-No real sample values may be hardcoded in tests or docs.
+No real sample values may be hardcoded in tests/docs/logs.
 
-## 10. R1 Part A structural renderer
+## 10. Difficulty decision — blank by Owner approval
 
-For `<=4` objectives, preserve legacy rows 25–28.
+R2 must not invent or read any `Difficulty_*` field.
 
-For `5–10` objectives:
-- insert rows immediately after row 28;
-- clone full objective row structure from the legacy objective block including merges/styles/borders/alignment/height;
-- shift all lower sections by inserted-row count;
-- move summary/score/signature anchors with those sections;
-- extend print-area bottom;
+```text
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
+NORMALIZER_CHANGE = FORBIDDEN
+EXPORT_PROJECTION_CHANGE = FORBIDDEN
+```
+
+Sanitized template clears sample Difficulty data and renderer leaves `AA:AB` blank.
+
+## 11. True Part A structural insertion
+
+For 4 objectives:
+- preserve rows 25–28 and lower sections at legacy positions.
+
+For 5–10 objectives:
+- shift the existing rows 29+ downward by `objectiveCount - 4` **before** writing extra objectives;
+- insert new objective rows after row 28;
+- clone full row-28 style/merge/border/alignment/height structure;
+- update affected OOXML row/cell/merge/dimension/print references;
+- lower sections move exactly +1 for 5 and +6 for 10;
+- print area becomes `A1:BJ53` for 5 and `A1:BJ58` for 10;
 - retain A3 landscape and horizontal geometry;
-- render all objectives; no truncation.
+- never overwrite original lower-section structures.
 
-Tests must prove the lower section moves exactly by +1 for 5 and +6 for 10.
+Copying style/data into already occupied rows is not structural insertion.
 
-## 11. R1 Part B structural renderer
+If `xlsx-populate` high-level API lacks a true insert primitive, bounded OOXML-level row/reference surgery inside the existing XLSX package is allowed. No second dependency is authorized.
 
-For 6 competencies, preserve legacy six blocks.
+## 12. True Part B structural insertion
+
+For 6 competencies:
+- preserve six legacy blocks and totals/signatures beginning row 31.
 
 For 8 competencies:
-- insert two complete repeated blocks before totals/signatures;
-- clone block merges/styles/borders/row heights;
-- shift totals/signatures downward;
-- extend print-area bottom;
-- retain A4 portrait, horizontal centering and protection behavior;
-- render current dynamic profile/weighting.
+- shift existing totals/signatures beginning row 31 downward by 8 rows;
+- insert two complete four-row competency blocks before totals;
+- clone style/merge/border/height structure;
+- update affected OOXML row/cell/merge/dimension/print references;
+- totals/signatures begin row 39;
+- print area becomes `A1:X43`;
+- retain A4 portrait, centering and protection;
+- use current projection weight; stale 30% must not survive.
 
-Test must supply exactly eight competency items.
+## 13. Structural acceptance proof
 
-## 12. Score/formula strategy
+Tests must use structural sentinels/metadata, not only data text.
 
-The approved source main sheets contain zero worksheet formulas.
+At minimum:
+- Part A 4: old lower-section row 29 remains row 29;
+- Part A 5: old row-29 structure/content sentinel moves to row 30; new objective is row 29; print bottom 53;
+- Part A 10: old row-29 moves to row 35; objective 10 at row 34; print bottom 58;
+- inserted Part A rows preserve representative row-28 style/merge/height;
+- Part B 6: totals begin row 31;
+- Part B 8 test input contains exactly 8 items; old totals row 31 moves to row 39; items 7/8 occupy inserted blocks; print bottom 43;
+- inserted Part B blocks preserve representative style/merge/height;
+- header labels remain unchanged while values appear only in row 7 / row 3;
+- Difficulty cells remain blank;
+- A3/A4 geometry and Part B protection remain valid;
+- zero scoring formulas;
+- Employee-Self confidentiality remains intact.
 
-Current application/scoring services remain calculation authority. Initial renderer writes authorized calculated values and must not introduce workbook-only scoring formulas.
-
-## 13. Difficulty Level data-source gap
-
-Part A layout includes Difficulty Level (`AA:AB`), but current repository evidence/FIELD_DICTIONARY does not prove a canonical current App794 Difficulty field.
-
-R1 rules:
-- never invent a field code;
-- never bypass secured projection;
-- if a canonical current field is proven from bounded directly relevant evidence, extend normalizer/export projection narrowly and test security regression;
-- if no canonical field is proven, stop with `BLOCKER_DIFFICULTY_SOURCE_UNRESOLVED`.
+If true structural insertion cannot be proven without material drift:
+`BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
 
 ## 14. XLSX library gate
 
-Only `xlsx-populate@1.21.0` is authorized, conditional on a no-op round-trip proof preserving material structure:
-- sheet names/order;
-- Part A/Part B print geometry;
-- merge counts;
-- key dimensions;
-- Part B protection;
-- required branding/image relationships;
-- reparsable XLSX.
+Only `xlsx-populate@1.21.0` is authorized, conditional on no-op parity preserving material sheet/print/merge/dimension/protection/branding structure.
 
-If material drift occurs, stop with `BLOCKER_XLSX_LIBRARY_PARITY`; no second spreadsheet library is authorized.
-
-`npm audit --omit=dev` HIGH/CRITICAL attributable to the new dependency is also a blocker.
+`npm audit --omit=dev` HIGH/CRITICAL attributable to the dependency is a blocker. No second spreadsheet/XML library is authorized.
 
 ## 15. Current gate
 
@@ -244,25 +251,25 @@ D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R1 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
+D2-WP003-R2 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R2-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R1 ONLY / LOW-CREDIT
+ANTIGRAVITY = EXECUTE R2 ONLY / LOW-CREDIT
 ```
 
-PDF generation, export UI, Live Kintone access, deployment and D2-WP004 remain outside R1.
+PDF generation, export UI, Live Kintone access, deployment and D2-WP004 remain outside R2.
 
 ## 16. D2 closure condition
 
 D2 may close only when:
-- Part A XLSX parity is independently accepted;
-- Part B XLSX parity is independently accepted;
-- combined workbook behavior is accepted where required;
-- PDF output/parity is independently accepted;
-- 5–10 objective binary handling is proven;
-- 6/8 competency handling is proven;
-- authorization/confidentiality remains enforced in all export paths;
+- Part A XLSX parity independently accepted;
+- Part B XLSX parity independently accepted;
+- combined workbook behavior accepted where required;
+- PDF output/parity independently accepted;
+- 5–10 objective binary handling proven;
+- 6/8 competency handling proven;
+- authorization/confidentiality enforced in all export paths;
 - no material legacy-format gap remains undocumented.
 
 Until then:
