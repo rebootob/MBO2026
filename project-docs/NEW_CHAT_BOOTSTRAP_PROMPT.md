@@ -110,18 +110,19 @@ R3-R22 closes proof isolation. Raw round-trip dimension loss is now proven and r
 CURRENT GATE
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
 D3 = HOLD UNTIL D2 PASS / CLOSED
 
-NEXT PROPOSED WP — NOT AUTHORIZED
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
-PROPOSED_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE WP — OWNER AUTHORIZED / ONE-SHOT
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
+ACTIVE_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
+AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+AUTHORIZATION_ID = D2-WP003-R3-R23-SOURCE-20260901-01
+AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
 
 R3-R23 intended direction:
 - keep getNoOpParityBuffers() frozen as raw unrepaired evidence;
@@ -166,8 +167,8 @@ Answer in Thai with:
 4. current D2 accepted foundations;
 5. R3-R22 accepted proof and proven raw dimension blocker;
 6. current authorization ledger;
-7. R3-R23 proposed preservation status;
-8. exact next action without auto-starting R3-R23 or D3.
+7. R3-R23 active bounded authorization status;
+8. exact next action for Antigravity without widening into evidence publication, R3-R24 or D3.
 ```
 
 Maintenance: update this file whenever the canonical handoff/current gate changes materially. It is a bootstrap convenience, not execution evidence.

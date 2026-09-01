@@ -8,7 +8,7 @@
 | ID | Item | Status | Required next condition |
 |---|---|---|---|
 | D2-EXPORT-001 | Excel/PDF original/legacy-format closure | IN PROGRESS | Close dimension preservation, then image/insertion/formula/renderer/PDF/security gates |
-| D2-R3-R23 | Separate minimal exact-dimension preservation path | PROPOSED / NOT AUTHORIZED | Owner authorization; raw evidence path remains frozen |
+| D2-R3-R23 | Separate minimal exact-dimension preservation path | ACTIVE / OWNER AUTHORIZED | Antigravity executes once in existing feasibility source/test; raw evidence remains frozen |
 | D3-MIG-001 | 8 legacy PMS Apps -> App794 migration | HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED; then dry-run/reconciliation/backup/exact manifest before write approval |
 | D4-E2E-001 | App800 HR Control Center full operations | OPEN / NOT ACTIVE | Complete remaining HR operations and secure UAT under separate WP |
 | D4-LIFECYCLE-001 | Employee lifecycle operations | OPEN / POLICY CONFIRMED / WRITE NOT AUTHORIZED | Controlled reassignment/principal/session/audit/readback operations |
@@ -63,9 +63,9 @@ Proposed corrective:
 
 ```text
 D2-WP003-R3-R22 = PASS / CLOSED
-D2-WP003-R3-R23 = PROPOSED / NOT AUTHORIZED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_WORK_PACKAGE = NONE
+D2-WP003-R3-R23 = ACTIVE / OWNER AUTHORIZED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
 ```
 
 Expected R3-R23: keep raw evidence frozen; add a separate exact-dimension preservation path in existing feasibility source/test; exact worksheet mapping; no non-dimension changes; fail closed on ambiguity/conflict.
@@ -121,11 +121,11 @@ Admin Support Center source functionality is CLOSED. Reopen only if a new proven
 
 ```text
 D2 = IN PROGRESS
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
 D3 = HOLD UNTIL D2 PASS / CLOSED
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R23
+NEXT_CONTROL_STEP = ANTIGRAVITY EXECUTES R3-R23 ONCE AND PUSHES ONE BOUNDED COMMIT
 ```

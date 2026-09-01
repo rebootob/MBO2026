@@ -24,16 +24,16 @@ For a new chat, copy `NEW_CHAT_BOOTSTRAP_PROMPT.md` into the first message. Repo
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003-R3-R22 = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R23
+AUTHORIZED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+AUTHORIZATION_DECISION_BASELINE_COMMIT = aca452faf4d3fc3ef82e957bd45f4e0874d9377e
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R23-SOURCE-20260901-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / EXECUTE ONCE / STOP AFTER COMMIT
 ```
 
 Owner priority: `COMPLETE D2 FULLY BEFORE D3.`
@@ -90,7 +90,7 @@ Current D2 checkpoint:
 - R3-R22 proof isolation is PASS/CLOSED;
 - exact-source validators pass but raw `outputAsync()` loses dimension evidence for Part A and all Part B worksheets;
 - raw Part A/Part B fail closed with the workbook parity blocker;
-- R3-R23 separate minimal exact-dimension preservation path is proposed and not authorized;
+- R3-R23 separate minimal exact-dimension preservation path is owner-authorized for the existing feasibility source/test only;
 - do not start image/insertion/formula/renderer/PDF work until the separate preservation path is accepted;
 - D3 remains HOLD.
 
