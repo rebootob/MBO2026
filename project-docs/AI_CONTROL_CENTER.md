@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R11 AUTHORIZED
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R11 REVIEWED NOT PASS
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R11 AUTHORIZED | Source-derived role resolution + real fail-closed validation only |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R12 PROPOSED | Body + summary role-specific source validation remains |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -34,52 +34,22 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R10 independent review truth
+## 3. R3-R11 independent review truth
 
-R3-R10 implementation `533599f9a1f7390c11c15dd7f3b28c911c3926e2` changed only the two authorized feasibility files. Scope = PASS; no Privacy Purge required.
+Implementation `e43669961b67d806994fec67fb2bf83fbd02cd01` changed only the two authorized feasibility files, so scope = PASS and no Privacy Purge is required.
 
-Accepted progress: exact SHA-verified Part B source is loaded and classified addresses carry real merge/style/type/blankness/hash evidence.
+Accepted progress:
+- full safe Part B rows2:34 source inventory is built before role assignment;
+- exact template SHA is enforced;
+- `SENSITIVE_RANGES_B` is now post-resolution compatibility only, not classification input;
+- real resolver returns independent dynamic/protected sets and enforces disjointness;
+- real fail-closed tests remove/conflict evidence for real header addresses.
 
-Source acceptance = FAIL because role selection still begins from `SENSITIVE_RANGES_B`, hard-coded header addresses, row rules and manually constructed protected-static addresses. Source evidence enriches preselected roles instead of independently resolving/validating them. The negative test also uses a local synthetic validator rather than the real classifier.
+Source acceptance = FAIL because body/summary role acceptance still depends on broad row/column rectangles with only generic evidence-presence/type checks. Role-specific source evidence does not yet confirm competency/body and summary/signature roles.
 
-## 4. D2-WP003-R3-R11 — AUTHORIZED
+GitHub combined statuses/checks for the implementation commit are empty.
 
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R11
-WORK_PACKAGE_NAME = SOURCE-DERIVED ROLE RESOLUTION / FAIL-CLOSED VALIDATION
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
-PRIVACY_PURGE_REQUIRED = NO
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = ROLE_RESOLUTION_PROOF_PENDING_INDEPENDENT_REVIEW
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-```
-
-Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
-
-Authorized writes ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Package files, governance docs and owner templates are read-only for Antigravity.
-
-## 5. R3-R11 acceptance direction
-
-R3-R11 solves only the remaining classification root blocker:
-- build a complete safe Part B rows 2:34 source evidence inventory before role assignment;
-- resolve/validate roles from frozen structural role geometry + actual source evidence;
-- `SENSITIVE_RANGES_B` MUST NOT be classification input; it may only be compared after independent resolution as a compatibility cross-check;
-- broad row rules or manually expanded tables alone are not independent proof;
-- wire `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` into the real classifier/validator for missing/conflicting/ambiguous evidence;
-- tests must mutate/remove real evidence for real Part B addresses and exercise the real path;
-- independently resolved dynamic set must equal the sanitizer expected set only after resolution;
-- independently resolved protected-static set must be disjoint from dynamic set.
-
-Do not work on typed metadata, header parity, workbook parity, image inventory, structural matrix, formula matrix, production renderer, PDF/UI, Kintone or deploy.
-
-## 6. Current gate
+## 4. Current gate
 
 ```text
 D1 = PASS / CLOSED
@@ -87,24 +57,41 @@ D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R10 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R11 = AUTHORIZED / EXECUTION ACTIVE
-CURRENT_EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY = EXECUTE R3-R11 ONLY / LOW-CREDIT
+D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R12
+PROPOSED_WORK_PACKAGE_NAME = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-No other Work Package may auto-start.
+No Work Package may auto-start.
 
-## 7. Authorization ledger
+## 5. R3-R12 direction if approved
+
+R3-R12 remains single-blocker only:
+- preserve accepted source inventory, header role validation, real fail-closed architecture and post-resolution sanitizer cross-check;
+- derive authoritative safe evidence from exact SHA source before test overrides;
+- body/summary geometry may nominate a role but role-specific source evidence must confirm it;
+- validate merge/style/type/blankness and safe static hash where appropriate for competency/body and summary/signature regions;
+- real resolver must fail closed on body/summary role evidence conflict;
+- tests must mutate role-relevant evidence for one protected body, one dynamic body and one summary/signature real address.
+
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+No package/dependency change or binary publication.
+
+## 6. Authorization ledger
 
 ```text
-D2-WP003-R3-R10-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R11-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
+D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
