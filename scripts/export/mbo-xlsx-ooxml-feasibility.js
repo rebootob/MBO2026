@@ -171,7 +171,6 @@ export async function buildPartBSourceEvidenceInventory() {
 }
 
 export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
-  // Authoritative baseline loaded directly from SHA-verified source template BEFORE override
   const authSourceInventory = await buildPartBSourceEvidenceInventory();
   const observedInventory = inventoryOverride || authSourceInventory;
 
@@ -195,7 +194,6 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
-      // Role-specific authoritative source evidence validation
       if (authEv) {
         if (ev.styleId !== authEv.styleId || ev.mergeRef !== authEv.mergeRef) {
           throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
@@ -212,7 +210,6 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
       let classification = null;
       let roleJustification = null;
 
-      // Frozen Part B Structural Geometry Resolution (Rows 2:34)
       if (r === 2 || r === 3) {
         if (['B', 'C', 'D', 'E', 'F'].includes(cStr)) {
           classification = 'PROTECTED_STATIC_TITLE';
@@ -329,7 +326,6 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
         continue;
       }
 
-      // Safe valHash parity check ONLY for protected-static template text when nonblank
       if (!isDynamic && authEv && authEv.valHash) {
         if (ev.valHash !== authEv.valHash) {
           throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
@@ -351,7 +347,6 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
     }
   }
 
-  // Set Disjointness Check: DYNAMIC ∩ PROTECTED_STATIC = empty
   const dynamicSet = new Set(dynamicAddresses);
   for (const staticAddr of protectedStaticAddresses) {
     if (dynamicSet.has(staticAddr)) {
@@ -359,7 +354,6 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
     }
   }
 
-  // Final Sanitizer Compatibility Cross-Check (ONLY AFTER independent resolution)
   const sortedDynamic = [...dynamicAddresses].sort();
   const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
 
@@ -477,12 +471,77 @@ export async function getTypedPrivacyMetadata(partKey) {
   };
 }
 
+export function validateTypedPrivacyMetadata(metaResult, expectedAddresses) {
+  if (!metaResult || !Array.isArray(metaResult.metadata)) {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  const { metadata, uniqueCount, typeCounts, totalReconciled } = metaResult;
+
+  if (metadata.length !== uniqueCount || totalReconciled !== uniqueCount) {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  const sortedMetaAddrs = metadata.map(m => m.address).sort();
+  const sortedExpectedAddrs = [...expectedAddresses].sort();
+
+  if (JSON.stringify(sortedMetaAddrs) !== JSON.stringify(sortedExpectedAddrs)) {
+    throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+  }
+
+  const derivedCounts = { string: 0, number: 0, date: 0, boolean: 0, blank: 0 };
+  const seen = new Set();
+
+  for (const rec of metadata) {
+    if (seen.has(rec.address)) {
+      throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+    }
+    seen.add(rec.address);
+
+    if (!['string', 'number', 'date', 'boolean', 'blank'].includes(rec.normalizedType)) {
+      throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+    }
+
+    if (typeof rec.nonblank !== 'boolean') {
+      throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+    }
+
+    if (rec.normalizedType === 'blank') {
+      if (rec.nonblank !== false || rec.hash !== null) {
+        throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+      }
+    } else {
+      if (rec.nonblank !== true) {
+        throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+      }
+      if (rec.normalizedType === 'string') {
+        if (!rec.hash || typeof rec.hash !== 'string' || !/^[0-9a-f]{64}$/.test(rec.hash)) {
+          throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+        }
+      } else {
+        if (rec.hash !== null) {
+          throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+        }
+      }
+    }
+
+    derivedCounts[rec.normalizedType]++;
+  }
+
+  for (const type of ['string', 'number', 'date', 'boolean', 'blank']) {
+    if (derivedCounts[type] !== typeCounts[type]) {
+      throw new Error('BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED');
+    }
+  }
+
+  return true;
+}
+
 export async function getHeaderCellFingerprints(buf, partKey) {
   const wb = await XlsxPopulate.fromDataAsync(buf);
   const sheet = wb.sheet(0);
   const sheetXml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
 
-  // Parse raw merges in header
   const merges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
 
   function getMergeRef(addr) {

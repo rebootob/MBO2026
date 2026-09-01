@@ -15,6 +15,7 @@ import {
   buildPartBSourceEvidenceInventory,
   resolvePartBPrivacyRoles,
   getTypedPrivacyMetadata,
+  validateTypedPrivacyMetadata,
   getHeaderCellFingerprints,
   getWorkbookFingerprint,
   inspectRawWorksheetOOXML,
@@ -137,7 +138,6 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   assert.deepEqual(realResolved.dynamicAddresses, sortedSensitive, 'Independently resolved dynamic addresses must equal SENSITIVE_RANGES_B');
 
   // 6. REAL FAIL-CLOSED TESTS
-  // Test Case A: Remove evidence for REAL dynamic header address G2
   const invMutA = { ...realInventory };
   delete invMutA['G2'];
   await assert.rejects(
@@ -146,7 +146,6 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Removing dynamic address G2 evidence must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // Test Case B: Remove evidence for REAL protected-static header address B2
   const invMutB = { ...realInventory };
   delete invMutB['B2'];
   await assert.rejects(
@@ -155,7 +154,6 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Removing protected-static address B2 evidence must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // Test Case C: Structural conflict - mutate mergeRef for G2:H3 to G2:H2
   const invMutC = JSON.parse(JSON.stringify(realInventory));
   invMutC['G2'].mergeRef = 'G2:H2';
   await assert.rejects(
@@ -189,8 +187,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Mutating styleId for summary cell B31 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // MANDATORY R3-R13 NON-STYLE FAIL-CLOSED TESTS:
-  // 1. Protected-static body address B7 valHash mutation (keeping style/merge unchanged)
+  // Non-style fail-closed tests
   const invMutProtectedHash = JSON.parse(JSON.stringify(realInventory));
   invMutProtectedHash['B7'].valHash = 'bad_hash_value_1234567890abcdef';
   await assert.rejects(
@@ -199,7 +196,6 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Mutating valHash for protected body cell B7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // 2. Dynamic body address K7 normalizedType mutation (keeping style/merge unchanged)
   const invMutDynamicType = JSON.parse(JSON.stringify(realInventory));
   invMutDynamicType['K7'].normalizedType = 'boolean';
   await assert.rejects(
@@ -208,7 +204,6 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Mutating normalizedType for dynamic body cell K7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // 3. Summary/signature address B31 normalizedType mutation (keeping style/merge unchanged)
   const invMutSummaryType = JSON.parse(JSON.stringify(realInventory));
   invMutSummaryType['B31'].normalizedType = 'number';
   await assert.rejects(
@@ -217,14 +212,67 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Mutating normalizedType for summary cell B31 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // Typed privacy metadata test
-  const metaA = await getTypedPrivacyMetadata('A');
-  assert.equal(metaA.uniqueCount, SENSITIVE_RANGES_A.length, 'Metadata count must equal Part A unique address count');
-  assert.equal(metaA.totalReconciled, metaA.uniqueCount, 'Aggregate type counts must reconcile to unique count in Part A');
+  // --- R3-R14 TYPED PRIVACY METADATA COMPLETENESS PROOF ---
+  for (const partKey of ['A', 'B']) {
+    const expectedAddrs = partKey === 'A' ? SENSITIVE_RANGES_A : SENSITIVE_RANGES_B;
+    const metaResult = await getTypedPrivacyMetadata(partKey);
 
-  const metaB = await getTypedPrivacyMetadata('B');
-  assert.equal(metaB.uniqueCount, SENSITIVE_RANGES_B.length, 'Metadata count must equal Part B unique address count');
-  assert.equal(metaB.totalReconciled, metaB.uniqueCount, 'Aggregate type counts must reconcile to unique count in Part B');
+    // 1. Validate complete metadata using helper
+    assert.equal(validateTypedPrivacyMetadata(metaResult, expectedAddrs), true, `Part ${partKey} typed privacy metadata must be 100% valid`);
+
+    // 2. Per-record exact assertions
+    const { metadata, uniqueCount, typeCounts, totalReconciled } = metaResult;
+
+    assert.equal(uniqueCount, expectedAddrs.length, `Part ${partKey} uniqueCount must equal expected address count`);
+    assert.equal(metadata.length, uniqueCount, `Part ${partKey} metadata length must equal uniqueCount`);
+    assert.equal(totalReconciled, uniqueCount, `Part ${partKey} totalReconciled must equal uniqueCount`);
+
+    const sortedMetaAddrs = metadata.map(m => m.address).sort();
+    const sortedExpectedAddrs = [...expectedAddrs].sort();
+    assert.deepEqual(sortedMetaAddrs, sortedExpectedAddrs, `Part ${partKey} metadata address set must equal expected address set`);
+
+    const derivedCounts = { string: 0, number: 0, date: 0, boolean: 0, blank: 0 };
+    const seenAddrs = new Set();
+
+    for (const rec of metadata) {
+      assert.equal(seenAddrs.has(rec.address), false, `Part ${partKey} address ${rec.address} must be unique`);
+      seenAddrs.add(rec.address);
+
+      assert.ok(['string', 'number', 'date', 'boolean', 'blank'].includes(rec.normalizedType), `Part ${partKey} normalizedType for ${rec.address} must be enum-valid`);
+      assert.equal(typeof rec.nonblank, 'boolean', `Part ${partKey} nonblank for ${rec.address} must be boolean`);
+
+      if (rec.normalizedType === 'blank') {
+        assert.equal(rec.nonblank, false, `Part ${partKey} blank cell ${rec.address} must have nonblank === false`);
+        assert.equal(rec.hash, null, `Part ${partKey} blank cell ${rec.address} must have hash === null`);
+      } else {
+        assert.equal(rec.nonblank, true, `Part ${partKey} non-blank cell ${rec.address} must have nonblank === true`);
+        if (rec.normalizedType === 'string') {
+          assert.ok(rec.hash && /^[0-9a-f]{64}$/.test(rec.hash), `Part ${partKey} string cell ${rec.address} hash must be 64 lowercase hex chars`);
+        } else {
+          assert.equal(rec.hash, null, `Part ${partKey} non-string cell ${rec.address} must have hash === null`);
+        }
+      }
+
+      derivedCounts[rec.normalizedType]++;
+    }
+
+    // 3. Derived count vs reported typeCounts equality
+    assert.deepEqual(derivedCounts, typeCounts, `Part ${partKey} derived type counts must equal reported typeCounts`);
+
+    // 4. Assert zero for absent source types (date, boolean)
+    assert.equal(typeCounts.date, 0, `Part ${partKey} date count in template must be 0`);
+    assert.equal(typeCounts.boolean, 0, `Part ${partKey} boolean count in template must be 0`);
+  }
+
+  // 5. Fail-closed test for malformed metadata validation
+  const badMeta = await getTypedPrivacyMetadata('B');
+  const mutatedBadMeta = JSON.parse(JSON.stringify(badMeta));
+  mutatedBadMeta.metadata[0].normalizedType = 'invalid_type';
+  assert.throws(
+    () => validateTypedPrivacyMetadata(mutatedBadMeta, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Validation of malformed metadata must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
 
   const { bufA, bufB, sensitiveA, sensitiveB } = await getSanitizedDisposableBuffers();
 
@@ -232,6 +280,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   const sheetA = wbA.sheet(0);
 
   // Directly inspect EVERY metadata record in Part A to confirm it is blank after sanitization
+  const metaA = await getTypedPrivacyMetadata('A');
   for (const rec of metaA.metadata) {
     const val = sheetA.cell(rec.address).value();
     assert.equal(val === null || val === undefined, true, `Cell ${rec.address} must be blank after sanitization`);
@@ -260,6 +309,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
 
   const wbB = await XlsxPopulate.fromDataAsync(bufB);
   const sheetB = wbB.sheet(0);
+  const metaB = await getTypedPrivacyMetadata('B');
 
   for (const rec of metaB.metadata) {
     const val = sheetB.cell(rec.address).value();
