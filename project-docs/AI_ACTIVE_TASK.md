@@ -1,11 +1,11 @@
-# AI ACTIVE TASK — D2-WP003-R3-R17 REVIEWED / CLOSED
+# AI ACTIVE TASK — D2-WP003-R3-R18 EXECUTION AUTHORIZED
 
-Mode: **CONTROL PLANE REVIEW COMPLETE / D2 PRIORITY / NO KINTONE / NO DEPLOY**  
+Mode: **ANTIGRAVITY / WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY COMPLETENESS ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = WAIT_OWNER_AUTHORIZATION
+TASK_STATE = AUTHORIZED_FOR_EXECUTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
@@ -20,90 +20,257 @@ TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
 OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R18
+ACTIVE_WORK_PACKAGE_NAME = WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY COMPLETENESS
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 1. R3-R17 independent review result
+## 1. Purpose — ONE DEFERRED FEASIBILITY BLOCKER ONLY
 
-Implementation commit:
+Close only **workbook-wide source-vs-roundtrip semantic structural parity completeness** for the exact SHA-verified Part A and Part B owner templates.
 
-```text
-6910d54d731c771c358382328a01f1fbfd5f9b9c
-```
+R3-R18 is a no-op roundtrip feasibility proof. It is NOT the production renderer, NOT PDF, NOT image semantic closure, NOT Kintone, and NOT D3.
 
-Execution baseline / parent:
+## 2. Execution baseline and exact write scope
 
-```text
-97051401a71ec8a35c104e673dc7bc31affc5ca9
-```
-
-Scope review:
-- exactly one executor commit;
-- only `scripts/export/mbo-xlsx-ooxml-feasibility.js` and `tests/mbo-xlsx-ooxml-feasibility.test.js` changed;
-- no package/dependency/governance/application/Kintone/deploy/binary publication change.
-
-Source review accepted:
-- exact owner-template SHA verification remains mandatory;
-- authoritative Part A/B header fingerprints are rebuilt from exact source before observed override;
-- protected-static title/labels preserve exact address/style/merge/type and safe hash identity;
-- dynamic headers preserve address/style/merge but sanitized values must be blank with no sample-value hash requirement;
-- unrelated bounded header structure is source-consistent;
-- exact role/address sets are compared fail-closed;
-- real validator throws `BLOCKER_HEADER_FINGERPRINT_PARITY_UNRESOLVED` for required mismatch paths;
-- positive source-vs-sanitized parity is exercised for both Part A and Part B;
-- negative tests cover dynamic structural mismatch, nonblank sanitized dynamic value, protected-static hash mutation, and missing required address;
-- previously accepted R3-R14/R3-R15/R3-R16 typed-metadata negative proof remains present.
-
-GitHub CI/status checks are absent; this remains missing CI evidence and is non-blocking for this bounded source feasibility review.
+Control-plane pre-authorization checkpoint:
 
 ```text
-D2-WP003-R3-R17_SCOPE_REVIEW = PASS
-D2-WP003-R3-R17_SOURCE_REVIEW = PASS
-D2-WP003-R3-R17_STATUS = PASS / CLOSED
+4666db780a32179061c5f15f96bc0bda10ad4010
 ```
 
-## 2. D2 priority rule
+This checkpoint is NOT the executor baseline. Antigravity MUST fresh-fetch the canonical branch after authorization sync and record the then-current remote HEAD as `EXECUTION_BASELINE` before editing. Do not reset behind the current authorized governance HEAD.
 
-Owner direction:
+Authorized modifications ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Read-only:
+- `package.json`
+- `package-lock.json`
+- governance docs
+- exact ignored owner templates after SHA verification
+
+No dependency/package change. No XLSX/image/media/output publication.
+
+## 3. Exact source identity
+
+Use ONLY exact owner templates:
 
 ```text
-COMPLETE D2 FULLY BEFORE D3.
+PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Therefore:
-- do not start D3 migration execution;
-- do not open App794 write authorization for D3;
-- do not auto-start D4/D5/D6;
-- continue only bounded D2 blockers until Excel + PDF + export security are independently accepted and D2 is PASS/CLOSED.
+Bounded lookup only in repository root, `app info/data/`, and `exp/`.
+If exact templates are unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
+Never print/log/commit raw employee/sample values.
 
-## 3. Next proposed bounded work package — NOT AUTHORIZED
+## 4. Reuse-first rule
+
+Reuse existing accepted helpers/tests first:
+- `findLocalSourceTemplates()`
+- `getNoOpParityBuffers()`
+- `getWorkbookFingerprint()`
+- `FEASIBILITY_NO_OP_PARITY`
+- exact SHA constants
+
+Prefer extending `getWorkbookFingerprint()` minimally. Do NOT build a second workbook parser/architecture if the existing helper can be extended.
+
+## 5. Critical parity rule
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R18
-PROPOSED_WORK_PACKAGE_NAME = WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY COMPLETENESS
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-EXECUTOR = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+PARITY AUTHORITY = EXACT SOURCE SEMANTIC STRUCTURE.
+ZIP BYTE-FOR-BYTE EQUALITY IS NOT REQUIRED.
+NO-OP ROUNDTRIP MUST PRESERVE ALL MATERIAL WORKBOOK/WORKSHEET STRUCTURE.
 ```
 
-R3-R18 intent only:
-- close workbook-wide no-op source-vs-roundtrip parity completeness for exact Part A/B templates;
-- reuse existing `getWorkbookFingerprint()` and current no-op parity tests first;
-- prove whole-workbook structural fidelity beyond bounded header parity;
-- no production renderer, PDF/UI, Kintone, deploy, or D3 work.
+Authoritative expected evidence must be derived from the exact SHA source BEFORE any observed override/mutation.
 
-Exact write scope and acceptance criteria are NOT active until Owner explicitly authorizes R3-R18.
+Required semantic proof must cover BOTH workbooks and EVERY worksheet present, not only sheet1.
 
-## 4. Authorization ledger
+### Workbook-level evidence
+
+At minimum prove source-vs-roundtrip equality for:
+- exact sheet name list and order;
+- sheet visibility/state where present;
+- workbook defined-name inventory relevant to printing, including sheet-scoped/global print areas;
+- workbook relationship inventory already exposed by existing proof;
+- no missing or unexpected worksheets.
+
+### Per-worksheet evidence for EVERY worksheet
+
+At minimum prove source-vs-roundtrip equality for material structure that exists in the exact source:
+- worksheet identity/index;
+- used-range / `<dimension>`;
+- exact merge refs and declared merge count;
+- column-definition structure (`<cols>` semantic/hash evidence);
+- explicit row-height evidence;
+- sheet-view material flags, especially gridline visibility;
+- page margins;
+- page setup including paper size, orientation, scale and fit-to-page semantics where present;
+- print options / centering semantics where present;
+- sheet protection presence/semantic fingerprint where present;
+- print area binding for the sheet;
+- worksheet relationship inventory where applicable.
+
+Part B second visible `Sheet1` MUST be included in workbook-wide evidence even though it has no user-facing print area.
+
+Existing relationship/media parity assertions may remain, but R3-R18 must NOT expand into image identity/removal/preservation semantics; that is the next separate blocker.
+
+Do not require raw sample cell-value equality and do not emit raw values. Header/privacy identity already closed in R3-R17 and must not be reopened.
+
+## 6. Exact-source facts that must remain true
+
+At minimum the current accepted exact-source facts must remain provable after no-op roundtrip:
+
+Part A main sheet:
+- sheet `MBO Staff & Chief`;
+- 193 merges;
+- print area A1:BJ52;
+- paper A3 / landscape / scale 58%;
+- hidden gridlines;
+- source margins preserved;
+- fit-to-page semantics preserved;
+- explicit row-height/column structure preserved.
+
+Part B workbook:
+- sheets `[(Part B) Competency, Sheet1]` in exact order;
+- main sheet 79 merges;
+- main print area A1:X35;
+- paper A4 / portrait / scale 75%;
+- horizontally centered;
+- hidden gridlines;
+- source margins preserved;
+- main sheet protection semantics preserved;
+- `Sheet1` remains present/visible and structurally source-consistent.
+
+Do not hard-code these as a substitute for source-derived equality. They are baseline sanity checks; exact SHA source remains authority.
+
+## 7. Fail-closed validator requirement
+
+Use a real bounded workbook-parity validator/resolver path. It must rebuild authoritative expected fingerprint(s) from exact SHA source before any observed override.
+
+Any material mismatch must deterministically throw exactly:
+
+```text
+BLOCKER_WORKBOOK_PARITY_UNRESOLVED
+```
+
+Examples include:
+- missing/extra/reordered/renamed worksheet;
+- sheet state mismatch;
+- dimension mismatch;
+- merge set/count mismatch;
+- columns or row-height structure mismatch;
+- gridline/view mismatch;
+- page margin/setup/fit/centering mismatch;
+- protection mismatch;
+- print-area mismatch;
+- relevant relationship inventory mismatch;
+- missing/extra required per-sheet evidence.
+
+Do not rely on incidental TypeError/assertion failure.
+
+## 8. Mandatory source-backed tests
+
+Preserve ALL accepted existing tests.
+
+Positive proof:
+1. Part A exact source -> no-op roundtrip passes workbook-wide validator.
+2. Part B exact source -> no-op roundtrip passes workbook-wide validator.
+3. Proof explicitly covers every worksheet in each workbook, including Part B `Sheet1`.
+
+Mandatory negative proof using a REAL source-backed fingerprint and the REAL validator, with authoritative baseline independently rebuilt from exact source before mutation:
+- mutate/remove one worksheet identity/order/state item => exact blocker;
+- mutate one real merge/dimension/column-or-row structural item => exact blocker;
+- mutate one real page margin/page setup/print-area/view item => exact blocker;
+- mutate one real Part B protection OR second-sheet structural item => exact blocker.
+
+Observed fingerprint override is allowed only for negative testing. Expected evidence must never be derived from the mutated observed object.
+
+## 9. Preserve accepted work
+
+Do not regress or reopen:
+- R3-R17 header fingerprint/sanitized export parity;
+- Part B privacy classification/evidence parity;
+- typed privacy metadata completeness/validator shape;
+- range-driven privacy clearing / zero sensitive-token proof;
+- exact template SHA proof;
+- current reference-image test behavior;
+- current insertion/formula tests;
+- Difficulty Level blank decision.
+
+## 10. Out of scope — DO NOT TOUCH
+
+Do NOT work on:
+- reference-image full inventory/removal/preservation closure beyond preserving existing tests;
+- Part A objective insertion structural matrix closure;
+- Part B competency insertion structural matrix closure;
+- formula/no-formula authority closure;
+- production sanitizer/renderer;
+- export service/normalizer/application code;
+- combined production Excel;
+- PDF/UI;
+- Live Kintone;
+- deploy;
+- D3 or another Work Package.
+
+## 11. Mandatory commands
+
+Run exactly:
+
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+Before commit only authorized feasibility file(s) may differ. After commit/push working tree must be clean.
+
+## 12. Completion contract
+
+Commit/push only authorized feasibility file(s), maximum these two:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Before editing, record fresh-fetched current remote canonical HEAD as `EXECUTION_BASELINE`.
+After push, verify remote HEAD differs from `EXECUTION_BASELINE` and is a fast-forward descendant.
+
+Report:
+- EXECUTION_BASELINE SHA
+- NEW COMMIT SHA
+- PUSH SUCCESS
+- REMOTE HEAD SHA
+- exact changed files
+- test result
+- npm audit result
+- final status
+
+Final executor status must be exactly one of:
+
+```text
+WORKBOOK_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
+BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
+BLOCKER_WORKBOOK_PARITY_UNRESOLVED
+```
+
+Antigravity must not declare D2-WP003 or D2 PASS/CLOSED and must not start another blocker/Work Package.
+
+## 13. Authorization ledger
 
 ```text
 D2-WP003-R3-R16-TEST-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R18-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -114,13 +281,7 @@ ACL_PROCESS_WRITE = NO
 KINTONE_CUSTOMIZATION_DEPLOY = NO
 LIVE_UAT = NO
 ROLLBACK = NO
+D3_EXECUTION = HOLD
 ```
 
-## 5. Exact next action
-
-```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R18
-NEXT_EXECUTOR = NONE
-ANTIGRAVITY = STOP
-D3 = HOLD
-```
+Authorization is consumed when the R3-R18 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
