@@ -1,11 +1,11 @@
-# AI ACTIVE TASK — D2-WP003-R3-R15 REVIEW / R3-R16 PROPOSED
+# AI ACTIVE TASK — D2-WP003-R3-R16 EXECUTION AUTHORIZED
 
-Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **ANTIGRAVITY / TEST-ONLY REGRESSION RESTORE / NO SOURCE CHANGE / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
+TASK_STATE = AUTHORIZED_FOR_EXECUTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
@@ -14,78 +14,66 @@ D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R15_SCOPE_REVIEW = PASS
-D2-WP003-R3-R15_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-D2-WP003-R3-R15_STATUS = NOT PASS / NOT CLOSED
+D2-WP003-R3-R15 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R16
+ACTIVE_WORK_PACKAGE_NAME = RESTORE MALFORMED NORMALIZED-TYPE NEGATIVE PROOF
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R16
-PROPOSED_WORK_PACKAGE_NAME = RESTORE MALFORMED NORMALIZED-TYPE NEGATIVE PROOF
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY_ACTION = STOP / WAIT OWNER
-D2-WP003-R3-R15-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED / TEST-ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R16-TEST-20260901-01
+MAX_EXECUTOR_STATUS = NORMALIZED_TYPE_NEGATIVE_PROOF_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. R3-R15 independent review
+## 1. Purpose — ONE TEST REGRESSION ONLY
 
-Implementation commit `fb762c47559efc31e8f0e323973284aa83a6a0ad` is exactly one commit above authorization baseline `4b35c30de9ae8f6bdf2f7bd52173d660e83cac5d` and changed only:
+Restore the malformed `normalizedType` fail-closed negative proof that R3-R15 accidentally removed.
+
+The R3-R15 validator implementation is accepted. This Work Package is proof restoration only.
+
+## 2. Exact write scope
+
+Authorized modification ONLY:
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Read-only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+- `package.json`
+- `package-lock.json`
+- governance docs
+- exact ignored owner templates after SHA verification if needed
 
-Scope review = PASS. No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
+No dependency/package change. No XLSX/image/media/output publication.
 
-## 2. Accepted R3-R15 progress
+## 3. Accepted work — PRESERVE
 
-The validator shape corrective itself is accepted:
-- top-level validator input is explicitly object-checked;
-- `typeCounts` must be a non-null non-array object;
-- exact key set is enforced: `blank|boolean|date|number|string`;
-- extra and missing keys are rejected;
-- every count is required to be a non-negative integer;
-- malformed/missing count shape deterministically throws `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
-- negative tests cover extra key, missing object, null/array object, negative/fractional/non-number count;
-- accepted source-backed typed-metadata positive proof remains materially present.
+Preserve without modification:
+- R3-R15 validator source implementation;
+- exact five-key `typeCounts` shape validation;
+- extra/missing key rejection;
+- non-negative integer count validation;
+- deterministic `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED` for malformed count shape;
+- all R3-R15 count-shape negative tests;
+- all R3-R14 source-backed positive per-record/address/hash/type proof;
+- all accepted R3-R13 Part B classification/evidence-parity behavior.
 
-GitHub combined statuses/checks for the implementation commit are empty.
+## 4. Mandatory R3-R16 proof
 
-## 3. Remaining blocker — accepted normalized-type negative proof was removed
+Use the real source-backed valid Part B typed metadata and the real `validateTypedPrivacyMetadata()`.
 
-R3-R15 explicitly required preserving the accepted R3-R14 malformed normalized-type fail-closed test.
-
-The implementation removed this real validator test:
-
-```text
-source-backed valid metadata
--> mutate metadata[0].normalizedType = invalid_type
--> validateTypedPrivacyMetadata(...)
--> must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED
-```
-
-Current source validator still contains the enum rejection behavior, so this is a **proof/test regression**, not a newly discovered validator implementation defect.
-
-Because the Work Package contract required preserving accepted proof, R3-R15 cannot be closed yet.
-
-## 4. Proposed R3-R16 — ONE TEST-ONLY CORRECTIVE
-
-Purpose: **restore the removed malformed normalized-type negative proof and change nothing else.**
-
-Expected authorized write ONLY:
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Source file should remain read-only because R3-R15 validator implementation is accepted.
-
-Mandatory direction if approved:
-1. Start from real source-backed valid Part B typed metadata.
-2. Deep-copy it.
-3. Mutate one real metadata record `normalizedType` to a value outside the allowed enum, e.g. `invalid_type`.
-4. Call the real `validateTypedPrivacyMetadata()`.
-5. Assert exact fail-closed error `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`.
-6. Preserve all R3-R15 validator-shape tests and all R3-R14 positive per-record proof.
-7. Do not refactor source or touch any other blocker.
+Mandatory test:
+1. `const validMetaB = await getTypedPrivacyMetadata('B')` or reuse the equivalent real source-backed object already in the test.
+2. Deep-copy the valid metadata object.
+3. Mutate one real metadata record:
+   `normalizedType = 'invalid_type'`
+   or another value outside `string|number|date|boolean|blank`.
+4. Call `validateTypedPrivacyMetadata(mutated, SENSITIVE_RANGES_B)`.
+5. Assert it throws exactly/documentedly:
+   `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`.
+6. Preserve all existing R3-R15 tests and positive proof.
 
 Critical rule:
 
@@ -94,15 +82,15 @@ R3-R16 IS TEST-ONLY.
 RESTORE ACCEPTED NEGATIVE PROOF; DO NOT REDESIGN VALIDATOR SOURCE.
 ```
 
-## 5. Out of scope for R3-R16
+## 5. Out of scope — DO NOT TOUCH
 
-Do NOT work on:
-- feasibility source implementation unless a proven regression makes the test impossible;
-- Part B privacy classification/evidence parity;
-- typed metadata address/hash/count positive proof already accepted;
+Do NOT modify:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- Part B role classification/evidence parity;
+- typed metadata positive proof except minimal test placement;
 - header fingerprint/export parity;
 - workbook source-vs-roundtrip parity;
-- reference-image inventory;
+- image inventory;
 - insertion structural matrix;
 - formula matrix;
 - production sanitizer/renderer;
@@ -110,14 +98,40 @@ Do NOT work on:
 - PDF/UI;
 - Live Kintone;
 - deploy;
-- next Work Package.
+- another Work Package.
 
-## 6. Authorization ledger
+## 6. Mandatory commands
+
+Run exactly:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+Before commit ONLY `tests/mbo-xlsx-ooxml-feasibility.test.js` may differ. After commit/push working tree must be clean.
+
+## 7. Completion contract
+
+Push only:
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Final executor status exactly one of:
+```text
+NORMALIZED_TYPE_NEGATIVE_PROOF_PENDING_INDEPENDENT_REVIEW
+BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
+BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED
+```
+
+Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
+
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R14-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R15-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R16-TEST-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY / TEST-ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R16-TEST-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -130,11 +144,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-## 7. Exact next gate
-
-```text
-D2-WP003-R3-R15 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R16 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-PRIVACY_PURGE_REQUIRED = NO
-ANTIGRAVITY = STOP / WAIT OWNER
-```
+Authorization is consumed when the R3-R16 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
