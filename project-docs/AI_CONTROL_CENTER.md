@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R14 REVIEWED NOT PASS
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R15 AUTHORIZED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R15 PROPOSED | Typed metadata validator count-shape fail-closed gap remains |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R15 AUTHORIZED | Typed metadata validator count-shape fail-closed only |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -38,23 +38,58 @@ PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. R3-R14 independent review truth
 
-Implementation `c67e810bdc43c6a626f73da206cfaf5606ca250c` changed only the two authorized feasibility files. Scope = PASS; no Privacy Purge required.
+Implementation `c67e810bdc43c6a626f73da206cfaf5606ca250c` changed only the two authorized feasibility files. Scope = PASS; source review = FAIL / corrective required; no Privacy Purge required.
 
-Accepted progress:
-- exact Part A/B typed metadata address-set equality is tested;
-- duplicate addresses are rejected;
-- exact normalized-type enum is checked per record;
-- `nonblank` boolean/type consistency is checked;
-- safe hash shape/absence contract is checked;
-- derived type counts are compared with reported counts in the source-backed tests;
-- exact source absent date/boolean occurrences are asserted zero without fabrication;
-- malformed normalized type fails closed through the validator.
+Accepted R3-R14 per-record proof:
+- exact Part A/B metadata address-set equality;
+- duplicate rejection;
+- exact normalized-type enum per record;
+- `nonblank` boolean/type consistency;
+- safe string hash shape and blank/non-string no-hash contract;
+- source-backed derived/reported type-count checks;
+- source-zero date/boolean assertions without fabrication;
+- malformed normalized type fails closed.
 
-Source review = FAIL only because `validateTypedPrivacyMetadata()` does not reject malformed `typeCounts` object shape. Extra keys are ignored because the validator compares only the five known keys, so an otherwise valid result plus `typeCounts.unexpected = 1` can still return true. Missing/malformed `typeCounts` also lacks deterministic explicit blocker handling.
+Remaining blocker is only validator top-level/count shape: unexpected `typeCounts` keys can be ignored and malformed/missing count objects are not deterministically rejected through the documented blocker.
 
-GitHub combined statuses/checks for the implementation commit are empty.
+## 4. D2-WP003-R3-R15 — AUTHORIZED
 
-## 4. Current gate
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R15
+WORK_PACKAGE_NAME = TYPED METADATA VALIDATOR FAIL-CLOSED SHAPE COMPLETENESS
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+PRIVACY_PURGE_REQUIRED = NO
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = VALIDATOR_SHAPE_PROOF_PENDING_INDEPENDENT_REVIEW
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+```
+
+Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
+
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Package files, governance docs and owner templates are read-only for Antigravity.
+
+## 5. R3-R15 acceptance direction
+
+R3-R15 solves one blocker only:
+- preserve accepted R3-R14 per-record proof;
+- require `typeCounts` to be a non-null non-array object;
+- require exactly `string|number|date|boolean|blank` keys, no extras or missing;
+- require each reported count to be a non-negative integer;
+- require exact derived/reported count object equality including key set;
+- missing/malformed count shape must deterministically throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
+- negative tests must cover extra key, missing/malformed object and invalid count value;
+- do not fabricate absent source types.
+
+Do not work on Part B classification, header/workbook/image/insertion/formula blockers, production renderer, PDF/UI, Kintone or deploy.
+
+## 6. Current gate
 
 ```text
 D1 = PASS / CLOSED
@@ -64,42 +99,23 @@ D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R15
-PROPOSED_WORK_PACKAGE_NAME = TYPED METADATA VALIDATOR FAIL-CLOSED SHAPE COMPLETENESS
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R15 = AUTHORIZED / EXECUTION ACTIVE
+CURRENT_EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY = EXECUTE R3-R15 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-No Work Package may auto-start.
+No other Work Package may auto-start.
 
-## 5. R3-R15 direction if approved
-
-R3-R15 remains single-blocker only:
-- preserve accepted R3-R14 per-record/source-backed proof;
-- require `typeCounts` object to contain exactly `string|number|date|boolean|blank` keys and no extras;
-- all counts must be non-negative integers;
-- derived count object must exactly equal reported `typeCounts`, including key set;
-- missing/malformed `typeCounts` must deterministically throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
-- negative tests must include extra unexpected key and missing/malformed `typeCounts`;
-- do not fabricate absent source types.
-
-Expected writes only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-No package/dependency change or binary publication.
-
-## 6. Authorization ledger
+## 7. Authorization ledger
 
 ```text
-D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R14-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R15-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
