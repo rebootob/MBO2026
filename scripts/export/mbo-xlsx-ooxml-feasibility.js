@@ -35,69 +35,72 @@ export function findLocalSourceTemplates() {
   return null;
 }
 
-export async function verifyNoOpParity() {
+export async function getNoOpParityBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  // Part A No-Op Proof
-  const bufA1 = fs.readFileSync(found.partA);
-  const wbA1 = await XlsxPopulate.fromDataAsync(bufA1);
-  const outA = await wbA1.outputAsync();
-  const wbA2 = await XlsxPopulate.fromDataAsync(outA);
-  const sheetA = wbA2.sheet(0);
+  const origBufA = fs.readFileSync(found.partA);
+  const wbA = await XlsxPopulate.fromDataAsync(origBufA);
+  const outBufA = await wbA.outputAsync();
 
-  const sheetNameA = sheetA.name();
-  if (sheetNameA !== 'MBO Staff & Chief') {
-    throw new Error(`BLOCKER_XLSX_LIBRARY_PARITY: Part A sheet name mismatch (${sheetNameA})`);
-  }
+  const origBufB = fs.readFileSync(found.partB);
+  const wbB = await XlsxPopulate.fromDataAsync(origBufB);
+  const outBufB = await wbB.outputAsync();
 
-  // Part B No-Op Proof
-  const bufB1 = fs.readFileSync(found.partB);
-  const wbB1 = await XlsxPopulate.fromDataAsync(bufB1);
-  const outB = await wbB1.outputAsync();
-  const wbB2 = await XlsxPopulate.fromDataAsync(outB);
-  const sheetB = wbB2.sheet(0);
-
-  const sheetNameB = sheetB.name();
-  if (sheetNameB !== '(Part B) Competency') {
-    throw new Error(`BLOCKER_XLSX_LIBRARY_PARITY: Part B sheet name mismatch (${sheetNameB})`);
-  }
-
-  return {
-    partASheetName: sheetNameA,
-    partBSheetName: sheetNameB,
-    parityPass: true
-  };
+  return { origBufA, outBufA, origBufB, outBufB };
 }
 
-export async function verifyHeaderValueMapping() {
+export async function getMutatedHeaderValueBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
   const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA = wbA.sheet(0);
 
-  // Assert label cells in Row 6 remain preserved
-  const labelN6 = sheetA.cell('N6').value();
-  const labelZ6 = sheetA.cell('Z6').value();
-
-  // Disposable value clear in row 7 / row 6 value anchors
-  sheetA.cell('N6').value(null);
-  sheetA.cell('Z6').value(null);
-  sheetA.cell('AQ6').value(null);
-  sheetA.cell('AT6').value(null);
-
-  const outA = await wbA.outputAsync();
-  const wbA2 = await XlsxPopulate.fromDataAsync(outA);
-  const sheetA2 = wbA2.sheet(0);
-
-  const clearedN6 = sheetA2.cell('N6').value();
-  const clearedZ6 = sheetA2.cell('Z6').value();
-
-  return {
-    labelN6Preserved: labelN6 !== undefined,
-    valueCleared: (clearedN6 === null || clearedN6 === undefined) && (clearedZ6 === null || clearedZ6 === undefined)
+  // Snapshot Part A Row 6 static header labels
+  const labelSnapshotA = {
+    B6: sheetA.cell('B6').value(),
+    AM6: sheetA.cell('AM6').value(),
+    AQ6: sheetA.cell('AQ6').value(),
+    AT6: sheetA.cell('AT6').value(),
+    BD6: sheetA.cell('BD6').value()
   };
+
+  // Mutate proven Row 7 / Row 6 value ranges only
+  sheetA.cell('N6').value(null); // Sample Fiscal Year value
+  sheetA.cell('Z7').value(null); // Dept value
+  sheetA.cell('AG7').value(null); // Section value
+  sheetA.cell('AM7').value(null); // Start Date value
+  sheetA.cell('AQ7').value(null); // Emp ID value
+  sheetA.cell('AT7').value(null); // Emp Name value
+  sheetA.cell('BD7').value(null); // Position value
+
+  const outBufA = await wbA.outputAsync();
+
+  const wbB = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
+  const sheetB = wbB.sheet(0);
+
+  // Snapshot Part B Row 2 static header labels
+  const labelSnapshotB = {
+    B2: sheetB.cell('B2').value(),
+    J2: sheetB.cell('J2').value(),
+    M2: sheetB.cell('M2').value(),
+    P2: sheetB.cell('P2').value(),
+    R2: sheetB.cell('R2').value(),
+    S2: sheetB.cell('S2').value()
+  };
+
+  // Mutate proven Row 3 / Row 2 value ranges only
+  sheetB.cell('G2').value(null); // Sample Fiscal Year value
+  sheetB.cell('J3').value(null);
+  sheetB.cell('M3').value(null);
+  sheetB.cell('P3').value(null);
+  sheetB.cell('R3').value('TEST_MUTATION');
+  sheetB.cell('S3').value(null);
+
+  const outBufB = await wbB.outputAsync();
+
+  return { outBufA, labelSnapshotA, outBufB, labelSnapshotB };
 }
 
 export function unescapeUnicode(str) {
@@ -140,18 +143,18 @@ export async function extractSensitiveTokensFromBinary(filePath) {
   });
 }
 
-export async function verifyPrivacyRangeDrivenSanitization() {
+export async function getSanitizedDisposableBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
   const sensitiveA = await extractSensitiveTokensFromBinary(found.partA);
   const sensitiveB = await extractSensitiveTokensFromBinary(found.partB);
 
-  // --- DISPOSABLE SANITIZATION PART A ---
+  // Sanitization Part A
   const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA = wbA.sheet(0);
 
-  const clearCellsA = ['N6', 'Z6', 'AG6', 'AM6', 'AQ6', 'AT6', 'BD6', 'G8', 'G16', 'AM16'];
+  const clearCellsA = ['N6', 'Z6', 'AG6', 'AM6', 'AQ6', 'AT6', 'BD6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7', 'G8', 'G16', 'AM16'];
   for (const c of clearCellsA) sheetA.cell(c).value(null);
 
   for (let r = 25; r <= 28; r++) {
@@ -171,7 +174,6 @@ export async function verifyPrivacyRangeDrivenSanitization() {
     sheetA.cell(`L${r}`).value(null);
   }
 
-  // Purge shared string XML content for sensitive tokens
   let bufA = await wbA.outputAsync();
   const wbA_zip = await XlsxPopulate.fromDataAsync(bufA);
   const ssFileA = wbA_zip._zip.files['xl/sharedStrings.xml'];
@@ -186,24 +188,11 @@ export async function verifyPrivacyRangeDrivenSanitization() {
     bufA = await wbA_zip._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  // Verify Part A OOXML Privacy
-  const wbA_check = await XlsxPopulate.fromDataAsync(bufA);
-  for (const fileName in wbA_check._zip.files) {
-    if (fileName.endsWith('.xml') || fileName.endsWith('.rels')) {
-      const text = await wbA_check._zip.files[fileName].async('string');
-      for (const token of sensitiveA) {
-        if (token.length >= 3 && text.includes(token)) {
-          throw new Error(`BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED: Token "${token}" found in Part A part ${fileName}`);
-        }
-      }
-    }
-  }
-
-  // --- DISPOSABLE SANITIZATION PART B ---
+  // Sanitization Part B
   const wbB = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB = wbB.sheet(0);
 
-  const clearCellsB = ['G2', 'J2', 'M2', 'P2', 'R3', 'S2'];
+  const clearCellsB = ['G2', 'J2', 'M2', 'P2', 'R3', 'S2', 'J3', 'M3', 'P3', 'S3'];
   for (const c of clearCellsB) sheetB.cell(c).value(null);
 
   for (let r = 7; r <= 29; r++) {
@@ -233,141 +222,126 @@ export async function verifyPrivacyRangeDrivenSanitization() {
     bufB = await wbB_zip._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  // Verify Part B OOXML Privacy
-  const wbB_check = await XlsxPopulate.fromDataAsync(bufB);
-  for (const fileName in wbB_check._zip.files) {
-    if (fileName.endsWith('.xml') || fileName.endsWith('.rels')) {
-      const text = await wbB_check._zip.files[fileName].async('string');
-      for (const token of sensitiveB) {
-        if (token.length >= 3 && text.includes(token)) {
-          throw new Error(`BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED: Token "${token}" found in Part B part ${fileName}`);
-        }
-      }
-    }
-  }
-
-  return { privacyProofPass: true };
+  return { bufA, bufB, sensitiveA, sensitiveB };
 }
 
-export async function verifyReferenceImageRemoval() {
+export async function getReferenceImageBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
-  const files = wbA._zip.files;
+  const origBufA = fs.readFileSync(found.partA);
+  const wbA = await XlsxPopulate.fromDataAsync(origBufA);
 
-  // Check drawing files / relationship files
-  let drawingCount = 0;
-  for (const f in files) {
-    if (f.startsWith('xl/drawings/') || f.startsWith('xl/media/')) {
-      drawingCount++;
+  let drawingFile = null;
+  for (const f in wbA._zip.files) {
+    if (f.startsWith('xl/drawings/drawing')) {
+      drawingFile = f;
+      break;
     }
   }
 
-  if (drawingCount === 0) {
-    throw new Error('BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED: Drawings or media parts not found in template');
+  if (!drawingFile) {
+    throw new Error('BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED: Drawing file not found in template');
   }
 
-  return {
-    drawingsIdentified: drawingCount,
-    brandingPreserved: true
-  };
+  const outBufA = await wbA.outputAsync();
+  return { origBufA, outBufA, drawingFile };
 }
 
-export async function verifyTruePartAStructuralInsertion() {
+export async function getStructuralPartABuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  // Load Part A
-  const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
-  const sheetA = wbA.sheet(0);
+  const origBufA = fs.readFileSync(found.partA);
 
-  // Set sentinel value at legacy row 29
-  sheetA.cell('B29').value('SENTINEL_ROW_29');
+  // 4 Objectives (unchanged)
+  const wbA4 = await XlsxPopulate.fromDataAsync(origBufA);
+  const sheetA4 = wbA4.sheet(0);
+  sheetA4.cell('B29').value('SENTINEL_ROW_29');
+  const bufA4 = await wbA4.outputAsync();
 
-  // Shift rows 29..52 downward by 6 rows (from 52 down to 29) for 10 objectives
-  const extraRows = 6;
+  // 5 Objectives (+1 insertion)
+  const wbA5 = await XlsxPopulate.fromDataAsync(origBufA);
+  const sheetA5 = wbA5.sheet(0);
+  sheetA5.cell('B29').value('SENTINEL_ROW_29');
   for (let r = 52; r >= 29; r--) {
-    const srcRow = sheetA.row(r);
-    const tgtRow = sheetA.row(r + extraRows);
+    const srcRow = sheetA5.row(r);
+    const tgtRow = sheetA5.row(r + 1);
     if (srcRow && tgtRow) {
       const h = srcRow.height();
       if (h) tgtRow.height(h);
       for (let c = 1; c <= 60; c++) {
-        const val = sheetA.cell(r, c).value();
+        const val = sheetA5.cell(r, c).value();
         if (val !== undefined && val !== null) {
-          sheetA.cell(r + extraRows, c).value(val);
-          sheetA.cell(r, c).value(null);
+          sheetA5.cell(r + 1, c).value(val);
+          sheetA5.cell(r, c).value(null);
         }
       }
     }
   }
+  sheetA5.row(29).hidden(false);
+  if (typeof sheetA5.printArea === 'function') sheetA5.printArea('A1:BJ53');
+  const bufA5 = await wbA5.outputAsync();
 
-  // Clone row 28 structure to inserted objective rows 29..34
-  for (let i = 0; i < extraRows; i++) {
-    const insertAt = 29 + i;
-    sheetA.row(insertAt).hidden(false);
-    const srcRow = sheetA.row(28);
-    const tgtRow = sheetA.row(insertAt);
-    if (srcRow && tgtRow && srcRow.height()) tgtRow.height(srcRow.height());
+  // 10 Objectives (+6 insertion)
+  const wbA10 = await XlsxPopulate.fromDataAsync(origBufA);
+  const sheetA10 = wbA10.sheet(0);
+  sheetA10.cell('B29').value('SENTINEL_ROW_29');
+  for (let r = 52; r >= 29; r--) {
+    const srcRow = sheetA10.row(r);
+    const tgtRow = sheetA10.row(r + 6);
+    if (srcRow && tgtRow) {
+      const h = srcRow.height();
+      if (h) tgtRow.height(h);
+      for (let c = 1; c <= 60; c++) {
+        const val = sheetA10.cell(r, c).value();
+        if (val !== undefined && val !== null) {
+          sheetA10.cell(r + 6, c).value(val);
+          sheetA10.cell(r, c).value(null);
+        }
+      }
+    }
   }
+  for (let i = 0; i < 6; i++) sheetA10.row(29 + i).hidden(false);
+  if (typeof sheetA10.printArea === 'function') sheetA10.printArea('A1:BJ58');
+  const bufA10 = await wbA10.outputAsync();
 
-  // Update print area to BJ58 for 10 objectives
-  if (typeof sheetA.printArea === 'function') {
-    sheetA.printArea('A1:BJ58');
-  }
-
-  const outA = await wbA.outputAsync();
-  const wbA_check = await XlsxPopulate.fromDataAsync(outA);
-  const sheetA_check = wbA_check.sheet(0);
-
-  const sentinelMoved = sheetA_check.cell('B35').value(); // Sentinel moved from 29 to 35 for +6 insertion
-
-  return {
-    partA4Row29Position: 29,
-    partA10SentinelPosition: 35,
-    sentinelMovedCorrectly: sentinelMoved === 'SENTINEL_ROW_29',
-    partAStructuralInsertionPass: true
-  };
+  return { bufA4, bufA5, bufA10 };
 }
 
-export async function verifyTruePartBStructuralInsertion() {
+export async function getStructuralPartBBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  const wbB = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
-  const sheetB = wbB.sheet(0);
+  const origBufB = fs.readFileSync(found.partB);
 
-  // Set sentinel at row 31 (totals start)
-  sheetB.cell('B31').value('SENTINEL_ROW_31');
+  // 6 Competencies
+  const wbB6 = await XlsxPopulate.fromDataAsync(origBufB);
+  const sheetB6 = wbB6.sheet(0);
+  sheetB6.cell('B31').value('SENTINEL_ROW_31');
+  const bufB6 = await wbB6.outputAsync();
 
-  // Shift rows 31..35 downward by 8 rows (from 35 down to 31) for 8 competencies
-  const extraRows = 8;
+  // 8 Competencies (+8 rows insertion)
+  const wbB8 = await XlsxPopulate.fromDataAsync(origBufB);
+  const sheetB8 = wbB8.sheet(0);
+  sheetB8.cell('B31').value('SENTINEL_ROW_31');
   for (let r = 35; r >= 31; r--) {
-    const srcRow = sheetB.row(r);
-    const tgtRow = sheetB.row(r + extraRows);
+    const srcRow = sheetB8.row(r);
+    const tgtRow = sheetB8.row(r + 8);
     if (srcRow && tgtRow) {
       const h = srcRow.height();
       if (h) tgtRow.height(h);
       for (let c = 1; c <= 24; c++) {
-        const val = sheetB.cell(r, c).value();
+        const val = sheetB8.cell(r, c).value();
         if (val !== undefined && val !== null) {
-          sheetB.cell(r + extraRows, c).value(val);
-          sheetB.cell(r, c).value(null);
+          sheetB8.cell(r + 8, c).value(val);
+          sheetB8.cell(r, c).value(null);
         }
       }
     }
   }
+  if (typeof sheetB8.printArea === 'function') sheetB8.printArea('A1:X43');
+  const bufB8 = await wbB8.outputAsync();
 
-  const outB = await wbB.outputAsync();
-  const wbB_check = await XlsxPopulate.fromDataAsync(outB);
-  const sheetB_check = wbB_check.sheet(0);
-
-  const sentinelPos = sheetB_check.cell('B39').value();
-
-  return {
-    partB6TotalsPosition: 31,
-    partB8TotalsPosition: 39,
-    partBStructuralInsertionPass: sentinelPos === 'SENTINEL_ROW_31'
-  };
+  return { bufB6, bufB8 };
 }
