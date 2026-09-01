@@ -171,19 +171,21 @@ export async function buildPartBSourceEvidenceInventory() {
 }
 
 export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
-  const inventory = inventoryOverride || (await buildPartBSourceEvidenceInventory());
+  // Authoritative baseline loaded directly from SHA-verified source template BEFORE override
+  const authSourceInventory = await buildPartBSourceEvidenceInventory();
+  const observedInventory = inventoryOverride || authSourceInventory;
 
   const classificationMap = {};
   const dynamicAddresses = [];
   const protectedStaticAddresses = [];
 
   for (let r = 2; r <= 34; r++) {
-    // Skip empty row gap 4, 5, 6 for header vs body if needed, or iterate all B:X
-    const cols = (r === 4 || r === 5 || r === 6 || r === 30) ? ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'] : ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
+    const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
 
     for (const cStr of cols) {
       const addr = `${cStr}${r}`;
-      const ev = inventory[addr];
+      const authEv = authSourceInventory[addr];
+      const ev = observedInventory[addr];
 
       if (!ev || !ev.address || ev.styleId === undefined || !ev.normalizedType) {
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
@@ -191,6 +193,13 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
 
       if (!['string', 'number', 'date', 'boolean', 'blank'].includes(ev.normalizedType)) {
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
+      // Role-specific authoritative source evidence validation
+      if (authEv) {
+        if (ev.styleId !== authEv.styleId || ev.mergeRef !== authEv.mergeRef) {
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        }
       }
 
       let isDynamic = false;

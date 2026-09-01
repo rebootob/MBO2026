@@ -106,6 +106,9 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   const realInventory = await buildPartBSourceEvidenceInventory();
   assert.ok(realInventory['G2'], 'Source evidence must exist for G2');
   assert.ok(realInventory['B2'], 'Source evidence must exist for B2');
+  assert.ok(realInventory['B7'], 'Source evidence must exist for B7');
+  assert.ok(realInventory['K7'], 'Source evidence must exist for K7');
+  assert.ok(realInventory['B31'], 'Source evidence must exist for B31');
 
   // 3. Resolve roles independently using REAL resolver
   const realResolved = await resolvePartBPrivacyRoles();
@@ -134,7 +137,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   assert.deepEqual(realResolved.dynamicAddresses, sortedSensitive, 'Independently resolved dynamic addresses must equal SENSITIVE_RANGES_B');
 
   // 6. REAL FAIL-CLOSED TESTS
-  // Test Case A: Remove evidence for REAL dynamic address G2
+  // Test Case A: Remove evidence for REAL dynamic header address G2
   const invMutA = { ...realInventory };
   delete invMutA['G2'];
   await assert.rejects(
@@ -143,7 +146,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Removing dynamic address G2 evidence must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // Test Case B: Remove evidence for REAL protected-static address B2
+  // Test Case B: Remove evidence for REAL protected-static header address B2
   const invMutB = { ...realInventory };
   delete invMutB['B2'];
   await assert.rejects(
@@ -159,6 +162,34 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     async () => resolvePartBPrivacyRoles(invMutC),
     /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
     'Structural mergeRef mismatch for G2 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // MANDATORY R3-R12 FAIL-CLOSED TESTS:
+  // 1. Protected competency/body address B7 role-relevant styleId mutation
+  const invMutBodyProtected = JSON.parse(JSON.stringify(realInventory));
+  invMutBodyProtected['B7'].styleId = '99999';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutBodyProtected),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating styleId for protected body cell B7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // 2. Dynamic competency/body address K7 role-relevant styleId mutation
+  const invMutBodyDynamic = JSON.parse(JSON.stringify(realInventory));
+  invMutBodyDynamic['K7'].styleId = '99999';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutBodyDynamic),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating styleId for dynamic body cell K7 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // 3. Summary/signature address B31 role-relevant styleId mutation
+  const invMutSummary = JSON.parse(JSON.stringify(realInventory));
+  invMutSummary['B31'].styleId = '99999';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutSummary),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating styleId for summary cell B31 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
   // Typed privacy metadata test
