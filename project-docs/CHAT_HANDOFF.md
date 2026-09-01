@@ -34,68 +34,82 @@ PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. R3-R13 independent review — PASS
 
-Implementation `14ec0c4fcc404e580ced61759dd0338a68f2c856` is exactly one commit above authorization baseline `4b52ee0a7c860a41668e0c6e8b435f756df3d4a1` and changed only the two authorized feasibility files.
+Implementation `14ec0c4fcc404e580ced61759dd0338a68f2c856` passed scope/source review. Part B privacy classification/evidence-parity blocker is CLOSED. No Privacy Purge required.
 
-Accepted behavior:
-- authoritative-vs-observed evidence separation preserved;
-- style/merge parity preserved;
-- `normalizedType` + `nonblank` parity added;
-- protected-static hashed text requires safe hash parity;
-- dynamic values do not require source-sample hash equality;
-- real resolver fail-closed tests cover protected body `B7`, dynamic body `K7`, summary `B31`.
+Do not reopen without proven regression.
 
-Scope review = PASS. Source review = PASS. No Privacy Purge required. GitHub combined status/check list is empty.
-
-Do not reopen this Part B classification/evidence-parity blocker without proven regression.
-
-## 4. Exact current gate
+## 4. Exact current gate — R3-R14 AUTHORIZED
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R14
-PROPOSED_WORK_PACKAGE_NAME = TYPED PRIVACY METADATA COMPLETENESS
-STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R14 = TYPED PRIVACY METADATA COMPLETENESS
+STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R14
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE R3-R14 ONLY / LOW-CREDIT
+MAX_EXECUTOR_STATUS = TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 5. Why R3-R14 is next
+Read `project-docs/AI_ACTIVE_TASK.md` for exact contract.
 
-Current typed metadata helper already emits address/type/nonblank/hash metadata, but current tests only prove aggregate count/reconciliation.
+## 5. Exact authorized writes
 
-If approved, R3-R14 must prove per-record completeness and consistency:
-- exact expected address sets for Parts A/B;
-- no duplicates;
-- normalized type enum exactly `string|number|date|boolean|blank`;
-- `nonblank` boolean consistent with type;
-- safe hash contract without raw values;
-- aggregate type counts still reconcile.
-
-Expected writes only:
+Maximum only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Do not touch header/workbook/image/insertion/formula blockers, production renderer, PDF/UI, Kintone, deploy or another Work Package.
+Read-only: package files, governance docs and exact ignored owner templates after SHA verification.
 
-## 6. Authorization ledger
+No XLSX/image/media/disposable-output commit.
+
+## 6. R3-R14 critical rules
+
+R3-R14 addresses ONE blocker only:
+- prove exact expected metadata address set for Parts A/B;
+- prove no duplicate addresses;
+- prove every type is exactly `string|number|date|boolean|blank`;
+- prove `nonblank` is boolean and consistent with type;
+- prove safe hash contract per record without raw values;
+- derive per-type counts from metadata and match reported `typeCounts`;
+- keep aggregate reconciliation;
+- absent source types remain zero; never fabricate values for coverage.
+
+Critical rule:
+```text
+AGGREGATE COUNTS ARE NOT SUFFICIENT.
+EVERY TYPED METADATA RECORD MUST BE EXACT, UNIQUE, ENUM-VALID, AND INTERNALLY CONSISTENT.
+```
+
+Do not touch Part B classification already closed, header/workbook/image/insertion/formula blockers, production renderer, PDF/UI, Kintone, deploy or another Work Package.
+
+## 7. Required commands
 
 ```text
-D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+After push STOP at `TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
+
+## 8. Authorization ledger
+
+```text
 D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R14-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 7. Exact next action
+## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = NONE
-NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R14
-NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
+NEXT_EXECUTOR = ANTIGRAVITY
+ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R14 TYPED METADATA COMPLETENESS, RUN TEST/AUDIT, PUSH, STOP
+NEXT_CONTROL_STEP = ChatGPT independent review
 ```
