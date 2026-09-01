@@ -30,77 +30,94 @@ PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Frozen geometry:
-- Part A: A3 landscape, print area `A1:BJ52`, objective rows 25–28, lower section starts row 29, labels row 6 / values row 7.
-- Part B: A4 portrait, print area `A1:X35`, six competency blocks, totals/signatures start row 31, labels row 2 / values row 3.
-- Difficulty export = blank temporarily by Owner decision.
+Difficulty export remains blank temporarily by Owner decision.
 
-## 3. Privacy/corrective state
+## 3. R3-R1 review result
 
-R2 was purged before R3. R3 deliberately committed no XLSX/image/binary outputs, so R3-R1 requires no Privacy Purge.
+R3-R1 scope = PASS. Exactly the two authorized feasibility files changed and no workbook/image/binary/output was committed.
 
-R3 scope review passed but feasibility source review failed because the proof did not objectively establish material parity, correct value rows, range-driven privacy, actual image removal or true OOXML insertion.
-
-## 4. Exact current gate — R3-R1 AUTHORIZED
-
+Therefore:
 ```text
-D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R1 = CONTRACT-COMPLETE OOXML FEASIBILITY PROOF CORRECTIVE
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R1
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R1-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R1 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact contract.
+R3-R1 source acceptance = FAIL / corrective required.
 
-## 5. Exact authorized writes
+Main reasons:
+- no-op parity remains incomplete;
+- privacy source of truth remains shared-string keyword heuristics instead of explicit sensitive ranges;
+- reference-image function does not remove anything;
+- Part A and Part B still simulate insertion by copying worksheet values/row heights;
+- tests mainly prove sentinel/value movement, not raw OOXML structure.
 
-Only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+## 4. Accepted template clarification from raw OOXML
 
-Read-only:
-- `package.json` / `package-lock.json`; `xlsx-populate@1.21.0` is already pinned.
+Part A:
+- Fiscal Year is a merged value at `N6:Q7`.
+- Department label/value = `Z6:AF6` / `Z7:AF7`.
+- Section = `AG6:AL6` / `AG7:AL7`.
+- Start Date = `AM6:AP6` / `AM7:AP7`.
+- Employee ID = `AQ6:AS6` / `AQ7:AS7`.
+- Name = `AT6:BC6` / `AT7:BC7`.
+- Position = `BD6:BI6` / `BD7:BI7`.
 
-Still forbidden:
-- any `.xlsx`/image/media/disposable output commit;
-- production sanitizer/renderer;
-- normalizer/export-service changes;
-- Difficulty field changes;
-- PDF/UI/Live Kintone/deploy;
-- dependency changes;
-- next Work Package.
+Part B:
+- Fiscal Year is a merged value at `G2:H3`.
+- Department = `J2:L2` / `J3:L3`.
+- Section = `M2:O2` / `M3:O3`.
+- Position = `P2:Q2` / `P3:Q3`.
+- Employee ID = `R2` / `R3`.
+- Name = `S2:W2` / `S3:W3`.
 
-## 6. R3-R1 critical proof rules
-
-Tests must inspect the disposable workbook/OOXML directly and must not trust helper success flags.
-
-Must prove:
-- full no-op material parity, not sheet names only;
-- row-6 Part A and row-2 Part B label fingerprints stay unchanged while only proven row-7/row-3 value ranges mutate;
-- explicit bounded privacy ranges for text/numeric/date values with no source-value logging;
-- actual reference drawing/media removal while approved branding remains;
-- Part A true +1 and +6 OOXML insertion with row/cell/merge/dimension/print rewrites;
-- Part B true +8 block insertion with preserved A4/protection geometry;
-- Difficulty cells/ranges are actually blank after disposable sanitization.
-
-Fail closed on any unresolved mapping or structural evidence.
-
-## 7. Required commands
-
+Reference screenshot accepted structural target:
 ```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
+xl/drawings/drawing1.xml
+xl/drawings/_rels/drawing1.xml.rels
+rId3 -> ../media/image3.png
 ```
 
-Before commit, only the two authorized files may differ. After push, working tree must be clean.
+Preserve approved branding relationships:
+```text
+rId1 -> ../media/image1.jpeg
+rId2 -> ../media/image2.jpeg
+```
 
-## 8. Authorization ledger
+## 5. Exact current gate
+
+```text
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
+D2-WP003-R3-R1 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R2
+PROPOSED_WORK_PACKAGE_NAME = RAW OOXML STRUCTURE + PRIVACY FEASIBILITY PROOF
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+PRIVACY_PURGE_REQUIRED_FOR_R3-R2 = NO
+```
+
+## 6. R3-R2 mandatory architecture if approved
+
+Keep feasibility-only and no-binary.
+
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
+
+Rules:
+- no package/dependency changes;
+- `xlsx-populate` may be used for ZIP access/reparse only;
+- structural insertion must directly mutate raw OOXML, not use `sheet.row()`/`sheet.cell()` loops to move data;
+- Part A must shift raw rows/cells/merges/dimension and Print_Area for +1/+6 and clone raw row 28;
+- Part B must shift raw rows 31+ by +8 and clone raw rows 27:30 twice;
+- image proof must actually remove `rId3 -> image3.png` and preserve rId1/rId2;
+- privacy must use explicit address/range mapping across text/numeric/date values without source-value logging;
+- tests must inspect raw OOXML after mutation;
+- unresolved evidence must fail closed.
+
+Still no production sanitizer/renderer, XLSX publication, PDF/UI/Live Kintone/deploy or next Work Package.
+
+## 7. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
@@ -110,8 +127,8 @@ D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / PURGED / DO NOT REUSE
 D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R1-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R1-SOURCE-20260901-01
+D2-WP003-R3-R1-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE_AUTH = NONE
@@ -124,10 +141,10 @@ LIVE_UAT = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CURRENT CANONICAL BRANCH, EXECUTE R3-R1 PROOF CORRECTIVE IN TWO AUTHORIZED FILES ONLY, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R2
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot raw-OOXML proof authorization
 ```
