@@ -44,112 +44,77 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. Exact current gate — R3-R18 AUTHORIZED
+## 3. R3-R18 reviewed result
+
+```text
+IMPLEMENTATION_COMMIT = e5d082059d05da4ac686568b55600fb12873e30d
+EXECUTION_BASELINE = 7d8fa41c93e950011b59d8a6951830fa6d289301
+D2-WP003-R3-R18_SCOPE_REVIEW = PASS
+D2-WP003-R3-R18_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R18_STATUS = NOT PASS / NOT CLOSED
+PRIVACY_PURGE_REQUIRED = NO
+```
+
+Accepted:
+- workbook fingerprint covers every worksheet;
+- Part B second visible `Sheet1` is present in evidence;
+- names/order/state plus broad material per-sheet structure are compared;
+- exact SHA source is rebuilt before observed override;
+- real validator throws `BLOCKER_WORKBOOK_PARITY_UNRESOLVED` for tested mismatch paths;
+- prior accepted privacy/header/typed-metadata tests remain.
+
+Remaining defects:
+1. per-sheet print-area lookup incorrectly uses `localSheetId=0` for all sheets before `sheets[name]` is assigned, with fallback to first print-area defined name; Part B `Sheet1` can therefore inherit main print area incorrectly;
+2. dimension comparison only executes when both strings are non-empty, allowing missing observed dimension evidence to bypass fail-closed parity;
+3. no negative tests directly cover wrong second-sheet print-area binding or missing dimension evidence.
+
+GitHub CI/status checks are absent; non-blocking missing CI evidence for this bounded source review.
+
+## 4. Exact current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
-D2-WP003-R3-R18 = WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY COMPLETENESS
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-CONTROL_PLANE_PRE_AUTH_CHECKPOINT = 4666db780a32179061c5f15f96bc0bda10ad4010
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R18
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R18 ONLY / LOW-CREDIT / BOUNDED
-MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
-PRIVACY_PURGE_REQUIRED = NO
+D2-WP003-R3-R18 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact execution contract.
-
-Antigravity must fresh-fetch current authorized canonical HEAD and record it as `EXECUTION_BASELINE`; do not reset to the pre-authorization checkpoint.
-
-## 4. Exact authorized writes
-
-ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Read-only:
-- package files;
-- governance docs;
-- exact owner templates after SHA verification.
-
-No XLSX/image/media/output commit.
-
-## 5. R3-R18 critical contract
+## 5. Next proposed bounded corrective — NOT AUTHORIZED
 
 ```text
-PARITY = EXACT-SOURCE SEMANTIC WORKBOOK STRUCTURE.
-ZIP BYTE-FOR-BYTE EQUALITY IS NOT REQUIRED.
-EVERY WORKSHEET MUST BE COVERED.
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R19
+PROPOSED_WORK_PACKAGE_NAME = PER-SHEET PRINT-AREA BINDING + MISSING EVIDENCE FAIL-CLOSED
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-Required proof:
-- authoritative expected fingerprints from exact SHA source before observed mutation/override;
-- exact workbook sheet names/order/state;
-- every worksheet included, including Part B second visible `Sheet1`;
-- per-sheet dimension, merge refs/count, columns, explicit row heights, material sheet views/gridlines, margins, page setup/fit/centering, protection, print-area binding and relevant relationship evidence where present;
-- preserve current no-op relationship/media checks without expanding into image semantics;
-- no raw sample-value comparison/logging;
-- real validator fails closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`.
+R3-R19 intent:
+- preserve accepted R3-R18 workbook-wide work;
+- bind print areas by actual worksheet index/`localSheetId` and prove Part B `Sheet1` has the exact source binding, including no print area when none exists;
+- require exact dimension equality so missing evidence fails closed;
+- add real source-backed negative tests for wrong `Sheet1` print-area binding and missing dimension;
+- no image/insertion/formula/production renderer/PDF/UI/Kintone/deploy/D3 work.
 
-Mandatory negative proof through the real validator includes:
-- worksheet identity/order/state mutation;
-- one real merge/dimension/column-or-row structural mutation;
-- one real margin/page setup/print-area/view mutation;
-- one Part B protection or second-sheet structural mutation.
-
-Preserve all accepted privacy/typed-metadata/header tests.
-
-## 6. Out of scope
-
-Do not touch:
-- reference-image full inventory/removal/preservation closure beyond preserving current test behavior;
-- Part A/B insertion matrix closure;
-- formula/no-formula authority closure;
-- production sanitizer/renderer;
-- export service/normalizer/application code;
-- combined production Excel;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- D3 or another Work Package.
-
-## 7. Required commands
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at one of:
-
-```text
-WORKBOOK_PARITY_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
-```
-
-## 8. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
-D2-WP003-R3-R18-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R18-SOURCE-20260901-01
+D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CURRENT CANONICAL, RECORD EXECUTION_BASELINE, EXECUTE ONLY R3-R18, TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R19
+NEXT_EXECUTOR = NONE
+ANTIGRAVITY = STOP
 D3 = HOLD
 ```
