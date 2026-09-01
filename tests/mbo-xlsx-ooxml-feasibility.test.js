@@ -14,7 +14,8 @@ import {
   getTypedPrivacyMetadata,
   getHeaderCellFingerprints,
   getWorkbookFingerprint,
-  getWorksheetFormulaNodeCount,
+  inspectRawWorksheetOOXML,
+  getWorksheetFormulaSet,
   SENSITIVE_RANGES_A,
   SENSITIVE_RANGES_B,
   EXPECTED_PART_A_SHA,
@@ -95,8 +96,21 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   assert.equal(classMapB['B2'].isDynamic, false, 'B2 static title must be protected');
   assert.equal(classMapB['B7'].isDynamic, false, 'B7 static competency text must be protected');
 
-  for (const addr of SENSITIVE_RANGES_B) {
-    assert.equal(classMapB[addr]?.isDynamic, true, `Sensitive address ${addr} must be classified dynamic/sample`);
+  const protectedAddrs = [];
+  const sensitiveAddrs = [];
+
+  for (const addr in classMapB) {
+    if (classMapB[addr].isDynamic) {
+      sensitiveAddrs.push(addr);
+    } else {
+      protectedAddrs.push(addr);
+    }
+  }
+
+  // Assert set disjointness: SENSITIVE ∩ PROTECTED_STATIC = empty
+  const sensitiveSet = new Set(SENSITIVE_RANGES_B);
+  for (const addr of protectedAddrs) {
+    assert.equal(sensitiveSet.has(addr), false, `Protected static address ${addr} must NOT be in sensitive set`);
   }
 
   // Typed privacy metadata test
@@ -119,9 +133,9 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
-  // Formula node test using regex <f(?:\s|>)
-  const sourceFormulasA = await getWorksheetFormulaNodeCount(bufA);
-  assert.equal(sourceFormulasA, 0, 'Part A sanitized output worksheet formula node count must equal 0');
+  // Formula node test using getWorksheetFormulaSet()
+  const sourceFormulasA = await getWorksheetFormulaSet(bufA);
+  assert.equal(sourceFormulasA.size, 0, 'Part A sanitized output worksheet formula node count must equal 0');
 
   // Scan all xl/ OOXML XML files in memory for token survival
   for (const fileName in wbA._zip.files) {
@@ -143,8 +157,8 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
-  const sourceFormulasB = await getWorksheetFormulaNodeCount(bufB);
-  assert.equal(sourceFormulasB, 0, 'Part B sanitized output worksheet formula node count must equal 0');
+  const sourceFormulasB = await getWorksheetFormulaSet(bufB);
+  assert.equal(sourceFormulasB.size, 0, 'Part B sanitized output worksheet formula node count must equal 0');
 
   for (const fileName in wbB._zip.files) {
     if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
@@ -179,58 +193,33 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
   const { bufA4, bufA5, bufA10 } = await getStructuralPartABuffers();
 
   // 4 Objectives
-  const wbA4 = await XlsxPopulate.fromDataAsync(bufA4);
-  const sheetA4 = wbA4.sheet(0);
-  assert.equal(sheetA4.cell('B29').value(), 'SENTINEL_ROW_29', 'Sentinel at row 29 must remain at row 29 for 4 objectives');
-  const wbXml4 = await wbA4._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(wbXml4.includes('BJ$52'), true, 'Part A 4 objectives print area must end at BJ52');
+  const inspA4 = await inspectRawWorksheetOOXML(bufA4);
+  assert.equal(inspA4.rawMerges.length, 193, 'Part A 4 objectives merge count must equal 193');
+  assert.equal(inspA4.printArea.includes('BJ$52'), true, 'Part A 4 objectives print area must end at BJ52');
 
   // 5 Objectives (raw OOXML +1 insertion & merge cloning)
-  const wbA5 = await XlsxPopulate.fromDataAsync(bufA5);
-  const sheetA5 = wbA5.sheet(0);
-  assert.equal(sheetA5.cell('B30').value(), 'SENTINEL_ROW_29', 'Sentinel at row 29 must move to row 30 for 5 objectives (+1 raw insertion)');
-
-  const sheet1Xml5 = await wbA5._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const rawMerges5 = [...sheet1Xml5.matchAll(/<mergeCell [^>]*\/>/g)];
-  assert.equal(rawMerges5.length, 207, 'Part A 5 objectives raw merge count must equal 207 (193 + 14 cloned)');
-
-  const wbXml5 = await wbA5._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(wbXml5.includes('BJ$53'), true, 'Part A 5 objectives print area must end at BJ53');
+  const inspA5 = await inspectRawWorksheetOOXML(bufA5);
+  assert.equal(inspA5.rawMerges.length, 207, 'Part A 5 objectives raw merge count must equal 207 (193 + 14 cloned)');
+  assert.equal(inspA5.printArea.includes('BJ$53'), true, 'Part A 5 objectives print area must end at BJ53');
 
   // 10 Objectives (raw OOXML +6 insertion & merge cloning)
-  const wbA10 = await XlsxPopulate.fromDataAsync(bufA10);
-  const sheetA10 = wbA10.sheet(0);
-  assert.equal(sheetA10.cell('B35').value(), 'SENTINEL_ROW_29', 'Sentinel at row 29 must move to row 35 for 10 objectives (+6 raw insertion)');
-
-  const sheet1Xml10 = await wbA10._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const rawMerges10 = [...sheet1Xml10.matchAll(/<mergeCell [^>]*\/>/g)];
-  assert.equal(rawMerges10.length, 277, 'Part A 10 objectives raw merge count must equal 277 (193 + 84 cloned)');
-
-  const wbXml10 = await wbA10._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(wbXml10.includes('BJ$58'), true, 'Part A 10 objectives print area must end at BJ58');
+  const inspA10 = await inspectRawWorksheetOOXML(bufA10);
+  assert.equal(inspA10.rawMerges.length, 277, 'Part A 10 objectives raw merge count must equal 277 (193 + 84 cloned)');
+  assert.equal(inspA10.printArea.includes('BJ$58'), true, 'Part A 10 objectives print area must end at BJ58');
 });
 
 test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block insertion, merge cloning & totals shifting for 6 and 8 competencies', async () => {
   const { bufB6, bufB8 } = await getStructuralPartBBuffers();
 
   // 6 Competencies
-  const wbB6 = await XlsxPopulate.fromDataAsync(bufB6);
-  const sheetB6 = wbB6.sheet(0);
-  assert.equal(sheetB6.cell('B31').value(), 'SENTINEL_ROW_31', 'Totals sentinel must remain at row 31 for 6 competencies');
-  const wbXml6 = await wbB6._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(wbXml6.includes('X$35'), true, 'Part B 6 competencies print area must end at X35');
+  const inspB6 = await inspectRawWorksheetOOXML(bufB6);
+  assert.equal(inspB6.rawMerges.length, 79, 'Part B 6 competencies merge count must equal 79');
+  assert.equal(inspB6.printArea.includes('X$35'), true, 'Part B 6 competencies print area must end at X35');
 
   // 8 Competencies (raw OOXML +8 block insertion & merge cloning)
-  const wbB8 = await XlsxPopulate.fromDataAsync(bufB8);
-  const sheetB8 = wbB8.sheet(0);
-  assert.equal(sheetB8.cell('B39').value(), 'SENTINEL_ROW_31', 'Totals sentinel must move to row 39 for 8 competencies (+8 raw block insertion)');
-
-  const sheet1Xml8 = await wbB8._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const rawMerges8 = [...sheet1Xml8.matchAll(/<mergeCell [^>]*\/>/g)];
-  assert.equal(rawMerges8.length, 91, 'Part B 8 competencies raw merge count must equal 91 (79 + 12 cloned)');
-
-  const wbXml8 = await wbB8._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(wbXml8.includes('X$43'), true, 'Part B 8 competencies print area must end at X43');
+  const inspB8 = await inspectRawWorksheetOOXML(bufB8);
+  assert.equal(inspB8.rawMerges.length, 91, 'Part B 8 competencies raw merge count must equal 91 (79 + 12 cloned)');
+  assert.equal(inspB8.printArea.includes('X$43'), true, 'Part B 8 competencies print area must end at X43');
 });
 
 test('FEASIBILITY_DIFFICULTY_LEVEL_BLANK: Difficulty Level cells remain blank per R3 Owner Decision', async () => {

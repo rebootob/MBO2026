@@ -195,6 +195,22 @@ export async function getTypedPrivacyMetadata(partKey) {
 export async function getHeaderCellFingerprints(buf, partKey) {
   const wb = await XlsxPopulate.fromDataAsync(buf);
   const sheet = wb.sheet(0);
+  const sheetXml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+
+  // Parse raw merges in header
+  const merges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+
+  function getMergeRef(addr) {
+    for (const ref of merges) {
+      if (ref.includes(':')) {
+        const addrs = expandRangeToAddresses(ref);
+        if (addrs.includes(addr)) return ref;
+      } else if (ref === addr) {
+        return ref;
+      }
+    }
+    return null;
+  }
 
   const titleAddrsA = expandRangeToAddresses('B6:M7').concat(expandRangeToAddresses('Z6:AF6'), expandRangeToAddresses('AG6:AL6'), expandRangeToAddresses('AM6:AP6'), expandRangeToAddresses('AQ6:AS6'), expandRangeToAddresses('AT6:BC6'), expandRangeToAddresses('BD6:BI6'));
   const valueAddrsA = expandRangeToAddresses('N6:Q7').concat(expandRangeToAddresses('Z7:AF7'), expandRangeToAddresses('AG7:AL7'), expandRangeToAddresses('AM7:AP7'), expandRangeToAddresses('AQ7:AS7'), expandRangeToAddresses('AT7:BC7'), expandRangeToAddresses('BD7:BI7'));
@@ -209,14 +225,20 @@ export async function getHeaderCellFingerprints(buf, partKey) {
 
   const titleFingerprints = {};
   for (const addr of targetTitleAddrs) {
-    const val = String(sheet.cell(addr).value() || '');
-    titleFingerprints[addr] = crypto.createHash('sha256').update(val).digest('hex');
+    const val = sheet.cell(addr).value();
+    const strVal = String(val || '');
+    const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
+    const mergeRef = getMergeRef(addr);
+    titleFingerprints[addr] = { address: addr, type: typeof val, valHash, mergeRef };
   }
 
   const valueFingerprints = {};
   for (const addr of targetValueAddrs) {
-    const val = String(sheet.cell(addr).value() || '');
-    valueFingerprints[addr] = crypto.createHash('sha256').update(val).digest('hex');
+    const val = sheet.cell(addr).value();
+    const strVal = String(val || '');
+    const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
+    const mergeRef = getMergeRef(addr);
+    valueFingerprints[addr] = { address: addr, type: typeof val, valHash, mergeRef };
   }
 
   const valueSet = new Set(targetValueAddrs);
@@ -227,8 +249,11 @@ export async function getHeaderCellFingerprints(buf, partKey) {
     for (let c = 1; c <= maxCol; c++) {
       const addr = `${idxToCol(c)}${r}`;
       if (!valueSet.has(addr) && !titleSet.has(addr)) {
-        const val = String(sheet.cell(addr).value() || '');
-        unrelatedFingerprints[addr] = crypto.createHash('sha256').update(val).digest('hex');
+        const val = sheet.cell(addr).value();
+        const strVal = String(val || '');
+        const valHash = strVal ? crypto.createHash('sha256').update(strVal).digest('hex') : null;
+        const mergeRef = getMergeRef(addr);
+        unrelatedFingerprints[addr] = { address: addr, type: typeof val, valHash, mergeRef };
       }
     }
   }
@@ -293,17 +318,79 @@ export async function getWorkbookFingerprint(buf) {
   };
 }
 
-export async function getWorksheetFormulaNodeCount(buf) {
+export async function inspectRawWorksheetOOXML(buf) {
   const wb = await XlsxPopulate.fromDataAsync(buf);
-  let count = 0;
+  const sheetXml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const workbookXml = await wb._zip.files['xl/workbook.xml'].async('string');
+
+  const rowMatches = [...sheetXml.matchAll(/<row r="(\d+)"([^>]*)>/g)];
+  const rowRefs = rowMatches.map(m => parseInt(m[1], 10)).sort((a, b) => a - b);
+
+  const cellRefs = {};
+  const stylePattern = {};
+  const rowHeights = {};
+
+  for (const m of rowMatches) {
+    const r = parseInt(m[1], 10);
+    const rowAttr = m[2];
+    const htMatch = rowAttr.match(/ht="([^"]+)"/);
+    const customHtMatch = rowAttr.match(/customHeight="([^"]+)"/);
+    rowHeights[r] = { ht: htMatch ? htMatch[1] : null, customHeight: customHtMatch ? customHtMatch[1] : null };
+
+    // Extract row XML block to parse cells
+    const rowBlockMatch = sheetXml.match(new RegExp(`<row r="${r}"[^>]*>[\\s\\S]*?<\\/row>`));
+    if (rowBlockMatch) {
+      const rowXml = rowBlockMatch[0];
+      const cells = [...rowXml.matchAll(/<c r="([A-Z]+\d+)"([^>]*)>/g)];
+      cellRefs[r] = cells.map(c => c[1]);
+      stylePattern[r] = cells.map(c => {
+        const sMatch = c[2].match(/s="(\d+)"/);
+        return sMatch ? sMatch[1] : '0';
+      });
+    }
+  }
+
+  const rawMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
+  const mergeCountAttr = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1] || String(rawMerges.length);
+
+  const dimension = sheetXml.match(/<dimension [^>]*\/>/)?.[0] || '';
+  let printArea = workbookXml.match(/<definedName name="_xlnm\.Print_Area"[^>]*>([^<]+)<\/definedName>/)?.[1] || '';
+  printArea = printArea.replaceAll('&amp;', '&');
+
+  const paperSize = sheetXml.match(/paperSize="(\d+)"/)?.[1] || '';
+  const orientation = sheetXml.match(/orientation="([^"]+)"/)?.[1] || '';
+  const scale = sheetXml.match(/scale="(\d+)"/)?.[1] || '';
+  const horizontalCentered = sheetXml.includes('horizontalCentered="1"');
+  const sheetProtection = sheetXml.includes('<sheetProtection') || sheetXml.includes('sheetProtection');
+
+  return {
+    rowRefs,
+    cellRefs,
+    stylePattern,
+    rowHeights,
+    rawMerges,
+    mergeCountAttr,
+    dimension,
+    printArea,
+    pageSetup: { paperSize, orientation, scale },
+    horizontalCentered,
+    sheetProtection
+  };
+}
+
+export async function getWorksheetFormulaSet(buf) {
+  const wb = await XlsxPopulate.fromDataAsync(buf);
+  const formulaSet = new Set();
   for (const fileName in wb._zip.files) {
     if (fileName.startsWith('xl/worksheets/') && fileName.endsWith('.xml')) {
       const xml = await wb._zip.files[fileName].async('string');
-      const matches = xml.match(/<f(?:\s|>)/g);
-      if (matches) count += matches.length;
+      const matches = [...xml.matchAll(/<c r="([A-Z0-9]+)"[^>]*>[\s\S]*?<f(?:\s|>)([^<]*)/g)];
+      for (const m of matches) {
+        formulaSet.add(`${fileName}:${m[1]}`);
+      }
     }
   }
-  return count;
+  return formulaSet;
 }
 
 export async function getNoOpParityBuffers() {
