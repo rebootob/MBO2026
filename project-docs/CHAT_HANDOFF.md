@@ -44,117 +44,78 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R20 reviewed result
+## 3. R3-R21 reviewed result
 
 ```text
-IMPLEMENTATION_COMMIT = ddcee22200c22a5474374562a6630e835365db02
-EXECUTION_BASELINE = aab36a7f216db4a1ecb10f14360faed5fa16ced9
-D2-WP003-R3-R20_SCOPE_REVIEW = PASS
-D2-WP003-R3-R20_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-D2-WP003-R3-R20_STATUS = NOT PASS / NOT CLOSED
+IMPLEMENTATION_COMMIT = 1587b20b3920618b79b335c66bbdde1778570626
+EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
+D2-WP003-R3-R21_SCOPE_REVIEW = PASS
+D2-WP003-R3-R21_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R21_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R19/R3-R20 work remains frozen unless proven regression:
-- print areas bind by exact `localSheetId` and actual workbook sheet index with no cross-sheet fallback;
-- `getWorkbookFingerprint()` records actual `<dimension>` tag/absence only;
-- validator dimension equality is unconditional;
-- wrong `Sheet1.printArea`, blank observed dimension, `Sheet1.colsHash`, and actual dimension-tag removal proof remain.
+Accepted:
+- raw no-op buffers are direct `xlsx-populate` `outputAsync()` results with no dimension/source repair;
+- validator preserves template-source blocker and normalizes all other parity errors to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- actual dimension-tag fingerprinting remains strict;
+- per-sheet print-area binding remains exact;
+- restored second-sheet `colsHash` proof remains present.
 
-Remaining R3-R21 defects:
-1. `getNoOpParityBuffers()` repairs missing raw roundtrip `<dimension>` evidence from source before validation.
-2. `validateWorkbookParity()` currently rethrows incidental parity-path errors instead of deterministic workbook blocker normalization.
+Remaining proof defect:
+- R3-R21 mutation-specific negatives are based on raw `fpOutB/outBufB`. That baseline is only conditionally valid; when raw roundtrip itself has a dimension blocker, mutation tests can reject for that pre-existing defect instead of the mutation under test.
+- actual `<dimension>` removal also starts from raw `outBufB`; if the tag is already absent, the removal does nothing and the rejection is not isolated proof.
 
-## 4. Exact current gate — R3-R21 AUTHORIZED
+GitHub CI/status checks are absent; non-blocking missing CI evidence for this bounded source review.
+
+## 4. Exact current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R20 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R21 = PURE NO-OP OBSERVED EVIDENCE + DETERMINISTIC BLOCKER NORMALIZATION
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-CONTROL_PLANE_PRE_AUTH_CHECKPOINT = 26645b31ae6f9fabc42af8b595dd25aea39ee5d1
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R21
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R21-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R21 ONLY / LOW-CREDIT / BOUNDED
-MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_RAW_NOOP_PROOF_PENDING_INDEPENDENT_REVIEW
-PRIVACY_PURGE_REQUIRED = NO
+D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact execution contract.
-
-Antigravity must fresh-fetch current authorized canonical HEAD and record it as `EXECUTION_BASELINE`; do not reset to the pre-authorization checkpoint.
-
-## 5. Exact authorized writes
-
-ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Read-only:
-- package files;
-- governance docs;
-- exact owner templates after SHA verification.
-
-No XLSX/image/media/output commit.
-
-## 6. R3-R21 critical contract
+## 5. Next proposed bounded corrective — NOT AUTHORIZED
 
 ```text
-RAW XLSX-POPULATE OUTPUT = OBSERVED EVIDENCE.
-SOURCE REPAIR BEFORE VALIDATION = FORBIDDEN.
-NON-TEMPLATE-SOURCE PARITY ERRORS = BLOCKER_WORKBOOK_PARITY_UNRESOLVED.
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
+PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
+PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-Required:
-- `getNoOpParityBuffers()` returns direct `outputAsync()` results only;
-- remove all source-to-roundtrip `<dimension>` reinsertion/repair;
-- if raw roundtrip loses material evidence, expose and report the blocker; do not implement preservation strategy in this WP;
-- preserve `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` exactly;
-- normalize every other parity-path error/failure to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- add the smallest malformed observed-evidence proof that verifies incidental runtime errors are normalized;
-- preserve every accepted R3-R19/R3-R20 proof.
+R3-R22 intent:
+- keep R3-R21 source implementation read-only;
+- use independently valid exact-source/source-backed fingerprint as baseline for wrong print area, blank dimension, `Sheet1.colsHash`, malformed serialization and other mutation-specific negative tests;
+- use a source buffer known to contain an actual `<dimension>` tag for the in-memory tag-removal proof;
+- separately evaluate raw Part A and Part B no-op outputs honestly through the real validator with no repair;
+- keep mutation-specific proof isolated from any raw no-op blocker;
+- no image/insertion/formula/renderer/PDF/UI/Kintone/deploy/D3 work.
 
-## 7. Out of scope
-
-Do not touch preservation strategy/renderer, image closure, insertion closure, formula authority, production renderer, combined Excel, PDF/UI, Kintone, deploy, D3 or another Work Package.
-
-## 8. Required commands
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at one of:
-
-```text
-WORKBOOK_PARITY_RAW_NOOP_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_WORKBOOK_PARITY_UNRESOLVED
-```
-
-## 9. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
 D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R21-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R21-SOURCE-20260901-01
+D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 10. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CURRENT CANONICAL, RECORD EXECUTION_BASELINE, EXECUTE ONLY R3-R21, TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
+NEXT_EXECUTOR = NONE
+ANTIGRAVITY = STOP
 D3 = HOLD
 ```
