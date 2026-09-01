@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R3 REVIEWED NOT PASS
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R4 AUTHORIZED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R4 PROPOSED | Raw OOXML architecture retained; privacy/parity/test coverage still incomplete |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R4 AUTHORIZED | Final feasibility coverage + safe privacy proof; no binary publication |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -34,26 +34,58 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R3 independent review
+## 3. R3-R3 review truth
 
-Scope = PASS. Implementation commit `c25510d522591b9a8fb84c17d0bbe66c1eb1f1df` is exactly one commit above its authorization baseline and changed only the two feasibility files. No package/binary/application/Kintone/deploy change occurred, so no Privacy Purge is required.
+R3-R3 scope = PASS. No workbook/image/binary/package/application/Kintone/deploy change occurred, so no Privacy Purge is required.
 
 Accepted progress:
-- Part A merge patterns are now cloned into inserted objective rows and merge count is updated;
-- Part B source-block merge patterns are now cloned into both inserted blocks and merge count is updated;
-- the old shared-string keyword classifier was removed as the privacy authority.
+- raw Part A/Part B row/cell/dimension/Print_Area mutation retained;
+- Part A row-28 merge patterns are cloned into inserted objective rows;
+- Part B rows27:30 merge patterns are cloned into both inserted competency blocks;
+- old shared-string keyword classification is no longer the declared privacy authority.
 
-Source acceptance = FAIL / corrective required because:
-- explicit privacy maps contain selected anchor cells rather than the complete accepted sensitive ranges;
-- mapped collection still accepts only strings and ignores numeric/date/boolean values;
-- privacy assertions still interpolate source-sensitive tokens into failure messages;
-- header proof still fingerprints only selected anchors and verifies only a subset of runtime values;
-- image3 deletion remains unconditional after rId3 removal, without package-wide orphan proof or complete non-target inventory comparison;
-- no-op parity still lacks original-vs-roundtrip second-sheet/centering/row-height/column/dimension/drawing/protection comparisons;
-- structural tests still rely mainly on sentinel movement, merge counts and Print_Area rather than exact merge patterns/style/height/dimension/page/protection geometry;
-- GitHub has no CI/status evidence for the proof commit.
+R3-R3 source acceptance = FAIL because privacy mapping/typed-value proof, safe logging, header coverage, orphan-safe image proof, complete no-op parity, and exact structural acceptance tests remain incomplete.
 
-## 4. Current gate
+## 4. D2-WP003-R3-R4 — AUTHORIZED
+
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R4
+WORK_PACKAGE_NAME = FINAL FEASIBILITY COVERAGE + SAFE PRIVACY PROOF
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+PRIVACY_PURGE_REQUIRED = NO
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R4-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+```
+
+Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
+
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Read-only: package files, governance docs, exact ignored owner templates after SHA verification.
+
+## 5. R3-R4 acceptance direction
+
+Do not redesign the raw OOXML architecture. Close only the remaining proof gaps:
+- complete Part A privacy coverage for every accepted sensitive cell in the required ranges;
+- exact Part B dynamic/sample map; fail closed if static-vs-dynamic cells cannot be safely distinguished;
+- mapped collection by actual type including strings, numeric/date and boolean where present;
+- no source-sensitive value in logs, assertions or exceptions;
+- complete frozen title/label/runtime-value fingerprints and unrelated-header preservation proof;
+- package-wide orphan proof before deleting `image3.png` plus complete non-target drawing/media inventory comparison;
+- original-vs-roundtrip exact sheet/order/merge/dimension/column/row-height/page/centering/protection/drawing parity;
+- Part A 4/5/10 and Part B 6/8 tests must verify exact row/cell refs, styles, heights, merge patterns/count attribute, dimension, print area and page/protection geometry;
+- prove zero worksheet scoring formulas introduced;
+- Difficulty remains blank; no application Difficulty field is added/read.
+
+Still forbidden: XLSX/image/media/output commit, package/dependency change, production sanitizer/renderer, PDF/UI, Live Kintone, deploy, or next Work Package.
+
+## 6. Current gate
 
 ```text
 D1 = PASS / CLOSED
@@ -62,38 +94,32 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R3 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R4
-PROPOSED_WORK_PACKAGE_NAME = FINAL FEASIBILITY COVERAGE + SAFE PRIVACY PROOF
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R4 = AUTHORIZED / EXECUTION ACTIVE
+CURRENT_EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY = EXECUTE R3-R4 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R4-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-No Work Package may auto-start.
+No other Work Package may auto-start.
 
-## 5. R3-R4 direction if approved
-
-Keep the existing raw OOXML architecture. Correct only the remaining proof gaps:
-- complete Part A privacy ranges and exact Part B dynamic/sample map;
-- collect mapped text/numeric/date/boolean values by type without source-value logging;
-- no sensitive values in assertion/error text;
-- complete frozen title/label/value-region fingerprints;
-- package-wide orphan check before deleting image3 and complete non-target drawing/media inventory comparison;
-- complete original-vs-roundtrip sheet/order/merge/dimension/column/row-height/page/centering/protection/drawing parity;
-- exact structural tests for cloned merge patterns, row/cell refs, style ids, heights, dimension, mergeCells count and page/protection geometry;
-- prove zero worksheet scoring formulas introduced.
-
-Expected writes remain only the two feasibility files. No binary publication or production renderer/sanitizer.
-
-## 6. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 D2-WP003-R3-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R4-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R4-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
+ACTIVE_APP794_DEPLOY_AUTH = NONE
+ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
+ACTIVE_PROCESS_UAT_WRITE_AUTH = NONE
+ACTIVE_GROUP_WRITE_AUTH = NONE
+APP53_WRITE_AUTH = NONE
+APP794_WRITE_AUTH = NONE
+APP795_WRITE_AUTH = NONE
+APP801_WRITE_AUTH = NONE
+ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
+PRODUCTION_ROLLBACK_AUTH = NONE
 ```
