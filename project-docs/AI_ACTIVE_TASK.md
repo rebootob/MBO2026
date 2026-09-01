@@ -1,319 +1,167 @@
-# AI ACTIVE TASK — D2-WP003-R3-R5 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R5 REVIEW / R3-R6 PROPOSED
 
-Mode: **ANTIGRAVITY / EXACT ACCEPTANCE MEASUREMENT COMPLETION / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R4 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R5
-ACTIVE_WORK_PACKAGE_NAME = EXACT ACCEPTANCE MEASUREMENT COMPLETION
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+D2-WP003-R3-R5_SCOPE_REVIEW = PASS
+D2-WP003-R3-R5_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R5_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R5-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R6
+PROPOSED_WORK_PACKAGE_NAME = EXACT SOURCE-VS-OUTPUT TEST HARNESS COMPLETION
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY_ACTION = STOP / WAIT OWNER
+D2-WP003-R3-R5-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. Purpose
+## 1. Scope review — PASS
 
-Complete the missing acceptance measurements only. Preserve the accepted raw-OOXML architecture from R3-R4. Do not redesign the mutation logic and do not build production export code.
-
-R3-R5 exists only to close these remaining proof gaps:
-- exact Part B privacy classification;
-- per-address typed privacy accounting;
-- complete header/value/unrelated-header fingerprints;
-- complete source-vs-roundtrip structural fingerprints;
-- exact non-target drawing/relationship/media equality;
-- exact Part A 4/5/10 and Part B 6/8 structural assertions;
-- exact source-vs-output worksheet formula-node comparison.
-
-## 2. Exact write scope
-
-Authorized modifications ONLY:
+Implementation commit `bc733cfbea81c0cdcdd6161ab707477346c80a90` is exactly one commit above R3-R5 authorization baseline `700b242f3c6239b0b5881ee10b3c5af1ca4e1e1d` and changed only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `package.json`
-- `package-lock.json`
-- governance docs
-- exact ignored owner templates after SHA verification
+No package/dependency, workbook/image/binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
 
-No other repository path may change. No dependency/package change is authorized.
+## 2. Accepted progress
 
-## 3. Source identity
+R3-R5 adds useful proof helpers:
+- sensitive address lists are de-duplicated;
+- per-address typed metadata is now generated with normalized type, blank state and safe hash for text;
+- aggregate typed counts reconcile inside the helper;
+- formula detection was improved from literal `<f>` to `<f(?:\s|>)`-equivalent matching;
+- Part B classification now exposes explicit dynamic/static labels instead of having no classification object at all.
 
-Use only local originals matching exactly:
+These are accepted improvements, but most R3-R5 acceptance requirements are still not measured by the tests.
 
-```text
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
+## 3. BLOCKER A — Part B classification is self-declared, not source-derived proof
 
-Bounded lookup only in repository root, `app info/data/`, and `exp/`.
-If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never print/log/commit source employee/sample values.
+`getPartBPrivacyClassification()` classifies the already hard-coded `SENSITIVE_RANGES_B` as dynamic by row/range rules. For rows 7:29 it marks mapped cells as `COMPETENCY_RATING_VALUE`, while the protected static list is hard-coded mainly to columns B:J.
 
-## 4. Architecture frozen
+It does not inspect exact owner-template structure to prove that every mapped K:X address is dynamic/sample and that no static rating/scale guidance exists in the mapped set.
 
-Keep current raw OOXML architecture:
-- `xlsx-populate@1.21.0` only as already installed;
-- raw worksheet/XML/package mutation for insertion;
-- current row/cell shift, dimension rewrite, Print_Area rewrite and merge cloning remain;
-- do not return to high-level row/cell copy as structural proof;
-- do not redesign sanitization/renderer architecture.
+The test samples only a few addresses (`G2`, `B2`, `B7`) instead of proving:
+- every sensitive address has a justified dynamic classification;
+- every protected static address is excluded from the sensitive set;
+- ambiguous source cells fail closed.
 
-If the existing approach cannot be proved safe within this scope: STOP `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
+Therefore the R3-R5 Part B privacy classification contract is not satisfied.
 
-## 5. Exact Part B privacy classification
+## 4. BLOCKER B — typed metadata exists but the acceptance proof is incomplete
 
-R3-R5 must not accept broad ranges merely because they contain dynamic cells.
+`getTypedPrivacyMetadata()` is meaningful progress, but tests only assert `uniqueCount == SENSITIVE_RANGES_* length` and aggregate count reconciliation.
 
-Build an inspectable classification from exact owner-template structure for rows 2:34:
-- every mapped sensitive address must have a safe classification/reason such as `HEADER_VALUE`, `APPRAISER_INPUT`, `SCORE_VALUE`, `SIGNATURE_VALUE`, or equivalent;
-- static title cells, frozen header labels, competency names/descriptions, rating guidance and other template text must be explicitly excluded/protected;
-- tests must prove all mapped addresses are classified dynamic/sample and all protected static addresses are absent from the sensitive set;
-- no source text may be logged in the classification evidence.
-
-If any ambiguous cell cannot be safely classified: STOP `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` instead of widening a range.
-
-## 6. Per-address typed privacy accounting
-
-For every mapped Part A and Part B address return inspectable metadata keyed by safe address, including:
-- address;
-- normalized type: `string`, `number`, `date`, `boolean`, `blank`;
-- nonblank/blank state;
-- safe content hash for text where useful, never raw source value.
-
-Requirements:
-- metadata count must equal unique mapped-address count exactly;
+They do not directly assert:
+- `metadata.length == unique mapped address count`;
+- every metadata address is unique and belongs to the mapped set;
 - every mapped address appears exactly once;
-- aggregate type counts must reconcile exactly to metadata count;
-- every nonblank source address must be represented exactly once;
-- after sanitization every mapped address is empty after reparse;
-- numeric/date/boolean addresses present in source must be directly asserted empty using their metadata addresses;
-- mapped text survival scan may use source values in memory only; assertion/error text must not contain raw values.
+- every metadata type is in the accepted enum;
+- every numeric/date/boolean source address present is specifically checked empty after sanitization using the metadata address list;
+- source metadata and sanitized output are reconciled address-by-address.
 
-Failure => STOP `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+Typed proof is therefore partial, not complete.
 
-## 7. Complete header/value proof
+## 5. BLOCKER C — complete header/value fingerprints were not implemented
 
-Frozen Part A:
-```text
-TITLE = B6:M7
-FISCAL_YEAR_VALUE = N6:Q7
-DEPARTMENT_LABEL/VALUE = Z6:AF6 / Z7:AF7
-SECTION_LABEL/VALUE = AG6:AL6 / AG7:AL7
-START_DATE_LABEL/VALUE = AM6:AP6 / AM7:AP7
-EMP_ID_LABEL/VALUE = AQ6:AS6 / AQ7:AS7
-EMP_NAME_LABEL/VALUE = AT6:BC6 / AT7:BC7
-POSITION_LABEL/VALUE = BD6:BI6 / BD7:BI7
-```
+`getMutatedHeaderValueBuffers()` remains anchor-based. It hashes selected cells only, for example Part A `B6`, `AM6`, `AQ6`, `AT6`, `BD6` and selected Part B anchors.
 
-Frozen Part B:
-```text
-TITLE = B2:F3
-FISCAL_YEAR_VALUE = G2:H3
-DEPARTMENT_LABEL/VALUE = J2:L2 / J3:L3
-SECTION_LABEL/VALUE = M2:O2 / M3:O3
-POSITION_LABEL/VALUE = P2:Q2 / P3:Q3
-EMP_ID_LABEL/VALUE = R2 / R3
-EMP_NAME_LABEL/VALUE = S2:W2 / S3:W3
-```
+It does not fingerprint every cell in every frozen title/static-label/runtime-value region and does not fingerprint unrelated bounded header cells.
 
-Build before/after safe fingerprints for EVERY cell in:
-- all title/static-label regions;
-- every runtime value region;
-- all unrelated header cells in the bounded header rows.
+The test still checks the selected snapshot cells and directly verifies only a subset of intended runtime changes. It does not prove unrelated header XML/cells unchanged or merged header geometry unchanged.
 
-Tests must prove:
-- every static/title/label fingerprint unchanged;
-- every intended runtime value address changed/cleared as intended;
-- unrelated header cell fingerprints unchanged;
-- merged geometry unchanged;
-- no raw source value appears in logs/errors.
+## 6. BLOCKER D — full source-vs-roundtrip parity harness was not implemented
 
-Failure => STOP `BLOCKER_HEADER_VALUE_MAP_UNRESOLVED`.
-
-## 8. Full no-op source-vs-roundtrip fingerprints
-
-Create reusable raw fingerprints and compare SOURCE vs ROUND-TRIP directly.
-
-For Part A and Part B include:
-- exact sheet order/names;
-- exact merge-ref SET and count;
-- worksheet dimension;
-- exact `<cols>` structure/hash;
-- explicit row-height map;
-- Print_Area;
-- page setup attributes;
-- Part B `centerHorizontal`;
-- Part B sheet-protection structural fingerprint;
+The no-op test remains mostly the R3-R4 test. It checks expected output counts/settings and Part A `<cols>` equality, but still lacks direct source-vs-output equality for:
+- exact merge-ref SETS;
+- worksheet dimensions;
+- explicit row-height maps;
+- Part B `<cols>` structure;
+- Part B protection structural fingerprint;
 - drawing relationship inventory;
-- media-member inventory with filename/hash;
-- successful reparse.
+- media filename/hash inventory.
 
-Hard-coded expected values may be additional checks, but cannot replace source-vs-output equality.
+Hard-coded expected output values are still used where R3-R5 required reusable source-vs-output fingerprints.
 
-Failure => STOP `BLOCKER_XLSX_LIBRARY_PARITY`.
+## 7. BLOCKER E — complete reference-image inventory equality was not implemented
 
-## 9. Reference-image exact inventory proof
+The orphan search remains useful, but `getReferenceImageBuffers()` still does not return or compare complete before/after inventories for:
+- drawing anchors;
+- drawing relationships;
+- media filenames/hashes.
 
-Target only:
-```text
-DRAWING_XML = xl/drawings/drawing1.xml
-DRAWING_RELS = xl/drawings/_rels/drawing1.xml.rels
-TARGET_REL = rId3
-TARGET_MEDIA = xl/media/image3.png
-```
+The test still proves only that target `rId3`/`image3.png` are absent and branding `rId1`/`rId2` remain. It does not normalize the target out of BEFORE and require exact equality of every non-target item AFTER.
 
-Before mutation snapshot using safe metadata:
-- complete drawing-anchor inventory;
-- complete relationship inventory with ids/targets;
-- complete media inventory with filenames/hashes.
+## 8. BLOCKER F — structural tests remain sentinel/count/Print_Area heavy
 
-After removing exactly rId3 anchor + rId3 relationship:
-- search all remaining `.rels` parts and delete `image3.png` only if orphaned;
-- reparse;
-- normalize away only the target anchor/relationship/media from the BEFORE inventory;
-- assert the complete remaining anchor/relationship/media inventories equal AFTER exactly.
+The Part A 4/5/10 and Part B 6/8 tests are materially unchanged from R3-R4.
 
-Preserve every non-target item, including rId1/image1.jpeg and rId2/image2.jpeg.
+They still do not independently assert the required:
+- unique and strictly sorted row refs;
+- unique/sorted cell refs;
+- source-vs-inserted style-id patterns;
+- row heights;
+- exact translated merge-ref patterns;
+- `<mergeCells count>` attribute equals actual merge set;
+- worksheet dimensions;
+- Part A page setup on every structural output;
+- Part B page setup, centerHorizontal and protection on every structural output.
 
-Failure => STOP `BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED`.
+Sentinel movement + total merge counts + Print_Area cannot prove exact geometry.
 
-## 10. Exact Part A 4 / 5 / 10 measurements
+## 9. BLOCKER G — formula-node proof improved regex but still violates the exact contract
 
-Tests must directly measure raw OOXML, not helper success booleans.
+The regex now detects `<f(?:\s|>)`, which is accepted progress.
 
-For all variants assert:
-- row refs are unique and strictly sorted;
-- cell refs within rows are valid/unique/sorted;
-- `<mergeCells count>` attribute equals actual merge-ref count;
-- worksheet dimension is exact;
-- Print_Area is exact;
-- paperSize8 / landscape / scale58 preserved.
+However the test scans broad `xl/*.xml` / `.rels` parts rather than worksheet XML only, does not construct source formula-node/address sets, does not compare source vs output sets, and does not inspect all structural Part A/Part B outputs for formula additions.
 
-5-objective case:
-- old row29 -> row30;
-- inserted row29 reproduces row28 row-height and cell-style-id pattern;
-- exact row28 merge pattern translated to row29;
-- affected existing merge refs shifted correctly;
-- dimension +1;
-- Print_Area A1:BJ53.
+R3-R5 required source-vs-output worksheet formula-set comparison with zero additions.
 
-10-objective case:
-- inserted rows29:34;
-- old row29 -> row35;
-- objective slot10 = row34;
-- every inserted row reproduces row28 row-height/style-id pattern;
-- exact row28 merge pattern translated to every inserted row;
-- affected existing merge refs shifted correctly;
-- dimension +6;
-- Print_Area A1:BJ58.
+## 10. CI/runtime evidence
 
-4-objective case must prove unchanged legacy lower-section geometry and A1:BJ52.
+GitHub has no combined status/check evidence for `bc733cfbea81c0cdcdd6161ab707477346c80a90`.
 
-## 11. Exact Part B 6 / 8 measurements
+Local green results, if any, cannot override missing acceptance measurements in the committed source/test design.
 
-For both variants assert:
-- row/cell refs valid, unique, sorted;
-- `<mergeCells count>` attribute equals actual merge count;
-- exact dimension/Print_Area;
-- paperSize9 / portrait / scale75 / centerHorizontal / protection preserved.
+## 11. Proposed D2-WP003-R3-R6
 
-8-competency case:
-- source structural block rows27:30;
-- rows31+ shift +8;
-- cloned blocks rows31:34 and 35:38;
-- old row31 -> row39;
-- each cloned row reproduces corresponding source row height and cell-style-id pattern;
-- exact source-block merge pattern translated into both inserted blocks;
-- affected existing merge refs shifted correctly;
-- dimension +8;
-- Print_Area A1:X43.
+Purpose: finish the test/fingerprint harness only. Do not change the accepted raw mutation architecture and do not build production export code.
 
-6-competency case must prove unchanged legacy totals/signature start row31 and A1:X35.
+Expected write scope only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-## 12. Exact formula-node proof
+No package/dependency change. No binary publication.
 
-The accepted source has zero worksheet formulas.
+Mandatory direction if Owner approves:
+1. replace self-declared Part B classification with source-structure-backed classification evidence or fail closed;
+2. test per-address typed metadata exactly and reconcile it address-by-address to sanitized output;
+3. implement complete header title/label/value/unrelated-header fingerprints;
+4. implement one reusable source-vs-output workbook structural fingerprint helper covering merge set, dimension, cols, row heights, page setup, protection, drawing rels and media inventory;
+5. implement complete target-normalized before/after reference-image inventory equality;
+6. implement raw structural inspectors and assert exact Part A 4/5/10 and Part B 6/8 row/cell/style/height/merge/dimension/page/protection properties;
+7. implement worksheet-only formula-node/address-set extraction and compare source against sanitized + every structural output;
+8. preserve Difficulty blank and no application `Difficulty_*` field changes.
 
-For every source, sanitized disposable output and structural output:
-- inspect worksheet XML parts only;
-- detect formula nodes with a raw pattern equivalent to `<f(?:\s|>)`, not literal `<f>` only;
-- compare formula-node/address sets source vs output;
-- prove zero additions;
-- if source set is zero, every output worksheet formula set must also be zero.
+Do not add more hard-coded count-only/sentinel-only assertions as substitutes for the required measurements.
 
-Do not scan non-worksheet XML and call that scoring-formula proof.
-
-## 13. Difficulty
+## 12. Authorization ledger
 
 ```text
-DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
-```
-
-Do not add/read/invent any application `Difficulty_*` field. Directly prove legacy Difficulty sample cells in the sanitized Part A mapping are blank.
-
-## 14. Mandatory commands
-
-Run exactly:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Before commit only the two authorized files may differ. After commit/push working tree must be clean.
-
-## 15. Forbidden
-
-Do NOT:
-- modify package files or add dependencies;
-- commit/publish XLSX/image/media/ZIP/disposable output;
-- create production sanitizer/renderer;
-- modify export service/normalizer/application code;
-- implement PDF/UI;
-- access/write Live Kintone;
-- deploy;
-- start another Work Package.
-
-## 16. Completion contract
-
-Push only the two authorized proof files.
-
-Final executor status must be exactly one of:
-```text
-FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_XLSX_LIBRARY_PARITY
-BLOCKER_HEADER_VALUE_MAP_UNRESOLVED
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED
-BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE
-```
-
-Antigravity must not declare PASS/CLOSED.
-
-## 17. Authorization ledger
-
-```text
-D2-WP003-R3-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R4-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R5-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R5-SOURCE-20260901-01
+D2-WP003-R3-R5-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -326,4 +174,11 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Authorization is consumed when the R3-R5 proof commit is pushed for independent review or invalidated by any scope/dependency change.
+## 13. Exact next gate
+
+```text
+D2-WP003-R3-R5 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R6 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = STOP / WAIT OWNER
+```
