@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 REVIEWED-NOT-PASS / R3-R15 AUTHORIZED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 REVIEWED-NOT-PASS / R3-R15 REVIEWED-NOT-PASS / R3-R16 PROPOSED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -36,70 +36,48 @@ PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 The R3-R10..R3-R13 classification/evidence-parity corrective chain remains accepted and closed. Do not reopen without proven regression.
 
-## 4. R3-R14 review result
+## 4. R3-R15 review result
 
-Implementation `c67e810bdc43c6a626f73da206cfaf5606ca250c` changed only the two authorized feasibility files.
+Implementation `fb762c47559efc31e8f0e323973284aa83a6a0ad` changed only the two authorized feasibility files.
 
 ```text
-R3-R14_SCOPE_REVIEW = PASS
-R3-R14_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R14_STATUS = NOT PASS / NOT CLOSED
+R3-R15_SCOPE_REVIEW = PASS
+R3-R15_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+R3-R15_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted typed-metadata proof:
-- exact expected Part A/B address sets;
-- duplicate rejection;
-- exact type enum per record;
-- `nonblank` consistency;
-- safe hash shape/absence contract;
-- source-backed derived/reported count comparison;
-- exact source-zero date/boolean assertions without fabricated values;
-- malformed normalized type fail-closed test.
+Accepted R3-R15 validator-shape progress:
+- top-level validator input is explicitly checked;
+- `typeCounts` must be a non-null non-array object;
+- exact keys `string|number|date|boolean|blank` are enforced, no missing/extra keys;
+- all reported counts must be non-negative integers;
+- malformed count shapes deterministically throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
+- negative tests cover extra key, missing/null/array object, and negative/fractional/non-number counts.
 
-Remaining blocker is only validator top-level/count-shape exactness. Extra `typeCounts` keys can currently be ignored, and missing/malformed count objects do not deterministically map to the documented blocker.
+Remaining blocker is proof-only: R3-R15 removed the previously accepted malformed normalized-type negative validator test even though the R3-R15 contract required preserving it. The validator enum-rejection implementation remains present.
 
-## 5. D2-WP003-R3-R15 — AUTHORIZED
+GitHub combined statuses/checks for the implementation commit are empty.
 
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R15
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
-PRIVACY_PURGE_REQUIRED = NO
-MAX_EXECUTOR_STATUS = VALIDATOR_SHAPE_PROOF_PENDING_INDEPENDENT_REVIEW
-```
+## 5. Proposed D2-WP003-R3-R16
 
-R3-R15 is intentionally narrow and may modify only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+R3-R16 is intentionally **TEST-ONLY**: restore the removed malformed normalized-type negative proof.
+
+Expected write only:
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No package/dependency changes and no binary publication.
+Mandatory direction if approved:
+- preserve all current R3-R15 count-shape tests and positive source-backed typed metadata proof;
+- start from real source-backed valid Part B metadata;
+- deep-copy it;
+- mutate one real record to `normalizedType = invalid_type` or another invalid enum value;
+- call the real `validateTypedPrivacyMetadata()`;
+- assert exact blocker `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
+- do not modify feasibility source unless this restored proof exposes a real source regression.
 
-## 6. Mandatory R3-R15 proof
+No Part B classification redesign and no header/workbook/image/insertion/formula closure in R3-R16.
 
-Preserve accepted R3-R14 per-record proof and solve only validator count-shape fail-closed completeness:
-- `typeCounts` must exist as a non-null non-array object;
-- exact keys only: `string|number|date|boolean|blank`;
-- no extra or missing keys;
-- every count is a non-negative integer;
-- derived and reported count objects must exactly equal including key set;
-- missing/malformed input must throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED` deterministically;
-- negative tests must cover extra unexpected key, missing/malformed object and invalid count value;
-- preserve exact source-zero type assertions and do not fabricate source values.
-
-No Part B classification redesign and no header/workbook/image/insertion/formula closure in R3-R15.
-
-## 7. Explicit exclusions
-
-No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
-
-Mandatory commands:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-## 8. Current gate
+## 6. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -108,11 +86,12 @@ D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R15 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R15-SOURCE-20260901-01
+D2-WP003-R3-R15 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R16 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = EXECUTE R3-R15 ONLY / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
