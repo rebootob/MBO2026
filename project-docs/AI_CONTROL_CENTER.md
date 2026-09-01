@@ -5,13 +5,13 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R24 CORRECTIVE / R3-R25 PROPOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R25 CORRECTIVE / R3-R26 PROPOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 2 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 3 OF 20
 CONTROL_PLANE_STOP = D2 PASS/CLOSED OR ROUND 20
 ANTIGRAVITY_AUTO_AUTH = NO
 ```
@@ -21,7 +21,7 @@ ANTIGRAVITY_AUTO_AUTH = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Frozen; Kintone-only ceilings retained |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R24 reviewed CORRECTIVE; R3-R25 proposed |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R25 reviewed CORRECTIVE; R3-R26 proposed |
 | D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Owner requires D2 complete first |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -66,27 +66,26 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 4. Latest D2 review — R3-R24
+## 4. Latest D2 review — R3-R25
 
 ```text
-IMPLEMENTATION_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
+IMPLEMENTATION_COMMIT = 60b24f39b78013d37fe210192bb97876e0184638
 SCOPE_REVIEW = PASS
 SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-PROOF_REVIEW = FAIL / INCOMPLETE
+PROOF_REVIEW = FAIL / REGRESSION + INCOMPLETE
 STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
 Independent findings:
-- exact partKey and source-SHA gates improved and actual target equality is now checked;
-- however worksheet Type is still accepted by suffix `endsWith('/worksheet')`, not exact canonical Type equality;
-- duplicate relationship IDs are not rejected globally before relationship-type filtering;
-- source/observed relationship equality omits exact Type/TargetMode tuple binding;
-- dimension insertion uses any found `<sheetPr>` and does not prove the exact source-equivalent top-level child boundary or that dimension precedes all later worksheet children;
-- mandatory counterfeit-Type, cross-type duplicate-ID and schema-invalid insertion-point negatives are absent;
-- GitHub has no CI/status checks for this implementation commit.
+- exact canonical worksheet Type, global duplicate-ID checking and predecessor/successor schema checks improved;
+- target lexical identity remains fail-open because leading-slash and already-`xl/` aliases normalize to the same ZIP path as the verified source;
+- Relationship and worksheet-child scanners only recognize unprefixed element names and can silently skip prefixed elements instead of proving complete inventory/order;
+- an observed-only leading `sheetPr` exception weakens the required exact source-minus-dimension child-order equality;
+- valid R3-R24 preservation negatives were removed despite explicit regression-preservation requirements, including missing relationship, duplicate target, real target swap, cross-sheet, external/non-worksheet, dimension conflict/multiplicity and malformed-buffer cases;
+- GitHub has no CI/status checks or workflow runs for the implementation commit.
 
-R3-R24 therefore cannot close preservation or D2-WP003.
+R3-R25 therefore cannot close preservation or D2-WP003.
 
 ## 5. Current gate
 
@@ -94,8 +93,8 @@ R3-R24 therefore cannot close preservation or D2-WP003.
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 2 OF 20
+D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 3 OF 20
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
@@ -106,23 +105,23 @@ D3 = HOLD UNTIL D2 PASS / CLOSED
 ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-## 6. Next proposed corrective — R3-R25 / NOT AUTHORIZED
+## 6. Next proposed corrective — R3-R26 / NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R25
-PROPOSED_WORK_PACKAGE_NAME = EXACT RELATIONSHIP-TYPE + SCHEMA-SLOT FAIL-CLOSED CORRECTIVE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R26
+PROPOSED_WORK_PACKAGE_NAME = STRICT TARGET LEXICAL IDENTITY + PROOF REGRESSION RESTORE CORRECTIVE
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
+CORRECTIVE_BASELINE_COMMIT = 60b24f39b78013d37fe210192bb97876e0184638
 PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-R3-R25 direction:
-- exact canonical worksheet relationship Type and exact source/observed relationship tuple;
-- global duplicate relationship-ID rejection before filtering;
-- strict non-external canonical target resolution;
-- derive dimension insertion from exact source top-level child order;
-- observed order must match source with only dimension omitted;
-- add counterfeit worksheet-Type, cross-type duplicate-ID and schema-invalid boundary negatives;
+R3-R26 direction:
+- preserve R3-R25 exact Type/global-ID/source-SHA gates;
+- require exact raw relationship Target lexical equality before ZIP lookup and reject aliases/URI ambiguity;
+- do not treat leading-slash or already-`xl/` target forms as equivalent to verified source lexical targets;
+- parse or explicitly reject namespace-prefixed Relationship and worksheet top-level elements;
+- remove the observed-only `sheetPr` exception and require exact source-minus-dimension top-level order;
+- restore all valid R3-R24 preservation negatives, then retain/add R3-R25/R3-R26 negatives;
 - keep raw `getNoOpParityBuffers()` frozen;
 - no evidence/image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
 
@@ -148,7 +147,8 @@ D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R22-EVIDENCE-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R23-SOURCE-20260901-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 2 OF 20
+D2-WP003-R3-R25-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 3 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
@@ -161,7 +161,7 @@ D3_EXECUTION = HOLD
 
 ```text
 COMPLETE D2 FULLY BEFORE D3.
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R25
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R26
 NEXT_EXECUTOR = NONE
 ANTIGRAVITY = STOP
 D3 = HOLD
