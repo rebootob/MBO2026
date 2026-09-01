@@ -30,64 +30,79 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R9 independent review
+## 3. R3-R9 review truth
 
-R3-R9 scope = PASS. Implementation `068bba6ae8cccc9bcc7fe9c36facf1effa97b63f` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy change; no Privacy Purge required.
+R3-R9 scope = PASS; source acceptance = FAIL. Implementation `068bba6ae8cccc9bcc7fe9c36facf1effa97b63f` added formula node hash only; the required assertion closure was not implemented. No Privacy Purge required.
 
-Actual R3-R9 change:
-- formula helper now adds a SHA-256 node hash to worksheet/cell entries;
-- test file adds only a comment claiming completion.
+Root blocker remains Part B privacy classification: existing classification is hard-coded/self-declared rather than driven or validated by actual SHA-verified source evidence.
 
-R3-R9 source acceptance = FAIL / corrective required. A comment is not acceptance evidence. The prior blockers remain, including hard-coded Part B classification, incomplete typed/header/workbook/image/structural proof, and incomplete formula coverage matrix.
-
-## 4. Exact current gate
+## 4. Exact current gate — R3-R10 AUTHORIZED
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R9 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R10
-PROPOSED_WORK_PACKAGE_NAME = SOURCE-BACKED PART B CLASSIFICATION RESOLUTION
-STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R10 = SOURCE-BACKED PART B CLASSIFICATION RESOLUTION
+STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R10
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R10-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE R3-R10 ONLY / LOW-CREDIT
+MAX_EXECUTOR_STATUS = CLASSIFICATION_PROOF_PENDING_INDEPENDENT_REVIEW
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 5. Why R3-R10 is deliberately narrow
+Read `project-docs/AI_ACTIVE_TASK.md` for the exact contract.
 
-Repeated broad corrective packages produced partial helpers instead of complete measurement. To conserve Antigravity credits, R3-R10 addresses only the root blocker: Part B privacy classification.
+## 5. Exact authorized writes
 
-If approved, Antigravity must:
-- load the exact SHA-verified Part B template;
-- inspect rows 2:34 from actual source;
-- produce safe per-address evidence: merge membership, style id, normalized type, blank/nonblank, safe hash where needed;
-- derive/validate every sensitive/protected-static address from source structure and frozen template roles;
-- test all sensitive/protected addresses and exact disjointness;
-- never treat membership in a broad range or row number as sufficient proof;
-- stop `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` if any address is ambiguous.
-
-Expected writes only:
+Only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-No package change, binary publication, production sanitizer/renderer, PDF/UI, Live Kintone, deploy or next Work Package.
+Read-only: package files, governance docs and exact ignored owner template after SHA verification.
 
-## 6. Authorization ledger
+No XLSX/image/media/disposable-output commit.
+
+## 6. R3-R10 critical rules
+
+R3-R10 addresses ONE blocker only:
+- load exact SHA-verified Part B template;
+- inspect actual rows 2:34;
+- produce source evidence for every classified address: merge membership, style id, normalized type, blank/nonblank, safe hash where useful, explicit role justification;
+- every sensitive/protected-static address must be source-backed;
+- tests iterate all sensitive and all protected addresses and prove exact disjointness;
+- membership in a broad range, row number, or self-declared table is not sufficient proof;
+- any unresolved classification => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+
+Do not attempt typed/header/workbook/image/structural/formula blocker closure in R3-R10.
+
+Still forbidden: production sanitizer/renderer, package changes, binary publication, PDF/UI, Live Kintone, deploy or next Work Package.
+
+## 7. Required commands
+
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+After push STOP at `CLASSIFICATION_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
+
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R9-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R10-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R10-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 7. Exact next action
+## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = NONE
-NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R10
-NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
+NEXT_EXECUTOR = ANTIGRAVITY
+ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R10 SOURCE-BACKED PART B CLASSIFICATION, RUN TEST/AUDIT, PUSH, STOP
+NEXT_CONTROL_STEP = ChatGPT independent review
 ```
