@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R9 AUTHORIZED
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R9 REVIEWED NOT PASS
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R9 AUTHORIZED | Final assertion coverage closure only |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R10 PROPOSED | Root blocker isolated: source-backed Part B privacy classification |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -34,63 +34,15 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R8 independent review truth
+## 3. R3-R9 independent review truth
 
-Scope = PASS. Implementation `e7690e6066839ac8abd53b1d1ac524120ab06e17` changed only the two authorized feasibility files. No package/binary/application/Kintone/deploy path changed; no Privacy Purge required.
+Scope = PASS. Implementation `068bba6ae8cccc9bcc7fe9c36facf1effa97b63f` is exactly one commit above R3-R9 authorization baseline `523d1bde3c50baa8ab532a5dbb67ab9400da2b92` and changed only the two authorized feasibility files. No package/binary/application/Kintone/deploy path changed; no Privacy Purge is required.
 
-Accepted progress:
-- header style id added;
-- package `.rels` tuple inventory added;
-- metadata-address blank checks added;
-- selected raw inspector assertions added.
+Actual progress is limited to formula worksheet/cell/node-hash identity. The test file only adds a completion comment and does not add the missing acceptance assertions.
 
-Source acceptance = FAIL because mandatory proof remains incomplete:
-- Part B classification remains hard-coded instead of source-backed;
-- typed metadata exact set/type/nonblank/date/boolean proof incomplete;
-- strict normalized header type and runtime-value proof incomplete;
-- workbook parity incomplete for dimension, mergeCountAttr source equality, explicit row-height/customHeight, full page/protection and reparse;
-- normalized full reference-image inventory equality absent;
-- structural matrix incomplete;
-- formula node-hash + complete output coverage absent;
-- no GitHub CI/status evidence.
+Source acceptance = FAIL / corrective required. All R3-R8 blockers remain except that the formula helper now carries a node hash. The full formula test matrix is still absent.
 
-## 4. D2-WP003-R3-R9 — AUTHORIZED
-
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R9
-WORK_PACKAGE_NAME = FINAL ASSERTION COVERAGE CLOSURE
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
-PRIVACY_PURGE_REQUIRED = NO
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R9-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-```
-
-Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
-
-Authorized writes ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Package files, governance docs and exact ignored owner templates are read-only for Antigravity.
-
-## 5. R3-R9 acceptance direction
-
-Preserve raw OOXML mutation architecture. Close only the remaining proof gaps:
-- actual SHA-verified source-backed Part B classification or fail closed;
-- exact typed metadata set/duplicate/type/nonblank + number/date/boolean reconciliation;
-- exact normalized header enum + all runtime/merge assertions;
-- every workbook invariant direct SOURCE == ROUND-TRIP;
-- target-normalized complete image anchor/relationship/media inventories;
-- every required raw structural assertion for A4/A5/A10/B6/B8;
-- formula worksheet/cell/node-hash sets for original, sanitized and every structural output.
-
-Critical rule: no new helper/field counts as proof unless its required output is directly asserted against actual source/output in the same commit.
-
-## 6. Current gate
+## 4. Current gate
 
 ```text
 D1 = PASS / CLOSED
@@ -98,33 +50,41 @@ D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R8 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R9 = AUTHORIZED / EXECUTION ACTIVE
-CURRENT_EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY = EXECUTE R3-R9 ONLY / LOW-CREDIT
+D2-WP003-R3-R9 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R10
+PROPOSED_WORK_PACKAGE_NAME = SOURCE-BACKED PART B CLASSIFICATION RESOLUTION
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R9-SOURCE-20260901-01
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-No other Work Package may auto-start.
+No Work Package may auto-start.
 
-## 7. Authorization ledger
+## 5. R3-R10 direction if approved
+
+To conserve Antigravity credits, do not attempt all remaining blockers simultaneously. R3-R10 solves only the root blocker:
+- load exact SHA-verified Part B owner template;
+- derive/validate sensitive and protected-static classification from actual source structure;
+- attach safe evidence per address: merge membership, style id, normalized type, blank/nonblank and safe hash where useful;
+- tests iterate every sensitive and protected address and prove exact disjointness;
+- no broad-range/row-rule-only classification accepted;
+- ambiguous address => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+No package/dependency change or binary publication.
+
+## 6. Authorization ledger
 
 ```text
-D2-WP003-R3-R8-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R9-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R9-SOURCE-20260901-01
+D2-WP003-R3-R9-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_APP794_DEPLOY_AUTH = NONE
-ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
-ACTIVE_PROCESS_UAT_WRITE_AUTH = NONE
-ACTIVE_GROUP_WRITE_AUTH = NONE
-APP53_WRITE_AUTH = NONE
-APP794_WRITE_AUTH = NONE
-APP795_WRITE_AUTH = NONE
-APP801_WRITE_AUTH = NONE
-ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
-PRODUCTION_ROLLBACK_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
 ```
