@@ -1,11 +1,11 @@
-# AI ACTIVE TASK — D2-WP003-R3-R14 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R14 REVIEW / R3-R15 PROPOSED
 
-Mode: **ANTIGRAVITY / TYPED PRIVACY METADATA COMPLETENESS ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
@@ -13,187 +13,103 @@ D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R14
-ACTIVE_WORK_PACKAGE_NAME = TYPED PRIVACY METADATA COMPLETENESS
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+D2-WP003-R3-R14_SCOPE_REVIEW = PASS
+D2-WP003-R3-R14_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R14_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R15
+PROPOSED_WORK_PACKAGE_NAME = TYPED METADATA VALIDATOR FAIL-CLOSED SHAPE COMPLETENESS
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY_ACTION = STOP / WAIT OWNER
+D2-WP003-R3-R14-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. Purpose — ONE DEFERRED FEASIBILITY BLOCKER ONLY
+## 1. R3-R14 scope review — PASS
 
-Complete **typed privacy metadata completeness proof** for existing Part A/B sensitive-address metadata.
-
-Do NOT reopen the accepted Part B privacy classification/evidence-parity chain. Do NOT attempt header parity, workbook parity, image inventory, insertion matrix, formula matrix, production renderer/sanitizer, PDF/UI, Kintone or deploy.
-
-## 2. Exact write scope
-
-Authorized modifications ONLY:
+Implementation commit `c67e810bdc43c6a626f73da206cfaf5606ca250c` is exactly one commit above authorization baseline `560706cf6e0a6f04ed440ec5ff5cd8fb88e32043` and changed only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `package.json`
-- `package-lock.json`
-- governance docs
-- exact ignored owner templates after SHA verification
+No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
 
-No dependency/package change. No XLSX/image/media/output publication.
+## 2. Accepted R3-R14 progress
 
-## 3. Source identity
+The implementation now proves the actual source-backed typed metadata records for Parts A/B materially better:
+- exact sorted metadata address set equals expected sensitive address set;
+- metadata length / unique count / total reconciliation are checked;
+- duplicate addresses are rejected;
+- every record normalized type is constrained to `string|number|date|boolean|blank`;
+- `nonblank` boolean/type consistency is checked;
+- string SHA-256 hash shape is checked;
+- blank/non-string records reject manufactured hashes;
+- derived per-type counts are compared against reported counts in tests;
+- exact owner-source absent `date` and `boolean` occurrences are asserted as zero rather than fabricated;
+- malformed normalized type exercises the real validator fail-closed path.
 
-Use only exact owner templates:
+These accepted per-record proof additions must be preserved.
 
-```text
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
+## 3. Remaining blocker — validator top-level/count shape is not fully fail-closed
 
-Bounded lookup only in repository root, `app info/data/`, and `exp/`.
-If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never print/log/commit raw employee/sample values.
+`validateTypedPrivacyMetadata()` compares derived counts only for the five known keys by iterating:
+`string, number, date, boolean, blank`.
 
-## 4. Accepted R3-R13 work — PRESERVE
+It does not require the reported `typeCounts` object itself to have exactly those five keys and no extras.
 
-Preserve without redesign:
-- Part B source evidence inventory / exact SHA verification;
-- independent role resolution;
-- authoritative-vs-observed style/merge/type/blankness parity;
-- protected-static safe hash parity where applicable;
-- no source-sample hash equality for dynamic values;
-- real fail-closed classification path;
-- post-resolution `SENSITIVE_RANGES_B` compatibility check;
-- dynamic/protected disjointness.
+Concrete malformed counterexample:
+- begin with an otherwise valid `metaResult`;
+- add `typeCounts.unexpected = 1`;
+- all five recognized derived counts still match;
+- current validator returns `true` instead of throwing `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`.
 
-Do not spend credit reopening these accepted areas.
+This violates the R3-R14 contract that per-type occurrence counts derived from metadata must **exactly equal** reported `typeCounts`, and malformed metadata reaching the validator path must fail closed.
 
-## 5. Current typed metadata truth
+The validator also should fail closed deterministically if `typeCounts` is missing/not an object rather than relying on incidental runtime errors.
 
-`getTypedPrivacyMetadata(partKey)` currently emits per-record metadata:
+GitHub combined statuses/checks for implementation commit are empty.
 
-```text
-{ address, normalizedType, nonblank, hash }
-```
+## 4. Proposed R3-R15 — ONE blocker only
 
-and aggregate `typeCounts`, `uniqueCount`, `totalReconciled`.
+Purpose: **close typed metadata validator top-level/count-shape fail-closed completeness without reopening accepted R3-R14 per-record proof.**
 
-Current tests prove aggregate count/reconciliation but do not independently prove every record is exact, unique, enum-valid and internally consistent.
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Critical rule:
-
-```text
-AGGREGATE COUNTS ARE NOT SUFFICIENT.
-EVERY TYPED METADATA RECORD MUST BE EXACT, UNIQUE, ENUM-VALID, AND INTERNALLY CONSISTENT.
-```
-
-## 6. Mandatory R3-R14 proof
-
-For BOTH Part A and Part B:
-
-1. Prove exact metadata address-set equality to the expected sensitive address set:
-   - no missing addresses;
-   - no extra addresses.
-2. Prove no duplicate metadata addresses.
-3. For EVERY metadata record, prove `normalizedType` is exactly one of:
+Mandatory direction if approved:
+1. Preserve all accepted R3-R14 source-backed per-record/address/hash/type proof.
+2. `validateTypedPrivacyMetadata()` must require `typeCounts` to be a valid object with exactly these keys and no extras:
    - `string`
    - `number`
    - `date`
    - `boolean`
    - `blank`
-4. Prove `nonblank` is a boolean and internally consistent:
-   - `blank` => `nonblank === false`
-   - non-blank type => `nonblank === true`
-5. Prove safe hash contract:
-   - nonblank `string` records may carry a lowercase SHA-256 hex identity;
-   - if a nonblank string hash is emitted, it must be exactly 64 lowercase hex chars;
-   - `blank`, `number`, `date`, and `boolean` records must not manufacture a value hash;
-   - no raw source value may be logged or committed.
-6. Preserve aggregate type-count reconciliation as a secondary invariant.
-7. For each normalized type actually present in the exact owner source, prove its records satisfy the per-record contract.
-8. If a normalized type has zero source occurrences, record/assert zero occurrence; DO NOT fabricate synthetic source values merely to force branch coverage.
-9. If malformed metadata can reach the proof/validator path, fail closed using the smallest bounded validation mechanism. Do not broaden into another blocker.
+3. Each reported count must be a non-negative integer.
+4. Derived count object must exactly equal the reported count object, including key set — no ignored extra/missing keys.
+5. Missing/malformed top-level validator input must deterministically throw exactly `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`.
+6. Add real bounded negative tests at minimum for:
+   - extra unexpected `typeCounts` key;
+   - missing/malformed `typeCounts` object.
+7. Preserve exact source-backed zero occurrence assertions; do not fabricate absent types.
+8. Do not touch Part B classification, header/workbook/image/insertion/formula blockers, renderer, PDF/UI, Kintone or deploy.
 
-## 7. Source/helper change policy
+Critical rule:
 
-Prefer tests-only proof if the existing helper already provides enough information.
-
-Modify feasibility source only if a small helper/validator is strictly necessary to make the proof deterministic and fail-closed.
-
-Do NOT refactor unrelated classification/renderer code.
-
-## 8. Mandatory tests
-
-Tests must independently verify at minimum:
-
-- Part A exact sorted metadata address set equals sorted `SENSITIVE_RANGES_A`;
-- Part B exact sorted metadata address set equals sorted `SENSITIVE_RANGES_B`;
-- metadata array length equals unique address count for A and B;
-- every record address is unique;
-- every `normalizedType` is in exact allowed enum;
-- every `nonblank` is boolean and consistent with type;
-- every nonblank string hash, when present, matches `/^[0-9a-f]{64}$/`;
-- every blank/non-string record has no manufactured hash (`null`/documented absence only);
-- per-type occurrence counts derived from metadata exactly equal reported `typeCounts`;
-- `totalReconciled === uniqueCount` remains true;
-- absent source types remain zero and are not fabricated.
-
-Do not use raw source values in assertions/messages.
-
-## 9. Out of scope — DO NOT TOUCH
-
-Do NOT work on:
-- Part B privacy role classification/evidence parity already closed;
-- header fingerprint/export parity;
-- workbook source-vs-roundtrip parity;
-- reference-image full inventory proof;
-- Part A/B insertion structural matrix;
-- formula matrix;
-- production sanitizer/renderer;
-- export service/normalizer/application code;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- next Work Package.
-
-## 10. Mandatory commands
-
-Run exactly:
 ```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
+VALIDATOR MUST REJECT MALFORMED COUNT SHAPE.
+KNOWN-KEY MATCHES ARE NOT EXACT OBJECT EQUALITY WHEN EXTRA/MISSING KEYS EXIST.
 ```
 
-Before commit only the two authorized feasibility files may differ. After commit/push working tree must be clean.
-
-## 11. Completion contract
-
-Push only the authorized feasibility file(s), maximum these two:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Final executor status must be exactly one of:
-```text
-TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED
-```
-
-Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
-
-## 12. Authorization ledger
+## 5. Authorization ledger
 
 ```text
-D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R14-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
+D2-WP003-R3-R14-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -206,4 +122,11 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Authorization is consumed when the R3-R14 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
+## 6. Exact next gate
+
+```text
+D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R15 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = STOP / WAIT OWNER
+```
