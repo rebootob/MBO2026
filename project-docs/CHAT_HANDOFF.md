@@ -1,19 +1,31 @@
 # MBO2026 — CHAT HANDOFF
 
+> Canonical continuation document for a new ChatGPT conversation.  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
-Repository/Kintone accepted evidence wins over embedded checkpoints. Fresh-fetch before acting.
+**Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.**
 
-## 1. Operating model
+## 1. Operating model / non-negotiable governance
 
 ```text
-ChatGPT = Control Plane / Architect / Independent Reviewer
-Antigravity = execution plane only when genuinely necessary
+ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
+Antigravity = Execution Plane only for important/necessary implementation
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+Repository + accepted Live evidence = operational truth
+CONFIRMED_BASELINE = durable business/security truth
 ```
 
-No Live Kintone write/deploy/ACL/group/schema/record/session/password operation without exact explicit authorization. Never reuse consumed authorization.
+Rules:
+- do not ask the Owner to repeat history already in Git;
+- do not broad-scan historical trees by default;
+- no false PASS; executor cannot self-certify independent PASS;
+- no Live Kintone POST/PUT/DELETE/deploy/ACL/group/schema/record/session/password mutation without exact explicit Owner authorization;
+- never widen or reuse consumed one-shot authorization;
+- no automatic rollback;
+- D3 must remain HOLD until D2 is fully PASS/CLOSED;
+- do not reopen accepted D1/D2 foundations without proven regression.
 
 Owner priority:
 
@@ -21,10 +33,102 @@ Owner priority:
 COMPLETE D2 FULLY BEFORE D3.
 ```
 
-## 2. Accepted foundations
+## 2. Startup order for a new chat
+
+Read in this exact order:
+1. fresh-fetch current HEAD of `ai/antigravity-wp002c`;
+2. `project-docs/CHAT_HANDOFF.md` — this file;
+3. `project-docs/AI_CONTROL_CENTER.md`;
+4. `project-docs/AI_ACTIVE_TASK.md`;
+5. `project-docs/AI_DOCUMENT_INDEX.md`;
+6. `project-docs/00_MASTER_JOBLIST.md` when D1–D7 completeness matters;
+7. `project-docs/EXCEL_EXPORT.md` for current D2 work;
+8. `project-docs/CONFIRMED_BASELINE/README.md` and only directly relevant Baselines;
+9. exact current source/tests/diff only when needed for the next decision.
+
+Use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` as the copy/paste first message for a new chat.
+
+## 3. D1 — frozen PASS/CLOSED
 
 ```text
 D1 = PASS / CLOSED
+FINAL_D1_SECURITY_REVIEW = PASS
+APP794_LIVE_REVISION = 67
+RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
+HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
+CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT APP794 ASSIGNEE
+SHARED_APPROVER_AUTHORITY = DENIED
+```
+
+Accepted ceilings:
+
+```text
+SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
+DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+```
+
+Pattama interactive login remains credential-limited/non-blocking. Do not reset another person's native Kintone password solely for UAT.
+
+Canonical Live Record #12 remains the accepted D1 reference:
+
+```text
+Employee_Code = 0113
+Requester = papatchaya
+Status = 03 Manager Objective Review
+Manager / Assignee = pattama
+Topology = M1_ONLY
+```
+
+No synthetic D1 test record remains.
+
+## 4. Employee lifecycle policy — confirmed
+
+Canonical Baseline: `CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+
+```text
+Employee_Code = stable person identity
+App53 = current employee/org/position truth
+App795 = current routing configuration for fresh resolution
+App794 = annual historical snapshot + current workflow truth
+Current approval authority = native current Assignee
+App53/App795 change != automatic retroactive App794 rewrite
+Mid-cycle change = explicit HR-controlled lifecycle amendment + audit
+```
+
+D4 owns lifecycle operations. D5 must resolve fresh target-year identity/routing and must not carry stale requester/route/workflow snapshots. D6 must prove lifecycle/security regression. This policy does not reopen D1 by itself.
+
+## 5. D1–D7 current scoreboard
+
+| ID | Status | Current checkpoint |
+|---|---|---|
+| D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
+| D2 | 🟠 IN PROGRESS | R3-R21 reviewed; R3-R22 TEST-ONLY corrective proposed |
+| D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED |
+| D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
+| D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route + identity required |
+| D6 | 🔴 PENDING | Integrated E2E/security/lifecycle regression |
+| D7 | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
+
+## 6. D2 authority split / frozen source identity
+
+```text
+LEGACY_TEMPLATE = VISUAL / LAYOUT AUTHORITY
+CONFIRMED_BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
+SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
+```
+
+Exact owner-template SHA-256:
+
+```text
+PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+```
+
+Do not commit owner employee-bearing source binaries. Privacy purge is not currently required.
+
+## 7. D2 accepted foundations — do not reopen without proven regression
+
+```text
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
@@ -37,14 +141,14 @@ HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-Accepted template SHA-256:
+Renderer authority already frozen:
+- template-preserving approach, not rebuild from scratch;
+- Part A legacy base 4 objectives, expandable through 10 by structural insertion;
+- Part B legacy base 6 competencies, expandable to 8 by complete-block insertion;
+- 0 legacy formulas; application scoring/projection is calculation authority;
+- PDF target: Part A A3 landscape, Part B A4 portrait/protected.
 
-```text
-PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
-
-## 3. R3-R21 reviewed result
+## 8. Latest reviewed D2 work — R3-R21
 
 ```text
 IMPLEMENTATION_COMMIT = 1587b20b3920618b79b335c66bbdde1778570626
@@ -55,20 +159,22 @@ D2-WP003-R3-R21_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted:
-- raw no-op buffers are direct `xlsx-populate` `outputAsync()` results with no dimension/source repair;
-- validator preserves template-source blocker and normalizes all other parity errors to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- actual dimension-tag fingerprinting remains strict;
-- per-sheet print-area binding remains exact;
-- restored second-sheet `colsHash` proof remains present.
+Accepted implementation from R3-R21:
+- `getNoOpParityBuffers()` returns raw direct `xlsx-populate` `outputAsync()` buffers; source-to-output `<dimension>` repair is removed;
+- `validateWorkbookParity()` preserves `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` and normalizes all other parity-path errors to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- `getWorkbookFingerprint()` uses actual `<dimension .../>` evidence only, no row/cell synthesis;
+- print area is bound by exact `localSheetId` and actual zero-based worksheet index, with no cross-sheet fallback;
+- Part B `Sheet1.colsHash` negative proof exists.
 
-Remaining proof defect:
-- R3-R21 mutation-specific negatives are based on raw `fpOutB/outBufB`. That baseline is only conditionally valid; when raw roundtrip itself has a dimension blocker, mutation tests can reject for that pre-existing defect instead of the mutation under test.
-- actual `<dimension>` removal also starts from raw `outBufB`; if the tag is already absent, the removal does nothing and the rejection is not isolated proof.
+Remaining blocker is **test-proof isolation**:
+- mutation-specific tests still use raw Part B `fpOutB/outBufB` as their baseline;
+- raw Part B may itself be parity-invalid; a test can therefore reject on a pre-existing dimension mismatch instead of the mutation under test;
+- actual dimension-tag removal from raw output is not isolated proof when that tag may already be absent;
+- raw no-op result must be pinned separately from mutation-specific negative proof.
 
-GitHub CI/status checks are absent; non-blocking missing CI evidence for this bounded source review.
+GitHub CI/status checks are absent; record as missing CI evidence, non-blocking for this bounded source/proof review.
 
-## 4. Exact current gate
+## 9. Exact current gate
 
 ```text
 D2 = IN PROGRESS
@@ -78,11 +184,12 @@ ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+PRIVACY_PURGE_REQUIRED = NO
 ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 5. Next proposed bounded corrective — NOT AUTHORIZED
+## 10. Proposed next WP — R3-R22 / NOT AUTHORIZED
 
 ```text
 PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
@@ -91,27 +198,61 @@ PROPOSED_SCOPE = TEST-ONLY
 PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-R3-R22 intent:
-- keep R3-R21 source implementation read-only;
-- use independently valid exact-source/source-backed fingerprint as baseline for wrong print area, blank dimension, `Sheet1.colsHash`, malformed serialization and other mutation-specific negative tests;
-- use a source buffer known to contain an actual `<dimension>` tag for the in-memory tag-removal proof;
-- separately evaluate raw Part A and Part B no-op outputs honestly through the real validator with no repair;
-- keep mutation-specific proof isolated from any raw no-op blocker;
-- no image/insertion/formula/renderer/PDF/UI/Kintone/deploy/D3 work.
+If Owner authorizes R3-R22:
+- fresh-fetch current HEAD first;
+- source file `scripts/export/mbo-xlsx-ooxml-feasibility.js` should remain READ-ONLY;
+- expected write scope should be only `tests/mbo-xlsx-ooxml-feasibility.test.js` unless a proven blocker invalidates the authorization;
+- start mutation-specific negative tests from exact-source/source-backed fingerprints known valid through the real validator;
+- run dimension-tag removal from exact source buffer known to contain the tag;
+- separately pin raw Part A / Part B main / Part B `Sheet1` dimension presence/absence and real validator result with no repair;
+- isolate malformed/serialization normalization proof from any pre-existing raw parity defect;
+- do not start preservation strategy, image closure, insertion closure, formula authority, renderer, PDF, Kintone, deploy, D3 or R3-R23.
 
-## 6. Authorization ledger
+## 11. D2 remaining closure path after workbook parity proof isolation
+
+1. If raw no-op degradation is proven, separate minimal preservation strategy WP.
+2. Reference-image inventory/removal/preservation closure.
+3. Part A objective insertion structural matrix closure.
+4. Part B competency insertion structural matrix closure.
+5. Formula/no-formula authority closure.
+6. Production sanitizer + XLSX renderer from secured export projection.
+7. Combined Part A + Part B Excel parity.
+8. PDF generation/parity — Part A A3 landscape / Part B A4 portrait.
+9. Export authorization/security/privacy regression.
+10. Final D2 independent closure review.
+
+Do not auto-start any item.
+
+## 12. Authorization ledger
 
 ```text
-D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
+D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
+D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
+D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
+D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
+ACTIVE_APP794_DEPLOY_AUTH = NONE
+APP53_WRITE = NO
+APP794_WRITE = NO
+APP795_WRITE = NO
+APP801_WRITE = NO
+ACL_PROCESS_WRITE = NO
+KINTONE_CUSTOMIZATION_DEPLOY = NO
+LIVE_UAT = NO
+ROLLBACK = NO
+D3_EXECUTION = HOLD
 ```
 
-## 7. Exact next action
+## 13. User shorthand
+
+`review` → fresh-fetch current HEAD, read current Handoff + Control Center + authorizing Active Task, compare exact authorization baseline → implementation, inspect exact diff/tests/evidence, independently decide PASS/CORRECTIVE/BLOCKED.
+
+`ต่อ` / `ต่อไป` → fresh-fetch current HEAD + current gate, choose smallest safe next action; do not spend Antigravity unnecessarily.
+
+`อนุมัติ ...` → create a new exact one-shot authorization only; never widen/reuse an old authorization.
+
+## 14. Exact next action
 
 ```text
 NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
