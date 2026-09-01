@@ -1129,13 +1129,26 @@ export async function getNoOpParityBuffers() {
 
 export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, sourceBufOverride = null) {
   try {
+    if (partKey !== 'A' && partKey !== 'B') {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const expectedSha = partKey === 'A' ? EXPECTED_PART_A_SHA : EXPECTED_PART_B_SHA;
     let sourceBuf = sourceBufOverride;
-    if (!sourceBuf) {
+
+    if (sourceBuf) {
+      if (!Buffer.isBuffer(sourceBuf)) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+      const sourceSha = crypto.createHash('sha256').update(sourceBuf).digest('hex');
+      if (sourceSha !== expectedSha) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+    } else {
       const found = findLocalSourceTemplates();
       if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
       const sourceFile = partKey === 'A' ? found.partA : found.partB;
-      const expectedSha = partKey === 'A' ? EXPECTED_PART_A_SHA : EXPECTED_PART_B_SHA;
       sourceBuf = fs.readFileSync(sourceFile);
       const sourceSha = crypto.createHash('sha256').update(sourceBuf).digest('hex');
       if (sourceSha !== expectedSha) {
@@ -1143,7 +1156,7 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       }
     }
 
-    if (!Buffer.isBuffer(rawObservedBuf) || !Buffer.isBuffer(sourceBuf)) {
+    if (!Buffer.isBuffer(rawObservedBuf)) {
       throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
     }
 
@@ -1162,40 +1175,81 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
     const obsRelsXmlFile = wbObserved._zip.files['xl/_rels/workbook.xml.rels'];
     const obsRelsXml = obsRelsXmlFile ? await obsRelsXmlFile.async('string') : '';
 
-    function parseRelMap(relsXml) {
+    function parseWorksheetRelMap(relsXml) {
       const map = {};
-      const matches = [...relsXml.matchAll(/<Relationship Id="([^"]+)" Type="[^"]*" Target="([^"]+)"/g)];
-      for (const m of matches) {
-        let target = m[2];
-        if (!target.startsWith('xl/')) {
-          target = 'xl/' + target.replace(/^\//, '');
+      const seenTargets = new Set();
+      const relMatches = [...relsXml.matchAll(/<Relationship\s+[^>]*\/?>/g)];
+
+      for (const m of relMatches) {
+        const tag = m[0];
+        const idMatch = tag.match(/\bId="([^"]+)"/);
+        const typeMatch = tag.match(/\bType="([^"]+)"/);
+        const targetMatch = tag.match(/\bTarget="([^"]+)"/);
+        const isExternal = /\bTargetMode="External"/i.test(tag);
+
+        if (idMatch && typeMatch && targetMatch) {
+          const rId = idMatch[1];
+          const type = typeMatch[1];
+          let target = targetMatch[1];
+
+          if (type.endsWith('/worksheet') && !isExternal) {
+            if (map[rId]) {
+              // Duplicate relationship ID
+              throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+            }
+            if (!target.startsWith('xl/')) {
+              target = 'xl/' + target.replace(/^\//, '');
+            }
+            if (seenTargets.has(target)) {
+              // Duplicate normalized target
+              throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+            }
+            seenTargets.add(target);
+            map[rId] = target;
+          }
         }
-        map[m[1]] = target;
       }
       return map;
     }
 
-    const srcRelMap = parseRelMap(srcRelsXml);
-    const obsRelMap = parseRelMap(obsRelsXml);
+    const srcRelMap = parseWorksheetRelMap(srcRelsXml);
+    const obsRelMap = parseWorksheetRelMap(obsRelsXml);
 
-    function parseSheets(wbXml) {
+    function parseSheets(wbXml, relMap) {
       const sheets = [];
-      const matches = [...wbXml.matchAll(/<sheet [^>]*name="([^"]+)"[^>]*r:id="([^"]+)"[^>]*>/g)];
-      for (const m of matches) {
-        sheets.push({ name: m[1].replaceAll('&amp;', '&'), rId: m[2] });
+      const sheetMatches = [...wbXml.matchAll(/<sheet\s+[^>]*\/?>/g)];
+
+      for (const m of sheetMatches) {
+        const tag = m[0];
+        const nameMatch = tag.match(/\bname="([^"]+)"/);
+        const rIdMatch = tag.match(/\br:id="([^"]+)"/);
+
+        if (!nameMatch || !rIdMatch) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        const name = nameMatch[1].replaceAll('&amp;', '&');
+        const rId = rIdMatch[1];
+        const target = relMap[rId];
+
+        if (!target) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        sheets.push({ name, rId, target });
       }
       return sheets;
     }
 
-    const srcSheets = parseSheets(srcWbXml);
-    const obsSheets = parseSheets(obsWbXml);
+    const srcSheets = parseSheets(srcWbXml, srcRelMap);
+    const obsSheets = parseSheets(obsWbXml, obsRelMap);
 
     if (srcSheets.length === 0 || srcSheets.length !== obsSheets.length) {
       throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
     }
 
     for (let i = 0; i < srcSheets.length; i++) {
-      if (srcSheets[i].name !== obsSheets[i].name) {
+      if (srcSheets[i].name !== obsSheets[i].name || srcSheets[i].rId !== obsSheets[i].rId || srcSheets[i].target !== obsSheets[i].target) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
       }
     }
@@ -1206,15 +1260,8 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       const srcSheet = srcSheets[i];
       const obsSheet = obsSheets[i];
 
-      const srcFileName = srcRelMap[srcSheet.rId];
-      const obsFileName = obsRelMap[obsSheet.rId];
-
-      if (!srcFileName || !obsFileName) {
-        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-      }
-
-      const srcFile = wbSource._zip.files[srcFileName];
-      const obsFile = wbPreserved._zip.files[obsFileName];
+      const srcFile = wbSource._zip.files[srcSheet.target];
+      const obsFile = wbPreserved._zip.files[obsSheet.target];
 
       if (!srcFile || !obsFile) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
@@ -1239,11 +1286,21 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
       } else {
-        if (!obsXml.includes('<worksheet')) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        // Schema-valid insertion point: after optional <sheetPr> and before later worksheet children
+        let insertionIndex = -1;
+        const sheetPrMatch = obsXml.match(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/);
+        if (sheetPrMatch) {
+          insertionIndex = sheetPrMatch.index + sheetPrMatch[0].length;
+        } else {
+          const worksheetMatch = obsXml.match(/<worksheet[^>]*>/);
+          if (!worksheetMatch) {
+            throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+          }
+          insertionIndex = worksheetMatch.index + worksheetMatch[0].length;
         }
-        obsXml = obsXml.replace(/(<worksheet[^>]*>)/, `$1\n  ${srcDimTag}`);
-        wbPreserved._zip.file(obsFileName, obsXml);
+
+        obsXml = obsXml.slice(0, insertionIndex) + '\n  ' + srcDimTag + obsXml.slice(insertionIndex);
+        wbPreserved._zip.file(obsSheet.target, obsXml);
       }
     }
 
