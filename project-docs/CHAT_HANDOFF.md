@@ -102,7 +102,7 @@ D4 owns lifecycle operations. D5 must resolve fresh target-year identity/routing
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | R3-R21 reviewed; R3-R22 TEST-ONLY corrective proposed |
+| D2 | 🟠 IN PROGRESS | R3-R22 PASS/CLOSED; raw dimension loss proven; R3-R23 preservation path proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route + identity required |
@@ -134,6 +134,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -148,29 +149,28 @@ Renderer authority already frozen:
 - 0 legacy formulas; application scoring/projection is calculation authority;
 - PDF target: Part A A3 landscape, Part B A4 portrait/protected.
 
-## 8. Latest reviewed D2 work — R3-R21
+## 8. Latest reviewed D2 work — R3-R22
 
 ```text
-IMPLEMENTATION_COMMIT = 1587b20b3920618b79b335c66bbdde1778570626
-EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
-D2-WP003-R3-R21_SCOPE_REVIEW = PASS
-D2-WP003-R3-R21_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-D2-WP003-R3-R21_STATUS = NOT PASS / NOT CLOSED
+TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
+D2-WP003-R3-R22_SCOPE_REVIEW = PASS
+D2-WP003-R3-R22_SOURCE_REVIEW = PASS
+D2-WP003-R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
+D2-WP003-R3-R22_STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted implementation from R3-R21:
-- `getNoOpParityBuffers()` returns raw direct `xlsx-populate` `outputAsync()` buffers; source-to-output `<dimension>` repair is removed;
-- `validateWorkbookParity()` preserves `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` and normalizes all other parity-path errors to `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
-- `getWorkbookFingerprint()` uses actual `<dimension .../>` evidence only, no row/cell synthesis;
-- print area is bound by exact `localSheetId` and actual zero-based worksheet index, with no cross-sheet fallback;
-- Part B `Sheet1.colsHash` negative proof exists.
+Accepted R3-R22 proof:
+- exact owner-template SHA identity matched for Part A and Part B;
+- mandatory feasibility tests passed `8/8`; `npm audit --omit=dev` reported `0` vulnerabilities;
+- mutation-specific negatives use independently valid exact-source `fpOrigB/origBufB` baselines;
+- exact-source Part A and Part B pass the real validator;
+- raw direct `xlsx-populate.outputAsync()` removes `<dimension>` from Part A main, Part B main and Part B `Sheet1`;
+- raw Part A and Part B fail closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- raw evidence remains unrepaired and privacy-safe evidence contains no owner binary/raw value.
 
-Remaining blocker is **test-proof isolation**:
-- mutation-specific tests still use raw Part B `fpOutB/outBufB` as their baseline;
-- raw Part B may itself be parity-invalid; a test can therefore reject on a pre-existing dimension mismatch instead of the mutation under test;
-- actual dimension-tag removal from raw output is not isolated proof when that tag may already be absent;
-- raw no-op result must be pinned separately from mutation-specific negative proof.
+R3-R22 closes proof isolation only. The proven raw dimension loss requires a separate minimal preservation strategy before later renderer work.
 
 GitHub CI/status checks are absent; record as missing CI evidence, non-blocking for this bounded source/proof review.
 
@@ -179,9 +179,10 @@ GitHub CI/status checks are absent; record as missing CI evidence, non-blocking 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
@@ -189,28 +190,29 @@ ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 10. Proposed next WP — R3-R22 / NOT AUTHORIZED
+## 10. Proposed next WP — R3-R23 / NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-If Owner authorizes R3-R22:
+If Owner authorizes R3-R23:
 - fresh-fetch current HEAD first;
-- source file `scripts/export/mbo-xlsx-ooxml-feasibility.js` should remain READ-ONLY;
-- expected write scope should be only `tests/mbo-xlsx-ooxml-feasibility.test.js` unless a proven blocker invalidates the authorization;
-- start mutation-specific negative tests from exact-source/source-backed fingerprints known valid through the real validator;
-- run dimension-tag removal from exact source buffer known to contain the tag;
-- separately pin raw Part A / Part B main / Part B `Sheet1` dimension presence/absence and real validator result with no repair;
-- isolate malformed/serialization normalization proof from any pre-existing raw parity defect;
-- do not start preservation strategy, image closure, insertion closure, formula authority, renderer, PDF, Kintone, deploy, D3 or R3-R23.
+- expected write scope is only the existing feasibility source and test files;
+- keep `getNoOpParityBuffers()` frozen as raw direct evidence with no repair;
+- add a separate fail-closed preservation path that maps every worksheet by exact name/order/relationship target;
+- insert only the exact missing source dimension tag at a schema-valid position;
+- prove raw buffers remain unchanged and preserved buffers pass the real validator;
+- prove no fingerprint evidence changes except exact worksheet dimensions;
+- fail closed on missing/multiple/conflicting dimension tags or ambiguous/cross-sheet mapping;
+- do not start image/insertion/formula/renderer/PDF/Kintone/deploy/D3 or R3-R24.
 
-## 11. D2 remaining closure path after workbook parity proof isolation
+## 11. D2 remaining closure path after R3-R22 proof isolation
 
-1. If raw no-op degradation is proven, separate minimal preservation strategy WP.
+1. Separate minimal exact-dimension preservation path.
 2. Reference-image inventory/removal/preservation closure.
 3. Part A objective insertion structural matrix closure.
 4. Part B competency insertion structural matrix closure.
@@ -230,7 +232,10 @@ D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
+D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
+D2-WP003-R3-R22-EVIDENCE-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -255,7 +260,7 @@ D3_EXECUTION = HOLD
 ## 14. Exact next action
 
 ```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R23
 NEXT_EXECUTOR = NONE
 ANTIGRAVITY = STOP
 D3 = HOLD

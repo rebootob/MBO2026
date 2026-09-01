@@ -72,6 +72,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -82,27 +83,33 @@ Accepted owner-template SHA-256:
 PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
-LATEST REVIEW — R3-R21
-IMPLEMENTATION_COMMIT = 1587b20b3920618b79b335c66bbdde1778570626
-EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
-R3-R21_SCOPE_REVIEW = PASS
-R3-R21_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R21_STATUS = NOT PASS / NOT CLOSED
+LATEST REVIEW — R3-R22
+TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
+R3-R22_SCOPE_REVIEW = PASS
+R3-R22_SOURCE_REVIEW = PASS
+R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
+R3-R22_STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 
-Accepted R3-R21 source implementation:
+Accepted R3-R22 proof:
 - getNoOpParityBuffers() returns direct raw xlsx-populate outputAsync() buffers; no source-to-output dimension repair.
 - validateWorkbookParity() preserves BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE and normalizes all other parity-path failures to BLOCKER_WORKBOOK_PARITY_UNRESOLVED.
 - getWorkbookFingerprint() uses actual <dimension .../> tag/absence only.
 - print area binds by exact localSheetId and actual zero-based worksheet index with no cross-sheet fallback.
 - Part B Sheet1.colsHash negative proof is present.
+- mutation negatives use exact-source fpOrigB/origBufB baselines.
+- exact source Part A/Part B validates TRUE.
+- raw Part A, Part B main and Part B Sheet1 lose dimension tags.
+- raw Part A/Part B fail closed with BLOCKER_WORKBOOK_PARITY_UNRESOLVED.
+- tests pass 8/8 and npm audit reports 0 vulnerabilities.
 
 REMAINING BLOCKER
-Mutation-specific negative tests use raw Part B fpOutB/outBufB as baseline. Raw Part B may already be parity-invalid, so tests can reject on a pre-existing dimension mismatch instead of the intended mutation. Actual dimension-tag removal must start from a buffer known to contain the source tag. Raw no-op result must be pinned separately from mutation-specific proof.
+R3-R22 closes proof isolation. Raw round-trip dimension loss is now proven and requires a separate preservation path before later renderer work.
 
 CURRENT GATE
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -111,19 +118,19 @@ ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD UNTIL D2 PASS / CLOSED
 
 NEXT PROPOSED WP — NOT AUTHORIZED
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 
-R3-R22 intended direction:
-- source implementation stays read-only;
-- expected write scope = tests/mbo-xlsx-ooxml-feasibility.test.js only unless a proven blocker invalidates authorization;
-- mutation-specific negatives start from independently valid exact-source/source-backed fingerprints;
-- actual dimension removal starts from exact source buffer known to contain the tag;
-- raw Part A / Part B main / Part B Sheet1 dimension presence/absence and real validator result are evaluated separately with no repair;
-- deterministic normalization proof is isolated from any pre-existing raw parity defect;
-- do not start preservation strategy, image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
+R3-R23 intended direction:
+- keep getNoOpParityBuffers() frozen as raw unrepaired evidence;
+- expected write scope = existing feasibility source and test only;
+- add a separate exact-dimension preservation path;
+- map every worksheet by exact name/order/relationship target with no fallback;
+- copy only exact missing source dimension tags and fail closed on ambiguity/conflict;
+- prove preserved Part A/Part B pass the real validator with no non-dimension fingerprint changes;
+- do not start image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
 
 D1-D7 SCOREBOARD
 D1 = PASS / CLOSED
@@ -157,10 +164,10 @@ Answer in Thai with:
 2. D1-D7 scoreboard;
 3. D1 frozen closure + ceilings;
 4. current D2 accepted foundations;
-5. R3-R21 reviewed result and remaining blocker;
+5. R3-R22 accepted proof and proven raw dimension blocker;
 6. current authorization ledger;
-7. R3-R22 proposed TEST-ONLY status;
-8. exact next action without auto-starting R3-R22 or D3.
+7. R3-R23 proposed preservation status;
+8. exact next action without auto-starting R3-R23 or D3.
 ```
 
 Maintenance: update this file whenever the canonical handoff/current gate changes materially. It is a bootstrap convenience, not execution evidence.

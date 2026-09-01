@@ -5,7 +5,7 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-01 ICT — D2 IN PROGRESS / R3-R22 PROPOSED TEST-ONLY
+> Updated: 2026-09-01 ICT — D2 IN PROGRESS / R3-R22 PASS-CLOSED / R3-R23 PROPOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -14,7 +14,7 @@ Fresh-fetch current branch HEAD before any status, review or execution decision.
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee; documented Kintone-only ceilings retained |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R21 reviewed; R3-R22 test-only proof-isolation corrective proposed |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R22 PASS/CLOSED; raw dimension loss proven; R3-R23 preservation proposed |
 | D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Owner requires D2 complete first |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -48,6 +48,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -62,28 +63,26 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 4. Latest D2 review — R3-R21
+## 4. Latest D2 review — R3-R22
 
 ```text
-IMPLEMENTATION_COMMIT = 1587b20b3920618b79b335c66bbdde1778570626
-EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
+TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-STATUS = NOT PASS / NOT CLOSED
+SOURCE_REVIEW = PASS
+RUNTIME_EVIDENCE_REVIEW = PASS
+STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted source implementation:
-- raw no-op buffers are direct `xlsx-populate` `outputAsync()` results with no source structural repair;
-- deterministic workbook blocker normalization is restored;
-- actual `<dimension>` tag/absence fingerprinting remains strict;
-- exact per-sheet `localSheetId` print-area binding remains;
-- `Sheet1.colsHash` proof remains present.
+Accepted proof:
+- exact Part A/Part B template SHA identity matched; tests passed `8/8`; dependency audit found `0` vulnerabilities;
+- mutation-specific negatives use valid exact-source baselines and actual dimension removal starts from a proven source tag;
+- raw direct output loses dimension evidence for Part A main, Part B main and Part B `Sheet1`;
+- exact-source validators pass while raw Part A/Part B fail closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- raw evidence remains unrepaired and evidence publication is privacy-safe.
 
-Remaining defect is proof isolation:
-- mutation-specific negative tests can start from a raw Part B baseline that may already be parity-invalid;
-- therefore rejection may come from a pre-existing raw dimension mismatch rather than the intended mutation;
-- raw no-op result and mutation-specific evidence must be separated and pinned independently.
+R3-R22 closes proof isolation only. D2-WP003 remains open because the raw dimension defect now requires a separate preservation path.
 
 ## 5. Current gate
 
@@ -91,9 +90,10 @@ Remaining defect is proof isolation:
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
@@ -101,27 +101,27 @@ D3 = HOLD UNTIL D2 PASS / CLOSED
 ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-## 6. Next proposed D2 corrective — NOT AUTHORIZED
+## 6. Next proposed D2 corrective — R3-R23 / NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ```
 
-R3-R22 direction:
-- source implementation from R3-R21 stays read-only;
-- mutation-specific negatives use independently valid exact-source/source-backed baselines;
-- actual dimension-removal starts from source buffer known to contain the tag;
-- raw Part A / Part B main / Part B `Sheet1` dimension presence and real validator result are evaluated separately, with no repair;
-- deterministic normalization proof is isolated from pre-existing raw parity defects;
+R3-R23 direction:
+- raw `getNoOpParityBuffers()` remains frozen and unrepaired;
+- add a separate preservation path in the existing feasibility source;
+- map every worksheet by exact name/order/relationship target with no fallback;
+- insert only exact missing source dimension tags and fail closed on ambiguity/conflict;
+- prove preserved Part A/Part B pass the real validator and no non-dimension fingerprint changes;
 - no image/insertion/formula/renderer/PDF/UI/Kintone/deploy/D3 work.
 
 ## 7. D2 remaining closure path
 
-After workbook-wide parity truth/proof isolation is independently accepted:
-1. if raw no-op degradation is proven, authorize a separate minimal preservation-strategy WP;
+After R3-R22 proof isolation:
+1. separate minimal exact-dimension preservation path;
 2. reference-image inventory/removal/preservation closure;
 3. Part A objective insertion structural matrix closure;
 4. Part B competency insertion structural matrix closure;
@@ -147,7 +147,10 @@ D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R20-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
 D2-WP003-R3-R21-SOURCE-20260901-01 = CONSUMED / DO NOT REUSE
+D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
+D2-WP003-R3-R22-EVIDENCE-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3_EXECUTION = HOLD

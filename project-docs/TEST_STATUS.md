@@ -72,6 +72,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -86,14 +87,15 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 6. Latest D2 review — R3-R21
+## 6. Latest D2 review — R3-R22
 
 ```text
-IMPLEMENTATION_COMMIT = 1587b20b3920618b79b335c66bbdde1778570626
-EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
-R3-R21_SCOPE_REVIEW = PASS
-R3-R21_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R21_STATUS = NOT PASS / NOT CLOSED
+TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
+R3-R22_SCOPE_REVIEW = PASS
+R3-R22_SOURCE_REVIEW = PASS
+R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
+R3-R22_STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
@@ -103,38 +105,46 @@ Accepted implementation evidence:
 - actual worksheet `<dimension>` tag/absence is the fingerprint evidence; no row/cell synthesis;
 - per-sheet print-area binding uses exact `localSheetId` and actual worksheet index;
 - Part B `Sheet1.colsHash` negative proof is present.
+- source-backed mutation proof isolation is present;
+- exact source Part A/Part B validates TRUE;
+- raw Part A/Part B lose dimensions and fail closed.
 
 GitHub CI/status checks are absent; record as missing CI evidence, non-blocking for this bounded review.
 
-## 7. R3-R21 remaining proof blocker
-
-Mutation-specific negative tests are not fully isolated:
-- they use raw Part B `fpOutB/outBufB` as baseline;
-- raw Part B is allowed by R3-R21 to be parity-clean OR fail-closed;
-- if raw Part B already has a dimension mismatch, wrong print-area / `Sheet1.colsHash` / malformed-field tests can reject for the pre-existing defect instead of the intended mutation;
-- actual dimension-tag removal from raw output can be a no-op if the tag is already absent.
-
-Therefore R3-R21 cannot close workbook-wide parity proof yet.
-
-## 8. Proposed R3-R22 test state — NOT AUTHORIZED
+## 7. R3-R22 accepted runtime result
 
 ```text
-D2-WP003-R3-R22 = PROPOSED / TEST-ONLY / NOT AUTHORIZED
+TEMPLATE_SHA_MATCH = PART_A YES / PART_B YES
+TESTS = 8 PASS / 0 FAIL
+NPM_AUDIT_VULNERABILITIES = 0
+RAW_PART_A_DIMENSION = MISSING / VALIDATOR BLOCKER
+RAW_PART_B_MAIN_DIMENSION = MISSING / VALIDATOR BLOCKER
+RAW_PART_B_SHEET1_DIMENSION = MISSING / COVERED BY PART_B BLOCKER
+```
+
+Therefore R3-R22 proof isolation is closed, while D2-WP003 remains open for preservation.
+
+## 8. Proposed R3-R23 preservation state — NOT AUTHORIZED
+
+```text
+D2-WP003-R3-R23 = PROPOSED / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
 Required proof direction if authorized:
-1. source implementation remains read-only;
-2. mutation-specific negative baselines start from independently valid exact-source/source-backed fingerprints that the real validator accepts before mutation;
-3. actual dimension-tag removal starts from exact source buffer known to contain the tag;
-4. raw Part A / Part B main / Part B `Sheet1` dimension presence/absence and real validator outcome are pinned separately, with no repair;
-5. deterministic blocker normalization proof is isolated from any pre-existing raw parity defect.
+1. keep raw no-op evidence frozen and unrepaired;
+2. add a separate fail-closed exact-dimension preservation path;
+3. map every worksheet by exact name/order/relationship target;
+4. copy only exact missing source dimension tags;
+5. prove preserved Part A/Part B pass real parity and no non-dimension fingerprint changes;
+6. fail closed on missing/multiple/conflicting tags or ambiguous/cross-sheet mapping.
 
 ## 9. D2 completion test matrix — still open
 
 ```text
-WORKBOOK_WIDE_PARITY_PROOF_ISOLATION = OPEN
+WORKBOOK_WIDE_PARITY_PROOF_ISOLATION = PASS / CLOSED
+EXACT_DIMENSION_PRESERVATION = NOT CLOSED
 REFERENCE_IMAGE_CLOSURE = NOT CLOSED
 PART_A_5_TO_10_OBJECTIVE_INSERTION = NOT CLOSED
 PART_B_6_TO_8_COMPETENCY_INSERTION = NOT CLOSED
@@ -146,7 +156,7 @@ EXPORT_SECURITY_PRIVACY_REGRESSION = NOT TESTED
 FINAL_D2_REVIEW = NOT TESTED
 ```
 
-If raw no-op degradation is proven, a separate preservation-strategy WP must be tested before later production renderer closure.
+The proven raw no-op degradation requires a separate preservation-strategy WP before later production renderer closure.
 
 ## 10. Remaining project tests
 
@@ -156,5 +166,5 @@ D1 is closed. D2 is active and must be completed before D3. D3 is HOLD/write not
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R23
 ```

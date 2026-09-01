@@ -70,10 +70,10 @@ D4 owns lifecycle operations. D5 resolves fresh target-year route/identity. D6 i
 ```text
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
-D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
@@ -92,6 +92,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -106,37 +107,38 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 7. Latest reviewed work — R3-R21
+## 7. Latest reviewed work — R3-R22
 
 ```text
-IMPLEMENTATION = 1587b20b3920618b79b335c66bbdde1778570626
-EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
+TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+SOURCE_REVIEW = PASS
+RUNTIME_EVIDENCE_REVIEW = PASS
+STATUS = PASS / CLOSED
 ```
 
-Accepted source implementation:
-- raw direct `outputAsync()` no-op buffers; no source repair;
-- deterministic parity blocker normalization restored;
-- actual dimension-tag/absence fingerprint only;
-- exact per-sheet print-area binding preserved.
+Accepted proof:
+- exact template identities matched and tests passed `8/8`;
+- source-backed negative proof isolation passed;
+- raw Part A and Part B lose exact dimension evidence and fail closed;
+- raw evidence remains unrepaired and privacy-safe.
 
-Remaining blocker: mutation-specific negative tests use raw Part B baseline that may already be parity-invalid, so proof is not isolated.
-
-## 8. Proposed R3-R22 — NOT AUTHORIZED
+## 8. Proposed R3-R23 — NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 ```
 
 Expected direction:
-- source implementation read-only;
-- mutation negatives start from valid exact-source/source-backed baseline;
-- actual dimension removal starts from source buffer known to contain tag;
-- raw no-op Part A / Part B main / Part B Sheet1 result pinned separately;
-- no preservation strategy/image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
+- keep raw no-op evidence frozen and unrepaired;
+- add a separate fail-closed preservation path in the existing feasibility source;
+- bind every worksheet by exact name/order/relationship target;
+- copy only exact missing dimension tags and fail closed on ambiguity/conflict;
+- prove preserved buffers pass parity with no non-dimension changes;
+- no image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
 
 ## 9. D1–D7 no-drop
 

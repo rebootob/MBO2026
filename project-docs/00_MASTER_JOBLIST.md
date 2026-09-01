@@ -55,10 +55,10 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
-D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
@@ -66,13 +66,15 @@ Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
 
 Accepted foundations include privacy classification/evidence parity, typed privacy metadata completeness/validator shape, header fingerprint/sanitized export parity and exact owner-template SHA identity.
 
-Latest accepted source implementation from R3-R21:
+Accepted R3-R22 closure:
 - raw direct `xlsx-populate.outputAsync()` no-op buffers with no source repair;
 - deterministic workbook parity blocker normalization;
 - actual `<dimension>` evidence only;
-- exact per-sheet print-area binding.
+- exact per-sheet print-area binding;
+- source-backed negative proof isolation and privacy-safe runtime evidence PASS;
+- exact source passes validation while raw Part A/Part B lose dimensions and fail closed.
 
-Remaining blocker: mutation-specific negative proof is not isolated from a possibly-invalid raw Part B baseline. R3-R22 is proposed TEST-ONLY to use valid exact-source/source-backed negative baselines and separately pin raw no-op results.
+Remaining blocker: raw round-trip dimension loss is proven. R3-R23 is proposed to add a separate minimal fail-closed preservation path while keeping raw evidence frozen.
 
 D2 must ultimately close:
 - reference-image handling;
@@ -162,7 +164,7 @@ For a new ChatGPT conversation:
 ## 11. Current exact next action
 
 ```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R23
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD

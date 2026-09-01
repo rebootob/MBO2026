@@ -23,11 +23,12 @@ For a new chat, copy `NEW_CHAT_BOOTSTRAP_PROMPT.md` into the first message. Repo
 ```text
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
-D2-WP003-R3-R21 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
@@ -86,10 +87,11 @@ Read in this order:
 7. `SECURITY_MODEL.md` and D1 security Baselines only for export authorization/confidentiality review.
 
 Current D2 checkpoint:
-- R3-R21 source implementation accepted in part;
-- remaining blocker is mutation-specific proof isolation;
-- R3-R22 is proposed TEST-ONLY and is not authorized;
-- do not start image/insertion/formula/renderer/PDF work until workbook-wide parity truth/proof isolation is accepted;
+- R3-R22 proof isolation is PASS/CLOSED;
+- exact-source validators pass but raw `outputAsync()` loses dimension evidence for Part A and all Part B worksheets;
+- raw Part A/Part B fail closed with the workbook parity blocker;
+- R3-R23 separate minimal exact-dimension preservation path is proposed and not authorized;
+- do not start image/insertion/formula/renderer/PDF work until the separate preservation path is accepted;
 - D3 remains HOLD.
 
 ## 6. Task -> document routing

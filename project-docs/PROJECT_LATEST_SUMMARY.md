@@ -60,6 +60,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 D2-WP003-R3-R16 = PASS / CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
+D2-WP003-R3-R22 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -74,46 +75,47 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Latest reviewed implementation:
+Latest reviewed proof:
 
 ```text
-R3-R21_IMPLEMENTATION = 1587b20b3920618b79b335c66bbdde1778570626
-R3-R21_EXECUTION_BASELINE = 9853f018b2f759c8da19e0f2713216584a3f2113
-R3-R21_SCOPE_REVIEW = PASS
-R3-R21_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R21_STATUS = NOT PASS / NOT CLOSED
+R3-R22_TEST_COMMIT = 9cb94250fc0fa3bfe458f406c09d0df709aa5b96
+R3-R22_EVIDENCE_COMMIT = 5ae2f7f8cfe22dbed7b121505a40d3244a4673a0
+R3-R22_SCOPE_REVIEW = PASS
+R3-R22_SOURCE_REVIEW = PASS
+R3-R22_RUNTIME_EVIDENCE_REVIEW = PASS
+R3-R22_STATUS = PASS / CLOSED
 ```
 
-Accepted source implementation from R3-R21:
-- raw no-op buffers are direct `xlsx-populate.outputAsync()` results with no source-to-output dimension repair;
-- deterministic workbook-parity blocker normalization is restored;
-- actual `<dimension>` evidence only, no synthetic reconstruction;
-- exact per-sheet print-area binding remains.
+Accepted R3-R22 proof:
+- exact template identity and source-backed negative proof isolation passed;
+- tests passed `8/8`; dependency audit found `0` vulnerabilities;
+- exact source passes validation;
+- raw Part A/Part B lose dimension tags and fail closed with the workbook parity blocker;
+- raw evidence remains unrepaired and privacy-safe.
 
-Remaining blocker: mutation-specific negative tests use raw Part B baseline which may already be parity-invalid, so rejection is not reliably attributable to the intended mutation. Raw no-op truth and mutation-specific proof must be separated.
-
-## 5. Proposed R3-R22 — TEST-ONLY / NOT AUTHORIZED
+## 5. Proposed R3-R23 — PRESERVATION / NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R22
-PROPOSED_WORK_PACKAGE_NAME = VALID SOURCE-BACKED NEGATIVE BASELINES + RAW NO-OP RESULT PINNING
-PROPOSED_SCOPE = TEST-ONLY
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R23
+PROPOSED_WORK_PACKAGE_NAME = SEPARATE MINIMAL EXACT-DIMENSION PRESERVATION PATH
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
 Expected direction:
-- source implementation read-only;
-- mutation negatives start from independently valid exact-source/source-backed fingerprints;
-- actual dimension removal starts from exact source buffer known to contain the tag;
-- raw Part A / Part B main / Part B Sheet1 dimension presence and real validator result are pinned separately with no repair.
+- keep raw no-op evidence unchanged;
+- add a separate exact-dimension preservation path;
+- bind worksheets by exact name/order/relationship target without fallback;
+- copy only missing exact source dimension tags and fail closed on ambiguity/conflict;
+- prove preserved buffers pass parity with no non-dimension fingerprint changes.
 
 ## 6. D1–D7 scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen with documented ceilings |
-| D2 | 🟠 IN PROGRESS | R3-R22 proposed TEST-ONLY corrective |
+| D2 | 🟠 IN PROGRESS | R3-R22 PASS/CLOSED; R3-R23 preservation proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route/identity required |
@@ -139,8 +141,8 @@ D3 = HOLD
 
 ## 8. D2 remaining path
 
-After workbook parity truth/proof isolation closes:
-1. preservation strategy only if raw no-op degradation is proven;
+After R3-R22 proof isolation:
+1. separate minimal exact-dimension preservation path;
 2. reference-image closure;
 3. Part A insertion matrix;
 4. Part B insertion matrix;
@@ -165,7 +167,7 @@ New session:
 Use `NEW_CHAT_BOOTSTRAP_PROMPT.md` for the first message.
 
 ```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R23
 ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD
 ```
