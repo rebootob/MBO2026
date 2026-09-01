@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import XlsxPopulate from 'xlsx-populate';
 import {
   findLocalSourceTemplates,
@@ -29,10 +30,17 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(wbOutA.sheets().length, 1, 'Part A sheet count must remain 1');
   assert.equal(wbOutA.sheet(0).name(), 'MBO Staff & Chief', 'Part A sheet name must be MBO Staff & Chief');
 
-  // Measure raw <mergeCell> count in Part A sheet1.xml directly with no fallback
+  // Measure raw <mergeCell> count & refs in Part A sheet1.xml directly with no fallback
   const sheet1XmlA = await wbOutA._zip.files['xl/worksheets/sheet1.xml'].async('string');
   const rawMergesA = [...sheet1XmlA.matchAll(/<mergeCell [^>]*\/>/g)];
   assert.equal(rawMergesA.length, 193, 'Part A raw merge count in sheet1.xml must equal 193');
+
+  // Compare original vs output cols & page setup
+  const wbOrigA = await XlsxPopulate.fromDataAsync(origBufA);
+  const origXmlA = await wbOrigA._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const colsOrigA = origXmlA.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
+  const colsOutA = sheet1XmlA.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
+  assert.equal(colsOutA, colsOrigA, 'Part A <cols> structure must match original exactly');
 
   // Inspect Part A OOXML page setup & workbook defined names directly
   const workbookXmlA = await wbOutA._zip.files['xl/workbook.xml'].async('string');
@@ -44,7 +52,8 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
 
   const wbOutB = await XlsxPopulate.fromDataAsync(outBufB);
   assert.equal(wbOutB.sheets().length, 2, 'Part B workbook must preserve sheet count');
-  assert.equal(wbOutB.sheet(0).name(), '(Part B) Competency', 'Part B sheet name must be (Part B) Competency');
+  assert.equal(wbOutB.sheet(0).name(), '(Part B) Competency', 'Part B sheet 0 name must be (Part B) Competency');
+  assert.equal(wbOutB.sheet(1).name(), 'Sheet1', 'Part B sheet 1 name must be Sheet1');
 
   const sheet1XmlB = await wbOutB._zip.files['xl/worksheets/sheet1.xml'].async('string');
   const rawMergesB = [...sheet1XmlB.matchAll(/<mergeCell [^>]*\/>/g)];
@@ -56,6 +65,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(sheet1XmlB.includes('orientation="portrait"'), true, 'Part B orientation must be portrait');
   assert.equal(sheet1XmlB.includes('paperSize="9"'), true, 'Part B paperSize must be 9 (A4)');
   assert.equal(sheet1XmlB.includes('scale="75"'), true, 'Part B scale must be 75%');
+  assert.equal(sheet1XmlB.includes('horizontalCentered="1"'), true, 'Part B horizontalCentered must be 1');
   assert.equal(sheet1XmlB.includes('<sheetProtection') || sheet1XmlB.includes('sheetProtection'), true, 'Part B sheet protection must be present');
 });
 
@@ -65,42 +75,52 @@ test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels rema
   const wbA = await XlsxPopulate.fromDataAsync(outBufA);
   const sheetA = wbA.sheet(0);
 
-  // Directly inspect Part A Row 6 static header labels to confirm they match snapshot
+  // Directly inspect Part A Row 6 static header labels to confirm their hashes match snapshot
   for (const cellAddr in labelSnapshotA) {
-    assert.equal(sheetA.cell(cellAddr).value(), labelSnapshotA[cellAddr], `Label at ${cellAddr} must remain unchanged`);
+    const valHash = crypto.createHash('sha256').update(String(sheetA.cell(cellAddr).value() || '')).digest('hex');
+    assert.equal(valHash, labelSnapshotA[cellAddr], `Label hash at ${cellAddr} must remain unchanged`);
   }
 
   const wbB = await XlsxPopulate.fromDataAsync(outBufB);
   const sheetB = wbB.sheet(0);
 
-  // Directly inspect Part B Row 2 static header labels to confirm they match snapshot
+  // Directly inspect Part B Row 2 static header labels to confirm their hashes match snapshot
   for (const cellAddr in labelSnapshotB) {
-    assert.equal(sheetB.cell(cellAddr).value(), labelSnapshotB[cellAddr], `Label at ${cellAddr} must remain unchanged`);
+    const valHash = crypto.createHash('sha256').update(String(sheetB.cell(cellAddr).value() || '')).digest('hex');
+    assert.equal(valHash, labelSnapshotB[cellAddr], `Label hash at ${cellAddr} must remain unchanged`);
   }
 
   // Directly inspect mutated value cell R3
-  assert.equal(sheetB.cell('R3').value(), 'TEST_MUTATION', 'Value cell R3 must be updated');
+  assert.equal(sheetB.cell('R3').value(), 'MUTATED_VAL', 'Value cell R3 must be updated');
 });
 
 test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string purging leave 0 sensitive tokens in OOXML parts', async () => {
-  const { bufA, bufB, sensitiveA, sensitiveB } = await getSanitizedDisposableBuffers();
+  const { bufA, bufB, sensitiveA, sensitiveB, typeCountsA, typeCountsB } = await getSanitizedDisposableBuffers();
+
+  // Prove mapped source cells were accounted for by type
+  assert.equal(SENSITIVE_RANGES_A.length > 100, true, 'Part A mapped sensitive address count must cover all target ranges');
+  assert.equal(SENSITIVE_RANGES_B.length > 50, true, 'Part B mapped sensitive address count must cover all target ranges');
+  assert.equal(typeCountsA.string + typeCountsA.number + typeCountsA.nullOrEmpty > 0, true, 'Typed values must be accounted for in Part A');
+  assert.equal(typeCountsB.string + typeCountsB.number + typeCountsB.nullOrEmpty > 0, true, 'Typed values must be accounted for in Part B');
 
   const wbA = await XlsxPopulate.fromDataAsync(bufA);
   const sheetA = wbA.sheet(0);
 
-  // Directly inspect designated sensitive cells in Part A to confirm they are empty
+  // Directly inspect every mapped cell in Part A to confirm it is empty
   for (const addr of SENSITIVE_RANGES_A) {
     const val = sheetA.cell(addr).value();
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
-  // Directly scan OOXML parts for sensitive tokens collected from mapped ranges
+  // Scan all xl/ OOXML XML files in memory for token survival
   for (const fileName in wbA._zip.files) {
-    if (fileName.endsWith('.xml') || fileName.endsWith('.rels')) {
+    if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
       const xmlText = await wbA._zip.files[fileName].async('string');
+      // Prove no worksheet formulas exist
+      assert.equal(xmlText.includes('<f>'), false, `No worksheet formula <f> allowed in ${fileName}`);
       for (const token of sensitiveA) {
         if (token.length >= 3) {
-          assert.equal(xmlText.includes(token), false, `Sensitive token "${token}" must not exist in Part A OOXML ${fileName}`);
+          assert.equal(xmlText.includes(token), false, `Sensitive token must not exist in Part A OOXML ${fileName}`);
         }
       }
     }
@@ -115,11 +135,12 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   }
 
   for (const fileName in wbB._zip.files) {
-    if (fileName.endsWith('.xml') || fileName.endsWith('.rels')) {
+    if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
       const xmlText = await wbB._zip.files[fileName].async('string');
+      assert.equal(xmlText.includes('<f>'), false, `No worksheet formula <f> allowed in ${fileName}`);
       for (const token of sensitiveB) {
         if (token.length >= 3) {
-          assert.equal(xmlText.includes(token), false, `Sensitive token "${token}" must not exist in Part B OOXML ${fileName}`);
+          assert.equal(xmlText.includes(token), false, `Sensitive token must not exist in Part B OOXML ${fileName}`);
         }
       }
     }

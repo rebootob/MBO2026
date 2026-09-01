@@ -35,6 +35,63 @@ export function findLocalSourceTemplates() {
   return null;
 }
 
+export function colToIdx(colStr) {
+  let idx = 0;
+  for (let i = 0; i < colStr.length; i++) {
+    idx = idx * 26 + (colStr.charCodeAt(i) - 64);
+  }
+  return idx;
+}
+
+export function idxToCol(idx) {
+  let str = '';
+  while (idx > 0) {
+    const rem = (idx - 1) % 26;
+    str = String.fromCharCode(65 + rem) + str;
+    idx = Math.floor((idx - 1) / 26);
+  }
+  return str;
+}
+
+export function expandRangeToAddresses(rangeStr) {
+  if (!rangeStr.includes(':')) return [rangeStr];
+  const [start, end] = rangeStr.split(':');
+  const mStart = start.match(/^([A-Z]+)(\d+)$/);
+  const mEnd = end.match(/^([A-Z]+)(\d+)$/);
+  if (!mStart || !mEnd) return [rangeStr];
+
+  const col1 = colToIdx(mStart[1]);
+  const row1 = parseInt(mStart[2], 10);
+  const col2 = colToIdx(mEnd[1]);
+  const row2 = parseInt(mEnd[2], 10);
+
+  const addrs = [];
+  for (let r = Math.min(row1, row2); r <= Math.max(row1, row2); r++) {
+    for (let c = Math.min(col1, col2); c <= Math.max(col1, col2); c++) {
+      addrs.push(`${idxToCol(c)}${r}`);
+    }
+  }
+  return addrs;
+}
+
+export const PART_A_SENSITIVE_RANGES = [
+  'N6:Q7', 'Z7:AF7', 'AG7:AL7', 'AM7:AP7', 'AQ7:AS7', 'AT7:BC7', 'BD7:BI7',
+  'G8:S8', 'G16:AF19', 'AM16:BI19',
+  'B25:BI28',
+  'BC29:BI35',
+  'B37:S42', 'AI37:AY42',
+  'B47:N50'
+];
+
+export const PART_B_SENSITIVE_RANGES = [
+  'G2:H3', 'J3:L3', 'M3:O3', 'P3:Q3', 'R3', 'S3:W3',
+  'K7:Q29', 'R7:X29',
+  'B31:D34', 'E31:H34', 'I31:P34', 'Q31:S34', 'T31:X34'
+];
+
+export const SENSITIVE_RANGES_A = PART_A_SENSITIVE_RANGES.flatMap(expandRangeToAddresses);
+export const SENSITIVE_RANGES_B = PART_B_SENSITIVE_RANGES.flatMap(expandRangeToAddresses);
+
 export async function getNoOpParityBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
@@ -57,46 +114,39 @@ export async function getMutatedHeaderValueBuffers() {
   const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA = wbA.sheet(0);
 
-  // Snapshot Part A static header labels
+  // Snapshot Part A static header labels using safe hashes
   const labelSnapshotA = {
-    B6: sheetA.cell('B6').value(),
-    AM6: sheetA.cell('AM6').value(),
-    AQ6: sheetA.cell('AQ6').value(),
-    AT6: sheetA.cell('AT6').value(),
-    BD6: sheetA.cell('BD6').value()
+    B6: crypto.createHash('sha256').update(String(sheetA.cell('B6').value() || '')).digest('hex'),
+    AM6: crypto.createHash('sha256').update(String(sheetA.cell('AM6').value() || '')).digest('hex'),
+    AQ6: crypto.createHash('sha256').update(String(sheetA.cell('AQ6').value() || '')).digest('hex'),
+    AT6: crypto.createHash('sha256').update(String(sheetA.cell('AT6').value() || '')).digest('hex'),
+    BD6: crypto.createHash('sha256').update(String(sheetA.cell('BD6').value() || '')).digest('hex')
   };
 
   // Mutate Part A value ranges
-  sheetA.cell('N6').value(null); // Fiscal Year value
-  sheetA.cell('Z7').value(null); // Department value
-  sheetA.cell('AG7').value(null); // Section value
-  sheetA.cell('AM7').value(null); // Start Date value
-  sheetA.cell('AQ7').value(null); // Emp ID value
-  sheetA.cell('AT7').value(null); // Emp Name value
-  sheetA.cell('BD7').value(null); // Position value
+  for (const addr of ['N6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7']) {
+    sheetA.cell(addr).value(null);
+  }
 
   const outBufA = await wbA.outputAsync();
 
   const wbB = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB = wbB.sheet(0);
 
-  // Snapshot Part B static header labels
+  // Snapshot Part B static header labels using safe hashes
   const labelSnapshotB = {
-    B2: sheetB.cell('B2').value(),
-    J2: sheetB.cell('J2').value(),
-    M2: sheetB.cell('M2').value(),
-    P2: sheetB.cell('P2').value(),
-    R2: sheetB.cell('R2').value(),
-    S2: sheetB.cell('S2').value()
+    B2: crypto.createHash('sha256').update(String(sheetB.cell('B2').value() || '')).digest('hex'),
+    J2: crypto.createHash('sha256').update(String(sheetB.cell('J2').value() || '')).digest('hex'),
+    M2: crypto.createHash('sha256').update(String(sheetB.cell('M2').value() || '')).digest('hex'),
+    P2: crypto.createHash('sha256').update(String(sheetB.cell('P2').value() || '')).digest('hex'),
+    R2: crypto.createHash('sha256').update(String(sheetB.cell('R2').value() || '')).digest('hex'),
+    S2: crypto.createHash('sha256').update(String(sheetB.cell('S2').value() || '')).digest('hex')
   };
 
   // Mutate Part B value ranges
-  sheetB.cell('G2').value(null); // Fiscal Year value
-  sheetB.cell('J3').value(null); // Department value
-  sheetB.cell('M3').value(null); // Section value
-  sheetB.cell('P3').value(null); // Position value
-  sheetB.cell('R3').value('TEST_MUTATION'); // Emp ID value
-  sheetB.cell('S3').value(null); // Emp Name value
+  for (const addr of ['G2', 'J3', 'M3', 'P3', 'R3', 'S3']) {
+    sheetB.cell(addr).value(addr === 'R3' ? 'MUTATED_VAL' : null);
+  }
 
   const outBufB = await wbB.outputAsync();
 
@@ -107,47 +157,54 @@ export function unescapeUnicode(str) {
   return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 }
 
-/**
- * EXPLICIT BOUNDED SENSITIVE RANGE MAP
- */
-export const SENSITIVE_RANGES_A = [
-  'N6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7', 'G8', 'G16', 'AM16',
-  'B25', 'J25', 'T25', 'Y25', 'AA25', 'AD25', 'AI25', 'AK25', 'AS25', 'AV25', 'AX25', 'BA25', 'BC25', 'BF25',
-  'B26', 'J26', 'T26', 'Y26', 'AA26', 'AD26', 'AI26', 'AK26', 'AS26', 'AV26', 'AX26', 'BA26', 'BC26', 'BF26',
-  'B27', 'J27', 'T27', 'Y27', 'AA27', 'AD27', 'AI27', 'AK27', 'AS27', 'AV27', 'AX27', 'BA27', 'BC27', 'BF27',
-  'B28', 'J28', 'T28', 'Y28', 'AA28', 'AD28', 'AI28', 'AK28', 'AS28', 'AV28', 'AX28', 'BA28', 'BC28', 'BF28',
-  'BC29', 'BC30', 'BC31', 'BC32', 'BC33', 'BC34', 'BC35',
-  'B37', 'AI37', 'B47', 'G47', 'L47'
-];
-
-export const SENSITIVE_RANGES_B = [
-  'G2', 'J3', 'M3', 'P3', 'R3', 'S3',
-  'K7', 'R7', 'K11', 'R11', 'K15', 'R15', 'K19', 'R19', 'K23', 'R23', 'K27', 'R27',
-  'B31', 'E31', 'I31', 'Q31', 'T31'
-];
-
 export async function getSanitizedDisposableBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  // Collect source text values from explicit mapped ranges only
+  // Typed value collection in memory without logging source strings
   const wbA_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA_orig = wbA_orig.sheet(0);
   const collectedSensitiveA = [];
+  const typeCountsA = { string: 0, number: 0, date: 0, boolean: 0, nullOrEmpty: 0 };
+
   for (const addr of SENSITIVE_RANGES_A) {
     const v = sheetA_orig.cell(addr).value();
-    if (v && typeof v === 'string' && v.trim().length >= 3) {
-      collectedSensitiveA.push(v.trim());
+    if (v === null || v === undefined) {
+      typeCountsA.nullOrEmpty++;
+    } else if (typeof v === 'number') {
+      typeCountsA.number++;
+    } else if (typeof v === 'boolean') {
+      typeCountsA.boolean++;
+    } else if (v instanceof Date) {
+      typeCountsA.date++;
+    } else if (typeof v === 'string') {
+      typeCountsA.string++;
+      if (v.trim().length >= 3) {
+        collectedSensitiveA.push(v.trim());
+      }
     }
   }
 
   const wbB_orig = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB_orig = wbB_orig.sheet(0);
   const collectedSensitiveB = [];
+  const typeCountsB = { string: 0, number: 0, date: 0, boolean: 0, nullOrEmpty: 0 };
+
   for (const addr of SENSITIVE_RANGES_B) {
     const v = sheetB_orig.cell(addr).value();
-    if (v && typeof v === 'string' && v.trim().length >= 3) {
-      collectedSensitiveB.push(v.trim());
+    if (v === null || v === undefined) {
+      typeCountsB.nullOrEmpty++;
+    } else if (typeof v === 'number') {
+      typeCountsB.number++;
+    } else if (typeof v === 'boolean') {
+      typeCountsB.boolean++;
+    } else if (v instanceof Date) {
+      typeCountsB.date++;
+    } else if (typeof v === 'string') {
+      typeCountsB.string++;
+      if (v.trim().length >= 3) {
+        collectedSensitiveB.push(v.trim());
+      }
     }
   }
 
@@ -189,7 +246,7 @@ export async function getSanitizedDisposableBuffers() {
     bufB = await wbB_zip._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  return { bufA, bufB, sensitiveA: collectedSensitiveA, sensitiveB: collectedSensitiveB };
+  return { bufA, bufB, sensitiveA: collectedSensitiveA, sensitiveB: collectedSensitiveB, typeCountsA, typeCountsB };
 }
 
 export async function getReferenceImageBuffers() {
@@ -219,8 +276,23 @@ export async function getReferenceImageBuffers() {
 
   wbA._zip.file(drawingXmlPath, drawingXml);
   wbA._zip.file(drawingRelsPath, drawingRels);
-  if (wbA._zip.files['xl/media/image3.png']) {
+
+  // Search ALL remaining package .rels files to confirm image3.png is orphaned
+  let image3Referenced = false;
+  for (const fileName in wbA._zip.files) {
+    if (fileName.endsWith('.rels')) {
+      const relsContent = await wbA._zip.files[fileName].async('string');
+      if (relsContent.includes('image3.png')) {
+        image3Referenced = true;
+        break;
+      }
+    }
+  }
+
+  if (!image3Referenced && wbA._zip.files['xl/media/image3.png']) {
     wbA._zip.remove('xl/media/image3.png');
+  } else if (image3Referenced) {
+    throw new Error('BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED: image3.png is still referenced elsewhere in package');
   }
 
   const outBufA = await wbA._zip.generateAsync({ type: 'nodebuffer' });
