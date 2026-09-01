@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R9 REVIEWED-NOT-PASS / R3-R10 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R9 REVIEWED-NOT-PASS / R3-R10 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -61,41 +61,51 @@ TOTALS_SIGNATURE_START = 31
 
 ## 4. R3-R9 review result
 
-Scope review = PASS. Implementation `068bba6ae8cccc9bcc7fe9c36facf1effa97b63f` changed only the two authorized feasibility files. No binary/package/application/Kintone/deploy changes; no Privacy Purge required.
+Scope review = PASS. Source review = FAIL. Implementation `068bba6ae8cccc9bcc7fe9c36facf1effa97b63f` only added formula node-hash identity and did not implement final assertion closure. No Privacy Purge required.
 
-Actual accepted progress is limited to formula worksheet/cell/node-hash identity.
+Root blocker remains Part B source-backed privacy classification.
 
-Feasibility acceptance = FAIL because the final assertion closure was not implemented. The test file adds only a completion comment and the previous blockers remain:
-1. Part B classification is still hard-coded/self-declared rather than source-backed.
-2. typed metadata exact address-set/duplicate/type/nonblank/date/boolean reconciliation is incomplete.
-3. header normalized-type/runtime merged-region proof is incomplete.
-4. workbook source-vs-output parity is incomplete for dimension, mergeCountAttr, explicit row-height/customHeight, full page/protection and reparse.
-5. reference-image proof lacks complete target-normalized inventory equality.
-6. structural matrix remains incomplete across Part A 4/5/10 and Part B 6/8.
-7. formula helper now has node hash, but the original/sanitized/structural test matrix is still incomplete.
-8. GitHub has no CI/status evidence.
+## 5. D2-WP003-R3-R10 — AUTHORIZED
 
-## 5. Proposed D2-WP003-R3-R10
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R10
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R10-SOURCE-20260901-01
+PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = CLASSIFICATION_PROOF_PENDING_INDEPENDENT_REVIEW
+```
 
-R3-R10 is intentionally narrow to conserve executor credits. It must solve only **source-backed Part B privacy classification** before any other proof work resumes.
-
-Expected writes only:
+R3-R10 is intentionally narrow and may modify only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-Mandatory direction:
-- load the exact SHA-verified Part B owner template;
-- inspect rows 2:34 from actual source;
-- attach safe evidence per candidate address: merge membership, style id, normalized type, blank/nonblank and safe hash where needed;
-- build complete protected-static roles from actual template structure and frozen labels/competency/rating guidance;
-- every sensitive address must have source evidence and explicit role justification;
-- tests iterate every sensitive and protected-static address and prove exact disjointness;
-- broad range / row-number membership alone is not proof;
-- any unresolved address => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+No package/dependency changes and no binary publication.
 
-No typed/header/workbook/image/structural/formula closure is in R3-R10 scope. Those resume only after the root classification blocker is independently accepted.
+## 6. Mandatory R3-R10 proof
 
-## 6. Current gate
+Use the exact SHA-verified Part B owner template and solve only source-backed classification:
+- inspect actual rows 2:34;
+- produce safe evidence for every classified address: merge membership, style id, normalized type `string|number|date|boolean|blank`, blank/nonblank and safe hash where useful;
+- establish explicit source-role justification for every sensitive and protected-static address;
+- build complete protected-static coverage for title/header labels/competency names/descriptions/rating guidance/other static text;
+- tests iterate every sensitive and every protected address;
+- prove exact `SENSITIVE ∩ PROTECTED_STATIC = empty`;
+- broad-range/row-number/self-declared table is not acceptance evidence;
+- ambiguity => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+
+No typed/header/workbook/image/structural/formula closure is in R3-R10 scope. Those blockers remain deferred until this root classification gate is independently accepted.
+
+## 7. Explicit exclusions
+
+No XLSX/image/media/output commit; no package/dependency change; no production sanitizer/renderer; no normalizer/export-service change; no PDF/UI/Live Kintone/deploy; no next Work Package.
+
+Mandatory commands:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -103,11 +113,11 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R9 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R10 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R10 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R10-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R10 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
