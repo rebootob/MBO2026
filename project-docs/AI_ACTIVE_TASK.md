@@ -1,188 +1,116 @@
-# AI ACTIVE TASK — D2-WP003-R3-R10 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R10 REVIEW / R3-R11 PROPOSED
 
-Mode: **ANTIGRAVITY / SOURCE-BACKED PART B CLASSIFICATION RESOLUTION ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R9 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R10
-ACTIVE_WORK_PACKAGE_NAME = SOURCE-BACKED PART B CLASSIFICATION RESOLUTION
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+D2-WP003-R3-R10_SCOPE_REVIEW = PASS
+D2-WP003-R3-R10_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R10_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R10-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = CLASSIFICATION_PROOF_PENDING_INDEPENDENT_REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R11
+PROPOSED_WORK_PACKAGE_NAME = SOURCE-DERIVED ROLE RESOLUTION / FAIL-CLOSED VALIDATION
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY_ACTION = STOP / WAIT OWNER
+D2-WP003-R3-R10-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. Purpose — ONE ROOT BLOCKER ONLY
+## 1. R3-R10 scope review — PASS
 
-Resolve only the Part B privacy-classification blocker from R3-R9.
-
-Do NOT attempt typed metadata closure, header proof, workbook parity, reference-image proof, structural matrix closure, formula-matrix closure, production renderer/sanitizer, PDF/UI, Kintone or deploy in this Work Package.
-
-## 2. Exact write scope
-
-Authorized modifications ONLY:
+Implementation commit `533599f9a1f7390c11c15dd7f3b28c911c3926e2` is exactly one commit above authorization baseline `cc8e7dd02d3a0973be388d3f7ad6007db70b6975` and changed only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `package.json`
-- `package-lock.json`
-- governance docs
-- exact ignored owner templates after SHA verification
+No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
 
-No other repository path may change. No dependency/package change is authorized.
+## 2. Accepted R3-R10 progress
 
-## 3. Source identity
+R3-R10 now genuinely loads the SHA-verified Part B template and attaches real source evidence to classified addresses:
+- merge membership;
+- style id;
+- normalized type;
+- blank/nonblank state;
+- safe hash for nonblank strings.
 
-Use only the exact Part B owner template matching:
+Tests also verify the Part B SHA and inspect the new evidence records.
 
-```text
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
+This source-evidence extraction is accepted progress.
 
-Bounded lookup only in repository root, `app info/data/`, and `exp/`.
-If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never print/log/commit raw employee/sample values.
+## 3. Root blocker — role decision is still hard-coded
 
-## 4. Frozen rule
+`getPartBPrivacyClassificationSourceBacked()` still decides the role from preselected/manual logic:
+- iterates `SENSITIVE_RANGES_B` as the dynamic population;
+- assigns dynamic roles using a hard-coded header-address list and row-number rules (`7:29`, `31:34`);
+- builds protected-static addresses from a manually declared header list plus columns `B:J` / rows `7:29`;
+- assigns protected roles using row-number rules.
 
-The current classification based only on `SENSITIVE_RANGES_B`, broad ranges, row numbers, or a manually declared protected list is NOT acceptance proof.
+The source template enriches records after those addresses/roles are already chosen. Therefore source evidence does not actually drive or independently validate the role decision.
 
-Critical rule:
+This remains contrary to the frozen rule:
 
 ```text
 ACTUAL SHA-VERIFIED SOURCE EVIDENCE MUST DRIVE OR VALIDATE EVERY ADDRESS.
-IF ANY ADDRESS CANNOT BE JUSTIFIED, STOP BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED.
 ```
 
-Do not manufacture a pass with hard-coded tables, row rules, comments, helper booleans, or self-consistency checks.
+## 4. Fail-closed proof is not wired to the real classifier
 
-## 5. Required source evidence
+The negative test creates a local `validateClassificationMap()` inside the test and passes a synthetic `Z99` object. That proves only the local test helper throws.
 
-Load the exact SHA-verified Part B template and inspect rows 2:34 from the actual source.
+It does NOT prove the production feasibility classification path fails closed when actual source evidence is missing, structurally inconsistent, ambiguous, or conflicts with the expected role.
 
-For every candidate address used in classification, produce safe evidence containing at minimum:
-- `address`;
-- `mergeRef` / merge membership;
-- `styleId`;
-- normalized source type exactly one of `string|number|date|boolean|blank`;
-- `nonblank` boolean;
-- safe SHA-256 hash when needed to prove identity without exposing value;
-- source-role evidence/justification used by classification.
+## 5. CI evidence
 
-No raw value may be logged, committed, or embedded in error messages.
+GitHub combined status/check list for implementation commit `533599f9a1f7390c11c15dd7f3b28c911c3926e2` is empty.
 
-## 6. Protected-static set
+## 6. Proposed R3-R11 — ONE blocker only
 
-Build and validate the COMPLETE protected-static set for rows 2:34 from actual source structure plus frozen template roles, including at least:
-- title cells;
-- header labels;
-- competency names;
-- competency descriptions;
-- rating / scale guidance;
-- other static instructional/template text.
+Purpose: **make role resolution independently source-validated and wire fail-closed behavior into the real classification path.**
 
-Every protected-static address must have source evidence.
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-The implementation must not call a cell static merely because it is outside a sensitive range; it must be backed by actual source structure/role evidence.
+Do NOT work on typed metadata, header parity, workbook parity, image inventory, structural matrix, formula matrix, production renderer, PDF/UI, Kintone or deploy.
 
-## 7. Sensitive set
+### Mandatory R3-R11 design
 
-Every sensitive Part B address must:
-- exist in the SHA-verified source evidence map;
-- carry merge/style/type/blankness evidence;
-- carry an explicit dynamic/sample role justification;
-- NOT be classified solely because it falls in a broad range or row number.
+1. Build a complete safe source evidence inventory for Part B rows `2:34` before assigning privacy roles.
+2. Role resolution must use exact frozen template-role geometry + actual source evidence (merge membership, style, type/blankness and safe hashes where needed).
+3. `SENSITIVE_RANGES_B` may remain for sanitizer compatibility, but it MUST NOT drive classification. It may be compared only AFTER independent role resolution as a final expected-set cross-check.
+4. Broad row rules alone (`row 7:29`, `row 31:34`) are not sufficient role evidence.
+5. A manually pre-expanded sensitive/protected address table may not be accepted as independent proof.
+6. The real classifier/validator must throw exactly `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` when source evidence is missing, conflicts with the role spec, or is ambiguous.
+7. Tests must exercise the REAL validator with altered/missing evidence for real Part B addresses and prove fail-closed behavior.
+8. Tests must prove independently resolved dynamic address set equals the expected sanitizer sensitive set only as a post-resolution cross-check.
+9. Tests must prove independently resolved protected-static set is disjoint from the dynamic set.
+10. No raw source value may be logged or committed.
 
-If an address remains ambiguous between dynamic/sample and static template content, STOP exactly:
+Critical acceptance rule:
 
 ```text
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
+DO NOT SELECT AN ADDRESS BECAUSE IT IS IN SENSITIVE_RANGES_B AND THEN CALL ITS SOURCE DATA "VALIDATION".
+RESOLVE/VALIDATE ROLE FROM FROZEN STRUCTURE + ACTUAL SOURCE EVIDENCE FIRST.
+ONLY THEN COMPARE THE RESULT TO THE SANITIZER MAP.
 ```
 
-## 8. Mandatory tests
-
-Tests must directly use actual source-backed evidence and must:
-1. verify template SHA before classification proof;
-2. assert evidence exists for EVERY sensitive address;
-3. assert evidence exists for EVERY protected-static address;
-4. assert every evidence `normalizedType` belongs to `string|number|date|boolean|blank`;
-5. assert style/merge/blankness evidence fields are present as applicable;
-6. iterate ALL sensitive addresses;
-7. iterate ALL protected-static addresses;
-8. prove exact set disjointness:
+## 7. Authorization ledger
 
 ```text
-SENSITIVE ∩ PROTECTED_STATIC = empty
-```
-
-9. prove no classified address lacks a source-backed role justification;
-10. include negative/fail-closed coverage showing unresolved classification raises `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` rather than silently passing.
-
-Tests that only partition the helper's own output or compare a self-declared table against itself do NOT satisfy this contract.
-
-## 9. Out of scope — DO NOT TOUCH
-
-Do NOT use R3-R10 to close or redesign:
-- typed metadata proof;
-- header fingerprint proof;
-- workbook source-vs-roundtrip parity;
-- reference-image inventory proof;
-- Part A/B structural assertion matrix;
-- formula coverage matrix;
-- production sanitizer/renderer;
-- export service/normalizer/application code;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- any next Work Package.
-
-Existing unrelated proof code may remain unchanged.
-
-## 10. Mandatory commands
-
-Run exactly:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Before commit only the two authorized feasibility files may differ. After commit/push working tree must be clean.
-
-## 11. Completion contract
-
-Push only the two authorized feasibility files.
-
-Final executor status must be exactly one of:
-```text
-CLASSIFICATION_PROOF_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
-
-## 12. Authorization ledger
-
-```text
-D2-WP003-R3-R8-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R9-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R10-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R10-SOURCE-20260901-01
+D2-WP003-R3-R10-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -195,4 +123,11 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Authorization is consumed when the R3-R10 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
+## 8. Exact next gate
+
+```text
+D2-WP003-R3-R10 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R11 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = STOP / WAIT OWNER
+```
