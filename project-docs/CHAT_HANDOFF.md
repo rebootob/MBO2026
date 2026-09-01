@@ -32,66 +32,80 @@ PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. R3-R10 independent review
 
-R3-R10 implementation `533599f9a1f7390c11c15dd7f3b28c911c3926e2` is exactly one commit above its authorization baseline and changed only the two authorized feasibility files. Scope = PASS. No Privacy Purge required.
+R3-R10 implementation `533599f9a1f7390c11c15dd7f3b28c911c3926e2` changed only the two authorized feasibility files. Scope = PASS; no Privacy Purge required.
 
-Accepted progress: the exact Part B source is loaded and real merge/style/type/blankness/hash evidence is attached to classified addresses.
+Accepted progress: exact Part B template is loaded and real source evidence (merge/style/type/blankness/hash) is attached to records.
 
-R3-R10 source acceptance = FAIL because role resolution remains preselected/hard-coded:
-- dynamic population begins from `SENSITIVE_RANGES_B`;
-- dynamic roles use a hard-coded header address list and row rules;
-- protected-static addresses are manually constructed from address/row/column rules;
-- source evidence is attached after those decisions rather than independently validating them.
+Source acceptance = FAIL because classification decisions still come from `SENSITIVE_RANGES_B`, hard-coded header lists, row rules and manually constructed protected-static addresses. The negative test exercises a local synthetic validator rather than the real classification path.
 
-The negative test exercises a local synthetic validator, not the real classification path.
-
-## 4. Exact current gate
+## 4. Exact current gate — R3-R11 AUTHORIZED
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R10 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R11
-PROPOSED_WORK_PACKAGE_NAME = SOURCE-DERIVED ROLE RESOLUTION / FAIL-CLOSED VALIDATION
-STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R11 = SOURCE-DERIVED ROLE RESOLUTION / FAIL-CLOSED VALIDATION
+STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R11
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE R3-R11 ONLY / LOW-CREDIT
+MAX_EXECUTOR_STATUS = ROLE_RESOLUTION_PROOF_PENDING_INDEPENDENT_REVIEW
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 5. Why R3-R11 remains narrow
+Read `project-docs/AI_ACTIVE_TASK.md` for exact contract.
 
-Do not return to the broad multi-blocker closure. R3-R11 addresses only the remaining classification issue.
+## 5. Exact authorized writes
 
-If approved, Antigravity must:
-- build a complete safe Part B rows2:34 source evidence inventory before assigning roles;
-- use exact frozen template-role structure + source evidence to resolve/validate roles;
-- NOT use `SENSITIVE_RANGES_B` as an input to classification; it may only be a final post-resolution cross-check;
-- not accept broad row rules or manually expanded tables as independent proof;
-- wire `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` into the real classifier/validator;
-- test the real path with missing/conflicting evidence for real addresses;
-- prove independently resolved dynamic set equals expected sanitizer set and is disjoint from protected-static set.
-
-Expected writes only:
+Only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-No package change, binary publication, production sanitizer/renderer, PDF/UI, Live Kintone, deploy or next Work Package.
+Read-only: package files, governance docs and exact ignored owner template after SHA verification.
 
-## 6. Authorization ledger
+No XLSX/image/media/disposable-output commit.
+
+## 6. R3-R11 critical rules
+
+R3-R11 addresses ONE blocker only:
+- build complete safe evidence inventory for actual Part B rows 2:34 before role assignment;
+- resolve/validate role from frozen structural role geometry + actual source evidence;
+- `SENSITIVE_RANGES_B` is a sanitizer compatibility map only and MUST NOT drive role selection;
+- compare independent dynamic set to `SENSITIVE_RANGES_B` only after resolution;
+- broad row rules and manually expanded tables alone are not independent proof;
+- real classifier/validator must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` for missing/conflicting/ambiguous evidence;
+- tests must alter/remove evidence for real Part B addresses and exercise the real classifier/validator;
+- independently resolved protected-static set must be disjoint from dynamic set.
+
+Do not attempt typed/header/workbook/image/structural/formula blocker closure in R3-R11.
+
+Still forbidden: production sanitizer/renderer, package changes, binary publication, PDF/UI, Live Kintone, deploy or next Work Package.
+
+## 7. Required commands
+
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+After push STOP at `ROLE_RESOLUTION_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
+
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R10-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R11-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R11-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 7. Exact next action
+## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = NONE
-NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R11
-NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
+NEXT_EXECUTOR = ANTIGRAVITY
+ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R11 ROLE RESOLUTION / REAL FAIL-CLOSED VALIDATION, RUN TEST/AUDIT, PUSH, STOP
+NEXT_CONTROL_STEP = ChatGPT independent review
 ```
