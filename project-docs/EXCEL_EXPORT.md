@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 REVIEWED-NOT-PASS / R3-R15 REVIEWED-NOT-PASS / R3-R16 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R15 REVIEWED-NOT-PASS / R3-R16 AUTHORIZED TEST-ONLY**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -17,12 +17,13 @@ CONFIRMED_BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
 SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
 ```
 
-Closed foundations:
+Accepted foundations:
 ```text
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
+R3-R15_VALIDATOR_SHAPE_IMPLEMENTATION = ACCEPTED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
@@ -32,66 +33,59 @@ PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. Frozen Part B privacy authority — classification proof CLOSED
+## 3. R3-R15 review result
 
-The R3-R10..R3-R13 classification/evidence-parity corrective chain remains accepted and closed. Do not reopen without proven regression.
+Implementation `fb762c47559efc31e8f0e323973284aa83a6a0ad` passed scope. Its validator shape implementation is accepted:
+- exact `typeCounts` five-key shape;
+- no missing/extra keys;
+- non-negative integer counts;
+- deterministic malformed-shape blocker;
+- required shape negative tests.
 
-## 4. R3-R15 review result
+R3-R15 remains not closed only because the previously accepted malformed normalized-type negative test was removed. Validator source enum rejection remains present; therefore the next correction is test-only.
 
-Implementation `fb762c47559efc31e8f0e323973284aa83a6a0ad` changed only the two authorized feasibility files.
+## 4. D2-WP003-R3-R16 — AUTHORIZED TEST-ONLY
 
 ```text
-R3-R15_SCOPE_REVIEW = PASS
-R3-R15_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R15_STATUS = NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R16
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R16-TEST-20260901-01
 PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = NORMALIZED_TYPE_NEGATIVE_PROOF_PENDING_INDEPENDENT_REVIEW
 ```
 
-Accepted R3-R15 validator-shape progress:
-- top-level validator input is explicitly checked;
-- `typeCounts` must be a non-null non-array object;
-- exact keys `string|number|date|boolean|blank` are enforced, no missing/extra keys;
-- all reported counts must be non-negative integers;
-- malformed count shapes deterministically throw `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
-- negative tests cover extra key, missing/null/array object, and negative/fractional/non-number counts.
+Authorized write ONLY:
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Remaining blocker is proof-only: R3-R15 removed the previously accepted malformed normalized-type negative validator test even though the R3-R15 contract required preserving it. The validator enum-rejection implementation remains present.
+Feasibility source is read-only in R3-R16.
 
-GitHub combined statuses/checks for the implementation commit are empty.
+## 5. Mandatory R3-R16 proof
 
-## 5. Proposed D2-WP003-R3-R16
-
-R3-R16 is intentionally **TEST-ONLY**: restore the removed malformed normalized-type negative proof.
-
-Expected write only:
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
-
-Mandatory direction if approved:
-- preserve all current R3-R15 count-shape tests and positive source-backed typed metadata proof;
-- start from real source-backed valid Part B metadata;
+- preserve all existing R3-R15 validator-shape tests;
+- preserve all R3-R14 positive typed-metadata proof;
+- start from real source-backed valid Part B typed metadata;
 - deep-copy it;
-- mutate one real record to `normalizedType = invalid_type` or another invalid enum value;
-- call the real `validateTypedPrivacyMetadata()`;
-- assert exact blocker `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
-- do not modify feasibility source unless this restored proof exposes a real source regression.
+- mutate one real record `normalizedType` to `invalid_type` or another invalid enum value;
+- call real `validateTypedPrivacyMetadata()`;
+- assert `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
+- make no source/refactor/header/workbook/image/insertion/formula/renderer/PDF/UI/Kintone/deploy change.
 
-No Part B classification redesign and no header/workbook/image/insertion/formula closure in R3-R16.
+Critical rule:
+```text
+R3-R16 IS TEST-ONLY.
+RESTORE ACCEPTED NEGATIVE PROOF; DO NOT REDESIGN VALIDATOR SOURCE.
+```
 
 ## 6. Current gate
 
 ```text
 D2 = IN PROGRESS
-D2-WP001 = PASS / CLOSED
-D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R15 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R16 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R16 = AUTHORIZED / EXECUTION ACTIVE / TEST-ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R16-TEST-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R16 ONLY / LOW-CREDIT / TEST-ONLY
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
