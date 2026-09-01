@@ -51,11 +51,12 @@ D2-WP003-R3-R17 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 2 OF 20
+D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 3 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R25
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R26
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
+CORRECTIVE_BASELINE_COMMIT = 60b24f39b78013d37fe210192bb97876e0184638
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
@@ -63,9 +64,9 @@ Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
 
 Accepted R3-R22 closure remains frozen: raw direct xlsx-populate output, deterministic parity blocker, actual dimension evidence, exact per-sheet print-area binding, source-backed negative proof isolation, exact source validates and raw Part A/Part B fail closed after losing dimensions.
 
-R3-R24 improved source identity and target equality but remains corrective because exact worksheet relationship Type/TargetMode tuple, global duplicate-ID behavior, and exact source-equivalent schema-slot validation/proof are incomplete.
+R3-R25 improved exact worksheet Type, global relationship-ID checking and schema-neighbor validation but remains corrective because target lexical aliases can collapse to source ZIP paths, prefixed XML elements are not proven fail-closed, an observed-only `sheetPr` exception weakens source-equivalent ordering, and valid R3-R24 preservation negatives were removed.
 
-R3-R25 is proposed as the smallest next preservation corrective. It is NOT authorized.
+R3-R26 strict target lexical identity + proof-regression restoration is proposed as the smallest next preservation corrective. It is NOT authorized.
 
 D2 must ultimately close:
 - reference-image handling;
@@ -116,7 +117,7 @@ Status: `SOURCE FUNCTIONALITY CLOSED`; reopen only proven defect.
 ## 8. Current exact next action
 
 ```text
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R25
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R26
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 D3 = HOLD
