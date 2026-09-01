@@ -32,64 +32,85 @@ PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. R3-R11 independent review
 
-R3-R11 implementation `e43669961b67d806994fec67fb2bf83fbd02cd01` is exactly one commit above its authorization baseline and changed only the two authorized feasibility files. Scope = PASS. No Privacy Purge required.
+R3-R11 implementation `e43669961b67d806994fec67fb2bf83fbd02cd01` changed only the two authorized feasibility files. Scope = PASS; no Privacy Purge required.
 
 Accepted progress:
-- complete safe Part B rows2:34 source inventory is created before roles;
-- exact source SHA is enforced;
-- `SENSITIVE_RANGES_B` is used only after independent role resolution;
-- dynamic/protected disjointness is enforced by the real resolver;
-- real fail-closed tests now use real Part B evidence and real resolver paths.
+- source inventory is complete before role assignment;
+- exact Part B SHA is enforced;
+- `SENSITIVE_RANGES_B` is only a post-resolution compatibility check;
+- real resolver enforces independent sets/disjointness;
+- real fail-closed tests use actual Part B evidence and real resolver paths.
 
-R3-R11 source acceptance = FAIL because competency/body and summary/signature role acceptance still comes from broad row/column rectangles with no role-specific source fingerprint validation. Header merge conflicts fail closed, but equivalent body/summary source conflicts can still pass if generic evidence fields remain valid.
+R3-R11 source acceptance = FAIL only because competency/body and summary/signature roles still rely on broad row/column geometry with insufficient role-specific source fingerprint confirmation.
 
-## 4. Exact current gate
+## 4. Exact current gate — R3-R12 AUTHORIZED
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R12
-PROPOSED_WORK_PACKAGE_NAME = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
-STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP003-R3-R12 = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
+STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R12
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE R3-R12 ONLY / LOW-CREDIT
+MAX_EXECUTOR_STATUS = BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 5. Why R3-R12 remains narrow
+Read `project-docs/AI_ACTIVE_TASK.md` for exact contract.
 
-Do not return to broad multi-blocker closure. R3-R12 addresses only body/summary role-specific source validation.
+## 5. Exact authorized writes
 
-If approved, Antigravity must:
-- preserve accepted inventory-first, header validation, real fail-closed and post-resolution sanitizer cross-check architecture;
-- create authoritative safe source-role validation evidence before test overrides;
-- allow body/summary geometry to nominate a role, but require role-specific source evidence to confirm it;
-- use merge/style/type/blankness and safe static hashes where applicable;
-- fail closed in the real resolver on body/summary role evidence conflict;
-- test real protected-body, dynamic-body and summary/signature addresses with role-relevant evidence mutations.
-
-Expected writes only:
+Only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-No package change, binary publication, production sanitizer/renderer, PDF/UI, Live Kintone, deploy or next Work Package.
+Read-only: package files, governance docs and exact ignored owner template after SHA verification.
 
-## 6. Authorization ledger
+No XLSX/image/media/disposable-output commit.
+
+## 6. R3-R12 critical rules
+
+R3-R12 addresses ONE blocker only:
+- preserve accepted inventory/header/fail-closed/post-resolution architecture;
+- derive authoritative source role-validation evidence BEFORE any test override;
+- body/summary geometry may nominate a role but cannot accept it alone;
+- role-specific merge/style/type/blankness/static-hash evidence must confirm body/summary roles;
+- authoritative expected evidence must come from exact source, not mutated override input;
+- real resolver must throw `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on body/summary role-specific conflicts;
+- tests must mutate role-relevant evidence for one protected competency/body, one dynamic competency/body and one summary/signature real address;
+- preserve post-resolution `SENSITIVE_RANGES_B` equality and dynamic/static disjointness.
+
+Do not attempt typed/header/workbook/image/insertion-structural/formula blocker closure in R3-R12.
+
+Still forbidden: production sanitizer/renderer, package changes, binary publication, PDF/UI, Live Kintone, deploy or next Work Package.
+
+## 7. Required commands
+
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+After push STOP at `BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
+
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R12-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 7. Exact next action
+## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = NONE
-NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R12
-NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
+NEXT_EXECUTOR = ANTIGRAVITY
+ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R12 BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION, RUN TEST/AUDIT, PUSH, STOP
+NEXT_CONTROL_STEP = ChatGPT independent review
 ```
