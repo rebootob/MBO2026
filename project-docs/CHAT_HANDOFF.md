@@ -23,7 +23,9 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
-R3-R15_VALIDATOR_SHAPE_IMPLEMENTATION = ACCEPTED
+TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
+TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
+D2-WP003-R3-R16 = PASS / CLOSED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
@@ -33,82 +35,65 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R15 review
+## 3. R3-R16 independent review — PASS
 
-R3-R15 implementation `fb762c47559efc31e8f0e323973284aa83a6a0ad` passed scope and its validator shape correction is accepted. R3-R15 is not closed only because the accepted R3-R14 malformed normalized-type validator negative test was removed.
+Implementation `003afb71caf9aca2810d3fd92df9218c948b5f72` is exactly one commit above authorization baseline `6d250264f702837c5894d4ed399e9adbe2fc693b` and changed only the authorized test file.
 
-This is a test/proof regression only. The validator source enum-rejection logic remains accepted.
+The restored test starts from real source-backed Part B metadata, deep-copies it, mutates one real record to an invalid normalized type, invokes the real validator and asserts `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`.
 
-## 4. Exact current gate — R3-R16 AUTHORIZED TEST-ONLY
+R3-R15 validator-shape source and tests remain intact. Scope review = PASS; source/proof review = PASS; no Privacy Purge required. GitHub combined status/check list is empty.
+
+The typed privacy metadata corrective chain is now closed for this bounded feasibility layer. Do not reopen without proven regression.
+
+## 4. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R15 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R16 = RESTORE MALFORMED NORMALIZED-TYPE NEGATIVE PROOF
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R16
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R16-TEST-20260901-01
-ANTIGRAVITY = EXECUTE R3-R16 ONLY / LOW-CREDIT / TEST-ONLY
-MAX_EXECUTOR_STATUS = NORMALIZED_TYPE_NEGATIVE_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R16 = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R17
+PROPOSED_WORK_PACKAGE_NAME = HEADER FINGERPRINT / SANITIZED EXPORT PARITY
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact contract.
+## 5. Why R3-R17 is next
 
-## 5. Exact authorized write
+The next deferred feasibility blocker is header fingerprint/sanitized export parity.
 
-ONLY:
+If approved, R3-R17 should:
+- use only exact SHA-verified owner templates;
+- prove authoritative Part A/B header fingerprint and merge geometry;
+- prove sanitized disposable export preserves required structural identity while clearing dynamic sensitive header values;
+- preserve protected/static header identity using safe fingerprints only;
+- never require source sample-value equality for dynamic header fields;
+- fail closed on missing/extra/mismatched header evidence;
+- remain bounded to feasibility source/tests only.
+
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- package files
-- governance docs
-- owner templates
+Do not touch workbook-wide parity, image inventory, insertion matrix, formula matrix, production renderer, PDF/UI, Kintone, deploy or another Work Package.
 
-No XLSX/image/media/output commit.
-
-## 6. R3-R16 critical rule
-
-```text
-R3-R16 IS TEST-ONLY.
-RESTORE ACCEPTED NEGATIVE PROOF; DO NOT REDESIGN VALIDATOR SOURCE.
-```
-
-Required proof:
-- use real source-backed valid Part B typed metadata;
-- deep-copy it;
-- mutate a real metadata record to an invalid normalized type;
-- call real `validateTypedPrivacyMetadata()`;
-- assert `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED`;
-- preserve all R3-R15 shape tests and R3-R14 positive proof.
-
-## 7. Required commands
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at `NORMALIZED_TYPE_NEGATIVE_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
-
-## 8. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 D2-WP003-R3-R15-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R16-TEST-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY / TEST-ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R16-TEST-20260901-01
+D2-WP003-R3-R16-TEST-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CANONICAL, MODIFY ONLY TEST FILE, RESTORE NORMALIZED-TYPE NEGATIVE PROOF, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R17
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
 ```
