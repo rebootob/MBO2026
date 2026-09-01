@@ -32,84 +32,71 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R13 independent review — PASS
+## 3. R3-R14 independent review
 
-Implementation `14ec0c4fcc404e580ced61759dd0338a68f2c856` passed scope/source review. Part B privacy classification/evidence-parity blocker is CLOSED. No Privacy Purge required.
+R3-R14 implementation `c67e810bdc43c6a626f73da206cfaf5606ca250c` is exactly one commit above authorization baseline `560706cf6e0a6f04ed440ec5ff5cd8fb88e32043` and changed only the two authorized feasibility files. Scope = PASS. No Privacy Purge required.
 
-Do not reopen without proven regression.
+Accepted:
+- exact typed metadata address sets for Parts A/B are tested;
+- duplicate addresses are rejected;
+- every record type is enum-valid;
+- `nonblank` consistency is tested;
+- string hash shape and blank/non-string no-hash contract are tested;
+- derived type counts are checked against reported counts in source-backed tests;
+- source-zero date/boolean types are asserted without fabrication;
+- malformed normalized type exercises the validator blocker.
 
-## 4. Exact current gate — R3-R14 AUTHORIZED
+Source review = FAIL because validator count-shape fail-closed behavior is incomplete. `validateTypedPrivacyMetadata()` ignores extra keys in `typeCounts`, so a malformed object such as otherwise-valid counts plus `unexpected: 1` can pass. Missing/malformed `typeCounts` also is not explicitly normalized to the documented blocker.
+
+GitHub combined status/check list is empty.
+
+## 4. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R14 = TYPED PRIVACY METADATA COMPLETENESS
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R14
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R14 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R14 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R15
+PROPOSED_WORK_PACKAGE_NAME = TYPED METADATA VALIDATOR FAIL-CLOSED SHAPE COMPLETENESS
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for exact contract.
+## 5. Why R3-R15 remains narrow
 
-## 5. Exact authorized writes
+Do not reopen the accepted per-record metadata proof. R3-R15 addresses only validator top-level/count-shape exactness:
+- exact five-key `typeCounts` object only;
+- no extra/missing keys;
+- non-negative integer counts;
+- derived count object exact equality including key set;
+- deterministic `BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED` for missing/malformed count shape;
+- negative tests for extra key and missing/malformed `typeCounts`.
 
-Maximum only:
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only: package files, governance docs and exact ignored owner templates after SHA verification.
+Do not touch Part B classification, header/workbook/image/insertion/formula blockers, production renderer, PDF/UI, Kintone, deploy or another Work Package.
 
-No XLSX/image/media/disposable-output commit.
-
-## 6. R3-R14 critical rules
-
-R3-R14 addresses ONE blocker only:
-- prove exact expected metadata address set for Parts A/B;
-- prove no duplicate addresses;
-- prove every type is exactly `string|number|date|boolean|blank`;
-- prove `nonblank` is boolean and consistent with type;
-- prove safe hash contract per record without raw values;
-- derive per-type counts from metadata and match reported `typeCounts`;
-- keep aggregate reconciliation;
-- absent source types remain zero; never fabricate values for coverage.
-
-Critical rule:
-```text
-AGGREGATE COUNTS ARE NOT SUFFICIENT.
-EVERY TYPED METADATA RECORD MUST BE EXACT, UNIQUE, ENUM-VALID, AND INTERNALLY CONSISTENT.
-```
-
-Do not touch Part B classification already closed, header/workbook/image/insertion/formula blockers, production renderer, PDF/UI, Kintone, deploy or another Work Package.
-
-## 7. Required commands
-
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at `TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
-
-## 8. Authorization ledger
+## 6. Authorization ledger
 
 ```text
 D2-WP003-R3-R13-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R14-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
+D2-WP003-R3-R14-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 7. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CANONICAL BRANCH, EXECUTE ONLY R3-R14 TYPED METADATA COMPLETENESS, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R15
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot focused authorization
 ```
