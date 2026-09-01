@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / D2-WP003-R3 REVIEWED NOT PASS
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / D2-WP003-R3-R1 AUTHORIZED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R1 PROPOSED | R3 proof scope clean but source proof incomplete/false-positive; no binary publish |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R1 AUTHORIZED | Contract-complete OOXML feasibility corrective; no binary publish |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -33,36 +33,57 @@ PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Owner decision remains:
+Owner decision:
 ```text
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
 ## 3. R3 review result
 
-R3 scope discipline passed:
-- only feasibility source/test + `xlsx-populate@1.21.0` dependency metadata changed;
-- no XLSX/image/binary/output committed;
-- no production renderer/sanitizer or application/Kintone/PDF/UI/deploy changes.
+R3 scope discipline passed and no workbook/image/binary output was committed, so no new Privacy Purge is required.
 
-Therefore:
+R3 feasibility acceptance failed because its tests and helpers did not objectively prove material parity, row-7/row-3 value mapping, range-driven privacy, actual reference-image removal, or true OOXML Part A/Part B insertion.
+
+## 4. D2-WP003-R3-R1 — AUTHORIZED
+
 ```text
-R3_PRIVACY_PURGE_REQUIRED = NO
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R1
+WORK_PACKAGE_NAME = CONTRACT-COMPLETE OOXML FEASIBILITY PROOF CORRECTIVE
+OWNER_APPROVAL = GRANTED
+PRIVACY_PURGE_REQUIRED = NO
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R1-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
 ```
 
-R3 source acceptance failed because the proof did not actually establish the contract:
-- no-op parity checked only first-sheet names;
-- header proof still cleared Part A row-6 anchors and omitted true row-7 / Part B row-3 mapping;
-- privacy proof remained shared-string heuristic based and did not prove designated text/numeric/date ranges empty;
-- sensitive token values could appear in error strings;
-- image proof counted drawing/media files but did not identify/remove the reference image or prove branding remains;
-- Part A copied values + row heights rather than doing true OOXML insertion and did not prove the 5-objective case;
-- Part B copied values rather than inserting two 4-row blocks;
-- tests largely asserted helper booleans and contained an unconditional Difficulty pass.
+Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
 
-GitHub has no CI/status/workflow evidence for the R3 proof commit.
+Authorized write scope is now only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-## 4. Current gate
+`package.json` / `package-lock.json` are read-only because `xlsx-populate@1.21.0` is already pinned.
+
+R3-R1 still forbids all XLSX/image/binary publication and all production renderer/sanitizer/application changes.
+
+## 5. Acceptance direction
+
+R3-R1 must objectively measure the disposable OOXML package rather than trusting helper booleans.
+
+Required proof classes:
+- material no-op parity including print/page/merge/dimension/protection/drawing structure;
+- Part A row-6 labels preserved with values only in proven row-7 ranges;
+- Part B row-2 labels preserved with values only in proven row-3 ranges;
+- explicit sensitive-range map across text/numeric/date cells with no source-value logging;
+- actual disposable removal of the identified reference drawing/media while branding remains;
+- true OOXML Part A +1/+6 insertion with row/cell/merge/dimension/print rewrites;
+- true OOXML Part B +8 insertion with two four-row blocks and preserved protection/print geometry;
+- Difficulty blank directly measured.
+
+Any unresolved structure must fail closed.
+
+## 6. Current gate
 
 ```text
 D1 = CLOSED / PASS
@@ -71,31 +92,16 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R1
-PROPOSED_WORK_PACKAGE_NAME = CONTRACT-COMPLETE OOXML FEASIBILITY PROOF CORRECTIVE
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R1 = AUTHORIZED / EXECUTION ACTIVE
+CURRENT_EXECUTOR = ANTIGRAVITY
+NEXT_CONTROL_GATE = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW OR REAL BLOCKER
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-No Work Package may auto-start.
+No other Work Package may auto-start.
 
-## 5. R3-R1 direction
-
-If Owner approves R3-R1, keep it feasibility-only and no-binary:
-- correct the existing feasibility source/test rather than creating production code;
-- prove material no-op parity;
-- prove exact row-6/row-7 and row-2/row-3 label/value separation;
-- use an explicit sensitive-range map covering text/numeric/date cells without logging source values;
-- actually remove the identified reference drawing/media relationship while retaining approved branding;
-- perform bounded OOXML structural insertion with row/cell/merge/dimension/print reference rewrites;
-- test Part A 4/5/10 and Part B 6/8 through independent workbook assertions;
-- fail closed on any unresolved evidence.
-
-## 6. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
@@ -105,7 +111,8 @@ D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / PURGED / DO NOT REUSE
 D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R1-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R1-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
