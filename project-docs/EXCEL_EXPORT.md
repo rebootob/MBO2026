@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 PROPOSED**  
+> Status: **IN PROGRESS / D2-WP001 PASS-CLOSED / D2-WP002 PASS-CLOSED / R3-R13 PASS-CLOSED / R3-R14 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -34,53 +34,61 @@ PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 
 ## 3. Frozen Part B privacy authority — classification proof CLOSED
 
-The exact owner template remains the source structure authority. `SENSITIVE_RANGES_B` is post-resolution compatibility only.
+The R3-R10..R3-R13 classification/evidence-parity chain is accepted and CLOSED. Do not reopen without proven regression.
 
-The R3-R10..R3-R13 classification/evidence-parity corrective chain is now accepted and CLOSED:
-- complete SHA-verified source evidence inventory first;
-- role resolution independent from sanitizer map;
-- real fail-closed behavior;
-- authoritative vs observed style/merge/type/blankness parity;
-- protected-static safe hash identity where applicable;
-- no source-sample hash equality for dynamic values;
-- post-resolution dynamic set equals sanitizer expected set;
-- dynamic/static sets remain disjoint.
+Accepted behavior includes SHA-verified source evidence, independent role resolution, authoritative-vs-observed style/merge/type/blankness parity, protected-static safe hash identity where applicable, no sample-hash equality for dynamic values, fail-closed behavior, post-resolution sanitizer compatibility and dynamic/static disjointness.
 
-Do not reopen without proven regression.
-
-## 4. R3-R13 review result
-
-Implementation `14ec0c4fcc404e580ced61759dd0338a68f2c856` changed only the two authorized feasibility files.
+## 4. D2-WP003-R3-R14 — AUTHORIZED
 
 ```text
-R3-R13_SCOPE_REVIEW = PASS
-R3-R13_SOURCE_REVIEW = PASS
-R3-R13_STATUS = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R14
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
 PRIVACY_PURGE_REQUIRED = NO
+MAX_EXECUTOR_STATUS = TYPED_METADATA_PROOF_PENDING_INDEPENDENT_REVIEW
 ```
-
-GitHub combined statuses/checks are empty; this is recorded as missing CI evidence rather than a source defect for the bounded feasibility proof.
-
-## 5. Proposed D2-WP003-R3-R14
 
 R3-R14 is intentionally narrow: **typed privacy metadata completeness only**.
 
-Current source emits typed metadata but current tests mostly prove aggregate count/reconciliation. If approved, R3-R14 must independently prove per-record metadata correctness for Parts A/B:
-- exact expected unique address set, no missing/extra;
-- no duplicate addresses;
-- exact `normalizedType` enum: `string|number|date|boolean|blank`;
-- `nonblank` is boolean and consistent with type;
-- safe hash behavior is internally consistent and never exposes raw values;
-- number/date/boolean/string/blank occurrence counts reflect actual source only — no fabricated type cases;
-- aggregate type counts reconcile as a secondary check.
-
-Expected writes only:
+Authorized writes maximum only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-No Part B classification redesign and no header/workbook/image/insertion/formula closure in R3-R14.
+No package/dependency changes and no binary publication.
 
-## 6. Current gate
+## 5. Mandatory R3-R14 proof
+
+For Part A and Part B typed privacy metadata:
+- exact metadata address set equals the expected unique sensitive address set, with no missing/extra;
+- no duplicate addresses;
+- every `normalizedType` is exactly `string|number|date|boolean|blank`;
+- every `nonblank` is boolean and consistent with normalized type;
+- nonblank string hash, when emitted, is safe lowercase SHA-256 identity;
+- blank/number/date/boolean records do not manufacture hashes;
+- no raw source values are logged or committed;
+- per-type occurrence counts derived from records exactly match reported `typeCounts`;
+- `totalReconciled === uniqueCount` remains a secondary invariant;
+- types absent from the exact source remain zero and are not fabricated for branch coverage.
+
+Critical rule:
+```text
+AGGREGATE COUNTS ARE NOT SUFFICIENT.
+EVERY TYPED METADATA RECORD MUST BE EXACT, UNIQUE, ENUM-VALID, AND INTERNALLY CONSISTENT.
+```
+
+Prefer tests-only proof if the existing helper is sufficient. Feasibility source may change only for a minimal proof/validation helper if strictly necessary.
+
+## 6. Explicit exclusions
+
+No Part B classification redesign; no header fingerprint/export parity; no workbook roundtrip parity; no reference-image full inventory proof; no insertion structural matrix; no formula matrix; no production sanitizer/renderer; no normalizer/export-service application change; no PDF/UI/Live Kintone/deploy; no next Work Package.
+
+Mandatory commands:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+## 7. Current gate
 
 ```text
 D2 = IN PROGRESS
@@ -88,12 +96,12 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R14 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R14 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R14-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R14 ONLY / LOW-CREDIT
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-D2 remains open until the deferred feasibility blockers and then production Excel/combined/PDF parity and export security are independently accepted.
+D2 remains open until deferred feasibility blockers and then production Excel/combined/PDF parity and export security are independently accepted.
