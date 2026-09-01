@@ -37,80 +37,69 @@ Frozen geometry:
 - Part B labels row 2 / values row 3.
 - Difficulty export = blank temporarily by Owner decision.
 
-## 3. Corrective/privacy history
+## 3. Privacy history
 
-R2 independent review failed because true OOXML structural insertion, correct header/value mapping and privacy proof were still not implemented. Scope itself was clean.
+R2 was purged before R3. R3 deliberately committed no XLSX/image/binary outputs.
 
-Owner explicitly approved `D2-WP003-R3` with Privacy Purge.
+Therefore the R3 proof commit does **not** require another Privacy Purge.
 
-ChatGPT force-reset canonical branch to the clean pre-R2 implementation baseline:
-```text
-R3_SAFE_BASELINE = 22d8215287f0280fbbea668a275fee77b3801776
-THIRD_CANONICAL_BRANCH_PURGE = COMPLETE
-```
+Do not recreate refs/tags/backups to previously purged lineages and do not reuse prior generated sanitized binaries.
 
-Do not create refs/tags/backups to purged lineages and do not reuse prior generated sanitized binaries.
+## 4. R3 independent review
 
-## 4. Exact current gate — D2-WP003-R3 AUTHORIZED
+R3 implementation was one commit above authorization baseline and changed only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`;
+- `package.json` / `package-lock.json` for `xlsx-populate@1.21.0`.
+
+Scope review = PASS.
+
+Source review = FAIL / corrective required because:
+- no-op parity checks only sheet names, not material workbook geometry;
+- header mapping still clears Part A row-6 anchors and does not prove row-7 / Part B row-3 value ranges;
+- privacy extraction remains `sharedStrings.xml` heuristic based rather than designated range-driven text/numeric/date proof;
+- privacy errors may include source-sensitive token text;
+- reference-image proof only counts drawing/media files and performs no removal;
+- Part A proof copies values/row heights rather than performing true OOXML structural insertion and omits the +1 five-objective proof;
+- Part B proof copies values rather than inserting two four-row blocks;
+- test assertions largely trust helper-returned booleans and Difficulty test is unconditional.
+
+GitHub has no CI/status/workflow evidence for the proof commit.
+
+## 5. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3 = THIRD PRIVACY PURGE + FEASIBILITY-FIRST OOXML STRUCTURE PROOF
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R1
+PROPOSED_WORK_PACKAGE_NAME = CONTRACT-COMPLETE OOXML FEASIBILITY PROOF CORRECTIVE
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+PRIVACY_PURGE_REQUIRED_FOR_R3-R1 = NO
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for exact R3 contract.
+## 6. R3-R1 intent
 
-## 5. R3 strategy — proof before production
+R3-R1 should correct only the feasibility proof. Keep the no-binary strategy.
 
-R3 must NOT build/publish the production renderer or sanitized assets.
+Expected authorized paths, if Owner approves:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`;
+- dependency metadata only if genuinely required.
 
-Allowed changes only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-- `package.json` / `package-lock.json` for `xlsx-populate@1.21.0`
-
-No `.xlsx`, image, extracted media or disposable output may be committed.
-
-R3 must prove on exact ignored local owner templates and disposable outputs:
-- no-op parity;
-- header/value map without label overwrite;
-- privacy range map for text/numeric/date values;
-- safe reference-image removal while branding remains;
-- Part A actual row shifting: 5 => old row29 to row30, 10 => old row29 to row35;
-- Part B actual block shift: 8 items => old row31 to row39;
-- print areas become Part A row53/58 and Part B row43;
-- geometry/protection survive and workbook reparses.
-
-If any proof cannot be made safely, report the exact blocker instead of implementing production code.
-
-## 6. Forbidden
-
-No:
-- `assets/export-templates/**` changes;
-- production sanitizer/renderer changes;
+Still forbidden:
+- XLSX/image/media/output commit;
+- production sanitizer/renderer;
 - normalizer/export-service changes;
 - Difficulty field changes;
 - PDF/UI/Live Kintone/deploy;
-- second spreadsheet/XML library;
 - next Work Package.
 
-## 7. Required verification
+R3-R1 must objectively inspect disposable workbook structure rather than returning predeclared success flags.
 
-At minimum:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push, STOP at `FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW` or a real blocker.
-
-## 8. Authorization ledger
+## 7. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
@@ -119,8 +108,8 @@ D2-WP002 = APPROVED / READ-ONLY / CLOSED
 D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / PURGED / DO NOT REUSE
-D2-WP003-R3-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-SOURCE-20260901-01
+D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE_AUTH = NONE
@@ -133,10 +122,10 @@ LIVE_UAT = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-## 9. Exact next action
+## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = CLEAN-CHECK + FRESH-FETCH/HARD-RESET TO REWRITTEN CANONICAL BRANCH, EXECUTE R3 FEASIBILITY PROOF ONLY, PUSH SOURCE/TEST PROOF, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R1
+NEXT_CONTROL_STEP = If approved, ChatGPT opens a new one-shot R3-R1 proof authorization
 ```
