@@ -192,6 +192,120 @@ export async function getTypedPrivacyMetadata(partKey) {
   };
 }
 
+export async function getHeaderCellFingerprints(buf, partKey) {
+  const wb = await XlsxPopulate.fromDataAsync(buf);
+  const sheet = wb.sheet(0);
+
+  const titleAddrsA = expandRangeToAddresses('B6:M7').concat(expandRangeToAddresses('Z6:AF6'), expandRangeToAddresses('AG6:AL6'), expandRangeToAddresses('AM6:AP6'), expandRangeToAddresses('AQ6:AS6'), expandRangeToAddresses('AT6:BC6'), expandRangeToAddresses('BD6:BI6'));
+  const valueAddrsA = expandRangeToAddresses('N6:Q7').concat(expandRangeToAddresses('Z7:AF7'), expandRangeToAddresses('AG7:AL7'), expandRangeToAddresses('AM7:AP7'), expandRangeToAddresses('AQ7:AS7'), expandRangeToAddresses('AT7:BC7'), expandRangeToAddresses('BD7:BI7'));
+
+  const titleAddrsB = expandRangeToAddresses('B2:F3').concat(expandRangeToAddresses('J2:L2'), expandRangeToAddresses('M2:O2'), expandRangeToAddresses('P2:Q2'), ['R2'], expandRangeToAddresses('S2:W2'));
+  const valueAddrsB = expandRangeToAddresses('G2:H3').concat(expandRangeToAddresses('J3:L3'), expandRangeToAddresses('M3:O3'), expandRangeToAddresses('P3:Q3'), ['R3'], expandRangeToAddresses('S3:W3'));
+
+  const targetTitleAddrs = partKey === 'A' ? titleAddrsA : titleAddrsB;
+  const targetValueAddrs = partKey === 'A' ? valueAddrsA : valueAddrsB;
+  const boundedRows = partKey === 'A' ? [6, 7] : [2, 3];
+  const maxCol = partKey === 'A' ? 61 : 24;
+
+  const titleFingerprints = {};
+  for (const addr of targetTitleAddrs) {
+    const val = String(sheet.cell(addr).value() || '');
+    titleFingerprints[addr] = crypto.createHash('sha256').update(val).digest('hex');
+  }
+
+  const valueFingerprints = {};
+  for (const addr of targetValueAddrs) {
+    const val = String(sheet.cell(addr).value() || '');
+    valueFingerprints[addr] = crypto.createHash('sha256').update(val).digest('hex');
+  }
+
+  const valueSet = new Set(targetValueAddrs);
+  const titleSet = new Set(targetTitleAddrs);
+  const unrelatedFingerprints = {};
+
+  for (const r of boundedRows) {
+    for (let c = 1; c <= maxCol; c++) {
+      const addr = `${idxToCol(c)}${r}`;
+      if (!valueSet.has(addr) && !titleSet.has(addr)) {
+        const val = String(sheet.cell(addr).value() || '');
+        unrelatedFingerprints[addr] = crypto.createHash('sha256').update(val).digest('hex');
+      }
+    }
+  }
+
+  return { titleFingerprints, valueFingerprints, unrelatedFingerprints };
+}
+
+export async function getWorkbookFingerprint(buf) {
+  const wb = await XlsxPopulate.fromDataAsync(buf);
+  const sheetNames = wb.sheets().map(s => s.name());
+
+  const sheet1Xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const rawMerges = [...sheet1Xml.matchAll(/<mergeCell [^>]*\/>/g)].map(m => m[0]).sort();
+  const mergeCountAttr = sheet1Xml.match(/<mergeCells count="(\d+)">/)?.[1] || String(rawMerges.length);
+
+  const dimension = sheet1Xml.match(/<dimension [^>]*\/>/)?.[0] || '';
+  const colsXml = sheet1Xml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
+  const colsHash = crypto.createHash('sha256').update(colsXml).digest('hex');
+
+  const rowHeights = [...sheet1Xml.matchAll(/<row r="(\d+)"[^>]*ht="([^"]+)"/g)].map(m => `R${m[1]}:${m[2]}`);
+  const rowHeightsHash = crypto.createHash('sha256').update(rowHeights.join(',')).digest('hex');
+
+  const workbookXml = await wb._zip.files['xl/workbook.xml'].async('string');
+  let printArea = workbookXml.match(/<definedName name="_xlnm\.Print_Area"[^>]*>([^<]+)<\/definedName>/)?.[1] || '';
+  printArea = printArea.replaceAll('&amp;', '&');
+
+  const paperSize = sheet1Xml.match(/paperSize="(\d+)"/)?.[1] || '';
+  const orientation = sheet1Xml.match(/orientation="([^"]+)"/)?.[1] || '';
+  const scale = sheet1Xml.match(/scale="(\d+)"/)?.[1] || '';
+  const horizontalCentered = sheet1Xml.includes('horizontalCentered="1"');
+  const sheetProtection = sheet1Xml.includes('<sheetProtection') || sheet1Xml.includes('sheetProtection');
+
+  const drawingRels = wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'] ? await wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string') : '';
+  const drawingRelsHash = crypto.createHash('sha256').update(drawingRels).digest('hex');
+
+  const mediaFiles = [];
+  for (const fileName in wb._zip.files) {
+    if (fileName.startsWith('xl/media/')) {
+      const mediaBuf = await wb._zip.files[fileName].async('nodebuffer');
+      const mediaHash = crypto.createHash('sha256').update(mediaBuf).digest('hex');
+      mediaFiles.push(`${fileName}:${mediaHash}`);
+    }
+  }
+  mediaFiles.sort();
+
+  return {
+    sheetNames,
+    rawMergeCount: rawMerges.length,
+    mergeCountAttr,
+    rawMerges,
+    dimension,
+    colsHash,
+    rowHeightsHash,
+    printArea,
+    paperSize,
+    orientation,
+    scale,
+    horizontalCentered,
+    sheetProtection,
+    drawingRelsHash,
+    mediaFiles
+  };
+}
+
+export async function getWorksheetFormulaNodeCount(buf) {
+  const wb = await XlsxPopulate.fromDataAsync(buf);
+  let count = 0;
+  for (const fileName in wb._zip.files) {
+    if (fileName.startsWith('xl/worksheets/') && fileName.endsWith('.xml')) {
+      const xml = await wb._zip.files[fileName].async('string');
+      const matches = xml.match(/<f(?:\s|>)/g);
+      if (matches) count += matches.length;
+    }
+  }
+  return count;
+}
+
 export async function getNoOpParityBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');

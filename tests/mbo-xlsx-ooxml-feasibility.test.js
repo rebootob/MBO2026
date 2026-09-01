@@ -12,6 +12,9 @@ import {
   getStructuralPartBBuffers,
   getPartBPrivacyClassification,
   getTypedPrivacyMetadata,
+  getHeaderCellFingerprints,
+  getWorkbookFingerprint,
+  getWorksheetFormulaNodeCount,
   SENSITIVE_RANGES_A,
   SENSITIVE_RANGES_B,
   EXPECTED_PART_A_SHA,
@@ -28,72 +31,61 @@ test('FEASIBILITY_TEMPLATE_SHA_VERIFICATION: local owner template SHA-256 hashes
 test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates without material degradation', async () => {
   const { origBufA, outBufA, origBufB, outBufB } = await getNoOpParityBuffers();
 
-  const wbOutA = await XlsxPopulate.fromDataAsync(outBufA);
-  assert.equal(wbOutA.sheets().length, 1, 'Part A sheet count must remain 1');
-  assert.equal(wbOutA.sheet(0).name(), 'MBO Staff & Chief', 'Part A sheet name must be MBO Staff & Chief');
+  // Part A Direct Source vs Round-Trip Fingerprint Equality
+  const fpOrigA = await getWorkbookFingerprint(origBufA);
+  const fpOutA = await getWorkbookFingerprint(outBufA);
 
-  // Measure raw <mergeCell> count & refs in Part A sheet1.xml directly with no fallback
-  const sheet1XmlA = await wbOutA._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const rawMergesA = [...sheet1XmlA.matchAll(/<mergeCell [^>]*\/>/g)];
-  assert.equal(rawMergesA.length, 193, 'Part A raw merge count in sheet1.xml must equal 193');
+  assert.deepEqual(fpOutA.sheetNames, fpOrigA.sheetNames, 'Part A sheet names must match source exactly');
+  assert.equal(fpOutA.rawMergeCount, 193, 'Part A raw merge count must equal 193');
+  assert.deepEqual(fpOutA.rawMerges, fpOrigA.rawMerges, 'Part A raw merge refs must match source exactly');
+  assert.equal(fpOutA.colsHash, fpOrigA.colsHash, 'Part A <cols> structure hash must match source exactly');
+  assert.equal(fpOutA.rowHeightsHash, fpOrigA.rowHeightsHash, 'Part A row heights hash must match source exactly');
+  assert.equal(fpOutA.paperSize, '8', 'Part A paperSize must be 8 (A3)');
+  assert.equal(fpOutA.orientation, 'landscape', 'Part A orientation must be landscape');
+  assert.equal(fpOutA.scale, '58', 'Part A scale must be 58%');
+  assert.equal(fpOutA.printArea, "'MBO Staff & Chief'!$A$1:$BJ$52", 'Part A print area must be A1:BJ52');
+  assert.equal(fpOutA.drawingRelsHash, fpOrigA.drawingRelsHash, 'Part A drawing relationships hash must match source exactly');
+  assert.deepEqual(fpOutA.mediaFiles, fpOrigA.mediaFiles, 'Part A media inventory must match source exactly');
 
-  // Compare original vs output cols & page setup
-  const wbOrigA = await XlsxPopulate.fromDataAsync(origBufA);
-  const origXmlA = await wbOrigA._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const colsOrigA = origXmlA.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
-  const colsOutA = sheet1XmlA.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
-  assert.equal(colsOutA, colsOrigA, 'Part A <cols> structure must match original exactly');
+  // Part B Direct Source vs Round-Trip Fingerprint Equality
+  const fpOrigB = await getWorkbookFingerprint(origBufB);
+  const fpOutB = await getWorkbookFingerprint(outBufB);
 
-  // Inspect Part A OOXML page setup & workbook defined names directly
-  const workbookXmlA = await wbOutA._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(workbookXmlA.includes('Print_Area') && workbookXmlA.includes('BJ$52'), true, 'Part A print area must be A1:BJ52');
-
-  assert.equal(sheet1XmlA.includes('orientation="landscape"'), true, 'Part A orientation must be landscape');
-  assert.equal(sheet1XmlA.includes('scale="58"'), true, 'Part A scale must be 58%');
-  assert.equal(sheet1XmlA.includes('paperSize="8"'), true, 'Part A paperSize must be 8 (A3)');
-
-  const wbOutB = await XlsxPopulate.fromDataAsync(outBufB);
-  assert.equal(wbOutB.sheets().length, 2, 'Part B workbook must preserve sheet count');
-  assert.equal(wbOutB.sheet(0).name(), '(Part B) Competency', 'Part B sheet 0 name must be (Part B) Competency');
-  assert.equal(wbOutB.sheet(1).name(), 'Sheet1', 'Part B sheet 1 name must be Sheet1');
-
-  const sheet1XmlB = await wbOutB._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const rawMergesB = [...sheet1XmlB.matchAll(/<mergeCell [^>]*\/>/g)];
-  assert.equal(rawMergesB.length, 79, 'Part B raw merge count in sheet1.xml must equal 79');
-
-  const workbookXmlB = await wbOutB._zip.files['xl/workbook.xml'].async('string');
-  assert.equal(workbookXmlB.includes('Print_Area') && workbookXmlB.includes('X$35'), true, 'Part B print area must be A1:X35');
-
-  assert.equal(sheet1XmlB.includes('orientation="portrait"'), true, 'Part B orientation must be portrait');
-  assert.equal(sheet1XmlB.includes('paperSize="9"'), true, 'Part B paperSize must be 9 (A4)');
-  assert.equal(sheet1XmlB.includes('scale="75"'), true, 'Part B scale must be 75%');
-  assert.equal(sheet1XmlB.includes('horizontalCentered="1"'), true, 'Part B horizontalCentered must be 1');
-  assert.equal(sheet1XmlB.includes('<sheetProtection') || sheet1XmlB.includes('sheetProtection'), true, 'Part B sheet protection must be present');
+  assert.deepEqual(fpOutB.sheetNames, ['(Part B) Competency', 'Sheet1'], 'Part B sheet names must match source exactly');
+  assert.equal(fpOutB.rawMergeCount, 79, 'Part B raw merge count must equal 79');
+  assert.deepEqual(fpOutB.rawMerges, fpOrigB.rawMerges, 'Part B raw merge refs must match source exactly');
+  assert.equal(fpOutB.colsHash, fpOrigB.colsHash, 'Part B <cols> structure hash must match source exactly');
+  assert.equal(fpOutB.rowHeightsHash, fpOrigB.rowHeightsHash, 'Part B row heights hash must match source exactly');
+  assert.equal(fpOutB.paperSize, '9', 'Part B paperSize must be 9 (A4)');
+  assert.equal(fpOutB.orientation, 'portrait', 'Part B orientation must be portrait');
+  assert.equal(fpOutB.scale, '75', 'Part B scale must be 75%');
+  assert.equal(fpOutB.horizontalCentered, true, 'Part B horizontalCentered must be true');
+  assert.equal(fpOutB.sheetProtection, true, 'Part B sheetProtection must be present');
+  assert.equal(fpOutB.printArea, "'(Part B) Competency'!$A$1:$X$35", 'Part B print area must be A1:X35');
+  assert.equal(fpOutB.drawingRelsHash, fpOrigB.drawingRelsHash, 'Part B drawing relationships hash must match source exactly');
+  assert.deepEqual(fpOutB.mediaFiles, fpOrigB.mediaFiles, 'Part B media inventory must match source exactly');
 });
 
 test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels remain intact while value cells clear/update', async () => {
-  const { outBufA, labelSnapshotA, outBufB, labelSnapshotB } = await getMutatedHeaderValueBuffers();
+  const { origBufA, outBufA, origBufB, outBufB } = await getNoOpParityBuffers();
 
-  const wbA = await XlsxPopulate.fromDataAsync(outBufA);
-  const sheetA = wbA.sheet(0);
+  const fpOrigHeaderA = await getHeaderCellFingerprints(origBufA, 'A');
+  const { outBufA: mutBufA, outBufB: mutBufB } = await getMutatedHeaderValueBuffers();
+  const fpMutHeaderA = await getHeaderCellFingerprints(mutBufA, 'A');
 
-  // Directly inspect Part A Row 6 static header labels to confirm their hashes match snapshot
-  for (const cellAddr in labelSnapshotA) {
-    const valHash = crypto.createHash('sha256').update(String(sheetA.cell(cellAddr).value() || '')).digest('hex');
-    assert.equal(valHash, labelSnapshotA[cellAddr], `Label hash at ${cellAddr} must remain unchanged`);
-  }
+  // Assert Part A static title/label fingerprints & unrelated header cell fingerprints are unchanged
+  assert.deepEqual(fpMutHeaderA.titleFingerprints, fpOrigHeaderA.titleFingerprints, 'Part A title/label fingerprints must match source exactly');
+  assert.deepEqual(fpMutHeaderA.unrelatedFingerprints, fpOrigHeaderA.unrelatedFingerprints, 'Part A unrelated header cell fingerprints must match source exactly');
 
-  const wbB = await XlsxPopulate.fromDataAsync(outBufB);
-  const sheetB = wbB.sheet(0);
+  const fpOrigHeaderB = await getHeaderCellFingerprints(origBufB, 'B');
+  const fpMutHeaderB = await getHeaderCellFingerprints(mutBufB, 'B');
 
-  // Directly inspect Part B Row 2 static header labels to confirm their hashes match snapshot
-  for (const cellAddr in labelSnapshotB) {
-    const valHash = crypto.createHash('sha256').update(String(sheetB.cell(cellAddr).value() || '')).digest('hex');
-    assert.equal(valHash, labelSnapshotB[cellAddr], `Label hash at ${cellAddr} must remain unchanged`);
-  }
+  assert.deepEqual(fpMutHeaderB.titleFingerprints, fpOrigHeaderB.titleFingerprints, 'Part B title/label fingerprints must match source exactly');
+  assert.deepEqual(fpMutHeaderB.unrelatedFingerprints, fpOrigHeaderB.unrelatedFingerprints, 'Part B unrelated header cell fingerprints must match source exactly');
 
   // Directly inspect mutated value cell R3
-  assert.equal(sheetB.cell('R3').value(), 'MUTATED_VAL', 'Value cell R3 must be updated');
+  const wbB = await XlsxPopulate.fromDataAsync(mutBufB);
+  assert.equal(wbB.sheet(0).cell('R3').value(), 'MUTATED_VAL', 'Value cell R3 must be updated');
 });
 
 test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string purging leave 0 sensitive tokens in OOXML parts', async () => {
@@ -102,6 +94,10 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   assert.equal(classMapB['G2'].classification, 'HEADER_VALUE', 'G2 must be classified HEADER_VALUE');
   assert.equal(classMapB['B2'].isDynamic, false, 'B2 static title must be protected');
   assert.equal(classMapB['B7'].isDynamic, false, 'B7 static competency text must be protected');
+
+  for (const addr of SENSITIVE_RANGES_B) {
+    assert.equal(classMapB[addr]?.isDynamic, true, `Sensitive address ${addr} must be classified dynamic/sample`);
+  }
 
   // Typed privacy metadata test
   const metaA = await getTypedPrivacyMetadata('A');
@@ -123,12 +119,14 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
-  // Scan all xl/ OOXML XML files in memory for token survival & formula nodes <f(?:\s|>)
+  // Formula node test using regex <f(?:\s|>)
+  const sourceFormulasA = await getWorksheetFormulaNodeCount(bufA);
+  assert.equal(sourceFormulasA, 0, 'Part A sanitized output worksheet formula node count must equal 0');
+
+  // Scan all xl/ OOXML XML files in memory for token survival
   for (const fileName in wbA._zip.files) {
     if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
       const xmlText = await wbA._zip.files[fileName].async('string');
-      // Prove zero formula nodes <f> exist in worksheet
-      assert.equal(/<f(?:\s|>)/.test(xmlText), false, `No worksheet formula <f> allowed in ${fileName}`);
       for (const token of sensitiveA) {
         if (token.length >= 3) {
           assert.equal(xmlText.includes(token), false, `Sensitive token must not exist in Part A OOXML ${fileName}`);
@@ -145,10 +143,12 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(val === null || val === undefined, true, `Cell ${addr} must be empty after sanitization`);
   }
 
+  const sourceFormulasB = await getWorksheetFormulaNodeCount(bufB);
+  assert.equal(sourceFormulasB, 0, 'Part B sanitized output worksheet formula node count must equal 0');
+
   for (const fileName in wbB._zip.files) {
     if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
       const xmlText = await wbB._zip.files[fileName].async('string');
-      assert.equal(/<f(?:\s|>)/.test(xmlText), false, `No worksheet formula <f> allowed in ${fileName}`);
       for (const token of sensitiveB) {
         if (token.length >= 3) {
           assert.equal(xmlText.includes(token), false, `Sensitive token must not exist in Part B OOXML ${fileName}`);
