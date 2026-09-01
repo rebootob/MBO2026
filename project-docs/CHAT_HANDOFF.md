@@ -30,13 +30,23 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R7 independent review
+## 3. R3-R8 independent review
 
-R3-R7 scope = PASS. Implementation `a5779e6540e3f677b400620acc0e98807b381780` changed only the two authorized feasibility files. No workbook/image/binary/output/package/application/Kintone/deploy path changed, so no Privacy Purge is required.
+R3-R8 scope = PASS. Implementation `e7690e6066839ac8abd53b1d1ac524120ab06e17` changed only the two authorized feasibility files. No workbook/image/binary/output/package/application/Kintone/deploy path changed, so no Privacy Purge is required.
 
-Accepted progress: header merge/value/type hashing, raw worksheet inspector, formula worksheet/cell set helper, and inspector usage in structural tests.
+Accepted progress: header style id, package relationship tuples, metadata-address blank checks, and additional raw inspector assertions.
 
-R3-R7 source acceptance = FAIL because proof coverage remains incomplete: Part B classification is still hard-coded; typed metadata is not reconciled address-by-address; header style/normalized-type/runtime/merge proof is incomplete; workbook parity omits several direct source-equality invariants; target-normalized image inventory equality is absent; structural inspector properties are not asserted beyond merge count/Print_Area; formula source + structural output coverage/node fingerprints are absent.
+R3-R8 source acceptance = FAIL / corrective required.
+
+Remaining blockers:
+- Part B classification remains hard-coded/self-declared rather than source-backed;
+- typed metadata exact set/type/nonblank/date/boolean reconciliation is incomplete;
+- header normalized type does not strictly implement `string|number|date|boolean|blank` and complete runtime value fingerprints are not asserted;
+- workbook parity still lacks direct source equality for dimension, mergeCountAttr, explicit row-height/customHeight map, complete page/protection structure and reparse;
+- reference-image proof lacks target-normalized complete before/after inventories;
+- raw structural tests still do not assert all row/cell/style/height/merge/dimension/page/protection properties for A4/A5/A10/B6/B8;
+- formula proof lacks safe node hashes and complete original/sanitized/structural coverage;
+- GitHub has no CI/status evidence.
 
 ## 4. Frozen evidence
 
@@ -65,81 +75,52 @@ rId3 -> ../media/image3.png
 ```
 Preserve every non-target drawing/media relationship.
 
-## 5. Exact current gate — R3-R8 AUTHORIZED
+## 5. Exact current gate
 
 ```text
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R7 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R8 = MANDATORY PROOF COVERAGE COMPLETION
-STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R8
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R8-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE R3-R8 ONLY / LOW-CREDIT
-MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+D2-WP003-R3-R8 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R9
+PROPOSED_WORK_PACKAGE_NAME = FINAL ASSERTION COVERAGE CLOSURE
+STATUS = OWNER APPROVAL REQUIRED / NOT STARTED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 PRIVACY_PURGE_REQUIRED = NO
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for the exact contract.
+## 6. R3-R9 direction if approved
 
-## 6. Exact authorized writes
+Do not redesign raw OOXML mutation. Finish only the remaining proof coverage:
+- source-derived Part B classification or fail closed;
+- typed metadata exact set/type/nonblank/number/date/boolean reconciliation;
+- strict header normalized-type enum plus complete runtime/merge assertions;
+- every workbook fingerprint invariant compared source-vs-roundtrip;
+- complete target-normalized reference-image inventories;
+- all required raw structural properties for Part A 4/5/10 and Part B 6/8;
+- source/sanitized/structural formula worksheet/cell/node-hash sets.
 
-Only:
+Expected writes only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only: package files, governance docs and exact ignored owner templates after SHA verification.
+No package change, binary publication, production sanitizer/renderer, PDF/UI, Live Kintone, deploy or next Work Package.
 
-No XLSX/image/media/disposable-output commit.
-
-## 7. R3-R8 critical completion rules
-
-- preserve raw OOXML mutation implementation; proof-coverage completion only;
-- Part B classification must be backed by actual SHA-verified owner-template structure or fail closed;
-- typed metadata must reconcile exact address sets and types directly to sanitized output;
-- header fingerprints must include normalized type/style/merge and prove static/runtime/unrelated/merge invariants;
-- compare every workbook fingerprint field source-vs-roundtrip, including dimension, merge-count consistency, row height/customHeight map, page/protection and complete relationship inventory;
-- compare complete target-normalized reference-image anchors/relationships/media before vs after;
-- assert every required raw inspector property for Part A 4/5/10 and Part B 6/8;
-- formula proof must compare source, sanitized and every structural output using worksheet/cell/node fingerprints;
-- no helper is accepted unless its required outputs are directly asserted in the same commit;
-- Difficulty remains blank; no application Difficulty field changes.
-
-Still forbidden: production sanitizer/renderer, package changes, binary publication, PDF/UI, Live Kintone, deploy or next Work Package.
-
-## 8. Required commands
+## 7. Authorization ledger
 
 ```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-After push STOP at `FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW` or an exact documented blocker.
-
-## 9. Authorization ledger
-
-```text
-D2-WP003-R3-R7-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R8-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R8-SOURCE-20260901-01
+D2-WP003-R3-R8-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_APP794_DEPLOY_AUTH = NONE
-APP53_WRITE_AUTH = NONE
-APP794_WRITE_AUTH = NONE
-APP795_WRITE_AUTH = NONE
-APP801_WRITE_AUTH = NONE
-ACL_PROCESS_WRITE_AUTH = NONE
-KINTONE_CUSTOMIZATION_DEPLOY = NONE
-LIVE_UAT = NO
-ROLLBACK_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
 ```
 
-## 10. Exact next action
+## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = FRESH-FETCH CURRENT CANONICAL BRANCH, EXECUTE R3-R8 IN THE TWO AUTHORIZED FILES ONLY, RUN TEST/AUDIT, PUSH, STOP
-NEXT_CONTROL_STEP = ChatGPT independent review
+NEXT_EXECUTOR = NONE
+NEXT_ACTION = OWNER DECISION ON D2-WP003-R3-R9
+NEXT_CONTROL_STEP = If approved, ChatGPT opens one-shot corrective authorization
 ```
