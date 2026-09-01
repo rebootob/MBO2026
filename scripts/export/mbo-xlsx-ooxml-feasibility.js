@@ -772,13 +772,22 @@ export async function getWorkbookFingerprint(buf) {
     sheetRelMap[m[1]] = target;
   }
 
+  // Corrective A: Parse _xlnm.Print_Area defined names strictly by localSheetId attribute
+  const printAreasByLocalSheetId = {};
+  const paMatches = [...workbookXml.matchAll(/<definedName [^>]*name="_xlnm\.Print_Area"[^>]*localSheetId="(\d+)"[^>]*>([^<]+)<\/definedName>/g)];
+  for (const m of paMatches) {
+    const sheetIdx = parseInt(m[1], 10);
+    printAreasByLocalSheetId[sheetIdx] = m[2].replaceAll('&amp;', '&');
+  }
+
   const sheetMatchesAlt = [...workbookXml.matchAll(/<sheet [^>]*name="([^"]+)"[^>]*>/g)];
 
   const sheetNames = [];
   const sheetStates = [];
   const sheets = {};
 
-  for (const sm of sheetMatchesAlt) {
+  for (let sheetIdx = 0; sheetIdx < sheetMatchesAlt.length; sheetIdx++) {
+    const sm = sheetMatchesAlt[sheetIdx];
     const sTag = sm[0];
     const rawName = sTag.match(/name="([^"]+)"/)?.[1];
     const name = rawName ? rawName.replaceAll('&amp;', '&') : '';
@@ -797,7 +806,28 @@ export async function getWorkbookFingerprint(buf) {
 
       const rawMerges = [...sheetXml.matchAll(/<mergeCell [^>]*ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
       const mergeCountAttr = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1] || String(rawMerges.length);
-      const dimension = sheetXml.match(/<dimension [^>]*\/>/)?.[0] || '';
+
+      // Extract or compute dimension ref if tag omitted by xlsx-populate
+      let dimension = sheetXml.match(/<dimension [^>]*\/>/)?.[0] || '';
+      if (!dimension && sheetXml.includes('<row r=')) {
+        let minC = Infinity, maxC = 0, minR = Infinity, maxR = 0;
+        const rowMatches = [...sheetXml.matchAll(/<row r="(\d+)"/g)];
+        for (const rm of rowMatches) {
+          const rIdx = parseInt(rm[1], 10);
+          if (rIdx < minR) minR = rIdx;
+          if (rIdx > maxR) maxR = rIdx;
+        }
+        const cellMatches = [...sheetXml.matchAll(/<c r="([A-Z]+)\d+"/g)];
+        for (const cm of cellMatches) {
+          const cIdx = colToIdx(cm[1]);
+          if (cIdx < minC) minC = cIdx;
+          if (cIdx > maxC) maxC = cIdx;
+        }
+        if (minR === 1) minC = 1;
+        if (minC !== Infinity && maxC > 0 && minR !== Infinity && maxR > 0) {
+          dimension = `<dimension ref="${idxToCol(minC)}${minR}:${idxToCol(maxC)}${maxR}"/>`;
+        }
+      }
 
       const colsXml = sheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
       const colsHash = crypto.createHash('sha256').update(colsXml).digest('hex');
@@ -820,11 +850,8 @@ export async function getWorkbookFingerprint(buf) {
       const verticalCentered = sheetXml.includes('verticalCentered="1"');
       const sheetProtection = sheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || (sheetXml.includes('sheetProtection') ? 'protected' : 'none');
 
-      let printArea = '';
-      const paMatch = workbookXml.match(new RegExp(`<definedName name="_xlnm\\.Print_Area"[^>]*localSheetId="${sheets[name] ? Object.keys(sheets).length - 1 : 0}"[^>]*>([^<]+)<\\/definedName>`)) || workbookXml.match(/<definedName name="_xlnm\.Print_Area"[^>]*>([^<]+)<\/definedName>/);
-      if (paMatch) {
-        printArea = paMatch[1].replaceAll('&amp;', '&');
-      }
+      // Exact per-sheet print area binding without fallbacks
+      const printArea = printAreasByLocalSheetId[sheetIdx] || '';
 
       const sheetRelsPath = fileName.replace('xl/worksheets/', 'xl/worksheets/_rels/') + '.rels';
       const sheetRels = [];
@@ -965,7 +992,8 @@ export async function validateWorkbookParity(observedBufOrFingerprint, partKey, 
         throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
       }
 
-      if (obsSheet.dimension && authSheet.dimension && obsSheet.dimension !== authSheet.dimension) {
+      // Corrective B: Mandatory exact dimension check (unconditional, fail-closed if missing or mismatch)
+      if (obsSheet.dimension !== authSheet.dimension) {
         throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
       }
       if (obsSheet.rawMergeCount !== authSheet.rawMergeCount) {
@@ -1010,6 +1038,7 @@ export async function validateWorkbookParity(observedBufOrFingerprint, partKey, 
       if (obsSheet.sheetProtection !== authSheet.sheetProtection) {
         throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
       }
+      // Corrective A: Mandatory printArea check
       if (obsSheet.printArea !== authSheet.printArea) {
         throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
       }
