@@ -1127,6 +1127,79 @@ export async function getNoOpParityBuffers() {
   return { origBufA, outBufA, origBufB, outBufB };
 }
 
+const CANONICAL_WORKSHEET_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet';
+
+const OPENXML_WORKSHEET_CHILD_ORDER = [
+  'sheetPr',
+  'dimension',
+  'sheetViews',
+  'sheetFormatPr',
+  'cols',
+  'sheetData',
+  'sheetCalcPr',
+  'sheetProtection',
+  'protectedRanges',
+  'scenarios',
+  'autoFilter',
+  'sortState',
+  'dataConsolidate',
+  'customSheetViews',
+  'mergeCells',
+  'phoneticPr',
+  'conditionalFormatting',
+  'dataValidations',
+  'hyperlinks',
+  'printOptions',
+  'pageMargins',
+  'pageSetup',
+  'headerFooter',
+  'rowBreaks',
+  'colBreaks',
+  'customProperties',
+  'cellWatchPr',
+  'ignoredErrors',
+  'smartTags',
+  'drawing',
+  'legacyDrawing',
+  'legacyDrawingHF',
+  'drawingHF',
+  'picture',
+  'oleObjects',
+  'controls',
+  'webPublishItems',
+  'tableParts',
+  'extLst'
+];
+
+function parseTopLevelChildren(xml) {
+  const wsMatch = xml.match(/<worksheet[^>]*>/);
+  if (!wsMatch) return null;
+  const startIdx = wsMatch.index + wsMatch[0].length;
+  const endIdx = xml.indexOf('</worksheet>');
+  if (endIdx === -1 || endIdx <= startIdx) return null;
+
+  const inner = xml.slice(startIdx, endIdx);
+  const matches = [...inner.matchAll(/<([a-zA-Z0-9]+)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/g)];
+  return matches.map(m => ({
+    name: m[1],
+    fullTag: m[0],
+    startIndex: startIdx + m.index,
+    endIndex: startIdx + m.index + m[0].length
+  }));
+}
+
+function validateSchemaOrder(children) {
+  let lastOrderIdx = -1;
+  for (const c of children) {
+    const orderIdx = OPENXML_WORKSHEET_CHILD_ORDER.indexOf(c.name);
+    if (orderIdx === -1 || orderIdx < lastOrderIdx) {
+      return false; // Out of schema order or invalid element
+    }
+    lastOrderIdx = orderIdx;
+  }
+  return true;
+}
+
 export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, sourceBufOverride = null) {
   try {
     if (partKey !== 'A' && partKey !== 'B') {
@@ -1175,9 +1248,8 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
     const obsRelsXmlFile = wbObserved._zip.files['xl/_rels/workbook.xml.rels'];
     const obsRelsXml = obsRelsXmlFile ? await obsRelsXmlFile.async('string') : '';
 
-    function parseWorksheetRelMap(relsXml) {
-      const map = {};
-      const seenTargets = new Set();
+    function parseGlobalRels(relsXml) {
+      const relsMap = {};
       const relMatches = [...relsXml.matchAll(/<Relationship\s+[^>]*\/?>/g)];
 
       for (const m of relMatches) {
@@ -1187,36 +1259,46 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
         const targetMatch = tag.match(/\bTarget="([^"]+)"/);
         const isExternal = /\bTargetMode="External"/i.test(tag);
 
-        if (idMatch && typeMatch && targetMatch) {
-          const rId = idMatch[1];
-          const type = typeMatch[1];
-          let target = targetMatch[1];
-
-          if (type.endsWith('/worksheet') && !isExternal) {
-            if (map[rId]) {
-              // Duplicate relationship ID
-              throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-            }
-            if (!target.startsWith('xl/')) {
-              target = 'xl/' + target.replace(/^\//, '');
-            }
-            if (seenTargets.has(target)) {
-              // Duplicate normalized target
-              throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-            }
-            seenTargets.add(target);
-            map[rId] = target;
-          }
+        if (!idMatch || !typeMatch || !targetMatch) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
+
+        const rId = idMatch[1];
+        const type = typeMatch[1];
+        let target = targetMatch[1];
+
+        // Global duplicate relationship ID rejection across ALL relationship types
+        if (relsMap[rId]) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        // Path traversal check
+        if (target.includes('..') || target.includes('//') || target.includes('\\')) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        let normalizedTarget = target.replace(/^\//, '');
+        if (!normalizedTarget.startsWith('xl/')) {
+          normalizedTarget = 'xl/' + normalizedTarget;
+        }
+
+        relsMap[rId] = {
+          rId,
+          type,
+          target: normalizedTarget,
+          isExternal
+        };
       }
-      return map;
+
+      return relsMap;
     }
 
-    const srcRelMap = parseWorksheetRelMap(srcRelsXml);
-    const obsRelMap = parseWorksheetRelMap(obsRelsXml);
+    const srcRelMap = parseGlobalRels(srcRelsXml);
+    const obsRelMap = parseGlobalRels(obsRelsXml);
 
     function parseSheets(wbXml, relMap) {
       const sheets = [];
+      const seenTargets = new Set();
       const sheetMatches = [...wbXml.matchAll(/<sheet\s+[^>]*\/?>/g)];
 
       for (const m of sheetMatches) {
@@ -1230,13 +1312,23 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
 
         const name = nameMatch[1].replaceAll('&amp;', '&');
         const rId = rIdMatch[1];
-        const target = relMap[rId];
+        const rel = relMap[rId];
 
-        if (!target) {
+        if (!rel) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
-        sheets.push({ name, rId, target });
+        // Strict exact canonical relationship Type matching
+        if (rel.type !== CANONICAL_WORKSHEET_REL_TYPE || rel.isExternal) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        if (seenTargets.has(rel.target)) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+        seenTargets.add(rel.target);
+
+        sheets.push({ name, rId, rel });
       }
       return sheets;
     }
@@ -1249,7 +1341,18 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
     }
 
     for (let i = 0; i < srcSheets.length; i++) {
-      if (srcSheets[i].name !== obsSheets[i].name || srcSheets[i].rId !== obsSheets[i].rId || srcSheets[i].target !== obsSheets[i].target) {
+      const s = srcSheets[i];
+      const o = obsSheets[i];
+
+      // Exact relationship tuple comparison including exact Type, Target, rId & TargetMode
+      if (
+        s.name !== o.name ||
+        s.rId !== o.rId ||
+        s.rel.rId !== o.rel.rId ||
+        s.rel.type !== o.rel.type ||
+        s.rel.target !== o.rel.target ||
+        s.rel.isExternal !== o.rel.isExternal
+      ) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
       }
     }
@@ -1260,8 +1363,8 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       const srcSheet = srcSheets[i];
       const obsSheet = obsSheets[i];
 
-      const srcFile = wbSource._zip.files[srcSheet.target];
-      const obsFile = wbPreserved._zip.files[obsSheet.target];
+      const srcFile = wbSource._zip.files[srcSheet.rel.target];
+      const obsFile = wbPreserved._zip.files[obsSheet.rel.target];
 
       if (!srcFile || !obsFile) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
@@ -1270,37 +1373,69 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       const srcXml = await srcFile.async('string');
       let obsXml = await obsFile.async('string');
 
-      const srcDimMatches = [...srcXml.matchAll(/<dimension [^>]*\/>/g)];
-      if (srcDimMatches.length !== 1) {
-        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-      }
-      const srcDimTag = srcDimMatches[0][0];
+      const srcChildren = parseTopLevelChildren(srcXml);
+      const obsChildren = parseTopLevelChildren(obsXml);
 
-      const obsDimMatches = [...obsXml.matchAll(/<dimension [^>]*\/>/g)];
-      if (obsDimMatches.length > 1) {
+      if (!srcChildren || !obsChildren) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
       }
 
-      if (obsDimMatches.length === 1) {
-        if (obsDimMatches[0][0] !== srcDimTag) {
+      if (!validateSchemaOrder(srcChildren) || !validateSchemaOrder(obsChildren)) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+
+      const srcDimChildren = srcChildren.filter(c => c.name === 'dimension');
+      if (srcDimChildren.length !== 1) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+      const srcDimTag = srcDimChildren[0].fullTag;
+
+      const obsDimChildren = obsChildren.filter(c => c.name === 'dimension');
+      if (obsDimChildren.length > 1) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+
+      if (obsDimChildren.length === 1) {
+        if (obsDimChildren[0].fullTag !== srcDimTag) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
       } else {
-        // Schema-valid insertion point: after optional <sheetPr> and before later worksheet children
+        // Verification that observed top-level child sequence matches source top-level child sequence
+        const expectedObsNames = srcChildren.filter(c => c.name !== 'dimension').map(c => c.name);
+        let actualObsNames = obsChildren.map(c => c.name);
+
+        // Account for optional sheetPr injected by xlsx-populate if absent in source
+        if (actualObsNames[0] === 'sheetPr' && expectedObsNames[0] !== 'sheetPr') {
+          actualObsNames = actualObsNames.slice(1);
+        }
+
+        if (expectedObsNames.join(',') !== actualObsNames.join(',')) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        // Schema-order placement: after optional <sheetPr> and before later worksheet children
+        const sheetPrChild = obsChildren.find(c => c.name === 'sheetPr');
         let insertionIndex = -1;
-        const sheetPrMatch = obsXml.match(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/);
-        if (sheetPrMatch) {
-          insertionIndex = sheetPrMatch.index + sheetPrMatch[0].length;
+
+        if (sheetPrChild) {
+          insertionIndex = sheetPrChild.endIndex;
         } else {
-          const worksheetMatch = obsXml.match(/<worksheet[^>]*>/);
-          if (!worksheetMatch) {
+          const wsMatch = obsXml.match(/<worksheet[^>]*>/);
+          if (!wsMatch) {
             throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
           }
-          insertionIndex = worksheetMatch.index + worksheetMatch[0].length;
+          insertionIndex = wsMatch.index + wsMatch[0].length;
         }
 
         obsXml = obsXml.slice(0, insertionIndex) + '\n  ' + srcDimTag + obsXml.slice(insertionIndex);
-        wbPreserved._zip.file(obsSheet.target, obsXml);
+
+        // Verify that resulting obsXml has valid schema order
+        const checkChildren = parseTopLevelChildren(obsXml);
+        if (!checkChildren || !validateSchemaOrder(checkChildren)) {
+          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+        }
+
+        wbPreserved._zip.file(obsSheet.rel.target, obsXml);
       }
     }
 
