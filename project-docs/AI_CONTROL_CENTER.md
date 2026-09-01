@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2 IN PROGRESS / R3-R19 AUTHORIZED / D2 PRIORITY
+> Updated: 2026-09-01 — D1 CLOSED / D2 IN PROGRESS / R3-R19 REVIEWED-NOT-PASS / D2 PRIORITY
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R19 AUTHORIZED | Per-sheet print-area binding + missing dimension fail-closed only |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R19 reviewed; bounded R3-R20 corrective proposed |
 | D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Owner requires D2 complete first |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year routing/identity required |
@@ -41,82 +41,68 @@ PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-## 3. R3-R18 reviewed result
+## 3. R3-R19 independent review
 
 ```text
-IMPLEMENTATION_COMMIT = e5d082059d05da4ac686568b55600fb12873e30d
+IMPLEMENTATION_COMMIT = 4a3092b3e69a68d3a5e864173f8c2e5c182eee54
+EXECUTION_BASELINE = d2f43ade77da4895a371749b997c5337f5cbbf42
 SCOPE_REVIEW = PASS
 SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
 STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R18 work remains frozen except for the two proven defects:
-- per-sheet print-area binding can wrongly use `localSheetId=0`/first print area for every sheet;
-- missing observed dimension evidence can bypass parity because comparison is truthiness-gated.
+Accepted from R3-R19:
+- exact `localSheetId` print-area binding by worksheet index;
+- no cross-sheet print-area fallback;
+- Part B `Sheet1` empty print area proof;
+- unconditional exact dimension comparison in validator;
+- negative proof for wrong `Sheet1.printArea` and blank dimension.
 
-## 4. R3-R19 — AUTHORIZED
+Remaining bounded defects:
+- fingerprint helper synthesizes dimension from row/cell data when the actual `<dimension>` tag is absent, which can hide missing observed evidence;
+- accepted R3-R18 `Sheet1.colsHash` negative test was removed, violating proof-preservation requirements.
 
-```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R19
-WORK_PACKAGE_NAME = PER-SHEET PRINT-AREA BINDING + MISSING EVIDENCE FAIL-CLOSED
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
-CONTROL_PLANE_PRE_AUTH_CHECKPOINT = f1848b3efffb034659817dbc9f7ff2088b76cf6f
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R19-SOURCE-20260901-01
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_CORRECTIVE_PROOF_PENDING_INDEPENDENT_REVIEW
-PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-```
-
-Canonical execution contract: `project-docs/AI_ACTIVE_TASK.md`.
-
-Authorized writes ONLY:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Antigravity must fresh-fetch current authorized HEAD and record it as `EXECUTION_BASELINE`; it must not reset to the pre-authorization checkpoint.
-
-## 5. R3-R19 acceptance direction
-
-Correct only:
-1. bind `_xlnm.Print_Area` by actual zero-based worksheet index / exact `localSheetId`, with no cross-sheet fallback;
-2. prove Part B second visible `Sheet1` has no print area when exact source has none;
-3. compare dimension evidence exactly and fail closed on missing/empty-vs-present/different evidence;
-4. add source-backed negative tests for wrong `Sheet1` print-area binding and missing observed dimension.
-
-All other accepted R3-R18 workbook parity evidence and all R3-R17/privacy/typed-metadata tests must remain intact.
-
-## 6. Owner priority / current gate
+## 4. Owner priority
 
 ```text
 COMPLETE D2 FULLY BEFORE D3.
+```
 
+D3 remains HOLD. No D3 App794 write authorization while D2 is open.
+
+## 5. Current gate
+
+```text
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R18 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R19 = AUTHORIZED / EXECUTION ACTIVE
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R19
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R19-SOURCE-20260901-01
+D2-WP003-R3-R19 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = EXECUTE R3-R19 ONLY / LOW-CREDIT / BOUNDED
+ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-No other Work Package may auto-start.
+## 6. Next proposed D2 corrective — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R20
+PROPOSED_WORK_PACKAGE_NAME = STRICT DIMENSION TAG EVIDENCE + RESTORE SECOND-SHEET STRUCTURAL NEGATIVE PROOF
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+```
+
+Intent: keep the accepted R3-R19 print-area fix, use actual OOXML `<dimension>` evidence only with missing-tag fail-closed behavior, and restore the Part B `Sheet1.colsHash` negative proof. No next blocker auto-start.
 
 ## 7. Authorization ledger
 
 ```text
-D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-D2-WP003-R3-R19-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R19-SOURCE-20260901-01
+D2-WP003-R3-R19-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
