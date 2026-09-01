@@ -5,14 +5,14 @@
 > Branch: `ai/antigravity-wp002c`
 > Control Plane: ChatGPT
 > Execution Plane: Antigravity only for minimum necessary execution
-> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R1 REVIEWED NOT PASS
+> Updated: 2026-09-01 — D1 CLOSED / D2-WP001+WP002 CLOSED / R3-R2 AUTHORIZED
 
 ## 1. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Current approval authority = native current Assignee |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R2 PROPOSED | Raw OOXML feasibility corrective; no binary publish |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / R3-R2 AUTHORIZED | Raw OOXML structure/privacy feasibility proof; no binary publish |
 | D3 8 Legacy PMS Apps → App794 | 🟠 IN PROGRESS / WRITE NOT AUTHORIZED | Read-only/mapping/reconciliation only |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS | Fresh target-year routing/identity required |
@@ -38,34 +38,18 @@ Owner decision:
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 3. R3-R1 independent review
+## 3. R3-R1 review truth
 
-Scope review = PASS:
-- exactly two authorized proof files changed;
-- no dependency/package change;
-- no XLSX/image/binary/output publication;
-- no production renderer/sanitizer/application/Kintone/PDF/UI/deploy change.
-
-Therefore:
+R3-R1 scope review passed and no workbook/image/binary output was committed, so:
 ```text
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Source acceptance = FAIL / corrective required.
-
-Blocking classes:
-- no-op parity remains incomplete and includes a false-positive merge fallback;
-- header proof is improved but does not independently prove every intended value range; Fiscal Year is now confirmed as a merged-value exception;
-- privacy still uses `sharedStrings.xml` keyword heuristics rather than explicit range-driven text/numeric/date collection;
-- reference-image proof still performs no removal;
-- Part A/Part B still copy values/row heights with high-level APIs rather than mutating OOXML structure;
-- tests still prove mostly sentinel/value movement, not row/cell/merge/style/dimension/print/protection structure.
+R3-R1 source review did not pass because structural insertion remained high-level value copying, privacy remained shared-string heuristic based, reference-image removal was not performed, and material no-op parity/header proof remained incomplete.
 
 GitHub has no CI/status evidence for the proof commit.
 
-## 4. Accepted source clarification
-
-Exact owner OOXML confirms:
+## 4. Accepted raw template evidence
 
 Part A:
 ```text
@@ -88,16 +72,63 @@ EMP_ID = label R2 / value R3
 EMP_NAME = label S2:W2 / value S3:W3
 ```
 
-Reference screenshot structural identity:
+Reference screenshot target:
 ```text
 DRAWING = xl/drawings/drawing1.xml
 DRAWING_RELS = xl/drawings/_rels/drawing1.xml.rels
 TARGET_REL = rId3
 TARGET_MEDIA = xl/media/image3.png
-PRESERVE_BRANDING = rId1 -> image1.jpeg; rId2 -> image2.jpeg
 ```
 
-## 5. Current gate
+Must preserve:
+- `rId1 -> image1.jpeg`;
+- `rId2 -> image2.jpeg`;
+- every other non-target drawing anchor/relationship/media present in the source.
+
+## 5. D2-WP003-R3-R2 — AUTHORIZED
+
+```text
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R2
+WORK_PACKAGE_NAME = RAW OOXML STRUCTURE + PRIVACY FEASIBILITY PROOF
+OWNER_APPROVAL = GRANTED
+PRIVACY_PURGE_REQUIRED = NO
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+```
+
+Canonical contract: `project-docs/AI_ACTIVE_TASK.md`.
+
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+`package.json` / `package-lock.json` are read-only. No binary publication.
+
+## 6. R3-R2 architecture
+
+R3-R2 must prove feasibility using raw OOXML/package mutation:
+- no high-level row/cell copying to simulate insertion;
+- Part A raw +1/+6 structural insertion with row/cell/merge/dimension/Print_Area rewrites and row-28 structural cloning;
+- Part B raw +8 insertion with rows27:30 cloned twice and totals shifted to row39;
+- explicit range-driven privacy collection across text/numeric/date values; no keyword heuristic source of truth;
+- actual removal of `rId3/image3.png` while every non-target drawing remains;
+- full material no-op parity including page/merge/dimension/protection/drawing structure;
+- tests inspect raw OOXML directly and fail closed on unresolved evidence.
+
+Still forbidden:
+- workbook/image/binary publication;
+- package/dependency changes;
+- production sanitizer/renderer;
+- export-service/normalizer/Application changes;
+- Difficulty field implementation;
+- PDF/UI/Live Kintone/deploy;
+- next Work Package.
+
+## 7. Current gate
 
 ```text
 D1 = CLOSED / PASS
@@ -106,34 +137,17 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R1 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R2
-PROPOSED_WORK_PACKAGE_NAME = RAW OOXML STRUCTURE + PRIVACY FEASIBILITY PROOF
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R2 = AUTHORIZED / EXECUTION ACTIVE
+CURRENT_EXECUTOR = ANTIGRAVITY
+NEXT_CONTROL_GATE = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW OR REAL BLOCKER
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-PRIVACY_PURGE_REQUIRED = NO
 ```
 
-No Work Package may auto-start.
+No other Work Package may auto-start.
 
-## 6. R3-R2 direction
-
-If Owner approves R3-R2:
-- keep feasibility-only / no binary publication;
-- modify only the same two proof files;
-- use `xlsx-populate` only for ZIP access/reparse;
-- structural proof must directly edit raw OOXML, never simulate insertion by copying worksheet values;
-- Part A must rewrite raw row/cell/merge/dimension/Print_Area references for +1/+6 and clone row 28;
-- Part B must rewrite raw rows 31+ by +8 and clone rows 27:30 twice;
-- reference-image proof must actually remove `rId3 -> image3.png` while rId1/rId2 remain;
-- privacy must use explicit bounded source ranges across text/numeric/date types;
-- tests must inspect the resulting raw OOXML directly;
-- unresolved proof must STOP with the documented blocker.
-
-## 7. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
@@ -144,7 +158,8 @@ D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / PURGED / DO NOT REUSE
 D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R1-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R2-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R2-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
