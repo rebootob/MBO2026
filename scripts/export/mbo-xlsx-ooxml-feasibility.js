@@ -57,7 +57,7 @@ export async function getMutatedHeaderValueBuffers() {
   const wbA = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partA));
   const sheetA = wbA.sheet(0);
 
-  // Snapshot Part A Row 6 static header labels
+  // Snapshot Part A static header labels
   const labelSnapshotA = {
     B6: sheetA.cell('B6').value(),
     AM6: sheetA.cell('AM6').value(),
@@ -66,9 +66,9 @@ export async function getMutatedHeaderValueBuffers() {
     BD6: sheetA.cell('BD6').value()
   };
 
-  // Mutate proven Row 7 / Row 6 value ranges only
-  sheetA.cell('N6').value(null); // Sample Fiscal Year value
-  sheetA.cell('Z7').value(null); // Dept value
+  // Mutate Part A value ranges
+  sheetA.cell('N6').value(null); // Fiscal Year value
+  sheetA.cell('Z7').value(null); // Department value
   sheetA.cell('AG7').value(null); // Section value
   sheetA.cell('AM7').value(null); // Start Date value
   sheetA.cell('AQ7').value(null); // Emp ID value
@@ -80,7 +80,7 @@ export async function getMutatedHeaderValueBuffers() {
   const wbB = await XlsxPopulate.fromDataAsync(fs.readFileSync(found.partB));
   const sheetB = wbB.sheet(0);
 
-  // Snapshot Part B Row 2 static header labels
+  // Snapshot Part B static header labels
   const labelSnapshotB = {
     B2: sheetB.cell('B2').value(),
     J2: sheetB.cell('J2').value(),
@@ -90,13 +90,13 @@ export async function getMutatedHeaderValueBuffers() {
     S2: sheetB.cell('S2').value()
   };
 
-  // Mutate proven Row 3 / Row 2 value ranges only
-  sheetB.cell('G2').value(null); // Sample Fiscal Year value
-  sheetB.cell('J3').value(null);
-  sheetB.cell('M3').value(null);
-  sheetB.cell('P3').value(null);
-  sheetB.cell('R3').value('TEST_MUTATION');
-  sheetB.cell('S3').value(null);
+  // Mutate Part B value ranges
+  sheetB.cell('G2').value(null); // Fiscal Year value
+  sheetB.cell('J3').value(null); // Department value
+  sheetB.cell('M3').value(null); // Section value
+  sheetB.cell('P3').value(null); // Position value
+  sheetB.cell('R3').value('TEST_MUTATION'); // Emp ID value
+  sheetB.cell('S3').value(null); // Emp Name value
 
   const outBufB = await wbB.outputAsync();
 
@@ -232,116 +232,189 @@ export async function getReferenceImageBuffers() {
   const origBufA = fs.readFileSync(found.partA);
   const wbA = await XlsxPopulate.fromDataAsync(origBufA);
 
-  let drawingFile = null;
-  for (const f in wbA._zip.files) {
-    if (f.startsWith('xl/drawings/drawing')) {
-      drawingFile = f;
-      break;
-    }
+  const drawingXmlPath = 'xl/drawings/drawing1.xml';
+  const drawingRelsPath = 'xl/drawings/_rels/drawing1.xml.rels';
+
+  if (!wbA._zip.files[drawingXmlPath] || !wbA._zip.files[drawingRelsPath]) {
+    throw new Error('BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED: Drawing files not found');
   }
 
-  if (!drawingFile) {
-    throw new Error('BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED: Drawing file not found in template');
+  let drawingXml = await wbA._zip.files[drawingXmlPath].async('string');
+  let drawingRels = await wbA._zip.files[drawingRelsPath].async('string');
+
+  // Remove anchor containing rId3
+  const anchorRegex = /<xdr:twoCellAnchor[^>]*>(?:(?!<\/xdr:twoCellAnchor>)[\s\S])*rId3[\s\S]*?<\/xdr:twoCellAnchor>/g;
+  drawingXml = drawingXml.replace(anchorRegex, '');
+
+  // Remove rId3 from rels
+  const relsRegex = /<Relationship[^>]*Id="rId3"[^>]*\/>/g;
+  drawingRels = drawingRels.replace(relsRegex, '');
+
+  wbA._zip.file(drawingXmlPath, drawingXml);
+  wbA._zip.file(drawingRelsPath, drawingRels);
+  if (wbA._zip.files['xl/media/image3.png']) {
+    wbA._zip.remove('xl/media/image3.png');
   }
 
-  const outBufA = await wbA.outputAsync();
-  return { origBufA, outBufA, drawingFile };
+  const outBufA = await wbA._zip.generateAsync({ type: 'nodebuffer' });
+  return { origBufA, outBufA, drawingXmlPath, drawingRelsPath };
 }
 
+/**
+ * RAW OOXML Structural Insertion for Part A
+ */
 export async function getStructuralPartABuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
   const origBufA = fs.readFileSync(found.partA);
 
-  // 4 Objectives (unchanged)
+  // --- 4 OBJECTIVES (Unchanged) ---
   const wbA4 = await XlsxPopulate.fromDataAsync(origBufA);
   const sheetA4 = wbA4.sheet(0);
   sheetA4.cell('B29').value('SENTINEL_ROW_29');
   const bufA4 = await wbA4.outputAsync();
 
-  // 5 Objectives (+1 insertion)
-  const wbA5 = await XlsxPopulate.fromDataAsync(origBufA);
-  const sheetA5 = wbA5.sheet(0);
-  sheetA5.cell('B29').value('SENTINEL_ROW_29');
-  for (let r = 52; r >= 29; r--) {
-    const srcRow = sheetA5.row(r);
-    const tgtRow = sheetA5.row(r + 1);
-    if (srcRow && tgtRow) {
-      const h = srcRow.height();
-      if (h) tgtRow.height(h);
-      for (let c = 1; c <= 60; c++) {
-        const val = sheetA5.cell(r, c).value();
-        if (val !== undefined && val !== null) {
-          sheetA5.cell(r + 1, c).value(val);
-          sheetA5.cell(r, c).value(null);
-        }
-      }
-    }
-  }
-  sheetA5.row(29).hidden(false);
-  if (typeof sheetA5.printArea === 'function') sheetA5.printArea('A1:BJ53');
-  const bufA5 = await wbA5.outputAsync();
+  // --- RAW OOXML HELPER FOR PART A INSERTION ---
+  async function performRawPartAInsertion(extraRows, printAreaStr) {
+    const wbTemp = await XlsxPopulate.fromDataAsync(origBufA);
+    wbTemp.sheet(0).cell('B29').value('SENTINEL_ROW_29');
+    const tempBuf = await wbTemp.outputAsync();
 
-  // 10 Objectives (+6 insertion)
-  const wbA10 = await XlsxPopulate.fromDataAsync(origBufA);
-  const sheetA10 = wbA10.sheet(0);
-  sheetA10.cell('B29').value('SENTINEL_ROW_29');
-  for (let r = 52; r >= 29; r--) {
-    const srcRow = sheetA10.row(r);
-    const tgtRow = sheetA10.row(r + 6);
-    if (srcRow && tgtRow) {
-      const h = srcRow.height();
-      if (h) tgtRow.height(h);
-      for (let c = 1; c <= 60; c++) {
-        const val = sheetA10.cell(r, c).value();
-        if (val !== undefined && val !== null) {
-          sheetA10.cell(r + 6, c).value(val);
-          sheetA10.cell(r, c).value(null);
-        }
+    const wb = await XlsxPopulate.fromDataAsync(tempBuf);
+    const sheetFile = wb._zip.files['xl/worksheets/sheet1.xml'];
+    let sheetXml = await sheetFile.async('string');
+
+    sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
+      const r = parseInt(rStr, 10);
+      if (r >= 29) {
+        return `<row r="${r + extraRows}"${rest}>`;
       }
+      return match;
+    });
+
+    sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
+      const r = parseInt(rStr, 10);
+      if (r >= 29) {
+        return `<c r="${col}${r + extraRows}"`;
+      }
+      return match;
+    });
+
+    const row28Match = sheetXml.match(/<row r="28"[^>]*>[\s\S]*?<\/row>/);
+    if (row28Match) {
+      const row28Xml = row28Match[0];
+      const clonedRowsXml = [];
+      for (let i = 0; i < extraRows; i++) {
+        const targetR = 29 + i;
+        let clonedRow = row28Xml.replace(/<row r="28"/g, `<row r="${targetR}"`);
+        clonedRow = clonedRow.replace(/<c r="([A-Z]+)28"/g, (m, col) => `<c r="${col}${targetR}"`);
+        clonedRowsXml.push(clonedRow);
+      }
+      sheetXml = sheetXml.replace(row28Match[0], row28Match[0] + '\n' + clonedRowsXml.join('\n'));
     }
+
+    sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
+      let r1 = parseInt(r1Str, 10);
+      let r2 = parseInt(r2Str, 10);
+      if (r1 >= 29) r1 += extraRows;
+      if (r2 >= 29) r2 += extraRows;
+      return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
+    });
+
+    sheetXml = sheetXml.replace(/<dimension ref="([A-Z0-9]+:)([A-Z]+)(\d+)"\s*\/>/, (m, prefix, col, rStr) => {
+      return `<dimension ref="${prefix}${col}${parseInt(rStr, 10) + extraRows}"/>`;
+    });
+
+    wb._zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+    let wbXml = await wb._zip.files['xl/workbook.xml'].async('string');
+    wbXml = wbXml.replace(/<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/, `<definedName name="_xlnm.Print_Area" localSheetId="0">'MBO Staff &amp; Chief'!${printAreaStr}</definedName>`);
+    wb._zip.file('xl/workbook.xml', wbXml);
+
+    return wb._zip.generateAsync({ type: 'nodebuffer' });
   }
-  for (let i = 0; i < 6; i++) sheetA10.row(29 + i).hidden(false);
-  if (typeof sheetA10.printArea === 'function') sheetA10.printArea('A1:BJ58');
-  const bufA10 = await wbA10.outputAsync();
+
+  const bufA5 = await performRawPartAInsertion(1, '$A$1:$BJ$53');
+  const bufA10 = await performRawPartAInsertion(6, '$A$1:$BJ$58');
 
   return { bufA4, bufA5, bufA10 };
 }
 
+/**
+ * RAW OOXML Structural Insertion for Part B
+ */
 export async function getStructuralPartBBuffers() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
   const origBufB = fs.readFileSync(found.partB);
 
-  // 6 Competencies
+  // --- 6 COMPETENCIES (Unchanged) ---
   const wbB6 = await XlsxPopulate.fromDataAsync(origBufB);
   const sheetB6 = wbB6.sheet(0);
   sheetB6.cell('B31').value('SENTINEL_ROW_31');
   const bufB6 = await wbB6.outputAsync();
 
-  // 8 Competencies (+8 rows insertion)
-  const wbB8 = await XlsxPopulate.fromDataAsync(origBufB);
-  const sheetB8 = wbB8.sheet(0);
-  sheetB8.cell('B31').value('SENTINEL_ROW_31');
-  for (let r = 35; r >= 31; r--) {
-    const srcRow = sheetB8.row(r);
-    const tgtRow = sheetB8.row(r + 8);
-    if (srcRow && tgtRow) {
-      const h = srcRow.height();
-      if (h) tgtRow.height(h);
-      for (let c = 1; c <= 24; c++) {
-        const val = sheetB8.cell(r, c).value();
-        if (val !== undefined && val !== null) {
-          sheetB8.cell(r + 8, c).value(val);
-          sheetB8.cell(r, c).value(null);
-        }
-      }
+  // --- 8 COMPETENCIES (+8 RAW OOXML INSERTION) ---
+  const wbTemp = await XlsxPopulate.fromDataAsync(origBufB);
+  wbTemp.sheet(0).cell('B31').value('SENTINEL_ROW_31');
+  const tempBuf = await wbTemp.outputAsync();
+  const wbB8 = await XlsxPopulate.fromDataAsync(tempBuf);
+
+  const sheetFile = wbB8._zip.files['xl/worksheets/sheet1.xml'];
+  let sheetXml = await sheetFile.async('string');
+
+  const extraRows = 8;
+
+  sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
+    const r = parseInt(rStr, 10);
+    if (r >= 31) {
+      return `<row r="${r + extraRows}"${rest}>`;
     }
+    return match;
+  });
+
+  sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
+    const r = parseInt(rStr, 10);
+    if (r >= 31) {
+      return `<c r="${col}${r + extraRows}"`;
+    }
+    return match;
+  });
+
+  let block27_30 = '';
+  for (let r = 27; r <= 30; r++) {
+    const m = sheetXml.match(new RegExp(`<row r="${r}"[^>]*>[\\s\\S]*?<\\/row>`));
+    if (m) block27_30 += m[0] + '\n';
   }
-  if (typeof sheetB8.printArea === 'function') sheetB8.printArea('A1:X43');
-  const bufB8 = await wbB8.outputAsync();
+
+  const block31_34 = block27_30.replace(/r="(\d+)"/g, (m, rStr) => `r="${parseInt(rStr, 10) + 4}"`).replace(/<c r="([A-Z]+)(\d+)"/g, (m, col, rStr) => `<c r="${col}${parseInt(rStr, 10) + 4}"`);
+  const block35_38 = block27_30.replace(/r="(\d+)"/g, (m, rStr) => `r="${parseInt(rStr, 10) + 8}"`).replace(/<c r="([A-Z]+)(\d+)"/g, (m, col, rStr) => `<c r="${col}${parseInt(rStr, 10) + 8}"`);
+
+  const row30Match = sheetXml.match(/<row r="30"[^>]*>[\s\S]*?<\/row>/);
+  if (row30Match) {
+    sheetXml = sheetXml.replace(row30Match[0], row30Match[0] + '\n' + block31_34 + '\n' + block35_38);
+  }
+
+  sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
+    let r1 = parseInt(r1Str, 10);
+    let r2 = parseInt(r2Str, 10);
+    if (r1 >= 31) r1 += extraRows;
+    if (r2 >= 31) r2 += extraRows;
+    return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
+  });
+
+  sheetXml = sheetXml.replace(/<dimension ref="([A-Z0-9]+:)([A-Z]+)(\d+)"\s*\/>/, (m, prefix, col, rStr) => {
+    return `<dimension ref="${prefix}${col}${parseInt(rStr, 10) + extraRows}"/>`;
+  });
+  wbB8._zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+  let wbXml = await wbB8._zip.files['xl/workbook.xml'].async('string');
+  wbXml = wbXml.replace(/<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/, `<definedName name="_xlnm.Print_Area" localSheetId="0">'(Part B) Competency'!$A$1:$X$43</definedName>`);
+  wbB8._zip.file('xl/workbook.xml', wbXml);
+
+  const bufB8 = await wbB8._zip.generateAsync({ type: 'nodebuffer' });
 
   return { bufB6, bufB8 };
 }
