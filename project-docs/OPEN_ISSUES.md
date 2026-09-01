@@ -1,19 +1,19 @@
 # MBO2026 — OPEN ISSUES & GATES
 
-> Updated: 2026-08-31 ICT.  
+> Updated: 2026-09-01 ICT.  
 > Current acceptance/status authority remains `AI_CONTROL_CENTER.md`.
 
 ## 1. Open project gates
 
 | ID | Item | Status | Required next condition |
 |---|---|---|---|
-| D2-EXPORT-001 | Excel/PDF original/legacy-format closure | READY / NOT STARTED | Owner starts D2; perform read-only export/source/sample discovery before implementation |
-| D3-MIG-001 | 8 legacy PMS Apps -> App794 migration | OPEN / WRITE NOT AUTHORIZED | Read-only mapping/dry-run/conflict/reconciliation/backup/exact manifest before target write approval |
-| D4-E2E-001 | App800 HR Control Center full operations | OPEN | Complete remaining HR operational functions and secure UAT |
-| D4-LIFECYCLE-001 | Employee lifecycle operations | OPEN / POLICY CONFIRMED / WRITE NOT AUTHORIZED | Implement controlled inactive/resigned impact handling, reassignment, principal/session handling, audit/readback/exception reporting under a separately approved Work Package |
-| D4-RESET-DEPLOY | App800 Reset MBO Password UI deployment | SOURCE SEMANTICS ACCEPTED / DEPLOY NOT AUTHORIZED | Fresh exact deploy authorization if/when deployment becomes current priority |
-| D5-COPY-001 | Copy Own Previous MBO | OPEN | Implement approved carry-forward whitelist with fresh target-year current identity/routing and no stale requester/route/workflow state |
-| D6-E2E-001 | Integrated E2E/security/regression | PENDING | After D1–D5 are sufficiently ready; must include lifecycle/security regression |
+| D2-EXPORT-001 | Excel/PDF original/legacy-format closure | IN PROGRESS | Close workbook-parity proof isolation, then image/insertion/formula/renderer/PDF/security gates |
+| D2-R3-R22 | Valid source-backed negative baselines + raw no-op result pinning | PROPOSED / TEST-ONLY / NOT AUTHORIZED | Owner authorization; source implementation remains read-only |
+| D3-MIG-001 | 8 legacy PMS Apps -> App794 migration | HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED; then dry-run/reconciliation/backup/exact manifest before write approval |
+| D4-E2E-001 | App800 HR Control Center full operations | OPEN / NOT ACTIVE | Complete remaining HR operations and secure UAT under separate WP |
+| D4-LIFECYCLE-001 | Employee lifecycle operations | OPEN / POLICY CONFIRMED / WRITE NOT AUTHORIZED | Controlled reassignment/principal/session/audit/readback operations |
+| D5-COPY-001 | Copy Own Previous MBO | OPEN / NOT ACTIVE | Carry-forward whitelist with fresh target-year route/identity |
+| D6-E2E-001 | Integrated E2E/security/regression | PENDING | After D2–D5 sufficiently ready; lifecycle/security regression mandatory |
 
 ## 2. D1 — CLOSED
 
@@ -24,34 +24,64 @@ APP794_LIVE_REVISION = 67
 RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
 ```
 
-Former D1 gates are closed and must not remain listed as active issues:
+Former D1 gates remain closed. Accepted architecture ceilings are not ordinary defects:
 
 ```text
-D1-ACL-001 = CLOSED / PASS
-D1-APPROVAL-TASKS = CLOSED / PASS
-D1-SHARED = CLOSED / PASS
-D1-DUALROLE = CLOSED / PASS
-D1-COMMENTS-ATTACH = CLOSED / PASS
-D1-PATTAMA-UAT = CREDENTIAL-LIMITED / NON-BLOCKING / NO RESET REQUIRED
-```
-
-Accepted evidence includes Dedicated record privacy, foreign-record denial, Shared session runtime, live dual-role separation, current-Assignee authority, HR non-employee runtime and comments/history/attachment truthfulness.
-
-Synthetic Records #13 and #14 were deleted after bounded UAT; no D1 synthetic test record remains.
-
-## 3. Accepted D1 platform limitations — not defects
-
-```text
-D1-SHARED-CEILING:
 SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED UNDER SHARED KINTONE PRINCIPAL
-
-D1-DEDICATED-CREATE-CEILING:
 DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-These are accepted architecture ceilings. Keep them visible; do not reopen them as ordinary defects unless the Owner explicitly changes architecture.
+## 3. D2 current open gate
 
-## 4. Employee lifecycle open gate
+Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
+
+Latest review:
+
+```text
+R3-R21_IMPLEMENTATION = 1587b20b3920618b79b335c66bbdde1778570626
+R3-R21_SCOPE_REVIEW = PASS
+R3-R21_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+R3-R21_STATUS = NOT PASS / NOT CLOSED
+```
+
+Accepted implementation:
+- raw direct `xlsx-populate.outputAsync()` no-op evidence;
+- deterministic workbook-parity blocker normalization;
+- actual dimension-tag/absence fingerprint only;
+- exact per-sheet print-area binding.
+
+Remaining issue:
+- mutation-specific negatives are based on raw Part B evidence which may already be parity-invalid;
+- tests can therefore reject for a pre-existing dimension mismatch instead of the intended mutation;
+- raw no-op outcome and mutation-specific negative proof must be separated.
+
+Proposed corrective:
+
+```text
+D2-WP003-R3-R22 = PROPOSED / TEST-ONLY / NOT AUTHORIZED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = NONE
+```
+
+Expected R3-R22: source read-only; test-only proof isolation using valid exact-source/source-backed baselines; actual dimension removal from known source tag; raw Part A/B result pinned separately.
+
+## 4. D2 remaining gates after workbook parity isolation
+
+```text
+REFERENCE_IMAGE_CLOSURE = OPEN
+PART_A_INSERTION_MATRIX = OPEN
+PART_B_INSERTION_MATRIX = OPEN
+FORMULA_AUTHORITY_CLOSURE = OPEN
+PRODUCTION_XLSX_RENDERER = OPEN
+COMBINED_EXCEL_PARITY = OPEN
+PDF_PARITY = OPEN
+EXPORT_SECURITY_PRIVACY_REGRESSION = OPEN
+FINAL_D2_REVIEW = OPEN
+```
+
+If raw no-op degradation is proven, a separate preservation-strategy WP is required before the later renderer work.
+
+## 5. Employee lifecycle open gate
 
 Canonical policy: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
 
@@ -60,28 +90,7 @@ EMPLOYEE_LIFECYCLE_POLICY = CONFIRMED
 ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ```
 
-Policy confirmation is not implementation completion. D4 still has to implement the controlled operational path and D6 still has to prove lifecycle/security regression. Existing App794 records must not be silently rewritten when App53/App795 changes.
-
-## 5. D2 pre-start gate
-
-Canonical D2 scope: `project-docs/EXCEL_EXPORT.md`.
-
-Before source changes:
-
-```text
-inventory existing export source/tests
-locate approved legacy Excel/PDF samples
-map App794 fields to legacy output
-review current PDF mechanism
-review export security/confidentiality guards
-produce gap list and smallest D2 Work Package
-```
-
-```text
-D2_STATUS = READY / NOT STARTED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_WORK_PACKAGE = NONE
-```
+Policy confirmation is not implementation completion. D4 owns operational implementation and D6 owns regression proof.
 
 ## 6. App53 production boundary
 
@@ -95,8 +104,6 @@ APP53 RECORD WRITE AUTH = NONE
 APP53 BULK WRITE AUTH = NONE
 ```
 
-App53 remains read-only by default.
-
 ## 7. App802
 
 Prior sandbox continuation path is cancelled/revoked. Do not resume/delete/repair App802 without separate exact authorization.
@@ -104,3 +111,16 @@ Prior sandbox continuation path is cancelled/revoked. Do not resume/delete/repai
 ## 8. D7
 
 Admin Support Center source functionality is CLOSED. Reopen only if a new proven defect exists.
+
+## 9. Current exact gate
+
+```text
+D2 = IN PROGRESS
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+D3 = HOLD UNTIL D2 PASS / CLOSED
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R22
+```
