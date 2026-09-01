@@ -1,235 +1,114 @@
-# AI ACTIVE TASK — D2-WP003-R3-R12 EXECUTION AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R3-R12 REVIEW / R3-R13 PROPOSED
 
-Mode: **ANTIGRAVITY / BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION ONLY / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
+Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = AUTHORIZED_FOR_EXECUTION
+TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R11 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R12
-ACTIVE_WORK_PACKAGE_NAME = BODY + SUMMARY ROLE-SPECIFIC SOURCE VALIDATION
-OWNER_APPROVAL = GRANTED 2026-09-01 ICT
+D2-WP003-R3-R12_SCOPE_REVIEW = PASS
+D2-WP003-R3-R12_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R12_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
-EXECUTOR = ANTIGRAVITY
-ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
-MAX_EXECUTOR_STATUS = BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R13
+PROPOSED_WORK_PACKAGE_NAME = BODY + SUMMARY AUTHORITATIVE EVIDENCE PARITY
+CURRENT_EXECUTOR = NONE
+ANTIGRAVITY_ACTION = STOP / WAIT OWNER
+D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. Purpose — ONE REMAINING CLASSIFICATION BLOCKER ONLY
+## 1. R3-R12 scope review — PASS
 
-Resolve only the R3-R11 remaining blocker:
-
-**validate Part B competency/body and summary/signature roles against role-specific authoritative source evidence.**
-
-Do NOT reopen accepted R3-R11 architecture and do NOT attempt typed metadata, header parity, workbook parity, image inventory, structural insertion matrix, formula matrix, production renderer/sanitizer, PDF/UI, Kintone or deploy.
-
-## 2. Exact write scope
-
-Authorized modifications ONLY:
+Implementation commit `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` is exactly one commit above authorization baseline `ef35c820504458d8f8fbcfbd3e86ea17dc4e9c0d` and changed only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Read-only:
-- `package.json`
-- `package-lock.json`
-- governance docs
-- exact ignored owner templates after SHA verification
+No package/dependency, binary/output, production renderer/sanitizer, application, PDF/UI, Kintone or deploy path changed. No Privacy Purge is required.
 
-No dependency/package change. No XLSX/image/media/output publication.
+## 2. Accepted R3-R12 progress
 
-## 3. Source identity
+R3-R12 correctly separates authoritative source evidence from test overrides:
+- `resolvePartBPrivacyRoles()` loads an authoritative SHA-verified source inventory first;
+- observed override evidence is kept separate;
+- body/summary evidence is now compared against authoritative `styleId` and `mergeRef` before role acceptance;
+- real fail-closed tests mutate role-relevant style evidence for real protected body `B7`, dynamic body `K7`, and summary `B31` addresses.
 
-Use only exact Part B owner template:
+This architecture is accepted and must be preserved.
+
+## 3. Remaining blocker — authoritative evidence parity is incomplete
+
+The authoritative-vs-observed comparison currently checks only:
+- `styleId`;
+- `mergeRef`.
+
+It does not compare other already-collected role-relevant source evidence:
+- `normalizedType`;
+- `nonblank`;
+- safe `valHash` for proven protected-static template text where required.
+
+Therefore an observed body/summary record can still change semantic evidence while preserving style/merge and remain accepted. Examples include:
+- protected-static competency text becoming blank or a different string while retaining the same style/merge;
+- a dynamic body or summary cell changing normalized type/blankness while retaining the same style/merge.
+
+This is still inconsistent with the frozen rule that actual SHA-verified source evidence must confirm the role and that conflicting/ambiguous evidence must fail closed.
+
+## 4. Test coverage gap
+
+The new R3-R12 tests prove style conflicts fail closed, but they do not prove the real resolver rejects:
+- `normalizedType` conflict for a real dynamic body address;
+- `nonblank` conflict for a real summary/body address;
+- static value identity conflict for a proven protected-static competency text address where hash identity is needed.
+
+GitHub combined statuses/checks for implementation commit `8c5b933e9ff375b8e77b8f25ecd2f92ed870187b` are empty.
+
+## 5. Proposed R3-R13 — ONE blocker only
+
+Purpose: **complete authoritative evidence parity for Part B body + summary role validation without reopening accepted R3-R11/R3-R12 architecture.**
+
+Expected writes only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Do NOT work on typed metadata, header parity, workbook parity, image inventory, insertion matrix, formula matrix, production renderer, PDF/UI, Kintone or deploy.
+
+### Mandatory R3-R13 direction
+
+1. Preserve authoritative-source-first vs observed-override separation.
+2. Preserve current `styleId` + `mergeRef` checks.
+3. For body/summary candidates, compare authoritative vs observed `normalizedType` and `nonblank` wherever those fields are role-relevant.
+4. For proven protected-static competency/template text, require authoritative safe `valHash` parity where needed to prevent same-style/same-merge content substitution from silently passing.
+5. Do not require `valHash` parity for dynamic employee/sample values merely because a hash exists; dynamic values are expected to vary. Validate their structural/type/blankness role contract instead.
+6. The real resolver must throw exactly `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED` on any required evidence mismatch.
+7. Add real-address fail-closed tests that mutate non-style evidence, at minimum:
+   - protected-static body: mutate `valHash` or `nonblank` on a proven static text address;
+   - dynamic body: mutate `normalizedType` or `nonblank` on a real `K:X / rows 7:29` address;
+   - summary/signature: mutate `normalizedType` or `nonblank` on a real `B:X / rows 31:34` address.
+8. Preserve post-resolution `SORT(dynamicAddresses) == SORT(SENSITIVE_RANGES_B)` and dynamic/static disjointness.
+9. No raw source values may be logged or committed.
+
+Critical acceptance rule:
 
 ```text
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+STYLE + MERGE PARITY IS NECESSARY BUT NOT SUFFICIENT.
+ROLE-RELEVANT TYPE / BLANKNESS / STATIC-ID EVIDENCE MUST ALSO MATCH AUTHORITATIVE SOURCE.
 ```
 
-Bounded lookup only in repository root, `app info/data/`, and `exp/`.
-If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
-Never print/log/commit raw employee/sample values.
-
-## 4. Accepted R3-R11 architecture — PRESERVE
-
-Preserve without redesign unless a minimal correction is strictly required:
-- `buildPartBSourceEvidenceInventory()` inventory-first architecture;
-- exact SHA verification;
-- source evidence fields already collected;
-- header role-specific structural validation;
-- `SENSITIVE_RANGES_B` used only AFTER independent role resolution;
-- real resolver dynamic/protected disjointness;
-- real fail-closed path using `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`;
-- real-address fail-closed tests.
-
-Do not spend credit rebuilding accepted header/inventory/fail-closed work.
-
-## 5. Frozen R3-R11 rejection
-
-The following is NOT sufficient acceptance for body/summary:
+## 6. Authorization ledger
 
 ```text
-Rows 7:29  + column rectangle => role accepted
-Rows 31:34 + column rectangle => role accepted
-```
-
-Geometry may nominate a candidate role, but generic evidence existence + valid normalized type is not enough.
-
-Critical rule:
-
-```text
-BODY/SUMMARY GEOMETRY MAY NOMINATE A ROLE.
-ACTUAL SHA-VERIFIED SOURCE EVIDENCE MUST CONFIRM THAT ROLE.
-A BROAD RECTANGLE BY ITSELF IS NOT ACCEPTANCE PROOF.
-```
-
-## 6. Authoritative source role-validation baseline
-
-Before applying any test override, derive the authoritative safe body/summary role-validation baseline from the exact SHA-verified source inventory.
-
-For each role family, use the smallest reliable safe fingerprint necessary to distinguish expected source structure from conflicting/ambiguous structure. Allowed evidence includes:
-- exact merge membership / merge-pattern identity where applicable;
-- style id or style-pattern identity;
-- normalized type;
-- blank/nonblank state;
-- safe SHA-256 hash ONLY for proven static template text where required;
-- other already-available safe structural attributes if necessary.
-
-Do not store/log raw source values.
-
-Role validation must cover at minimum:
-1. protected-static competency/body region (`B:J`, rows `7:29`);
-2. dynamic competency/body region (`K:X`, rows `7:29`);
-3. summary/signature region (`B:X`, rows `31:34`).
-
-Do not assume one fingerprint fits all cells if the source contains multiple legitimate style/merge patterns. Derive/validate the actual legitimate pattern set from source.
-
-## 7. Real resolver behavior
-
-For every body/summary candidate role:
-1. geometry nominates the candidate role;
-2. authoritative source-role evidence confirms the actual evidence record;
-3. only then may the role be accepted.
-
-The REAL resolver must throw exactly:
-
-```text
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-when body/summary role evidence is:
-- missing;
-- structurally changed;
-- inconsistent with authoritative source-role evidence;
-- conflicting with candidate role;
-- ambiguous.
-
-Do not silently accept the role from row/column geometry.
-
-## 8. Mandatory tests — REAL role-relevant mutations
-
-Tests must use the real resolver and actual source-backed evidence.
-
-Preserve prior accepted header fail-closed tests and ADD at minimum:
-
-1. **Protected competency/body**
-   - choose a real address in `B:J`, rows `7:29`;
-   - mutate a ROLE-RELEVANT evidence field such as actual style/merge/static-hash evidence;
-   - prove real resolver throws `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
-
-2. **Dynamic competency/body**
-   - choose a real address in `K:X`, rows `7:29`;
-   - mutate a ROLE-RELEVANT source evidence field;
-   - prove real resolver throws the same blocker.
-
-3. **Summary/signature**
-   - choose a real address in `B:X`, rows `31:34`;
-   - mutate a ROLE-RELEVANT source evidence field;
-   - prove real resolver throws the same blocker.
-
-Deleting a generic record alone does NOT satisfy these three new tests. Each must demonstrate role-specific source conflict detection.
-
-Tests must also preserve proof that:
-
-```text
-SORT(dynamicAddresses) == SORT(SENSITIVE_RANGES_B)
-DYNAMIC ∩ PROTECTED_STATIC = empty
-```
-
-Only compare to `SENSITIVE_RANGES_B` after role resolution.
-
-## 9. No circular/self-fulfilling proof
-
-Do not derive a role fingerprint from the mutated override itself.
-
-Authoritative expected body/summary evidence MUST come from the exact SHA source before override/mutation is applied.
-
-Test overrides may mutate the observed evidence supplied to the resolver, but must not mutate/recompute the authoritative expected baseline used to validate the role.
-
-If the architecture cannot separate authoritative expected evidence from observed override evidence safely, STOP:
-
-```text
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-## 10. Out of scope — DO NOT TOUCH
-
-Do NOT use R3-R12 to close or redesign:
-- header role validation already accepted;
-- source inventory architecture already accepted;
-- typed metadata proof;
-- header fingerprint/export parity;
-- workbook source-vs-roundtrip parity;
-- reference-image inventory;
-- Part A/B insertion structural matrix;
-- formula matrix;
-- production sanitizer/renderer;
-- export service/normalizer/application code;
-- PDF/UI;
-- Live Kintone;
-- deploy;
-- next Work Package.
-
-## 11. Mandatory commands
-
-Run exactly:
-```text
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Before commit only the two authorized feasibility files may differ. After commit/push working tree must be clean.
-
-## 12. Completion contract
-
-Push only the two authorized feasibility files.
-
-Final executor status must be exactly one of:
-```text
-BODY_SUMMARY_ROLE_VALIDATION_PENDING_INDEPENDENT_REVIEW
-BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE
-BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-```
-
-Antigravity must not declare D2-WP003 PASS/CLOSED and must not start another blocker or Work Package.
-
-## 13. Authorization ledger
-
-```text
-D2-WP003-R3-R10-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
 D2-WP003-R3-R11-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-D2-WP003-R3-R12-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R12-SOURCE-20260901-01
+D2-WP003-R3-R12-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -242,4 +121,11 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-Authorization is consumed when the R3-R12 implementation/blocker commit is pushed for independent review or invalidated by any scope/dependency change.
+## 7. Exact next gate
+
+```text
+D2-WP003-R3-R12 = REVIEWED / NOT PASS / NOT CLOSED
+D2-WP003-R3-R13 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
+PRIVACY_PURGE_REQUIRED = NO
+ANTIGRAVITY = STOP / WAIT OWNER
+```
