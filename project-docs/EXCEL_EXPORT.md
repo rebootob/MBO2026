@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R3-R17 PASS-CLOSED / R3-R18 REVIEWED-NOT-PASS / R3-R19 PROPOSED**  
+> Status: **IN PROGRESS / R3-R17 PASS-CLOSED / R3-R18 REVIEWED-NOT-PASS / R3-R19 AUTHORIZED**  
 > Updated: 2026-09-01 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -45,18 +45,12 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 
 Accepted privacy/typed-metadata/header work must not reopen without proven regression.
 
-## 4. R3-R18 independent review
+## 4. R3-R18 review / accepted partial workbook parity
 
 Implementation:
 
 ```text
 e5d082059d05da4ac686568b55600fb12873e30d
-```
-
-Execution baseline:
-
-```text
-7d8fa41c93e950011b59d8a6951830fa6d289301
 ```
 
 Verdict:
@@ -68,51 +62,57 @@ D2-WP003-R3-R18_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R18 work:
-- `getWorkbookFingerprint()` now builds evidence for every worksheet;
-- workbook sheet names/order/state are compared;
-- Part B `Sheet1` is explicitly included;
-- per-sheet merges, columns, explicit row heights, gridline/view flag, margins, page setup, fit/centering, protection and relationships are represented and compared;
-- expected evidence is rebuilt from exact SHA source before observed override;
-- positive Part A/B no-op validation and structural negative tests exist;
-- previously accepted tests remain.
+Accepted R3-R18 work includes all-worksheet fingerprinting, Part B `Sheet1` representation, exact sheet names/order/state, merges, columns, row heights, views/gridlines, margins, page setup/fit/centering, protection, relationships, exact-source expected evidence before override, and the existing positive/negative workbook validator paths.
 
-Remaining blockers:
+Only these defects remain open for R3-R19:
 
 ### A. Per-sheet print-area binding
-Current `getWorkbookFingerprint()` computes the requested `localSheetId` before the current `sheets[name]` entry is assigned. The expression therefore resolves to `0` for every worksheet and falls back to the first print-area defined name. This can incorrectly give Part B second `Sheet1` the main `'(Part B) Competency'!$A$1:$X$35` print area, even though the source second sheet has no user-facing print area.
-
-Required authority:
-- resolve `localSheetId` from actual worksheet index/order;
-- bind each defined print area to its exact source sheet;
-- no fallback that silently applies another sheet's print area;
-- if a source sheet has no print area, observed must also have no print area.
+- bind `_xlnm.Print_Area` by actual zero-based worksheet index / `localSheetId`;
+- do not use a first-print-area/global fallback for a sheet without a binding;
+- Part B main sheet retains its exact source print area;
+- Part B second `Sheet1` must expose no print area when the exact source has none.
 
 ### B. Missing dimension evidence
-Current validator checks dimension only when both `obsSheet.dimension` and `authSheet.dimension` are truthy. An observed empty/missing dimension can bypass the comparison.
+- dimension is required per-sheet evidence;
+- compare source vs observed exactly;
+- present-vs-missing/empty and different values must fail closed.
 
-Required authority:
-- exact dimension evidence equality for each source sheet;
-- present-vs-missing must fail closed with `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`.
+## 5. D2-WP003-R3-R19 — AUTHORIZED
 
-### C. Missing negative proof
-Add real source-backed negative tests for:
-- wrong/non-empty print-area binding on Part B `Sheet1`;
-- missing observed dimension on a sheet that has source dimension evidence.
-
-## 5. Next proposed corrective — NOT AUTHORIZED
+Purpose: **per-sheet print-area binding + missing evidence fail-closed only**.
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R19
-PROPOSED_WORK_PACKAGE_NAME = PER-SHEET PRINT-AREA BINDING + MISSING EVIDENCE FAIL-CLOSED
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+CONTROL_PLANE_PRE_AUTH_CHECKPOINT = f1848b3efffb034659817dbc9f7ff2088b76cf6f
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R19-SOURCE-20260901-01
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+MAX_EXECUTOR_STATUS = WORKBOOK_PARITY_CORRECTIVE_PROOF_PENDING_INDEPENDENT_REVIEW
+PRIVACY_PURGE_REQUIRED = NO
 ```
 
-R3-R19 is expected to be a minimal feasibility source/test correction only. Preserve all other accepted R3-R18 behavior.
+Authorized writes ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-## 6. D2 remaining closure path
+Antigravity must fresh-fetch current authorized canonical HEAD and use that as `EXECUTION_BASELINE`; the pre-authorization checkpoint is not an executor reset target.
+
+## 6. Mandatory corrective proof
+
+Preserve all R3-R18 tests and add only bounded proof:
+
+Positive:
+- Part A and B no-op roundtrip still pass the real workbook validator;
+- Part B main print area equals source;
+- Part B `Sheet1` print area is empty/absent exactly as source;
+- per-sheet dimensions equal source.
+
+Negative through the real validator and source-backed expected fingerprint:
+- wrong/non-empty `Sheet1.printArea` => `BLOCKER_WORKBOOK_PARITY_UNRESOLVED`;
+- missing/blank observed dimension where source has dimension => exact blocker.
+
+Do not derive expected evidence from the mutated observed object.
+
+## 7. D2 remaining closure path
 
 After workbook-wide parity is independently accepted, continue bounded steps:
 1. reference-image inventory/removal/preservation closure;
@@ -127,28 +127,28 @@ After workbook-wide parity is independently accepted, continue bounded steps:
 
 Do not auto-start the next step.
 
-## 7. Current gate
+## 8. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R17 = PASS / CLOSED
 D2-WP003-R3-R18 = REVIEWED / NOT PASS / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R19 = AUTHORIZED / EXECUTION ACTIVE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R19
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R19-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = EXECUTE R3-R19 ONLY / LOW-CREDIT / BOUNDED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-## 8. Authorization ledger
+## 9. Authorization ledger
 
 ```text
-D2-WP003-R3-R17-SOURCE-20260901-01 = CONSUMED / REVIEWED / PASS-CLOSED / DO NOT REUSE
 D2-WP003-R3-R18-SOURCE-20260901-01 = CONSUMED / REVIEWED / NOT PASS / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R19-SOURCE-20260901-01 = ACTIVE / ONE CORRECTIVE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R19-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ```
