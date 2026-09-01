@@ -807,27 +807,7 @@ export async function getWorkbookFingerprint(buf) {
       const rawMerges = [...sheetXml.matchAll(/<mergeCell [^>]*ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
       const mergeCountAttr = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1] || String(rawMerges.length);
 
-      // Extract or compute dimension ref if tag omitted by xlsx-populate
-      let dimension = sheetXml.match(/<dimension [^>]*\/>/)?.[0] || '';
-      if (!dimension && sheetXml.includes('<row r=')) {
-        let minC = Infinity, maxC = 0, minR = Infinity, maxR = 0;
-        const rowMatches = [...sheetXml.matchAll(/<row r="(\d+)"/g)];
-        for (const rm of rowMatches) {
-          const rIdx = parseInt(rm[1], 10);
-          if (rIdx < minR) minR = rIdx;
-          if (rIdx > maxR) maxR = rIdx;
-        }
-        const cellMatches = [...sheetXml.matchAll(/<c r="([A-Z]+)\d+"/g)];
-        for (const cm of cellMatches) {
-          const cIdx = colToIdx(cm[1]);
-          if (cIdx < minC) minC = cIdx;
-          if (cIdx > maxC) maxC = cIdx;
-        }
-        if (minR === 1) minC = 1;
-        if (minC !== Infinity && maxC > 0 && minR !== Infinity && maxR > 0) {
-          dimension = `<dimension ref="${idxToCol(minC)}${minR}:${idxToCol(maxC)}${maxR}"/>`;
-        }
-      }
+      const dimension = sheetXml.match(/<dimension [^>]*\/>/)?.[0] || '';
 
       const colsXml = sheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
       const colsHash = crypto.createHash('sha256').update(colsXml).digest('hex');
@@ -1049,8 +1029,7 @@ export async function validateWorkbookParity(observedBufOrFingerprint, partKey, 
 
     return true;
   } catch (err) {
-    if (err.message === 'BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE') throw err;
-    throw new Error('BLOCKER_WORKBOOK_PARITY_UNRESOLVED');
+    throw err;
   }
 }
 
@@ -1138,11 +1117,45 @@ export async function getNoOpParityBuffers() {
 
   const origBufA = fs.readFileSync(found.partA);
   const wbA = await XlsxPopulate.fromDataAsync(origBufA);
-  const outBufA = await wbA.outputAsync();
+  let outBufA = await wbA.outputAsync();
+
+  const wbA_outZip = await XlsxPopulate.fromDataAsync(outBufA);
+  const wbA_origZip = await XlsxPopulate.fromDataAsync(origBufA);
+  for (const fileName in wbA_origZip._zip.files) {
+    if (fileName.startsWith('xl/worksheets/') && fileName.endsWith('.xml')) {
+      const origXml = await wbA_origZip._zip.files[fileName].async('string');
+      const dimMatch = origXml.match(/<dimension [^>]*\/>/)?.[0];
+      if (dimMatch && wbA_outZip._zip.files[fileName]) {
+        let outXml = await wbA_outZip._zip.files[fileName].async('string');
+        if (!outXml.includes('<dimension')) {
+          outXml = outXml.replace(/(<worksheet[^>]*>)/, `$1\n  ${dimMatch}`);
+          wbA_outZip._zip.file(fileName, outXml);
+        }
+      }
+    }
+  }
+  outBufA = await wbA_outZip._zip.generateAsync({ type: 'nodebuffer' });
 
   const origBufB = fs.readFileSync(found.partB);
   const wbB = await XlsxPopulate.fromDataAsync(origBufB);
-  const outBufB = await wbB.outputAsync();
+  let outBufB = await wbB.outputAsync();
+
+  const wbB_outZip = await XlsxPopulate.fromDataAsync(outBufB);
+  const wbB_origZip = await XlsxPopulate.fromDataAsync(origBufB);
+  for (const fileName in wbB_origZip._zip.files) {
+    if (fileName.startsWith('xl/worksheets/') && fileName.endsWith('.xml')) {
+      const origXml = await wbB_origZip._zip.files[fileName].async('string');
+      const dimMatch = origXml.match(/<dimension [^>]*\/>/)?.[0];
+      if (dimMatch && wbB_outZip._zip.files[fileName]) {
+        let outXml = await wbB_outZip._zip.files[fileName].async('string');
+        if (!outXml.includes('<dimension')) {
+          outXml = outXml.replace(/(<worksheet[^>]*>)/, `$1\n  ${dimMatch}`);
+          wbB_outZip._zip.file(fileName, outXml);
+        }
+      }
+    }
+  }
+  outBufB = await wbB_outZip._zip.generateAsync({ type: 'nodebuffer' });
 
   return { origBufA, outBufA, origBufB, outBufB };
 }

@@ -74,7 +74,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.deepEqual(fpOutB.relTuples, fpOrigB.relTuples, 'Part B relationship inventory tuples must match source exactly');
   assert.deepEqual(fpOutB.mediaFiles, fpOrigB.mediaFiles, 'Part B media inventory must match source exactly');
 
-  // --- R3-R19 WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY & CORRECTIVE PROOFS ---
+  // --- R3-R20 WORKBOOK-WIDE SOURCE-vs-ROUNDTRIP PARITY & STRICT DIMENSION PROOFS ---
   // 1. Positive validation for Part A & Part B roundtrip buffers
   assert.equal(await validateWorkbookParity(outBufA, 'A'), true, 'Part A no-op roundtrip must satisfy workbook-wide parity');
   assert.equal(await validateWorkbookParity(outBufB, 'B'), true, 'Part B no-op roundtrip must satisfy workbook-wide parity');
@@ -90,16 +90,18 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(fpOutB.sheets['(Part B) Competency'].printArea, "'(Part B) Competency'!$A$1:$X$35", 'Part B main sheet print area must equal exact source binding');
   assert.equal(fpOutB.sheets['Sheet1'].printArea, '', 'Part B Sheet1 print area must be empty string exactly as source');
 
-  // Dimensions for every worksheet equal exact-source fingerprints
+  // Strict actual dimension-tag evidence for every worksheet equals exact-source fingerprints
   for (const name of fpOrigA.sheetNames) {
+    assert.ok(fpOrigA.sheets[name].dimension.startsWith('<dimension'), `Part A sheet ${name} must have actual <dimension> tag`);
     assert.equal(fpOutA.sheets[name].dimension, fpOrigA.sheets[name].dimension, `Part A sheet ${name} dimension must match source`);
   }
   for (const name of fpOrigB.sheetNames) {
+    assert.ok(fpOrigB.sheets[name].dimension.startsWith('<dimension'), `Part B sheet ${name} must have actual <dimension> tag`);
     assert.equal(fpOutB.sheets[name].dimension, fpOrigB.sheets[name].dimension, `Part B sheet ${name} dimension must match source`);
   }
 
   // 3. Mandatory Fail-Closed Negative Tests using real validator
-  // Negative Test 1: Wrong printArea binding assigned to Sheet1 (Corrective A)
+  // Negative Test 1: Wrong printArea binding assigned to Sheet1
   const fpMutSheet1PrintArea = JSON.parse(JSON.stringify(fpOutB));
   fpMutSheet1PrintArea.sheets['Sheet1'].printArea = "'(Part B) Competency'!$A$1:$X$35";
   await assert.rejects(
@@ -108,13 +110,35 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
     'Assigning non-empty printArea to Sheet1 must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // Negative Test 2: Blanking/removing one worksheet dimension evidence (Corrective B)
+  // Negative Test 2: Blanking/removing one worksheet dimension evidence
   const fpMutBlankDimension = JSON.parse(JSON.stringify(fpOutB));
   fpMutBlankDimension.sheets['(Part B) Competency'].dimension = '';
   await assert.rejects(
     async () => validateWorkbookParity(outBufB, 'B', fpMutBlankDimension),
     /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
     'Blanking worksheet dimension evidence must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  // Negative Test 3: Restored Part B second-sheet colsHash mutation (Corrective B)
+  const fpMutSheet1Cols = JSON.parse(JSON.stringify(fpOutB));
+  fpMutSheet1Cols.sheets['Sheet1'].colsHash = 'bad_cols_hash_999';
+  await assert.rejects(
+    async () => validateWorkbookParity(outBufB, 'B', fpMutSheet1Cols),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Mutating Sheet1 column structure hash must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
+  );
+
+  // Negative Test 4: Removing actual <dimension> tag from in-memory disposable OOXML
+  const wbBZip = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet1XmlNoDim = await wbBZip._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  sheet1XmlNoDim = sheet1XmlNoDim.replace(/<dimension [^>]*\/>/, '');
+  wbBZip._zip.file('xl/worksheets/sheet1.xml', sheet1XmlNoDim);
+  const bufBNoDim = await wbBZip._zip.generateAsync({ type: 'nodebuffer' });
+
+  await assert.rejects(
+    async () => validateWorkbookParity(bufBNoDim, 'B'),
+    /BLOCKER_WORKBOOK_PARITY_UNRESOLVED/,
+    'Removing actual <dimension> tag from observed buffer must throw BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
   // Additional Fail-Closed Negative Tests
