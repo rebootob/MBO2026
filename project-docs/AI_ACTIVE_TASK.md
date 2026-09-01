@@ -1,163 +1,340 @@
-# AI ACTIVE TASK — D2-WP003-R3 REVIEW / R3-R1 PROPOSED
+# AI ACTIVE TASK — D2-WP003-R3-R1 EXECUTION AUTHORIZED
 
-Mode: **CHATGPT CONTROL PLANE / NO ACTIVE SOURCE AUTH / NO KINTONE / NO DEPLOY / NO BINARY PUBLISH**  
+Mode: **ANTIGRAVITY / CONTRACT-COMPLETE OOXML FEASIBILITY CORRECTIVE / NO BINARY PUBLISH / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-01 ICT
 
 ```text
-TASK_STATE = WAITING_OWNER_CORRECTIVE_APPROVAL
+TASK_STATE = AUTHORIZED_FOR_EXECUTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3_SCOPE_REVIEW = PASS
-D2-WP003-R3_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-D2-WP003-R3_STATUS = NOT PASS / NOT CLOSED
+D2-WP003-R3 = REVIEWED / NOT PASS / NOT CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R1
+ACTIVE_WORK_PACKAGE_NAME = CONTRACT-COMPLETE OOXML FEASIBILITY PROOF CORRECTIVE
+OWNER_APPROVAL = GRANTED 2026-09-01 ICT
 PRIVACY_PURGE_REQUIRED = NO
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R1
-PROPOSED_WORK_PACKAGE_NAME = CONTRACT-COMPLETE OOXML FEASIBILITY PROOF CORRECTIVE
-CURRENT_EXECUTOR = NONE
-ANTIGRAVITY_ACTION = STOP / WAIT OWNER
-D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
+EXECUTOR = ANTIGRAVITY
+ANTIGRAVITY_MODE = LOW-CREDIT / BOUNDED
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R1-SOURCE-20260901-01
+MAX_EXECUTOR_STATUS = FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-OWNER_DIFFICULTY_DECISION = LEAVE BLANK TEMPORARILY
 ```
 
-## 1. R3 scope review — PASS
+## 1. Purpose
 
-R3 implementation is exactly one commit above its authorization baseline and changed only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`;
-- `package.json` / `package-lock.json` for `xlsx-populate@1.21.0`.
+Correct the existing R3 feasibility proof only. Do not build the production sanitizer/renderer and do not publish any workbook/image/binary output.
 
-No XLSX/image/binary/output was committed. No production renderer/sanitizer, normalizer/export-service, PDF/UI/Kintone/deploy path changed.
+R3-R1 must objectively prove that the accepted legacy templates can be handled safely before any later production Work Package is authorized.
 
-Therefore no new privacy purge is required for the R3 proof commit.
+## 2. Exact source scope
 
-## 2. BLOCKER A — no-op parity proof is incomplete
+Authorized modifications ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-`verifyNoOpParity()` only proves that the first-sheet names survive load/output/reparse.
+Read-only:
+- `package.json`
+- `package-lock.json`
+- exact ignored owner templates after SHA verification
+- governance docs listed below
 
-It does not prove the contract-required material parity for:
-- sheet order;
-- print areas;
-- A3/A4 paper size/orientation/scale;
-- merge counts 193 / 79;
-- representative row heights/column widths;
-- Part B protection;
-- drawing/image relationship counts / approved branding;
-- other required geometry.
+`xlsx-populate@1.21.0` is already present and pinned. Package/dependency changes are NOT authorized in R3-R1. If a dependency correction is genuinely required, STOP and request a new authorization.
 
-A passing sheet-name check is not sufficient to establish `xlsx-populate` parity.
+No other file may change.
 
-## 3. BLOCKER B — header/value-map proof contradicts frozen evidence
+## 3. Exact owner-template identity
 
-`verifyHeaderValueMapping()` claims to prove Part A row-6 labels / row-7 values, but it actually clears `N6`, `Z6`, `AQ6`, `AT6`.
+Only local originals with exact SHA-256 may be used:
 
-It does not mutate or verify row-7 value ranges and does not prove Part B row-2 label / row-3 value separation at all.
+```text
+PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+```
 
-`labelN6Preserved` only records that the original cell had some value before the function then clears it. This is not a preservation proof.
+Bounded lookup only in repository root, `app info/data/`, and `exp/`.
+If unavailable: STOP `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE`.
 
-Required corrective proof:
-- preserve representative Part A row-6 labels unchanged;
-- identify and mutate only corresponding row-7 value ranges;
-- preserve representative Part B row-2 labels unchanged;
-- identify and mutate only corresponding row-3 value ranges;
-- reparse and compare label text/hash/addresses without publishing source values.
+Never log, print, commit or include source employee/sample values in errors.
 
-## 4. BLOCKER C — privacy proof remains shared-string heuristic based
+## 4. Low-credit read order
 
-R3 still derives sensitive tokens from `xl/sharedStrings.xml` using broad static-keyword filtering and still clears several row-6 / row-2 anchors.
+Fresh-fetch current canonical branch first, then read only:
+1. `project-docs/AI_CONTROL_CENTER.md`
+2. `project-docs/AI_ACTIVE_TASK.md`
+3. `project-docs/EXCEL_EXPORT.md`
+4. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+5. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+6. `package.json`
+7. exact owner templates after SHA verification
 
-This does not satisfy the required range-driven proof for text/numeric/date values.
+No whole-repo scan.
 
-Problems:
-- source-sensitive numeric/date values are not collected from designated cell ranges;
-- designated sensitive ranges are not proven empty after reparse;
-- incomplete heuristic classification can omit real sensitive values;
-- error messages interpolate the sensitive token itself, violating the no-source-value logging rule.
+## 5. No-binary rule
 
-Corrective proof must define exact sensitive cell/range addresses, collect values in memory by cell type without logging values, clear those ranges, reparse/assert emptiness, and OOXML-scan only non-sensitive hashes/derived fingerprints or safe in-memory comparisons.
+R3-R1 must NOT commit or publish:
+- `.xlsx`, `.xls`, `.xlsm`, `.zip`;
+- images/media extracted from workbooks;
+- disposable outputs;
+- `assets/export-templates/**`.
 
-## 5. BLOCKER D — reference-image removal is not proved
+Disposable workbook buffers may exist only in memory or ignored temporary local paths and must not appear in Git diff.
 
-`verifyReferenceImageRemoval()` merely counts files under `xl/drawings/` and `xl/media/` and then returns `brandingPreserved: true`.
+## 6. Mandatory proof architecture
 
-It does not:
-- identify the historical/reference screenshot;
-- identify the approved branding asset(s);
-- remove a drawing relationship;
-- remove the media target;
-- prove branding relationship remains;
-- reparse the mutated workbook.
+Tests must inspect the mutated disposable workbook/OOXML directly. Acceptance MUST NOT rely on:
+- helper-returned `pass: true` booleans;
+- unconditional assertions such as `assert.ok(true)`;
+- sentinel movement alone;
+- a helper claiming a property without the test measuring that property.
 
-This is inventory presence, not image-removal feasibility.
+Helpers may return buffers and non-sensitive structural metadata. The test must independently inspect the resulting package and assert the required structure.
 
-## 6. BLOCKER E — Part A proof is value-copying, not true structural insertion
+Any unresolved evidence must fail closed with the documented blocker.
 
-`verifyTruePartAStructuralInsertion()` copies non-empty cell values from rows 29..52 to rows +6 and copies row height only.
+## 7. Material no-op parity proof
 
-It does not perform bounded OOXML structural insertion and does not prove:
-- Part A 5-objective +1 case;
-- style ids;
-- borders/alignment;
+For BOTH exact source workbooks:
+1. load -> output -> reparse with `xlsx-populate@1.21.0`;
+2. independently compare before/after material structure.
+
+Must prove at minimum:
+- sheet names AND order unchanged;
+- Part A print area `A1:BJ52`;
+- Part A A3 / landscape / scale 58%;
+- Part B print area `A1:X35`;
+- Part B A4 / portrait / scale 75% / horizontal centering;
+- Part A main-sheet merge count = 193;
+- Part B main-sheet merge count = 79;
+- representative row heights and column widths unchanged;
+- Part B protection presence/state unchanged;
+- drawing/image relationship counts and approved-branding relationship inventory unchanged;
+- workbook reparses successfully.
+
+Use OOXML/package attributes where high-level APIs are insufficient.
+
+Failure => `BLOCKER_XLSX_LIBRARY_PARITY`.
+
+## 8. Header label/value map proof
+
+Frozen evidence:
+- Part A row 6 = labels; runtime values belong in corresponding row-7 value ranges.
+- Part B row 2 = labels; runtime values belong in corresponding row-3 value ranges.
+
+R3-R1 must derive/prove exact value-range addresses from workbook structure without logging values.
+
+On disposable copies:
+- snapshot representative label cell/range addresses plus non-sensitive hash/fingerprint of label content;
+- mutate/clear ONLY the proven Part A row-7 value ranges;
+- mutate/clear ONLY the proven Part B row-3 value ranges;
+- reparse;
+- prove label fingerprints are unchanged;
+- prove only the intended value ranges changed.
+
+Do NOT clear row-6 Part A labels or row-2 Part B labels.
+
+If exact value ranges cannot be proved: STOP `BLOCKER_HEADER_VALUE_MAP_UNRESOLVED`.
+
+## 9. Range-driven privacy proof
+
+Do NOT derive the sensitive set from `sharedStrings.xml` heuristics.
+
+Define/derive an explicit bounded sensitive cell/range map from the accepted workbook structure covering at minimum:
+- employee identity/name/code;
+- department/section/position/start date;
+- Hoshin/sample plan/business text;
+- objective/action/target/result fields;
+- self evaluation;
+- manager/GM/appraiser evaluation fields;
+- evaluator/signature/name areas;
+- scores/grades/summary values;
+- legacy Difficulty sample values.
+
+Proof requirements:
+1. collect designated source-cell values in memory by cell type (text/numeric/date) without logging them;
+2. clear the complete designated ranges on a disposable copy while preserving labels/styles/merges;
+3. output and reparse;
+4. independently assert every designated sensitive cell/range is empty after reparse;
+5. for collected text values, scan all OOXML XML/text parts in memory and assert those values do not survive;
+6. error messages may include only safe addresses/part names/counts/hashes, never source values;
+7. prove zero worksheet scoring formulas are introduced.
+
+If the map is incomplete/ambiguous: STOP `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
+
+## 10. Reference-image removal proof
+
+Inventory drawings/media/relationships using non-sensitive metadata only: relationship id, anchor coordinates, media filename/hash, dimensions and relationship target.
+
+R3-R1 must identify the non-user-facing historical/reference screenshot separately from approved branding.
+
+On a disposable package actually:
+- remove the target drawing anchor/object;
+- remove its relationship;
+- remove its media target if orphaned;
+- update related OOXML/content-type entries when required;
+- preserve approved branding relationship(s)/media;
+- reparse successfully.
+
+Tests must independently prove:
+- target relationship/object is absent;
+- target media is absent if orphaned;
+- approved branding relationship(s) remain;
+- workbook reparses.
+
+If target cannot be distinguished safely: STOP `BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED`.
+
+## 11. TRUE Part A OOXML insertion proof
+
+Use bounded OOXML structural mutation, not value/style copying into already occupied rows.
+
+Each scenario starts from a fresh disposable copy.
+
+### 4 objectives
+- no insertion;
+- original lower-section row 29 remains row 29;
+- original print area remains `A1:BJ52`.
+
+### 5 objectives
+- insert exactly one new objective row after row 28;
+- shift all existing rows 29+ down by +1;
+- old row-29 structural sentinel/content moves to row 30;
+- print area becomes `A1:BJ53`.
+
+### 10 objectives
+- insert exactly six new objective rows after row 28;
+- shift all existing rows 29+ down by +6;
+- objective-row slot 10 is row 34;
+- old row-29 structural sentinel/content moves to row 35;
+- print area becomes `A1:BJ58`.
+
+For inserted rows, clone the full relevant row-28 OOXML structure, including representative:
+- row height;
+- cell references;
+- style IDs;
 - merged ranges;
-- row/cell reference rewrites;
-- dimension/reference rewrites;
-- formulas/data validation if present;
-- A3/scale preservation;
-- print area after reparse.
+- border/alignment/number-format references embodied by styles;
+- any applicable validation/reference metadata present in the source.
 
-The function sets `partAStructuralInsertionPass: true` unconditionally. Sentinel movement alone is not structural proof.
+Update affected:
+- row `r` attributes;
+- cell `r` references;
+- merged-range refs;
+- worksheet dimension refs;
+- print-area refs;
+- other affected range refs that actually exist in the source package.
 
-## 7. BLOCKER F — Part B proof is value-copying, not block insertion
+After reparse, tests must independently compare structure from the resulting OOXML. Preserve A3 landscape and scale 58%.
 
-`verifyTruePartBStructuralInsertion()` copies non-empty values from rows 31..35 to rows +8.
+Failure => `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
 
-It does not insert two four-row competency blocks, clone style/merge/border/height metadata, update print area to `A1:X43`, or prove A4/centering/protection after reparse.
+## 12. TRUE Part B OOXML block insertion proof
 
-The sentinel proves only copied data movement, not true block insertion.
+Each scenario starts from a fresh disposable copy.
 
-## 8. BLOCKER G — tests overstate what implementation proves
+### 6 competencies
+- no insertion;
+- totals/signatures remain beginning row 31;
+- print area remains `A1:X35`.
 
-The tests assert boolean flags returned by the helper without independently checking the required workbook structure.
+### 8 competencies
+- insert two complete four-row competency blocks before row 31;
+- use the final legacy competency block structure as the structural source only where proven appropriate;
+- shift all existing rows 31+ down exactly +8;
+- old row-31 structural sentinel/content moves to row 39;
+- print area becomes `A1:X43`.
 
-Examples:
-- no-op test checks only sheet names;
-- header test does not inspect row 7 / row 3;
-- image test accepts `brandingPreserved: true` without any removal;
-- Part A test does not test 5 objectives;
-- Part B test does not prove inserted blocks/print area/styles;
-- Difficulty test is only `assert.ok(true)`.
+Update and prove row/cell refs, merge refs, dimension, print area and any other affected existing range references.
 
-R3 feasibility acceptance therefore fails even if the local test command exited 0.
+Inserted blocks must preserve representative source block:
+- row heights;
+- style IDs;
+- merged ranges;
+- border/alignment structure.
 
-## 9. CI / test evidence
+After reparse preserve:
+- A4 portrait;
+- scale 75%;
+- horizontal centering;
+- Part B protection state.
 
-GitHub has no commit status/check or workflow run evidence for the R3 proof commit.
+Failure => `BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE`.
 
-Independent review is source-based and finds the blockers above. Owner-provided/offline evidence can supplement but cannot override false-positive test design.
+## 13. Difficulty decision
 
-## 10. Proposed D2-WP003-R3-R1
+```text
+DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
+```
 
-Purpose: correct the proof only. No history rewrite and no binary publication.
+Do not read/invent any `Difficulty_*` application field. Do not modify normalizer/export-service.
 
-Expected scope remains limited to:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`;
-- `package.json` / `package-lock.json` only if dependency metadata correction is genuinely required.
+Feasibility proof must directly inspect the disposable sanitized Part A structure and prove designated legacy Difficulty cells/ranges are blank after sanitization. No unconditional test is allowed.
 
-No `.xlsx`, image/media, production sanitizer/renderer, application service, Kintone, PDF, UI or deploy change.
+## 14. Mandatory commands
 
-R3-R1 must fail closed instead of returning success flags unless every required structural/privacy assertion is objectively measured from the disposable workbook package.
+Run:
+```text
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
 
-Owner approval is required before R3-R1 starts.
+Before commit, Git diff/status must contain only the two authorized files. After commit/push, working tree must be clean.
 
-## 11. Authorization ledger
+No GitHub CI exists; local test evidence must be reported exactly and is subject to independent source review.
+
+## 15. Explicitly forbidden
+
+Do NOT:
+- modify `package.json` or `package-lock.json`;
+- create/publish workbook/image/binary output;
+- create production sanitizer/renderer;
+- modify `src/services/mbo-export-service.js`;
+- modify `src/core/kintone-normalizer.js`;
+- modify existing export tests;
+- implement Difficulty fields;
+- implement PDF/UI;
+- access/read/write/export Live Kintone;
+- deploy;
+- add dependencies;
+- start another Work Package.
+
+## 16. Completion contract
+
+Push only the smallest corrective proof changes in the two authorized files.
+
+Final executor status must be exactly one of:
+```text
+FEASIBILITY_PROOF_PENDING_INDEPENDENT_REVIEW
+BLOCKER_XLSX_LIBRARY_PARITY
+BLOCKER_HEADER_VALUE_MAP_UNRESOLVED
+BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
+BLOCKER_REFERENCE_IMAGE_ID_UNRESOLVED
+BLOCKER_TRUE_STRUCTURAL_INSERTION_UNSAFE
+```
+
+Antigravity must not declare PASS/CLOSED.
+
+Final report <=18 concise lines and include:
+- implementation commit SHA;
+- exact changed filenames;
+- exact source SHA verification result;
+- no-op parity result;
+- header/value map result;
+- privacy-range result;
+- reference-image removal result;
+- Part A 4/5/10 structural result;
+- Part B 6/8 structural result;
+- Difficulty blank result;
+- test pass/fail counts;
+- `npm audit --omit=dev` result;
+- confirmation no binary/output/application/Kintone/deploy changes;
+- final status.
+
+## 17. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
@@ -167,7 +344,8 @@ D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R1-SOURCE-20260901-01 = CONSUMED / INVALIDATED / PURGED / DO NOT REUSE
 D2-WP003-R2-SOURCE-20260901-01 = CONSUMED / REVIEWED / PURGED / DO NOT REUSE
 D2-WP003-R3-SOURCE-20260901-01 = CONSUMED / REVIEWED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+D2-WP003-R3-R1-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R3-R1-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 APP53_WRITE = NO
@@ -180,10 +358,4 @@ LIVE_UAT = NO
 ROLLBACK = NO
 ```
 
-## 12. Exact next gate
-
-```text
-D2-WP003-R3 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R1 = PROPOSED / OWNER APPROVAL REQUIRED / NOT STARTED
-ANTIGRAVITY = STOP / WAIT OWNER
-```
+Authorization is consumed when the R3-R1 proof commit is pushed for independent review or invalidated by any scope/dependency change.
