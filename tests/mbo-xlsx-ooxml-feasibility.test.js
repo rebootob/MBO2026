@@ -12,6 +12,8 @@ import {
   getStructuralPartBBuffers,
   getPartBPrivacyClassification,
   getPartBPrivacyClassificationSourceBacked,
+  buildPartBSourceEvidenceInventory,
+  resolvePartBPrivacyRoles,
   getTypedPrivacyMetadata,
   getHeaderCellFingerprints,
   getWorkbookFingerprint,
@@ -95,19 +97,23 @@ test('FEASIBILITY_HEADER_GEOMETRY_LABEL_VALUE_MAPPING: static header labels rema
 });
 
 test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string purging leave 0 sensitive tokens in OOXML parts', async () => {
-  // Verify Part B SHA before classification proof
+  // 1. Verify exact Part B SHA
   const found = findLocalSourceTemplates();
   assert.notEqual(found, null, 'Local source templates must exist');
   assert.equal(found.shaB, EXPECTED_PART_B_SHA, 'Part B SHA-256 must match exact baseline');
 
-  // Source-backed Part B classification test
-  const classMapB = await getPartBPrivacyClassificationSourceBacked();
+  // 2. Build complete source evidence inventory FIRST
+  const realInventory = await buildPartBSourceEvidenceInventory();
+  assert.ok(realInventory['G2'], 'Source evidence must exist for G2');
+  assert.ok(realInventory['B2'], 'Source evidence must exist for B2');
+
+  // 3. Resolve roles independently using REAL resolver
+  const realResolved = await resolvePartBPrivacyRoles();
+  const classMapB = realResolved.classificationMap;
+
   assert.equal(classMapB['G2'].classification, 'HEADER_VALUE', 'G2 must be classified HEADER_VALUE');
   assert.equal(classMapB['B2'].isDynamic, false, 'B2 static title must be protected');
   assert.equal(classMapB['B7'].isDynamic, false, 'B7 static competency text must be protected');
-
-  const protectedAddrs = [];
-  const sensitiveAddrs = [];
 
   for (const addr in classMapB) {
     const rec = classMapB[addr];
@@ -115,34 +121,45 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.ok(rec.styleId !== undefined, `StyleId evidence must exist for ${addr}`);
     assert.ok(['string', 'number', 'date', 'boolean', 'blank'].includes(rec.normalizedType), `Normalized type must be valid for ${addr}`);
     assert.ok(rec.roleJustification, `Role justification must exist for ${addr}`);
-
-    if (rec.isDynamic) {
-      sensitiveAddrs.push(addr);
-    } else {
-      protectedAddrs.push(addr);
-    }
   }
 
-  // Assert evidence exists for EVERY sensitive address
-  for (const addr of SENSITIVE_RANGES_B) {
-    assert.ok(classMapB[addr], `Source evidence must exist for sensitive address ${addr}`);
+  // 4. Assert DYNAMIC ∩ PROTECTED_STATIC = empty
+  const dynamicSet = new Set(realResolved.dynamicAddresses);
+  for (const staticAddr of realResolved.protectedStaticAddresses) {
+    assert.equal(dynamicSet.has(staticAddr), false, `Protected static address ${staticAddr} must NOT be in dynamic set`);
   }
 
-  // Assert set disjointness: SENSITIVE ∩ PROTECTED_STATIC = empty
-  const sensitiveSet = new Set(SENSITIVE_RANGES_B);
-  for (const addr of protectedAddrs) {
-    assert.equal(sensitiveSet.has(addr), false, `Protected static address ${addr} must NOT be in sensitive set`);
-  }
+  // 5. Cross-check SORT(independentlyResolvedDynamicAddresses) == SORT(SENSITIVE_RANGES_B)
+  const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
+  assert.deepEqual(realResolved.dynamicAddresses, sortedSensitive, 'Independently resolved dynamic addresses must equal SENSITIVE_RANGES_B');
 
-  // Negative / Fail-closed coverage test: proves unclassifiable address triggers BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED
-  function validateClassificationMap(map) {
-    for (const addr in map) {
-      if (!map[addr].roleJustification || map[addr].isDynamic === undefined) {
-        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-      }
-    }
-  }
-  assert.throws(() => validateClassificationMap({ Z99: { address: 'Z99' } }), /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/);
+  // 6. REAL FAIL-CLOSED TESTS
+  // Test Case A: Remove evidence for REAL dynamic address G2
+  const invMutA = { ...realInventory };
+  delete invMutA['G2'];
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutA),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Removing dynamic address G2 evidence must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test Case B: Remove evidence for REAL protected-static address B2
+  const invMutB = { ...realInventory };
+  delete invMutB['B2'];
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutB),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Removing protected-static address B2 evidence must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test Case C: Structural conflict - mutate mergeRef for G2:H3 to G2:H2
+  const invMutC = JSON.parse(JSON.stringify(realInventory));
+  invMutC['G2'].mergeRef = 'G2:H2';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMutC),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Structural mergeRef mismatch for G2 must throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
 
   // Typed privacy metadata test
   const metaA = await getTypedPrivacyMetadata('A');

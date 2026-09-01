@@ -92,14 +92,18 @@ export const PART_B_SENSITIVE_RANGES = [
 export const SENSITIVE_RANGES_A = [...new Set(PART_A_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
 export const SENSITIVE_RANGES_B = [...new Set(PART_B_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
 
-export async function getPartBPrivacyClassificationSourceBacked() {
+export async function buildPartBSourceEvidenceInventory() {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
   const bufB = fs.readFileSync(found.partB);
+  const shaB = crypto.createHash('sha256').update(bufB).digest('hex');
+  if (shaB !== EXPECTED_PART_B_SHA) {
+    throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+  }
+
   const wb = await XlsxPopulate.fromDataAsync(bufB);
   const sheet = wb.sheet(0);
-
   const sheetXml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
   const merges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
 
@@ -120,79 +124,12 @@ export async function getPartBPrivacyClassificationSourceBacked() {
     return m ? m[1] : '0';
   }
 
-  const map = {};
-  const sensitiveSet = new Set(SENSITIVE_RANGES_B);
-
-  // Classify mapped sensitive addresses with source evidence
-  for (const addr of SENSITIVE_RANGES_B) {
-    const val = sheet.cell(addr).value();
-    let normalizedType = 'blank';
-    let nonblank = false;
-    let valHash = null;
-
-    if (val === null || val === undefined) {
-      normalizedType = 'blank';
-    } else if (typeof val === 'number') {
-      normalizedType = 'number';
-      nonblank = true;
-    } else if (typeof val === 'boolean') {
-      normalizedType = 'boolean';
-      nonblank = true;
-    } else if (val instanceof Date) {
-      normalizedType = 'date';
-      nonblank = true;
-    } else {
-      const strVal = String(val).trim();
-      if (strVal === '') {
-        normalizedType = 'blank';
-      } else {
-        normalizedType = 'string';
-        nonblank = true;
-        valHash = crypto.createHash('sha256').update(strVal).digest('hex');
-      }
-    }
-
-    const row = parseInt(addr.match(/\d+/)[0], 10);
-    let classification = 'DYNAMIC_SAMPLE_VALUE';
-    let roleJustification = 'Dynamic sample data field';
-    if (['G2', 'G3', 'H2', 'H3', 'J3', 'K3', 'L3', 'M3', 'N3', 'O3', 'P3', 'Q3', 'R3', 'S3', 'T3', 'U3', 'V3', 'W3'].includes(addr)) {
-      classification = 'HEADER_VALUE';
-      roleJustification = 'Dynamic runtime header input field';
-    } else if (row >= 7 && row <= 29) {
-      classification = 'COMPETENCY_RATING_VALUE';
-      roleJustification = 'Dynamic competency evaluation and rating input field';
-    } else if (row >= 31 && row <= 34) {
-      classification = 'SUMMARY_SIGNATURE_VALUE';
-      roleJustification = 'Dynamic summary evaluation and signature input field';
-    }
-
-    map[addr] = {
-      address: addr,
-      mergeRef: getMergeRef(addr),
-      styleId: getStyleId(addr),
-      normalizedType,
-      nonblank,
-      valHash,
-      classification,
-      roleJustification,
-      isDynamic: true
-    };
-  }
-
-  // Build complete protected static set from actual Part B template structure in rows 2:34
-  const protectedStatic = [
-    'B2', 'C2', 'D2', 'E2', 'F2', 'B3', 'C3', 'D3', 'E3', 'F3',
-    'J2', 'K2', 'L2', 'M2', 'N2', 'O2', 'P2', 'Q2', 'R2', 'S2', 'T2', 'U2', 'V2', 'W2'
-  ];
-  for (let r = 7; r <= 29; r++) {
-    for (const c of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
-      protectedStatic.push(`${c}${r}`);
-    }
-  }
-
-  for (const addr of protectedStatic) {
-    if (!sensitiveSet.has(addr)) {
+  const inventory = {};
+  for (let r = 2; r <= 34; r++) {
+    for (let c = 2; c <= 24; c++) {
+      const addr = `${idxToCol(c)}${r}`;
       const val = sheet.cell(addr).value();
+
       let normalizedType = 'blank';
       let nonblank = false;
       let valHash = null;
@@ -219,32 +156,206 @@ export async function getPartBPrivacyClassificationSourceBacked() {
         }
       }
 
-      let classification = 'PROTECTED_STATIC_TEMPLATE_TEXT';
-      let roleJustification = 'Static template text/label';
-      const row = parseInt(addr.match(/\d+/)[0], 10);
-      if (row <= 3) {
-        classification = addr.startsWith('B') ? 'PROTECTED_STATIC_TITLE' : 'PROTECTED_STATIC_HEADER_LABEL';
-        roleJustification = 'Static sheet title or header label';
-      } else if (row >= 7 && row <= 29) {
-        classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
-        roleJustification = 'Static competency name or rating guidance description text';
-      }
-
-      map[addr] = {
+      inventory[addr] = {
         address: addr,
         mergeRef: getMergeRef(addr),
         styleId: getStyleId(addr),
         normalizedType,
         nonblank,
-        valHash,
-        classification,
-        roleJustification,
-        isDynamic: false
+        valHash
       };
     }
   }
 
-  return map;
+  return inventory;
+}
+
+export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
+  const inventory = inventoryOverride || (await buildPartBSourceEvidenceInventory());
+
+  const classificationMap = {};
+  const dynamicAddresses = [];
+  const protectedStaticAddresses = [];
+
+  for (let r = 2; r <= 34; r++) {
+    // Skip empty row gap 4, 5, 6 for header vs body if needed, or iterate all B:X
+    const cols = (r === 4 || r === 5 || r === 6 || r === 30) ? ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'] : ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
+
+    for (const cStr of cols) {
+      const addr = `${cStr}${r}`;
+      const ev = inventory[addr];
+
+      if (!ev || !ev.address || ev.styleId === undefined || !ev.normalizedType) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
+      if (!['string', 'number', 'date', 'boolean', 'blank'].includes(ev.normalizedType)) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
+      let isDynamic = false;
+      let classification = null;
+      let roleJustification = null;
+
+      // Frozen Part B Structural Geometry Resolution (Rows 2:34)
+      if (r === 2 || r === 3) {
+        if (['B', 'C', 'D', 'E', 'F'].includes(cStr)) {
+          classification = 'PROTECTED_STATIC_TITLE';
+          roleJustification = 'Static sheet title';
+          isDynamic = false;
+          if (ev.mergeRef !== 'B2:F3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        } else if (['G', 'H'].includes(cStr)) {
+          classification = 'HEADER_VALUE';
+          roleJustification = 'Dynamic fiscal year header input field';
+          isDynamic = true;
+          if (ev.mergeRef !== 'G2:H3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        } else if (['J', 'K', 'L'].includes(cStr)) {
+          if (r === 2) {
+            classification = 'PROTECTED_STATIC_HEADER_LABEL';
+            roleJustification = 'Static department header label';
+            isDynamic = false;
+            if (ev.mergeRef !== 'J2:L2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          } else {
+            classification = 'HEADER_VALUE';
+            roleJustification = 'Dynamic department header value';
+            isDynamic = true;
+            if (ev.mergeRef !== 'J3:L3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          }
+        } else if (['M', 'N', 'O'].includes(cStr)) {
+          if (r === 2) {
+            classification = 'PROTECTED_STATIC_HEADER_LABEL';
+            roleJustification = 'Static section header label';
+            isDynamic = false;
+            if (ev.mergeRef !== 'M2:O2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          } else {
+            classification = 'HEADER_VALUE';
+            roleJustification = 'Dynamic section header value';
+            isDynamic = true;
+            if (ev.mergeRef !== 'M3:O3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          }
+        } else if (['P', 'Q'].includes(cStr)) {
+          if (r === 2) {
+            classification = 'PROTECTED_STATIC_HEADER_LABEL';
+            roleJustification = 'Static position header label';
+            isDynamic = false;
+            if (ev.mergeRef !== 'P2:Q2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          } else {
+            classification = 'HEADER_VALUE';
+            roleJustification = 'Dynamic position header value';
+            isDynamic = true;
+            if (ev.mergeRef !== 'P3:Q3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          }
+        } else if (cStr === 'R') {
+          if (r === 2) {
+            classification = 'PROTECTED_STATIC_HEADER_LABEL';
+            roleJustification = 'Static employee ID header label';
+            isDynamic = false;
+          } else {
+            classification = 'HEADER_VALUE';
+            roleJustification = 'Dynamic employee ID header value';
+            isDynamic = true;
+          }
+        } else if (['S', 'T', 'U', 'V', 'W'].includes(cStr)) {
+          if (r === 2) {
+            classification = 'PROTECTED_STATIC_HEADER_LABEL';
+            roleJustification = 'Static employee name header label';
+            isDynamic = false;
+            if (ev.mergeRef !== 'S2:W2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          } else {
+            classification = 'HEADER_VALUE';
+            roleJustification = 'Dynamic employee name header value';
+            isDynamic = true;
+            if (ev.mergeRef !== 'S3:W3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          }
+        } else if (cStr === 'X') {
+          classification = 'PROTECTED_STATIC_HEADER_UNTOUCHED';
+          roleJustification = 'Static header padding cell';
+          isDynamic = false;
+        }
+      } else if (r >= 7 && r <= 29) {
+        if (['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr)) {
+          classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
+          roleJustification = 'Static competency name, description, or rating guidance text';
+          isDynamic = false;
+        } else if (['K', 'L', 'M', 'N', 'O', 'P', 'Q'].includes(cStr)) {
+          classification = 'COMPETENCY_RATING_VALUE';
+          roleJustification = 'Dynamic self-evaluation rating input field';
+          isDynamic = true;
+        } else if (['R', 'S', 'T', 'U', 'V', 'W', 'X'].includes(cStr)) {
+          classification = 'COMPETENCY_RATING_VALUE';
+          roleJustification = 'Dynamic chief-evaluation rating input field';
+          isDynamic = true;
+        }
+      } else if (r >= 31 && r <= 34) {
+        if (['B', 'C', 'D'].includes(cStr)) {
+          classification = 'SUMMARY_SIGNATURE_VALUE';
+          roleJustification = 'Dynamic overall rating summary field';
+          isDynamic = true;
+        } else if (['E', 'F', 'G', 'H'].includes(cStr)) {
+          classification = 'SUMMARY_SIGNATURE_VALUE';
+          roleJustification = 'Dynamic employee comments field';
+          isDynamic = true;
+        } else if (['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'].includes(cStr)) {
+          classification = 'SUMMARY_SIGNATURE_VALUE';
+          roleJustification = 'Dynamic chief feedback field';
+          isDynamic = true;
+        } else if (['Q', 'R', 'S'].includes(cStr)) {
+          classification = 'SUMMARY_SIGNATURE_VALUE';
+          roleJustification = 'Dynamic employee signature field';
+          isDynamic = true;
+        } else if (['T', 'U', 'V', 'W', 'X'].includes(cStr)) {
+          classification = 'SUMMARY_SIGNATURE_VALUE';
+          roleJustification = 'Dynamic chief signature field';
+          isDynamic = true;
+        }
+      }
+
+      if (!classification || !roleJustification) {
+        // Skip unmapped row gaps like r=4..6 or 30
+        continue;
+      }
+
+      classificationMap[addr] = {
+        ...ev,
+        classification,
+        roleJustification,
+        isDynamic
+      };
+
+      if (isDynamic) {
+        dynamicAddresses.push(addr);
+      } else {
+        protectedStaticAddresses.push(addr);
+      }
+    }
+  }
+
+  // Set Disjointness Check: DYNAMIC ∩ PROTECTED_STATIC = empty
+  const dynamicSet = new Set(dynamicAddresses);
+  for (const staticAddr of protectedStaticAddresses) {
+    if (dynamicSet.has(staticAddr)) {
+      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+    }
+  }
+
+  // Final Sanitizer Compatibility Cross-Check (ONLY AFTER independent resolution)
+  const sortedDynamic = [...dynamicAddresses].sort();
+  const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
+
+  if (JSON.stringify(sortedDynamic) !== JSON.stringify(sortedSensitive)) {
+    throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+  }
+
+  return {
+    classificationMap,
+    dynamicAddresses: sortedDynamic,
+    protectedStaticAddresses: [...protectedStaticAddresses].sort()
+  };
+}
+
+export async function getPartBPrivacyClassificationSourceBacked() {
+  const resolved = await resolvePartBPrivacyRoles();
+  return resolved.classificationMap;
 }
 
 export function getPartBPrivacyClassification() {
