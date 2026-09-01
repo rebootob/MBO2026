@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R3-R24 CORRECTIVE / R3-R25 PROPOSED**  
+> Status: **IN PROGRESS / R3-R25 CORRECTIVE / R3-R26 PROPOSED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -67,56 +67,55 @@ PDF PART_A = A3 LANDSCAPE
 PDF PART_B = A4 PORTRAIT / PROTECTED PRESENTATION
 ```
 
-## 5. Latest reviewed implementation — R3-R24
+## 5. Latest reviewed implementation — R3-R25
 
 ```text
-IMPLEMENTATION_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
-D2-WP003-R3-R24_SCOPE_REVIEW = PASS
-D2-WP003-R3-R24_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-D2-WP003-R3-R24_PROOF_REVIEW = FAIL / INCOMPLETE
-D2-WP003-R3-R24_STATUS = NOT PASS / NOT CLOSED
+IMPLEMENTATION_COMMIT = 60b24f39b78013d37fe210192bb97876e0184638
+D2-WP003-R3-R25_SCOPE_REVIEW = PASS
+D2-WP003-R3-R25_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+D2-WP003-R3-R25_PROOF_REVIEW = FAIL / REGRESSION + INCOMPLETE
+D2-WP003-R3-R25_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-R3-R24 accepted improvements:
-- exact partKey A/B gate;
-- source SHA verified on override path;
-- exact sheet name/r:id/target equality;
-- worksheet duplicate target and duplicate worksheet-ID checks;
-- dimension moves after existing `sheetPr` for the normal accepted Part B path;
+R3-R25 accepted improvements:
+- exact canonical worksheet relationship Type;
+- global duplicate relationship-ID checking before sheet binding;
+- exact source/observed Type/target/TargetMode tuple comparison;
+- predecessor/successor schema checks;
 - raw no-op path remains frozen.
 
 Remaining blockers:
-- worksheet relationship Type uses suffix matching instead of exact canonical Type;
-- duplicate relationship IDs are not rejected globally before relationship-type filtering;
-- source/observed exact relationship tuple does not bind Type/TargetMode semantics;
-- insertion does not derive/verify the exact source-equivalent top-level worksheet-child boundary;
-- a misplaced `sheetPr` can still cause dimension insertion after later worksheet children;
-- mandatory counterfeit-Type, cross-type duplicate-ID and schema-invalid insertion-point proof is missing;
-- positive schema proof checks only dimension after sheetPr, not before the next source-equivalent child;
-- no GitHub CI/status checks exist for the implementation commit.
+- relationship Target lexical identity is not strict: leading-slash and already-`xl/` aliases can normalize to the same ZIP path as the verified source;
+- Relationship scanner only recognizes unprefixed `<Relationship>` tags, so prefixed relationship elements can be omitted from the global inventory;
+- worksheet top-level child scanner only recognizes unprefixed alphanumeric element names, so prefixed top-level children can be silently skipped;
+- observed-only `sheetPr` exception weakens exact source-minus-dimension top-level-order equality;
+- R3-R25 removed valid R3-R24 preservation negatives despite explicit regression-preservation requirements;
+- removed proof includes missing relationship, duplicate target, actual target swap, cross-sheet, non-worksheet/external, source/observed dimension and malformed-buffer negatives;
+- target alias proof covers `..` traversal but not leading-slash/already-`xl/`/dot/encoded aliases;
+- no GitHub CI/status checks or workflow runs exist for the implementation commit.
 
-R3-R24 does not close preservation or D2-WP003.
+R3-R25 does not close preservation or D2-WP003.
 
-## 6. Proposed R3-R25 — NOT AUTHORIZED
+## 6. Proposed R3-R26 — NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R25
-PROPOSED_WORK_PACKAGE_NAME = EXACT RELATIONSHIP-TYPE + SCHEMA-SLOT FAIL-CLOSED CORRECTIVE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R26
+PROPOSED_WORK_PACKAGE_NAME = STRICT TARGET LEXICAL IDENTITY + PROOF REGRESSION RESTORE CORRECTIVE
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = cb5276d48c0386e2d890604b57697e6bf49ed85b
+CORRECTIVE_BASELINE_COMMIT = 60b24f39b78013d37fe210192bb97876e0184638
 PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 ```
 
-R3-R25 direction:
-- exact canonical worksheet relationship Type and exact source/observed tuple;
-- global duplicate relationship-ID fail-closed behavior;
-- strict normalized internal worksheet target;
-- exact source top-level worksheet-child order determines dimension predecessor/successor;
-- observed structure must match source with only dimension omitted;
-- add counterfeit-Type, cross-type duplicate-ID, target ambiguity and schema-invalid boundary negatives;
+R3-R26 direction:
+- preserve exact Type/global-ID/source-SHA gates;
+- compare exact raw source/observed relationship Target lexical form before ZIP lookup;
+- reject leading slash, already-`xl/`, dot segments, encoded aliases and URI ambiguity;
+- parse or explicitly reject namespace-prefixed Relationship/top-level worksheet children;
+- require exact source-minus-dimension top-level child order with no observed-only `sheetPr` exception;
+- restore all valid R3-R24 preservation negatives, then retain/add R3-R25/R3-R26 proof;
 - keep raw buffers frozen.
 
 ## 7. D2 remaining closure path
@@ -139,9 +138,9 @@ Do not auto-start any next step.
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 2 OF 20
-D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 3 OF 20
+D2-WP003-R3-R25-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
