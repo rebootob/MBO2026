@@ -24,99 +24,107 @@ D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 ```
 
-WP001 closed secured export projection and 4/5/10 projection coverage.
+WP001 closed secured export authorization/privacy projection.
+WP002 closed legacy template evidence/design using Owner-provided Part A/Part B workbooks.
 
-WP002 closed legacy template evidence/design using Owner-provided Excel binaries. Original employee-bearing files were not committed.
-
-Accepted template hashes:
+Accepted owner-template hashes:
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
 
-Frozen high-level geometry:
-- Part A: `MBO Staff & Chief`, A3 landscape, print area A1:BJ52, legacy objective rows 25–28;
-- Part B: `(Part B) Competency`, A4 portrait, print area A1:X35, six legacy competency blocks;
-- no worksheet formulas in supplied main sheets;
-- legacy visual/layout wins for presentation, current baseline/config/projection wins for business data.
+Frozen geometry remains:
+- Part A: `MBO Staff & Chief`, A3 landscape, print area `A1:BJ52`, legacy objective rows 25–28;
+- Part B: `(Part B) Competency`, A4 portrait, print area `A1:X35`, six legacy competency blocks;
+- legacy visual/layout = presentation authority;
+- secured projection/current baseline = business/data authority.
 
-## 3. Exact current gate — D2-WP003 AUTHORIZED
+## 3. WP003 review and privacy containment
+
+The first WP003 source did not pass independent review. Main failures were unsafe sanitization, no real Part A row insertion for 5–10 objectives, no real Part B block insertion for 8 competencies, wrong header value anchors, and insufficient structural/privacy tests.
+
+Owner explicitly approved `D2-WP003-R1` **with Privacy Purge**.
+
+ChatGPT force-reset the canonical branch to the safe pre-implementation baseline:
+```text
+SAFE_BASELINE = 731ba80a976847e579d80fc30012df54fd36badf
+CANONICAL_BRANCH_PURGE = COMPLETE
+```
+
+Do not create refs/tags/backups to the purged lineage. Do not record purged commit/blob identifiers in Git docs. Git provider caches/unreachable objects may persist until garbage collection; no new ref may make them reachable again.
+
+## 4. Exact current gate — D2-WP003-R1 AUTHORIZED
 
 ```text
-D2-WP003 = SANITIZED TEMPLATE ASSETS + XLSX RENDERER FOUNDATION
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
+D2-WP003-R1 = PRIVACY PURGE + SANITIZER + STRUCTURAL XLSX RENDERER CORRECTIVE
 STATUS = AUTHORIZED FOR ANTIGRAVITY EXECUTION
-ACTIVE_WORK_PACKAGE = D2-WP003
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-SOURCE-20260901-01
-ANTIGRAVITY = EXECUTE WP003 ONLY / LOW-CREDIT
+ACTIVE_WORK_PACKAGE = D2-WP003-R1
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
+ANTIGRAVITY = EXECUTE R1 ONLY / LOW-CREDIT
 MAX_EXECUTOR_STATUS = IMPLEMENTED_PENDING_INDEPENDENT_REVIEW
 ```
 
-Read `project-docs/AI_ACTIVE_TASK.md` for exact source scope and acceptance tests.
+Read `project-docs/AI_ACTIVE_TASK.md` for the exact R1 contract.
 
-Critical rules:
-- use only local originals matching the two accepted SHA-256 values;
-- bounded lookup only in repo root, `app info/data/`, `exp/`;
-- if matching originals are absent: STOP, do not recreate from screenshots;
-- original owner binaries must never be committed;
-- sanitized runtime binaries may be committed only after privacy sanitization proof;
-- renderer consumes sanitized template buffer + secured export projection only;
-- renderer makes no Kintone calls and performs no authorization widening;
-- Part A must render 4/5/10 objectives template-preservingly;
-- Part B must render 6/8 competencies template-preservingly;
-- current profile weighting replaces stale legacy static weight/title content.
+Critical execution points:
+- history was rewritten: Antigravity must fresh-fetch and reset its local branch to origin before coding;
+- use only exact-hash owner templates from bounded local paths;
+- do not reuse any previously generated sanitized assets;
+- run no-op `xlsx-populate@1.21.0` parity proof before mappings;
+- sanitizer must clear actual value ranges, preserve labels, remove non-user-facing reference screenshot, and prove extracted source-sensitive text is absent from all sanitized OOXML XML/text parts;
+- Part A 5/10 requires real row insertion/clone/shift/print-area extension;
+- Part B 8 requires real repeated-block insertion/clone/shift/print-area extension;
+- renderer consumes secured projection only and makes no Kintone calls;
+- Difficulty field must be proven from canonical current evidence or execution stops with a blocker; never invent field code.
 
-Exactly one new dependency is authorized: `xlsx-populate@1.21.0`.
+## 5. Exact authorized paths
 
-Before implementation, Antigravity must prove a no-op load/write roundtrip on both exact source templates preserves material sheet/merge/print/protection/branding structure. If it does not, revert experiment and STOP with `BLOCKER_XLSX_LIBRARY_PARITY`; do not switch libraries.
+Only paths listed in `AI_ACTIVE_TASK.md`, principally:
+- `scripts/export/sanitize-mbo-xlsx-templates.js`
+- `src/services/mbo-xlsx-renderer.js`
+- `tests/mbo-xlsx-renderer.test.js`
+- `assets/export-templates/PMS_PART_A_SANITIZED.xlsx`
+- `assets/export-templates/PMS_PART_B_SANITIZED.xlsx`
+- `package.json` / `package-lock.json` for `xlsx-populate@1.21.0` only
+- normalizer/export-service/export-test only if narrowly required by a **proven** canonical Difficulty field.
 
-## 4. Exact authorized files
-
-Only:
-- `src/services/mbo-xlsx-renderer.js` NEW
-- `scripts/export/sanitize-mbo-xlsx-templates.js` NEW
-- `tests/mbo-xlsx-renderer.test.js` NEW
-- `assets/export-templates/PMS_PART_A_SANITIZED.xlsx` NEW
-- `assets/export-templates/PMS_PART_B_SANITIZED.xlsx` NEW
-- `package.json` for `xlsx-populate@1.21.0` only
-- `package-lock.json` lockfile consequence only
-
-`src/services/mbo-export-service.js` is NOT authorized to change in WP003.
-
-## 5. Forbidden in WP003
+## 6. Forbidden
 
 No:
+- backup ref/tag/branch to purged history;
+- original owner workbook commit;
+- real source sample values in tests/docs;
 - PDF generator;
-- UI/download buttons;
-- `src/main-mbo-app.js` changes;
+- UI/download button;
+- `src/main-mbo-app.js` change;
 - Live Kintone read/write/export/UAT;
-- deployment;
-- other dependency/library;
-- original binary commit;
-- generated output fixture commit;
+- deploy;
+- second XLSX library;
 - D2-WP004 or D3–D6 implementation.
 
-## 6. Verification minimum
+## 7. Required verification
 
-Antigravity must run:
+At minimum:
 ```text
 node --test tests/mbo-export-service.test.js
 node --test tests/mbo-xlsx-renderer.test.js
 node --test tests/core-794-795-796-integration.test.js
 npm audit --omit=dev
+git status --porcelain
 ```
 
-Source template hashes, no-op parity, sanitization evidence and working-tree scope must also be reported.
+After push, STOP at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW` or report a real blocker.
 
-After push, Antigravity must STOP at `IMPLEMENTED_PENDING_INDEPENDENT_REVIEW`. ChatGPT reviews the actual commit before PASS/CLOSED.
-
-## 7. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 D2-WP001-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP001-R1-SOURCE-20260901-01 = CONSUMED / CLOSED / DO NOT REUSE
 D2-WP002 = APPROVED / READ-ONLY / CLOSED
-D2-WP003-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-SOURCE-20260901-01
+D2-WP003-SOURCE-20260901-01 = CONSUMED / INVALIDATED / DO NOT REUSE
+D2-WP003-R1-SOURCE-20260901-01 = ACTIVE / ONE WORK PACKAGE ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R1-SOURCE-20260901-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
 ACTIVE_RECORD_ACL_WRITE_AUTH = NONE
@@ -129,10 +137,10 @@ ACTIVE_LIFECYCLE_WRITE_AUTH = NONE
 ROLLBACK_AUTH = NONE
 ```
 
-## 8. Exact next action
+## 9. Exact next action
 
 ```text
 NEXT_EXECUTOR = ANTIGRAVITY
-ACTION = EXECUTE D2-WP003 EXACTLY AS AI_ACTIVE_TASK DEFINES, PUSH, THEN STOP
-NEXT_CONTROL STEP = ChatGPT independent review
+ACTION = FRESH-FETCH/RESET TO REWRITTEN CANONICAL BRANCH, EXECUTE D2-WP003-R1 EXACTLY, PUSH, STOP
+NEXT_CONTROL_STEP = ChatGPT independent review
 ```
