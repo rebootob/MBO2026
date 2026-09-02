@@ -37,18 +37,16 @@ D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 D2-WP003-R3-R36 = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
-ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4
-PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_WORK_PACKAGE = D2-WP003-R4
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-Current READ-ONLY finding: the existing Part A feasibility source exposes 4/5/10 objective variants only, while the existing test checks only merge-count/declaration and print-area endings. R4 is proposed to generalize the existing helper to counts 4–10 and prove exact structural transformation without starting the production renderer.
+R4 is authorized only for the existing Part A feasibility structural helper and its existing feasibility test. It must generalize/exercise objective counts 4–10 and prove exact structural transformation. Production renderer, Part B, preservation/reference-image, Kintone, deploy and D3 remain out of scope.
 
-D2 must still close:
-- 5–10 Part A objective structural insertion matrix;
-- 6→8 Part B competency structural insertion matrix;
+D2 must still close after R4:
+- Part B competency structural insertion matrix;
 - no-formula authority;
 - production sanitizer/XLSX renderer;
 - combined Excel parity;
@@ -84,10 +82,11 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R4 FEASIBILITY SOURCE+TEST AS PROPOSED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R4-SOURCE-TEST-20260902-01
+EXPECTED_CHANGED_FILES = EXACTLY scripts/export/mbo-xlsx-ooxml-feasibility.js + tests/mbo-xlsx-ooxml-feasibility.test.js
+EXPECTED_COMMITS = EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT
+ANTIGRAVITY = STOP AFTER PUSH/REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
