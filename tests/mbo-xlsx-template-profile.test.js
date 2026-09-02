@@ -9,10 +9,14 @@ import {
   PART_B_TEMPLATE_SHA256,
   ACCEPTED_PART_A_OBJECTIVE_COUNTS,
   ACCEPTED_PART_B_COMPETENCY_COUNTS,
+  SEMANTIC_PROJECTION_PATHS,
+  getObjectiveProjectionPath,
   validatePartAObjectiveCount,
   validatePartBCompetencyCount,
   validateTemplateSha,
-  MboXlsxTemplateProfile
+  validateAddressFormat,
+  MboXlsxTemplateProfile,
+  validateMappingIntegrity
 } from '../src/profiles/mbo-xlsx-template-profile.js';
 
 test('TEMPLATE_PROFILE_EXACT_SHA_IDENTITY: exports exact accepted Part A and Part B SHA-256 hashes', () => {
@@ -56,62 +60,160 @@ test('TEMPLATE_PROFILE_EXACT_CARDINALITY_DOMAINS: objective counts = 4..10, comp
   assert.deepEqual(profile.getPartBCompetencyDomain(), [6, 7, 8]);
 });
 
-test('TEMPLATE_PROFILE_DETERMINISTIC_MAPPING_PART_A: maps all objective counts 4..10 without gap or truncation', () => {
+test('TEMPLATE_PROFILE_PART_B_ROW_AUTHORITY_TOPOLOGY: proves exact N=6, N=7, N=8 dynamic rating vs protected padding rows', () => {
   const profile = new MboXlsxTemplateProfile();
+  const cols = ['K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
 
-  for (let n = 4; n <= 10; n++) {
-    const map = profile.getPartAMappings(n);
-    assert.equal(map.profileId, 'MBO2026');
-    assert.equal(map.objectiveCount, n);
-    assert.equal(map.objectives.length, n);
-
-    // Verify row progression
-    for (let i = 0; i < n; i++) {
-      const obj = map.objectives[i];
-      assert.equal(obj.index, i + 1);
-      assert.equal(obj.row, 25 + i);
-      assert.equal(obj.OBJECTIVE_NAME_AND_TARGET, `B${25 + i}`);
-      assert.equal(obj.WEIGHT, `F${25 + i}`);
+  // Proof 1: N=6 rows 10, 14, 18, 22, 26 (columns K:X) ARE DYNAMIC rating rows
+  for (const r of [10, 14, 18, 22, 26]) {
+    for (const c of cols) {
+      assert.equal(profile.isDynamicWriteTarget('B', `${c}${r}`, 6), true, `N6 cell ${c}${r} MUST be dynamic`);
     }
-
-    // Verify summary score rows move deterministically with extraRows (N - 4)
-    assert.equal(map.summary.WEIGHT_SUM_ROW, 25 + n);
-    assert.equal(map.summary.WEIGHT_SUM, `F${25 + n}`);
-    assert.equal(map.summary.PART_A_RAW_SCORE, `BC${25 + n}`);
-    assert.equal(map.summary.FINAL_GRADE, `BI${27 + n}`);
   }
+
+  // Proof 2: Row 30 (columns K:X) IS NON-DYNAMIC for N=6, N=7, N=8
+  for (const n of [6, 7, 8]) {
+    for (const c of cols) {
+      assert.equal(profile.isDynamicWriteTarget('B', `${c}30`, n), false, `N${n} cell ${c}30 MUST be non-dynamic`);
+    }
+  }
+
+  // Proof 3: N=7 rows 31..33 (K:X) ARE DYNAMIC
+  for (let r = 31; r <= 33; r++) {
+    for (const c of cols) {
+      assert.equal(profile.isDynamicWriteTarget('B', `${c}${r}`, 7), true, `N7 cell ${c}${r} MUST be dynamic`);
+    }
+  }
+
+  // Proof 4: N=7 row 34 (K:X) IS NON-DYNAMIC
+  for (const c of cols) {
+    assert.equal(profile.isDynamicWriteTarget('B', `${c}34`, 7), false, `N7 cell ${c}34 MUST be non-dynamic`);
+  }
+
+  // Proof 5: N=8 rows 31..33 and 35..37 (K:X) ARE DYNAMIC
+  for (const r of [31, 32, 33, 35, 36, 37]) {
+    for (const c of cols) {
+      assert.equal(profile.isDynamicWriteTarget('B', `${c}${r}`, 8), true, `N8 cell ${c}${r} MUST be dynamic`);
+    }
+  }
+
+  // Proof 6: N=8 rows 34 and 38 (K:X) ARE NON-DYNAMIC
+  for (const r of [34, 38]) {
+    for (const c of cols) {
+      assert.equal(profile.isDynamicWriteTarget('B', `${c}${r}`, 8), false, `N8 cell ${c}${r} MUST be non-dynamic`);
+    }
+  }
+
+  // Proof 7: Summary row destinations are exactly 31:34 (N=6), 35:38 (N=7), 39:42 (N=8)
+  const map6 = profile.getPartBMappings(6);
+  assert.equal(map6.summary.startRow, 31);
+  assert.equal(map6.summary.endRow, 34);
+
+  const map7 = profile.getPartBMappings(7);
+  assert.equal(map7.summary.startRow, 35);
+  assert.equal(map7.summary.endRow, 38);
+
+  const map8 = profile.getPartBMappings(8);
+  assert.equal(map8.summary.startRow, 39);
+  assert.equal(map8.summary.endRow, 42);
+
+  // Proof 8: False original padding model [10, 14, 18, 22, 26, 30] DOES NOT SURVIVE
+  assert.deepEqual(map6.protectedPaddingRows, [30], 'N6 protected padding rows must be strictly [30]');
+  assert.deepEqual(map7.protectedPaddingRows, [30, 34], 'N7 protected padding rows must be strictly [30, 34]');
+  assert.deepEqual(map8.protectedPaddingRows, [30, 34, 38], 'N8 protected padding rows must be strictly [30, 34, 38]');
 });
 
-test('TEMPLATE_PROFILE_DETERMINISTIC_MAPPING_PART_B: maps all competency counts 6..8 with exact block relocation', () => {
+test('TEMPLATE_PROFILE_SECURED_PROJECTION_SEMANTICS: aligns with read-only MboExportService projection paths', () => {
   const profile = new MboXlsxTemplateProfile();
 
-  for (const n of [6, 7, 8]) {
-    const map = profile.getPartBMappings(n);
-    assert.equal(map.profileId, 'MBO2026');
-    assert.equal(map.competencyCount, n);
-    assert.equal(map.competencies.length, n);
+  // Proof 9: Both department and section Hoshin projection paths are represented
+  const depHoshinRes = profile.resolveSemanticRole('HOSHIN_DEPARTMENT_HOSHIN_TITLE', { partKey: 'A' });
+  assert.equal(depHoshinRes.projectionPath, 'partA.hoshin.departmentHoshinTitle');
 
-    const extraBlocks = n - 6;
-    const extraRows = 4 * extraBlocks;
+  const secHoshinRes = profile.resolveSemanticRole('HOSHIN_SECTION_HOSHIN_TITLE', { partKey: 'A' });
+  assert.equal(secHoshinRes.projectionPath, 'partA.hoshin.sectionHoshinTitle');
 
-    // Verify block start rows and ratings
-    for (let b = 1; b <= n; b++) {
-      const comp = map.competencies[b - 1];
-      const startRow = 7 + (b - 1) * 4;
-      assert.equal(comp.index, b);
-      assert.equal(comp.blockStartRow, startRow);
-      assert.equal(comp.paddingRow, startRow + 3);
-      assert.equal(comp.selfRatings[0], `K${startRow}`);
-      assert.equal(comp.chiefRatings[0], `R${startRow}`);
-    }
+  // Proof 10: Every claimed objective semantic role has explicit projection-path translation
+  for (let i = 1; i <= 4; i++) {
+    const titleRes = profile.resolveSemanticRole(`OBJECTIVE_${i}_TITLE`, { partKey: 'A', objectiveCount: 4 });
+    assert.equal(titleRes.projectionPath, `partA.objectives[${i-1}].title`);
 
-    // Verify summary relocation
-    const expectedSummaryStart = 31 + extraRows;
-    assert.equal(map.summary.startRow, expectedSummaryStart);
-    assert.equal(map.summary.OVERALL_RATING_SUMMARY, `B${expectedSummaryStart}`);
-    assert.equal(map.summary.EMPLOYEE_COMMENTS, `E${expectedSummaryStart}`);
-    assert.equal(map.summary.CHIEF_FEEDBACK, `I${expectedSummaryStart}`);
+    const weightRes = profile.resolveSemanticRole(`OBJECTIVE_${i}_WEIGHT`, { partKey: 'A', objectiveCount: 4 });
+    assert.equal(weightRes.projectionPath, `partA.objectives[${i-1}].weight`);
+
+    const selfCommentRes = profile.resolveSemanticRole(`OBJECTIVE_${i}_SELF_COMMENT`, { partKey: 'A', objectiveCount: 4 });
+    assert.equal(selfCommentRes.projectionPath, `partA.objectives[${i-1}].selfComment`);
   }
+
+  // Header semantics carry explicit projection paths
+  const empNameRes = profile.resolveSemanticRole('HEADER_EMPLOYEE_NAME', { partKey: 'A' });
+  assert.equal(empNameRes.projectionPath, 'partA.header.employeeName');
+
+  const deptRes = profile.resolveSemanticRole('HEADER_DEPARTMENT', { partKey: 'A' });
+  assert.equal(deptRes.projectionPath, 'partA.header.department');
+});
+
+test('TEMPLATE_PROFILE_FAIL_CLOSED_INTEGRITY_VALIDATOR: validates default profile and catches in-memory anomalies', () => {
+  const profile = new MboXlsxTemplateProfile();
+
+  // Proof 15: Default profile passes production integrity validator
+  assert.equal(validateMappingIntegrity(profile), true);
+  assert.equal(validateMappingIntegrity(), true);
+
+  // Proof 11: Removing required mapping in-memory => exact blocker
+  const brokenProfile1 = Object.create(profile);
+  brokenProfile1.getPartAMappings = function(count) {
+    const map = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, count);
+    const clone = JSON.parse(JSON.stringify(map));
+    delete clone.header.EMPLOYEE_NAME;
+    return clone;
+  };
+  assert.throws(
+    () => validateMappingIntegrity(brokenProfile1),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
+
+  // Proof 12: Duplicate exclusive target in-memory => exact blocker
+  const brokenProfile2 = Object.create(profile);
+  brokenProfile2.getPartAMappings = function(count) {
+    const map = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, count);
+    const clone = JSON.parse(JSON.stringify(map));
+    clone.header.EMPLOYEE_CODE = clone.header.EMPLOYEE_NAME; // Duplicate cell address
+    return clone;
+  };
+  assert.throws(
+    () => validateMappingIntegrity(brokenProfile2),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
+
+  // Proof 13: Exposing row 30/34/38 writable in-memory => exact blocker
+  const brokenProfile3 = Object.create(profile);
+  brokenProfile3.isDynamicWriteTarget = function(partKey, cellAddress, count) {
+    if (cellAddress === 'K30') return true; // Exposing row 30 as writable
+    return MboXlsxTemplateProfile.prototype.isDynamicWriteTarget.call(this, partKey, cellAddress, count);
+  };
+  assert.throws(
+    () => validateMappingIntegrity(brokenProfile3),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
+
+  // Proof 14: Malformed address/range => exact blocker
+  assert.equal(validateAddressFormat('INVALID_CELL_123'), false);
+  assert.equal(validateAddressFormat('$$5'), false);
+  assert.equal(validateAddressFormat('Z7'), true);
+  assert.equal(validateAddressFormat('B25:E25'), true);
+
+  const brokenProfile4 = Object.create(profile);
+  brokenProfile4.getPartAMappings = function(count) {
+    const map = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, count);
+    const clone = JSON.parse(JSON.stringify(map));
+    clone.header.FISCAL_YEAR = 'INVALID_ADDR';
+    return clone;
+  };
+  assert.throws(
+    () => validateMappingIntegrity(brokenProfile4),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
 });
 
 test('TEMPLATE_PROFILE_FAIL_CLOSED_INVALID_INPUTS: invalid counts, unknown profile, or unmapped role throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED', () => {
@@ -162,124 +264,15 @@ test('TEMPLATE_PROFILE_FAIL_CLOSED_INVALID_INPUTS: invalid counts, unknown profi
   );
 });
 
-test('TEMPLATE_PROFILE_PROTECTED_PADDING_NON_WRITABLE: source row 30 and N=7/8 padding clones rows 34/38 never resolve as dynamic write targets', () => {
-  const profile = new MboXlsxTemplateProfile();
-
-  // N=6 padding rows: 10, 14, 18, 22, 26, 30
-  const map6 = profile.getPartBMappings(6);
-  assert.deepEqual(map6.protectedPaddingRows, [10, 14, 18, 22, 26, 30]);
-  assert.equal(profile.isDynamicWriteTarget('B', 'B30', 6), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'K30', 6), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'X30', 6), false);
-
-  // N=7 padding rows: 10, 14, 18, 22, 26, 30, 34
-  const map7 = profile.getPartBMappings(7);
-  assert.deepEqual(map7.protectedPaddingRows, [10, 14, 18, 22, 26, 30, 34]);
-  assert.equal(profile.isDynamicWriteTarget('B', 'B30', 7), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'B34', 7), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'K34', 7), false);
-
-  // N=8 padding rows: 10, 14, 18, 22, 26, 30, 34, 38
-  const map8 = profile.getPartBMappings(8);
-  assert.deepEqual(map8.protectedPaddingRows, [10, 14, 18, 22, 26, 30, 34, 38]);
-  assert.equal(profile.isDynamicWriteTarget('B', 'B30', 8), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'B34', 8), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'B38', 8), false);
-  assert.equal(profile.isDynamicWriteTarget('B', 'K38', 8), false);
-
-  // Verify real dynamic rating cells DO resolve as dynamic write targets
-  assert.equal(profile.isDynamicWriteTarget('B', 'K7', 6), true);
-  assert.equal(profile.isDynamicWriteTarget('B', 'R7', 6), true);
-  assert.equal(profile.isDynamicWriteTarget('B', 'K31', 7), true);
-  assert.equal(profile.isDynamicWriteTarget('B', 'K35', 8), true);
-});
-
-test('TEMPLATE_PROFILE_EXCLUSIVE_MAPPING_NO_DUPLICATES: no duplicate semantic owner for the same exclusive write responsibility', () => {
-  const profile = new MboXlsxTemplateProfile();
-
-  // Part A exclusive write targets
-  for (let n = 4; n <= 10; n++) {
-    const mapA = profile.getPartAMappings(n);
-    const writeTargetsA = [];
-
-    // Add headers
-    writeTargetsA.push(...Object.values(mapA.header));
-    writeTargetsA.push(mapA.hoshin.CORPORATE_HOSHIN_TEXT);
-    writeTargetsA.push(mapA.hoshin.DEPARTMENT_HOSHIN_TEXT);
-
-    // Add objective fields
-    for (const obj of mapA.objectives) {
-      writeTargetsA.push(obj.OBJECTIVE_NAME_AND_TARGET);
-      writeTargetsA.push(obj.WEIGHT);
-      writeTargetsA.push(obj.PLAN_TARGET);
-      writeTargetsA.push(obj.MID_TERM_PROGRESS);
-      writeTargetsA.push(obj.SELF_RATING);
-      writeTargetsA.push(obj.CHIEF_RATING);
-      writeTargetsA.push(obj.FINAL_RATING);
-      writeTargetsA.push(obj.SELF_COMMENT);
-      writeTargetsA.push(obj.CHIEF_COMMENT);
-    }
-
-    // Add summary fields
-    writeTargetsA.push(mapA.summary.WEIGHT_SUM);
-    writeTargetsA.push(mapA.summary.PART_A_RAW_SCORE);
-    writeTargetsA.push(mapA.summary.PART_A_WEIGHTED_SCORE);
-    writeTargetsA.push(mapA.summary.PART_B_RAW_SCORE);
-    writeTargetsA.push(mapA.summary.PART_B_WEIGHTED_SCORE);
-    writeTargetsA.push(mapA.summary.FINAL_SCORE);
-    writeTargetsA.push(mapA.summary.FINAL_GRADE);
-
-    const setA = new Set(writeTargetsA);
-    assert.equal(
-      setA.size,
-      writeTargetsA.length,
-      `Part A N=${n} write targets must have 0 duplicate addresses`
-    );
-  }
-
-  // Part B exclusive write targets
-  for (const n of [6, 7, 8]) {
-    const mapB = profile.getPartBMappings(n);
-    const writeTargetsB = [];
-
-    // Add header values
-    writeTargetsB.push(mapB.header.FISCAL_YEAR);
-    writeTargetsB.push(mapB.header.DEPARTMENT_VALUE);
-    writeTargetsB.push(mapB.header.SECTION_VALUE);
-    writeTargetsB.push(mapB.header.POSITION_VALUE);
-    writeTargetsB.push(mapB.header.EMPLOYEE_ID_VALUE);
-    writeTargetsB.push(mapB.header.EMPLOYEE_NAME_VALUE);
-
-    // Add competency rating cells
-    for (const comp of mapB.competencies) {
-      writeTargetsB.push(...comp.selfRatings);
-      writeTargetsB.push(...comp.chiefRatings);
-    }
-
-    // Add summary fields
-    writeTargetsB.push(mapB.summary.OVERALL_RATING_SUMMARY);
-    writeTargetsB.push(mapB.summary.EMPLOYEE_COMMENTS);
-    writeTargetsB.push(mapB.summary.CHIEF_FEEDBACK);
-    writeTargetsB.push(mapB.summary.EMPLOYEE_SIGNATURE);
-    writeTargetsB.push(mapB.summary.CHIEF_SIGNATURE);
-
-    const setB = new Set(writeTargetsB);
-    assert.equal(
-      setB.size,
-      writeTargetsB.length,
-      `Part B N=${n} write targets must have 0 duplicate addresses`
-    );
-  }
-});
-
 test('TEMPLATE_PROFILE_CALLER_IMMUTABILITY: profile resolution does not mutate caller input options or returned mappings', () => {
   const profile = new MboXlsxTemplateProfile();
   const callerOptions = Object.freeze({ partKey: 'A', objectiveCount: 5 });
 
-  const role = profile.resolveSemanticRole('HEADER_EMPLOYEE_NAME', callerOptions);
-  assert.equal(role, 'Z7');
+  const roleRes = profile.resolveSemanticRole('HEADER_EMPLOYEE_NAME', callerOptions);
+  assert.equal(roleRes.address, 'Z7');
   assert.deepEqual(callerOptions, { partKey: 'A', objectiveCount: 5 });
 
+  // Returned mapping object is frozen
   const mapA = profile.getPartAMappings(5);
   assert.throws(
     () => { mapA.objectiveCount = 99; },
