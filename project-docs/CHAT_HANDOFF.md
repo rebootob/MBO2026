@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 11
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; reference-image proof corrective proposed |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; R3-R31 reference-image TEST-ONLY corrective authorized |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -61,11 +61,11 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 5. Latest Control Plane review — reference image
+## 5. Reference-image review basis
 
-Current source removes target `rId3` anchor/relationship and removes `xl/media/image3.png` only after a package-wide remaining-relationship orphan check. This source behavior is accepted for the current corrective and should not be redesigned.
+Current source removes target `rId3` anchor/relationship and removes `xl/media/image3.png` only after a package-wide remaining-relationship orphan check. This source behavior is accepted for R3-R31 and MUST NOT be redesigned.
 
-Current proof is insufficient for closure because it checks only target absence plus `rId1/rId2` survival. Historical independent reviews R3-R5 through R3-R9 repeatedly required target-normalized exact equality of all non-target drawing anchors, drawing relationship tuples, and media filename/content hashes. The current test does not contain that proof.
+Current proof is insufficient for closure because it checks only target absence plus `rId1/rId2` survival. Historical independent reviews R3-R5 through R3-R9 repeatedly required target-normalized exact equality of all non-target drawing anchors, drawing relationship tuples, and media filename/content hashes.
 
 ```text
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
@@ -75,33 +75,35 @@ REFERENCE_IMAGE_PROOF_REVIEW = FAIL / FULL INVENTORY EQUALITY ABSENT
 
 ## 6. Exact current gate
 
+Owner explicitly approved `D2-WP003-R3-R31 TEST-ONLY` on 2026-09-02.
+
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
-PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE TARGET-NORMALIZED INVENTORY CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R31
+ACTIVE_WORK_PACKAGE_NAME = REFERENCE-IMAGE TARGET-NORMALIZED INVENTORY CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R31-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R31 / ONE BOUNDED COMMIT
+CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-R3-R31 is proposed only. No executor is authorized.
+Antigravity may modify only the existing feasibility test file, run the exact required checks, push exactly one bounded implementation/blocker commit, then STOP. It may not self-certify PASS/CLOSED.
 
 ## 7. D2 remaining path
 
-1. reference-image closure;
-2. Part A objective insertion matrix;
-3. Part B competency insertion matrix;
-4. formula/no-formula authority;
-5. production sanitizer/XLSX renderer;
-6. combined Excel parity;
-7. PDF parity;
-8. export security/privacy regression;
-9. final D2 independent closure.
+After ChatGPT independently reviews R3-R31 and closes the reference-image gate if justified:
+1. Part A objective insertion matrix;
+2. Part B competency insertion matrix;
+3. formula/no-formula authority;
+4. production sanitizer/XLSX renderer;
+5. combined Excel parity;
+6. PDF parity;
+7. export security/privacy regression;
+8. final D2 independent closure.
 
 Do not auto-start any item.
