@@ -10,98 +10,57 @@ Open in this order:
 2. `project-docs/CHAT_HANDOFF.md`;
 3. `project-docs/AI_CONTROL_CENTER.md`;
 4. `project-docs/AI_ACTIVE_TASK.md`;
-5. `project-docs/AI_DOCUMENT_INDEX.md`;
+5. this `AI_DOCUMENT_INDEX.md`;
 6. `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness matters;
 7. `project-docs/EXCEL_EXPORT.md` for D2;
 8. `project-docs/CONFIRMED_BASELINE/README.md`;
-9. only directly relevant Baseline/source/evidence routed below.
+9. only directly relevant Baseline/source/evidence.
 
-## 2. Current project checkpoint
+## 2. Current checkpoint
 
 ```text
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
-D2-WP003-R3-R22 = PASS / CLOSED
-D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
-D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R28 = REVIEWED / NOT PASS / NOT CLOSED
-R3-R28_IMPLEMENTATION_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
-D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
+D2-WP003-R3-R29 = REVIEWED / SOURCE PASS / PROOF FAIL / NOT CLOSED
+R3-R29_IMPLEMENTATION_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 7 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R29
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R30
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-PRIVACY_PURGE_REQUIRED = NO
-D3 = HOLD UNTIL D2 PASS / CLOSED
 ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP / NOT NEEDED AT THIS GATE
+CLAUDE = STOP
+D3 = HOLD
 ```
 
-Owner priority: `COMPLETE D2 FULLY BEFORE D3.`
+## 3. D2 routing — current priority
 
-## 3. D2 routing — CURRENT PRIORITY
-
-Read in this order:
+Read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact current feasibility source/tests when R3-R29 is authorized or under review;
-6. exact SHA-verified owner templates only when explicitly required;
-7. D1/security Baselines only for export authorization/confidentiality review.
+5. exact current feasibility source/tests only as needed.
 
-Current D2 checkpoint:
-- R3-R22 accepted proof remains frozen;
-- Owner-approved Option B remains the only allowed Part B `Sheet1` drift;
-- R3-R28 fixed persistent Option B write-back and improved XML gap/token coverage;
-- R3-R28 remains CORRECTIVE because worksheet singleton semantics are wrong/incomplete, source structural proof still hits SHA first, required print-area/Sheet1 colsHash proof and much prior regression coverage were removed, actual Unicode proof is absent, Option B negative proof is incomplete, and accepted header/privacy negative guards were reduced;
-- no GitHub CI/runtime signal exists for R3-R28;
-- R3-R29 is proposed and NOT authorized;
-- no Claude review is needed at this gate;
-- D3 remains HOLD.
+R3-R29 source corrections are accepted. Current remaining preservation work is proof-only: Option B negative completion, distinct counterfeit-Type negative, and restoration of three typed-privacy negative cases. R3-R30 is proposed TEST-ONLY and is NOT authorized.
 
 ## 4. Task -> document routing
 
-| Task / Question | Open First | Then If Needed |
+| Task | Open First | Then If Needed |
 |---|---|---|
-| New chat / handoff / resume | `CHAT_HANDOFF.md` | `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md` |
-| Current status / what next | `AI_CONTROL_CENTER.md` | `CHAT_HANDOFF.md`, `00_MASTER_JOBLIST.md` |
-| Whole D1–D7 completeness | `00_MASTER_JOBLIST.md` | Control Center + relevant Baseline/evidence |
-| Current executor/task instruction | `AI_ACTIVE_TASK.md` | exact named files only |
-| D1 closure/audit/reopen | `CONFIRMED_BASELINE/D1_CLOSURE.md` | exact D1 Baseline/runtime evidence |
-| Employee lifecycle | `CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` | `EMPLOYEE_MASTER_ROUTING.md`, `ROUTING_WORKFLOW.md` |
-| AI workflow/review governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `DOCUMENT_CONTROL.md` |
-| Source architecture/build ownership | `CONFIRMED_BASELINE/SOURCE_CODE_ARCHITECTURE.md` | exact source/tests/build scripts |
-| D2 Excel/PDF | `EXCEL_EXPORT.md` | current feasibility source/tests, exact legacy samples |
+| New chat / resume | `CHAT_HANDOFF.md` | Control Center + Active Task |
+| Current status / next | `AI_CONTROL_CENTER.md` | Active Task |
+| Whole D1–D7 | `00_MASTER_JOBLIST.md` | relevant Baselines |
+| Current executor instruction | `AI_ACTIVE_TASK.md` | exact named files only |
+| D2 Excel/PDF | `EXCEL_EXPORT.md` | current feasibility source/tests |
+| D1 reopen/security | `CONFIRMED_BASELINE/D1_CLOSURE.md` | directly relevant D1 Baselines |
+| Employee lifecycle | `CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` | routing Baselines |
+| AI governance | `CONFIRMED_BASELINE/AI_OPERATING_GOVERNANCE.md` | `DOCUMENT_CONTROL.md` |
 | D3 migration | `CONFIRMED_BASELINE/LEGACY_PMS_APPS.md` | only after D2 closes |
-| D4 HR Control Center | `AI_CONTROL_CENTER.md` | lifecycle Baseline + exact App800 source/evidence |
-| D5 Copy Previous | `AI_CONTROL_CENTER.md` | exact copy service/test; fresh target-year route/identity |
-| D6 E2E/security | relevant Baselines | include lifecycle regression |
-| D7 Admin Support Center | `AI_CONTROL_CENTER.md` | reopen only proven defect |
 
 ## 5. Review minimum read set
 
-When user says `review`:
-
-```text
-fresh current HEAD
-+ CHAT_HANDOFF
-+ AI_CONTROL_CENTER
-+ authorizing/current AI_ACTIVE_TASK
-+ EXCEL_EXPORT for D2
-+ exact authorization baseline -> implementation diff/tests/evidence
-```
-
-Do not trust executor or second-reviewer self-report as final PASS evidence.
-
-## 6. Index maintenance
-
-Update this index whenever canonical routing/current gate changes materially.
+`review` = fresh HEAD + Handoff + Control Center + current/authorizing Active Task + EXCEL_EXPORT for D2 + exact authorization-to-implementation diff/tests. Do not trust executor/second-reviewer self-report as final PASS evidence.
