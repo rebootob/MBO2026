@@ -24,49 +24,55 @@ CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
 ```
 
-## Latest independent review — D2-WP004-R1-R2
+## Latest independent review — D2-WP004-R1-R2-R1
 ```text
-R1_R2_AUTHORIZATION_COMMIT = 90d6ae21353c153d5d2679837ef8e337d0bf8118
-R1_R2_EVIDENCE_COMMIT = 6e7cb1f5633dfc2a85dc181ae37f425dab3ea067
+AUTHORIZATION_COMMIT = b4e45c15ada92cfe0a8d9f84d01e4f56f0af9ed2
+EVIDENCE_COMMIT = 26fa18feead191c7587df82e393c73366969000d
 AUTH_TO_EVIDENCE = EXACTLY ONE COMMIT
 CHANGED_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
-R1_R2_SCOPE = PASS
+SCOPE = PASS
 PART_A_SHA = PASS / EXACT MATCH
 PART_B_SHA = PASS / EXACT MATCH
-PRIVACY_SAFE_EVIDENCE_SCOPE = PASS
-HOSHIN_SEMANTIC_EVIDENCE = PASS / FREEZE
-PART_B_HEADER_EVIDENCE = PASS / FREEZE
-R1_R2_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
-R1_R2_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-R1_R2_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+PRIVACY_SAFE_SCOPE = PASS
+HOSHIN = PASS / FREEZE
+PART_B_HEADER = PASS / FREEZE
+PART_A_HEADER_EXCLUSIVE_OWNERSHIP = PASS / FREEZE
+STATUS_TAXONOMY = IMPROVED / COUNTS INTERNALLY RECONCILED
+OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Accepted/frozen evidence from R1-R2:
-- Part A owner template SHA `03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3`.
-- Part B owner template SHA `c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3`.
-- Part A Hoshin: Department `G16:AF19`; Section `AM16:BI19`; `G8:S8` is appraisal-period/static content, not Hoshin.
-- Part B header mapping: fiscal year `G2:H3`, department `J3:L3`, section `M3:O3`, position `P3:Q3`, employee code `R3`, employee name `S3:W3`, consuming nested `partA.header.*` projection paths.
-- Existing frozen Part B structural/privacy topology remains authoritative.
+Accepted/frozen additionally from R1-R2-R1:
+- Part A Department `Z7:AF7` -> `partA.header.department`.
+- Part A Section `AG7:AL7` -> `partA.header.section`.
+- one primary Name-Surname target `AT7:BC7` -> `partA.header.employeeName`; employeeNameTH remains unresolved as alternate source.
+- projection fields with no proven workbook target are classified `UNRESOLVED`, not `NO_SECURED_PROJECTION_SOURCE`.
+- Part A final score/grade without static semantic proof remain unresolved.
+- Part B standalone comments/signatures remain `NO_SECURED_PROJECTION_SOURCE`.
 
-## Active corrective — D2-WP004-R1-R2-R1
+Remaining evidence defects before any profile source corrective:
+1. Part B chief target rows are still recorded as `R:W` although frozen authority is `R:X`.
+2. `SUMMARY_WEIGHT_SUM` is still `SAFE_TO_MAP` while secured projection path is `N/A`, violating zero-safe-to-map-without-path invariant.
+3. 1st/2nd Appraiser -> Manager/GM evaluator translations remain marked `PROVEN` without citing accepted role-identity authority.
+4. combined objective/target region B:I still marks `OBJECTIVE_i_TITLE` `PROVEN` although no accepted composition rule proves title-only ownership.
+5. evidence header self-promotes `PROVEN EVIDENCE BASELINE — CORRECTED` before independent acceptance.
+
+## Proposed next — NOT AUTHORIZED
 ```text
-WORK_PACKAGE = D2-WP004-R1-R2-R1
-NAME = XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
-STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
-AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R2-R2
+NAME = FINAL XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
 MODE = EVIDENCE-ONLY / SAME ONE MARKDOWN FILE / OWNER-TEMPLATE READ-ONLY
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+STATE = PROPOSED / NOT AUTHORIZED
+EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
 PROFILE_CHANGE = FORBIDDEN
-TEMPLATE_BINARY_CHANGE = FORBIDDEN
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
-
-Corrective focus: exclusive Part A header ownership; source-selection ambiguity for employeeName/employeeNameTH; correct projection-vs-workbook-missing status taxonomy; complete objective/evaluator/summary semantic inventory without inference; Part B K:Q self and R:X chief reconciliation with exact secured field paths only; mechanically correct status counts; no duplicate exclusive `SAFE_TO_MAP` target.
