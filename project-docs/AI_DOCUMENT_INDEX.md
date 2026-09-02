@@ -22,31 +22,33 @@ Open in this order:
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
-D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-R3-R35_IMPLEMENTATION_COMMIT = 2ea39f1d10dca9ba4b830e4207a4abf7cf797644
-R3-R35_SCOPE_REVIEW = PASS
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
+R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
+R3-R36_SCOPE_REVIEW = PASS
+R3-R36_PROOF_CODE_REVIEW = PASS
+R3-R36_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 14 OF 20
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R36
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R36 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For the current gate read:
+Reference-image durable closure is in `CONFIRMED_BASELINE/README.md`.
+
+The next D2 gate is **Part A objective insertion structural matrix**, but it is NOT STARTED and NOT AUTHORIZED. For continuation read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact R3-R35 implementation diff in `tests/mbo-xlsx-ooxml-feasibility.test.js`.
+5. the reference-image Baseline only if regression/reopen is suspected.
 
-R3-R36 is authorized TEST-ONLY to close only malformed prefixed-`embed` QName fail-closed behavior/proof. All other accepted R3-R35 parser/regression proof is frozen. Reference-image production source remains frozen.
+Do not reopen preservation/reference-image gates without proven regression.
