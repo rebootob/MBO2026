@@ -15,9 +15,13 @@ FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 XLSX_TEMPLATE_PROFILE = PASS / CLOSED
+PRE1 = PASS / CLOSED
+PRE1_R1 = PASS / CLOSED
+PRE2 = READ-ONLY DESIGN COMPLETE
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
+PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
@@ -30,16 +34,45 @@ Durable D2 Baselines:
 - `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-R2 design:
-- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
+R2 design chain:
+- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` — original Production Renderer/Sanitizer architecture design.
+- `phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md` — PRE1/PRE1-R1 accepted presentation evidence.
+- `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` — current expanded presentation authority design.
 
 R2 current state:
 ```text
 R2_READ_ONLY_DESIGN = COMPLETE
+PRE1 = PASS / CLOSED
+PRE1_R1 = PASS / CLOSED
+PRE2 = READ-ONLY DESIGN COMPLETE
 R2_IMPLEMENTATION = NOT AUTHORIZED
-PRE_RENDER_BLOCKER = PART B N7/N8 COMPETENCY PRESENTATION MAPPING/SOURCE AUTHORITY UNPROVEN
-PROPOSED_PRE1 = D2-WP004-R2-PRE1 EVIDENCE-ONLY / NOT AUTHORIZED
-EXPECTED_PRE1_EVIDENCE = phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
 ```
 
-Read the R2 design before any renderer authorization. PRE1 must prove exact visible presentation targets plus deterministic secured projection/source-selection authority or leave them unresolved. Production Renderer remains NOT AUTHORIZED.
+Current frozen semantic authority remains:
+```text
+SAFE_TO_MAP = 18 EXACT
+UNRESOLVED = 22 EXACT
+NO_SECURED_PROJECTION_SOURCE = 5 EXACT
+```
+
+PRE2 proposes, but does not yet authorize or close:
+```text
+EXPANDED_DYNAMIC_PRESENTATION = competency 7/8 only
+CANONICAL_IDENTITY = code
+b7 = COMP_LEAD
+b8 = COMP_STRAT
+CANONICAL_TITLE_FIELD = presentationTitle
+CANONICAL_DESCRIPTION_FIELD = presentationDescription
+N7_TITLE_OVERLAY = B31:J31
+N8_TITLE_OVERLAY = B31:J31 + B35:J35
+FUTURE_SAFE_TO_MAP_IF_INDEPENDENTLY_CLOSED = 20 EXACT
+```
+
+Exact next proposed gate:
+```text
+D2-WP004-R2-PRE2-R1
+EXPANDED COMPETENCY CANONICAL PRESENTATION PROJECTION
+SOURCE+TEST / NOT AUTHORIZED
+```
+
+Read `AI_ACTIVE_TASK.md` for the exact proposed writable files and authorization phrase. Do not auto-start Production Renderer, Kintone work, deployment or D3.
