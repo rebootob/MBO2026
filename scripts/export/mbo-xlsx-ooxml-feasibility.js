@@ -192,7 +192,7 @@ function relocateMergeRef(ref, rowOffset, isClonedRow = false) {
   }
 }
 
-export async function resolvePartBPrivacyRoles(inventoryOverride = null, competencyCount = 6, bufOverride = null) {
+export async function resolvePartBPrivacyRoles(inventoryOverride = null, competencyCount = 6, bufOverride = null, isPresentationOverlay = false) {
   const n = competencyCount || 6;
   if (![6, 7, 8].includes(n)) {
     throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
@@ -264,16 +264,30 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
-      if (ev.normalizedType !== authEv.normalizedType) {
-        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-      }
+      const isOverlayCell = isPresentationOverlay && (
+        (n >= 7 && (r === 31 || r === 32)) ||
+        (n === 8 && (r === 35 || r === 36))
+      ) && ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr);
 
-      if (ev.nonblank !== authEv.nonblank) {
-        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      if (!isOverlayCell) {
+        if (ev.normalizedType !== authEv.normalizedType) {
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        }
+
+        if (ev.nonblank !== authEv.nonblank) {
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+        }
       }
 
       const isClonedRow = r > 30 && r <= 30 + extraRows;
-      const expectedMergeRef = relocateMergeRef(authEv.mergeRef, rowOffset, isClonedRow);
+      let expectedMergeRef = relocateMergeRef(authEv.mergeRef, rowOffset, isClonedRow);
+      if (isPresentationOverlay) {
+        if (n >= 7 && r === 31 && ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr)) {
+          expectedMergeRef = 'B31:J31';
+        } else if (n === 8 && r === 35 && ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr)) {
+          expectedMergeRef = 'B35:J35';
+        }
+      }
       if (ev.mergeRef !== expectedMergeRef) {
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
@@ -352,9 +366,19 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
         isDynamic = false;
       } else if (sourceRow >= 7 && sourceRow <= 29) {
         if (['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr)) {
-          classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
-          roleJustification = 'Static competency name, description, or rating guidance text';
-          isDynamic = false;
+          const isOverlayCell = isPresentationOverlay && (
+            (n >= 7 && (r === 31 || r === 32)) ||
+            (n === 8 && (r === 35 || r === 36))
+          );
+          if (isOverlayCell) {
+            classification = 'EXPANDED_COMPETENCY_PRESENTATION_VALUE';
+            roleJustification = 'Dynamic expanded competency title and description presentation write target';
+            isDynamic = true;
+          } else {
+            classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
+            roleJustification = 'Static competency name, description, or rating guidance text';
+            isDynamic = false;
+          }
         } else if (['K', 'L', 'M', 'N', 'O', 'P', 'Q'].includes(cStr)) {
           classification = 'COMPETENCY_RATING_VALUE';
           roleJustification = 'Dynamic self-evaluation rating input field';
@@ -426,6 +450,10 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
 
   const sortedDynamic = [...dynamicAddresses].sort();
 
+  const expectedCount = isPresentationOverlay
+    ? (n === 6 ? 432 : (n === 7 ? 492 : 552))
+    : (n === 6 ? 432 : (n === 7 ? 474 : 516));
+
   if (n === 6) {
     const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
     if (JSON.stringify(sortedDynamic) !== JSON.stringify(sortedSensitive)) {
@@ -434,13 +462,9 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
     if (sortedDynamic.length !== 432) {
       throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
     }
-  } else if (n === 7) {
-    if (sortedDynamic.length !== 474) {
-      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-    }
-  } else if (n === 8) {
-    if (sortedDynamic.length !== 516) {
-      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+  } else {
+    if (sortedDynamic.length !== expectedCount) {
+      throw new Error(`BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED: Expected ${expectedCount}, found ${sortedDynamic.length}`);
     }
   }
 
@@ -449,6 +473,10 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
     dynamicAddresses: sortedDynamic,
     protectedStaticAddresses: [...protectedStaticAddresses].sort()
   };
+}
+
+export async function resolveExpandedPartBPrivacyRoles(buf = null, count = 6) {
+  return resolvePartBPrivacyRoles(null, count, buf, true);
 }
 
 export async function getPartBPrivacyClassificationSourceBacked() {
@@ -2364,5 +2392,195 @@ export async function getStructuralPartBBuffers() {
     bufB7: buffers[7],
     bufB8: buffers[8],
     buffers
+  };
+}
+
+/**
+ * RAW OOXML Presentation Title Overlay & Stale Clone Sanitization Proof for Part B
+ */
+export async function getExpandedPresentationPartBBuffers() {
+  const structural = await getStructuralPartBBuffers();
+  const found = findLocalSourceTemplates();
+  if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+  const origBufB = fs.readFileSync(found.partB);
+  const origSha = crypto.createHash('sha256').update(origBufB).digest('hex');
+
+  const buffers = {};
+  const intermediateMetrics = {};
+  const effectiveMetrics = {};
+
+  for (let n = 6; n <= 8; n++) {
+    const rawBuf = structural.buffers ? structural.buffers[n] : (n === 6 ? structural.bufB6 : (n === 7 ? structural.bufB7 : structural.bufB8));
+
+    // 1. Validate intermediate structural invariants BEFORE presentation overlay
+    const inspIntermediate = await inspectRawWorksheetOOXML(rawBuf);
+    const expectedIntermediateMerges = n === 6 ? 79 : (n === 7 ? 85 : 91);
+    const expectedDimension = n === 6 ? '<dimension ref="A1:X35"/>' : (n === 7 ? '<dimension ref="A1:X39"/>' : '<dimension ref="A1:X43"/>');
+    const expectedPrintArea = n === 6 ? "'(Part B) Competency'!$A$1:$X$35" : (n === 7 ? "'(Part B) Competency'!$A$1:$X$39" : "'(Part B) Competency'!$A$1:$X$43");
+    const expectedSummaryStartRow = n === 6 ? 31 : (n === 7 ? 35 : 39);
+
+    if (inspIntermediate.rawMerges.length !== expectedIntermediateMerges ||
+        inspIntermediate.mergeCountAttr !== String(expectedIntermediateMerges)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Intermediate merge count mismatch for N=${n}`);
+    }
+    if (inspIntermediate.dimension !== expectedDimension) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Intermediate dimension mismatch for N=${n}`);
+    }
+    if (inspIntermediate.printArea !== expectedPrintArea) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Intermediate printArea mismatch for N=${n}`);
+    }
+
+    // Validate base privacy count FIRST
+    const basePrivacy = await resolvePartBPrivacyRoles(null, n, rawBuf);
+    const expectedBaseDynamic = n === 6 ? 432 : (n === 7 ? 474 : 516);
+    if (basePrivacy.dynamicAddresses.length !== expectedBaseDynamic) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Base privacy dynamic count mismatch for N=${n}`);
+    }
+
+    intermediateMetrics[n] = {
+      mergeCount: inspIntermediate.rawMerges.length,
+      dimension: inspIntermediate.dimension,
+      printArea: inspIntermediate.printArea,
+      summaryStartRow: expectedSummaryStartRow,
+      baseDynamicCount: basePrivacy.dynamicAddresses.length
+    };
+
+    // 2. Identify & validate stale cloned presentation text BEFORE sanitization
+    const wbTemp = await XlsxPopulate.fromDataAsync(rawBuf);
+    const sheetTemp = wbTemp.sheet(0);
+
+    const expectedStaleDesc = '6.นโยบายจรรยาบรรณและจริยธรรม (10 ประการ)                                    倫理・道徳方針（10項目）';
+
+    function getCellTextValue(cell) {
+      const val = cell.value();
+      if (val === null || val === undefined) return '';
+      if (typeof val === 'object' && typeof val.text === 'function') {
+        return val.text().replaceAll('\r\n', '\n').trim();
+      }
+      return String(val).replaceAll('\r\n', '\n').trim();
+    }
+
+    if (n === 7) {
+      const b32Str = getCellTextValue(sheetTemp.cell('B32'));
+      const b33Str = getCellTextValue(sheetTemp.cell('B33'));
+
+      if (b32Str !== expectedStaleDesc) {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32 did not match expected competency-6 clone');
+      }
+      if (b33Str !== 'Rating Scale') {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33 corrupted');
+      }
+    } else if (n === 8) {
+      const b32Str = getCellTextValue(sheetTemp.cell('B32'));
+      const b36Str = getCellTextValue(sheetTemp.cell('B36'));
+      const b33Str = getCellTextValue(sheetTemp.cell('B33'));
+      const b37Str = getCellTextValue(sheetTemp.cell('B37'));
+
+      if (b32Str !== expectedStaleDesc || b36Str !== expectedStaleDesc) {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32/B36 did not match expected competency-6 clone');
+      }
+      if (b33Str !== 'Rating Scale' || b37Str !== 'Rating Scale') {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33/B37 corrupted');
+      }
+    }
+
+    // 3. Sanitize/blank presentation write targets & preserve static rating scale
+    if (n === 7) {
+      sheetTemp.cell('B31').value(null);
+      sheetTemp.cell('B32').value(null);
+    } else if (n === 8) {
+      sheetTemp.cell('B31').value(null);
+      sheetTemp.cell('B32').value(null);
+      sheetTemp.cell('B35').value(null);
+      sheetTemp.cell('B36').value(null);
+    }
+
+    const sanitizedBuf = await wbTemp.outputAsync();
+
+    // 4. Apply title merge overlay in OOXML
+    const wbOut = await XlsxPopulate.fromDataAsync(sanitizedBuf);
+    const sheetFile = wbOut._zip.files['xl/worksheets/sheet1.xml'];
+    let sheetXml = await sheetFile.async('string');
+
+    const overlayTitleMerges = [];
+    if (n === 7) {
+      overlayTitleMerges.push('B31:J31');
+    } else if (n === 8) {
+      overlayTitleMerges.push('B31:J31', 'B35:J35');
+    }
+
+    if (overlayTitleMerges.length > 0) {
+      const titleMergesXml = overlayTitleMerges.map(m => `<mergeCell ref="${m}"/>`).join('\n');
+      sheetXml = sheetXml.replace(/<\/mergeCells>/, `${titleMergesXml}\n</mergeCells>`);
+
+      const currentCountMatch = sheetXml.match(/<mergeCells count="(\d+)">/);
+      if (!currentCountMatch) {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: mergeCells count tag missing');
+      }
+      const newMergeCount = parseInt(currentCountMatch[1], 10) + overlayTitleMerges.length;
+      sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newMergeCount}">`);
+    }
+
+    // Ensure dimension ref is present and exact
+    const expectedLastRow = 35 + 4 * (n - 6);
+    const dimensionTag = `<dimension ref="A1:X${expectedLastRow}"/>`;
+    if (/<dimension [^>]*\/>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<dimension [^>]*\/>/, dimensionTag);
+    } else if (/<sheetPr[^>]*\/>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<sheetPr[^>]*\/>/, `$& \n  ${dimensionTag}`);
+    } else if (/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>/, `$& \n  ${dimensionTag}`);
+    } else {
+      sheetXml = sheetXml.replace(/<worksheet[^>]*>/, `$& \n  ${dimensionTag}`);
+    }
+
+    wbOut._zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+    let wbXml = await wbOut._zip.files['xl/workbook.xml'].async('string');
+    if (!wbXml.includes('_xlnm.Print_Area')) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Print_Area missing');
+    }
+    wbXml = wbXml.replace(/<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/, `<definedName name="_xlnm.Print_Area" localSheetId="0">'(Part B) Competency'!$A$1:$X$${expectedLastRow}</definedName>`);
+    wbOut._zip.file('xl/workbook.xml', wbXml);
+
+    const finalBuf = await wbOut._zip.generateAsync({ type: 'nodebuffer' });
+
+    // 5. Verify final effective OOXML metrics & dynamic privacy overlay
+    const inspFinal = await inspectRawWorksheetOOXML(finalBuf);
+    const expectedFinalMerges = n === 6 ? 79 : (n === 7 ? 86 : 93);
+    if (inspFinal.rawMerges.length !== expectedFinalMerges ||
+        inspFinal.mergeCountAttr !== String(expectedFinalMerges)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective merge count mismatch for N=${n}`);
+    }
+
+    const effectivePrivacy = await resolveExpandedPartBPrivacyRoles(finalBuf, n);
+    const expectedEffectiveDynamic = n === 6 ? 432 : (n === 7 ? 492 : 552);
+    if (effectivePrivacy.dynamicAddresses.length !== expectedEffectiveDynamic) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
+    }
+
+    effectiveMetrics[n] = {
+      mergeCount: inspFinal.rawMerges.length,
+      dimension: inspFinal.dimension,
+      printArea: inspFinal.printArea,
+      effectiveDynamicCount: effectivePrivacy.dynamicAddresses.length
+    };
+
+    buffers[n] = finalBuf;
+  }
+
+  // Source input byte immutability check
+  const checkSourceSha = crypto.createHash('sha256').update(fs.readFileSync(found.partB)).digest('hex');
+  if (checkSourceSha !== origSha) {
+    throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Source bytes mutated');
+  }
+
+  return {
+    bufB6: buffers[6],
+    bufB7: buffers[7],
+    bufB8: buffers[8],
+    buffers,
+    intermediateMetrics,
+    effectiveMetrics
   };
 }

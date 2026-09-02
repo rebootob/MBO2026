@@ -14,6 +14,8 @@ import {
   getReferenceImageBuffers,
   getStructuralPartABuffers,
   getStructuralPartBBuffers,
+  getExpandedPresentationPartBBuffers,
+  resolveExpandedPartBPrivacyRoles,
   getHeaderCellFingerprints,
   validateHeaderFingerprintParity,
   getWorkbookFingerprint,
@@ -2007,5 +2009,123 @@ test('FEASIBILITY_DIFFICULTY_LEVEL_BLANK: Difficulty Level cells remain blank pe
   for (let r = 25; r <= 28; r++) {
     const val = sheetA.cell(`AA${r}`).value();
     assert.equal(val === null || val === undefined, true, `Difficulty cell AA${r} must be blank`);
+  }
+});
+
+test('FEASIBILITY_PART_B_EXPANDED_PRESENTATION_OOXML_OVERLAY_AND_PRIVACY_PROOF: proves intermediate structural invariants, presentation title merges, effective privacy counts, and stale clone sanitization', async (t) => {
+  const found = findLocalSourceTemplates();
+  if (!found) {
+    t.skip('Local owner templates unavailable in this environment');
+    return;
+  }
+
+  const origBufB = fs.readFileSync(found.partB);
+  const origSha = crypto.createHash('sha256').update(origBufB).digest('hex');
+
+  // 1 & 2. Get structural Part B buffers and prove intermediate structural invariants BEFORE overlay
+  const structuralBuffers = await getStructuralPartBBuffers();
+
+  for (const n of [6, 7, 8]) {
+    const rawBuf = structuralBuffers.buffers ? structuralBuffers.buffers[n] : (n === 6 ? structuralBuffers.bufB6 : (n === 7 ? structuralBuffers.bufB7 : structuralBuffers.bufB8));
+    const inspIntermediate = await inspectRawWorksheetOOXML(rawBuf);
+
+    const expectedIntermediateMergeCount = n === 6 ? 79 : (n === 7 ? 85 : 91);
+    const expectedDimensionTag = n === 6 ? '<dimension ref="A1:X35"/>' : (n === 7 ? '<dimension ref="A1:X39"/>' : '<dimension ref="A1:X43"/>');
+    const expectedPrintArea = n === 6 ? "'(Part B) Competency'!$A$1:$X$35" : (n === 7 ? "'(Part B) Competency'!$A$1:$X$39" : "'(Part B) Competency'!$A$1:$X$43");
+
+    assert.equal(inspIntermediate.rawMerges.length, expectedIntermediateMergeCount, `Intermediate merge count for N=${n} must equal ${expectedIntermediateMergeCount}`);
+    assert.equal(inspIntermediate.mergeCountAttr, String(expectedIntermediateMergeCount), `Intermediate mergeCountAttr for N=${n} must equal ${expectedIntermediateMergeCount}`);
+    assert.equal(inspIntermediate.dimension, expectedDimensionTag, `Intermediate dimension for N=${n} must equal ${expectedDimensionTag}`);
+    assert.equal(inspIntermediate.printArea, expectedPrintArea, `Intermediate printArea for N=${n} must equal ${expectedPrintArea}`);
+
+    // Validate base privacy count FIRST
+    const basePrivacy = await resolvePartBPrivacyRoles(null, n, rawBuf);
+    const expectedBaseDynamicCount = n === 6 ? 432 : (n === 7 ? 474 : 516);
+    assert.equal(basePrivacy.dynamicAddresses.length, expectedBaseDynamicCount, `Base privacy dynamic count for N=${n} must equal ${expectedBaseDynamicCount}`);
+  }
+
+  // Execute expanded presentation OOXML feasibility pipeline
+  const expResult = await getExpandedPresentationPartBBuffers();
+  const { bufB6, bufB7, bufB8 } = expResult;
+
+  // 3 & 4. Final title overlays and merge counts
+  const inspB6 = await inspectRawWorksheetOOXML(bufB6);
+  assert.equal(inspB6.rawMerges.length, 79, 'N6 final merge count must be 79');
+  assert.equal(inspB6.mergeCountAttr, '79', 'N6 mergeCountAttr must be 79');
+
+  const inspB7 = await inspectRawWorksheetOOXML(bufB7);
+  assert.equal(inspB7.rawMerges.length, 86, 'N7 final merge count must be 86 (85 + B31:J31)');
+  assert.equal(inspB7.mergeCountAttr, '86', 'N7 mergeCountAttr must be 86');
+  assert.ok(inspB7.rawMerges.includes('B31:J31'), 'N7 final raw merges must include B31:J31');
+  assert.ok(inspB7.rawMerges.includes('B32:J32'), 'N7 final raw merges must include description merge B32:J32');
+  assert.ok(inspB7.rawMerges.includes('B33:J33'), 'N7 final raw merges must include rating scale merge B33:J33');
+
+  const inspB8 = await inspectRawWorksheetOOXML(bufB8);
+  assert.equal(inspB8.rawMerges.length, 93, 'N8 final merge count must be 93 (91 + B31:J31 + B35:J35)');
+  assert.equal(inspB8.mergeCountAttr, '93', 'N8 mergeCountAttr must be 93');
+  assert.ok(inspB8.rawMerges.includes('B31:J31'), 'N8 final raw merges must include B31:J31');
+  assert.ok(inspB8.rawMerges.includes('B35:J35'), 'N8 final raw merges must include B35:J35');
+  assert.ok(inspB8.rawMerges.includes('B32:J32'), 'N8 final raw merges must include description merge B32:J32');
+  assert.ok(inspB8.rawMerges.includes('B36:J36'), 'N8 final raw merges must include description merge B36:J36');
+  assert.ok(inspB8.rawMerges.includes('B33:J33'), 'N8 final raw merges must include rating scale merge B33:J33');
+  assert.ok(inspB8.rawMerges.includes('B37:J37'), 'N8 final raw merges must include rating scale merge B37:J37');
+
+  // 7, 8, 9. Dimensions, Print_Area, Summary Start Rows
+  assert.equal(inspB6.dimension, '<dimension ref="A1:X35"/>');
+  assert.equal(inspB7.dimension, '<dimension ref="A1:X39"/>');
+  assert.equal(inspB8.dimension, '<dimension ref="A1:X43"/>');
+
+  assert.equal(inspB6.printArea, "'(Part B) Competency'!$A$1:$X$35");
+  assert.equal(inspB7.printArea, "'(Part B) Competency'!$A$1:$X$39");
+  assert.equal(inspB8.printArea, "'(Part B) Competency'!$A$1:$X$43");
+
+  // 11 & 12. Effective privacy dynamic counts & exact presentation overlays
+  const effB6 = await resolveExpandedPartBPrivacyRoles(bufB6, 6);
+  const effB7 = await resolveExpandedPartBPrivacyRoles(bufB7, 7);
+  const effB8 = await resolveExpandedPartBPrivacyRoles(bufB8, 8);
+
+  assert.equal(effB6.dynamicAddresses.length, 432, 'N6 effective dynamic count must be 432');
+  assert.equal(effB7.dynamicAddresses.length, 492, 'N7 effective dynamic count must be 492 (474 + 18 presentation cells B31:J32)');
+  assert.equal(effB8.dynamicAddresses.length, 552, 'N8 effective dynamic count must be 552 (516 + 36 presentation cells B31:J32 + B35:J36)');
+
+  // 13 & 14. Rating scale and padding rows remain static/non-dynamic
+  for (const row of [33, 37]) {
+    for (const col of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+      const cellAddr = `${col}${row}`;
+      assert.equal(effB8.dynamicAddresses.includes(cellAddr), false, `Rating scale cell ${cellAddr} must remain non-dynamic`);
+      assert.equal(effB8.protectedStaticAddresses.includes(cellAddr), true, `Rating scale cell ${cellAddr} must remain protected static`);
+    }
+  }
+
+  for (const pRow of [30, 34, 38]) {
+    for (const col of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
+      const cellAddr = `${col}${pRow}`;
+      assert.equal(effB8.dynamicAddresses.includes(cellAddr), false, `Padding cell ${cellAddr} must remain non-dynamic`);
+    }
+  }
+
+  // 16 & 17. Sanitization proof: stale presentation targets are cleared, Rating Scale static text survives
+  const wbB7 = await XlsxPopulate.fromDataAsync(bufB7);
+  const sheetB7 = wbB7.sheet(0);
+  assert.equal(sheetB7.cell('B31').value() == null, true, 'N7 B31 presentation target must be sanitized to null/undefined');
+  assert.equal(sheetB7.cell('B32').value() == null, true, 'N7 B32 presentation target must be sanitized to null/undefined');
+  assert.equal(String(sheetB7.cell('B33').value() || '').trim(), 'Rating Scale', 'N7 B33 rating scale text must survive intact');
+
+  const wbB8 = await XlsxPopulate.fromDataAsync(bufB8);
+  const sheetB8 = wbB8.sheet(0);
+  assert.equal(sheetB8.cell('B31').value() == null, true, 'N8 B31 presentation target must be sanitized to null/undefined');
+  assert.equal(sheetB8.cell('B32').value() == null, true, 'N8 B32 presentation target must be sanitized to null/undefined');
+  assert.equal(sheetB8.cell('B35').value() == null, true, 'N8 B35 presentation target must be sanitized to null/undefined');
+  assert.equal(sheetB8.cell('B36').value() == null, true, 'N8 B36 presentation target must be sanitized to null/undefined');
+  assert.equal(String(sheetB8.cell('B33').value() || '').trim(), 'Rating Scale', 'N8 B33 rating scale text must survive intact');
+  assert.equal(String(sheetB8.cell('B37').value() || '').trim(), 'Rating Scale', 'N8 B37 rating scale text must survive intact');
+
+  // 18 & 19. Source bytes & Formula inventory
+  const postSha = crypto.createHash('sha256').update(fs.readFileSync(found.partB)).digest('hex');
+  assert.equal(postSha, origSha, 'Source template bytes must remain immutable');
+
+  for (const buf of [bufB6, bufB7, bufB8]) {
+    const formulas = await getWorksheetFormulaSet(buf);
+    assert.equal(formulas.size, 0, 'Formula inventory must equal 0');
   }
 });
