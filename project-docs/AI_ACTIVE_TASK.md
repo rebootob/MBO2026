@@ -1,18 +1,17 @@
-# AI ACTIVE TASK — D2 CONTINUATION / FAST-START MODE
+# AI ACTIVE TASK — D2 R7 PRIVACY REMAP PROPOSED / NO ACTIVE EXECUTOR
 
-Mode: **CONTROL PLANE / D2 MUST COMPLETE BEFORE D3 / NO ACTIVE EXECUTOR / NO KINTONE / NO DEPLOY**  
+Mode: **CONTROL PLANE / FORMULA AUTHORITY CLOSED / R7 PROPOSED NOT AUTHORIZED / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
-## 0. Read first
+## 0. Fast read path
 
-For ordinary D2 continuation/review:
 1. `project-docs/D2_REVIEW_FAST_START.md`
 2. this file
 3. only the directly relevant `CONFIRMED_BASELINE/` file
-4. exact authorization→implementation diff / changed files as needed
+4. exact authorization→implementation diff and changed files when review begins
 
 Do not re-read closed-gate internals by default.
 
@@ -20,13 +19,13 @@ Do not re-read closed-gate internals by default.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
-TASK_STATE = CHATGPT READ-ONLY / DOCS-ONLY NEXT-GATE PLANNING
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
+D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / 20 OF 20 / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
@@ -42,40 +41,15 @@ ANTIGRAVITY = STOP
 CLAUDE = STOP
 ```
 
-## 2. Closed D2 gates — frozen
-
-Do not reopen without proven regression:
-
-```text
-PRESERVATION = PASS / CLOSED
-REFERENCE_IMAGE = PASS / CLOSED
-PART_A_STRUCTURAL = PASS / CLOSED
-PART_B_STRUCTURAL = PASS / CLOSED
-```
+## 2. Newly closed gate — Formula Authority
 
 Durable authority:
-- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-
-Key accepted implementation commits:
-
-```text
-PART_A_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054
-PART_A_FINAL_TEST_CLOSURE = 98da94a07259effd95dcf539de3454b1f94745a8
-PART_B_SOURCE_MATRIX = 068e719a7b6c0fee66613619a7aa7ed359960cb5
-PART_B_FINAL_CLOSURE = 223f293057219efe0e6410029523bd904c92c6ae
-```
-
-Full invariant summary is in `D2_REVIEW_FAST_START.md`.
-
-## 3. Current next gate — Formula Authority
-
-Current repository evidence supports this target contract:
+`project-docs/CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
 ```text
 SCORING_SOURCE_OF_TRUTH = KINTONE / APP794 + CONFIRMED SCORING CONFIG
 EXPORT_DATA_AUTHORITY = SECURED MboExportService PROJECTION
-LEGACY_TEMPLATE_AUTHORITY = VISUAL / LAYOUT ONLY
+LEGACY_EXCEL_TEMPLATE_AUTHORITY = VISUAL / LAYOUT ONLY
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
 AUTHORIZED_APPROVER_EXPORT = WRITE SCALAR VALUES FROM SECURED PROJECTION ONLY
@@ -83,66 +57,143 @@ EMPLOYEE_SELF_CONFIDENTIAL_SCORE_FIELDS = OMIT / BLANK; NEVER RECALCULATE
 PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
 ```
 
-Formula-authority closure itself should be Control-Plane documentation/Baseline work; do not spend Antigravity on it unless a concrete source/test gap is proven.
+Do not reopen without proven contradictory repository/live evidence.
 
-## 4. Next implementation-worthy gate
-
-After Formula Authority closes:
-
-`PRODUCTION XLSX RENDERER + SANITIZER + EXPANDED PART B PRIVACY ADDRESS REMAP`
-
-Mandatory unresolved boundary:
+## 3. Proposed next gate — D2-WP003-R7
 
 ```text
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
+PROPOSED_WORK_PACKAGE = D2-WP003-R7
+NAME = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / BOUNDED / TWO EXISTING FILES ONLY
+EXPECTED_WRITABLE_FILES =
+  scripts/export/mbo-xlsx-ooxml-feasibility.js
+  tests/mbo-xlsx-ooxml-feasibility.test.js
+ANTIGRAVITY = STOP UNTIL OWNER AUTHORIZATION
+CLAUDE = STOP
 ```
 
-Existing Part B privacy mapping is authority only for the original 6-block source layout. Expanded 7/8 layouts shift summary/signature addresses and require explicit remapping before production/security closure.
+Why R7 comes before production renderer:
+- current `PART_B_SENSITIVE_RANGES` and sanitizer/privacy classification are authority only for the original 6-competency source layout;
+- accepted structural variants insert complete rows 27:30 blocks;
+- for N=7 the first inserted block occupies rows 31:34 and original summary/signature rows shift to 35:38;
+- for N=8 inserted blocks occupy 31:34 and 35:38 and original summary/signature rows shift to 39:42;
+- using the old fixed 31:34 summary privacy map on expanded workbooks would classify/sanitize the wrong cells.
 
-## 5. Remaining D2 sequence
+## 4. R7 exact proposed contract
 
-1. Formula Authority
-2. Production XLSX Renderer + Sanitizer + Privacy Remap
-3. Combined Excel Parity
-4. PDF Parity
-5. Export Authorization / Security / Privacy Regression
-6. Final Independent D2 Closure
-7. only then may D3 leave HOLD
+### A. Preserve source-6 behavior
+The exact accepted 6-block privacy mapping remains the baseline and must not be weakened.
+
+Header dynamic addresses remain unchanged.
+
+Original competency rating roles remain:
+- self rating columns K:Q over source competency dynamic rows;
+- chief rating columns R:X over source competency dynamic rows.
+
+Original summary/signature dynamic roles remain rows 31:34 only for N=6.
+
+### B. Count-aware 6/7/8 mapping
+Support only competency counts 6,7,8. All other counts fail closed.
+
+For:
+```text
+extraBlocks = N - 6
+extraRows = 4 * extraBlocks
+summaryStart = 31 + extraRows
+summaryEnd = 34 + extraRows
+```
+
+Required transformed roles:
+- header roles stay at the original addresses;
+- original competency roles before row 31 stay unchanged;
+- each inserted 4-row block inherits source rows 27:30 role semantics exactly;
+- source row 30 is not silently promoted to a dynamic rating row if it is not dynamic in the 6-block authority;
+- original summary/signature roles relocate exactly by `extraRows`;
+- no stale summary role may remain at rows 31:34 for N=7/8;
+- no duplicate/overlapping/conflicting dynamic role classification;
+- protected static competency text in cloned blocks remains protected and must never be cleared as sensitive dynamic data.
+
+Expected summary ranges:
+```text
+N=6 => rows 31:34
+N=7 => rows 35:38
+N=8 => rows 39:42
+```
+
+Expected added competency dynamic-row semantics are derived from cloned source rows 27:30, not invented from a blanket rectangular clear.
+
+### C. Real structural-buffer proof
+R7 proof must use real outputs from the accepted `getStructuralPartBBuffers()` path for 6/7/8.
+
+Do not duplicate structural insertion logic in tests.
+
+The privacy resolver must fail closed if the observed structural variant does not match the accepted row/style/merge role evidence needed to classify it safely.
+
+### D. Sanitization proof for expanded variants
+For N=6/7/8 prove:
+- every dynamic sensitive address appropriate to that count is cleared/sanitized;
+- protected static competency text remains byte/value-fingerprint stable where applicable;
+- shifted summary/signature data is sanitized at its new addresses;
+- stale old summary addresses are not treated as summary after insertion;
+- sensitive test tokens are absent from worksheet/sharedStrings/package evidence after sanitization;
+- typed privacy metadata remains complete and fail-closed for the exact count-aware sensitive-address inventory;
+- no employee-bearing source value is logged or committed.
+
+### E. Frozen dependencies
+Do not redesign or weaken:
+- Preservation / Option B;
+- Reference Image;
+- Part A structural matrix;
+- Part B structural matrix 6/7/8;
+- Formula Authority;
+- `MboExportService` security/authorization behavior.
+
+### F. Explicitly out of scope for R7
+Do not create production renderer yet.
+Do not modify `src/services/mbo-export-service.js`.
+Do not modify dependencies/package-lock.
+Do not create generated XLSX/PDF/image/evidence binaries.
+Do not touch Kintone, deploy, ACL, process, Live UAT or D3.
+
+## 5. Remaining D2 after R7
+
+1. R7 expanded Part B privacy remap 6/7/8;
+2. production XLSX renderer/sanitizer consuming secured projection + frozen structural/privacy/formula contracts;
+3. combined Excel parity;
+4. PDF parity;
+5. export authorization/security/privacy regression;
+6. final independent D2 closure;
+7. only then may D3 leave HOLD.
 
 ## 6. Fast review procedure
 
-When Owner says `review` after an executor push:
+When Owner says `review` after an authorized executor push:
 1. fresh-fetch HEAD;
 2. read Fast-Start + this file;
-3. validate authorization token/commit/files;
+3. validate exact authorization token/commit/files;
 4. compare authorization→implementation;
-5. inspect changed code and only directly touched frozen contract;
-6. verify no accepted proof was removed/weakened;
-7. check combined status/workflow runs;
+5. inspect changed code + directly touched privacy/structural contract only;
+6. verify accepted proof was not removed/weakened;
+7. check GitHub combined status/workflow runs;
 8. no CI/workflow => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
 9. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
 10. no auto-start next WP.
 
-## 7. Consumed authorization summary
+## 7. Authorization ledger note
 
-```text
-D2-WP003-R3-R36-TEST-20260902-01 = CONSUMED / PASS / CLOSED
-D2-WP003-R4-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE
-D2-WP003-R4-R1-TEST-20260902-01 = CONSUMED / CORRECTIVE
-D2-WP003-R4-R2-TEST-20260902-01 = CONSUMED / PASS / CLOSED
-D2-WP003-R5-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE
-D2-WP003-R5-R1-SOURCE-TEST-20260902-01 = CONSUMED / PASS / CLOSED
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
-```
+Previous one-shot authorizations remain consumed and must never be reused. The old 20-round standing Control Plane authorization remains exhausted and is not silently extended.
 
-Never reuse consumed authorization tokens.
+R7 currently has **NO authorization token**.
 
 ## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = CHATGPT CONTROL PLANE
-NEXT_ACTION = CLOSE FORMULA AUTHORITY BY DOCS/BASELINE IF NO CONTRADICTORY EVIDENCE; THEN PLAN THE SMALLEST PRODUCTION XLSX RENDERER + PRIVACY REMAP WP
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R7 SOURCE+TEST UNDER THE PROPOSED TWO-FILE CONTRACT
 ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
