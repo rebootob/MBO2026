@@ -34,42 +34,40 @@ Direct durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
+- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
 ## Latest closed gate — R7-R3
 ```text
-R7-R3_AUTHORIZATION_COMMIT = 97f2517d368f150569b953aca735b704e244668e
 R7-R3_IMPLEMENTATION = 69891d82996f83a0442ee6dc268dd20b7ef8ee99
-SCOPE = PASS / ONE COMMIT / ONE AUTHORIZED TEST FILE
-ROW30_CLONE_NORMALIZEDTYPE_SINGLE_FIELD_NEGATIVE = PASS
-ROW30_CLONE_NONBLANK_SINGLE_FIELD_NEGATIVE = PASS
-SOURCE_ROW30_VALHASH_APPLICABILITY = PROVEN NONE / DO NOT FABRICATE
-R7-R2_SOURCE = PASS / FROZEN
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
 ## Production Renderer architecture — Owner-confirmed
-Read `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md` before renderer work.
-
 ```text
 NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
 CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 ```
 
-Important cell/range addresses must live in centralized semantic Template Profile/Mapping, not be scattered across renderer/business logic.
+Secured projection authority remains `src/services/mbo-export-service.js`; it must not be modified merely to make renderer mapping easier.
 
-## Current gate
+## Proposed next — D2-WP004-R1
 ```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R1
+NAME = MBO2026 PRODUCTION XLSX TEMPLATE PROFILE / MAPPING FOUNDATION
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / PURE MAPPING / NO WORKBOOK MUTATION
+EXPECTED_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
 ```
 
-Remaining D2 path: Production XLSX Renderer/Sanitizer -> Combined Excel parity -> PDF parity -> export authorization/security/privacy regression -> final independent D2 closure -> then D3 may leave HOLD.
+R1 establishes one centralized semantic mapping authority for the accepted MBO2026 template family, exact Part A 4..10 and Part B 6..8 cardinality support, exact template SHA identity, and fail-closed unknown template/profile/count/semantic-role behavior. It does NOT render or mutate XLSX.
+
+Remaining D2 path: Template Profile foundation -> Production XLSX Renderer/Sanitizer -> Combined Excel parity -> PDF parity -> export authorization/security/privacy regression -> final independent D2 closure -> then D3 may leave HOLD.
