@@ -2396,6 +2396,135 @@ export async function getStructuralPartBBuffers() {
 }
 
 /**
+ * Production Validator for Pre-Sanitize Part B Presentation State.
+ * Validates real structural buffer/workbook state BEFORE any cell blanking or sanitization.
+ */
+export async function validatePreSanitizePartBPresentationState(rawBuf, count = 6) {
+  const n = count || 6;
+  if (![6, 7, 8].includes(n)) {
+    throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Invalid competency count');
+  }
+
+  if (n === 6) {
+    return true;
+  }
+
+  const wbTemp = await XlsxPopulate.fromDataAsync(rawBuf);
+  const sheetTemp = wbTemp.sheet(0);
+
+  function getCellTextValue(cell) {
+    const val = cell.value();
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object' && typeof val.text === 'function') {
+      return val.text().replaceAll('\r\n', '\n').trim();
+    }
+    return String(val).replaceAll('\r\n', '\n').trim();
+  }
+
+  const expectedStaleDesc = '6.นโยบายจรรยาบรรณและจริยธรรม (10 ประการ)                                    倫理・道徳方針（10項目）';
+
+  if (n === 7) {
+    const b31Str = getCellTextValue(sheetTemp.cell('B31'));
+    const b32Str = getCellTextValue(sheetTemp.cell('B32'));
+    const b33Str = getCellTextValue(sheetTemp.cell('B33'));
+
+    if (b31Str !== '') {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title target B31 must be blank before mutation');
+    }
+    if (b32Str !== expectedStaleDesc) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32 did not match expected competency-6 clone');
+    }
+    if (b33Str !== 'Rating Scale') {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33 corrupted');
+    }
+  } else if (n === 8) {
+    const b31Str = getCellTextValue(sheetTemp.cell('B31'));
+    const b35Str = getCellTextValue(sheetTemp.cell('B35'));
+    const b32Str = getCellTextValue(sheetTemp.cell('B32'));
+    const b36Str = getCellTextValue(sheetTemp.cell('B36'));
+    const b33Str = getCellTextValue(sheetTemp.cell('B33'));
+    const b37Str = getCellTextValue(sheetTemp.cell('B37'));
+
+    if (b31Str !== '') {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title target B31 must be blank before mutation');
+    }
+    if (b35Str !== '') {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title target B35 must be blank before mutation');
+    }
+    if (b32Str !== expectedStaleDesc) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32 did not match expected competency-6 clone');
+    }
+    if (b36Str !== expectedStaleDesc) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B36 did not match expected competency-6 clone');
+    }
+    if (b33Str !== 'Rating Scale' || b37Str !== 'Rating Scale') {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33/B37 corrupted');
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Production Validator for Effective Dynamic Privacy Evidence for Part B
+ * Validates real effectivePrivacy objects / evidence against authorized dynamic topology standards.
+ */
+export function validatePartBEffectivePrivacyOverlay(effectivePrivacy, count = 6) {
+  const n = count || 6;
+  if (![6, 7, 8].includes(n)) {
+    throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Invalid competency count');
+  }
+
+  if (!effectivePrivacy || !Array.isArray(effectivePrivacy.dynamicAddresses)) {
+    throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Invalid effective privacy evidence');
+  }
+
+  const expectedEffectiveDynamic = n === 6 ? 432 : (n === 7 ? 492 : 552);
+  if (effectivePrivacy.dynamicAddresses.length !== expectedEffectiveDynamic) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
+  }
+
+  // Validate exact required presentation dynamic write targets are present
+  const requiredAddrs = [];
+  if (n >= 7) {
+    requiredAddrs.push(...expandRangeToAddresses('B31:J32'));
+  }
+  if (n === 8) {
+    requiredAddrs.push(...expandRangeToAddresses('B35:J36'));
+  }
+
+  const dynamicSet = new Set(effectivePrivacy.dynamicAddresses);
+  for (const addr of requiredAddrs) {
+    if (!dynamicSet.has(addr)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Required presentation dynamic target ${addr} missing`);
+    }
+  }
+
+  // Validate Rating Scale cells and padding rows are non-dynamic / protected static
+  const ratingScaleRows = n === 6 ? [29] : (n === 7 ? [29, 33] : [29, 33, 37]);
+  for (const rRow of ratingScaleRows) {
+    for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+      const addr = `${cStr}${rRow}`;
+      if (dynamicSet.has(addr)) {
+        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale cell ${addr} marked dynamic`);
+      }
+    }
+  }
+
+  const paddingRows = n === 6 ? [30] : (n === 7 ? [30, 34] : [30, 34, 38]);
+  for (const pRow of paddingRows) {
+    for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
+      const addr = `${cStr}${pRow}`;
+      if (dynamicSet.has(addr)) {
+        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Padding cell ${addr} marked dynamic`);
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
  * Production Validator for Expanded Presentation OOXML Overlay & Privacy Topology for Part B
  * Validates real in-memory workbook/buffer evidence against presentation overlay standards.
  */
@@ -2424,33 +2553,9 @@ export async function validateExpandedPresentationOverlayPartB(buf, count = 6, s
     }
   }
 
-  // 2. Dynamic Privacy Overlay & Topology Validation
+  // 2. Dynamic Privacy Overlay & Topology Validation via production helper
   const effectivePrivacy = await resolveExpandedPartBPrivacyRoles(buf, n);
-  const expectedEffectiveDynamic = n === 6 ? 432 : (n === 7 ? 492 : 552);
-  if (effectivePrivacy.dynamicAddresses.length !== expectedEffectiveDynamic) {
-    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
-  }
-
-  // Validate Rating Scale cells and padding rows are non-dynamic / protected static
-  const ratingScaleRows = n === 6 ? [29] : (n === 7 ? [29, 33] : [29, 33, 37]);
-  for (const rRow of ratingScaleRows) {
-    for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
-      const addr = `${cStr}${rRow}`;
-      if (effectivePrivacy.dynamicAddresses.includes(addr)) {
-        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale cell ${addr} marked dynamic`);
-      }
-    }
-  }
-
-  const paddingRows = n === 6 ? [30] : (n === 7 ? [30, 34] : [30, 34, 38]);
-  for (const pRow of paddingRows) {
-    for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
-      const addr = `${cStr}${pRow}`;
-      if (effectivePrivacy.dynamicAddresses.includes(addr)) {
-        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Padding cell ${addr} marked dynamic`);
-      }
-    }
-  }
+  validatePartBEffectivePrivacyOverlay(effectivePrivacy, n);
 
   // 3. XlsxPopulate Text & Sanitization State Validation
   const wbFinal = await XlsxPopulate.fromDataAsync(buf);
@@ -2466,6 +2571,7 @@ export async function validateExpandedPresentationOverlayPartB(buf, count = 6, s
   }
 
   // Validate Rating Scale static text survives
+  const ratingScaleRows = n === 6 ? [29] : (n === 7 ? [29, 33] : [29, 33, 37]);
   for (const rRow of ratingScaleRows) {
     const text = getCellTextValue(sheetFinal.cell(`B${rRow}`));
     if (text !== 'Rating Scale') {
@@ -2591,57 +2697,12 @@ export async function getExpandedPresentationPartBBuffers() {
       baseDynamicCount: basePrivacy.dynamicAddresses.length
     };
 
-    // 2. Identify & validate stale cloned presentation text BEFORE sanitization
+    // 2. Validate pre-sanitize title, description, and Rating Scale state BEFORE any cell blanking via production validator
+    await validatePreSanitizePartBPresentationState(rawBuf, n);
+
+    // 3. Sanitize/blank presentation write targets ONLY AFTER pre-sanitize validation passes
     const wbTemp = await XlsxPopulate.fromDataAsync(rawBuf);
     const sheetTemp = wbTemp.sheet(0);
-
-    const expectedStaleDesc = '6.นโยบายจรรยาบรรณและจริยธรรม (10 ประการ)                                    倫理・道徳方針（10項目）';
-
-    function getCellTextValue(cell) {
-      const val = cell.value();
-      if (val === null || val === undefined) return '';
-      if (typeof val === 'object' && typeof val.text === 'function') {
-        return val.text().replaceAll('\r\n', '\n').trim();
-      }
-      return String(val).replaceAll('\r\n', '\n').trim();
-    }
-
-    if (n === 7) {
-      // PRE-SANITIZE VALIDATION for N7: B31 (title target) must be mechanically blank/no-value from un-cloned B26:J27
-      const b31Str = getCellTextValue(sheetTemp.cell('B31'));
-      const b32Str = getCellTextValue(sheetTemp.cell('B32'));
-      const b33Str = getCellTextValue(sheetTemp.cell('B33'));
-
-      if (b31Str !== '') {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title target B31 must be blank before mutation');
-      }
-      if (b32Str !== expectedStaleDesc) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32 did not match expected competency-6 clone');
-      }
-      if (b33Str !== 'Rating Scale') {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33 corrupted');
-      }
-    } else if (n === 8) {
-      // PRE-SANITIZE VALIDATION for N8: B31 and B35 (title targets) must be mechanically blank/no-value from un-cloned B26:J27
-      const b31Str = getCellTextValue(sheetTemp.cell('B31'));
-      const b35Str = getCellTextValue(sheetTemp.cell('B35'));
-      const b32Str = getCellTextValue(sheetTemp.cell('B32'));
-      const b36Str = getCellTextValue(sheetTemp.cell('B36'));
-      const b33Str = getCellTextValue(sheetTemp.cell('B33'));
-      const b37Str = getCellTextValue(sheetTemp.cell('B37'));
-
-      if (b31Str !== '' || b35Str !== '') {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title targets B31/B35 must be blank before mutation');
-      }
-      if (b32Str !== expectedStaleDesc || b36Str !== expectedStaleDesc) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32/B36 did not match expected competency-6 clone');
-      }
-      if (b33Str !== 'Rating Scale' || b37Str !== 'Rating Scale') {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33/B37 corrupted');
-      }
-    }
-
-    // 3. Sanitize/blank presentation write targets & preserve static rating scale ONLY AFTER validation passes
     if (n === 7) {
       sheetTemp.cell('B31').value(null);
       sheetTemp.cell('B32').value(null);
