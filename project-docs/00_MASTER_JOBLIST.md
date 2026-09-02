@@ -13,35 +13,28 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-D2 closed:
-- Preservation
-- Reference Image
-- Part A Structural
-- Part B Structural
-- Formula Authority
-- Part B Expanded Privacy
+D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
 
-Production Renderer architecture requirement:
+Template Profile foundation:
 ```text
-NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
-CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
+D2-WP004-R1 = CORRECTIVE REQUIRED
+R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
+R1_SCOPE = PASS
+R1_TOKEN = CONSUMED / DO NOT REUSE
+PROPOSED_NEXT = D2-WP004-R1-R1 SOURCE+TEST / NOT AUTHORIZED
 ```
-Authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
 
-Current D2 execution:
+R1-R1 must correct only:
+1. Part B exact frozen row-role mapping — rows7:29 K:X dynamic; only row30 and clones34/38 protected padding; inserted dynamic rows N7=31:33, N8=31:33+35:37; summary rows 31:34 / 35:38 / 39:42.
+2. Semantic role alignment with current `MboExportService` secured projection.
+3. Runtime fail-closed validation for missing/conflicting required mapping.
+
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1
-NAME = TEMPLATE PROFILE / MAPPING FOUNDATION
-AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-SCOPE = SOURCE+TEST / ONE-SHOT / TWO NEW FILES / PURE MAPPING
-WORKBOOK_MUTATION = FORBIDDEN
-PRODUCTION_RENDERER = NOT YET
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
+PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
-
-Remaining D2 after R1 review: Production XLSX Renderer/Sanitizer -> Combined Excel parity -> PDF parity -> export authorization/security/privacy regression -> final independent D2 closure -> only then D3 may leave HOLD.
