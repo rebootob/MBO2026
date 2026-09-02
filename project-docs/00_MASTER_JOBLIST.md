@@ -38,14 +38,12 @@ D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 R3-R31_PROOF_REVIEW = FAIL / FAIL-CLOSED INVENTORY COVERAGE INCOMPLETE
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 10 OF 20
-ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R32
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_WORK_PACKAGE = D2-WP003-R3-R32
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R32-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-R3-R31 implementation `37325d8279c6e0a19072ca9593a9feda2f9c6174` stayed within TEST-ONLY scope and added target-normalized inventory equality, but the new anchor/relationship extractors are not fail-closed and can silently omit relevant OOXML variants. R3-R32 is proposed TEST-ONLY; no production source change is required.
+R3-R31 implementation `37325d8279c6e0a19072ca9593a9feda2f9c6174` stayed within TEST-ONLY scope and added target-normalized inventory equality. R3-R32 is now authorized TEST-ONLY to close only fail-closed inventory coverage/raw-tuple proof gaps; reference-image production source remains frozen.
 
 D2 must still close:
 - reference-image full-inventory fail-closed proof;
@@ -86,10 +84,11 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R32 TEST-ONLY
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R3-R32-TEST-20260902-01
+EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+EXPECTED_COMMITS = EXACTLY ONE BOUNDED TEST-ONLY IMPLEMENTATION/BLOCKER COMMIT
+ANTIGRAVITY = STOP AFTER PUSH/REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
