@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R3-R26 BLOCKED / OWNER PRESERVATION DECISION REQUIRED**  
+> Status: **IN PROGRESS / OPTION B APPROVED / R3-R27 PROPOSED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -82,40 +82,52 @@ PRIVACY_PURGE_REQUIRED = NO
 Accepted R3-R26 improvements:
 - strict raw relationship Target lexical identity and no alias normalization;
 - exact canonical worksheet relationship Type + global duplicate-ID + exact relationship tuple remain enforced;
-- observed-only `sheetPr` exception removed;
+- observed-only `sheetPr` generic exception removed;
 - all valid R3-R24 preservation negatives restored;
 - raw no-op path remains frozen.
 
-Current blockers:
-1. direct raw Part B `outBufB` is explicitly rejected because xlsx-populate injects an observed-only `sheetPr` into Part B `Sheet1`, while the current strict preservation invariant allows only source `dimension` omission;
-2. positive Part B proof pre-cleans a derivative of `outBufB` by deleting that `<sheetPr>` before calling preservation, so the proof bypasses the real raw-input incompatibility;
-3. the same test explicitly proves direct `outBufB` rejection, so the current dimension-only preservation policy and actual xlsx-populate output cannot both hold;
-4. regex-only Relationship and worksheet-child inventory can still silently skip valid XML element names/prefixes outside restricted regex character classes;
-5. some required alias sub-cases remain under-tested directly (for example repeated `//`, leading `./`, full URI scheme/authority forms);
-6. no GitHub CI/status/workflow run exists for the implementation commit.
+R3-R26 proved an architecture conflict: direct raw Part B `outBufB` includes one xlsx-populate-generated observed-only `sheetPr` in `Sheet1`, while the strict source-minus-dimension rule rejected it. The positive Part B proof only passed after test-side pre-cleaning, so it did not prove direct raw preservation. Regex-only XML inventory and several alias proof sub-cases also remained incomplete.
 
-R3-R26 does not close preservation or D2-WP003.
-
-## 6. Owner preservation-policy decision
+## 6. Approved preservation-policy decision
 
 ```text
 DECISION_ID = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
-STATUS = WAIT OWNER
+DECISION = OPTION B
+STATUS = APPROVED
+POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
 ```
 
-Option A — STRICT SOURCE-MINUS-DIMENSION:
-- keep observed-only `sheetPr` forbidden;
-- abandon/redesign the current direct xlsx-populate Part B preservation path because it cannot satisfy the invariant.
+Option B authorizes the policy only:
+- exactly one deterministic xlsx-populate-generated Part B `Sheet1` `sheetPr` may be normalized only if its exact structure/value/fingerprint and exact slot are pinned from SHA-verified owner-template round-trip evidence;
+- exact source must lack that element;
+- normalization/removal occurs inside preservation on the working copy, never in test setup;
+- raw/source inputs remain byte-immutable;
+- modified/extra/duplicate/reordered/moved/other-sheet/Part-A `sheetPr` remains fail-closed;
+- every other non-dimension drift remains forbidden.
 
-Option B — NARROW DETERMINISTIC ALLOWED-DRIFT:
-- explicitly allow only a precisely fingerprinted deterministic xlsx-populate-injected Part B `Sheet1` `sheetPr` drift;
-- normalization/removal must happen inside the authorized preservation path, never in test setup;
-- arbitrary/changed/reordered/extra `sheetPr` remains fail-closed;
-- all other non-dimension drift remains forbidden.
+## 7. Proposed R3-R27 — NOT AUTHORIZED
 
-No new Antigravity/Claude work is authorized until Owner chooses A or B.
+```text
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
+PROPOSED_WORK_PACKAGE_NAME = NARROW PART B SHEETPR ALLOWED-DRIFT + COMPLETE XML INVENTORY CORRECTIVE
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP / NOT NEEDED AT THIS GATE
+```
 
-## 7. D2 remaining closure path
+R3-R27 direction:
+- implement the one approved `Sheet1` drift allowlist inside `preserveExactWorkbookDimensions()`;
+- direct raw `outBufB` must be used for the positive Part B preservation proof with no test-side pre-cleaning;
+- close Relationship/worksheet-child XML inventory gaps so valid QName forms cannot be silently skipped;
+- reject duplicate maxOccurs=1 schema children independently;
+- add repeated `//`, leading `./`, embedded `/./`, full URI scheme/authority, query/fragment and other missing proof sub-cases;
+- retain all restored R3-R24/R3-R25/R3-R26 negatives and exact source-SHA/raw/privacy boundaries;
+- add privacy-safe unit proof for pure validators when exact owner templates are unavailable.
+
+## 8. D2 remaining closure path
 
 After preservation closes:
 1. reference-image inventory/removal/preservation closure;
@@ -130,20 +142,22 @@ After preservation closes:
 
 Do not auto-start any next step.
 
-## 8. Current gate / authorization ledger
+## 9. Current gate / authorization ledger
 
 ```text
-D2 = IN PROGRESS / BLOCKED
-D2-WP003 = BLOCKED / NOT CLOSED
+D2 = IN PROGRESS
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
+D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
 D2-WP003-R3-R26-SOURCE-20260902-01 = CONSUMED / BLOCKED / DO NOT REUSE
 ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 ```
