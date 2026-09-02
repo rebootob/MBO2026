@@ -255,7 +255,7 @@ test('EXPORT_SECURITY_TECHNICAL_ADMIN_DENIED: admin-form fails closed for export
   );
 });
 
-test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION: b7/b8 presentation title and description, alias resistance, and fail-closed validation', () => {
+test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION_CORRECTIVE: strict b7/b8 exact code, N1..6 backward compatibility, and Employee-Self protection', () => {
   const mboRec = {
     Employee_Code: { value: 'EMP001' },
     Profile_Code: { value: 'PROF_SECTION_MGR' },
@@ -264,7 +264,7 @@ test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION: b7/b8 presentation title 
   const approverContext = { type: 'APPROVER', context: { mode: 'DEDICATED', kintoneUserCode: 'mgr1' } };
   const selfContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
 
-  // Base 6 competency items
+  // Base 6 standard competency items
   const items6 = [
     { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4' },
     { code: 'COMP_PROB', description: 'Desc 2', selfRating: '4' },
@@ -274,19 +274,40 @@ test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION: b7/b8 presentation title 
     { code: 'COMP_COCE', description: 'Desc 6', selfRating: '4' }
   ];
 
-  // N6 backward compatibility check
-  const projN6 = MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items6, exportContext: approverContext });
+  // Base 6 items with non-object primitive for backward compatibility test
+  const items6WithPrimitive = [
+    { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4' },
+    { code: 'COMP_PROB', description: 'Desc 2', selfRating: '4' },
+    { code: 'COMP_CUST', description: 'Desc 3', selfRating: '4' },
+    'primitive_non_object_item',
+    { code: 'COMP_SAFETY', description: 'Desc 5', selfRating: '4' },
+    { code: 'COMP_COCE', description: 'Desc 6', selfRating: '4' }
+  ];
+
+  // 12. N1..6 non-object items preserve previous pass-through behavior
+  const projN6 = MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items6WithPrimitive, exportContext: approverContext });
   assert.equal(projN6.partB.competencyItems.length, 6);
+  assert.equal(projN6.partB.competencyItems[3], 'primitive_non_object_item');
   assert.equal(projN6.partB.competencyItems[0].presentationTitle, undefined);
   assert.equal(projN6.partB.competencyItems[0].presentationDescription, undefined);
 
-  // b7 COMP_LEAD and b8 COMP_STRAT canonical presentationTitle & presentationDescription
+  // 13. b1..6 Employee-Self caller-supplied presentationTitle/presentationDescription are not newly exposed
+  const items6WithSneakyPresentation = [
+    { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4', presentationTitle: 'Unexposed Title 1', presentationDescription: 'Unexposed Desc 1' },
+    ...items6.slice(1)
+  ];
+  const projSelfN6 = MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items6WithSneakyPresentation, exportContext: selfContext });
+  assert.equal(projSelfN6.partB.competencyItems[0].presentationTitle, undefined, 'b1..6 caller-supplied presentationTitle must not be exposed for Employee-Self');
+  assert.equal(projSelfN6.partB.competencyItems[0].presentationDescription, undefined, 'b1..6 caller-supplied presentationDescription must not be exposed for Employee-Self');
+
+  // b7 exact COMP_LEAD and b8 exact COMP_STRAT
   const items8 = [
     ...items6,
-    { code: 'COMP_LEAD', description: 'Exact Leadership Criteria Text', title: 'Conflicting Title 7', name: 'Conflicting Name 7', selfRating: '5' },
-    { code: 'COMP_STRAT', description: 'Exact Strategy Criteria Text', title: 'Conflicting Title 8', competencyName: 'Conflicting Name 8', selfRating: '5' }
+    { code: 'COMP_LEAD', description: 'Exact Leadership Criteria Text', title: 'Conflicting Title 7', name: 'Conflicting Name 7', selfRating: '5', managerRating: '5' },
+    { code: 'COMP_STRAT', description: 'Exact Strategy Criteria Text', title: 'Conflicting Title 8', competencyName: 'Conflicting Name 8', selfRating: '5', managerRating: '5' }
   ];
 
+  // 1, 2, 3, 15. Approver b7/b8 gets canonical presentation title/description and full evaluation data
   const projN8 = MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items8, exportContext: approverContext });
   assert.equal(projN8.partB.competencyItems.length, 8);
 
@@ -294,70 +315,78 @@ test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION: b7/b8 presentation title 
   assert.equal(comp7.code, 'COMP_LEAD');
   assert.equal(comp7.presentationTitle, '7. Leadership & People Management');
   assert.equal(comp7.presentationDescription, 'Exact Leadership Criteria Text');
+  assert.equal(comp7.managerRating, '5');
 
   const comp8 = projN8.partB.competencyItems[7];
   assert.equal(comp8.code, 'COMP_STRAT');
   assert.equal(comp8.presentationTitle, '8. Strategy & Coaching');
   assert.equal(comp8.presentationDescription, 'Exact Strategy Criteria Text');
+  assert.equal(comp8.managerRating, '5');
 
-  // Conflicting title/name/competencyName does NOT override code-derived title
+  // 4. Conflicting aliases (name, title, competencyName) cannot override canonical title
   assert.notEqual(comp7.presentationTitle, 'Conflicting Title 7');
   assert.notEqual(comp8.presentationTitle, 'Conflicting Title 8');
 
-  // Employee-Self vs Approver presentation fields
+  // 14. Employee-Self b7/b8 receives computed canonical presentation and strips evaluator data (managerRating)
   const projSelfN8 = MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items8, exportContext: selfContext });
   const comp7Self = projSelfN8.partB.competencyItems[6];
   assert.equal(comp7Self.presentationTitle, '7. Leadership & People Management');
   assert.equal(comp7Self.presentationDescription, 'Exact Leadership Criteria Text');
+  assert.equal(comp7Self.managerRating, undefined, 'managerRating must be omitted for Employee-Self');
   assert.equal(projSelfN8.finalResult, undefined, 'Final result omitted for Employee-Self');
 
-  // b7 wrong/missing code fails closed
-  const items7WrongCode = [
-    ...items6,
-    { code: 'WRONG_CODE', description: 'Some description', selfRating: '5' }
-  ];
+  // 5 & 6. b7 missing code / wrong code fails closed
   assert.throws(
-    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items7WrongCode, exportContext: approverContext }),
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { description: 'Desc 7' }], exportContext: approverContext }),
     /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
   );
 
-  const items7MissingCode = [
-    ...items6,
-    { description: 'Some description', selfRating: '5' }
-  ];
   assert.throws(
-    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items7MissingCode, exportContext: approverContext }),
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'WRONG_CODE', description: 'Desc 7' }], exportContext: approverContext }),
     /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
   );
 
-  // b8 wrong/missing code fails closed
-  const items8WrongCode = [
-    ...items6,
-    { code: 'COMP_LEAD', description: 'Desc 7', selfRating: '5' },
-    { code: 'WRONG_CODE', description: 'Desc 8', selfRating: '5' }
-  ];
+  // 7 & 8. b8 missing code / wrong code fails closed
   assert.throws(
-    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items8WrongCode, exportContext: approverContext }),
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: 'Desc 7' }, { description: 'Desc 8' }], exportContext: approverContext }),
     /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
   );
 
-  // b7/b8 missing or blank description fails closed
-  const items7BlankDesc = [
-    ...items6,
-    { code: 'COMP_LEAD', description: '  ', selfRating: '5' }
-  ];
   assert.throws(
-    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items7BlankDesc, exportContext: approverContext }),
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: 'Desc 7' }, { code: 'WRONG_CODE', description: 'Desc 8' }], exportContext: approverContext }),
     /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
   );
 
-  const items8MissingDesc = [
-    ...items6,
-    { code: 'COMP_LEAD', description: 'Desc 7', selfRating: '5' },
-    { code: 'COMP_STRAT', selfRating: '5' }
-  ];
+  // 9. Lowercase code variants fail closed
   assert.throws(
-    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: items8MissingDesc, exportContext: approverContext }),
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'comp_lead', description: 'Desc 7' }], exportContext: approverContext }),
+    /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
+  );
+
+  assert.throws(
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: 'Desc 7' }, { code: 'comp_strat', description: 'Desc 8' }], exportContext: approverContext }),
+    /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
+  );
+
+  // 10. Whitespace code variants fail closed
+  assert.throws(
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: ' COMP_LEAD', description: 'Desc 7' }], exportContext: approverContext }),
+    /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
+  );
+
+  assert.throws(
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: 'Desc 7' }, { code: 'COMP_STRAT ', description: 'Desc 8' }], exportContext: approverContext }),
+    /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
+  );
+
+  // 11. Missing or blank b7/b8 description fails closed
+  assert.throws(
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: '  ' }], exportContext: approverContext }),
+    /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
+  );
+
+  assert.throws(
+    () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: 'Desc 7' }, { code: 'COMP_STRAT', description: '' }], exportContext: approverContext }),
     /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
   );
 });
