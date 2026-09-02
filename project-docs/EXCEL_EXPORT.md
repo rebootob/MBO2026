@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R3-R29 SOURCE PASS + PROOF CORRECTIVE / R3-R30 TEST-ONLY PROPOSED**  
+> Status: **IN PROGRESS / PRESERVATION PASS-CLOSED / REFERENCE-IMAGE CLOSURE NEXT**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -31,6 +31,8 @@ Original employee-bearing binaries remain ignored/not publishable.
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
+D2-WP003-R3-R30 = PASS / CLOSED
+D2_PRESERVATION_GATE = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -44,41 +46,50 @@ Raw `getNoOpParityBuffers()` remains direct unrepaired `xlsx-populate.outputAsyn
 Part A: `MBO Staff & Chief`, A1:BL52, print A1:BJ52, A3 landscape, scale 58%, 193 merges, no legacy formulas.  
 Part B: `(Part B) Competency`, `Sheet1`, main A1:X35, A4 portrait, scale 75%, protected, 79 main-sheet merges, six blocks expandable to eight, `Sheet1` has no print area, no legacy formulas.
 
-## 4. R3-R29 independent review
+## 4. Preservation closure — R3-R30
 
 ```text
-AUTHORIZATION_COMMIT = 1ff838f6f10e846cdd00925d62b444946b35445b
-IMPLEMENTATION_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
+AUTHORIZATION_COMMIT = 985ddbd1d99d629d54fa7d76fba94a679f08dc59
+IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = PASS
-PROOF_REVIEW = FAIL / INCOMPLETE REGRESSION RESTORE
-STATUS = NOT PASS / NOT CLOSED
+R3-R29_SOURCE_BASELINE = PASS / FROZEN
+PROOF_CODE_REVIEW = PASS
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+R3-R30_STATUS = PASS / CLOSED
+PRESERVATION_GATE = PASS / CLOSED
+PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Source is accepted for this gate: worksheet occurrence semantics corrected; pure structural preservation helper is used by production; persistent Option B write-back, XML gap inventory, strict source SHA/relationship tuple and frozen no-op path remain.
+Preservation closure retains:
+- exact owner-template SHA identity;
+- strict relationship Type/ID/raw-Target tuple identity;
+- target lexical fail-closed rules;
+- coverage/gap XML inventory;
+- worksheet singleton/repeatable semantics;
+- pure dimension/sequence/boundary structural validation used by production;
+- persistent Option B normalization only for exact Part B `Sheet1` drift;
+- direct raw A/B preservation path;
+- source/raw input byte immutability;
+- exact per-sheet print-area and Part B `Sheet1.colsHash` regression proof;
+- accepted header-fingerprint and typed-privacy regression matrices.
 
-Proof now includes Unicode QName negatives, pure dimension/boundary tests, exact per-sheet print-area binding, Part B `Sheet1.colsHash` negative, relationship mapping/TargetMode regressions and accepted header fingerprint negatives.
+R3-R30 completed missing proof for duplicate/extra/moved/other-sheet/Part-A `sheetPr`, distinct counterfeit worksheet-like Type URI, and array/fractional/non-number typed-privacy cases. No production source changed.
 
-Remaining proof-only gaps:
-- duplicate/extra Option B `sheetPr` rejection;
-- effective preservation rejection for moved/other-sheet/Part-A observed-only `sheetPr`;
-- distinct counterfeit worksheet-like Type URI negative;
-- typed-privacy negatives for array typeCounts, fractional count and non-number count;
-- no independent CI/runtime signal.
-
-## 5. Proposed R3-R30 — NOT AUTHORIZED
+## 5. Current next gate
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R30
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
+PREFERRED_EXECUTION = CHATGPT CONTROL-PLANE READ-ONLY REVIEW FIRST
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 ```
 
-No production source change is proposed. Restore the missing accepted tests from Git history and add the missing Option B preservation-level negatives only.
+Existing source/tests already contain reference-image handling. Review repository truth first; use Antigravity only if an actual implementation gap is proven.
 
-## 6. Remaining D2 path after preservation closes
+## 6. Remaining D2 path
 
 1. reference-image closure;
 2. Part A objective insertion matrix;
