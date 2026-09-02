@@ -16,7 +16,7 @@ Normal D2 continuation/review order:
 4. exact authorization→implementation diff;
 5. exact changed source/test files only as needed.
 
-Do not re-read closed-gate internals unless the current diff touches them or concrete regression evidence exists.
+Do not re-read closed-gate internals unless current changes touch them or concrete regression evidence exists.
 
 ## 1. Owner objective / controls
 
@@ -31,7 +31,7 @@ CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
-Previous standing review window is exhausted / DO NOT REUSE. R7 is a separate one-shot Owner authorization only.
+Previous standing review window remains exhausted / DO NOT REUSE. Owner `review` instructions are one-off reviews only unless a new standing cycle is explicitly created.
 
 ## 2. D1–D7 scoreboard
 
@@ -60,69 +60,80 @@ Durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-Frozen authority includes real Part A 4..10 matrix, real Part B 6/7/8 matrix, exact layout/preservation controls, and production formula inventory requirement = 0.
-
-## 4. Active gate — R7 Part B Expanded Privacy Remap
+## 4. Latest independent review — R7
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R7
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
-MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO FILES
+R7_IMPLEMENTATION_COMMIT = 993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6
+R7_SCOPE_REVIEW = PASS
+R7_SOURCE_REVIEW = CORRECTIVE REQUIRED
+R7_PROOF_CODE_REVIEW = CORRECTIVE REQUIRED
+R7_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R7_STATUS = CORRECTIVE REQUIRED
+D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+```
+
+Accepted/frozen from R7:
+- one-shot scope discipline: exactly the two authorized feasibility source/test files;
+- count supports only 6/7/8;
+- summary relocation intent remains 31:34 / 35:38 / 39:42;
+- real `getStructuralPartBBuffers()` path is used;
+- typed metadata API is extended count-aware;
+- formula-zero proof is retained.
+
+Corrective defects to close:
+1. **row-30 clone semantics** — source row 30 is not a rating row. R7 incorrectly promotes row 30 for N=7/8, and also first cloned padding row 34 for N=8, into K:X dynamic rating addresses;
+2. **expanded structural-role fail-closed** — N=7/8 observed style/merge/type/nonblank evidence is not compared against the corresponding source-row authority before classification;
+3. **expanded package token purge proof** — R7 clears cells and proves blank/formula-zero, but does not prove synthetic sensitive tokens are absent from worksheet/sharedStrings/package evidence for N=7/8.
+
+Correct dynamic-address cardinality derived from the accepted source-6 authority is:
+```text
+N=6 = 432
+N=7 = 474
+N=8 = 516
+```
+Each inserted competency block adds only the three dynamic source rows 27:29 = `3 * 14 = 42` dynamic rating addresses. Source row 30 / each row-30 clone remains non-dynamic.
+
+## 5. Proposed corrective — R7-R1
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R1
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / EXACT TWO EXISTING FILES
 FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
         tests/mbo-xlsx-ooxml-feasibility.test.js
 ```
 
-R7 target:
-- preserve exact N=6 privacy behavior;
-- support only N=6/7/8 and fail closed otherwise;
-- use real `getStructuralPartBBuffers()` outputs;
-- derive each inserted 4-row block's roles from source rows 27:30 semantics, including static-vs-dynamic distinctions;
-- N=7 summary/signature => rows 35:38;
-- N=8 summary/signature => rows 39:42;
-- no stale summary classification at rows 31:34 in expanded variants;
-- protected cloned static competency text must never be cleared;
-- exact dynamic-address inventory must be unique/non-conflicting;
-- count-aware sanitization must purge sensitive tokens from worksheet/sharedStrings/package evidence;
-- typed privacy metadata must exactly match the count-aware dynamic inventory;
-- structural/role ambiguity must fail closed.
+R7-R1 must ONLY:
+- replace the contiguous expanded rating-row assumption with exact source-row role mapping;
+- prove source row 30 and every cloned row-30 padding row are non-dynamic;
+- enforce N=6/7/8 structural-role evidence against source-backed row/merge/style/type/nonblank authority before classification;
+- add negative structural-role mismatch proof for expanded variants;
+- add feasibility-only count-aware sanitization/token-purge proof that scans relevant `xl/*.xml` / `.rels` / sharedStrings package evidence using privacy-safe synthetic tokens;
+- retain all accepted R7/frozen D2 proof.
 
-Production renderer is explicitly NOT part of R7.
+Do not redesign structural insertion and do not create Production Renderer in R7-R1.
 
-## 5. Current authorization/safety state
+## 6. Current executor / safety state
 
 ```text
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / STOP AFTER ONE PUSH+REPORT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-## 6. Remaining D2 after R7
+## 7. Remaining D2 after privacy closure
 
-1. production XLSX renderer/sanitizer;
-2. combined Excel parity;
-3. PDF parity;
-4. export authorization/security/privacy regression;
-5. final independent D2 closure;
-6. only then may D3 leave HOLD.
-
-## 7. Fast review checklist
-
-When Owner says `review` after R7 push:
-1. fresh-fetch HEAD;
-2. read this file + `AI_ACTIVE_TASK.md`;
-3. confirm authorization commit/token/files;
-4. compare authorization→implementation;
-5. require exactly one bounded implementation/blocker commit and only two authorized files;
-6. inspect changed privacy code/test plus directly touched frozen Part B contract;
-7. verify N=6 behavior and accepted structural/formula proof were not weakened;
-8. verify N=7/8 role relocation/static protection/fail-closed behavior;
-9. check GitHub status/workflow runs; no signal => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
-10. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
-11. do not auto-start Production Renderer.
+1. close R7-R1 expanded Part B privacy remap;
+2. Production XLSX renderer/sanitizer;
+3. Combined Excel parity;
+4. PDF parity;
+5. Export authorization/security/privacy regression;
+6. Final independent D2 closure;
+7. only then may D3 leave HOLD.
