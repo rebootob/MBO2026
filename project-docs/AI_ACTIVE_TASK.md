@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — D2-WP004-R2-PRE2-R3-R2 NEEDS CORRECTIVE
+# AI ACTIVE TASK — D2-WP004-R2-PRE2-R3-R3 CORRECTIVE AUTHORIZED
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO RENDERER AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / ANTIGRAVITY BOUNDED ONE-SHOT / OOXML-FEASIBILITY+TEST CORRECTIVE ONLY / LOW-CREDIT / NO RENDERER AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> exact PRE2-R3/R3-R1/R3-R2 feasibility diffs only.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> exact PRE2-R3/R3-R1/R3-R2 diffs -> only the two authorized files.
 
 ## 1. Current truth
 
@@ -36,83 +36,63 @@ UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-PRE2-R3-R3
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-PRE2-R3-R3-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-PRE2-R3-R3-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED CORRECTIVE / ONE COMMIT -> PUSH -> STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. PRE2-R3-R2 independent review authority
+Owner authorization phrase:
+`อนุมัติ D2-WP004-R2-PRE2-R3-R3 OOXML-FEASIBILITY+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+
+Authorization token:
+`D2-WP004-R2-PRE2-R3-R3-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01`
+
+Authorization basis HEAD:
+`6fde029df846ee9526be7ce08816511f4572efea`
+
+## 2. Accepted R3/R3-R1/R3-R2 truth — MUST NOT REGRESS
 
 ```text
-AUTHORIZATION_COMMIT = bc429a140080d4bdab7fdf823e4f7a63fe896f97
-IMPLEMENTATION_COMMIT = 298f480ad3f2257327dbea82c3bc3bcd41054b60
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES =
-  scripts/export/mbo-xlsx-ooxml-feasibility.js
-  tests/mbo-xlsx-ooxml-feasibility.test.js
-SCOPE_REVIEW = PASS
-CONTENT_REVIEW = NEEDS CORRECTIVE
-TOKEN = CONSUMED / DO NOT REUSE
-GITHUB_RUNTIME_SIGNAL = UNAVAILABLE / NO STATUS / NO WORKFLOW RUN
+INTERMEDIATE_MERGES = N6 79 / N7 85 / N8 91
+FINAL_MERGES = N6 79 / N7 86 / N8 93
+BASE_PRIVACY = N6 432 / N7 474 / N8 516
+EFFECTIVE_PRIVACY = N6 432 / N7 492 / N8 552
+DIMENSIONS = A1:X35 / A1:X39 / A1:X43
+SUMMARY_START = N6 31 / N7 35 / N8 39 / OBSERVED FROM FINAL OUTPUT
+TITLE_MERGES = B31:J31 / B35:J35
+DESCRIPTION_MERGES = B32:J32 / B36:J36
+RATING_SCALE = B33:J33 / B37:J37 / STATIC
+PADDING = rows 30 / 34 / 38 / PROTECTED
+FORMULA_INVENTORY = 0
 ```
 
-Accepted R3-R2 improvements that pass review and must not regress:
-- `validateExpandedPresentationOverlayPartB()` is now a bounded production feasibility validator and is called by the positive `getExpandedPresentationPartBBuffers()` pipeline;
-- final summary start row is mechanically observed from final workbook text/topology rather than recorded from a hardcoded expected row;
-- positive-path final merge counts remain 79/86/93;
-- effective privacy counts remain 432/492/552;
-- Rating Scale and padding protection remain in the production validator path;
-- relationship tuples, media inventory and auxiliary Sheet1 preservation remain production-validator checked against structural input;
-- source bytes/formula-zero/accepted dimensions/Print_Area remain preserved by the positive path.
+Accepted improvements that must remain:
+- `validateExpandedPresentationOverlayPartB()` is a bounded production feasibility validator and is called by the positive pipeline;
+- final summary row is mechanically observed from final workbook evidence;
+- relationship tuples/media inventory/auxiliary Sheet1 preservation are checked against structural input;
+- source bytes remain immutable;
+- dimensions and Print_Area remain exact accepted values;
+- no Production Renderer, semantic writer, scoring or recalculation logic exists here.
 
-## 3. Remaining material blockers
-
-### A. Dynamic overlay negative proof is still missing
-The authorized R3-R2 contract required real malformed evidence for:
-- unauthorized presentation dynamic address;
-- wrong effective dynamic count.
-
-The R3-R2 negative matrix does not include either case. Current tests cover title/description content, Rating Scale, padding, merge range/count, summary, relationships, media and Sheet1, but they do not exercise malformed dynamic-address evidence against the production privacy/overlay validator.
-
-Corrective requirement:
-- add the smallest bounded production helper/validation seam only if necessary;
-- malformed dynamic evidence must be passed to the same production validation logic used by the positive path;
-- prove an extra/unauthorized dynamic presentation address rejects;
-- prove an incorrect effective dynamic count derived from malformed real evidence rejects;
-- no fake local count plus direct test throw.
-
-### B. Stale title/description negative cases do not prove the intended pre-sanitize guards
-The R3-R2 tests mutate `rawB7` structural buffers and then call the final-overlay validator.
-
-However N7 structural input has intermediate merge count 85 while the final-overlay validator requires 86. Therefore those tests can reject on final merge-count mismatch before reaching any stale title/description condition.
-
-This does not mechanically prove that the production pre-sanitize title/description guards themselves fail closed.
-
-Corrective requirement:
-- extract/reuse a bounded pre-sanitize presentation-state validator/helper used by the actual positive pipeline before blanking;
-- it must validate B31/B35 blank state, B32/B36 exact stale description, and B33/B37 Rating Scale state as applicable;
-- the positive pipeline must call this helper before sanitization;
-- negative tests must mutate real structural buffers and call the same helper;
-- prove title mutation fails for the title reason and stale-description mutation fails for the stale-description reason before any final-overlay merge-count validation;
-- no test-only backdoor.
-
-## 4. Proposed smallest corrective — NOT AUTHORIZED
+## 3. AUTHORIZED WORK PACKAGE — D2-WP004-R2-PRE2-R3-R3
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE2-R3-R3
+WORK_PACKAGE = D2-WP004-R2-PRE2-R3-R3
 NAME = PART B PRESENTATION PRE-SANITIZE + DYNAMIC-OVERLAY PROOF CORRECTIVE
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = OOXML-FEASIBILITY+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION = D2-WP004-R2-PRE2-R3-R3-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01
+STATE = AUTHORIZED / ACTIVE
+MODE = OOXML-FEASIBILITY+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+
 WRITABLE_FILES =
   scripts/export/mbo-xlsx-ooxml-feasibility.js
   tests/mbo-xlsx-ooxml-feasibility.test.js
@@ -129,27 +109,143 @@ DEPLOY = FORBIDDEN
 D3 = HOLD
 ```
 
-Exact R3-R3 objective:
-1. introduce/reuse one bounded production pre-sanitize validator used by the real positive pipeline;
-2. prove mutated B31/B35 and B32/B36 structural evidence fails that validator before sanitization;
-3. add real malformed dynamic-overlay evidence proving unauthorized dynamic address and wrong effective dynamic count fail production validation;
-4. preserve all accepted R3/R3-R1/R3-R2 positive invariants;
-5. exactly one corrective commit -> push -> report -> STOP;
-6. do not implement Production Renderer.
+No other file may be edited.
 
-Recommended Owner phrase:
-`อนุมัติ D2-WP004-R2-PRE2-R3-R3 OOXML-FEASIBILITY+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+## 4. Exact corrective contract
 
-## 5. Authorization ledger
+Correct ONLY the two remaining proof blockers. Do not redesign or broaden scope.
+
+### A. Production pre-sanitize presentation-state validator
+Create/reuse one bounded production helper used by the real positive pipeline BEFORE any blanking/sanitization.
+
+It must validate real structural buffer/workbook state for:
+
+```text
+N7:
+  B31 = exact expected blank/no-value title target
+  B32 = exact expected competency-6 stale description
+  B33 = exact Rating Scale static text
+
+N8:
+  B31 = exact expected blank/no-value title target
+  B32 = exact expected competency-6 stale description
+  B35 = exact expected blank/no-value title target
+  B36 = exact expected competency-6 stale description
+  B33 = exact Rating Scale static text
+  B37 = exact Rating Scale static text
+```
+
+Requirements:
+- positive `getExpandedPresentationPartBBuffers()` must call this helper before sanitization;
+- unexpected title/stale description/Rating Scale state must fail closed before mutation;
+- negative tests must mutate real structural evidence and invoke the same production helper;
+- tests must prove the intended blocker reason/path, not merely any later final-overlay failure;
+- no test-only backdoor.
+
+### B. Dynamic-overlay production validation seam
+The current final validator derives dynamic addresses internally from workbook/privacy topology. Add the smallest bounded production validation seam/helper needed to validate the resulting real dynamic-address evidence.
+
+It must prove for each N:
+- exact effective dynamic count;
+- exact authorized expanded presentation dynamic set only;
+- no unauthorized presentation dynamic address;
+- Rating Scale and padding remain non-dynamic;
+- Chief R:X authority is not broadened.
+
+Authorized presentation additions are exactly:
+
+```text
+N6: none
+N7: B31:J32
+N8: B31:J32 + B35:J36
+```
+
+Required effective counts remain:
+
+```text
+N6 = 432
+N7 = 492
+N8 = 552
+```
+
+Negative tests must use malformed real/in-memory dynamic evidence passed into the same production validator/helper:
+1. add one unauthorized dynamic presentation address -> reject;
+2. remove/add address so count is wrong -> reject;
+3. mark Rating Scale or padding dynamic -> reject;
+4. no fake local count plus direct test throw.
+
+The positive final-overlay validator must use this same validation logic.
+
+### C. Preserve final-overlay validator behavior
+Do not regress existing production-validator checks for:
+- final merge set/count;
+- observed final summary topology;
+- Rating Scale/padding static state;
+- relationship/media/reference-image/Sheet1 preservation;
+- sanitized final presentation targets.
+
+## 5. Required focused tests
+
+Modify only `tests/mbo-xlsx-ooxml-feasibility.test.js` and prove at minimum:
+
+1. existing relevant positive tests still pass;
+2. positive pipeline calls pre-sanitize validator before blanking;
+3. real structural N7 title mutation B31 fails pre-sanitize validator for title-state reason;
+4. real structural N8 title mutation B35 fails pre-sanitize validator;
+5. real structural N7 stale description mutation B32 fails pre-sanitize validator;
+6. real structural N8 stale description mutation B36 fails pre-sanitize validator;
+7. Rating Scale mutation B33/B37 fails pre-sanitize validator;
+8. positive dynamic evidence validates exact counts 432/492/552;
+9. unauthorized dynamic presentation address fails production dynamic validator;
+10. wrong dynamic count from malformed real/in-memory dynamic evidence fails;
+11. Rating Scale dynamic mutation fails;
+12. padding dynamic mutation fails;
+13. existing merge-range/count negatives still call production validator;
+14. existing summary/package/media/Sheet1 negatives still call production validator;
+15. final merges remain 79/86/93;
+16. dimensions and Print_Area remain exact;
+17. source bytes immutable;
+18. formula inventory zero.
+
+Forbidden proof pattern:
+```text
+const fakeX = ...
+if (fakeX !== expected) throw new Error(expectedBlocker)
+```
+when the throw is not emitted by the production feasibility validator/helper under test.
+
+Run focused:
+`tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+## 6. Executor protocol
+
+```text
+fresh-fetch authorization HEAD
+-> verify branch ai/antigravity-wp002c
+-> read fast-start + this file + PRE2 design + exact R3/R3-R1/R3-R2 diffs
+-> modify only the two authorized files
+-> implement minimum corrective
+-> run focused OOXML feasibility tests
+-> verify git diff contains only the two authorized files
+-> commit exactly once
+-> push ai/antigravity-wp002c
+-> report commit SHA + exact changed files + test command/result
+-> STOP
+```
+
+Antigravity must NOT self-declare PASS/CLOSED.
+Final executor status:
+`CORRECTIVE PRE-SANITIZE + DYNAMIC PROOF COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`.
+
+## 7. Authorization ledger
 
 ```text
 D2-WP004-R2-PRE2-R3-OOXML-FEASIBILITY-TEST-20260902-01 = CONSUMED / NEEDS CORRECTIVE / DO NOT REUSE
 D2-WP004-R2-PRE2-R3-R1-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01 = CONSUMED / NEEDS CORRECTIVE / DO NOT REUSE
 D2-WP004-R2-PRE2-R3-R2-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01 = CONSUMED / NEEDS CORRECTIVE / DO NOT REUSE
-D2-WP004-R2-PRE2-R3-R3 = PROPOSED / NOT AUTHORIZED
-NEXT_EXECUTOR = OWNER / CHATGPT CONTROL PLANE
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE PRE2-R3-R3
-ANTIGRAVITY = STOP / WAIT OWNER
+D2-WP004-R2-PRE2-R3-R3-OOXML-FEASIBILITY-TEST-CORRECTIVE-20260902-01 = ACTIVE / ONE-SHOT / CONSUME ON ONE CORRECTIVE COMMIT
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE PRE2-R3-R3 EXACTLY, PUSH, REPORT, STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
