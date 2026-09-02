@@ -1,21 +1,17 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R7 PRIVACY REMAP AUTHORIZED**  
+> Status: **IN PROGRESS / R7 PRIVACY REMAP CORRECTIVE**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
-## 0. Fast review entry
+Fast review: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
 
-Read `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
+## Objective
 
-## 1. Objective
+Deliver Excel/PDF preserving approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries. `COMPLETE D2 FULLY BEFORE D3.`
 
-Deliver Excel/PDF outputs preserving approved legacy PMS presentation while using current App794/configuration truth and D1 security/privacy boundaries.
-
-`COMPLETE D2 FULLY BEFORE D3.`
-
-## 2. Frozen authority
+## Frozen authority
 
 ```text
 LEGACY TEMPLATE = VISUAL / LAYOUT AUTHORITY
@@ -37,39 +33,49 @@ Durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-## 3. Active R7 — expanded Part B privacy remap
+## Part B privacy remap status
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R7
-R7_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-R7_AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = ACTIVE R7 CLOSURE TARGET
+R7_IMPLEMENTATION_COMMIT = 993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6
+R7_STATUS = CORRECTIVE REQUIRED
+D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / DO NOT REUSE
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R1
+R7-R1_STATE = PROPOSED / NOT AUTHORIZED
 ```
 
-Writable only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Frozen structural layout:
+- N=6 => summary/signature 31:34;
+- N=7 => inserted block 31:34, summary/signature 35:38;
+- N=8 => inserted blocks 31:38, summary/signature 39:42;
+- clone authority = source rows 27:30.
 
-Frozen structural layout facts:
-- N=6 => summary/signature rows 31:34;
-- N=7 => inserted block rows 31:34; summary/signature rows 35:38;
-- N=8 => inserted blocks rows 31:38; summary/signature rows 39:42.
+Correct privacy semantics:
+- source dynamic competency rating rows are 7:29; source row 30 is not a rating row;
+- each inserted block maps source rows 27:29 as dynamic rating rows and source row 30 as non-dynamic padding/static;
+- dynamic inventory cardinality = 432 / 474 / 516 for N=6/7/8.
 
-R7 must preserve source-6 privacy behavior; derive inserted block role semantics from source rows 27:30; protect cloned static competency text; sanitize exact count-aware dynamic cells only; eliminate stale source-6 summary classification from expanded variants; use real structural buffers; and fail closed on unsupported count or structural-role mismatch.
+R7-R1 must close only:
+1. row30/clone padding role regression;
+2. source-backed fail-closed structural-role validation for N7/N8;
+3. expanded worksheet/sharedStrings/package synthetic token-purge proof.
 
-R7 must also prove sensitive-token purge and typed privacy metadata against the exact count-aware inventory.
+Production renderer, `MboExportService`, dependency changes, generated binaries, Kintone/deploy/Live UAT/D3 remain out of scope.
 
-## 4. Explicit R7 exclusions
+## Remaining D2
 
-No Production XLSX renderer yet. No `MboExportService` change. No dependency/package-lock change. No generated XLSX/PDF/image/evidence binary. No Kintone/deploy/ACL/process/Live UAT/D3.
+1. close R7-R1 privacy remap;
+2. Production XLSX renderer/sanitizer;
+3. Combined Excel parity;
+4. PDF parity;
+5. Export authorization/security/privacy regression;
+6. Final independent D2 closure.
 
-## 5. Remaining D2 after R7
-
-1. production XLSX renderer/sanitizer using secured projection + frozen structural/privacy/formula contracts;
-2. combined Excel parity;
-3. PDF parity;
-4. export authorization/security/privacy regression;
-5. final independent D2 closure.
-
-Antigravity is authorized for R7 one-shot only and must stop after one bounded implementation/blocker push+report.
+```text
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP
+D3 = HOLD
+```
