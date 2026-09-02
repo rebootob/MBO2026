@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4 CORRECTIVE REQUIRED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4-R1 TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -54,35 +54,27 @@ R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted progress:
-- real feasibility source helper now exposes all objective counts 4–10;
-- exact Part A SHA gate retained;
-- exact dimension/print-area progression proven;
-- complete computed merge inventory is deep-compared, not count-only;
-- inserted/downstream row cell-ref/style/row-height mappings are asserted;
-- sentinel relocation, relationship/media preservation and formula-empty proof are present.
+Accepted R4 source/proof progress remains frozen. Existing fingerprint helpers already expose the missing invariant fields.
 
-Remaining TEST-ONLY proof gaps:
-- exact `rowRefs` sequence and uniqueness are not asserted, so row-loss/duplication/old-row absence is not fully closed;
-- `sheetStates` is not asserted;
-- hidden gridline, fit-to-page, page-margin and remaining non-target per-sheet setup invariants are not asserted against the 4-objective baseline.
-
-The R4 source implementation is frozen for the corrective. Existing fingerprint helpers already expose the missing fields.
-
-## 5. Proposed R4-R1 — NOT AUTHORIZED
+## 5. R4-R1 TEST-ONLY authorization
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
-PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
+ACTIVE_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = 5f22caf6ffc9d539ce0df0c23663dd934385d923
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
 ```
 
-R4-R1 must retain all accepted R4 matrix assertions and only add the missing exact structural invariant proof. No source change is proposed.
+R4-R1 must retain the full accepted 4–10 matrix and add only:
+- exact `rowRefs` expected sequence;
+- `rowRefs` uniqueness/no unexpected rows;
+- exact `sheetStates` equality;
+- exact equality of main-sheet `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels` against the 4-objective baseline.
+
+No source, Part B, preservation/reference-image, renderer, Kintone, deploy, evidence or D3 work is authorized.
 
 ## 6. Remaining D2 path after Part A closure
 
