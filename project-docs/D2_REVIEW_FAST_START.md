@@ -56,15 +56,16 @@ Key freeze:
 - Part B self authority K:Q; Chief frozen authority R:X; only self rating has proven secured item path.
 - scoring/recalculation/formulas remain forbidden; production XLSX formula inventory must be zero.
 
-## Proposed next — NOT AUTHORIZED
+## Active source corrective — D2-WP004-R1-R3
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R1-R3
+WORK_PACKAGE = D2-WP004-R1-R3
 NAME = TEMPLATE PROFILE SEMANTIC ALIGNMENT
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-STATE = PROPOSED / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -72,4 +73,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R3, if authorized, must align the existing pure Template Profile to the closed semantic Baseline only. It must not create the Production Renderer or widen semantic authority beyond the 18 accepted `SAFE_TO_MAP` roles.
+R1-R3 must align the existing pure Template Profile to the closed semantic Baseline only. It must expose deterministic writable mappings for exactly the 18 accepted `SAFE_TO_MAP` roles, fail closed for all 22 unresolved and all 5 no-secured-source roles, preserve pure/no-workbook-I/O architecture and structural/privacy/formula Baselines, and STOP before Production Renderer implementation.
