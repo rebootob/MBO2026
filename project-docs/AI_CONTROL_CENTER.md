@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART B R5 CORRECTIVE REQUIRED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART B R5-R1 SOURCE+TEST AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation/Reference-Image/Part A closed; Part B R5 corrective required |
+| D2 | 🟠 IN PROGRESS | Preservation/Reference-Image/Part A closed; Part B R5-R1 authorized corrective |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -42,40 +42,42 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ## 3. R5 review result
 
 ```text
-R5_AUTHORIZATION_COMMIT = f1f0b627f4b612120a27a3467bb6e8713a1f526a
 R5_IMPLEMENTATION_COMMIT = 068e719a7b6c0fee66613619a7aa7ed359960cb5
 R5_SCOPE_REVIEW = PASS
 R5_MATRIX_SOURCE_BEHAVIOR = PASS / FROZEN EXCEPT FAIL-CLOSED BASELINE GUARD
 R5_MATRIX_PROOF = PASS EXCEPT DEFINED-NAME CONTROL
-R5_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 R5_STATUS = CORRECTIVE REQUIRED
 D2_PART_B_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R5 matrix behavior/proof must be retained: real 6/7/8 source path, exact row/block/downstream/sentinel transformation, full merge sets 79/85/91, exact dimensions/print areas, main setup invariants, exact `Sheet1` stability, package relationship/media stability and zero formulas.
+Accepted R5 matrix behavior/proof is frozen: real 6/7/8 source path, exact row/block/downstream/sentinel transformation, full merge sets 79/85/91, exact dimensions/print areas, main setup invariants, exact `Sheet1` stability, package relationship/media stability and zero formulas.
 
-Remaining blockers are bounded:
-- raw owner-template prerequisite guards must prove exact source dimension A1:X35, actual+declared merges 79, exact source-block 6 merges and exact single main Print_Area/localSheetId0 before working-copy mutation;
-- test must prove defined-name stability/binding explicitly.
-
-## 4. Proposed R5-R1 — NOT AUTHORIZED
+## 4. R5-R1 — AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R5-R1
-PROPOSED_SCOPE = SOURCE+TEST / EXACT SAME TWO FEASIBILITY FILES ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R5-R1
+ACTIVE_WORK_PACKAGE_NAME = PART B RAW-BASELINE FAIL-CLOSED + DEFINED-NAME PROOF CLOSURE
+AUTHORIZED_SCOPE = SOURCE+TEST / EXACT SAME TWO FEASIBILITY FILES ONLY
+OWNER_APPROVAL_BASELINE_HEAD = 24d7841af7156f0de2e2aa3c37464b9cb7e81bd2
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R5-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R5-R1-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R5-R1 / ONE-SHOT SOURCE+TEST
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-R5-R1 must only add the missing raw-source fail-closed guards and defined-name proof. Do not redesign accepted matrix logic or touch privacy/sanitization, Part A, preservation/reference-image, renderer, Kintone, deploy, D3 or a next WP.
+Writable only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Corrective is restricted to:
+- raw owner-template fail-closed guards before mutation: exact source dimension, actual+declared merge authority, source-block merge authority, exact single Part B Print_Area/localSheetId0/value and required package structures;
+- explicit defined-name source/6/7/8 proof, including empty `Sheet1` print area and non-print-area defined-name equality.
+
+Do not redesign accepted 6/7/8 matrix logic or touch privacy/sanitization, Part A, preservation/reference-image, renderer, dependencies, Kintone, deploy, D3 or a next WP.
 
 ## 5. Privacy boundary
 
