@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A R4-R1 CORRECTIVE REQUIRED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A R4-R2 TEST-ONLY AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R1 proof corrective required |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R2 TEST-ONLY authorized |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -58,29 +58,30 @@ R4-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R4-R1 correctly adds exact `rowRefs` sequence/uniqueness, `sheetStates`, and baseline equality for the missing per-sheet invariant fields. However it removes the previously accepted absolute R4 assertions `paperSize='8'`, `orientation='landscape'`, `scale='58'` and replaces them only with baseline-relative equality. Because R4-R1 was explicitly required to preserve every accepted R4 matrix assertion, this is a proof regression.
+R4-R1 accepted proof is frozen. Remaining proof regression is only restoration of the absolute authority constants `paperSize='8'`, `orientation='landscape'`, `scale='58'` while retaining baseline-relative equality and every existing R4/R4-R1 assertion.
 
 No source defect is proven. R4 source remains frozen.
 
-## 4. Current gate
+## 4. Current gate — R4-R2 AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
-PROPOSED_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R2
+ACTIVE_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = f566fa300818e53e78342710332573e0294d4c4b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R2 / ONE-SHOT TEST-ONLY
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
+R4-R2 may only add back the three absolute per-count assertions while retaining all current R4/R4-R1 proof. No source modification or next-work-package work is authorized.
+
 ## 5. Low-credit rule
 
-If R4-R2 is authorized, modify only the existing feasibility test file and restore the three absolute R4 assertions while retaining all R4-R1 proof. Do not modify source. No Claude review is needed for this directly proven regression.
+Antigravity may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js`, create exactly one bounded implementation/blocker commit, push, then STOP. No Claude review is needed for this directly proven regression.
