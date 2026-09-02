@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT.
 
-Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/evidence -> exact diff.
 
 ```text
 D1 = PASS / CLOSED
@@ -13,8 +13,8 @@ PART_A_STRUCTURAL = PASS / CLOSED
 PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R1
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R1
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
 ```
@@ -26,12 +26,18 @@ Durable D2 Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-Active corrective:
+Latest Template Profile review:
 ```text
-WORK_PACKAGE = D2-WP004-R1-R1
-AUTHORIZATION = D2-WP004-R1-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 57b77fde38c0ef95f0ac40eb396ec386643adf03
-FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js ONLY
+D2-WP004-R1-R1 = CORRECTIVE REQUIRED
+IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
+PART_B_TOPOLOGY = PASS / FREEZE
+BASIC_MAPPING_INTEGRITY = PASS / FREEZE
+SEMANTIC_AUTHORITY = NOT CLOSED
+TOKEN = CONSUMED / DO NOT REUSE
+PROPOSED_NEXT = D2-WP004-R1-R2 EVIDENCE-ONLY / NOT AUTHORIZED
 ```
 
-Read `AI_ACTIVE_TASK.md` for exact Part B row-role, secured-projection semantic, and mapping-integrity corrective contract. Production Renderer remains NOT AUTHORIZED.
+Proposed evidence destination:
+`project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md`
+
+Read `AI_ACTIVE_TASK.md` for exact evidence questions. Production Renderer remains NOT AUTHORIZED.
