@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / REFERENCE-IMAGE PROOF CORRECTIVE
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R32 TEST-ONLY AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation closed; reference-image source accepted; proof corrective remains |
+| D2 | 🟠 IN PROGRESS | Preservation closed; reference-image source accepted; R3-R32 TEST-ONLY corrective authorized |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -54,27 +54,25 @@ PROOF_REVIEW = FAIL / FAIL-CLOSED INVENTORY COVERAGE INCOMPLETE
 STATUS = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Implementation added target-normalized deep equality for complete intended anchor/relationship/media inventories, but the extractors are not coverage-complete: anchor parsing can silently omit `absoluteAnchor`/alternate-prefix markup; relationship parsing can silently omit prefixed or differently quoted markup; `TargetMode` raw identity is normalized; target normalization is not bound to the complete exact tuple.
-
-GitHub has no independent CI/status/workflow signal for the implementation commit.
+R3-R31 added target-normalized equality, but inventory extraction can still silently omit relevant anchor/relationship variants, normalizes absent `TargetMode`, and removes target relationships without exact full-tuple binding.
 
 ## 4. Current gate
 
 ```text
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R32
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R32
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R32-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R32 / ONE-SHOT
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
 ## 5. Low-credit rule
 
-R3-R32, if authorized, is TEST-ONLY. Do not modify reference-image production source. Use Antigravity for one bounded test correction only; do not invoke Claude unless a later implementation creates material ambiguity.
+R3-R32 is TEST-ONLY. Do not modify reference-image production source. Use Antigravity for one bounded test correction only; do not invoke Claude unless a later implementation creates material ambiguity.
