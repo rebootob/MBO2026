@@ -1,37 +1,26 @@
 # MBO2026 — CHAT HANDOFF
 
-> Canonical continuation handoff.  
-> Updated: 2026-09-02 ICT  
+> Canonical continuation handoff. Updated 2026-09-02 ICT.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
-Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
+Fresh-fetch current HEAD first. For normal D2 continuation/review read `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff/changed files only.
 
-## 1. Fast continuation path
-
-For normal D2 continuation/review:
-1. `project-docs/D2_REVIEW_FAST_START.md`
-2. `project-docs/AI_ACTIVE_TASK.md`
-3. only the directly relevant `CONFIRMED_BASELINE/` file
-4. exact authorization→implementation diff and changed files as needed
-
-## 2. Operating model
+## Operating model
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
 ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
 Antigravity = LOW-CREDIT / BOUNDED execution only when necessary
-Claude = READ-ONLY second reviewer only when materially useful
-NO_FALSE_PASS = YES
-EXECUTOR_CANNOT_SELF_CERTIFY = YES
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
 ```
 
-The previous standing Control Plane review/corrective window is exhausted / DO NOT REUSE. R7 execution is a new one-shot Owner authorization only; it does not silently create another standing review cycle.
+Owner `review` instructions may authorize one independent review; they do not silently create a new standing cycle.
 
-## 3. Current project gate
+## Current project gate
 
 ```text
 D1 = PASS / CLOSED
@@ -41,6 +30,7 @@ D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
 D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
+D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 D4 = IN PROGRESS / NOT ACTIVE
 D5 = IN PROGRESS / NOT ACTIVE
@@ -48,51 +38,39 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-Closed D2 Baselines:
-- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+## Latest R7 review
 
-## 4. Active work package — R7
+Implementation: `993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6`
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R7
-NAME = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
-MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO EXISTING FILES
+R7_SCOPE_REVIEW = PASS
+R7_SOURCE_REVIEW = CORRECTIVE REQUIRED
+R7_PROOF_CODE_REVIEW = CORRECTIVE REQUIRED
+R7_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Writable files only:
-1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Three defects remain:
+1. source row 30 is non-dynamic but R7 promotes row 30 for N=7/8 and row 34 for N=8 into K:X dynamic ratings;
+2. N=7/8 structural role evidence is not fail-closed against source-backed style/merge/type/nonblank authority;
+3. expanded 7/8 proof does not scan worksheet/sharedStrings/package evidence for synthetic sensitive-token purge.
 
-R7 must preserve exact N=6 privacy behavior, make privacy roles/sanitization count-aware for N=7/8 from the frozen rows 27:30 clone semantics, relocate summary/signature roles by exact structural `extraRows`, protect cloned static competency text, use real `getStructuralPartBBuffers()` outputs, and fail closed on unsupported count or structural-role ambiguity.
+Correct dynamic-address counts: N6=432, N7=474, N8=516.
 
-For N=7 summary/signature moves to rows 35:38. For N=8 it moves to rows 39:42. No stale source-6 summary classification may remain at rows 31:34 in expanded layouts.
-
-## 5. Explicit R7 exclusions
-
-R7 does not authorize:
-- Production XLSX renderer;
-- changes to `src/services/mbo-export-service.js`;
-- dependency/package-lock changes;
-- generated XLSX/PDF/image/evidence binaries;
-- Kintone writes/deploy/ACL/process/Live UAT;
-- D3 or any later WP.
-
-## 6. Current executor/safety state
+## Proposed next work package
 
 ```text
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / ONE-SHOT / STOP AFTER PUSH+REPORT
+D2-WP003-R7-R1 = PART B EXPANDED PRIVACY CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / EXACT TWO EXISTING FILES
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
 ```
 
-Exact implementation contract is in `AI_ACTIVE_TASK.md`. After Antigravity pushes exactly one bounded implementation/blocker commit, STOP and return to Owner/ChatGPT for independent review.
+Full corrective contract is in `AI_ACTIVE_TASK.md`. Production Renderer remains out of scope until privacy remap closes.
