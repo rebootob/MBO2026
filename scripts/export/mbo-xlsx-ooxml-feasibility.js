@@ -264,6 +264,14 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
+      if (ev.normalizedType !== authEv.normalizedType) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
+      if (ev.nonblank !== authEv.nonblank) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
       const isClonedRow = r > 30 && r <= 30 + extraRows;
       const expectedMergeRef = relocateMergeRef(authEv.mergeRef, rowOffset, isClonedRow);
       if (ev.mergeRef !== expectedMergeRef) {
@@ -390,14 +398,7 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
 
       if (!isDynamic) {
         if (authEv.valHash && ev.valHash !== authEv.valHash) {
-          if (!([30, 34, 38].includes(r) && cStr === 'B')) {
-            throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-          }
-        }
-        if (ev.normalizedType !== authEv.normalizedType) {
-          if (!([30, 34, 38].includes(r) && cStr === 'B')) {
-            throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-          }
+          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
         }
       }
 
@@ -1903,14 +1904,11 @@ export async function getSanitizedDisposableBuffersPartB(competencyCount = 6, in
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  let bufB = inputBuf;
-  if (!bufB) {
-    const buffersObj = await getStructuralPartBBuffers();
-    bufB = buffersObj.buffers ? buffersObj.buffers[n] : (n === 6 ? buffersObj.bufB6 : (n === 7 ? buffersObj.bufB7 : buffersObj.bufB8));
-  }
+  const buffersObj = await getStructuralPartBBuffers();
+  const untouchedBuf = buffersObj.buffers ? buffersObj.buffers[n] : (n === 6 ? buffersObj.bufB6 : (n === 7 ? buffersObj.bufB7 : buffersObj.bufB8));
+  const resolved = await resolvePartBPrivacyRoles(null, n, untouchedBuf);
 
-  const bufCopy = Buffer.from(bufB);
-  const resolved = await resolvePartBPrivacyRoles(null, n, bufCopy);
+  const bufCopy = Buffer.from(inputBuf || untouchedBuf);
 
   const wbB_orig = await XlsxPopulate.fromDataAsync(bufCopy);
   const sheetB_orig = wbB_orig.sheet(0);

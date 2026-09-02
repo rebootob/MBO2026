@@ -1206,6 +1206,44 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Unsupported competency count 9 MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
+  // Test 5: Dynamic target normalizedType mismatch => blocker
+  const invDynTypeMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invDynTypeMutated['K31'].normalizedType = 'number';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invDynTypeMutated, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Dynamic target normalizedType mismatch MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 6: Dynamic target nonblank mismatch => blocker
+  const invDynNonblankMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invDynNonblankMutated['K31'].nonblank = true;
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invDynNonblankMutated, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Dynamic target nonblank mismatch MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 7: Protected static valHash mismatch => blocker
+  const invStaticHashMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invStaticHashMutated['B7'].valHash = '0000000000000000000000000000000000000000000000000000000000000000';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invStaticHashMutated, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Protected static valHash mismatch MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 8: Protected row30-clone static normalizedType mismatch => blocker
+  const invRow30CloneTypeMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invRow30CloneTypeMutated['B34'].normalizedType = 'string';
+  invRow30CloneTypeMutated['B34'].nonblank = true;
+  invRow30CloneTypeMutated['B34'].valHash = '1111111111111111111111111111111111111111111111111111111111111111';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invRow30CloneTypeMutated, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Protected row30 clone normalizedType mismatch MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
   // --- PART B EXPANDED PRIVACY REMAP MATRIX (6, 7, 8 COMPETENCIES) ---
   for (const n of [6, 7, 8]) {
     const origBufN = partBBuffers.buffers ? partBBuffers.buffers[n] : (n === 6 ? partBBuffers.bufB6 : (n === 7 ? partBBuffers.bufB7 : partBBuffers.bufB8));
