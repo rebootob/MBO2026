@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R34 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -52,23 +52,23 @@ R3-R33_PROOF_REVIEW = FAIL / NCNAME + ATTRIBUTE COVERAGE FAIL-CLOSED INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R33 correctly tightened case-sensitive local-name handling, direct Relationship start-tag attribute extraction, duplicate required-attribute rejection and TargetMode tuple identity. Remaining gap is only TEST-ONLY proof parser strictness: the prefix matcher accepts invalid NCNames and the attribute tokenizer can silently skip malformed/unquoted attributes because it does not prove complete consumption of the start-tag attribute region.
+R3-R33 correctly tightened case-sensitive local-name handling, direct Relationship start-tag attribute extraction, duplicate required-attribute rejection and TargetMode tuple identity. Remaining gap is TEST-ONLY only: NCName validation and complete start-tag attribute-region token coverage.
 
 No production source change is required.
 
-## 5. Current next gate
+## 5. Current gate — R3-R34 AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R34
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R34
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R34-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R34 / ONE-SHOT
 CLAUDE = STOP
 ```
 
-R3-R34 should only make prefix validation genuinely NCName-aware, require complete quoted-attribute token coverage on the Relationship start tag, and preserve all accepted R3-R33 target-normalized equality logic.
+R3-R34 must only make prefix validation genuinely NCName-aware, require complete quoted-attribute token coverage on the direct Relationship start tag, and preserve all accepted R3-R33 target-normalized equality logic.
 
 ## 6. Remaining D2 path
 
@@ -81,3 +81,5 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
+
+Do not auto-start any next step.
