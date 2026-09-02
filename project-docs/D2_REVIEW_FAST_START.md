@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant Baseline -> exact diff.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant Baseline/evidence -> exact diff.
 
 ## Project truth
 ```text
@@ -24,26 +24,34 @@ CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
 ```
 
-## D2-WP004-R1 review
+## Latest independent review — D2-WP004-R1-R1
 ```text
-R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
-R1_SCOPE = PASS
-R1_PURITY_SHA_CARDINALITY = PASS
-R1_SOURCE_PROOF = CORRECTIVE REQUIRED
-R1_TOKEN = CONSUMED / DO NOT REUSE
-R1_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_R1_AUTHORIZATION_COMMIT = d49d33024ec57615e6aba31a7ee4c4f6aa73acec
+R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
+SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED FILES
+PART_B_ROW_ROLE_TOPOLOGY = PASS / FREEZE
+PURE_PROFILE_SHA_COUNT = PASS / FREEZE
+BASIC_MAPPING_INTEGRITY_GUARDS = PASS / FREEZE
+SECURED_SEMANTIC_AUTHORITY = CORRECTIVE REQUIRED
+R1_R1_STATUS = CORRECTIVE REQUIRED
+R1_R1_TOKEN = CONSUMED / DO NOT REUSE
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-## Active corrective — D2-WP004-R1-R1
+Remaining semantic defects:
+1. Department/Section Hoshin both resolve to the same workbook address while current accepted evidence does not prove that shared ownership.
+2. Multiple claimed writable roles have null/no secured projection path, including Part B header-value roles, Part B summary/comment/signature roles, `CHIEF_NAME`, and legacy Part A evaluator aliases.
+3. `validateMappingIntegrity()` does not require a non-null secured projection path for every claimed writable semantic role, so the default profile can validate despite unresolved semantics.
+4. `MboExportService` does not currently project Part B overall-comment/signature fields; profile must not invent them as writable data sources.
+
+## Proposed next — NOT AUTHORIZED
 ```text
-WORK_PACKAGE = D2-WP004-R1-R1
-AUTHORIZATION = D2-WP004-R1-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 57b77fde38c0ef95f0ac40eb396ec386643adf03
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / EXACT TWO FILES
-FILES =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R1
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R2
+NAME = XLSX TEMPLATE SEMANTIC MAPPING EVIDENCE
+MODE = EVIDENCE-ONLY / OWNER-TEMPLATE READ-ONLY / NO SOURCE CHANGE
+EXPECTED_EVIDENCE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -51,9 +59,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Correct only:
-1. Part B exact frozen row-role topology — original rows7:29 K:X dynamic; row30/34/38 protected; N7 inserted rows31:33 dynamic; N8 rows31:33+35:37 dynamic; summary 31:34 / 35:38 / 39:42.
-2. Explicit semantic/projection-path alignment with read-only `MboExportService`; no invented meanings.
-3. Runtime fail-closed mapping-integrity validation for missing/conflicting/invalid/protected-writable mapping.
-
-If exact semantic/address authority is not supported by accepted repository evidence, fail closed/report blocker rather than guess.
+R1-R2 should inspect only exact SHA-approved owner templates and existing read-only projection/evidence, record static label/merge/address semantics without personal data, and explicitly mark unresolved/no-secured-projection roles. Do not change profile source until that evidence is independently reviewed.
