@@ -26,13 +26,14 @@ D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
-R3-R26_IMPLEMENTATION_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
+R3-R27_IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -52,18 +53,19 @@ Read in this order:
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact current feasibility source/tests only if R3-R27 is authorized or under review;
+5. exact current feasibility source/tests when R3-R28 is authorized or under review;
 6. exact SHA-verified owner templates only when explicitly required;
 7. D1/security Baselines only for export authorization/confidentiality review.
 
 Current D2 checkpoint:
 - R3-R22 accepted proof remains frozen;
-- R3-R26 is reviewed BLOCKED and its source authorization is consumed;
-- Owner approved Option B narrow deterministic allowed-drift for exactly one fingerprinted xlsx-populate-generated Part B `Sheet1` `sheetPr`;
-- normalization/removal must occur inside preservation, not in test setup;
-- all other non-dimension drift remains fail-closed;
-- R3-R27 is proposed to implement Option B, close XML-inventory gaps and complete missing proof;
-- R3-R27 is NOT authorized;
+- Owner approved Option B narrow deterministic Part B `Sheet1` `sheetPr` allowed drift;
+- R3-R27 moved Option B into preservation and restored direct raw Part B positive input, but remains CORRECTIVE;
+- normalization is not persisted when observed dimension is already correct;
+- regex-only XML inventory remains fail-open for QName forms outside ASCII classes because no complete direct-child gap consumption is proved;
+- valid R3-R25/R3-R26 negatives regressed again and several source-structure labels still test the SHA gate rather than structural logic;
+- no always-runnable privacy-safe synthetic proof or GitHub CI runtime signal exists;
+- R3-R28 is proposed and NOT authorized;
 - no new Claude review is needed at this gate;
 - D3 remains HOLD.
 
