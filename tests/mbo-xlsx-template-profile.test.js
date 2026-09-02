@@ -20,6 +20,19 @@ import {
   validatePartBCompetencyCount,
   validateTemplateSha,
   validateAddressFormat,
+  PART_A_BASE_OBJECTIVE_COUNT,
+  PART_A_SOURCE_CLONE_ROW,
+  PART_A_DOWNSTREAM_THRESHOLD_ROW,
+  PART_A_MAIN_SHEET_NAME,
+  PART_A_BASE_SENSITIVE_RANGES,
+  PART_B_BASE_COMPETENCY_COUNT,
+  PART_B_SOURCE_CLONE_BLOCK,
+  PART_B_SOURCE_BLOCK_HEIGHT,
+  PART_B_DOWNSTREAM_THRESHOLD_ROW,
+  PART_B_MAIN_SHEET_NAME,
+  PART_B_AUXILIARY_SHEET_NAME,
+  PART_B_BASE_SENSITIVE_RANGES,
+  expandRangeToAddresses,
   MboXlsxTemplateProfile,
   validateMappingIntegrity
 } from '../src/profiles/mbo-xlsx-template-profile.js';
@@ -489,4 +502,74 @@ test('TEMPLATE_PROFILE_PURE_IMPORTS_NO_WORKBOOK_IO: source file imports no fs, K
   assert.equal(/require\(['"]fs['"]\)/.test(sourceCode), false, 'Must not require fs');
   assert.equal(/xlsx-populate/.test(sourceCode), false, 'Must not reference xlsx-populate');
   assert.equal(/kintone/i.test(sourceCode), false, 'Must not reference kintone');
+});
+
+test('TEMPLATE_PROFILE_R2_A_LAYOUT_AND_SANITIZATION_TOPOLOGY: proves Part A and Part B structural/sanitization invariants', () => {
+  const profile = new MboXlsxTemplateProfile();
+
+  // Part A topology for N=4..10
+  for (const n of ACCEPTED_PART_A_OBJECTIVE_COUNTS) {
+    const layoutA = profile.getPartALayoutTopology(n);
+    assert.equal(layoutA.objectiveCount, n);
+    assert.equal(layoutA.mainSheetName, 'MBO Staff & Chief');
+    assert.equal(layoutA.baseObjectiveCount, 4);
+    assert.equal(layoutA.sourceCloneRow, 28);
+    assert.equal(layoutA.downstreamThresholdRow, 29);
+    assert.equal(layoutA.extraRows, n - 4);
+    assert.equal(layoutA.dimension, `A1:BL${48 + n}`);
+    assert.equal(layoutA.printArea, `'MBO Staff & Chief'!$A$1:$BJ$${48 + n}`);
+    assert.deepEqual(layoutA.pageSetup, { paperSize: 8, orientation: 'landscape', scale: 58 });
+    assert.equal(layoutA.formulaCount, 0);
+    assert.equal(layoutA.baseSensitiveRanges.length, 15);
+    assert.equal(layoutA.effectiveSanitizationRanges.length, 15);
+    assert.equal(Object.isFrozen(layoutA), true);
+  }
+
+  // Part B topology for N=6..8
+  const expectedB = {
+    6: { dim: 'A1:X35', print: "'(Part B) Competency'!$A$1:$X$35", inter: 79, final: 79, start: 31, padding: [30], ratingStatic: ['B29:J29'], dyn: [], baseDyn: 432, effDyn: 432 },
+    7: { dim: 'A1:X39', print: "'(Part B) Competency'!$A$1:$X$39", inter: 85, final: 86, start: 35, padding: [30, 34], ratingStatic: ['B29:J29', 'B33:J33'], dyn: ['B31:J32'], baseDyn: 474, effDyn: 492 },
+    8: { dim: 'A1:X43', print: "'(Part B) Competency'!$A$1:$X$43", inter: 91, final: 93, start: 39, padding: [30, 34, 38], ratingStatic: ['B29:J29', 'B33:J33', 'B37:J37'], dyn: ['B31:J32', 'B35:J36'], baseDyn: 516, effDyn: 552 }
+  };
+
+  for (const n of ACCEPTED_PART_B_COMPETENCY_COUNTS) {
+    const layoutB = profile.getPartBLayoutTopology(n);
+    const exp = expectedB[n];
+    assert.equal(layoutB.competencyCount, n);
+    assert.equal(layoutB.mainSheetName, '(Part B) Competency');
+    assert.equal(layoutB.auxiliarySheetName, 'Sheet1');
+    assert.equal(layoutB.baseCompetencyCount, 6);
+    assert.equal(layoutB.sourceCloneBlockRows, '27:30');
+    assert.equal(layoutB.sourceBlockHeight, 4);
+    assert.equal(layoutB.downstreamThresholdRow, 31);
+    assert.equal(layoutB.extraBlocks, n - 6);
+    assert.equal(layoutB.extraRows, 4 * (n - 6));
+    assert.equal(layoutB.dimension, exp.dim);
+    assert.equal(layoutB.printArea, exp.print);
+    assert.equal(layoutB.intermediateMergeCount, exp.inter);
+    assert.equal(layoutB.finalOverlayMergeCount, exp.final);
+    assert.equal(layoutB.summaryStartRow, exp.start);
+    assert.equal(layoutB.summaryEndRow, exp.start + 3);
+    assert.deepEqual(layoutB.pageSetup, { paperSize: 9, orientation: 'portrait', scale: 75 });
+    assert.equal(layoutB.formulaCount, 0);
+    assert.deepEqual(layoutB.protectedPaddingRows, exp.padding);
+    assert.deepEqual(layoutB.ratingScaleStaticRanges, exp.ratingStatic);
+    assert.deepEqual(layoutB.presentationDynamicRanges, exp.dyn);
+    assert.equal(layoutB.baseDynamicCount, exp.baseDyn);
+    assert.equal(layoutB.effectiveDynamicCount, exp.effDyn);
+    assert.equal(layoutB.baseSensitiveRanges.length, 13);
+    assert.equal(Object.isFrozen(layoutB), true);
+  }
+
+  // Range expansion helper test
+  const expanded = expandRangeToAddresses('B31:J32');
+  assert.equal(expanded.length, 18);
+  assert.equal(expanded[0], 'B31');
+  assert.equal(expanded[17], 'J32');
+
+  // Unsupported count fail closed
+  assert.throws(() => profile.getPartALayoutTopology(3), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+  assert.throws(() => profile.getPartALayoutTopology(11), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+  assert.throws(() => profile.getPartBLayoutTopology(5), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+  assert.throws(() => profile.getPartBLayoutTopology(9), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
 });

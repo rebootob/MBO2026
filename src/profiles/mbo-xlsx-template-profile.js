@@ -31,6 +31,56 @@ export const CHIEF_DYNAMIC_AUTHORITY = 'R:X';
 export const SELF_DYNAMIC_AUTHORITY = 'K:Q';
 
 /**
+ * Part A Layout & Topology Constants
+ */
+export const PART_A_BASE_OBJECTIVE_COUNT = 4;
+export const PART_A_SOURCE_CLONE_ROW = 28;
+export const PART_A_DOWNSTREAM_THRESHOLD_ROW = 29;
+export const PART_A_MAIN_SHEET_NAME = 'MBO Staff & Chief';
+export const PART_A_BASE_SENSITIVE_RANGES = Object.freeze([
+  'N6:Q7',
+  'Z7:AF7',
+  'AG7:AL7',
+  'AM7:AP7',
+  'AQ7:AS7',
+  'AT7:BC7',
+  'BD7:BI7',
+  'G8:S8',
+  'G16:AF19',
+  'AM16:BI19',
+  'B25:BI28',
+  'BC29:BI35',
+  'B37:S42',
+  'AI37:AY42',
+  'B47:N50'
+]);
+
+/**
+ * Part B Layout & Topology Constants
+ */
+export const PART_B_BASE_COMPETENCY_COUNT = 6;
+export const PART_B_SOURCE_CLONE_BLOCK = '27:30';
+export const PART_B_SOURCE_BLOCK_HEIGHT = 4;
+export const PART_B_DOWNSTREAM_THRESHOLD_ROW = 31;
+export const PART_B_MAIN_SHEET_NAME = '(Part B) Competency';
+export const PART_B_AUXILIARY_SHEET_NAME = 'Sheet1';
+export const PART_B_BASE_SENSITIVE_RANGES = Object.freeze([
+  'G2:H3',
+  'J3:L3',
+  'M3:O3',
+  'P3:Q3',
+  'R3',
+  'S3:W3',
+  'K7:Q29',
+  'R7:X29',
+  'B31:D34',
+  'E31:H34',
+  'I31:P34',
+  'Q31:S34',
+  'T31:X34'
+]);
+
+/**
  * Exact candidate 20 SAFE_TO_MAP semantic roles (18 baseline + expanded b7/b8 presentation role families)
  */
 export const PROVEN_SAFE_ROLES = Object.freeze([
@@ -185,6 +235,52 @@ export function validateAddressFormat(addrStr) {
 }
 
 /**
+ * Expand range string (e.g. 'B31:J32' or 'R3') into array of cell addresses
+ */
+export function expandRangeToAddresses(rangeStr) {
+  if (typeof rangeStr !== 'string' || !rangeStr) return [];
+  const trimmed = rangeStr.trim().toUpperCase();
+  if (!trimmed.includes(':')) {
+    return [trimmed];
+  }
+  const [start, end] = trimmed.split(':');
+  const m1 = start.match(/^([A-Z]+)(\d+)$/);
+  const m2 = end.match(/^([A-Z]+)(\d+)$/);
+  if (!m1 || !m2) return [trimmed];
+
+  function colToNum(colStr) {
+    let num = 0;
+    for (let i = 0; i < colStr.length; i++) {
+      num = num * 26 + (colStr.charCodeAt(i) - 64);
+    }
+    return num;
+  }
+
+  function numToCol(num) {
+    let col = '';
+    while (num > 0) {
+      let rem = (num - 1) % 26;
+      col = String.fromCharCode(65 + rem) + col;
+      num = Math.floor((num - 1) / 26);
+    }
+    return col;
+  }
+
+  const c1 = colToNum(m1[1]);
+  const r1 = parseInt(m1[2], 10);
+  const c2 = colToNum(m2[1]);
+  const r2 = parseInt(m2[2], 10);
+
+  const addresses = [];
+  for (let r = r1; r <= r2; r++) {
+    for (let c = c1; c <= c2; c++) {
+      addresses.push(`${numToCol(c)}${r}`);
+    }
+  }
+  return addresses;
+}
+
+/**
  * Main MBO2026 Production Template Profile Class
  */
 export class MboXlsxTemplateProfile {
@@ -215,6 +311,139 @@ export class MboXlsxTemplateProfile {
 
   getPartBCompetencyDomain() {
     return ACCEPTED_PART_B_COMPETENCY_COUNTS;
+  }
+
+  /**
+   * Get Part A layout & sanitization topology for objective count N (4..10)
+   */
+  getPartALayoutTopology(objectiveCount = 4) {
+    const n = validatePartAObjectiveCount(objectiveCount);
+    const extraRows = n - PART_A_BASE_OBJECTIVE_COUNT;
+    const lastRow = 52 + extraRows;
+    const dimension = `A1:BL${lastRow}`;
+    const printArea = `'${PART_A_MAIN_SHEET_NAME}'!$A$1:$BJ$${lastRow}`;
+
+    const effectiveSanitizationRanges = [
+      'N6:Q7',
+      'Z7:AF7',
+      'AG7:AL7',
+      'AM7:AP7',
+      'AQ7:AS7',
+      'AT7:BC7',
+      'BD7:BI7',
+      'G8:S8',
+      'G16:AF19',
+      'AM16:BI19',
+      `B25:BI${24 + n}`,
+      `BC${25 + n}:BI${31 + n}`,
+      `B${33 + n}:S${38 + n}`,
+      `AI${33 + n}:AY${38 + n}`,
+      `B${43 + n}:N${46 + n}`
+    ];
+
+    return Object.freeze({
+      profileId: this.profileId,
+      objectiveCount: n,
+      mainSheetName: PART_A_MAIN_SHEET_NAME,
+      baseObjectiveCount: PART_A_BASE_OBJECTIVE_COUNT,
+      sourceCloneRow: PART_A_SOURCE_CLONE_ROW,
+      downstreamThresholdRow: PART_A_DOWNSTREAM_THRESHOLD_ROW,
+      extraRows,
+      dimension,
+      printArea,
+      pageSetup: Object.freeze({
+        paperSize: 8,
+        orientation: 'landscape',
+        scale: 58
+      }),
+      formulaCount: 0,
+      baseSensitiveRanges: PART_A_BASE_SENSITIVE_RANGES,
+      effectiveSanitizationRanges: Object.freeze(effectiveSanitizationRanges)
+    });
+  }
+
+  /**
+   * Get Part B layout & sanitization topology for competency count N (6, 7, 8)
+   */
+  getPartBLayoutTopology(competencyCount = 6) {
+    const n = validatePartBCompetencyCount(competencyCount);
+    const extraBlocks = n - PART_B_BASE_COMPETENCY_COUNT;
+    const extraRows = PART_B_SOURCE_BLOCK_HEIGHT * extraBlocks;
+
+    const summaryStartRow = 31 + extraRows;
+    const summaryEndRow = summaryStartRow + 3;
+    const lastRow = 35 + extraRows;
+
+    const dimension = `A1:X${lastRow}`;
+    const printArea = `'${PART_B_MAIN_SHEET_NAME}'!$A$1:$X$${lastRow}`;
+
+    const intermediateMergeCount = n === 6 ? 79 : (n === 7 ? 85 : 91);
+    const finalOverlayMergeCount = n === 6 ? 79 : (n === 7 ? 86 : 93);
+
+    const protectedPaddingRows = [30];
+    if (n >= 7) protectedPaddingRows.push(34);
+    if (n === 8) protectedPaddingRows.push(38);
+
+    const ratingScaleStaticRanges = ['B29:J29'];
+    if (n >= 7) ratingScaleStaticRanges.push('B33:J33');
+    if (n === 8) ratingScaleStaticRanges.push('B37:J37');
+
+    const presentationDynamicRanges = [];
+    if (n >= 7) presentationDynamicRanges.push('B31:J32');
+    if (n === 8) presentationDynamicRanges.push('B35:J36');
+
+    const baseDynamicCount = n === 6 ? 432 : (n === 7 ? 474 : 516);
+    const effectiveDynamicCount = n === 6 ? 432 : (n === 7 ? 492 : 552);
+
+    const effectiveSanitizationRanges = [
+      'G2:H3',
+      'J3:L3',
+      'M3:O3',
+      'P3:Q3',
+      'R3',
+      'S3:W3',
+      `K7:Q${29 + extraRows}`,
+      `R7:X${29 + extraRows}`,
+      `B${summaryStartRow}:D${summaryEndRow}`,
+      `E${summaryStartRow}:H${summaryEndRow}`,
+      `I${summaryStartRow}:P${summaryEndRow}`,
+      `Q${summaryStartRow}:S${summaryEndRow}`,
+      `T${summaryStartRow}:X${summaryEndRow}`
+    ];
+    if (n >= 7) effectiveSanitizationRanges.push('B31:J32');
+    if (n === 8) effectiveSanitizationRanges.push('B35:J36');
+
+    return Object.freeze({
+      profileId: this.profileId,
+      competencyCount: n,
+      mainSheetName: PART_B_MAIN_SHEET_NAME,
+      auxiliarySheetName: PART_B_AUXILIARY_SHEET_NAME,
+      baseCompetencyCount: PART_B_BASE_COMPETENCY_COUNT,
+      sourceCloneBlockRows: PART_B_SOURCE_CLONE_BLOCK,
+      sourceBlockHeight: PART_B_SOURCE_BLOCK_HEIGHT,
+      downstreamThresholdRow: PART_B_DOWNSTREAM_THRESHOLD_ROW,
+      extraBlocks,
+      extraRows,
+      dimension,
+      printArea,
+      intermediateMergeCount,
+      finalOverlayMergeCount,
+      summaryStartRow,
+      summaryEndRow,
+      pageSetup: Object.freeze({
+        paperSize: 9,
+        orientation: 'portrait',
+        scale: 75
+      }),
+      formulaCount: 0,
+      protectedPaddingRows: Object.freeze(protectedPaddingRows),
+      ratingScaleStaticRanges: Object.freeze(ratingScaleStaticRanges),
+      presentationDynamicRanges: Object.freeze(presentationDynamicRanges),
+      baseDynamicCount,
+      effectiveDynamicCount,
+      baseSensitiveRanges: PART_B_BASE_SENSITIVE_RANGES,
+      effectiveSanitizationRanges: Object.freeze(effectiveSanitizationRanges)
+    });
   }
 
   /**
@@ -621,6 +850,13 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
 
   for (const n of ACCEPTED_PART_A_OBJECTIVE_COUNTS) {
     const mapA = profile.getPartAMappings(n);
+    const layoutA = profile.getPartALayoutTopology(n);
+    if (!layoutA || layoutA.objectiveCount !== n || layoutA.mainSheetName !== 'MBO Staff & Chief' ||
+        layoutA.sourceCloneRow !== 28 || layoutA.downstreamThresholdRow !== 29 ||
+        layoutA.pageSetup.paperSize !== 8 || layoutA.pageSetup.orientation !== 'landscape' || layoutA.pageSetup.scale !== 58 ||
+        layoutA.formulaCount !== 0) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
 
     const reqHeaders = ['FISCAL_YEAR', 'EMPLOYEE_NAME', 'DEPARTMENT', 'SECTION', 'POSITION', 'EMPLOYEE_CODE'];
     for (const k of reqHeaders) {
@@ -684,6 +920,13 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
 
   for (const n of ACCEPTED_PART_B_COMPETENCY_COUNTS) {
     const mapB = profile.getPartBMappings(n);
+    const layoutB = profile.getPartBLayoutTopology(n);
+    if (!layoutB || layoutB.competencyCount !== n || layoutB.mainSheetName !== '(Part B) Competency' ||
+        layoutB.auxiliarySheetName !== 'Sheet1' || layoutB.sourceBlockHeight !== 4 || layoutB.downstreamThresholdRow !== 31 ||
+        layoutB.pageSetup.paperSize !== 9 || layoutB.pageSetup.orientation !== 'portrait' || layoutB.pageSetup.scale !== 75 ||
+        layoutB.formulaCount !== 0) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
 
     const reqBHeaders = ['FISCAL_YEAR', 'DEPARTMENT', 'SECTION', 'POSITION', 'EMPLOYEE_CODE', 'EMPLOYEE_NAME'];
     for (const k of reqBHeaders) {
