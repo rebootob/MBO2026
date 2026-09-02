@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
 
-Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant confirmed Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -15,43 +15,41 @@ D2_PART_B_STRUCTURAL = PASS / CLOSED
 D2_FORMULA_AUTHORITY = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
+D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D3 = HOLD
 ```
 
-Durable semantic authority:
-`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
-
+Latest Template Profile closure:
 ```text
-SAFE_TO_MAP = 18 EXACT
-UNRESOLVED = 22 EXACT / FAIL CLOSED
-NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
-CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
-```
-
-Latest Template Profile review:
-```text
-R1_R3_R1_IMPLEMENTATION = 6386e506b85ded87a57967705066e38d56212f73
+R1_R3_R2_AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+R1_R3_R2_AUTHORIZATION_COMMIT = 368dcb4890621400fd9b6fabfb979599bf453a07
+R1_R3_R2_IMPLEMENTATION = b59815aa5e5bad09ad252a10cdd1914185170fc0
 SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED FILES
-OBJECTIVE_COMMENT_ALIAS = PASS / REJECTS
-COMPETENCY_RATING_ALIAS = PASS / REJECTS
-BASIC_NULL_PATH_NEGATIVES = PASS
-OVERALL = CORRECTIVE REQUIRED
-TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+CANONICAL_PART_B_COMPETENCY_INTEGRITY = PASS
+TEMPLATE_PROFILE = PASS / CLOSED
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Remaining proven defect: Part B competency integrity must require exact canonical `index`, expected rating `row`, exact `K{row}` self target and exact `partB.competencyItems[b-1].selfRating` secured path.
+Durable authority:
+- `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
+
+Frozen profile facts:
+- exact semantic authority remains SAFE 18 / UNRESOLVED 22 / NO_SOURCE 5;
+- non-canonical aliases reject;
+- Part B self competency identity is exact and fail closed;
+- K:Q Self / R:X Chief structural authority remains frozen; Chief secured writable role = zero;
+- row30/34/38 protected;
+- no workbook I/O, scoring or formulas in Template Profile.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R2
-AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -59,4 +57,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-LOW-CREDIT rule: no broad scan, no workbook inspection, no semantic re-research. Fix only the canonical Part B integrity checks/tests in the same two files and stop after one implementation/blocker commit.
+Next proposed gate: `D2-WP004-R2 — PRODUCTION XLSX RENDERER + SANITIZER`, but only after a ChatGPT Control-Plane READ-ONLY design pass defines exact implementation files/tests/security/fail-closed contract. Do not auto-start executor work.
