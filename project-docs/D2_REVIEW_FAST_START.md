@@ -29,38 +29,56 @@ FORMULA_AUTHORITY = PASS / CLOSED
 ```
 Durable Baselines: `D2_PART_A_STRUCTURAL_CLOSURE.md`, `D2_PART_B_STRUCTURAL_CLOSURE.md`, `D2_FORMULA_AUTHORITY_CLOSURE.md`.
 
-## Active corrective — R7-R2
+## Latest review — R7-R2
+Authorization: `D2-WP003-R7-R2-SOURCE-TEST-20260902-01`  
+Authorization commit: `a8b3fe32ac4ac5eefd00d48bf015fc89b1c0618a`  
+Implementation: `6975b1f076b9b3f4baa3b6cb4ca844767f513f0a`
+
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R2
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 52a28d6f24a353f4a425315b730b9b9f19cd4bce
-MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO FILES
-FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
-        tests/mbo-xlsx-ooxml-feasibility.test.js
+R7-R2_SCOPE_REVIEW = PASS / ONE COMMIT / TWO AUTHORIZED FILES
+R7-R2_SOURCE_REVIEW = PASS / FROZEN
+R7-R2_STATIC_BYPASS_REMOVAL = PASS / FROZEN
+R7-R2_STRICT_PREMUTATION_STYLE_MERGE_TYPE_NONBLANK = PASS / FROZEN
+R7-R2_STATIC_VALHASH_SOURCE_ENFORCEMENT = PASS / FROZEN
+R7-R2_VALIDATION_VS_SYNTHETIC_MUTATION_SEPARATION = PASS / FROZEN
+R7-R2_EXISTING_R7-R1_PROOF = RETAINED / FROZEN
+R7-R2_PROOF_CODE_REVIEW = CORRECTIVE REQUIRED / DIRECT NEGATIVE ISOLATION ONLY
+R7-R2_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R7-R2_STATUS = CORRECTIVE REQUIRED
+D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Freeze accepted R7-R1 work: exact 6/7/8 row mapping, row30/clone padding non-dynamic, dynamic counts 432/474/516, source-backed style/merge relocation, count-aware metadata, expanded package/sharedStrings token purge, caller-buffer immutability, zero-formula proof.
+Accepted/frozen privacy work now includes:
+- exact N=6/7/8 role mapping;
+- row30/clone rows 34/38 protected non-dynamic;
+- dynamic counts 432/474/516;
+- source-backed style + normalized merge + normalizedType + nonblank validation;
+- protected-static valHash enforcement where source has valHash;
+- expanded package/sharedStrings token purge;
+- caller-buffer immutability;
+- formula inventory = 0.
 
-R7-R2 may correct ONLY the remaining fail-closed gap:
-1. remove B30/B34/B38 static hash/type bypass or equivalent tolerance;
-2. validate untouched structural roles against source-relative `styleId`, normalized merge, `normalizedType`, `nonblank`, and protected-static `valHash` before synthetic mutation;
-3. add direct negative tests for dynamic type/nonblank and row30-clone static hash/type mismatch.
+## Only remaining proof gap
+The R7-R2 test did not isolate the exact row30/clone static field failures required by contract:
+1. static valHash negative test mutates `B7`, not row30/clone;
+2. row30-clone test mutates `normalizedType + nonblank + valHash` together, so it is not a direct single-field proof.
 
-Production Renderer remains out of scope.
-
-## Safety
+## Proposed next corrective
 ```text
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R2 / ONE-SHOT / STOP AFTER PUSH+REPORT
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R3
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = TEST-ONLY / EXACT ONE FILE
+FILE = tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
 ```
 
-Previous standing 20-round Control Plane authorization remains exhausted / DO NOT REUSE. Owner `review` will initiate independent review separately.
+R7-R3 must add only direct isolated row30/clone static valHash and normalizedType fail-closed assertions. No source change. Production Renderer remains out of scope.
 
 Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel parity -> PDF parity -> export security/privacy regression -> final D2 closure -> then D3 may leave HOLD.
