@@ -24,11 +24,13 @@ D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-R4_SOURCE_REVIEW = PASS / FROZEN
-R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
 R4-R2_IMPLEMENTATION_COMMIT = 98da94a07259effd95dcf539de3454b1f94745a8
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 18 OF 20
 ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R5
+PROPOSED_SCOPE = SOURCE+TEST / EXACT TWO FEASIBILITY FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
@@ -37,16 +39,21 @@ ACTIVE_DEPLOY_AUTH = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
-NEXT_D2_PLANNING_GATE = PART B COMPETENCY INSERTION STRUCTURAL MATRIX
 ```
 
 ## 3. Current D2 routing
 
-For current D2 status read:
+For R5 planning/authorization/review read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md` when Part A details are needed.
+5. `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md` only if Part A comparison is needed;
+6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — proposed Part B helper source scope only;
+7. `tests/mbo-xlsx-ooxml-feasibility.test.js` — proposed Part B structural proof scope only.
 
-Part B has not started. If Owner says `ต่อ`, ChatGPT should perform READ-ONLY planning first, inspect only the existing Part B feasibility source/test areas needed to establish the smallest safe scope, and must not auto-authorize Antigravity or Claude.
+R5 is proposed to generalize the existing hard-coded Part B 6/8 path into a real 6/7/8 competency matrix and prove exact structural/workbook invariants. It is NOT authorized. Do not call Antigravity or Claude until Owner approval.
+
+## 4. Future D2 privacy routing note
+
+The accepted Part B privacy mapping remains source-template authority for the original 6-block layout. Expanded 7/8-block address roles must be explicitly remapped during production renderer/security work; R5 must not change privacy/sanitization logic.
