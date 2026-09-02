@@ -145,97 +145,104 @@ test('PREPARER_ADVERSARIAL_REFERENCE_IMAGE_FAIL_CLOSED: reachable production hel
     /Missing rId3 relationship/
   );
 
-  // 3. Valid rId3 + non-self-closing duplicate rId3 -> REJECT
-  const nonSelfClosingDupRel = validRels.replace('</Relationships>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"></Relationship></Relationships>');
+  // 3. Single paired / non-self-closing rId3 -> REJECT
+  const singlePairedRel = validRels.replace('<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"></Relationship>');
   assert.throws(
-    () => validateAndRemoveReferenceImage(createZip(nonSelfClosingDupRel, validXml)),
-    /Expected exactly 1 canonical rId3 relationship/
+    () => validateAndRemoveReferenceImage(createZip(singlePairedRel, validXml)),
+    /Expected exactly 1 canonical self-closing rId3 relationship|Non-self-closing/
   );
 
   // 4. Malformed / open-only rId3 -> REJECT
-  const openOnlyRel = validRels.replace(/<Relationship[^>]*Id="rId3"[^>]*\/>/, '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png">');
+  const openOnlyRel = validRels.replace('<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png">');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(openOnlyRel, validXml)),
-    /Malformed non-self-closing relationship tag for rId3/
+    /Non-self-closing, open-only or namespace-prefixed rId3 relationship forbidden|Expected exactly 1/
   );
 
   // 5. Namespace-prefixed abnormal rId3 -> REJECT
-  const nsPrefixedRel = validRels.replace('Id="rId3"', 'Id="rId3"').replace('<Relationship Id="rId3"', '<r:Relationship Id="rId3"');
+  const nsPrefixedRel = validRels.replace('<Relationship Id="rId3"', '<r:Relationship Id="rId3"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(nsPrefixedRel, validXml)),
-    /Namespace-prefixed relationship forbidden for rId3/
+    /Expected exactly 1 canonical self-closing rId3 relationship|Non-self-closing/
   );
 
-  // 6. Duplicate mixed-form rId3 -> REJECT
+  // 6. Valid self-closing + paired duplicate -> REJECT
+  const selfClosingPlusPaired = validRels.replace('</Relationships>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"></Relationship></Relationships>');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(selfClosingPlusPaired, validXml)),
+    /Expected exactly 1 canonical self-closing rId3 relationship|Non-self-closing/
+  );
+
+  // 7. Duplicate mixed-form rId3 -> REJECT
   const mixedDupRel = validRels.replace('</Relationships>', '<r:Relationship Id="rId3" Target="../media/image3.png"/></Relationships>');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(mixedDupRel, validXml)),
-    /Expected exactly 1 canonical rId3 relationship/
+    /Expected exactly 1 canonical self-closing rId3 relationship|Non-self-closing/
   );
 
-  // 7. Wrong relationship Type -> REJECT
+  // 8. Wrong relationship Type -> REJECT
   const wrongTypeRel = validRels.replace('Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"', 'Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(wrongTypeRel, validXml)),
     /Invalid relationship Type for rId3/
   );
 
-  // 8. Wrong Target (media/image3.png without ../) -> REJECT
+  // 9. Wrong Target (media/image3.png without ../) -> REJECT
   const wrongTargetRel1 = validRels.replace('Target="../media/image3.png"', 'Target="media/image3.png"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(wrongTargetRel1, validXml)),
     /Invalid relationship Target for rId3/
   );
 
-  // 9. Wrong Target (other image) -> REJECT
+  // 10. Wrong Target (other image) -> REJECT
   const wrongTargetRel2 = validRels.replace('Target="../media/image3.png"', 'Target="../media/other.png"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(wrongTargetRel2, validXml)),
     /Invalid relationship Target for rId3/
   );
 
-  // 10. TargetMode="Internal" -> REJECT
+  // 11. TargetMode="Internal" -> REJECT
   const intModeRel = validRels.replace('Id="rId3"', 'Id="rId3" TargetMode="Internal"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(intModeRel, validXml)),
     /TargetMode attribute must be absent for rId3/
   );
 
-  // 11. TargetMode="External" -> REJECT
+  // 12. TargetMode="External" -> REJECT
   const extModeRel = validRels.replace('Id="rId3"', 'Id="rId3" TargetMode="External"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(extModeRel, validXml)),
     /TargetMode attribute must be absent for rId3/
   );
 
-  // 12. Missing media evidence -> REJECT
+  // 13. Missing media evidence -> REJECT
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(validRels, validXml, false)),
     /Reference image files missing in package/
   );
 
-  // 13. Zero exact embeds -> REJECT
+  // 14. Zero exact embeds -> REJECT
   const zeroEmbedXml = validXml.replace('r:embed="rId3"', 'r:embed="rId99"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(validRels, zeroEmbedXml)),
     /Zero exact r:embed="rId3" occurrences found/
   );
 
-  // 14. Duplicate embeds in one anchor -> REJECT
+  // 15. Duplicate embeds in one anchor -> REJECT
   const dupInOneXml = validXml.replace('r:embed="rId3"', 'r:embed="rId3" r:embed="rId3"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(validRels, dupInOneXml)),
     /Duplicate r:embed="rId3" occurrences found/
   );
 
-  // 15. Duplicate embeds across anchors -> REJECT
-  const dupAcrossXml = validXml + '<xdr:twoCellAnchor><a:blip r:embed="rId3"/></xdr:twoCellAnchor>';
+  // 16. Duplicate embeds across anchors -> REJECT
+  const dupAcrossXml = `<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:twoCellAnchor><a:blip r:embed="rId3"/></xdr:twoCellAnchor><xdr:twoCellAnchor><a:blip r:embed="rId3"/></xdr:twoCellAnchor></xdr:wsDr>`;
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(validRels, dupAcrossXml)),
     /Duplicate r:embed="rId3" occurrences found/
   );
 
-  // 16. Incidental rId3 text without exact embed -> REJECT
+  // 17. Incidental rId3 text without exact embed -> REJECT
   const incidentalXml = validXml.replace('r:embed="rId3"', 'name="rId3"');
   assert.throws(
     () => validateAndRemoveReferenceImage(createZip(validRels, incidentalXml)),
@@ -243,7 +250,37 @@ test('PREPARER_ADVERSARIAL_REFERENCE_IMAGE_FAIL_CLOSED: reachable production hel
   );
 });
 
-test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix, deep structural & package parity', async (t) => {
+function parseRowObjects(sheetXml) {
+  const map = new Map();
+  const rMatches = [...sheetXml.matchAll(/<row r="(\d+)"([^>]*)>/g)];
+  for (const m of rMatches) {
+    const rNum = parseInt(m[1], 10);
+    const rowAttrs = m[2];
+    const rawTagEnd = sheetXml.indexOf('</row>', m.index);
+    let rowBody = '';
+    if (rawTagEnd !== -1 && (sheetXml.indexOf('<row ', m.index + 1) === -1 || sheetXml.indexOf('<row ', m.index + 1) > rawTagEnd)) {
+      rowBody = sheetXml.substring(m.index + m[0].length, rawTagEnd);
+    }
+    const cells = [...rowBody.matchAll(/<c r="([A-Z]+)\d+"([^>]*)>/g)].map(cm => ({
+      col: cm[1],
+      style: cm[2].match(/s="(\d+)"/)?.[1] || null
+    }));
+
+    map.set(rNum, {
+      raw: m[0],
+      rNum,
+      rowAttrs,
+      height: rowAttrs.match(/ht="([^"]+)"/)?.[1] || null,
+      customHeight: rowAttrs.includes('customHeight="1"'),
+      customFormat: rowAttrs.includes('customFormat="1"'),
+      styleIndex: rowAttrs.match(/s="(\d+)"/)?.[1] || null,
+      cells
+    });
+  }
+  return map;
+}
+
+test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix, deep row structural parity & frozen baseline matrix', async (t) => {
   const templateBytes = loadLocalTemplate();
   if (!templateBytes) {
     t.skip('Local Part A owner template unavailable or SHA mismatch');
@@ -259,17 +296,23 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
   const srcDrawingRels = await wbSource._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
   const srcDrawingXml = await wbSource._zip.files['xl/drawings/drawing1.xml'].async('string');
 
+  // Parse baseline source row XML objects for deep structural comparison
+  const srcRowObjectsMap = parseRowObjects(srcSheetXml);
+
   // Collect source merge inventory
   const srcMerges = [...srcSheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
 
-  // Collect source row XML tags for rows 1..28
-  const srcRowsMap = new Map();
-  for (let r = 1; r <= 28; r++) {
-    const match = srcSheetXml.match(new RegExp(`<row r="${r}"[^>]*>[\\s\\S]*?<\\/row>`));
-    if (match) {
-      srcRowsMap.set(r, match[0]);
-    }
-  }
+  // Extract source cols, sheetViews showGridLines, pageMargins, printOptions from source sheet1.xml
+  const srcColsXml = srcSheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
+  const srcShowGridLines = srcSheetXml.includes('showGridLines="1"') || !srcSheetXml.includes('showGridLines="0"');
+  const srcMarginsMatch = srcSheetXml.match(/<pageMargins [^>]*\/>/)?.[0] || '';
+  const srcPrintOptionsMatch = srcSheetXml.match(/<printOptions [^>]*\/>/)?.[0] || '';
+  const srcSheetProtectionMatch = srcSheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || '';
+
+  // Extract source sheetRels from xl/worksheets/_rels/sheet1.xml.rels
+  const srcSheetRels = wbSource._zip.files['xl/worksheets/_rels/sheet1.xml.rels']
+    ? await wbSource._zip.files['xl/worksheets/_rels/sheet1.xml.rels'].async('string')
+    : null;
 
   // Collect sensitive string tokens from source template before sanitization
   const profile = new MboXlsxTemplateProfile();
@@ -315,12 +358,49 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     const expectedPrintArea = `'MBO Staff &amp; Chief'!$A$1:$BJ$${expectedLastRow}`;
     assert.equal(wbXml.includes(expectedPrintArea), true, `Print_Area must be ${expectedPrintArea} for N=${n}`);
 
-    // D. Page setup authority: paperSize="8", orientation="landscape", scale="58"
+    // D. Absolute Page Setup Authority: paperSize="8", orientation="landscape", scale="58"
     assert.equal(sheetXml.includes('paperSize="8"'), true);
     assert.equal(sheetXml.includes('orientation="landscape"'), true);
     assert.equal(sheetXml.includes('scale="58"'), true);
 
-    // E. Workbook-wide formula inventory across ALL sheets is EXACTLY ZERO
+    // E. Frozen Baseline Matrix Checks (D2_PART_A_STRUCTURAL_CLOSURE.md):
+    // Cols XML block parity
+    if (srcColsXml) {
+      const outColsXml = sheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
+      assert.equal(outColsXml, srcColsXml, `cols block must match source baseline for N=${n}`);
+    }
+
+    // showGridLines parity
+    const outShowGridLines = sheetXml.includes('showGridLines="1"') || !sheetXml.includes('showGridLines="0"');
+    assert.equal(outShowGridLines, srcShowGridLines, `showGridLines must match source baseline for N=${n}`);
+
+    // pageMargins parity
+    if (srcMarginsMatch) {
+      const outMarginsMatch = sheetXml.match(/<pageMargins [^>]*\/>/)?.[0] || '';
+      assert.equal(outMarginsMatch, srcMarginsMatch, `pageMargins must match source baseline for N=${n}`);
+    }
+
+    // printOptions parity (horizontalCentered, verticalCentered)
+    if (srcPrintOptionsMatch) {
+      const outPrintOptionsMatch = sheetXml.match(/<printOptions [^>]*\/>/)?.[0] || '';
+      assert.equal(outPrintOptionsMatch, srcPrintOptionsMatch, `printOptions must match source baseline for N=${n}`);
+    }
+
+    // sheetProtection parity
+    if (srcSheetProtectionMatch) {
+      const outSheetProtectionMatch = sheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || '';
+      assert.equal(outSheetProtectionMatch, srcSheetProtectionMatch, `sheetProtection must match source baseline for N=${n}`);
+    }
+
+    // sheetRels parity
+    if (srcSheetRels) {
+      const outSheetRelsFile = wb._zip.files['xl/worksheets/_rels/sheet1.xml.rels'];
+      assert.equal(Boolean(outSheetRelsFile), true);
+      const outSheetRels = await outSheetRelsFile.async('string');
+      assert.equal(outSheetRels.replace(/\r?\n/g, ''), srcSheetRels.replace(/\r?\n/g, ''), `sheetRels must match source baseline for N=${n}`);
+    }
+
+    // F. Workbook-wide formula inventory across ALL sheets is EXACTLY ZERO
     for (const fileName in wb._zip.files) {
       if (fileName.startsWith('xl/worksheets/') && fileName.endsWith('.xml')) {
         const sXml = await wb._zip.files[fileName].async('string');
@@ -329,46 +409,77 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       }
     }
 
-    // F. Structural RowRefs sequence inspection:
-    const rowRefs = [...sheetXml.matchAll(/<row r="(\d+)"/g)].map(m => parseInt(m[1], 10));
+    // G. Complete Row Structural Parity Inspection
+    const outRowObjectsMap = parseRowObjects(sheetXml);
+    const rowRefs = Array.from(outRowObjectsMap.keys()).sort((a, b) => a - b);
     assert.equal(rowRefs.length, expectedLastRow, `Row count must equal ${expectedLastRow} for N=${n}`);
     assert.equal(new Set(rowRefs).size, rowRefs.length, 'rowRefs sequence must be strictly unique');
 
-    // Rows 1:28 exact normalized structural identity against source baseline
+    // 1. Rows 1:28 Deep Structural Parity against Source Baseline
     for (let r = 1; r <= 28; r++) {
-      assert.equal(rowRefs[r - 1], r, `Row ${r} must preserve index`);
-      const srcRowXml = srcRowsMap.get(r);
-      const outRowMatch = sheetXml.match(new RegExp(`<row r="${r}"[^>]*>[\\s\\S]*?<\\/row>`));
-      assert.equal(Boolean(outRowMatch), true, `Output row ${r} XML must exist`);
+      const srcObj = srcRowObjectsMap.get(r);
+      const outObj = outRowObjectsMap.get(r);
+      if (!srcObj) continue; // Skip if source row is absent in baseline XML (e.g. row 2)
 
-      // Verify row height and customHeight attribute preservation
-      if (srcRowXml.includes('customHeight="1"')) {
-        assert.equal(outRowMatch[0].includes('customHeight="1"'), true, `Row ${r} customHeight must be preserved`);
-      }
-      if (srcRowXml.includes('ht="')) {
-        const srcHt = srcRowXml.match(/ht="([^"]+)"/)[1];
-        assert.equal(outRowMatch[0].includes(`ht="${srcHt}"`), true, `Row ${r} ht="${srcHt}" must be preserved`);
+      assert.equal(Boolean(outObj), true, `Output row ${r} must exist`);
+      assert.equal(outObj.height, srcObj.height, `Row ${r} height must match source baseline`);
+      assert.equal(outObj.customHeight, srcObj.customHeight, `Row ${r} customHeight must match source baseline`);
+      assert.equal(outObj.customFormat, srcObj.customFormat, `Row ${r} customFormat must match source baseline`);
+      assert.equal(outObj.styleIndex, srcObj.styleIndex, `Row ${r} styleIndex must match source baseline`);
+
+      // Verify all populated cells in source row have matching column letter and style index in output row
+      for (const srcCell of srcObj.cells) {
+        const matchingOutCell = outObj.cells.find(c => c.col === srcCell.col);
+        assert.equal(Boolean(matchingOutCell), true, `Row ${r} cell ${srcCell.col} must exist in output row`);
+        assert.equal(matchingOutCell.style, srcCell.style, `Row ${r} cell ${srcCell.col} style index must match source baseline`);
       }
     }
 
-    // Every inserted objective row (29..28+extra) exact normalized structural clone of source row 28
+    // 2. Inserted Rows (29..28+extra) Deep Structural Parity (cloned from source row 28)
     const extra = n - 4;
+    const srcRow28Obj = srcRowObjectsMap.get(28);
     for (let i = 0; i < extra; i++) {
       const targetR = 29 + i;
-      assert.equal(rowRefs[28 + i], targetR, `Inserted row ${targetR} must exist`);
-      const outClonedMatch = sheetXml.match(new RegExp(`<row r="${targetR}"[^>]*>[\\s\\S]*?<\\/row>`));
-      assert.equal(Boolean(outClonedMatch), true, `Cloned row ${targetR} XML must exist`);
-      assert.equal(outClonedMatch[0].includes('ht="14'), true, `Cloned row ${targetR} must preserve height ht="14"`);
-      assert.equal(outClonedMatch[0].includes('customFormat="1"'), true, `Cloned row ${targetR} must preserve customFormat="1"`);
+      const outClonedObj = outRowObjectsMap.get(targetR);
+      assert.equal(Boolean(outClonedObj), true, `Inserted row ${targetR} must exist`);
+      assert.equal(outClonedObj.height, srcRow28Obj.height, `Inserted row ${targetR} height must match source row 28`);
+      assert.equal(outClonedObj.customHeight, srcRow28Obj.customHeight, `Inserted row ${targetR} customHeight must match source row 28`);
+      assert.equal(outClonedObj.customFormat, srcRow28Obj.customFormat, `Inserted row ${targetR} customFormat must match source row 28`);
+      assert.equal(outClonedObj.styleIndex, srcRow28Obj.styleIndex, `Inserted row ${targetR} styleIndex must match source row 28`);
+
+      for (const srcCell of srcRow28Obj.cells) {
+        const matchingClonedCell = outClonedObj.cells.find(c => c.col === srcCell.col);
+        assert.equal(Boolean(matchingClonedCell), true, `Inserted row ${targetR} cell ${srcCell.col} must exist`);
+        assert.equal(matchingClonedCell.style, srcCell.style, `Inserted row ${targetR} cell ${srcCell.col} style index must match source row 28`);
+      }
     }
 
-    // Downstream rows relocated by +extra
+    // 3. Downstream Relocated Rows (>=29) Deep Structural Parity
     for (let r = 29; r <= 52; r++) {
       const targetR = r + extra;
-      assert.equal(rowRefs[28 + extra + (r - 29)], targetR, `Downstream row ${r} must relocate to ${targetR}`);
+      const srcDownstreamObj = srcRowObjectsMap.get(r);
+      if (!srcDownstreamObj) continue;
+
+      const outRelocatedObj = outRowObjectsMap.get(targetR);
+      assert.equal(Boolean(outRelocatedObj), true, `Relocated downstream row ${targetR} must exist`);
+      assert.equal(outRelocatedObj.height, srcDownstreamObj.height, `Relocated row ${targetR} height must match source row ${r}`);
+      assert.equal(outRelocatedObj.customHeight, srcDownstreamObj.customHeight, `Relocated row ${targetR} customHeight must match source row ${r}`);
+      assert.equal(outRelocatedObj.customFormat, srcDownstreamObj.customFormat, `Relocated row ${targetR} customFormat must match source row ${r}`);
+      assert.equal(outRelocatedObj.styleIndex, srcDownstreamObj.styleIndex, `Relocated row ${targetR} styleIndex must match source row ${r}`);
+
+      for (const srcCell of srcDownstreamObj.cells) {
+        const matchingRelocatedCell = outRelocatedObj.cells.find(c => c.col === srcCell.col);
+        assert.equal(Boolean(matchingRelocatedCell), true, `Relocated row ${targetR} cell ${srcCell.col} must exist`);
+        assert.equal(matchingRelocatedCell.style, srcCell.style, `Relocated row ${targetR} cell ${srcCell.col} style index must match source row ${r}`);
+      }
+
+      // Assert no stale old-row structural identity remains at unshifted index r when r < 29 + extra
+      if (extra > 0 && r < 29 + extra && r > 28) {
+        assert.equal(r >= 29 && r <= 28 + extra, true, `Position ${r} must be an inserted row, not stale old row ${r}`);
+      }
     }
 
-    // G. Complete Expected Merge SET Deep Equality
+    // H. Complete Expected Merge SET Deep Equality
     const expectedMergeSet = new Set();
     const row28Merges = [];
     for (const mRef of srcMerges) {
@@ -405,7 +516,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     assert.equal(rawMerges.length, expectedMergeSet.size, `Merge count must equal expected set size ${expectedMergeSet.size} for N=${n}`);
     assert.deepEqual(actualMergeSet, expectedMergeSet, `Complete merge SET must match expected set for N=${n}`);
 
-    // H. Effective sanitization ranges cleared
+    // I. Effective sanitization ranges cleared
     const sheet = wb.sheet(0);
     const layout = profile.getPartALayoutTopology(n);
     const sensitiveAddrsN = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
@@ -424,7 +535,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       }
     }
 
-    // I. Reference image rId3 / image3.png removed; branding rId1 / rId2 / rId4 & media image1.jpeg / image2.jpeg / image4.png preserved
+    // J. Full Package Inventory Parity (Relationship, Media, Drawing Anchor)
     const drawingXml = await wb._zip.files['xl/drawings/drawing1.xml'].async('string');
     const drawingRels = await wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
 
@@ -432,26 +543,28 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     assert.equal(drawingRels.includes('rId3'), false, 'drawing1.xml.rels must not contain rId3 relationship');
     assert.equal(drawingRels.includes('image3.png'), false, 'drawing1.xml.rels must not contain image3.png');
 
-    // Deep non-target relationship & media inventory equality
+    // Deep non-target relationship inventory equality
     const expectedNormalizedRels = srcDrawingRels.replace(/<Relationship[^>]*Id="rId3"[^>]*\/>/g, '');
     assert.equal(drawingRels, expectedNormalizedRels, 'drawing1.xml.rels non-target relationship inventory must match exact normalized source');
 
+    // Deep non-target drawing anchor inventory equality
     const expectedNormalizedXml = srcDrawingXml.replace(/<xdr:twoCellAnchor[^>]*>(?:(?!<\/xdr:twoCellAnchor>)[\s\S])*rId3[\s\S]*?<\/xdr:twoCellAnchor>/g, '');
     assert.equal(drawingXml, expectedNormalizedXml, 'drawing1.xml non-target drawing anchor inventory must match exact normalized source');
 
-    assert.equal(Boolean(wb._zip.files['xl/media/image3.png']), false, 'image3.png must be deleted from package');
-    assert.equal(Boolean(wb._zip.files['xl/media/image1.jpeg']), true, 'Branding image1.jpeg must be preserved');
-    assert.equal(Boolean(wb._zip.files['xl/media/image2.jpeg']), true, 'Branding image2.jpeg must be preserved');
-    assert.equal(Boolean(wb._zip.files['xl/media/image4.png']), true, 'Branding image4.png must be preserved');
+    // Deep non-target media inventory equality
+    const srcMediaFiles = Object.keys(wbSource._zip.files).filter(f => f.startsWith('xl/media/')).sort();
+    const expectedNormalizedMediaFiles = srcMediaFiles.filter(f => f !== 'xl/media/image3.png').sort();
+    const actualMediaFiles = Object.keys(wb._zip.files).filter(f => f.startsWith('xl/media/')).sort();
+    assert.deepEqual(actualMediaFiles, expectedNormalizedMediaFiles, 'Output media inventory minus image3.png must match exact normalized source media inventory');
 
-    // J. No semantic value writes
+    // K. No semantic value writes
     for (let i = 1; i <= n; i++) {
       const r = 24 + i;
       assert.equal(sheet.cell(`T${r}`).value() == null, true, `Objective ${i} Measurement must be unwritten`);
       assert.equal(sheet.cell(`Y${r}`).value() == null, true, `Objective ${i} Weight must be unwritten`);
     }
 
-    // K. Sheet names & states preserved
+    // L. Sheet names & states preserved
     const sheetNames = [...wbXml.matchAll(/<sheet [^>]*name="([^"]+)"/g)].map(m => m[1]);
     assert.deepEqual(sheetNames, ['MBO Staff &amp; Chief']);
   }

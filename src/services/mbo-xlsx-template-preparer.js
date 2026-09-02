@@ -77,21 +77,15 @@ export function validateAndRemoveReferenceImage(zipFiles) {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing rId3 relationship');
   }
 
-  // Match all Relationship elements (self-closing or open/close paired, including optional namespace prefix)
-  const relMatches = [...drawingRels.matchAll(/<(?:\w+:)?Relationship\b[^>]*>(?:[\s\S]*?<\/(?:\w+:)?Relationship>)?|<(?:\w+:)?Relationship\b[^>]*\/>/gi)];
-  const matchingRels = [];
+  // Match all relationship elements (self-closing or paired/open, including optional namespace prefix)
+  const allRelTagMatches = [...drawingRels.matchAll(/<(?:\w+:)?Relationship\b[^>]*>(?:[\s\S]*?<\/(?:\w+:)?Relationship>)?|<(?:\w+:)?Relationship\b[^>]*\/>|<(?:\w+:)?Relationship\b[^>]*>/gi)];
+  // Match ONLY canonical self-closing <Relationship .../> elements
+  const selfClosingRelMatches = [...drawingRels.matchAll(/<Relationship\s+[^>]*\/>/g)];
 
-  for (const m of relMatches) {
+  const matchingRels = [];
+  for (const m of selfClosingRelMatches) {
     const tag = m[0].trim();
     if (tag.includes('rId3')) {
-      // Open-only tag validation: tag must either end with '/>' or end with a proper closing tag </Relationship>
-      const isSelfClosing = tag.endsWith('/>');
-      const isPairedClosing = /<\/(?:\w+:)?Relationship>$/i.test(tag);
-      if (!isSelfClosing && !isPairedClosing) {
-        throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Malformed non-self-closing relationship tag for rId3');
-      }
-
-      const fullTagName = tag.match(/<([^>\s/]+)/)?.[1] || '';
       const idMatch = tag.match(/\bId="([^"]+)"/);
       const typeMatch = tag.match(/\bType="([^"]+)"/);
       const targetMatch = tag.match(/\bTarget="([^"]+)"/);
@@ -100,7 +94,6 @@ export function validateAndRemoveReferenceImage(zipFiles) {
 
       matchingRels.push({
         tag,
-        fullTagName,
         id: idMatch ? idMatch[1] : null,
         type: typeMatch ? typeMatch[1] : null,
         target: targetMatch ? targetMatch[1] : null,
@@ -110,17 +103,23 @@ export function validateAndRemoveReferenceImage(zipFiles) {
     }
   }
 
-  // Must have EXACTLY ONE Relationship element matching rId3 AND total rId3 occurrences in rels text must be exactly 1
+  // Must have EXACTLY ONE canonical self-closing Relationship matching rId3 AND total rId3 occurrences in rels text must be exactly 1
   if (matchingRels.length !== 1 || rId3Occurrences.length !== 1) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Expected exactly 1 canonical rId3 relationship');
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Expected exactly 1 canonical self-closing rId3 relationship');
+  }
+
+  // Assert no non-self-closing, paired, open-only or namespace-prefixed relationship tag contains rId3
+  for (const m of allRelTagMatches) {
+    const tag = m[0].trim();
+    if (tag.includes('rId3')) {
+      const isCanonicalSelfClosing = tag.startsWith('<Relationship ') && tag.endsWith('/>');
+      if (!isCanonicalSelfClosing) {
+        throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Non-self-closing, open-only or namespace-prefixed rId3 relationship forbidden');
+      }
+    }
   }
 
   const rel = matchingRels[0];
-
-  // Must be exact canonical element name 'Relationship' (no namespace prefix like 'r:Relationship')
-  if (rel.fullTagName !== 'Relationship') {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Namespace-prefixed relationship forbidden for rId3');
-  }
 
   if (rel.id !== 'rId3') {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid relationship Id for rId3');
