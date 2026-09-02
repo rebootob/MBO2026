@@ -28,26 +28,25 @@ R3-R35_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 14 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R36
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R36
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R36 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For the next gate read:
+For the current gate read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
 5. exact R3-R35 implementation diff in `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-R3-R36 is proposed TEST-ONLY to close only malformed prefixed-`embed` QName fail-closed behavior/proof. All other accepted R3-R35 parser/regression proof is frozen. Reference-image production source remains frozen.
+R3-R36 is authorized TEST-ONLY to close only malformed prefixed-`embed` QName fail-closed behavior/proof. All other accepted R3-R35 parser/regression proof is frozen. Reference-image production source remains frozen.
