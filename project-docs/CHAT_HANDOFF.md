@@ -19,8 +19,8 @@ ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_OWNER_AUTH = YES
 COMPLETE_D2_FULLY_BEFORE_D3 = YES
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 8 OF 20
-ROUNDS_REMAINING = 12
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 9 OF 20
+ROUNDS_REMAINING = 11
 ```
 
 ## 2. Startup order
@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 12
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; reference-image closure next |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; reference-image proof corrective proposed |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -61,39 +61,36 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-Only the exact deterministic Part B `Sheet1` `<sheetPr/>` drift may be normalized inside preservation. Raw `getNoOpParityBuffers()` remains frozen and unrepaired.
+## 5. Latest Control Plane review — reference image
 
-## 5. Latest review — R3-R30
+Current source removes target `rId3` anchor/relationship and removes `xl/media/image3.png` only after a package-wide remaining-relationship orphan check. This source behavior is accepted for the current corrective and should not be redesigned.
+
+Current proof is insufficient for closure because it checks only target absence plus `rId1/rId2` survival. Historical independent reviews R3-R5 through R3-R9 repeatedly required target-normalized exact equality of all non-target drawing anchors, drawing relationship tuples, and media filename/content hashes. The current test does not contain that proof.
 
 ```text
-AUTHORIZATION_COMMIT = 985ddbd1d99d629d54fa7d76fba94a679f08dc59
-IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
-SCOPE_REVIEW = PASS
-R3-R29_SOURCE_BASELINE = PASS / FROZEN
-PROOF_CODE_REVIEW = PASS
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
-R3-R30_STATUS = PASS / CLOSED
+D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS
+REFERENCE_IMAGE_PROOF_REVIEW = FAIL / FULL INVENTORY EQUALITY ABSENT
 ```
-
-R3-R30 changed only the authorized test file and completed the missing Option B fail-closed, counterfeit-Type and typed-privacy regression proof. No production source changed.
 
 ## 6. Exact current gate
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
-PREFERRED_EXECUTION = CHATGPT CONTROL-PLANE READ-ONLY REVIEW FIRST
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
+PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE TARGET-NORMALIZED INVENTORY CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-Existing source/tests already contain reference-image handling. Review them first before spending executor credits.
+R3-R31 is proposed only. No executor is authorized.
 
 ## 7. D2 remaining path
 
