@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION PASS-CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
+> Status: **IN PROGRESS / PRESERVATION PASS-CLOSED / R3-R31 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -50,9 +50,9 @@ Part B: `(Part B) Competency`, `Sheet1`, main A1:X35, A4 portrait, scale 75%, pr
 
 R3-R30 is PASS/CLOSED. The OOXML preservation gate is PASS/CLOSED. Production preservation source is frozen from R3-R29 and Option B remains narrow deterministic allowed drift only.
 
-## 5. Reference-image READ-ONLY review
+## 5. Reference-image review truth
 
-Current source behavior is accepted for the next corrective:
+Current source behavior is accepted for R3-R31:
 - target anchor/relationship `rId3` is removed;
 - target media `xl/media/image3.png` is removed only after scanning all remaining `.rels` parts and failing closed if still referenced.
 
@@ -65,31 +65,48 @@ Historical independent review truth R3-R5 through R3-R9 consistently required:
 - normalize only exact target items out of BEFORE;
 - require every non-target item to be exactly identical AFTER.
 
-That proof is absent from the current test.
-
 ```text
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-REFERENCE_IMAGE_SOURCE_REVIEW = PASS
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN FOR R3-R31
 REFERENCE_IMAGE_PROOF_REVIEW = FAIL
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R31
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R31-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R31
+CLAUDE = STOP / NOT NEEDED
 ```
 
-R3-R31 is NOT authorized.
+Owner explicitly authorized R3-R31 TEST-ONLY on 2026-09-02.
 
-## 6. R3-R31 proposed proof direction
+## 6. R3-R31 mandatory proof
 
-Use existing `origBufA` and `outBufA` only. Snapshot stable full inventories for anchors, drawing relationships and `xl/media/*`; prove exact target identity in BEFORE; remove only target `rId3` anchor/relationship and `image3.png` from the BEFORE inventories; require exact deep equality with AFTER. Retain existing target absence/branding assertions and package-wide orphan safety.
+Using existing `origBufA` and `outBufA` only:
+1. verify exact Part A owner-template identity before template-dependent proof;
+2. snapshot complete BEFORE and AFTER drawing-anchor inventories across relevant `xl/drawings/*.xml` parts using stable part/path + anchor identity/hash;
+3. snapshot complete BEFORE and AFTER drawing relationship inventories using exact `(part, Id, Type, Target, TargetMode)` tuples;
+4. snapshot complete BEFORE and AFTER `xl/media/*` inventories using exact media path + SHA-256 content hash;
+5. prove exact target identity in BEFORE: exactly one expected `rId3` anchor, exactly one image relationship `rId3` resolving to `xl/media/image3.png`, and exact target media present;
+6. normalize only those exact target items out of BEFORE;
+7. require exact deep equality of normalized BEFORE versus AFTER for anchors, relationships and media inventory;
+8. retain explicit target absence, branding/non-target survival and package-wide orphan safety assertions;
+9. if exact owner template is unavailable, skip template-dependent proof explicitly rather than reconstructing the binary.
 
-No production source change is proposed.
+No production source change is authorized.
+
+Required checks:
+```text
+node --check tests/mbo-xlsx-ooxml-feasibility.test.js
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
+```
+
+Exactly one bounded TEST-ONLY commit and push, then STOP.
 
 ## 7. Remaining D2 path
 
-After reference-image closure:
+After ChatGPT independently reviews R3-R31 and closes reference-image handling if justified:
 1. Part A objective insertion matrix;
 2. Part B competency insertion matrix;
 3. formula/no-formula authority;
