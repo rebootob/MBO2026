@@ -6,40 +6,26 @@
 > Execution Plane: Antigravity only for minimum necessary execution  
 > Updated: 2026-09-02 ICT
 
-This file guarantees D1–D7 completeness across chats. Durable rules live in `CONFIRMED_BASELINE/`; current operational status lives in `AI_CONTROL_CENTER.md`.
-
-## 0. Non-negotiable continuity rules
+## 0. Non-negotiable rules
 
 ```text
-NEVER_DROP_D1_TO_D7 = YES
-REPOSITORY_AND_LIVE_EVIDENCE_BEAT_CHAT_MEMORY = YES
+REPOSITORY_AND_ACCEPTED_LIVE_EVIDENCE_BEAT_CHAT_MEMORY = YES
 NO_FALSE_PASS = YES
 EXECUTOR_CANNOT_SELF_CERTIFY = YES
-NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
-NO_REUSE_OR_WIDENING_OF_CONSUMED_AUTH = YES
-APP53_AND_LEGACY_SOURCE_APPS_READ_ONLY_BY_DEFAULT = YES
-EMPLOYEE_CODE_STABLE_PERSON_ID = YES
-NO_AUTOMATIC_EXISTING_MBO_REROUTE_ON_MASTER_CHANGE = YES
-EMPLOYEE_LIFECYCLE_CHANGE_REQUIRES_CONTROLLED_AUDIT = YES
 ANTIGRAVITY_MINIMUM_NECESSARY_ONLY = YES
 CLAUDE_READ_ONLY_SECOND_REVIEW_MINIMUM_NECESSARY_ONLY = YES
+NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 COMPLETE_D2_BEFORE_D3 = YES
 ```
 
-## 1. D1 — Hybrid Identity + Password + Employee-Self + Approver Access
+## 1. D1
 
 ```text
 D1 = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
-APP794_LIVE_REVISION = 67
-RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
-CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT APP794 ASSIGNEE
-SHARED_APPROVER_AUTHORITY = DENIED
-SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
-DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
 ```
 
-D1 is frozen unless proven regression or explicit architecture change.
+Frozen unless proven regression.
 
 ## 2. D2 — Excel + PDF Original/Legacy Format
 
@@ -47,34 +33,18 @@ D1 is frozen unless proven regression or explicit architecture change.
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
-D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R17 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
-D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
-D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
-D2-WP003-R3-R28 = REVIEWED / NOT PASS / NOT CLOSED
-R3-R28_IMPLEMENTATION_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
+D2-WP003-R3-R29 = REVIEWED / SOURCE PASS / PROOF FAIL / NOT CLOSED
+R3-R29_IMPLEMENTATION_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 7 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R29
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R30
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
-
-Accepted R3-R22 closure remains frozen: raw direct xlsx-populate output, deterministic parity blocker, actual dimension evidence, exact per-sheet print-area binding, source-backed negative proof isolation, exact source validates and raw Part A/Part B fail closed after losing dimensions.
-
-Owner-approved Option B allows only one exact deterministic Part B `Sheet1` `<sheetPr/>` round-trip drift to be normalized inside preservation. It is not generic `sheetPr` tolerance; all other non-dimension drift remains fail-closed.
-
-R3-R28 fixed Option B write-back persistence and added coverage/gap XML parsing plus always-runnable unit tests. It remains corrective because the worksheet singleton set is wrong/incomplete, source structural proof still hits SHA first, required per-sheet print-area/Sheet1 colsHash proof and much prior regression coverage were removed, actual Unicode proof and Option B negative proof are incomplete, accepted header/privacy negative guards were reduced, and no CI/runtime signal exists.
-
-R3-R29 is proposed as the smallest next corrective and is NOT authorized.
+R3-R29 source is accepted. Remaining preservation corrective is proof-only: complete Option B fail-closed negatives, restore distinct counterfeit-Type proof, and restore accepted typed-privacy negatives for array typeCounts, fractional count and non-number count. No production source change is proposed.
 
 D2 must ultimately close:
 - preservation gate;
@@ -88,46 +58,36 @@ D2 must ultimately close:
 - export security/privacy regression;
 - final independent D2 review.
 
-## 3. D3 — Migrate 8 Legacy PMS Apps -> App794
+## 3. D3
 
 Protected READ-ONLY sources: `283, 310, 305, 643, 307, 640, 715, 716`.
-
-Required sequence: `READ-ONLY discovery -> mapping -> dry run -> conflict report -> reconciliation -> target backup -> exact manifest -> explicit App794 write authorization -> batch write -> readback -> reconciliation`.
 
 ```text
 D3 = HOLD UNTIL D2 PASS / CLOSED
 D3_WRITE_AUTH = NONE
 ```
 
-## 4. D4 — App800 HR Control Center End-to-End
+## 4. D4
 
-Must include Employee Lifecycle Change operations. Canonical lifecycle policy: `CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+App800 HR Control Center E2E. Must include Employee Lifecycle Change operations. Status: `IN PROGRESS / NOT ACTIVE`.
 
-Status: `IN PROGRESS / NOT ACTIVE`.
+## 5. D5
 
-## 5. D5 — Copy Own Previous MBO
+Copy Own Previous MBO. Carry-forward whitelist only; fresh target-year routing/identity. Status: `IN PROGRESS / NOT ACTIVE`.
 
-Carry-forward whitelist only: Objective, Action Plan, Additional Agreement, Weight. Target FY resolves fresh current App53/App795 configuration.
+## 6. D6
 
-Status: `IN PROGRESS / NOT ACTIVE`.
+Integrated E2E / Security / Regression. Status: `PENDING`.
 
-## 6. D6 — Integrated E2E / Security / Regression
+## 7. D7
 
-Must prove D1–D5 + D7 together, including lifecycle/security regression and stale-prior-authority denial after controlled reassignment.
-
-Status: `PENDING`.
-
-## 7. D7 — Admin Support Center
-
-`admin-form` = Technical Admin/recovery only; no Employee-Self/Approver authority.
-
-Status: `SOURCE FUNCTIONALITY CLOSED`; reopen only proven defect.
+Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE FUNCTIONALITY CLOSED`.
 
 ## 8. Current exact next action
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R29 AS PROPOSED
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R30 TEST-ONLY
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
