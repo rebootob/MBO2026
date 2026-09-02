@@ -36,14 +36,16 @@ D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R33_PROOF_REVIEW = FAIL / NCNAME + ATTRIBUTE COVERAGE FAIL-CLOSED INCOMPLETE
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 12 OF 20
-ACTIVE_D2_WORK_PACKAGE = D2-WP003-R3-R34
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R34-TEST-20260902-01
+R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 13 OF 20
+ACTIVE_D2_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R35
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-R3-R33 implementation `adc974704898686efffd7ac121b4b58820581461` stayed within TEST-ONLY scope and correctly tightened case-sensitive local names, direct start-tag attributes, duplicate required-attribute rejection and TargetMode tuple identity. R3-R34 is now authorized TEST-ONLY to close only NCName validation and complete Relationship start-tag attribute-region token consumption; reference-image production source remains frozen.
+R3-R34 implementation `f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec` stayed within TEST-ONLY scope and correctly closed the originally targeted minimum invalid-prefix and malformed attribute-region cases. Remaining defects are TEST-ONLY XML Name/NCName/QName correctness plus removed accepted adversarial regression proof; reference-image production source remains frozen.
 
 D2 must still close:
 - reference-image strict fail-closed inventory proof;
@@ -84,11 +86,10 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R3-R34-TEST-20260902-01
-EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-EXPECTED_COMMITS = EXACTLY ONE BOUNDED TEST-ONLY IMPLEMENTATION/BLOCKER COMMIT
-ANTIGRAVITY = STOP AFTER PUSH/REPORT
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R35 TEST-ONLY
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
