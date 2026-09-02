@@ -1,42 +1,53 @@
 # CONFIRMED BASELINE — SOURCE OF TRUTH
 
-This folder contains business, technical, security, UI/UX, routing, data, and governance facts that have already been explicitly confirmed by user decision, live Kintone evidence accepted by independent review, or completed review gates.
+This folder contains business, technical, security, UI/UX, routing, data, and governance facts already confirmed by Owner decision, accepted Live evidence, or completed independent review gates.
 
 ## Governance
 
 1. This folder is the highest-priority durable source of truth for future ChatGPT/Antigravity reviews.
 2. Only confirmed/frozen facts belong here. Drafts, proposals, hypotheses, candidate mappings, temporary findings, pending-review execution claims, and unresolved decisions must stay outside this folder.
-3. **Every important durable fact that becomes confirmed MUST be promoted into this folder in the same control cycle.**
-4. When a confirmed fact changes, update the existing canonical file in place or add a clearly scoped closure/supersession Baseline when preserving the original acceptance contract is important. Do not create duplicate `_old` / `_v1` sources of truth.
-5. Every Baseline change must include the evidence/review context or explicit user decision that caused it.
+3. Every important durable fact that becomes confirmed MUST be promoted here in the same control cycle.
+4. When confirmed truth changes, update the canonical file or add a clearly scoped closure/supersession Baseline; do not create duplicate `_old` / `_v1` truth files.
+5. Every Baseline change must include its evidence/review or explicit Owner decision basis.
 6. If another project document conflicts with this folder, STOP and reconcile before runtime/deployment work.
-7. Runtime code, Kintone configuration, tests, `AI_CONTROL_CENTER.md`, and `AI_ACTIVE_TASK.md` must remain consistent with the applicable Baseline.
-8. Historical evidence does not become current truth until independently reviewed/accepted or explicitly confirmed.
+7. Runtime code, Kintone configuration, tests, `AI_CONTROL_CENTER.md`, and `AI_ACTIVE_TASK.md` must remain consistent with applicable Baselines.
+8. Historical evidence does not become current truth until independently accepted or explicitly confirmed.
 9. Baseline promotion is a Control Plane responsibility.
-10. Follow `DOCUMENT_CONTROL.md`; historical/superseded documents remain available for audit but are not reread by default.
+10. Historical/superseded documents remain available for audit but are not reread by default.
+
+## Fast D2 durable read set
+
+For ordinary D2 continuation/review, start with `../D2_REVIEW_FAST_START.md` and read only the Baseline directly touched by the current gate/diff.
+
+Current closed D2 gate Baselines:
+- `D2_PART_A_STRUCTURAL_CLOSURE.md` — frozen Part A real 4..10 objective structural matrix and zero-formula invariant.
+- `D2_PART_B_STRUCTURAL_CLOSURE.md` — frozen Part B real 6/7/8 competency structural matrix, fail-closed source/defined-name controls, zero-formula invariant, and explicit privacy-remap boundary.
+- `D2_FORMULA_AUTHORITY_CLOSURE.md` — scoring authority = Kintone/App794; secured projection = export-data authority; Excel scoring formulas/recalculation forbidden; production XLSX formula inventory must remain zero.
+
+Do not reread these closed gates by default unless the current diff touches their dependency or concrete regression evidence exists.
 
 ## D1 final status
 
-D1 authentication/access is **KINTONE-ONLY HYBRID IDENTITY** and is now closed:
+D1 authentication/access is **KINTONE-ONLY HYBRID IDENTITY** and is closed:
 
 ```text
 D1 = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
 External server/service = FORBIDDEN
-Auth Bridge              = CANCELLED / SUPERSEDED
-External database        = FORBIDDEN
-Reverse proxy            = FORBIDDEN
+Auth Bridge = CANCELLED / SUPERSEDED
+External database = FORBIDDEN
+Reverse proxy = FORBIDDEN
 HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
 ```
 
-`D1_CLOSURE.md` is the durable final-status/supersession authority for D1. Older D1 Baselines continue to govern their detailed behavior/security contracts, but pre-live/pre-closure status sentences inside them are superseded by `D1_CLOSURE.md` and current accepted repository/live evidence.
+`D1_CLOSURE.md` is the durable final-status/supersession authority for D1. Older D1 Baselines govern detailed behavior/security contracts, but pre-live/pre-closure status text is superseded by `D1_CLOSURE.md` and current accepted repository/live evidence.
 
 Canonical meaning remains:
-- dedicated Kintone employee/approvers auto-bind only through exact active App53 `MBO_Kintone_User` -> canonical `emp_text` Employee_Code;
+- dedicated Kintone employee/approvers auto-bind only through exact active App53 `MBO_Kintone_User` -> canonical Employee_Code;
 - approved shared Kintone principals use Employee_Code + App801 MBO password/session;
 - one person may be both Employee and Approver without duplicate employee/MBO records;
 - `My MBO` and `My Approval Tasks` are separate security contexts;
-- self-approval is prohibited; approved own-MBO-only elision removes self before workflow snapshot and never auto-approves;
+- self-approval is prohibited;
 - Dedicated approval authority is authoritative current native App794 `Assignee`;
 - SHARED approver authority is denied.
 
@@ -49,9 +60,7 @@ DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERM
 
 ## Employee lifecycle changes — durable policy
 
-`EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` is the canonical policy for resignation, transfer, promotion/position change, Department/Section/Team change, Kintone-principal change, and manager/appraiser lifecycle changes.
-
-Core rule:
+`EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` is canonical for resignation, transfer, promotion/position change, Department/Section/Team change, Kintone-principal change, and manager/appraiser lifecycle changes.
 
 ```text
 Employee_Code = stable person identity
@@ -62,11 +71,9 @@ master-data change != automatic retroactive App794 rewrite
 mid-cycle operational change = HR-controlled explicit amendment + audit
 ```
 
-This lifecycle policy does not reopen D1 by itself. D4 owns HR operational implementation and D6 owns integrated lifecycle/security regression.
+D4 owns HR operational implementation and D6 owns integrated lifecycle/security regression.
 
-## D2 Part B preservation allowed-drift — durable Owner decision
-
-Owner decision confirmed on 2026-09-02 ICT:
+## D2 preservation allowed-drift — durable Owner decision
 
 ```text
 DECISION_ID = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
@@ -75,21 +82,9 @@ STATUS = APPROVED
 POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
 ```
 
-Durable meaning:
-- the direct xlsx-populate Part B round trip may contain exactly one specifically proven deterministic `sheetPr` drift in legacy `Sheet1`;
-- this is not generic `sheetPr` tolerance;
-- the exact SHA-verified source must lack the allowed element;
-- the observed element must match the exact pinned structure/value/fingerprint and exact pinned worksheet/slot derived from the verified round trip;
-- normalization/removal must occur only inside the approved preservation path on its working copy;
-- caller source/raw inputs remain byte-immutable;
-- modified, extra, duplicate, reordered, moved, other-sheet or Part-A `sheetPr` remains fail-closed;
-- every other non-dimension drift remains forbidden.
-
-This decision changes only the D2 preservation policy. It does not by itself authorize source changes, evidence publication, Kintone access/write, deploy, Live UAT, rollback or D3.
+Only the specifically proven deterministic Part B `Sheet1` `<sheetPr/>` drift is allowed in the approved preservation path. It is not generic tolerance. All other non-dimension drift remains fail-closed and caller source/raw inputs remain byte-immutable.
 
 ## D2 OOXML preservation gate — durable closure
-
-Independent Control Plane review on 2026-09-02 ICT accepted the bounded preservation implementation and final TEST-ONLY proof completion:
 
 ```text
 D2_PRESERVATION_GATE = PASS / CLOSED
@@ -98,25 +93,9 @@ D2-WP003-R3-R30 = PASS / CLOSED
 R3-R30_IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
 ```
 
-Frozen preservation controls:
-- exact SHA-verified owner-template identity;
-- exact worksheet relationship Type/ID/raw-Target tuple identity;
-- fail-closed target lexical validation and duplicate relationship-ID rejection;
-- coverage/gap XML inventory and worksheet occurrence/order validation;
-- pure dimension/sequence/boundary preservation validation used by production;
-- direct raw Part A/Part B preservation path;
-- byte-immutable caller source/raw buffers;
-- `getNoOpParityBuffers()` remains unrepaired/frozen;
-- Option B is the only allowed non-dimension drift and remains exact/fail-closed;
-- duplicate, extra, moved, other-sheet and Part-A observed-only `sheetPr` cases are rejected;
-- distinct counterfeit worksheet-like relationship Type is rejected;
-- exact print-area, Part B `Sheet1.colsHash`, header-fingerprint and typed-privacy regression guards remain part of accepted proof.
-
-GitHub exposed no independent CI/status/workflow run for R3-R30. This closure records the independent repository scope/source/proof-code review and does not claim a separate CI/runtime certification.
+Frozen preservation controls include exact template SHA identity, worksheet relationship/type/target controls, XML structure/order/occurrence validation, direct raw Part A/Part B preservation, caller-buffer immutability, exact print-area and privacy/header regression guards, and Option B as the only allowed non-dimension drift.
 
 ## D2 reference-image gate — durable closure
-
-Independent Control Plane review on 2026-09-02 ICT accepted the frozen reference-image source path plus the cumulative TEST-ONLY proof completion through R3-R36:
 
 ```text
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
@@ -126,55 +105,41 @@ R3-R36_AUTHORIZATION_COMMIT = f72e935b639da850aacc675c1ef2e30ce5f892c7
 R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
 ```
 
-Frozen reference-image controls:
-- exact Part A owner-template SHA identity gates template-dependent proof;
-- target removal identity remains the exact Part A drawing anchor embedding `rId3`, exact drawing relationship tuple for `rId3`, and exact `xl/media/image3.png` media target;
-- complete BEFORE/AFTER drawing-anchor inventories are compared after normalizing only the exact approved target item;
-- complete BEFORE/AFTER drawing-relationship inventories preserve exact part, Id, Type, raw Target, and raw TargetMode identity and are compared after normalizing only the exact approved target tuple;
-- complete BEFORE/AFTER `xl/media/*` inventories use exact media path plus SHA-256 content hash and are compared after normalizing only `xl/media/image3.png`;
-- deterministic stable sorting, exact target cardinality, target absence, `rId1`/`rId2` branding survival, and package-wide orphan safety remain required;
-- drawing anchor coverage includes `twoCellAnchor`, `oneCellAnchor`, and `absoluteAnchor` with exact case-sensitive local names;
-- XML 1.0-compatible NameStartChar/NameChar/NCName/QName handling is retained for parser proof, including valid Unicode continuation cases and fail-closed malformed QName cases;
-- drawing Relationship start-tag attribute parsing is direct-start-tag only, complete-region consuming, quote-safe, duplicate-safe, and fail-closed for malformed/unconsumed syntax;
-- TargetMode absent / explicit Internal / explicit External remain distinct raw tuple identities;
-- malformed prefixed `embed` candidates including `1bad:embed`, `:embed`, and `foo::embed` fail closed; valid `r:embed="rId3"` retains exact rId extraction;
-- reference-image production source was not modified by the R3-R31 through R3-R36 proof-corrective sequence and remains accepted/frozen.
-
-GitHub exposed no independent CI/status/workflow run for R3-R36. This closure records independent repository scope/proof-code review and does not claim a separate CI/runtime certification.
+Frozen reference-image controls preserve exact target anchor/relationship/media identity, complete before/after inventories, deterministic package-reference safety, fail-closed XML/relationship parsing, exact case/QName behavior, and branding/media survival outside the single approved removed target.
 
 ## Canonical Files
 
-- `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules, Control Center/Active Task model, Baseline promotion and reusable-skill rules.
+- `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules and Baseline promotion.
 - `ROLLBACK_RECOVERY_SAFETY.md` — mandatory Live rollback/recovery standard.
 - `SOURCE_CODE_ARCHITECTURE.md` — modular JavaScript architecture and source ownership rules.
-- `DOCUMENT_CONTROL.md` — lean document policy, Core Read Set and default-ignore historical files.
-- `D1_CLOSURE.md` — final durable D1 PASS/closure, accepted runtime/config evidence, cleanup state, security ceilings and supersession rule for older pre-live status text.
-- `D1_AUTH_SECURITY.md` — KINTONE-ONLY HYBRID IDENTITY architecture, dedicated-vs-shared identity modes, Employee-Self/Approver separation, App801 shared credential model, PBKDF2/lockout/password rules and HR/admin reset authority.
-- `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — App53 mapping contract, own-MBO self-appraiser elision, Dedicated native access and status-aware Record ACL design.
-- `D1_SESSION_CONTINUITY.md` — dedicated native-Kintone continuity versus shared 8-hour App801-backed same-tab MBO session, binding/logout/password rules.
-- `D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO ownership/history/status/no-delete rules for both identity modes, with dual-role separation.
-- `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — Live history/comments/attachments truthfulness and Kintone-only file lifecycle.
-- `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` — stable Employee_Code, current-master vs historical-snapshot rules, resignation/transfer/promotion/principal-change handling, HR-controlled mid-cycle reassignment and D4/D6 ownership.
-- `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes, weights and lifecycle appraiser model.
-- `LEGACY_PMS_APPS.md` — verified legacy PMS app IDs/names used as historical classification evidence.
-- `ROUTING_WORKFLOW.md` — confirmed App795 routing model, effective requester identity and workflow rules.
-- `EMPLOYEE_MASTER_ROUTING.md` — confirmed App53 routing-input semantics and mapping contract.
-- `UI_UX.md` — confirmed App794 UI/UX and Hybrid Identity Home behavior.
+- `DOCUMENT_CONTROL.md` — lean document policy and historical/default-ignore rules.
+- `D1_CLOSURE.md` — final durable D1 PASS/closure and security ceilings.
+- `D1_AUTH_SECURITY.md` — KINTONE-ONLY HYBRID IDENTITY and shared credential model.
+- `D1_HYBRID_IDENTITY_ACCESS_DESIGN.md` — App53 mapping and access design.
+- `D1_SESSION_CONTINUITY.md` — dedicated/shared session continuity rules.
+- `D1_EMPLOYEE_SELF_MY_MBO.md` — My MBO ownership/history/status rules.
+- `D1_LIVE_UI_TRUTHFULNESS_ATTACHMENTS.md` — Live history/comments/attachments truthfulness.
+- `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` — lifecycle change policy.
+- `EVALUATION_CLASSES.md` — frozen evaluation/scoring classes and weights.
+- `LEGACY_PMS_APPS.md` — verified legacy PMS app classification evidence.
+- `ROUTING_WORKFLOW.md` — App795 routing/workflow rules.
+- `EMPLOYEE_MASTER_ROUTING.md` — App53 routing-input semantics.
+- `UI_UX.md` — confirmed App794 UI/UX behavior.
+- `D2_PART_A_STRUCTURAL_CLOSURE.md` — Part A structural closure.
+- `D2_PART_B_STRUCTURAL_CLOSURE.md` — Part B structural closure.
+- `D2_FORMULA_AUTHORITY_CLOSURE.md` — formula/no-formula authority closure.
 
 ## Review Rule
 
-For every future `review`, reviewer must:
-1. read `AI_CONTROL_CENTER.md` and only the relevant Baselines;
-2. compare implementation/evidence against confirmed facts;
-3. independently accept/reject new evidence;
-4. promote newly accepted durable facts into this folder before closing the control cycle;
-5. extract reusable Kintone knowledge into `skills/kintone/` when generalizable;
+For future `review`:
+1. start from `D2_REVIEW_FAST_START.md` for D2 work;
+2. read only the relevant Baseline;
+3. compare implementation/evidence against confirmed facts;
+4. independently accept/reject new evidence;
+5. promote newly accepted durable facts before closing the cycle;
 6. treat conflicts as MUST FIX/BLOCKER according to impact;
-7. update Control Center / Active Task to match the promoted Baseline.
+7. update Control Center / Active Task to match promoted truth.
 
-For any D1 reopen/security audit, read `D1_CLOSURE.md` first, then only the detailed D1 Baselines directly relevant to the suspected regression.
-For employee resignation/transfer/promotion/principal/approver lifecycle work, `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` is mandatory reading before planning or implementation.
-For any Live deployment/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory reading.
-For any source implementation/refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory reading when functional ownership or module boundaries are affected.
+For D1 reopen/security audit, read `D1_CLOSURE.md` first. For lifecycle work, read `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`. For Live deployment/rollback, read `ROLLBACK_RECOVERY_SAFETY.md`. For source implementation/refactor affecting module ownership, read `SOURCE_CODE_ARCHITECTURE.md`.
 
-Temporary status, blockers, transient commit SHAs and raw test logs belong in `AI_CONTROL_CENTER.md` / evidence, not duplicated here except where a reviewed commit is part of an explicit durable closure statement.
+Temporary status, blockers, transient SHAs and raw test logs belong in operational docs/evidence, not duplicated here except where a reviewed commit is part of a durable closure statement.
