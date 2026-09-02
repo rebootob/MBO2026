@@ -1,206 +1,165 @@
-# AI ACTIVE TASK — D2-WP003-R3-R34 TEST-ONLY AUTHORIZED
+# AI ACTIVE TASK — D2 REFERENCE-IMAGE R3-R34 REVIEW / R3-R35 TEST-ONLY PROPOSED
 
-Mode: **CONTROL PLANE / LOW-CREDIT / ONE-SHOT TEST-ONLY EXECUTION / SOURCE FROZEN / NO KINTONE / NO DEPLOY**  
+Mode: **CONTROL PLANE / LOW-CREDIT / SOURCE FROZEN / TEST-ONLY CORRECTIVE PROPOSED / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
 ```text
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+TASK_STATE = WAIT_OWNER_CORRECTIVE_APPROVAL
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-D2-WP003-R3-R33_SCOPE_REVIEW = PASS
-D2-WP003-R3-R33_PROOF_REVIEW = FAIL / NCNAME + ATTRIBUTE COVERAGE FAIL-CLOSED INCOMPLETE
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 12
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 8
+D2-WP003-R3-R34_SCOPE_REVIEW = PASS
+D2-WP003-R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 13
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 7
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R34
-ACTIVE_WORK_PACKAGE_NAME = REFERENCE-IMAGE NCNAME + ATTRIBUTE TOKEN COVERAGE CLOSURE
-AUTHORIZED_SCOPE = TEST-ONLY / EXISTING FEASIBILITY TEST FILE ONLY
-OWNER_APPROVAL_BASELINE_HEAD = 473dbff1b4bc47329e2bfb9d42e14b719cdd217c
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R34-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R35
+PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE XML NAME/QNAME + REGRESSION RETENTION CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / EXISTING FEASIBILITY TEST FILE ONLY
+REFERENCE_IMAGE_SOURCE_BASELINE = CURRENT SOURCE / FROZEN / DO NOT MODIFY
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = CURRENT SOURCE / FROZEN / DO NOT MODIFY
 PRIVACY_PURGE_REQUIRED = NO
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R34 / ONE-SHOT BOUNDED EXECUTION
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 ```
 
-## 1. Owner authorization
-
-Owner explicitly authorized:
+## 1. R3-R34 authorization consumed
 
 ```text
-D2-WP003-R3-R34 TEST-ONLY ตามขอบเขตที่เสนอ
+AUTHORIZATION = D2-WP003-R3-R34-TEST-20260902-01
+AUTHORIZATION_COMMIT = 29837a5b84ad7b3397ec256a0bcf193f80d67b7e
+IMPLEMENTATION_COMMIT = f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec
+AUTHORIZATION_STATUS = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Authorization token:
+Scope review = PASS:
+- implementation is exactly one commit after the authorization commit;
+- only `tests/mbo-xlsx-ooxml-feasibility.test.js` changed;
+- no production source/dependency/evidence/Kintone/deploy/D3 scope changed.
 
-```text
-D2-WP003-R3-R34-TEST-20260902-01 = ACTIVE / ONE-SHOT / TEST-ONLY / DO NOT WIDEN / DO NOT REUSE
-```
+## 2. Accepted R3-R34 progress
 
-This authorization permits only the bounded TEST-ONLY implementation described below. It does not authorize production source changes, evidence publication, Kintone writes, deploys, Live UAT, PDF work, D3, R3-R35, or any next work package.
-
-## 2. R3-R33 accepted progress and remaining blockers
-
-R3-R33 implementation:
-
-```text
-adc974704898686efffd7ac121b4b58820581461
-```
-
-Retain all accepted progress:
+Retain all of this:
 - case-sensitive exact local names for `wsDr`, anchors, `Relationships`, `Relationship`;
 - target-normalized BEFORE/AFTER anchor equality;
 - target-normalized BEFORE/AFTER drawing relationship equality;
 - media path + SHA-256 equality;
 - exact Part A SHA gate for template-dependent proof;
 - direct Relationship START-TAG attribute extraction;
-- nested-child attribute substitution rejection;
-- duplicate `Id`, `Type`, `Target`, `TargetMode` rejection;
-- namespace-qualified required-attribute substitute rejection when the unqualified required attribute is absent;
-- absent TargetMode retained as `null`;
-- explicit `Internal` / `External` values retained distinctly;
-- TargetMode tuple inequality proof;
+- complete scanning that now rejects the specifically targeted unterminated quote, unquoted value, malformed equals and stray attribute-region syntax;
+- leading-digit, leading-hyphen and leading-dot element-prefix negatives;
+- valid `ns-1`, `pkg.rel` and non-ASCII-letter prefix positives;
+- mixed single/double quoted valid Relationship attributes;
 - exact full target relationship tuple binding before normalization;
 - exact target anchor part/embed/cardinality binding;
-- target absence, `rId1`/`rId2` survival and package-wide orphan safety;
-- positive prefix examples for hyphen, dot and non-ASCII characters.
+- target absence, `rId1`/`rId2` survival and package-wide orphan safety.
 
 Reference-image production source remains accepted and frozen.
 
-Remaining proof blockers:
-1. prefix pattern is broader than XML NCName and accepts invalid forms such as leading digit;
-2. Relationship start-tag attribute extraction does not prove complete token-region consumption, so malformed/unquoted extra syntax can be silently skipped;
-3. always-runnable proof does not yet reject invalid NCName prefixes or malformed/unquoted attribute-region syntax.
+## 3. R3-R34 proof blockers
 
-## 3. Exact write scope — ONLY ONE FILE
+### A. `isValidNCName()` is still an approximation, not XML NCName-complete
 
-Modify ONLY:
+Current validator hard-codes broad BMP ranges. It rejects XML-valid NameChar forms such as middle-dot and combining-mark continuation characters and does not model the XML NameStartChar/NameChar ranges exactly, including supplementary-plane NameStartChar.
+
+Control Plane independently reproduced examples where valid NCNames equivalent to `a·b` and `a` + combining acute are rejected.
+
+### B. Relationship attribute names are not validated as XML Name/QName tokens
+
+The current attribute-name matcher accepts characters from a broad class including digits and colon without validating QName structure. Therefore XML-invalid attribute names such as leading-digit names, leading-colon names, trailing-colon names or multi-colon names can be accepted as syntactically valid extra attributes while `Id`, `Type` and `Target` remain valid.
+
+Control Plane independently reproduced acceptance of examples equivalent to:
+- `1bad="x"`;
+- `:bad="x"`;
+- `foo::bar="x"`.
+
+This contradicts the R3-R34 rule that the entire attribute region must consist only of syntactically valid attribute tokens.
+
+### C. Accepted R3-R33 adversarial proof was removed
+
+R3-R34 replaced the existing parser adversarial test body and removed explicit accepted assertions that R3-R34 was required to preserve, including:
+- wrong-case anchor local-name rejection;
+- wrong-case Relationship local-name rejection;
+- nested-child `Id`/`Type`/`Target` substitution rejection;
+- duplicate `Id`, `Type`, `Target`, `TargetMode` rejection;
+- namespaced required-attribute substitute rejection;
+- TargetMode absent/Internal/External tuple inequality proof.
+
+Behavior may still exist in helpers, but the accepted regression proof itself was removed, so the gate cannot be closed.
+
+### D. Additional prefix-bearing embed proof remains incomplete
+
+If the anchor inventory extracts a prefixed `embed` attribute, that QName prefix must not bypass the same NCName validity rules. A malformed prefix on the embed QName must fail closed rather than still yielding the target rId.
+
+## 4. Independent runtime signal
+
+GitHub exposes no combined status checks and no workflow runs for implementation commit `f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec`.
+
+Control Plane does not claim independent runtime PASS.
+
+## 5. Proposed D2-WP003-R3-R35 — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R35
+PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE XML NAME/QNAME + REGRESSION RETENTION CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+EXECUTOR = NONE
+```
+
+No Antigravity or Claude execution is authorized by this proposal.
+
+## 6. Proposed mandatory TEST-ONLY corrective
+
+If explicitly authorized, modify ONLY:
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-READ-ONLY as needed:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- exact R3-R33 authorization / implementation history;
-- package metadata;
-- exact ignored Part A owner template only after SHA verification.
+Mandatory direction:
+1. preserve every accepted R3-R34 test and helper behavior;
+2. restore all accepted R3-R33 adversarial assertions listed in section 3C; do not replace one negative matrix with another;
+3. implement XML 1.0-compatible NCName validation based on actual NameStartChar/NameChar code-point ranges rather than a rough broad-character class;
+4. NCName must exclude colon and validate all code points, including supplementary-plane code points where allowed;
+5. prove valid continuation examples such as middle-dot, combining mark and connector punctuation are accepted when XML-valid;
+6. preserve the already accepted valid `ns-1`, `pkg.rel`, and non-ASCII-letter prefix examples and invalid leading-digit/hyphen/dot examples;
+7. validate each Relationship attribute name as a syntactically valid XML name form before accepting the token:
+   - unqualified attribute name = one valid NCName;
+   - qualified attribute name = exactly one colon separating valid prefix NCName and valid local NCName;
+   - reject leading colon, trailing colon, multiple colons, leading-digit local/name, or other invalid Name/QName forms;
+8. continue requiring exactly one UNQUALIFIED `Id`, exactly one UNQUALIFIED `Type`, exactly one UNQUALIFIED raw `Target`, and at most one UNQUALIFIED `TargetMode`;
+9. retain namespaced required-attribute substitute rejection, duplicate required-attribute rejection, nested-child substitution rejection and exact TargetMode identity;
+10. retain complete Relationship attribute-region consumption from R3-R34, including malformed quote/unquoted/malformed equals/stray text negatives;
+11. if a prefixed `embed` QName is observed by anchor inventory extraction, validate that prefix with the same NCName rules before using its value; malformed QName prefix must fail closed;
+12. retain exact complete target relationship tuple normalization, exact target anchor part/embed/cardinality binding, full anchor/relationship/media deep equality, target absence, branding survival and orphan-safety proof;
+13. add always-runnable privacy-safe synthetic/adversarial tests proving at minimum:
+   - restored complete R3-R33 adversarial matrix;
+   - all R3-R34 adversarial matrix remains;
+   - valid NCName with middle-dot continuation;
+   - valid NCName with combining-mark continuation;
+   - valid connector-punctuation continuation;
+   - invalid attribute name beginning with digit rejects;
+   - invalid attribute name beginning with colon rejects;
+   - invalid trailing-colon name rejects;
+   - invalid multi-colon QName rejects;
+   - valid unrelated qualified extra attribute with exactly one valid QName parses without satisfying required unqualified attributes;
+   - malformed prefixed `embed` QName cannot yield a target rId;
+14. synthetic/adversarial tests must run when owner templates are absent;
+15. template-dependent full inventory equality may skip only when exact owner template is unavailable;
+16. do not change production source merely to make tests pass.
 
-Do NOT modify production source, package/dependencies, governance docs, generated workbook/image/PDF files, evidence, application code, Kintone, deploy configuration, or any other tracked file.
-
-## 4. Mandatory TEST-ONLY corrective
-
-Preserve all accepted R3-R33 proof behavior and close only NCName + Relationship start-tag token coverage.
-
-Mandatory requirements:
-
-1. Replace the broad optional-prefix token with a genuinely NCName-aware validator/tokenizer or equivalent strict parser.
-
-2. Preserve positive valid prefix behavior already required:
-   - `ns-1` must be accepted;
-   - `pkg.rel` must be accepted;
-   - a non-ASCII-letter prefix such as `ñ` must be accepted.
-
-3. Reject invalid NCName prefix forms at minimum:
-   - leading digit, e.g. `1bad`;
-   - leading hyphen, e.g. `-bad`;
-   - leading dot, e.g. `.bad`.
-
-4. Do not broaden accepted local names. Exact case-sensitive local names remain mandatory:
-   - `wsDr`;
-   - `twoCellAnchor`;
-   - `oneCellAnchor`;
-   - `absoluteAnchor`;
-   - `Relationships`;
-   - `Relationship`.
-
-5. For each direct `Relationship` START TAG, tokenize/validate the COMPLETE attribute region. Every non-whitespace character between the element QName and the closing `>` or `/>` must be consumed by a syntactically valid attribute token.
-
-6. Valid attribute tokens may use single- or double-quoted values as already accepted.
-
-7. Reject fail-closed:
-   - unterminated single-quoted value;
-   - unterminated double-quoted value;
-   - unquoted attribute value;
-   - stray token text;
-   - malformed `=` syntax;
-   - any other unconsumed attribute-region character/text.
-
-8. Continue requiring exactly one UNQUALIFIED:
-   - `Id`;
-   - `Type`;
-   - raw `Target`.
-
-9. Continue permitting at most one UNQUALIFIED `TargetMode`.
-   - absent remains `null`;
-   - explicit value remains exact raw value.
-
-10. Retain duplicate `Id`, `Type`, `Target`, `TargetMode` rejection and namespaced required-attribute substitute rejection.
-
-11. Retain exact complete target relationship tuple normalization from R3-R33:
-   - expected drawing relationship part;
-   - `Id = rId3`;
-   - canonical image relationship Type;
-   - raw `Target = ../media/image3.png`;
-   - exact raw TargetMode identity.
-
-12. Retain exact target anchor part/embed/cardinality binding before normalization.
-
-13. Retain exact target-normalized deep equality for:
-   - anchors;
-   - drawing relationship tuples;
-   - media path/hash inventory.
-
-14. Retain target absence assertions, `rId1`/`rId2` survival assertions and package-wide orphan-safety proof.
-
-15. Add always-runnable privacy-safe synthetic/adversarial tests in the SAME existing test file proving at minimum:
-   - valid hyphenated prefix still passes;
-   - valid dotted prefix still passes;
-   - valid non-ASCII-letter prefix still passes;
-   - leading-digit prefix rejects;
-   - leading-hyphen prefix rejects;
-   - leading-dot prefix rejects;
-   - malformed unterminated quoted extra attribute rejects even when `Id`/`Type`/`Target` are otherwise valid;
-   - unquoted extra attribute rejects even when `Id`/`Type`/`Target` are otherwise valid;
-   - malformed equals syntax rejects;
-   - stray/unconsumed attribute-region text rejects;
-   - complete valid mixed single/double quoted attributes still parse.
-
-16. Synthetic/adversarial tests MUST run even when owner templates are unavailable.
-
-17. If exact owner template is unavailable, template-dependent full inventory equality proof may skip explicitly; do not reconstruct, invent, publish, or commit the binary.
-
-18. Do not modify production source merely to make tests pass.
-
-## 5. Proof quality rules
-
-Required characteristics:
-- deterministic stable sorting before deep equality;
-- exact case-sensitive local names;
-- genuinely NCName-aware prefix validation;
-- complete direct Relationship start-tag attribute-region consumption;
-- exact direct-start-tag attributes only;
-- exact relationship tuple identity;
-- raw relationship `Target` retained;
-- raw TargetMode presence/value retained;
-- exact target cardinality checks before normalization;
-- no count-only or sentinel-only substitute for full inventory equality;
-- no silent dropping of malformed/unparsed relevant inventory entries;
-- any helper added/changed in the test file must be directly exercised by the same change.
-
-## 6. Required execution sequence
-
-Run exactly:
+## 7. Required execution sequence if authorized
 
 ```bash
 node --check tests/mbo-xlsx-ooxml-feasibility.test.js
@@ -209,49 +168,37 @@ npm audit --omit=dev
 git status --porcelain
 ```
 
-Then:
-- create exactly ONE bounded TEST-ONLY implementation or blocker commit;
-- push to `ai/antigravity-wp002c`;
-- STOP immediately;
-- report commit SHA, changed file, node check result, test result, npm audit result, `git status --porcelain`, and blocker if any.
+Exactly one bounded TEST-ONLY implementation/blocker commit and push, then STOP.
 
-Do not start another corrective or work package automatically.
-
-## 7. Frozen / out of scope
+## 8. Frozen / out of scope
 
 Do NOT modify:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js` or any production source;
 - preservation source / Option B policy / `getNoOpParityBuffers()`;
-- dependencies;
-- generated workbooks/images/PDFs;
-- privacy evidence or employee-bearing binaries;
-- Kintone/App53/App794/App795/App801;
-- ACL/process configuration;
-- customization deploy;
-- Live UAT / rollback;
-- Part A objective insertion closure;
-- Part B competency insertion closure;
-- formula/no-formula closure;
-- production renderer/sanitizer;
-- combined Excel;
-- PDF;
+- dependencies or generated workbooks/images/PDFs;
+- evidence/Kintone/deploy/Live UAT;
+- Part A objective insertion;
+- Part B competency insertion;
+- formula closure;
+- renderer/combined export/PDF;
 - D3;
-- R3-R35 or any next WP.
+- R3-R36 or any next WP.
 
-Claude second review is not authorized or needed for this bounded TEST-ONLY change unless ChatGPT later determines material ambiguity remains after repository review.
+Claude second review is not needed at this gate.
 
-## 8. Authorization ledger
+## 9. Authorization ledger
 
 ```text
 D2-WP003-R3-R30-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R31-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R32-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R33-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP003-R3-R34-TEST-20260902-01 = ACTIVE / ONE-SHOT / TEST-ONLY
+D2-WP003-R3-R34-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 12 OF 20
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 13 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -261,15 +208,12 @@ ROLLBACK = NO
 D3_EXECUTION = HOLD
 ```
 
-## 9. Exact next action
+## 10. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R3-R34-TEST-20260902-01
-EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-EXPECTED_COMMITS = EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT
-ANTIGRAVITY = STOP IMMEDIATELY AFTER PUSH/REPORT
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R35 TEST-ONLY AS PROPOSED
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-CHATGPT = INDEPENDENT REVIEW AFTER IMPLEMENTATION ARRIVES
 D3 = HOLD
 ```
