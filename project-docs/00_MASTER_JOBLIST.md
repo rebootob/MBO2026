@@ -30,19 +30,22 @@ R1_R2_PART_B_HEADER = PASS / FREEZE
 R1_R2_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
 ```
 
-Next proposed smallest gate:
+Active smallest corrective:
 ```text
 D2-WP004-R1-R2-R1 = XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
-MODE = EVIDENCE-ONLY / NOT AUTHORIZED
-WRITABLE_FILE_IF_AUTHORIZED = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
+AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
+MODE = EVIDENCE-ONLY / ONE-SHOT / OWNER-TEMPLATE READ-ONLY
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_TEST_PROFILE_CHANGE = NONE
 ```
 
-Corrective focus: exclusive Part A header ownership; correct projection-vs-workbook-missing status taxonomy; complete objective/evaluator semantic inventory without inference; correct Part B self/chief secured semantics and R:X authority; exact summary evidence/status counts.
+Corrective focus: exclusive Part A header ownership; employeeName/employeeNameTH source-selection ambiguity; correct status taxonomy; complete objective/evaluator/summary inventory without inference; Part B K:Q self vs R:X chief secured semantics; exact status counts and zero duplicate exclusive `SAFE_TO_MAP` targets.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R1
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
