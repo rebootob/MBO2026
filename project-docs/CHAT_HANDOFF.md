@@ -17,30 +17,32 @@ D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D3 = HOLD
 ```
 
-Durable privacy closure: `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`.
-Owner-confirmed renderer architecture: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
+Renderer architecture remains mandatory: centralized Template Profile/Mapping; no scattered important cell/range addresses.
 
+Latest R1 review:
 ```text
-NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
-CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
+AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
+IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
+SCOPE = PASS / ONE COMMIT / TWO NEW FILES
+SOURCE_PROOF = CORRECTIVE REQUIRED
+TOKEN = CONSUMED / DO NOT REUSE
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Current authorization:
+Corrective facts:
+- original Part B rows 7:29 K:X remain dynamic; rows10/14/18/22/26 are NOT frozen padding;
+- protected padding authority is source row30 and clones row34/38 only;
+- semantic mapping must align to current `MboExportService` secured projection rather than inventing incompatible field semantics;
+- missing/conflicting required mapping must fail closed at runtime.
+
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1
-AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-MODE = SOURCE+TEST / PURE MAPPING / ONE-SHOT
-EXPECTED_NEW_FILES =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1
+PROPOSED_NEXT = D2-WP004-R1-R1 SOURCE+TEST / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
 ```
-
-R1 must not modify `MboExportService`, feasibility source/tests, dependencies, dist, Kintone, or create/render XLSX. It creates pure centralized template mapping only. Previous standing Control Plane review/corrective authority remains exhausted / DO NOT REUSE.
