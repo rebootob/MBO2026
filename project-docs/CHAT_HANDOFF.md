@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 5
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A structural matrix proposed |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; R4 Part A structural matrix SOURCE+TEST authorized |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -63,42 +63,39 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 5. Current READ-ONLY finding — Part A structural matrix
+## 5. Exact current gate — R4 AUTHORIZED
 
-Owner continued D2 on 2026-09-02. ChatGPT performed READ-ONLY inspection only.
-
-Current feasibility source already contains raw OOXML Part A insertion logic, but it exposes template-dependent outputs only for 4, 5 and 10 objectives. Current proof checks only merge counts and print-area endings for those three counts. Counts 6–9 and exact structural equality are not proven.
-
-Therefore TEST-ONLY is insufficient: proving the real feasibility path for every count 4–10 requires a bounded source generalization plus test expansion. No production renderer work is required at this gate.
-
-## 6. Exact current gate
+Owner explicitly authorized `D2-WP003-R4 SOURCE+TEST` on 2026-09-02.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4
-PROPOSED_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-PROPOSED_FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js + tests/mbo-xlsx-ooxml-feasibility.test.js
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R4
+ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
+AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE BOUNDED COMMIT
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-R4 must not reopen preservation/reference-image gates and must not start production renderer work.
+Allowed files only:
+1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-## 7. Remaining D2 path
+R4 must generalize the existing Part A feasibility path to all objective counts 4–10 and prove the full structural matrix. It must not reopen preservation/reference-image, modify Part B, or start production renderer work. If the matrix reveals an algorithm defect outside this bounded generalization, Antigravity must STOP with a blocker.
 
-1. Part A objective insertion structural matrix;
-2. Part B competency insertion structural matrix;
-3. formula/no-formula authority;
-4. production sanitizer/XLSX renderer;
-5. combined Excel parity;
-6. PDF parity;
-7. export authorization/security/privacy regression;
-8. final independent D2 closure.
+## 6. D2 remaining path after R4 review
+
+1. Part B competency insertion structural matrix;
+2. formula/no-formula authority;
+3. production sanitizer/XLSX renderer;
+4. combined Excel parity;
+5. PDF parity;
+6. export authorization/security/privacy regression;
+7. final independent D2 closure.
+
+Do not auto-start any next item.
