@@ -31,20 +31,20 @@ FINAL_D1_SECURITY_REVIEW = PASS
 D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 D2-WP003-R3-R36 = PASS / CLOSED
-R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4
+PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-Reference-image durable closure is promoted to `CONFIRMED_BASELINE/README.md`. GitHub exposed no CI/status/workflow signal for R3-R36, so no independent runtime certification is claimed. Production reference-image source remains frozen.
+Current READ-ONLY finding: the existing Part A feasibility source exposes 4/5/10 objective variants only, while the existing test checks only merge-count/declaration and print-area endings. R4 is proposed to generalize the existing helper to counts 4–10 and prove exact structural transformation without starting the production renderer.
 
 D2 must still close:
 - 5–10 Part A objective structural insertion matrix;
@@ -85,8 +85,8 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO CONTINUE TO PART A OBJECTIVE INSERTION STRUCTURAL MATRIX
-NEXT_GATE_STATUS = NOT STARTED / NOT AUTHORIZED
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R4 FEASIBILITY SOURCE+TEST AS PROPOSED
+ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
