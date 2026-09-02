@@ -30,19 +30,21 @@ R1_R2_R1_PART_A_HEADER = PASS / FREEZE
 R1_R2_R1_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
 ```
 
-Next proposed smallest gate:
+Active smallest gate:
 ```text
 D2-WP004-R1-R2-R2 = FINAL XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
-MODE = EVIDENCE-ONLY / NOT AUTHORIZED
-WRITABLE_FILE_IF_AUTHORIZED = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
+AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
+MODE = EVIDENCE-ONLY / ONE-SHOT / SAME ONE MARKDOWN FILE
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_TEST_PROFILE_CHANGE = NONE
 ```
 
-Remaining evidence-only corrections: Chief rating authority must be `R:X`; no `SAFE_TO_MAP` without secured path; evaluator mappings require accepted role-identity citation or remain unresolved; combined objective/target B:I cannot prove title-only ownership without a composition rule; evidence cannot self-promote to Baseline before independent review.
+Final evidence-only corrections: preserve full Chief `R:X`; no `SAFE_TO_MAP` without secured path; evaluator mappings require accepted role-identity citation or remain unresolved; combined B:I objective/target cannot prove title-only ownership without composition authority; evidence status remains neutral until independent review; recalculate final counts mechanically.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
