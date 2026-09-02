@@ -5,14 +5,14 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R29 PROOF CORRECTIVE / R3-R30 TEST-ONLY PROPOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PRESERVATION PASS / REFERENCE-IMAGE REVIEW NEXT
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 7 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 13
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 8 OF 20
+CONTROL_PLANE_ROUNDS_REMAINING = 12
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ```
@@ -22,7 +22,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | R3-R29 source PASS / proof incomplete; R3-R30 TEST-ONLY proposed |
+| D2 | 🟠 IN PROGRESS | OOXML preservation gate PASS/CLOSED; reference-image closure next |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -35,6 +35,8 @@ CLAUDE_AUTO_REVIEW = NO
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
+D2-WP003-R3-R30 = PASS / CLOSED
+D2_PRESERVATION_GATE = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -47,60 +49,51 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 
 Raw `getNoOpParityBuffers()` remains direct unrepaired xlsx-populate output.
 
-## 3. Latest independent review — R3-R29
+## 3. Latest independent review — R3-R30
 
 ```text
-AUTHORIZATION_COMMIT = 1ff838f6f10e846cdd00925d62b444946b35445b
-IMPLEMENTATION_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
+AUTHORIZATION_COMMIT = 985ddbd1d99d629d54fa7d76fba94a679f08dc59
+IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = PASS
-PROOF_REVIEW = FAIL / INCOMPLETE REGRESSION RESTORE
-STATUS = NOT PASS / NOT CLOSED
+R3-R29_SOURCE_BASELINE = PASS / FROZEN
+PROOF_CODE_REVIEW = PASS
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+STATUS = PASS / CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R29 source improvements:
-- worksheet singleton/repeatable occurrence semantics corrected;
-- `preserveWorksheetXmlDimensions()` factored and used by production;
-- source SHA, strict relationship tuple, XML gap inventory, persistent Option B write-back and frozen no-op behavior retained.
+Accepted R3-R30 proof completion:
+- duplicate/extra Option B `sheetPr` fail-closed proof;
+- effective moved/other-sheet/Part-A observed-only `sheetPr` preservation rejection;
+- distinct counterfeit worksheet-like Type URI negative;
+- restored array/fractional/non-number typed-privacy negatives;
+- existing R3-R29 regression proof retained.
 
-Accepted proof improvements:
-- real Unicode QName rejection added;
-- pure dimension/boundary structural tests added;
-- print-area exact-sheet and Part B Sheet1 colsHash negative restored;
-- relationship mapping/TargetMode regression restored;
-- accepted header fingerprint negative matrix restored.
-
-Remaining proof-only gaps:
-1. explicit duplicate/extra Option B `sheetPr` rejection absent;
-2. moved/other-sheet/Part-A Option B cases only prove `normalized:false`, not effective preservation fail-closed behavior;
-3. distinct counterfeit worksheet-like Type URI negative is missing;
-4. accepted typed-privacy matrix still lacks array typeCounts, fractional count and non-number count;
-5. no GitHub CI/status/workflow signal exists for the implementation commit.
+No production source changed in R3-R30.
 
 ## 4. Current gate
 
 ```text
 D2 = IN PROGRESS
-D2-WP003-R3-R29 = REVIEWED / SOURCE PASS / PROOF FAIL / NOT CLOSED
+D2_PRESERVATION_GATE = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R30
-PROPOSED_SCOPE = TEST-ONLY / EXISTING FEASIBILITY TEST FILE
-CORRECTIVE_BASELINE_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
+PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
+PREFERRED_EXECUTION = CHATGPT READ-ONLY REVIEW FIRST
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = STOP
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 5. Proposed R3-R30 — NOT AUTHORIZED
+## 5. Low-credit next-step policy
 
-R3-R30 is test-only and may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js`. It must retain every current R3-R29 proof and only add the missing Option B effective negatives, distinct counterfeit-Type proof, and the three previously accepted typed-privacy negative cases. No production source change is proposed.
+Existing source/tests already contain reference-image handling. The next action should be a Control Plane READ-ONLY repository review. Do not spend Antigravity or Claude credits unless that review identifies a necessary implementation gap or material ambiguity.
 
-## 6. D2 closure path after preservation
+## 6. Remaining D2 closure path
 
 1. reference-image inventory/removal/preservation closure;
 2. Part A objective insertion structural matrix closure;
