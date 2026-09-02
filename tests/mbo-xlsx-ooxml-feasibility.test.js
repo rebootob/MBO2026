@@ -15,6 +15,7 @@ import {
   getStructuralPartABuffers,
   getStructuralPartBBuffers,
   getExpandedPresentationPartBBuffers,
+  validateExpandedPresentationOverlayPartB,
   resolveExpandedPartBPrivacyRoles,
   getHeaderCellFingerprints,
   validateHeaderFingerprintParity,
@@ -2146,7 +2147,7 @@ test('FEASIBILITY_PART_B_EXPANDED_PRESENTATION_OOXML_OVERLAY_AND_PRIVACY_PROOF: 
   }
 });
 
-test('FEASIBILITY_PART_B_EXPANDED_PRESENTATION_NEGATIVE_FAIL_CLOSED_MATRIX: proves fail closed on unexpected title/description content, rating scale mutation, wrong overlay range, wrong merge count, wrong dynamic count, summary misplacement, and relationship regression', async (t) => {
+test('FEASIBILITY_PART_B_EXPANDED_PRESENTATION_NEGATIVE_FAIL_CLOSED_MATRIX: proves fail closed on real malformed evidence via production validator', async (t) => {
   const found = findLocalSourceTemplates();
   if (!found) {
     t.skip('Local owner templates unavailable in this environment');
@@ -2156,110 +2157,140 @@ test('FEASIBILITY_PART_B_EXPANDED_PRESENTATION_NEGATIVE_FAIL_CLOSED_MATRIX: prov
   const structuralBuffers = await getStructuralPartBBuffers();
   const rawB7 = structuralBuffers.buffers ? structuralBuffers.buffers[7] : structuralBuffers.bufB7;
 
-  // 1. Unexpected title value in B31 before sanitization fails closed
+  const expResult = await getExpandedPresentationPartBBuffers();
+  const finalB7 = expResult.buffers[7];
+
+  const isBlocker = (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED') || err.message.includes('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+
+  // 1. Pre-sanitize title mutation on real structural buffer fails production validator
   const wbBadTitle = await XlsxPopulate.fromDataAsync(rawB7);
-  wbBadTitle.sheet(0).cell('B31').value('UNEXPECTED TITLE CONTENT');
+  wbBadTitle.sheet(0).cell('B31').value('UNEXPECTED PRE-SANITIZE TITLE');
   const bufBadTitle = await wbBadTitle.outputAsync();
   await assert.rejects(
     async () => {
-      const wb = await XlsxPopulate.fromDataAsync(bufBadTitle);
-      const sheet = wb.sheet(0);
-      const val = sheet.cell('B31').value();
-      if (val !== null && val !== undefined && String(val).trim() !== '') {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Unexpected pre-sanitize title content in B31');
-      }
+      await validateExpandedPresentationOverlayPartB(bufBadTitle, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 2. Unexpected stale description value in B32 fails closed
+  // 2. Pre-sanitize description mutation on real structural buffer fails production validator
   const wbBadDesc = await XlsxPopulate.fromDataAsync(rawB7);
   wbBadDesc.sheet(0).cell('B32').value('CORRUPTED STALE DESCRIPTION');
   const bufBadDesc = await wbBadDesc.outputAsync();
   await assert.rejects(
     async () => {
-      const wb = await XlsxPopulate.fromDataAsync(bufBadDesc);
-      const sheet = wb.sheet(0);
-      const val = String(sheet.cell('B32').value() || '').trim();
-      const expectedStaleDesc = '6.นโยบายจรรยาบรรณและจริยธรรม (10 ประการ)                                    倫理・道徳方針（10項目）';
-      if (val !== expectedStaleDesc) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32 did not match expected competency-6 clone');
-      }
+      await validateExpandedPresentationOverlayPartB(bufBadDesc, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 3. Rating Scale mutation in B33 fails closed
-  const wbBadScale = await XlsxPopulate.fromDataAsync(rawB7);
+  // 3. Rating Scale mutation on real final overlay buffer fails production validator
+  const wbBadScale = await XlsxPopulate.fromDataAsync(finalB7);
   wbBadScale.sheet(0).cell('B33').value('MUTATED RATING SCALE');
   const bufBadScale = await wbBadScale.outputAsync();
   await assert.rejects(
     async () => {
-      const wb = await XlsxPopulate.fromDataAsync(bufBadScale);
-      const sheet = wb.sheet(0);
-      const val = String(sheet.cell('B33').value() || '').trim();
-      if (val !== 'Rating Scale') {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33 corrupted');
-      }
+      await validateExpandedPresentationOverlayPartB(bufBadScale, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 4. Wrong merge count / extra merge fails closed
+  // 4. Protected padding mutation on real final overlay buffer fails production validator
+  const wbBadPadding = await XlsxPopulate.fromDataAsync(finalB7);
+  wbBadPadding.sheet(0).cell('B34').value('MUTATED PADDING CELL');
+  const bufBadPadding = await wbBadPadding.outputAsync();
   await assert.rejects(
     async () => {
-      const insp = await inspectRawWorksheetOOXML(rawB7);
-      const fakeMergeCount = insp.rawMerges.length + 5;
-      if (fakeMergeCount !== 86) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective merge count mismatch for N=7');
-      }
+      await validateExpandedPresentationOverlayPartB(bufBadPadding, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 5. Wrong effective dynamic count fails closed
+  // 5. Wrong title overlay merge range (B31:J32 instead of B31:J31) fails production validator
+  const wbWrongMerge = await XlsxPopulate.fromDataAsync(finalB7);
+  let xmlWrongMerge = await wbWrongMerge._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  xmlWrongMerge = xmlWrongMerge.replace('<mergeCell ref="B31:J31"/>', '<mergeCell ref="B31:J32"/>');
+  wbWrongMerge._zip.file('xl/worksheets/sheet1.xml', xmlWrongMerge);
+  const bufWrongMerge = await wbWrongMerge._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
     async () => {
-      const fakeDynamicAddresses = new Array(500).fill('B31');
-      if (fakeDynamicAddresses.length !== 492) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=7');
-      }
+      await validateExpandedPresentationOverlayPartB(bufWrongMerge, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 6. Misplaced summary start row fails closed
+  // 6. Extra/duplicate title merge fails production validator
+  const wbExtraMerge = await XlsxPopulate.fromDataAsync(finalB7);
+  let xmlExtraMerge = await wbExtraMerge._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  xmlExtraMerge = xmlExtraMerge.replace(/<\/mergeCells>/, '<mergeCell ref="B33:J33"/>\n</mergeCells>');
+  xmlExtraMerge = xmlExtraMerge.replace(/<mergeCells count="86">/, '<mergeCells count="87">');
+  wbExtraMerge._zip.file('xl/worksheets/sheet1.xml', xmlExtraMerge);
+  const bufExtraMerge = await wbExtraMerge._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
     async () => {
-      const fakeSummaryRow = 34;
-      if (fakeSummaryRow !== 35) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Summary start row mismatch for N=7');
-      }
+      await validateExpandedPresentationOverlayPartB(bufExtraMerge, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 7. Synthetic relationship tuple regression fails closed
+  // 7. Wrong merge count fails production validator
+  const wbWrongCount = await XlsxPopulate.fromDataAsync(finalB7);
+  let xmlWrongCount = await wbWrongCount._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  xmlWrongCount = xmlWrongCount.replace('<mergeCells count="86">', '<mergeCells count="85">');
+  wbWrongCount._zip.file('xl/worksheets/sheet1.xml', xmlWrongCount);
+  const bufWrongCount = await wbWrongCount._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
     async () => {
-      const fakeRels1 = ['rel1->target1'];
-      const fakeRels2 = ['rel1->target1', 'rel2->target2_mutated'];
-      if (JSON.stringify(fakeRels1) !== JSON.stringify(fakeRels2)) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Relationship tuples mutated for N=7');
-      }
+      await validateExpandedPresentationOverlayPartB(bufWrongCount, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
   );
 
-  // 8. Synthetic media inventory regression fails closed
+  // 8. Misplaced final summary topology fails production validator
+  const wbBadSummary = await XlsxPopulate.fromDataAsync(finalB7);
+  wbBadSummary.sheet(0).cell('I35').value(''); // Remove summary marker text
+  const bufBadSummary = await wbBadSummary.outputAsync();
   await assert.rejects(
     async () => {
-      const fakeMedia1 = ['xl/media/image1.png:hash1'];
-      const fakeMedia2 = ['xl/media/image1.png:hash1_mutated'];
-      if (JSON.stringify(fakeMedia1) !== JSON.stringify(fakeMedia2)) {
-        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Media files mutated for N=7');
-      }
+      await validateExpandedPresentationOverlayPartB(bufBadSummary, 7, rawB7);
     },
-    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+    isBlocker
+  );
+
+  // 9. Relationship tuple regression on real package fails production validator
+  const wbBadRels = await XlsxPopulate.fromDataAsync(finalB7);
+  let relsXml = await wbBadRels._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXml = relsXml.replace('</Relationships>', '<Relationship Id="rId999" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet999.xml"/></Relationships>');
+  wbBadRels._zip.file('xl/_rels/workbook.xml.rels', relsXml);
+  const bufBadRels = await wbBadRels._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => {
+      await validateExpandedPresentationOverlayPartB(bufBadRels, 7, rawB7);
+    },
+    isBlocker
+  );
+
+  // 10. Media inventory regression on real package fails production validator
+  const wbBadMedia = await XlsxPopulate.fromDataAsync(finalB7);
+  wbBadMedia._zip.file('xl/media/image999.png', Buffer.from('fake media image'));
+  const bufBadMedia = await wbBadMedia._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => {
+      await validateExpandedPresentationOverlayPartB(bufBadMedia, 7, rawB7);
+    },
+    isBlocker
+  );
+
+  // 11. Auxiliary Sheet1 regression on real package fails production validator
+  const wbBadSheet1 = await XlsxPopulate.fromDataAsync(finalB7);
+  let sheet1Xml = await wbBadSheet1._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  sheet1Xml = sheet1Xml.replace('<mergeCell ref="A1:C1"/>', '<mergeCell ref="A1:Z1"/>');
+  wbBadSheet1._zip.file('xl/worksheets/sheet2.xml', sheet1Xml);
+  const bufBadSheet1 = await wbBadSheet1._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => {
+      await validateExpandedPresentationOverlayPartB(bufBadSheet1, 7, rawB7);
+    },
+    isBlocker
   );
 });

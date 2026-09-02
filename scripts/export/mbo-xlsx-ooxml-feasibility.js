@@ -2396,6 +2396,151 @@ export async function getStructuralPartBBuffers() {
 }
 
 /**
+ * Production Validator for Expanded Presentation OOXML Overlay & Privacy Topology for Part B
+ * Validates real in-memory workbook/buffer evidence against presentation overlay standards.
+ */
+export async function validateExpandedPresentationOverlayPartB(buf, count = 6, structuralBuf = null) {
+  const n = count || 6;
+  if (![6, 7, 8].includes(n)) {
+    throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Invalid competency count');
+  }
+
+  // 1. Raw OOXML Inspection of final overlay buffer
+  const inspFinal = await inspectRawWorksheetOOXML(buf);
+  const expectedFinalMerges = n === 6 ? 79 : (n === 7 ? 86 : 93);
+  if (inspFinal.rawMerges.length !== expectedFinalMerges ||
+      inspFinal.mergeCountAttr !== String(expectedFinalMerges)) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective merge count mismatch for N=${n}`);
+  }
+
+  // Validate exact required presentation title merges are present in rawMerges
+  if (n === 7) {
+    if (!inspFinal.rawMerges.includes('B31:J31')) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Missing N7 title merge B31:J31');
+    }
+  } else if (n === 8) {
+    if (!inspFinal.rawMerges.includes('B31:J31') || !inspFinal.rawMerges.includes('B35:J35')) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Missing N8 title merges B31:J31 or B35:J35');
+    }
+  }
+
+  // 2. Dynamic Privacy Overlay & Topology Validation
+  const effectivePrivacy = await resolveExpandedPartBPrivacyRoles(buf, n);
+  const expectedEffectiveDynamic = n === 6 ? 432 : (n === 7 ? 492 : 552);
+  if (effectivePrivacy.dynamicAddresses.length !== expectedEffectiveDynamic) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
+  }
+
+  // Validate Rating Scale cells and padding rows are non-dynamic / protected static
+  const ratingScaleRows = n === 6 ? [29] : (n === 7 ? [29, 33] : [29, 33, 37]);
+  for (const rRow of ratingScaleRows) {
+    for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+      const addr = `${cStr}${rRow}`;
+      if (effectivePrivacy.dynamicAddresses.includes(addr)) {
+        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale cell ${addr} marked dynamic`);
+      }
+    }
+  }
+
+  const paddingRows = n === 6 ? [30] : (n === 7 ? [30, 34] : [30, 34, 38]);
+  for (const pRow of paddingRows) {
+    for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
+      const addr = `${cStr}${pRow}`;
+      if (effectivePrivacy.dynamicAddresses.includes(addr)) {
+        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Padding cell ${addr} marked dynamic`);
+      }
+    }
+  }
+
+  // 3. XlsxPopulate Text & Sanitization State Validation
+  const wbFinal = await XlsxPopulate.fromDataAsync(buf);
+  const sheetFinal = wbFinal.sheet(0);
+
+  function getCellTextValue(cell) {
+    const val = cell.value();
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object' && typeof val.text === 'function') {
+      return val.text().replaceAll('\r\n', '\n').trim();
+    }
+    return String(val).replaceAll('\r\n', '\n').trim();
+  }
+
+  // Validate Rating Scale static text survives
+  for (const rRow of ratingScaleRows) {
+    const text = getCellTextValue(sheetFinal.cell(`B${rRow}`));
+    if (text !== 'Rating Scale') {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text at B${rRow} corrupted`);
+    }
+  }
+
+  // Validate expanded presentation targets are sanitized/blanked in final output
+  if (n === 7) {
+    const b31Val = sheetFinal.cell('B31').value();
+    const b32Val = sheetFinal.cell('B32').value();
+    if (b31Val !== null && b31Val !== undefined) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: N7 B31 presentation target not sanitized');
+    }
+    if (b32Val !== null && b32Val !== undefined) {
+      throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: N7 B32 presentation target not sanitized');
+    }
+  } else if (n === 8) {
+    for (const addr of ['B31', 'B32', 'B35', 'B36']) {
+      const val = sheetFinal.cell(addr).value();
+      if (val !== null && val !== undefined) {
+        throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: N8 ${addr} presentation target not sanitized`);
+      }
+    }
+  }
+
+  // 4. Mechanical Observation of Actual Summary Start Row from Output Evidence
+  const summaryMatches = [];
+  const expectedSummaryStartRow = n === 6 ? 31 : (n === 7 ? 35 : 39);
+  const maxSearchRow = 35 + 4 * (n - 6);
+
+  for (let r = 25; r <= maxSearchRow + 5; r++) {
+    const txtI = getCellTextValue(sheetFinal.cell(`I${r}`));
+    const txtB = getCellTextValue(sheetFinal.cell(`B${r}`));
+    if (txtI.includes('Part B : Competency 30%') || txtB.includes('[A] Total')) {
+      summaryMatches.push(r);
+    }
+  }
+
+  if (summaryMatches.length === 0) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Summary block marker missing in final output for N=${n}`);
+  }
+  if (summaryMatches.length > 1) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Duplicate summary block markers in final output for N=${n}`);
+  }
+
+  const observedSummaryStartRow = summaryMatches[0];
+  if (observedSummaryStartRow !== expectedSummaryStartRow) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Summary start row misplaced for N=${n} (expected ${expectedSummaryStartRow}, observed ${observedSummaryStartRow})`);
+  }
+
+  // 5. Package / Reference-Image Preservation Proof against Structural Input
+  if (structuralBuf) {
+    const sFp = await getWorkbookFingerprint(structuralBuf);
+    const fFp = await getWorkbookFingerprint(buf);
+
+    if (JSON.stringify(fFp.relTuples) !== JSON.stringify(sFp.relTuples)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Relationship tuples mutated for N=${n}`);
+    }
+    if (JSON.stringify(fFp.mediaFiles) !== JSON.stringify(sFp.mediaFiles)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Media files mutated for N=${n}`);
+    }
+    if (JSON.stringify(fFp.sheets['Sheet1']) !== JSON.stringify(sFp.sheets['Sheet1'])) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Auxiliary Sheet1 mutated for N=${n}`);
+    }
+  }
+
+  return {
+    mergeCount: inspFinal.rawMerges.length,
+    effectiveDynamicCount: effectivePrivacy.dynamicAddresses.length,
+    observedSummaryStartRow
+  };
+}
+
+/**
  * RAW OOXML Presentation Title Overlay & Stale Clone Sanitization Proof for Part B
  */
 export async function getExpandedPresentationPartBBuffers() {
@@ -2557,45 +2702,16 @@ export async function getExpandedPresentationPartBBuffers() {
 
     const finalBuf = await wbOut._zip.generateAsync({ type: 'nodebuffer' });
 
-    // 5. Verify final effective OOXML metrics & dynamic privacy overlay
+    // 5. Verify final effective OOXML metrics, dynamic privacy, summary topology & package preservation via production validator
     const inspFinal = await inspectRawWorksheetOOXML(finalBuf);
-    const expectedFinalMerges = n === 6 ? 79 : (n === 7 ? 86 : 93);
-    if (inspFinal.rawMerges.length !== expectedFinalMerges ||
-        inspFinal.mergeCountAttr !== String(expectedFinalMerges)) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective merge count mismatch for N=${n}`);
-    }
-
-    const effectivePrivacy = await resolveExpandedPartBPrivacyRoles(finalBuf, n);
-    const expectedEffectiveDynamic = n === 6 ? 432 : (n === 7 ? 492 : 552);
-    if (effectivePrivacy.dynamicAddresses.length !== expectedEffectiveDynamic) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
-    }
-
-    // CORRECTIVE 3: Final Summary Topology Verification from Output
-    const summaryStartRowFromTopology = n === 6 ? 31 : (n === 7 ? 35 : 39);
-    if (expectedSummaryStartRow !== summaryStartRowFromTopology) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Summary start row mismatch for N=${n}`);
-    }
-
-    // CORRECTIVE 4: Final Package / Reference-Image Preservation Proof
-    const finalFp = await getWorkbookFingerprint(finalBuf);
-
-    if (JSON.stringify(finalFp.relTuples) !== JSON.stringify(structuralFp.relTuples)) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Relationship tuples mutated for N=${n}`);
-    }
-    if (JSON.stringify(finalFp.mediaFiles) !== JSON.stringify(structuralFp.mediaFiles)) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Media files mutated for N=${n}`);
-    }
-    if (JSON.stringify(finalFp.sheets['Sheet1']) !== JSON.stringify(structuralFp.sheets['Sheet1'])) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Auxiliary Sheet1 mutated for N=${n}`);
-    }
+    const valResult = await validateExpandedPresentationOverlayPartB(finalBuf, n, rawBuf);
 
     effectiveMetrics[n] = {
-      mergeCount: inspFinal.rawMerges.length,
+      mergeCount: valResult.mergeCount,
       dimension: inspFinal.dimension,
       printArea: inspFinal.printArea,
-      summaryStartRow: summaryStartRowFromTopology,
-      effectiveDynamicCount: effectivePrivacy.dynamicAddresses.length
+      summaryStartRow: valResult.observedSummaryStartRow,
+      effectiveDynamicCount: valResult.effectiveDynamicCount
     };
 
     buffers[n] = finalBuf;
