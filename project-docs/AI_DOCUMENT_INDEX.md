@@ -23,30 +23,31 @@ D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-R3-R34_IMPLEMENTATION_COMMIT = f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec
-R3-R34_SCOPE_REVIEW = PASS
+R3-R35_IMPLEMENTATION_COMMIT = 2ea39f1d10dca9ba4b830e4207a4abf7cf797644
+R3-R35_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 13 OF 20
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R35
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R35-TEST-20260902-01
+R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 14 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R36
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R35 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For the current gate read:
+For the next gate read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact R3-R33 and R3-R34 diffs in `tests/mbo-xlsx-ooxml-feasibility.test.js`.
+5. exact R3-R35 implementation diff in `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-R3-R35 is authorized TEST-ONLY to restore accepted R3-R33 adversarial proof, retain R3-R34 proof, and close XML Name/NCName/QName plus prefixed `embed` syntax validation. Reference-image production source remains frozen.
+R3-R36 is proposed TEST-ONLY to close only malformed prefixed-`embed` QName fail-closed behavior/proof. All other accepted R3-R35 parser/regression proof is frozen. Reference-image production source remains frozen.
