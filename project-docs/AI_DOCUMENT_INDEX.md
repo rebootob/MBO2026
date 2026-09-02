@@ -23,33 +23,34 @@ D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-D2-WP003-R3-R36 = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-R4_IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
-R4_SCOPE_REVIEW = PASS
 R4_SOURCE_REVIEW = PASS / FROZEN
-R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
-ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054
+R4-R1_IMPLEMENTATION_COMMIT = 8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6
+R4-R1_SCOPE_REVIEW = PASS
+R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 17 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R1 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For R4-R1 execution/review read:
+For R4-R2 continuation read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — only writable file;
+5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — proposed only writable file;
 6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — READ-ONLY accepted R4 source.
 
-R4-R1 must close only missing rowRefs uniqueness/sequence and workbook/sheet invariant assertions. Do not reopen preservation/reference-image or modify Part B/renderer.
+R4-R2 is proposed only to restore the accepted absolute assertions `paperSize=8`, `orientation=landscape`, `scale=58` while retaining all R4-R1 proof. Do not reopen preservation/reference-image or modify Part B/renderer.
