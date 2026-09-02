@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — D2 R7 PRIVACY REMAP PROPOSED / NO ACTIVE EXECUTOR
+# AI ACTIVE TASK — D2-WP003-R7 SOURCE+TEST AUTHORIZED
 
-Mode: **CONTROL PLANE / FORMULA AUTHORITY CLOSED / R7 PROPOSED NOT AUTHORIZED / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **LOW-CREDIT / BOUNDED / ONE-SHOT / EXACT TWO FILES / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
@@ -10,10 +10,11 @@ Repository truth and accepted newer Live evidence always win. Fresh-fetch curren
 
 1. `project-docs/D2_REVIEW_FAST_START.md`
 2. this file
-3. only the directly relevant `CONFIRMED_BASELINE/` file
-4. exact authorization→implementation diff and changed files when review begins
+3. `project-docs/CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+4. `project-docs/CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+5. exact changed source/test files only
 
-Do not re-read closed-gate internals by default.
+Do not re-scan closed gates by default.
 
 ## 1. Current truth
 
@@ -29,72 +30,83 @@ D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / 20 OF 20 / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R7
+ACTIVE_WORK_PACKAGE_NAME = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
+TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / ONE-SHOT / LOW-CREDIT
 CLAUDE = STOP
 ```
 
-## 2. Newly closed gate — Formula Authority
+The exhausted prior 20-round standing review/corrective authorization is NOT renewed by R7. After implementation, Antigravity stops. Owner/ChatGPT will explicitly initiate any independent review/corrective action.
 
-Durable authority:
-`project-docs/CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+## 2. Authorization identity
 
 ```text
-SCORING_SOURCE_OF_TRUTH = KINTONE / APP794 + CONFIRMED SCORING CONFIG
-EXPORT_DATA_AUTHORITY = SECURED MboExportService PROJECTION
-LEGACY_EXCEL_TEMPLATE_AUTHORITY = VISUAL / LAYOUT ONLY
+WORK_PACKAGE = D2-WP003-R7
+AUTHORIZATION_TOKEN = D2-WP003-R7-SOURCE-TEST-20260902-01
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT
+EXPECTED_COMMITS = EXACTLY ONE IMPLEMENTATION OR BLOCKER COMMIT AFTER THIS AUTHORIZATION COMMIT
+```
+
+Writable files ONLY:
+1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Any other changed file is out of scope and must block completion.
+
+## 3. Frozen dependencies — DO NOT REDESIGN
+
+The following are PASS/CLOSED/FROZEN unless this R7 work produces concrete regression evidence:
+- Preservation / Option B;
+- Reference Image;
+- Part A structural matrix 4..10;
+- Part B structural matrix 6/7/8;
+- Formula Authority;
+- `MboExportService` authorization/projection behavior.
+
+Frozen Part B structural facts:
+```text
+N=6 => dimension A1:X35 / summary-signature rows 31:34
+N=7 => dimension A1:X39 / inserted block rows 31:34 / summary-signature rows 35:38
+N=8 => dimension A1:X43 / inserted blocks rows 31:38 / summary-signature rows 39:42
+SOURCE_CLONE_BLOCK = rows 27:30
+DOWNSTREAM_THRESHOLD = row 31
+```
+
+Formula Authority remains:
+```text
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
-AUTHORIZED_APPROVER_EXPORT = WRITE SCALAR VALUES FROM SECURED PROJECTION ONLY
-EMPLOYEE_SELF_CONFIDENTIAL_SCORE_FIELDS = OMIT / BLANK; NEVER RECALCULATE
 PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
 ```
 
-Do not reopen without proven contradictory repository/live evidence.
+## 4. R7 exact implementation contract
 
-## 3. Proposed next gate — D2-WP003-R7
+### A. Preserve N=6 privacy authority exactly
 
-```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R7
-NAME = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST / BOUNDED / TWO EXISTING FILES ONLY
-EXPECTED_WRITABLE_FILES =
-  scripts/export/mbo-xlsx-ooxml-feasibility.js
-  tests/mbo-xlsx-ooxml-feasibility.test.js
-ANTIGRAVITY = STOP UNTIL OWNER AUTHORIZATION
-CLAUDE = STOP
-```
+The accepted source-6 privacy classification/sensitive-address behavior is the baseline.
 
-Why R7 comes before production renderer:
-- current `PART_B_SENSITIVE_RANGES` and sanitizer/privacy classification are authority only for the original 6-competency source layout;
-- accepted structural variants insert complete rows 27:30 blocks;
-- for N=7 the first inserted block occupies rows 31:34 and original summary/signature rows shift to 35:38;
-- for N=8 inserted blocks occupy 31:34 and 35:38 and original summary/signature rows shift to 39:42;
-- using the old fixed 31:34 summary privacy map on expanded workbooks would classify/sanitize the wrong cells.
+R7 must not weaken or broaden it.
 
-## 4. R7 exact proposed contract
+Header roles remain at their existing addresses.
 
-### A. Preserve source-6 behavior
-The exact accepted 6-block privacy mapping remains the baseline and must not be weakened.
+Existing source competency role semantics remain authoritative, including the distinction between:
+- protected static competency text/guidance;
+- dynamic self-evaluation rating cells;
+- dynamic chief-evaluation rating cells;
+- source summary/signature dynamic cells.
 
-Header dynamic addresses remain unchanged.
+Do NOT turn source row 30 or any protected static cell into a dynamic sensitive cell merely because it lies inside a cloned 4-row block.
 
-Original competency rating roles remain:
-- self rating columns K:Q over source competency dynamic rows;
-- chief rating columns R:X over source competency dynamic rows.
-
-Original summary/signature dynamic roles remain rows 31:34 only for N=6.
-
-### B. Count-aware 6/7/8 mapping
-Support only competency counts 6,7,8. All other counts fail closed.
+### B. Count-aware mapping supports ONLY 6, 7, 8
 
 For:
 ```text
@@ -104,98 +116,144 @@ summaryStart = 31 + extraRows
 summaryEnd = 34 + extraRows
 ```
 
-Required transformed roles:
-- header roles stay at the original addresses;
-- original competency roles before row 31 stay unchanged;
-- each inserted 4-row block inherits source rows 27:30 role semantics exactly;
-- source row 30 is not silently promoted to a dynamic rating row if it is not dynamic in the 6-block authority;
-- original summary/signature roles relocate exactly by `extraRows`;
-- no stale summary role may remain at rows 31:34 for N=7/8;
-- no duplicate/overlapping/conflicting dynamic role classification;
-- protected static competency text in cloned blocks remains protected and must never be cleared as sensitive dynamic data.
+Required behavior:
+- N=6 preserves the exact accepted mapping;
+- N=7 relocates original summary/signature roles to rows 35:38;
+- N=8 relocates original summary/signature roles to rows 39:42;
+- inserted block 1 inherits source rows 27:30 privacy-role semantics at rows 31:34;
+- inserted block 2, when N=8, inherits the same source rows 27:30 privacy-role semantics at rows 35:38;
+- protected static cells in cloned blocks remain protected/static;
+- dynamic rating cells in cloned blocks remain dynamic/sensitive;
+- no stale source-summary role may remain at rows 31:34 in N=7/8;
+- no stale source-summary role may remain at rows 35:38 in N=8;
+- no duplicate address, overlapping conflicting role, or ambiguous classification is allowed;
+- unsupported count, missing expected row/merge/style evidence, or role ambiguity must fail closed using the existing privacy blocker family.
 
-Expected summary ranges:
-```text
-N=6 => rows 31:34
-N=7 => rows 35:38
-N=8 => rows 39:42
+Prefer deriving count-aware roles from accepted source-backed role evidence rather than introducing a second independent privacy classification table.
+
+### C. Use REAL structural variants
+
+R7 proof must consume real outputs from accepted:
+`getStructuralPartBBuffers()`
+
+for N=6/7/8.
+
+Do NOT duplicate/reimplement Part B row insertion in test code.
+
+Any count-aware privacy resolver/proof helper added in the feasibility source must validate the observed variant against the structural evidence needed to classify safely before clearing/sanitizing values.
+
+### D. Count-aware sanitization proof
+
+R7 may add/extend feasibility-only helper(s) in the authorized source file to prove sanitized 6/7/8 structural variants. This is NOT the Production Renderer.
+
+For every N=6,7,8 prove:
+- exact expected dynamic-address inventory for that variant;
+- inventory addresses are unique;
+- protected static competency text in original and cloned blocks is not part of the dynamic clear set;
+- every dynamic sensitive address is cleared/sanitized;
+- shifted summary/signature dynamic values are cleared at their new addresses;
+- stale old summary addresses are not cleared as summary when they belong to inserted competency blocks;
+- privacy-safe synthetic sensitive tokens inserted for proof are absent from relevant worksheet/sharedStrings/package evidence after sanitization;
+- static protected proof tokens/fingerprints survive where required;
+- caller/source buffers required to remain immutable by frozen preservation rules are not mutated in place.
+
+Do not log or commit real employee-bearing template values.
+
+### E. Typed privacy metadata proof
+
+For every N=6,7,8:
+- metadata must describe the exact count-aware dynamic-address inventory;
+- address cardinality must equal the exact unique dynamic inventory;
+- each metadata record must use only accepted normalized types;
+- malformed/missing/extra/duplicate metadata must fail closed;
+- metadata for N=6 must remain compatible with the previously accepted source-6 authority;
+- metadata must not silently classify protected static clone cells as dynamic.
+
+Retain the previously accepted typed-privacy negative regression matrix unless a directly equivalent stronger proof replaces it without coverage loss.
+
+### F. Preserve non-target invariants
+
+R7 must not remove/weaken accepted proof for:
+- Part B row/merge/dimension/Print_Area structural matrix;
+- sheet names/order/states;
+- `Sheet1` stability;
+- relationships/media stability;
+- workbook formula inventory exactly zero;
+- preservation/reference-image controls directly exercised by the same test file.
+
+If a required edit accidentally weakens prior accepted proof, STOP and report blocker rather than widening scope.
+
+## 5. Explicitly OUT OF SCOPE
+
+Do NOT:
+- create Production XLSX renderer;
+- modify `src/services/mbo-export-service.js`;
+- implement score calculation/recalculation;
+- modify dependencies or package-lock;
+- publish generated XLSX/PDF/image/evidence binaries;
+- modify Part A source behavior;
+- redesign Part B structural insertion;
+- touch Kintone records/apps/settings/ACL/process/customization;
+- deploy anything;
+- perform Live UAT;
+- start Combined Excel, PDF, security-regression, D3, or any next WP;
+- invoke Claude.
+
+## 6. Required commands
+
+Run exactly:
+
+```bash
+node --check scripts/export/mbo-xlsx-ooxml-feasibility.js
+node --check tests/mbo-xlsx-ooxml-feasibility.test.js
+node --test tests/mbo-xlsx-ooxml-feasibility.test.js
+npm audit --omit=dev
+git status --porcelain
 ```
 
-Expected added competency dynamic-row semantics are derived from cloned source rows 27:30, not invented from a blanket rectangular clear.
+If local owner-template binaries are unavailable and template-dependent tests skip, report that truth exactly. Do not claim runtime PASS for skipped template-dependent proof.
 
-### C. Real structural-buffer proof
-R7 proof must use real outputs from the accepted `getStructuralPartBBuffers()` path for 6/7/8.
+## 7. Commit/push contract
 
-Do not duplicate structural insertion logic in tests.
+After implementation/testing:
+- create exactly ONE bounded R7 implementation commit OR exactly ONE blocker commit;
+- commit must change only the two authorized files;
+- push to `ai/antigravity-wp002c`;
+- STOP immediately after push/report;
+- do not self-declare PASS/CLOSED;
+- do not start the next gate.
 
-The privacy resolver must fail closed if the observed structural variant does not match the accepted row/style/merge role evidence needed to classify it safely.
+Report only:
+- commit SHA;
+- exact changed files;
+- both `node --check` results;
+- `node --test` result including skip count if any;
+- `npm audit --omit=dev` result;
+- `git status --porcelain`;
+- blocker, if any.
 
-### D. Sanitization proof for expanded variants
-For N=6/7/8 prove:
-- every dynamic sensitive address appropriate to that count is cleared/sanitized;
-- protected static competency text remains byte/value-fingerprint stable where applicable;
-- shifted summary/signature data is sanitized at its new addresses;
-- stale old summary addresses are not treated as summary after insertion;
-- sensitive test tokens are absent from worksheet/sharedStrings/package evidence after sanitization;
-- typed privacy metadata remains complete and fail-closed for the exact count-aware sensitive-address inventory;
-- no employee-bearing source value is logged or committed.
-
-### E. Frozen dependencies
-Do not redesign or weaken:
-- Preservation / Option B;
-- Reference Image;
-- Part A structural matrix;
-- Part B structural matrix 6/7/8;
-- Formula Authority;
-- `MboExportService` security/authorization behavior.
-
-### F. Explicitly out of scope for R7
-Do not create production renderer yet.
-Do not modify `src/services/mbo-export-service.js`.
-Do not modify dependencies/package-lock.
-Do not create generated XLSX/PDF/image/evidence binaries.
-Do not touch Kintone, deploy, ACL, process, Live UAT or D3.
-
-## 5. Remaining D2 after R7
-
-1. R7 expanded Part B privacy remap 6/7/8;
-2. production XLSX renderer/sanitizer consuming secured projection + frozen structural/privacy/formula contracts;
-3. combined Excel parity;
-4. PDF parity;
-5. export authorization/security/privacy regression;
-6. final independent D2 closure;
-7. only then may D3 leave HOLD.
-
-## 6. Fast review procedure
-
-When Owner says `review` after an authorized executor push:
-1. fresh-fetch HEAD;
-2. read Fast-Start + this file;
-3. validate exact authorization token/commit/files;
-4. compare authorization→implementation;
-5. inspect changed code + directly touched privacy/structural contract only;
-6. verify accepted proof was not removed/weakened;
-7. check GitHub combined status/workflow runs;
-8. no CI/workflow => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
-9. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
-10. no auto-start next WP.
-
-## 7. Authorization ledger note
-
-Previous one-shot authorizations remain consumed and must never be reused. The old 20-round standing Control Plane authorization remains exhausted and is not silently extended.
-
-R7 currently has **NO authorization token**.
-
-## 8. Exact next action
+## 8. Authorization ledger
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R7 SOURCE+TEST UNDER THE PROPOSED TWO-FILE CONTRACT
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP
+D2-WP003-R7-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / SOURCE+TEST
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / 20 OF 20 / DO NOT REUSE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+D3_EXECUTION = HOLD
+```
+
+## 9. Exact next action
+
+```text
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R7-SOURCE-TEST-20260902-01; CREATE EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT; PUSH; REPORT; STOP
+EXPECTED_CHANGED_FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js + tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7
 CLAUDE = STOP
+CHATGPT = INDEPENDENT REVIEW ONLY AFTER OWNER INITIATES REVIEW
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
