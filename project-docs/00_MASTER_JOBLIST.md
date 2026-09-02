@@ -1,6 +1,6 @@
 # 00 MASTER JOBLIST — MBO2026
 
-Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/design/evidence -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -15,29 +15,21 @@ D7 = SOURCE FUNCTIONALITY CLOSED
 
 D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping, XLSX Template Profile.
 
-Template Profile closure:
+Production XLSX Renderer/Sanitizer status:
 ```text
-FINAL_IMPLEMENTATION = b59815aa5e5bad09ad252a10cdd1914185170fc0
-FINAL_AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-SCOPE = PASS
-CANONICAL_PART_B_INTEGRITY = PASS
-PROFILE = PASS / CLOSED
-SEMANTIC_BASELINE = 18 SAFE / 22 UNRESOLVED / 5 NO_SOURCE
-TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+D2-WP004-R2 = READ-ONLY DESIGN COMPLETE / IMPLEMENTATION NOT AUTHORIZED
+DESIGN = phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md
+PRE_RENDER_BLOCKER = PART B N7/N8 COMPETENCY PRESENTATION AUTHORITY UNPROVEN
 ```
-
-Durable profile baseline:
-`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
 
 Next proposed smallest gate:
 ```text
-D2-WP004-R2 = PRODUCTION XLSX RENDERER + SANITIZER
-STATE = PROPOSED / NOT AUTHORIZED
-FIRST_STEP = CHATGPT CONTROL-PLANE READ-ONLY DESIGN
+D2-WP004-R2-PRE1 = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
+MODE = EVIDENCE-ONLY / READ-ONLY INSPECTION / LOW-CREDIT / NOT AUTHORIZED
+EXPECTED_FILE = phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
 ```
 
-No renderer implementation should start until exact files, sanitizer/security boundary, structural/privacy/formula checks and focused tests are defined from repository truth.
+PRE1 is required because the N6 Part B owner template is structurally cloned for N7/N8, while current semantic authority proves only competency self-rating writes. Additional visible competency 7/8 presentation must not be duplicated or guessed.
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
