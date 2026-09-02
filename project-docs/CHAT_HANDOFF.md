@@ -18,23 +18,11 @@ EXECUTOR_CANNOT_SELF_CERTIFY = YES
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 COMPLETE_D2_FULLY_BEFORE_D3 = YES
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 18 OF 20
-ROUNDS_REMAINING = 2
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 19 OF 20
+ROUNDS_REMAINING = 1
 ```
 
-## 2. Startup order
-
-1. fresh-fetch current HEAD;
-2. `CHAT_HANDOFF.md`;
-3. `AI_CONTROL_CENTER.md`;
-4. `AI_ACTIVE_TASK.md`;
-5. `AI_DOCUMENT_INDEX.md`;
-6. `00_MASTER_JOBLIST.md` when whole-project completeness matters;
-7. `EXCEL_EXPORT.md` for D2;
-8. `CONFIRMED_BASELINE/README.md` and only directly relevant Baselines;
-9. exact current source/tests/diff only when required.
-
-## 3. Current project gate
+## 2. Current project gate
 
 ```text
 D1 = PASS / CLOSED
@@ -42,47 +30,74 @@ D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
+D2_PART_B_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
 Do not reopen preservation, reference-image or Part A without a newly proven regression.
 
-## 4. D2-WP003-R5 — AUTHORIZED
+## 3. R5 independent review
 
-Owner explicitly authorized `D2-WP003-R5 SOURCE+TEST ตามขอบเขตที่เสนอ` on 2026-09-02.
+Authorization: `D2-WP003-R5-SOURCE-TEST-20260902-01`  
+Implementation: `068e719a7b6c0fee66613619a7aa7ed359960cb5`
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R5
-ACTIVE_WORK_PACKAGE_NAME = PART B COMPETENCY INSERTION STRUCTURAL MATRIX CLOSURE
-AUTHORIZED_SCOPE = SOURCE+TEST / EXACT TWO FEASIBILITY FILES ONLY
-OWNER_APPROVAL_BASELINE_HEAD = 519312ca84b99091a3e863815a398688111dcb39
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R5-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R5-SOURCE-TEST-20260902-01
+R5_SCOPE_REVIEW = PASS
+R5_MATRIX_SOURCE_BEHAVIOR = PASS / FROZEN EXCEPT FAIL-CLOSED BASELINE GUARD
+R5_MATRIX_PROOF = PASS EXCEPT DEFINED-NAME CONTROL
+R5_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R5_STATUS = CORRECTIVE REQUIRED
+R5_AUTHORIZATION = CONSUMED / CORRECTIVE / DO NOT REUSE
+```
+
+Accepted/frozen from R5:
+- one real source path produces 6/7/8 competency variants;
+- rows 27:30 are clone authority; downstream begins at row 31;
+- exact rowRefs/uniqueness, block clone structure, downstream relocation and sentinel relocation proof;
+- full merge-set transformation with 79/85/91 merges;
+- exact output dimensions A1:X35/A1:X39/A1:X43 and print areas X35/X39/X43;
+- Part B main A4/portrait/75/horizontal-centering/protection invariants;
+- exact auxiliary `Sheet1` fingerprint stability;
+- relationship/media stability and workbook-wide zero formulas.
+
+R5 blockers:
+1. source does not yet fail closed on raw owner-template baseline dimension `A1:X35`, actual merge inventory count 79, and exact single main `_xlnm.Print_Area` bound to `localSheetId=0` before working-copy mutation; current code can deterministically emit/replace these values after round-trip instead of first proving raw-source authority;
+2. test does not yet prove defined-name control: non-print-area defined names unchanged, exactly one main Print_Area bound to localSheetId 0, and `Sheet1` print area empty.
+
+## 4. Proposed R5-R1 — NOT AUTHORIZED
+
+```text
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R5-R1
+PROPOSED_WORK_PACKAGE_NAME = PART B RAW-BASELINE FAIL-CLOSED + DEFINED-NAME PROOF CLOSURE
+PROPOSED_SCOPE = SOURCE+TEST / EXACT SAME TWO FEASIBILITY FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R5 / ONE-SHOT BOUNDED SOURCE+TEST
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-Writable files only:
+If authorized, R5-R1 must NOT redesign the accepted 6/7/8 insertion algorithm. It may only:
+- add raw owner-template prerequisite checks before mutation after the exact SHA gate: exact main dimension A1:X35, actual+declared merge inventory 79, source-block merges exactly 6, exactly one `_xlnm.Print_Area` with `localSheetId=0` and exact source value, and required raw structures present;
+- retain deterministic structural output emission after those raw-source guards pass (including re-emitting dimension on a working copy if xlsx-populate omitted it); this is bounded construction, not generic repair;
+- add test proof that raw source baseline facts hold and that for every 6/7/8 variant all non-print-area defined names are identical, exactly one Print_Area is bound to localSheetId 0 with the expected endpoint, and `Sheet1` has empty print area;
+- retain every accepted R5 matrix assertion unchanged.
+
+Writable files only if Owner authorizes:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-R5 must generalize the existing real Part B helper from hard-coded 6/8 to exact 6/7/8 competency variants using the same 4-row source block `27:30`, then prove exact row/block relocation, full merge-set equality, exact dimensions/print areas, main-sheet non-target invariants, exact auxiliary `Sheet1` stability, controlled defined names, package relationship/media preservation and zero formulas.
-
-Expected authority:
-- 6 => A1:X35 / 79 merges / print X35
-- 7 => A1:X39 / 85 merges / print X39
-- 8 => A1:X43 / 91 merges / print X43
-- Part B main page authority = A4 / portrait / scale 75 / horizontally centered / protected.
-
 ## 5. Privacy follow-up boundary
 
-R5 is structural only. The accepted privacy mapping remains authority for the original 6-block source layout. Expanded 7/8 output requires explicit competency/summary address-role remapping before production renderer/security closure. R5 must not modify privacy/sanitization code or evidence.
+`PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED BEFORE PRODUCTION RENDERER / SECURITY CLOSURE`.
+R5/R5-R1 remain structural only and must not modify privacy/sanitization.
 
-## 6. Remaining D2 path after R5
+## 6. Remaining D2 path after Part B closure
 
 1. formula/no-formula authority;
 2. production sanitizer/XLSX renderer including expanded Part B privacy/address remapping;
@@ -90,5 +105,3 @@ R5 is structural only. The accepted privacy mapping remains authority for the or
 4. PDF parity;
 5. export authorization/security/privacy regression;
 6. final independent D2 closure.
-
-Antigravity must push exactly one bounded implementation/blocker commit and STOP for ChatGPT independent review.
