@@ -17,21 +17,20 @@ D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, 
 
 Template Profile foundation:
 ```text
-D2-WP004-R1 = CORRECTIVE REQUIRED
+D2-WP004-R1 = CORRECTIVE REQUIRED / TOKEN CONSUMED
 R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
-R1_SCOPE = PASS
-R1_TOKEN = CONSUMED / DO NOT REUSE
-PROPOSED_NEXT = D2-WP004-R1-R1 SOURCE+TEST / NOT AUTHORIZED
+D2-WP004-R1-R1 = ACTIVE / SOURCE+TEST / ONE-SHOT
+AUTHORIZATION = D2-WP004-R1-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 57b77fde38c0ef95f0ac40eb396ec386643adf03
 ```
 
-R1-R1 must correct only:
-1. Part B exact frozen row-role mapping — rows7:29 K:X dynamic; only row30 and clones34/38 protected padding; inserted dynamic rows N7=31:33, N8=31:33+35:37; summary rows 31:34 / 35:38 / 39:42.
-2. Semantic role alignment with current `MboExportService` secured projection.
-3. Runtime fail-closed validation for missing/conflicting required mapping.
+R1-R1 corrects only:
+1. Part B frozen row-role topology.
+2. Semantic/projection-path alignment with current read-only `MboExportService`.
+3. Runtime fail-closed mapping integrity.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R1
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
