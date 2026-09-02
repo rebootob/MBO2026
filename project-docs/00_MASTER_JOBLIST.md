@@ -15,37 +15,34 @@ D7 = SOURCE FUNCTIONALITY CLOSED
 
 D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
 
-Template Profile status:
+Template Profile/evidence status:
 ```text
-R1 = CORRECTIVE / CONSUMED
 R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
 R1_R1_PART_B_TOPOLOGY = PASS / FREEZE
 R1_R1_BASIC_INTEGRITY = PASS / FREEZE
 R1_R1_PROFILE_SEMANTIC_AUTHORITY = NOT CLOSED
 
-R1_R2_EVIDENCE = 6e7cb1f5633dfc2a85dc181ae37f425dab3ea067
-R1_R2_SCOPE_SHA = PASS
-R1_R2_HOSHIN = PASS / FREEZE
-R1_R2_PART_B_HEADER = PASS / FREEZE
-R1_R2_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
+R1_R2_R1_EVIDENCE = 26fa18feead191c7587df82e393c73366969000d
+R1_R2_R1_SCOPE_SHA = PASS
+R1_R2_R1_HOSHIN = PASS / FREEZE
+R1_R2_R1_PART_B_HEADER = PASS / FREEZE
+R1_R2_R1_PART_A_HEADER = PASS / FREEZE
+R1_R2_R1_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
 ```
 
-Active smallest corrective:
+Next proposed smallest gate:
 ```text
-D2-WP004-R1-R2-R1 = XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
-STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
-AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
-MODE = EVIDENCE-ONLY / ONE-SHOT / OWNER-TEMPLATE READ-ONLY
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+D2-WP004-R1-R2-R2 = FINAL XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
+MODE = EVIDENCE-ONLY / NOT AUTHORIZED
+WRITABLE_FILE_IF_AUTHORIZED = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_TEST_PROFILE_CHANGE = NONE
 ```
 
-Corrective focus: exclusive Part A header ownership; employeeName/employeeNameTH source-selection ambiguity; correct status taxonomy; complete objective/evaluator/summary inventory without inference; Part B K:Q self vs R:X chief secured semantics; exact status counts and zero duplicate exclusive `SAFE_TO_MAP` targets.
+Remaining evidence-only corrections: Chief rating authority must be `R:X`; no `SAFE_TO_MAP` without secured path; evaluator mappings require accepted role-identity citation or remain unresolved; combined objective/target B:I cannot prove title-only ownership without a composition rule; evidence cannot self-promote to Baseline before independent review.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R1
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
