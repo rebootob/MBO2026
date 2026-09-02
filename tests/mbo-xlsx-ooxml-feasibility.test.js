@@ -39,6 +39,169 @@ import {
 // ALWAYS-RUNNABLE PRIVACY-SAFE UNIT TESTS (NO TEMPLATE BINARIES REQUIRED)
 // ============================================================================
 
+export function parseDrawingAnchorsXml(xml, partName = 'xl/drawings/drawing1.xml') {
+  if (typeof xml !== 'string') {
+    throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
+  }
+
+  const wsDrMatch = xml.match(/<(?:\w+:)?wsDr[^>]*>([\s\S]*?)<\/(?:\w+:)?wsDr>/i);
+  if (!wsDrMatch) {
+    throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
+  }
+
+  const inner = wsDrMatch[1];
+  const anchorRegex = /<((?:\w+:)?(?:twoCellAnchor|oneCellAnchor|absoluteAnchor))(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/gi;
+  const tagMatches = [...inner.matchAll(anchorRegex)];
+
+  let lastEnd = 0;
+  for (const m of tagMatches) {
+    const textBetween = inner.slice(lastEnd, m.index);
+    if (textBetween.trim().length > 0) {
+      throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
+    }
+    lastEnd = m.index + m[0].length;
+  }
+  if (inner.slice(lastEnd).trim().length > 0) {
+    throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
+  }
+
+  const anchors = [];
+
+  for (const m of tagMatches) {
+    const fullTagName = m[1];
+    const anchorXml = m[0];
+    const typeName = fullTagName.includes(':') ? fullTagName.split(':')[1] : fullTagName;
+
+    const embedMatch = anchorXml.match(/\b(?:\w+:)?embed=(?:"([^"]+)"|'([^']+)')/);
+    const blipRId = embedMatch ? (embedMatch[1] || embedMatch[2]) : null;
+
+    anchors.push({
+      part: partName,
+      typeName,
+      blipRId,
+      xml: anchorXml
+    });
+  }
+
+  anchors.sort((a, b) => (a.part + ':' + (a.blipRId || '') + ':' + a.xml).localeCompare(b.part + ':' + (b.blipRId || '') + ':' + b.xml));
+  return anchors;
+}
+
+export function parseDrawingRelsXml(xml, partName = 'xl/drawings/_rels/drawing1.xml.rels') {
+  if (typeof xml !== 'string') {
+    throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+  }
+
+  const relsMatch = xml.match(/<(?:\w+:)?Relationships[^>]*>([\s\S]*?)<\/(?:\w+:)?Relationships>/i);
+  if (!relsMatch) {
+    throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+  }
+
+  const inner = relsMatch[1];
+  const tagMatches = [...inner.matchAll(/<((?:\w+:)?Relationship)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/gi)];
+
+  let lastEnd = 0;
+  for (const m of tagMatches) {
+    const textBetween = inner.slice(lastEnd, m.index);
+    if (textBetween.trim().length > 0) {
+      throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+    }
+    lastEnd = m.index + m[0].length;
+  }
+  if (inner.slice(lastEnd).trim().length > 0) {
+    throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+  }
+
+  const rels = [];
+
+  for (const m of tagMatches) {
+    const tag = m[0];
+
+    const idMatch = tag.match(/\bId=(?:"([^"]+)"|'([^']+)')/);
+    const typeMatch = tag.match(/\bType=(?:"([^"]+)"|'([^']+)')/);
+    const targetMatch = tag.match(/\bTarget=(?:"([^"]+)"|'([^']+)')/);
+    const modeMatch = tag.match(/\bTargetMode=(?:"([^"]+)"|'([^']+)')/);
+
+    if (!idMatch || !typeMatch || !targetMatch) {
+      throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+    }
+
+    const Id = idMatch[1] || idMatch[2];
+    const Type = typeMatch[1] || typeMatch[2];
+    const Target = targetMatch[1] || targetMatch[2];
+    const TargetMode = modeMatch ? (modeMatch[1] || modeMatch[2]) : null;
+
+    rels.push({
+      part: partName,
+      Id,
+      Type,
+      Target,
+      TargetMode
+    });
+  }
+
+  rels.sort((a, b) => (a.part + ':' + a.Id + ':' + a.Type + ':' + a.Target + ':' + String(a.TargetMode)).localeCompare(b.part + ':' + b.Id + ':' + b.Type + ':' + b.Target + ':' + String(b.TargetMode)));
+  return rels;
+}
+
+test('UNIT_REFERENCE_IMAGE_INVENTORY_PARSERS: synthetic & adversarial drawing anchor and relationship parser validation', () => {
+  // 1. absoluteAnchor parsing
+  const absAnchorXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <xdr:absoluteAnchor><a:blip r:embed="rId10"/></xdr:absoluteAnchor>
+</wsDr>`;
+  const absAnchors = parseDrawingAnchorsXml(absAnchorXml, 'xl/drawings/drawing1.xml');
+  assert.equal(absAnchors.length, 1, 'absoluteAnchor must be parsed');
+  assert.equal(absAnchors[0].typeName, 'absoluteAnchor');
+  assert.equal(absAnchors[0].blipRId, 'rId10');
+
+  // 2. Alternate/non-xdr namespace prefix
+  const altPrefixXml = `<ns:wsDr xmlns:ns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <ns:twoCellAnchor><a:blip embed='rId11'/></ns:twoCellAnchor>
+</ns:wsDr>`;
+  const altAnchors = parseDrawingAnchorsXml(altPrefixXml, 'xl/drawings/drawing1.xml');
+  assert.equal(altAnchors.length, 1, 'Alternate prefix twoCellAnchor must be parsed');
+  assert.equal(altAnchors[0].typeName, 'twoCellAnchor');
+  assert.equal(altAnchors[0].blipRId, 'rId11');
+
+  // 3. Prefixed Relationship element & single-quoted attributes
+  const singleQuoteRelsXml = `<r:Relationships xmlns:r="http://schemas.openxmlformats.org/package/2006/relationships">
+  <r:Relationship Id='rId1' Type='http://example.com/type1' Target='target1'/>
+</r:Relationships>`;
+  const singleRels = parseDrawingRelsXml(singleQuoteRelsXml, 'xl/drawings/_rels/drawing1.xml.rels');
+  assert.equal(singleRels.length, 1, 'Prefixed single-quoted Relationship must be parsed');
+  assert.equal(singleRels[0].Id, 'rId1');
+  assert.equal(singleRels[0].Type, 'http://example.com/type1');
+  assert.equal(singleRels[0].Target, 'target1');
+  assert.equal(singleRels[0].TargetMode, null, 'Absent TargetMode must be null (not converted to Internal)');
+
+  // 4. Missing required Relationship attribute (Id, Type, or Target) -> fail closed
+  const missingAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://example.com/type1"/>
+</Relationships>`;
+  assert.throws(() => parseDrawingRelsXml(missingAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Missing Target attribute must throw BLOCKER_DRAWING_RELS_PARSING_FAILED');
+
+  // 5. TargetMode presence and value retention
+  const targetModeRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://example.com/type1" Target="target1" TargetMode="External"/>
+</Relationships>`;
+  const extRels = parseDrawingRelsXml(targetModeRelsXml);
+  assert.equal(extRels[0].TargetMode, 'External', 'Explicit TargetMode="External" must be retained');
+
+  // 6. Unknown / unconsumed direct anchor markup -> fail closed
+  const junkAnchorXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  <xdr:twoCellAnchor><a:blip r:embed="rId1"/></xdr:twoCellAnchor>
+  <unknownTag/>
+</wsDr>`;
+  assert.throws(() => parseDrawingAnchorsXml(junkAnchorXml), /BLOCKER_DRAWING_ANCHOR_PARSING_FAILED/, 'Unknown direct anchor element must fail closed');
+
+  // 7. Unknown / unconsumed direct relationship markup -> fail closed
+  const junkRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://example.com/type1" Target="target1"/>
+  unconsumedJunkText
+</Relationships>`;
+  assert.throws(() => parseDrawingRelsXml(junkRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Unconsumed text under <Relationships> must fail closed');
+});
+
 test('UNIT_TARGET_LEXICAL_VALIDATION: strict raw Target lexical identity enforcement', () => {
   assert.equal(validateRawTargetLexical('worksheets/sheet1.xml'), true, 'Valid relative target must pass');
   assert.equal(validateRawTargetLexical('worksheets/sheet2.xml'), true, 'Valid relative target 2 must pass');
@@ -831,23 +994,14 @@ test('FEASIBILITY_REFERENCE_IMAGE_REMOVAL: identifies drawings and proves refere
   const wbOrigA = await XlsxPopulate.fromDataAsync(origBufA);
   const wbOutA = await XlsxPopulate.fromDataAsync(outBufA);
 
-  // Helper functions for deterministic inventory extraction
+  // Helper functions for deterministic inventory extraction using coverage-complete parsers
   async function extractDrawingAnchorInventory(wb) {
-    const anchors = [];
+    let anchors = [];
     for (const fileName in wb._zip.files) {
       if (fileName.startsWith('xl/drawings/') && fileName.endsWith('.xml') && !fileName.includes('_rels')) {
         const xml = await wb._zip.files[fileName].async('string');
-        const matches = [...xml.matchAll(/<(?:xdr:twoCellAnchor|xdr:oneCellAnchor)[\s\S]*?<\/(?:xdr:twoCellAnchor|xdr:oneCellAnchor)>/g)];
-        for (const m of matches) {
-          const anchorXml = m[0];
-          const rIdMatch = anchorXml.match(/\br:embed="([^"]+)"/);
-          const blipRId = rIdMatch ? rIdMatch[1] : null;
-          anchors.push({
-            part: fileName,
-            blipRId,
-            xml: anchorXml
-          });
-        }
+        const parsed = parseDrawingAnchorsXml(xml, fileName);
+        anchors = anchors.concat(parsed);
       }
     }
     anchors.sort((a, b) => (a.part + ':' + (a.blipRId || '') + ':' + a.xml).localeCompare(b.part + ':' + (b.blipRId || '') + ':' + b.xml));
@@ -855,29 +1009,15 @@ test('FEASIBILITY_REFERENCE_IMAGE_REMOVAL: identifies drawings and proves refere
   }
 
   async function extractDrawingRelsInventory(wb) {
-    const rels = [];
+    let rels = [];
     for (const fileName in wb._zip.files) {
       if (fileName.startsWith('xl/drawings/_rels/') && fileName.endsWith('.rels')) {
         const xml = await wb._zip.files[fileName].async('string');
-        const matches = [...xml.matchAll(/<Relationship\s+([^>]*)\/?>/g)];
-        for (const m of matches) {
-          const tag = m[0];
-          const idMatch = tag.match(/\bId="([^"]+)"/);
-          const typeMatch = tag.match(/\bType="([^"]+)"/);
-          const targetMatch = tag.match(/\bTarget="([^"]+)"/);
-          const modeMatch = tag.match(/\bTargetMode="([^"]+)"/);
-
-          rels.push({
-            part: fileName,
-            Id: idMatch ? idMatch[1] : null,
-            Type: typeMatch ? typeMatch[1] : null,
-            Target: targetMatch ? targetMatch[1] : null,
-            TargetMode: modeMatch ? modeMatch[1] : 'Internal'
-          });
-        }
+        const parsed = parseDrawingRelsXml(xml, fileName);
+        rels = rels.concat(parsed);
       }
     }
-    rels.sort((a, b) => (a.part + ':' + a.Id).localeCompare(b.part + ':' + b.Id));
+    rels.sort((a, b) => (a.part + ':' + a.Id + ':' + a.Type + ':' + a.Target + ':' + String(a.TargetMode)).localeCompare(b.part + ':' + b.Id + ':' + b.Type + ':' + b.Target + ':' + String(b.TargetMode)));
     return rels;
   }
 
@@ -910,22 +1050,40 @@ test('FEASIBILITY_REFERENCE_IMAGE_REMOVAL: identifies drawings and proves refere
   const mediaAfter = await extractMediaInventory(wbOutA);
 
   // 5. Prove exact target identity exists BEFORE
-  const targetAnchorsBefore = anchorsBefore.filter(a => a.blipRId === 'rId3');
-  assert.equal(targetAnchorsBefore.length, 1, 'BEFORE drawing anchor inventory MUST contain exactly 1 anchor embedding rId3');
-  assert.equal(targetAnchorsBefore[0].part, drawingXmlPath, 'Target anchor part MUST equal expected drawingXmlPath');
+  const targetRelTuple = {
+    part: drawingRelsPath,
+    Id: 'rId3',
+    Type: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image',
+    Target: '../media/image3.png',
+    TargetMode: null
+  };
 
-  const targetRelsBefore = relsBefore.filter(r => r.Id === 'rId3');
-  assert.equal(targetRelsBefore.length, 1, 'BEFORE drawing relationship inventory MUST contain exactly 1 relationship rId3');
-  assert.equal(targetRelsBefore[0].part, drawingRelsPath, 'Target relationship part MUST equal expected drawingRelsPath');
-  assert.equal(targetRelsBefore[0].Type, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image', 'Target relationship Type MUST be canonical image relationship Type');
-  assert.equal(targetRelsBefore[0].Target, '../media/image3.png', 'Target relationship Target MUST resolve to ../media/image3.png');
+  const targetAnchorsBefore = anchorsBefore.filter(a => a.part === drawingXmlPath && a.blipRId === 'rId3');
+  assert.equal(targetAnchorsBefore.length, 1, 'BEFORE drawing anchor inventory MUST contain exactly 1 anchor embedding rId3');
+
+  const targetRelsBefore = relsBefore.filter(r =>
+    r.part === targetRelTuple.part &&
+    r.Id === targetRelTuple.Id &&
+    r.Type === targetRelTuple.Type &&
+    r.Target === targetRelTuple.Target &&
+    r.TargetMode === targetRelTuple.TargetMode
+  );
+  assert.equal(targetRelsBefore.length, 1, 'BEFORE drawing relationship inventory MUST contain exactly 1 relationship matching targetRelTuple');
 
   const targetMediaBefore = mediaBefore.filter(m => m.path === 'xl/media/image3.png');
   assert.equal(targetMediaBefore.length, 1, 'BEFORE media inventory MUST contain xl/media/image3.png');
 
-  // 6. Normalize ONLY those exact target items out of BEFORE
+  // 6. Normalize ONLY those exact target items out of BEFORE using COMPLETE EXACT TUPLE COMPARISON
   const normalizedAnchorsBefore = anchorsBefore.filter(a => !(a.part === drawingXmlPath && a.blipRId === 'rId3'));
-  const normalizedRelsBefore = relsBefore.filter(r => !(r.part === drawingRelsPath && r.Id === 'rId3'));
+
+  const normalizedRelsBefore = relsBefore.filter(r => !(
+    r.part === targetRelTuple.part &&
+    r.Id === targetRelTuple.Id &&
+    r.Type === targetRelTuple.Type &&
+    r.Target === targetRelTuple.Target &&
+    r.TargetMode === targetRelTuple.TargetMode
+  ));
+
   const normalizedMediaBefore = mediaBefore.filter(m => m.path !== 'xl/media/image3.png');
 
   // 7. Require exact deep equality
