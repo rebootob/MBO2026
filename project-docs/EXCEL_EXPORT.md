@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE ALIGNMENT NEXT PROPOSED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE ALIGNMENT ACTIVE**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -41,7 +41,7 @@ RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 Durable authority:
 `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-Production semantic rules now frozen:
+Production semantic rules frozen:
 - only the exact 18 roles in the semantic closure Baseline may be production writable today;
 - 22 unresolved roles remain fail-closed/non-writable;
 - 5 visually identifiable roles with no secured projection source must not be synthesized or mapped;
@@ -50,19 +50,24 @@ Production semantic rules now frozen:
 - Employee-Self confidential omissions must never be reconstructed;
 - Excel scoring/recalculation remains forbidden and generated workbook formula inventory remains exactly zero.
 
-## Proposed next — NOT AUTHORIZED
+## Active D2-WP004-R1-R3 — TEMPLATE PROFILE SEMANTIC ALIGNMENT
 ```text
-D2-WP004-R1-R3 = TEMPLATE PROFILE SEMANTIC ALIGNMENT
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT
+WRITABLE_FILES_ONLY =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+SOURCE_CHANGE = AUTHORIZED ONLY FOR PROFILE FILE
+TEST_CHANGE = AUTHORIZED ONLY FOR PROFILE TEST FILE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
-R1-R3 must update the existing pure Template Profile to consume this closed semantic authority only. No Renderer, workbook I/O, scoring recalculation, Kintone write, deploy, Live UAT, Combined Excel/PDF regression or D3 is authorized.
+R1-R3 must update the existing pure Template Profile to consume the closed semantic authority only. It must expose deterministic writable mappings for exactly the 18 safe roles, reject all 22 unresolved and 5 no-source roles with `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`, preserve exact SHA/count/topology/immutability/basic-integrity behavior, and introduce no workbook I/O, scoring logic, Kintone write, deployment or renderer implementation.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
