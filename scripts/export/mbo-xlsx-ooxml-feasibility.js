@@ -2467,9 +2467,9 @@ export async function validatePreSanitizePartBPresentationState(rawBuf, count = 
 
 /**
  * Production Validator for Effective Dynamic Privacy Evidence for Part B
- * Validates real effectivePrivacy objects / evidence against authorized dynamic topology standards.
+ * Validates real effectivePrivacy objects / evidence against authoritative dynamic topology standards.
  */
-export function validatePartBEffectivePrivacyOverlay(effectivePrivacy, count = 6) {
+export async function validatePartBEffectivePrivacyOverlay(effectivePrivacy, count = 6, structuralBuf = null) {
   const n = count || 6;
   if (![6, 7, 8].includes(n)) {
     throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Invalid competency count');
@@ -2479,33 +2479,62 @@ export function validatePartBEffectivePrivacyOverlay(effectivePrivacy, count = 6
     throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Invalid effective privacy evidence');
   }
 
+  const rawObserved = effectivePrivacy.dynamicAddresses;
+
+  // 1. Validate exact raw count match first
   const expectedEffectiveDynamic = n === 6 ? 432 : (n === 7 ? 492 : 552);
-  if (effectivePrivacy.dynamicAddresses.length !== expectedEffectiveDynamic) {
+  if (rawObserved.length !== expectedEffectiveDynamic) {
     throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
   }
 
-  // Validate exact required presentation dynamic write targets are present
-  const requiredAddrs = [];
-  if (n >= 7) {
-    requiredAddrs.push(...expandRangeToAddresses('B31:J32'));
-  }
-  if (n === 8) {
-    requiredAddrs.push(...expandRangeToAddresses('B35:J36'));
+  // 2. Deterministic normalization & Uniqueness validation
+  const normalizedObserved = rawObserved.map(addr => String(addr).trim().toUpperCase());
+  const uniqueObserved = new Set(normalizedObserved);
+  if (uniqueObserved.size !== normalizedObserved.length) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Duplicate dynamic addresses detected for N=${n}`);
   }
 
-  const dynamicSet = new Set(effectivePrivacy.dynamicAddresses);
-  for (const addr of requiredAddrs) {
-    if (!dynamicSet.has(addr)) {
-      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Required presentation dynamic target ${addr} missing`);
+  // 3. Derive authoritative expected effective dynamic set from source-backed privacy resolution
+  let rawBaseBuf = structuralBuf;
+  if (!rawBaseBuf) {
+    const structuralBuffers = await getStructuralPartBBuffers();
+    rawBaseBuf = structuralBuffers.buffers ? structuralBuffers.buffers[n] : (n === 6 ? structuralBuffers.bufB6 : (n === 7 ? structuralBuffers.bufB7 : structuralBuffers.bufB8));
+  }
+
+  const basePrivacy = await resolvePartBPrivacyRoles(null, n, rawBaseBuf, false);
+  const expectedAddrs = [...basePrivacy.dynamicAddresses];
+  if (n >= 7) {
+    expectedAddrs.push(...expandRangeToAddresses('B31:J32'));
+  }
+  if (n === 8) {
+    expectedAddrs.push(...expandRangeToAddresses('B35:J36'));
+  }
+
+  const expectedSet = new Set(expectedAddrs.map(addr => addr.toUpperCase()));
+
+  if (expectedSet.size !== expectedEffectiveDynamic) {
+    throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Authoritative expected dynamic set count mismatch for N=${n}`);
+  }
+
+  // 4. Exact Set Equality Validation (Fail closed on missing, extra, or substituted addresses)
+  for (const addr of normalizedObserved) {
+    if (!expectedSet.has(addr)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Unauthorized dynamic address ${addr} outside accepted authority for N=${n}`);
     }
   }
 
-  // Validate Rating Scale cells and padding rows are non-dynamic / protected static
+  for (const addr of expectedSet) {
+    if (!uniqueObserved.has(addr)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Missing authorized dynamic address ${addr} for N=${n}`);
+    }
+  }
+
+  // 5. Defense-in-depth static protection validation for Rating Scale and Padding
   const ratingScaleRows = n === 6 ? [29] : (n === 7 ? [29, 33] : [29, 33, 37]);
   for (const rRow of ratingScaleRows) {
     for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
       const addr = `${cStr}${rRow}`;
-      if (dynamicSet.has(addr)) {
+      if (uniqueObserved.has(addr)) {
         throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale cell ${addr} marked dynamic`);
       }
     }
@@ -2515,7 +2544,7 @@ export function validatePartBEffectivePrivacyOverlay(effectivePrivacy, count = 6
   for (const pRow of paddingRows) {
     for (const cStr of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X']) {
       const addr = `${cStr}${pRow}`;
-      if (dynamicSet.has(addr)) {
+      if (uniqueObserved.has(addr)) {
         throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Padding cell ${addr} marked dynamic`);
       }
     }
@@ -2555,7 +2584,7 @@ export async function validateExpandedPresentationOverlayPartB(buf, count = 6, s
 
   // 2. Dynamic Privacy Overlay & Topology Validation via production helper
   const effectivePrivacy = await resolveExpandedPartBPrivacyRoles(buf, n);
-  validatePartBEffectivePrivacyOverlay(effectivePrivacy, n);
+  await validatePartBEffectivePrivacyOverlay(effectivePrivacy, n, structuralBuf);
 
   // 3. XlsxPopulate Text & Sanitization State Validation
   const wbFinal = await XlsxPopulate.fromDataAsync(buf);

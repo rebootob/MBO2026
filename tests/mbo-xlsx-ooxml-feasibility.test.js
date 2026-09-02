@@ -2245,48 +2245,69 @@ test('FEASIBILITY_PART_B_EXPANDED_PRESENTATION_NEGATIVE_FAIL_CLOSED_MATRIX: prov
   // 8. Positive dynamic evidence validates exact counts 432/492/552 via production dynamic validator
   for (let n = 6; n <= 8; n++) {
     const effPrivacy = await resolveExpandedPartBPrivacyRoles(expResult.buffers[n], n);
-    const isValid = validatePartBEffectivePrivacyOverlay(effPrivacy, n);
+    const isValid = await validatePartBEffectivePrivacyOverlay(effPrivacy, n);
     assert.equal(isValid, true, `Positive dynamic evidence for N=${n} validates cleanly`);
     const expectedCount = n === 6 ? 432 : (n === 7 ? 492 : 552);
     assert.equal(effPrivacy.dynamicAddresses.length, expectedCount, `Dynamic address count for N=${n} equals ${expectedCount}`);
   }
 
-  // 9. Unauthorized dynamic presentation address fails production dynamic validator
-  const effPrivacy7BadAddr = await resolveExpandedPartBPrivacyRoles(finalB7, 7);
-  const malformedAddrs1 = [...effPrivacy7BadAddr.dynamicAddresses, 'Z99'];
-  assert.throws(
-    () => {
-      validatePartBEffectivePrivacyOverlay({ dynamicAddresses: malformedAddrs1 }, 7);
+  // 9. CRITICAL NEGATIVE TEST: Same-count unauthorized substitution (length remains 492)
+  const effPrivacy7Base = await resolveExpandedPartBPrivacyRoles(finalB7, 7);
+  const addrsSameCountSubst = effPrivacy7Base.dynamicAddresses.filter(a => a !== 'K10').concat('Z99');
+  assert.equal(addrsSameCountSubst.length, 492, 'Raw length remains exactly 492');
+  await assert.rejects(
+    async () => {
+      await validatePartBEffectivePrivacyOverlay({ dynamicAddresses: addrsSameCountSubst }, 7);
+    },
+    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED') && err.message.includes('Z99')
+  );
+
+  // 10. SAME-COUNT DUPLICATE TEST: Remove one address + duplicate another (length remains 492)
+  const firstAddr = effPrivacy7Base.dynamicAddresses[0];
+  const addrsSameCountDup = effPrivacy7Base.dynamicAddresses.filter(a => a !== 'K10').concat(firstAddr);
+  assert.equal(addrsSameCountDup.length, 492, 'Raw length remains exactly 492');
+  await assert.rejects(
+    async () => {
+      await validatePartBEffectivePrivacyOverlay({ dynamicAddresses: addrsSameCountDup }, 7);
     },
     (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
   );
 
-  // 10. Wrong dynamic count fails production dynamic validator
-  const effPrivacy7BadCount = await resolveExpandedPartBPrivacyRoles(finalB7, 7);
-  const malformedAddrs2 = effPrivacy7BadCount.dynamicAddresses.slice(0, 490);
-  assert.throws(
-    () => {
-      validatePartBEffectivePrivacyOverlay({ dynamicAddresses: malformedAddrs2 }, 7);
+  // 11. MISSING ADDRESS TEST: Remove one authorized address without replacement (length 491)
+  const addrsMissingOne = effPrivacy7Base.dynamicAddresses.filter(a => a !== 'B31');
+  assert.equal(addrsMissingOne.length, 491, 'Raw length is 491');
+  await assert.rejects(
+    async () => {
+      await validatePartBEffectivePrivacyOverlay({ dynamicAddresses: addrsMissingOne }, 7);
     },
     (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
   );
 
-  // 11. Rating Scale marked dynamic fails production dynamic validator
-  const effPrivacy7BadScale = await resolveExpandedPartBPrivacyRoles(finalB7, 7);
-  const malformedAddrs3 = [...effPrivacy7BadScale.dynamicAddresses.slice(0, -1), 'B33'];
-  assert.throws(
-    () => {
-      validatePartBEffectivePrivacyOverlay({ dynamicAddresses: malformedAddrs3 }, 7);
+  // 12. WRONG COUNT TEST: Independent wrong-count evidence
+  const addrsWrongCount = effPrivacy7Base.dynamicAddresses.slice(0, 490);
+  await assert.rejects(
+    async () => {
+      await validatePartBEffectivePrivacyOverlay({ dynamicAddresses: addrsWrongCount }, 7);
+    },
+    (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED')
+  );
+
+  // 13. Rating Scale marked dynamic fails production dynamic validator (length remains 492)
+  const addrsBadScale = effPrivacy7Base.dynamicAddresses.filter(a => a !== 'K10').concat('B33');
+  assert.equal(addrsBadScale.length, 492, 'Raw length remains 492');
+  await assert.rejects(
+    async () => {
+      await validatePartBEffectivePrivacyOverlay({ dynamicAddresses: addrsBadScale }, 7);
     },
     (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED') && err.message.includes('B33')
   );
 
-  // 12. Padding marked dynamic fails production dynamic validator
-  const effPrivacy7BadPad = await resolveExpandedPartBPrivacyRoles(finalB7, 7);
-  const malformedAddrs4 = [...effPrivacy7BadPad.dynamicAddresses.slice(0, -1), 'B34'];
-  assert.throws(
-    () => {
-      validatePartBEffectivePrivacyOverlay({ dynamicAddresses: malformedAddrs4 }, 7);
+  // 14. Padding marked dynamic fails production dynamic validator (length remains 492)
+  const addrsBadPad = effPrivacy7Base.dynamicAddresses.filter(a => a !== 'K10').concat('B34');
+  assert.equal(addrsBadPad.length, 492, 'Raw length remains 492');
+  await assert.rejects(
+    async () => {
+      await validatePartBEffectivePrivacyOverlay({ dynamicAddresses: addrsBadPad }, 7);
     },
     (err) => err.message.includes('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED') && err.message.includes('B34')
   );
