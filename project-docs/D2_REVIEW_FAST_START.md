@@ -24,33 +24,44 @@ CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
 ```
 
-## Latest independent review — D2-WP004-R1-R1
+## Latest independent review — D2-WP004-R1-R2
 ```text
-R1_R1_AUTHORIZATION_COMMIT = d49d33024ec57615e6aba31a7ee4c4f6aa73acec
-R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
-SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED FILES
-PART_B_ROW_ROLE_TOPOLOGY = PASS / FREEZE
-PURE_PROFILE_SHA_COUNT = PASS / FREEZE
-BASIC_MAPPING_INTEGRITY_GUARDS = PASS / FREEZE
-SECURED_SEMANTIC_AUTHORITY = CORRECTIVE REQUIRED
-R1_R1_STATUS = CORRECTIVE REQUIRED
-R1_R1_TOKEN = CONSUMED / DO NOT REUSE
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_R2_AUTHORIZATION_COMMIT = 90d6ae21353c153d5d2679837ef8e337d0bf8118
+R1_R2_EVIDENCE_COMMIT = 6e7cb1f5633dfc2a85dc181ae37f425dab3ea067
+AUTH_TO_EVIDENCE = EXACTLY ONE COMMIT
+CHANGED_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
+R1_R2_SCOPE = PASS
+PART_A_SHA = PASS / EXACT MATCH
+PART_B_SHA = PASS / EXACT MATCH
+PRIVACY_SAFE_EVIDENCE_SCOPE = PASS
+HOSHIN_SEMANTIC_EVIDENCE = PASS / FREEZE
+PART_B_HEADER_EVIDENCE = PASS / FREEZE
+R1_R2_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
+R1_R2_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_R2_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-## Active evidence gate — D2-WP004-R1-R2
+Accepted/frozen evidence from R1-R2:
+- Part A owner template SHA `03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3`.
+- Part B owner template SHA `c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3`.
+- Part A Hoshin: Department `G16:AF19`; Section `AM16:BI19`; `G8:S8` is appraisal-period/static content, not Hoshin.
+- Part B header mapping: fiscal year `G2:H3`, department `J3:L3`, section `M3:O3`, position `P3:Q3`, employee code `R3`, employee name `S3:W3`, consuming nested `partA.header.*` projection paths.
+- Existing frozen Part B structural/privacy topology remains authoritative.
+
+Evidence corrective is still required because the submitted evidence contains internal semantic conflicts/unsupported claims, including duplicate Part A header target ownership, incorrect status taxonomy for fields that do have secured projection paths but no proven workbook target, incomplete/unsupported objective/evaluator mappings, Part B chief-rating secured-path ambiguity, and incorrect status counts.
+
+## Proposed corrective — NOT AUTHORIZED
 ```text
-WORK_PACKAGE = D2-WP004-R1-R2
-NAME = XLSX TEMPLATE SEMANTIC MAPPING EVIDENCE
-STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
-AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
-MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / OWNER-TEMPLATE READ-ONLY
-EXPECTED_EVIDENCE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R2-R1
+NAME = XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
+MODE = EVIDENCE-ONLY / SAME ONE MARKDOWN FILE / OWNER-TEMPLATE READ-ONLY
+STATE = PROPOSED / NOT AUTHORIZED
+EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
-TEMPLATE_BINARY_CHANGE = FORBIDDEN
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE
+PROFILE_CHANGE = FORBIDDEN
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -58,4 +69,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Evidence must use exact SHA-approved owner templates and current read-only `MboExportService`, contain no personal employee values, distinguish workbook semantic evidence from secured projection availability and frozen structural/privacy authority, and explicitly mark unsupported mappings `UNRESOLVED` or `NO_SECURED_PROJECTION_SOURCE` rather than guessing.
+R1-R2-R1 must correct evidence only; no production mapping may be promoted until every `PROVEN` claim has exclusive workbook ownership plus a compatible secured projection path.
