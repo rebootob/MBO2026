@@ -15,13 +15,19 @@ FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
 R7-R1_IMPLEMENTATION = 7c1be393bbddaf1f6b439d13229ad256c23517cf
 R7-R1 = CORRECTIVE REQUIRED / TOKEN CONSUMED
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R2
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R2
+R7-R2_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7-R2_AUTHORIZATION = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 52a28d6f24a353f4a425315b730b9b9f19cd4bce
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R2 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 Durable D2 Baselines: `D2_PART_A_STRUCTURAL_CLOSURE.md`, `D2_PART_B_STRUCTURAL_CLOSURE.md`, `D2_FORMULA_AUTHORITY_CLOSURE.md`. No privacy-remap Baseline yet.
 
-R7-R2 shortcut: same two feasibility files only; preserve accepted R7-R1 row mapping/counts/style+merge/token-purge work; correct only remaining source-backed static/type/nonblank fail-closed proof. Full contract in `AI_ACTIVE_TASK.md`.
+R7-R2 writable scope only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Freeze all accepted R7-R1 behavior. Correct only source-evidence fail-closed type/nonblank/static-hash proof. Full contract: `AI_ACTIVE_TASK.md`.
