@@ -34,8 +34,6 @@ CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```text
 AUTHORIZATION_COMMIT = 867111d785b7e85689725379249e7b278108d8cc
 IMPLEMENTATION_COMMIT = 6386e506b85ded87a57967705066e38d56212f73
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES = EXACTLY TWO AUTHORIZED PROFILE/TEST FILES
 SCOPE_REVIEW = PASS
 ALIAS_CORRECTION = PASS
 NULL_PATH_BASIC_GUARD = PASS
@@ -46,19 +44,24 @@ INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-### Remaining proven defect
-`validateMappingIntegrity()` still does not prove the exact canonical Part B competency identity. It validates count, address shape and non-empty projection path, but not exact expected `index`, exact expected rating `row`, exact `SELF_RATING = K{row}`, or exact secured path `partB.competencyItems[i-1].selfRating`.
-
-Therefore mutations such as a wrong competency index, a different but syntactically valid rating cell, or a different non-empty projection path are not guaranteed to fail closed. The authorization explicitly required wrong/missing Part B competency count/index/self-rating address to fail and direct negative tests for missing/wrong mapping/index/address.
-
-## Proposed next — NOT AUTHORIZED
+Remaining proven defect: canonical Part B competency identity is not exact enough. Validator must require for each competency `b` and accepted N=6/7/8:
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R1-R3-R2
+index = b
+row = expectedRow
+SELF_RATING = K{expectedRow}
+projectionPath = partB.competencyItems[b-1].selfRating
+```
+
+## Active corrective — D2-WP004-R1-R3-R2
+```text
+WORK_PACKAGE = D2-WP004-R1-R3-R2
 NAME = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED / LOW-CREDIT
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -66,4 +69,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R3-R2 must not re-research semantics or inspect workbooks. It should only complete exact canonical integrity validation and focused negative mutation tests in the same two files.
+LOW-CREDIT: no broad scan, no workbook inspection, no semantic re-research. Fix only canonical Part B competency integrity and focused negatives, then one commit -> push -> STOP.
