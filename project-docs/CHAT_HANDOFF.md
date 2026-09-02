@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
 
-Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/evidence -> exact diff.
+Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -14,43 +14,40 @@ D2_PART_A_STRUCTURAL = PASS / CLOSED
 D2_PART_B_STRUCTURAL = PASS / CLOSED
 D2_FORMULA_AUTHORITY = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
+D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 D3 = HOLD
 ```
 
-Latest semantic-evidence review:
+Latest independent semantic evidence closure:
 ```text
-R1_R2_R1_AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
-R1_R2_R1_EVIDENCE = 26fa18feead191c7587df82e393c73366969000d
+R1_R2_R2_AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
+R1_R2_R2_AUTHORIZATION_COMMIT = ef9f9ca1fbfef224372150226a5db8ba7a5ba12c
+R1_R2_R2_EVIDENCE = bc141f355d7714302801d5adca3d5652b83c4de1
 SCOPE = PASS / ONE COMMIT / ONE MARKDOWN FILE
 OWNER_TEMPLATE_SHA = PASS / EXACT MATCH A+B
-HOSHIN = PASS / FREEZE
-PART_B_HEADER = PASS / FREEZE
-PART_A_HEADER = PASS / FREEZE
-OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
-TOKEN = CONSUMED / DO NOT REUSE
+PROVEN_SAFE_TO_MAP = 18
+UNRESOLVED = 22
+NO_SECURED_PROJECTION_SOURCE = 5
+DUPLICATE_SAFE_TARGETS = 0
+SAFE_TO_MAP_WITHOUT_SECURED_PATH = 0
+CHIEF_FROZEN_AUTHORITY = R:X
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Accepted/frozen from R1-R2-R1: Part A Department `Z7:AF7`, Section `AG7:AL7`, primary Name-Surname `AT7:BC7`, corrected unresolved taxonomy for projection fields without workbook targets, unresolved final score/grade without static proof, and conservative Part B no-source classifications.
+Durable authority:
+`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-Final evidence-only corrections remain:
-- preserve complete chief `R:X` authority;
-- remove any `SAFE_TO_MAP` with null/unknown secured projection path, including `SUMMARY_WEIGHT_SUM`;
-- require accepted authority for Appraiser1/2 -> Manager/GM or downgrade to `UNRESOLVED`;
-- combined B:I objective/target region cannot prove standalone title mapping without composition authority;
-- evidence status must remain neutral until independent PASS.
+Template Profile implementation `570a388a3f05be564c38e55431b739d3b28bf406` remains accepted/frozen for pure architecture, exact SHA/count domains, corrected Part B topology and basic integrity guards, but its semantic mappings are NOT yet aligned to the newly closed semantic Baseline.
 
-Current authorization:
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R2
-AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
-MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+PROPOSED_NEXT = D2-WP004-R1-R3 / TEMPLATE PROFILE SEMANTIC ALIGNMENT / SOURCE+TEST / NOT AUTHORIZED
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -58,4 +55,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-If exact evaluator/composition authority is not directly available from accepted repository truth, record `UNRESOLVED` and stop searching broadly.
+If R1-R3 is later authorized, it must expose only the 18 accepted `SAFE_TO_MAP` semantics, fail closed for all unresolved roles, forbid all no-secured-source roles, preserve pure/no-workbook-I/O architecture and all structural/privacy/formula Baselines, and stop before Production Renderer implementation.
