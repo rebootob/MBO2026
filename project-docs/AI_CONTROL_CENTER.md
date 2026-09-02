@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A R4 CORRECTIVE REQUIRED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A R4-R1 TEST-ONLY AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4 proof corrective required |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R1 TEST-ONLY authorized |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -57,29 +57,28 @@ R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Implementation is exactly one commit after authorization and changes only the two authorized files. The source helper now exposes real-path Part A objective counts 4–10. Existing R4 proof correctly covers exact SHA, full merge-set transformation, exact dimension/print area, normalized row/cell/style/row-height relocation, sentinel relocation, relationship/media preservation and empty formula inventory.
+R4 source implementation is accepted/frozen. Missing proof is bounded to the existing test file and uses fields already exposed by `inspectRawWorksheetOOXML()` and `getWorkbookFingerprint()`.
 
-Remaining proof gaps are bounded to the existing test file: exact `rowRefs` sequence/uniqueness, sheet-state equality, and exact gridline/fit-to-page/page-margin/per-sheet setup invariants. `getWorkbookFingerprint()` already exposes these fields, so no source change is required.
-
-## 4. Current gate
+## 4. Current gate — R4-R1 AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
-PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
+ACTIVE_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = 5f22caf6ffc9d539ce0df0c23663dd934385d923
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN FOR CORRECTIVE
-ANTIGRAVITY = STOP / WAIT OWNER
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R1 / ONE-SHOT TEST-ONLY
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
+R4-R1 must add exact `rowRefs` sequence/uniqueness, exact `sheetStates`, and exact equality of non-target per-sheet invariants: `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels`. All accepted R4 matrix assertions must remain unchanged.
+
 ## 5. Low-credit rule
 
-If R4-R1 is authorized, modify only the existing feasibility test file. Do not alter the accepted R4 source implementation unless a new independently proven source defect appears. No Claude review is needed for the current proof gap.
+Antigravity may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js`, create exactly one bounded implementation/blocker commit, push, then STOP. No source modification and no Claude review are authorized.
