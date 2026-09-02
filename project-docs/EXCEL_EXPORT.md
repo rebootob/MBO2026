@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / TEMPLATE SEMANTIC EVIDENCE CORRECTIVE REQUIRED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / R1-R2-R1 SEMANTIC EVIDENCE CORRECTIVE ACTIVE**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -39,30 +39,32 @@ Accepted/frozen evidence:
 - `G8:S8` is appraisal-period/static content, not Hoshin.
 - Part B header workbook regions and nested `partA.header.*` projection paths are supported by static labels/merges.
 
-Corrective evidence required before profile source may change:
-- re-inspect Part A row-6 labels against all sensitive header value ranges and eliminate duplicate semantic target ownership;
-- do not claim both employeeName and employeeNameTH as independent writes to one target without an accepted fallback/source-selection contract;
-- a projection field that exists but lacks a proven workbook target is `UNRESOLVED`, not `NO_SECURED_PROJECTION_SOURCE`;
-- cover every relevant Part A objective secured field (`title`, `description`, `kpi`, `target`, `measurement`, `weight`, `progressPercent`, `actualResult`, `selfAchievement`, `selfComment`, manager/GM/average fields) and mark ambiguous merged semantics unresolved rather than inferring translations from nearby labels;
-- do not map all per-objective manager comments to one shared row unless exact template semantics prove that relationship;
-- preserve Part B K:Q self and R:X chief privacy authority; do not truncate chief region to R:W;
-- a chief/evaluator Part B mapping is not `PROVEN` unless an exact secured `competencyItems` field key/path is proven for the relevant caller;
-- summary/result `PROVEN` claims require actual workbook label/merge evidence plus compatible secured projection; address + projection existence alone is insufficient;
-- status counts must match every matrix row and use status definitions exactly.
-
-## Proposed next — NOT AUTHORIZED
+## Active D2-WP004-R1-R2-R1 — EVIDENCE-ONLY CORRECTIVE
 ```text
-D2-WP004-R1-R2-R1 = EVIDENCE-ONLY CORRECTIVE
-WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
+AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
 PROFILE_CHANGE = FORBIDDEN
+TEMPLATE_BINARY_CHANGE = FORBIDDEN
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
+Corrective requirements:
+- re-inspect exact Part A row-6 labels/merges vs `N6:Q7`, `Z7:AF7`, `AG7:AL7`, `AM7:AP7`, `AQ7:AS7`, `AT7:BC7`, `BD7:BI7`; no duplicate exclusive target may remain `SAFE_TO_MAP`;
+- distinguish one workbook Name-Surname target from `employeeName` vs `employeeNameTH` source-selection/fallback; do not claim two independent write owners without accepted authority;
+- projection fields that exist but lack proven workbook target are `UNRESOLVED / NO_PROVEN_WORKBOOK_TARGET`, not `NO_SECURED_PROJECTION_SOURCE`;
+- cover every current secured Part A objective field and leave combined/ambiguous merged semantics unresolved instead of inferring from nearby labels;
+- do not equate Appraisee/Appraiser1/Appraiser2/Chief/Manager/GM/Final/average without accepted role-translation evidence;
+- re-inspect summary/result labels/merges; address + projection existence alone does not make a mapping `PROVEN`;
+- preserve Part B K:Q self and R:X chief authority, and separate visually proven chief target from secured chief field/path availability;
+- do not reconstruct filtered chief values for Employee-Self;
+- recalculate `PROVEN`, `UNRESOLVED`, `NO_SECURED_PROJECTION_SOURCE` counts mechanically from final matrices/decision table.
+
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R1
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
