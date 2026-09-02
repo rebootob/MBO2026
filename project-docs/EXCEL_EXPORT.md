@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R35 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -52,23 +52,23 @@ R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R34 correctly added minimum invalid-prefix negatives and complete malformed/unquoted/stray Relationship attribute-region consumption. Remaining gap is TEST-ONLY only: XML Name/NCName/QName correctness and regression retention. Several accepted R3-R33 adversarial assertions were removed rather than retained.
+R3-R34 correctly closed the minimum invalid-prefix and malformed/unquoted/stray Relationship attribute-region cases. Remaining gap is TEST-ONLY: complete XML Name/NCName/QName correctness, prefixed `embed` fail-closed handling, and restoration of accepted R3-R33 adversarial regression proof.
 
 No production source change is required.
 
-## 5. Current next gate
+## 5. Current gate — R3-R35 AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R35
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R35
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R35-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R35 / ONE-SHOT
 CLAUDE = STOP
 ```
 
-R3-R35 should restore all accepted R3-R33 adversarial assertions, retain every R3-R34 new adversarial assertion, make NCName validation represent XML NameStartChar/NameChar correctly, validate attribute names as XML NCName/QName tokens, and preserve all accepted target-normalized equality logic.
+R3-R35 must restore all accepted R3-R33 adversarial assertions, retain every R3-R34 adversarial assertion, implement XML-compatible NameStartChar/NameChar/NCName/QName validation, validate attribute names and prefixed `embed` syntax, and preserve all accepted target-normalized equality logic.
 
 ## 6. Remaining D2 path
 
@@ -81,3 +81,5 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
+
+Do not auto-start any next step.
