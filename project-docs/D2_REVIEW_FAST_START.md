@@ -27,42 +27,40 @@ PART_A_STRUCTURAL = PASS / CLOSED
 PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 ```
-Baselines: `D2_PART_A_STRUCTURAL_CLOSURE.md`, `D2_PART_B_STRUCTURAL_CLOSURE.md`, `D2_FORMULA_AUTHORITY_CLOSURE.md`.
+Durable Baselines: `D2_PART_A_STRUCTURAL_CLOSURE.md`, `D2_PART_B_STRUCTURAL_CLOSURE.md`, `D2_FORMULA_AUTHORITY_CLOSURE.md`.
 
-## Latest review — R7-R1
-Authorization commit: `273d5ccbbb24d6aaa1b5ae23bab2a0941977d591`  
-Implementation: `7c1be393bbddaf1f6b439d13229ad256c23517cf`
-
+## Active corrective — R7-R2
 ```text
-R7-R1_SCOPE = PASS
-R7-R1_ROW30_MAPPING = PASS / FROZEN
-R7-R1_DYNAMIC_COUNTS = PASS / FROZEN (432 / 474 / 516)
-R7-R1_STYLE_MERGE_SOURCE_BACKING = PASS / FROZEN
-R7-R1_EXPANDED_PACKAGE_TOKEN_PURGE = PASS / FROZEN
-R7-R1_SOURCE_BACKED_STATIC/DYNAMIC EVIDENCE = CORRECTIVE REQUIRED
-R7-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-R7-R1_STATUS = CORRECTIVE REQUIRED
-D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R2
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 52a28d6f24a353f4a425315b730b9b9f19cd4bce
+MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO FILES
+FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
+        tests/mbo-xlsx-ooxml-feasibility.test.js
 ```
 
-### Remaining proven defects
-1. `resolvePartBPrivacyRoles()` weakens protected-static authority with a special bypass for `B30/B34/B38`, allowing `valHash` / `normalizedType` drift instead of validating first and injecting proof data only after validation.
-2. Source-backed validation does not directly enforce `normalizedType` + `nonblank` identity for dynamic evidence; the exact corrective contract required those source-relative checks before accepting the structural role map.
-3. Negative proof does not directly mutate/prove fail-closed for dynamic normalizedType/nonblank and row30-clone role inconsistency.
+Freeze accepted R7-R1 work: exact 6/7/8 row mapping, row30/clone padding non-dynamic, dynamic counts 432/474/516, source-backed style/merge relocation, count-aware metadata, expanded package/sharedStrings token purge, caller-buffer immutability, zero-formula proof.
 
-## Proposed next corrective
+R7-R2 may correct ONLY the remaining fail-closed gap:
+1. remove B30/B34/B38 static hash/type bypass or equivalent tolerance;
+2. validate untouched structural roles against source-relative `styleId`, normalized merge, `normalizedType`, `nonblank`, and protected-static `valHash` before synthetic mutation;
+3. add direct negative tests for dynamic type/nonblank and row30-clone static hash/type mismatch.
+
+Production Renderer remains out of scope.
+
+## Safety
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R2
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST / EXACT SAME TWO FILES ONLY
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R2 / ONE-SHOT / STOP AFTER PUSH+REPORT
 CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
 D3 = HOLD
 ```
 
-R7-R2 must preserve all accepted R7-R1 work and correct only the remaining fail-closed proof. Full contract: `AI_ACTIVE_TASK.md`.
+Previous standing 20-round Control Plane authorization remains exhausted / DO NOT REUSE. Owner `review` will initiate independent review separately.
 
 Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel parity -> PDF parity -> export security/privacy regression -> final D2 closure -> then D3 may leave HOLD.
