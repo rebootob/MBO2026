@@ -1,22 +1,33 @@
-# AI ACTIVE TASK — D2 PART B STRUCTURAL CLOSED / NO ACTIVE EXECUTOR
+# AI ACTIVE TASK — D2 CONTINUATION / FAST-START MODE
 
-Mode: **CONTROL PLANE / PART A+B STRUCTURAL FROZEN / NO ACTIVE EXECUTOR / REVIEW AUTHORITY 20-ROUND WINDOW EXHAUSTED / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / D2 MUST COMPLETE BEFORE D3 / NO ACTIVE EXECUTOR / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
+## 0. Read first
+
+For ordinary D2 continuation/review:
+1. `project-docs/D2_REVIEW_FAST_START.md`
+2. this file
+3. only the directly relevant `CONFIRMED_BASELINE/` file
+4. exact authorization→implementation diff / changed files as needed
+
+Do not re-read closed-gate internals by default.
+
+## 1. Current truth
+
 ```text
-TASK_STATE = WAIT OWNER / READ-ONLY NEXT-GATE PLANNING ALLOWED
+OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
+TASK_STATE = CHATGPT READ-ONLY / DOCS-ONLY NEXT-GATE PLANNING
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 20
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 0
-CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT SILENTLY EXTEND
+CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / 20 OF 20 / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ACTIVE_WORK_PACKAGE = NONE
@@ -31,107 +42,110 @@ ANTIGRAVITY = STOP
 CLAUDE = STOP
 ```
 
-## 1. R5-R1 independent review closure
+## 2. Closed D2 gates — frozen
+
+Do not reopen without proven regression:
 
 ```text
-R5-R1_AUTHORIZATION = D2-WP003-R5-R1-SOURCE-TEST-20260902-01
-R5-R1_AUTHORIZATION_COMMIT = 37749f415bcbed08a97169d5bbe6ab73a6a70186
-R5-R1_IMPLEMENTATION_COMMIT = 223f293057219efe0e6410029523bd904c92c6ae
-R5-R1_SCOPE_REVIEW = PASS
-R5-R1_SOURCE_REVIEW = PASS / FROZEN
-R5-R1_PROOF_CODE_REVIEW = PASS
-R5-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-R5-R1_STATUS = PASS / CLOSED
-R5-R1_AUTHORIZATION_STATE = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
+PRESERVATION = PASS / CLOSED
+REFERENCE_IMAGE = PASS / CLOSED
+PART_A_STRUCTURAL = PASS / CLOSED
+PART_B_STRUCTURAL = PASS / CLOSED
 ```
 
-Authorization→implementation is exactly one commit and changes only:
-1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Durable authority:
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 
-No production renderer, privacy/sanitization, dependency, Kintone, deploy, D3 or next-WP file was changed by the implementation commit.
-
-## 2. Durable Part B authority
-
-Read:
-
-`project-docs/CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-
-Frozen structural truth includes:
-- exact SHA-gated owner-template source;
-- one bounded source path for 6/7/8 competencies;
-- source rows 27:30 and downstream row 31 authority;
-- exact rowRefs/uniqueness, block clone, downstream and sentinel transformations;
-- exact full merge sets and counts 79/85/91;
-- exact dimensions A1:X35/A1:X39/A1:X43;
-- exact main Print_Area X35/X39/X43;
-- raw-source fail-closed guards before mutation for dimension, actual+declared merges, rows/source-block merges and single main Print_Area/localSheetId0/value;
-- exact defined-name control and empty `Sheet1` print area;
-- Part B main A4 / portrait / scale 75 / horizontal-centered / protected authority;
-- exact auxiliary `Sheet1` fingerprint stability;
-- relationship/media equality;
-- workbook-wide formula inventory exactly 0.
-
-Do not reopen this structural gate unless a proven regression conflicts with the Baseline.
-
-## 3. Privacy boundary still open
+Key accepted implementation commits:
 
 ```text
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED BEFORE PRODUCTION RENDERER / SECURITY CLOSURE
+PART_A_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054
+PART_A_FINAL_TEST_CLOSURE = 98da94a07259effd95dcf539de3454b1f94745a8
+PART_B_SOURCE_MATRIX = 068e719a7b6c0fee66613619a7aa7ed359960cb5
+PART_B_FINAL_CLOSURE = 223f293057219efe0e6410029523bd904c92c6ae
 ```
 
-Current privacy mapping remains authority only for the original 6-block source layout. This Part B structural closure does not authorize or complete the expanded 7/8 competency + shifted summary/signature address-role remap.
+Full invariant summary is in `D2_REVIEW_FAST_START.md`.
 
-## 4. Remaining D2 path
+## 3. Current next gate — Formula Authority
 
-1. formula/no-formula authority;
-2. production sanitizer/XLSX renderer including expanded Part B privacy/address remapping;
-3. combined Excel parity;
-4. PDF parity;
-5. export authorization/security/privacy regression;
-6. final independent D2 closure.
-
-No next work package is active or authorized.
-
-## 5. Control Plane review authority checkpoint
-
-The Owner-approved standing authorization:
-
-`CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901`
-
-has now been fully consumed:
+Current repository evidence supports this target contract:
 
 ```text
-STATE = EXHAUSTED / 20 OF 20 USED
-REMAINING = 0
-DO_NOT_REUSE = YES
+SCORING_SOURCE_OF_TRUTH = KINTONE / APP794 + CONFIRMED SCORING CONFIG
+EXPORT_DATA_AUTHORITY = SECURED MboExportService PROJECTION
+LEGACY_TEMPLATE_AUTHORITY = VISUAL / LAYOUT ONLY
+EXCEL_SCORE_FORMULAS = FORBIDDEN
+EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
+AUTHORIZED_APPROVER_EXPORT = WRITE SCALAR VALUES FROM SECURED PROJECTION ONLY
+EMPLOYEE_SELF_CONFIDENTIAL_SCORE_FIELDS = OMIT / BLANK; NEVER RECALCULATE
+PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
 ```
 
-Read-only planning may continue without starting executor work. Before another standing review/corrective cycle is relied upon, Owner must explicitly establish additional review/corrective authority. Do not silently infer or extend the exhausted authorization.
+Formula-authority closure itself should be Control-Plane documentation/Baseline work; do not spend Antigravity on it unless a concrete source/test gap is proven.
 
-## 6. Authorization ledger
+## 4. Next implementation-worthy gate
+
+After Formula Authority closes:
+
+`PRODUCTION XLSX RENDERER + SANITIZER + EXPANDED PART B PRIVACY ADDRESS REMAP`
+
+Mandatory unresolved boundary:
 
 ```text
-D2-WP003-R3-R36-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP003-R4-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP003-R4-R1-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP003-R4-R2-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP003-R5-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP003-R5-R1-SOURCE-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / 20 OF 20 / DO NOT REUSE
+PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
 ```
 
-## 7. Exact next action
+Existing Part B privacy mapping is authority only for the original 6-block source layout. Expanded 7/8 layouts shift summary/signature addresses and require explicit remapping before production/security closure.
+
+## 5. Remaining D2 sequence
+
+1. Formula Authority
+2. Production XLSX Renderer + Sanitizer + Privacy Remap
+3. Combined Excel Parity
+4. PDF Parity
+5. Export Authorization / Security / Privacy Regression
+6. Final Independent D2 Closure
+7. only then may D3 leave HOLD
+
+## 6. Fast review procedure
+
+When Owner says `review` after an executor push:
+1. fresh-fetch HEAD;
+2. read Fast-Start + this file;
+3. validate authorization token/commit/files;
+4. compare authorization→implementation;
+5. inspect changed code and only directly touched frozen contract;
+6. verify no accepted proof was removed/weakened;
+7. check combined status/workflow runs;
+8. no CI/workflow => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
+9. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
+10. no auto-start next WP.
+
+## 7. Consumed authorization summary
 
 ```text
-NEXT_EXECUTOR = OWNER / CHATGPT READ-ONLY PLANNING
-NEXT_ACTION = DECIDE ADDITIONAL CONTROL-PLANE REVIEW/CORRECTIVE AUTHORITY; THEN PLAN THE SMALLEST NEXT D2 GATE
+D2-WP003-R3-R36-TEST-20260902-01 = CONSUMED / PASS / CLOSED
+D2-WP003-R4-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE
+D2-WP003-R4-R1-TEST-20260902-01 = CONSUMED / CORRECTIVE
+D2-WP003-R4-R2-TEST-20260902-01 = CONSUMED / PASS / CLOSED
+D2-WP003-R5-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE
+D2-WP003-R5-R1-SOURCE-TEST-20260902-01 = CONSUMED / PASS / CLOSED
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
+```
+
+Never reuse consumed authorization tokens.
+
+## 8. Exact next action
+
+```text
+NEXT_EXECUTOR = CHATGPT CONTROL PLANE
+NEXT_ACTION = CLOSE FORMULA AUTHORITY BY DOCS/BASELINE IF NO CONTRADICTORY EVIDENCE; THEN PLAN THE SMALLEST PRODUCTION XLSX RENDERER + PRIVACY REMAP WP
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
-CHATGPT = MAY PERFORM READ-ONLY NEXT-GATE PLANNING ONLY
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
 ```
