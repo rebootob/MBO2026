@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — TEMPLATE PROFILE PASS/CLOSED / PRODUCTION XLSX RENDERER DESIGN NEXT
+# AI ACTIVE TASK — D2-WP004-R2 DESIGN COMPLETE / R2-PRE1 EVIDENCE PROPOSED
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / READ-ONLY NEXT / NO SOURCE AUTH / NO TEST AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / READ-ONLY NEXT / NO SOURCE AUTH / NO TEST AUTH / NO EVIDENCE AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> only directly relevant confirmed Baseline/source needed for the exact next decision.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only directly relevant Baseline/source/evidence needed for the exact next decision.
 
 ## 1. Current truth
 ```text
@@ -19,6 +19,7 @@ D2_FORMULA_AUTHORITY = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
+R2_READ_ONLY_DESIGN = COMPLETE
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
@@ -34,126 +35,186 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. D2-WP004-R1-R3-R2 independent review — PASS/CLOSED
-```text
-AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-AUTHORIZATION_COMMIT = 368dcb4890621400fd9b6fabfb979599bf453a07
-IMPLEMENTATION_COMMIT = b59815aa5e5bad09ad252a10cdd1914185170fc0
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
-SCOPE_REVIEW = PASS
-CANONICAL_PART_B_COMPETENCY_INDEX = PASS
-CANONICAL_PART_B_COMPETENCY_ROW = PASS
-CANONICAL_PART_B_SELF_RATING_ADDRESS = PASS
-CANONICAL_PART_B_SELF_RATING_SECURED_PATH = PASS
-FOCUSED_WRONG_INDEX_NEGATIVE = PASS
-FOCUSED_WRONG_ROW_NEGATIVE = PASS
-FOCUSED_WRONG_VALID_ADDRESS_NEGATIVE = PASS
-FOCUSED_WRONG_NONEMPTY_PATH_NEGATIVE = PASS
-SEMANTIC_BASELINE = PRESERVED / 18-22-5
-TEMPLATE_PROFILE = PASS / CLOSED
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
-```
+## 2. R2 READ-ONLY design authority
+Design document:
+`project-docs/phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
 
-Durable profile authority:
-`project-docs/CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+Durable dependencies:
+- `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-Durable semantic authority:
-`project-docs/CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
-
-Mandatory renderer architecture:
-`project-docs/CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
-
-## 3. Frozen Template Profile authority
-Do not reopen unless a proven regression or explicitly authorized new semantic/template baseline exists.
-
+Frozen semantic/profile authority remains:
 ```text
 SAFE_TO_MAP = 18 EXACT
-UNRESOLVED = 22 EXACT / FAIL CLOSED
-NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
+UNRESOLVED_KEEP_UNRESOLVED = 22 EXACT
+NO_SECURED_PROJECTION_SOURCE_DO_NOT_MAP = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / STRUCTURAL-PRIVACY ONLY
 CHIEF_SECURED_WRITABLE_ROLE = 0
-OBJECTIVE_i_COMMENT = REJECT
-COMPETENCY_b_RATING = REJECT
-PART_B_CANONICAL_SELF_IDENTITY = EXACT INDEX + ROW + K{ROW} + SECURED PATH
-ROW30_34_38 = PROTECTED / NON-DYNAMIC
-PROFILE_WORKBOOK_IO = ZERO
-PROFILE_SCORING_FORMULA_AUTHORITY = ZERO
 ```
 
-## 4. Proposed next gate — D2-WP004-R2 / NOT AUTHORIZED
+## 3. R2 architecture decisions already proven from repository truth
+1. `MboExportService` secured projection is the only renderer data authority. Renderer must not accept/read raw App794/Kintone data.
+2. Employee-Self intentionally omits confidential evaluator/summary/final values. Globally SAFE role != mandatory role in every request. Only write a safe role when its exact secured path is present in that request projection; otherwise leave/force target sanitized blank.
+3. `xlsx-populate@1.21.0` already exists; package changes are not required.
+4. Kintone UI is browser-bundled. Production XLSX core must not depend on Node `fs`/path template discovery.
+5. Production processing should be bytes/buffer-like input -> new output bytes, preserving caller input bytes.
+6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` is accepted proof authority but must not be imported wholesale into production. Its structural builders contain proof-only `SENTINEL_ROW_29` / `SENTINEL_ROW_31` mutation and local filesystem assumptions.
+7. Sanitization is broader than the 18 writable targets; unresolved/no-source/confidential/template-sample regions must also be cleared as required by the privacy authority before secured writes.
+8. Important cell/range/layout/sanitization geometry must remain centralized in the Template Profile/mapping layer, not scattered in renderer functions.
+9. Excel scoring/recalculation/formulas remain forbidden. Output formula inventory must be exactly zero.
+
+## 4. Proven pre-render blocker
+The exact owner Part B template is N=6. Closed structural expansion for N7/N8 clones source rows 27:30.
+
+Current closed Template Profile proves only:
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2
-NAME = PRODUCTION XLSX RENDERER + SANITIZER
-STATE = CONTROL-PLANE READ-ONLY DESIGN FIRST / NOT AUTHORIZED
+COMPETENCY_b_SELF_RATING -> partB.competencyItems[b-1].selfRating
+```
+
+Current competency source evidence proves management competency sets include actual additional competency items 7/8 rather than another copy of competency 6.
+
+However repository evidence does NOT currently prove the writable cell/range ownership for visible presentation content in a competency block (candidate name/title/description/weight/etc.) and does NOT establish one deterministic secured projection path/source-selection rule for those presentation aliases.
+
+`MboExportService.projectCombinedExport()` currently preserves candidate keys including:
+```text
+id / competencyId / code
+name / title / competencyName
+description
+weight / weightPercent
+category / group
+```
+without defining renderer-side alias precedence.
+
+If renderer implementation starts now, N7/N8 can become structurally valid but visibly incorrect/duplicated or can require unproven alias inference. That is forbidden.
+
+## 5. Proposed prerequisite — D2-WP004-R2-PRE1 / NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE1
+NAME = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / BOUNDED / ONE-SHOT IF AUTHORIZED / LOW-CREDIT
+EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
 SOURCE_CHANGE = NOT AUTHORIZED
 TEST_CHANGE = NOT AUTHORIZED
-EVIDENCE_WRITE = NOT AUTHORIZED
-ANTIGRAVITY = STOP
-CLAUDE = STOP
+PROFILE_CHANGE = NOT AUTHORIZED
+RENDERER_CHANGE = NOT AUTHORIZED
 ```
 
-Do NOT authorize executor implementation from this proposal alone. First ChatGPT Control Plane should perform a low-credit READ-ONLY repository design pass to identify the exact existing source/test integration points and produce one bounded R2 implementation contract.
+Recommended Owner phrase:
+`อนุมัติ D2-WP004-R2-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
 
-### Required R2 design questions
-The READ-ONLY design pass must determine, from repository truth and closed Baselines:
-1. exact renderer/sanitizer source and test files to create or modify;
-2. how renderer receives only secured `MboExportService` projection data;
-3. how MBO2026 Template Profile is selected/validated by exact template identity;
-4. workbook mutation order for Part A/Part B without scattered important cell/range literals;
-5. sanitizer/privacy behavior for unresolved/no-source/confidential fields;
-6. structural preservation checks for Part A and Part B closed Baselines;
-7. reference-image/preservation compatibility;
-8. zero-formula/zero-score-recalculation proof;
-9. unknown template/mapping/data semantic fail-closed behavior;
-10. output buffer/source buffer immutability expectations;
-11. exact focused tests and negative tests;
-12. whether any renderer dependency already exists and can be reused without package changes.
+## 6. Exact proposed PRE1 contract
+If later authorized, Antigravity may create/edit ONLY:
+`project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md`
 
-### Mandatory future renderer acceptance
+READ-ONLY inputs allowed:
+1. exact owner Part B template with SHA `c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3`;
+2. `project-docs/CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`;
+3. `project-docs/CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`;
+4. `project-docs/CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`;
+5. `project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md` only for current competency-set meaning/count/source context;
+6. `src/services/mbo-export-service.js` only for secured projection availability;
+7. `src/profiles/mbo-xlsx-template-profile.js` only to avoid colliding with already-frozen roles.
+
+No broad repository scan. Do not inspect unrelated apps/source/docs.
+
+### A. Workbook presentation inventory
+Inspect the main Part B sheet only and record static/structural presentation ownership for competency blocks 1..6, with special focus on source block rows 27:30 that is cloned for N7/N8.
+
+For each visible per-competency candidate presentation element, record only static label/geometry evidence:
+- workbook text/label meaning where non-personal/static;
+- exact cell/range;
+- exact merge relationship;
+- source row role;
+- whether cloned block 7/8 would inherit stale competency-6 presentation if not rewritten.
+
+Candidate concepts may include name/title, description/criteria, weight/percentage, ordinal/number or other genuinely per-competency presentation content found in the workbook. Do not invent categories that are not present.
+
+### B. Secured projection compatibility
+For each candidate presentation concept, compare only to secured `MboExportService` projection availability.
+
+A candidate may become `PROVEN / SAFE_CANDIDATE` only if BOTH are proven:
+1. deterministic workbook target ownership;
+2. deterministic secured projection path or an already-authoritative source-selection rule.
+
+If the service merely exposes multiple aliases without an accepted deterministic source-selection rule, record:
+`UNRESOLVED / CANONICAL_PROJECTION_PATH_NOT_PROVEN`
+
+Do not select alias precedence by intuition.
+
+### C. N7/N8 truthfulness decision
+Explicitly state for each cloned presentation field whether:
+- clone-as-static is valid for all competency sets; OR
+- competency 7/8 must be rewritten from secured projection; OR
+- authority remains unresolved and Production Renderer stays blocked for N7/N8 presentation.
+
+Do not use old legacy-analysis names to override newer source evidence or exact owner-template evidence.
+
+### D. Privacy/integrity constraints
+- zero personal employee values copied into evidence;
+- zero workbook mutation/save;
+- no Chief writable rating mapping;
+- no change to the accepted 18/22/5 Baseline during executor work;
+- no formula/scoring inference;
+- protected row30/34/38 remains non-dynamic;
+- no overlap/duplicate target with existing safe semantic ownership.
+
+### E. Final evidence outputs
+Evidence must include:
 ```text
-CENTRALIZED_TEMPLATE_MAPPING = PASS
-NO_SCATTERED_IMPORTANT_CELL_ADDRESS = PASS
-SEMANTIC_EXPORT_MODEL_BOUNDARY = PASS
-SECURED_PROJECTION_AUTHORITY_PRESERVED = PASS
-STRUCTURAL_BASELINES_PRESERVED = PASS
-PRIVACY_BASELINE_PRESERVED = PASS
-FORMULA_INVENTORY = EXACTLY ZERO
-UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
+OWNER_PART_B_SHA = EXACT MATCH / BLOCKER
+PRESENTATION_CANDIDATE_COUNT = <mechanical count>
+PROVEN_SAFE_CANDIDATES = <count + roles>
+UNRESOLVED_CANDIDATES = <count + roles/reasons>
+DUPLICATE_EXISTING_SAFE_TARGETS = 0
+N7_PRESENTATION_TRUTHFULNESS = PROVEN / BLOCKED
+N8_PRESENTATION_TRUTHFULNESS = PROVEN / BLOCKED
+SOURCE_TEST_PROFILE_RENDERER_CHANGE = 0
 ```
 
-No Renderer source/test authorization exists until Owner explicitly approves a later bounded contract.
+Evidence status must be neutral:
+`EVIDENCE CANDIDATE / AWAITING INDEPENDENT REVIEW`
 
-## 5. Low-credit rule
-For the next Control-Plane design step:
-- ChatGPT performs repository READ-ONLY review itself;
-- do not invoke Antigravity merely to discover files or architecture;
-- do not invoke Claude unless a later material high-risk ambiguity cannot be resolved independently;
-- inspect only directly relevant export/profile/service/structural/privacy code and tests;
-- after the READ-ONLY design, propose the smallest exact implementation scope before asking Owner authorization.
+Do not self-declare Baseline/PASS/CLOSED.
 
-## 6. Authorization ledger / exact next action
+### F. Executor restrictions
+Do NOT modify source, tests, Template Profile, feasibility source/tests, Baselines/control docs, packages, dist, owner XLSX, Kintone, deployment or D3.
+
+Exactly one evidence or blocker commit, push, report, STOP.
+
+## 7. R2 planned sequence after PRE1
+Not authorized yet:
+1. `R2-PRE1` exact presentation evidence;
+2. if needed, smallest semantic/projection/profile corrective to establish only independently proven presentation roles;
+3. centralized template geometry + sanitization topology;
+4. sentinel-free production template preparation/sanitizer engine;
+5. secured semantic value renderer;
+6. independent renderer closure;
+7. Combined Excel parity remains a later D2 gate.
+
+## 8. Low-credit rule
+- ChatGPT performs repository discovery/design/review.
+- Antigravity is used only for exact local owner-template inspection or bounded implementation that ChatGPT cannot perform from repository truth.
+- PRE1, if authorized, reads only the exact files listed above and the one owner template; no whole-repo scan.
+- Claude remains STOP unless later explicitly justified/authorized.
+
+## 9. Authorization ledger / exact next action
 ```text
-D2-WP004-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP004-R1-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP004-R1-R2-EVIDENCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP004-R1-R2-R1-EVIDENCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP004-R1-R2-R2-EVIDENCE-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP004-R1-R3-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP004-R2 = PROPOSED / READ-ONLY DESIGN NEXT / NOT AUTHORIZED
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
+D2-WP004-R2 = READ-ONLY DESIGN COMPLETE / IMPLEMENTATION NOT AUTHORIZED
+D2-WP004-R2-PRE1 = PROPOSED / NOT AUTHORIZED
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-NEXT_EXECUTOR = CHATGPT CONTROL PLANE / READ-ONLY
-NEXT_ACTION = DESIGN BOUNDED D2-WP004-R2 CONTRACT FROM REPOSITORY TRUTH
+NEXT_EXECUTOR = OWNER / CHATGPT CONTROL PLANE
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP004-R2-PRE1 EVIDENCE-ONLY
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
