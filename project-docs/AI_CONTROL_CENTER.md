@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R36 TEST-ONLY PROPOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R36 TEST-ONLY AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation closed; reference-image source accepted/frozen; one narrow TEST-ONLY proof corrective remains |
+| D2 | 🟠 IN PROGRESS | Preservation closed; reference-image source accepted/frozen; R3-R36 TEST-ONLY authorized |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -54,26 +54,25 @@ PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
 STATUS = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R35 correctly implemented XML 1.0 NameStartChar/NameChar code-point handling, valid NCName/QName attribute validation, restored R3-R33 adversarial proof and retained the R3-R34 matrix. The remaining defect is TEST-ONLY and narrow: malformed prefixed `embed` is ignored instead of throwing/failing closed. GitHub has no independent CI/status/workflow runtime signal for the implementation commit.
+R3-R35 correctly implemented XML 1.0 NameStartChar/NameChar code-point handling, NCName/QName attribute validation, restored R3-R33 adversarial proof and retained the R3-R34 matrix. The remaining defect is TEST-ONLY and narrow: malformed prefixed `embed` is ignored instead of throwing/failing closed.
 
 ## 4. Current gate
 
 ```text
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R36
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R36
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R36 / ONE-SHOT
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
 ## 5. Low-credit rule
 
-R3-R36, if authorized, must remain TEST-ONLY and change only malformed prefixed-`embed` fail-closed behavior/proof while preserving all accepted R3-R35 tests and helpers. Do not modify reference-image production source and do not invoke Claude unless material ambiguity later remains.
+R3-R36 is TEST-ONLY. Change only malformed prefixed-`embed` fail-closed behavior/proof while preserving all accepted R3-R35 tests and helpers. Do not modify reference-image production source and do not invoke Claude unless material ambiguity later remains.
