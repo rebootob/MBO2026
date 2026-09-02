@@ -28,14 +28,14 @@ Standing Control Plane authority:
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE
 MAX_ROUNDS = 20
-ROUNDS_USED = 4
-ROUNDS_REMAINING = 16
+ROUNDS_USED = 5
+ROUNDS_REMAINING = 15
 STOP = D2 PASS/CLOSED OR ROUND 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ```
 
-Standing authority covers ChatGPT independent review, bounded corrective/decision drafting and Control Plane Git synchronization only. It does not authorize Antigravity implementation, Claude execution, evidence publication, Live Kintone/deploy, D3 or scope expansion.
+Standing authority covers ChatGPT independent review, bounded corrective drafting and Control Plane Git synchronization only. It does not authorize Antigravity implementation, Claude execution, evidence publication, Live Kintone/deploy, D3 or scope expansion.
 
 ## 2. Startup order
 
@@ -71,7 +71,7 @@ Do not reopen D1 without proven regression.
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Option B preservation policy approved; R3-R27 proposed |
+| D2 | 🟠 IN PROGRESS | R3-R27 reviewed CORRECTIVE; R3-R28 proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route + identity required |
@@ -98,51 +98,54 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 
 Raw `getNoOpParityBuffers()` direct output remains frozen and unrepaired.
 
-## 6. Latest independent review — R3-R26
+## 6. Approved preservation decision
 
 ```text
-AUTHORIZATION_COMMIT = d9eeb38436c2b9a45246048af41c682805bb847e
-IMPLEMENTATION_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
-R3-R26_SCOPE_REVIEW = PASS
-R3-R26_SOURCE_REVIEW = FAIL / PRESERVATION-INVARIANT CONFLICT + XML SCANNER GAP
-R3-R26_PROOF_REVIEW = FAIL / CONTRACT-BYPASS + INCOMPLETE
-R3-R26_STATUS = BLOCKED / NOT PASS / NOT CLOSED
+D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
+PRESERVATION_POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
+```
+
+Only the exact deterministic Part B `Sheet1` `<sheetPr/>` round-trip drift is allowed; it must be normalized inside preservation and all other non-dimension drift remains fail-closed.
+
+## 7. Latest independent review — R3-R27
+
+```text
+AUTHORIZATION_COMMIT = 671948b3d4a935118172a3c849d9265eb606ac73
+IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+R3-R27_SCOPE_REVIEW = PASS
+R3-R27_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
+R3-R27_PROOF_REVIEW = FAIL / REGRESSION + WRONG-BRANCH + NO INDEPENDENT RUNTIME
+R3-R27_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-R3-R26 proved that the strict source-minus-dimension policy conflicts with actual direct Part B xlsx-populate output because an observed-only `sheetPr` is injected into `Sheet1`. Its positive proof pre-cleaned a derivative buffer outside preservation, so it did not prove the direct raw path. XML inventory and several proof sub-cases also remained incomplete.
+Accepted R3-R27 improvements:
+- positive Part B now uses direct raw `outBufB` with no test-side pre-clean;
+- Option B handling is inside preservation;
+- exact `<sheetPr/>`/first-child checks and additional alias negatives were added;
+- scope remained exactly the two authorized files.
 
-## 7. Owner architecture decision — APPROVED
+Remaining blockers:
+1. Option B local normalization is not persisted when the observed dimension is already correct because ZIP write-back occurs only in the missing-dimension branch;
+2. XML scanners still use ASCII QName classes and have no complete direct-child gap consumption proof, so Unicode QName markup can be skipped;
+3. several R3-R25/R3-R26 regression negatives disappeared again;
+4. source-structure negative labels still hit the SHA gate first when they mutate `sourceBufOverride`;
+5. no always-runnable privacy-safe synthetic/unit proof exists;
+6. no GitHub CI/status/workflow signal exists.
 
-```text
-DECISION_ID = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
-DECISION = OPTION B
-STATUS = APPROVED
-POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
-```
-
-Approved policy:
-- permit only one precisely fingerprinted deterministic xlsx-populate-generated Part B `Sheet1` `sheetPr` drift;
-- exact source must lack it;
-- observed raw element must match exact pinned structure/value/fingerprint and exact pinned slot;
-- normalization/removal occurs only inside `preserveExactWorkbookDimensions()` on the working copy;
-- raw/source inputs remain byte-immutable;
-- arbitrary/modified/extra/duplicate/reordered/moved/other-sheet/Part-A `sheetPr` remains fail-closed;
-- all other non-dimension drift remains forbidden.
-
-This decision is architecture policy only; it does not authorize implementation.
+Claude was not invoked for R3-R27 because the defects are independently provable from repository source and using Claude would add cost without changing the gate.
 
 ## 8. Exact current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
+D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
-PROPOSED_WORK_PACKAGE_NAME = NARROW PART B SHEETPR ALLOWED-DRIFT + COMPLETE XML INVENTORY CORRECTIVE
-CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
+PROPOSED_WORK_PACKAGE_NAME = OPTION B WRITEBACK + COMPLETE XML TOKEN INVENTORY + EFFECTIVE PROOF CORRECTIVE
+CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -152,18 +155,16 @@ CLAUDE = STOP / NOT NEEDED AT THIS GATE
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 9. Proposed next WP — R3-R27 / NOT AUTHORIZED
+## 9. Proposed next WP — R3-R28 / NOT AUTHORIZED
 
-R3-R27 is limited to the existing feasibility source and test files only. It must:
-- implement Option B inside preservation, never by test-side pre-cleaning;
-- use direct raw `outBufB` as the Part B positive preservation input;
-- derive and pin the exact allowed `Sheet1` `sheetPr` fingerprint from SHA-verified owner-template round-trip evidence; stop if exact identity is unavailable;
-- reject any changed/extra/moved/duplicate/other-sheet/Part-A `sheetPr`;
-- close Relationship and worksheet-child XML inventory gaps so valid QName forms cannot be silently skipped;
-- reject duplicate maxOccurs=1 schema children independently;
-- add repeated `//`, leading `./`, full URI scheme/authority and missing alias sub-case proof;
-- retain all restored R3-R24/R3-R25/R3-R26 negatives and frozen source-SHA/raw/privacy boundaries;
-- add privacy-safe unit proof for pure validators when exact owner templates are unavailable.
+R3-R28 is limited to the same existing feasibility source and test files only. It must:
+- persist Option B normalization to the returned working ZIP whether dimension is missing or already correct;
+- implement coverage-complete direct-child XML token/gap validation so unknown/prefixed/Unicode Relationship and worksheet-child markup cannot be silently skipped;
+- factor privacy-safe pure validators without weakening production source-SHA enforcement;
+- make exact-template tests report/skip unavailable when local ignored templates are absent while template-independent unit tests still run;
+- restore all still-valid R3-R25/R3-R26 negative proofs removed in R3-R27;
+- separate wrong-SHA production-gate proof from synthetic source-structure proof;
+- keep raw output, source SHA, privacy, evidence/Kintone/deploy/D3 boundaries frozen.
 
 No Antigravity or Claude execution is authorized yet.
 
@@ -190,9 +191,11 @@ D2-WP003-R3-R23-SOURCE-20260901-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R25-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R26-SOURCE-20260902-01 = CONSUMED / BLOCKED / DO NOT REUSE
-D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY ONLY
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 4 OF 20
+D2-WP003-R3-R27-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 5 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
+CLAUDE_AUTO_REVIEW = NO
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -204,15 +207,15 @@ D3_EXECUTION = HOLD
 
 ## 12. User shorthand / exact next action
 
-`review` → fresh-fetch current HEAD + Handoff + Control Center + authorizing/current Active Task + exact diff/tests/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
+`review` → fresh-fetch + current docs + exact authorization-to-implementation diff/tests; independent PASS/CORRECTIVE/BLOCKED.
 
-`ต่อ` / `ต่อไป` → fresh-fetch HEAD + current gate; choose smallest safe next action; do not spend Antigravity/Claude unnecessarily.
+`ต่อ` / `ต่อไป` → fresh-fetch current gate; choose smallest safe next action; do not spend Antigravity/Claude unnecessarily.
 
 `อนุมัติ ...` → create a new exact narrow one-shot authorization only; never widen/reuse consumed authorization.
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R27 AS PROPOSED
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R28 AS PROPOSED
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
