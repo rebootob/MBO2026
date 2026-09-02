@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT.
 
-Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact two-file diff.
 
 ```text
 D1 = PASS / CLOSED
@@ -14,8 +14,8 @@ PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
 CLAUDE = STOP
 D3 = HOLD
 ```
@@ -36,7 +36,10 @@ R1_R3_STATUS = CORRECTIVE REQUIRED
 R1_R3_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE
 
-PROPOSED_CORRECTIVE = D2-WP004-R1-R3-R1 SOURCE+TEST / NOT AUTHORIZED
+D2-WP004-R1-R3-R1 = AUTHORIZED / SOURCE+TEST / LOW-CREDIT / ONE-SHOT
+AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
 ```
 
-R1-R3-R1 must be strict and bounded: reject non-canonical aliases (`OBJECTIVE_i_COMMENT`, `COMPETENCY_b_RATING`), require non-null secured projection for every writable resolution, and expand integrity negative tests for malformed/null/Part-B mapping faults. Production Renderer remains NOT AUTHORIZED.
+R1-R3-R1 is strict and bounded: reject non-canonical aliases, require non-null secured projection for every successful writable resolution, and complete integrity negative tests for malformed/null/Part-B mapping faults. No semantic expansion or Production Renderer is authorized.
