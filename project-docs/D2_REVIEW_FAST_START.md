@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact authorized diff only.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant confirmed Baseline -> exact diff.
 
 ## Project truth
 ```text
@@ -19,49 +19,46 @@ D2_PART_B_STRUCTURAL = PASS / CLOSED
 D2_FORMULA_AUTHORITY = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
+D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D3 = HOLD
 ```
 
-Durable semantic authority remains unchanged:
+## Latest independent review — D2-WP004-R1-R3-R2
 ```text
-SAFE_TO_MAP = 18 EXACT
-UNRESOLVED = 22 EXACT / FAIL CLOSED
-NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
-CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
-```
-
-## Latest independent review — D2-WP004-R1-R3-R1
-```text
-AUTHORIZATION_COMMIT = 867111d785b7e85689725379249e7b278108d8cc
-IMPLEMENTATION_COMMIT = 6386e506b85ded87a57967705066e38d56212f73
+AUTHORIZATION_COMMIT = 368dcb4890621400fd9b6fabfb979599bf453a07
+IMPLEMENTATION_COMMIT = b59815aa5e5bad09ad252a10cdd1914185170fc0
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES = EXACTLY TWO AUTHORIZED PROFILE/TEST FILES
 SCOPE_REVIEW = PASS
-ALIAS_CORRECTION = PASS
-NULL_PATH_BASIC_GUARD = PASS
-PURE_NO_WORKBOOK_IO = PASS
-SEMANTIC_BASELINE = PRESERVED
-INTEGRITY_COMPLETION = CORRECTIVE REQUIRED
+CANONICAL_PART_B_COMPETENCY_INTEGRITY = PASS / FREEZE
+FOCUSED_NEGATIVE_MUTATIONS = PASS / FREEZE
+SEMANTIC_BASELINE = PRESERVED / 18-22-5
+TEMPLATE_PROFILE = PASS / CLOSED
 INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
 ```
 
-Remaining proven defect: canonical Part B competency identity is not exact enough. Validator must require for each competency `b` and accepted N=6/7/8:
-```text
-index = b
-row = expectedRow
-SELF_RATING = K{expectedRow}
-projectionPath = partB.competencyItems[b-1].selfRating
-```
+Durable profile authority:
+`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
 
-## Active corrective — D2-WP004-R1-R3-R2
+Durable semantic authority:
+`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
+
+Key freeze:
+- canonical resolver writable authority remains exactly 18 SAFE semantic classes;
+- 22 unresolved + 5 no-secured-source remain fail closed;
+- non-canonical `OBJECTIVE_i_COMMENT` and `COMPETENCY_b_RATING` reject;
+- Part B competency identity is exact for index, canonical row, `K{row}` and secured selfRating path;
+- K:Q Self / R:X Chief structural authority preserved; Chief secured writable role = zero;
+- row30/34/38 protected;
+- no workbook I/O or scoring/formula authority in Template Profile.
+
+## Next smallest gate — NOT AUTHORIZED
 ```text
-WORK_PACKAGE = D2-WP004-R1-R3-R2
-NAME = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
+PROPOSED_NEXT = D2-WP004-R2 / PRODUCTION XLSX RENDERER + SANITIZER
+STATE = CONTROL-PLANE DESIGN / READ-ONLY FIRST / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -69,4 +66,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-LOW-CREDIT: no broad scan, no workbook inspection, no semantic re-research. Fix only canonical Part B competency integrity and focused negatives, then one commit -> push -> STOP.
+Before any Renderer SOURCE authorization, ChatGPT should do the low-credit READ-ONLY design pass from closed Baselines and current repository source to define exact files, security boundary, sanitizer behavior, tests and fail-closed acceptance contract. Do not auto-start Antigravity.
