@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only the Baseline touched by the current gate -> exact diff.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant Baseline -> exact diff.
 
 ## Project truth
 ```text
@@ -13,58 +13,44 @@ OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D3 = HOLD UNTIL D2 PASS / CLOSED
-D4 = IN PROGRESS / NOT ACTIVE
-D5 = IN PROGRESS / NOT ACTIVE
-D6 = PENDING
-D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-## Closed/frozen D2 gates
-```text
-PRESERVATION = PASS / CLOSED
-REFERENCE_IMAGE = PASS / CLOSED
-PART_A_STRUCTURAL = PASS / CLOSED
-PART_B_STRUCTURAL = PASS / CLOSED
-FORMULA_AUTHORITY = PASS / CLOSED
-PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-```
+Closed/frozen D2 gates: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
 
-Direct durable Baselines:
-- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
-- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
-
-## Production Renderer architecture — Owner-confirmed
+Mandatory renderer architecture:
 ```text
 NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
 CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
 ```
 
-Secured projection authority remains `src/services/mbo-export-service.js`; R1 must not modify it.
-
-## Active gate — D2-WP004-R1
+## Latest independent review — D2-WP004-R1
 ```text
-WORK_PACKAGE = D2-WP004-R1
-NAME = MBO2026 PRODUCTION XLSX TEMPLATE PROFILE / MAPPING FOUNDATION
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-MODE = SOURCE+TEST / PURE MAPPING / ONE-SHOT / LOW-CREDIT
-EXPECTED_FILES =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
-WORKBOOK_MUTATION = FORBIDDEN
-PRODUCTION_RENDERER = NOT YET
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1
+R1_AUTHORIZATION_COMMIT = dcf1fca73fbca4a6156e924f4472c6b089836997
+R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
+R1_SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED NEW FILES
+R1_PURITY_SHA_CARDINALITY = PASS
+R1_SOURCE_PROOF = CORRECTIVE REQUIRED
+R1_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+```
+
+Proven corrective issues:
+1. Part B profile invents uniform 4-row blocks from row7 and marks rows 10/14/18/22/26 as padding; frozen privacy authority says original rows 7:29 K:X are dynamic and only source row30 plus clones 34/38 are protected padding.
+2. Part A semantic names do not fully align with current `MboExportService` secured projection (`departmentHoshinTitle`, `sectionHoshinTitle`, objective/evaluator fields); renderer-safe semantic boundary is incomplete.
+3. Missing/conflicting required mapping is not runtime fail-closed; tests only inspect current hard-coded uniqueness.
+
+## Proposed corrective — NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R1
+MODE = SOURCE+TEST / BOUNDED / EXACT SAME TWO FILES
+STATE = PROPOSED / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
 ```
 
-R1 establishes one centralized semantic mapping authority for the accepted MBO2026 template family, exact Part A 4..10 and Part B 6/7/8 cardinality support, exact template SHA identity, and fail-closed unknown template/profile/count/semantic-role behavior. It does NOT render or mutate XLSX.
-
-After implementation push, Antigravity must STOP. ChatGPT independently reviews only after Owner says `review`.
+R1-R1 must preserve pure/no-I/O architecture and correct only mapping authority + fail-closed proof. Production Renderer remains NOT AUTHORIZED.
