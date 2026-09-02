@@ -2,8 +2,6 @@
 
 Updated: 2026-09-02 ICT. Fresh-fetch canonical branch before acting.
 
-Fast review: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
-
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
@@ -15,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — D2-WP004-R1 Template Profile Foundation ACTIVE |
+| D2 | IN PROGRESS — R1 corrective required |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -24,26 +22,21 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 
 Closed D2 gates: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
 
-Mandatory renderer architecture:
 ```text
-NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = YES
-CENTRALIZED_TEMPLATE_PROFILE_MAPPING = YES
-```
-Authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
-
-```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1
-ACTIVE_AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-MODE = SOURCE+TEST / PURE MAPPING / ONE-SHOT / TWO NEW FILES
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
+R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
+R1_SCOPE = PASS
+R1_SOURCE_PROOF = CORRECTIVE REQUIRED
+R1_TOKEN = CONSUMED / DO NOT REUSE
+PROPOSED_NEXT = D2-WP004-R1-R1 SOURCE+TEST / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-R1 cannot render/mutate XLSX and cannot modify existing source/tests, MboExportService, feasibility proof, dependencies, dist, Kintone, or deployment resources.
+R1-R1 corrective is limited to the two Template Profile files and must restore exact frozen Part B row-role authority, align semantics with secured export projection, and enforce missing/conflicting mapping fail-closed. Production Renderer remains NOT AUTHORIZED.
