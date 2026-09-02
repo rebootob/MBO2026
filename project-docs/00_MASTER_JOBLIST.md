@@ -18,22 +18,30 @@ D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, 
 Current D2 gate:
 ```text
 D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
-R7-R1_IMPLEMENTATION = 7c1be393bbddaf1f6b439d13229ad256c23517cf
-R7-R1_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R2
-R7-R2 = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-R7-R2_AUTHORIZATION = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 52a28d6f24a353f4a425315b730b9b9f19cd4bce
+R7-R2_IMPLEMENTATION = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
+R7-R2_SOURCE = PASS / FROZEN
+R7-R2_PROOF = CORRECTIVE REQUIRED
+R7-R2_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R3
+R7-R3 = PROPOSED / NOT AUTHORIZED / TEST-ONLY
+ACTIVE_D2_WORK_PACKAGE = NONE
 ```
 
-Accepted/frozen R7-R1: N6/N7/N8 dynamic counts 432/474/516, exact clone mapping with row30 padding non-dynamic, style/merge relocation, count-aware metadata, expanded package token purge, caller-buffer immutability, formula inventory zero.
+Accepted/frozen privacy authority:
+- N6/N7/N8 dynamic counts 432/474/516;
+- exact clone mapping with row30/34/38 protected non-dynamic;
+- strict source-backed style/merge/normalizedType/nonblank validation;
+- static valHash enforcement where source authority has valHash;
+- expanded package/sharedStrings token purge;
+- caller-buffer immutability;
+- formula inventory zero.
 
-R7-R2 corrects only: remove static source-authority bypass/tolerance; enforce exact untouched-buffer source-backed normalizedType/nonblank/static-hash evidence; add direct negative tests for those fail-closed conditions. No renderer/Kintone/deploy/D3.
+R7-R3 closes only the remaining proof isolation gap in `tests/mbo-xlsx-ooxml-feasibility.test.js`: direct row30/clone static valHash mismatch and direct row30/clone static normalizedType mismatch must each independently fail closed. No source modification.
 
 Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel -> PDF -> export security/privacy regression -> final independent D2 review.
 
 ```text
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R2 / ONE-SHOT / STOP AFTER PUSH+REPORT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
