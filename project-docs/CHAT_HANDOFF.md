@@ -20,27 +20,23 @@ D3 = HOLD
 Latest Template Profile review:
 ```text
 R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
-SCOPE = PASS / ONE COMMIT / TWO AUTHORIZED FILES
 PART_B_TOPOLOGY = PASS / FREEZE
 BASIC_INTEGRITY_VALIDATOR = PASS / FREEZE
 SEMANTIC_AUTHORITY = CORRECTIVE REQUIRED
-TOKEN = CONSUMED / DO NOT REUSE
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_R1_TOKEN = CONSUMED / DO NOT REUSE
 ```
 
-Concrete remaining defects:
-- Department and Section Hoshin semantic resolvers currently share one address without accepted evidence proving that mapping.
-- Several writable semantic roles still have no secured projection path; Part B comment/signature fields are not projected by `MboExportService`.
-- mapping integrity does not require every claimed writable role to have an exact non-null secured projection translation.
-
+Current authorization:
 ```text
-PROPOSED_NEXT = D2-WP004-R1-R2 / EVIDENCE-ONLY / NOT AUTHORIZED
-EXPECTED_EVIDENCE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
-ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2
+AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
+MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = STOP
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-EVIDENCE-20260902-01
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -48,4 +44,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2 must inspect exact SHA-approved owner-template static semantics only and record unresolved/no-projection roles rather than guessing. Source corrective comes only after independent evidence review.
+R1-R2 may inspect exact SHA-approved owner XLSX templates READ-ONLY plus existing repository authority READ-ONLY. It must record static labels/merged ranges and compatible secured projection paths only, with statuses `PROVEN`, `UNRESOLVED`, or `NO_SECURED_PROJECTION_SOURCE`. No source/test/profile/template-binary changes are authorized.
