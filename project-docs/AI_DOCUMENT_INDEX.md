@@ -20,6 +20,7 @@ PRE1_R1 = PASS / CLOSED
 PRE2 = READ-ONLY DESIGN COMPLETE
 PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
 PRE2_R1_R1 = PASS / CLOSED
+PRE2_R2 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -41,47 +42,39 @@ R2 design/evidence chain:
 - `phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md`
 - `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`
 
-Accepted PRE2 secured projection implementation:
+Accepted PRE2 implementation chain:
 ```text
 PRE2_R1_IMPLEMENTATION = 9154ab33f2fd6262fa5d3e7717f7eed4f4052e0a / NEEDS CORRECTIVE
-PRE2_R1_R1_CORRECTIVE = fb3765f81b635b2bdc1f4fb8a1cf50fdbe6ea222 / PASS INDEPENDENT SOURCE+TEST-CONTRACT REVIEW
+PRE2_R1_R1_CORRECTIVE = fb3765f81b635b2bdc1f4fb8a1cf50fdbe6ea222 / PASS
+PRE2_R2_PROFILE_AUTHORITY = e02af3b1796d0efa8ca6860a54bc64b3c14231f2 / PASS
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Canonical expanded secured presentation now accepted at `MboExportService` boundary:
+Current semantic/profile authority:
 ```text
-b7 exact code COMP_LEAD
-  presentationTitle = 7. Leadership & People Management
-  presentationDescription = exact nonblank item.description
-b8 exact code COMP_STRAT
-  presentationTitle = 8. Strategy & Coaching
-  presentationDescription = exact nonblank item.description
-EXACT_CODE = CASE-SENSITIVE / NO NORMALIZATION
-ALIAS_PRECEDENCE = FORBIDDEN
-N1..6 BACKWARD COMPATIBILITY = PRESERVED
-```
-
-Current Template Profile semantic authority remains frozen:
-```text
-SAFE_TO_MAP = 18 EXACT
+SAFE_TO_MAP = 20 EXACT
 UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
+CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-PRE2 proposes future expanded-only profile roles and geometry:
+Closed expanded presentation authority:
 ```text
-COMPETENCY_b_TITLE / b7,b8 only
-COMPETENCY_b_DESCRIPTION / b7,b8 only
-b7 TITLE B31 / DESCRIPTION B32 / TITLE MERGE B31:J31
-b8 TITLE B35 / DESCRIPTION B36 / TITLE MERGE B35:J35
-FUTURE_SAFE_TO_MAP_IF_INDEPENDENTLY_CLOSED = 20 EXACT
+b7 TITLE B31 / DESCRIPTION B32
+b7 TITLE_MERGE B31:J31 / DESCRIPTION_MERGE B32:J32
+b7 RATING_SCALE B33:J33 STATIC / PADDING 34 PROTECTED
+b8 TITLE B35 / DESCRIPTION B36
+b8 TITLE_MERGE B35:J35 / DESCRIPTION_MERGE B36:J36
+b8 RATING_SCALE B37:J37 STATIC / PADDING 38 PROTECTED
+b1..6 TITLE/DESCRIPTION reject
+b8 under N7 reject
 ```
 
 Exact next proposed gate:
 ```text
-D2-WP004-R2-PRE2-R2
-EXPANDED COMPETENCY TEMPLATE PROFILE PRESENTATION AUTHORITY
-PROFILE+TEST / NOT AUTHORIZED
+D2-WP004-R2-PRE2-R3
+PART B EXPANDED PRESENTATION OOXML + PRIVACY OVERLAY PROOF
+OOXML-FEASIBILITY+TEST / NOT AUTHORIZED
 ```
 
-Read `AI_ACTIVE_TASK.md` for exact proposed writable files and authorization phrase. Do not auto-start OOXML work, Production Renderer, Kintone work, deployment or D3.
+Read `AI_ACTIVE_TASK.md` for exact proposed writable files and authorization phrase. Do not auto-start Production Renderer, Kintone work, deployment or D3.
