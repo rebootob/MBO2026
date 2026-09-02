@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT.
 
-Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/design/evidence -> exact diff.
+Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant R2 design/Baseline/evidence -> exact diff.
 
 ```text
 D1 = PASS / CLOSED
@@ -21,6 +21,7 @@ PRE2 = READ-ONLY DESIGN COMPLETE
 PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
 PRE2_R1_R1 = PASS / CLOSED
 PRE2_R2 = PASS / CLOSED
+PRE2_R3 = PASS / CLOSED AFTER R1-R4 CORRECTIVE CHAIN
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -44,10 +45,15 @@ R2 design/evidence chain:
 
 Accepted PRE2 implementation chain:
 ```text
-PRE2_R1_IMPLEMENTATION = 9154ab33f2fd6262fa5d3e7717f7eed4f4052e0a / NEEDS CORRECTIVE
+PRE2_R1_INITIAL = 9154ab33f2fd6262fa5d3e7717f7eed4f4052e0a / CORRECTED
 PRE2_R1_R1_CORRECTIVE = fb3765f81b635b2bdc1f4fb8a1cf50fdbe6ea222 / PASS
 PRE2_R2_PROFILE_AUTHORITY = e02af3b1796d0efa8ca6860a54bc64b3c14231f2 / PASS
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+PRE2_R3_INITIAL = 431b0a298e994002e590f0eef5b3169eddb5d540 / CORRECTED
+PRE2_R3_R1 = 4e66cca1d2a41b4d40cf8b1b41587b47abbb590f / CORRECTED
+PRE2_R3_R2 = 298f480ad3f2257327dbea82c3bc3bcd41054b60 / CORRECTED
+PRE2_R3_R3 = 1542ac8ebef1f22505ba0d240c9e064d2b2cd8f8 / CORRECTED
+PRE2_R3_R4 = 22477d74008ea7438ea86f0592ce8ae78685ecaa / PASS / CLOSES PRE2_R3 CHAIN
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN FOR FINAL COMMIT
 ```
 
 Current semantic/profile authority:
@@ -70,11 +76,25 @@ b1..6 TITLE/DESCRIPTION reject
 b8 under N7 reject
 ```
 
-Exact next proposed gate:
+Closed PRE2-R3 OOXML/privacy proof:
 ```text
-D2-WP004-R2-PRE2-R3
-PART B EXPANDED PRESENTATION OOXML + PRIVACY OVERLAY PROOF
-OOXML-FEASIBILITY+TEST / NOT AUTHORIZED
+FROZEN_INTERMEDIATE_MERGES = 79 / 85 / 91
+FINAL_OVERLAY_MERGES = 79 / 86 / 93
+BASE_PRIVACY_DYNAMIC = 432 / 474 / 516
+FINAL_EFFECTIVE_DYNAMIC = 432 / 492 / 552
+SUMMARY_START_OBSERVED = 31 / 35 / 39
+DIMENSIONS = A1:X35 / A1:X39 / A1:X43
+FORMULA_INVENTORY = 0
 ```
 
-Read `AI_ACTIVE_TASK.md` for exact proposed writable files and authorization phrase. Do not auto-start Production Renderer, Kintone work, deployment or D3.
+Dynamic exact-set proof is source-backed and fail-closed for missing, duplicate, extra and same-count substituted addresses. Pre-sanitize expanded presentation state is validated before mutation. Relationship tuples, media/reference-image inventory and auxiliary Sheet1 remain preservation authority.
+
+Exact next gate:
+```text
+CONTROL-PLANE DECISION REQUIRED
+R2-B = sentinel-free production template preparation/sanitizer engine / NOT AUTHORIZED
+R2-C = secured semantic value renderer / NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = later D2 gate
+```
+
+Read `AI_ACTIVE_TASK.md` for exact current authority. Do not auto-start Production Renderer, Kintone work, deployment or D3.
