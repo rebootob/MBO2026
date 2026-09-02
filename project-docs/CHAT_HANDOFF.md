@@ -15,40 +15,32 @@ D2_PART_B_STRUCTURAL = PASS / CLOSED
 D2_FORMULA_AUTHORITY = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D3 = HOLD
-D4 = IN PROGRESS / NOT ACTIVE
-D5 = IN PROGRESS / NOT ACTIVE
-D6 = PENDING
-D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-Expanded Privacy closure:
-- R7-R2 source: `6975b1f076b9b3f4baa3b6cb4ca844767f513f0a` = PASS / FROZEN.
-- R7-R3 test-only: `69891d82996f83a0442ee6dc268dd20b7ef8ee99` = PASS / CLOSED.
-- authorization -> R7-R3 implementation = one commit / one authorized test file.
-- direct isolated row30-clone normalizedType/nonblank fail-closed proof accepted.
-- pristine source row30 B:X has no non-empty valHash authority; no fabricated row30 hash authority permitted.
-- independent runtime signal unavailable because GitHub has no status/workflow run for the commit.
-
-Durable closure: `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`.
-
-Owner-confirmed Production Renderer architecture: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
+Durable privacy closure: `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`.
+Owner-confirmed renderer architecture: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
 
 ```text
 NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
 CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 ```
 
-Current state:
+Current authorization:
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1
+AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
+MODE = SOURCE+TEST / PURE MAPPING / ONE-SHOT
+EXPECTED_NEW_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
-PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Previous standing Control Plane review/corrective authority remains exhausted / DO NOT REUSE.
+R1 must not modify `MboExportService`, feasibility source/tests, dependencies, dist, Kintone, or create/render XLSX. It creates pure centralized template mapping only. Previous standing Control Plane review/corrective authority remains exhausted / DO NOT REUSE.
