@@ -30,27 +30,26 @@ R4_SCOPE_REVIEW = PASS
 R4_SOURCE_REVIEW = PASS / FROZEN
 R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R1 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For R4-R1 continuation read:
+For R4-R1 execution/review read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — Part A structural matrix proof;
-6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — READ-ONLY accepted R4 source unless a proven regression appears.
+5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — only writable file;
+6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — READ-ONLY accepted R4 source.
 
-R4-R1 is proposed TEST-ONLY to close missing rowRefs uniqueness/sequence and workbook/sheet invariant assertions. Do not reopen preservation/reference-image or modify Part B/renderer.
+R4-R1 must close only missing rowRefs uniqueness/sequence and workbook/sheet invariant assertions. Do not reopen preservation/reference-image or modify Part B/renderer.
