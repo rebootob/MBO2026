@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact authorized diff.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact authorized two-file diff only.
 
 ## Project truth
 ```text
@@ -36,13 +36,13 @@ INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-### Proven R1-R3 defects
-1. `resolveSemanticRole()` accepts `OBJECTIVE_i_COMMENT` as an alias for `OBJECTIVE_i_SELF_COMMENT`. `OBJECTIVE_i_COMMENT` is not in the exact 18-role SAFE Baseline, and the returned projection path is `null`; this widens writable authority and violates `WRITABLE_ROLE_WITH_NULL_PROJECTION_PATH = 0`.
-2. `resolveSemanticRole()` accepts `COMPETENCY_b_RATING` as an alias for `COMPETENCY_b_SELF_RATING`. The alias is not in the exact SAFE Baseline and widens writable semantic authority.
-3. `validateMappingIntegrity()` does not validate the full production safe set. It does not fail closed for null objective projection paths and lacks complete Part B header/competency mapping/projection/duplicate integrity validation.
-4. Tests do not prove the required malformed-address/null-projection negative cases and do not reject the two unauthorized aliases above.
+Proven defects are narrow and frozen for the corrective:
+1. reject non-canonical `OBJECTIVE_i_COMMENT` alias;
+2. reject non-canonical `COMPETENCY_b_RATING` alias;
+3. complete integrity validation of the actual production safe mapping/projection set, including null-path, malformed, Part B mapping/projection/duplicate faults;
+4. add the missing direct negative mutation tests.
 
-Accepted semantic authority remains unchanged:
+Durable semantic authority remains unchanged:
 ```text
 SAFE_TO_MAP = 18 EXACT
 UNRESOLVED = 22 EXACT / FAIL CLOSED
@@ -50,17 +50,21 @@ NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-## Proposed next — NOT AUTHORIZED
+## Active corrective — D2-WP004-R1-R3-R1
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R1-R3-R1
+WORK_PACKAGE = D2-WP004-R1-R3-R1
 NAME = TEMPLATE PROFILE STRICT ALLOWLIST + INTEGRITY CORRECTIVE
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
+
+Low-credit rule: read only Fast Start, Active Task, semantic closure Baseline, and the two writable files. No broad repository scan, no workbook inspection, no new semantic research.
