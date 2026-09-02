@@ -18,8 +18,6 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
 ```
 
-Owner `review` instructions may authorize one independent review; they do not silently create a new standing cycle.
-
 ## Current project gate
 
 ```text
@@ -38,39 +36,37 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-## Latest R7 review
-
-Implementation: `993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6`
+## Active corrective — R7-R1
 
 ```text
-R7_SCOPE_REVIEW = PASS
-R7_SOURCE_REVIEW = CORRECTIVE REQUIRED
-R7_PROOF_CODE_REVIEW = CORRECTIVE REQUIRED
-R7_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R1
+TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
+MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO EXISTING FILES
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
 ```
 
-Three defects remain:
-1. source row 30 is non-dynamic but R7 promotes row 30 for N=7/8 and row 34 for N=8 into K:X dynamic ratings;
-2. N=7/8 structural role evidence is not fail-closed against source-backed style/merge/type/nonblank authority;
-3. expanded 7/8 proof does not scan worksheet/sharedStrings/package evidence for synthetic sensitive-token purge.
+Writable files only:
+1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Correct dynamic-address counts: N6=432, N7=474, N8=516.
+R7-R1 must correct only the three proven R7 defects: row30/clone-padding role semantics, expanded source-backed fail-closed structural-role proof, and expanded package/sharedStrings token-purge proof. Exact dynamic counts are N6=432 / N7=474 / N8=516.
 
-## Proposed next work package
+Frozen structural insertion, formula authority, source-6 privacy behavior, summary target rows 31:34 / 35:38 / 39:42, Preservation, Reference Image and Part A/B structural gates must not be redesigned.
+
+## Safety state
 
 ```text
-D2-WP003-R7-R1 = PART B EXPANDED PRIVACY CORRECTIVE
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST / EXACT TWO EXISTING FILES
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT / STOP AFTER PUSH+REPORT
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
 ```
 
-Full corrective contract is in `AI_ACTIVE_TASK.md`. Production Renderer remains out of scope until privacy remap closes.
+Production XLSX Renderer remains the next later gate only after expanded privacy remap closes. Full corrective contract is in `AI_ACTIVE_TASK.md`.
