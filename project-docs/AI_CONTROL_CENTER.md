@@ -5,7 +5,7 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R26 BLOCKED / OWNER PRESERVATION DECISION REQUIRED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / OPTION B APPROVED / R3-R27 PROPOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -14,6 +14,7 @@ CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
 CONTROL_PLANE_STOP = D2 PASS/CLOSED OR ROUND 20
 ANTIGRAVITY_AUTO_AUTH = NO
+CLAUDE_AUTO_REVIEW = NO
 ```
 
 ## 1. Whole-project scoreboard
@@ -21,7 +22,7 @@ ANTIGRAVITY_AUTO_AUTH = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Frozen; Kintone-only ceilings retained |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS / BLOCKED | R3-R26 reviewed; Owner preservation-policy decision required |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | Option B preservation policy approved; R3-R27 proposed |
 | D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Owner requires D2 complete first |
 | D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory scope |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -78,58 +79,64 @@ STATUS = BLOCKED / NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Key independent findings:
-- strict raw relationship Target identity, exact worksheet Type/global duplicate-ID/tuple binding, observed-only `sheetPr` rejection and restored R3-R24 negatives are real improvements;
-- however direct raw Part B `outBufB` is now deliberately rejected because xlsx-populate injects an observed-only `sheetPr` in `Sheet1` while the contract permits only missing `dimension`;
-- positive Part B proof sidesteps this by making a derivative of `outBufB`, deleting `<sheetPr>` from `sheet2.xml`, regenerating the ZIP, and only then calling dimension preservation;
-- therefore the positive proof does not prove the direct raw Part B preservation path and confirms a policy/architecture conflict rather than closure;
-- XML inventory remains incomplete because regex-only scanning can silently miss valid XML names/prefixes outside its restricted character classes;
-- mandatory alias sub-case proof is incomplete (for example repeated `//` and full URI scheme/authority forms);
-- no GitHub CI/status/workflow run exists for the implementation commit.
+R3-R26 proved that direct raw Part B output contains an observed-only `sheetPr` in `Sheet1`; the strict source-minus-dimension policy rejected it, while the positive test only passed after test-side pre-cleaning. XML inventory and several proof sub-cases also remained incomplete.
 
-R3-R26 cannot close preservation or D2-WP003.
+## 5. Owner preservation decision — APPROVED
 
-## 5. Current gate
+```text
+DECISION_ID = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
+DECISION = OPTION B
+STATUS = APPROVED
+POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
+```
+
+Approved boundaries:
+- allow only one exact fingerprinted deterministic xlsx-populate-injected Part B `Sheet1` `sheetPr` drift;
+- exact source must lack it;
+- exact raw observed element/slot/structure must match a pinned allowlist derived from SHA-verified owner-template round-trip evidence;
+- normalization/removal happens only inside the preservation function on its working copy;
+- source/raw inputs remain byte-immutable;
+- modified/extra/reordered/moved/other-sheet/Part-A `sheetPr` remains fail-closed;
+- every other non-dimension drift remains forbidden.
+
+This decision is architecture policy only and does not authorize implementation.
+
+## 6. Current gate
 
 ```text
 D1 = PASS / CLOSED
-D2 = IN PROGRESS / BLOCKED
-D2-WP003 = BLOCKED / NOT CLOSED
+D2 = IN PROGRESS
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
+PROPOSED_WORK_PACKAGE_NAME = NARROW PART B SHEETPR ALLOWED-DRIFT + COMPLETE XML INVENTORY CORRECTIVE
+CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP
-CLAUDE = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP / NOT NEEDED AT THIS GATE
 ```
 
-## 6. Owner decision gate
+## 7. Proposed R3-R27 — NOT AUTHORIZED
 
-```text
-DECISION_ID = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
-STATUS = WAIT OWNER
-```
+R3-R27 is limited to the two existing feasibility source/test files. It must:
+- implement the Option B allowlist inside preservation, never in test setup;
+- make direct raw `outBufB` the positive Part B preservation input;
+- close XML Relationship/worksheet-child inventory gaps so valid QName forms cannot be silently skipped;
+- reject duplicate maxOccurs=1 schema children independently;
+- add repeated `//`, leading `./`, full URI scheme/authority and other missing proof sub-cases;
+- retain all restored R3-R24/R3-R25/R3-R26 negatives and frozen raw/source-SHA/privacy boundaries;
+- provide privacy-safe unit proof for pure validators when owner templates are unavailable.
 
-Option A — STRICT SOURCE-MINUS-DIMENSION:
-- keep observed-only `sheetPr` forbidden;
-- current xlsx-populate direct Part B round-trip path is not viable;
-- choose/design a different preservation/generation approach.
+No Antigravity or Claude execution is authorized yet.
 
-Option B — NARROW DETERMINISTIC ALLOWED-DRIFT:
-- explicitly allow only one precisely fingerprinted xlsx-populate-generated Part B `Sheet1` `sheetPr` drift;
-- normalization/removal must happen inside the authorized preservation path, never in test setup;
-- arbitrary/modified/reordered/extra `sheetPr` remains fail-closed;
-- all other non-dimension drift remains forbidden.
-
-No implementation is authorized until Owner chooses A or B.
-
-## 7. D2 remaining closure path
+## 8. D2 remaining closure path
 
 After preservation closes:
 1. reference-image inventory/removal/preservation closure;
@@ -144,7 +151,7 @@ After preservation closes:
 
 Do not auto-start the next step.
 
-## 8. Authorization ledger
+## 9. Authorization ledger
 
 ```text
 D2-WP003-R3-R22-TEST-20260901-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
@@ -153,6 +160,7 @@ D2-WP003-R3-R23-SOURCE-20260901-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R25-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R26-SOURCE-20260902-01 = CONSUMED / BLOCKED / DO NOT REUSE
+D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY ONLY
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 4 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -162,11 +170,12 @@ ACTIVE_DEPLOY_AUTH = NONE
 D3_EXECUTION = HOLD
 ```
 
-## 9. Exact next action
+## 10. Owner priority / exact next action
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = CHOOSE D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 OPTION A OR OPTION B
+COMPLETE D2 FULLY BEFORE D3.
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R27
+NEXT_EXECUTOR = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
