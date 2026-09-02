@@ -8,11 +8,7 @@
 
 ## 0. Fast routing
 
-For D2 continuation/review, use:
-
-`project-docs/D2_REVIEW_FAST_START.md`
-
-Then read `AI_ACTIVE_TASK.md`, the directly relevant Baseline, and the exact authorization→implementation diff. Do not re-scan closed gates by default.
+For D2 continuation/review use `project-docs/D2_REVIEW_FAST_START.md`, then `AI_ACTIVE_TASK.md`, the directly relevant Baseline, and exact diff. Do not re-scan closed gates by default.
 
 ## 1. Non-negotiable rules
 
@@ -39,25 +35,23 @@ D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
-R5-R1_IMPLEMENTATION_COMMIT = 223f293057219efe0e6410029523bd904c92c6ae
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 20 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 0
-CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
+D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
+PROPOSED_WORK_PACKAGE = D2-WP003-R7 / PART B EXPANDED PRIVACY REMAP 6/7/8
+R7_STATE = PROPOSED / NOT AUTHORIZED
 ACTIVE_D2_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-Durable authority:
+Durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-
-Expanded Part B privacy/address remapping remains mandatory before production renderer/security closure.
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
 Remaining D2:
-1. formula/no-formula authority;
-2. production XLSX renderer/sanitizer + expanded Part B privacy remap;
+1. R7 expanded Part B privacy remap 6/7/8;
+2. production XLSX renderer/sanitizer;
 3. combined Excel parity;
 4. PDF parity;
 5. export security/privacy regression;
@@ -65,7 +59,7 @@ Remaining D2:
 
 ## 4. D3
 
-Protected READ-ONLY sources: `283, 310, 305, 643, 307, 640, 715, 716`.
+Protected READ-ONLY legacy sources: `283, 310, 305, 643, 307, 640, 715, 716`.
 
 ```text
 D3 = HOLD UNTIL D2 PASS / CLOSED
@@ -91,12 +85,14 @@ Admin Support Center: `SOURCE FUNCTIONALITY CLOSED`.
 ## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = CHATGPT CONTROL PLANE
-NEXT_ACTION = FORMULA AUTHORITY DOCS/BASELINE CLOSURE PLANNING; THEN SMALLEST PRODUCTION XLSX RENDERER + PRIVACY REMAP WP
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE D2-WP003-R7 SOURCE+TEST AUTHORIZATION
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
 ```
 
-The exhausted 20-round standing authorization must not be reused silently. Executor/Kintone/deploy permissions remain separately scoped.
+Previous 20-round standing Control Plane authorization remains exhausted / DO NOT REUSE. Executor/Kintone/deploy permissions remain separately scoped.
