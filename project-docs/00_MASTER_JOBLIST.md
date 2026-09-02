@@ -28,29 +28,32 @@ D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-D2_PART_B_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-R5_IMPLEMENTATION_COMMIT = 068e719a7b6c0fee66613619a7aa7ed359960cb5
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 19 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 1
-ACTIVE_D2_WORK_PACKAGE = D2-WP003-R5-R1
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R5-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R5-R1-SOURCE-TEST-20260902-01
+D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
+R5-R1_IMPLEMENTATION_COMMIT = 223f293057219efe0e6410029523bd904c92c6ae
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 20 OF 20
+CONTROL_PLANE_ROUNDS_REMAINING = 0
+CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED
+ACTIVE_D2_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-R5 accepted/frozen matrix behavior includes real 6/7/8 structural variants, exact row/block/downstream/sentinel transformations, full merge sets 79/85/91, exact output dimensions/print areas, Part B A4/portrait/75/protection setup, `Sheet1` stability, package relationship/media equality and zero formulas.
+Part B durable authority: `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`.
 
-R5-R1 is authorized only to close:
-- raw owner-template fail-closed prerequisite proof before mutation: exact dimension A1:X35, actual+declared merges 79, six source-block merges, exact single main Print_Area/localSheetId0/value and required structures;
-- explicit defined-name stability/binding proof for source and 6/7/8.
+Frozen Part B structural matrix:
+- 6 => A1:X35 / 79 merges / print X35;
+- 7 => A1:X39 / 85 merges / print X39;
+- 8 => A1:X43 / 91 merges / print X43;
+- exact row/block/downstream/sentinel transformation;
+- raw-source fail-closed dimension/merge/Print_Area guards;
+- exact defined-name stability and empty Sheet1 print area;
+- Part B A4/portrait/75/protection setup;
+- exact Sheet1, relationships/media and zero-formula invariants.
 
-Writable only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Expanded Part B privacy/address remapping remains mandatory before production renderer/security closure.
 
-No privacy/sanitization, Part A, preservation/reference-image, renderer, dependency, Kintone, deploy, D3 or next-WP work is authorized.
-
-Remaining after Part B closure:
+Remaining D2:
 - formula/no-formula authority;
 - production XLSX renderer/sanitizer + expanded Part B privacy remap;
 - combined Excel parity;
@@ -86,11 +89,12 @@ Admin Support Center: `SOURCE FUNCTIONALITY CLOSED`.
 ## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R5-R1-SOURCE-TEST-20260902-01
-EXPECTED_CHANGED_FILES = EXACT TWO AUTHORIZED FEASIBILITY FILES ONLY
-EXPECTED_COMMITS = EXACTLY ONE IMPLEMENTATION/BLOCKER COMMIT
-ANTIGRAVITY = STOP AFTER PUSH/REPORT
+NEXT_EXECUTOR = OWNER / CHATGPT READ-ONLY PLANNING
+NEXT_ACTION = DECIDE ADDITIONAL CONTROL-PLANE REVIEW AUTHORITY, THEN PLAN NEXT D2 GATE
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
 ```
+
+Do not silently extend the exhausted 20-round standing review/corrective authorization.
