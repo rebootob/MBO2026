@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 4
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4 corrective required |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R1 TEST-ONLY authorized |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -77,34 +77,32 @@ R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R4 progress: exactly one implementation commit; exactly the two authorized feasibility source/test files; real source helper generalized to objective counts 4–10; exact SHA gate, full merge-set equality, exact dimension/print-area matrix, normalized row/cell/style/height mapping, sentinel relocation, relationship/media preservation and formula-empty proof added.
+Accepted R4 progress is frozen. Remaining proof gaps are TEST-ONLY: exact `rowRefs` sequence/uniqueness, `sheetStates`, and exact non-target sheet invariants already exposed by the fingerprint helper.
 
-Remaining proof gaps are TEST-ONLY:
-- no exact `rowRefs` sequence/uniqueness proof, so no-loss/no-duplicate/no-old-row relocation is not fully proven;
-- `sheetStates` not asserted;
-- `showGridLines`, `fitToPage`, `pageMargins` and remaining non-target per-sheet setup invariants are not asserted against the 4-objective baseline.
+## 6. Exact current gate — R4-R1 AUTHORIZED
 
-The current feasibility source implementation is frozen for the corrective unless a new proven source defect appears.
-
-## 6. Exact current gate
+Owner explicitly authorized `D2-WP003-R4-R1 TEST-ONLY` on 2026-09-02.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
-PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
+ACTIVE_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = 5f22caf6ffc9d539ce0df0c23663dd934385d923
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R1 / ONE BOUNDED TEST-ONLY COMMIT
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-Do not auto-start R4-R1. Do not modify the accepted R4 source under the proposed corrective.
+Allowed file only:
+`tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Do not modify accepted R4 source. Do not start Part B or any next work package.
 
 ## 7. D2 remaining path after Part A closure
 
