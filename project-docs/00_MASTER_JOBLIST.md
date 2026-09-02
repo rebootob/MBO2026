@@ -42,15 +42,13 @@ R4_SCOPE_REVIEW = PASS
 R4_SOURCE_REVIEW = PASS / FROZEN
 R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
-ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ACTIVE_D2_WORK_PACKAGE = D2-WP003-R4-R1
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-R4 source generalization to objective counts 4–10 is accepted/frozen. Remaining corrective is proof-only: exact rowRefs sequence/uniqueness and missing sheet-state/gridline/fit-to-page/page-margin/per-sheet invariant assertions.
+R4 source generalization to objective counts 4–10 is accepted/frozen. R4-R1 is authorized TEST-ONLY to close exact rowRefs sequence/uniqueness and missing sheet-state/non-target per-sheet invariant assertions.
 
 D2 must still close after Part A:
 - Part B competency structural insertion matrix;
@@ -89,10 +87,11 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R4-R1 TEST-ONLY AS PROPOSED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R4-R1-TEST-20260902-01
+EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+EXPECTED_COMMITS = EXACTLY ONE BOUNDED TEST-ONLY IMPLEMENTATION/BLOCKER COMMIT
+ANTIGRAVITY = STOP AFTER PUSH/REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
