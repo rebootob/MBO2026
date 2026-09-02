@@ -1,45 +1,70 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / R7-R3 PRIVACY PROOF TEST-ONLY ACTIVE**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / PRODUCTION XLSX RENDERER NEXT PROPOSED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
-LEGACY TEMPLATE = VISUAL / LAYOUT AUTHORITY
-MboExportService SECURED PROJECTION = EXPORT DATA AUTHORITY
+LEGACY_TEMPLATE = VISUAL / LAYOUT AUTHORITY
+MboExportService_SECURED_PROJECTION = EXPORT DATA AUTHORITY
 SCORING_SOURCE = KINTONE / APP794 + CONFIRMED CONFIG
 PRESERVATION = PASS / CLOSED
 REFERENCE_IMAGE = PASS / CLOSED
 PART_A_STRUCTURAL = PASS / CLOSED
 PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
+PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 ```
 
-Privacy status:
+Privacy closure:
 ```text
-R7-R2_IMPLEMENTATION = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
-D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
-R7-R2_SOURCE = PASS / FROZEN
-ACCEPTED_COUNTS = N6 432 / N7 474 / N8 516
-ROW30_AND_CLONES = NON-DYNAMIC / FROZEN
-STYLE_MERGE_TYPE_NONBLANK_SOURCE_BACKING = PASS / FROZEN
-PROTECTED_STATIC_VALHASH_ENFORCEMENT = PASS / FROZEN WHERE SOURCE HAS VALHASH
+R7-R2_SOURCE = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a / PASS FROZEN
+R7-R3_TEST_ONLY = 69891d82996f83a0442ee6dc268dd20b7ef8ee99 / PASS CLOSED
+COUNTS = N6 432 / N7 474 / N8 516
+ROW30_AND_CLONES = PROTECTED NON-DYNAMIC / FROZEN
+STRICT_SOURCE_EVIDENCE = STYLE + MERGE + TYPE + NONBLANK + STATIC HASH WHEN APPLICABLE
 EXPANDED_PACKAGE_TOKEN_PURGE = PASS / FROZEN
 CALLER_BUFFER_IMMUTABILITY = PASS / FROZEN
 ZERO_FORMULA = PASS / FROZEN
-R7-R2_PROOF = CORRECTIVE REQUIRED / DIRECT TEST ISOLATION ONLY
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
-AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
 ```
 
-R7-R3 is TEST-ONLY. It may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js` to add isolated row30/clone direct negative proof. Source, Production Renderer, `MboExportService`, dependencies, generated binaries, Kintone/deploy/Live UAT/D3 remain out of scope.
+Durable privacy authority: `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`.
 
-Remaining D2: Privacy closure -> Production XLSX renderer/sanitizer -> Combined Excel parity -> PDF parity -> export security/privacy regression -> final D2 closure.
+## Production Renderer Template Mapping Architecture
+
+Owner-confirmed mandatory rule:
+```text
+NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = YES
+CENTRALIZED_TEMPLATE_PROFILE_MAPPING = YES
+```
+
+Required boundary:
+```text
+Kintone/App794 truth
+  -> MboExportService secured projection
+  -> Canonical Export Model / semantic roles
+  -> centralized Template Profile / Mapping
+  -> Production Renderer
+  -> owner template
+```
+
+Important cell/range addresses must be centralized in the Template Profile/Mapping layer. Future template versions should normally be handled by profile/mapping change + focused structural/privacy regression, not by scattering address edits across business logic.
+
+Durable authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
+
+## Remaining D2
+1. Production XLSX Renderer/Sanitizer — PROPOSED / NOT AUTHORIZED
+2. Combined Excel parity
+3. PDF parity
+4. Export authorization/security/privacy regression
+5. Final independent D2 closure
 
 ```text
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / ONE-SHOT / STOP AFTER PUSH+REPORT
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
