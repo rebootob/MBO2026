@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
 
-Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact two-file diff.
+Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -30,31 +30,28 @@ CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
 Latest Template Profile review:
 ```text
-R1_R3_AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-R1_R3_IMPLEMENTATION = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
+R1_R3_R1_AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+R1_R3_R1_AUTHORIZATION_COMMIT = 867111d785b7e85689725379249e7b278108d8cc
+R1_R3_R1_IMPLEMENTATION = 6386e506b85ded87a57967705066e38d56212f73
 SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED FILES
+OBJECTIVE_COMMENT_ALIAS = PASS / REJECTS
+COMPETENCY_RATING_ALIAS = PASS / REJECTS
+BASIC_NULL_PATH_NEGATIVES = PASS
 OVERALL = CORRECTIVE REQUIRED
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Frozen corrective defects:
-- `OBJECTIVE_i_COMMENT` alias must reject;
-- `COMPETENCY_b_RATING` alias must reject;
-- integrity validator must validate complete safe mapping/projection integrity, including null/malformed/Part-B mapping/duplicate faults;
-- missing negative mutation tests must be added.
+Remaining proven defect: Part B competency integrity is not canonical-exact. Validator currently checks list length, syntactically valid `SELF_RATING`, non-empty projectionPath and duplicates, but does not require each competency to have the exact expected `index`, exact expected rating row, exact `K{row}` target and exact `partB.competencyItems[i-1].selfRating` secured path. The approved R1-R3-R1 contract explicitly required wrong/missing Part B competency count/index/self-rating address to fail closed and direct tests for missing/wrong mapping/index/address.
 
-Current authorization:
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
-AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+PROPOSED_NEXT = D2-WP004-R1-R3-R2 / SOURCE+TEST / NOT AUTHORIZED / LOW-CREDIT
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -62,4 +59,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Low-credit execution: no broad scan, no workbook inspection, no semantic re-discovery; use the closed Baseline and only the two writable files.
+If R1-R3-R2 is later authorized, do not broad-scan or re-research semantics; fix only canonical integrity checks/tests in the same two files.
