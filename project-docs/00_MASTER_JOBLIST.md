@@ -42,19 +42,21 @@ D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 R7_IMPLEMENTATION_COMMIT = 993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6
 D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R1
-R7-R1_STATE = PROPOSED / NOT AUTHORIZED
-ACTIVE_D2_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_WORK_PACKAGE = D2-WP003-R7-R1
+R7-R1_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7-R1_AUTHORIZATION = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-R7 corrective targets only:
-- source row30 and row30-clone padding must remain non-dynamic;
+R7-R1 corrective targets only:
+- source row30 and every row30-clone padding must remain non-dynamic;
 - expected count-aware dynamic inventory = N6 432 / N7 474 / N8 516;
-- expanded structural-role evidence must fail closed against source-backed row/merge/style/type/nonblank authority;
-- expanded 7/8 sanitizer proof must purge privacy-safe synthetic tokens from worksheet/sharedStrings/package evidence.
+- expanded structural-role evidence must fail closed against exact source-backed row/merge/style/type/nonblank/static-value authority;
+- expanded N6/N7/N8 sanitizer proof must purge privacy-safe synthetic sensitive tokens from worksheet/sharedStrings/package evidence;
+- retain all frozen D2 structural/preservation/formula proof.
 
 Remaining D2 after privacy closure:
 1. Production XLSX renderer/sanitizer;
@@ -66,9 +68,9 @@ Remaining D2 after privacy closure:
 ## Current executor state
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R7-R1 SOURCE+TEST
-ANTIGRAVITY = STOP
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R7-R1-SOURCE-TEST-20260902-01; PUSH EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT; STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
