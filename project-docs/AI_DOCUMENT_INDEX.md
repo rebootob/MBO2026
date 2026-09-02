@@ -13,8 +13,8 @@ Open in this order:
 5. this `AI_DOCUMENT_INDEX.md`;
 6. `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness matters;
 7. `project-docs/EXCEL_EXPORT.md` for D2;
-8. `project-docs/CONFIRMED_BASELINE/README.md`;
-9. only directly relevant source/tests/Baseline.
+8. `project-docs/CONFIRMED_BASELINE/README.md` and directly relevant closure Baselines;
+9. only directly relevant source/tests.
 
 ## 2. Current checkpoint
 
@@ -23,34 +23,30 @@ D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 R4_SOURCE_REVIEW = PASS / FROZEN
 R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054
-R4-R1_IMPLEMENTATION_COMMIT = 8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6
-R4-R1_SCOPE_REVIEW = PASS
-R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 17 OF 20
-ACTIVE_WORK_PACKAGE = D2-WP003-R4-R2
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-OWNER_APPROVAL_BASELINE_HEAD = f566fa300818e53e78342710332573e0294d4c4b
+R4-R2_IMPLEMENTATION_COMMIT = 98da94a07259effd95dcf539de3454b1f94745a8
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 18 OF 20
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R2 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
+NEXT_D2_PLANNING_GATE = PART B COMPETENCY INSERTION STRUCTURAL MATRIX
 ```
 
 ## 3. Current D2 routing
 
-For R4-R2 execution/review read:
+For current D2 status read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — only writable file;
-6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — READ-ONLY accepted R4 source.
+5. `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md` when Part A details are needed.
 
-R4-R2 is authorized only to restore the absolute assertions `paperSize=8`, `orientation=landscape`, `scale=58` while retaining all R4/R4-R1 proof. Do not reopen preservation/reference-image or modify Part B/renderer.
+Part B has not started. If Owner says `ต่อ`, ChatGPT should perform READ-ONLY planning first, inspect only the existing Part B feasibility source/test areas needed to establish the smallest safe scope, and must not auto-authorize Antigravity or Claude.
