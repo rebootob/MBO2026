@@ -15,8 +15,6 @@ For normal D2 continuation/review:
 3. only the directly relevant `CONFIRMED_BASELINE/` file
 4. exact authorization→implementation diff and changed files as needed
 
-Do not start with a full repository scan unless whole-project reconciliation is required.
-
 ## 2. Operating model
 
 ```text
@@ -31,7 +29,7 @@ CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
-Previous standing review window is exhausted and must not be reused silently. Executor work remains one-shot and Owner-authorized.
+The previous standing Control Plane review/corrective window is exhausted / DO NOT REUSE. R7 execution is a new one-shot Owner authorization only; it does not silently create another standing review cycle.
 
 ## 3. Current project gate
 
@@ -55,56 +53,46 @@ Closed D2 Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-Do not reopen closed/frozen gates without proven regression.
-
-## 4. Current open privacy boundary
+## 4. Active work package — R7
 
 ```text
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
+ACTIVE_WORK_PACKAGE = D2-WP003-R7
+NAME = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
+TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
+MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO EXISTING FILES
 ```
 
-Current 6-block Part B privacy map is not valid as-is for expanded layouts:
-- N=7 inserts rows 31:34; original summary/signature moves to 35:38;
-- N=8 inserts rows 31:38; original summary/signature moves to 39:42.
+Writable files only:
+1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Using the fixed source-6 summary map on N=7/8 would target the wrong cells.
+R7 must preserve exact N=6 privacy behavior, make privacy roles/sanitization count-aware for N=7/8 from the frozen rows 27:30 clone semantics, relocate summary/signature roles by exact structural `extraRows`, protect cloned static competency text, use real `getStructuralPartBBuffers()` outputs, and fail closed on unsupported count or structural-role ambiguity.
 
-## 5. Proposed next work package
+For N=7 summary/signature moves to rows 35:38. For N=8 it moves to rows 39:42. No stale source-6 summary classification may remain at rows 31:34 in expanded layouts.
 
-```text
-D2-WP003-R7 = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST / TWO EXISTING FILES ONLY
-FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
-        tests/mbo-xlsx-ooxml-feasibility.test.js
-```
+## 5. Explicit R7 exclusions
 
-R7 must preserve the source-6 privacy map, derive inserted block roles from source rows 27:30, relocate summary/signature roles exactly, protect cloned static text, sanitize only exact count-aware dynamic addresses, and fail closed on unsupported count/structural-role mismatch.
+R7 does not authorize:
+- Production XLSX renderer;
+- changes to `src/services/mbo-export-service.js`;
+- dependency/package-lock changes;
+- generated XLSX/PDF/image/evidence binaries;
+- Kintone writes/deploy/ACL/process/Live UAT;
+- D3 or any later WP.
 
-Full contract: `AI_ACTIVE_TASK.md`.
-
-## 6. Remaining D2 path
-
-1. R7 expanded Part B privacy remap 6/7/8;
-2. production XLSX renderer/sanitizer;
-3. combined Excel parity;
-4. PDF parity;
-5. export authorization/security/privacy regression;
-6. final independent D2 closure;
-7. only then may D3 leave HOLD.
-
-## 7. Current executor state
+## 6. Current executor/safety state
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / ONE-SHOT / STOP AFTER PUSH+REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-Exact next action: Owner decides whether to authorize `D2-WP003-R7 SOURCE+TEST` under the proposed two-file contract.
+Exact implementation contract is in `AI_ACTIVE_TASK.md`. After Antigravity pushes exactly one bounded implementation/blocker commit, STOP and return to Owner/ChatGPT for independent review.
