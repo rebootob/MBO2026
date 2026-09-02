@@ -23,15 +23,16 @@ D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
 D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 R7_IMPLEMENTATION_COMMIT = 993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6
-R7_STATE = CORRECTIVE REQUIRED / TOKEN CONSUMED
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R1
-R7-R1_STATE = PROPOSED / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R1
+R7-R1_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7-R1_AUTHORIZATION = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
@@ -43,14 +44,18 @@ Read only when directly relevant:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-R7 did not close a durable gate, so no R7 Baseline is promoted yet.
+No R7 privacy Baseline exists yet because the gate is not closed.
 
 ## R7-R1 scope shortcut
 
-Writable only if Owner authorizes R7-R1:
+Writable only:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Correct only row30/clone padding role semantics, source-backed structural-role fail-closed proof, and expanded package/sharedStrings token-purge proof. Production renderer remains a later gate.
+Correct only:
+- row30/row30-clone non-dynamic role semantics;
+- exact dynamic counts 432/474/516;
+- source-backed expanded fail-closed structural-role validation;
+- expanded N6/N7/N8 package/sharedStrings privacy-safe synthetic token purge proof.
 
-Previous 20-round standing Control Plane authorization remains exhausted / DO NOT REUSE.
+Production renderer remains a later gate. Previous 20-round standing Control Plane authorization remains exhausted / DO NOT REUSE.
