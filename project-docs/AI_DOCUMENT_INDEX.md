@@ -13,8 +13,8 @@ PART_A_STRUCTURAL = PASS / CLOSED
 PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP004-R1
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
 ```
@@ -26,14 +26,12 @@ Durable D2 Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-Active R1:
+Latest Template Profile review:
 ```text
-AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-MODE = SOURCE+TEST / PURE CENTRALIZED TEMPLATE MAPPING
-EXPECTED_NEW_FILES =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
+D2-WP004-R1 = CORRECTIVE REQUIRED
+IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
+TOKEN = CONSUMED / DO NOT REUSE
+PROPOSED_CORRECTIVE = D2-WP004-R1-R1 SOURCE+TEST / NOT AUTHORIZED
 ```
 
-R1 is not the Production Renderer. It must not perform workbook I/O/mutation, scoring, authorization, Kintone access, dependency changes, or modify existing source/test files. Full contract: `AI_ACTIVE_TASK.md`.
+Read `AI_ACTIVE_TASK.md` for the exact three corrective defects and bounded next contract. Production Renderer remains NOT AUTHORIZED.
