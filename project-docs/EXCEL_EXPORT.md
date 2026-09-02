@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY PROOF FINALIZATION**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / R7-R3 PRIVACY PROOF TEST-ONLY ACTIVE**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -24,23 +24,22 @@ R7-R2_SOURCE = PASS / FROZEN
 ACCEPTED_COUNTS = N6 432 / N7 474 / N8 516
 ROW30_AND_CLONES = NON-DYNAMIC / FROZEN
 STYLE_MERGE_TYPE_NONBLANK_SOURCE_BACKING = PASS / FROZEN
-PROTECTED_STATIC_VALHASH_ENFORCEMENT = PASS / FROZEN
+PROTECTED_STATIC_VALHASH_ENFORCEMENT = PASS / FROZEN WHERE SOURCE HAS VALHASH
 EXPANDED_PACKAGE_TOKEN_PURGE = PASS / FROZEN
 CALLER_BUFFER_IMMUTABILITY = PASS / FROZEN
 ZERO_FORMULA = PASS / FROZEN
 R7-R2_PROOF = CORRECTIVE REQUIRED / DIRECT TEST ISOLATION ONLY
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R3
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
+AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
 ```
 
-R7-R3 is TEST-ONLY and not authorized. It may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js` to add isolated direct row30/clone static valHash and normalizedType fail-closed assertions. No source change.
-
-Production renderer, `MboExportService`, dependencies, generated binaries, Kintone/deploy/Live UAT/D3 remain out of scope until privacy gate closes.
+R7-R3 is TEST-ONLY. It may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js` to add isolated row30/clone direct negative proof. Source, Production Renderer, `MboExportService`, dependencies, generated binaries, Kintone/deploy/Live UAT/D3 remain out of scope.
 
 Remaining D2: Privacy closure -> Production XLSX renderer/sanitizer -> Combined Excel parity -> PDF parity -> export security/privacy regression -> final D2 closure.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / ONE-SHOT / STOP AFTER PUSH+REPORT
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
