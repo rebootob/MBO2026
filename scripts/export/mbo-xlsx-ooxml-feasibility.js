@@ -1129,7 +1129,7 @@ export async function getNoOpParityBuffers() {
 
 const CANONICAL_WORKSHEET_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet';
 
-const OPENXML_WORKSHEET_CHILD_ORDER = [
+export const OPENXML_WORKSHEET_CHILD_ORDER = [
   'sheetPr',
   'dimension',
   'sheetViews',
@@ -1172,7 +1172,7 @@ const OPENXML_WORKSHEET_CHILD_ORDER = [
 ];
 
 // Elements under <worksheet> that are maxOccurs=1 in ECMA-376 schema
-const MAX_OCCURS_ONE_CHILDREN = new Set([
+export const MAX_OCCURS_ONE_CHILDREN = new Set([
   'sheetPr',
   'dimension',
   'sheetViews',
@@ -1208,7 +1208,102 @@ const MAX_OCCURS_ONE_CHILDREN = new Set([
   'extLst'
 ]);
 
-function parseTopLevelChildren(xml) {
+export function validateRawTargetLexical(rawTarget) {
+  if (typeof rawTarget !== 'string' || rawTarget.length === 0) return false;
+  if (
+    rawTarget.startsWith('/') ||
+    rawTarget.startsWith('xl/') ||
+    rawTarget.startsWith('./') ||
+    rawTarget.includes('/./') ||
+    rawTarget.includes('..') ||
+    rawTarget.includes('//') ||
+    rawTarget.includes('\\') ||
+    rawTarget.includes('%') ||
+    rawTarget.includes(':') ||
+    rawTarget.includes('?') ||
+    rawTarget.includes('#')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function parseGlobalRelsXml(relsXml) {
+  if (typeof relsXml !== 'string') {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+
+  const relsMatch = relsXml.match(/<Relationships[^>]*>([\s\S]*?)<\/Relationships>/i);
+  if (!relsMatch) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+
+  const inner = relsMatch[1];
+  const tagMatches = [...inner.matchAll(/<([^>\s/]+)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/gi)];
+
+  // Coverage-complete gap validation: ensure text between Relationship tags is pure whitespace
+  let lastEnd = 0;
+  for (const m of tagMatches) {
+    const textBetween = inner.slice(lastEnd, m.index);
+    if (textBetween.trim().length > 0) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+    lastEnd = m.index + m[0].length;
+  }
+  if (inner.slice(lastEnd).trim().length > 0) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+
+  const relsMap = {};
+
+  for (const m of tagMatches) {
+    const fullTagName = m[1];
+    const tag = m[0];
+
+    // Fail closed on any namespace-prefixed Relationship tag (e.g. <r:Relationship>) or non-Relationship tag
+    if (fullTagName !== 'Relationship') {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const idMatch = tag.match(/\bId="([^"]+)"/);
+    const typeMatch = tag.match(/\bType="([^"]+)"/);
+    const targetMatch = tag.match(/\bTarget="([^"]+)"/);
+    const isExternal = /\bTargetMode="External"/i.test(tag);
+
+    if (!idMatch || !typeMatch || !targetMatch) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const rId = idMatch[1];
+    const type = typeMatch[1];
+    const rawTarget = targetMatch[1];
+
+    // Global duplicate relationship ID rejection across ALL relationship types
+    if (relsMap[rId]) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    // Strict raw Target lexical validation
+    if (!validateRawTargetLexical(rawTarget)) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const zipPath = 'xl/' + rawTarget;
+
+    relsMap[rId] = {
+      rId,
+      type,
+      rawTarget,
+      zipPath,
+      isExternal
+    };
+  }
+
+  return relsMap;
+}
+
+export function parseWorksheetTopLevelChildren(xml) {
+  if (typeof xml !== 'string') return null;
   const wsMatch = xml.match(/<worksheet[^>]*>/);
   if (!wsMatch) return null;
   const startIdx = wsMatch.index + wsMatch[0].length;
@@ -1216,20 +1311,33 @@ function parseTopLevelChildren(xml) {
   if (endIdx === -1 || endIdx <= startIdx) return null;
 
   const inner = xml.slice(startIdx, endIdx);
-  // Match ALL top-level elements, capturing prefix and tag name with full QName support
-  const matches = [...inner.matchAll(/<([a-zA-Z0-9_\-\.]+?:)?([a-zA-Z0-9_\-\.]+?)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/(?:\1)?\2>)/g)];
+  const matches = [...inner.matchAll(/<([^>\s/]+)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/g)];
+
+  // Coverage-complete gap validation: ensure text between direct children is pure whitespace
+  let lastIndex = 0;
+  for (const m of matches) {
+    const gap = inner.slice(lastIndex, m.index);
+    if (gap.trim().length > 0) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+    lastIndex = m.index + m[0].length;
+  }
+  if (inner.slice(lastIndex).trim().length > 0) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
 
   const children = [];
   const counts = {};
 
   for (const m of matches) {
-    const prefix = m[1];
-    const tagName = m[2];
+    const fullTagHead = m[1];
 
-    // Fail closed on any namespace prefix
-    if (prefix) {
+    // Fail closed on any namespace prefix (e.g. x:sheetPr)
+    if (fullTagHead.includes(':')) {
       throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
     }
+
+    const tagName = fullTagHead;
 
     // Fail closed on unknown element not in ECMA-376 schema order map
     if (!OPENXML_WORKSHEET_CHILD_ORDER.includes(tagName)) {
@@ -1253,7 +1361,7 @@ function parseTopLevelChildren(xml) {
   return children;
 }
 
-function validateSchemaOrder(children) {
+export function validateWorksheetSchemaOrder(children) {
   let lastOrderIdx = -1;
   for (const c of children) {
     const orderIdx = OPENXML_WORKSHEET_CHILD_ORDER.indexOf(c.name);
@@ -1263,6 +1371,58 @@ function validateSchemaOrder(children) {
     lastOrderIdx = orderIdx;
   }
   return true;
+}
+
+export function matchAndNormalizeOptionBSheetPr(obsXml, srcChildren, obsChildren, rawTarget, partKey) {
+  if (
+    partKey === 'B' &&
+    rawTarget === 'worksheets/sheet2.xml' &&
+    obsChildren.length > 0 &&
+    obsChildren[0].name === 'sheetPr'
+  ) {
+    // 1. Source Sheet1 MUST NOT contain sheetPr
+    const srcSheetPr = srcChildren.find(c => c.name === 'sheetPr');
+    if (srcSheetPr) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    // 2. Observed sheetPr MUST be at index 0
+    const obsSheetPr = obsChildren[0];
+
+    // 3. Observed sheetPr MUST match exact pinned structure/fingerprint: "<sheetPr/>"
+    if (obsSheetPr.fullTag.trim() !== '<sheetPr/>') {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    // 4. Perform Option B internal normalization on working copy
+    let removeStart = obsSheetPr.startIndex;
+    let removeEnd = obsSheetPr.endIndex;
+
+    // Include trailing whitespace/newline if present
+    while (removeEnd < obsXml.length && (obsXml[removeEnd] === ' ' || obsXml[removeEnd] === '\t' || obsXml[removeEnd] === '\r' || obsXml[removeEnd] === '\n')) {
+      removeEnd++;
+    }
+
+    const normalizedXml = obsXml.slice(0, removeStart) + obsXml.slice(removeEnd);
+
+    // Re-parse obsChildren from normalized obsXml working copy
+    const normalizedObsChildren = parseWorksheetTopLevelChildren(normalizedXml);
+    if (!normalizedObsChildren || !validateWorksheetSchemaOrder(normalizedObsChildren)) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    return {
+      normalized: true,
+      obsXml: normalizedXml,
+      obsChildren: normalizedObsChildren
+    };
+  }
+
+  return {
+    normalized: false,
+    obsXml,
+    obsChildren
+  };
 }
 
 export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, sourceBufOverride = null) {
@@ -1313,65 +1473,8 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
     const obsRelsXmlFile = wbObserved._zip.files['xl/_rels/workbook.xml.rels'];
     const obsRelsXml = obsRelsXmlFile ? await obsRelsXmlFile.async('string') : '';
 
-    function parseGlobalRels(relsXml) {
-      const relsMap = {};
-      // Coverage-first parser matching ALL Relationship elements with any valid QName prefix
-      const relMatches = [...relsXml.matchAll(/<(?:[a-zA-Z0-9_\-\.]+?:)?Relationship\b[^>]*\/?>/gi)];
-
-      for (const m of relMatches) {
-        const tag = m[0];
-        const idMatch = tag.match(/\bId="([^"]+)"/);
-        const typeMatch = tag.match(/\bType="([^"]+)"/);
-        const targetMatch = tag.match(/\bTarget="([^"]+)"/);
-        const isExternal = /\bTargetMode="External"/i.test(tag);
-
-        if (!idMatch || !typeMatch || !targetMatch) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        const rId = idMatch[1];
-        const type = typeMatch[1];
-        const rawTarget = targetMatch[1];
-
-        // Global duplicate relationship ID rejection across ALL relationship types
-        if (relsMap[rId]) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        // Strict raw Target lexical validation:
-        // Reject leading slash, xl/ prefix, ./, /./, .., repeated slashes (//), backslashes (\), percent-encoding (%), URI schemes (:), queries (?), fragments (#)
-        if (
-          rawTarget.startsWith('/') ||
-          rawTarget.startsWith('xl/') ||
-          rawTarget.startsWith('./') ||
-          rawTarget.includes('/./') ||
-          rawTarget.includes('..') ||
-          rawTarget.includes('//') ||
-          rawTarget.includes('\\') ||
-          rawTarget.includes('%') ||
-          rawTarget.includes(':') ||
-          rawTarget.includes('?') ||
-          rawTarget.includes('#')
-        ) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        const zipPath = 'xl/' + rawTarget;
-
-        relsMap[rId] = {
-          rId,
-          type,
-          rawTarget,
-          zipPath,
-          isExternal
-        };
-      }
-
-      return relsMap;
-    }
-
-    const srcRelMap = parseGlobalRels(srcRelsXml);
-    const obsRelMap = parseGlobalRels(obsRelsXml);
+    const srcRelMap = parseGlobalRelsXml(srcRelsXml);
+    const obsRelMap = parseGlobalRelsXml(obsRelsXml);
 
     function parseSheets(wbXml, relMap) {
       const sheets = [];
@@ -1451,58 +1554,25 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       const srcXml = await srcFile.async('string');
       let obsXml = await obsFile.async('string');
 
-      const srcChildren = parseTopLevelChildren(srcXml);
-      let obsChildren = parseTopLevelChildren(obsXml);
+      const srcChildren = parseWorksheetTopLevelChildren(srcXml);
+      let obsChildren = parseWorksheetTopLevelChildren(obsXml);
 
       if (!srcChildren || !obsChildren) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
       }
 
-      if (!validateSchemaOrder(srcChildren) || !validateSchemaOrder(obsChildren)) {
+      if (!validateWorksheetSchemaOrder(srcChildren) || !validateWorksheetSchemaOrder(obsChildren)) {
         throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
       }
 
-      // Check for Option B allowed drift:
-      // Allowed ONLY if partKey === 'B' and sheet target is Part B Sheet1 ('worksheets/sheet2.xml')
-      if (
-        partKey === 'B' &&
-        srcSheet.rel.rawTarget === 'worksheets/sheet2.xml' &&
-        obsChildren.length > 0 &&
-        obsChildren[0].name === 'sheetPr'
-      ) {
-        // Option B Allowlist Verification:
-        // 1. Source Sheet1 MUST NOT contain sheetPr
-        const srcSheetPr = srcChildren.find(c => c.name === 'sheetPr');
-        if (srcSheetPr) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
+      let isObsXmlModified = false;
 
-        // 2. Observed sheetPr MUST be at index 0
-        const obsSheetPr = obsChildren[0];
-
-        // 3. Observed sheetPr MUST match exact pinned structure/fingerprint: "<sheetPr/>"
-        if (obsSheetPr.fullTag.trim() !== '<sheetPr/>') {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        // 4. Perform Option B internal normalization on working copy
-        let removeStart = obsSheetPr.startIndex;
-        let removeEnd = obsSheetPr.endIndex;
-
-        // Include trailing whitespace/newline if present
-        while (removeEnd < obsXml.length && (obsXml[removeEnd] === ' ' || obsXml[removeEnd] === '\t' || obsXml[removeEnd] === '\r' || obsXml[removeEnd] === '\n')) {
-          removeEnd++;
-        }
-
-        obsXml = obsXml.slice(0, removeStart) + obsXml.slice(removeEnd);
-
-        // Re-parse obsChildren from normalized obsXml working copy
-        const normalizedObsChildren = parseTopLevelChildren(obsXml);
-        if (!normalizedObsChildren || !validateSchemaOrder(normalizedObsChildren)) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        obsChildren = normalizedObsChildren;
+      // Option B allowed drift check & normalization
+      const optBResult = matchAndNormalizeOptionBSheetPr(obsXml, srcChildren, obsChildren, srcSheet.rel.rawTarget, partKey);
+      if (optBResult.normalized) {
+        obsXml = optBResult.obsXml;
+        obsChildren = optBResult.obsChildren;
+        isObsXmlModified = true;
       }
 
       const srcDimChildren = srcChildren.filter(c => c.name === 'dimension');
@@ -1558,11 +1628,16 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
         obsXml = obsXml.slice(0, insertionIndex) + '\n  ' + srcDimTag + obsXml.slice(insertionIndex);
 
         // Verify that resulting obsXml has exact top-level child sequence match with srcXml
-        const checkChildren = parseTopLevelChildren(obsXml);
+        const checkChildren = parseWorksheetTopLevelChildren(obsXml);
         if (!checkChildren || checkChildren.map(c => c.name).join(',') !== srcChildren.map(c => c.name).join(',')) {
           throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
         }
 
+        isObsXmlModified = true;
+      }
+
+      // PERSIST TO ZIP WORK-COPY IF MODIFIED (Option B normalized OR dimension restored!)
+      if (isObsXmlModified) {
         wbPreserved._zip.file(obsSheet.rel.zipPath, obsXml);
       }
     }
