@@ -1,41 +1,15 @@
 # D2 REVIEW FAST-START — MBO2026
 
-> Purpose: single high-signal entry point for continuing/reviewing D2 without re-reading the whole repository.  
-> Updated: 2026-09-02 ICT  
-> Repository: `rebootob/MBO2026`  
-> Canonical branch: `ai/antigravity-wp002c`
+Updated: 2026-09-02 ICT  
+Repository: `rebootob/MBO2026`  
+Branch: `ai/antigravity-wp002c`
 
-## 0. Fast use
+## Fast path
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> authorization→implementation diff -> changed files only.
 
-Fresh-fetch current branch HEAD first.
-
-Normal D2 continuation/review order:
-1. this file;
-2. `project-docs/AI_ACTIVE_TASK.md`;
-3. only the directly relevant `CONFIRMED_BASELINE/` file;
-4. exact authorization→implementation diff;
-5. exact changed source/test files only as needed.
-
-Do not re-read closed-gate internals unless current changes touch them or concrete regression evidence exists.
-
-## 1. Owner objective / controls
-
+## Project truth
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
-COMPLETE_D2_FULLY_BEFORE_D3 = YES
-NO_FALSE_PASS = YES
-EXECUTOR_CANNOT_SELF_CERTIFY = YES
-ANTIGRAVITY_MINIMUM_NECESSARY_ONLY = YES
-ANTIGRAVITY_AUTO_AUTH = NO
-CLAUDE_AUTO_REVIEW = NO
-NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
-```
-
-Previous standing review window remains exhausted / DO NOT REUSE. R7-R1 is a separate one-shot Owner authorization only.
-
-## 2. D1–D7 scoreboard
-
-```text
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D3 = HOLD UNTIL D2 PASS / CLOSED
@@ -45,64 +19,50 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-## 3. D2 closed/frozen gates
+## Closed/frozen D2 gates
+```text
+PRESERVATION = PASS / CLOSED
+REFERENCE_IMAGE = PASS / CLOSED
+PART_A_STRUCTURAL = PASS / CLOSED
+PART_B_STRUCTURAL = PASS / CLOSED
+FORMULA_AUTHORITY = PASS / CLOSED
+```
+Baselines: `D2_PART_A_STRUCTURAL_CLOSURE.md`, `D2_PART_B_STRUCTURAL_CLOSURE.md`, `D2_FORMULA_AUTHORITY_CLOSURE.md`.
+
+## Latest review — R7-R1
+Authorization commit: `273d5ccbbb24d6aaa1b5ae23bab2a0941977d591`  
+Implementation: `7c1be393bbddaf1f6b439d13229ad256c23517cf`
 
 ```text
-D2_PRESERVATION_GATE = PASS / CLOSED
-D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
-D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
+R7-R1_SCOPE = PASS
+R7-R1_ROW30_MAPPING = PASS / FROZEN
+R7-R1_DYNAMIC_COUNTS = PASS / FROZEN (432 / 474 / 516)
+R7-R1_STYLE_MERGE_SOURCE_BACKING = PASS / FROZEN
+R7-R1_EXPANDED_PACKAGE_TOKEN_PURGE = PASS / FROZEN
+R7-R1_SOURCE_BACKED_STATIC/DYNAMIC EVIDENCE = CORRECTIVE REQUIRED
+R7-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R7-R1_STATUS = CORRECTIVE REQUIRED
 D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Durable Baselines:
-- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+### Remaining proven defects
+1. `resolvePartBPrivacyRoles()` weakens protected-static authority with a special bypass for `B30/B34/B38`, allowing `valHash` / `normalizedType` drift instead of validating first and injecting proof data only after validation.
+2. Source-backed validation does not directly enforce `normalizedType` + `nonblank` identity for dynamic evidence; the exact corrective contract required those source-relative checks before accepting the structural role map.
+3. Negative proof does not directly mutate/prove fail-closed for dynamic normalizedType/nonblank and row30-clone role inconsistency.
 
-## 4. Active corrective — R7-R1
-
+## Proposed next corrective
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R1
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
-MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO FILES
-FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
-        tests/mbo-xlsx-ooxml-feasibility.test.js
-```
-
-R7 implementation `993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6` remains corrective. R7 token is consumed / do not reuse.
-
-R7-R1 closes ONLY:
-1. exact source-row role mapping: inserted rows map 27/28/29 as dynamic K:X and row30 clone as non-dynamic padding/static;
-2. exact dynamic-address cardinality N6=432 / N7=474 / N8=516;
-3. source-backed structural-role fail-closed validation for original, cloned, and shifted-summary rows;
-4. negative mismatch tests for style/merge/missing role/row30/unsupported count;
-5. expanded N=6/7/8 privacy-safe synthetic token purge across relevant `xl/*.xml`, `.rels`, and sharedStrings evidence;
-6. source/caller buffer immutability and formula inventory exactly zero.
-
-Frozen R7 portions and all prior D2 closed gates must not be redesigned or weakened. Production XLSX Renderer remains out of scope.
-
-## 5. Current safety state
-
-```text
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT / STOP AFTER PUSH+REPORT
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R2
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / EXACT SAME TWO FILES ONLY
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
 ```
 
-## 6. Remaining D2 after privacy closure
+R7-R2 must preserve all accepted R7-R1 work and correct only the remaining fail-closed proof. Full contract: `AI_ACTIVE_TASK.md`.
 
-1. Production XLSX renderer/sanitizer;
-2. Combined Excel parity;
-3. PDF parity;
-4. Export authorization/security/privacy regression;
-5. Final independent D2 closure;
-6. only then may D3 leave HOLD.
+Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel parity -> PDF parity -> export security/privacy regression -> final D2 closure -> then D3 may leave HOLD.
