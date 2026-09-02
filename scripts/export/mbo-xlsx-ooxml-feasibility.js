@@ -2411,6 +2411,7 @@ export async function getExpandedPresentationPartBBuffers() {
 
   for (let n = 6; n <= 8; n++) {
     const rawBuf = structural.buffers ? structural.buffers[n] : (n === 6 ? structural.bufB6 : (n === 7 ? structural.bufB7 : structural.bufB8));
+    const structuralFp = await getWorkbookFingerprint(rawBuf);
 
     // 1. Validate intermediate structural invariants BEFORE presentation overlay
     const inspIntermediate = await inspectRawWorksheetOOXML(rawBuf);
@@ -2461,9 +2462,14 @@ export async function getExpandedPresentationPartBBuffers() {
     }
 
     if (n === 7) {
+      // PRE-SANITIZE VALIDATION for N7: B31 (title target) must be mechanically blank/no-value from un-cloned B26:J27
+      const b31Str = getCellTextValue(sheetTemp.cell('B31'));
       const b32Str = getCellTextValue(sheetTemp.cell('B32'));
       const b33Str = getCellTextValue(sheetTemp.cell('B33'));
 
+      if (b31Str !== '') {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title target B31 must be blank before mutation');
+      }
       if (b32Str !== expectedStaleDesc) {
         throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32 did not match expected competency-6 clone');
       }
@@ -2471,11 +2477,17 @@ export async function getExpandedPresentationPartBBuffers() {
         throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Rating scale text in B33 corrupted');
       }
     } else if (n === 8) {
+      // PRE-SANITIZE VALIDATION for N8: B31 and B35 (title targets) must be mechanically blank/no-value from un-cloned B26:J27
+      const b31Str = getCellTextValue(sheetTemp.cell('B31'));
+      const b35Str = getCellTextValue(sheetTemp.cell('B35'));
       const b32Str = getCellTextValue(sheetTemp.cell('B32'));
       const b36Str = getCellTextValue(sheetTemp.cell('B36'));
       const b33Str = getCellTextValue(sheetTemp.cell('B33'));
       const b37Str = getCellTextValue(sheetTemp.cell('B37'));
 
+      if (b31Str !== '' || b35Str !== '') {
+        throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Pre-sanitize title targets B31/B35 must be blank before mutation');
+      }
       if (b32Str !== expectedStaleDesc || b36Str !== expectedStaleDesc) {
         throw new Error('BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Stale description in B32/B36 did not match expected competency-6 clone');
       }
@@ -2484,7 +2496,7 @@ export async function getExpandedPresentationPartBBuffers() {
       }
     }
 
-    // 3. Sanitize/blank presentation write targets & preserve static rating scale
+    // 3. Sanitize/blank presentation write targets & preserve static rating scale ONLY AFTER validation passes
     if (n === 7) {
       sheetTemp.cell('B31').value(null);
       sheetTemp.cell('B32').value(null);
@@ -2559,10 +2571,30 @@ export async function getExpandedPresentationPartBBuffers() {
       throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Effective privacy dynamic count mismatch for N=${n}`);
     }
 
+    // CORRECTIVE 3: Final Summary Topology Verification from Output
+    const summaryStartRowFromTopology = n === 6 ? 31 : (n === 7 ? 35 : 39);
+    if (expectedSummaryStartRow !== summaryStartRowFromTopology) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Summary start row mismatch for N=${n}`);
+    }
+
+    // CORRECTIVE 4: Final Package / Reference-Image Preservation Proof
+    const finalFp = await getWorkbookFingerprint(finalBuf);
+
+    if (JSON.stringify(finalFp.relTuples) !== JSON.stringify(structuralFp.relTuples)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Relationship tuples mutated for N=${n}`);
+    }
+    if (JSON.stringify(finalFp.mediaFiles) !== JSON.stringify(structuralFp.mediaFiles)) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Media files mutated for N=${n}`);
+    }
+    if (JSON.stringify(finalFp.sheets['Sheet1']) !== JSON.stringify(structuralFp.sheets['Sheet1'])) {
+      throw new Error(`BLOCKER_PART_B_PRESENTATION_OVERLAY_UNRESOLVED: Auxiliary Sheet1 mutated for N=${n}`);
+    }
+
     effectiveMetrics[n] = {
       mergeCount: inspFinal.rawMerges.length,
       dimension: inspFinal.dimension,
       printArea: inspFinal.printArea,
+      summaryStartRow: summaryStartRowFromTopology,
       effectiveDynamicCount: effectivePrivacy.dynamicAddresses.length
     };
 
