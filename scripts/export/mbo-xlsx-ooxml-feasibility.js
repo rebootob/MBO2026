@@ -92,14 +92,16 @@ export const PART_B_SENSITIVE_RANGES = [
 export const SENSITIVE_RANGES_A = [...new Set(PART_A_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
 export const SENSITIVE_RANGES_B = [...new Set(PART_B_SENSITIVE_RANGES.flatMap(expandRangeToAddresses))];
 
-export async function buildPartBSourceEvidenceInventory() {
+export async function buildPartBSourceEvidenceInventory(bufOverride = null, expectedMaxRow = 34) {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  const bufB = fs.readFileSync(found.partB);
-  const shaB = crypto.createHash('sha256').update(bufB).digest('hex');
-  if (shaB !== EXPECTED_PART_B_SHA) {
-    throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+  const bufB = bufOverride || fs.readFileSync(found.partB);
+  if (!bufOverride) {
+    const shaB = crypto.createHash('sha256').update(bufB).digest('hex');
+    if (shaB !== EXPECTED_PART_B_SHA) {
+      throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+    }
   }
 
   const wb = await XlsxPopulate.fromDataAsync(bufB);
@@ -125,7 +127,7 @@ export async function buildPartBSourceEvidenceInventory() {
   }
 
   const inventory = {};
-  for (let r = 2; r <= 34; r++) {
+  for (let r = 2; r <= expectedMaxRow; r++) {
     for (let c = 2; c <= 24; c++) {
       const addr = `${idxToCol(c)}${r}`;
       const val = sheet.cell(addr).value();
@@ -170,17 +172,42 @@ export async function buildPartBSourceEvidenceInventory() {
   return inventory;
 }
 
-export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
+export async function resolvePartBPrivacyRoles(inventoryOverride = null, competencyCount = 6, bufOverride = null) {
+  const n = competencyCount || 6;
+  if (![6, 7, 8].includes(n)) {
+    throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+  }
+
+  const extraBlocks = n - 6;
+  const extraRows = 4 * extraBlocks;
+  const compRatingEnd = 29 + extraRows;
+  const summaryStart = 31 + extraRows;
+  const summaryEnd = 34 + extraRows;
+  const maxRow = 34 + extraRows;
+
+  let observedInventory;
+  if (inventoryOverride) {
+    observedInventory = inventoryOverride;
+  } else if (bufOverride || n !== 6) {
+    let bufToUse = bufOverride;
+    if (!bufToUse) {
+      const buffersObj = await getStructuralPartBBuffers();
+      bufToUse = buffersObj.buffers ? buffersObj.buffers[n] : (n === 6 ? buffersObj.bufB6 : (n === 7 ? buffersObj.bufB7 : buffersObj.bufB8));
+    }
+    observedInventory = await buildPartBSourceEvidenceInventory(bufToUse, maxRow);
+  } else {
+    observedInventory = await buildPartBSourceEvidenceInventory();
+  }
+
   const authSourceInventory = await buildPartBSourceEvidenceInventory();
-  const observedInventory = inventoryOverride || authSourceInventory;
 
   const classificationMap = {};
   const dynamicAddresses = [];
   const protectedStaticAddresses = [];
 
-  for (let r = 2; r <= 34; r++) {
-    const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
+  const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
 
+  for (let r = 2; r <= maxRow; r++) {
     for (const cStr of cols) {
       const addr = `${cStr}${r}`;
       const authEv = authSourceInventory[addr];
@@ -194,7 +221,7 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
-      if (authEv) {
+      if (authEv && r <= 30 && n === 6) {
         if (ev.styleId !== authEv.styleId || ev.mergeRef !== authEv.mergeRef) {
           throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
         }
@@ -284,7 +311,7 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
           roleJustification = 'Static header padding cell';
           isDynamic = false;
         }
-      } else if (r >= 7 && r <= 29) {
+      } else if (r >= 7 && r <= compRatingEnd) {
         if (['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr)) {
           classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
           roleJustification = 'Static competency name, description, or rating guidance text';
@@ -298,7 +325,11 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
           roleJustification = 'Dynamic chief-evaluation rating input field';
           isDynamic = true;
         }
-      } else if (r >= 31 && r <= 34) {
+      } else if (r === 30 + extraRows) {
+        classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
+        roleJustification = 'Static competency block padding row';
+        isDynamic = false;
+      } else if (r >= summaryStart && r <= summaryEnd) {
         if (['B', 'C', 'D'].includes(cStr)) {
           classification = 'SUMMARY_SIGNATURE_VALUE';
           roleJustification = 'Dynamic overall rating summary field';
@@ -326,7 +357,7 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
         continue;
       }
 
-      if (!isDynamic && authEv && authEv.valHash) {
+      if (!isDynamic && authEv && authEv.valHash && r <= 30 && n === 6) {
         if (ev.valHash !== authEv.valHash) {
           throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
         }
@@ -355,10 +386,12 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null) {
   }
 
   const sortedDynamic = [...dynamicAddresses].sort();
-  const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
 
-  if (JSON.stringify(sortedDynamic) !== JSON.stringify(sortedSensitive)) {
-    throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+  if (n === 6) {
+    const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
+    if (JSON.stringify(sortedDynamic) !== JSON.stringify(sortedSensitive)) {
+      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+    }
   }
 
   return {
@@ -409,14 +442,31 @@ export function getPartBPrivacyClassification() {
   return map;
 }
 
-export async function getTypedPrivacyMetadata(partKey) {
+export async function getTypedPrivacyMetadata(partKey, bufOverride = null, competencyCount = 6) {
   const found = findLocalSourceTemplates();
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
-  const file = partKey === 'A' ? found.partA : found.partB;
-  const targetAddrs = partKey === 'A' ? SENSITIVE_RANGES_A : SENSITIVE_RANGES_B;
+  let targetAddrs;
+  let buf;
 
-  const wb = await XlsxPopulate.fromDataAsync(fs.readFileSync(file));
+  if (partKey === 'A') {
+    targetAddrs = SENSITIVE_RANGES_A;
+    buf = bufOverride || fs.readFileSync(found.partA);
+  } else {
+    const n = competencyCount || 6;
+    if (bufOverride) {
+      buf = bufOverride;
+    } else if (n !== 6) {
+      const buffersObj = await getStructuralPartBBuffers();
+      buf = buffersObj.buffers ? buffersObj.buffers[n] : (n === 6 ? buffersObj.bufB6 : (n === 7 ? buffersObj.bufB7 : buffersObj.bufB8));
+    } else {
+      buf = fs.readFileSync(found.partB);
+    }
+    const resolvedRoles = await resolvePartBPrivacyRoles(null, n, buf);
+    targetAddrs = resolvedRoles.dynamicAddresses;
+  }
+
+  const wb = await XlsxPopulate.fromDataAsync(buf);
   const sheet = wb.sheet(0);
 
   const metadata = [];

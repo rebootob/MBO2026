@@ -1160,6 +1160,75 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(dynamicSet.has(staticAddr), false, `Protected static address ${staticAddr} must NOT be in dynamic set`);
   }
 
+  // --- PART B EXPANDED PRIVACY REMAP MATRIX (6, 7, 8 COMPETENCIES) ---
+  const partBBuffers = await getStructuralPartBBuffers();
+
+  for (const n of [6, 7, 8]) {
+    const bufN = partBBuffers.buffers ? partBBuffers.buffers[n] : (n === 6 ? partBBuffers.bufB6 : (n === 7 ? partBBuffers.bufB7 : partBBuffers.bufB8));
+    const resolvedN = await resolvePartBPrivacyRoles(null, n, bufN);
+    const classMapN = resolvedN.classificationMap;
+
+    const extraBlocks = n - 6;
+    const extraRows = 4 * extraBlocks;
+    const summaryStart = 31 + extraRows;
+    const expectedDynamicCount = 432 + (14 * 4 * extraBlocks);
+
+    assert.equal(resolvedN.dynamicAddresses.length, expectedDynamicCount, `Dynamic address count for ${n} competencies must be ${expectedDynamicCount}`);
+    assert.equal(new Set(resolvedN.dynamicAddresses).size, resolvedN.dynamicAddresses.length, `Dynamic addresses for ${n} competencies must be 100% unique`);
+
+    // Verify static competency text protection in cloned blocks
+    if (n >= 7) {
+      assert.equal(classMapN['B31'].classification, 'PROTECTED_STATIC_COMPETENCY_TEXT', `B31 in ${n} competencies must be static competency text`);
+      assert.equal(classMapN['B31'].isDynamic, false, `B31 in ${n} competencies must NOT be dynamic`);
+      assert.equal(classMapN['K31'].classification, 'COMPETENCY_RATING_VALUE', `K31 in ${n} competencies must be dynamic rating value`);
+      assert.equal(classMapN['K31'].isDynamic, true, `K31 in ${n} competencies must be dynamic`);
+    }
+
+    if (n === 8) {
+      assert.equal(classMapN['B35'].classification, 'PROTECTED_STATIC_COMPETENCY_TEXT', `B35 in 8 competencies must be static competency text`);
+      assert.equal(classMapN['B35'].isDynamic, false, `B35 in 8 competencies must NOT be dynamic`);
+      assert.equal(classMapN['K35'].classification, 'COMPETENCY_RATING_VALUE', `K35 in 8 competencies must be dynamic rating value`);
+      assert.equal(classMapN['K35'].isDynamic, true, `K35 in 8 competencies must be dynamic`);
+    }
+
+    // Verify relocated summary/signature classification
+    const summaryAddr = `B${summaryStart}`;
+    assert.equal(classMapN[summaryAddr].classification, 'SUMMARY_SIGNATURE_VALUE', `Cell ${summaryAddr} in ${n} competencies must be classified SUMMARY_SIGNATURE_VALUE`);
+    assert.equal(classMapN[summaryAddr].isDynamic, true, `Cell ${summaryAddr} in ${n} competencies must be dynamic`);
+
+    // Verify typed privacy metadata for N
+    const metaN = await getTypedPrivacyMetadata('B', bufN, n);
+    assert.equal(validateTypedPrivacyMetadata(metaN, resolvedN.dynamicAddresses), true, `Part B typed privacy metadata for ${n} competencies must be valid`);
+
+    // Verify count-aware sanitization on bufN
+    const wbN = await XlsxPopulate.fromDataAsync(bufN);
+    const sheetN = wbN.sheet(0);
+    for (const addr of resolvedN.dynamicAddresses) {
+      sheetN.cell(addr).value(null);
+    }
+    const sanitizedBufN = await wbN.outputAsync();
+    const sanitizedWbN = await XlsxPopulate.fromDataAsync(sanitizedBufN);
+    const sanitizedSheetN = sanitizedWbN.sheet(0);
+
+    for (const addr of resolvedN.dynamicAddresses) {
+      const val = sanitizedSheetN.cell(addr).value();
+      assert.equal(val === null || val === undefined, true, `Cell ${addr} in ${n} competencies must be blank after sanitization`);
+    }
+
+    if (n >= 7) {
+      assert.equal(resolvedN.dynamicAddresses.includes('B31'), false, `B31 in ${n} competencies must NOT be in dynamic clear set`);
+      assert.equal(resolvedN.protectedStaticAddresses.includes('B31'), true, `B31 in ${n} competencies MUST be in protected static set`);
+    }
+
+    if (n === 8) {
+      assert.equal(resolvedN.dynamicAddresses.includes('B35'), false, `B35 in 8 competencies must NOT be in dynamic clear set`);
+      assert.equal(resolvedN.protectedStaticAddresses.includes('B35'), true, `B35 in 8 competencies MUST be in protected static set`);
+    }
+
+    const formulaSetN = await getWorksheetFormulaSet(sanitizedBufN);
+    assert.equal(formulaSetN.size, 0, `Formula inventory for ${n} competencies sanitized output must equal 0`);
+  }
+
   for (const partKey of ['A', 'B']) {
     const expectedAddrs = partKey === 'A' ? SENSITIVE_RANGES_A : SENSITIVE_RANGES_B;
     const metaResult = await getTypedPrivacyMetadata(partKey);
