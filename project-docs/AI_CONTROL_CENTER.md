@@ -13,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — Template Profile PASS/CLOSED; Renderer design next |
+| D2 | IN PROGRESS — R2 renderer design complete; PRE1 evidence proposed |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -30,12 +30,11 @@ UNRESOLVED = 22
 NO_SECURED_PROJECTION_SOURCE = 5
 CHIEF_FROZEN_AUTHORITY = R:X
 
-R1_R3_R2_IMPLEMENTATION = b59815aa5e5bad09ad252a10cdd1914185170fc0
-R1_R3_R2_SCOPE = PASS
-R1_R3_R2_CANONICAL_INTEGRITY = PASS
-R1_R3_R2_STATUS = PASS / CLOSED
-R1_R3_R2_TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
-R1_R3_R2_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R2_DESIGN = project-docs/phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md
+R2_READ_ONLY_DESIGN = COMPLETE
+R2_IMPLEMENTATION = NOT AUTHORIZED
+R2_PRE_RENDER_BLOCKER = PART B N7/N8 COMPETENCY PRESENTATION AUTHORITY UNPROVEN
+PROPOSED_NEXT = D2-WP004-R2-PRE1 EVIDENCE-ONLY / NOT AUTHORIZED / LOW-CREDIT
 
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -49,6 +48,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Next proposed gate: `D2-WP004-R2 — PRODUCTION XLSX RENDERER + SANITIZER`.
-
-Low-credit rule: ChatGPT performs READ-ONLY repository design first and defines exact renderer/source/test scope before any Antigravity authorization. Renderer must consume the closed centralized profile, preserve secured projection/privacy/structural authority, create zero score formulas and fail closed on unknown template/mapping.
+R2-PRE1, if authorized, is evidence-only and must inspect only the exact owner Part B template plus directly relevant secured projection/source evidence to prove or reject deterministic competency presentation mappings. No renderer/source/profile/test changes are authorized from the design alone.
