@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — D2-WP004-R2-PRE1 EVIDENCE-ONLY AUTHORIZED
+# AI ACTIVE TASK — D2-WP004-R2-PRE1 NEEDS CORRECTIVE
 
-Mode: **CONTROL PLANE / ANTIGRAVITY BOUNDED ONE-SHOT / EVIDENCE-ONLY / NO SOURCE AUTH / NO TEST AUTH / NO PROFILE AUTH / NO RENDERER AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO SOURCE AUTH / NO TEST AUTH / NO PROFILE AUTH / NO RENDERER AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only exact PRE1 inputs listed below.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> exact PRE1 evidence -> only directly relevant frozen structural source/test when needed for review.
 
 ## 1. Current truth
 ```text
@@ -21,73 +21,85 @@ D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 R2_READ_ONLY_DESIGN = COMPLETE
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-PRE1
+D2_WP004_R2_PRE1 = NEEDS CORRECTIVE / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R2-PRE1-EVIDENCE-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = AUTHORIZED / BOUNDED EVIDENCE-ONLY / ONE COMMIT -> PUSH -> STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Owner authorization phrase:
-`อนุมัติ D2-WP004-R2-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
-
-## 2. R2 frozen design authority
-Design document:
-`project-docs/phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
-
-Frozen semantic/profile authority remains:
+## 2. PRE1 authorization / implementation review
 ```text
-SAFE_TO_MAP = 18 EXACT
-UNRESOLVED_KEEP_UNRESOLVED = 22 EXACT
-NO_SECURED_PROJECTION_SOURCE_DO_NOT_MAP = 5 EXACT
-CHIEF_FROZEN_AUTHORITY = R:X / STRUCTURAL-PRIVACY ONLY
-CHIEF_SECURED_WRITABLE_ROLE = 0
-```
-
-Production renderer remains blocked until PRE1 is independently reviewed and any required follow-up semantic/projection/profile authority is separately authorized.
-
-## 3. Why PRE1 exists
-The exact owner Part B template is N=6. Closed structural expansion for N7/N8 clones source rows 27:30.
-
-Current closed Template Profile proves only:
-```text
-COMPETENCY_b_SELF_RATING -> partB.competencyItems[b-1].selfRating
-```
-
-Current competency evidence proves management competency sets include actual additional competency items 7/8 rather than another copy of competency 6.
-
-Repository evidence does not yet prove:
-1. exact workbook target ownership for visible per-competency presentation content in the cloned block; and
-2. one deterministic secured projection path/source-selection rule for candidate presentation aliases.
-
-`MboExportService.projectCombinedExport()` currently preserves candidate keys such as:
-```text
-id / competencyId / code
-name / title / competencyName
-description
-weight / weightPercent
-category / group
-```
-without a renderer-side canonical alias-precedence authority.
-
-No guessing is allowed.
-
-## 4. AUTHORIZED WORK PACKAGE — D2-WP004-R2-PRE1
-```text
-WORK_PACKAGE = D2-WP004-R2-PRE1
-NAME = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
 AUTHORIZATION = D2-WP004-R2-PRE1-EVIDENCE-20260902-01
-STATE = AUTHORIZED / ACTIVE
-MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / BOUNDED / ONE-SHOT / LOW-CREDIT
-EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
+AUTHORIZATION_COMMIT = 87c31ac7122137f2bbc2fb71f289c7155d76a1e3
+EVIDENCE_COMMIT = 653d8668950aaf45f291b6452a3c5b2de334a885
+AUTH_TO_EVIDENCE = EXACTLY ONE COMMIT
+CHANGED_FILE = project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md ONLY
+SCOPE_REVIEW = PASS
+EXECUTOR_SELF_CERTIFICATION = NONE
+TOKEN = CONSUMED / DO NOT REUSE
+```
+
+Evidence scope is clean, but independent content review found a material structural inconsistency, so PRE1 cannot close yet.
+
+## 3. Material review finding — cloned title geometry is unproven / evidence statement incorrect
+PRE1 evidence records the owner N=6 competency-6 title merge as:
+```text
+B26:J27
+```
+
+The frozen Part B structural implementation/test authority clones source-block merge ranges only when the entire merge is inside rows 27:30:
+```text
+r1 >= 27 && r2 <= 30
+```
+
+Therefore `B26:J27` does NOT qualify for cloned-merge creation.
+
+The evidence statement:
+```text
+Row 31 (cloned row 27): Bottom half of title merge B30:J31
+```
+is not supported by the frozen structural algorithm and must not be used as authority.
+
+This matters because PRE1 exists specifically to prove exact visible presentation ownership for N7/N8. Until the actual post-expansion title geometry is mechanically established, `COMPETENCY_b_TITLE` target ownership for competency 7/8 is unresolved independently of the projection-alias problem.
+
+Fail-closed consequence:
+```text
+N7_TITLE_GEOMETRY = UNRESOLVED
+N8_TITLE_GEOMETRY = UNRESOLVED
+N7_PRESENTATION_TRUTHFULNESS = BLOCKED
+N8_PRESENTATION_TRUTHFULNESS = BLOCKED
+PRODUCTION_RENDERER = NOT AUTHORIZED
+```
+
+## 4. Secondary evidence-quality corrections required
+The corrective evidence must also repair the candidate ledger:
+
+1. `COMPETENCY_b_SELF_RATING` is an already-frozen writable semantic, not a new presentation candidate. It may be recorded as an existing-safe collision check, but must not inflate the mechanical presentation-candidate count.
+2. Every genuinely cloned presentation element must receive one explicit decision required by the PRE1 contract:
+   - `CLONE_AS_STATIC_VALID`; or
+   - `MUST_REWRITE_FROM_SECURED_PROJECTION`; or
+   - `UNRESOLVED / BLOCKED`.
+3. The cloned `Rating Scale` presentation must be explicitly classified rather than only mentioned incidentally.
+4. Weight/category/group concepts must not be counted as workbook presentation candidates when the workbook inspection proves no visible target exists; they may be recorded separately as `NO_WORKBOOK_TARGET / NOT_A_PRESENTATION_TARGET`.
+5. Do not infer or invent title merge geometry for N7/N8. Record exact observed/generated geometry only from the already-accepted structural path or fail closed.
+
+## 5. Proposed smallest corrective — NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE1-R1
+NAME = PART B EXPANDED COMPETENCY PRESENTATION EVIDENCE CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / LOW-CREDIT
+EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md ONLY
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
 PROFILE_CHANGE = FORBIDDEN
@@ -100,132 +112,50 @@ DEPLOY = FORBIDDEN
 D3 = HOLD
 ```
 
-## 5. Exact allowed READ-ONLY inputs
-Antigravity may inspect ONLY:
-1. exact owner Part B template with SHA256 `c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3`;
+Recommended Owner phrase:
+`อนุมัติ D2-WP004-R2-PRE1-R1 EVIDENCE-CORRECTIVE ตามขอบเขตที่เสนอ`
+
+## 6. Exact proposed R1 corrective contract
+If later authorized, Antigravity may edit ONLY the existing PRE1 evidence file.
+
+Allowed READ-ONLY inputs are limited to:
+1. exact owner Part B template SHA256 `c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3`;
 2. `project-docs/CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`;
 3. `project-docs/CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`;
 4. `project-docs/CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`;
-5. `project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md` only for current competency-set meaning/count/source context;
-6. `src/services/mbo-export-service.js` only for secured projection availability;
-7. `src/profiles/mbo-xlsx-template-profile.js` only to avoid colliding with already-frozen roles.
+5. `project-docs/phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md`;
+6. `src/services/mbo-export-service.js`;
+7. `src/profiles/mbo-xlsx-template-profile.js`;
+8. `scripts/export/mbo-xlsx-ooxml-feasibility.js` and `tests/mbo-xlsx-ooxml-feasibility.test.js` ONLY for the exact already-frozen Part B block/merge transformation needed to correct N7/N8 presentation geometry. No unrelated feasibility review.
 
-No broad repository scan. Do not inspect unrelated apps/source/docs.
+Corrective outputs must:
+- mechanically reconcile owner N6 title/description/rating-label geometry with actual N7/N8 structural output;
+- explicitly state whether a competency 7/8 title merge exists after the frozen transform and its exact range if it does;
+- remove unsupported `B30:J31` / equivalent inferred geometry unless mechanically proven;
+- separate existing-safe rating semantics from new presentation candidates;
+- enumerate only genuinely visible workbook presentation targets in `PRESENTATION_CANDIDATE_COUNT`;
+- classify every cloned presentation field as static-valid, must-rewrite, or unresolved;
+- preserve 18/22/5 authority and Chief R:X privacy authority;
+- keep N7/N8 blocked unless both exact workbook target and deterministic secured source are proven;
+- remain `EVIDENCE CANDIDATE / AWAITING INDEPENDENT REVIEW`;
+- never self-declare PASS/CLOSED.
 
-## 6. Exact PRE1 evidence contract
+Exactly one corrective evidence commit -> push -> report -> STOP.
 
-### A. Workbook presentation inventory
-Inspect the main Part B sheet only and record static/structural presentation ownership for competency blocks 1..6, with special focus on source block rows 27:30 that is cloned for N7/N8.
-
-For each genuinely visible per-competency candidate presentation element found in the workbook, record only non-personal/static evidence:
-- workbook text/label meaning where non-personal/static;
-- exact cell/range;
-- exact merge relationship;
-- source row role;
-- whether cloned block 7/8 would inherit stale competency-6 presentation if not rewritten.
-
-Candidate concepts may include name/title, description/criteria, weight/percentage, ordinal/number or other genuinely per-competency presentation content found in the workbook. Do not invent categories that are not present.
-
-### B. Secured projection compatibility
-For each candidate presentation concept, compare only to secured `MboExportService` projection availability.
-
-A candidate may become `PROVEN / SAFE_CANDIDATE` only if BOTH are proven:
-1. deterministic workbook target ownership; and
-2. deterministic secured projection path or an already-authoritative source-selection rule.
-
-If the service exposes multiple aliases without an accepted deterministic source-selection rule, record:
-`UNRESOLVED / CANONICAL_PROJECTION_PATH_NOT_PROVEN`
-
-Do not select alias precedence by intuition.
-
-### C. N7/N8 truthfulness decision
-Explicitly state for each cloned presentation field whether:
-- clone-as-static is valid for all competency sets; OR
-- competency 7/8 must be rewritten from secured projection; OR
-- authority remains unresolved and Production Renderer stays blocked for N7/N8 presentation.
-
-Do not use old legacy-analysis names to override newer secured/source evidence or exact owner-template evidence.
-
-### D. Privacy/integrity constraints
-- zero personal employee values copied into evidence;
-- zero workbook mutation/save;
-- no Chief writable rating mapping;
-- no change to accepted 18/22/5 authority during executor work;
-- no formula/scoring inference;
-- protected row30/34/38 remains non-dynamic;
-- no overlap/duplicate target with existing safe semantic ownership.
-
-### E. Required evidence outputs
-Evidence must include:
+## 7. Authorization ledger / next action
 ```text
-OWNER_PART_B_SHA = EXACT MATCH / BLOCKER
-PRESENTATION_CANDIDATE_COUNT = <mechanical count>
-PROVEN_SAFE_CANDIDATES = <count + roles>
-UNRESOLVED_CANDIDATES = <count + roles/reasons>
-DUPLICATE_EXISTING_SAFE_TARGETS = 0
-N7_PRESENTATION_TRUTHFULNESS = PROVEN / BLOCKED
-N8_PRESENTATION_TRUTHFULNESS = PROVEN / BLOCKED
-SOURCE_TEST_PROFILE_RENDERER_CHANGE = 0
-```
-
-Evidence status must be neutral:
-`EVIDENCE CANDIDATE / AWAITING INDEPENDENT REVIEW`
-
-Antigravity must NOT self-declare Baseline/PASS/CLOSED.
-
-## 7. Executor restrictions
-Antigravity must NOT modify:
-- source;
-- tests;
-- Template Profile;
-- feasibility source/tests;
-- Baselines;
-- this control file or other control docs;
-- package/package-lock;
-- dist;
-- owner XLSX;
-- Kintone;
-- deployment;
-- D3.
-
-Exactly one evidence file may be created/edited.
-
-Execution protocol:
-```text
-fresh-fetch authorized HEAD
--> read exact allowed inputs only
--> inspect owner Part B template READ-ONLY
--> create evidence file only
--> verify git diff contains exactly one allowed file
--> commit once
--> push canonical branch
--> report commit SHA + changed file + concise findings
--> STOP
-```
-
-If exact target + exact deterministic secured source cannot both be proven, fail closed and record the blocker. Do not spend credits exploring unrelated repository areas.
-
-## 8. Low-credit rule
-- ChatGPT performs repository discovery/design/review.
-- Antigravity performs only this exact local owner-template inspection/evidence write.
-- No broad scan.
-- No architecture redesign by executor.
-- No implementation speculation.
-- Claude remains STOP.
-
-## 9. Authorization ledger / next action
-```text
-D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP004-R2 = READ-ONLY DESIGN COMPLETE / IMPLEMENTATION NOT AUTHORIZED
-D2-WP004-R2-PRE1-EVIDENCE-20260902-01 = ACTIVE / ONE-SHOT / CONSUME ON ONE EVIDENCE COMMIT
+D2-WP004-R2-PRE1-EVIDENCE-20260902-01 = CONSUMED / NEEDS CORRECTIVE / DO NOT REUSE
+D2-WP004-R2-PRE1-R1 = PROPOSED / NOT AUTHORIZED
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE PRE1 EVIDENCE CONTRACT EXACTLY, PUSH, STOP
+NEXT_EXECUTOR = OWNER / CHATGPT CONTROL PLANE
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE PRE1-R1 EVIDENCE-CORRECTIVE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
