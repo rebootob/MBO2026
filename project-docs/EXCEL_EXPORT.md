@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A STRUCTURAL CLOSED / PART B R5 AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A CLOSED / PART B R5 CORRECTIVE REQUIRED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -24,51 +24,52 @@ D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 ```
 
-Original employee-bearing binaries remain ignored/not publishable.
-
-## 3. R5 authorization
+## 3. R5 review
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R5
-ACTIVE_WORK_PACKAGE_NAME = PART B COMPETENCY INSERTION STRUCTURAL MATRIX CLOSURE
-OWNER_APPROVAL_BASELINE_HEAD = 519312ca84b99091a3e863815a398688111dcb39
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R5-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R5-SOURCE-TEST-20260902-01
-AUTHORIZED_SCOPE = SOURCE+TEST / EXACT TWO FEASIBILITY FILES ONLY
+R5_AUTHORIZATION_COMMIT = f1f0b627f4b612120a27a3467bb6e8713a1f526a
+R5_IMPLEMENTATION_COMMIT = 068e719a7b6c0fee66613619a7aa7ed359960cb5
+R5_SCOPE_REVIEW = PASS
+R5_MATRIX_SOURCE_BEHAVIOR = PASS / FROZEN EXCEPT FAIL-CLOSED BASELINE GUARD
+R5_MATRIX_PROOF = PASS EXCEPT DEFINED-NAME CONTROL
+R5_STATUS = CORRECTIVE REQUIRED
+D2_PART_B_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Writable only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Accepted matrix behavior/proof:
+- real 6/7/8 variants from the same helper;
+- 6 => A1:X35 / 79 merges / main print X35;
+- 7 => A1:X39 / 85 merges / main print X39;
+- 8 => A1:X43 / 91 merges / main print X43;
+- exact rowRefs/uniqueness, block clone/downstream relocation, sentinel relocation and full merge-set equality;
+- main Part B page authority A4 (`paperSize=9`) / portrait / scale 75 / horizontal centered / protected;
+- exact `Sheet1` fingerprint stability, relationship/media equality and workbook-wide zero formulas.
 
-R5 must use the existing raw-OOXML 4-row competency-block algorithm and support real variants 6, 7 and 8.
+Remaining R5 blockers:
+1. source must prove raw owner-template baseline facts before working-copy mutation: exact main dimension A1:X35, actual+declared merges 79, source-block merges exactly 6, exactly one main `_xlnm.Print_Area` bound to localSheetId 0 with exact source value, and required structures present;
+2. test must explicitly prove defined-name control: all non-print-area defined names unchanged, exactly one expected main Print_Area/localSheetId0 for each 6/7/8 variant, and `Sheet1` print area empty.
 
-For `N in {6,7,8}`:
+After raw-source authority is proven, deterministic output emission/re-emission of the count-dependent dimension/print area on the working copy remains allowed bounded structural construction; do not generalize into repair logic.
+
+## 4. Proposed R5-R1 — NOT AUTHORIZED
+
 ```text
-extraBlocks = N - 6
-extraRows = 4 * extraBlocks
-expectedLastRow = 35 + extraRows
-expectedMergeCount = 79 + 6 * extraBlocks
+PROPOSED_WORK_PACKAGE = D2-WP003-R5-R1
+PROPOSED_SCOPE = SOURCE+TEST / EXACT SAME TWO FEASIBILITY FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP
 ```
 
-Exact matrix:
-- 6 => dimension `A1:X35`, print area `'(Part B) Competency'!$A$1:$X$35`, merges 79
-- 7 => dimension `A1:X39`, print area `'(Part B) Competency'!$A$1:$X$39`, merges 85
-- 8 => dimension `A1:X43`, print area `'(Part B) Competency'!$A$1:$X$43`, merges 91
+R5-R1 must retain every accepted R5 matrix assertion and only close the two blockers above.
 
-Proof must include exact rowRefs/uniqueness, block clones from rows 27:30, downstream shift from row 31, sentinel relocation, full merge inventory, main non-target setup invariants, exact `Sheet1` stability, defined-name control, relationships/media and workbook-wide zero formulas.
+## 5. Privacy boundary
 
-Absolute Part B main page authority remains A4 (`paperSize=9`) / portrait / scale 75 / horizontal centered / protected.
+Current accepted privacy mapping remains authority for the source 6-block layout. R5-R1 must not modify privacy/sanitization. Expanded 7/8 competency rows and shifted summary/signature rows require explicit address-role remapping before production renderer/security closure.
 
-## 4. Privacy boundary
-
-Current accepted privacy mapping remains authority for the source 6-block layout. R5 must not modify privacy/sanitization code or evidence. Expanded 7/8 competency rows and shifted summary/signature rows require explicit address-role remapping before production renderer/security closure.
-
-## 5. Out of scope
-
-No Part A, preservation/Option B, reference-image, privacy/sanitization, dependency, renderer, combined Excel, PDF, evidence, Kintone, deploy, D3 or next-WP work is authorized.
-
-## 6. Remaining D2 path after R5
+## 6. Remaining D2 path after Part B closure
 
 1. formula/no-formula authority;
 2. production sanitizer/XLSX renderer + expanded Part B privacy remap;
