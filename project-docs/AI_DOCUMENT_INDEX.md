@@ -22,6 +22,8 @@ PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
 PRE2_R1_R1 = PASS / CLOSED
 PRE2_R2 = PASS / CLOSED
 PRE2_R3 = PASS / CLOSED AFTER R1-R4 CORRECTIVE CHAIN
+R2_A = PASS / CLOSED AFTER R1
+R2_A_R1 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -53,7 +55,16 @@ PRE2_R3_R1 = 4e66cca1d2a41b4d40cf8b1b41587b47abbb590f / CORRECTED
 PRE2_R3_R2 = 298f480ad3f2257327dbea82c3bc3bcd41054b60 / CORRECTED
 PRE2_R3_R3 = 1542ac8ebef1f22505ba0d240c9e064d2b2cd8f8 / CORRECTED
 PRE2_R3_R4 = 22477d74008ea7438ea86f0592ce8ae78685ecaa / PASS / CLOSES PRE2_R3 CHAIN
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN FOR FINAL COMMIT
+```
+
+Accepted R2-A profile foundation chain:
+```text
+R2_A_AUTHORIZATION = 3a629e00466b82bee65dcfb146d81577e7c319d5
+R2_A_INITIAL_IMPLEMENTATION = 6dcfba1277462f230a5cd9379aacb96193253ac1 / CORRECTED
+R2_A_R1_AUTHORIZATION = e70c90049af0aed4a33851b98c226d5c86bb9c39
+R2_A_R1_IMPLEMENTATION = 9a93adf69a0d029fc810b6121f3f8dfe228f0c42 / PASS / CLOSES R2_A
+R2_A_R1_SCOPE = EXACTLY ONE COMMIT / EXACTLY TWO PROFILE+TEST FILES
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
 Current semantic/profile authority:
@@ -87,14 +98,21 @@ DIMENSIONS = A1:X35 / A1:X39 / A1:X43
 FORMULA_INVENTORY = 0
 ```
 
-Dynamic exact-set proof is source-backed and fail-closed for missing, duplicate, extra and same-count substituted addresses. Pre-sanitize expanded presentation state is validated before mutation. Relationship tuples, media/reference-image inventory and auxiliary Sheet1 remain preservation authority.
+Closed R2-A layout/sanitization profile authority:
+- Part A count-aware layout/sanitization topology is centralized and production-validator protected.
+- Part B rating sanitization is segmented into base rows 7:29, N7 clone rows 31:33, and N8 extra clone rows 35:37.
+- protected padding rows 30/34/38 have zero sanitization overlap.
+- Rating Scale static ranges have zero sanitization overlap.
+- exact dimensions, Print_Area, merge counts, summary rows, privacy counts, presentation ranges and base/effective sanitization topology are fail-closed by `validateMappingIntegrity()`.
+- mutation tests call the production validator for representative Part A/Part B topology corruption.
+- profile remains browser-safe/pure; semantic authority remains 20/22/5 with Chief R:X not writable.
 
 Exact next gate:
 ```text
-CONTROL-PLANE DECISION REQUIRED
-R2-B = sentinel-free production template preparation/sanitizer engine / NOT AUTHORIZED
-R2-C = secured semantic value renderer / NOT AUTHORIZED
+CONTROL-PLANE PLANNING REQUIRED
+R2_B = sentinel-free production template preparation/sanitizer engine / PROPOSED / NOT AUTHORIZED
+R2_C = secured semantic value renderer / NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = later D2 gate
 ```
 
-Read `AI_ACTIVE_TASK.md` for exact current authority. Do not auto-start Production Renderer, Kintone work, deployment or D3.
+R2-B exact writable file/test split must be planned and separately Owner-authorized. Read `AI_ACTIVE_TASK.md` for exact current authority. Do not auto-start Production Renderer, Kintone work, deployment or D3.
