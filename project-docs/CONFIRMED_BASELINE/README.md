@@ -64,6 +64,29 @@ mid-cycle operational change = HR-controlled explicit amendment + audit
 
 This lifecycle policy does not reopen D1 by itself. D4 owns HR operational implementation and D6 owns integrated lifecycle/security regression.
 
+## D2 Part B preservation allowed-drift — durable Owner decision
+
+Owner decision confirmed on 2026-09-02 ICT:
+
+```text
+DECISION_ID = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
+DECISION = OPTION B
+STATUS = APPROVED
+POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
+```
+
+Durable meaning:
+- the direct xlsx-populate Part B round trip may contain exactly one specifically proven deterministic `sheetPr` drift in legacy `Sheet1`;
+- this is not generic `sheetPr` tolerance;
+- the exact SHA-verified source must lack the allowed element;
+- the observed element must match the exact pinned structure/value/fingerprint and exact pinned worksheet/slot derived from the verified round trip;
+- normalization/removal must occur only inside the approved preservation path on its working copy;
+- caller source/raw inputs remain byte-immutable;
+- modified, extra, duplicate, reordered, moved, other-sheet or Part-A `sheetPr` remains fail-closed;
+- every other non-dimension drift remains forbidden.
+
+This decision changes only the D2 preservation policy. It does not by itself authorize source changes, evidence publication, Kintone access/write, deploy, Live UAT, rollback or D3.
+
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules, Control Center/Active Task model, Baseline promotion and reusable-skill rules.
