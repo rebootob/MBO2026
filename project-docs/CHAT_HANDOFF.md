@@ -38,16 +38,18 @@ RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 Durable authority:
 `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-Template Profile implementation `570a388a3f05be564c38e55431b739d3b28bf406` remains accepted/frozen for pure architecture, exact SHA/count domains, corrected Part B topology and basic integrity guards, but its semantic mappings are NOT yet aligned to the newly closed semantic Baseline.
+Template Profile implementation `570a388a3f05be564c38e55431b739d3b28bf406` remains accepted/frozen for pure architecture, exact SHA/count domains, corrected Part B topology and basic integrity guards, but its semantic mappings now require the authorized R1-R3 alignment to the closed Baseline.
 
 ```text
-PROPOSED_NEXT = D2-WP004-R1-R3 / TEMPLATE PROFILE SEMANTIC ALIGNMENT / SOURCE+TEST / NOT AUTHORIZED
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3
+AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -55,4 +57,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-If R1-R3 is later authorized, it must expose only the 18 accepted `SAFE_TO_MAP` semantics, fail closed for all unresolved roles, forbid all no-secured-source roles, preserve pure/no-workbook-I/O architecture and all structural/privacy/formula Baselines, and stop before Production Renderer implementation.
+R1-R3 must expose only the 18 accepted `SAFE_TO_MAP` semantics, fail closed for all 22 unresolved roles, prohibit all 5 no-secured-source roles, preserve pure/no-workbook-I/O architecture and all structural/privacy/formula Baselines, and stop after exactly one implementation/blocker commit. Production Renderer remains out of scope.
