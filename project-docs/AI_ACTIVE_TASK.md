@@ -1,13 +1,13 @@
-# AI ACTIVE TASK — D2 REFERENCE-IMAGE R3-R31 REVIEW / R3-R32 TEST-ONLY PROPOSED
+# AI ACTIVE TASK — D2-WP003-R3-R32 TEST-ONLY AUTHORIZED
 
-Mode: **CONTROL PLANE / LOW-CREDIT / SOURCE FROZEN / TEST-ONLY CORRECTIVE PROPOSED / NO KINTONE / NO DEPLOY**  
+Mode: **CONTROL PLANE / LOW-CREDIT / ONE-SHOT TEST-ONLY EXECUTION / SOURCE FROZEN / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
 ```text
-TASK_STATE = WAIT_OWNER_CORRECTIVE_APPROVAL
+TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
@@ -20,39 +20,47 @@ CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 10
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 10
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R32
-PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE FAIL-CLOSED INVENTORY PROOF CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / EXISTING FEASIBILITY TEST FILE ONLY
-REFERENCE_IMAGE_SOURCE_BASELINE = CURRENT SOURCE / FROZEN / DO NOT MODIFY
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R32
+ACTIVE_WORK_PACKAGE_NAME = REFERENCE-IMAGE FAIL-CLOSED INVENTORY PROOF CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / EXISTING FEASIBILITY TEST FILE ONLY
+OWNER_APPROVAL_BASELINE_HEAD = d6afdf8ef9d241253ce4f97e346d9e87e9cf8442
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R32-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+REFERENCE_IMAGE_SOURCE_BASELINE = CURRENT SOURCE / FROZEN / DO NOT MODIFY
 PRIVACY_PURGE_REQUIRED = NO
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R32 / ONE-SHOT BOUNDED EXECUTION
 CLAUDE = STOP / NOT NEEDED
 ```
 
-## 1. R3-R31 authorization consumed
+## 1. Owner authorization
+
+Owner explicitly authorized:
 
 ```text
-AUTHORIZATION = D2-WP003-R3-R31-TEST-20260902-01
-AUTHORIZATION_COMMIT = 0d208db2a9c874eec5942fd8d76d284453070d16
-IMPLEMENTATION_COMMIT = 37325d8279c6e0a19072ca9593a9feda2f9c6174
-AUTHORIZATION_STATUS = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R3-R32 TEST-ONLY ตามขอบเขตที่เสนอ
 ```
 
-Scope review = PASS:
-- implementation is exactly one commit after the authorization commit;
-- only `tests/mbo-xlsx-ooxml-feasibility.test.js` changed;
-- no production source/dependency/evidence/Kintone/deploy/D3 scope changed.
+Authorization token:
 
-## 2. Accepted R3-R31 progress
+```text
+D2-WP003-R3-R32-TEST-20260902-01 = ACTIVE / ONE-SHOT / TEST-ONLY / DO NOT WIDEN / DO NOT REUSE
+```
 
-R3-R31 added the correct high-level proof shape:
+This authorization permits only the bounded TEST-ONLY implementation described below. It does not authorize production source changes, evidence publication, Kintone writes, deploys, Live UAT, PDF work, D3, R3-R33, or any next work package.
+
+## 2. R3-R31 accepted progress and remaining blockers
+
+R3-R31 implementation:
+
+```text
+37325d8279c6e0a19072ca9593a9feda2f9c6174
+```
+
+Accepted progress:
 - exact Part A SHA assertion before template-dependent image proof;
 - BEFORE/AFTER drawing-anchor inventories;
 - BEFORE/AFTER drawing relationship inventories;
@@ -61,77 +69,102 @@ R3-R31 added the correct high-level proof shape:
 - target-normalized deep equality for anchors, relationships and media;
 - existing target absence and `rId1`/`rId2` survival assertions retained.
 
-Reference-image production source remains accepted and frozen.
+Production/reference-image source remains accepted and frozen.
 
-## 3. R3-R31 proof blockers
+Remaining proof blockers:
+1. anchor inventory recognizes only literal `xdr:twoCellAnchor` / `xdr:oneCellAnchor` and can silently omit `absoluteAnchor` or alternate namespace prefixes;
+2. relationship inventory recognizes only literal unprefixed `<Relationship ...>` and double-quoted attributes, so relevant variants can be silently skipped;
+3. absent `TargetMode` is normalized to `Internal` instead of retaining exact raw presence/value;
+4. target relationship normalization filters by `(part, Id)` instead of the full exact tuple.
 
-### A. Drawing-anchor inventory is not coverage-complete
+## 3. Exact write scope — ONLY ONE FILE
 
-The new helper matches only literal `xdr:twoCellAnchor` and `xdr:oneCellAnchor`. It can silently omit relevant drawing anchors such as `absoluteAnchor` and markup using another namespace prefix. Because omitted BEFORE/AFTER items never enter the inventory, deep equality can false-pass.
-
-### B. Drawing relationship inventory is not coverage-complete
-
-The new helper matches only literal unprefixed `<Relationship ...>` tags and extracts only double-quoted attributes. Namespace-prefixed Relationship markup, valid alternate quoting, or relevant malformed/unparsed direct children can be silently skipped instead of failing closed.
-
-This violates the R3-R31 proof rule:
-
-```text
-NO SILENT DROPPING OF MALFORMED/UNPARSED RELEVANT INVENTORY ENTRIES
-```
-
-### C. TargetMode is normalized instead of retained exactly
-
-Missing `TargetMode` is converted to string `Internal`. R3-R31 required exact tuple identity including `TargetMode`; the proof should retain exact raw presence/value rather than inventing an equivalent default.
-
-### D. Target relationship normalization predicate is too broad
-
-The target relationship is normalized out by `(part, Id)` only. The proof must remove the exact expected target tuple only, including exact Type, raw Target and raw TargetMode identity.
-
-## 4. Independent runtime signal
-
-GitHub exposes no combined status checks and no workflow runs for implementation commit `37325d8279c6e0a19072ca9593a9feda2f9c6174`.
-
-Control Plane does not claim independent runtime PASS.
-
-## 5. Proposed D2-WP003-R3-R32 — NOT AUTHORIZED
-
-```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R32
-PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE FAIL-CLOSED INVENTORY PROOF CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-EXECUTOR = NONE
-```
-
-No Antigravity or Claude execution is authorized by this proposal.
-
-## 6. Proposed mandatory TEST-ONLY corrective
-
-If explicitly authorized, modify ONLY:
+Modify ONLY:
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Mandatory direction:
-1. preserve all accepted R3-R31 full target-normalized equality assertions;
-2. make drawing-anchor inventory coverage-complete for all relevant direct anchor forms used by SpreadsheetDrawing, including `twoCellAnchor`, `oneCellAnchor`, and `absoluteAnchor`, independent of namespace prefix;
-3. use a coverage/gap validation approach so relevant direct-child anchor markup cannot be silently skipped; unknown/malformed relevant markup must fail the test helper closed;
-4. make drawing relationship inventory coverage-complete for direct Relationship children independent of namespace prefix and attribute quote style;
-5. require every relationship inventory entry to have parseable exact Id, Type and raw Target; retain raw TargetMode presence/value exactly (`null`/absent remains distinct from an explicit value);
-6. do not invent `Internal` for absent TargetMode in the inventory tuple;
-7. normalize out the target relationship only when the complete exact expected tuple matches: expected drawing rel part + `rId3` + canonical image Type + raw `../media/image3.png` + exact raw TargetMode identity;
-8. normalize out the target anchor only after exact target cardinality/part/embed identity proof;
-9. retain media path + SHA-256 inventory exactly as R3-R31;
-10. add always-runnable synthetic/adversarial tests inside the existing test file proving that at least these cannot evade inventory extraction:
+READ-ONLY as needed:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- exact R3-R31 authorization / implementation history;
+- package metadata;
+- exact ignored Part A owner template only after SHA verification.
+
+Do NOT modify production source, package/dependencies, governance docs, generated workbook/image/PDF files, evidence, application code, Kintone, deploy configuration, or any other tracked file.
+
+## 4. Mandatory TEST-ONLY corrective
+
+Preserve all accepted R3-R31 target-normalized full-inventory equality assertions and make the proof extraction fail-closed.
+
+Mandatory requirements:
+
+1. Drawing-anchor inventory must cover all relevant direct SpreadsheetDrawing anchor forms used by the contract:
+   - `twoCellAnchor`
+   - `oneCellAnchor`
+   - `absoluteAnchor`
+   independent of namespace prefix.
+
+2. Use coverage/gap validation so relevant direct-child anchor markup cannot be silently skipped. Unknown or malformed relevant direct-child markup must fail the helper closed.
+
+3. Drawing relationship inventory must cover direct Relationship children independent of namespace prefix and attribute quote style.
+
+4. Every relationship entry must have parseable exact:
+   - `Id`
+   - `Type`
+   - raw `Target`
+
+5. Retain raw `TargetMode` presence/value exactly. Missing remains `null`/absent and is distinct from an explicit value. Do NOT invent `Internal` for an absent attribute.
+
+6. Normalize out the target relationship ONLY when the complete exact expected tuple matches:
+   - expected drawing relationship part;
+   - `Id = rId3`;
+   - canonical image relationship Type;
+   - raw `Target = ../media/image3.png`;
+   - exact raw TargetMode identity.
+
+7. Normalize out the target anchor only after exact target cardinality + expected part + exact embed identity are proved.
+
+8. Retain media path + SHA-256 inventory exactly as accepted in R3-R31.
+
+9. Retain exact target-normalized deep equality for:
+   - anchors;
+   - drawing relationship tuples;
+   - media path/hash inventory.
+
+10. Retain explicit target-absence assertions and `rId1`/`rId2` survival assertions as supplemental proof.
+
+11. Retain package-wide orphan-safety proof. Do not weaken it.
+
+12. Add always-runnable privacy-safe synthetic/adversarial tests inside the SAME existing test file proving these cannot evade inventory extraction:
    - `absoluteAnchor`;
-   - alternate/non-`xdr` namespace prefix for a valid anchor;
+   - valid anchor with alternate/non-`xdr` namespace prefix;
    - prefixed Relationship element;
    - single-quoted relationship attributes;
    - missing required relationship attribute;
    - TargetMode presence/value drift;
-   - unknown/unconsumed relevant direct anchor/relationship markup;
-11. do not modify production source to make tests pass;
-12. if exact owner template is unavailable, template-dependent equality proof may skip explicitly, but the privacy-safe synthetic/adversarial inventory tests must still run.
+   - unknown/unconsumed relevant direct anchor markup;
+   - unknown/unconsumed relevant direct relationship markup.
 
-## 7. Required execution sequence if authorized
+13. Synthetic/adversarial helpers/tests must run even if exact owner templates are unavailable.
+
+14. If exact owner template is unavailable, template-dependent inventory equality proof may skip explicitly; do not reconstruct, invent, publish, or commit the binary.
+
+15. Do not modify production source merely to make tests pass.
+
+## 5. Proof quality rules
+
+Required characteristics:
+- deterministic stable sorting before deep equality;
+- coverage-complete direct-child inventory or explicit fail-closed gap detection;
+- exact relationship tuple identity;
+- raw relationship `Target` retained;
+- raw TargetMode presence/value retained;
+- exact target cardinality checks before normalization;
+- no count-only or sentinel-only substitute for full inventory equality;
+- no silent dropping of malformed/unparsed relevant inventory entries;
+- any helper added in the test file must be directly exercised by the same change.
+
+## 6. Required execution sequence
+
+Run exactly:
 
 ```bash
 node --check tests/mbo-xlsx-ooxml-feasibility.test.js
@@ -140,34 +173,47 @@ npm audit --omit=dev
 git status --porcelain
 ```
 
-Exactly one bounded TEST-ONLY implementation/blocker commit and push, then STOP.
+Then:
+- create exactly ONE bounded TEST-ONLY implementation or blocker commit;
+- push to `ai/antigravity-wp002c`;
+- STOP immediately;
+- report commit SHA, changed file, node check result, test result, npm audit result, `git status --porcelain`, and blocker if any.
 
-## 8. Frozen / out of scope
+Do not start another corrective or work package automatically.
+
+## 7. Frozen / out of scope
 
 Do NOT modify:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js` or any production source;
 - preservation source / Option B policy / `getNoOpParityBuffers()`;
-- dependencies or generated workbooks/images/PDFs;
-- evidence/Kintone/deploy/Live UAT;
-- Part A objective insertion;
-- Part B competency insertion;
-- formula closure;
-- renderer/combined export/PDF;
+- dependencies;
+- generated workbooks/images/PDFs;
+- privacy evidence or employee-bearing binaries;
+- Kintone/App53/App794/App795/App801;
+- ACL/process configuration;
+- customization deploy;
+- Live UAT / rollback;
+- Part A objective insertion closure;
+- Part B competency insertion closure;
+- formula/no-formula closure;
+- production renderer/sanitizer;
+- combined Excel;
+- PDF;
 - D3;
 - R3-R33 or any next WP.
 
-Claude second review is not needed at this gate.
+Claude second review is not authorized or needed for this bounded TEST-ONLY change unless ChatGPT later determines material ambiguity remains after repository review.
 
-## 9. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R30-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-WP003-R3-R31-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R3-R32-TEST-20260902-01 = ACTIVE / ONE-SHOT / TEST-ONLY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 10 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -177,12 +223,15 @@ ROLLBACK = NO
 D3_EXECUTION = HOLD
 ```
 
-## 10. Exact next action
+## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R32 TEST-ONLY AS PROPOSED
-ANTIGRAVITY = STOP / WAIT OWNER
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R3-R32-TEST-20260902-01
+EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+EXPECTED_COMMITS = EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT
+ANTIGRAVITY = STOP IMMEDIATELY AFTER PUSH/REPORT
 CLAUDE = STOP
+CHATGPT = INDEPENDENT REVIEW AFTER IMPLEMENTATION ARRIVES
 D3 = HOLD
 ```
