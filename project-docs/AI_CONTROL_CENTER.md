@@ -13,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — final semantic evidence corrective still required |
+| D2 | IN PROGRESS — final semantic evidence corrective active |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -35,17 +35,20 @@ R1_R2_R1_PART_B_HEADER = PASS / FREEZE
 R1_R2_R1_PART_A_HEADER = PASS / FREEZE
 R1_R2_R1_OVERALL = CORRECTIVE REQUIRED
 R1_R2_R1_TOKEN = CONSUMED / DO NOT REUSE
-PROPOSED_NEXT = D2-WP004-R1-R2-R2 EVIDENCE-ONLY / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
+
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R2
+ACTIVE_AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
+MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / SAME ONE MARKDOWN FILE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2-R2 should correct only the same evidence markdown: preserve accepted SHA/Hoshin/headers, restore chief `R:X`, remove any `SAFE_TO_MAP` without a secured path, downgrade evaluator/composite-field claims lacking accepted authority, and remove premature Baseline self-promotion. No source/profile corrective is authorized yet.
+R1-R2-R2 may correct only the existing semantic evidence markdown. Preserve accepted SHA/Hoshin/header evidence; chief authority must be `R:X`; `SAFE_TO_MAP` requires a non-null secured path; evaluator/composite-field translations require direct accepted authority or remain unresolved; evidence cannot self-promote before independent review.
