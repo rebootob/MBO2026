@@ -3,7 +3,7 @@
 > Current operational truth only. Durable rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — FORMULA AUTHORITY CLOSED / R7 PROPOSED
+> Updated: 2026-09-02 ICT — R7 AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -16,8 +16,6 @@ Use:
 4. authorization→implementation diff
 5. changed files only
 
-Do not re-scan closed gates by default.
-
 ## 1. Governance
 
 ```text
@@ -28,12 +26,14 @@ CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
+R7 is a separate one-shot Owner authorization. It does not renew the exhausted standing review/corrective window.
+
 ## 2. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation / Reference Image / Part A / Part B Structural / Formula Authority closed |
+| D2 | 🟠 IN PROGRESS | Preservation / Reference Image / Part A / Part B Structural / Formula Authority closed; R7 active |
 | D3 | ⏸ HOLD | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity |
@@ -56,39 +56,42 @@ Durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-## 4. Current proposed gate
+## 4. Active R7 authorization
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R7
-NAME = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
-STATE = PROPOSED / NOT AUTHORIZED
-EXPECTED_SCOPE = SOURCE+TEST / TWO EXISTING FILES
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
+ACTIVE_WORK_PACKAGE = D2-WP003-R7
+R7_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7_AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
+EXPECTED_SCOPE = SOURCE+TEST / EXACT TWO EXISTING FILES
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
 ```
 
-Mandatory reason: fixed source-6 summary privacy rows 31:34 are invalid for expanded layouts where summary moves to 35:38 (N=7) or 39:42 (N=8).
+Writable files only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Full R7 contract: `AI_ACTIVE_TASK.md`.
+R7 closes only the count-aware 6/7/8 Part B privacy-role/sanitization proof. Production renderer remains out of scope.
 
-## 5. Remaining D2
-
-1. R7 expanded Part B privacy remap;
-2. production XLSX renderer/sanitizer;
-3. combined Excel parity;
-4. PDF parity;
-5. export authorization/security/privacy regression;
-6. final independent D2 closure;
-7. then and only then D3 may leave HOLD.
-
-## 6. Current safety state
+## 5. Current safety state
 
 ```text
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / ONE-SHOT / STOP AFTER PUSH+REPORT
+CLAUDE = STOP
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
+
+## 6. Remaining D2 after R7
+
+1. production XLSX renderer/sanitizer;
+2. combined Excel parity;
+3. PDF parity;
+4. export authorization/security/privacy regression;
+5. final independent D2 closure;
+6. then and only then D3 may leave HOLD.
+
+Full R7 contract: `AI_ACTIVE_TASK.md`.
