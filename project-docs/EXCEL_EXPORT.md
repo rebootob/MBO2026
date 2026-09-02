@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R35 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -41,34 +41,34 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Reference-image status — R3-R34 reviewed
+## 4. Reference-image status — R3-R35 reviewed
 
 ```text
-R3-R34_AUTHORIZATION_COMMIT = 29837a5b84ad7b3397ec256a0bcf193f80d67b7e
-R3-R34_IMPLEMENTATION_COMMIT = f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec
-R3-R34_SCOPE_REVIEW = PASS
+R3-R35_AUTHORIZATION_COMMIT = 3eb083b9d5920f1002ce3bf069d60d87325f0136
+R3-R35_IMPLEMENTATION_COMMIT = 2ea39f1d10dca9ba4b830e4207a4abf7cf797644
+R3-R35_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
+R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R34 correctly closed the minimum invalid-prefix and malformed/unquoted/stray Relationship attribute-region cases. Remaining gap is TEST-ONLY: complete XML Name/NCName/QName correctness, prefixed `embed` fail-closed handling, and restoration of accepted R3-R33 adversarial regression proof.
+R3-R35 successfully restored the R3-R33 adversarial matrix, retained R3-R34 proof and implemented XML 1.0 NameStartChar/NameChar plus Relationship attribute NCName/QName validation. Remaining gap is only TEST-ONLY prefixed `embed` fail-closed behavior: malformed `1bad:embed` is ignored and produces `blipRId = null` rather than throwing a blocker as the authorization required.
 
 No production source change is required.
 
-## 5. Current gate — R3-R35 AUTHORIZED
+## 5. Current next gate
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R35
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R35-TEST-20260902-01
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R36
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R35 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 ```
 
-R3-R35 must restore all accepted R3-R33 adversarial assertions, retain every R3-R34 adversarial assertion, implement XML-compatible NameStartChar/NameChar/NCName/QName validation, validate attribute names and prefixed `embed` syntax, and preserve all accepted target-normalized equality logic.
+R3-R36 should only convert malformed prefixed-`embed` QName handling to deterministic fail-closed rejection and assert the blocker throw, while preserving every accepted R3-R35 proof and helper behavior.
 
 ## 6. Remaining D2 path
 
@@ -81,5 +81,3 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
-
-Do not auto-start any next step.
