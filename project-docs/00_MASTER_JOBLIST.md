@@ -42,15 +42,13 @@ R4-R1_IMPLEMENTATION_COMMIT = 8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6
 R4-R1_SCOPE_REVIEW = PASS
 R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 17 OF 20
-ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ACTIVE_D2_WORK_PACKAGE = D2-WP003-R4-R2
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-Accepted R4-R1 progress: exact rowRefs sequence/uniqueness, sheet-state equality and main-sheet non-target invariant baseline equality. Remaining proof regression is only restoration of the previously accepted absolute assertions `paperSize=8`, `orientation=landscape`, `scale=58`; source remains frozen.
+Accepted R4-R1 progress remains frozen. R4-R2 is authorized TEST-ONLY to restore only the accepted absolute page-setup assertions `paperSize=8`, `orientation=landscape`, `scale=58` while retaining all relative baseline and structural proof. Source remains frozen.
 
 D2 must still close after Part A:
 - Part B competency structural insertion matrix;
@@ -89,10 +87,11 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R4-R2 TEST-ONLY AS PROPOSED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+NEXT_EXECUTOR = ANTIGRAVITY
+NEXT_ACTION = EXECUTE ONLY D2-WP003-R4-R2-TEST-20260902-01
+EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+EXPECTED_COMMITS = EXACTLY ONE BOUNDED TEST-ONLY IMPLEMENTATION/BLOCKER COMMIT
+ANTIGRAVITY = STOP AFTER PUSH/REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
