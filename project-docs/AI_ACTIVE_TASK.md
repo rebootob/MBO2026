@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-A NEEDS CORRECTIVE / R2-A-R1 PROPOSED
+# AI ACTIVE TASK — R2-A-R1 EXACT-TOPOLOGY CORRECTIVE AUTHORIZED
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **EXECUTION PLANE AUTHORIZED / PROFILE+TEST CORRECTIVE ONLY / BOUNDED / ONE-SHOT / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only directly relevant frozen Baselines/profile/tests for the exact next gate.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only directly relevant frozen Baselines/profile/tests for this exact corrective gate.
 
 ## 1. Current truth
 
@@ -30,22 +30,23 @@ D2_WP004_R2_PRE2_R2 = PASS / CLOSED
 D2_WP004_R2_PRE2_R3 = PASS / CLOSED AFTER CORRECTIVES
 D2_WP004_R2_PRE2_R3_R4 = PASS / CLOSED
 D2_WP004_R2_A = NEEDS CORRECTIVE / NOT CLOSED
+D2_WP004_R2_A_R1 = AUTHORIZED / ACTIVE
 
 SAFE_TO_MAP = 20 EXACT
 UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
-ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-A-R1
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-A-R1-PROFILE-TEST-CORRECTIVE-20260902-01
+ACTIVE_D2_PROFILE_CHANGE_AUTH = D2-WP004-R2-A-R1-PROFILE-TEST-CORRECTIVE-20260902-01
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED PROFILE+TEST CORRECTIVE / ONE COMMIT -> PUSH -> STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
@@ -81,7 +82,7 @@ Accepted parts that must not regress:
 
 ## 3. Material blocker A — Part B effective sanitization topology crosses protected padding rows
 
-Current implementation constructs count-aware rating sanitization as contiguous ranges:
+Current R2-A implementation constructs count-aware rating sanitization as contiguous ranges:
 
 ```text
 K7:Q(29 + extraRows)
@@ -98,107 +99,146 @@ N8: K7:Q37 + R7:X37
      -> includes protected padding rows 30 and 34
 ```
 
-Frozen authority requires padding rows 30/34/38 to remain protected static. The production profile must not expose an `effectiveSanitizationRanges` contract that silently includes protected padding unless an explicit machine-enforced exclusion topology is part of the same authority. R2-B must be able to consume the profile without inventing exclusion logic or hardcoded padding literals.
+Frozen authority requires padding rows 30/34/38 to remain protected static. The production profile must not expose an `effectiveSanitizationRanges` contract that silently includes protected padding. R2-B must be able to consume the profile without inventing exclusion logic or hardcoded padding literals.
 
 Corrective requirement:
-- preserve base rating ranges K7:Q29 and R7:X29;
+- preserve base rating ranges `K7:Q29` and `R7:X29`;
 - add cloned dynamic rating ranges per inserted competency block without crossing cloned padding rows;
-- N7 cloned rating authority must cover rows 31:33 only;
-- N8 additional cloned rating authority must cover rows 35:37 only;
-- protected rows 30/34/38 must expand to zero sanitization addresses in the effective sanitization set;
-- presentation ranges B31:J32 and B35:J36 remain separately authorized dynamic overlay ranges;
-- shifted summary/signature sanitization ranges remain exact.
+- N7 cloned rating authority covers rows 31:33 only;
+- N8 additional cloned rating authority covers rows 35:37 only;
+- protected rows 30/34/38 expand to zero addresses in the effective sanitization address set;
+- presentation ranges `B31:J32` and `B35:J36` remain separately authorized dynamic overlay ranges;
+- shifted summary/signature sanitization ranges remain exact;
+- final effective sanitization address set is deterministic and duplicate-free;
+- final effective sanitization address set has zero intersection with protected padding/static authority.
 
-The final expanded effective sanitization address set must be deterministic, duplicate-free and must not intersect protected padding/static authority.
+Do not broaden or reinterpret semantic write authority.
 
-## 4. Material blocker B — `validateMappingIntegrity()` does not validate the new topology authority deeply enough
+## 4. Material blocker B — `validateMappingIntegrity()` must deeply validate R2-A topology authority
 
-Current validator checks only a subset of new layout fields (for example sheet names, clone/downstream anchors, page setup and formulaCount). It does not mechanically fail closed on mutations to critical R2-A authority such as:
+Current R2-A validator checks only a subset of layout fields. R2-A-R1 must make production validation fail closed on critical topology mutations, including:
 - Part A dimension;
 - Part A Print_Area;
-- Part A effective/base sensitive range sets;
+- Part A base/effective sensitive/sanitization exact sets;
 - Part B dimension;
 - Part B Print_Area;
 - Part B intermediate merge count;
 - Part B final overlay merge count;
 - Part B summary start/end;
 - Part B base/effective dynamic counts;
-- Part B presentation dynamic ranges;
-- Part B protected/rating-static topology as a complete set;
-- Part B base/effective sanitization range sets.
+- Part B presentation dynamic exact ranges;
+- Part B protected-padding and rating-static exact topology;
+- Part B base/effective sanitization exact sets;
+- duplicates in expanded address authority;
+- any effective sanitization overlap with protected padding/static authority.
 
-Focused tests currently assert many positive scalar values, but base sensitive topology is checked mainly by array length and there is no credible mutation-style proof that `validateMappingIntegrity()` rejects a changed critical topology field.
-
-Corrective requirement:
-- strengthen production `validateMappingIntegrity()` so the new layout/sanitization topology is validated against deterministic frozen/count-derived authority;
-- exact set equality where sets/ranges are authority;
-- uniqueness/duplicate rejection after deterministic range expansion;
-- protected padding/static ranges must have zero overlap with effective sanitization address set;
+Corrective requirements:
+- production `validateMappingIntegrity()` must validate deterministic frozen/count-derived authority, not merely positive object shape;
+- exact set equality where range/address sets are authority;
+- deterministic range expansion + uniqueness enforcement;
 - no test-only validator/backdoor;
-- mutation-style tests must call the real production validator with a bounded profile override/subclass/helper path and prove at least representative mutations fail for both Part A and Part B.
+- mutation-style tests must call the real production validator through a bounded profile override/subclass/helper path;
+- production validation itself must reject malformed topology.
 
 Representative required negative proof:
 1. wrong Part A dimension or Print_Area -> reject;
-2. Part A sensitive range substituted while length stays the same -> reject;
+2. Part A sensitive range substituted while list length stays the same -> reject;
 3. wrong Part B final overlay merge count -> reject;
 4. wrong Part B summary start -> reject;
 5. wrong Part B effective dynamic count -> reject;
 6. Part B sensitive/sanitization same-count substitution -> reject;
-7. protected padding address introduced into effective sanitization set -> reject.
+7. protected padding address introduced into effective sanitization authority -> reject.
 
-Do not simply compare test-created fake constants and throw from test code. Production validation must reject.
+Forbidden proof pattern: test-created fake constants followed by a throw from test code. The production validator must be the component that rejects.
 
-## 5. Exact next proposed gate — NOT AUTHORIZED
+## 5. R2-A-R1 authorization authority
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-A-R1
+WORK_PACKAGE = D2-WP004-R2-A-R1
 NAME = LAYOUT/SANITIZATION PROFILE EXACT-TOPOLOGY CORRECTIVE
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MODE = PROFILE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION_TOKEN = D2-WP004-R2-A-R1-PROFILE-TEST-CORRECTIVE-20260902-01
+AUTHORIZATION_BASIS_HEAD = fcbcf1e472752477d309c08c932629ffe2ac5b6a
 
 WRITABLE_FILES =
   src/profiles/mbo-xlsx-template-profile.js
   tests/mbo-xlsx-template-profile.test.js
 
-MBO_EXPORT_SERVICE_CHANGE = FORBIDDEN
-FEASIBILITY_SOURCE_CHANGE = FORBIDDEN
-FEASIBILITY_TEST_CHANGE = FORBIDDEN
-PRODUCTION_RENDERER/PREPARER_CHANGE = FORBIDDEN
-NEW_RENDERER_FILE = FORBIDDEN
-PACKAGE/PACKAGE-LOCK_CHANGE = FORBIDDEN
-DIST_CHANGE = FORBIDDEN
-BASELINE_CHANGE_BY_EXECUTOR = FORBIDDEN
-CONTROL_DOC_CHANGE_BY_EXECUTOR = FORBIDDEN
-KINTONE_WRITE/DEPLOY/LIVE_UAT = FORBIDDEN
+MAX_EXECUTOR_COMMITS = 1
+PUSH_TARGET = ai/antigravity-wp002c
+```
+
+Forbidden:
+
+```text
+src/services/mbo-export-service.js = FORBIDDEN
+scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
+tests/mbo-xlsx-ooxml-feasibility.test.js = FORBIDDEN
+production renderer/preparer source = FORBIDDEN
+new renderer/preparer file = FORBIDDEN
+package.json / package-lock.json = FORBIDDEN
+dist = FORBIDDEN
+Baselines/control docs by executor = FORBIDDEN
+Kintone write/deploy/Live UAT = FORBIDDEN
 D3 = HOLD
 ```
 
-R2-A-R1 must correct only blocker A and blocker B above. Do not redesign semantic mapping and do not start R2-B.
+R2-A-R1 corrects ONLY blocker A and blocker B. Do not redesign semantic mapping and do not start R2-B.
 
 ## 6. Focused corrective test contract
 
-At minimum:
+At minimum prove:
 1. all existing template-profile tests remain passing;
 2. Part A N4..N10 exact geometry/dimension/Print_Area/page setup remains unchanged;
-3. Part A base sensitive ranges exact set equality, frozen and duplicate-free after expansion;
-4. Part A effective sanitization sets deterministic and duplicate-free;
-5. Part B N6/N7/N8 exact geometry/merge/summary/privacy metrics remain unchanged;
-6. Part B effective rating sanitization does not include rows 30/34/38;
-7. presentation dynamic topology remains exact +0/+18/+36;
-8. Part B effective sanitization address set is duplicate-free;
-9. effective sanitization has zero overlap with protected padding/static authority;
-10. exact base sensitive range authority is mechanically validated, not length-only;
-11. `validateMappingIntegrity()` rejects representative Part A topology mutation;
-12. `validateMappingIntegrity()` rejects representative Part B merge/summary/privacy mutation;
-13. `validateMappingIntegrity()` rejects same-count sensitive-range substitution;
-14. `validateMappingIntegrity()` rejects protected-padding sanitization contamination;
-15. SAFE_TO_MAP=20 / UNRESOLVED=22 / NO_SOURCE=5 unchanged;
-16. profile remains browser-safe/pure.
+3. Part A base sensitive ranges equal the exact frozen set, are immutable, and expand duplicate-free;
+4. Part A effective sanitization address sets are deterministic and duplicate-free;
+5. Part B N6/N7/N8 geometry/merge/summary/privacy metrics remain exact;
+6. Part B rating sanitization covers base rows 7:29 plus inserted competency dynamic rows 31:33 / 35:37 only as applicable;
+7. Part B effective rating sanitization excludes protected rows 30/34/38;
+8. presentation dynamic topology remains exact +0/+18/+36;
+9. Part B effective sanitization address set is duplicate-free;
+10. effective sanitization has zero overlap with protected padding/static authority;
+11. Part A and Part B base sensitive range authority is mechanically exact, not length-only;
+12. `validateMappingIntegrity()` rejects wrong Part A dimension/Print_Area;
+13. `validateMappingIntegrity()` rejects Part A same-count sensitive-range substitution;
+14. `validateMappingIntegrity()` rejects wrong Part B final overlay merge count;
+15. `validateMappingIntegrity()` rejects wrong Part B summary start/end;
+16. `validateMappingIntegrity()` rejects wrong Part B effective dynamic count;
+17. `validateMappingIntegrity()` rejects Part B same-count sensitive/sanitization substitution;
+18. `validateMappingIntegrity()` rejects protected-padding contamination;
+19. SAFE_TO_MAP=20 / UNRESOLVED=22 / NO_SOURCE=5 unchanged;
+20. b1..6 TITLE/DESCRIPTION reject, b8 under N7 rejects, Chief rating rejects;
+21. profile remains browser-safe/pure with no workbook I/O or Node-only dependency.
 
-Focused command remains:
+Focused command:
 `node --test tests/mbo-xlsx-template-profile.test.js`
 
-## 7. What comes after R2-A closure — NOT AUTHORIZED
+No owner-template binary/local files are required for this corrective profile-only gate.
+
+## 7. Executor protocol
+
+Antigravity must:
+1. fresh-fetch canonical branch;
+2. verify current HEAD contains this authorization;
+3. read `D2_REVIEW_FAST_START.md`, this file, the R2 renderer/sanitizer design, and only the exact profile/test + directly relevant frozen Baselines needed;
+4. implement only the two corrective blockers in the two writable files;
+5. run `node --test tests/mbo-xlsx-template-profile.test.js`;
+6. verify `git diff --name-only` contains only the two authorized files;
+7. commit exactly once;
+8. push to `ai/antigravity-wp002c`;
+9. report commit SHA, exact changed files, exact focused test command/result;
+10. STOP.
+
+Do not self-declare R2-A or R2-A-R1 PASS/CLOSED.
+
+Final executor status must be:
+
+```text
+R2-A-R1 EXACT-TOPOLOGY CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW
+```
+
+## 8. What comes after R2-A closure — NOT AUTHORIZED
 
 Only after independent R2-A/R2-A-R1 closure:
 
@@ -207,21 +247,4 @@ R2-B = SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER ENGINE
 R2-C = SECURED SEMANTIC VALUE RENDERER
 COMBINED_EXCEL_PARITY = LATER D2 GATE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-```
-
-## 8. Owner decision
-
-Recommended Owner authorization phrase:
-
-`อนุมัติ D2-WP004-R2-A-R1 PROFILE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
-
-Until exact Owner authorization:
-
-```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-PRODUCTION_RENDERER = NOT AUTHORIZED
-KINTONE_WRITE = NONE
-DEPLOY = NONE
-D3 = HOLD
 ```
