@@ -24,6 +24,7 @@ Current closed D2 gate Baselines:
 - `D2_PART_B_STRUCTURAL_CLOSURE.md` — frozen Part B real 6/7/8 competency structural matrix, fail-closed source/defined-name controls, zero-formula invariant, and explicit privacy-remap boundary.
 - `D2_FORMULA_AUTHORITY_CLOSURE.md` — scoring authority = Kintone/App794; secured projection = export-data authority; Excel scoring formulas/recalculation forbidden; production XLSX formula inventory must remain zero.
 - `D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md` — frozen Part B 6/7/8 privacy-role mapping, strict source evidence, sanitization/token-purge proof, and row30/clone protected-static semantics.
+- `D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` — independently accepted owner-template semantic mapping authority: exactly 18 `SAFE_TO_MAP`, 22 unresolved fail-closed roles, 5 no-secured-source roles, zero duplicate safe targets, and Part B Chief authority `R:X`.
 
 Production export architecture:
 - `EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md` — mandatory centralized semantic Template Profile/Mapping; no scattered important cell/range addresses in the Production Renderer.
@@ -134,6 +135,7 @@ Frozen reference-image controls preserve exact target anchor/relationship/media 
 - `D2_PART_B_STRUCTURAL_CLOSURE.md` — Part B structural closure.
 - `D2_FORMULA_AUTHORITY_CLOSURE.md` — formula/no-formula authority closure.
 - `D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md` — Part B expanded privacy closure.
+- `D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` — XLSX semantic mapping closure and exact safe/unresolved/no-source production role authority.
 
 ## Review Rule
 
@@ -146,4 +148,4 @@ For future `review`:
 6. treat conflicts as MUST FIX/BLOCKER according to impact;
 7. update Control Center / Active Task to match promoted truth.
 
-For D1 reopen/security audit, read `D1_CLOSURE.md` first. For lifecycle work, read `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`. For Live deployment/rollback, read `ROLLBACK_RECOVERY_SAFETY.md`. For source implementation/refactor affecting module ownership, read `SOURCE_CODE_ARCHITECTURE.md`. For Production XLSX/PDF template-address mapping or future form-layout changes, read `EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
+For D1 reopen/security audit, read `D1_CLOSURE.md` first. For lifecycle work, read `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`. For Live deployment/rollback, read `ROLLBACK_RECOVERY_SAFETY.md`. For source implementation/refactor affecting module ownership, read `SOURCE_CODE_ARCHITECTURE.md`. For Production XLSX/PDF template-address mapping or future form-layout changes, read `EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md` together with `D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`.
