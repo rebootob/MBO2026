@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — D2-WP004-R1-R3 TEMPLATE PROFILE SEMANTIC ALIGNMENT AUTHORIZED
+# AI ACTIVE TASK — R1-R3 REVIEW CORRECTIVE / R1-R3-R1 STRICT PROFILE FIX PROPOSED
 
-Mode: **LOW-CREDIT / BOUNDED / ONE-SHOT / SOURCE+TEST / EXACT TWO EXISTING FILES / PURE MAPPING / NO RENDERER / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO SOURCE AUTH / NO TEST AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact two authorized files only.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact relevant diff only.
 
 ## 1. Current truth
 ```text
@@ -21,296 +21,207 @@ D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3
-ACTIVE_WORK_PACKAGE_NAME = TEMPLATE PROFILE SEMANTIC ALIGNMENT
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3 SOURCE+TEST / ONE-SHOT / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-This Owner authorization is execution-only for exactly one implementation or blocker commit after this authorization commit. Independent review begins only after Owner says `review`.
-
-## 2. Authorization identity
+## 2. D2-WP004-R1-R3 independent review
 ```text
-WORK_PACKAGE = D2-WP004-R1-R3
-AUTHORIZATION_TOKEN = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / EXACT TWO EXISTING FILES
-OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
-EXPECTED_COMMITS = EXACTLY ONE IMPLEMENTATION OR BLOCKER COMMIT AFTER THIS AUTHORIZATION COMMIT
+AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+AUTHORIZATION_COMMIT = 228a38b909fd7185d9ba94cf4d53288736b4172c
+IMPLEMENTATION_COMMIT = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+SCOPE_REVIEW = PASS
+PURE_NO_WORKBOOK_IO = PASS
+EXACT_SHA_COUNT_TOPOLOGY = PASS / PRESERVED
+SEMANTIC_ALIGNMENT = CORRECTIVE REQUIRED
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+STATUS = CORRECTIVE REQUIRED
+TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Authorized writable files ONLY:
-1. `src/profiles/mbo-xlsx-template-profile.js`
-2. `tests/mbo-xlsx-template-profile.test.js`
-
-No third file.
-
-## 3. Durable semantic authority
+## 3. Durable semantic authority — unchanged
 Canonical authority:
 `project-docs/CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-Exact classification:
 ```text
-PROVEN_SAFE_TO_MAP = 18
-UNRESOLVED_KEEP_UNRESOLVED = 22
-NO_SECURED_PROJECTION_SOURCE_DO_NOT_MAP = 5
+PROVEN_SAFE_TO_MAP = 18 EXACT
+UNRESOLVED_KEEP_UNRESOLVED = 22 EXACT
+NO_SECURED_PROJECTION_SOURCE_DO_NOT_MAP = 5 EXACT
 DUPLICATE_EXCLUSIVE_SAFE_TO_MAP_TARGETS = 0
 SAFE_TO_MAP_WITH_NULL_OR_UNKNOWN_SECURED_PATH = 0
 CHIEF_FROZEN_AUTHORITY = R:X
-```
-
-### 3.1 Exact 18 SAFE_TO_MAP roles
-Only these semantic roles may resolve as production writable mappings:
-1. `HEADER_FISCAL_YEAR`
-2. `HEADER_EMPLOYEE_NAME`
-3. `HEADER_DEPARTMENT`
-4. `HEADER_SECTION`
-5. `HEADER_POSITION`
-6. `HEADER_EMPLOYEE_CODE`
-7. `HOSHIN_DEPARTMENT_HOSHIN_TITLE`
-8. `HOSHIN_SECTION_HOSHIN_TITLE`
-9. `OBJECTIVE_i_MEASUREMENT`
-10. `OBJECTIVE_i_WEIGHT`
-11. `OBJECTIVE_i_ACTUAL_RESULT`
-12. `OBJECTIVE_i_SELF_COMMENT`
-13. `OBJECTIVE_i_AVERAGE_SCORE`
-14. `SUMMARY_PART_A_RAW_SCORE`
-15. `SUMMARY_PART_A_WEIGHTED_SCORE`
-16. `COMPETENCY_b_SELF_RATING`
-17. `SUMMARY_PART_B_RAW_SCORE`
-18. `SUMMARY_PART_B_WEIGHTED_SCORE`
-
-### 3.2 Exact 22 UNRESOLVED roles
-Every request for these roles must remain non-writable and throw exactly `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`:
-- `HEADER_EMPLOYEE_NAME_TH`
-- `HEADER_PROFILE_CODE`
-- `HEADER_PROFILE_FAMILY`
-- `HEADER_PART_A_WEIGHT_PERCENT`
-- `HEADER_CHIEF_NAME`
-- `OBJECTIVE_i_TITLE`
-- `OBJECTIVE_i_DESCRIPTION`
-- `OBJECTIVE_i_KPI`
-- `OBJECTIVE_i_TARGET`
-- `OBJECTIVE_i_PROGRESS_PERCENT`
-- `OBJECTIVE_i_SELF_ACHIEVEMENT`
-- `OBJECTIVE_i_MANAGER_ACHIEVEMENT`
-- `OBJECTIVE_i_MANAGER_SCORE`
-- `OBJECTIVE_i_MANAGER_COMMENT`
-- `OBJECTIVE_i_GM_ACHIEVEMENT`
-- `OBJECTIVE_i_GM_SCORE`
-- `OBJECTIVE_i_GM_COMMENT`
-- `OBJECTIVE_i_DIFFICULTY`
-- `SUMMARY_WEIGHT_SUM`
-- `SUMMARY_FINAL_SCORE`
-- `SUMMARY_FINAL_GRADE`
-- `COMPETENCY_b_CHIEF_RATING`
-
-### 3.3 Exact 5 NO_SECURED_PROJECTION_SOURCE roles
-Never synthesize, reconstruct or map these. Any production-resolution request must throw `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`:
-- `OVERALL_RATING_SUMMARY`
-- `EMPLOYEE_COMMENTS`
-- `CHIEF_FEEDBACK`
-- `EMPLOYEE_SIGNATURE`
-- `CHIEF_SIGNATURE`
-
-## 4. Frozen mapping facts
-Template identity:
-```text
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
-
-Part A headers/Hoshin:
-```text
-HEADER_FISCAL_YEAR -> N6 / N6:Q7 -> partA.header.fiscalYear
-HEADER_DEPARTMENT -> Z7:AF7 -> partA.header.department
-HEADER_SECTION -> AG7:AL7 -> partA.header.section
-HEADER_EMPLOYEE_CODE -> AQ7:AS7 -> partA.header.employeeCode
-HEADER_EMPLOYEE_NAME -> AT7:BC7 -> partA.header.employeeName
-HEADER_POSITION -> BD7:BI7 -> partA.header.position
-HOSHIN_DEPARTMENT_HOSHIN_TITLE -> G16:AF19 -> partA.hoshin.departmentHoshinTitle
-HOSHIN_SECTION_HOSHIN_TITLE -> AM16:BI19 -> partA.hoshin.sectionHoshinTitle
-G8:S8 = NOT HOSHIN / NON-WRITABLE AS HOSHIN
-```
-
-For Part A objective index `i` with template row `r = 24 + i`:
-```text
-OBJECTIVE_i_MEASUREMENT -> T{r}:W{r} -> partA.objectives[i-1].measurement
-OBJECTIVE_i_WEIGHT -> Y{r}:Z{r} -> partA.objectives[i-1].weight
-OBJECTIVE_i_ACTUAL_RESULT -> AK{r}:AR{r} -> partA.objectives[i-1].actualResult
-OBJECTIVE_i_SELF_COMMENT -> AD{r}:AG{r} -> partA.objectives[i-1].selfComment
-OBJECTIVE_i_AVERAGE_SCORE -> BC{r}:BE{r} -> partA.objectives[i-1].averageScore
-```
-
-Part A safe summaries:
-```text
-SUMMARY_PART_A_RAW_SCORE -> BC29 -> partA.summary.rawPartAScore
-SUMMARY_PART_A_WEIGHTED_SCORE -> BC33 -> partA.summary.weightedPartAScore
-```
-
-Part B safe headers:
-```text
-HEADER_FISCAL_YEAR -> G2:H3 -> partA.header.fiscalYear
-HEADER_DEPARTMENT -> J3:L3 -> partA.header.department
-HEADER_SECTION -> M3:O3 -> partA.header.section
-HEADER_POSITION -> P3:Q3 -> partA.header.position
-HEADER_EMPLOYEE_CODE -> R3 -> partA.header.employeeCode
-HEADER_EMPLOYEE_NAME -> S3:W3 -> partA.header.employeeName
-```
-
-Part B authority:
-```text
-SELF_DYNAMIC_AUTHORITY = K:Q
-CHIEF_DYNAMIC_AUTHORITY = R:X
-PROVEN_SECURED_COMPETENCY_WRITE = partB.competencyItems[b-1].selfRating ONLY
 CHIEF_SECURED_WRITABLE_ROLE = 0
-N6_SUMMARY_ROWS = 31:34
-N7_SUMMARY_ROWS = 35:38
-N8_SUMMARY_ROWS = 39:42
-SAFE_SUMMARY_PROJECTIONS = partB.rawPartBScore + partB.weightedPartBScore
 ```
 
-## 5. Preserve accepted R1-R1 behavior
-Do not regress:
-- pure mapping module architecture;
-- exact Part A/B SHA constants;
-- Part A objective count accepts integer 4..10 only;
-- Part B competency count accepts integer 6/7/8 only;
-- corrected Part B rows7:29 dynamic authority and inserted N7/N8 topology;
-- row30/34/38 protected non-dynamic behavior;
-- caller input and returned structures remain immutable;
-- stable blocker family `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`;
-- integrity validation for malformed address, missing mapping, duplicate exclusive target and protected-target violations;
-- no `fs`, Kintone API, `xlsx-populate`, workbook read/write, generated XLSX/PDF or scoring logic.
+No semantic Baseline expansion is authorized or proposed.
 
-## 6. Required R1-R3 source behavior
-1. The profile must expose a canonical allowlist/classification whose writable set is exactly the 18 SAFE roles above.
-2. `resolve`/equivalent production writable APIs must return deterministic address/range + exact secured projection path only for the accepted safe role/count/index combination.
-3. Requests for every unresolved role, no-source role, unknown role, unsupported count/index or unknown template identity must fail closed with `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`.
-4. Remove or disable legacy writable mappings that conflict with the semantic Baseline, including:
-   - Department at AG7;
-   - legacy G8 Hoshin;
-   - employeeNameTH as separate writer;
-   - standalone objective title/description/KPI/target/progress/selfAchievement;
-   - Manager/GM/Appraiser ordinal mappings;
-   - `SUMMARY_WEIGHT_SUM`, final score, final grade;
-   - Part B Chief writable rating mapping;
-   - comment/signature/no-source mappings.
-5. Chief `R:X` must remain available only as frozen structural/privacy metadata; it must NOT become a secured writable semantic role.
-6. Formula/scoring mappings = zero. Do not calculate scores or create formula authority.
-7. Integrity validator must validate the actual production safe mapping set, not merely hard-coded metadata counts.
+## 4. Proven R1-R3 defects
 
-## 7. Required tests
-Tests must directly prove:
-- exact SAFE role set = 18;
-- exact UNRESOLVED role set = 22;
-- exact NO_SECURED_SOURCE role set = 5;
-- all 18 safe mappings resolve deterministically for relevant supported counts/indices;
-- all 22 unresolved roles throw exact blocker;
-- all 5 no-source roles throw exact blocker;
-- Department is `Z7:AF7`, Section `AG7:AL7`;
-- Department Hoshin is `G16:AF19`, Section Hoshin `AM16:BI19`, G8 is not a Hoshin write target;
-- employeeName resolves; employeeNameTH rejects;
-- objective title/description/KPI/target/progress/selfAchievement/Manager/GM writes reject;
-- five proven objective semantics resolve for all Part A count domain 4..10 and valid objective indices;
-- summary weight/final score/final grade reject;
-- Part B self competency resolves for N6/N7/N8 valid items; Chief competency rejects;
-- Chief frozen authority metadata remains exactly `R:X` without a writable secured Chief role;
-- N6/N7/N8 summary relocation remains exact;
-- row30/34/38 remain protected/non-writable;
-- duplicate exclusive writable target count = 0;
-- writable role with null/unknown secured path count = 0;
-- integrity validator rejects missing safe mapping, duplicate target, malformed address, protected-target violation and null projection path;
-- caller input/returned structures remain immutable;
-- module has no forbidden import/I/O and tests require no template binaries.
+### DEFECT A — unauthorized objective alias widens writable authority
+Current resolver accepts:
+`OBJECTIVE_i_COMMENT`
 
-## 8. Commands
-Run exactly:
-```bash
-node --check src/profiles/mbo-xlsx-template-profile.js
-node --check tests/mbo-xlsx-template-profile.test.js
-node --test tests/mbo-xlsx-template-profile.test.js
-node --test tests/mbo-export-service.test.js
-npm audit --omit=dev
-git status --porcelain
-```
+It aliases that name to `SELF_COMMENT`, even though only canonical `OBJECTIVE_i_SELF_COMMENT` belongs to the exact SAFE Baseline. The returned address is writable while `getObjectiveProjectionPath(..., 'comment')` returns `null`.
 
-## 9. Explicitly forbidden / out of scope
-Do NOT modify:
-- `src/services/mbo-export-service.js`;
-- feasibility source/tests;
-- any Baseline/control document during executor work;
-- package/dependency files;
-- owner XLSX binaries;
-- `dist/`;
-- any repository file other than the two authorized files.
-
-Do NOT:
-- create/edit Production XLSX Renderer;
-- read/write/mutate XLSX workbooks from production profile code;
-- generate XLSX/PDF/image evidence;
-- recalculate scoring;
-- widen semantic authority beyond the 18 safe roles;
-- reconstruct Employee-Self confidential fields;
-- touch Kintone/ACL/process/customization;
-- deploy;
-- run Live UAT;
-- invoke Claude;
-- start Combined Excel parity, PDF parity, security regression or D3.
-
-## 10. Verification / commit contract
-Before commit:
-```bash
-git diff --name-only
-git status --porcelain
-```
-
-Exactly these two repository paths may differ:
+This violates both:
 ```text
-src/profiles/mbo-xlsx-template-profile.js
-tests/mbo-xlsx-template-profile.test.js
+ONLY_EXACT_SAFE_SEMANTICS_MAY_RESOLVE = YES
+WRITABLE_ROLE_WITH_NULL_PROJECTION_PATH = 0
 ```
 
-Then:
-- create exactly ONE implementation OR blocker commit;
-- push to `ai/antigravity-wp002c`;
-- STOP immediately;
-- do not self-declare PASS/CLOSED;
-- do not start Production Renderer or next gate.
+Required correction: `OBJECTIVE_i_COMMENT` must throw exactly `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`.
 
-Report:
-- implementation/blocker commit SHA;
-- exact changed files;
-- both `node --check` results;
-- both `node --test` results with pass/fail/skip counts;
-- `npm audit --omit=dev` result;
-- `git status --porcelain`;
-- blocker if any.
+### DEFECT B — unauthorized competency alias widens writable authority
+Current resolver accepts:
+`COMPETENCY_b_RATING`
 
-## 11. Authorization ledger
+It resolves it as the safe self-rating mapping. Only canonical `COMPETENCY_b_SELF_RATING` is accepted by the semantic Baseline.
+
+Required correction: `COMPETENCY_b_RATING` must throw exactly `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`.
+
+### DEFECT C — integrity validator does not validate the complete production safe mapping set
+Current `validateMappingIntegrity()` validates useful address/padding basics but is incomplete against the R1-R3 contract:
+- objective `projectionPaths` object existence is checked, but each required safe projection path is not required to be a valid non-empty path;
+- Part A summary addresses/projection integrity is not fully validated;
+- Part B safe headers are not fully validated for required mapping/address/projection presence;
+- Part B competency list/index/address/projection integrity is not fully validated;
+- Part B duplicate exclusive writable targets are not fully validated;
+- actual production safe resolution/allowlist cannot be proven merely by array counts.
+
+Required correction: integrity validation must validate actual safe mappings/resolutions and fail closed on missing/malformed/null/conflicting production-safe mapping data.
+
+### DEFECT D — required negative tests are incomplete
+Current tests prove many accepted cases, but the authorization required negative proof for malformed address and null projection path and strict exact safe-role authority. Missing direct proof includes:
+- `OBJECTIVE_1_COMMENT` rejects;
+- `COMPETENCY_1_RATING` rejects;
+- null required objective projection path mutation rejects;
+- malformed safe summary/Part B safe address mutation rejects;
+- missing/null Part B competency projection mapping rejects;
+- duplicate Part B exclusive safe target mutation rejects.
+
+## 5. Proposed D2-WP004-R1-R3-R1 — NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R3-R1
+NAME = TEMPLATE PROFILE STRICT ALLOWLIST + INTEGRITY CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED / LOW-CREDIT
+EXPECTED_WRITABLE_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+SOURCE_CHANGE = NOT AUTHORIZED YET
+TEST_CHANGE = NOT AUTHORIZED YET
+PRODUCTION_RENDERER = NOT AUTHORIZED
+```
+
+Recommended Owner phrase:
+`อนุมัติ D2-WP004-R1-R3-R1 SOURCE+TEST ตามขอบเขตที่เสนอ`
+
+## 6. Exact proposed R1-R3-R1 contract
+If later authorized, modify ONLY the same two profile/test files.
+
+### A. Strict canonical resolver allowlist
+Production resolver must accept only canonical semantic names proven by the Baseline. In particular:
+- accept `OBJECTIVE_i_SELF_COMMENT`; reject `OBJECTIVE_i_COMMENT`;
+- accept `COMPETENCY_b_SELF_RATING`; reject `COMPETENCY_b_RATING`;
+- do not introduce any replacement compatibility alias;
+- any non-canonical/unknown semantic role must throw exactly `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`.
+
+Every successful resolver result must have:
+```text
+address = valid non-empty approved address
+projectionPath = valid non-empty secured projection path
+```
+No successful production writable resolution may return null/unknown path.
+
+### B. Complete production mapping-integrity validation
+Keep the validator pure. Extend it so mutations fail closed for at least:
+1. missing required Part A safe header/Hoshin/objective/summary mapping;
+2. malformed Part A safe address;
+3. null/empty required Part A objective projection path;
+4. duplicate Part A exclusive safe target;
+5. missing/malformed Part B safe header mapping;
+6. missing/malformed Part B safe summary mapping;
+7. wrong/missing competency count/index/self-rating address;
+8. null/empty Part B competency self-rating projection path;
+9. duplicate Part B exclusive safe target where applicable;
+10. protected row30/34/38 exposed dynamic;
+11. unsupported profile/template/count;
+12. any claimed writable role whose resolver returns null/unknown secured path.
+
+Default MBO2026 profile must pass.
+
+### C. Preserve accepted behavior
+Do not regress:
+- exact SHA constants;
+- Part A count integer 4..10;
+- Part B count integer 6/7/8;
+- Part B structural/privacy dynamic topology including K:Q self and R:X Chief structural authority;
+- row30/34/38 protected;
+- exact semantic Baseline 18/22/5;
+- Chief secured writable role = zero;
+- caller/returned mapping immutability;
+- stable blocker family;
+- zero workbook I/O;
+- zero scoring/formula mapping/recalculation.
+
+### D. Focused tests
+Add/retain direct tests proving:
+```text
+SAFE_ROLE_CLASS_COUNT = 18
+UNRESOLVED_ROLE_CLASS_COUNT = 22
+NO_SOURCE_ROLE_CLASS_COUNT = 5
+OBJECTIVE_i_COMMENT = REJECT
+COMPETENCY_b_RATING = REJECT
+OBJECTIVE_i_SELF_COMMENT = ACCEPT
+COMPETENCY_b_SELF_RATING = ACCEPT
+SUCCESSFUL_RESOLUTION_WITH_NULL_PATH = 0
+CHIEF_SECURED_WRITABLE_ROLE = 0
+```
+
+Mutation tests must prove exact blocker for null objective path, malformed safe address, broken Part B header/summary/competency mapping/path, duplicate exclusive targets and protected-row exposure.
+
+### E. Explicit out of scope
+Do NOT modify any third file, `MboExportService`, feasibility source/tests, Baselines/control docs during executor work, packages, `dist`, or owner XLSX. Do NOT create Renderer, generate XLSX/PDF, touch Kintone, deploy, run Live UAT, invoke Claude, start parity/security regression or D3.
+
+### F. Low-credit execution rule
+If authorized, Antigravity should read only:
+1. `D2_REVIEW_FAST_START.md`;
+2. this `AI_ACTIVE_TASK.md`;
+3. `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`;
+4. the two writable files.
+
+No broad repository scan. Exactly one implementation/blocker commit, push, report, STOP.
+
+## 7. Authorization ledger / exact next action
 ```text
 D2-WP004-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP004-R1-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP004-R1-R2-EVIDENCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP004-R1-R2-R1-EVIDENCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP004-R1-R2-R2-EVIDENCE-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP004-R1-R3-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / SOURCE+TEST
+D2-WP004-R1-R3-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP004-R1-R3-R1 = PROPOSED / NOT AUTHORIZED
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE EXACT R1-R3 CONTRACT, PUSH ONE COMMIT, STOP
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP004-R1-R3-R1 SOURCE+TEST
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
