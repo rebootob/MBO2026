@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE CORRECTIVE REQUIRED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE CANONICAL INTEGRITY ACTIVE**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -30,8 +30,6 @@ CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
 ## R1-R3-R1 independent review
 ```text
-AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-AUTHORIZATION_COMMIT = 867111d785b7e85689725379249e7b278108d8cc
 IMPLEMENTATION_COMMIT = 6386e506b85ded87a57967705066e38d56212f73
 SCOPE = PASS / EXACT TWO AUTHORIZED FILES
 OBJECTIVE_i_COMMENT_ALIAS = FIXED / REJECTS
@@ -42,24 +40,26 @@ TOKEN = CONSUMED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Remaining proven defect: canonical Part B competency integrity is incomplete. `validateMappingIntegrity()` validates list length, address syntax, non-empty projection and duplicate targets, but does not require exact expected competency `index`, rating `row`, exact `K{row}` self target or exact `partB.competencyItems[i-1].selfRating` path. The approved contract required wrong/missing count/index/self-rating address to fail closed and direct wrong mapping/index/address tests.
+Remaining defect: canonical Part B competency integrity must require exact expected `index`, rating `row`, exact `K{row}` self target and exact `partB.competencyItems[b-1].selfRating` path.
 
-## Proposed next — NOT AUTHORIZED
+## Active D2-WP004-R1-R3-R2
 ```text
-D2-WP004-R1-R3-R2 = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
-WRITABLE_FILES_IF_AUTHORIZED =
+AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+WRITABLE_FILES_ONLY =
   src/profiles/mbo-xlsx-template-profile.js
   tests/mbo-xlsx-template-profile.test.js
-SOURCE_TEST_ONLY = YES
-LOW_CREDIT = YES
+SOURCE_CHANGE = AUTHORIZED ONLY FOR PROFILE FILE
+TEST_CHANGE = AUTHORIZED ONLY FOR PROFILE TEST FILE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
-No semantic Baseline expansion is proposed. R1-R3-R2 must only complete exact canonical integrity validation/tests and preserve all already-corrected behavior.
+No semantic Baseline expansion is authorized. R1-R3-R2 must only complete exact canonical integrity validation/tests and preserve all already-corrected behavior. No workbook inspection or semantic re-research.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R2
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
