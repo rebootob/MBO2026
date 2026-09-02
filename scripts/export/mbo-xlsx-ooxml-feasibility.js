@@ -1854,12 +1854,6 @@ export async function getStructuralPartABuffers() {
 
   const origBufA = fs.readFileSync(found.partA);
 
-  // --- 4 OBJECTIVES (Unchanged) ---
-  const wbA4 = await XlsxPopulate.fromDataAsync(origBufA);
-  const sheetA4 = wbA4.sheet(0);
-  sheetA4.cell('B29').value('SENTINEL_ROW_29');
-  const bufA4 = await wbA4.outputAsync();
-
   // --- RAW OOXML HELPER FOR PART A INSERTION & MERGE CLONING ---
   async function performRawPartAInsertion(extraRows, printAreaStr) {
     const wbTemp = await XlsxPopulate.fromDataAsync(origBufA);
@@ -1870,79 +1864,90 @@ export async function getStructuralPartABuffers() {
     const sheetFile = wb._zip.files['xl/worksheets/sheet1.xml'];
     let sheetXml = await sheetFile.async('string');
 
-    // 1. Shift raw rows r >= 29 by +extraRows
-    sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
-      const r = parseInt(rStr, 10);
-      if (r >= 29) {
-        return `<row r="${r + extraRows}"${rest}>`;
-      }
-      return match;
-    });
+    if (extraRows > 0) {
+      // 1. Shift raw rows r >= 29 by +extraRows
+      sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
+        const r = parseInt(rStr, 10);
+        if (r >= 29) {
+          return `<row r="${r + extraRows}"${rest}>`;
+        }
+        return match;
+      });
 
-    // 2. Shift cell references <c r="([A-Z]+)(\d+)"
-    sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
-      const r = parseInt(rStr, 10);
-      if (r >= 29) {
-        return `<c r="${col}${r + extraRows}"`;
-      }
-      return match;
-    });
+      // 2. Shift cell references <c r="([A-Z]+)(\d+)"
+      sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
+        const r = parseInt(rStr, 10);
+        if (r >= 29) {
+          return `<c r="${col}${r + extraRows}"`;
+        }
+        return match;
+      });
 
-    // 3. Clone row 28 XML for inserted rows 29..(28+extraRows)
-    const row28Match = sheetXml.match(/<row r="28"[^>]*>[\s\S]*?<\/row>/);
-    if (row28Match) {
-      const row28Xml = row28Match[0];
-      const clonedRowsXml = [];
+      // 3. Clone row 28 XML for inserted rows 29..(28+extraRows)
+      const row28Match = sheetXml.match(/<row r="28"[^>]*>[\s\S]*?<\/row>/);
+      if (row28Match) {
+        const row28Xml = row28Match[0];
+        const clonedRowsXml = [];
+        for (let i = 0; i < extraRows; i++) {
+          const targetR = 29 + i;
+          let clonedRow = row28Xml.replace(/<row r="28"/g, `<row r="${targetR}"`);
+          clonedRow = clonedRow.replace(/<c r="([A-Z]+)28"/g, (m, col) => `<c r="${col}${targetR}"`);
+          clonedRowsXml.push(clonedRow);
+        }
+        sheetXml = sheetXml.replace(row28Match[0], row28Match[0] + '\n' + clonedRowsXml.join('\n'));
+      }
+
+      // 4. Extract row 28 mergeCell elements and clone them for inserted rows
+      const row28Merges = [];
+      const mergeCellMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)28:([A-Z]+)28"\/>/g)];
+      for (const m of mergeCellMatches) {
+        row28Merges.push({ col1: m[1], col2: m[2] });
+      }
+
+      // Shift existing mergeCells for rows >= 29
+      sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
+        let r1 = parseInt(r1Str, 10);
+        let r2 = parseInt(r2Str, 10);
+        if (r1 >= 29) r1 += extraRows;
+        if (r2 >= 29) r2 += extraRows;
+        return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
+      });
+
+      // Append cloned mergeCell elements for inserted rows
+      const clonedMergesXml = [];
       for (let i = 0; i < extraRows; i++) {
         const targetR = 29 + i;
-        let clonedRow = row28Xml.replace(/<row r="28"/g, `<row r="${targetR}"`);
-        clonedRow = clonedRow.replace(/<c r="([A-Z]+)28"/g, (m, col) => `<c r="${col}${targetR}"`);
-        clonedRowsXml.push(clonedRow);
+        for (const m of row28Merges) {
+          clonedMergesXml.push(`<mergeCell ref="${m.col1}${targetR}:${m.col2}${targetR}"/>`);
+        }
       }
-      sheetXml = sheetXml.replace(row28Match[0], row28Match[0] + '\n' + clonedRowsXml.join('\n'));
-    }
 
-    // 4. Extract row 28 mergeCell elements and clone them for inserted rows
-    const row28Merges = [];
-    const mergeCellMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)28:([A-Z]+)28"\/>/g)];
-    for (const m of mergeCellMatches) {
-      row28Merges.push({ col1: m[1], col2: m[2] });
-    }
+      if (clonedMergesXml.length > 0) {
+        sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXml.join('\n') + '\n</mergeCells>');
+      }
 
-    // Shift existing mergeCells for rows >= 29
-    sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
-      let r1 = parseInt(r1Str, 10);
-      let r2 = parseInt(r2Str, 10);
-      if (r1 >= 29) r1 += extraRows;
-      if (r2 >= 29) r2 += extraRows;
-      return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
-    });
-
-    // Append cloned mergeCell elements for inserted rows
-    const clonedMergesXml = [];
-    for (let i = 0; i < extraRows; i++) {
-      const targetR = 29 + i;
-      for (const m of row28Merges) {
-        clonedMergesXml.push(`<mergeCell ref="${m.col1}${targetR}:${m.col2}${targetR}"/>`);
+      // Update <mergeCells count="N">
+      const countMatch = sheetXml.match(/<mergeCells count="(\d+)">/);
+      if (countMatch) {
+        const currentCount = parseInt(countMatch[1], 10);
+        const newCount = currentCount + clonedMergesXml.length;
+        sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newCount}">`);
       }
     }
 
-    if (clonedMergesXml.length > 0) {
-      sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXml.join('\n') + '\n</mergeCells>');
-    }
+    // Ensure dimension ref is present and exact
+    const expectedLastRow = 52 + extraRows;
+    const dimensionTag = `<dimension ref="A1:BL${expectedLastRow}"/>`;
 
-    // Update <mergeCells count="N">
-    const countMatch = sheetXml.match(/<mergeCells count="(\d+)">/);
-    if (countMatch) {
-      const currentCount = parseInt(countMatch[1], 10);
-      const newCount = currentCount + clonedMergesXml.length;
-      sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newCount}">`);
+    if (/<dimension [^>]*\/>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<dimension [^>]*\/>/, dimensionTag);
+    } else if (/<sheetPr[^>]*\/>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<sheetPr[^>]*\/>/, `$& \n  ${dimensionTag}`);
+    } else if (/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>/, `$& \n  ${dimensionTag}`);
+    } else {
+      sheetXml = sheetXml.replace(/<worksheet[^>]*>/, `$& \n  ${dimensionTag}`);
     }
-
-    // Update dimension ref
-    sheetXml = sheetXml.replace(/<dimension ref="([A-Z0-9]+:)([A-Z]+)(\d+)"\s*\/>/, (m, prefix, col, rStr) => {
-      return `<dimension ref="${prefix}${col}${parseInt(rStr, 10) + extraRows}"/>`;
-    });
 
     wb._zip.file('xl/worksheets/sheet1.xml', sheetXml);
 
@@ -1954,10 +1959,23 @@ export async function getStructuralPartABuffers() {
     return wb._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  const bufA5 = await performRawPartAInsertion(1, '$A$1:$BJ$53');
-  const bufA10 = await performRawPartAInsertion(6, '$A$1:$BJ$58');
+  const buffers = {};
+  for (let n = 4; n <= 10; n++) {
+    const extraRows = n - 4;
+    const printAreaStr = `$A$1:$BJ$${52 + extraRows}`;
+    buffers[n] = await performRawPartAInsertion(extraRows, printAreaStr);
+  }
 
-  return { bufA4, bufA5, bufA10 };
+  return {
+    bufA4: buffers[4],
+    bufA5: buffers[5],
+    bufA6: buffers[6],
+    bufA7: buffers[7],
+    bufA8: buffers[8],
+    bufA9: buffers[9],
+    bufA10: buffers[10],
+    buffers
+  };
 }
 
 /**
