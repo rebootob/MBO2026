@@ -236,6 +236,44 @@ test('UNIT_PURE_STRUCTURAL_PRESERVATION_VALIDATION: pure XML structural preserva
 
   // 8. Malformed observed XML -> fail closed
   assert.throws(() => preserveWorksheetXmlDimensions(validSrcXml, '<invalidXml', 'worksheets/sheet1.xml', 'B'), /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/, 'Malformed observed XML must fail closed');
+
+  // --- MANDATORY R3-R30 OPTION B STRUCTURAL FAIL-CLOSED PROOFS ---
+  const srcSheet2NoPrXml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:A1"/>
+  <sheetViews><sheetView tabSelected="1" workbookViewId="0"/></sheetViews>
+</worksheet>`;
+
+  // 9. Duplicate Option B sheetPr fails closed in preservation path
+  const obsSheet2DupPrXml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetPr/>
+  <sheetPr/>
+  <sheetViews><sheetView tabSelected="1" workbookViewId="0"/></sheetViews>
+</worksheet>`;
+  assert.throws(() => preserveWorksheetXmlDimensions(srcSheet2NoPrXml, obsSheet2DupPrXml, 'worksheets/sheet2.xml', 'B'), /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/, 'Duplicate Option B sheetPr must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+
+  // 10. Extra unexpected Option B sheetPr fails closed in preservation path
+  const obsSheet2ExtraPrXml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetPr codeName="Extra"/>
+  <sheetViews><sheetView tabSelected="1" workbookViewId="0"/></sheetViews>
+</worksheet>`;
+  assert.throws(() => preserveWorksheetXmlDimensions(srcSheet2NoPrXml, obsSheet2ExtraPrXml, 'worksheets/sheet2.xml', 'B'), /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/, 'Extra unexpected Option B sheetPr must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+
+  // 11. Moved observed-only sheetPr fails closed in preservation path
+  const obsSheet2MovedPrXml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews><sheetView tabSelected="1" workbookViewId="0"/></sheetViews>
+  <sheetPr/>
+</worksheet>`;
+  assert.throws(() => preserveWorksheetXmlDimensions(srcSheet2NoPrXml, obsSheet2MovedPrXml, 'worksheets/sheet2.xml', 'B'), /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/, 'Moved observed-only sheetPr must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+
+  // 12. Other-sheet observed-only sheetPr fails closed in preservation path
+  const obsOtherSheetPrXml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetPr/>
+  <sheetViews><sheetView tabSelected="1" workbookViewId="0"/></sheetViews>
+</worksheet>`;
+  assert.throws(() => preserveWorksheetXmlDimensions(srcSheet2NoPrXml, obsOtherSheetPrXml, 'worksheets/sheet1.xml', 'B'), /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/, 'Other-sheet observed-only sheetPr must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+
+  // 13. Part-A observed-only sheetPr fails closed in preservation path
+  assert.throws(() => preserveWorksheetXmlDimensions(srcSheet2NoPrXml, obsOtherSheetPrXml, 'worksheets/sheet1.xml', 'A'), /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/, 'Part-A observed-only sheetPr must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
 });
 
 // ============================================================================
@@ -447,7 +485,18 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
     'Cross-sheet mapping must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
   );
 
-  // 9. Non-worksheet Type/target & counterfeit Type URI
+  // 9. Non-worksheet Type/target & distinct counterfeit Type URI (http://example.com/custom/worksheet)
+  const wbCounterfeitType = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlCounterfeit = await wbCounterfeitType._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlCounterfeit = relsXmlCounterfeit.replace('Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"', 'Type="http://example.com/custom/worksheet"');
+  wbCounterfeitType._zip.file('xl/_rels/workbook.xml.rels', relsXmlCounterfeit);
+  const bufCounterfeitType = await wbCounterfeitType._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufCounterfeitType, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Distinct counterfeit Type URI http://example.com/custom/worksheet must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
   const wbNonWsType = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlNonWs = await wbNonWsType._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlNonWs = relsXmlNonWs.replace(/Type="[^"]*\/worksheet"/, 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"');
@@ -646,7 +695,7 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     assert.equal(validateTypedPrivacyMetadata(metaResult, expectedAddrs), true, `Part ${partKey} typed privacy metadata must be 100% valid`);
   }
 
-  // --- ACCEPTED TYPED-PRIVACY METADATA NEGATIVE REGRESSION MATRIX ---
+  // --- ACCEPTED TYPED-PRIVACY METADATA NEGATIVE REGRESSION MATRIX (FULL PREVIOUSLY ACCEPTED MATRIX) ---
   const validMetaB = await getTypedPrivacyMetadata('B');
 
   // Test A: Extra unexpected typeCounts key
@@ -676,13 +725,37 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Null typeCounts must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
   );
 
-  // Test D: Invalid count values (negative, non-number)
+  const metaArrayCounts = JSON.parse(JSON.stringify(validMetaB));
+  metaArrayCounts.typeCounts = [1, 2, 3];
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaArrayCounts, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Array typeCounts must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  // Test D: Invalid count values (negative, fractional, non-number)
   const metaNegativeCount = JSON.parse(JSON.stringify(validMetaB));
   metaNegativeCount.typeCounts.string = -1;
   assert.throws(
     () => validateTypedPrivacyMetadata(metaNegativeCount, SENSITIVE_RANGES_B),
     /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
     'Negative typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  const metaFractionalCount = JSON.parse(JSON.stringify(validMetaB));
+  metaFractionalCount.typeCounts.string = 1.5;
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaFractionalCount, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Fractional typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
+  );
+
+  const metaNonNumberCount = JSON.parse(JSON.stringify(validMetaB));
+  metaNonNumberCount.typeCounts.string = 'five';
+  assert.throws(
+    () => validateTypedPrivacyMetadata(metaNonNumberCount, SENSITIVE_RANGES_B),
+    /BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED/,
+    'Non-number typeCounts value must throw BLOCKER_TYPED_PRIVACY_METADATA_UNRESOLVED'
   );
 
   // Test E: Malformed normalizedType record mutation
