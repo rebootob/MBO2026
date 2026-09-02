@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — PRE2-R3 CLOSED / R2-A PROFILE FOUNDATION PROPOSED
+# AI ACTIVE TASK — R2-A PROFILE FOUNDATION AUTHORIZED
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **EXECUTION PLANE AUTHORIZED / PROFILE+TEST ONLY / BOUNDED / ONE-SHOT / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only directly relevant frozen Baselines/profile/tests for the exact next gate.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only directly relevant frozen Baselines/profile/tests for this exact gate.
 
 ## 1. Current truth
 
@@ -38,16 +38,16 @@ UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
-ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-A
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-A-PROFILE-TEST-20260902-01
+ACTIVE_D2_PROFILE_CHANGE_AUTH = D2-WP004-R2-A-PROFILE-TEST-20260902-01
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED PROFILE+TEST / ONE COMMIT -> PUSH -> STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
@@ -81,57 +81,42 @@ Preserved authority:
 - Chief R:X not widened;
 - no Excel scoring or recalculation.
 
-## 3. Control-plane repository finding after PRE2-R3
-
-There is currently **no production XLSX renderer/template-preparer source file** in `src/`.
-
-Existing production-side authorities are:
-- `src/services/mbo-export-service.js` — secured data projection authority;
-- `src/profiles/mbo-xlsx-template-profile.js` — semantic mapping/profile authority;
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js` — proof/feasibility harness only, NOT production code.
-
-The feasibility harness imports Node `fs`, `path`, `crypto`, performs local template discovery, and contains proof-only behavior. The R2 design explicitly forbids importing/copying it wholesale into browser production code.
-
-Current Template Profile already centralizes semantic mapping and expanded b7/b8 presentation overlay metadata, but it does **not yet centralize the complete structural/layout + broad sanitization topology** required by the production preparer/sanitizer.
-
-Therefore starting R2-B now would force important workbook row/range/geometry literals into the production engine, conflicting with:
+## 3. Authorization authority
 
 ```text
-CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
-NO_SCATTERED_IMPORTANT_CELL_ADDRESS = MANDATORY
-```
-
-R2-A must therefore close first.
-
-## 4. Exact next proposed gate — NOT AUTHORIZED
-
-```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-A
+WORK_PACKAGE = D2-WP004-R2-A
 NAME = PRODUCTION XLSX LAYOUT + SANITIZATION PROFILE FOUNDATION
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MODE = PROFILE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION_TOKEN = D2-WP004-R2-A-PROFILE-TEST-20260902-01
+AUTHORIZATION_BASIS_HEAD = cb240a71581e55420860d6d3975c909b6a7c8eaf
 
 WRITABLE_FILES =
   src/profiles/mbo-xlsx-template-profile.js
   tests/mbo-xlsx-template-profile.test.js
 
-MBO_EXPORT_SERVICE_CHANGE = FORBIDDEN
-FEASIBILITY_SOURCE_CHANGE = FORBIDDEN
-FEASIBILITY_TEST_CHANGE = FORBIDDEN
-PRODUCTION_RENDERER_CHANGE = FORBIDDEN
-NEW_RENDERER_FILE = FORBIDDEN
-PACKAGE_CHANGE = FORBIDDEN
-DIST_CHANGE = FORBIDDEN
-BASELINE_CHANGE_BY_EXECUTOR = FORBIDDEN
-CONTROL_DOC_CHANGE_BY_EXECUTOR = FORBIDDEN
-KINTONE_WRITE = FORBIDDEN
-DEPLOY = FORBIDDEN
+MAX_EXECUTOR_COMMITS = 1
+PUSH_TARGET = ai/antigravity-wp002c
+```
+
+Forbidden:
+
+```text
+src/services/mbo-export-service.js = FORBIDDEN
+scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
+tests/mbo-xlsx-ooxml-feasibility.test.js = FORBIDDEN
+production renderer/preparer source = FORBIDDEN
+new renderer file = FORBIDDEN
+package.json / package-lock.json = FORBIDDEN
+dist = FORBIDDEN
+baselines/control docs by executor = FORBIDDEN
+Kintone write/deploy/Live UAT = FORBIDDEN
 D3 = HOLD
 ```
 
 This gate is **pure declarative profile authority only**. It must not open, mutate, generate or render an XLSX file.
 
-## 5. Proposed R2-A contract
+## 4. R2-A implementation contract
 
 ### A. Browser-safe purity
 `src/profiles/mbo-xlsx-template-profile.js` must remain pure/browser-safe:
@@ -265,7 +250,7 @@ COMPETENCY_CHIEF_RATING = REJECT
 FORMULA/SCORING CREATION = FORBIDDEN
 ```
 
-## 6. Proposed focused test contract
+## 5. Required focused test contract
 
 Modify only `tests/mbo-xlsx-template-profile.test.js` and prove at minimum:
 1. all existing semantic/profile tests remain passing;
@@ -289,6 +274,27 @@ Modify only `tests/mbo-xlsx-template-profile.test.js` and prove at minimum:
 
 No template binary/local owner files are required for this profile-only gate.
 
+## 6. Executor protocol
+
+Antigravity must:
+1. fresh-fetch canonical branch;
+2. verify current HEAD includes this authorization and read this file;
+3. read only directly relevant design/baselines/source/test;
+4. implement only the exact R2-A contract in the two writable files;
+5. run focused test: `node --test tests/mbo-xlsx-template-profile.test.js`;
+6. optionally run only directly relevant additional tests if necessary; do not broad-run expensive suites by default;
+7. verify `git diff --name-only` contains only the two authorized files;
+8. commit exactly once;
+9. push to `ai/antigravity-wp002c`;
+10. report commit SHA, exact changed files, exact test command/result;
+11. STOP.
+
+Executor must not self-declare PASS/CLOSED. Final executor status must be:
+
+```text
+R2-A PROFILE+TEST IMPLEMENTATION COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW
+```
+
 ## 7. What comes after R2-A — NOT AUTHORIZED
 
 Only after independent R2-A closure:
@@ -310,21 +316,4 @@ R2-C = SECURED SEMANTIC VALUE RENDERER
 
 COMBINED_EXCEL_PARITY = LATER D2 GATE
 D3 = HOLD UNTIL D2 PASS / CLOSED
-```
-
-## 8. Owner decision
-
-Recommended Owner authorization phrase:
-
-`อนุมัติ D2-WP004-R2-A PROFILE+TEST ตามขอบเขตที่เสนอ`
-
-Until exact Owner authorization:
-
-```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-PRODUCTION_RENDERER = NOT AUTHORIZED
-KINTONE_WRITE = NONE
-DEPLOY = NONE
-D3 = HOLD
 ```
