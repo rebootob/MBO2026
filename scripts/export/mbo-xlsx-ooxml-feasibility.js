@@ -1172,12 +1172,12 @@ export const OPENXML_WORKSHEET_CHILD_ORDER = [
 ];
 
 // Elements under <worksheet> that are maxOccurs=1 in ECMA-376 schema
+// cols and conditionalFormatting are repeatable; mergeCells, hyperlinks, oleObjects, controls, tableParts are maxOccurs=1
 export const MAX_OCCURS_ONE_CHILDREN = new Set([
   'sheetPr',
   'dimension',
   'sheetViews',
   'sheetFormatPr',
-  'cols',
   'sheetData',
   'sheetCalcPr',
   'sheetProtection',
@@ -1187,8 +1187,10 @@ export const MAX_OCCURS_ONE_CHILDREN = new Set([
   'sortState',
   'dataConsolidate',
   'customSheetViews',
+  'mergeCells',
   'phoneticPr',
   'dataValidations',
+  'hyperlinks',
   'printOptions',
   'pageMargins',
   'pageSetup',
@@ -1204,7 +1206,10 @@ export const MAX_OCCURS_ONE_CHILDREN = new Set([
   'legacyDrawingHF',
   'drawingHF',
   'picture',
+  'oleObjects',
+  'controls',
   'webPublishItems',
+  'tableParts',
   'extLst'
 ]);
 
@@ -1260,7 +1265,7 @@ export function parseGlobalRelsXml(relsXml) {
     const fullTagName = m[1];
     const tag = m[0];
 
-    // Fail closed on any namespace-prefixed Relationship tag (e.g. <r:Relationship>) or non-Relationship tag
+    // Fail closed on any namespace-prefixed Relationship tag (e.g. <r:Relationship>, <ñ:Relationship>) or non-Relationship tag
     if (fullTagName !== 'Relationship') {
       throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
     }
@@ -1332,7 +1337,7 @@ export function parseWorksheetTopLevelChildren(xml) {
   for (const m of matches) {
     const fullTagHead = m[1];
 
-    // Fail closed on any namespace prefix (e.g. x:sheetPr)
+    // Fail closed on any namespace prefix (e.g. x:sheetPr, ñ:sheetPr)
     if (fullTagHead.includes(':')) {
       throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
     }
@@ -1422,6 +1427,95 @@ export function matchAndNormalizeOptionBSheetPr(obsXml, srcChildren, obsChildren
     normalized: false,
     obsXml,
     obsChildren
+  };
+}
+
+export function preserveWorksheetXmlDimensions(srcXml, obsXml, rawTarget, partKey) {
+  const srcChildren = parseWorksheetTopLevelChildren(srcXml);
+  let obsChildren = parseWorksheetTopLevelChildren(obsXml);
+
+  if (!srcChildren || !obsChildren) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+
+  if (!validateWorksheetSchemaOrder(srcChildren) || !validateWorksheetSchemaOrder(obsChildren)) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+
+  let isObsXmlModified = false;
+
+  // Option B allowed drift check & normalization
+  const optBResult = matchAndNormalizeOptionBSheetPr(obsXml, srcChildren, obsChildren, rawTarget, partKey);
+  if (optBResult.normalized) {
+    obsXml = optBResult.obsXml;
+    obsChildren = optBResult.obsChildren;
+    isObsXmlModified = true;
+  }
+
+  const srcDimChildren = srcChildren.filter(c => c.name === 'dimension');
+  if (srcDimChildren.length !== 1) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+  const srcDimTag = srcDimChildren[0].fullTag;
+
+  const obsDimChildren = obsChildren.filter(c => c.name === 'dimension');
+  if (obsDimChildren.length > 1) {
+    throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+  }
+
+  if (obsDimChildren.length === 1) {
+    if (obsDimChildren[0].fullTag !== srcDimTag) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+    // Verify exact top-level child sequence match
+    if (srcChildren.map(c => c.name).join(',') !== obsChildren.map(c => c.name).join(',')) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+  } else {
+    // Verification that observed top-level children match source EXACTLY with only dimension omitted
+    const expectedObsNames = srcChildren.filter(c => c.name !== 'dimension').map(c => c.name);
+    const actualObsNames = obsChildren.map(c => c.name);
+
+    if (expectedObsNames.join(',') !== actualObsNames.join(',')) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    const srcDimIndex = srcChildren.findIndex(c => c.name === 'dimension');
+    const predecessorName = srcDimIndex > 0 ? srcChildren[srcDimIndex - 1].name : null;
+    const successorName = srcDimIndex < srcChildren.length - 1 ? srcChildren[srcDimIndex + 1].name : null;
+
+    let insertionIndex = -1;
+
+    if (predecessorName !== null) {
+      const predChild = obsChildren.find(c => c.name === predecessorName);
+      if (!predChild) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+      insertionIndex = predChild.endIndex;
+    } else if (successorName !== null) {
+      const succChild = obsChildren.find(c => c.name === successorName);
+      if (!succChild) {
+        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+      }
+      insertionIndex = succChild.startIndex;
+    } else {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    obsXml = obsXml.slice(0, insertionIndex) + '\n  ' + srcDimTag + obsXml.slice(insertionIndex);
+
+    // Verify that resulting obsXml has exact top-level child sequence match with srcXml
+    const checkChildren = parseWorksheetTopLevelChildren(obsXml);
+    if (!checkChildren || checkChildren.map(c => c.name).join(',') !== srcChildren.map(c => c.name).join(',')) {
+      throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
+    }
+
+    isObsXmlModified = true;
+  }
+
+  return {
+    isObsXmlModified,
+    obsXml
   };
 }
 
@@ -1552,93 +1646,13 @@ export async function preserveExactWorkbookDimensions(rawObservedBuf, partKey, s
       }
 
       const srcXml = await srcFile.async('string');
-      let obsXml = await obsFile.async('string');
+      const obsXml = await obsFile.async('string');
 
-      const srcChildren = parseWorksheetTopLevelChildren(srcXml);
-      let obsChildren = parseWorksheetTopLevelChildren(obsXml);
-
-      if (!srcChildren || !obsChildren) {
-        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-      }
-
-      if (!validateWorksheetSchemaOrder(srcChildren) || !validateWorksheetSchemaOrder(obsChildren)) {
-        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-      }
-
-      let isObsXmlModified = false;
-
-      // Option B allowed drift check & normalization
-      const optBResult = matchAndNormalizeOptionBSheetPr(obsXml, srcChildren, obsChildren, srcSheet.rel.rawTarget, partKey);
-      if (optBResult.normalized) {
-        obsXml = optBResult.obsXml;
-        obsChildren = optBResult.obsChildren;
-        isObsXmlModified = true;
-      }
-
-      const srcDimChildren = srcChildren.filter(c => c.name === 'dimension');
-      if (srcDimChildren.length !== 1) {
-        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-      }
-      const srcDimTag = srcDimChildren[0].fullTag;
-
-      const obsDimChildren = obsChildren.filter(c => c.name === 'dimension');
-      if (obsDimChildren.length > 1) {
-        throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-      }
-
-      if (obsDimChildren.length === 1) {
-        if (obsDimChildren[0].fullTag !== srcDimTag) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-        // Verify exact top-level child sequence match
-        if (srcChildren.map(c => c.name).join(',') !== obsChildren.map(c => c.name).join(',')) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-      } else {
-        // Verification that observed top-level children match source EXACTLY with only dimension omitted
-        const expectedObsNames = srcChildren.filter(c => c.name !== 'dimension').map(c => c.name);
-        const actualObsNames = obsChildren.map(c => c.name);
-
-        if (expectedObsNames.join(',') !== actualObsNames.join(',')) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        const srcDimIndex = srcChildren.findIndex(c => c.name === 'dimension');
-        const predecessorName = srcDimIndex > 0 ? srcChildren[srcDimIndex - 1].name : null;
-        const successorName = srcDimIndex < srcChildren.length - 1 ? srcChildren[srcDimIndex + 1].name : null;
-
-        let insertionIndex = -1;
-
-        if (predecessorName !== null) {
-          const predChild = obsChildren.find(c => c.name === predecessorName);
-          if (!predChild) {
-            throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-          }
-          insertionIndex = predChild.endIndex;
-        } else if (successorName !== null) {
-          const succChild = obsChildren.find(c => c.name === successorName);
-          if (!succChild) {
-            throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-          }
-          insertionIndex = succChild.startIndex;
-        } else {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        obsXml = obsXml.slice(0, insertionIndex) + '\n  ' + srcDimTag + obsXml.slice(insertionIndex);
-
-        // Verify that resulting obsXml has exact top-level child sequence match with srcXml
-        const checkChildren = parseWorksheetTopLevelChildren(obsXml);
-        if (!checkChildren || checkChildren.map(c => c.name).join(',') !== srcChildren.map(c => c.name).join(',')) {
-          throw new Error('BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED');
-        }
-
-        isObsXmlModified = true;
-      }
+      const res = preserveWorksheetXmlDimensions(srcXml, obsXml, srcSheet.rel.rawTarget, partKey);
 
       // PERSIST TO ZIP WORK-COPY IF MODIFIED (Option B normalized OR dimension restored!)
-      if (isObsXmlModified) {
-        wbPreserved._zip.file(obsSheet.rel.zipPath, obsXml);
+      if (res.isObsXmlModified) {
+        wbPreserved._zip.file(obsSheet.rel.zipPath, res.obsXml);
       }
     }
 
