@@ -1,156 +1,117 @@
-# AI ACTIVE TASK — D2-WP003-R3-R30 TEST-ONLY AUTHORIZED
+# AI ACTIVE TASK — D2 PRESERVATION GATE CLOSED / NEXT READ-ONLY REVIEW
 
-Mode: **BOUNDED ANTIGRAVITY EXECUTION / LOW-CREDIT / TEST-ONLY / NO SOURCE / NO KINTONE / NO DEPLOY**  
+Mode: **CONTROL PLANE / LOW-CREDIT / NO ACTIVE EXECUTOR / NO KINTONE / NO DEPLOY**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
 ```text
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY TEST-ONLY IMPLEMENTATION
+TASK_STATE = WAIT_OWNER_NEXT_ACTION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
-D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R29 = REVIEWED / NOT PASS / NOT CLOSED
-R3-R29_AUTHORIZATION_COMMIT = 1ff838f6f10e846cdd00925d62b444946b35445b
-R3-R29_IMPLEMENTATION_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
-R3-R29_SCOPE_REVIEW = PASS
-R3-R29_SOURCE_REVIEW = PASS
-R3-R29_PROOF_REVIEW = FAIL / INCOMPLETE REGRESSION RESTORE
+D2_PRESERVATION_GATE = PASS / CLOSED
+D2-WP003-R3-R29 = REVIEWED / SOURCE PASS / PROOF CORRECTIVE
+D2-WP003-R3-R30 = PASS / CLOSED
+R3-R30_AUTHORIZATION_COMMIT = 985ddbd1d99d629d54fa7d76fba94a679f08dc59
+R3-R30_IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
+R3-R30_SCOPE_REVIEW = PASS
+R3-R30_PROOF_CODE_REVIEW = PASS
+R3-R30_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 PRESERVATION_POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 7
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 13
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 8
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 12
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R30
-WORK_PACKAGE_NAME = TEST-ONLY FINAL PROOF COMPLETION FOR PRESERVATION GATE
-AUTHORIZED_SCOPE = EXISTING FEASIBILITY TEST FILE ONLY
-CORRECTIVE_BASELINE_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
-AUTHORIZATION_BASELINE_HEAD = c92fd00af120fff16b7e598c74c077055f4e6ead
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R30-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-AUTHORIZATION_MODE = ONE-SHOT / BOUNDED / TEST-ONLY / DO NOT WIDEN / DO NOT REUSE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = AUTHORIZED FOR THIS TEST-ONLY WP ONLY
-CLAUDE = STOP / NOT AUTHORIZED / NOT NEEDED UNLESS CHATGPT LATER FINDS MATERIAL AMBIGUITY
+ANTIGRAVITY = STOP
+CLAUDE = STOP
 ```
 
-## 1. Owner authorization
+## 1. Independent R3-R30 review
 
-Owner explicitly authorized on 2026-09-02 ICT:
+Authorization consumed:
 
 ```text
-อนุมัติ D2-WP003-R3-R30 TEST-ONLY ตามขอบเขตที่เสนอ
+D2-WP003-R3-R30-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 ```
 
-This creates exactly one bounded TEST-ONLY authorization:
+Scope = PASS:
+- implementation commit `d15261eadbc726ea87f11085253c026fedada381` is exactly one commit after authorization `985ddbd1d99d629d54fa7d76fba94a679f08dc59`;
+- only `tests/mbo-xlsx-ooxml-feasibility.test.js` changed;
+- no production source, dependency, evidence, Kintone, deploy, PDF, renderer or D3 scope change.
+
+Proof-code = PASS:
+- duplicate Option B `sheetPr` rejection is now exercised through `preserveWorksheetXmlDimensions()`;
+- extra unexpected `sheetPr` rejection is exercised through the preservation helper;
+- moved / other-sheet / Part-A observed-only `sheetPr` cases prove effective fail-closed preservation behavior;
+- a distinct counterfeit worksheet-like Type URI negative exists in addition to the non-worksheet/styles Type case;
+- accepted typed-privacy negatives for array `typeCounts`, fractional count and non-number count were restored;
+- no existing R3-R29 assertion was materially removed or weakened.
+
+Runtime evidence note:
+- GitHub exposes zero status checks and zero workflow runs for the implementation commit;
+- Control Plane therefore does not claim an independent CI/runtime execution result;
+- this does not change the repository code/proof review verdict for the bounded TEST-ONLY work package.
+
+## 2. Preservation gate closure
+
+The D2 OOXML dimension/preservation gate is now accepted and closed with these frozen controls:
+- exact source SHA verification;
+- exact relationship tuple and raw Target lexical identity;
+- global duplicate relationship-ID rejection;
+- coverage/gap fail-closed XML inventory;
+- worksheet singleton/repeatable occurrence semantics;
+- exact source dimension restoration and sequence/boundary checks;
+- direct raw A/B preservation path;
+- caller source/raw byte immutability;
+- `getNoOpParityBuffers()` frozen and unrepaired;
+- Owner-approved Option B only for the exact deterministic Part B `Sheet1` `<sheetPr/>` drift;
+- all other non-dimension drift remains fail-closed.
+
+## 3. Next D2 action — do not auto-start
 
 ```text
-D2-WP003-R3-R30-TEST-20260902-01 = ACTIVE / ONE-SHOT
+PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
+PREFERRED_EXECUTION = CHATGPT CONTROL-PLANE READ-ONLY REVIEW FIRST
+ANTIGRAVITY = DO NOT USE UNLESS REVIEW PROVES A NECESSARY IMPLEMENTATION GAP
+CLAUDE = DO NOT USE UNLESS MATERIAL AMBIGUITY REMAINS
 ```
 
-This does NOT authorize production source changes, evidence publication, Kintone access/write, deploy, Live UAT, rollback, D3, R3-R31, another work package, Claude execution or scope expansion.
+Existing source/tests already contain reference-image handling. The next safe action is therefore a repository READ-ONLY review before spending executor credits.
 
-## 2. R3-R29 accepted source baseline
+## 4. Remaining D2 path
 
-R3-R29 source review is PASS and is frozen for R3-R30:
-- worksheet singleton semantics corrected;
-- `cols` and `conditionalFormatting` remain repeatable;
-- supported maxOccurs=1 children are independently guarded;
-- pure `preserveWorksheetXmlDimensions()` is used by production preservation;
-- production exact source-SHA enforcement remains;
-- Option B write-back and XML gap/inventory behavior remain;
-- `getNoOpParityBuffers()` remains frozen.
+After reference-image closure:
+1. Part A objective insertion structural matrix closure;
+2. Part B competency insertion structural matrix closure;
+3. formula/no-formula authority closure;
+4. production sanitizer + XLSX renderer;
+5. combined Part A + Part B Excel parity;
+6. PDF parity;
+7. export authorization/security/privacy regression;
+8. final independent D2 closure review.
 
-R3-R30 MUST NOT modify production source merely to make a test pass.
+Do not auto-start any item.
 
-## 3. Exact write scope
-
-Modify ONLY:
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Read-only as needed:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- prior accepted test versions in Git history;
-- `package.json`, `package-lock.json`;
-- exact ignored owner templates only after SHA verification.
-
-No other tracked file may change.
-No new file, dependency, artifact, workbook, PDF, image or evidence document may be created.
-
-## 4. Mandatory TEST-ONLY proof completion
-
-R3-R30 MUST ONLY complete the missing proof from R3-R29:
-
-1. retain every current R3-R29 test and assertion unless an exact duplicate is being restored from prior accepted Git history;
-2. add always-runnable pure structural proof that duplicate Option B `sheetPr` fails closed;
-3. add always-runnable pure structural proof that an extra unexpected `sheetPr` fails closed;
-4. add always-runnable `preserveWorksheetXmlDimensions()` rejection proof for:
-   - moved observed-only `sheetPr`;
-   - other-sheet observed-only `sheetPr`;
-   - Part-A observed-only `sheetPr`;
-5. restore a distinct counterfeit worksheet-like relationship Type URI negative, separate from the current styles/non-worksheet Type case;
-6. restore the exact previously accepted typed-privacy negatives from Git history for:
-   - array `typeCounts`;
-   - fractional count;
-   - non-number count;
-7. do not remove, weaken, rename away, or bypass existing R3-R29 regression proof;
-8. do not change production source or validators;
-9. do not add a workaround that converts expected fail-closed behavior into permissive behavior.
-
-If exact owner templates are unavailable:
-- do NOT reconstruct or invent them;
-- template-dependent integration cases may skip explicitly;
-- all always-runnable privacy-safe pure tests MUST still execute.
-
-## 5. Required execution sequence
-
-Run exactly:
+## 5. Authorization ledger
 
 ```text
-node --check tests/mbo-xlsx-ooxml-feasibility.test.js
-node --test tests/mbo-xlsx-ooxml-feasibility.test.js
-npm audit --omit=dev
-git status --porcelain
-```
-
-Then:
-1. make exactly ONE bounded test-only implementation/blocker commit;
-2. push to `ai/antigravity-wp002c`;
-3. STOP;
-4. report commit SHA, exact changed file, test result, npm audit result and blocker if any.
-
-Antigravity self-report is not independent PASS evidence. ChatGPT performs the independent Git review.
-
-## 6. Stop conditions / frozen scope
-
-STOP immediately if satisfying R3-R30 would require:
-- modifying `scripts/export/mbo-xlsx-ooxml-feasibility.js` or any production source;
-- another tracked file;
-- a new dependency;
-- widening Option B;
-- evidence publication;
-- Kintone/Live/deploy/PDF/renderer work;
-- reference-image/objective/competency/formula closure work;
-- D3 or R3-R31.
-
-No automatic rollback.
-
-## 7. Authorization ledger
-
-```text
-D2-WP003-R3-R28-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R29-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP003-R3-R30-TEST-20260902-01 = ACTIVE / ONE-SHOT
+D2-WP003-R3-R30-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 7 OF 20
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 8 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -160,12 +121,12 @@ ROLLBACK = NO
 D3_EXECUTION = HOLD
 ```
 
-## 8. Exact next action
+## 6. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = IMPLEMENT D2-WP003-R3-R30 TEST-ONLY EXACTLY WITHIN ONE FILE
-AFTER_COMMIT = STOP / CHATGPT INDEPENDENT REVIEW
-CLAUDE = STOP / DO NOT INVOKE
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = SAY `ต่อ` TO START CONTROL-PLANE READ-ONLY REFERENCE-IMAGE CLOSURE REVIEW
+ANTIGRAVITY = STOP
+CLAUDE = STOP
 D3 = HOLD
 ```
