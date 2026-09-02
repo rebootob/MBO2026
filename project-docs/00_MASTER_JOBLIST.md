@@ -55,13 +55,14 @@ D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
 D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
-R3-R27_IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+D2-WP003-R3-R28 = REVIEWED / NOT PASS / NOT CLOSED
+R3-R28_IMPLEMENTATION_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R29
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+CORRECTIVE_BASELINE_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
@@ -71,9 +72,9 @@ Accepted R3-R22 closure remains frozen: raw direct xlsx-populate output, determi
 
 Owner-approved Option B allows only one exact deterministic Part B `Sheet1` `<sheetPr/>` round-trip drift to be normalized inside preservation. It is not generic `sheetPr` tolerance; all other non-dimension drift remains fail-closed.
 
-R3-R27 successfully removed test-side pre-cleaning and uses direct raw Part B output, but remains corrective because Option B normalization is not persisted when the dimension is already correct, XML QName inventory can still skip Unicode/direct-child markup, prior negative proof regressed, source-structure tests hit SHA gates rather than their labels, and no always-runnable privacy-safe unit proof/CI signal exists.
+R3-R28 fixed Option B write-back persistence and added coverage/gap XML parsing plus always-runnable unit tests. It remains corrective because the worksheet singleton set is wrong/incomplete, source structural proof still hits SHA first, required per-sheet print-area/Sheet1 colsHash proof and much prior regression coverage were removed, actual Unicode proof and Option B negative proof are incomplete, accepted header/privacy negative guards were reduced, and no CI/runtime signal exists.
 
-R3-R28 is proposed as the smallest next corrective and is NOT authorized.
+R3-R29 is proposed as the smallest next corrective and is NOT authorized.
 
 D2 must ultimately close:
 - preservation gate;
@@ -126,7 +127,7 @@ Status: `SOURCE FUNCTIONALITY CLOSED`; reopen only proven defect.
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R28 AS PROPOSED
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R29 AS PROPOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
