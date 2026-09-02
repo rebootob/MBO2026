@@ -20,25 +20,27 @@ Open in this order:
 
 ```text
 D1 = PASS / CLOSED
-D2 = IN PROGRESS / BLOCKED
+D2 = IN PROGRESS
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
 R3-R26_IMPLEMENTATION_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = NONE
-OWNER_DECISION_REQUIRED = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 PRIVACY_PURGE_REQUIRED = NO
 D3 = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = STOP
-CLAUDE = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP / NOT NEEDED AT THIS GATE
 ```
 
 Owner priority: `COMPLETE D2 FULLY BEFORE D3.`
@@ -50,17 +52,18 @@ Read in this order:
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact current feasibility source/tests only when needed for the owner decision;
+5. exact current feasibility source/tests only if R3-R27 is authorized or under review;
 6. exact SHA-verified owner templates only when explicitly required;
 7. D1/security Baselines only for export authorization/confidentiality review.
 
 Current D2 checkpoint:
 - R3-R22 accepted proof remains frozen;
-- R3-R26 scope is valid but source/proof cannot close preservation;
-- direct Part B raw round-trip `outBufB` is incompatible with the strict source-minus-dimension invariant because xlsx-populate injects an observed-only `sheetPr` in `Sheet1`;
-- R3-R26 positive Part B proof pre-cleans a derivative buffer before preservation and therefore does not prove the direct raw path;
-- regex-only XML element inventory remains incomplete/fail-open for valid names/prefixes outside its restricted patterns;
-- Owner must choose strict redesign (Option A) or a narrow deterministic allowed-drift policy (Option B) before any further Antigravity work;
+- R3-R26 is reviewed BLOCKED and its source authorization is consumed;
+- Owner approved Option B narrow deterministic allowed-drift for exactly one fingerprinted xlsx-populate-generated Part B `Sheet1` `sheetPr`;
+- normalization/removal must occur inside preservation, not in test setup;
+- all other non-dimension drift remains fail-closed;
+- R3-R27 is proposed to implement Option B, close XML-inventory gaps and complete missing proof;
+- R3-R27 is NOT authorized;
 - no new Claude review is needed at this gate;
 - D3 remains HOLD.
 
