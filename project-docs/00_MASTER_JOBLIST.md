@@ -25,8 +25,6 @@ D1 = PASS / CLOSED
 FINAL_D1_SECURITY_REVIEW = PASS
 ```
 
-Frozen unless proven regression.
-
 ## 2. D2 — Excel + PDF Original/Legacy Format
 
 ```text
@@ -37,21 +35,20 @@ D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN FOR R3-R31
-REFERENCE_IMAGE_PROOF_REVIEW = FAIL / FULL TARGET-NORMALIZED INVENTORY EQUALITY ABSENT
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 9 OF 20
-ACTIVE_D2_WORK_PACKAGE = D2-WP003-R3-R31
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R31-TEST-20260902-01
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
+R3-R31_PROOF_REVIEW = FAIL / FAIL-CLOSED INVENTORY COVERAGE INCOMPLETE
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 10 OF 20
+ACTIVE_D2_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R32
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R31 / ONE BOUNDED COMMIT
-CLAUDE = STOP / NOT NEEDED
 ```
 
-The OOXML preservation gate is closed. Owner explicitly authorized R3-R31 TEST-ONLY on 2026-09-02 to close the missing target-normalized reference-image inventory proof. Production reference-image source is accepted for this corrective and must not be modified.
+R3-R31 implementation `37325d8279c6e0a19072ca9593a9feda2f9c6174` stayed within TEST-ONLY scope and added target-normalized inventory equality, but the new anchor/relationship extractors are not fail-closed and can silently omit relevant OOXML variants. R3-R32 is proposed TEST-ONLY; no production source change is required.
 
 D2 must still close:
-- reference-image handling through R3-R31 independent review;
+- reference-image full-inventory fail-closed proof;
 - 5–10 Part A objectives;
 - 6→8 Part B competency blocks;
 - no-formula authority;
@@ -89,23 +86,10 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R3-R31-TEST-20260902-01 FROM AI_ACTIVE_TASK.md
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R31
-ANTIGRAVITY = ONE-SHOT TEST-ONLY THEN STOP
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R32 TEST-ONLY
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
-```
-
-## 9. Project-close condition
-
-```text
-D1 = PASS
-D2 = PASS
-D3 = PASS
-D4 = PASS
-D5 = PASS
-D6 = PASS
-D7 = PASS
-P0_DEFECTS_OPEN = 0
 ```
