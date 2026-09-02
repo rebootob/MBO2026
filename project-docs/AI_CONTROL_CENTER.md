@@ -3,19 +3,38 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART B STRUCTURAL PASS CLOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / FAST-START ENABLED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
+## 0. Review routing
+
+Primary D2 routing document:
+
+`project-docs/D2_REVIEW_FAST_START.md`
+
+For ordinary D2 review use:
+1. Fast-Start
+2. `AI_ACTIVE_TASK.md`
+3. directly relevant Baseline
+4. authorization→implementation diff
+5. changed files only as needed
+
+Do not re-scan closed gates by default.
+
+## 1. Governance checkpoint
+
 ```text
-CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / MAX 20 ROUNDS USED
+OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
+CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / MAX 20 ROUNDS USED / DO NOT REUSE
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 20 OF 20
 CONTROL_PLANE_ROUNDS_REMAINING = 0
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
+NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
-## 1. Whole-project scoreboard
+## 2. Whole-project scoreboard
 
 | ID | Status | Current checkpoint |
 |---|---|---|
@@ -27,7 +46,7 @@ CLAUDE_AUTO_REVIEW = NO
 | D6 | 🔴 PENDING | Integrated E2E/security/lifecycle regression |
 | D7 | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
 
-## 2. Accepted D2 foundations
+## 3. Accepted D2 foundations — frozen
 
 ```text
 D2_PRESERVATION_GATE = PASS / CLOSED
@@ -42,18 +61,14 @@ PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED FOR 6-BLOCK SOURCE
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 3. R5-R1 review result
+Durable Part A authority:
+`CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 
-```text
-R5-R1_SCOPE_REVIEW = PASS
-R5-R1_SOURCE_REVIEW = PASS / FROZEN
-R5-R1_PROOF_CODE_REVIEW = PASS
-R5-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-R5-R1_STATUS = PASS / CLOSED
-D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
-```
+Durable Part B authority:
+`CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 
-Durable Part B structural authority lives in `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`.
+Review shortcuts and exact frozen invariants:
+`D2_REVIEW_FAST_START.md`
 
 ## 4. Current executor state
 
@@ -69,7 +84,7 @@ CLAUDE = STOP
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 5. Remaining D2 path
+## 5. Open D2 path only
 
 1. formula/no-formula authority;
 2. production sanitizer/XLSX renderer + expanded Part B privacy/address remapping;
@@ -78,8 +93,19 @@ D3 = HOLD UNTIL D2 PASS / CLOSED
 5. export authorization/security/privacy regression;
 6. final independent D2 closure.
 
-## 6. Review authority checkpoint
+Open mandatory privacy boundary:
 
-The Owner-approved Control Plane review/corrective standing authorization has reached its maximum 20 rounds.
+`PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED BEFORE PRODUCTION RENDERER / SECURITY CLOSURE`
 
-Read-only planning may continue. Before another standing review/corrective cycle is relied upon, Owner must explicitly establish additional review/corrective authority. No executor work or next work package is auto-started by this closure.
+## 6. Fast review rule
+
+When reviewing a new executor commit:
+- fresh-fetch HEAD;
+- validate exact authorization and scope;
+- compare authorization→implementation;
+- inspect changed files and directly touched frozen contract only;
+- never accept removal/weakening of accepted proof;
+- check GitHub CI/workflow signal;
+- no signal => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
+- verdict only `PASS/CLOSED`, `CORRECTIVE REQUIRED`, or `BLOCKED`;
+- no auto-start next WP.
