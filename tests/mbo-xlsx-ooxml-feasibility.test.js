@@ -1233,16 +1233,29 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     'Protected static valHash mismatch MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
 
-  // Test 8: Protected row30-clone static normalizedType mismatch => blocker
-  const invRow30CloneTypeMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
-  invRow30CloneTypeMutated['B34'].normalizedType = 'string';
-  invRow30CloneTypeMutated['B34'].nonblank = true;
-  invRow30CloneTypeMutated['B34'].valHash = '1111111111111111111111111111111111111111111111111111111111111111';
+  // Test 8A (R7-R3): Mutate ONLY row30-clone B34.normalizedType => blocker
+  const invRow30CloneTypeOnly = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invRow30CloneTypeOnly['B34'].normalizedType = 'string';
   await assert.rejects(
-    async () => resolvePartBPrivacyRoles(invRow30CloneTypeMutated, 7),
+    async () => resolvePartBPrivacyRoles(invRow30CloneTypeOnly, 7),
     /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
-    'Protected row30 clone normalizedType mismatch MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+    'Mutating ONLY B34.normalizedType MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
   );
+
+  // Test 8B (R7-R3): Mutate ONLY row30-clone B34.nonblank => blocker
+  const invRow30CloneNonblankOnly = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invRow30CloneNonblankOnly['B34'].nonblank = true;
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invRow30CloneNonblankOnly, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Mutating ONLY B34.nonblank MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 8C (R7-R3): Inspect pristine source row 30 protected-static valHash evidence
+  const authSourceInventory = await buildPartBSourceEvidenceInventory();
+  const row30Cols = ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X'];
+  const hasRow30ValHash = row30Cols.some(col => authSourceInventory[`${col}30`]?.valHash !== null);
+  assert.equal(hasRow30ValHash, false, 'Pristine source row 30 must have NO non-empty valHash authority (all cells B30..X30 are blank padding cells)');
 
   // --- PART B EXPANDED PRIVACY REMAP MATRIX (6, 7, 8 COMPETENCIES) ---
   for (const n of [6, 7, 8]) {
