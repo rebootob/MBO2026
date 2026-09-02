@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 2
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A Structural PASS/CLOSED; next gate Part B planning only |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A Structural PASS/CLOSED; Part B R5 proposed / not authorized |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -69,31 +69,32 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 Durable Part A closure authority:
 `project-docs/CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 
-## 5. Latest review — D2-WP003-R4-R2
+Do not reopen preservation, reference-image or Part A without a newly proven regression.
 
-Authorization:
-`D2-WP003-R4-R2-TEST-20260902-01`
+## 5. Part B READ-ONLY planning result
 
-Authorization commit:
-`2bb18bedc060955019bcf9c57efe6f27c52cafa3`
+Planning baseline before proposal docs:
+`c67c93a7bec6d2a753855073360eb469d33859b9`
 
-Implementation commit:
-`98da94a07259effd95dcf539de3454b1f94745a8`
+Repository inspection proves the current Part B feasibility path is incomplete for the full allowed structural range:
+- owner template main sheet `(Part B) Competency` is the 6-competency baseline;
+- one competency block is the complete 4-row block `27:30`;
+- summary/downstream content starts at row `31`;
+- `getStructuralPartBBuffers()` currently returns only `bufB6` and `bufB8`;
+- the 8-competency path is hard-coded to `extraRows = 8`, clones rows `27:30` to `31:34` and `35:38`, shifts original rows/cells/merges at `>=31` by 8, changes dimension to row 43 and print area to `X43`;
+- the existing structural test covers only 6 and 8 competencies and proves only merge counts plus print-area suffixes.
 
-```text
-R4-R2_SCOPE_REVIEW = PASS
-R4-R2_PROOF_CODE_REVIEW = PASS
-R4-R2_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
-R4-R2_STATUS = PASS / CLOSED
-D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-```
+Therefore TEST-ONLY is insufficient for a real 6/7/8 production-path feasibility matrix. The smallest safe proposed scope is the existing feasibility source helper plus its existing test file.
 
-Independent review confirms exactly one implementation commit after authorization, only `tests/mbo-xlsx-ooxml-feasibility.test.js` changed, and the diff is exactly `+3/-0`. The three absolute authority assertions `paperSize='8'`, `orientation='landscape'`, `scale='58'` were restored while every R4/R4-R1 relative and structural proof remained intact. No source defect was proven; R4 source stays frozen.
-
-## 6. Exact current gate
+## 6. Proposed next work package — NOT AUTHORIZED
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R5
+PROPOSED_WORK_PACKAGE_NAME = PART B COMPETENCY INSERTION STRUCTURAL MATRIX CLOSURE
+PROPOSED_SCOPE = SOURCE+TEST / EXACT TWO FEASIBILITY FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+PLANNING_BASELINE_HEAD = c67c93a7bec6d2a753855073360eb469d33859b9
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
@@ -102,17 +103,25 @@ ACTIVE_DEPLOY_AUTH = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
-NEXT_D2_PLANNING_GATE = PART B COMPETENCY INSERTION STRUCTURAL MATRIX
-NEXT_EXECUTOR = OWNER / CHATGPT READ-ONLY PLANNING WHEN REQUESTED
 ```
 
-Do not auto-start Part B. Do not reopen preservation, reference-image or Part A without a newly proven regression.
+Proposed writable files only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-## 7. D2 remaining path
+R5 should generalize the existing Part B helper to a real 6/7/8 competency matrix using the current 4-row block algorithm, then prove exact row/block relocation, full merge-set equality, dimensions/print areas, non-target workbook invariants, auxiliary `Sheet1` stability, relationship/media preservation and zero formulas.
+
+No Part B authorization exists yet. Do not call Antigravity until the Owner explicitly authorizes R5.
+
+## 7. Important privacy follow-up boundary
+
+The currently accepted Part B privacy/source classification is for the 6-block owner-template address layout. Expanded 7/8-block structures occupy rows that are summary rows in the source layout. R5 is structural-only and must NOT change privacy/sanitization logic. Before production renderer/security closure, expanded Part B role/address mapping must be resolved explicitly instead of blindly reusing source absolute row ranges.
+
+## 8. D2 remaining path
 
 1. Part B competency insertion structural matrix;
 2. formula/no-formula authority;
-3. production sanitizer/XLSX renderer;
+3. production sanitizer/XLSX renderer, including expanded Part B privacy/address remapping;
 4. combined Excel parity;
 5. PDF parity;
 6. export authorization/security/privacy regression;
