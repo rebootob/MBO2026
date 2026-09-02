@@ -19,8 +19,8 @@ ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_OWNER_AUTH = YES
 COMPLETE_D2_FULLY_BEFORE_D3 = YES
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 13 OF 20
-ROUNDS_REMAINING = 7
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 14 OF 20
+ROUNDS_REMAINING = 6
 ```
 
 ## 2. Startup order
@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 7
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; reference-image source PASS/FROZEN; R3-R35 TEST-ONLY authorized |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; reference-image source PASS/FROZEN; R3-R36 TEST-ONLY proposed |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -61,51 +61,46 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 5. Latest review — R3-R34
+## 5. Latest review — R3-R35
 
-Authorization `D2-WP003-R3-R34-TEST-20260902-01` was consumed by implementation `f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec`.
+Authorization `D2-WP003-R3-R35-TEST-20260902-01` was consumed by implementation `2ea39f1d10dca9ba4b830e4207a4abf7cf797644`.
 
 ```text
-R3-R34_SCOPE_REVIEW = PASS
+R3-R35_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
+R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R3-R34 progress: leading-digit/hyphen/dot prefix negatives reject; Relationship start-tag scanning rejects malformed/unquoted/stray syntax fail-closed; mixed single/double quoted valid attributes parse.
+Accepted R3-R35 progress is frozen: XML 1.0 NameStartChar/NameChar code-point validation, NCName/QName attribute-name validation, restored complete R3-R33 adversarial matrix, retained R3-R34 matrix, middle-dot/combining-mark/connector-punctuation positives, invalid attribute-QName negatives, exact target-normalized equality and existing orphan-safety proof.
 
-Remaining TEST-ONLY blockers:
-- XML NameStartChar/NameChar/NCName/QName correctness is incomplete;
-- Relationship attribute names are not syntax-validated as XML NCName/QName tokens;
-- accepted R3-R33 adversarial assertions were removed instead of retained;
-- malformed prefixed `embed` QName must fail closed.
+Remaining TEST-ONLY blocker is narrow: when anchor inventory encounters malformed prefixed `embed` such as `1bad:embed`, the helper currently ignores the attribute and returns `blipRId = null`. The authorization required malformed QName/prefix to **fail closed**, not merely avoid yielding a target rId. Current synthetic test also asserts `null` instead of asserting a blocker throw.
 
-GitHub exposes no CI/status/workflow runtime signal for the implementation commit. No independent runtime PASS is claimed.
+GitHub exposes no CI/status/workflow runtime signal for the implementation commit. No independent runtime PASS is claimed. Claude is not needed.
 
 ## 6. Exact current gate
 
-Owner explicitly authorized `D2-WP003-R3-R35 TEST-ONLY` on 2026-09-02.
-
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R35
-ACTIVE_WORK_PACKAGE_NAME = REFERENCE-IMAGE XML NAME/QNAME + REGRESSION RETENTION CLOSURE
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R35-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R36
+PROPOSED_WORK_PACKAGE_NAME = REFERENCE-IMAGE PREFIXED EMBED FAIL-CLOSED CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R35 / ONE BOUNDED COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-Antigravity may modify only the existing feasibility test file, run the exact required checks, push exactly one bounded implementation/blocker commit, then STOP. It may not self-certify PASS/CLOSED.
+R3-R36 is proposed only. Do not auto-start it.
 
 ## 7. D2 remaining path
 
-After ChatGPT independently reviews R3-R35 and closes the reference-image gate if justified:
+After reference-image closure:
 1. Part A objective insertion matrix;
 2. Part B competency insertion matrix;
 3. formula/no-formula authority;
@@ -113,6 +108,6 @@ After ChatGPT independently reviews R3-R35 and closes the reference-image gate i
 5. combined Excel parity;
 6. PDF parity;
 7. export authorization/security/privacy regression;
-8. final independent D2 closure.
+8. final D2 independent closure.
 
 Do not auto-start any item.
