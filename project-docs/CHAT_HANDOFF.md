@@ -17,32 +17,28 @@ D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D3 = HOLD
 ```
 
-Renderer architecture remains mandatory: centralized Template Profile/Mapping; no scattered important cell/range addresses.
-
 Latest R1 review:
 ```text
-AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
 IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
 SCOPE = PASS / ONE COMMIT / TWO NEW FILES
 SOURCE_PROOF = CORRECTIVE REQUIRED
 TOKEN = CONSUMED / DO NOT REUSE
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Corrective facts:
-- original Part B rows 7:29 K:X remain dynamic; rows10/14/18/22/26 are NOT frozen padding;
-- protected padding authority is source row30 and clones row34/38 only;
-- semantic mapping must align to current `MboExportService` secured projection rather than inventing incompatible field semantics;
-- missing/conflicting required mapping must fail closed at runtime.
-
+Current authorization:
 ```text
-PROPOSED_NEXT = D2-WP004-R1-R1 SOURCE+TEST / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R1
+AUTHORIZATION = D2-WP004-R1-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 57b77fde38c0ef95f0ac40eb396ec386643adf03
+WRITABLE_FILES_ONLY =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R1 / ONE-SHOT
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
+PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
+
+R1-R1 must restore exact frozen Part B row-role authority, align semantics/projection paths to read-only `MboExportService`, and enforce missing/conflicting mapping fail-closed. Do not invent unsupported semantic/address authority; block instead.
