@@ -3,14 +3,20 @@
  * 
  * Centralized, pure semantic role-to-address mapping for MBO2026 Part A and Part B templates.
  * 
+ * Aligned strictly to canonical baseline:
+ * project-docs/CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md
+ * 
  * Rules:
  * - Pure configuration/resolver module (no filesystem I/O, no remote API adapters, no workbook binary parsers).
  * - Exact SHA256 validation for Part A and Part B.
  * - Part A objective counts domain: integer 4..10.
  * - Part B competency counts domain: integer 6, 7, 8.
- * - Fails closed with EXPORT_TEMPLATE_PROFILE_UNRESOLVED on any invalid/unsupported input or unmapped role.
- * - Part B source row 30 (for N=6/7/8) and clone rows 34 (for N=7/8) & 38 (for N=8) are protected non-dynamic padding and MUST NOT resolve as dynamic write targets.
- * - Rows 10, 14, 18, 22, 26 (columns K:X) in pristine source Part B ARE DYNAMIC competency rating rows.
+ * - Exactly 18 SAFE_TO_MAP roles are production writable.
+ * - All 22 UNRESOLVED roles throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
+ * - All 5 NO_SECURED_PROJECTION_SOURCE roles throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
+ * - Zero formula/scoring recreation.
+ * - Zero duplicate exclusive writable targets.
+ * - Zero writable roles with null projection path.
  */
 
 export const MBO2026_PROFILE_ID = 'MBO2026';
@@ -20,32 +26,90 @@ export const PART_B_TEMPLATE_SHA256 = 'c210c049ccc1daa83449f08c41276d4a668d15188
 export const ACCEPTED_PART_A_OBJECTIVE_COUNTS = Object.freeze([4, 5, 6, 7, 8, 9, 10]);
 export const ACCEPTED_PART_B_COMPETENCY_COUNTS = Object.freeze([6, 7, 8]);
 
+export const CHIEF_DYNAMIC_AUTHORITY = 'R:X';
+export const SELF_DYNAMIC_AUTHORITY = 'K:Q';
+
+/**
+ * Exact 18 SAFE_TO_MAP semantic roles
+ */
+export const PROVEN_SAFE_ROLES = Object.freeze([
+  'HEADER_FISCAL_YEAR',
+  'HEADER_EMPLOYEE_NAME',
+  'HEADER_DEPARTMENT',
+  'HEADER_SECTION',
+  'HEADER_POSITION',
+  'HEADER_EMPLOYEE_CODE',
+  'HOSHIN_DEPARTMENT_HOSHIN_TITLE',
+  'HOSHIN_SECTION_HOSHIN_TITLE',
+  'OBJECTIVE_MEASUREMENT',
+  'OBJECTIVE_WEIGHT',
+  'OBJECTIVE_ACTUAL_RESULT',
+  'OBJECTIVE_SELF_COMMENT',
+  'OBJECTIVE_AVERAGE_SCORE',
+  'SUMMARY_PART_A_RAW_SCORE',
+  'SUMMARY_PART_A_WEIGHTED_SCORE',
+  'COMPETENCY_SELF_RATING',
+  'SUMMARY_PART_B_RAW_SCORE',
+  'SUMMARY_PART_B_WEIGHTED_SCORE'
+]);
+
+/**
+ * Exact 22 UNRESOLVED semantic roles
+ */
+export const UNRESOLVED_ROLES = Object.freeze([
+  'HEADER_EMPLOYEE_NAME_TH',
+  'HEADER_PROFILE_CODE',
+  'HEADER_PROFILE_FAMILY',
+  'HEADER_PART_A_WEIGHT_PERCENT',
+  'HEADER_CHIEF_NAME',
+  'OBJECTIVE_TITLE',
+  'OBJECTIVE_DESCRIPTION',
+  'OBJECTIVE_KPI',
+  'OBJECTIVE_TARGET',
+  'OBJECTIVE_PROGRESS_PERCENT',
+  'OBJECTIVE_SELF_ACHIEVEMENT',
+  'OBJECTIVE_MANAGER_ACHIEVEMENT',
+  'OBJECTIVE_MANAGER_SCORE',
+  'OBJECTIVE_MANAGER_COMMENT',
+  'OBJECTIVE_GM_ACHIEVEMENT',
+  'OBJECTIVE_GM_SCORE',
+  'OBJECTIVE_GM_COMMENT',
+  'OBJECTIVE_DIFFICULTY',
+  'SUMMARY_WEIGHT_SUM',
+  'SUMMARY_FINAL_SCORE',
+  'SUMMARY_FINAL_GRADE',
+  'COMPETENCY_CHIEF_RATING'
+]);
+
+/**
+ * Exact 5 NO_SECURED_PROJECTION_SOURCE semantic roles
+ */
+export const NO_SECURED_SOURCE_ROLES = Object.freeze([
+  'OVERALL_RATING_SUMMARY',
+  'EMPLOYEE_COMMENTS',
+  'CHIEF_FEEDBACK',
+  'EMPLOYEE_SIGNATURE',
+  'CHIEF_SIGNATURE'
+]);
+
 /**
  * Standard projection path mapping for canonical semantic roles
  */
 export const SEMANTIC_PROJECTION_PATHS = Object.freeze({
   HEADER_FISCAL_YEAR: 'partA.header.fiscalYear',
   HEADER_EMPLOYEE_NAME: 'partA.header.employeeName',
-  HEADER_EMPLOYEE_NAME_TH: 'partA.header.employeeNameTH',
   HEADER_DEPARTMENT: 'partA.header.department',
   HEADER_SECTION: 'partA.header.section',
   HEADER_POSITION: 'partA.header.position',
   HEADER_EMPLOYEE_CODE: 'partA.header.employeeCode',
-  HEADER_PROFILE_CODE: 'partA.header.profileCode',
-  HEADER_PROFILE_FAMILY: 'partA.header.profileFamily',
-  HEADER_PART_A_WEIGHT_PERCENT: 'partA.header.partAWeightPercent',
 
   HOSHIN_DEPARTMENT_HOSHIN_TITLE: 'partA.hoshin.departmentHoshinTitle',
   HOSHIN_SECTION_HOSHIN_TITLE: 'partA.hoshin.sectionHoshinTitle',
 
-  HEADER_PART_B_WEIGHT_PERCENT: 'partB.partBWeightPercent',
-
   SUMMARY_PART_A_RAW_SCORE: 'partA.summary.rawPartAScore',
   SUMMARY_PART_A_WEIGHTED_SCORE: 'partA.summary.weightedPartAScore',
   SUMMARY_PART_B_RAW_SCORE: 'partB.rawPartBScore',
-  SUMMARY_PART_B_WEIGHTED_SCORE: 'partB.weightedPartBScore',
-  SUMMARY_FINAL_SCORE: 'finalResult.finalWeightedScore',
-  SUMMARY_FINAL_GRADE: 'finalResult.grade'
+  SUMMARY_PART_B_WEIGHTED_SCORE: 'partB.weightedPartBScore'
 });
 
 /**
@@ -55,29 +119,14 @@ export function getObjectiveProjectionPath(index, fieldKey) {
   const i = index - 1;
   const f = String(fieldKey || '').toLowerCase();
   const fieldPathMap = {
-    title: `partA.objectives[${i}].title`,
-    name: `partA.objectives[${i}].title`,
-    objective_name_and_target: `partA.objectives[${i}].title`,
-    description: `partA.objectives[${i}].description`,
-    kpi: `partA.objectives[${i}].kpi`,
-    target: `partA.objectives[${i}].target`,
-    plan_target: `partA.objectives[${i}].target`,
     measurement: `partA.objectives[${i}].measurement`,
     weight: `partA.objectives[${i}].weight`,
-    progresspercent: `partA.objectives[${i}].progressPercent`,
-    mid_term_progress: `partA.objectives[${i}].progressPercent`,
     actualresult: `partA.objectives[${i}].actualResult`,
-    selfachievement: `partA.objectives[${i}].selfAchievement`,
-    self_rating: `partA.objectives[${i}].selfAchievement`,
+    actual_result: `partA.objectives[${i}].actualResult`,
     selfcomment: `partA.objectives[${i}].selfComment`,
     self_comment: `partA.objectives[${i}].selfComment`,
-    managerachievement: `partA.objectives[${i}].managerAchievement`,
-    managerscore: `partA.objectives[${i}].managerScore`,
-    managercomment: `partA.objectives[${i}].managerComment`,
-    gmachievement: `partA.objectives[${i}].gmAchievement`,
-    gmscore: `partA.objectives[${i}].gmScore`,
-    gmcomment: `partA.objectives[${i}].gmComment`,
-    averagescore: `partA.objectives[${i}].averageScore`
+    averagescore: `partA.objectives[${i}].averageScore`,
+    average_score: `partA.objectives[${i}].averageScore`
   };
   return fieldPathMap[f] || null;
 }
@@ -173,19 +222,16 @@ export class MboXlsxTemplateProfile {
 
     const header = Object.freeze({
       FISCAL_YEAR: 'N6',
-      EMPLOYEE_NAME: 'Z7',
-      DEPARTMENT: 'AG7',
-      SECTION: 'AM7',
-      POSITION: 'AQ7',
-      EMPLOYEE_CODE: 'AT7',
-      CHIEF_NAME: 'BD7'
+      EMPLOYEE_NAME: 'AT7',
+      DEPARTMENT: 'Z7',
+      SECTION: 'AG7',
+      POSITION: 'BD7',
+      EMPLOYEE_CODE: 'AQ7'
     });
 
     const hoshin = Object.freeze({
-      CORPORATE_HOSHIN_LABEL: 'B4',
-      CORPORATE_HOSHIN_TEXT: 'G8',
-      DEPARTMENT_HOSHIN_LABEL: 'G4',
-      DEPARTMENT_HOSHIN_TEXT: 'G16'
+      DEPARTMENT_HOSHIN_TITLE: 'G16',
+      SECTION_HOSHIN_TITLE: 'AM16'
     });
 
     const objectives = [];
@@ -194,41 +240,25 @@ export class MboXlsxTemplateProfile {
       objectives.push(Object.freeze({
         index: i,
         row: r,
-        OBJECTIVE_NAME_AND_TARGET: `B${r}`,
-        WEIGHT: `F${r}`,
-        PLAN_TARGET: `I${r}`,
-        MID_TERM_PROGRESS: `W${r}`,
-        SELF_RATING: `AG${r}`,
-        CHIEF_RATING: `AM${r}`,
-        FINAL_RATING: `AQ${r}`,
-        SELF_COMMENT: `AT${r}`,
-        CHIEF_COMMENT: `BD${r}`,
+        MEASUREMENT: `T${r}`,
+        WEIGHT: `Y${r}`,
+        ACTUAL_RESULT: `AK${r}`,
+        SELF_COMMENT: `AD${r}`,
+        AVERAGE_SCORE: `BC${r}`,
 
         projectionPaths: Object.freeze({
-          title: getObjectiveProjectionPath(i, 'title'),
-          description: getObjectiveProjectionPath(i, 'description'),
-          kpi: getObjectiveProjectionPath(i, 'kpi'),
-          target: getObjectiveProjectionPath(i, 'target'),
           measurement: getObjectiveProjectionPath(i, 'measurement'),
           weight: getObjectiveProjectionPath(i, 'weight'),
-          progressPercent: getObjectiveProjectionPath(i, 'progressPercent'),
           actualResult: getObjectiveProjectionPath(i, 'actualResult'),
-          selfAchievement: getObjectiveProjectionPath(i, 'selfAchievement'),
-          selfComment: getObjectiveProjectionPath(i, 'selfComment')
+          selfComment: getObjectiveProjectionPath(i, 'selfComment'),
+          averageScore: getObjectiveProjectionPath(i, 'averageScore')
         })
       }));
     }
 
-    const weightSumRow = 25 + n;
     const summary = Object.freeze({
-      WEIGHT_SUM_ROW: weightSumRow,
-      WEIGHT_SUM: `F${weightSumRow}`,
       PART_A_RAW_SCORE: `BC${25 + n}`,
-      PART_A_WEIGHTED_SCORE: `BI${25 + n}`,
-      PART_B_RAW_SCORE: `BC${26 + n}`,
-      PART_B_WEIGHTED_SCORE: `BI${26 + n}`,
-      FINAL_SCORE: `BC${27 + n}`,
-      FINAL_GRADE: `BI${27 + n}`
+      PART_A_WEIGHTED_SCORE: `BC${29 + n}`
     });
 
     return Object.freeze({
@@ -246,43 +276,51 @@ export class MboXlsxTemplateProfile {
    */
   getPartBMappings(competencyCount) {
     const n = validatePartBCompetencyCount(competencyCount);
-    const extraBlocks = n - 6;
-    const extraRows = 4 * extraBlocks;
 
     const header = Object.freeze({
       FISCAL_YEAR: 'G2',
-      DEPARTMENT_LABEL: 'J2',
-      DEPARTMENT_VALUE: 'J3',
-      SECTION_LABEL: 'M2',
-      SECTION_VALUE: 'M3',
-      POSITION_LABEL: 'P2',
-      POSITION_VALUE: 'P3',
-      EMPLOYEE_ID_LABEL: 'R2',
-      EMPLOYEE_ID_VALUE: 'R3',
-      EMPLOYEE_NAME_LABEL: 'S2',
-      EMPLOYEE_NAME_VALUE: 'S3'
+      DEPARTMENT: 'J3',
+      SECTION: 'M3',
+      POSITION: 'P3',
+      EMPLOYEE_CODE: 'R3',
+      EMPLOYEE_NAME: 'S3'
     });
 
     const protectedPaddingRows = [30];
     if (n >= 7) protectedPaddingRows.push(34);
     if (n === 8) protectedPaddingRows.push(38);
 
-    const summaryStartRow = 31 + extraRows;
+    const extraBlocks = n - 6;
+    const summaryStartRow = 31 + 4 * extraBlocks;
+
     const summary = Object.freeze({
       startRow: summaryStartRow,
       endRow: summaryStartRow + 3,
-      OVERALL_RATING_SUMMARY: `B${summaryStartRow}`,
-      EMPLOYEE_COMMENTS: `E${summaryStartRow}`,
-      CHIEF_FEEDBACK: `I${summaryStartRow}`,
-      EMPLOYEE_SIGNATURE: `Q${summaryStartRow}`,
-      CHIEF_SIGNATURE: `T${summaryStartRow}`
+      PART_B_RAW_SCORE: `B${summaryStartRow}`,
+      PART_B_WEIGHTED_SCORE: `I${summaryStartRow}`
     });
+
+    const competencies = [];
+    const ratingRows = [9, 13, 17, 21, 25, 29];
+    if (n >= 7) ratingRows.push(33);
+    if (n === 8) ratingRows.push(37);
+
+    for (let b = 1; b <= n; b++) {
+      const r = ratingRows[b - 1];
+      competencies.push(Object.freeze({
+        index: b,
+        row: r,
+        SELF_RATING: `K${r}`,
+        projectionPath: `partB.competencyItems[${b - 1}].selfRating`
+      }));
+    }
 
     return Object.freeze({
       profileId: this.profileId,
       competencyCount: n,
       header,
       protectedPaddingRows: Object.freeze(protectedPaddingRows),
+      competencies: Object.freeze(competencies),
       summary
     });
   }
@@ -302,6 +340,12 @@ export class MboXlsxTemplateProfile {
     if (partKey === 'A') {
       const mappings = this.getPartAMappings(objectiveCount);
 
+      if (roleName === 'HEADER_EMPLOYEE_NAME_TH' || roleName === 'HEADER_PROFILE_CODE' ||
+          roleName === 'HEADER_PROFILE_FAMILY' || roleName === 'HEADER_PART_A_WEIGHT_PERCENT' ||
+          roleName === 'HEADER_CHIEF_NAME') {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+
       if (roleName.startsWith('HEADER_')) {
         const key = roleName.replace('HEADER_', '');
         if (mappings.header[key]) {
@@ -312,28 +356,32 @@ export class MboXlsxTemplateProfile {
         }
       }
 
-      if (roleName === 'HOSHIN_DEPARTMENT_HOSHIN_TITLE' || roleName === 'HOSHIN_DEPARTMENT_HOSHIN_TEXT') {
+      if (roleName === 'HOSHIN_DEPARTMENT_HOSHIN_TITLE') {
         return {
-          address: mappings.hoshin.DEPARTMENT_HOSHIN_TEXT,
+          address: mappings.hoshin.DEPARTMENT_HOSHIN_TITLE,
           projectionPath: SEMANTIC_PROJECTION_PATHS.HOSHIN_DEPARTMENT_HOSHIN_TITLE
         };
       }
 
-      if (roleName === 'HOSHIN_SECTION_HOSHIN_TITLE' || roleName === 'HOSHIN_SECTION_HOSHIN_TEXT') {
+      if (roleName === 'HOSHIN_SECTION_HOSHIN_TITLE') {
         return {
-          address: mappings.hoshin.DEPARTMENT_HOSHIN_TEXT,
+          address: mappings.hoshin.SECTION_HOSHIN_TITLE,
           projectionPath: SEMANTIC_PROJECTION_PATHS.HOSHIN_SECTION_HOSHIN_TITLE
         };
       }
 
-      if (roleName.startsWith('SUMMARY_')) {
-        const key = roleName.replace('SUMMARY_', '');
-        if (mappings.summary[key]) {
-          return {
-            address: mappings.summary[key],
-            projectionPath: SEMANTIC_PROJECTION_PATHS[roleName] || null
-          };
-        }
+      if (roleName === 'SUMMARY_PART_A_RAW_SCORE') {
+        return {
+          address: mappings.summary.PART_A_RAW_SCORE,
+          projectionPath: SEMANTIC_PROJECTION_PATHS.SUMMARY_PART_A_RAW_SCORE
+        };
+      }
+
+      if (roleName === 'SUMMARY_PART_A_WEIGHTED_SCORE') {
+        return {
+          address: mappings.summary.PART_A_WEIGHTED_SCORE,
+          projectionPath: SEMANTIC_PROJECTION_PATHS.SUMMARY_PART_A_WEIGHTED_SCORE
+        };
       }
 
       if (roleName.startsWith('OBJECTIVE_')) {
@@ -342,9 +390,18 @@ export class MboXlsxTemplateProfile {
           const idx = parseInt(match[1], 10);
           const rawField = match[2];
 
-          // Map field aliases (TITLE, WEIGHT, PLAN_TARGET, etc.)
+          // Reject unresolved objective roles
+          const forbiddenFields = [
+            'TITLE', 'NAME', 'OBJECTIVE_NAME_AND_TARGET', 'DESCRIPTION', 'KPI', 'PLAN_TARGET',
+            'TARGET', 'PROGRESS_PERCENT', 'MID_TERM_PROGRESS', 'SELF_ACHIEVEMENT', 'SELF_RATING',
+            'MANAGER_ACHIEVEMENT', 'MANAGER_SCORE', 'MANAGER_COMMENT',
+            'GM_ACHIEVEMENT', 'GM_SCORE', 'GM_COMMENT', 'DIFFICULTY'
+          ];
+          if (forbiddenFields.includes(rawField)) {
+            throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+          }
+
           let propKey = rawField;
-          if (rawField === 'TITLE' || rawField === 'NAME') propKey = 'OBJECTIVE_NAME_AND_TARGET';
           if (rawField === 'COMMENT') propKey = 'SELF_COMMENT';
 
           const obj = mappings.objectives.find(o => o.index === idx);
@@ -369,13 +426,39 @@ export class MboXlsxTemplateProfile {
         }
       }
 
-      if (roleName.startsWith('SUMMARY_')) {
-        const key = roleName.replace('SUMMARY_', '');
-        if (mappings.summary[key]) {
-          return {
-            address: mappings.summary[key],
-            projectionPath: SEMANTIC_PROJECTION_PATHS[roleName] || null
-          };
+      if (roleName === 'SUMMARY_PART_B_RAW_SCORE') {
+        return {
+          address: mappings.summary.PART_B_RAW_SCORE,
+          projectionPath: SEMANTIC_PROJECTION_PATHS.SUMMARY_PART_B_RAW_SCORE
+        };
+      }
+
+      if (roleName === 'SUMMARY_PART_B_WEIGHTED_SCORE') {
+        return {
+          address: mappings.summary.PART_B_WEIGHTED_SCORE,
+          projectionPath: SEMANTIC_PROJECTION_PATHS.SUMMARY_PART_B_WEIGHTED_SCORE
+        };
+      }
+
+      if (roleName.startsWith('COMPETENCY_')) {
+        const match = roleName.match(/^COMPETENCY_(\d+)_(.+)$/);
+        if (match) {
+          const idx = parseInt(match[1], 10);
+          const rawField = match[2];
+
+          if (rawField === 'CHIEF_RATING') {
+            throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+          }
+
+          if (rawField === 'SELF_RATING' || rawField === 'RATING') {
+            const comp = mappings.competencies.find(c => c.index === idx);
+            if (comp) {
+              return {
+                address: comp.SELF_RATING,
+                projectionPath: comp.projectionPath
+              };
+            }
+          }
         }
       }
     }
@@ -402,11 +485,11 @@ export class MboXlsxTemplateProfile {
       const n = validatePartAObjectiveCount(count);
       const mappings = this.getPartAMappings(n);
 
-      if (['N6', 'Z7', 'AG7', 'AM7', 'AQ7', 'AT7', 'BD7'].includes(addr)) return true;
-      if (['G8', 'G16'].includes(addr)) return true;
+      if (['N6', 'AT7', 'Z7', 'AG7', 'BD7', 'AQ7'].includes(addr)) return true;
+      if (['G16', 'AM16'].includes(addr)) return true;
 
       if (row >= 25 && row <= 24 + n) {
-        if (['B', 'F', 'I', 'W', 'AG', 'AM', 'AQ', 'AT', 'BD'].includes(col)) return true;
+        if (['T', 'Y', 'AK', 'AD', 'BC'].includes(col)) return true;
       }
 
       if (Object.values(mappings.summary).includes(addr)) return true;
@@ -465,14 +548,14 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
   for (const n of ACCEPTED_PART_A_OBJECTIVE_COUNTS) {
     const mapA = profile.getPartAMappings(n);
 
-    const reqHeaders = ['FISCAL_YEAR', 'EMPLOYEE_NAME', 'DEPARTMENT', 'SECTION', 'POSITION', 'EMPLOYEE_CODE', 'CHIEF_NAME'];
+    const reqHeaders = ['FISCAL_YEAR', 'EMPLOYEE_NAME', 'DEPARTMENT', 'SECTION', 'POSITION', 'EMPLOYEE_CODE'];
     for (const k of reqHeaders) {
       if (!mapA.header || !mapA.header[k] || !validateAddressFormat(mapA.header[k])) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
       }
     }
 
-    const reqHoshin = ['CORPORATE_HOSHIN_LABEL', 'CORPORATE_HOSHIN_TEXT', 'DEPARTMENT_HOSHIN_LABEL', 'DEPARTMENT_HOSHIN_TEXT'];
+    const reqHoshin = ['DEPARTMENT_HOSHIN_TITLE', 'SECTION_HOSHIN_TITLE'];
     for (const k of reqHoshin) {
       if (!mapA.hoshin || !mapA.hoshin[k] || !validateAddressFormat(mapA.hoshin[k])) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
@@ -482,7 +565,7 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
     if (!Array.isArray(mapA.objectives) || mapA.objectives.length !== n) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
     }
-    const reqObjFields = ['OBJECTIVE_NAME_AND_TARGET', 'WEIGHT', 'PLAN_TARGET', 'MID_TERM_PROGRESS', 'SELF_RATING', 'CHIEF_RATING', 'FINAL_RATING', 'SELF_COMMENT', 'CHIEF_COMMENT'];
+    const reqObjFields = ['MEASUREMENT', 'WEIGHT', 'ACTUAL_RESULT', 'SELF_COMMENT', 'AVERAGE_SCORE'];
     for (const obj of mapA.objectives) {
       for (const f of reqObjFields) {
         if (!obj[f] || !validateAddressFormat(obj[f])) {
@@ -496,11 +579,11 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
 
     const writeAddrs = [];
     writeAddrs.push(...Object.values(mapA.header));
-    writeAddrs.push(mapA.hoshin.CORPORATE_HOSHIN_TEXT, mapA.hoshin.DEPARTMENT_HOSHIN_TEXT);
+    writeAddrs.push(mapA.hoshin.DEPARTMENT_HOSHIN_TITLE, mapA.hoshin.SECTION_HOSHIN_TITLE);
     for (const obj of mapA.objectives) {
-      writeAddrs.push(obj.OBJECTIVE_NAME_AND_TARGET, obj.WEIGHT, obj.PLAN_TARGET, obj.MID_TERM_PROGRESS, obj.SELF_RATING, obj.CHIEF_RATING, obj.FINAL_RATING, obj.SELF_COMMENT, obj.CHIEF_COMMENT);
+      writeAddrs.push(obj.MEASUREMENT, obj.WEIGHT, obj.ACTUAL_RESULT, obj.SELF_COMMENT, obj.AVERAGE_SCORE);
     }
-    writeAddrs.push(mapA.summary.WEIGHT_SUM, mapA.summary.PART_A_RAW_SCORE, mapA.summary.PART_A_WEIGHTED_SCORE, mapA.summary.PART_B_RAW_SCORE, mapA.summary.PART_B_WEIGHTED_SCORE, mapA.summary.FINAL_SCORE, mapA.summary.FINAL_GRADE);
+    writeAddrs.push(mapA.summary.PART_A_RAW_SCORE, mapA.summary.PART_A_WEIGHTED_SCORE);
 
     if (new Set(writeAddrs).size !== writeAddrs.length) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
@@ -527,7 +610,7 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
       }
     }
 
-    const reqSummary = ['OVERALL_RATING_SUMMARY', 'EMPLOYEE_COMMENTS', 'CHIEF_FEEDBACK', 'EMPLOYEE_SIGNATURE', 'CHIEF_SIGNATURE'];
+    const reqSummary = ['PART_B_RAW_SCORE', 'PART_B_WEIGHTED_SCORE'];
     for (const k of reqSummary) {
       if (!mapB.summary || !mapB.summary[k] || !validateAddressFormat(mapB.summary[k])) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
