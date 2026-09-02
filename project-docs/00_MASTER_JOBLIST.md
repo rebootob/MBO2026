@@ -1,6 +1,6 @@
 # 00 MASTER JOBLIST — MBO2026
 
-Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -26,18 +26,23 @@ UNRESOLVED = 22
 NO_SECURED_PROJECTION_SOURCE = 5
 ```
 
-Next proposed smallest gate:
+Active smallest gate:
 ```text
 D2-WP004-R1-R3-R1 = TEMPLATE PROFILE STRICT ALLOWLIST + INTEGRITY CORRECTIVE
-MODE = SOURCE+TEST / NOT AUTHORIZED
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
 ```
 
-Corrective focus only: remove unauthorized writable aliases; reject every writable resolution with null/unknown secured path; complete validator coverage for actual Part A/Part B safe mappings, duplicate/malformed/null path faults and canonical role authority. Preserve all accepted SHA/count/topology/purity behavior.
+Corrective focus only: reject unauthorized aliases; reject every successful resolution with null/unknown secured path; complete validator coverage for actual Part A/Part B safe mappings, duplicate/malformed/null-path faults, and focused negative tests. Preserve all accepted SHA/count/topology/purity behavior.
+
+Low-credit rule: no broad repository scan or workbook inspection.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
