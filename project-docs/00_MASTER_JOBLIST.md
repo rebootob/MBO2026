@@ -1,6 +1,6 @@
 # 00 MASTER JOBLIST — MBO2026
 
-Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
+Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -13,29 +13,42 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority.
+D2 closed:
+- Preservation
+- Reference Image
+- Part A Structural
+- Part B Structural
+- Formula Authority
+- Part B Expanded Privacy
 
-Current D2 gate:
+Latest privacy closure:
 ```text
-D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
-R7-R2_IMPLEMENTATION = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
-R7-R2_SOURCE = PASS / FROZEN
-R7-R2_PROOF = CORRECTIVE REQUIRED / DIRECT NEGATIVE ISOLATION ONLY
-R7-R2_TOKEN = CONSUMED / DO NOT REUSE
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
-R7-R3 = AUTHORIZED / TEST-ONLY / ONE FILE
-R7-R3_AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
+R7-R2_SOURCE = PASS / FROZEN / 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
+R7-R3_TEST_ONLY = PASS / CLOSED / 69891d82996f83a0442ee6dc268dd20b7ef8ee99
+D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 ```
 
-Accepted/frozen privacy authority: N6/N7/N8 counts 432/474/516; row30/34/38 protected non-dynamic; strict style/merge/type/nonblank source backing; source-applicable static valHash enforcement; expanded package token purge; caller-buffer immutability; formula inventory zero.
+Frozen privacy authority includes N6/N7/N8 counts 432/474/516, exact row30/34/38 protected-static semantics, strict source-backed style/merge/type/nonblank/static-hash-when-applicable validation, expanded package token purge, immutable caller buffers and zero formulas.
 
-R7-R3 may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js` to isolate direct row30/clone normalizedType, nonblank, and source-applicable valHash blocker proof. No source modification.
+Production Renderer requirement:
+```text
+NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
+CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
+```
+Authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
 
-Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel -> PDF -> export security/privacy regression -> final independent D2 review.
+Remaining D2:
+1. Production XLSX Renderer/Sanitizer
+2. Combined Excel parity
+3. PDF parity
+4. Export authorization/security/privacy regression
+5. Final independent D2 closure
+6. only then D3 may leave HOLD
 
 ```text
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / ONE-SHOT / STOP AFTER PUSH+REPORT
+PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
