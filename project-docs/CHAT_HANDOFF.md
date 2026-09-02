@@ -19,8 +19,8 @@ ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_OWNER_AUTH = YES
 COMPLETE_D2_FULLY_BEFORE_D3 = YES
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
-ROUNDS_REMAINING = 5
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
+ROUNDS_REMAINING = 4
 ```
 
 ## 2. Startup order
@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 5
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; R4 Part A structural matrix SOURCE+TEST authorized |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4 corrective required |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -63,32 +63,50 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 5. Exact current gate — R4 AUTHORIZED
+## 5. Latest review — D2-WP003-R4
 
-Owner explicitly authorized `D2-WP003-R4 SOURCE+TEST` on 2026-09-02.
+Authorization `D2-WP003-R4-SOURCE-TEST-20260902-01` was consumed by implementation:
+
+`bf9ef7e82c78efc2e725614046745a3ccf394054`
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R4
-ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+R4_SCOPE_REVIEW = PASS
+R4_SOURCE_REVIEW = PASS / FROZEN
+R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
+R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+```
+
+Accepted R4 progress: exactly one implementation commit; exactly the two authorized feasibility source/test files; real source helper generalized to objective counts 4–10; exact SHA gate, full merge-set equality, exact dimension/print-area matrix, normalized row/cell/style/height mapping, sentinel relocation, relationship/media preservation and formula-empty proof added.
+
+Remaining proof gaps are TEST-ONLY:
+- no exact `rowRefs` sequence/uniqueness proof, so no-loss/no-duplicate/no-old-row relocation is not fully proven;
+- `sheetStates` not asserted;
+- `showGridLines`, `fitToPage`, `pageMargins` and remaining non-target per-sheet setup invariants are not asserted against the 4-objective baseline.
+
+The current feasibility source implementation is frozen for the corrective unless a new proven source defect appears.
+
+## 6. Exact current gate
+
+```text
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
+PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE BOUNDED COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-Allowed files only:
-1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Do not auto-start R4-R1. Do not modify the accepted R4 source under the proposed corrective.
 
-R4 must generalize the existing Part A feasibility path to all objective counts 4–10 and prove the full structural matrix. It must not reopen preservation/reference-image, modify Part B, or start production renderer work. If the matrix reveals an algorithm defect outside this bounded generalization, Antigravity must STOP with a blocker.
-
-## 6. D2 remaining path after R4 review
+## 7. D2 remaining path after Part A closure
 
 1. Part B competency insertion structural matrix;
 2. formula/no-formula authority;
@@ -97,5 +115,3 @@ R4 must generalize the existing Part A feasibility path to all objective counts 
 5. PDF parity;
 6. export authorization/security/privacy regression;
 7. final independent D2 closure.
-
-Do not auto-start any next item.
