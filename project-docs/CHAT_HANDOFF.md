@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 3
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R1 corrective required |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R2 TEST-ONLY authorized |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -89,29 +89,34 @@ Accepted/frozen R4-R1 progress:
 - all accepted R4 merge/row/sentinel/dimension/print-area/relationship/media/formula proof remains.
 
 Remaining defect:
-- R4-R1 removed previously accepted absolute per-count assertions `paperSize = 8`, `orientation = landscape`, `scale = 58` and replaced them only with baseline-relative equality. R4-R1 explicitly required preserving every accepted R4 matrix assertion, so these constants must be restored without removing the new relative-equality proof.
+- R4-R1 removed previously accepted absolute per-count assertions `paperSize = 8`, `orientation = landscape`, `scale = 58` and replaced them only with baseline-relative equality. R4-R2 must restore those constants while retaining every current R4/R4-R1 assertion.
 
 R4 source implementation `bf9ef7e82c78efc2e725614046745a3ccf394054` remains PASS/FROZEN.
 
-## 6. Exact current gate
+## 6. Exact current gate — R4-R2 AUTHORIZED
+
+Owner explicitly authorized `D2-WP003-R4-R2 TEST-ONLY` on 2026-09-02.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
-PROPOSED_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R2
+ACTIVE_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = f566fa300818e53e78342710332573e0294d4c4b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R2 / ONE BOUNDED TEST-ONLY COMMIT
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-Do not auto-start R4-R2. Do not modify accepted R4 source.
+Allowed file only:
+`tests/mbo-xlsx-ooxml-feasibility.test.js`
+
+Do not modify accepted R4 source. Do not remove any accepted R4/R4-R1 proof. Do not start Part B or any next work package.
 
 ## 7. D2 remaining path after Part A closure
 
