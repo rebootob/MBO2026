@@ -1,11 +1,11 @@
 # D2 REVIEW FAST-START — MBO2026
 
-Updated: 2026-09-02 ICT  
-Repository: `rebootob/MBO2026`  
+Updated: 2026-09-02 ICT
+Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> only directly relevant Baseline/source/test for the exact next gate.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> only directly relevant source/test/Baseline for the exact next gate.
 
 ## Project truth
 ```text
@@ -25,6 +25,7 @@ PRE1_R1 = PASS / CLOSED
 PRE2 = READ-ONLY DESIGN COMPLETE
 PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
 PRE2_R1_R1 = PASS / CLOSED
+PRE2_R2 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -32,64 +33,63 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## Current frozen semantic authority
+## Current semantic/profile authority
 ```text
-SAFE_TO_MAP = 18 EXACT
+SAFE_TO_MAP = 20 EXACT
 UNRESOLVED = 22 EXACT / FAIL CLOSED
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-## PRE2 / secured projection authority
-Design: `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`
-
-Accepted secured projection from PRE2-R1/R1-R1:
+Expanded-only closed roles:
 ```text
-b7 exact code COMP_LEAD
--> presentationTitle = 7. Leadership & People Management
--> presentationDescription = exact nonblank item.description
-
-b8 exact code COMP_STRAT
--> presentationTitle = 8. Strategy & Coaching
--> presentationDescription = exact nonblank item.description
-
-EXACT_CODE_MATCH = CASE-SENSITIVE / NO TRIM NORMALIZATION
-ALIAS_PRECEDENCE = FORBIDDEN
-N1..6 = PREVIOUS PROJECTION BEHAVIOR PRESERVED
-EMPLOYEE_SELF_CALLER_PRESENTATION_FIELDS = NOT GLOBALLY EXPOSED
+b7 TITLE B31 -> partB.competencyItems[6].presentationTitle
+b7 DESCRIPTION B32 -> partB.competencyItems[6].presentationDescription
+b8 TITLE B35 -> partB.competencyItems[7].presentationTitle
+b8 DESCRIPTION B36 -> partB.competencyItems[7].presentationDescription
+b1..6 TITLE/DESCRIPTION = REJECT
+b8 under N7 = REJECT
 ```
 
-Independent source/test-contract review passed. GitHub CI/status/workflow signal was unavailable; no runtime certification is claimed.
-
-PRE2 geometry design remains:
+Presentation overlay metadata:
 ```text
-N7_TITLE_OVERLAY = B31:J31
-N8_TITLE_OVERLAY = B31:J31 + B35:J35
-FROZEN_INTERMEDIATE_MERGES = 79 / 85 / 91
-PROPOSED_EFFECTIVE_MERGES = 79 / 86 / 93
-BASE_PRIVACY_DYNAMIC = 432 / 474 / 516
-PROPOSED_EFFECTIVE_DYNAMIC = 432 / 492 / 552
+b7 TITLE_MERGE B31:J31
+b7 DESCRIPTION_MERGE B32:J32
+b7 RATING_SCALE B33:J33 / STATIC
+b7 PADDING_ROW 34 / PROTECTED
+b8 TITLE_MERGE B35:J35
+b8 DESCRIPTION_MERGE B36:J36
+b8 RATING_SCALE B37:J37 / STATIC
+b8 PADDING_ROW 38 / PROTECTED
 ```
 
 ## Exact next proposed gate — NOT AUTHORIZED
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE2-R2
-NAME = EXPANDED COMPETENCY TEMPLATE PROFILE PRESENTATION AUTHORITY
-MODE = PROFILE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE2-R3
+NAME = PART B EXPANDED PRESENTATION OOXML + PRIVACY OVERLAY PROOF
+MODE = OOXML-FEASIBILITY+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
 WRITABLE =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
+  scripts/export/mbo-xlsx-ooxml-feasibility.js
+  tests/mbo-xlsx-ooxml-feasibility.test.js
 EXPORT_SERVICE_CHANGE = NO
-OOXML_CHANGE = NO
-RENDERER_CHANGE = NO
+PROFILE_CHANGE = NO
+PRODUCTION_RENDERER_CHANGE = NO
 KINTONE = NO
 DEPLOY = NO
 D3 = HOLD
 ```
 
-If PRE2-R2 later independently closes, proposed semantic authority becomes `SAFE_TO_MAP = 20 EXACT`; current frozen 18 remains authoritative until then.
+Key proof targets if authorized:
+```text
+FROZEN_INTERMEDIATE_MERGES = 79 / 85 / 91
+FINAL_OVERLAY_MERGES = 79 / 86 / 93
+BASE_PRIVACY_DYNAMIC = 432 / 474 / 516
+FINAL_EFFECTIVE_DYNAMIC = 432 / 492 / 552
+N7 overlay = B31:J31 + dynamic presentation B31:J32
+N8 overlay = B31:J31 + B35:J35 + dynamic presentation B31:J32 + B35:J36
+```
 
 Recommended Owner phrase:
-`อนุมัติ D2-WP004-R2-PRE2-R2 PROFILE+TEST ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-PRE2-R3 OOXML-FEASIBILITY+TEST ตามขอบเขตที่เสนอ`
 
 Do not auto-start. Antigravity remains STOP until exact Owner authorization.
