@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant confirmed Baseline -> exact diff.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant confirmed Baseline/design/evidence -> exact diff.
 
 ## Project truth
 ```text
@@ -23,47 +23,50 @@ D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D3 = HOLD
 ```
 
-## Latest independent review — D2-WP004-R1-R3-R2
+Durable semantic/profile authority:
 ```text
-AUTHORIZATION_COMMIT = 368dcb4890621400fd9b6fabfb979599bf453a07
-IMPLEMENTATION_COMMIT = b59815aa5e5bad09ad252a10cdd1914185170fc0
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES = EXACTLY TWO AUTHORIZED PROFILE/TEST FILES
-SCOPE_REVIEW = PASS
-CANONICAL_PART_B_COMPETENCY_INTEGRITY = PASS / FREEZE
-FOCUSED_NEGATIVE_MUTATIONS = PASS / FREEZE
-SEMANTIC_BASELINE = PRESERVED / 18-22-5
-TEMPLATE_PROFILE = PASS / CLOSED
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
+SAFE_TO_MAP = 18 EXACT
+UNRESOLVED = 22 EXACT / FAIL CLOSED
+NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
+CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-Durable profile authority:
-`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+## D2-WP004-R2 — PRODUCTION XLSX RENDERER + SANITIZER
+ChatGPT Control Plane completed the first READ-ONLY repository design pass.
 
-Durable semantic authority:
-`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
+Design document:
+`phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
 
-Key freeze:
-- canonical resolver writable authority remains exactly 18 SAFE semantic classes;
-- 22 unresolved + 5 no-secured-source remain fail closed;
-- non-canonical `OBJECTIVE_i_COMMENT` and `COMPETENCY_b_RATING` reject;
-- Part B competency identity is exact for index, canonical row, `K{row}` and secured selfRating path;
-- K:Q Self / R:X Chief structural authority preserved; Chief secured writable role = zero;
-- row30/34/38 protected;
-- no workbook I/O or scoring/formula authority in Template Profile.
-
-## Next smallest gate — NOT AUTHORIZED
+Current result:
 ```text
-PROPOSED_NEXT = D2-WP004-R2 / PRODUCTION XLSX RENDERER + SANITIZER
-STATE = CONTROL-PLANE DESIGN / READ-ONLY FIRST / NOT AUTHORIZED
+R2_READ_ONLY_DESIGN = COMPLETE
+R2_IMPLEMENTATION = NOT AUTHORIZED
+PRE_RENDER_BLOCKER = PART B N7/N8 COMPETENCY PRESENTATION AUTHORITY UNPROVEN
+```
+
+Why blocked:
+- owner Part B template is N6;
+- structural N7/N8 expansion clones source rows 27:30;
+- current production semantic/profile authority only permits `COMPETENCY_b_SELF_RATING` writes;
+- current competency evidence shows management N7/N8 adds real competency items rather than duplicating item 6;
+- no proven cell ownership/source-selection authority yet exists for visible competency 7/8 presentation content such as name/title/description/weight.
+
+Renderer must not be implemented by guessing these targets or projection aliases.
+
+## Proposed prerequisite — NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE1
+NAME = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
+MODE = EVIDENCE-ONLY / READ-ONLY INSPECTION / ONE-SHOT / LOW-CREDIT IF AUTHORIZED
+EXPECTED_FILE = project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
 ACTIVE_WORK_PACKAGE = NONE
+SOURCE_AUTH = NONE
+TEST_AUTH = NONE
+PROFILE_AUTH = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Before any Renderer SOURCE authorization, ChatGPT should do the low-credit READ-ONLY design pass from closed Baselines and current repository source to define exact files, security boundary, sanitizer behavior, tests and fail-closed acceptance contract. Do not auto-start Antigravity.
+PRE1 should inspect only the exact owner Part B template and directly relevant secured projection/source evidence. No broad repository scan. If exact target + deterministic secured source cannot both be proven, keep the candidate role unresolved.
