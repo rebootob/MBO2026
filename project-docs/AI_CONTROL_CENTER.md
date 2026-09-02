@@ -5,14 +5,14 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PRESERVATION PASS / REFERENCE-IMAGE REVIEW NEXT
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 8 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 12
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 9 OF 20
+CONTROL_PLANE_ROUNDS_REMAINING = 11
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ```
@@ -22,7 +22,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | OOXML preservation gate PASS/CLOSED; reference-image closure next |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; reference-image source accepted but full inventory proof incomplete |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -49,60 +49,61 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 
 Raw `getNoOpParityBuffers()` remains direct unrepaired xlsx-populate output.
 
-## 3. Latest independent review — R3-R30
+## 3. Reference-image READ-ONLY review
 
 ```text
-AUTHORIZATION_COMMIT = 985ddbd1d99d629d54fa7d76fba94a679f08dc59
-IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
-SCOPE_REVIEW = PASS
-R3-R29_SOURCE_BASELINE = PASS / FROZEN
-PROOF_CODE_REVIEW = PASS
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
-STATUS = PASS / CLOSED
-PRIVACY_PURGE_REQUIRED = NO
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS / RETAIN CURRENT ORPHAN-SAFE REMOVAL
+REFERENCE_IMAGE_PROOF_REVIEW = FAIL / FULL TARGET-NORMALIZED INVENTORY EQUALITY ABSENT
+D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R3-R30 proof completion:
-- duplicate/extra Option B `sheetPr` fail-closed proof;
-- effective moved/other-sheet/Part-A observed-only `sheetPr` preservation rejection;
-- distinct counterfeit worksheet-like Type URI negative;
-- restored array/fractional/non-number typed-privacy negatives;
-- existing R3-R29 regression proof retained.
+Accepted current source behavior:
+- target `rId3` drawing anchor and relationship are removed;
+- target `xl/media/image3.png` is removed only after scanning all remaining `.rels` parts and failing closed if still referenced;
+- no source rewrite is required for the current corrective.
 
-No production source changed in R3-R30.
+Current test remains spot-check based (`rId3` gone, `image3.png` gone, `rId1/rId2` remain). Repository-history reviews R3-R5 through R3-R9 repeatedly required complete target-normalized BEFORE/AFTER equality for drawing anchors, drawing relationships and media path/hash inventory. That requirement is not present in the current test and no later accepted closure proof was found.
 
 ## 4. Current gate
 
 ```text
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
+D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
-PREFERRED_EXECUTION = CHATGPT READ-ONLY REVIEW FIRST
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 5. Low-credit next-step policy
+## 5. Proposed R3-R31 — NOT AUTHORIZED
 
-Existing source/tests already contain reference-image handling. The next action should be a Control Plane READ-ONLY repository review. Do not spend Antigravity or Claude credits unless that review identifies a necessary implementation gap or material ambiguity.
+R3-R31 should modify only the existing feasibility test file and use current `origBufA` / `outBufA` to prove:
+- complete drawing-anchor inventory equality after removing only the exact target anchor from BEFORE;
+- complete drawing-relationship tuple equality after removing only exact target `rId3` from BEFORE;
+- complete `xl/media/*` path + SHA-256 equality after removing only `xl/media/image3.png` from BEFORE;
+- exact target identity exists before removal and is absent after;
+- all current proof remains.
+
+Do not modify production source merely to make this test pass.
 
 ## 6. Remaining D2 closure path
 
-1. reference-image inventory/removal/preservation closure;
-2. Part A objective insertion structural matrix closure;
-3. Part B competency insertion structural matrix closure;
-4. formula/no-formula authority closure;
-5. production sanitizer + XLSX renderer;
-6. combined Excel parity;
-7. PDF parity;
-8. export authorization/security/privacy regression;
-9. final D2 independent closure review.
+After reference-image closure:
+1. Part A objective insertion structural matrix closure;
+2. Part B competency insertion structural matrix closure;
+3. formula/no-formula authority closure;
+4. production sanitizer + XLSX renderer;
+5. combined Excel parity;
+6. PDF parity;
+7. export authorization/security/privacy regression;
+8. final D2 independent closure review.
 
 Do not auto-start any next step.
