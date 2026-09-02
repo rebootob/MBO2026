@@ -35,11 +35,13 @@ D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / PASS / FROZEN
 R4-R2_IMPLEMENTATION_COMMIT = 98da94a07259effd95dcf539de3454b1f94745a8
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 18 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R5
+PROPOSED_SCOPE = SOURCE+TEST / EXACT TWO FEASIBILITY FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
@@ -47,10 +49,14 @@ ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 
 Part A structural matrix 4–10 is closed and durably recorded in `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`. Do not reopen without a proven regression.
 
+Part B current helper is not full-matrix: it proves only 6 and hard-coded 8 competencies. R5 is proposed to generalize the current 4-row competency-block algorithm and prove exact 6/7/8 structural parity in the existing feasibility source/test only.
+
+R5 remains NOT AUTHORIZED. Antigravity and Claude remain stopped.
+
 D2 must still close:
 - Part B competency structural insertion matrix;
 - no-formula authority;
-- production sanitizer/XLSX renderer;
+- production sanitizer/XLSX renderer, including expanded Part B privacy/address remapping;
 - combined Excel parity;
 - PDF parity;
 - export security/privacy regression;
@@ -85,8 +91,7 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHEN TO CONTINUE D2 WITH CHATGPT READ-ONLY PART B PLANNING
-NEXT_D2_PLANNING_GATE = PART B COMPETENCY INSERTION STRUCTURAL MATRIX
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R5 SOURCE+TEST AS PROPOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
