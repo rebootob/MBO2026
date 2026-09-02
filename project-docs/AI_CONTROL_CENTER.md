@@ -5,13 +5,13 @@
 > Canonical branch: `ai/antigravity-wp002c`  
 > Control Plane: ChatGPT  
 > Execution Plane: Antigravity only for minimum necessary execution  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R27 CORRECTIVE / R3-R28 PROPOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R28 CORRECTIVE / R3-R29 PROPOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
 CONTROL_PLANE_STOP = D2 PASS/CLOSED OR ROUND 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
@@ -22,9 +22,9 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 Hybrid Identity + Password + Employee-Self + Approver Access | ✅ PASS / CLOSED | Frozen; Kintone-only ceilings retained |
-| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R27 reviewed CORRECTIVE; R3-R28 proposed |
-| D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Owner requires D2 complete first |
-| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory scope |
+| D2 Excel + PDF Original/Legacy Format | 🟠 IN PROGRESS | R3-R28 reviewed CORRECTIVE; R3-R29 proposed |
+| D3 8 Legacy PMS Apps → App794 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
+| D4 App800 HR Control Center E2E | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 Copy Own Previous MBO | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
 | D6 Integrated E2E / Security / Regression | 🔴 PENDING | Lifecycle/security regression required |
 | D7 Admin Support Center | ✅ SOURCE FUNCTIONALITY CLOSED | Reopen only proven defect |
@@ -74,36 +74,38 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 PRESERVATION_POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
 ```
 
-Only one exact deterministic xlsx-populate-generated Part B `Sheet1` `<sheetPr/>` drift may be normalized. Source must lack it; the exact observed structure and slot must match the pinned allowlist; normalization occurs only inside preservation; all other non-dimension drift remains fail-closed; Part A receives no exception.
+Only one exact deterministic xlsx-populate-generated Part B `Sheet1` `<sheetPr/>` drift may be normalized. All other non-dimension drift remains fail-closed; Part A receives no exception.
 
-## 5. Latest D2 review — R3-R27
+## 5. Latest D2 review — R3-R28
 
 ```text
-AUTHORIZATION_COMMIT = 671948b3d4a935118172a3c849d9265eb606ac73
-IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+AUTHORIZATION_COMMIT = 9598602238d2f46614b6a135f0422b8e744b862a
+IMPLEMENTATION_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 SCOPE_REVIEW = PASS
-SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-PROOF_REVIEW = FAIL / REGRESSION + WRONG-BRANCH + NO INDEPENDENT RUNTIME
+SOURCE_REVIEW = FAIL / SINGLETON-SCHEMA CONTRACT GAP
+PROOF_REVIEW = FAIL / REGRESSION + WRONG-BRANCH + INCOMPLETE
 STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted improvements:
-- direct raw `outBufB` is used for positive preservation; no test-side pre-cleaning;
-- Option B normalization moved inside `preserveExactWorkbookDimensions()`;
-- exact `<sheetPr/>` structure and first-child slot are checked for the Part B Sheet1 target;
-- several missing alias negatives were added;
-- source/test scope remained bounded and `getNoOpParityBuffers()` stayed frozen.
+Accepted R3-R28 improvements:
+- Option B normalized XML now persists to the returned working ZIP in every successful path;
+- XML direct-child inventory uses coverage/gap validation and no longer relies on ASCII-only QName classes;
+- always-runnable template-independent unit tests were added;
+- template-dependent tests skip explicitly when exact ignored owner templates are absent;
+- direct raw Part B positive path and frozen `getNoOpParityBuffers()` remain intact.
 
-Remaining proven defects:
-1. Option B normalization is written back to the ZIP only in the missing-dimension branch; with an already-correct dimension the function can validate normalized local XML but return the working ZIP with `<sheetPr/>` still present;
-2. Relationship and worksheet-child scanners still use ASCII QName character classes and do not prove complete direct-child markup consumption, so Unicode QName forms can be skipped rather than rejected;
-3. several valid R3-R25/R3-R26 negatives were removed again, including counterfeit Type, exact Type mismatch, leading-slash/already-`xl/`, backslash/percent-encoded aliases and missing predecessor/successor boundary;
-4. several source-structure tests mutate the source override and therefore fail at the source SHA gate before exercising the labeled structural condition;
-5. no always-runnable privacy-safe unit proof exists for pure XML/allowlist validators;
-6. GitHub has no CI/status/workflow run for the implementation commit.
+Remaining defects:
+1. worksheet singleton classification is wrong/incomplete: `cols` is incorrectly treated as maxOccurs=1 while supported singleton children including `mergeCells`, `hyperlinks`, `oleObjects`, `controls`, `tableParts` are not independently guarded;
+2. `Missing predecessor/successor boundary` still mutates `sourceBufOverride` and therefore rejects at source SHA before structural logic;
+3. exact per-sheet print-area binding and Part B `Sheet1.colsHash` negative required by R3-R28 were removed;
+4. much of the still-valid R3-R24/R3-R25/R3-R26 regression matrix was removed instead of retained, including relationship mapping, TargetMode and dimension/malformed-XML cases;
+5. actual Unicode QName tests are absent despite labels/comments claiming Unicode coverage;
+6. Option B always-runnable proof lacks explicit duplicate/extra sheetPr and effective fail-closed preservation proof for moved/other-sheet/Part-A cases;
+7. previously accepted header-fingerprint and typed-privacy negative regression matrices were reduced;
+8. GitHub has no CI/status/workflow signal for the implementation commit.
 
-R3-R27 cannot close preservation or D2-WP003.
+R3-R28 cannot close preservation or D2-WP003.
 
 ## 6. Current gate
 
@@ -111,12 +113,12 @@ R3-R27 cannot close preservation or D2-WP003.
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
+D2-WP003-R3-R28 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
-PROPOSED_WORK_PACKAGE_NAME = OPTION B WRITEBACK + COMPLETE XML TOKEN INVENTORY + EFFECTIVE PROOF CORRECTIVE
-CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R29
+PROPOSED_WORK_PACKAGE_NAME = SINGLETON SCHEMA FIX + FULL REGRESSION RESTORE + EFFECTIVE STRUCTURAL PROOF
+CORRECTIVE_BASELINE_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -127,15 +129,17 @@ ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED AT THIS GATE
 ```
 
-## 7. Proposed R3-R28 — NOT AUTHORIZED
+## 7. Proposed R3-R29 — NOT AUTHORIZED
 
-R3-R28 remains limited to the same two feasibility source/test files. Direction:
-- persist Option B normalization in every successful branch;
-- replace regex-only QName assumptions with complete direct-child token/gap inventory that rejects unknown/prefixed/Unicode forms rather than skipping them;
-- factor pure validation helpers so privacy-safe tests can exercise structural logic without weakening production source-SHA gates;
-- make exact-template tests skip/report unavailable only when local ignored templates are absent while always-runnable synthetic proof still executes;
-- restore all still-valid R3-R25/R3-R26 negatives removed in R3-R27;
-- keep direct raw output, exact source SHA and privacy boundaries frozen.
+R3-R29 remains limited to the same two feasibility source/test files. It must:
+- correct maxOccurs semantics for the supported worksheet child set, including repeatable `cols` and complete singleton guards;
+- preserve R3-R28 write-back and XML coverage improvements;
+- extract pure worksheet structural validation sufficient to test dimension/boundary cases without weakening source SHA;
+- restore all still-valid preservation regressions removed in R3-R28;
+- restore exact per-sheet print-area and Part B `Sheet1.colsHash` proof;
+- restore accepted header-fingerprint and typed-privacy negative regression guards;
+- use actual non-ASCII Unicode QName negatives;
+- complete Option B duplicate/extra/moved/other-sheet/Part-A fail-closed proof.
 
 No Antigravity or Claude execution is authorized yet.
 
@@ -164,8 +168,9 @@ D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R25-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R26-SOURCE-20260902-01 = CONSUMED / BLOCKED / DO NOT REUSE
 D2-WP003-R3-R27-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R3-R28-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 5 OF 20
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 6 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -179,7 +184,7 @@ D3_EXECUTION = HOLD
 
 ```text
 COMPLETE D2 FULLY BEFORE D3.
-NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R28
+NEXT_CONTROL_STEP = OWNER DECIDES WHETHER TO AUTHORIZE D2-WP003-R3-R29
 NEXT_EXECUTOR = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
