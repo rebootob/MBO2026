@@ -1,6 +1,6 @@
 # 00 MASTER JOBLIST — MBO2026
 
-Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/evidence -> exact diff.
+Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -13,38 +13,36 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
+D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping Evidence.
 
-Template Profile/evidence status:
+Template Profile status:
 ```text
 R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
 R1_R1_PART_B_TOPOLOGY = PASS / FREEZE
 R1_R1_BASIC_INTEGRITY = PASS / FREEZE
-R1_R1_PROFILE_SEMANTIC_AUTHORITY = NOT CLOSED
+R1_R1_PROFILE_SEMANTIC_ALIGNMENT = NOT CLOSED
 
-R1_R2_R1_EVIDENCE = 26fa18feead191c7587df82e393c73366969000d
-R1_R2_R1_SCOPE_SHA = PASS
-R1_R2_R1_HOSHIN = PASS / FREEZE
-R1_R2_R1_PART_B_HEADER = PASS / FREEZE
-R1_R2_R1_PART_A_HEADER = PASS / FREEZE
-R1_R2_R1_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
+R1_R2_R2_EVIDENCE = bc141f355d7714302801d5adca3d5652b83c4de1
+R1_R2_R2_SEMANTIC_EVIDENCE = PASS / CLOSED
+R1_R2_R2_TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
+SEMANTIC_BASELINE = D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md
+PROVEN_SAFE_TO_MAP = 18
+UNRESOLVED = 22
+NO_SECURED_PROJECTION_SOURCE = 5
 ```
 
-Active smallest gate:
+Next proposed smallest gate:
 ```text
-D2-WP004-R1-R2-R2 = FINAL XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
-STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
-AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
-MODE = EVIDENCE-ONLY / ONE-SHOT / SAME ONE MARKDOWN FILE
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
-SOURCE_TEST_PROFILE_CHANGE = NONE
+D2-WP004-R1-R3 = TEMPLATE PROFILE SEMANTIC ALIGNMENT
+MODE = SOURCE+TEST / NOT AUTHORIZED
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
 ```
 
-Final evidence-only corrections: preserve full Chief `R:X`; no `SAFE_TO_MAP` without secured path; evaluator mappings require accepted role-identity citation or remain unresolved; combined B:I objective/target cannot prove title-only ownership without composition authority; evidence status remains neutral until independent review; recalculate final counts mechanically.
+If authorized, R1-R3 must align the existing pure profile to exactly the closed semantic Baseline: expose only the 18 accepted safe mappings; fail closed for 22 unresolved roles; prohibit 5 no-source roles; preserve Part B K:Q self / R:X Chief authority; preserve no-workbook-I/O and zero-formula/scoring-recalculation rules.
 
 ```text
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
