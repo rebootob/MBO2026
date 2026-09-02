@@ -180,25 +180,69 @@ export class MboExportService {
     const targetProfileCode = profileCode || readString(mboRecord, 'Profile_Code');
     const weighting = this.resolveProfileWeighting(targetProfileCode);
 
-    const projectedCompetencyItems = (Array.isArray(competencyItems) ? competencyItems : []).map(item => {
-      if (!item || typeof item !== 'object') return item;
+    const projectedCompetencyItems = (Array.isArray(competencyItems) ? competencyItems : []).map((item, index) => {
+      if (!item || typeof item !== 'object') {
+        throw new Error('EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED: Competency item must be an object.');
+      }
+
+      const ordinal = index + 1;
+      let presentationTitle;
+      let presentationDescription;
+
+      if (ordinal === 7) {
+        const code = String(item.code || '').trim().toUpperCase();
+        if (code !== 'COMP_LEAD') {
+          throw new Error(`EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED: Competency 7 code must be COMP_LEAD, found '${item.code || ''}'.`);
+        }
+        if (typeof item.description !== 'string' || item.description.trim() === '') {
+          throw new Error('EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED: Competency 7 description must be a nonblank string.');
+        }
+        presentationTitle = '7. Leadership & People Management';
+        presentationDescription = item.description;
+      } else if (ordinal === 8) {
+        const code = String(item.code || '').trim().toUpperCase();
+        if (code !== 'COMP_STRAT') {
+          throw new Error(`EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED: Competency 8 code must be COMP_STRAT, found '${item.code || ''}'.`);
+        }
+        if (typeof item.description !== 'string' || item.description.trim() === '') {
+          throw new Error('EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED: Competency 8 description must be a nonblank string.');
+        }
+        presentationTitle = '8. Strategy & Coaching';
+        presentationDescription = item.description;
+      } else if (ordinal > 8) {
+        throw new Error(`EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED: Competency ordinal ${ordinal} is unsupported.`);
+      }
 
       if (isEmployeeSelf) {
         const safeItem = {};
         const safeKeys = [
           'id', 'competencyId', 'code', 'name', 'title', 'competencyName',
           'description', 'weight', 'weightPercent', 'category', 'group',
-          'selfRating', 'selfScore', 'selfComment', 'selfEvaluation', 'selfAchievement'
+          'selfRating', 'selfScore', 'selfComment', 'selfEvaluation', 'selfAchievement',
+          'presentationTitle', 'presentationDescription'
         ];
         for (const k of safeKeys) {
           if (k in item) {
             safeItem[k] = item[k];
           }
         }
+        if (presentationTitle !== undefined) {
+          safeItem.presentationTitle = presentationTitle;
+        }
+        if (presentationDescription !== undefined) {
+          safeItem.presentationDescription = presentationDescription;
+        }
         return safeItem;
       }
 
-      return { ...item };
+      const projected = { ...item };
+      if (presentationTitle !== undefined) {
+        projected.presentationTitle = presentationTitle;
+      }
+      if (presentationDescription !== undefined) {
+        projected.presentationDescription = presentationDescription;
+      }
+      return projected;
     });
 
     const projection = {
