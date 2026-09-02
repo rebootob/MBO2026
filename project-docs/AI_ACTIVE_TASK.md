@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — D2-WP004-R1 TEMPLATE PROFILE FOUNDATION AUTHORIZED
+# AI ACTIVE TASK — D2-WP004-R1 REVIEW CORRECTIVE / R1-R1 PROPOSED
 
-Mode: **LOW-CREDIT / BOUNDED / ONE-SHOT / EXACT TWO NEW FILES / PURE MAPPING / NO WORKBOOK I/O / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / PURE TEMPLATE-MAPPING CORRECTIVE PROPOSED / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> directly relevant Baseline -> exact implementation diff.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> directly relevant Baseline -> exact diff.
 
 ## 1. Current truth
 ```text
@@ -20,170 +20,160 @@ D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP004-R1
-ACTIVE_WORK_PACKAGE_NAME = MBO2026 PRODUCTION XLSX TEMPLATE PROFILE / MAPPING FOUNDATION
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1 / ONE-SHOT / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-This Owner authorization is execution-only for exactly one SOURCE+TEST implementation/blocker commit. Independent review begins only when Owner says `review`.
-
-## 2. Authorization identity
+## 2. D2-WP004-R1 independent review
 ```text
-WORK_PACKAGE = D2-WP004-R1
-AUTHORIZATION_TOKEN = D2-WP004-R1-SOURCE-TEST-20260902-01
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / PURE MAPPING
-OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
-EXPECTED_COMMITS = EXACTLY ONE IMPLEMENTATION OR BLOCKER COMMIT AFTER THIS AUTHORIZATION COMMIT
+R1_AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
+R1_AUTHORIZATION_COMMIT = dcf1fca73fbca4a6156e924f4472c6b089836997
+R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+R1_SCOPE_REVIEW = PASS
+R1_PURE_NO_WORKBOOK_IO = PASS
+R1_TEMPLATE_SHA_CONSTANTS = PASS
+R1_COUNT_VALIDATION = PASS
+R1_CALLER_IMMUTABILITY = PASS
+R1_SOURCE_ROLE_REVIEW = CORRECTIVE REQUIRED
+R1_SEMANTIC_BOUNDARY_REVIEW = CORRECTIVE REQUIRED
+R1_FAIL_CLOSED_INTEGRITY_PROOF = CORRECTIVE REQUIRED
+R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_STATUS = CORRECTIVE REQUIRED
+R1_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Authorized writable files ONLY:
-1. `src/profiles/mbo-xlsx-template-profile.js` — NEW
-2. `tests/mbo-xlsx-template-profile.test.js` — NEW
+No Baseline promotion for the R1 profile yet.
 
-Any existing-file modification or any third file is out of scope and must block completion.
+## 3. Proven defects
 
-## 3. Frozen D2 authority consumed by R1
-Read only as needed:
-- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
-- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
-- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
+### DEFECT A — Part B uniform four-row model contradicts frozen privacy authority
+R1 models every competency as 3 rating rows + 1 padding row beginning at row7, making rows 10/14/18/22/26 protected padding.
 
-Secured export-data authority remains read-only:
-`src/services/mbo-export-service.js`
-
-Accepted owner-template identities:
+Frozen authority says:
 ```text
-PART_A_TEMPLATE_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_TEMPLATE_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-PART_A_OBJECTIVE_COUNTS = integers 4..10
-PART_B_COMPETENCY_COUNTS = integers 6,7,8
+ORIGINAL N6 DYNAMIC COMPETENCY RATING ROWS = 7..29 / K:X
+ORIGINAL PROTECTED PADDING = ROW 30 ONLY
+N7 INSERTED DYNAMIC ROWS = 31..33 / K:X
+N7 INSERTED PADDING = 34
+N7 SUMMARY = 35..38
+N8 INSERTED DYNAMIC ROWS = 31..33 AND 35..37 / K:X
+N8 INSERTED PADDING = 34 AND 38
+N8 SUMMARY = 39..42
 ```
 
-Mandatory architecture:
+Do not infer original per-competency four-row boundaries from the inserted source clone block. The only frozen 4-row clone authority is source rows27:30 for each EXTRA competency block.
+
+### DEFECT B — semantic mapping does not faithfully consume secured projection
+`src/services/mbo-export-service.js` is read-only secured projection authority.
+
+Current projection semantics include, among others:
+- `partA.header.employeeCode/employeeName/employeeNameTH/department/section/position/fiscalYear/profileCode/profileFamily/partAWeightPercent`;
+- `partA.hoshin.departmentHoshinTitle/sectionHoshinTitle`;
+- objective semantic fields `title`, `description`, `kpi`, `target`, `measurement`, `weight`, `progressPercent`, `actualResult`, `selfAchievement`, `selfComment`, and authorized manager/GM/average fields;
+- authorized summary/result fields already projected by the service;
+- `partB.competencyItems` with Employee-Self filtering already applied by the service.
+
+R1 currently invents/uses incompatible or incomplete roles such as `CORPORATE_HOSHIN_TEXT`, `PLAN_TARGET`, `CHIEF_RATING`, `FINAL_RATING` without an explicit proven translation to the secured projection and omits the section-Hoshin projection role.
+
+The Template Profile must express a clear semantic/projection-path contract. Do not reconstruct omitted confidential fields and do not invent a field meaning merely because an address exists.
+
+### DEFECT C — missing/conflicting mapping is not runtime fail-closed
+R1 tests show the current hard-coded addresses are unique, but there is no production mapping-integrity validator proving that a missing required semantic mapping or conflicting exclusive write ownership throws `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`.
+
+## 4. Proposed corrective — D2-WP004-R1-R1 / NOT AUTHORIZED
 ```text
-NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
-CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
-UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R1
+NAME = TEMPLATE PROFILE AUTHORITY + SEMANTIC + FAIL-CLOSED CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED
+EXPECTED_WRITABLE_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
 ```
 
-## 4. Exact R1 contract
+No authorization token exists yet.
 
-### A. Pure centralized Template Profile only
-Create `src/profiles/mbo-xlsx-template-profile.js` as the single production mapping owner for the accepted MBO2026 XLSX template family.
+Recommended Owner phrase:
+`อนุมัติ D2-WP004-R1-R1 SOURCE+TEST ตามขอบเขตที่เสนอ`
 
-R1 is pure configuration/resolution logic only:
-- no `fs`;
-- no Kintone API/adapter;
-- no `xlsx-populate`;
-- no workbook read/write/mutation;
-- no generated XLSX/PDF/binary;
-- no scoring calculation;
-- no renderer orchestration.
+## 5. Exact R1-R1 corrective contract
 
-### B. Deterministic identity
-Expose deterministic template identity/version metadata with the exact accepted Part A and Part B SHA-256 values above.
+### A. Freeze R1 accepted behavior
+Retain:
+- pure module: no `fs`, Kintone, `xlsx-populate`, workbook I/O or renderer;
+- exact Part A/Part B SHA constants;
+- numeric-only Part A count 4..10;
+- numeric-only Part B count 6/7/8;
+- immutable caller inputs/returned mapping structures;
+- stable error family `EXPORT_TEMPLATE_PROFILE_UNRESOLVED`.
 
-Unknown/mismatched template identity must fail closed with stable production error family:
-`EXPORT_TEMPLATE_PROFILE_UNRESOLVED`
+### B. Correct Part B row-role authority
+Remove the false original uniform four-row competency model.
 
-Do not silently accept a different template revision.
+Production profile must expose the exact frozen dynamic/protected role topology above. At minimum:
+- `isDynamicWriteTarget('B', ...)` must return TRUE for every K:X cell in original rows7:29;
+- rows10/14/18/22/26 must therefore be dynamic, not padding;
+- row30/34/38 remain non-dynamic;
+- N7 rows31:33 K:X dynamic, row34 non-dynamic, summary35:38;
+- N8 rows31:33 +35:37 K:X dynamic, rows34/38 non-dynamic, summary39:42.
 
-### C. Exact supported cardinalities
-Explicitly support only:
-- Part A objectives: integer 4..10;
-- Part B competencies: integer 6, 7, 8.
+Do not fabricate original per-competency block boundaries if they are not proven by accepted evidence. If a requested per-item semantic role cannot be resolved from authoritative evidence, fail closed rather than guess.
 
-Reject missing, non-integer, fractional, stringly ambiguous, below/above-range or unsupported values. No nearest-count fallback/coercion.
+### C. Align semantic roles to `MboExportService`
+Read `src/services/mbo-export-service.js` READ-ONLY and define explicit canonical semantic identifiers/projection paths for mappings that Production Renderer may consume.
 
-### D. Semantic role boundary
-Expose semantic workbook roles/mapping APIs so future renderer code does not own raw workbook addresses.
+Required:
+- Hoshin roles must distinguish the actual `departmentHoshinTitle` and `sectionHoshinTitle` projection semantics;
+- objective/evaluation/summary semantic names must either match projection field semantics or carry an explicit deterministic translation to them;
+- do not create writable semantic roles for data the secured projection does not expose to that caller;
+- profile itself still does not authorize callers or calculate scores.
 
-Mapping must cover roles needed from the current secured projection, grouped clearly by responsibility, including at minimum:
-- common/header identity roles;
-- Part A Hoshin roles;
-- Part A objective/evaluation roles;
-- Part A summary/result roles applicable to authorized projections;
-- Part B header roles;
-- Part B competency self/chief dynamic rating roles;
-- Part B summary/comment/signature roles.
+For any address whose exact semantic meaning is not proven by current accepted repository/template evidence, do not invent a production semantic meaning; fail closed or leave it outside the writable mapping until separately proven.
 
-Part B protected static competency text and padding remain non-writable. Source row30 and N=7/N=8 clones rows34/38 must never resolve as dynamic write roles.
+### D. Add production mapping-integrity validator
+Add a pure validator/API that validates a profile/mapping definition and throws exactly `EXPORT_TEMPLATE_PROFILE_UNRESOLVED` for at least:
+- missing required semantic role/mapping;
+- duplicate/conflicting exclusive write target ownership;
+- invalid address/range shape where applicable;
+- protected Part B padding exposed as writable;
+- unsupported count/template/profile identity.
 
-The profile may use ranges/count-aware resolver functions. Production address/range literals belong here, not in future renderer/business logic.
+The default MBO2026 profile must validate successfully.
 
-### E. Preserve authority boundaries
-The profile must NOT:
-- calculate Part A/Part B/final scores;
-- reconstruct fields omitted by Employee-Self secured projection;
-- decide export authorization;
-- embed Kintone field-code lookup/business rules;
-- duplicate renderer/sanitizer/structural mutation logic;
-- weaken structural/privacy/formula Baselines.
+### E. Exact negative/positive tests
+Tests must directly prove:
+1. rows10/14/18/22/26 K:X dynamic for N6;
+2. row30 K:X non-dynamic N6/7/8;
+3. N7 rows31:33 dynamic and row34 non-dynamic;
+4. N8 rows31:33 +35:37 dynamic and rows34/38 non-dynamic;
+5. summary destinations exactly 31:34 / 35:38 / 39:42;
+6. no guessed original four-row padding list remains;
+7. secured-projection semantic keys/paths are explicit, including both department and section Hoshin;
+8. missing required mapping mutation => exact blocker;
+9. duplicate/conflicting exclusive write target mutation => exact blocker;
+10. protected padding made writable => exact blocker;
+11. accepted default profile passes integrity validator;
+12. existing SHA/count/purity/immutability tests remain.
 
-`MboExportService` remains secured projection authority. Kintone/App794 remains scoring truth.
+Tests may clone/mutate in-memory profile definitions for negative proof. No owner-template binary is required.
 
-### F. Fail-closed mapping behavior
-At minimum prove blocker behavior for:
-- unknown profile/template version;
-- wrong Part A SHA;
-- wrong Part B SHA;
-- unsupported objective count;
-- unsupported competency count;
-- unknown semantic role;
-- missing required mapping entry;
-- conflicting/duplicate semantic mapping where exclusivity is required.
+## 6. Explicitly out of scope
+Do NOT modify any file except the two proposed profile/test files if later authorized.
+Do NOT modify `MboExportService`, feasibility source/tests, dependencies, package-lock, dist or Baselines.
+Do NOT create Production XLSX Renderer, render/mutate XLSX, recalculate scores, touch Kintone/deploy/Live UAT, start Combined Excel/PDF/security regression/D3, or invoke Claude.
 
-No best-effort fallback is allowed.
-
-## 5. Exact R1 test contract
-Create `tests/mbo-xlsx-template-profile.test.js`.
-
-Required proof:
-1. exact Part A/Part B SHA identity values;
-2. exact accepted objective-count domain = 4,5,6,7,8,9,10;
-3. exact accepted competency-count domain = 6,7,8;
-4. semantic mappings resolve deterministically for every accepted count;
-5. unsupported identity/count/role fail closed;
-6. source row30 and N7/N8 padding clones rows34/38 cannot resolve as dynamic write targets;
-7. centralized mapping has no duplicate semantic owner for the same exclusive write responsibility;
-8. profile resolution does not mutate caller input;
-9. production profile source imports no `fs`, Kintone adapter, or `xlsx-populate` and performs no workbook I/O;
-10. tests run without owner-template binaries because R1 is pure mapping.
-
-Tests may contain expected address/range literals as independent assertions; production mapping literals must live only in the profile module.
-
-## 6. Explicitly forbidden / out of scope
-Do NOT modify:
-- `src/services/mbo-export-service.js`;
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`;
-- any existing source/test file;
-- `package.json` or `package-lock.json`;
-- `dist/` or deployed JS/CSS;
-- structural/privacy/formula Baselines or behavior.
-
-Do NOT:
-- create Production XLSX Renderer yet;
-- render/mutate/read workbook binaries;
-- create generated XLSX/PDF/image/evidence binaries;
-- recalculate scoring;
-- touch Kintone/ACL/process/customization/deploy/Live UAT;
-- start Combined Excel parity, PDF parity, security regression or D3;
-- invoke Claude.
-
-## 7. Required commands
-Run exactly:
+## 7. Expected commands if authorized
 ```bash
 node --check src/profiles/mbo-xlsx-template-profile.js
 node --check tests/mbo-xlsx-template-profile.test.js
@@ -193,54 +183,17 @@ npm audit --omit=dev
 git status --porcelain
 ```
 
-No template-dependent skip is expected because R1 is pure mapping. If any skip occurs, report it exactly and do not call skipped proof PASS.
+Exactly one bounded implementation/blocker commit, exactly the two profile/test files, push canonical branch, report, STOP, no self-PASS/CLOSED.
 
-## 8. Commit/push contract
-After testing:
-- create exactly ONE bounded R1 implementation commit OR exactly ONE blocker commit;
-- commit must contain ONLY the two authorized new files;
-- push to `ai/antigravity-wp002c`;
-- STOP immediately after push/report;
-- do not self-declare PASS/CLOSED;
-- do not start Production Renderer or next gate.
-
-Report only:
-- implementation/blocker commit SHA;
-- exact changed files;
-- both `node --check` results;
-- both `node --test` results including skips if any;
-- `npm audit --omit=dev` result;
-- `git status --porcelain`;
-- blocker, if any.
-
-## 9. Review focus after Owner says `review`
-ChatGPT will independently verify:
-- authorization -> implementation = exactly one commit;
-- exactly two authorized NEW files and no existing-file drift;
-- no workbook I/O/imports and no renderer implementation;
-- exact template SHA/cardinality authority;
-- complete deterministic semantic role API;
-- row30/34/38 protected non-writable semantics;
-- fail-closed unknown template/count/role/missing/conflict behavior;
-- caller immutability;
-- no duplicate mapping ownership;
-- GitHub status/workflow signal truth.
-
-## 10. Authorization ledger / exact next action
+## 8. Exact next action
 ```text
-D2-WP003-R7-R3-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP004-R1-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / SOURCE+TEST / EXACT TWO NEW FILES
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP004-R1-SOURCE-TEST-20260902-01; CREATE EXACTLY ONE TWO-NEW-FILE IMPLEMENTATION/BLOCKER COMMIT; PUSH; REPORT; STOP
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP004-R1-R1 SOURCE+TEST
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
+PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
