@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4-R1 CORRECTIVE REQUIRED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4-R2 TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -62,34 +62,26 @@ R4-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R4-R1 proof additions:
-- exact `rowRefs` sequence and uniqueness;
-- exact `sheetNames` and `sheetStates` equality;
-- exact baseline equality for `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels`;
-- previously accepted R4 merge/row/sentinel/dimension/print-area/relationship/media/formula proof remains.
+Accepted R4-R1 proof additions are frozen: exact `rowRefs` sequence/uniqueness, exact `sheetNames`/`sheetStates`, and baseline equality for `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, centered flags, protection and sheet relationships, plus all prior R4 structural proof.
 
-Proof regression:
-- the previous R4 absolute per-count assertions `paperSize = 8`, `orientation = landscape`, `scale = 58` were removed and replaced only with baseline-relative equality. Those accepted assertions must be restored; baseline-relative equality must also remain.
-
-## 6. Proposed R4-R2 — NOT AUTHORIZED
+## 6. R4-R2 TEST-ONLY authorization
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
-PROPOSED_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R2
+ACTIVE_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = f566fa300818e53e78342710332573e0294d4c4b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
 ```
 
-If authorized, R4-R2 must retain every current R4/R4-R1 assertion and add back exact per-count assertions:
-- `paperSize === '8'`;
-- `orientation === 'landscape'`;
-- `scale === '58'`.
+R4-R2 must retain every current R4/R4-R1 assertion and add back exact per-count authority assertions:
+- `currentMain.paperSize === '8'`;
+- `currentMain.orientation === 'landscape'`;
+- `currentMain.scale === '58'`.
 
-No source, Part B, preservation/reference-image, renderer, Kintone, deploy, evidence or D3 work is authorized by this proposal.
+Baseline-relative equality must remain alongside the absolute assertions. No source, Part B, preservation/reference-image, renderer, Kintone, deploy, evidence or D3 work is authorized.
 
 ## 7. Remaining D2 path after Part A closure
 
