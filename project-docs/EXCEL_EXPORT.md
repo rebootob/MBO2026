@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION PASS-CLOSED / REFERENCE-IMAGE CLOSURE NEXT**  
+> Status: **IN PROGRESS / PRESERVATION PASS-CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -48,57 +48,55 @@ Part B: `(Part B) Competency`, `Sheet1`, main A1:X35, A4 portrait, scale 75%, pr
 
 ## 4. Preservation closure — R3-R30
 
-```text
-AUTHORIZATION_COMMIT = 985ddbd1d99d629d54fa7d76fba94a679f08dc59
-IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
-SCOPE_REVIEW = PASS
-R3-R29_SOURCE_BASELINE = PASS / FROZEN
-PROOF_CODE_REVIEW = PASS
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
-R3-R30_STATUS = PASS / CLOSED
-PRESERVATION_GATE = PASS / CLOSED
-PRIVACY_PURGE_REQUIRED = NO
-```
+R3-R30 is PASS/CLOSED. The OOXML preservation gate is PASS/CLOSED. Production preservation source is frozen from R3-R29 and Option B remains narrow deterministic allowed drift only.
 
-Preservation closure retains:
-- exact owner-template SHA identity;
-- strict relationship Type/ID/raw-Target tuple identity;
-- target lexical fail-closed rules;
-- coverage/gap XML inventory;
-- worksheet singleton/repeatable semantics;
-- pure dimension/sequence/boundary structural validation used by production;
-- persistent Option B normalization only for exact Part B `Sheet1` drift;
-- direct raw A/B preservation path;
-- source/raw input byte immutability;
-- exact per-sheet print-area and Part B `Sheet1.colsHash` regression proof;
-- accepted header-fingerprint and typed-privacy regression matrices.
+## 5. Reference-image READ-ONLY review
 
-R3-R30 completed missing proof for duplicate/extra/moved/other-sheet/Part-A `sheetPr`, distinct counterfeit worksheet-like Type URI, and array/fractional/non-number typed-privacy cases. No production source changed.
+Current source behavior is accepted for the next corrective:
+- target anchor/relationship `rId3` is removed;
+- target media `xl/media/image3.png` is removed only after scanning all remaining `.rels` parts and failing closed if still referenced.
 
-## 5. Current next gate
+Current proof does not close the gate. It only checks target absence and `rId1/rId2` survival.
+
+Historical independent review truth R3-R5 through R3-R9 consistently required:
+- complete BEFORE/AFTER drawing-anchor inventory;
+- complete drawing relationship inventory;
+- complete media filename + SHA-256 inventory;
+- normalize only exact target items out of BEFORE;
+- require every non-target item to be exactly identical AFTER.
+
+That proof is absent from the current test.
 
 ```text
-PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
-PREFERRED_EXECUTION = CHATGPT CONTROL-PLANE READ-ONLY REVIEW FIRST
-ACTIVE_WORK_PACKAGE = NONE
+D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS
+REFERENCE_IMAGE_PROOF_REVIEW = FAIL
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 ```
 
-Existing source/tests already contain reference-image handling. Review repository truth first; use Antigravity only if an actual implementation gap is proven.
+R3-R31 is NOT authorized.
 
-## 6. Remaining D2 path
+## 6. R3-R31 proposed proof direction
 
-1. reference-image closure;
-2. Part A objective insertion matrix;
-3. Part B competency insertion matrix;
-4. formula/no-formula authority;
-5. production sanitizer + XLSX renderer;
-6. combined Excel parity;
-7. PDF parity;
-8. export authorization/security/privacy regression;
-9. final independent D2 closure.
+Use existing `origBufA` and `outBufA` only. Snapshot stable full inventories for anchors, drawing relationships and `xl/media/*`; prove exact target identity in BEFORE; remove only target `rId3` anchor/relationship and `image3.png` from the BEFORE inventories; require exact deep equality with AFTER. Retain existing target absence/branding assertions and package-wide orphan safety.
+
+No production source change is proposed.
+
+## 7. Remaining D2 path
+
+After reference-image closure:
+1. Part A objective insertion matrix;
+2. Part B competency insertion matrix;
+3. formula/no-formula authority;
+4. production sanitizer + XLSX renderer;
+5. combined Excel parity;
+6. PDF parity;
+7. export authorization/security/privacy regression;
+8. final independent D2 closure.
 
 Do not auto-start any next step.
