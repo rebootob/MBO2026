@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE STRICT CORRECTIVE AUTHORIZED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE CORRECTIVE REQUIRED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -28,40 +28,38 @@ NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-## R1-R3 independent review
+## R1-R3-R1 independent review
 ```text
-AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-IMPLEMENTATION_COMMIT = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
+AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+AUTHORIZATION_COMMIT = 867111d785b7e85689725379249e7b278108d8cc
+IMPLEMENTATION_COMMIT = 6386e506b85ded87a57967705066e38d56212f73
 SCOPE = PASS / EXACT TWO AUTHORIZED FILES
+OBJECTIVE_i_COMMENT_ALIAS = FIXED / REJECTS
+COMPETENCY_b_RATING_ALIAS = FIXED / REJECTS
+NULL_PATH_BASIC_GUARD = PASS
 OVERALL = CORRECTIVE REQUIRED
 TOKEN = CONSUMED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Proven narrow defects:
-- non-canonical `OBJECTIVE_i_COMMENT` alias becomes writable and can return null projection path;
-- non-canonical `COMPETENCY_b_RATING` alias becomes writable;
-- validator does not validate the complete actual safe mapping/projection set;
-- required negative mutation proof is incomplete.
+Remaining proven defect: canonical Part B competency integrity is incomplete. `validateMappingIntegrity()` validates list length, address syntax, non-empty projection and duplicate targets, but does not require exact expected competency `index`, rating `row`, exact `K{row}` self target or exact `partB.competencyItems[i-1].selfRating` path. The approved contract required wrong/missing count/index/self-rating address to fail closed and direct wrong mapping/index/address tests.
 
-## Active D2-WP004-R1-R3-R1
+## Proposed next — NOT AUTHORIZED
 ```text
-AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE_FILES_ONLY =
+D2-WP004-R1-R3-R2 = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
+WRITABLE_FILES_IF_AUTHORIZED =
   src/profiles/mbo-xlsx-template-profile.js
   tests/mbo-xlsx-template-profile.test.js
-SOURCE_CHANGE = AUTHORIZED ONLY FOR PROFILE FILE
-TEST_CHANGE = AUTHORIZED ONLY FOR PROFILE TEST FILE
+SOURCE_TEST_ONLY = YES
+LOW_CREDIT = YES
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
-No semantic Baseline expansion is authorized. Correct only strict canonical allowlist enforcement, successful-resolution non-null path integrity, actual Part A/Part B safe mapping validation, and focused negative tests. No broad scan, workbook inspection, Renderer, Kintone write, deploy, Live UAT, parity/security regression or D3.
+No semantic Baseline expansion is proposed. R1-R3-R2 must only complete exact canonical integrity validation/tests and preserve all already-corrected behavior.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
