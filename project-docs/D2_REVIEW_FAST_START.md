@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> only directly relevant source/test/Baseline for the exact next gate.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only directly relevant source/test/Baseline for the exact next gate.
 
 ## Project truth
 ```text
@@ -26,6 +26,7 @@ PRE2 = READ-ONLY DESIGN COMPLETE
 PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
 PRE2_R1_R1 = PASS / CLOSED
 PRE2_R2 = PASS / CLOSED
+PRE2_R3 = PASS / CLOSED AFTER CORRECTIVE CHAIN THROUGH R4
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -41,7 +42,7 @@ NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-Expanded-only closed roles:
+Expanded presentation authority:
 ```text
 b7 TITLE B31 -> partB.competencyItems[6].presentationTitle
 b7 DESCRIPTION B32 -> partB.competencyItems[6].presentationDescription
@@ -51,45 +52,39 @@ b1..6 TITLE/DESCRIPTION = REJECT
 b8 under N7 = REJECT
 ```
 
-Presentation overlay metadata:
+## Closed PRE2-R3 OOXML + privacy overlay proof
 ```text
-b7 TITLE_MERGE B31:J31
-b7 DESCRIPTION_MERGE B32:J32
-b7 RATING_SCALE B33:J33 / STATIC
-b7 PADDING_ROW 34 / PROTECTED
-b8 TITLE_MERGE B35:J35
-b8 DESCRIPTION_MERGE B36:J36
-b8 RATING_SCALE B37:J37 / STATIC
-b8 PADDING_ROW 38 / PROTECTED
+INTERMEDIATE_MERGES = 79 / 85 / 91
+FINAL_MERGES = 79 / 86 / 93
+BASE_PRIVACY = 432 / 474 / 516
+EFFECTIVE_PRIVACY = 432 / 492 / 552
+SUMMARY_START_OBSERVED = 31 / 35 / 39
+DIMENSIONS = A1:X35 / A1:X39 / A1:X43
+N7_TITLE_MERGE = B31:J31
+N8_TITLE_MERGES = B31:J31 + B35:J35
+N7_PRESENTATION_DYNAMIC = B31:J32
+N8_PRESENTATION_DYNAMIC = B31:J32 + B35:J36
+RATING_SCALE = B33:J33 / B37:J37 / STATIC
+PADDING = 30 / 34 / 38 / PROTECTED
+FORMULA_INVENTORY = 0
 ```
 
-## Exact next proposed gate — NOT AUTHORIZED
+Final exact-set authority:
+- expected effective dynamic set is derived from source-backed base privacy topology + only authorized presentation additions;
+- observed addresses are normalized and unique;
+- exact set equality rejects missing, duplicate, extra or same-count substituted addresses;
+- pre-sanitize B31/B35/B32/B36/B33/B37 validation occurs before mutation;
+- relationship/media/reference-image/auxiliary Sheet1 preservation remains required.
+
+## Exact next control-plane decision — NOT AUTHORIZED
+R2 design now has all PRE2 prerequisites closed. Next production implementation must be separately bounded and authorized.
+
+Planned layers:
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE2-R3
-NAME = PART B EXPANDED PRESENTATION OOXML + PRIVACY OVERLAY PROOF
-MODE = OOXML-FEASIBILITY+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE =
-  scripts/export/mbo-xlsx-ooxml-feasibility.js
-  tests/mbo-xlsx-ooxml-feasibility.test.js
-EXPORT_SERVICE_CHANGE = NO
-PROFILE_CHANGE = NO
-PRODUCTION_RENDERER_CHANGE = NO
-KINTONE = NO
-DEPLOY = NO
-D3 = HOLD
+R2-B = sentinel-free production template preparation/sanitizer engine
+R2-C = secured semantic value renderer
+COMBINED_EXCEL_PARITY = later D2 gate
 ```
 
-Key proof targets if authorized:
-```text
-FROZEN_INTERMEDIATE_MERGES = 79 / 85 / 91
-FINAL_OVERLAY_MERGES = 79 / 86 / 93
-BASE_PRIVACY_DYNAMIC = 432 / 474 / 516
-FINAL_EFFECTIVE_DYNAMIC = 432 / 492 / 552
-N7 overlay = B31:J31 + dynamic presentation B31:J32
-N8 overlay = B31:J31 + B35:J35 + dynamic presentation B31:J32 + B35:J36
-```
-
-Recommended Owner phrase:
-`อนุมัติ D2-WP004-R2-PRE2-R3 OOXML-FEASIBILITY+TEST ตามขอบเขตที่เสนอ`
-
-Do not auto-start. Antigravity remains STOP until exact Owner authorization.
+No production renderer/sanitizer source change is currently authorized.
+Read `AI_ACTIVE_TASK.md` for the exact current gate. Do not auto-start Antigravity, Kintone, deploy or D3.
