@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4-R1 TEST-ONLY AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4-R1 CORRECTIVE REQUIRED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -42,41 +42,56 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Part A R4 review
+## 4. Part A source baseline
 
 ```text
-R4_AUTHORIZATION_COMMIT = 8df05db6535a8ce871e987853e5a356ad67f4232
 R4_IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
-R4_SCOPE_REVIEW = PASS
 R4_SOURCE_REVIEW = PASS / FROZEN
-R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
-R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+```
+
+Accepted source behavior remains frozen: real feasibility path for objective counts 4–10, row/cell shifting, row-28 cloning, merge shifting/cloning, exact dimensions A1:BL52..58, exact print areas BJ52..58, sentinel setup and backwards-compatible buffer outputs.
+
+## 5. R4-R1 review
+
+```text
+R4-R1_AUTHORIZATION_COMMIT = 8b0eb2ca2058c458c40286b6b2d5f55bdb34d703
+R4-R1_IMPLEMENTATION_COMMIT = 8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6
+R4-R1_SCOPE_REVIEW = PASS
+R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
+R4-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R4 source/proof progress remains frozen. Existing fingerprint helpers already expose the missing invariant fields.
+Accepted R4-R1 proof additions:
+- exact `rowRefs` sequence and uniqueness;
+- exact `sheetNames` and `sheetStates` equality;
+- exact baseline equality for `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels`;
+- previously accepted R4 merge/row/sentinel/dimension/print-area/relationship/media/formula proof remains.
 
-## 5. R4-R1 TEST-ONLY authorization
+Proof regression:
+- the previous R4 absolute per-count assertions `paperSize = 8`, `orientation = landscape`, `scale = 58` were removed and replaced only with baseline-relative equality. Those accepted assertions must be restored; baseline-relative equality must also remain.
+
+## 6. Proposed R4-R2 — NOT AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
-ACTIVE_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-OWNER_APPROVAL_BASELINE_HEAD = 5f22caf6ffc9d539ce0df0c23663dd934385d923
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
+PROPOSED_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
-R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP
 ```
 
-R4-R1 must retain the full accepted 4–10 matrix and add only:
-- exact `rowRefs` expected sequence;
-- `rowRefs` uniqueness/no unexpected rows;
-- exact `sheetStates` equality;
-- exact equality of main-sheet `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels` against the 4-objective baseline.
+If authorized, R4-R2 must retain every current R4/R4-R1 assertion and add back exact per-count assertions:
+- `paperSize === '8'`;
+- `orientation === 'landscape'`;
+- `scale === '58'`.
 
-No source, Part B, preservation/reference-image, renderer, Kintone, deploy, evidence or D3 work is authorized.
+No source, Part B, preservation/reference-image, renderer, Kintone, deploy, evidence or D3 work is authorized by this proposal.
 
-## 6. Remaining D2 path after Part A closure
+## 7. Remaining D2 path after Part A closure
 
 1. Part B competency insertion structural matrix;
 2. formula/no-formula authority;
