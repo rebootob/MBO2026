@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-B1-R1 NEEDS CORRECTIVE / R2 PROPOSED
+# AI ACTIVE TASK — R2-B1-R2 AUTHORIZED / ACTIVE
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / BOUNDED EXECUTOR AUTHORIZED / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
@@ -23,205 +23,234 @@ D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = NEEDS CORRECTIVE / NOT CLOSED
 D2_WP004_R2_B1_R1 = NEEDS CORRECTIVE / NOT CLOSED
+D2_WP004_R2_B1_R2 = AUTHORIZED / ACTIVE
 
 SAFE_TO_MAP = 20 EXACT
 UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-B1-R2
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-B1-R2-SOURCE-TEST-CORRECTIVE-20260903-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-B1-R2-SOURCE-TEST-CORRECTIVE-20260903-01
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
-ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
+ACTIVE_D2_RENDERER_CHANGE_AUTH = D2-WP004-R2-B1-R2-SOURCE-TEST-CORRECTIVE-20260903-01 / PART-A PREPARER CORRECTIVE ONLY
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED CORRECTIVE / ONE-SHOT / ONE COMMIT -> PUSH -> STOP
 CLAUDE = STOP
-PRODUCTION_RENDERER = B1 NOT CLOSED / B2+C NOT AUTHORIZED
+PRODUCTION_RENDERER = B1 CORRECTIVE ONLY / B2+C NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. R2-B1-R1 implementation identity / scope review
+## 2. Authorization identity
 
 ```text
-R2_B1_R1_AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R1-SOURCE-TEST-CORRECTIVE-20260903-01
-R2_B1_R1_AUTHORIZATION_COMMIT = fba306d1ce2dc3b318495a0e72bb4e4728353f28
-R2_B1_R1_IMPLEMENTATION_COMMIT = 972c2a8b5f71bd661593a6856c1d1c25928af279
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES = EXACTLY TWO AUTHORIZED FILES
-  src/services/mbo-xlsx-template-preparer.js
-  tests/mbo-xlsx-template-preparer.test.js
-SCOPE_REVIEW = PASS
-TOKEN_STATE = CONSUMED / DO NOT REUSE
-GITHUB_COMBINED_STATUS = NONE
-GITHUB_WORKFLOW_RUNS = NONE
-RUNTIME_CERTIFICATION = NOT INDEPENDENTLY AVAILABLE
+WORK_PACKAGE = D2-WP004-R2-B1-R2
+NAME = PART A EXACT REFERENCE VALIDATOR + REACHABLE PROOF CORRECTIVE
+STATE = AUTHORIZED / ACTIVE
+MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R2-SOURCE-TEST-CORRECTIVE-20260903-01
+AUTHORIZATION_BASIS_HEAD = 89370c25630c53b2da963ea0aab15c8801e6c276
+MAX_EXECUTOR_COMMITS = 1
+EXECUTOR = ANTIGRAVITY
+FINAL_EXECUTOR_STATE = CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW
 ```
 
-Accepted R1 improvements that must not regress:
-- production reference-image handling moved away from simple substring-only deletion;
-- production now checks a parsed rId3 relationship count and image relationship type;
-- production requires target media to exist before removal;
-- production checks a drawing anchor containing rId3 and attempts to distinguish incidental rId3 text;
-- workbook-wide formula scan was added to the focused integration test;
-- test coverage expanded for rowRefs, merge count, dimensions/Print_Area, page setup and basic image/branding checks;
+Owner authorization received exactly:
+`อนุมัติ D2-WP004-R2-B1-R2 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+
+The token is single-use. Antigravity must not self-declare PASS/CLOSED and must STOP immediately after one corrective implementation commit is pushed.
+
+## 3. Prior R1 identity / accepted improvements
+
+```text
+R1_AUTHORIZATION_COMMIT = fba306d1ce2dc3b318495a0e72bb4e4728353f28
+R1_IMPLEMENTATION_COMMIT = 972c2a8b5f71bd661593a6856c1d1c25928af279
+R1_REVIEW_STATE_COMMIT = 89370c25630c53b2da963ea0aab15c8801e6c276
+R1_SCOPE_REVIEW = PASS
+R1_TOKEN = CONSUMED / DO NOT REUSE
+```
+
+Preserve these accepted R1 improvements:
 - production remains browser-safe with no Node fs/path/crypto import and no feasibility import;
-- no sentinel, semantic writer, scoring, Part B, Kintone or deploy scope expansion.
+- exact owner-template SHA remains validated before workbook/package mutation;
+- caller bytes remain copied before mutation;
+- Part A only, N4..N10, sentinel-free;
+- reference-image handling now parses relationship evidence instead of substring-only deletion;
+- media existence is checked before removal;
+- workbook-wide zero-formula test coverage exists;
+- rowRefs / merge count / dimension / Print_Area / page-setup coverage improved;
+- no semantic writer, scoring, Part B, Kintone or deploy scope expansion.
 
-These improvements are not sufficient to close B1 because exact target authority and test-path reachability remain incorrect/incomplete.
+## 4. Exact writable scope
 
-## 3. MATERIAL BLOCKER A — source still widens the exact accepted reference-image tuple
+Antigravity may modify ONLY:
 
-Authorized/frozen exact tuple is:
+```text
+src/services/mbo-xlsx-template-preparer.js
+tests/mbo-xlsx-template-preparer.test.js
+```
+
+Forbidden:
+
+```text
+src/services/mbo-export-service.js
+src/profiles/mbo-xlsx-template-profile.js
+scripts/export/mbo-xlsx-ooxml-feasibility.js
+tests/mbo-xlsx-ooxml-feasibility.test.js
+project-docs/*
+package.json
+package-lock.json
+dist/*
+UI / integration
+Part B production implementation
+R2-C semantic renderer
+Combined Excel
+Kintone write/deploy/Live UAT
+D3
+```
+
+No redesign and no broad generic framework.
+
+## 5. R2 SOURCE CORRECTIVE — exact reachable reference validator
+
+Do NOT weaken or bypass the exact owner-template SHA gate.
+
+Production exact accepted reference tuple is ONLY:
 
 ```text
 Id = rId3
 Type = http://schemas.openxmlformats.org/officeDocument/2006/relationships/image
 Target = ../media/image3.png
-TargetMode = absent/null
+TargetMode = ABSENT
 MEDIA = xl/media/image3.png
+EXACT_EMBED = r:embed="rId3" exactly once globally in accepted drawing anchor evidence
 ```
 
-Current R1 source still accepts states outside this authority:
+Required source correction:
+1. accept ONLY exact Target `../media/image3.png`; `media/image3.png` must reject;
+2. TargetMode attribute must be absent entirely; `Internal`, `External`, or any value must reject;
+3. require exactly one parsed Relationship element whose Id is exactly `rId3`;
+4. require exact canonical image Type and exact Target tuple;
+5. require exactly one exact `r:embed="rId3"` occurrence and exactly one enclosing accepted drawing anchor;
+6. reject duplicate/missing/malformed/non-self-closing rId3 relationship evidence rather than silently ignoring it;
+7. require exact media path to exist before removal;
+8. preserve no-remaining-image3-reference proof after relationship removal;
+9. preserve unrelated relationship/media/drawing inventory after normalizing only the accepted target removal;
+10. preserve exact owner SHA, browser safety, zero formulas, zero semantic writes and Part A-only boundary.
 
-```text
-Target = media/image3.png          [incorrectly accepted alternative]
-TargetMode = Internal              [incorrectly accepted when contract requires absent/null]
-```
+### Required reachable production helper
 
-Therefore the production validator is not exact fail-closed yet.
+Extract the smallest browser-safe pure production helper used by the REAL preparer to validate reference-image evidence after SHA validation.
 
-The drawing-anchor check also counts matching anchors, not exact embed occurrences. One anchor containing multiple `r:embed="rId3"` occurrences can still satisfy `matchingAnchors.length === 1`. R2 must prove exact embed cardinality = 1 globally for the accepted anchor identity before mutation.
+The helper may accept only the minimum evidence needed, for example:
+- drawing XML;
+- drawing relationships XML;
+- media path existence / relationship inventory evidence.
 
-### Required R2 source correction
-- accept ONLY exact Target `../media/image3.png`;
-- require TargetMode attribute to be absent entirely;
-- require exactly one Relationship element with Id `rId3` and exact Type/Target tuple;
-- require exactly one exact `r:embed="rId3"` occurrence and exactly one enclosing accepted drawing anchor;
-- reject malformed/non-self-closing/duplicate rId3 relationship evidence rather than silently ignoring it;
-- preserve all accepted post-removal no-reference and unrelated-inventory checks;
-- do not weaken exact owner-template SHA validation.
+Rules:
+- `preparePartATemplate()` MUST call this SAME production helper;
+- synthetic adversarial tests MUST call this SAME helper directly;
+- no duplicate test-side validator;
+- no bypass of SHA inside `preparePartATemplate()`;
+- helper must fail with specific/reference-validation errors so tests can prove the intended path rather than generic SHA mismatch.
 
-## 4. MATERIAL BLOCKER B — adversarial reference-image tests do not reach the reference validator
+## 6. R2 TEST CORRECTIVE — reachable adversarial proof
 
-The corrective test mutates the owner workbook package first (missing/duplicate relationship, External TargetMode, missing media), re-generates new bytes, then calls:
+Focused command:
+`node --test tests/mbo-xlsx-template-preparer.test.js`
 
-`preparePartATemplate(mutatedBytes, ...)`
+Adversarial tests must exercise the shared production reference validator directly for at least:
+- missing rId3 relationship;
+- duplicate rId3 relationship;
+- wrong relationship Type;
+- wrong Target `media/image3.png`;
+- another wrong Target;
+- TargetMode=`Internal`;
+- TargetMode=`External`;
+- missing media evidence;
+- zero exact embeds;
+- duplicate exact embeds in one anchor;
+- duplicate exact embeds across anchors;
+- incidental rId3 text without exact embed;
+- remaining image3.png reference/orphan condition.
 
-But production order is intentionally:
+Assertions must distinguish the intended reference-validator failure from SHA mismatch.
 
-```text
-exact owner-template SHA validation
--> workbook/package parsing
--> reference-image validation
-```
+## 7. R2 TEST CORRECTIVE — complete Part A structural/package proof
 
-Any package mutation changes the workbook bytes and therefore fails the SHA check before the reference-image validator executes.
+Using the real production preparer for mutation and test-side oracle/inspection only, prove N4..N10:
+1. exact numeric rowRefs sequence derived from source baseline;
+2. rowRefs uniqueness and no unexpected row nodes;
+3. rows 1:28 structural identity preserved against source baseline, including cell refs/style pattern/row height/custom-height behavior;
+4. every inserted objective row exact normalized clone of source row 28 for those dimensions;
+5. every original downstream row >=29 exact relocated structural identity by N-4 with no stale/lost/duplicate identity;
+6. complete expected merge inventory deep equality, not only count arithmetic;
+7. declared merge count equals actual inventory length;
+8. exact dimensions A1:BL52..A1:BL58;
+9. exact Print_Area BJ52..BJ58;
+10. page setup paperSize=8 / orientation=landscape / scale=58;
+11. sheet names/states and directly relevant frozen metadata required by `D2_PART_A_STRUCTURAL_CLOSURE.md`;
+12. every Profile `effectiveSanitizationRanges` address sanitized;
+13. stale sensitive tokens collected pre-sanitize absent from final cells/sharedStrings/package evidence where frozen proof requires;
+14. same-count sanitization topology substitution and protected/static mutation reject through production Profile validation;
+15. exact normalized target reference removal;
+16. COMPLETE unrelated drawing relationship/media inventory equality after removing only rId3/image3;
+17. workbook-wide formula inventory exactly zero;
+18. caller bytes identical on success and failure;
+19. no semantic/user writes, scoring/recalculation or Part B mutation.
 
-Consequently these adversarial tests can PASS merely because `EXPORT_TEMPLATE_PREPARER_UNRESOLVED` is thrown for SHA mismatch. They do not prove missing/duplicate/wrong tuple/media conditions are rejected by the production reference-image validator.
+Tests may reuse existing feasibility helpers ONLY as TEST-SIDE inspection/oracle support if useful. They must not import feasibility code into production and must not duplicate production mutation logic as the implementation path.
 
-### Required R2 reachability correction
-Do NOT bypass or weaken production SHA validation.
+## 8. Real-template runtime evidence
 
-Instead extract the smallest browser-safe pure production helper used by the real preparer, for example an exported/internal production function that validates the reference-image package evidence from drawing XML + relationship XML + media/reference inventory. The real `preparePartATemplate()` must call this SAME helper after SHA validation, and tests must call the SAME production helper directly with synthetic malformed XML/inventory to prove each adversarial condition reaches the intended validation logic.
-
-No duplicated test-side validator is acceptable.
-
-## 5. MATERIAL BLOCKER C — claimed complete Part A proof matrix is still materially incomplete
-
-R1 test additions improve coverage but still do not satisfy the frozen `D2_PART_A_STRUCTURAL_CLOSURE.md` production-path proof.
-
-Current R1 tests check row number presence/sequence and merge COUNT, but do not yet prove all required structural identity:
-
-1. rows 1:28 structural identity against source baseline, including cell refs/style pattern/row height/custom-height behavior;
-2. each inserted objective row exact normalized structural clone of source row 28 for those dimensions;
-3. each original downstream row >=29 exact relocated structural identity, not merely that the target row number exists;
-4. complete expected merge inventory deep equality; current test checks declared count and formula `193 + extra*14` but not exact merge set;
-5. directly relevant frozen metadata parity (sheet state and required baseline metadata) rather than sheet-name-only spot check;
-6. stale sensitive token absence from final sharedStrings/package content; current visible proof checks final cell nulls but not complete token purge evidence;
-7. same-count sanitization topology substitution / protected-static mutation through production validation; current malformed profile example mutates dimension only;
-8. complete unrelated drawing relationship/media inventory equality after normalizing only accepted rId3/image3 target; current test checks presence of rId1/rId2/rId4 and three media files, not full inventory equality.
-
-R2 tests may use accepted feasibility helpers ONLY as test-side inspection/oracle support, but the actual mutation path must remain the production preparer.
-
-## 6. MATERIAL BLOCKER D — independent real-template runtime evidence still unavailable
-
-Repository truth for R1 implementation commit exposes:
-- no combined CI status;
-- no GitHub workflow run;
-- no persisted test result artifact/log proving the focused real-template test executed and did not skip.
-
-The integration test still has an explicit local-template skip path. Repository/source review therefore cannot independently certify that the N4..N10 matrix executed successfully in the executor environment.
-
-R2 must run:
+Antigravity must run:
 
 `node --test tests/mbo-xlsx-template-preparer.test.js`
 
-with exact owner template present and report exact pass/fail/skip counts plus explicit `real owner-template integration = EXECUTED / NOT SKIPPED`. This executor report is necessary evidence but does not replace source/test review.
+with the exact owner Part A template present and SHA matching.
 
-## 7. Exact next proposed corrective — NOT AUTHORIZED
+Final executor report must state explicitly:
+- exact command;
+- pass count;
+- fail count;
+- skip count;
+- real owner-template integration = EXECUTED / NOT SKIPPED;
+- N4..N10 matrix = PASS/FAIL.
+
+If the owner template is unavailable or integration skips, report that limitation and do not claim closure.
+
+## 9. Executor protocol
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-B1-R2
-NAME = PART A EXACT REFERENCE VALIDATOR + REACHABLE PROOF CORRECTIVE
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
-
-PROPOSED_WRITABLE_FILES =
-  src/services/mbo-xlsx-template-preparer.js
-  tests/mbo-xlsx-template-preparer.test.js
-
-MAX_EXECUTOR_COMMITS = 1
+fresh-fetch canonical branch
+-> verify HEAD equals Control Plane authorization HEAD
+-> read D2_REVIEW_FAST_START.md
+-> read this AI_ACTIVE_TASK.md
+-> read R2 renderer/sanitizer design
+-> inspect only relevant Part A baseline/profile/B1 source+test/reference proof
+-> correct only two authorized files
+-> run focused real-template tests
+-> verify git diff contains only two authorized files
+-> exactly one corrective implementation commit
+-> push canonical branch
+-> report SHA + exact files + pass/fail/skip + real-template execution status
+-> STOP
 ```
 
-Correct ONLY Blockers A-D above. Do not redesign the preparer and do not broaden beyond Part A.
+Do not modify control docs. Do not begin R2-B2/R2-C. Do not deploy. Do not perform Kintone writes.
 
-R2 source/test goals:
-1. exact relationship Target only `../media/image3.png`;
-2. TargetMode absent only;
-3. exact relationship + embed cardinality fail-closed;
-4. smallest production reference-evidence validator helper shared by real preparer and adversarial tests;
-5. adversarial tests must prove intended validator error path, not generic SHA rejection;
-6. exact row/clone/downstream structural identity proof;
-7. exact merge-set equality;
-8. required frozen metadata parity;
-9. stale package/shared-string token purge proof;
-10. same-count sanitization/protected-static mutation proof;
-11. full normalized non-target relationship/media inventory equality;
-12. real-template N4..N10 execution, not skipped;
-13. preserve browser safety, exact SHA gate, zero formulas, zero semantic writes, zero Part B scope.
+Expected executor final status:
+`R2-B1-R2 CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`
 
-## 8. Forbidden scope remains
+## 10. Remaining work — NOT AUTHORIZED
 
 ```text
-src/services/mbo-export-service.js = FORBIDDEN
-src/profiles/mbo-xlsx-template-profile.js = FORBIDDEN
-scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
-tests/mbo-xlsx-ooxml-feasibility.test.js = FORBIDDEN
-package.json / package-lock.json = FORBIDDEN
-project-docs/* = FORBIDDEN TO EXECUTOR
-UI / dist / integration = FORBIDDEN
-R2-B2 = NOT AUTHORIZED
-R2-C = NOT AUTHORIZED
-Combined Excel = NOT AUTHORIZED
-Kintone write/deploy/Live UAT = FORBIDDEN
-D3 = HOLD
-```
-
-## 9. Owner decision
-
-No execution is authorized now.
-
-Recommended approval phrase if Owner accepts the smallest corrective:
-`อนุมัติ D2-WP004-R2-B1-R2 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
-
-```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-PRODUCTION_RENDERER = B1 NOT CLOSED
-R2-B2 = NOT AUTHORIZED
-R2-C = NOT AUTHORIZED
-D3 = HOLD
+R2-B2 = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
+R2-C = SECURED SEMANTIC VALUE RENDERER
+COMBINED_EXCEL_PARITY = later D2 gate
+D2_FINAL_CLOSURE = after production preparer + semantic renderer + parity closure
+D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
