@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / TEMPLATE PROFILE SEMANTIC AUTHORITY NOT CLOSED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / TEMPLATE SEMANTIC EVIDENCE ACTIVE**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -22,7 +22,6 @@ Mandatory architecture: centralized Template Profile/Mapping, no scattered impor
 ## D2-WP004-R1-R1 review
 ```text
 IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
-SCOPE = PASS / EXACT TWO FILES
 PART_B_ROW_ROLE_TOPOLOGY = PASS / FREEZE
 BASIC_INTEGRITY_VALIDATOR = PASS / FREEZE
 SEMANTIC_PROJECTION_AUTHORITY = CORRECTIVE REQUIRED
@@ -30,31 +29,27 @@ TOKEN = CONSUMED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Accepted/frozen from R1-R1:
-- Part B original rows7:29 K:X dynamic;
-- row30 and clones34/38 protected non-dynamic;
-- N7 inserted rows31:33 dynamic; N8 inserted rows31:33 +35:37 dynamic;
-- summary relocation 31:34 / 35:38 / 39:42;
-- pure no-workbook-I/O profile;
-- exact template SHA/count domains;
-- basic fail-closed checks for missing address mapping, duplicate target, malformed address and protected row exposed writable.
+## Active D2-WP004-R1-R2 — EVIDENCE-ONLY
+```text
+AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+SOURCE_CHANGE = FORBIDDEN
+TEST_CHANGE = FORBIDDEN
+PROFILE_CHANGE = FORBIDDEN
+TEMPLATE_BINARY_CHANGE = FORBIDDEN
+PRODUCTION_RENDERER = NOT AUTHORIZED
+```
 
-Still not accepted:
-- Department vs Section Hoshin exact workbook ownership;
-- writable roles whose resolver returns no secured projection path;
-- Part B summary/comment/signature mappings not backed by current `MboExportService` projection;
-- Part A evaluator/Chief aliases whose exact manager/GM projection meaning is unresolved;
-- validator does not yet require every claimed writable semantic to have a valid secured projection translation.
+Evidence must inspect only exact SHA-approved owner templates READ-ONLY and the current `MboExportService` READ-ONLY. For each candidate writable region it must record worksheet, cell/range/merge, proving static label, normalized semantic role, secured projection path when present, and status `PROVEN`, `UNRESOLVED`, or `NO_SECURED_PROJECTION_SOURCE`.
 
-## Proposed next — NOT AUTHORIZED
-`D2-WP004-R1-R2` should be EVIDENCE-ONLY. Inspect exact SHA-approved owner-template static labels/merged ranges and current read-only projection, writing only `project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md`. Do not change profile source until evidence review closes the semantic questions.
+It must specifically investigate Department vs Section Hoshin ownership, Part A header/objective/evaluator/summary roles, Part B headers/competency rating regions/summary-comment-signature regions, and avoid inventing semantic meaning when workbook evidence or secured projection is absent.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
-PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
