@@ -15,7 +15,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — privacy remap corrective |
+| D2 | IN PROGRESS — R7-R2 privacy fail-closed corrective active |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -24,29 +24,22 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 
 Closed D2: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority.
 
-Latest R7-R1 review:
-```text
-AUTH_COMMIT = 273d5ccbbb24d6aaa1b5ae23bab2a0941977d591
-IMPLEMENTATION = 7c1be393bbddaf1f6b439d13229ad256c23517cf
-SCOPE = PASS / EXACTLY ONE COMMIT / EXACT TWO FILES
-ROW30_MAPPING = PASS / FROZEN
-DYNAMIC_COUNTS = PASS / FROZEN 432/474/516
-STYLE_MERGE_SOURCE_BACKING = PASS / FROZEN
-EXPANDED_TOKEN_PURGE = PASS / FROZEN
-FAIL_CLOSED_TYPE_NONBLANK_STATIC_AUTHORITY = CORRECTIVE REQUIRED
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-R7-R1_STATUS = CORRECTIVE REQUIRED
-```
-
-Proposed R7-R2 is not authorized. It may correct only the remaining source-backed fail-closed gaps in the same two feasibility files. Production renderer remains out of scope.
+R7-R1 accepted/frozen: row mapping, row30 non-dynamic semantics, dynamic counts 432/474/516, style+merge source backing, expanded token purge, count-aware metadata, zero formulas.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R2
+R7-R2_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7-R2_AUTHORIZATION = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 52a28d6f24a353f4a425315b730b9b9f19cd4bce
+EXPECTED_SCOPE = SOURCE+TEST / EXACT TWO EXISTING FILES
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R2 / ONE-SHOT / STOP AFTER PUSH+REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
+
+R7-R2 is limited to exact source-evidence fail-closed closure: remove static bypass/tolerance, enforce untouched-buffer type/nonblank/static-hash authority, and prove direct negative mismatch blockers. Production Renderer and all later gates remain out of scope. Full contract: `AI_ACTIVE_TASK.md`.
