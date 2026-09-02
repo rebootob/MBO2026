@@ -1987,8 +1987,71 @@ export async function getStructuralPartBBuffers() {
 
   const origBufB = fs.readFileSync(found.partB);
   const sourceSha = crypto.createHash('sha256').update(origBufB).digest('hex');
-  if (sourceSha !== EXPECTED_PART_B_SHA) {
-    throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Source SHA mismatch');
+  // --- RAW OWNER-TEMPLATE FAIL-CLOSED GUARDS (R5-R1) ---
+  const rawWbTemp = await XlsxPopulate.fromDataAsync(origBufB);
+  const rawSheetFile = rawWbTemp._zip.files['xl/worksheets/sheet1.xml'];
+  const rawWbFile = rawWbTemp._zip.files['xl/workbook.xml'];
+  if (!rawSheetFile || !rawWbFile) {
+    throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw worksheet XML or workbook XML missing');
+  }
+
+  const rawSheetXml = await rawSheetFile.async('string');
+  const rawWbXml = await rawWbFile.async('string');
+
+  const rawDimMatch = rawSheetXml.match(/<dimension ref="([^"]+)"\/>/);
+  if (!rawDimMatch || rawDimMatch[1] !== 'A1:X35') {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw main dimension tag must be A1:X35, found ${rawDimMatch ? rawDimMatch[1] : 'none'}`);
+  }
+
+  const rawMergesMatches = [...rawSheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
+  if (rawMergesMatches.length !== 79) {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw actual merge inventory length must equal 79, found ${rawMergesMatches.length}`);
+  }
+
+  const rawDeclaredCountMatch = rawSheetXml.match(/<mergeCells count="(\d+)">/);
+  if (!rawDeclaredCountMatch || parseInt(rawDeclaredCountMatch[1], 10) !== 79) {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw mergeCells declared count must equal 79, found ${rawDeclaredCountMatch ? rawDeclaredCountMatch[1] : 'none'}`);
+  }
+
+  const rawBlock27_30Merges = [];
+  for (const m of rawMergesMatches) {
+    const r1 = parseInt(m[2], 10);
+    const r2 = parseInt(m[4], 10);
+    if (r1 >= 27 && r2 <= 30) {
+      rawBlock27_30Merges.push(m[0]);
+    }
+  }
+  if (rawBlock27_30Merges.length !== 6) {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw source block 27:30 must contain exactly 6 merges, found ${rawBlock27_30Merges.length}`);
+  }
+
+  for (let r = 27; r <= 31; r++) {
+    const matches = [...rawSheetXml.matchAll(new RegExp(`<row r="${r}"[^>]*>`, 'g'))];
+    if (matches.length !== 1) {
+      throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw row ${r} must be present exactly once, found ${matches.length}`);
+    }
+  }
+
+  const rawPrintAreas = [...rawWbXml.matchAll(/<definedName name="_xlnm\.Print_Area"([^>]*)>([^<]+)<\/definedName>/g)];
+  if (rawPrintAreas.length !== 1) {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Exactly one raw _xlnm.Print_Area definedName must exist, found ${rawPrintAreas.length}`);
+  }
+
+  const rawPrintAreaAttr = rawPrintAreas[0][1];
+  const rawPrintAreaVal = rawPrintAreas[0][2].trim();
+
+  const localSheetIdMatch = rawPrintAreaAttr.match(/localSheetId="(\d+)"/);
+  if (!localSheetIdMatch || localSheetIdMatch[1] !== '0') {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw Print_Area localSheetId must equal 0, found ${rawPrintAreaAttr}`);
+  }
+
+  if (rawPrintAreaVal !== "'(Part B) Competency'!$A$1:$X$35") {
+    throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Raw Print_Area value must equal '(Part B) Competency'!$A$1:$X$35, found ${rawPrintAreaVal}`);
+  }
+
+  const rawSheet1PrintAreas = [...rawWbXml.matchAll(/<definedName name="_xlnm\.Print_Area"[^>]*localSheetId="1"[^>]*>/g)];
+  if (rawSheet1PrintAreas.length > 0) {
+    throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: No Print_Area must be bound to Sheet1/localSheetId 1');
   }
 
   // --- RAW OOXML HELPER FOR PART B BLOCK INSERTION & MERGE CLONING ---

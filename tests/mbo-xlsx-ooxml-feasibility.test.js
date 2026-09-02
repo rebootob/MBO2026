@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import XlsxPopulate from 'xlsx-populate';
 import {
   findLocalSourceTemplates,
@@ -1573,8 +1574,40 @@ test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block 
     return;
   }
 
-  // 1. Exact Part B SHA gate
+  // 1. Exact Part B SHA gate & raw owner-template baseline proof
   assert.equal(found.shaB, EXPECTED_PART_B_SHA, 'Part B SHA-256 must match baseline exactly');
+
+  const origBufB = fs.readFileSync(found.partB);
+  const rawWbTemp = await XlsxPopulate.fromDataAsync(origBufB);
+  const rawSheetXml = await rawWbTemp._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const rawWbXml = await rawWbTemp._zip.files['xl/workbook.xml'].async('string');
+
+  const rawDimMatch = rawSheetXml.match(/<dimension ref="([^"]+)"\/>/);
+  assert.ok(rawDimMatch && rawDimMatch[1] === 'A1:X35', 'Raw owner-template dimension must be exact A1:X35');
+
+  const rawMergesMatches = [...rawSheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
+  assert.equal(rawMergesMatches.length, 79, 'Raw owner-template actual merge inventory length must equal 79');
+
+  const rawDeclaredCountMatch = rawSheetXml.match(/<mergeCells count="(\d+)">/);
+  assert.ok(rawDeclaredCountMatch && parseInt(rawDeclaredCountMatch[1], 10) === 79, 'Raw owner-template mergeCells declared count must equal 79');
+
+  const rawBlock27_30Merges = [];
+  for (const m of rawMergesMatches) {
+    const r1 = parseInt(m[2], 10);
+    const r2 = parseInt(m[4], 10);
+    if (r1 >= 27 && r2 <= 30) {
+      rawBlock27_30Merges.push(m[0]);
+    }
+  }
+  assert.equal(rawBlock27_30Merges.length, 6, 'Raw owner-template source block 27:30 must contain exactly 6 merges');
+
+  const rawPrintAreas = [...rawWbXml.matchAll(/<definedName name="_xlnm\.Print_Area"([^>]*)>([^<]+)<\/definedName>/g)];
+  assert.equal(rawPrintAreas.length, 1, 'Exactly one raw _xlnm.Print_Area definedName must exist');
+  assert.ok(rawPrintAreas[0][1].includes('localSheetId="0"'), 'Raw Print_Area localSheetId must equal 0');
+  assert.equal(rawPrintAreas[0][2].trim(), "'(Part B) Competency'!$A$1:$X$35", "Raw Print_Area value must equal '(Part B) Competency'!$A$1:$X$35");
+
+  const rawSheet1PrintAreas = [...rawWbXml.matchAll(/<definedName name="_xlnm\.Print_Area"[^>]*localSheetId="1"[^>]*>/g)];
+  assert.equal(rawSheet1PrintAreas.length, 0, 'No Print_Area must be bound to Sheet1/localSheetId 1 in raw owner template');
 
   const partBBuffers = await getStructuralPartBBuffers();
   const baselineBufB = partBBuffers.bufB6;
@@ -1723,10 +1756,27 @@ test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block 
     assert.ok(currentMainB.sheetProtection && currentMainB.sheetProtection !== 'none' && currentMainB.sheetProtection !== '', `sheetProtection for ${n} competencies must be present and non-none`);
     assert.deepEqual(currentMainB.sheetRels, baselineMainB.sheetRels, `sheetRels for ${n} competencies must match baseline`);
 
-    // J. Auxiliary Sheet1 exact stability
+    // J. Defined-name control proof (R5-R1)
+    assert.equal(currentMainB.printArea, expectedPrintArea, `Main sheet printArea for ${n} competencies must match ${expectedPrintArea} exactly`);
+    assert.equal(fpB.sheets['Sheet1'].printArea, '', `Sheet1 printArea for ${n} competencies must be empty string`);
+
+    const printAreaEntries = fpB.definedNames.filter(dn => dn.includes('name="_xlnm.Print_Area"'));
+    assert.equal(printAreaEntries.length, 1, `Exactly 1 _xlnm.Print_Area definedName must exist in ${n} competencies fingerprint`);
+    assert.ok(printAreaEntries[0].includes('localSheetId="0"'), `Print_Area in ${n} competencies must have localSheetId="0"`);
+    assert.equal(printAreaEntries[0].includes('localSheetId="1"'), false, `No Print_Area in ${n} competencies must have localSheetId="1"`);
+
+    const valMatch = printAreaEntries[0].match(/>([^<]+)</);
+    assert.ok(valMatch, 'DefinedName value must be extractable');
+    assert.equal(valMatch[1].trim(), expectedPrintArea, `Print_Area value for ${n} competencies must equal ${expectedPrintArea} exactly`);
+
+    const baselineNonPrint = baselineFpB.definedNames.filter(dn => !dn.includes('name="_xlnm.Print_Area"')).sort();
+    const currentNonPrint = fpB.definedNames.filter(dn => !dn.includes('name="_xlnm.Print_Area"')).sort();
+    assert.deepEqual(currentNonPrint, baselineNonPrint, `Non-print-area defined names for ${n} competencies must match baseline exactly`);
+
+    // K. Auxiliary Sheet1 exact stability
     assert.deepEqual(fpB.sheets['Sheet1'], baselineFpB.sheets['Sheet1'], `Auxiliary Sheet1 fingerprint for ${n} competencies must match baseline Sheet1 exactly`);
 
-    // K. Package / Formulas
+    // L. Package / Formulas
     assert.deepEqual(fpB.relTuples, baselineFpB.relTuples, `Relationship tuples for ${n} competencies must match baseline`);
     assert.deepEqual(fpB.mediaFiles, baselineFpB.mediaFiles, `Media inventory for ${n} competencies must match baseline`);
 
